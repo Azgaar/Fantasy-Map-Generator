@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import FlatQueue from "flatqueue";
 
-import {TIME, WARN} from "config/logging";
+import {ERROR, TIME, WARN} from "config/logging";
 import {getColors} from "utils/colorUtils";
 import {rn, minmax} from "utils/numberUtils";
 import {rand, P, biased} from "utils/probabilityUtils";
@@ -9,77 +9,80 @@ import {abbreviate} from "utils/languageUtils";
 import {getInputNumber, getInputValue, getSelectedOption} from "utils/nodeUtils";
 import {byId} from "utils/shorthands";
 import {cultureSets, TCultureSetName} from "config/cultureSets";
+import {DISTANCE_FIELD, ELEVATION, HUNTING_BIOMES, NOMADIC_BIOMES} from "config/generation";
 
-const {COA} = window;
+const {COA, Names} = window;
+
+const cultureTypeBaseExpansionism: {[key in TCultureType]: number} = {
+  Generic: 1,
+  Lake: 0.8,
+  Naval: 1.5,
+  River: 0.9,
+  Nomadic: 1.5,
+  Hunting: 0.7,
+  Highland: 1.2
+};
+
+const {MOUNTAINS, HILLS} = ELEVATION;
+const {LAND_COAST, LANDLOCKED} = DISTANCE_FIELD;
 
 window.Cultures = (function () {
   let cells: IGraphCells & IPackCells;
 
-  const generate = function (pack: IPack) {
+  const generate = function (pack: IPack): {culture: Uint16Array; cultures: TCultures} {
     TIME && console.time("generateCultures");
     cells = pack.cells;
 
-    const wildlands = {name: "Wildlands", i: 0, base: 1, origins: [null], shield: "round"};
+    const wildlands: IWilderness = {name: "Wildlands", i: 0, base: 1, origins: [null], shield: "round"};
     const culture = new Uint16Array(cells.i.length); // cell cultures
 
-    const culturesNumber = getCulturesNumber();
+    const populatedCellIds = cells.i.filter(cellId => cells.pop[cellId] > 0);
+
+    const culturesNumber = getCulturesNumber(populatedCellIds.length);
     if (!culturesNumber) return {culture, cultures: [wildlands]};
 
     const culturesData = selectCulturesData(culturesNumber);
-    const centers = d3.quadtree();
     const colors = getColors(culturesNumber);
+
+    const powerInput = getInputNumber("powerInput");
     const emblemShape = getInputValue("emblemShape");
+    const isEmblemShareRandom = emblemShape === "random";
 
     const codes: string[] = [];
+    const centers = d3.quadtree();
 
-    const cultures = culturesData.map(function (c, i) {
-      const cell = (c.center = placeCenter(c.sort ? c.sort : i => cells.s[i]));
+    const definedCultures: ICulture[] = culturesData.map((cultureData, index) => {
+      const sort = cultureData.sort || "n";
+      const sortingFn = new Function("return " + sort);
+      const cell = placeCenter(sortingFn);
+
+      const {name} = cultureData;
+      const base = checkNamesbase(cultureData.base);
+      const color = colors[index];
+      const type = defineCultureType(cell);
+      const expansionism = defineCultureExpansionism(type);
+
+      const origins = [0];
+      const code = abbreviate(name, codes);
+      const shield = isEmblemShareRandom ? COA.getRandomShield() : cultureData.shield;
+
       centers.add(cells.p[cell]);
-      c.i = i + 1;
-      delete c.odd;
-      delete c.sort;
-      c.color = colors[i];
-      c.type = defineCultureType(cell);
-      c.expansionism = defineCultureExpansionism(c.type);
-      c.origins = [0];
-      c.code = abbreviate(c.name, codes);
-      codes.push(c.code);
-      cells.culture[cell] = i + 1;
-      if (emblemShape === "random") c.shield = COA.getRandomShield();
+      codes.push(code);
+      cells.culture[cell] = index + 1;
+
+      return {i: index + 1, name, base, cell, color, type, expansionism, origins, code, shield};
     });
 
-    function placeCenter(v) {
-      let c,
-        spacing = (graphWidth + graphHeight) / 2 / culturesNumber;
-      const sorted = [...populated].sort((a, b) => v(b) - v(a)),
-        max = Math.floor(sorted.length / 2);
-      do {
-        c = sorted[biased(0, max, 5)];
-        spacing *= 0.9;
-      } while (centers.find(cells.p[c][0], cells.p[c][1], spacing) !== undefined);
-      return c;
-    }
-
-    // the first culture with id 0 is for wildlands
-    cultures.unshift(wildlands);
-
-    // make sure all bases exist in nameBases
-    if (!nameBases.length) {
-      ERROR && console.error("Name base is empty, default nameBases will be applied");
-      nameBases = Names.getNameBases();
-    }
-
-    cultures.forEach(c => (c.base = c.base % nameBases.length));
+    const cultures: TCultures = [wildlands, ...definedCultures];
 
     TIME && console.timeEnd("generateCultures");
+
     return {culture, cultures};
 
-    function getCulturesNumber() {
+    function getCulturesNumber(populatedCells: number) {
       const culturesDesired = getInputNumber("culturesInput");
       const culturesAvailable = Number(getSelectedOption("culturesSet").dataset.max);
       const expectedNumber = Math.min(culturesDesired, culturesAvailable);
-
-      const populatedCells = cells.pop.reduce((prev, curr) => prev + (curr > 0 ? 1 : 0), 0);
 
       // normal case, enough populated cells to generate cultures
       if (populatedCells >= expectedNumber * 25) return expectedNumber;
@@ -117,8 +120,7 @@ window.Cultures = (function () {
 
     function selectCulturesData(culturesNumber: number) {
       let defaultCultures = getDefault(culturesNumber);
-      if (defaultCultures.length === culturesNumber) return defaultCultures;
-      if (defaultCultures.every(d => d.odd === 1)) return defaultCultures.slice(0, culturesNumber);
+      if (defaultCultures.length >= culturesNumber) return defaultCultures;
 
       const culturesAvailable = Math.min(culturesNumber, defaultCultures.length);
       const cultures = [];
@@ -135,32 +137,71 @@ window.Cultures = (function () {
       return cultures;
     }
 
+    function placeCenter(sort: Function) {
+      let c;
+      let spacing = (graphWidth + graphHeight) / 2 / culturesNumber;
+      const sorted = Array.from(populatedCellIds).sort((a, b) => sort(b) - sort(a));
+      const max = Math.floor(sorted.length / 2);
+
+      do {
+        c = sorted[biased(0, max, 5)];
+        spacing *= 0.9;
+      } while (centers.find(cells.p[c][0], cells.p[c][1], spacing) !== undefined);
+      return c;
+    }
+
     // set culture type based on culture center position
-    function defineCultureType(i) {
-      if (cells.h[i] < 70 && [1, 2, 4].includes(cells.biome[i])) return "Nomadic"; // high penalty in forest biomes and near coastline
-      if (cells.h[i] > 50) return "Highland"; // no penalty for hills and moutains, high for other elevations
-      const f = pack.features[cells.f[cells.haven[i]]]; // opposite feature
-      if (f.type === "lake" && f.cells > 5) return "Lake"; // low water cross penalty and high for growth not along coastline
-      if (
-        (cells.harbor[i] && f.type !== "lake" && P(0.1)) ||
-        (cells.harbor[i] === 1 && P(0.6)) ||
-        (pack.features[cells.f[i]].group === "isle" && P(0.4))
-      )
-        return "Naval"; // low water cross penalty and high for non-along-coastline growth
-      if (cells.r[i] && cells.fl[i] > 100) return "River"; // no River cross penalty, penalty for non-River growth
-      if (cells.t[i] > 2 && [3, 7, 8, 9, 10, 12].includes(cells.biome[i])) return "Hunting"; // high penalty in non-native biomes
+    function defineCultureType(cellId: number): TCultureType {
+      const height = cells.h[cellId];
+
+      if (height > HILLS) return "Highland";
+
+      const biome = cells.biome[cellId];
+      if (height < MOUNTAINS && NOMADIC_BIOMES.includes(biome)) return "Nomadic";
+
+      if (cells.t[cellId] === LAND_COAST) {
+        const waterFeatureId = cells.f[cells.haven[cellId]];
+        const waterFeature = pack.features[waterFeatureId];
+
+        const isBigLakeCoast = waterFeature && waterFeature.type === "lake" && waterFeature.cells > 5;
+        if (isBigLakeCoast) return "Lake";
+
+        const isOceanCoast = waterFeature && waterFeature.type === "ocean";
+        if (isOceanCoast && P(0.1)) return "Naval";
+
+        const isSafeHarbor = cells.harbor[cellId] === 1;
+        if (isSafeHarbor && P(0.6)) return "Naval";
+
+        const cellFeature = pack.features[cells.f[cellId]];
+        const isIsle = cellFeature && cellFeature.group === "isle";
+        if (isIsle && P(0.4)) return "Naval";
+      }
+
+      const isOnBigRiver = cells.r[cellId] && cells.fl[cellId] > 100;
+      if (isOnBigRiver) return "River";
+
+      const isDeelyLandlocked = cells.t[cellId] > LANDLOCKED;
+      if (isDeelyLandlocked && HUNTING_BIOMES.includes(biome)) return "Hunting";
+
       return "Generic";
     }
 
-    function defineCultureExpansionism(type) {
-      let base = 1; // Generic
-      if (type === "Lake") base = 0.8;
-      else if (type === "Naval") base = 1.5;
-      else if (type === "River") base = 0.9;
-      else if (type === "Nomadic") base = 1.5;
-      else if (type === "Hunting") base = 0.7;
-      else if (type === "Highland") base = 1.2;
-      return rn(((Math.random() * powerInput.value) / 2 + 1) * base, 1);
+    function defineCultureExpansionism(type: TCultureType) {
+      const baseExp = cultureTypeBaseExpansionism[type];
+      return rn(((Math.random() * powerInput) / 2 + 1) * baseExp, 1);
+    }
+
+    function checkNamesbase(base: number) {
+      // make sure namesbase exists in nameBases
+      if (!nameBases.length) {
+        ERROR && console.error("Name base is empty, default nameBases will be applied");
+        nameBases = Names.getNameBases();
+      }
+
+      // check if base is in nameBases
+      if (base > nameBases.length) return base;
+      ERROR && console.error(`Name base ${base} is not available, applying a fallback one`);
+      return base % nameBases.length;
     }
   };
 
@@ -210,29 +251,6 @@ window.Cultures = (function () {
   };
 
   const getDefault = function (culturesNumber: number) {
-    // // generic sorting functions
-    // const {cells} = pack;
-    // const {s, t, h} = cells;
-    // const temp = grid.cells.temp;
-
-    // const sMax = d3.max(s)!;
-
-    // // normalized cell score
-    // const n = cell => Math.ceil((s[cell] / sMax) * 3);
-
-    // // temperature difference fee
-    // const td = (cell, goal) => {
-    //   const d = Math.abs(temp[cells.g[cell]] - goal);
-    //   return d ? d + 1 : 1;
-    // };
-
-    // // biome difference fee
-    // const bd = (cell, biomes, fee = 4) => (biomes.includes(cells.biome[cell]) ? 1 : fee);
-
-    // // not on sea coast fee
-    // const sf = (cell, fee = 4) =>
-    //   cells.haven[cell] && pack.features[cells.f[cells.haven[cell]]].type !== "lake" ? 1 : fee;
-
     const cultureSet = getInputValue("culturesSet") as TCultureSetName;
     if (cultureSet in cultureSets) {
       return cultureSets[cultureSet](culturesNumber);
