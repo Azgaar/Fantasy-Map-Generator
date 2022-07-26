@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-const c12: Hex[] = [
+const cardinal12: Hex[] = [
   "#dababf",
   "#fb8072",
   "#80b1d3",
@@ -26,9 +26,13 @@ const colorSchemeMap: Dict<ColorScheme> = {
 
 export function getColors(number: number) {
   const scheme = colorSchemeMap.bright;
-  const colors = d3
-    .range(number)
-    .map(index => (index < 12 ? c12[index] : d3.color(scheme((index - 12) / (number - 12))!)!.formatHex()));
+
+  const colors = d3.range(number).map(index => {
+    if (index < 12) return cardinal12[index];
+
+    const rgb = scheme((index - 12) / (number - 12))!;
+    return d3.color(rgb)!.formatHex() as Hex;
+  });
   return d3.shuffle(colors);
 }
 

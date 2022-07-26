@@ -9,10 +9,11 @@ import {rankCells} from "scripts/generation/pack/rankCells";
 import {createTypedArray} from "utils/arrayUtils";
 import {pick} from "utils/functionUtils";
 import {rn} from "utils/numberUtils";
+import {generateCultures} from "./cultures";
 import {generateRivers} from "./rivers";
 
 const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
-const {Biomes, Cultures} = window;
+const {Biomes} = window;
 
 export function createPack(grid: IGrid): IPack {
   const {temp, prec} = grid.cells;
@@ -51,7 +52,7 @@ export function createPack(grid: IGrid): IPack {
   const {suitability, population} = rankCells(mergedFeatures, {
     t: distanceField,
     f: featureIds,
-    fl: riverIds,
+    fl: flux,
     conf,
     r: riverIds,
     h: heights,
@@ -61,10 +62,25 @@ export function createPack(grid: IGrid): IPack {
     harbor
   });
 
-  const {cultureIds, cultures}: {cultureIds: Uint16Array; cultures: ICulture[]} = Cultures.generate({
-    features: mergedFeatures,
-    cells: {...cells, pop: population}
-  });
+  const {cultureIds, cultures} = generateCultures(
+    mergedFeatures,
+    {
+      p: cells.p,
+      i: cells.i,
+      g: cells.g,
+      t: distanceField,
+      h: heights,
+      haven,
+      harbor,
+      f: featureIds,
+      r: riverIds,
+      fl: flux,
+      s: suitability,
+      pop: population,
+      biome
+    },
+    temp
+  );
 
   // Cultures.expand();
   // BurgsAndStates.generate();
@@ -93,7 +109,7 @@ export function createPack(grid: IGrid): IPack {
     vertices,
     cells: {
       ...cells,
-      h: new Uint8Array(heights),
+      h: heights,
       f: featureIds,
       t: distanceField,
       haven,

@@ -2,7 +2,7 @@ interface IPack extends IGraph {
   cells: IGraphCells & IPackCells;
   features: TPackFeatures;
   states: IState[];
-  cultures: ICulture[];
+  cultures: TCultures;
   provinces: IProvince[];
   burgs: IBurg[];
   rivers: IRiver[];
@@ -43,21 +43,6 @@ interface IState {
   fullName: string;
   removed?: boolean;
 }
-
-interface ICulture {
-  i: number;
-  type: TCultureType;
-  name: string;
-  base: number;
-  code: string;
-  color: Hex | CssUrl;
-  expansionism: number;
-  origins: number[] | [null];
-  shield: string;
-  removed?: boolean;
-}
-
-type TCultureType = "Generic" | "Lake" | "Naval" | "River" | "Nomadic" | "Hunting" | "Highland";
 
 interface IProvince {
   i: number;
