@@ -40,6 +40,7 @@ export const generateCultures = function (
   const cultureIds = new Uint16Array(cells.i.length); // cell cultures
 
   const populatedCellIds = cells.i.filter(cellId => cells.pop[cellId] > 0);
+  const maxSuitability = d3.max(cells.s)!;
 
   const culturesNumber = getCulturesNumber(populatedCellIds.length);
   if (!culturesNumber) return {cultureIds, cultures: [wildlands]};
@@ -117,12 +118,12 @@ export const generateCultures = function (
 
   function selectCulturesData(culturesNumber: number) {
     let defaultCultures = getDefault(culturesNumber);
-    if (defaultCultures.length >= culturesNumber) return defaultCultures;
+    if (defaultCultures.length <= culturesNumber) return defaultCultures;
 
-    const culturesAvailable = Math.min(culturesNumber, defaultCultures.length);
     const cultures = [];
+    const MAX_ITERATIONS = 200;
 
-    for (let culture, rnd, i = 0; cultures.length < culturesAvailable && i < 200; i++) {
+    for (let culture, rnd, i = 0; cultures.length < culturesNumber && i < MAX_ITERATIONS; i++) {
       do {
         rnd = rand(defaultCultures.length - 1);
         culture = defaultCultures[rnd];
@@ -135,34 +136,59 @@ export const generateCultures = function (
   }
 
   function placeCenter(sortingString: string) {
+    let spacing = (graphWidth + graphHeight) / 2 / culturesNumber;
+
+    const sorted = sortPopulatedCellByCultureSuitability(sortingString);
+    const MAX = Math.floor(sorted.length / 2);
+    const BIAS_EXPONENT = 6;
+
+    return (function getCellId(): number {
+      const cellId = sorted[biased(0, MAX, BIAS_EXPONENT)];
+      if (centers.find(...cells.p[cellId], spacing) !== undefined) {
+        // to close to another center, try again with reduced spacing
+        spacing *= 0.9;
+        return getCellId(); // call recursively
+      }
+
+      return cellId;
+    })();
+  }
+
+  function sortPopulatedCellByCultureSuitability(sortingString: string) {
     let cellId: number;
 
-    const sMax = d3.max(cells.s)!;
-
     const sortingMethods = {
-      n: () => Math.ceil((cells.s[cellId] / sMax) * 3), // normalized cell score
+      n: () => Math.ceil((cells.s[cellId] / maxSuitability) * 3), // normalized cell score
+
       td: (goalTemp: number) => {
         const tempDelta = Math.abs(temp[cells.g[cellId]] - goalTemp);
         return tempDelta ? tempDelta + 1 : 1;
       },
+
       bd: (biomes: number[], fee = 4) => {
         return biomes.includes(cells.biome[cellId]) ? 1 : fee;
       },
+
       sf: (fee = 4) => {
         const haven = cells.haven[cellId];
         const havenHeature = features[haven];
         return haven && havenHeature && havenHeature.type !== "lake" ? 1 : fee;
       },
+
       t: () => cells.t[cellId],
+
       h: () => cells.h[cellId],
+
       s: () => cells.s[cellId]
     };
+
     const allSortingMethods = `{${Object.keys(sortingMethods).join(", ")}}`;
 
     const sortFn = new Function(allSortingMethods, "return " + sortingString);
+
     const comparator = (a: number, b: number) => {
       cellId = a;
-      const cellA = sortFn({...sortingMethods});
+      const cellA = sortFn(sortingMethods);
 
       cellId = b;
       const cellB = sortFn(sortingMethods);
@@ -170,15 +196,8 @@ export const generateCultures = function (
       return cellB - cellA;
     };
 
-    let spacing = (graphWidth + graphHeight) / 2 / culturesNumber;
     const sorted = Array.from(populatedCellIds).sort(comparator);
-    const max = Math.floor(sorted.length / 2);
-
-    do {
-      cellId = sorted[biased(0, max, 5)];
-      spacing *= 0.9;
-    } while (centers.find(...cells.p[cellId], spacing) !== undefined);
-    return cellId;
+    return sorted;
   }
 
   // set culture type based on culture center position
@@ -230,7 +249,8 @@ export const generateCultures = function (
     }
 
     // check if base is in nameBases
-    if (base > nameBases.length) return base;
+    if (base < nameBases.length) return base;
+
     ERROR && console.error(`Name base ${base} is not available, applying a fallback one`);
     return base % nameBases.length;
   }

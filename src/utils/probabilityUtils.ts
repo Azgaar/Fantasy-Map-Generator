@@ -49,9 +49,17 @@ export function rw(object: {[key: string]: number}) {
   return ra(weightedArray);
 }
 
-// return a random integer from min to max biased towards one end based on exponent distribution (the bigger ex the higher bias towards min)
-export function biased(min: number, max: number, ex: number) {
-  return Math.round(min + (max - min) * Math.pow(Math.random(), ex));
+// return a random integer from min to max biased towards one end based on exponent distribution
+// the bigger exponent the higher bias towards min
+// biased(0, 10, 10): {0: 74%, 1: 9%, 2: 4%, 3: 3%, 4: 2%, 5: 2%, 6: 2%, 7: 1%, 8: 1%, 9: 1%, 10: 0%}
+// biased(0, 10, 5): {0: 55%, 1: 14%, 2: 7%, 3: 5%, 4: 4%, 5: 4%, 6: 3%, 7%: 3%, 8: 2%, 9: 2%, 10: 1%}
+// biased(0, 10, 4): {0: 46%, 1: 15%, 2: 8%, 3: 6%, 4: 5%, 5: 4%, 6: 4%, 7%: 3, 8: 3%, 9: 3%, 10: 1%}
+// biased(0, 10, 3): {0: 36%, 1: 16%, 2: 10%, 3: 8%, 4: 6%, 5: 5%, 6: 5%, 7%: 4, 8: 4%, 9: 4%, 10: 2%}
+// biased(0, 10, 2): {0: 22%, 1: 17%, 2: 11%, 3: 9%, 4: 8%, 5: 7%, 6: 6%, 7%: 6, 8: 6%, 9: 5%, 10: 2%}
+// biased{0, 10, 1): {0: 5%, 1: 10%, 2: 10%, 3: 10%, 4: 10%, 5: 10%, 6: 10%, 7%: 10, 8%: 10, 9: 10%, 10: 5%}
+export function biased(min: number, max: number, exponent: number) {
+  if (exponent <= 1) throw new Error("Exponent must be greater than 1");
+  return Math.round(min + (max - min) * Math.pow(Math.random(), exponent));
 }
 
 // get number from string in format "1-3" or "2" or "0.5"
