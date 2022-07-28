@@ -9,7 +9,7 @@ import {rankCells} from "scripts/generation/pack/rankCells";
 import {createTypedArray} from "utils/arrayUtils";
 import {pick} from "utils/functionUtils";
 import {rn} from "utils/numberUtils";
-import {generateCultures} from "./cultures";
+import {generateCultures, expandCultures} from "./cultures";
 import {generateRivers} from "./rivers";
 
 const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
@@ -39,7 +39,7 @@ export function createPack(grid: IGrid): IPack {
     temp
   );
 
-  const biome: IPack["cells"]["biome"] = Biomes.define({
+  const biome: Uint8Array = Biomes.define({
     temp,
     prec,
     flux,
@@ -62,7 +62,7 @@ export function createPack(grid: IGrid): IPack {
     harbor
   });
 
-  const {cultureIds, cultures} = generateCultures(
+  const cultures = generateCultures(
     mergedFeatures,
     {
       p: cells.p,
@@ -82,7 +82,18 @@ export function createPack(grid: IGrid): IPack {
     temp
   );
 
-  // Cultures.expand();
+  const cultureIds = expandCultures(cultures, mergedFeatures, {
+    c: cells.c,
+    area: cells.area,
+    h: heights,
+    t: distanceField,
+    f: featureIds,
+    r: riverIds,
+    fl: flux,
+    biome,
+    pop: population
+  });
+
   // BurgsAndStates.generate();
   // Religions.generate();
   // BurgsAndStates.defineStateForms();

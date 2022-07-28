@@ -420,8 +420,8 @@ function regenerateReligions() {
 }
 
 function regenerateCultures() {
-  Cultures.generate();
-  Cultures.expand();
+  // Cultures.generate();
+  // Cultures.expand();
   BurgsAndStates.updateCultures();
   Religions.updateCultures();
   if (!layerIsOn("toggleCultures")) toggleCultures();

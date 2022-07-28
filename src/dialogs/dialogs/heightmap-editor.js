@@ -239,8 +239,8 @@ export function open(options) {
     Lakes.defineGroup();
     Biomes.define();
     rankCells();
-    Cultures.generate();
-    Cultures.expand();
+    // Cultures.generate();
+    // Cultures.expand();
     BurgsAndStates.generate();
     Religions.generate();
     BurgsAndStates.defineStateForms();

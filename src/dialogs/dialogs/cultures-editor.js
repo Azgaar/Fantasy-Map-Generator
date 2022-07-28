@@ -688,7 +688,7 @@ function recalculateCultures(must) {
     pack.cells.culture[c.center] = c.i;
   });
 
-  Cultures.expand();
+  // Cultures.expand();
   drawCultures();
   pack.burgs.forEach(b => (b.culture = pack.cells.culture[b.cell]));
   refreshCulturesEditor();
@@ -845,10 +845,56 @@ function addCulture() {
   if (occupied) return tip("This cell is already a culture center. Please select a different cell", false, "error");
 
   if (d3.event.shiftKey === false) exitAddCultureMode();
-  Cultures.add(center);
+
+  addCultureAtCell(center);
 
   drawCultureCenters();
   culturesEditorAddLines();
+}
+
+function addCultureAtCell(center) {
+  const defaultCultures = getDefault();
+  let culture, base, name;
+
+  if (pack.cultures.length < defaultCultures.length) {
+    // add one of the default cultures
+    culture = pack.cultures.length;
+    base = defaultCultures[culture].base;
+    name = defaultCultures[culture].name;
+  } else {
+    // add random culture besed on one of the current ones
+    culture = rand(pack.cultures.length - 1);
+    name = Names.getCulture(culture, 5, 8, "");
+    base = pack.cultures[culture].base;
+  }
+  const code = abbreviate(
+    name,
+    pack.cultures.map(c => c.code)
+  );
+  const i = pack.cultures.length;
+  const color = d3.color(d3.scaleSequential(d3.interpolateRainbow)(Math.random())).hex();
+
+  // define emblem shape
+  let shield = culture.shield;
+  const emblemShape = document.getElementById("emblemShape").value;
+  if (emblemShape === "random") shield = COA.getRandomShield();
+
+  pack.cultures.push({
+    name,
+    color,
+    base,
+    center,
+    i,
+    expansionism: 1,
+    type: "Generic",
+    cells: 0,
+    area: 0,
+    rural: 0,
+    urban: 0,
+    origins: [0],
+    code,
+    shield
+  });
 }
 
 function downloadCulturesCsv() {

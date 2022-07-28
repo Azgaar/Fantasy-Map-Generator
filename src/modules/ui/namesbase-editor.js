@@ -5,6 +5,7 @@ import {tip} from "scripts/tooltips";
 import {openURL} from "utils/linkUtils";
 import {rn} from "utils/numberUtils";
 import {closeDialogs} from "dialogs/utils";
+import {defaultNameBases} from "config/namebases";
 
 let isLoaded = false;
 
@@ -245,7 +246,7 @@ export function editNamesbase() {
         Restore: function () {
           $(this).dialog("close");
           Names.clearChains();
-          nameBases = Names.getNameBases();
+          nameBases = [...defaultNameBases];
           createBasesList();
           updateInputs();
         },

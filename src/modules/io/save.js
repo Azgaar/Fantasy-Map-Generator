@@ -3,6 +3,7 @@ import {rn} from "utils/numberUtils";
 import {ldb} from "scripts/indexedDB";
 import {ra} from "utils/probabilityUtils";
 import {closeDialogs} from "dialogs/utils";
+import {defaultNameBases} from "config/namebases";
 
 // functions to save project as .map file
 
@@ -71,10 +72,9 @@ function getMapData() {
   const markers = JSON.stringify(pack.markers);
 
   // store name array only if not the same as default
-  const defaultNB = Names.getNameBases();
   const namesData = nameBases
     .map((b, i) => {
-      const names = defaultNB[i] && defaultNB[i].b === b.b ? "" : b.b;
+      const names = defaultNameBases[i] && defaultNameBases[i].b === b.b ? "" : b.b;
       return `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${names}`;
     })
     .join("/");

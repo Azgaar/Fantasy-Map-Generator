@@ -1,4 +1,5 @@
 import {rand} from "utils/probabilityUtils";
+import {NAMEBASE as NB, defaultNameBases} from "./namebases";
 
 const {Names, COA} = window;
 
@@ -13,183 +14,381 @@ export type TCultureSetName =
   | "random";
 
 interface ICultureConfig {
-  name: string;
-  base: number;
-  odd: number;
-  shield: string;
-  sort?: string;
+  name: string; // culture name
+  base: number; // NB id
+  chance: number; // selection chance [0, 1]
+  shield: string; // emblem type name
+  sort?: string; // cells sorting function to place culture center
 }
 
 const world = () => [
-  {name: "Shwazen", base: 0, odd: 0.7, sort: "n() / td(10) / bd([6, 8])", shield: "hessen"},
-  {name: "Angshire", base: 1, odd: 1, sort: "n() / td(10) / sf", shield: "heater"},
-  {name: "Luari", base: 2, odd: 0.6, sort: "n() / td(12) / bd([6, 8])", shield: "oldFrench"},
-  {name: "Tallian", base: 3, odd: 0.6, sort: "n() / td(15)", shield: "horsehead2"},
-  {name: "Astellian", base: 4, odd: 0.6, sort: "n() / td(16)", shield: "spanish"},
-  {name: "Slovan", base: 5, odd: 0.7, sort: "(n() / td(6)) * t()", shield: "round"},
-  {name: "Norse", base: 6, odd: 0.7, sort: "n() / td(5)", shield: "heater"},
-  {name: "Elladan", base: 7, odd: 0.7, sort: "(n() / td(18)) * h()", shield: "boeotian"},
-  {name: "Romian", base: 8, odd: 0.7, sort: "n() / td(15)", shield: "roman"},
-  {name: "Soumi", base: 9, odd: 0.3, sort: "(n() / td(5) / bd([9])) * t()", shield: "pavise"},
-  {name: "Koryo", base: 10, odd: 0.1, sort: "n() / td(12) / t()", shield: "round"},
-  {name: "Hantzu", base: 11, odd: 0.1, sort: "n() / td(13)", shield: "banner"},
-  {name: "Yamoto", base: 12, odd: 0.1, sort: "n() / td(15) / t()", shield: "round"},
-  {name: "Portuzian", base: 13, odd: 0.4, sort: "n() / td(17) / sf()", shield: "spanish"},
-  {name: "Nawatli", base: 14, odd: 0.1, sort: "h / td(18) / bd([7])", shield: "square"},
-  {name: "Vengrian", base: 15, odd: 0.2, sort: "(n() / td(11) / bd([4])) * t()", shield: "wedged"},
-  {name: "Turchian", base: 16, odd: 0.2, sort: "n() / td(13)", shield: "round"},
-  {name: "Berberan", base: 17, odd: 0.1, sort: "(n() / td(19) / bd([1, 2, 3], 7)) * t()", shield: "round"},
-  {name: "Eurabic", base: 18, odd: 0.2, sort: "(n() / td(26) / bd([1, 2], 7)) * t()", shield: "round"},
-  {name: "Inuk", base: 19, odd: 0.05, sort: "td(-1) / bd([10, 11]) / sf()", shield: "square"},
-  {name: "Euskati", base: 20, odd: 0.05, sort: "(n() / td(15)) * h()", shield: "spanish"},
-  {name: "Yoruba", base: 21, odd: 0.05, sort: "n() / td(15) / bd([5, 7])", shield: "vesicaPiscis"},
-  {name: "Keltan", base: 22, odd: 0.05, sort: "(n() / td(11) / bd([6, 8])) * t()", shield: "vesicaPiscis"},
-  {name: "Efratic", base: 23, odd: 0.05, sort: "(n() / td(22)) * t()", shield: "diamond"},
-  {name: "Tehrani", base: 24, odd: 0.1, sort: "(n() / td(18)) * h()", shield: "round"},
-  {name: "Maui", base: 25, odd: 0.05, sort: "n() / td(24) / sf() / t()", shield: "round"},
-  {name: "Carnatic", base: 26, odd: 0.05, sort: "n() / td(26)", shield: "round"},
-  {name: "Inqan", base: 27, odd: 0.05, sort: "h / td(13)", shield: "square"},
-  {name: "Kiswaili", base: 28, odd: 0.1, sort: "n() / td(29) / bd([1, 3, 5, 7])", shield: "vesicaPiscis"},
-  {name: "Vietic", base: 29, odd: 0.1, sort: "n() / td(25) / bd([7], 7) / t()", shield: "banner"},
-  {name: "Guantzu", base: 30, odd: 0.1, sort: "n() / td(17)", shield: "banner"},
-  {name: "Ulus", base: 31, odd: 0.1, sort: "(n() / td(5) / bd([2, 4, 10], 7)) * t()", shield: "banner"}
+  {name: "Shwazen", base: NB.German, chance: 0.7, sort: "score() / temp(10) / biome([6, 8])", shield: "hessen"},
+  {name: "Angshire", base: NB.English, chance: 1, sort: "score() / temp(10) / oceanCoast()", shield: "heater"},
+  {name: "Luari", base: NB.French, chance: 0.6, sort: "score() / temp(12) / biome([6, 8])", shield: "oldFrench"},
+  {name: "Tallian", base: NB.Italian, chance: 0.6, sort: "score() / temp(15)", shield: "horsehead2"},
+  {name: "Astellian", base: NB.Castillian, chance: 0.6, sort: "score() / temp(16)", shield: "spanish"},
+  {name: "Slovan", base: NB.Ruthenian, chance: 0.7, sort: "score() / temp(6) * coastDist()", shield: "round"},
+  {name: "Norse", base: NB.Nordic, chance: 0.7, sort: "score() / temp(5)", shield: "heater"},
+  {name: "Elladan", base: NB.Greek, chance: 0.7, sort: "score() / temp(18) * height()", shield: "boeotian"},
+  {name: "Romian", base: NB.Roman, chance: 0.7, sort: "score() / temp(15)", shield: "roman"},
+  {name: "Soumi", base: NB.Finnic, chance: 0.3, sort: "score() / temp(5) / biome([9]) * coastDist()", shield: "pavise"},
+  {name: "Koryo", base: NB.Korean, chance: 0.1, sort: "score() / temp(12) / coastDist()", shield: "round"},
+  {name: "Hantzu", base: NB.Chinese, chance: 0.1, sort: "score() / temp(13)", shield: "banner"},
+  {name: "Yamoto", base: NB.Japanese, chance: 0.1, sort: "score() / temp(15) / coastDist()", shield: "round"},
+  {name: "Portuzian", base: NB.Portuguese, chance: 0.4, sort: "score() / temp(17) / oceanCoast()", shield: "spanish"},
+  {name: "Nawatli", base: NB.Nahuatl, chance: 0.1, sort: "height() / temp(18) / biome([7])", shield: "square"},
+  {
+    name: "Vengrian",
+    base: NB.Hungarian,
+    chance: 0.2,
+    sort: "score() / temp(11) / biome([4]) * coastDist()",
+    shield: "wedged"
+  },
+  {name: "Turchian", base: NB.Turkish, chance: 0.2, sort: "score() / temp(13)", shield: "round"},
+  {
+    name: "Berberan",
+    base: NB.Berber,
+    chance: 0.1,
+    sort: "score() / temp(19) / biome([1, 2, 3], 7) * coastDist()",
+    shield: "round"
+  },
+  {
+    name: "Eurabic",
+    base: NB.Arabic,
+    chance: 0.2,
+    sort: "score() / temp(26) / biome([1, 2], 7) * coastDist()",
+    shield: "round"
+  },
+  {name: "Inuk", base: NB.Inuit, chance: 0.05, sort: "temp(-1) / biome([10, 11]) / oceanCoast()", shield: "square"},
+  {name: "Euskati", base: NB.Basque, chance: 0.05, sort: "score() / temp(15) * height()", shield: "spanish"},
+  {name: "Yoruba", base: NB.Nigerian, chance: 0.05, sort: "score() / temp(15) / biome([5, 7])", shield: "vesicaPiscis"},
+  {
+    name: "Keltan",
+    base: NB.Celtic,
+    chance: 0.05,
+    sort: "score() / temp(11) / biome([6, 8]) * coastDist()",
+    shield: "vesicaPiscis"
+  },
+  {name: "Efratic", base: NB.Mesopotamian, chance: 0.05, sort: "score() / temp(22) * coastDist()", shield: "diamond"},
+  {name: "Tehrani", base: NB.Iranian, chance: 0.1, sort: "score() / temp(18) * height()", shield: "round"},
+  {
+    name: "Maui",
+    base: NB.Hawaiian,
+    chance: 0.05,
+    sort: "score() / temp(24) / oceanCoast() / coastDist()",
+    shield: "round"
+  },
+  {name: "Carnatic", base: NB.Karnataka, chance: 0.05, sort: "score() / temp(26)", shield: "round"},
+  {name: "Inqan", base: NB.Quechua, chance: 0.05, sort: "height() / temp(13)", shield: "square"},
+  {
+    name: "Kiswaili",
+    base: NB.Swahili,
+    chance: 0.1,
+    sort: "score() / temp(29) / biome([1, 3, 5, 7])",
+    shield: "vesicaPiscis"
+  },
+  {
+    name: "Vietic",
+    base: NB.Vietnamese,
+    chance: 0.1,
+    sort: "score() / temp(25) / biome([7], 7) / coastDist()",
+    shield: "banner"
+  },
+  {name: "Guantzu", base: NB.Cantonese, chance: 0.1, sort: "score() / temp(17)", shield: "banner"},
+  {
+    name: "Ulus",
+    base: NB.Mongolian,
+    chance: 0.1,
+    sort: "score() / temp(5) / biome([2, 4, 10], 7) * coastDist()",
+    shield: "banner"
+  }
 ];
 
 const european = () => [
-  {name: "Shwazen", base: 0, odd: 1, sort: "n() / td(10) / bd([6, 8])", shield: "swiss"},
-  {name: "Angshire", base: 1, odd: 1, sort: "n() / td(10) / sf()", shield: "wedged"},
-  {name: "Luari", base: 2, odd: 1, sort: "n() / td(12) / bd([6, 8])", shield: "french"},
-  {name: "Tallian", base: 3, odd: 1, sort: "n() / td(15)", shield: "horsehead"},
-  {name: "Astellian", base: 4, odd: 1, sort: "n() / td(16)", shield: "spanish"},
-  {name: "Slovan", base: 5, odd: 1, sort: "(n() / td(6)) * t()", shield: "polish"},
-  {name: "Norse", base: 6, odd: 1, sort: "n() / td(5)", shield: "heater"},
-  {name: "Elladan", base: 7, odd: 1, sort: "(n() / td(18)) * h()", shield: "boeotian"},
-  {name: "Romian", base: 8, odd: 0.2, sort: "n() / td(15) / t()", shield: "roman"},
-  {name: "Soumi", base: 9, odd: 1, sort: "(n() / td(5) / bd([9])) * t()", shield: "pavise"},
-  {name: "Portuzian", base: 13, odd: 1, sort: "n() / td(17) / sf()", shield: "renaissance"},
-  {name: "Vengrian", base: 15, odd: 1, sort: "(n() / td(11) / bd([4])) * t()", shield: "horsehead2"},
-  {name: "Turchian", base: 16, odd: 0.05, sort: "n() / td(14)", shield: "round"},
-  {name: "Euskati", base: 20, odd: 0.05, sort: "(n() / td(15)) * h()", shield: "oldFrench"},
-  {name: "Keltan", base: 22, odd: 0.05, sort: "(n() / td(11) / bd([6, 8])) * t()", shield: "oval"}
+  {name: "Shwazen", base: NB.German, chance: 1, sort: "score() / temp(10) / biome([6, 8])", shield: "swiss"},
+  {name: "Angshire", base: NB.English, chance: 1, sort: "score() / temp(10) / oceanCoast()", shield: "wedged"},
+  {name: "Luari", base: NB.French, chance: 1, sort: "score() / temp(12) / biome([6, 8])", shield: "french"},
+  {name: "Tallian", base: NB.Italian, chance: 1, sort: "score() / temp(15)", shield: "horsehead"},
+  {name: "Astellian", base: NB.Castillian, chance: 1, sort: "score() / temp(16)", shield: "spanish"},
+  {name: "Slovan", base: NB.Ruthenian, chance: 1, sort: "score() / temp(6) * coastDist()", shield: "polish"},
+  {name: "Norse", base: NB.Nordic, chance: 1, sort: "score() / temp(5)", shield: "heater"},
+  {name: "Elladan", base: NB.Greek, chance: 1, sort: "score() / temp(18) * height()", shield: "boeotian"},
+  {name: "Romian", base: NB.Roman, chance: 0.2, sort: "score() / temp(15) / coastDist()", shield: "roman"},
+  {name: "Soumi", base: NB.Finnic, chance: 1, sort: "score() / temp(5) / biome([9]) * coastDist()", shield: "pavise"},
+  {name: "Portuzian", base: NB.Portuguese, chance: 1, sort: "score() / temp(17) / oceanCoast()", shield: "renaissance"},
+  {
+    name: "Vengrian",
+    base: NB.Hungarian,
+    chance: 1,
+    sort: "score() / temp(11) / biome([4]) * coastDist()",
+    shield: "horsehead2"
+  },
+  {name: "Turchian", base: NB.Turkish, chance: 0.05, sort: "score() / temp(14)", shield: "round"},
+  {name: "Euskati", base: NB.Basque, chance: 0.05, sort: "score() / temp(15) * height()", shield: "oldFrench"},
+  {
+    name: "Keltan",
+    base: NB.Celtic,
+    chance: 0.05,
+    sort: "score() / temp(11) / biome([6, 8]) * coastDist()",
+    shield: "oval"
+  }
 ];
 
 const oriental = () => [
-  {name: "Koryo", base: 10, odd: 1, sort: "n() / td(12) / t()", shield: "round"},
-  {name: "Hantzu", base: 11, odd: 1, sort: "n() / td(13)", shield: "banner"},
-  {name: "Yamoto", base: 12, odd: 1, sort: "n() / td(15) / t()", shield: "round"},
-  {name: "Turchian", base: 16, odd: 1, sort: "n() / td(12)", shield: "round"},
-  {name: "Berberan", base: 17, odd: 0.2, sort: "(n() / td(19) / bd([1, 2, 3], 7)) * t()", shield: "oval"},
-  {name: "Eurabic", base: 18, odd: 1, sort: "(n() / td(26) / bd([1, 2], 7)) * t()", shield: "oval"},
-  {name: "Efratic", base: 23, odd: 0.1, sort: "(n() / td(22)) * t()", shield: "round"},
-  {name: "Tehrani", base: 24, odd: 1, sort: "(n() / td(18)) * h()", shield: "round"},
-  {name: "Maui", base: 25, odd: 0.2, sort: "n() / td(24) / sf() / t()", shield: "vesicaPiscis"},
-  {name: "Carnatic", base: 26, odd: 0.5, sort: "n() / td(26)", shield: "round"},
-  {name: "Vietic", base: 29, odd: 0.8, sort: "n() / td(25) / bd([7], 7) / t", shield: "banner"},
-  {name: "Guantzu", base: 30, odd: 0.5, sort: "n() / td(17)", shield: "banner"},
-  {name: "Ulus", base: 31, odd: 1, sort: "(n() / td(5) / bd([2, 4, 10], 7)) * t()", shield: "banner"}
+  {name: "Koryo", base: NB.Korean, chance: 1, sort: "score() / temp(12) / coastDist()", shield: "round"},
+  {name: "Hantzu", base: NB.Chinese, chance: 1, sort: "score() / temp(13)", shield: "banner"},
+  {name: "Yamoto", base: NB.Japanese, chance: 1, sort: "score() / temp(15) / coastDist()", shield: "round"},
+  {name: "Turchian", base: NB.Turkish, chance: 1, sort: "score() / temp(12)", shield: "round"},
+  {
+    name: "Berberan",
+    base: NB.Berber,
+    chance: 0.2,
+    sort: "score() / temp(19) / biome([1, 2, 3], 7) * coastDist()",
+    shield: "oval"
+  },
+  {
+    name: "Eurabic",
+    base: NB.Arabic,
+    chance: 1,
+    sort: "score() / temp(26) / biome([1, 2], 7) * coastDist()",
+    shield: "oval"
+  },
+  {name: "Efratic", base: NB.Mesopotamian, chance: 0.1, sort: "score() / temp(22) * coastDist()", shield: "round"},
+  {name: "Tehrani", base: NB.Iranian, chance: 1, sort: "score() / temp(18) * height()", shield: "round"},
+  {
+    name: "Maui",
+    base: NB.Hawaiian,
+    chance: 0.2,
+    sort: "score() / temp(24) / oceanCoast() / coastDist()",
+    shield: "vesicaPiscis"
+  },
+  {name: "Carnatic", base: NB.Karnataka, chance: 0.5, sort: "score() / temp(26)", shield: "round"},
+  {
+    name: "Vietic",
+    base: NB.Vietnamese,
+    chance: 0.8,
+    sort: "score() / temp(25) / biome([7], 7) / coastDist()",
+    shield: "banner"
+  },
+  {name: "Guantzu", base: NB.Cantonese, chance: 0.5, sort: "score() / temp(17)", shield: "banner"},
+  {
+    name: "Ulus",
+    base: NB.Mongolian,
+    chance: 1,
+    sort: "score() / temp(5) / biome([2, 4, 10], 7) * coastDist()",
+    shield: "banner"
+  }
 ];
 
 const getEnglishName: () => string = () => Names.getBase(1, 5, 9, "", 0);
 
 const english = () => [
-  {name: getEnglishName(), base: 1, odd: 1, shield: "heater"},
-  {name: getEnglishName(), base: 1, odd: 1, shield: "wedged"},
-  {name: getEnglishName(), base: 1, odd: 1, shield: "swiss"},
-  {name: getEnglishName(), base: 1, odd: 1, shield: "oldFrench"},
-  {name: getEnglishName(), base: 1, odd: 1, shield: "swiss"},
-  {name: getEnglishName(), base: 1, odd: 1, shield: "spanish"},
-  {name: getEnglishName(), base: 1, odd: 1, shield: "hessen"},
-  {name: getEnglishName(), base: 1, odd: 1, shield: "fantasy5"},
-  {name: getEnglishName(), base: 1, odd: 1, shield: "fantasy4"},
-  {name: getEnglishName(), base: 1, odd: 1, shield: "fantasy1"}
+  {name: getEnglishName(), base: NB.English, chance: 1, shield: "heater"},
+  {name: getEnglishName(), base: NB.English, chance: 1, shield: "wedged"},
+  {name: getEnglishName(), base: NB.English, chance: 1, shield: "swiss"},
+  {name: getEnglishName(), base: NB.English, chance: 1, shield: "oldFrench"},
+  {name: getEnglishName(), base: NB.English, chance: 1, shield: "swiss"},
+  {name: getEnglishName(), base: NB.English, chance: 1, shield: "spanish"},
+  {name: getEnglishName(), base: NB.English, chance: 1, shield: "hessen"},
+  {name: getEnglishName(), base: NB.English, chance: 1, shield: "fantasy5"},
+  {name: getEnglishName(), base: NB.English, chance: 1, shield: "fantasy4"},
+  {name: getEnglishName(), base: NB.English, chance: 1, shield: "fantasy1"}
 ];
 
 const antique = () => [
-  {name: "Roman", base: 8, odd: 1, sort: "n() / td(14) / t()", shield: "roman"}, // Roman
-  {name: "Roman", base: 8, odd: 1, sort: "n() / td(15) / sf()", shield: "roman"}, // Roman
-  {name: "Roman", base: 8, odd: 1, sort: "n() / td(16) / sf()", shield: "roman"}, // Roman
-  {name: "Roman", base: 8, odd: 1, sort: "n() / td(17) / t()", shield: "roman"}, // Roman
-  {name: "Hellenic", base: 7, odd: 1, sort: "(n() / td(18) / sf) * h()", shield: "boeotian"}, // Greek
-  {name: "Hellenic", base: 7, odd: 1, sort: "(n() / td(19) / sf) * h()", shield: "boeotian"}, // Greek
-  {name: "Macedonian", base: 7, odd: 0.5, sort: "(n() / td(12)) * h()", shield: "round"}, // Greek
-  {name: "Celtic", base: 22, odd: 1, sort: "n() / td(11) ** 0.5 / bd([6, 8])", shield: "round"},
-  {name: "Germanic", base: 0, odd: 1, sort: "n() / td(10) ** 0.5 / bd([6, 8])", shield: "round"},
-  {name: "Persian", base: 24, odd: 0.8, sort: "(n() / td(18)) * h()", shield: "oval"}, // Iranian
-  {name: "Scythian", base: 24, odd: 0.5, sort: "n() / td(11) ** 0.5 / bd([4])", shield: "round"}, // Iranian
-  {name: "Cantabrian", base: 20, odd: 0.5, sort: "(n() / td(16)) * h()", shield: "oval"}, // Basque
-  {name: "Estian", base: 9, odd: 0.2, sort: "(n() / td(5)) * t()", shield: "pavise"}, // Finnic
-  {name: "Carthaginian", base: 17, odd: 0.3, sort: "n() / td(19) / sf()", shield: "oval"}, // Berber
-  {name: "Mesopotamian", base: 23, odd: 0.2, sort: "n() / td(22) / bd([1, 2, 3])", shield: "oval"} // Mesopotamian
+  {name: "Roman", base: NB.Roman, chance: 1, sort: "score() / temp(14) / coastDist()", shield: "roman"},
+  {name: "Roman", base: NB.Roman, chance: 1, sort: "score() / temp(15) / oceanCoast()", shield: "roman"},
+  {name: "Roman", base: NB.Roman, chance: 1, sort: "score() / temp(16) / oceanCoast()", shield: "roman"},
+  {name: "Roman", base: NB.Roman, chance: 1, sort: "score() / temp(17) / coastDist()", shield: "roman"},
+  {
+    name: "Hellenic",
+    base: NB.Greek,
+    chance: 1,
+    sort: "score() / temp(18) / oceanCoast() * height()",
+    shield: "boeotian"
+  },
+  {
+    name: "Hellenic",
+    base: NB.Greek,
+    chance: 1,
+    sort: "score() / temp(19) / oceanCoast() * height()",
+    shield: "boeotian"
+  },
+  {name: "Macedonian", base: NB.Greek, chance: 0.5, sort: "score() / temp(12) * height()", shield: "round"},
+  {name: "Celtic", base: NB.Celtic, chance: 1, sort: "score() / temp(11) ** 0.5 / biome([6, 8])", shield: "round"},
+  {name: "Germanic", base: NB.German, chance: 1, sort: "score() / temp(10) ** 0.5 / biome([6, 8])", shield: "round"},
+  {name: "Persian", base: NB.Iranian, chance: 0.8, sort: "score() / temp(18) * height()", shield: "oval"},
+  {
+    name: "Scythian",
+    base: NB.Iranian,
+    chance: 0.5,
+    sort: "score() / temp(11) ** 0.5 / biome([4])",
+    shield: "round"
+  },
+  {name: "Cantabrian", base: NB.Basque, chance: 0.5, sort: "score() / temp(16) * height()", shield: "oval"},
+  {name: "Estian", base: NB.Finnic, chance: 0.2, sort: "score() / temp(5) * coastDist()", shield: "pavise"},
+  {name: "Carthaginian", base: NB.Berber, chance: 0.3, sort: "score() / temp(19) / oceanCoast()", shield: "oval"},
+  {
+    name: "Mesopotamian",
+    base: NB.Mesopotamian,
+    chance: 0.2,
+    sort: "score() / temp(22) / biome([1, 2, 3])",
+    shield: "oval"
+  }
 ];
 
 const highFantasy = () => [
   // fantasy races
-  {name: "Quenian (Elfish)", base: 33, odd: 1, sort: "(n() / bd([6, 7, 8, 9], 10)) * t()", shield: "gondor"}, // Elves
-  {name: "Eldar (Elfish)", base: 33, odd: 1, sort: "(n() / bd([6, 7, 8, 9], 10)) * t()", shield: "noldor"}, // Elves
-  {name: "Trow (Dark Elfish)", base: 34, odd: 0.9, sort: "(n() / bd([7, 8, 9, 12], 10)) * t()", shield: "hessen"},
-  {name: "Lothian (Dark Elfish)", base: 34, odd: 0.3, sort: "(n() / bd([7, 8, 9, 12], 10)) * t()", shield: "wedged"},
-  {name: "Dunirr (Dwarven)", base: 35, odd: 1, sort: "n() + h()", shield: "ironHills"}, // Dwarfs
-  {name: "Khazadur (Dwarven)", base: 35, odd: 1, sort: "n() + h()", shield: "erebor"}, // Dwarfs
-  {name: "Kobold (Goblin)", base: 36, odd: 1, sort: "t() - s()", shield: "moriaOrc"}, // Goblin
-  {name: "Uruk (Orkish)", base: 37, odd: 1, sort: "h() * t()", shield: "urukHai"}, // Orc
-  {name: "Ugluk (Orkish)", base: 37, odd: 0.5, sort: "(h * t) / bd([1, 2, 10, 11])", shield: "moriaOrc"}, // Orc
-  {name: "Yotunn (Giants)", base: 38, odd: 0.7, sort: "td(-10)", shield: "pavise"}, // Giant
-  {name: "Rake (Drakonic)", base: 39, odd: 0.7, sort: "- s()", shield: "fantasy2"}, // Draconic
-  {name: "Arago (Arachnid)", base: 40, odd: 0.7, sort: "t() - s()", shield: "horsehead2"}, // Arachnid
-  {name: "Aj'Snaga (Serpents)", base: 41, odd: 0.7, sort: "n() / bd([12], 10)", shield: "fantasy1"}, // Serpents
+  {
+    name: "Quenian (Elfish)",
+    base: NB.Elven,
+    chance: 1,
+    sort: "score() / biome([6, 7, 8, 9], 10) * coastDist()",
+    shield: "gondor"
+  }, // Elves
+  {
+    name: "Eldar (Elfish)",
+    base: NB.Elven,
+    chance: 1,
+    sort: "score() / biome([6, 7, 8, 9], 10) * coastDist()",
+    shield: "noldor"
+  }, // Elves
+  {
+    name: "Trow (Dark Elfish)",
+    base: NB.DarkElven,
+    chance: 0.9,
+    sort: "score() / biome([7, 8, 9, 12], 10) * coastDist()",
+    shield: "hessen"
+  },
+  {
+    name: "Lothian (Dark Elfish)",
+    base: NB.DarkElven,
+    chance: 0.3,
+    sort: "score() / biome([7, 8, 9, 12], 10) * coastDist()",
+    shield: "wedged"
+  },
+  {name: "Dunirr (Dwarven)", base: NB.Dwarven, chance: 1, sort: "score() + height()", shield: "ironHills"}, // Dwarfs
+  {name: "Khazadur (Dwarven)", base: NB.Dwarven, chance: 1, sort: "score() + height()", shield: "erebor"}, // Dwarfs
+  {name: "Kobold (Goblin)", base: NB.Goblin, chance: 1, sort: "coastDist() - suitability()", shield: "moriaOrc"}, // Goblin
+  {name: "Uruk (Orkish)", base: NB.Orc, chance: 1, sort: "height() * coastDist()", shield: "urukHai"}, // Orc
+  {
+    name: "Ugluk (Orkish)",
+    base: NB.Orc,
+    chance: 0.5,
+    sort: "height() * oceanCoast() / biome([1, 2, 10, 11])",
+    shield: "moriaOrc"
+  }, // Orc
+  {name: "Yotunn (Giants)", base: NB.Giant, chance: 0.7, sort: "temp(-10)", shield: "pavise"}, // Giant
+  {name: "Rake (Drakonic)", base: NB.Draconic, chance: 0.7, sort: "- suitability()", shield: "fantasy2"}, // Draconic
+  {name: "Arago (Arachnid)", base: NB.Arachnid, chance: 0.7, sort: "coastDist() - suitability()", shield: "horsehead2"}, // Arachnid
+  {name: "Aj'Snaga (Serpents)", base: NB.Serpents, chance: 0.7, sort: "score() / biome([12], 10)", shield: "fantasy1"}, // Serpents
   // fantasy human
-  {name: "Anor (Human)", base: 32, odd: 1, sort: "n() / td(10)", shield: "fantasy5"},
-  {name: "Dail (Human)", base: 32, odd: 1, sort: "n() / td(13)", shield: "roman"},
-  {name: "Rohand (Human)", base: 16, odd: 1, sort: "n() / td(16)", shield: "round"},
-  {name: "Dulandir (Human)", base: 31, odd: 1, sort: "(n() / td(5) / bd([2, 4, 10], 7)) * t()", shield: "easterling"}
+  {name: "Anor (Human)", base: NB.HumanGeneric, chance: 1, sort: "score() / temp(10)", shield: "fantasy5"},
+  {name: "Dail (Human)", base: NB.HumanGeneric, chance: 1, sort: "score() / temp(13)", shield: "roman"},
+  {name: "Rohand (Human)", base: NB.Turkish, chance: 1, sort: "score() / temp(16)", shield: "round"},
+  {
+    name: "Dulandir (Human)",
+    base: NB.Mongolian,
+    chance: 1,
+    sort: "score() / temp(5) / biome([2, 4, 10], 7) * coastDist()",
+    shield: "easterling"
+  }
 ];
 
 const darkFantasy = () => [
   // common real-world English
-  {name: "Angshire", base: 1, odd: 1, sort: "n() / td(10) / sf()", shield: "heater"},
-  {name: "Enlandic", base: 1, odd: 1, sort: "n() / td(12)", shield: "heater"},
-  {name: "Westen", base: 1, odd: 1, sort: "n() / td(10)", shield: "heater"},
-  {name: "Nortumbic", base: 1, odd: 1, sort: "n() / td(7)", shield: "heater"},
-  {name: "Mercian", base: 1, odd: 1, sort: "n() / td(9)", shield: "heater"},
-  {name: "Kentian", base: 1, odd: 1, sort: "n() / td(12)", shield: "heater"},
+  {name: "Angshire", base: NB.English, chance: 1, sort: "score() / temp(10) / oceanCoast()", shield: "heater"},
+  {name: "Enlandic", base: NB.English, chance: 1, sort: "score() / temp(12)", shield: "heater"},
+  {name: "Westen", base: NB.English, chance: 1, sort: "score() / temp(10)", shield: "heater"},
+  {name: "Nortumbic", base: NB.English, chance: 1, sort: "score() / temp(7)", shield: "heater"},
+  {name: "Mercian", base: NB.English, chance: 1, sort: "score() / temp(9)", shield: "heater"},
+  {name: "Kentian", base: NB.English, chance: 1, sort: "score() / temp(12)", shield: "heater"},
   // rare real-world western
-  {name: "Norse", base: 6, odd: 0.7, sort: "n() / td(5) / sf", shield: "oldFrench"},
-  {name: "Schwarzen", base: 0, odd: 0.3, sort: "n() / td(10) / bd([6, 8])", shield: "gonfalon"},
-  {name: "Luarian", base: 2, odd: 0.3, sort: "n() / td(12) / bd([6, 8])", shield: "oldFrench"},
-  {name: "Hetallian", base: 3, odd: 0.3, sort: "n() / td(15)", shield: "oval"},
-  {name: "Astellian", base: 4, odd: 0.3, sort: "n() / td(16)", shield: "spanish"},
+  {name: "Norse", base: NB.Nordic, chance: 0.7, sort: "score() / temp(5) / oceanCoast()", shield: "oldFrench"},
+  {name: "Schwarzen", base: NB.German, chance: 0.3, sort: "score() / temp(10) / biome([6, 8])", shield: "gonfalon"},
+  {name: "Luarian", base: NB.French, chance: 0.3, sort: "score() / temp(12) / biome([6, 8])", shield: "oldFrench"},
+  {name: "Hetallian", base: NB.Italian, chance: 0.3, sort: "score() / temp(15)", shield: "oval"},
+  {name: "Astellian", base: NB.Castillian, chance: 0.3, sort: "score() / temp(16)", shield: "spanish"},
   // rare real-world exotic
-  {name: "Kiswaili", base: 28, odd: 0.05, sort: "n() / td(29) / bd([1, 3, 5, 7])", shield: "vesicaPiscis"},
-  {name: "Yoruba", base: 21, odd: 0.05, sort: "n() / td(15) / bd([5, 7])", shield: "vesicaPiscis"},
-  {name: "Koryo", base: 10, odd: 0.05, sort: "n() / td(12) / t", shield: "round"},
-  {name: "Hantzu", base: 11, odd: 0.05, sort: "n() / td(13)", shield: "banner"},
-  {name: "Yamoto", base: 12, odd: 0.05, sort: "n() / td(15) / t", shield: "round"},
-  {name: "Guantzu", base: 30, odd: 0.05, sort: "n() / td(17)", shield: "banner"},
-  {name: "Ulus", base: 31, odd: 0.05, sort: "(n() / td(5) / bd([2, 4, 10], 7)) * t()", shield: "banner"},
-  {name: "Turan", base: 16, odd: 0.05, sort: "n() / td(12)", shield: "round"},
-  {name: "Berberan", base: 17, odd: 0.05, sort: "(n() / td(19) / bd([1, 2, 3], 7)) * t()", shield: "round"},
-  {name: "Eurabic", base: 18, odd: 0.05, sort: "(n() / td(26) / bd([1, 2], 7)) * t()", shield: "round"},
-  {name: "Slovan", base: 5, odd: 0.05, sort: "(n() / td(6)) * t()", shield: "round"},
-  {name: "Keltan", base: 22, odd: 0.1, sort: "n() / td(11) ** 0.5 / bd([6, 8])", shield: "vesicaPiscis"},
-  {name: "Elladan", base: 7, odd: 0.2, sort: "(n() / td(18) / sf) * h()", shield: "boeotian"},
-  {name: "Romian", base: 8, odd: 0.2, sort: "n() / td(14) / t", shield: "roman"},
+  {
+    name: "Kiswaili",
+    base: NB.Swahili,
+    chance: 0.05,
+    sort: "score() / temp(29) / biome([1, 3, 5, 7])",
+    shield: "vesicaPiscis"
+  },
+  {name: "Yoruba", base: NB.Nigerian, chance: 0.05, sort: "score() / temp(15) / biome([5, 7])", shield: "vesicaPiscis"},
+  {name: "Koryo", base: NB.Korean, chance: 0.05, sort: "score() / temp(12) / coastDist()", shield: "round"},
+  {name: "Hantzu", base: NB.Chinese, chance: 0.05, sort: "score() / temp(13)", shield: "banner"},
+  {name: "Yamoto", base: NB.Japanese, chance: 0.05, sort: "score() / temp(15) / coastDist()", shield: "round"},
+  {name: "Guantzu", base: NB.Cantonese, chance: 0.05, sort: "score() / temp(17)", shield: "banner"},
+  {
+    name: "Ulus",
+    base: NB.Mongolian,
+    chance: 0.05,
+    sort: "score() / temp(5) / biome([2, 4, 10], 7) * coastDist()",
+    shield: "banner"
+  },
+  {name: "Turan", base: NB.Turkish, chance: 0.05, sort: "score() / temp(12)", shield: "round"},
+  {
+    name: "Berberan",
+    base: NB.Berber,
+    chance: 0.05,
+    sort: "score() / temp(19) / biome([1, 2, 3], 7) * coastDist()",
+    shield: "round"
+  },
+  {
+    name: "Eurabic",
+    base: NB.Arabic,
+    chance: 0.05,
+    sort: "score() / temp(26) / biome([1, 2], 7) * coastDist()",
+    shield: "round"
+  },
+  {name: "Slovan", base: NB.Ruthenian, chance: 0.05, sort: "score() / temp(6) * coastDist()", shield: "round"},
+  {
+    name: "Keltan",
+    base: NB.Celtic,
+    chance: 0.1,
+    sort: "score() / temp(11) ** 0.5 / biome([6, 8])",
+    shield: "vesicaPiscis"
+  },
+  {
+    name: "Elladan",
+    base: NB.Greek,
+    chance: 0.2,
+    sort: "score() / temp(18) / oceanCoast() * height()",
+    shield: "boeotian"
+  },
+  {name: "Romian", base: NB.Roman, chance: 0.2, sort: "score() / temp(14) / coastDist()", shield: "roman"},
   // fantasy races
-  {name: "Eldar", base: 33, odd: 0.5, sort: "(n() / bd([6, 7, 8, 9], 10)) * t()", shield: "fantasy5"}, // Elves
-  {name: "Trow", base: 34, odd: 0.8, sort: "(n() / bd([7, 8, 9, 12], 10)) * t()", shield: "hessen"}, // Dark Elves
-  {name: "Durinn", base: 35, odd: 0.8, sort: "n() + h()", shield: "erebor"}, // Dwarven
-  {name: "Kobblin", base: 36, odd: 0.8, sort: "t() - s()", shield: "moriaOrc"}, // Goblin
-  {name: "Uruk", base: 37, odd: 0.8, sort: "(h() * t()) / bd([1, 2, 10, 11])", shield: "urukHai"}, // Orc
-  {name: "Yotunn", base: 38, odd: 0.8, sort: "td(-10)", shield: "pavise"}, // Giant
-  {name: "Drake", base: 39, odd: 0.9, sort: "- s()", shield: "fantasy2"}, // Draconic
-  {name: "Rakhnid", base: 40, odd: 0.9, sort: "t() - s()", shield: "horsehead2"}, // Arachnid
-  {name: "Aj'Snaga", base: 41, odd: 0.9, sort: "n() / bd([12], 10)", shield: "fantasy1"} // Serpents
+  {
+    name: "Eldar",
+    base: NB.Elven,
+    chance: 0.5,
+    sort: "score() / biome([6, 7, 8, 9], 10) * coastDist()",
+    shield: "fantasy5"
+  }, // Elves
+  {
+    name: "Trow",
+    base: NB.DarkElven,
+    chance: 0.8,
+    sort: "score() / biome([7, 8, 9, 12], 10) * coastDist()",
+    shield: "hessen"
+  }, // Dark Elves
+  {name: "Durinn", base: NB.Dwarven, chance: 0.8, sort: "score() + height()", shield: "erebor"}, // Dwarven
+  {name: "Kobblin", base: NB.Goblin, chance: 0.8, sort: "coastDist() - suitability()", shield: "moriaOrc"}, // Goblin
+  {name: "Uruk", base: NB.Orc, chance: 0.8, sort: "height() * coastDist() / biome([1, 2, 10, 11])", shield: "urukHai"}, // Orc
+  {name: "Yotunn", base: NB.Giant, chance: 0.8, sort: "temp(-10)", shield: "pavise"}, // Giant
+  {name: "Drake", base: NB.Draconic, chance: 0.9, sort: "- suitability()", shield: "fantasy2"}, // Draconic
+  {name: "Rakhnid", base: NB.Arachnid, chance: 0.9, sort: "coastDist() - suitability()", shield: "horsehead2"}, // Arachnid
+  {name: "Aj'Snaga", base: NB.Serpents, chance: 0.9, sort: "score() / biome([12], 10)", shield: "fantasy1"} // Serpents
 ];
 
 const random = (culturesNumber: number) =>
   new Array(culturesNumber).map(() => {
-    const rnd = rand(nameBases.length - 1);
+    const rnd = rand(defaultNameBases.length - 1);
     const name = Names.getBaseShort(rnd);
-    return {name, base: rnd, odd: 1, shield: COA.getRandomShield()};
+    return {name, base: rnd, chance: 1, shield: COA.getRandomShield()};
   });
 
 export const cultureSets: {[K in TCultureSetName]: (culturesNumber: number) => ICultureConfig[]} = {

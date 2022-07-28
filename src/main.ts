@@ -13,6 +13,7 @@ import {applyStoredOptions} from "./modules/ui/options";
 import {addGlobalListeners} from "./scripts/listeners";
 import {checkForUpdates} from "./scripts/updater";
 import {getInputNumber} from "utils/nodeUtils";
+import {defaultNameBases} from "config/namebases";
 
 // default options
 options = {
@@ -33,7 +34,7 @@ statesNeutral = 1; // statesEditor growth parameter
 
 rulers = new Rulers();
 biomesData = window.Biomes.getDefault();
-nameBases = window.Names.getNameBases(); // cultures-related data
+nameBases = [...defaultNameBases];
 
 // voronoi graph extension, cannot be changed after generation
 graphWidth = getInputNumber("mapWidthInput");
