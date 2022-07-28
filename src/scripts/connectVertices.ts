@@ -17,7 +17,8 @@ export function getFeatureVertices({
 
   const startingCell = findStartingCell({firstCell, featureIds, featureId, vertices, cells, packCellsNumber});
   const startingVertex = findStartingVertex({startingCell, featureIds, featureId, vertices, cells, packCellsNumber});
-  const featureVertices = connectVertices({vertices, startingVertex, featureIds, featureId});
+  const ofSameType = (cellId: number) => featureIds[cellId] === featureId;
+  const featureVertices = connectVertices({vertices, startingVertex, ofSameType});
 
   return featureVertices;
 }
@@ -90,18 +91,15 @@ function findStartingVertex({
 const CONNECT_VERTICES_MAX_ITERATIONS = 50000;
 
 // connect vertices around feature
-function connectVertices({
+export function connectVertices({
   vertices,
   startingVertex,
-  featureIds,
-  featureId
+  ofSameType
 }: {
   vertices: IGraphVertices;
   startingVertex: number;
-  featureIds: Uint16Array;
-  featureId: number;
+  ofSameType: (cellId: number) => boolean;
 }) {
-  const ofSameType = (cellId: number) => featureIds[cellId] === featureId;
   const chain: number[] = []; // vertices chain to form a path
 
   let next = startingVertex;
