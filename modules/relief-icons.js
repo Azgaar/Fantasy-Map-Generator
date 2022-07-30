@@ -6,9 +6,9 @@ window.ReliefIcons = (function () {
     terrain.selectAll("*").remove();
 
     const cells = pack.cells;
-    const density = terrain.attr("density") || 0.4;
-    const size = 2 * (terrain.attr("size") || 1);
-    const mod = 0.2 * size; // size modifier
+    const density = terrain.attr("density") || 5;
+    const size = 1.5 * (terrain.attr("size") || 1);
+    const mod = 0.1 * size; // size modifier
     const relief = [];
 
     for (const i of cells.i) {
@@ -40,7 +40,7 @@ window.ReliefIcons = (function () {
       }
 
       function placeReliefIcons(i) {
-        const radius = 2 / density;
+        const radius = 3 / density;
         const [icon, h] = getReliefIcon(i, height);
 
         for (const [cx, cy] of poissonDiscSampler(minX, minY, maxX, maxY, radius)) {
@@ -51,8 +51,8 @@ window.ReliefIcons = (function () {
 
       function getReliefIcon(i, h) {
         const temp = grid.cells.temp[pack.cells.g[i]];
-        const type = h > 70 && temp < 0 ? "mountSnow" : h > 70 ? "mount" : "hill";
-        const size = h > 70 ? (h - 45) * mod : minmax((h - 40) * mod, 3, 6);
+        const type = h > 60 && temp < 0 ? "mountSnow" : h > 50 ? "mount" : "hill";
+        const size = h > 60 ? (h - 55) * mod : minmax((h - 50) * mod, 3, 6);
         return [getIcon(type), size];
       }
     }

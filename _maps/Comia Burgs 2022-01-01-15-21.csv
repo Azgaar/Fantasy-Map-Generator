@@ -1,0 +1,285 @@
+Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,Longitude,Latitude,Elevation (ft),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town
+1,Shimber,Smotfosia,Smotfosia County,Bridemide,Principality of Bridemide,Fruthos (Human),Path of Emonwagon,3267,10.373143963847642,18.736950146627567,472,capital,port,citadel,walls,,,shanty town
+2,Orgalero,,,Heim,Duchy of Heim,Zakaos (Giant),Kynathyrism,6594,-2.8973531310522915,14.548387096774192,52,capital,port,citadel,walls,,,shanty town
+3,Eagrave,Depmawland,Depmawland County,Stilver,Grand Duchy of Stilver,Fruthos (Human),Fruthos (Human) Religion,8576,9.172369270497093,19.710850439882698,13,capital,port,citadel,walls,plaza,,shanty town
+4,Silkb,Kilowbia,Kilowbia Earldom,Boulowsia,Kingdom of Boulowsia,Fruthos (Human),Fruthos (Human) Religion,7051,9.923821820529373,19.32683284457478,472,capital,port,citadel,walls,,,shanty town
+5,Oleriusle,,,Ormnes,Duchy of Ormnes,Goren (Elvish},Kynathyrism,2558,-1.7817947062621045,14.888856304985339,52,capital,port,citadel,walls,,,shanty town
+6,Solfond,Burtrek,Burtrek County,Guge,Kingdom of Guge,Zakaos (Giant),Zakaos (Giant) Deities,27128,-3.5480955455132346,14.397947214076247,52,capital,port,citadel,walls,plaza,,shanty town
+7,Varkel,Giledgiz,Giledgiz Province,Froth,Republic of Froth,Zakaos (Giant),Zakaos (Giant) Deities,2495,-3.757262750161395,14.120821114369502,52,capital,port,citadel,walls,,,shanty town
+8,Pondford,Pondford,Pondford Earldom,Pondfordia,Grand Duchy of Pondfordia,Rulor (Human),Rulor (Human) Beliefs,7340,-1.375080697224016,18.139149560117303,1184,capital,port,citadel,walls,plaza,,shanty town
+9,Misthal,Clifia,Clifia County,Misthalia,Kingdom of Misthalia,Fruthos (Human),Path of Emonwagon,2416,10.001291155584248,17.620527859237537,472,capital,port,citadel,walls,,,
+10,Sylnona,Ananynbel,Ananynbel County,Helmahethe,Principality of Helmahethe,Goren (Elvish},Kynathyrism,2429,-2.0064557779212393,15.87859237536657,328,capital,port,citadel,walls,,,
+11,Ragons,Ragons,Ragons County,Silkgulch,Principality of Silkgulch,Fruthos (Human),Way of Drakecros,35832,9.21885087153002,15.696480938416421,472,capital,port,citadel,walls,plaza,temple,shanty town
+12,Curun,Rorestle,Rorestle County,Chilhandia,Kingdom of Chilhandia,Rulor (Human),Rulor (Human) Beliefs,13393,-1.9522272433828274,18.277712609970674,1184,capital,port,citadel,walls,plaza,,shanty town
+13,Sletme,Sletme,Sletme Landgrave,Sprinwelia,Principality of Sprinwelia,Fruthos (Human),Path of Emonwagon,14546,10.051646223369918,16.44868035190616,472,capital,port,citadel,walls,plaza,,shanty town
+14,Stig,Narkerad,Narkerad Shire,Stig,Kingdom of Stig,Zakaos (Giant),Kynathyrism,10337,-2.69593285990962,15.973607038123166,328,capital,port,citadel,walls,,,
+15,Nird,Uzgar,Uzgar County,Zac,Protectorate of Zac,Lagakh (Orkish),Lagakh (Orkish) Beliefs,2292,-4.3537766300839245,18.55483870967742,1184,capital,port,citadel,walls,,,shanty town
+16,Dograsple,Boceansia,Boceansia County,Anwel,Kingdom of Anwel,Rulor (Human),Rulor (Human) Beliefs,18828,-3.222724338282763,17.91348973607038,1184,capital,port,citadel,walls,,,shanty town
+17,Unbunul,Naram,Naram Republic,Abar,Commonwealth of Abar,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,14869,0.5577792123950935,17.402785923753665,1736,capital,port,citadel,walls,plaza,,shanty town
+18,Menornet,,,Kethosano,Duchy of Kethosano,Goren (Elvish},Kynathyrism,4119,-1.572627501613944,15.625219941348973,328,capital,port,citadel,walls,,,shanty town
+19,Batli,,,Karshan,Karshan Horde,Gralcek (Human),Gralcek (Human) Spirits,1824,-9.048418334409297,20.62140762463343,210,capital,port,citadel,walls,,,shanty town
+20,Kirk,Tunliurstan,Tunliurstan Barony,Akcstan,Akc Horde,Gralcek (Human),Gralcek (Human) Spirits,1789,-9.15687540348612,20.06715542521994,554,capital,port,citadel,walls,,,shanty town
+21,Akup,Bivas,Bivas County,Gulstan,Gul Sultanate,Gralcek (Human),Gralcek (Human) Spirits,9012,-8.854744996772112,20.130498533724342,1890,capital,port,citadel,walls,,,shanty town
+22,Mur,Mur,Mur County,Bhakh,Kingdom of Bhakh,Mazoga (Orkish),Mazoga (Orkish) Beliefs,13380,-2.612265978050356,20.1241642228739,3153,capital,,citadel,walls,plaza,,shanty town
+23,Gras,,,Imedaken,Kingdom of Imedaken,Fruthos (Human),Fruthos (Human) Religion,3801,8.936552614590056,20.110862170087977,13,capital,,citadel,walls,,,
+24,Chaydis,,,Kalstan,Protectorate of Kalstan,Gralcek (Human),Gralcek (Human) Spirits,5408,-8.91672046481601,19.619794721407626,554,capital,port,citadel,walls,,,shanty town
+25,Osherin,Kinyolstan,Kinyolstan Margrave,Sirelicya,Sirelicyan Sultanate,Gralcek (Human),Gralcek (Human) Spirits,5569,-9.079406068431247,19.283284457478008,554,capital,port,citadel,walls,plaza,,shanty town
+26,Sun,Sun,Sun Deanery,Sirtsya,Imamah of Sirtsya,Gralcek (Human),Kirksartian Church,12351,-9.826985151710781,19.22390029325513,554,capital,port,citadel,walls,,temple,shanty town
+27,Bhum,Vad,Vad County,Bhum,Bhumese Empire,Lagakh (Orkish),Lagakh (Orkish) Beliefs,10736,-5.202065848934797,19.023973607038123,1184,capital,port,citadel,walls,plaza,,shanty town
+28,Lostine,Lostine,Lostine Barony,Light,Kingdom of Light,Fruthos (Human),Old Fruthos (Human) Beliefs,1744,8.138153647514528,19.02991202346041,82,capital,port,citadel,walls,plaza,,shanty town
+29,Cey,Cey,Cey County,Charstan,Char Sultanate,Gralcek (Human),Gralcek (Human) Spirits,18390,-7.708198837959975,18.887390029325513,554,capital,port,citadel,walls,,,shanty town
+30,Sanik,Kakakstan,Kakakstan Margrave,Sanik,Sanikian Horde,Gralcek (Human),Gralcek (Human) Spirits,11481,-7.4602969657843765,18.65777126099707,554,capital,port,citadel,walls,plaza,,
+31,Churg,Churg,Churg County,Churg,Principality of Churg,Lagakh (Orkish),Lagakh (Orkish) Beliefs,16409,-4.826339573918657,18.729032258064517,738,capital,port,citadel,walls,plaza,,shanty town
+32,Drake,,,Depmorland,Duchy of Depmorland,Rulor (Human),Rulor (Human) Beliefs,17303,-1.4021949644932228,18.634017595307917,1184,capital,,citadel,walls,plaza,,
+33,Bunzathiz,Bunzathiz,Bunzathiz County,Tumundi,Kingdom of Tumundi,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,6762,-0.07746933505487519,18.66568914956012,1312,capital,port,citadel,walls,plaza,,
+34,Black,Black,Black County,Negulchia,Negulchian Empire,Fruthos (Human),Path of Emonwagon,9703,8.366688185926403,18.610263929618768,82,capital,port,citadel,walls,,,shanty town
+35,Kiruktha,Khiz,Khiz County,Kiruktha,Principality of Kiruktha,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,5769,2.421846352485474,18.383653958944283,4019,capital,,citadel,walls,plaza,,shanty town
+36,Rodhad,Rodhad,Rodhad County,Rodhad,Principality of Rodhad,Lagakh (Orkish),Lagakh (Orkish) Beliefs,2255,-4.067140090380891,18.087683284457476,1184,capital,port,citadel,walls,,,shanty town
+37,Tur,Duz,Duz County,Tur,Protectorate of Tur,Gralcek (Human),Gralcek (Human) Spirits,10715,-7.5222724338282765,17.98475073313783,1447,capital,port,citadel,walls,,,
+38,Kerin,Kerin,Kerin Council,Kerin,Kerinese League,Gralcek (Human),Gralcek (Human) Spirits,1991,-6.7901872175597155,17.917448680351907,2759,capital,port,citadel,walls,,,shanty town
+39,Sharabil,Shabilna,Shabilna Province,Shatho,Republic of Shatho,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,1810,0.18592640413169725,17.636363636363637,1736,capital,port,citadel,walls,,,
+40,Sharmale,Sharmale,Sharmale Margrave,Tirikya,Tirikyan Sultanate,Gralcek (Human),Gralcek (Human) Spirits,10771,-7.235635894125242,17.55718475073314,1447,capital,port,citadel,walls,plaza,,shanty town
+41,Nulbar,,,Kizah,Grand Duchy of Kizah,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,1810,3.8540994189799864,17.442375366568918,2392,capital,port,citadel,walls,plaza,,shanty town
+42,Kharagz,Baram,Baram Province,Nul,Republic of Nul,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,1817,4.0748870238863795,17.47008797653959,2392,capital,port,citadel,walls,,,shanty town
+43,Roremime,Roremime,Roremime County,Camevein,Kingdom of Camevein,Rulor (Human),Rulor (Human) Beliefs,11144,0.09544222078760356,17.121384164222874,1736,capital,,citadel,walls,plaza,,shanty town
+44,Chil,Eguardholia,Eguardholia County,Imemins,Imeminsian Marches,Fruthos (Human),Path of Emonwagon,1785,10.445771465461586,17.200879765395896,472,capital,port,citadel,walls,,,
+45,Nulbizad,Nulbizad,Nulbizad Landgrave,Nulbizad,Protectorate of Nulbizad,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,12509,0.3718528082633945,16.923753665689148,1736,capital,port,citadel,walls,plaza,,
+46,Kharb,Khakinb,Khakinb County,Bundindus,Kingdom of Bundindus,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,1856,4.601678502259521,16.725806451612904,2392,capital,port,citadel,walls,,,shanty town
+47,Thornyard,,,Lastglenia,Duchy of Lastglenia,Fruthos (Human),Thornyardian Heresy,4050,10.473854099418979,16.90791788856305,472,capital,port,citadel,walls,,,shanty town
+48,Tuzur,Tuzur,Tuzur Barony,Gabuzun,Principality of Gabuzun,Gongrem (Dwarven),Numunism,10279,1.2627501613944467,16.25073313782991,1736,capital,port,citadel,walls,,,shanty town
+49,Gibuluk,Gibuluk,Gibuluk County,Nabuzundu,Protectorate of Nabuzundu,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,1383,4.978024531956098,16.283671554252198,2392,capital,,citadel,walls,plaza,,shanty town
+50,Shatharbh,,,Baram,Grand Duchy of Baram,Gongrem (Dwarven),Numunism,1417,1.758708844415752,16.172346041055718,1736,capital,,citadel,walls,,,shanty town
+51,Nazah,Nazah,Nazah County,Khakib,Principality of Khakib,Gongrem (Dwarven),Numunism,18499,2.510006455777921,16.116129032258065,1736,capital,port,citadel,walls,,,shanty town
+52,Symkasebel,,,Shanor,Duchy of Shanor,Goren (Elvish},Kynathyrism,1853,-1.0303421562298265,15.823167155425221,397,capital,port,citadel,walls,,,
+53,Lostdade,Lostdade,Lostdade Republic,Whitwia,Whitwian Union,Rulor (Human),Kynathyrism,19477,0.650742414460943,15.973607038123166,1736,capital,port,citadel,walls,plaza,,shanty town
+54,Nargazinb,Kinbiz,Kinbiz Shire,Ginar,Ginarian Empire,Mudtoe (Dwarven),Numunism,6074,2.448030987734022,15.799413489736072,1736,capital,port,citadel,walls,,,shanty town
+55,Efvamyse,Shenor,Shenor Landgrave,Efvamyse,Grand Duchy of Efvamyse,Goren (Elvish},Kynathyrism,1812,-1.1930277598450623,15.696480938416421,328,capital,port,citadel,walls,,,shanty town
+56,Pudrock,Pudrock,Pudrock County,Whitw,Protectorate of Whitw,Rulor (Human),Kynathyrism,10487,0.8986442866365394,15.77565982404692,1736,capital,port,citadel,walls,,,shanty town
+57,Sletham,Morestfia,Morestfia County,Pearl,Kingdom of Pearl,Fruthos (Human),Way of Drakecros,3655,9.327307940606843,15.371847507331378,472,capital,port,citadel,walls,,,shanty town
+58,Zazadh,Dodhaz,Dodhaz Earldom,Moco,Kingdom of Moco,Gul (Orkish),Gul (Orkish) Shamanism,2455,-5.9341510652033564,15.205571847507333,397,capital,port,citadel,walls,,,shanty town
+59,Sewesarion,,,Ilfasarion,Principality of Ilfasarion,Goren (Elvish},Kynathyrism,5810,-1.6733376371852806,15.245161290322581,82,capital,port,citadel,walls,plaza,,shanty town
+60,Mudstarse,Mudstarse,Mudstarse County,Crowgia,Kingdom of Crowgia,Fruthos (Human),Mudstarsian Circle,15241,8.428663653970304,15.126392961876833,554,capital,port,citadel,walls,,,
+61,Yeraselo,Yeraselo,Yeraselo Parish,Eshthinde,See of Eshthinde,Lothian (Elvish),Unzarian Religion,1848,6.786313750806972,14.983870967741936,948,capital,port,citadel,walls,,temple,
+62,Durk,Morb,Morb Margrave,Bed,Kingdom of Bed,Gul (Orkish),Gul (Orkish) Shamanism,1831,-4.837959974176888,14.971994134897361,397,capital,port,citadel,walls,,,shanty town
+63,Niorarire,Falorale,Falorale County,Efrancahil,Principality of Efrancahil,Goren (Elvish},Kynathyrism,21400,-2.3705616526791484,14.675073313782992,52,capital,port,citadel,walls,,,shanty town
+64,Aetheas,Aetheas,Aetheas County,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Kynathyrism,5870,-1.4254357650096843,14.492961876832844,210,capital,port,citadel,walls,,,shanty town
+65,Srande,Selhalone,Selhalone Earldom,Lebelhalon,Kingdom of Lebelhalon,Lothian (Elvish),Lothian (Elvish) Pantheon,20095,6.902517753389283,14.651319648093843,2572,capital,port,citadel,walls,plaza,,shanty town
+66,Adandi,,,Yulkanar,Yulkanarian Marches,Zakaos (Giant),Zakaos (Giant) Deities,3794,-3.1375080697224007,14.492961876832844,52,capital,port,citadel,walls,,,shanty town
+67,Narukthad,Narakhur,Narakhur Territory,Eshthinde,See of Eshthinde,Mudtoe (Dwarven),Unzarian Religion,911,3.7805035506778566,13.530938416422288,3360,,port,citadel,,,temple,
+68,Kharb,Gatharbhela,Gatharbhela County,Lebelhalon,Kingdom of Lebelhalon,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,1515,5.9767591994835385,13.825483870967743,948,,,,,plaza,,
+69,Shunbund,,,Neutrals,undefined,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,1349,4.3041962556488045,19.472205278592376,5515,,,citadel,,,,
+70,Bolonnead,Fethathei,Fethathei Land,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Kynathyrism,2975,-0.1905745642349892,13.664750733137831,6352,,,citadel,,plaza,,
+71,Zrazded,Kraghuz,Kraghuz Region,Bhum,Bhumese Empire,Lagakh (Orkish),Lagakh (Orkish) Beliefs,2173,-4.750884441575209,16.867061583577712,643,,,,,,,
+72,Deeple,Stosehall,Stosehall Tribe,Negulchia,Negulchian Empire,Fruthos (Human),Old Fruthos (Human) Beliefs,918,6.631375080697225,18.443988269794723,210,,,citadel,walls,plaza,,shanty town
+73,Kalduch,Theodzig,Theodzig Province,Froth,Republic of Froth,Zakaos (Giant),Zakaos (Giant) Deities,801,-4.698515171078116,13.580187683284457,52,,,citadel,walls,plaza,,shanty town
+74,Kindush,Sharararam,Sharararam Territory,Ginar,Ginarian Empire,Dunirr (Dwarven),Dunirr (Dwarven) Gods,893,2.1768883150419622,14.2,4019,,port,citadel,walls,,,shanty town
+75,Barebreak,Barebreak,Barebreak Margrave,Bridemide,Principality of Bridemide,Fruthos (Human),Path of Emonwagon,1032,9.933582956746289,18.654445747800587,472,,,citadel,,,,
+76,Dirtstarses,Cagonb,Cagonb Land,Pondfordia,Grand Duchy of Pondfordia,Rulor (Human),Rulor (Human) Beliefs,10594,-0.7979341510652027,17.612609970674487,5250,,port,,walls,,,shanty town
+77,Kharb,Aburagz,Aburagz Earldom,Khakib,Principality of Khakib,Mudtoe (Dwarven),Numunism,1326,3.3776630083925134,16.56744868035191,1736,,port,,walls,,,shanty town
+78,Kharb,Sgand,Sgand Shire,Stig,Kingdom of Stig,Zakaos (Giant),Kynathyrism,1236,-3.5868302130406704,16.40909090909091,3793,,,citadel,,,,
+79,Brolabuled,Gudgach,Gudgach Shire,Stig,Kingdom of Stig,Zakaos (Giant),Kynathyrism,3976,-3.8900451904454485,15.749214076246336,328,,,citadel,,,,
+80,Scorchstal,Smotva,Smotva Earldom,Zac,Protectorate of Zac,Rulor (Human),Rulor (Human) Beliefs,994,-3.447385409941898,18.998240469208213,1184,,port,,walls,,,shanty town
+81,Khiz,,,Neutrals,undefined,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,1942,4.135313105229184,15.096304985337245,4019,,,,,plaza,,
+82,Koluch,Yigez,Yigez Barony,Guge,Kingdom of Guge,Zakaos (Giant),Zakaos (Giant) Deities,4837,-3.1657069076823774,14.958692082111437,1890,,,,,,,
+83,Mudtownzeg,Hound,Hound Colony,Crowgia,Kingdom of Crowgia,Fruthos (Human),Old Fruthos (Human) Beliefs,2525,8.121885087153004,14.074897360703812,2572,,,,walls,,,shanty town
+84,Vylderere,Gabun,Gabun Province,Froth,Republic of Froth,Zakaos (Giant),Zakaos (Giant) Deities,5440,-4.051646223369916,13.566568914956012,52,,port,,,,,
+85,Agordk,Agordk,Agordk County,Bhum,Bhumese Empire,Lagakh (Orkish),Lagakh (Orkish) Beliefs,3576,-4.641032924467398,19.603642228739005,1184,,,citadel,,,,
+86,Emeale,Sundburn,Sundburn Margrave,Boulowsia,Kingdom of Boulowsia,Fruthos (Human),Old Fruthos (Human) Beliefs,6760,10.447514525500324,19.47014662756598,1447,,,,,plaza,,
+87,Nytlelena,Fethathei,Fethathei Land,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Kynathyrism,899,-0.9683666881859256,13.621994134897362,6352,,port,,walls,plaza,,
+88,Bumundushel,,,Neutrals,undefined,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,9865,5.083692704970947,19.03086217008798,5515,,,citadel,,,,
+89,Eldraz,Yeraselo,Yeraselo Parish,Eshthinde,See of Eshthinde,Zildud (Orkish),Unzarian Religion,469,7.287695287282116,15.69758944281525,554,,,citadel,,,temple,
+90,Kindum,,,Neutrals,undefined,Dunirr (Dwarven),Dunirr (Dwarven) Gods,2336,3.3001936733376382,13.083577712609971,3360,,port,,,,,
+91,Kharakziled,Bundush,Bundush Republic,Abar,Commonwealth of Abar,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,1167,1.7614977404777292,17.776035190615836,1890,,,,,plaza,,
+92,Morngar,Morngar,Morngar Territory,Froth,Republic of Froth,Zakaos (Giant),Old Zakaos (Giant) Spirits,173,-7.601446094254357,12.73582404692082,328,,,,walls,plaza,,shanty town
+93,Yezir,Trabzeri,Trabzeri Margrave,Tirikya,Tirikyan Sultanate,Gralcek (Human),Gralcek (Human) Spirits,866,-6.593260167850226,16.52326686217009,1890,,,,,plaza,,
+94,Ilolat,Suyukya,Suyukya County,Sirelicya,Sirelicyan Sultanate,Gralcek (Human),Gralcek (Human) Spirits,186,-9.34171723692705,18.59316129032258,1736,,,,,,,
+95,Whitwharf,Cagonb,Cagonb Land,Pondfordia,Grand Duchy of Pondfordia,Rulor (Human),Rulor (Human) Beliefs,752,-0.4922401549386688,18.155143695014665,1736,,,citadel,,,,
+96,Nulgath,Unzar,Unzar Parish,Eshthinde,See of Eshthinde,Mudtoe (Dwarven),Unzarian Religion,1352,4.896061975468044,14.5463284457478,4019,,,,walls,,temple,shanty town
+97,Kalthalen,,,Neutrals,undefined,Castien (Elvish),Castien (Elvish) Beliefs,1742,-7.4038992898644285,16.33133724340176,2572,,,citadel,walls,,,shanty town
+98,Nulbunba,Gatharbhela,Gatharbhela County,Lebelhalon,Kingdom of Lebelhalon,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,1130,5.8563718528082624,13.400134897360704,2759,,,citadel,walls,,,
+99,Zruccukh,Mur,Mur County,Bhakh,Kingdom of Bhakh,Mazoga (Orkish),Mazoga (Orkish) Beliefs,2280,-3.090561652679149,20.519900293255134,2218,,,citadel,,,,
+100,Littpeak,,,Neutrals,undefined,Fruthos (Human),Old Fruthos (Human) Beliefs,208,6.435532601678499,20.034058651026392,210,,,citadel,,,,
+101,Shulur,Yeraselo,Yeraselo Parish,Eshthinde,See of Eshthinde,Khazadur (Dwarven),Unzarian Religion,197,6.37464170432537,15.810815249266863,2051,,,citadel,,,temple,
+102,Vozuled,Vozuled,Vozuled Island,Froth,Republic of Froth,Zakaos (Giant),Old Zakaos (Giant) Spirits,439,-4.652343447385409,12.069929618768327,472,,,citadel,walls,,,shanty town
+103,Bilbar,Bilbar,Bilbar Dependency,Chilhandia,Kingdom of Chilhandia,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,949,-1.3719819238218207,19.284551319648095,1184,,,citadel,,,,
+104,Korkror,Zuz,Zuz Parish,Eshthinde,See of Eshthinde,Zildud (Orkish),Unzarian Religion,521,7.734383473208521,15.90725513196481,554,,,,,plaza,temple,
+105,Khulur,,,Neutrals,undefined,Dunirr (Dwarven),Dunirr (Dwarven) Gods,1440,2.34995480955455,12.171753665689149,2953,,,citadel,,plaza,,
+106,Khizdum,Bunzathiz,Bunzathiz County,Tumundi,Kingdom of Tumundi,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,192,0.8132730794060699,18.74866862170088,1736,,,citadel,,,,
+107,Kraghuz,Kraghuz,Kraghuz Region,Bhum,Bhumese Empire,Lagakh (Orkish),Lagakh (Orkish) Beliefs,186,-5.263266623628148,17.6458651026393,1063,,,citadel,,,,
+108,Shimburn,Stosehall,Stosehall Tribe,Negulchia,Negulchian Empire,Fruthos (Human),Old Fruthos (Human) Beliefs,229,7.572162685603615,17.523612903225807,2572,,,,,,,
+109,Ginargzad,,,Neutrals,undefined,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,236,5.9226856036152356,17.114891495601174,3573,,,citadel,,plaza,,
+110,Sholed,,,Neutrals,undefined,Dunirr (Dwarven),Dunirr (Dwarven) Gods,233,3.0981536475145273,12.173178885630497,2953,,,citadel,,,,
+111,Kurkumush,Kurkumush,Kurkumush Land,Akcstan,Akc Horde,Gralcek (Human),Gralcek (Human) Spirits,5919,-9.847901872175598,20.504222873900293,1588,,,citadel,walls,,,shanty town
+112,Ryfaraqualye,Selhalone,Selhalone Earldom,Lebelhalon,Kingdom of Lebelhalon,Lothian (Elvish),Lothian (Elvish) Pantheon,1046,6.770819883795998,14.2475073313783,2572,,port,citadel,walls,,,
+113,Oski,Akchya,Akchya County,Charstan,Char Sultanate,Gralcek (Human),Gralcek (Human) Spirits,8784,-7.856939961265333,19.824868035190615,1890,,,citadel,,,,
+114,Craglensine,Sletme,Sletme Landgrave,Sprinwelia,Principality of Sprinwelia,Fruthos (Human),Path of Emonwagon,3365,9.660426081342802,16.789149560117302,472,,port,,walls,,,shanty town
+115,Sharararam,Sharararam,Sharararam Territory,Ginar,Ginarian Empire,Mudtoe (Dwarven),Numunism,752,2.883098773402196,15.29108504398827,4019,,,,,plaza,,
+116,Bearmebonac,Moongarow,Moongarow County,Silkgulch,Principality of Silkgulch,Fruthos (Human),Way of Drakecros,10876,9.300193673337638,16.386445747800586,472,,,,,plaza,,
+117,Namunz,Khabuzun,Khabuzun Region,Nabuzundu,Protectorate of Nabuzundu,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,746,4.531956100710133,15.956187683284458,4019,,,citadel,walls,,,shanty town
+118,Daninopru,Akchya,Akchya County,Charstan,Char Sultanate,Gralcek (Human),Gralcek (Human) Spirits,8234,-7.226339573918657,19.45431085043988,5515,,,citadel,,,,
+119,Boceanshell,Stovia,Stovia County,Pearl,Kingdom of Pearl,Fruthos (Human),Way of Drakecros,5106,9.102646868947708,14.524633431085043,2572,,port,citadel,,,,
+120,Abovankurp,Akchya,Akchya County,Charstan,Char Sultanate,Gralcek (Human),Gralcek (Human) Spirits,931,-7.731439638476436,19.204105571847506,1890,,port,,,,,
+121,Cerius,Fethathei,Fethathei Land,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Kynathyrism,4117,-2.2156229825694,13.994134897360704,118,,port,citadel,,,,
+122,Ailesidiel,Fethathei,Fethathei Land,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Kynathyrism,5023,-1.46417043253712,13.859530791788856,6352,,port,,,,,
+123,Zamunzdirak,,,Neutrals,undefined,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,2529,4.7779987088444145,19.446392961876832,5515,,,,,,,
+124,Khar,Bundush,Bundush Republic,Abar,Commonwealth of Abar,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,942,1.061329890251777,16.8841642228739,1736,,port,,,,,
+125,Gumunbahar,Gumunbahar,Gumunbahar Shire,Ginar,Ginarian Empire,Mudtoe (Dwarven),Numunism,6745,2.223369916074887,15.086803519061585,3153,,port,,,,,
+126,Ehallgulch,Lostine,Lostine Barony,Light,Kingdom of Light,Fruthos (Human),Old Fruthos (Human) Beliefs,973,7.801162040025822,18.622140762463346,2218,,port,,,,,
+127,Dhulzog,Dhulzog,Dhulzog County,Rodhad,Principality of Rodhad,Lagakh (Orkish),Lagakh (Orkish) Beliefs,9775,-4.253066494512589,17.95307917888563,1184,,port,,,,,
+128,Nuzanbaric,Aragkiz,Aragkiz Region,Moco,Kingdom of Moco,Zakaos (Giant),Old Zakaos (Giant) Spirits,736,-6.609528728211749,15.434240469208211,2953,,,,,,,
+129,Narbilnzinb,Baram,Baram Province,Nul,Republic of Nul,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,743,4.674499677211106,18.033683284457478,2392,,,,walls,plaza,,shanty town
+130,Westsdrift,Stilldyard,Stilldyard County,Negulchia,Negulchian Empire,Fruthos (Human),Path of Emonwagon,844,9.056165267914785,18.740117302052788,161,,,citadel,,,,
+131,Machlorelath,Machlorelath,Machlorelath Land,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Celonian Blasphemy,749,0.32056810845706885,14.037683284457477,472,,,citadel,,plaza,,
+132,Goldbrook,Goldbrook,Goldbrook County,Anwel,Kingdom of Anwel,Rulor (Human),Rulor (Human) Beliefs,7723,-3.0406714009038094,18.11143695014663,1184,,port,citadel,,plaza,,
+133,Mapmoorgar,Depmawland,Depmawland County,Stilver,Grand Duchy of Stilver,Fruthos (Human),Fruthos (Human) Religion,752,8.967850225952226,19.289618768328445,30,,,,walls,plaza,,shanty town
+134,Ryalas,Ryalas,Ryalas County,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Kynathyrism,3978,-0.6120077469335055,14.374193548387098,643,,port,,walls,,,shanty town
+135,Giram,Gibuluk,Gibuluk County,Nabuzundu,Protectorate of Nabuzundu,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,8488,4.956333118140737,16.033466275659823,4019,,,,,plaza,,
+136,Arerik,Tunliurstan,Tunliurstan Barony,Akcstan,Akc Horde,Gralcek (Human),Gralcek (Human) Spirits,3576,-9.612395093608779,19.834369501466277,554,,,citadel,walls,,,shanty town
+137,Grur,Burtrek,Burtrek County,Guge,Kingdom of Guge,Gul (Orkish),Gul (Orkish) Shamanism,1796,-4.408005164622337,14.342521994134898,52,,port,,,,,
+138,Millstal,Drymouthia,Drymouthia Region,Camevein,Kingdom of Camevein,Rulor (Human),Rulor (Human) Beliefs,2923,-0.5687798579728849,17.563519061583577,5250,,,,,,,
+139,Shundin,Gathel,Gathel Shire,Ginar,Ginarian Empire,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,2972,3.114267269205939,14.841348973607037,4019,,port,,,,,
+140,Bridmins,Sgand,Sgand Shire,Stig,Kingdom of Stig,Rulor (Human),Kynathyrism,727,-2.8756617172369268,16.684633431085043,1312,,,,,,,
+141,Kharukth,Bunzathiz,Bunzathiz County,Tumundi,Kingdom of Tumundi,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,6763,0.1705874757908319,18.14865102639296,1312,,,citadel,,,,
+142,Aragkiz,Aragkiz,Aragkiz Region,Moco,Kingdom of Moco,Zakaos (Giant),Old Zakaos (Giant) Spirits,3627,-5.58166559070368,15.757290322580644,397,,,,,,,
+143,Deadhamhorn,Deadhamhorn,Deadhamhorn Territory,Silkgulch,Principality of Silkgulch,Fruthos (Human),Way of Drakecros,755,8.974512588766949,15.405260997067447,5788,,,,,,,
+144,Draumesitys,Draumesitys,Draumesitys County,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Kynathyrism,11296,-1.615235635894125,14.599853372434017,210,,port,,,plaza,,
+145,Britthwal,Clifia,Clifia County,Misthalia,Kingdom of Misthalia,Fruthos (Human),Path of Emonwagon,3316,10.436823757262747,18.06377126099707,472,,,,,,,
+146,Kalfond,Theodzig,Theodzig Province,Froth,Republic of Froth,Zakaos (Giant),Zakaos (Giant) Deities,3496,-4.431245965138799,12.956891495601173,52,,port,citadel,,,,
+147,Khalabiled,Bundush,Bundush Republic,Abar,Commonwealth of Abar,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,3040,1.1327566171723689,17.748639296187683,1736,,,,walls,plaza,,
+148,Brolbaz,Brolbaz,Brolbaz County,Bhum,Bhumese Empire,Lagakh (Orkish),Lagakh (Orkish) Beliefs,6328,-5.325242091672046,19.517653958944283,1184,,,citadel,walls,,,
+149,Bozggor,Bozggor,Bozggor Earldom,Churg,Principality of Churg,Lagakh (Orkish),Lagakh (Orkish) Beliefs,2067,-5.090974822466107,18.152609970674487,643,,,,,,,
+150,Belharalore,Shenor,Shenor Landgrave,Efvamyse,Grand Duchy of Efvamyse,Goren (Elvish},Kynathyrism,3837,-1.1728857327307942,15.34492668621701,328,,,,walls,,,shanty town
+151,Undushol,,,Neutrals,undefined,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,4101,4.555196901226598,18.831964809384164,2392,,,,,,,
+152,Freyspirong,Boceansia,Boceansia County,Anwel,Kingdom of Anwel,Rulor (Human),Rulor (Human) Beliefs,8614,-2.925087153001936,17.8151495601173,1184,,,,,,,
+153,Gilaragzdus,Gilaragzdus,Gilaragzdus Territory,Bundindus,Kingdom of Bundindus,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,7256,3.514783731439639,16.00417008797654,4019,,,citadel,,plaza,,
+154,Unulbiragz,Khakinb,Khakinb County,Bundindus,Kingdom of Bundindus,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,784,3.9176242737249822,16.174563049853372,2392,,,,,,,
+155,Pondgeport,Lostdade,Lostdade Republic,Whitwia,Whitwian Union,Rulor (Human),Kynathyrism,536,0.005577792123951042,15.279841642228739,1736,,,,,plaza,,
+156,Shatharb,Unzar,Unzar Parish,Eshthinde,See of Eshthinde,Mudtoe (Dwarven),Unzarian Religion,757,5.368624919302775,13.867448680351906,948,,,citadel,walls,,temple,shanty town
+157,Lastshield,Lastshield,Lastshield County,Misthalia,Kingdom of Misthalia,Fruthos (Human),Path of Emonwagon,6997,9.433595868302127,17.327882697947214,472,,,citadel,,,,
+158,Barakzar,Khakinb,Khakinb County,Bundindus,Kingdom of Bundindus,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,1004,4.059393156875405,16.622873900293257,2392,,port,,,,,
+159,Brarud,Kraghuz,Kraghuz Region,Bhum,Bhumese Empire,Lagakh (Orkish),Lagakh (Orkish) Beliefs,1021,-4.5397030342156235,17.335483870967742,643,,,citadel,,plaza,,
+160,Bunalbar,Shazibumun,Shazibumun Shire,Ginar,Ginarian Empire,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,1788,3.520051646223372,14.730973607038123,1736,,,,,,,
+161,Shathaz,Narakhur,Narakhur Territory,Eshthinde,See of Eshthinde,Mudtoe (Dwarven),Unzarian Religion,1041,4.291801162040027,13.285483870967742,8872,,,,walls,plaza,temple,shanty town
+162,Sale,Trabzeri,Trabzeri Margrave,Tirikya,Tirikyan Sultanate,Gralcek (Human),Gralcek (Human) Spirits,1403,-6.631375080697223,17.509677419354837,1447,,port,citadel,,,,
+163,Shazibumun,Shazibumun,Shazibumun Shire,Ginar,Ginarian Empire,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,7340,3.4667527437056176,15.110557184750734,161,,,citadel,walls,,,shanty town
+164,Mathana,Aetheas,Aetheas County,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Kynathyrism,3014,-0.8901226597805039,14.08566568914956,210,,,citadel,,,,
+165,Smootwall,Smootwall,Smootwall County,Negulchia,Negulchian Empire,Fruthos (Human),Path of Emonwagon,2903,7.96384764364106,18.404398826979474,82,,port,,walls,,,shanty town
+166,Bova,Uca,Uca County,Tur,Protectorate of Tur,Gralcek (Human),Gralcek (Human) Spirits,3294,-7.796049063912202,18.218803519061584,1447,,,citadel,walls,plaza,,
+167,Gazd,Morb,Morb Margrave,Bed,Kingdom of Bed,Gul (Orkish),Gul (Orkish) Shamanism,971,-4.803098773402194,15.229325513196482,397,,port,citadel,,plaza,,
+168,Shathar,Shathar,Shathar Department,Nul,Republic of Nul,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,2587,3.6962169141381533,18.18618181818182,2572,,,citadel,,plaza,,
+169,Bashak,Bithilstan,Bithilstan County,Gulstan,Gul Sultanate,Gralcek (Human),Gralcek (Human) Spirits,2302,-8.160464816010329,20.265894428152492,1063,,,,,,,
+170,Tumun,,,Neutrals,undefined,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,2317,0.20746287927695306,19.54758357771261,2953,,,,walls,plaza,,
+171,Gakinbhar,Bunzathiz,Bunzathiz County,Tumundi,Kingdom of Tumundi,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,713,0.5309748224661064,18.812011730205278,1312,,,,,,,
+172,Stilldyard,Stilldyard,Stilldyard County,Negulchia,Negulchian Empire,Fruthos (Human),Path of Emonwagon,12422,8.777275661717237,18.64985337243402,118,,port,,walls,plaza,,shanty town
+173,Zuron,Zuz,Zuz Parish,Eshthinde,See of Eshthinde,Zildud (Orkish),Unzarian Religion,1905,8.507062621045836,16.33798826979472,3360,,,,,,temple,
+174,Gundushur,Sharararam,Sharararam Territory,Ginar,Ginarian Empire,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,225,2.7357520981278256,14.299607038123169,2572,,,citadel,,plaza,,
+175,Srokzar,Gararki,Gararki Territory,Froth,Republic of Froth,Zakaos (Giant),Old Zakaos (Giant) Spirits,711,-6.075145255003228,14.003319648093843,328,,,citadel,,plaza,,
+176,Thorngar,,,Neutrals,undefined,Fruthos (Human),Old Fruthos (Human) Beliefs,259,8.39287282117495,13.319847507331378,397,,,citadel,,plaza,,
+177,Khevurre,Uzdur,Uzdur Territory,Bhum,Bhumese Empire,Lagakh (Orkish),Lagakh (Orkish) Beliefs,798,-5.0756358941252415,20.402873900293255,2759,,,citadel,,,,
+178,Bozg,Brolbaz,Brolbaz County,Bhum,Bhumese Empire,Lagakh (Orkish),Lagakh (Orkish) Beliefs,2771,-5.912769528728212,19.087395894428152,643,,,,,,,
+179,Nuraz,,,Neutrals,undefined,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,3408,4.30233699160749,19.125401759530792,5515,,,citadel,,,,
+180,Akirhalcuk,Duz,Duz County,Tur,Protectorate of Tur,Gralcek (Human),Gralcek (Human) Spirits,414,-8.080206584893478,17.851730205278592,1447,,,,,,,
+181,Kinbiz,Garam,Garam County,Bundindus,Kingdom of Bundindus,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,9515,5.252420916720464,16.915835777126098,2392,,port,citadel,,,,
+182,Bundushund,Bundushund,Bundushund Landgrave,Whitw,Protectorate of Whitw,Dunirr (Dwarven),Dunirr (Dwarven) Gods,1166,1.4085474499677204,15.087595307917889,2759,,,citadel,,,,
+183,Oshluven,Yeraselo,Yeraselo Parish,Eshthinde,See of Eshthinde,Lothian (Elvish),Unzarian Religion,1647,7.406378308586184,15.106281524926686,554,,,citadel,,,temple,
+184,Hardur,Bivas,Bivas County,Gulstan,Gul Sultanate,Gralcek (Human),Gralcek (Human) Spirits,859,-8.586701097482248,20.494721407624635,82,,,,,plaza,,
+185,Dhodeg,Dhodeg,Dhodeg County,Bhakh,Kingdom of Bhakh,Mazoga (Orkish),Mazoga (Orkish) Beliefs,2577,-2.932989025177532,19.557560117302053,1588,,,,,,,
+186,Shar,,,Neutrals,undefined,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,1578,-1.861278244028405,19.391284457478008,2953,,,,walls,,,
+187,Oavenwell,Stosehall,Stosehall Tribe,Negulchia,Negulchian Empire,Fruthos (Human),Old Fruthos (Human) Beliefs,245,7.066287927695285,17.856639296187684,2572,,,,,,,
+188,Drore,Mur,Mur Clan,Bhakh,Kingdom of Bhakh,Mazoga (Orkish),Mazoga (Orkish) Beliefs,226,-3.663060038734667,20.973436950146628,1588,,,,walls,,,
+189,Ikhug,Mur,Mur County,Bhakh,Kingdom of Bhakh,Mazoga (Orkish),Mazoga (Orkish) Beliefs,597,-2.2407230471271795,20.646744868035192,3153,,,,,,,
+190,Nosh,Vad,Vad County,Bhum,Bhumese Empire,Lagakh (Orkish),Lagakh (Orkish) Beliefs,1264,-5.372963202065848,18.212944281524926,738,,,citadel,walls,,,shanty town
+191,Graymouth,,,Neutrals,undefined,Fruthos (Human),Path of Emonwagon,274,11.011801162040026,15.804480938416422,2218,,,,,,,
+192,Flathand,,,Neutrals,undefined,Fruthos (Human),Old Fruthos (Human) Beliefs,257,3.890819883795997,20.942557184750733,4019,,,citadel,walls,,,shanty town
+193,Erkuta,Erkuta,Erkuta Council,Kerin,Kerinese League,Gralcek (Human),Gralcek (Human) Spirits,13531,-6.8521626856036155,18.41627565982405,1447,,port,,walls,plaza,,shanty town
+194,Bellport,,,Neutrals,undefined,Fruthos (Human),Bellportian Cult,2451,11.384738540994189,18.40218181818182,3573,,,,,,,
+195,Bridge,Bridge,Bridge Territory,Misthalia,Kingdom of Misthalia,Fruthos (Human),Path of Emonwagon,1417,8.727540348612006,16.775372434017594,5515,,,,,,,
+196,Rauthyr,,,Neutrals,undefined,Castien (Elvish),Castien (Elvish) Beliefs,2301,-7.772808263395739,16.57457478005865,2051,,,,,plaza,,
+197,Mugmukh,Zuz,Zuz Parish,Eshthinde,See of Eshthinde,Zildud (Orkish),Unzarian Religion,775,8.098644286636542,15.824275659824046,554,,,,,,temple,
+198,Agrothei,Selhalone,Selhalone Earldom,Lebelhalon,Kingdom of Lebelhalon,Lothian (Elvish),Lothian (Elvish) Pantheon,2658,7.419857972885733,14.419483870967742,2572,,,citadel,,plaza,,
+199,Gamunzdus,,,Neutrals,undefined,Zakaos (Giant),Old Zakaos (Giant) Spirits,2637,-7.143912201420271,14.09817595307918,82,,,,walls,,,shanty town
+200,Unzar,Unzar,Unzar Parish,Eshthinde,See of Eshthinde,Mudtoe (Dwarven),Unzarian Religion,3030,4.80061975468044,13.980041055718475,3360,,,citadel,,,temple,
+201,Khundum,,,Neutrals,undefined,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,2280,5.116849580374435,12.936463343108505,2218,,,citadel,,,,
+202,Velkan,Morngar,Morngar Territory,Froth,Republic of Froth,Zakaos (Giant),Old Zakaos (Giant) Spirits,1143,-6.40609425435765,12.478017595307918,840,,,,walls,,,shanty town
+203,Moongarow,Moongarow,Moongarow County,Silkgulch,Principality of Silkgulch,Fruthos (Human),Way of Drakecros,14667,9.296320206584895,16.07558944281525,472,,,,,,,
+204,Drakengulf,Drakengulf,Drakengulf County,Camevein,Kingdom of Camevein,Rulor (Human),Rulor (Human) Beliefs,15869,0.2943834732085229,16.488269794721408,1736,,port,,,plaza,,
+205,Aburagz,Aburagz,Aburagz Earldom,Khakib,Principality of Khakib,Mudtoe (Dwarven),Numunism,10930,2.790910264686895,16.370609970674487,1736,,,,,,,
+206,Whitle,Houndsi,Houndsi Republic,Whitwia,Whitwian Union,Rulor (Human),Rulor (Human) Beliefs,816,0.5633570045190446,16.32215249266862,1736,,,citadel,,,,
+207,Suncirtin,Kerin,Kerin Council,Kerin,Kerinese League,Gralcek (Human),Gralcek (Human) Spirits,7966,-6.615881213686249,18.032258064516128,2759,,port,,,,,
+208,Ullorthalon,Sober,Sober County,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Kynathyrism,4525,-1.0396384764364104,14.876187683284458,948,,,citadel,walls,plaza,,
+209,Theod,Aragkiz,Aragkiz Region,Moco,Kingdom of Moco,Zakaos (Giant),Old Zakaos (Giant) Spirits,2775,-6.198941252420917,15.524979472140764,2953,,,citadel,walls,,,shanty town
+210,Kinbazilgab,Naram,Naram Republic,Abar,Commonwealth of Abar,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,6471,0.8986442866365394,17.36715542521994,1736,,port,,,,,
+211,Bayhan,Tunliurstan,Tunliurstan Barony,Akcstan,Akc Horde,Gralcek (Human),Gralcek (Human) Spirits,5517,-9.604648160103292,20.04340175953079,554,,,,,plaza,,
+212,Horeverch,Snowswindia,Snowswindia Area,Sprinwelia,Principality of Sprinwelia,Fruthos (Human),Path of Emonwagon,1071,9.9703034215623,15.688563049853371,1588,,port,citadel,,,,
+213,Shabar,Kirarabuzan,Kirarabuzan County,Tumundi,Kingdom of Tumundi,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,4114,-0.31762427372498436,19.05366568914956,1184,,port,citadel,,,,
+214,Kirarabuzan,Kirarabuzan,Kirarabuzan County,Tumundi,Kingdom of Tumundi,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,11845,-0.116204002582311,18.91906158357771,1184,,,,walls,plaza,,shanty town
+215,Adebursin,Adebursin,Adebursin County,Sanik,Sanikian Horde,Gralcek (Human),Gralcek (Human) Spirits,5978,-7.433182698515171,18.337096774193547,554,,,,,plaza,,
+216,Westwell,Westwell,Westwell Barony,Crowgia,Kingdom of Crowgia,Fruthos (Human),Way of Drakecros,7656,7.949903163331179,14.963284457478007,2572,,,citadel,walls,plaza,,shanty town
+217,Dugragh,Churg,Churg County,Churg,Principality of Churg,Lagakh (Orkish),Lagakh (Orkish) Beliefs,1177,-5.1365267914783725,18.660304985337245,1184,,,,,,,
+218,Khiz,Baram,Baram Province,Nul,Republic of Nul,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,2103,4.314422207876049,17.82259237536657,2392,,,,,,,
+219,Pondstar,Pondstar,Pondstar Landgrave,Sprinwelia,Principality of Sprinwelia,Fruthos (Human),Path of Emonwagon,6692,9.76748870238864,17.22716715542522,472,,,,walls,,,
+220,Theodzig,Theodzig,Theodzig Province,Froth,Republic of Froth,Zakaos (Giant),Zakaos (Giant) Deities,5209,-4.524209167204649,13.344868035190615,52,,port,citadel,,,,
+221,Oxbrookford,Pondford,Pondford Earldom,Pondfordia,Grand Duchy of Pondfordia,Rulor (Human),Rulor (Human) Beliefs,8968,-1.347966429954809,18.30225806451613,1184,,,,,plaza,,
+222,Himnashelalu,Himnashelalu,Himnashelalu County,Helmahethe,Principality of Helmahethe,Goren (Elvish},Kynathyrism,1073,-2.0647127178825038,16.025548387096773,1312,,,citadel,,,,
+223,Thilnesilon,Thilnesilon,Thilnesilon Landgrave,Efvamyse,Grand Duchy of Efvamyse,Goren (Elvish},Kynathyrism,5238,-1.1914783731439638,15.956187683284458,328,,,citadel,,,,
+224,Whineguard,Stovia,Stovia County,Pearl,Kingdom of Pearl,Fruthos (Human),Way of Drakecros,2018,9.474499677211107,14.825513196480937,2572,,port,,,,,
+225,Grasshell,Hound,Hound Colony,Crowgia,Kingdom of Crowgia,Fruthos (Human),Old Fruthos (Human) Beliefs,1665,8.005681084570693,14.497712609970675,2572,,,citadel,,plaza,,
+226,Irik,Akchya,Akchya County,Charstan,Char Sultanate,Gralcek (Human),Gralcek (Human) Spirits,785,-6.961394448030989,19.156598240469208,1184,,,citadel,,,,
+227,Shimbergbu,Rorestle,Rorestle County,Chilhandia,Kingdom of Chilhandia,Rulor (Human),Rulor (Human) Beliefs,2996,-2.2388637830858613,18.246041055718475,1184,,port,citadel,,,,
+228,Iredenhold,Hound,Hound Colony,Crowgia,Kingdom of Crowgia,Fruthos (Human),Old Fruthos (Human) Beliefs,9576,8.421226597805035,14.520357771260997,472,,,,,,,
+229,Ellmetherin,Fethathei,Fethathei Land,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Kynathyrism,4020,-1.7385668173014857,13.774017595307917,2051,,,citadel,walls,plaza,,shanty town
+230,Khunarag,Khunarag,Khunarag County,Nabuzundu,Protectorate of Nabuzundu,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,6328,5.134357650096838,16.688117302052785,2392,,,,,plaza,,
+231,Khundur,,,Neutrals,undefined,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,830,4.431865719819239,15.248645161290323,4019,,,,,,,
+232,Dogburybar,Dogburybar,Dogburybar Earldom,Pondfordia,Grand Duchy of Pondfordia,Rulor (Human),Rulor (Human) Beliefs,16177,-1.048934796642996,17.753548387096775,5250,,,citadel,,,,
+233,Whidegarme,Cryswalia,Cryswalia County,Sprinwelia,Principality of Sprinwelia,Fruthos (Human),Path of Emonwagon,5749,10.179625564880567,16.32025219941349,472,,,citadel,,,,
+234,Gatharbhela,Gatharbhela,Gatharbhela County,Lebelhalon,Kingdom of Lebelhalon,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,5599,6.383473208521629,14.011554252199414,948,,,citadel,,,,
+235,Nabilaram,Gudgach,Gudgach Shire,Stig,Kingdom of Stig,Zakaos (Giant),Kynathyrism,664,-3.6554680438992904,15.911689149560118,328,,,citadel,,,,
+236,Bundush,Bundush,Bundush Republic,Abar,Commonwealth of Abar,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,6520,1.3526145900581028,17.30650439882698,1736,,,,,,,
+237,Badush,,,Neutrals,undefined,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,860,4.847411233053581,19.135061583577713,5515,,,citadel,,,,
+238,Sundburn,Sundburn,Sundburn Margrave,Boulowsia,Kingdom of Boulowsia,Fruthos (Human),Fruthos (Human) Religion,13014,10.419625564880569,19.065542521994136,472,,port,citadel,,plaza,,
+239,Amwoodbay,Dinewalia,Dinewalia County,Chilhandia,Kingdom of Chilhandia,Rulor (Human),Rulor (Human) Beliefs,8693,-2.0606843124596512,18.048093841642228,1184,,port,citadel,,,,
+240,Bucco,Bucco,Bucco Earldom,Moco,Kingdom of Moco,Gul (Orkish),Gul (Orkish) Shamanism,7271,-5.740477727566172,14.873020527859238,397,,port,citadel,,,,
+241,Elalinluny,Elalinluny,Elalinluny County,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Kynathyrism,5852,-0.5165655261459001,13.545190615835777,6352,,,citadel,walls,,,shanty town
+242,Uyuksara,Patstan,Patstan Barony,Akcstan,Akc Horde,Gralcek (Human),Gralcek (Human) Spirits,11989,-10.125242091672046,19.92859237536657,5250,,port,citadel,walls,,,shanty town
+243,Alihrala,Akchya,Akchya County,Charstan,Char Sultanate,Gralcek (Human),Gralcek (Human) Spirits,8635,-7.049709489993544,19.354545454545455,1184,,port,,,,,
+244,Zigmod,Vrur,Vrur Margrave,Bed,Kingdom of Bed,Gul (Orkish),Gul (Orkish) Shamanism,12758,-5.261097482246611,14.76391202346041,738,,,citadel,walls,,,shanty town
+245,Gundab,Bilnul,Bilnul County,Tumundi,Kingdom of Tumundi,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,8754,-0.5004519044544864,18.700527859237535,1184,,,citadel,,,,
+246,Lostshorere,Rorestle,Rorestle County,Chilhandia,Kingdom of Chilhandia,Rulor (Human),Rulor (Human) Beliefs,4169,-2.0374435119431897,18.356891495601175,1184,,port,,,,,
+247,Ehallde,Ehallde,Ehallde Prefecture,Shatho,Republic of Shatho,Rulor (Human),Rulor (Human) Beliefs,797,-0.24325371207230617,17.51759530791789,5250,,,,,,,
+248,Nolukkhaz,Narkerad,Narkerad Shire,Stig,Kingdom of Stig,Zakaos (Giant),Kynathyrism,3540,-2.7826985151710772,16.38217008797654,328,,,citadel,walls,,,shanty town
+249,Khararar,Kinbiz,Kinbiz Shire,Ginar,Ginarian Empire,Mudtoe (Dwarven),Numunism,996,2.510006455777921,15.556017595307917,4019,,,,,,,
+250,Almanyn,Yeraselo,Yeraselo Parish,Eshthinde,See of Eshthinde,Lothian (Elvish),Unzarian Religion,1267,7.0621045836023235,14.956633431085045,554,,,,,,temple,
+251,Bunzadd,Mur,Mur County,Bhakh,Kingdom of Bhakh,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,1658,-2.4449322143318266,20.265102639296188,210,,,citadel,walls,,,
+252,Mosshield,Stovia,Stovia County,Pearl,Kingdom of Pearl,Fruthos (Human),Way of Drakecros,5289,9.31646223369916,14.570557184750733,2572,,,,,,,
+253,Oakenwave,Cryswalia,Cryswalia County,Sprinwelia,Principality of Sprinwelia,Fruthos (Human),Path of Emonwagon,793,10.258489347966428,15.962521994134898,472,,,,walls,plaza,,shanty town
+254,Lynatheinas,Ryalas,Ryalas County,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Celonian Blasphemy,1865,-0.06972240154938802,14.2,472,,,,,plaza,,
+255,Oxbreach,Kilowbia,Kilowbia Earldom,Boulowsia,Kingdom of Boulowsia,Fruthos (Human),Fruthos (Human) Religion,845,9.52500968366688,18.872029325513196,13,,,citadel,,,,
+256,Naled,Khakinb,Khakinb County,Bundindus,Kingdom of Bundindus,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,7477,4.28792769528728,16.48367741935484,2392,,,,,,,
+257,Kiltoch,Burtrek,Burtrek County,Guge,Kingdom of Guge,Zakaos (Giant),Zakaos (Giant) Deities,911,-3.973712072304714,14.389554252199414,52,,,citadel,walls,,,
+258,Azinb,Sgand,Sgand Shire,Stig,Kingdom of Stig,Zakaos (Giant),Kynathyrism,5180,-3.098773402194965,16.56744868035191,3573,,,,,,,
+259,Baram,Gumunbahar,Gumunbahar Shire,Ginar,Ginarian Empire,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,1988,2.155506778566817,14.560422287390029,1890,,,,walls,plaza,,
+260,Drakenwave,Drakenwave,Drakenwave Barony,Light,Kingdom of Light,Fruthos (Human),Old Fruthos (Human) Beliefs,799,8.566868947708201,19.11542521994135,30,,,,,,,
+261,Oldwich,Lastshield,Lastshield County,Misthalia,Kingdom of Misthalia,Fruthos (Human),Path of Emonwagon,7634,9.706907682375725,17.91348973607038,472,,,citadel,,,,
+262,Narakhur,Narakhur,Narakhur Territory,Eshthinde,See of Eshthinde,Mudtoe (Dwarven),Unzarian Religion,1158,3.5752098127824397,13.483431085043987,3360,,port,,,,temple,
+263,Zaragzdus,Zaragzdus,Zaragzdus County,Kiruktha,Principality of Kiruktha,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,1300,2.612265978050356,18.409149560117303,5515,,,,,plaza,,
+264,Curowfalls,Boceansia,Boceansia County,Anwel,Kingdom of Anwel,Rulor (Human),Rulor (Human) Beliefs,1192,-3.660426081342802,17.91348973607038,1184,,port,citadel,,,,
+265,Khizdushazi,Khizdushazi,Khizdushazi Parish,Eshthinde,See of Eshthinde,Dunirr (Dwarven),Unzarian Religion,4322,3.7897998708844405,12.918885630498535,3360,,,citadel,,,temple,
+266,Stosehall,Stosehall,Stosehall Tribe,Negulchia,Negulchian Empire,Fruthos (Human),Old Fruthos (Human) Beliefs,904,6.848289218850873,18.54533724340176,266,,,,walls,,,shanty town
+267,Timhandhill,Rorestle,Rorestle County,Chilhandia,Kingdom of Chilhandia,Rulor (Human),Rulor (Human) Beliefs,6558,-1.7975984506132985,18.472809384164222,1184,,,,,,,
+268,Yalilim,Sharmale,Sharmale Margrave,Tirikya,Tirikyan Sultanate,Gralcek (Human),Gralcek (Human) Spirits,932,-7.292653324725629,17.626228739002933,1447,,,,,,,
+269,Ganleriende,Falorale,Falorale County,Efrancahil,Principality of Efrancahil,Goren (Elvish},Kynathyrism,1116,-2.796642995480955,15.023460410557185,52,,port,citadel,walls,,,shanty town
+270,Yanya,Kirksarta,Kirksarta Parish,Sirtsya,Imamah of Sirtsya,Gralcek (Human),Kirksartian Church,838,-10.18411878631375,19.726686217008798,2572,,,,walls,,temple,shanty town
+271,Smoothal,Dawnpas,Dawnpas County,Imemins,Imeminsian Marches,Fruthos (Human),Path of Emonwagon,6783,10.479896707553262,17.558768328445748,472,,,,walls,,,shanty town
+272,Adzarbiz,Kibun,Kibun County,Nulbizad,Protectorate of Nulbizad,Dhommeam (Dwarven),Dhommeam (Dwarven) Spirits,2590,0.4871271788250482,17.06168328445748,1736,,,citadel,,,,
+273,Idereforest,Snowswindia,Snowswindia Area,Sprinwelia,Principality of Sprinwelia,Fruthos (Human),Idereforestian Schism,3933,9.795377663008395,15.683020527859238,1588,,,,walls,,,shanty town
+274,Celon,Machlorelath,Machlorelath Land,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Celonian Blasphemy,841,0.20080051646223396,13.736803519061585,472,,,citadel,walls,,,shanty town
+275,Akzinb,,,Neutrals,undefined,Khazadur (Dwarven),Khazadur (Dwarven) Beliefs,5748,4.420400258231119,18.89214076246334,5515,,,,,,,
+276,Evranor,Ryalas,Ryalas County,Elunaneas,Kingdom of Elunaneas,Goren (Elvish},Kynathyrism,820,-0.8360490639122027,14.511806451612902,82,,,,,,,
+277,Curgulch,Curgulch,Curgulch Earldom,Stilver,Grand Duchy of Stilver,Fruthos (Human),Fruthos (Human) Religion,4287,9.482246610716594,19.6,30,,,,,,,
+278,Kirksarta,Kirksarta,Kirksarta Parish,Sirtsya,Imamah of Sirtsya,Gralcek (Human),Kirksartian Church,10544,-9.943034215622983,19.398885630498533,554,,,,walls,,temple,shanty town
+279,Undadzah,Shazibumun,Shazibumun Shire,Ginar,Ginarian Empire,Mudtoe (Dwarven),Mudtoe (Dwarven) Beliefs,889,3.690174306003872,15.435665689149559,52,,,,,,,
+280,Nargiram,Nargiram,Nargiram County,Gabuzun,Principality of Gabuzun,Gongrem (Dwarven),Numunism,2252,1.0497094899935462,16.207184750733138,1736,,port,,,,,
+281,Erkurp,Adebursin,Adebursin County,Sanik,Sanikian Horde,Gralcek (Human),Gralcek (Human) Spirits,1610,-7.6262362814719165,18.460457478005864,554,,,citadel,,,,
+282,Scorchwich,Boceansia,Boceansia County,Anwel,Kingdom of Anwel,Rulor (Human),Rulor (Human) Beliefs,2835,-3.359070367979342,17.846979472140763,1184,,,citadel,,,,
+283,Kakzig,Bake,Bake County,Efrancahil,Principality of Efrancahil,Zakaos (Giant),Kynathyrism,5527,-2.9515816655907035,15.126392961876833,3793,,port,citadel,walls,plaza,,shanty town
+284,Shar,Nulbunzan,Nulbunzan Parish,Eshthinde,See of Eshthinde,Mudtoe (Dwarven),Unzarian Religion,6038,4.1244673983214994,13.66633431085044,3360,,,,walls,,temple,shanty town
