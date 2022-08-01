@@ -94,13 +94,23 @@ const CONNECT_VERTICES_MAX_ITERATIONS = 50000;
 export function connectVertices({
   vertices,
   startingVertex,
-  ofSameType
+  ofSameType,
+  checkedCellsMutable
 }: {
   vertices: IGraphVertices;
   startingVertex: number;
   ofSameType: (cellId: number) => boolean;
+  checkedCellsMutable?: Uint8Array;
 }) {
   const chain: number[] = []; // vertices chain to form a path
+
+  const addToChecked = (cellIds: number[]) => {
+    if (checkedCellsMutable) {
+      cellIds.forEach(cellId => {
+        checkedCellsMutable[cellId] = 1;
+      });
+    }
+  };
 
   let next = startingVertex;
   for (let i = 0; i === 0 || (next !== startingVertex && i < CONNECT_VERTICES_MAX_ITERATIONS); i++) {
@@ -108,7 +118,10 @@ export function connectVertices({
     const current = next;
     chain.push(current);
 
-    const [c1, c2, c3] = vertices.c[current].map(ofSameType);
+    const neibCells = vertices.c[current];
+    addToChecked(neibCells);
+
+    const [c1, c2, c3] = neibCells.map(ofSameType);
     const [v1, v2, v3] = vertices.v[current];
 
     if (v1 !== previous && c1 !== c2) next = v1;

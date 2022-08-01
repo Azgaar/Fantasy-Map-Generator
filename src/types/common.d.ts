@@ -6,6 +6,9 @@ interface Dict<T> {
   [key: string]: T;
 }
 
+// element of Object.entries
+type ObjectEntry<T> = [string, T];
+
 type UintArray = Uint8Array | Uint16Array | Uint32Array;
 type IntArray = Int8Array | Int16Array | Int32Array;
 
