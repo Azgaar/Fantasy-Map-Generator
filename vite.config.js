@@ -64,7 +64,9 @@ export default defineConfig(({mode}) => {
       }
     },
     test: {
-      environment: "happy-dom"
+      globals: true,
+      environment: "happy-dom",
+      reporters: ["verbose"]
     },
     resolve: {
       alias: [

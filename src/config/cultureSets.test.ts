@@ -1,5 +1,3 @@
-import {vi, describe, it, expect} from "vitest";
-
 vi.stubGlobal("Names", {
   getBase: () => 0,
   getBaseShort: () => "TestName"

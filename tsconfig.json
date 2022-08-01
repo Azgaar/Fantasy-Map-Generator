@@ -15,6 +15,7 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "skipLibCheck": true,
+    "types": ["vitest/globals"],
     "baseUrl": "src"
   },
   "include": ["src"]
