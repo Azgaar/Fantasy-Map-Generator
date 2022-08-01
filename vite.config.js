@@ -63,6 +63,9 @@ export default defineConfig(({mode}) => {
         }
       }
     },
+    test: {
+      environment: "happy-dom"
+    },
     resolve: {
       alias: [
         {find: "src", replacement: path.resolve(pathName, "./src")},

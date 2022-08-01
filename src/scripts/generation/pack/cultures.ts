@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import FlatQueue from "flatqueue";
 
-import {cultureSets, TCultureSetName} from "config/cultureSets";
+import {cultureSets, DEFAULT_SORT_STRING, TCultureSetName} from "config/cultureSets";
 import {
   DISTANCE_FIELD,
   ELEVATION,
@@ -64,7 +64,7 @@ export const generateCultures = function (
 
   const definedCultures: ICulture[] = culturesData.map((cultureData, index) => {
     const {name, sort} = cultureData;
-    const center = placeCenter(sort || "n");
+    const center = placeCenter(sort || DEFAULT_SORT_STRING);
     const base = checkNamesbase(cultureData.base);
     const color = colors[index];
     const type = defineCultureType(center);

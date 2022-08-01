@@ -18,7 +18,7 @@ interface ICultureConfig {
   base: number; // NB id
   chance: number; // selection chance [0, 1]
   shield: string; // emblem type name
-  sort?: string; // cells sorting function to place culture center
+  sort?: string; // string to create a function to compare cells and place culture center
 }
 
 const world = () => [
@@ -401,3 +401,5 @@ export const cultureSets: {[K in TCultureSetName]: (culturesNumber: number) => I
   darkFantasy,
   random
 };
+
+export const DEFAULT_SORT_STRING = "score()";

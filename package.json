@@ -19,6 +19,7 @@
     "@types/jquery": "^3.5.14",
     "@types/jqueryui": "^1.12.16",
     "c8": "^7.12.0",
+    "happy-dom": "^6.0.4",
     "rollup": "^2.75.7",
     "rollup-plugin-terser": "^7.0.2",
     "rollup-plugin-visualizer": "^5.6.0",
