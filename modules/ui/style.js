@@ -292,7 +292,7 @@ styleGroupSelect.addEventListener("change", selectStyleElement);
 function getEl() {
   const el = styleElementSelect.value;
   const g = styleGroupSelect.value;
-  if (g === el) return svg.select("#" + el);
+  if (g === el || g === "") return svg.select("#" + el);
   else return svg.select("#" + el).select("#" + g);
 }
 
