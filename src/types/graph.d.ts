@@ -12,7 +12,7 @@ interface IGraphVertices {
 
 interface IGraphCells {
   i: UintArray;
-  b: (0 | 1)[];
+  b: Logical[];
   c: number[][];
   v: number[][];
 }

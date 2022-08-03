@@ -38,10 +38,8 @@ export function getSegmentId(points: TPoints, point: TPoint, step = 10) {
 }
 
 // return center point of common edge of 2 pack cells
-export function getMiddlePoint(cell1: number, cell2: number) {
-  const {cells, vertices} = pack;
-
-  const commonVertices = cells.v[cell1].filter((vertex: number) =>
+export function getCommonEdgePoint(cellVertices: number[][], vertices: IGraphVertices, cell1: number, cell2: number) {
+  const commonVertices = cellVertices[cell1].filter((vertex: number) =>
     vertices.c[vertex].some((cellId: number) => cellId === cell2)
   );
 

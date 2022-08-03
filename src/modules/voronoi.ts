@@ -14,7 +14,7 @@ export class Voronoi {
   private readonly pointsN: number;
 
   // voronoi cells: v = cell vertices, c = adjacent cells, b = near-border cell
-  public readonly cells: {v: number[][]; c: number[][]; b: (0 | 1)[]};
+  public readonly cells: {v: number[][]; c: number[][]; b: Logical[]};
 
   // cells vertices: p = vertex coordinates, v = neighboring vertices, c = adjacent cells
   public readonly vertices: {p: TPoints; v: Number3[]; c: Number3[]};

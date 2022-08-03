@@ -1,3 +1,5 @@
+type Logical = number & (1 | 0); // data type for logical numbers
+
 type UnknownObject = {[key: string]: unknown};
 
 type noop = () => void;

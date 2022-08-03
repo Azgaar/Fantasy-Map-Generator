@@ -44,7 +44,7 @@ export const generateCultures = function (
 ): TCultures {
   TIME && console.time("generateCultures");
 
-  const wildlands: IWilderness = {name: "Wildlands", i: 0, base: 1, origins: [null], shield: "round"};
+  const wildlands: TWilderness = {name: "Wildlands", i: 0, base: 1, origins: [null], shield: "round"};
 
   const populatedCellIds = cells.i.filter(cellId => cells.pop[cellId] > 0);
   const maxSuitability = d3.max(cells.s)!;
@@ -282,7 +282,7 @@ export const expandCultures = function (
   TIME && console.time("expandCultures");
 
   const cultureIds = new Uint16Array(cells.h.length); // cell cultures
-  const isWilderness = (culture: ICulture | IWilderness): culture is IWilderness => culture.i === 0;
+  const isWilderness = (culture: ICulture | TWilderness): culture is TWilderness => culture.i === 0;
 
   const queue = new FlatQueue<{cellId: number; cultureId: number}>();
   cultures.forEach(culture => {

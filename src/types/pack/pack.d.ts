@@ -1,10 +1,10 @@
 interface IPack extends IGraph {
   cells: IGraphCells & IPackCells;
   features: TPackFeatures;
-  states: IState[];
+  states: TStates;
   cultures: TCultures;
   provinces: IProvince[];
-  burgs: IBurg[];
+  burgs: TBurgs;
   rivers: IRiver[];
   religions: IReligion[];
 }
@@ -37,30 +37,10 @@ interface IPackBase extends IGraph {
   features?: TPackFeatures;
 }
 
-interface IState {
-  i: number;
-  name: string;
-  fullName: string;
-  removed?: boolean;
-}
-
 interface IProvince {
   i: number;
   name: string;
   fullName: string;
-  removed?: boolean;
-}
-
-interface IBurg {
-  i: number;
-  name: string;
-  cell: number;
-  x: number;
-  y: number;
-  population: number;
-  port: number;
-  shanty: number;
-  MFCG?: string | number;
   removed?: boolean;
 }
 

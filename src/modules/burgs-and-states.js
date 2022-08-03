@@ -181,7 +181,6 @@ window.BurgsAndStates = (function () {
   const specifyBurgs = function () {
     TIME && console.time("specifyBurgs");
     const cells = pack.cells,
-      vertices = pack.vertices,
       features = pack.features,
       temp = grid.cells.temp;
 
@@ -204,7 +203,7 @@ window.BurgsAndStates = (function () {
 
       if (b.port) {
         b.population = b.population * 1.3; // increase port population
-        const [x, y] = getMiddlePoint(i, haven);
+        const [x, y] = getCommonEdgePoint(i, haven);
         b.x = x;
         b.y = y;
       }

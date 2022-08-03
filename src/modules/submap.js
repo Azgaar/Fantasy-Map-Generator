@@ -397,7 +397,7 @@ window.Submap = (function () {
           return;
         }
         DEBUG && console.log(`Moving ${b.name} from ${cityCell} to ${newCell} near ${neighbor}.`);
-        [b.x, b.y] = b.port ? getMiddlePoint(newCell, neighbor) : cells.p[newCell];
+        [b.x, b.y] = b.port ? getCommonEdgePoint(newCell, neighbor) : cells.p[newCell]; // TODO: to be reworked
         if (b.port) b.port = cells.f[neighbor]; // copy feature number
         b.cell = newCell;
         if (b.port && !isWater(pack, neighbor)) console.error("betrayal! negihbor must be water!", b);

@@ -12,7 +12,7 @@ interface ICulture {
   removed?: boolean;
 }
 
-type IWilderness = {
+type TWilderness = {
   i: 0;
   name: string;
   base: number;
@@ -20,7 +20,7 @@ type IWilderness = {
   shield: string;
 };
 
-type TCultures = [IWilderness, ...ICulture[]];
+type TCultures = [TWilderness, ...ICulture[]];
 
 type TCultureType =
   | "Generic" // no bonuses, standard penalties
