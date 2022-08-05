@@ -17,7 +17,7 @@ let rulers;
 let biomesData;
 let nameBases;
 
-// defined in main.js
+// defined in main.ts
 let graphWidth;
 let graphHeight;
 let svgWidth;
@@ -44,7 +44,7 @@ let svg,
   texture,
   terrs,
   biomes,
-  cells,
+  //  cells,
   gridOverlay,
   coordinates,
   compass,

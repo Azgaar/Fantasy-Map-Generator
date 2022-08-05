@@ -6,7 +6,6 @@ interface IPackFeatureBase {
   vertices: number[]; // indexes of perimetric vertices
   area: number; // area of the feature perimetric polygon
 }
-3;
 
 interface IPackFeatureOcean extends IPackFeatureBase {
   land: false;

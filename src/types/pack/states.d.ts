@@ -1,8 +1,10 @@
 interface IState {
   i: number;
   name: string;
+  culture: number;
   fullName: string;
   removed?: boolean;
+  coa: ICoa | string;
 }
 
 type TNeutrals = {
@@ -11,3 +13,12 @@ type TNeutrals = {
 };
 
 type TStates = [TNeutrals, ...IState[]];
+
+interface ICoa {
+  t1: string;
+  division: {};
+  ordinaries: {}[];
+  charges: {}[];
+  shield: "heater";
+  t1: "purpure";
+}

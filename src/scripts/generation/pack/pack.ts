@@ -11,7 +11,7 @@ import {pick} from "utils/functionUtils";
 import {rn} from "utils/numberUtils";
 import {generateCultures, expandCultures} from "./cultures";
 import {generateRivers} from "./rivers";
-import {generateBurgsAndStates} from "./burgsAndStates";
+import {generateBurgsAndStates} from "./burgsAndStates/generateBurgsAndStates";
 
 const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
 const {Biomes} = window;
@@ -98,18 +98,21 @@ export function createPack(grid: IGrid): IPack {
   const {burgIds, states, burgs} = generateBurgsAndStates(
     {
       ...pick(cells, "v", "p", "i", "g"),
+      h: heights,
       f: featureIds,
       haven,
       harbor,
       r: riverIds,
       fl: flux,
+      biome,
       s: suitability,
       culture: cultureIds
     },
     vertices,
     cultures,
     mergedFeatures,
-    temp
+    temp,
+    rawRivers
   );
 
   // Religions.generate();

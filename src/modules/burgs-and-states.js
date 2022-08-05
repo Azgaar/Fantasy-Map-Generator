@@ -8,7 +8,6 @@ import {Voronoi} from "/src/modules/voronoi";
 import {getColors, getMixedColor, getRandomColor} from "utils/colorUtils";
 import {findCell} from "utils/graphUtils";
 import {getAdjective, trimVowels} from "utils/languageUtils";
-import {getMiddlePoint} from "utils/lineUtils";
 import {minmax, rn} from "utils/numberUtils";
 import {each, gauss, generateSeed, P, ra, rand, rw} from "utils/probabilityUtils";
 import {round, splitInTwo} from "utils/stringUtils";
