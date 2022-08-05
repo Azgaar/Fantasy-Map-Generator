@@ -2,6 +2,9 @@ type Logical = number & (1 | 0); // data type for logical numbers
 
 type UnknownObject = {[key: string]: unknown};
 
+// extract element from array
+type Entry<T> = T[number];
+
 type noop = () => void;
 
 interface Dict<T> {

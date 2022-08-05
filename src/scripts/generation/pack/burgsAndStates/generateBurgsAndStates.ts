@@ -9,15 +9,12 @@ import {expandStates} from "./expandStates";
 import {specifyBurgs} from "./specifyBurgs";
 
 export function generateBurgsAndStates(
-  cells: Pick<
-    IPack["cells"],
-    "v" | "p" | "i" | "g" | "h" | "f" | "haven" | "harbor" | "r" | "fl" | "biome" | "s" | "culture"
-  >,
-  vertices: IGraphVertices,
   cultures: TCultures,
   features: TPackFeatures,
-  temp: Int8Array,
-  rivers: Omit<IRiver, "name" | "basin" | "type">[]
+  cells: Pick<
+    IPack["cells"],
+    "v" | "c" | "p" | "i" | "g" | "h" | "f" | "t" | "haven" | "harbor" | "r" | "fl" | "biome" | "s" | "culture"
+  >
 ) {
   const cellsNumber = cells.i.length;
   const burgIds = new Uint16Array(cellsNumber);
@@ -30,13 +27,19 @@ export function generateBurgsAndStates(
   const states = createStates(capitals, cultures);
   const towns = createTowns(burgIds, cultures, pick(cells, "p", "i", "f", "s", "culture"));
 
-  expandStates();
+  const stateIds = expandStates(
+    capitals,
+    states,
+    features,
+    pick(cells, "c", "h", "f", "t", "r", "fl", "s", "biome", "culture")
+  );
   // normalizeStates();
+  // burgs.filter(b => b.i && !b.removed).forEach(b => (b.state = stateIds[b.cell])); // assign state to burgs
   const roadScores = new Uint16Array(cellsNumber); // TODO: define roads
 
   const burgs = specifyBurgs(capitals, towns, roadScores);
 
-  return {burgIds, states, burgs};
+  return {burgIds, stateIds, burgs, states};
 
   function getScoredCellIds() {
     // cell score for capitals placement

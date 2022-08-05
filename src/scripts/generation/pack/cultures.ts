@@ -282,35 +282,33 @@ export const expandCultures = function (
   TIME && console.time("expandCultures");
 
   const cultureIds = new Uint16Array(cells.h.length); // cell cultures
-  const isWilderness = (culture: ICulture | TWilderness): culture is TWilderness => culture.i === 0;
-
   const queue = new FlatQueue<{cellId: number; cultureId: number}>();
+
+  const isWilderness = (culture: ICulture | TWilderness): culture is TWilderness => culture.i === 0;
   cultures.forEach(culture => {
     if (isWilderness(culture) || culture.removed) return;
     queue.push({cellId: culture.center, cultureId: culture.i}, 0);
   });
 
   const cellsNumberFactor = cells.h.length / 1.6;
-  const neutral = cellsNumberFactor * getInputNumber("neutralInput"); // limit cost for culture growth
+  const maxExpansionCost = cellsNumberFactor * getInputNumber("neutralInput"); // limit cost for culture growth
   const cost: number[] = [];
 
   while (queue.length) {
     const priority = queue.peekValue()!;
     const {cellId, cultureId} = queue.pop()!;
 
-    if (cultureId === 0) throw new Error("Wilderness culture should not expand");
-    const {type, expansionism} = cultures[cultureId] as ICulture;
-    const cultureBiome = cells.biome[cellId];
+    const {type, expansionism, center} = getCulture(cultureId);
+    const cultureBiome = cells.biome[center];
 
     cells.c[cellId].forEach(neibCellId => {
-      const biome = cells.biome[neibCellId];
-      const biomeCost = getBiomeCost(biome, cultureBiome, type);
+      const biomeCost = getBiomeCost(neibCellId, cultureBiome, type);
       const heightCost = getHeightCost(neibCellId, cells.h[neibCellId], type);
       const riverCost = getRiverCost(cells.r[neibCellId], neibCellId, type);
       const typeCost = getTypeCost(cells.t[neibCellId], type);
-      const totalCost = priority + (biomeCost + heightCost + riverCost + typeCost) / expansionism;
 
-      if (totalCost > neutral) return;
+      const totalCost = priority + (biomeCost + heightCost + riverCost + typeCost) / expansionism;
+      if (totalCost > maxExpansionCost) return;
 
       if (!cost[neibCellId] || totalCost < cost[neibCellId]) {
         if (cells.pop[neibCellId] > 0) cultureIds[neibCellId] = cultureId; // assign culture to populated cell
@@ -323,7 +321,14 @@ export const expandCultures = function (
   TIME && console.timeEnd("expandCultures");
   return cultureIds;
 
-  function getBiomeCost(biome: number, cultureBiome: number, type: TCultureType) {
+  function getCulture(cultureId: number) {
+    const culture = cultures[cultureId];
+    if (isWilderness(culture)) throw new Error("Wilderness culture cannot expand");
+    return culture;
+  }
+
+  function getBiomeCost(cellId: number, cultureBiome: number, type: TCultureType) {
+    const biome = cells.biome[cellId];
     if (cultureBiome === biome) return 10; // tiny penalty for native biome
     if (type === "Hunting") return biomesData.cost[biome] * 5; // non-native biome penalty for hunters
     if (type === "Nomadic" && FOREST_BIOMES.includes(biome)) return biomesData.cost[biome] * 10; // forest biome penalty for nomads

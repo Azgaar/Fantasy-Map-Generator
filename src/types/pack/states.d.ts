@@ -2,6 +2,7 @@ interface IState {
   i: number;
   name: string;
   culture: number;
+  type: TCultureType;
   fullName: string;
   removed?: boolean;
   coa: ICoa | string;
