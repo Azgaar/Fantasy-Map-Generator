@@ -221,9 +221,11 @@ function regenerateStates() {
     }
 
     const culture = capital.culture;
+    const base = pack.cultures[culture].base;
+
     const basename =
       capital.name.length < 9 && capital.cell % 5 === 0 ? capital.name : Names.getCulture(culture, 3, 6, "", 0);
-    const name = Names.getState(basename, culture);
+    const name = Names.getState(basename, base);
     const nomadic = [1, 2, 3, 4].includes(pack.cells.biome[capital.cell]);
     const type = nomadic
       ? "Nomadic"

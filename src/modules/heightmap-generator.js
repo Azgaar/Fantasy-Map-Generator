@@ -99,7 +99,7 @@ window.HeightmapGenerator = (function () {
     if (tool === "Smooth") return smooth(a2);
   }
 
-  function getBlobPower(cells) {
+  function getBlobPower(cellsNumber) {
     const blobPowerMap = {
       1000: 0.93,
       2000: 0.95,
@@ -115,10 +115,10 @@ window.HeightmapGenerator = (function () {
       90000: 0.9964,
       100000: 0.9973
     };
-    return blobPowerMap[cells] || 0.98;
+    return blobPowerMap[cellsNumber] || 0.98;
   }
 
-  function getLinePower() {
+  function getLinePower(cellsNumber) {
     const linePowerMap = {
       1000: 0.75,
       2000: 0.77,
@@ -135,7 +135,7 @@ window.HeightmapGenerator = (function () {
       100000: 0.93
     };
 
-    return linePowerMap[cells] || 0.81;
+    return linePowerMap[cellsNumber] || 0.81;
   }
 
   const addHill = (count, height, rangeX, rangeY) => {

@@ -162,10 +162,9 @@ window.Names = (function () {
   };
 
   // generate state name based on capital or random name and culture-specific suffix
-  const getState = function (name, culture, base) {
+  const getState = function (name, base) {
     if (name === undefined) return ERROR && console.error("Please define a base name");
-    if (culture === undefined && base === undefined) return ERROR && console.error("Please define a culture");
-    if (base === undefined) base = pack.cultures[culture].base;
+    if (base === undefined) return ERROR && console.error("Please define a namesbase");
 
     // exclude endings inappropriate for states name
     if (name.includes(" ")) name = capitalize(name.replace(/ /g, "").toLowerCase()); // don't allow multiword state names

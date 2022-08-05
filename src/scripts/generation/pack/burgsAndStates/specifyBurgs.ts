@@ -103,7 +103,7 @@ export function specifyBurgs(capitals: TCapitals, towns: TTowns, roadScores: Uin
 
     if (stateId === 0) {
       const baseCoa = COA.generate(null, 0, null, coaType);
-      const shield = COA.getShield(cultureId, stateId);
+      const shield = COA.getShield(cultureId, stateId, cultures, states);
       return {...baseCoa, shield};
     }
 
@@ -111,7 +111,7 @@ export function specifyBurgs(capitals: TCapitals, towns: TTowns, roadScores: Uin
     const kinship = defineKinshipToStateEmblem();
 
     const baseCoa = COA.generate(stateCOA, kinship, null, coaType);
-    const shield = COA.getShield(cultureId, stateId);
+    const shield = COA.getShield(cultureId, stateId, cultures, states);
     return {...baseCoa, shield};
 
     function defineKinshipToStateEmblem() {

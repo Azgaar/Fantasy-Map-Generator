@@ -337,8 +337,9 @@ export function open({el}) {
     let name = "";
     if (elSelected.attr("id").slice(0, 10) === "stateLabel") {
       const id = +elSelected.attr("id").slice(10);
-      const culture = pack.states[id].culture;
-      name = Names.getState(Names.getCulture(culture, 4, 7, ""), culture);
+      const cultureId = pack.states[id].culture;
+      const base = pack.cultures[cultureId].base;
+      name = Names.getState(Names.getBase(base, 4, 7, ""), base);
     } else {
       const box = elSelected.node().getBBox();
       const cell = findCell((box.x + box.width) / 2, (box.y + box.height) / 2);

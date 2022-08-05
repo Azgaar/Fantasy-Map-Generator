@@ -106,8 +106,9 @@ window.BurgsAndStates = (function () {
 
         // states data
         const expansionism = rn(Math.random() * powerInput.value + 1, 1);
-        const basename = b.name.length < 9 && each5th(b.cell) ? b.name : Names.getCultureShort(b.culture);
-        const name = Names.getState(basename, b.culture);
+        const base = pack.cultures[b.culture].base;
+        const basename = b.name.length < 9 && each5th(b.cell) ? b.name : Names.getBaseShort(base);
+        const name = Names.getState(basename, base);
         const type = cultures[b.culture].type;
 
         const coa = COA.generate(null, null, null, type);
@@ -1200,9 +1201,11 @@ window.BurgsAndStates = (function () {
         s.provinces.push(province);
         const center = stateBurgs[i].cell;
         const burg = stateBurgs[i].i;
-        const c = stateBurgs[i].culture;
+        const cultureId = stateBurgs[i].culture;
         const nameByBurg = P(0.5);
-        const name = nameByBurg ? stateBurgs[i].name : Names.getState(Names.getCultureShort(c), c);
+
+        const base = pack.cultures[cultureId].base;
+        const name = nameByBurg ? stateBurgs[i].name : Names.getState(Names.getBaseShort(base), base);
         const formName = rw(form);
         form[formName] += 10;
         const fullName = name + " " + formName;
@@ -1210,7 +1213,7 @@ window.BurgsAndStates = (function () {
         const kinship = nameByBurg ? 0.8 : 0.4;
         const type = getType(center, burg.port);
         const coa = COA.generate(stateBurgs[i].coa, kinship, null, type);
-        coa.shield = COA.getShield(c, s.i);
+        coa.shield = COA.getShield(cultureId, s.i);
         provinces.push({i: province, state: s.i, center, burg, name, formName, fullName, color, coa});
       }
     });
@@ -1312,7 +1315,7 @@ window.BurgsAndStates = (function () {
         }
 
         // generate "wild" province name
-        const c = cells.culture[center];
+        const cultureId = cells.culture[center];
         const f = pack.features[cells.f[center]];
         const color = getMixedColor(s.color);
 
@@ -1325,7 +1328,9 @@ window.BurgsAndStates = (function () {
           const colonyName = colony && P(0.8) && getColonyName();
           if (colonyName) return colonyName;
           if (burgCell && P(0.5)) return burgs[burg].name;
-          return Names.getState(Names.getCultureShort(c), c);
+          const base = pack.cultures[cultureId].base;
+
+          return Names.getState(Names.getBaseShort(base), base);
         })();
 
         const formName = (function () {
@@ -1341,7 +1346,7 @@ window.BurgsAndStates = (function () {
         const kinship = dominion ? 0 : 0.4;
         const type = getType(center, burgs[burg]?.port);
         const coa = COA.generate(s.coa, kinship, dominion, type);
-        coa.shield = COA.getShield(c, s.i);
+        coa.shield = COA.getShield(cultureId, s.i);
 
         provinces.push({i: province, state: s.i, center, burg, name, formName, fullName, color, coa});
         s.provinces.push(province);

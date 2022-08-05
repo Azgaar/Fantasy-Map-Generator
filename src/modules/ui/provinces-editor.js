@@ -552,13 +552,15 @@ export function editProvinces() {
     function regenerateShortNameCuture() {
       const province = +provinceNameEditor.dataset.province;
       const culture = pack.cells.culture[pack.provinces[province].center];
-      const name = Names.getState(Names.getCultureShort(culture), culture);
+      const base = pack.cultures[culture].base;
+
+      const name = Names.getState(Names.getBaseShort(base), base);
       byId("provinceNameEditorShort").value = name;
     }
 
     function regenerateShortNameRandom() {
       const base = rand(nameBases.length - 1);
-      const name = Names.getState(Names.getBase(base), undefined, base);
+      const name = Names.getState(Names.getBase(base), base);
       byId("provinceNameEditorShort").value = name;
     }
 
@@ -1033,8 +1035,9 @@ export function editProvinces() {
     const province = provinces.length;
     pack.states[state].provinces.push(province);
     const burg = cells.burg[center];
-    const c = cells.culture[center];
-    const name = burg ? pack.burgs[burg].name : Names.getState(Names.getCultureShort(c), c);
+    const cultureId = cells.culture[center];
+    const base = pack.cultures[cultureId].base;
+    const name = burg ? pack.burgs[burg].name : Names.getState(Names.getBaseShort(base), base);
     const formName = oldProvince ? provinces[oldProvince].formName : "Province";
     const fullName = name + " " + formName;
     const stateColor = pack.states[state].color;
@@ -1046,7 +1049,7 @@ export function editProvinces() {
     const parent = burg ? pack.burgs[burg].coa : pack.states[state].coa;
     const type = BurgsAndStates.getType(center, parent.port);
     const coa = COA.generate(parent, kinship, P(0.1), type);
-    coa.shield = COA.getShield(c, state);
+    coa.shield = COA.getShield(cultureId, state);
     COArenderer.add("province", province, coa, point[0], point[1]);
 
     provinces.push({i: province, state, center, burg, name, formName, fullName, color, coa});

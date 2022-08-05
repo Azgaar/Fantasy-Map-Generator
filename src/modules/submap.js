@@ -2,7 +2,7 @@ import * as d3 from "d3";
 
 import {INFO} from "config/logging";
 import {findCell} from "utils/graphUtils";
-import {getMiddlePoint} from "utils/lineUtils";
+import {getCommonEdgePoint} from "utils/lineUtils";
 import {rn} from "utils/numberUtils";
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {renderLayer} from "layers";

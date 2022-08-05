@@ -1,3 +1,4 @@
+import {pack} from "d3";
 import {P, rw} from "utils/probabilityUtils";
 
 window.COA = (function () {
@@ -1038,14 +1039,14 @@ window.COA = (function () {
     return coa;
   };
 
-  const getShield = function (culture, state) {
+  const getShield = function (cultureId, stateId, cultures = pack.cultures, states = pack.states) {
     const emblemShape = document.getElementById("emblemShape");
     const shapeGroup = emblemShape.selectedOptions[0]?.parentNode.label || "Diversiform";
     if (shapeGroup !== "Diversiform") return emblemShape.value;
 
-    if (emblemShape.value === "state" && state && pack.states[state].coa) return pack.states[state].coa.shield;
-    if (pack.cultures[culture].shield) return pack.cultures[culture].shield;
-    ERROR && console.error("Shield shape is not defined on culture level", pack.cultures[culture]);
+    if (emblemShape.value === "state" && stateId && states[stateId].coa) return states[stateId].coa.shield;
+    if (cultures[cultureId].shield) return cultures[cultureId].shield;
+    ERROR && console.error("Shield shape is not defined on culture level", cultures[cultureId]);
     return "heater";
   };
 

@@ -7,24 +7,31 @@ import {gauss} from "utils/probabilityUtils";
 
 const {Names} = window;
 
-export function createTowns(scoredCellIds: UintArray, burgIds: Uint16Array) {
+export function createTowns(
+  burgIds: Uint16Array,
+  cultures: TCultures,
+  cells: Pick<IPack["cells"], "p" | "i" | "f" | "s" | "culture">
+) {
   TIME && console.time("createTowns");
-
-  const townsNumber = getTownsNumber();
-  if (townsNumber === 0) return [];
 
   // randomize cells score a bit for more natural towns placement
   const randomizeScore = (suitability: number) => suitability * gauss(1, 3, 0, 20, 3);
   const scores = new Int16Array(cells.s.map(randomizeScore));
 
   // take populated cells without capitals
-  const scoredCellsIds = cells.i.filter(i => scores[i] > 0 && cells.culture[i] && !burgIds[i]);
-  scoredCellsIds.sort((a, b) => scores[b] - scores[a]); // sort by randomized suitability score
+  const scoredCellIds = cells.i.filter(i => scores[i] > 0 && cells.culture[i] && !burgIds[i]);
+  scoredCellIds.sort((a, b) => scores[b] - scores[a]); // sort by randomized suitability score
 
-  const towns = placeTowns(townsNumber, scoredCellIds).map((cellId, index) => {
+  const townsNumber = getTownsNumber();
+  if (townsNumber === 0) return [];
+
+  const townCells = placeTowns(townsNumber, scoredCellIds, cells.p);
+
+  const towns = townCells.map((cellId, index) => {
     const id = index + 1;
     const cultureId = cells.culture[cellId];
-    const name: string = Names.getCulture(cultureId);
+    const namesbase = cultures[cultureId].base;
+    const name: string = Names.getBase(namesbase);
     const featureId = cells.f[cellId];
 
     return {i: id, cell: cellId, culture: cultureId, name, feature: featureId, capital: 0 as Logical};
@@ -40,13 +47,13 @@ export function createTowns(scoredCellIds: UintArray, burgIds: Uint16Array) {
   function getTownsNumber() {
     const inputTownsNumber = getInputNumber("manorsInput");
     const shouldAutoDefine = inputTownsNumber === 1000;
-    const desiredTownsNumber = shouldAutoDefine ? rn(scoredCellsIds.length / 5 ** 0.8) : inputTownsNumber;
+    const desiredTownsNumber = shouldAutoDefine ? rn(scoredCellIds.length / 5 ** 0.8) : inputTownsNumber;
 
-    return Math.min(desiredTownsNumber, scoredCellsIds.length);
+    return Math.min(desiredTownsNumber, scoredCellIds.length);
   }
 }
 
-function placeTowns(townsNumber: number, scoredCellIds: UintArray) {
+function placeTowns(townsNumber: number, scoredCellIds: UintArray, points: TPoints) {
   function attemptToPlaceTowns(spacing: number): number[] {
     const townCells: number[] = [];
     const townsQuadtree = d3.quadtree();
@@ -54,7 +61,7 @@ function placeTowns(townsNumber: number, scoredCellIds: UintArray) {
     const randomizeScaping = (spacing: number) => spacing * gauss(1, 0.3, 0.2, 2, 2);
 
     for (const cellId of scoredCellIds) {
-      const [x, y] = cells.p[cellId];
+      const [x, y] = points[cellId];
 
       // randomize min spacing a bit to make placement not that uniform
       const currentSpacing = randomizeScaping(spacing);

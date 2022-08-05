@@ -464,14 +464,15 @@ function editStateName(state) {
 
   function regenerateShortNameCuture() {
     const state = +stateNameEditor.dataset.state;
-    const culture = pack.states[state].culture;
-    const name = Names.getState(Names.getCultureShort(culture), culture);
+    const cultureId = pack.states[state].culture;
+    const base = pack.cultures[cultureId].base;
+    const name = Names.getState(Names.getBaseShort(base), base);
     byId("stateNameEditorShort").value = name;
   }
 
   function regenerateShortNameRandom() {
     const base = rand(nameBases.length - 1);
-    const name = Names.getState(Names.getBase(base), undefined, base);
+    const name = Names.getState(Names.getBase(base), base);
     byId("stateNameEditorShort").value = name;
   }
 
@@ -1156,7 +1157,8 @@ function adjustProvinces(affectedProvinces) {
     const culture = cells.culture[center];
 
     const nameByBurg = burgCell && P(0.5);
-    const name = nameByBurg ? burg.name : oldProvince.name || Names.getState(Names.getCultureShort(culture), culture);
+    const base = pack.cultures[culture].base;
+    const name = nameByBurg ? burg.name : oldProvince.name || Names.getState(Names.getBaseShort(base), base);
 
     const formOptions = ["Zone", "Area", "Territory", "Province"];
     const formName = burgCell && oldProvince.formName ? oldProvince.formName : ra(formOptions);
@@ -1259,8 +1261,9 @@ function addState() {
   if (d3.event.shiftKey === false) exitAddStateMode();
 
   const culture = cells.culture[center];
-  const basename = center % 5 === 0 ? burgs[burg].name : Names.getCulture(culture);
-  const name = Names.getState(basename, culture);
+  const base = pack.cultures[culture].base;
+  const basename = center % 5 === 0 ? burgs[burg].name : Names.getBase(culture);
+  const name = Names.getState(basename, base);
   const color = getRandomColor();
   const pole = cells.p[center];
 

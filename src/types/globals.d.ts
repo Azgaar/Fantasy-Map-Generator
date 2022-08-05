@@ -49,7 +49,7 @@ let landmass: Selection<SVGGElement>;
 let texture: Selection<SVGGElement>;
 let terrs: Selection<SVGGElement>;
 let biomes: Selection<SVGGElement>;
-let cells: Selection<SVGGElement>;
+// let cells: Selection<SVGGElement>;
 let gridOverlay: Selection<SVGGElement>;
 let coordinates: Selection<SVGGElement>;
 let compass: Selection<SVGGElement>;

@@ -15,7 +15,7 @@ export function defineSvg(width, height) {
   texture = viewbox.append("g").attr("id", "texture");
   terrs = viewbox.append("g").attr("id", "terrs");
   biomes = viewbox.append("g").attr("id", "biomes");
-  cells = viewbox.append("g").attr("id", "cells");
+  // cells = viewbox.append("g").attr("id", "cells");
   gridOverlay = viewbox.append("g").attr("id", "gridOverlay");
   coordinates = viewbox.append("g").attr("id", "coordinates");
   compass = viewbox.append("g").attr("id", "compass");

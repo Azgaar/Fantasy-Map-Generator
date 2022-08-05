@@ -1,4 +1,5 @@
 import {WARN} from "config/logging";
+import {pick} from "utils/functionUtils";
 import {getInputNumber} from "utils/nodeUtils";
 import {NEUTRALS, NO_BURG} from "./config";
 import {createCapitals} from "./createCapitals";
@@ -25,9 +26,9 @@ export function generateBurgsAndStates(
   const statesNumber = getStatesNumber(scoredCellIds.length);
   if (statesNumber === 0) return {burgIds, burgs: [NO_BURG], states: [NEUTRALS]};
 
-  const capitals = createCapitals(statesNumber, scoredCellIds, burgIds);
+  const capitals = createCapitals(statesNumber, scoredCellIds, burgIds, cultures, pick(cells, "p", "f", "culture"));
   const states = createStates(capitals, cultures);
-  const towns = createTowns(scoredCellIds, burgIds);
+  const towns = createTowns(burgIds, cultures, pick(cells, "p", "i", "f", "s", "culture"));
 
   expandStates();
   // normalizeStates();
