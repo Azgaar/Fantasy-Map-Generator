@@ -28,7 +28,7 @@ export function createStates(capitals: TCapitals, cultures: TCultures) {
     const shield = COA.getShield(cultureShield, null);
     const coa: ICoa = {...COA.generate(null, null, null, type), shield};
 
-    return {i: id, center: cellId, type, name, color, expansionism, capital: capitalId, culture: cultureId, coa};
+    return {i: id, name, type, center: cellId, color, expansionism, capital: capitalId, culture: cultureId, coa};
   });
 
   TIME && console.timeEnd("createStates");

@@ -1044,10 +1044,9 @@ window.COA = (function () {
     const shapeGroup = emblemShape.selectedOptions[0]?.parentNode.label || "Diversiform";
 
     if (shapeGroup !== "Diversiform") return emblemShape.value;
-
     if (emblemShape.value === "state" && stateShield) return stateShield;
+    if (cultureShield) return cultureShield;
 
-    if (cultureShield) cultureShield;
     ERROR && console.error("Shield shape is not defined on culture level");
     return "heater";
   };

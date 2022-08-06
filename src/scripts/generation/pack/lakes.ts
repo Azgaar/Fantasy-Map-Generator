@@ -58,10 +58,10 @@ export const mergeLakeData = function (
     const lake = lakeData.find(lake => lake.i === feature.i);
     if (!lake) return feature;
 
-    const {firstCell, height, flux, temp, evaporation} = lake;
+    const {firstCell, height, flux, temp, evaporation, cells} = lake;
     const inlets = lake.inlets?.filter(inlet => rivers.find(river => river.i === inlet));
     const outlet = rivers.find(river => river.i === lake.outlet)?.i;
-    const group = defineLakeGroup({firstCell, height, flux, temp, evaporation, inlets, outlet});
+    const group = defineLakeGroup({firstCell, height, flux, temp, evaporation, cells, inlets, outlet});
 
     const lakeFeature: IPackFeatureLake = {...feature, flux, temp, evaporation, inlets, outlet, group};
     if (!inlets || !inlets.length) delete lakeFeature.inlets;
@@ -79,6 +79,7 @@ function defineLakeGroup({
   flux,
   temp,
   evaporation,
+  cells,
   inlets,
   outlet
 }: {
@@ -87,6 +88,7 @@ function defineLakeGroup({
   flux: number;
   temp: number;
   evaporation: number;
+  cells: number;
   inlets?: number[];
   outlet?: number;
 }): IPackFeatureLake["group"] {

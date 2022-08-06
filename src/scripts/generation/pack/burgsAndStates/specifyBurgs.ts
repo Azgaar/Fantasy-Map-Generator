@@ -25,6 +25,7 @@ export function specifyBurgs(
   vertices: IGraphVertices,
   cultures: TCultures,
   states: TStatesReturn,
+  rivers: Omit<IRiver, "name" | "basin" | "type">[],
   cells: Pick<IPack["cells"], "v" | "p" | "g" | "h" | "f" | "haven" | "harbor" | "s" | "biome" | "fl" | "r">
 ): TBurgs {
   TIME && console.time("specifyBurgs");
@@ -102,7 +103,11 @@ export function specifyBurgs(
     if (haven && (waterBody as TPackFeature).type === "lake") return "Lake";
 
     if (cells.h[cellId] > ELEVATION.FOOTHILLS) return "Highland";
-    if (cells.r[cellId] && rivers[cellId].length > 100) return "River";
+
+    if (cells.r[cellId]) {
+      const river = rivers.find(river => river.i === cellId);
+      if (river && river.length > 100) return "River";
+    }
 
     if (population < 6) {
       const biome = cells.biome[cellId];

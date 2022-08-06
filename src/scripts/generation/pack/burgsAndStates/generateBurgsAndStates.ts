@@ -12,6 +12,7 @@ export function generateBurgsAndStates(
   cultures: TCultures,
   features: TPackFeatures,
   temp: Int8Array,
+  rivers: Omit<IRiver, "name" | "basin" | "type">[],
   vertices: IGraphVertices,
   cells: Pick<
     IPack["cells"],
@@ -55,6 +56,7 @@ export function generateBurgsAndStates(
     vertices,
     cultures,
     states,
+    rivers,
     pick(cells, "v", "p", "g", "h", "f", "haven", "harbor", "s", "biome", "fl", "r")
   );
 

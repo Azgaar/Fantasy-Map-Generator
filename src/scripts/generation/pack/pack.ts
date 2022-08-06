@@ -95,19 +95,26 @@ export function createPack(grid: IGrid): IPack {
     pop: population
   });
 
-  const {burgIds, stateIds, burgs, states} = generateBurgsAndStates(cultures, mergedFeatures, temp, vertices, {
-    ...pick(cells, "v", "c", "p", "i", "g"),
-    h: heights,
-    f: featureIds,
-    t: distanceField,
-    haven,
-    harbor,
-    r: riverIds,
-    fl: flux,
-    biome,
-    s: suitability,
-    culture: cultureIds
-  });
+  const {burgIds, stateIds, burgs, states} = generateBurgsAndStates(
+    cultures,
+    mergedFeatures,
+    temp,
+    rawRivers,
+    vertices,
+    {
+      ...pick(cells, "v", "c", "p", "i", "g"),
+      h: heights,
+      f: featureIds,
+      t: distanceField,
+      haven,
+      harbor,
+      r: riverIds,
+      fl: flux,
+      biome,
+      s: suitability,
+      culture: cultureIds
+    }
+  );
 
   // Religions.generate();
   // BurgsAndStates.defineStateForms();
