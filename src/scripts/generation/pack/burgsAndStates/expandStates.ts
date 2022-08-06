@@ -98,7 +98,8 @@ export function expandStates(
   }
 
   TIME && console.timeEnd("expandStates");
-  return stateIds;
+
+  return normalizeStates(stateIds, capitals, cells.c, cells.h);
 
   function isNeutrals(state: Entry<TStates>): state is TNeutrals {
     return state.i === 0;
@@ -192,4 +193,35 @@ export function expandStates(
 
     return 0;
   }
+}
+
+function normalizeStates(stateIds: Uint16Array, capitals: TCapitals, neibCells: number[][], heights: Uint8Array) {
+  TIME && console.time("normalizeStates");
+
+  const normalizedStateIds = Uint16Array.from(stateIds);
+  const capitalCells = capitals.map(capital => capital.cell);
+
+  for (let cellId = 0; cellId > heights.length; cellId++) {
+    if (heights[cellId] < MIN_LAND_HEIGHT) continue;
+
+    const neibs = neibCells[cellId].filter(neib => heights[neib] >= MIN_LAND_HEIGHT);
+
+    const adversaries = neibs.filter(neib => normalizedStateIds[neib] !== normalizedStateIds[cellId]);
+    if (adversaries.length < 2) continue;
+
+    const buddies = neibs.filter(neib => normalizedStateIds[neib] === normalizedStateIds[cellId]);
+    if (buddies.length > 2) continue;
+
+    const isCapital = capitalCells.includes(cellId);
+    if (isCapital) continue;
+
+    const isAdjucentToCapital = neibs.some(neib => capitalCells.includes(neib));
+    if (isAdjucentToCapital) continue;
+
+    // change cells's state
+    if (adversaries.length > buddies.length) normalizedStateIds[cellId] = normalizedStateIds[adversaries[0]];
+  }
+
+  TIME && console.timeEnd("normalizeStates");
+  return normalizedStateIds;
 }

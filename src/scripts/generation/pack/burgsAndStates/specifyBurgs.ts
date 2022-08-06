@@ -4,28 +4,43 @@ import {getCommonEdgePoint} from "utils/lineUtils";
 import {rn} from "utils/numberUtils";
 import {gauss, P} from "utils/probabilityUtils";
 import {NO_BURG} from "./config";
+
 import type {createCapitals} from "./createCapitals";
+import type {createStates} from "./createStates";
 import type {createTowns} from "./createTowns";
 
 const {COA} = window;
 
 type TCapitals = ReturnType<typeof createCapitals>;
 type TTowns = ReturnType<typeof createTowns>;
+type TStatesReturn = ReturnType<typeof createStates>;
 
-export function specifyBurgs(capitals: TCapitals, towns: TTowns, roadScores: Uint16Array): TBurgs {
+export function specifyBurgs(
+  capitals: TCapitals,
+  towns: TTowns,
+  roadScores: Uint16Array,
+  stateIds: Uint16Array,
+  features: TPackFeatures,
+  temp: Int8Array,
+  vertices: IGraphVertices,
+  cultures: TCultures,
+  states: TStatesReturn,
+  cells: Pick<IPack["cells"], "v" | "p" | "g" | "h" | "f" | "haven" | "harbor" | "s" | "biome" | "fl" | "r">
+): TBurgs {
   TIME && console.time("specifyBurgs");
 
-  const burgs = [...capitals, ...towns].map(burgData => {
-    const {cell, culture, capital, state} = burgData;
+  const burgs: IBurg[] = [...capitals, ...towns].map(burgData => {
+    const {cell, culture, capital} = burgData;
+    const state = stateIds[cell];
 
     const port = definePort(cell, capital);
     const population = definePopulation(cell, capital, port);
     const [x, y] = defineLocation(cell, port);
 
     const type = defineType(cell, port, population);
-    const coa = defineEmblem(state, culture, port, capital, type);
+    const coa = defineEmblem(state, culture, port, capital, type, cultures, states);
 
-    return {...burgData, port, population, x, y, type, coa};
+    return {...burgData, state, port, population, x, y, type, coa};
   });
 
   TIME && console.timeEnd("specifyBurgs");
@@ -98,12 +113,22 @@ export function specifyBurgs(capitals: TCapitals, towns: TTowns, roadScores: Uin
     return "Generic";
   }
 
-  function defineEmblem(stateId: number, cultureId: number, port: number, capital: Logical, type: TCultureType) {
+  function defineEmblem(
+    stateId: number,
+    cultureId: number,
+    port: number,
+    capital: Logical,
+    type: TCultureType,
+    cultures: TCultures,
+    states: TStatesReturn
+  ) {
     const coaType = capital && P(0.2) ? "Capital" : type === "Generic" ? "City" : type;
+    const cultureShield = cultures[cultureId].shield;
+    const stateShield = ((states[stateId] as IState)?.coa as ICoa)?.shield;
 
     if (stateId === 0) {
       const baseCoa = COA.generate(null, 0, null, coaType);
-      const shield = COA.getShield(cultureId, stateId, cultures, states);
+      const shield = COA.getShield(cultureShield, stateShield);
       return {...baseCoa, shield};
     }
 
@@ -111,7 +136,7 @@ export function specifyBurgs(capitals: TCapitals, towns: TTowns, roadScores: Uin
     const kinship = defineKinshipToStateEmblem();
 
     const baseCoa = COA.generate(stateCOA, kinship, null, coaType);
-    const shield = COA.getShield(cultureId, stateId, cultures, states);
+    const shield = COA.getShield(cultureShield, stateShield);
     return {...baseCoa, shield};
 
     function defineKinshipToStateEmblem() {

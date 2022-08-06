@@ -1,11 +1,15 @@
 interface IState {
   i: number;
   name: string;
-  culture: number;
+  center: number;
+  color: Hex | CssUrls;
   type: TCultureType;
+  culture: number;
+  expansionism: number;
   fullName: string;
-  removed?: boolean;
+  capital: Logical;
   coa: ICoa | string;
+  removed?: boolean;
 }
 
 type TNeutrals = {
@@ -20,6 +24,6 @@ interface ICoa {
   division: {};
   ordinaries: {}[];
   charges: {}[];
-  shield: "heater";
-  t1: "purpure";
+  shield: string;
+  t1: string;
 }

@@ -1168,7 +1168,7 @@ function adjustProvinces(affectedProvinces) {
     const kinship = nameByBurg ? 0.8 : 0.4;
     const type = BurgsAndStates.getType(center, burg?.port);
     const coa = COA.generate(burg?.coa || states[stateId].coa, kinship, burg ? null : 0.9, type);
-    coa.shield = COA.getShield(culture, stateId);
+    coa.shield = COA.getPackShield(culture, stateId);
 
     provinces.push({
       i: newProvinceId,
@@ -1270,7 +1270,7 @@ function addState() {
   // generate emblem
   const cultureType = pack.cultures[culture].type;
   const coa = COA.generate(burgs[burg].coa, 0.4, null, cultureType);
-  coa.shield = COA.getShield(culture, null);
+  coa.shield = COA.getPackShield(culture, null);
 
   // update diplomacy and reverse relations
   const diplomacy = states.map(s => {

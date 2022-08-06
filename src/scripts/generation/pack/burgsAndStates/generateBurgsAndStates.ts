@@ -11,18 +11,27 @@ import {specifyBurgs} from "./specifyBurgs";
 export function generateBurgsAndStates(
   cultures: TCultures,
   features: TPackFeatures,
+  temp: Int8Array,
+  vertices: IGraphVertices,
   cells: Pick<
     IPack["cells"],
     "v" | "c" | "p" | "i" | "g" | "h" | "f" | "t" | "haven" | "harbor" | "r" | "fl" | "biome" | "s" | "culture"
   >
-) {
+): {burgIds: Uint16Array; stateIds: Uint16Array; burgs: TBurgs; states: TStates} {
   const cellsNumber = cells.i.length;
-  const burgIds = new Uint16Array(cellsNumber);
 
   const scoredCellIds = getScoredCellIds();
   const statesNumber = getStatesNumber(scoredCellIds.length);
-  if (statesNumber === 0) return {burgIds, burgs: [NO_BURG], states: [NEUTRALS]};
+  if (statesNumber === 0) {
+    return {
+      burgIds: new Uint16Array(cellsNumber),
+      stateIds: new Uint16Array(cellsNumber),
+      burgs: [NO_BURG],
+      states: [NEUTRALS]
+    };
+  }
 
+  const burgIds = new Uint16Array(cellsNumber);
   const capitals = createCapitals(statesNumber, scoredCellIds, burgIds, cultures, pick(cells, "p", "f", "culture"));
   const states = createStates(capitals, cultures);
   const towns = createTowns(burgIds, cultures, pick(cells, "p", "i", "f", "s", "culture"));
@@ -33,11 +42,21 @@ export function generateBurgsAndStates(
     features,
     pick(cells, "c", "h", "f", "t", "r", "fl", "s", "biome", "culture")
   );
-  // normalizeStates();
-  // burgs.filter(b => b.i && !b.removed).forEach(b => (b.state = stateIds[b.cell])); // assign state to burgs
+
   const roadScores = new Uint16Array(cellsNumber); // TODO: define roads
 
-  const burgs = specifyBurgs(capitals, towns, roadScores);
+  const burgs = specifyBurgs(
+    capitals,
+    towns,
+    roadScores,
+    stateIds,
+    features,
+    temp,
+    vertices,
+    cultures,
+    states,
+    pick(cells, "v", "p", "g", "h", "f", "haven", "harbor", "s", "biome", "fl", "r")
+  );
 
   return {burgIds, stateIds, burgs, states};
 

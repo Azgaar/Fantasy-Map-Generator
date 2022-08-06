@@ -1049,7 +1049,11 @@ export function editProvinces() {
     const parent = burg ? pack.burgs[burg].coa : pack.states[state].coa;
     const type = BurgsAndStates.getType(center, parent.port);
     const coa = COA.generate(parent, kinship, P(0.1), type);
-    coa.shield = COA.getShield(cultureId, state);
+
+    const cultureShield = cultures[cultureId].shield;
+    const stateShield = states[state]?.coa?.shield;
+    coa.shield = COA.getShield(cultureShield, stateShield);
+
     COArenderer.add("province", province, coa, point[0], point[1]);
 
     provinces.push({i: province, state, center, burg, name, formName, fullName, color, coa});

@@ -375,7 +375,9 @@ function regenerateEmblems() {
     if (!state.i || state.removed) return;
     const cultureType = pack.cultures[state.culture].type;
     state.coa = COA.generate(null, null, null, cultureType);
-    state.coa.shield = COA.getShield(state.culture, null);
+
+    const cultureShield = cultures[state.culture].shield;
+    state.coa.shield = COA.getShield(cultureShield, null);
   });
 
   pack.burgs.forEach(burg => {
@@ -387,7 +389,10 @@ function regenerateEmblems() {
     else if (burg.port) kinship -= 0.1;
     if (state && burg.culture !== state.culture) kinship -= 0.25;
     burg.coa = COA.generate(state ? state.coa : null, kinship, null, burg.type);
-    burg.coa.shield = COA.getShield(burg.culture, state ? burg.state : 0);
+
+    const cultureShield = cultures[burg.culture].shield;
+    const stateShield = states[burg.state]?.coa?.shield;
+    burg.coa.shield = COA.getShield(cultureShield, stateShield);
   });
 
   pack.provinces.forEach(province => {
@@ -409,7 +414,10 @@ function regenerateEmblems() {
     const culture = pack.cells.culture[province.center];
     const type = BurgsAndStates.getType(province.center, parent.port);
     province.coa = COA.generate(parent.coa, kinship, dominion, type);
-    province.coa.shield = COA.getShield(culture, province.state);
+
+    const cultureShield = cultures[culture].shield;
+    const stateShield = states[province.state]?.coa?.shield;
+    province.coa.shield = COA.getShield(cultureShield, stateShield);
   });
 
   if (layerIsOn("toggleEmblems")) drawEmblems(); // redrawEmblems

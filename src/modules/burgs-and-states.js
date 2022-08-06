@@ -112,7 +112,7 @@ window.BurgsAndStates = (function () {
         const type = cultures[b.culture].type;
 
         const coa = COA.generate(null, null, null, type);
-        coa.shield = COA.getShield(b.culture, null);
+        coa.shield = COA.getPackShield(b.culture, null);
         states.push({
           i,
           color: colors[i - 1],
@@ -230,7 +230,7 @@ window.BurgsAndStates = (function () {
       b.type = getType(i, b.port);
       const type = b.capital && P(0.2) ? "Capital" : b.type === "Generic" ? "City" : b.type;
       b.coa = COA.generate(stateCOA, kinship, null, type);
-      b.coa.shield = COA.getShield(b.culture, b.state);
+      b.coa.shield = COA.getPackShield(b.culture, b.state);
     }
 
     // de-assign port status if it's the only one on feature
@@ -1213,7 +1213,7 @@ window.BurgsAndStates = (function () {
         const kinship = nameByBurg ? 0.8 : 0.4;
         const type = getType(center, burg.port);
         const coa = COA.generate(stateBurgs[i].coa, kinship, null, type);
-        coa.shield = COA.getShield(cultureId, s.i);
+        coa.shield = COA.getPackShield(cultureId, s.i);
         provinces.push({i: province, state: s.i, center, burg, name, formName, fullName, color, coa});
       }
     });
@@ -1346,7 +1346,7 @@ window.BurgsAndStates = (function () {
         const kinship = dominion ? 0 : 0.4;
         const type = getType(center, burgs[burg]?.port);
         const coa = COA.generate(s.coa, kinship, dominion, type);
-        coa.shield = COA.getShield(cultureId, s.i);
+        coa.shield = COA.getPackShield(cultureId, s.i);
 
         provinces.push({i: province, state: s.i, center, burg, name, formName, fullName, color, coa});
         s.provinces.push(province);

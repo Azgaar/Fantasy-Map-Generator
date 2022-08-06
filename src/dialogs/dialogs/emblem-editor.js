@@ -250,7 +250,11 @@ export function open({type, id, el}) {
       parent = province ? pack.provinces[province] : pack.states[el.state];
     }
 
-    const shield = el.coa.shield || COA.getShield(el.culture || parent?.culture || 0, el.state);
+    const cultureId = el.culture || parent?.culture || 0;
+    const cultureShield = cultures[cultureId].shield;
+    const stateShield = states[el.state]?.coa?.shield;
+
+    const shield = el.coa.shield || COA.getPackShield(cultureShield, stateShield);
     el.coa = COA.generate(parent ? parent.coa : null, 0.3, 0.1, null);
     el.coa.shield = shield;
     emblemShapeSelector.disabled = false;

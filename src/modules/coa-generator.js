@@ -1,5 +1,5 @@
-import {pack} from "d3";
 import {P, rw} from "utils/probabilityUtils";
+import {ERROR} from "config/logging";
 
 window.COA = (function () {
   const tinctures = {
@@ -1039,15 +1039,23 @@ window.COA = (function () {
     return coa;
   };
 
-  const getShield = function (cultureId, stateId, cultures = pack.cultures, states = pack.states) {
+  const getShield = function (cultureShield, stateShield) {
     const emblemShape = document.getElementById("emblemShape");
     const shapeGroup = emblemShape.selectedOptions[0]?.parentNode.label || "Diversiform";
+
     if (shapeGroup !== "Diversiform") return emblemShape.value;
 
-    if (emblemShape.value === "state" && stateId && states[stateId].coa) return states[stateId].coa.shield;
-    if (cultures[cultureId].shield) return cultures[cultureId].shield;
-    ERROR && console.error("Shield shape is not defined on culture level", cultures[cultureId]);
+    if (emblemShape.value === "state" && stateShield) return stateShield;
+
+    if (cultureShield) cultureShield;
+    ERROR && console.error("Shield shape is not defined on culture level");
     return "heater";
+  };
+
+  const getPackShield = function (cultureId, stateId) {
+    const cultureShield = pack.cultres[cultureId]?.shield;
+    const stateShield = pack.states[stateId]?.coa?.shield;
+    return getShield(cultureShield, stateShield);
   };
 
   const getRandomShield = function () {
@@ -1058,5 +1066,5 @@ window.COA = (function () {
   const toString = coa => JSON.stringify(coa).replaceAll("#", "%23");
   const copy = coa => JSON.parse(JSON.stringify(coa));
 
-  return {generate, toString, copy, getShield, shields, getRandomShield};
+  return {generate, toString, copy, getShield, getPackShield, shields, getRandomShield};
 })();

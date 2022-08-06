@@ -95,7 +95,7 @@ export function createPack(grid: IGrid): IPack {
     pop: population
   });
 
-  const {burgIds, stateIds, burgs, states} = generateBurgsAndStates(cultures, mergedFeatures, {
+  const {burgIds, stateIds, burgs, states} = generateBurgsAndStates(cultures, mergedFeatures, temp, vertices, {
     ...pick(cells, "v", "c", "p", "i", "g"),
     h: heights,
     f: featureIds,

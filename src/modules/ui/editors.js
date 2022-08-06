@@ -104,7 +104,7 @@ function addBurg(point) {
 
   // generate emblem
   const coa = COA.generate(pack.states[state].coa, 0.25, null, type);
-  coa.shield = COA.getShield(culture, state);
+  coa.shield = COA.getPackShield(culture, state);
   COArenderer.add("burg", i, coa, x, y);
 
   pack.burgs.push({name, cell, x, y, state, i, culture, feature, capital: 0, port: 0, temple, population, coa, type});
