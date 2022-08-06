@@ -12,6 +12,7 @@ import {rn} from "utils/numberUtils";
 import {generateCultures, expandCultures} from "./cultures";
 import {generateRivers} from "./rivers";
 import {generateBurgsAndStates} from "./burgsAndStates/generateBurgsAndStates";
+import {generateRoutes} from "./generateRoutes";
 
 const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
 const {Biomes} = window;
@@ -116,6 +117,8 @@ export function createPack(grid: IGrid): IPack {
     }
   );
 
+  const routeScores = generateRoutes();
+
   // Religions.generate();
   // BurgsAndStates.defineStateForms();
   // BurgsAndStates.generateProvinces();
@@ -154,7 +157,8 @@ export function createPack(grid: IGrid): IPack {
       pop: population,
       culture: cultureIds,
       burg: burgIds,
-      state: stateIds
+      state: stateIds,
+      road: routeScores
       // religion, province
     },
     features: mergedFeatures,

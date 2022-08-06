@@ -28,6 +28,7 @@ interface Window {
   Military: any;
   Markers: any;
   COA: any;
+  Routes: any;
 }
 
 interface Node {

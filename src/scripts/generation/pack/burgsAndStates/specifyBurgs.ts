@@ -18,7 +18,6 @@ type TStatesReturn = ReturnType<typeof createStates>;
 export function specifyBurgs(
   capitals: TCapitals,
   towns: TTowns,
-  roadScores: Uint16Array,
   stateIds: Uint16Array,
   features: TPackFeatures,
   temp: Int8Array,
@@ -64,7 +63,7 @@ export function specifyBurgs(
 
   // get population in points, where 1 point = 1000 people by default
   function definePopulation(cellId: number, capital: Logical, port: number) {
-    const basePopulation = (cells.s[cellId] + roadScores[cellId] / 2) / 4;
+    const basePopulation = cells.s[cellId] / 4;
     const decimalPart = (cellId % 1000) / 1000;
 
     const capitalMultiplier = capital ? 1.3 : 1;

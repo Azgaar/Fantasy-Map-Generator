@@ -14,6 +14,7 @@ interface IBurg {
 }
 
 type TNoBurg = {
+  i: 0;
   name: undefined;
 };
 

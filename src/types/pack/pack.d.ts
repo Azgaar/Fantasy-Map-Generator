@@ -29,6 +29,7 @@ interface IPackCells {
   burg: UintArray;
   haven: UintArray;
   harbor: UintArray;
+  road: Uint8Array;
   q: Quadtree;
 }
 

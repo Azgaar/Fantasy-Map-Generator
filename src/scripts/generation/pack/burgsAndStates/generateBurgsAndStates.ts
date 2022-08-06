@@ -44,12 +44,9 @@ export function generateBurgsAndStates(
     pick(cells, "c", "h", "f", "t", "r", "fl", "s", "biome", "culture")
   );
 
-  const roadScores = new Uint16Array(cellsNumber); // TODO: define roads
-
   const burgs = specifyBurgs(
     capitals,
     towns,
-    roadScores,
     stateIds,
     features,
     temp,
