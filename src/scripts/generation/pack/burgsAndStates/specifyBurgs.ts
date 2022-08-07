@@ -29,7 +29,7 @@ export function specifyBurgs(
 ): TBurgs {
   TIME && console.time("specifyBurgs");
 
-  const burgs: IBurg[] = [...capitals, ...towns].map(burgData => {
+  const burgs = [...capitals, ...towns].map(burgData => {
     const {cell, culture, capital} = burgData;
     const state = stateIds[cell];
 
@@ -38,9 +38,10 @@ export function specifyBurgs(
     const [x, y] = defineLocation(cell, port);
 
     const type = defineType(cell, port, population);
-    const coa = defineEmblem(state, culture, port, capital, type, cultures, states);
+    const coa: ICoa = defineEmblem(state, culture, port, capital, type, cultures, states);
 
-    return {...burgData, state, port, population, x, y, type, coa};
+    const burg: IBurg = {...burgData, state, port, population, x, y, type, coa};
+    return burg;
   });
 
   TIME && console.timeEnd("specifyBurgs");

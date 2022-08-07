@@ -19,18 +19,18 @@ const getRoads = function (burgs: TBurgs) {
 
   if (capitals.length < 2) return []; // not enough capitals to build main roads
 
-  const paths = []; // array to store path segments
+  const routes = []; // array to store path segments
 
-  for (const b of capitals) {
-    const connect = capitals.filter(c => c.feature === b.feature && c !== b);
-    for (const t of connect) {
-      const [from, exit] = findLandPath(b.cell, t.cell, true);
-      const segments = restorePath(b.cell, exit, "main", from);
-      segments.forEach(s => paths.push(s));
+  for (const {i, feature, cell: fromCell} of capitals) {
+    const sameFeatureCapitals = capitals.filter(capital => i !== capital.i && feature === capital.feature);
+    for (const {cell: toCell} of sameFeatureCapitals) {
+      const [from, exit] = findLandPath(fromCell, toCell, true);
+      const segments = restorePath(fromCell, exit, "main", from);
+      segments.forEach(s => routes.push(s));
     }
   }
 
   cells.i.forEach(i => (cells.s[i] += cells.road[i] / 2)); // add roads to suitability score
   TIME && console.timeEnd("generateMainRoads");
-  return paths;
+  return routes;
 };
