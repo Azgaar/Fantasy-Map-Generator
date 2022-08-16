@@ -310,7 +310,7 @@ const cultureHighlightOn = debounce(event => {
     .select("#cultureCenter" + cultureId)
     .raise()
     .transition(animate)
-    .attr("r", 2)
+    .attr("r", 3)
     .attr("stroke", "#d0240f");
 }, 200);
 
@@ -326,7 +326,7 @@ function cultureHighlightOff(event) {
   debug
     .select("#cultureCenter" + cultureId)
     .transition()
-    .attr("r", 1)
+    .attr("r", 2)
     .attr("stroke", null);
 }
 
@@ -557,7 +557,7 @@ function drawCultureCenters() {
   const cultureCenters = debug
     .append("g")
     .attr("id", "cultureCenters")
-    .attr("stroke-width", 0.5)
+    .attr("stroke-width", 0.8)
     .attr("stroke", "#444444")
     .style("cursor", "move");
 
@@ -569,7 +569,7 @@ function drawCultureCenters() {
     .append("circle")
     .attr("id", d => "cultureCenter" + d.i)
     .attr("data-id", d => d.i)
-    .attr("r", 1)
+    .attr("r", 2)
     .attr("fill", d => d.color)
     .attr("cx", d => pack.cells.p[d.center][0])
     .attr("cy", d => pack.cells.p[d.center][1])
