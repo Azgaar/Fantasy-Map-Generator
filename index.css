@@ -85,7 +85,7 @@ a {
 }
 
 #prec text {
-  font-size: 32px;
+  font-size: 24px;
   stroke: none;
   text-shadow: 1px 1px 1px #9daac9;
   user-select: none;
@@ -297,12 +297,17 @@ i.icon-lock {
   }
 }
 
-#provinceLabels,
 #burgLabels {
   dominant-baseline: alphabetic;
   text-anchor: middle;
+  font-size: 0.1em;
 }
-
+#provinceLabels {
+  dominant-baseline: alphabetic;
+  text-anchor: leftOver;
+  font-size: 0.2em;
+  text-shadow: 1px 1px #e7ffa1;
+}
 #routeLength,
 #coastlineArea {
   background-color: #eeeeee;

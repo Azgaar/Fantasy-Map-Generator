@@ -6,9 +6,19 @@ function getMapData() {
   TIME && console.time("createMapData");
 
   const date = new Date();
-  const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
-  const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
-  const params = [version, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
+  const dateString =
+    date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+  const license =
+    "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
+  const params = [
+    version,
+    license,
+    dateString,
+    seed,
+    graphWidth,
+    graphHeight,
+    mapId,
+  ].join("|");
   const settings = [
     distanceUnitInput.value,
     distanceScaleInput.value,
@@ -34,10 +44,14 @@ function getMapData() {
     +hideLabels.checked,
     stylePreset.value,
     +rescaleLabels.checked,
-    urbanDensity
+    urbanDensity,
   ].join("|");
   const coords = JSON.stringify(mapCoordinates);
-  const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
+  const biomes = [
+    biomesData.color,
+    biomesData.habitability,
+    biomesData.name,
+  ].join("|");
   const notesData = JSON.stringify(notes);
   const rulersString = rulers.toString();
   const fonts = JSON.stringify(getUsedFonts(svg.node()));
@@ -54,8 +68,15 @@ function getMapData() {
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
-  const {spacing, cellsX, cellsY, boundary, points, features} = grid;
-  const gridGeneral = JSON.stringify({spacing, cellsX, cellsY, boundary, points, features});
+  const { spacing, cellsX, cellsY, boundary, points, features } = grid;
+  const gridGeneral = JSON.stringify({
+    spacing,
+    cellsX,
+    cellsY,
+    boundary,
+    points,
+    features,
+  });
   const packFeatures = JSON.stringify(pack.features);
   const cultures = JSON.stringify(pack.cultures);
   const states = JSON.stringify(pack.states);
@@ -75,7 +96,7 @@ function getMapData() {
     .join("/");
 
   // round population to save space
-  const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
+  const pop = Array.from(pack.cells.pop).map((p) => rn(p, 4));
 
   // data format as below
   const mapData = [
@@ -114,31 +135,120 @@ function getMapData() {
     rivers,
     rulersString,
     fonts,
-    markers
+    markers,
   ].join("\r\n");
   TIME && console.timeEnd("createMapData");
-  
+
   return mapData;
 }
 
 // Download .map file
-function dowloadMap() {
-  if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
-  closeDialogs("#alert");
-
+function downloadMapOrig() {
   const mapData = getMapData();
-  const blob = new Blob([mapData], {type: "text/plain"});
+  const blob = new Blob([mapData], { type: "text/plain" });
   const URL = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.download = getFileName() + ".map";
   link.href = URL;
   link.click();
-  tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+}
+
+function downloadMarkers() {
+  const mapData = JSON.stringify(pack.markers);
+  const blob = new Blob([mapData], { type: "text/plain" });
+  const URL = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = getFileName() + "-markers.json";
+  link.href = URL;
+  link.click();
+}
+
+function downloadBurgs() {
+  const mapData = JSON.stringify(pack.burgs);
+  const blob = new Blob([mapData], { type: "text/plain" });
+  const URL = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = getFileName() + "-burgs.json";
+  link.href = URL;
+  link.click();
+}
+
+function downloadReligions() {
+  const mapData = JSON.stringify(pack.religions);
+  const blob = new Blob([mapData], { type: "text/plain" });
+  const URL = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = getFileName() + "-religions.json";
+  link.href = URL;
+  link.click();
+}
+function downloadCultures() {
+  const mapData = JSON.stringify(pack.cultures);
+  const blob = new Blob([mapData], { type: "text/plain" });
+  const URL = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = getFileName() + "-cultures.json";
+  link.href = URL;
+  link.click();
+}
+
+function downloadStates() {
+  const mapData = JSON.stringify(pack.states);
+  const blob = new Blob([mapData], { type: "text/plain" });
+  const URL = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = getFileName() + "-states.json";
+  link.href = URL;
+  link.click();
+}
+
+function downloadNotes() {
+  const mapData = JSON.stringify(pack.notes);
+  const blob = new Blob([mapData], { type: "text/plain" });
+  const URL = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = getFileName() + "-notes.json";
+  link.href = URL;
+  link.click();
+}
+
+function downloadPopRates() {
+  const mapData = populationRate * urbanization;
+  const blob = new Blob([mapData], { type: "text/plain" });
+  const URL = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.download = getFileName() + "-poprate.txt";
+  link.href = URL;
+  link.click();
+}
+
+function dowloadMap() {
+  if (customization)
+    return tip(
+      "Map cannot be saved when edit mode is active, please exit the mode and retry",
+      false,
+      "error"
+    );
+  closeDialogs("#alert");
+  downloadMapOrig();
+  downloadMarkers();
+  downloadBurgs();
+  downloadCultures();
+  downloadNotes();
+  downloadReligions();
+  downloadPopRates();
+  downloadStates();
+
   window.URL.revokeObjectURL(URL);
 }
 
 async function saveToDropbox() {
-  if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
+  if (customization)
+    return tip(
+      "Map cannot be saved when edit mode is active, please exit the mode and retry",
+      false,
+      "error"
+    );
   closeDialogs("#alert");
   const mapData = getMapData();
   const filename = getFileName() + ".map";
@@ -152,12 +262,22 @@ async function saveToDropbox() {
 }
 
 function quickSave() {
-  if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
+  if (customization)
+    return tip(
+      "Map cannot be saved when edit mode is active, please exit the mode and retry",
+      false,
+      "error"
+    );
 
   const mapData = getMapData();
-  const blob = new Blob([mapData], {type: "text/plain"});
+  const blob = new Blob([mapData], { type: "text/plain" });
   if (blob) ldb.set("lastMap", blob); // auto-save map
-  tip("Map is saved to browser memory. Please also save as .map file to secure progress", true, "success", 2000);
+  tip(
+    "Map is saved to browser memory. Please also save as .map file to secure progress",
+    true,
+    "success",
+    2000
+  );
 }
 
 const saveReminder = function () {
@@ -170,7 +290,7 @@ const saveReminder = function () {
     "Don't forget to save your map on a regular basis!",
     "Just a gentle reminder for you to save the map",
     "Please don't forget to save your progress (saving as .map is the best option)",
-    "Don't want to be reminded about need to save? Press CTRL+Q"
+    "Don't want to be reminded about need to save? Press CTRL+Q",
   ];
   const interval = 15 * 60 * 1000; // remind every 15 minutes
 
@@ -184,12 +304,22 @@ saveReminder();
 
 function toggleSaveReminder() {
   if (saveReminder.status) {
-    tip("Save reminder is turned off. Press CTRL+Q again to re-initiate", true, "warn", 2000);
+    tip(
+      "Save reminder is turned off. Press CTRL+Q again to re-initiate",
+      true,
+      "warn",
+      2000
+    );
     clearInterval(saveReminder.reminder);
     localStorage.setItem("noReminder", true);
     saveReminder.status = 0;
   } else {
-    tip("Save reminder is turned on. Press CTRL+Q to turn off", true, "warn", 2000);
+    tip(
+      "Save reminder is turned on. Press CTRL+Q to turn off",
+      true,
+      "warn",
+      2000
+    );
     localStorage.removeItem("noReminder");
     saveReminder();
   }
