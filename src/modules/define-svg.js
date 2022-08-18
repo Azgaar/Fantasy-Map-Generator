@@ -32,9 +32,6 @@ export function defineSvg(width, height) {
   stateBorders = borders.append("g").attr("id", "stateBorders");
   provinceBorders = borders.append("g").attr("id", "provinceBorders");
   routes = viewbox.append("g").attr("id", "routes");
-  roads = routes.append("g").attr("id", "roads");
-  trails = routes.append("g").attr("id", "trails");
-  searoutes = routes.append("g").attr("id", "searoutes");
   temperature = viewbox.append("g").attr("id", "temperature");
   coastline = viewbox.append("g").attr("id", "coastline");
   ice = viewbox.append("g").attr("id", "ice").style("display", "none");
@@ -56,6 +53,11 @@ export function defineSvg(width, height) {
     .style("display", "none");
   ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
   debug = viewbox.append("g").attr("id", "debug");
+
+  // route groups
+  roads = routes.append("g").attr("id", "roads").attr("data-type", "road");
+  trails = routes.append("g").attr("id", "trails").attr("data-type", "trail");
+  searoutes = routes.append("g").attr("id", "searoutes").attr("data-type", "sea");
 
   // lake and coast groups
   lakes.append("g").attr("id", "freshwater");

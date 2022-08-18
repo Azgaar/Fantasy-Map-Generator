@@ -7,6 +7,7 @@ interface IPack extends IGraph {
   burgs: TBurgs;
   rivers: IRiver[];
   religions: IReligion[];
+  routes: TRoutes;
 }
 
 interface IPackCells {
@@ -29,7 +30,7 @@ interface IPackCells {
   burg: UintArray;
   haven: UintArray;
   harbor: UintArray;
-  road: Uint8Array;
+  route: Uint8Array; // [0, 1, 2, 3], see ROUTES enum, defined by generateRoutes()
   q: Quadtree;
 }
 

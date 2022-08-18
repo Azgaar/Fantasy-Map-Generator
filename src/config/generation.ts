@@ -58,3 +58,9 @@ export const FOREST_BIOMES = [
   TEMPERATE_RAINFOREST,
   TAIGA
 ];
+
+export const ROUTES = {
+  MAIN_ROAD: 1,
+  SMALL_ROAD: 2,
+  SEA_ROUTE: 3
+};

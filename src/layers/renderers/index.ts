@@ -16,6 +16,7 @@ import {drawPrecipitation} from "./drawPrecipitation";
 import {drawProvinces} from "./drawProvinces";
 import {drawReligions} from "./drawReligions";
 import {drawRivers} from "./drawRivers";
+import {drawRoutes} from "./drawRoutes";
 import {drawStates} from "./drawStates";
 import {drawTemperature} from "./drawTemperature";
 
@@ -37,6 +38,7 @@ const layerRenderersMap = {
   provinces: drawProvinces,
   religions: drawReligions,
   rivers: drawRivers,
+  routes: drawRoutes,
   states: drawStates,
   temperature: drawTemperature
 };
