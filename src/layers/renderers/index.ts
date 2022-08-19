@@ -2,11 +2,12 @@
 import {TIME} from "config/logging";
 import {drawBiomes} from "./drawBiomes";
 import {drawBorders} from "./drawBorders";
+import {drawBurgs} from "./drawBurgs";
 import {drawCells} from "./drawCells";
-import {drawFeatures} from "./drawFeatures";
 import {drawCoordinates} from "./drawCoordinates";
 import {drawCultures} from "./drawCultures";
 import {drawEmblems} from "./drawEmblems";
+import {drawFeatures} from "./drawFeatures";
 import {drawGrid} from "./drawGrid";
 import {drawHeightmap} from "./drawHeightmap";
 import {drawIce} from "./drawIce";
@@ -24,6 +25,7 @@ import {drawTemperature} from "./drawTemperature";
 const layerRenderersMap = {
   biomes: drawBiomes,
   borders: drawBorders,
+  burgs: drawBurgs,
   cells: drawCells,
   coordinates: drawCoordinates,
   cultures: drawCultures,

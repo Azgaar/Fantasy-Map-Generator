@@ -156,7 +156,7 @@ function togglePopulation(event?: MouseEvent) {
 }
 
 function toggleCells(event?: MouseEvent) {
-  if (!cells.selectAll("path").size()) {
+  if (!viewbox.select("#cells").selectAll("path").size()) {
     turnLayerButtonOn("toggleCells");
     renderLayer("cells");
     if (isCtrlPressed(event)) editStyle("cells");
@@ -165,7 +165,7 @@ function toggleCells(event?: MouseEvent) {
       editStyle("cells");
       return;
     }
-    cells.selectAll("path").remove();
+    viewbox.select("#cells").selectAll("path").remove();
     turnLayerButtonOff("toggleCells");
   }
 }
