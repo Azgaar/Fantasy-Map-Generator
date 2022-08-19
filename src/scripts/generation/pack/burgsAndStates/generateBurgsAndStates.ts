@@ -32,13 +32,14 @@ export function generateBurgsAndStates(
     };
   }
 
-  const burgIds = new Uint16Array(cellsNumber);
-  const capitals = createCapitals(statesNumber, scoredCellIds, burgIds, cultures, pick(cells, "p", "f", "culture"));
+  const capitals = createCapitals(statesNumber, scoredCellIds, cultures, pick(cells, "p", "f", "culture"));
+  const capitalCells = new Map(capitals.map(({cell}) => [cell, true]));
+
   const states = createStates(capitals, cultures);
-  const towns = createTowns(burgIds, cultures, pick(cells, "p", "i", "f", "s", "culture"));
+  const towns = createTowns(capitalCells, cultures, pick(cells, "p", "i", "f", "s", "culture"));
 
   const stateIds = expandStates(
-    capitals,
+    capitalCells,
     states,
     features,
     pick(cells, "c", "h", "f", "t", "r", "fl", "s", "biome", "culture")
@@ -56,6 +57,8 @@ export function generateBurgsAndStates(
     rivers,
     pick(cells, "v", "p", "g", "h", "f", "haven", "harbor", "s", "biome", "fl", "r")
   );
+
+  const burgIds = assignBurgIds(burgs);
 
   return {burgIds, stateIds, burgs, states};
 
@@ -84,5 +87,16 @@ export function generateBurgsAndStates(
     }
 
     return requestedStatesNumber;
+  }
+
+  function assignBurgIds(burgs: TBurgs) {
+    const burgIds = new Uint16Array(cellsNumber);
+
+    for (let i = 1; i < burgs.length; i++) {
+      const {cell} = burgs[i] as IBurg;
+      burgIds[cell] = i;
+    }
+
+    return burgIds;
   }
 }

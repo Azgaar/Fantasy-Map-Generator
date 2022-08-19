@@ -7,7 +7,6 @@ const {Names} = window;
 export function createCapitals(
   statesNumber: number,
   scoredCellIds: UintArray,
-  burgIds: Uint16Array,
   cultures: TCultures,
   cells: Pick<IPack["cells"], "p" | "f" | "culture">
 ) {
@@ -15,19 +14,14 @@ export function createCapitals(
 
   const capitalCells = placeCapitals(statesNumber, scoredCellIds, cells.p);
 
-  const capitals = capitalCells.map((cellId, index) => {
-    const id = index + 1;
+  const capitals = capitalCells.map(cellId => {
     const cultureId = cells.culture[cellId];
     const nameBase = cultures[cultureId].base;
     const name: string = Names.getBaseShort(nameBase);
     const featureId = cells.f[cellId];
 
-    return {i: id, cell: cellId, culture: cultureId, name, feature: featureId, capital: 1 as Logical};
+    return {cell: cellId, culture: cultureId, name, feature: featureId, capital: 1 as Logical};
   });
-
-  for (const {cell, i} of capitals) {
-    burgIds[cell] = i;
-  }
 
   TIME && console.timeEnd("createCapitals");
   return capitals;

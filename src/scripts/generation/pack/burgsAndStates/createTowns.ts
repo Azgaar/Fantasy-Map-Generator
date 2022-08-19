@@ -8,7 +8,7 @@ import {gauss} from "utils/probabilityUtils";
 const {Names} = window;
 
 export function createTowns(
-  burgIds: Uint16Array,
+  capitalCells: Map<number, boolean>,
   cultures: TCultures,
   cells: Pick<IPack["cells"], "p" | "i" | "f" | "s" | "culture">
 ) {
@@ -19,7 +19,7 @@ export function createTowns(
   const scores = new Int16Array(cells.s.map(randomizeScore));
 
   // take populated cells without capitals
-  const scoredCellIds = cells.i.filter(i => scores[i] > 0 && cells.culture[i] && !burgIds[i]);
+  const scoredCellIds = cells.i.filter(i => scores[i] > 0 && cells.culture[i] && !capitalCells.has(i));
   scoredCellIds.sort((a, b) => scores[b] - scores[a]); // sort by randomized suitability score
 
   const townsNumber = getTownsNumber();
@@ -27,19 +27,14 @@ export function createTowns(
 
   const townCells = placeTowns(townsNumber, scoredCellIds, cells.p);
 
-  const towns = townCells.map((cellId, index) => {
-    const id = index + 1;
+  const towns = townCells.map(cellId => {
     const cultureId = cells.culture[cellId];
     const namesbase = cultures[cultureId].base;
     const name: string = Names.getBase(namesbase);
     const featureId = cells.f[cellId];
 
-    return {i: id, cell: cellId, culture: cultureId, name, feature: featureId, capital: 0 as Logical};
+    return {cell: cellId, culture: cultureId, name, feature: featureId, capital: 0 as Logical};
   });
-
-  for (const {cell, i} of towns) {
-    burgIds[cell] = i;
-  }
 
   TIME && console.timeEnd("createTowns");
   return towns;

@@ -1,13 +1,9 @@
-import {ERROR} from "../config/logging";
 import {rn} from "./numberUtils";
 
 // round numbers in string to d decimals
-export function round(str: string, d = 1) {
-  if (!str) {
-    ERROR && console.error("Path is empty", str);
-    return "";
-  }
-  return str.replace(/[\d\.-][\d\.e-]*/g, n => String(rn(+n, d)));
+export function round(str: string, decimals = 1) {
+  if (!str) throw new Error("Path is empty");
+  return str.replace(/[\d\.-][\d\.e-]*/g, n => String(rn(+n, decimals)));
 }
 
 // return string with 1st char capitalized

@@ -17,7 +17,7 @@ export function createStates(capitals: TCapitals, cultures: TCultures) {
   const powerInput = getInputNumber("powerInput");
 
   const states = capitals.map((capital, index) => {
-    const {cell: cellId, culture: cultureId, name: capitalName, i: capitalId} = capital;
+    const {cell: cellId, culture: cultureId, name: capitalName} = capital;
     const id = index + 1;
     const name = getStateName(cellId, capitalName, cultureId, cultures);
     const color = colors[index];
@@ -28,7 +28,7 @@ export function createStates(capitals: TCapitals, cultures: TCultures) {
     const shield = COA.getShield(cultureShield, null);
     const coa: ICoa = {...COA.generate(null, null, null, type), shield};
 
-    return {i: id, name, type, center: cellId, color, expansionism, capital: capitalId, culture: cultureId, coa};
+    return {i: id, name, type, center: cellId, color, expansionism, capital: id, culture: cultureId, coa};
   });
 
   TIME && console.timeEnd("createStates");

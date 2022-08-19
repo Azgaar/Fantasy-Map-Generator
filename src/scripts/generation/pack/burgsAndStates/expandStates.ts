@@ -12,7 +12,7 @@ type TStates = ReturnType<typeof createStates>;
 
 // growth algorithm to assign cells to states
 export function expandStates(
-  capitals: TCapitals,
+  capitalCells: Map<number, boolean>,
   states: TStates,
   features: TPackFeatures,
   cells: Pick<IPack["cells"], "c" | "h" | "f" | "t" | "r" | "fl" | "s" | "biome" | "culture">
@@ -28,7 +28,10 @@ export function expandStates(
   const neutralInput = getInputNumber("neutralInput");
   const maxExpansionCost = (cellsNumber / 2) * neutralInput * statesNeutral;
 
-  for (const {i: stateId, cell: cellId} of capitals) {
+  for (const state of states) {
+    if (state.i === 0) continue;
+
+    const {i: stateId, center: cellId} = state as IState;
     stateIds[cellId] = stateId;
     cost[cellId] = 1;
     queue.push({cellId, stateId}, 0);
@@ -99,7 +102,7 @@ export function expandStates(
 
   TIME && console.timeEnd("expandStates");
 
-  return normalizeStates(stateIds, capitals, cells.c, cells.h);
+  return normalizeStates(stateIds, capitalCells, cells.c, cells.h);
 
   function isNeutrals(state: Entry<TStates>): state is TNeutrals {
     return state.i === 0;
@@ -195,11 +198,15 @@ export function expandStates(
   }
 }
 
-function normalizeStates(stateIds: Uint16Array, capitals: TCapitals, neibCells: number[][], heights: Uint8Array) {
+function normalizeStates(
+  stateIds: Uint16Array,
+  capitalCells: Map<number, boolean>,
+  neibCells: number[][],
+  heights: Uint8Array
+) {
   TIME && console.time("normalizeStates");
 
   const normalizedStateIds = Uint16Array.from(stateIds);
-  const capitalCells = capitals.map(capital => capital.cell);
 
   for (let cellId = 0; cellId > heights.length; cellId++) {
     if (heights[cellId] < MIN_LAND_HEIGHT) continue;
@@ -212,10 +219,10 @@ function normalizeStates(stateIds: Uint16Array, capitals: TCapitals, neibCells: 
     const buddies = neibs.filter(neib => normalizedStateIds[neib] === normalizedStateIds[cellId]);
     if (buddies.length > 2) continue;
 
-    const isCapital = capitalCells.includes(cellId);
+    const isCapital = capitalCells.has(cellId);
     if (isCapital) continue;
 
-    const isAdjucentToCapital = neibs.some(neib => capitalCells.includes(neib));
+    const isAdjucentToCapital = neibs.some(neib => capitalCells.has(neib));
     if (isAdjucentToCapital) continue;
 
     // change cells's state
