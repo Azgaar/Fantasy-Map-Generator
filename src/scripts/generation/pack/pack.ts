@@ -117,7 +117,14 @@ export function createPack(grid: IGrid): IPack {
     }
   );
 
-  const {cellRoutes, routes} = generateRoutes(burgs, {c: cells.c, h: heights, biome, state: stateIds, burg: burgIds});
+  const {cellRoutes, routes} = generateRoutes(burgs, {
+    c: cells.c,
+    p: cells.p,
+    h: heights,
+    biome,
+    state: stateIds,
+    burg: burgIds
+  });
 
   // Religions.generate();
   // BurgsAndStates.defineStateForms();

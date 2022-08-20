@@ -2,11 +2,14 @@ import Delaunator from "delaunator";
 import FlatQueue from "flatqueue";
 
 import {TIME} from "config/logging";
-import {ROUTES} from "config/generation";
+import {ELEVATION, MIN_LAND_HEIGHT, ROUTES} from "config/generation";
 import {dist2} from "utils/functionUtils";
 import {drawLine} from "utils/debugUtils";
 
-export function generateRoutes(burgs: TBurgs, cells: Pick<IPack["cells"], "c" | "h" | "biome" | "state" | "burg">) {
+export function generateRoutes(
+  burgs: TBurgs,
+  cells: Pick<IPack["cells"], "c" | "p" | "h" | "biome" | "state" | "burg">
+) {
   const cellRoutes = new Uint8Array(cells.h.length);
   const validBurgs = burgs.filter(burg => burg.i && !(burg as IBurg).removed) as IBurg[];
   const mainRoads = generateMainRoads();
@@ -108,15 +111,20 @@ export function generateRoutes(burgs: TBurgs, cells: Pick<IPack["cells"], "c" | 
         const next = queue.pop()!;
 
         for (const neibCellId of cells.c[next]) {
-          if (cells.h[neibCellId] < 20) continue; // ignore water cells
-          const stateChangeCost = cells.state && cells.state[neibCellId] !== cells.state[next] ? 400 : 0; // prefer to lay within the same state
+          if (cells.h[neibCellId] < MIN_LAND_HEIGHT) continue; // ignore water cells
+
           const habitability = biomesData.habitability[cells.biome[neibCellId]];
-          if (!habitability) continue; // avoid inhabitable cells (eg. lava, glacier)
-          const habitedCost = habitability ? Math.max(100 - habitability, 0) : 400; // routes tend to lay within populated areas
-          const heightChangeCost = Math.abs(cells.h[neibCellId] - cells.h[next]) * 10; // routes tend to avoid elevation changes
-          const heightCost = cells.h[neibCellId] > 80 ? cells.h[neibCellId] : 0; // routes tend to avoid mountainous areas
-          const cellCoast = 10 + stateChangeCost + habitedCost + heightChangeCost + heightCost;
-          const totalCost = priority + (cellRoutes[neibCellId] || cells.burg[neibCellId] ? cellCoast / 3 : cellCoast);
+          if (!habitability) continue; // inhabitable cells are not passable (eg. lava, glacier)
+
+          const distanceCost = dist2(cells.p[next], cells.p[neibCellId]);
+
+          const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
+          const heightModifier = 1 + Math.max(cells.h[neibCellId] - ELEVATION.HILLS, 0) / 500; // [1, 1.1];
+          const roadModifier = cellRoutes[neibCellId] ? 0.5 : 1;
+          const burgModifier = cells.burg[neibCellId] ? 0.5 : 1;
+
+          const cellsCost = distanceCost * habitabilityModifier * heightModifier * roadModifier * burgModifier;
+          const totalCost = priority + cellsCost;
 
           if (from[neibCellId] || totalCost >= cost[neibCellId]) continue;
           from[neibCellId] = next;
@@ -168,12 +176,6 @@ function getRouteSegments(pathCells: number[], cellRoutes: Uint8Array) {
   const hasRoute = (cellId: number) => cellRoutes[cellId] !== 0;
   const noRoute = (cellId: number) => cellRoutes[cellId] === 0;
 
-  const segments: number[][] = [];
-  let segment: number[] = [];
-
-  // UC: complitely new route
-  if (pathCells.every(noRoute)) return [pathCells];
-
   // UC: only first and/or last cell have route
   if (pathCells.slice(1, -1).every(noRoute)) return [pathCells];
 
@@ -181,6 +183,9 @@ function getRouteSegments(pathCells: number[], cellRoutes: Uint8Array) {
   if (pathCells.every(hasRoute)) return [];
 
   // UC: discontinuous route
+  const segments: number[][] = [];
+  let segment: number[] = [];
+
   for (let i = 0; i < pathCells.length; i++) {
     const cellId = pathCells[i];
     const nextCellId = pathCells[i + 1];
@@ -190,6 +195,11 @@ function getRouteSegments(pathCells: number[], cellRoutes: Uint8Array) {
 
     const noConnection = !hasRoute || !nextHasRoute;
     if (noConnection) segment.push(cellId);
+
+    if (nextHasRoute) {
+      if (segment.length) segments.push(segment);
+      segment = [];
+    }
   }
 
   return segments;
