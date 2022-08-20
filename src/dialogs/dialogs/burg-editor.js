@@ -18,7 +18,7 @@ let isLoaded = false;
 export function open({id} = {}) {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleIcons")) toggleLayer("toggleIcons");
+  if (!layerIsOn("toggleBurgs")) toggleLayer("toggleBurgs");
   if (!layerIsOn("toggleLabels")) toggleLayer("toggleLabels");
 
   const burg = id || d3.event.target.dataset.id;

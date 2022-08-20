@@ -22,7 +22,7 @@ let isLoaded = false;
 export function open() {
   if (customization) return;
   closeDialogs("#burgsOverview, .stable");
-  if (!layerIsOn("toggleIcons")) toggleLayer("toggleIcons");
+  if (!layerIsOn("toggleBurgs")) toggleLayer("toggleBurgs");
   if (!layerIsOn("toggleLabels")) toggleLayer("toggleLabels");
 
   const body = document.getElementById("burgsBody");

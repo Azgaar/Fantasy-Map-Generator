@@ -16,7 +16,7 @@ let presets: Dict<string[]> = {};
 const defaultPresets = {
   political: [
     "toggleBorders",
-    "toggleIcons",
+    "toggleBurgs",
     "toggleIce",
     "toggleLabels",
     "toggleRivers",
@@ -27,7 +27,7 @@ const defaultPresets = {
   cultural: [
     "toggleBorders",
     "toggleCultures",
-    "toggleIcons",
+    "toggleBurgs",
     "toggleLabels",
     "toggleRivers",
     "toggleRoutes",
@@ -35,14 +35,14 @@ const defaultPresets = {
   ],
   religions: [
     "toggleBorders",
-    "toggleIcons",
+    "toggleBurgs",
     "toggleLabels",
     "toggleReligions",
     "toggleRivers",
     "toggleRoutes",
     "toggleScaleBar"
   ],
-  provinces: ["toggleBorders", "toggleIcons", "toggleProvinces", "toggleRivers", "toggleScaleBar"],
+  provinces: ["toggleBorders", "toggleBurgs", "toggleProvinces", "toggleRivers", "toggleScaleBar"],
   biomes: ["toggleBiomes", "toggleIce", "toggleRivers", "toggleScaleBar"],
   heightmap: ["toggleHeight", "toggleRivers"],
   physical: ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleRivers", "toggleScaleBar"],
@@ -50,7 +50,7 @@ const defaultPresets = {
     "toggleBorders",
     "toggleHeight",
     "toggleIce",
-    "toggleIcons",
+    "toggleBurgs",
     "toggleMarkers",
     "toggleRivers",
     "toggleRoutes",
@@ -58,7 +58,7 @@ const defaultPresets = {
   ],
   military: [
     "toggleBorders",
-    "toggleIcons",
+    "toggleBurgs",
     "toggleLabels",
     "toggleMilitary",
     "toggleRivers",
@@ -68,7 +68,7 @@ const defaultPresets = {
   ],
   emblems: [
     "toggleBorders",
-    "toggleIcons",
+    "toggleBurgs",
     "toggleIce",
     "toggleEmblems",
     "toggleRivers",
@@ -117,7 +117,7 @@ const layerButtonToElementMap: Dict<string> = {
   toggleGrid: "gridOverlay",
   toggleHeight: "terrs",
   toggleIce: "ice",
-  toggleIcons: "icons",
+  toggleBurgs: "icons",
   toggleLabels: "labels",
   toggleMarkers: "markers",
   toggleMilitary: "armies",

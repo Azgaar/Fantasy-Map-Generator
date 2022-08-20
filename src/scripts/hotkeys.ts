@@ -105,7 +105,7 @@ function handleKeyup(event: KeyboardEvent) {
   else if (code === "KeyA") toggleLayer("togglePrec");
   else if (code === "KeyY") toggleLayer("toggleEmblems");
   else if (code === "KeyL") toggleLayer("toggleLabels");
-  else if (code === "KeyI") toggleLayer("toggleIcons");
+  else if (code === "KeyI") toggleLayer("toggleBurgs");
   else if (code === "KeyM") toggleLayer("toggleMilitary");
   else if (code === "KeyK") toggleLayer("toggleMarkers");
   else if (code === "Equal") toggleLayer("toggleRulers");

@@ -34,7 +34,7 @@ export function generateRoutes(burgs: TBurgs, cells: Pick<IPack["cells"], "c" | 
       const points: TPoints = featureCapitals.map(burg => [burg.x, burg.y]);
       const urquhartEdges = calculateUrquhartEdges(points);
       urquhartEdges.forEach(([fromId, toId]) => {
-        drawLine(points[fromId], points[toId], {stroke: "red", strokeWidth: 0.05});
+        drawLine(points[fromId], points[toId], {stroke: "red", strokeWidth: 0.03});
 
         const start = featureCapitals[fromId].cell;
         const exit = featureCapitals[toId].cell;
@@ -69,7 +69,7 @@ export function generateRoutes(burgs: TBurgs, cells: Pick<IPack["cells"], "c" | 
       const points: TPoints = featureBurgs.map(burg => [burg.x, burg.y]);
       const urquhartEdges = calculateUrquhartEdges(points);
       urquhartEdges.forEach(([fromId, toId]) => {
-        drawLine(points[fromId], points[toId], {strokeWidth: 0.05});
+        drawLine(points[fromId], points[toId], {strokeWidth: 0.03});
 
         const start = featureBurgs[fromId].cell;
         const exit = featureBurgs[toId].cell;
@@ -116,7 +116,7 @@ export function generateRoutes(burgs: TBurgs, cells: Pick<IPack["cells"], "c" | 
           const heightChangeCost = Math.abs(cells.h[neibCellId] - cells.h[next]) * 10; // routes tend to avoid elevation changes
           const heightCost = cells.h[neibCellId] > 80 ? cells.h[neibCellId] : 0; // routes tend to avoid mountainous areas
           const cellCoast = 10 + stateChangeCost + habitedCost + heightChangeCost + heightCost;
-          const totalCost = priority + (cellRoutes[neibCellId] || cells.burg[neibCellId] ? cellCoast / 2 : cellCoast);
+          const totalCost = priority + (cellRoutes[neibCellId] || cells.burg[neibCellId] ? cellCoast / 3 : cellCoast);
 
           if (from[neibCellId] || totalCost >= cost[neibCellId]) continue;
           from[neibCellId] = next;
@@ -174,11 +174,11 @@ function getRouteSegments(pathCells: number[], cellRoutes: Uint8Array) {
   // UC: complitely new route
   if (pathCells.every(noRoute)) return [pathCells];
 
-  // UC: all cells already have route
-  if (pathCells.every(hasRoute)) return [];
-
   // UC: only first and/or last cell have route
   if (pathCells.slice(1, -1).every(noRoute)) return [pathCells];
+
+  // UC: all cells already have route
+  if (pathCells.every(hasRoute)) return [];
 
   // UC: discontinuous route
   for (let i = 0; i < pathCells.length; i++) {

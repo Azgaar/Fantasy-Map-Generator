@@ -21,7 +21,7 @@ const layerTogglesMap = {
   toggleGrid,
   toggleHeight,
   toggleIce,
-  toggleIcons,
+  toggleBurgs,
   toggleLabels,
   toggleMarkers,
   toggleMilitary,
@@ -417,31 +417,26 @@ function toggleMarkers(event?: MouseEvent) {
 function toggleLabels(event?: MouseEvent) {
   if (!layerIsOn("toggleLabels")) {
     turnLayerButtonOn("toggleLabels");
-    labels.style("display", null);
-    window.Zoom.invoke();
+    renderLayer("labels");
     if (isCtrlPressed(event)) editStyle("labels");
   } else {
-    if (isCtrlPressed(event)) {
-      editStyle("labels");
-      return;
-    }
+    if (isCtrlPressed(event)) return editStyle("labels");
+    labels.selectAll("text").remove();
+    // TODO: remove text paths
     turnLayerButtonOff("toggleLabels");
-    labels.style("display", "none");
   }
 }
 
-function toggleIcons(event?: MouseEvent) {
-  if (!layerIsOn("toggleIcons")) {
-    turnLayerButtonOn("toggleIcons");
-    $("#icons").fadeIn();
+function toggleBurgs(event?: MouseEvent) {
+  if (!layerIsOn("toggleBurgs")) {
+    turnLayerButtonOn("toggleBurgs");
+    renderLayer("burgs");
     if (isCtrlPressed(event)) editStyle("burgIcons");
   } else {
-    if (isCtrlPressed(event)) {
-      editStyle("burgIcons");
-      return;
-    }
-    turnLayerButtonOff("toggleIcons");
-    $("#icons").fadeOut();
+    if (isCtrlPressed(event)) return editStyle("burgIcons");
+    burgIcons.selectAll("circle").remove();
+    icons.selectAll("use").remove();
+    turnLayerButtonOff("toggleBurgs");
   }
 }
 

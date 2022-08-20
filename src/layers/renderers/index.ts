@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {TIME} from "config/logging";
 import {drawBiomes} from "./drawBiomes";
 import {drawBorders} from "./drawBorders";
@@ -11,6 +10,7 @@ import {drawFeatures} from "./drawFeatures";
 import {drawGrid} from "./drawGrid";
 import {drawHeightmap} from "./drawHeightmap";
 import {drawIce} from "./drawIce";
+import {drawLabels} from "./drawLabels";
 import {drawMarkers} from "./drawMarkers";
 import {drawPopulation} from "./drawPopulation";
 import {drawPrecipitation} from "./drawPrecipitation";
@@ -34,6 +34,7 @@ const layerRenderersMap = {
   grid: drawGrid,
   heightmap: drawHeightmap,
   ice: drawIce,
+  labels: drawLabels,
   markers: drawMarkers,
   population: drawPopulation,
   precipitation: drawPrecipitation,
@@ -45,7 +46,7 @@ const layerRenderersMap = {
   temperature: drawTemperature
 };
 
-export function renderLayer(layerName: keyof typeof layerRenderersMap, ...args) {
+export function renderLayer(layerName: keyof typeof layerRenderersMap, ...args: any[]) {
   const renderer = layerRenderersMap[layerName];
   TIME && console.time(renderer.name);
   renderer(...args);

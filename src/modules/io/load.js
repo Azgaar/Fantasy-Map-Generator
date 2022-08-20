@@ -473,7 +473,7 @@ async function parseLoadedData(data) {
       if (hasChild(prec, "circle")) turnOn("togglePrec");
       if (notHidden(emblems) && hasChild(emblems, "use")) turnOn("toggleEmblems");
       if (notHidden(labels)) turnOn("toggleLabels");
-      if (notHidden(icons)) turnOn("toggleIcons");
+      if (notHidden(icons)) turnOn("toggleBurgs");
       if (hasChildren(armies) && notHidden(armies)) turnOn("toggleMilitary");
       if (hasChildren(markers)) turnOn("toggleMarkers");
       if (notHidden(ruler)) turnOn("toggleRulers");
