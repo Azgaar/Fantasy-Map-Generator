@@ -44,3 +44,14 @@ export function drawArrow([x1, y1]: TPoint, [x2, y2]: TPoint, {width = 1, color 
     .attr("stroke", color)
     .attr("stroke-width", width / 2);
 }
+
+export function drawText(text: string | number, [x, y]: TPoint, {size = 6, color = "black"} = {}) {
+  debug
+    .append("text")
+    .attr("x", x)
+    .attr("y", y)
+    .attr("font-size", size)
+    .attr("fill", color)
+    .attr("stroke", "none")
+    .text(text);
+}

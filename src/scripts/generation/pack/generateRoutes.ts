@@ -4,7 +4,6 @@ import FlatQueue from "flatqueue";
 import {TIME} from "config/logging";
 import {ELEVATION, MIN_LAND_HEIGHT, ROUTES} from "config/generation";
 import {dist2} from "utils/functionUtils";
-import {drawLine} from "utils/debugUtils";
 
 export function generateRoutes(
   burgs: TBurgs,
@@ -37,8 +36,6 @@ export function generateRoutes(
       const points: TPoints = featureCapitals.map(burg => [burg.x, burg.y]);
       const urquhartEdges = calculateUrquhartEdges(points);
       urquhartEdges.forEach(([fromId, toId]) => {
-        drawLine(points[fromId], points[toId], {stroke: "red", strokeWidth: 0.01});
-
         const start = featureCapitals[fromId].cell;
         const exit = featureCapitals[toId].cell;
 
@@ -70,8 +67,6 @@ export function generateRoutes(
       const points: TPoints = featureBurgs.map(burg => [burg.x, burg.y]);
       const urquhartEdges = calculateUrquhartEdges(points);
       urquhartEdges.forEach(([fromId, toId]) => {
-        drawLine(points[fromId], points[toId], {strokeWidth: 0.01});
-
         const start = featureBurgs[fromId].cell;
         const exit = featureBurgs[toId].cell;
 

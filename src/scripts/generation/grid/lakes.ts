@@ -1,4 +1,4 @@
-import {TIME} from "config/logging";
+import {INFO, TIME} from "config/logging";
 import {getInputNumber} from "utils/nodeUtils";
 import {MAX_HEIGHT, MIN_LAND_HEIGHT} from "config/generation";
 
@@ -46,7 +46,7 @@ export function addLakesInDeepDepressions(heights: Uint8Array, neighbours: numbe
 
     if (inDeepDepression) {
       currentHeights[cellId] = MIN_LAND_HEIGHT - 1;
-      console.log(`ⓘ Added lake at deep depression. Cell: ${cellId}`);
+      INFO && console.info(`ⓘ Added lake at deep depression. Cell: ${cellId}`);
     }
   }
 

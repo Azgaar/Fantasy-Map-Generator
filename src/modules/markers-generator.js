@@ -1,8 +1,7 @@
 import * as d3 from "d3";
 
-import {TIME} from "config/logging";
+import {TIME, DEBUG} from "config/logging";
 import {last} from "utils/arrayUtils";
-import {rn} from "utils/numberUtils";
 import {rand, P, gauss, ra, rw} from "utils/probabilityUtils";
 import {capitalize} from "utils/stringUtils";
 import {convertTemperature, getFriendlyHeight, getBurgPopulation} from "utils/unitUtils";
@@ -112,8 +111,9 @@ window.Markers = (function () {
 
       let candidates = Array.from(list(pack));
       let quantity = getQuantity(candidates, min, each, multiplier);
-      // uncomment for debugging:
-      // console.log(`${icon} ${type}: each ${each} of ${candidates.length}, min ${min} candidates. Got ${quantity}`);
+
+      DEBUG &&
+        console.info(`${icon} ${type}: each ${each} of ${candidates.length}, min ${min} candidates. Got ${quantity}`);
 
       while (quantity && candidates.length) {
         const [cell] = extractAnyElement(candidates);
