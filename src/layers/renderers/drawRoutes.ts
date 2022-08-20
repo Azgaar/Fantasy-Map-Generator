@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import {drawPoint} from "utils/debugUtils";
 
 import {round} from "utils/stringUtils";
 
@@ -22,11 +23,21 @@ export function drawRoutes() {
       return cells.p[cellId];
     });
 
+  const normalizePoints = (points: TPoints): TPoints =>
+    points.map(([x, y], index) => {
+      return [x, y];
+
+      if (i === 17) {
+        cells.forEach(cellId => drawPoint(pack.cells.p[cellId]));
+      }
+    });
+
   const routePaths: Dict<string[]> = {};
 
   for (const {i, type, cells} of pack.routes) {
     const points = getPathPoints(cells);
-    const path = round(lineGen(points)!, 1);
+    const normalizedPoints = normalizePoints(points);
+    const path = round(lineGen(normalizedPoints)!, 1);
 
     if (!routePaths[type]) routePaths[type] = [];
     routePaths[type].push(`<path id="${type}${i}" d="${path}"/>`);

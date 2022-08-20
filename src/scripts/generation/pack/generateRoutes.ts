@@ -12,13 +12,13 @@ export function generateRoutes(
 ) {
   const cellRoutes = new Uint8Array(cells.h.length);
   const validBurgs = burgs.filter(burg => burg.i && !(burg as IBurg).removed) as IBurg[];
+  const connections: Map<string, boolean> = new Map();
+
   const mainRoads = generateMainRoads();
   const trails = generateTrails();
   // const oceanRoutes = getSearoutes();
 
   const routes = combineRoutes();
-
-  console.log(routes);
   return {cellRoutes, routes};
 
   function generateMainRoads() {
@@ -37,16 +37,14 @@ export function generateRoutes(
       const points: TPoints = featureCapitals.map(burg => [burg.x, burg.y]);
       const urquhartEdges = calculateUrquhartEdges(points);
       urquhartEdges.forEach(([fromId, toId]) => {
-        drawLine(points[fromId], points[toId], {stroke: "red", strokeWidth: 0.03});
+        drawLine(points[fromId], points[toId], {stroke: "red", strokeWidth: 0.01});
 
         const start = featureCapitals[fromId].cell;
         const exit = featureCapitals[toId].cell;
 
-        const segments = findLandPathSegments(cellRoutes, start, exit);
+        const segments = findLandPathSegments(cellRoutes, connections, start, exit);
         for (const segment of segments) {
-          segment.forEach(cellId => {
-            cellRoutes[cellId] = ROUTES.MAIN_ROAD;
-          });
+          addConnections(segment, ROUTES.MAIN_ROAD);
           mainRoads.push({feature: Number(key), cells: segment});
         }
       });
@@ -72,16 +70,14 @@ export function generateRoutes(
       const points: TPoints = featureBurgs.map(burg => [burg.x, burg.y]);
       const urquhartEdges = calculateUrquhartEdges(points);
       urquhartEdges.forEach(([fromId, toId]) => {
-        drawLine(points[fromId], points[toId], {strokeWidth: 0.03});
+        drawLine(points[fromId], points[toId], {strokeWidth: 0.01});
 
         const start = featureBurgs[fromId].cell;
         const exit = featureBurgs[toId].cell;
 
-        const segments = findLandPathSegments(cellRoutes, start, exit);
+        const segments = findLandPathSegments(cellRoutes, connections, start, exit);
         for (const segment of segments) {
-          segment.forEach(cellId => {
-            cellRoutes[cellId] = ROUTES.TRAIL;
-          });
+          addConnections(segment, ROUTES.TRAIL);
           trails.push({feature: Number(key), cells: segment});
         }
       });
@@ -91,13 +87,27 @@ export function generateRoutes(
     return trails;
   }
 
+  function addConnections(segment: number[], roadTypeId: number) {
+    for (let i = 0; i < segment.length; i++) {
+      const cellId = segment[i];
+      const nextCellId = segment[i + 1];
+      if (nextCellId) connections.set(`${cellId}-${nextCellId}`, true);
+      cellRoutes[cellId] = roadTypeId;
+    }
+  }
+
   // find land route segments from cell to cell
-  function findLandPathSegments(cellRoutes: Uint8Array, start: number, exit: number): number[][] {
+  function findLandPathSegments(
+    cellRoutes: Uint8Array,
+    connections: Map<string, boolean>,
+    start: number,
+    exit: number
+  ): number[][] {
     const from = findPath();
     if (!from) return [];
 
     const pathCells = restorePath(start, exit, from);
-    const segments = getRouteSegments(pathCells, cellRoutes);
+    const segments = getRouteSegments(pathCells, connections);
     return segments;
 
     function findPath() {
@@ -172,35 +182,31 @@ function restorePath(start: number, end: number, from: number[]) {
   return cells;
 }
 
-function getRouteSegments(pathCells: number[], cellRoutes: Uint8Array) {
-  const hasRoute = (cellId: number) => cellRoutes[cellId] !== 0;
-  const noRoute = (cellId: number) => cellRoutes[cellId] === 0;
-
-  // UC: only first and/or last cell have route
-  if (pathCells.slice(1, -1).every(noRoute)) return [pathCells];
-
-  // UC: all cells already have route
-  if (pathCells.every(hasRoute)) return [];
-
-  // UC: discontinuous route
+function getRouteSegments(pathCells: number[], connections: Map<string, boolean>) {
   const segments: number[][] = [];
   let segment: number[] = [];
+
+  // if (pathCells.includes(5204)) debugger;
 
   for (let i = 0; i < pathCells.length; i++) {
     const cellId = pathCells[i];
     const nextCellId = pathCells[i + 1];
+    const isConnected = connections.has(`${cellId}-${nextCellId}`) || connections.has(`${nextCellId}-${cellId}`);
 
-    const hasRoute = cellRoutes[cellId] !== 0;
-    const nextHasRoute = cellRoutes[nextCellId] !== 0;
-
-    const noConnection = !hasRoute || !nextHasRoute;
-    if (noConnection) segment.push(cellId);
-
-    if (nextHasRoute) {
-      if (segment.length) segments.push(segment);
-      segment = [];
+    if (isConnected) {
+      if (segment.length) {
+        // segment stepped into existing segment
+        segment.push(pathCells[i]);
+        segments.push(segment);
+        segment = [];
+      }
+      continue;
     }
+
+    segment.push(pathCells[i]);
   }
+
+  if (segment.length) segments.push(segment);
 
   return segments;
 }
