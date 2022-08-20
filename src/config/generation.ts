@@ -61,6 +61,6 @@ export const FOREST_BIOMES = [
 
 export const ROUTES = {
   MAIN_ROAD: 1,
-  SMALL_ROAD: 2,
+  TRAIL: 2,
   SEA_ROUTE: 3
 };

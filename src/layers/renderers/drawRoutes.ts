@@ -6,7 +6,7 @@ export function drawRoutes() {
   routes.selectAll("path").remove();
 
   const {cells, burgs} = pack;
-  const lineGen = d3.line().curve(d3.curveBasis);
+  const lineGen = d3.line().curve(d3.curveCatmullRom.alpha(0.1));
 
   const getBurgCoords = (burgId: number): TPoint => {
     if (!burgId) throw new Error("burgId must be positive");
@@ -24,8 +24,8 @@ export function drawRoutes() {
 
   const routePaths: Dict<string[]> = {};
 
-  for (const {i, type, cells: routeCells} of pack.routes) {
-    const points = getPathPoints(routeCells);
+  for (const {i, type, cells} of pack.routes) {
+    const points = getPathPoints(cells);
     const path = round(lineGen(points)!, 1);
 
     if (!routePaths[type]) routePaths[type] = [];

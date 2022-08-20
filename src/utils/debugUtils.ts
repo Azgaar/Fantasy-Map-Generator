@@ -17,6 +17,17 @@ export function drawPolygon(
     .attr("stroke-width", strokeWidth);
 }
 
+export function drawLine([x1, y1]: TPoint, [x2, y2]: TPoint, {stroke = "#444", strokeWidth = 0.2} = {}) {
+  debug
+    .append("line")
+    .attr("x1", x1)
+    .attr("y1", y1)
+    .attr("x2", x2)
+    .attr("y2", y2)
+    .attr("stroke", stroke)
+    .attr("stroke-width", strokeWidth);
+}
+
 export function drawArrow([x1, y1]: TPoint, [x2, y2]: TPoint, {width = 1, color = "#444"} = {}): void {
   const angle = Math.atan2(y2 - y1, x2 - x1);
   const normal = angle + Math.PI / 2;

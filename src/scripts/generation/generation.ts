@@ -64,8 +64,8 @@ async function generate(options?: IGenerationOptions) {
     // temp rendering for debug
     // renderLayer("cells");
     renderLayer("features");
-    renderLayer("heightmap");
-    renderLayer("rivers");
+    // renderLayer("heightmap");
+    // renderLayer("rivers");
     // renderLayer("biomes");
     renderLayer("burgs");
     renderLayer("routes");
