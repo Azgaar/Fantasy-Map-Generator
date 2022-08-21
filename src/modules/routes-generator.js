@@ -271,7 +271,7 @@ window.Routes = (function () {
         }
 
         if (cells.h[neibCellId] >= 20) continue; // ignore land cells
-        if (temp[cells.g[neibCellId]] <= -5) continue; // ignore cells with term <= -5
+        if (temp[cells.g[neibCellId]] <= -5) continue; // ignore cells with temp <= -5
 
         const dist2 =
           (cells.p[neibCellId][1] - cells.p[next][1]) ** 2 + (cells.p[neibCellId][0] - cells.p[next][0]) ** 2;

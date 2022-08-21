@@ -375,7 +375,7 @@ const resolveDepressions = function (
     return [initialCellHeights, {}];
   }
 
-  INFO && console.info(`ⓘ Resolved all depressions. Depressions: ${depressions[0]}. Iterations: ${depressions.length}`);
+  INFO && console.info(`ⓘ resolved all ${depressions[0]} depressions in ${depressions.length} iterations`);
   return [currentCellHeights, currentDrainableLakes];
 
   // define lakes that potentially can be open (drained into another water body)

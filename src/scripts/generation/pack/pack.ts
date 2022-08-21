@@ -117,10 +117,12 @@ export function createPack(grid: IGrid): IPack {
     }
   );
 
-  const {cellRoutes, routes} = generateRoutes(burgs, {
+  const {cellRoutes, routes} = generateRoutes(burgs, temp, {
     c: cells.c,
     p: cells.p,
+    g: cells.g,
     h: heights,
+    t: distanceField,
     biome,
     state: stateIds,
     burg: burgIds
@@ -189,14 +191,17 @@ function repackGrid(grid: IGrid) {
   for (const i of gridCells.i) {
     const height = gridCells.h[i];
     const type = gridCells.t[i];
-    if (height < MIN_LAND_HEIGHT && type !== WATER_COAST && type !== DEEPER_WATER) continue; // exclude all deep ocean points
+
+    // exclude ocean points far from coast
+    if (height < MIN_LAND_HEIGHT && type !== WATER_COAST && type !== DEEPER_WATER) continue;
 
     const feature = features[gridCells.f[i]];
     const isLake = feature && feature.type === "lake";
 
-    if (type === DEEPER_WATER && (i % 4 === 0 || isLake)) continue; // exclude non-coastal lake points
-    const [x, y] = points[i];
+    // exclude non-coastal lake points
+    if (type === DEEPER_WATER && (i % 4 === 0 || isLake)) continue;
 
+    const [x, y] = points[i];
     addNewPoint(i, x, y, height);
 
     // add additional points for cells along coast

@@ -147,9 +147,18 @@ export function markupPackFeatures(
   // markup pack land cells
   const dfLandMarked = markup({distanceField, neighbors: cells.c, start: LANDLOCKED + 1, increment: 1});
 
+  // markup deep ocean cells
+  const dfOceanMarked = markup({
+    distanceField: dfLandMarked,
+    neighbors: cells.c,
+    start: DEEPER_WATER,
+    increment: -1,
+    limit: -10
+  });
+
   TIME && console.timeEnd("markupPackFeatures");
 
-  return {features, featureIds, distanceField: dfLandMarked, haven, harbor};
+  return {features, featureIds, distanceField: dfOceanMarked, haven, harbor};
 }
 
 function addFeature({
@@ -291,7 +300,7 @@ function markup({
   increment: number;
   limit?: number;
 }) {
-  for (let distance = start, marked = Infinity; marked > 0 && distance > limit; distance += increment) {
+  for (let distance = start, marked = Infinity; marked > 0 && distance !== limit; distance += increment) {
     marked = 0;
     const prevDistance = distance - increment;
     for (let cellId = 0; cellId < neighbors.length; cellId++) {

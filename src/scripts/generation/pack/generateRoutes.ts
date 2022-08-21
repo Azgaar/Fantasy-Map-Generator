@@ -4,33 +4,50 @@ import FlatQueue from "flatqueue";
 import {TIME} from "config/logging";
 import {ELEVATION, MIN_LAND_HEIGHT, ROUTES} from "config/generation";
 import {dist2} from "utils/functionUtils";
+import {drawLine} from "utils/debugUtils";
 
-export function generateRoutes(
-  burgs: TBurgs,
-  cells: Pick<IPack["cells"], "c" | "p" | "h" | "biome" | "state" | "burg">
-) {
+type TCellsData = Pick<IPack["cells"], "c" | "p" | "g" | "h" | "t" | "haven" | "biome" | "state" | "burg">;
+
+export function generateRoutes(burgs: TBurgs, temp: Int8Array, cells: TCellsData) {
   const cellRoutes = new Uint8Array(cells.h.length);
-  const validBurgs = burgs.filter(burg => burg.i && !(burg as IBurg).removed) as IBurg[];
+
+  const {capitalsByFeature, burgsByFeature, portsByFeature} = sortBurgsByFeature(burgs);
   const connections: Map<string, boolean> = new Map();
 
   const mainRoads = generateMainRoads();
   const trails = generateTrails();
-  // const oceanRoutes = getSearoutes();
+  const seaRoutes = generateSeaRoutes();
 
   const routes = combineRoutes();
+  console.log(routes);
   return {cellRoutes, routes};
+
+  function sortBurgsByFeature(burgs: TBurgs) {
+    const burgsByFeature: Dict<IBurg[]> = {};
+    const capitalsByFeature: Dict<IBurg[]> = {};
+    const portsByFeature: Dict<IBurg[]> = {};
+
+    const isBurg = (burg: IBurg | TNoBurg): burg is IBurg => burg.i !== 0;
+    const addBurg = (object: Dict<IBurg[]>, feature: number, burg: IBurg) => {
+      if (!object[feature]) object[feature] = [];
+      object[feature].push(burg);
+    };
+
+    for (const burg of burgs) {
+      if (isBurg(burg)) {
+        const {feature, capital, port} = burg;
+        addBurg(burgsByFeature, feature, burg);
+        if (capital) addBurg(capitalsByFeature, feature, burg);
+        if (port) addBurg(portsByFeature, port, burg);
+      }
+    }
+
+    return {burgsByFeature, capitalsByFeature, portsByFeature};
+  }
 
   function generateMainRoads() {
     TIME && console.time("generateMainRoads");
     const mainRoads: {feature: number; cells: number[]}[] = [];
-
-    const capitalsByFeature = validBurgs.reduce((acc, burg) => {
-      const {capital, feature} = burg;
-      if (!capital) return acc;
-      if (!acc[feature]) acc[feature] = [];
-      acc[feature].push(burg);
-      return acc;
-    }, {} as {[feature: string]: IBurg[]});
 
     for (const [key, featureCapitals] of Object.entries(capitalsByFeature)) {
       const points: TPoints = featureCapitals.map(burg => [burg.x, burg.y]);
@@ -39,7 +56,7 @@ export function generateRoutes(
         const start = featureCapitals[fromId].cell;
         const exit = featureCapitals[toId].cell;
 
-        const segments = findLandPathSegments(cellRoutes, connections, start, exit);
+        const segments = findPathSegments({isWater: false, cellRoutes, connections, start, exit});
         for (const segment of segments) {
           addConnections(segment, ROUTES.MAIN_ROAD);
           mainRoads.push({feature: Number(key), cells: segment});
@@ -56,13 +73,6 @@ export function generateRoutes(
 
     const trails: {feature: number; cells: number[]}[] = [];
 
-    const burgsByFeature = validBurgs.reduce((acc, burg) => {
-      const {feature} = burg;
-      if (!acc[feature]) acc[feature] = [];
-      acc[feature].push(burg);
-      return acc;
-    }, {} as {[feature: string]: IBurg[]});
-
     for (const [key, featureBurgs] of Object.entries(burgsByFeature)) {
       const points: TPoints = featureBurgs.map(burg => [burg.x, burg.y]);
       const urquhartEdges = calculateUrquhartEdges(points);
@@ -70,7 +80,7 @@ export function generateRoutes(
         const start = featureBurgs[fromId].cell;
         const exit = featureBurgs[toId].cell;
 
-        const segments = findLandPathSegments(cellRoutes, connections, start, exit);
+        const segments = findPathSegments({isWater: false, cellRoutes, connections, start, exit});
         for (const segment of segments) {
           addConnections(segment, ROUTES.TRAIL);
           trails.push({feature: Number(key), cells: segment});
@@ -82,6 +92,30 @@ export function generateRoutes(
     return trails;
   }
 
+  function generateSeaRoutes() {
+    TIME && console.time("generateSearoutes");
+    const mainRoads: {feature: number; cells: number[]}[] = [];
+
+    for (const [key, featurePorts] of Object.entries(portsByFeature)) {
+      const points: TPoints = featurePorts.map(burg => [burg.x, burg.y]);
+      const urquhartEdges = calculateUrquhartEdges(points);
+      urquhartEdges.forEach(([fromId, toId]) => {
+        const start = featurePorts[fromId].cell;
+        const exit = featurePorts[toId].cell;
+        drawLine(cells.p[start], cells.p[exit]);
+
+        const segments = findPathSegments({isWater: true, cellRoutes, connections, start, exit});
+        for (const segment of segments) {
+          addConnections(segment, ROUTES.MAIN_ROAD);
+          mainRoads.push({feature: Number(key), cells: segment});
+        }
+      });
+    }
+
+    TIME && console.timeEnd("generateSearoutes");
+    return mainRoads;
+  }
+
   function addConnections(segment: number[], roadTypeId: number) {
     for (let i = 0; i < segment.length; i++) {
       const cellId = segment[i];
@@ -91,58 +125,25 @@ export function generateRoutes(
     }
   }
 
-  // find land route segments from cell to cell
-  function findLandPathSegments(
-    cellRoutes: Uint8Array,
-    connections: Map<string, boolean>,
-    start: number,
-    exit: number
-  ): number[][] {
-    const from = findPath();
+  function findPathSegments({
+    isWater,
+    cellRoutes,
+    connections,
+    start,
+    exit
+  }: {
+    isWater: boolean;
+    cellRoutes: Uint8Array;
+    connections: Map<string, boolean>;
+    start: number;
+    exit: number;
+  }): number[][] {
+    const from = findPath(isWater, cellRoutes, temp, cells, start, exit);
     if (!from) return [];
 
     const pathCells = restorePath(start, exit, from);
     const segments = getRouteSegments(pathCells, connections);
     return segments;
-
-    function findPath() {
-      const from: number[] = [];
-      const cost: number[] = [];
-      const queue = new FlatQueue<number>();
-      queue.push(start, 0);
-
-      while (queue.length) {
-        const priority = queue.peekValue()!;
-        const next = queue.pop()!;
-
-        for (const neibCellId of cells.c[next]) {
-          if (cells.h[neibCellId] < MIN_LAND_HEIGHT) continue; // ignore water cells
-
-          const habitability = biomesData.habitability[cells.biome[neibCellId]];
-          if (!habitability) continue; // inhabitable cells are not passable (eg. lava, glacier)
-
-          const distanceCost = dist2(cells.p[next], cells.p[neibCellId]);
-
-          const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
-          const heightModifier = 1 + Math.max(cells.h[neibCellId] - ELEVATION.HILLS, 0) / 500; // [1, 1.1];
-          const roadModifier = cellRoutes[neibCellId] ? 0.5 : 1;
-          const burgModifier = cells.burg[neibCellId] ? 0.5 : 1;
-
-          const cellsCost = distanceCost * habitabilityModifier * heightModifier * roadModifier * burgModifier;
-          const totalCost = priority + cellsCost;
-
-          if (from[neibCellId] || totalCost >= cost[neibCellId]) continue;
-          from[neibCellId] = next;
-
-          if (neibCellId === exit) return from;
-
-          cost[neibCellId] = totalCost;
-          queue.push(neibCellId, totalCost);
-        }
-      }
-
-      return null; // path is not found
-    }
   }
 
   function combineRoutes() {
@@ -156,7 +157,96 @@ export function generateRoutes(
       routes.push({i: routes.length, type: "trail", feature, cells});
     }
 
+    for (const {feature, cells} of seaRoutes) {
+      routes.push({i: routes.length, type: "sea", feature, cells});
+    }
+
     return routes;
+  }
+}
+
+function findPath(
+  isWater: boolean,
+  cellRoutes: Uint8Array,
+  temp: Int8Array,
+  cells: TCellsData,
+  start: number,
+  exit: number
+) {
+  const from: number[] = [];
+  const cost: number[] = [];
+  const queue = new FlatQueue<number>();
+  queue.push(start, 0);
+
+  return isWater ? findWaterPath() : findLandPath();
+
+  function findLandPath() {
+    while (queue.length) {
+      const priority = queue.peekValue()!;
+      const next = queue.pop()!;
+
+      for (const neibCellId of cells.c[next]) {
+        if (cells.h[neibCellId] < MIN_LAND_HEIGHT) continue; // ignore water cells
+
+        const habitability = biomesData.habitability[cells.biome[neibCellId]];
+        if (!habitability) continue; // inhabitable cells are not passable (eg. lava, glacier)
+
+        const distanceCost = dist2(cells.p[next], cells.p[neibCellId]);
+
+        const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
+        const heightModifier = 1 + Math.max(cells.h[neibCellId] - ELEVATION.HILLS, 0) / 500; // [1, 1.1];
+        const roadModifier = cellRoutes[neibCellId] ? 0.5 : 1;
+        const burgModifier = cells.burg[neibCellId] ? 0.5 : 1;
+
+        const cellsCost = distanceCost * habitabilityModifier * heightModifier * roadModifier * burgModifier;
+        const totalCost = priority + cellsCost;
+
+        if (from[neibCellId] || totalCost >= cost[neibCellId]) continue;
+        from[neibCellId] = next;
+
+        if (neibCellId === exit) return from;
+
+        cost[neibCellId] = totalCost;
+        queue.push(neibCellId, totalCost);
+      }
+    }
+
+    return null; // path is not found
+  }
+
+  function findWaterPath() {
+    const MIN_PASSABLE_TEMP = -4;
+
+    while (queue.length) {
+      const priority = queue.peekValue()!;
+      const next = queue.pop()!;
+
+      for (const neibCellId of cells.c[next]) {
+        if (neibCellId === exit) {
+          from[neibCellId] = next;
+          return from;
+        }
+
+        if (cells.h[neibCellId] >= MIN_LAND_HEIGHT) continue; // ignore land cells
+        if (temp[cells.g[neibCellId]] < MIN_PASSABLE_TEMP) continue; // ignore to cold cells
+
+        const distanceCost = dist2(cells.p[next], cells.p[neibCellId]);
+        const typeModifier = Math.abs(cells.t[neibCellId]); // 1 for coastline, 2 for deep ocean, 3 for deeper ocean
+
+        const routeModifier = cellRoutes[neibCellId] ? 0.5 : 1;
+
+        const cellsCost = distanceCost * typeModifier * routeModifier;
+        const totalCost = priority + cellsCost;
+
+        if (from[neibCellId] || totalCost >= cost[neibCellId]) continue;
+        from[neibCellId] = next;
+
+        cost[neibCellId] = totalCost;
+        queue.push(neibCellId, totalCost);
+      }
+    }
+
+    return null; // path is not found
   }
 }
 
@@ -180,8 +270,6 @@ function restorePath(start: number, end: number, from: number[]) {
 function getRouteSegments(pathCells: number[], connections: Map<string, boolean>) {
   const segments: number[][] = [];
   let segment: number[] = [];
-
-  // if (pathCells.includes(5204)) debugger;
 
   for (let i = 0; i < pathCells.length; i++) {
     const cellId = pathCells[i];
