@@ -4,7 +4,6 @@ import FlatQueue from "flatqueue";
 import {TIME} from "config/logging";
 import {ELEVATION, MIN_LAND_HEIGHT, ROUTES} from "config/generation";
 import {dist2} from "utils/functionUtils";
-import {drawLine} from "utils/debugUtils";
 
 type TCellsData = Pick<IPack["cells"], "c" | "p" | "g" | "h" | "t" | "haven" | "biome" | "state" | "burg">;
 
@@ -102,9 +101,9 @@ export function generateRoutes(burgs: TBurgs, temp: Int8Array, cells: TCellsData
       urquhartEdges.forEach(([fromId, toId]) => {
         const start = featurePorts[fromId].cell;
         const exit = featurePorts[toId].cell;
-        drawLine(cells.p[start], cells.p[exit]);
 
         const segments = findPathSegments({isWater: true, cellRoutes, connections, start, exit});
+
         for (const segment of segments) {
           addConnections(segment, ROUTES.MAIN_ROAD);
           mainRoads.push({feature: Number(key), cells: segment});
@@ -232,7 +231,6 @@ function findPath(
 
         const distanceCost = dist2(cells.p[next], cells.p[neibCellId]);
         const typeModifier = Math.abs(cells.t[neibCellId]); // 1 for coastline, 2 for deep ocean, 3 for deeper ocean
-
         const routeModifier = cellRoutes[neibCellId] ? 0.5 : 1;
 
         const cellsCost = distanceCost * typeModifier * routeModifier;
@@ -289,7 +287,7 @@ function getRouteSegments(pathCells: number[], connections: Map<string, boolean>
     segment.push(pathCells[i]);
   }
 
-  if (segment.length) segments.push(segment);
+  if (segment.length > 1) segments.push(segment);
 
   return segments;
 }
