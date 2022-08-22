@@ -375,14 +375,11 @@ function toggleRivers(event?: MouseEvent) {
 function toggleRoutes(event?: MouseEvent) {
   if (!layerIsOn("toggleRoutes")) {
     turnLayerButtonOn("toggleRoutes");
-    $("#routes").fadeIn();
+    renderLayer("routes");
     if (isCtrlPressed(event)) editStyle("routes");
   } else {
-    if (isCtrlPressed(event)) {
-      editStyle("routes");
-      return;
-    }
-    $("#routes").fadeOut();
+    if (isCtrlPressed(event)) return editStyle("routes");
+    routes.selectAll("path").remove();
     turnLayerButtonOff("toggleRoutes");
   }
 }

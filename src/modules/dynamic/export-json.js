@@ -76,7 +76,7 @@ function getGridCellsDataJson() {
   const gridCells = getGridCellsData();
   const exportData = {info, gridCells};
 
-  TIME && console.log("getGridCellsDataJson");
+  TIME && console.timeEnd("getGridCellsDataJson");
   return JSON.stringify(exportData);
 }
 

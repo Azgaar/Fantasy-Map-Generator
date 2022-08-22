@@ -788,7 +788,7 @@ function textureProvideURL() {
 }
 
 function fetchTextureURL(url) {
-  INFO && console.log("Provided URL is", url);
+  INFO && console.info("Provided URL is", url);
   const img = new Image();
   img.onload = function () {
     const canvas = document.getElementById("texturePreview");

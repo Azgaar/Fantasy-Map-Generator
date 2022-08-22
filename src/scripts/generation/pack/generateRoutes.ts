@@ -18,7 +18,6 @@ export function generateRoutes(burgs: TBurgs, temp: Int8Array, cells: TCellsData
   const seaRoutes = generateSeaRoutes();
 
   const routes = combineRoutes();
-  console.log(routes);
   return {cellRoutes, routes};
 
   function sortBurgsByFeature(burgs: TBurgs) {
@@ -103,7 +102,6 @@ export function generateRoutes(burgs: TBurgs, temp: Int8Array, cells: TCellsData
         const exit = featurePorts[toId].cell;
 
         const segments = findPathSegments({isWater: true, cellRoutes, connections, start, exit});
-
         for (const segment of segments) {
           addConnections(segment, ROUTES.MAIN_ROAD);
           mainRoads.push({feature: Number(key), cells: segment});
@@ -137,7 +135,7 @@ export function generateRoutes(burgs: TBurgs, temp: Int8Array, cells: TCellsData
     start: number;
     exit: number;
   }): number[][] {
-    const from = findPath(isWater, cellRoutes, temp, cells, start, exit);
+    const from = findPath(isWater, cellRoutes, temp, cells, start, exit, connections);
     if (!from) return [];
 
     const pathCells = restorePath(start, exit, from);
@@ -170,7 +168,8 @@ function findPath(
   temp: Int8Array,
   cells: TCellsData,
   start: number,
-  exit: number
+  exit: number,
+  connections: Map<string, boolean>
 ) {
   const from: number[] = [];
   const cost: number[] = [];
@@ -193,9 +192,9 @@ function findPath(
         const distanceCost = dist2(cells.p[next], cells.p[neibCellId]);
 
         const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
-        const heightModifier = 1 + Math.max(cells.h[neibCellId] - ELEVATION.HILLS, 0) / 500; // [1, 1.1];
-        const roadModifier = cellRoutes[neibCellId] ? 0.5 : 1;
-        const burgModifier = cells.burg[neibCellId] ? 0.5 : 1;
+        const heightModifier = 1 + Math.max(cells.h[neibCellId] - ELEVATION.HILLS, 0) / 50; // [1, 2];
+        const roadModifier = cellRoutes[neibCellId] ? 1 : 2;
+        const burgModifier = cells.burg[neibCellId] ? 1 : 2;
 
         const cellsCost = distanceCost * habitabilityModifier * heightModifier * roadModifier * burgModifier;
         const totalCost = priority + cellsCost;
@@ -231,9 +230,11 @@ function findPath(
 
         const distanceCost = dist2(cells.p[next], cells.p[neibCellId]);
         const typeModifier = Math.abs(cells.t[neibCellId]); // 1 for coastline, 2 for deep ocean, 3 for deeper ocean
-        const routeModifier = cellRoutes[neibCellId] ? 0.5 : 1;
+        const routeModifier = cellRoutes[neibCellId] ? 1 : 2;
+        const connectionModifier =
+          connections.has(`${next}-${neibCellId}`) || connections.has(`${neibCellId}-${next}`) ? 1 : 3;
 
-        const cellsCost = distanceCost * typeModifier * routeModifier;
+        const cellsCost = distanceCost * typeModifier * routeModifier * connectionModifier;
         const totalCost = priority + cellsCost;
 
         if (from[neibCellId] || totalCost >= cost[neibCellId]) continue;

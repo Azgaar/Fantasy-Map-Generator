@@ -33,7 +33,7 @@ window.Submap = (function () {
 
     const projection = options.projection;
     const inverse = options.inverse;
-    const stage = s => INFO && console.log("SUBMAP:", s);
+    const stage = s => INFO && console.info("SUBMAP:", s);
     const timeStart = performance.now();
     Zoom.invoke();
 
@@ -41,7 +41,7 @@ window.Submap = (function () {
     seed = parentMap.seed;
     Math.random = aleaPRNG(seed);
     INFO && console.group("SubMap with seed: " + seed);
-    DEBUG && console.log("Using Options:", options);
+    DEBUG && console.info("Using Options:", options);
 
     // create new grid
     applyMapSize();
@@ -396,7 +396,7 @@ window.Submap = (function () {
           b.removed = true;
           return;
         }
-        DEBUG && console.log(`Moving ${b.name} from ${cityCell} to ${newCell} near ${neighbor}.`);
+        DEBUG && console.info(`Moving ${b.name} from ${cityCell} to ${newCell} near ${neighbor}.`);
         [b.x, b.y] = b.port ? getCommonEdgePoint(newCell, neighbor) : cells.p[newCell]; // TODO: to be reworked
         if (b.port) b.port = cells.f[neighbor]; // copy feature number
         b.cell = newCell;

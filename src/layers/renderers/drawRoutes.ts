@@ -2,11 +2,17 @@ import * as d3 from "d3";
 
 import {round} from "utils/stringUtils";
 
+const lineGenTypeMap: {[key in IRoute["type"]]: d3.CurveFactory | d3.CurveFactoryLineOnly} = {
+  road: d3.curveCatmullRom.alpha(0.1),
+  trail: d3.curveCatmullRom.alpha(0.1),
+  sea: d3.curveBundle.beta(1)
+};
+
 export function drawRoutes() {
   routes.selectAll("path").remove();
 
   const {cells, burgs} = pack;
-  const lineGen = d3.line().curve(d3.curveCatmullRom.alpha(0.1));
+  const lineGen = d3.line();
 
   const SHARP_ANGLE = 135;
   const VERY_SHARP_ANGLE = 115;
@@ -15,8 +21,10 @@ export function drawRoutes() {
   const routePaths: Dict<string[]> = {};
 
   for (const {i, type, cells} of pack.routes) {
-    straightenPathAngles(cells); // mutates points
+    if (type !== "sea") straightenPathAngles(cells); // mutates points
     const pathPoints = cells.map(cellId => points[cellId]);
+
+    lineGen.curve(lineGenTypeMap[type]);
     const path = round(lineGen(pathPoints)!, 1);
 
     if (!routePaths[type]) routePaths[type] = [];

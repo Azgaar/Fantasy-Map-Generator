@@ -26,5 +26,5 @@ export function showStatistics() {
 
   mapId = Date.now(); // unique map id is it's creation date number
   mapHistory.push({seed, width: graphWidth, height: graphHeight, template: heightmap, created: mapId});
-  INFO && console.log(stats);
+  INFO && console.info(stats);
 }

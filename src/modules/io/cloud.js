@@ -59,7 +59,7 @@ window.Cloud = (function () {
 
     async save(fileName, contents) {
       const resp = await this.call("filesUpload", {path: "/" + fileName, contents});
-      DEBUG && console.log("Dropbox response:", resp);
+      DEBUG && console.info("Dropbox response:", resp);
       return true;
     },
 
@@ -103,7 +103,7 @@ window.Cloud = (function () {
 
     // Callback function for auth window
     async setDropBoxToken(token) {
-      DEBUG && console.log("Access token:", token);
+      DEBUG && console.info("Access token:", token);
       setToken(this.name, token);
       await this.connect(token);
       this.authWindow.close();
@@ -130,7 +130,7 @@ window.Cloud = (function () {
         allow_download: true
       };
       const resp = await this.call("sharingCreateSharedLinkWithSettings", {path, settings});
-      DEBUG && console.log("Dropbox link object:", resp.result);
+      DEBUG && console.info("Dropbox link object:", resp.result);
       return resp.result.url;
     }
   };
