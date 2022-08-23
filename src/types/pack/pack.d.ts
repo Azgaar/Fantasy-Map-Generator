@@ -6,7 +6,7 @@ interface IPack extends IGraph {
   provinces: IProvince[];
   burgs: TBurgs;
   rivers: IRiver[];
-  religions: IReligion[];
+  religions: TReligions;
   routes: TRoutes;
 }
 
@@ -23,9 +23,9 @@ interface IPackCells {
   conf: Uint16Array; // conluence, defined by defineRivers() in river-generator.ts
   biome: Uint8Array;
   area: UintArray;
-  state: UintArray;
+  state: Uint16Array;
   culture: Uint16Array;
-  religion: UintArray;
+  religion: Uint16Array;
   province: UintArray;
   burg: UintArray;
   haven: UintArray;
@@ -43,13 +43,6 @@ interface IProvince {
   i: number;
   name: string;
   fullName: string;
-  removed?: boolean;
-}
-
-interface IReligion {
-  i: number;
-  name: string;
-  type: "Folk" | "Orgamized" | "Cult" | "Heresy";
   removed?: boolean;
 }
 

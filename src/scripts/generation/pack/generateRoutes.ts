@@ -5,7 +5,7 @@ import {TIME} from "config/logging";
 import {ELEVATION, MIN_LAND_HEIGHT, ROUTES} from "config/generation";
 import {dist2} from "utils/functionUtils";
 
-type TCellsData = Pick<IPack["cells"], "c" | "p" | "g" | "h" | "t" | "haven" | "biome" | "state" | "burg">;
+type TCellsData = Pick<IPack["cells"], "c" | "p" | "g" | "h" | "t" | "biome" | "burg">;
 
 export function generateRoutes(burgs: TBurgs, temp: Int8Array, cells: TCellsData) {
   const cellRoutes = new Uint8Array(cells.h.length);

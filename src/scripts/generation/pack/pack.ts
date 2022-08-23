@@ -13,6 +13,7 @@ import {generateCultures, expandCultures} from "./cultures";
 import {generateRivers} from "./rivers";
 import {generateBurgsAndStates} from "./burgsAndStates/generateBurgsAndStates";
 import {generateRoutes} from "./generateRoutes";
+import {generateReligions} from "./generateReligions";
 
 const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
 const {Biomes} = window;
@@ -124,7 +125,16 @@ export function createPack(grid: IGrid): IPack {
     h: heights,
     t: distanceField,
     biome,
-    state: stateIds,
+    burg: burgIds
+  });
+
+  const {religionIds} = generateReligions(states, cultures, {
+    c: cells.c,
+    p: cells.p,
+    g: cells.g,
+    h: heights,
+    t: distanceField,
+    biome,
     burg: burgIds
   });
 
@@ -167,8 +177,9 @@ export function createPack(grid: IGrid): IPack {
       culture: cultureIds,
       burg: burgIds,
       state: stateIds,
-      route: cellRoutes
-      // religion, province
+      route: cellRoutes,
+      religion: religionIds
+      // province
     },
     features: mergedFeatures,
     rivers: rawRivers, // "name" | "basin" | "type"

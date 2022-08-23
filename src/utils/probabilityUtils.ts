@@ -42,10 +42,9 @@ export function ra<T>(array: T[]) {
 }
 
 // return random value from weighted array
-export function rw(object: {[key: string]: number}) {
-  const weightedArray = Object.entries(object)
-    .map(([choise, weight]) => new Array(weight).fill(choise))
-    .flat();
+export function rw<T extends string>(object: {[key in T]: number}) {
+  const entries = Object.entries<number>(object);
+  const weightedArray: T[] = entries.map(([choise, weight]) => new Array(weight).fill(choise)).flat();
   return ra(weightedArray);
 }
 
