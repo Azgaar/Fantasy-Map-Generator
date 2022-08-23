@@ -74,3 +74,7 @@ export function filterOutOfCanvasPoints(points: TPoints) {
 
   return points.filter((_, i) => filterOutCanvasPoint(i));
 }
+
+export function getNormal([x1, y1]: TPoint, [x2, y2]: TPoint) {
+  return Math.atan2(y1 - y2, x1 - x2) + Math.PI / 2;
+}

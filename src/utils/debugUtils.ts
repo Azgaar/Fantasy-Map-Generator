@@ -1,5 +1,7 @@
 // utils to be used for debugging (not in PROD)
 
+import {getNormal} from "./lineUtils";
+
 export function drawPoint([x, y]: TPoint, {radius = 1, color = "red"} = {}) {
   debug.append("circle").attr("cx", x).attr("cy", y).attr("r", radius).attr("fill", color);
 }
@@ -10,7 +12,7 @@ export function drawPolygon(
 ) {
   debug
     .append("polyline")
-    .attr("points", [...points, points[0]])
+    .attr("points", [...points, points[0]].join(" "))
     .attr("fill", fill)
     .attr("fill-opacity", fillOpacity)
     .attr("stroke", stroke)
@@ -28,10 +30,8 @@ export function drawLine([x1, y1]: TPoint, [x2, y2]: TPoint, {stroke = "#444", s
     .attr("stroke-width", strokeWidth);
 }
 
-export function drawArrow([x1, y1]: TPoint, [x2, y2]: TPoint, {width = 1, color = "#444"} = {}): void {
-  const angle = Math.atan2(y2 - y1, x2 - x1);
-  const normal = angle + Math.PI / 2;
-
+export function drawArrow([x1, y1]: TPoint, [x2, y2]: TPoint, {width = 1, color = "#444"} = {}) {
+  const normal = getNormal([x1, y1], [x2, y2]);
   const [xMid, yMid] = [(x1 + x2) / 2, (y1 + y2) / 2];
 
   const [xLeft, yLeft] = [xMid + width * Math.cos(normal), yMid + width * Math.sin(normal)];
