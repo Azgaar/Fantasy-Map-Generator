@@ -309,7 +309,7 @@ const methods = {
   "Culture + type": 4
 };
 
-export const types = {
+const types = {
   Shamanism: {Beliefs: 3, Shamanism: 2, Spirits: 1},
   Animism: {Spirits: 1, Beliefs: 1},
   "Ancestor worship": {Beliefs: 1, Forefathers: 2, Ancestors: 2},
