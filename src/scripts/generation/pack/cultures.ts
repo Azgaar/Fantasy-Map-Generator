@@ -18,6 +18,7 @@ import {minmax, rn} from "utils/numberUtils";
 import {biased, P, rand} from "utils/probabilityUtils";
 import {byId} from "utils/shorthands";
 import {defaultNameBases} from "config/namebases";
+import {isCulture} from "utils/typeUtils";
 
 const {COA} = window;
 
@@ -284,9 +285,7 @@ export const expandCultures = function (
   const cultureIds = new Uint16Array(cells.h.length); // cell cultures
   const queue = new FlatQueue<{cellId: number; cultureId: number}>();
 
-  const isWilderness = (culture: ICulture | TWilderness): culture is TWilderness => culture.i === 0;
-  cultures.forEach(culture => {
-    if (isWilderness(culture) || culture.removed) return;
+  cultures.filter(isCulture).forEach(culture => {
     queue.push({cellId: culture.center, cultureId: culture.i}, 0);
   });
 
@@ -323,7 +322,7 @@ export const expandCultures = function (
 
   function getCulture(cultureId: number) {
     const culture = cultures[cultureId];
-    if (isWilderness(culture)) throw new Error("Wilderness culture cannot expand");
+    if (!isCulture(culture)) throw new Error("Wilderness cannot expand");
     return culture;
   }
 

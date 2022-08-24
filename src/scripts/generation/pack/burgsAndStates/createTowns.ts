@@ -53,13 +53,13 @@ function placeTowns(townsNumber: number, scoredCellIds: UintArray, points: TPoin
     const townCells: number[] = [];
     const townsQuadtree = d3.quadtree();
 
-    const randomizeScaping = (spacing: number) => spacing * gauss(1, 0.3, 0.2, 2, 2);
+    const randomizeSpacing = (spacing: number) => spacing * gauss(1, 0.3, 0.2, 2, 2);
 
     for (const cellId of scoredCellIds) {
       const [x, y] = points[cellId];
 
       // randomize min spacing a bit to make placement not that uniform
-      const currentSpacing = randomizeScaping(spacing);
+      const currentSpacing = randomizeSpacing(spacing);
 
       if (townsQuadtree.find(x, y, currentSpacing) === undefined) {
         townCells.push(cellId);
