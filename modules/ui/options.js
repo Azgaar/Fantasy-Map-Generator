@@ -461,7 +461,7 @@ function changeDialogsTheme(themeColor, transparency) {
 }
 
 function changeZoomExtent(value) {
-  if(zoomExtentMin.value > zoomExtentMax.value) {
+  if(+zoomExtentMin.value > +zoomExtentMax.value) {
     [zoomExtentMin.value, zoomExtentMax.value]=[zoomExtentMax.value, zoomExtentMin.value];
   }
   const min = Math.max(+zoomExtentMin.value, 0.01);
