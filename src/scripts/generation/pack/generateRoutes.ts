@@ -4,6 +4,7 @@ import FlatQueue from "flatqueue";
 import {TIME} from "config/logging";
 import {ELEVATION, MIN_LAND_HEIGHT, ROUTES} from "config/generation";
 import {dist2} from "utils/functionUtils";
+import {isBurg} from "utils/typeUtils";
 
 type TCellsData = Pick<IPack["cells"], "c" | "p" | "g" | "h" | "t" | "biome" | "burg">;
 
@@ -25,7 +26,6 @@ export function generateRoutes(burgs: TBurgs, temp: Int8Array, cells: TCellsData
     const capitalsByFeature: Dict<IBurg[]> = {};
     const portsByFeature: Dict<IBurg[]> = {};
 
-    const isBurg = (burg: IBurg | TNoBurg): burg is IBurg => burg.i !== 0;
     const addBurg = (object: Dict<IBurg[]>, feature: number, burg: IBurg) => {
       if (!object[feature]) object[feature] = [];
       object[feature].push(burg);

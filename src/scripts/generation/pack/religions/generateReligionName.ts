@@ -1,10 +1,10 @@
 import {religionsData} from "config/religionsData";
 import {trimVowels, getAdjective} from "utils/languageUtils";
 import {rw, ra} from "utils/probabilityUtils";
-import {isCulture, isState} from "utils/typeUtils";
+import {generateMeaning} from "./generateDeityName";
 
 const {Names} = window;
-const {methods, types} = religionsData;
+const {namingMethods, types} = religionsData;
 
 interface IContext {
   cultureId: number;
@@ -13,9 +13,8 @@ interface IContext {
   cultures: TCultures;
   states: TStates;
   burgs: TBurgs;
-  center: number;
-  form: keyof typeof types;
-  deity: string;
+  form: string;
+  supreme: string;
 }
 
 const context = {
@@ -43,8 +42,8 @@ const context = {
     return this.data.form;
   },
 
-  get deity() {
-    return this.data.deity;
+  get supreme() {
+    return this.data.supreme;
   },
 
   // generation methods
@@ -53,11 +52,11 @@ const context = {
   },
 
   get type() {
-    return rw(types[this.form] as {[key: string]: number});
+    return rw<string>(types[this.form as keyof typeof types]);
   },
 
-  get supreme() {
-    return this.deity.split(/[ ,]+/)[0];
+  get supremeName() {
+    return this.supreme.split(/[ ,]+/)[0];
   },
 
   get cultureName() {
@@ -67,15 +66,19 @@ const context = {
   get place() {
     const base = this.burg.name || this.state.name;
     return trimVowels(base.split(/[ ,]+/)[0]);
+  },
+
+  get meaning() {
+    return generateMeaning();
   }
 };
 
 const nameMethodsMap = {
   "Random + type": {getName: () => `${context.random} ${context.type}`, expansion: "global"},
   "Random + ism": {getName: () => `${trimVowels(context.random)}ism`, expansion: "global"},
-  "Supreme + ism": {getName: () => `${trimVowels(context.supreme)}ism`, expansion: "global"},
+  "Supreme + ism": {getName: () => `${trimVowels(context.supremeName)}ism`, expansion: "global"},
   "Faith of + Supreme": {
-    getName: () => `${ra(["Faith", "Way", "Path", "Word", "Witnesses"])} of ${context.supreme}`,
+    getName: () => `${ra(["Faith", "Way", "Path", "Word", "Witnesses"])} of ${context.supremeName}`,
     expansion: "global"
   },
   "Place + ism": {getName: () => `${context.place}ism`, expansion: "state"},
@@ -84,29 +87,36 @@ const nameMethodsMap = {
     getName: () => `${getAdjective(context.place)} ${context.type}`,
     expansion: "state"
   },
-  "Culture + type": {getName: () => `${context.cultureName} ${context.type}`, expansion: "culture"}
+  "Culture + type": {getName: () => `${context.cultureName} ${context.type}`, expansion: "culture"},
+  "Burg + ian + type": {
+    getName: () => context.burg.name && `${getAdjective(context.burg.name)} ${context.type}`,
+    expansion: "global"
+  },
+  "Random + ian + type": {getName: () => `${getAdjective(context.random)} ${context.type}`, expansion: "global"},
+  "Type + of the + meaning": {getName: () => `${context.type} of the ${context.meaning}`, expansion: "global"}
 };
 
-export function generateReligionName(data: IContext) {
+const fallbackMethod = nameMethodsMap["Random + type"];
+
+function getMethod(type: IReligion["type"]) {
+  const methods: {[key in string]: number} = namingMethods[type];
+  const method = rw(methods);
+  return nameMethodsMap[method as keyof typeof nameMethodsMap];
+}
+
+export function generateReligionName(
+  type: IReligion["type"],
+  data: IContext
+): {name: string; expansion: IReligion["expansion"]} {
   context.current = data;
-  const {stateId, cultureId, states, cultures, center} = data;
+  const {stateId, cultureId} = data;
 
-  const method = nameMethodsMap[rw(methods)];
-  const name = method.getName();
+  const method = getMethod(type);
+  const name = method.getName() || fallbackMethod.getName();
 
-  let expansion = method.expansion;
+  let expansion = method.expansion as IReligion["expansion"];
   if (expansion === "state" && !stateId) expansion = "global";
   if (expansion === "culture" && !cultureId) expansion = "global";
 
-  if (expansion === "state" && Math.random() > 0.5) {
-    const state = states[stateId];
-    if (isState(state)) return {name, expansion, center: state.center};
-  }
-
-  if (expansion === "culture" && Math.random() > 0.5) {
-    const culture = cultures[cultureId];
-    if (isCulture(culture)) return {name, expansion, center: culture.center};
-  }
-
-  return {name, expansion, center};
+  return {name, expansion};
 }

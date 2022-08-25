@@ -15,7 +15,7 @@ export function getDeityName(cultures: TCultures, cultureId: number) {
   return cultureName + ", The " + meaning;
 }
 
-function generateMeaning() {
+export function generateMeaning() {
   const approach = ra(approaches);
   if (approach === "Number") return ra(base.number);
   if (approach === "Being") return ra(base.being);

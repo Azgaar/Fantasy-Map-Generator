@@ -298,15 +298,34 @@ const forms = {
   Heresy: {Heresy: 1}
 };
 
-const methods = {
-  "Random + type": 3,
-  "Random + ism": 1,
-  "Supreme + ism": 5,
-  "Faith of + Supreme": 5,
-  "Place + ism": 1,
-  "Culture + ism": 2,
-  "Place + ian + type": 6,
-  "Culture + type": 4
+const namingMethods = {
+  Folk: {
+    "Culture + type": 1
+  },
+
+  Organized: {
+    "Random + type": 3,
+    "Random + ism": 1,
+    "Supreme + ism": 5,
+    "Faith of + Supreme": 5,
+    "Place + ism": 1,
+    "Culture + ism": 2,
+    "Place + ian + type": 6,
+    "Culture + type": 4
+  },
+
+  Cult: {
+    "Burg + ian + type": 2,
+    "Random + ian + type": 1,
+    "Type + of the + meaning": 2
+  },
+
+  Heresy: {
+    "Burg + ian + type": 3,
+    "Random + ism": 3,
+    "Random + ian + type": 2,
+    "Type + of the + meaning": 1
+  }
 };
 
 const types = {
@@ -336,4 +355,4 @@ const types = {
   }
 };
 
-export const religionsData = {approaches, base, forms, methods, types};
+export const religionsData = {approaches, base, forms, namingMethods, types};
