@@ -128,7 +128,7 @@ export function createPack(grid: IGrid): IPack {
     burg: burgIds
   });
 
-  const {religionIds} = generateReligions({
+  const {religionIds, religions} = generateReligions({
     states,
     cultures,
     burgs,
@@ -143,7 +143,8 @@ export function createPack(grid: IGrid): IPack {
       pop: population,
       culture: cultureIds,
       burg: burgIds,
-      state: stateIds
+      state: stateIds,
+      route: cellRoutes
     }
   });
 
@@ -191,11 +192,12 @@ export function createPack(grid: IGrid): IPack {
       // province
     },
     features: mergedFeatures,
-    rivers: rawRivers, // "name" | "basin" | "type"
+    // rivers: rawRivers, // "name" | "basin" | "type"
     cultures,
     states,
     burgs,
-    routes
+    routes,
+    religions
   };
 
   return pack;

@@ -26,6 +26,7 @@ import {createGrid} from "./grid/grid";
 import {createPack} from "./pack/pack";
 import {getInputValue, setInputValue} from "utils/nodeUtils";
 import {calculateMapCoordinates} from "modules/coordinates";
+import {drawPolygons} from "utils/debugUtils";
 
 const {Zoom, ThreeD} = window;
 
@@ -69,6 +70,8 @@ async function generate(options?: IGenerationOptions) {
     // renderLayer("biomes");
     renderLayer("burgs");
     renderLayer("routes");
+
+    drawPolygons(pack.cells.religion, pack.cells.v, pack.vertices.p, {fillOpacity: 0.8, excludeZeroes: true});
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     // showStatistics();

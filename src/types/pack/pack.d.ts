@@ -3,9 +3,9 @@ interface IPack extends IGraph {
   features: TPackFeatures;
   states: TStates;
   cultures: TCultures;
-  provinces: IProvince[];
+  provinces: TProvinces;
   burgs: TBurgs;
-  rivers: IRiver[];
+  rivers: TRivers;
   religions: TReligions;
   routes: TRoutes;
 }
@@ -37,28 +37,4 @@ interface IPackCells {
 interface IPackBase extends IGraph {
   cells: IGraphCells & Partial<IPackCells>;
   features?: TPackFeatures;
-}
-
-interface IProvince {
-  i: number;
-  name: string;
-  fullName: string;
-  removed?: boolean;
-}
-
-interface IRiver {
-  i: number;
-  name: string;
-  basin: number;
-  parent: number;
-  type: string;
-  source: number;
-  mouth: number;
-  sourceWidth: number;
-  width: number;
-  widthFactor: number;
-  length: number;
-  discharge: number;
-  cells: number[];
-  points?: number[];
 }

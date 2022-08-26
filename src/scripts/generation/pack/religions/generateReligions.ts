@@ -6,7 +6,7 @@ import {specifyReligions} from "./specifyReligions";
 
 type TCellsData = Pick<
   IPack["cells"],
-  "i" | "c" | "p" | "g" | "h" | "t" | "biome" | "pop" | "culture" | "burg" | "state"
+  "i" | "c" | "p" | "g" | "h" | "t" | "biome" | "pop" | "culture" | "burg" | "state" | "route"
 >;
 
 export function generateReligions({
@@ -29,7 +29,7 @@ export function generateReligions({
     cultures,
     states,
     burgs,
-    pick(cells, "i", "c", "culture", "burg", "state")
+    pick(cells, "i", "c", "biome", "culture", "burg", "state", "route")
   );
 
   console.log(religions);

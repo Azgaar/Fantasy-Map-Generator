@@ -17,7 +17,7 @@ export function specifyReligions(
   cultures: TCultures,
   states: TStates,
   burgs: TBurgs,
-  cells: Pick<IPack["cells"], "i" | "c" | "culture" | "burg" | "state">
+  cells: Pick<IPack["cells"], "i" | "c" | "biome" | "culture" | "burg" | "state" | "route">
 ): {religions: TReligions; religionIds: Uint16Array} {
   const rawReligions = religionsData.map(({type, form, culture: cultureId, center}, index) => {
     const supreme = getDeityName(cultures, cultureId);
