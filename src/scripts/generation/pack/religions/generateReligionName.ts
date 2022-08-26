@@ -109,14 +109,12 @@ export function generateReligionName(
   data: IContext
 ): {name: string; expansion: IReligion["expansion"]} {
   context.current = data;
-  const {stateId, cultureId} = data;
-
   const method = getMethod(type);
   const name = method.getName() || fallbackMethod.getName();
 
   let expansion = method.expansion as IReligion["expansion"];
-  if (expansion === "state" && !stateId) expansion = "global";
-  if (expansion === "culture" && !cultureId) expansion = "global";
+  if (expansion === "state" && !data.stateId) expansion = "global";
+  else if (expansion === "culture" && !data.cultureId) expansion = "global";
 
   return {name, expansion};
 }

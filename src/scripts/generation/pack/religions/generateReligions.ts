@@ -4,37 +4,32 @@ import {generateFolkReligions} from "./generateFolkReligions";
 import {generateOrganizedReligions} from "./generateOrganizedReligions";
 import {specifyReligions} from "./specifyReligions";
 
-type TCellsData = Pick<IPack["cells"], "i" | "c" | "p" | "g" | "h" | "t" | "biome" | "pop" | "burg">;
+type TCellsData = Pick<
+  IPack["cells"],
+  "i" | "c" | "p" | "g" | "h" | "t" | "biome" | "pop" | "culture" | "burg" | "state"
+>;
 
 export function generateReligions({
   states,
   cultures,
   burgs,
-  cultureIds,
-  stateIds,
-  burgIds,
   cells
 }: {
   states: TStates;
   cultures: TCultures;
   burgs: TBurgs;
-  cultureIds: Uint16Array;
-  stateIds: Uint16Array;
-  burgIds: Uint16Array;
   cells: TCellsData;
 }) {
   TIME && console.time("generateReligions");
 
   const folkReligions = generateFolkReligions(cultures);
-  const basicReligions = generateOrganizedReligions(burgs, cultureIds, pick(cells, "i", "p", "pop"));
+  const basicReligions = generateOrganizedReligions(burgs, pick(cells, "i", "p", "pop", "culture"));
   const {religions, religionIds} = specifyReligions(
     [...folkReligions, ...basicReligions],
-    stateIds,
-    burgIds,
     cultures,
     states,
     burgs,
-    cells.p
+    pick(cells, "i", "c", "culture", "burg", "state")
   );
 
   console.log(religions);

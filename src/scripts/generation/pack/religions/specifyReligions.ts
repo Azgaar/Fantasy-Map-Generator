@@ -1,6 +1,4 @@
-import {unique} from "utils/arrayUtils";
 import {getMixedColor, getRandomColor} from "utils/colorUtils";
-import {findAll} from "utils/graphUtils";
 import {each, gauss, rand} from "utils/probabilityUtils";
 import {isCulture} from "utils/typeUtils";
 import {expandReligions} from "./expandReligions";
@@ -16,19 +14,17 @@ const expansionismMap = {
 
 export function specifyReligions(
   religionsData: Pick<IReligion, "type" | "form" | "culture" | "center">[],
-  stateIds: Uint16Array,
-  burgIds: Uint16Array,
   cultures: TCultures,
   states: TStates,
   burgs: TBurgs,
-  points: TPoints
-) {
-  const religions = religionsData.map(({type, form, culture: cultureId, center}, index) => {
+  cells: Pick<IPack["cells"], "i" | "c" | "culture" | "burg" | "state">
+): {religions: TReligions; religionIds: Uint16Array} {
+  const rawReligions = religionsData.map(({type, form, culture: cultureId, center}, index) => {
     const supreme = getDeityName(cultures, cultureId);
     const deity = form === "Non-theism" || form === "Animism" ? null : supreme;
 
-    const stateId = stateIds[center];
-    const burgId = burgIds[center];
+    const stateId = cells.state[center];
+    const burgId = cells.burg[center];
 
     const {name, expansion} = generateReligionName(type, {
       cultureId,
@@ -46,19 +42,26 @@ export function specifyReligions(
     const culture = cultures[cultureId];
     const color = isCulture(culture) ? getMixedColor(culture.color, 0.1, 0) : getRandomColor();
 
-    const origins: number[] = []; // define after religions expansion
-    return {i: index + 1, name, type, form, culture: cultureId, center, deity, expansion, expansionism, color, origins};
+    return {i: index + 1, name, type, form, culture: cultureId, center, deity, expansion, expansionism, color};
   });
 
-  const religionIds = expandReligions(religions);
+  const religionIds = expandReligions(rawReligions, cells);
+  const names = renameOldReligions(rawReligions);
+  const origins = defineOrigins(religionIds, rawReligions, cells.c);
 
-  const names = renameOldReligions(religions);
-  const origins = defineOrigins(religionIds, religions, points);
+  return {religions: combineReligionsData(), religionIds};
 
-  return {
-    religions: religions.map((religion, index) => ({name: names[index], religion, origins: origins[index]})),
-    religionIds
-  };
+  function combineReligionsData(): TReligions {
+    const noReligion: TNoReligion = {i: 0, name: "No religion"};
+
+    const religions = rawReligions.map((religion, index) => ({
+      ...religion,
+      name: names[index],
+      origins: origins[index]
+    }));
+
+    return [noReligion, ...religions];
+  }
 }
 
 // add 'Old' to names of folk religions which have organized competitors
@@ -74,38 +77,58 @@ function renameOldReligions(religions: Pick<IReligion, "name" | "culture" | "typ
   });
 }
 
+const religionOriginsParamsMap = {
+  Organized: {clusterSize: 100, maxReligions: 2},
+  Cult: {clusterSize: 50, maxReligions: 3},
+  Heresy: {clusterSize: 50, maxReligions: 43}
+};
+
 function defineOrigins(
   religionIds: Uint16Array,
   religions: Pick<IReligion, "i" | "culture" | "type" | "expansion" | "center">[],
-  points: TPoints
+  neighbors: number[][]
 ) {
   return religions.map(religion => {
     if (religion.type === "Folk") return [0];
 
-    const {type, culture: cultureId, expansion, center} = religion;
-    const [x, y] = points[center];
+    const {i, type, culture: cultureId, expansion, center} = religion;
 
     const folkReligion = religions.find(({culture, type}) => type === "Folk" || culture === cultureId);
     const isFolkBased = folkReligion && cultureId && expansion === "culture" && each(2)(center);
 
     if (isFolkBased) return [folkReligion.i];
 
-    if (type === "Organized") {
-      const origins = getReligionsInRadius(religionIds, {x, y, r: 150 / religions.length, max: 2});
-      return origins;
-    }
-
-    const origins = getReligionsInRadius(religionIds, {x, y, r: 300 / religions.length, max: rand(0, 4)});
+    const {clusterSize, maxReligions} = religionOriginsParamsMap[type];
+    const origins = getReligionsInRadius(neighbors, center, religionIds, i, clusterSize, maxReligions);
     return origins;
   });
 }
 
 function getReligionsInRadius(
+  neighbors: number[][],
+  center: number,
   religionIds: Uint16Array,
-  {x, y, r, max}: {x: number; y: number; r: number; max: number}
+  religionId: number,
+  clusterSize: number,
+  maxReligions: number
 ) {
-  if (max === 0) return [0];
-  const cellsInRadius: number[] = []; // findAll(x, y, r);
-  const religions = unique(cellsInRadius.map(i => religionIds[i]).filter(r => r));
-  return religions.length ? religions.slice(0, max) : [0];
+  const religions = new Set<number>();
+  const queue = [center];
+  const checked = <{[key: number]: true}>{};
+
+  for (let size = 0; queue.length && size < clusterSize; size++) {
+    const cellId = queue.pop()!;
+    checked[center] = true;
+
+    for (const neibId of neighbors[cellId]) {
+      if (checked[neibId]) continue;
+      checked[neibId] = true;
+
+      const neibReligion = religionIds[neibId];
+      if (neibReligion && neibReligion !== religionId) religions.add(neibReligion);
+      queue.push(neibId);
+    }
+  }
+
+  return religions.size ? [...religions].slice(0, maxReligions) : [0];
 }

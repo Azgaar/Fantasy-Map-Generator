@@ -15,7 +15,7 @@ interface IReligion {
 
 type TNoReligion = {
   i: 0;
-  name: string;
+  name: "No religion";
 };
 
 type TReligions = [TNoReligion, ...IReligion[]];

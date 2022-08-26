@@ -3,13 +3,8 @@ import FlatQueue from "flatqueue";
 import {TIME} from "config/logging";
 import {getInputNumber} from "utils/nodeUtils";
 import {minmax} from "utils/numberUtils";
-import type {createCapitals} from "./createCapitals";
-import type {createStates} from "./createStates";
 import {ELEVATION, FOREST_BIOMES, MIN_LAND_HEIGHT, DISTANCE_FIELD} from "config/generation";
-import {isState} from "utils/typeUtils";
-
-type TCapitals = ReturnType<typeof createCapitals>;
-type TStates = ReturnType<typeof createStates>;
+import {isNeutals} from "utils/typeUtils";
 
 // growth algorithm to assign cells to states
 export function expandStates(
@@ -107,7 +102,7 @@ export function expandStates(
 
   function getState(stateId: number) {
     const state = states[stateId];
-    if (!isState(state)) throw new Error("Neutrals cannot expand");
+    if (isNeutals(state)) throw new Error("Neutrals cannot expand");
     return state;
   }
 

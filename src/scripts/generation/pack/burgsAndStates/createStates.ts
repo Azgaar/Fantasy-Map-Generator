@@ -10,7 +10,7 @@ const {Names, COA} = window;
 
 type TCapitals = ReturnType<typeof createCapitals>;
 
-export function createStates(capitals: TCapitals, cultures: TCultures) {
+export function createStates(capitals: TCapitals, cultures: TCultures): TStates {
   TIME && console.time("createStates");
 
   const colors = getColors(capitals.length);
@@ -28,7 +28,7 @@ export function createStates(capitals: TCapitals, cultures: TCultures) {
     const shield = COA.getShield(cultureShield, null);
     const coa: ICoa = {...COA.generate(null, null, null, type), shield};
 
-    return {i: id, name, type, center: cellId, color, expansionism, capital: id, culture: cultureId, coa};
+    return {i: id, name, type, center: cellId, color, expansionism, capital: id, culture: cultureId, coa} as IState;
   });
 
   TIME && console.timeEnd("createStates");

@@ -10,8 +10,7 @@ const {forms} = religionsData;
 
 export function generateOrganizedReligions(
   burgs: TBurgs,
-  cultureIds: Uint16Array,
-  cells: Pick<IPack["cells"], "i" | "p" | "pop">
+  cells: Pick<IPack["cells"], "i" | "p" | "pop" | "culture">
 ): Pick<IReligion, "type" | "form" | "culture" | "center">[] {
   const religionsNumber = getInputNumber("religionsInput");
   if (religionsNumber === 0) return [];
@@ -32,7 +31,7 @@ export function generateOrganizedReligions(
   return religionCells.map((cellId, index) => {
     const type = getType(index);
     const form = rw<string>(forms[type]);
-    const cultureId = cultureIds[cellId];
+    const cultureId = cells.culture[cellId];
 
     return {type, form, culture: cultureId, center: cellId};
   });

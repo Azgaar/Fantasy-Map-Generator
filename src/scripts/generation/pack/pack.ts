@@ -132,9 +132,6 @@ export function createPack(grid: IGrid): IPack {
     states,
     cultures,
     burgs,
-    cultureIds,
-    stateIds,
-    burgIds,
     cells: {
       i: cells.i,
       c: cells.c,
@@ -144,7 +141,9 @@ export function createPack(grid: IGrid): IPack {
       t: distanceField,
       biome,
       pop: population,
-      burg: burgIds
+      culture: cultureIds,
+      burg: burgIds,
+      state: stateIds
     }
   });
 
