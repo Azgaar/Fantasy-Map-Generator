@@ -58,7 +58,7 @@ export function drawText(text: string | number, [x, y]: TPoint, {size = 6, color
 }
 
 export function drawPolygons(
-  values: TypedArray,
+  values: TypedArray | number[],
   cellVertices: number[][],
   vertexPoints: TPoints,
   {

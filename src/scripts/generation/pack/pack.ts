@@ -104,7 +104,7 @@ export function createPack(grid: IGrid): IPack {
     rawRivers,
     vertices,
     {
-      ...pick(cells, "v", "c", "p", "i", "g"),
+      ...pick(cells, "v", "c", "p", "b", "i", "g"),
       h: heights,
       f: featureIds,
       t: distanceField,

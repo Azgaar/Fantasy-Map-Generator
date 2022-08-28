@@ -16,7 +16,7 @@ export function generateBurgsAndStates(
   vertices: IGraphVertices,
   cells: Pick<
     IPack["cells"],
-    "v" | "c" | "p" | "i" | "g" | "h" | "f" | "t" | "haven" | "harbor" | "r" | "fl" | "biome" | "s" | "culture"
+    "v" | "c" | "p" | "b" | "i" | "g" | "h" | "f" | "t" | "haven" | "harbor" | "r" | "fl" | "biome" | "s" | "culture"
   >
 ): {burgIds: Uint16Array; stateIds: Uint16Array; burgs: TBurgs; states: TStates} {
   const cellsNumber = cells.i.length;
@@ -34,9 +34,13 @@ export function generateBurgsAndStates(
 
   const capitals = createCapitals(statesNumber, scoredCellIds, cultures, pick(cells, "p", "f", "culture"));
   const capitalCells = new Map(capitals.map(({cell}) => [cell, true]));
-
   const states = createStates(capitals, cultures);
-  const towns = createTowns(capitalCells, cultures, pick(cells, "p", "i", "f", "s", "culture"));
+
+  const towns = createTowns(
+    cultures,
+    scoredCellIds.filter(i => !capitalCells.has(i)),
+    pick(cells, "p", "i", "f", "s", "culture")
+  );
 
   const stateIds = expandStates(
     capitalCells,
@@ -63,11 +67,12 @@ export function generateBurgsAndStates(
   return {burgIds, stateIds, burgs, states};
 
   function getScoredCellIds() {
-    // cell score for capitals placement
     const score = new Int16Array(cells.s.map(s => s * Math.random()));
 
-    // filtered and sorted array of indexes
-    const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]);
+    // filtered and sorted array of indexes: only populated cells not on map edge
+    const sorted = cells.i
+      .filter(i => !cells.b[i] && score[i] > 0 && cells.culture[i])
+      .sort((a, b) => score[b] - score[a]);
 
     return sorted;
   }
