@@ -63,12 +63,12 @@ function getPointOffCanvasSide([x, y]: TPoint) {
 
 // remove intermediate out-of-canvas points from polyline
 export function filterOutOfCanvasPoints(points: TPoints) {
-  const pointsOutSide = points.map(getPointOffCanvasSide);
+  const pointsOutside = points.map(getPointOffCanvasSide);
   const SAFE_ZONE = 3;
-  const fragment = (i: number) => sliceFragment(pointsOutSide, i, SAFE_ZONE);
+  const fragment = (i: number) => sliceFragment(pointsOutside, i, SAFE_ZONE);
 
   const filterOutCanvasPoint = (i: number) => {
-    const pointSide = pointsOutSide[i];
+    const pointSide = pointsOutside[i];
     return !pointSide || fragment(i).some(side => !side || side !== pointSide);
   };
 

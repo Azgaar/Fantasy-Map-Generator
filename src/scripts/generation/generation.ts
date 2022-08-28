@@ -70,8 +70,10 @@ async function generate(options?: IGenerationOptions) {
     // renderLayer("biomes");
     renderLayer("burgs");
     renderLayer("routes");
+    renderLayer("cultures");
+    //renderLayer("religions");
 
-    drawPolygons(pack.cells.religion, pack.cells.v, pack.vertices.p, {fillOpacity: 0.8, excludeZeroes: true});
+    // drawPolygons(pack.cells.religion, pack.cells.v, pack.vertices.p, {fillOpacity: 0.8, excludeZeroes: true});
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     // showStatistics();

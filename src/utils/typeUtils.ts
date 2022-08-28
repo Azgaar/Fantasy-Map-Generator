@@ -1,3 +1,8 @@
+export const isFeature = (feature: TNoFeature | TPackFeature): feature is TPackFeature => feature !== 0;
+
+export const isLake = (feature: TNoFeature | TPackFeature): feature is IPackFeatureLake =>
+  isFeature(feature) && feature.type === "lake";
+
 export const isState = (state: TNeutrals | IState): state is IState => state.i !== 0 && !(state as IState).removed;
 
 export const isNeutals = (neutrals: TNeutrals | IState): neutrals is TNeutrals => neutrals.i === 0;

@@ -4,7 +4,6 @@ export function drawReligions() {
   const n = cells.i.length;
 
   const used = new Uint8Array(cells.i.length);
-  const vArray = new Array(religions.length); // store vertices array
   const body = new Array(religions.length).fill(""); // store path around each religion
   const gap = new Array(religions.length).fill(""); // store path along water for each religion to fill the gaps
 
@@ -20,8 +19,7 @@ export function drawReligions() {
     const chain = connectVertices(vertex, r, borderWith);
     if (chain.length < 3) continue;
     const points = chain.map(v => vertices.p[v[0]]);
-    if (!vArray[r]) vArray[r] = [];
-    vArray[r].push(points);
+
     body[r] += "M" + points.join("L") + "Z";
     gap[r] +=
       "M" +

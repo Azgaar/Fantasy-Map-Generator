@@ -12,7 +12,7 @@ const lineGenTypeMap: {[key in IRoute["type"]]: d3.CurveFactory | d3.CurveFactor
 export function drawRoutes() {
   routes.selectAll("path").remove();
 
-  const {cells, burgs} = pack;
+  /* uses */ const {cells, burgs} = pack;
   const lineGen = d3.line();
 
   const SHARP_ANGLE = 135;
