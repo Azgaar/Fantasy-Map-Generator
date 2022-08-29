@@ -26,7 +26,8 @@ import {createGrid} from "./grid/grid";
 import {createPack} from "./pack/pack";
 import {getInputValue, setInputValue} from "utils/nodeUtils";
 import {calculateMapCoordinates} from "modules/coordinates";
-import {drawPolygons} from "utils/debugUtils";
+import {drawPoint, drawPolygons} from "utils/debugUtils";
+import {isReligion} from "utils/typeUtils";
 
 const {Zoom, ThreeD} = window;
 
@@ -70,10 +71,15 @@ async function generate(options?: IGenerationOptions) {
     // renderLayer("biomes");
     renderLayer("burgs");
     renderLayer("routes");
-    renderLayer("cultures");
-    //renderLayer("religions");
+    // renderLayer("states");
+    renderLayer("religions");
 
     // drawPolygons(pack.cells.religion, pack.cells.v, pack.vertices.p, {fillOpacity: 0.8, excludeZeroes: true});
+    pack.religions.filter(isReligion).forEach(({center}) =>
+      drawPoint(pack.cells.p[center], {
+        radius: 5
+      })
+    );
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     // showStatistics();

@@ -8,12 +8,14 @@ export function getPaths({
   vertices,
   getType,
   features,
-  cells
+  cells,
+  options
 }: {
   vertices: IGraphVertices;
   getType: (cellId: number) => number;
   features: TPackFeatures;
   cells: Pick<IPack["cells"], "c" | "v" | "b" | "h" | "f">;
+  options: {[key in keyof TPath]: boolean};
 }) {
   const paths: Dict<TPath> = {};
 
@@ -55,11 +57,12 @@ export function getPaths({
   function getFillPath(vertexChain: number[]) {
     const points: TPoints = vertexChain.map(getVertexPoint);
     const firstPoint = points.shift();
-    return `M${firstPoint} L${points.join(" ")} Z`;
+    return `M${firstPoint} L${points.join(" ")}`;
   }
 
   function getBorderPath(vertexChain: number[], discontinue: (vertex: number) => boolean) {
     let discontinued = true;
+    let lastOperation = "";
     const path = vertexChain.map(vertex => {
       if (discontinue(vertex)) {
         discontinued = true;
@@ -67,8 +70,12 @@ export function getPaths({
       }
 
       const operation = discontinued ? "M" : "L";
+      const command = operation === lastOperation ? "" : operation;
+
       discontinued = false;
-      return ` ${operation}${getVertexPoint(vertex)}`;
+      lastOperation = operation;
+
+      return ` ${command}${getVertexPoint(vertex)}`;
     });
 
     return path.join("").trim();
@@ -87,9 +94,9 @@ export function getPaths({
   function addPath(index: number, vertexChain: number[]) {
     if (!paths[index]) paths[index] = {fill: "", waterGap: "", halo: ""};
 
-    paths[index].fill += getFillPath(vertexChain);
-    paths[index].halo += getBorderPath(vertexChain, isBorderVertex);
-    paths[index].waterGap += getBorderPath(vertexChain, isLandVertex);
+    if (options.fill) paths[index].fill += getFillPath(vertexChain);
+    if (options.halo) paths[index].halo += getBorderPath(vertexChain, isBorderVertex);
+    if (options.waterGap) paths[index].waterGap += getBorderPath(vertexChain, isLandVertex);
   }
 }
 

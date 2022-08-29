@@ -9,6 +9,7 @@ interface IState {
   fullName: string;
   capital: Logical;
   coa: ICoa | string;
+  // pole: TPoint ?
   removed?: boolean;
 }
 

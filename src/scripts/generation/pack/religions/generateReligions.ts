@@ -32,8 +32,6 @@ export function generateReligions({
     pick(cells, "i", "c", "biome", "culture", "burg", "state", "route")
   );
 
-  console.log(religions);
-
   TIME && console.timeEnd("generateReligions");
   return {religionIds, religions};
 }

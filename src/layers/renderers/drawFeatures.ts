@@ -5,7 +5,7 @@ import {filterOutOfCanvasPoints} from "utils/lineUtils";
 import {round} from "utils/stringUtils";
 
 export function drawFeatures() {
-  /* uses */ const {vertices, features} = pack;
+  /* global */ const {vertices, features} = pack;
 
   const landMask = defs.select("#land");
   const waterMask = defs.select("#water");
