@@ -1,4 +1,4 @@
-import {getMixedColor, getRandomColor} from "utils/colorUtils";
+import {brighter, getMixedColor} from "utils/colorUtils";
 import {each, gauss, rand} from "utils/probabilityUtils";
 import {isCulture} from "utils/typeUtils";
 import {expandReligions} from "./expandReligions";
@@ -12,8 +12,10 @@ const expansionismMap = {
   Heresy: () => gauss(1.2, 0.5, 0, 5)
 };
 
+type TReligionData = Pick<IReligion, "type" | "form" | "culture" | "center">;
+
 export function specifyReligions(
-  religionsData: Pick<IReligion, "type" | "form" | "culture" | "center">[],
+  religionsData: TReligionData[],
   cultures: TCultures,
   states: TStates,
   burgs: TBurgs,
@@ -39,8 +41,7 @@ export function specifyReligions(
 
     const expansionism = expansionismMap[type]();
 
-    const culture = cultures[cultureId];
-    const color = isCulture(culture) ? getMixedColor(culture.color, 0.1, 0) : getRandomColor();
+    const color = getReligionColor(cultureId, type);
 
     return {i: index + 1, name, type, form, culture: cultureId, center, deity, expansion, expansionism, color};
   });
@@ -50,6 +51,14 @@ export function specifyReligions(
   const origins = defineOrigins(religionIds, rawReligions, cells.c);
 
   return {religions: combineReligionsData(), religionIds};
+
+  function getReligionColor(cultureId: number, type: IReligion["type"]) {
+    const culture = cultures[cultureId];
+    if (!isCulture(culture)) throw new Error(`Culture ${cultureId} is not a valid culture`);
+
+    if (type === "Folk") return brighter(culture.color, 0.2);
+    return getMixedColor(culture.color, 0.2, 0);
+  }
 
   function combineReligionsData(): TReligions {
     const noReligion: TNoReligion = {i: 0, name: "No religion"};

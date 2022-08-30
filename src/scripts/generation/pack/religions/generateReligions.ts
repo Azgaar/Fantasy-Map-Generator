@@ -1,4 +1,5 @@
 import {TIME} from "config/logging";
+import {drawPoint} from "utils/debugUtils";
 import {pick} from "utils/functionUtils";
 import {generateFolkReligions} from "./generateFolkReligions";
 import {generateOrganizedReligions} from "./generateOrganizedReligions";
@@ -31,6 +32,9 @@ export function generateReligions({
     burgs,
     pick(cells, "i", "c", "biome", "culture", "burg", "state", "route")
   );
+
+  folkReligions.forEach(({center}) => drawPoint(cells.p[center], {radius: 3, color: "blue"}));
+  basicReligions.forEach(({center}) => drawPoint(cells.p[center], {radius: 3, color: "red"}));
 
   TIME && console.timeEnd("generateReligions");
   return {religionIds, religions};

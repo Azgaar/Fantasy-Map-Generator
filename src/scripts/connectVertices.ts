@@ -113,7 +113,7 @@ export function connectVertices({
     chain.push(current);
 
     const neibCells = vertices.c[current];
-    if (addToChecked) neibCells.forEach(addToChecked);
+    if (addToChecked) neibCells.filter(ofSameType).forEach(addToChecked);
 
     const [c1, c2, c3] = neibCells.map(ofSameType);
     const [v1, v2, v3] = vertices.v[current];
