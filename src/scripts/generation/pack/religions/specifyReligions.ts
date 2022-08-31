@@ -1,4 +1,4 @@
-import {brighter, getMixedColor} from "utils/colorUtils";
+import {brighter, darker, getMixedColor} from "utils/colorUtils";
 import {each, gauss, rand} from "utils/probabilityUtils";
 import {isCulture} from "utils/typeUtils";
 import {expandReligions} from "./expandReligions";
@@ -7,19 +7,20 @@ import {generateReligionName} from "./generateReligionName";
 
 const expansionismMap = {
   Folk: () => 0,
-  Organized: () => rand(3, 8),
-  Cult: () => gauss(1.1, 0.5, 0, 5),
-  Heresy: () => gauss(1.2, 0.5, 0, 5)
+  Organized: () => gauss(5, 3, 0, 10, 1),
+  Cult: () => gauss(0.5, 0.5, 0, 5, 1),
+  Heresy: () => gauss(1, 0.5, 0, 5, 1)
 };
 
 type TReligionData = Pick<IReligion, "type" | "form" | "culture" | "center">;
+type TCellsData = Pick<IPack["cells"], "i" | "c" | "h" | "biome" | "culture" | "burg" | "state" | "route">;
 
 export function specifyReligions(
   religionsData: TReligionData[],
   cultures: TCultures,
   states: TStates,
   burgs: TBurgs,
-  cells: Pick<IPack["cells"], "i" | "c" | "biome" | "culture" | "burg" | "state" | "route">
+  cells: TCellsData
 ): {religions: TReligions; religionIds: Uint16Array} {
   const rawReligions = religionsData.map(({type, form, culture: cultureId, center}, index) => {
     const supreme = getDeityName(cultures, cultureId);
@@ -56,8 +57,10 @@ export function specifyReligions(
     const culture = cultures[cultureId];
     if (!isCulture(culture)) throw new Error(`Culture ${cultureId} is not a valid culture`);
 
-    if (type === "Folk") return brighter(culture.color, 0.2);
-    return getMixedColor(culture.color, 0.2, 0);
+    if (type === "Folk") return culture.color;
+    if (type === "Heresy") return darker(getMixedColor(culture.color, 0.35), 0.3);
+    if (type === "Cult") return darker(getMixedColor(culture.color, 0.5), 0.8);
+    return brighter(getMixedColor(culture.color, 0.25), 0.3);
   }
 
   function combineReligionsData(): TReligions {

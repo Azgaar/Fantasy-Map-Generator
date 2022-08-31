@@ -103,7 +103,7 @@ export function generateRoutes(burgs: TBurgs, temp: Int8Array, cells: TCellsData
 
         const segments = findPathSegments({isWater: true, cellRoutes, connections, start, exit});
         for (const segment of segments) {
-          addConnections(segment, ROUTES.MAIN_ROAD);
+          addConnections(segment, ROUTES.SEA_ROUTE);
           mainRoads.push({feature: Number(key), cells: segment});
         }
       });
@@ -118,7 +118,7 @@ export function generateRoutes(burgs: TBurgs, temp: Int8Array, cells: TCellsData
       const cellId = segment[i];
       const nextCellId = segment[i + 1];
       if (nextCellId) connections.set(`${cellId}-${nextCellId}`, true);
-      cellRoutes[cellId] = roadTypeId;
+      if (!cellRoutes[cellId]) cellRoutes[cellId] = roadTypeId;
     }
   }
 

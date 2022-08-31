@@ -30,7 +30,7 @@ export function generateReligions({
     cultures,
     states,
     burgs,
-    pick(cells, "i", "c", "biome", "culture", "burg", "state", "route")
+    pick(cells, "i", "c", "h", "biome", "culture", "burg", "state", "route")
   );
 
   folkReligions.forEach(({center}) => drawPoint(cells.p[center], {radius: 3, color: "blue"}));

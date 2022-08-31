@@ -46,12 +46,12 @@ export function getRandomColor(): Hex {
 }
 
 // mix a color with a random color. TODO: refactor without interpolation
-export function getMixedColor(color: Hex | CssUrl, mixation = 0.2, bright = 0.3) {
+export function getMixedColor(color: Hex | CssUrl, mixation: number) {
   const color1 = color.startsWith("#") ? color : getRandomColor();
   const color2 = getRandomColor();
   const mixedColor = d3.interpolate(color1, color2)(mixation);
 
-  return d3.color(mixedColor)!.brighter(bright).formatHex() as Hex;
+  return d3.color(mixedColor)!.formatHex() as Hex;
 }
 
 export function darker(color: Hex | CssUrl, amount = 1) {

@@ -780,7 +780,7 @@ window.BurgsAndStates = (function () {
       const sameColored = pack.states.filter(s => s.color === c);
       sameColored.forEach((s, d) => {
         if (!d) return;
-        s.color = getMixedColor(s.color);
+        s.color = brighter(getMixedColor(s.color, 0.2), 0.3);
       });
     });
 
@@ -1209,7 +1209,7 @@ window.BurgsAndStates = (function () {
         const formName = rw(form);
         form[formName] += 10;
         const fullName = name + " " + formName;
-        const color = getMixedColor(s.color);
+        const color = brighter(getMixedColor(s.color, 0.2), 0.3);
         const kinship = nameByBurg ? 0.8 : 0.4;
         const type = getType(center, burg.port);
         const coa = COA.generate(stateBurgs[i].coa, kinship, null, type);
@@ -1317,7 +1317,7 @@ window.BurgsAndStates = (function () {
         // generate "wild" province name
         const cultureId = cells.culture[center];
         const f = pack.features[cells.f[center]];
-        const color = getMixedColor(s.color);
+        const color = brighter(getMixedColor(s.color, 0.2), 0.3);
 
         const provCells = stateNoProvince.filter(i => cells.province[i] === province);
         const singleIsle = provCells.length === f.cells && !provCells.find(i => cells.f[i] !== f.i);

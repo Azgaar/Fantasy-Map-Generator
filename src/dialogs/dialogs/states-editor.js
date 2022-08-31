@@ -1119,7 +1119,7 @@ function adjustProvinces(affectedProvinces) {
         // reassign province ownership to province center owner
         prevOwner.provinces = prevOwner.provinces.filter(province => province !== provinceId);
         province.state = stateId;
-        province.color = getMixedColor(states[stateId].color);
+        province.color = brighter(getMixedColor(states[stateId].color, 0.2), 0.3);
         states[stateId].provinces.push(provinceId);
         return;
       }
@@ -1163,7 +1163,7 @@ function adjustProvinces(affectedProvinces) {
     const formOptions = ["Zone", "Area", "Territory", "Province"];
     const formName = burgCell && oldProvince.formName ? oldProvince.formName : ra(formOptions);
 
-    const color = getMixedColor(states[stateId].color);
+    const color = brighter(getMixedColor(states[stateId].color, 0.2), 0.3);
 
     const kinship = nameByBurg ? 0.8 : 0.4;
     const type = BurgsAndStates.getType(center, burg?.port);

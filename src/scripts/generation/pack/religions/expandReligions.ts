@@ -1,12 +1,12 @@
 import FlatQueue from "flatqueue";
 
-import {ROUTES} from "config/generation";
+import {MIN_LAND_HEIGHT, ROUTES} from "config/generation";
 import {getInputNumber} from "utils/nodeUtils";
 import {gauss} from "utils/probabilityUtils";
 import {isReligion} from "utils/typeUtils";
 
 type TReligionData = Pick<IReligion, "i" | "type" | "center" | "culture" | "expansion" | "expansionism">;
-type TCellsData = Pick<IPack["cells"], "i" | "c" | "biome" | "culture" | "state" | "route">;
+type TCellsData = Pick<IPack["cells"], "i" | "c" | "h" | "biome" | "culture" | "state" | "route">;
 
 export function expandReligions(religions: TReligionData[], cells: TCellsData) {
   const religionIds = spreadFolkReligions(religions, cells);
@@ -15,11 +15,9 @@ export function expandReligions(religions: TReligionData[], cells: TCellsData) {
   const cost: number[] = [];
 
   const neutralInput = getInputNumber("neutralInput");
-  const maxExpansionCost = (cells.i.length / 25) * gauss(1, 0.3, 0.2, 2, 2) * neutralInput;
+  const maxExpansionCost = (cells.i.length / 20) * gauss(1, 0.3, 0.2, 2, 2) * neutralInput;
 
   const biomePassageCost = (cellId: number) => biomesData.cost[cells.biome[cellId]];
-  const isMainRoad = (cellId: number) => cells.route[cellId] === ROUTES.MAIN_ROAD;
-  const isSeaRoute = (cellId: number) => cells.route[cellId] === ROUTES.SEA_ROUTE;
 
   for (const religion of religions) {
     if (!isReligion(religion as IReligion) || (religion as IReligion).type === "Folk") continue;
@@ -32,6 +30,11 @@ export function expandReligions(religions: TReligionData[], cells: TCellsData) {
 
   const religionsMap = new Map<number, TReligionData>(religions.map(religion => [religion.i, religion]));
 
+  const isMainRoad = (cellId: number) => cells.route[cellId] === ROUTES.MAIN_ROAD;
+  const isTrail = (cellId: number) => cells.route[cellId] === ROUTES.TRAIL;
+  const isSeaRoute = (cellId: number) => cells.route[cellId] === ROUTES.SEA_ROUTE;
+  const isWater = (cellId: number) => cells.h[cellId] < MIN_LAND_HEIGHT;
+
   while (queue.length) {
     const priority = queue.peekValue()!;
     const {cellId, religionId} = queue.pop()!;
@@ -39,16 +42,14 @@ export function expandReligions(religions: TReligionData[], cells: TCellsData) {
     const {culture, center, expansion, expansionism} = religionsMap.get(religionId)!;
 
     cells.c[cellId].forEach(neibCellId => {
-      // if (neibCellId === center && religionIds[neibCellId]) return; // do not overwrite center cells
       if (expansion === "culture" && culture !== cells.culture[neibCellId]) return;
       if (expansion === "state" && cells.state[center] !== cells.state[neibCellId]) return;
 
-      const cultureCost = culture !== cells.culture[neibCellId] ? 50 : 0;
-      const stateCost = cells.state[center] !== cells.state[neibCellId] ? 50 : 0;
-      const passageCost = isMainRoad(neibCellId) ? 1 : biomePassageCost(neibCellId); // [1, 5000]
-      const waterCost = isSeaRoute(neibCellId) ? 50 : 1000;
+      const cultureCost = culture !== cells.culture[neibCellId] ? 10 : 0;
+      const stateCost = cells.state[center] !== cells.state[neibCellId] ? 10 : 0;
+      const passageCost = getPassageCost(neibCellId);
 
-      const cellCost = Math.max(cultureCost + stateCost + passageCost + waterCost, 0);
+      const cellCost = cultureCost + stateCost + passageCost;
       const totalCost = priority + 10 + cellCost / expansionism;
       if (totalCost > maxExpansionCost) return;
 
@@ -62,6 +63,13 @@ export function expandReligions(religions: TReligionData[], cells: TCellsData) {
   }
 
   return religionIds;
+
+  function getPassageCost(cellId: number) {
+    if (isWater(cellId)) return isSeaRoute(cellId) ? 50 : 500;
+    if (isMainRoad(cellId)) return 1;
+    const biomeCost = biomePassageCost(cellId); // [1, 5000]
+    return isTrail(cellId) ? biomeCost / 1.5 : biomeCost;
+  }
 }
 
 // folk religions initially get all cells of their culture

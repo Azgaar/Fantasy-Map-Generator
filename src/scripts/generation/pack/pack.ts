@@ -188,11 +188,11 @@ export function createPack(grid: IGrid): IPack {
       burg: burgIds,
       state: stateIds,
       route: cellRoutes,
-      religion: religionIds
-      // province
+      religion: religionIds,
+      province: new Uint16Array(cells.i.length)
     },
     features: mergedFeatures,
-    // rivers: rawRivers, // "name" | "basin" | "type"
+    rivers: rawRivers, // "name" | "basin" | "type"
     cultures,
     states,
     burgs,
