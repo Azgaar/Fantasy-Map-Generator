@@ -1,9 +1,6 @@
 import * as d3 from "d3";
 
 import {layerIsOn} from "layers";
-// @ts-expect-error js module
-import {clearLegend, dragLegendBox} from "modules/legend";
-// @ts-expect-error js module
 import {updateCellInfo} from "modules/ui/cell-info";
 import {debounce} from "utils/functionUtils";
 import {findCell, findGridCell, isLand} from "utils/graphUtils";
@@ -78,7 +75,7 @@ const getHoveredElement = (tagName: string, group: string, subgroup: string, isL
   if (layerIsOn("togglePopulation")) return "populationLayer";
   if (layerIsOn("toggleTemp")) return "temperatureLayer";
   if (layerIsOn("toggleBiomes") && biome[cellId]) return "biomesLayer";
-  if (layerIsOn("toggleReligions") && religion[cellId]) return "religionsLayer";
+  if (religion[cellId]) return "religionsLayer"; // layerIsOn("toggleReligions") &&
   if (layerIsOn("toggleProvinces") || (layerIsOn("toggleStates") && state[cellId])) return "statesLayer";
   if (layerIsOn("toggleCultures") && culture[cellId]) return "culturesLayer";
   if (layerIsOn("toggleHeight")) return "heightLayer";

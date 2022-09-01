@@ -3,10 +3,10 @@ interface IPack extends IGraph {
   features: TPackFeatures;
   states: TStates;
   cultures: TCultures;
-  provinces: IProvince[];
+  provinces: TProvinces;
   burgs: TBurgs;
-  rivers: IRiver[];
-  religions: IReligion[];
+  rivers: TRivers;
+  religions: TReligions;
   routes: TRoutes;
 }
 
@@ -23,9 +23,9 @@ interface IPackCells {
   conf: Uint16Array; // conluence, defined by defineRivers() in river-generator.ts
   biome: Uint8Array;
   area: UintArray;
-  state: UintArray;
+  state: Uint16Array;
   culture: Uint16Array;
-  religion: UintArray;
+  religion: Uint16Array;
   province: UintArray;
   burg: UintArray;
   haven: UintArray;
@@ -37,35 +37,4 @@ interface IPackCells {
 interface IPackBase extends IGraph {
   cells: IGraphCells & Partial<IPackCells>;
   features?: TPackFeatures;
-}
-
-interface IProvince {
-  i: number;
-  name: string;
-  fullName: string;
-  removed?: boolean;
-}
-
-interface IReligion {
-  i: number;
-  name: string;
-  type: "Folk" | "Orgamized" | "Cult" | "Heresy";
-  removed?: boolean;
-}
-
-interface IRiver {
-  i: number;
-  name: string;
-  basin: number;
-  parent: number;
-  type: string;
-  source: number;
-  mouth: number;
-  sourceWidth: number;
-  width: number;
-  widthFactor: number;
-  length: number;
-  discharge: number;
-  cells: number[];
-  points?: number[];
 }

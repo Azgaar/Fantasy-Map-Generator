@@ -10,9 +10,7 @@ const lineGenTypeMap: {[key in IRoute["type"]]: d3.CurveFactory | d3.CurveFactor
 };
 
 export function drawRoutes() {
-  routes.selectAll("path").remove();
-
-  const {cells, burgs} = pack;
+  /* global */ const {cells, burgs} = pack;
   const lineGen = d3.line();
 
   const SHARP_ANGLE = 135;
@@ -32,6 +30,7 @@ export function drawRoutes() {
     routePaths[type].push(`<path id="${type}${i}" d="${path}"/>`);
   }
 
+  routes.selectAll("path").remove();
   for (const type in routePaths) {
     routes.select(`[data-type=${type}]`).html(routePaths[type].join(""));
   }

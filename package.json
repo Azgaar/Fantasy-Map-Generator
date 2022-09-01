@@ -18,6 +18,7 @@
     "@types/delaunator": "^5.0.0",
     "@types/jquery": "^3.5.14",
     "@types/jqueryui": "^1.12.16",
+    "@types/polylabel": "^1.0.5",
     "c8": "^7.12.0",
     "happy-dom": "^6.0.4",
     "rollup": "^2.75.7",

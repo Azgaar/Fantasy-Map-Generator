@@ -1,5 +1,6 @@
 // utils to be used for debugging (not in PROD)
 
+import {getColorScheme, TColorScheme} from "./colorUtils";
 import {getNormal} from "./lineUtils";
 
 export function drawPoint([x, y]: TPoint, {radius = 1, color = "red"} = {}) {
@@ -54,4 +55,50 @@ export function drawText(text: string | number, [x, y]: TPoint, {size = 6, color
     .attr("fill", color)
     .attr("stroke", "none")
     .text(text);
+}
+
+export function drawPolygons(
+  values: TypedArray | number[],
+  cellVertices: number[][],
+  vertexPoints: TPoints,
+  {
+    fillOpacity = 0.3,
+    stroke = "#222",
+    strokeWidth = 0.2,
+    colorScheme = "default",
+    excludeZeroes = false
+  }: {
+    fillOpacity?: number;
+    stroke?: string;
+    strokeWidth?: number;
+    colorScheme?: TColorScheme;
+    excludeZeroes?: boolean;
+  } = {}
+) {
+  const cellIds = [...Array(values.length).keys()];
+  const data = excludeZeroes ? cellIds.filter(id => values[id] !== 0) : cellIds;
+
+  const getPolygon = (id: number) => {
+    const vertices = cellVertices[id];
+    const points = vertices.map(id => vertexPoints[id]);
+    return `${points.join(" ")} ${points[0].join(",")}`;
+  };
+
+  // get fill from normalizing and interpolating values to color scheme
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const normalized = Array.from(values).map(value => (value - min) / (max - min));
+  const scheme = getColorScheme(colorScheme);
+  const getFill = (id: number) => scheme(normalized[id])!;
+
+  debug
+    .selectAll("polyline")
+    .data(data)
+    .enter()
+    .append("polyline")
+    .attr("points", getPolygon)
+    .attr("fill", getFill)
+    .attr("fill-opacity", fillOpacity)
+    .attr("stroke", stroke)
+    .attr("stroke-width", strokeWidth);
 }

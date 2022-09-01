@@ -35,6 +35,6 @@ interface IPackFeatureLake extends IPackFeatureBase {
 
 type TPackFeature = IPackFeatureOcean | IPackFeatureIsland | IPackFeatureLake;
 
-type FirstElement = 0;
+type TNoFeature = 0;
 
-type TPackFeatures = [FirstElement, ...TPackFeature[]];
+type TPackFeatures = [TNoFeature, ...TPackFeature[]];

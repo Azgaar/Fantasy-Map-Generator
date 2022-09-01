@@ -26,6 +26,7 @@ import {createGrid} from "./grid/grid";
 import {createPack} from "./pack/pack";
 import {getInputValue, setInputValue} from "utils/nodeUtils";
 import {calculateMapCoordinates} from "modules/coordinates";
+import {drawPoint} from "utils/debugUtils";
 
 const {Zoom, ThreeD} = window;
 
@@ -69,6 +70,12 @@ async function generate(options?: IGenerationOptions) {
     // renderLayer("biomes");
     renderLayer("burgs");
     renderLayer("routes");
+    // renderLayer("states");
+    renderLayer("religions");
+
+    // pack.cells.route.forEach((route, index) => {
+    //   if (route === 2) drawPoint(pack.cells.p[index], {color: "black"});
+    // });
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     // showStatistics();

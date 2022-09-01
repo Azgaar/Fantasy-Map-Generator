@@ -15,8 +15,9 @@ const cardinal12: Hex[] = [
   "#eb8de7"
 ];
 
-type ColorScheme = d3.ScaleSequential<string>;
-const colorSchemeMap: Dict<ColorScheme> = {
+export type TColorScheme = "default" | "bright" | "light" | "green" | "rainbow" | "monochrome";
+const colorSchemeMap: {[key in TColorScheme]: d3.ScaleSequential<string>} = {
+  default: d3.scaleSequential(d3.interpolateSpectral),
   bright: d3.scaleSequential(d3.interpolateSpectral),
   light: d3.scaleSequential(d3.interpolateRdYlGn),
   green: d3.scaleSequential(d3.interpolateGreens),
@@ -24,10 +25,10 @@ const colorSchemeMap: Dict<ColorScheme> = {
   monochrome: d3.scaleSequential(d3.interpolateGreys)
 };
 
-export function getColors(number: number) {
+export function getColors(number: number): Hex[] {
   if (number <= cardinal12.length) return d3.shuffle(cardinal12.slice(0, number));
 
-  const scheme = colorSchemeMap.bright;
+  const scheme = colorSchemeMap.default;
   const colors = d3.range(number).map(index => {
     if (index < 12) return cardinal12[index];
 
@@ -39,22 +40,31 @@ export function getColors(number: number) {
 }
 
 export function getRandomColor(): Hex {
-  const scheme = colorSchemeMap.bright;
+  const scheme = d3.scaleSequential(d3.interpolateSpectral);
   const rgb = scheme(Math.random())!;
   return d3.color(rgb)?.formatHex() as Hex;
 }
 
-// mix a color with a random color
-export function getMixedColor(hexColor: string, mixation = 0.2, bright = 0.3) {
-  // if provided color is not hex (e.g. harching), generate random one
-  const color1 = hexColor && hexColor[0] === "#" ? hexColor : getRandomColor();
+// mix a color with a random color. TODO: refactor without interpolation
+export function getMixedColor(color: Hex | CssUrl, mixation: number) {
+  const color1 = color.startsWith("#") ? color : getRandomColor();
   const color2 = getRandomColor();
   const mixedColor = d3.interpolate(color1, color2)(mixation);
 
-  return d3.color(mixedColor)!.brighter(bright).hex();
+  return d3.color(mixedColor)!.formatHex() as Hex;
 }
 
-export function getColorScheme(schemeName: string) {
+export function darker(color: Hex | CssUrl, amount = 1) {
+  if (color.startsWith("#") === false) return color;
+  return d3.color(color)!.darker(amount).formatHex() as Hex;
+}
+
+export function brighter(color: Hex | CssUrl, amount = 1) {
+  if (color.startsWith("#") === false) return color;
+  return d3.color(color)!.brighter(amount).formatHex() as Hex;
+}
+
+export function getColorScheme(schemeName: TColorScheme) {
   return colorSchemeMap[schemeName] || colorSchemeMap.bright;
 }
 

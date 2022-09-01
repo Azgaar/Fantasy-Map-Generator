@@ -4,8 +4,9 @@ import FlatQueue from "flatqueue";
 import {TIME} from "config/logging";
 import {ELEVATION, MIN_LAND_HEIGHT, ROUTES} from "config/generation";
 import {dist2} from "utils/functionUtils";
+import {isBurg} from "utils/typeUtils";
 
-type TCellsData = Pick<IPack["cells"], "c" | "p" | "g" | "h" | "t" | "haven" | "biome" | "state" | "burg">;
+type TCellsData = Pick<IPack["cells"], "c" | "p" | "g" | "h" | "t" | "biome" | "burg">;
 
 export function generateRoutes(burgs: TBurgs, temp: Int8Array, cells: TCellsData) {
   const cellRoutes = new Uint8Array(cells.h.length);
@@ -25,7 +26,6 @@ export function generateRoutes(burgs: TBurgs, temp: Int8Array, cells: TCellsData
     const capitalsByFeature: Dict<IBurg[]> = {};
     const portsByFeature: Dict<IBurg[]> = {};
 
-    const isBurg = (burg: IBurg | TNoBurg): burg is IBurg => burg.i !== 0;
     const addBurg = (object: Dict<IBurg[]>, feature: number, burg: IBurg) => {
       if (!object[feature]) object[feature] = [];
       object[feature].push(burg);
@@ -103,7 +103,7 @@ export function generateRoutes(burgs: TBurgs, temp: Int8Array, cells: TCellsData
 
         const segments = findPathSegments({isWater: true, cellRoutes, connections, start, exit});
         for (const segment of segments) {
-          addConnections(segment, ROUTES.MAIN_ROAD);
+          addConnections(segment, ROUTES.SEA_ROUTE);
           mainRoads.push({feature: Number(key), cells: segment});
         }
       });
@@ -118,7 +118,7 @@ export function generateRoutes(burgs: TBurgs, temp: Int8Array, cells: TCellsData
       const cellId = segment[i];
       const nextCellId = segment[i + 1];
       if (nextCellId) connections.set(`${cellId}-${nextCellId}`, true);
-      cellRoutes[cellId] = roadTypeId;
+      if (!cellRoutes[cellId]) cellRoutes[cellId] = roadTypeId;
     }
   }
 

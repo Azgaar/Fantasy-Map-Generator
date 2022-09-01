@@ -78,13 +78,13 @@
   "#relig": {
     "opacity": 0.5,
     "stroke": null,
-    "stroke-width": 0,
+    "stroke-width": 3,
     "filter": null
   },
   "#cults": {
     "opacity": 0.5,
     "stroke": "#777777",
-    "stroke-width": 0,
+    "stroke-width": 3,
     "stroke-dasharray": null,
     "stroke-linecap": null,
     "filter": null

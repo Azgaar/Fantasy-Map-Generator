@@ -102,7 +102,7 @@ a {
 }
 
 #biomes {
-  stroke-width: 0.7;
+  stroke-width: 3;
 }
 
 #landmass {
@@ -137,7 +137,8 @@ a {
   stroke-linejoin: round;
 }
 
-t,
+/* TODO: turn on after debugging */
+/* t,
 #regions,
 #cults,
 #relig,
@@ -150,7 +151,7 @@ t,
 #landmass,
 #fogging {
   pointer-events: none;
-}
+} */
 
 #armies text {
   pointer-events: none;

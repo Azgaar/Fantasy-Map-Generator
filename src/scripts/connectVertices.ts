@@ -88,38 +88,32 @@ function findStartingVertex({
   throw new Error(`Markup: firstCell of feature ${featureId} has no neighbors of other features or external vertices`);
 }
 
-const CONNECT_VERTICES_MAX_ITERATIONS = 50000;
+const MAX_ITERATIONS = 50000;
 
 // connect vertices around feature
 export function connectVertices({
   vertices,
   startingVertex,
   ofSameType,
-  checkedCellsMutable
+  addToChecked,
+  closeRing
 }: {
   vertices: IGraphVertices;
   startingVertex: number;
   ofSameType: (cellId: number) => boolean;
-  checkedCellsMutable?: Uint8Array;
+  addToChecked?: (cellId: number) => void;
+  closeRing?: boolean;
 }) {
   const chain: number[] = []; // vertices chain to form a path
 
-  const addToChecked = (cellIds: number[]) => {
-    if (checkedCellsMutable) {
-      cellIds.forEach(cellId => {
-        checkedCellsMutable[cellId] = 1;
-      });
-    }
-  };
-
   let next = startingVertex;
-  for (let i = 0; i === 0 || (next !== startingVertex && i < CONNECT_VERTICES_MAX_ITERATIONS); i++) {
+  for (let i = 0; i === 0 || (next !== startingVertex && i < MAX_ITERATIONS); i++) {
     const previous = chain.at(-1);
     const current = next;
     chain.push(current);
 
     const neibCells = vertices.c[current];
-    addToChecked(neibCells);
+    if (addToChecked) neibCells.filter(ofSameType).forEach(addToChecked);
 
     const [c1, c2, c3] = neibCells.map(ofSameType);
     const [v1, v2, v3] = vertices.v[current];
@@ -134,5 +128,6 @@ export function connectVertices({
     }
   }
 
+  if (closeRing) chain.push(startingVertex);
   return chain;
 }

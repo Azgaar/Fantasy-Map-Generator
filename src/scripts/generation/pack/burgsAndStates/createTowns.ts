@@ -8,8 +8,8 @@ import {gauss} from "utils/probabilityUtils";
 const {Names} = window;
 
 export function createTowns(
-  capitalCells: Map<number, boolean>,
   cultures: TCultures,
+  scoredCellIds: UintArray,
   cells: Pick<IPack["cells"], "p" | "i" | "f" | "s" | "culture">
 ) {
   TIME && console.time("createTowns");
@@ -17,9 +17,6 @@ export function createTowns(
   // randomize cells score a bit for more natural towns placement
   const randomizeScore = (suitability: number) => suitability * gauss(1, 3, 0, 20, 3);
   const scores = new Int16Array(cells.s.map(randomizeScore));
-
-  // take populated cells without capitals
-  const scoredCellIds = cells.i.filter(i => scores[i] > 0 && cells.culture[i] && !capitalCells.has(i));
   scoredCellIds.sort((a, b) => scores[b] - scores[a]); // sort by randomized suitability score
 
   const townsNumber = getTownsNumber();
@@ -53,13 +50,13 @@ function placeTowns(townsNumber: number, scoredCellIds: UintArray, points: TPoin
     const townCells: number[] = [];
     const townsQuadtree = d3.quadtree();
 
-    const randomizeScaping = (spacing: number) => spacing * gauss(1, 0.3, 0.2, 2, 2);
+    const randomizeSpacing = (spacing: number) => spacing * gauss(1, 0.3, 0.2, 2, 2);
 
     for (const cellId of scoredCellIds) {
       const [x, y] = points[cellId];
 
       // randomize min spacing a bit to make placement not that uniform
-      const currentSpacing = randomizeScaping(spacing);
+      const currentSpacing = randomizeSpacing(spacing);
 
       if (townsQuadtree.find(x, y, currentSpacing) === undefined) {
         townCells.push(cellId);

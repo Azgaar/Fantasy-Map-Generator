@@ -1,22 +1,28 @@
-import * as d3 from "d3";
-
-import {getPaths} from "./utilts";
+import {pick} from "utils/functionUtils";
+import {byId} from "utils/shorthands";
+import {getPaths} from "./utils/getVertexPaths";
 
 export function drawCultures() {
-  /* uses */ const {cells, vertices, cultures} = pack;
+  /* global */ const {cells, vertices, features, cultures} = pack;
 
-  const getType = (cellId: number) => cells.culture[cellId];
-  const paths = getPaths(cells.c, cells.v, vertices, getType);
+  const paths = getPaths({
+    getType: (cellId: number) => cells.culture[cellId],
+    cells: pick(cells, "c", "v", "b", "h", "f"),
+    vertices,
+    features,
+    options: {fill: true, waterGap: true, halo: false}
+  });
 
-  const getColor = (i: number) => i && (cultures[i] as ICulture).color;
+  const getColor = (i: string) => (cultures[Number(i)] as ICulture).color;
 
-  d3.select("#cults")
-    .selectAll("path")
-    .remove()
-    .data(Object.entries(paths))
-    .enter()
-    .append("path")
-    .attr("d", ([, path]) => path)
-    .attr("fill", ([i]) => getColor(Number(i)))
-    .attr("id", ([i]) => "culture" + i);
+  const htmlPaths = paths.map(([index, {fill, waterGap}]) => {
+    const color = getColor(index);
+
+    return /* html */ `
+      <path d="${waterGap}" fill="none" stroke="${color}" id="culture-gap${index}" />
+      <path d="${fill}" fill="${color}" stroke="none" id="culture${index}" />
+    `;
+  });
+
+  byId("cults")!.innerHTML = htmlPaths.join("");
 }
