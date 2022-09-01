@@ -4,12 +4,12 @@ import {TIME} from "config/logging";
 import {getInputNumber} from "utils/nodeUtils";
 import {minmax} from "utils/numberUtils";
 import {ELEVATION, FOREST_BIOMES, MIN_LAND_HEIGHT, DISTANCE_FIELD} from "config/generation";
-import {isNeutals} from "utils/typeUtils";
+import type {TStateData} from "./createStateData";
 
 // growth algorithm to assign cells to states
 export function expandStates(
   capitalCells: Map<number, boolean>,
-  states: TStates,
+  statesData: TStateData[],
   features: TPackFeatures,
   cells: Pick<IPack["cells"], "c" | "h" | "f" | "t" | "r" | "fl" | "s" | "biome" | "culture">
 ) {
@@ -24,10 +24,7 @@ export function expandStates(
   const neutralInput = getInputNumber("neutralInput");
   const maxExpansionCost = (cellsNumber / 2) * neutralInput * statesNeutral;
 
-  for (const state of states) {
-    if (state.i === 0) continue;
-
-    const {i: stateId, center: cellId} = state as IState;
+  for (const {i: stateId, center: cellId} of statesData) {
     stateIds[cellId] = stateId;
     cost[cellId] = 1;
     queue.push({cellId, stateId}, 0);
@@ -66,11 +63,13 @@ export function expandStates(
   const GENERIC_LANDLOCKED_FEE = 0;
   const NAVAL_LANDLOCKED_FEE = 30;
 
+  const statesMap = new Map<number, TStateData>(statesData.map(stateData => [stateData.i, stateData]));
+
   while (queue.length) {
     const priority = queue.peekValue()!;
     const {cellId, stateId} = queue.pop()!;
 
-    const {type, culture, center, expansionism} = getState(stateId);
+    const {type, culture, center, expansionism} = statesMap.get(stateId)!;
     const capitalBiome = cells.biome[center];
 
     cells.c[cellId].forEach(neibCellId => {
@@ -99,12 +98,6 @@ export function expandStates(
   TIME && console.timeEnd("expandStates");
 
   return normalizeStates(stateIds, capitalCells, cells.c, cells.h);
-
-  function getState(stateId: number) {
-    const state = states[stateId];
-    if (isNeutals(state)) throw new Error("Neutrals cannot expand");
-    return state;
-  }
 
   function getCultureCost(cellId: number, stateCulture: number) {
     return cells.culture[cellId] === stateCulture ? SAME_CULTURE_BONUS : DIFFERENT_CULTURES_FEE;

@@ -104,7 +104,7 @@ export function createPack(grid: IGrid): IPack {
     rawRivers,
     vertices,
     {
-      ...pick(cells, "v", "c", "p", "b", "i", "g"),
+      ...pick(cells, "v", "c", "p", "b", "i", "g", "area"),
       h: heights,
       f: featureIds,
       t: distanceField,
@@ -114,6 +114,7 @@ export function createPack(grid: IGrid): IPack {
       fl: flux,
       biome,
       s: suitability,
+      pop: population,
       culture: cultureIds
     }
   );
@@ -148,7 +149,6 @@ export function createPack(grid: IGrid): IPack {
     }
   });
 
-  // Religions.generate();
   // BurgsAndStates.defineStateForms();
   // BurgsAndStates.generateProvinces();
   // BurgsAndStates.defineBurgFeatures();

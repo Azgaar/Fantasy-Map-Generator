@@ -2,14 +2,22 @@ interface IState {
   i: number;
   name: string;
   center: number;
+  capital: number;
   color: Hex | CssUrls;
   type: TCultureType;
   culture: number;
   expansionism: number;
+  form: string;
+  formName: string;
   fullName: string;
-  capital: Logical;
   coa: ICoa | string;
   // pole: TPoint ?
+  area: number;
+  cells: number;
+  burgs: number;
+  rural: number;
+  urban: number;
+  neighbors: number[];
   removed?: boolean;
 }
 
