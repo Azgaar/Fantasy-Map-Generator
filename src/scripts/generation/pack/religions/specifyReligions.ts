@@ -1,5 +1,5 @@
 import {brighter, darker, getMixedColor} from "utils/colorUtils";
-import {each, gauss, rand} from "utils/probabilityUtils";
+import {each, gauss} from "utils/probabilityUtils";
 import {isCulture} from "utils/typeUtils";
 import {expandReligions} from "./expandReligions";
 import {getDeityName} from "./generateDeityName";

@@ -33,9 +33,6 @@ export function generateReligions({
     pick(cells, "i", "c", "h", "biome", "culture", "burg", "state", "route")
   );
 
-  folkReligions.forEach(({center}) => drawPoint(cells.p[center], {radius: 3, color: "blue"}));
-  basicReligions.forEach(({center}) => drawPoint(cells.p[center], {radius: 3, color: "red"}));
-
   TIME && console.timeEnd("generateReligions");
   return {religionIds, religions};
 }
