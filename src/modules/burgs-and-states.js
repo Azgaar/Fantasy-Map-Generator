@@ -1000,7 +1000,6 @@ window.BurgsAndStates = (function () {
     }
 
     TIME && console.timeEnd("generateDiplomacy");
-    //console.table(states.map(s => s.diplomacy));
   };
 
   // select a forms for listed or all valid states

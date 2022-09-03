@@ -197,7 +197,7 @@ const onHoverEventsMap: OnHoverEventMap = {
   statesLayer: ({packCellId}) => {
     const stateId = pack.cells.state[packCellId];
     const state = pack.states[stateId];
-    const stateName = isState(state) ? state.fullName || state.name : state.name;
+    const stateName = isState(state) ? state.fullName : state.name;
 
     const provinceId = pack.cells.province[packCellId];
     const provinceName = provinceId ? `${pack.provinces[provinceId].fullName}, ` : "";

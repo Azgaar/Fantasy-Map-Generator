@@ -1,15 +1,22 @@
+import {getAdjective} from "utils/languageUtils";
 import {each} from "utils/probabilityUtils";
+import {adjectivalForms} from "./config";
 
 const {Names} = window;
 
-export function defineStateName(cellId: number, capitalName: string, cultureId: number, cultures: TCultures): string {
-  const useCapitalName = capitalName.length < 9 && each(5)(cellId);
-  const nameBase = cultures[cultureId].base;
+export function defineStateName(center: number, capitalName: string, nameBase: number, formName: string): string {
+  if (["Free City", "City-state"].includes(formName)) return capitalName;
+
+  const useCapitalName = capitalName.length < 9 && each(5)(center);
   const basename: string = useCapitalName ? capitalName : Names.getBaseShort(nameBase);
 
   return Names.getState(basename, basename);
 }
 
-export function defineFullStateName(name: string, form: string) {
-  return `${name} ${form}`;
+export function defineFullStateName(name: string, formName: string) {
+  if (!formName) return name;
+  if (!name && formName) return "The " + formName;
+
+  const isAdjectival = adjectivalForms.includes(formName) && !/-| /.test(name);
+  return isAdjectival ? `${getAdjective(name)} ${formName}` : `${formName} of ${name}`;
 }

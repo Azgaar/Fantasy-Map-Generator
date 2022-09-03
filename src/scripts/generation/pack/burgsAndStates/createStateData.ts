@@ -2,14 +2,10 @@ import {TIME} from "config/logging";
 import {getInputNumber} from "utils/nodeUtils";
 import {rn} from "utils/numberUtils";
 import type {createCapitals} from "./createCapitals";
-import {defineStateName} from "./defineStateName";
 import {generateStateEmblem} from "./generateStateEmblem";
 
 type TCapitals = ReturnType<typeof createCapitals>;
-export type TStateData = Pick<
-  IState,
-  "i" | "name" | "type" | "culture" | "center" | "expansionism" | "capital" | "coa"
->;
+export type TStateData = Pick<IState, "i" | "type" | "culture" | "center" | "expansionism" | "capital" | "coa">;
 
 export function createStateData(capitals: TCapitals, cultures: TCultures) {
   TIME && console.time("createStates");
@@ -17,16 +13,15 @@ export function createStateData(capitals: TCapitals, cultures: TCultures) {
   const powerInput = getInputNumber("powerInput");
 
   const statesData: TStateData[] = capitals.map((capital, index) => {
-    const {cell: cellId, culture: cultureId, name: capitalName} = capital;
+    const {cell: cellId, culture: cultureId} = capital;
     const id = index + 1;
-    const name = defineStateName(cellId, capitalName, cultureId, cultures);
 
+    if (cultureId === 0) throw new Error("Culture id cannot be 0");
     const {type, shield} = cultures[cultureId] as ICulture;
     const expansionism = rn(Math.random() * powerInput + 1, 1);
-
     const coa = generateStateEmblem(type, shield);
 
-    return {i: id, name, type, center: cellId, expansionism, capital: id, culture: cultureId, coa};
+    return {i: id, type, center: cellId, expansionism, capital: id, culture: cultureId, coa};
   });
 
   TIME && console.timeEnd("createStates");

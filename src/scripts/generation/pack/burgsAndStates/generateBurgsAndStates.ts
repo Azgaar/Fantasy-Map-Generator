@@ -10,33 +10,35 @@ import {expandStates} from "./expandStates";
 import {specifyBurgs} from "./specifyBurgs";
 import {specifyStates} from "./specifyStates";
 
+type TCellsData = Pick<
+  IPack["cells"],
+  | "v"
+  | "c"
+  | "p"
+  | "b"
+  | "i"
+  | "g"
+  | "area"
+  | "h"
+  | "f"
+  | "t"
+  | "haven"
+  | "harbor"
+  | "r"
+  | "fl"
+  | "biome"
+  | "s"
+  | "pop"
+  | "culture"
+>;
+
 export function generateBurgsAndStates(
   cultures: TCultures,
   features: TPackFeatures,
   temp: Int8Array,
   rivers: Omit<IRiver, "name" | "basin" | "type">[],
   vertices: IGraphVertices,
-  cells: Pick<
-    IPack["cells"],
-    | "v"
-    | "c"
-    | "p"
-    | "b"
-    | "i"
-    | "g"
-    | "area"
-    | "h"
-    | "f"
-    | "t"
-    | "haven"
-    | "harbor"
-    | "r"
-    | "fl"
-    | "biome"
-    | "s"
-    | "pop"
-    | "culture"
-  >
+  cells: TCellsData
 ): {burgIds: Uint16Array; stateIds: Uint16Array; burgs: TBurgs; states: TStates} {
   const cellsNumber = cells.i.length;
 
@@ -84,7 +86,7 @@ export function generateBurgsAndStates(
   const burgIds = assignBurgIds(burgs);
 
   const statistics = collectStatistics({...cells, state: stateIds, burg: burgIds}, burgs);
-  const states = specifyStates(statesData, statistics, stateIds, burgIds);
+  const states = specifyStates(statesData, statistics, cultures, burgs);
 
   return {burgIds, stateIds, burgs, states};
 
