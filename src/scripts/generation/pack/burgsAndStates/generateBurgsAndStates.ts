@@ -1,12 +1,36 @@
 import {WARN} from "config/logging";
 import {pick} from "utils/functionUtils";
 import {getInputNumber} from "utils/nodeUtils";
+import {collectStatistics} from "./collectStatistics";
 import {NEUTRALS, NO_BURG} from "./config";
 import {createCapitals} from "./createCapitals";
-import {createStates} from "./createStates";
+import {createStateData} from "./createStateData";
 import {createTowns} from "./createTowns";
 import {expandStates} from "./expandStates";
 import {specifyBurgs} from "./specifyBurgs";
+import {specifyStates} from "./specifyStates";
+
+type TCellsData = Pick<
+  IPack["cells"],
+  | "v"
+  | "c"
+  | "p"
+  | "b"
+  | "i"
+  | "g"
+  | "area"
+  | "h"
+  | "f"
+  | "t"
+  | "haven"
+  | "harbor"
+  | "r"
+  | "fl"
+  | "biome"
+  | "s"
+  | "pop"
+  | "culture"
+>;
 
 export function generateBurgsAndStates(
   cultures: TCultures,
@@ -14,10 +38,7 @@ export function generateBurgsAndStates(
   temp: Int8Array,
   rivers: Omit<IRiver, "name" | "basin" | "type">[],
   vertices: IGraphVertices,
-  cells: Pick<
-    IPack["cells"],
-    "v" | "c" | "p" | "b" | "i" | "g" | "h" | "f" | "t" | "haven" | "harbor" | "r" | "fl" | "biome" | "s" | "culture"
-  >
+  cells: TCellsData
 ): {burgIds: Uint16Array; stateIds: Uint16Array; burgs: TBurgs; states: TStates} {
   const cellsNumber = cells.i.length;
 
@@ -34,7 +55,7 @@ export function generateBurgsAndStates(
 
   const capitals = createCapitals(statesNumber, scoredCellIds, cultures, pick(cells, "p", "f", "culture"));
   const capitalCells = new Map(capitals.map(({cell}) => [cell, true]));
-  const states = createStates(capitals, cultures);
+  const statesData = createStateData(capitals, cultures);
 
   const towns = createTowns(
     cultures,
@@ -44,7 +65,7 @@ export function generateBurgsAndStates(
 
   const stateIds = expandStates(
     capitalCells,
-    states,
+    statesData,
     features,
     pick(cells, "c", "h", "f", "t", "r", "fl", "s", "biome", "culture")
   );
@@ -57,12 +78,15 @@ export function generateBurgsAndStates(
     temp,
     vertices,
     cultures,
-    states,
+    statesData,
     rivers,
     pick(cells, "v", "p", "g", "h", "f", "haven", "harbor", "s", "biome", "fl", "r")
   );
 
   const burgIds = assignBurgIds(burgs);
+
+  const statistics = collectStatistics({...cells, state: stateIds, burg: burgIds}, burgs);
+  const states = specifyStates(statesData, statistics, cultures, burgs);
 
   return {burgIds, stateIds, burgs, states};
 

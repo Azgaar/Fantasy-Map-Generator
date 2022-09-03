@@ -6,14 +6,13 @@ import {gauss, P} from "utils/probabilityUtils";
 import {NO_BURG} from "./config";
 
 import type {createCapitals} from "./createCapitals";
-import type {createStates} from "./createStates";
+import type {TStateData} from "./createStateData";
 import type {createTowns} from "./createTowns";
 
 const {COA} = window;
 
 type TCapitals = ReturnType<typeof createCapitals>;
 type TTowns = ReturnType<typeof createTowns>;
-type TStatesReturn = ReturnType<typeof createStates>;
 
 export function specifyBurgs(
   capitals: TCapitals,
@@ -23,11 +22,13 @@ export function specifyBurgs(
   temp: Int8Array,
   vertices: IGraphVertices,
   cultures: TCultures,
-  states: TStatesReturn,
+  statesData: TStateData[],
   rivers: Omit<IRiver, "name" | "basin" | "type">[],
   cells: Pick<IPack["cells"], "v" | "p" | "g" | "h" | "f" | "haven" | "harbor" | "s" | "biome" | "fl" | "r">
 ): TBurgs {
   TIME && console.time("specifyBurgs");
+
+  const stateDataMap = new Map(statesData.map(data => [data.i, data]));
 
   const burgs = [...capitals, ...towns].map((burgData, index) => {
     const {cell, culture, capital} = burgData;
@@ -38,7 +39,8 @@ export function specifyBurgs(
     const [x, y] = defineLocation(cell, port);
 
     const type = defineType(cell, port, population);
-    const coa: ICoa = defineEmblem(state, culture, port, capital, type, cultures, states);
+    const stateData = stateDataMap.get(state)!;
+    const coa: ICoa = defineEmblem(culture, port, capital, type, cultures, stateData);
 
     const burg: IBurg = {i: index + 1, ...burgData, state, port, population, x, y, type, coa};
     return burg;
@@ -119,28 +121,27 @@ export function specifyBurgs(
   }
 
   function defineEmblem(
-    stateId: number,
     cultureId: number,
     port: number,
     capital: Logical,
     type: TCultureType,
     cultures: TCultures,
-    states: TStatesReturn
+    stateData: TStateData
   ) {
     const coaType = capital && P(0.2) ? "Capital" : type === "Generic" ? "City" : type;
     const cultureShield = cultures[cultureId].shield;
-    const stateShield = ((states[stateId] as IState)?.coa as ICoa)?.shield;
 
-    if (stateId === 0) {
+    if (!stateData) {
       const baseCoa = COA.generate(null, 0, null, coaType);
-      const shield = COA.getShield(cultureShield, stateShield);
+      const shield = COA.getShield(cultureShield);
       return {...baseCoa, shield};
     }
 
-    const {culture: stateCultureId, coa: stateCOA} = states[stateId] as IState;
+    const {culture: stateCultureId, coa: stateCOA} = stateData;
     const kinship = defineKinshipToStateEmblem();
 
     const baseCoa = COA.generate(stateCOA, kinship, null, coaType);
+    const stateShield = (stateData.coa as ICoa)?.shield;
     const shield = COA.getShield(cultureShield, stateShield);
     return {...baseCoa, shield};
 

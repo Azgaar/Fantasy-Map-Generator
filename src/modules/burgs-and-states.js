@@ -1000,7 +1000,6 @@ window.BurgsAndStates = (function () {
     }
 
     TIME && console.timeEnd("generateDiplomacy");
-    //console.table(states.map(s => s.diplomacy));
   };
 
   // select a forms for listed or all valid states
@@ -1053,7 +1052,7 @@ window.BurgsAndStates = (function () {
       const isTheocracy =
         (religion && pack.religions[religion].expansion === "state") ||
         (P(0.1) && ["Organized", "Cult"].includes(pack.religions[religion].type));
-      const isAnarchy = P(0.01 - tier / 500);
+      const isAnarchy = P((1 - tier / 5) / 100); // 1% for smallest states, 0.2% for biggest
 
       if (isTheocracy) s.form = "Theocracy";
       else if (isAnarchy) s.form = "Anarchy";

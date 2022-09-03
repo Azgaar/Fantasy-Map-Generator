@@ -157,8 +157,7 @@ window.Names = (function () {
       base = 1;
     }
     const min = nameBases[base].min - 1;
-    const max = Math.max(nameBases[base].max - 2, min);
-    return getBase(base, min, max, "", 0);
+    return getBase(base, min, min, "", 0);
   };
 
   // generate state name based on capital or random name and culture-specific suffix

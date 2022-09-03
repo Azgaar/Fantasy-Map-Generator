@@ -16,6 +16,7 @@ import {
 } from "utils/unitUtils";
 import {showMainTip, tip} from "scripts/tooltips";
 import {defineEmblemData} from "./utils";
+import {isState} from "utils/typeUtils";
 
 export const onMouseMove = debounce(handleMouseMove, 100);
 
@@ -75,8 +76,9 @@ const getHoveredElement = (tagName: string, group: string, subgroup: string, isL
   if (layerIsOn("togglePopulation")) return "populationLayer";
   if (layerIsOn("toggleTemp")) return "temperatureLayer";
   if (layerIsOn("toggleBiomes") && biome[cellId]) return "biomesLayer";
-  if (religion[cellId]) return "religionsLayer"; // layerIsOn("toggleReligions") &&
-  if (layerIsOn("toggleProvinces") || (layerIsOn("toggleStates") && state[cellId])) return "statesLayer";
+  if (layerIsOn("toggleReligions") && religion[cellId]) return "religionsLayer";
+  // if (layerIsOn("toggleProvinces") || (layerIsOn("toggleStates") && state[cellId])) return "statesLayer";
+  if (state[cellId]) return "statesLayer";
   if (layerIsOn("toggleCultures") && culture[cellId]) return "culturesLayer";
   if (layerIsOn("toggleHeight")) return "heightLayer";
 
@@ -193,16 +195,18 @@ const onHoverEventsMap: OnHoverEventMap = {
   },
 
   statesLayer: ({packCellId}) => {
-    const state = pack.cells.state[packCellId];
-    const stateName = pack.states[state].fullName;
-    const province = pack.cells.province[packCellId];
-    const prov = province ? `${pack.provinces[province].fullName}, ` : "";
-    tip(prov + stateName);
+    const stateId = pack.cells.state[packCellId];
+    const state = pack.states[stateId];
+    const stateName = isState(state) ? state.fullName : state.name;
 
-    highlightDialogLine("statesEditor", state);
-    highlightDialogLine("diplomacyEditor", state);
-    highlightDialogLine("militaryEditor", state);
-    highlightDialogLine("provincesEditor", province);
+    const provinceId = pack.cells.province[packCellId];
+    const provinceName = provinceId ? `${pack.provinces[provinceId].fullName}, ` : "";
+    tip(provinceName + stateName);
+
+    highlightDialogLine("statesEditor", stateId);
+    highlightDialogLine("diplomacyEditor", stateId);
+    highlightDialogLine("militaryEditor", stateId);
+    highlightDialogLine("provincesEditor", provinceId);
   },
 
   culturesLayer: ({packCellId}) => {
