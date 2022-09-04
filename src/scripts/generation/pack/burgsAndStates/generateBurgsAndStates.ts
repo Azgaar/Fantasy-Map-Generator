@@ -7,31 +7,12 @@ import {createCapitals} from "./createCapitals";
 import {createStateData} from "./createStateData";
 import {createTowns} from "./createTowns";
 import {expandStates} from "./expandStates";
-import {generateDiplomacy} from "./generateDiplomacy";
+import {generateRelations} from "./generateRelations";
 import {specifyBurgs} from "./specifyBurgs";
 import {specifyStates} from "./specifyStates";
 
-type TCellsData = Pick<
-  IPack["cells"],
-  | "v"
-  | "c"
-  | "p"
-  | "b"
-  | "i"
-  | "g"
-  | "area"
-  | "h"
-  | "f"
-  | "t"
-  | "haven"
-  | "harbor"
-  | "r"
-  | "fl"
-  | "biome"
-  | "s"
-  | "pop"
-  | "culture"
->;
+// prettier-ignore
+type TCellsData = Pick<IPack["cells"], | "v" | "c" | "p" | "b" | "i" | "g" | "area" | "h" | "f" | "t" | "haven" | "harbor" | "r" | "fl" | "biome" | "s" | "pop" | "culture">;
 
 export function generateBurgsAndStates(
   cultures: TCultures,
@@ -87,7 +68,7 @@ export function generateBurgsAndStates(
   const burgIds = assignBurgIds(burgs);
 
   const statistics = collectStatistics({...cells, state: stateIds, burg: burgIds}, burgs);
-  const {chronicle, diplomacy} = generateDiplomacy(statesData, statistics, pick(cells, "f"));
+  const diplomacy = generateRelations(statesData, statistics, pick(cells, "f"));
   const states = specifyStates(statesData, statistics, diplomacy, cultures, burgs);
 
   return {burgIds, stateIds, burgs, states};

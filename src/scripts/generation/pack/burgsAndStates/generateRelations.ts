@@ -1,34 +1,32 @@
 import * as d3 from "d3";
 
 import {TIME} from "config/logging";
-import {TStateStatistics} from "./collectStatistics";
-import {TStateData} from "./createStateData";
 import {P, rw} from "utils/probabilityUtils";
 import {relations} from "./config";
 
-export type TDiplomacy = {[key: number]: TRelations[]};
+import type {TStateStatistics} from "./collectStatistics";
+import type {TStateData} from "./createStateData";
+
+export type TDiplomacy = {[key: number]: TRelation[]};
 
 interface IDiplomacyData {
   i: number;
   type: TCultureType;
   center: number;
+  expansionism: number;
   area: number;
   neighbors: number[];
 }
 
-export function generateDiplomacy(
+export function generateRelations(
   statesData: TStateData[],
   statistics: TStateStatistics,
   cells: Pick<IPack["cells"], "f">
 ) {
-  TIME && console.time("generateDiplomacy");
+  TIME && console.time("generateRelations");
 
-  const chronicle: string[] = [];
   const diplomacy = getBlankDiplomacyMatrix(statesData);
-
-  if (statesData.length < 2) {
-    return {chronicle, diplomacy};
-  }
+  if (statesData.length < 2) return diplomacy;
 
   const stateAreas = Object.values(statistics).map(({area}) => area);
   const averageStateArea = d3.mean(stateAreas)!;
@@ -81,8 +79,8 @@ export function generateDiplomacy(
     }
   }
 
-  TIME && console.timeEnd("generateDiplomacy");
-  return {chronicle, diplomacy};
+  TIME && console.timeEnd("generateRelations");
+  return diplomacy;
 }
 
 function getBlankDiplomacyMatrix(statesData: TStateData[]) {
@@ -95,9 +93,9 @@ function getBlankDiplomacyMatrix(statesData: TStateData[]) {
 }
 
 function getDiplomacyData(stateData: TStateData, statistics: TStateStatistics): IDiplomacyData {
-  const {i, type, center} = stateData;
+  const {i, type, center, expansionism} = stateData;
   const {neighbors, area} = statistics[i];
-  return {i, type, center, neighbors, area};
+  return {i, type, center, expansionism, neighbors, area};
 }
 
 function detectVassalState(from: IDiplomacyData, to: IDiplomacyData, averageStateArea: number) {

@@ -7,7 +7,7 @@ import {isBurg} from "utils/typeUtils";
 
 import type {TStateStatistics} from "./collectStatistics";
 import type {TStateData} from "./createStateData";
-import type {TDiplomacy} from "./generateDiplomacy";
+import type {TDiplomacy} from "./generateRelations";
 
 export function specifyStates(
   statesData: TStateData[],
@@ -24,16 +24,17 @@ export function specifyStates(
 
   const states: IState[] = statesData.map(stateData => {
     const {i, center, type, culture, capital} = stateData;
-    const {area, burgs: burgsNumber, ...stats} = statistics[i];
+    const {area, burgs: burgsNumber, neighbors, ...stats} = statistics[i];
     const color = colors[i];
 
     const capitalBurg = burgs[capital];
     const capitalName = isBurg(capitalBurg) ? capitalBurg.name : null;
     if (!capitalName) throw new Error("State capital is not a burg");
 
+    const relations = diplomacy[i];
     const nameBase = getNameBase(culture);
     const areaTier = getAreaTier(area);
-    const {form, formName} = defineStateForm(type, areaTier, nameBase, burgsNumber);
+    const {form, formName} = defineStateForm(type, areaTier, nameBase, burgsNumber, relations, neighbors);
     const name = defineStateName(center, capitalName, nameBase, formName);
     const fullName = defineFullStateName(name, formName);
 
@@ -47,7 +48,8 @@ export function specifyStates(
       area,
       burgs: burgsNumber,
       ...stats,
-      diplomacy: diplomacy[i]
+      neighbors,
+      relations
     };
     return state;
   });

@@ -18,7 +18,7 @@ interface IState {
   rural: number;
   urban: number;
   neighbors: number[];
-  diplomacy: TRelations[];
+  relations: TRelation[];
   removed?: boolean;
 }
 
@@ -38,4 +38,14 @@ interface ICoa {
   t1: string;
 }
 
-type TRelations = "Ally" | "Friendly" | "Neutral" | "Suspicion" | "Rival" | "Unknown" | "Suzerain" | "Vassal" | "x";
+type TRelation =
+  | "Ally"
+  | "Friendly"
+  | "Neutral"
+  | "Suspicion"
+  | "Rival"
+  | "Unknown"
+  | "Suzerain"
+  | "Vassal"
+  | "Enemy"
+  | "x";
