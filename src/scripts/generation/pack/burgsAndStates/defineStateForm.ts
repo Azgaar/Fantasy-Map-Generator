@@ -28,11 +28,11 @@ export function defineStateForm(
   areaTier: AreaTiers,
   nameBase: number,
   burgsNumber: number,
-  relations: TRelation[],
-  neighbors: number[]
+  neighbors: number[],
+  isVassal: boolean
 ) {
   const form = defineForm(type, areaTier);
-  const formName = defineFormName(form, nameBase, areaTier, burgsNumber, relations, neighbors);
+  const formName = defineFormName(form, nameBase, areaTier, burgsNumber, neighbors, isVassal);
 
   return {form, formName};
 }
@@ -59,10 +59,10 @@ function defineFormName(
   nameBase: number,
   areaTier: AreaTiers,
   burgsNumber: number,
-  relations: TRelation[],
-  neighbors: number[]
+  neighbors: number[],
+  isVassal: boolean
 ) {
-  if (form === "Monarchy") return defineMonarchyForm(nameBase, areaTier, relations, neighbors);
+  if (form === "Monarchy") return defineMonarchyForm(nameBase, areaTier, neighbors, isVassal);
   if (form === "Republic") return defineRepublicForm(areaTier, burgsNumber);
   if (form === "Union") return rw(StateForms.union);
   if (form === "Theocracy") return defineTheocracyForm(nameBase, areaTier);
@@ -72,10 +72,9 @@ function defineFormName(
 }
 
 // Default name depends on area tier, some name bases have special names for tiers
-function defineMonarchyForm(nameBase: number, areaTier: AreaTiers, relations: TRelation[], neighbors: number[]) {
+function defineMonarchyForm(nameBase: number, areaTier: AreaTiers, neighbors: number[], isVassal: boolean) {
   const form = StateForms.monarchy[areaTier];
 
-  const isVassal = relations.includes("Vassal");
   if (isVassal) {
     if (areaTier === AreaTiers.DUCHY && neighbors.length > 1 && rand(6) < neighbors.length) return "Marches";
     if (nameBase === NAMEBASE.English && P(0.3)) return "Dominion";

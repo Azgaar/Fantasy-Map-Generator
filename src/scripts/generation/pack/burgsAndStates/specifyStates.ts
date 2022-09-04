@@ -4,6 +4,7 @@ import {createAreaTiers, defineStateForm} from "./defineStateForm";
 import {defineFullStateName, defineStateName} from "./defineStateName";
 import {defineStateColors} from "./defineStateColors";
 import {isBurg} from "utils/typeUtils";
+import {generateConflicts} from "./generateConflicts";
 
 import type {TStateStatistics} from "./collectStatistics";
 import type {TStateData} from "./createStateData";
@@ -32,13 +33,15 @@ export function specifyStates(
     if (!capitalName) throw new Error("State capital is not a burg");
 
     const relations = diplomacy[i];
+    const isVassal = relations.includes("Vassal");
+
     const nameBase = getNameBase(culture);
     const areaTier = getAreaTier(area);
-    const {form, formName} = defineStateForm(type, areaTier, nameBase, burgsNumber, relations, neighbors);
+    const {form, formName} = defineStateForm(type, areaTier, nameBase, burgsNumber, neighbors, isVassal);
     const name = defineStateName(center, capitalName, nameBase, formName);
     const fullName = defineFullStateName(name, formName);
 
-    const state: IState = {
+    return {
       name,
       ...stateData,
       form,
@@ -51,8 +54,11 @@ export function specifyStates(
       neighbors,
       relations
     };
-    return state;
   });
+
+  const wars = generateConflicts(states); // mutates states
+  console.log(wars);
+  console.log(states);
 
   TIME && console.timeEnd("specifyStates");
   return [NEUTRALS, ...states];

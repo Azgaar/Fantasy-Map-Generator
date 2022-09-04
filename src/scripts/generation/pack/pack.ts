@@ -149,7 +149,6 @@ export function createPack(grid: IGrid): IPack {
     }
   });
 
-  // BurgsAndStates.defineStateForms();
   // BurgsAndStates.generateProvinces();
   // BurgsAndStates.defineBurgFeatures();
 

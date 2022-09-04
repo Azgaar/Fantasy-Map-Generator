@@ -24,6 +24,7 @@ interface IOptions {
   showMFCGMap: boolean;
   winds: [number, number, number, number, number, number];
   stateLabelsMode: "auto" | "short" | "full";
+  year: number;
 }
 
 declare let populationRate: number;
