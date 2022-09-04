@@ -7,6 +7,7 @@ import {createCapitals} from "./createCapitals";
 import {createStateData} from "./createStateData";
 import {createTowns} from "./createTowns";
 import {expandStates} from "./expandStates";
+import {generateDiplomacy} from "./generateDiplomacy";
 import {specifyBurgs} from "./specifyBurgs";
 import {specifyStates} from "./specifyStates";
 
@@ -86,7 +87,8 @@ export function generateBurgsAndStates(
   const burgIds = assignBurgIds(burgs);
 
   const statistics = collectStatistics({...cells, state: stateIds, burg: burgIds}, burgs);
-  const states = specifyStates(statesData, statistics, cultures, burgs);
+  const {chronicle, diplomacy} = generateDiplomacy(statesData, statistics, pick(cells, "f"));
+  const states = specifyStates(statesData, statistics, diplomacy, cultures, burgs);
 
   return {burgIds, stateIds, burgs, states};
 

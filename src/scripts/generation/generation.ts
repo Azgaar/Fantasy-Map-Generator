@@ -7,7 +7,7 @@ import {initLayers, renderLayer, restoreLayers} from "layers";
 // @ts-expect-error js module
 import {drawScaleBar, Rulers} from "modules/measurers";
 // @ts-expect-error js module
-import {unfog} from "modules/ui/editors";
+import {unfog, downloadFile} from "modules/ui/editors";
 // @ts-expect-error js module
 import {applyMapSize, randomizeOptions} from "modules/ui/options";
 // @ts-expect-error js module
@@ -26,7 +26,6 @@ import {createGrid} from "./grid/grid";
 import {createPack} from "./pack/pack";
 import {getInputValue, setInputValue} from "utils/nodeUtils";
 import {calculateMapCoordinates} from "modules/coordinates";
-import {drawPoint} from "utils/debugUtils";
 
 const {Zoom, ThreeD} = window;
 
@@ -77,12 +76,27 @@ async function generate(options?: IGenerationOptions) {
     //   if (route === 2) drawPoint(pack.cells.p[index], {color: "black"});
     // });
 
+    downloadDiplomacyData();
+
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     // showStatistics();
     INFO && console.groupEnd();
   } catch (error) {
     showGenerationError(error as Error);
   }
+}
+
+function downloadDiplomacyData() {
+  const states = pack.states.filter(s => s.i && !s.removed);
+  const valid = states.map(s => s.i);
+
+  let data = "," + states.map(s => s.name).join(",") + "\n"; // headers
+  states.forEach(s => {
+    const rels = s.diplomacy.filter((v, i) => valid.includes(i));
+    data += s.name + "," + rels.join(",") + "\n";
+  });
+
+  // downloadFile(data, "relations.csv");
 }
 
 function showGenerationError(error: Error) {

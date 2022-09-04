@@ -106,3 +106,10 @@ export const adjectivalForms = [
   "Horde",
   "Marches"
 ];
+
+export const relations = {
+  neighbors: {Ally: 1, Friendly: 2, Neutral: 1, Suspicion: 10, Rival: 9},
+  neighborsOfNeighbors: {Ally: 10, Friendly: 8, Neutral: 5, Suspicion: 1},
+  farStates: {Friendly: 1, Neutral: 12, Suspicion: 2},
+  navalToNaval: {Neutral: 2, Suspicion: 2, Rival: 1}
+};

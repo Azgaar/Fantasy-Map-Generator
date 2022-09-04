@@ -673,7 +673,7 @@ function getFileName(dataType) {
   return name + " " + type + dateString;
 }
 
-function downloadFile(data, name, type = "text/plain") {
+export function downloadFile(data, name, type = "text/plain") {
   const dataBlob = new Blob([data], {type});
   const url = window.URL.createObjectURL(dataBlob);
   const link = document.createElement("a");

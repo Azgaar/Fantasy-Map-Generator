@@ -1,10 +1,10 @@
-import {NAMEBASE} from "config/namebases";
 import * as d3 from "d3";
 
+import {NAMEBASE} from "config/namebases";
 import {getInputNumber} from "utils/nodeUtils";
 import {P, rand, rw} from "utils/probabilityUtils";
-import type {TStateStatistics} from "./collectStatistics";
 import {AreaTiers, culturalMonarchyFormsMap, culturalTheocracyFormsMap, StateForms} from "./config";
+import type {TStateStatistics} from "./collectStatistics";
 
 // create 5 area tiers, 4 is the biggest, 0 the smallest
 export function createAreaTiers(statistics: TStateStatistics) {
@@ -59,7 +59,7 @@ function defineFormName(
   if (form === "Theocracy") return defineTheocracyForm(nameBase, areaTier);
   if (form === "Anarchy") return rw(StateForms.anarchy);
 
-  return "test";
+  throw new Error("Unknown state form: " + form);
 }
 
 // Default name depends on area tier, some name bases have special names for tiers
