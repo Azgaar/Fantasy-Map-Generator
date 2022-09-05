@@ -126,7 +126,7 @@ export function generatePrecipitation(heights: Uint8Array, temperatures: Int8Arr
   return precipitation;
 }
 
-// TODO: move to renderer
+// TODO: move to renderers
 function drawWindDirection() {
   const wind = prec.append("g").attr("id", "wind");
 

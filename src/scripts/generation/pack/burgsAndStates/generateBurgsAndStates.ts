@@ -7,30 +7,12 @@ import {createCapitals} from "./createCapitals";
 import {createStateData} from "./createStateData";
 import {createTowns} from "./createTowns";
 import {expandStates} from "./expandStates";
+import {generateRelations} from "./generateRelations";
 import {specifyBurgs} from "./specifyBurgs";
 import {specifyStates} from "./specifyStates";
 
-type TCellsData = Pick<
-  IPack["cells"],
-  | "v"
-  | "c"
-  | "p"
-  | "b"
-  | "i"
-  | "g"
-  | "area"
-  | "h"
-  | "f"
-  | "t"
-  | "haven"
-  | "harbor"
-  | "r"
-  | "fl"
-  | "biome"
-  | "s"
-  | "pop"
-  | "culture"
->;
+// prettier-ignore
+type TCellsData = Pick<IPack["cells"], | "v" | "c" | "p" | "b" | "i" | "g" | "area" | "h" | "f" | "t" | "haven" | "harbor" | "r" | "fl" | "biome" | "s" | "pop" | "culture">;
 
 export function generateBurgsAndStates(
   cultures: TCultures,
@@ -39,7 +21,7 @@ export function generateBurgsAndStates(
   rivers: Omit<IRiver, "name" | "basin" | "type">[],
   vertices: IGraphVertices,
   cells: TCellsData
-): {burgIds: Uint16Array; stateIds: Uint16Array; burgs: TBurgs; states: TStates} {
+): {burgIds: Uint16Array; stateIds: Uint16Array; burgs: TBurgs; states: TStates; conflicts: IConflict[]} {
   const cellsNumber = cells.i.length;
 
   const scoredCellIds = getScoredCellIds();
@@ -49,7 +31,8 @@ export function generateBurgsAndStates(
       burgIds: new Uint16Array(cellsNumber),
       stateIds: new Uint16Array(cellsNumber),
       burgs: [NO_BURG],
-      states: [NEUTRALS]
+      states: [NEUTRALS],
+      conflicts: []
     };
   }
 
@@ -86,9 +69,10 @@ export function generateBurgsAndStates(
   const burgIds = assignBurgIds(burgs);
 
   const statistics = collectStatistics({...cells, state: stateIds, burg: burgIds}, burgs);
-  const states = specifyStates(statesData, statistics, cultures, burgs);
+  const diplomacy = generateRelations(statesData, statistics, pick(cells, "f"));
+  const {states, conflicts} = specifyStates(statesData, statistics, diplomacy, cultures, burgs);
 
-  return {burgIds, stateIds, burgs, states};
+  return {burgIds, stateIds, burgs, states, conflicts};
 
   function getScoredCellIds() {
     const score = new Int16Array(cells.s.map(s => s * Math.random()));

@@ -26,7 +26,6 @@ import {createGrid} from "./grid/grid";
 import {createPack} from "./pack/pack";
 import {getInputValue, setInputValue} from "utils/nodeUtils";
 import {calculateMapCoordinates} from "modules/coordinates";
-import {drawPoint} from "utils/debugUtils";
 
 const {Zoom, ThreeD} = window;
 
@@ -54,13 +53,14 @@ async function generate(options?: IGenerationOptions) {
     window.mapCoordinates = calculateMapCoordinates();
 
     const newGrid = await createGrid(grid, precreatedGraph);
-    const newPack = createPack(newGrid);
+    const {pack: newPack, conflicts} = createPack(newGrid);
 
     // TODO: draw default ruler
 
     // redefine global grid and pack
     grid = newGrid;
     pack = newPack;
+    events = {conflicts};
 
     // temp rendering for debug
     // renderLayer("cells");

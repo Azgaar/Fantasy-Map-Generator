@@ -149,11 +149,8 @@ window.Names = (function () {
   // generate short name for base
   const getBaseShort = function (base) {
     if (nameBases[base] === undefined) {
-      tip(
-        `Namebase ${base} does not exist. Please upload custom namebases of change the base in Cultures Editor`,
-        false,
-        "error"
-      );
+      const message = `Namebase ${base} does not exist. Please upload custom namebases of change the base in Cultures Editor`;
+      tip(message, false, "error");
       base = 1;
     }
     const min = nameBases[base].min - 1;

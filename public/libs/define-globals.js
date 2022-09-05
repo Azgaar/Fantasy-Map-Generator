@@ -4,13 +4,15 @@
 let grid = {}; // initial graph based on jittered square grid and data
 let pack = {}; // packed graph and data
 
+let notes = [];
+let events = {};
+
 let seed;
 let mapId;
 let mapHistory = [];
 
 let elSelected;
 
-let notes = [];
 let customization = 0;
 
 let rulers;

@@ -1,11 +1,13 @@
 declare let grid: IGrid;
 declare let pack: IPack;
 
+declare let notes: INote[];
+declare let events: IEvents;
+
 declare let seed: string;
 declare let mapId: number;
 declare let mapHistory: IMapHistoryEntry[];
 
-declare let notes: INote[];
 declare let customization: number;
 
 declare let rulers: Rulers;
@@ -24,6 +26,7 @@ interface IOptions {
   showMFCGMap: boolean;
   winds: [number, number, number, number, number, number];
   stateLabelsMode: "auto" | "short" | "full";
+  year: number;
 }
 
 declare let populationRate: number;
