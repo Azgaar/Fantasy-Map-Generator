@@ -1,12 +1,22 @@
 import * as d3 from "d3";
 
 import {TIME} from "config/logging";
-import {list, trimVowels} from "utils/languageUtils";
-import {gauss, ra} from "utils/probabilityUtils";
+import {getAdjective, list, trimVowels} from "utils/languageUtils";
+import {gauss, P, ra, rw} from "utils/probabilityUtils";
+import {conflictTypes} from "./config";
 
-export function generateConflicts(states: IState[]) {
+const {Names} = window;
+
+export function generateConflicts(states: IState[], cultures: TCultures): IConflict[] {
   TIME && console.time("generateConflicts");
+  const historicalWars = generateHistoricalConflicts(states, cultures);
+  const ongoingWars = generateOngoingConflicts(states);
 
+  TIME && console.timeEnd("generateConflicts");
+  return [...historicalWars, ...ongoingWars].sort((a, b) => a.start - b.start);
+}
+
+function generateOngoingConflicts(states: IState[]): IConflict[] {
   const statesMap = new Map(states.map(state => [state.i, state]));
   const wars: IConflict[] = [];
 
@@ -37,7 +47,6 @@ export function generateConflicts(states: IState[]) {
     wars.push(war);
   }
 
-  TIME && console.timeEnd("generateConflicts");
   return wars;
 
   function simulateWar(attacker: IState, defender: IState): IConflict {
@@ -134,7 +143,7 @@ export function generateConflicts(states: IState[]) {
     const name = `${attacker.name}-${trimVowels(defender.name)}ian War`;
     const parties = {attackers: attackers.map(({i}) => i), defenders: defenders.map(({i}) => i)};
     const start = options.year - gauss(2, 2, 0, 5);
-    return {type: "conflict", name, start, parties, description: history.join(". ")};
+    return {name, start, parties, description: history.join(". ")};
   }
 
   function getStatePower(state: IState) {
@@ -154,5 +163,33 @@ export function generateConflicts(states: IState[]) {
     if (advantage > 2) return "decisive";
     if (advantage > 1.3) return "significant";
     return "minor";
+  }
+}
+
+function generateHistoricalConflicts(states: IState[], cultures: TCultures): IConflict[] {
+  const statesMap = new Map(states.map(state => [state.i, state]));
+  const isConflict = (conflict: IConflict | null): conflict is IConflict => conflict !== null;
+  const getNameBase = (cultureId: number) => cultures[cultureId].base;
+  return states.map(generateConflicts).flat();
+
+  function generateConflicts(state: IState): IConflict[] {
+    const conflicts = state.neighbors
+      .map((neighbor, index) => {
+        if (index && P(0.8)) return null;
+        const enemy = statesMap.get(neighbor);
+        if (!enemy) return null;
+
+        const properName = P(0.8) ? enemy.name : Names.getBaseShort(getNameBase(enemy.culture));
+        const name = getAdjective(properName) + " " + rw(conflictTypes);
+        const start = gauss(options.year - 100, 150, 1, options.year - 6);
+        const end = start + gauss(4, 5, 1, options.year - start - 1);
+        const parties = {attackers: [state.i], defenders: [enemy.i]};
+
+        const conflict: IConflict = {name, start, end, parties};
+        return conflict;
+      })
+      .filter(isConflict);
+
+    return conflicts;
   }
 }

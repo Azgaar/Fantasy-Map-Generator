@@ -113,3 +113,15 @@ export const relations = {
   farStates: {Friendly: 1, Neutral: 12, Suspicion: 2},
   navalToNaval: {Neutral: 2, Suspicion: 2, Rival: 1}
 };
+
+export const conflictTypes = {
+  War: 6,
+  Conflict: 2,
+  Campaign: 4,
+  Invasion: 2,
+  Rebellion: 2,
+  Conquest: 2,
+  Intervention: 1,
+  Expedition: 1,
+  Crusade: 1
+};

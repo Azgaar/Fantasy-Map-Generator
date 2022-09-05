@@ -16,7 +16,7 @@ export function specifyStates(
   diplomacy: TDiplomacy,
   cultures: TCultures,
   burgs: TBurgs
-): TStates {
+): {states: TStates; conflicts: IConflict[]} {
   TIME && console.time("specifyStates");
 
   const colors = defineStateColors(statistics);
@@ -56,10 +56,8 @@ export function specifyStates(
     };
   });
 
-  const wars = generateConflicts(states); // mutates states
-  console.log(wars);
-  console.log(states);
+  const conflicts = generateConflicts(states, cultures); // mutates states
 
   TIME && console.timeEnd("specifyStates");
-  return [NEUTRALS, ...states];
+  return {states: [NEUTRALS, ...states], conflicts};
 }

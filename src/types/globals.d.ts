@@ -1,11 +1,13 @@
 declare let grid: IGrid;
 declare let pack: IPack;
 
+declare let notes: INote[];
+declare let events: IEvents;
+
 declare let seed: string;
 declare let mapId: number;
 declare let mapHistory: IMapHistoryEntry[];
 
-declare let notes: INote[];
 declare let customization: number;
 
 declare let rulers: Rulers;

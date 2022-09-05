@@ -18,7 +18,7 @@ import {generateReligions} from "./religions/generateReligions";
 const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
 const {Biomes} = window;
 
-export function createPack(grid: IGrid): IPack {
+export function createPack(grid: IGrid): {pack: IPack; conflicts: IConflict[]} {
   const {temp, prec} = grid.cells;
   const {vertices, cells} = repackGrid(grid);
 
@@ -97,7 +97,7 @@ export function createPack(grid: IGrid): IPack {
     pop: population
   });
 
-  const {burgIds, stateIds, burgs, states} = generateBurgsAndStates(
+  const {burgIds, stateIds, burgs, states, conflicts} = generateBurgsAndStates(
     cultures,
     mergedFeatures,
     temp,
@@ -199,7 +199,7 @@ export function createPack(grid: IGrid): IPack {
     religions
   };
 
-  return pack;
+  return {pack, conflicts};
 }
 
 // repack grid cells: discart deep water cells, add land cells along the coast

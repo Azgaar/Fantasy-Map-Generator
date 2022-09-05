@@ -559,6 +559,7 @@ window.Markers = (function () {
     const {cells, states} = pack;
 
     const state = states[cells.state[cell]];
+    // TODO: use events
     if (!state.campaigns) state.campaigns = BurgsAndStates.generateCampaign(state);
     const campaign = ra(state.campaigns);
     const date = generateDate(campaign.start, campaign.end);

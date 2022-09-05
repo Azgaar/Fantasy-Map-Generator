@@ -21,7 +21,7 @@ export function generateBurgsAndStates(
   rivers: Omit<IRiver, "name" | "basin" | "type">[],
   vertices: IGraphVertices,
   cells: TCellsData
-): {burgIds: Uint16Array; stateIds: Uint16Array; burgs: TBurgs; states: TStates} {
+): {burgIds: Uint16Array; stateIds: Uint16Array; burgs: TBurgs; states: TStates; conflicts: IConflict[]} {
   const cellsNumber = cells.i.length;
 
   const scoredCellIds = getScoredCellIds();
@@ -31,7 +31,8 @@ export function generateBurgsAndStates(
       burgIds: new Uint16Array(cellsNumber),
       stateIds: new Uint16Array(cellsNumber),
       burgs: [NO_BURG],
-      states: [NEUTRALS]
+      states: [NEUTRALS],
+      conflicts: []
     };
   }
 
@@ -69,9 +70,9 @@ export function generateBurgsAndStates(
 
   const statistics = collectStatistics({...cells, state: stateIds, burg: burgIds}, burgs);
   const diplomacy = generateRelations(statesData, statistics, pick(cells, "f"));
-  const states = specifyStates(statesData, statistics, diplomacy, cultures, burgs);
+  const {states, conflicts} = specifyStates(statesData, statistics, diplomacy, cultures, burgs);
 
-  return {burgIds, stateIds, burgs, states};
+  return {burgIds, stateIds, burgs, states, conflicts};
 
   function getScoredCellIds() {
     const score = new Int16Array(cells.s.map(s => s * Math.random()));
