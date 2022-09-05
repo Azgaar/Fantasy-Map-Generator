@@ -18,7 +18,7 @@ import {generateReligions} from "./religions/generateReligions";
 const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
 const {Biomes} = window;
 
-export function createPack(grid: IGrid): {pack: IPack; conflicts: IConflict[]} {
+export function createPack(grid: IGrid): IPack {
   const {temp, prec} = grid.cells;
   const {vertices, cells} = repackGrid(grid);
 
@@ -168,6 +168,8 @@ export function createPack(grid: IGrid): {pack: IPack; conflicts: IConflict[]} {
   // drawScaleBar(window.scale);
   // Names.getMapName();
 
+  const events: IEvents = {conflicts};
+
   const pack: IPack = {
     vertices,
     cells: {
@@ -196,10 +198,11 @@ export function createPack(grid: IGrid): {pack: IPack; conflicts: IConflict[]} {
     states,
     burgs,
     routes,
-    religions
+    religions,
+    events
   };
 
-  return {pack, conflicts};
+  return pack;
 }
 
 // repack grid cells: discart deep water cells, add land cells along the coast

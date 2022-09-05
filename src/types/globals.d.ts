@@ -2,7 +2,6 @@ declare let grid: IGrid;
 declare let pack: IPack;
 
 declare let notes: INote[];
-declare let events: IEvents;
 
 declare let seed: string;
 declare let mapId: number;

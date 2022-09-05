@@ -8,6 +8,7 @@ interface IPack extends IGraph {
   rivers: TRivers;
   religions: TReligions;
   routes: TRoutes;
+  events: IEvents;
 }
 
 interface IPackCells {

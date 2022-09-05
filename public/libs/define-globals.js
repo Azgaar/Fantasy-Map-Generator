@@ -5,7 +5,6 @@ let grid = {}; // initial graph based on jittered square grid and data
 let pack = {}; // packed graph and data
 
 let notes = [];
-let events = {};
 
 let seed;
 let mapId;
