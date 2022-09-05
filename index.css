@@ -2335,3 +2335,9 @@ svg.button {
     display: none;
   }
 }
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #25252a;
+    }
+}
