@@ -7,7 +7,7 @@ export function generateProvinces(
   states: TStates,
   burgs: TBurgs,
   cultures: TCultures,
-  cells: Pick<IPack["cells"], "i">
+  cells: Pick<IPack["cells"], "i" | "c" | "h" | "t" | "state" | "burg">
 ) {
   TIME && console.time("generateProvinces");
 
@@ -16,7 +16,7 @@ export function generateProvinces(
     return {provinceIds: new Uint16Array(cells.i.length), provinces: [] as TProvinces[]};
 
   const coreProvinces = generateCoreProvinces(states, burgs, cultures, percentage);
-  const provinceIds = expandProvinces(percentage, cells);
+  const provinceIds = expandProvinces(percentage, coreProvinces, cells);
 
   const provinces = [...coreProvinces];
 

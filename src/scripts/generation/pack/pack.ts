@@ -143,7 +143,14 @@ export function createPack(grid: IGrid): IPack {
     }
   });
 
-  const {provinceIds, provinces} = generateProvinces(states, burgs, cultures, {i: cells.i});
+  const {provinceIds, provinces} = generateProvinces(states, burgs, cultures, {
+    i: cells.i,
+    c: cells.c,
+    h: heights,
+    t: distanceField,
+    state: stateIds,
+    burg: burgIds
+  });
 
   // BurgsAndStates.generateProvinces();
   // BurgsAndStates.defineBurgFeatures();
