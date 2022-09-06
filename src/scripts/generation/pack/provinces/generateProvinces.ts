@@ -2,6 +2,7 @@ import {TIME} from "config/logging";
 import {getInputNumber} from "utils/nodeUtils";
 import {expandProvinces} from "./expandProvinces";
 import {generateCoreProvinces} from "./generateCoreProvinces";
+import {generateWildProvinces} from "./generateWildProvinces";
 
 export function generateProvinces(
   states: TStates,
@@ -17,8 +18,9 @@ export function generateProvinces(
 
   const coreProvinces = generateCoreProvinces(states, burgs, cultures, percentage);
   const provinceIds = expandProvinces(percentage, coreProvinces, cells);
+  const wildProvinces = generateWildProvinces(states, burgs, cultures, coreProvinces, provinceIds, cells); // mutates provinceIds
 
-  const provinces = [...coreProvinces];
+  const provinces = [...coreProvinces, ...wildProvinces];
 
   TIME && console.timeEnd("generateProvinces");
   return {provinceIds, provinces};
