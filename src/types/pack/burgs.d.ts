@@ -3,6 +3,7 @@ interface IBurg {
   name: string;
   feature: number;
   state: number;
+  culture: number;
   cell: number;
   x: number;
   y: number;

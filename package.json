@@ -15,6 +15,7 @@
     "@rollup/plugin-node-resolve": "^13.3.0",
     "@rollup/plugin-replace": "^4.0.0",
     "@types/d3": "^5.9.0",
+    "@types/d3-array": "^3.0.3",
     "@types/delaunator": "^5.0.0",
     "@types/jquery": "^3.5.14",
     "@types/jqueryui": "^1.12.16",
@@ -35,6 +36,7 @@
   },
   "dependencies": {
     "d3": "5.8.0",
+    "d3-array": "^3.2.0",
     "delaunator": "^5.0.0",
     "flatqueue": "^2.0.3",
     "lineclip": "^1.1.5",
