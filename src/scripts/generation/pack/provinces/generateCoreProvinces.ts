@@ -4,6 +4,7 @@ import {brighter, getMixedColor} from "utils/colorUtils";
 import {gauss, P, rw} from "utils/probabilityUtils";
 import {isBurg, isState} from "utils/typeUtils";
 import {provinceForms} from "./config";
+import {generateProvinceName, generateProvinceEmblem} from "./utils";
 
 const {COA, Names} = window;
 
@@ -26,9 +27,9 @@ export function generateCoreProvinces(states: TStates, burgs: TBurgs, cultures: 
 
     for (let i = 0; i < provincesNumber; i++) {
       const {i: burg, cell: center, culture: cultureId, coa: burgEmblem, name: burgName, type} = stateBurgs[i];
+
       const nameByBurg = P(0.5);
-      const name = nameByBurg ? burgName : generateName(cultureId, cultures);
-      3;
+      const name = generateName(nameByBurg, burgName, cultureId, cultures);
       const formName = rw(formsPool);
       formsPool[formName] += 10; // increase chance to get the same form again
 
@@ -43,7 +44,9 @@ export function generateCoreProvinces(states: TStates, burgs: TBurgs, cultures: 
   return provinces;
 }
 
-function generateName(cultureId: number, cultures: TCultures) {
+function generateName(nameByBurg: boolean, burgName: string, cultureId: number, cultures: TCultures) {
+  if (nameByBurg) return burgName;
+
   const base = cultures[cultureId].base;
   return Names.getState(Names.getBaseShort(base), base);
 }

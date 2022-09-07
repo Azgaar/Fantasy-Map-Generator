@@ -1,126 +1,200 @@
 import {group} from "d3-array";
-import {rand} from "utils/probabilityUtils";
+import FlatQueue from "flatqueue";
+
+import {DISTANCE_FIELD, MIN_LAND_HEIGHT} from "config/generation";
+import {unique} from "utils/arrayUtils";
+import {brighter, getMixedColor} from "utils/colorUtils";
+import {gauss, P, ra, rw} from "utils/probabilityUtils";
+import {isBurg, isState} from "utils/typeUtils";
+import {provinceForms} from "./config";
+
+const {COA, Names} = window;
 
 // add "wild" provinces if some cells don't have a province assigned
-export function generateWildProvinces(
-  states: TStates,
-  burgs: TBurgs,
-  cultures: TCultures,
-  coreProvinces: IProvince[],
-  provinceIds: Uint16Array,
-  cells: Pick<IPack["cells"], "i" | "state" | "burg">
-) {
-  const stateProvincesMap = group(coreProvinces, (province: IProvince) => province.state);
+export function generateWildProvinces({
+  states,
+  burgs,
+  cultures,
+  features,
+  coreProvinces,
+  provinceIds,
+  percentage,
+  cells
+}: {
+  states: TStates;
+  burgs: TBurgs;
+  cultures: TCultures;
+  features: TPackFeatures;
+  coreProvinces: IProvince[];
+  provinceIds: Uint16Array;
+  percentage: number;
+  cells: Pick<IPack["cells"], "i" | "c" | "h" | "t" | "f" | "culture" | "state" | "burg">;
+}) {
   const noProvinceCells = Array.from(cells.i.filter(i => cells.state[i] && !provinceIds[i]));
   const wildProvinces = [] as IProvince[];
+  const colonyNamesMap = createColonyNamesMap();
 
-  for (const {i: stateId, name: stateName} of states) {
-    const stateProvinces = stateProvincesMap.get(stateId);
-    if (!stateProvinces || !stateProvinces.length) continue;
+  for (const state of states) {
+    if (!isState(state)) continue;
 
-    const coreProvinceNames = stateProvinces.map(({name}) => name);
-    const colonyNamePool = [stateName, ...coreProvinceNames].filter(name => name && !/new/i.test(name));
-    const getColonyName = () => {
-      if (colonyNamePool.length < 1) return null;
-
-      const index = rand(colonyNamePool.length - 1);
-      const spliced = colonyNamePool.splice(index, 1);
-      return spliced[0] ? `New ${spliced[0]}` : null;
-    };
-
-    let noProvinceCellsInState = noProvinceCells.filter(i => cells.state[i] === stateId);
+    let noProvinceCellsInState = noProvinceCells.filter(i => cells.state[i] === state.i);
     while (noProvinceCellsInState.length) {
-      // add new province
       const provinceId = coreProvinces.length + wildProvinces.length;
       const burgCell = noProvinceCellsInState.find(i => cells.burg[i]);
       const center = burgCell || noProvinceCellsInState[0];
-      const burg = burgCell ? cells.burg[burgCell] : 0;
-      provinceIds[center] = provinceId;
-
-      // expand province
-      const costs = [];
-      costs[center] = 1;
-      queue.push(center, 0);
-
-      while (queue.length) {
-        const priority = queue.peekValue();
-        const next = queue.pop();
-
-        cells.c[next].forEach(neibCellId => {
-          if (cells.province[neibCellId]) return;
-          const land = cells.h[neibCellId] >= 20;
-          if (cells.state[neibCellId] && cells.state[neibCellId] !== s.i) return;
-          const cost = land ? (cells.state[neibCellId] === s.i ? 3 : 20) : cells.t[neibCellId] ? 10 : 30;
-          const totalCost = priority + cost;
-
-          if (totalCost > max) return;
-          if (!costs[neibCellId] || totalCost < costs[neibCellId]) {
-            if (land && cells.state[neibCellId] === s.i) cells.province[neibCellId] = provinceId; // assign province to a cell
-            costs[neibCellId] = totalCost;
-            queue.push(neibCellId, totalCost);
-          }
-        });
-      }
-
-      // generate "wild" province name
       const cultureId = cells.culture[center];
-      const f = pack.features[cells.f[center]];
-      const color = brighter(getMixedColor(s.color, 0.2), 0.3);
 
-      const provCells = noProvinceCellsInState.filter(i => cells.province[i] === provinceId);
-      const singleIsle = provCells.length === f.cells && !provCells.find(i => cells.f[i] !== f.i);
-      const isleGroup = !singleIsle && !provCells.find(i => pack.features[cells.f[i]].group !== "isle");
-      const colony = !singleIsle && !isleGroup && P(0.5) && !isPassable(s.center, center);
+      const burgId = burgCell ? cells.burg[burgCell] : 0;
+      const burg = burgs[burgId];
 
-      const name = (function () {
-        const colonyName = colony && P(0.8) && getColonyName();
-        if (colonyName) return colonyName;
-        if (burgCell && P(0.5)) return burgs[burg].name;
-        const base = pack.cultures[cultureId].base;
-
-        return Names.getState(Names.getBaseShort(base), base);
-      })();
-
-      const formName = (function () {
-        if (singleIsle) return "Island";
-        if (isleGroup) return "Islands";
-        if (colony) return "Colony";
-        return rw(forms["Wild"]);
-      })();
-
+      const provinceCells = expandWildProvince(center, provinceId, state.i); // mutates provinceIds
+      const formName = getProvinceForm(center, provinceCells, state.center);
+      const name = getProvinceName(state.i, formName, burg, cultureId);
       const fullName = name + " " + formName;
 
-      const dominion = colony ? P(0.95) : singleIsle || isleGroup ? P(0.7) : P(0.3);
-      const kinship = dominion ? 0 : 0.4;
-      const type = getType(center, burgs[burg]?.port);
-      const coa = COA.generate(s.coa, kinship, dominion, type);
-      coa.shield = COA.getPackShield(cultureId, s.i);
+      const coa = generateEmblem(formName, state, burg, cultureId);
+      const color = brighter(getMixedColor(state.color, 0.2), 0.3);
 
-      provinces.push({i: provinceId, state: s.i, center, burg, name, formName, fullName, color, coa});
-      s.provinces.push(provinceId);
-
-      // check if there is a land way within the same state between two cells
-      function isPassable(from, to) {
-        if (cells.f[from] !== cells.f[to]) return false; // on different islands
-        const queue = [from];
-
-        const used = new Uint8Array(cells.i.length);
-        const state = cells.state[from];
-
-        while (queue.length) {
-          const current = queue.pop();
-          if (current === to) return true; // way is found
-          cells.c[current].forEach(c => {
-            if (used[c] || cells.h[c] < 20 || cells.state[c] !== state) return;
-            queue.push(c);
-            used[c] = 1;
-          });
-        }
-        return false; // way is not found
-      }
+      wildProvinces.push({i: provinceId, name, formName, center, burg: burgId, state: state.i, fullName, color, coa});
 
       // re-check
-      noProvinceCellsInState = noProvinceCells.filter(i => cells.state[i] === stateId && !provinceIds[i]);
+      noProvinceCellsInState = noProvinceCells.filter(i => cells.state[i] === state.i && !provinceIds[i]);
     }
+  }
+
+  return wildProvinces;
+
+  function createColonyNamesMap() {
+    const stateProvincesMap = group(coreProvinces, (province: IProvince) => province.state);
+
+    const colonyNamesMap = new Map<number, string[]>(
+      states.map(state => {
+        const stateProvinces = stateProvincesMap.get(state.i) || [];
+        const coreProvinceNames = stateProvinces.map(province => province.name);
+        const colonyNamePool = unique([state.name, ...coreProvinceNames].filter(name => name && !/new/i.test(name)));
+        return [state.i, colonyNamePool];
+      })
+    );
+
+    return colonyNamesMap;
+  }
+
+  function getColonyName(stateId: number) {
+    const namesPool = colonyNamesMap.get(stateId) || [];
+    if (namesPool.length < 1) return null;
+
+    const name = ra(namesPool);
+    colonyNamesMap.set(
+      stateId,
+      namesPool.filter(n => n !== name)
+    );
+
+    return `New ${name}`;
+  }
+
+  function getProvinceName(stateId: number, formName: string, burg: TNoBurg | IBurg, cultureId: number) {
+    const colonyName = formName === "Colony" && P(0.8) && getColonyName(stateId);
+    if (colonyName) return colonyName;
+
+    if (burg?.name && P(0.5)) return burg.name;
+
+    const base = cultures[cultureId].base;
+    return Names.getState(Names.getBaseShort(base), base);
+  }
+
+  function expandWildProvince(center: number, provinceId: number, stateId: number) {
+    const maxExpansionCost = percentage === 100 ? 1000 : gauss(20, 5, 5, 100) * percentage ** 0.5;
+
+    const provinceCells = [center];
+    provinceIds[center] = provinceId;
+
+    const queue = new FlatQueue<number>();
+    const cost: number[] = [];
+    cost[center] = 1;
+    queue.push(center, 0);
+
+    while (queue.length) {
+      const priority = queue.peekValue()!;
+      const next = queue.pop()!;
+
+      cells.c[next].forEach(neibCellId => {
+        if (provinceIds[neibCellId]) return;
+        if (cells.state[neibCellId] !== stateId) return;
+
+        const isLand = cells.h[neibCellId] >= MIN_LAND_HEIGHT;
+        const cellCost = isLand ? 3 : cells.t[neibCellId] === DISTANCE_FIELD.WATER_COAST ? 10 : 30;
+        const totalCost = priority + cellCost;
+        if (totalCost > maxExpansionCost) return;
+
+        if (!cost[neibCellId] || totalCost < cost[neibCellId]) {
+          if (isLand && cells.state[neibCellId] === stateId) {
+            // assign province to a cell
+            provinceCells.push(neibCellId);
+            provinceIds[neibCellId] = provinceId;
+          }
+          cost[neibCellId] = totalCost;
+          queue.push(neibCellId, totalCost);
+        }
+      });
+    }
+
+    return provinceCells;
+  }
+
+  function getProvinceForm(center: number, provinceCells: number[], stateCenter: number) {
+    const feature = features[cells.f[center]];
+    if (feature === 0) throw new Error("Feature is not defined");
+
+    const provinceFeatures = unique(provinceCells.map(i => cells.f[i]));
+    const isWholeIsle = provinceCells.length === feature.cells && provinceFeatures.length === 1;
+    if (isWholeIsle) return "Island";
+
+    const isIsleGroup = provinceFeatures.every(featureId => (features[featureId] as TPackFeature)?.group === "isle");
+    if (isIsleGroup) return "Islands";
+
+    const isColony = P(0.5) && !isConnected(stateCenter, center);
+    if (isColony) return "Colony";
+
+    return rw(provinceForms["Wild"]);
+
+    // check if two cells are connected by land withing same state
+    function isConnected(from: number, to: number) {
+      if (cells.f[from] !== cells.f[to]) return false; // on different islands
+      const queue = [from];
+      const checked: Dict<boolean> = {[from]: true};
+      const stateId = cells.state[from];
+
+      while (queue.length) {
+        const current = queue.pop()!;
+        if (current === to) return true;
+
+        for (const neibId of cells.c[current]) {
+          if (checked[neibId] || cells.state[neibId] !== stateId) continue;
+          queue.push(neibId);
+          checked[neibId] = true;
+        }
+      }
+      return false;
+    }
+  }
+
+  function generateEmblem(formName: string, state: IState, burg: TNoBurg | IBurg, cultureId: number) {
+    const dominion = P(getDominionChance(formName));
+    const kinship = dominion ? 0 : 0.4;
+    const coaType = isBurg(burg) ? burg.type : "Generic";
+    const coa = COA.generate(state.coa, kinship, dominion, coaType);
+
+    const cultureShield = cultures[cultureId].shield;
+    const stateShield = (state.coa as ICoa)?.shield;
+    coa.shield = COA.getShield(cultureShield, stateShield);
+
+    return coa;
+  }
+
+  function getDominionChance(formName: string) {
+    if (formName === "Colony") return 0.95;
+    if (formName === "Island") return 0.7;
+    if (formName === "Islands") return 0.7;
+    return 0.3;
   }
 }

@@ -1,6 +1,6 @@
-import {DISTANCE_FIELD, ELEVATION, MIN_LAND_HEIGHT} from "config/generation";
 import FlatQueue from "flatqueue";
 
+import {DISTANCE_FIELD, ELEVATION, MIN_LAND_HEIGHT} from "config/generation";
 import {gauss} from "utils/probabilityUtils";
 
 const {WATER_COAST} = DISTANCE_FIELD;
