@@ -11,4 +11,6 @@ interface IProvince {
   removed?: boolean;
 }
 
-type TProvinces = IProvince[];
+type TNoProvince = 0;
+
+type TProvinces = [TNoProvince, ...IProvince[]];

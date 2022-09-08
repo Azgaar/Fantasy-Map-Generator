@@ -10,12 +10,11 @@ export function generateProvinces(
   cultures: TCultures,
   features: TPackFeatures,
   cells: Pick<IPack["cells"], "i" | "c" | "h" | "t" | "f" | "culture" | "state" | "burg">
-) {
+): {provinceIds: Uint16Array; provinces: TProvinces} {
   TIME && console.time("generateProvinces");
 
   const percentage = getInputNumber("provincesInput");
-  if (states.length < 2 || percentage === 0)
-    return {provinceIds: new Uint16Array(cells.i.length), provinces: [] as TProvinces[]};
+  if (states.length < 2 || percentage === 0) return {provinceIds: new Uint16Array(cells.i.length), provinces: [0]};
 
   const coreProvinces = generateCoreProvinces(states, burgs, cultures, percentage);
   const provinceIds = expandProvinces(percentage, coreProvinces, cells);
@@ -31,7 +30,7 @@ export function generateProvinces(
     cells
   }); // mutates provinceIds
 
-  const provinces = [...coreProvinces, ...wildProvinces];
+  const provinces: TProvinces = [0, ...coreProvinces, ...wildProvinces];
 
   TIME && console.timeEnd("generateProvinces");
   return {provinceIds, provinces};
