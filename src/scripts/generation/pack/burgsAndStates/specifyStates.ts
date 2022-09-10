@@ -14,6 +14,7 @@ export function specifyStates(
   statesData: TStateData[],
   statistics: TStateStatistics,
   diplomacy: TDiplomacy,
+  poles: Dict<TPoint>,
   cultures: TCultures,
   burgs: TBurgs
 ): {states: TStates; conflicts: IConflict[]} {
@@ -41,6 +42,8 @@ export function specifyStates(
     const name = defineStateName(center, capitalName, nameBase, formName);
     const fullName = defineFullStateName(name, formName);
 
+    const pole = poles[i];
+
     return {
       name,
       ...stateData,
@@ -52,7 +55,8 @@ export function specifyStates(
       burgs: burgsNumber,
       ...stats,
       neighbors,
-      relations
+      relations,
+      pole
     };
   });
 

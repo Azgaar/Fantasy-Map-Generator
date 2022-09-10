@@ -2,6 +2,7 @@ import polylabel from "polylabel";
 
 import {TIME} from "config/logging";
 import {connectVertices} from "./connectVertices";
+import {rn} from "utils/numberUtils";
 
 interface IGetPolesProps {
   vertices: IGraphVertices;
@@ -17,7 +18,7 @@ export function getPolesOfInaccessibility(props: IGetPolesProps) {
   const poles: Dict<TPoint> = Object.fromEntries(
     Object.entries(multiPolygons).map(([id, multiPolygon]) => {
       const [x, y] = polylabel(multiPolygon, 20);
-      return [id, [x, y]];
+      return [id, [rn(x), rn(y)]];
     })
   );
 
