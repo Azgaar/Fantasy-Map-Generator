@@ -39,7 +39,7 @@ export function generateWildProvinces({
 
     let noProvinceCellsInState = noProvinceCells.filter(i => cells.state[i] === state.i);
     while (noProvinceCellsInState.length) {
-      const provinceId = coreProvinces.length + wildProvinces.length;
+      const provinceId = coreProvinces.length + wildProvinces.length + 1;
       const burgCell = noProvinceCellsInState.find(i => cells.burg[i]);
       const center = burgCell || noProvinceCellsInState[0];
       const cultureId = cells.culture[center];

@@ -1,6 +1,5 @@
 import * as d3 from "d3";
 
-import {getProvincesVertices} from "./drawProvinces";
 import {minmax, rn} from "utils/numberUtils";
 import {byId} from "utils/shorthands";
 
@@ -42,7 +41,7 @@ export function drawEmblems() {
 
   const sizeProvinces = getProvinceEmblemsSize();
   const provinceCOAs = validProvinces.map(province => {
-    if (!province.pole) getProvincesVertices();
+    if (!province.pole) throw "Pole is not defined";
     const [x, y] = province.pole || pack.cells.p[province.center];
     const size = province.coaSize || 1;
     const shift = (sizeProvinces * size) / 2;

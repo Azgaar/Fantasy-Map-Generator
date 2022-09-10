@@ -143,9 +143,10 @@ export function createPack(grid: IGrid): IPack {
     }
   });
 
-  const {provinceIds, provinces} = generateProvinces(states, burgs, cultures, mergedFeatures, {
+  const {provinceIds, provinces} = generateProvinces(states, burgs, cultures, mergedFeatures, vertices, {
     i: cells.i,
     c: cells.c,
+    v: cells.v,
     h: heights,
     t: distanceField,
     f: featureIds,

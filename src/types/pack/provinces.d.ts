@@ -7,6 +7,7 @@ interface IProvince {
   color: Hex | CssUrls;
   state: number;
   center: number;
+  pole: TPoint;
   coa: ICoa | string;
   removed?: boolean;
 }

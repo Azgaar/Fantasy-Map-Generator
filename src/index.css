@@ -169,6 +169,7 @@ a {
   font-size: 0.8em;
 }
 
+#provincesBody,
 #statesBody {
   stroke-width: 3;
 }
@@ -177,10 +178,6 @@ a {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-#provincesBody {
-  stroke-width: 0.2;
 }
 
 #statesBody,

@@ -3,13 +3,15 @@ import {getInputNumber} from "utils/nodeUtils";
 import {expandProvinces} from "./expandProvinces";
 import {generateCoreProvinces} from "./generateCoreProvinces";
 import {generateWildProvinces} from "./generateWildProvinces";
+import {specifyProvinces} from "./specifyProvinces";
 
 export function generateProvinces(
   states: TStates,
   burgs: TBurgs,
   cultures: TCultures,
   features: TPackFeatures,
-  cells: Pick<IPack["cells"], "i" | "c" | "h" | "t" | "f" | "culture" | "state" | "burg">
+  vertices: IGraphVertices,
+  cells: Pick<IPack["cells"], "i" | "c" | "v" | "h" | "t" | "f" | "culture" | "state" | "burg">
 ): {provinceIds: Uint16Array; provinces: TProvinces} {
   TIME && console.time("generateProvinces");
 
@@ -30,7 +32,7 @@ export function generateProvinces(
     cells
   }); // mutates provinceIds
 
-  const provinces: TProvinces = [0, ...coreProvinces, ...wildProvinces];
+  const provinces = specifyProvinces(provinceIds, coreProvinces, wildProvinces, vertices, cells.c, cells.v);
 
   TIME && console.timeEnd("generateProvinces");
   return {provinceIds, provinces};

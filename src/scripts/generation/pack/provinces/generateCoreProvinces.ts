@@ -4,7 +4,6 @@ import {brighter, getMixedColor} from "utils/colorUtils";
 import {gauss, P, rw} from "utils/probabilityUtils";
 import {isBurg, isState} from "utils/typeUtils";
 import {provinceForms} from "./config";
-import {generateProvinceName, generateProvinceEmblem} from "./utils";
 
 const {COA, Names} = window;
 
@@ -37,7 +36,7 @@ export function generateCoreProvinces(states: TStates, burgs: TBurgs, cultures: 
       const color = brighter(getMixedColor(state.color, 0.2), 0.3);
       const coa = generateEmblem(nameByBurg, burgEmblem, type, cultures, cultureId, state);
 
-      provinces.push({i: provinces.length, name, formName, center, burg, state: state.i, fullName, color, coa});
+      provinces.push({i: provinces.length + 1, name, formName, center, burg, state: state.i, fullName, color, coa});
     }
   });
 

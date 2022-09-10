@@ -10,8 +10,8 @@ interface IState {
   form: TStateForm;
   formName: string;
   fullName: string;
+  pole: TPoint;
   coa: ICoa | string;
-  // pole: TPoint ?
   area: number;
   cells: number;
   burgs: number;

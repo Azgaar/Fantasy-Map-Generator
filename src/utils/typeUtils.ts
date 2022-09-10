@@ -14,3 +14,6 @@ export const isBurg = (burg: TNoBurg | IBurg): burg is IBurg => burg.i !== 0 && 
 
 export const isReligion = (religion: TNoReligion | IReligion): religion is IReligion =>
   religion.i !== 0 && !(religion as IReligion).removed;
+
+export const isProvince = (province: TNoProvince | IProvince): province is IProvince =>
+  province !== 0 && !(province as IProvince).removed;
