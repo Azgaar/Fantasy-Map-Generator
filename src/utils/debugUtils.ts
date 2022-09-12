@@ -31,6 +31,19 @@ export function drawLine([x1, y1]: TPoint, [x2, y2]: TPoint, {stroke = "#444", s
     .attr("stroke-width", strokeWidth);
 }
 
+export function drawPolyline(points: TPoints, {fill = "none", stroke = "#444", strokeWidth = 0.2} = {}) {
+  debug
+    .append("polyline")
+    .attr("points", points.join(" "))
+    .attr("fill", fill)
+    .attr("stroke", stroke)
+    .attr("stroke-width", strokeWidth);
+}
+
+export function drawPath(d: string, {fill = "none", stroke = "#444", strokeWidth = 0.2} = {}) {
+  debug.append("path").attr("d", d).attr("fill", fill).attr("stroke", stroke).attr("stroke-width", strokeWidth);
+}
+
 export function drawArrow([x1, y1]: TPoint, [x2, y2]: TPoint, {width = 1, color = "#444"} = {}) {
   const normal = getNormal([x1, y1], [x2, y2]);
   const [xMid, yMid] = [(x1 + x2) / 2, (y1 + y2) / 2];
