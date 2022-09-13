@@ -65,7 +65,7 @@ export function open({el}) {
     const heights = lakeCells.map(i => cells.h[i]);
 
     byId("lakeElevation").value = getHeight(l.height);
-    byId("lakeAvarageDepth").value = getHeight(d3.mean(heights), true);
+    byId("lakeAverageDepth").value = getHeight(d3.mean(heights), true);
     byId("lakeMaxDepth").value = getHeight(d3.min(heights), true);
 
     byId("lakeFlux").value = l.flux;

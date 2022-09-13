@@ -67,8 +67,8 @@ async function generate(options?: IGenerationOptions) {
     // renderLayer("heightmap");
     // renderLayer("rivers");
     // renderLayer("biomes");
-    renderLayer("burgs");
-    renderLayer("routes");
+    // renderLayer("burgs");
+    // renderLayer("routes");
     renderLayer("states");
     renderLayer("labels");
 

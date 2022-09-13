@@ -1,20 +1,15 @@
 import * as d3 from "d3";
-import Delaunator from "delaunator";
-import FlatQueue from "flatqueue";
 
-import {simplify} from "scripts/simplify";
-import {Voronoi} from "modules/voronoi";
-import {MIN_LAND_HEIGHT} from "config/generation";
 import {findCell} from "utils/graphUtils";
 import {isState} from "utils/typeUtils";
-import {drawPath, drawPoint, drawPolyline} from "utils/debugUtils";
+import {drawPath, drawPoint} from "utils/debugUtils";
 
 export function drawLabels() {
   /* global */ const {cells, vertices, features, states, burgs} = pack;
   /* global: findCell, graphWidth, graphHeight */
 
   drawStateLabels(cells, features, states, vertices);
-  drawBurgLabels(burgs);
+  // drawBurgLabels(burgs);
   // TODO: draw other labels
 
   window.Zoom.invoke();
@@ -62,166 +57,140 @@ function drawBurgLabels(burgs: TBurgs) {
 }
 
 function drawStateLabels(cells: IPack["cells"], features: TPackFeatures, states: TStates, vertices: IGraphVertices) {
+  console.time("drawStateLabels");
   const lineGen = d3.line().curve(d3.curveBundle.beta(1));
   const mode = options.stateLabelsMode || "auto";
 
+  // increase step to increase performarce and make more horyzontal, decrease to increase accuracy
+  const STEP = 9;
+  const raycast = precalculateAngles(STEP);
+
+  const INITIAL_DISTANCE = 5;
+  const DISTANCE_STEP = 15;
+  const MAX_ITERATIONS = 100;
+
   const labelPaths = getLabelPaths();
-  console.log(labelPaths);
 
   function getLabelPaths() {
     const labelPaths: [number, TPoints][] = [];
-    const MIN_HULL_SIZE = 20;
     const lineGen = d3.line().curve(d3.curveBundle.beta(1));
 
     for (const state of states) {
       if (!isState(state)) continue;
-      const used: Dict<boolean> = {}; // mutable
 
-      const visualCenter = findCell(...state.pole);
-      const startingCell = cells.state[visualCenter] === state.i ? visualCenter : state.center;
-      const hull = getHull(startingCell, state.i, state.cells, used);
-      const points = [...hull].map(vertex => vertices.p[vertex]);
+      const offset = getOffsetWidth(state.cells);
+      const [x0, y0] = state.pole;
 
-      const delaunay = Delaunator.from(points);
-      const voronoi = new Voronoi(delaunay, points, points.length);
-      const chain = connectVertices(voronoi.vertices, state.pole, used);
-
-      drawPoint(state.pole, {color: "blue", radius: 1});
-
-      if (state.i === 1) {
-        points.forEach(point => {
-          drawPoint(point, {color: "red", radius: 0.5});
-        });
-      }
-
-      const pathPoints = simplify(
-        chain.map(i => voronoi.vertices.p[i]),
-        30
+      const offsetPoints = new Map(
+        (offset ? raycast : []).map(({angle, x: x1, y: y1}) => {
+          const [x, y] = [x0 + offset * x1, y0 + offset * y1];
+          return [angle, {x, y}];
+        })
       );
 
-      drawPath(lineGen(pathPoints)!, {stroke: "red", strokeWidth: 0.5});
+      const distances = raycast.map(({angle, x: dx, y: dy, modifier}) => {
+        let distanceMin: number;
 
+        if (offset) {
+          const point1 = offsetPoints.get(angle + 90 >= 360 ? angle - 270 : angle + 90)!;
+          const distance1 = getMaxDistance(state.i, point1, dx, dy);
+
+          const point2 = offsetPoints.get(angle - 90 < 0 ? angle + 270 : angle - 90)!;
+          const distance2 = getMaxDistance(state.i, point2, dx, dy);
+          distanceMin = Math.min(distance1, distance2);
+        } else {
+          distanceMin = getMaxDistance(state.i, {x: x0, y: y0}, dx, dy);
+        }
+
+        const [x, y] = [x0 + distanceMin * dx, y0 + distanceMin * dy];
+        return {angle, distance: distanceMin * modifier, x, y};
+      });
+
+      const {angle, x, y} = distances.reduce(
+        (acc, {angle, distance, x, y}) => {
+          if (distance > acc.distance) return {angle, distance, x, y};
+          return acc;
+        },
+        {angle: 0, distance: 0, x: 0, y: 0}
+      );
+
+      const oppositeAngle = angle >= 180 ? angle - 180 : angle + 180;
+      const {x: x2, y: y2} = distances.reduce(
+        (acc, {angle, distance, x, y}) => {
+          const angleDif = getAnglesDif(angle, oppositeAngle);
+          const score = distance * getAngleModifier(angleDif);
+          if (score > acc.score) return {angle, score, x, y};
+          return acc;
+        },
+        {angle: 0, score: 0, x: 0, y: 0}
+      );
+
+      drawPath(lineGen([[x, y], state.pole, [x2, y2]])!, {stroke: "red", strokeWidth: 1});
+
+      const pathPoints: TPoints = [];
       labelPaths.push([state.i, pathPoints]);
     }
 
     return labelPaths;
-
-    function getHull(start: number, stateId: number, stateCells: number, used: Dict<boolean>) {
-      const maxPassableLakeSize = stateCells / 10;
-      const queue = [start];
-
-      const hull = new Set<number>();
-      const addToHull = (cellId: number, index: number) => {
-        const vertex = cells.v[cellId][index];
-        if (vertex) hull.add(vertex);
-      };
-
-      while (queue.length) {
-        const cellId = queue.pop()!;
-
-        cells.c[cellId].forEach((neibCellId, index) => {
-          if (used[neibCellId]) return;
-          used[neibCellId] = true;
-
-          if (isHullEdge(neibCellId)) return addToHull(cellId, index);
-          return queue.push(neibCellId);
-        });
-      }
-
-      return hull;
-
-      function isHullEdge(cellId: number) {
-        if (cells.b[cellId]) return true;
-
-        if (cells.h[cellId] < MIN_LAND_HEIGHT) {
-          const feature = features[cells.f[cellId]];
-          if (!feature || feature.type !== "lake") return true;
-          if (feature.cells > maxPassableLakeSize) return true;
-          return false;
-        }
-
-        if (cells.state[cellId] !== stateId) return true;
-
-        if (hull.size > MIN_HULL_SIZE) {
-          // stop on narrow passages
-          const sameStateNeibs = cells.c[cellId].filter(c => cells.state[c] === stateId);
-          if (sameStateNeibs.length < 3) return true;
-        }
-
-        return false;
-      }
-    }
-
-    function connectVertices(vertices: Voronoi["vertices"], pole: TPoint, used: Dict<boolean>) {
-      // check if vertex is inside the area
-      const inside = vertices.p.map(([x, y]) => {
-        if (x <= 0 || y <= 0 || x >= graphWidth || y >= graphHeight) return false; // out of the screen
-        return used[findCell(x, y)];
-      });
-
-      const innerVertices = d3.range(vertices.p.length).filter(i => inside[i]);
-      if (innerVertices.length < 2) return [0];
-
-      const horyzontalShift = getHoryzontalShift(vertices.p.length);
-      const {right: start, left: end} = getEdgeVertices(innerVertices, vertices.p, pole, horyzontalShift);
-
-      // connect leftmost and rightmost vertices with shortest path
-      const cost: number[] = [];
-      const from: number[] = [];
-      const queue = new FlatQueue<number>();
-      queue.push(start, 0);
-
-      while (queue.length) {
-        const priority = queue.peekValue()!;
-        const next = queue.pop()!;
-
-        if (next === end) break;
-
-        for (const neibVertex of vertices.v[next]) {
-          if (neibVertex === -1) continue;
-
-          const totalCost = priority + (inside[neibVertex] ? 1 : 100);
-          if (from[neibVertex] || totalCost >= cost[neibVertex]) continue;
-
-          cost[neibVertex] = totalCost;
-          from[neibVertex] = next;
-          queue.push(neibVertex, totalCost);
-        }
-      }
-
-      // restore path
-      const chain = [end];
-      let cur = end;
-      while (cur !== start) {
-        cur = from[cur];
-        if (inside[cur]) chain.push(cur);
-      }
-      return chain;
-    }
-
-    function getHoryzontalShift(verticesNumber: number) {
-      console.log({verticesNumber});
-      return 0;
-      if (verticesNumber < 100) return 1;
-      if (verticesNumber < 200) return 0.3;
-      if (verticesNumber < 300) return 0.1;
-      return 0;
-    }
-
-    function getEdgeVertices(innerVertices: number[], points: TPoints, pole: TPoint, horyzontalShift: number) {
-      let leftmost = {value: Infinity, vertex: innerVertices.at(0)!};
-      let rightmost = {value: -Infinity, vertex: innerVertices.at(-1)!};
-
-      for (const vertex of innerVertices) {
-        const [x, y] = points[vertex];
-        const valueX = x - pole[0];
-        const valueY = Math.abs(y - pole[1]) * horyzontalShift;
-
-        if (valueX + valueY < leftmost.value) leftmost = {value: valueX + valueY, vertex};
-        if (valueX - valueY > rightmost.value) rightmost = {value: valueX - valueY, vertex};
-      }
-
-      return {left: leftmost.vertex, right: rightmost.vertex};
-    }
   }
+
+  function getMaxDistance(stateId: number, point: {x: number; y: number}, dx: number, dy: number) {
+    let distance = INITIAL_DISTANCE;
+
+    for (let i = 0; i < MAX_ITERATIONS; i++) {
+      const [x, y] = [point.x + distance * dx, point.y + distance * dy];
+      const cellId = findCell(x, y);
+
+      // const inside = cells.state[cellId] === stateId;
+      // drawPoint([x, y], {color: inside ? "blue" : "red", radius: 1});
+
+      if (cells.state[cellId] !== stateId) break;
+      distance += DISTANCE_STEP;
+    }
+
+    return distance;
+  }
+
+  console.timeEnd("drawStateLabels");
+}
+
+// point offset to reduce label overlap with state borders
+function getOffsetWidth(cellsNumber: number) {
+  if (cellsNumber < 80) return 0;
+  if (cellsNumber < 140) return 5;
+  if (cellsNumber < 200) return 15;
+  if (cellsNumber < 300) return 20;
+  if (cellsNumber < 500) return 25;
+  return 30;
+}
+
+// difference between two angles in range [0, 180]
+function getAnglesDif(angle1: number, angle2: number) {
+  return 180 - Math.abs(Math.abs(angle1 - angle2) - 180);
+}
+
+// score multiplier based on angle difference betwee left and right sides
+function getAngleModifier(angleDif: number) {
+  if (angleDif === 0) return 1;
+  if (angleDif <= 15) return 0.95;
+  if (angleDif <= 30) return 0.9;
+  if (angleDif <= 45) return 0.6;
+  if (angleDif <= 60) return 0.3;
+  if (angleDif <= 90) return 0.1;
+  return 0; // >90
+}
+
+function precalculateAngles(step: number) {
+  const RAD = Math.PI / 180;
+  const angles = [];
+
+  for (let angle = 0; angle < 360; angle += step) {
+    const x = Math.cos(angle * RAD);
+    const y = Math.sin(angle * RAD);
+    const angleDif = 90 - Math.abs((angle % 180) - 90);
+    const modifier = 1 - angleDif / 120; // [0.25, 1]
+    angles.push({angle, modifier, x, y});
+  }
+
+  return angles;
 }

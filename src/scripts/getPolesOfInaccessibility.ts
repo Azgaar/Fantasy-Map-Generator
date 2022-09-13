@@ -15,7 +15,6 @@ export function getPolesOfInaccessibility(props: IGetPolesProps) {
   TIME && console.time("getPolesOfInaccessibility");
   const multiPolygons = getMultiPolygons(props);
   const sortByLength = (a: unknown[], b: unknown[]) => b.length - a.length;
-  console.log(multiPolygons);
 
   const poles: Dict<TPoint> = Object.fromEntries(
     Object.entries(multiPolygons).map(([id, multiPolygon]) => {
