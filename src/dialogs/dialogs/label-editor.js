@@ -14,6 +14,8 @@ export function open({el}) {
   closeDialogs();
   if (!layerIsOn("toggleLabels")) toggleLayer("toggleLabels");
 
+  const lineGen = d3.line().curve(d3.curveBundle.beta(1));
+
   const textPath = el.parentNode;
   const text = textPath.parentNode;
   elSelected = d3.select(text).call(d3.drag().on("start", dragLabel)).classed("draggable", true);
@@ -122,8 +124,6 @@ export function open({el}) {
     this.setAttribute("cy", d3.event.y);
     redrawLabelPath();
   }
-
-  const lineGen = d3.line().curve(d3.curveBundle.beta(1));
 
   function redrawLabelPath() {
     const path = byId("textPath_" + elSelected.attr("id"));
@@ -308,26 +308,12 @@ export function open({el}) {
   function changeText() {
     const input = byId("labelText").value;
     const el = elSelected.select("textPath").node();
-    const example = d3
-      .select(elSelected.node().parentNode)
-      .append("text")
-      .attr("x", 0)
-      .attr("x", 0)
-      .attr("font-size", el.getAttribute("font-size"))
-      .node();
 
     const lines = input.split("|");
     const top = (lines.length - 1) / -2; // y offset
-    const inner = lines
-      .map((l, d) => {
-        example.innerHTML = l;
-        const left = example.getBBox().width / -2; // x offset
-        return `<tspan x="${left}px" dy="${d ? 1 : top}em">${l}</tspan>`;
-      })
-      .join("");
+    const inner = lines.map((l, d) => `<tspan x="0" dy="${d ? 1 : top}em">${l}</tspan>`).join("");
 
     el.innerHTML = inner;
-    example.remove();
 
     if (elSelected.attr("id").slice(0, 10) === "stateLabel")
       tip("Use States Editor to change an actual state name, not just a label", false, "warning");
