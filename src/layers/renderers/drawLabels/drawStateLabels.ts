@@ -113,8 +113,9 @@ function drawLabelPath(stateIds: Uint16Array, states: TStates, labelPaths: [numb
   const textGroup = d3.select("g#labels > g#states");
   const pathGroup = d3.select("defs > g#deftemp > g#textPaths");
 
-  const example = textGroup.append("text").attr("x", 0).attr("x", 0).text("Average");
-  const letterLength = example.node()!.getComputedTextLength() / 7; // average length of 1 letter
+  const testLabel = textGroup.append("text").attr("x", 0).attr("x", 0).text("Example");
+  const letterLength = testLabel.node()!.getComputedTextLength() / 7; // approximate length of 1 letter
+  testLabel.remove();
 
   for (const [stateId, pathPoints] of labelPaths) {
     const state = states[stateId];
@@ -129,58 +130,58 @@ function drawLabelPath(stateIds: Uint16Array, states: TStates, labelPaths: [numb
       .attr("d", round(lineGen(pathPoints)!))
       .attr("id", "textPath_stateLabel" + stateId);
 
-    drawPath(round(lineGen(pathPoints)!), {stroke: "red", strokeWidth: 0.6});
+    drawPath(round(lineGen(pathPoints)!), {stroke: "red", strokeWidth: 1});
 
     const pathLength = textPath.node()!.getTotalLength() / letterLength; // path length in letters
     const [lines, ratio] = getLinesAndRatio(mode, state.name, state.fullName, pathLength);
 
     // prolongate path if it's too short
-    if (pathLength && pathLength < lines[0].length) {
+    const longestLineLength = d3.max(lines.map(({length}) => length))!;
+    if (pathLength && pathLength < longestLineLength) {
       const [x1, y1] = pathPoints.at(0)!;
       const [x2, y2] = pathPoints.at(-1)!;
-      const [dx, dy] = [x2 - x1, y2 - y1];
+      const [dx, dy] = [(x2 - x1) / 2, (y2 - y1) / 2];
 
-      const mod = Math.abs((letterLength * lines[0].length) / dx) / 2;
-      pathPoints[0] = [rn(x1 - dx * mod), rn(y1 - dy * mod)];
-      pathPoints[pathPoints.length - 1] = [rn(x2 + dx * mod), rn(y2 + dy * mod)];
+      const mod = longestLineLength / pathLength;
+      pathPoints[0] = [x1 + dx - dx * mod, y1 + dy - dy * mod];
+      pathPoints[pathPoints.length - 1] = [x2 - dx + dx * mod, y2 - dy + dy * mod];
 
       textPath.attr("d", round(lineGen(pathPoints)!));
+      drawPath(round(lineGen(pathPoints)!), {stroke: "blue", strokeWidth: 0.4});
     }
-
-    example.attr("font-size", ratio + "%");
-    const top = (lines.length - 1) / -2; // y offset
-    const spans = lines.map((line, index) => {
-      example.text(line);
-      const left = example.node()!.getBBox().width / -2; // x offset
-      return `<tspan x=${rn(left, 1)} dy="${index ? 1 : top}em">${line}</tspan>`;
-    });
 
     const textElement = textGroup
       .append("text")
       .attr("id", "stateLabel" + stateId)
       .append("textPath")
-      .attr("xlink:href", "#textPath_stateLabel" + stateId)
       .attr("startOffset", "50%")
       .attr("font-size", ratio + "%")
       .node()!;
 
+    const top = (lines.length - 1) / -2; // y offset
+    const spans = lines.map((line, index) => `<tspan x="0" dy="${index ? 1 : top}em">${line}</tspan>`);
     textElement.insertAdjacentHTML("afterbegin", spans.join(""));
+
+    const {width, height} = textElement.getBBox();
+    textElement.setAttribute("href", "#textPath_stateLabel" + stateId);
+
     if (mode === "full" || lines.length === 1) continue;
 
-    const isInsideState = checkIfInsideState(textElement, stateIds, stateId);
+    // check if label fits state boundaries. If no, replace it with short name
+    const [[x1, y1], [x2, y2]] = [pathPoints.at(0)!, pathPoints.at(-1)!];
+    const angleRad = Math.atan2(y2 - y1, x2 - x1);
+
+    const isInsideState = checkIfInsideState(textElement, angleRad, width / 2, height / 2, stateIds, stateId);
     if (isInsideState) continue;
 
     // replace name to one-liner
     const text = pathLength > state.fullName.length * 1.8 ? state.fullName : state.name;
-    example.text(text);
-    const left = example.node()!.getBBox().width / -2; // x offset
-    textElement.innerHTML = `<tspan x="${left}px">${text}</tspan>`;
+    textElement.innerHTML = `<tspan x="0">${text}</tspan>`;
 
     const correctedRatio = minmax(rn((pathLength / text.length) * 60), 40, 130);
     textElement.setAttribute("font-size", correctedRatio + "%");
+    textElement.setAttribute("fill", "blue");
   }
-
-  example.remove();
 }
 
 // point offset to reduce label overlap with state borders
@@ -210,8 +211,8 @@ function getAngleModifier(angleDif: number) {
 }
 
 function precalculateAngles(step: number) {
-  const RAD = Math.PI / 180;
   const angles = [];
+  const RAD = Math.PI / 180;
 
   for (let angle = 0; angle < 360; angle += step) {
     const x = Math.cos(angle * RAD);
@@ -231,9 +232,10 @@ function getLinesAndRatio(
   pathLength: number
 ): [string[], number] {
   // short name
-  if (mode === "short" || (mode === "auto" && pathLength < name.length)) {
+  if (mode === "short" || (mode === "auto" && pathLength <= name.length)) {
     const lines = splitInTwo(name);
-    const ratio = pathLength / lines[0].length;
+    const longestLineLength = d3.max(lines.map(({length}) => length))!;
+    const ratio = pathLength / longestLineLength;
     return [lines, minmax(rn(ratio * 60), 50, 150)];
   }
 
@@ -246,32 +248,45 @@ function getLinesAndRatio(
 
   // full name: two lines
   const lines = splitInTwo(fullName);
-  const ratio = pathLength / lines[0].length;
+  const longestLineLength = d3.max(lines.map(({length}) => length))!;
+  const ratio = pathLength / longestLineLength;
   return [lines, minmax(rn(ratio * 60), 70, 150)];
 }
 
 // check whether multi-lined label is mostly inside the state. If no, replace it with short name label
-function checkIfInsideState(textElement: SVGTextPathElement, stateIds: Uint16Array, stateId: number) {
-  //textElement.querySelectorAll("tspan").forEach(tspan => (tspan.textContent = "A"));
-
-  const {x, y, width, height} = textElement.getBBox();
+function checkIfInsideState(
+  textElement: SVGTextPathElement,
+  angleRad: number,
+  halfwidth: number,
+  halfheight: number,
+  stateIds: Uint16Array,
+  stateId: number
+) {
+  const bbox = textElement.getBBox();
+  const [cx, cy] = [bbox.x + bbox.width / 2, bbox.y + bbox.height / 2];
 
   const points: TPoints = [
-    [x, y],
-    [x + width, y],
-    [x + width, y + height],
-    [x, y + height],
-    [x + width / 2, y],
-    [x + width / 2, y + height]
+    [-halfwidth, -halfheight],
+    [+halfwidth, -halfheight],
+    [+halfwidth, halfheight],
+    [-halfwidth, halfheight],
+    [0, halfheight],
+    [0, -halfheight]
   ];
-  drawPolyline(points, {stroke: "#333"});
 
-  for (let i = 0, pointsInside = 0; i < points.length && pointsInside < 4; i++) {
-    const isInside = stateIds[findCell(...points[i])] === stateId;
+  const sin = Math.sin(angleRad);
+  const cos = Math.cos(angleRad);
+  const rotatedPoints: TPoints = points.map(([x, y]) => [cx + x * cos - y * sin, cy + x * sin + y * cos]);
+
+  drawPolyline([...rotatedPoints.slice(0, 4), rotatedPoints[0]], {stroke: "#333"});
+
+  let pointsInside = 0;
+  for (const [x, y] of rotatedPoints) {
+    const isInside = stateIds[findCell(x, y)] === stateId;
     if (isInside) pointsInside++;
-    drawPoint(points[i], {color: isInside ? "green" : "red"});
-    if (pointsInside > 3) return true;
+    drawPoint([x, y], {color: isInside ? "green" : "red"});
+    if (pointsInside > 4) return true;
   }
 
-  return true;
+  return false;
 }
