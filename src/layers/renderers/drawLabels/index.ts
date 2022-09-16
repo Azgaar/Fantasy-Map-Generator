@@ -2,9 +2,9 @@ import {drawBurgLabels} from "./drawBurgLabels";
 import {drawStateLabels} from "./drawStateLabels";
 
 export function drawLabels() {
-  /* global */ const {cells, states, burgs} = pack;
+  /* global */ const {cells, features, states, burgs} = pack;
 
-  drawStateLabels(cells, states);
+  drawStateLabels(features, cells.f, cells.state, states);
   drawBurgLabels(burgs);
   // TODO: draw other labels
 

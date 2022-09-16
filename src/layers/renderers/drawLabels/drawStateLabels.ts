@@ -1,36 +1,42 @@
 import * as d3 from "d3";
 
 import {findCell} from "utils/graphUtils";
-import {isState} from "utils/typeUtils";
+import {isLake, isState} from "utils/typeUtils";
 import {drawPath, drawPoint, drawPolyline} from "utils/debugUtils";
 import {round, splitInTwo} from "utils/stringUtils";
 import {minmax, rn} from "utils/numberUtils";
 
 // increase step to 15 or 30 to make it faster and more horyzontal, decrease to 5 to improve accuracy
-const STEP = 9;
-const raycast = precalculateAngles(STEP);
+const ANGLE_STEP = 9;
+const raycast = precalculateAngles(ANGLE_STEP);
 
-const INITIAL_DISTANCE = 5;
+const INITIAL_DISTANCE = 10;
 const DISTANCE_STEP = 15;
 const MAX_ITERATIONS = 100;
 
-export function drawStateLabels(cells: IPack["cells"], states: TStates) {
+export function drawStateLabels(
+  features: TPackFeatures,
+  featureIds: Uint16Array,
+  stateIds: Uint16Array,
+  states: TStates
+) {
   /* global: findCell, graphWidth, graphHeight */
   console.time("drawStateLabels");
 
-  const labelPaths = getLabelPaths(cells.state, states);
-  drawLabelPath(cells.state, states, labelPaths);
+  const labelPaths = getLabelPaths(features, featureIds, stateIds, states);
+  drawLabelPath(stateIds, states, labelPaths);
 
   console.timeEnd("drawStateLabels");
 }
 
-function getLabelPaths(stateIds: Uint16Array, states: TStates) {
+function getLabelPaths(features: TPackFeatures, featureIds: Uint16Array, stateIds: Uint16Array, states: TStates) {
   const labelPaths: [number, TPoints][] = [];
 
   for (const state of states) {
     if (!isState(state)) continue;
 
     const offset = getOffsetWidth(state.cells);
+    const maxLakeSize = state.cells / 50;
     const [x0, y0] = state.pole;
 
     const offsetPoints = new Map(
@@ -43,15 +49,18 @@ function getLabelPaths(stateIds: Uint16Array, states: TStates) {
     const distances = raycast.map(({angle, x: dx, y: dy, modifier}) => {
       let distanceMin: number;
 
-      if (offset) {
-        const point1 = offsetPoints.get(angle + 90 >= 360 ? angle - 270 : angle + 90)!;
-        const distance1 = getMaxDistance(stateIds, state.i, point1, dx, dy);
+      const distance1 = getMaxDistance(state.i, {x: x0, y: y0}, dx, dy, maxLakeSize);
 
+      if (offset) {
         const point2 = offsetPoints.get(angle - 90 < 0 ? angle + 270 : angle - 90)!;
-        const distance2 = getMaxDistance(stateIds, state.i, point2, dx, dy);
-        distanceMin = Math.min(distance1, distance2);
+        const distance2 = getMaxDistance(state.i, point2, dx, dy, maxLakeSize);
+
+        const point3 = offsetPoints.get(angle + 90 >= 360 ? angle - 270 : angle + 90)!;
+        const distance3 = getMaxDistance(state.i, point3, dx, dy, maxLakeSize);
+
+        distanceMin = Math.min(distance1, distance2, distance3);
       } else {
-        distanceMin = getMaxDistance(stateIds, state.i, {x: x0, y: y0}, dx, dy);
+        distanceMin = distance1;
       }
 
       const [x, y] = [x0 + distanceMin * dx, y0 + distanceMin * dy];
@@ -87,23 +96,28 @@ function getLabelPaths(stateIds: Uint16Array, states: TStates) {
   }
 
   return labelPaths;
-}
 
-function getMaxDistance(stateIds: Uint16Array, stateId: number, point: {x: number; y: number}, dx: number, dy: number) {
-  let distance = INITIAL_DISTANCE;
+  function getMaxDistance(stateId: number, point: {x: number; y: number}, dx: number, dy: number, maxLakeSize: number) {
+    let distance = INITIAL_DISTANCE;
 
-  for (let i = 0; i < MAX_ITERATIONS; i++) {
-    const [x, y] = [point.x + distance * dx, point.y + distance * dy];
-    const cellId = findCell(x, y);
+    for (let i = 0; i < MAX_ITERATIONS; i++) {
+      const [x, y] = [point.x + distance * dx, point.y + distance * dy];
+      const cellId = findCell(x, y, DISTANCE_STEP);
 
-    // const inside = cells.state[cellId] === stateId;
-    // drawPoint([x, y], {color: inside ? "blue" : "red", radius: 1});
+      // drawPoint([x, y], {color: cellId && isPassable(cellId) ? "blue" : "red", radius: 0.8});
 
-    if (stateIds[cellId] !== stateId) break;
-    distance += DISTANCE_STEP;
+      if (!cellId || !isPassable(cellId)) break;
+      distance += DISTANCE_STEP;
+    }
+
+    return distance;
+
+    function isPassable(cellId: number) {
+      const feature = features[featureIds[cellId]];
+      if (isLake(feature) && feature.cells <= maxLakeSize) return true;
+      return stateIds[cellId] === stateId;
+    }
   }
-
-  return distance;
 }
 
 function drawLabelPath(stateIds: Uint16Array, states: TStates, labelPaths: [number, TPoints][]) {
@@ -130,7 +144,7 @@ function drawLabelPath(stateIds: Uint16Array, states: TStates, labelPaths: [numb
       .attr("d", round(lineGen(pathPoints)!))
       .attr("id", "textPath_stateLabel" + stateId);
 
-    drawPath(round(lineGen(pathPoints)!), {stroke: "red", strokeWidth: 1});
+    // drawPath(round(lineGen(pathPoints)!), {stroke: "red", strokeWidth: 1});
 
     const pathLength = textPath.node()!.getTotalLength() / letterLength; // path length in letters
     const [lines, ratio] = getLinesAndRatio(mode, state.name, state.fullName, pathLength);
@@ -147,7 +161,7 @@ function drawLabelPath(stateIds: Uint16Array, states: TStates, labelPaths: [numb
       pathPoints[pathPoints.length - 1] = [x2 - dx + dx * mod, y2 - dy + dy * mod];
 
       textPath.attr("d", round(lineGen(pathPoints)!));
-      drawPath(round(lineGen(pathPoints)!), {stroke: "blue", strokeWidth: 0.4});
+      // drawPath(round(lineGen(pathPoints)!), {stroke: "blue", strokeWidth: 0.4});
     }
 
     const textElement = textGroup
@@ -178,9 +192,9 @@ function drawLabelPath(stateIds: Uint16Array, states: TStates, labelPaths: [numb
     const text = pathLength > state.fullName.length * 1.8 ? state.fullName : state.name;
     textElement.innerHTML = `<tspan x="0">${text}</tspan>`;
 
-    const correctedRatio = minmax(rn((pathLength / text.length) * 60), 40, 130);
+    const correctedRatio = minmax(rn((pathLength / text.length) * 50), 40, 130);
     textElement.setAttribute("font-size", correctedRatio + "%");
-    textElement.setAttribute("fill", "blue");
+    // textElement.setAttribute("fill", "blue");
   }
 }
 
@@ -240,7 +254,7 @@ function getLinesAndRatio(
   }
 
   // full name: one line
-  if (pathLength > fullName.length * 2.5) {
+  if (pathLength > fullName.length * 2) {
     const lines = [fullName];
     const ratio = pathLength / lines[0].length;
     return [lines, minmax(rn(ratio * 70), 70, 170)];
@@ -278,13 +292,13 @@ function checkIfInsideState(
   const cos = Math.cos(angleRad);
   const rotatedPoints: TPoints = points.map(([x, y]) => [cx + x * cos - y * sin, cy + x * sin + y * cos]);
 
-  drawPolyline([...rotatedPoints.slice(0, 4), rotatedPoints[0]], {stroke: "#333"});
+  // drawPolyline([...rotatedPoints.slice(0, 4), rotatedPoints[0]], {stroke: "#333"});
 
   let pointsInside = 0;
   for (const [x, y] of rotatedPoints) {
     const isInside = stateIds[findCell(x, y)] === stateId;
     if (isInside) pointsInside++;
-    drawPoint([x, y], {color: isInside ? "green" : "red"});
+    // drawPoint([x, y], {color: isInside ? "green" : "red"});
     if (pointsInside > 4) return true;
   }
 

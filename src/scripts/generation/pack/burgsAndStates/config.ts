@@ -97,12 +97,15 @@ export const adjectivalForms = [
   "Theocracy",
   "Oligarchy",
   "Union",
+  "Federation",
   "Confederation",
   "Trade Company",
   "League",
   "Tetrarchy",
   "Triumvirate",
   "Diarchy",
+  "Khanate",
+  "Khaganate",
   "Horde",
   "Marches"
 ];
