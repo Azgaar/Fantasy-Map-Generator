@@ -48,13 +48,14 @@ function editLake() {
     document.getElementById("lakeArea").value = si(getArea(l.area)) + " " + getAreaUnit();
 
     const length = d3.polygonLength(l.vertices.map(v => pack.vertices.p[v]));
-    document.getElementById("lakeShoreLength").value = si(length * distanceScaleInput.value) + " " + distanceUnitInput.value;
+    document.getElementById("lakeShoreLength").value =
+      si(length * distanceScaleInput.value) + " " + distanceUnitInput.value;
 
     const lakeCells = Array.from(cells.i.filter(i => cells.f[i] === l.i));
     const heights = lakeCells.map(i => cells.h[i]);
 
     document.getElementById("lakeElevation").value = getHeight(l.height);
-    document.getElementById("lakeAvarageDepth").value = getHeight(d3.mean(heights), "abs");
+    document.getElementById("lakeAverageDepth").value = getHeight(d3.mean(heights), "abs");
     document.getElementById("lakeMaxDepth").value = getHeight(d3.min(heights), "abs");
 
     document.getElementById("lakeFlux").value = l.flux;
@@ -91,7 +92,9 @@ function editLake() {
       .attr("r", 0.4)
       .attr("data-v", d => d)
       .call(d3.drag().on("drag", dragVertex))
-      .on("mousemove", () => tip("Drag to move the vertex, please use for fine-tuning only. Edit heightmap to change actual cell heights"));
+      .on("mousemove", () =>
+        tip("Drag to move the vertex, please use for fine-tuning only. Edit heightmap to change actual cell heights")
+      );
   }
 
   function dragVertex() {

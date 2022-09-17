@@ -23,15 +23,23 @@ function editNamesbase() {
 
   const uploader = document.getElementById("namesbaseToLoad");
   document.getElementById("namesbaseUpload").addEventListener("click", () => {
-    uploader.addEventListener("change", function (event) {
-      uploadFile(event.target, d => namesbaseUpload(d, true));
-    }, { once: true });
+    uploader.addEventListener(
+      "change",
+      function (event) {
+        uploadFile(event.target, d => namesbaseUpload(d, true));
+      },
+      {once: true}
+    );
     uploader.click();
   });
   document.getElementById("namesbaseUploadExtend").addEventListener("click", () => {
-    uploader.addEventListener("change", function (event) {
-      uploadFile(event.target, d => namesbaseUpload(d, false));
-    }, { once: true });
+    uploader.addEventListener(
+      "change",
+      function (event) {
+        uploadFile(event.target, d => namesbaseUpload(d, false));
+      },
+      {once: true}
+    );
     uploader.click();
   });
 
@@ -57,10 +65,8 @@ function editNamesbase() {
 
   function updateInputs() {
     const base = +document.getElementById("namesbaseSelect").value;
-    if (!nameBases[base]) {
-      tip(`Namesbase ${base} is not defined`, false, "error");
-      return;
-    }
+    if (!nameBases[base]) return tip(`Namesbase ${base} is not defined`, false, "error");
+
     document.getElementById("namesbaseTextarea").value = nameBases[base].b;
     document.getElementById("namesbaseName").value = nameBases[base].name;
     document.getElementById("namesbaseMin").value = nameBases[base].min;
@@ -86,20 +92,23 @@ function editNamesbase() {
 
   function updateNamesData() {
     const base = +document.getElementById("namesbaseSelect").value;
-    const b = document.getElementById("namesbaseTextarea").value;
-    if (b.split(",").length < 3) {
-      tip("The names data provided is too short of incorrect", false, "error");
-      return;
-    }
-    nameBases[base].b = b;
+    const rawInput = document.getElementById("namesbaseTextarea").value;
+    if (rawInput.split(",").length < 3) return tip("The names data provided is too short of incorrect", false, "error");
+
+    const namesData = rawInput.replace(/[/|]/g, "");
+    nameBases[base].b = namesData;
     Names.updateChain(base);
   }
 
   function updateBaseName() {
     const base = +document.getElementById("namesbaseSelect").value;
     const select = document.getElementById("namesbaseSelect");
-    select.options[namesbaseSelect.selectedIndex].innerHTML = this.value;
-    nameBases[base].name = this.value;
+
+    const rawName = this.value;
+    const name = rawName.replace(/[/|]/g, "");
+
+    select.options[namesbaseSelect.selectedIndex].innerHTML = name;
+    nameBases[base].name = name;
   }
 
   function updateBaseMin() {
@@ -147,21 +156,28 @@ function editNamesbase() {
       : "none";
 
     const geminate = namesArray.map(name => name.match(/[^\w\s]|(.)(?=\1)/g) || []).flat();
-    const doubled = unique(geminate).filter(char => geminate.filter(doudledChar => doudledChar === char).length > 3) || ["none"];
+    const doubled = unique(geminate).filter(
+      char => geminate.filter(doudledChar => doudledChar === char).length > 3
+    ) || ["none"];
 
     const duplicates = unique(namesArray.filter((e, i, a) => a.indexOf(e) !== i)).join(", ") || "none";
     const multiwordRate = d3.mean(namesArray.map(n => +n.includes(" ")));
 
     const getLengthQuality = () => {
-      if (length < 30) return "<span data-tip='Namesbase contains < 30 names - not enough to generate reasonable data' style='color:red'>[not enough]</span>";
-      if (length < 100) return "<span data-tip='Namesbase contains < 100 names - not enough to generate good names' style='color:darkred'>[low]</span>";
-      if (length <= 400) return "<span data-tip='Namesbase contains a reasonable number of samples' style='color:green'>[good]</span>";
+      if (length < 30)
+        return "<span data-tip='Namesbase contains < 30 names - not enough to generate reasonable data' style='color:red'>[not enough]</span>";
+      if (length < 100)
+        return "<span data-tip='Namesbase contains < 100 names - not enough to generate good names' style='color:darkred'>[low]</span>";
+      if (length <= 400)
+        return "<span data-tip='Namesbase contains a reasonable number of samples' style='color:green'>[good]</span>";
       return "<span data-tip='Namesbase contains > 400 names. That is too much, try to reduce it to ~300 names' style='color:darkred'>[overmuch]</span>";
     };
 
     const getVarietyLevel = () => {
-      if (variety < 15) return "<span data-tip='Namesbase average variety < 15 - generated names will be too repetitive' style='color:red'>[low]</span>";
-      if (variety < 30) return "<span data-tip='Namesbase average variety < 30 - names can be too repetitive' style='color:orange'>[mean]</span>";
+      if (variety < 15)
+        return "<span data-tip='Namesbase average variety < 15 - generated names will be too repetitive' style='color:red'>[low]</span>";
+      if (variety < 30)
+        return "<span data-tip='Namesbase average variety < 30 - names can be too repetitive' style='color:orange'>[mean]</span>";
       return "<span data-tip='Namesbase variety is good' style='color:green'>[good]</span>";
     };
 
@@ -175,9 +191,14 @@ function editNamesbase() {
       <div data-tip="Common name length">Median name length: ${d3.median(wordsLength)}</div>
       <hr />
       <div data-tip="Characters outside of Basic Latin have bad font support">Non-basic chars: ${nonBasicLatinChars}</div>
-      <div data-tip="Characters that are frequently (more than 3 times) doubled">Doubled chars: ${doubled.join("")}</div>
+      <div data-tip="Characters that are frequently (more than 3 times) doubled">Doubled chars: ${doubled.join(
+        ""
+      )}</div>
       <div data-tip="Names used more than one time">Duplicates: ${duplicates}</div>
-      <div data-tip="Percentage of names containing space character">Multi-word names: ${rn(multiwordRate * 100, 2)}%</div>
+      <div data-tip="Percentage of names containing space character">Multi-word names: ${rn(
+        multiwordRate * 100,
+        2
+      )}%</div>
     </div>`;
 
     $("#alert").dialog({
@@ -194,7 +215,8 @@ function editNamesbase() {
 
   function namesbaseAdd() {
     const base = nameBases.length;
-    const b = "This,is,an,example,of,name,base,showing,correct,format,It,should,have,at,least,one,hundred,names,separated,with,comma";
+    const b =
+      "This,is,an,example,of,name,base,showing,correct,format,It,should,have,at,least,one,hundred,names,separated,with,comma";
     nameBases.push({name: "Base" + base, min: 5, max: 12, d: "", m: 0, b});
     document.getElementById("namesbaseSelect").add(new Option("Base" + base, base));
     document.getElementById("namesbaseSelect").value = base;
@@ -232,7 +254,7 @@ function editNamesbase() {
     downloadFile(data, name);
   }
 
-  function namesbaseUpload(dataLoaded, override=true) {
+  function namesbaseUpload(dataLoaded, override = true) {
     const data = dataLoaded.split("\r\n");
     if (!data || !data[0]) {
       tip("Cannot load a namesbase. Please check the data format", false, "error");

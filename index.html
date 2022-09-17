@@ -2245,7 +2245,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 350">
                 <rect width="100%" height="100%" fill="#005bbb"></rect>
                 <rect y="50%" width="100%" height="50%" fill="#ffd500"></rect>
-                <text x="50%" text-anchor="middle" font-size="9em" y="35%" fill="#f5f5f5">Support Ukraine</text>
+                <text x="50%" text-anchor="middle" font-size="8em" y="32%" fill="#f5f5f5">Support Ukraine</text>
                 <text x="50%" text-anchor="middle" font-size="4em" y="78%" fill="#005bdd">
                   war.ukraine.ua/support-ukraine
                 </text>
@@ -2643,8 +2643,8 @@
           </div>
 
           <div data-tip="Lake average depth in selected units">
-            <div class="label">Avarage depth:</div>
-            <input id="lakeAvarageDepth" disabled />
+            <div class="label">Average depth:</div>
+            <input id="lakeAverageDepth" disabled />
           </div>
 
           <div data-tip="Lake maximum depth in selected units">
@@ -4047,11 +4047,6 @@
           <button id="convertColorsButton" data-tip="Set maximum number of colors" class="icon-signal"></button>
           <input id="convertColors" value="100" style="display: none" />
           <button
-            id="convertComplete"
-            data-tip="Complete the conversion. All unassigned colors will be considered as ocean"
-            class="icon-check"
-          ></button>
-          <button
             id="convertCancel"
             data-tip="Cancel the conversion. Previous heightmap will be restored"
             class="icon-cancel"
@@ -4072,12 +4067,23 @@
         </div>
 
         <div data-tip="Select a color to re-assign the height value" id="colorsAssigned" style="display: none">
-          <i>Assigned colors (<span id="colorsAssignedNumber"></span>):</i><br />
+          <i>Assigned colors (<span id="colorsAssignedNumber"></span>):</i>
+          <div id="colorsAssignedContainer" class="colorsContainer"></div>
         </div>
 
         <div data-tip="Select a color to assign a height value" id="colorsUnassigned" style="display: none">
-          <i>Unassigned colors (<span id="colorsUnassignedNumber"></span>):</i><br />
+          <i>Unassigned colors (<span id="colorsUnassignedNumber"></span>):</i>
+          <div id="colorsUnassignedContainer" class="colorsContainer"></div>
         </div>
+
+        <button
+          id="convertComplete"
+          data-tip="Complete the conversion. All unassigned colors will be considered as ocean"
+          style="margin: 0.4em 0"
+          class="glow"
+        >
+          Complete the conversion
+        </button>
       </div>
 
       <div id="biomesEditor" class="dialog stable" style="display: none">
