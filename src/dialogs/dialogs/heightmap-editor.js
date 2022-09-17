@@ -1190,7 +1190,7 @@ export function open(options) {
         .on("click", mapClicked);
 
       const colors = pallete.map(p => `rgb(${p[0]}, ${p[1]}, ${p[2]})`);
-      d3.select("#colorsUnassigned")
+      d3.select("#colorsUnassignedContainer")
         .selectAll("div")
         .data(colors)
         .enter()
@@ -1253,25 +1253,23 @@ export function open(options) {
           this.setAttribute("data-height", height);
         });
 
-      if (selectedColor.parentNode.id === "colorsUnassigned") {
-        colorsAssigned.appendChild(selectedColor);
+      if (selectedColor.parentNode.id === "colorsUnassignedContainer") {
+        colorsAssignedContainer.appendChild(selectedColor);
         colorsAssigned.style.display = "block";
 
-        byId("colorsUnassignedNumber").innerHTML = colorsUnassigned.childElementCount - 2;
-        byId("colorsAssignedNumber").innerHTML = colorsAssigned.childElementCount - 2;
+        byId("colorsUnassignedNumber").innerHTML = colorsUnassignedContainer.childElementCount - 2;
+        byId("colorsAssignedNumber").innerHTML = colorsAssignedContainer.childElementCount - 2;
       }
     }
 
     // auto assign color based on luminosity or hue
     function autoAssing(type) {
-      let unassigned = colorsUnassigned.querySelectorAll("div");
+      let unassigned = colorsUnassignedContainer.querySelectorAll("div");
       if (!unassigned.length) {
         heightsFromImage(+convertColors.value);
-        unassigned = colorsUnassigned.querySelectorAll("div");
-        if (!unassigned.length) {
-          tip("No unassigned colors. Please load an image and click the button again", false, "error");
-          return;
-        }
+        unassigned = colorsUnassignedContainer.querySelectorAll("div");
+        if (!unassigned.length)
+          return tip("No unassigned colors. Please load an image and click the button again", false, "error");
       }
 
       const getHeightByHue = function (color) {
@@ -1315,18 +1313,18 @@ export function open(options) {
         } // if color is already added, remove it
         el.style.backgroundColor = el.dataset.color = colorTo;
         el.dataset.height = height;
-        colorsAssigned.appendChild(el);
+        colorsAssignedContainer.appendChild(el);
         assinged[height] = true;
       });
 
       // sort assigned colors by height
-      Array.from(colorsAssigned.children)
+      Array.from(colorsAssignedContainer.children)
         .sort((a, b) => +a.dataset.height - +b.dataset.height)
-        .forEach(line => colorsAssigned.appendChild(line));
+        .forEach(line => colorsAssignedContainer.appendChild(line));
 
       colorsAssigned.style.display = "block";
       colorsUnassigned.style.display = "none";
-      byId("colorsAssignedNumber").innerHTML = colorsAssigned.childElementCount - 2;
+      byId("colorsAssignedNumber").innerHTML = colorsAssignedContainer.childElementCount - 2;
     }
 
     function setConvertColorsNumber() {
@@ -1346,7 +1344,8 @@ export function open(options) {
     }
 
     function applyConversion() {
-      if (colorsAssigned.childElementCount < 3) return tip("Please do the assignment first", false, "error");
+      if (colorsAssignedContainer.childElementCount < 3)
+        return tip("Please assign colors to heights first", false, "error");
 
       viewbox
         .select("#heights")

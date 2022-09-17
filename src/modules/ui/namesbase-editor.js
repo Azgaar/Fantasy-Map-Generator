@@ -75,10 +75,8 @@ export function editNamesbase() {
 
   function updateInputs() {
     const base = +document.getElementById("namesbaseSelect").value;
-    if (!nameBases[base]) {
-      tip(`Namesbase ${base} is not defined`, false, "error");
-      return;
-    }
+    if (!nameBases[base]) return tip(`Namesbase ${base} is not defined`, false, "error");
+
     document.getElementById("namesbaseTextarea").value = nameBases[base].b;
     document.getElementById("namesbaseName").value = nameBases[base].name;
     document.getElementById("namesbaseMin").value = nameBases[base].min;
@@ -104,20 +102,23 @@ export function editNamesbase() {
 
   function updateNamesData() {
     const base = +document.getElementById("namesbaseSelect").value;
-    const b = document.getElementById("namesbaseTextarea").value;
-    if (b.split(",").length < 3) {
-      tip("The names data provided is too short of incorrect", false, "error");
-      return;
-    }
-    nameBases[base].b = b;
+    const rawInput = document.getElementById("namesbaseTextarea").value;
+    if (rawInput.split(",").length < 3) return tip("The names data provided is too short of incorrect", false, "error");
+
+    const namesData = rawInput.replace(/[/|]/g, "");
+    nameBases[base].b = namesData;
     Names.updateChain(base);
   }
 
   function updateBaseName() {
     const base = +document.getElementById("namesbaseSelect").value;
     const select = document.getElementById("namesbaseSelect");
-    select.options[namesbaseSelect.selectedIndex].innerHTML = this.value;
-    nameBases[base].name = this.value;
+
+    const rawName = this.value;
+    const name = rawName.replace(/[/|]/g, "");
+
+    select.options[namesbaseSelect.selectedIndex].innerHTML = name;
+    nameBases[base].name = name;
   }
 
   function updateBaseMin() {

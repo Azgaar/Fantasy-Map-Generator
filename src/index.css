@@ -1141,12 +1141,17 @@ div#regimentSelectorBody > div > div {
   filter: sepia(1) hue-rotate(200deg);
 }
 
+.colorsContainer {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-column-gap: 0.3em;
+  grid-row-gap: 0.2em;
+}
+
 .color-div {
   width: 3em;
-  height: 1em;
-  display: inline-block;
-  margin: 0 0.16em;
-  border: 1px #c5c5c5 groove;
+  height: 1.5em;
+  border: 1px #999 solid;
   cursor: pointer;
 }
 
