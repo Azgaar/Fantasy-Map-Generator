@@ -461,8 +461,8 @@ function changeDialogsTheme(themeColor, transparency) {
 }
 
 function changeZoomExtent(value) {
-  if(+zoomExtentMin.value > +zoomExtentMax.value) {
-    [zoomExtentMin.value, zoomExtentMax.value]=[zoomExtentMax.value, zoomExtentMin.value];
+  if (+zoomExtentMin.value > +zoomExtentMax.value) {
+    [zoomExtentMin.value, zoomExtentMax.value] = [zoomExtentMax.value, zoomExtentMin.value];
   }
   const min = Math.max(+zoomExtentMin.value, 0.01);
   const max = Math.min(+zoomExtentMax.value, 200);
@@ -1008,6 +1008,7 @@ function toggle3dOptions() {
     const globe = document.getElementById("canvas3d").dataset.type === "viewGlobe";
     options3dMesh.style.display = globe ? "none" : "block";
     options3dGlobe.style.display = globe ? "block" : "none";
+    options3dOBJSave.style.display = globe ? "none" : "inline-block";
     options3dScaleRange.value = options3dScaleNumber.value = ThreeD.options.scale;
     options3dLightnessRange.value = options3dLightnessNumber.value = ThreeD.options.lightness * 100;
     options3dSunX.value = ThreeD.options.sun.x;
