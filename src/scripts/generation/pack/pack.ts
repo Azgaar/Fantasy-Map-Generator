@@ -164,12 +164,7 @@ export function createPack(grid: IGrid): IPack {
 
   // Military.generate();
   // Markers.generate();
-  // addZones();
-
-  // OceanLayers(newGrid);
-
-  // drawScaleBar(window.scale);
-  // Names.getMapName();
+  // addZones(); // add to pack data
 
   const events: IEvents = {conflicts};
 

@@ -55,7 +55,11 @@ async function generate(options?: IGenerationOptions) {
     const newGrid = await createGrid(grid, precreatedGraph);
     const newPack = createPack(newGrid);
 
-    // TODO: draw default ruler
+    // OceanLayers(newGrid);
+
+    // draw default ruler
+    // drawScaleBar(window.scale);
+    // Names.getMapName();
 
     // redefine global grid and pack
     grid = newGrid;
