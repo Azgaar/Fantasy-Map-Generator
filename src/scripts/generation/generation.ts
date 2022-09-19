@@ -67,10 +67,10 @@ async function generate(options?: IGenerationOptions) {
     // renderLayer("heightmap");
     // renderLayer("rivers");
     // renderLayer("biomes");
-    renderLayer("burgs");
-    renderLayer("routes");
+    // renderLayer("burgs");
+    // renderLayer("routes");
     renderLayer("states");
-    // renderLayer("religions");
+    renderLayer("labels");
 
     // pack.cells.route.forEach((route, index) => {
     //   if (route === 2) drawPoint(pack.cells.p[index], {color: "black"});

@@ -7,11 +7,11 @@ interface IState {
   type: TCultureType;
   culture: number;
   expansionism: number;
-  form: string;
+  form: TStateForm;
   formName: string;
   fullName: string;
+  pole: TPoint;
   coa: ICoa | string;
-  // pole: TPoint ?
   area: number;
   cells: number;
   burgs: number;
@@ -37,6 +37,8 @@ interface ICoa {
   shield: string;
   t1: string;
 }
+
+type TStateForm = "Monarchy" | "Republic" | "Theocracy" | "Union" | "Anarchy";
 
 type TRelation =
   | "Ally"

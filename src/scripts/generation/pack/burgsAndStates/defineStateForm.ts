@@ -40,7 +40,7 @@ export function defineStateForm(
 const generic = {Monarchy: 25, Republic: 2, Union: 1};
 const naval = {Monarchy: 6, Republic: 2, Union: 1};
 
-function defineForm(type: TCultureType, areaTier: AreaTiers) {
+function defineForm(type: TCultureType, areaTier: AreaTiers): TStateForm {
   const isAnarchy = P((1 - areaTier / 5) / 100); // [1% - 0.2%] chance
   if (isAnarchy) return "Anarchy";
 

@@ -1,4 +1,5 @@
 import {WARN} from "config/logging";
+import {getPolesOfInaccessibility} from "scripts/getPolesOfInaccessibility";
 import {pick} from "utils/functionUtils";
 import {getInputNumber} from "utils/nodeUtils";
 import {collectStatistics} from "./collectStatistics";
@@ -70,7 +71,13 @@ export function generateBurgsAndStates(
 
   const statistics = collectStatistics({...cells, state: stateIds, burg: burgIds}, burgs);
   const diplomacy = generateRelations(statesData, statistics, pick(cells, "f"));
-  const {states, conflicts} = specifyStates(statesData, statistics, diplomacy, cultures, burgs);
+  const poles = getPolesOfInaccessibility({
+    vertices,
+    getType: (cellId: number) => stateIds[cellId],
+    cellNeighbors: cells.c,
+    cellVertices: cells.v
+  });
+  const {states, conflicts} = specifyStates(statesData, statistics, diplomacy, poles, cultures, burgs);
 
   return {burgIds, stateIds, burgs, states, conflicts};
 

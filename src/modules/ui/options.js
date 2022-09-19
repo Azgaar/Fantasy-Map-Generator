@@ -485,10 +485,17 @@ function changeDialogsTheme(themeColor, transparency) {
 }
 
 function changeZoomExtent(value) {
-  const min = Math.max(+byId("zoomExtentMin").value, 0.01);
-  const max = Math.min(+byId("zoomExtentMax").value, 200);
-  Zoom.scaleExtent([min, max]);
+  const zoomExtentMin = byId("zoomExtentMin");
+  const zoomExtentMax = byId("zoomExtentMax");
 
+  if (+zoomExtentMin.value > +zoomExtentMax.value) {
+    [zoomExtentMin.value, zoomExtentMax.value] = [zoomExtentMax.value, zoomExtentMin.value];
+  }
+  const min = Math.max(+zoomExtentMin.value, 0.01);
+  const max = Math.min(+zoomExtentMax.value, 200);
+  zoomExtentMin.value = min;
+  zoomExtentMax.value = max;
+  zoom.scaleExtent([min, max]);
   const scale = minmax(+value, 0.01, 200);
   Zoom.scaleTo(svg, scale);
 }
@@ -1056,6 +1063,7 @@ export function toggle3dOptions() {
     const globe = byId("canvas3d").dataset.type === "viewGlobe";
     options3dMesh.style.display = globe ? "none" : "block";
     options3dGlobe.style.display = globe ? "block" : "none";
+    options3dOBJSave.style.display = globe ? "none" : "inline-block";
     options3dScaleRange.value = options3dScaleNumber.value = ThreeD.options.scale;
     options3dLightnessRange.value = options3dLightnessNumber.value = ThreeD.options.lightness * 100;
     options3dSunX.value = ThreeD.options.sun.x;

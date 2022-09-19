@@ -833,7 +833,7 @@ window.BurgsAndStates = (function () {
 
     valid.forEach(s => (s.diplomacy = new Array(states.length).fill("x"))); // clear all relationships
     if (valid.length < 2) return; // no states to renerate relations with
-    const areaMean = d3.mean(valid.map(s => s.area)); // avarage state area
+    const areaMean = d3.mean(valid.map(s => s.area)); // average state area
 
     // generic relations
     for (let f = 1; f < states.length; f++) {

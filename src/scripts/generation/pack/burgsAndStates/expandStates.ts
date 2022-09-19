@@ -6,6 +6,42 @@ import {minmax} from "utils/numberUtils";
 import {ELEVATION, FOREST_BIOMES, MIN_LAND_HEIGHT, DISTANCE_FIELD} from "config/generation";
 import type {TStateData} from "./createStateData";
 
+const costs = {
+  SAME_CULTURE: -9,
+  DIFFERENT_CULTURES: 100,
+
+  MAX_SUITABILITY: 20,
+  UNINHABITED_LAND: 5000,
+  NATIVE_BIOME_FIXED: 10,
+
+  GENERIC_WATER_CROSSING: 1000,
+  NOMADS_WATER_CROSSING: 10000,
+  NAVAL_WATER_CROSSING: 300,
+  LAKE_STATES_LAKE_CROSSING: 10,
+  GENERIC_MOUNTAINS_CROSSING: 2200,
+  GENERIC_HILLS_CROSSING: 300,
+  HIGHLAND_STATE_LOWLANDS: 1100,
+  HIGHLAND_STATE_HIGHTLAND: 0,
+
+  RIVER_STATE_RIVER_CROSSING: 0,
+  RIVER_STATE_NO_RIVER: 100,
+  RIVER_CROSSING_MIN: 20,
+  RIVER_CROSSING_MAX: 100,
+
+  GENERIC_LAND_COAST: 20,
+  MARITIME_LAND_COAST: 0,
+  NOMADS_LAND_COAST: 60,
+  GENERIC_LANDLOCKED: 0,
+  NAVAL_LANDLOCKED: 30
+};
+
+const multipliers = {
+  HUNTERS_NON_NATIVE_BIOME: 2,
+  NOMADS_FOREST_BIOMES: 3,
+  GENERIC_NON_NATIVE_BIOME: 1,
+  GENERIC_DEEP_WATER: 2
+};
+
 // growth algorithm to assign cells to states
 export function expandStates(
   capitalCells: Map<number, boolean>,
@@ -29,39 +65,6 @@ export function expandStates(
     cost[cellId] = 1;
     queue.push({cellId, stateId}, 0);
   }
-
-  // expansion costs (less is better)
-  const SAME_CULTURE_BONUS = -9;
-  const DIFFERENT_CULTURES_FEE = 100;
-
-  const MAX_SUITABILITY_COST = 20;
-  const UNINHABITED_LAND_FEE = 5000;
-
-  const NATIVE_BIOME_FIXED_COST = 10;
-  const HUNTERS_NON_NATIVE_BIOME_FEE_MULTIPLIER = 2;
-  const NOMADS_FOREST_BIOMES_FEE_MULTIPLIER = 3;
-  const GENERIC_NON_NATIVE_BIOME_FEE_MULTIPLIER = 1;
-
-  const GENERIC_DEEP_WATER_FEE_MULTIPLIER = 2;
-  const GENERIC_WATER_CROSSING_FEE = 1000;
-  const NOMADS_WATER_CROSSING_FEE = 10000;
-  const NAVAL_WATER_CROSSING_FEE = 300;
-  const LAKE_STATES_LAKE_CROSSING_FEE = 10;
-  const GENERIC_MOUNTAINS_CROSSING_FEE = 2200;
-  const GENERIC_HILLS_CROSSING_FEE = 300;
-  const HIGHLAND_STATE_LOWLANDS_FEE = 1100;
-  const HIGHLAND_STATE_HIGHTLAND_COST = 0;
-
-  const RIVER_STATE_RIVER_CROSSING_COST = 0;
-  const RIVER_STATE_NO_RIVER_COST = 100;
-  const RIVER_CROSSING_MIN_COST = 20;
-  const RIVER_CROSSING_MAX_COST = 100;
-
-  const GENERIC_LAND_COAST_FEE = 20;
-  const MARITIME_LAND_COAST_FEE = 0;
-  const NOMADS_LAND_COAST_FEE = 60;
-  const GENERIC_LANDLOCKED_FEE = 0;
-  const NAVAL_LANDLOCKED_FEE = 30;
 
   const statesMap = new Map<number, TStateData>(statesData.map(stateData => [stateData.i, stateData]));
 
@@ -100,7 +103,7 @@ export function expandStates(
   return normalizeStates(stateIds, capitalCells, cells.c, cells.h);
 
   function getCultureCost(cellId: number, stateCulture: number) {
-    return cells.culture[cellId] === stateCulture ? SAME_CULTURE_BONUS : DIFFERENT_CULTURES_FEE;
+    return cells.culture[cellId] === stateCulture ? costs.SAME_CULTURE : costs.DIFFERENT_CULTURES;
   }
 
   function getPopulationCost(cellId: number) {
@@ -108,19 +111,19 @@ export function expandStates(
     if (isWater) return 0;
 
     const suitability = cells.s[cellId];
-    if (suitability) return Math.max(MAX_SUITABILITY_COST - suitability, 0);
+    if (suitability) return Math.max(costs.MAX_SUITABILITY - suitability, 0);
 
-    return UNINHABITED_LAND_FEE;
+    return costs.UNINHABITED_LAND;
   }
 
   function getBiomeCost(cellId: number, capitalBiome: number, type: TCultureType) {
     const biome = cells.biome[cellId];
-    if (biome === capitalBiome) return NATIVE_BIOME_FIXED_COST;
+    if (biome === capitalBiome) return costs.NATIVE_BIOME_FIXED;
 
     const defaultCost = biomesData.cost[biome];
-    if (type === "Hunting") return defaultCost * HUNTERS_NON_NATIVE_BIOME_FEE_MULTIPLIER;
-    if (type === "Nomadic" && FOREST_BIOMES.includes(biome)) return defaultCost * NOMADS_FOREST_BIOMES_FEE_MULTIPLIER;
-    return defaultCost * GENERIC_NON_NATIVE_BIOME_FEE_MULTIPLIER;
+    if (type === "Hunting") return defaultCost * multipliers.HUNTERS_NON_NATIVE_BIOME;
+    if (type === "Nomadic" && FOREST_BIOMES.includes(biome)) return defaultCost * multipliers.NOMADS_FOREST_BIOMES;
+    return defaultCost * multipliers.GENERIC_NON_NATIVE_BIOME;
   }
 
   function getHeightCost(cellId: number, type: TCultureType) {
@@ -131,12 +134,12 @@ export function expandStates(
       const feature = features[cells.f[cellId]];
       if (feature === 0) throw new Error(`No feature for cell ${cellId}`);
       const isDeepWater = cells.t[cellId] > DISTANCE_FIELD.WATER_COAST;
-      const multiplier = isDeepWater ? GENERIC_DEEP_WATER_FEE_MULTIPLIER : 1;
+      const multiplier = isDeepWater ? multipliers.GENERIC_DEEP_WATER : 1;
 
-      if (type === "Lake" && feature.type === "lake") return LAKE_STATES_LAKE_CROSSING_FEE * multiplier;
-      if (type === "Naval") return NAVAL_WATER_CROSSING_FEE * multiplier;
-      if (type === "Nomadic") return NOMADS_WATER_CROSSING_FEE * multiplier;
-      return GENERIC_WATER_CROSSING_FEE * multiplier;
+      if (type === "Lake" && feature.type === "lake") return costs.LAKE_STATES_LAKE_CROSSING * multiplier;
+      if (type === "Naval") return costs.NAVAL_WATER_CROSSING * multiplier;
+      if (type === "Nomadic") return costs.NOMADS_WATER_CROSSING * multiplier;
+      return costs.GENERIC_WATER_CROSSING * multiplier;
     }
 
     const isLowlands = height <= ELEVATION.FOOTHILLS;
@@ -144,22 +147,22 @@ export function expandStates(
     const isMountains = height >= ELEVATION.MOUNTAINS;
 
     if (type === "Highland") {
-      if (isLowlands) return HIGHLAND_STATE_LOWLANDS_FEE;
-      return HIGHLAND_STATE_HIGHTLAND_COST;
+      if (isLowlands) return costs.HIGHLAND_STATE_LOWLANDS;
+      return costs.HIGHLAND_STATE_HIGHTLAND;
     }
 
-    if (isMountains) return GENERIC_MOUNTAINS_CROSSING_FEE;
-    if (isHills) return GENERIC_HILLS_CROSSING_FEE;
+    if (isMountains) return costs.GENERIC_MOUNTAINS_CROSSING;
+    if (isHills) return costs.GENERIC_HILLS_CROSSING;
     return 0;
   }
 
   function getRiverCost(cellId: number, type: TCultureType) {
     const isRiver = cells.r[cellId] !== 0;
-    if (type === "River") return isRiver ? RIVER_STATE_RIVER_CROSSING_COST : RIVER_STATE_NO_RIVER_COST;
+    if (type === "River") return isRiver ? costs.RIVER_STATE_RIVER_CROSSING : costs.RIVER_STATE_NO_RIVER;
     if (!isRiver) return 0;
 
     const flux = cells.fl[cellId];
-    return minmax(flux / 10, RIVER_CROSSING_MIN_COST, RIVER_CROSSING_MAX_COST);
+    return minmax(flux / 10, costs.RIVER_CROSSING_MIN, costs.RIVER_CROSSING_MAX);
   }
 
   function getTypeCost(cellId: number, type: TCultureType) {
@@ -168,15 +171,15 @@ export function expandStates(
 
     const isLandCoast = t === DISTANCE_FIELD.LAND_COAST;
     if (isLandCoast) {
-      if (isMaritime) return MARITIME_LAND_COAST_FEE;
-      if (type === "Nomadic") return NOMADS_LAND_COAST_FEE;
-      return GENERIC_LAND_COAST_FEE;
+      if (isMaritime) return costs.MARITIME_LAND_COAST;
+      if (type === "Nomadic") return costs.NOMADS_LAND_COAST;
+      return costs.GENERIC_LAND_COAST;
     }
 
     const isLandlocked = t === DISTANCE_FIELD.LANDLOCKED;
     if (isLandlocked) {
-      if (type === "Naval") return NAVAL_LANDLOCKED_FEE;
-      return GENERIC_LANDLOCKED_FEE;
+      if (type === "Naval") return costs.NAVAL_LANDLOCKED;
+      return costs.GENERIC_LANDLOCKED;
     }
 
     return 0;
@@ -193,7 +196,7 @@ function normalizeStates(
 
   const normalizedStateIds = Uint16Array.from(stateIds);
 
-  for (let cellId = 0; cellId > heights.length; cellId++) {
+  for (let cellId = 0; cellId < heights.length; cellId++) {
     if (heights[cellId] < MIN_LAND_HEIGHT) continue;
 
     const neibs = neibCells[cellId].filter(neib => heights[neib] >= MIN_LAND_HEIGHT);

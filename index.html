@@ -2206,7 +2206,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 350">
                 <rect width="100%" height="100%" fill="#005bbb"></rect>
                 <rect y="50%" width="100%" height="50%" fill="#ffd500"></rect>
-                <text x="50%" text-anchor="middle" font-size="9em" y="35%" fill="#f5f5f5">Support Ukraine</text>
+                <text x="50%" text-anchor="middle" font-size="8em" y="32%" fill="#f5f5f5">Support Ukraine</text>
                 <text x="50%" text-anchor="middle" font-size="4em" y="78%" fill="#005bdd">
                   war.ukraine.ua/support-ukraine
                 </text>
@@ -2604,8 +2604,8 @@
           </div>
 
           <div data-tip="Lake average depth in selected units">
-            <div class="label">Avarage depth:</div>
-            <input id="lakeAvarageDepth" disabled />
+            <div class="label">Average depth:</div>
+            <input id="lakeAverageDepth" disabled />
           </div>
 
           <div data-tip="Lake maximum depth in selected units">
@@ -3988,11 +3988,6 @@
           <button id="convertColorsButton" data-tip="Set maximum number of colors" class="icon-signal"></button>
           <input id="convertColors" value="100" style="display: none" />
           <button
-            id="convertComplete"
-            data-tip="Complete the conversion. All unassigned colors will be considered as ocean"
-            class="icon-check"
-          ></button>
-          <button
             id="convertCancel"
             data-tip="Cancel the conversion. Previous heightmap will be restored"
             class="icon-cancel"
@@ -4013,12 +4008,23 @@
         </div>
 
         <div data-tip="Select a color to re-assign the height value" id="colorsAssigned" style="display: none">
-          <i>Assigned colors (<span id="colorsAssignedNumber"></span>):</i><br />
+          <i>Assigned colors (<span id="colorsAssignedNumber"></span>):</i>
+          <div id="colorsAssignedContainer" class="colorsContainer"></div>
         </div>
 
         <div data-tip="Select a color to assign a height value" id="colorsUnassigned" style="display: none">
-          <i>Unassigned colors (<span id="colorsUnassignedNumber"></span>):</i><br />
+          <i>Unassigned colors (<span id="colorsUnassignedNumber"></span>):</i>
+          <div id="colorsUnassignedContainer" class="colorsContainer"></div>
         </div>
+
+        <button
+          id="convertComplete"
+          data-tip="Complete the conversion. All unassigned colors will be considered as ocean"
+          style="margin: 0.4em 0"
+          class="glow"
+        >
+          Complete the conversion
+        </button>
       </div>
 
       <div id="biomesEditor" class="dialog stable" style="display: none">
@@ -5466,19 +5472,19 @@
           <div data-tip="Set map rotation speed. Set to 0 is you want to toggle off the rotation">
             <div>Rotation:</div>
             <input id="options3dMeshRotationRange" type="range" min="0" max="10" step=".1" />
-            <input id="options3dMeshRotationNumber" type="number" min="0" max="10" step=".1" style="width: 3em" />
+            <input id="options3dMeshRotationNumber" type="number" min="0" max="10" step=".1" style="width: 4em" />
           </div>
 
           <div data-tip="Set height scale">
             <div>Height scale:</div>
             <input id="options3dScaleRange" type="range" min="0" max="100" />
-            <input id="options3dScaleNumber" type="number" min="0" max="1000" style="width: 3em" />
+            <input id="options3dScaleNumber" type="number" min="0" max="1000" style="width: 4em" />
           </div>
 
           <div data-tip="Set scene lightness">
             <div>Lightness:</div>
             <input id="options3dLightnessRange" type="range" min="0" max="100" />
-            <input id="options3dLightnessNumber" type="number" min="0" max="500" style="width: 3em" />
+            <input id="options3dLightnessNumber" type="number" min="0" max="500" style="width: 4em" />
           </div>
 
           <div data-tip="Set sun position (x, y, z) to define shadows">
@@ -5518,7 +5524,7 @@
           <div data-tip="Set globe rotation speed. Set to 0 is you want to toggle off the rotation">
             <div>Rotation:</div>
             <input id="options3dGlobeRotationRange" type="range" min="0" max="10" step=".1" />
-            <input id="options3dGlobeRotationNumber" type="number" min="0" max="10" step=".1" style="width: 3em" />
+            <input id="options3dGlobeRotationNumber" type="number" min="0" max="10" step=".1" style="width: 4em" />
           </div>
 
           <div data-tip="Set globe texture resolution">
@@ -5595,6 +5601,8 @@
           <input id="pngResolutionOutput" data-stored="pngResolution" type="number" min="1" max="8" value="1" />
         </div>
 
+        <p>Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
+
         <div style="margin: 1em 0 0.3em; font-weight: bold">Export to GeoJSON</div>
         <div>
           <button id="saveGeoJSON_Cells" data-tip="Download cells data in GeoJSON format">cells</button>
@@ -5607,7 +5615,6 @@
           <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a>
           for guidance.
         </p>
-        <p>Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
 
         <div style="margin: 1em 0 0.3em; font-weight: bold">Export To JSON</div>
         <div>
@@ -5622,12 +5629,10 @@
         </div>
         <p>Export in JSON format can be used as an API replacement.</p>
 
-        <div>
-          <p>
-            It's also possible to export map to <i>Foundry VTT</i>, see
-            <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a>
-          </p>
-        </div>
+        <p>
+          It's also possible to export map to <i>Foundry VTT</i>, see
+          <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a>
+        </p>
       </div>
 
       <div id="saveMapData" style="display: none" class="dialog">

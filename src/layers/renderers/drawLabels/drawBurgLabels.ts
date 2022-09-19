@@ -1,15 +1,11 @@
-export function drawLabels() {
-  drawBurgLabels();
-  // TODO: draw other labels
+import * as d3 from "d3";
 
-  window.Zoom.invoke();
-}
-
-function drawBurgLabels() {
+export function drawBurgLabels(burgs: TBurgs) {
   // remove old data
+  const burgLabels = d3.select("#burgLabels");
   burgLabels.selectAll("text").remove();
 
-  const validBurgs = pack.burgs.filter(burg => burg.i && !(burg as IBurg).removed) as IBurg[];
+  const validBurgs = burgs.filter(burg => burg.i && !(burg as IBurg).removed) as IBurg[];
 
   // capitals
   const capitals = validBurgs.filter(burg => burg.capital);

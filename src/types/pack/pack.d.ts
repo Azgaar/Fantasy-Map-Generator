@@ -27,8 +27,8 @@ interface IPackCells {
   state: Uint16Array;
   culture: Uint16Array;
   religion: Uint16Array;
-  province: UintArray;
-  burg: UintArray;
+  province: Uint16Array;
+  burg: Uint16Array;
   haven: UintArray;
   harbor: UintArray;
   route: Uint8Array; // [0, 1, 2, 3], see ROUTES enum, defined by generateRoutes()

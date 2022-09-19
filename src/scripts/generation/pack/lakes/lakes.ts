@@ -14,7 +14,7 @@ export interface ILakeClimateData extends IPackFeatureLake {
   enteringFlux?: number;
 }
 
-export const getClimateData = function (
+export function getClimateData(
   lakes: IPackFeatureLake[],
   heights: Float32Array,
   drainableLakes: Dict<boolean>,
@@ -44,13 +44,9 @@ export const getClimateData = function (
   });
 
   return lakeData;
-};
+}
 
-export const mergeLakeData = function (
-  features: TPackFeatures,
-  lakeData: ILakeClimateData[],
-  rivers: Pick<IRiver, "i">[]
-) {
+export function mergeLakeData(features: TPackFeatures, lakeData: ILakeClimateData[], rivers: Pick<IRiver, "i">[]) {
   const updatedFeatures = features.map(feature => {
     if (!feature) return 0;
     if (feature.type !== "lake") return feature;
@@ -71,7 +67,7 @@ export const mergeLakeData = function (
   });
 
   return updatedFeatures as TPackFeatures;
-};
+}
 
 function defineLakeGroup({
   firstCell,
