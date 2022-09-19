@@ -1,5 +1,4 @@
 import {TIME} from "config/logging";
-import {drawPoint} from "utils/debugUtils";
 import {pick} from "utils/functionUtils";
 import {generateFolkReligions} from "./generateFolkReligions";
 import {generateOrganizedReligions} from "./generateOrganizedReligions";

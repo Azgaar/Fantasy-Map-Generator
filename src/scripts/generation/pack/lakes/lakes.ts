@@ -3,8 +3,6 @@ import * as d3 from "d3";
 import {rn} from "utils/numberUtils";
 import {getRealHeight} from "utils/unitUtils";
 
-const {Names} = window;
-
 export interface ILakeClimateData extends IPackFeatureLake {
   flux: number;
   temp: number;
@@ -99,18 +97,4 @@ function defineLakeGroup({
   if (!outlet && evaporation > flux) return "salt";
 
   return "freshwater";
-}
-
-export function generateLakeNames(features: TPackFeatures, culture: UintArray) {
-  const updatedFeatures = features.map(feature => {
-    if (!feature) return 0;
-    if (feature.type !== "lake") return feature;
-
-    const landCell = feature.shoreline[0];
-    const cultureId = culture[landCell];
-    const name = Names.getCulture(cultureId) as string;
-    return {...feature, name};
-  });
-
-  return updatedFeatures as TPackFeatures;
 }
