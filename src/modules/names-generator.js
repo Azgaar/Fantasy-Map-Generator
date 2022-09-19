@@ -63,10 +63,7 @@ window.Names = (function () {
 
   // generate name using Markov's chain
   const getBase = function (base, min, max, dupl) {
-    if (base === undefined) {
-      ERROR && console.error("Please define a base");
-      return;
-    }
+    if (base === undefined) return ERROR && console.error("Please define a base");
     if (!chains[base]) updateChain(base);
 
     const data = chains[base];

@@ -4,10 +4,12 @@ import {pick} from "utils/functionUtils";
 import {generateBurgsAndStates} from "./burgsAndStates/generateBurgsAndStates";
 import {expandCultures} from "./cultures/expandCultures";
 import {generateCultures} from "./cultures/generateCultures";
+import {generateLakeNames} from "./lakes/generateLakeNames";
 import {generateProvinces} from "./provinces/generateProvinces";
 import {generateReligions} from "./religions/generateReligions";
 import {repackGrid} from "./repackGrid";
 import {generateRivers} from "./rivers/generateRivers";
+import {specifyRivers} from "./rivers/specifyRivers";
 import {generateRoutes} from "./routes/generateRoutes";
 
 const {Biomes} = window;
@@ -16,11 +18,13 @@ export function createPack(grid: IGrid): IPack {
   const {temp, prec} = grid.cells;
   const {vertices, cells} = repackGrid(grid);
 
-  const {features, featureIds, distanceField, haven, harbor} = markupPackFeatures(
-    grid,
-    vertices,
-    pick(cells, "v", "c", "b", "p", "h")
-  );
+  const {
+    features: rawFeatures,
+    featureIds,
+    distanceField,
+    haven,
+    harbor
+  } = markupPackFeatures(grid, vertices, pick(cells, "v", "c", "b", "p", "h"));
 
   const {
     heights,
@@ -31,7 +35,7 @@ export function createPack(grid: IGrid): IPack {
     mergedFeatures
   } = generateRivers(
     {...pick(cells, "i", "c", "b", "g", "h", "p"), f: featureIds, t: distanceField, haven},
-    features,
+    rawFeatures,
     prec,
     temp
   );
@@ -155,8 +159,8 @@ export function createPack(grid: IGrid): IPack {
     burg: burgIds
   });
 
-  // Rivers.specify();
-  // const updatedFeatures = generateLakeNames();
+  const rivers = specifyRivers(rawRivers, cultureIds, cultures);
+  const features = generateLakeNames(mergedFeatures, cultureIds, cultures);
 
   // Military.generate();
   // Markers.generate();
@@ -191,8 +195,8 @@ export function createPack(grid: IGrid): IPack {
       religion: religionIds,
       province: provinceIds
     },
-    features: mergedFeatures,
-    rivers: rawRivers, // "name" | "basin" | "type"
+    features,
+    rivers,
     cultures,
     states,
     burgs,
