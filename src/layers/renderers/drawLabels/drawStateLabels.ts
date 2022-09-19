@@ -2,11 +2,11 @@ import * as d3 from "d3";
 
 import {findCell} from "utils/graphUtils";
 import {isLake, isState} from "utils/typeUtils";
-import {drawPath, drawPoint, drawPolyline} from "utils/debugUtils";
 import {round, splitInTwo} from "utils/stringUtils";
 import {minmax, rn} from "utils/numberUtils";
 
-// increase step to 15 or 30 to make it faster and more horyzontal, decrease to 5 to improve accuracy
+// increase step to 15 or 30 to make it faster and more horyzontal
+// decrease step to 5 to improve accuracy
 const ANGLE_STEP = 9;
 const raycast = precalculateAngles(ANGLE_STEP);
 

@@ -32,24 +32,27 @@ export function specifyBurgs(
 
   const burgs = [...capitals, ...towns].map((burgData, index) => {
     const {cell, culture, capital} = burgData;
+    const isCapital = Boolean(capital);
     const state = stateIds[cell];
 
-    const port = definePort(cell, capital);
-    const population = definePopulation(cell, capital, port);
+    const port = definePort(cell, isCapital);
+    const population = definePopulation(cell, isCapital, port);
     const [x, y] = defineLocation(cell, port);
 
     const type = defineType(cell, port, population);
     const stateData = stateDataMap.get(state)!;
-    const coa: ICoa = defineEmblem(culture, port, capital, type, cultures, stateData);
+    const coa: ICoa = defineEmblem(culture, port, isCapital, type, cultures, stateData);
 
-    const burg: IBurg = {i: index + 1, ...burgData, state, port, population, x, y, type, coa};
+    const features = defineFeatures(population, isCapital);
+
+    const burg: IBurg = {i: index + 1, ...burgData, state, port, population, x, y, type, coa, ...features};
     return burg;
   });
 
   TIME && console.timeEnd("specifyBurgs");
   return [NO_BURG, ...burgs];
 
-  function definePort(cellId: number, capital: Logical) {
+  function definePort(cellId: number, isCapital: boolean) {
     if (!cells.haven[cellId]) return 0; // must be a coastal cell
     if (temp[cells.g[cellId]] <= 0) return 0; // temperature must be above zero °C
 
@@ -59,17 +62,17 @@ export function specifyBurgs(
     if (feature.cells < 2) return 0; // water body must have at least 2 cells
 
     const isSafeHarbor = cells.harbor[cellId] === 1;
-    if (!capital && !isSafeHarbor) return 0; // must be a capital or safe harbor
+    if (!isCapital && !isSafeHarbor) return 0; // must be a capital or safe harbor
 
     return havenFeatureId;
   }
 
   // get population in points, where 1 point = 1000 people by default
-  function definePopulation(cellId: number, capital: Logical, port: number) {
+  function definePopulation(cellId: number, isCapital: boolean, port: number) {
     const basePopulation = cells.s[cellId] / 4;
     const decimalPart = (cellId % 1000) / 1000;
 
-    const capitalMultiplier = capital ? 1.3 : 1;
+    const capitalMultiplier = isCapital ? 1.3 : 1;
     const portMultiplier = port ? 1.3 : 1;
     const randomMultiplier = gauss(1, 1.5, 0.3, 10, 3);
 
@@ -123,12 +126,12 @@ export function specifyBurgs(
   function defineEmblem(
     cultureId: number,
     port: number,
-    capital: Logical,
+    isCapital: boolean,
     type: TCultureType,
     cultures: TCultures,
     stateData: TStateData
   ) {
-    const coaType = capital && P(0.2) ? "Capital" : type === "Generic" ? "City" : type;
+    const coaType = isCapital && P(0.2) ? "Capital" : type === "Generic" ? "City" : type;
     const cultureShield = cultures[cultureId].shield;
 
     if (!stateData) {
@@ -147,11 +150,29 @@ export function specifyBurgs(
 
     function defineKinshipToStateEmblem() {
       const baseKinship = 0.25;
-      const capitalModifier = capital ? 0.1 : 0;
+      const capitalModifier = isCapital ? 0.1 : 0;
       const portModifier = port ? -0.1 : 0;
       const cultureModifier = cultureId === stateCultureId ? 0 : -0.25;
 
       return baseKinship + capitalModifier + portModifier + cultureModifier;
     }
+  }
+
+  // burg features used mainly in MFCG
+  function defineFeatures(population: number, isCapital: boolean) {
+    const citadel: Logical = isCapital || (population > 50 && P(0.75)) || P(0.5) ? 1 : 0;
+
+    const plaza: Logical =
+      population > 50 || (population > 30 && P(0.75)) || (population > 10 && P(0.5)) || P(0.25) ? 1 : 0;
+
+    const walls: Logical =
+      isCapital || population > 30 || (population > 20 && P(0.75)) || (population > 10 && P(0.5)) || P(0.2) ? 1 : 0;
+
+    const shanty: Logical =
+      population > 60 || (population > 40 && P(0.75)) || (population > 20 && walls && P(0.4)) ? 1 : 0;
+
+    const temple: Logical = population > 50 || (population > 35 && P(0.75)) || (population > 20 && P(0.5)) ? 1 : 0;
+
+    return {citadel, plaza, walls, shanty, temple};
   }
 }

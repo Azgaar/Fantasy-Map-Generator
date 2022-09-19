@@ -1,5 +1,8 @@
+import * as d3 from "d3";
+
 export function drawBurgLabels(burgs: TBurgs) {
   // remove old data
+  const burgLabels = d3.select("#burgLabels");
   burgLabels.selectAll("text").remove();
 
   const validBurgs = burgs.filter(burg => burg.i && !(burg as IBurg).removed) as IBurg[];

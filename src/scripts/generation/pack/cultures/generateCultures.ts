@@ -34,7 +34,7 @@ type TCellsData = Pick<
 export function generateCultures(features: TPackFeatures, cells: TCellsData, temp: Int8Array): TCultures {
   TIME && console.time("generateCultures");
 
-  const wildlands: TWilderness = {name: "Wildlands", i: 0, base: 1, origins: [null], shield: "round"};
+  const wildlands: TWilderness = {i: 0, name: "Wildlands", base: 1, origins: [null], shield: "round"};
 
   const populatedCellIds = cells.i.filter(cellId => cells.pop[cellId] > 0);
   const maxSuitability = d3.max(cells.s)!;

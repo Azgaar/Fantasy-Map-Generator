@@ -155,8 +155,6 @@ export function createPack(grid: IGrid): IPack {
     burg: burgIds
   });
 
-  // BurgsAndStates.generateProvinces();
-  // BurgsAndStates.defineBurgFeatures();
   // Rivers.specify();
   // const updatedFeatures = generateLakeNames();
 
