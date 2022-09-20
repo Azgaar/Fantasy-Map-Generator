@@ -165,7 +165,8 @@ window.Markers = (function () {
 
     const proper = Names.getCulture(cells.culture[cell]);
     const name = P(0.3) ? "Mount " + proper : Math.random() > 0.3 ? proper + " Volcano" : proper;
-    notes.push({id, name, legend: `Active volcano. Height: ${getFriendlyHeight(cells.p[cell])}`});
+    const status = P(0.6) ? "Dormant" : Math.random() > 0.6 ? "Active" : "Erupting";
+    notes.push({id, name, legend: `${status} volcano. Height: ${getFriendlyHeight(cells.p[cell])}`});
   }
 
   function listHotSprings({cells}) {
