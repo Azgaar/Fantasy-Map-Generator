@@ -662,15 +662,16 @@ window.Markers = (function () {
 
   // Sacred pineries spawn on boreal forests
   function listSacredPineries({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.biome[i] === 9);
+    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.religion[i] && cells.biome[i] === 9);
   }
 
   function addSacredPinery(id, cell) {
-    const {cells, cultures} = pack;
+    const {cells, cultures, religions} = pack;
 
     const culture = cells.culture[cell];
+    const religion = cells.religion[cell];
     const name = `${Names.getCulture(culture)} Pinery`;
-    const legend = `A sacred pinery of ${cultures[culture].name} culture`;
+    const legend = `A pinery sacred to the followers of ${religions[religion].name}`;
     notes.push({id, name, legend});
   }
 
