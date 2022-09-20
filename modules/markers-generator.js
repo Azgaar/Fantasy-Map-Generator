@@ -47,6 +47,7 @@ window.Markers = (function () {
       {type: "migration", icon: "🐗", min: 20, each: 1000, multiplier: 1, list: listMigrations, add: addMigrations},
       {type: "dances", icon: "💃🏽", min: 5, each: 60, multiplier: 1, list: listDances, add: addDances},
       {type: "mirage", icon: "💦", min: 10, each: 400, multiplier: 1, list: listMirage, add: addMirage},
+      {type: "caves", icon:"🦇", min: 60, each: 1000, multiplier: 1, list: listCaves, add: addCaves},
       {type: "portals", icon: "🌀", px: 14, min: 16, each: 8, multiplier: +isFantasy, list: listPortals, add: addPortal},
       {type: "rifts", icon: "🎆", min: 1, each: 3000, multiplier: +isFantasy, list: listRifts, add: addRifts}
     ];
@@ -959,6 +960,43 @@ window.Markers = (function () {
     const legend = `This ${mirageAdjective.toLowerCase()} mirage has been luring travellers out of their way for eons`;
     notes.push({id, name, legend});
   }
+
+  function listCaves({cells}) {
+    return cells.i.filter(i => !occupied[i] && cells.h[i] >= 50 && cells.pop[i]);
+  }
+
+  function addCaves(id, cell){
+    const {cells} = pack;
+
+    const formations = [
+      "Cave",
+      "Cavern",
+      "Grotto",
+      "Sinkhole",
+      "Chasm",
+      "Hole",
+      "Pit",
+      "Fracture"
+    ];
+    const inhabitants = [
+      "fearsome monsters",
+      "untold treasures",
+      "lava",
+      "water, it is flooded",
+      "nothing, it is empty",
+    ]
+    
+    var formation = ra(formations);
+    const toponym = Names.getCulture(cells.culture[cell]);
+    if(cells.biome[cell] == 11){
+      formation = "Glacial " + formation;
+    }
+    const name = `${toponym} ${formation}`;
+    const legend = `The ${name}. Locals claim that is is filled with ${ra(inhabitants)}.`;
+    notes.push({id, name, legend});
+
+  }
+
   function listPortals({burgs}) {
     return burgs
       .slice(1, Math.ceil(burgs.length / 10) + 1)
