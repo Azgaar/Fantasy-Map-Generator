@@ -677,15 +677,16 @@ window.Markers = (function () {
 
   // Sacred palm groves spawn on oasises
   function listSacredPalmGroves({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.biome[i] === 1 && cells.pop[i] > 1 && cells.road[i]);
+    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.religion[i] && cells.biome[i] === 1 && cells.pop[i] > 1 && cells.road[i]);
   }
 
   function addSacredPalmGrove(id, cell) {
-    const {cells, cultures} = pack;
+    const {cells, cultures, religions} = pack;
 
     const culture = cells.culture[cell];
+    const religion = cells.religion[cell];
     const name = `${Names.getCulture(culture)} Palm Grove`;
-    const legend = `A sacred palm grove of ${cultures[culture].name} culture`;
+    const legend = `A palm grove sacred to the followers of ${religions[religion].name}`;
     notes.push({id, name, legend});
   }
 
