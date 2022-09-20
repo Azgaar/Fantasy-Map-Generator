@@ -647,15 +647,16 @@ window.Markers = (function () {
 
   // Sacred forests spawn on temperate forests
   function listSacredForests({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.culture[i] && [6, 8].includes(cells.biome[i]));
+    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.religion[i] && [6, 8].includes(cells.biome[i]));
   }
 
   function addSacredForest(id, cell) {
-    const {cells, cultures} = pack;
+    const {cells, cultures, religions} = pack;
 
     const culture = cells.culture[cell];
+    const religion = cells.religion[cell];
     const name = `${Names.getCulture(culture)} Forest`;
-    const legend = `A sacred forest of ${cultures[culture].name} culture`;
+    const legend = `A forest sacred to the followers of ${religions[religion].name}`;
     notes.push({id, name, legend});
   }
 
