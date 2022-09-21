@@ -968,31 +968,33 @@ window.Markers = (function () {
   function addCaves(id, cell){
     const {cells} = pack;
 
-    const formations = [
-      "Cave",
-      "Cavern",
-      "Grotto",
-      "Sinkhole",
-      "Chasm",
-      "Hole",
-      "Pit",
-      "Fracture"
-    ];
-    const inhabitants = [
-      "fearsome monsters",
-      "untold treasures",
-      "lava",
-      "water, it is flooded",
-      "nothing, it is empty",
-    ]
+    const formations = {
+      "Cave" : 10,
+      "Cavern" : 8,
+      "Chasm" : 6,
+      "Ravine" : 6,
+      "Fracture" : 5,
+      "Grotto" : 4,
+      "Pit" : 4,
+      "Sinkhole" : 2,
+      "Hole" : 2,
+    };
+    const status = {
+      "a good spot to hid treasure" : 5,
+      "the home of strange monsters" : 5,
+      "totally empty" : 4,
+      "endlessly deep and unexplored" : 4,
+      "completely flooded" : 2,
+      "slowly filling with lava" : 1,
+    }
     
-    var formation = ra(formations);
+    let formation = rw(formations);
     const toponym = Names.getCulture(cells.culture[cell]);
-    if(cells.biome[cell] == 11){
+    if(cells.biome[cell] === 11){
       formation = "Glacial " + formation;
     }
     const name = `${toponym} ${formation}`;
-    const legend = `The ${name}. Locals claim that is is filled with ${ra(inhabitants)}.`;
+    const legend = `The ${name}. Locals claim that it is ${rw(status)}.`;
     notes.push({id, name, legend});
 
   }
