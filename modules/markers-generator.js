@@ -47,6 +47,7 @@ window.Markers = (function () {
       {type: "migration", icon: "🐗", min: 20, each: 1000, multiplier: 1, list: listMigrations, add: addMigrations},
       {type: "dances", icon: "💃🏽", min: 5, each: 60, multiplier: 1, list: listDances, add: addDances},
       {type: "mirage", icon: "💦", min: 10, each: 400, multiplier: 1, list: listMirage, add: addMirage},
+      {type: "caves", icon:"🦇", min: 60, each: 1000, multiplier: 1, list: listCaves, add: addCaves},
       {type: "portals", icon: "🌀", px: 14, min: 16, each: 8, multiplier: +isFantasy, list: listPortals, add: addPortal},
       {type: "rifts", icon: "🎆", min: 1, each: 3000, multiplier: +isFantasy, list: listRifts, add: addRifts}
     ];
@@ -165,7 +166,8 @@ window.Markers = (function () {
 
     const proper = Names.getCulture(cells.culture[cell]);
     const name = P(0.3) ? "Mount " + proper : Math.random() > 0.3 ? proper + " Volcano" : proper;
-    notes.push({id, name, legend: `Active volcano. Height: ${getFriendlyHeight(cells.p[cell])}`});
+    const status = P(0.6) ? "Dormant" : Math.random() > 0.6 ? "Active" : "Erupting";
+    notes.push({id, name, legend: `${status} volcano. Height: ${getFriendlyHeight(cells.p[cell])}`});
   }
 
   function listHotSprings({cells}) {
@@ -646,43 +648,46 @@ window.Markers = (function () {
 
   // Sacred forests spawn on temperate forests
   function listSacredForests({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.culture[i] && [6, 8].includes(cells.biome[i]));
+    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.religion[i] && [6, 8].includes(cells.biome[i]));
   }
 
   function addSacredForest(id, cell) {
-    const {cells, cultures} = pack;
+    const {cells, cultures, religions} = pack;
 
     const culture = cells.culture[cell];
+    const religion = cells.religion[cell];
     const name = `${Names.getCulture(culture)} Forest`;
-    const legend = `A sacred forest of ${cultures[culture].name} culture`;
+    const legend = `A forest sacred to the followers of ${religions[religion].name}`;
     notes.push({id, name, legend});
   }
 
   // Sacred pineries spawn on boreal forests
   function listSacredPineries({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.biome[i] === 9);
+    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.religion[i] && cells.biome[i] === 9);
   }
 
   function addSacredPinery(id, cell) {
-    const {cells, cultures} = pack;
+    const {cells, cultures, religions} = pack;
 
     const culture = cells.culture[cell];
+    const religion = cells.religion[cell];
     const name = `${Names.getCulture(culture)} Pinery`;
-    const legend = `A sacred pinery of ${cultures[culture].name} culture`;
+    const legend = `A pinery sacred to the followers of ${religions[religion].name}`;
     notes.push({id, name, legend});
   }
 
   // Sacred palm groves spawn on oasises
   function listSacredPalmGroves({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.biome[i] === 1 && cells.pop[i] > 1 && cells.road[i]);
+    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.religion[i] && cells.biome[i] === 1 && cells.pop[i] > 1 && cells.road[i]);
   }
 
   function addSacredPalmGrove(id, cell) {
-    const {cells, cultures} = pack;
+    const {cells, cultures, religions} = pack;
 
     const culture = cells.culture[cell];
+    const religion = cells.religion[cell];
     const name = `${Names.getCulture(culture)} Palm Grove`;
-    const legend = `A sacred palm grove of ${cultures[culture].name} culture`;
+    const legend = `A palm grove sacred to the followers of ${religions[religion].name}`;
     notes.push({id, name, legend});
   }
 
@@ -955,6 +960,45 @@ window.Markers = (function () {
     const legend = `This ${mirageAdjective.toLowerCase()} mirage has been luring travellers out of their way for eons`;
     notes.push({id, name, legend});
   }
+
+  function listCaves({cells}) {
+    return cells.i.filter(i => !occupied[i] && cells.h[i] >= 50 && cells.pop[i]);
+  }
+
+  function addCaves(id, cell){
+    const {cells} = pack;
+
+    const formations = {
+      "Cave" : 10,
+      "Cavern" : 8,
+      "Chasm" : 6,
+      "Ravine" : 6,
+      "Fracture" : 5,
+      "Grotto" : 4,
+      "Pit" : 4,
+      "Sinkhole" : 2,
+      "Hole" : 2,
+    };
+    const status = {
+      "a good spot to hid treasure" : 5,
+      "the home of strange monsters" : 5,
+      "totally empty" : 4,
+      "endlessly deep and unexplored" : 4,
+      "completely flooded" : 2,
+      "slowly filling with lava" : 1,
+    }
+    
+    let formation = rw(formations);
+    const toponym = Names.getCulture(cells.culture[cell]);
+    if(cells.biome[cell] === 11){
+      formation = "Glacial " + formation;
+    }
+    const name = `${toponym} ${formation}`;
+    const legend = `The ${name}. Locals claim that it is ${rw(status)}.`;
+    notes.push({id, name, legend});
+
+  }
+
   function listPortals({burgs}) {
     return burgs
       .slice(1, Math.ceil(burgs.length / 10) + 1)
