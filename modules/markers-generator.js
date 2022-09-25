@@ -20,6 +20,7 @@ window.Markers = (function () {
       list: function to select candidates
       add: function to add marker legend
     */
+    // prettier-ignore
     return [
       {type: "volcanoes", icon: "🌋", dx: 52, px: 13, min: 10, each: 500, multiplier: 1, list: listVolcanoes, add: addVolcano},
       {type: "hot-springs", icon: "♨️", dy: 52, min: 30, each: 1200, multiplier: 1, list: listHotSprings, add: addHotSpring},
@@ -165,8 +166,8 @@ window.Markers = (function () {
     const {cells} = pack;
 
     const proper = Names.getCulture(cells.culture[cell]);
-    const name = P(0.3) ? "Mount " + proper : Math.random() > 0.3 ? proper + " Volcano" : proper;
-    const status = P(0.6) ? "Dormant" : Math.random() > 0.6 ? "Active" : "Erupting";
+    const name = P(0.3) ? "Mount " + proper : P(0.7) ? proper + " Volcano" : proper;
+    const status = P(0.6) ? "Dormant" : P(0.4) ? "Active" : "Erupting";
     notes.push({id, name, legend: `${status} volcano. Height: ${getFriendlyHeight(cells.p[cell])}.`});
   }
 
@@ -179,8 +180,12 @@ window.Markers = (function () {
 
     const proper = Names.getCulture(cells.culture[cell]);
     const temp = convertTemperature(gauss(35, 15, 20, 100));
-    const status = P(0.6) ? "geothermal" : Math.random() > 0.6 ? "springwater" : "natural";
-    notes.push({id, name: proper + " Hot Springs", legend: `A ${status} hot springs area. Average temperature: ${temp}.`});
+    const status = P(0.6) ? "geothermal" : P(0.4) ? "springwater" : "natural";
+    notes.push({
+      id,
+      name: proper + " Hot Springs",
+      legend: `A ${status} hot springs area. Average temperature: ${temp}.`
+    });
   }
 
   function listMines({cells}) {
@@ -202,7 +207,13 @@ window.Markers = (function () {
   function listBridges({cells, burgs}) {
     const meanFlux = d3.mean(cells.fl.filter(fl => fl));
     return cells.i.filter(
-      i => !occupied[i] && cells.burg[i] && cells.t[i] !== 1 && burgs[cells.burg[i]].population > 20 && cells.r[i] && cells.fl[i] > meanFlux
+      i =>
+        !occupied[i] &&
+        cells.burg[i] &&
+        cells.t[i] !== 1 &&
+        burgs[cells.burg[i]].population > 20 &&
+        cells.r[i] &&
+        cells.fl[i] > meanFlux
     );
   }
 
@@ -444,7 +455,21 @@ window.Markers = (function () {
       "rat tails",
       "pig ears"
     ];
-    const types = ["hot", "cold", "fire", "ice", "smoky", "misty", "shiny", "sweet", "bitter", "salty", "sour", "sparkling", "smelly"];
+    const types = [
+      "hot",
+      "cold",
+      "fire",
+      "ice",
+      "smoky",
+      "misty",
+      "shiny",
+      "sweet",
+      "bitter",
+      "salty",
+      "sour",
+      "sparkling",
+      "smelly"
+    ];
     const drinks = [
       "wine",
       "brandy",
@@ -472,7 +497,11 @@ window.Markers = (function () {
     const typeName = P(0.3) ? "inn" : "tavern";
     const isAnimalThemed = P(0.7);
     const animal = ra(animals);
-    const name = isAnimalThemed ? (P(0.6) ? ra(colors) + " " + animal : ra(adjectives) + " " + animal) : ra(adjectives) + " " + capitalize(typeName);
+    const name = isAnimalThemed
+      ? P(0.6)
+        ? ra(colors) + " " + animal
+        : ra(adjectives) + " " + animal
+      : ra(adjectives) + " " + capitalize(typeName);
     const meal = isAnimalThemed && P(0.3) ? animal : ra(courses);
     const course = `${ra(methods)} ${meal}`.toLowerCase();
     const drink = `${P(0.5) ? ra(types) : ra(colors)} ${ra(drinks)}`.toLowerCase();
@@ -481,18 +510,26 @@ window.Markers = (function () {
   }
 
   function listLighthouses({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.harbor[i] > 6 && cells.c[i].some(c => cells.h[c] < 20 && cells.road[c]));
+    return cells.i.filter(
+      i => !occupied[i] && cells.harbor[i] > 6 && cells.c[i].some(c => cells.h[c] < 20 && cells.road[c])
+    );
   }
 
   function addLighthouse(id, cell) {
     const {cells} = pack;
 
     const proper = cells.burg[cell] ? pack.burgs[cells.burg[cell]].name : Names.getCulture(cells.culture[cell]);
-    notes.push({id, name: getAdjective(proper) + " Lighthouse" + name, legend: `A lighthouse to serve as a beacon for ships in the open sea.`});
+    notes.push({
+      id,
+      name: getAdjective(proper) + " Lighthouse" + name,
+      legend: `A lighthouse to serve as a beacon for ships in the open sea.`
+    });
   }
 
   function listWaterfalls({cells}) {
-    return cells.i.filter(i => cells.r[i] && !occupied[i] && cells.h[i] >= 50 && cells.c[i].some(c => cells.h[c] < 40 && cells.r[c]));
+    return cells.i.filter(
+      i => cells.r[i] && !occupied[i] && cells.h[i] >= 50 && cells.c[i].some(c => cells.h[c] < 40 && cells.r[c])
+    );
   }
 
   function addWaterfall(id, cell) {
@@ -512,7 +549,9 @@ window.Markers = (function () {
   }
 
   function listBattlefields({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.state[i] && cells.pop[i] > 2 && cells.h[i] < 50 && cells.h[i] > 25);
+    return cells.i.filter(
+      i => !occupied[i] && cells.state[i] && cells.pop[i] > 2 && cells.h[i] < 50 && cells.h[i] > 25
+    );
   }
 
   function addBattlefield(id, cell) {
@@ -553,13 +592,27 @@ window.Markers = (function () {
 
     const name = `${lake.name} Monster`;
     const length = gauss(10, 5, 5, 100);
-    const subjects = ["Locals", "Elders", "Inscriptions", "Tipplers", "Legends", "Whispers", "Rumors", "Journeying folk", "Tales"];
-    const legend = `${ra(subjects)} say a relic monster of ${length} ${heightUnit.value} long inhabits ${lake.name} Lake. Truth or lie, folks are afraid to fish in the lake.`;
+    const subjects = [
+      "Locals",
+      "Elders",
+      "Inscriptions",
+      "Tipplers",
+      "Legends",
+      "Whispers",
+      "Rumors",
+      "Journeying folk",
+      "Tales"
+    ];
+    const legend = `${ra(subjects)} say a relic monster of ${length} ${heightUnit.value} long inhabits ${
+      lake.name
+    } Lake. Truth or lie, folks are afraid to fish in the lake.`;
     notes.push({id, name, legend});
   }
 
   function listSeaMonsters({cells, features}) {
-    return cells.i.filter(i => !occupied[i] && cells.h[i] < 20 && cells.road[i] && features[cells.f[i]].type === "ocean");
+    return cells.i.filter(
+      i => !occupied[i] && cells.h[i] < 20 && cells.road[i] && features[cells.f[i]].type === "ocean"
+    );
   }
 
   function addSeaMonster(id, cell) {
@@ -593,7 +646,17 @@ window.Markers = (function () {
       "horrifying",
       "feared"
     ];
-    const subjects = ["Locals", "Elders", "Inscriptions", "Tipplers", "Legends", "Whispers", "Rumors", "Journeying folk", "Tales"];
+    const subjects = [
+      "Locals",
+      "Elders",
+      "Inscriptions",
+      "Tipplers",
+      "Legends",
+      "Whispers",
+      "Rumors",
+      "Journeying folk",
+      "Tales"
+    ];
     const species = [
       "Ogre",
       "Troll",
@@ -629,13 +692,21 @@ window.Markers = (function () {
     const monster = ra(species);
     const toponym = Names.getCulture(cells.culture[cell]);
     const name = `${toponym} ${monster}`;
-    const legend = `${ra(subjects)} speak of a ${ra(adjectives)} ${monster} who inhabits ${toponym} hills and ${ra(modusOperandi)}.`;
+    const legend = `${ra(subjects)} speak of a ${ra(adjectives)} ${monster} who inhabits ${toponym} hills and ${ra(
+      modusOperandi
+    )}.`;
     notes.push({id, name, legend});
   }
 
   // Sacred mountains spawn on lonely mountains
   function listSacredMountains({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.h[i] >= 70 && cells.c[i].some(c => cells.culture[c]) && cells.c[i].every(c => cells.h[c] < 60));
+    return cells.i.filter(
+      i =>
+        !occupied[i] &&
+        cells.h[i] >= 70 &&
+        cells.c[i].some(c => cells.culture[c]) &&
+        cells.c[i].every(c => cells.h[c] < 60)
+    );
   }
 
   function addSacredMountain(id, cell) {
@@ -651,7 +722,9 @@ window.Markers = (function () {
 
   // Sacred forests spawn on temperate forests
   function listSacredForests({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.religion[i] && [6, 8].includes(cells.biome[i]));
+    return cells.i.filter(
+      i => !occupied[i] && cells.culture[i] && cells.religion[i] && [6, 8].includes(cells.biome[i])
+    );
   }
 
   function addSacredForest(id, cell) {
@@ -681,7 +754,15 @@ window.Markers = (function () {
 
   // Sacred palm groves spawn on oasises
   function listSacredPalmGroves({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.religion[i] && cells.biome[i] === 1 && cells.pop[i] > 1 && cells.road[i]);
+    return cells.i.filter(
+      i =>
+        !occupied[i] &&
+        cells.culture[i] &&
+        cells.religion[i] &&
+        cells.biome[i] === 1 &&
+        cells.pop[i] > 1 &&
+        cells.road[i]
+    );
   }
 
   function addSacredPalmGrove(id, cell) {
@@ -773,7 +854,20 @@ window.Markers = (function () {
   function addStatue(id, cell) {
     const {cells} = pack;
 
-    const variants = ["Statue", "Obelisk", "Monument", "Column", "Monolith", "Pillar", "Megalith", "Stele", "Runestone", "Sculpture", "Effigy", "Idol"];
+    const variants = [
+      "Statue",
+      "Obelisk",
+      "Monument",
+      "Column",
+      "Monolith",
+      "Pillar",
+      "Megalith",
+      "Stele",
+      "Runestone",
+      "Sculpture",
+      "Effigy",
+      "Idol"
+    ];
     const scripts = {
       cypriot: "𐠁𐠂𐠃𐠄𐠅𐠈𐠊𐠋𐠌𐠍𐠎𐠏𐠐𐠑𐠒𐠓𐠔𐠕𐠖𐠗𐠘𐠙𐠚𐠛𐠜𐠝𐠞𐠟𐠠𐠡𐠢𐠣𐠤𐠥𐠦𐠧𐠨𐠩𐠪𐠫𐠬𐠭𐠮𐠯𐠰𐠱𐠲𐠳𐠴𐠵𐠷𐠸𐠼𐠿     ",
       geez: "ሀለሐመሠረሰቀበተኀነአከወዐዘየደገጠጰጸፀፈፐ   ",
@@ -828,7 +922,16 @@ window.Markers = (function () {
   }
 
   function addCircuses(id, cell) {
-    const adjectives = ["Fantastical", "Wonderous", "Incomprehensible", "Magical", "Extraordinary", "Unmissable", "World-famous", "Breathtaking"];
+    const adjectives = [
+      "Fantastical",
+      "Wonderous",
+      "Incomprehensible",
+      "Magical",
+      "Extraordinary",
+      "Unmissable",
+      "World-famous",
+      "Breathtaking"
+    ];
 
     const adjective = ra(adjectives);
     const name = `Travelling ${adjective} Circus`;
@@ -940,8 +1043,26 @@ window.Markers = (function () {
   function addDances(id, cell) {
     const {cells, burgs} = pack;
     const burgName = burgs[cells.burg[cell]].name;
-    const socialTypes = ["gala", "dance", "performance", "ball", "soiree", "jamboree", "exhibition", "carnival", "festival", "jubilee"];
-    const people = ["great and the good", "nobility", "local elders", "foreign dignitaries", "spiritual leaders", "suspected revolutionaries"];
+    const socialTypes = [
+      "gala",
+      "dance",
+      "performance",
+      "ball",
+      "soiree",
+      "jamboree",
+      "exhibition",
+      "carnival",
+      "festival",
+      "jubilee"
+    ];
+    const people = [
+      "great and the good",
+      "nobility",
+      "local elders",
+      "foreign dignitaries",
+      "spiritual leaders",
+      "suspected revolutionaries"
+    ];
     const socialType = ra(socialTypes);
 
     const name = `${burgName} ${socialType}`;
@@ -968,38 +1089,37 @@ window.Markers = (function () {
     return cells.i.filter(i => !occupied[i] && cells.h[i] >= 50 && cells.pop[i]);
   }
 
-  function addCaves(id, cell){
+  function addCaves(id, cell) {
     const {cells} = pack;
 
     const formations = {
-      "Cave" : 10,
-      "Cavern" : 8,
-      "Chasm" : 6,
-      "Ravine" : 6,
-      "Fracture" : 5,
-      "Grotto" : 4,
-      "Pit" : 4,
-      "Sinkhole" : 2,
-      "Hole" : 2,
+      Cave: 10,
+      Cavern: 8,
+      Chasm: 6,
+      Ravine: 6,
+      Fracture: 5,
+      Grotto: 4,
+      Pit: 4,
+      Sinkhole: 2,
+      Hole: 2
     };
     const status = {
-      "a good spot to hid treasure" : 5,
-      "the home of strange monsters" : 5,
-      "totally empty" : 4,
-      "endlessly deep and unexplored" : 4,
-      "completely flooded" : 2,
-      "slowly filling with lava" : 1,
-    }
-    
+      "a good spot to hid treasure": 5,
+      "the home of strange monsters": 5,
+      "totally empty": 4,
+      "endlessly deep and unexplored": 4,
+      "completely flooded": 2,
+      "slowly filling with lava": 1
+    };
+
     let formation = rw(formations);
     const toponym = Names.getCulture(cells.culture[cell]);
-    if(cells.biome[cell] === 11){
+    if (cells.biome[cell] === 11) {
       formation = "Glacial " + formation;
     }
     const name = `${toponym} ${formation}`;
     const legend = `The ${name}. Locals claim that it is ${rw(status)}.`;
     notes.push({id, name, legend});
-
   }
 
   function listPortals({burgs}) {
