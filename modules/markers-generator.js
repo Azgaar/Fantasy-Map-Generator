@@ -710,7 +710,7 @@ window.Markers = (function () {
   }
 
   function addSacredMountain(id, cell) {
-    const {cells, cultures} = pack;
+    const {cells, religions} = pack;
 
     const culture = cells.c[cell].map(c => cells.culture[c]).find(c => c);
     const religion = cells.religion[cell];
