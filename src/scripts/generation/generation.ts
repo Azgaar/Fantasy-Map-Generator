@@ -74,7 +74,8 @@ async function generate(options?: IGenerationOptions) {
     // renderLayer("burgs");
     // renderLayer("routes");
     renderLayer("states");
-    renderLayer("labels");
+    renderLayer("borders");
+    // renderLayer("labels");
 
     // pack.cells.route.forEach((route, index) => {
     //   if (route === 2) drawPoint(pack.cells.p[index], {color: "black"});

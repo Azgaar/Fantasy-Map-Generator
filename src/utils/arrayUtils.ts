@@ -60,3 +60,9 @@ function getTypedArray(maxValue: number) {
   if (maxValue <= UINT32_MAX) return Uint32Array;
   return Uint32Array;
 }
+
+type Nested<T> = (T | Nested<T>)[];
+export function createNestedArray<T>(length: number, depth: number, value: boolean | number | string): Nested<T> {
+  if (depth === 0) return new Array(length).fill(value);
+  return new Array(length).fill(value).map(_ => createNestedArray(length, depth - 1, value));
+}

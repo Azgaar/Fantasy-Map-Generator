@@ -14,8 +14,6 @@ export function drawBiomes() {
     options: {fill: true, waterGap: true, halo: false}
   });
 
-  console.log(paths);
-
   const htmlPaths = paths.map(([index, {fill, waterGap}]) => {
     const color = colors[Number(index)];
 

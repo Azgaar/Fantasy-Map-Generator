@@ -568,7 +568,7 @@ export function randomizeOptions() {
   // 'Options' settings
   if (randomize || !locked("template")) randomizeHeightmapTemplate();
   if (randomize || !locked("regions")) regionsInput.value = regionsOutput.value = gauss(18, 5, 2, 30);
-  if (randomize || !locked("provinces")) provincesInput.value = provincesOutput.value = gauss(20, 10, 20, 100);
+  if (randomize || !locked("provinces")) provincesInput.value = provincesOutput.value = gauss(5, 15, 3, 100);
   if (randomize || !locked("manors")) {
     manorsInput.value = 1000;
     manorsOutput.value = "auto";

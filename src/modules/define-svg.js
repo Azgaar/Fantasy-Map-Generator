@@ -2,7 +2,7 @@ import * as d3 from "d3";
 
 export function defineSvg(width, height) {
   // append svg layers (in default order)
-  svg = d3.select("#map");
+  svg = d3.select("#map"); // to be: the only global var
   defs = svg.select("#deftemp");
   viewbox = svg.select("#viewbox");
   scaleBar = svg.select("#scaleBar");
