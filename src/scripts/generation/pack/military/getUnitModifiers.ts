@@ -3,19 +3,22 @@ import {isState} from "utils/typeUtils";
 
 // calculate overall state modifiers for unit types based on state features
 export function getUnitModifiers(states: TStates) {
-  const validStates = states.filter(isState);
+  return states.map(state => {
+    if (!isState(state)) return {};
 
-  for (const state of validStates) {
-    const military = {platoons: []};
-    const {i: stateId, relations, expansionism, area, neighbors, alert} = state;
+    const unitModifiers: Dict<number> = {};
+    const {type: stateType, formName, form, alert} = state;
 
-    for (const unit of options.military) {
-      if (!stateModifier[unit.type]) continue;
+    for (const {type, name} of options.military) {
+      if (!stateModifier[type]) continue;
 
-      let modifier = stateModifier[unit.type][s.type] || 1;
-      if (unit.type === "mounted" && s.formName.includes("Horde")) modifier *= 2;
-      else if (unit.type === "naval" && s.form === "Republic") modifier *= 1.2;
-      military[unit.name] = modifier * alert;
+      let modifier = stateModifier[type][stateType] || 1;
+      if (type === "mounted" && formName.includes("Horde")) modifier *= 2;
+      else if (type === "naval" && form === "Republic") modifier *= 1.2;
+
+      unitModifiers[name] = modifier * alert;
     }
-  }
+
+    return unitModifiers;
+  });
 }

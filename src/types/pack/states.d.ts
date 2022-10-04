@@ -53,15 +53,15 @@ type TRelation =
   | "Enemy"
   | "x";
 
-interface IMilitaryOption {
+interface IMilitaryUnit {
   name: string;
   icon: string;
   crew: number;
   power: number;
   rural: number;
   urban: number;
-  type: TMilitaryType;
+  type: TMilitaryUnitType;
   separate: Logical;
 }
 
-type TMilitaryType = "melee" | "ranged" | "mounted" | "machinery" | "naval" | "armored" | "aviation" | "magical";
+type TMilitaryUnitType = "melee" | "ranged" | "mounted" | "machinery" | "naval" | "armored" | "aviation" | "magical";

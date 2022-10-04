@@ -1,4 +1,4 @@
-export const getDefaultMilitaryOptions: () => IMilitaryOption[] = function () {
+export const getDefaultMilitaryOptions: () => IMilitaryUnit[] = function () {
   return [
     {icon: "⚔️", name: "infantry", rural: 0.25, urban: 0.2, crew: 1, power: 1, type: "melee", separate: 0},
     {icon: "🏹", name: "archers", rural: 0.12, urban: 0.2, crew: 1, power: 1, type: "ranged", separate: 0},
@@ -21,19 +21,18 @@ export const relationsAlertRate: {[key in TRelation]: number} = {
   Enemy: 1
 };
 
-type TCulture = Exclude<TCultureType, "Generic">;
-export const stateModifier: {[key in TMilitaryType]: {[key in TCulture]: number}} = {
-  melee: {Nomadic: 0.5, Highland: 1.2, Lake: 1, Naval: 0.7, Hunting: 1.2, River: 1.1},
-  ranged: {Nomadic: 0.9, Highland: 1.3, Lake: 1, Naval: 0.8, Hunting: 2, River: 0.8},
-  mounted: {Nomadic: 2.3, Highland: 0.6, Lake: 0.7, Naval: 0.3, Hunting: 0.7, River: 0.8},
-  machinery: {Nomadic: 0.8, Highland: 1.4, Lake: 1.1, Naval: 1.4, Hunting: 0.4, River: 1.1},
-  naval: {Nomadic: 0.5, Highland: 0.5, Lake: 1.2, Naval: 1.8, Hunting: 0.7, River: 1.2},
-  armored: {Nomadic: 1, Highland: 0.5, Lake: 1, Naval: 1, Hunting: 0.7, River: 1.1},
-  aviation: {Nomadic: 0.5, Highland: 0.5, Lake: 1.2, Naval: 1.2, Hunting: 0.6, River: 1.2},
-  magical: {Nomadic: 1, Highland: 2, Lake: 1, Naval: 1, Hunting: 1, River: 1}
+export const stateModifier: {[key in TMilitaryUnitType]: {[key in TCultureType]: number}} = {
+  melee: {Generic: 1, Nomadic: 0.5, Highland: 1.2, Lake: 1, Naval: 0.7, Hunting: 1.2, River: 1.1},
+  ranged: {Generic: 1, Nomadic: 0.9, Highland: 1.3, Lake: 1, Naval: 0.8, Hunting: 2, River: 0.8},
+  mounted: {Generic: 1, Nomadic: 2.3, Highland: 0.6, Lake: 0.7, Naval: 0.3, Hunting: 0.7, River: 0.8},
+  machinery: {Generic: 1, Nomadic: 0.8, Highland: 1.4, Lake: 1.1, Naval: 1.4, Hunting: 0.4, River: 1.1},
+  naval: {Generic: 1, Nomadic: 0.5, Highland: 0.5, Lake: 1.2, Naval: 1.8, Hunting: 0.7, River: 1.2},
+  armored: {Generic: 1, Nomadic: 1, Highland: 0.5, Lake: 1, Naval: 1, Hunting: 0.7, River: 1.1},
+  aviation: {Generic: 1, Nomadic: 0.5, Highland: 0.5, Lake: 1.2, Naval: 1.2, Hunting: 0.6, River: 1.2},
+  magical: {Generic: 1, Nomadic: 1, Highland: 2, Lake: 1, Naval: 1, Hunting: 1, River: 1}
 };
 
-export const cellTypeModifier: {[key: string]: {[key in TMilitaryType]: number}} = {
+export const cellTypeModifier: {[key: string]: {[key in TMilitaryUnitType]: number}} = {
   nomadic: {
     melee: 0.2,
     ranged: 0.5,
@@ -66,7 +65,7 @@ export const cellTypeModifier: {[key: string]: {[key in TMilitaryType]: number}}
   }
 };
 
-export const burgTypeModifier: {[key: string]: {[key in TMilitaryType]: number}} = {
+export const burgTypeModifier: {[key: string]: {[key in TMilitaryUnitType]: number}} = {
   nomadic: {
     melee: 0.3,
     ranged: 0.8,

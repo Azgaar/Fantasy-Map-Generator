@@ -7,9 +7,9 @@ export function generateMilitary(states: TStates) {
 
   if (!options.military) options.military = getDefaultMilitaryOptions();
 
-  // const unitModifiers = getUnitModifiers(states);
+  const unitModifiers = getUnitModifiers(states);
 
-  console.log(states);
+  console.log({states, unitModifiers});
 
   TIME && console.timeEnd("generateMilitaryForces");
 }

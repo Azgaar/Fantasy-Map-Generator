@@ -26,7 +26,7 @@ interface IOptions {
   winds: [number, number, number, number, number, number];
   stateLabelsMode: "auto" | "short" | "full";
   year: number;
-  military: IMilitaryOption[];
+  military: IMilitaryUnit[];
 }
 
 declare let populationRate: number;
