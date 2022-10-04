@@ -3,3 +3,4 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home/howlcrvy/worlds.howlingsails.com/
     - /bin/cp -R * $DEPLOYPATH
+    
