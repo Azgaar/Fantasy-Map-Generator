@@ -19,6 +19,7 @@ interface IState {
   urban: number;
   neighbors: number[];
   relations: TRelation[];
+  alert: number;
   removed?: boolean;
 }
 
@@ -51,3 +52,16 @@ type TRelation =
   | "Vassal"
   | "Enemy"
   | "x";
+
+interface IMilitaryOption {
+  name: string;
+  icon: string;
+  crew: number;
+  power: number;
+  rural: number;
+  urban: number;
+  type: TMilitaryType;
+  separate: Logical;
+}
+
+type TMilitaryType = "melee" | "ranged" | "mounted" | "machinery" | "naval" | "armored" | "aviation" | "magical";

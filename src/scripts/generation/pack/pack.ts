@@ -1,10 +1,12 @@
 import {markupPackFeatures} from "scripts/generation/markup";
 import {rankCells} from "scripts/generation/pack/rankCells";
 import {pick} from "utils/functionUtils";
+
 import {generateBurgsAndStates} from "./burgsAndStates/generateBurgsAndStates";
 import {expandCultures} from "./cultures/expandCultures";
 import {generateCultures} from "./cultures/generateCultures";
 import {generateLakeNames} from "./lakes/generateLakeNames";
+import {generateMilitary} from "./military/generateMilitary";
 import {generateProvinces} from "./provinces/generateProvinces";
 import {generateReligions} from "./religions/generateReligions";
 import {repackGrid} from "./repackGrid";
@@ -161,6 +163,8 @@ export function createPack(grid: IGrid): IPack {
 
   const rivers = specifyRivers(rawRivers, cultureIds, cultures);
   const features = generateLakeNames(mergedFeatures, cultureIds, cultures);
+
+  generateMilitary(states);
 
   // Military.generate();
   // Markers.generate();

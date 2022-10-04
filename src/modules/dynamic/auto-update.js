@@ -6,6 +6,7 @@ import {findCell} from "utils/graphUtils";
 import {rn} from "utils/numberUtils";
 import {P, rand, rw} from "utils/probabilityUtils";
 import {parseTransform} from "utils/stringUtils";
+import {getDefaultMilitaryOptions} from "config/military";
 
 // update old .map version to the current one
 export function resolveVersionConflicts(version) {
@@ -272,7 +273,7 @@ export function resolveVersionConflicts(version) {
     const year = rand(100, 2000);
     const era = Names.getBaseShort(P(0.7) ? 1 : rand(nameBases.length)) + " Era";
     const eraShort = era[0] + "E";
-    const military = Military.getDefaultOptions();
+    const military = getDefaultMilitaryOptions();
     options = {winds, year, era, eraShort, military};
 
     // v1.3 added campaings data for all states

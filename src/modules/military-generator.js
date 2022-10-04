@@ -5,6 +5,7 @@ import {rn, minmax} from "utils/numberUtils";
 import {rand, gauss, ra} from "utils/probabilityUtils";
 import {si} from "utils/unitUtils";
 import {nth} from "utils/languageUtils";
+import {getDefaultMilitaryOptions} from "config/military";
 
 window.Military = (function () {
   const generate = function () {
@@ -12,7 +13,7 @@ window.Military = (function () {
     const {cells, states} = pack;
     const {p} = cells;
     const valid = states.filter(s => s.i && !s.removed); // valid states
-    if (!options.military) options.military = getDefaultOptions();
+    if (!options.military) options.military = getDefaultMilitaryOptions();
 
     const expn = d3.sum(valid.map(s => s.expansionism)); // total expansion
     const area = d3.sum(valid.map(s => s.area)); // total area
@@ -331,16 +332,6 @@ window.Military = (function () {
     validStates.forEach(s => drawRegiments(s.military, s.i));
   }
 
-  const getDefaultOptions = function () {
-    return [
-      {icon: "⚔️", name: "infantry", rural: 0.25, urban: 0.2, crew: 1, power: 1, type: "melee", separate: 0},
-      {icon: "🏹", name: "archers", rural: 0.12, urban: 0.2, crew: 1, power: 1, type: "ranged", separate: 0},
-      {icon: "🐴", name: "cavalry", rural: 0.12, urban: 0.03, crew: 2, power: 2, type: "mounted", separate: 0},
-      {icon: "💣", name: "artillery", rural: 0, urban: 0.03, crew: 8, power: 12, type: "machinery", separate: 0},
-      {icon: "🌊", name: "fleet", rural: 0, urban: 0.015, crew: 100, power: 50, type: "naval", separate: 1}
-    ];
-  };
-
   const drawRegiments = function (regiments, s) {
     const size = +armies.attr("box-size");
     const w = d => (d.n ? size * 4 : size * 6);
@@ -512,7 +503,6 @@ window.Military = (function () {
   return {
     generate,
     redraw,
-    getDefaultOptions,
     getName,
     generateNote,
     drawRegiments,

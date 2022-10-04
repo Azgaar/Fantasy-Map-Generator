@@ -4,20 +4,16 @@ import {NAMEBASE} from "config/namebases";
 import {getInputNumber} from "utils/nodeUtils";
 import {P, rand, rw} from "utils/probabilityUtils";
 import {AreaTiers, culturalMonarchyFormsMap, culturalTheocracyFormsMap, StateForms} from "./config";
-import type {TStateStatistics} from "./collectStatistics";
 
 // create 5 area tiers, 4 is the biggest, 0 the smallest
-export function createAreaTiers(statistics: TStateStatistics) {
-  const stateAreas = Object.entries(statistics)
-    .filter(([id]) => Number(id))
-    .map(([, {area}]) => area);
-  const medianArea = d3.median(stateAreas)!;
+export function createAreaTiers(stateAreas: number[]) {
+  const meanArea = d3.mean(stateAreas)!;
 
   const topTierIndex = Math.max(Math.ceil(stateAreas.length ** 0.4) - 2, 0);
   const minTopTierArea = stateAreas.sort((a, b) => b - a)[topTierIndex];
 
   return (area: number) => {
-    const tier = Math.min(Math.floor((area / medianArea) * 2.6), 4) as AreaTiers;
+    const tier = Math.min(Math.floor((area / meanArea) * 2.6), 4) as AreaTiers;
     if (tier === AreaTiers.EMPIRE && area < minTopTierArea) return AreaTiers.KINGDOM;
     return tier;
   };

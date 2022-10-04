@@ -5,6 +5,7 @@ import {defineFullStateName, defineStateName} from "./defineStateName";
 import {defineStateColors} from "./defineStateColors";
 import {isBurg} from "utils/typeUtils";
 import {generateConflicts} from "./generateConflicts";
+import {defineWarAlert} from "./defineWarAlert";
 
 import type {TStateStatistics} from "./collectStatistics";
 import type {TStateData} from "./createStateData";
@@ -21,11 +22,15 @@ export function specifyStates(
   TIME && console.time("specifyStates");
 
   const colors = defineStateColors(statistics);
-  const getAreaTier = createAreaTiers(statistics);
   const getNameBase = (cultureId: number) => cultures[cultureId].base;
 
-  const states: IState[] = statesData.map(stateData => {
-    const {i, center, type, culture, capital} = stateData;
+  const stateAreas = getStateAreas(statistics);
+  const totalArea = stateAreas.reduce((a, b) => a + b);
+  const totalExpansionism = statesData.map(state => state.expansionism).reduce((a, b) => a + b);
+  const getAreaTier = createAreaTiers(stateAreas);
+
+  const states = statesData.map(stateData => {
+    const {i, center, type, culture, capital, expansionism} = stateData;
     const {area, burgs: burgsNumber, neighbors, ...stats} = statistics[i];
     const color = colors[i];
 
@@ -35,6 +40,7 @@ export function specifyStates(
 
     const relations = diplomacy[i];
     const isVassal = relations.includes("Vassal");
+    const alert = defineWarAlert(neighbors, relations, area / totalArea, expansionism / totalExpansionism);
 
     const nameBase = getNameBase(culture);
     const areaTier = getAreaTier(area);
@@ -44,7 +50,7 @@ export function specifyStates(
 
     const pole = poles[i];
 
-    return {
+    const state: IState = {
       name,
       ...stateData,
       form,
@@ -56,12 +62,20 @@ export function specifyStates(
       ...stats,
       neighbors,
       relations,
+      alert,
       pole
     };
+    return state;
   });
 
   const conflicts = generateConflicts(states, cultures); // mutates states
 
   TIME && console.timeEnd("specifyStates");
   return {states: [NEUTRALS, ...states], conflicts};
+}
+
+function getStateAreas(statistics: TStateStatistics) {
+  return Object.entries(statistics)
+    .filter(([id]) => Number(id))
+    .map(([, {area}]) => area);
 }
