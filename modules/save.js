@@ -202,12 +202,14 @@ function downloadStates() {
   link.click();
 }
 
-function downloadNotes() {
-  const mapData = JSON.stringify(pack.notes);
+
+
+function downloadCells() {
+  const mapData = JSON.stringify(pack.cells);
   const blob = new Blob([mapData], { type: "text/plain" });
   const URL = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.download = getFileName() + "-notes.json";
+  link.download = getFileName() + "-cells.json";
   link.href = URL;
   link.click();
 }
@@ -234,7 +236,7 @@ function dowloadMap() {
   downloadMarkers();
   downloadBurgs();
   downloadCultures();
-  downloadNotes();
+  downloadCells();
   downloadReligions();
   downloadPopRates();
   downloadStates();

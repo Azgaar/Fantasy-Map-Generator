@@ -574,8 +574,8 @@ function editBurg(id) {
     if (people > 900) townSize = "medium";
     if (people > 2_000) townSize = "average";
     if (people > 5_500) townSize = "big";
-    const baseURL = "http://localhost:9090/town/";
-    const url = `${baseURL}${worldName}_${name}-${burgCulture}/${townSize}`;
+    const baseURL = "http://localhost:9090/world/";
+    const url = `${baseURL}${worldName}/burg/${burg.i}`;
 
     return url;
   }
