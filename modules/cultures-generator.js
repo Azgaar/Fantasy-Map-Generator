@@ -218,7 +218,8 @@ window.Cultures = (function () {
         {name: "Vengrian", base: 15, odd: 1, sort: i => (n(i) / td(i, 11) / bd(i, [4])) * t[i], shield: "horsehead2"},
         {name: "Turchian", base: 16, odd: 0.05, sort: i => n(i) / td(i, 14), shield: "round"},
         {name: "Euskati", base: 20, odd: 0.05, sort: i => (n(i) / td(i, 15)) * h[i], shield: "oldFrench"},
-        {name: "Keltan", base: 22, odd: 0.05, sort: i => (n(i) / td(i, 11) / bd(i, [6, 8])) * t[i], shield: "oval"}
+        {name: "Keltan", base: 22, odd: 0.05, sort: i => (n(i) / td(i, 11) / bd(i, [6, 8])) * t[i], shield: "oval"},
+        {name: "Hebrew", base: 42, odd: 0.05, sort: i => n(i) / td(i, 18) * sf(i), shield: "oval"}
       ];
     }
 
@@ -277,8 +278,10 @@ window.Cultures = (function () {
         {name: "Scythian", base: 24, odd: 0.5, sort: i => n(i) / td(i, 11) ** 0.5 / bd(i, [4]), shield: "round"}, // Iranian
         {name: "Cantabrian", base: 20, odd: 0.5, sort: i => (n(i) / td(i, 16)) * h[i], shield: "oval"}, // Basque
         {name: "Estian", base: 9, odd: 0.2, sort: i => (n(i) / td(i, 5)) * t[i], shield: "pavise"}, // Finnic
-        {name: "Carthaginian", base: 17, odd: 0.3, sort: i => n(i) / td(i, 19) / sf(i), shield: "oval"}, // Berber
-        {name: "Mesopotamian", base: 23, odd: 0.2, sort: i => n(i) / td(i, 22) / bd(i, [1, 2, 3]), shield: "oval"} // Mesopotamian
+        {name: "Carthaginian", base: 42, odd: 0.3, sort: i => n(i) / td(i, 19) / sf(i), shield: "oval"}, // Levantine
+        {name: "Phoenician", base: 42, odd: 0.3, sort: i => n(i) / td(i, 20) / sf(i), shield: "oval"}, // Levantine
+        {name: "Mesopotamian", base: 23, odd: 0.2, sort: i => n(i) / td(i, 22) / bd(i, [1, 2, 3]), shield: "oval"}, // Mesopotamian
+        {name: "Hebrew", base: 42, odd: 0.2, sort: i => n(i) / td(i, 18) * sf(i), shield: "oval"} // Levantine
       ];
     }
 
@@ -468,7 +471,8 @@ window.Cultures = (function () {
       {name: "Kiswaili", base: 28, odd: 0.1, sort: i => n(i) / td(i, 29) / bd(i, [1, 3, 5, 7]), shield: "vesicaPiscis"},
       {name: "Vietic", base: 29, odd: 0.1, sort: i => n(i) / td(i, 25) / bd(i, [7], 7) / t[i], shield: "banner"},
       {name: "Guantzu", base: 30, odd: 0.1, sort: i => n(i) / td(i, 17), shield: "banner"},
-      {name: "Ulus", base: 31, odd: 0.1, sort: i => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i], shield: "banner"}
+      {name: "Ulus", base: 31, odd: 0.1, sort: i => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i], shield: "banner"},
+      {name: "Hebrew", base: 42, odd: 0.2, sort: i => n(i) / td(i, 18) * sf(i), shield: "oval"} // Levantine
     ];
   };
 
