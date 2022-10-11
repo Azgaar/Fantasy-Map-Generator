@@ -164,7 +164,19 @@ export function createPack(grid: IGrid): IPack {
   const rivers = specifyRivers(rawRivers, cultureIds, cultures);
   const features = generateLakeNames(mergedFeatures, cultureIds, cultures);
 
-  generateMilitary(states);
+  generateMilitary(states, burgs, {
+    i: cells.i,
+    p: cells.p,
+    h: heights,
+    f: featureIds,
+    haven,
+    pop: population,
+    biome,
+    culture: cultureIds,
+    state: stateIds,
+    burg: burgIds,
+    religion: religionIds
+  });
 
   // Military.generate();
   // Markers.generate();

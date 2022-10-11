@@ -62,6 +62,10 @@ interface IMilitaryUnit {
   urban: number;
   type: TMilitaryUnitType;
   separate: Logical;
+  biomes?: number[];
+  states?: number[];
+  cultures?: number[];
+  religions?: number[];
 }
 
 type TMilitaryUnitType = "melee" | "ranged" | "mounted" | "machinery" | "naval" | "armored" | "aviation" | "magical";

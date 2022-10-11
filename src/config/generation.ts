@@ -59,6 +59,8 @@ export const FOREST_BIOMES = [
   TAIGA
 ];
 
+export const WETLAND_BIOMES = [TROPICAL_RAINFOREST, TEMPERATE_RAINFOREST, TAIGA, WETLAND];
+
 export const ROUTES = {
   MAIN_ROAD: 1,
   TRAIL: 2,
