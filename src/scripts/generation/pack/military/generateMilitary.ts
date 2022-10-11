@@ -9,15 +9,12 @@ export type TCellsData = Pick<
 >;
 
 export interface IPlatoon {
+  unit: IMilitaryUnit;
   cell: number;
   a: number;
   t: number;
   x: number;
   y: number;
-  u: string;
-  isNaval: boolean;
-  s: Logical;
-  type: TMilitaryUnitType;
 }
 
 export function generateMilitary(states: TStates, burgs: TBurgs, cells: TCellsData) {

@@ -48,20 +48,9 @@ export function generatePlatoons(states: TStates, burgs: TBurgs, unitModifiers: 
 
       const placeCell = unit.type === "naval" ? cells.haven[i] : i;
       const [x, y] = cells.p[placeCell];
-      const isNaval = unit.type === "naval";
 
       if (!platoons[stateId]) platoons[stateId] = [];
-      platoons[stateId].push({
-        cell: i,
-        a: total,
-        t: total,
-        x,
-        y,
-        u: unit.name,
-        isNaval,
-        s: unit.separate,
-        type: unit.type
-      });
+      platoons[stateId].push({unit, cell: i, a: total, t: total, x, y});
     }
   }
 
