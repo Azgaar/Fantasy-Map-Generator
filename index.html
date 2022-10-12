@@ -1237,6 +1237,10 @@
                 <td><select id="styleStatesBodyFilter" /></td>
               </tr>
 
+              <tr style="margin-top: 1em">
+                <td><em>Halo is disabled if "Rendering" option is set to "Best performance"</em></td>
+              </tr>
+
               <tr data-tip="Set states halo effect width">
                 <td>Halo width</td>
                 <td>
@@ -1253,7 +1257,7 @@
                 </td>
               </tr>
 
-              <tr data-tip="Select halo effect power (blur). Set to 0 to make it solid line">
+              <tr data-tip="Select halo effect power (blur). Set to 0 to make it solid line" style="margin-bottom: 1em">
                 <td>Halo blur</td>
                 <td>
                   <input id="styleStatesHaloBlur" type="range" min="0" max="10" step="0.01" value="4" />
@@ -1874,9 +1878,9 @@
               </td>
             </tr>
 
-            <tr data-tip="Select shape rendering model">
+            <tr data-tip="Select rendering model. Try to set to 'optimized' if you face performance issues">
               <td></td>
-              <td>Shape rendering</td>
+              <td>Rendering</td>
               <td>
                 <select id="shapeRendering" data-stored="shapeRendering">
                   <option value="geometricPrecision" selected>Best quality</option>
@@ -7801,7 +7805,7 @@
     <script src="config/heightmap-templates.js"></script>
     <script src="config/precreated-heightmaps.js"></script>
     <script src="modules/heightmap-generator.js"></script>
-    <script src="modules/ocean-layers.js"></script>
+    <script src="modules/ocean-layers.js?v=1.87.15"></script>
     <script src="modules/river-generator.js"></script>
     <script src="modules/lakes.js"></script>
     <script src="modules/names-generator.js?v=1.87.14"></script>
@@ -7822,8 +7826,8 @@
     <script src="modules/ui/stylePresets.js"></script>
 
     <script src="modules/ui/general.js?v=1.87.00"></script>
-    <script src="modules/ui/options.js?v=1.87.11"></script>
-    <script src="main.js"></script>
+    <script src="modules/ui/options.js?v=1.87.15"></script>
+    <script src="main.js?v=1.87.15"></script>
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js"></script>

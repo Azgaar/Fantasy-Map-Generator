@@ -38,7 +38,7 @@ window.OceanLayers = (function () {
     for (const t of limits) {
       const layer = chains.filter(c => c[0] === t);
       let path = layer.map(c => round(lineGen(c[1]))).join("");
-      if (path) oceanLayers.append("path").attr("d", path).attr("fill", "#ecf2f9").style("opacity", opacity);
+      if (path) oceanLayers.append("path").attr("d", path).attr("fill", "#ecf2f9").attr("fill-opacity", opacity);
     }
 
     // find eligible cell vertex to start path detection

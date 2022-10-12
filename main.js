@@ -82,7 +82,13 @@ let burgIcons = icons.append("g").attr("id", "burgIcons");
 let anchors = icons.append("g").attr("id", "anchors");
 let armies = viewbox.append("g").attr("id", "armies").style("display", "none");
 let markers = viewbox.append("g").attr("id", "markers");
-let fogging = viewbox.append("g").attr("id", "fogging-cont").attr("mask", "url(#fog)").append("g").attr("id", "fogging").style("display", "none");
+let fogging = viewbox
+  .append("g")
+  .attr("id", "fogging-cont")
+  .attr("mask", "url(#fog)")
+  .append("g")
+  .attr("id", "fogging")
+  .style("display", "none");
 let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
 let debug = viewbox.append("g").attr("id", "debug");
 
@@ -119,11 +125,20 @@ emblems.append("g").attr("id", "stateEmblems");
 
 // fogging
 fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
-fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("fill", "#e8f0f6").attr("filter", "url(#splotch)");
+fogging
+  .append("rect")
+  .attr("x", 0)
+  .attr("y", 0)
+  .attr("width", "100%")
+  .attr("height", "100%")
+  .attr("fill", "#e8f0f6")
+  .attr("filter", "url(#splotch)");
 
 // assign events separately as not a viewbox child
 scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
-legend.on("mousemove", () => tip("Drag to change the position. Click to hide the legend")).on("click", () => clearLegend());
+legend
+  .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
+  .on("click", () => clearLegend());
 
 // main data variables
 let grid = {}; // initial graph based on jittered square grid and data
@@ -189,8 +204,20 @@ let svgWidth = graphWidth;
 let svgHeight = graphHeight;
 
 landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-oceanPattern.append("rect").attr("fill", "url(#oceanic)").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-oceanLayers.append("rect").attr("id", "oceanBase").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
+oceanPattern
+  .append("rect")
+  .attr("fill", "url(#oceanic)")
+  .attr("x", 0)
+  .attr("y", 0)
+  .attr("width", graphWidth)
+  .attr("height", graphHeight);
+oceanLayers
+  .append("rect")
+  .attr("id", "oceanBase")
+  .attr("x", 0)
+  .attr("y", 0)
+  .attr("width", graphWidth)
+  .attr("height", graphHeight);
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (!location.hostname) {
@@ -421,7 +448,21 @@ function applyDefaultBiomesSystem() {
     "Glacier",
     "Wetland"
   ];
-  const color = ["#466eab", "#fbe79f", "#b5b887", "#d2d082", "#c8d68f", "#b6d95d", "#29bc56", "#7dcb35", "#409c43", "#4b6b32", "#96784b", "#d5e7eb", "#0b9131"];
+  const color = [
+    "#466eab",
+    "#fbe79f",
+    "#b5b887",
+    "#d2d082",
+    "#c8d68f",
+    "#b6d95d",
+    "#29bc56",
+    "#7dcb35",
+    "#409c43",
+    "#4b6b32",
+    "#96784b",
+    "#d5e7eb",
+    "#0b9131"
+  ];
   const habitability = [0, 4, 10, 22, 30, 50, 100, 80, 90, 12, 4, 0, 12];
   const iconsDensity = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 150];
   const icons = [
@@ -509,6 +550,8 @@ function getViewBoxExtent() {
 
 // active zooming feature
 function invokeActiveZooming() {
+  const isOptimized = shapeRendering.value === "optimizeSpeed";
+
   if (coastline.select("#sea_island").size() && +coastline.select("#sea_island").attr("auto-filter")) {
     // toggle shade/blur filter for coatline on zoom
     const filter = scale > 1.5 && scale <= 2.6 ? null : scale > 2.6 ? "url(#blurFilter)" : "url(#dropShadow)";
@@ -536,7 +579,8 @@ function invokeActiveZooming() {
       const hidden = hideEmblems.checked && (size < 25 || size > 300);
       if (hidden) this.classList.add("hidden");
       else this.classList.remove("hidden");
-      if (!hidden && window.COArenderer && this.children.length && !this.children[0].getAttribute("href")) renderGroupCOAs(this);
+      if (!hidden && window.COArenderer && this.children.length && !this.children[0].getAttribute("href"))
+        renderGroupCOAs(this);
     });
   }
 
@@ -547,7 +591,7 @@ function invokeActiveZooming() {
     .attr("opacity", scale > 10 ? 0.2 : null);
 
   // change states halo width
-  if (!customization) {
+  if (!customization && !isOptimized) {
     const desired = +statesHalo.attr("data-width");
     const haloSize = rn(desired / scale ** 0.8, 2);
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
@@ -575,7 +619,12 @@ function invokeActiveZooming() {
 }
 
 async function renderGroupCOAs(g) {
-  const [group, type] = g.id === "burgEmblems" ? [pack.burgs, "burg"] : g.id === "provinceEmblems" ? [pack.provinces, "province"] : [pack.states, "state"];
+  const [group, type] =
+    g.id === "burgEmblems"
+      ? [pack.burgs, "burg"]
+      : g.id === "provinceEmblems"
+      ? [pack.provinces, "province"]
+      : [pack.states, "state"];
   for (let use of g.children) {
     const i = +use.dataset.i;
     const id = type + "COA" + i;
@@ -1547,7 +1596,9 @@ function addZones(number = 1) {
     const invader = ra(atWar);
     const target = invader.diplomacy.findIndex(d => d === "Enemy");
 
-    const cell = ra(cells.i.filter(i => cells.state[i] === target && cells.c[i].some(c => cells.state[c] === invader.i)));
+    const cell = ra(
+      cells.i.filter(i => cells.state[i] === target && cells.c[i].some(c => cells.state[c] === invader.i))
+    );
     if (!cell) return;
 
     const cellsArray = [],
@@ -1589,7 +1640,9 @@ function addZones(number = 1) {
 
     const neib = ra(state.neighbors.filter(n => n && !states[n].removed));
     if (!neib) return;
-    const cell = cells.i.find(i => cells.state[i] === state.i && !state.removed && cells.c[i].some(c => cells.state[c] === neib));
+    const cell = cells.i.find(
+      i => cells.state[i] === state.i && !state.removed && cells.c[i].some(c => cells.state[c] === neib)
+    );
     const cellsArray = [];
     const queue = [];
     if (cell) queue.push(cell);
@@ -1610,7 +1663,17 @@ function addZones(number = 1) {
       });
     }
 
-    const rebels = rw({Rebels: 5, Insurgents: 2, Mutineers: 1, Rioters: 1, Separatists: 1, Secessionists: 1, Insurrection: 2, Rebellion: 1, Conspiracy: 2});
+    const rebels = rw({
+      Rebels: 5,
+      Insurgents: 2,
+      Mutineers: 1,
+      Rioters: 1,
+      Separatists: 1,
+      Secessionists: 1,
+      Insurrection: 2,
+      Rebellion: 1,
+      Conspiracy: 2
+    });
     const name = getAdjective(states[neib].name) + " " + rebels;
     zonesData.push({name, type: "Rebels", cells: cellsArray, fill: "url(#hatch3)"});
   }
@@ -1619,7 +1682,14 @@ function addZones(number = 1) {
     const organized = ra(pack.religions.filter(r => r.type === "Organized"));
     if (!organized) return;
 
-    const cell = ra(cells.i.filter(i => cells.religion[i] && cells.religion[i] !== organized.i && cells.c[i].some(c => cells.religion[c] === organized.i)));
+    const cell = ra(
+      cells.i.filter(
+        i =>
+          cells.religion[i] &&
+          cells.religion[i] !== organized.i &&
+          cells.c[i].some(c => cells.religion[c] === organized.i)
+      )
+    );
     if (!cell) return;
     const target = cells.religion[cell];
     const cellsArray = [],
@@ -1685,11 +1755,54 @@ function addZones(number = 1) {
       });
     }
 
-    const adjective = () => ra(["Great", "Silent", "Severe", "Blind", "Unknown", "Loud", "Deadly", "Burning", "Bloody", "Brutal", "Fatal"]);
-    const animal = () => ra(["Ape", "Bear", "Boar", "Cat", "Cow", "Dog", "Pig", "Fox", "Bird", "Horse", "Rat", "Raven", "Sheep", "Spider", "Wolf"]);
-    const color = () => ra(["Golden", "White", "Black", "Red", "Pink", "Purple", "Blue", "Green", "Yellow", "Amber", "Orange", "Brown", "Grey"]);
+    const adjective = () =>
+      ra(["Great", "Silent", "Severe", "Blind", "Unknown", "Loud", "Deadly", "Burning", "Bloody", "Brutal", "Fatal"]);
+    const animal = () =>
+      ra([
+        "Ape",
+        "Bear",
+        "Boar",
+        "Cat",
+        "Cow",
+        "Dog",
+        "Pig",
+        "Fox",
+        "Bird",
+        "Horse",
+        "Rat",
+        "Raven",
+        "Sheep",
+        "Spider",
+        "Wolf"
+      ]);
+    const color = () =>
+      ra([
+        "Golden",
+        "White",
+        "Black",
+        "Red",
+        "Pink",
+        "Purple",
+        "Blue",
+        "Green",
+        "Yellow",
+        "Amber",
+        "Orange",
+        "Brown",
+        "Grey"
+      ]);
 
-    const type = rw({Fever: 5, Pestilence: 2, Flu: 2, Pox: 2, Smallpox: 2, Plague: 4, Cholera: 2, Dropsy: 1, Leprosy: 2});
+    const type = rw({
+      Fever: 5,
+      Pestilence: 2,
+      Flu: 2,
+      Pox: 2,
+      Smallpox: 2,
+      Plague: 4,
+      Cholera: 2,
+      Dropsy: 1,
+      Leprosy: 2
+    });
     const name = rw({[color()]: 4, [animal()]: 2, [adjective()]: 1}) + " " + type;
     zonesData.push({name, type: "Disease", cells: cellsArray, fill: "url(#hatch12)"});
   }
@@ -1812,7 +1925,9 @@ function addZones(number = 1) {
       meanFlux = d3.mean(fl),
       maxFlux = d3.max(fl),
       flux = (maxFlux - meanFlux) / 2 + meanFlux;
-    const rivers = cells.i.filter(i => !used[i] && cells.h[i] < 50 && cells.r[i] && cells.fl[i] > flux && cells.burg[i]);
+    const rivers = cells.i.filter(
+      i => !used[i] && cells.h[i] < 50 && cells.r[i] && cells.fl[i] > flux && cells.burg[i]
+    );
     if (!rivers.length) return;
 
     const cell = +ra(rivers),
