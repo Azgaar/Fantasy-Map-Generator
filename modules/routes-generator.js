@@ -68,7 +68,7 @@ window.Routes = (function () {
 
     const bodies = new Set(allPorts.map(b => b.port)); // water features with ports
     let paths = []; // array to store path segments
-    const connected = []; // store cell id of connected burgs
+    const connected = {}; // store cell id of connected burgs
 
     bodies.forEach(f => {
       const ports = allPorts.filter(b => b.port === f); // all ports on the same feature
