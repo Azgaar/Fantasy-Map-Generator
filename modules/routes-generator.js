@@ -77,22 +77,44 @@ window.Routes = (function () {
       if (features[f]?.border) addOverseaRoute(f, ports[0]);
 
       // get inner-map routes
-      for (let s = 0; s < ports.length; s++) {
-        const source = ports[s].cell;
-        if (connected[source]) continue;
 
-        for (let t = s + 1; t < ports.length; t++) {
-          const target = ports[t].cell;
-          if (connected[target]) continue;
+      // determine neighbouring ports; note that this method is not ideal, as it does not understand difference between
+      // land and sea cells so it will sometimes consider neighbour a port that's close by land but far away by ocean
+      cords = [];
+      for (let p = 0; p < ports.length; p++) {
+        cords.push([ports[p].x, ports[p].y])
+      }
+      dl = Delaunator.from(cords)
 
-          const [from, exit, passable] = findOceanPath(target, source, true);
-          if (!passable) continue;
+      formed = {};
+      createPath = function(a, b) {
+        if (formed[[a, b]] || formed[[b, a]]) {
+          // we've already connected them;
+          return null;
+        }
+        const [from, exit, passable] = findOceanPath(ports[a].cell, ports[b].cell);
+        if (!passable) return null;
+        formed[[a, b]] = true; formed[[b, a]]
+        const path = restorePath(ports[a].cell, exit, "ocean", from);
+        return path;
+      }
 
-          const path = restorePath(target, exit, "ocean", from);
-          paths = paths.concat(path);
+      for (t = 0; t < dl.triangles.length; t+=3) {
+        portA = dl.triangles[t];
+        portB = dl.triangles[t+1];
+        portC = dl.triangles[t+2];
 
-          connected[source] = 1;
-          connected[target] = 1;
+        path = createPath(portA, portB)
+        if (path) {
+          paths = paths.concat(path)
+        }
+        path = createPath(portB, portC)
+        if (path) {
+          paths = paths.concat(path)
+        }
+        path = createPath(portC, portA)
+        if (path) {
+          paths = paths.concat(path)
         }
       }
     });
