@@ -278,8 +278,8 @@ window.Routes = (function () {
         }
         if (cells.h[c] >= 20) continue; // ignore land cells
         if (temp[cells.g[c]] <= -5) continue; // ignore cells with term <= -5
-        const dist2 = (cells.p[c][1] - cells.p[n][1]) ** 2 + (cells.p[c][0] - cells.p[n][0]) ** 2;
-        const totalCost = p + (cells.road[c] ? 1 + dist2 / 2 : dist2 + (cells.t[c] ? 1 : 100));
+        const dist = Math.sqrt((cells.p[c][1] - cells.p[n][1]) ** 2 + (cells.p[c][0] - cells.p[n][0]) ** 2);
+        const totalCost = p + (cells.road[c] ? 1 + dist / 2 : dist + (cells.t[c] ? 1 : 100));
 
         if (from[c] || totalCost >= cost[c]) continue;
         (from[c] = n), (cost[c] = totalCost);
