@@ -37,6 +37,7 @@ const version = "1.87.13"; // generator version, update each time
         <li>Ability to install the App</li>
         <li>14 new default fonts</li>
         <li>Caching for faster startup</li>
+        <li>Allowing for redundant sea routes</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
