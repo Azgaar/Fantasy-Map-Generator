@@ -94,7 +94,7 @@ window.Routes = (function () {
         }
         const [from, exit, passable] = findOceanPath(ports[a].cell, ports[b].cell);
         if (!passable) return null;
-        formed[[a, b]] = true; formed[[b, a]]
+        formed[[a, b]] = true; formed[[b, a]] = true;
         const path = restorePath(ports[a].cell, exit, "ocean", from);
         return path;
       }
