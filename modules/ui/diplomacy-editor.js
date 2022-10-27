@@ -54,11 +54,20 @@ function editDiplomacy() {
     }
   };
 
+  const selectOptions = Object.entries(relations)
+      .map(
+          ([relation, {color, inText, tip}]) =>
+              `<option value="${relation}">${inText}</option>`
+      )
+      .join("");
+  diplomacyRelationSelect.innerHTML = selectOptions;
+
   refreshDiplomacyEditor();
   viewbox.style("cursor", "crosshair").on("click", selectStateOnMapClick);
 
   if (modules.editDiplomacy) return;
   modules.editDiplomacy = true;
+  modules.batchEditDiplomacy = false;
 
   $("#diplomacyEditor").dialog({
     title: "Diplomacy Editor",
@@ -76,6 +85,9 @@ function editDiplomacy() {
   document.getElementById("diplomacyShowMatrix").addEventListener("click", showRelationsMatrix);
   document.getElementById("diplomacyHistory").addEventListener("click", showRelationsHistory);
   document.getElementById("diplomacyExport").addEventListener("click", downloadDiplomacyData);
+  //document.getElementById("diplomacyImport").addEventListener("click", uploadDiplomacyData);
+  document.getElementById("diplomacyBatchEdit").addEventListener("click", toggleDiplomacyCheckbox);
+  document.getElementById("diplomacyBatchEditConfirm").addEventListener("click", ConfirmDiplomacyBatch);
 
   body.addEventListener("click", function (ev) {
     const el = ev.target;
@@ -90,6 +102,9 @@ function editDiplomacy() {
       selectRelation(subjectId, objectId, currentRelation);
       return;
     }
+    
+    if (el.classList.contains("diploChk")) return;
+    if (el.classList.contains("diploDivChk")) return;
 
     // select state of clicked line
     body.querySelector("div.Self").classList.remove("Self");
@@ -106,11 +121,15 @@ function editDiplomacy() {
   function diplomacyEditorAddLines() {
     const states = pack.states;
     const selectedLine = body.querySelector("div.Self");
+    
     const selectedId = selectedLine ? +selectedLine.dataset.id : states.find(s => s.i && !s.removed).i;
     const selectedName = states[selectedId].name;
 
+    const toggleState = modules.batchEditDiplomacy ? 'inline-block' : 'none';
+
     COArenderer.trigger("stateCOA" + selectedId, states[selectedId].coa);
     let lines = /* html */ `<div class="states Self" data-id=${selectedId} data-tip="List below shows relations to ${selectedName}">
+    <div style="display:${toggleState}" class="diploDivChk"></div>
       <div style="width: max-content">${states[selectedId].fullName}</div>
       <svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${selectedId}"></use></svg>
     </div>`;
@@ -127,9 +146,12 @@ function editDiplomacy() {
       const name = state.fullName.length < 23 ? state.fullName : state.name;
       COArenderer.trigger("stateCOA" + state.i, state.coa);
 
+     
+
       lines += /* html */ `<div class="states" data-id=${state.i} data-name="${name}" data-relations="${relation}">
-        <svg data-tip="${tipSelect}" class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${state.i}"></use></svg>
-        <div data-tip="${tipSelect}" style="width: 12em">${name}</div>
+       <div data-tip="${tipSelect}" style="display:${toggleState}" class="diploDivChk"><input class="diploChk" type="checkbox" name="chk[${selectedId}][]" value="${state.i}"></div>
+       <svg data-tip="${tipSelect}" class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${state.i}"></use></svg>
+       <div data-tip="${tipSelect}" style="width: 12em">${name}</div>
         <div data-tip="${tipChange}" class="changeRelations" style="width: 6em">
           <fill-box fill="${color}" size=".9em"></fill-box>
           ${relation}
@@ -444,6 +466,9 @@ function editDiplomacy() {
     downloadFile(data, name);
   }
 
+  function uploadDiplomacyData() {
+  }
+
   function closeDiplomacyEditor() {
     restoreDefaultEvents();
     clearMainTip();
@@ -452,5 +477,29 @@ function editDiplomacy() {
     if (layerIsOn("toggleStates")) drawStates();
     else toggleStates();
     debug.selectAll(".highlight").remove();
+  }
+
+  function toggleDiplomacyCheckbox(){
+    modules.batchEditDiplomacy = !modules.batchEditDiplomacy;
+
+    diplomacyRelationSelect.style.display = (modules.batchEditDiplomacy?"inline-block":"none");
+    diplomacyBatchEditConfirm.style.display = (modules.batchEditDiplomacy?"inline-block":"none");
+    diplomacyHeader.style['grid-template-columns'] = (modules.batchEditDiplomacy?"1.5em 15em 6em":"15em 6em");
+    document.querySelectorAll(".diploDivChk").forEach(el => (el.style.display = (modules.batchEditDiplomacy?"inline-block":"none")));
+    document.querySelectorAll(".diploDivChk > input").forEach(el => (el.checked = false));
+  }
+
+  function ConfirmDiplomacyBatch() {
+    const states = pack.states;
+    //Apply relation changes for selected states
+    document.querySelectorAll(".diploDivChk > input.diploChk:checked").forEach(function(ipt){
+        const objectId = +body.querySelector("div.Self").dataset.id;
+        const subjectId =ipt.value;
+
+        changeRelation(subjectId, objectId, states[subjectId].diplomacy[objectId], diplomacyRelationSelect.value);
+
+    });
+    //Clear selection waiting for next batch
+    document.querySelectorAll(".diploDivChk").forEach(el => (el.checked = false));
   }
 }

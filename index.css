@@ -2346,3 +2346,10 @@ svg.button {
         background: #25252a;
     }
 }
+div.states > div.diploDivChk {
+    width: 1.5em;
+    display: inline-block;
+}
+input.diploChk {
+     display: block;
+}

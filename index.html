@@ -4428,6 +4428,9 @@
 
       <div id="diplomacyEditor" class="dialog stable" style="display: none">
         <div id="diplomacyHeader" class="header" style="grid-template-columns: 15em 6em">
+        <div class="diploDivChk" style="display:none; width:1.5em">
+            &nbsp;
+          </div>
           <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">
             State&nbsp;
           </div>
@@ -4462,6 +4465,24 @@
             id="diplomacyExport"
             data-tip="Save state relations matrix as a text file (.csv)"
             class="icon-download"
+          ></button>
+                    <button
+                  id="diplomacyBatchEdit"
+                  data-tip=""
+                  class="icon-edit"
+          ></button>
+            <hr>
+                      <!--<button
+            id="diplomacyImport"
+            data-tip=""
+            class="icon-download"
+          ></button>-->
+          <select id="diplomacyRelationSelect" style="display:none"></select>
+          <button
+                  id="diplomacyBatchEditConfirm"
+                  data-tip=""
+                  class="icon-ok-circled"
+                  style="display:none"
           ></button>
         </div>
       </div>
