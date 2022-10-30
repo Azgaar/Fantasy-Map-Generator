@@ -56,7 +56,7 @@ function biased(min, max, ex) {
 // get number from string in format "1-3" or "2" or "0.5"
 function getNumberInRange(r) {
   if (typeof r !== "string") {
-    ERROR && console.error("The value should be a string", r);
+    ERROR && console.error("Range value should be a string", r);
     return 0;
   }
   if (!isNaN(+r)) return ~~r + +P(r - ~~r);

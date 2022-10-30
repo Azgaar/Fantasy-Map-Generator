@@ -108,7 +108,7 @@
       }
     </style>
 
-    <link rel="preload" href="index.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+    <link rel="preload" href="index.css?v=1.88.00" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="icons.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="libs/jquery-ui.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
   </head>
@@ -3836,6 +3836,12 @@
               <path d="m15,63 l15,-13 15,20 15,-20 15,19 15,-14" fill="none" stroke="#000" stroke-width="5" />
             </svg>
           </button>
+
+          <button id="brushLine" data-tip="Line: select two points to change heights along the line">
+            <svg viewBox="0 -5 100 100" height="1em" width="1.6em">
+              <path d="M0 90 L100 10" fill="none" stroke="#000" stroke-width="7"></path>
+            </svg>
+          </button>
         </div>
 
         <div id="brushesSliders" style="display: none">
@@ -3848,6 +3854,7 @@
               min="1"
               max="99"
               value="25"
+              style="width: 13em"
             />
             <input
               id="brushRadiusNumber"
@@ -3869,6 +3876,7 @@
               min="1"
               max="10"
               value="5"
+              style="width: 13em"
             />
             <input
               id="brushPowerNumber"
@@ -3877,6 +3885,30 @@
               min="1"
               max="10"
               value="5"
+              style="border: 1px solid #d4d4d4"
+            />
+          </div>
+        </div>
+
+        <div id="lineSlider" style="display: none">
+          <div data-tip="Set change power">
+            <div style="width: 3.2em; display: inline-block"><i>Power:</i></div>
+            <input
+              id="linePower"
+              oninput="tip('Line power: '+this.value); linePowerNumber.value = this.value"
+              type="range"
+              min="-100"
+              max="100"
+              value="30"
+              style="width: 13em"
+            />
+            <input
+              id="linePowerNumber"
+              oninput="tip('Line power: '+this.value); linePower.value = this.value"
+              type="number"
+              min="-100"
+              max="100"
+              value="30"
               style="border: 1px solid #d4d4d4"
             />
           </div>
@@ -7796,7 +7828,7 @@
     <script src="utils/nodeUtils.js"></script>
     <script src="utils/numberUtils.js"></script>
     <script src="utils/polyfills.js"></script>
-    <script src="utils/probabilityUtils.js"></script>
+    <script src="utils/probabilityUtils.js?v=1.88.00"></script>
     <script src="utils/stringUtils.js"></script>
     <script src="utils/languageUtils.js"></script>
     <script src="utils/unitUtils.js?v=1.87.00"></script>
@@ -7804,7 +7836,7 @@
     <script src="modules/voronoi.js"></script>
     <script src="config/heightmap-templates.js"></script>
     <script src="config/precreated-heightmaps.js"></script>
-    <script src="modules/heightmap-generator.js"></script>
+    <script src="modules/heightmap-generator.js?v=1.88.00"></script>
     <script src="modules/ocean-layers.js?v=1.87.15"></script>
     <script src="modules/river-generator.js"></script>
     <script src="modules/lakes.js"></script>
@@ -7834,7 +7866,7 @@
     <script defer src="modules/ui/editors.js?v=1.87.07"></script>
     <script defer src="modules/ui/tools.js?v=1.87.03"></script>
     <script defer src="modules/ui/world-configurator.js"></script>
-    <script defer src="modules/ui/heightmap-editor.js?v=1.87.10"></script>
+    <script defer src="modules/ui/heightmap-editor.js?v=1.88.00"></script>
     <script defer src="modules/ui/provinces-editor.js"></script>
     <script defer src="modules/ui/biomes-editor.js"></script>
     <script defer src="modules/ui/namesbase-editor.js?v=1.87.10"></script>
@@ -7864,7 +7896,7 @@
     <script defer src="modules/ui/markers-editor.js"></script>
     <script defer src="modules/ui/3d.js"></script>
     <script defer src="modules/ui/submap.js"></script>
-    <script defer src="modules/ui/hotkeys.js?v=1.87.00"></script>
+    <script defer src="modules/ui/hotkeys.js?v=1.88.00"></script>
     <script defer src="modules/coa-renderer.js?v=1.87.08"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>

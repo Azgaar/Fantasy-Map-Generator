@@ -89,13 +89,13 @@ function handleKeyup(event) {
   else if (code === "KeyI") toggleIcons();
   else if (code === "KeyM") toggleMilitary();
   else if (code === "KeyK") toggleMarkers();
-  else if (code === "Equal") toggleRulers();
+  else if (code === "Equal" && !customization) toggleRulers();
   else if (code === "Slash") toggleScaleBar();
   else if (code === "ArrowLeft") zoom.translateBy(svg, 10, 0);
   else if (code === "ArrowRight") zoom.translateBy(svg, -10, 0);
   else if (code === "ArrowUp") zoom.translateBy(svg, 0, 10);
   else if (code === "ArrowDown") zoom.translateBy(svg, 0, -10);
-  else if (key === "+" || key === "-") pressNumpadSign(key);
+  else if (key === "+" || key === "-" || key === "=") handleSizeChange(key);
   else if (key === "0") resetZoom(1000);
   else if (key === "1") zoom.scaleTo(svg, 1);
   else if (key === "2") zoom.scaleTo(svg, 2);
@@ -117,11 +117,12 @@ function allowHotkeys() {
   return true;
 }
 
-function pressNumpadSign(key) {
-  const change = key === "+" ? 1 : -1;
+// "+", "-" and "=" keys on numpad. "=" is for "+" on Mac
+function handleSizeChange(key) {
   let brush = null;
 
   if (document.getElementById("brushRadius")?.offsetParent) brush = document.getElementById("brushRadius");
+  else if (document.getElementById("linePower")?.offsetParent) brush = document.getElementById("linePower");
   else if (document.getElementById("biomesManuallyBrush")?.offsetParent)
     brush = document.getElementById("biomesManuallyBrush");
   else if (document.getElementById("statesManuallyBrush")?.offsetParent)
@@ -135,6 +136,7 @@ function pressNumpadSign(key) {
     brush = document.getElementById("religionsManuallyBrush");
 
   if (brush) {
+    const change = key === "-" ? -5 : 5;
     const value = minmax(+brush.value + change, +brush.min, +brush.max);
     brush.value = document.getElementById(brush.id + "Number").value = value;
     return;

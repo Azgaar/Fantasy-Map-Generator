@@ -1303,11 +1303,6 @@ div.slider .ui-slider-handle {
   color: white;
 }
 
-#brushPower,
-#brushRadius {
-  width: 12em;
-}
-
 #rescaleHigher,
 #rescaleLower,
 #rescaleModifier {
