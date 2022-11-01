@@ -8,7 +8,7 @@ window.HeightmapGenerator = (function () {
 
   const setGraph = graph => {
     const {cellsDesired, cells, points} = graph;
-    heights = cells.h || createTypedArray({maxValue: 100, length: points.length});
+    heights = cells.h ? Uint8Array.from(cells.h) : createTypedArray({maxValue: 100, length: points.length});
     blobPower = getBlobPower(cellsDesired);
     linePower = getLinePower(cellsDesired);
     grid = graph;
@@ -198,7 +198,8 @@ window.HeightmapGenerator = (function () {
     }
   };
 
-  const addRange = (count, height, rangeX, rangeY) => {
+  // fromCell, toCell are options cell ids
+  const addRange = (count, height, rangeX, rangeY, startCell, endCell) => {
     count = getNumberInRange(count);
     while (count > 0) {
       addOneRange();
@@ -209,23 +210,27 @@ window.HeightmapGenerator = (function () {
       const used = new Uint8Array(heights.length);
       let h = lim(getNumberInRange(height));
 
-      // find start and end points
-      const startX = getPointInRange(rangeX, graphWidth);
-      const startY = getPointInRange(rangeY, graphHeight);
+      if (rangeX && rangeY) {
+        // find start and end points
+        const startX = getPointInRange(rangeX, graphWidth);
+        const startY = getPointInRange(rangeY, graphHeight);
 
-      let dist = 0,
-        limit = 0,
-        endX,
-        endY;
-      do {
-        endX = Math.random() * graphWidth * 0.8 + graphWidth * 0.1;
-        endY = Math.random() * graphHeight * 0.7 + graphHeight * 0.15;
-        dist = Math.abs(endY - startY) + Math.abs(endX - startX);
-        limit++;
-      } while ((dist < graphWidth / 8 || dist > graphWidth / 3) && limit < 50);
+        let dist = 0,
+          limit = 0,
+          endX,
+          endY;
 
-      const startCell = findGridCell(startX, startY, grid);
-      const endCell = findGridCell(endX, endY, grid);
+        do {
+          endX = Math.random() * graphWidth * 0.8 + graphWidth * 0.1;
+          endY = Math.random() * graphHeight * 0.7 + graphHeight * 0.15;
+          dist = Math.abs(endY - startY) + Math.abs(endX - startX);
+          limit++;
+        } while ((dist < graphWidth / 8 || dist > graphWidth / 3) && limit < 50);
+
+        startCell = findGridCell(startX, startY, grid);
+        endCell = findGridCell(endX, endY, grid);
+      }
+
       let range = getRange(startCell, endCell);
 
       // get main ridge
@@ -286,7 +291,7 @@ window.HeightmapGenerator = (function () {
     }
   };
 
-  const addTrough = (count, height, rangeX, rangeY) => {
+  const addTrough = (count, height, rangeX, rangeY, startCell, endCell) => {
     count = getNumberInRange(count);
     while (count > 0) {
       addOneTrough();
@@ -297,30 +302,33 @@ window.HeightmapGenerator = (function () {
       const used = new Uint8Array(heights.length);
       let h = lim(getNumberInRange(height));
 
-      // find start and end points
-      let limit = 0,
-        startX,
-        startY,
-        start,
-        dist = 0,
-        endX,
-        endY;
-      do {
-        startX = getPointInRange(rangeX, graphWidth);
-        startY = getPointInRange(rangeY, graphHeight);
-        start = findGridCell(startX, startY, grid);
-        limit++;
-      } while (heights[start] < 20 && limit < 50);
+      if (rangeX && rangeY) {
+        // find start and end points
+        let limit = 0,
+          startX,
+          startY,
+          dist = 0,
+          endX,
+          endY;
+        do {
+          startX = getPointInRange(rangeX, graphWidth);
+          startY = getPointInRange(rangeY, graphHeight);
+          startCell = findGridCell(startX, startY, grid);
+          limit++;
+        } while (heights[startCell] < 20 && limit < 50);
 
-      limit = 0;
-      do {
-        endX = Math.random() * graphWidth * 0.8 + graphWidth * 0.1;
-        endY = Math.random() * graphHeight * 0.7 + graphHeight * 0.15;
-        dist = Math.abs(endY - startY) + Math.abs(endX - startX);
-        limit++;
-      } while ((dist < graphWidth / 8 || dist > graphWidth / 2) && limit < 50);
+        limit = 0;
+        do {
+          endX = Math.random() * graphWidth * 0.8 + graphWidth * 0.1;
+          endY = Math.random() * graphHeight * 0.7 + graphHeight * 0.15;
+          dist = Math.abs(endY - startY) + Math.abs(endX - startX);
+          limit++;
+        } while ((dist < graphWidth / 8 || dist > graphWidth / 2) && limit < 50);
 
-      let range = getRange(start, findGridCell(endX, endY, grid));
+        endCell = findGridCell(endX, endY, grid);
+      }
+
+      let range = getRange(startCell, endCell);
 
       // get main ridge
       function getRange(cur, end) {
@@ -388,8 +396,12 @@ window.HeightmapGenerator = (function () {
     const vert = direction === "vertical";
     const startX = vert ? Math.floor(Math.random() * graphWidth * 0.4 + graphWidth * 0.3) : 5;
     const startY = vert ? 5 : Math.floor(Math.random() * graphHeight * 0.4 + graphHeight * 0.3);
-    const endX = vert ? Math.floor(graphWidth - startX - graphWidth * 0.1 + Math.random() * graphWidth * 0.2) : graphWidth - 5;
-    const endY = vert ? graphHeight - 5 : Math.floor(graphHeight - startY - graphHeight * 0.1 + Math.random() * graphHeight * 0.2);
+    const endX = vert
+      ? Math.floor(graphWidth - startX - graphWidth * 0.1 + Math.random() * graphWidth * 0.2)
+      : graphWidth - 5;
+    const endY = vert
+      ? graphHeight - 5
+      : Math.floor(graphHeight - startY - graphHeight * 0.1 + Math.random() * graphHeight * 0.2);
 
     const start = findGridCell(startX, startY, grid);
     const end = findGridCell(endX, endY, grid);

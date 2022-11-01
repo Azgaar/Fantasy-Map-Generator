@@ -130,6 +130,12 @@ function editHeightmap(options) {
     // move radius circle if drag mode is active
     const pressed = byId("brushesButtons").querySelector("button.pressed");
     if (!pressed) return;
+
+    if (pressed.id === "brushLine") {
+      debug.select("line").attr("x2", x).attr("y2", y);
+      return;
+    }
+
     moveCircle(x, y, brushRadius.valueAsNumber, "#333");
   }
 
@@ -181,7 +187,6 @@ function editHeightmap(options) {
     else if (mode === "risk") restoreRiskedData();
 
     // restore initial layers
-    //viewbox.select("#heights").remove();
     byId("heights").remove();
     turnButtonOff("toggleHeight");
     document
@@ -494,10 +499,8 @@ function editHeightmap(options) {
 
     selection.forEach(function (i) {
       let cell = viewbox.select("#heights").select("#cell" + i);
-      if (!ocean && grid.cells.h[i] < 20) {
-        cell.remove();
-        return;
-      }
+      if (!ocean && grid.cells.h[i] < 20) return cell.remove();
+
       if (!cell.size())
         cell = viewbox
           .select("#heights")
@@ -594,24 +597,81 @@ function editHeightmap(options) {
 
     function exitBrushMode() {
       const pressed = document.querySelector("#brushesButtons > button.pressed");
-      if (!pressed) return;
-      pressed.classList.remove("pressed");
+      if (pressed) pressed.classList.remove("pressed");
 
-      viewbox.style("cursor", "default").on(".drag", null);
+      viewbox.style("cursor", "default").on(".drag", null).on("click", clicked);
+      debug.selectAll(".lineCircle").remove();
       removeCircle();
+
       byId("brushesSliders").style.display = "none";
+      byId("lineSlider").style.display = "none";
     }
 
     const dragBrushThrottled = throttle(dragBrush, 100);
-    function toggleBrushMode(e) {
-      if (e.target.classList.contains("pressed")) {
+
+    function toggleBrushMode(event) {
+      if (event.target.classList.contains("pressed")) {
         exitBrushMode();
         return;
       }
+
       exitBrushMode();
-      byId("brushesSliders").style.display = "block";
-      e.target.classList.add("pressed");
-      viewbox.style("cursor", "crosshair").call(d3.drag().on("start", dragBrushThrottled));
+      event.target.classList.add("pressed");
+
+      if (event.target.id === "brushLine") {
+        byId("lineSlider").style.display = "block";
+        viewbox.style("cursor", "crosshair").on("click", placeLinearFeature);
+      } else {
+        byId("brushesSliders").style.display = "block";
+        viewbox.style("cursor", "crosshair").call(d3.drag().on("start", dragBrushThrottled));
+      }
+    }
+
+    function placeLinearFeature() {
+      const [x, y] = d3.mouse(this);
+      const toCell = findGridCell(x, y, grid);
+
+      const lineCircle = debug.selectAll(".lineCircle");
+      if (!lineCircle.size()) {
+        // first click: add 1st control point
+        debug.append("line").attr("id", "brushCircle").attr("x1", x).attr("y1", y).attr("x2", x).attr("y2", y);
+
+        debug
+          .append("circle")
+          .attr("data-cell", toCell)
+          .attr("class", "lineCircle")
+          .attr("r", 6)
+          .attr("cx", x)
+          .attr("cy", y)
+          .attr("fill", "yellow")
+          .attr("stroke", "#333")
+          .attr("stroke-width", 2);
+        return;
+      }
+
+      // second click: execute operation and remove control points
+      const fromCell = +lineCircle.attr("data-cell");
+      debug.selectAll("*").remove();
+
+      const power = byId("linePower").valueAsNumber;
+      if (power === 0) return tip("Power should not be zero", false, "error");
+
+      const heights = grid.cells.h;
+      const operation = power > 0 ? HeightmapGenerator.addRange : HeightmapGenerator.addTrough;
+      HeightmapGenerator.setGraph(grid);
+      operation("1", String(Math.abs(power)), null, null, fromCell, toCell);
+      const changedHeights = HeightmapGenerator.getHeights();
+
+      let selection = [];
+      for (let i = 0; i < heights.length; i++) {
+        if (changedHeights[i] === heights[i]) continue;
+        if (changeOnlyLand.checked && heights[i] < 20) continue;
+        heights[i] = changedHeights[i];
+        selection.push(i);
+      }
+
+      mockHeightmapSelection(selection);
+      updateHistory();
     }
 
     function dragBrush() {
@@ -632,37 +692,44 @@ function editHeightmap(options) {
       d3.event.on("end", updateHeightmap);
     }
 
-    function changeHeightForSelection(s, start) {
+    function changeHeightForSelection(selection, start) {
       const power = brushPower.valueAsNumber;
+
       const interpolate = d3.interpolateRound(power, 1);
       const land = changeOnlyLand.checked;
       const lim = v => minmax(v, land ? 20 : 0, 100);
-      const h = grid.cells.h;
+      const heights = grid.cells.h;
 
       const brush = document.querySelector("#brushesButtons > button.pressed").id;
-      if (brush === "brushRaise") s.forEach(i => (h[i] = h[i] < 20 ? 20 : lim(h[i] + power)));
+      if (brush === "brushRaise") selection.forEach(i => (heights[i] = heights[i] < 20 ? 20 : lim(heights[i] + power)));
       else if (brush === "brushElevate")
-        s.forEach((i, d) => (h[i] = lim(h[i] + interpolate(d / Math.max(s.length - 1, 1)))));
-      else if (brush === "brushLower") s.forEach(i => (h[i] = lim(h[i] - power)));
+        selection.forEach(
+          (i, d) => (heights[i] = lim(heights[i] + interpolate(d / Math.max(selection.length - 1, 1))))
+        );
+      else if (brush === "brushLower") selection.forEach(i => (heights[i] = lim(heights[i] - power)));
       else if (brush === "brushDepress")
-        s.forEach((i, d) => (h[i] = lim(h[i] - interpolate(d / Math.max(s.length - 1, 1)))));
-      else if (brush === "brushAlign") s.forEach(i => (h[i] = lim(h[start])));
+        selection.forEach(
+          (i, d) => (heights[i] = lim(heights[i] - interpolate(d / Math.max(selection.length - 1, 1))))
+        );
+      else if (brush === "brushAlign") selection.forEach(i => (heights[i] = lim(heights[start])));
       else if (brush === "brushSmooth")
-        s.forEach(
+        selection.forEach(
           i =>
-            (h[i] = rn(
-              (d3.mean(grid.cells.c[i].filter(i => (land ? h[i] >= 20 : 1)).map(c => h[c])) +
-                h[i] * (10 - power) +
+            (heights[i] = rn(
+              (d3.mean(grid.cells.c[i].filter(i => (land ? heights[i] >= 20 : 1)).map(c => heights[c])) +
+                heights[i] * (10 - power) +
                 0.6) /
                 (11 - power),
               1
             ))
         );
       else if (brush === "brushDisrupt")
-        s.forEach(i => (h[i] = h[i] < 15 ? h[i] : lim(h[i] + power / 1.6 - Math.random() * power)));
+        selection.forEach(
+          i => (heights[i] = heights[i] < 15 ? heights[i] : lim(heights[i] + power / 1.6 - Math.random() * power))
+        );
 
-      mockHeightmapSelection(s);
-      // updateHistory(); uncomment to update history every step
+      mockHeightmapSelection(selection);
+      // updateHistory(); uncomment to update history on every step
     }
 
     function changeOnlyLandClick(e) {
