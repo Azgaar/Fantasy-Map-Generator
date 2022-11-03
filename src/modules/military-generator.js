@@ -305,8 +305,8 @@ window.Military = (function () {
         .map((r, i) => {
           const u = {};
           u[r.u] = r.a;
-          (r.childen || []).forEach(n => (u[n.u] = u[n.u] ? (u[n.u] += n.a) : n.a));
-          return {i, a: r.t, cell: r.cell, x: r.x, y: r.y, bx: r.x, by: r.y, u, n: r.n, name, state: s.i};
+          r.childen?.forEach(n => (u[n.u] = u[n.u] ? (u[n.u] += n.a) : n.a));
+          return {i, a: r.t, cell: r.cell, x: r.x, y: r.y, bx: r.x, by: r.y, u, n: r.n, state: s.i};
         });
 
       // generate name for regiments

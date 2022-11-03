@@ -68,7 +68,7 @@ export function repackGrid(grid: IGrid) {
       ...cells,
       p: newCells.p,
       g: createTypedArray({maxValue: grid.points.length, from: newCells.g}),
-      q: d3.quadtree(newCells.p.map(([x, y], i) => [x, y, i])) as unknown as Quadtree,
+      q: d3.quadtree(newCells.p.map(([x, y], i) => [x, y, i])),
       h: new Uint8Array(newCells.h),
       area: createTypedArray({maxValue: UINT16_MAX, from: cells.i}).map(getCellArea)
     }

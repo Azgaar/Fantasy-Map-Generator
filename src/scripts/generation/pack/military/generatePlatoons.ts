@@ -2,7 +2,15 @@ import {ELEVATION, NOMADIC_BIOMES, WETLAND_BIOMES} from "config/generation";
 import {burgTypeModifier, cellTypeModifier} from "config/military";
 import {rn} from "utils/numberUtils";
 import {isBurg, isState} from "utils/typeUtils";
-import {IPlatoon, TCellsData} from "./generateMilitary";
+import {TCellsData} from "./generateMilitary";
+
+export interface IPlatoon {
+  unit: IMilitaryUnitConfig;
+  cell: number;
+  total: number;
+  x: number;
+  y: number;
+}
 
 export function generatePlatoons(states: TStates, burgs: TBurgs, unitModifiers: Dict<number>[], cells: TCellsData) {
   const platoons: {[key: number]: IPlatoon[]} = {};
@@ -32,13 +40,14 @@ export function generatePlatoons(states: TStates, burgs: TBurgs, unitModifiers: 
 
     const stateModifiers = unitModifiers[stateId];
     const cellType = getCellType(biomeId, cells.h[i]);
+    const isGeneric = cellType === "generic";
 
     for (const unit of options.military) {
       if (!checkUnitConstrains(unit, biomeId, stateId, cultureId, religionId)) continue;
       if (unit.type === "naval" && !isNavyProducer(cells.haven[i], burg)) continue;
 
-      const ruralUnitModifier = cellTypeModifier[cellType][unit.type];
-      const urbanUnitModifier = burgTypeModifier[cellType][unit.type];
+      const ruralUnitModifier = isGeneric ? 1 : cellTypeModifier[cellType][unit.type];
+      const urbanUnitModifier = isGeneric ? 1 : burgTypeModifier[cellType][unit.type];
 
       const ruralArmy = ruralBase * unit.rural * ruralUnitModifier * cellModifier * stateModifiers[unit.name];
       const urbanArmy = urbanBase * unit.urban * urbanUnitModifier * cellModifier * stateModifiers[unit.name];
@@ -50,7 +59,7 @@ export function generatePlatoons(states: TStates, burgs: TBurgs, unitModifiers: 
       const [x, y] = cells.p[placeCell];
 
       if (!platoons[stateId]) platoons[stateId] = [];
-      platoons[stateId].push({unit, cell: i, a: total, t: total, x, y});
+      platoons[stateId].push({unit, cell: i, total, x, y});
     }
   }
 
@@ -92,7 +101,13 @@ function getCellType(biomeId: number, cellHeight: number) {
   return "generic";
 }
 
-function checkUnitConstrains(unit: IMilitaryUnit, biome: number, state: number, culture: number, religion: number) {
+function checkUnitConstrains(
+  unit: IMilitaryUnitConfig,
+  biome: number,
+  state: number,
+  culture: number,
+  religion: number
+) {
   if (unit.biomes?.length && !unit.biomes.includes(biome)) return false;
   if (unit.states?.length && !unit.states.includes(state)) return false;
   if (unit.cultures?.length && !unit.cultures.includes(culture)) return false;

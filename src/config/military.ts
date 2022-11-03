@@ -1,4 +1,4 @@
-export const getDefaultMilitaryOptions: () => IMilitaryUnit[] = function () {
+export const getDefaultMilitaryOptions: () => IMilitaryUnitConfig[] = function () {
   return [
     {icon: "⚔️", name: "infantry", rural: 0.25, urban: 0.2, crew: 1, power: 1, type: "melee", separate: 0},
     {icon: "🏹", name: "archers", rural: 0.12, urban: 0.2, crew: 1, power: 1, type: "ranged", separate: 0},
@@ -32,7 +32,9 @@ export const stateModifier: {[key in TMilitaryUnitType]: {[key in TCultureType]:
   magical: {Generic: 1, Nomadic: 1, Highland: 2, Lake: 1, Naval: 1, Hunting: 1, River: 1}
 };
 
-export const cellTypeModifier: {[key: string]: {[key in TMilitaryUnitType]: number}} = {
+type TCellType = "nomadic" | "wetland" | "highland";
+
+export const cellTypeModifier: {[key in TCellType]: {[key in TMilitaryUnitType]: number}} = {
   nomadic: {
     melee: 0.2,
     ranged: 0.5,
@@ -65,7 +67,7 @@ export const cellTypeModifier: {[key: string]: {[key in TMilitaryUnitType]: numb
   }
 };
 
-export const burgTypeModifier: {[key: string]: {[key in TMilitaryUnitType]: number}} = {
+export const burgTypeModifier: {[key in TCellType]: {[key in TMilitaryUnitType]: number}} = {
   nomadic: {
     melee: 0.3,
     ranged: 0.8,

@@ -32,7 +32,7 @@ interface IPackCells {
   haven: UintArray;
   harbor: UintArray;
   route: Uint8Array; // [0, 1, 2, 3], see ROUTES enum, defined by generateRoutes()
-  q: Quadtree;
+  q: Quadtree<number[]>;
 }
 
 interface IPackBase extends IGraph {
