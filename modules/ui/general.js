@@ -136,7 +136,12 @@ function showMapTooltip(point, e, i, g) {
     tip(`${name} ${type} emblem. Click to edit. Hold Shift to show associated area or place`);
     return;
   }
-
+  if (group === 'goods') {
+    const id = +e.target.dataset.i;
+    const resource = pack.resources.find((resource) => resource.i === id);
+    tip('Resource: ' + resource.name);
+    return;
+  }
   if (group === "rivers") {
     const river = +e.target.id.slice(5);
     const r = pack.rivers.find(r => r.i === river);

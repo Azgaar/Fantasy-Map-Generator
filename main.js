@@ -715,12 +715,27 @@ async function generate(options) {
     Lakes.defineGroup();
     defineBiomes();
 
+    Resources.generate();
+
     rankCells();
     Cultures.generate();
     Cultures.expand();
     BurgsAndStates.generate();
     Religions.generate();
     BurgsAndStates.defineStateForms();
+    BurgsAndStates.defineTaxes();
+
+    Production.collectResources();
+
+    Trade.defineCenters();
+    Trade.calculateDistances();
+    Trade.exportGoods();
+    Trade.importGoods();
+
+    // temp, replace with route generator
+    // pack.cells.road = new Uint16Array(pack.cells.i.length);
+    // pack.cells.crossroad = new Uint16Array(pack.cells.i.length);
+
     BurgsAndStates.generateProvinces();
     BurgsAndStates.defineBurgFeatures();
 

@@ -263,6 +263,13 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || 1;
   }
 
+  if (sel === 'goods') {
+    styleStrokeWidth.style.display = 'block';
+    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr('stroke-width') || '';
+    styleResources.style.display = 'block';
+    styleResourcesCircle.checked = +el.attr('data-circle');
+  }
+
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
   if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(sel)) {
@@ -713,6 +720,12 @@ styleArmiesSize.addEventListener("input", function () {
 emblemsStateSizeInput.addEventListener("change", drawEmblems);
 emblemsProvinceSizeInput.addEventListener("change", drawEmblems);
 emblemsBurgSizeInput.addEventListener("change", drawEmblems);
+
+styleResourcesCircle.addEventListener('change', function () {
+  goods.attr('data-circle', +this.checked);
+  goods.selectAll('*').remove();
+  drawResources();
+});
 
 // request a URL to image to be used as a texture
 function textureProvideURL() {

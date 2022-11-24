@@ -1529,8 +1529,45 @@ div.states > .riverType {
   pointer-events: none;
 }
 
+div.states > .resourceIcon {
+  margin: 0;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+div.states > .resourceIcon > * {
+  pointer-events: none;
+}
+
 #diplomacyBodySection > div {
   cursor: pointer;
+}
+
+div.states > .resourceCategory,
+div.states > .resourceModel {
+  cursor: pointer;
+  width: 7em;
+  overflow: hidden;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+div.states > .resourceBonus {
+  color: #666;
+  width: 5em;
+  cursor: pointer;
+}
+
+div.states > div.resourceBonus > span {
+  pointer-events: none;
+  margin: 0 0.15em;
+}
+div.states > div.resourceBonus > span.icon-anchor {
+  font-size: 0.85em;
+  margin: 0 0.25em;
+}
+div.states > div.resourceBonus > span.icon-male {
+  margin: 0 0.1em;
 }
 
 .changeRelations > * {
@@ -1570,6 +1607,12 @@ div.states > .riverType {
   width: 6em;
 }
 
+#burgBody svg.resIcon {
+  vertical-align: top;
+  width: 1.6em;
+  height: 1.6em;
+}
+
 #burgBody > div > div,
 #riverBody > div,
 #lakeBody > div {
@@ -1589,6 +1632,7 @@ div.states > .riverType {
 #stateNameEditor div.label,
 #provinceNameEditor div.label,
 #regimentBody div.label,
+#resourceIconEditor div.label,
 #markerEditor div.label {
   display: inline-block;
   width: 5.5em;
@@ -2243,6 +2287,9 @@ svg.button {
   user-select: none;
 }
 
+#goods > g > use {
+  pointer-events: none;
+}
 
 .dontAsk {
   margin: 0.9em 0 0 0.6em;

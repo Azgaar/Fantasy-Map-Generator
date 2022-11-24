@@ -48,6 +48,17 @@ function getDefaultPresets() {
       "toggleRoutes",
       "toggleScaleBar"
     ],
+    economical: [
+      "toggleResources", 
+      "toggleBiomes",
+      "toggleBorders",
+      "toggleIcons",
+      "toggleIce",
+      "toggleLabels",
+      "toggleRivers",
+      "toggleRoutes",
+      "toggleScaleBar"
+    ],
     military: [
       "toggleBorders",
       "toggleIcons",
@@ -1867,7 +1878,50 @@ function drawEmblems() {
     invokeActiveZooming();
   });
 
-  TIME && console.timeEnd("drawEmblems");
+  TIME && console.timeEnd('drawEmblems');
+}
+
+function toggleResources(event) {
+  if (!layerIsOn('toggleResources')) {
+    turnButtonOn('toggleResources');
+    drawResources();
+    if (event && isCtrlClick(event)) editStyle('goods');
+  } else {
+    if (event && isCtrlClick(event)) {
+      editStyle('goods');
+      return;
+    }
+    goods.selectAll('*').remove();
+    turnButtonOff('toggleResources');
+  }
+}
+
+function drawResources() {
+  console.time('drawResources');
+  const someArePinned = pack.resources.some((resource) => resource.pinned);
+  const drawCircle = +goods.attr('data-circle');
+
+  let resourcesHTML = '';
+  for (const i of pack.cells.i) {
+    if (!pack.cells.resource[i]) continue;
+    const resource = Resources.get(pack.cells.resource[i]);
+    if (someArePinned && !resource.pinned) continue;
+    const [x, y] = pack.cells.p[i];
+    const stroke = Resources.getStroke(resource.color);
+
+    if (!drawCircle) {
+      resourcesHTML += `<use data-i="${resource.i}" href="#${resource.icon}" x="${x - 3}" y="${y - 3}" width="6" height="6"/>`;
+      continue;
+    }
+
+    resourcesHTML += `<g>
+      <circle data-i="${resource.i}" cx=${x} cy=${y} r="3" fill="${resource.color}" stroke="${stroke}" />
+      <use href="#${resource.icon}" x="${x - 3}" y="${y - 3}" width="6" height="6"/>
+    </g>`;
+  }
+
+  goods.html(resourcesHTML);
+  console.timeEnd('drawResources');
 }
 
 function layerIsOn(el) {
@@ -1917,6 +1971,7 @@ function getLayer(id) {
   if (id === "togglePopulation") return $("#population");
   if (id === "toggleIce") return $("#ice");
   if (id === "toggleTexture") return $("#texture");
+  if (id === 'toggleResources') return $('#goods');
   if (id === "toggleEmblems") return $("#emblems");
   if (id === "toggleLabels") return $("#labels");
   if (id === "toggleIcons") return $("#icons");
