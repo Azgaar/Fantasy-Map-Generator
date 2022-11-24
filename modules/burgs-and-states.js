@@ -1393,6 +1393,7 @@ window.BurgsAndStates = (function () {
     generateDiplomacy,
     defineStateForms,
     getFullName,
+    defineTaxes,
     generateProvinces,
     updateCultures
   };

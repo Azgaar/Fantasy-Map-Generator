@@ -270,6 +270,13 @@ function selectStyleElement() {
     styleResourcesCircle.checked = +el.attr('data-circle');
   }
 
+  if (sel === 'goods') {
+    styleStrokeWidth.style.display = 'block';
+    styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr('stroke-width') || '';
+    styleResources.style.display = 'block';
+    styleResourcesCircle.checked = +el.attr('data-circle');
+  }
+
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
   if (['routes', 'labels', 'coastline', 'lakes', 'anchors', 'burgIcons', 'borders'].includes(sel)) {

@@ -96,6 +96,12 @@ function editBurg(id) {
     document.getElementById('burgExport').innerHTML = getExport(deals.filter((deal) => deal.exporter === b.i));
     document.getElementById('burgImport').innerHTML = '';
 
+    // economics block
+    document.getElementById('burgProduction').innerHTML = getProduction(b.produced);
+    const deals = pack.trade.deals;
+    document.getElementById('burgExport').innerHTML = getExport(deals.filter((deal) => deal.exporter === b.i));
+    document.getElementById('burgImport').innerHTML = '';
+
     //toggle lock
     updateBurgLockIcon();
 
@@ -198,7 +204,7 @@ function editBurg(id) {
     return `${totalIncome}: ${exported.join('')}`;
   }
 
-  // [-1; 31] °C, source: https://en.wikipedia.org/wiki/List_of_cities_by_average_temperature
+  // in °C, array from -1 °C; source: https://en.wikipedia.org/wiki/List_of_cities_by_average_temperature
   function getTemperatureLikeness(temperature) {
     if (temperature < -15) return 'nowhere in the real-world';
     if (temperature < -5) return 'in Yakutsk';

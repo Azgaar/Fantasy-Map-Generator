@@ -2358,6 +2358,9 @@ svg.button {
   user-select: none;
 }
 
+#goods > g > use {
+  pointer-events: none;
+}
 
 .dontAsk {
   margin: 0.9em 0 0 0.6em;

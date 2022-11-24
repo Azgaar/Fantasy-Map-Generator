@@ -739,8 +739,8 @@ async function generate(options) {
     Trade.importGoods();
 
     // temp, replace with route generator
-    pack.cells.road = new Uint16Array(pack.cells.i.length);
-    pack.cells.crossroad = new Uint16Array(pack.cells.i.length);
+    // pack.cells.road = new Uint16Array(pack.cells.i.length);
+    // pack.cells.crossroad = new Uint16Array(pack.cells.i.length);
 
     Religions.generate();
     BurgsAndStates.defineStateForms();
