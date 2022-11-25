@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 function editResources() {
   if (customization) return;
   closeDialogs('#resourcesEditor, .stable');
