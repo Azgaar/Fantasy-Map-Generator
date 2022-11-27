@@ -733,7 +733,7 @@ async function generate(options) {
     BurgsAndStates.drawStateLabels();
 
     Production.collectResources();
-    Production.defineExport();
+    // Production.defineExport();
 
     Trade.defineCenters();
     Trade.calculateDistances();
