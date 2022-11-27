@@ -149,6 +149,7 @@ function getPackCellsData() {
     religion: Array.from(pack.cells.religion),
     province: Array.from(pack.cells.province)
   };
+
   const cellObjArr = [];
   {
     cellConverted.i.forEach(value => {
@@ -221,15 +222,4 @@ function getPackVerticesData() {
     };
   }
   return verticesArray;
-}
-
-function getGridCellsDataJson() {
-  TIME && console.time("getGridCellsDataJson");
-
-  const info = getMapInfo();
-  const gridCells = getGridCellsData()
-  const exportData = {info,gridCells};
-
-  TIME && console.log("getGridCellsDataJson");
-  return JSON.stringify(exportData);
 }

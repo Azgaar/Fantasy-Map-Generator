@@ -517,13 +517,13 @@ function handleZoom(isScaleChanged, isPositionChanged) {
 
   // zoom image converter overlay
   if (customization === 1) {
-    const canvas = document.getElementById('canvas');
-    if (!canvas || canvas.style.opacity === '0') return;
+    const canvas = document.getElementById("canvas");
+    if (!canvas || canvas.style.opacity === "0") return;
 
-    const img = document.getElementById('imageToConvert');
+    const img = document.getElementById("imageToConvert");
     if (!img) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -565,11 +565,11 @@ function invokeActiveZooming() {
       if (this.id === "burgLabels") return;
       const desired = +this.dataset.size;
       const relative = Math.max(rn((desired + desired / scale) / 2, 2), 1);
-      if (rescaleLabels.checked) this.setAttribute('font-size', relative);
+      if (rescaleLabels.checked) this.setAttribute("font-size", relative);
 
       const hidden = hideLabels.checked && (relative * scale < 6 || relative * scale > 60);
-      if (hidden) this.classList.add('hidden');
-      else this.classList.remove('hidden');
+      if (hidden) this.classList.add("hidden");
+      else this.classList.remove("hidden");
     });
   }
 
@@ -595,7 +595,7 @@ function invokeActiveZooming() {
   if (!customization && !isOptimized) {
     const desired = +statesHalo.attr("data-width");
     const haloSize = rn(desired / scale ** 0.8, 2);
-    statesHalo.attr('stroke-width', haloSize).style('display', haloSize > 0.1 ? 'block' : 'none');
+    statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }
 
   // rescale map markers
@@ -721,12 +721,16 @@ async function generate(options) {
     rankCells();
     Cultures.generate();
     Cultures.expand();
-
     BurgsAndStates.generate();
-
     Religions.generate();
     BurgsAndStates.defineStateForms();
+    BurgsAndStates.generateProvinces();
+    BurgsAndStates.defineBurgFeatures();
     BurgsAndStates.defineTaxes();
+
+    drawStates();
+    drawBorders();
+    BurgsAndStates.drawStateLabels();
 
     Production.collectResources();
     Production.defineExport();
@@ -739,13 +743,6 @@ async function generate(options) {
     // temp, replace with route generator
     // pack.cells.road = new Uint16Array(pack.cells.i.length);
     // pack.cells.crossroad = new Uint16Array(pack.cells.i.length);
-
-    BurgsAndStates.generateProvinces();
-    BurgsAndStates.defineBurgFeatures();
-
-    drawStates();
-    drawBorders();
-    BurgsAndStates.drawStateLabels();
 
     Rivers.specify();
     Lakes.generateName();
@@ -1435,9 +1432,9 @@ function reMarkFeatures() {
   cells.haven = cells.i.length < 65535 ? new Uint16Array(cells.i.length) : new Uint32Array(cells.i.length); // cell haven (opposite water cell);
   cells.harbor = new Uint8Array(cells.i.length); // cell harbor (number of adjacent water cells);
 
-  const defineHaven = (i) => {
-    const water = cells.c[i].filter((c) => cells.h[c] < 20);
-    const dist2 = water.map((c) => (cells.p[i][0] - cells.p[c][0]) ** 2 + (cells.p[i][1] - cells.p[c][1]) ** 2);
+  const defineHaven = i => {
+    const water = cells.c[i].filter(c => cells.h[c] < 20);
+    const dist2 = water.map(c => (cells.p[i][0] - cells.p[c][0]) ** 2 + (cells.p[i][1] - cells.p[c][1]) ** 2);
     const closest = water[dist2.indexOf(Math.min.apply(Math, dist2))];
 
     cells.haven[i] = closest;
@@ -1506,12 +1503,6 @@ function isWetLand(moisture, temperature, height) {
   return false;
 }
 
-function isWetLand(moisture, temperature, height) {
-  if (moisture > 40 && temperature > -2 && height < 25) return true; //near coast
-  if (moisture > 24 && temperature > -2 && height > 24 && height < 60) return true; //off coast
-  return false;
-}
-
 // assign biome id for each cell
 function defineBiomes() {
   TIME && console.time("defineBiomes");
@@ -1551,12 +1542,12 @@ function getBiomeId(moisture, temperature, height) {
   return biomesData.biomesMartix[moistureBand][temperatureBand];
 }
 
-// assess cells suitability to calculate population and rang cells for culture center and burgs placement
+// assess cells suitability to calculate population and rand cells for culture center and burgs placement
 function rankCells() {
   TIME && console.time("rankCells");
   const {cells, features} = pack;
-  cells.s = new Int16Array(cells.i.length); // cell suitability score
-  cells.pop = new Float32Array(cells.i.length); // cell population
+  cells.s = new Int16Array(cells.i.length); // cell suitability array
+  cells.pop = new Float32Array(cells.i.length); // cell population array
 
   const flMean = d3.median(cells.fl.filter(f => f)) || 0,
     flMax = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
@@ -1567,11 +1558,10 @@ function rankCells() {
   for (const i of cells.i) {
     if (cells.b[i]) continue; // avoid adding burgs on map border
     if (cells.h[i] < 20) continue; // no population in water
-    let s = biomesData.habitability[cells.biome[i]] / 10; // base suitability derived from biome habitability
+    let s = +biomesData.habitability[cells.biome[i]]; // base suitability derived from biome habitability
     if (!s) continue; // uninhabitable biomes has 0 suitability
-
-    if (flMean) s += normalize(cells.fl[i] + cells.conf[i], flMean, flMax) * 50; // big rivers and confluences are valued
-    s -= (cells.h[i] - 50) / 25; // low elevation is valued, high is not;
+    if (flMean) s += normalize(cells.fl[i] + cells.conf[i], flMean, flMax) * 250; // big rivers and confluences are valued
+    s -= (cells.h[i] - 50) / 5; // low elevation is valued, high is not;
 
     if (cells.t[i] === 1) {
       if (cells.r[i]) s += 15; // estuary is valued
@@ -1584,8 +1574,8 @@ function rankCells() {
         else if (feature.group == "sinkhole") s -= 5;
         else if (feature.group == "lava") s -= 30;
       } else {
-        s += 1; // ocean coast is valued
-        if (cells.harbor[i] === 1) s += 4; // safe sea harbor is valued
+        s += 5; // ocean coast is valued
+        if (cells.harbor[i] === 1) s += 20; // safe sea harbor is valued
       }
     }
 
@@ -1595,8 +1585,7 @@ function rankCells() {
     const resBonus = (cellRes ? cellRes + 10 : 0) + neibRes;
 
     // cell rural population is suitability adjusted by cell area
-    cells.pop[i] = s > 0 ? (s * POP_BALANCER * cells.area[i]) / areaMean : 0;
-    cells.s[i] = s + resBonus;
+    cells.pop[i] = cells.s[i] > 0 ? (cells.s[i] * cells.area[i]) / areaMean : 0;
   }
 
   TIME && console.timeEnd("rankCells");

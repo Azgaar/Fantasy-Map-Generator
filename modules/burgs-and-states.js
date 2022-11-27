@@ -5,22 +5,28 @@ window.BurgsAndStates = (function () {
     const {cells, cultures} = pack;
     const n = cells.i.length;
 
-    cells.burg = new Uint16Array(n);
-    pack.burgs = placeCapitals();
-    const {burgs} = pack;
+    cells.burg = new Uint16Array(n); // cell burg
+    cells.road = new Uint16Array(n); // cell road power
+    cells.crossroad = new Uint16Array(n); // cell crossroad power
 
+    const burgs = (pack.burgs = placeCapitals());
     pack.states = createStates();
+    const capitalRoutes = Routes.getRoads();
 
     placeTowns();
     expandStates();
     normalizeStates();
+    const townRoutes = Routes.getTrails();
     specifyBurgs();
+
+    const oceanRoutes = Routes.getSearoutes();
 
     collectStatistics();
     assignColors();
 
     generateCampaigns();
     generateDiplomacy();
+    Routes.draw(capitalRoutes, townRoutes, oceanRoutes);
     drawBurgs();
 
     function placeCapitals() {
@@ -55,7 +61,7 @@ window.BurgsAndStates = (function () {
         }
 
         if (i === sorted.length - 1) {
-          WARN && console.warn('Cannot place capitals with current spacing. Trying again with reduced spacing');
+          WARN && console.warn("Cannot place capitals with current spacing. Trying again with reduced spacing");
           burgsTree = d3.quadtree();
           i = -1;
           burgs = [0];
@@ -68,13 +74,12 @@ window.BurgsAndStates = (function () {
       return burgs;
     }
 
-    // for each capital create a state
+    // For each capital create a state
     function createStates() {
       TIME && console.time("createStates");
       const states = [{i: 0, name: "Neutrals"}];
       const colors = getColors(burgs.length - 1);
       const each5th = each(5);
-      const maxExpansionism = +powerInput.value;
 
       burgs.forEach(function (b, i) {
         if (!i) return; // skip first element
@@ -87,7 +92,7 @@ window.BurgsAndStates = (function () {
         b.capital = 1;
 
         // states data
-        const expansionism = rn(Math.random() * maxExpansionism + 1, 1);
+        const expansionism = rn(Math.random() * powerInput.value + 1, 1);
         const basename = b.name.length < 9 && each5th(b.cell) ? b.name : Names.getCultureShort(b.culture);
         const name = Names.getState(basename, b.culture);
         const type = cultures[b.culture].type;
@@ -133,10 +138,9 @@ window.BurgsAndStates = (function () {
       while (burgsAdded < burgsNumber && spacing > 1) {
         for (let i = 0; burgsAdded < burgsNumber && i < sorted.length; i++) {
           if (cells.burg[sorted[i]]) continue;
-
-          const cell = sorted[i];
-          const [x, y] = cells.p[cell];
-
+          const cell = sorted[i],
+            x = cells.p[cell][0],
+            y = cells.p[cell][1];
           const s = spacing * gauss(1, 0.3, 0.2, 2, 2); // randomize to make placement not uniform
           if (burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
           const burg = burgs.length;
@@ -180,10 +184,8 @@ window.BurgsAndStates = (function () {
         b.port = port ? f : 0; // port is defined by water body id it lays on
       } else b.port = 0;
 
-      // define burg population
-      const primaryPopulation = cells.s[i];
-      const secondaryPopulation = b.i / 1000 + (i % 100) / 1000;
-      b.population = rn(Math.max(primaryPopulation + secondaryPopulation, 0.1), 3);
+      // define burg population (keep urbanization at about 10% rate)
+      b.population = rn(Math.max((cells.s[i] + cells.road[i] / 2) / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
       if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
 
       if (b.port) {
@@ -219,10 +221,10 @@ window.BurgsAndStates = (function () {
     }
 
     // de-assign port status if it's the only one on feature
-    const ports = pack.burgs.filter((b) => !b.removed && b.port > 0);
+    const ports = pack.burgs.filter(b => !b.removed && b.port > 0);
     for (const f of features) {
       if (!f.i || f.land || f.border) continue;
-      const featurePorts = ports.filter((b) => b.port === f.i);
+      const featurePorts = ports.filter(b => b.port === f.i);
       if (featurePorts.length === 1) featurePorts[0].port = 0;
     }
 
@@ -231,14 +233,14 @@ window.BurgsAndStates = (function () {
 
   const getType = function (i, port) {
     const cells = pack.cells;
-    if (port) return 'Naval';
-    if (cells.haven[i] && pack.features[cells.f[cells.haven[i]]].type === 'lake') return 'Lake';
-    if (cells.h[i] > 60) return 'Highland';
-    if (cells.r[i] && cells.r[i].length > 100 && cells.r[i].length >= pack.rivers[0].length) return 'River';
+    if (port) return "Naval";
+    if (cells.haven[i] && pack.features[cells.f[cells.haven[i]]].type === "lake") return "Lake";
+    if (cells.h[i] > 60) return "Highland";
+    if (cells.r[i] && cells.r[i].length > 100 && cells.r[i].length >= pack.rivers[0].length) return "River";
 
     if (!cells.burg[i] || pack.burgs[cells.burg[i]].population < 6) {
-      if (population < 5 && [1, 2, 3, 4].includes(cells.biome[i])) return 'Nomadic';
-      if (cells.biome[i] > 4 && cells.biome[i] < 10) return 'Hunting';
+      if (population < 5 && [1, 2, 3, 4].includes(cells.biome[i])) return "Nomadic";
+      if (cells.biome[i] > 4 && cells.biome[i] < 10) return "Hunting";
     }
 
     return "Generic";
@@ -264,9 +266,9 @@ window.BurgsAndStates = (function () {
     TIME && console.time("drawBurgs");
 
     // remove old data
-    burgIcons.selectAll('circle').remove();
-    burgLabels.selectAll('text').remove();
-    icons.selectAll('use').remove();
+    burgIcons.selectAll("circle").remove();
+    burgLabels.selectAll("text").remove();
+    icons.selectAll("use").remove();
 
     // capitals
     const capitals = pack.burgs.filter(b => b.capital && !b.removed);
@@ -383,7 +385,7 @@ window.BurgsAndStates = (function () {
       const {e, p, s, b} = next;
       const {type, culture} = states[s];
 
-      cells.c[e].forEach((e) => {
+      cells.c[e].forEach(e => {
         if (cells.state[e] && e === states[cells.state[e]].center) return; // do not overwrite capital cells
 
         const cultureCost = culture === cells.culture[e] ? -9 : 100;
@@ -409,33 +411,33 @@ window.BurgsAndStates = (function () {
 
     function getBiomeCost(b, biome, type) {
       if (b === biome) return 10; // tiny penalty for native biome
-      if (type === 'Hunting') return biomesData.cost[biome] * 2; // non-native biome penalty for hunters
-      if (type === 'Nomadic' && biome > 4 && biome < 10) return biomesData.cost[biome] * 3; // forest biome penalty for nomads
+      if (type === "Hunting") return biomesData.cost[biome] * 2; // non-native biome penalty for hunters
+      if (type === "Nomadic" && biome > 4 && biome < 10) return biomesData.cost[biome] * 3; // forest biome penalty for nomads
       return biomesData.cost[biome]; // general non-native biome penalty
     }
 
     function getHeightCost(f, h, type) {
-      if (type === 'Lake' && f.type === 'lake') return 10; // low lake crossing penalty for Lake cultures
-      if (type === 'Naval' && h < 20) return 300; // low sea crossing penalty for Navals
-      if (type === 'Nomadic' && h < 20) return 10000; // giant sea crossing penalty for Nomads
+      if (type === "Lake" && f.type === "lake") return 10; // low lake crossing penalty for Lake cultures
+      if (type === "Naval" && h < 20) return 300; // low sea crossing penalty for Navals
+      if (type === "Nomadic" && h < 20) return 10000; // giant sea crossing penalty for Nomads
       if (h < 20) return 1000; // general sea crossing penalty
-      if (type === 'Highland' && h < 62) return 1100; // penalty for highlanders on lowlands
-      if (type === 'Highland') return 0; // no penalty for highlanders on highlands
+      if (type === "Highland" && h < 62) return 1100; // penalty for highlanders on lowlands
+      if (type === "Highland") return 0; // no penalty for highlanders on highlands
       if (h >= 67) return 2200; // general mountains crossing penalty
       if (h >= 44) return 300; // general hills crossing penalty
       return 0;
     }
 
     function getRiverCost(r, i, type) {
-      if (type === 'River') return r ? 0 : 100; // penalty for river cultures
+      if (type === "River") return r ? 0 : 100; // penalty for river cultures
       if (!r) return 0; // no penalty for others if there is no river
       return minmax(cells.fl[i] / 10, 20, 100); // river penalty from 20 to 100 based on flux
     }
 
     function getTypeCost(t, type) {
-      if (t === 1) return type === 'Naval' || type === 'Lake' ? 0 : type === 'Nomadic' ? 60 : 20; // penalty for coastline
-      if (t === 2) return type === 'Naval' || type === 'Nomadic' ? 30 : 0; // low penalty for land level 2 for Navals and nomads
-      if (t !== -1) return type === 'Naval' || type === 'Lake' ? 100 : 0; // penalty for mainland for navals
+      if (t === 1) return type === "Naval" || type === "Lake" ? 0 : type === "Nomadic" ? 60 : 20; // penalty for coastline
+      if (t === 2) return type === "Naval" || type === "Nomadic" ? 30 : 0; // low penalty for land level 2 for Navals and nomads
+      if (t !== -1) return type === "Naval" || type === "Lake" ? 100 : 0; // penalty for mainland for navals
       return 0;
     }
 
@@ -449,11 +451,11 @@ window.BurgsAndStates = (function () {
 
     for (const i of cells.i) {
       if (cells.h[i] < 20 || cells.burg[i]) continue; // do not overwrite burgs
-      if (cells.c[i].some((c) => burgs[cells.burg[c]].capital)) continue; // do not overwrite near capital
-      const neibs = cells.c[i].filter((c) => cells.h[c] >= 20);
-      const adversaries = neibs.filter((c) => cells.state[c] !== cells.state[i]);
+      if (cells.c[i].some(c => burgs[cells.burg[c]].capital)) continue; // do not overwrite near capital
+      const neibs = cells.c[i].filter(c => cells.h[c] >= 20);
+      const adversaries = neibs.filter(c => cells.state[c] !== cells.state[i]);
       if (adversaries.length < 2) continue;
-      const buddies = neibs.filter((c) => cells.state[c] === cells.state[i]);
+      const buddies = neibs.filter(c => cells.state[c] === cells.state[i]);
       if (buddies.length > 2) continue;
       if (adversaries.length <= buddies.length) continue;
       cells.state[i] = cells.state[adversaries[0]];
@@ -501,7 +503,7 @@ window.BurgsAndStates = (function () {
       const visualCenter = findCell(s.pole[0], s.pole[1]);
       const start = cells.state[visualCenter] === s.i ? visualCenter : s.center;
       const hull = getHull(start, s.i, s.cells / 10);
-      const points = [...hull].map((v) => pack.vertices.p[v]);
+      const points = [...hull].map(v => pack.vertices.p[v]);
       const delaunay = Delaunator.from(points);
       const voronoi = new Voronoi(delaunay, points, points.length);
       const chain = connectCenters(voronoi.vertices, s.pole[1]);
@@ -539,7 +541,7 @@ window.BurgsAndStates = (function () {
           return used[findCell(p[0], p[1])];
         });
 
-        const pointsInside = d3.range(c.p.length).filter((i) => inside[i]);
+        const pointsInside = d3.range(c.p.length).filter(i => inside[i]);
         if (!pointsInside.length) return [0];
         const h = c.p.length < 200 ? 0 : c.p.length < 600 ? 0.5 : 1; // power of horyzontality shift
         const end =
@@ -598,14 +600,14 @@ window.BurgsAndStates = (function () {
 
       if (!list) {
         // remove all labels and textpaths
-        g.selectAll('text').remove();
+        g.selectAll("text").remove();
         t.selectAll("path[id*='stateLabel']").remove();
       }
 
-      const example = g.append('text').attr('x', 0).attr('x', 0).text('Average');
+      const example = g.append("text").attr("x", 0).attr("x", 0).text("Average");
       const letterLength = example.node().getComputedTextLength() / 7; // average length of 1 letter
 
-      paths.forEach((p) => {
+      paths.forEach(p => {
         const id = p[0];
         const state = states[p[0]];
         const {name, fullName} = state;
@@ -736,7 +738,7 @@ window.BurgsAndStates = (function () {
     }
 
     // convert neighbors Set object into array
-    states.forEach((s) => {
+    states.forEach(s => {
       if (!s.neighbors) return;
       s.neighbors = Array.from(s.neighbors);
     });
@@ -752,14 +754,14 @@ window.BurgsAndStates = (function () {
     pack.states.forEach(s => {
       if (!s.i || s.removed) return;
       const neibs = s.neighbors;
-      s.color = colors.find((c) => neibs.every((n) => pack.states[n].color !== c));
+      s.color = colors.find(c => neibs.every(n => pack.states[n].color !== c));
       if (!s.color) s.color = getRandomColor();
       colors.push(colors.shift());
     });
 
     // randomize each already used color a bit
-    colors.forEach((c) => {
-      const sameColored = pack.states.filter((s) => s.color === c);
+    colors.forEach(c => {
+      const sameColored = pack.states.filter(s => s.color === c);
       sameColored.forEach((s, d) => {
         if (!d) return;
         s.color = getMixedColor(s.color);
@@ -821,9 +823,9 @@ window.BurgsAndStates = (function () {
     for (let f = 1; f < states.length; f++) {
       if (states[f].removed) continue;
 
-      if (states[f].diplomacy.includes('Vassal')) {
+      if (states[f].diplomacy.includes("Vassal")) {
         // Vassals copy relations from their Suzerains
-        const suzerain = states[f].diplomacy.indexOf('Vassal');
+        const suzerain = states[f].diplomacy.indexOf("Vassal");
 
         for (let i = 1; i < states.length; i++) {
           if (i === f || i === suzerain) continue;
@@ -831,7 +833,7 @@ window.BurgsAndStates = (function () {
           if (states[suzerain].diplomacy[i] === "Suzerain") states[f].diplomacy[i] = "Ally";
           for (let e = 1; e < states.length; e++) {
             if (e === f || e === suzerain) continue;
-            if (states[e].diplomacy[suzerain] === 'Suzerain' || states[e].diplomacy[suzerain] === 'Vassal') continue;
+            if (states[e].diplomacy[suzerain] === "Suzerain" || states[e].diplomacy[suzerain] === "Vassal") continue;
             states[e].diplomacy[f] = states[e].diplomacy[suzerain];
           }
         }
@@ -841,8 +843,8 @@ window.BurgsAndStates = (function () {
       for (let t = f + 1; t < states.length; t++) {
         if (states[t].removed) continue;
 
-        if (states[t].diplomacy.includes('Vassal')) {
-          const suzerain = states[t].diplomacy.indexOf('Vassal');
+        if (states[t].diplomacy.includes("Vassal")) {
+          const suzerain = states[t].diplomacy.indexOf("Vassal");
           states[f].diplomacy[t] = states[f].diplomacy[suzerain];
           continue;
         }
@@ -880,9 +882,9 @@ window.BurgsAndStates = (function () {
     for (let attacker = 1; attacker < states.length; attacker++) {
       const ad = states[attacker].diplomacy; // attacker relations;
       if (states[attacker].removed) continue;
-      if (!ad.includes('Rival')) continue; // no rivals to attack
-      if (ad.includes('Vassal')) continue; // not independent
-      if (ad.includes('Enemy')) continue; // already at war
+      if (!ad.includes("Rival")) continue; // no rivals to attack
+      if (ad.includes("Vassal")) continue; // not independent
+      if (ad.includes("Enemy")) continue; // already at war
 
       // random independent rival
       const defender = ra(
@@ -920,8 +922,8 @@ window.BurgsAndStates = (function () {
         }
       });
 
-      ap = d3.sum(attackers.map((a) => states[a].area * states[a].expansionism)); // attackers joined power
-      dp = d3.sum(defenders.map((d) => states[d].area * states[d].expansionism)); // defender joined power
+      ap = d3.sum(attackers.map(a => states[a].area * states[a].expansionism)); // attackers joined power
+      dp = d3.sum(defenders.map(d => states[d].area * states[d].expansionism)); // defender joined power
 
       // defender allies join
       dd.forEach((r, d) => {
@@ -929,7 +931,7 @@ window.BurgsAndStates = (function () {
         if (states[d].diplomacy[attacker] !== "Rival" && ap / dp > 2 * gauss(1.6, 0.8, 0, 10, 2)) {
           const reason = states[d].diplomacy.includes("Enemy") ? "Being already at war," : `Frightened by ${an},`;
           war.push(`${reason} ${states[d].name} severed the defense pact with ${dn}`);
-          dd[d] = states[d].diplomacy[defender] = 'Suspicion';
+          dd[d] = states[d].diplomacy[defender] = "Suspicion";
           return;
         }
         defenders.push(d);
@@ -949,7 +951,7 @@ window.BurgsAndStates = (function () {
 
       // attacker allies join if the defender is their rival or joined power > defenders power and defender is not an ally
       ad.forEach((r, d) => {
-        if (r !== 'Ally' || states[d].diplomacy.includes('Vassal') || defenders.includes(d)) return;
+        if (r !== "Ally" || states[d].diplomacy.includes("Vassal") || defenders.includes(d)) return;
         const name = states[d].name;
         if (states[d].diplomacy[defender] !== "Rival" && (P(0.2) || ap <= dp * 1.2)) {
           war.push(`${an}'s ally ${name} avoided entering the war`);
@@ -981,7 +983,7 @@ window.BurgsAndStates = (function () {
       chronicle.push(war); // add a record to diplomatical history
     }
 
-    TIME && console.timeEnd('generateDiplomacy');
+    TIME && console.timeEnd("generateDiplomacy");
     //console.table(states.map(s => s.diplomacy));
   };
 
@@ -1062,33 +1064,33 @@ window.BurgsAndStates = (function () {
           if (P(0.3) && s.diplomacy.includes("Vassal")) return "Protectorate"; // some vassals
         }
 
-        if (base === 16 && (form === 'Empire' || form === 'Kingdom')) return 'Sultanate'; // Turkic
-        if (base === 5 && (form === 'Empire' || form === 'Kingdom')) return 'Tsardom'; // Ruthenian
-        if ([16, 31].includes(base) && (form === 'Empire' || form === 'Kingdom')) return 'Khaganate'; // Turkic, Mongolian
-        if (base === 12 && (form === 'Kingdom' || form === 'Grand Duchy')) return 'Shogunate'; // Japanese
-        if ([18, 17].includes(base) && form === 'Empire') return 'Caliphate'; // Arabic, Berber
-        if (base === 18 && (form === 'Grand Duchy' || form === 'Duchy')) return 'Emirate'; // Arabic
-        if (base === 7 && (form === 'Grand Duchy' || form === 'Duchy')) return 'Despotate'; // Greek
-        if (base === 31 && (form === 'Grand Duchy' || form === 'Duchy')) return 'Ulus'; // Mongolian
-        if (base === 16 && (form === 'Grand Duchy' || form === 'Duchy')) return 'Horde'; // Turkic
-        if (base === 24 && (form === 'Grand Duchy' || form === 'Duchy')) return 'Satrapy'; // Iranian
+        if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Sultanate"; // Turkic
+        if (base === 5 && (form === "Empire" || form === "Kingdom")) return "Tsardom"; // Ruthenian
+        if ([16, 31].includes(base) && (form === "Empire" || form === "Kingdom")) return "Khaganate"; // Turkic, Mongolian
+        if (base === 12 && (form === "Kingdom" || form === "Grand Duchy")) return "Shogunate"; // Japanese
+        if ([18, 17].includes(base) && form === "Empire") return "Caliphate"; // Arabic, Berber
+        if (base === 18 && (form === "Grand Duchy" || form === "Duchy")) return "Emirate"; // Arabic
+        if (base === 7 && (form === "Grand Duchy" || form === "Duchy")) return "Despotate"; // Greek
+        if (base === 31 && (form === "Grand Duchy" || form === "Duchy")) return "Ulus"; // Mongolian
+        if (base === 16 && (form === "Grand Duchy" || form === "Duchy")) return "Horde"; // Turkic
+        if (base === 24 && (form === "Grand Duchy" || form === "Duchy")) return "Satrapy"; // Iranian
         return form;
       }
 
-      if (s.form === 'Republic') {
+      if (s.form === "Republic") {
         // Default name is from weighted array, special case for small states with only 1 burg
         if (tier < 2 && s.burgs === 1) {
           if (trimVowels(s.name) === trimVowels(pack.burgs[s.capital].name)) {
             s.name = pack.burgs[s.capital].name;
-            return 'Free City';
+            return "Free City";
           }
           if (P(0.3)) return "City-state";
         }
         return rw(republic);
       }
 
-      if (s.form === 'Union') return rw(union);
-      if (s.form === 'Anarchy') return rw(anarchy);
+      if (s.form === "Union") return rw(union);
+      if (s.form === "Anarchy") return rw(anarchy);
 
       if (s.form === "Theocracy") {
         // European
@@ -1211,7 +1213,7 @@ window.BurgsAndStates = (function () {
         const name = nameByBurg ? stateBurgs[i].name : Names.getState(Names.getCultureShort(c), c);
         const formName = rw(form);
         form[formName] += 10;
-        const fullName = name + ' ' + formName;
+        const fullName = name + " " + formName;
         const color = getMixedColor(s.color);
         const kinship = nameByBurg ? 0.8 : 0.4;
         const type = getType(center, burg.port);
@@ -1256,10 +1258,10 @@ window.BurgsAndStates = (function () {
     // justify provinces shapes a bit
     for (const i of cells.i) {
       if (cells.burg[i]) continue; // do not overwrite burgs
-      const neibs = cells.c[i].filter((c) => cells.state[c] === cells.state[i]).map((c) => cells.province[c]);
-      const adversaries = neibs.filter((c) => c !== cells.province[i]);
+      const neibs = cells.c[i].filter(c => cells.state[c] === cells.state[i]).map(c => cells.province[c]);
+      const adversaries = neibs.filter(c => c !== cells.province[i]);
       if (adversaries.length < 2) continue;
-      const buddies = neibs.filter((c) => c === cells.province[i]).length;
+      const buddies = neibs.filter(c => c === cells.province[i]).length;
       if (buddies.length > 2) continue;
       const competitors = adversaries.map(p => adversaries.reduce((s, v) => (v === p ? s + 1 : s), 0));
       const max = d3.max(competitors);
@@ -1268,8 +1270,8 @@ window.BurgsAndStates = (function () {
     }
 
     // add "wild" provinces if some cells don't have a province assigned
-    const noProvince = Array.from(cells.i).filter((i) => cells.state[i] && !cells.province[i]); // cells without province assigned
-    states.forEach((s) => {
+    const noProvince = Array.from(cells.i).filter(i => cells.state[i] && !cells.province[i]); // cells without province assigned
+    states.forEach(s => {
       if (!s.provinces.length) return;
 
       const coreProvinceNames = s.provinces.map(p => provinces[p]?.name);
@@ -1286,7 +1288,7 @@ window.BurgsAndStates = (function () {
       while (stateNoProvince.length) {
         // add new province
         const province = provinces.length;
-        const burgCell = stateNoProvince.find((i) => cells.burg[i]);
+        const burgCell = stateNoProvince.find(i => cells.burg[i]);
         const center = burgCell ? burgCell : stateNoProvince[0];
         const burg = burgCell ? cells.burg[burgCell] : 0;
         cells.province[center] = province;
@@ -1360,7 +1362,7 @@ window.BurgsAndStates = (function () {
           while (queue.length) {
             const current = queue.pop();
             if (current === to) return true; // way is found
-            cells.c[current].forEach((c) => {
+            cells.c[current].forEach(c => {
               if (used[c] || cells.h[c] < 20 || cells.state[c] !== state) return;
               queue.push(c);
               used[c] = 1;
@@ -1370,7 +1372,7 @@ window.BurgsAndStates = (function () {
         }
 
         // re-check
-        stateNoProvince = noProvince.filter((i) => cells.state[i] === s.i && !cells.province[i]);
+        stateNoProvince = noProvince.filter(i => cells.state[i] === s.i && !cells.province[i]);
       }
     });
 

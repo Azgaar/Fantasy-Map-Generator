@@ -24,12 +24,8 @@
         font-size: 10px;
         overflow: hidden;
       }
-      #loading > * {
-        pointer-events: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+      #map {
+        position: absolute;
       }
       #loading > * {
         pointer-events: none;
@@ -121,7 +117,6 @@
       id="map"
       width="100%"
       height="100%"
-      style="position: absolute"
       version="1.1"
       xmlns="http://www.w3.org/2000/svg"
       xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -340,11 +335,20 @@
     </svg>
 
   <div id="loading">
+      <svg width="100%" height="100%">
+        <rect x="-1%" y="-1%" width="102%" height="102%" fill="#466eab" />
+        <rect x="-1%" y="-1%" width="102%" height="102%" fill="url(#oceanic)" />
+      </svg>
+      <svg id="loading-rose" width="100%" height="100%" viewBox="0 0 700 700">
+        <use href="#rose" x="50%" y="50%" />
+      </svg>
+      <div id="loading-typography">
     <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
     <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-    <div id="version"><t data-t="version">v. </t>1.66</div>
+        <div id="versionText"><t data-t="version">v</t><span id="version"></span></div>
     <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
   </div>
+    </div>
 
     <div id="optionsContainer" style="opacity: 0">
       <div id="collapsible">
@@ -2014,22 +2018,64 @@
 
         <p>Click to regenerate:</p>
         <div id="regenerateFeature">
-          <button id="regenerateStateLabels" data-tip="Click to update state labels placement based on current borders">Labels</button>
-          <button id="regenerateReliefIcons" data-tip="Click to regenerate all relief icons based on current cell biome and elevation">Relief</button>
+            <button
+              id="regenerateStateLabels"
+              data-tip="Click to update state labels placement based on current borders"
+            >
+              Labels
+            </button>
+            <button
+              id="regenerateReliefIcons"
+              data-tip="Click to regenerate all relief icons based on current cell biome and elevation"
+            >
+              Relief
+            </button>
           <button id="regenerateRoutes" data-tip="Click to regenerate all routes">Routes</button>
-          <button id="regenerateRivers" data-tip="Click to regenerate all rivers (restore default state)">Rivers</button>
-          <button id="regeneratePopulation" data-tip="Click to recalculate rural and urban population">Population</button>
-          <button id="regenerateStates" data-tip="Click to select new capitals and regenerate states. Emblems and military forces will be regenerated as well, burgs will remain as they are">States</button>
-          <button id="regenerateProvinces" data-tip="Click to regenerate provinces. States will remain as they are">Provinces</button>
-          <button id="regenerateBurgs" data-tip="Click to regenerate all unlocked burgs and routes. States will remain as they are">Burgs</button>
-          <button id="regenerateResources" data-tip="Click to regenerate resources">Resources</button>
+          <button id="regenerateRivers" data-tip="Click to regenerate all rivers (restore default state)">
+            Rivers
+          </button>
+          <button id="regeneratePopulation" data-tip="Click to recalculate rural and urban population">
+            Population
+          </button>
+          <button
+            id="regenerateStates"
+            data-tip="Click to select new capitals and regenerate states. Emblems and military forces will be regenerated as well, burgs will remain as they are"
+          >
+            States
+          </button>
+          <button id="regenerateProvinces" data-tip="Click to regenerate provinces. States will remain as they are">
+            Provinces
+          </button>
+          <button
+            id="regenerateBurgs"
+            data-tip="Click to regenerate all unlocked burgs and routes. States will remain as they are. Note: burgs are only generated in populated areas with culture assigned"
+          >
+            Burgs
+          </button>
+          <button 
+            id="regenerateResources" 
+            data-tip="Click to regenerate resources">
+            Resources
+          </button>
           <button id="regenerateEmblems" data-tip="Click to regenerate all emblems">Emblems</button>
           <button id="regenerateReligions" data-tip="Click to regenerate religions">Religions</button>
           <button id="regenerateCultures" data-tip="Click to regenerate cultures">Cultures</button>
-          <button id="regenerateMilitary" data-tip="Click to recalculate military forces based on current military options">Military</button>
+            <button
+              id="regenerateMilitary"
+              data-tip="Click to recalculate military forces based on current military options"
+            >
+              Military
+            </button>
           <button id="regenerateIce" data-tip="Click to icebergs and glaciers">Ice</button>
-          <button id="regenerateMarkers" data-tip="Click to regenerate markers. Hold Ctrl and click to set markers number multiplier">Markers</button>
-          <button id="regenerateZones" data-tip="Click to regenerate zones. Hold Ctrl and click to set zones number multiplier">Zones</button>
+            <button id="regenerateMarkers" data-tip="Click to regenerate markers">
+              Markers <i id="configRegenerateMarkers" class="icon-cog" data-tip="Click to set number multiplier"></i>
+            </button>
+            <button
+              id="regenerateZones"
+              data-tip="Click to regenerate zones. Hold Ctrl and click to set zones number multiplier"
+            >
+              Zones
+            </button>
         </div>
 
           <p>Click to add:</p>
@@ -5864,27 +5910,6 @@
             </div>
           </div>
         </div>
-        <div data-tip="Move all existing towns to the 'largetown' burg group">
-          <input id="submapPromoteTowns" class="checkbox" type="checkbox" />
-          <label for="submapPromoteTowns" class="checkbox-label">Promote towns to largetowns</label>
-        </div>
-        <div data-tip="Add lakes in depressions (can be very slow on big landmasses)">
-          <input id="submapAddLakeInDepression" class="checkbox" type="checkbox" />
-          <label for="submapAddLakeInDepression" class="checkbox-label">Add lakes in depressions (slow)</label>
-        </div>
-      </div>
-
-      <div id="alert" style="display: none" class="dialog">
-        <p id="alertMessage">Warning!</p>
-      </div>
-
-      <div id="prompt" style="display: none" class="dialog">
-        <form id="promptForm">
-          <div id="promptText"></div>
-          <input id="promptInput" type="number" step=".01" placeholder="type value" autocomplete="off" />
-          <button type="submit">Confirm</button>
-          <button type="button" id="promptCancel" formnovalidate>Cancel</button>
-        </form>
       </div>
 
       <div id="saveTilesScreen" style="display: none" class="dialog">
@@ -8092,6 +8117,8 @@
   <script src="modules/heightmap-generator.js"></script>
   <script src="modules/ocean-layers.js?v=1.87.15"></script>
   <script src="modules/resources-generator.js"></script>
+  <script src="modules/production-generator.js"></script>
+  <script src="modules/trade-generator.js"></script>
   <script src="modules/river-generator.js"></script>
   <script src="modules/lakes.js"></script>
   <script src="modules/names-generator.js?v=1.87.14"></script>
