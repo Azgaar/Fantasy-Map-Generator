@@ -62,18 +62,8 @@ export function open(props) {
 }
 
 function appendStyleSheet() {
-  const styles = /* css */ `
-
-    #hierarchyTree {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    #hierarchyTree > svg {
-      height: 100%;
-    }
-
+  const style = document.createElement("style");
+  style.textContent = /* css */ `
     #hierarchyTree_selectedOrigins > button {
       margin: 0 2px;
     }
@@ -428,6 +418,7 @@ function selectElement(d) {
         </div>
       `;
     });
+
     byId("hierarchyTree_originSelector").innerHTML = /*html*/ `
       <form style="max-height: 35vh">
         ${selectableElementsHtml.join("")}

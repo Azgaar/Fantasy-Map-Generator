@@ -1,7 +1,6 @@
 const initialSeed = generateSeed();
 let graph = getGraph(grid);
 
-const initialSeed = generateSeed();
 appendStyleSheet();
 insertHtml();
 addListeners();
@@ -95,19 +94,6 @@ function appendStyleSheet() {
 
     .heightmap-selection_options > div:last-child {
       justify-self: end;
-    }
-
-    @media (max-width: 600px) {
-      .heightmap-selection_container {
-        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-        grid-gap: 4px;
-      }
-    }
-
-    @media (min-width: 2000px) {
-      .heightmap-selection_container {
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      }
     }
 
     .heightmap-selection article {
@@ -306,20 +292,6 @@ function drawHeights(heights) {
 
   ctx.putImageData(imageData, 0, 0);
   return canvas.toDataURL("image/png");
-}
-
-function drawTemplatePreview(id) {
-  const heights = HeightmapGenerator.fromTemplate(graph, id);
-  const dataUrl = drawHeights(heights);
-  const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
-  article.querySelector("img").src = dataUrl;
-}
-
-async function drawPrecreatedHeightmap(id) {
-  const heights = await HeightmapGenerator.fromPrecreated(graph, id);
-  const dataUrl = drawHeights(heights);
-  const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
-  article.querySelector("img").src = dataUrl;
 }
 
 function drawTemplatePreview(id) {
