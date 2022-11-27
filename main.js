@@ -726,7 +726,7 @@ async function generate(options) {
     BurgsAndStates.defineStateForms();
     BurgsAndStates.generateProvinces();
     BurgsAndStates.defineBurgFeatures();
-    // BurgsAndStates.defineTaxes();
+    BurgsAndStates.defineTaxes();
 
     drawStates();
     drawBorders();
@@ -1556,7 +1556,7 @@ function rankCells() {
   const POP_BALANCER = 1.5; // to ballance population to desired number
 
   for (const i of cells.i) {
-    if (cells.b[i]) continue; // avoid adding burgs on map border
+    // if (cells.b[i]) continue; // avoid adding burgs on map border
     if (cells.h[i] < 20) continue; // no population in water
     let s = +biomesData.habitability[cells.biome[i]]; // base suitability derived from biome habitability
     if (!s) continue; // uninhabitable biomes has 0 suitability
@@ -1579,6 +1579,7 @@ function rankCells() {
       }
     }
 
+    cells.s[i] = s / 5; // general population rate
     // add bonus for resources around
     const cellRes = getResValue(i);
     const neibRes = d3.mean(cells.c[i].map((c) => getResValue(c)));
