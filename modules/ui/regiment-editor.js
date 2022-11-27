@@ -370,8 +370,8 @@ function editRegiment(selector) {
           military.splice(regIndex, 1);
 
           const index = notes.findIndex(n => n.id === elSelected.id);
-      if (index != -1) notes.splice(index, 1);
-      elSelected.remove();
+          if (index != -1) notes.splice(index, 1);
+          elSelected.remove();
 
           if (militaryOverviewRefresh.offsetParent) militaryOverviewRefresh.click();
           if (regimentsOverviewRefresh.offsetParent) regimentsOverviewRefresh.click();

@@ -335,10 +335,6 @@ function getPrecipitation(prec) {
   return prec * 100 + " mm";
 }
 
-function getPrecipitation(prec) {
-  return prec * 100 + " mm";
-}
-
 // get user-friendly (real-world) precipitation value from map data
 function getFriendlyPrecipitation(i) {
   const prec = grid.cells.prec[pack.cells.g[i]];

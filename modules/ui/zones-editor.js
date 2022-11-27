@@ -127,8 +127,6 @@ function editZones() {
     $("#zonesEditor").dialog({width: fitContent()});
   }
 
-  function filterZonesByType() {}
-
   function zoneHighlightOn(event) {
     const zone = event.target.dataset.id;
     zones.select("#" + zone).style("outline", "1px solid red");

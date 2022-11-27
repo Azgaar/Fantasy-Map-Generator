@@ -1,12 +1,12 @@
-'use strict';
+"use strict";
 function overviewRivers() {
   if (customization) return;
-  closeDialogs('#riversOverview, .stable');
-  if (!layerIsOn('toggleRivers')) toggleRivers();
+  closeDialogs("#riversOverview, .stable");
+  if (!layerIsOn("toggleRivers")) toggleRivers();
 
-  const body = document.getElementById('riversBody');
+  const body = document.getElementById("riversBody");
   riversOverviewAddLines();
-  $('#riversOverview').dialog();
+  $("#riversOverview").dialog();
 
   if (modules.overviewRivers) return;
   modules.overviewRivers = true;
@@ -28,15 +28,15 @@ function overviewRivers() {
 
   // add line for each river
   function riversOverviewAddLines() {
-    body.innerHTML = '';
-    let lines = '';
+    body.innerHTML = "";
+    let lines = "";
     const unit = distanceUnitInput.value;
 
     for (const r of pack.rivers) {
-      const discharge = r.discharge + ' m³/s';
-      const length = rn(r.length * distanceScaleInput.value) + ' ' + unit;
-      const width = rn(r.width * distanceScaleInput.value, 3) + ' ' + unit;
-      const basin = pack.rivers.find((river) => river.i === r.basin)?.name;
+      const discharge = r.discharge + " m³/s";
+      const length = rn(r.length * distanceScaleInput.value) + " " + unit;
+      const width = rn(r.width * distanceScaleInput.value, 3) + " " + unit;
+      const basin = pack.rivers.find(river => river.i === r.basin)?.name;
 
       lines += /* html */ `<div
         class="states"
@@ -59,7 +59,7 @@ function overviewRivers() {
         <span data-tip="Remove river" class="icon-trash-empty"></span>
       </div>`;
     }
-    body.insertAdjacentHTML('beforeend', lines);
+    body.insertAdjacentHTML("beforeend", lines);
 
     // update footer
     riversFooterNumber.innerHTML = pack.rivers.length;
@@ -71,17 +71,17 @@ function overviewRivers() {
     riversFooterWidth.innerHTML = rn(averageWidth * distanceScaleInput.value, 3) + " " + unit;
 
     // add listeners
-    body.querySelectorAll('div.states').forEach((el) => el.addEventListener('mouseenter', (ev) => riverHighlightOn(ev)));
-    body.querySelectorAll('div.states').forEach((el) => el.addEventListener('mouseleave', (ev) => riverHighlightOff(ev)));
-    body.querySelectorAll('div > span.icon-dot-circled').forEach((el) => el.addEventListener('click', zoomToRiver));
-    body.querySelectorAll('div > span.icon-pencil').forEach((el) => el.addEventListener('click', openRiverEditor));
-    body.querySelectorAll('div > span.icon-trash-empty').forEach((el) => el.addEventListener('click', triggerRiverRemove));
+    body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => riverHighlightOn(ev)));
+    body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => riverHighlightOff(ev)));
+    body.querySelectorAll("div > span.icon-dot-circled").forEach(el => el.addEventListener("click", zoomToRiver));
+    body.querySelectorAll("div > span.icon-pencil").forEach(el => el.addEventListener("click", openRiverEditor));
+    body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", triggerRiverRemove));
 
     applySorting(riversHeader);
   }
 
   function riverHighlightOn(event) {
-    if (!layerIsOn('toggleRivers')) toggleRivers();
+    if (!layerIsOn("toggleRivers")) toggleRivers();
     const r = +event.target.dataset.id;
     rivers
       .select("#river" + r)
@@ -104,9 +104,9 @@ function overviewRivers() {
   }
 
   function toggleBasinsHightlight() {
-    if (rivers.attr('data-basin') === 'hightlighted') {
-      rivers.selectAll('*').attr('fill', null);
-      rivers.attr('data-basin', null);
+    if (rivers.attr("data-basin") === "hightlighted") {
+      rivers.selectAll("*").attr("fill", null);
+      rivers.attr("data-basin", null);
     } else {
       rivers.attr("data-basin", "hightlighted");
       const basins = [...new Set(pack.rivers.map(r => r.basin))];
@@ -124,7 +124,7 @@ function overviewRivers() {
   }
 
   function downloadRiversData() {
-    let data = 'Id,River,Type,Discharge,Length,Width,Basin\n'; // headers
+    let data = "Id,River,Type,Discharge,Length,Width,Basin\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function (el) {
       const d = el.dataset;
@@ -134,7 +134,7 @@ function overviewRivers() {
       data += [d.id, d.name, d.type, discharge, length, width, d.basin].join(",") + "\n";
     });
 
-    const name = getFileName('Rivers') + '.csv';
+    const name = getFileName("Rivers") + ".csv";
     downloadFile(data, name);
   }
 

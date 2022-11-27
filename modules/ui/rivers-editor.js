@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 function editRiver(id) {
   if (customization) return;
   if (elSelected && id === elSelected.attr("id")) return;
@@ -47,18 +47,18 @@ function editRiver(id) {
   document.getElementById("riverWidthFactor").addEventListener("input", changeWidthFactor);
 
   function getRiver() {
-    const riverId = +elSelected.attr('id').slice(5);
-    const river = pack.rivers.find((r) => r.i === riverId);
+    const riverId = +elSelected.attr("id").slice(5);
+    const river = pack.rivers.find(r => r.i === riverId);
     return river;
   }
 
   function updateRiverData() {
     const r = getRiver();
 
-    document.getElementById('riverName').value = r.name;
-    document.getElementById('riverType').value = r.type;
+    document.getElementById("riverName").value = r.name;
+    document.getElementById("riverType").value = r.type;
 
-    const parentSelect = document.getElementById('riverMainstem');
+    const parentSelect = document.getElementById("riverMainstem");
     parentSelect.options.length = 0;
     const parent = r.parent || r.i;
     const sortedRivers = pack.rivers.slice().sort((a, b) => (a.name > b.name ? 1 : -1));
@@ -66,7 +66,7 @@ function editRiver(id) {
       const opt = new Option(river.name, river.i, false, river.i === parent);
       parentSelect.options.add(opt);
     });
-    document.getElementById('riverBasin').value = pack.rivers.find((river) => river.i === r.basin).name;
+    document.getElementById("riverBasin").value = pack.rivers.find(river => river.i === r.basin).name;
 
     document.getElementById("riverDischarge").value = r.discharge + " m³/s";
     document.getElementById("riverSourceWidth").value = r.sourceWidth;
@@ -208,8 +208,8 @@ function editRiver(id) {
   function changeParent() {
     const r = getRiver();
     r.parent = +this.value;
-    r.basin = pack.rivers.find((river) => river.i === r.parent).basin;
-    document.getElementById('riverBasin').value = pack.rivers.find((river) => river.i === r.basin).name;
+    r.basin = pack.rivers.find(river => river.i === r.parent).basin;
+    document.getElementById("riverBasin").value = pack.rivers.find(river => river.i === r.basin).name;
   }
 
   function changeSourceWidth() {
@@ -232,9 +232,9 @@ function editRiver(id) {
   }
 
   function editRiverLegend() {
-    const id = elSelected.attr('id');
+    const id = elSelected.attr("id");
     const river = getRiver();
-    editNotes(id, river.name + ' ' + river.type);
+    editNotes(id, river.name + " " + river.type);
   }
 
   function removeRiver() {

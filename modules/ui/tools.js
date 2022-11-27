@@ -1,36 +1,36 @@
+"use strict";
 // module to control the Tools options (click to edit, to re-geenerate, tp add)
-'use strict';
 
 toolsContent.addEventListener("click", function (event) {
   if (customization) return tip("Please exit the customization mode first", false, "warning");
   if (!["BUTTON", "I"].includes(event.target.tagName)) return;
   const button = event.target.id;
 
-  // Click to open Editor buttons
-  if (button === 'editHeightmapButton') editHeightmap();
-  else if (button === 'editBiomesButton') editBiomes();
-  else if (button === 'editStatesButton') editStates();
-  else if (button === 'editProvincesButton') editProvinces();
-  else if (button === 'editDiplomacyButton') editDiplomacy();
-  else if (button === 'editCulturesButton') editCultures();
-  else if (button === 'editReligions') editReligions();
+  // click on open Editor buttons
+  if (button === "editHeightmapButton") editHeightmap();
+  else if (button === "editBiomesButton") editBiomes();
+  else if (button === "editStatesButton") editStates();
+  else if (button === "editProvincesButton") editProvinces();
+  else if (button === "editDiplomacyButton") editDiplomacy();
+  else if (button === "editCulturesButton") editCultures();
+  else if (button === "editReligions") editReligions();
   else if (button === 'editResources') editResources();
-  else if (button === 'editEmblemButton') openEmblemEditor();
-  else if (button === 'editNamesBaseButton') editNamesbase();
-  else if (button === 'editUnitsButton') editUnits();
-  else if (button === 'editNotesButton') editNotes();
-  else if (button === 'editZonesButton') editZones();
-  else if (button === 'overviewBurgsButton') overviewBurgs();
-  else if (button === 'overviewRiversButton') overviewRivers();
-  else if (button === 'overviewMilitaryButton') overviewMilitary();
-  else if (button === 'overviewCellsButton') viewCellDetails();
+  else if (button === "editEmblemButton") openEmblemEditor();
+  else if (button === "editNamesBaseButton") editNamesbase();
+  else if (button === "editUnitsButton") editUnits();
+  else if (button === "editNotesButton") editNotes();
+  else if (button === "editZonesButton") editZones();
+  else if (button === "overviewChartsButton") overviewCharts();
+  else if (button === "overviewBurgsButton") overviewBurgs();
+  else if (button === "overviewRiversButton") overviewRivers();
+  else if (button === "overviewMilitaryButton") overviewMilitary();
+  else if (button === "overviewMarkersButton") overviewMarkers();
+  else if (button === "overviewCellsButton") viewCellDetails();
 
-  // Click to Regenerate buttons
-  if (event.target.parentNode.id === 'regenerateFeature') {
-    if (sessionStorage.getItem('regenerateFeatureDontAsk')) {
-      processFeatureRegeneration(event, button);
-      return;
-    }
+  // click on Regenerate buttons
+  if (event.target.parentNode.id === "regenerateFeature") {
+    const dontAsk = sessionStorage.getItem("regenerateFeatureDontAsk");
+    if (dontAsk) return processFeatureRegeneration(event, button);
 
     alertMessage.innerHTML = /* html */ `Regeneration will remove all the custom changes for the element.<br /><br />Are you sure you want to proceed?`;
     $("#alert").dialog({
@@ -59,12 +59,18 @@ toolsContent.addEventListener("click", function (event) {
     });
   }
 
-  // Click to Add buttons
-  if (button === 'addLabel') toggleAddLabel();
-  else if (button === 'addBurgTool') toggleAddBurg();
-  else if (button === 'addRiver') toggleAddRiver();
-  else if (button === 'addRoute') toggleAddRoute();
-  else if (button === 'addMarker') toggleAddMarker();
+  // click on Configure regenerate buttons
+  if (button === "configRegenerateMarkers") configMarkersGeneration();
+
+  // click on Add buttons
+  if (button === "addLabel") toggleAddLabel();
+  else if (button === "addBurgTool") toggleAddBurg();
+  else if (button === "addRiver") toggleAddRiver();
+  else if (button === "addRoute") toggleAddRoute();
+  else if (button === "addMarker") toggleAddMarker();
+  // click to create a new map buttons
+  else if (button === "openSubmapMenu") UISubmap.openSubmapMenu();
+  else if (button === "openResampleMenu") UISubmap.openResampleMenu();
 });
 
 function processFeatureRegeneration(event, button) {
@@ -76,20 +82,20 @@ function processFeatureRegeneration(event, button) {
     if (!layerIsOn("toggleRelief")) toggleRelief();
   } else if (button === "regenerateRoutes") {
     Routes.regenerate();
-    if (!layerIsOn('toggleRoutes')) toggleRoutes();
-  } else if (button === 'regenerateRivers') regenerateRivers();
-  else if (button === 'regeneratePopulation') recalculatePopulation();
-  else if (button === 'regenerateStates') regenerateStates();
-  else if (button === 'regenerateProvinces') regenerateProvinces();
-  else if (button === 'regenerateBurgs') regenerateBurgs();
+    if (!layerIsOn("toggleRoutes")) toggleRoutes();
+  } else if (button === "regenerateRivers") regenerateRivers();
+  else if (button === "regeneratePopulation") recalculatePopulation();
+  else if (button === "regenerateStates") regenerateStates();
+  else if (button === "regenerateProvinces") regenerateProvinces();
+  else if (button === "regenerateBurgs") regenerateBurgs();
   else if (button === 'regenerateResources') regenerateResources();
-  else if (button === 'regenerateEmblems') regenerateEmblems();
-  else if (button === 'regenerateReligions') regenerateReligions();
-  else if (button === 'regenerateCultures') regenerateCultures();
-  else if (button === 'regenerateMilitary') regenerateMilitary();
-  else if (button === 'regenerateIce') regenerateIce();
-  else if (button === 'regenerateMarkers') regenerateMarkers(event);
-  else if (button === 'regenerateZones') regenerateZones(event);
+  else if (button === "regenerateEmblems") regenerateEmblems();
+  else if (button === "regenerateReligions") regenerateReligions();
+  else if (button === "regenerateCultures") regenerateCultures();
+  else if (button === "regenerateMilitary") regenerateMilitary();
+  else if (button === "regenerateIce") regenerateIce();
+  else if (button === "regenerateMarkers") regenerateMarkers();
+  else if (button === "regenerateZones") regenerateZones(event);
 }
 
 async function openEmblemEditor() {
@@ -430,23 +436,11 @@ function regenerateIce() {
   drawIce();
 }
 
-function regenerateMarkers(event) {
-  if (isCtrlClick(event)) prompt("Please provide markers number multiplier", {default: 1, step: 0.01, min: 0, max: 100}, v => addNumberOfMarkers(v));
-  else addNumberOfMarkers();
-
-  function addNumberOfMarkers(multiplier) {
-    pack.markers = pack.markers.filter(marker => {
-      if (marker.lock) return true;
-      document.getElementById(`marker${marker.i}`)?.remove();
-      const index = notes.findIndex(note => note.id === marker.id);
-      if (index != -1) notes.splice(index, 1);
-      return false;
-    });
-
-    Markers.regenerate(multiplier);
-    turnButtonOn("toggleMarkers");
-    drawMarkers();
-  }
+function regenerateMarkers() {
+  Markers.regenerate();
+  turnButtonOn("toggleMarkers");
+  drawMarkers();
+  if (document.getElementById("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
 }
 
 function regenerateZones(event) {
