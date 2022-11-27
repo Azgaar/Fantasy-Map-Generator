@@ -726,7 +726,7 @@ async function generate(options) {
     BurgsAndStates.defineStateForms();
     BurgsAndStates.generateProvinces();
     BurgsAndStates.defineBurgFeatures();
-    BurgsAndStates.defineTaxes();
+    // BurgsAndStates.defineTaxes();
 
     drawStates();
     drawBorders();

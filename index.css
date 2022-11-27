@@ -712,17 +712,6 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   margin: 0.16em 0.12em;
 }
 
-#toolsContent div {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  margin: 0.2em 0;
-}
-
-#toolsContent button {
-  padding: 0.35em 0;
-  margin: 0.16em 0.12em;
-}
-
 #mapLayers {
   display: inline-block;
   padding: 0;
@@ -1227,7 +1216,7 @@ i.resetButton:active {
   border-radius: 10%;
 }
 
-.ui-dialog input[type='range'] {
+.ui-dialog input[type="range"] {
   padding: 0;
   height: 2px;
   background: #d4d4d4;
@@ -1237,7 +1226,7 @@ i.resetButton:active {
   -webkit-appearance: none;
 }
 
-.ui-dialog input[type='range']::-webkit-slider-thumb {
+.ui-dialog input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   border-radius: 15%;
   width: 1em;
@@ -1247,7 +1236,7 @@ i.resetButton:active {
   cursor: pointer;
 }
 
-.ui-dialog input[type='range']::-moz-range-thumb {
+.ui-dialog input[type="range"]::-moz-range-thumb {
   appearance: none;
   border-radius: 15%;
   width: 1em;
@@ -1463,7 +1452,7 @@ div.states .icon-resize-vertical {
   font-size: 0.9em;
 }
 
-div.states > [class^='icon-'] {
+div.states > [class^="icon-"] {
   color: #6e5e66;
   padding: 0;
 }
@@ -1650,15 +1639,6 @@ div.states > div.resourceBonus > span.icon-male {
   line-height: 1.4em;
 }
 
-#burgBody {
-  display: flex;
-  padding-bottom: 0.3em;
-}
-
-#burgBody > div {
-  width: 18em;
-}
-
 #burgBody div.label {
   display: inline-block;
   width: 6em;
@@ -1673,7 +1653,7 @@ div.states > div.resourceBonus > span.icon-male {
 #burgBody > div > div,
 #riverBody > div,
 #lakeBody > div {
-  line-height: 1.8em;
+  padding: 0.1em;
 }
 
 #riverBody div.label,
@@ -1701,7 +1681,7 @@ div.states > div.resourceBonus > span.icon-male {
   width: 5em;
 }
 
-#regimentBody input[type='number'] {
+#regimentBody input[type="number"] {
   width: 5em;
 }
 
@@ -1912,7 +1892,7 @@ div.editorLine {
   width: 9em;
 }
 
-#unitsBody > div > input[type='range'] {
+#unitsBody > div > input[type="range"] {
   width: 7em;
 }
 
@@ -1970,7 +1950,7 @@ div.editorLine {
 }
 
 #ruler text {
-  font-family: 'Georgia';
+  font-family: "Georgia";
   fill: #3d3d3d;
   text-anchor: middle;
   text-shadow: 0 0 4px white;
@@ -2005,7 +1985,7 @@ div.editorLine {
   border: 1px solid #d4d4d4;
 }
 
-#militaryOptionsTable input[type='number'] {
+#militaryOptionsTable input[type="number"] {
   width: 4em;
 }
 
@@ -2042,7 +2022,7 @@ ul.share-buttons img {
   width: 2em;
 }
 
-input[type='checkbox'] {
+input[type="checkbox"] {
   display: none;
 }
 
@@ -2052,7 +2032,7 @@ input[type='checkbox'] {
 }
 
 .checkbox + .checkbox-label:before {
-  content: '';
+  content: "";
   display: inline-block;
   vertical-align: middle;
   width: 0.6em;
@@ -2067,7 +2047,7 @@ input[type='checkbox'] {
 .checkbox:checked + .checkbox-label:before {
   line-height: 0.8em;
   font-weight: bold;
-  content: '✓';
+  content: "✓";
   color: #333333;
 }
 
@@ -2176,12 +2156,8 @@ svg.button {
   width: 4em;
 }
 
-#reliefEditor input[type='range'] {
+#reliefEditor input[type="range"] {
   width: 16em;
-}
-
-#reliefEditor input[type='number'] {
-  width: 3em;
 }
 
 #reliefIconsDiv {
@@ -2262,7 +2238,7 @@ svg.button {
   padding: 2px 0;
 }
 
-#worldControls input[type='number'] {
+#worldControls input[type="number"] {
   border: 1px solid #e5e5e5;
   padding: 0px;
   width: 3.2em;
