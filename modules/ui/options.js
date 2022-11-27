@@ -1,41 +1,41 @@
 // UI module to control the options (preferences)
-'use strict';
+"use strict";
 
-$('#optionsContainer').draggable({handle: '.drag-trigger', snap: 'svg', snapMode: 'both'});
-$('#exitCustomization').draggable({handle: 'div'});
-$('#mapLayers').disableSelection();
+$("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
+$("#exitCustomization").draggable({handle: "div"});
+$("#mapLayers").disableSelection();
 
 // remove glow if tip is aknowledged
 if (stored("disable_click_arrow_tooltip")) {
   clearMainTip();
-  optionsTrigger.classList.remove('glow');
+  optionsTrigger.classList.remove("glow");
 }
 
 // Show options pane on trigger click
 function showOptions(event) {
   if (!stored("disable_click_arrow_tooltip")) {
     clearMainTip();
-    localStorage.setItem('disable_click_arrow_tooltip', true);
-    optionsTrigger.classList.remove('glow');
+    localStorage.setItem("disable_click_arrow_tooltip", true);
+    optionsTrigger.classList.remove("glow");
   }
 
-  regenerate.style.display = 'none';
-  document.getElementById('options').style.display = 'block';
-  optionsTrigger.style.display = 'none';
+  regenerate.style.display = "none";
+  document.getElementById("options").style.display = "block";
+  optionsTrigger.style.display = "none";
 
   if (event) event.stopPropagation();
 }
 
 // Hide options pane on trigger click
 function hideOptions(event) {
-  document.getElementById('options').style.display = 'none';
-  optionsTrigger.style.display = 'block';
+  document.getElementById("options").style.display = "none";
+  optionsTrigger.style.display = "block";
   if (event) event.stopPropagation();
 }
 
 // To toggle options on hotkey press
 function toggleOptions(event) {
-  if (document.getElementById('options').style.display === 'none') showOptions(event);
+  if (document.getElementById("options").style.display === "none") showOptions(event);
   else hideOptions(event);
 }
 
@@ -158,15 +158,15 @@ optionsContent.addEventListener("click", function (event) {
 
 function mapSizeInputChange() {
   changeMapSize();
-  localStorage.setItem('mapWidth', mapWidthInput.value);
-  localStorage.setItem('mapHeight', mapHeightInput.value);
+  localStorage.setItem("mapWidth", mapWidthInput.value);
+  localStorage.setItem("mapHeight", mapHeightInput.value);
 }
 
 // change svg size on manual size change or window resize, do not change graph size
 function changeMapSize() {
   svgWidth = Math.min(+mapWidthInput.value, window.innerWidth);
   svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
-  svg.attr('width', svgWidth).attr('height', svgHeight);
+  svg.attr("width", svgWidth).attr("height", svgHeight);
 
   const maxWidth = Math.max(+mapWidthInput.value, graphWidth);
   const maxHeight = Math.max(+mapHeightInput.value, graphHeight);
@@ -207,8 +207,8 @@ function toggleFullscreen() {
   if (mapWidthInput.value != window.innerWidth || mapHeightInput.value != window.innerHeight) {
     mapWidthInput.value = window.innerWidth;
     mapHeightInput.value = window.innerHeight;
-    localStorage.removeItem('mapHeight');
-    localStorage.removeItem('mapWidth');
+    localStorage.removeItem("mapHeight");
+    localStorage.removeItem("mapWidth");
   } else {
     mapWidthInput.value = graphWidth;
     mapHeightInput.value = graphHeight;
@@ -236,7 +236,7 @@ const voiceInterval = setInterval(function () {
   if (voices.length) clearInterval(voiceInterval);
   else return;
 
-  const select = document.getElementById('speakerVoice');
+  const select = document.getElementById("speakerVoice");
   voices.forEach((voice, i) => {
     select.options.add(new Option(voice.name, i, false));
   });
@@ -250,7 +250,7 @@ function testSpeaker() {
   const speaker = new SpeechSynthesisUtterance(text);
   const voices = speechSynthesis.getVoices();
   if (voices.length) {
-    const voiceId = +document.getElementById('speakerVoice').value;
+    const voiceId = +document.getElementById("speakerVoice").value;
     speaker.voice = voices[voiceId];
   }
   speechSynthesis.speak(speaker);
@@ -349,9 +349,9 @@ function changeCultureSet() {
 }
 
 function changeEmblemShape(emblemShape) {
-  const image = document.getElementById('emblemShapeImage');
+  const image = document.getElementById("emblemShapeImage");
   const shapePath = window.COArenderer && COArenderer.shieldPaths[emblemShape];
-  shapePath ? image.setAttribute('d', shapePath) : image.removeAttribute('d');
+  shapePath ? image.setAttribute("d", shapePath) : image.removeAttribute("d");
 
   const specificShape = ["culture", "state", "random"].includes(emblemShape) ? null : emblemShape;
   if (emblemShape === "random")
@@ -364,25 +364,25 @@ function changeEmblemShape(emblemShape) {
     COArenderer.trigger(id, coa);
   };
 
-  pack.states.forEach((state) => {
-    if (!state.i || state.removed || !state.coa || state.coa === 'custom') return;
+  pack.states.forEach(state => {
+    if (!state.i || state.removed || !state.coa || state.coa === "custom") return;
     const newShield = specificShape || COA.getShield(state.culture, null);
     if (newShield === state.coa.shield) return;
     state.coa.shield = newShield;
-    rerenderCOA('stateCOA' + state.i, state.coa);
+    rerenderCOA("stateCOA" + state.i, state.coa);
   });
 
-  pack.provinces.forEach((province) => {
-    if (!province.i || province.removed || !province.coa || province.coa === 'custom') return;
+  pack.provinces.forEach(province => {
+    if (!province.i || province.removed || !province.coa || province.coa === "custom") return;
     const culture = pack.cells.culture[province.center];
     const newShield = specificShape || COA.getShield(culture, province.state);
     if (newShield === province.coa.shield) return;
     province.coa.shield = newShield;
-    rerenderCOA('provinceCOA' + province.i, province.coa);
+    rerenderCOA("provinceCOA" + province.i, province.coa);
   });
 
-  pack.burgs.forEach((burg) => {
-    if (!burg.i || burg.removed || !burg.coa || burg.coa === 'custom') return;
+  pack.burgs.forEach(burg => {
+    if (!burg.i || burg.removed || !burg.coa || burg.coa === "custom") return;
     const newShield = specificShape || COA.getShield(burg.culture, burg.state);
     if (newShield === burg.coa.shield) return;
     burg.coa.shield = newShield;
@@ -521,8 +521,8 @@ function applyStoredOptions() {
 
   // search params overwrite stored and default options
   const params = new URL(window.location.href).searchParams;
-  const width = +params.get('width');
-  const height = +params.get('height');
+  const width = +params.get("width");
+  const height = +params.get("height");
   if (width) mapWidthInput.value = width;
   if (height) mapHeightInput.value = height;
 
@@ -647,7 +647,7 @@ function changeYear() {
 
 function changeEra() {
   if (!eraInput.value) return;
-  lock('era');
+  lock("era");
   options.era = eraInput.value;
 }
 
@@ -810,7 +810,7 @@ function loadURL() {
           return;
         }
         loadMapFromURL(value);
-        $(this).dialog('close');
+        $(this).dialog("close");
       },
       Cancel: function () {
         $(this).dialog("close");
@@ -822,7 +822,7 @@ function loadURL() {
 // load map
 document.getElementById("mapToLoad").addEventListener("change", function () {
   const fileToLoad = this.files[0];
-  this.value = '';
+  this.value = "";
   closeDialogs();
   uploadMap(fileToLoad);
 });
@@ -904,30 +904,30 @@ function updateTilesOptions() {
 }
 
 // View mode
-viewMode.addEventListener('click', changeViewMode);
+viewMode.addEventListener("click", changeViewMode);
 function changeViewMode(event) {
   const button = event.target;
-  if (button.tagName !== 'BUTTON') return;
-  const pressed = button.classList.contains('pressed');
+  if (button.tagName !== "BUTTON") return;
+  const pressed = button.classList.contains("pressed");
   enterStandardView();
 
-  if (!pressed && button.id !== 'viewStandard') {
-    viewStandard.classList.remove('pressed');
-    button.classList.add('pressed');
+  if (!pressed && button.id !== "viewStandard") {
+    viewStandard.classList.remove("pressed");
+    button.classList.add("pressed");
     enter3dView(button.id);
   }
 }
 
 function enterStandardView() {
-  viewMode.querySelectorAll('.pressed').forEach((button) => button.classList.remove('pressed'));
-  heightmap3DView.classList.remove('pressed');
-  viewStandard.classList.add('pressed');
+  viewMode.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
+  heightmap3DView.classList.remove("pressed");
+  viewStandard.classList.add("pressed");
 
-  if (!document.getElementById('canvas3d')) return;
+  if (!document.getElementById("canvas3d")) return;
   ThreeD.stop();
-  document.getElementById('canvas3d').remove();
-  if (options3dUpdate.offsetParent) $('#options3d').dialog('close');
-  if (preview3d.offsetParent) $('#preview3d').dialog('close');
+  document.getElementById("canvas3d").remove();
+  if (options3dUpdate.offsetParent) $("#options3d").dialog("close");
+  if (preview3d.offsetParent) $("#preview3d").dialog("close");
 }
 
 async function enter3dView(type) {
@@ -935,21 +935,21 @@ async function enter3dView(type) {
   canvas.id = "canvas3d";
   canvas.dataset.type = type;
 
-  if (type === 'heightmap3DView') {
+  if (type === "heightmap3DView") {
     canvas.width = parseFloat(preview3d.style.width) || graphWidth / 3;
     canvas.height = canvas.width / (graphWidth / graphHeight);
-    canvas.style.display = 'block';
+    canvas.style.display = "block";
   } else {
     canvas.width = svgWidth;
     canvas.height = svgHeight;
-    canvas.style.position = 'absolute';
-    canvas.style.display = 'none';
+    canvas.style.position = "absolute";
+    canvas.style.display = "none";
   }
 
   const started = await ThreeD.create(canvas, type);
   if (!started) return;
 
-  canvas.style.display = 'block';
+  canvas.style.display = "block";
   canvas.onmouseenter = () => {
     const help =
       "Left mouse to change angle, middle mouse / mousewheel to zoom, right mouse to pan. <b>O</b> to toggle options";
@@ -972,7 +972,7 @@ async function enter3dView(type) {
 }
 
 function resize3d() {
-  const canvas = document.getElementById('canvas3d');
+  const canvas = document.getElementById("canvas3d");
   canvas.width = parseFloat(preview3d.style.width);
   canvas.height = parseFloat(preview3d.style.height) - 2;
   ThreeD.redraw();
@@ -995,9 +995,9 @@ function toggle3dOptions() {
   if (modules.options3d) return;
   modules.options3d = true;
 
-  document.getElementById('options3dUpdate').addEventListener('click', ThreeD.update);
-  document.getElementById('options3dSave').addEventListener('click', ThreeD.saveScreenshot);
-  document.getElementById('options3dOBJSave').addEventListener('click', ThreeD.saveOBJ);
+  document.getElementById("options3dUpdate").addEventListener("click", ThreeD.update);
+  document.getElementById("options3dSave").addEventListener("click", ThreeD.saveScreenshot);
+  document.getElementById("options3dOBJSave").addEventListener("click", ThreeD.saveOBJ);
 
   document.getElementById("options3dScaleRange").addEventListener("input", changeHeightScale);
   document.getElementById("options3dScaleNumber").addEventListener("change", changeHeightScale);
@@ -1030,7 +1030,7 @@ function toggle3dOptions() {
     options3dGlobeRotationRange.value = options3dGlobeRotationNumber.value = ThreeD.options.rotateGlobe;
     options3dMeshLabels3d.value = ThreeD.options.labels3d;
     options3dMeshSkyMode.value = ThreeD.options.extendedWater;
-    options3dColorSection.style.display = ThreeD.options.extendedWater ? 'block' : 'none';
+    options3dColorSection.style.display = ThreeD.options.extendedWater ? "block" : "none";
     options3dMeshSky.value = ThreeD.options.skyColor;
     options3dMeshWater.value = ThreeD.options.waterColor;
     options3dGlobeResolution.value = ThreeD.options.resolution;
@@ -1065,7 +1065,7 @@ function toggle3dOptions() {
 
   function toggleSkyMode() {
     const hide = ThreeD.options.extendedWater;
-    options3dColorSection.style.display = hide ? 'none' : 'block';
+    options3dColorSection.style.display = hide ? "none" : "block";
     ThreeD.toggleSky();
   }
 

@@ -1,14 +1,14 @@
-'use strict';
+"use strict";
 function overviewMilitary() {
   if (customization) return;
-  closeDialogs('#militaryOverview, .stable');
-  if (!layerIsOn('toggleStates')) toggleStates();
-  if (!layerIsOn('toggleBorders')) toggleBorders();
-  if (!layerIsOn('toggleMilitary')) toggleMilitary();
+  closeDialogs("#militaryOverview, .stable");
+  if (!layerIsOn("toggleStates")) toggleStates();
+  if (!layerIsOn("toggleBorders")) toggleBorders();
+  if (!layerIsOn("toggleMilitary")) toggleMilitary();
 
-  const body = document.getElementById('militaryBody');
+  const body = document.getElementById("militaryBody");
   addLines();
-  $('#militaryOverview').dialog();
+  $("#militaryOverview").dialog();
 
   if (modules.overviewMilitary) return;
   modules.overviewMilitary = true;
@@ -22,13 +22,13 @@ function overviewMilitary() {
   });
 
   // add listeners
-  document.getElementById('militaryOverviewRefresh').addEventListener('click', addLines);
-  document.getElementById('militaryPercentage').addEventListener('click', togglePercentageMode);
-  document.getElementById('militaryOptionsButton').addEventListener('click', militaryCustomize);
-  document.getElementById('militaryRegimentsList').addEventListener('click', () => overviewRegiments(-1));
-  document.getElementById('militaryOverviewRecalculate').addEventListener('click', militaryRecalculate);
-  document.getElementById('militaryExport').addEventListener('click', downloadMilitaryData);
-  document.getElementById('militaryWiki').addEventListener('click', () => wiki('Military-Forces'));
+  document.getElementById("militaryOverviewRefresh").addEventListener("click", addLines);
+  document.getElementById("militaryPercentage").addEventListener("click", togglePercentageMode);
+  document.getElementById("militaryOptionsButton").addEventListener("click", militaryCustomize);
+  document.getElementById("militaryRegimentsList").addEventListener("click", () => overviewRegiments(-1));
+  document.getElementById("militaryOverviewRecalculate").addEventListener("click", militaryRecalculate);
+  document.getElementById("militaryExport").addEventListener("click", downloadMilitaryData);
+  document.getElementById("militaryWiki").addEventListener("click", () => wiki("Military-Forces"));
 
   body.addEventListener("change", function (ev) {
     const el = ev.target,
@@ -65,9 +65,9 @@ function overviewMilitary() {
 
   // add line for each state
   function addLines() {
-    body.innerHTML = '';
-    let lines = '';
-    const states = pack.states.filter((s) => s.i && !s.removed);
+    body.innerHTML = "";
+    let lines = "";
+    const states = pack.states.filter(s => s.i && !s.removed);
 
     for (const s of states) {
       const population = rn((s.rural + s.urban * urbanization) * populationRate);
@@ -75,8 +75,8 @@ function overviewMilitary() {
       const total = options.military.reduce((s, u) => s + getForces(u) * u.crew, 0);
       const rate = (total / population) * 100;
 
-      const sortData = options.military.map((u) => `data-${u.name}="${getForces(u)}"`).join(' ');
-      const lineData = options.military.map((u) => `<div data-type="${u.name}" data-tip="State ${u.name} units number">${getForces(u)}</div>`).join(' ');
+      const sortData = options.military.map(u => `data-${u.name}="${getForces(u)}"`).join(" ");
+      const lineData = options.military.map(u => `<div data-type="${u.name}" data-tip="State ${u.name} units number">${getForces(u)}</div>`).join(" ");
 
       lines += /* html */ `<div
         class="states"
@@ -105,12 +105,12 @@ function overviewMilitary() {
         <span data-tip="Show regiments list" class="icon-list-bullet pointer"></span>
       </div>`;
     }
-    body.insertAdjacentHTML('beforeend', lines);
+    body.insertAdjacentHTML("beforeend", lines);
     updateFooter();
 
     // add listeners
-    body.querySelectorAll('div.states').forEach((el) => el.addEventListener('mouseenter', (ev) => stateHighlightOn(ev)));
-    body.querySelectorAll('div.states').forEach((el) => el.addEventListener('mouseleave', (ev) => stateHighlightOff(ev)));
+    body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => stateHighlightOn(ev)));
+    body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => stateHighlightOff(ev)));
 
     if (body.dataset.type === "percentage") {
       body.dataset.type = "absolute";
@@ -137,7 +137,7 @@ function overviewMilitary() {
     const total = (line.dataset.total = options.military.reduce((s, u) => s + getForces(u) * u.crew, 0));
     const rate = (line.dataset.rate = (total / population) * 100);
     line.querySelector("div[data-type='total']").innerHTML = si(total);
-    line.querySelector("div[data-type='rate']").innerHTML = rn(rate, 2) + '%';
+    line.querySelector("div[data-type='rate']").innerHTML = rn(rate, 2) + "%";
 
     updateFooter();
   }
@@ -148,8 +148,8 @@ function overviewMilitary() {
     const total = d3.sum(lines.map(el => el.dataset.total));
     militaryFooterForcesTotal.innerHTML = si(total);
     militaryFooterForces.innerHTML = si(total / statesNumber);
-    militaryFooterRate.innerHTML = rn(d3.sum(lines.map((el) => el.dataset.rate)) / statesNumber, 2) + '%';
-    militaryFooterAlert.innerHTML = rn(d3.sum(lines.map((el) => el.dataset.alert)) / statesNumber, 2);
+    militaryFooterRate.innerHTML = rn(d3.sum(lines.map(el => el.dataset.rate)) / statesNumber, 2) + "%";
+    militaryFooterAlert.innerHTML = rn(d3.sum(lines.map(el => el.dataset.alert)) / statesNumber, 2);
   }
 
   function stateHighlightOn(event) {
@@ -207,7 +207,7 @@ function overviewMilitary() {
 
       const total = function (type) {
         if (cache[type]) cache[type];
-        cache[type] = d3.sum(array.map((el) => +el.dataset[type]));
+        cache[type] = d3.sum(array.map(el => +el.dataset[type]));
         return cache[type];
       };
 
@@ -219,7 +219,7 @@ function overviewMilitary() {
         });
       });
     } else {
-      body.dataset.type = 'absolute';
+      body.dataset.type = "absolute";
       addLines();
     }
   }
@@ -388,11 +388,11 @@ function overviewMilitary() {
       const unitLines = Array.from(tableBody.querySelectorAll("tr"));
       const names = unitLines.map(r => r.querySelector("input").value.replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, "_"));
       if (new Set(names).size !== names.length) {
-        tip('All units should have unique names', false, 'error');
+        tip("All units should have unique names", false, "error");
         return;
       }
 
-      $('#militaryOptions').dialog('close');
+      $("#militaryOptions").dialog("close");
       options.military = unitLines.map((r, i) => {
         const elements = Array.from(r.querySelectorAll("input, button, select"));
         const [icon, name, biomes, states, cultures, religions, rural, urban, crew, power, type, separate] = elements.map(el => {
@@ -411,7 +411,7 @@ function overviewMilitary() {
         if (religions) unit.religions = religions;
         return unit;
       });
-      localStorage.setItem('military', JSON.stringify(options.military));
+      localStorage.setItem("military", JSON.stringify(options.military));
       Military.generate();
       updateHeaders();
       addLines();
@@ -450,7 +450,7 @@ function overviewMilitary() {
       data += el.dataset.alert + "\n";
     });
 
-    const name = getFileName('Military') + '.csv';
+    const name = getFileName("Military") + ".csv";
     downloadFile(data, name);
   }
 }

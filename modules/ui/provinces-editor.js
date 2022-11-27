@@ -1,14 +1,14 @@
-'use strict';
+"use strict";
 function editProvinces() {
   if (customization) return;
-  closeDialogs('#provincesEditor, .stable');
-  if (!layerIsOn('toggleProvinces')) toggleProvinces();
-  if (!layerIsOn('toggleBorders')) toggleBorders();
-  if (layerIsOn('toggleStates')) toggleStates();
-  if (layerIsOn('toggleCultures')) toggleCultures();
+  closeDialogs("#provincesEditor, .stable");
+  if (!layerIsOn("toggleProvinces")) toggleProvinces();
+  if (!layerIsOn("toggleBorders")) toggleBorders();
+  if (layerIsOn("toggleStates")) toggleStates();
+  if (layerIsOn("toggleCultures")) toggleCultures();
 
-  provs.selectAll('text').call(d3.drag().on('drag', dragLabel)).classed('draggable', true);
-  const body = document.getElementById('provincesBodySection');
+  provs.selectAll("text").call(d3.drag().on("drag", dragLabel)).classed("draggable", true);
+  const body = document.getElementById("provincesBodySection");
   refreshProvincesEditor();
 
   if (modules.editProvinces) return;
@@ -91,14 +91,14 @@ function editProvinces() {
       provinces[p].burgs.push(cells.burg[i]);
     }
 
-    provinces.forEach((p) => {
+    provinces.forEach(p => {
       if (!p.i || p.removed) return;
       if (!p.burg && p.burgs.length) p.burg = p.burgs[0];
     });
   }
 
   function updateFilter() {
-    const stateFilter = document.getElementById('provincesFilterState');
+    const stateFilter = document.getElementById("provincesFilterState");
     const selectedState = stateFilter.value || 1;
     stateFilter.options.length = 0; // remove all options
     stateFilter.options.add(new Option(`all`, -1, false, selectedState == -1));
@@ -175,10 +175,10 @@ function editProvinces() {
     provincesFooterArea.dataset.area = totalArea;
     provincesFooterPopulation.dataset.population = totalPopulation;
 
-    body.querySelectorAll('div.states').forEach((el) => {
-      el.addEventListener('click', selectProvinceOnLineClick);
-      el.addEventListener('mouseenter', (ev) => provinceHighlightOn(ev));
-      el.addEventListener('mouseleave', (ev) => provinceHighlightOff(ev));
+    body.querySelectorAll("div.states").forEach(el => {
+      el.addEventListener("click", selectProvinceOnLineClick);
+      el.addEventListener("mouseenter", ev => provinceHighlightOn(ev));
+      el.addEventListener("mouseleave", ev => provinceHighlightOff(ev));
     });
 
     if (body.dataset.type === "percentage") {
@@ -186,7 +186,7 @@ function editProvinces() {
       togglePercentageMode();
     }
     applySorting(provincesHeader);
-    $('#provincesEditor').dialog({width: fitContent()});
+    $("#provincesEditor").dialog({width: fitContent()});
   }
 
   function getCapitalOptions(burgs, capital) {
@@ -198,9 +198,9 @@ function editProvinces() {
   function provinceHighlightOn(event) {
     const province = +event.target.dataset.id;
     const el = body.querySelector(`div[data-id='${province}']`);
-    if (el) el.classList.add('active');
+    if (el) el.classList.add("active");
 
-    if (!layerIsOn('toggleProvinces')) return;
+    if (!layerIsOn("toggleProvinces")) return;
     if (customization) return;
     const animate = d3.transition().duration(2000).ease(d3.easeSinIn);
     provs
@@ -214,7 +214,7 @@ function editProvinces() {
   function provinceHighlightOff(event) {
     const province = +event.target.dataset.id;
     const el = body.querySelector(`div[data-id='${province}']`);
-    if (el) el.classList.remove('active');
+    if (el) el.classList.remove("active");
 
     if (!layerIsOn("toggleProvinces")) return;
     provs
@@ -370,7 +370,7 @@ function editProvinces() {
     const rural = rn(p.rural * populationRate);
     const urban = rn(p.urban * populationRate * urbanization);
     const total = rural + urban;
-    const l = (n) => Number(n).toLocaleString();
+    const l = n => Number(n).toLocaleString();
 
     alertMessage.innerHTML = /* html */ ` Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
       <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${p.burgs.length ? "" : "disabled"} />
@@ -450,11 +450,11 @@ function editProvinces() {
 
           unfog("focusProvince" + p);
 
-      const coaId = 'provinceCOA' + p;
-      if (document.getElementById(coaId)) document.getElementById(coaId).remove();
-      emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
+          const coaId = "provinceCOA" + p;
+          if (document.getElementById(coaId)) document.getElementById(coaId).remove();
+          emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
 
-      pack.provinces[p] = {i: p, removed: true};
+          pack.provinces[p] = {i: p, removed: true};
 
           const g = provs.select("#provincesBody");
           g.select("#province" + p).remove();
@@ -497,41 +497,41 @@ function editProvinces() {
     modules.editProvinceName = true;
 
     // add listeners
-    document.getElementById('provinceNameEditorShortCulture').addEventListener('click', regenerateShortNameCuture);
-    document.getElementById('provinceNameEditorShortRandom').addEventListener('click', regenerateShortNameRandom);
-    document.getElementById('provinceNameEditorAddForm').addEventListener('click', addCustomForm);
-    document.getElementById('provinceNameEditorFullRegenerate').addEventListener('click', regenerateFullName);
+    document.getElementById("provinceNameEditorShortCulture").addEventListener("click", regenerateShortNameCuture);
+    document.getElementById("provinceNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
+    document.getElementById("provinceNameEditorAddForm").addEventListener("click", addCustomForm);
+    document.getElementById("provinceNameEditorFullRegenerate").addEventListener("click", regenerateFullName);
 
     function regenerateShortNameCuture() {
       const province = +provinceNameEditor.dataset.province;
       const culture = pack.cells.culture[pack.provinces[province].center];
       const name = Names.getState(Names.getCultureShort(culture), culture);
-      document.getElementById('provinceNameEditorShort').value = name;
+      document.getElementById("provinceNameEditorShort").value = name;
     }
 
     function regenerateShortNameRandom() {
       const base = rand(nameBases.length - 1);
       const name = Names.getState(Names.getBase(base), undefined, base);
-      document.getElementById('provinceNameEditorShort').value = name;
+      document.getElementById("provinceNameEditorShort").value = name;
     }
 
     function addCustomForm() {
       const value = provinceNameEditorCustomForm.value;
-      const displayed = provinceNameEditorCustomForm.style.display === 'inline-block';
-      provinceNameEditorCustomForm.style.display = displayed ? 'none' : 'inline-block';
-      provinceNameEditorSelectForm.style.display = displayed ? 'inline-block' : 'none';
+      const displayed = provinceNameEditorCustomForm.style.display === "inline-block";
+      provinceNameEditorCustomForm.style.display = displayed ? "none" : "inline-block";
+      provinceNameEditorSelectForm.style.display = displayed ? "inline-block" : "none";
       if (displayed) applyOption(provinceNameEditorSelectForm, value);
     }
 
     function regenerateFullName() {
-      const short = document.getElementById('provinceNameEditorShort').value;
-      const form = document.getElementById('provinceNameEditorSelectForm').value;
-      document.getElementById('provinceNameEditorFull').value = getFullName();
+      const short = document.getElementById("provinceNameEditorShort").value;
+      const form = document.getElementById("provinceNameEditorSelectForm").value;
+      document.getElementById("provinceNameEditorFull").value = getFullName();
 
       function getFullName() {
         if (!form) return short;
-        if (!short && form) return 'The ' + form;
-        return short + ' ' + form;
+        if (!short && form) return "The " + form;
+        return short + " " + form;
       }
     }
 
@@ -551,8 +551,8 @@ function editProvinces() {
   }
 
   function togglePercentageMode() {
-    if (body.dataset.type === 'absolute') {
-      body.dataset.type = 'percentage';
+    if (body.dataset.type === "absolute") {
+      body.dataset.type = "percentage";
       const totalArea = +provincesFooterArea.dataset.area;
       const totalPopulation = +provincesFooterPopulation.dataset.population;
 
@@ -561,7 +561,7 @@ function editProvinces() {
         el.querySelector(".culturePopulation").innerHTML = rn((+el.dataset.population / totalPopulation) * 100) + "%";
       });
     } else {
-      body.dataset.type = 'absolute';
+      body.dataset.type = "absolute";
       provincesEditorAddLines();
     }
   }
@@ -628,7 +628,7 @@ function editProvinces() {
       .on("mouseleave", d => hideInfo(event, d));
 
     function showInfo(ev, d) {
-      d3.select(ev.target).select('rect').classed('selected', 1);
+      d3.select(ev.target).select("rect").classed("selected", 1);
       const name = d.data.fullName;
       const state = pack.states[d.data.state].fullName;
 
@@ -651,9 +651,9 @@ function editProvinces() {
 
     function hideInfo(ev) {
       provinceHighlightOff(ev);
-      if (!document.getElementById('provinceInfo')) return;
-      provinceInfo.innerHTML = '&#8205;';
-      d3.select(ev.target).select('rect').classed('selected', 0);
+      if (!document.getElementById("provinceInfo")) return;
+      provinceInfo.innerHTML = "&#8205;";
+      d3.select(ev.target).select("rect").classed("selected", 0);
     }
 
     node
@@ -677,7 +677,7 @@ function editProvinces() {
       node.select("text").each(function (d) {
         this.innerHTML = d.data.name;
         let b = this.getBBox();
-        if (b.y + b.height > d.y1 + 1) this.innerHTML = '';
+        if (b.y + b.height > d.y1 + 1) this.innerHTML = "";
 
         for (let i = 0; i < 15 && b.width > 0 && b.x + b.width > d.x1; i++) {
           if (this.innerHTML.length < 3) {
@@ -730,10 +730,10 @@ function editProvinces() {
   }
 
   function toggleLabels() {
-    const hidden = provs.select('#provinceLabels').style('display') === 'none';
-    provs.select('#provinceLabels').style('display', `${hidden ? 'block' : 'none'}`);
-    provs.attr('data-labels', +hidden);
-    provs.selectAll('text').call(d3.drag().on('drag', dragLabel)).classed('draggable', true);
+    const hidden = provs.select("#provinceLabels").style("display") === "none";
+    provs.select("#provinceLabels").style("display", `${hidden ? "block" : "none"}`);
+    provs.attr("data-labels", +hidden);
+    provs.selectAll("text").call(d3.drag().on("drag", dragLabel)).classed("draggable", true);
   }
 
   function triggerProvincesRelease() {
@@ -765,8 +765,8 @@ function editProvinces() {
   }
 
   function enterProvincesManualAssignent() {
-    if (!layerIsOn('toggleProvinces')) toggleProvinces();
-    if (!layerIsOn('toggleBorders')) toggleBorders();
+    if (!layerIsOn("toggleProvinces")) toggleProvinces();
+    if (!layerIsOn("toggleBorders")) toggleBorders();
 
     // make province and state borders more visible
     provinceBorders.select("path").attr("stroke", "#000").attr("stroke-width", 0.5);
@@ -788,15 +788,15 @@ function editProvinces() {
     tip("Click on a province to select, drag the circle to change province", true);
     viewbox.style("cursor", "crosshair").on("click", selectProvinceOnMapClick).call(d3.drag().on("start", dragBrush)).on("touchmove mousemove", moveBrush);
 
-    body.querySelector('div').classList.add('selected');
-    selectProvince(+body.querySelector('div').dataset.id);
+    body.querySelector("div").classList.add("selected");
+    selectProvince(+body.querySelector("div").dataset.id);
   }
 
   function selectProvinceOnLineClick() {
     if (customization !== 11) return;
-    if (this.parentNode.id !== 'provincesBodySection') return;
-    body.querySelector('div.selected').classList.remove('selected');
-    this.classList.add('selected');
+    if (this.parentNode.id !== "provincesBodySection") return;
+    body.querySelector("div.selected").classList.remove("selected");
+    this.classList.add("selected");
     selectProvince(+this.dataset.id);
   }
 
@@ -814,8 +814,8 @@ function editProvinces() {
       return;
     }
 
-    body.querySelector('div.selected').classList.remove('selected');
-    editorLine.classList.add('selected');
+    body.querySelector("div.selected").classList.remove("selected");
+    editorLine.classList.add("selected");
     selectProvince(province);
   }
 
@@ -828,7 +828,7 @@ function editProvinces() {
   function dragBrush() {
     const r = +provincesManuallyBrush.value;
 
-    d3.event.on('drag', () => {
+    d3.event.on("drag", () => {
       if (!d3.event.dx && !d3.event.dy) return;
       const p = d3.mouse(this);
       moveCircle(p[0], p[1], r);
@@ -847,9 +847,9 @@ function editProvinces() {
 
     const provinceNew = +selected.dataset.id;
     const state = pack.provinces[provinceNew].state;
-    const fill = pack.provinces[provinceNew].color || '#ffffff';
+    const fill = pack.provinces[provinceNew].color || "#ffffff";
 
-    selection.forEach((i) => {
+    selection.forEach(i => {
       if (!pack.cells.state[i] || pack.cells.state[i] !== state) return;
       const exists = temp.select("polygon[data-cell='" + i + "']");
       const provinceOld = exists.size() ? +exists.attr("data-province") : pack.cells.province[i];
@@ -864,7 +864,7 @@ function editProvinces() {
       // change of append new element
       if (exists.size()) {
         if (pack.cells.province[i] === provinceNew) exists.remove();
-        else exists.attr('data-province', provinceNew).attr('fill', fill);
+        else exists.attr("data-province", provinceNew).attr("fill", fill);
       } else {
         temp
           .append("polygon")
@@ -903,14 +903,14 @@ function editProvinces() {
 
   function exitProvincesManualAssignment(close) {
     customization = 0;
-    provs.select('#temp').remove();
-    provs.select('#centers').remove();
+    provs.select("#temp").remove();
+    provs.select("#centers").remove();
     removeCircle();
 
     // restore borders style
-    provinceBorders.select('path').attr('stroke', null).attr('stroke-width', null);
-    stateBorders.select('path').attr('stroke', null).attr('stroke-width', null);
-    debug.selectAll('path.selected').remove();
+    provinceBorders.select("path").attr("stroke", null).attr("stroke-width", null);
+    stateBorders.select("path").attr("stroke", null).attr("stroke-width", null);
+    debug.selectAll("path.selected").remove();
 
     document.querySelectorAll("#provincesBottom > *").forEach(el => (el.style.display = "inline-block"));
     document.getElementById("provincesManuallyButtons").style.display = "none";
@@ -923,8 +923,8 @@ function editProvinces() {
 
     restoreDefaultEvents();
     clearMainTip();
-    const selected = body.querySelector('div.selected');
-    if (selected) selected.classList.remove('selected');
+    const selected = body.querySelector("div.selected");
+    if (selected) selected.classList.remove("selected");
   }
 
   function enterAddProvinceMode() {
@@ -969,14 +969,14 @@ function editProvinces() {
     const type = BurgsAndStates.getType(center, parent.port);
     const coa = COA.generate(parent, kinship, P(0.1), type);
     coa.shield = COA.getShield(c, state);
-    COArenderer.add('province', province, coa, point[0], point[1]);
+    COArenderer.add("province", province, coa, point[0], point[1]);
 
     provinces.push({i: province, state, center, burg, name, formName, fullName, color, coa});
 
     cells.province[center] = province;
-    cells.c[center].forEach((c) => {
+    cells.c[center].forEach(c => {
       if (cells.h[c] < 20 || cells.state[c] !== state) return;
-      if (provinces.find((p) => !p.removed && p.center === c)) return;
+      if (provinces.find(p => !p.removed && p.center === c)) return;
       cells.province[c] = province;
     });
 
@@ -985,7 +985,7 @@ function editProvinces() {
     if (!layerIsOn("toggleProvinces")) toggleProvinces();
     else drawProvinces();
     collectStatistics();
-    document.getElementById('provincesFilterState').value = state;
+    document.getElementById("provincesFilterState").value = state;
     provincesEditorAddLines();
   }
 
@@ -998,9 +998,9 @@ function editProvinces() {
   }
 
   function recolorProvinces() {
-    const state = +document.getElementById('provincesFilterState').value;
+    const state = +document.getElementById("provincesFilterState").value;
 
-    pack.provinces.forEach((p) => {
+    pack.provinces.forEach(p => {
       if (!p || p.removed) return;
       if (state !== -1 && p.state !== state) return;
       const stateColor = pack.states[p.state].color;
@@ -1032,7 +1032,7 @@ function editProvinces() {
       data += `${Math.round(provincePack.urban * populationRate * urbanization)}\n`;
     });
 
-    const name = getFileName('Provinces') + '.csv';
+    const name = getFileName("Provinces") + ".csv";
     downloadFile(data, name);
   }
 
@@ -1045,10 +1045,9 @@ function editProvinces() {
         Remove: function () {
           $(this).dialog("close");
 
-      // remove data
-      pack.provinces = [0];
-      pack.cells.province = new Uint16Array(pack.cells.i.length);
-      pack.states.forEach((s) => (s.provinces = []));
+          // remove emblems
+          document.querySelectorAll("[id^='provinceCOA']").forEach(el => el.remove());
+          emblems.select("#provinceEmblems").selectAll("*").remove();
 
           // remove data
           pack.provinces = [0];
@@ -1082,8 +1081,8 @@ function editProvinces() {
   }
 
   function closeProvincesEditor() {
-    provs.selectAll('text').call(d3.drag().on('drag', null)).attr('class', null);
-    if (customization === 11) exitProvincesManualAssignment('close');
+    provs.selectAll("text").call(d3.drag().on("drag", null)).attr("class", null);
+    if (customization === 11) exitProvincesManualAssignment("close");
     if (customization === 12) exitAddProvinceMode();
   }
 }

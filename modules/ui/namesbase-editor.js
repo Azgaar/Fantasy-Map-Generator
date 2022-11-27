@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 function editNamesbase() {
   if (customization) return;
-  closeDialogs('#namesbaseEditor, .stable');
-  $('#namesbaseEditor').dialog();
+  closeDialogs("#namesbaseEditor, .stable");
+  $("#namesbaseEditor").dialog();
 
   if (modules.editNamesbase) return;
   modules.editNamesbase = true;
@@ -58,8 +58,8 @@ function editNamesbase() {
   });
 
   function createBasesList() {
-    const select = document.getElementById('namesbaseSelect');
-    select.innerHTML = '';
+    const select = document.getElementById("namesbaseSelect");
+    select.innerHTML = "";
     nameBases.forEach((b, i) => select.options.add(new Option(b.name, i)));
   }
 
@@ -81,13 +81,13 @@ function editNamesbase() {
     for (let i = 0; i < 10; i++) {
       const example = Names.getBase(base);
       if (example === undefined) {
-        examples = 'Cannot generate examples. Please verify the data';
+        examples = "Cannot generate examples. Please verify the data";
         break;
       }
-      if (i) examples += ', ';
+      if (i) examples += ", ";
       examples += example;
     }
-    document.getElementById('namesbaseExamples').innerHTML = examples;
+    document.getElementById("namesbaseExamples").innerHTML = examples;
   }
 
   function updateNamesData() {
@@ -130,7 +130,7 @@ function editNamesbase() {
   }
 
   function updateBaseDublication() {
-    const base = +document.getElementById('namesbaseSelect').value;
+    const base = +document.getElementById("namesbaseSelect").value;
     nameBases[base].d = this.value;
   }
 

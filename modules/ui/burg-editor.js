@@ -611,7 +611,7 @@ function editBurg(id) {
           }
         }
       });
-    } 
+    }
   }
 
   function closeBurgEditor() {
