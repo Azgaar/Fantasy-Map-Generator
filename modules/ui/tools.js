@@ -345,13 +345,6 @@ function regenerateBurgs() {
 
 function regenerateResources() {
   Resources.generate();
-  goods.selectAll('*').remove();
-  if (layerIsOn('toggleResources')) drawResources();
-  refreshAllEditors();
-}
-
-function regenerateResources() {
-  Resources.generate();
   goods.selectAll("*").remove();
   if (layerIsOn("toggleResources")) drawResources();
   refreshAllEditors();

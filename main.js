@@ -2,10 +2,7 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 "use strict";
-const version = "1.662"; // generator version
-document.title += " v" + version;
-
-// switches to disable/enable logging features
+// set debug options
 const PRODUCTION = location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
 const DEBUG = localStorage.getItem("debug");
 const INFO = DEBUG || !PRODUCTION;
@@ -53,7 +50,7 @@ let landmass = viewbox.append("g").attr("id", "landmass");
 let texture = viewbox.append("g").attr("id", "texture");
 let terrs = viewbox.append("g").attr("id", "terrs");
 let biomes = viewbox.append("g").attr("id", "biomes");
-let gridCells = viewbox.append("g").attr("id", "cells");
+let cells = viewbox.append("g").attr("id", "cells");
 let gridOverlay = viewbox.append("g").attr("id", "gridOverlay");
 let coordinates = viewbox.append("g").attr("id", "coordinates");
 let compass = viewbox.append("g").attr("id", "compass");
@@ -726,21 +723,6 @@ async function generate(options) {
     Cultures.expand();
 
     BurgsAndStates.generate();
-
-    Religions.generate();
-    BurgsAndStates.defineStateForms();
-    BurgsAndStates.defineTaxes();
-
-    Production.collectResources();
-
-    Trade.defineCenters();
-    Trade.calculateDistances();
-    Trade.exportGoods();
-    Trade.importGoods();
-
-    // temp, replace with route generator
-    // pack.cells.road = new Uint16Array(pack.cells.i.length);
-    // pack.cells.crossroad = new Uint16Array(pack.cells.i.length);
 
     Religions.generate();
     BurgsAndStates.defineStateForms();

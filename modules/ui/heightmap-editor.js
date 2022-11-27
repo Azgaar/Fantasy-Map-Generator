@@ -3,7 +3,7 @@
 function editHeightmap(options) {
   const {mode, tool} = options || {};
   restartHistory();
-  viewbox.insert('g', '#terrs').attr('id', 'heights');
+  viewbox.insert("g", "#terrs").attr("id", "heights");
 
   if (!mode) showModeDialog();
   else enterHeightmapEditMode(mode);
@@ -981,9 +981,6 @@ function editHeightmap(options) {
     function executeTemplate() {
       const steps = byId("templateBody").querySelectorAll("#templateBody > div");
       if (!steps.length) return;
-
-      const seed = byId("templateSeed").value;
-      if (seed) Math.random = aleaPRNG(seed);
 
       grid.cells.h = createTypedArray({maxValue: 100, length: grid.points.length});
       HeightmapGenerator.setGraph(grid);

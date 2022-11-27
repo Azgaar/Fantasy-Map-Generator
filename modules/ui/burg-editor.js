@@ -96,12 +96,6 @@ function editBurg(id) {
     document.getElementById('burgExport').innerHTML = getExport(deals.filter((deal) => deal.exporter === b.i));
     document.getElementById('burgImport').innerHTML = '';
 
-    // economics block
-    document.getElementById('burgProduction').innerHTML = getProduction(b.produced);
-    const deals = pack.trade.deals;
-    document.getElementById('burgExport').innerHTML = getExport(deals.filter((deal) => deal.exporter === b.i));
-    document.getElementById('burgImport').innerHTML = '';
-
     //toggle lock
     updateBurgLockIcon();
 
@@ -663,16 +657,8 @@ function editBurg(id) {
           }
         }
       });
-    } else {
-      const message = 'Are you sure you want to remove the burg? <br>This action cannot be reverted';
-      const onConfirm = () => {
-        removeBurg(id);
-        $('#burgEditor').dialog('close');
-      };
-      confirmationDialog({title: 'Remove burg', message, confirm: 'Remove', onConfirm});
-    }
+    } 
   }
-
   function closeBurgEditor() {
     document.getElementById('burgRelocate').classList.remove('pressed');
     burgLabels.selectAll('text').call(d3.drag().on('drag', null)).classed('draggable', false);
