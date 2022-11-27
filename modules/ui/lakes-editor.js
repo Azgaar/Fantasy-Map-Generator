@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 function editLake() {
   if (customization) return;
-  closeDialogs('.stable');
-  if (layerIsOn('toggleCells')) toggleCells();
+  closeDialogs(".stable");
+  if (layerIsOn("toggleCells")) toggleCells();
 
   $("#lakeEditor").dialog({
     title: "Edit Lake",
@@ -12,32 +12,32 @@ function editLake() {
   });
 
   const node = d3.event.target;
-  debug.append('g').attr('id', 'vertices');
+  debug.append("g").attr("id", "vertices");
   elSelected = d3.select(node);
   updateLakeValues();
   selectLakeGroup(node);
   drawLakeVertices();
-  viewbox.on('touchmove mousemove', null);
+  viewbox.on("touchmove mousemove", null);
 
   if (modules.editLake) return;
   modules.editLake = true;
 
   // add listeners
-  document.getElementById('lakeName').addEventListener('input', changeName);
-  document.getElementById('lakeNameCulture').addEventListener('click', generateNameCulture);
-  document.getElementById('lakeNameRandom').addEventListener('click', generateNameRandom);
+  document.getElementById("lakeName").addEventListener("input", changeName);
+  document.getElementById("lakeNameCulture").addEventListener("click", generateNameCulture);
+  document.getElementById("lakeNameRandom").addEventListener("click", generateNameRandom);
 
-  document.getElementById('lakeGroup').addEventListener('change', changeLakeGroup);
-  document.getElementById('lakeGroupAdd').addEventListener('click', toggleNewGroupInput);
-  document.getElementById('lakeGroupName').addEventListener('change', createNewGroup);
-  document.getElementById('lakeGroupRemove').addEventListener('click', removeLakeGroup);
+  document.getElementById("lakeGroup").addEventListener("change", changeLakeGroup);
+  document.getElementById("lakeGroupAdd").addEventListener("click", toggleNewGroupInput);
+  document.getElementById("lakeGroupName").addEventListener("change", createNewGroup);
+  document.getElementById("lakeGroupRemove").addEventListener("click", removeLakeGroup);
 
-  document.getElementById('lakeEditStyle').addEventListener('click', editGroupStyle);
-  document.getElementById('lakeLegend').addEventListener('click', editLakeLegend);
+  document.getElementById("lakeEditStyle").addEventListener("click", editGroupStyle);
+  document.getElementById("lakeLegend").addEventListener("click", editLakeLegend);
 
   function getLake() {
-    const lakeId = +elSelected.attr('data-f');
-    return pack.features.find((feature) => feature.i === lakeId);
+    const lakeId = +elSelected.attr("data-f");
+    return pack.features.find(feature => feature.i === lakeId);
   }
 
   function updateLakeValues() {
@@ -51,21 +51,21 @@ function editLake() {
     document.getElementById("lakeShoreLength").value =
       si(length * distanceScaleInput.value) + " " + distanceUnitInput.value;
 
-    const lakeCells = Array.from(cells.i.filter((i) => cells.f[i] === l.i));
-    const heights = lakeCells.map((i) => cells.h[i]);
+    const lakeCells = Array.from(cells.i.filter(i => cells.f[i] === l.i));
+    const heights = lakeCells.map(i => cells.h[i]);
 
     document.getElementById("lakeElevation").value = getHeight(l.height);
     document.getElementById("lakeAverageDepth").value = getHeight(d3.mean(heights), "abs");
     document.getElementById("lakeMaxDepth").value = getHeight(d3.min(heights), "abs");
 
-    document.getElementById('lakeFlux').value = l.flux;
-    document.getElementById('lakeEvaporation').value = l.evaporation;
+    document.getElementById("lakeFlux").value = l.flux;
+    document.getElementById("lakeEvaporation").value = l.evaporation;
 
-    const inlets = l.inlets && l.inlets.map((inlet) => pack.rivers.find((river) => river.i === inlet)?.name);
-    const outlet = l.outlet ? pack.rivers.find((river) => river.i === l.outlet)?.name : 'no';
-    document.getElementById('lakeInlets').value = inlets ? inlets.length : 'no';
-    document.getElementById('lakeInlets').title = inlets ? inlets.join(', ') : '';
-    document.getElementById('lakeOutlet').value = outlet;
+    const inlets = l.inlets && l.inlets.map(inlet => pack.rivers.find(river => river.i === inlet)?.name);
+    const outlet = l.outlet ? pack.rivers.find(river => river.i === l.outlet)?.name : "no";
+    document.getElementById("lakeInlets").value = inlets ? inlets.length : "no";
+    document.getElementById("lakeInlets").title = inlets ? inlets.join(", ") : "";
+    document.getElementById("lakeOutlet").value = outlet;
   }
 
   function drawLakeVertices() {
@@ -114,7 +114,7 @@ function editLake() {
   function redrawLake() {
     lineGen.curve(d3.curveBasisClosed);
     const feature = getLake();
-    const points = feature.vertices.map((v) => pack.vertices.p[v]);
+    const points = feature.vertices.map(v => pack.vertices.p[v]);
     const d = round(lineGen(points));
     elSelected.attr("d", d);
     defs.select("mask#land > path#land_" + feature.i).attr("d", d); // update land mask
@@ -139,7 +139,7 @@ function editLake() {
 
   function selectLakeGroup(node) {
     const group = node.parentNode.id;
-    const select = document.getElementById('lakeGroup');
+    const select = document.getElementById("lakeGroup");
     select.options.length = 0; // remove all options
 
     lakes.selectAll("g").each(function () {
@@ -153,10 +153,10 @@ function editLake() {
   }
 
   function toggleNewGroupInput() {
-    if (lakeGroupName.style.display === 'none') {
-      lakeGroupName.style.display = 'inline-block';
+    if (lakeGroupName.style.display === "none") {
+      lakeGroupName.style.display = "inline-block";
       lakeGroupName.focus();
-      lakeGroup.style.display = 'none';
+      lakeGroup.style.display = "none";
     } else {
       lakeGroupName.style.display = "none";
       lakeGroup.style.display = "inline-block";
@@ -174,42 +174,42 @@ function editLake() {
       .replace(/[^\w\s]/gi, "");
 
     if (document.getElementById(group)) {
-      tip('Element with this id already exists. Please provide a unique name', false, 'error');
+      tip("Element with this id already exists. Please provide a unique name", false, "error");
       return;
     }
 
     if (Number.isFinite(+group.charAt(0))) {
-      tip('Group name should start with a letter', false, 'error');
+      tip("Group name should start with a letter", false, "error");
       return;
     }
 
     // just rename if only 1 element left
     const oldGroup = elSelected.node().parentNode;
-    const basic = ['freshwater', 'salt', 'sinkhole', 'frozen', 'lava', 'dry'].includes(oldGroup.id);
+    const basic = ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(oldGroup.id);
     if (!basic && oldGroup.childElementCount === 1) {
-      document.getElementById('lakeGroup').selectedOptions[0].remove();
-      document.getElementById('lakeGroup').options.add(new Option(group, group, false, true));
+      document.getElementById("lakeGroup").selectedOptions[0].remove();
+      document.getElementById("lakeGroup").options.add(new Option(group, group, false, true));
       oldGroup.id = group;
       toggleNewGroupInput();
-      document.getElementById('lakeGroupName').value = '';
+      document.getElementById("lakeGroupName").value = "";
       return;
     }
 
     // create a new group
     const newGroup = elSelected.node().parentNode.cloneNode(false);
-    document.getElementById('lakes').appendChild(newGroup);
+    document.getElementById("lakes").appendChild(newGroup);
     newGroup.id = group;
-    document.getElementById('lakeGroup').options.add(new Option(group, group, false, true));
+    document.getElementById("lakeGroup").options.add(new Option(group, group, false, true));
     document.getElementById(group).appendChild(elSelected.node());
 
     toggleNewGroupInput();
-    document.getElementById('lakeGroupName').value = '';
+    document.getElementById("lakeGroupName").value = "";
   }
 
   function removeLakeGroup() {
     const group = elSelected.node().parentNode.id;
-    if (['freshwater', 'salt', 'sinkhole', 'frozen', 'lava', 'dry'].includes(group)) {
-      tip('This is one of the default groups, it cannot be removed', false, 'error');
+    if (["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(group)) {
+      tip("This is one of the default groups, it cannot be removed", false, "error");
       return;
     }
 
@@ -236,21 +236,20 @@ function editLake() {
         }
       }
     });
-    confirmationDialog({title: 'Remove lake group', message, confirm: 'Remove', onConfirm});
   }
 
   function editGroupStyle() {
     const g = elSelected.node().parentNode.id;
-    editStyle('lakes', g);
+    editStyle("lakes", g);
   }
 
   function editLakeLegend() {
-    const id = elSelected.attr('id');
-    editNotes(id, getLake().name + ' ' + lakeGroup.value + ' lake');
+    const id = elSelected.attr("id");
+    editNotes(id, getLake().name + " " + lakeGroup.value + " lake");
   }
 
   function closeLakesEditor() {
-    debug.select('#vertices').remove();
+    debug.select("#vertices").remove();
     unselect();
   }
 }
