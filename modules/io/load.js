@@ -439,7 +439,7 @@ async function parseLoadedData(data) {
       const cells = pack.cells;
 
       if (pack.cells.i.length !== pack.cells.state.length) {
-        const message = "Data Integrity Check. Striping issue. To fix edit the heightmap in erase mode";
+        const message = "Data Integrity Check. Striping issue detected. To fix edit the heightmap in erase mode";
         ERROR && console.error(message);
       }
 
@@ -482,11 +482,13 @@ async function parseLoadedData(data) {
         ERROR && console.error("Data Integrity Check. Invalid feature", f, "is assigned to cells", invalidCells);
       });
 
-      const invalidBurgs = [...new Set(cells.burg)].filter(b => b && (!pack.burgs[b] || pack.burgs[b].removed));
-      invalidBurgs.forEach(b => {
-        const invalidCells = cells.i.filter(i => cells.burg[i] === b);
+      const invalidBurgs = [...new Set(cells.burg)].filter(
+        burgId => burgId && (!pack.burgs[burgId] || pack.burgs[burgId].removed)
+      );
+      invalidBurgs.forEach(burgId => {
+        const invalidCells = cells.i.filter(i => cells.burg[i] === burgId);
         invalidCells.forEach(i => (cells.burg[i] = 0));
-        ERROR && console.error("Data Integrity Check. Invalid burg", b, "is assigned to cells", invalidCells);
+        ERROR && console.error("Data Integrity Check. Invalid burg", burgId, "is assigned to cells", invalidCells);
       });
 
       const invalidRivers = [...new Set(cells.r)].filter(r => r && !pack.rivers.find(river => river.i === r));
@@ -521,6 +523,11 @@ async function parseLoadedData(data) {
 
         if (burg.state && !pack.states[burg.state]) {
           ERROR && console.error("Data Integrity Check. Burg", burg.i, "is linked to invalid state", burg.state);
+          burg.state = 0;
+        }
+
+        if (burg.state && pack.states[burg.state].removed) {
+          ERROR && console.error("Data Integrity Check. Burg", burg.i, "is linked to removed state", burg.state);
           burg.state = 0;
         }
 
