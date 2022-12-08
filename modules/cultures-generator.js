@@ -6,6 +6,12 @@ window.Cultures = (function () {
   const generate = function () {
     TIME && console.time("generateCultures");
     cells = pack.cells;
+    const prevCultures = {};
+    if (cells.culture) {
+      cells.culture.forEach(function (cultureId, index) {
+        prevCultures[index] = cultureId;
+      })
+    }
     cells.culture = new Uint16Array(cells.i.length); // cell cultures
     let count = Math.min(+culturesInput.value, +culturesSet.selectedOptions[0].dataset.max);
 
@@ -51,7 +57,29 @@ window.Cultures = (function () {
     const emblemShape = document.getElementById("emblemShape").value;
 
     const codes = [];
+    let unoccupied = [...populated];
     cultures.forEach(function (c, i) {
+      if (c.lock) {
+        centers.add(c.center);
+        cells.culture[c.center] = i + 1;
+        codes.push(c.code);
+
+        const cultureCells = [];
+        Object.entries(prevCultures).forEach(function ([index, cultureId]) {
+          if (cultureId === c.i) {
+            cells.culture[index] = i + 1;
+            cultureCells.push(parseInt(index));
+          }
+        });
+
+        unoccupied = unoccupied.filter(function (cell) {
+          return !cultureCells.includes(cell);
+        });
+
+        c.i = i + 1;
+        return;
+      }
+
       const cell = (c.center = placeCenter(c.sort ? c.sort : i => cells.s[i]));
       centers.add(cells.p[cell]);
       c.i = i + 1;
@@ -70,12 +98,16 @@ window.Cultures = (function () {
     function placeCenter(v) {
       let c,
         spacing = (graphWidth + graphHeight) / 2 / count;
-      const sorted = [...populated].sort((a, b) => v(b) - v(a)),
+      // Only use cells where there are no culture already on that cell, which may happen if a locked culture
+      // was restored. We can be sure that locked cultures will always be first in the list.
+      const sorted = [...unoccupied].sort((a, b) => v(b) - v(a)),
         max = Math.floor(sorted.length / 2);
       do {
         c = sorted[biased(0, max, 5)];
         spacing *= 0.9;
-      } while (centers.find(cells.p[c][0], cells.p[c][1], spacing) !== undefined);
+      } while (
+        centers.find(cells.p[c][0], cells.p[c][1], spacing) !== undefined
+      );
       return c;
     }
 
@@ -97,6 +129,12 @@ window.Cultures = (function () {
 
       const count = Math.min(c, def.length);
       const cultures = [];
+
+      if (pack.cultures) {
+        pack.cultures.forEach(function (culture) {
+          if (culture.lock) cultures.push(culture);
+        });
+      }
 
       for (let culture, rnd, i = 0; cultures.length < count && i < 200; i++) {
         do {
@@ -481,12 +519,17 @@ window.Cultures = (function () {
 
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     pack.cultures.forEach(function (c) {
-      if (!c.i || c.removed) return;
+      if (!c.i || c.removed || c.lock) return;
       queue.queue({e: c.center, p: 0, c: c.i});
     });
 
     const neutral = (cells.i.length / 5000) * 3000 * neutralInput.value; // limit cost for culture growth
     const cost = [];
+    const cellsCost = {};
+    cells.culture.forEach(function (cultureId, index) {
+      // Make the cost of cells with an existing culture so high, they won't get picked
+      cellsCost[index] = cultureId > 0 ? neutral : 0;
+    });
     while (queue.length) {
       const next = queue.dequeue(),
         n = next.e,
@@ -494,6 +537,7 @@ window.Cultures = (function () {
         c = next.c;
       const type = pack.cultures[c].type;
       cells.c[n].forEach(function (e) {
+        const cellCost = cellsCost[e];
         const biome = cells.biome[e];
         const biomeCost = getBiomeCost(c, biome, type);
         const biomeChangeCost = biome === cells.biome[n] ? 0 : 20; // penalty on biome change
@@ -501,7 +545,7 @@ window.Cultures = (function () {
         const riverCost = getRiverCost(cells.r[e], e, type);
         const typeCost = getTypeCost(cells.t[e], type);
         const totalCost =
-          p + (biomeCost + biomeChangeCost + heightCost + riverCost + typeCost) / pack.cultures[c].expansionism;
+          p + cellCost + (biomeCost + biomeChangeCost + heightCost + riverCost + typeCost) / pack.cultures[c].expansionism;
 
         if (totalCost > neutral) return;
 

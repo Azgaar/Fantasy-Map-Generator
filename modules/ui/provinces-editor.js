@@ -53,6 +53,7 @@ function editProvinces() {
     else if (cl.contains("culturePopulation")) changePopulation(p);
     else if (cl.contains("icon-pin")) toggleFog(p, cl);
     else if (cl.contains("icon-trash-empty")) removeProvince(p);
+    else if (cl.contains("icon-lock") || cl.contains("icon-lock-open")) updateLockStatus(p, cl);
   });
 
   body.addEventListener("change", function (ev) {
@@ -163,6 +164,7 @@ function editProvinces() {
           class="icon-flag-empty ${separable ? "" : "placeholder"} hide"
         ></span>
         <span data-tip="Toggle province focus" class="icon-pin ${focused ? "" : " inactive"} hide"></span>
+        <span data-tip="Lock the province" class="icon-lock${p.lock ? '' : '-open'} hide"></span>
         <span data-tip="Remove the province" class="icon-trash-empty hide"></span>
       </div>`;
     }
@@ -1084,5 +1086,19 @@ function editProvinces() {
     provs.selectAll("text").call(d3.drag().on("drag", null)).attr("class", null);
     if (customization === 11) exitProvincesManualAssignment("close");
     if (customization === 12) exitAddProvinceMode();
+  }
+}
+
+function updateLockStatus(provinceId, classList) {
+  const p = pack.provinces[provinceId];
+  p.lock = !p.lock;
+
+  if (p.lock) {
+    classList.remove("icon-lock-open");
+    classList.add("icon-lock");
+  }
+  else {
+    classList.remove("icon-lock");
+    classList.add("icon-lock-open");
   }
 }

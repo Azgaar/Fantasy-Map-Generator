@@ -1438,7 +1438,9 @@ div.states .icon-trash-empty,
 div.states .icon-eye,
 div.states .icon-pin,
 div.states .icon-flag-empty,
-div.states .icon-cw {
+div.states .icon-cw,
+div.states .icon-lock,
+div.states .icon-lock-open {
   cursor: pointer;
 }
 
