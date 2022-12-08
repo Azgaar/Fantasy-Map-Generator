@@ -212,7 +212,10 @@ function religionsEditorAddLines() {
       <div data-tip="Religion area" class="religionArea hide" style="width: 5em">${si(area) + unit}</div>
       <span data-tip="${populationTip}" class="icon-male hide"></span>
       <div data-tip="${populationTip}" class="religionPopulation hide pointer">${si(population)}</div>
-      <span data-tip="Lock religion" class="icon-lock${r.lock ? '' : '-open'} hide"></span>
+      <span
+        data-tip="Lock religion, will regenerate the origin folk and organized religion if they are not also locked"
+        class="icon-lock${r.lock ? '' : '-open'} hide"
+      ></span>
       <span data-tip="Remove religion" class="icon-trash-empty hide"></span>
     </div>`;
   }

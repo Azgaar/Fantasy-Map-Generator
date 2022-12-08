@@ -347,11 +347,51 @@ window.Religions = (function () {
     const cells = pack.cells,
       states = pack.states,
       cultures = pack.cultures;
-    const religions = (pack.religions = []);
+
+    // Keep a map of the previous religions per cell for referencing when we restore locked religions
+    const prevReligions = {};
+    if (cells.religion) {
+      cells.religion.forEach((rId, index) => {
+        prevReligions[index] = rId;
+      })
+    }
     cells.religion = new Uint16Array(cells.culture); // cell religion; initially based on culture
+
+    const religionsToRestore = [];
+    const restoredCells = [];
+    const restoredHeresyCells = [];
+    // Restore locked religions to their existing cells
+    if (pack.religions) {
+      pack.religions.forEach( (religion) => {
+        // Keep any locked religions, we will reassign it to a folk or organized religion later
+        if (!religion.lock) return;
+
+        // Add all religions we restore after the base cults to keep the index correct
+        const id = pack.cultures.length + religionsToRestore.length;
+        religionsToRestore.push(religion);
+
+        Object.entries(prevReligions).forEach(([index, rId]) => {
+          if (rId !== religion.i) return;
+
+          if (religion.type === "Heresy") {
+            restoredHeresyCells.push(parseInt(index));
+          } else {
+            restoredCells.push(parseInt(index));
+            cells.religion[index] = id;
+          }
+        });
+
+        religion.i = id;
+      });
+    }
+    const religions = (pack.religions = []);
 
     // add folk religions
     pack.cultures.forEach(c => {
+      // If a restored religion exists for this culture, ignore
+      if (religionsToRestore.find(r => r.type === "Folk" && r.culture === c.i) !== undefined) return;
+
+      // We already preadded the "no religion" religion
       if (!c.i) return religions.push({i: 0, name: "No religion"});
 
       if (c.removed) {
@@ -370,6 +410,7 @@ window.Religions = (function () {
       const color = getMixedColor(c.color, 0.1, 0); // `url(#hatch${rand(8,13)})`;
       religions.push({i: c.i, name, color, culture: c.i, type: "Folk", form, deity, center: c.center, origins: [0]});
     });
+    religions.push(...religionsToRestore);
 
     if (religionsInput.value == 0 || pack.cultures.length < 2)
       return religions.filter(r => r.i).forEach(r => (r.code = abbreviate(r.name)));
@@ -379,6 +420,7 @@ window.Religions = (function () {
       burgs.length > +religionsInput.value
         ? burgs.sort((a, b) => b.population - a.population).map(b => b.cell)
         : cells.i.filter(i => cells.s[i] > 2).sort((a, b) => cells.s[b] - cells.s[a]);
+    const available = [...sorted].filter(cellI => !restoredCells.includes(cellI));
     const religionsTree = d3.quadtree();
     const spacing = (graphWidth + graphHeight) / 6 / religionsInput.value; // base min distance between towns
     const cultsCount = Math.floor((rand(10, 40) / 100) * religionsInput.value);
@@ -391,9 +433,27 @@ window.Religions = (function () {
       return religions.length ? religions.slice(0, max) : [0];
     }
 
+    // Restore the origins of any organized religion that was locked
+    pack.religions.forEach(religion => {
+      // Ignore if the religion is not locked or not organized
+      if (religion.type !== "Organized" || !religion.lock) return;
+      // Ignore if the religion already has a valid origin
+      if (pack.religions.find(r => religion.origins.includes(r.i) && r.lock) !== undefined) return;
+
+      // Select a random folk religion for the religion
+      const culture = cells.culture[religion.center];
+      const [x, y] = cells.p[religion.center];
+      const isFolkBased = religion.expansion === "culture" || P(0.5);
+      const folk = isFolkBased && religions.find(r => r.culture === culture && r.type === "Folk");
+      if (folk && religion.expansion === "culture" && folk.name.slice(0, 3) !== "Old") folk.name = "Old " + folk.name;
+
+      religion.origins = folk ? [folk.i] : getReligionsInRadius({x, y, r: 150 / count, max: 2});
+      religionsTree.add([x, y]);
+    });
+
     // generate organized religions
     for (let i = 0; religions.length < count && i < 1000; i++) {
-      let center = sorted[biased(0, sorted.length - 1, 5)]; // religion center
+      let center = available[biased(0, available.length - 1, 5)]; // religion center
       const form = rw(forms.Organized);
       const state = cells.state[center];
       const culture = cells.culture[center];
@@ -439,10 +499,22 @@ window.Religions = (function () {
       religionsTree.add([x, y]);
     }
 
+    // Restore the origins of any cult that was locked
+    pack.religions.forEach(religion => {
+      // Ignore if the religion is not locked or not organized
+      if (religion.type !== "Cult" || !religion.lock) return;
+      // Ignore if the religion already has a valid origin
+      if (pack.religions.find(r => religion.origins.includes(r.i) && r.lock) !== undefined) return;
+
+      const [x, y] = cells.p[religion.center];
+      religion.origins = getReligionsInRadius({x, y, r: 300 / count, max: rand(0, 4)});
+      religionsTree.add([x, y]);
+    });
+
     // generate cults
     for (let i = 0; religions.length < count + cultsCount && i < 1000; i++) {
       const form = rw(forms.Cult);
-      let center = sorted[biased(0, sorted.length - 1, 1)]; // religion center
+      let center = available[biased(0, available.length - 1, 1)]; // religion center
       if (!cells.burg[center] && cells.c[center].some(c => cells.burg[c]))
         center = cells.c[center].find(c => cells.burg[c]);
       const [x, y] = cells.p[center];
@@ -473,7 +545,29 @@ window.Religions = (function () {
       religionsTree.add([x, y]);
     }
 
-    expandReligions();
+    expandReligions(restoredCells);
+
+    // Restore the origins of any heresy that was locked
+    pack.religions.forEach(religion => {
+      // Ignore if the religion is not locked or not organized
+      if (religion.type !== "Heresy" || !religion.lock) return;
+
+      const originReligion = [cells.religion[religion.center]];
+      // Restore the cells now that all other religions have been processed
+      Object.entries(prevReligions).forEach(([index, rId]) => {
+        if (rId !== religion.i) return;
+
+        cells.religion[index] = religion.i;
+      });
+
+      // Ignore if the religion already has a valid origin
+      if (pack.religions.find(r => religion.origins.includes(r.i) && r.lock) !== undefined) return;
+
+      const [x, y] = cells.p[religion.center];
+      // Use the religion from the expanded cells, we'll restore the heresies later
+      religion.origins = [originReligion];
+      religionsTree.add([x, y]);
+    });
 
     // generate heresies
     religions
@@ -512,7 +606,7 @@ window.Religions = (function () {
         }
       });
 
-    expandHeresies();
+    expandHeresies(restoredHeresyCells);
     checkCenters();
 
     TIME && console.timeEnd("generateReligions");
@@ -567,14 +661,14 @@ window.Religions = (function () {
   };
 
   // growth algorithm to assign cells to religions
-  const expandReligions = function () {
+  const expandReligions = function (restoredCells) {
     const cells = pack.cells,
       religions = pack.religions;
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
     religions
-      .filter(r => r.type === "Organized" || r.type === "Cult")
+      .filter(r => !r.lock && (r.type === "Organized" || r.type === "Cult"))
       .forEach(r => {
         cells.religion[r.center] = r.i;
         queue.queue({e: r.center, p: 0, r: r.i, s: cells.state[r.center], c: r.culture});
@@ -583,6 +677,11 @@ window.Religions = (function () {
 
     const neutral = (cells.i.length / 5000) * 200 * gauss(1, 0.3, 0.2, 2, 2) * neutralInput.value; // limit cost for organized religions growth
     const popCost = d3.max(cells.pop) / 3; // enougth population to spered religion without penalty
+    const cellsCost = {};
+    restoredCells.forEach(index => {
+      // Make the cost of cells with an existing culture so high, they won't get picked
+      cellsCost[index] = neutral;
+    });
 
     while (queue.length) {
       const next = queue.dequeue(),
@@ -605,6 +704,7 @@ window.Religions = (function () {
         const waterCost = cells.h[e] < 20 ? (cells.road[e] ? 50 : 1000) : 0;
         const totalCost =
           p +
+          (cellsCost[e] || 0) +
           (cultureCost + stateCost + biomeCost + populationCost + heightCost + waterCost) / religions[r].expansionism;
         if (totalCost > neutral) return;
 
@@ -618,14 +718,14 @@ window.Religions = (function () {
   };
 
   // growth algorithm to assign cells to heresies
-  const expandHeresies = function () {
+  const expandHeresies = function (restoredCells) {
     const cells = pack.cells,
       religions = pack.religions;
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
     religions
-      .filter(r => r.type === "Heresy")
+      .filter(r => !r.lock && r.type === "Heresy")
       .forEach(r => {
         const b = cells.religion[r.center]; // "base" religion id
         cells.religion[r.center] = r.i; // heresy id
@@ -634,6 +734,11 @@ window.Religions = (function () {
       });
 
     const neutral = (cells.i.length / 5000) * 500 * neutralInput.value; // limit cost for heresies growth
+    const cellsCost = {};
+    restoredCells.forEach(index => {
+      // Make the cost of cells with an existing culture so high, they won't get picked
+      cellsCost[index] = neutral;
+    });
 
     while (queue.length) {
       const next = queue.dequeue(),
@@ -648,7 +753,8 @@ window.Religions = (function () {
         const heightCost = Math.max(cells.h[e], 20) - 20;
         const waterCost = cells.h[e] < 20 ? (cells.road[e] ? 50 : 1000) : 0;
         const totalCost =
-          p + (religionCost + biomeCost + heightCost + waterCost) / Math.max(religions[r].expansionism, 0.1);
+          p + (cellsCost[e] || 0) +
+          (religionCost + biomeCost + heightCost + waterCost) / Math.max(religions[r].expansionism, 0.1);
 
         if (totalCost > neutral) return;
 
