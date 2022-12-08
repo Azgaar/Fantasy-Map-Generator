@@ -358,6 +358,7 @@ window.Religions = (function () {
     cells.religion = new Uint16Array(cells.culture); // cell religion; initially based on culture
 
     const religionsToRestore = [];
+    const folkToRestore = [];
     const restoredCells = [];
     const restoredHeresyCells = [];
     // Restore locked religions to their existing cells
@@ -367,29 +368,39 @@ window.Religions = (function () {
         if (!religion.lock) return;
 
         // Add all religions we restore after the base cults to keep the index correct
-        const id = pack.cultures.length + religionsToRestore.length;
-        religionsToRestore.push(religion);
+        // Keep folk religion at the same index since we should restore them during the culture parsing
+        const id = religion.type === 'Folk' ? religion.i : pack.cultures.length + religionsToRestore.length;
 
         Object.entries(prevReligions).forEach(([index, rId]) => {
           if (rId !== religion.i) return;
 
           if (religion.type === "Heresy") {
             restoredHeresyCells.push(parseInt(index));
+            religion.old_i = religion.i;
           } else {
             restoredCells.push(parseInt(index));
             cells.religion[index] = id;
           }
         });
 
-        religion.i = id;
+        if (religion.type === 'Folk') {
+          folkToRestore.push(religion);
+        } else {
+          religionsToRestore.push(religion);
+          religion.i = id;
+        }
       });
     }
     const religions = (pack.religions = []);
 
     // add folk religions
     pack.cultures.forEach(c => {
-      // If a restored religion exists for this culture, ignore
-      if (religionsToRestore.find(r => r.type === "Folk" && r.culture === c.i) !== undefined) return;
+      // If a restored religion exists for this culture, move it to this position
+      const existingFolkReligion = folkToRestore.find(r => r.culture === c.i);
+      if (existingFolkReligion !== undefined) {
+        religions.push(existingFolkReligion);
+        return;
+      }
 
       // We already preadded the "no religion" religion
       if (!c.i) return religions.push({i: 0, name: "No religion"});
@@ -438,16 +449,21 @@ window.Religions = (function () {
       // Ignore if the religion is not locked or not organized
       if (religion.type !== "Organized" || !religion.lock) return;
       // Ignore if the religion already has a valid origin
-      if (pack.religions.find(r => religion.origins.includes(r.i) && r.lock) !== undefined) return;
+      if (pack.religions.find(r => r.i !== religion.i && religion.origins.includes(r.i) && r.lock) !== undefined)
+        return;
 
       // Select a random folk religion for the religion
       const culture = cells.culture[religion.center];
       const [x, y] = cells.p[religion.center];
       const isFolkBased = religion.expansion === "culture" || P(0.5);
-      const folk = isFolkBased && religions.find(r => r.culture === culture && r.type === "Folk");
+      const folk = isFolkBased && religions.find(r => r.i !== religion.i && r.culture === culture && r.type === "Folk");
       if (folk && religion.expansion === "culture" && folk.name.slice(0, 3) !== "Old") folk.name = "Old " + folk.name;
 
-      religion.origins = folk ? [folk.i] : getReligionsInRadius({x, y, r: 150 / count, max: 2});
+      do {
+        // Run the search until we have at least one source religion that is not the current religion.
+        religion.origins = folk ? [folk.i] : getReligionsInRadius({x, y, r: 150 / count, max: 2})
+          .filter(r => r !== religion.i);
+      } while (!religion.origins.length)
       religionsTree.add([x, y]);
     });
 
@@ -504,10 +520,15 @@ window.Religions = (function () {
       // Ignore if the religion is not locked or not organized
       if (religion.type !== "Cult" || !religion.lock) return;
       // Ignore if the religion already has a valid origin
-      if (pack.religions.find(r => religion.origins.includes(r.i) && r.lock) !== undefined) return;
+      if (pack.religions.find(r => r.i !== religion.i && religion.origins.includes(r.i) && r.lock) !== undefined)
+        return;
 
       const [x, y] = cells.p[religion.center];
-      religion.origins = getReligionsInRadius({x, y, r: 300 / count, max: rand(0, 4)});
+      do {
+        // Run the search until we have at least one source religion that is not the current religion.
+        religion.origins = getReligionsInRadius({x, y, r: 300 / count, max: rand(0, 4)})
+          .filter(r => r !== religion.i);
+      } while (!religion.origins.length)
       religionsTree.add([x, y]);
     });
 
@@ -552,16 +573,19 @@ window.Religions = (function () {
       // Ignore if the religion is not locked or not organized
       if (religion.type !== "Heresy" || !religion.lock) return;
 
-      const originReligion = [cells.religion[religion.center]];
+      const originReligion = cells.religion[religion.center];
       // Restore the cells now that all other religions have been processed
       Object.entries(prevReligions).forEach(([index, rId]) => {
-        if (rId !== religion.i) return;
+        if (rId !== religion.old_i) return;
 
-        cells.religion[index] = religion.i;
+        cells.religion[parseInt(index)] = religion.i;
       });
 
+      delete religion.old_i;
+
       // Ignore if the religion already has a valid origin
-      if (pack.religions.find(r => religion.origins.includes(r.i) && r.lock) !== undefined) return;
+      if (pack.religions.find(r => r.i !== religion.i && religion.origins.includes(r.i) && r.lock) !== undefined)
+        return;
 
       const [x, y] = cells.p[religion.center];
       // Use the religion from the expanded cells, we'll restore the heresies later
@@ -606,7 +630,7 @@ window.Religions = (function () {
         }
       });
 
-    expandHeresies(restoredHeresyCells);
+    expandHeresies([...restoredCells, ...restoredHeresyCells]);
     checkCenters();
 
     TIME && console.timeEnd("generateReligions");

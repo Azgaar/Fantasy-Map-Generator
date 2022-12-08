@@ -403,6 +403,7 @@ function regenerateReligions() {
   Religions.generate();
   if (!layerIsOn("toggleReligions")) toggleReligions();
   else drawReligions();
+  refreshAllEditors();
 }
 
 function regenerateCultures() {
