@@ -163,6 +163,143 @@ window.BurgsAndStates = (function () {
     }
   };
 
+  const regenerateStates = function() {
+    const localSeed = generateSeed();
+    Math.random = aleaPRNG(localSeed);
+
+    const statesCount = +regionsOutput.value;
+    const burgs = pack.burgs.filter(b => b.i && !b.removed);
+    if (!burgs.length) return tip("There are no any burgs to generate states. Please create burgs first", false, "error");
+    if (burgs.length < statesCount)
+      tip(`Not enough burgs to generate ${statesCount} states. Will generate only ${burgs.length} states`, false, "warn");
+
+    // turn all old capitals into towns, except for the capitals of locked states
+    burgs
+      .filter(b => b.capital && pack.states.find(s => s.lock && s.capital === b.i) === undefined)
+      .forEach(b => {
+        moveBurgToGroup(b.i, "towns");
+        b.capital = 0;
+      });
+
+    // remove emblems
+    document.querySelectorAll("[id^=stateCOA]").forEach(el => el.remove());
+    document.querySelectorAll("[id^=provinceCOA]").forEach(el => el.remove());
+    emblems.selectAll("use").remove();
+
+    unfog();
+
+    if (!statesCount) {
+      tip(`Cannot generate zero states. Please check the <i>States Number</i> option`, false, "warn");
+      pack.states = pack.states.slice(0, 1); // remove all except of neutrals
+      pack.states[0].diplomacy = []; // clear diplomacy
+      pack.provinces = [0]; // remove all provinces
+      pack.cells.state = new Uint16Array(pack.cells.i.length); // reset cells data
+      borders.selectAll("path").remove(); // remove borders
+      regions.selectAll("path").remove(); // remove states fill
+      labels.select("#states").selectAll("text"); // remove state labels
+      defs.select("#textPaths").selectAll("path[id*='stateLabel']").remove(); // remove state labels paths
+
+      if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
+      if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
+      return;
+    }
+
+    // burg local ids sorted by a bit randomized population. Also ignore burgs of a locked state.
+    const sortedBurgs = burgs
+      .filter(b => !pack.states[b.state] || !pack.states[b.state].lock)
+      .map((b, i) => [b, b.population * Math.random()])
+      .sort((a, b) => b[1] - a[1])
+      .map(b => b[0]);
+    const capitalsTree = d3.quadtree();
+
+    const neutral = pack.states[0].name; // neutrals name
+    const count = Math.min(statesCount, burgs.length) + 1; // +1 for neutral
+    let spacing = (graphWidth + graphHeight) / 2 / count; // min distance between capitals
+
+    const states = [];
+    // Get all the states to restore
+    let statesToRestore = [];
+    if (pack.states) {
+      pack.states.forEach(state => {
+        if (!state.lock) return;
+
+        statesToRestore.push(state)
+      });
+    }
+
+    d3.range(count).forEach(i => {
+      if (!i) {
+        states.push({i, name: neutral});
+        return;
+      }
+
+      // If we still have states to restore from the locks, restore those first and assign them the right ids.
+      if (statesToRestore.length) {
+        const [toRestore, ...rest] = statesToRestore;
+
+        toRestore.old_i = toRestore.i;
+        toRestore.i = i;
+        states.push(toRestore);
+
+        // Also reassign the state id of all provinces of this state for locked provinces
+        toRestore.provinces.forEach(id => {
+          if (!pack.provinces[id]) return;
+
+          pack.provinces[id].state = toRestore.i;
+        });
+
+        statesToRestore = rest;
+
+        const {x, y} = burgs[toRestore.capital];
+        capitalsTree.add([x, y]);
+        return;
+      }
+
+      let capital = null;
+      for (const burg of sortedBurgs) {
+        const {x, y} = burg;
+        if (capitalsTree.find(x, y, spacing) === undefined) {
+          burg.capital = 1;
+          capital = burg;
+          capitalsTree.add([x, y]);
+          moveBurgToGroup(burg.i, "cities");
+          break;
+        }
+
+        spacing = Math.max(spacing - 1, 1);
+      }
+
+      const culture = capital.culture;
+      const basename =
+        capital.name.length < 9 && capital.cell % 5 === 0 ? capital.name : Names.getCulture(culture, 3, 6, "", 0);
+      const name = Names.getState(basename, culture);
+      const nomadic = [1, 2, 3, 4].includes(pack.cells.biome[capital.cell]);
+      const type = nomadic
+        ? "Nomadic"
+        : pack.cultures[culture].type === "Nomadic"
+          ? "Generic"
+          : pack.cultures[culture].type;
+      const expansionism = rn(Math.random() * powerInput.value + 1, 1);
+
+      const cultureType = pack.cultures[culture].type;
+      const coa = COA.generate(capital.coa, 0.3, null, cultureType);
+      coa.shield = capital.coa.shield;
+
+      states.push({
+        i,
+        name,
+        type,
+        capital: capital.i,
+        center: capital.cell,
+        culture,
+        expansionism,
+        coa
+      });
+    });
+
+    pack.states = states;
+  }
+
   // define burg coordinates, coa, port status and define details
   const specifyBurgs = function () {
     TIME && console.time("specifyBurgs");
@@ -364,6 +501,12 @@ window.BurgsAndStates = (function () {
     TIME && console.time("expandStates");
     const {cells, states, cultures, burgs} = pack;
 
+    const prevStates = {};
+    if (cells.state) {
+      cells.state.forEach(function (i, index) {
+        prevStates[index] = i;
+      })
+    }
     cells.state = new Uint16Array(cells.i.length);
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
@@ -372,6 +515,18 @@ window.BurgsAndStates = (function () {
     states
       .filter(s => s.i && !s.removed)
       .forEach(s => {
+        if (s.lock) {
+          Object.entries(prevStates).forEach(function ([index, stateId]) {
+            if (stateId === s.old_i) {
+              cells.state[index] = s.i;
+              cost[index] = neutral;
+            }
+          });
+
+          delete s.old_i;
+          return;
+        }
+
         const capitalCell = burgs[s.capital].cell;
         cells.state[capitalCell] = s.i;
         const cultureCenter = cultures[s.culture].center;
@@ -387,6 +542,8 @@ window.BurgsAndStates = (function () {
 
       cells.c[e].forEach(e => {
         if (cells.state[e] && e === states[cells.state[e]].center) return; // do not overwrite capital cells
+        // Do not overwrite cells from a locked state.
+        if (states[cells.state[e]].lock) return;
 
         const cultureCost = culture === cells.culture[e] ? -9 : 100;
         const populationCost = cells.h[e] < 20 ? 0 : cells.s[e] ? Math.max(20 - cells.s[e], 0) : 5000;
@@ -1148,7 +1305,17 @@ window.BurgsAndStates = (function () {
     Math.random = aleaPRNG(localSeed);
 
     const {cells, states, burgs} = pack;
-    const provinces = (pack.provinces = [0]);
+    const provincesToRestore = pack.provinces ?
+      pack.provinces.filter(p => p.lock || (states[p.state] && states[p.state].lock))
+      : [];
+    const provinces = (pack.provinces = [0].concat(...provincesToRestore));
+
+    const prevProvinces = {};
+    if (cells.province) {
+      cells.province.forEach((i, index) => {
+        prevProvinces[index] = i;
+      })
+    }
     cells.province = new Uint16Array(cells.i.length); // cell state
     const percentage = +provincesInput.value;
 
@@ -1170,10 +1337,16 @@ window.BurgsAndStates = (function () {
 
     // generate provinces for a selected burgs
     states.forEach(s => {
-      s.provinces = [];
+      s.provinces = s.provinces ? s.provinces.filter(p => p.lock) : [];
+      // Don't regenerate provinces of a locked state
+      if (s.lock) return;
+
       if (!s.i || s.removed) return;
       const stateBurgs = burgs
-        .filter(b => b.state === s.i && !b.removed)
+        // Filter for burgs of this state that haven't been removed and that are not in a locked province.
+        .filter(b =>
+          b.state === s.i && !b.removed && provincesToRestore.find(p => prevProvinces[b.cell] === p.i) === undefined
+        )
         .sort((a, b) => b.population * gauss(1, 0.2, 0.5, 1.5, 3) - a.population)
         .sort((a, b) => b.capital - a.capital);
       if (stateBurgs.length < 2) return; // at least 2 provinces are required
@@ -1200,11 +1373,31 @@ window.BurgsAndStates = (function () {
       }
     });
 
+    // Restore the indexes of locked and kept provinces
+    provincesToRestore.forEach((province, index) => {
+      province.old_i = province.i;
+      province.i = index + 1;
+      states[province.state].provinces.push(province.i);
+    });
+
     // expand generated provinces
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
     provinces.forEach(function (p) {
       if (!p.i || p.removed) return;
+
+      // Then restore the cells of locked or kept provinces
+      if (p.old_i) {
+        Object.entries(prevProvinces).forEach(function ([index, provId]) {
+          if (provId === p.old_i) {
+            cells.province[index] = p.i;
+          }
+        });
+
+        delete p.old_i;
+        return;
+      }
+
       cells.province[p.center] = p.i;
       queue.queue({e: p.center, p: 0, province: p.i, state: p.state});
       cost[p.center] = 1;
@@ -1217,6 +1410,16 @@ window.BurgsAndStates = (function () {
         province = next.province,
         state = next.state;
       cells.c[n].forEach(function (e) {
+        // Do not overwrite cells from a locked state or province.
+        if (
+          (provinces[cells.province[e]] && provinces[cells.province[e]].lock) ||
+          (
+            provinces[cells.province[e]] &&
+            states[provinces[cells.province[e]].state] &&
+            states[provinces[cells.province[e]].state].lock
+          )
+        ) return;
+
         const land = cells.h[e] >= 20;
         if (!land && !cells.t[e]) return; // cannot pass deep ocean
         if (land && cells.state[e] !== state) return;
@@ -1358,6 +1561,7 @@ window.BurgsAndStates = (function () {
 
   return {
     generate,
+    regenerateStates,
     expandStates,
     normalizeStates,
     assignColors,
