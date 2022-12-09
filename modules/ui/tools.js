@@ -171,6 +171,7 @@ function regenerateProvinces() {
   document.querySelectorAll("[id^=provinceCOA]").forEach(el => el.remove());
   emblems.selectAll("use").remove();
   if (layerIsOn("toggleEmblems")) drawEmblems();
+  refreshAllEditors();
 }
 
 function regenerateBurgs() {
