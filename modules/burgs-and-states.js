@@ -655,7 +655,8 @@ window.BurgsAndStates = (function () {
     const mode = options.stateLabelsMode || "auto";
 
     for (const s of states) {
-      if (!s.i || s.removed || !s.cells || (list && !list.includes(s.i))) continue;
+      if (!s.i || s.removed || s.lock || !s.cells || (list && !list.includes(s.i))) continue;
+
       const used = [];
       const visualCenter = findCell(s.pole[0], s.pole[1]);
       const start = cells.state[visualCenter] === s.i ? visualCenter : s.center;
@@ -757,9 +758,38 @@ window.BurgsAndStates = (function () {
 
       if (!list) {
         // remove all labels and textpaths
-        g.selectAll("text").remove();
-        t.selectAll("path[id*='stateLabel']").remove();
+        g.selectAll("text").filter((_, i) => {
+          const id = g.select(`:nth-child(${i + 1})`).node()?.id;
+          if (!id) return true;
+
+          return !pack.states.some(s => s.lock && `${s.name_id}` === id.substring(10));
+        }).remove();
+        t.selectAll("path[id*='stateLabel']").filter((_, i) => {
+          const id = t.select(`:nth-child(${i + 1})`).node()?.id;
+          if (!id) return true;
+
+          return !pack.states.some(s => s.lock && `${s.name_id}` === id.substring(19));
+        }).remove();
       }
+
+      pack.states.forEach(s => {
+        if (!s.lock) return;
+
+        // For locked states, get the name and update its index to keep it in place
+        const g = labels.select("#states");
+        const t = defs.select("#textPaths");
+
+        const labelNode = g.select(`#stateLabel${s.name_id}`);
+        const textNode = t.select(`#textPath_stateLabel${s.name_id}`);
+
+        labelNode
+          .attr('id', `stateLabel${s.i}`)
+          .select("textPath")
+          .attr("xlink:href", `#textPath_stateLabel${s.i}`);
+        textNode.attr('id', `textPath_stateLabel${s.i}`);
+
+        s.name_id = s.i;
+      });
 
       const example = g.append("text").attr("x", 0).attr("x", 0).text("Average");
       const letterLength = example.node().getComputedTextLength() / 7; // average length of 1 letter
@@ -767,6 +797,7 @@ window.BurgsAndStates = (function () {
       paths.forEach(p => {
         const id = p[0];
         const state = states[p[0]];
+        state.name_id = id;
         const {name, fullName} = state;
 
         if (list) {
@@ -909,7 +940,7 @@ window.BurgsAndStates = (function () {
 
     // assign basic color using greedy coloring algorithm
     pack.states.forEach(s => {
-      if (!s.i || s.removed) return;
+      if (!s.i || s.removed || s.lock) return;
       const neibs = s.neighbors;
       s.color = colors.find(c => neibs.every(n => pack.states[n].color !== c));
       if (!s.color) s.color = getRandomColor();
@@ -918,7 +949,7 @@ window.BurgsAndStates = (function () {
 
     // randomize each already used color a bit
     colors.forEach(c => {
-      const sameColored = pack.states.filter(s => s.color === c);
+      const sameColored = pack.states.filter(s => s.color === c && !s.lock);
       sameColored.forEach((s, d) => {
         if (!d) return;
         s.color = getMixedColor(s.color);
@@ -1147,7 +1178,7 @@ window.BurgsAndStates = (function () {
   // select a forms for listed or all valid states
   const defineStateForms = function (list) {
     TIME && console.time("defineStateForms");
-    const states = pack.states.filter(s => s.i && !s.removed);
+    const states = pack.states.filter(s => s.i && !s.removed && !s.lock);
     if (states.length < 1) return;
 
     const generic = {Monarchy: 25, Republic: 2, Union: 1};
@@ -1438,7 +1469,15 @@ window.BurgsAndStates = (function () {
     // justify provinces shapes a bit
     for (const i of cells.i) {
       if (cells.burg[i]) continue; // do not overwrite burgs
-      const neibs = cells.c[i].filter(c => cells.state[c] === cells.state[i]).map(c => cells.province[c]);
+      // Do not process any locked provinces or states
+      if (pack.provinces[cells.province[i]].lock || pack.states[cells.state[i]].lock) return;
+      // Find neighbors, but ignore any cells from locked states or provinces
+      const neibs = cells.c[i].filter(
+        c =>
+          !pack.states[cells.state[c]].lock &&
+          !pack.provinces[cells.province[c]].lock &&
+          cells.state[c] === cells.state[i]
+      ).map(c => cells.province[c]);
       const adversaries = neibs.filter(c => c !== cells.province[i]);
       if (adversaries.length < 2) continue;
       const buddies = neibs.filter(c => c === cells.province[i]).length;
@@ -1452,7 +1491,7 @@ window.BurgsAndStates = (function () {
     // add "wild" provinces if some cells don't have a province assigned
     const noProvince = Array.from(cells.i).filter(i => cells.state[i] && !cells.province[i]); // cells without province assigned
     states.forEach(s => {
-      if (!s.provinces.length) return;
+      if (!s.provinces.length || s.lock) return;
 
       const coreProvinceNames = s.provinces.map(p => provinces[p]?.name);
       const colonyNamePool = [s.name, ...coreProvinceNames].filter(name => name && !/new/i.test(name));
