@@ -523,7 +523,6 @@ window.BurgsAndStates = (function () {
             }
           });
 
-          delete s.old_i;
           return;
         }
 
@@ -762,13 +761,13 @@ window.BurgsAndStates = (function () {
           const id = g.select(`:nth-child(${i + 1})`).node()?.id;
           if (!id) return true;
 
-          return !pack.states.some(s => s.lock && `${s.name_id}` === id.substring(10));
+          return !pack.states.some(s => s.lock && `${s.old_i}` === id.substring(10));
         }).remove();
         t.selectAll("path[id*='stateLabel']").filter((_, i) => {
           const id = t.select(`:nth-child(${i + 1})`).node()?.id;
           if (!id) return true;
 
-          return !pack.states.some(s => s.lock && `${s.name_id}` === id.substring(19));
+          return !pack.states.some(s => s.lock && `${s.old_i}` === id.substring(19));
         }).remove();
       }
 
@@ -779,16 +778,14 @@ window.BurgsAndStates = (function () {
         const g = labels.select("#states");
         const t = defs.select("#textPaths");
 
-        const labelNode = g.select(`#stateLabel${s.name_id}`);
-        const textNode = t.select(`#textPath_stateLabel${s.name_id}`);
+        const labelNode = g.select(`#stateLabel${s.old_i}`);
+        const textNode = t.select(`#textPath_stateLabel${s.old_i}`);
 
         labelNode
           .attr('id', `stateLabel${s.i}`)
           .select("textPath")
           .attr("xlink:href", `#textPath_stateLabel${s.i}`);
         textNode.attr('id', `textPath_stateLabel${s.i}`);
-
-        s.name_id = s.i;
       });
 
       const example = g.append("text").attr("x", 0).attr("x", 0).text("Average");
@@ -797,7 +794,6 @@ window.BurgsAndStates = (function () {
       paths.forEach(p => {
         const id = p[0];
         const state = states[p[0]];
-        state.name_id = id;
         const {name, fullName} = state;
 
         if (list) {
