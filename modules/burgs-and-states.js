@@ -246,6 +246,7 @@ window.BurgsAndStates = (function () {
           if (!pack.provinces[id]) return;
 
           pack.provinces[id].state = toRestore.i;
+          pack.provinces[id].should_restore = true;
         });
 
         statesToRestore = rest;
@@ -608,10 +609,15 @@ window.BurgsAndStates = (function () {
     for (const i of cells.i) {
       if (cells.h[i] < 20 || cells.burg[i]) continue; // do not overwrite burgs
       if (cells.c[i].some(c => burgs[cells.burg[c]].capital)) continue; // do not overwrite near capital
+      if (pack.states[cells.state[i]]?.lock) continue; // Do not overwrite cells of locks states
       const neibs = cells.c[i].filter(c => cells.h[c] >= 20);
-      const adversaries = neibs.filter(c => cells.state[c] !== cells.state[i]);
+      const adversaries = neibs.filter(
+        c => !pack.states[cells.state[c]]?.lock && cells.state[c] !== cells.state[i]
+      );
       if (adversaries.length < 2) continue;
-      const buddies = neibs.filter(c => cells.state[c] === cells.state[i]);
+      const buddies = neibs.filter(
+        c => !pack.states[cells.state[c]]?.lock && cells.state[c] === cells.state[i]
+      );
       if (buddies.length > 2) continue;
       if (adversaries.length <= buddies.length) continue;
       cells.state[i] = cells.state[adversaries[0]];
@@ -1333,7 +1339,7 @@ window.BurgsAndStates = (function () {
 
     const {cells, states, burgs} = pack;
     const provincesToRestore = pack.provinces ?
-      pack.provinces.filter(p => p.lock || (states[p.state] && states[p.state].lock))
+      pack.provinces.filter(p => p.lock || p.should_restore)
       : [];
     const provinces = (pack.provinces = [0].concat(...provincesToRestore));
 
@@ -1402,6 +1408,7 @@ window.BurgsAndStates = (function () {
 
     // Restore the indexes of locked and kept provinces
     provincesToRestore.forEach((province, index) => {
+      delete province.should_restore;
       province.old_i = province.i;
       province.i = index + 1;
       states[province.state].provinces.push(province.i);
