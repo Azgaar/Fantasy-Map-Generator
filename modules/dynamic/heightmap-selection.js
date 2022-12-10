@@ -262,7 +262,7 @@ function getName(id) {
 }
 
 function getGraph(currentGraph) {
-  const newGraph = shouldRegenerateGrid(currentGraph) ? generateGrid() : deepCopy(currentGraph);
+  const newGraph = shouldRegenerateGrid(currentGraph, seed) ? generateGrid() : deepCopy(currentGraph);
   delete newGraph.cells.h;
   return newGraph;
 }

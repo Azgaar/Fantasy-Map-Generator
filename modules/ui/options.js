@@ -257,8 +257,8 @@ function testSpeaker() {
 }
 
 function generateMapWithSeed() {
-  if (optionsSeed.value == seed) return tip("The current map already has this seed", false, "error");
-  regeneratePrompt();
+  if (optionsSeed.value === seed) return tip("The current map already has this seed", false, "error");
+  regeneratePrompt({seed: optionsSeed.value});
 }
 
 function showSeedHistoryDialog() {
@@ -288,7 +288,7 @@ function restoreSeed(id) {
 
   if (locked("template")) unlock("template");
 
-  regeneratePrompt();
+  regeneratePrompt({seed});
 }
 
 function restoreDefaultZoomExtent() {
