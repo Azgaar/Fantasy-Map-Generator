@@ -452,7 +452,7 @@ function unlock(id) {
 // check if option is locked
 function locked(id) {
   const lockEl = document.getElementById("lock_" + id);
-  return lockEl.dataset.locked == 1;
+  return lockEl.dataset.locked === "1";
 }
 
 // return key value stored in localStorage or null

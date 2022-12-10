@@ -980,7 +980,7 @@ fieldset {
 
 #templateBody > div > span {
   float: right;
-  margin: 0 1px 0 0.5px;
+  margin-inline: 1px;
 }
 
 #templateBody > div > i {
@@ -989,10 +989,9 @@ fieldset {
 
 #templateBody input,
 #templateBody select {
-  width: 4em;
+  width: 4.5em;
   height: 1em;
   border: 0;
-  font-size: 0.95em;
   background-color: #ffffff95;
   color: #05044d;
   font-style: italic;

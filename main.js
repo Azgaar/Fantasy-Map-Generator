@@ -692,7 +692,7 @@ async function generate(options) {
     applyMapSize();
     randomizeOptions();
 
-    if (shouldRegenerateGrid(grid)) grid = precreatedGraph || generateGrid();
+    if (shouldRegenerateGrid(grid, precreatedSeed)) grid = precreatedGraph || generateGrid();
     else delete grid.cells.h;
     grid.cells.h = await HeightmapGenerator.generate(grid);
 
@@ -774,12 +774,10 @@ async function generate(options) {
 function setSeed(precreatedSeed) {
   if (!precreatedSeed) {
     const first = !mapHistory[0];
-    const url = new URL(window.location.href);
-    const params = url.searchParams;
-    const urlSeed = url.searchParams.get("seed");
+    const params = new URL(window.location.href).searchParams;
+    const urlSeed = params.get("seed");
     if (first && params.get("from") === "MFCG" && urlSeed.length === 13) seed = urlSeed.slice(0, -4);
     else if (first && urlSeed) seed = urlSeed;
-    else if (optionsSeed.value && optionsSeed.value != seed) seed = optionsSeed.value;
     else seed = generateSeed();
   } else {
     seed = precreatedSeed;

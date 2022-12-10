@@ -1041,8 +1041,10 @@ function editHeightmap(options) {
       const steps = byId("templateBody").querySelectorAll("#templateBody > div");
       if (!steps.length) return;
 
-      const seed = byId("templateSeed").value;
-      if (seed) Math.random = aleaPRNG(seed);
+      const currentSeed = byId("templateSeed").value;
+      const seed = (locked("templateSeed") && currentSeed) || generateSeed();
+      Math.random = aleaPRNG(seed);
+      byId("templateSeed").value = seed;
 
       grid.cells.h = createTypedArray({maxValue: 100, length: grid.points.length});
       HeightmapGenerator.setGraph(grid);
