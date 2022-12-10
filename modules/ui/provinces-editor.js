@@ -1093,12 +1093,6 @@ function updateLockStatus(provinceId, classList) {
   const p = pack.provinces[provinceId];
   p.lock = !p.lock;
 
-  if (p.lock) {
-    classList.remove("icon-lock-open");
-    classList.add("icon-lock");
-  }
-  else {
-    classList.remove("icon-lock");
-    classList.add("icon-lock-open");
-  }
+  classList.toggle("icon-lock-open");
+  classList.toggle("icon-lock");
 }

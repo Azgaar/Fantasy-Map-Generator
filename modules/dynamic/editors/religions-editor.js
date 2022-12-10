@@ -770,12 +770,6 @@ function updateLockStatus() {
   const r = pack.religions[religionId];
   r.lock = !r.lock;
 
-  if (r.lock) {
-    classList.remove("icon-lock-open");
-    classList.add("icon-lock");
-  }
-  else {
-    classList.remove("icon-lock");
-    classList.add("icon-lock-open");
-  }
+  classList.toggle("icon-lock-open");
+  classList.toggle("icon-lock");
 }

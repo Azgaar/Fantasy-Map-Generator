@@ -525,11 +525,6 @@ window.Cultures = (function () {
 
     const neutral = (cells.i.length / 5000) * 3000 * neutralInput.value; // limit cost for culture growth
     const cost = [];
-    const cellsCost = {};
-    cells.culture.forEach(function (cultureId, index) {
-      // Make the cost of cells with an existing culture so high, they won't get picked
-      cellsCost[index] = cultureId > 0 ? neutral : 0;
-    });
     while (queue.length) {
       const next = queue.dequeue(),
         n = next.e,
@@ -537,7 +532,8 @@ window.Cultures = (function () {
         c = next.c;
       const type = pack.cultures[c].type;
       cells.c[n].forEach(function (e) {
-        const cellCost = cellsCost[e];
+        if (pack.cultures[cells.culture[e]]?.lock) return;
+
         const biome = cells.biome[e];
         const biomeCost = getBiomeCost(c, biome, type);
         const biomeChangeCost = biome === cells.biome[n] ? 0 : 20; // penalty on biome change
@@ -545,7 +541,7 @@ window.Cultures = (function () {
         const riverCost = getRiverCost(cells.r[e], e, type);
         const typeCost = getTypeCost(cells.t[e], type);
         const totalCost =
-          p + cellCost + (biomeCost + biomeChangeCost + heightCost + riverCost + typeCost) / pack.cultures[c].expansionism;
+          p + (biomeCost + biomeChangeCost + heightCost + riverCost + typeCost) / pack.cultures[c].expansionism;
 
         if (totalCost > neutral) return;
 

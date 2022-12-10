@@ -940,12 +940,6 @@ function updateLockStatus() {
   const c = pack.cultures[cultureId];
   c.lock = !c.lock;
 
-  if (c.lock) {
-    classList.remove("icon-lock-open");
-    classList.add("icon-lock");
-  }
-  else {
-    classList.remove("icon-lock");
-    classList.add("icon-lock-open");
-  }
+  classList.toggle("icon-lock-open");
+  classList.toggle("icon-lock");
 }

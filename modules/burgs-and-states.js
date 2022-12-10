@@ -1466,7 +1466,7 @@ window.BurgsAndStates = (function () {
     for (const i of cells.i) {
       if (cells.burg[i]) continue; // do not overwrite burgs
       // Do not process any locked provinces or states
-      if (pack.provinces[cells.province[i]].lock || pack.states[cells.state[i]].lock) return;
+      if (pack.provinces[cells.province[i]].lock || pack.states[cells.state[i]].lock) continue;
       // Find neighbors, but ignore any cells from locked states or provinces
       const neibs = cells.c[i].filter(
         c =>

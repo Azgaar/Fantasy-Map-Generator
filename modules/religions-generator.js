@@ -459,10 +459,13 @@ window.Religions = (function () {
       const folk = isFolkBased && religions.find(r => r.i !== religion.i && r.culture === culture && r.type === "Folk");
       if (folk && religion.expansion === "culture" && folk.name.slice(0, 3) !== "Old") folk.name = "Old " + folk.name;
 
+      // have a counter here to adjust the search range and make sure we can find a religion
+      let runs = 1;
       do {
         // Run the search until we have at least one source religion that is not the current religion.
-        religion.origins = folk ? [folk.i] : getReligionsInRadius({x, y, r: 150 / count, max: 2})
+        religion.origins = folk ? [folk.i] : getReligionsInRadius({x, y, r: (150 * runs) / count, max: 2})
           .filter(r => r !== religion.i);
+        runs++;
       } while (!religion.origins.length)
       religionsTree.add([x, y]);
     });
@@ -524,10 +527,13 @@ window.Religions = (function () {
         return;
 
       const [x, y] = cells.p[religion.center];
+      // have a counter here to adjust the search range and make sure we can find a religion
+      let runs = 1;
       do {
         // Run the search until we have at least one source religion that is not the current religion.
-        religion.origins = getReligionsInRadius({x, y, r: 300 / count, max: rand(0, 4)})
+        religion.origins = getReligionsInRadius({x, y, r: (300 * runs) / count, max: rand(0, 4)})
           .filter(r => r !== religion.i);
+        runs++;
       } while (!religion.origins.length)
       religionsTree.add([x, y]);
     });
@@ -701,11 +707,6 @@ window.Religions = (function () {
 
     const neutral = (cells.i.length / 5000) * 200 * gauss(1, 0.3, 0.2, 2, 2) * neutralInput.value; // limit cost for organized religions growth
     const popCost = d3.max(cells.pop) / 3; // enougth population to spered religion without penalty
-    const cellsCost = {};
-    restoredCells.forEach(index => {
-      // Make the cost of cells with an existing culture so high, they won't get picked
-      cellsCost[index] = neutral;
-    });
 
     while (queue.length) {
       const next = queue.dequeue(),
@@ -719,6 +720,7 @@ window.Religions = (function () {
       cells.c[n].forEach(function (e) {
         if (expansion === "culture" && c !== cells.culture[e]) return;
         if (expansion === "state" && s !== cells.state[e]) return;
+        if (restoredCells.includes(e)) return;
 
         const cultureCost = c !== cells.culture[e] ? 10 : 0;
         const stateCost = s !== cells.state[e] ? 10 : 0;
@@ -728,7 +730,6 @@ window.Religions = (function () {
         const waterCost = cells.h[e] < 20 ? (cells.road[e] ? 50 : 1000) : 0;
         const totalCost =
           p +
-          (cellsCost[e] || 0) +
           (cultureCost + stateCost + biomeCost + populationCost + heightCost + waterCost) / religions[r].expansionism;
         if (totalCost > neutral) return;
 
@@ -758,11 +759,6 @@ window.Religions = (function () {
       });
 
     const neutral = (cells.i.length / 5000) * 500 * neutralInput.value; // limit cost for heresies growth
-    const cellsCost = {};
-    restoredCells.forEach(index => {
-      // Make the cost of cells with an existing culture so high, they won't get picked
-      cellsCost[index] = neutral;
-    });
 
     while (queue.length) {
       const next = queue.dequeue(),
@@ -772,13 +768,14 @@ window.Religions = (function () {
         b = next.b;
 
       cells.c[n].forEach(function (e) {
+        if (restoredCells.includes(e)) return;
+
         const religionCost = cells.religion[e] === b ? 0 : 2000;
         const biomeCost = cells.road[e] ? 0 : biomesData.cost[cells.biome[e]];
         const heightCost = Math.max(cells.h[e], 20) - 20;
         const waterCost = cells.h[e] < 20 ? (cells.road[e] ? 50 : 1000) : 0;
         const totalCost =
-          p + (cellsCost[e] || 0) +
-          (religionCost + biomeCost + heightCost + waterCost) / Math.max(religions[r].expansionism, 0.1);
+          p + (religionCost + biomeCost + heightCost + waterCost) / Math.max(religions[r].expansionism, 0.1);
 
         if (totalCost > neutral) return;
 

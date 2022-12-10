@@ -1369,12 +1369,6 @@ function updateLockStatus(stateId, classList) {
   const s = pack.states[stateId];
   s.lock = !s.lock;
 
-  if (s.lock) {
-    classList.remove("icon-lock-open");
-    classList.add("icon-lock");
-  }
-  else {
-    classList.remove("icon-lock");
-    classList.add("icon-lock-open");
-  }
+  classList.toggle("icon-lock-open");
+  classList.toggle("icon-lock");
 }
