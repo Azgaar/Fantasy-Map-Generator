@@ -213,33 +213,70 @@ function editDiplomacy() {
 
   function selectRelation(subjectId, objectId, currentRelation) {
     const states = pack.states;
-
     const subject = states[subjectId];
-    const header = `<div style="margin-bottom: 0.3em"><svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${subject.i}"></use></svg> <b>${subject.fullName}</b></div>`;
+    const object = states[objectId];
 
-    const options = Object.entries(relations)
+    const relationsSelector = Object.entries(relations)
       .map(
-        ([relation, {color, inText, tip}]) =>
-          `<div style="margin-block: 0.2em" data-tip="${tip}"><label class="pointer">
-          <input type="radio" name="relationSelect" value="${relation}" ${currentRelation === relation && "checked"} >
-          <fill-box fill="${color}" size=".8em"></fill-box>
-          ${inText}
-        </label></div>`
+        ([relation, {color, inText, tip}]) => /* html */ `
+          <div data-tip="${tip}">
+            <label class="pointer">
+              <input type="radio" name="relationSelect" value="${relation}"
+              ${currentRelation === relation && "checked"} >
+              <fill-box fill="${color}" size=".8em"></fill-box>
+              ${inText}
+          </label>
+          </div>
+        `
       )
       .join("");
 
-    const object = states[objectId];
-    const footer = `<div style="margin-top: 0.7em"><svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${object.i}"></use></svg> <b>${object.fullName}</b></div>`;
+    const objectsSelector = states
+      .filter(s => s.i && !s.removed && s.i !== subjectId)
+      .map(
+        s => /* html */ `
+          <div data-tip="${s.fullName}">
+            <input id="selectState${s.i}" class="checkbox" type="checkbox" name="objectSelect" value="${s.i}"
+            ${s.i === objectId && "checked"} />
+            <label for="selectState${s.i}" class="checkbox-label">
+              <svg class="coaIcon" viewBox="0 0 200 200">
+                <use href="#stateCOA${s.i}"></use>
+              </svg>
+              ${s.fullName}
+            </label>
+          </div>
+        `
+      )
+      .join("");
 
-    alertMessage.innerHTML = /* html */ `<div style="overflow: hidden">${header} ${options} ${footer}</div>`;
+    alertMessage.innerHTML = /* html */ `
+      <form id='relationsForm' style="overflow: hidden; display: flex; flex-direction: column; gap: .3em; padding: 0.1em 0;">
+        <header>
+          <svg class="coaIcon" viewBox="0 0 200 200">
+            <use href="#stateCOA${subject.i}"></use>
+          </svg>
+          <b>${subject.fullName}</b>
+        </header>
+
+        <main style='display: flex; gap: 1em;'>
+          <section style="display: flex; flex-direction: column; gap: .3em;">${relationsSelector}</section>
+          <section style="display: flex; flex-direction: column; gap: .3em;">${objectsSelector}</section>
+        </main>
+      </form>
+    `;
 
     $("#alert").dialog({
       width: fitContent(),
       title: `Change relations`,
       buttons: {
         Apply: function () {
-          const newRelation = document.querySelector('input[name="relationSelect"]:checked')?.value;
-          changeRelation(subjectId, objectId, currentRelation, newRelation);
+          const formData = new FormData(byId("relationsForm"));
+          const newRelation = formData.get("relationSelect");
+          const objectIds = [...formData.getAll("objectSelect")].map(Number);
+
+          for (const objectId of objectIds) {
+            changeRelation(subjectId, objectId, currentRelation, newRelation);
+          }
           $(this).dialog("close");
         },
         Cancel: function () {
