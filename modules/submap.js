@@ -403,7 +403,7 @@ window.Submap = (function () {
       } else {
         b.cell = cityCell;
       }
-      if (!b.lock) b.lock = options.lockBurgs;
+      if (b.i && !b.lock) b.lock = options.lockBurgs;
       cells.burg[b.cell] = id;
     });
   }
