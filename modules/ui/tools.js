@@ -176,7 +176,7 @@ function regenerateProvinces() {
 
 function regenerateBurgs() {
   const {cells, states} = pack;
-  const lockedburgs = pack.burgs.filter(b => b.lock);
+  const lockedburgs = pack.burgs.filter(b => b.i && !b.removed && b.lock);
   rankCells();
 
   cells.burg = new Uint16Array(cells.i.length);

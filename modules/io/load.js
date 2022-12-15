@@ -500,6 +500,15 @@ async function parseLoadedData(data) {
       });
 
       pack.burgs.forEach(burg => {
+        if ((!burg.i || burg.removed) && burg.lock) {
+          ERROR &&
+            console.error(
+              `Data Integrity Check. Burg ${burg.i || "0"} is removed or invalid but still locked. Unlocking the burg`
+            );
+          delete burg.lock;
+          return;
+        }
+
         if (!burg.i || burg.removed) return;
         if (burg.cell === undefined || burg.x === undefined || burg.y === undefined) {
           ERROR &&
