@@ -1,4 +1,5 @@
 "use strict";
+
 // module to control the Tools options (click to edit, to re-geenerate, tp add)
 
 toolsContent.addEventListener("click", function (event) {
@@ -138,7 +139,7 @@ function recalculatePopulation() {
 }
 
 function regenerateStates() {
-  BurgsAndStates.regenerateStates();
+  recreateStates();
   BurgsAndStates.expandStates();
   BurgsAndStates.normalizeStates();
   BurgsAndStates.collectStatistics();
@@ -158,6 +159,137 @@ function regenerateStates() {
   if (document.getElementById("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
   if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
   if (document.getElementById("militaryOverviewRefresh")?.offsetParent) militaryOverviewRefresh.click();
+}
+
+function recreateStates() {
+  const localSeed = generateSeed();
+  Math.random = aleaPRNG(localSeed);
+
+  const statesCount = +regionsOutput.value;
+  const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
+  if (!validBurgs.length)
+    return tip("There are no any burgs to generate states. Please create burgs first", false, "error");
+  if (validBurgs.length < statesCount)
+    tip(
+      `Not enough burgs to generate ${statesCount} states. Will generate only ${validBurgs.length} states`,
+      false,
+      "warn"
+    );
+
+  const lockedStates = pack.states.filter(s => s.i && !s.removed && s.lock);
+  const lockedStatesIds = lockedStates.map(s => s.i);
+  const lockedStatesCapitals = lockedStates.map(s => s.capital);
+
+  // turn all old capitals into towns, except for the capitals of locked states
+  for (const burg of validBurgs) {
+    if (!burg.capital) continue;
+    if (lockedStatesCapitals.includes(burg.i)) continue;
+
+    moveBurgToGroup(burg.i, "towns");
+    burg.capital = 0;
+  }
+
+  // remove emblems
+  document.querySelectorAll("[id^=stateCOA]").forEach(el => el.remove());
+  document.querySelectorAll("[id^=provinceCOA]").forEach(el => el.remove());
+  emblems.selectAll("use").remove();
+
+  unfog();
+
+  if (!statesCount) {
+    tip(`Cannot generate zero states. Please check the <i>States Number</i> option`, false, "warn");
+    pack.states = pack.states.slice(0, 1); // remove all except of neutrals
+    pack.states[0].diplomacy = []; // clear diplomacy
+    pack.provinces = [0]; // remove all provinces
+    pack.cells.state = new Uint16Array(pack.cells.i.length); // reset cells data
+
+    borders.selectAll("path").remove(); // remove borders
+    regions.selectAll("path").remove(); // remove states fill
+    labels.select("#states").selectAll("text"); // remove state labels
+    defs.select("#textPaths").selectAll("path[id*='stateLabel']").remove(); // remove state labels paths
+
+    if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
+    if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
+    return;
+  }
+
+  // burg local ids sorted by a bit randomized population. Also ignore burgs of a locked state
+  const sortedBurgs = validBurgs
+    .filter(b => !lockedStatesIds.includes(b.state))
+    .map(b => [b, b.population * Math.random()])
+    .sort((a, b) => b[1] - a[1])
+    .map(b => b[0]);
+
+  const count = Math.min(statesCount, validBurgs.length) + 1; // +1 for neutral
+  let spacing = (graphWidth + graphHeight) / 2 / count; // min distance between capitals
+
+  const capitalsTree = d3.quadtree();
+  const isTooClose = (x, y, spacing) => Boolean(capitalsTree.find(x, y, spacing));
+
+  const newStates = [{i: 0, name: pack.states[0].name}];
+
+  // restore locked states
+  lockedStates.forEach(s => {
+    const newId = newStates.length;
+
+    s.provinces.forEach(id => {
+      if (!pack.provinces[id] || !pack.provinces[id].removed) return;
+      pack.provinces[id].state = newId;
+      // pack.provinces[id].should_restore = true;
+    });
+
+    for (const i of pack.cells.i) {
+      const stateId = pack.cells.state[i];
+      if (stateId === s.i) pack.cells.state[i] = newId;
+    }
+
+    const {x, y} = validBurgs[s.capital];
+    capitalsTree.add([x, y]);
+
+    s.i = newId;
+    newStates.push(s);
+  });
+
+  for (let i = newStates.length; i < count; i++) {
+    let capital = null;
+
+    for (const burg of sortedBurgs) {
+      const {x, y} = burg;
+      if (!isTooClose(x, y, spacing)) {
+        burg.capital = 1;
+        capital = burg;
+        capitalsTree.add([x, y]);
+        moveBurgToGroup(burg.i, "cities");
+        break;
+      }
+
+      spacing = Math.max(spacing - 1, 1);
+    }
+
+    // all burgs are too close, should not happen in normal conditions
+    if (!capital) break;
+
+    // create new state
+    const culture = capital.culture;
+    const basename =
+      capital.name.length < 9 && capital.cell % 5 === 0 ? capital.name : Names.getCulture(culture, 3, 6, "", 0);
+    const name = Names.getState(basename, culture);
+    const nomadic = [1, 2, 3, 4].includes(pack.cells.biome[capital.cell]);
+    const type = nomadic
+      ? "Nomadic"
+      : pack.cultures[culture].type === "Nomadic"
+      ? "Generic"
+      : pack.cultures[culture].type;
+    const expansionism = rn(Math.random() * powerInput.value + 1, 1);
+
+    const cultureType = pack.cultures[culture].type;
+    const coa = COA.generate(capital.coa, 0.3, null, cultureType);
+    coa.shield = capital.coa.shield;
+
+    newStates.push({i, name, type, capital: capital.i, center: capital.cell, culture, expansionism, coa});
+  }
+
+  pack.states = newStates;
 }
 
 function regenerateProvinces() {

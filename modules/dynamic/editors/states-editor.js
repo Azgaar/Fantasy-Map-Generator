@@ -153,7 +153,8 @@ function addListeners() {
     else if (classList.contains("statePopulation")) changePopulation(stateId);
     else if (classList.contains("icon-pin")) toggleFog(stateId, classList);
     else if (classList.contains("icon-trash-empty")) stateRemovePrompt(stateId);
-    else if (classList.contains("icon-lock") || classList.contains("icon-lock-open")) updateLockStatus(stateId, classList);
+    else if (classList.contains("icon-lock") || classList.contains("icon-lock-open"))
+      updateLockStatus(stateId, classList);
   });
 
   $body.on("input", function (ev) {
@@ -289,7 +290,9 @@ function statesEditorAddLines() {
       <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
       <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
       <span data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"} hide"></span>
-      <span data-tip="Lock the state" class="icon-lock${s.lock ? '' : '-open'} hide"></span>
+      <span data-tip="Lock the state to protect it from re-generation" class="icon-lock${
+        s.lock ? "" : "-open"
+      } hide"></span>
       <span data-tip="Remove the state" class="icon-trash-empty hide"></span>
     </div>`;
   }
