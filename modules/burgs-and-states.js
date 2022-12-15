@@ -1332,7 +1332,10 @@ window.BurgsAndStates = (function () {
     return adjName ? `${getAdjective(s.name)} ${s.formName}` : `${s.formName} of ${s.name}`;
   };
 
-  const generateProvinces = function (regenerate) {
+  const generateProvinces = function (
+      regenerate = false,
+      ignoreLockedStates = false
+  ) {
     TIME && console.time("generateProvinces");
     const localSeed = regenerate ? generateSeed() : seed;
     Math.random = aleaPRNG(localSeed);
@@ -1372,7 +1375,7 @@ window.BurgsAndStates = (function () {
     states.forEach(s => {
       s.provinces = s.provinces ? s.provinces.filter(p => p.lock) : [];
       // Don't regenerate provinces of a locked state
-      if (s.lock) return;
+      if (!ignoreLockedStates && s.lock) return;
 
       if (!s.i || s.removed) return;
       const stateBurgs = burgs
@@ -1448,6 +1451,10 @@ window.BurgsAndStates = (function () {
         if (
           (provinces[cells.province[e]] && provinces[cells.province[e]].lock) ||
           (
+            // For finding if the state is locked, first make sure we care about that
+            // then find the province, the state for the province, and if both are defined,
+            // check the lock.
+            !ignoreLockedStates &&
             provinces[cells.province[e]] &&
             states[provinces[cells.province[e]].state] &&
             states[provinces[cells.province[e]].state].lock
@@ -1472,12 +1479,15 @@ window.BurgsAndStates = (function () {
     // justify provinces shapes a bit
     for (const i of cells.i) {
       if (cells.burg[i]) continue; // do not overwrite burgs
-      // Do not process any locked provinces or states
-      if (pack.provinces[cells.province[i]].lock || pack.states[cells.state[i]].lock) continue;
+      // Do not process any locked provinces or states, if we care about the latter
+      if (
+          pack.provinces[cells.province[i]].lock ||
+          (!ignoreLockedStates && pack.states[cells.state[i]].lock)
+      ) continue;
       // Find neighbors, but ignore any cells from locked states or provinces
       const neibs = cells.c[i].filter(
         c =>
-          !pack.states[cells.state[c]].lock &&
+          (ignoreLockedStates || !pack.states[cells.state[c]].lock) &&
           !pack.provinces[cells.province[c]].lock &&
           cells.state[c] === cells.state[i]
       ).map(c => cells.province[c]);
@@ -1494,7 +1504,7 @@ window.BurgsAndStates = (function () {
     // add "wild" provinces if some cells don't have a province assigned
     const noProvince = Array.from(cells.i).filter(i => cells.state[i] && !cells.province[i]); // cells without province assigned
     states.forEach(s => {
-      if (!s.provinces.length || s.lock) return;
+      if (!s.provinces.length || (!ignoreLockedStates && s.lock)) return;
 
       const coreProvinceNames = s.provinces.map(p => provinces[p]?.name);
       const colonyNamePool = [s.name, ...coreProvinceNames].filter(name => name && !/new/i.test(name));

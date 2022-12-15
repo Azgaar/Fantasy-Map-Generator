@@ -163,7 +163,7 @@ function regenerateStates() {
 function regenerateProvinces() {
   unfog();
 
-  BurgsAndStates.generateProvinces(true);
+  BurgsAndStates.generateProvinces(true, true);
   drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
 
