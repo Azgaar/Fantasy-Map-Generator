@@ -163,6 +163,144 @@ window.BurgsAndStates = (function () {
     }
   };
 
+  const regenerateStates = function() {
+    const localSeed = generateSeed();
+    Math.random = aleaPRNG(localSeed);
+
+    const statesCount = +regionsOutput.value;
+    const burgs = pack.burgs.filter(b => b.i && !b.removed);
+    if (!burgs.length) return tip("There are no any burgs to generate states. Please create burgs first", false, "error");
+    if (burgs.length < statesCount)
+      tip(`Not enough burgs to generate ${statesCount} states. Will generate only ${burgs.length} states`, false, "warn");
+
+    // turn all old capitals into towns, except for the capitals of locked states
+    burgs
+      .filter(b => b.capital && pack.states.find(s => s.lock && s.capital === b.i) === undefined)
+      .forEach(b => {
+        moveBurgToGroup(b.i, "towns");
+        b.capital = 0;
+      });
+
+    // remove emblems
+    document.querySelectorAll("[id^=stateCOA]").forEach(el => el.remove());
+    document.querySelectorAll("[id^=provinceCOA]").forEach(el => el.remove());
+    emblems.selectAll("use").remove();
+
+    unfog();
+
+    if (!statesCount) {
+      tip(`Cannot generate zero states. Please check the <i>States Number</i> option`, false, "warn");
+      pack.states = pack.states.slice(0, 1); // remove all except of neutrals
+      pack.states[0].diplomacy = []; // clear diplomacy
+      pack.provinces = [0]; // remove all provinces
+      pack.cells.state = new Uint16Array(pack.cells.i.length); // reset cells data
+      borders.selectAll("path").remove(); // remove borders
+      regions.selectAll("path").remove(); // remove states fill
+      labels.select("#states").selectAll("text"); // remove state labels
+      defs.select("#textPaths").selectAll("path[id*='stateLabel']").remove(); // remove state labels paths
+
+      if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
+      if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
+      return;
+    }
+
+    // burg local ids sorted by a bit randomized population. Also ignore burgs of a locked state.
+    const sortedBurgs = burgs
+      .filter(b => !pack.states[b.state] || !pack.states[b.state].lock)
+      .map((b, i) => [b, b.population * Math.random()])
+      .sort((a, b) => b[1] - a[1])
+      .map(b => b[0]);
+    const capitalsTree = d3.quadtree();
+
+    const neutral = pack.states[0].name; // neutrals name
+    const count = Math.min(statesCount, burgs.length) + 1; // +1 for neutral
+    let spacing = (graphWidth + graphHeight) / 2 / count; // min distance between capitals
+
+    const states = [];
+    // Get all the states to restore
+    let statesToRestore = [];
+    if (pack.states) {
+      pack.states.forEach(state => {
+        if (!state.lock) return;
+
+        statesToRestore.push(state)
+      });
+    }
+
+    d3.range(count).forEach(i => {
+      if (!i) {
+        states.push({i, name: neutral});
+        return;
+      }
+
+      // If we still have states to restore from the locks, restore those first and assign them the right ids.
+      if (statesToRestore.length) {
+        const [toRestore, ...rest] = statesToRestore;
+
+        toRestore.old_i = toRestore.i;
+        toRestore.i = i;
+        states.push(toRestore);
+
+        // Also reassign the state id of all provinces of this state for locked provinces
+        toRestore.provinces.forEach(id => {
+          if (!pack.provinces[id]) return;
+
+          pack.provinces[id].state = toRestore.i;
+          pack.provinces[id].should_restore = true;
+        });
+
+        statesToRestore = rest;
+
+        const {x, y} = burgs[toRestore.capital];
+        capitalsTree.add([x, y]);
+        return;
+      }
+
+      let capital = null;
+      for (const burg of sortedBurgs) {
+        const {x, y} = burg;
+        if (capitalsTree.find(x, y, spacing) === undefined) {
+          burg.capital = 1;
+          capital = burg;
+          capitalsTree.add([x, y]);
+          moveBurgToGroup(burg.i, "cities");
+          break;
+        }
+
+        spacing = Math.max(spacing - 1, 1);
+      }
+
+      const culture = capital.culture;
+      const basename =
+        capital.name.length < 9 && capital.cell % 5 === 0 ? capital.name : Names.getCulture(culture, 3, 6, "", 0);
+      const name = Names.getState(basename, culture);
+      const nomadic = [1, 2, 3, 4].includes(pack.cells.biome[capital.cell]);
+      const type = nomadic
+        ? "Nomadic"
+        : pack.cultures[culture].type === "Nomadic"
+          ? "Generic"
+          : pack.cultures[culture].type;
+      const expansionism = rn(Math.random() * powerInput.value + 1, 1);
+
+      const cultureType = pack.cultures[culture].type;
+      const coa = COA.generate(capital.coa, 0.3, null, cultureType);
+      coa.shield = capital.coa.shield;
+
+      states.push({
+        i,
+        name,
+        type,
+        capital: capital.i,
+        center: capital.cell,
+        culture,
+        expansionism,
+        coa
+      });
+    });
+
+    pack.states = states;
+  }
+
   // define burg coordinates, coa, port status and define details
   const specifyBurgs = function () {
     TIME && console.time("specifyBurgs");
@@ -364,6 +502,12 @@ window.BurgsAndStates = (function () {
     TIME && console.time("expandStates");
     const {cells, states, cultures, burgs} = pack;
 
+    const prevStates = {};
+    if (cells.state) {
+      cells.state.forEach(function (i, index) {
+        prevStates[index] = i;
+      })
+    }
     cells.state = new Uint16Array(cells.i.length);
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
@@ -372,6 +516,17 @@ window.BurgsAndStates = (function () {
     states
       .filter(s => s.i && !s.removed)
       .forEach(s => {
+        if (s.lock) {
+          Object.entries(prevStates).forEach(function ([index, stateId]) {
+            if (stateId === s.old_i) {
+              cells.state[index] = s.i;
+              cost[index] = neutral;
+            }
+          });
+
+          return;
+        }
+
         const capitalCell = burgs[s.capital].cell;
         cells.state[capitalCell] = s.i;
         const cultureCenter = cultures[s.culture].center;
@@ -387,6 +542,8 @@ window.BurgsAndStates = (function () {
 
       cells.c[e].forEach(e => {
         if (cells.state[e] && e === states[cells.state[e]].center) return; // do not overwrite capital cells
+        // Do not overwrite cells from a locked state.
+        if (states[cells.state[e]].lock) return;
 
         const cultureCost = culture === cells.culture[e] ? -9 : 100;
         const populationCost = cells.h[e] < 20 ? 0 : cells.s[e] ? Math.max(20 - cells.s[e], 0) : 5000;
@@ -452,10 +609,15 @@ window.BurgsAndStates = (function () {
     for (const i of cells.i) {
       if (cells.h[i] < 20 || cells.burg[i]) continue; // do not overwrite burgs
       if (cells.c[i].some(c => burgs[cells.burg[c]].capital)) continue; // do not overwrite near capital
+      if (pack.states[cells.state[i]]?.lock) continue; // Do not overwrite cells of locks states
       const neibs = cells.c[i].filter(c => cells.h[c] >= 20);
-      const adversaries = neibs.filter(c => cells.state[c] !== cells.state[i]);
+      const adversaries = neibs.filter(
+        c => !pack.states[cells.state[c]]?.lock && cells.state[c] !== cells.state[i]
+      );
       if (adversaries.length < 2) continue;
-      const buddies = neibs.filter(c => cells.state[c] === cells.state[i]);
+      const buddies = neibs.filter(
+        c => !pack.states[cells.state[c]]?.lock && cells.state[c] === cells.state[i]
+      );
       if (buddies.length > 2) continue;
       if (adversaries.length <= buddies.length) continue;
       cells.state[i] = cells.state[adversaries[0]];
@@ -498,7 +660,8 @@ window.BurgsAndStates = (function () {
     const mode = options.stateLabelsMode || "auto";
 
     for (const s of states) {
-      if (!s.i || s.removed || !s.cells || (list && !list.includes(s.i))) continue;
+      if (!s.i || s.removed || s.lock || !s.cells || (list && !list.includes(s.i))) continue;
+
       const used = [];
       const visualCenter = findCell(s.pole[0], s.pole[1]);
       const start = cells.state[visualCenter] === s.i ? visualCenter : s.center;
@@ -600,9 +763,36 @@ window.BurgsAndStates = (function () {
 
       if (!list) {
         // remove all labels and textpaths
-        g.selectAll("text").remove();
-        t.selectAll("path[id*='stateLabel']").remove();
+        g.selectAll("text").filter((_, i) => {
+          const id = g.select(`:nth-child(${i + 1})`).node()?.id;
+          if (!id) return true;
+
+          return !pack.states.some(s => s.lock && `${s.old_i}` === id.substring(10));
+        }).remove();
+        t.selectAll("path[id*='stateLabel']").filter((_, i) => {
+          const id = t.select(`:nth-child(${i + 1})`).node()?.id;
+          if (!id) return true;
+
+          return !pack.states.some(s => s.lock && `${s.old_i}` === id.substring(19));
+        }).remove();
       }
+
+      pack.states.forEach(s => {
+        if (!s.lock) return;
+
+        // For locked states, get the name and update its index to keep it in place
+        const g = labels.select("#states");
+        const t = defs.select("#textPaths");
+
+        const labelNode = g.select(`#stateLabel${s.old_i}`);
+        const textNode = t.select(`#textPath_stateLabel${s.old_i}`);
+
+        labelNode
+          .attr('id', `stateLabel${s.i}`)
+          .select("textPath")
+          .attr("xlink:href", `#textPath_stateLabel${s.i}`);
+        textNode.attr('id', `textPath_stateLabel${s.i}`);
+      });
 
       const example = g.append("text").attr("x", 0).attr("x", 0).text("Average");
       const letterLength = example.node().getComputedTextLength() / 7; // average length of 1 letter
@@ -752,7 +942,7 @@ window.BurgsAndStates = (function () {
 
     // assign basic color using greedy coloring algorithm
     pack.states.forEach(s => {
-      if (!s.i || s.removed) return;
+      if (!s.i || s.removed || s.lock) return;
       const neibs = s.neighbors;
       s.color = colors.find(c => neibs.every(n => pack.states[n].color !== c));
       if (!s.color) s.color = getRandomColor();
@@ -761,7 +951,7 @@ window.BurgsAndStates = (function () {
 
     // randomize each already used color a bit
     colors.forEach(c => {
-      const sameColored = pack.states.filter(s => s.color === c);
+      const sameColored = pack.states.filter(s => s.color === c && !s.lock);
       sameColored.forEach((s, d) => {
         if (!d) return;
         s.color = getMixedColor(s.color);
@@ -990,7 +1180,7 @@ window.BurgsAndStates = (function () {
   // select a forms for listed or all valid states
   const defineStateForms = function (list) {
     TIME && console.time("defineStateForms");
-    const states = pack.states.filter(s => s.i && !s.removed);
+    const states = pack.states.filter(s => s.i && !s.removed && !s.lock);
     if (states.length < 1) return;
 
     const generic = {Monarchy: 25, Republic: 2, Union: 1};
@@ -1142,13 +1332,26 @@ window.BurgsAndStates = (function () {
     return adjName ? `${getAdjective(s.name)} ${s.formName}` : `${s.formName} of ${s.name}`;
   };
 
-  const generateProvinces = function (regenerate) {
+  const generateProvinces = function (
+      regenerate = false,
+      ignoreLockedStates = false
+  ) {
     TIME && console.time("generateProvinces");
     const localSeed = regenerate ? generateSeed() : seed;
     Math.random = aleaPRNG(localSeed);
 
     const {cells, states, burgs} = pack;
-    const provinces = (pack.provinces = [0]);
+    const provincesToRestore = pack.provinces ?
+      pack.provinces.filter(p => p.lock || p.should_restore)
+      : [];
+    const provinces = (pack.provinces = [0].concat(...provincesToRestore));
+
+    const prevProvinces = {};
+    if (cells.province) {
+      cells.province.forEach((i, index) => {
+        prevProvinces[index] = i;
+      })
+    }
     cells.province = new Uint16Array(cells.i.length); // cell state
     const percentage = +provincesInput.value;
 
@@ -1170,10 +1373,16 @@ window.BurgsAndStates = (function () {
 
     // generate provinces for a selected burgs
     states.forEach(s => {
-      s.provinces = [];
+      s.provinces = s.provinces ? s.provinces.filter(p => p.lock) : [];
+      // Don't regenerate provinces of a locked state
+      if (!ignoreLockedStates && s.lock) return;
+
       if (!s.i || s.removed) return;
       const stateBurgs = burgs
-        .filter(b => b.state === s.i && !b.removed)
+        // Filter for burgs of this state that haven't been removed and that are not in a locked province.
+        .filter(b =>
+          b.state === s.i && !b.removed && provincesToRestore.find(p => prevProvinces[b.cell] === p.i) === undefined
+        )
         .sort((a, b) => b.population * gauss(1, 0.2, 0.5, 1.5, 3) - a.population)
         .sort((a, b) => b.capital - a.capital);
       if (stateBurgs.length < 2) return; // at least 2 provinces are required
@@ -1200,11 +1409,32 @@ window.BurgsAndStates = (function () {
       }
     });
 
+    // Restore the indexes of locked and kept provinces
+    provincesToRestore.forEach((province, index) => {
+      delete province.should_restore;
+      province.old_i = province.i;
+      province.i = index + 1;
+      states[province.state].provinces.push(province.i);
+    });
+
     // expand generated provinces
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
     provinces.forEach(function (p) {
       if (!p.i || p.removed) return;
+
+      // Then restore the cells of locked or kept provinces
+      if (p.old_i) {
+        Object.entries(prevProvinces).forEach(function ([index, provId]) {
+          if (provId === p.old_i) {
+            cells.province[index] = p.i;
+          }
+        });
+
+        delete p.old_i;
+        return;
+      }
+
       cells.province[p.center] = p.i;
       queue.queue({e: p.center, p: 0, province: p.i, state: p.state});
       cost[p.center] = 1;
@@ -1217,6 +1447,20 @@ window.BurgsAndStates = (function () {
         province = next.province,
         state = next.state;
       cells.c[n].forEach(function (e) {
+        // Do not overwrite cells from a locked state or province.
+        if (
+          (provinces[cells.province[e]] && provinces[cells.province[e]].lock) ||
+          (
+            // For finding if the state is locked, first make sure we care about that
+            // then find the province, the state for the province, and if both are defined,
+            // check the lock.
+            !ignoreLockedStates &&
+            provinces[cells.province[e]] &&
+            states[provinces[cells.province[e]].state] &&
+            states[provinces[cells.province[e]].state].lock
+          )
+        ) return;
+
         const land = cells.h[e] >= 20;
         if (!land && !cells.t[e]) return; // cannot pass deep ocean
         if (land && cells.state[e] !== state) return;
@@ -1235,7 +1479,18 @@ window.BurgsAndStates = (function () {
     // justify provinces shapes a bit
     for (const i of cells.i) {
       if (cells.burg[i]) continue; // do not overwrite burgs
-      const neibs = cells.c[i].filter(c => cells.state[c] === cells.state[i]).map(c => cells.province[c]);
+      // Do not process any locked provinces or states, if we care about the latter
+      if (
+          pack.provinces[cells.province[i]].lock ||
+          (!ignoreLockedStates && pack.states[cells.state[i]].lock)
+      ) continue;
+      // Find neighbors, but ignore any cells from locked states or provinces
+      const neibs = cells.c[i].filter(
+        c =>
+          (ignoreLockedStates || !pack.states[cells.state[c]].lock) &&
+          !pack.provinces[cells.province[c]].lock &&
+          cells.state[c] === cells.state[i]
+      ).map(c => cells.province[c]);
       const adversaries = neibs.filter(c => c !== cells.province[i]);
       if (adversaries.length < 2) continue;
       const buddies = neibs.filter(c => c === cells.province[i]).length;
@@ -1249,7 +1504,7 @@ window.BurgsAndStates = (function () {
     // add "wild" provinces if some cells don't have a province assigned
     const noProvince = Array.from(cells.i).filter(i => cells.state[i] && !cells.province[i]); // cells without province assigned
     states.forEach(s => {
-      if (!s.provinces.length) return;
+      if (!s.provinces.length || (!ignoreLockedStates && s.lock)) return;
 
       const coreProvinceNames = s.provinces.map(p => provinces[p]?.name);
       const colonyNamePool = [s.name, ...coreProvinceNames].filter(name => name && !/new/i.test(name));
@@ -1358,6 +1613,7 @@ window.BurgsAndStates = (function () {
 
   return {
     generate,
+    regenerateStates,
     expandStates,
     normalizeStates,
     assignColors,

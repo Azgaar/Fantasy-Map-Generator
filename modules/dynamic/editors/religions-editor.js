@@ -212,6 +212,10 @@ function religionsEditorAddLines() {
       <div data-tip="Religion area" class="religionArea hide" style="width: 5em">${si(area) + unit}</div>
       <span data-tip="${populationTip}" class="icon-male hide"></span>
       <div data-tip="${populationTip}" class="religionPopulation hide pointer">${si(population)}</div>
+      <span
+        data-tip="Lock religion, will regenerate the origin folk and organized religion if they are not also locked"
+        class="icon-lock${r.lock ? '' : '-open'} hide"
+      ></span>
       <span data-tip="Remove religion" class="icon-trash-empty hide"></span>
     </div>`;
   }
@@ -242,6 +246,8 @@ function religionsEditorAddLines() {
   $body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.on("click", regenerateDeity));
   $body.querySelectorAll("div > div.religionPopulation").forEach(el => el.on("click", changePopulation));
   $body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", religionRemovePrompt));
+  $body.querySelectorAll("div > span.icon-lock").forEach($el => $el.on("click", updateLockStatus));
+  $body.querySelectorAll("div > span.icon-lock-open").forEach($el => $el.on("click", updateLockStatus));
 
   if ($body.dataset.type === "percentage") {
     $body.dataset.type = "absolute";
@@ -754,4 +760,16 @@ function closeReligionsEditor() {
   debug.select("#religionCenters").remove();
   exitReligionsManualAssignment("close");
   exitAddReligionMode();
+}
+
+function updateLockStatus() {
+  if (customization) return;
+
+  const religionId = +this.parentNode.dataset.id;
+  const classList = this.classList;
+  const r = pack.religions[religionId];
+  r.lock = !r.lock;
+
+  classList.toggle("icon-lock-open");
+  classList.toggle("icon-lock");
 }

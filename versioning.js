@@ -1,7 +1,7 @@
 "use strict";
 
 // version and caching control
-const version = "1.88.05"; // generator version, update each time
+const version = "1.89.00"; // generator version, update each time
 
 {
   document.title += " v" + version;
@@ -28,6 +28,7 @@ const version = "1.88.05"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Can now lock states, provinces, cultures, and religions from being regenerated</li>
         <li>Heightmap brushes: linear edit option</li>
         <li>Data Charts screen</li>
         <li>Сultures and religions can have multiple parents in hierarchy tree</li>
