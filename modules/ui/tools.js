@@ -238,17 +238,19 @@ function recreateStates() {
       // pack.provinces[id].should_restore = true;
     });
 
-    for (const i of pack.cells.i) {
-      const stateId = pack.cells.state[i];
-      if (stateId === s.i) pack.cells.state[i] = newId;
-    }
-
     const {x, y} = validBurgs[s.capital];
     capitalsTree.add([x, y]);
 
     s.i = newId;
     newStates.push(s);
   });
+
+  for (const i of pack.cells.i) {
+    const stateId = pack.cells.state[i];
+    const lockedStateIndex = lockedStatesIds.indexOf(stateId) + 1;
+    // lockedStateIndex is an index of locked state of 0 if state is not locked
+    pack.cells.state[i] = lockedStateIndex;
+  }
 
   for (let i = newStates.length; i < count; i++) {
     let capital = null;

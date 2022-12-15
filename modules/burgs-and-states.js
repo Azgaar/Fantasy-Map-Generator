@@ -364,7 +364,7 @@ window.BurgsAndStates = (function () {
     TIME && console.time("expandStates");
     const {cells, states, cultures, burgs} = pack;
 
-    cells.state = new Uint16Array(cells.i.length);
+    cells.state = cells.state || new Uint16Array(cells.i.length);
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
     const neutral = (cells.i.length / 5000) * 2500 * neutralInput.value * statesNeutral; // limit cost for state growth
