@@ -152,6 +152,7 @@ function regenerateStates() {
   else drawStates();
   if (!layerIsOn("toggleBorders")) toggleBorders();
   else drawBorders();
+
   BurgsAndStates.drawStateLabels();
   Military.generate();
   if (layerIsOn("toggleEmblems")) drawEmblems(); // redrawEmblems
@@ -167,6 +168,7 @@ function recreateStates() {
 
   const statesCount = +regionsOutput.value;
   const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
+
   if (!validBurgs.length)
     return tip("There are no any burgs to generate states. Please create burgs first", false, "error");
   if (validBurgs.length < statesCount)
@@ -189,29 +191,26 @@ function recreateStates() {
     burg.capital = 0;
   }
 
-  // remove emblems
-  document.querySelectorAll("[id^=stateCOA]").forEach(el => el.remove());
-  document.querySelectorAll("[id^=provinceCOA]").forEach(el => el.remove());
-  emblems.selectAll("use").remove();
+  // remove labels and emblems for non-locked states
+  for (const state of pack.states) {
+    if (!state.i || state.removed || state.lock) continue;
+
+    // remove state labels
+    byId(`stateLabel${state.i}`)?.remove();
+    byId(`textPath_stateLabel${state.i}`)?.remove();
+
+    // remove state emblems
+    byId(`stateCOA${state.i}`)?.remove();
+    document.querySelector(`#stateEmblems > use[data-i="${state.i}"]`)?.remove();
+
+    // remove province emblems
+    for (const provinceId of state.provinces) {
+      byId(`provinceCOA${provinceId}`)?.remove();
+      document.querySelector(`#provinceEmblems > use[data-i="${provinceId}"]`)?.remove();
+    }
+  }
 
   unfog();
-
-  if (!statesCount) {
-    tip(`Cannot generate zero states. Please check the <i>States Number</i> option`, false, "warn");
-    pack.states = pack.states.slice(0, 1); // remove all except of neutrals
-    pack.states[0].diplomacy = []; // clear diplomacy
-    pack.provinces = [0]; // remove all provinces
-    pack.cells.state = new Uint16Array(pack.cells.i.length); // reset cells data
-
-    borders.selectAll("path").remove(); // remove borders
-    regions.selectAll("path").remove(); // remove states fill
-    labels.select("#states").selectAll("text"); // remove state labels
-    defs.select("#textPaths").selectAll("path[id*='stateLabel']").remove(); // remove state labels paths
-
-    if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
-    if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
-    return;
-  }
 
   // burg local ids sorted by a bit randomized population. Also ignore burgs of a locked state
   const sortedBurgs = validBurgs
@@ -229,26 +228,38 @@ function recreateStates() {
   const newStates = [{i: 0, name: pack.states[0].name}];
 
   // restore locked states
-  lockedStates.forEach(s => {
+  lockedStates.forEach(state => {
     const newId = newStates.length;
+    const {x, y} = validBurgs[state.capital];
+    capitalsTree.add([x, y]);
 
-    s.provinces.forEach(id => {
+    // update label id reference
+    labels
+      .select("#states")
+      .select(`#stateLabel${state.i}`)
+      .attr("id", `stateLabel${newId}`)
+      .select("textPath")
+      .attr("xlink:href", `#textPath_stateLabel${newId}`);
+    defs.select("#textPaths").select(`#textPath_stateLabel${state.i}`).attr("id", `textPath_stateLabel${newId}`);
+
+    // update emblem id reference
+    byId(`stateCOA${state.i}`)?.setAttribute("id", `stateCOA${newId}`);
+    document.querySelector(`#stateEmblems > use[data-i="${state.i}"]`)?.setAttribute("data-i", newId);
+
+    state.provinces.forEach(id => {
       if (!pack.provinces[id] || !pack.provinces[id].removed) return;
       pack.provinces[id].state = newId;
       // pack.provinces[id].should_restore = true;
     });
 
-    const {x, y} = validBurgs[s.capital];
-    capitalsTree.add([x, y]);
-
-    s.i = newId;
-    newStates.push(s);
+    state.i = newId;
+    newStates.push(state);
   });
 
   for (const i of pack.cells.i) {
     const stateId = pack.cells.state[i];
     const lockedStateIndex = lockedStatesIds.indexOf(stateId) + 1;
-    // lockedStateIndex is an index of locked state of 0 if state is not locked
+    // lockedStateIndex is an index of locked state or 0 if state is not locked
     pack.cells.state[i] = lockedStateIndex;
   }
 
@@ -290,6 +301,8 @@ function recreateStates() {
 
     newStates.push({i, name, type, capital: capital.i, center: capital.cell, culture, expansionism, coa});
   }
+
+  if (!statesCount) tip(`<i>States Number</i> option is set to zero. No counties are generated`, false, "warn");
 
   pack.states = newStates;
 }

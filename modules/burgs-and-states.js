@@ -602,39 +602,14 @@ window.BurgsAndStates = (function () {
       const displayed = layerIsOn("toggleLabels");
       if (!displayed) toggleLabels();
 
-      if (!list) {
-        // remove all labels and textpaths
-        g.selectAll("text")
-          .filter((_, i) => {
-            const id = g.select(`:nth-child(${i + 1})`).node()?.id;
-            if (!id) return true;
+      // remove state labels to be redrawn
+      for (const state of pack.states) {
+        if (!state.i || state.removed || state.lock) continue;
+        if (list && !list.includes(state.i)) continue;
 
-            return !pack.states.some(s => s.lock && `${s.old_i}` === id.substring(10));
-          })
-          .remove();
-        t.selectAll("path[id*='stateLabel']")
-          .filter((_, i) => {
-            const id = t.select(`:nth-child(${i + 1})`).node()?.id;
-            if (!id) return true;
-
-            return !pack.states.some(s => s.lock && `${s.old_i}` === id.substring(19));
-          })
-          .remove();
+        byId(`stateLabel${state.i}`)?.remove();
+        byId(`textPath_stateLabel6${state.i}`)?.remove();
       }
-
-      pack.states.forEach(s => {
-        if (!s.lock) return;
-
-        // For locked states, get the name and update its index to keep it in place
-        const g = labels.select("#states");
-        const t = defs.select("#textPaths");
-
-        const labelNode = g.select(`#stateLabel${s.old_i}`);
-        const textNode = t.select(`#textPath_stateLabel${s.old_i}`);
-
-        labelNode.attr("id", `stateLabel${s.i}`).select("textPath").attr("xlink:href", `#textPath_stateLabel${s.i}`);
-        textNode.attr("id", `textPath_stateLabel${s.i}`);
-      });
 
       const example = g.append("text").attr("x", 0).attr("x", 0).text("Average");
       const letterLength = example.node().getComputedTextLength() / 7; // average length of 1 letter
@@ -643,11 +618,6 @@ window.BurgsAndStates = (function () {
         const id = p[0];
         const state = states[p[0]];
         const {name, fullName} = state;
-
-        if (list) {
-          t.select("#textPath_stateLabel" + id).remove();
-          g.select("#stateLabel" + id).remove();
-        }
 
         const path = p[1].length > 1 ? round(lineGen(p[1])) : `M${p[1][0][0] - 50},${p[1][0][1]}h${100}`;
         const textPath = t
