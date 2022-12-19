@@ -1144,27 +1144,28 @@ window.BurgsAndStates = (function () {
     return adjName ? `${getAdjective(s.name)} ${s.formName}` : `${s.formName} of ${s.name}`;
   };
 
-  const generateProvinces = function (regenerate = false, regenerateInLockedStates = false) {
+  const generateProvinces = function (regenerate = false, ignoreLockedStates = false) {
     TIME && console.time("generateProvinces");
     const localSeed = regenerate ? generateSeed() : seed;
     Math.random = aleaPRNG(localSeed);
 
     const {cells, states, burgs} = pack;
+    const provincesToRestore = pack.provinces ? pack.provinces.filter(p => p.lock || p.should_restore) : [];
+    const provinces = (pack.provinces = [0].concat(...provincesToRestore));
 
-    const provinces = [0];
-
-    regenerate &&
-      pack.provinces.forEach(province => {
-        if (!province.i || !province.removed) return;
-        const isLockedOnStateLevel = !regenerateInLockedStates && states[province.state].lock;
-        if (province.lock || isLockedOnStateLevel) {
-          province.i = provinces.length; // update id
-          provinces.push(province);
-        }
+    const prevProvinces = {};
+    if (cells.province) {
+      cells.province.forEach((i, index) => {
+        prevProvinces[index] = i;
       });
-
-    cells.province = cells.province || new Uint16Array(cells.i.length);
+    }
+    cells.province = new Uint16Array(cells.i.length); // cell state
     const percentage = +provincesInput.value;
+
+    if (states.length < 2 || !percentage) {
+      states.forEach(s => (s.provinces = []));
+      return;
+    } // no provinces
 
     const max = percentage == 100 ? 1000 : gauss(20, 5, 5, 100) * percentage ** 0.5; // max growth
 
@@ -1177,24 +1178,28 @@ window.BurgsAndStates = (function () {
       Wild: {Territory: 10, Land: 5, Region: 2, Tribe: 1, Clan: 1, Dependency: 1, Area: 1}
     };
 
-    // generate provinces for selected burgs
+    // generate provinces for a selected burgs
     states.forEach(s => {
-      if (!s.i || s.removed) return;
-      s.provinces = provinces.filter(p => p.state === s.i).map(p => p.i); // locked provinces ids
-      if (s.lock && !regenerateInLockedStates) return; // don't regenerate provinces of a locked state
+      s.provinces = s.provinces ? s.provinces.filter(p => p.lock) : [];
+      // Don't regenerate provinces of a locked state
+      if (!ignoreLockedStates && s.lock) return;
 
+      if (!s.i || s.removed) return;
       const stateBurgs = burgs
-        .filter(b => b.state === s.i && !b.removed && !cells.province[b.cell])
+        // Filter for burgs of this state that haven't been removed and that are not in a locked province.
+        .filter(
+          b =>
+            b.state === s.i && !b.removed && provincesToRestore.find(p => prevProvinces[b.cell] === p.i) === undefined
+        )
         .sort((a, b) => b.population * gauss(1, 0.2, 0.5, 1.5, 3) - a.population)
         .sort((a, b) => b.capital - a.capital);
       if (stateBurgs.length < 2) return; // at least 2 provinces are required
       const provincesNumber = Math.max(Math.ceil((stateBurgs.length * percentage) / 100), 2);
-
       const form = Object.assign({}, forms[s.form]);
 
       for (let i = 0; i < provincesNumber; i++) {
-        const provinceId = provinces.length;
-        s.provinces.push(provinceId);
+        const province = provinces.length;
+        s.provinces.push(province);
         const center = stateBurgs[i].cell;
         const burg = stateBurgs[i].i;
         const c = stateBurgs[i].culture;
@@ -1208,26 +1213,60 @@ window.BurgsAndStates = (function () {
         const type = getType(center, burg.port);
         const coa = COA.generate(stateBurgs[i].coa, kinship, null, type);
         coa.shield = COA.getShield(c, s.i);
-        provinces.push({i: provinceId, state: s.i, center, burg, name, formName, fullName, color, coa});
+        provinces.push({i: province, state: s.i, center, burg, name, formName, fullName, color, coa});
       }
+    });
+
+    // Restore the indexes of locked and kept provinces
+    provincesToRestore.forEach((province, index) => {
+      delete province.should_restore;
+      province.old_i = province.i;
+      province.i = index + 1;
+      states[province.state].provinces.push(province.i);
     });
 
     // expand generated provinces
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
-
     provinces.forEach(function (p) {
-      if (!p.i || p.removed || p.lock) return;
+      if (!p.i || p.removed) return;
+
+      // Then restore the cells of locked or kept provinces
+      if (p.old_i) {
+        Object.entries(prevProvinces).forEach(function ([index, provId]) {
+          if (provId === p.old_i) {
+            cells.province[index] = p.i;
+          }
+        });
+
+        delete p.old_i;
+        return;
+      }
+
       cells.province[p.center] = p.i;
       queue.queue({e: p.center, p: 0, province: p.i, state: p.state});
       cost[p.center] = 1;
     });
 
     while (queue.length) {
-      const {e, p, province, state} = queue.dequeue();
-
-      cells.c[e].forEach(function (e) {
-        if (provinces[province].lock) return; // do not overwrite cell of locked provinces
+      const next = queue.dequeue(),
+        n = next.e,
+        p = next.p,
+        province = next.province,
+        state = next.state;
+      cells.c[n].forEach(function (e) {
+        // Do not overwrite cells from a locked state or province.
+        if (
+          (provinces[cells.province[e]] && provinces[cells.province[e]].lock) ||
+          // For finding if the state is locked, first make sure we care about that
+          // then find the province, the state for the province, and if both are defined,
+          // check the lock.
+          (!ignoreLockedStates &&
+            provinces[cells.province[e]] &&
+            states[provinces[cells.province[e]].state] &&
+            states[provinces[cells.province[e]].state].lock)
+        )
+          return;
 
         const land = cells.h[e] >= 20;
         if (!land && !cells.t[e]) return; // cannot pass deep ocean
@@ -1247,10 +1286,16 @@ window.BurgsAndStates = (function () {
     // justify provinces shapes a bit
     for (const i of cells.i) {
       if (cells.burg[i]) continue; // do not overwrite burgs
-      if (provinces[cells.province[i]].lock) return; // do not overwrite cell of locked provinces
-
+      // Do not process any locked provinces or states, if we care about the latter
+      if (pack.provinces[cells.province[i]].lock || (!ignoreLockedStates && pack.states[cells.state[i]].lock)) continue;
+      // Find neighbors, but ignore any cells from locked states or provinces
       const neibs = cells.c[i]
-        .filter(c => cells.state[c] === cells.state[i] && !provinces[cells.province[c]].lock)
+        .filter(
+          c =>
+            (ignoreLockedStates || !pack.states[cells.state[c]].lock) &&
+            !pack.provinces[cells.province[c]].lock &&
+            cells.state[c] === cells.state[i]
+        )
         .map(c => cells.province[c]);
       const adversaries = neibs.filter(c => c !== cells.province[i]);
       if (adversaries.length < 2) continue;
@@ -1265,9 +1310,7 @@ window.BurgsAndStates = (function () {
     // add "wild" provinces if some cells don't have a province assigned
     const noProvince = Array.from(cells.i).filter(i => cells.state[i] && !cells.province[i]); // cells without province assigned
     states.forEach(s => {
-      if (!s.i || s.removed) return;
-      if (s.lock && !regenerateInLockedStates) return;
-      if (!s.provinces.length) return;
+      if (!s.provinces.length || (!ignoreLockedStates && s.lock)) return;
 
       const coreProvinceNames = s.provinces.map(p => provinces[p]?.name);
       const colonyNamePool = [s.name, ...coreProvinceNames].filter(name => name && !/new/i.test(name));
@@ -1370,8 +1413,6 @@ window.BurgsAndStates = (function () {
         stateNoProvince = noProvince.filter(i => cells.state[i] === s.i && !cells.province[i]);
       }
     });
-
-    pack.provinces = provinces;
 
     TIME && console.timeEnd("generateProvinces");
   };

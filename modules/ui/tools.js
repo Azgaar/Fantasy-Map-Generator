@@ -249,7 +249,6 @@ function recreateStates() {
     state.provinces.forEach(id => {
       if (!pack.provinces[id] || !pack.provinces[id].removed) return;
       pack.provinces[id].state = newId;
-      // pack.provinces[id].should_restore = true;
     });
 
     state.i = newId;
@@ -261,6 +260,8 @@ function recreateStates() {
     const lockedStateIndex = lockedStatesIds.indexOf(stateId) + 1;
     // lockedStateIndex is an index of locked state or 0 if state is not locked
     pack.cells.state[i] = lockedStateIndex;
+
+    // TODO: update province id reference
   }
 
   for (let i = newStates.length; i < count; i++) {
@@ -309,6 +310,15 @@ function recreateStates() {
 
 function regenerateProvinces() {
   unfog();
+
+  // TODO: lockedProvincesIds
+
+  for (const i of pack.cells.i) {
+    const provinceId = pack.cells.province[i];
+    const lockedProvinceIndex = lockedProvincesIds.indexOf(provinceId) + 1;
+    // lockedProvinceIndex is an index of locked province or 0 if state is not locked
+    pack.cells.province[i] = lockedProvinceIndex;
+  }
 
   BurgsAndStates.generateProvinces(true, true);
   drawBorders();
