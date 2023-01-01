@@ -6,13 +6,8 @@ window.Cultures = (function () {
   const generate = function () {
     TIME && console.time("generateCultures");
     cells = pack.cells;
-    const prevCultures = {};
-    if (cells.culture) {
-      cells.culture.forEach(function (cultureId, index) {
-        prevCultures[index] = cultureId;
-      })
-    }
-    cells.culture = new Uint16Array(cells.i.length); // cell cultures
+
+    const cultureIds = new Uint16Array(cells.i.length); // cell cultures
     let count = Math.min(+culturesInput.value, +culturesSet.selectedOptions[0].dataset.max);
 
     const populated = cells.i.filter(i => cells.s[i]); // populated cells
@@ -21,9 +16,12 @@ window.Cultures = (function () {
       if (!count) {
         WARN && console.warn(`There are no populated cells. Cannot generate cultures`);
         pack.cultures = [{name: "Wildlands", i: 0, base: 1, shield: "round"}];
-        alertMessage.innerHTML = /* html */ ` The climate is harsh and people cannot live in this world.<br />
+        cells.culture = cultureIds;
+
+        alertMessage.innerHTML = /* html */ `The climate is harsh and people cannot live in this world.<br />
           No cultures, states and burgs will be created.<br />
           Please consider changing climate settings in the World Configurator`;
+
         $("#alert").dialog({
           resizable: false,
           title: "Extreme climate warning",
@@ -57,32 +55,25 @@ window.Cultures = (function () {
     const emblemShape = document.getElementById("emblemShape").value;
 
     const codes = [];
-    let unoccupied = [...populated];
+
     cultures.forEach(function (c, i) {
+      const newId = i + 1;
+
       if (c.lock) {
-        centers.add(c.center);
-        cells.culture[c.center] = i + 1;
         codes.push(c.code);
+        centers.add(c.center);
 
-        const cultureCells = [];
-        Object.entries(prevCultures).forEach(function ([index, cultureId]) {
-          if (cultureId === c.i) {
-            cells.culture[index] = i + 1;
-            cultureCells.push(parseInt(index));
-          }
-        });
+        for (const i of cells.i) {
+          if (cells.culture[i] === c.i) cultureIds[i] = newId;
+        }
 
-        unoccupied = unoccupied.filter(function (cell) {
-          return !cultureCells.includes(cell);
-        });
-
-        c.i = i + 1;
+        c.i = newId;
         return;
       }
 
       const cell = (c.center = placeCenter(c.sort ? c.sort : i => cells.s[i]));
       centers.add(cells.p[cell]);
-      c.i = i + 1;
+      c.i = newId;
       delete c.odd;
       delete c.sort;
       c.color = colors[i];
@@ -91,24 +82,27 @@ window.Cultures = (function () {
       c.origins = [0];
       c.code = abbreviate(c.name, codes);
       codes.push(c.code);
-      cells.culture[cell] = i + 1;
+      cultureIds[cell] = newId;
       if (emblemShape === "random") c.shield = getRandomShield();
     });
 
+    cells.culture = cultureIds;
+
     function placeCenter(v) {
-      let c,
-        spacing = (graphWidth + graphHeight) / 2 / count;
-      // Only use cells where there are no culture already on that cell, which may happen if a locked culture
-      // was restored. We can be sure that locked cultures will always be first in the list.
-      const sorted = [...unoccupied].sort((a, b) => v(b) - v(a)),
-        max = Math.floor(sorted.length / 2);
-      do {
-        c = sorted[biased(0, max, 5)];
+      let spacing = (graphWidth + graphHeight) / 2 / count;
+      const MAX_ATTEMPTS = 100;
+
+      const sorted = [...populated].sort((a, b) => v(b) - v(a));
+      const max = Math.floor(sorted.length / 2);
+
+      let cellId = 0;
+      for (let i = 0; i < MAX_ATTEMPTS; i++) {
+        cellId = sorted[biased(0, max, 5)];
         spacing *= 0.9;
-      } while (
-        centers.find(cells.p[c][0], cells.p[c][1], spacing) !== undefined
-      );
-      return c;
+        if (!cultureIds[cellId] && !centers.find(cells.p[cellId][0], cells.p[cellId][1], spacing)) break;
+      }
+
+      return cellId;
     }
 
     // the first culture with id 0 is for wildlands
@@ -130,11 +124,9 @@ window.Cultures = (function () {
       const count = Math.min(c, def.length);
       const cultures = [];
 
-      if (pack.cultures) {
-        pack.cultures.forEach(function (culture) {
-          if (culture.lock) cultures.push(culture);
-        });
-      }
+      pack.cultures?.forEach(function (culture) {
+        if (culture.lock) cultures.push(culture);
+      });
 
       for (let culture, rnd, i = 0; cultures.length < count && i < 200; i++) {
         do {
@@ -531,7 +523,7 @@ window.Cultures = (function () {
         p = next.p,
         c = next.c;
       const type = pack.cultures[c].type;
-      cells.c[n].forEach(function (e) {
+      cells.c[n].forEach(e => {
         if (pack.cultures[cells.culture[e]]?.lock) return;
 
         const biome = cells.biome[e];

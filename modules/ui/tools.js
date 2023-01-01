@@ -310,15 +310,6 @@ function recreateStates() {
 function regenerateProvinces() {
   unfog();
 
-  // TODO: lockedProvincesIds
-
-  for (const i of pack.cells.i) {
-    const provinceId = pack.cells.province[i];
-    const lockedProvinceIndex = lockedProvincesIds.indexOf(provinceId) + 1;
-    // lockedProvinceIndex is an index of locked province or 0 if state is not locked
-    pack.cells.province[i] = lockedProvinceIndex;
-  }
-
   BurgsAndStates.generateProvinces(true, true);
   drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
