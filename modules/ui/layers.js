@@ -1132,6 +1132,7 @@ function drawBorders() {
     const provToCell = cells.c[i].find(
       n => cells.state[n] === s && p > cells.province[n] && pUsed[p][n] !== cells.province[n]
     );
+
     if (provToCell) {
       const provTo = cells.province[provToCell];
       pUsed[p][provToCell] = provTo;

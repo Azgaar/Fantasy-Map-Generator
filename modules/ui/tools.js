@@ -148,14 +148,14 @@ function regenerateStates() {
   BurgsAndStates.generateDiplomacy();
   BurgsAndStates.defineStateForms();
   BurgsAndStates.generateProvinces(true);
-  if (!layerIsOn("toggleStates")) toggleStates();
-  else drawStates();
-  if (!layerIsOn("toggleBorders")) toggleBorders();
-  else drawBorders();
+
+  layerIsOn("toggleStates") ? drawStates() : toggleStates();
+  layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
+  if (layerIsOn("toggleProvinces")) drawProvinces();
 
   BurgsAndStates.drawStateLabels();
   Military.generate();
-  if (layerIsOn("toggleEmblems")) drawEmblems(); // redrawEmblems
+  if (layerIsOn("toggleEmblems")) drawEmblems();
 
   if (document.getElementById("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
   if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
@@ -203,10 +203,11 @@ function recreateStates() {
     byId(`stateCOA${state.i}`)?.remove();
     document.querySelector(`#stateEmblems > use[data-i="${state.i}"]`)?.remove();
 
-    // remove province emblems
+    // remove province data and emblems
     for (const provinceId of state.provinces) {
       byId(`provinceCOA${provinceId}`)?.remove();
       document.querySelector(`#provinceEmblems > use[data-i="${provinceId}"]`)?.remove();
+      pack.provinces[provinceId].removed = true;
     }
   }
 
@@ -246,9 +247,9 @@ function recreateStates() {
     byId(`stateCOA${state.i}`)?.setAttribute("id", `stateCOA${newId}`);
     document.querySelector(`#stateEmblems > use[data-i="${state.i}"]`)?.setAttribute("data-i", newId);
 
-    state.provinces.forEach(id => {
-      if (!pack.provinces[id] || !pack.provinces[id].removed) return;
-      pack.provinces[id].state = newId;
+    state.provinces.forEach(provinceId => {
+      if (!pack.provinces[provinceId]) return;
+      pack.provinces[provinceId].state = newId;
     });
 
     state.i = newId;
@@ -260,8 +261,6 @@ function recreateStates() {
     const lockedStateIndex = lockedStatesIds.indexOf(stateId) + 1;
     // lockedStateIndex is an index of locked state or 0 if state is not locked
     pack.cells.state[i] = lockedStateIndex;
-
-    // TODO: update province id reference
   }
 
   for (let i = newStates.length; i < count; i++) {
