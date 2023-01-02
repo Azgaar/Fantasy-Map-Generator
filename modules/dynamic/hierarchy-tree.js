@@ -29,8 +29,7 @@ export function open(props) {
   closeDialogs("#hierarchyTree, .stable");
 
   dataElements = props.data;
-  dataElements[0].origins = [null];
-  validElements = dataElements.filter(r => !r.removed);
+  validElements = cleanupOrigins(dataElements);
   if (validElements.length < 3) return tip(`Not enough ${props.type} to show hierarchy`, false, "error");
 
   onNodeEnter = props.onNodeEnter;
@@ -39,6 +38,8 @@ export function open(props) {
   getShape = props.getShape;
 
   const root = getRoot();
+  if (!root) return;
+
   const treeWidth = root.leaves().length * 50;
   const treeHeight = root.height * 50;
 
@@ -175,14 +176,30 @@ function insertHtml() {
   byId("dialogs").insertAdjacentHTML("beforeend", html);
 }
 
-function getRoot() {
-  const root = d3
-    .stratify()
-    .id(d => d.i)
-    .parentId(d => d.origins[0])(validElements);
+function cleanupOrigins(elements) {
+  const existingElements = elements.filter(d => !d.removed);
 
-  oldRoot = root;
-  return root;
+  return existingElements.map(d => {
+    if (d.i === 0) d.origins = [null]; // root element
+    else if (!d.origins.length) d.origins = [0];
+    else if (!existingElements.find(el => d.origins[0] === el.i)) d.origins = [0];
+    return d;
+  });
+}
+
+function getRoot() {
+  try {
+    const root = d3
+      .stratify()
+      .id(d => d.i)
+      .parentId(d => d.origins[0])(validElements);
+
+    oldRoot = root;
+    return root;
+  } catch (error) {
+    tip("Hierarchy data issue. " + error, false, "error", 6000);
+    return oldRoot;
+  }
 }
 
 function getLinkKey(d) {
