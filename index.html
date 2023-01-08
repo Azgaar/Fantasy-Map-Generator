@@ -108,7 +108,7 @@
       }
     </style>
 
-    <link rel="preload" href="index.css?v=1.88.03" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+    <link rel="preload" href="index.css?v=1.89.00" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="icons.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="libs/jquery-ui.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
   </head>
@@ -2017,11 +2017,14 @@
             </button>
             <button
               id="regenerateStates"
-              data-tip="Click to select new capitals and regenerate states. Emblems and military forces will be regenerated as well, burgs will remain as they are"
+              data-tip="Click to select new capitals and regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are"
             >
               States
             </button>
-            <button id="regenerateProvinces" data-tip="Click to regenerate provinces. States will remain as they are">
+            <button
+              id="regenerateProvinces"
+              data-tip="Click to regenerate non-locked provinces. States will remain as they are"
+            >
               Provinces
             </button>
             <button
@@ -2031,8 +2034,8 @@
               Burgs
             </button>
             <button id="regenerateEmblems" data-tip="Click to regenerate all emblems">Emblems</button>
-            <button id="regenerateReligions" data-tip="Click to regenerate religions">Religions</button>
-            <button id="regenerateCultures" data-tip="Click to regenerate cultures">Cultures</button>
+            <button id="regenerateReligions" data-tip="Click to regenerate non-locked religions">Religions</button>
+            <button id="regenerateCultures" data-tip="Click to regenerate non-locked cultures">Cultures</button>
             <button
               id="regenerateMilitary"
               data-tip="Click to recalculate military forces based on current military options"
@@ -2040,7 +2043,7 @@
               Military
             </button>
             <button id="regenerateIce" data-tip="Click to icebergs and glaciers">Ice</button>
-            <button id="regenerateMarkers" data-tip="Click to regenerate markers">
+            <button id="regenerateMarkers" data-tip="Click to regenerate unlocked markers">
               Markers <i id="configRegenerateMarkers" class="icon-cog" data-tip="Click to set number multiplier"></i>
             </button>
             <button
@@ -7842,10 +7845,10 @@
     <script src="modules/river-generator.js"></script>
     <script src="modules/lakes.js"></script>
     <script src="modules/names-generator.js?v=1.87.14"></script>
-    <script src="modules/cultures-generator.js?v=1.87.14"></script>
-    <script src="modules/burgs-and-states.js?v=1.87.10"></script>
+    <script src="modules/cultures-generator.js?v=1.89.00"></script>
+    <script src="modules/burgs-and-states.js?v=1.89.00"></script>
     <script src="modules/routes-generator.js"></script>
-    <script src="modules/religions-generator.js"></script>
+    <script src="modules/religions-generator.js?v=1.89.00"></script>
     <script src="modules/military-generator.js"></script>
     <script src="modules/markers-generator.js?v=1.87.13"></script>
     <script src="modules/coa-generator.js"></script>
@@ -7864,11 +7867,11 @@
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js"></script>
-    <script defer src="modules/ui/editors.js?v=1.88.06"></script>
-    <script defer src="modules/ui/tools.js?v=1.88.05"></script>
+    <script defer src="modules/ui/editors.js?v=1.87.07"></script>
+    <script defer src="modules/ui/tools.js?v=1.89.00"></script>
     <script defer src="modules/ui/world-configurator.js"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=1.88.03"></script>
-    <script defer src="modules/ui/provinces-editor.js"></script>
+    <script defer src="modules/ui/provinces-editor.js?v=1.89.00"></script>
     <script defer src="modules/ui/biomes-editor.js"></script>
     <script defer src="modules/ui/namesbase-editor.js?v=1.87.10"></script>
     <script defer src="modules/ui/elevation-profile.js"></script>

@@ -228,6 +228,7 @@ function culturesEditorAddLines() {
           style="width: 5em">${si(population)}</div>
         <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw hide"></span>
         ${getShapeOptions(selectShape, c.shield)}
+        <span data-tip="Lock culture" class="icon-lock${c.lock ? '' : '-open'} hide"></span>
         <span data-tip="Remove culture" class="icon-trash-empty hide"></span>
       </div>`;
   }
@@ -257,6 +258,8 @@ function culturesEditorAddLines() {
   $body.querySelectorAll("div > div.culturePopulation").forEach($el => $el.on("click", changePopulation));
   $body.querySelectorAll("div > span.icon-arrows-cw").forEach($el => $el.on("click", cultureRegenerateBurgs));
   $body.querySelectorAll("div > span.icon-trash-empty").forEach($el => $el.on("click", cultureRemovePrompt));
+  $body.querySelectorAll("div > span.icon-lock").forEach($el => $el.on("click", updateLockStatus));
+  $body.querySelectorAll("div > span.icon-lock-open").forEach($el => $el.on("click", updateLockStatus));
 
   const $culturesHeader = byId("culturesHeader");
   $culturesHeader.querySelector("div[data-sortby='emblems']").style.display = selectShape ? "inline-block" : "none";
@@ -927,4 +930,16 @@ async function uploadCulturesData() {
 
   drawCultures();
   refreshCulturesEditor();
+}
+
+function updateLockStatus() {
+  if (customization) return;
+
+  const cultureId = +this.parentNode.dataset.id;
+  const classList = this.classList;
+  const c = pack.cultures[cultureId];
+  c.lock = !c.lock;
+
+  classList.toggle("icon-lock-open");
+  classList.toggle("icon-lock");
 }

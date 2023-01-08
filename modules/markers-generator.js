@@ -106,7 +106,7 @@ window.Markers = (function () {
       let candidates = Array.from(list(pack));
       let quantity = getQuantity(candidates, min, each, multiplier);
       // uncomment for debugging:
-      // console.log(`${icon} ${type}: each ${each} of ${candidates.length}, min ${min} candidates. Got ${quantity}`);
+      // console.info(`${icon} ${type}: each ${each} of ${candidates.length}, min ${min} candidates. Got ${quantity}`);
 
       while (quantity && candidates.length) {
         const [cell] = extractAnyElement(candidates);

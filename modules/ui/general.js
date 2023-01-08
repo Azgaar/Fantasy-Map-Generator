@@ -210,7 +210,7 @@ function showMapTooltip(point, e, i, g) {
     const r = pack.religions[religion];
     const type = r.type === "Cult" || r.type == "Heresy" ? r.type : r.type + " religion";
     tip(type + ": " + r.name);
-    if (religionsEditor?.offsetParent) highlightEditorLine(religionsEditor, religion);
+    if (byId("religionsEditor")?.offsetParent) highlightEditorLine(religionsEditor, religion);
   } else if (pack.cells.state[i] && (layerIsOn("toggleProvinces") || layerIsOn("toggleStates"))) {
     const state = pack.cells.state[i];
     const stateName = pack.states[state].fullName;
