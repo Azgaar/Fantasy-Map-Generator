@@ -26,7 +26,7 @@ window.Cloud = (function () {
 
   const DBP = {
     name: "dropbox",
-    clientId: "pdr9ae64ip0qno4",
+    clientId: "61ndwmjyxi8bkrc",
     authWindow: undefined,
     token: null, // Access token
     api: null,

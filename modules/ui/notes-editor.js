@@ -67,7 +67,7 @@ function editNotes(id, name) {
 
   async function initEditor() {
     if (!window.tinymce) {
-      const url = "https://cdn.tiny.cloud/1/4i6a79ymt2y0cagke174jp3meoi28vyecrch12e5puyw3p9a/tinymce/5/tinymce.min.js";
+      const url = "https://cdn.tiny.cloud/1/0jymwxq81rqy6je7xkr8eqviynn0hknty661obyitcu6lmrj/tinymce/6/tinymce.min.js";
       try {
         await import(url);
       } catch (error) {
