@@ -397,8 +397,12 @@ window.Religions = (function () {
       });
     });
 
-    if (religionsInput.value == 0 || pack.cultures.length < 2)
-      return religions.filter(r => r.i).forEach(r => (r.code = abbreviate(r.name)));
+    if (religionsInput.value == 0 || pack.cultures.length < 2) {
+      religions.filter(r => r.i).forEach(r => (r.code = abbreviate(r.name)));
+      cells.religion = religionIds;
+      pack.religions = religions;
+      return;
+    }
 
     const burgs = pack.burgs.filter(b => b.i && !b.removed);
     const sorted =
