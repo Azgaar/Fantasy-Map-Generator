@@ -228,7 +228,7 @@ function culturesEditorAddLines() {
           style="width: 5em">${si(population)}</div>
         <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw hide"></span>
         ${getShapeOptions(selectShape, c.shield)}
-        <span data-tip="Lock culture" class="icon-lock${c.lock ? '' : '-open'} hide"></span>
+        <span data-tip="Lock culture" class="icon-lock${c.lock ? "" : "-open"} hide"></span>
         <span data-tip="Remove culture" class="icon-trash-empty hide"></span>
       </div>`;
   }
@@ -251,7 +251,7 @@ function culturesEditorAddLines() {
   $body.querySelectorAll("fill-box").forEach($el => $el.on("click", cultureChangeColor));
   $body.querySelectorAll("div > input.cultureName").forEach($el => $el.on("input", cultureChangeName));
   $body.querySelectorAll("div > span.icon-cw").forEach($el => $el.on("click", cultureRegenerateName));
-  $body.querySelectorAll("div > input.cultureExpan").forEach($el => $el.on("input", cultureChangeExpansionism));
+  $body.querySelectorAll("div > input.cultureExpan").forEach($el => $el.on("change", cultureChangeExpansionism));
   $body.querySelectorAll("div > select.cultureType").forEach($el => $el.on("change", cultureChangeType));
   $body.querySelectorAll("div > select.cultureBase").forEach($el => $el.on("change", cultureChangeBase));
   $body.querySelectorAll("div > select.cultureEmblems").forEach($el => $el.on("change", cultureChangeEmblemsShape));
@@ -666,17 +666,10 @@ async function showHierarchy() {
 function recalculateCultures(must) {
   if (!must && !culturesAutoChange.checked) return;
 
-  pack.cells.culture = new Uint16Array(pack.cells.i.length);
-  pack.cultures.forEach(function (c) {
-    if (!c.i || c.removed) return;
-    pack.cells.culture[c.center] = c.i;
-  });
-
   Cultures.expand();
   drawCultures();
   pack.burgs.forEach(b => (b.culture = pack.cells.culture[b.cell]));
   refreshCulturesEditor();
-  document.querySelector("input.cultureExpan").focus(); // to not trigger hotkeys
 }
 
 function enterCultureManualAssignent() {
