@@ -2045,6 +2045,7 @@ div.textual span,
 }
 
 #notesLegend {
+  width: auto;
   height: 87%;
   outline: 0;
   overflow-y: auto;

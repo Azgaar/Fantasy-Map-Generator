@@ -42,12 +42,11 @@ function editNotes(id, name) {
 
   $("#notesEditor").dialog({
     title: "Notes Editor",
-    width: "minmax(80vw, 540px)",
+    width: window.innerWidth * 0.8,
     height: window.innerHeight * 0.75,
     position: {my: "center", at: "center", of: "svg"},
     close: removeEditor
   });
-  $("[aria-describedby='notesEditor']").css("top", "10vh");
 
   if (modules.editNotes) return;
   modules.editNotes = true;
