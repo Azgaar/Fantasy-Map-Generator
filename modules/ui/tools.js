@@ -74,10 +74,8 @@ toolsContent.addEventListener("click", function (event) {
 });
 
 function processFeatureRegeneration(event, button) {
-  if (button === "regenerateStateLabels") {
-    BurgsAndStates.drawStateLabels();
-    if (!layerIsOn("toggleLabels")) toggleLabels();
-  } else if (button === "regenerateReliefIcons") {
+  if (button === "regenerateStateLabels") BurgsAndStates.drawStateLabels();
+  else if (button === "regenerateReliefIcons") {
     ReliefIcons();
     if (!layerIsOn("toggleRelief")) toggleRelief();
   } else if (button === "regenerateRoutes") {

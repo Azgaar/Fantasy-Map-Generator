@@ -608,7 +608,7 @@ window.BurgsAndStates = (function () {
         if (list && !list.includes(state.i)) continue;
 
         byId(`stateLabel${state.i}`)?.remove();
-        byId(`textPath_stateLabel6${state.i}`)?.remove();
+        byId(`textPath_stateLabel${state.i}`)?.remove();
       }
 
       const example = g.append("text").attr("x", 0).attr("x", 0).text("Average");
