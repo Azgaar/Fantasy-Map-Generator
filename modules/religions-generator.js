@@ -700,7 +700,7 @@ window.Religions = (function () {
       form: formName,
       deity,
       expansion,
-      expansionism: 0,
+      expansionism: 0.01,
       center,
       cells: 0,
       area: 0,
