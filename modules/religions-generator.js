@@ -438,6 +438,8 @@ window.Religions = (function () {
       }
     }
 
+    cells.religion = religionIds;
+
     // generate organized religions
     for (let i = 0; religions.length < count && i < 1000; i++) {
       let center = sorted[biased(0, sorted.length - 1, 5)]; // religion center
@@ -520,6 +522,8 @@ window.Religions = (function () {
       religionsTree.add([x, y]);
     }
 
+    pack.religions = religions;
+
     expandReligions();
 
     // generate heresies
@@ -540,8 +544,8 @@ window.Religions = (function () {
           const name = getCultName("Heresy", center);
           const expansionism = gauss(1.2, 0.5, 0, 5);
           const color = getMixedColor(r.color, 0.4, 0.2); // "url(#hatch6)";
-          religions.push({
-            i: religions.length,
+          pack.religions.push({
+            i: pack.religions.length,
             name,
             color,
             culture,
@@ -559,19 +563,20 @@ window.Religions = (function () {
 
     expandHeresies();
 
-    checkCenters();
-
-    cells.religion = religionIds;
-    pack.religions = religions;
+    checkReligionCenters();
 
     TIME && console.timeEnd("generateReligions");
+  };
 
     // growth algorithm to assign cells to religions
-    function expandReligions() {
+    const expandReligions = function() {
       const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
       const cost = [];
+      const religionIds = pack.cells.religion;
+      const cells = pack.cells;
 
-      religions
+
+      pack.religions
         .filter(r => !r.lock && (r.type === "Organized" || r.type === "Cult"))
         .forEach(r => {
           religionIds[r.center] = r.i;
@@ -584,12 +589,12 @@ window.Religions = (function () {
 
       while (queue.length) {
         const {e, p, r, c, s} = queue.dequeue();
-        const expansion = religions[r].expansion;
+        const expansion = pack.religions[r].expansion;
 
         cells.c[e].forEach(nextCell => {
           if (expansion === "culture" && c !== cells.culture[nextCell]) return;
           if (expansion === "state" && s !== cells.state[nextCell]) return;
-          if (religions[religionIds[nextCell]]?.lock) return;
+          if (pack.religions[religionIds[nextCell]]?.lock) return;
 
           const cultureCost = c !== cells.culture[nextCell] ? 10 : 0;
           const stateCost = s !== cells.state[nextCell] ? 10 : 0;
@@ -599,7 +604,7 @@ window.Religions = (function () {
           const waterCost = cells.h[nextCell] < 20 ? (cells.road[nextCell] ? 50 : 1000) : 0;
           const totalCost =
             p +
-            (cultureCost + stateCost + biomeCost + populationCost + heightCost + waterCost) / religions[r].expansionism;
+            (cultureCost + stateCost + biomeCost + populationCost + heightCost + waterCost) / pack.religions[r].expansionism;
           if (totalCost > neutral) return;
 
           if (!cost[nextCell] || totalCost < cost[nextCell]) {
@@ -609,14 +614,16 @@ window.Religions = (function () {
           }
         });
       }
-    }
+    };
 
     // growth algorithm to assign cells to heresies
-    function expandHeresies() {
+    const expandHeresies = function() {
       const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
       const cost = [];
+      const religionIds = pack.cells.religion;
+      const cells = pack.cells;
 
-      religions
+      pack.religions
         .filter(r => !r.lock && r.type === "Heresy")
         .forEach(r => {
           const b = religionIds[r.center]; // "base" religion id
@@ -631,13 +638,13 @@ window.Religions = (function () {
         const {e, p, r, b} = queue.dequeue();
 
         cells.c[e].forEach(nextCell => {
-          if (religions[religionIds[nextCell]]?.lock) return;
+          if (pack.religions[religionIds[nextCell]]?.lock) return;
           const religionCost = religionIds[nextCell] === b ? 0 : 2000;
           const biomeCost = cells.road[nextCell] ? 0 : biomesData.cost[cells.biome[nextCell]];
           const heightCost = Math.max(cells.h[nextCell], 20) - 20;
           const waterCost = cells.h[nextCell] < 20 ? (cells.road[nextCell] ? 50 : 1000) : 0;
           const totalCost =
-            p + (religionCost + biomeCost + heightCost + waterCost) / Math.max(religions[r].expansionism, 0.1);
+            p + (religionCost + biomeCost + heightCost + waterCost) / Math.max(pack.religions[r].expansionism, 0.1);
 
           if (totalCost > neutral) return;
 
@@ -648,21 +655,20 @@ window.Religions = (function () {
           }
         });
       }
-    }
+    };
 
-    function checkCenters() {
-      const codes = religions.map(r => r.code);
-      religions.forEach(r => {
+    const checkReligionCenters = function() {
+      const codes = pack.religions.map(r => r.code);
+      pack.religions.forEach(r => {
         if (!r.i) return;
         r.code = abbreviate(r.name, codes);
 
         // move religion center if it's not within religion area after expansion
-        if (religionIds[r.center] === r.i) return; // in area
-        const firstCell = cells.i.find(i => religionIds[i] === r.i);
+        if (pack.cells.religion[r.center] === r.i) return; // in area
+        const firstCell = pack.cells.i.find(i => pack.cells.religion[i] === r.i);
         if (firstCell) r.center = firstCell; // move center, othervise it's an extinct religion
       });
-    }
-  };
+    };
 
   const add = function (center) {
     const {cells, religions} = pack;
@@ -799,5 +805,15 @@ window.Religions = (function () {
     return type() + " of the " + generateMeaning();
   }
 
-  return {generate, add, getDeityName, updateCultures};
+  const resetUnlockedReligions = function() {
+    const religion = pack.cells.religion;
+    const culture = pack.cells.culture;
+    for(const i of pack.cells.i){
+      if( culture[i] && !pack.religions[religion[i]]?.lock ){
+        religion[i] = culture[i];
+      }
+    }
+  };
+
+  return {generate, expandReligions, expandHeresies, checkReligionCentres, add, getDeityName, updateCultures, resetUnlockedReligions};
 })();

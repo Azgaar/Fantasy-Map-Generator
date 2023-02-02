@@ -773,3 +773,16 @@ function updateLockStatus() {
   classList.toggle("icon-lock-open");
   classList.toggle("icon-lock");
 }
+
+function recalculateReligions(must) {
+  if (!must && !religionsAutoChange.checked) return;
+
+  Religions.resetUnlockedReligions();
+  Religions.expandReligions();
+  Religions.expandHeresies();
+  Religions.checkReligionCentres();
+
+  drawReligions();
+  refreshReligionsEditor();
+  drawReligionCenters();
+}
