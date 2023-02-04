@@ -883,7 +883,6 @@ function changeStatesGrowthRate() {
   const growthRate = +this.value;
   byId("statesNeutral").value = growthRate;
   byId("statesNeutralNumber").value = growthRate;
-  statesNeutral = growthRate;
   tip("Growth rate: " + growthRate);
   recalculateStates(false);
 }
