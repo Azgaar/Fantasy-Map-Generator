@@ -808,8 +808,16 @@ window.Religions = (function () {
   const resetUnlockedReligions = function() {
     const religion = pack.cells.religion;
     const culture = pack.cells.culture;
+    // ignore cultures added since last folk generation. Known Issue
+    let knownFolk = 1;
+    for(const j = 1; j++; j<pack.religions.length){
+      if(pack.religions[j].type != "Folk"){
+        knownFolk = j;
+        break;
+      }
+    }
     for(const i of pack.cells.i){
-      if( culture[i] && !pack.religions[religion[i]]?.lock ){
+      if( culture[i] && (culture[i] < +knownFolk) && !pack.religions[religion[i]]?.lock ){
         religion[i] = culture[i];
       }
     }
