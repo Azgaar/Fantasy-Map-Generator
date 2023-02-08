@@ -1,7 +1,7 @@
 "use strict";
 
 // version and caching control
-const version = "1.89.04"; // generator version, update each time
+const version = "1.90.00"; // generator version, update each time
 
 {
   document.title += " v" + version;
@@ -28,6 +28,7 @@ const version = "1.89.04"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Religions update by center drag expansionism value</li>
         <li>Lock states, provinces, cultures, and religions from regeneration</li>
         <li>Heightmap brushes: linear edit option</li>
         <li>Data Charts screen</li>
