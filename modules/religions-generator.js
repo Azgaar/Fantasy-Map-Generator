@@ -569,12 +569,11 @@ window.Religions = (function () {
   };
 
     // growth algorithm to assign cells to religions
-    const expandReligions = function() {
+    function expandReligions() {
       const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
       const cost = [];
       const religionIds = pack.cells.religion;
       const cells = pack.cells;
-
 
       pack.religions
         .filter(r => !r.lock && (r.type === "Organized" || r.type === "Cult"))
@@ -614,10 +613,10 @@ window.Religions = (function () {
           }
         });
       }
-    };
+    }
 
     // growth algorithm to assign cells to heresies
-    const expandHeresies = function() {
+    function expandHeresies() {
       const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
       const cost = [];
       const religionIds = pack.cells.religion;
@@ -655,9 +654,9 @@ window.Religions = (function () {
           }
         });
       }
-    };
+    }
 
-    const checkReligionCenters = function() {
+    function checkReligionCenters() {
       const codes = pack.religions.map(r => r.code);
       pack.religions.forEach(r => {
         if (!r.i) return;
@@ -668,7 +667,7 @@ window.Religions = (function () {
         const firstCell = pack.cells.i.find(i => pack.cells.religion[i] === r.i);
         if (firstCell) r.center = firstCell; // move center, othervise it's an extinct religion
       });
-    };
+    }
 
   const add = function (center) {
     const {cells, religions} = pack;
@@ -810,7 +809,7 @@ window.Religions = (function () {
     const culture = pack.cells.culture;
     // ignore cultures added since last folk generation. Known Issue
     let knownFolk = 1;
-    for(const j = 1; j++; j<pack.religions.length){
+    for(let j = 1; j++; j<pack.religions.length){
       if(pack.religions[j].type != "Folk"){
         knownFolk = j;
         break;
@@ -823,5 +822,5 @@ window.Religions = (function () {
     }
   };
 
-  return {generate, expandReligions, expandHeresies, checkReligionCentres, add, getDeityName, updateCultures, resetUnlockedReligions};
+  return {generate, expandReligions, expandHeresies, checkReligionCenters, add, getDeityName, updateCultures, resetUnlockedReligions};
 })();

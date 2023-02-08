@@ -832,7 +832,7 @@ function recalculateReligions(must) {
   Religions.resetUnlockedReligions();
   Religions.expandReligions();
   Religions.expandHeresies();
-  Religions.checkReligionCentres();
+  Religions.checkReligionCenters();
 
   drawReligions();
   refreshReligionsEditor();
