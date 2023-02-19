@@ -359,7 +359,7 @@ window.BurgsAndStates = (function () {
     TIME && console.timeEnd("drawBurgs");
   };
 
-  // growth algorithm to assign cells to states like we did for cultures
+  // expand cultures across the map (Dijkstra-like algorithm)
   const expandStates = function () {
     TIME && console.time("expandStates");
     const {cells, states, cultures, burgs} = pack;
@@ -368,8 +368,8 @@ window.BurgsAndStates = (function () {
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
-    const globalNeutralRate = byId("neutralInput")?.value || 1;
-    const statesNeutralRate = byId("statesNeutral")?.value || 1;
+    const globalNeutralRate = byId("neutralInput")?.valueAsNumber || 1;
+    const statesNeutralRate = byId("statesNeutral")?.valueAsNumber || 1;
     const neutral = (cells.i.length / 2) * globalNeutralRate * statesNeutralRate; // limit cost for state growth
 
     // remove state from all cells except of locked

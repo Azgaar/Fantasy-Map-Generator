@@ -3,11 +3,11 @@ addListeners();
 
 export function open() {
   closeDialogs("#religionsEditor, .stable");
-  if (!layerIsOn("toggleReligions")) toggleCultures();
   if (layerIsOn("toggleStates")) toggleStates();
   if (layerIsOn("toggleBiomes")) toggleBiomes();
   if (layerIsOn("toggleCultures")) toggleReligions();
   if (layerIsOn("toggleProvinces")) toggleProvinces();
+  if (!layerIsOn("toggleReligions")) toggleReligions();
 
   refreshReligionsEditor();
   drawReligionCenters();
@@ -214,7 +214,7 @@ function religionsEditorAddLines() {
       <div data-tip="${populationTip}" class="religionPopulation hide pointer">${si(population)}</div>
       <span
         data-tip="Lock religion, will regenerate the origin folk and organized religion if they are not also locked"
-        class="icon-lock${r.lock ? '' : '-open'} hide"
+        class="icon-lock${r.lock ? "" : "-open"} hide"
       ></span>
       <span data-tip="Remove religion" class="icon-trash-empty hide"></span>
     </div>`;

@@ -350,9 +350,8 @@ window.Religions = (function () {
     const religions = [];
 
     // add folk religions
-    pack.cultures.forEach(c => {
-      const newId = c.i;
-      if (!newId) return religions.push({i: 0, name: "No religion"});
+    cultures.forEach(c => {
+      if (!c.i) return religions.push({i: 0, name: "No religion"});
 
       if (c.removed) {
         religions.push({
@@ -363,6 +362,8 @@ window.Religions = (function () {
         });
         return;
       }
+
+      const newId = c.i;
 
       if (pack.religions) {
         const lockedFolkReligion = pack.religions.find(
@@ -383,7 +384,7 @@ window.Religions = (function () {
       const form = rw(forms.Folk);
       const name = c.name + " " + rw(types[form]);
       const deity = form === "Animism" ? null : getDeityName(c.i);
-      const color = getMixedColor(c.color, 0.1, 0); // `url(#hatch${rand(8,13)})`;
+      const color = getMixedColor(c.color, 0.1, 0);
       religions.push({
         i: newId,
         name,
@@ -713,14 +714,10 @@ window.Religions = (function () {
   };
 
   function updateCultures() {
-    TIME && console.time("updateCulturesForReligions");
     pack.religions = pack.religions.map((religion, index) => {
-      if (index === 0) {
-        return religion;
-      }
+      if (index === 0) return religion;
       return {...religion, culture: pack.cells.culture[religion.center]};
     });
-    TIME && console.timeEnd("updateCulturesForReligions");
   }
 
   // get supreme deity name
