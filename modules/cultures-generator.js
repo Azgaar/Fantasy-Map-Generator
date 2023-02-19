@@ -116,14 +116,14 @@ window.Cultures = (function () {
 
     cultures.forEach(c => (c.base = c.base % nameBases.length));
 
-    function selectCultures(c) {
-      let def = getDefault(c);
-      if (c === def.length) return def;
-      if (def.every(d => d.odd === 1)) return def.splice(0, c);
+    function selectCultures(culturesNumber) {
+      let def = getDefault(culturesNumber);
+      if (culturesNumber === def.length) return def;
+      if (def.every(d => d.odd === 1)) return def.splice(0, culturesNumber);
 
-      const count = Math.min(c, def.length);
+      const count = Math.min(culturesNumber, def.length);
+
       const cultures = [];
-
       pack.cultures?.forEach(function (culture) {
         if (culture.lock) cultures.push(culture);
       });
