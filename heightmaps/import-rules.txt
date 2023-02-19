@@ -1,5 +1,5 @@
 To get heightmap with correct height scale:
-1. Open tangrams.github.io
+1. Open https://tangrams.github.io/heightmapper
 2. Toggle off auto-exposure
 3. Set max elevation to 2000
 4. Set min elevation to -500
