@@ -30,7 +30,7 @@ function insertEditorHtml() {
       <div data-tip="Click to sort by supreme deity" class="sortable alphabetically hide" data-sortby="deity">Supreme Deity&nbsp;</div>
       <div data-tip="Click to sort by religion area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
       <div data-tip="Click to sort by number of believers (religion area population)" class="sortable hide" data-sortby="population">Believers&nbsp;</div>
-      <div data-tip="Click to sort by expansion limit" class="sortable hide" data-sortby="expansion">Limits&nbsp;</div>
+      <div data-tip="Click to sort by potential extent type" class="sortable hide" data-sortby="expansion">Potential&nbsp;</div>
       <div data-tip="Click to sort by expansionism" class="sortable hide" data-sortby="expansionism">Expansion&nbsp;</div>
     </div>
     <div id="religionsBody" class="table" data-type="absolute"></div>
@@ -91,7 +91,7 @@ function insertEditorHtml() {
       <button id="religionsAdd" data-tip="Add a new religion. Hold Shift to add multiple" class="icon-plus"></button>
       <button id="religionsExport" data-tip="Download religions-related data" class="icon-download"></button>
       <button id="religionsRecalculate" data-tip="Recalculate religions based on current values of growth-related attributes" class="icon-retweet"></button>
-      <span data-tip="Allow religion centers, expansion limit, and expansionism changes to take an immediate effect">
+      <span data-tip="Allow religion center, extent, and expansionism changes to take an immediate effect">
         <input id="religionsAutoChange" class="checkbox" type="checkbox" />
         <label for="religionsAutoChange" class="checkbox-label"><i>auto-apply changes</i></label>
       </span>
@@ -190,8 +190,8 @@ function religionsEditorAddLines() {
         <div data-tip="Religion area" class="religionArea hide" style="width: 5em">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="religionPopulation hide pointer">${si(population)}</div>
-        <select data-tip="Religion spread limit" class="religionLimit placeholder" style="width: 5em">
-          ${getLimitOptions(r.expansion)}
+        <select data-tip="Potential religion extent" class="religionLimit placeholder hide" style="width: 5em">
+          ${getExtentOptions(r.expansion)}
         </select>
         <span class="icon-resize-full placeholder hide"></span>
         <input class="religionExpan placeholder hide" type="number" />
@@ -227,13 +227,19 @@ function religionsEditorAddLines() {
       <div data-tip="Religion area" class="religionArea hide" style="width: 5em">${si(area) + unit}</div>
       <span data-tip="${populationTip}" class="icon-male hide"></span>
       <div data-tip="${populationTip}" class="religionPopulation hide pointer">${si(population)}</div>
-      <select data-tip="Religion spread limit" class="religionLimit" style="width: 5em">
-        ${getLimitOptions(r.expansion)}
-      </select>
-      <span data-tip="Religion expansionism. Defines competitive size" class="icon-resize-full hide"></span>
+      ${r.type == "Folk" ?
+      `<span data-tip="Potential religion extent" class="hide" style="width: 5em">
+        "culture"
+      </span>`
+        :
+      `<select data-tip="Potential religion extent" class="religionLimit hide" style="width: 5em">
+        ${getExtentOptions(r.expansion)}
+      </select>`
+      }
+      <span data-tip="Religion expansionism. Defines competitive size" class="icon-resize-full ${r.type =="Folk" ? "placeholder"} hide"></span>
       <input
         data-tip="Religion expansionism. Defines competitive size. Click to change, then click Recalculate to apply change"
-        class="religionExpan hide"
+        class="religionExpan ${r.type =="Folk" ? "placeholder"} hide"
         type="number"
         min="0"
         max="99"
@@ -294,7 +300,7 @@ function getTypeOptions(type) {
   return options;
 }
 
-function getLimitOptions(type) {
+function getExtentOptions(type) {
   let options = "";
   const types = ["global", "state", "culture"];
   types.forEach(t => (options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`));
@@ -636,7 +642,7 @@ function enterReligionsManualAssignent() {
   if (!layerIsOn("toggleReligions")) toggleReligions();
   customization = 7;
   relig.append("g").attr("id", "temp");
-  document.querySelectorAll("#religionsBottom > button").forEach(el => (el.style.display = "none"));
+  document.querySelectorAll("#religionsBottom > *").forEach(el => (el.style.display = "none"));
   byId("religionsManuallyButtons").style.display = "inline-block";
   debug.select("#religionCenters").style("display", "none");
 
@@ -738,7 +744,7 @@ function exitReligionsManualAssignment(close) {
   customization = 0;
   relig.select("#temp").remove();
   removeCircle();
-  document.querySelectorAll("#religionsBottom > button").forEach(el => (el.style.display = "inline-block"));
+  document.querySelectorAll("#religionsBottom > *").forEach(el => (el.style.display = "inline-block"));
   byId("religionsManuallyButtons").style.display = "none";
 
   byId("religionsEditor")
@@ -792,7 +798,7 @@ function addReligion() {
 
 function downloadReligionsCsv() {
   const unit = getAreaUnit("2");
-  const headers = `Id,Name,Color,Type,Form,Supreme Deity,Area ${unit},Believers,Origins,Limit,Expansionism`;
+  const headers = `Id,Name,Color,Type,Form,Supreme Deity,Area ${unit},Believers,Origins,Potential,Expansionism`;
   const lines = Array.from($body.querySelectorAll(":scope > div"));
   const data = lines.map($line => {
     const {id, name, color, type, form, deity, area, population, expansion, expansionism} = $line.dataset;
