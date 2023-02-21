@@ -190,9 +190,7 @@ function religionsEditorAddLines() {
         <div data-tip="Religion area" class="religionArea hide" style="width: 5em">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="religionPopulation hide pointer">${si(population)}</div>
-        <select data-tip="Potential religion extent" class="religionLimit placeholder hide" style="width: 5em">
-          ${getExtentOptions(r.expansion)}
-        </select>
+        <select data-tip="Potential religion extent" class="religionLimit placeholder hide" style="width: 5em"></select>
         <span class="icon-resize-full placeholder hide"></span>
         <input class="religionExpan placeholder hide" type="number" />
       </div>`;
@@ -215,9 +213,15 @@ function religionsEditorAddLines() {
       <fill-box fill="${r.color}"></fill-box>
       <input data-tip="Religion name. Click and type to change" class="religionName" style="width: 11em"
         value="${r.name}" autocorrect="off" spellcheck="false" />
-      <select data-tip="Religion type" class="religionType" style="width: 5em">
+      ${r.type === "Folk" ?
+      `<span data-tip="Religion type" class="religionType" style="width: 5em">
+        Folk
+      </span>`
+      :
+      `<select data-tip="Religion type" class="religionType" style="width: 5em">
         ${getTypeOptions(r.type)}
-      </select>
+      </select>`
+      }
       <input data-tip="Religion form" class="religionForm hide" style="width: 6em"
         value="${r.form}" autocorrect="off" spellcheck="false" />
       <span data-tip="Click to re-generate supreme deity" class="icon-arrows-cw hide"></span>
@@ -227,19 +231,19 @@ function religionsEditorAddLines() {
       <div data-tip="Religion area" class="religionArea hide" style="width: 5em">${si(area) + unit}</div>
       <span data-tip="${populationTip}" class="icon-male hide"></span>
       <div data-tip="${populationTip}" class="religionPopulation hide pointer">${si(population)}</div>
-      ${r.type == "Folk" ?
+      ${r.type === "Folk" ?
       `<span data-tip="Potential religion extent" class="hide" style="width: 5em">
-        "culture"
+        culture
       </span>`
-        :
+      :
       `<select data-tip="Potential religion extent" class="religionLimit hide" style="width: 5em">
         ${getExtentOptions(r.expansion)}
       </select>`
       }
-      <span data-tip="Religion expansionism. Defines competitive size" class="icon-resize-full ${r.type =="Folk" ? "placeholder"} hide"></span>
+      <span data-tip="Religion expansionism. Defines competitive size" class="icon-resize-full ${r.type === "Folk" ? "placeholder "}hide"></span>
       <input
         data-tip="Religion expansionism. Defines competitive size. Click to change, then click Recalculate to apply change"
-        class="religionExpan ${r.type =="Folk" ? "placeholder"} hide"
+        class="religionExpan ${r.type === "Folk" ? "placeholder "}hide"
         type="number"
         min="0"
         max="99"
@@ -250,7 +254,7 @@ function religionsEditorAddLines() {
         data-tip="Lock religion, will regenerate the origin folk and organized religion if they are not also locked"
         class="icon-lock${r.lock ? '' : '-open'} hide"
       ></span>
-      <span data-tip="Remove religion" class="icon-trash-empty hide"></span>
+      <span data-tip="Remove religion" class="icon-trash-empty ${r.type === "Folk" ? "placeholder "}hide"></span>
     </div>`;
   }
   $body.innerHTML = lines;
@@ -295,7 +299,7 @@ function religionsEditorAddLines() {
 
 function getTypeOptions(type) {
   let options = "";
-  const types = ["Folk", "Organized", "Cult", "Heresy"];
+  const types = ["Organized", "Cult", "Heresy"];
   types.forEach(t => (options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`));
   return options;
 }

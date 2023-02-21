@@ -348,6 +348,7 @@ window.Religions = (function () {
 
     const religionIds = new Uint16Array(cells.culture); // cell religion; initially based on culture
     const religions = [];
+    const codes = [];
 
     // add folk religions
     pack.cultures.forEach(c => {
@@ -376,6 +377,7 @@ window.Religions = (function () {
 
           lockedFolkReligion.i = newId;
           religions.push(lockedFolkReligion);
+          codes.push(lockedFolkReligion.code);
           return;
         }
       }
@@ -384,6 +386,8 @@ window.Religions = (function () {
       const name = c.name + " " + rw(types[form]);
       const deity = form === "Animism" ? null : getDeityName(c.i);
       const color = getMixedColor(c.color, 0.1, 0); // `url(#hatch${rand(8,13)})`;
+      const code = abbreviate(name, codes);
+      codes.push(code);
       religions.push({
         i: newId,
         name,
@@ -393,7 +397,8 @@ window.Religions = (function () {
         form,
         deity,
         center: c.center,
-        origins: [0]
+        origins: [0],
+        code
       });
     });
 
@@ -435,6 +440,7 @@ window.Religions = (function () {
         religion.origins = religion.origins.filter(origin => origin < newId);
         religionsTree.add(cells.p[religion.center]);
         religions.push(religion);
+        codes.push(religion.code);
       }
     }
 
@@ -471,7 +477,9 @@ window.Religions = (function () {
       const expansionism = rand(3, 8);
       const baseColor = religions[culture]?.color || states[state]?.color || getRandomColor();
       const color = getMixedColor(baseColor, 0.3, 0);
+      const code = abbreviate(name, codes);
 
+      codes.push(code);
       religions.push({
         i: religions.length,
         name,
@@ -483,7 +491,8 @@ window.Religions = (function () {
         expansion,
         expansionism,
         center,
-        origins
+        origins,
+        code
       });
       religionsTree.add([x, y]);
     }
@@ -506,6 +515,8 @@ window.Religions = (function () {
       const name = getCultName(form, center);
       const expansionism = gauss(1.1, 0.5, 0, 5);
       const color = getMixedColor(cultures[culture].color, 0.5, 0); // "url(#hatch7)";
+      code = abbreviate(name, codes);
+      codes.push(code);
       religions.push({
         i: religions.length,
         name,
@@ -517,7 +528,8 @@ window.Religions = (function () {
         expansion: "global",
         expansionism,
         center,
-        origins
+        origins,
+        code
       });
       religionsTree.add([x, y]);
     }
@@ -544,6 +556,8 @@ window.Religions = (function () {
           const name = getCultName("Heresy", center);
           const expansionism = gauss(1.2, 0.5, 0, 5);
           const color = getMixedColor(r.color, 0.4, 0.2); // "url(#hatch6)";
+          const code = abbreviate(name, codes);
+          codes.push(code);
           pack.religions.push({
             i: pack.religions.length,
             name,
@@ -555,7 +569,8 @@ window.Religions = (function () {
             expansion: "global",
             expansionism,
             center,
-            origins: [r.i]
+            origins: [r.i],
+            code
           });
           religionsTree.add([x, y]);
         }
@@ -657,13 +672,10 @@ window.Religions = (function () {
     }
 
     function checkReligionCenters() {
-      const codes = pack.religions.map(r => r.code);
       pack.religions.forEach(r => {
         if (!r.i) return;
-        r.code = abbreviate(r.name, codes);
-
         // move religion center if it's not within religion area after expansion
-        if (pack.cells.religion[r.center] === r.i) return; // in area
+        if (r.type==="Folk" || pack.cells.religion[r.center] === r.i) return; // in area, or non-expanding
         const firstCell = pack.cells.i.find(i => pack.cells.religion[i] === r.i);
         if (firstCell) r.center = firstCell; // move center, othervise it's an extinct religion
       });
@@ -725,7 +737,10 @@ window.Religions = (function () {
     const form = rw(forms.Folk);
     const deity = form === "Animism" ? null : getDeityName(c.i);
     const name = c.name + " " + rw(types[form]);
-    const code = abbreviate(name);
+    const code = abbreviate(
+      name,
+      religions.map(r => r.code)
+    );
     const newFolk = {
       i: c.i,
       name,
