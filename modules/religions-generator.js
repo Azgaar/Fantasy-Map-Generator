@@ -717,6 +717,57 @@ window.Religions = (function () {
     cells.religion[center] = i;
   };
 
+  const addFolk = function (center) {
+    const {cultures, religions, cells} = pack;
+
+    const c = cultures.find(c => !c.removed && c.center === center);
+    const color = getMixedColor(c.color, 0.1, 0);
+    const form = rw(forms.Folk);
+    const deity = form === "Animism" ? null : getDeityName(c.i);
+    const name = c.name + " " + rw(types[form]);
+    const code = abbreviate(name);
+    const newFolk = {
+      i: c.i,
+      name,
+      color,
+      culture: c.i,
+      type: "Folk",
+      form,
+      deity,
+      center: center,
+      cells: 0,
+      area: 0,
+      rural: 0,
+      urban: 0,
+      origins: [0],
+      code
+    };
+
+    if(religions[c.i]){
+      let rCargo = religions[c.i];
+      if(rCargo.type === "Folk") return;
+      const newId = religions.length;
+      rCargo.i = newId;
+      for(const i of cells.i) {
+        if(cells.religion[i] = c.i) {
+          cells.religion[i] = newId;
+        }
+      }
+      religions.forEach(r => {
+        for(let j = 0; j < r.origins.length; j++) {
+          if(r.origins[j] === c.i) {
+            r.origins[j] === newid;
+            return;
+          }
+        }
+      });
+      religions.push(rCargo);
+      religions[c.i] = newFolk;
+    } else {
+      religions.push(newFolk);
+    }
+  };
+
   function updateCultures() {
     TIME && console.time("updateCulturesForReligions");
     pack.religions = pack.religions.map((religion, index) => {
@@ -805,22 +856,14 @@ window.Religions = (function () {
   }
 
   const resetUnlockedReligions = function() {
-    const religion = pack.cells.religion;
-    const culture = pack.cells.culture;
-    // ignore cultures added since last folk generation. Known Issue
-    let knownFolk = 1;
-    for(let j = 1; j++; j<pack.religions.length){
-      if(pack.religions[j].type != "Folk"){
-        knownFolk = j;
-        break;
-      }
-    }
+    const {religion, culture} = pack.cells;
+
     for(const i of pack.cells.i){
-      if( culture[i] && (culture[i] < +knownFolk) && !pack.religions[religion[i]]?.lock ){
+      if( !pack.religions[religion[i]]?.lock ){
         religion[i] = culture[i];
       }
     }
   };
 
-  return {generate, expandReligions, expandHeresies, checkReligionCenters, add, getDeityName, updateCultures, resetUnlockedReligions};
+  return {generate, expandReligions, expandHeresies, checkReligionCenters, add, addFolk, getDeityName, updateCultures, resetUnlockedReligions};
 })();
