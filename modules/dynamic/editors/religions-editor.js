@@ -536,7 +536,7 @@ function drawReligionCenters() {
     .attr("stroke", "#444444")
     .style("cursor", "move");
 
-  const data = pack.religions.filter(r => r.i && r.center && r.cells && !r.removed);
+  const data = pack.religions.filter(r => r.i && r.center && !r.type==="Folk" && !r.removed);
   religionCenters
     .selectAll("circle")
     .data(data)

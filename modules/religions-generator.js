@@ -758,25 +758,26 @@ window.Religions = (function () {
       code
     };
 
-    if(religions[c.i]){
-      let rCargo = religions[c.i];
-      if(rCargo.type === "Folk") return;
-      const newId = religions.length;
-      rCargo.i = newId;
-      for(const i of cells.i) {
-        if(cells.religion[i] = c.i) {
-          cells.religion[i] = newId;
-        }
-      }
-      religions.forEach(r => {
-        for(let j = 0; j < r.origins.length; j++) {
-          if(r.origins[j] === c.i) {
-            r.origins[j] === newid;
-            return;
+    if(c.i < religions.length){
+      const rCargo = religions[c.i];
+      if(!rCargo.removed) {
+        const newId = religions.length;
+        rCargo.i = newId;
+        for(const i of cells.i) {
+          if(cells.religion[i] = c.i) {
+            cells.religion[i] = newId;
           }
         }
-      });
-      religions.push(rCargo);
+        religions.forEach(r => {
+          for(let j = 0; j < r.origins.length; j++) {
+            if(r.origins[j] === c.i) {
+              r.origins[j] === newid;
+              return;
+            }
+          }
+        });
+        religions.push(rCargo);
+      }
       religions[c.i] = newFolk;
     } else {
       religions.push(newFolk);
@@ -785,11 +786,14 @@ window.Religions = (function () {
 
   function updateCultures() {
     TIME && console.time("updateCulturesForReligions");
-    pack.religions = pack.religions.map((religion, index) => {
-      if (index === 0) {
-        return religion;
+    pack.religions.forEach(r => {
+      if(r.i === 0) return;
+      if(!r.origins.length) r.origins = [0];
+      if(r.type === "Folk"){
+        if(r.removed) addFolk(pack.cultures[r.i].center); // regnerate folk religions for the regenerated cultures
+        else r.center = pack.cultures[r.i].center;
       }
-      return {...religion, culture: pack.cells.culture[religion.center]};
+      else r.culture = pack.cells.culture[r.center];
     });
     TIME && console.timeEnd("updateCulturesForReligions");
   }
