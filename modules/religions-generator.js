@@ -381,25 +381,10 @@ window.Religions = (function () {
           return;
         }
       }
-
-      const form = rw(forms.Folk);
-      const name = c.name + " " + rw(types[form]);
-      const deity = form === "Animism" ? null : getDeityName(c.i);
-      const color = getMixedColor(c.color, 0.1, 0); // `url(#hatch${rand(8,13)})`;
-      const code = abbreviate(name, codes);
-      codes.push(code);
-      religions.push({
-        i: newId,
-        name,
-        color,
-        culture: newId,
-        type: "Folk",
-        form,
-        deity,
-        center: c.center,
-        origins: [0],
-        code
-      });
+      
+      const newFolk = createFolk(c, codes);
+      codes.push(newFolk.code);
+      religions.push(newFolk);
     });
 
     if (religionsInput.value == 0 || pack.cultures.length < 2) {
@@ -515,7 +500,7 @@ window.Religions = (function () {
       const name = getCultName(form, center);
       const expansionism = gauss(1.1, 0.5, 0, 5);
       const color = getMixedColor(cultures[culture].color, 0.5, 0); // "url(#hatch7)";
-      code = abbreviate(name, codes);
+      const code = abbreviate(name, codes);
       codes.push(code);
       religions.push({
         i: religions.length,
@@ -582,6 +567,27 @@ window.Religions = (function () {
 
     TIME && console.timeEnd("generateReligions");
   };
+  
+  function createFolk(c, codes) {
+
+    const form = rw(forms.Folk);
+    const name = c.name + " " + rw(types[form]);
+    const deity = form === "Animism" ? null : getDeityName(c.i);
+    const color = getMixedColor(c.color, 0.1, 0);
+    const code = abbreviate(name, codes);
+    return {
+      i: c.i,
+      name,
+      color,
+      culture: c.i,
+      type: "Folk",
+      form,
+      deity,
+      center: c.center,
+      origins: [0],
+      code
+    };
+  }
 
   // growth algorithm to assign cells to religions
   function expandReligions() {
@@ -749,35 +755,13 @@ window.Religions = (function () {
     const {cultures, religions, cells} = pack;
 
     const c = cultures.find(c => !c.removed && c.center === center);
-    const color = getMixedColor(c.color, 0.1, 0);
-    const form = rw(forms.Folk);
-    const deity = form === "Animism" ? null : getDeityName(c.i);
-    const name = c.name + " " + rw(types[form]);
-    const code = abbreviate(
-      name,
-      religions.map(r => r.code)
-    );
-    const newFolk = {
-      i: c.i,
-      name,
-      color,
-      culture: c.i,
-      type: "Folk",
-      form,
-      deity,
-      center: center,
-      cells: 0,
-      area: 0,
-      rural: 0,
-      urban: 0,
-      origins: [0],
-      code
-    };
+    const codes = religions.map(r => r.code);
+    const newFolk = createFolk(c, codes);
 
     if(c.i < religions.length){
       // move an existing organized religion to the end of the array
       const rCargo = religions[c.i];
-      if(!rCargo.removed) {
+      if(!rCargo.removed && rCargo.type != "Folk") {
         const newId = religions.length;
         rCargo.i = newId;
 
@@ -787,9 +771,10 @@ window.Religions = (function () {
           }
         }
         religions.forEach(r => {
+          if (r.i === 0) return;
           for(let j = 0; j < r.origins.length; j++) {
             if(r.origins[j] === c.i) {
-              r.origins[j] === newid;
+              r.origins[j] === newId;
               return;
             }
           }
@@ -806,17 +791,38 @@ window.Religions = (function () {
 
   function updateCultures() {
     TIME && console.time("updateCulturesForReligions");
+    const religions = [];
+    for (let i=0; i < pack.religions.length; i++) {
+      const faith = pack.religions.find(r => r.i === i);
+      if (faith) {
+        if (faith.type === "Folk" && faith.removed && !pack.cultures[i].removed) {
+          const codes = religions.map(r => r.code);
+          religions.push(createFolk(c, codes));
+        }
+        else religions.push(faith);
+      }
+      else religions.push({
+        i, 
+        name: "removed index",
+        origins: [null],
+        removed: true
+      });
+    }
+    
+    pack.religions = religions;
+    
     pack.religions.forEach(r => {
       if(r.i === 0) return;
       
-      if(!r.origins.length) r.origins = [0];
+      if(r.origins?.length < 1) r.origins = [0];
       
       if(r.type === "Folk"){
-        if(r.removed) addFolk(pack.cultures[r.i].center); // regnerate folk religions for the regenerated cultures
-        else r.center = pack.cultures[r.i].center;
+        r.center = pack.cultures[r.i].center;
       }
-      // set new namebase culture
-      else r.culture = pack.cells.culture[r.center];
+      else {
+        r.culture = pack.cells.culture[r.center];
+        if (r.i < pack.cultures.length) addFolk(pack.cultures[r.i].center);
+      }
     });
     TIME && console.timeEnd("updateCulturesForReligions");
   }

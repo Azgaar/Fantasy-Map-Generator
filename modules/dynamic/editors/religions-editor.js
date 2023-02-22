@@ -240,10 +240,10 @@ function religionsEditorAddLines() {
         ${getExtentOptions(r.expansion)}
       </select>`
       }
-      <span data-tip="Religion expansionism. Defines competitive size" class="icon-resize-full ${r.type === "Folk" ? "placeholder "}hide"></span>
+      <span data-tip="Religion expansionism. Defines competitive size" class="icon-resize-full ${r.type === "Folk" ? "placeholder " : ""}hide"></span>
       <input
         data-tip="Religion expansionism. Defines competitive size. Click to change, then click Recalculate to apply change"
-        class="religionExpan ${r.type === "Folk" ? "placeholder "}hide"
+        class="religionExpan ${r.type === "Folk" ? "placeholder " : ""}hide"
         type="number"
         min="0"
         max="99"
@@ -254,7 +254,7 @@ function religionsEditorAddLines() {
         data-tip="Lock religion, will regenerate the origin folk and organized religion if they are not also locked"
         class="icon-lock${r.lock ? '' : '-open'} hide"
       ></span>
-      <span data-tip="Remove religion" class="icon-trash-empty ${r.type === "Folk" ? "placeholder "}hide"></span>
+      <span data-tip="Remove religion" class="icon-trash-empty ${r.type === "Folk" ? "placeholder " : ""}hide"></span>
     </div>`;
   }
   $body.innerHTML = lines;
