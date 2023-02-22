@@ -190,7 +190,7 @@ function religionsEditorAddLines() {
         <div data-tip="Religion area" class="religionArea hide" style="width: 5em">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="religionPopulation hide pointer">${si(population)}</div>
-        <select data-tip="Potential religion extent" class="religionLimit placeholder hide" style="width: 5em"></select>
+        <select data-tip="Potential religion extent" class="religionExtent placeholder hide" style="width: 5em"></select>
         <span class="icon-resize-full placeholder hide"></span>
         <input class="religionExpan placeholder hide" type="number" />
       </div>`;
@@ -236,7 +236,7 @@ function religionsEditorAddLines() {
         culture
       </span>`
       :
-      `<select data-tip="Potential religion extent" class="religionLimit hide" style="width: 5em">
+      `<select data-tip="Potential religion extent" class="religionExtent hide" style="width: 5em">
         ${getExtentOptions(r.expansion)}
       </select>`
       }
@@ -283,7 +283,7 @@ function religionsEditorAddLines() {
   $body.querySelectorAll("div > input.religionDeity").forEach(el => el.on("input", religionChangeDeity));
   $body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.on("click", regenerateDeity));
   $body.querySelectorAll("div > div.religionPopulation").forEach(el => el.on("click", changePopulation));
-  $body.querySelectorAll("div > select.religionLimit").forEach(el => el.on("change", religionChangeLimit));
+  $body.querySelectorAll("div > select.religionExtent").forEach(el => el.on("change", religionChangeExtent));
   $body.querySelectorAll("div > input.religionExpan").forEach(el => el.on("change", religionChangeExpansionism));
   $body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", religionRemovePrompt));
   $body.querySelectorAll("div > span.icon-lock").forEach($el => $el.on("click", updateLockStatus));
@@ -481,7 +481,7 @@ function changePopulation() {
   }
 }
 
-function religionChangeLimit() {
+function religionChangeExtent() {
   const religion = +this.parentNode.dataset.id;
   this.parentNode.dataset.expansion = this.value;
   pack.religions[religion].expansion = this.value;
@@ -839,10 +839,7 @@ function updateLockStatus() {
 function recalculateReligions(must) {
   if (!must && !religionsAutoChange.checked) return;
 
-  Religions.resetUnlockedReligions();
-  Religions.expandReligions();
-  Religions.expandHeresies();
-  Religions.checkReligionCenters();
+  Religions.recalculate();
 
   drawReligions();
   refreshReligionsEditor();

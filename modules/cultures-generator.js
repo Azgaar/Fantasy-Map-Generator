@@ -127,24 +127,28 @@ window.Cultures = (function () {
       pack.cultures?.forEach(function (culture) {
         if (culture.lock) cultures.push(culture);
       });
-      if(pack.religions?.length){
-        const religMap=[];
-        pack.religions.forEach(r => religMap.push(r.type === "Folk" ? 0 : r.i)); // remove folk religions in general
-        for(const j = 0; j < cultures.length; j++) { // locked cultures save their folk religions, at the new id
-          const k = j+1;
-          religMap[cultures[j].i] = k;
-        });
-        for(const i of cells.i){
+        
+      if (pack.religions?.length) {
+        const religions = pack.religions;
+        const religMap = [];
+        religions.forEach(r => religMap.push(r.type === "Folk" ? 0 : r.i)); // remove folk religions in general
+        
+        for (const j = 0; j < cultures.length; j++) { // locked cultures save their folk religions, at the new id
+          const newId = j + 1;
+          religMap[cultures[j].i] = newId;
+        };
+        
+        for (const i of cells.i) {
           cells.religion[i] = religMap[cells.religion[i]];
         }
-        for(const i = 0; i < religMap.length; i++){
+        
+        for (const i = 0; i < religMap.length; i++) {
           // update origin heirarchy to the new ids
-          pack.religions[i].origins = pack.religions[i].origins.map(i => religMap[i]).filter(i => i);
-          if(religMap[i] !== i){
-            if(religMap[i] !== 0)
-              pack.religions[religMap[i]] = pack.religions[i];
-            // folk religions for unlocked cultures are removed pending regeneration
-            pack.religions[i].removed = true;
+          religions[i].origins = religions[i].origins.map(i => religMap[i]).filter(i => i);
+          if (religMap[i] !== i) {
+            if (religMap[i]) religions[religMap[i]] = religions[i];
+            // unlocked folk religions for unlocked cultures are removed pending regeneration
+            if (!religions[i].locked) religions[i].removed = true;
           }
         }
       }

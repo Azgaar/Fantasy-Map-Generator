@@ -578,109 +578,125 @@ window.Religions = (function () {
 
     expandHeresies();
 
-    checkReligionCenters();
+    checkCenters();
 
     TIME && console.timeEnd("generateReligions");
   };
 
-    // growth algorithm to assign cells to religions
-    function expandReligions() {
-      const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
-      const cost = [];
-      const religionIds = pack.cells.religion;
-      const cells = pack.cells;
+  // growth algorithm to assign cells to religions
+  function expandReligions() {
+    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    const cost = [];
+    const religionIds = pack.cells.religion;
+    const {cells, religions} = pack;
 
-      pack.religions
-        .filter(r => !r.lock && (r.type === "Organized" || r.type === "Cult"))
-        .forEach(r => {
-          religionIds[r.center] = r.i;
-          queue.queue({e: r.center, p: 0, r: r.i, s: cells.state[r.center], c: r.culture});
-          cost[r.center] = 1;
-        });
+    religions
+      .filter(r => !r.lock && (r.type === "Organized" || r.type === "Cult"))
+      .forEach(r => {
+        religionIds[r.center] = r.i;
+        queue.queue({e: r.center, p: 0, r: r.i, s: cells.state[r.center], c: r.culture});
+        cost[r.center] = 1;
+      });
 
-      const neutral = (cells.i.length / 5000) * 200 * gauss(1, 0.3, 0.2, 2, 2) * neutralInput.value; // limit cost for organized religions growth
-      const popCost = d3.max(cells.pop) / 3; // enougth population to spered religion without penalty
+    const neutral = (cells.i.length / 5000) * 200 * gauss(1, 0.3, 0.2, 2, 2) * neutralInput.value; // limit cost for organized religions growth
+    const popCost = d3.max(cells.pop) / 3; // enougth population to spered religion without penalty
 
-      while (queue.length) {
-        const {e, p, r, c, s} = queue.dequeue();
-        const expansion = pack.religions[r].expansion;
+    while (queue.length) {
+      const {e, p, r, c, s} = queue.dequeue();
+      const expansion = religions[r].expansion;
 
-        cells.c[e].forEach(nextCell => {
-          if (expansion === "culture" && c !== cells.culture[nextCell]) return;
-          if (expansion === "state" && s !== cells.state[nextCell]) return;
-          if (pack.religions[religionIds[nextCell]]?.lock) return;
+      cells.c[e].forEach(nextCell => {
+        if (expansion === "culture" && c !== cells.culture[nextCell]) return;
+        if (expansion === "state" && s !== cells.state[nextCell]) return;
+        if (religions[religionIds[nextCell]]?.lock) return;
 
-          const cultureCost = c !== cells.culture[nextCell] ? 10 : 0;
-          const stateCost = s !== cells.state[nextCell] ? 10 : 0;
-          const biomeCost = cells.road[nextCell] ? 1 : biomesData.cost[cells.biome[nextCell]];
-          const populationCost = Math.max(rn(popCost - cells.pop[nextCell]), 0);
-          const heightCost = Math.max(cells.h[nextCell], 20) - 20;
-          const waterCost = cells.h[nextCell] < 20 ? (cells.road[nextCell] ? 50 : 1000) : 0;
-          const totalCost =
-            p +
-            (cultureCost + stateCost + biomeCost + populationCost + heightCost + waterCost) / pack.religions[r].expansionism;
-          if (totalCost > neutral) return;
+        const cultureCost = c !== cells.culture[nextCell] ? 10 : 0;
+        const stateCost = s !== cells.state[nextCell] ? 10 : 0;
+        const biomeCost = cells.road[nextCell] ? 1 : biomesData.cost[cells.biome[nextCell]];
+        const populationCost = Math.max(rn(popCost - cells.pop[nextCell]), 0);
+        const heightCost = Math.max(cells.h[nextCell], 20) - 20;
+        const waterCost = cells.h[nextCell] < 20 ? (cells.road[nextCell] ? 50 : 1000) : 0;
+        const totalCost =
+          p +
+          (cultureCost + stateCost + biomeCost + populationCost + heightCost + waterCost) / religions[r].expansionism;
+        if (totalCost > neutral) return;
 
-          if (!cost[nextCell] || totalCost < cost[nextCell]) {
-            if (cells.h[nextCell] >= 20 && cells.culture[nextCell]) religionIds[nextCell] = r; // assign religion to cell
-            cost[nextCell] = totalCost;
-            queue.queue({e: nextCell, p: totalCost, r, c, s});
-          }
-        });
-      }
-    }
-
-    // growth algorithm to assign cells to heresies
-    function expandHeresies() {
-      const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
-      const cost = [];
-      const religionIds = pack.cells.religion;
-      const cells = pack.cells;
-
-      pack.religions
-        .filter(r => !r.lock && r.type === "Heresy")
-        .forEach(r => {
-          const b = religionIds[r.center]; // "base" religion id
-          religionIds[r.center] = r.i; // heresy id
-          queue.queue({e: r.center, p: 0, r: r.i, b});
-          cost[r.center] = 1;
-        });
-
-      const neutral = (cells.i.length / 5000) * 500 * neutralInput.value; // limit cost for heresies growth
-
-      while (queue.length) {
-        const {e, p, r, b} = queue.dequeue();
-
-        cells.c[e].forEach(nextCell => {
-          if (pack.religions[religionIds[nextCell]]?.lock) return;
-          const religionCost = religionIds[nextCell] === b ? 0 : 2000;
-          const biomeCost = cells.road[nextCell] ? 0 : biomesData.cost[cells.biome[nextCell]];
-          const heightCost = Math.max(cells.h[nextCell], 20) - 20;
-          const waterCost = cells.h[nextCell] < 20 ? (cells.road[nextCell] ? 50 : 1000) : 0;
-          const totalCost =
-            p + (religionCost + biomeCost + heightCost + waterCost) / Math.max(pack.religions[r].expansionism, 0.1);
-
-          if (totalCost > neutral) return;
-
-          if (!cost[nextCell] || totalCost < cost[nextCell]) {
-            if (cells.h[nextCell] >= 20 && cells.culture[nextCell]) religionIds[nextCell] = r; // assign religion to cell
-            cost[nextCell] = totalCost;
-            queue.queue({e: nextCell, p: totalCost, r});
-          }
-        });
-      }
-    }
-
-    function checkReligionCenters() {
-      pack.religions.forEach(r => {
-        if (!r.i) return;
-        // move religion center if it's not within religion area after expansion
-        if (r.type==="Folk" || pack.cells.religion[r.center] === r.i) return; // in area, or non-expanding
-        const firstCell = pack.cells.i.find(i => pack.cells.religion[i] === r.i);
-        if (firstCell) r.center = firstCell; // move center, othervise it's an extinct religion
+        if (!cost[nextCell] || totalCost < cost[nextCell]) {
+          if (cells.h[nextCell] >= 20 && cells.culture[nextCell]) religionIds[nextCell] = r; // assign religion to cell
+          cost[nextCell] = totalCost;
+          queue.queue({e: nextCell, p: totalCost, r, c, s});
+        }
       });
     }
+  }
 
+  // growth algorithm to assign cells to heresies
+  function expandHeresies() {
+    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    const cost = [];
+    const religionIds = pack.cells.religion;
+    const {cells, religions} = pack;
+
+    religions
+      .filter(r => !r.lock && r.type === "Heresy")
+      .forEach(r => {
+        const b = religionIds[r.center]; // "base" religion id
+        religionIds[r.center] = r.i; // heresy id
+        queue.queue({e: r.center, p: 0, r: r.i, b});
+        cost[r.center] = 1;
+      });
+
+    const neutral = (cells.i.length / 5000) * 500 * neutralInput.value; // limit cost for heresies growth
+
+    while (queue.length) {
+      const {e, p, r, b} = queue.dequeue();
+
+      cells.c[e].forEach(nextCell => {
+        if (religions[religionIds[nextCell]]?.lock) return;
+        const religionCost = religionIds[nextCell] === b ? 0 : 2000;
+        const biomeCost = cells.road[nextCell] ? 0 : biomesData.cost[cells.biome[nextCell]];
+        const heightCost = Math.max(cells.h[nextCell], 20) - 20;
+        const waterCost = cells.h[nextCell] < 20 ? (cells.road[nextCell] ? 50 : 1000) : 0;
+        const totalCost =
+          p + (religionCost + biomeCost + heightCost + waterCost) / Math.max(religions[r].expansionism, 0.1);
+
+        if (totalCost > neutral) return;
+
+        if (!cost[nextCell] || totalCost < cost[nextCell]) {
+          if (cells.h[nextCell] >= 20 && cells.culture[nextCell]) religionIds[nextCell] = r; // assign religion to cell
+          cost[nextCell] = totalCost;
+          queue.queue({e: nextCell, p: totalCost, r});
+        }
+      });
+    }
+  }
+
+  function checkCenters() {
+    const cells = pack.cells;
+    pack.religions.forEach(r => {
+      if (!r.i) return;
+      // move religion center if it's not within religion area after expansion
+      if (r.type==="Folk" || cells.religion[r.center] === r.i) return; // in area, or non-expanding
+      const firstCell = cells.i.find(i => cells.religion[i] === r.i);
+      if (firstCell) r.center = firstCell; // move center, othervise it's an extinct religion
+    });
+  }
+
+  function recalculate() {
+    const {religion, culture} = pack.cells;
+    // start with the culutres map, but also keep locked religions
+    for(const i of pack.cells.i){
+      if( !pack.religions[religion[i]]?.lock ){
+        religion[i] = culture[i];
+      }
+    }
+    
+    expandReligions();
+    expandHeresies();
+    
+    checkCenters();
+  }
+  
   const add = function (center) {
     const {cells, religions} = pack;
     const religionId = cells.religion[center];
@@ -717,7 +733,7 @@ window.Religions = (function () {
       form: formName,
       deity,
       expansion,
-      expansionism: 0.01,
+      expansionism: 0,
       center,
       cells: 0,
       area: 0,
@@ -759,10 +775,12 @@ window.Religions = (function () {
     };
 
     if(c.i < religions.length){
+      // move an existing organized religion to the end of the array
       const rCargo = religions[c.i];
       if(!rCargo.removed) {
         const newId = religions.length;
         rCargo.i = newId;
+
         for(const i of cells.i) {
           if(cells.religion[i] = c.i) {
             cells.religion[i] = newId;
@@ -776,8 +794,10 @@ window.Religions = (function () {
             }
           }
         });
+        
         religions.push(rCargo);
       }
+      
       religions[c.i] = newFolk;
     } else {
       religions.push(newFolk);
@@ -788,11 +808,14 @@ window.Religions = (function () {
     TIME && console.time("updateCulturesForReligions");
     pack.religions.forEach(r => {
       if(r.i === 0) return;
+      
       if(!r.origins.length) r.origins = [0];
+      
       if(r.type === "Folk"){
         if(r.removed) addFolk(pack.cultures[r.i].center); // regnerate folk religions for the regenerated cultures
         else r.center = pack.cultures[r.i].center;
       }
+      // set new namebase culture
       else r.culture = pack.cells.culture[r.center];
     });
     TIME && console.timeEnd("updateCulturesForReligions");
@@ -874,15 +897,5 @@ window.Religions = (function () {
     return type() + " of the " + generateMeaning();
   }
 
-  const resetUnlockedReligions = function() {
-    const {religion, culture} = pack.cells;
-
-    for(const i of pack.cells.i){
-      if( !pack.religions[religion[i]]?.lock ){
-        religion[i] = culture[i];
-      }
-    }
-  };
-
-  return {generate, expandReligions, expandHeresies, checkReligionCenters, add, addFolk, getDeityName, updateCultures, resetUnlockedReligions};
+  return {generate, add, addFolk, getDeityName, updateCultures, recalculate};
 })();
