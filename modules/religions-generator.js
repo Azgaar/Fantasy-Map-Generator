@@ -784,44 +784,88 @@ window.Religions = (function () {
       }
       
       religions[c.i] = newFolk;
-    } else {
-      religions.push(newFolk);
-    }
+    } 
+    else religions.push(newFolk);
   };
 
   function updateCultures() {
     TIME && console.time("updateCulturesForReligions");
-    const religions = [];
-    for (let i=0; i < pack.religions.length; i++) {
-      const faith = pack.religions.find(r => r.i === i);
-      if (faith) {
-        if (faith.type === "Folk" && faith.removed && !pack.cultures[i].removed) {
-          const codes = religions.map(r => r.code);
-          religions.push(createFolk(c, codes));
+    const {religions, cultures, cells} = pack;
+    
+    const tReligions = [];
+    const spareCovenants = [];
+    const codes = religions.filter(r => !r.removed).map(r => r.code);
+    
+    tReligions.push(religions[0]);
+    for (let i = 1; i < cultures.length; i++) {
+      const faith = religions.find(r => r.i === i);
+      if (faith && !faith.removed) {
+        if (faith.type === "Folk") {
+          tReligions.push(faith);
+          continue;
         }
-        else religions.push(faith);
+        else spareCovenants.push(faith);
       }
-      else religions.push({
-        i, 
-        name: "removed index",
-        origins: [null],
-        removed: true
-      });
+      const newFolk = createFolk(cultures[i], codes);
+      tReligions.push(newFolk);
+      codes.push(newFolk.code);
+    }
+    for (let i = cultures.length; i < religions.length; i++) {
+      const faith = religions.find(r => r.i === i);
+      if (faith) {
+        if (faith.type === "Folk" && !faith.locked)
+          tReligions.push({...faith, removed: true}));
+        else tReligions.push(faith);
+      }
+      else tReligions.push({
+          i, 
+          name: "filler index",
+          origins: [null],
+          removed: true
+        });
     }
     
-    pack.religions = religions;
+    const updateMap = [];
+    for (let k = 0; k < spareCovenants.length; k++) {
+      const sc = spareCovenants[k];
+      const newId = tReligions.length;
+      
+      for (const i of cells.i) {
+        if (cells.religion[i] = sc.i) {
+          cells.religion[i] = newId;
+        }
+      }
+      
+      updateMap.push({oldId: sc.i, newId});
+      tReligions.forEach(r => {
+        if (r.i === 0) return;
+        for (let i = 0; i < r.origins.length; i++) {
+          if (r.origins[i] === sc.i) {
+            r.origins[i] === newId;
+            return;
+          }
+        }
+      });
+      // update origins from other spareCovenants
+      for (let i = 0; i < sc.origins.length; i++) {
+        const changeRule = updateMap.find(u => u.oldId === sc.origins[i])
+        if (changeRule) sc.origins[i] = changeRule.newId;
+      }
+      tReligions.push({...sc, i: newId});
+    }
+    
+    pack.religions = tReligions;
     
     pack.religions.forEach(r => {
-      if(r.i === 0) return;
+      if (r.i === 0) return;
       
-      if(r.origins?.length < 1) r.origins = [0];
+      if (r.origins?.length < 1) r.origins = [0];
       
-      if(r.type === "Folk"){
-        r.center = pack.cultures[r.i].center;
+      if (r.type === "Folk"){
+        r.center = cultures[r.i].center;
       }
       else {
-        r.culture = pack.cells.culture[r.center];
-        if (r.i < pack.cultures.length) addFolk(pack.cultures[r.i].center);
+        r.culture = cells.culture[r.center];
       }
     });
     TIME && console.timeEnd("updateCulturesForReligions");
