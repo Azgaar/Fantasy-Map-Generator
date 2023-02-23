@@ -2038,6 +2038,8 @@ const regenerateMap = debounce(async function (options) {
   customization = 0;
   resetZoom(1000);
   undraw();
+  pack.religions = [];
+  pack.cultures = [];
   await generate(options);
   restoreLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
