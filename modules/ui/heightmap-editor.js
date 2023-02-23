@@ -204,6 +204,13 @@ function editHeightmap(options) {
     INFO && console.group("Edit Heightmap");
     TIME && console.time("regenerateErasedData");
 
+    // remove data
+    pack.cultures = [];
+    pack.burgs = [];
+    pack.states = [];
+    pack.provinces = [];
+    pack.religions = [];
+
     const erosionAllowed = allowErosion.checked;
     markFeatures();
     markupGridOcean();
@@ -231,8 +238,10 @@ function editHeightmap(options) {
     Lakes.defineGroup();
     defineBiomes();
     rankCells();
+
     Cultures.generate();
     Cultures.expand();
+
     BurgsAndStates.generate();
     Religions.generate();
     BurgsAndStates.defineStateForms();

@@ -351,9 +351,8 @@ window.Religions = (function () {
     const codes = [];
 
     // add folk religions
-    pack.cultures.forEach(c => {
-      const newId = c.i;
-      if (!newId) return religions.push({i: 0, name: "No religion"});
+    cultures.forEach(c => {
+      if (!c.i) return religions.push({i: 0, name: "No religion"});
 
       if (c.removed) {
         religions.push({
@@ -364,6 +363,8 @@ window.Religions = (function () {
         });
         return;
       }
+
+      const newId = c.i;
 
       if (pack.religions) {
         const lockedFolkReligion = pack.religions.find(
@@ -868,7 +869,6 @@ window.Religions = (function () {
         r.culture = cells.culture[r.center];
       }
     });
-    TIME && console.timeEnd("updateCulturesForReligions");
   }
 
   // get supreme deity name
