@@ -29,7 +29,7 @@ const version = "1.90.00"; // generator version, update each time
       <ul>
         <strong>Latest changes:</strong>
         <li>Religions update by center and expansionism value</li>
-        <li>Adding a culture manually also adds a folk religion for it</li>
+        <li>Adding, removing, and regenerating cultures also affect the linked folk religion</li>
         <li>Lock states, provinces, cultures, and religions from regeneration</li>
         <li>Heightmap brushes: linear edit option</li>
         <li>Data Charts screen</li>

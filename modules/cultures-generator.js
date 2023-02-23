@@ -125,8 +125,7 @@ window.Cultures = (function () {
       });
         
       if (cultures.length) {
-        
-        if (pack.religions?.length > 1) {
+        if (pack.religions?.length > 2) {
           const religions = pack.religions;
           const religMap = [];
           religions.forEach(r => religMap.push(r.type === "Folk" ? 0 : r.i)); // remove folk religions in general
@@ -139,24 +138,11 @@ window.Cultures = (function () {
 
           religions.forEach(r => {
             if (r.i === 0) return;
-            // queue for movement to newId, or removal
+            // queue for movement to new id, or removal
             if (religMap[r.i]) r.i = religMap[r.i];
-            else if (r.locked) {
-              // locked folk religion getting a new culture
-              if (religMap.find(r.i) > 0) { // something already there, shift away from conflict
-                const nextId = religMap.find(0);
-                if (nextId > 0) {
-                  religMap[r.i] = nextId;
-                  r.i = nextId;
-                }
-                else { // none available...
-                  religMap[r.i] = religMap.length;
-                  r.i = religMap.length;
-                  religMap.push(r.i);
-                }
-              }
+            else {
+              r.removed = true; // the folk religions that were left behind by unlocked cultures
             }
-            else r.removed = true; // the unlocked folk religions that were left behind by unlocked cultures
             
             // update origin heirarchy to the new ids
             r.origins = r.origins.map(i => religMap[i]).filter(i => i);
@@ -164,21 +150,19 @@ window.Cultures = (function () {
           
           for (const i of cells.i) {
             cells.religion[i] = religMap[cells.religion[i]];
-          }                
+          }
         }
       } else {
         if (c === def.length) return def;
         if (def.every(d => d.odd === 1)) return def.splice(0, c);
+        if (pack.religions?.length > 2) {
+          pack.religions.forEach(r => {
+            if (r.type === "Folk" && !r.lock) r.removed = true;
+          });
+        }
       }
 
-      pack.religions?.forEach(r => {
-        if (r.type === "Folk" && !r.locked)
-          cells.religion = cells.religion.map(ri => ri === r.i ? 0 : ri);
-      });
-
-      let culture, rnd;
-      let i = 0;
-      do {
+      for (let culture, rnd, i = 0; cultures.length < c && def.length > 0;) {
         do {
           rnd = rand(def.length - 1);
           culture = def[rnd];
@@ -186,7 +170,7 @@ window.Cultures = (function () {
         } while (i < 200 && !P(culture.odd));
         cultures.push(culture);
         def.splice(rnd, 1);
-      } while (cultures.length < c && def.length > 0);
+      }
       return cultures;
     }
 

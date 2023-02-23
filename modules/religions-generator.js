@@ -813,7 +813,7 @@ window.Religions = (function () {
     for (let i = cultures.length; i < religions.length; i++) {
       const faith = religions.find(r => r.i === i);
       if (faith) {
-        if (faith.type === "Folk" && !faith.locked)
+        if (faith.type === "Folk" && !faith.lock)
           tReligions.push({...faith, removed: true});
         else tReligions.push(faith);
       }

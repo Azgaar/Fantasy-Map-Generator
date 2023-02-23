@@ -234,16 +234,22 @@ function religionsEditorAddLines() {
       ${r.type === "Folk" ?
       `<span data-tip="Potential religion extent" class="hide" style="width: 5em">
         culture
-      </span>`
+      </span>
+      <span class="icon-resize-full placeholder hide"></span>
+      <input class="religionExpan placeholder hide" type="number" />
+      <span
+        data-tip="Lock religion, culture changes still take precence"
+        class="icon-lock${r.lock ? "" : "-open"} hide"
+      ></span>
+      <span data-tip="Remove religion" class="icon-trash-empty placeholder hide"></span>`
       :
       `<select data-tip="Potential religion extent" class="religionExtent hide" style="width: 5em">
         ${getExtentOptions(r.expansion)}
-      </select>`
-      }
-      <span data-tip="Religion expansionism. Defines competitive size" class="icon-resize-full ${r.type === "Folk" ? "placeholder " : ""}hide"></span>
+      </select>
+      <span data-tip="Religion expansionism. Defines competitive size" class="icon-resize-full hide"></span>
       <input
         data-tip="Religion expansionism. Defines competitive size. Click to change, then click Recalculate to apply change"
-        class="religionExpan ${r.type === "Folk" ? "placeholder " : ""}hide"
+        class="religionExpan hide"
         type="number"
         min="0"
         max="99"
@@ -251,10 +257,11 @@ function religionsEditorAddLines() {
         value=${r.expansionism}
       />
       <span
-        data-tip="Lock religion, will regenerate the origin folk and organized religion if they are not also locked"
-        class="icon-lock${r.lock ? '' : '-open'} hide"
+        data-tip="Lock this religion"
+        class="icon-lock${r.lock ? "" : "-open"} hide"
       ></span>
-      <span data-tip="Remove religion" class="icon-trash-empty ${r.type === "Folk" ? "placeholder " : ""}hide"></span>
+      <span data-tip="Remove religion" class="icon-trash-empty hide"></span>`
+      }
     </div>`;
   }
   $body.innerHTML = lines;
