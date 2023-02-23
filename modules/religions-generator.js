@@ -814,7 +814,7 @@ window.Religions = (function () {
       const faith = religions.find(r => r.i === i);
       if (faith) {
         if (faith.type === "Folk" && !faith.locked)
-          tReligions.push({...faith, removed: true}));
+          tReligions.push({...faith, removed: true});
         else tReligions.push(faith);
       }
       else tReligions.push({
@@ -861,7 +861,7 @@ window.Religions = (function () {
       
       if (r.origins?.length < 1) r.origins = [0];
       
-      if (r.type === "Folk"){
+      if (r.type === "Folk" && cultures[r.i]) {
         r.center = cultures[r.i].center;
       }
       else {
