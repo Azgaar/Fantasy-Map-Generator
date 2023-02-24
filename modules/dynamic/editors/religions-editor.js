@@ -238,7 +238,7 @@ function religionsEditorAddLines() {
       <span class="icon-resize-full placeholder hide"></span>
       <input class="religionExpan placeholder hide" type="number" />
       <span
-        data-tip="Lock religion, culture changes still take precence"
+        data-tip="Lock this religion"
         class="icon-lock${r.lock ? "" : "-open"} hide"
       ></span>
       <span data-tip="Remove religion" class="icon-trash-empty placeholder hide"></span>`

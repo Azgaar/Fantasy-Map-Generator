@@ -124,42 +124,9 @@ window.Cultures = (function () {
         if (culture.lock) cultures.push(culture);
       });
         
-      if (cultures.length) {
-        if (pack.religions?.length > 2) {
-          const religions = pack.religions;
-          const religMap = [];
-          religions.forEach(r => religMap.push(r.type === "Folk" ? 0 : r.i)); // remove folk religions in general
-          
-          for (let j = 0; j < cultures.length; j++) { 
-            // locked cultures bring their folk religions along to the new id
-            const newId = j + 1;
-            religMap[cultures[j].i] = newId;
-          };
-
-          religions.forEach(r => {
-            if (r.i === 0) return;
-            // queue for movement to new id, or removal
-            if (religMap[r.i]) r.i = religMap[r.i];
-            else {
-              r.removed = true; // the folk religions that were left behind by unlocked cultures
-            }
-            
-            // update origin heirarchy to the new ids
-            r.origins = r.origins.map(i => religMap[i]).filter(i => i);
-          });
-          
-          for (const i of cells.i) {
-            cells.religion[i] = religMap[cells.religion[i]];
-          }
-        }
-      } else {
+      if (!cultures.length) {
         if (culturesNumber === def.length) return def;
         if (def.every(d => d.odd === 1)) return def.splice(0, culturesNumber);
-        if (pack.religions?.length > 2) {
-          pack.religions.forEach(r => {
-            if (r.type === "Folk" && !r.lock) r.removed = true;
-          });
-        }
       }
 
       for (let culture, rnd, i = 0; cultures.length < culturesNumber && def.length > 0;) {
