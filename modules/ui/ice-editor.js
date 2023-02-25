@@ -67,11 +67,11 @@ function editIce() {
   function addIcebergOnClick() {
     const [x, y] = d3.mouse(this);
     const i = findGridCell(x, y, grid);
-    const c = grid.points[i];
-    const s = +document.getElementById("iceSize").value;
+    const [cx, cy] = grid.points[i];
+    const size = +document.getElementById("iceSize")?.value || 1;
 
-    const points = getGridPolygon(i).map(p => [(p[0] + (c[0] - p[0]) / s) | 0, (p[1] + (c[1] - p[1]) / s) | 0]);
-    const iceberg = ice.append("polygon").attr("points", points).attr("cell", i).attr("size", s);
+    const points = getGridPolygon(i).map(([x, y]) => [rn(lerp(cx, x, size), 2), rn(lerp(cy, y, size), 2)]);
+    const iceberg = ice.append("polygon").attr("points", points).attr("cell", i).attr("size", size);
     iceberg.call(d3.drag().on("drag", dragElement));
     if (d3.event.shiftKey === false) toggleAdd();
   }
