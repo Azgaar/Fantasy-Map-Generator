@@ -684,6 +684,7 @@ async function generate(options) {
     const timeStart = performance.now();
     const {seed: precreatedSeed, graph: precreatedGraph} = options || {};
 
+    pack = {};
     invokeActiveZooming();
     setSeed(precreatedSeed);
     INFO && console.group("Generated Map " + seed);

@@ -5,7 +5,7 @@ export function open() {
   closeDialogs("#religionsEditor, .stable");
   if (layerIsOn("toggleStates")) toggleStates();
   if (layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleCultures")) toggleReligions();
+  if (layerIsOn("toggleCultures")) toggleCultures();
   if (layerIsOn("toggleProvinces")) toggleProvinces();
   if (!layerIsOn("toggleReligions")) toggleReligions();
 
@@ -213,7 +213,7 @@ function religionsEditorAddLines() {
       <span data-tip="${populationTip}" class="icon-male hide"></span>
       <div data-tip="${populationTip}" class="religionPopulation hide pointer">${si(population)}</div>
       <span
-        data-tip="Lock religion, will regenerate the origin folk and organized religion if they are not also locked"
+        data-tip="Lock this religion"
         class="icon-lock${r.lock ? "" : "-open"} hide"
       ></span>
       <span data-tip="Remove religion" class="icon-trash-empty hide"></span>
@@ -475,7 +475,7 @@ function drawReligionCenters() {
     .attr("stroke", "#444444")
     .style("cursor", "move");
 
-  const data = pack.religions.filter(r => r.i && r.center && r.cells && !r.removed);
+  const data = pack.religions.filter(r => r.i && r.center && !r.removed);
   religionCenters
     .selectAll("circle")
     .data(data)
