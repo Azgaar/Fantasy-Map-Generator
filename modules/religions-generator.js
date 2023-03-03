@@ -360,6 +360,7 @@ window.Religions = (function () {
       Society: 1
     }
   };
+
   const expansionismMap = {
     Folk: () => 0,
     Organized: () => gauss(5, 3, 0, 10, 1), // was rand(3, 8)
@@ -460,7 +461,7 @@ window.Religions = (function () {
     const {cells, cultures} = pack;
 
     const rawReligions = newReligions.map(({type, form, culture: cultureId, center}) => {
-      const supreme = getDeityName(cultures[cultureId]);
+      const supreme = getDeityName(cultureId);
       const deity = form === "Non-theism" || form === "Animism" ? null : supreme;
 
       const stateId = cells.state[center];
@@ -693,18 +694,28 @@ window.Religions = (function () {
       });
     }
 
+  function recalculate() {
+    const newReligionIds = expandReligions(pack.religions);
+    pack.cells.religion = newReligionIds;
+  }
+
   const add = function (center) {
     const {cells, religions} = pack;
     const religionId = cells.religion[center];
 
-    const culture = cells.culture[center];
+    const cultureId = cells.culture[center];
     const color = getMixedColor(religions[religionId].color, 0.3, 0);
+    const missingFolk = !religions.some(({type, culture}) => type === "Folk" && culture === cultureId);
 
     const type =
-      religions[religionId].type === "Organized" ? rw({Organized: 4, Cult: 1, Heresy: 2}) : rw({Organized: 5, Cult: 2});
+      missingFolk ? "Folk" : 
+      religions[religionId].type === "Organized" ? rw({Organized: 4, Cult: 1, Heresy: 2}) 
+      : rw({Organized: 5, Cult: 2});
     const form = rw(forms[type]);
     const deity =
-      type === "Heresy" ? religions[religionId].deity : form === "Non-theism" ? null : getDeityName(culture);
+      type === "Heresy" ? religions[religionId].deity : 
+      (form === "Non-theism" || form === "Animism") ? null 
+      : getDeityName(cultureId);
 
     const {name, expansion} = generateReligionName(type, form, deity, center);
 
@@ -713,13 +724,15 @@ window.Religions = (function () {
       name,
       religions.map(r => r.code)
     );
+    const influences = getReligionsInRadius(cells.c, center, cells.religion, 0, 25, 3);
+    const origins = type === "Folk" ? [0] : influences;
 
     const i = religions.length;
     religions.push({
       i,
       name,
       color,
-      culture,
+      culture: cultureId,
       type,
       form: formName,
       deity,
@@ -730,7 +743,7 @@ window.Religions = (function () {
       area: 0,
       rural: 0,
       urban: 0,
-      origins: [religionId],
+      origins,
       code
     });
     cells.religion[center] = i;
@@ -808,5 +821,5 @@ window.Religions = (function () {
     return [trimVowels(random()) + "ism", "global"]; // else
   }
 
-  return {generate, add, getDeityName, updateCultures};
+  return {generate, add, getDeityName, updateCultures, recalculate};
 })();
