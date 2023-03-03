@@ -118,8 +118,8 @@ window.Cultures = (function () {
 
     function selectCultures(culturesNumber) {
       let def = getDefault(culturesNumber);
-
       const cultures = [];
+      
       pack.cultures?.forEach(function (culture) {
         if (culture.lock) cultures.push(culture);
       });
