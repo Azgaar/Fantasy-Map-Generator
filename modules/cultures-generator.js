@@ -123,7 +123,7 @@ window.Cultures = (function () {
       pack.cultures?.forEach(function (culture) {
         if (culture.lock) cultures.push(culture);
       });
-        
+      
       if (!cultures.length) {
         if (culturesNumber === def.length) return def;
         if (def.every(d => d.odd === 1)) return def.splice(0, culturesNumber);

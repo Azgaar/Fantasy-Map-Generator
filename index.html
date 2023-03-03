@@ -3,14 +3,33 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Azgaar's Fantasy Map Generator</title>
     <meta name="application-name" content="Azgaar's Fantasy Map Generator" />
-    <meta name="author" content="Azgaar (Max Ganiev)" />
-    <meta name="description" content="Azgaar's Fantasy Map Generator and Editor" />
+    <meta name="author" content="Azgaar" />
+    <meta
+      name="description"
+      content="Free web app that helps fantasy writers, game masters, and cartographers create and edit fantasy maps"
+    />
+
     <meta property="og:url" content="https://azgaar.github.io/Fantasy-Map-Generator" />
     <meta property="og:title" content="Azgaar's Fantasy Map Generator" />
-    <meta property="og:description" content="Web application generating interactive and customizable maps" />
+    <meta
+      property="og:description"
+      content="Free web app that helps fantasy writers, game masters, and cartographers create and edit fantasy maps"
+    />
     <meta property="og:image" content="images/preview.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="twitter:domain" content="azgaar.github.io" />
+    <meta property="twitter:url" content="https://azgaar.github.io/Fantasy-Map-Generator/" />
+    <meta name="twitter:title" content="Azgaar's Fantasy Map Generator" />
+    <meta
+      name="twitter:description"
+      content="Free web app that helps fantasy writers, game masters, and cartographers create and edit fantasy maps"
+    />
+    <meta name="twitter:image" content="images/preview.png" />
+
     <link rel="icon" type="image/png" href="images/icons/favicon-32x32.png" sizes="32x32" />
     <link rel="icon" type="image/png" href="images/icons/favicon-16x16.png" sizes="16x16" />
     <link rel="apple-touch-icon" href="images/icons/maskable_icon_x192.png" />
@@ -2749,7 +2768,7 @@
       <div id="iceEditor" class="dialog" style="display: none">
         <button id="iceEditStyle" data-tip="Edit style in Style Editor" class="icon-brush"></button>
         <button id="iceRandomize" data-tip="Randomize Iceberg shape" class="icon-shuffle"></button>
-        <input id="iceSize" data-tip="Change Iceberg size" type="range" min=".05" max="1" step=".01" />
+        <input id="iceSize" data-tip="Change Iceberg size" type="range" min=".05" max="2" step=".01" />
         <button id="iceNew" data-tip="Add an Iceberg (click on map)" class="icon-plus"></button>
         <button
           id="iceRemove"
@@ -7830,7 +7849,7 @@
     <script src="utils/colorUtils.js"></script>
     <script src="utils/graphUtils.js?v=1.88.02"></script>
     <script src="utils/nodeUtils.js"></script>
-    <script src="utils/numberUtils.js"></script>
+    <script src="utils/numberUtils.js?v=1.89.08"></script>
     <script src="utils/polyfills.js"></script>
     <script src="utils/probabilityUtils.js?v=1.88.00"></script>
     <script src="utils/stringUtils.js"></script>
@@ -7841,7 +7860,7 @@
     <script src="config/heightmap-templates.js"></script>
     <script src="config/precreated-heightmaps.js"></script>
     <script src="modules/heightmap-generator.js?v=1.88.00"></script>
-    <script src="modules/ocean-layers.js?v=1.87.15"></script>
+    <script src="modules/ocean-layers.js?v=1.89.08"></script>
     <script src="modules/river-generator.js"></script>
     <script src="modules/lakes.js"></script>
     <script src="modules/names-generator.js?v=1.87.14"></script>
@@ -7877,7 +7896,7 @@
     <script defer src="modules/ui/elevation-profile.js"></script>
     <script defer src="modules/ui/temperature-graph.js"></script>
     <script defer src="modules/ui/routes-editor.js?v=1.89.04"></script>
-    <script defer src="modules/ui/ice-editor.js"></script>
+    <script defer src="modules/ui/ice-editor.js?v=1.89.08"></script>
     <script defer src="modules/ui/lakes-editor.js?v=1.87.10"></script>
     <script defer src="modules/ui/coastline-editor.js"></script>
     <script defer src="modules/ui/labels-editor.js"></script>
