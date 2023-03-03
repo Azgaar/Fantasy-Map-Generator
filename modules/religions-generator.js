@@ -371,9 +371,10 @@ window.Religions = (function () {
     TIME && console.time("generateReligions");
     // const {cells, states, cultures, burgs} = pack;
 
+    const lockedReligions = pack.religions?.filter(religion => religion.locked && !religion.removed) || [];
+
     const folkReligions = generateFolkReligions();
-    const {lockedReligions, lockedReligionCount} = saveLockedReligions();
-    const basicReligions = generateOrganizedReligions(+religionsInput.value, lockedReligionCount);
+    const basicReligions = generateOrganizedReligions(+religionsInput.value, lockedReligions);
 
     const namedReligions = specifyReligions([...folkReligions, ...basicReligions]);
     const indexedReligions = combineReligions(namedReligions, lockedReligions);
@@ -395,13 +396,8 @@ window.Religions = (function () {
     });
   }
 
-  function saveLockedReligions() {
-    const lockedReligions = pack.religions?.filter(religion => religion.locked && !religion.removed) || [];
+  function generateOrganizedReligions(desiredReligionNumber, lockedReligions) {
     const lockedReligionCount = lockedReligions.filter(({type}) => type !== "Folk").length || 0;
-    return {lockedReligions, lockedReligionCount};
-  }
-
-  function generateOrganizedReligions(desiredReligionNumber, lockedReligionCount) {
     const requiredReligionsNumber = desiredReligionNumber - lockedReligionCount;
     if (requiredReligionsNumber < 1) return [];
 
@@ -431,7 +427,7 @@ window.Religions = (function () {
       const religionsTree = d3.quadtree();
 
       // pre-populate with locked centers
-      // TODO
+      lockedReligions.forEach(({center}) => religionsTree.add(cells.p[center]));
 
       // min distance between religion inceptions
       const spacing = (graphWidth + graphHeight) / 2 / desiredReligionNumber; // was major gauss(1,0.3, 0.2,2, 2) / 6; cult gauss(2,0.3, 1,3, 2) /6; heresy /60
@@ -481,12 +477,6 @@ window.Religions = (function () {
 
     return rawReligions;
 
-    // const religionIds = expandReligions(rawReligions);
-    // const names = renameOldReligions(rawReligions);
-    // const origins = defineOrigins(religionIds, rawReligions, cells.c);
-
-    // return {religions: combineReligionsData(), religionIds};
-
     function getReligionColor(culture, type) {
       if (!culture.i) ERROR && console.error(`Culture ${culture.i} is not a valid culture`);
 
@@ -504,12 +494,15 @@ window.Religions = (function () {
 
     const {lockedReligionQueue, highestLockedIndex, codes} = parseLockedReligions();
     const maxIndex = Math.max(highestLockedIndex, namedReligions.length + lockedReligions.length + 1);
+
     for (let index = 1, progress = 0; index < maxIndex; index++) {
+      // place locked religion back at its old index
       if (index === lockedReligionQueue[0]?.i) {
         const nextReligion = lockedReligionQueue.shift();
         indexedReligions.push(nextReligion);
         continue;
       }
+      // slot the new religions
       if (progress < namedReligions.length) {
         const nextReligion = namedReligions[progress];
         progress++;
@@ -529,7 +522,7 @@ window.Religions = (function () {
 
     function parseLockedReligions() {
       const lockedReligionQueue = lockedReligions.map(r => r).sort((a, b) => a.i - b.i);
-      const highestLockedIndex = lockedReligionQueue[-1]?.i;
+      const highestLockedIndex = Math.max(lockedReligions.map(r => r.i));
 
       const codes = lockedReligions.length > 0 ? lockedReligions.map(r => r.code) : [];
 
@@ -548,7 +541,7 @@ window.Religions = (function () {
     }
   }
 
-  // finally generate origins tree
+  // finally generate and stores origins trees
   function defineOrigins(religionIds, indexedReligions) {
     const religionOriginsParamsMap = {
       Organized: {clusterSize: 100, maxReligions: 2}, // was 150/count, 2
@@ -569,6 +562,7 @@ window.Religions = (function () {
 
       const {clusterSize, maxReligions} = religionOriginsParamsMap[type];
       const origins = getReligionsInRadius(pack.cells.c, center, religionIds, i, clusterSize, maxReligions);
+
       if (origins === [0]) return [folkReligion.i]; // hegemony has local roots
       return origins;
     });
@@ -601,58 +595,20 @@ window.Religions = (function () {
     return foundReligions.size ? [...foundReligions].slice(0, maxReligions) : [0];
   }
 
-/*
-    // add folk religions
-    cultures.forEach(c => {
-      if (!c.i) return religions.push({i: 0, name: "No religion"});
-
-      if (pack.religions) {
-        const lockedFolkReligion = pack.religions.find(
-          r => r.culture === c.i && !r.removed && r.lock && r.type === "Folk"
-        );
-
-        if (lockedFolkReligion) {
-          for (const i of cells.i) {
-            if (cells.religion[i] === lockedFolkReligion.i) religionIds[i] = newId;
-          }
-
-          lockedFolkReligion.i = newId;
-          religions.push(lockedFolkReligion);
-          return;
-        }
-      }
-
-    });
-
-    // restore locked non-folk religions
-    if (pack.religions) {
-      const lockedNonFolkReligions = pack.religions.filter(r => r.lock && !r.removed && r.type !== "Folk");
-      for (const religion of lockedNonFolkReligions) {
-        const newId = religions.length;
-        for (const i of cells.i) {
-          if (cells.religion[i] === religion.i) religionIds[i] = newId;
-        }
-
-        religion.i = newId;
-        religion.origins = religion.origins.filter(origin => origin < newId);
-        religionsTree.add(cells.p[religion.center]);
-        religions.push(religion);
-      }
-    }
-*/
   // growth algorithm to assign cells to religions
   function expandReligions(religions) {
+    const cells = pack.cells;
     const religionIds = spreadFolkReligions(religions);
 
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
-    const maxExpansionCost = (cells.i.length / 20) * gauss(1, 0.3, 0.2, 2, 2) * neutralInput.value; // limit cost for organized religions growth (was /25)
+    const maxExpansionCost = (cells.i.length / 20) * gauss(1, 0.3, 0.2, 2, 2) * neutralInput.value; // limit cost for organized religions growth (was /25, heresy /10)
 
     const biomePassageCost = (cellId) => biomesData.cost[cells.biome[cellId]];
 
     religions
-      .filter(r => r.i && !r.lock && r.type !== "Folk")
+      .filter(r => r.i && !r.lock && r.type !== "Folk" && !r.removed)
       .forEach(r => {
         religionIds[r.center] = r.i;
         queue.queue({e: r.center, p: 0, r: r.i, s: cells.state[r.center]});
@@ -662,9 +618,9 @@ window.Religions = (function () {
     const religionsMap = new Map(religions.map(r => [r.i, r]));
 
     const isMainRoad = (cellId) => (cells.road[cellId] - cells.crossroad[cellId]) > 4;
-    const isTrail = (cellId) => cells.h > 19 && (cells.road[cellId] - cells.crossroad[cellId]) === 1;
-    const isSeaRoute = (cellId) => cells.h < 20 && cells.road;
-    const isWater = (cellId) => cells.h < 20;
+    const isTrail = (cellId) => cells.h[cellId] > 19 && (cells.road[cellId] - cells.crossroad[cellId]) === 1;
+    const isSeaRoute = (cellId) => cells.h[cellId] < 20 && cells.road[cellId];
+    const isWater = (cellId) => cells.h[cellId] < 20;
     // const popCost = d3.max(cells.pop) / 3; // enougth population to spered religion without penalty
 
     while (queue.length) {
@@ -705,16 +661,19 @@ window.Religions = (function () {
     }
   }
 
-  // folk religions initially get all cells of their culture
+  // folk religions initially get all cells of their culture, and locked religions are retained
   function spreadFolkReligions(religions) {
     const religionIds = new Uint16Array(cells.i.length);
 
-    const folkReligions = religions.filter(({type}) => type === "Folk");
+    const folkReligions = religions.filter(religion => religion.type === "Folk" && !religion.removed);
     const cultureToReligionMap = new Map(folkReligions.map(({i, culture}) => [culture, i]));
 
     for (const cellId of cells.i) {
-      const oldId = cells.religion[cellId];
-      // TODO locked
+      const oldId = cells.religion[cellId] || 0;
+      if (oldId && religions[oldId]?.lock && !religions[oldId]?.removed) {
+        religionIds[cellId] = oldId;
+        continue;
+      }
       const cultureId = cells.culture[cellId];
       religionIds[cellId] = cultureToReligionMap.get(cultureId) || 0;
     }
@@ -723,15 +682,14 @@ window.Religions = (function () {
   }
 
     function checkCenters() {
-      const codes = religions.map(r => r.code);
       religions.forEach(r => {
         if (!r.i) return;
-        r.code = abbreviate(r.name, codes);
-
         // move religion center if it's not within religion area after expansion
         if (religionIds[r.center] === r.i) return; // in area
         const firstCell = cells.i.find(i => religionIds[i] === r.i);
+        const cultureHome = pack.cultures[r.culture]?.center;
         if (firstCell) r.center = firstCell; // move center, othervise it's an extinct religion
+        else if (type === "Folk" && cultureHome) r.center = cultureHome;
       });
     }
 
