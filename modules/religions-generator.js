@@ -496,8 +496,8 @@ window.Religions = (function () {
     const noReligion = {i: 0, name: "No religion"};
     const indexedReligions = [noReligion];
 
-    const {lockedReligionQueue, highestLockedIndex, codes} = parseLockedReligions();
-    const maxIndex = Math.max(highestLockedIndex, namedReligions.length + lockedReligions.length + 1);
+    const {lockedReligionQueue, highestLockedIndex, codes, numberLockedFolk} = parseLockedReligions();
+    const maxIndex = Math.max(highestLockedIndex, namedReligions.length + lockedReligions.length + 1 - numberLockedFolk);
 
     for (let index = 1, progress = 0; index < maxIndex; index = indexedReligions.length) {
       // place locked religion back at its old index
@@ -525,12 +525,19 @@ window.Religions = (function () {
     return indexedReligions;
 
     function parseLockedReligions() {
-      const lockedReligionQueue = [...lockedReligions].sort((a, b) => a.i - b.i);
+      // copy and sort the locked religions list
+      const lockedReligionQueue = [...lockedReligions].sort((a, b) => a.i - b.i).map(religion => {
+        // and filter their origins to locked religions
+        let newOrigin = religion.origins.filter(n => lockedReligions.some(({i: index}) => index === n));
+        if (newOrigin === []) newOrigin = [0];
+        return {...religion, origins: newOrigin};
+      });
+
       const highestLockedIndex = Math.max(...(lockedReligions.map(r => r.i)));
-
       const codes = lockedReligions.length > 0 ? lockedReligions.map(r => r.code) : [];
+      const numberLockedFolk = lockedReligions.filter(({type}) => type === "Folk").length;
 
-      return {lockedReligionQueue, highestLockedIndex, codes};
+      return {lockedReligionQueue, highestLockedIndex, codes, numberLockedFolk};
     }
 
     // prepend 'Old' to names of folk religions which have organized competitors
@@ -607,7 +614,7 @@ window.Religions = (function () {
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
-    const maxExpansionCost = (cells.i.length / 20) * gauss(1, 0.3, 0.2, 2, 2) * neutralInput.value; // limit cost for organized religions growth (was /25, heresy /10)
+    const maxExpansionCost = (cells.i.length / 20) * neutralInput.value; // limit cost for organized religions growth (was /25, heresy /10)
 
     const biomePassageCost = (cellId) => biomesData.cost[cells.biome[cellId]];
 
@@ -668,14 +675,14 @@ window.Religions = (function () {
   // folk religions initially get all cells of their culture, and locked religions are retained
   function spreadFolkReligions(religions) {
     const cells = pack.cells;
-    const hasLocked = cells.religion && true;
+    const hasPrior = cells.religion && true;
     const religionIds = new Uint16Array(cells.i.length);
 
     const folkReligions = religions.filter(religion => religion.type === "Folk" && !religion.removed);
     const cultureToReligionMap = new Map(folkReligions.map(({i, culture}) => [culture, i]));
 
     for (const cellId of cells.i) {
-      const oldId = (hasLocked && cells.religion[cellId]) || 0;
+      const oldId = (hasPrior && cells.religion[cellId]) || 0;
       if (oldId && religions[oldId]?.lock && !religions[oldId]?.removed) {
         religionIds[cellId] = oldId;
         continue;
