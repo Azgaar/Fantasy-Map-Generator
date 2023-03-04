@@ -708,12 +708,13 @@ window.Religions = (function () {
   }
   
   const add = function (center) {
-    const {cells, religions} = pack;
+    const {cells, cultures, religions} = pack;
     const religionId = cells.religion[center];
 
     const cultureId = cells.culture[center];
-    const color = getMixedColor(religions[religionId].color, 0.3, 0);
-    const missingFolk = !religions.some(({type, culture}) => type === "Folk" && culture === cultureId);
+    const missingFolk = !religions.some(({type, culture, removed}) => type === "Folk" && culture === cultureId && !removed);
+    const color = missingFolk ? cultures[cultureId].color
+      : getMixedColor(religions[religionId].color, 0.3, 0);
 
     const type =
       missingFolk ? "Folk" : 
