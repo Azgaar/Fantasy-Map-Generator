@@ -385,6 +385,8 @@ window.Religions = (function () {
     pack.religions = religions;
     pack.cells.religion = religionIds;
 
+    checkCenters();
+    
     TIME && console.timeEnd("generateReligions");
   };
 
@@ -682,46 +684,23 @@ window.Religions = (function () {
     return religionIds;
   }
 
-    function checkCenters() {
-      religions.forEach(r => {
-        if (!r.i) return;
-        // move religion center if it's not within religion area after expansion
-        if (religionIds[r.center] === r.i) return; // in area
-        const firstCell = cells.i.find(i => religionIds[i] === r.i);
-        const cultureHome = pack.cultures[r.culture]?.center;
-        if (firstCell) r.center = firstCell; // move center, othervise it's an extinct religion
-        else if (type === "Folk" && cultureHome) r.center = cultureHome;
-      });
-    }
-
-  function recalculate() {
-    const newReligionIds = expandReligions(pack.religions);
-    pack.cells.religion = newReligionIds;
-  }
-
   function checkCenters() {
     const cells = pack.cells;
     pack.religions.forEach(r => {
       if (!r.i) return;
       // move religion center if it's not within religion area after expansion
-      if (r.type==="Folk" || cells.religion[r.center] === r.i) return; // in area, or non-expanding
+      if (cells.religion[r.center] === r.i) return; // in area
       const firstCell = cells.i.find(i => cells.religion[i] === r.i);
+      const cultureHome = pack.cultures[r.culture]?.center;
       if (firstCell) r.center = firstCell; // move center, othervise it's an extinct religion
+      else if (r.type === "Folk" && cultureHome) r.center = cultureHome; // reset extinct culture centers
     });
   }
 
   function recalculate() {
-    const {religion, culture} = pack.cells;
-    // start with the culutres map, but also keep locked religions
-    for(const i of pack.cells.i){
-      if( !pack.religions[religion[i]]?.lock ){
-        religion[i] = culture[i];
-      }
-    }
-    
-    expandReligions();
-    expandHeresies();
-    
+    const newReligionIds = expandReligions(pack.religions);
+    pack.cells.religion = newReligionIds;
+
     checkCenters();
   }
   
@@ -744,7 +723,7 @@ window.Religions = (function () {
       : getDeityName(cultureId);
 
     const {name, expansion} = generateReligionName(type, form, deity, center);
-
+    
     const formName = type === "Heresy" ? religions[religionId].form : form;
     const code = abbreviate(
       name,
@@ -775,122 +754,10 @@ window.Religions = (function () {
     cells.religion[center] = i;
   };
 
-  const addFolk = function (center) {
-    const {cultures, religions, cells} = pack;
-
-    const c = cultures.find(c => !c.removed && c.center === center);
-    const codes = religions.map(r => r.code);
-    const newFolk = createFolk(c, codes);
-
-    if(c.i < religions.length){
-      // move an existing organized religion to the end of the array
-      const rCargo = religions[c.i];
-      if(!rCargo.removed && rCargo.type != "Folk") {
-        const newId = religions.length;
-        rCargo.i = newId;
-
-        for(const i of cells.i) {
-          if(cells.religion[i] = c.i) {
-            cells.religion[i] = newId;
-          }
-        }
-        religions.forEach(r => {
-          if (r.i === 0) return;
-          for(let j = 0; j < r.origins.length; j++) {
-            if(r.origins[j] === c.i) {
-              r.origins[j] === newId;
-              return;
-            }
-          }
-        });
-        
-        religions.push(rCargo);
-      }
-      
-      religions[c.i] = newFolk;
-    } 
-    else religions.push(newFolk);
-  };
-
   function updateCultures() {
-    TIME && console.time("updateCulturesForReligions");
-    const {religions, cultures, cells} = pack;
-    
-    const tReligions = [];
-    const spareCovenants = [];
-    const codes = religions.filter(r => !r.removed).map(r => r.code);
-    
-    tReligions.push(religions[0]);
-    for (let i = 1; i < cultures.length; i++) {
-      const faith = religions.find(r => r.i === i);
-      if (faith && !faith.removed) {
-        if (faith.type === "Folk") {
-          tReligions.push(faith);
-          continue;
-        }
-        else spareCovenants.push(faith);
-      }
-      const newFolk = createFolk(cultures[i], codes);
-      tReligions.push(newFolk);
-      codes.push(newFolk.code);
-    }
-    for (let i = cultures.length; i < religions.length; i++) {
-      const faith = religions.find(r => r.i === i);
-      if (faith) {
-        if (faith.type === "Folk" && !faith.lock)
-          tReligions.push({...faith, removed: true});
-        else tReligions.push(faith);
-      }
-      else tReligions.push({
-          i, 
-          name: "filler index",
-          origins: [null],
-          removed: true
-        });
-    }
-    
-    const updateMap = [];
-    for (let k = 0; k < spareCovenants.length; k++) {
-      const sc = spareCovenants[k];
-      const newId = tReligions.length;
-      
-      for (const i of cells.i) {
-        if (cells.religion[i] = sc.i) {
-          cells.religion[i] = newId;
-        }
-      }
-      
-      updateMap.push({oldId: sc.i, newId});
-      tReligions.forEach(r => {
-        if (r.i === 0) return;
-        for (let i = 0; i < r.origins.length; i++) {
-          if (r.origins[i] === sc.i) {
-            r.origins[i] === newId;
-            return;
-          }
-        }
-      });
-      // update origins from other spareCovenants
-      for (let i = 0; i < sc.origins.length; i++) {
-        const changeRule = updateMap.find(u => u.oldId === sc.origins[i])
-        if (changeRule) sc.origins[i] = changeRule.newId;
-      }
-      tReligions.push({...sc, i: newId});
-    }
-    
-    pack.religions = tReligions;
-    
-    pack.religions.forEach(r => {
-      if (r.i === 0) return;
-      
-      if (r.origins?.length < 1) r.origins = [0];
-      
-      if (r.type === "Folk" && cultures[r.i]) {
-        r.center = cultures[r.i].center;
-      }
-      else {
-        r.culture = cells.culture[r.center];
-      }
+    pack.religions = pack.religions.map((religion, index) => {
+      if (index === 0) return religion;
+      return {...religion, culture: pack.cells.culture[religion.center]};
     });
   }
 
