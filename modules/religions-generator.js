@@ -386,7 +386,7 @@ window.Religions = (function () {
     pack.cells.religion = religionIds;
 
     checkCenters();
-    
+
     TIME && console.timeEnd("generateReligions");
   };
 
@@ -400,6 +400,7 @@ window.Religions = (function () {
   }
 
   function generateOrganizedReligions(desiredReligionNumber, lockedReligions) {
+    const cells = pack.cells;
     const lockedReligionCount = lockedReligions.filter(({type}) => type !== "Folk").length || 0;
     const requiredReligionsNumber = desiredReligionNumber - lockedReligionCount;
     if (requiredReligionsNumber < 1) return [];
@@ -468,7 +469,7 @@ window.Religions = (function () {
 
       const stateId = cells.state[center];
 
-      let {name, expansion} = generateReligionName(type, form, supreme, center);
+      let [name, expansion] = generateReligionName(type, form, supreme, center);
       if (expansion === "state" && !stateId) expansion = "global";
 
       const expansionism = expansionismMap[type]();
@@ -649,7 +650,7 @@ window.Religions = (function () {
           if (cells.culture[nextCell]) religionIds[nextCell] = r; // assign religion to cell
           cost[nextCell] = totalCost;
 
-          queue.queue({e: nextCell, p: totalCost, r, s});
+          queue.queue({e: nextCell, p: totalCost, r, s: state});
         }
       });
     }
@@ -666,13 +667,15 @@ window.Religions = (function () {
 
   // folk religions initially get all cells of their culture, and locked religions are retained
   function spreadFolkReligions(religions) {
+    const cells = pack.cells;
+    const hasLocked = cells.religion && true;
     const religionIds = new Uint16Array(cells.i.length);
 
     const folkReligions = religions.filter(religion => religion.type === "Folk" && !religion.removed);
     const cultureToReligionMap = new Map(folkReligions.map(({i, culture}) => [culture, i]));
 
     for (const cellId of cells.i) {
-      const oldId = cells.religion[cellId] || 0;
+      const oldId = (hasLocked && cells.religion[cellId]) || 0;
       if (oldId && religions[oldId]?.lock && !religions[oldId]?.removed) {
         religionIds[cellId] = oldId;
         continue;
@@ -722,7 +725,7 @@ window.Religions = (function () {
       (form === "Non-theism" || form === "Animism") ? null 
       : getDeityName(cultureId);
 
-    const {name, expansion} = generateReligionName(type, form, deity, center);
+    const [name, expansion] = generateReligionName(type, form, deity, center);
     
     const formName = type === "Heresy" ? religions[religionId].form : form;
     const code = abbreviate(
