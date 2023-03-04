@@ -372,7 +372,7 @@ window.Religions = (function () {
     TIME && console.time("generateReligions");
     // const {cells, states, cultures, burgs} = pack;
 
-    const lockedReligions = pack.religions?.filter(religion => religion.locked && !religion.removed) || [];
+    const lockedReligions = pack.religions?.filter(religion => religion.lock && !religion.removed) || [];
 
     const folkReligions = generateFolkReligions();
     const basicReligions = generateOrganizedReligions(+religionsInput.value, lockedReligions);
@@ -499,7 +499,7 @@ window.Religions = (function () {
     const {lockedReligionQueue, highestLockedIndex, codes} = parseLockedReligions();
     const maxIndex = Math.max(highestLockedIndex, namedReligions.length + lockedReligions.length + 1);
 
-    for (let index = 1, progress = 0; index < maxIndex; index++) {
+    for (let index = 1, progress = 0; index < maxIndex; index = indexedReligions.length) {
       // place locked religion back at its old index
       if (index === lockedReligionQueue[0]?.i) {
         const nextReligion = lockedReligionQueue.shift();
@@ -520,13 +520,13 @@ window.Religions = (function () {
         indexedReligions.push({...nextReligion, i: index, name: newName, code});
         continue;
       }
-      indexedReligions.push({i: index, name: "Padding", removed: true});
+      indexedReligions.push({i: index, type: "Folk", culture: 0, name: "Padding", removed: true});
     }
     return indexedReligions;
 
     function parseLockedReligions() {
-      const lockedReligionQueue = lockedReligions.map(r => r).sort((a, b) => a.i - b.i);
-      const highestLockedIndex = Math.max(lockedReligions.map(r => r.i));
+      const lockedReligionQueue = [...lockedReligions].sort((a, b) => a.i - b.i);
+      const highestLockedIndex = Math.max(...(lockedReligions.map(r => r.i)));
 
       const codes = lockedReligions.length > 0 ? lockedReligions.map(r => r.code) : [];
 
