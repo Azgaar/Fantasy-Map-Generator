@@ -213,15 +213,9 @@ function religionsEditorAddLines() {
       <fill-box fill="${r.color}"></fill-box>
       <input data-tip="Religion name. Click and type to change" class="religionName" style="width: 11em"
         value="${r.name}" autocorrect="off" spellcheck="false" />
-      ${r.type === "Folk" ?
-      `<span data-tip="Religion type" class="religionType" style="width: 5em">
-        Folk
-      </span>`
-      :
-      `<select data-tip="Religion type" class="religionType" style="width: 5em">
+      <select data-tip="Religion type" class="religionType" style="width: 5em">
         ${getTypeOptions(r.type)}
-      </select>`
-      }
+      </select>
       <input data-tip="Religion form" class="religionForm hide" style="width: 6em"
         value="${r.form}" autocorrect="off" spellcheck="false" />
       <span data-tip="Click to re-generate supreme deity" class="icon-arrows-cw hide"></span>
@@ -231,37 +225,12 @@ function religionsEditorAddLines() {
       <div data-tip="Religion area" class="religionArea hide" style="width: 5em">${si(area) + unit}</div>
       <span data-tip="${populationTip}" class="icon-male hide"></span>
       <div data-tip="${populationTip}" class="religionPopulation hide pointer">${si(population)}</div>
-      ${r.type === "Folk" ?
-      `<span data-tip="Potential religion extent" class="hide" style="width: 5em">
-        culture
-      </span>
-      <span class="icon-resize-full placeholder hide"></span>
-      <input class="religionExpan placeholder hide" type="number" />
+      ${getExpansionColumns(r)}
       <span
         data-tip="Lock this religion"
         class="icon-lock${r.lock ? "" : "-open"} hide"
       ></span>
-      <span data-tip="Remove religion" class="icon-trash-empty placeholder hide"></span>`
-      :
-      `<select data-tip="Potential religion extent" class="religionExtent hide" style="width: 5em">
-        ${getExtentOptions(r.expansion)}
-      </select>
-      <span data-tip="Religion expansionism. Defines competitive size" class="icon-resize-full hide"></span>
-      <input
-        data-tip="Religion expansionism. Defines competitive size. Click to change, then click Recalculate to apply change"
-        class="religionExpan hide"
-        type="number"
-        min="0"
-        max="99"
-        step=".1"
-        value=${r.expansionism}
-      />
-      <span
-        data-tip="Lock this religion"
-        class="icon-lock${r.lock ? "" : "-open"} hide"
-      ></span>
-      <span data-tip="Remove religion" class="icon-trash-empty hide"></span>`
-      }
+      <span data-tip="Remove religion" class="icon-trash-empty hide"></span>
     </div>`;
   }
   $body.innerHTML = lines;
@@ -306,9 +275,32 @@ function religionsEditorAddLines() {
 
 function getTypeOptions(type) {
   let options = "";
-  const types = ["Organized", "Cult", "Heresy"];
+  const types = ["Folk", "Organized", "Cult", "Heresy"];
   types.forEach(t => (options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`));
   return options;
+}
+
+function getExpansionColumns(r) {
+  if (r.type === "Folk")
+    return `<span data-tip="Potential religion extent" class="religionExtent hide" style="width: 5em">
+    culture
+  </span>
+  <span class="icon-resize-full placeholder hide"></span>
+  <input class="religionExpan placeholder hide" type="number" />`
+  else
+    return `<select data-tip="Potential religion extent" class="religionExtent hide" style="width: 5em">
+    ${getExtentOptions(r.expansion)}
+  </select>
+  <span data-tip="Religion expansionism. Defines competitive size" class="icon-resize-full hide"></span>
+  <input
+    data-tip="Religion expansionism. Defines competitive size. Click to change, then click Recalculate to apply change"
+    class="religionExpan hide"
+    type="number"
+    min="0"
+    max="99"
+    step=".1"
+    value=${r.expansionism}
+  />`
 }
 
 function getExtentOptions(type) {

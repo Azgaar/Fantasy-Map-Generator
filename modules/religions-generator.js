@@ -678,7 +678,6 @@ window.Religions = (function () {
       const cultureId = cells.culture[cellId];
       religionIds[cellId] = cultureToReligionMap.get(cultureId) || 0;
     }
-  }
 
     return religionIds;
   }

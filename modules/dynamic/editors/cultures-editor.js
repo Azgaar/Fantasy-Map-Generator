@@ -519,11 +519,10 @@ function cultureRegenerateBurgs() {
 }
 
 function removeCulture(cultureId) {
-  // and the Folk religion
   cults.select("#culture" + cultureId).remove();
   debug.select("#cultureCenter" + cultureId).remove();
 
-  const {burgs, states, cells, cultures, religions} = pack;
+  const {burgs, states, cells, cultures} = pack;
 
   burgs.filter(b => b.culture == cultureId).forEach(b => (b.culture = 0));
   states.forEach(s => {
@@ -532,23 +531,13 @@ function removeCulture(cultureId) {
   cells.culture.forEach((c, i) => {
     if (c === cultureId) cells.culture[i] = 0;
   });
-  cells.religion.forEach((r, i) => {
-    if (r === cultureId) cells.religion[i] = 0;
-  })
   cultures[cultureId].removed = true;
-  religions[cultureId].removed = true;
 
   cultures
     .filter(c => c.i && !c.removed)
     .forEach(c => {
       c.origins = c.origins.filter(origin => origin !== cultureId);
       if (!c.origins.length) c.origins = [0];
-    });
-  religions
-    .filter(r => r.i && !r.removed)
-    .forEach(r => {
-      r.origins = r.origins.filter(origin => origin !== cultureId);
-      if (!r.origins.length) r.origins = [0];
     });
   refreshCulturesEditor();
 }
@@ -559,7 +548,7 @@ function cultureRemovePrompt() {
   const cultureId = +this.parentNode.dataset.id;
   confirmationDialog({
     title: "Remove culture",
-    message: "Are you sure you want to remove the culture? <br>The linked folk religion will also be removed. <br>This action cannot be reverted",
+    message: "Are you sure you want to remove the culture? <br>This action cannot be reverted",
     confirm: "Remove",
     onConfirm: () => removeCulture(cultureId)
   });
@@ -834,7 +823,6 @@ function addCulture() {
 
   if (d3.event.shiftKey === false) exitAddCultureMode();
   Cultures.add(center);
-  Religions.addFolk(center);
 
   drawCultureCenters();
   culturesEditorAddLines();
