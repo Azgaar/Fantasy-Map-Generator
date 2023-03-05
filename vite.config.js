@@ -77,7 +77,6 @@ export default defineConfig(({mode}) => {
         {find: "layers", replacement: path.resolve(pathName, "./src/layers")},
         {find: "libs", replacement: path.resolve(pathName, "./src/libs")},
         {find: "modules", replacement: path.resolve(pathName, "./src/modules")},
-        {find: "modules", replacement: path.resolve(pathName, "./src/modules")},
         {find: "scripts", replacement: path.resolve(pathName, "./src/scripts")},
         {find: "utils", replacement: path.resolve(pathName, "./src/utils")}
       ]
