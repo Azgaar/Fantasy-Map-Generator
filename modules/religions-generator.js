@@ -526,12 +526,12 @@ window.Religions = (function () {
 
     function parseLockedReligions() {
       // copy and sort the locked religions list
-      const lockedReligionQueue = [...lockedReligions].sort((a, b) => a.i - b.i).map(religion => {
+      const lockedReligionQueue = lockedReligions.map(religion => {
         // and filter their origins to locked religions
         let newOrigin = religion.origins.filter(n => lockedReligions.some(({i: index}) => index === n));
         if (newOrigin === []) newOrigin = [0];
         return {...religion, origins: newOrigin};
-      });
+      }).sort((a, b) => a.i - b.i);
 
       const highestLockedIndex = Math.max(...(lockedReligions.map(r => r.i)));
       const codes = lockedReligions.length > 0 ? lockedReligions.map(r => r.code) : [];
@@ -719,7 +719,7 @@ window.Religions = (function () {
     const religionId = cells.religion[center];
 
     const cultureId = cells.culture[center];
-    const missingFolk = !religions.some(({type, culture, removed}) => type === "Folk" && culture === cultureId && !removed);
+    const missingFolk = cultureId !== 0 && !religions.some(({type, culture, removed}) => type === "Folk" && culture === cultureId && !removed);
     const color = missingFolk ? cultures[cultureId].color
       : getMixedColor(religions[religionId].color, 0.3, 0);
 
