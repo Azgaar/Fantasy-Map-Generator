@@ -24,7 +24,7 @@ export function open() {
 
 function insertEditorHtml() {
   const editorHtml = /* html */ `<div id="culturesEditor" class="dialog stable">
-    <div id="culturesHeader" class="header" style="grid-template-columns: 10em 7em 8em 4em 8em 5em 8em 8em">
+    <div id="culturesHeader" class="header" style="grid-template-columns: 10em 7em 9em 4em 8em 5em 7em 8em">
       <div data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="name">Culture&nbsp;</div>
       <div data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
       <div data-tip="Click to sort by culture namesbase" class="sortable" data-sortby="base">Namesbase&nbsp;</div>
@@ -171,6 +171,7 @@ function culturesEditorAddLines() {
             value="${c.name}" autocorrect="off" spellcheck="false" />
           <span class="icon-cw placeholder"></span>
           <select class="cultureType placeholder">${getTypeOptions(c.type)}</select>
+          <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw hide"></span>
           <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names"
             class="cultureBase">${getBaseOptions(c.base)}</select>
           <span data-tip="Cells count" class="icon-check-empty hide"></span>
@@ -181,8 +182,7 @@ function culturesEditorAddLines() {
           <div data-tip="Culture area" class="cultureArea hide" style="width: 6em">${si(area)} ${unit}</div>
           <span data-tip="${populationTip}" class="icon-male hide"></span>
           <div data-tip="${populationTip}" class="culturePopulation hide pointer"
-            style="width: 5em">${si(population)}</div>
-          <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw hide"></span>
+            style="width: 4em">${si(population)}</div>
           ${getShapeOptions(selectShape, c.shield)}
         </div>`;
       continue;
@@ -207,6 +207,7 @@ function culturesEditorAddLines() {
         <span data-tip="Regenerate culture name" class="icon-cw hiddenIcon" style="visibility: hidden"></span>
         <select data-tip="Culture type. Defines growth model. Click to change"
           class="cultureType">${getTypeOptions(c.type)}</select>
+        <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw hide"></span>
         <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names"
           class="cultureBase">${getBaseOptions(c.base)}</select>
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
@@ -225,8 +226,7 @@ function culturesEditorAddLines() {
         <div data-tip="Culture area" class="cultureArea hide" style="width: 6em">${si(area)} ${unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="culturePopulation hide pointer"
-          style="width: 5em">${si(population)}</div>
-        <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw hide"></span>
+          style="width: 4em">${si(population)}</div>
         ${getShapeOptions(selectShape, c.shield)}
         <span data-tip="Lock culture" class="icon-lock${c.lock ? "" : "-open"} hide"></span>
         <span data-tip="Remove culture" class="icon-trash-empty hide"></span>

@@ -1182,7 +1182,7 @@ async function editStates() {
 
 async function editCultures() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.89.02");
+  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.89.09");
   Editor.open();
 }
 
