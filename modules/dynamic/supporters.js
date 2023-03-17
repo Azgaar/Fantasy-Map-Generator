@@ -1,44 +1,481 @@
-const capitalize = text => text.charAt(0).toUpperCase() + text.slice(1);
-
-const format = rawList =>
-  rawList
-    .replace(/(?:\r\n|\r|\n)/g, "")
-    .split(",")
-    .map(name => capitalize(name.trim()))
-    .sort();
-
-export const supporters = format(`
-  Aaron Meyer,Ahmad Amerih,AstralJacks,aymeric,Billy Dean Goehring,Branndon Edwards,Chase Mayers,Curt Flood,cyninge,Dino Princip,
-  E.M. White,es,Fondue,Fritjof Olsson,Gatsu,Johan Fröberg,Jonathan Moore,Joseph Miranda,Kate,KC138,Luke Nelson,Markus Finster,Massimo Vella,Mikey,
-  Nathan Mitchell,Paavi1,Pat,Ryan Westcott,Sasquatch,Shawn Spencer,Sizz_TV,Timothée CALLET,UTG community,Vlad Tomash,Wil Sisney,William Merriott,
-  Xariun,Gun Metal Games,Scott Marner,Spencer Sherman,Valerii Matskevych,Alloyed Clavicle,Stewart Walsh,Ruthlyn Mollett (Javan),Benjamin Mair-Pratt,
-  Diagonath,Alexander Thomas,Ashley Wilson-Savoury,William Henry,Preston Brooks,JOSHUA QUALTIERI,Hilton Williams,Katharina Haase,Hisham Bedri,
-  Ian arless,Karnat,Bird,Kevin,Jessica Thomas,Steve Hyatt,Logicspren,Alfred García,Jonathan Killstring,John Ackley,Invad3r233,Norbert Žigmund,Jennifer,
-  PoliticsBuff,_gfx_,Maggie,Connor McMartin,Jared McDaris,BlastWind,Franc Casanova Ferrer,Dead & Devil,Michael Carmody,Valerie Elise,naikibens220,
-  Jordon Phillips,William Pucs,The Dungeon Masters,Brady R Rathbun,J,Shadow,Matthew Tiffany,Huw Williams,Joseph Hamilton,FlippantFeline,Tamashi Toh,
-  kms,Stephen Herron,MidnightMoon,Whakomatic x,Barished,Aaron bateson,Brice Moss,Diklyquill,PatronUser,Michael Greiner,Steven Bennett,Jacob Harrington,
-  Miguel C.,Reya C.,Giant Monster Games,Noirbard,Brian Drennen,Ben Craigie,Alex Smolin,Endwords,Joshua E Goodwin,SirTobit ,Allen S. Rout,Allen Bull Bear,
-  Pippa Mitchell,R K,G0atfather,Ryan Lege,Caner Oleas Pekgönenç,Bradley Edwards,Tertiary ,Austin Miller,Jesse Holmes,Jan Dvořák,Marten F,Erin D. Smale,
-  Maxwell Hill,Drunken_Legends,rob bee,Jesse Holmes,YYako,Detocroix,Anoplexian,Hannah,Paul,Sandra Krohn,Lucid,Richard Keating,Allen Varney,Rick Falkvinge,
-  Seth Fusion,Adam Butler,Gus,StroboWolf,Sadie Blackthorne,Zewen Senpai,Dell McKnight,Oneiris,Darinius Dragonclaw Studios,Christopher Whitney,Rhodes HvZ,
-  Jeppe Skov Jensen,María Martín López,Martin Seeger,Annie Rishor,Aram Sabatés,MadNomadMedia,Eric Foley,Vito Martono,James H. Anthony,Kevin Cossutta,
-  Thirty-OneR,ThatGuyGW,Dee Chiu,MontyBoosh,Achillain,Jaden,SashaTK,Steve Johnson,Pierrick Bertrand,Jared Kennedy,Dylan Devenny,Kyle Robertson,
-  Andrew Rostaing,Daniel Gill,Char,Jack,Barna Csíkos,Ian Rousseau,Nicholas Grabstas,Tom Van Orden jr,Bryan Brake,Akylos,Riley Seaman,MaxOliver,Evan-DiLeo,
-  Alex Debus,Joshua Vaught,Kyle S,Eric Moore,Dean Dunakin,Uniquenameosaurus,WarWizardGames,Chance Mena,Jan Ka,Miguel Alejandro,Dalton Clark,Simon Drapeau,
-  Radovan Zapletal,Jmmat6,Justa Badge,Blargh Blarghmoomoo,Vanessa Anjos,Grant A. Murray,Akirsop,Rikard Wolff,Jake Fish,teco 47,Antiroo,Jakob Siegel,
-  Guilherme Aguiar,Jarno Hallikainen,Justin Mcclain,Kristin Chernoff,Rowland Kingman,Esther Busch,Grayson McClead,Austin,Hakon the Viking,Chad Riley,
-  Cooper Counts,Patrick Jones,Clonetone,PlayByMail.Net,Brad Wardell,Lance Saba,Egoensis,Brea Richards,Tiber,Chris Bloom,Maxim Lowe,Aquelion,
-  Page One Project,Spencer Morris,Paul Ingram,Dust Bunny,Adrian Wright,Eric Alexander Cartaya,GameNight,Thomas Mortensen Hansen,Zklaus,Drinarius,
-  Ed Wright,Lon Varnadore,Crys Cain,Heaven N Lee,Jeffrey Henning,Lazer Elf,Jordan Bellah,Alex Beard,Kass Frisson,Petro Lombaard,Emanuel Pietri,Rox,
-  PinkEvil,Gavin Madrigal,Martin Lorber,Prince of Morgoth,Jaryd Armstrong,Andrew Pirkola,ThyHolyDevil,Gary Smith,Tyshaun Wise,Ethan Cook,Jon Stroman,
-  Nobody679,良义 金,Chris Gray,Phoenix Boatwright,Mackenzie,Milo Cohen,Jason Matthew Wuerfel,Rasmus Legêne,Andrew Hines,Wexxler,Espen Sæverud,Binks,
-  Dominick Ormsby,Linn Browning,Václav Švec,Alan Buehne,George J.Lekkas,Alexandre Boivin,Tommy Mayfield,Skylar Mangum-Turner,Karen Blythe,Stefan Gugerel,
-  Mike Conley,Xavier privé,Hope You're Well,Mark Sprietsma,Robert Landry,Nick Mowry,steve hall,Markell,Josh Wren,Neutrix,BLRageQuit,Rocky,
-  Dario Spadavecchia,Bas Kroot,John Patrick Callahan Jr,Alexandra Vesey,D,Exp1nt,james,Braxton Istace,w,Rurikid,AntiBlock,Redsauz,BigE0021,
-  Jonathan Williams,ojacid .,Brian Wilson,A Patreon of the Ahts,Shubham Jakhotiya,www15o,Jan Bundesmann,Angelique Badger,Joshua Xiong,Moist mongol,
-  Frank Fewkes,jason baldrick,Game Master Pro,Andrew Kircher,Preston Mitchell,Chris Kohut,Emarandzeb,Trentin Bergeron,Damon Gallaty,Pleaseworkforonce,
-  Jordan,William Markus,Sidr Dim,Alexander Whittaker,The Next Level,Patrick Valverde,Markus Peham,Daniel Cooper,the Beagles of Neorbus,Marley Moule,
-  Maximilian Schielke,Johnathan Xavier Hutchinson,Ele,Rita,Randy Ross,John Wick,RedSpaz,cameron cannon,Ian Grau-Fay,Kyle Barrett,Charlotte Wiland,
-  David Kaul,E. Jason Davis,Cyberate,Atenfox,Sea Wolf,Holly Loveless,Roekai,Alden Z,angel carrillo,Sam Spoerle,S A Rudy,Bird Law Expert,Mira Cyr,
-  Aaron Blair,Neyimadd,RLKZ1022,DerWolf,Kenji Yamada,Zion,Robert Rinne,Actual_Dio,Kyarou
-`);
+export const supporters = `ken burgan
+Sera's Nafitlaan
+Richard Rogers
+Hylobate
+Colin deSousa
+Aurelia De La Silla
+Maciej Kontny
+Ricky L Cain
+Iggyflare
+Garrett Renner
+Michael Harris
+Joshua Maly
+Nigel Guest
+Theo Hodges
+BERTHEAS Frédéric
+lilMoni
+Δημήτρης Μάρκογιαννακης
+Lee S.
+Chris Dibbs
+jarrad tait
+Jacen Solo
+Hannes Rotestam
+Preston Hicks
+Лонгин
+Will Fink
+ControlFreq
+IllAngel
+John Giardina
+Thiago Prado
+Zhang Dijon
+NoBurny
+thibault tersinet
+scarletsky 
+Nich Smith
+Omegus
+Karl Abrahamsson
+Sara Fernandes
+peetey897
+Cooper Janse
+G F
+Glen Aultman-Bettridge
+Nathan Rogers
+Benjamin Mock
+CadmiumMan 
+Kirk Edwards
+Leigh G
+Thom Colyer
+Frederik
+C pstj
+Zachary Pecora
+Trevor D'Arcey
+Ryan Gauvin
+Shawn Moore
+Jim Channon
+Kyarou
+Actual_Dio
+Jim B Johnson
+Robert Rinne
+Zion 
+Kenji Yamada
+DerWolf 
+RLKZ1022
+Neyimadd
+Aaron Blair
+Mira Cyr
+Bird Law Expert
+S A Rudy
+Sam Spoerle
+angel carrillo
+Alden Z
+Holly Loveless
+Sea Wolf
+Atenfox 
+Cyberate
+E. Jason Davis
+Caro Lyns
+David Kaul
+Charlotte Wiland
+Kyle Barrett
+Ian Grau-Fay
+cameron cannon
+RedSpaz
+John Wick
+Randy Ross
+Rita
+Ele
+Johnathan Xavier Hutchinson
+Andrew Stein
+Ghettov Milan
+Malke
+TameMoon
+Daniel Cooper
+Markus Peham
+The Next Level
+Alexander Whittaker
+Sidr Dim
+William Markus
+Jordan
+Pleaseworkforonce 
+Damon Gallaty
+Trentin Bergeron
+Emarandzeb
+Laulajatar
+Dale McBane
+Chris Kohut
+Preston Mitchell
+Andrew Kircher
+Frank Fewkes
+Moist mongol
+Joshua Xiong
+Jan Bundesmann
+www15o
+Game Master Pro
+jason baldrick
+Exp1nt
+w 
+Shubham Jakhotiya
+Braxton Istace
+LesterThePossum
+Rurikid
+ojacid .
+james 
+A Patreon of the Ahts
+BigE0021
+Angelique Badger
+Jonathan Williams
+AntiBlock 
+Redsauz
+Florian Kelber
+John Patrick Callahan Jr
+Alexandra Vesey
+Bas Kroot
+Dzmitry Malyshau
+PedanticSteve
+Josh Wren
+BLRageQuit
+Dario Spadavecchia
+Neutrix 
+Markell
+Rocky
+Robert Landry
+Skylar Mangum-Turner
+Nick Mowry
+Anjen Pai
+Hope You're Well
+Alexandre Boivin
+Racussa
+Mike Conley
+Karen Blythe
+Mark Sprietsma
+Xavier privé
+Tommy Mayfield
+Václav Švec
+Binks
+Mackenzie 
+Linn Browning
+Writer's Consultant Page by George J.Lekkas
+Andrew Hines
+Wexxler 
+Jason Matthew Wuerfel
+Milo Cohen
+Alan Buehne
+Dominick Ormsby
+Espen Sæverud
+Rasmus Legêne
+rbbalderama
+Nobody679
+Prince of Morgoth
+Jaryd Armstrong
+Gary Smith
+ThyHolyDevil
+良义 金
+Andrew Pirkola
+Dig
+Chris Gray
+Tyshaun Wise
+Phoenix
+Ethan Cook
+Jordan Bellah
+Petro Lombaard
+Kass Frisson
+Lazer Elf
+Gavin Madrigal
+Rox
+PinkEvil
+Martin Lorber
+Emanuel Pietri
+Alex Beard
+Jeffrey Henning
+Eric Alexander Cartaya
+Dust Bunny
+GameNight 
+Beingus
+Crys Cain
+Lon Varnadore
+Thomas Mortensen Hansen
+Drinarius
+Ed Wright
+Adrian Wright
+Zklaus 
+Chris Bloom
+PlayByMail.Net
+Maxim Lowe
+Aquelion
+Tiber
+Daydream1013
+Page One Project
+Clonetone
+Egoensis 
+Brad Wardell
+Heaven N Lee
+BarnabyJones
+Paul Ingram
+Lance Saba
+Chad Riley
+Austin
+Rowland Kingman
+Decimus Vitalis
+Grayson McClead
+Battleturtle1
+Kristin Chernoff
+Justin Mcclain
+Patrick Jones
+Esther Busch
+Chance Mena
+JimmyTheBob
+Antiroo 
+Dalton Clark
+Guilherme Aguiar
+Simon Drapeau
+Akirsop
+Radovan Zapletal
+Vanessa Anjos
+Rikard Wolff
+Justa Badge
+teco 47
+Jake
+Miguel Alejandro
+Blargh Blarghmoomoo
+Jakob Siegel
+Grant A. Murray
+Jarno Hallikainen
+Jan Ka
+Joshua Vaught
+MaxOliver 
+WarWizardGames
+Evan-DiLeo 
+Eric Moore
+Kyle S
+Alex Debus
+Uniquenameosaurus 
+Dean Dunakin
+Jack 
+Bryan Brake
+McNeil Atticus Inksmudge
+Char 
+Tom Van Orden jr
+Kendall Patterson
+Akylos 
+Barna Csíkos
+Nicholas Grabstas
+OldFarkas
+Riley Seaman
+Daniel Gill
+Kyle Robertson
+Natasha Taylor
+Pierrick Bertrand
+Jared.K
+Dylan Devenny
+logic_error
+SashaTK
+Steve Johnson
+MontyBoosh 
+Achillain 
+Jaden 
+Vito Martono
+Thirty-OneR 
+Eric Foley
+ThatGuyGW 
+Dee Chiu
+James H. Anthony
+Kevin Cossutta
+MadNomadMedia
+Darinius Dragonclaw Studios
+Tsahyla (Triston Lightyear)
+Christopher Whitney
+María Martín López
+Annie Rishor
+Aram Sabatés
+Jeppe Skov Jensen
+Martin Seeger
+Oneiris (Oni)
+EternalDeiwos
+Richard Keating
+StroboWolf 
+Rick Falkvinge
+Zewen Senpai
+Adam Butler
+Kassidy 
+Sadie Blackthorne
+ErrorForever 
+Seth Fusion
+Gus 
+Paul 
+Lucid 
+Allen Varney
+Hannah May
+Sankroh
+Eliot Miller
+Detocroix 
+Meg Ziegler
+rob bee
+Anoplexian 
+Marten F
+Erin D. Smale
+Johnpaul Morrow
+Roekai 
+Drunken_Legends 
+Jesse Holmes
+Maxwell Hill
+Jan Dvořák
+SirTobit 
+G0atfather
+Allen S. Rout
+Pippa Mitchell
+Austin Miller
+Caner Oleas Pekgönenç
+Alison Bull Bear
+Bradley Edwards
+Tertiary 
+Daniel
+Joshua E Goodwin
+Shaun Alexander
+Ryan Lege
+Myrrhlin
+Jesper Cockx
+Noirbard 
+Dice
+Brian Drennen
+Giant Monster Games
+Reya C.
+Krk
+Endwords 
+Jacob Harrington
+RK
+Michael Greiner
+Steven Bennett
+Brice Moss
+Whakomatic x
+Stephen Herron
+kosmobius
+ZizRenanim
+Barished 
+Maur Razimtheth
+Aaron bateson
+Diklyquill
+Shawn Taylor
+Brady R Rathbun
+FlippantFeline 
+Shadow
+J 
+Tamashi Toh
+Huw Williams
+Graves
+ShadeByTheSea
+The Dungeon Masters
+Valerie Elise
+Empi3
+William Pucs
+Michael Carmody
+Marco Veldman
+naikibens220
+Jordon Phillips
+_gfx_ 
+F. Casanova
+Jared McDaris
+BlastWind 
+Taldonix
+Connor McMartin
+Nexoness 
+Guy 
+Maggie 
+AdvancedAzrielAngel
+Alfred García
+Norbert Žigmund
+Jennifer
+Titanium Tomes
+John Ackley
+Invad3r233
+Jonathan Killstring
+Jessica Thomas
+Nikita Kondratjuks
+Steve Hyatt
+PoliticsBuff 
+Ian arless
+Karnat 
+Hilton Williams
+Kevin 
+Katharina Haase
+Hisham Bedri
+Bird
+JOSHUA QUALTIERI
+Preston Brooks
+Troy Schuler
+DerGeisterbär 
+L. V. Werneck
+Marcus Hellyrr
+yami
+Daniel Eric Crosby
+Augusto Chiarle
+Doug Churchman
+David Roza
+Alexander Thomas
+Ashley Wilson-Savoury
+Nathan L Myers
+Theresa Walsh
+JP Roberts III
+William Henry
+OldbeanOldboy
+Javasharp
+Diagonath 
+Gun Metal Games
+Scott Marner
+Alloyed Clavicle
+Valerii Matskevych
+Spencer Sherman
+Nolan Moore
+James Schellenger
+Pat 
+Dino Princip
+Shawn Spencer
+Timothée CALLET
+KC138
+Nylian 
+Kate 
+Markus Finster
+CanadianGold 
+AstralJacks 
+Keith Marshall
+Scott Davis
+Joseph Miranda
+Shaptarshi Joarder
+Branndon
+EP
+Johan Fröberg
+Sasquatch 
+Chase Mayers
+Sizz_TV 
+Ryan Westcott
+Nathan Mitchell
+Curt Flood
+Mikey 
+E.M. White
+Billy 
+Vlad Tomash
+Xariun
+Luke Nelson
+W Maxwell Cassity-Guilliom
+Marty H
+Aaron Meyer
+Max Amillios
+chris 
+cyninge 
+Omegavoid 
+Fritjof Olsson
+Crazypedia 
+Duncan Thomson
+William Merriott
+Gold Tamarin
+Lhoris 
+Jonathan
+Jon
+Massimo Vella
+Feuver 
+aymeric 
+Eric Schumann
+Rei 
+Fondue 
+Paavi1
+Wil Sisney
+David Patterson`;
