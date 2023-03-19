@@ -77,12 +77,15 @@ document
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
   const {supporters} = await import("../dynamic/supporters.js?v=19062022");
+  const list = supporters.split("\n").sort();
+  const columns = window.innerWidth < 800 ? 2 : 5;
+
   alertMessage.innerHTML =
-    "<ul style='column-count: 5; column-gap: 2em'>" + supporters.map(n => `<li>${n}</li>`).join("") + "</ul>";
+    `<ul style='column-count: ${columns}; column-gap: 2em'>` + list.map(n => `<li>${n}</li>`).join("") + "</ul>";
   $("#alert").dialog({
     resizable: false,
     title: "Patreon Supporters",
-    width: "54vw",
+    width: "min-width",
     position: {my: "center", at: "center", of: "svg"}
   });
 }
@@ -602,17 +605,17 @@ function randomizeCultureSet() {
 function setRendering(value) {
   viewbox.attr("shape-rendering", value);
 
-  if (value === "optimizeSpeed") {
-    // block some styles
-    coastline.select("#sea_island").style("filter", "none");
-    statesHalo.style("display", "none");
-    emblems.style("opacity", 1);
-  } else {
-    // remove style block
-    coastline.select("#sea_island").style("filter", null);
-    statesHalo.style("display", null);
-    emblems.style("opacity", null);
-  }
+  // if (value === "optimizeSpeed") {
+  //   // block some styles
+  //   coastline.select("#sea_island").style("filter", "none");
+  //   statesHalo.style("display", "none");
+  //   emblems.style("opacity", 1);
+  // } else {
+  //   // remove style block
+  //   coastline.select("#sea_island").style("filter", null);
+  //   statesHalo.style("display", null);
+  //   emblems.style("opacity", null);
+  // }
 }
 
 // generate current year and era name
