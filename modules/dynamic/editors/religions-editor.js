@@ -267,6 +267,7 @@ function religionsEditorAddLines() {
     $body.dataset.type = "absolute";
     togglePercentageMode();
   }
+
   applySorting(religionsHeader);
   $("#religionsEditor").dialog({width: fitContent()});
 }
@@ -533,7 +534,10 @@ function drawReligionCenters() {
     .attr("stroke", "#444444")
     .style("cursor", "move");
 
-  const data = pack.religions.filter(r => r.i && r.center && !r.removed);
+  let data = pack.religions.filter(r => r.i && r.center && !r.removed);
+  const showExtinct = $body.dataset.extinct === "show";
+  if (!showExtinct) data = data.filter(r => r.cells > 0);
+
   religionCenters
     .selectAll("circle")
     .data(data)
@@ -557,16 +561,23 @@ function drawReligionCenters() {
 }
 
 function religionCenterDrag() {
-  const $el = d3.select(this);
   const religionId = +this.dataset.id;
-  d3.event.on("drag", () => {
+  const tr = parseTransform(this.getAttribute("transform"));
+  const x0 = +tr[0] - d3.event.x;
+  const y0 = +tr[1] - d3.event.y;
+
+  function handleDrag() {
     const {x, y} = d3.event;
-    $el.attr("cx", x).attr("cy", y);
+    this.setAttribute("transform", `translate(${x0 + x},${y0 + y})`);
     const cell = findCell(x, y);
     if (pack.cells.h[cell] < 20) return; // ignore dragging on water
+
     pack.religions[religionId].center = cell;
     recalculateReligions();
-  });
+  }
+
+  const dragDebounced = debounce(handleDrag, 50);
+  d3.event.on("drag", dragDebounced);
 }
 
 function toggleLegend() {
@@ -637,6 +648,7 @@ async function showHierarchy() {
 function toggleExtinct() {
   $body.dataset.extinct = $body.dataset.extinct !== "show" ? "show" : "hide";
   religionsEditorAddLines();
+  drawReligionCenters();
 }
 
 function enterReligionsManualAssignent() {
