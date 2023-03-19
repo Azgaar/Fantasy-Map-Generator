@@ -684,7 +684,6 @@ async function generate(options) {
     const timeStart = performance.now();
     const {seed: precreatedSeed, graph: precreatedGraph} = options || {};
 
-    pack = {};
     invokeActiveZooming();
     setSeed(precreatedSeed);
     INFO && console.group("Generated Map " + seed);
@@ -695,7 +694,7 @@ async function generate(options) {
     if (shouldRegenerateGrid(grid, precreatedSeed)) grid = precreatedGraph || generateGrid();
     else delete grid.cells.h;
     grid.cells.h = await HeightmapGenerator.generate(grid);
-    pack = {};
+    pack = {}; // reset pack
 
     markFeatures();
     markupGridOcean();

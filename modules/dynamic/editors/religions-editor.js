@@ -286,7 +286,7 @@ function getExpansionColumns(r) {
     culture
   </span>
   <span class="icon-resize-full placeholder hide"></span>
-  <input class="religionExpan placeholder hide" type="number" />`
+  <input class="religionExpan placeholder hide" type="number" />`;
   else
     return `<select data-tip="Potential religion extent" class="religionExtent hide" style="width: 5em">
     ${getExtentOptions(r.expansion)}
@@ -300,7 +300,7 @@ function getExpansionColumns(r) {
     max="99"
     step=".1"
     value=${r.expansionism}
-  />`
+  />`;
 }
 
 function getExtentOptions(type) {
@@ -318,20 +318,19 @@ const religionHighlightOn = debounce(event => {
   if (!layerIsOn("toggleReligions")) return;
   if (customization) return;
 
-  const animate = d3.transition().duration(1500).ease(d3.easeSinIn);
+  const animate = d3.transition().duration(2000).ease(d3.easeSinIn);
   relig
     .select("#religion" + religionId)
     .raise()
     .transition(animate)
     .attr("stroke-width", 2.5)
-    .attr("stroke", "#c13119");
+    .attr("stroke", "#d0240f");
   debug
     .select("#religionsCenter" + religionId)
     .raise()
     .transition(animate)
-    .attr("r", 8)
-    .attr("stroke-width", 2)
-    .attr("stroke", "#c13119");
+    .attr("r", 3)
+    .attr("stroke", "#d0240f");
 }, 200);
 
 function religionHighlightOff(event) {
@@ -347,8 +346,7 @@ function religionHighlightOff(event) {
   debug
     .select("#religionsCenter" + religionId)
     .transition()
-    .attr("r", 4)
-    .attr("stroke-width", 1.2)
+    .attr("r", 2)
     .attr("stroke", null);
 }
 
@@ -531,7 +529,7 @@ function drawReligionCenters() {
   const religionCenters = debug
     .append("g")
     .attr("id", "religionCenters")
-    .attr("stroke-width", 1.2)
+    .attr("stroke-width", 0.8)
     .attr("stroke", "#444444")
     .style("cursor", "move");
 
@@ -543,7 +541,7 @@ function drawReligionCenters() {
     .append("circle")
     .attr("id", d => "religionsCenter" + d.i)
     .attr("data-id", d => d.i)
-    .attr("r", 4)
+    .attr("r", 2)
     .attr("fill", d => d.color)
     .attr("cx", d => pack.cells.p[d.center][0])
     .attr("cy", d => pack.cells.p[d.center][1])
