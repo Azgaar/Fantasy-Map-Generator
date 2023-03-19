@@ -118,21 +118,23 @@ window.Cultures = (function () {
 
     function selectCultures(culturesNumber) {
       let def = getDefault(culturesNumber);
-      if (culturesNumber === def.length) return def;
-      if (def.every(d => d.odd === 1)) return def.splice(0, culturesNumber);
-
-      const count = Math.min(culturesNumber, def.length);
-
       const cultures = [];
+      
       pack.cultures?.forEach(function (culture) {
         if (culture.lock) cultures.push(culture);
       });
+      
+      if (!cultures.length) {
+        if (culturesNumber === def.length) return def;
+        if (def.every(d => d.odd === 1)) return def.splice(0, culturesNumber);
+      }
 
-      for (let culture, rnd, i = 0; cultures.length < count && i < 200; i++) {
+      for (let culture, rnd, i = 0; cultures.length < culturesNumber && def.length > 0;) {
         do {
           rnd = rand(def.length - 1);
           culture = def[rnd];
-        } while (!P(culture.odd));
+          i++;
+        } while (i < 200 && !P(culture.odd));
         cultures.push(culture);
         def.splice(rnd, 1);
       }
