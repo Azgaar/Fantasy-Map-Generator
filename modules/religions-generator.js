@@ -370,7 +370,7 @@ window.Religions = (function () {
 
   function generate() {
     TIME && console.time("generateReligions");
-    const lockedReligions = pack.religions?.filter(religion => r.i && religion.lock && !religion.removed) || [];
+    const lockedReligions = pack.religions?.filter(r => r.i && r.lock && !r.removed) || [];
 
     const folkReligions = generateFolkReligions();
     const organizedReligions = generateOrganizedReligions(+religionsInput.value, lockedReligions);
@@ -468,7 +468,6 @@ window.Religions = (function () {
       if (expansion === "state" && !stateId) expansion = "global";
 
       const expansionism = expansionismMap[type]();
-
       const color = getReligionColor(cultures[cultureId], type);
 
       return {name, type, form, culture: cultureId, center, deity, expansion, expansionism, color};
@@ -477,7 +476,7 @@ window.Religions = (function () {
     return rawReligions;
 
     function getReligionColor(culture, type) {
-      if (!culture.i) ERROR && console.error(`Culture ${culture.i} is not a valid culture`);
+      if (!culture.i) return getRandomColor();
 
       if (type === "Folk") return culture.color;
       if (type === "Heresy") return getMixedColor(culture.color, 0.35, 0.2);
