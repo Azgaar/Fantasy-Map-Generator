@@ -30,7 +30,7 @@ function insertEditorHtml() {
       <div data-tip="Click to sort by supreme deity" class="sortable alphabetically hide" data-sortby="deity">Supreme Deity&nbsp;</div>
       <div data-tip="Click to sort by religion area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
       <div data-tip="Click to sort by number of believers (religion area population)" class="sortable hide" data-sortby="population">Believers&nbsp;</div>
-      <div data-tip="Click to sort by potential extent type" class="sortable hide" data-sortby="expansion">Potential&nbsp;</div>
+      <div data-tip="Click to sort by potential extent type" class="sortable alphabetically hide" data-sortby="expansion">Potential&nbsp;</div>
       <div data-tip="Click to sort by expansionism" class="sortable hide" data-sortby="expansionism">Expansion&nbsp;</div>
     </div>
     <div id="religionsBody" class="table" data-type="absolute"></div>
@@ -280,15 +280,18 @@ function getTypeOptions(type) {
 }
 
 function getExpansionColumns(r) {
-  if (r.type === "Folk")
+  if (r.type === "Folk") {
+    const tip =
+      "Folk religions are not competitive and do not expand. Initially they cover all cells of their parent culture, but get ousted by organized religions when they expand";
     return /* html */ `
-      <span class="icon-resize-full-alt placeholder hide" style="padding-right: 2px"></span>
-      <span data-tip="Potential religion extent" class="religionExtent hide" style="width: 5em">culture</span>
-      <span class="icon-resize-full placeholder hide"></span>
-      <input class="religionExpantion placeholder hide" type="number" />`;
+      <span data-tip="${tip}" class="icon-resize-full-alt hide" style="padding-right: 2px"></span>
+      <span data-tip="${tip}" class="religionExtent hide" style="width: 5em">culture</span>
+      <span data-tip="${tip}" class="icon-resize-full hide"></span>
+      <input data-tip="${tip}" class="religionExpantion hide" disabled type="number" value='0' />`;
+  }
 
   return /* html */ `
-    <span class="icon-resize-full-alt hide" style="padding-right: 2px"></span>
+    <span data-tip="Potential religion extent" class="icon-resize-full-alt hide" style="padding-right: 2px"></span>
     <select data-tip="Potential religion extent" class="religionExtent hide" style="width: 5em">
       ${getExtentOptions(r.expansion)}
     </select>
