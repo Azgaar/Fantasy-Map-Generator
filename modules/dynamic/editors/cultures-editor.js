@@ -590,16 +590,23 @@ function drawCultureCenters() {
 }
 
 function cultureCenterDrag() {
-  const $el = d3.select(this);
   const cultureId = +this.id.slice(13);
-  d3.event.on("drag", () => {
+  const tr = parseTransform(this.getAttribute("transform"));
+  const x0 = +tr[0] - d3.event.x;
+  const y0 = +tr[1] - d3.event.y;
+
+  function handleDrag() {
     const {x, y} = d3.event;
-    $el.attr("cx", x).attr("cy", y);
+    this.setAttribute("transform", `translate(${x0 + x},${y0 + y})`);
     const cell = findCell(x, y);
     if (pack.cells.h[cell] < 20) return; // ignore dragging on water
+
     pack.cultures[cultureId].center = cell;
     recalculateCultures();
-  });
+  }
+
+  const dragDebounced = debounce(handleDrag, 50);
+  d3.event.on("drag", dragDebounced);
 }
 
 function toggleLegend() {

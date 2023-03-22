@@ -694,6 +694,7 @@ async function generate(options) {
     if (shouldRegenerateGrid(grid, precreatedSeed)) grid = precreatedGraph || generateGrid();
     else delete grid.cells.h;
     grid.cells.h = await HeightmapGenerator.generate(grid);
+    pack = {}; // reset pack
 
     markFeatures();
     markupGridOcean();
