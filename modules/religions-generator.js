@@ -614,7 +614,7 @@ window.Religions = (function () {
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
-    const maxExpansionCost = (cells.i.length / 20) * neutralInput.value; // limit cost for organized religions growth (was /25, heresy /10)
+    const maxExpansionCost = (cells.i.length / 20) * neutralInput.value; // limit cost for organized religions growth
 
     const biomePassageCost = cellId => biomesData.cost[cells.biome[cellId]];
 
@@ -632,7 +632,6 @@ window.Religions = (function () {
     const isTrail = cellId => cells.h[cellId] > 19 && cells.road[cellId] - cells.crossroad[cellId] === 1;
     const isSeaRoute = cellId => cells.h[cellId] < 20 && cells.road[cellId];
     const isWater = cellId => cells.h[cellId] < 20;
-    // const popCost = d3.max(cells.pop) / 3; // enougth population to spered religion without penalty
 
     while (queue.length) {
       const {e: cellId, p, r, s: state} = queue.dequeue();
@@ -646,8 +645,6 @@ window.Religions = (function () {
         const cultureCost = culture !== cells.culture[nextCell] ? 10 : 0;
         const stateCost = state !== cells.state[nextCell] ? 10 : 0;
         const passageCost = getPassageCost(nextCell);
-        // const populationCost = Math.max(rn(popCost - cells.pop[nextCell]), 0);
-        // const heightCost = Math.max(cells.h[nextCell], 20) - 20;
 
         const cellCost = cultureCost + stateCost + passageCost;
         const totalCost = p + 10 + cellCost / expansionism;
@@ -665,10 +662,10 @@ window.Religions = (function () {
     return religionIds;
 
     function getPassageCost(cellId) {
-      if (isWater(cellId)) return isSeaRoute ? 50 : 500; // was 50 : 1000
+      if (isWater(cellId)) return isSeaRoute ? 50 : 500;
       if (isMainRoad(cellId)) return 1;
       const biomeCost = biomePassageCost(cellId);
-      return isTrail(cellId) ? biomeCost / 1.5 : biomeCost; // was same as main road
+      return isTrail(cellId) ? biomeCost / 1.5 : biomeCost;
     }
   }
 
