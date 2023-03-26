@@ -597,7 +597,7 @@ window.Religions = (function () {
         checked[neibId] = true;
 
         const neibReligion = religionIds[neibId];
-        if (neibReligion && neibReligion !== religionId) foundReligions.add(neibReligion);
+        if (neibReligion && neibReligion < religionId) foundReligions.add(neibReligion);
         if (foundReligions.size >= maxReligions) return [...foundReligions];
         queue.push(neibId);
       }
@@ -714,6 +714,7 @@ window.Religions = (function () {
   const add = function (center) {
     const {cells, cultures, religions} = pack;
     const religionId = cells.religion[center];
+    const i = religions.length;
 
     const cultureId = cells.culture[center];
     const missingFolk =
@@ -741,10 +742,9 @@ window.Religions = (function () {
       name,
       religions.map(r => r.code)
     );
-    const influences = getReligionsInRadius(cells.c, center, cells.religion, 0, 25, 3, 0);
+    const influences = getReligionsInRadius(cells.c, center, cells.religion, i, 25, 3, 0);
     const origins = type === "Folk" ? [0] : influences;
 
-    const i = religions.length;
     religions.push({
       i,
       name,
