@@ -160,9 +160,20 @@ optionsContent.addEventListener("click", function (event) {
 });
 
 function mapSizeInputChange() {
+  const $mapWidthInput = byId("mapWidthInput");
+  const $mapHeightInput = byId("mapHeightInput");
+
   changeMapSize();
-  localStorage.setItem("mapWidth", mapWidthInput.value);
-  localStorage.setItem("mapHeight", mapHeightInput.value);
+  localStorage.setItem("mapWidth", $mapWidthInput.value);
+  localStorage.setItem("mapHeight", $mapHeightInput.value);
+
+  const tooWide = +$mapWidthInput.value > window.innerWidth;
+  const tooHigh = +$mapHeightInput.value > window.innerHeight;
+
+  if (tooWide || tooHigh) {
+    const message = `Canvas size is larger than actual window size (${window.innerWidth} x ${window.innerHeight}). It can affect the performance if you are going to create a new map`;
+    tip(message, false, "warn", 4000);
+  }
 }
 
 // change svg size on manual size change or window resize, do not change graph size
