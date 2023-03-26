@@ -626,10 +626,11 @@ function addRiverOnClick() {
     getType,
     getWidth,
     getOffset,
-    getApproximateLength
+    getApproximateLength,
+    getNextId
   } = Rivers;
   const riverCells = [];
-  let riverId = rivers.length ? last(rivers).i + 1 : 1;
+  let riverId = getNextId(rivers);
   let parent = riverId;
 
   const initialFlux = grid.cells.prec[cells.g[i]];
