@@ -1082,9 +1082,13 @@ tr.battleSurvivors {
   font-size: 0.9em;
 }
 
-#battleBody div.battlePhases,
 #battleBottom div.battleTypes {
   position: fixed;
+  background-color: #ffffff30;
+}
+
+#battleBody div.battlePhases {
+  position: absolute;
   background-color: #ffffff30;
 }
 
@@ -2240,7 +2244,6 @@ svg.button {
   user-select: none;
 }
 
-
 .dontAsk {
   margin: 0.9em 0 0 0.6em;
   display: inline-flex;
@@ -2339,7 +2342,7 @@ svg.button {
 }
 
 @media (prefers-color-scheme: dark) {
-    body {
-        background: #25252a;
-    }
+  body {
+    background: #25252a;
+  }
 }
