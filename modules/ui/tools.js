@@ -74,10 +74,8 @@ toolsContent.addEventListener("click", function (event) {
 });
 
 function processFeatureRegeneration(event, button) {
-  if (button === "regenerateStateLabels") {
-    BurgsAndStates.drawStateLabels();
-    if (!layerIsOn("toggleLabels")) toggleLabels();
-  } else if (button === "regenerateReliefIcons") {
+  if (button === "regenerateStateLabels") BurgsAndStates.drawStateLabels();
+  else if (button === "regenerateReliefIcons") {
     ReliefIcons();
     if (!layerIsOn("toggleRelief")) toggleRelief();
   } else if (button === "regenerateRoutes") {
@@ -628,10 +626,11 @@ function addRiverOnClick() {
     getType,
     getWidth,
     getOffset,
-    getApproximateLength
+    getApproximateLength,
+    getNextId
   } = Rivers;
   const riverCells = [];
-  let riverId = rivers.length ? last(rivers).i + 1 : 1;
+  let riverId = getNextId(rivers);
   let parent = riverId;
 
   const initialFlux = grid.cells.prec[cells.g[i]];

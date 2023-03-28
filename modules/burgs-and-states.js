@@ -359,7 +359,7 @@ window.BurgsAndStates = (function () {
     TIME && console.timeEnd("drawBurgs");
   };
 
-  // growth algorithm to assign cells to states like we did for cultures
+  // expand cultures across the map (Dijkstra-like algorithm)
   const expandStates = function () {
     TIME && console.time("expandStates");
     const {cells, states, cultures, burgs} = pack;
@@ -367,18 +367,28 @@ window.BurgsAndStates = (function () {
     cells.state = cells.state || new Uint16Array(cells.i.length);
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
-    const neutral = (cells.i.length / 5000) * 2500 * neutralInput.value * statesNeutral; // limit cost for state growth
 
-    states
-      .filter(s => s.i && !s.removed)
-      .forEach(s => {
-        const capitalCell = burgs[s.capital].cell;
-        cells.state[capitalCell] = s.i;
-        const cultureCenter = cultures[s.culture].center;
-        const b = cells.biome[cultureCenter]; // state native biome
-        queue.queue({e: s.center, p: 0, s: s.i, b});
-        cost[s.center] = 1;
-      });
+    const globalNeutralRate = byId("neutralInput")?.valueAsNumber || 1;
+    const statesNeutralRate = byId("statesNeutral")?.valueAsNumber || 1;
+    const neutral = (cells.i.length / 2) * globalNeutralRate * statesNeutralRate; // limit cost for state growth
+
+    // remove state from all cells except of locked
+    for (const cellId of cells.i) {
+      const state = states[cells.state[cellId]];
+      if (state.lock) continue;
+      cells.state[cellId] = 0;
+    }
+
+    for (const state of states) {
+      if (!state.i || state.removed) continue;
+
+      const capitalCell = burgs[state.capital].cell;
+      cells.state[capitalCell] = state.i;
+      const cultureCenter = cultures[state.culture].center;
+      const b = cells.biome[cultureCenter]; // state native biome
+      queue.queue({e: state.center, p: 0, s: state.i, b});
+      cost[state.center] = 1;
+    }
 
     while (queue.length) {
       const next = queue.dequeue();
@@ -608,7 +618,7 @@ window.BurgsAndStates = (function () {
         if (list && !list.includes(state.i)) continue;
 
         byId(`stateLabel${state.i}`)?.remove();
-        byId(`textPath_stateLabel6${state.i}`)?.remove();
+        byId(`textPath_stateLabel${state.i}`)?.remove();
       }
 
       const example = g.append("text").attr("x", 0).attr("x", 0).text("Average");

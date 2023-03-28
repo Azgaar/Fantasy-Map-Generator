@@ -3,10 +3,10 @@ addListeners();
 
 export function open() {
   closeDialogs("#religionsEditor, .stable");
-  if (!layerIsOn("toggleReligions")) toggleCultures();
+  if (!layerIsOn("toggleReligions")) toggleReligions();
   if (layerIsOn("toggleStates")) toggleStates();
   if (layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleCultures")) toggleReligions();
+  if (layerIsOn("toggleCultures")) toggleCultures();
   if (layerIsOn("toggleProvinces")) toggleProvinces();
 
   refreshReligionsEditor();
@@ -23,13 +23,15 @@ export function open() {
 
 function insertEditorHtml() {
   const editorHtml = /* html */ `<div id="religionsEditor" class="dialog stable">
-    <div id="religionsHeader" class="header" style="grid-template-columns: 13em 6em 7em 18em 5em 6em">
+    <div id="religionsHeader" class="header" style="grid-template-columns: 13em 6em 7em 18em 6em 7em 6em 7em">
       <div data-tip="Click to sort by religion name" class="sortable alphabetically" data-sortby="name">Religion&nbsp;</div>
       <div data-tip="Click to sort by religion type" class="sortable alphabetically icon-sort-name-down" data-sortby="type">Type&nbsp;</div>
       <div data-tip="Click to sort by religion form" class="sortable alphabetically hide" data-sortby="form">Form&nbsp;</div>
       <div data-tip="Click to sort by supreme deity" class="sortable alphabetically hide" data-sortby="deity">Supreme Deity&nbsp;</div>
       <div data-tip="Click to sort by religion area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
       <div data-tip="Click to sort by number of believers (religion area population)" class="sortable hide" data-sortby="population">Believers&nbsp;</div>
+      <div data-tip="Click to sort by potential extent type" class="sortable alphabetically hide" data-sortby="expansion">Potential&nbsp;</div>
+      <div data-tip="Click to sort by expansionism" class="sortable hide" data-sortby="expansionism">Expansion&nbsp;</div>
     </div>
     <div id="religionsBody" class="table" data-type="absolute"></div>
 
@@ -88,6 +90,11 @@ function insertEditorHtml() {
       </div>
       <button id="religionsAdd" data-tip="Add a new religion. Hold Shift to add multiple" class="icon-plus"></button>
       <button id="religionsExport" data-tip="Download religions-related data" class="icon-download"></button>
+      <button id="religionsRecalculate" data-tip="Recalculate religions based on current values of growth-related attributes" class="icon-retweet"></button>
+      <span data-tip="Allow religion center, extent, and expansionism changes to take an immediate effect">
+        <input id="religionsAutoChange" class="checkbox" type="checkbox" />
+        <label for="religionsAutoChange" class="checkbox-label"><i>auto-apply changes</i></label>
+      </span>
     </div>
   </div>`;
 
@@ -109,6 +116,7 @@ function addListeners() {
   byId("religionsManuallyCancel").on("click", () => exitReligionsManualAssignment());
   byId("religionsAdd").on("click", enterAddReligionMode);
   byId("religionsExport").on("click", downloadReligionsCsv);
+  byId("religionsRecalculate").on("click", () => recalculateReligions(true));
 }
 
 function refreshReligionsEditor() {
@@ -166,9 +174,10 @@ function religionsEditorAddLines() {
         data-type=""
         data-form=""
         data-deity=""
+        data-expansion=""
         data-expansionism=""
       >
-        <svg width="11" height="11" class="placeholder"></svg>
+        <svg width="9" height="9" class="placeholder"></svg>
         <input data-tip="Religion name. Click and type to change" class="religionName italic" style="width: 11em"
           value="${r.name}" autocorrect="off" spellcheck="false" />
         <select data-tip="Religion type" class="religionType placeholder" style="width: 5em">
@@ -178,9 +187,11 @@ function religionsEditorAddLines() {
         <span data-tip="Click to re-generate supreme deity" class="icon-arrows-cw placeholder hide"></span>
         <input data-tip="Religion supreme deity" class="religionDeity placeholder hide" style="width: 17em" value="" autocorrect="off" spellcheck="false" />
         <span data-tip="Religion area" style="padding-right: 4px" class="icon-map-o hide"></span>
-        <div data-tip="Religion area" class="religionArea hide" style="width: 5em">${si(area) + unit}</div>
+        <div data-tip="Religion area" class="religionArea hide" style="width: 6em">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
-        <div data-tip="${populationTip}" class="religionPopulation hide pointer">${si(population)}</div>
+        <div data-tip="${populationTip}" class="religionPopulation hide pointer" style="width: 5em">${si(
+        population
+      )}</div>
       </div>`;
       continue;
     }
@@ -195,6 +206,7 @@ function religionsEditorAddLines() {
       data-type="${r.type}"
       data-form="${r.form}"
       data-deity="${r.deity || ""}"
+      data-expansion="${r.expansion}"
       data-expansionism="${r.expansionism}"
     >
       <fill-box fill="${r.color}"></fill-box>
@@ -209,13 +221,13 @@ function religionsEditorAddLines() {
       <input data-tip="Religion supreme deity" class="religionDeity hide" style="width: 17em"
         value="${r.deity || ""}" autocorrect="off" spellcheck="false" />
       <span data-tip="Religion area" style="padding-right: 4px" class="icon-map-o hide"></span>
-      <div data-tip="Religion area" class="religionArea hide" style="width: 5em">${si(area) + unit}</div>
+      <div data-tip="Religion area" class="religionArea hide" style="width: 6em">${si(area) + unit}</div>
       <span data-tip="${populationTip}" class="icon-male hide"></span>
-      <div data-tip="${populationTip}" class="religionPopulation hide pointer">${si(population)}</div>
-      <span
-        data-tip="Lock religion, will regenerate the origin folk and organized religion if they are not also locked"
-        class="icon-lock${r.lock ? '' : '-open'} hide"
-      ></span>
+      <div data-tip="${populationTip}" class="religionPopulation hide pointer" style="width: 5em">${si(
+      population
+    )}</div>
+      ${getExpansionColumns(r)}
+      <span data-tip="Lock this religion" class="icon-lock${r.lock ? "" : "-open"} hide"></span>
       <span data-tip="Remove religion" class="icon-trash-empty hide"></span>
     </div>`;
   }
@@ -245,6 +257,8 @@ function religionsEditorAddLines() {
   $body.querySelectorAll("div > input.religionDeity").forEach(el => el.on("input", religionChangeDeity));
   $body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.on("click", regenerateDeity));
   $body.querySelectorAll("div > div.religionPopulation").forEach(el => el.on("click", changePopulation));
+  $body.querySelectorAll("div > select.religionExtent").forEach(el => el.on("change", religionChangeExtent));
+  $body.querySelectorAll("div > input.religionExpantion").forEach(el => el.on("change", religionChangeExpansionism));
   $body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", religionRemovePrompt));
   $body.querySelectorAll("div > span.icon-lock").forEach($el => $el.on("click", updateLockStatus));
   $body.querySelectorAll("div > span.icon-lock-open").forEach($el => $el.on("click", updateLockStatus));
@@ -253,6 +267,7 @@ function religionsEditorAddLines() {
     $body.dataset.type = "absolute";
     togglePercentageMode();
   }
+
   applySorting(religionsHeader);
   $("#religionsEditor").dialog({width: fitContent()});
 }
@@ -260,6 +275,41 @@ function religionsEditorAddLines() {
 function getTypeOptions(type) {
   let options = "";
   const types = ["Folk", "Organized", "Cult", "Heresy"];
+  types.forEach(t => (options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`));
+  return options;
+}
+
+function getExpansionColumns(r) {
+  if (r.type === "Folk") {
+    const tip =
+      "Folk religions are not competitive and do not expand. Initially they cover all cells of their parent culture, but get ousted by organized religions when they expand";
+    return /* html */ `
+      <span data-tip="${tip}" class="icon-resize-full-alt hide" style="padding-right: 2px"></span>
+      <span data-tip="${tip}" class="religionExtent hide" style="width: 5em">culture</span>
+      <span data-tip="${tip}" class="icon-resize-full hide"></span>
+      <input data-tip="${tip}" class="religionExpantion hide" disabled type="number" value='0' />`;
+  }
+
+  return /* html */ `
+    <span data-tip="Potential religion extent" class="icon-resize-full-alt hide" style="padding-right: 2px"></span>
+    <select data-tip="Potential religion extent" class="religionExtent hide" style="width: 5em">
+      ${getExtentOptions(r.expansion)}
+    </select>
+    <span data-tip="Religion expansionism. Defines competitive size" class="icon-resize-full hide"></span>
+    <input
+      data-tip="Religion expansionism. Defines competitive size. Click to change, then click Recalculate to apply change"
+      class="religionExpantion hide"
+      type="number"
+      min="0"
+      max="99"
+      step=".1"
+      value=${r.expansionism}
+    />`;
+}
+
+function getExtentOptions(type) {
+  let options = "";
+  const types = ["global", "state", "culture"];
   types.forEach(t => (options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`));
   return options;
 }
@@ -272,20 +322,19 @@ const religionHighlightOn = debounce(event => {
   if (!layerIsOn("toggleReligions")) return;
   if (customization) return;
 
-  const animate = d3.transition().duration(1500).ease(d3.easeSinIn);
+  const animate = d3.transition().duration(2000).ease(d3.easeSinIn);
   relig
     .select("#religion" + religionId)
     .raise()
     .transition(animate)
     .attr("stroke-width", 2.5)
-    .attr("stroke", "#c13119");
+    .attr("stroke", "#d0240f");
   debug
     .select("#religionsCenter" + religionId)
     .raise()
     .transition(animate)
-    .attr("r", 8)
-    .attr("stroke-width", 2)
-    .attr("stroke", "#c13119");
+    .attr("r", 3)
+    .attr("stroke", "#d0240f");
 }, 200);
 
 function religionHighlightOff(event) {
@@ -301,8 +350,7 @@ function religionHighlightOff(event) {
   debug
     .select("#religionsCenter" + religionId)
     .transition()
-    .attr("r", 4)
-    .attr("stroke-width", 1.2)
+    .attr("r", 2)
     .attr("stroke", null);
 }
 
@@ -434,6 +482,20 @@ function changePopulation() {
   }
 }
 
+function religionChangeExtent() {
+  const religion = +this.parentNode.dataset.id;
+  this.parentNode.dataset.expansion = this.value;
+  pack.religions[religion].expansion = this.value;
+  recalculateReligions();
+}
+
+function religionChangeExpansionism() {
+  const religion = +this.parentNode.dataset.id;
+  this.parentNode.dataset.expansionism = this.value;
+  pack.religions[religion].expansionism = +this.value;
+  recalculateReligions();
+}
+
 function religionRemovePrompt() {
   if (customization) return;
 
@@ -471,11 +533,14 @@ function drawReligionCenters() {
   const religionCenters = debug
     .append("g")
     .attr("id", "religionCenters")
-    .attr("stroke-width", 1.2)
+    .attr("stroke-width", 0.8)
     .attr("stroke", "#444444")
     .style("cursor", "move");
 
-  const data = pack.religions.filter(r => r.i && r.center && r.cells && !r.removed);
+  let data = pack.religions.filter(r => r.i && r.center && !r.removed);
+  const showExtinct = $body.dataset.extinct === "show";
+  if (!showExtinct) data = data.filter(r => r.cells > 0);
+
   religionCenters
     .selectAll("circle")
     .data(data)
@@ -483,7 +548,7 @@ function drawReligionCenters() {
     .append("circle")
     .attr("id", d => "religionsCenter" + d.i)
     .attr("data-id", d => d.i)
-    .attr("r", 4)
+    .attr("r", 2)
     .attr("fill", d => d.color)
     .attr("cx", d => pack.cells.p[d.center][0])
     .attr("cy", d => pack.cells.p[d.center][1])
@@ -499,15 +564,23 @@ function drawReligionCenters() {
 }
 
 function religionCenterDrag() {
-  const $el = d3.select(this);
   const religionId = +this.dataset.id;
-  d3.event.on("drag", () => {
+  const tr = parseTransform(this.getAttribute("transform"));
+  const x0 = +tr[0] - d3.event.x;
+  const y0 = +tr[1] - d3.event.y;
+
+  function handleDrag() {
     const {x, y} = d3.event;
-    $el.attr("cx", x).attr("cy", y);
+    this.setAttribute("transform", `translate(${x0 + x},${y0 + y})`);
     const cell = findCell(x, y);
     if (pack.cells.h[cell] < 20) return; // ignore dragging on water
+
     pack.religions[religionId].center = cell;
-  });
+    recalculateReligions();
+  }
+
+  const dragDebounced = debounce(handleDrag, 50);
+  d3.event.on("drag", dragDebounced);
 }
 
 function toggleLegend() {
@@ -578,13 +651,14 @@ async function showHierarchy() {
 function toggleExtinct() {
   $body.dataset.extinct = $body.dataset.extinct !== "show" ? "show" : "hide";
   religionsEditorAddLines();
+  drawReligionCenters();
 }
 
 function enterReligionsManualAssignent() {
   if (!layerIsOn("toggleReligions")) toggleReligions();
   customization = 7;
   relig.append("g").attr("id", "temp");
-  document.querySelectorAll("#religionsBottom > button").forEach(el => (el.style.display = "none"));
+  document.querySelectorAll("#religionsBottom > *").forEach(el => (el.style.display = "none"));
   byId("religionsManuallyButtons").style.display = "inline-block";
   debug.select("#religionCenters").style("display", "none");
 
@@ -686,7 +760,7 @@ function exitReligionsManualAssignment(close) {
   customization = 0;
   relig.select("#temp").remove();
   removeCircle();
-  document.querySelectorAll("#religionsBottom > button").forEach(el => (el.style.display = "inline-block"));
+  document.querySelectorAll("#religionsBottom > *").forEach(el => (el.style.display = "inline-block"));
   byId("religionsManuallyButtons").style.display = "none";
 
   byId("religionsEditor")
@@ -740,15 +814,15 @@ function addReligion() {
 
 function downloadReligionsCsv() {
   const unit = getAreaUnit("2");
-  const headers = `Id,Name,Color,Type,Form,Supreme Deity,Area ${unit},Believers,Origins`;
+  const headers = `Id,Name,Color,Type,Form,Supreme Deity,Area ${unit},Believers,Origins,Potential,Expansionism`;
   const lines = Array.from($body.querySelectorAll(":scope > div"));
   const data = lines.map($line => {
-    const {id, name, color, type, form, deity, area, population} = $line.dataset;
+    const {id, name, color, type, form, deity, area, population, expansion, expansionism} = $line.dataset;
     const deityText = '"' + deity + '"';
     const {origins} = pack.religions[+id];
     const originList = (origins || []).filter(origin => origin).map(origin => pack.religions[origin].name);
     const originText = '"' + originList.join(", ") + '"';
-    return [id, name, color, type, form, deityText, area, population, originText].join(",");
+    return [id, name, color, type, form, deityText, area, population, originText, expansion, expansionism].join(",");
   });
   const csvData = [headers].concat(data).join("\n");
 
@@ -772,4 +846,14 @@ function updateLockStatus() {
 
   classList.toggle("icon-lock-open");
   classList.toggle("icon-lock");
+}
+
+function recalculateReligions(must) {
+  if (!must && !religionsAutoChange.checked) return;
+
+  Religions.recalculate();
+
+  drawReligions();
+  refreshReligionsEditor();
+  drawReligionCenters();
 }

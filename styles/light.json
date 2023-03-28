@@ -192,18 +192,18 @@
     "filter": null
   },
   "#roads": {
-    "opacity": 0.9,
-    "stroke": "#3c1d0b",
-    "stroke-width": 1.37,
+    "opacity": 0.8,
+    "stroke": "#95481a",
+    "stroke-width": 0.8,
     "stroke-dasharray": 2,
     "stroke-linecap": "inherit",
     "filter": null,
     "mask": null
   },
   "#trails": {
-    "opacity": 0.9,
+    "opacity": 0.8,
     "stroke": "#95481a",
-    "stroke-width": 0.88,
+    "stroke-width": 0.5,
     "stroke-dasharray": ".8 1.6",
     "stroke-linecap": "butt",
     "filter": null,

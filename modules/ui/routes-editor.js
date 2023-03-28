@@ -1,4 +1,7 @@
 "use strict";
+
+const CONTROL_POINST_DISTANCE = 10;
+
 function editRoute(onClick) {
   if (customization) return;
   if (!onClick && elSelected && d3.event.target.id === elSelected.attr("id")) return;
@@ -47,13 +50,13 @@ function editRoute(onClick) {
   }
 
   function drawControlPoints(node) {
-    const l = node.getTotalLength();
-    const increment = l / Math.ceil(l / 4);
-    for (let i = 0; i <= l; i += increment) {
+    const totalLength = node.getTotalLength();
+    const increment = totalLength / Math.ceil(totalLength / CONTROL_POINST_DISTANCE);
+    for (let i = 0; i <= totalLength; i += increment) {
       const point = node.getPointAtLength(i);
       addControlPoint([point.x, point.y]);
     }
-    routeLength.innerHTML = rn(l * distanceScaleInput.value) + " " + distanceUnitInput.value;
+    routeLength.innerHTML = rn(totalLength * distanceScaleInput.value) + " " + distanceUnitInput.value;
   }
 
   function addControlPoint(point, before = null) {

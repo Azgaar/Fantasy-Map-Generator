@@ -116,23 +116,25 @@ window.Cultures = (function () {
 
     cultures.forEach(c => (c.base = c.base % nameBases.length));
 
-    function selectCultures(c) {
-      let def = getDefault(c);
-      if (c === def.length) return def;
-      if (def.every(d => d.odd === 1)) return def.splice(0, c);
-
-      const count = Math.min(c, def.length);
+    function selectCultures(culturesNumber) {
+      let def = getDefault(culturesNumber);
       const cultures = [];
-
+      
       pack.cultures?.forEach(function (culture) {
         if (culture.lock) cultures.push(culture);
       });
+      
+      if (!cultures.length) {
+        if (culturesNumber === def.length) return def;
+        if (def.every(d => d.odd === 1)) return def.splice(0, culturesNumber);
+      }
 
-      for (let culture, rnd, i = 0; cultures.length < count && i < 200; i++) {
+      for (let culture, rnd, i = 0; cultures.length < culturesNumber && def.length > 0;) {
         do {
           rnd = rand(def.length - 1);
           culture = def[rnd];
-        } while (!P(culture.odd));
+          i++;
+        } while (i < 200 && !P(culture.odd));
         cultures.push(culture);
         def.splice(rnd, 1);
       }
@@ -507,28 +509,37 @@ window.Cultures = (function () {
   // expand cultures across the map (Dijkstra-like algorithm)
   const expand = function () {
     TIME && console.time("expandCultures");
-    cells = pack.cells;
+    const {cells, cultures} = pack;
 
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
-    pack.cultures.forEach(function (c) {
-      if (!c.i || c.removed || c.lock) return;
-      queue.queue({e: c.center, p: 0, c: c.i});
-    });
-
-    const neutral = (cells.i.length / 5000) * 3000 * neutralInput.value; // limit cost for culture growth
     const cost = [];
+
+    const neutralRate = byId("neutralRate")?.valueAsNumber || 1;
+    const neutral = cells.i.length * 0.6 * neutralRate; // limit cost for culture growth
+
+    // remove culture from all cells except of locked
+    for (const cellId of cells.i) {
+      const culture = cultures[cells.culture[cellId]];
+      if (culture.lock) continue;
+      cells.culture[cellId] = 0;
+    }
+
+    for (const culture of cultures) {
+      if (!culture.i || culture.removed) continue;
+      queue.queue({e: culture.center, p: 0, c: culture.i});
+    }
+
     while (queue.length) {
-      const next = queue.dequeue(),
-        n = next.e,
-        p = next.p,
-        c = next.c;
-      const type = pack.cultures[c].type;
-      cells.c[n].forEach(e => {
-        if (pack.cultures[cells.culture[e]]?.lock) return;
+      const {e, p, c} = queue.dequeue();
+      const {type} = pack.cultures[c];
+
+      cells.c[e].forEach(e => {
+        const culture = cells.culture[e];
+        if (culture?.lock) return; // do not overwrite cell of locked culture
 
         const biome = cells.biome[e];
         const biomeCost = getBiomeCost(c, biome, type);
-        const biomeChangeCost = biome === cells.biome[n] ? 0 : 20; // penalty on biome change
+        const biomeChangeCost = biome === cells.biome[e] ? 0 : 20; // penalty on biome change
         const heightCost = getHeightCost(e, cells.h[e], type);
         const riverCost = getRiverCost(cells.r[e], e, type);
         const typeCost = getTypeCost(cells.t[e], type);

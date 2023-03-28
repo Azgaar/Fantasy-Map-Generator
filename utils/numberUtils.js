@@ -20,3 +20,7 @@ function lim(v) {
 function normalize(val, min, max) {
   return minmax((val - min) / (max - min), 0, 1);
 }
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}

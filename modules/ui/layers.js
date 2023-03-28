@@ -671,11 +671,10 @@ function toggleIce(event) {
 }
 
 function drawIce() {
-  const cells = grid.cells,
-    vertices = grid.vertices,
-    n = cells.i.length,
-    temp = cells.temp,
-    h = cells.h;
+  const {cells, vertices} = grid;
+  const {temp, h} = cells;
+  const n = cells.i.length;
+
   const used = new Uint8Array(cells.i.length);
   Math.random = aleaPRNG(seed);
 
@@ -700,23 +699,22 @@ function drawIce() {
       continue;
     }
 
+    const tNormalized = normalize(t, -8, 2);
+    const randomFactor = t > -5 ? 0.4 + rand() * 1.2 : 1;
+
     // mildly cold: iceberd
-    if (P(normalize(t, -7, 2.5))) continue; // t[-5; 2] cold: skip some cells
+    if (P(tNormalized ** 0.5 * randomFactor)) continue; // cold: skip some cells
     if (grid.features[cells.f[i]].type === "lake") continue; // lake: no icebers
-    let size = (6.5 + t) / 10; // iceberg size: 0 = full size, 1 = zero size
-    if (cells.t[i] === -1) size *= 1.3; // coasline: smaller icebers
-    size = Math.min(size * (0.4 + rand() * 1.2), 0.95); // randomize iceberg size
-    resizePolygon(i, size);
+
+    let size = 1 - tNormalized; // iceberg size: 0 = zero size, 1 = full size
+    if (cells.t[i] === -1) size /= 1.3; // coasline: smaller icebers
+    resizePolygon(i, minmax(rn(size * randomFactor, 2), 0.08, 1));
   }
 
-  function resizePolygon(i, s) {
-    const c = grid.points[i];
-    const points = getGridPolygon(i).map(p => [(p[0] + (c[0] - p[0]) * s) | 0, (p[1] + (c[1] - p[1]) * s) | 0]);
-    ice
-      .append("polygon")
-      .attr("points", points)
-      .attr("cell", i)
-      .attr("size", rn(1 - s, 2));
+  function resizePolygon(i, size) {
+    const [cx, cy] = grid.points[i];
+    const points = getGridPolygon(i).map(([x, y]) => [rn(lerp(cx, x, size), 2), rn(lerp(cy, y, size), 2)]);
+    ice.append("polygon").attr("points", points).attr("cell", i).attr("size", size);
   }
 
   // connect vertices to chain

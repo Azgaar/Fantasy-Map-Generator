@@ -163,8 +163,6 @@ function addListeners() {
     const line = $element.parentNode;
     const state = +line.dataset.id;
     if (classList.contains("stateCapital")) stateChangeCapitalName(state, line, $element.value);
-    else if (classList.contains("cultureType")) stateChangeType(state, line, $element.value);
-    else if (classList.contains("statePower")) stateChangeExpansionism(state, line, $element.value);
   });
 
   $body.on("change", function (ev) {
@@ -173,6 +171,8 @@ function addListeners() {
     const line = $element.parentNode;
     const state = +line.dataset.id;
     if (classList.contains("stateCulture")) stateChangeCulture(state, line, $element.value);
+    else if (classList.contains("cultureType")) stateChangeType(state, line, $element.value);
+    else if (classList.contains("statePower")) stateChangeExpansionism(state, line, $element.value);
   });
 }
 
@@ -883,7 +883,6 @@ function changeStatesGrowthRate() {
   const growthRate = +this.value;
   byId("statesNeutral").value = growthRate;
   byId("statesNeutralNumber").value = growthRate;
-  statesNeutral = growthRate;
   tip("Growth rate: " + growthRate);
   recalculateStates(false);
 }

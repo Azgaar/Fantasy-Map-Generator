@@ -48,7 +48,9 @@ window.Rivers = (function () {
         cells.fl[i] += prec[cells.g[i]] / cellsNumberModifier; // add flux from precipitation
 
         // create lake outlet if lake is not in deep depression and flux > evaporation
-        const lakes = lakeOutCells[i] ? features.filter(feature => i === feature.outCell && feature.flux > feature.evaporation) : [];
+        const lakes = lakeOutCells[i]
+          ? features.filter(feature => i === feature.outCell && feature.flux > feature.evaporation)
+          : [];
         for (const lake of lakes) {
           const lakeCell = cells.c[i].find(c => h[c] < 20 && cells.f[c] === lake.i);
           cells.fl[lakeCell] += Math.max(lake.flux - lake.evaporation, 0); // not evaporated lake water drains to outlet
@@ -191,7 +193,18 @@ window.Rivers = (function () {
         const length = getApproximateLength(meanderedPoints);
         const width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, 0));
 
-        pack.rivers.push({i: riverId, source, mouth, discharge, length, width, widthFactor, sourceWidth: 0, parent, cells: riverCells});
+        pack.rivers.push({
+          i: riverId,
+          source,
+          mouth,
+          discharge,
+          length,
+          width,
+          widthFactor,
+          sourceWidth: 0,
+          parent,
+          cells: riverCells
+        });
       }
     }
 
@@ -479,6 +492,10 @@ window.Rivers = (function () {
     return getBasin(parent);
   };
 
+  const getNextId = function (rivers) {
+    return rivers.length ? Math.max(...rivers.map(r => r.i)) + 1 : 1;
+  };
+
   return {
     generate,
     alterHeights,
@@ -493,6 +510,7 @@ window.Rivers = (function () {
     getOffset,
     getApproximateLength,
     getRiverPoints,
-    remove
+    remove,
+    getNextId
   };
 })();

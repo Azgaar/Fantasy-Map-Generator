@@ -77,12 +77,15 @@ document
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
   const {supporters} = await import("../dynamic/supporters.js?v=19062022");
+  const list = supporters.split("\n").sort();
+  const columns = window.innerWidth < 800 ? 2 : 5;
+
   alertMessage.innerHTML =
-    "<ul style='column-count: 5; column-gap: 2em'>" + supporters.map(n => `<li>${n}</li>`).join("") + "</ul>";
+    `<ul style='column-count: ${columns}; column-gap: 2em'>` + list.map(n => `<li>${n}</li>`).join("") + "</ul>";
   $("#alert").dialog({
     resizable: false,
     title: "Patreon Supporters",
-    width: "54vw",
+    width: "min-width",
     position: {my: "center", at: "center", of: "svg"}
   });
 }
@@ -157,9 +160,20 @@ optionsContent.addEventListener("click", function (event) {
 });
 
 function mapSizeInputChange() {
+  const $mapWidthInput = byId("mapWidthInput");
+  const $mapHeightInput = byId("mapHeightInput");
+
   changeMapSize();
-  localStorage.setItem("mapWidth", mapWidthInput.value);
-  localStorage.setItem("mapHeight", mapHeightInput.value);
+  localStorage.setItem("mapWidth", $mapWidthInput.value);
+  localStorage.setItem("mapHeight", $mapHeightInput.value);
+
+  const tooWide = +$mapWidthInput.value > window.innerWidth;
+  const tooHigh = +$mapHeightInput.value > window.innerHeight;
+
+  if (tooWide || tooHigh) {
+    const message = `Canvas size is larger than actual window size (${window.innerWidth} x ${window.innerHeight}). It can affect the performance if you are going to create a new map`;
+    tip(message, false, "warn", 4000);
+  }
 }
 
 // change svg size on manual size change or window resize, do not change graph size
@@ -534,7 +548,7 @@ function applyStoredOptions() {
   options.stateLabelsMode = stateLabelsModeInput.value;
 }
 
-// randomize options if randomization is allowed (not locked or options='default')
+// randomize options if randomization is allowed (not locked or queryParam options='default')
 function randomizeOptions() {
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
 
@@ -546,7 +560,7 @@ function randomizeOptions() {
     manorsInput.value = 1000;
     manorsOutput.value = "auto";
   }
-  if (randomize || !locked("religions")) religionsInput.value = religionsOutput.value = gauss(5, 2, 2, 10);
+  if (randomize || !locked("religions")) religionsInput.value = religionsOutput.value = gauss(6, 3, 2, 10);
   if (randomize || !locked("power")) powerInput.value = powerOutput.value = gauss(4, 2, 0, 10, 2);
   if (randomize || !locked("neutral")) neutralInput.value = neutralOutput.value = rn(1 + Math.random(), 1);
   if (randomize || !locked("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
@@ -602,17 +616,17 @@ function randomizeCultureSet() {
 function setRendering(value) {
   viewbox.attr("shape-rendering", value);
 
-  if (value === "optimizeSpeed") {
-    // block some styles
-    coastline.select("#sea_island").style("filter", "none");
-    statesHalo.style("display", "none");
-    emblems.style("opacity", 1);
-  } else {
-    // remove style block
-    coastline.select("#sea_island").style("filter", null);
-    statesHalo.style("display", null);
-    emblems.style("opacity", null);
-  }
+  // if (value === "optimizeSpeed") {
+  //   // block some styles
+  //   coastline.select("#sea_island").style("filter", "none");
+  //   statesHalo.style("display", "none");
+  //   emblems.style("opacity", 1);
+  // } else {
+  //   // remove style block
+  //   coastline.select("#sea_island").style("filter", null);
+  //   statesHalo.style("display", null);
+  //   emblems.style("opacity", null);
+  // }
 }
 
 // generate current year and era name

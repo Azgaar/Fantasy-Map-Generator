@@ -3,14 +3,33 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Azgaar's Fantasy Map Generator</title>
     <meta name="application-name" content="Azgaar's Fantasy Map Generator" />
-    <meta name="author" content="Azgaar (Max Ganiev)" />
-    <meta name="description" content="Azgaar's Fantasy Map Generator and Editor" />
+    <meta name="author" content="Azgaar" />
+    <meta
+      name="description"
+      content="Free web app that helps fantasy writers, game masters, and cartographers create and edit fantasy maps"
+    />
+
     <meta property="og:url" content="https://azgaar.github.io/Fantasy-Map-Generator" />
     <meta property="og:title" content="Azgaar's Fantasy Map Generator" />
-    <meta property="og:description" content="Web application generating interactive and customizable maps" />
+    <meta
+      property="og:description"
+      content="Free web app that helps fantasy writers, game masters, and cartographers create and edit fantasy maps"
+    />
     <meta property="og:image" content="images/preview.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="twitter:domain" content="azgaar.github.io" />
+    <meta property="twitter:url" content="https://azgaar.github.io/Fantasy-Map-Generator/" />
+    <meta name="twitter:title" content="Azgaar's Fantasy Map Generator" />
+    <meta
+      name="twitter:description"
+      content="Free web app that helps fantasy writers, game masters, and cartographers create and edit fantasy maps"
+    />
+    <meta name="twitter:image" content="images/preview.png" />
+
     <link rel="icon" type="image/png" href="images/icons/favicon-32x32.png" sizes="32x32" />
     <link rel="icon" type="image/png" href="images/icons/favicon-16x16.png" sizes="16x16" />
     <link rel="apple-touch-icon" href="images/icons/maskable_icon_x192.png" />
@@ -108,7 +127,7 @@
       }
     </style>
 
-    <link rel="preload" href="index.css?v=1.89.00" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+    <link rel="preload" href="index.css?v=1.89.13" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="icons.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="libs/jquery-ui.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
   </head>
@@ -1237,10 +1256,6 @@
                 <td><select id="styleStatesBodyFilter" /></td>
               </tr>
 
-              <tr style="margin-top: 1em">
-                <td><em>Halo is disabled if "Rendering" option is set to "Best performance"</em></td>
-              </tr>
-
               <tr data-tip="Set states halo effect width">
                 <td>Halo width</td>
                 <td>
@@ -1446,7 +1461,7 @@
           </p>
           <table>
             <tr
-              data-tip="Canvas width and height in pixels. Defines map size on generation, then map size cannot be changed and canvas size changes only visible area. Keep canvas size equal to screen size or less to improve performance. The best aspect ratio for maps is 2:1"
+              data-tip="Canvas width and height in pixels. Defines map size on generation that cannot be changed later. Always keep canvas size equal to your screen size or less. The best option is to use the default value. For full-globe maps use aspect ratio 2:1"
             >
               <td></td>
               <td>Canvas size</td>
@@ -1458,7 +1473,7 @@
               </td>
               <td>
                 <i
-                  data-tip="Toggle between screen size and initial canvas size"
+                  data-tip="Toggle between the current screen size and the initial canvas size"
                   id="toggleFullscreen"
                   class="icon-resize-full-alt"
                 ></i>
@@ -1883,8 +1898,8 @@
               <td>Rendering</td>
               <td>
                 <select id="shapeRendering" data-stored="shapeRendering">
-                  <option value="geometricPrecision" selected>Best quality</option>
-                  <option value="optimizeSpeed">Best performace</option>
+                  <option value="geometricPrecision">Best quality</option>
+                  <option value="optimizeSpeed" selected>Best performace</option>
                 </select>
               </td>
               <td></td>
@@ -2749,7 +2764,7 @@
       <div id="iceEditor" class="dialog" style="display: none">
         <button id="iceEditStyle" data-tip="Edit style in Style Editor" class="icon-brush"></button>
         <button id="iceRandomize" data-tip="Randomize Iceberg shape" class="icon-shuffle"></button>
-        <input id="iceSize" data-tip="Change Iceberg size" type="range" min=".05" max="1" step=".01" />
+        <input id="iceSize" data-tip="Change Iceberg size" type="range" min=".05" max="2" step=".01" />
         <button id="iceNew" data-tip="Add an Iceberg (click on map)" class="icon-plus"></button>
         <button
           id="iceRemove"
@@ -5602,7 +5617,7 @@
       </div>
 
       <div id="iconSelector" style="display: none" class="dialog">
-        <table id="iconTable" class="table pointer" style="font-size: 2em; text-align: center"></table>
+        <table id="iconTable" class="table pointer" style="font-size: 2em; text-align: center; width: 100%"></table>
         <div style="font-style: italic; font-size: 1.2em; margin: 0.4em 0 0 0.4em">
           <span>Select from the list or paste a Unicode character here: </span>
           <input id="iconInput" style="width: 2em" />
@@ -7830,7 +7845,7 @@
     <script src="utils/colorUtils.js"></script>
     <script src="utils/graphUtils.js?v=1.88.02"></script>
     <script src="utils/nodeUtils.js"></script>
-    <script src="utils/numberUtils.js"></script>
+    <script src="utils/numberUtils.js?v=1.89.08"></script>
     <script src="utils/polyfills.js"></script>
     <script src="utils/probabilityUtils.js?v=1.88.00"></script>
     <script src="utils/stringUtils.js"></script>
@@ -7841,14 +7856,14 @@
     <script src="config/heightmap-templates.js"></script>
     <script src="config/precreated-heightmaps.js"></script>
     <script src="modules/heightmap-generator.js?v=1.88.00"></script>
-    <script src="modules/ocean-layers.js?v=1.87.15"></script>
-    <script src="modules/river-generator.js"></script>
+    <script src="modules/ocean-layers.js?v=1.89.08"></script>
+    <script src="modules/river-generator.js?v=1.89.13"></script>
     <script src="modules/lakes.js"></script>
     <script src="modules/names-generator.js?v=1.87.14"></script>
-    <script src="modules/cultures-generator.js?v=1.89.00"></script>
-    <script src="modules/burgs-and-states.js?v=1.89.00"></script>
+    <script src="modules/cultures-generator.js?v=1.89.10"></script>
+    <script src="modules/burgs-and-states.js?v=1.89.07"></script>
     <script src="modules/routes-generator.js"></script>
-    <script src="modules/religions-generator.js?v=1.89.00"></script>
+    <script src="modules/religions-generator.js?v=1.89.15"></script>
     <script src="modules/military-generator.js"></script>
     <script src="modules/markers-generator.js?v=1.87.13"></script>
     <script src="modules/coa-generator.js"></script>
@@ -7859,34 +7874,34 @@
     <script src="modules/fonts.js"></script>
     <script src="modules/ui/layers.js"></script>
     <script src="modules/ui/measurers.js?v=1.87.02"></script>
-    <script src="modules/ui/stylePresets.js"></script>
+    <script src="modules/ui/stylePresets.js?v=1.89.11"></script>
 
     <script src="modules/ui/general.js?v=1.87.03"></script>
-    <script src="modules/ui/options.js?v=1.88.02"></script>
-    <script src="main.js?v=1.88.02"></script>
+    <script src="modules/ui/options.js?v=1.88.14"></script>
+    <script src="main.js?v=1.89.12"></script>
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js"></script>
-    <script defer src="modules/ui/editors.js?v=1.87.07"></script>
-    <script defer src="modules/ui/tools.js?v=1.89.00"></script>
+    <script defer src="modules/ui/editors.js?v=1.89.12"></script>
+    <script defer src="modules/ui/tools.js?v=1.89.13"></script>
     <script defer src="modules/ui/world-configurator.js"></script>
-    <script defer src="modules/ui/heightmap-editor.js?v=1.88.03"></script>
+    <script defer src="modules/ui/heightmap-editor.js?v=1.89.06"></script>
     <script defer src="modules/ui/provinces-editor.js?v=1.89.00"></script>
     <script defer src="modules/ui/biomes-editor.js"></script>
     <script defer src="modules/ui/namesbase-editor.js?v=1.87.10"></script>
     <script defer src="modules/ui/elevation-profile.js"></script>
     <script defer src="modules/ui/temperature-graph.js"></script>
-    <script defer src="modules/ui/routes-editor.js"></script>
-    <script defer src="modules/ui/ice-editor.js"></script>
+    <script defer src="modules/ui/routes-editor.js?v=1.89.04"></script>
+    <script defer src="modules/ui/ice-editor.js?v=1.89.08"></script>
     <script defer src="modules/ui/lakes-editor.js?v=1.87.10"></script>
     <script defer src="modules/ui/coastline-editor.js"></script>
     <script defer src="modules/ui/labels-editor.js"></script>
     <script defer src="modules/ui/rivers-editor.js"></script>
-    <script defer src="modules/ui/rivers-creator.js"></script>
+    <script defer src="modules/ui/rivers-creator.js?v=1.89.13"></script>
     <script defer src="modules/ui/relief-editor.js"></script>
     <script defer src="modules/ui/burg-editor.js"></script>
     <script defer src="modules/ui/units-editor.js"></script>
-    <script defer src="modules/ui/notes-editor.js"></script>
+    <script defer src="modules/ui/notes-editor.js?v=1.89.03"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.88.04"></script>
     <script defer src="modules/ui/zones-editor.js"></script>
     <script defer src="modules/ui/burgs-overview.js"></script>

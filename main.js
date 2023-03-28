@@ -191,7 +191,6 @@ let populationRate = +document.getElementById("populationRateInput").value;
 let distanceScale = +document.getElementById("distanceScaleInput").value;
 let urbanization = +document.getElementById("urbanizationInput").value;
 let urbanDensity = +document.getElementById("urbanDensityInput").value;
-let statesNeutral = 1; // statesEditor growth parameter
 
 applyStoredOptions();
 
@@ -695,6 +694,7 @@ async function generate(options) {
     if (shouldRegenerateGrid(grid, precreatedSeed)) grid = precreatedGraph || generateGrid();
     else delete grid.cells.h;
     grid.cells.h = await HeightmapGenerator.generate(grid);
+    pack = {}; // reset pack
 
     markFeatures();
     markupGridOcean();
