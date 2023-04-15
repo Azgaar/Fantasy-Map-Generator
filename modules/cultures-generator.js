@@ -511,31 +511,38 @@ window.Cultures = (function () {
     TIME && console.time("expandCultures");
     const {cells, cultures} = pack;
 
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    const queue = new PriorityQueue({comparator: (a, b) => a.priority - b.priority});
     const cost = [];
 
     const neutralRate = byId("neutralRate")?.valueAsNumber || 1;
-    const neutral = cells.i.length * 0.6 * neutralRate; // limit cost for culture growth
+    const maxExpansionCost = cells.i.length * 0.6 * neutralRate; // limit cost for culture growth
 
     // remove culture from all cells except of locked
-    for (const cellId of cells.i) {
-      const culture = cultures[cells.culture[cellId]];
-      if (culture.lock) continue;
-      cells.culture[cellId] = 0;
+    const hasLocked = cultures.some(c => !c.removed && c.lock);
+    if (hasLocked) {
+      for (const cellId of cells.i) {
+        const culture = cultures[cells.culture[cellId]];
+        if (culture.lock) continue;
+        cells.culture[cellId] = 0;
+      }
+    } else {
+      cells.culture = new Uint16Array(cells.i.length);
     }
 
     for (const culture of cultures) {
-      if (!culture.i || culture.removed) continue;
+      if (!culture.i || culture.removed || culture.lock) continue;
       queue.queue({cellId: culture.center, cultureId: culture.i, priority: 0});
     }
 
     while (queue.length) {
       const {cellId, priority, cultureId} = queue.dequeue();
-      const {type, expansionism} = pack.cultures[cultureId];
+      const {type, expansionism} = cultures[cultureId];
 
       cells.c[cellId].forEach(neibCellId => {
-        const neibCultureId = cells.culture[neibCellId];
-        if (neibCultureId && pack.cultures[neibCultureId].lock) return; // do not overwrite cell of locked culture
+        if (hasLocked) {
+          const neibCultureId = cells.culture[neibCellId];
+          if (neibCultureId && cultures[neibCultureId].lock) return; // do not overwrite cell of locked culture
+        }
 
         const biome = cells.biome[neibCellId];
         const biomeCost = getBiomeCost(cultureId, biome, type);
@@ -544,13 +551,13 @@ window.Cultures = (function () {
         const riverCost = getRiverCost(cells.r[neibCellId], neibCellId, type);
         const typeCost = getTypeCost(cells.t[neibCellId], type);
 
-        const totalCost = priority + (biomeCost + biomeChangeCost + heightCost + riverCost + typeCost) / expansionism;
-        if (Number.isNaN(totalCost)) debugger;
+        const cellCost = (biomeCost + biomeChangeCost + heightCost + riverCost + typeCost) / expansionism;
+        const totalCost = priority + cellCost;
 
-        if (totalCost > neutral) return;
+        if (totalCost > maxExpansionCost) return;
 
         if (!cost[neibCellId] || totalCost < cost[neibCellId]) {
-          if (cells.s[neibCellId] > 0) cells.culture[neibCellId] = cultureId; // assign culture to populated cell
+          if (cells.pop[neibCellId] > 0) cells.culture[neibCellId] = cultureId; // assign culture to populated cell
           cost[neibCellId] = totalCost;
           queue.queue({cellId: neibCellId, cultureId, priority: totalCost});
         }
@@ -558,7 +565,7 @@ window.Cultures = (function () {
     }
 
     function getBiomeCost(c, biome, type) {
-      if (cells.biome[pack.cultures[c].center] === biome) return 10; // tiny penalty for native biome
+      if (cells.biome[cultures[c].center] === biome) return 10; // tiny penalty for native biome
       if (type === "Hunting") return biomesData.cost[biome] * 5; // non-native biome penalty for hunters
       if (type === "Nomadic" && biome > 4 && biome < 10) return biomesData.cost[biome] * 10; // forest biome penalty for nomads
       return biomesData.cost[biome] * 2; // general non-native biome penalty
