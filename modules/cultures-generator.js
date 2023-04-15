@@ -119,17 +119,17 @@ window.Cultures = (function () {
     function selectCultures(culturesNumber) {
       let def = getDefault(culturesNumber);
       const cultures = [];
-      
+
       pack.cultures?.forEach(function (culture) {
         if (culture.lock) cultures.push(culture);
       });
-      
+
       if (!cultures.length) {
         if (culturesNumber === def.length) return def;
         if (def.every(d => d.odd === 1)) return def.splice(0, culturesNumber);
       }
 
-      for (let culture, rnd, i = 0; cultures.length < culturesNumber && def.length > 0;) {
+      for (let culture, rnd, i = 0; cultures.length < culturesNumber && def.length > 0; ) {
         do {
           rnd = rand(def.length - 1);
           culture = def[rnd];
@@ -526,73 +526,74 @@ window.Cultures = (function () {
 
     for (const culture of cultures) {
       if (!culture.i || culture.removed) continue;
-      queue.queue({e: culture.center, p: 0, c: culture.i});
+      queue.queue({cellId: culture.center, cultureId: culture.i, priority: 0});
     }
 
     while (queue.length) {
-      const {e, p, c} = queue.dequeue();
-      const {type} = pack.cultures[c];
+      const {cellId, priority, cultureId} = queue.dequeue();
+      const {type, expansionism} = pack.cultures[cultureId];
 
-      cells.c[e].forEach(e => {
-        const culture = cells.culture[e];
-        if (culture?.lock) return; // do not overwrite cell of locked culture
+      cells.c[cellId].forEach(neibCellId => {
+        const neibCultureId = cells.culture[neibCellId];
+        if (neibCultureId && pack.cultures[neibCultureId].lock) return; // do not overwrite cell of locked culture
 
-        const biome = cells.biome[e];
-        const biomeCost = getBiomeCost(c, biome, type);
-        const biomeChangeCost = biome === cells.biome[e] ? 0 : 20; // penalty on biome change
-        const heightCost = getHeightCost(e, cells.h[e], type);
-        const riverCost = getRiverCost(cells.r[e], e, type);
-        const typeCost = getTypeCost(cells.t[e], type);
-        const totalCost =
-          p + (biomeCost + biomeChangeCost + heightCost + riverCost + typeCost) / pack.cultures[c].expansionism;
+        const biome = cells.biome[neibCellId];
+        const biomeCost = getBiomeCost(cultureId, biome, type);
+        const biomeChangeCost = biome === cells.biome[neibCellId] ? 0 : 20; // penalty on biome change
+        const heightCost = getHeightCost(neibCellId, cells.h[neibCellId], type);
+        const riverCost = getRiverCost(cells.r[neibCellId], neibCellId, type);
+        const typeCost = getTypeCost(cells.t[neibCellId], type);
+
+        const totalCost = priority + (biomeCost + biomeChangeCost + heightCost + riverCost + typeCost) / expansionism;
+        if (Number.isNaN(totalCost)) debugger;
 
         if (totalCost > neutral) return;
 
-        if (!cost[e] || totalCost < cost[e]) {
-          if (cells.s[e] > 0) cells.culture[e] = c; // assign culture to populated cell
-          cost[e] = totalCost;
-          queue.queue({e, p: totalCost, c});
+        if (!cost[neibCellId] || totalCost < cost[neibCellId]) {
+          if (cells.s[neibCellId] > 0) cells.culture[neibCellId] = cultureId; // assign culture to populated cell
+          cost[neibCellId] = totalCost;
+          queue.queue({cellId: neibCellId, cultureId, priority: totalCost});
         }
       });
     }
 
+    function getBiomeCost(c, biome, type) {
+      if (cells.biome[pack.cultures[c].center] === biome) return 10; // tiny penalty for native biome
+      if (type === "Hunting") return biomesData.cost[biome] * 5; // non-native biome penalty for hunters
+      if (type === "Nomadic" && biome > 4 && biome < 10) return biomesData.cost[biome] * 10; // forest biome penalty for nomads
+      return biomesData.cost[biome] * 2; // general non-native biome penalty
+    }
+
+    function getHeightCost(i, h, type) {
+      const f = pack.features[cells.f[i]],
+        a = cells.area[i];
+      if (type === "Lake" && f.type === "lake") return 10; // no lake crossing penalty for Lake cultures
+      if (type === "Naval" && h < 20) return a * 2; // low sea/lake crossing penalty for Naval cultures
+      if (type === "Nomadic" && h < 20) return a * 50; // giant sea/lake crossing penalty for Nomads
+      if (h < 20) return a * 6; // general sea/lake crossing penalty
+      if (type === "Highland" && h < 44) return 3000; // giant penalty for highlanders on lowlands
+      if (type === "Highland" && h < 62) return 200; // giant penalty for highlanders on lowhills
+      if (type === "Highland") return 0; // no penalty for highlanders on highlands
+      if (h >= 67) return 200; // general mountains crossing penalty
+      if (h >= 44) return 30; // general hills crossing penalty
+      return 0;
+    }
+
+    function getRiverCost(riverId, cellId, type) {
+      if (type === "River") return riverId ? 0 : 100; // penalty for river cultures
+      if (!riverId) return 0; // no penalty for others if there is no river
+      return minmax(cells.fl[cellId] / 10, 20, 100); // river penalty from 20 to 100 based on flux
+    }
+
+    function getTypeCost(t, type) {
+      if (t === 1) return type === "Naval" || type === "Lake" ? 0 : type === "Nomadic" ? 60 : 20; // penalty for coastline
+      if (t === 2) return type === "Naval" || type === "Nomadic" ? 30 : 0; // low penalty for land level 2 for Navals and nomads
+      if (t !== -1) return type === "Naval" || type === "Lake" ? 100 : 0; // penalty for mainland for navals
+      return 0;
+    }
+
     TIME && console.timeEnd("expandCultures");
   };
-
-  function getBiomeCost(c, biome, type) {
-    if (cells.biome[pack.cultures[c].center] === biome) return 10; // tiny penalty for native biome
-    if (type === "Hunting") return biomesData.cost[biome] * 5; // non-native biome penalty for hunters
-    if (type === "Nomadic" && biome > 4 && biome < 10) return biomesData.cost[biome] * 10; // forest biome penalty for nomads
-    return biomesData.cost[biome] * 2; // general non-native biome penalty
-  }
-
-  function getHeightCost(i, h, type) {
-    const f = pack.features[cells.f[i]],
-      a = cells.area[i];
-    if (type === "Lake" && f.type === "lake") return 10; // no lake crossing penalty for Lake cultures
-    if (type === "Naval" && h < 20) return a * 2; // low sea/lake crossing penalty for Naval cultures
-    if (type === "Nomadic" && h < 20) return a * 50; // giant sea/lake crossing penalty for Nomads
-    if (h < 20) return a * 6; // general sea/lake crossing penalty
-    if (type === "Highland" && h < 44) return 3000; // giant penalty for highlanders on lowlands
-    if (type === "Highland" && h < 62) return 200; // giant penalty for highlanders on lowhills
-    if (type === "Highland") return 0; // no penalty for highlanders on highlands
-    if (h >= 67) return 200; // general mountains crossing penalty
-    if (h >= 44) return 30; // general hills crossing penalty
-    return 0;
-  }
-
-  function getRiverCost(r, i, type) {
-    if (type === "River") return r ? 0 : 100; // penalty for river cultures
-    if (!r) return 0; // no penalty for others if there is no river
-    return minmax(cells.fl[i] / 10, 20, 100); // river penalty from 20 to 100 based on flux
-  }
-
-  function getTypeCost(t, type) {
-    if (t === 1) return type === "Naval" || type === "Lake" ? 0 : type === "Nomadic" ? 60 : 20; // penalty for coastline
-    if (t === 2) return type === "Naval" || type === "Nomadic" ? 30 : 0; // low penalty for land level 2 for Navals and nomads
-    if (t !== -1) return type === "Naval" || type === "Lake" ? 100 : 0; // penalty for mainland for navals
-    return 0;
-  }
 
   const getRandomShield = function () {
     const type = rw(COA.shields.types);
