@@ -909,7 +909,7 @@ function addLakesInDeepDepressions() {
   TIME && console.timeEnd("addLakesInDeepDepressions");
 }
 
-// near sea lakes usually get a lot of water inflow, most of them should brake threshold and flow out to sea (see Ancylus Lake)
+// near sea lakes usually get a lot of water inflow, most of them should break threshold and flow out to sea (see Ancylus Lake)
 function openNearSeaLakes() {
   if (byId("templateInput").value === "Atoll") return; // no need for Atolls
 
@@ -924,7 +924,7 @@ function openNearSeaLakes() {
     if (features[lake].type !== "lake") continue; // not a lake cell
 
     check_neighbours: for (const c of cells.c[i]) {
-      if (cells.t[c] !== 1 || cells.h[c] > LIMIT) continue; // water cannot brake this
+      if (cells.t[c] !== 1 || cells.h[c] > LIMIT) continue; // water cannot break this
 
       for (const n of cells.c[c]) {
         const ocean = cells.f[n];
