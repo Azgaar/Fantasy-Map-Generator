@@ -10,7 +10,12 @@ async function saveSVG() {
   link.href = url;
   link.click();
 
-  tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, "success", 5000);
+  tip(
+    `${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`,
+    true,
+    "success",
+    5000
+  );
   TIME && console.timeEnd("saveSVG");
 }
 
@@ -36,7 +41,12 @@ async function savePNG() {
       window.setTimeout(function () {
         canvas.remove();
         window.URL.revokeObjectURL(link.href);
-        tip(`${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`, true, "success", 5000);
+        tip(
+          `${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`,
+          true,
+          "success",
+          5000
+        );
       }, 1000);
     });
   };
@@ -140,7 +150,15 @@ async function saveTiles() {
 
 // parse map svg to object url
 async function getMapURL(type, options = {}) {
-  const {debug = false, globe = false, noLabels = false, noWater = false, noScaleBar = false, noIce = false, fullMap = false} = options;
+  const {
+    debug = false,
+    globe = false,
+    noLabels = false,
+    noWater = false,
+    noScaleBar = false,
+    noIce = false,
+    fullMap = false
+  } = options;
 
   if (fullMap) drawScaleBar(1);
 
@@ -315,7 +333,8 @@ async function getMapURL(type, options = {}) {
 
   clone.remove();
 
-  const serialized = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + new XMLSerializer().serializeToString(cloneEl);
+  const serialized =
+    `<?xml version="1.0" encoding="UTF-8" standalone="no"?>` + new XMLSerializer().serializeToString(cloneEl);
   const blob = new Blob([serialized], {type: "image/svg+xml;charset=utf-8"});
   const url = window.URL.createObjectURL(blob);
   window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
@@ -461,7 +480,7 @@ function saveGeoJSON_Markers() {
     const coordinates = getCoordinates(x, y, 4);
     const id = `marker${i}`;
     const note = notes.find(note => note.id === id);
-    const properties = {id, type, icon, ...note, size, fill, stroke};
+    const properties = {id, type, icon, x, y, ...note, size, fill, stroke};
     return {type: "Feature", geometry: {type: "Point", coordinates}, properties};
   });
 
