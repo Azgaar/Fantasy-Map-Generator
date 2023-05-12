@@ -508,4 +508,14 @@ Hunter Hawthorne
 Sunsette 
 Travis Love
 Dakian Delomast
-Kyle`;
+Kyle
+Davis Walker
+Naomi
+Clément D
+Jake Herr
+ReV0LT
+Jack Dawson
+Queso y Libertad
+RadioJay21H
+NEO
+Crecs`;
