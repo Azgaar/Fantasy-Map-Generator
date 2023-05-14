@@ -1,7 +1,7 @@
 "use strict";
 
 // version and caching control
-const version = "1.89.18"; // generator version, update each time
+const version = "1.89.19"; // generator version, update each time
 
 {
   document.title += " v" + version;
@@ -28,6 +28,7 @@ const version = "1.89.18"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Google translation support (in Options)</li>
         <li>Religions can be edited and redrawn like cultures</li>
         <li>Lock states, provinces, cultures, and religions from regeneration</li>
         <li>Heightmap brushes: linear edit option</li>
@@ -36,7 +37,6 @@ const version = "1.89.18"; // generator version, update each time
         <li>Heightmap selection screen</li>
         <li>Dialogs optimization for mobile</li>
         <li>New heightmap template: Fractious</li>
-        <li>Template Editor: mask and invert tools</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>

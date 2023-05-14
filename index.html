@@ -40,6 +40,7 @@
     <style type="text/css">
       body {
         margin: 0;
+        top: 0 !important;
         font-size: 10px;
         overflow: hidden;
       }
@@ -362,10 +363,10 @@
         <use href="#rose" x="50%" y="50%" />
       </svg>
       <div id="loading-typography">
-        <div id="titleName"><t data-t="titleName">Azgaar's</t></div>
-        <div id="title"><t data-t="title">Fantasy Map Generator</t></div>
-        <div id="versionText"><t data-t="version">v</t><span id="version"></span></div>
-        <p id="loading-text"><t data-t="loading">LOADING</t><span>.</span><span>.</span><span>.</span></p>
+        <div id="titleName">Azgaar's</div>
+        <div id="title">Fantasy Map Generator</div>
+        <div id="versionText">v<span id="version"></span></div>
+        <p id="loading-text">LOADING<span>.</span><span>.</span><span>.</span></p>
       </div>
     </div>
 
@@ -373,7 +374,6 @@
       <div id="collapsible">
         <button
           id="optionsTrigger"
-          data-t="tipOptionsTrigger"
           data-tip="Click to show the Menu"
           data-shortcut="Tab"
           class="options glow"
@@ -383,24 +383,22 @@
         </button>
         <button
           id="regenerate"
-          data-t="tipRegenerate"
           data-tip="Click to generate a new map"
           data-shortcut="F2"
           onclick="regeneratePrompt()"
           class="options"
           style="display: none"
         >
-          <t data-t="newMap">New Map!</t>
+          New Map!
         </button>
       </div>
 
       <div id="options" style="display: none">
-        <div class="drag-trigger" data-t="optionsDragTrigger" data-tip="Drag to move the Menu"></div>
+        <div class="drag-trigger" data-tip="Drag to move the Menu"></div>
 
         <div class="tab">
           <button
             id="optionsHide"
-            data-t="optionsHide"
             data-tip="Click to hide the Menu"
             data-shortcut="Tab or Esc"
             class="options"
@@ -408,26 +406,11 @@
           >
             ◄
           </button>
-          <button id="layersTab" data-t="layersTab" data-tip="Click to change map layers" class="options active">
-            <t data-t="layers">Layers</t>
-          </button>
-          <button id="styleTab" data-t="styleTab" data-tip="Click to open style editor" class="options">
-            <t data-t="style">Style</t>
-          </button>
-          <button
-            id="optionsTab"
-            data-t="optionsTab"
-            data-tip="Click to change generation and UI options"
-            class="options"
-          >
-            <t data-t="options">Options</t>
-          </button>
-          <button id="toolsTab" data-t="toolsTab" data-tip="Click to open tools menu" class="options">
-            <t data-t="tools">Tools</t>
-          </button>
-          <button id="aboutTab" data-t="aboutTab" data-tip="Click to see Generator info" class="options">
-            <t data-t="about">About</t>
-          </button>
+          <button id="layersTab" data-tip="Click to change map layers" class="options active">Layers</button>
+          <button id="styleTab" data-tip="Click to open style editor" class="options">Style</button>
+          <button id="optionsTab" data-tip="Click to change generation and UI options" class="options">Options</button>
+          <button id="toolsTab" data-tip="Click to open tools menu" class="options">Tools</button>
+          <button id="aboutTab" data-tip="Click to see Generator info" class="options">About</button>
         </div>
 
         <div id="layersContent" class="tabcontent" style="display: block">
@@ -1905,17 +1888,19 @@
               <td></td>
             </tr>
 
-            <!-- <tr data-tip="Select language (not all languages are fully supported). Reload the page to apply">
-            <td></td>
-            <td>Language</td>
-            <td>
-              <select id="selectLanguage" data-stored="lang">
-                <option value="en" selected>English (100%)</option>
-                <option value="ru">Русский (1%)</option>
-              </select>
-            </td>
-            <td></td>
-          </tr> -->
+            <tr
+              data-tip="Load Google Translate and select language. Note that automatic translation can break some page functional. In this case reset the language back to English or refresh the page"
+            >
+              <td>
+                <i data-tip="Reset language to English" id="resetLanguage" class="icon-ccw"></i>
+              </td>
+              <td>Language</td>
+              <td>
+                <button id="loadGoogleTranslateButton">Init Google Translate</button>
+                <div id="google_translate_element"></div>
+              </td>
+              <td></td>
+            </tr>
           </table>
 
           <div>
@@ -7877,7 +7862,7 @@
     <script src="modules/ui/stylePresets.js?v=1.89.11"></script>
 
     <script src="modules/ui/general.js?v=1.87.03"></script>
-    <script src="modules/ui/options.js?v=1.89.15"></script>
+    <script src="modules/ui/options.js?v=1.89.19"></script>
     <script src="main.js?v=1.89.15"></script>
 
     <script defer src="modules/relief-icons.js"></script>

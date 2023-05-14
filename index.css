@@ -4,6 +4,21 @@
   --sans-serif: Helvetica, Arial, sans-serif;
 }
 
+/* hide Google translate header */
+body > .skiptranslate {
+  display: none;
+}
+
+/* hide Google translate in-progress widget */
+body > .skiptranslate + div {
+  display: none;
+}
+
+/* make translated text wrapper non-blocking */
+font {
+  pointer-events: none;
+}
+
 input,
 select,
 button {
@@ -597,6 +612,11 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   width: 100%;
 }
 
+#loadGoogleTranslateButton {
+  font-size: smaller;
+  padding: 0.4em 0.5em;
+}
+
 #options input[type="color"] {
   width: 2em;
   padding: 1px;
@@ -697,6 +717,11 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   margin: 0.35em 0;
   transition: 0.1s;
   font-size: 1em;
+  text-transform: capitalize;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .tabcontent button.pressed {
@@ -750,6 +775,11 @@ fieldset {
   float: left;
   width: 28%;
   text-align: center;
+  text-transform: capitalize;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .tabcontent .buttonoff {

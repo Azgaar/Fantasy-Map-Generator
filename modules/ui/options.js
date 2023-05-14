@@ -157,6 +157,8 @@ optionsContent.addEventListener("click", function (event) {
   else if (id === "translateExtent") toggleTranslateExtent(event.target);
   else if (id === "speakerTest") testSpeaker();
   else if (id === "themeColorRestore") restoreDefaultThemeColor();
+  else if (id === "loadGoogleTranslateButton") loadGoogleTranslate();
+  else if (id === "resetLanguage") resetLanguage();
 });
 
 function mapSizeInputChange() {
@@ -472,6 +474,44 @@ function changeDialogsTheme(themeColor, transparency) {
   theme.forEach(({name, h, s, l, alpha}) => {
     sx.setProperty(name, getRGBA(h, s, l, alpha));
   });
+}
+
+function loadGoogleTranslate() {
+  const script = document.createElement("script");
+  script.src = "https://translate.google.com/translate_a/element.js?cb=initGoogleTranslate";
+  script.onload = () => {
+    document.getElementById("loadGoogleTranslateButton")?.remove();
+
+    // replace mapLayers underline <u> with bare text to avoid translation issue
+    document
+      .getElementById("mapLayers")
+      .querySelectorAll("li")
+      .forEach(el => {
+        const text = el.innerHTML.replace(/<u>(.+)<\/u>/g, "$1");
+        el.innerHTML = text;
+      });
+  };
+
+  document.head.appendChild(script);
+}
+
+function initGoogleTranslate() {
+  new google.translate.TranslateElement(
+    {pageLanguage: "en", layout: google.translate.TranslateElement.InlineLayout.VERTICAL},
+    "google_translate_element"
+  );
+}
+
+function resetLanguage() {
+  const languageSelect = document.querySelector("#google_translate_element select");
+  if (!languageSelect.value) return;
+
+  languageSelect.value = "en";
+  languageSelect.dispatchEvent(new Event("change"));
+
+  // do once again to actually reset the language
+  languageSelect.value = "en";
+  languageSelect.dispatchEvent(new Event("change"));
 }
 
 function changeZoomExtent(value) {
