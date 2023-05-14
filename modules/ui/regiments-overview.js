@@ -37,7 +37,9 @@ function overviewRegiments(state) {
     const insert = html => document.getElementById("regimentsTotal").insertAdjacentHTML("beforebegin", html);
     for (const u of options.military) {
       const label = capitalize(u.name.replace(/_/g, " "));
-      insert(`<div data-tip="Regiment ${u.name} units number. Click to sort" class="sortable removable" data-sortby="${u.name}">${label}&nbsp;</div>`);
+      insert(
+        `<div data-tip="Regiment ${u.name} units number. Click to sort" class="sortable removable" data-sortby="${u.name}">${label}&nbsp;</div>`
+      );
     }
     header.querySelectorAll(".removable").forEach(function (e) {
       e.addEventListener("click", function () {
@@ -60,10 +62,12 @@ function overviewRegiments(state) {
       for (const r of s.military) {
         const sortData = options.military.map(u => `data-${u.name}=${r.u[u.name] || 0}`).join(" ");
         const lineData = options.military
-          .map(u => `<div data-type="${u.name}" data-tip="${capitalize(u.name)} units number">${r.u[u.name] || 0}</div>`)
+          .map(
+            u => `<div data-type="${u.name}" data-tip="${capitalize(u.name)} units number">${r.u[u.name] || 0}</div>`
+          )
           .join(" ");
 
-        lines += /* html */ `<div class="states" data-id=${r.i} data-s="${s.i}" data-state="${s.name}" data-name="${r.name}" ${sortData} data-total="${r.a}">
+        lines += /* html */ `<div class="states" data-id="${r.i}" data-s="${s.i}" data-state="${s.name}" data-name="${r.name}" ${sortData} data-total="${r.a}">
           <fill-box data-tip="${s.fullName}" fill="${s.color}" disabled></fill-box>
           <input data-tip="${s.fullName}" style="width:6em" value="${s.name}" readonly />
           <span data-tip="Regiment's emblem" style="width:1em">${r.icon}</span>
@@ -79,7 +83,9 @@ function overviewRegiments(state) {
 
     lines += /* html */ `<div id="regimentsTotalLine" class="totalLine" data-tip="Total of all displayed regiments">
       <div style="width: 21em; margin-left: 1em">Regiments: ${regiments.length}</div>
-      ${options.military.map(u => `<div style="width:5em">${si(d3.sum(regiments.map(r => r.u[u.name] || 0)))}</div>`).join(" ")}
+      ${options.military
+        .map(u => `<div style="width:5em">${si(d3.sum(regiments.map(r => r.u[u.name] || 0)))}</div>`)
+        .join(" ")}
       <div style="width:5em">${si(d3.sum(regiments.map(r => r.a)))}</div>
     </div>`;
 
@@ -92,7 +98,9 @@ function overviewRegiments(state) {
 
     // add listeners
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => regimentHighlightOn(ev)));
-    body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => regimentHighlightOff(ev)));
+    body
+      .querySelectorAll("div.states")
+      .forEach(el => el.addEventListener("mouseleave", ev => regimentHighlightOff(ev)));
   }
 
   function updateFilter(state) {
@@ -158,10 +166,7 @@ function overviewRegiments(state) {
 
   function addRegimentOnClick() {
     const state = +regimentsFilter.value;
-    if (state === -1) {
-      tip("Please select state from the list", false, "error");
-      return;
-    }
+    if (state === -1) return tip("Please select state from the list", false, "error");
 
     const point = d3.mouse(this);
     const cell = findCell(point[0], point[1]);
@@ -180,15 +185,32 @@ function overviewRegiments(state) {
 
   function downloadRegimentsData() {
     const units = options.military.map(u => u.name);
-    let data = "State,Id,Name," + units.map(u => capitalize(u)).join(",") + ",Total\n"; // headers
+    let data =
+      "State,Id,Icon,Name," +
+      units.map(u => capitalize(u)).join(",") +
+      ",X,Y,Latitude,Longitude,Base X,Base Y,Base Latitude,Base Longitude\n"; // headers
 
-    body.querySelectorAll(":scope > div:not(.totalLine)").forEach(function (el) {
-      data += el.dataset.state + ",";
-      data += el.dataset.id + ",";
-      data += el.dataset.name + ",";
-      data += units.map(u => el.dataset[u]).join(",") + ",";
-      data += el.dataset.total + "\n";
-    });
+    for (const s of pack.states) {
+      if (!s.i || s.removed || !s.military.length) continue;
+
+      for (const r of s.military) {
+        data += s.name + ",";
+        data += r.i + ",";
+        data += r.icon + ",";
+        data += r.name + ",";
+        data += units.map(unit => r.u[unit]).join(",") + ",";
+
+        data += r.x + ",";
+        data += r.y + ",";
+        data += getLatitude(r.y, 2) + ",";
+        data += getLongitude(r.x, 2) + ",";
+
+        data += r.bx + ",";
+        data += r.by + ",";
+        data += getLatitude(r.by, 2) + ",";
+        data += getLongitude(r.bx, 2) + "\n";
+      }
+    }
 
     const name = getFileName("Regiments") + ".csv";
     downloadFile(data, name);
