@@ -239,12 +239,9 @@ function editEmblem(type, id, el) {
     input.value = "";
 
     if (file.size > 500000) {
-      tip(
-        `File is too big, please optimize file size up to 500kB and re-upload. Recommended size is 200x200 px and up to 100kB`,
-        true,
-        "error",
-        5000
-      );
+      const message =
+        "File is too big, please optimize file size up to 500kB and re-upload. Recommended size is 200x200 px and up to 100kB";
+      tip(message, true, "error", 5000);
       return;
     }
 
@@ -253,40 +250,37 @@ function editEmblem(type, id, el) {
     reader.onload = function (readerEvent) {
       const result = readerEvent.target.result;
       const defs = document.getElementById("defs-emblems");
-      const coa = document.getElementById(id); // old emblem
+      const oldEmblem = document.getElementById(id);
 
-      if (type === "image") {
-        const svg = `<svg id="${id}" xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><image x="0" y="0" width="200" height="200" href="${result}"/></svg>`;
-        defs.insertAdjacentHTML("beforeend", svg);
-      } else {
+      let href = result; // raster images
+      if (type === "svg") {
         const el = document.createElement("html");
         el.innerHTML = result;
 
-        // remove sodipodi and inkscape attributes
         el.querySelectorAll("*").forEach(el => {
-          const attributes = el.getAttributeNames();
-          attributes.forEach(attr => {
+          if (el.id === "adobe_illustrator_pgf") el.remove(); // remove Adobe Illustrator inner data
+
+          el.getAttributeNames().forEach(attr => {
+            // remove sodipodi and inkscape attributes
             if (attr.includes("inkscape") || attr.includes("sodipodi")) el.removeAttribute(attr);
           });
         });
 
         const svg = el.querySelector("svg");
         if (!svg) {
-          tip(
-            "The file should be prepated for load to FMG. Please use Armoria or other relevant tools",
-            false,
-            "error"
-          );
+          const message = "The file is not a valid SVG. Please use Armoria or other relevant tools";
+          tip(message, false, "error");
           return;
         }
 
-        const newEmblem = defs.appendChild(svg);
-        newEmblem.id = id;
-        newEmblem.setAttribute("width", 200);
-        newEmblem.setAttribute("height", 200);
+        const serialized = new XMLSerializer().serializeToString(svg);
+        href = "data:image/svg+xml;base64," + window.btoa(serialized);
       }
 
-      if (coa) coa.remove(); // remove old emblem
+      const svg = `<svg id="${id}" viewBox="0 0 200 200"><image width="200" height="200" href="${href}"/></svg>`;
+      defs.insertAdjacentHTML("beforeend", svg);
+
+      if (oldEmblem) oldEmblem.remove();
       el.coa = "custom";
       emblemShapeSelector.disabled = true;
     };

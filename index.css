@@ -1731,7 +1731,7 @@ div.states > div.biomeArea {
 #emblemUploadControl,
 #emblemDownloadControl {
   margin-top: 0.3em;
-  text-align: center;
+  width: 100%;
 }
 
 div.editorLine {
