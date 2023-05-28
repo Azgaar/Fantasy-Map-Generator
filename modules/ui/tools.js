@@ -920,6 +920,6 @@ function viewCellDetails() {
 }
 
 async function overviewCharts() {
-  const Overview = await import("../dynamic/overview/charts-overview.js?v=1.87.03");
+  const Overview = await import("../dynamic/overview/charts-overview.js?v=1.89.24");
   Overview.open();
 }
