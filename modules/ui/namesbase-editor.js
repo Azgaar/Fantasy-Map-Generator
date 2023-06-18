@@ -23,23 +23,11 @@ function editNamesbase() {
 
   const uploader = document.getElementById("namesbaseToLoad");
   document.getElementById("namesbaseUpload").addEventListener("click", () => {
-    uploader.addEventListener(
-      "change",
-      function (event) {
-        uploadFile(event.target, d => namesbaseUpload(d, true));
-      },
-      {once: true}
-    );
+    uploader.addEventListener("change", e => uploadFile(e.target, d => namesbaseUpload(d, true)), {once: true});
     uploader.click();
   });
   document.getElementById("namesbaseUploadExtend").addEventListener("click", () => {
-    uploader.addEventListener(
-      "change",
-      function (event) {
-        uploadFile(event.target, d => namesbaseUpload(d, false));
-      },
-      {once: true}
-    );
+    uploader.addEventListener("change", e => uploadFile(e.target, d => namesbaseUpload(d, false)), {once: true});
     uploader.click();
   });
 
@@ -92,11 +80,13 @@ function editNamesbase() {
 
   function updateNamesData() {
     const base = +document.getElementById("namesbaseSelect").value;
-    const rawInput = document.getElementById("namesbaseTextarea").value;
-    if (rawInput.split(",").length < 3) return tip("The names data provided is too short of incorrect", false, "error");
+    const input = document.getElementById("namesbaseTextarea");
+    if (input.value.split(",").length < 3)
+      return tip("The names data provided is too short of incorrect", false, "error");
 
-    const namesData = rawInput.replace(/[/|]/g, "");
-    nameBases[base].b = namesData;
+    const securedNamesData = input.value.replace(/[/|]/g, "");
+    nameBases[base].b = securedNamesData;
+    input.value = securedNamesData;
     Names.updateChain(base);
   }
 
@@ -113,19 +103,13 @@ function editNamesbase() {
 
   function updateBaseMin() {
     const base = +document.getElementById("namesbaseSelect").value;
-    if (+this.value > nameBases[base].max) {
-      tip("Minimal length cannot be greater than maximal", false, "error");
-      return;
-    }
+    if (+this.value > nameBases[base].max) return tip("Minimal length cannot be greater than maximal", false, "error");
     nameBases[base].min = +this.value;
   }
 
   function updateBaseMax() {
     const base = +document.getElementById("namesbaseSelect").value;
-    if (+this.value < nameBases[base].min) {
-      tip("Maximal length should be greater than minimal", false, "error");
-      return;
-    }
+    if (+this.value < nameBases[base].min) return tip("Maximal length should be greater than minimal", false, "error");
     nameBases[base].max = +this.value;
   }
 
@@ -256,16 +240,14 @@ function editNamesbase() {
 
   function namesbaseUpload(dataLoaded, override = true) {
     const data = dataLoaded.split("\r\n");
-    if (!data || !data[0]) {
-      tip("Cannot load a namesbase. Please check the data format", false, "error");
-      return;
-    }
+    if (!data || !data[0]) return tip("Cannot load a namesbase. Please check the data format", false, "error");
 
     Names.clearChains();
     if (override) nameBases = [];
     data.forEach(d => {
-      const e = d.split("|");
-      nameBases.push({name: e[0], min: e[1], max: e[2], d: e[3], m: e[4], b: e[5]});
+      const [name, min, max, d, m, names] = d.split("|");
+      const secureNames = names.replace(/[/|]/g, "");
+      nameBases.push({name, min, max, d, m, b: secureNames});
     });
 
     createBasesList();
