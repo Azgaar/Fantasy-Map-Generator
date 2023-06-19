@@ -244,8 +244,9 @@ function editNamesbase() {
 
     Names.clearChains();
     if (override) nameBases = [];
-    data.forEach(d => {
-      const [name, min, max, d, m, names] = d.split("|");
+
+    data.forEach(base => {
+      const [name, min, max, d, m, names] = base.split("|");
       const secureNames = names.replace(/[/|]/g, "");
       nameBases.push({name, min, max, d, m, b: secureNames});
     });
