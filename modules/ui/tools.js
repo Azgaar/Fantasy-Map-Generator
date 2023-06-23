@@ -137,7 +137,10 @@ function recalculatePopulation() {
 }
 
 function regenerateStates() {
-  recreateStates();
+  const newStates = recreateStates();
+  if (!newStates) return;
+
+  pack.states = newStates;
   BurgsAndStates.expandStates();
   BurgsAndStates.normalizeStates();
   BurgsAndStates.collectStatistics();
@@ -165,20 +168,31 @@ function recreateStates() {
   Math.random = aleaPRNG(localSeed);
 
   const statesCount = +regionsOutput.value;
+  if (!statesCount) {
+    tip(`<i>States Number</i> option value is zero. No counties are generated`, false, "error");
+    return null;
+  }
+
   const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
+  if (!validBurgs.length) {
+    tip("There are no any burgs to generate states. Please create burgs first", false, "error");
+    return null;
+  }
 
-  if (!validBurgs.length)
-    return tip("There are no any burgs to generate states. Please create burgs first", false, "error");
-  if (validBurgs.length < statesCount)
-    tip(
-      `Not enough burgs to generate ${statesCount} states. Will generate only ${validBurgs.length} states`,
-      false,
-      "warn"
-    );
+  if (validBurgs.length < statesCount) {
+    const message = `Not enough burgs to generate ${statesCount} states. Will generate only ${validBurgs.length} states`;
+    tip(message, false, "warn");
+  }
 
-  const lockedStates = pack.states.filter(s => s.i && !s.removed && s.lock);
+  const validStates = pack.states.filter(s => s.i && !s.removed);
+  const lockedStates = validStates.filter(s => s.lock);
   const lockedStatesIds = lockedStates.map(s => s.i);
   const lockedStatesCapitals = lockedStates.map(s => s.capital);
+
+  if (lockedStates.length === validStates.length) {
+    tip("Unable to regenerate as all states are locked", false, "error");
+    return null;
+  }
 
   // turn all old capitals into towns, except for the capitals of locked states
   for (const burg of validBurgs) {
@@ -229,7 +243,7 @@ function recreateStates() {
   // restore locked states
   lockedStates.forEach(state => {
     const newId = newStates.length;
-    const {x, y} = validBurgs[state.capital];
+    const {x, y} = pack.burgs[state.capital];
     capitalsTree.add([x, y]);
 
     // update label id reference
@@ -300,9 +314,7 @@ function recreateStates() {
     newStates.push({i, name, type, capital: capital.i, center: capital.cell, culture, expansionism, coa});
   }
 
-  if (!statesCount) tip(`<i>States Number</i> option is set to zero. No counties are generated`, false, "warn");
-
-  pack.states = newStates;
+  return newStates;
 }
 
 function regenerateProvinces() {
