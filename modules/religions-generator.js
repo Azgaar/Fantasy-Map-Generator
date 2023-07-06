@@ -104,13 +104,11 @@ window.Religions = (function () {
       "Goat",
       "Goose",
       "Gorgon",
-      "Griffin", // Griffin, Griffon, and Gryphon are all the same, just are different spellings
-      "Griffon",
       "Gryphon",
       "Hare",
       "Hawk",
       "Heron",
-      "Hippocriff",
+      "Hippogriff",
       "Horse",
       "Hound",
       "Hyena",
@@ -360,34 +358,34 @@ window.Religions = (function () {
     ]
   };
 
-    const forms = {
-      Folk: {
-        Shamanism: 3,
-        Animism: 3,
-        "Ancestor Worship": 1,
-        Polytheism: 3,
-        "Nature Worship": 1,
-        Totemism: 2,
-        Druidism: 2
-      },
-      Organized: {
-        Polytheism: 6,
-        Dualism: 3,
-        Monotheism: 6,
-        "Non-theism": 2,
-        Pantheism: 3,
-        Henotheism: 2,
-        Panentheism: 1
-      },
-      Cult: {
-        Cult: 2,
-        "Dark Cult": 2,
-        Sect: 1,
-      },
-      Heresy: {
-        Heresy: 1,
-      }
-    };
+  const forms = {
+    Folk: {
+      Shamanism: 4,
+      Animism: 4,
+      Polytheism: 4,
+      Totemism: 2,
+      Druidism: 1,
+      "Ancestor Worship": 1,
+      "Nature Worship": 1
+    },
+    Organized: {
+      Polytheism: 14,
+      Monotheism: 12,
+      Dualism: 6,
+      Pantheism: 6,
+      "Non-theism": 4,
+      Henotheism: 1,
+      Panentheism: 1
+    },
+    Cult: {
+      Cult: 2,
+      "Dark Cult": 2,
+      Sect: 1
+    },
+    Heresy: {
+      Heresy: 1
+    }
+  };
 
   const namingMethods = {
     Folk: {
