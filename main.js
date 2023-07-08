@@ -281,20 +281,19 @@ async function checkLoadParameters() {
   }
 
   // check if there is a map saved to indexedDB
-  const blob = await ldb.get("lastMap");
-  if (blob) {
-    try {
+  try {
+    const blob = await ldb.get("lastMap");
+    if (blob) {
       WARN && console.warn("Loading last stored map");
       uploadMap(blob);
-    } catch (error) {
-      ERROR && console.error(error);
-      WARN && console.warn("Cannot load stored map, random map to be generated");
-      generateMapOnLoad();
+      return;
     }
-  } else {
-    WARN && console.warn("Generate random map");
-    generateMapOnLoad();
+  } catch (error) {
+    console.error(error);
   }
+
+  WARN && console.warn("Generate random map");
+  generateMapOnLoad();
 }
 
 async function generateMapOnLoad() {

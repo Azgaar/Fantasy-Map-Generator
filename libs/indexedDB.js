@@ -1,50 +1,72 @@
-function getValue(key) {
-  return new Promise(function (resolve) {
+let db;
+
+const DATABASE_NAME = "d2";
+const STORE_NAME = "s";
+const KEY_PATH = "key";
+
+const openDatabase = () => {
+  return new Promise((resolve, reject) => {
     if (db) {
-      var transaction = db.transaction("store", "readonly");
-      var objectStore = transaction.objectStore("store");
-      var getRequest = objectStore.get(key);
-      getRequest.onsuccess = function (event) {
-        var result = event.target.result ? event.target.result.value : null;
-        resolve(result);
-      };
+      resolve();
     } else {
-      setTimeout(function () {
-        getValue(key).then(resolve);
-      }, 100);
+      const request = window.indexedDB.open(DATABASE_NAME, 1);
+
+      request.onsuccess = event => {
+        db = event.target.result;
+        resolve();
+      };
+
+      request.onerror = event => {
+        console.error("indexedDB request error");
+        console.log(event);
+        reject();
+      };
+
+      request.onupgradeneeded = event => {
+        db = event.target.result;
+        const objectStore = db.createObjectStore(STORE_NAME, {keyPath: KEY_PATH});
+        objectStore.transaction.oncomplete = () => {
+          db = event.target.result;
+        };
+      };
     }
   });
-}
-
-var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
-if (!indexedDB) console.error("indexedDB not supported");
-
-var db;
-var request = indexedDB.open("myDatabase", 1);
-
-request.onsuccess = function (event) {
-  db = event.target.result;
 };
 
-request.onerror = function (event) {
-  console.error("indexedDB request error");
-  console.log(event);
-};
+const ldb = {
+  get: key => {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) return reject("indexedDB not supported");
 
-request.onupgradeneeded = function (event) {
-  db = null;
-  var dbRequest = event.target.result;
-  var objectStore = dbRequest.createObjectStore("store", {keyPath: "key"});
-  objectStore.transaction.oncomplete = function () {
-    db = dbRequest;
-  };
-};
+      openDatabase().then(() => {
+        const hasStore = Array.from(db.objectStoreNames).includes(STORE_NAME);
+        if (!hasStore) return reject("no store found");
 
-window.ldb = {
-  get: getValue,
-  set: function (key, value) {
-    var transaction = db.transaction("store", "readwrite");
-    var objectStore = transaction.objectStore("store");
-    objectStore.put({key: key, value: value});
+        const transaction = db.transaction(STORE_NAME, "readonly");
+        const objectStore = transaction.objectStore(STORE_NAME);
+        const getRequest = objectStore.get(key);
+
+        getRequest.onsuccess = event => {
+          const result = event.target.result?.value || null;
+          resolve(result);
+        };
+      });
+    });
+  },
+
+  set: (key, value) => {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) return reject("indexedDB not supported");
+
+      openDatabase().then(() => {
+        const transaction = db.transaction(STORE_NAME, "readwrite");
+        const objectStore = transaction.objectStore(STORE_NAME);
+        const putRequest = objectStore.put({key, value});
+
+        putRequest.onsuccess = () => {
+          resolve();
+        };
+      });
+    });
   }
 };
