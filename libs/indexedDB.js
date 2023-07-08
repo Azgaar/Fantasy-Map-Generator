@@ -1,82 +1,50 @@
-function waitForIndexedDB() {
-  return new Promise(resolve => {
-    const timer = setInterval(() => {
-      if (window.indexedDB) {
-        clearInterval(timer);
-        resolve();
-      }
-    }, 100);
-  });
-}
-
 function getValue(key) {
-  return new Promise((resolve, reject) => {
-    if (!window.indexedDB) {
-      reject(new Error("indexedDB not supported"));
-      return;
+  return new Promise(function (resolve) {
+    if (db) {
+      var transaction = db.transaction("store", "readonly");
+      var objectStore = transaction.objectStore("store");
+      var getRequest = objectStore.get(key);
+      getRequest.onsuccess = function (event) {
+        var result = event.target.result ? event.target.result.value : null;
+        resolve(result);
+      };
+    } else {
+      setTimeout(function () {
+        getValue(key).then(resolve);
+      }, 100);
     }
-
-    waitForIndexedDB().then(() => {
-      const request = window.indexedDB.open("d2", 1);
-
-      request.onsuccess = event => {
-        const db = event.target.result;
-        const transaction = db.transaction("s", "readonly");
-        const objectStore = transaction.objectStore("s");
-        const getRequest = objectStore.get(key);
-
-        getRequest.onsuccess = event => {
-          const value = (event.target.result && event.target.result.v) || null;
-          resolve(value);
-        };
-
-        getRequest.onerror = event => {
-          reject(new Error("indexedDB request error"));
-          console.error(event);
-        };
-      };
-
-      request.onerror = event => {
-        reject(new Error("indexedDB request error"));
-        console.error(event);
-      };
-    });
   });
 }
 
-function setValue(key, value) {
-  return new Promise((resolve, reject) => {
-    if (!window.indexedDB) {
-      reject(new Error("indexedDB not supported"));
-      return;
-    }
+var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+if (!indexedDB) console.error("indexedDB not supported");
 
-    waitForIndexedDB().then(() => {
-      const request = window.indexedDB.open("d2", 1);
+var db;
+var request = indexedDB.open("myDatabase", 1);
 
-      request.onsuccess = event => {
-        const db = event.target.result;
-        const transaction = db.transaction("s", "readwrite");
-        const objectStore = transaction.objectStore("s");
+request.onsuccess = function (event) {
+  db = event.target.result;
+};
 
-        objectStore.put({k: key, v: value});
+request.onerror = function (event) {
+  console.error("indexedDB request error");
+  console.log(event);
+};
 
-        transaction.oncomplete = () => {
-          resolve();
-        };
+request.onupgradeneeded = function (event) {
+  db = null;
+  var dbRequest = event.target.result;
+  var objectStore = dbRequest.createObjectStore("store", {keyPath: "key"});
+  objectStore.transaction.oncomplete = function () {
+    db = dbRequest;
+  };
+};
 
-        transaction.onerror = event => {
-          reject(new Error("indexedDB request error"));
-          console.error(event);
-        };
-      };
-
-      request.onerror = event => {
-        reject(new Error("indexedDB request error"));
-        console.error(event);
-      };
-    });
-  });
-}
-
-window.ldb = {get: getValue, set: setValue};
+window.ldb = {
+  get: getValue,
+  set: function (key, value) {
+    var transaction = db.transaction("store", "readwrite");
+    var objectStore = transaction.objectStore("store");
+    objectStore.put({key: key, value: value});
+  }
+};
