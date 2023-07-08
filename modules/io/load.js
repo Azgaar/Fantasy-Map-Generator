@@ -2,7 +2,7 @@
 // Functions to load and parse .map files
 
 async function quickLoad() {
-  const blob = ldb.get("lastMap");
+  const blob = await ldb.get("lastMap");
   if (blob) loadMapPrompt(blob);
   else {
     tip("No map stored. Save map to browser storage first", true, "error", 2000);

@@ -32,13 +32,13 @@ function getValue(key) {
 
         getRequest.onerror = event => {
           reject(new Error("indexedDB request error"));
-          console.log(event);
+          console.error(event);
         };
       };
 
       request.onerror = event => {
         reject(new Error("indexedDB request error"));
-        console.log(event);
+        console.error(event);
       };
     });
   });
@@ -67,13 +67,13 @@ function setValue(key, value) {
 
         transaction.onerror = event => {
           reject(new Error("indexedDB request error"));
-          console.log(event);
+          console.error(event);
         };
       };
 
       request.onerror = event => {
         reject(new Error("indexedDB request error"));
-        console.log(event);
+        console.error(event);
       };
     });
   });
