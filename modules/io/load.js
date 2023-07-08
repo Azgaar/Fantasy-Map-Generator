@@ -1,15 +1,13 @@
 "use strict";
 // Functions to load and parse .map files
 
-function quickLoad() {
-  ldb.get("lastMap", blob => {
-    if (blob) {
-      loadMapPrompt(blob);
-    } else {
-      tip("No map stored. Save map to storage first", true, "error", 2000);
-      ERROR && console.error("No map stored");
-    }
-  });
+async function quickLoad() {
+  const blob = ldb.get("lastMap");
+  if (blob) loadMapPrompt(blob);
+  else {
+    tip("No map stored. Save map to browser storage first", true, "error", 2000);
+    ERROR && console.error("No map stored");
+  }
 }
 
 async function loadFromDropbox() {

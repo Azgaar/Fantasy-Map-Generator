@@ -3,8 +3,6 @@
 
 // prepare map data for saving
 function getMapData() {
-  TIME && console.time("createMapData");
-
   const date = new Date();
   const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
@@ -116,13 +114,13 @@ function getMapData() {
     fonts,
     markers
   ].join("\r\n");
-  TIME && console.timeEnd("createMapData");
   return mapData;
 }
 
 // Download .map file
 function dowloadMap() {
-  if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
+  if (customization)
+    return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
 
   const mapData = getMapData();
@@ -137,7 +135,8 @@ function dowloadMap() {
 }
 
 async function saveToDropbox() {
-  if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
+  if (customization)
+    return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
   const mapData = getMapData();
   const filename = getFileName() + ".map";
@@ -150,12 +149,36 @@ async function saveToDropbox() {
   }
 }
 
-function quickSave() {
-  if (customization) return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
+async function initiateAutosave() {
+  const MINUTE = 60000; // munite in milliseconds
+  let lastSavedAt = Date.now();
+
+  async function autosave() {
+    const timeoutMinutes = byId("autosaveIntervalOutput").valueAsNumber;
+    if (!timeoutMinutes) return;
+
+    const diffInMinutes = (Date.now() - lastSavedAt) / MINUTE;
+    if (diffInMinutes < timeoutMinutes) return;
+    if (customization) return tip("Autosave: map cannot be saved in edit mode", false, "warning", 2000);
+
+    tip("Autosave: saving map...", false, "warning", 3000);
+    const mapData = getMapData();
+    const blob = new Blob([mapData], {type: "text/plain"});
+    await ldb.set("lastMap", blob);
+    console.log("Autosaved at", new Date().toLocaleTimeString());
+    lastSavedAt = Date.now();
+  }
+
+  setInterval(autosave, MINUTE / 2);
+}
+
+async function quickSave() {
+  if (customization)
+    return tip("Map cannot be saved when edit mode is active, please exit the mode first", false, "error");
 
   const mapData = getMapData();
   const blob = new Blob([mapData], {type: "text/plain"});
-  if (blob) ldb.set("lastMap", blob); // auto-save map
+  await ldb.set("lastMap", blob); // auto-save map
   tip("Map is saved to browser memory. Please also save as .map file to secure progress", true, "success", 2000);
 }
 

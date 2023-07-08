@@ -221,8 +221,7 @@ oceanLayers
 document.addEventListener("DOMContentLoaded", async () => {
   if (!location.hostname) {
     const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
-    alertMessage.innerHTML = /* html */ `Fantasy Map Generator cannot run serverless. Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can
-      easily run a local web-server`;
+    alertMessage.innerHTML = /* html */ `Fantasy Map Generator cannot run serverless. Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`;
 
     $("#alert").dialog({
       resizable: false,
@@ -240,6 +239,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await checkLoadParameters();
   }
   restoreDefaultEvents(); // apply default viewbox events
+  initiateAutosave();
 });
 
 function hideLoading() {
@@ -280,35 +280,20 @@ async function checkLoadParameters() {
     return;
   }
 
-  // open latest map if option is active and map is stored
-  const loadLastMap = () =>
-    new Promise((resolve, reject) => {
-      ldb.get("lastMap", blob => {
-        if (blob) {
-          WARN && console.warn("Load last saved map");
-          try {
-            uploadMap(blob);
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
-        } else {
-          reject("No map stored");
-        }
-      });
-    });
-
-  if (onloadMap.value === "saved") {
+  // check if there is a map saved to indexedDB
+  const blob = await ldb.get("lastMap");
+  if (blob) {
     try {
-      await loadLastMap();
+      WARN && console.warn("Loading last stored map");
+      uploadMap(blob);
     } catch (error) {
       ERROR && console.error(error);
       WARN && console.warn("Cannot load stored map, random map to be generated");
-      await generateMapOnLoad();
+      generateMapOnLoad();
     }
   } else {
     WARN && console.warn("Generate random map");
-    await generateMapOnLoad();
+    generateMapOnLoad();
   }
 }
 

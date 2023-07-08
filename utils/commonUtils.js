@@ -134,7 +134,11 @@ function isCtrlClick(event) {
 }
 
 function generateDate(from = 100, to = 1000) {
-  return new Date(rand(from, to), rand(12), rand(31)).toLocaleDateString("en", {year: "numeric", month: "long", day: "numeric"});
+  return new Date(rand(from, to), rand(12), rand(31)).toLocaleDateString("en", {
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
 }
 
 function getLongitude(x, decimals = 2) {
@@ -158,7 +162,8 @@ void (function () {
   const defaultOptions = {default: 1, step: 0.01, min: 0, max: 100, required: true};
 
   window.prompt = function (promptText = defaultText, options = defaultOptions, callback) {
-    if (options.default === undefined) return ERROR && console.error("Prompt: options object does not have default value defined");
+    if (options.default === undefined)
+      return ERROR && console.error("Prompt: options object does not have default value defined");
 
     const input = prompt.querySelector("#promptInput");
     prompt.querySelector("#promptText").innerHTML = promptText;
@@ -191,42 +196,4 @@ void (function () {
   cancel.addEventListener("click", () => {
     prompt.style.display = "none";
   });
-})();
-
-// indexedDB; ldb object
-void (function () {
-  function e(t, o) {
-    return n
-      ? void (n.transaction("s").objectStore("s").get(t).onsuccess = function (e) {
-          var t = (e.target.result && e.target.result.v) || null;
-          o(t);
-        })
-      : void setTimeout(function () {
-          e(t, o);
-        }, 100);
-  }
-  var t = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
-  if (!t) return void ERROR && console.error("indexedDB not supported");
-  var n,
-    o = {k: "", v: ""},
-    r = t.open("d2", 1);
-  (r.onsuccess = function (e) {
-    n = this.result;
-  }),
-    (r.onerror = function (e) {
-      ERROR && console.error("indexedDB request error"), INFO && console.log(e);
-    }),
-    (r.onupgradeneeded = function (e) {
-      n = null;
-      var t = e.target.result.createObjectStore("s", {keyPath: "k"});
-      t.transaction.oncomplete = function (e) {
-        n = e.target.db;
-      };
-    }),
-    (window.ldb = {
-      get: e,
-      set: function (e, t) {
-        (o.k = e), (o.v = t), n.transaction("s", "readwrite").objectStore("s").put(o);
-      }
-    });
 })();
