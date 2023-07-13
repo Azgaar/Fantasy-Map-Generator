@@ -11,7 +11,7 @@ async function saveSVG() {
   link.click();
 
   tip(
-    `${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`,
+    `${link.download} is saved. Open "Downloads" screen (ctrl + J) to check. You can set image scale in options`,
     true,
     "success",
     5000
@@ -157,7 +157,8 @@ async function getMapURL(type, options = {}) {
     noWater = false,
     noScaleBar = false,
     noIce = false,
-    fullMap = false
+    fullMap = false,
+    for3D = false
   } = options;
 
   if (fullMap) drawScaleBar(1);
