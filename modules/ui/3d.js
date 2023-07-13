@@ -5,14 +5,17 @@ window.ThreeD = (function () {
     scale: 50,
     lightness: 0.7,
     shadow: 0.5,
-    sun: {x: 100, y: 600, z: 1000},
+    sun: {x: 300, y: 1500, z: 800},
     rotateMesh: 0,
     rotateGlobe: 0.5,
     skyColor: "#9ecef5",
     waterColor: "#466eab",
     extendedWater: 0,
     labels3d: 0,
-    resolution: 2
+    wireframe: 0,
+    resolution: 2,
+    resolutionScale: 3,
+    sunColor: "#ffffff"
   };
 
   // set variables
@@ -100,6 +103,18 @@ window.ThreeD = (function () {
     redraw();
   };
 
+  const setSunColor = function(color){
+    options.sunColor = color;
+    spotLight.color = new THREE.Color(color);
+    render();
+  }
+
+  const setResolutionScale = function (scale) {
+    options.resolutionScale = scale;
+    console.log("New res:",scale);
+    redraw();
+  };
+
   const setLightness = function (intensity) {
     options.lightness = intensity;
     ambientLight.intensity = intensity;
@@ -148,6 +163,11 @@ window.ThreeD = (function () {
     }
   };
 
+  const toggleWireframe = function () {
+    options.wireframe = !options.wireframe;
+    redraw();
+  };
+
   const setColors = function (sky, water) {
     options.skyColor = sky;
     scene.background = scene.fog.color = new THREE.Color(sky);
@@ -189,16 +209,20 @@ window.ThreeD = (function () {
     // light
     ambientLight = new THREE.AmbientLight(0xcccccc, options.lightness);
     scene.add(ambientLight);
-    spotLight = new THREE.SpotLight(0xcccccc, 0.8, 2000, 0.8, 0, 0);
+    spotLight = new THREE.SpotLight(options.sunColor, 0.8, 2000, 0.8, 0, 0);
     spotLight.position.set(options.sun.x, options.sun.y, options.sun.z);
     spotLight.castShadow = true;
+    //maybe add a option for this. But changing the option will require to reinstance the spotLight.
+    spotLight.shadow.mapSize.width = 2048;
+    spotLight.shadow.mapSize.height = 2048;
     scene.add(spotLight);
     //scene.add(new THREE.SpotLightHelper(spotLight));
 
-    // Rendered
+    // Renderer
     Renderer = new THREE.WebGLRenderer({canvas, antialias: true, preserveDrawingBuffer: true});
     Renderer.setSize(canvas.width, canvas.height);
     Renderer.shadowMap.enabled = true;
+    Renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     if (options.extendedWater) extendWater(graphWidth, graphHeight);
     createMesh(graphWidth, graphHeight, grid.cellsX, grid.cellsY);
 
@@ -223,7 +247,7 @@ window.ThreeD = (function () {
 
   function textureToSprite(texture, width, height) {
     const map = new THREE.TextureLoader().load(texture);
-    map.anisotropy = Renderer.getMaxAnisotropy();
+    map.anisotropy = Renderer.capabilities.getMaxAnisotropy();
     const material = new THREE.SpriteMaterial({map});
 
     const sprite = new THREE.Sprite(material);
@@ -295,8 +319,13 @@ window.ThreeD = (function () {
       line: 5 - towns.attr("data-size") / 2
     };
 
+    //Look for a custom model for city and town geometry. If not found use these.
+    //Maybe serialize the models to the .map file.
+    
     const city_icon_material = new THREE.MeshPhongMaterial({color: cityOptions.iconColor});
+    city_icon_material.wireframe = options.wireframe;
     const town_icon_material = new THREE.MeshPhongMaterial({color: townOptions.iconColor});
+    town_icon_material.wireframe = options.wireframe;
     const city_icon_geometry = new THREE.CylinderGeometry(cityOptions.iconSize * 2, cityOptions.iconSize * 2, cityOptions.iconSize, 16, 1);
     const town_icon_geometry = new THREE.CylinderGeometry(townOptions.iconSize * 2, townOptions.iconSize * 2, townOptions.iconSize, 16, 1);
     const line_material = new THREE.LineBasicMaterial({color: cityOptions.iconColor});
@@ -387,24 +416,76 @@ window.ThreeD = (function () {
     lines = [];
   }
 
+  async function createMeshTextureUrl(){
+    return new Promise(async (resolve, reject)=>{
+      const mapOptions = {
+        noLabels: options.labels3d,
+        noWater: options.extendedWater,
+        fullMap: true,
+        for3D: true
+      };
+      let sizeOfSkin = 512;
+      switch(options.resolutionScale){
+        case 1:
+          sizeOfSkin = 512;
+          break;
+        case 2:
+          sizeOfSkin = 1024;
+          break;
+        case 3:
+          sizeOfSkin = 2048;
+          break;
+        case 4:
+          sizeOfSkin = 4096;
+          break;
+        case 5:
+          sizeOfSkin = 8192;
+          break;
+      }
+      const url = await getMapURL("mesh",mapOptions);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = sizeOfSkin;
+      canvas.height = sizeOfSkin;
+      const img = new Image();
+      img.src = url;
+
+      img.onload = function(){
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        canvas.toBlob((blob)=>{
+          const blobObj = window.URL.createObjectURL(blob)
+          window.setTimeout(()=>{
+            canvas.remove();
+            window.URL.revokeObjectURL(blobObj);
+          }, 100);
+          resolve(blobObj);
+        })
+      }
+    })
+  }
   // create a mesh from pixel data
   async function createMesh(width, height, segmentsX, segmentsY) {
-    const mapOptions = {
-      noLabels: options.labels3d,
-      noWater: options.extendedWater,
-      fullMap: true
-    };
-    const url = await getMapURL("mesh", mapOptions);
-    window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
 
     if (texture) texture.dispose();
-    texture = new THREE.TextureLoader().load(url, render);
+    if(!options.wireframe){
+      //Try loading skin texture.
+    texture = new THREE.TextureLoader().load(await createMeshTextureUrl(), render);
     texture.needsUpdate = true;
+    }
+    
+
 
     if (material) material.dispose();
-    material = new THREE.MeshLambertMaterial();
-    material.map = texture;
-    material.transparent = true;
+    if(options.wireframe){
+      material = new THREE.MeshLambertMaterial();
+      material.wireframe = true;
+    }else{
+      material = new THREE.MeshStandardMaterial();
+      material.map = texture;
+      material.roughness = 0.9;
+      material.transparent = true;
+    }
+    
 
     if (geometry) geometry.dispose();
     geometry = new THREE.PlaneGeometry(width, height, segmentsX - 1, segmentsY - 1);
@@ -449,7 +530,7 @@ window.ThreeD = (function () {
       noWater: options.extendedWater,
       fullMap: true
     };
-    const url = await getMapURL("mesh", mapOptions);
+    const url = await createMeshTextureUrl();
     window.setTimeout(() => window.URL.revokeObjectURL(url), 4000);
     texture = new THREE.TextureLoader().load(url, render);
     material.map = texture;
@@ -609,11 +690,14 @@ window.ThreeD = (function () {
     update,
     stop,
     options,
+    setSunColor,
     setScale,
+    setResolutionScale,
     setLightness,
     setSun,
     setRotation,
     toggleLabels,
+    toggleWireframe,
     toggleSky,
     setResolution,
     setColors,
