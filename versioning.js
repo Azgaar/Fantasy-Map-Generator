@@ -1,12 +1,12 @@
 "use strict";
 
 // version and caching control
-const version = "1.89.32"; // generator version, update each time
+const version = "1.89.33"; // generator version, update each time
 
 {
   document.title += " v" + version;
-  const loadingScreenVersion = document.getElementById("version");
-  if (loadingScreenVersion) loadingScreenVersion.innerHTML = version;
+  const loadingScreenVersion = document.getElementById("versionText");
+  if (loadingScreenVersion) loadingScreenVersion.innerText = `v${version}`;
 
   const versionNumber = parseFloat(version);
   const storedVersion = localStorage.getItem("version") ? parseFloat(localStorage.getItem("version")) : 0;
