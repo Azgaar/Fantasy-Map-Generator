@@ -421,13 +421,13 @@ body .ui-dialog {
 /* Component containers
 ----------------------------------*/
 .ui-widget {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--sans-serif);
 }
 .ui-widget input,
 .ui-widget select,
 .ui-widget textarea,
 .ui-widget button {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--sans-serif);
   font-size: 1em;
 }
 .ui-widget button[class^="icon-"] {

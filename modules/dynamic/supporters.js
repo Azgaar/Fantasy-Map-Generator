@@ -478,4 +478,44 @@ Rei
 Fondue 
 Paavi1
 Wil Sisney
-David Patterson`;
+David Patterson
+L
+Justin Scheffers
+Commieboo
+Garrison Wood
+Emsiron
+Frosty
+John Joseph Adams
+The_Lone_Wanderer
+Andrew Stein
+Groonfish
+soup
+Bruno Haack Vilar
+Ian Burke
+Tentacle Shogun
+Andrew Chandler
+Fritz Wulfram
+Doom Chupacabra
+Zakharov
+Dylan Fox
+Alfred Piccioni
+Avery Vreeland
+Kennedy
+Zack Wolf
+Matjam
+Jeff Johnston
+Hunter Hawthorne
+Sunsette 
+Travis Love
+Dakian Delomast
+Kyle
+Davis Walker
+Naomi
+Clément D
+Jake Herr
+ReV0LT
+Jack Dawson
+Queso y Libertad
+RadioJay21H
+NEO
+Crecs`;

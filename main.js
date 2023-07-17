@@ -29,7 +29,7 @@ if (PRODUCTION && "serviceWorker" in navigator) {
     "beforeinstallprompt",
     async event => {
       event.preventDefault();
-      const Installation = await import("./modules/dynamic/installation.js");
+      const Installation = await import("./modules/dynamic/installation.js?v=1.89.19");
       Installation.init(event);
     },
     {once: true}
@@ -221,8 +221,7 @@ oceanLayers
 document.addEventListener("DOMContentLoaded", async () => {
   if (!location.hostname) {
     const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
-    alertMessage.innerHTML = /* html */ `Fantasy Map Generator cannot run serverless. Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can
-      easily run a local web-server`;
+    alertMessage.innerHTML = /* html */ `Fantasy Map Generator cannot run serverless. Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`;
 
     $("#alert").dialog({
       resizable: false,
@@ -240,6 +239,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await checkLoadParameters();
   }
   restoreDefaultEvents(); // apply default viewbox events
+  initiateAutosave();
 });
 
 function hideLoading() {
@@ -280,36 +280,20 @@ async function checkLoadParameters() {
     return;
   }
 
-  // open latest map if option is active and map is stored
-  const loadLastMap = () =>
-    new Promise((resolve, reject) => {
-      ldb.get("lastMap", blob => {
-        if (blob) {
-          WARN && console.warn("Load last saved map");
-          try {
-            uploadMap(blob);
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
-        } else {
-          reject("No map stored");
-        }
-      });
-    });
-
-  if (onloadMap.value === "saved") {
-    try {
-      await loadLastMap();
-    } catch (error) {
-      ERROR && console.error(error);
-      WARN && console.warn("Cannot load stored map, random map to be generated");
-      await generateMapOnLoad();
+  // check if there is a map saved to indexedDB
+  try {
+    const blob = await ldb.get("lastMap");
+    if (blob) {
+      WARN && console.warn("Loading last stored map");
+      uploadMap(blob);
+      return;
     }
-  } else {
-    WARN && console.warn("Generate random map");
-    await generateMapOnLoad();
+  } catch (error) {
+    console.error(error);
   }
+
+  WARN && console.warn("Generate random map");
+  generateMapOnLoad();
 }
 
 async function generateMapOnLoad() {
@@ -909,7 +893,7 @@ function addLakesInDeepDepressions() {
   TIME && console.timeEnd("addLakesInDeepDepressions");
 }
 
-// near sea lakes usually get a lot of water inflow, most of them should brake threshold and flow out to sea (see Ancylus Lake)
+// near sea lakes usually get a lot of water inflow, most of them should break threshold and flow out to sea (see Ancylus Lake)
 function openNearSeaLakes() {
   if (byId("templateInput").value === "Atoll") return; // no need for Atolls
 
@@ -924,7 +908,7 @@ function openNearSeaLakes() {
     if (features[lake].type !== "lake") continue; // not a lake cell
 
     check_neighbours: for (const c of cells.c[i]) {
-      if (cells.t[c] !== 1 || cells.h[c] > LIMIT) continue; // water cannot brake this
+      if (cells.t[c] !== 1 || cells.h[c] > LIMIT) continue; // water cannot break this
 
       for (const n of cells.c[c]) {
         const ocean = cells.f[n];

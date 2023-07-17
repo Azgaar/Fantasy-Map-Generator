@@ -28,7 +28,7 @@ function createButton() {
   button.innerHTML = "Install";
   button.onclick = openDialog;
   button.onmouseenter = () => tip("Install the Application");
-  document.querySelector("body").appendChild(button);
+  document.getElementById("optionsContainer").appendChild(button);
   return button;
 }
 

@@ -670,13 +670,13 @@ async function showHierarchy() {
   });
 }
 
-function recalculateCultures(must) {
-  if (!must && !culturesAutoChange.checked) return;
-
-  Cultures.expand();
-  drawCultures();
-  pack.burgs.forEach(b => (b.culture = pack.cells.culture[b.cell]));
-  refreshCulturesEditor();
+function recalculateCultures(force) {
+  if (force || culturesAutoChange.checked) {
+    Cultures.expand();
+    drawCultures();
+    pack.burgs.forEach(b => (b.culture = pack.cells.culture[b.cell]));
+    refreshCulturesEditor();
+  }
 }
 
 function enterCultureManualAssignent() {

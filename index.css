@@ -1,3 +1,24 @@
+:root {
+  --monospace: Consolas, monospace;
+  --serif: Georgia, serif;
+  --sans-serif: Helvetica, Arial, sans-serif;
+}
+
+/* hide Google translate header */
+body > .skiptranslate {
+  display: none;
+}
+
+/* hide Google translate in-progress widget */
+body > .skiptranslate + div {
+  display: none;
+}
+
+/* make translated text wrapper non-blocking */
+font {
+  pointer-events: none;
+}
+
 input,
 select,
 button {
@@ -119,7 +140,7 @@ a {
 }
 
 #temperature {
-  font-family: sans-serif;
+  font-family: var(--sans-serif);
   font-weight: 700;
   text-anchor: middle;
   dominant-baseline: central;
@@ -160,7 +181,7 @@ t,
   text-shadow: 0 0 4px #000;
   dominant-baseline: central;
   text-anchor: middle;
-  font-family: Helvetica;
+  font-family: var(--sans-serif);
   fill-opacity: 1;
 }
 
@@ -249,7 +270,7 @@ i.icon-lock {
 
 .chartInfo {
   text-align: center;
-  font-family: sans-serif;
+  font-family: var(--sans-serif);
   font-style: italic;
   font-size: 12px;
 }
@@ -356,7 +377,7 @@ text.drag {
 
 #options {
   position: absolute;
-  font-family: Consolas, monospace;
+  font-family: var(--monospace);
   border: solid 1px #5e4fa2;
   margin: 10px;
   padding-bottom: 0.3em;
@@ -366,7 +387,7 @@ text.drag {
 #options input,
 #options select,
 #options button {
-  font-family: Consolas, monospace;
+  font-family: var(--monospace);
 }
 
 #collapsible {
@@ -387,7 +408,7 @@ text.drag {
 
 div.tab > button#optionsHide {
   width: auto;
-  font-family: Arial;
+  font-family: var(--sans-serif);
   padding: 0.6em 0.45em;
 }
 
@@ -421,6 +442,7 @@ button.options:hover {
 
 #aboutContent p {
   font-weight: normal;
+  font-style: normal;
 }
 
 #aboutContent a {
@@ -590,6 +612,11 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   width: 100%;
 }
 
+#loadGoogleTranslateButton {
+  font-size: smaller;
+  padding: 0.4em 0.5em;
+}
+
 #options input[type="color"] {
   width: 2em;
   padding: 1px;
@@ -657,7 +684,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   border: none;
   padding: 0.45em 0.75em;
   margin: 0.4em 0;
-  font-family: Consolas, monospace;
+  font-family: var(--monospace);
   animation: glowing 2s infinite;
 }
 
@@ -690,6 +717,11 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   margin: 0.35em 0;
   transition: 0.1s;
   font-size: 1em;
+  text-transform: capitalize;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .tabcontent button.pressed {
@@ -743,6 +775,11 @@ fieldset {
   float: left;
   width: 28%;
   text-align: center;
+  text-transform: capitalize;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .tabcontent .buttonoff {
@@ -936,7 +973,7 @@ fieldset {
   padding: 0.1em 0.5em;
   float: left;
   font-size: 1.2em;
-  font-family: monospace;
+  font-family: var(--monospace);
 }
 
 #brushesButtons > button {
@@ -995,7 +1032,7 @@ fieldset {
   background-color: #ffffff95;
   color: #05044d;
   font-style: italic;
-  font-family: monospace;
+  font-family: var(--monospace);
 }
 
 #templateBody select {
@@ -1694,7 +1731,7 @@ div.states > div.biomeArea {
 #emblemUploadControl,
 #emblemDownloadControl {
   margin-top: 0.3em;
-  text-align: center;
+  width: 100%;
 }
 
 div.editorLine {
@@ -1721,7 +1758,7 @@ div.editorLine {
   fill: #f8ffff;
   font-size: 12px;
   font-weight: bold;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--sans-serif);
   cursor: move !important;
 }
 
@@ -1734,7 +1771,7 @@ div.editorLine {
 #pickerCloseText {
   fill: #f8ffff;
   font-size: 10px;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--sans-serif);
   pointer-events: none;
 }
 
@@ -1869,7 +1906,7 @@ div.editorLine {
 }
 
 #ruler text {
-  font-family: "Georgia";
+  font-family: var(--serif);
   fill: #3d3d3d;
   text-anchor: middle;
   text-shadow: 0 0 4px white;
@@ -1892,7 +1929,7 @@ div.editorLine {
 #scaleBar text {
   fill: #353540;
   text-anchor: middle;
-  font-family: Georgia;
+  font-family: var(--serif);
 }
 
 #militaryOptionsTable select {
@@ -1918,7 +1955,7 @@ div.editorLine {
 
 #coordinateLabels {
   fill: #333333;
-  font-family: monospace;
+  font-family: var(--monospace);
   text-shadow: 0 0 4px white;
   stroke-width: 0;
   dominant-baseline: central;
@@ -1973,7 +2010,7 @@ input[type="checkbox"] {
 div.textual select,
 div.textual textarea,
 div.textual input {
-  font-family: monospace;
+  font-family: var(--monospace);
 }
 
 div.textual fieldset {
@@ -1988,13 +2025,13 @@ div.textual span,
 }
 
 #namesbaseExamples {
-  font-family: monospace;
+  font-family: var(--monospace);
   cursor: pointer;
 }
 
 #markers {
   cursor: pointer;
-  font-family: monospace;
+  font-family: var(--monospace);
   user-select: none;
   text-anchor: middle;
   dominant-baseline: central;
@@ -2054,7 +2091,7 @@ div.textual span,
   outline: 0;
   overflow-y: auto;
   padding: 0.6em;
-  font-family: monospace;
+  font-family: var(--monospace);
   background-color: #fff;
   border: 1px solid #dedede;
   color: #000;
@@ -2184,14 +2221,14 @@ svg.button {
 #globaAxisLabels {
   font-style: italic;
   font-size: 9px;
-  font-family: monospace;
+  font-family: var(--monospace);
   stroke: none;
   fill: #001754;
 }
 
 #globeLatLabels {
   font-size: 12px;
-  font-family: monospace;
+  font-family: var(--monospace);
   stroke: none;
   fill: #001754;
 }
@@ -2252,7 +2289,7 @@ svg.button {
 
 #errorBox {
   font-size: 0.9em;
-  font-family: Consolas, monospace;
+  font-family: var(--monospace);
   color: #920303;
   background-color: #dabdbd91;
   padding: 2px;
@@ -2287,7 +2324,7 @@ svg.button {
 #promptText {
   padding: 0 0 0.6em 0;
   font-weight: bold;
-  font-family: sans-serif;
+  font-family: var(--sans-serif);
 }
 
 #mapOverlay {

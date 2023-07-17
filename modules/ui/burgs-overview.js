@@ -93,7 +93,9 @@ function overviewBurgs() {
         data-type="${type}"
       >
         <span data-tip="Click to zoom into view" class="icon-dot-circled pointer"></span>
-        <input data-tip="Burg name. Click and type to change" class="burgName" value="${b.name}" autocorrect="off" spellcheck="false" />
+        <input data-tip="Burg name. Click and type to change" class="burgName" value="${
+          b.name
+        }" autocorrect="off" spellcheck="false" />
         <input data-tip="Burg province" class="burgState" value="${province}" disabled />
         <input data-tip="Burg state" class="burgState" value="${state}" disabled />
         <select data-tip="Dominant culture. Click to change burg culture (to change cell culture use Cultures Editor)" class="stateCulture">
@@ -106,10 +108,14 @@ function overviewBurgs() {
             data-tip="${b.capital ? " This burg is a state capital" : "Click to assign a capital status"}"
             class="icon-star-empty${b.capital ? "" : " inactive pointer"}"
           ></span>
-          <span data-tip="Click to toggle port status" class="icon-anchor pointer${b.port ? "" : " inactive"}" style="font-size:.9em"></span>
+          <span data-tip="Click to toggle port status" class="icon-anchor pointer${
+            b.port ? "" : " inactive"
+          }" style="font-size:.9em"></span>
         </div>
         <span data-tip="Edit burg" class="icon-pencil"></span>
-        <span class="locks pointer ${b.lock ? "icon-lock" : "icon-lock-open inactive"}" onmouseover="showElementLockTip(event)"></span>
+        <span class="locks pointer ${
+          b.lock ? "icon-lock" : "icon-lock-open inactive"
+        }" onmouseover="showElementLockTip(event)"></span>
         <span data-tip="Remove burg" class="icon-trash-empty"></span>
       </div>`;
     }
@@ -125,8 +131,12 @@ function overviewBurgs() {
     body.querySelectorAll("div > input.burgName").forEach(el => el.addEventListener("input", changeBurgName));
     body.querySelectorAll("div > span.icon-dot-circled").forEach(el => el.addEventListener("click", zoomIntoBurg));
     body.querySelectorAll("div > select.stateCulture").forEach(el => el.addEventListener("change", changeBurgCulture));
-    body.querySelectorAll("div > input.burgPopulation").forEach(el => el.addEventListener("change", changeBurgPopulation));
-    body.querySelectorAll("div > span.icon-star-empty").forEach(el => el.addEventListener("click", toggleCapitalStatus));
+    body
+      .querySelectorAll("div > input.burgPopulation")
+      .forEach(el => el.addEventListener("change", changeBurgPopulation));
+    body
+      .querySelectorAll("div > span.icon-star-empty")
+      .forEach(el => el.addEventListener("click", toggleCapitalStatus));
     body.querySelectorAll("div > span.icon-anchor").forEach(el => el.addEventListener("click", togglePortStatus));
     body.querySelectorAll("div > span.locks").forEach(el => el.addEventListener("click", toggleBurgLockStatus));
     body.querySelectorAll("div > span.icon-pencil").forEach(el => el.addEventListener("click", openBurgEditor));
@@ -137,7 +147,9 @@ function overviewBurgs() {
 
   function getCultureOptions(culture) {
     let options = "";
-    pack.cultures.filter(c => !c.removed).forEach(c => (options += `<option ${c.i === culture ? "selected" : ""} value="${c.i}">${c.name}</option>`));
+    pack.cultures
+      .filter(c => !c.removed)
+      .forEach(c => (options += `<option ${c.i === culture ? "selected" : ""} value="${c.i}">${c.name}</option>`));
     return options;
   }
 
@@ -228,7 +240,8 @@ function overviewBurgs() {
 
   function triggerBurgRemove() {
     const burg = +this.parentNode.dataset.id;
-    if (pack.burgs[burg].capital) return tip("You cannot remove the capital. Please change the capital first", false, "error");
+    if (pack.burgs[burg].capital)
+      return tip("You cannot remove the capital. Please change the capital first", false, "error");
 
     confirmationDialog({
       title: "Remove burg",
@@ -266,8 +279,10 @@ function overviewBurgs() {
   function addBurgOnClick() {
     const point = d3.mouse(this);
     const cell = findCell(point[0], point[1]);
-    if (pack.cells.h[cell] < 20) return tip("You cannot place state into the water. Please click on a land cell", false, "error");
-    if (pack.cells.burg[cell]) return tip("There is already a burg in this cell. Please select a free cell", false, "error");
+    if (pack.cells.h[cell] < 20)
+      return tip("You cannot place state into the water. Please click on a land cell", false, "error");
+    if (pack.cells.burg[cell])
+      return tip("There is already a burg in this cell. Please select a free cell", false, "error");
 
     addBurg(point); // add new burg
 
@@ -301,7 +316,19 @@ function overviewBurgs() {
         const capital = b.capital;
         const province = pack.cells.province[b.cell];
         const parent = province ? province + states.length - 1 : b.state;
-        return {id, i: b.i, state: b.state, culture: b.culture, province, parent, name: b.name, population, capital, x: b.x, y: b.y};
+        return {
+          id,
+          i: b.i,
+          state: b.state,
+          culture: b.culture,
+          province,
+          parent,
+          name: b.name,
+          population,
+          capital,
+          x: b.x,
+          y: b.y
+        };
       });
     const data = states.concat(burgs);
     if (data.length < 2) return tip("No burgs to show", false, "error");
@@ -452,7 +479,7 @@ function overviewBurgs() {
   }
 
   function downloadBurgsData() {
-    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,Latitude,Longitude,Elevation (${heightUnit.value}),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town`; // headers
+    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town`; // headers
     if (options.showMFCGMap) data += `,City Generator Link`;
     data += "\n";
 
@@ -471,6 +498,8 @@ function overviewBurgs() {
       data += rn(b.population * populationRate * urbanization) + ",";
 
       // add geography data
+      data += b.x + ",";
+      data += b.y + ",";
       data += getLatitude(b.y, 2) + ",";
       data += getLongitude(b.x, 2) + ",";
       data += parseInt(getHeight(pack.cells.h[b.cell])) + ",";

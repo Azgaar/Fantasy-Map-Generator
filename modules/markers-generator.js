@@ -24,6 +24,7 @@ window.Markers = (function () {
     return [
       {type: "volcanoes", icon: "🌋", dx: 52, px: 13, min: 10, each: 500, multiplier: 1, list: listVolcanoes, add: addVolcano},
       {type: "hot-springs", icon: "♨️", dy: 52, min: 30, each: 1200, multiplier: 1, list: listHotSprings, add: addHotSpring},
+      {type: "water-sources", icon: "💧", min: 1, each: 1000, multiplier: 1, list: listWaterSources, add: addWaterSource},
       {type: "mines", icon: "⛏️", dx: 48, px: 13, min: 1, each: 15, multiplier: 1, list: listMines, add: addMine},
       {type: "bridges", icon: "🌉", px: 14, min: 1, each: 5, multiplier: 1, list: listBridges, add: addBridge},
       {type: "inns", icon: "🍻", px: 14, min: 1, each: 100, multiplier: 1, list: listInns, add: addInn},
@@ -42,15 +43,19 @@ window.Markers = (function () {
       {type: "pirates", icon: "🏴‍☠️", dx: 51, min: 40, each: 300, multiplier: 1, list: listPirates, add: addPirates},
       {type: "statues", icon: "🗿", min: 80, each: 1200, multiplier: 1, list: listStatues, add: addStatue},
       {type: "ruins", icon: "🏺", min: 80, each: 1200, multiplier: 1, list: listRuins, add: addRuins},
-      {type: "circuses", icon: "🎪", min: 80, each: 1000, multiplier: 1, list: listCircuses, add: addCircuses},
-      {type: "jousts", icon: "🤺", dx: 48, min: 5, each: 500, multiplier: 1, list: listJousts, add: addJousts},
-      {type: "canoes", icon: "🛶", min: 1000, each: 2000, multiplier: 1, list: listCanoes, add: addCanoes},
-      {type: "migration", icon: "🐗", min: 20, each: 1000, multiplier: 1, list: listMigrations, add: addMigrations},
-      {type: "dances", icon: "💃🏽", min: 5, each: 60, multiplier: 1, list: listDances, add: addDances},
+      {type: "libraries", icon: "📚", min: 10, each: 1200, multiplier: 1, list: listLibraries, add: addLibrary},
+      {type: "circuses", icon: "🎪", min: 80, each: 1000, multiplier: 1, list: listCircuses, add: addCircuse},
+      {type: "jousts", icon: "🤺", dx: 48, min: 5, each: 500, multiplier: 1, list: listJousts, add: addJoust},
+      {type: "fairs", icon: "🎠", min: 50, each: 1000, multiplier: 1, list: listFairs, add: addFair},
+      {type: "canoes", icon: "🛶", min: 500, each: 2000, multiplier: 1, list: listCanoes, add: addCanoe},
+      {type: "migration", icon: "🐗", min: 20, each: 1000, multiplier: 1, list: listMigrations, add: addMigration},
+      {type: "dances", icon: "💃🏽", min: 50, each: 1000, multiplier: 1, list: listDances, add: addDances},
       {type: "mirage", icon: "💦", min: 10, each: 400, multiplier: 1, list: listMirage, add: addMirage},
-      {type: "caves", icon:"🦇", min: 60, each: 1000, multiplier: 1, list: listCaves, add: addCaves},
+      {type: "caves", icon:"🦇", min: 60, each: 1000, multiplier: 1, list: listCaves, add: addCave},
       {type: "portals", icon: "🌀", px: 14, min: 16, each: 8, multiplier: +isFantasy, list: listPortals, add: addPortal},
-      {type: "rifts", icon: "🎆", min: 1, each: 3000, multiplier: +isFantasy, list: listRifts, add: addRifts}
+      {type: "rifts", icon: "🎆", min: 5, each: 3000, multiplier: +isFantasy, list: listRifts, add: addRift},
+      {type: "disturbed-burials", icon: "💀", min: 20, each: 3000, multiplier: +isFantasy, list: listDisturbedBurial, add: addDisturbedBurial},
+      {type: "necropolises", icon: "🪦", min: 20, each: 1000, multiplier: 1, list: listNecropolis, add: addNecropolis},
     ];
   }
 
@@ -172,7 +177,7 @@ window.Markers = (function () {
   }
 
   function listHotSprings({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.h[i] > 50);
+    return cells.i.filter(i => !occupied[i] && cells.h[i] > 50 && cells.culture[i]);
   }
 
   function addHotSpring(id, cell) {
@@ -180,12 +185,37 @@ window.Markers = (function () {
 
     const proper = Names.getCulture(cells.culture[cell]);
     const temp = convertTemperature(gauss(35, 15, 20, 100));
-    const status = P(0.6) ? "geothermal" : P(0.4) ? "springwater" : "natural";
-    notes.push({
-      id,
-      name: proper + " Hot Springs",
-      legend: `A ${status} hot springs area. Average temperature: ${temp}.`
+    const name = P(0.3) ? "Hot Springs of " + proper : P(0.7) ? proper + " Hot Springs" : proper;
+    const legend = `A geothermal springs with naturally heated water that provide relaxation and medicinal benefits. Average temperature is ${temp}.`;
+
+    notes.push({id, name, legend});
+  }
+
+  function listWaterSources({cells}) {
+    return cells.i.filter(i => !occupied[i] && cells.h[i] > 30 && cells.r[i]);
+  }
+
+  function addWaterSource(id, cell) {
+    const {cells} = pack;
+
+    const type = rw({
+      "Healing Spring": 5,
+      "Purifying Well": 2,
+      "Enchanted Reservoir": 1,
+      "Creek of Luck": 1,
+      "Fountain of Youth": 1,
+      "Wisdom Spring": 1,
+      "Spring of Life": 1,
+      "Spring of Youth": 1,
+      "Healing Stream": 1
     });
+
+    const proper = Names.getCulture(cells.culture[cell]);
+    const name = `${proper} ${type}`;
+    const legend =
+      "This legendary water source is whispered about in ancient tales and believed to possess mystical properties. The spring emanates crystal-clear water, shimmering with an otherworldly iridescence that sparkles even in the dimmest light.";
+
+    notes.push({id, name, legend});
   }
 
   function listMines({cells}) {
@@ -728,7 +758,7 @@ window.Markers = (function () {
   }
 
   function addSacredForest(id, cell) {
-    const {cells, cultures, religions} = pack;
+    const {cells, religions} = pack;
 
     const culture = cells.culture[cell];
     const religion = cells.religion[cell];
@@ -743,7 +773,7 @@ window.Markers = (function () {
   }
 
   function addSacredPinery(id, cell) {
-    const {cells, cultures, religions} = pack;
+    const {cells, religions} = pack;
 
     const culture = cells.culture[cell];
     const religion = cells.religion[cell];
@@ -766,7 +796,7 @@ window.Markers = (function () {
   }
 
   function addSacredPalmGrove(id, cell) {
-    const {cells, cultures, religions} = pack;
+    const {cells, religions} = pack;
 
     const culture = cells.culture[cell];
     const religion = cells.religion[cell];
@@ -842,8 +872,8 @@ window.Markers = (function () {
   }
 
   function addPirates(id, cell) {
-    const name = `Pirates`;
-    const legend = `Pirate ships have been spotted in these waters.`;
+    const name = "Pirates";
+    const legend = "Pirate ships have been spotted in these waters.";
     notes.push({id, name, legend});
   }
 
@@ -869,7 +899,7 @@ window.Markers = (function () {
       "Idol"
     ];
     const scripts = {
-      cypriot: "𐠁𐠂𐠃𐠄𐠅𐠈𐠊𐠋𐠌𐠍𐠎𐠏𐠐𐠑𐠒𐠓𐠔𐠕𐠖𐠗𐠘𐠙𐠚𐠛𐠜𐠝𐠞𐠟𐠠𐠡𐠢𐠣𐠤𐠥𐠦𐠧𐠨𐠩𐠪𐠫𐠬𐠭𐠮𐠯𐠰𐠱𐠲𐠳𐠴𐠵𐠷𐠸𐠼𐠿     ",
+      cypriot: "𐠁𐠂𐠃𐠄𐠅𐠈𐠊𐠋𐠌𐠍𐠎𐠏𐠐𐠑𐠒𐠓𐠔𐠕𐠖𐠗𐠘𐠙𐠚𐠛𐠜𐠝𐠞𐠟𐠠𐠡𐠢𐠣𐠤𐠥𐠦𐠧𐠨𐠩𐠪𐠫𐠬𐠭𐠮𐠯𐠰𐠱𐠲𐠳𐠴𐠵𐠷𐠸𐠼𐠿      ",
       geez: "ሀለሐመሠረሰቀበተኀነአከወዐዘየደገጠጰጸፀፈፐ   ",
       coptic: "ⲲⲴⲶⲸⲺⲼⲾⳀⳁⳂⳃⳄⳆⳈⳊⳌⳎⳐⳒⳔⳖⳘⳚⳜⳞⳠⳢⳤ⳥⳧⳩⳪ⳫⳬⳭⳲ⳹⳾   ",
       tibetan: "ༀ༁༂༃༄༅༆༇༈༉༊་༌༐༑༒༓༔༕༖༗༘༙༚༛༜༠༡༢༣༤༥༦༧༨༩༪༫༬༭༮༯༰༱༲༳༴༵༶༷༸༹༺༻༼༽༾༿",
@@ -917,11 +947,25 @@ window.Markers = (function () {
     notes.push({id, name, legend});
   }
 
+  function listLibraries({cells}) {
+    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.burg[i] && cells.pop[i] > 10);
+  }
+
+  function addLibrary(id, cell) {
+    const {cells} = pack;
+
+    const type = rw({Library: 3, Archive: 1, Collection: 1});
+    const name = `${Names.getCulture(cells.culture[cell])} ${type}`;
+    const legend = "A vast collection of knowledge, including many rare and ancient tomes.";
+
+    notes.push({id, name, legend});
+  }
+
   function listCircuses({cells}) {
     return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.h[i] >= 20 && pack.cells.road[i]);
   }
 
-  function addCircuses(id, cell) {
+  function addCircuse(id, cell) {
     const adjectives = [
       "Fantastical",
       "Wonderous",
@@ -943,7 +987,7 @@ window.Markers = (function () {
     return cells.i.filter(i => !occupied[i] && cells.burg[i] && burgs[cells.burg[i]].population > 20);
   }
 
-  function addJousts(id, cell) {
+  function addJoust(id, cell) {
     const {cells, burgs} = pack;
     const types = ["Joust", "Competition", "Melee", "Tournament", "Contest"];
     const virtues = ["cunning", "might", "speed", "the greats", "acumen", "brutality"];
@@ -958,11 +1002,29 @@ window.Markers = (function () {
     notes.push({id, name, legend});
   }
 
+  function listFairs({cells, burgs}) {
+    return cells.i.filter(
+      i => !occupied[i] && cells.burg[i] && burgs[cells.burg[i]].population < 20 && burgs[cells.burg[i]].population < 5
+    );
+  }
+
+  function addFair(id, cell) {
+    const {cells, burgs} = pack;
+    if (!cells.burg[cell]) return;
+
+    const burgName = burgs[cells.burg[cell]].name;
+    const type = "Fair";
+
+    const name = `${burgName} ${type}`;
+    const legend = `A fair is being held in ${burgName}, with all manner of local and foreign goods and services on offer.`;
+    notes.push({id, name, legend});
+  }
+
   function listCanoes({cells}) {
     return cells.i.filter(i => !occupied[i] && cells.r[i]);
   }
 
-  function addCanoes(id, cell) {
+  function addCanoe(id, cell) {
     const river = pack.rivers.find(r => r.i === pack.cells.r[cell]);
 
     const name = `Minor Jetty`;
@@ -975,7 +1037,7 @@ window.Markers = (function () {
     return cells.i.filter(i => !occupied[i] && cells.h[i] >= 20 && cells.pop[i] <= 2);
   }
 
-  function addMigrations(id, cell) {
+  function addMigration(id, cell) {
     const animals = [
       "Antelopes",
       "Apes",
@@ -1053,7 +1115,10 @@ window.Markers = (function () {
       "exhibition",
       "carnival",
       "festival",
-      "jubilee"
+      "jubilee",
+      "celebration",
+      "gathering",
+      "fete"
     ];
     const people = [
       "great and the good",
@@ -1089,7 +1154,7 @@ window.Markers = (function () {
     return cells.i.filter(i => !occupied[i] && cells.h[i] >= 50 && cells.pop[i]);
   }
 
-  function addCaves(id, cell) {
+  function addCave(id, cell) {
     const {cells} = pack;
 
     const formations = {
@@ -1144,7 +1209,7 @@ window.Markers = (function () {
     return cells.i.filter(i => !occupied[i] && pack.cells.pop[i] <= 3 && biomesData.habitability[pack.cells.biome[i]]);
   }
 
-  function addRifts(id, cell) {
+  function addRift(id, cell) {
     const types = ["Demonic", "Interdimensional", "Abyssal", "Cosmic", "Cataclysmic", "Subterranean", "Ancient"];
 
     const descriptions = [
@@ -1158,6 +1223,50 @@ window.Markers = (function () {
     const riftType = ra(types);
     const name = `${riftType} Rift`;
     const legend = `A rumoured ${riftType.toLowerCase()} rift in this area is causing ${ra(descriptions)}.`;
+    notes.push({id, name, legend});
+  }
+
+  function listDisturbedBurial({cells}) {
+    return cells.i.filter(i => !occupied[i] && cells.h[i] >= 20 && cells.pop[i] > 2);
+  }
+  function addDisturbedBurial(id, cell) {
+    const name = "Disturbed Burial";
+    const legend = "A burial site has been disturbed in this area, causing the dead to rise and attack the living.";
+    notes.push({id, name, legend});
+  }
+
+  function listNecropolis({cells}) {
+    return cells.i.filter(i => !occupied[i] && cells.h[i] >= 20 && cells.pop[i] < 2);
+  }
+
+  function addNecropolis(id, cell) {
+    const {cells} = pack;
+
+    const toponym = Names.getCulture(cells.culture[cell]);
+    const type = rw({
+      Necropolis: 5,
+      Crypt: 2,
+      Tomb: 2,
+      Graveyard: 1,
+      Cemetery: 2,
+      Mausoleum: 1,
+      Sepulchre: 1
+    });
+
+    const name = `${toponym} ${type}`;
+    const legend = ra([
+      "A foreboding necropolis shrouded in perpetual darkness, where eerie whispers echo through the winding corridors and spectral guardians stand watch over the tombs of long-forgotten souls",
+      "A towering necropolis adorned with macabre sculptures and guarded by formidable undead sentinels. Its ancient halls house the remains of fallen heroes, entombed alongside their cherished relics",
+      "This ethereal necropolis seems suspended between the realms of the living and the dead. Wisps of mist dance around the tombstones, while haunting melodies linger in the air, commemorating the departed",
+      "Rising from the desolate landscape, this sinister necropolis is a testament to necromantic power. Its skeletal spires cast ominous shadows, concealing forbidden knowledge and arcane secrets",
+      "An eerie necropolis where nature intertwines with death. Overgrown tombstones are entwined by thorny vines, and mournful spirits wander among the fading petals of once-vibrant flowers",
+      "A labyrinthine necropolis where each step echoes with haunting murmurs. The walls are adorned with ancient runes, and restless spirits guide or hinder those who dare to delve into its depths",
+      "This cursed necropolis is veiled in perpetual twilight, perpetuating a sense of impending doom. Dark enchantments shroud the tombs, and the moans of anguished souls resound through its crumbling halls",
+      "A sprawling necropolis built within a labyrinthine network of catacombs. Its halls are lined with countless alcoves, each housing the remains of the departed, while the distant sound of rattling bones fills the air",
+      "A desolate necropolis where an eerie stillness reigns. Time seems frozen amidst the decaying mausoleums, and the silence is broken only by the whispers of the wind and the rustle of tattered banners",
+      "A foreboding necropolis perched atop a jagged cliff, overlooking a desolate wasteland. Its towering walls harbor restless spirits, and the imposing gates bear the marks of countless battles and ancient curses"
+    ]);
+
     notes.push({id, name, legend});
   }
 
