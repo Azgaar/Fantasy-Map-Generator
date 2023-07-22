@@ -704,7 +704,7 @@ window.ThreeD = (function () {
 
     return new Promise(resolve => {
       const script = document.createElement("script");
-      script.src = "libs/objexporter.min.js";
+      script.src = "libs/objexporter.min.js?v=1.89.35";
       document.head.append(script);
       script.onload = () => resolve(new THREE.OBJExporter());
       script.onerror = () => resolve(false);
