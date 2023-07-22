@@ -489,11 +489,18 @@ window.ThreeD = (function () {
 
     if (geometry) geometry.dispose();
     geometry = new THREE.PlaneGeometry(width, height, segmentsX - 1, segmentsY - 1);
-    geometry.vertices.forEach((v, i) => (v.z = getMeshHeight(i)));
+    let vertices = geometry.getAttribute('position');
+    for(let i = 0; i < vertices.count; i++){
+      vertices.setZ(i,getMeshHeight(i));
+    }
+    // vertices.forEach((v, i) => (v.z = getMeshHeight(i)));
+    geometry.setAttribute('position',vertices);
     geometry.computeVertexNormals();
 
+    //This takes too long
+    const smoothGeometry = LoopSubdivision.modify(geometry,1,undefined);
     if (mesh) scene.remove(mesh);
-    mesh = new THREE.Mesh(geometry, material);
+    mesh = new THREE.Mesh(smoothGeometry, material);
     mesh.rotation.x = -Math.PI / 2;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
