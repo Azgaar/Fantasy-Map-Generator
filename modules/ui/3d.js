@@ -5,7 +5,7 @@ window.ThreeD = (function () {
     scale: 50,
     lightness: 0.7,
     shadow: 0.5,
-    sun: {x: 300, y: 1500, z: 800},
+    sun: {x: 100, y: 600, z: 1000},
     rotateMesh: 0,
     rotateGlobe: 0.5,
     skyColor: "#9ecef5",
@@ -15,7 +15,8 @@ window.ThreeD = (function () {
     wireframe: 0,
     resolution: 2,
     resolutionScale: 3,
-    sunColor: "#ffffff"
+    sunColor: "#cccccc",
+    subdivide: 0
   };
 
   // set variables
@@ -95,7 +96,11 @@ window.ThreeD = (function () {
 
   const setScale = function (scale) {
     options.scale = scale;
-    geometry.vertices.forEach((v, i) => (v.z = getMeshHeight(i)));
+    let vertices = geometry.getAttribute('position');
+    for(let i = 0; i < vertices.count; i++){
+      vertices.setZ(i,getMeshHeight(i));
+    }
+    geometry.setAttribute('position',vertices);
     geometry.verticesNeedUpdate = true;
     geometry.computeVertexNormals();
     geometry.verticesNeedUpdate = false;
@@ -163,6 +168,12 @@ window.ThreeD = (function () {
     }
   };
 
+  const toggle3dSubdivision = function(){
+    console.log("toggle 3d subdivision");
+    options.subdivide = !options.subdivide;
+    redraw();
+  }
+
   const toggleWireframe = function () {
     options.wireframe = !options.wireframe;
     redraw();
@@ -222,7 +233,7 @@ window.ThreeD = (function () {
     Renderer = new THREE.WebGLRenderer({canvas, antialias: true, preserveDrawingBuffer: true});
     Renderer.setSize(canvas.width, canvas.height);
     Renderer.shadowMap.enabled = true;
-    Renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // Renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     if (options.extendedWater) extendWater(graphWidth, graphHeight);
     createMesh(graphWidth, graphHeight, grid.cellsX, grid.cellsY);
 
@@ -480,9 +491,8 @@ window.ThreeD = (function () {
       material = new THREE.MeshLambertMaterial();
       material.wireframe = true;
     }else{
-      material = new THREE.MeshStandardMaterial();
+      material = new THREE.MeshLambertMaterial();
       material.map = texture;
-      material.roughness = 0.9;
       material.transparent = true;
     }
     
@@ -493,14 +503,24 @@ window.ThreeD = (function () {
     for(let i = 0; i < vertices.count; i++){
       vertices.setZ(i,getMeshHeight(i));
     }
-    // vertices.forEach((v, i) => (v.z = getMeshHeight(i)));
     geometry.setAttribute('position',vertices);
     geometry.computeVertexNormals();
 
     //This takes too long
-    const smoothGeometry = LoopSubdivision.modify(geometry,1,undefined);
     if (mesh) scene.remove(mesh);
-    mesh = new THREE.Mesh(smoothGeometry, material);
+    if(options.subdivide){
+      const subdivideParams = {
+        split: true,
+        uvSmooth: false,
+        preserveEdges: true,
+        flatOnly: false,
+        maxTriangles: Infinity
+      };
+      const smoothGeometry = loopSubdivision.modify(geometry,1,subdivideParams);
+      mesh = new THREE.Mesh(smoothGeometry, material);
+    }else{
+      mesh = new THREE.Mesh(geometry, material);
+    }
     mesh.rotation.x = -Math.PI / 2;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -704,6 +724,7 @@ window.ThreeD = (function () {
     setSun,
     setRotation,
     toggleLabels,
+    toggle3dSubdivision,
     toggleWireframe,
     toggleSky,
     setResolution,

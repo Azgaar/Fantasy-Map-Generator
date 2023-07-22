@@ -1070,8 +1070,9 @@ function toggle3dOptions() {
   document.getElementById("options3dMeshSky").addEventListener("input", changeColors);
   document.getElementById("options3dMeshWater").addEventListener("input", changeColors);
   document.getElementById("options3dGlobeResolution").addEventListener("change", changeResolution);
-  document.getElementById("options3dMeshWireframeMode").addEventListener("change",toggleWireframe3d);
+  // document.getElementById("options3dMeshWireframeMode").addEventListener("change",toggleWireframe3d);
   document.getElementById("options3dSunColor").addEventListener("input", changeSunColor);
+  document.getElementById("options3dSubdivide").addEventListener("change",toggle3dSubdivision);
 
 
   function updateValues() {
@@ -1094,6 +1095,7 @@ function toggle3dOptions() {
     options3dMeshWater.value = ThreeD.options.waterColor;
     options3dGlobeResolution.value = ThreeD.options.resolution;
     options3dSunColor.value = ThreeD.options.sunColor;
+    options3dSubdivide.value = ThreeD.options.subdivide;
     console.log("options3dSunColor.value =",ThreeD.options.sunColor);
   }
 
@@ -1134,9 +1136,14 @@ function toggle3dOptions() {
     ThreeD.toggleLabels();
   }
 
-  function toggleWireframe3d() {
-    ThreeD.toggleWireframe();
+  function toggle3dSubdivision(){
+    console.log(options.subdivide);
+    ThreeD.toggle3dSubdivision();
   }
+
+  // function toggleWireframe3d() {
+  //   ThreeD.toggleWireframe();
+  // }
 
   function toggleSkyMode() {
     const hide = ThreeD.options.extendedWater;

@@ -67,47 +67,46 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////
 
+const loopSubdivision = {};
+(()=>{
+    ///// Constants
 
+    const POSITION_DECIMALS = 2;
 
-///// Constants
+    ///// Local Variables
 
-const POSITION_DECIMALS = 2;
+    const _average = new THREE.Vector3();
+    const _center = new THREE.Vector3();
+    const _midpoint = new THREE.Vector3();
+    const _normal = new THREE.Vector3();
+    const _temp = new THREE.Vector3();
 
-///// Local Variables
+    const _vector0 = new THREE.Vector3(); // .Vector4();
+    const _vector1 = new THREE.Vector3(); // .Vector4();
+    const _vector2 = new THREE.Vector3(); // .Vector4();
+    const _vec0to1 = new THREE.Vector3();
+    const _vec1to2 = new THREE.Vector3();
+    const _vec2to0 = new THREE.Vector3();
 
-const _average = new THREE.Vector3();
-const _center = new THREE.Vector3();
-const _midpoint = new THREE.Vector3();
-const _normal = new THREE.Vector3();
-const _temp = new THREE.Vector3();
+    const _position = [
+        new THREE.Vector3(),
+        new THREE.Vector3(),
+        new THREE.Vector3(),
+    ];
 
-const _vector0 = new THREE.Vector3(); // .Vector4();
-const _vector1 = new THREE.Vector3(); // .Vector4();
-const _vector2 = new THREE.Vector3(); // .Vector4();
-const _vec0to1 = new THREE.Vector3();
-const _vec1to2 = new THREE.Vector3();
-const _vec2to0 = new THREE.Vector3();
+    const _vertex = [
+        new THREE.Vector3(),
+        new THREE.Vector3(),
+        new THREE.Vector3(),
+    ];
 
-const _position = [
-    new THREE.Vector3(),
-    new THREE.Vector3(),
-    new THREE.Vector3(),
-];
+    const _triangle = new THREE.Triangle();
 
-const _vertex = [
-    new THREE.Vector3(),
-    new THREE.Vector3(),
-    new THREE.Vector3(),
-];
+    /////////////////////////////////////////////////////////////////////////////////////
+    /////   Loop Subdivision Surface
+    /////////////////////////////////////////////////////////////////////////////////////
 
-const _triangle = new THREE.Triangle();
-
-/////////////////////////////////////////////////////////////////////////////////////
-/////   Loop Subdivision Surface
-/////////////////////////////////////////////////////////////////////////////////////
-
-/** Loop subdivision surface modifier for use with modern three.js BufferGeometry */
-class LoopSubdivision {
+    /** Loop subdivision surface modifier for use with modern three.js BufferGeometry */
 
     /////////////////////////////////////////////////////////////////////////////////////
     /////   Modify
@@ -128,8 +127,8 @@ class LoopSubdivision {
      * @param {Boolean} flatOnly - If true, subdivision generates triangles, but does not modify positions
      * @param {Number} maxTriangles - If geometry contains more than this many triangles, subdivision will not continue
     */
-    static modify(bufferGeometry, iterations = 1, params = {}) {
-        if (arguments.length > 3) console.warn(`LoopSubdivision.modify() now uses a parameter object. See readme for more info!`);
+    function modify(bufferGeometry, iterations = 1, params = {}) {
+        if (arguments.length > 3) console.warn(`modify() now uses a parameter object. See readme for more info!`);
 
         if (typeof params !== 'object') params = {};
 
@@ -141,12 +140,12 @@ class LoopSubdivision {
         if (params.maxTriangles === undefined) params.maxTriangles = Infinity;
 
         ///// Geometries
-        if (! verifyGeometry(bufferGeometry)) return bufferGeometry;
+        if (!verifyGeometry(bufferGeometry)) return bufferGeometry;
         let modifiedGeometry = bufferGeometry.clone();
 
         ///// Presplit
         if (params.split) {
-            const splitGeometry = LoopSubdivision.edgeSplit(modifiedGeometry)
+            const splitGeometry = edgeSplit(modifiedGeometry)
             modifiedGeometry.dispose();
             modifiedGeometry = splitGeometry;
         }
@@ -159,9 +158,9 @@ class LoopSubdivision {
 
                 // Subdivide
                 if (params.flatOnly) {
-                    subdividedGeometry = LoopSubdivision.flat(modifiedGeometry);
+                    subdividedGeometry = flat(modifiedGeometry);
                 } else {
-                    subdividedGeometry = LoopSubdivision.smooth(modifiedGeometry, params);
+                    subdividedGeometry = smooth(modifiedGeometry, params);
                 }
 
                 // Copy and Resize Groups
@@ -178,7 +177,8 @@ class LoopSubdivision {
         ///// Return New Geometry
         return modifiedGeometry;
     }
-
+    loopSubdivision.modify = modify;
+    console.log("Hello World");
     /////////////////////////////////////////////////////////////////////////////////////
     /////   Split Hypotenuse
     ////////////////////
@@ -188,10 +188,10 @@ class LoopSubdivision {
      * Starts by splitting at longest shared edge, followed by splitting from that new center edge point to the
      * center of any other shared edges.
      */
-    static edgeSplit(geometry) {
+    function edgeSplit(geometry) {
 
         ///// Geometries
-        if (! verifyGeometry(geometry)) return geometry;
+        if (!verifyGeometry(geometry)) return geometry;
         const existing = (geometry.index !== null) ? geometry.toNonIndexed() : geometry.clone();
         const split = new THREE.BufferGeometry();
 
@@ -219,8 +219,8 @@ class LoopSubdivision {
 
             // Verify Area
             const triangleSize = _triangle.set(_vector0, _vector1, _vector2).getArea();
-            triangleExist.push(! fuzzy(triangleSize, 0));
-            if (! triangleExist[i / 3]) {
+            triangleExist.push(!fuzzy(triangleSize, 0));
+            if (!triangleExist[i / 3]) {
                 triangleEdgeHashes.push([]);
                 continue;
             }
@@ -243,11 +243,11 @@ class LoopSubdivision {
             const index = i / 3;
             for (let j = 0; j < hashes.length; j++) {
                 // Attach Triangle Index to Edge Hash
-                if (! edgeHashToTriangle[hashes[j]]) edgeHashToTriangle[hashes[j]] = [];
+                if (!edgeHashToTriangle[hashes[j]]) edgeHashToTriangle[hashes[j]] = [];
                 edgeHashToTriangle[hashes[j]].push(index);
 
                 // Edge Length
-                if (! edgeLength[hashes[j]]) {
+                if (!edgeLength[hashes[j]]) {
                     if (j === 0 || j === 1) edgeLength[hashes[j]] = _vector0.distanceTo(_vector1);
                     if (j === 2 || j === 3) edgeLength[hashes[j]] = _vector1.distanceTo(_vector2);
                     if (j === 4 || j === 5) edgeLength[hashes[j]] = _vector2.distanceTo(_vector0);
@@ -255,13 +255,13 @@ class LoopSubdivision {
             }
 
             // Triangle Edge Reference
-            triangleEdgeHashes.push([ hashes[0], hashes[2], hashes[4] ]);
+            triangleEdgeHashes.push([hashes[0], hashes[2], hashes[4]]);
         }
 
         ///// Build Geometry, Set Attributes
         attributeList.forEach((attributeName) => {
             const attribute = existing.getAttribute(attributeName);
-            if (! attribute) return;
+            if (!attribute) return;
             const floatArray = splitAttribute(attribute, attributeName);
             split.setAttribute(attributeName, new THREE.BufferAttribute(floatArray, attribute.itemSize));
         });
@@ -292,7 +292,7 @@ class LoopSubdivision {
             const arrayLength = (vertexCount * attribute.itemSize) * newTriangles;
             const floatArray = new attribute.array.constructor(arrayLength);
 
-            const processGroups = (attributeName === 'position' && ! morph && existing.groups.length > 0);
+            const processGroups = (attributeName === 'position' && !morph && existing.groups.length > 0);
             let groupStart = undefined, groupMaterial = undefined;
 
             let index = 0;
@@ -301,7 +301,7 @@ class LoopSubdivision {
             for (let i = 0; i < vertexCount; i += 3) {
 
                 // Verify Triangle is Valid
-                if (! triangleExist[i / 3]) {
+                if (!triangleExist[i / 3]) {
                     skipped += 3;
                     continue;
                 }
@@ -329,7 +329,7 @@ class LoopSubdivision {
                 if (sharedCount === 0) {
                     setTriangle(floatArray, index, step, _vector0, _vector1, _vector2); index += (step * 3);
 
-                // Shared Edges
+                    // Shared Edges
                 } else {
                     const length0to1 = edgeLength[edgeHash0to1];
                     const length1to2 = edgeLength[edgeHash1to2];
@@ -431,10 +431,10 @@ class LoopSubdivision {
     ////////////////////
 
     /** Applies one iteration of Loop (flat) subdivision (1 triangle split into 4 triangles) */
-    static flat(geometry) {
+    function flat(geometry) {
 
         ///// Geometries
-        if (! verifyGeometry(geometry)) return geometry;
+        if (!verifyGeometry(geometry)) return geometry;
         const existing = (geometry.index !== null) ? geometry.toNonIndexed() : geometry.clone();
         const loop = new THREE.BufferGeometry();
 
@@ -445,9 +445,9 @@ class LoopSubdivision {
         ///// Build Geometry
         attributeList.forEach((attributeName) => {
             const attribute = existing.getAttribute(attributeName);
-            if (! attribute) return;
+            if (!attribute) return;
 
-            loop.setAttribute(attributeName, LoopSubdivision.flatAttribute(attribute, vertexCount));
+            loop.setAttribute(attributeName, flatAttribute(attribute, vertexCount));
         });
 
         ///// Morph Attributes
@@ -457,9 +457,9 @@ class LoopSubdivision {
             const morphAttribute = morphAttributes[attributeName];
 
             // Process Array of Float32BufferAttributes
-			for (let i = 0, l = morphAttribute.length; i < l; i++) {
+            for (let i = 0, l = morphAttribute.length; i < l; i++) {
                 if (morphAttribute[i].count !== vertexCount) continue;
-                array.push(LoopSubdivision.flatAttribute(morphAttribute[i], vertexCount));
+                array.push(flatAttribute(morphAttribute[i], vertexCount));
             }
             loop.morphAttributes[attributeName] = array;
         }
@@ -470,7 +470,7 @@ class LoopSubdivision {
         return loop;
     }
 
-    static flatAttribute(attribute, vertexCount) {
+    function flatAttribute(attribute, vertexCount) {
         const newTriangles = 4;
         const arrayLength = (vertexCount * attribute.itemSize) * newTriangles;
         const floatArray = new attribute.array.constructor(arrayLength);
@@ -504,7 +504,7 @@ class LoopSubdivision {
     ////////////////////
 
     /** Applies one iteration of Loop (smooth) subdivision (1 triangle split into 4 triangles) */
-    static smooth(geometry, params = {}) {
+    function smooth(geometry, params = {}) {
 
         if (typeof params !== 'object') params = {};
 
@@ -513,34 +513,34 @@ class LoopSubdivision {
         if (params.preserveEdges === undefined) params.preserveEdges = false;
 
         ///// Geometries
-        if (! verifyGeometry(geometry)) return geometry;
+        if (!verifyGeometry(geometry)) return geometry;
         const existing = (geometry.index !== null) ? geometry.toNonIndexed() : geometry.clone();
-        const flat = LoopSubdivision.flat(existing);
+        const flatGeometry = flat(existing);
         const loop = new THREE.BufferGeometry();
 
         ///// Attributes
         const attributeList = gatherAttributes(existing);
         const vertexCount = existing.attributes.position.count;
         const posAttribute = existing.getAttribute('position');
-        const flatPosition = flat.getAttribute('position');
+        const flatPosition = flatGeometry.getAttribute('position');
         const hashToIndex = {};             // Position hash mapped to index values of same position
         const existingNeighbors = {};       // Position hash mapped to existing vertex neighbors
         const flatOpposites = {};           // Position hash mapped to new edge point opposites
         const existingEdges = {};
 
         function addNeighbor(posHash, neighborHash, index) {
-            if (! existingNeighbors[posHash]) existingNeighbors[posHash] = {};
-            if (! existingNeighbors[posHash][neighborHash]) existingNeighbors[posHash][neighborHash] = [];
+            if (!existingNeighbors[posHash]) existingNeighbors[posHash] = {};
+            if (!existingNeighbors[posHash][neighborHash]) existingNeighbors[posHash][neighborHash] = [];
             existingNeighbors[posHash][neighborHash].push(index);
         }
 
         function addOpposite(posHash, index) {
-            if (! flatOpposites[posHash]) flatOpposites[posHash] = [];
+            if (!flatOpposites[posHash]) flatOpposites[posHash] = [];
             flatOpposites[posHash].push(index);
         }
 
         function addEdgePoint(posHash, edgeHash) {
-            if (! existingEdges[posHash]) existingEdges[posHash] = new Set();
+            if (!existingEdges[posHash]) existingEdges[posHash] = new Set();
             existingEdges[posHash].add(edgeHash);
         }
 
@@ -579,16 +579,16 @@ class LoopSubdivision {
         }
 
         ///// Flat Position to Index Map
-        for (let i = 0; i < flat.attributes.position.count; i++) {
+        for (let i = 0; i < flatGeometry.attributes.position.count; i++) {
             const posHash = hashFromVector(_temp.fromBufferAttribute(flatPosition, i));
-            if (! hashToIndex[posHash]) hashToIndex[posHash] = [];
+            if (!hashToIndex[posHash]) hashToIndex[posHash] = [];
             hashToIndex[posHash].push(i);
         }
 
         ///// Build Geometry, Set Attributes
         attributeList.forEach((attributeName) => {
             const existingAttribute = existing.getAttribute(attributeName);
-            const flatAttribute = flat.getAttribute(attributeName);
+            const flatAttribute = flatGeometry.getAttribute(attributeName);
             if (existingAttribute === undefined || flatAttribute === undefined) return;
 
             const floatArray = subdivideAttribute(attributeName, existingAttribute, flatAttribute);
@@ -605,7 +605,7 @@ class LoopSubdivision {
             for (let i = 0, l = morphAttribute.length; i < l; i++) {
                 if (morphAttribute[i].count !== vertexCount) continue;
                 const existingAttribute = morphAttribute[i];
-                const flatAttribute = LoopSubdivision.flatAttribute(morphAttribute[i], morphAttribute[i].count)
+                const flatAttribute = flatAttribute(morphAttribute[i], morphAttribute[i].count)
 
                 const floatArray = subdivideAttribute(attributeName, existingAttribute, flatAttribute);
                 array.push(new THREE.BufferAttribute(floatArray, flatAttribute.itemSize));
@@ -615,7 +615,7 @@ class LoopSubdivision {
         loop.morphTargetsRelative = existing.morphTargetsRelative;
 
         ///// Clean Up
-        flat.dispose();
+        flatGeometry.dispose();
         existing.dispose();
         return loop;
 
@@ -623,17 +623,17 @@ class LoopSubdivision {
 
         // Loop Subdivide Function
         function subdivideAttribute(attributeName, existingAttribute, flatAttribute) {
-            const arrayLength = (flat.attributes.position.count * flatAttribute.itemSize);
+            const arrayLength = (flatGeometry.attributes.position.count * flatAttribute.itemSize);
             const floatArray = new existingAttribute.array.constructor(arrayLength);
 
             // Process Triangles
             let index = 0;
-            for (let i = 0; i < flat.attributes.position.count; i += 3) {
+            for (let i = 0; i < flatGeometry.attributes.position.count; i += 3) {
 
                 // Process Triangle Points
                 for (let v = 0; v < 3; v++) {
 
-                    if (attributeName === 'uv' && ! params.uvSmooth) {
+                    if (attributeName === 'uv' && !params.uvSmooth) {
 
                         _vertex[v].fromBufferAttribute(flatAttribute, i + v);
 
@@ -676,14 +676,14 @@ class LoopSubdivision {
                                 for (const edgeHash of edgeSet) {
                                     if (flatOpposites[edgeHash].length % 2 !== 0) hasPair = false;
                                 }
-                                if (! hasPair) continue;
+                                if (!hasPair) continue;
                             }
 
                             // Number of Neighbors
                             const k = Object.keys(neighbors).length;
 
                             ///// Loop's Formula
-                            const beta = 1 / k * ((5/8) - Math.pow((3/8) + (1/4) * Math.cos(2 * Math.PI / k), 2));
+                            const beta = 1 / k * ((5 / 8) - Math.pow((3 / 8) + (1 / 4) * Math.cos(2 * Math.PI / k), 2));
 
                             ///// Warren's Formula
                             // const beta = (k > 3) ? 3 / (8 * k) : ((k === 3) ? 3 / 16 : 0);
@@ -708,7 +708,7 @@ class LoopSubdivision {
                                 _vertex[v].add(_average);
                             }
 
-                        ///// Newly Added Edge Vertex
+                            ///// Newly Added Edge Vertex
                         } else if (opposites && opposites.length === 2) {
                             const k = opposites.length;
                             const beta = 0.125; /* 1/8 */
@@ -734,93 +734,95 @@ class LoopSubdivision {
 
     }
 
-}
 
-/////////////////////////////////////////////////////////////////////////////////////
-/////   Local Functions, Hash
-/////////////////////////////////////////////////////////////////////////////////////
 
-const _positionShift = Math.pow(10, POSITION_DECIMALS);
+    /////////////////////////////////////////////////////////////////////////////////////
+    /////   Local Functions, Hash
+    /////////////////////////////////////////////////////////////////////////////////////
 
-/** Compares two numbers to see if they're almost the same */
-function fuzzy(a, b, tolerance = 0.00001) {
-    return ((a < (b + tolerance)) && (a > (b - tolerance)));
-}
+    const _positionShift = Math.pow(10, POSITION_DECIMALS);
 
-/** Generates hash strong from Number */
-function hashFromNumber(num, shift = _positionShift) {
-    let roundedNumber = round(num * shift);
-    if (roundedNumber == 0) roundedNumber = 0; /* prevent -0 (signed 0 can effect Math.atan2(), etc.) */
-    return `${roundedNumber}`;
-}
-
-/** Generates hash strong from Vector3 */
-function hashFromVector(vector, shift = _positionShift) {
-    return `${hashFromNumber(vector.x, shift)},${hashFromNumber(vector.y, shift)},${hashFromNumber(vector.z, shift)}`;
-}
-
-function round(x) {
-    return (x + ((x > 0) ? 0.5 : -0.5)) << 0;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////
-/////   Local Functions, Geometry
-/////////////////////////////////////////////////////////////////////////////////////
-
-function calcNormal(target, vec1, vec2, vec3) {
-    _temp.subVectors(vec1, vec2);
-    target.subVectors(vec2, vec3);
-    target.cross(_temp).normalize();
-}
-
-function gatherAttributes(geometry) {
-    const desired = [ 'position', 'normal', 'uv' ];
-    const contains = Object.keys(geometry.attributes);
-    const attributeList = Array.from(new Set(desired.concat(contains)));
-    return attributeList;
-}
-
-function setTriangle(positions, index, step, vec0, vec1, vec2) {
-    if (step >= 1) {
-        positions[index + 0 + (step * 0)] = vec0.x;
-        positions[index + 0 + (step * 1)] = vec1.x;
-        positions[index + 0 + (step * 2)] = vec2.x;
-    }
-    if (step >= 2) {
-        positions[index + 1 + (step * 0)] = vec0.y;
-        positions[index + 1 + (step * 1)] = vec1.y;
-        positions[index + 1 + (step * 2)] = vec2.y;
-    }
-    if (step >= 3) {
-        positions[index + 2 + (step * 0)] = vec0.z;
-        positions[index + 2 + (step * 1)] = vec1.z;
-        positions[index + 2 + (step * 2)] = vec2.z;
-    }
-    if (step >= 4) {
-        positions[index + 3 + (step * 0)] = vec0.w;
-        positions[index + 3 + (step * 1)] = vec1.w;
-        positions[index + 3 + (step * 2)] = vec2.w;
-    }
-}
-
-function verifyGeometry(geometry) {
-    if (geometry === undefined) {
-        console.warn(`LoopSubdivision: Geometry provided is undefined`);
-        return false;
+    /** Compares two numbers to see if they're almost the same */
+    function fuzzy(a, b, tolerance = 0.00001) {
+        return ((a < (b + tolerance)) && (a > (b - tolerance)));
     }
 
-    if (! geometry.isBufferGeometry) {
-        console.warn(`LoopSubdivision: Geometry provided is not 'BufferGeometry' type`);
-        return false;
+    /** Generates hash strong from Number */
+    function hashFromNumber(num, shift = _positionShift) {
+        let roundedNumber = round(num * shift);
+        if (roundedNumber == 0) roundedNumber = 0; /* prevent -0 (signed 0 can effect Math.atan2(), etc.) */
+        return `${roundedNumber}`;
     }
 
-    if (geometry.attributes.position === undefined) {
-        console.warn(`LoopSubdivision: Geometry provided missing required 'position' attribute`);
-        return false;
+    /** Generates hash strong from Vector3 */
+    function hashFromVector(vector, shift = _positionShift) {
+        return `${hashFromNumber(vector.x, shift)},${hashFromNumber(vector.y, shift)},${hashFromNumber(vector.z, shift)}`;
     }
 
-    if (geometry.attributes.normal === undefined) {
-        geometry.computeVertexNormals();
+    function round(x) {
+        return (x + ((x > 0) ? 0.5 : -0.5)) << 0;
     }
-    return true;
-}
+
+    /////////////////////////////////////////////////////////////////////////////////////
+    /////   Local Functions, Geometry
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    function calcNormal(target, vec1, vec2, vec3) {
+        _temp.subVectors(vec1, vec2);
+        target.subVectors(vec2, vec3);
+        target.cross(_temp).normalize();
+    }
+
+    function gatherAttributes(geometry) {
+        const desired = ['position', 'normal', 'uv'];
+        const contains = Object.keys(geometry.attributes);
+        const attributeList = Array.from(new Set(desired.concat(contains)));
+        return attributeList;
+    }
+
+    function setTriangle(positions, index, step, vec0, vec1, vec2) {
+        if (step >= 1) {
+            positions[index + 0 + (step * 0)] = vec0.x;
+            positions[index + 0 + (step * 1)] = vec1.x;
+            positions[index + 0 + (step * 2)] = vec2.x;
+        }
+        if (step >= 2) {
+            positions[index + 1 + (step * 0)] = vec0.y;
+            positions[index + 1 + (step * 1)] = vec1.y;
+            positions[index + 1 + (step * 2)] = vec2.y;
+        }
+        if (step >= 3) {
+            positions[index + 2 + (step * 0)] = vec0.z;
+            positions[index + 2 + (step * 1)] = vec1.z;
+            positions[index + 2 + (step * 2)] = vec2.z;
+        }
+        if (step >= 4) {
+            positions[index + 3 + (step * 0)] = vec0.w;
+            positions[index + 3 + (step * 1)] = vec1.w;
+            positions[index + 3 + (step * 2)] = vec2.w;
+        }
+    }
+
+    function verifyGeometry(geometry) {
+        if (geometry === undefined) {
+            console.warn(`LoopSubdivision: Geometry provided is undefined`);
+            return false;
+        }
+
+        if (!geometry.isBufferGeometry) {
+            console.warn(`LoopSubdivision: Geometry provided is not 'BufferGeometry' type`);
+            return false;
+        }
+
+        if (geometry.attributes.position === undefined) {
+            console.warn(`LoopSubdivision: Geometry provided missing required 'position' attribute`);
+            return false;
+        }
+
+        if (geometry.attributes.normal === undefined) {
+            geometry.computeVertexNormals();
+        }
+        return true;
+    }
+
+})()

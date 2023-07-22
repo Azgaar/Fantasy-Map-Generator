@@ -5673,14 +5673,7 @@
             <input id="options3dSunZ" type="number" min="-1500" max="1500" step="100" style="width: 4.7em" />
           </div>
 
-          <div data-tip="Set Sun Color" id="options3dSunColorSection">
-            <span>Sun Color:</span
-            ><input
-              id="options3dSunColor"
-              type="color"
-              style="width: 4.4em; height: 1em; border: 0; padding: 0; margin: 0 0.2em"
-            />
-          </div>
+
 
           <div data-tip="Toggle 3d labels" style="margin: 0.6em 0 0.3em -0.2em">
             <input id="options3dMeshLabels3d" class="checkbox" type="checkbox" />
@@ -5692,9 +5685,23 @@
             <label for="options3dMeshSkyMode" class="checkbox-label"><i>Show sky and extend water</i></label>
           </div>
 
-          <div data-tip="Toggle wireframe mode, generally used for debugging." style="margin: 0.6em 0 0.3em -0.2em">
+          <div data-tip="Toggle 3d subdivision. Increases the polygon count. Opening this will take some time. WARNING: Can smooth the sharp points in progress." style="margin: 0.6em 0 0.3em -0.2em">
+            <input id="options3dSubdivide" class="checkbox" type="checkbox" />
+            <label for="options3dSubdivide" class="checkbox-label"><i>Subdivide Model.</i></label>
+          </div>
+
+          <!-- <div data-tip="Toggle wireframe mode, generally used for debugging." style="margin: 0.6em 0 0.3em -0.2em">
             <input id="options3dMeshWireframeMode" class="checkbox" type="checkbox" />
             <label for="options3dMeshWireframeMode" class="checkbox-label"><i>Show mesh material as wireframe</i></label>
+          </div> -->
+
+          <div data-tip="Set Sun Color" id="options3dSunColorSection">
+            <span>Sun Color:</span
+            ><input
+              id="options3dSunColor"
+              type="color"
+              style="width: 4.4em; height: 1em; border: 0; padding: 0; margin: 0 0.2em"
+            />
           </div>
 
           <div data-tip="Set sky and water color" id="options3dColorSection" style="display: none">
@@ -7913,7 +7920,7 @@
     <script src="modules/ui/stylePresets.js?v=1.89.11"></script>
 
     <script src="modules/ui/general.js?v=1.87.03"></script>
-    <script src="modules/ui/options.js?v=1.89.20"></script>
+    <script src="modules/ui/options.js?v=1.89.35"></script>
     <script src="main.js?v=1.89.32"></script>
 
     <script defer src="modules/relief-icons.js"></script>
@@ -7949,14 +7956,14 @@
     <script defer src="modules/ui/battle-screen.js"></script>
     <script defer src="modules/ui/emblems-editor.js?v=1.89.21"></script>
     <script defer src="modules/ui/markers-editor.js"></script>
-    <script defer src="modules/ui/3d.js?v=1.89.33"></script>
+    <script defer src="modules/ui/3d.js?v=1.89.35"></script>
     <script defer src="modules/ui/submap.js"></script>
     <script defer src="modules/ui/hotkeys.js?v=1.88.00"></script>
     <script defer src="modules/coa-renderer.js?v=1.87.08"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
     <script defer src="libs/three.min.js"></script>
-    <script defer src="libs/LoopSubdivision.js"></script>
+    <script defer src="libs/loopSubdivision.js"></script>
 
     <script defer src="modules/io/save.js?v=1.89.29"></script>
     <script defer src="modules/io/load.js?v=1.89.30"></script>
