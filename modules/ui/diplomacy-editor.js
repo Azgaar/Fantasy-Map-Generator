@@ -214,7 +214,6 @@ function editDiplomacy() {
   function selectRelation(subjectId, objectId, currentRelation) {
     const states = pack.states;
     const subject = states[subjectId];
-    const object = states[objectId];
 
     const relationsSelector = Object.entries(relations)
       .map(
