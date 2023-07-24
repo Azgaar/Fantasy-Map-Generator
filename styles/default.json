@@ -225,8 +225,8 @@
   "#statesHalo": {
     "opacity": 0.4,
     "data-width": 10,
-    "stroke-width": 10,
-    "filter": "blur(3.5px)"
+    "stroke-width": 2,
+    "filter": "none"
   },
   "#provs": {
     "opacity": 0.7,

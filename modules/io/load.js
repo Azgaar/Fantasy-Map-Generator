@@ -320,6 +320,8 @@ async function parseLoadedData(data) {
       fogging = viewbox.select("#fogging");
       debug = viewbox.select("#debug");
       burgLabels = labels.select("#burgLabels");
+      const statePaths = defs.select("#statePaths");
+      statePaths?.remove();
     })();
 
     void (function parseGridData() {

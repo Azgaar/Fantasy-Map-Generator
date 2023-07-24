@@ -1032,9 +1032,9 @@ function drawStates() {
 
   const bodyString = bodyData.map(d => `<path id="state${d[1]}" d="${d[0]}" fill="${d[2]}" stroke="none"/>`).join("");
   const gapString = gapData.map(d => `<path id="state-gap${d[1]}" d="${d[0]}" fill="none" stroke="${d[2]}"/>`).join("");
-  const clipString = bodyData
-    .map(d => `<clipPath id="state-clip${d[1]}"><use href="#state${d[1]}"/></clipPath>`)
-    .join("");
+  // const clipString = bodyData
+  //   .map(d => `<clipPath id="state-clip${d[1]}"><use href="#state${d[1]}"/></clipPath>`)
+  //   .join("");
   const haloString = haloData
     .map(
       d =>
@@ -1045,7 +1045,7 @@ function drawStates() {
     .join("");
 
   statesBody.html(bodyString + gapString);
-  defs.select("#statePaths").html(clipString);
+  // defs.select("#statePaths").html(clipString);
   statesHalo.html(haloString);
 
   // connect vertices to chain
