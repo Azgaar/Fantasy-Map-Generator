@@ -1010,9 +1010,9 @@ function calculateTemperatures() {
   cells.temp = new Int8Array(cells.i.length); // temperature array
 
   const tEq = +temperatureEquatorInput.value;
-  const tPoleN = +temperaturePoleInput.value;
+  const tPoleN = +temperatureNorthPoleInput.value;
   //TODO Find proper delta to calculate
-  const tSPole = +temperatureSPoleInput.value;
+  const tSPole = +temperatureSouthPoleInput.value;
   const tDelta = tEq - tPoleN;
   const int = d3.easePolyInOut.exponent(0.5); // interpolation function
 

@@ -107,11 +107,11 @@ function editWorld() {
   function updateGlobeTemperature() {
     const tEq = +document.getElementById("temperatureEquatorOutput").value;
     document.getElementById("temperatureEquatorF").innerHTML = rn((tEq * 9) / 5 + 32);
-    const tPole = +document.getElementById("temperaturePoleOutput").value;
-    document.getElementById("temperaturePoleF").innerHTML = rn((tPole * 9) / 5 + 32);
-    globe.selectAll(".tempGradient90").attr("stop-color", clr(1 - (tPole - tMin) / (tMax - tMin)));
-    globe.selectAll(".tempGradient60").attr("stop-color", clr(1 - (tEq - ((tEq - tPole) * 2) / 3 - tMin) / (tMax - tMin)));
-    globe.selectAll(".tempGradient30").attr("stop-color", clr(1 - (tEq - ((tEq - tPole) * 1) / 3 - tMin) / (tMax - tMin)));
+    const tNPole = +document.getElementById("temperatureNorthPoleOutput").value;
+    document.getElementById("temperatureNorthPoleF").innerHTML = rn((tNPole * 9) / 5 + 32);
+    globe.selectAll(".tempGradient90").attr("stop-color", clr(1 - (tNPole - tMin) / (tMax - tMin)));
+    globe.selectAll(".tempGradient60").attr("stop-color", clr(1 - (tEq - ((tEq - tNPole) * 2) / 3 - tMin) / (tMax - tMin)));
+    globe.selectAll(".tempGradient30").attr("stop-color", clr(1 - (tEq - ((tEq - tNPole) * 1) / 3 - tMin) / (tMax - tMin)));
     globe.select(".tempGradient0").attr("stop-color", clr(1 - (tEq - tMin) / (tMax - tMin)));
   }
 
