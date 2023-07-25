@@ -1,7 +1,7 @@
 "use strict";
 
 window.Markers = (function () {
-  let config = [];
+  let config = getDefaultConfig();
   let occupied = [];
 
   function getDefaultConfig() {
