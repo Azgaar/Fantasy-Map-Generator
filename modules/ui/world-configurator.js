@@ -109,6 +109,8 @@ function editWorld() {
     document.getElementById("temperatureEquatorF").innerHTML = rn((tEq * 9) / 5 + 32);
     const tNPole = +document.getElementById("temperatureNorthPoleOutput").value;
     document.getElementById("temperatureNorthPoleF").innerHTML = rn((tNPole * 9) / 5 + 32);
+    const tSPole = +document.getElementById("temperatureSouthPoleOutput").value;
+    document.getElementById("temperatureSouthPoleF").innerHTML = rn((tSPole * 9) / 5 + 32);
     globe.selectAll(".tempGradient90").attr("stop-color", clr(1 - (tNPole - tMin) / (tMax - tMin)));
     globe.selectAll(".tempGradient60").attr("stop-color", clr(1 - (tEq - ((tEq - tNPole) * 2) / 3 - tMin) / (tMax - tMin)));
     globe.selectAll(".tempGradient30").attr("stop-color", clr(1 - (tEq - ((tEq - tNPole) * 1) / 3 - tMin) / (tMax - tMin)));
