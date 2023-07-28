@@ -916,7 +916,7 @@ window.Religions = (function () {
     if (m === "Culture + ism") return [trimVowels(culture) + "ism", "culture"];
     if (m === "Place + ian + type") return [place("adj") + " " + type, "state"];
     if (m === "Culture + type") return [culture + " " + type, "culture"];
-    if (m === "Burg + ian + type") return [`${place("adj")} ${type()}`, "global"];
+    if (m === "Burg + ian + type") return [`${place("adj")} ${type}`, "global"];
     if (m === "Random + ian + type") return [`${getAdjective(random())} ${type}`, "global"];
     if (m === "Type + of the + meaning") return [`${type} of the ${generateMeaning()}`, "global"];
     return [trimVowels(random()) + "ism", "global"]; // else
