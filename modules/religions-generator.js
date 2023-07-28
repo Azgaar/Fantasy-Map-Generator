@@ -375,8 +375,8 @@ window.Religions = (function () {
       "Non-theism": 4
     },
     Cult: {
-      Cult: 2,
-      "Dark Cult": 2,
+      Cult: 5,
+      "Dark Cult": 5,
       Sect: 1
     },
     Heresy: {
