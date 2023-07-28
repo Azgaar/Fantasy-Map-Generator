@@ -1019,9 +1019,8 @@ function calculateTemperatures() {
 
   d3.range(0, cells.i.length, grid.cellsX).forEach(function (r) {
     const y = grid.points[r][1];
-    const lat = Math.abs(mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT); // [0; 90]
-    const initTemp = tEq - rn(lat / 90, 2) * tNDelta;
-    console.info(+y + "\t|\t" + +lat + "\t|\t" + +initTemp);
+    const lat = (mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT); // [-90; 90]
+    const initTemp = tEq - (Math.max(rn(lat / 90, 2), 0) * tNDelta - Math.min(rn(lat / 90, 2), 0) * tSDelta);
     for (let i = r; i < r + grid.cellsX; i++) {
       cells.temp[i] = minmax(initTemp - convertToFriendly(cells.h[i]), -128, 127);
     }
