@@ -107,13 +107,15 @@ function editWorld() {
   function updateGlobeTemperature() {
     const tEq = +document.getElementById("temperatureEquatorOutput").value;
     document.getElementById("temperatureEquatorF").innerHTML = rn((tEq * 9) / 5 + 32);
-    const tNPole = +document.getElementById("temperatureNorthPoleOutput").value;
-    document.getElementById("temperatureNorthPoleF").innerHTML = rn((tNPole * 9) / 5 + 32);
-    const tSPole = +document.getElementById("temperatureSouthPoleOutput").value;
-    document.getElementById("temperatureSouthPoleF").innerHTML = rn((tSPole * 9) / 5 + 32);
-    globe.selectAll(".tempGradient90").attr("stop-color", clr(1 - (tNPole - tMin) / (tMax - tMin)));
-    globe.selectAll(".tempGradient60").attr("stop-color", clr(1 - (tEq - ((tEq - tNPole) * 2) / 3 - tMin) / (tMax - tMin)));
-    globe.selectAll(".tempGradient30").attr("stop-color", clr(1 - (tEq - ((tEq - tNPole) * 1) / 3 - tMin) / (tMax - tMin)));
+    const tNorthPole = +document.getElementById("temperatureNorthPoleOutput").value;
+    document.getElementById("temperatureNorthPoleF").innerHTML = rn((tNorthPole * 9) / 5 + 32);
+    const tSouthPole = +document.getElementById("temperatureSouthPoleOutput").value;
+    document.getElementById("temperatureSouthPoleF").innerHTML = rn((tSouthPole * 9) / 5 + 32);
+    //Update Settings to match the slider(there may be a better solution)
+    options.SouthPoleTemperature = +tSouthPole;
+    globe.selectAll(".tempGradient90").attr("stop-color", clr(1 - (tNorthPole - tMin) / (tMax - tMin)));
+    globe.selectAll(".tempGradient60").attr("stop-color", clr(1 - (tEq - ((tEq - tNorthPole) * 2) / 3 - tMin) / (tMax - tMin)));
+    globe.selectAll(".tempGradient30").attr("stop-color", clr(1 - (tEq - ((tEq - tNorthPole) * 1) / 3 - tMin) / (tMax - tMin)));
     globe.select(".tempGradient0").attr("stop-color", clr(1 - (tEq - tMin) / (tMax - tMin)));
   }
 

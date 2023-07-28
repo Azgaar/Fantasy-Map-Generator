@@ -219,7 +219,7 @@ async function parseLoadedData(data) {
       if (settings[14]) mapSizeInput.value = mapSizeOutput.value = minmax(settings[14], 1, 100);
       if (settings[15]) latitudeInput.value = latitudeOutput.value = minmax(settings[15], 0, 100);
       if (settings[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = settings[16];
-      if (settings[17]) temperaturePoleInput.value = temperaturePoleOutput.value = settings[17];
+      if (settings[17]) temperatureNorthPoleInput.value = temperatureNorthPoleOutput.value = settings[17];
       if (settings[18]) precInput.value = precOutput.value = settings[18];
       if (settings[19]) options = JSON.parse(settings[19]);
       if (settings[20]) mapName.value = settings[20];
@@ -589,6 +589,7 @@ async function parseLoadedData(data) {
     // set options
     yearInput.value = options.year;
     eraInput.value = options.era;
+    temperatureSouthPoleOutput.value = temperatureSouthPoleInput.value = options.SouthPoleTemperature;
     shapeRendering.value = viewbox.attr("shape-rendering") || "geometricPrecision";
 
     if (window.restoreDefaultEvents) restoreDefaultEvents();

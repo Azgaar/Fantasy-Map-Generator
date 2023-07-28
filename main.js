@@ -184,6 +184,7 @@ let options = {
   pinNotes: false,
   showMFCGMap: true,
   winds: [225, 45, 225, 315, 135, 315],
+  SouthPoleTemperature: 0,
   stateLabelsMode: "auto"
 };
 let mapCoordinates = {}; // map coordinates on globe
