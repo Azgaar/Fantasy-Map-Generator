@@ -636,4 +636,9 @@ export function resolveVersionConflicts(version) {
       if (coa?.shield === "state") delete coa.shield;
     });
   }
+
+  if (version < 1.89) {
+    //May need a major bump
+    
+  }
 }
