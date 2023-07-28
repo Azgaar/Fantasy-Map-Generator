@@ -613,12 +613,8 @@ function randomizeOptions() {
   if (randomize || !locked("temperatureEquator"))
     temperatureEquatorOutput.value = temperatureEquatorInput.value = rand(tMax - 10, tMax);
   if (randomize || !locked("temperaturePole")) {
-    temperatureNorthPoleOutput.value 
-      = temperatureNorthPoleInput.value 
-      = temperatureSouthPoleOutput.value 
-      = temperatureSouthPoleInput.value 
-      = options.SouthPoleTemperature
-      = rand(tMin, tMin + 30);
+    temperatureNorthPoleOutput.value = temperatureNorthPoleInput.value = rand(tMin, tMin + 30);
+    temperatureSouthPoleOutput.value = temperatureSouthPoleInput.value = rand(tMin, tMin + 30);
   }
     
 

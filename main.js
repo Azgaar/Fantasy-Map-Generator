@@ -184,7 +184,8 @@ let options = {
   pinNotes: false,
   showMFCGMap: true,
   winds: [225, 45, 225, 315, 135, 315],
-  SouthPoleTemperature: 0,
+  tempNorthPole: 0,
+  tempSouthPole: 0,
   stateLabelsMode: "auto"
 };
 let mapCoordinates = {}; // map coordinates on globe
@@ -1009,13 +1010,14 @@ function calculateTemperatures() {
   TIME && console.time("calculateTemperatures");
   const cells = grid.cells;
   cells.temp = new Int8Array(cells.i.length); // temperature array
-
   const tEq = +temperatureEquatorInput.value;
-  const tNPole = +temperatureNorthPoleInput.value;
-  //TODO Find proper delta to calculate
-  const tSPole = +temperatureSouthPoleInput.value;
-  const tNDelta = tEq - tNPole;
-  const tSDelta = tEq - tSPole;
+  const tNorthPole = +temperatureNorthPoleInput.value;
+  const tSouthPole = +temperatureSouthPoleInput.value;
+  //Update Settings to match the slider(there may be a better solution)
+  options.tempSouthPole = +tSouthPole;
+  options.tempNorthPole = +tNorthPole;
+  const tNDelta = tEq - tNorthPole;
+  const tSDelta = tEq - tSouthPole;
   const int = d3.easePolyInOut.exponent(0.5); // interpolation function
 
   d3.range(0, cells.i.length, grid.cellsX).forEach(function (r) {

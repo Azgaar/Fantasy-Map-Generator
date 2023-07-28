@@ -589,7 +589,7 @@ async function parseLoadedData(data) {
     // set options
     yearInput.value = options.year;
     eraInput.value = options.era;
-    temperatureSouthPoleOutput.value = temperatureSouthPoleInput.value = options.SouthPoleTemperature;
+    temperatureSouthPoleOutput.value = temperatureSouthPoleInput.value = options.tempSouthPole;
     shapeRendering.value = viewbox.attr("shape-rendering") || "geometricPrecision";
 
     if (window.restoreDefaultEvents) restoreDefaultEvents();

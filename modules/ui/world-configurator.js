@@ -111,8 +111,6 @@ function editWorld() {
     document.getElementById("temperatureNorthPoleF").innerHTML = rn((tNorthPole * 9) / 5 + 32);
     const tSouthPole = +document.getElementById("temperatureSouthPoleOutput").value;
     document.getElementById("temperatureSouthPoleF").innerHTML = rn((tSouthPole * 9) / 5 + 32);
-    //Update Settings to match the slider(there may be a better solution)
-    options.SouthPoleTemperature = +tSouthPole;
     globe.selectAll(".tempGradient90").attr("stop-color", clr(1 - (tNorthPole - tMin) / (tMax - tMin)));
     globe.selectAll(".tempGradient60").attr("stop-color", clr(1 - (tEq - ((tEq - tNorthPole) * 2) / 3 - tMin) / (tMax - tMin)));
     globe.selectAll(".tempGradient30").attr("stop-color", clr(1 - (tEq - ((tEq - tNorthPole) * 1) / 3 - tMin) / (tMax - tMin)));
