@@ -842,6 +842,56 @@ function addMarkerOnClick() {
   }
 }
 
+function toggleAddRandomMarker(config) {
+  return function() {
+    const pressed = document.getElementById("addMarker")?.classList.contains("pressed");
+    if (pressed) {
+      unpressClickToAddButton();
+      return;
+    }
+
+    addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
+    addMarker.classList.add("pressed");
+    markersAddFromOverview.classList.add("pressed");
+
+    viewbox.style("cursor", "crosshair").on("click", addRandomMarkerOnClick(config));
+    tip("Click on map to add a marker. Hold Shift to add multiple", true);
+    if (!layerIsOn("toggleMarkers")) toggleMarkers();
+    }
+}
+
+function addRandomMarkerOnClick(config) {
+  return function() {
+    const point = d3.mouse(this);
+    const x = rn(point[0], 2);
+    const y = rn(point[1], 2);
+
+    // Find the current cell
+    const cell = findCell(point[0], point[1]);
+
+    // Get the base marker from parent function parameters
+    const baseMarker = {
+      icon: config.icon || "❓",
+      type: config.type || ""
+    };
+    const marker = Markers.add({...baseMarker, x, y, cell});
+    if (config.add) {
+      config.add("marker"+marker.i, cell);
+    }
+
+    const markersElement = document.getElementById("markers");
+    const rescale = +markersElement.getAttribute("rescale");
+    markersElement.insertAdjacentHTML("beforeend", drawMarker(marker, rescale));
+
+    if (d3.event.shiftKey === false) {
+      document.getElementById("markerAdd").classList.remove("pressed");
+      document.getElementById("markersAddFromOverview").classList.remove("pressed");
+      unpressClickToAddButton();
+    }
+    configMarkersGeneration();
+  }
+}
+
 function configMarkersGeneration() {
   drawConfigTable();
 
@@ -853,6 +903,7 @@ function configMarkersGeneration() {
       <td data-tip="Marker icon">Icon</td>
       <td data-tip="Marker number multiplier">Multiplier</td>
       <td data-tip="Number of markers of that type on the current map">Number</td>
+      <td data-tip="Place a random marker of this type">Place</td>
     </tr></thead>`;
     const lines = config.map(({type, icon, multiplier}, index) => {
       const inputId = `markerIconInput${index}`;
@@ -864,6 +915,9 @@ function configMarkersGeneration() {
         </td>
         <td><input type="number" min="0" max="100" step="0.1" value="${multiplier}" /></td>
         <td style="text-align:center">${markers.filter(marker => marker.type === type).length}</td>
+        <td style="position: relative">
+          <button class="icon-plus add-marker" data-type="${type}" data-tip="Place a random ${type} marker"></button>
+      </td>
       </tr>`;
     });
     const table = `<table class="table">${headers}<tbody>${lines.join("")}</tbody></table>`;
@@ -873,6 +927,13 @@ function configMarkersGeneration() {
       selectIconButton.addEventListener("click", function () {
         const input = this.previousElementSibling;
         selectIcon(input.value, icon => (input.value = icon));
+      });
+    });
+
+    document.querySelectorAll('.add-marker').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        console.log('Hmm...');
+        toggleAddRandomMarker(Markers.getConfig().find(({type}) => type === event.target.getAttribute('data-type')))();
       });
     });
   }
