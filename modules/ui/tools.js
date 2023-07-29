@@ -932,7 +932,6 @@ function configMarkersGeneration() {
 
     document.querySelectorAll('.add-marker').forEach((button) => {
       button.addEventListener('click', (event) => {
-        console.log('Hmm...');
         toggleAddRandomMarker(Markers.getConfig().find(({type}) => type === event.target.getAttribute('data-type')))();
       });
     });
