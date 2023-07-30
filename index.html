@@ -2353,15 +2353,14 @@
               </label>
             </div>
             <div>
-              <i data-locked="0" id="lock_temperaturePole" class="icon-lock-open"></i>
               <label data-tip="Set temperature near poles">
-                <i>Poles:</i>
-                <br>
+                <i data-locked="0" id="lock_temperatureNorthPole" class="icon-lock-open"></i>
                 <i>North Pole</i>
                 <input id="temperatureNorthPoleInput" data-stored="temperatureNorthPole" type="number" min="-50" max="50" />°C =
                 <span id="temperatureNorthPoleF"></span>°F
                 <input id="temperatureNorthPoleOutput" data-stored="temperatureNorthPole" type="range" min="-50" max="50" />
                 <br>
+                <i data-locked="0" id="lock_temperatureSouthPole" class="icon-lock-open"></i>
                 <i>South Pole</i>
                 <input id="temperatureSouthPoleInput" data-stored="temperatureSouthPole" type="number" min="-50" max="50" />°C =
                 <span id="temperatureSouthPoleF"></span>°F
@@ -2424,13 +2423,13 @@
           <svg id="globe" width="22em" height="22em" viewBox="-20 -25 240 240">
             <defs>
               <linearGradient id="temperatureGradient" x1="0" x2="0" y1="0" y2="1">
-                <stop class="tempGradient90" offset="0%" stop-color="blue" />
-                <stop class="tempGradient60" offset="16.6%" stop-color="green" />
-                <stop class="tempGradient30" offset="33.3%" stop-color="yellow" />
+                <stop class="tempNorthGradient90" offset="0%" stop-color="blue" />
+                <stop class="tempNorthGradient60" offset="16.6%" stop-color="green" />
+                <stop class="tempNorthGradient30" offset="33.3%" stop-color="yellow" />
                 <stop class="tempGradient0" offset="50%" stop-color="red" />
-                <stop class="tempGradient30" offset="66.6%" stop-color="yellow" />
-                <stop class="tempGradient60" offset="83.3%" stop-color="green" />
-                <stop class="tempGradient90" offset="100%" stop-color="blue" />
+                <stop class="tempSouthGradient30" offset="66.6%" stop-color="yellow" />
+                <stop class="tempSouthGradient60" offset="83.3%" stop-color="green" />
+                <stop class="tempSouthGradient90" offset="100%" stop-color="blue" />
               </linearGradient>
             </defs>
             <g id="globeNoteLines">

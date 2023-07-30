@@ -111,10 +111,15 @@ function editWorld() {
     document.getElementById("temperatureNorthPoleF").innerHTML = rn((tNorthPole * 9) / 5 + 32);
     const tSouthPole = +document.getElementById("temperatureSouthPoleOutput").value;
     document.getElementById("temperatureSouthPoleF").innerHTML = rn((tSouthPole * 9) / 5 + 32);
-    globe.selectAll(".tempGradient90").attr("stop-color", clr(1 - (tNorthPole - tMin) / (tMax - tMin)));
-    globe.selectAll(".tempGradient60").attr("stop-color", clr(1 - (tEq - ((tEq - tNorthPole) * 2) / 3 - tMin) / (tMax - tMin)));
-    globe.selectAll(".tempGradient30").attr("stop-color", clr(1 - (tEq - ((tEq - tNorthPole) * 1) / 3 - tMin) / (tMax - tMin)));
+
+    //North to Equator to South
+    globe.select(".tempNorthGradient90").attr("stop-color", clr(1 - (tNorthPole - tMin) / (tMax - tMin)));
+    globe.select(".tempNorthGradient60").attr("stop-color", clr(1 - (tEq - ((tEq - tNorthPole) * 2) / 3 - tMin) / (tMax - tMin)));
+    globe.select(".tempNorthGradient30").attr("stop-color", clr(1 - (tEq - ((tEq - tNorthPole) * 1) / 3 - tMin) / (tMax - tMin)));
     globe.select(".tempGradient0").attr("stop-color", clr(1 - (tEq - tMin) / (tMax - tMin)));
+    globe.select(".tempSouthGradient30").attr("stop-color", clr(1 - (tEq - ((tEq - tSouthPole) * 1) / 3 - tMin) / (tMax - tMin)));
+    globe.select(".tempSouthGradient60").attr("stop-color", clr(1 - (tEq - ((tEq - tSouthPole) * 2) / 3 - tMin) / (tMax - tMin)));
+    globe.select(".tempSouthGradient90").attr("stop-color", clr(1 - (tSouthPole - tMin) / (tMax - tMin)));
   }
 
   function updateWindDirections() {
