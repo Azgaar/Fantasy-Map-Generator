@@ -25,7 +25,7 @@ function getMapData() {
     mapSizeOutput.value,
     latitudeOutput.value,
     temperatureEquatorOutput.value,
-    temperatureNorthPoleOutput.value,
+    0, //Dummy for tempNorthOutput.value
     precOutput.value,
     JSON.stringify(options),
     mapName.value,
