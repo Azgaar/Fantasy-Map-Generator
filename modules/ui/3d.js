@@ -116,7 +116,6 @@ window.ThreeD = (function () {
 
   const setResolutionScale = function (scale) {
     options.resolutionScale = scale;
-    console.log("New res:",scale);
     redraw();
   };
 
@@ -169,7 +168,6 @@ window.ThreeD = (function () {
   };
 
   const toggle3dSubdivision = function(){
-    console.log("toggle 3d subdivision");
     options.subdivide = !options.subdivide;
     redraw();
   }
@@ -505,8 +503,6 @@ window.ThreeD = (function () {
     }
     geometry.setAttribute('position',vertices);
     geometry.computeVertexNormals();
-
-    //This takes too long
     if (mesh) scene.remove(mesh);
     if(options.subdivide){
       const subdivideParams = {

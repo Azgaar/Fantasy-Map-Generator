@@ -1096,12 +1096,10 @@ function toggle3dOptions() {
     options3dGlobeResolution.value = ThreeD.options.resolution;
     options3dSunColor.value = ThreeD.options.sunColor;
     options3dSubdivide.value = ThreeD.options.subdivide;
-    console.log("options3dSunColor.value =",ThreeD.options.sunColor);
   }
 
   function changeHeightScale() {
     options3dScaleRange.value = options3dScaleNumber.value = this.value;
-    console.log(this);
     ThreeD.setScale(+this.value);
   }
 
@@ -1137,7 +1135,6 @@ function toggle3dOptions() {
   }
 
   function toggle3dSubdivision(){
-    console.log(options.subdivide);
     ThreeD.toggle3dSubdivision();
   }
 

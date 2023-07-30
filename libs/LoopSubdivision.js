@@ -178,7 +178,6 @@ const loopSubdivision = {};
         return modifiedGeometry;
     }
     loopSubdivision.modify = modify;
-    console.log("Hello World");
     /////////////////////////////////////////////////////////////////////////////////////
     /////   Split Hypotenuse
     ////////////////////
