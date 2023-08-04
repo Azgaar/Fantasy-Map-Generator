@@ -25,11 +25,14 @@ function overviewMarkers() {
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
+  const markerTypeInput = document.getElementById("addedMarkerType");
+  markerTypeInput.addEventListener("change", toggleAddMarker);
+
   Markers.getConfig().forEach(markerConfig => {
     const option = document.createElement("option");
     option.setAttribute("value", markerConfig.type);
     option.textContent = `${markerConfig.icon} ${markerConfig.type}`;
-    document.getElementById("addedMarkerType").appendChild(option);
+    markerTypeInput.appendChild(option);
   });
 
   const listeners = [
