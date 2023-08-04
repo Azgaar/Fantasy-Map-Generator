@@ -14,6 +14,7 @@ function overviewMarkers() {
   const markersGenerationConfig = document.getElementById("markersGenerationConfig");
   const markersRemoveAll = document.getElementById("markersRemoveAll");
   const markersExport = document.getElementById("markersExport");
+  const markerTypeInput = document.getElementById("addedMarkerType");
 
   addLines();
 
@@ -24,9 +25,6 @@ function overviewMarkers() {
     close: close,
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
-
-  const markerTypeInput = document.getElementById("addedMarkerType");
-  markerTypeInput.addEventListener("change", toggleAddMarker);
 
   Markers.getConfig().forEach(markerConfig => {
     const option = document.createElement("option");
@@ -43,7 +41,8 @@ function overviewMarkers() {
     listen(markersAddFromOverview, "click", toggleAddMarker),
     listen(markersGenerationConfig, "click", configMarkersGeneration),
     listen(markersRemoveAll, "click", triggerRemoveAll),
-    listen(markersExport, "click", exportMarkers)
+    listen(markersExport, "click", exportMarkers),
+    listen(markerTypeInput, "change", changeMarkerType),
   ];
 
   function handleLineClick(ev) {
@@ -152,6 +151,12 @@ function overviewMarkers() {
   function toggleAddMarker() {
     markersAddFromOverview.classList.toggle("pressed");
     addMarker.click();
+  }
+
+  function changeMarkerType() {
+    if (!markersAddFromOverview.classList.contains("pressed")) {
+      toggleAddMarker();
+    }
   }
 
   function removeMarker(i) {
