@@ -25,6 +25,13 @@ function overviewMarkers() {
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
+  Markers.getConfig().forEach(markerConfig => {
+    const option = document.createElement("option");
+    option.setAttribute("value", markerConfig.type);
+    option.textContent = `${markerConfig.icon} ${markerConfig.type}`;
+    document.getElementById("addedMarkerType").appendChild(option);
+  });
+
   const listeners = [
     listen(body, "click", handleLineClick),
     listen(markersInverPin, "click", invertPin),
