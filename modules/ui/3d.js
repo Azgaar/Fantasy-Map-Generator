@@ -427,8 +427,7 @@ window.ThreeD = (function () {
       const mapOptions = {
         noLabels: options.labels3d,
         noWater: options.extendedWater,
-        fullMap: true,
-        for3DRender: true
+        fullMap: true
       };
       const url = await getMapURL("mesh",mapOptions);
       const canvas = document.createElement("canvas");

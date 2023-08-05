@@ -157,8 +157,7 @@ async function getMapURL(type, options = {}) {
     noWater = false,
     noScaleBar = false,
     noIce = false,
-    fullMap = false,
-    for3DRender = false
+    fullMap = false
   } = options;
 
   if (fullMap) drawScaleBar(1);
