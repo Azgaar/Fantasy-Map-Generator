@@ -1,7 +1,7 @@
 "use strict";
 
 // version and caching control
-const version = "1.89.37"; // generator version, update each time
+const version = "1.89.38"; // generator version, update each time
 
 {
   document.title += " v" + version;
@@ -36,6 +36,7 @@ const version = "1.89.37"; // generator version, update each time
         <li>Data Charts screen</li>
         <li>Сultures and religions can have multiple parents in hierarchy tree</li>
         <li>Heightmap selection screen</li>
+        <li>Randomly generated marker type selection and placement</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
