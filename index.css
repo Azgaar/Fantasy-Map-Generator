@@ -2368,6 +2368,7 @@ svg.button {
 #markerTypeSelectMenu {
   display: none;
 }
+
 #markerTypeSelectMenu.visible {
   display: block;
   position: absolute;
@@ -2379,12 +2380,14 @@ svg.button {
   left: 0;
   background: white;
 }
+
 #markerTypeSelectMenu > button {
   display: block;
   width: 100%;
   border: 1px solid #ddd;
   margin-bottom: 1px;
 }
+
 #markerTypeSelectMenu > button:hover {
   background: #ccc;
 }
