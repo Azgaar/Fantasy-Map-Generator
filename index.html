@@ -5651,11 +5651,11 @@
           <div data-tip="Set mesh texture resolution">
             <div>Texture resolution:</div>
             <select id="options3dMeshSkinResolution" style="width: 10em">
-              <option value="1">512x512px</option>
-              <option value="2">1024x1024px</option>
-              <option value="3">2048x2048px</option>
-              <option value="4">4096x4096px</option>
-              <option value="5">8192x8192px</option>
+              <option value="512">512x512px</option>
+              <option value="1024">1024x1024px</option>
+              <option value="2048">2048x2048px</option>
+              <option value="4096">4096x4096px</option>
+              <option value="8192">8192x8192px</option>
             </select>
           </div>
           
@@ -5682,7 +5682,7 @@
 
           <div data-tip="Toggle 3d subdivision. Increases the polygon count. Opening this will take some time. WARNING: Can smooth the sharp points in progress." style="margin: 0.6em 0 0.3em -0.2em">
             <input id="options3dSubdivide" class="checkbox" type="checkbox" />
-            <label for="options3dSubdivide" class="checkbox-label"><i>Subdivide Model.</i></label>
+            <label for="options3dSubdivide" class="checkbox-label"><i>Smooth Geometry.</i></label>
           </div>
 
           <div data-tip="Set Sun Color" id="options3dSunColorSection">
@@ -7910,7 +7910,7 @@
     <script src="modules/ui/stylePresets.js?v=1.89.11"></script>
 
     <script src="modules/ui/general.js?v=1.87.03"></script>
-    <script src="modules/ui/options.js?v=1.89.35"></script>
+    <script src="modules/ui/options.js?v=1.89.36"></script>
     <script src="main.js?v=1.89.32"></script>
 
     <script defer src="modules/relief-icons.js"></script>
@@ -7946,19 +7946,17 @@
     <script defer src="modules/ui/battle-screen.js"></script>
     <script defer src="modules/ui/emblems-editor.js?v=1.89.21"></script>
     <script defer src="modules/ui/markers-editor.js"></script>
-    <script defer src="modules/ui/3d.js?v=1.89.35"></script>
+    <script defer src="modules/ui/3d.js?v=1.89.36"></script>
     <script defer src="modules/ui/submap.js"></script>
     <script defer src="modules/ui/hotkeys.js?v=1.88.00"></script>
     <script defer src="modules/coa-renderer.js?v=1.87.08"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-    <script defer src="libs/three.min.js"></script>
-    <script defer src="libs/loopSubdivision.js"></script>
 
     <script defer src="modules/io/save.js?v=1.89.29"></script>
     <script defer src="modules/io/load.js?v=1.89.30"></script>
     <script defer src="modules/io/cloud.js"></script>
-    <script defer src="modules/io/export.js?v=1.89.18"></script>
+    <script defer src="modules/io/export.js?v=1.89.36"></script>
     <script defer src="modules/io/formats.js"></script>
 
     <!-- Web Components -->

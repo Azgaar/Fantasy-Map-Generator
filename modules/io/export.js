@@ -158,7 +158,7 @@ async function getMapURL(type, options = {}) {
     noScaleBar = false,
     noIce = false,
     fullMap = false,
-    for3D = false
+    for3DRender = false
   } = options;
 
   if (fullMap) drawScaleBar(1);

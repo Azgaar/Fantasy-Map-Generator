@@ -14,7 +14,7 @@ window.ThreeD = (function () {
     labels3d: 0,
     wireframe: 0,
     resolution: 2,
-    resolutionScale: 3,
+    resolutionScale: 2048,
     sunColor: "#cccccc",
     subdivide: 0
   };
@@ -328,9 +328,6 @@ window.ThreeD = (function () {
       line: 5 - towns.attr("data-size") / 2
     };
 
-    //Look for a custom model for city and town geometry. If not found use these.
-    //Maybe serialize the models to the .map file.
-    
     const city_icon_material = new THREE.MeshPhongMaterial({color: cityOptions.iconColor});
     city_icon_material.wireframe = options.wireframe;
     const town_icon_material = new THREE.MeshPhongMaterial({color: townOptions.iconColor});
@@ -431,31 +428,13 @@ window.ThreeD = (function () {
         noLabels: options.labels3d,
         noWater: options.extendedWater,
         fullMap: true,
-        for3D: true
+        for3DRender: true
       };
-      let sizeOfSkin = 512;
-      switch(options.resolutionScale){
-        case 1:
-          sizeOfSkin = 512;
-          break;
-        case 2:
-          sizeOfSkin = 1024;
-          break;
-        case 3:
-          sizeOfSkin = 2048;
-          break;
-        case 4:
-          sizeOfSkin = 4096;
-          break;
-        case 5:
-          sizeOfSkin = 8192;
-          break;
-      }
       const url = await getMapURL("mesh",mapOptions);
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-      canvas.width = sizeOfSkin;
-      canvas.height = sizeOfSkin;
+      canvas.width = options.resolutionScale;
+      canvas.height = options.resolutionScale;
       const img = new Image();
       img.src = url;
 
@@ -480,6 +459,7 @@ window.ThreeD = (function () {
       //Try loading skin texture.
     texture = new THREE.TextureLoader().load(await createMeshTextureUrl(), render);
     texture.needsUpdate = true;
+    texture.anisotropy = Renderer.capabilities.getMaxAnisotropy();
     }
     
 
@@ -505,6 +485,7 @@ window.ThreeD = (function () {
     geometry.computeVertexNormals();
     if (mesh) scene.remove(mesh);
     if(options.subdivide){
+      await loadLoopSubdivision();
       const subdivideParams = {
         split: true,
         uvSmooth: false,
@@ -683,6 +664,17 @@ window.ThreeD = (function () {
     });
   }
 
+  function loadLoopSubdivision(){
+    if (window.loopSubdivision) return Promise.resolve(true);
+
+    return new Promise(resolve => {
+      const script = document.createElement("script");
+      script.src = "libs/loopsubdivison.min.js";
+      document.head.append(script);
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+    });
+  }
   function OrbitControls(camera, domElement) {
     if (THREE.OrbitControls) return new THREE.OrbitControls(camera, domElement);
 
