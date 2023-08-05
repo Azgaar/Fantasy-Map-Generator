@@ -2357,6 +2357,38 @@ svg.button {
   opacity: 0.8;
 }
 
+#markerTypeSelector {
+  font-size: 0.85em;
+}
+
+#markerTypeSelectorWrapper {
+  position: relative;
+}
+
+#markerTypeSelectMenu {
+  display: none;
+}
+#markerTypeSelectMenu.visible {
+  display: block;
+  position: absolute;
+  height: 250px;
+  width: 170px;
+  overflow-y: scroll;
+  background: inherit;
+  bottom: 100%;
+  left: 0;
+  background: white;
+}
+#markerTypeSelectMenu > button {
+  display: block;
+  width: 100%;
+  border: 1px solid #ddd;
+  margin-bottom: 1px;
+}
+#markerTypeSelectMenu > button:hover {
+  background: #ccc;
+}
+
 @media print {
   div,
   canvas {

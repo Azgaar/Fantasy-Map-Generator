@@ -5509,9 +5509,14 @@
 
         <div id="markersBottom">
           <button id="markersOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
-          <select id="addedMarkerType" style="width: 40px">
-            <option value="" selected>❓empty marker</option>
-          </select>
+          <input type="hidden" id="addedMarkerType" name="addedMarkerType" value="" />
+          <span id="markerTypeSelectorWrapper">
+              <button 
+              id="markerTypeSelector"
+              data-tip="Select marker type for newly added markers."
+            >❓</button>
+            <div id="markerTypeSelectMenu"></div>
+          </span>
           <button
             id="markersAddFromOverview"
             data-tip="Add a new marker. Hold Shift to add multiple"
