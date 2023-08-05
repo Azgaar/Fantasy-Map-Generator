@@ -1060,6 +1060,7 @@ function toggle3dOptions() {
   document.getElementById("options3dSunX").addEventListener("change", changeSunPosition);
   document.getElementById("options3dSunY").addEventListener("change", changeSunPosition);
   document.getElementById("options3dSunZ").addEventListener("change", changeSunPosition);
+  document.getElementById("options3dMeshSkinResolution").addEventListener("change", changeResolutionScale);
   document.getElementById("options3dMeshRotationRange").addEventListener("input", changeRotation);
   document.getElementById("options3dMeshRotationNumber").addEventListener("change", changeRotation);
   document.getElementById("options3dGlobeRotationRange").addEventListener("input", changeRotation);
@@ -1069,6 +1070,10 @@ function toggle3dOptions() {
   document.getElementById("options3dMeshSky").addEventListener("input", changeColors);
   document.getElementById("options3dMeshWater").addEventListener("input", changeColors);
   document.getElementById("options3dGlobeResolution").addEventListener("change", changeResolution);
+  // document.getElementById("options3dMeshWireframeMode").addEventListener("change",toggleWireframe3d);
+  document.getElementById("options3dSunColor").addEventListener("input", changeSunColor);
+  document.getElementById("options3dSubdivide").addEventListener("change",toggle3dSubdivision);
+
 
   function updateValues() {
     const globe = document.getElementById("canvas3d").dataset.type === "viewGlobe";
@@ -1081,6 +1086,7 @@ function toggle3dOptions() {
     options3dSunY.value = ThreeD.options.sun.y;
     options3dSunZ.value = ThreeD.options.sun.z;
     options3dMeshRotationRange.value = options3dMeshRotationNumber.value = ThreeD.options.rotateMesh;
+    options3dMeshSkinResolution.value = ThreeD.options.resolutionScale;
     options3dGlobeRotationRange.value = options3dGlobeRotationNumber.value = ThreeD.options.rotateGlobe;
     options3dMeshLabels3d.value = ThreeD.options.labels3d;
     options3dMeshSkyMode.value = ThreeD.options.extendedWater;
@@ -1088,6 +1094,8 @@ function toggle3dOptions() {
     options3dMeshSky.value = ThreeD.options.skyColor;
     options3dMeshWater.value = ThreeD.options.waterColor;
     options3dGlobeResolution.value = ThreeD.options.resolution;
+    options3dSunColor.value = ThreeD.options.sunColor;
+    options3dSubdivide.value = ThreeD.options.subdivide;
   }
 
   function changeHeightScale() {
@@ -1095,9 +1103,18 @@ function toggle3dOptions() {
     ThreeD.setScale(+this.value);
   }
 
+  function changeResolutionScale() {
+    options3dMeshSkinResolution.value = this.value;
+    ThreeD.setResolutionScale(+this.value);
+  }
+
   function changeLightness() {
     options3dLightnessRange.value = options3dLightnessNumber.value = this.value;
     ThreeD.setLightness(this.value / 100);
+  }
+
+  function changeSunColor(){
+    ThreeD.setSunColor(options3dSunColor.value);
   }
 
   function changeSunPosition() {
@@ -1116,6 +1133,14 @@ function toggle3dOptions() {
   function toggleLabels3d() {
     ThreeD.toggleLabels();
   }
+
+  function toggle3dSubdivision(){
+    ThreeD.toggle3dSubdivision();
+  }
+
+  // function toggleWireframe3d() {
+  //   ThreeD.toggleWireframe();
+  // }
 
   function toggleSkyMode() {
     const hide = ThreeD.options.extendedWater;

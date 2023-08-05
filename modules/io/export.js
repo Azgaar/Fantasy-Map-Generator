@@ -11,7 +11,7 @@ async function saveSVG() {
   link.click();
 
   tip(
-    `${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`,
+    `${link.download} is saved. Open "Downloads" screen (ctrl + J) to check. You can set image scale in options`,
     true,
     "success",
     5000
