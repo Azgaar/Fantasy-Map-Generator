@@ -1,7 +1,11 @@
 "use strict";
 
 // version and caching control
-const version = "1.89.36"; // generator version, update each time
+
+
+
+const version = "1.89.39"; // generator version, update each time
+
 
 {
   document.title += " v" + version;

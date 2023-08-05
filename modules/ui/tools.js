@@ -828,8 +828,16 @@ function addMarkerOnClick() {
   // Find the currently selected marker to use as a base
   const isMarkerSelected = markers.length && elSelected?.node()?.parentElement?.id === "markers";
   const selectedMarker = isMarkerSelected ? markers.find(marker => marker.i === +elSelected.attr("id").slice(6)) : null;
-  const baseMarker = selectedMarker || {icon: "❓"};
+
+  const selectedType = document.getElementById("addedMarkerType").value;
+  const selectedConfig = Markers.getConfig().find(({type}) => type === selectedType);
+
+  const baseMarker = selectedMarker || selectedConfig || {icon: "❓"};
   const marker = Markers.add({...baseMarker, x, y, cell});
+
+  if (selectedConfig && selectedConfig.add) {
+    selectedConfig.add("marker"+marker.i, cell);
+  }
 
   const markersElement = document.getElementById("markers");
   const rescale = +markersElement.getAttribute("rescale");

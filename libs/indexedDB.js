@@ -18,7 +18,6 @@ const openDatabase = () => {
 
       request.onerror = event => {
         console.error("indexedDB request error");
-        console.log(event);
         reject();
       };
 

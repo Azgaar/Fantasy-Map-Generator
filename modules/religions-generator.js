@@ -363,23 +363,20 @@ window.Religions = (function () {
       Shamanism: 4,
       Animism: 4,
       Polytheism: 4,
-      Totemism: 2,
-      Druidism: 1,
-      "Ancestor Worship": 1,
-      "Nature Worship": 1
+      "Ancestor Worship": 2,
+      "Nature Worship": 1,
+      Totemism: 1
     },
     Organized: {
       Polytheism: 14,
       Monotheism: 12,
       Dualism: 6,
       Pantheism: 6,
-      "Non-theism": 4,
-      Henotheism: 1,
-      Panentheism: 1
+      "Non-theism": 4
     },
     Cult: {
-      Cult: 2,
-      "Dark Cult": 2,
+      Cult: 5,
+      "Dark Cult": 5,
       Sect: 1
     },
     Heresy: {
@@ -418,17 +415,20 @@ window.Religions = (function () {
   };
 
   const types = {
-    Shamanism: {Beliefs: 3, Shamanism: 2, Spirits: 1},
-    Animism: {Spirits: 1, Beliefs: 1},
-    "Ancestor worship": {Beliefs: 1, Forefathers: 2, Ancestors: 2},
+    Shamanism: {Beliefs: 3, Shamanism: 2, Druidism: 1, Spirits: 1},
+    Animism: {Spirits: 3, Beliefs: 1},
     Polytheism: {Deities: 3, Faith: 1, Gods: 1, Pantheon: 1},
+    "Ancestor worship": {Beliefs: 1, Forefathers: 2, Ancestors: 2},
+    "Nature Worship": {Beliefs: 3, Druids: 1},
+    Totemism: {Beliefs: 2, Totems: 2, Idols: 1},
 
+    Monotheism: {Religion: 2, Church: 3, Faith: 1},
     Dualism: {Religion: 3, Faith: 1, Cult: 1},
-    Monotheism: {Religion: 1, Church: 1},
     "Non-theism": {Beliefs: 3, Spirits: 1},
 
-    Cult: {Cult: 4, Sect: 4, Arcanum: 1, Coterie: 1, Order: 1, Worship: 1},
-    "Dark Cult": {Cult: 2, Sect: 2, Blasphemy: 1, Circle: 1, Coven: 1, Idols: 1, Occultism: 1},
+    Cult: {Cult: 4, Sect: 2, Arcanum: 1, Order: 1, Worship: 1},
+    "Dark Cult": {Cult: 2, Blasphemy: 1, Circle: 1, Coven: 1, Idols: 1, Occultism: 1},
+    Sect: {Sect: 3, Society: 1},
 
     Heresy: {
       Heresy: 3,
@@ -893,9 +893,10 @@ window.Religions = (function () {
     const {cells, cultures, burgs, states} = pack;
 
     const random = () => Names.getCulture(cells.culture[center], null, null, "", 0);
-    const type = () => rw(types[form]);
-    const supreme = () => deity.split(/[ ,]+/)[0];
-    const culture = () => cultures[cells.culture[center]].name;
+    const type = rw(types[form]);
+    const supreme = deity.split(/[ ,]+/)[0];
+    const culture = cultures[cells.culture[center]].name;
+
     const place = adj => {
       const burgId = cells.burg[center];
       const stateId = cells.state[center];
@@ -906,18 +907,18 @@ window.Religions = (function () {
     };
 
     const m = rw(namingMethods[variety]);
-    if (m === "Random + type") return [random() + " " + type(), "global"];
+    if (m === "Random + type") return [random() + " " + type, "global"];
     if (m === "Random + ism") return [trimVowels(random()) + "ism", "global"];
-    if (m === "Supreme + ism" && deity) return [trimVowels(supreme()) + "ism", "global"];
+    if (m === "Supreme + ism" && deity) return [trimVowels(supreme) + "ism", "global"];
     if (m === "Faith of + Supreme" && deity)
-      return [ra(["Faith", "Way", "Path", "Word", "Witnesses"]) + " of " + supreme(), "global"];
+      return [ra(["Faith", "Way", "Path", "Word", "Witnesses"]) + " of " + supreme, "global"];
     if (m === "Place + ism") return [place() + "ism", "state"];
-    if (m === "Culture + ism") return [trimVowels(culture()) + "ism", "culture"];
-    if (m === "Place + ian + type") return [place("adj") + " " + type(), "state"];
-    if (m === "Culture + type") return [culture() + " " + type(), "culture"];
-    if (m === "Burg + ian + type") return [`${place("adj")} ${type()}`, "global"];
-    if (m === "Random + ian + type") return [`${getAdjective(random())} ${type()}`, "global"];
-    if (m === "Type + of the + meaning") return [`${type()} of the ${generateMeaning()}`, "global"];
+    if (m === "Culture + ism") return [trimVowels(culture) + "ism", "culture"];
+    if (m === "Place + ian + type") return [place("adj") + " " + type, "state"];
+    if (m === "Culture + type") return [culture + " " + type, "culture"];
+    if (m === "Burg + ian + type") return [`${place("adj")} ${type}`, "global"];
+    if (m === "Random + ian + type") return [`${getAdjective(random())} ${type}`, "global"];
+    if (m === "Type + of the + meaning") return [`${type} of the ${generateMeaning()}`, "global"];
     return [trimVowels(random()) + "ism", "global"]; // else
   }
 
