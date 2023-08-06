@@ -726,7 +726,7 @@ window.COA = (function () {
 
   // charges specific to culture or burg type (FMG-only config, not coming from Armoria)
   const typeMapping = {
-    Naval: {anchor: 3, boat: 1, lymphad: 2, armillarySphere: 1, escallop: 1, dolphin: 1, plaice: 1, cavavel: 1},
+    Naval: {anchor: 3, boat: 1, lymphad: 2, armillarySphere: 1, escallop: 1, dolphin: 1, plaice: 1, caravel: 1},
     Highland: {tower: 1, raven: 1, wolfHeadErased: 1, wolfPassant: 1, goat: 1, axe: 1},
     River: {
       tower: 1,
