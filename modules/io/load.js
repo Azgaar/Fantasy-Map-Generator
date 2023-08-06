@@ -218,8 +218,7 @@ async function parseLoadedData(data) {
       if (settings[13]) urbanization = urbanizationInput.value = urbanizationOutput.value = settings[13];
       if (settings[14]) mapSizeInput.value = mapSizeOutput.value = minmax(settings[14], 1, 100);
       if (settings[15]) latitudeInput.value = latitudeOutput.value = minmax(settings[15], 0, 100);
-      if (settings[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = settings[16];
-      if (settings[17]) temperatureNorthPoleInput.value = temperatureNorthPoleOutput.value = settings[17]; //Not used see options: only for compatibility
+      // setting 16 and 17 (temperature) are moved to options
       if (settings[18]) precInput.value = precOutput.value = settings[18];
       if (settings[19]) options = JSON.parse(settings[19]);
       if (settings[20]) mapName.value = settings[20];
@@ -231,6 +230,9 @@ async function parseLoadedData(data) {
 
     void (function applyOptionsToUI() {
       stateLabelsModeInput.value = options.stateLabelsMode;
+      yearInput.value = options.year;
+      eraInput.value = options.era;
+      shapeRendering.value = viewbox.attr("shape-rendering") || "geometricPrecision";
     })();
 
     void (function parseConfiguration() {
@@ -585,13 +587,6 @@ async function parseLoadedData(data) {
     // draw data layers (no kept in svg)
     if (rulers && layerIsOn("toggleRulers")) rulers.draw();
     if (layerIsOn("toggleGrid")) drawGrid();
-
-    // set options
-    yearInput.value = options.year;
-    eraInput.value = options.era;
-    temperatureNorthPoleOutput.value = temperatureNorthPoleInput.value = options.temperatureNorthPole;
-    temperatureSouthPoleOutput.value = temperatureSouthPoleInput.value = options.temperatureSouthPole;
-    shapeRendering.value = viewbox.attr("shape-rendering") || "geometricPrecision";
 
     if (window.restoreDefaultEvents) restoreDefaultEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
