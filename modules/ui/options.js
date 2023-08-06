@@ -612,8 +612,10 @@ function randomizeOptions() {
     tMin = -30; // temperature extremes
   if (randomize || !locked("temperatureEquator"))
     temperatureEquatorOutput.value = temperatureEquatorInput.value = rand(tMax - 10, tMax);
-  if (randomize || !locked("temperaturePole"))
-    temperaturePoleOutput.value = temperaturePoleInput.value = rand(tMin, tMin + 30);
+  if (randomize || !locked("temperatureNorthPole")) 
+    temperatureNorthPoleOutput.value = temperatureNorthPoleInput.value = rand(tMin, tMin + 30);
+  if (randomize || !locked("temperatureSouthPole"))
+    temperatureSouthPoleOutput.value = temperatureSouthPoleInput.value = rand(tMin, tMin + 30);
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
