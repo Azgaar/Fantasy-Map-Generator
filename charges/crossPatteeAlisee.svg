@@ -1,1 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200"><metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/><g id="crossPatteeAlisee" stroke-width=".5"><path d="m 76,67 c 10,-11 38,-11 48,0 -15,5 -20,23 -19,28 5,1 23,-4 28,-19 11,10 11,38 0,48 -5,-15 -23,-20 -28,-19 -1,5 4,23 19,28 -10,11 -38,11 -48,0 15,-5 20,-23 19,-28 -5,-1 -23,4 -28,19 C 56,114 56,86 67,76 72,91 90,97 95,95 96,90 91,72 76,67 Z"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
+  <g id="crossPatteeAlisee" stroke-width=".5">
+    <path d="m 76,67 c 10,-11 38,-11 48,0 -15,5 -20,23 -19,28 5,1 23,-4 28,-19 11,10 11,38 0,48 -5,-15 -23,-20 -28,-19 -1,5 4,23 19,28 -10,11 -38,11 -48,0 15,-5 20,-23 19,-28 -5,-1 -23,4 -28,19 C 56,114 56,86 67,76 72,91 90,97 95,95 96,90 91,72 76,67 Z"/>
+  </g>
+</svg>

@@ -1,1 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200"><metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/><g id="crossCeltic" stroke-width=".5"><path d="m 95,60 v 7 C 80,70 70,80 67,95 h -7 v 10 h 7 c 3,15 13,25 28,28 v 7 h 10 v -7 c 15,-3 25,-13 28,-28 h 7 V 95 h -7 C 130,80 120,70 105,67 v -7 z m 0,15 V 95 H 75 C 77,85 85,77 95,75 Z m 10,0 c 10,2 18,10 20,20 h -20 z m -30,30 h 20 v 20 C 85,123 77,115 75,105 Z m 30,0 h 20 c -2,10 -10,18 -20,20 z"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
+  <g id="crossCeltic" stroke-width=".5">
+    <path d="m 95,60 v 7 C 80,70 70,80 67,95 h -7 v 10 h 7 c 3,15 13,25 28,28 v 7 h 10 v -7 c 15,-3 25,-13 28,-28 h 7 V 95 h -7 C 130,80 120,70 105,67 v -7 z m 0,15 V 95 H 75 C 77,85 85,77 95,75 Z m 10,0 c 10,2 18,10 20,20 h -20 z m -30,30 h 20 v 20 C 85,123 77,115 75,105 Z m 30,0 h 20 c -2,10 -10,18 -20,20 z"/>
+  </g>
+</svg>

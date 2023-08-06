@@ -1,1 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200"><metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/><g id="goutte"><path d="M100 134c17-1 16-19 10-25-1.9-1.8-4.6-5.3-3.9-8.1C108 94 102 90 102 87c-1-7 3-7 3-13-.1-6.2-3.3-8.7-6-12 1.2 3 2 6 1 9-1.5 5.9-6.2 6.9-8 11-2 5 3 11 3 15-.6 9.1-9 13-9 23 .3 11.3 9 14 14 14z"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
+  <g id="goutte">
+    <path d="M100 134c17-1 16-19 10-25-1.9-1.8-4.6-5.3-3.9-8.1C108 94 102 90 102 87c-1-7 3-7 3-13-.1-6.2-3.3-8.7-6-12 1.2 3 2 6 1 9-1.5 5.9-6.2 6.9-8 11-2 5 3 11 3 15-.6 9.1-9 13-9 23 .3 11.3 9 14 14 14z"/>
+  </g>
+</svg>
