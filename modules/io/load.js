@@ -218,10 +218,13 @@ async function parseLoadedData(data) {
       if (settings[13]) urbanization = urbanizationInput.value = urbanizationOutput.value = settings[13];
       if (settings[14]) mapSizeInput.value = mapSizeOutput.value = minmax(settings[14], 1, 100);
       if (settings[15]) latitudeInput.value = latitudeOutput.value = minmax(settings[15], 0, 100);
-      if (settings[16]) temperatureEquatorInput.value = temperatureEquatorOutput.value = settings[16];
-      if (settings[17]) temperaturePoleInput.value = temperaturePoleOutput.value = settings[17];
       if (settings[18]) precInput.value = precOutput.value = settings[18];
+
       if (settings[19]) options = JSON.parse(settings[19]);
+      // setting 16 and 17 (temperature) are part of options now
+      if (settings[16]) options.temperatureEquator = Number(settings[16]);
+      if (settings[17]) options.temperatureNorthPole = options.temperatureSouthPole = Number(settings[17]);
+
       if (settings[20]) mapName.value = settings[20];
       if (settings[21]) hideLabels.checked = +settings[21];
       if (settings[22]) stylePreset.value = settings[22];
@@ -231,6 +234,9 @@ async function parseLoadedData(data) {
 
     void (function applyOptionsToUI() {
       stateLabelsModeInput.value = options.stateLabelsMode;
+      yearInput.value = options.year;
+      eraInput.value = options.era;
+      shapeRendering.value = viewbox.attr("shape-rendering") || "geometricPrecision";
     })();
 
     void (function parseConfiguration() {
@@ -585,11 +591,6 @@ async function parseLoadedData(data) {
     // draw data layers (no kept in svg)
     if (rulers && layerIsOn("toggleRulers")) rulers.draw();
     if (layerIsOn("toggleGrid")) drawGrid();
-
-    // set options
-    yearInput.value = options.year;
-    eraInput.value = options.era;
-    shapeRendering.value = viewbox.attr("shape-rendering") || "geometricPrecision";
 
     if (window.restoreDefaultEvents) restoreDefaultEvents();
     focusOn(); // based on searchParams focus on point, cell or burg

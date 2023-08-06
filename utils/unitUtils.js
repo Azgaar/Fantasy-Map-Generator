@@ -13,8 +13,7 @@ const temperatureConversionMap = {
   "°Rø": temp => rn((temp * 21) / 40 + 7.5) + "°Rø"
 };
 
-function convertTemperature(temp) {
-  const scale = temperatureScale.value || "°C";
+function convertTemperature(temp, scale = temperatureScale.value || "°C") {
   return temperatureConversionMap[scale](temp);
 }
 

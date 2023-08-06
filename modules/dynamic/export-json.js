@@ -108,8 +108,6 @@ function getSettings() {
     urbanization: urbanization,
     mapSize: mapSizeOutput.value,
     latitudeO: latitudeOutput.value,
-    temperatureEquator: temperatureEquatorOutput.value,
-    temperaturePole: temperaturePoleOutput.value,
     prec: precOutput.value,
     options: options,
     mapName: mapName.value,

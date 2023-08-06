@@ -559,11 +559,10 @@ function applyStoredOptions() {
     if (key.slice(0, 5) === "style") applyOption(stylePreset, key, key.slice(5));
   }
 
-  if (stored("winds"))
-    options.winds = localStorage
-      .getItem("winds")
-      .split(",")
-      .map(w => +w);
+  if (stored("winds")) options.winds = localStorage.getItem("winds").split(",").map(Number);
+  if (stored("temperatureEquator")) options.temperatureEquator = +localStorage.getItem("temperatureEquator");
+  if (stored("temperatureNorthPole")) options.temperatureNorthPole = +localStorage.getItem("temperatureNorthPole");
+  if (stored("temperatureSouthPole")) options.temperatureSouthPole = +localStorage.getItem("temperatureSouthPole");
   if (stored("military")) options.military = JSON.parse(stored("military"));
 
   if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize"));
@@ -607,13 +606,10 @@ function randomizeOptions() {
   if (randomize || !locked("culturesSet")) randomizeCultureSet();
 
   // 'Configure World' settings
+  if (randomize || !locked("temperatureEquator")) options.temperatureEquator = gauss(25, 7, 20, 35, 0);
+  if (randomize || !locked("temperatureNorthPole")) options.temperatureNorthPole = gauss(-25, 7, -40, 10, 0);
+  if (randomize || !locked("temperatureSouthPole")) options.temperatureSouthPole = gauss(-15, 7, -40, 10, 0);
   if (randomize || !locked("prec")) precInput.value = precOutput.value = gauss(100, 40, 5, 500);
-  const tMax = 30,
-    tMin = -30; // temperature extremes
-  if (randomize || !locked("temperatureEquator"))
-    temperatureEquatorOutput.value = temperatureEquatorInput.value = rand(tMax - 10, tMax);
-  if (randomize || !locked("temperaturePole"))
-    temperaturePoleOutput.value = temperaturePoleInput.value = rand(tMin, tMin + 30);
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
@@ -1072,8 +1068,7 @@ function toggle3dOptions() {
   document.getElementById("options3dGlobeResolution").addEventListener("change", changeResolution);
   // document.getElementById("options3dMeshWireframeMode").addEventListener("change",toggleWireframe3d);
   document.getElementById("options3dSunColor").addEventListener("input", changeSunColor);
-  document.getElementById("options3dSubdivide").addEventListener("change",toggle3dSubdivision);
-
+  document.getElementById("options3dSubdivide").addEventListener("change", toggle3dSubdivision);
 
   function updateValues() {
     const globe = document.getElementById("canvas3d").dataset.type === "viewGlobe";
@@ -1113,7 +1108,7 @@ function toggle3dOptions() {
     ThreeD.setLightness(this.value / 100);
   }
 
-  function changeSunColor(){
+  function changeSunColor() {
     ThreeD.setSunColor(options3dSunColor.value);
   }
 
@@ -1134,7 +1129,7 @@ function toggle3dOptions() {
     ThreeD.toggleLabels();
   }
 
-  function toggle3dSubdivision(){
+  function toggle3dSubdivision() {
     ThreeD.toggle3dSubdivision();
   }
 

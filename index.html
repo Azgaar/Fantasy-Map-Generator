@@ -2346,29 +2346,58 @@
 
     <div id="dialogs">
       <div id="worldConfigurator" class="dialog stable" style="display: none">
-        <div>
+        <div style="display: flex">
           <div id="worldControls">
             <div>
               <i data-locked="0" id="lock_temperatureEquator" class="icon-lock-open"></i>
               <label data-tip="Set temperature at equator">
                 <i>Equator:</i>
-                <input
-                  id="temperatureEquatorInput"
-                  data-stored="temperatureEquator"
-                  type="number"
-                  min="-50"
-                  max="50"
-                />°C = <span id="temperatureEquatorF"></span>°F
+                <input id="temperatureEquatorInput" data-stored="temperatureEquator" type="number" min="-50" max="50" />
+                <span>°C = <span id="temperatureEquatorF"></span></span>
                 <input id="temperatureEquatorOutput" data-stored="temperatureEquator" type="range" min="-50" max="50" />
               </label>
             </div>
             <div>
-              <i data-locked="0" id="lock_temperaturePole" class="icon-lock-open"></i>
-              <label data-tip="Set temperature near poles">
-                <i>Poles:</i>
-                <input id="temperaturePoleInput" data-stored="temperaturePole" type="number" min="-50" max="50" />°C =
-                <span id="temperaturePoleF"></span>°F
-                <input id="temperaturePoleOutput" data-stored="temperaturePole" type="range" min="-50" max="50" />
+              <label data-tip="Set the North Pole average yearly temperature">
+                <i data-locked="0" id="lock_temperatureNorthPole" class="icon-lock-open"></i>
+                <i>North Pole:</i>
+                <input
+                  id="temperatureNorthPoleInput"
+                  data-stored="temperatureNorthPole"
+                  type="number"
+                  min="-50"
+                  max="50"
+                />
+                <span>°C = <span id="temperatureNorthPoleF"></span></span>
+                <input
+                  id="temperatureNorthPoleOutput"
+                  data-stored="temperatureNorthPole"
+                  type="range"
+                  min="-50"
+                  max="50"
+                />
+              </label>
+            </div>
+
+            <div>
+              <label data-tip="Set the South Pole average yearly temperature">
+                <i data-locked="0" id="lock_temperatureSouthPole" class="icon-lock-open"></i>
+                <i>South Pole:</i>
+                <input
+                  id="temperatureSouthPoleInput"
+                  data-stored="temperatureSouthPole"
+                  type="number"
+                  min="-50"
+                  max="50"
+                />
+                <span>°C = <span id="temperatureSouthPoleF"></span></span>
+                <input
+                  id="temperatureSouthPoleOutput"
+                  data-stored="temperatureSouthPole"
+                  type="range"
+                  min="-50"
+                  max="50"
+                />
               </label>
             </div>
             <div>
@@ -2424,59 +2453,65 @@
             <div data-tip="Map coordinates on globe"><i>Coords:</i> <span id="mapCoordinates"></span></div>
           </div>
 
-          <svg id="globe" width="22em" height="22em" viewBox="-20 -25 240 240">
-            <defs>
-              <linearGradient id="temperatureGradient" x1="0" x2="0" y1="0" y2="1">
-                <stop class="tempGradient90" offset="0%" stop-color="blue" />
-                <stop class="tempGradient60" offset="16.6%" stop-color="green" />
-                <stop class="tempGradient30" offset="33.3%" stop-color="yellow" />
-                <stop class="tempGradient0" offset="50%" stop-color="red" />
-                <stop class="tempGradient30" offset="66.6%" stop-color="yellow" />
-                <stop class="tempGradient60" offset="83.3%" stop-color="green" />
-                <stop class="tempGradient90" offset="100%" stop-color="blue" />
-              </linearGradient>
-            </defs>
-            <g id="globeNoteLines">
-              <line x1="5" x2="220" y1="0" y2="0" />
-              <line x1="5" x2="220" y1="13" y2="13" />
-              <line x1="5" x2="220" y1="49.5" y2="49.5" />
-              <line x1="-5" x2="220" y1="100" y2="100" />
-              <line x1="5" x2="220" y1="150.5" y2="150.5" />
-              <line x1="5" x2="220" y1="187" y2="187" />
-              <line x1="5" x2="220" y1="200" y2="200" />
-            </g>
-            <g id="globeWindArrows" data-tip="Click to change wind direction" stroke-linejoin="round">
-              <circle cx="210" cy="6" r="12" />
-              <path data-tier="0" d="M210,11 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 6)" />
-              <circle cx="210" cy="30" r="12" />
-              <path data-tier="1" d="M210,35 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(45 210 30)" />
-              <circle cx="210" cy="75" r="12" />
-              <path data-tier="2" d="M210,80 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 75)" />
-              <circle cx="210" cy="130" r="12" />
-              <path data-tier="3" d="M210,135 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 130)" />
-              <circle cx="210" cy="173" r="12" />
-              <path data-tier="4" d="M210,178 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(135 210 173)" />
-              <circle cx="210" cy="194" r="12" />
-              <path data-tier="5" d="M210,199 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 194)" />
-            </g>
-            <g id="globaAxisLabels">
-              <text x="82%" y="-4%">wind</text>
-              <text x="-8%" y="-4%">latitude</text>
-            </g>
-            <g id="globeLatLabels">
-              <text x="-15" y="5">90°</text>
-              <text x="-15" y="18">60°</text>
-              <text x="-15" y="53">30°</text>
-              <text x="-15" y="103">0°</text>
-              <text x="-15" y="153">30°</text>
-              <text x="-15" y="190">60°</text>
-              <text x="-15" y="204">90°</text>
-            </g>
-            <circle id="globeOutline" cx="100" cy="100" r="100" />
-            <line id="globeEquator" x1="1" x2="199" y1="100" y2="100" />
-            <path id="globeGraticule" />
-            <path id="globeArea" />
-          </svg>
+          <div style="display: flex; flex-direction: column; align-items: flex-end">
+            <svg id="globe" width="22em" viewBox="-20 -25 240 240">
+              <defs>
+                <linearGradient id="temperatureGradient" x1="0" x2="0" y1="0" y2="1">
+                  <stop id="grad90" offset="0%" stop-color="blue" />
+                  <stop id="grad60" offset="16.6%" stop-color="green" />
+                  <stop id="grad30" offset="33.3%" stop-color="yellow" />
+                  <stop id="grad0" offset="50%" stop-color="red" />
+                  <stop id="grad-30" offset="66.6%" stop-color="yellow" />
+                  <stop id="grad-60" offset="83.3%" stop-color="green" />
+                  <stop id="grad-90" offset="100%" stop-color="blue" />
+                </linearGradient>
+              </defs>
+              <g id="globeNoteLines">
+                <line x1="5" x2="220" y1="0" y2="0" />
+                <line x1="5" x2="220" y1="13" y2="13" />
+                <line x1="5" x2="220" y1="49.5" y2="49.5" />
+                <line x1="-5" x2="220" y1="100" y2="100" />
+                <line x1="5" x2="220" y1="150.5" y2="150.5" />
+                <line x1="5" x2="220" y1="187" y2="187" />
+                <line x1="5" x2="220" y1="200" y2="200" />
+              </g>
+              <g id="globeWindArrows" data-tip="Click to change wind direction" stroke-linejoin="round">
+                <circle cx="210" cy="6" r="12" />
+                <path data-tier="0" d="M210,11 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 6)" />
+                <circle cx="210" cy="30" r="12" />
+                <path data-tier="1" d="M210,35 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(45 210 30)" />
+                <circle cx="210" cy="75" r="12" />
+                <path data-tier="2" d="M210,80 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 75)" />
+                <circle cx="210" cy="130" r="12" />
+                <path data-tier="3" d="M210,135 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 130)" />
+                <circle cx="210" cy="173" r="12" />
+                <path data-tier="4" d="M210,178 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(135 210 173)" />
+                <circle cx="210" cy="194" r="12" />
+                <path data-tier="5" d="M210,199 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 194)" />
+              </g>
+              <g id="globaAxisLabels">
+                <text x="82%" y="-4%">wind</text>
+                <text x="-8%" y="-4%">latitude</text>
+              </g>
+              <g id="globeLatLabels">
+                <text x="-15" y="5">90°</text>
+                <text x="-15" y="18">60°</text>
+                <text x="-15" y="53">30°</text>
+                <text x="-15" y="103">0°</text>
+                <text x="-15" y="153">30°</text>
+                <text x="-15" y="190">60°</text>
+                <text x="-15" y="204">90°</text>
+              </g>
+              <circle id="globeOutline" cx="100" cy="100" r="100" />
+              <line id="globeEquator" x1="1" x2="199" y1="100" y2="100" />
+              <path id="globeGraticule" />
+              <path id="globeArea" />
+            </svg>
+
+            <button id="restoreWinds" data-tip="Click to restore default (Earth-based) wind directions">
+              Restore winds
+            </button>
+          </div>
         </div>
       </div>
 
@@ -7924,14 +7959,14 @@
     <script src="modules/ui/stylePresets.js?v=1.89.11"></script>
 
     <script src="modules/ui/general.js?v=1.87.03"></script>
-    <script src="modules/ui/options.js?v=1.89.36"></script>
-    <script src="main.js?v=1.89.32"></script>
+    <script src="modules/ui/options.js?v=1.90.00"></script>
+    <script src="main.js?v=1.90.00"></script>
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js"></script>
     <script defer src="modules/ui/editors.js?v=1.89.35"></script>
-    <script defer src="modules/ui/tools.js?v=1.89.38"></script>
-    <script defer src="modules/ui/world-configurator.js"></script>
+    <script defer src="modules/ui/tools.js?v=1.90.00"></script>
+    <script defer src="modules/ui/world-configurator.js?v=1.90.00"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=1.89.06"></script>
     <script defer src="modules/ui/provinces-editor.js?v=1.89.00"></script>
     <script defer src="modules/ui/biomes-editor.js"></script>
@@ -7967,8 +8002,8 @@
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
 
-    <script defer src="modules/io/save.js?v=1.89.29"></script>
-    <script defer src="modules/io/load.js?v=1.89.30"></script>
+    <script defer src="modules/io/save.js?v=1.90.00"></script>
+    <script defer src="modules/io/load.js?v=1.90.00"></script>
     <script defer src="modules/io/cloud.js"></script>
     <script defer src="modules/io/export.js?v=1.89.36"></script>
     <script defer src="modules/io/formats.js"></script>
