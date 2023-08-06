@@ -29,6 +29,8 @@ const version = "1.89.39"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>More than 70 new heraldic charges</li>
+        <li>Multi-color heraldic charges support</li>
         <li>New 3D scene options</li>
         <li>Autosave feature (in Options)</li>
         <li>Google translation support (in Options)</li>
