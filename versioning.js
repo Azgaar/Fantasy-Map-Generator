@@ -2,10 +2,7 @@
 
 // version and caching control
 
-
-
 const version = "1.89.39"; // generator version, update each time
-
 
 {
   document.title += " v" + version;
@@ -32,7 +29,7 @@ const version = "1.89.39"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
-        <li>New 3D Scene options and quality improvements.</li>
+        <li>New 3D scene options</li>
         <li>Autosave feature (in Options)</li>
         <li>Google translation support (in Options)</li>
         <li>Religions can be edited and redrawn like cultures</li>

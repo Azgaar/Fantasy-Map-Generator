@@ -5511,10 +5511,7 @@
           <button id="markersOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
           <input type="hidden" id="addedMarkerType" name="addedMarkerType" value="" />
           <span id="markerTypeSelectorWrapper">
-              <button 
-              id="markerTypeSelector"
-              data-tip="Select marker type for newly added markers."
-            >❓</button>
+            <button id="markerTypeSelector" data-tip="Select marker type for newly added markers.">❓</button>
             <div id="markerTypeSelectMenu"></div>
           </span>
           <button
@@ -5676,8 +5673,6 @@
               <option value="8192">8192x8192px</option>
             </select>
           </div>
-          
-
 
           <div data-tip="Set sun position (x, y, z) to define shadows">
             <div>Sun position:</div>
@@ -5685,8 +5680,6 @@
             <input id="options3dSunY" type="number" min="0" max="5000" step="100" style="width: 4.7em" />
             <input id="options3dSunZ" type="number" min="-1500" max="1500" step="100" style="width: 4.7em" />
           </div>
-
-
 
           <div data-tip="Toggle 3d labels" style="margin: 0.6em 0 0.3em -0.2em">
             <input id="options3dMeshLabels3d" class="checkbox" type="checkbox" />
@@ -5698,9 +5691,12 @@
             <label for="options3dMeshSkyMode" class="checkbox-label"><i>Show sky and extend water</i></label>
           </div>
 
-          <div data-tip="Toggle 3d subdivision. Increases the polygon count. Opening this will take some time. WARNING: Can smooth the sharp points in progress." style="margin: 0.6em 0 0.3em -0.2em">
+          <div
+            data-tip="Increases the polygon count to smooth the sharp points. Please note that it can take some time to calculate"
+            style="margin: 0.6em 0 0.3em -0.2em"
+          >
             <input id="options3dSubdivide" class="checkbox" type="checkbox" />
-            <label for="options3dSubdivide" class="checkbox-label"><i>Smooth Geometry.</i></label>
+            <label for="options3dSubdivide" class="checkbox-label"><i>Smooth geometry</i></label>
           </div>
 
           <div data-tip="Set Sun Color" id="options3dSunColorSection">

@@ -96,11 +96,11 @@ window.ThreeD = (function () {
 
   const setScale = function (scale) {
     options.scale = scale;
-    let vertices = geometry.getAttribute('position');
-    for(let i = 0; i < vertices.count; i++){
-      vertices.setZ(i,getMeshHeight(i));
+    let vertices = geometry.getAttribute("position");
+    for (let i = 0; i < vertices.count; i++) {
+      vertices.setZ(i, getMeshHeight(i));
     }
-    geometry.setAttribute('position',vertices);
+    geometry.setAttribute("position", vertices);
     geometry.verticesNeedUpdate = true;
     geometry.computeVertexNormals();
     geometry.verticesNeedUpdate = false;
@@ -108,11 +108,11 @@ window.ThreeD = (function () {
     redraw();
   };
 
-  const setSunColor = function(color){
+  const setSunColor = function (color) {
     options.sunColor = color;
     spotLight.color = new THREE.Color(color);
     render();
-  }
+  };
 
   const setResolutionScale = function (scale) {
     options.resolutionScale = scale;
@@ -167,10 +167,10 @@ window.ThreeD = (function () {
     }
   };
 
-  const toggle3dSubdivision = function(){
+  const toggle3dSubdivision = function () {
     options.subdivide = !options.subdivide;
     redraw();
-  }
+  };
 
   const toggleWireframe = function () {
     options.wireframe = !options.wireframe;
@@ -275,7 +275,11 @@ window.ThreeD = (function () {
     context2d.fillStyle = color;
     context2d.fillText(text, 0, size * quality);
 
-    return textureToSprite(context2d.canvas.toDataURL(), context2d.canvas.width / quality, context2d.canvas.height / quality);
+    return textureToSprite(
+      context2d.canvas.toDataURL(),
+      context2d.canvas.width / quality,
+      context2d.canvas.height / quality
+    );
   }
 
   function get3dCoords(baseX, baseY) {
@@ -332,8 +336,20 @@ window.ThreeD = (function () {
     city_icon_material.wireframe = options.wireframe;
     const town_icon_material = new THREE.MeshPhongMaterial({color: townOptions.iconColor});
     town_icon_material.wireframe = options.wireframe;
-    const city_icon_geometry = new THREE.CylinderGeometry(cityOptions.iconSize * 2, cityOptions.iconSize * 2, cityOptions.iconSize, 16, 1);
-    const town_icon_geometry = new THREE.CylinderGeometry(townOptions.iconSize * 2, townOptions.iconSize * 2, townOptions.iconSize, 16, 1);
+    const city_icon_geometry = new THREE.CylinderGeometry(
+      cityOptions.iconSize * 2,
+      cityOptions.iconSize * 2,
+      cityOptions.iconSize,
+      16,
+      1
+    );
+    const town_icon_geometry = new THREE.CylinderGeometry(
+      townOptions.iconSize * 2,
+      townOptions.iconSize * 2,
+      townOptions.iconSize,
+      16,
+      1
+    );
     const line_material = new THREE.LineBasicMaterial({color: cityOptions.iconColor});
 
     // burg labels
@@ -422,14 +438,14 @@ window.ThreeD = (function () {
     lines = [];
   }
 
-  async function createMeshTextureUrl(){
-    return new Promise(async (resolve, reject)=>{
+  async function createMeshTextureUrl() {
+    return new Promise(async (resolve, reject) => {
       const mapOptions = {
         noLabels: options.labels3d,
         noWater: options.extendedWater,
         fullMap: true
       };
-      const url = await getMapURL("mesh",mapOptions);
+      const url = await getMapURL("mesh", mapOptions);
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       canvas.width = options.resolutionScale;
@@ -437,53 +453,50 @@ window.ThreeD = (function () {
       const img = new Image();
       img.src = url;
 
-      img.onload = function(){
-        ctx.drawImage(img,0,0,canvas.width,canvas.height);
-        canvas.toBlob((blob)=>{
-          const blobObj = window.URL.createObjectURL(blob)
-          window.setTimeout(()=>{
+      img.onload = function () {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => {
+          const blobObj = window.URL.createObjectURL(blob);
+          window.setTimeout(() => {
             canvas.remove();
             window.URL.revokeObjectURL(blobObj);
           }, 100);
           resolve(blobObj);
-        })
-      }
-    })
+        });
+      };
+    });
   }
   // create a mesh from pixel data
   async function createMesh(width, height, segmentsX, segmentsY) {
-
     if (texture) texture.dispose();
-    if(!options.wireframe){
-      //Try loading skin texture.
-    texture = new THREE.TextureLoader().load(await createMeshTextureUrl(), render);
-    texture.needsUpdate = true;
-    texture.anisotropy = Renderer.capabilities.getMaxAnisotropy();
+    if (!options.wireframe) {
+      texture = new THREE.TextureLoader().load(await createMeshTextureUrl(), render);
+      texture.needsUpdate = true;
+      texture.anisotropy = Renderer.capabilities.getMaxAnisotropy();
     }
-    
-
 
     if (material) material.dispose();
-    if(options.wireframe){
-      material = new THREE.MeshLambertMaterial();
+    material = new THREE.MeshLambertMaterial();
+
+    if (options.wireframe) {
       material.wireframe = true;
-    }else{
-      material = new THREE.MeshLambertMaterial();
+    } else {
       material.map = texture;
       material.transparent = true;
     }
-    
 
     if (geometry) geometry.dispose();
     geometry = new THREE.PlaneGeometry(width, height, segmentsX - 1, segmentsY - 1);
-    let vertices = geometry.getAttribute('position');
-    for(let i = 0; i < vertices.count; i++){
-      vertices.setZ(i,getMeshHeight(i));
+
+    let vertices = geometry.getAttribute("position");
+    for (let i = 0; i < vertices.count; i++) {
+      vertices.setZ(i, getMeshHeight(i));
     }
-    geometry.setAttribute('position',vertices);
+
+    geometry.setAttribute("position", vertices);
     geometry.computeVertexNormals();
     if (mesh) scene.remove(mesh);
-    if(options.subdivide){
+    if (options.subdivide) {
       await loadLoopSubdivision();
       const subdivideParams = {
         split: true,
@@ -492,9 +505,9 @@ window.ThreeD = (function () {
         flatOnly: false,
         maxTriangles: Infinity
       };
-      const smoothGeometry = loopSubdivision.modify(geometry,1,subdivideParams);
+      const smoothGeometry = loopSubdivision.modify(geometry, 1, subdivideParams);
       mesh = new THREE.Mesh(smoothGeometry, material);
-    }else{
+    } else {
       mesh = new THREE.Mesh(geometry, material);
     }
     mesh.rotation.x = -Math.PI / 2;
@@ -548,7 +561,10 @@ window.ThreeD = (function () {
 
     // scene
     scene = new THREE.Scene();
-    scene.background = new THREE.TextureLoader().load("https://i0.wp.com/azgaar.files.wordpress.com/2019/10/stars-1.png", render);
+    scene.background = new THREE.TextureLoader().load(
+      "https://i0.wp.com/azgaar.files.wordpress.com/2019/10/stars-1.png",
+      render
+    );
 
     // Renderer
     Renderer = new THREE.WebGLRenderer({canvas, antialias: true, preserveDrawingBuffer: true});
@@ -663,7 +679,7 @@ window.ThreeD = (function () {
     });
   }
 
-  function loadLoopSubdivision(){
+  function loadLoopSubdivision() {
     if (window.loopSubdivision) return Promise.resolve(true);
 
     return new Promise(resolve => {
