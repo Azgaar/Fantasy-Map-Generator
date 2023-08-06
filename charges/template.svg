@@ -1,1 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200"><metadata author="Name" license="licenseDescURL" source="URL"/><rect width="80" height="80" x="60" y="60" fill="red" fill-opacity=".05" stroke="#333" stroke-opacity=".5" stroke-width=".5"/><g stroke-width=".28"><path d="M96.6 118.8L98 69.2c0-1.8.7-9.2 2-9.2 1.2 0 2 7.4 2 9.2l1.4 49.6z"/><path d="M98.5 133.8L97 120h5.8l-1.3 13.8z"/><path d="M100 120.9c4.2 0 8.2-.2 12.4-.6l-.8-3.2c-2 .4-3.5 1.3-5.4 1.5-2 .3-4.7-.3-6.2-.6-1.5.3-4.1.9-6.2.6-2-.2-3.5-1-5.4-1.5l-.8 3.2c4.2.4 8.2.6 12.4.6zm0 19.1c2 0 3.6-1.5 3.6-3.5 0-1.5-1-2.7-2.2-3.3-.4.2-1 .3-1.6.3-.5 0-1 0-1.3-.2-1.2.6-2 1.8-2 3.2 0 2 1.5 3.5 3.5 3.5z"/><g fill="none"><path d="M99 118.25s.4-39.35.9-39.35.9 39.35.9 39.35"/><path d="M102.7 121.4c-.3.6-1.5.85-2.7.8-1.2-.05-2.4-.2-2.7-.8m5.1 2.5c-.2.5-1.3.7-2.4.7-1 0-2.2-.3-2.4-.7m4.6 2.3c-.2.4-1.2.6-2.2.6s-2-.2-2.2-.6m4.2 2.3c-.2.4-1 .6-2 .6-.9 0-1.8-.2-2-.6m3.7 2.3c-.2.4-1 .5-1.7.5s-1.5-.1-1.7-.5"/><path d="M97.6 137.1a2.4 2.4 0 014.8 0c0 1.3-1 2.3-2.4 2.3-1.3 0-2.4-1-2.4-2.3z"/><path d="M100 118v2.9"/></g></g></svg>
+<!--This is a template file for Armoria, saved as txt for easy-reading. Actually it's a valid svg file. This text is commented and does not affect the change-->
+<!--Use this file as a template, save as svg and upload back to Armoria. Visit https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Getting_Started for svg guidance-->
+<!--Next line must stay as is for consistency-->
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+<metadata author="Name" source="URL" license="licenseDescURL"/>
+<!--Here is a line where you should add info about source and license. Actual charge markup goes below.-->
+<!--Fit the charge into this 80px rectangle in the middle and then remove it-->
+  <rect width="80" height="80" x="60" y="60" fill="red" fill-opacity=".05" stroke="#333" stroke-opacity=".5" stroke-width=".5"/>
+  <g stroke-width=".28">
+<!--Basic shape elements have undefined fill and colored based on tincture selected-->
+    <path d="M96.6 118.8L98 69.2c0-1.8.7-9.2 2-9.2 1.2 0 2 7.4 2 9.2l1.4 49.6z"/>
+    <path d="M98.5 133.8L97 120h5.8l-1.3 13.8z"/>
+    <path d="M100 120.9c4.2 0 8.2-.2 12.4-.6l-.8-3.2c-2 .4-3.5 1.3-5.4 1.5-2 .3-4.7-.3-6.2-.6-1.5.3-4.1.9-6.2.6-2-.2-3.5-1-5.4-1.5l-.8 3.2c4.2.4 8.2.6 12.4.6zm0 19.1c2 0 3.6-1.5 3.6-3.5 0-1.5-1-2.7-2.2-3.3-.4.2-1 .3-1.6.3-.5 0-1 0-1.3-.2-1.2.6-2 1.8-2 3.2 0 2 1.5 3.5 3.5 3.5z"/>
+<!--Additional strokes, no fill-->
+    <g fill="none">
+      <path d="M99 118.25s.4-39.35.9-39.35.9 39.35.9 39.35"/>
+      <path d="M102.7 121.4c-.3.6-1.5.85-2.7.8-1.2-.05-2.4-.2-2.7-.8m5.1 2.5c-.2.5-1.3.7-2.4.7-1 0-2.2-.3-2.4-.7m4.6 2.3c-.2.4-1.2.6-2.2.6s-2-.2-2.2-.6m4.2 2.3c-.2.4-1 .6-2 .6-.9 0-1.8-.2-2-.6m3.7 2.3c-.2.4-1 .5-1.7.5s-1.5-.1-1.7-.5"/>
+      <path d="M97.6 137.1a2.4 2.4 0 014.8 0c0 1.3-1 2.3-2.4 2.3-1.3 0-2.4-1-2.4-2.3z"/>
+      <path d="M100 118v2.9"/>
+    </g>
+  </g>
+</svg>
