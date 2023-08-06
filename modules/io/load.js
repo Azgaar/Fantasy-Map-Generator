@@ -589,8 +589,8 @@ async function parseLoadedData(data) {
     // set options
     yearInput.value = options.year;
     eraInput.value = options.era;
-    temperatureNorthPoleOutput.value = temperatureNorthPoleInput.value = options.tempNorthPole;
-    temperatureSouthPoleOutput.value = temperatureSouthPoleInput.value = options.tempSouthPole;
+    temperatureNorthPoleOutput.value = temperatureNorthPoleInput.value = options.temperatureNorthPole;
+    temperatureSouthPoleOutput.value = temperatureSouthPoleInput.value = options.temperatureSouthPole;
     shapeRendering.value = viewbox.attr("shape-rendering") || "geometricPrecision";
 
     if (window.restoreDefaultEvents) restoreDefaultEvents();

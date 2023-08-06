@@ -2352,13 +2352,8 @@
               <i data-locked="0" id="lock_temperatureEquator" class="icon-lock-open"></i>
               <label data-tip="Set temperature at equator">
                 <i>Equator:</i>
-                <input
-                  id="temperatureEquatorInput"
-                  data-stored="temperatureEquator"
-                  type="number"
-                  min="-50"
-                  max="50"
-                />°C = <span id="temperatureEquatorF"></span>°F
+                <input id="temperatureEquatorInput" data-stored="temperatureEquator" type="number" min="-50" max="50" />
+                <span>°C = <span id="temperatureEquatorF"></span></span>
                 <input id="temperatureEquatorOutput" data-stored="temperatureEquator" type="range" min="-50" max="50" />
               </label>
             </div>
@@ -2373,7 +2368,7 @@
                   min="-50"
                   max="50"
                 />
-                <span>°C = <span id="temperatureNorthPoleF"></span>°F</span>
+                <span>°C = <span id="temperatureNorthPoleF"></span></span>
                 <input
                   id="temperatureNorthPoleOutput"
                   data-stored="temperatureNorthPole"
@@ -2395,7 +2390,7 @@
                   min="-50"
                   max="50"
                 />
-                <span>°C = <span id="temperatureSouthPoleF"></span>°F</span>
+                <span>°C = <span id="temperatureSouthPoleF"></span></span>
                 <input
                   id="temperatureSouthPoleOutput"
                   data-stored="temperatureSouthPole"
@@ -2461,13 +2456,13 @@
           <svg id="globe" width="22em" height="22em" viewBox="-20 -25 240 240">
             <defs>
               <linearGradient id="temperatureGradient" x1="0" x2="0" y1="0" y2="1">
-                <stop class="tempNorthGradient90" offset="0%" stop-color="blue" />
-                <stop class="tempNorthGradient60" offset="16.6%" stop-color="green" />
-                <stop class="tempNorthGradient30" offset="33.3%" stop-color="yellow" />
-                <stop class="tempGradient0" offset="50%" stop-color="red" />
-                <stop class="tempSouthGradient30" offset="66.6%" stop-color="yellow" />
-                <stop class="tempSouthGradient60" offset="83.3%" stop-color="green" />
-                <stop class="tempSouthGradient90" offset="100%" stop-color="blue" />
+                <stop id="grad90" offset="0%" stop-color="blue" />
+                <stop id="grad60" offset="16.6%" stop-color="green" />
+                <stop id="grad30" offset="33.3%" stop-color="yellow" />
+                <stop id="grad0" offset="50%" stop-color="red" />
+                <stop id="grad-30" offset="66.6%" stop-color="yellow" />
+                <stop id="grad-60" offset="83.3%" stop-color="green" />
+                <stop id="grad-90" offset="100%" stop-color="blue" />
               </linearGradient>
             </defs>
             <g id="globeNoteLines">

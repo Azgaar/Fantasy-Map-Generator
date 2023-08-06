@@ -639,7 +639,7 @@ export function resolveVersionConflicts(version) {
 
   if (version < 1.89) {
     //May need a major bump
-    options.tempNorthPole = +temperatureNorthPoleInput.value;
-    options.tempSouthPole = +temperatureNorthPoleInput.value;
+    options.temperatureNorthPole = +temperatureNorthPoleInput.value;
+    options.temperatureSouthPole = +temperatureNorthPoleInput.value;
   }
 }

@@ -1,5 +1,6 @@
 function editWorld() {
   if (customization) return;
+
   $("#worldConfigurator").dialog({
     title: "Configure World",
     resizable: false,
@@ -25,28 +26,54 @@ function editWorld() {
   });
 
   const globe = d3.select("#globe");
-  const clr = d3.scaleSequential(d3.interpolateSpectral);
-  const tMax = 30,
-    tMin = -25; // temperature extremes
   const projection = d3.geoOrthographic().translate([100, 100]).scale(100);
   const path = d3.geoPath(projection);
 
+  updateInputValues();
   updateGlobeTemperature();
   updateGlobePosition();
 
   if (modules.editWorld) return;
   modules.editWorld = true;
 
-  document.getElementById("worldControls").addEventListener("input", e => updateWorld(e.target));
+  byId("worldControls").addEventListener("input", e => updateWorld(e.target));
   globe.select("#globeWindArrows").on("click", changeWind);
   globe.select("#globeGraticule").attr("d", round(path(d3.geoGraticule()()))); // globe graticule
   updateWindDirections();
 
+  function updateInputValues() {
+    byId("temperatureEquatorInput").value = options.temperatureEquator;
+    byId("temperatureEquatorOutput").value = options.temperatureEquator;
+    byId("temperatureEquatorF").innerText = convertTemperature(options.temperatureEquator, "°F");
+
+    byId("temperatureNorthPoleInput").value = options.temperatureNorthPole;
+    byId("temperatureNorthPoleOutput").value = options.temperatureNorthPole;
+    byId("temperatureNorthPoleF").innerText = convertTemperature(options.temperatureNorthPole, "°F");
+
+    byId("temperatureSouthPoleInput").value = options.temperatureSouthPole;
+    byId("temperatureSouthPoleOutput").value = options.temperatureSouthPole;
+    byId("temperatureSouthPoleF").innerText = convertTemperature(options.temperatureSouthPole, "°F");
+  }
+
   function updateWorld(el) {
-    if (el) {
-      document.getElementById(el.dataset.stored + "Input").value = el.value;
-      document.getElementById(el.dataset.stored + "Output").value = el.value;
-      if (el.dataset.stored) lock(el.dataset.stored);
+    if (el?.dataset.stored) {
+      const stored = el.dataset.stored;
+      byId(stored + "Input").value = el.value;
+      byId(stored + "Output").value = el.value;
+      lock(el.dataset.stored);
+
+      if (stored === "temperatureEquator") {
+        options.temperatureEquator = Number(el.value);
+        byId("temperatureEquatorF").innerText = convertTemperature(options.temperatureEquator, "°F");
+      }
+      if (stored === "temperatureNorthPole") {
+        options.temperatureNorthPole = Number(el.value);
+        byId("temperatureNorthPoleF").innerText = convertTemperature(options.temperatureNorthPole, "°F");
+      }
+      if (stored === "temperatureSouthPole") {
+        options.temperatureSouthPole = Number(el.value);
+        byId("temperatureSouthPoleF").innerText = convertTemperature(options.temperatureSouthPole, "°F");
+      }
     }
 
     updateGlobeTemperature();
@@ -65,11 +92,11 @@ function editWorld() {
     if (layerIsOn("toggleBiomes")) drawBiomes();
     if (layerIsOn("toggleCoordinates")) drawCoordinates();
     if (layerIsOn("toggleRivers")) drawRivers();
-    if (document.getElementById("canvas3d")) setTimeout(ThreeD.update(), 500);
+    if (byId("canvas3d")) setTimeout(ThreeD.update(), 500);
   }
 
   function updateGlobePosition() {
-    const size = +document.getElementById("mapSizeOutput").value;
+    const size = +byId("mapSizeOutput").value;
     const eqD = ((graphHeight / 2) * 100) / size;
 
     calculateMapCoordinates();
@@ -77,12 +104,12 @@ function editWorld() {
     const scale = +distanceScaleInput.value;
     const unit = distanceUnitInput.value;
     const meridian = toKilometer(eqD * 2 * scale);
-    document.getElementById("mapSize").innerHTML = `${graphWidth}x${graphHeight}`;
-    document.getElementById("mapSizeFriendly").innerHTML = `${rn(graphWidth * scale)}x${rn(graphHeight * scale)} ${unit}`;
-    document.getElementById("meridianLength").innerHTML = rn(eqD * 2);
-    document.getElementById("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * scale)} ${unit}`;
-    document.getElementById("meridianLengthEarth").innerHTML = meridian ? " = " + rn(meridian / 200) + "%🌏" : "";
-    document.getElementById("mapCoordinates").innerHTML = `${lat(mc.latN)} ${Math.abs(rn(mc.lonW))}°W; ${lat(mc.latS)} ${rn(mc.lonE)}°E`;
+    byId("mapSize").innerHTML = `${graphWidth}x${graphHeight}`;
+    byId("mapSizeFriendly").innerHTML = `${rn(graphWidth * scale)}x${rn(graphHeight * scale)} ${unit}`;
+    byId("meridianLength").innerHTML = rn(eqD * 2);
+    byId("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * scale)} ${unit}`;
+    byId("meridianLengthEarth").innerHTML = meridian ? " = " + rn(meridian / 200) + "%🌏" : "";
+    byId("mapCoordinates").innerHTML = `${lat(mc.latN)} ${Math.abs(rn(mc.lonW))}°W; ${lat(mc.latS)} ${rn(mc.lonE)}°E`;
 
     function toKilometer(v) {
       if (unit === "km") return v;
@@ -104,22 +131,24 @@ function editWorld() {
     globe.select("#globeArea").attr("d", round(path(area.outline()))); // map area
   }
 
+  // update temperatures on globe (visual-only)
   function updateGlobeTemperature() {
-    const tEq = +document.getElementById("temperatureEquatorOutput").value;
-    document.getElementById("temperatureEquatorF").innerHTML = rn((tEq * 9) / 5 + 32);
-    const tNorthPole = +document.getElementById("temperatureNorthPoleOutput").value;
-    document.getElementById("temperatureNorthPoleF").innerHTML = rn((tNorthPole * 9) / 5 + 32);
-    const tSouthPole = +document.getElementById("temperatureSouthPoleOutput").value;
-    document.getElementById("temperatureSouthPoleF").innerHTML = rn((tSouthPole * 9) / 5 + 32);
+    const tEq = options.temperatureEquator;
+    const tNP = options.temperatureNorthPole;
+    const tSP = options.temperatureSouthPole;
 
-    //North to Equator to South
-    globe.select(".tempNorthGradient90").attr("stop-color", clr(1 - (tNorthPole - tMin) / (tMax - tMin)));
-    globe.select(".tempNorthGradient60").attr("stop-color", clr(1 - (tEq - ((tEq - tNorthPole) * 2) / 3 - tMin) / (tMax - tMin)));
-    globe.select(".tempNorthGradient30").attr("stop-color", clr(1 - (tEq - ((tEq - tNorthPole) * 1) / 3 - tMin) / (tMax - tMin)));
-    globe.select(".tempGradient0").attr("stop-color", clr(1 - (tEq - tMin) / (tMax - tMin)));
-    globe.select(".tempSouthGradient30").attr("stop-color", clr(1 - (tEq - ((tEq - tSouthPole) * 1) / 3 - tMin) / (tMax - tMin)));
-    globe.select(".tempSouthGradient60").attr("stop-color", clr(1 - (tEq - ((tEq - tSouthPole) * 2) / 3 - tMin) / (tMax - tMin)));
-    globe.select(".tempSouthGradient90").attr("stop-color", clr(1 - (tSouthPole - tMin) / (tMax - tMin)));
+    const scale = d3.scaleSequential(d3.interpolateSpectral);
+    const getColor = value => scale(1 - value);
+    const [tMin, tMax] = [-25, 30]; // temperature extremes
+    const tDelta = tMax - tMin;
+
+    globe.select("#grad90").attr("stop-color", getColor((tNP - tMin) / tDelta));
+    globe.select("#grad60").attr("stop-color", getColor((tEq - ((tEq - tNP) * 2) / 3 - tMin) / tDelta));
+    globe.select("#grad30").attr("stop-color", getColor((tEq - ((tEq - tNP) * 1) / 3 - tMin) / tDelta));
+    globe.select("#grad0").attr("stop-color", getColor((tEq - tMin) / tDelta));
+    globe.select("#grad-30").attr("stop-color", getColor((tEq - ((tEq - tSP) * 1) / 3 - tMin) / tDelta));
+    globe.select("#grad-60").attr("stop-color", getColor((tEq - ((tEq - tSP) * 2) / 3 - tMin) / tDelta));
+    globe.select("#grad-90").attr("stop-color", getColor((tSP - tMin) / tDelta));
   }
 
   function updateWindDirections() {
@@ -153,8 +182,8 @@ function editWorld() {
   }
 
   function applyWorldPreset(size, lat) {
-    document.getElementById("mapSizeInput").value = document.getElementById("mapSizeOutput").value = size;
-    document.getElementById("latitudeInput").value = document.getElementById("latitudeOutput").value = lat;
+    byId("mapSizeInput").value = byId("mapSizeOutput").value = size;
+    byId("latitudeInput").value = byId("latitudeOutput").value = lat;
     lock("mapSize");
     lock("latitude");
     updateWorld();
