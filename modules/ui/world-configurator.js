@@ -9,8 +9,7 @@ function editWorld() {
       "Whole World": () => applyWorldPreset(100, 50),
       Northern: () => applyWorldPreset(33, 25),
       Tropical: () => applyWorldPreset(33, 50),
-      Southern: () => applyWorldPreset(33, 75),
-      "Restore Winds": restoreDefaultWinds
+      Southern: () => applyWorldPreset(33, 75)
     },
     open: function () {
       const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button");
@@ -18,7 +17,6 @@ function editWorld() {
       buttons[1].addEventListener("mousemove", () => tip("Click to set map size to cover the Northern latitudes"));
       buttons[2].addEventListener("mousemove", () => tip("Click to set map size to cover the Tropical latitudes"));
       buttons[3].addEventListener("mousemove", () => tip("Click to set map size to cover the Southern latitudes"));
-      buttons[4].addEventListener("mousemove", () => tip("Click to restore default wind directions"));
     },
     close: function () {
       $(this).dialog("destroy");
@@ -40,6 +38,8 @@ function editWorld() {
   globe.select("#globeWindArrows").on("click", changeWind);
   globe.select("#globeGraticule").attr("d", round(path(d3.geoGraticule()()))); // globe graticule
   updateWindDirections();
+
+  byId("restoreWinds").addEventListener("click", restoreDefaultWinds);
 
   function updateInputValues() {
     byId("temperatureEquatorInput").value = options.temperatureEquator;
@@ -144,9 +144,9 @@ function editWorld() {
 
     globe.select("#grad90").attr("stop-color", getColor((tNP - tMin) / tDelta));
     globe.select("#grad60").attr("stop-color", getColor((tEq - ((tEq - tNP) * 2) / 3 - tMin) / tDelta));
-    globe.select("#grad30").attr("stop-color", getColor((tEq - ((tEq - tNP) * 1) / 3 - tMin) / tDelta));
+    globe.select("#grad30").attr("stop-color", getColor((tEq - ((tEq - tNP) * 1) / 4 - tMin) / tDelta));
     globe.select("#grad0").attr("stop-color", getColor((tEq - tMin) / tDelta));
-    globe.select("#grad-30").attr("stop-color", getColor((tEq - ((tEq - tSP) * 1) / 3 - tMin) / tDelta));
+    globe.select("#grad-30").attr("stop-color", getColor((tEq - ((tEq - tSP) * 1) / 4 - tMin) / tDelta));
     globe.select("#grad-60").attr("stop-color", getColor((tEq - ((tEq - tSP) * 2) / 3 - tMin) / tDelta));
     globe.select("#grad-90").attr("stop-color", getColor((tSP - tMin) / tDelta));
   }

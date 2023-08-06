@@ -2346,7 +2346,7 @@
 
     <div id="dialogs">
       <div id="worldConfigurator" class="dialog stable" style="display: none">
-        <div>
+        <div style="display: flex">
           <div id="worldControls">
             <div>
               <i data-locked="0" id="lock_temperatureEquator" class="icon-lock-open"></i>
@@ -2453,59 +2453,65 @@
             <div data-tip="Map coordinates on globe"><i>Coords:</i> <span id="mapCoordinates"></span></div>
           </div>
 
-          <svg id="globe" width="22em" height="22em" viewBox="-20 -25 240 240">
-            <defs>
-              <linearGradient id="temperatureGradient" x1="0" x2="0" y1="0" y2="1">
-                <stop id="grad90" offset="0%" stop-color="blue" />
-                <stop id="grad60" offset="16.6%" stop-color="green" />
-                <stop id="grad30" offset="33.3%" stop-color="yellow" />
-                <stop id="grad0" offset="50%" stop-color="red" />
-                <stop id="grad-30" offset="66.6%" stop-color="yellow" />
-                <stop id="grad-60" offset="83.3%" stop-color="green" />
-                <stop id="grad-90" offset="100%" stop-color="blue" />
-              </linearGradient>
-            </defs>
-            <g id="globeNoteLines">
-              <line x1="5" x2="220" y1="0" y2="0" />
-              <line x1="5" x2="220" y1="13" y2="13" />
-              <line x1="5" x2="220" y1="49.5" y2="49.5" />
-              <line x1="-5" x2="220" y1="100" y2="100" />
-              <line x1="5" x2="220" y1="150.5" y2="150.5" />
-              <line x1="5" x2="220" y1="187" y2="187" />
-              <line x1="5" x2="220" y1="200" y2="200" />
-            </g>
-            <g id="globeWindArrows" data-tip="Click to change wind direction" stroke-linejoin="round">
-              <circle cx="210" cy="6" r="12" />
-              <path data-tier="0" d="M210,11 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 6)" />
-              <circle cx="210" cy="30" r="12" />
-              <path data-tier="1" d="M210,35 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(45 210 30)" />
-              <circle cx="210" cy="75" r="12" />
-              <path data-tier="2" d="M210,80 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 75)" />
-              <circle cx="210" cy="130" r="12" />
-              <path data-tier="3" d="M210,135 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 130)" />
-              <circle cx="210" cy="173" r="12" />
-              <path data-tier="4" d="M210,178 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(135 210 173)" />
-              <circle cx="210" cy="194" r="12" />
-              <path data-tier="5" d="M210,199 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 194)" />
-            </g>
-            <g id="globaAxisLabels">
-              <text x="82%" y="-4%">wind</text>
-              <text x="-8%" y="-4%">latitude</text>
-            </g>
-            <g id="globeLatLabels">
-              <text x="-15" y="5">90°</text>
-              <text x="-15" y="18">60°</text>
-              <text x="-15" y="53">30°</text>
-              <text x="-15" y="103">0°</text>
-              <text x="-15" y="153">30°</text>
-              <text x="-15" y="190">60°</text>
-              <text x="-15" y="204">90°</text>
-            </g>
-            <circle id="globeOutline" cx="100" cy="100" r="100" />
-            <line id="globeEquator" x1="1" x2="199" y1="100" y2="100" />
-            <path id="globeGraticule" />
-            <path id="globeArea" />
-          </svg>
+          <div style="display: flex; flex-direction: column; align-items: flex-end">
+            <svg id="globe" width="22em" viewBox="-20 -25 240 240">
+              <defs>
+                <linearGradient id="temperatureGradient" x1="0" x2="0" y1="0" y2="1">
+                  <stop id="grad90" offset="0%" stop-color="blue" />
+                  <stop id="grad60" offset="16.6%" stop-color="green" />
+                  <stop id="grad30" offset="33.3%" stop-color="yellow" />
+                  <stop id="grad0" offset="50%" stop-color="red" />
+                  <stop id="grad-30" offset="66.6%" stop-color="yellow" />
+                  <stop id="grad-60" offset="83.3%" stop-color="green" />
+                  <stop id="grad-90" offset="100%" stop-color="blue" />
+                </linearGradient>
+              </defs>
+              <g id="globeNoteLines">
+                <line x1="5" x2="220" y1="0" y2="0" />
+                <line x1="5" x2="220" y1="13" y2="13" />
+                <line x1="5" x2="220" y1="49.5" y2="49.5" />
+                <line x1="-5" x2="220" y1="100" y2="100" />
+                <line x1="5" x2="220" y1="150.5" y2="150.5" />
+                <line x1="5" x2="220" y1="187" y2="187" />
+                <line x1="5" x2="220" y1="200" y2="200" />
+              </g>
+              <g id="globeWindArrows" data-tip="Click to change wind direction" stroke-linejoin="round">
+                <circle cx="210" cy="6" r="12" />
+                <path data-tier="0" d="M210,11 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 6)" />
+                <circle cx="210" cy="30" r="12" />
+                <path data-tier="1" d="M210,35 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(45 210 30)" />
+                <circle cx="210" cy="75" r="12" />
+                <path data-tier="2" d="M210,80 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 75)" />
+                <circle cx="210" cy="130" r="12" />
+                <path data-tier="3" d="M210,135 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 130)" />
+                <circle cx="210" cy="173" r="12" />
+                <path data-tier="4" d="M210,178 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(135 210 173)" />
+                <circle cx="210" cy="194" r="12" />
+                <path data-tier="5" d="M210,199 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 194)" />
+              </g>
+              <g id="globaAxisLabels">
+                <text x="82%" y="-4%">wind</text>
+                <text x="-8%" y="-4%">latitude</text>
+              </g>
+              <g id="globeLatLabels">
+                <text x="-15" y="5">90°</text>
+                <text x="-15" y="18">60°</text>
+                <text x="-15" y="53">30°</text>
+                <text x="-15" y="103">0°</text>
+                <text x="-15" y="153">30°</text>
+                <text x="-15" y="190">60°</text>
+                <text x="-15" y="204">90°</text>
+              </g>
+              <circle id="globeOutline" cx="100" cy="100" r="100" />
+              <line id="globeEquator" x1="1" x2="199" y1="100" y2="100" />
+              <path id="globeGraticule" />
+              <path id="globeArea" />
+            </svg>
+
+            <button id="restoreWinds" data-tip="Click to restore default (Earth-based) wind directions">
+              Restore winds
+            </button>
+          </div>
         </div>
       </div>
 

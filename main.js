@@ -972,7 +972,7 @@ function defineMapSize() {
 
     const part = grid.features.some(f => f.land && f.border); // if land goes over map borders
     const max = part ? 80 : 100; // max size
-    const lat = () => gauss(P(0.5) ? 40 : 60, 15, 25, 75); // latitude shift
+    const lat = () => gauss(P(0.5) ? 40 : 60, 20, 25, 75); // latitude shift
 
     if (!part) {
       if (template === "Pangea") return [100, 50];
@@ -1007,7 +1007,8 @@ function calculateMapCoordinates() {
   mapCoordinates = {latT, latN, latS, lonT: lon * 2, lonW: -lon, lonE: lon};
 }
 
-// temperature model
+// temperature model, trying to follow real-world data
+// based on http://www-das.uwyo.edu/~geerts/cwx/notes/chap16/Image64.gif
 function calculateTemperatures() {
   TIME && console.time("calculateTemperatures");
   const cells = grid.cells;
