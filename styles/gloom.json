@@ -261,13 +261,14 @@
     "filter": null
   },
   "#texture": {
-    "opacity": null,
+    "opacity": 0.8,
     "filter": null,
     "mask": "url(#land)"
   },
   "#textureImage": {
     "x": 0,
-    "y": 0
+    "y": 0,
+    "src": "https://i2.wp.com/azgaar.files.wordpress.com/2019/07/iran-small.jpg"
   },
   "#zones": {
     "opacity": 0.5,

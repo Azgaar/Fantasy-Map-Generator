@@ -636,4 +636,18 @@ export function resolveVersionConflicts(version) {
       if (coa?.shield === "state") delete coa.shield;
     });
   }
+
+  if (version < 1.9) {
+    // from v1.90.02 texture image is always there
+    if (!texture.selectAll("*").size()) {
+      texture.style("display", "none");
+      texture
+        .append("image")
+        .attr("id", "textureImage")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("preserveAspectRatio", "xMidYMid slice")
+        .attr("src", "https://i2.wp.com/azgaar.files.wordpress.com/2021/10/marble-big.jpg");
+    }
+  }
 }

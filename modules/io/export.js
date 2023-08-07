@@ -237,9 +237,23 @@ async function getMapURL(type, options = {}) {
   }
 
   // replace ocean pattern href to base64
-  if (location.hostname && cloneEl.getElementById("oceanicPattern")) {
+  if (location.hostname) {
     const el = cloneEl.getElementById("oceanicPattern");
-    const url = el.getAttribute("href");
+    const url = el?.getAttribute("href");
+    if (url) {
+      await new Promise(resolve => {
+        getBase64(url, base64 => {
+          el.setAttribute("href", base64);
+          resolve();
+        });
+      });
+    }
+  }
+
+  // replace texture href to base64
+  if (location.hostname) {
+    const el = cloneEl.getElementById("textureImage");
+    const url = el?.getAttribute("href");
     if (url) {
       await new Promise(resolve => {
         getBase64(url, base64 => {
