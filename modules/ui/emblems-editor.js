@@ -112,13 +112,13 @@ function editEmblem(type, id, el) {
     if (type === "burg") name = "Burg of " + name;
     document.getElementById("emblemArmiger").innerText = name;
 
-    if (el.coa === "custom") emblemShapeSelector.disabled = true;
+    if (el.coa.custom) emblemShapeSelector.disabled = true;
     else {
       emblemShapeSelector.disabled = false;
       emblemShapeSelector.value = el.coa.shield;
     }
 
-    const size = el.coaSize || 1;
+    const size = el.coa.size || 1;
     document.getElementById("emblemSizeSlider").value = size;
     document.getElementById("emblemSizeNumber").value = size;
   }
@@ -178,7 +178,9 @@ function editEmblem(type, id, el) {
   }
 
   function changeSize() {
-    const size = (el.coaSize = +this.value);
+    const size = +this.value;
+    el.coa.size = size;
+
     document.getElementById("emblemSizeSlider").value = size;
     document.getElementById("emblemSizeNumber").value = size;
 
@@ -189,8 +191,9 @@ function editEmblem(type, id, el) {
     // re-append use element
     const categotySize = +g.attr("font-size");
     const shift = (categotySize * size) / 2;
-    const x = el.x || el.pole[0];
-    const y = el.y || el.pole[1];
+    const x = el.coa.x || el.x || el.pole[0];
+    const y = el.coa.y || el.y || el.pole[1];
+
     g.append("use")
       .attr("data-i", el.i)
       .attr("x", rn(x - shift), 2)
@@ -220,7 +223,7 @@ function editEmblem(type, id, el) {
   }
 
   function openInArmoria() {
-    const coa = el.coa && el.coa !== "custom" ? el.coa : {t1: "sable"};
+    const coa = el.coa && !el.coa.custom ? el.coa : {t1: "sable"};
     const json = JSON.stringify(coa).replaceAll("#", "%23");
     const url = `https://azgaar.github.io/Armoria/?coa=${json}&from=FMG`;
     openURL(url);
@@ -281,7 +284,13 @@ function editEmblem(type, id, el) {
       defs.insertAdjacentHTML("beforeend", svg);
 
       if (oldEmblem) oldEmblem.remove();
-      el.coa = "custom";
+
+      const customCoa = {custom: true};
+      if (el.coa.size) customCoa.size = el.coa.size;
+      if (el.coa.x) customCoa.x = el.coa.x;
+      if (el.coa.y) customCoa.y = el.coa.y;
+      el.coa = customCoa;
+
       emblemShapeSelector.disabled = true;
     };
 
@@ -509,13 +518,21 @@ function editEmblem(type, id, el) {
   }
 
   function dragEmblem() {
-    const tr = parseTransform(this.getAttribute("transform"));
-    const x = +tr[0] - d3.event.x,
-      y = +tr[1] - d3.event.y;
+    const x = Number(this.getAttribute("x")) - d3.event.x;
+    const y = Number(this.getAttribute("y")) - d3.event.y;
 
     d3.event.on("drag", function () {
-      const transform = `translate(${x + d3.event.x},${y + d3.event.y})`;
-      this.setAttribute("transform", transform);
+      this.setAttribute("x", x + d3.event.x);
+      this.setAttribute("y", y + d3.event.y);
+    });
+
+    d3.event.on("end", function () {
+      const categotySize = Number(this.parentNode.getAttribute("font-size"));
+      const size = el.coa.size || 1;
+      const shift = (categotySize * size) / 2;
+
+      el.coa.x = rn(x + d3.event.x + shift, 2);
+      el.coa.y = rn(y + d3.event.y + shift, 2);
     });
   }
 

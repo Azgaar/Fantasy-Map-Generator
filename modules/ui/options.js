@@ -381,7 +381,7 @@ function changeEmblemShape(emblemShape) {
   };
 
   pack.states.forEach(state => {
-    if (!state.i || state.removed || !state.coa || state.coa === "custom") return;
+    if (!state.i || state.removed || !state.coa || state.coa.custom) return;
     const newShield = specificShape || COA.getShield(state.culture, null);
     if (newShield === state.coa.shield) return;
     state.coa.shield = newShield;
@@ -389,7 +389,7 @@ function changeEmblemShape(emblemShape) {
   });
 
   pack.provinces.forEach(province => {
-    if (!province.i || province.removed || !province.coa || province.coa === "custom") return;
+    if (!province.i || province.removed || !province.coa || province.coa.custom) return;
     const culture = pack.cells.culture[province.center];
     const newShield = specificShape || COA.getShield(culture, province.state);
     if (newShield === province.coa.shield) return;
@@ -398,7 +398,7 @@ function changeEmblemShape(emblemShape) {
   });
 
   pack.burgs.forEach(burg => {
-    if (!burg.i || burg.removed || !burg.coa || burg.coa === "custom") return;
+    if (!burg.i || burg.removed || !burg.coa || burg.coa.custom) return;
     const newShield = specificShape || COA.getShield(burg.culture, burg.state);
     if (newShield === burg.coa.shield) return;
     burg.coa.shield = newShield;

@@ -650,4 +650,53 @@ export function resolveVersionConflicts(version) {
         .attr("src", "https://i2.wp.com/azgaar.files.wordpress.com/2021/10/marble-big.jpg");
     }
   }
+
+  if (version < 1.91) {
+    // from 1.91.00 custom coa is moved to coa object
+    pack.states.forEach(state => {
+      if (state.coa === "custom") state.coa = {custom: true};
+    });
+    pack.provinces.forEach(province => {
+      if (province.coa === "custom") province.coa = {custom: true};
+    });
+    pack.burgs.forEach(burg => {
+      if (burg.coa === "custom") burg.coa = {custom: true};
+    });
+
+    // from 1.91.00 emblems don't have transform attribute
+    emblems.selectAll("use").each(function () {
+      const transform = this.getAttribute("transform");
+      if (!transform) return;
+
+      const [dx, dy] = parseTransform(transform);
+      const x = Number(this.getAttribute("x")) + Number(dx);
+      const y = Number(this.getAttribute("y")) + Number(dy);
+
+      this.setAttribute("x", x);
+      this.setAttribute("y", y);
+      this.removeAttribute("transform");
+    });
+
+    // from 1.91.00 coaSize is moved to coa object
+    pack.states.forEach(state => {
+      if (state.coaSize) {
+        state.coa.size = state.coaSize;
+        delete state.coaSize;
+      }
+    });
+
+    pack.provinces.forEach(province => {
+      if (province.coaSize) {
+        province.coa.size = province.coaSize;
+        delete province.coaSize;
+      }
+    });
+
+    pack.burgs.forEach(burg => {
+      if (burg.coaSize) {
+        burg.coa.size = burg.coaSize;
+        delete burg.coaSize;
+      }
+    });
+  }
 }

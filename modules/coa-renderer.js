@@ -2023,14 +2023,8 @@ window.COArenderer = (function () {
 
   // render coa if does not exist
   const trigger = async function (id, coa) {
-    if (coa === "custom") {
-      console.warn("Cannot render custom emblem", coa);
-      return;
-    }
-    if (!coa) {
-      console.warn(`Emblem ${id} is undefined`);
-      return;
-    }
+    if (!coa) return console.warn(`Emblem ${id} is undefined`);
+    if (coa.custom) return console.warn("Cannot render custom emblem", coa);
     if (!document.getElementById(id)) return draw(id, coa);
   };
 

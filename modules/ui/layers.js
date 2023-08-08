@@ -1749,9 +1749,9 @@ function drawEmblems() {
   TIME && console.time("drawEmblems");
   const {states, provinces, burgs} = pack;
 
-  const validStates = states.filter(s => s.i && !s.removed && s.coa && s.coaSize != 0);
-  const validProvinces = provinces.filter(p => p.i && !p.removed && p.coa && p.coaSize != 0);
-  const validBurgs = burgs.filter(b => b.i && !b.removed && b.coa && b.coaSize != 0);
+  const validStates = states.filter(s => s.i && !s.removed && s.coa && s.coa.size !== 0);
+  const validProvinces = provinces.filter(p => p.i && !p.removed && p.coa && p.coa.size !== 0);
+  const validBurgs = burgs.filter(b => b.i && !b.removed && b.coa && b.coa.size !== 0);
 
   const getStateEmblemsSize = () => {
     const startSize = minmax((graphHeight + graphWidth) / 40, 10, 100);
@@ -1777,26 +1777,26 @@ function drawEmblems() {
   const sizeBurgs = getBurgEmblemSize();
   const burgCOAs = validBurgs.map(burg => {
     const {x, y} = burg;
-    const size = burg.coaSize || 1;
+    const size = burg.coa.size || 1;
     const shift = (sizeBurgs * size) / 2;
-    return {type: "burg", i: burg.i, x, y, size, shift};
+    return {type: "burg", i: burg.i, x: burg.coa.x || x, y: burg.coa.y || y, size, shift};
   });
 
   const sizeProvinces = getProvinceEmblemsSize();
   const provinceCOAs = validProvinces.map(province => {
     if (!province.pole) getProvincesVertices();
     const [x, y] = province.pole || pack.cells.p[province.center];
-    const size = province.coaSize || 1;
+    const size = province.coa.size || 1;
     const shift = (sizeProvinces * size) / 2;
-    return {type: "province", i: province.i, x, y, size, shift};
+    return {type: "province", i: province.i, x: province.coa.x || x, y: province.coa.y || y, size, shift};
   });
 
   const sizeStates = getStateEmblemsSize();
   const stateCOAs = validStates.map(state => {
     const [x, y] = state.pole || pack.cells.p[state.center];
-    const size = state.coaSize || 1;
+    const size = state.coa.size || 1;
     const shift = (sizeStates * size) / 2;
-    return {type: "state", i: state.i, x, y, size, shift};
+    return {type: "state", i: state.i, x: state.coa.x || x, y: state.coa.y || y, size, shift};
   });
 
   const nodes = burgCOAs.concat(provinceCOAs).concat(stateCOAs);

@@ -1126,7 +1126,7 @@ window.COA = (function () {
   };
 
   const generate = function (parent, kinship, dominion, type) {
-    if (!parent || parent === "custom") {
+    if (!parent || parent.custom) {
       parent = null;
       kinship = 0;
       dominion = 0;
