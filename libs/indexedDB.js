@@ -2,44 +2,40 @@ let db;
 
 const DATABASE_NAME = "d2";
 const STORE_NAME = "s";
-const KEY_PATH = "key";
 
 const openDatabase = () => {
   return new Promise((resolve, reject) => {
-    if (db) {
+    if (db) resolve();
+
+    if (!window.indexedDB) return reject("IndexedDB is not supported");
+    const request = window.indexedDB.open(DATABASE_NAME);
+
+    request.onsuccess = event => {
+      db = event.target.result;
       resolve();
-    } else {
-      const request = window.indexedDB.open(DATABASE_NAME, 1);
+    };
 
-      request.onsuccess = event => {
+    request.onerror = event => {
+      console.error("IndexedDB request error");
+      reject();
+    };
+
+    request.onupgradeneeded = event => {
+      db = event.target.result;
+      const objectStore = db.createObjectStore(STORE_NAME, {keyPath: "key"});
+      objectStore.transaction.oncomplete = () => {
         db = event.target.result;
-        resolve();
       };
-
-      request.onerror = event => {
-        console.error("indexedDB request error");
-        reject();
-      };
-
-      request.onupgradeneeded = event => {
-        db = event.target.result;
-        const objectStore = db.createObjectStore(STORE_NAME, {keyPath: KEY_PATH});
-        objectStore.transaction.oncomplete = () => {
-          db = event.target.result;
-        };
-      };
-    }
+    };
   });
 };
 
 const ldb = {
   get: key => {
     return new Promise((resolve, reject) => {
-      if (!window.indexedDB) return reject("indexedDB not supported");
-
       openDatabase().then(() => {
         const hasStore = Array.from(db.objectStoreNames).includes(STORE_NAME);
-        if (!hasStore) return reject("no store found");
+        if (!hasStore) return reject("IndexedDB: no store found");
 
         const transaction = db.transaction(STORE_NAME, "readonly");
         const objectStore = transaction.objectStore(STORE_NAME);
@@ -53,14 +49,12 @@ const ldb = {
     });
   },
 
-  set: (key, value) => {
-    return new Promise((resolve, reject) => {
-      if (!window.indexedDB) return reject("indexedDB not supported");
-
+  set: (keyName, value) => {
+    return new Promise(resolve => {
       openDatabase().then(() => {
         const transaction = db.transaction(STORE_NAME, "readwrite");
-        const objectStore = transaction.objectStore(STORE_NAME);
-        const putRequest = objectStore.put({key, value});
+        const objectStore = transaction.objectStore([STORE_NAME]);
+        const putRequest = objectStore.put({key: keyName, value});
 
         putRequest.onsuccess = () => {
           resolve();
