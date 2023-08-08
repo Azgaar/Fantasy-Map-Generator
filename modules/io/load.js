@@ -408,7 +408,7 @@ async function parseLoadedData(data) {
       if (hasChildren(statesBody)) turnOn("toggleStates");
       if (hasChildren(provs)) turnOn("toggleProvinces");
       if (hasChildren(zones) && notHidden(zones)) turnOn("toggleZones");
-      if (notHidden(borders) && hasChild(compass, "use")) turnOn("toggleBorders");
+      if (notHidden(borders) && hasChild(borders, "path")) turnOn("toggleBorders");
       if (notHidden(routes) && hasChild(routes, "path")) turnOn("toggleRoutes");
       if (hasChildren(temperature)) turnOn("toggleTemp");
       if (hasChild(population, "line")) turnOn("togglePopulation");
