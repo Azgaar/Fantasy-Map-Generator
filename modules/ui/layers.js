@@ -1518,8 +1518,9 @@ function toggleTexture(event) {
   if (!layerIsOn("toggleTexture")) {
     turnButtonOn("toggleTexture");
     // href is not set directly to avoid image loading when layer is off
-    const src = texture.select("image").attr("src");
-    texture.select("image").attr("href", src);
+    const textureImage = byId("textureImage");
+    if (textureImage) textureImage.setAttribute("href", textureImage.getAttribute("src"));
+
     if (event && isCtrlClick(event)) editStyle("texture");
   } else {
     if (event && isCtrlClick(event)) return editStyle("texture");

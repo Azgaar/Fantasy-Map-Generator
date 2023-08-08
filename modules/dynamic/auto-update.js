@@ -637,10 +637,11 @@ export function resolveVersionConflicts(version) {
     });
   }
 
-  if (version < 1.9) {
+  if (version < 1.91) {
     // from v1.90.02 texture image is always there
     if (!texture.selectAll("*").size()) {
       texture.style("display", "none");
+
       texture
         .append("image")
         .attr("id", "textureImage")
@@ -649,9 +650,7 @@ export function resolveVersionConflicts(version) {
         .attr("preserveAspectRatio", "xMidYMid slice")
         .attr("src", "https://i2.wp.com/azgaar.files.wordpress.com/2021/10/marble-big.jpg");
     }
-  }
 
-  if (version < 1.91) {
     // from 1.91.00 custom coa is moved to coa object
     pack.states.forEach(state => {
       if (state.coa === "custom") state.coa = {custom: true};
