@@ -192,11 +192,14 @@ function editHeightmap(options) {
     document
       .getElementById("mapLayers")
       .querySelectorAll("li")
-      .forEach(function (e) {
-        if (editHeightmap.layers.includes(e.id) && !layerIsOn(e.id)) e.click();
-        // turn on
-        else if (!editHeightmap.layers.includes(e.id) && layerIsOn(e.id)) e.click(); // turn off
+      .forEach(e => {
+        const wasOn = editHeightmap.layers.includes(e.id);
+        if ((wasOn && !layerIsOn(e.id)) || (!wasOn && layerIsOn(e.id))) e.click();
       });
+    if (!layerIsOn("toggleBorders")) borders.selectAll("path").remove();
+    if (!layerIsOn("toggleStates")) regions.selectAll("path").remove();
+    if (!layerIsOn("toggleRivers")) rivers.selectAll("*").remove();
+
     getCurrentPreset();
   }
 
