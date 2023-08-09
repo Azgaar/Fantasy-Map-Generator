@@ -221,9 +221,9 @@ async function parseLoadedData(data) {
       if (settings[18]) precInput.value = precOutput.value = settings[18];
 
       if (settings[19]) options = JSON.parse(settings[19]);
-      // setting 16 and 17 (temperature) are part of options now
-      if (settings[16]) options.temperatureEquator = Number(settings[16]);
-      if (settings[17]) options.temperatureNorthPole = options.temperatureSouthPole = Number(settings[17]);
+      // setting 16 and 17 (temperature) are part of options now, kept as "" in newer versions for compatibility
+      if (settings[16]) options.temperatureEquator = +settings[16];
+      if (settings[17]) options.temperatureNorthPole = options.temperatureSouthPole = +settings[17];
 
       if (settings[20]) mapName.value = settings[20];
       if (settings[21]) hideLabels.checked = +settings[21];
