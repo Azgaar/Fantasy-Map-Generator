@@ -705,5 +705,16 @@ export function resolveVersionConflicts(version) {
 
     // leftover from v1.90.02
     texture.style("display", null);
+    const textureImage = texture.select("#textureImage");
+    if (textureImage) {
+      const xlink = textureImage.attr("xlink:href");
+      const href = textureImage.attr("href");
+      const src = xlink || href;
+
+      if (src) {
+        textureImage.attr("src", src);
+        textureImage.attr("xlink:href", null);
+      }
+    }
   }
 }
