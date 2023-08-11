@@ -74,7 +74,7 @@ toolsContent.addEventListener("click", function (event) {
 });
 
 function processFeatureRegeneration(event, button) {
-  if (button === "regenerateStateLabels") BurgsAndStates.drawStateLabels();
+  if (button === "regenerateStateLabels") drawStateLabels();
   else if (button === "regenerateReliefIcons") {
     ReliefIcons();
     if (!layerIsOn("toggleRelief")) toggleRelief();
@@ -154,7 +154,7 @@ function regenerateStates() {
   layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
 
-  BurgsAndStates.drawStateLabels();
+  drawStateLabels();
   Military.generate();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
@@ -836,7 +836,7 @@ function addMarkerOnClick() {
   const marker = Markers.add({...baseMarker, x, y, cell});
 
   if (selectedConfig && selectedConfig.add) {
-    selectedConfig.add("marker"+marker.i, cell);
+    selectedConfig.add("marker" + marker.i, cell);
   }
 
   const markersElement = document.getElementById("markers");

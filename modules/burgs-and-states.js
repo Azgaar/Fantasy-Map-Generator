@@ -503,7 +503,7 @@ window.BurgsAndStates = (function () {
   };
 
   // calculate and draw curved state labels for a list of states
-  const drawStateLabels = function (list) {
+  const drawStateLabelsOld = function (list) {
     TIME && console.time("drawStateLabels");
     const {cells, features, states} = pack;
     const paths = []; // text paths
@@ -519,8 +519,8 @@ window.BurgsAndStates = (function () {
       const hull = getHull(start, s.i, s.cells / 10);
       const points = [...hull].map(v => pack.vertices.p[v]);
       const delaunay = Delaunator.from(points);
-      const voronoi = new Voronoi(delaunay, points, points.length);
       const chain = connectCenters(voronoi.vertices, s.pole[1]);
+      const voronoi = new Voronoi(delaunay, points, points.length);
       const relaxed = chain.map(i => voronoi.vertices.p[i]).filter((p, i) => i % 15 === 0 || i + 1 === chain.length);
       paths.push([s.i, relaxed]);
 
@@ -1405,7 +1405,6 @@ window.BurgsAndStates = (function () {
     specifyBurgs,
     defineBurgFeatures,
     getType,
-    drawStateLabels,
     collectStatistics,
     generateCampaign,
     generateCampaigns,
