@@ -640,8 +640,6 @@ export function resolveVersionConflicts(version) {
   if (version < 1.91) {
     // from v1.90.02 texture image is always there
     if (!texture.selectAll("*").size()) {
-      texture.style("display", "none");
-
       texture
         .append("image")
         .attr("id", "textureImage")
@@ -704,5 +702,8 @@ export function resolveVersionConflicts(version) {
     labels.selectAll("tspan").each(function () {
       this.setAttribute("x", 0);
     });
+
+    // leftover from v1.90.02
+    texture.style("display", null);
   }
 }
