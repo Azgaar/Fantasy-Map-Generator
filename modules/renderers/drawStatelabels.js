@@ -1,6 +1,7 @@
 "use strict";
 
-function drawStateLabels() {
+// list - an optional array of stateIds to regenerate
+function drawStateLabels(list) {
   console.time("drawStateLabels");
 
   const {cells, states, features} = pack;
@@ -22,7 +23,8 @@ function drawStateLabels() {
     const labelPaths = [];
 
     for (const state of states) {
-      if (!state.i || state.removed || state.locked) continue;
+      if (!state.i || state.removed || state.lock) continue;
+      if (list && !list.includes(state.i)) continue;
 
       const offset = getOffsetWidth(state.cells);
       const maxLakeSize = state.cells / 50;
@@ -115,17 +117,17 @@ function drawStateLabels() {
     const textGroup = d3.select("g#labels > g#states");
     const pathGroup = d3.select("defs > g#deftemp > g#textPaths");
 
-    const testLabel = textGroup.append("text").attr("x", 0).attr("x", 0).text("Example");
+    const testLabel = textGroup.append("text").attr("x", 0).attr("y", 0).text("Example");
     const letterLength = testLabel.node().getComputedTextLength() / 7; // approximate length of 1 letter
     testLabel.remove();
 
     for (const [stateId, pathPoints] of labelPaths) {
       const state = states[stateId];
-      if (!state.i || state.removed) throw new Error("State must not be neutral");
+      if (!state.i || state.removed) throw new Error("State must not be neutral or removed");
       if (pathPoints.length < 2) throw new Error("Label path must have at least 2 points");
 
-      textGroup.select("#textPath_stateLabel" + stateId).remove();
-      pathGroup.select("#stateLabel" + stateId).remove();
+      textGroup.select("#stateLabel" + stateId).remove();
+      pathGroup.select("#textPath_stateLabel" + stateId).remove();
 
       const textPath = pathGroup
         .append("path")

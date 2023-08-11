@@ -263,7 +263,7 @@ i.icon-lock {
 }
 
 #labels {
-  text-anchor: start;
+  text-anchor: middle;
   dominant-baseline: central;
   cursor: pointer;
 }

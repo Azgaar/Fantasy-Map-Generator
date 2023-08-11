@@ -570,9 +570,8 @@ function addLabelOnClick() {
       .attr("data-size", 18)
       .attr("filter", null);
 
-  const example = group.append("text").attr("x", 0).attr("x", 0).text(name);
+  const example = group.append("text").attr("x", 0).attr("y", 0).text(name);
   const width = example.node().getBBox().width;
-  const x = width / -2; // x offset;
   example.remove();
 
   group.classed("hidden", false);
@@ -584,7 +583,7 @@ function addLabelOnClick() {
     .attr("startOffset", "50%")
     .attr("font-size", "100%")
     .append("tspan")
-    .attr("x", x)
+    .attr("x", 0)
     .text(name);
 
   defs
