@@ -698,4 +698,11 @@ export function resolveVersionConflicts(version) {
       }
     });
   }
+
+  if (version < 1.92) {
+    // v1.92 change labels text-anchor from 'start' to 'middle'
+    labels.selectAll("tspan").each(function () {
+      this.setAttribute("x", 0);
+    });
+  }
 }
