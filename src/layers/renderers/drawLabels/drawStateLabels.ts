@@ -114,7 +114,7 @@ function getLabelPaths(features: TPackFeatures, featureIds: Uint16Array, stateId
 
     function isPassable(cellId: number) {
       const feature = features[featureIds[cellId]];
-      if (isLake(feature) && feature.cells <= maxLakeSize) return true;
+      if (isLake(feature)) return feature.cells <= maxLakeSize;
       return stateIds[cellId] === stateId;
     }
   }
@@ -136,8 +136,8 @@ function drawLabelPath(stateIds: Uint16Array, states: TStates, labelPaths: [numb
     if (!isState(state)) throw new Error("State must not be neutral");
     if (pathPoints.length < 2) throw new Error("Label path must have at least 2 points");
 
-    textGroup.select("#textPath_stateLabel" + stateId).remove();
-    pathGroup.select("#stateLabel" + stateId).remove();
+    textGroup.select("#stateLabel" + stateId).remove();
+    pathGroup.select("#textPath_stateLabel" + stateId).remove();
 
     const textPath = pathGroup
       .append("path")
