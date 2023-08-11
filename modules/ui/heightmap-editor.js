@@ -239,7 +239,7 @@ function editHeightmap(options) {
 
     drawRivers();
     Lakes.defineGroup();
-    defineBiomes();
+    Biomes.define();
     rankCells();
 
     Cultures.generate();
@@ -373,16 +373,18 @@ function editHeightmap(options) {
       const g = pack.cells.g[i];
       const isLand = pack.cells.h[i] >= 20;
 
-      // check biome
-      pack.cells.biome[i] =
-        isLand && biome[g] ? biome[g] : getBiomeId(grid.cells.prec[g], grid.cells.temp[g], pack.cells.h[i]);
-
       // rivers data
       if (!erosionAllowed) {
         pack.cells.r[i] = r[g];
         pack.cells.conf[i] = conf[g];
         pack.cells.fl[i] = fl[g];
       }
+
+      // check biome
+      pack.cells.biome[i] =
+        isLand && biome[g]
+          ? biome[g]
+          : Biomes.getId(grid.cells.prec[g], grid.cells.temp[g], pack.cells.h[i], Boolean(pack.cells.r[i]));
 
       if (!isLand) continue;
       pack.cells.culture[i] = culture[g];

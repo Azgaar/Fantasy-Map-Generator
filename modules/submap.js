@@ -215,7 +215,7 @@ window.Submap = (function () {
     // biome calculation based on (resampled) grid.cells.temp and prec
     // it's safe to recalculate.
     stage("Regenerating Biome.");
-    defineBiomes();
+    Biomes.define();
     // recalculate suitability and population
     // TODO: normalize according to the base-map
     rankCells();

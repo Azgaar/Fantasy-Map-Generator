@@ -257,7 +257,7 @@ async function parseLoadedData(data) {
       }
 
       const biomes = data[3].split("|");
-      biomesData = applyDefaultBiomesSystem();
+      biomesData = Biomes.getDefault();
       biomesData.color = biomes[0].split(",");
       biomesData.habitability = biomes[1].split(",").map(h => +h);
       biomesData.name = biomes[2].split(",");
