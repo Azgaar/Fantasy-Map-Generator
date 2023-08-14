@@ -639,7 +639,9 @@ export function resolveVersionConflicts(version) {
 
   if (version < 1.91) {
     // from v1.90.02 texture image is always there
-    if (!texture.selectAll("*").size()) {
+    if (!texture.select("#textureImage").size()) {
+      // cleanup old texture if it has no id and add new one
+      texture.selectAll("*").remove();
       texture
         .append("image")
         .attr("id", "textureImage")
@@ -706,7 +708,7 @@ export function resolveVersionConflicts(version) {
     // leftover from v1.90.02
     texture.style("display", null);
     const textureImage = texture.select("#textureImage");
-    if (textureImage) {
+    if (textureImage.size()) {
       const xlink = textureImage.attr("xlink:href");
       const href = textureImage.attr("href");
       const src = xlink || href;
