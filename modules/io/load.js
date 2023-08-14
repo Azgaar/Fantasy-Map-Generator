@@ -1,5 +1,5 @@
 "use strict";
-// Functions to load and parse .map files
+// Functions to load and parse .gz/.map files
 async function quickLoad() {
   const blob = await ldb.get("lastMap");
   if (blob) loadMapPrompt(blob);
@@ -170,7 +170,7 @@ function showUploadMessage(type, mapData, mapVersion) {
   let message, title, canBeLoaded;
 
   if (type === "invalid") {
-    message = `The file does not look like a valid <i>.map</i> file.<br>Please check the data format`;
+    message = `The file does not look like a valid <i>.gz or .map</i> file.<br>Please check the data format`;
     title = "Invalid file";
     canBeLoaded = false;
   } else if (type === "ancient") {

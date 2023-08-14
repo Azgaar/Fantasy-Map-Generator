@@ -23,11 +23,12 @@ const version = "1.93.00"; // generator version, update each time
     const discord = "https://discordapp.com/invite/X7E84HU";
     const patreon = "https://www.patreon.com/azgaar";
 
-    alertMessage.innerHTML = /* html */ `The Fantasy Map Generator is updated up to version <strong>${version}</strong>. This version is compatible with <a href="${changelog}" target="_blank">previous versions</a>, loaded <i>.map</i> files will be auto-updated.
+    alertMessage.innerHTML = /* html */ `The Fantasy Map Generator is updated up to version <strong>${version}</strong>. This version is compatible with <a href="${changelog}" target="_blank">previous versions</a>, loaded <i>.gz or .map</i> files will be auto-updated.
       ${storedVersion ? "<span>Reload the page to fetch fresh code.</span>" : ""}
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Map save file extension is changed to .gz, .map files are still loadable</li>
         <li>New label placement algorithm for states</li>
         <li>North and South Poles temperature can be set independently</li>
         <li>More than 70 new heraldic charges</li>
