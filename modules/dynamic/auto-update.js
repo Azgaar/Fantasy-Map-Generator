@@ -639,7 +639,9 @@ export function resolveVersionConflicts(version) {
 
   if (version < 1.91) {
     // from v1.90.02 texture image is always there
-    if (!texture.selectAll("*").size()) {
+    if (!texture.select("#textureImage").size()) {
+      // cleanup old texture if it has no id and add new one
+      texture.selectAll("*").remove();
       texture
         .append("image")
         .attr("id", "textureImage")
