@@ -116,14 +116,23 @@ function getMapData() {
   ].join("\r\n");
   return mapData;
 }
+async function compressMapData(mapData){
+  const compressedStream = new Blob([mapData]).stream().pipeThrough(new CompressionStream("gzip"));
+  let compressedData = [];
+  for await (const chunk of compressedStream){
+    compressedData = compressedData.concat(Array.from(chunk));
+  }
+  return new Uint8Array(compressedData);
+}
+
 
 // Download .map file
-function dowloadMap() {
+async function downloadMap() {
   if (customization)
     return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
 
-  const mapData = getMapData();
+  const mapData = await compressMapData(getMapData());
   const blob = new Blob([mapData], {type: "text/plain"});
   const URL = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -138,7 +147,7 @@ async function saveToDropbox() {
   if (customization)
     return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
-  const mapData = getMapData();
+  const mapData = await compressMapData(getMapData());
   const filename = getFileName() + ".map";
   try {
     await Cloud.providers.dropbox.save(filename, mapData);
@@ -162,7 +171,7 @@ async function initiateAutosave() {
     if (customization) return tip("Autosave: map cannot be saved in edit mode", false, "warning", 2000);
 
     tip("Autosave: saving map...", false, "warning", 3000);
-    const mapData = getMapData();
+    const mapData = await compressMapData(getMapData());
     const blob = new Blob([mapData], {type: "text/plain"});
     await ldb.set("lastMap", blob);
     INFO && console.log("Autosaved at", new Date().toLocaleTimeString());
@@ -176,7 +185,7 @@ async function quickSave() {
   if (customization)
     return tip("Map cannot be saved when edit mode is active, please exit the mode first", false, "error");
 
-  const mapData = getMapData();
+  const mapData = await compressMapData(getMapData());
   const blob = new Blob([mapData], {type: "text/plain"});
   await ldb.set("lastMap", blob); // auto-save map
   tip("Map is saved to browser memory. Please also save as .map file to secure progress", true, "success", 2000);
