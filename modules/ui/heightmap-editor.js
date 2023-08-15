@@ -28,7 +28,7 @@ function editHeightmap(options) {
     <p><i>Erase</i> mode also allows you Convert an Image into a heightmap or use Template Editor.</p>
     <p>You can <i>keep</i> the data, but you won't be able to change the coastline.</p>
     <p>Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.</p>
-    <p>Please <span class="pseudoLink" onclick="dowloadMap();">save the map</span> before editing the heightmap!</p>
+    <p>Please <span class="pseudoLink" onclick="saveMap('machine')">save the map</span> before editing the heightmap!</p>
     <p style="margin-bottom: 0">Check out ${link(
       "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization",
       "wiki"

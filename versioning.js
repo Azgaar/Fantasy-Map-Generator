@@ -1,7 +1,7 @@
 "use strict";
 
 // version and caching control
-const version = "1.92.05"; // generator version, update each time
+const version = "1.93.00"; // generator version, update each time
 
 {
   document.title += " v" + version;
@@ -23,11 +23,13 @@ const version = "1.92.05"; // generator version, update each time
     const discord = "https://discordapp.com/invite/X7E84HU";
     const patreon = "https://www.patreon.com/azgaar";
 
-    alertMessage.innerHTML = /* html */ `The Fantasy Map Generator is updated up to version <strong>${version}</strong>. This version is compatible with <a href="${changelog}" target="_blank">previous versions</a>, loaded <i>.map</i> files will be auto-updated.
+    alertMessage.innerHTML = /* html */ `The Fantasy Map Generator is updated up to version <strong>${version}</strong>. This version is compatible with <a href="${changelog}" target="_blank">previous versions</a>, loaded save files will be auto-updated.
       ${storedVersion ? "<span>Reload the page to fetch fresh code.</span>" : ""}
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Auto-load of the last saved map is now optional (see <i>Onload behavior</i> in Options)</li>
+        <li>Save files compression (file extension is changed to <i>.gz</i>). Old <i>.map</i> files are still supported</li>
         <li>New label placement algorithm for states</li>
         <li>North and South Poles temperature can be set independently</li>
         <li>More than 70 new heraldic charges</li>

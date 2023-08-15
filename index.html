@@ -1775,6 +1775,18 @@
               </td>
             </tr>
 
+            <tr data-tip="Set what Generator should do on load">
+              <td></td>
+              <td>Onload behavior</td>
+              <td>
+                <select id="onloadBehavior" data-stored="onloadBehavior">
+                  <option value="random" selected>Generate random map</option>
+                  <option value="lastSaved">Open last saved map</option>
+                </select>
+              </td>
+              <td></td>
+            </tr>
+
             <tr data-tip="Select speech synthesis voice to pronounce generated names">
               <td></td>
               <td>Speaker voice</td>
@@ -2329,8 +2341,8 @@
         <div id="sticked">
           <button id="newMapButton" data-tip="Generate a new map based on options" data-shortcut="F2">New Map</button>
           <button id="exportButton" data-tip="Select format to download image or export map data">Export</button>
-          <button id="saveButton" data-tip="Save fully-functional map in .map format">Save</button>
-          <button id="loadButton" data-tip="Load fully-functional map in .map format">Load</button>
+          <button id="saveButton" data-tip="Save fully-functional map in .gz format">Save</button>
+          <button id="loadButton" data-tip="Load fully-functional map (.gz or .map formats)">Load</button>
           <button id="zoomReset" data-tip="Reset map zoom" data-shortcut="0 (zero)">Reset Zoom</button>
         </div>
       </div>
@@ -5884,37 +5896,42 @@
       <div id="saveMapData" style="display: none" class="dialog">
         <div style="margin-top: 0.3em">
           <strong>Save map to</strong>
-          <button onclick="dowloadMap()" data-tip="Download .map file to your local disk" data-shortcut="Ctrl + S">
+          <button onclick="saveMap('machine')" data-tip="Download map file to your local disk" data-shortcut="Ctrl + S">
             machine
           </button>
-          <button onclick="saveToDropbox()" data-tip="Save .map file to your Dropbox" data-shortcut="Ctrl + C">
+          <button onclick="saveMap('dropbox')" data-tip="Save map file to your Dropbox" data-shortcut="Ctrl + C">
             dropbox
           </button>
-          <button
-            onclick="quickSave()"
-            data-tip="Save the project to browser storage. It will overwrite the latest autosave"
-            data-shortcut="F6"
-          >
+          <button onclick="saveMap('storage')" data-tip="Save the project to browser storage only" data-shortcut="F6">
             browser
           </button>
         </div>
         <p>
-          Maps are saved in <i>.map</i> format, that can be loaded back via the <i>Load</i> in menu. There is no way to
-          restore the progress if file is lost. Please keep old <i>.map</i> files on your machine or cloud storage as
-          backups.
+          Maps are saved in <i>.gz</i> format, that can be loaded back via the <i>Load</i> in menu. There is no way to
+          restore the progress if file is lost. Please keep old save files on your machine or cloud storage as backups.
         </p>
       </div>
 
       <div id="loadMapData" style="display: none" class="dialog">
         <div>
           <strong>Load map from</strong>
-          <button onclick="mapToLoad.click()" data-tip="Load .map file from your local disk">machine</button>
-          <button onclick="loadURL()" data-tip="Load .map file from URL (server should allow CORS)">URL</button>
+          <button onclick="mapToLoad.click()" data-tip="Load map file (.gz or .map) from your local disk">
+            machine
+          </button>
+          <button
+            onclick="loadURL()"
+            data-tip="Load map file (.gz or .map) file from URL. Note that the server should allow CORS"
+          >
+            URL
+          </button>
           <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
         </div>
+
+        <p>Click on <i>storage</i> to open the last saved map.</p>
+
         <div id="loadFromDropbox">
           <p style="margin-bottom: 0.3em">
-            From your Dropbox account
+            Or load from your Dropbox account
             <button
               id="dropboxConnectButton"
               onclick="connectToDropbox()"
@@ -5926,7 +5943,7 @@
 
           <select id="loadFromDropboxSelect" style="width: 22em"></select>
           <div id="loadFromDropboxButtons" style="margin-bottom: 0.6em">
-            <button onclick="loadFromDropbox()" data-tip="Load .map file from your Dropbox">Load</button>
+            <button onclick="loadFromDropbox()" data-tip="Load map file (.gz or .map) from your Dropbox">Load</button>
             <button
               onclick="createSharableDropboxLink()"
               data-tip="Select file and create a link to share with your friends"
@@ -5995,7 +6012,7 @@
       <div id="resampleDialog" style="display: none" class="dialog">
         <div style="width: 34em; max-width: 80vw; font-weight: bold; padding: 6px">
           This operation is destructive and irreversible. It will create a completely new map based on the current one.
-          Don't forget to save the current project as a .map file first!
+          Don't forget to save the current project to your machine first!
         </div>
 
         <div
@@ -6116,10 +6133,10 @@
       data-main="Сlick the arrow button for options. Zoom in to see the map in details"
     ></div>
 
-    <div id="mapOverlay" style="display: none">Drop a .map file to open</div>
+    <div id="mapOverlay" style="display: none">Drop a map file to open</div>
 
     <div id="fileInputs" style="display: none">
-      <input type="file" accept=".map" id="mapToLoad" />
+      <input type="file" accept=".map,.gz" id="mapToLoad" />
       <input type="file" accept=".txt,.csv" id="burgsListToLoad" />
       <input type="file" accept=".txt" id="legendsToLoad" />
       <input type="file" accept="image/*" id="imageToLoad" />
@@ -7930,7 +7947,7 @@
     <script src="utils/graphUtils.js?v=1.90.01"></script>
     <script src="utils/nodeUtils.js"></script>
     <script src="utils/numberUtils.js?v=1.89.08"></script>
-    <script src="utils/polyfills.js"></script>
+    <script src="utils/polyfills.js?v=1.93.00"></script>
     <script src="utils/probabilityUtils.js?v=1.88.00"></script>
     <script src="utils/stringUtils.js"></script>
     <script src="utils/languageUtils.js"></script>
@@ -7963,15 +7980,15 @@
     <script src="modules/ui/stylePresets.js?v=1.89.11"></script>
 
     <script src="modules/ui/general.js?v=1.87.03"></script>
-    <script src="modules/ui/options.js?v=1.91.00"></script>
-    <script src="main.js?v=1.92.00"></script>
+    <script src="modules/ui/options.js?v=1.93.00"></script>
+    <script src="main.js?v=1.93.00"></script>
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js"></script>
     <script defer src="modules/ui/editors.js?v=1.92.00"></script>
     <script defer src="modules/ui/tools.js?v=1.92.00"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.91.05"></script>
-    <script defer src="modules/ui/heightmap-editor.js?v=1.92.00"></script>
+    <script defer src="modules/ui/heightmap-editor.js?v=1.93.00"></script>
     <script defer src="modules/ui/provinces-editor.js?v=1.92.00"></script>
     <script defer src="modules/ui/biomes-editor.js?v=1.91.05"></script>
     <script defer src="modules/ui/namesbase-editor.js?v=1.89.26"></script>
@@ -8001,13 +8018,12 @@
     <script defer src="modules/ui/markers-editor.js"></script>
     <script defer src="modules/ui/3d.js?v=1.89.36"></script>
     <script defer src="modules/ui/submap.js?v=1.92.00"></script>
-    <script defer src="modules/ui/hotkeys.js?v=1.88.00"></script>
+    <script defer src="modules/ui/hotkeys.js?v=1.93.00"></script>
     <script defer src="modules/coa-renderer.js?v=1.91.00"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-
-    <script defer src="modules/io/save.js?v=1.91.04"></script>
-    <script defer src="modules/io/load.js?v=1.92.05"></script>
+    <script defer src="modules/io/save.js?v=1.93.00"></script>
+    <script defer src="modules/io/load.js?v=1.93.00"></script>
     <script defer src="modules/io/cloud.js"></script>
     <script defer src="modules/io/export.js?v=1.89.36"></script>
     <script defer src="modules/io/formats.js"></script>

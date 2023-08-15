@@ -1,6 +1,6 @@
 "use strict";
 
-// update old .map version to the current one
+// update old map file to the current version
 export function resolveVersionConflicts(version) {
   if (version < 1) {
     // v1.0 added a new religions layer

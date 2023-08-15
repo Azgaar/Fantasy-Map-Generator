@@ -1,6 +1,5 @@
 "use strict";
-// Functions to load and parse .map files
-
+// Functions to load and parse .gz/.map files
 async function quickLoad() {
   const blob = await ldb.get("lastMap");
   if (blob) loadMapPrompt(blob);
@@ -112,11 +111,11 @@ function uploadMap(file, callback) {
   const currentVersion = parseFloat(version);
 
   const fileReader = new FileReader();
-  fileReader.onload = function (fileLoadedEvent) {
+  fileReader.onloadend = async function (fileLoadedEvent) {
     if (callback) callback();
     document.getElementById("coas").innerHTML = ""; // remove auto-generated emblems
     const result = fileLoadedEvent.target.result;
-    const [mapData, mapVersion] = parseLoadedResult(result);
+    const [mapData, mapVersion] = await parseLoadedResult(result);
 
     const isInvalid = !mapData || isNaN(mapVersion) || mapData.length < 26 || !mapData[5];
     const isUpdated = mapVersion === currentVersion;
@@ -131,18 +130,40 @@ function uploadMap(file, callback) {
     if (isOutdated) return showUploadMessage("outdated", mapData, mapVersion);
   };
 
-  fileReader.readAsText(file, "UTF-8");
+  fileReader.readAsArrayBuffer(file);
 }
 
-function parseLoadedResult(result) {
+async function uncompress(compressedData) {
   try {
+    const uncompressedStream = new Blob([compressedData]).stream().pipeThrough(new DecompressionStream("gzip"));
+
+    let uncompressedData = [];
+    for await (const chunk of uncompressedStream) {
+      uncompressedData = uncompressedData.concat(Array.from(chunk));
+    }
+
+    return new Uint8Array(uncompressedData);
+  } catch (error) {
+    ERROR && console.error(error);
+    return null;
+  }
+}
+
+async function parseLoadedResult(result) {
+  try {
+    const resultAsString = new TextDecoder().decode(result);
     // data can be in FMG internal format or base64 encoded
-    const isDelimited = result.substr(0, 10).includes("|");
-    const decoded = isDelimited ? result : decodeURIComponent(atob(result));
+    const isDelimited = resultAsString.substring(0, 10).includes("|");
+    const decoded = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
+
     const mapData = decoded.split("\r\n");
     const mapVersion = parseFloat(mapData[0].split("|")[0] || mapData[0]);
     return [mapData, mapVersion];
   } catch (error) {
+    // map file can be compressed with gzip
+    const uncompressedData = await uncompress(result);
+    if (uncompressedData) return parseLoadedResult(uncompressedData);
+
     ERROR && console.error(error);
     return [null, null];
   }
@@ -153,7 +174,7 @@ function showUploadMessage(type, mapData, mapVersion) {
   let message, title, canBeLoaded;
 
   if (type === "invalid") {
-    message = `The file does not look like a valid <i>.map</i> file.<br>Please check the data format`;
+    message = `The file does not look like a valid save file.<br>Please check the data format`;
     title = "Invalid file";
     canBeLoaded = false;
   } else if (type === "ancient") {
@@ -165,7 +186,7 @@ function showUploadMessage(type, mapData, mapVersion) {
     title = "Newer file";
     canBeLoaded = false;
   } else if (type === "outdated") {
-    message = `The map version (${mapVersion}) does not match the Generator version (${version}).<br>Click OK to get map <b>auto-updated</b>.<br>In case of issues please keep using an ${archive} of the Generator`;
+    message = `The map version (${mapVersion}) does not match the Generator version (${version}).<br>That is fine, click OK to the get map <b style="color: #005000">auto-updated</b>.<br>In case of issues please keep using an ${archive} of the Generator`;
     title = "Outdated file";
     canBeLoaded = true;
   }
@@ -435,7 +456,7 @@ async function parseLoadedData(data) {
     {
       // dynamically import and run auto-udpdate script
       const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.92.05");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.93.00");
       resolveVersionConflicts(versionNumber);
     }
 

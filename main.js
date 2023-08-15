@@ -270,7 +270,7 @@ async function checkLoadParameters() {
   const url = new URL(window.location.href);
   const params = url.searchParams;
 
-  // of there is a valid maplink, try to load .map file from URL
+  // of there is a valid maplink, try to load .gz/.map file from URL
   if (params.get("maplink")) {
     WARN && console.warn("Load map from URL");
     const maplink = params.get("maplink");
@@ -292,17 +292,20 @@ async function checkLoadParameters() {
   }
 
   // check if there is a map saved to indexedDB
-  try {
-    const blob = await ldb.get("lastMap");
-    if (blob) {
-      WARN && console.warn("Loading last stored map");
-      uploadMap(blob);
-      return;
+  if (byId("onloadBehavior").value === "lastSaved") {
+    try {
+      const blob = await ldb.get("lastMap");
+      if (blob) {
+        WARN && console.warn("Loading last stored map");
+        uploadMap(blob);
+        return;
+      }
+    } catch (error) {
+      ERROR && console.error(error);
     }
-  } catch (error) {
-    console.error(error);
   }
 
+  // else generate random map
   WARN && console.warn("Generate random map");
   generateMapOnLoad();
 }
@@ -574,9 +577,10 @@ void (function addDragToUpload() {
     overlay.style.display = "none";
     if (e.dataTransfer.items == null || e.dataTransfer.items.length !== 1) return; // no files or more than one
     const file = e.dataTransfer.items[0].getAsFile();
-    if (file.name.indexOf(".map") == -1) {
-      // not a .map file
-      alertMessage.innerHTML = "Please upload a <b>.map</b> file you have previously downloaded";
+
+    if (!file.name.endsWith(".map") && !file.name.endsWith(".gz")) {
+      alertMessage.innerHTML =
+        "Please upload a map file (<i>.gz</i> or <i>.map</i> formats) you have previously downloaded";
       $("#alert").dialog({
         resizable: false,
         title: "Invalid file format",
@@ -596,7 +600,7 @@ void (function addDragToUpload() {
     if (closeDialogs) closeDialogs();
     uploadMap(file, () => {
       overlay.style.display = "none";
-      overlay.innerHTML = "Drop a .map file to open";
+      overlay.innerHTML = "Drop a map file to open";
     });
   });
 })();

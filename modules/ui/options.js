@@ -793,7 +793,7 @@ async function showLoadPane() {
   $("#loadMapData").dialog({
     title: "Load map",
     resizable: false,
-    width: "24em",
+    width: "auto",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {
@@ -844,8 +844,8 @@ async function connectToDropbox() {
 
 function loadURL() {
   const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
-  const inner = `Provide URL to a .map file:
-    <input id="mapURL" type="url" style="width: 24em" placeholder="https://e-cloud.com/test.map">
+  const inner = `Provide URL to map file:
+    <input id="mapURL" type="url" style="width: 24em" placeholder="https://e-cloud.com/test.gz">
     <br><i>Please note server should allow CORS for file to be loaded. If CORS is not allowed, save file to Dropbox and provide a direct link</i>`;
   alertMessage.innerHTML = inner;
   $("#alert").dialog({
