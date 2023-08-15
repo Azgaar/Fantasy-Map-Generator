@@ -1,8 +1,43 @@
 "use strict";
-// functions to save project as .gz file
 
-// prepare map data for saving
-function getMapData() {
+// functions to save the project to a file
+async function saveMap(method) {
+  if (customization) return tip("Map cannot be saved in EDIT mode, please complete the edit and retry", false, "error");
+  closeDialogs("#alert");
+
+  try {
+    const compressedMapData = await compressData(prepareMapData());
+    const filename = getFileName() + ".gz";
+
+    saveToStorage(compressedMapData, method === "storage"); // any method saves to indexedDB
+    if (method === "machine") saveToMachine(compressedMapData, filename);
+    if (method === "dropbox") saveToDropbox(compressedMapData, filename);
+  } catch (error) {
+    ERROR && console.error(error);
+    alertMessage.innerHTML = /* html */ `An error is occured on map saving. If the issue persists, please copy the message below and report it on ${link(
+      "https://github.com/Azgaar/Fantasy-Map-Generator/issues",
+      "GitHub"
+    )}. <p id="errorBox">${parseError(error)}</p>`;
+
+    $("#alert").dialog({
+      resizable: false,
+      title: "Saving error",
+      width: "28em",
+      buttons: {
+        Retry: function () {
+          $(this).dialog("close");
+          saveMap(method);
+        },
+        Close: function () {
+          $(this).dialog("close");
+        }
+      },
+      position: {my: "center", at: "center", of: "svg"}
+    });
+  }
+}
+
+function prepareMapData() {
   const date = new Date();
   const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
@@ -117,50 +152,30 @@ function getMapData() {
   return mapData;
 }
 
-async function compressData(uncompressedData) {
-  const compressedStream = new Blob([uncompressedData]).stream().pipeThrough(new CompressionStream("gzip"));
-
-  let compressedData = [];
-  for await (const chunk of compressedStream) {
-    compressedData = compressedData.concat(Array.from(chunk));
-  }
-
-  return new Uint8Array(compressedData);
+// save map file to indexedDB
+async function saveToStorage(compressedMapData, showTip = false) {
+  const blob = new Blob([compressedMapData], {type: "text/plain"});
+  await ldb.set("lastMap", blob);
+  showTip && tip("Map is saved to the browser storage", false, "success");
 }
 
 // download .gz file
-async function downloadMap() {
-  if (customization)
-    return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
-  closeDialogs("#alert");
-
-  const compressedMapData = await compressData(getMapData());
+function saveToMachine(compressedMapData, filename) {
   const blob = new Blob([compressedMapData], {type: "text/plain"});
   const URL = window.URL.createObjectURL(blob);
 
   const link = document.createElement("a");
-  link.download = getFileName() + ".gz";
+  link.download = filename;
   link.href = URL;
   link.click();
-  tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+
+  tip('Map is saved to the "Downloads" folder (CTRL + J to open)', true, "success", 8000);
   window.URL.revokeObjectURL(URL);
 }
 
-async function saveToDropbox() {
-  if (customization)
-    return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
-  closeDialogs("#alert");
-
-  const compressedMapData = await compressData(getMapData());
-  const filename = getFileName() + ".gz";
-
-  try {
-    await Cloud.providers.dropbox.save(filename, compressedMapData);
-    tip("Map is saved to your Dropbox", true, "success", 8000);
-  } catch (msg) {
-    ERROR && console.error(msg);
-    tip("Cannot save .gz to your Dropbox", true, "error", 8000);
-  }
+async function saveToDropbox(compressedMapData, filename) {
+  await Cloud.providers.dropbox.save(filename, compressedMapData);
+  tip("Map is saved to your Dropbox", true, "success", 8000);
 }
 
 async function initiateAutosave() {
@@ -175,25 +190,30 @@ async function initiateAutosave() {
     if (diffInMinutes < timeoutMinutes) return;
     if (customization) return tip("Autosave: map cannot be saved in edit mode", false, "warning", 2000);
 
-    tip("Autosave: saving map...", false, "warning", 3000);
-    const compressedMapData = await compressData(getMapData());
-    const blob = new Blob([compressedMapData], {type: "text/plain"});
-    await ldb.set("lastMap", blob);
-    INFO && console.log("Autosaved at", new Date().toLocaleTimeString());
-    lastSavedAt = Date.now();
+    try {
+      tip("Autosave: saving map...", false, "warning", 3000);
+      const compressedMapData = await compressData(prepareMapData());
+      await saveToStorage(compressedMapData);
+      tip("Autosave: map is saved", false, "success", 2000);
+
+      lastSavedAt = Date.now();
+    } catch (error) {
+      ERROR && console.error(error);
+    }
   }
 
   setInterval(autosave, MINUTE / 2);
 }
 
-async function quickSave() {
-  if (customization)
-    return tip("Map cannot be saved when edit mode is active, please exit the mode first", false, "error");
+async function compressData(uncompressedData) {
+  const compressedStream = new Blob([uncompressedData]).stream().pipeThrough(new CompressionStream("gzip"));
 
-  const compressedMapData = await compressData(getMapData());
-  const blob = new Blob([compressedMapData], {type: "text/plain"});
-  await ldb.set("lastMap", blob); // auto-save map
-  tip("Map is saved to browser memory. Please also save to your desktop to secure the progress", true, "success", 2000);
+  let compressedData = [];
+  for await (const chunk of compressedStream) {
+    compressedData = compressedData.concat(Array.from(chunk));
+  }
+
+  return new Uint8Array(compressedData);
 }
 
 const saveReminder = function () {

@@ -1775,6 +1775,18 @@
               </td>
             </tr>
 
+            <tr data-tip="Set what Generator should do on load">
+              <td></td>
+              <td>Onload behavior</td>
+              <td>
+                <select id="onloadBehavior" data-stored="onloadBehavior">
+                  <option value="random" selected>Generate random map</option>
+                  <option value="lastSaved">Open last saved map</option>
+                </select>
+              </td>
+              <td></td>
+            </tr>
+
             <tr data-tip="Select speech synthesis voice to pronounce generated names">
               <td></td>
               <td>Speaker voice</td>
@@ -5884,17 +5896,13 @@
       <div id="saveMapData" style="display: none" class="dialog">
         <div style="margin-top: 0.3em">
           <strong>Save map to</strong>
-          <button onclick="downloadMap()" data-tip="Download map file to your local disk" data-shortcut="Ctrl + S">
+          <button onclick="saveMap('machine')" data-tip="Download map file to your local disk" data-shortcut="Ctrl + S">
             machine
           </button>
-          <button onclick="saveToDropbox()" data-tip="Save map file to your Dropbox" data-shortcut="Ctrl + C">
+          <button onclick="saveMap('dropbox')" data-tip="Save map file to your Dropbox" data-shortcut="Ctrl + C">
             dropbox
           </button>
-          <button
-            onclick="quickSave()"
-            data-tip="Save the project to browser storage. It will overwrite the latest autosave"
-            data-shortcut="F6"
-          >
+          <button onclick="saveMap('storage')" data-tip="Save the project to browser storage only" data-shortcut="F6">
             browser
           </button>
         </div>
@@ -5918,9 +5926,12 @@
           </button>
           <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
         </div>
+
+        <p>Click on <i>storage</i> to open the last saved map.</p>
+
         <div id="loadFromDropbox">
           <p style="margin-bottom: 0.3em">
-            From your Dropbox account
+            Or load from your Dropbox account
             <button
               id="dropboxConnectButton"
               onclick="connectToDropbox()"

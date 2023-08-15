@@ -186,7 +186,7 @@ function showUploadMessage(type, mapData, mapVersion) {
     title = "Newer file";
     canBeLoaded = false;
   } else if (type === "outdated") {
-    message = `The map version (${mapVersion}) does not match the Generator version (${version}).<br>Click OK to get map <b>auto-updated</b>.<br>In case of issues please keep using an ${archive} of the Generator`;
+    message = `The map version (${mapVersion}) does not match the Generator version (${version}).<br>That is fine, click OK to the get map <b style="color: #005000">auto-updated</b>.<br>In case of issues please keep using an ${archive} of the Generator`;
     title = "Outdated file";
     canBeLoaded = true;
   }

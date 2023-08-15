@@ -292,17 +292,20 @@ async function checkLoadParameters() {
   }
 
   // check if there is a map saved to indexedDB
-  try {
-    const blob = await ldb.get("lastMap");
-    if (blob) {
-      WARN && console.warn("Loading last stored map");
-      uploadMap(blob);
-      return;
+  if (byId("onloadBehavior").value === "lastSaved") {
+    try {
+      const blob = await ldb.get("lastMap");
+      if (blob) {
+        WARN && console.warn("Loading last stored map");
+        uploadMap(blob);
+        return;
+      }
+    } catch (error) {
+      ERROR && console.error(error);
     }
-  } catch (error) {
-    console.error(error);
   }
 
+  // else generate random map
   WARN && console.warn("Generate random map");
   generateMapOnLoad();
 }

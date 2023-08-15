@@ -793,7 +793,7 @@ async function showLoadPane() {
   $("#loadMapData").dialog({
     title: "Load map",
     resizable: false,
-    width: "24em",
+    width: "auto",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {
