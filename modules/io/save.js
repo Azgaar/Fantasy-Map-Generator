@@ -1,5 +1,5 @@
 "use strict";
-// functions to save project as .map file
+// functions to save project as .gz file
 
 // prepare map data for saving
 function getMapData() {
@@ -116,18 +116,27 @@ function getMapData() {
   ].join("\r\n");
   return mapData;
 }
+async function compressMapData(mapData){
+  const compressedStream = new Blob([mapData]).stream().pipeThrough(new CompressionStream("gzip"));
+  let compressedData = [];
+  for await (const chunk of compressedStream){
+    compressedData = compressedData.concat(Array.from(chunk));
+  }
+  return new Uint8Array(compressedData);
+}
 
-// Download .map file
-function dowloadMap() {
+
+// Download .gz file
+async function downloadMap() {
   if (customization)
     return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
 
-  const mapData = getMapData();
+  const mapData = await compressMapData(getMapData());
   const blob = new Blob([mapData], {type: "text/plain"});
   const URL = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.download = getFileName() + ".map";
+  link.download = getFileName() + ".gz";
   link.href = URL;
   link.click();
   tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
@@ -138,14 +147,14 @@ async function saveToDropbox() {
   if (customization)
     return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
-  const mapData = getMapData();
-  const filename = getFileName() + ".map";
+  const mapData = await compressMapData(getMapData());
+  const filename = getFileName() + ".gz";
   try {
     await Cloud.providers.dropbox.save(filename, mapData);
     tip("Map is saved to your Dropbox", true, "success", 8000);
   } catch (msg) {
     ERROR && console.error(msg);
-    tip("Cannot save .map to your Dropbox", true, "error", 8000);
+    tip("Cannot save .gz to your Dropbox", true, "error", 8000);
   }
 }
 
@@ -162,7 +171,7 @@ async function initiateAutosave() {
     if (customization) return tip("Autosave: map cannot be saved in edit mode", false, "warning", 2000);
 
     tip("Autosave: saving map...", false, "warning", 3000);
-    const mapData = getMapData();
+    const mapData = await compressMapData(getMapData());
     const blob = new Blob([mapData], {type: "text/plain"});
     await ldb.set("lastMap", blob);
     INFO && console.log("Autosaved at", new Date().toLocaleTimeString());
@@ -176,22 +185,22 @@ async function quickSave() {
   if (customization)
     return tip("Map cannot be saved when edit mode is active, please exit the mode first", false, "error");
 
-  const mapData = getMapData();
+  const mapData = await compressMapData(getMapData());
   const blob = new Blob([mapData], {type: "text/plain"});
   await ldb.set("lastMap", blob); // auto-save map
-  tip("Map is saved to browser memory. Please also save as .map file to secure progress", true, "success", 2000);
+  tip("Map is saved to browser memory. Please also save as .gz file to secure progress", true, "success", 2000);
 }
 
 const saveReminder = function () {
   if (localStorage.getItem("noReminder")) return;
   const message = [
-    "Please don't forget to save your work as a .map file",
-    "Please remember to save work as a .map file",
-    "Saving in .map format will ensure your data won't be lost in case of issues",
+    "Please don't forget to save your work as a .gz file",
+    "Please remember to save work as a .gz file",
+    "Saving in .gz format will ensure your data won't be lost in case of issues",
     "Safety is number one priority. Please save the map",
     "Don't forget to save your map on a regular basis!",
     "Just a gentle reminder for you to save the map",
-    "Please don't forget to save your progress (saving as .map is the best option)",
+    "Please don't forget to save your progress (saving as .gz is the best option)",
     "Don't want to be reminded about need to save? Press CTRL+Q"
   ];
   const interval = 15 * 60 * 1000; // remind every 15 minutes

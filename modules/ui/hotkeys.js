@@ -32,7 +32,7 @@ function handleKeyup(event) {
   else if (code === "Delete") removeElementOnKey();
   else if (code === "KeyO" && document.getElementById("canvas3d")) toggle3dOptions();
   else if (ctrl && code === "KeyQ") toggleSaveReminder();
-  else if (ctrl && code === "KeyS") dowloadMap();
+  else if (ctrl && code === "KeyS") downloadMap();
   else if (ctrl && code === "KeyC") saveToDropbox();
   else if (ctrl && code === "KeyZ" && undo?.offsetParent) undo.click();
   else if (ctrl && code === "KeyY" && redo?.offsetParent) redo.click();
