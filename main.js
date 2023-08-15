@@ -574,9 +574,10 @@ void (function addDragToUpload() {
     overlay.style.display = "none";
     if (e.dataTransfer.items == null || e.dataTransfer.items.length !== 1) return; // no files or more than one
     const file = e.dataTransfer.items[0].getAsFile();
+
     if (!file.name.endsWith(".map") && !file.name.endsWith(".gz")) {
-      // not a .gz/.map file
-      alertMessage.innerHTML = "Please upload a <b>.gz or .map</b> file you have previously downloaded";
+      alertMessage.innerHTML =
+        "Please upload a map file (<i>.gz</i> or <i>.map</i> formats) you have previously downloaded";
       $("#alert").dialog({
         resizable: false,
         title: "Invalid file format",
@@ -596,7 +597,7 @@ void (function addDragToUpload() {
     if (closeDialogs) closeDialogs();
     uploadMap(file, () => {
       overlay.style.display = "none";
-      overlay.innerHTML = "Drop a .gz or .map file to open";
+      overlay.innerHTML = "Drop a map file to open";
     });
   });
 })();

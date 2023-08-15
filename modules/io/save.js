@@ -116,25 +116,28 @@ function getMapData() {
   ].join("\r\n");
   return mapData;
 }
-async function compressMapData(mapData){
-  const compressedStream = new Blob([mapData]).stream().pipeThrough(new CompressionStream("gzip"));
+
+async function compressData(uncompressedData) {
+  const compressedStream = new Blob([uncompressedData]).stream().pipeThrough(new CompressionStream("gzip"));
+
   let compressedData = [];
-  for await (const chunk of compressedStream){
+  for await (const chunk of compressedStream) {
     compressedData = compressedData.concat(Array.from(chunk));
   }
+
   return new Uint8Array(compressedData);
 }
 
-
-// Download .gz file
+// download .gz file
 async function downloadMap() {
   if (customization)
     return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
 
-  const mapData = await compressMapData(getMapData());
-  const blob = new Blob([mapData], {type: "text/plain"});
+  const compressedMapData = await compressData(getMapData());
+  const blob = new Blob([compressedMapData], {type: "text/plain"});
   const URL = window.URL.createObjectURL(blob);
+
   const link = document.createElement("a");
   link.download = getFileName() + ".gz";
   link.href = URL;
@@ -147,10 +150,12 @@ async function saveToDropbox() {
   if (customization)
     return tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
-  const mapData = await compressMapData(getMapData());
+
+  const compressedMapData = await compressData(getMapData());
   const filename = getFileName() + ".gz";
+
   try {
-    await Cloud.providers.dropbox.save(filename, mapData);
+    await Cloud.providers.dropbox.save(filename, compressedMapData);
     tip("Map is saved to your Dropbox", true, "success", 8000);
   } catch (msg) {
     ERROR && console.error(msg);
@@ -171,8 +176,8 @@ async function initiateAutosave() {
     if (customization) return tip("Autosave: map cannot be saved in edit mode", false, "warning", 2000);
 
     tip("Autosave: saving map...", false, "warning", 3000);
-    const mapData = await compressMapData(getMapData());
-    const blob = new Blob([mapData], {type: "text/plain"});
+    const compressedMapData = await compressData(getMapData());
+    const blob = new Blob([compressedMapData], {type: "text/plain"});
     await ldb.set("lastMap", blob);
     INFO && console.log("Autosaved at", new Date().toLocaleTimeString());
     lastSavedAt = Date.now();
@@ -185,23 +190,23 @@ async function quickSave() {
   if (customization)
     return tip("Map cannot be saved when edit mode is active, please exit the mode first", false, "error");
 
-  const mapData = await compressMapData(getMapData());
-  const blob = new Blob([mapData], {type: "text/plain"});
+  const compressedMapData = await compressData(getMapData());
+  const blob = new Blob([compressedMapData], {type: "text/plain"});
   await ldb.set("lastMap", blob); // auto-save map
-  tip("Map is saved to browser memory. Please also save as .gz file to secure progress", true, "success", 2000);
+  tip("Map is saved to browser memory. Please also save to your desktop to secure the progress", true, "success", 2000);
 }
 
 const saveReminder = function () {
   if (localStorage.getItem("noReminder")) return;
   const message = [
-    "Please don't forget to save your work as a .gz file",
-    "Please remember to save work as a .gz file",
-    "Saving in .gz format will ensure your data won't be lost in case of issues",
+    "Please don't forget to save the project to desktop from time to time",
+    "Please remember to save the map to your desktop",
+    "Saving will ensure your data won't be lost in case of issues",
     "Safety is number one priority. Please save the map",
     "Don't forget to save your map on a regular basis!",
     "Just a gentle reminder for you to save the map",
-    "Please don't forget to save your progress (saving as .gz is the best option)",
-    "Don't want to be reminded about need to save? Press CTRL+Q"
+    "Please don't forget to save your progress (saving to desktop is the best option)",
+    "Don't want to get reminded about need to save? Press CTRL+Q"
   ];
   const interval = 15 * 60 * 1000; // remind every 15 minutes
 

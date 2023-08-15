@@ -76,7 +76,7 @@ function loadMapPrompt(blob) {
 function loadMapFromURL(maplink, random) {
   const URL = decodeURIComponent(maplink);
 
-  fetch(URL, { method: "GET", mode: "cors" })
+  fetch(URL, {method: "GET", mode: "cors"})
     .then(response => {
       if (response.ok) return response.blob();
       throw new Error("Cannot load map from URL");
@@ -90,8 +90,9 @@ function loadMapFromURL(maplink, random) {
 
 function showUploadErrorMessage(error, URL, random) {
   ERROR && console.error(error);
-  alertMessage.innerHTML = /* html */ `Cannot load map from the ${link(URL, "link provided")}. ${random ? `A new random map is generated. ` : ""
-    } Please ensure the
+  alertMessage.innerHTML = /* html */ `Cannot load map from the ${link(URL, "link provided")}. ${
+    random ? `A new random map is generated. ` : ""
+  } Please ensure the
   linked file is reachable and CORS is allowed on server side`;
   $("#alert").dialog({
     title: "Loading error",
@@ -131,35 +132,38 @@ function uploadMap(file, callback) {
 
   fileReader.readAsArrayBuffer(file);
 }
-async function uncompressMapData(compressedMapData) {
-  console.log("trying to uncompress:", compressedMapData);
+
+async function uncompress(compressedData) {
   try {
-    const uncompressedStream = new Blob([compressedMapData]).stream().pipeThrough(new DecompressionStream("gzip"));
+    const uncompressedStream = new Blob([compressedData]).stream().pipeThrough(new DecompressionStream("gzip"));
+
     let uncompressedData = [];
     for await (const chunk of uncompressedStream) {
       uncompressedData = uncompressedData.concat(Array.from(chunk));
     }
+
     return new Uint8Array(uncompressedData);
-  }
-  catch (error) {
-    console.error(error);
+  } catch (error) {
+    ERROR && console.error(error);
     return null;
   }
 }
+
 async function parseLoadedResult(result) {
   try {
     const resultAsString = new TextDecoder().decode(result);
     // data can be in FMG internal format or base64 encoded
     const isDelimited = resultAsString.substring(0, 10).includes("|");
     const decoded = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
+
     const mapData = decoded.split("\r\n");
     const mapVersion = parseFloat(mapData[0].split("|")[0] || mapData[0]);
     return [mapData, mapVersion];
   } catch (error) {
-    const uncompressedData = await uncompressMapData(result);
-    if (uncompressedData !== null) {
-      return parseLoadedResult(uncompressedData);
-    }
+    // map file can be compressed with gzip
+    const uncompressedData = await uncompress(result);
+    if (uncompressedData) return parseLoadedResult(uncompressedData);
+
     ERROR && console.error(error);
     return [null, null];
   }
@@ -170,7 +174,7 @@ function showUploadMessage(type, mapData, mapVersion) {
   let message, title, canBeLoaded;
 
   if (type === "invalid") {
-    message = `The file does not look like a valid <i>.gz or .map</i> file.<br>Please check the data format`;
+    message = `The file does not look like a valid save file.<br>Please check the data format`;
     title = "Invalid file";
     canBeLoaded = false;
   } else if (type === "ancient") {
@@ -194,7 +198,7 @@ function showUploadMessage(type, mapData, mapVersion) {
       if (canBeLoaded) parseLoadedData(mapData);
     }
   };
-  $("#alert").dialog({ title, buttons });
+  $("#alert").dialog({title, buttons});
 }
 
 async function parseLoadedData(data) {
@@ -263,9 +267,9 @@ async function parseLoadedData(data) {
       if (data[34]) {
         const usedFonts = JSON.parse(data[34]);
         usedFonts.forEach(usedFont => {
-          const { family: usedFamily, unicodeRange: usedRange, variant: usedVariant } = usedFont;
+          const {family: usedFamily, unicodeRange: usedRange, variant: usedVariant} = usedFont;
           const defaultFont = fonts.find(
-            ({ family, unicodeRange, variant }) =>
+            ({family, unicodeRange, variant}) =>
               family === usedFamily && unicodeRange === usedRange && variant === usedVariant
           );
           if (!defaultFont) fonts.push(usedFont);
@@ -348,7 +352,7 @@ async function parseLoadedData(data) {
     void (function parseGridData() {
       grid = JSON.parse(data[6]);
 
-      const { cells, vertices } = calculateVoronoi(grid.points, grid.boundary);
+      const {cells, vertices} = calculateVoronoi(grid.points, grid.boundary);
       grid.cells = cells;
       grid.vertices = vertices;
 
@@ -366,7 +370,7 @@ async function parseLoadedData(data) {
       pack.cultures = JSON.parse(data[13]);
       pack.states = JSON.parse(data[14]);
       pack.burgs = JSON.parse(data[15]);
-      pack.religions = data[29] ? JSON.parse(data[29]) : [{ i: 0, name: "No religion" }];
+      pack.religions = data[29] ? JSON.parse(data[29]) : [{i: 0, name: "No religion"}];
       pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
       pack.rivers = data[32] ? JSON.parse(data[32]) : [];
       pack.markers = data[35] ? JSON.parse(data[35]) : [];
@@ -392,7 +396,7 @@ async function parseLoadedData(data) {
           const e = d.split("|");
           if (!e.length) return;
           const b = e[5].split(",").length > 2 || !nameBases[i] ? e[5] : nameBases[i].b;
-          nameBases[i] = { name: e[0], min: e[1], max: e[2], d: e[3], m: e[4], b };
+          nameBases[i] = {name: e[0], min: e[1], max: e[2], d: e[3], m: e[4], b};
         });
       }
     })();
@@ -641,7 +645,7 @@ async function parseLoadedData(data) {
           $(this).dialog("close");
         }
       },
-      position: { my: "center", at: "center", of: "svg" }
+      position: {my: "center", at: "center", of: "svg"}
     });
   }
 }
