@@ -678,21 +678,21 @@ export function resolveVersionConflicts(version) {
 
     // from 1.91.00 coaSize is moved to coa object
     pack.states.forEach(state => {
-      if (state.coaSize) {
+      if (state.coaSize && state.coa) {
         state.coa.size = state.coaSize;
         delete state.coaSize;
       }
     });
 
     pack.provinces.forEach(province => {
-      if (province.coaSize) {
+      if (province.coaSize && province.coa) {
         province.coa.size = province.coaSize;
         delete province.coaSize;
       }
     });
 
     pack.burgs.forEach(burg => {
-      if (burg.coaSize) {
+      if (burg.coaSize && burg.coa) {
         burg.coa.size = burg.coaSize;
         delete burg.coaSize;
       }
