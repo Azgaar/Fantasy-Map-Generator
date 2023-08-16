@@ -1,5 +1,5 @@
 "use strict";
-// Functions to load and parse .gz/.map files
+// Functions to load and parse .map/.gz files
 async function quickLoad() {
   const blob = await ldb.get("lastMap");
   if (blob) loadMapPrompt(blob);

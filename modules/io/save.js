@@ -6,12 +6,12 @@ async function saveMap(method) {
   closeDialogs("#alert");
 
   try {
-    const compressedMapData = await compressData(prepareMapData());
-    const filename = getFileName() + ".gz";
+    const mapData = prepareMapData();
+    const filename = getFileName() + ".map";
 
-    saveToStorage(compressedMapData, method === "storage"); // any method saves to indexedDB
-    if (method === "machine") saveToMachine(compressedMapData, filename);
-    if (method === "dropbox") saveToDropbox(compressedMapData, filename);
+    saveToStorage(mapData, method === "storage"); // any method saves to indexedDB
+    if (method === "machine") saveToMachine(mapData, filename);
+    if (method === "dropbox") saveToDropbox(mapData, filename);
   } catch (error) {
     ERROR && console.error(error);
     alertMessage.innerHTML = /* html */ `An error is occured on map saving. If the issue persists, please copy the message below and report it on ${link(
@@ -153,15 +153,15 @@ function prepareMapData() {
 }
 
 // save map file to indexedDB
-async function saveToStorage(compressedMapData, showTip = false) {
-  const blob = new Blob([compressedMapData], {type: "text/plain"});
+async function saveToStorage(mapData, showTip = false) {
+  const blob = new Blob([mapData], {type: "text/plain"});
   await ldb.set("lastMap", blob);
   showTip && tip("Map is saved to the browser storage", false, "success");
 }
 
-// download .gz file
-function saveToMachine(compressedMapData, filename) {
-  const blob = new Blob([compressedMapData], {type: "text/plain"});
+// download map file
+function saveToMachine(mapData, filename) {
+  const blob = new Blob([mapData], {type: "text/plain"});
   const URL = window.URL.createObjectURL(blob);
 
   const link = document.createElement("a");
@@ -173,8 +173,8 @@ function saveToMachine(compressedMapData, filename) {
   window.URL.revokeObjectURL(URL);
 }
 
-async function saveToDropbox(compressedMapData, filename) {
-  await Cloud.providers.dropbox.save(filename, compressedMapData);
+async function saveToDropbox(mapData, filename) {
+  await Cloud.providers.dropbox.save(filename, mapData);
   tip("Map is saved to your Dropbox", true, "success", 8000);
 }
 
@@ -192,8 +192,8 @@ async function initiateAutosave() {
 
     try {
       tip("Autosave: saving map...", false, "warning", 3000);
-      const compressedMapData = await compressData(prepareMapData());
-      await saveToStorage(compressedMapData);
+      const mapData = prepareMapData();
+      await saveToStorage(mapData);
       tip("Autosave: map is saved", false, "success", 2000);
 
       lastSavedAt = Date.now();
@@ -205,6 +205,7 @@ async function initiateAutosave() {
   setInterval(autosave, MINUTE / 2);
 }
 
+// TODO: unused code
 async function compressData(uncompressedData) {
   const compressedStream = new Blob([uncompressedData]).stream().pipeThrough(new CompressionStream("gzip"));
 

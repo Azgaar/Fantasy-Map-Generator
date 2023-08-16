@@ -270,7 +270,7 @@ async function checkLoadParameters() {
   const url = new URL(window.location.href);
   const params = url.searchParams;
 
-  // of there is a valid maplink, try to load .gz/.map file from URL
+  // of there is a valid maplink, try to load .map/.gz file from URL
   if (params.get("maplink")) {
     WARN && console.warn("Load map from URL");
     const maplink = params.get("maplink");
@@ -580,7 +580,7 @@ void (function addDragToUpload() {
 
     if (!file.name.endsWith(".map") && !file.name.endsWith(".gz")) {
       alertMessage.innerHTML =
-        "Please upload a map file (<i>.gz</i> or <i>.map</i> formats) you have previously downloaded";
+        "Please upload a map file (<i>.map</i> or <i>.gz</i> formats) you have previously downloaded";
       $("#alert").dialog({
         resizable: false,
         title: "Invalid file format",
