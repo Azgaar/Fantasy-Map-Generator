@@ -530,4 +530,9 @@ Vector Tragedy
 yann
 Blarghle Hargle
 Jelke Boonstra
-afistupmabum`;
+afistupmabum
+Rob Frantz
+Driver
+Tr4v3l3r
+Cooper Cantrell
+Maximilien Bouillot`;
