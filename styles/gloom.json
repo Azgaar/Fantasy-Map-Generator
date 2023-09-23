@@ -98,7 +98,7 @@
   "#markers": {
     "opacity": 0.8,
     "rescale": 1,
-    "filter": "url(#dropShadow05)"
+    "filter": null
   },
   "#prec": {
     "opacity": null,

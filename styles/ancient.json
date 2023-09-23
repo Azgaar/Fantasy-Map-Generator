@@ -97,7 +97,7 @@
   "#markers": {
     "opacity": null,
     "rescale": 1,
-    "filter": ""
+    "filter": null
   },
   "#prec": {
     "opacity": null,
