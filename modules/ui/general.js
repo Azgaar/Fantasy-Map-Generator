@@ -87,6 +87,8 @@ function handleMouseMove() {
   if (cellInfo?.offsetParent) updateCellInfo(point, i, gridCell);
 }
 
+let currentNoteId = null; // store currently displayed node to not rerender to often
+
 // show note box on hover (if any)
 function showNotes(e) {
   if (notesEditor?.offsetParent) return;
@@ -96,13 +98,17 @@ function showNotes(e) {
 
   const note = notes.find(note => note.id === id);
   if (note !== undefined && note.legend !== "") {
+    if (currentNoteId === id) return;
+    currentNoteId = id;
+
     document.getElementById("notes").style.display = "block";
     document.getElementById("notesHeader").innerHTML = note.name;
     document.getElementById("notesBody").innerHTML = note.legend;
-  } else if (!options.pinNotes && !markerEditor?.offsetParent) {
+  } else if (!options.pinNotes && !markerEditor?.offsetParent && !e.shiftKey) {
     document.getElementById("notes").style.display = "none";
     document.getElementById("notesHeader").innerHTML = "";
     document.getElementById("notesBody").innerHTML = "";
+    currentNoteId = null;
   }
 }
 
@@ -160,7 +166,7 @@ function showMapTooltip(point, e, i, g) {
   }
   if (group === "labels") return tip("Click to edit the Label");
 
-  if (group === "markers") return tip("Click to edit the Marker and pin the marker note");
+  if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note");
 
   if (group === "ruler") {
     const tag = e.target.tagName;

@@ -2077,7 +2077,6 @@ div.textual span,
 }
 
 #notesBody > iframe {
-  pointer-events: none;
   user-select: none;
 }
 
