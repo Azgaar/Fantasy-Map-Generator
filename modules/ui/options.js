@@ -76,7 +76,7 @@ document
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
-  const {supporters} = await import("../dynamic/supporters.js?v=1.89.15");
+  const {supporters} = await import("../dynamic/supporters.js?v=1.93.03");
   const list = supporters.split("\n").sort();
   const columns = window.innerWidth < 800 ? 2 : 5;
 
@@ -381,7 +381,7 @@ function changeEmblemShape(emblemShape) {
   };
 
   pack.states.forEach(state => {
-    if (!state.i || state.removed || !state.coa || state.coa === "custom") return;
+    if (!state.i || state.removed || !state.coa || state.coa.custom) return;
     const newShield = specificShape || COA.getShield(state.culture, null);
     if (newShield === state.coa.shield) return;
     state.coa.shield = newShield;
@@ -389,7 +389,7 @@ function changeEmblemShape(emblemShape) {
   });
 
   pack.provinces.forEach(province => {
-    if (!province.i || province.removed || !province.coa || province.coa === "custom") return;
+    if (!province.i || province.removed || !province.coa || province.coa.custom) return;
     const culture = pack.cells.culture[province.center];
     const newShield = specificShape || COA.getShield(culture, province.state);
     if (newShield === province.coa.shield) return;
@@ -398,7 +398,7 @@ function changeEmblemShape(emblemShape) {
   });
 
   pack.burgs.forEach(burg => {
-    if (!burg.i || burg.removed || !burg.coa || burg.coa === "custom") return;
+    if (!burg.i || burg.removed || !burg.coa || burg.coa.custom) return;
     const newShield = specificShape || COA.getShield(burg.culture, burg.state);
     if (newShield === burg.coa.shield) return;
     burg.coa.shield = newShield;
@@ -559,11 +559,10 @@ function applyStoredOptions() {
     if (key.slice(0, 5) === "style") applyOption(stylePreset, key, key.slice(5));
   }
 
-  if (stored("winds"))
-    options.winds = localStorage
-      .getItem("winds")
-      .split(",")
-      .map(w => +w);
+  if (stored("winds")) options.winds = localStorage.getItem("winds").split(",").map(Number);
+  if (stored("temperatureEquator")) options.temperatureEquator = +localStorage.getItem("temperatureEquator");
+  if (stored("temperatureNorthPole")) options.temperatureNorthPole = +localStorage.getItem("temperatureNorthPole");
+  if (stored("temperatureSouthPole")) options.temperatureSouthPole = +localStorage.getItem("temperatureSouthPole");
   if (stored("military")) options.military = JSON.parse(stored("military"));
 
   if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize"));
@@ -607,13 +606,10 @@ function randomizeOptions() {
   if (randomize || !locked("culturesSet")) randomizeCultureSet();
 
   // 'Configure World' settings
+  if (randomize || !locked("temperatureEquator")) options.temperatureEquator = gauss(25, 7, 20, 35, 0);
+  if (randomize || !locked("temperatureNorthPole")) options.temperatureNorthPole = gauss(-25, 7, -40, 10, 0);
+  if (randomize || !locked("temperatureSouthPole")) options.temperatureSouthPole = gauss(-15, 7, -40, 10, 0);
   if (randomize || !locked("prec")) precInput.value = precOutput.value = gauss(100, 40, 5, 500);
-  const tMax = 30,
-    tMin = -30; // temperature extremes
-  if (randomize || !locked("temperatureEquator"))
-    temperatureEquatorOutput.value = temperatureEquatorInput.value = rand(tMax - 10, tMax);
-  if (randomize || !locked("temperaturePole"))
-    temperaturePoleOutput.value = temperaturePoleInput.value = rand(tMin, tMin + 30);
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
@@ -789,7 +785,7 @@ function showExportPane() {
 }
 
 async function exportToJson(type) {
-  const {exportToJson} = await import("../dynamic/export-json.js");
+  const {exportToJson} = await import("../dynamic/export-json.js?v=1.93.03");
   exportToJson(type);
 }
 
@@ -797,7 +793,7 @@ async function showLoadPane() {
   $("#loadMapData").dialog({
     title: "Load map",
     resizable: false,
-    width: "24em",
+    width: "auto",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {
@@ -848,7 +844,7 @@ async function connectToDropbox() {
 
 function loadURL() {
   const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
-  const inner = `Provide URL to a .map file:
+  const inner = `Provide URL to map file:
     <input id="mapURL" type="url" style="width: 24em" placeholder="https://e-cloud.com/test.map">
     <br><i>Please note server should allow CORS for file to be loaded. If CORS is not allowed, save file to Dropbox and provide a direct link</i>`;
   alertMessage.innerHTML = inner;
@@ -1060,6 +1056,7 @@ function toggle3dOptions() {
   document.getElementById("options3dSunX").addEventListener("change", changeSunPosition);
   document.getElementById("options3dSunY").addEventListener("change", changeSunPosition);
   document.getElementById("options3dSunZ").addEventListener("change", changeSunPosition);
+  document.getElementById("options3dMeshSkinResolution").addEventListener("change", changeResolutionScale);
   document.getElementById("options3dMeshRotationRange").addEventListener("input", changeRotation);
   document.getElementById("options3dMeshRotationNumber").addEventListener("change", changeRotation);
   document.getElementById("options3dGlobeRotationRange").addEventListener("input", changeRotation);
@@ -1069,6 +1066,9 @@ function toggle3dOptions() {
   document.getElementById("options3dMeshSky").addEventListener("input", changeColors);
   document.getElementById("options3dMeshWater").addEventListener("input", changeColors);
   document.getElementById("options3dGlobeResolution").addEventListener("change", changeResolution);
+  // document.getElementById("options3dMeshWireframeMode").addEventListener("change",toggleWireframe3d);
+  document.getElementById("options3dSunColor").addEventListener("input", changeSunColor);
+  document.getElementById("options3dSubdivide").addEventListener("change", toggle3dSubdivision);
 
   function updateValues() {
     const globe = document.getElementById("canvas3d").dataset.type === "viewGlobe";
@@ -1081,6 +1081,7 @@ function toggle3dOptions() {
     options3dSunY.value = ThreeD.options.sun.y;
     options3dSunZ.value = ThreeD.options.sun.z;
     options3dMeshRotationRange.value = options3dMeshRotationNumber.value = ThreeD.options.rotateMesh;
+    options3dMeshSkinResolution.value = ThreeD.options.resolutionScale;
     options3dGlobeRotationRange.value = options3dGlobeRotationNumber.value = ThreeD.options.rotateGlobe;
     options3dMeshLabels3d.value = ThreeD.options.labels3d;
     options3dMeshSkyMode.value = ThreeD.options.extendedWater;
@@ -1088,6 +1089,8 @@ function toggle3dOptions() {
     options3dMeshSky.value = ThreeD.options.skyColor;
     options3dMeshWater.value = ThreeD.options.waterColor;
     options3dGlobeResolution.value = ThreeD.options.resolution;
+    options3dSunColor.value = ThreeD.options.sunColor;
+    options3dSubdivide.value = ThreeD.options.subdivide;
   }
 
   function changeHeightScale() {
@@ -1095,9 +1098,18 @@ function toggle3dOptions() {
     ThreeD.setScale(+this.value);
   }
 
+  function changeResolutionScale() {
+    options3dMeshSkinResolution.value = this.value;
+    ThreeD.setResolutionScale(+this.value);
+  }
+
   function changeLightness() {
     options3dLightnessRange.value = options3dLightnessNumber.value = this.value;
     ThreeD.setLightness(this.value / 100);
+  }
+
+  function changeSunColor() {
+    ThreeD.setSunColor(options3dSunColor.value);
   }
 
   function changeSunPosition() {
@@ -1116,6 +1128,14 @@ function toggle3dOptions() {
   function toggleLabels3d() {
     ThreeD.toggleLabels();
   }
+
+  function toggle3dSubdivision() {
+    ThreeD.toggle3dSubdivision();
+  }
+
+  // function toggleWireframe3d() {
+  //   ThreeD.toggleWireframe();
+  // }
 
   function toggleSkyMode() {
     const hide = ThreeD.options.extendedWater;

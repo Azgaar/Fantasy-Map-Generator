@@ -97,7 +97,7 @@
   "#markers": {
     "opacity": null,
     "rescale": 1,
-    "filter": "url(#dropShadow01)"
+    "filter": null
   },
   "#prec": {
     "opacity": null,
@@ -262,6 +262,11 @@
     "opacity": 0.2,
     "filter": null,
     "mask": "url(#land)"
+  },
+  "#textureImage": {
+    "x": 0,
+    "y": 0,
+    "src": "https://i2.wp.com/azgaar.files.wordpress.com/2021/10/plaster.jpg"
   },
   "#zones": {
     "opacity": 0.6,

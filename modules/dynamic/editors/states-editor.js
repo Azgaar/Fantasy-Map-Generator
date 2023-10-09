@@ -494,7 +494,7 @@ function editStateName(state) {
     s.name = nameInput.value;
     s.formName = formSelect.value;
     s.fullName = fullNameInput.value;
-    if (changed && stateNameEditorUpdateLabel.checked) BurgsAndStates.drawStateLabels([s.i]);
+    if (changed && stateNameEditorUpdateLabel.checked) drawStateLabels([s.i]);
     refreshStatesEditor();
   }
 }
@@ -877,7 +877,7 @@ function recalculateStates(must) {
   if (!layerIsOn("toggleBorders")) toggleBorders();
   else drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (adjustLabels.checked) BurgsAndStates.drawStateLabels();
+  if (adjustLabels.checked) drawStateLabels();
   refreshStatesEditor();
 }
 
@@ -1022,7 +1022,7 @@ function applyStatesManualAssignent() {
   if (affectedStates.length) {
     refreshStatesEditor();
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
-    if (adjustLabels.checked) BurgsAndStates.drawStateLabels([...new Set(affectedStates)]);
+    if (adjustLabels.checked) drawStateLabels([...new Set(affectedStates)]);
     adjustProvinces([...new Set(affectedProvinces)]);
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
     if (layerIsOn("toggleProvinces")) drawProvinces();
@@ -1459,7 +1459,7 @@ function openStateMergeDialog() {
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
     layerIsOn("toggleProvinces") && drawProvinces();
-    BurgsAndStates.drawStateLabels([rulingStateId]);
+    drawStateLabels([rulingStateId]);
 
     refreshStatesEditor();
   }

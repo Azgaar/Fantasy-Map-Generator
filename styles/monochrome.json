@@ -98,7 +98,7 @@
   "#markers": {
     "opacity": null,
     "rescale": 1,
-    "filter": "url(#dropShadow01)"
+    "filter": null
   },
   "#prec": {
     "opacity": null,
@@ -249,16 +249,20 @@
     "filter": "url(#dropShadow05)"
   },
   "#texture": {
-    "opacity": 1,
+    "opacity": 0.2,
     "filter": null,
     "mask": "url(#land)"
+  },
+  "#textureImage": {
+    "x": 0,
+    "y": 0,
+    "src": "https://i2.wp.com/azgaar.files.wordpress.com/2021/10/plaster.jpg"
   },
   "#emblems": {
     "opacity": 0.5,
     "stroke-width": 0.5,
     "filter": null
   },
-  "#textureImage": {},
   "#zones": {
     "opacity": 0.6,
     "stroke": "#333333",

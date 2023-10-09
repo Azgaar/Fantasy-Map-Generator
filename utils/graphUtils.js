@@ -137,6 +137,7 @@ function find(x, y, radius = Infinity) {
 
 // return closest cell index
 function findCell(x, y, radius = Infinity) {
+  if (!pack.cells?.q) return;
   const found = pack.cells.q.find(x, y, radius);
   return found ? found[2] : undefined;
 }

@@ -1,1 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200"><metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/><g id="mulletFaceted"><path d="M100 60l8.98 27.64h29.06l-23.51 17.08 8.98 27.64L100 115.28l-23.51 17.08 8.98-27.64-23.51-17.08h29.06z"/><path fill="#000" fill-opacity=".2" stroke-width=".2" d="M100 100V60l8.98 27.64L100 100l38.04-12.36-23.51 17.08L100 100l23.51 32.36L100 115.28V100l-23.51 32.36 8.98-27.64L100 100 61.96 87.64h29.06z"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
+  <g id="mulletFaceted">
+    <path d="M100 60l8.98 27.64h29.06l-23.51 17.08 8.98 27.64L100 115.28l-23.51 17.08 8.98-27.64-23.51-17.08h29.06z"/>
+    <path  fill="#000" fill-opacity=".2" stroke-width=".2" d="M100 100V60l8.98 27.64L100 100l38.04-12.36-23.51 17.08L100 100l23.51 32.36L100 115.28V100l-23.51 32.36 8.98-27.64L100 100 61.96 87.64h29.06z"/>
+  </g>
+</svg>

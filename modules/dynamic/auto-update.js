@@ -1,6 +1,6 @@
 "use strict";
 
-// update old .map version to the current one
+// update old map file to the current version
 export function resolveVersionConflicts(version) {
   if (version < 1) {
     // v1.0 added a new religions layer
@@ -635,5 +635,88 @@ export function resolveVersionConflicts(version) {
     pack.states.forEach(({coa}) => {
       if (coa?.shield === "state") delete coa.shield;
     });
+  }
+
+  if (version < 1.91) {
+    // from v1.90.02 texture image is always there
+    if (!texture.select("#textureImage").size()) {
+      // cleanup old texture if it has no id and add new one
+      texture.selectAll("*").remove();
+      texture
+        .append("image")
+        .attr("id", "textureImage")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("preserveAspectRatio", "xMidYMid slice")
+        .attr("src", "https://i2.wp.com/azgaar.files.wordpress.com/2021/10/marble-big.jpg");
+    }
+
+    // from 1.91.00 custom coa is moved to coa object
+    pack.states.forEach(state => {
+      if (state.coa === "custom") state.coa = {custom: true};
+    });
+    pack.provinces.forEach(province => {
+      if (province.coa === "custom") province.coa = {custom: true};
+    });
+    pack.burgs.forEach(burg => {
+      if (burg.coa === "custom") burg.coa = {custom: true};
+    });
+
+    // from 1.91.00 emblems don't have transform attribute
+    emblems.selectAll("use").each(function () {
+      const transform = this.getAttribute("transform");
+      if (!transform) return;
+
+      const [dx, dy] = parseTransform(transform);
+      const x = Number(this.getAttribute("x")) + Number(dx);
+      const y = Number(this.getAttribute("y")) + Number(dy);
+
+      this.setAttribute("x", x);
+      this.setAttribute("y", y);
+      this.removeAttribute("transform");
+    });
+
+    // from 1.91.00 coaSize is moved to coa object
+    pack.states.forEach(state => {
+      if (state.coaSize && state.coa) {
+        state.coa.size = state.coaSize;
+        delete state.coaSize;
+      }
+    });
+
+    pack.provinces.forEach(province => {
+      if (province.coaSize && province.coa) {
+        province.coa.size = province.coaSize;
+        delete province.coaSize;
+      }
+    });
+
+    pack.burgs.forEach(burg => {
+      if (burg.coaSize && burg.coa) {
+        burg.coa.size = burg.coaSize;
+        delete burg.coaSize;
+      }
+    });
+  }
+
+  if (version < 1.92) {
+    // v1.92 change labels text-anchor from 'start' to 'middle'
+    labels.selectAll("tspan").each(function () {
+      this.setAttribute("x", 0);
+    });
+
+    // leftover from v1.90.02
+    texture.style("display", null);
+    const textureImage = texture.select("#textureImage");
+    if (textureImage.size()) {
+      const xlink = textureImage.attr("xlink:href");
+      const href = textureImage.attr("href");
+      const src = xlink || href;
+
+      if (src) {
+        textureImage.attr("src", src);
+        textureImage.attr("xlink:href", null);
+      }
+    }
   }
 }

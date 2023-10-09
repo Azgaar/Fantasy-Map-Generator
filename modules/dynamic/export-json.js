@@ -3,11 +3,12 @@ export function exportToJson(type) {
     return tip("Data cannot be exported when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
 
+  TIME && console.time("exportToJson");
   const typeMap = {
     Full: getFullDataJson,
     Minimal: getMinimalDataJson,
-    PackCells: getPackCellsDataJson,
-    GridCells: getGridCellsDataJson
+    PackCells: getPackDataJson,
+    GridCells: getGridDataJson
   };
 
   const mapData = typeMap[type]();
@@ -19,24 +20,28 @@ export function exportToJson(type) {
   link.click();
   tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
   window.URL.revokeObjectURL(URL);
+  TIME && console.timeEnd("exportToJson");
 }
 
 function getFullDataJson() {
-  TIME && console.time("getFullDataJson");
-
   const info = getMapInfo();
   const settings = getSettings();
-  const cells = getPackCellsData();
-  const vertices = getPackVerticesData();
-  const exportData = {info, settings, coords: mapCoordinates, cells, vertices, biomes: biomesData, notes, nameBases};
+  const pack = getPackCellsData();
+  const grid = getGridCellsData();
 
-  TIME && console.timeEnd("getFullDataJson");
-  return JSON.stringify(exportData);
+  return JSON.stringify({
+    info,
+    settings,
+    mapCoordinates,
+    pack,
+    grid,
+    biomesData,
+    notes,
+    nameBases
+  });
 }
 
 function getMinimalDataJson() {
-  TIME && console.time("getMinimalDataJson");
-
   const info = getMapInfo();
   const settings = getSettings();
   const packData = {
@@ -49,36 +54,23 @@ function getMinimalDataJson() {
     rivers: pack.rivers,
     markers: pack.markers
   };
-  const exportData = {info, settings, coords: mapCoordinates, pack: packData, biomes: biomesData, notes, nameBases};
-
-  TIME && console.timeEnd("getMinimalDataJson");
-  return JSON.stringify(exportData);
+  return JSON.stringify({info, settings, mapCoordinates, pack: packData, biomesData, notes, nameBases});
 }
 
-function getPackCellsDataJson() {
-  TIME && console.time("getCellsDataJson");
-
+function getPackDataJson() {
   const info = getMapInfo();
   const cells = getPackCellsData();
-  const exportData = {info, cells};
-
-  TIME && console.timeEnd("getCellsDataJson");
-  return JSON.stringify(exportData);
+  return JSON.stringify({info, cells});
 }
 
-function getGridCellsDataJson() {
-  TIME && console.time("getGridCellsDataJson");
-
+function getGridDataJson() {
   const info = getMapInfo();
-  const gridCells = getGridCellsData();
-  const exportData = {info, gridCells};
-
-  TIME && console.log("getGridCellsDataJson");
-  return JSON.stringify(exportData);
+  const cells = getGridCellsData();
+  return JSON.stringify({info, cells});
 }
 
 function getMapInfo() {
-  const info = {
+  return {
     version,
     description: "Azgaar's Fantasy Map Generator output: azgaar.github.io/Fantasy-map-generator",
     exportedAt: new Date().toISOString(),
@@ -86,12 +78,10 @@ function getMapInfo() {
     seed,
     mapId
   };
-
-  return info;
 }
 
 function getSettings() {
-  const settings = {
+  return {
     distanceUnit: distanceUnitInput.value,
     distanceScale: distanceScaleInput.value,
     areaUnit: areaUnit.value,
@@ -108,8 +98,6 @@ function getSettings() {
     urbanization: urbanization,
     mapSize: mapSizeOutput.value,
     latitudeO: latitudeOutput.value,
-    temperatureEquator: temperatureEquatorOutput.value,
-    temperaturePole: temperaturePoleOutput.value,
     prec: precOutput.value,
     options: options,
     mapName: mapName.value,
@@ -118,13 +106,10 @@ function getSettings() {
     rescaleLabels: rescaleLabels.checked,
     urbanDensity: urbanDensity
   };
-
-  return settings;
 }
 
 function getPackCellsData() {
-  const cellConverted = {
-    i: Array.from(pack.cells.i),
+  const dataArrays = {
     v: pack.cells.v,
     c: pack.cells.c,
     p: pack.cells.p,
@@ -150,41 +135,39 @@ function getPackCellsData() {
     province: Array.from(pack.cells.province)
   };
 
-  const cellObjArr = [];
-  {
-    cellConverted.i.forEach(value => {
-      const cellobj = {
-        i: value,
-        v: cellConverted.v[value],
-        c: cellConverted.c[value],
-        p: cellConverted.p[value],
-        g: cellConverted.g[value],
-        h: cellConverted.h[value],
-        area: cellConverted.area[value],
-        f: cellConverted.f[value],
-        t: cellConverted.t[value],
-        haven: cellConverted.haven[value],
-        harbor: cellConverted.harbor[value],
-        fl: cellConverted.fl[value],
-        r: cellConverted.r[value],
-        conf: cellConverted.conf[value],
-        biome: cellConverted.biome[value],
-        s: cellConverted.s[value],
-        pop: cellConverted.pop[value],
-        culture: cellConverted.culture[value],
-        burg: cellConverted.burg[value],
-        road: cellConverted.road[value],
-        crossroad: cellConverted.crossroad[value],
-        state: cellConverted.state[value],
-        religion: cellConverted.religion[value],
-        province: cellConverted.province[value]
-      };
-      cellObjArr.push(cellobj);
-    });
-  }
-
-  const cellsData = {
-    cells: cellObjArr,
+  return {
+    cells: Array.from(pack.cells.i).map(cellId => ({
+      i: cellId,
+      v: dataArrays.v[cellId],
+      c: dataArrays.c[cellId],
+      p: dataArrays.p[cellId],
+      g: dataArrays.g[cellId],
+      h: dataArrays.h[cellId],
+      area: dataArrays.area[cellId],
+      f: dataArrays.f[cellId],
+      t: dataArrays.t[cellId],
+      haven: dataArrays.haven[cellId],
+      harbor: dataArrays.harbor[cellId],
+      fl: dataArrays.fl[cellId],
+      r: dataArrays.r[cellId],
+      conf: dataArrays.conf[cellId],
+      biome: dataArrays.biome[cellId],
+      s: dataArrays.s[cellId],
+      pop: dataArrays.pop[cellId],
+      culture: dataArrays.culture[cellId],
+      burg: dataArrays.burg[cellId],
+      road: dataArrays.road[cellId],
+      crossroad: dataArrays.crossroad[cellId],
+      state: dataArrays.state[cellId],
+      religion: dataArrays.religion[cellId],
+      province: dataArrays.province[cellId]
+    })),
+    vertices: pack.vertices.c.map(vertexId => ({
+      i: vertexId,
+      p: pack.vertices.p[vertexId],
+      v: pack.vertices.v[vertexId],
+      c: pack.vertices.c[vertexId]
+    })),
     features: pack.features,
     cultures: pack.cultures,
     burgs: pack.burgs,
@@ -194,32 +177,46 @@ function getPackCellsData() {
     rivers: pack.rivers,
     markers: pack.markers
   };
-
-  return cellsData;
 }
 
 function getGridCellsData() {
+  const dataArrays = {
+    v: grid.cells.v,
+    c: grid.cells.c,
+    b: grid.cells.b,
+    f: Array.from(grid.cells.f),
+    t: Array.from(grid.cells.t),
+    h: Array.from(grid.cells.h),
+    temp: Array.from(grid.cells.temp),
+    prec: Array.from(grid.cells.prec)
+  };
+
   const gridData = {
+    cells: Array.from(grid.cells.i).map(cellId => ({
+      i: cellId,
+      v: dataArrays.v[cellId],
+      c: dataArrays.c[cellId],
+      b: dataArrays.b[cellId],
+      f: dataArrays.f[cellId],
+      t: dataArrays.t[cellId],
+      h: dataArrays.h[cellId],
+      temp: dataArrays.temp[cellId],
+      prec: dataArrays.prec[cellId]
+    })),
+    vertices: grid.vertices.c.map(vertexId => ({
+      i: vertexId,
+      p: pack.vertices.p[vertexId],
+      v: pack.vertices.v[vertexId],
+      c: pack.vertices.c[vertexId]
+    })),
     cellsDesired: grid.cellsDesired,
     spacing: grid.spacing,
     cellsY: grid.cellsY,
     cellsX: grid.cellsX,
     points: grid.points,
-    boundary: grid.boundary
+    boundary: grid.boundary,
+    seed: grid.seed,
+    features: pack.features
   };
   return gridData;
-}
-
-function getPackVerticesData() {
-  const {vertices} = pack;
-  const verticesNumber = vertices.p.length;
-  const verticesArray = new Array(verticesNumber);
-  for (let i = 0; i < verticesNumber; i++) {
-    verticesArray[i] = {
-      p: vertices.p[i],
-      v: vertices.v[i],
-      c: vertices.c[i]
-    };
-  }
-  return verticesArray;
 }

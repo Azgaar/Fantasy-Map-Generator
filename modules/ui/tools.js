@@ -74,7 +74,7 @@ toolsContent.addEventListener("click", function (event) {
 });
 
 function processFeatureRegeneration(event, button) {
-  if (button === "regenerateStateLabels") BurgsAndStates.drawStateLabels();
+  if (button === "regenerateStateLabels") drawStateLabels();
   else if (button === "regenerateReliefIcons") {
     ReliefIcons();
     if (!layerIsOn("toggleRelief")) toggleRelief();
@@ -154,7 +154,7 @@ function regenerateStates() {
   layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
 
-  BurgsAndStates.drawStateLabels();
+  drawStateLabels();
   Military.generate();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
@@ -570,9 +570,8 @@ function addLabelOnClick() {
       .attr("data-size", 18)
       .attr("filter", null);
 
-  const example = group.append("text").attr("x", 0).attr("x", 0).text(name);
+  const example = group.append("text").attr("x", 0).attr("y", 0).text(name);
   const width = example.node().getBBox().width;
-  const x = width / -2; // x offset;
   example.remove();
 
   group.classed("hidden", false);
@@ -584,7 +583,7 @@ function addLabelOnClick() {
     .attr("startOffset", "50%")
     .attr("font-size", "100%")
     .append("tspan")
-    .attr("x", x)
+    .attr("x", 0)
     .text(name);
 
   defs
@@ -828,8 +827,16 @@ function addMarkerOnClick() {
   // Find the currently selected marker to use as a base
   const isMarkerSelected = markers.length && elSelected?.node()?.parentElement?.id === "markers";
   const selectedMarker = isMarkerSelected ? markers.find(marker => marker.i === +elSelected.attr("id").slice(6)) : null;
-  const baseMarker = selectedMarker || {icon: "❓"};
+
+  const selectedType = document.getElementById("addedMarkerType").value;
+  const selectedConfig = Markers.getConfig().find(({type}) => type === selectedType);
+
+  const baseMarker = selectedMarker || selectedConfig || {icon: "❓"};
   const marker = Markers.add({...baseMarker, x, y, cell});
+
+  if (selectedConfig && selectedConfig.add) {
+    selectedConfig.add("marker" + marker.i, cell);
+  }
 
   const markersElement = document.getElementById("markers");
   const rescale = +markersElement.getAttribute("rescale");

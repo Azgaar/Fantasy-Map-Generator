@@ -1,7 +1,7 @@
 "use strict";
 
 // version and caching control
-const version = "1.89.35"; // generator version, update each time
+const version = "1.93.04"; // generator version, update each time
 
 {
   document.title += " v" + version;
@@ -23,19 +23,22 @@ const version = "1.89.35"; // generator version, update each time
     const discord = "https://discordapp.com/invite/X7E84HU";
     const patreon = "https://www.patreon.com/azgaar";
 
-    alertMessage.innerHTML = /* html */ `The Fantasy Map Generator is updated up to version <strong>${version}</strong>. This version is compatible with <a href="${changelog}" target="_blank">previous versions</a>, loaded <i>.map</i> files will be auto-updated.
+    alertMessage.innerHTML = /* html */ `The Fantasy Map Generator is updated up to version <strong>${version}</strong>. This version is compatible with <a href="${changelog}" target="_blank">previous versions</a>, loaded save files will be auto-updated.
       ${storedVersion ? "<span>Reload the page to fetch fresh code.</span>" : ""}
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Random encounter markers (integration with <a href="https://deorum.vercel.app/" target="_blank">Deorum</a>)</li>
+        <li>Auto-load of the last saved map is now optional (see <i>Onload behavior</i> in Options)</li>
+        <li>New label placement algorithm for states</li>
+        <li>North and South Poles temperature can be set independently</li>
+        <li>More than 70 new heraldic charges</li>
+        <li>Multi-color heraldic charges support</li>
+        <li>New 3D scene options and improvements</li>
         <li>Autosave feature (in Options)</li>
         <li>Google translation support (in Options)</li>
         <li>Religions can be edited and redrawn like cultures</li>
         <li>Lock states, provinces, cultures, and religions from regeneration</li>
-        <li>Heightmap brushes: linear edit option</li>
-        <li>Data Charts screen</li>
-        <li>Сultures and religions can have multiple parents in hierarchy tree</li>
-        <li>Heightmap selection screen</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>

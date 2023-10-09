@@ -5,8 +5,8 @@
 // set debug options
 const PRODUCTION = location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
 const DEBUG = localStorage.getItem("debug");
-const INFO = DEBUG || !PRODUCTION;
-const TIME = DEBUG || !PRODUCTION;
+const INFO = true;
+const TIME = true;
 const WARN = true;
 const ERROR = true;
 
@@ -134,6 +134,13 @@ fogging
   .attr("fill", "#e8f0f6")
   .attr("filter", "url(#splotch)");
 
+texture
+  .append("image")
+  .attr("id", "textureImage")
+  .attr("preserveAspectRatio", "xMidYMid slice")
+  .attr("width", "100%")
+  .attr("height", "100%");
+
 // assign events separately as not a viewbox child
 scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
 legend
@@ -152,7 +159,7 @@ let notes = [];
 let rulers = new Rulers();
 let customization = 0;
 
-let biomesData = applyDefaultBiomesSystem();
+let biomesData = Biomes.getDefault();
 let nameBases = Names.getNameBases(); // cultures-related data
 
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
@@ -179,13 +186,17 @@ function onZoom() {
 const onZoomDebouced = debounce(onZoom, 50);
 const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoomDebouced);
 
-// default options
+// default options, based on Earth data
 let options = {
   pinNotes: false,
   showMFCGMap: true,
   winds: [225, 45, 225, 315, 135, 315],
+  temperatureEquator: 27,
+  temperatureNorthPole: -30,
+  temperatureSouthPole: -15,
   stateLabelsMode: "auto"
 };
+
 let mapCoordinates = {}; // map coordinates on globe
 let populationRate = +document.getElementById("populationRateInput").value;
 let distanceScale = +document.getElementById("distanceScaleInput").value;
@@ -259,7 +270,7 @@ async function checkLoadParameters() {
   const url = new URL(window.location.href);
   const params = url.searchParams;
 
-  // of there is a valid maplink, try to load .map file from URL
+  // of there is a valid maplink, try to load .map/.gz file from URL
   if (params.get("maplink")) {
     WARN && console.warn("Load map from URL");
     const maplink = params.get("maplink");
@@ -281,17 +292,20 @@ async function checkLoadParameters() {
   }
 
   // check if there is a map saved to indexedDB
-  try {
-    const blob = await ldb.get("lastMap");
-    if (blob) {
-      WARN && console.warn("Loading last stored map");
-      uploadMap(blob);
-      return;
+  if (byId("onloadBehavior").value === "lastSaved") {
+    try {
+      const blob = await ldb.get("lastMap");
+      if (blob) {
+        WARN && console.warn("Loading last stored map");
+        uploadMap(blob);
+        return;
+      }
+    } catch (error) {
+      ERROR && console.error(error);
     }
-  } catch (error) {
-    console.error(error);
   }
 
+  // else generate random map
   WARN && console.warn("Generate random map");
   generateMapOnLoad();
 }
@@ -412,79 +426,6 @@ function findBurgForMFCG(params) {
   zoomTo(b.x, b.y, 8, 1600);
   invokeActiveZooming();
   tip("Here stands the glorious city of " + b.name, true, "success", 15000);
-}
-
-// apply default biomes data
-function applyDefaultBiomesSystem() {
-  const name = [
-    "Marine",
-    "Hot desert",
-    "Cold desert",
-    "Savanna",
-    "Grassland",
-    "Tropical seasonal forest",
-    "Temperate deciduous forest",
-    "Tropical rainforest",
-    "Temperate rainforest",
-    "Taiga",
-    "Tundra",
-    "Glacier",
-    "Wetland"
-  ];
-  const color = [
-    "#466eab",
-    "#fbe79f",
-    "#b5b887",
-    "#d2d082",
-    "#c8d68f",
-    "#b6d95d",
-    "#29bc56",
-    "#7dcb35",
-    "#409c43",
-    "#4b6b32",
-    "#96784b",
-    "#d5e7eb",
-    "#0b9131"
-  ];
-  const habitability = [0, 4, 10, 22, 30, 50, 100, 80, 90, 12, 4, 0, 12];
-  const iconsDensity = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 150];
-  const icons = [
-    {},
-    {dune: 3, cactus: 6, deadTree: 1},
-    {dune: 9, deadTree: 1},
-    {acacia: 1, grass: 9},
-    {grass: 1},
-    {acacia: 8, palm: 1},
-    {deciduous: 1},
-    {acacia: 5, palm: 3, deciduous: 1, swamp: 1},
-    {deciduous: 6, swamp: 1},
-    {conifer: 1},
-    {grass: 1},
-    {},
-    {swamp: 1}
-  ];
-  const cost = [10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150]; // biome movement cost
-  const biomesMartix = [
-    // hot ↔ cold [>19°C; <-4°C]; dry ↕ wet
-    new Uint8Array([1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 10]),
-    new Uint8Array([3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 9, 9, 9, 9, 10, 10, 10]),
-    new Uint8Array([5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 9, 9, 9, 9, 9, 10, 10, 10]),
-    new Uint8Array([5, 6, 6, 6, 6, 6, 6, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10, 10, 10]),
-    new Uint8Array([7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 10, 10])
-  ];
-
-  // parse icons weighted array into a simple array
-  for (let i = 0; i < icons.length; i++) {
-    const parsed = [];
-    for (const icon in icons[i]) {
-      for (let j = 0; j < icons[i][icon]; j++) {
-        parsed.push(icon);
-      }
-    }
-    icons[i] = parsed;
-  }
-
-  return {i: d3.range(0, name.length), name, color, biomesMartix, habitability, iconsDensity, icons, cost};
 }
 
 function handleZoom(isScaleChanged, isPositionChanged) {
@@ -636,9 +577,10 @@ void (function addDragToUpload() {
     overlay.style.display = "none";
     if (e.dataTransfer.items == null || e.dataTransfer.items.length !== 1) return; // no files or more than one
     const file = e.dataTransfer.items[0].getAsFile();
-    if (file.name.indexOf(".map") == -1) {
-      // not a .map file
-      alertMessage.innerHTML = "Please upload a <b>.map</b> file you have previously downloaded";
+
+    if (!file.name.endsWith(".map") && !file.name.endsWith(".gz")) {
+      alertMessage.innerHTML =
+        "Please upload a map file (<i>.map</i> or <i>.gz</i> formats) you have previously downloaded";
       $("#alert").dialog({
         resizable: false,
         title: "Invalid file format",
@@ -658,7 +600,7 @@ void (function addDragToUpload() {
     if (closeDialogs) closeDialogs();
     uploadMap(file, () => {
       overlay.style.display = "none";
-      overlay.innerHTML = "Drop a .map file to open";
+      overlay.innerHTML = "Drop a map file to open";
     });
   });
 })();
@@ -697,7 +639,7 @@ async function generate(options) {
     Rivers.generate();
     drawRivers();
     Lakes.defineGroup();
-    defineBiomes();
+    Biomes.define();
 
     rankCells();
     Cultures.generate();
@@ -710,7 +652,7 @@ async function generate(options) {
 
     drawStates();
     drawBorders();
-    BurgsAndStates.drawStateLabels();
+    drawStateLabels();
 
     Rivers.specify();
     Lakes.generateName();
@@ -968,7 +910,7 @@ function defineMapSize() {
 
     const part = grid.features.some(f => f.land && f.border); // if land goes over map borders
     const max = part ? 80 : 100; // max size
-    const lat = () => gauss(P(0.5) ? 40 : 60, 15, 25, 75); // latitude shift
+    const lat = () => gauss(P(0.5) ? 40 : 60, 20, 25, 75); // latitude shift
 
     if (!part) {
       if (template === "Pangea") return [100, 50];
@@ -1003,30 +945,49 @@ function calculateMapCoordinates() {
   mapCoordinates = {latT, latN, latS, lonT: lon * 2, lonW: -lon, lonE: lon};
 }
 
-// temperature model
+// temperature model, trying to follow real-world data
+// based on http://www-das.uwyo.edu/~geerts/cwx/notes/chap16/Image64.gif
 function calculateTemperatures() {
   TIME && console.time("calculateTemperatures");
   const cells = grid.cells;
   cells.temp = new Int8Array(cells.i.length); // temperature array
 
-  const tEq = +temperatureEquatorInput.value;
-  const tPole = +temperaturePoleInput.value;
-  const tDelta = tEq - tPole;
-  const int = d3.easePolyInOut.exponent(0.5); // interpolation function
+  const {temperatureEquator, temperatureNorthPole, temperatureSouthPole} = options;
+  const tropics = [16, -20]; // tropics zone
+  const tropicalGradient = 0.15;
 
-  d3.range(0, cells.i.length, grid.cellsX).forEach(function (r) {
-    const y = grid.points[r][1];
-    const lat = Math.abs(mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT); // [0; 90]
-    const initTemp = tEq - int(lat / 90) * tDelta;
-    for (let i = r; i < r + grid.cellsX; i++) {
-      cells.temp[i] = minmax(initTemp - convertToFriendly(cells.h[i]), -128, 127);
+  const tempNorthTropic = temperatureEquator - tropics[0] * tropicalGradient;
+  const northernGradient = (tempNorthTropic - temperatureNorthPole) / (90 - tropics[0]);
+
+  const tempSouthTropic = temperatureEquator + tropics[1] * tropicalGradient;
+  const southernGradient = (tempSouthTropic - temperatureSouthPole) / (90 + tropics[1]);
+
+  const exponent = +heightExponentInput.value;
+
+  for (let rowCellId = 0; rowCellId < cells.i.length; rowCellId += grid.cellsX) {
+    const [, y] = grid.points[rowCellId];
+    const rowLatitude = mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT; // [90; -90]
+    const tempSeaLevel = calculateSeaLevelTemp(rowLatitude);
+    DEBUG && console.info(`${rn(rowLatitude)}° sea temperature: ${rn(tempSeaLevel)}°C`);
+
+    for (let cellId = rowCellId; cellId < rowCellId + grid.cellsX; cellId++) {
+      const tempAltitudeDrop = getAltitudeTemperatureDrop(cells.h[cellId]);
+      cells.temp[cellId] = minmax(tempSeaLevel - tempAltitudeDrop, -128, 127);
     }
-  });
+  }
 
-  // temperature decreases by 6.5 degree C per 1km
-  function convertToFriendly(h) {
+  function calculateSeaLevelTemp(latitude) {
+    const isTropical = latitude <= 16 && latitude >= -20;
+    if (isTropical) return temperatureEquator - Math.abs(latitude) * tropicalGradient;
+
+    return latitude > 0
+      ? tempNorthTropic - (latitude - tropics[0]) * northernGradient
+      : tempSouthTropic + (latitude - tropics[1]) * southernGradient;
+  }
+
+  // temperature drops by 6.5°C per 1km of altitude
+  function getAltitudeTemperatureDrop(h) {
     if (h < 20) return 0;
-    const exponent = +heightExponentInput.value;
     const height = Math.pow(h - 18, exponent);
     return rn((height / 1000) * 6.5);
   }
@@ -1467,45 +1428,6 @@ function isWetLand(moisture, temperature, height) {
   if (moisture > 40 && temperature > -2 && height < 25) return true; //near coast
   if (moisture > 24 && temperature > -2 && height > 24 && height < 60) return true; //off coast
   return false;
-}
-
-// assign biome id for each cell
-function defineBiomes() {
-  TIME && console.time("defineBiomes");
-  const {cells} = pack;
-  const {temp, prec} = grid.cells;
-  cells.biome = new Uint8Array(cells.i.length); // biomes array
-
-  for (const i of cells.i) {
-    const temperature = temp[cells.g[i]];
-    const height = cells.h[i];
-    const moisture = height < 20 ? 0 : calculateMoisture(i);
-    cells.biome[i] = getBiomeId(moisture, temperature, height);
-  }
-
-  function calculateMoisture(i) {
-    let moist = prec[cells.g[i]];
-    if (cells.r[i]) moist += Math.max(cells.fl[i] / 20, 2);
-
-    const n = cells.c[i]
-      .filter(isLand)
-      .map(c => prec[cells.g[c]])
-      .concat([moist]);
-    return rn(4 + d3.mean(n));
-  }
-
-  TIME && console.timeEnd("defineBiomes");
-}
-
-// assign biome id to a cell
-function getBiomeId(moisture, temperature, height) {
-  if (height < 20) return 0; // marine biome: all water cells
-  if (temperature < -5) return 11; // permafrost biome
-  if (isWetLand(moisture, temperature, height)) return 12; // wetland biome
-
-  const moistureBand = Math.min((moisture / 5) | 0, 4); // [0-4]
-  const temperatureBand = Math.min(Math.max(20 - temperature, 0), 25); // [0-25]
-  return biomesData.biomesMartix[moistureBand][temperatureBand];
 }
 
 // assess cells suitability to calculate population and rand cells for culture center and burgs placement

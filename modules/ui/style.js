@@ -76,9 +76,22 @@ function selectStyleElement() {
 
   // stroke color and width
   if (
-    ["armies", "routes", "lakes", "borders", "cults", "relig", "cells", "coastline", "prec", "ice", "icons", "coordinates", "zones", "gridOverlay"].includes(
-      sel
-    )
+    [
+      "armies",
+      "routes",
+      "lakes",
+      "borders",
+      "cults",
+      "relig",
+      "cells",
+      "coastline",
+      "prec",
+      "ice",
+      "icons",
+      "coordinates",
+      "zones",
+      "gridOverlay"
+    ].includes(sel)
   ) {
     styleStroke.style.display = "block";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke");
@@ -87,14 +100,29 @@ function selectStyleElement() {
   }
 
   // stroke dash
-  if (["routes", "borders", "temperature", "legend", "population", "coordinates", "zones", "gridOverlay"].includes(sel)) {
+  if (
+    ["routes", "borders", "temperature", "legend", "population", "coordinates", "zones", "gridOverlay"].includes(sel)
+  ) {
     styleStrokeDash.style.display = "block";
     styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") || "";
     styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
   }
 
   // clipping
-  if (["cells", "gridOverlay", "coordinates", "compass", "terrain", "temperature", "routes", "texture", "biomes", "zones"].includes(sel)) {
+  if (
+    [
+      "cells",
+      "gridOverlay",
+      "coordinates",
+      "compass",
+      "terrain",
+      "temperature",
+      "routes",
+      "texture",
+      "biomes",
+      "zones"
+    ].includes(sel)
+  ) {
     styleClipping.style.display = "block";
     styleClippingInput.value = el.attr("mask") || "";
   }
@@ -142,8 +170,12 @@ function selectStyleElement() {
 
   if (sel === "population") {
     stylePopulation.style.display = "block";
-    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = population.select("#rural").attr("stroke");
-    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = population.select("#urban").attr("stroke");
+    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = population
+      .select("#rural")
+      .attr("stroke");
+    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = population
+      .select("#urban")
+      .attr("stroke");
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || "";
   }
@@ -233,7 +265,8 @@ function selectStyleElement() {
     styleOcean.style.display = "block";
     styleOceanFill.value = styleOceanFillOutput.value = oceanLayers.select("#oceanBase").attr("fill");
     styleOceanPattern.value = document.getElementById("oceanicPattern")?.getAttribute("href");
-    styleOceanPatternOpacity.value = styleOceanPatternOpacityOutput.value = document.getElementById("oceanicPattern").getAttribute("opacity") || 1;
+    styleOceanPatternOpacity.value = styleOceanPatternOpacityOutput.value =
+      document.getElementById("oceanicPattern").getAttribute("opacity") || 1;
     outlineLayers.value = oceanLayers.attr("layers");
   }
 
@@ -334,8 +367,9 @@ styleFilterInput.addEventListener("change", function () {
 });
 
 styleTextureInput.addEventListener("change", function () {
-  if (this.value === "none") texture.select("image").attr("xlink:href", "");
-  else getBase64(this.value, base64 => texture.select("image").attr("xlink:href", base64));
+  texture.select("image").attr("src", this.value);
+  if (layerIsOn("toggleTexture")) texture.select("image").attr("href", this.value);
+  zoom.scaleBy(svg, 1.00001);
 });
 
 styleTextureShiftX.addEventListener("input", function () {
@@ -551,7 +585,10 @@ styleFontAdd.addEventListener("click", function () {
 
         if (!family) return tip("Please provide a font name", false, "error");
 
-        const existingFont = method === "fontURL" ? fonts.find(font => font.family === family && font.src === src) : fonts.find(font => font.family === family);
+        const existingFont =
+          method === "fontURL"
+            ? fonts.find(font => font.family === family && font.src === src)
+            : fonts.find(font => font.family === family);
         if (existingFont) return tip("The font is already added", false, "error");
 
         if (method === "fontURL") addWebFont(family, src);
@@ -726,17 +763,17 @@ function textureProvideURL() {
     buttons: {
       Apply: function () {
         const name = textureURL.value.split("/").pop();
-        if (!name || name === "") {
-          tip("Please provide a valid URL", false, "error");
-          return;
-        }
+        if (!name || name === "") return tip("Please provide a valid URL", false, "error");
+
         const opt = document.createElement("option");
         opt.value = textureURL.value;
         opt.text = name.slice(0, 20);
         styleTextureInput.add(opt);
         styleTextureInput.value = textureURL.value;
-        getBase64(textureURL.value, base64 => texture.select("image").attr("xlink:href", base64));
-        zoom.scaleBy(svg, 1.00001); // enforce browser re-draw
+
+        const image = texture.select("image");
+        image.attr("src", textureURL.value);
+        if (layerIsOn("toggleTexture")) image.attr("href", textureURL.value);
         $(this).dialog("close");
       },
       Cancel: function () {

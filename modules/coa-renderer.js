@@ -1814,11 +1814,16 @@ window.COArenderer = (function () {
     const loadedPatterns = getPatterns(coa, id);
     const blacklight = `<radialGradient id="backlight_${id}" cx="100%" cy="100%" r="150%"><stop stop-color="#fff" stop-opacity=".3" offset="0"/><stop stop-color="#fff" stop-opacity=".15" offset=".25"/><stop stop-color="#000" stop-opacity="0" offset="1"/></radialGradient>`;
     const field = `<rect x="0" y="0" width="200" height="200" fill="${clr(coa.t1)}"/>`;
+    const style = `<style>
+      g.secondary,path.secondary {fill: var(--secondary);}
+      g.tertiary,path.tertiary {fill: var(--tertiary);}
+    </style>`;
+
     const divisionGroup = division ? templateDivision() : "";
     const overlay = `<path d="${shieldPath}" fill="url(#backlight_${id})" stroke="#333"/>`;
 
     const svg = `<svg id="${id}" width="200" height="200" viewBox="${viewBox}">
-        <defs>${shieldClip}${divisionClip}${loadedCharges}${loadedPatterns}${blacklight}</defs>
+        <defs>${shieldClip}${divisionClip}${loadedCharges}${loadedPatterns}${blacklight}${style}</defs>
         <g clip-path="url(#${shield}_${id})">${field}${divisionGroup}${templateAboveAll()}</g>
         ${overlay}</svg>`;
 
@@ -1903,17 +1908,20 @@ window.COArenderer = (function () {
       return svg + `</g>`;
     }
 
-    function templateCharge(charge, tincture) {
-      const fill = clr(tincture);
+    function templateCharge(charge, tincture, secondaryTincture, tertiaryTincture) {
+      const primary = clr(tincture);
+      const secondary = clr(secondaryTincture || tincture);
+      const tertiary = clr(tertiaryTincture || tincture);
+      const stroke = charge.stroke || "#000";
+
       const chargePositions = [...new Set(charge.p)].filter(position => positions[position]);
 
-      let svg = "";
-      svg += `<g fill="${fill}" stroke="#000">`;
+      let svg = `<g fill="${primary}" style="--secondary: ${secondary}; --tertiary: ${tertiary}" stroke="${stroke}">`;
       for (const p of chargePositions) {
         const transform = getElTransform(charge, p);
         svg += `<use href="#${charge.charge}_${id}" transform="${transform}"></use>`;
       }
-      return svg + `</g>`;
+      return svg + "</g>";
 
       function getElTransform(c, p) {
         const s = (c.size || 1) * sizeModifier;
@@ -2015,14 +2023,8 @@ window.COArenderer = (function () {
 
   // render coa if does not exist
   const trigger = async function (id, coa) {
-    if (coa === "custom") {
-      console.warn("Cannot render custom emblem", coa);
-      return;
-    }
-    if (!coa) {
-      console.warn(`Emblem ${id} is undefined`);
-      return;
-    }
+    if (!coa) return console.warn(`Emblem ${id} is undefined`);
+    if (coa.custom) return console.warn("Cannot render custom emblem", coa);
     if (!document.getElementById(id)) return draw(id, coa);
   };
 

@@ -1,1 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200"><metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/><g id="rustre"><path d="M100 55l30 45-30 45-30-45zm-12 45a12 12 0 1024 0 12 12 0 10-24 0"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
+  <g id="rustre">
+    <path d="M100 55l30 45-30 45-30-45zm-12 45a12 12 0 1024 0 12 12 0 10-24 0"/>
+  </g>
+</svg>

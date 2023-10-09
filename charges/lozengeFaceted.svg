@@ -1,1 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200"><metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/><g id="lozengeFaceted"><polygon points="100 55 130 100 100 145 70 100"/><g fill="#000" stroke="none"><polygon points="100 100 130 100 100 55" opacity=".2"/><polygon points="100 100 70 100 100 145" opacity=".2"/><polygon points="100 100 130 100 100 145" opacity=".3"/></g></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
+  <g id="lozengeFaceted">
+    <polygon points="100 55 130 100 100 145 70 100"/>
+    <g fill="#000" stroke="none">
+      <polygon points="100 100 130 100 100 55" opacity=".2"/>
+      <polygon points="100 100 70 100 100 145" opacity=".2"/>
+      <polygon points="100 100 130 100 100 145" opacity=".3"/>
+    </g>
+  </g>
+</svg>

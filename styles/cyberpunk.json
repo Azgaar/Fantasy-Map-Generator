@@ -97,7 +97,7 @@
   "#markers": {
     "opacity": 0.8,
     "rescale": 1,
-    "filter": "url(#dropShadow05)"
+    "filter": null
   },
   "#prec": {
     "opacity": null,
@@ -259,9 +259,14 @@
     "filter": ""
   },
   "#texture": {
-    "opacity": 0.14,
+    "opacity": 0.2,
     "filter": null,
     "mask": "url(#water)"
+  },
+  "#textureImage": {
+    "x": 0,
+    "y": 0,
+    "src": "https://i2.wp.com/azgaar.files.wordpress.com/2019/07/mercury-small.jpg"
   },
   "#zones": {
     "opacity": 0.7,

@@ -56,6 +56,7 @@ window.Markers = (function () {
       {type: "rifts", icon: "🎆", min: 5, each: 3000, multiplier: +isFantasy, list: listRifts, add: addRift},
       {type: "disturbed-burials", icon: "💀", min: 20, each: 3000, multiplier: +isFantasy, list: listDisturbedBurial, add: addDisturbedBurial},
       {type: "necropolises", icon: "🪦", min: 20, each: 1000, multiplier: 1, list: listNecropolis, add: addNecropolis},
+      {type: "encounters", icon: "🧙", min: 10, each: 600, multiplier: 1, list: listEncounters, add: addEncounter},
     ];
   }
 
@@ -603,7 +604,7 @@ window.Markers = (function () {
   function addDungeon(id, cell) {
     const dungeonSeed = `${seed}${cell}`;
     const name = "Dungeon";
-    const legend = `<div>Undiscovered dungeon. See <a href="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" target="_blank">One page dungeon</a></div><iframe src="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" sandbox="allow-scripts allow-same-origin"></iframe>`;
+    const legend = `<div>Undiscovered dungeon. See <a href="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" target="_blank">One page dungeon</a></div><iframe style="pointer-events: none;" src="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" sandbox="allow-scripts allow-same-origin"></iframe>`;
     notes.push({id, name, legend});
   }
 
@@ -849,18 +850,16 @@ window.Markers = (function () {
     const culture = cells.culture[cell];
     const biome = cells.biome[cell];
     const height = cells.p[cell];
-    const locality =
-      height >= 70
-        ? "highlander"
-        : [1, 2].includes(biome)
-        ? "desert"
-        : [3, 4].includes(biome)
-        ? "mounted"
-        : [5, 6, 7, 8, 9].includes(biome)
-        ? "forest"
-        : biome === 12
-        ? "swamp"
-        : "angry";
+
+    const locality = ((height, biome) => {
+      if (height >= 70) return "highlander";
+      if ([1, 2].includes(biome)) return "desert";
+      if ([3, 4].includes(biome)) return "mounted";
+      if ([5, 6, 7, 8, 9].includes(biome)) return "forest";
+      if (biome === 12) return "swamp";
+      return "angry";
+    })(height, biome);
+
     const name = `${Names.getCulture(culture)} ${ra(animals)}`;
     const legend = `A gang of ${locality} ${rw(types)}.`;
     notes.push({id, name, legend});
@@ -1267,6 +1266,17 @@ window.Markers = (function () {
       "A foreboding necropolis perched atop a jagged cliff, overlooking a desolate wasteland. Its towering walls harbor restless spirits, and the imposing gates bear the marks of countless battles and ancient curses"
     ]);
 
+    notes.push({id, name, legend});
+  }
+
+  function listEncounters({cells}) {
+    return cells.i.filter(i => !occupied[i] && cells.h[i] >= 20 && cells.pop[i] > 1);
+  }
+
+  function addEncounter(id, cell) {
+    const name = "Random encounter";
+    const encounterSeed = cell; // use just cell Id to not overwhelm the Vercel KV database
+    const legend = `<div>You have encountered a character.</div><iframe src="https://deorum.vercel.app/encounter/${encounterSeed}" width="375" height="600" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>`;
     notes.push({id, name, legend});
   }
 

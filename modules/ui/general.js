@@ -87,6 +87,8 @@ function handleMouseMove() {
   if (cellInfo?.offsetParent) updateCellInfo(point, i, gridCell);
 }
 
+let currentNoteId = null; // store currently displayed node to not rerender to often
+
 // show note box on hover (if any)
 function showNotes(e) {
   if (notesEditor?.offsetParent) return;
@@ -96,13 +98,17 @@ function showNotes(e) {
 
   const note = notes.find(note => note.id === id);
   if (note !== undefined && note.legend !== "") {
+    if (currentNoteId === id) return;
+    currentNoteId = id;
+
     document.getElementById("notes").style.display = "block";
     document.getElementById("notesHeader").innerHTML = note.name;
     document.getElementById("notesBody").innerHTML = note.legend;
-  } else if (!options.pinNotes && !markerEditor?.offsetParent) {
+  } else if (!options.pinNotes && !markerEditor?.offsetParent && !e.shiftKey) {
     document.getElementById("notes").style.display = "none";
     document.getElementById("notesHeader").innerHTML = "";
     document.getElementById("notesBody").innerHTML = "";
+    currentNoteId = null;
   }
 }
 
@@ -160,7 +166,7 @@ function showMapTooltip(point, e, i, g) {
   }
   if (group === "labels") return tip("Click to edit the Label");
 
-  if (group === "markers") return tip("Click to edit the Marker and pin the marker note");
+  if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note");
 
   if (group === "ruler") {
     const tag = e.target.tagName;
@@ -494,6 +500,7 @@ function showInfo() {
   const Reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit");
   const Patreon = link("https://www.patreon.com/azgaar", "Patreon");
   const Armoria = link("https://azgaar.github.io/Armoria", "Armoria");
+  const Deorum = link("https://deorum.vercel.app", "Deorum");
 
   const QuickStart = link(
     "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial",
@@ -515,8 +522,6 @@ function showInfo() {
       and ${VideoTutorial}.
     </p>
 
-    <p>Check out our another project: ${Armoria} — heraldry generator and editor.</p>
-
     <ul style="columns:2">
       <li>${link("https://github.com/Azgaar/Fantasy-Map-Generator", "GitHub repository")}</li>
       <li>${link("https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE", "License")}</li>
@@ -524,7 +529,14 @@ function showInfo() {
       <li>${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys", "Hotkeys")}</li>
       <li>${link("https://trello.com/b/7x832DG4/fantasy-map-generator", "Devboard")}</li>
       <li><a href="mailto:azgaar.fmg@yandex.by" target="_blank">Contact Azgaar</a></li>
-    </ul>`;
+    </ul>
+    
+    <p>Check out our other projects:
+      <ul>
+        <li>${Armoria}: a tool for creating heraldic coats of arms</li>
+        <li>${Deorum}: a vast gallery of customizable fantasy characters</li>
+      </ul>
+    </p>`;
 
   $("#alert").dialog({
     resizable: false,

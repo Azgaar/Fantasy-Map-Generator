@@ -14,6 +14,8 @@ function overviewMarkers() {
   const markersGenerationConfig = document.getElementById("markersGenerationConfig");
   const markersRemoveAll = document.getElementById("markersRemoveAll");
   const markersExport = document.getElementById("markersExport");
+  const markerTypeInput = document.getElementById("addedMarkerType");
+  const markerTypeSelector = document.getElementById("markerTypeSelector");
 
   addLines();
 
@@ -33,8 +35,25 @@ function overviewMarkers() {
     listen(markersAddFromOverview, "click", toggleAddMarker),
     listen(markersGenerationConfig, "click", configMarkersGeneration),
     listen(markersRemoveAll, "click", triggerRemoveAll),
-    listen(markersExport, "click", exportMarkers)
+    listen(markersExport, "click", exportMarkers),
+    listen(markerTypeSelector, "click", toggleMarkerTypeMenu)
   ];
+
+  const types = [{type: "empty", icon: "❓"}, ...Markers.getConfig()];
+  types.forEach(({icon, type}) => {
+    const option = document.createElement("button");
+    option.textContent = `${icon} ${type}`;
+    markerTypeSelectMenu.appendChild(option);
+
+    listeners.push(
+      listen(option, "click", () => {
+        markerTypeSelector.textContent = icon;
+        markerTypeInput.value = type;
+        changeMarkerType();
+        toggleMarkerTypeMenu();
+      })
+    );
+  });
 
   function handleLineClick(ev) {
     const el = ev.target;
@@ -139,9 +158,19 @@ function overviewMarkers() {
     });
   }
 
+  function toggleMarkerTypeMenu() {
+    document.getElementById("markerTypeSelectMenu").classList.toggle("visible");
+  }
+
   function toggleAddMarker() {
     markersAddFromOverview.classList.toggle("pressed");
     addMarker.click();
+  }
+
+  function changeMarkerType() {
+    if (!markersAddFromOverview.classList.contains("pressed")) {
+      toggleAddMarker();
+    }
   }
 
   function removeMarker(i) {

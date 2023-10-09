@@ -28,7 +28,7 @@ function editHeightmap(options) {
     <p><i>Erase</i> mode also allows you Convert an Image into a heightmap or use Template Editor.</p>
     <p>You can <i>keep</i> the data, but you won't be able to change the coastline.</p>
     <p>Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.</p>
-    <p>Please <span class="pseudoLink" onclick="dowloadMap();">save the map</span> before editing the heightmap!</p>
+    <p>Please <span class="pseudoLink" onclick="saveMap('machine')">save the map</span> before editing the heightmap!</p>
     <p style="margin-bottom: 0">Check out ${link(
       "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization",
       "wiki"
@@ -192,11 +192,14 @@ function editHeightmap(options) {
     document
       .getElementById("mapLayers")
       .querySelectorAll("li")
-      .forEach(function (e) {
-        if (editHeightmap.layers.includes(e.id) && !layerIsOn(e.id)) e.click();
-        // turn on
-        else if (!editHeightmap.layers.includes(e.id) && layerIsOn(e.id)) e.click(); // turn off
+      .forEach(e => {
+        const wasOn = editHeightmap.layers.includes(e.id);
+        if ((wasOn && !layerIsOn(e.id)) || (!wasOn && layerIsOn(e.id))) e.click();
       });
+    if (!layerIsOn("toggleBorders")) borders.selectAll("path").remove();
+    if (!layerIsOn("toggleStates")) regions.selectAll("path").remove();
+    if (!layerIsOn("toggleRivers")) rivers.selectAll("*").remove();
+
     getCurrentPreset();
   }
 
@@ -236,7 +239,7 @@ function editHeightmap(options) {
 
     drawRivers();
     Lakes.defineGroup();
-    defineBiomes();
+    Biomes.define();
     rankCells();
 
     Cultures.generate();
@@ -250,7 +253,7 @@ function editHeightmap(options) {
 
     drawStates();
     drawBorders();
-    BurgsAndStates.drawStateLabels();
+    drawStateLabels();
 
     Rivers.specify();
     Lakes.generateName();
@@ -370,16 +373,18 @@ function editHeightmap(options) {
       const g = pack.cells.g[i];
       const isLand = pack.cells.h[i] >= 20;
 
-      // check biome
-      pack.cells.biome[i] =
-        isLand && biome[g] ? biome[g] : getBiomeId(grid.cells.prec[g], grid.cells.temp[g], pack.cells.h[i]);
-
       // rivers data
       if (!erosionAllowed) {
         pack.cells.r[i] = r[g];
         pack.cells.conf[i] = conf[g];
         pack.cells.fl[i] = fl[g];
       }
+
+      // check biome
+      pack.cells.biome[i] =
+        isLand && biome[g]
+          ? biome[g]
+          : Biomes.getId(grid.cells.prec[g], grid.cells.temp[g], pack.cells.h[i], Boolean(pack.cells.r[i]));
 
       if (!isLand) continue;
       pack.cells.culture[i] = culture[g];
@@ -437,7 +442,7 @@ function editHeightmap(options) {
       c.center = findCell(c.x, c.y);
     }
 
-    BurgsAndStates.drawStateLabels();
+    drawStateLabels();
     drawStates();
     drawBorders();
 

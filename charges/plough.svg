@@ -1,1 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200"><metadata license="https://creativecommons.org/licenses/by-nc-sa/3.0" source="http://wappenwiki.org/images/a/a7/New_Jersey.svg"/><g id="plough" stroke-width="3" transform="translate(30 25) scale(0.17)"><rect width="11.1" height="41" x="189" y="424" ry="5.55"/><path d="M540 322c-40 15-50 65-70 87-10 22-20 45-10 46 10 2 20-16 30-37s20-57 40-77c20-18 54-11 60-15s7-10 0-11-30 2-50 7z"/><path d="M560 364c0 3-10 7-10 11h-40c-10 0-10-2-10-5 0-4 0-6 10-6zm-30 35v11h-40c-10 0-10-2-10-5s0-6 10-6z"/><path d="M590 336c-40 10-60 58-70 78-20 20-40 41-20 44 10 3 20-14 30-33 10-20 30-54 60-70 20-16 56-8 60-9s6-7 0-10-40-3-60 0z"/><path d="M420 438c-10 96-30 118-60 127 20-21 30-46 30-80l10 2v-48z"/><path d="M500 425l-10-6c10 70-30 112-80 148 70-2 120-34 140-85-20 12-30 11-50 9 10-26 10-47 0-66z"/><path d="M570 438c-30-8-60-9-90-10-30-2-60 7-100 7-100 1-190 0-190 0-10 0-10 14 0 14h210c30 0 60-2 90 0 20 2 50 8 70 13 10 1 20-20 10-24z"/><path fill="#000" stroke="none" d="M524 500c-5 16-32 40-45 46 19-5 45-35 45-46z"/><path fill="#000" stroke="none" d="M401 491c-2 28-20 61-31 68 16-10 33-50 31-68z"/><path fill="none" d="M450 532l20 23"/><path fill="none" d="M460 540c20-12 30-27 40-49"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+<metadata source="http://wappenwiki.org/images/a/a7/New_Jersey.svg" license="https://creativecommons.org/licenses/by-nc-sa/3.0"/>
+  <g id="plough" stroke-width="3" transform="translate(30 25) scale(0.17)">
+    <rect width="11.1" height="41" x="189" y="424" ry="5.55"/>
+    <path d="M540 322c-40 15-50 65-70 87-10 22-20 45-10 46 10 2 20-16 30-37s20-57 40-77c20-18 54-11 60-15s7-10 0-11-30 2-50 7z"/>
+    <path d="M560 364c0 3-10 7-10 11h-40c-10 0-10-2-10-5 0-4 0-6 10-6zm-30 35v11h-40c-10 0-10-2-10-5s0-6 10-6z"/>
+    <path d="M590 336c-40 10-60 58-70 78-20 20-40 41-20 44 10 3 20-14 30-33 10-20 30-54 60-70 20-16 56-8 60-9s6-7 0-10-40-3-60 0z"/>
+    <path class="secondary" d="M420 438c-10 96-30 118-60 127 20-21 30-46 30-80l10 2v-48z"/>
+    <path class="secondary" d="M500 425l-10-6c10 70-30 112-80 148 70-2 120-34 140-85-20 12-30 11-50 9 10-26 10-47 0-66z"/>
+    <path d="M570 438c-30-8-60-9-90-10-30-2-60 7-100 7-100 1-190 0-190 0-10 0-10 14 0 14h210c30 0 60-2 90 0 20 2 50 8 70 13 10 1 20-20 10-24z"/>
+    <path fill="#000" stroke="none" d="M524 500c-5 16-32 40-45 46 19-5 45-35 45-46z"/>
+    <path fill="#000" stroke="none" d="M401 491c-2 28-20 61-31 68 16-10 33-50 31-68z"/>
+    <path fill="none" d="M450 532l20 23"/>
+    <path fill="none" d="M460 540c20-12 30-27 40-49"/>
+  </g>
+</svg>
