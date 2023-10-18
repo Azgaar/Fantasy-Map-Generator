@@ -536,7 +536,9 @@ function showInfo() {
         <li>${Armoria}: a tool for creating heraldic coats of arms</li>
         <li>${Deorum}: a vast gallery of customizable fantasy characters</li>
       </ul>
-    </p>`;
+    </p>
+    
+    <p>Chinese localization: <a href="https://www.8desk.top" target="_blank">8desk.top</a></p>`;
 
   $("#alert").dialog({
     resizable: false,
