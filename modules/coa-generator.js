@@ -1556,6 +1556,7 @@ window.COA = (function () {
       "orb",
       "fasces",
       "cannon",
+      "angel",
       "centaur",
       "sagittarius"
     ],
@@ -1674,7 +1675,10 @@ window.COA = (function () {
       "stirrup",
       "wheel",
       "wing",
-      "wingSword"
+      "wingSword",
+      "angel",
+      "centaur",
+      "sagittarius"
     ],
     excludeNatureCharges: [
       "agnusDei",
@@ -1793,7 +1797,7 @@ window.COA = (function () {
       "serpent",
       "unicornRampant",
       "wyvern",
-      "wyvernWithWingsDisplayed",
+      "wyvernWithWingsDisplayed"
     ]
   };
 
@@ -2392,6 +2396,7 @@ window.COA = (function () {
       chargesSingleSet = charges.singleLimited;
       chargesSemySet = charges.semyShapes;
       excludeChargesSet = charges.excludeUnusualCharges;
+      excludeCultureChargesSet = charges.excludeUnusualCharges;
     } else if (chargesSetting === "Things") {
       chargesTypesSet = charges.typesThings;
       chargesSingleSet = charges.singleThings;
@@ -2472,7 +2477,7 @@ window.COA = (function () {
 
     if (ordinary) {
       coa.ordinaries = [{ordinary, t: getTincture("charge", excludeTincturesSet, usedTinctures, coa.t1)}];
-	if (linedOrdinary) coa.ordinaries[0].line = usedPattern || (division && P(0.7)) ? "straight" : rw(lines, excludeLinesSet);
+	if (linedOrdinary) coa.ordinaries[0].line = usedPattern || (division && P(0.7)) ? "straight" : rwx(lines, excludeLinesSet);
       if (division && !addCharge && !usedPattern && P(0.5) && ordinary !== "bordure" && ordinary !== "orle") {
         if (P(0.8)) coa.ordinaries[0].divided = "counter";
         // 40%
