@@ -1539,6 +1539,7 @@ window.COA = (function () {
     ],
     excludeUnusualCharges: [
       "roundel2",
+      "lozengeFaceted",
       "mulletFaceted",
       "mullet6Faceted",
       "compassRose",
