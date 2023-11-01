@@ -97,7 +97,7 @@ window.BurgsAndStates = (function () {
         const name = Names.getState(basename, b.culture);
         const type = cultures[b.culture].type;
 
-        const coa = COA.generate(null, null, null, type);
+        const coa = COA.generate(null, null, null, type, cultures, b.culture);
         coa.shield = COA.getShield(b.culture, null);
         states.push({
           i,
@@ -216,7 +216,7 @@ window.BurgsAndStates = (function () {
       if (b.culture !== state.culture) kinship -= 0.25;
       b.type = getType(i, b.port);
       const type = b.capital && P(0.2) ? "Capital" : b.type === "Generic" ? "City" : b.type;
-      b.coa = COA.generate(stateCOA, kinship, null, type);
+      b.coa = COA.generate(stateCOA, kinship, null, type, pack.cultures, b.culture);
       b.coa.shield = COA.getShield(b.culture, b.state);
     }
 
@@ -1005,7 +1005,7 @@ window.BurgsAndStates = (function () {
         const color = getMixedColor(s.color);
         const kinship = nameByBurg ? 0.8 : 0.4;
         const type = getType(center, burg.port);
-        const coa = COA.generate(stateBurgs[i].coa, kinship, null, type);
+        const coa = COA.generate(stateBurgs[i].coa, kinship, null, type, pack.cultures, c);
         coa.shield = COA.getShield(c, s.i);
 
         s.provinces.push(provinceId);
@@ -1144,7 +1144,7 @@ window.BurgsAndStates = (function () {
         const dominion = colony ? P(0.95) : singleIsle || isleGroup ? P(0.7) : P(0.3);
         const kinship = dominion ? 0 : 0.4;
         const type = getType(center, burgs[burg]?.port);
-        const coa = COA.generate(s.coa, kinship, dominion, type);
+        const coa = COA.generate(s.coa, kinship, dominion, type, pack.cultures, c);
         coa.shield = COA.getShield(c, s.i);
 
         provinces.push({i: provinceId, state: s.i, center, burg, name, formName, fullName, color, coa});

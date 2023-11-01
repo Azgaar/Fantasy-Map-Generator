@@ -1,7 +1,7 @@
 "use strict";
 
 // version and caching control
-const version = "1.93.05"; // generator version, update each time
+const version = "1.94.00"; // generator version, update each time
 
 {
   document.title += " v" + version;
@@ -39,6 +39,7 @@ const version = "1.93.05"; // generator version, update each time
         <li>Google translation support (in Options)</li>
         <li>Religions can be edited and redrawn like cultures</li>
         <li>Lock states, provinces, cultures, and religions from regeneration</li>
+        <li>Adjust apsects of the emblems created for a culture in the culture editor</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>

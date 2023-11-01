@@ -109,7 +109,6 @@ function uploadMap(file, callback) {
   uploadMap.timeStart = performance.now();
   const OLDEST_SUPPORTED_VERSION = 0.7;
   const currentVersion = parseFloat(version);
-
   const fileReader = new FileReader();
   fileReader.onloadend = async function (fileLoadedEvent) {
     if (callback) callback();
@@ -456,7 +455,7 @@ async function parseLoadedData(data) {
     {
       // dynamically import and run auto-udpdate script
       const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.93.00");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.94.00");
       resolveVersionConflicts(versionNumber);
     }
 

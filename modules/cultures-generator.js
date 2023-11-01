@@ -15,7 +15,7 @@ window.Cultures = (function () {
       count = Math.floor(populated.length / 50);
       if (!count) {
         WARN && console.warn(`There are no populated cells. Cannot generate cultures`);
-        pack.cultures = [{name: "Wildlands", i: 0, base: 1, shield: "round"}];
+        pack.cultures = [{name: "Wildlands", i: 0, base: 1, shield: "round", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"}];
         cells.culture = cultureIds;
 
         alertMessage.innerHTML = /* html */ `The climate is harsh and people cannot live in this world.<br />
@@ -106,7 +106,7 @@ window.Cultures = (function () {
     }
 
     // the first culture with id 0 is for wildlands
-    cultures.unshift({name: "Wildlands", i: 0, base: 1, origins: [null], shield: "round"});
+    cultures.unshift({name: "Wildlands", i: 0, base: 1, origins: [null], shield: "round", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"});
 
     // make sure all bases exist in nameBases
     if (!nameBases.length) {
@@ -182,7 +182,7 @@ window.Cultures = (function () {
       base = defaultCultures[culture].base;
       name = defaultCultures[culture].name;
     } else {
-      // add random culture besed on one of the current ones
+      // add random culture based on one of the current ones
       culture = rand(pack.cultures.length - 1);
       name = Names.getCulture(culture, 5, 8, "");
       base = pack.cultures[culture].base;
@@ -196,6 +196,8 @@ window.Cultures = (function () {
 
     // define emblem shape
     let shield = culture.shield;
+    let charges = culture.charges;
+    let lines = culture.lines;
     const emblemShape = document.getElementById("emblemShape").value;
     if (emblemShape === "random") shield = getRandomShield();
 
@@ -213,7 +215,10 @@ window.Cultures = (function () {
       urban: 0,
       origins: [0],
       code,
-      shield
+      shield,
+      charges,
+      lines,
+      tinctures
     });
   };
 
@@ -236,82 +241,82 @@ window.Cultures = (function () {
 
     if (culturesSet.value === "european") {
       return [
-        {name: "Shwazen", base: 0, odd: 1, sort: i => n(i) / td(i, 10) / bd(i, [6, 8]), shield: "swiss"},
-        {name: "Angshire", base: 1, odd: 1, sort: i => n(i) / td(i, 10) / sf(i), shield: "wedged"},
-        {name: "Luari", base: 2, odd: 1, sort: i => n(i) / td(i, 12) / bd(i, [6, 8]), shield: "french"},
-        {name: "Tallian", base: 3, odd: 1, sort: i => n(i) / td(i, 15), shield: "horsehead"},
-        {name: "Astellian", base: 4, odd: 1, sort: i => n(i) / td(i, 16), shield: "spanish"},
-        {name: "Slovan", base: 5, odd: 1, sort: i => (n(i) / td(i, 6)) * t[i], shield: "polish"},
-        {name: "Norse", base: 6, odd: 1, sort: i => n(i) / td(i, 5), shield: "heater"},
-        {name: "Elladan", base: 7, odd: 1, sort: i => (n(i) / td(i, 18)) * h[i], shield: "boeotian"},
-        {name: "Romian", base: 8, odd: 0.2, sort: i => n(i) / td(i, 15) / t[i], shield: "roman"},
-        {name: "Soumi", base: 9, odd: 1, sort: i => (n(i) / td(i, 5) / bd(i, [9])) * t[i], shield: "pavise"},
-        {name: "Portuzian", base: 13, odd: 1, sort: i => n(i) / td(i, 17) / sf(i), shield: "renaissance"},
-        {name: "Vengrian", base: 15, odd: 1, sort: i => (n(i) / td(i, 11) / bd(i, [4])) * t[i], shield: "horsehead2"},
-        {name: "Turchian", base: 16, odd: 0.05, sort: i => n(i) / td(i, 14), shield: "round"},
-        {name: "Euskati", base: 20, odd: 0.05, sort: i => (n(i) / td(i, 15)) * h[i], shield: "oldFrench"},
-        {name: "Keltan", base: 22, odd: 0.05, sort: i => (n(i) / td(i, 11) / bd(i, [6, 8])) * t[i], shield: "oval"}
+        {name: "Shwazen", base: 0, odd: 1, sort: i => n(i) / td(i, 10) / bd(i, [6, 8]), shield: "swiss", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Angshire", base: 1, odd: 1, sort: i => n(i) / td(i, 10) / sf(i), shield: "wedged", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Luari", base: 2, odd: 1, sort: i => n(i) / td(i, 12) / bd(i, [6, 8]), shield: "french", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Tallian", base: 3, odd: 1, sort: i => n(i) / td(i, 15), shield: "horsehead", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Astellian", base: 4, odd: 1, sort: i => n(i) / td(i, 16), shield: "spanish", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Slovan", base: 5, odd: 1, sort: i => (n(i) / td(i, 6)) * t[i], shield: "polish", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Norse", base: 6, odd: 1, sort: i => n(i) / td(i, 5), shield: "heater", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Elladan", base: 7, odd: 1, sort: i => (n(i) / td(i, 18)) * h[i], shield: "boeotian", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Romian", base: 8, odd: 0.2, sort: i => n(i) / td(i, 15) / t[i], shield: "roman", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Soumi", base: 9, odd: 1, sort: i => (n(i) / td(i, 5) / bd(i, [9])) * t[i], shield: "pavise", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Portuzian", base: 13, odd: 1, sort: i => n(i) / td(i, 17) / sf(i), shield: "renaissance", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Vengrian", base: 15, odd: 1, sort: i => (n(i) / td(i, 11) / bd(i, [4])) * t[i], shield: "horsehead2", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Turchian", base: 16, odd: 0.05, sort: i => n(i) / td(i, 14), shield: "round", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Euskati", base: 20, odd: 0.05, sort: i => (n(i) / td(i, 15)) * h[i], shield: "oldFrench", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Keltan", base: 22, odd: 0.05, sort: i => (n(i) / td(i, 11) / bd(i, [6, 8])) * t[i], shield: "oval", charges: "Limited", lines: "All", tinctures: "All"}
       ];
     }
 
     if (culturesSet.value === "oriental") {
       return [
-        {name: "Koryo", base: 10, odd: 1, sort: i => n(i) / td(i, 12) / t[i], shield: "round"},
-        {name: "Hantzu", base: 11, odd: 1, sort: i => n(i) / td(i, 13), shield: "banner"},
-        {name: "Yamoto", base: 12, odd: 1, sort: i => n(i) / td(i, 15) / t[i], shield: "round"},
-        {name: "Turchian", base: 16, odd: 1, sort: i => n(i) / td(i, 12), shield: "round"},
+        {name: "Koryo", base: 10, odd: 1, sort: i => n(i) / td(i, 12) / t[i], shield: "round", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Hantzu", base: 11, odd: 1, sort: i => n(i) / td(i, 13), shield: "banner", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Yamoto", base: 12, odd: 1, sort: i => n(i) / td(i, 15) / t[i], shield: "round", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Turchian", base: 16, odd: 1, sort: i => n(i) / td(i, 12), shield: "round", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
         {
           name: "Berberan",
           base: 17,
           odd: 0.2,
           sort: i => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],
-          shield: "oval"
+          shield: "oval", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"
         },
-        {name: "Eurabic", base: 18, odd: 1, sort: i => (n(i) / td(i, 26) / bd(i, [1, 2], 7)) * t[i], shield: "oval"},
-        {name: "Efratic", base: 23, odd: 0.1, sort: i => (n(i) / td(i, 22)) * t[i], shield: "round"},
-        {name: "Tehrani", base: 24, odd: 1, sort: i => (n(i) / td(i, 18)) * h[i], shield: "round"},
-        {name: "Maui", base: 25, odd: 0.2, sort: i => n(i) / td(i, 24) / sf(i) / t[i], shield: "vesicaPiscis"},
-        {name: "Carnatic", base: 26, odd: 0.5, sort: i => n(i) / td(i, 26), shield: "round"},
-        {name: "Vietic", base: 29, odd: 0.8, sort: i => n(i) / td(i, 25) / bd(i, [7], 7) / t[i], shield: "banner"},
-        {name: "Guantzu", base: 30, odd: 0.5, sort: i => n(i) / td(i, 17), shield: "banner"},
-        {name: "Ulus", base: 31, odd: 1, sort: i => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i], shield: "banner"}
+        {name: "Eurabic", base: 18, odd: 1, sort: i => (n(i) / td(i, 26) / bd(i, [1, 2], 7)) * t[i], shield: "oval", charges: "Shapes", lines: "All", tinctures: "All"},
+        {name: "Efratic", base: 23, odd: 0.1, sort: i => (n(i) / td(i, 22)) * t[i], shield: "round", charges: "Shapes", lines: "All", tinctures: "All"},
+        {name: "Tehrani", base: 24, odd: 1, sort: i => (n(i) / td(i, 18)) * h[i], shield: "round", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Maui", base: 25, odd: 0.2, sort: i => n(i) / td(i, 24) / sf(i) / t[i], shield: "vesicaPiscis", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Carnatic", base: 26, odd: 0.5, sort: i => n(i) / td(i, 26), shield: "round", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Vietic", base: 29, odd: 0.8, sort: i => n(i) / td(i, 25) / bd(i, [7], 7) / t[i], shield: "banner", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Guantzu", base: 30, odd: 0.5, sort: i => n(i) / td(i, 17), shield: "banner", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Ulus", base: 31, odd: 1, sort: i => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i], shield: "banner", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"}
       ];
     }
 
     if (culturesSet.value === "english") {
       const getName = () => Names.getBase(1, 5, 9, "", 0);
       return [
-        {name: getName(), base: 1, odd: 1, shield: "heater"},
-        {name: getName(), base: 1, odd: 1, shield: "wedged"},
-        {name: getName(), base: 1, odd: 1, shield: "swiss"},
-        {name: getName(), base: 1, odd: 1, shield: "oldFrench"},
-        {name: getName(), base: 1, odd: 1, shield: "swiss"},
-        {name: getName(), base: 1, odd: 1, shield: "spanish"},
-        {name: getName(), base: 1, odd: 1, shield: "hessen"},
-        {name: getName(), base: 1, odd: 1, shield: "fantasy5"},
-        {name: getName(), base: 1, odd: 1, shield: "fantasy4"},
-        {name: getName(), base: 1, odd: 1, shield: "fantasy1"}
+        {name: getName(), base: 1, odd: 1, shield: "heater", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: getName(), base: 1, odd: 1, shield: "wedged", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: getName(), base: 1, odd: 1, shield: "swiss", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: getName(), base: 1, odd: 1, shield: "oldFrench", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: getName(), base: 1, odd: 1, shield: "swiss", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: getName(), base: 1, odd: 1, shield: "spanish", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: getName(), base: 1, odd: 1, shield: "hessen", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: getName(), base: 1, odd: 1, shield: "fantasy5", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: getName(), base: 1, odd: 1, shield: "fantasy4", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: getName(), base: 1, odd: 1, shield: "fantasy1", charges: "Limited", lines: "All", tinctures: "All"}
       ];
     }
 
     if (culturesSet.value === "antique") {
       return [
-        {name: "Roman", base: 8, odd: 1, sort: i => n(i) / td(i, 14) / t[i], shield: "roman"}, // Roman
-        {name: "Roman", base: 8, odd: 1, sort: i => n(i) / td(i, 15) / sf(i), shield: "roman"}, // Roman
-        {name: "Roman", base: 8, odd: 1, sort: i => n(i) / td(i, 16) / sf(i), shield: "roman"}, // Roman
-        {name: "Roman", base: 8, odd: 1, sort: i => n(i) / td(i, 17) / t[i], shield: "roman"}, // Roman
-        {name: "Hellenic", base: 7, odd: 1, sort: i => (n(i) / td(i, 18) / sf(i)) * h[i], shield: "boeotian"}, // Greek
-        {name: "Hellenic", base: 7, odd: 1, sort: i => (n(i) / td(i, 19) / sf(i)) * h[i], shield: "boeotian"}, // Greek
-        {name: "Macedonian", base: 7, odd: 0.5, sort: i => (n(i) / td(i, 12)) * h[i], shield: "round"}, // Greek
-        {name: "Celtic", base: 22, odd: 1, sort: i => n(i) / td(i, 11) ** 0.5 / bd(i, [6, 8]), shield: "round"},
-        {name: "Germanic", base: 0, odd: 1, sort: i => n(i) / td(i, 10) ** 0.5 / bd(i, [6, 8]), shield: "round"},
-        {name: "Persian", base: 24, odd: 0.8, sort: i => (n(i) / td(i, 18)) * h[i], shield: "oval"}, // Iranian
-        {name: "Scythian", base: 24, odd: 0.5, sort: i => n(i) / td(i, 11) ** 0.5 / bd(i, [4]), shield: "round"}, // Iranian
-        {name: "Cantabrian", base: 20, odd: 0.5, sort: i => (n(i) / td(i, 16)) * h[i], shield: "oval"}, // Basque
-        {name: "Estian", base: 9, odd: 0.2, sort: i => (n(i) / td(i, 5)) * t[i], shield: "pavise"}, // Finnic
-        {name: "Carthaginian", base: 42, odd: 0.3, sort: i => n(i) / td(i, 20) / sf(i), shield: "oval"}, // Levantine
-        {name: "Hebrew", base: 42, odd: 0.2, sort: i => (n(i) / td(i, 19)) * sf(i), shield: "oval"}, // Levantine
-        {name: "Mesopotamian", base: 23, odd: 0.2, sort: i => n(i) / td(i, 22) / bd(i, [1, 2, 3]), shield: "oval"} // Mesopotamian
+        {name: "Roman", base: 8, odd: 1, sort: i => n(i) / td(i, 14) / t[i], shield: "roman", charges: "Limited", lines: "All", tinctures: "All"}, // Roman
+        {name: "Roman", base: 8, odd: 1, sort: i => n(i) / td(i, 15) / sf(i), shield: "roman", charges: "Limited", lines: "All", tinctures: "All"}, // Roman
+        {name: "Roman", base: 8, odd: 1, sort: i => n(i) / td(i, 16) / sf(i), shield: "roman", charges: "Limited", lines: "All", tinctures: "All"}, // Roman
+        {name: "Roman", base: 8, odd: 1, sort: i => n(i) / td(i, 17) / t[i], shield: "roman", charges: "Limited", lines: "All", tinctures: "All"}, // Roman
+        {name: "Hellenic", base: 7, odd: 1, sort: i => (n(i) / td(i, 18) / sf(i)) * h[i], shield: "boeotian", charges: "Limited", lines: "All", tinctures: "All"}, // Greek
+        {name: "Hellenic", base: 7, odd: 1, sort: i => (n(i) / td(i, 19) / sf(i)) * h[i], shield: "boeotian", charges: "Limited", lines: "All", tinctures: "All"}, // Greek
+        {name: "Macedonian", base: 7, odd: 0.5, sort: i => (n(i) / td(i, 12)) * h[i], shield: "round", charges: "Limited", lines: "All", tinctures: "All"}, // Greek
+        {name: "Celtic", base: 22, odd: 1, sort: i => n(i) / td(i, 11) ** 0.5 / bd(i, [6, 8]), shield: "round", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Germanic", base: 0, odd: 1, sort: i => n(i) / td(i, 10) ** 0.5 / bd(i, [6, 8]), shield: "round", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Persian", base: 24, odd: 0.8, sort: i => (n(i) / td(i, 18)) * h[i], shield: "oval", charges: "Limited", lines: "All", tinctures: "All"}, // Iranian
+        {name: "Scythian", base: 24, odd: 0.5, sort: i => n(i) / td(i, 11) ** 0.5 / bd(i, [4]), shield: "round", charges: "Limited", lines: "All", tinctures: "All"}, // Iranian
+        {name: "Cantabrian", base: 20, odd: 0.5, sort: i => (n(i) / td(i, 16)) * h[i], shield: "oval", charges: "Limited", lines: "All", tinctures: "All"}, // Basque
+        {name: "Estian", base: 9, odd: 0.2, sort: i => (n(i) / td(i, 5)) * t[i], shield: "pavise", charges: "Limited", lines: "All", tinctures: "All"}, // Finnic
+        {name: "Carthaginian", base: 42, odd: 0.3, sort: i => n(i) / td(i, 20) / sf(i), shield: "oval", charges: "Limited", lines: "All", tinctures: "All"}, // Levantine
+        {name: "Hebrew", base: 42, odd: 0.2, sort: i => (n(i) / td(i, 19)) * sf(i), shield: "oval", charges: "Shapes", lines: "All", tinctures: "All"}, // Levantine
+        {name: "Mesopotamian", base: 23, odd: 0.2, sort: i => n(i) / td(i, 22) / bd(i, [1, 2, 3]), shield: "oval", charges: "Limited", lines: "All", tinctures: "All"} // Mesopotamian
       ];
     }
 
@@ -323,54 +328,54 @@ window.Cultures = (function () {
           base: 33,
           odd: 1,
           sort: i => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
-          shield: "gondor"
+          shield: "gondor", charges: "Nature", lines: "All", tinctures: "All"
         }, // Elves
         {
           name: "Eldar (Elfish)",
           base: 33,
           odd: 1,
           sort: i => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
-          shield: "noldor"
+          shield: "noldor", charges: "Nature", lines: "All", tinctures: "All"
         }, // Elves
         {
           name: "Trow (Dark Elfish)",
           base: 34,
           odd: 0.9,
           sort: i => (n(i) / bd(i, [7, 8, 9, 12], 10)) * t[i],
-          shield: "hessen"
+          shield: "hessen", charges: "Limited", lines: "All", tinctures: "All"
         }, // Dark Elves
         {
           name: "Lothian (Dark Elfish)",
           base: 34,
           odd: 0.3,
           sort: i => (n(i) / bd(i, [7, 8, 9, 12], 10)) * t[i],
-          shield: "wedged"
+          shield: "wedged", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"
         }, // Dark Elves
-        {name: "Dunirr (Dwarven)", base: 35, odd: 1, sort: i => n(i) + h[i], shield: "ironHills"}, // Dwarfs
-        {name: "Khazadur (Dwarven)", base: 35, odd: 1, sort: i => n(i) + h[i], shield: "erebor"}, // Dwarfs
-        {name: "Kobold (Goblin)", base: 36, odd: 1, sort: i => t[i] - s[i], shield: "moriaOrc"}, // Goblin
-        {name: "Uruk (Orkish)", base: 37, odd: 1, sort: i => h[i] * t[i], shield: "urukHai"}, // Orc
+        {name: "Dunirr (Dwarven)", base: 35, odd: 1, sort: i => n(i) + h[i], shield: "ironHills", charges: "Shapes", lines: "Things", tinctures: "All"}, // Dwarfs
+        {name: "Khazadur (Dwarven)", base: 35, odd: 1, sort: i => n(i) + h[i], shield: "erebor", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"}, // Dwarfs
+        {name: "Kobold (Goblin)", base: 36, odd: 1, sort: i => t[i] - s[i], shield: "moriaOrc", charges: "None", lines: "None", tinctures: "NoStains"}, // Goblin
+        {name: "Uruk (Orkish)", base: 37, odd: 1, sort: i => h[i] * t[i], shield: "urukHai", charges: "Limited", lines: "Straight", tinctures: "NoPatterns"}, // Orc
         {
           name: "Ugluk (Orkish)",
           base: 37,
           odd: 0.5,
           sort: i => (h[i] * t[i]) / bd(i, [1, 2, 10, 11]),
-          shield: "moriaOrc"
+          shield: "moriaOrc", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"
         }, // Orc
-        {name: "Yotunn (Giants)", base: 38, odd: 0.7, sort: i => td(i, -10), shield: "pavise"}, // Giant
-        {name: "Rake (Drakonic)", base: 39, odd: 0.7, sort: i => -s[i], shield: "fantasy2"}, // Draconic
-        {name: "Arago (Arachnid)", base: 40, odd: 0.7, sort: i => t[i] - s[i], shield: "horsehead2"}, // Arachnid
-        {name: "Aj'Snaga (Serpents)", base: 41, odd: 0.7, sort: i => n(i) / bd(i, [12], 10), shield: "fantasy1"}, // Serpents
+        {name: "Yotunn (Giants)", base: 38, odd: 0.7, sort: i => td(i, -10), shield: "pavise", charges: "Limited", lines: "Straight", tinctures: "NoPatterns"}, // Giant
+        {name: "Rake (Drakonic)", base: 39, odd: 0.7, sort: i => -s[i], shield: "fantasy2", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"}, // Draconic
+        {name: "Arago (Arachnid)", base: 40, odd: 0.7, sort: i => t[i] - s[i], shield: "horsehead2", charges: "Shapes", lines: "None", tinctures: "NoPatterns"}, // Arachnid
+        {name: "Aj'Snaga (Serpents)", base: 41, odd: 0.7, sort: i => n(i) / bd(i, [12], 10), shield: "fantasy1", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"}, // Serpents
         // fantasy human
-        {name: "Anor (Human)", base: 32, odd: 1, sort: i => n(i) / td(i, 10), shield: "fantasy5"},
-        {name: "Dail (Human)", base: 32, odd: 1, sort: i => n(i) / td(i, 13), shield: "roman"},
-        {name: "Rohand (Human)", base: 16, odd: 1, sort: i => n(i) / td(i, 16), shield: "round"},
+        {name: "Anor (Human)", base: 32, odd: 1, sort: i => n(i) / td(i, 10), shield: "fantasy5", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Dail (Human)", base: 32, odd: 1, sort: i => n(i) / td(i, 13), shield: "roman", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Rohand (Human)", base: 16, odd: 1, sort: i => n(i) / td(i, 16), shield: "round", charges: "Limited", lines: "All", tinctures: "All"},
         {
           name: "Dulandir (Human)",
           base: 31,
           odd: 1,
           sort: i => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i],
-          shield: "easterling"
+          shield: "easterling", charges: "Limited", lines: "All", tinctures: "All"
         }
       ];
     }
@@ -378,73 +383,73 @@ window.Cultures = (function () {
     if (culturesSet.value === "darkFantasy") {
       return [
         // common real-world English
-        {name: "Angshire", base: 1, odd: 1, sort: i => n(i) / td(i, 10) / sf(i), shield: "heater"},
-        {name: "Enlandic", base: 1, odd: 1, sort: i => n(i) / td(i, 12), shield: "heater"},
-        {name: "Westen", base: 1, odd: 1, sort: i => n(i) / td(i, 10), shield: "heater"},
-        {name: "Nortumbic", base: 1, odd: 1, sort: i => n(i) / td(i, 7), shield: "heater"},
-        {name: "Mercian", base: 1, odd: 1, sort: i => n(i) / td(i, 9), shield: "heater"},
-        {name: "Kentian", base: 1, odd: 1, sort: i => n(i) / td(i, 12), shield: "heater"},
+        {name: "Angshire", base: 1, odd: 1, sort: i => n(i) / td(i, 10) / sf(i), shield: "heater", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Enlandic", base: 1, odd: 1, sort: i => n(i) / td(i, 12), shield: "heater", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Westen", base: 1, odd: 1, sort: i => n(i) / td(i, 10), shield: "heater", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Nortumbic", base: 1, odd: 1, sort: i => n(i) / td(i, 7), shield: "heater", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Mercian", base: 1, odd: 1, sort: i => n(i) / td(i, 9), shield: "heater", charges: "Limited", lines: "All", tinctures: "All"},
+        {name: "Kentian", base: 1, odd: 1, sort: i => n(i) / td(i, 12), shield: "heater", charges: "Limited", lines: "All", tinctures: "All"},
         // rare real-world western
-        {name: "Norse", base: 6, odd: 0.7, sort: i => n(i) / td(i, 5) / sf(i), shield: "oldFrench"},
-        {name: "Schwarzen", base: 0, odd: 0.3, sort: i => n(i) / td(i, 10) / bd(i, [6, 8]), shield: "gonfalon"},
-        {name: "Luarian", base: 2, odd: 0.3, sort: i => n(i) / td(i, 12) / bd(i, [6, 8]), shield: "oldFrench"},
-        {name: "Hetallian", base: 3, odd: 0.3, sort: i => n(i) / td(i, 15), shield: "oval"},
-        {name: "Astellian", base: 4, odd: 0.3, sort: i => n(i) / td(i, 16), shield: "spanish"},
+        {name: "Norse", base: 6, odd: 0.7, sort: i => n(i) / td(i, 5) / sf(i), shield: "oldFrench", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Schwarzen", base: 0, odd: 0.3, sort: i => n(i) / td(i, 10) / bd(i, [6, 8]), shield: "gonfalon", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Luarian", base: 2, odd: 0.3, sort: i => n(i) / td(i, 12) / bd(i, [6, 8]), shield: "oldFrench", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Hetallian", base: 3, odd: 0.3, sort: i => n(i) / td(i, 15), shield: "oval", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Astellian", base: 4, odd: 0.3, sort: i => n(i) / td(i, 16), shield: "spanish", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
         // rare real-world exotic
         {
           name: "Kiswaili",
           base: 28,
           odd: 0.05,
           sort: i => n(i) / td(i, 29) / bd(i, [1, 3, 5, 7]),
-          shield: "vesicaPiscis"
+          shield: "vesicaPiscis", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"
         },
-        {name: "Yoruba", base: 21, odd: 0.05, sort: i => n(i) / td(i, 15) / bd(i, [5, 7]), shield: "vesicaPiscis"},
-        {name: "Koryo", base: 10, odd: 0.05, sort: i => n(i) / td(i, 12) / t[i], shield: "round"},
-        {name: "Hantzu", base: 11, odd: 0.05, sort: i => n(i) / td(i, 13), shield: "banner"},
-        {name: "Yamoto", base: 12, odd: 0.05, sort: i => n(i) / td(i, 15) / t[i], shield: "round"},
-        {name: "Guantzu", base: 30, odd: 0.05, sort: i => n(i) / td(i, 17), shield: "banner"},
+        {name: "Yoruba", base: 21, odd: 0.05, sort: i => n(i) / td(i, 15) / bd(i, [5, 7]), shield: "vesicaPiscis", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Koryo", base: 10, odd: 0.05, sort: i => n(i) / td(i, 12) / t[i], shield: "round", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Hantzu", base: 11, odd: 0.05, sort: i => n(i) / td(i, 13), shield: "banner", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Yamoto", base: 12, odd: 0.05, sort: i => n(i) / td(i, 15) / t[i], shield: "round", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Guantzu", base: 30, odd: 0.05, sort: i => n(i) / td(i, 17), shield: "banner", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
         {
           name: "Ulus",
           base: 31,
           odd: 0.05,
           sort: i => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i],
-          shield: "banner"
+          shield: "banner", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"
         },
-        {name: "Turan", base: 16, odd: 0.05, sort: i => n(i) / td(i, 12), shield: "round"},
+        {name: "Turan", base: 16, odd: 0.05, sort: i => n(i) / td(i, 12), shield: "round", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
         {
           name: "Berberan",
           base: 17,
           odd: 0.05,
           sort: i => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],
-          shield: "round"
+          shield: "round", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"
         },
         {
           name: "Eurabic",
           base: 18,
           odd: 0.05,
           sort: i => (n(i) / td(i, 26) / bd(i, [1, 2], 7)) * t[i],
-          shield: "round"
+          shield: "round", charges: "Shapes", lines: "All", tinctures: "All"
         },
-        {name: "Slovan", base: 5, odd: 0.05, sort: i => (n(i) / td(i, 6)) * t[i], shield: "round"},
+        {name: "Slovan", base: 5, odd: 0.05, sort: i => (n(i) / td(i, 6)) * t[i], shield: "round", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
         {
           name: "Keltan",
           base: 22,
           odd: 0.1,
           sort: i => n(i) / td(i, 11) ** 0.5 / bd(i, [6, 8]),
-          shield: "vesicaPiscis"
+          shield: "vesicaPiscis", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"
         },
-        {name: "Elladan", base: 7, odd: 0.2, sort: i => (n(i) / td(i, 18) / sf(i)) * h[i], shield: "boeotian"},
-        {name: "Romian", base: 8, odd: 0.2, sort: i => n(i) / td(i, 14) / t[i], shield: "roman"},
+        {name: "Elladan", base: 7, odd: 0.2, sort: i => (n(i) / td(i, 18) / sf(i)) * h[i], shield: "boeotian", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+        {name: "Romian", base: 8, odd: 0.2, sort: i => n(i) / td(i, 14) / t[i], shield: "roman", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
         // fantasy races
-        {name: "Eldar", base: 33, odd: 0.5, sort: i => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i], shield: "fantasy5"}, // Elves
-        {name: "Trow", base: 34, odd: 0.8, sort: i => (n(i) / bd(i, [7, 8, 9, 12], 10)) * t[i], shield: "hessen"}, // Dark Elves
-        {name: "Durinn", base: 35, odd: 0.8, sort: i => n(i) + h[i], shield: "erebor"}, // Dwarven
-        {name: "Kobblin", base: 36, odd: 0.8, sort: i => t[i] - s[i], shield: "moriaOrc"}, // Goblin
-        {name: "Uruk", base: 37, odd: 0.8, sort: i => (h[i] * t[i]) / bd(i, [1, 2, 10, 11]), shield: "urukHai"}, // Orc
-        {name: "Yotunn", base: 38, odd: 0.8, sort: i => td(i, -10), shield: "pavise"}, // Giant
-        {name: "Drake", base: 39, odd: 0.9, sort: i => -s[i], shield: "fantasy2"}, // Draconic
-        {name: "Rakhnid", base: 40, odd: 0.9, sort: i => t[i] - s[i], shield: "horsehead2"}, // Arachnid
-        {name: "Aj'Snaga", base: 41, odd: 0.9, sort: i => n(i) / bd(i, [12], 10), shield: "fantasy1"} // Serpents
+        {name: "Eldar", base: 33, odd: 0.5, sort: i => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i], shield: "fantasy5", charges: "Nature", lines: "All", tinctures: "All"}, // Elves
+        {name: "Trow", base: 34, odd: 0.8, sort: i => (n(i) / bd(i, [7, 8, 9, 12], 10)) * t[i], shield: "hessen", charges: "Shapes", lines: "All", tinctures: "All"}, // Dark Elves
+        {name: "Durinn", base: 35, odd: 0.8, sort: i => n(i) + h[i], shield: "erebor", charges: "Shapes", lines: "All", tinctures: "All"}, // Dwarven
+        {name: "Kobblin", base: 36, odd: 0.8, sort: i => t[i] - s[i], shield: "moriaOrc", charges: "Shapes", lines: "None", tinctures: "NoStains"}, // Goblin
+        {name: "Uruk", base: 37, odd: 0.8, sort: i => (h[i] * t[i]) / bd(i, [1, 2, 10, 11]), shield: "urukHai", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"}, // Orc
+        {name: "Yotunn", base: 38, odd: 0.8, sort: i => td(i, -10), shield: "pavise", charges: "Limited", lines: "Straight", tinctures: "NoPatterns"}, // Giant
+        {name: "Drake", base: 39, odd: 0.9, sort: i => -s[i], shield: "fantasy2", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"}, // Draconic
+        {name: "Rakhnid", base: 40, odd: 0.9, sort: i => t[i] - s[i], shield: "horsehead2", charges: "Shapes", lines: "None", tinctures: "NoPatterns"}, // Arachnid
+        {name: "Aj'Snaga", base: 41, odd: 0.9, sort: i => n(i) / bd(i, [12], 10), shield: "fantasy1", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"} // Serpents
       ];
     }
 
@@ -458,51 +463,51 @@ window.Cultures = (function () {
 
     // all-world
     return [
-      {name: "Shwazen", base: 0, odd: 0.7, sort: i => n(i) / td(i, 10) / bd(i, [6, 8]), shield: "hessen"},
-      {name: "Angshire", base: 1, odd: 1, sort: i => n(i) / td(i, 10) / sf(i), shield: "heater"},
-      {name: "Luari", base: 2, odd: 0.6, sort: i => n(i) / td(i, 12) / bd(i, [6, 8]), shield: "oldFrench"},
-      {name: "Tallian", base: 3, odd: 0.6, sort: i => n(i) / td(i, 15), shield: "horsehead2"},
-      {name: "Astellian", base: 4, odd: 0.6, sort: i => n(i) / td(i, 16), shield: "spanish"},
-      {name: "Slovan", base: 5, odd: 0.7, sort: i => (n(i) / td(i, 6)) * t[i], shield: "round"},
-      {name: "Norse", base: 6, odd: 0.7, sort: i => n(i) / td(i, 5), shield: "heater"},
-      {name: "Elladan", base: 7, odd: 0.7, sort: i => (n(i) / td(i, 18)) * h[i], shield: "boeotian"},
-      {name: "Romian", base: 8, odd: 0.7, sort: i => n(i) / td(i, 15), shield: "roman"},
-      {name: "Soumi", base: 9, odd: 0.3, sort: i => (n(i) / td(i, 5) / bd(i, [9])) * t[i], shield: "pavise"},
-      {name: "Koryo", base: 10, odd: 0.1, sort: i => n(i) / td(i, 12) / t[i], shield: "round"},
-      {name: "Hantzu", base: 11, odd: 0.1, sort: i => n(i) / td(i, 13), shield: "banner"},
-      {name: "Yamoto", base: 12, odd: 0.1, sort: i => n(i) / td(i, 15) / t[i], shield: "round"},
-      {name: "Portuzian", base: 13, odd: 0.4, sort: i => n(i) / td(i, 17) / sf(i), shield: "spanish"},
-      {name: "Nawatli", base: 14, odd: 0.1, sort: i => h[i] / td(i, 18) / bd(i, [7]), shield: "square"},
-      {name: "Vengrian", base: 15, odd: 0.2, sort: i => (n(i) / td(i, 11) / bd(i, [4])) * t[i], shield: "wedged"},
-      {name: "Turchian", base: 16, odd: 0.2, sort: i => n(i) / td(i, 13), shield: "round"},
+      {name: "Shwazen", base: 0, odd: 0.7, sort: i => n(i) / td(i, 10) / bd(i, [6, 8]), shield: "hessen", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Angshire", base: 1, odd: 1, sort: i => n(i) / td(i, 10) / sf(i), shield: "heater", charges: "Limited", lines: "All", tinctures: "All"},
+      {name: "Luari", base: 2, odd: 0.6, sort: i => n(i) / td(i, 12) / bd(i, [6, 8]), shield: "oldFrench", charges: "Limited", lines: "All", tinctures: "All"},
+      {name: "Tallian", base: 3, odd: 0.6, sort: i => n(i) / td(i, 15), shield: "horsehead2", charges: "Limited", lines: "All", tinctures: "All"},
+      {name: "Astellian", base: 4, odd: 0.6, sort: i => n(i) / td(i, 16), shield: "spanish", charges: "Limited", lines: "All", tinctures: "All"},
+      {name: "Slovan", base: 5, odd: 0.7, sort: i => (n(i) / td(i, 6)) * t[i], shield: "round", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Norse", base: 6, odd: 0.7, sort: i => n(i) / td(i, 5), shield: "heater", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Elladan", base: 7, odd: 0.7, sort: i => (n(i) / td(i, 18)) * h[i], shield: "boeotian", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Romian", base: 8, odd: 0.7, sort: i => n(i) / td(i, 15), shield: "roman", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Soumi", base: 9, odd: 0.3, sort: i => (n(i) / td(i, 5) / bd(i, [9])) * t[i], shield: "pavise", charges: "Limited", lines: "All", tinctures: "All"},
+      {name: "Koryo", base: 10, odd: 0.1, sort: i => n(i) / td(i, 12) / t[i], shield: "round", charges: "Limited", lines: "All", tinctures: "All"},
+      {name: "Hantzu", base: 11, odd: 0.1, sort: i => n(i) / td(i, 13), shield: "banner", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Yamoto", base: 12, odd: 0.1, sort: i => n(i) / td(i, 15) / t[i], shield: "round", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Portuzian", base: 13, odd: 0.4, sort: i => n(i) / td(i, 17) / sf(i), shield: "spanish", charges: "Limited", lines: "All", tinctures: "All"},
+      {name: "Nawatli", base: 14, odd: 0.1, sort: i => h[i] / td(i, 18) / bd(i, [7]), shield: "square", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Vengrian", base: 15, odd: 0.2, sort: i => (n(i) / td(i, 11) / bd(i, [4])) * t[i], shield: "wedged", charges: "Limited", lines: "All", tinctures: "All"},
+      {name: "Turchian", base: 16, odd: 0.2, sort: i => n(i) / td(i, 13), shield: "round", charges: "Limited", lines: "All", tinctures: "NoPatterns"},
       {
         name: "Berberan",
         base: 17,
         odd: 0.1,
         sort: i => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],
-        shield: "round"
+        shield: "round", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"
       },
-      {name: "Eurabic", base: 18, odd: 0.2, sort: i => (n(i) / td(i, 26) / bd(i, [1, 2], 7)) * t[i], shield: "round"},
-      {name: "Inuk", base: 19, odd: 0.05, sort: i => td(i, -1) / bd(i, [10, 11]) / sf(i), shield: "square"},
-      {name: "Euskati", base: 20, odd: 0.05, sort: i => (n(i) / td(i, 15)) * h[i], shield: "spanish"},
-      {name: "Yoruba", base: 21, odd: 0.05, sort: i => n(i) / td(i, 15) / bd(i, [5, 7]), shield: "vesicaPiscis"},
+      {name: "Eurabic", base: 18, odd: 0.2, sort: i => (n(i) / td(i, 26) / bd(i, [1, 2], 7)) * t[i], shield: "round", charges: "Shapes", lines: "All", tinctures: "All"},
+      {name: "Inuk", base: 19, odd: 0.05, sort: i => td(i, -1) / bd(i, [10, 11]) / sf(i), shield: "square", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Euskati", base: 20, odd: 0.05, sort: i => (n(i) / td(i, 15)) * h[i], shield: "spanish", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Yoruba", base: 21, odd: 0.05, sort: i => n(i) / td(i, 15) / bd(i, [5, 7]), shield: "vesicaPiscis", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
       {
         name: "Keltan",
         base: 22,
         odd: 0.05,
         sort: i => (n(i) / td(i, 11) / bd(i, [6, 8])) * t[i],
-        shield: "vesicaPiscis"
+        shield: "vesicaPiscis", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"
       },
-      {name: "Efratic", base: 23, odd: 0.05, sort: i => (n(i) / td(i, 22)) * t[i], shield: "diamond"},
-      {name: "Tehrani", base: 24, odd: 0.1, sort: i => (n(i) / td(i, 18)) * h[i], shield: "round"},
-      {name: "Maui", base: 25, odd: 0.05, sort: i => n(i) / td(i, 24) / sf(i) / t[i], shield: "round"},
-      {name: "Carnatic", base: 26, odd: 0.05, sort: i => n(i) / td(i, 26), shield: "round"},
-      {name: "Inqan", base: 27, odd: 0.05, sort: i => h[i] / td(i, 13), shield: "square"},
-      {name: "Kiswaili", base: 28, odd: 0.1, sort: i => n(i) / td(i, 29) / bd(i, [1, 3, 5, 7]), shield: "vesicaPiscis"},
-      {name: "Vietic", base: 29, odd: 0.1, sort: i => n(i) / td(i, 25) / bd(i, [7], 7) / t[i], shield: "banner"},
-      {name: "Guantzu", base: 30, odd: 0.1, sort: i => n(i) / td(i, 17), shield: "banner"},
-      {name: "Ulus", base: 31, odd: 0.1, sort: i => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i], shield: "banner"},
-      {name: "Hebrew", base: 42, odd: 0.2, sort: i => (n(i) / td(i, 18)) * sf(i), shield: "oval"} // Levantine
+      {name: "Efratic", base: 23, odd: 0.05, sort: i => (n(i) / td(i, 22)) * t[i], shield: "diamond", charges: "Shapes", lines: "All", tinctures: "NoPatterns"},
+      {name: "Tehrani", base: 24, odd: 0.1, sort: i => (n(i) / td(i, 18)) * h[i], shield: "round", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Maui", base: 25, odd: 0.05, sort: i => n(i) / td(i, 24) / sf(i) / t[i], shield: "round", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Carnatic", base: 26, odd: 0.05, sort: i => n(i) / td(i, 26), shield: "round", charges: "Limited", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Inqan", base: 27, odd: 0.05, sort: i => h[i] / td(i, 13), shield: "square", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Kiswaili", base: 28, odd: 0.1, sort: i => n(i) / td(i, 29) / bd(i, [1, 3, 5, 7]), shield: "vesicaPiscis", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Vietic", base: 29, odd: 0.1, sort: i => n(i) / td(i, 25) / bd(i, [7], 7) / t[i], shield: "banner", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Guantzu", base: 30, odd: 0.1, sort: i => n(i) / td(i, 17), shield: "banner", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Ulus", base: 31, odd: 0.1, sort: i => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i], shield: "banner", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"},
+      {name: "Hebrew", base: 42, odd: 0.2, sort: i => (n(i) / td(i, 18)) * sf(i), shield: "oval", charges: "Shapes", lines: "Limited", tinctures: "NoPatterns"} // Levantine
     ];
   };
 
