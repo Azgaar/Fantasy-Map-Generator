@@ -147,7 +147,7 @@ function addBurg(point) {
   const type = BurgsAndStates.getType(cell, false);
 
   // generate emblem
-  const coa = COA.generate(pack.states[state].coa, 0.25, null, type);
+    const coa = COA.generate(pack.states[state].coa, 0.25, null, type, pack.cultures, culture);
   coa.shield = COA.getShield(culture, state);
   COArenderer.add("burg", i, coa, x, y);
 
@@ -1176,13 +1176,13 @@ function refreshAllEditors() {
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/states-editor.js?v=1.92.00");
+  const Editor = await import("../dynamic/editors/states-editor.js?v=1.94.00");
   Editor.open();
 }
 
 async function editCultures() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.91.00");
+  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.94.00");
   Editor.open();
 }
 

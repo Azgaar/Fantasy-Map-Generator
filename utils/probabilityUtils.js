@@ -48,6 +48,19 @@ function rw(object) {
   return array[Math.floor(Math.random() * array.length)];
 }
 
+// return random value from weighted array {"key1":weight1, "key2":weight2}, removing excluded keys
+function rwx(object, exclude) {
+  const array = [];
+  for (const key in object) {
+    if (!exclude.includes(key)) {
+      for (let i = 0; i < object[key]; i++) {
+          array.push(key);
+      }
+    }
+  }
+  return array[Math.floor(Math.random() * array.length)];
+}
+
 // return a random integer from min to max biased towards one end based on exponent distribution (the bigger ex the higher bias towards min)
 function biased(min, max, ex) {
   return Math.round(min + (max - min) * Math.pow(Math.random(), ex));

@@ -719,4 +719,15 @@ export function resolveVersionConflicts(version) {
       }
     }
   }
+  if (version < 1.94) {
+    // v1.94 adds several emblem adjustment attributes to cultures
+    console.log('##### 1.94 culture update #####');
+    pack.cultures.forEach(culture => {
+      console.log(culture);
+      if (culture.removed) return;
+      culture.charges = "All";
+      culture.lines = "All";
+      culture.tinctures = "All";
+    });
+  }
 }

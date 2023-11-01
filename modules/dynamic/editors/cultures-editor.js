@@ -1,7 +1,10 @@
 const $body = insertEditorHtml();
 addListeners();
 
+const chargesTypes = ["All", "Limited", "Nature", "Things", "Nature&Things", "Shapes", "None"];
 const cultureTypes = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
+const linesTypes = ["All", "Limited", "Straight", "None"];
+const tinctureTypes = ["All", "NoPatterns", "NoStains"];
 
 export function open() {
   closeDialogs("#culturesEditor, .stable");
@@ -21,10 +24,10 @@ export function open() {
   });
   $body.focus();
 }
-
 function insertEditorHtml() {
   const editorHtml = /* html */ `<div id="culturesEditor" class="dialog stable">
-    <div id="culturesHeader" class="header" style="grid-template-columns: 10em 7em 9em 4em 8em 5em 7em 8em">
+    <div id="culturesHeader" class="header" style="grid-template-columns: 10em 7em 9em 3em 8em 5em 7em 7em 6em 6em 6em
+1em 1em 1em">
       <div data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="name">Culture&nbsp;</div>
       <div data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
       <div data-tip="Click to sort by culture namesbase" class="sortable" data-sortby="base">Namesbase&nbsp;</div>
@@ -33,6 +36,11 @@ function insertEditorHtml() {
       <div data-tip="Click to sort by culture area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
       <div data-tip="Click to sort by culture population" class="sortable hide icon-sort-number-down" data-sortby="population">Population&nbsp;</div>
       <div data-tip="Click to sort by culture emblems shape" class="sortable alphabetically hide" data-sortby="emblems">Emblems&nbsp;</div>
+      <div data-tip="Click to sort by charge options" class="sortable alphabetically hide" data-sortby="charges">Charges&nbsp;</div>
+      <div data-tip="Click to sort by line options" class="sortable alphabetically hide" data-sortby="lines">Lines&nbsp;</div>
+      <div data-tip="Click to sort by tincture options" class="sortable alphabetically hide" data-sortby="tinctures">Tinctures&nbsp;</div>
+      <div data-tip="" class="hide">&nbsp;</div>
+      <div data-tip="" class="hide">&nbsp;</div>
     </div>
     <div id="culturesBody" class="table" data-type="absolute"></div>
 
@@ -42,7 +50,6 @@ function insertEditorHtml() {
       <div data-tip="Total land area" style="margin-left: 12px">Land Area:&nbsp;<span id="culturesFooterArea">0</span></div>
       <div data-tip="Total population" style="margin-left: 12px">Population:&nbsp;<span id="culturesFooterPopulation">0</span></div>
     </div>
-
     <div id="culturesBottom">
       <button id="culturesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
       <button id="culturesEditStyle" data-tip="Edit cultures style in Style Editor" class="icon-adjust"></button>
@@ -165,8 +172,13 @@ function culturesEditorAddLines() {
           data-type=""
           data-expansionism=""
           data-emblems="${c.shield}"
+          data-charges="${c.charges}"
+          data-lines="${c.lines}"
+          data-tinctures="${c.tinctures}"
+          data-lock=""
+          data-delete=""
         >
-          <svg width="11" height="11" class="placeholder"></svg>
+          <fill-box fill="#ffffff" width="11" height="11" style="visibility: hidden"></fill-box>
           <input data-tip="Neutral culture name. Click and type to change" class="cultureName italic" style="width: 7em"
             value="${c.name}" autocorrect="off" spellcheck="false" />
           <span class="icon-cw placeholder"></span>
@@ -175,15 +187,20 @@ function culturesEditorAddLines() {
           <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names"
             class="cultureBase">${getBaseOptions(c.base)}</select>
           <span data-tip="Cells count" class="icon-check-empty hide"></span>
-          <div data-tip="Cells count" class="cultureCells hide" style="width: 4em">${c.cells}</div>
+          <div data-tip="Cells count" class="cultureCells hide" style="width: 3em">${c.cells}</div>
           <span class="icon-resize-full placeholder hide"></span>
-          <input class="cultureExpan placeholder hide" type="number" />
+          <input class="cultureExpan placeholder hide" type="number" style="width: 5em;"/>
           <span data-tip="Culture area" style="padding-right: 4px" class="icon-map-o hide"></span>
           <div data-tip="Culture area" class="cultureArea hide" style="width: 6em">${si(area)} ${unit}</div>
           <span data-tip="${populationTip}" class="icon-male hide"></span>
           <div data-tip="${populationTip}" class="culturePopulation hide pointer"
             style="width: 4em">${si(population)}</div>
-          ${getShapeOptions(selectShape, c.shield)}
+          <select data-tip="Emblem shape associated with culture. Click to change" class="cultureEmblems hide" style="width: 7em">${getShapeOptions(selectShape, c.shield)}</select>
+          <select class="chargesType placeholder" style="width: 6em">${getChargesOptions(c.charges)}</select>
+          <select class="linesType placeholder" style="width: 6em">${getLinesOptions(c.lines)}</select>
+          <select class="tincturesType placeholder" style="width: 6em">${getTincturesOptions(c.tinctures)}</select>
+          <span class="cultureLock placeholder">>&nbsp;</span>
+          <span class="cultureDelete placeholder">>&nbsp;</span>
         </div>`;
       continue;
     }
@@ -200,8 +217,13 @@ function culturesEditorAddLines() {
         data-type="${c.type}"
         data-expansionism="${c.expansionism}"
         data-emblems="${c.shield}"
+        data-charges="${c.charges}"
+        data-lines="${c.lines}"
+        data-tinctures="${c.tinctures}"
+        data-lock=""
+        data-delete=""
       >
-        <fill-box fill="${c.color}"></fill-box>
+        <fill-box fill="${c.color}" width="11" height="11"></fill-box>
         <input data-tip="Culture name. Click and type to change" class="cultureName" style="width: 7em"
           value="${c.name}" autocorrect="off" spellcheck="false" />
         <span data-tip="Regenerate culture name" class="icon-cw hiddenIcon" style="visibility: hidden"></span>
@@ -212,7 +234,6 @@ function culturesEditorAddLines() {
           class="cultureBase">${getBaseOptions(c.base)}</select>
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
         <div data-tip="Cells count" class="cultureCells hide" style="width: 4em">${c.cells}</div>
-        <span data-tip="Culture expansionism. Defines competitive size" class="icon-resize-full hide"></span>
         <input
           data-tip="Culture expansionism. Defines competitive size. Click to change, then click Recalculate to apply change"
           class="cultureExpan hide"
@@ -220,14 +241,23 @@ function culturesEditorAddLines() {
           min="0"
           max="99"
           step=".1"
-          value=${c.expansionism}
+          value="${c.expansionism}"
+          style="width: 5em;"
         />
         <span data-tip="Culture area" style="padding-right: 4px" class="icon-map-o hide"></span>
         <div data-tip="Culture area" class="cultureArea hide" style="width: 6em">${si(area)} ${unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="culturePopulation hide pointer"
           style="width: 4em">${si(population)}</div>
-        ${getShapeOptions(selectShape, c.shield)}
+        <select data-tip="Emblem shape associated with culture. Click to change" class="cultureEmblems" style="width: 6em">${getShapeOptions(selectShape, c.shield)}</select>
+        <select data-tip="Emblem charge options. Determines which charges can appear on an emblem. Click to change"
+          class="chargesType" style="width: 6em">${getChargesOptions(c.charges)}</select>
+        <select
+          data-tip="Emblem line options. Determines which types of lines can appear on an emblem. Click to change"
+          class="linesType" style="width: 6em">${getLinesOptions(c.lines)}</select>
+        <select
+          data-tip="Emblem tincture options. Determines which types of tinctures can appear on an emblem. Click to change"
+          class="tincturesType" style="width: 6em">${getTincturesOptions(c.tinctures)}</select>
         <span data-tip="Lock culture" class="icon-lock${c.lock ? "" : "-open"} hide"></span>
         <span data-tip="Remove culture" class="icon-trash-empty hide"></span>
       </div>`;
@@ -255,6 +285,9 @@ function culturesEditorAddLines() {
   $body.querySelectorAll("div > select.cultureType").forEach($el => $el.on("change", cultureChangeType));
   $body.querySelectorAll("div > select.cultureBase").forEach($el => $el.on("change", cultureChangeBase));
   $body.querySelectorAll("div > select.cultureEmblems").forEach($el => $el.on("change", cultureChangeEmblemsShape));
+  $body.querySelectorAll("div > select.chargesType").forEach($el => $el.on("change", cultureChangeEmblemsCharges));
+  $body.querySelectorAll("div > select.linesType").forEach($el => $el.on("change", cultureChangeEmblemsLines));
+  $body.querySelectorAll("div > select.tincturesType").forEach($el => $el.on("change", cultureChangeEmblemsTinctures));
   $body.querySelectorAll("div > div.culturePopulation").forEach($el => $el.on("click", changePopulation));
   $body.querySelectorAll("div > span.icon-arrows-cw").forEach($el => $el.on("click", cultureRegenerateBurgs));
   $body.querySelectorAll("div > span.icon-trash-empty").forEach($el => $el.on("click", cultureRemovePrompt));
@@ -263,6 +296,9 @@ function culturesEditorAddLines() {
 
   const $culturesHeader = byId("culturesHeader");
   $culturesHeader.querySelector("div[data-sortby='emblems']").style.display = selectShape ? "inline-block" : "none";
+  $culturesHeader.querySelector("div[data-sortby='lines']").style.display = "inline-block";
+  $culturesHeader.querySelector("div[data-sortby='charges']").style.display = "inline-block";
+  $culturesHeader.querySelector("div[data-sortby='tinctures']").style.display = "inline-block";
 
   if ($body.dataset.type === "percentage") {
     $body.dataset.type = "absolute";
@@ -272,9 +308,27 @@ function culturesEditorAddLines() {
   $("#culturesEditor").dialog({width: fitContent()});
 }
 
-function getTypeOptions(type) {
+function getChargesOptions(charges) {
   let options = "";
-  cultureTypes.forEach(t => (options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`));
+  chargesTypes.forEach(c => (options += `<option ${charges === c ? "selected" : ""} value="${c}">${c}</option>`));
+  return options;
+}
+
+function getLinesOptions(lines) {
+  let options = "";
+  linesTypes.forEach(l => (options += `<option ${lines === l ? "selected" : ""} value="${l}">${l}</option>`));
+  return options;
+}
+
+function getTincturesOptions(tinctures) {
+  let options = "";
+  tinctureTypes.forEach(t => (options += `<option ${tinctures === t ? "selected" : ""} value="${t}">${t}</option>`));
+  return options;
+}
+
+function getTypeOptions(types) {
+  let options = "";
+  cultureTypes.forEach(t => (options += `<option ${types === t ? "selected" : ""} value="${t}">${t}</option>`));
   return options;
 }
 
@@ -293,7 +347,7 @@ function getShapeOptions(selectShape, selected) {
   const options = shapes.map(
     shape => `<option ${shape === selected ? "selected" : ""} value="${shape}">${capitalize(shape)}</option>`
   );
-  return `<select data-tip="Emblem shape associated with culture. Click to change" class="cultureEmblems hide">${options}</select>`;
+    return options;
 }
 
 const cultureHighlightOn = debounce(event => {
@@ -427,6 +481,24 @@ function cultureChangeEmblemsShape() {
     burg.coa.shield = shape;
     rerenderCOA("burgCOA" + burg.i, burg.coa);
   });
+}
+
+function cultureChangeEmblemsCharges() {
+  const culture = +this.parentNode.dataset.id;
+  const charges = this.value;
+  this.parentNode.dataset.charges = pack.cultures[culture].charges = charges;
+}
+
+function cultureChangeEmblemsLines() {
+  const culture = +this.parentNode.dataset.id;
+  const lines = this.value;
+  this.parentNode.dataset.lines = pack.cultures[culture].lines = lines;
+}
+
+function cultureChangeEmblemsTinctures() {
+  const culture = +this.parentNode.dataset.id;
+  const tinctures = this.value;
+  this.parentNode.dataset.tinctures = pack.cultures[culture].tinctures = tinctures;
 }
 
 function changePopulation() {

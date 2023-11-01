@@ -1017,7 +1017,7 @@ function editProvinces() {
     const kinship = burg ? 0.8 : 0.4;
     const parent = burg ? pack.burgs[burg].coa : pack.states[state].coa;
     const type = BurgsAndStates.getType(center, parent.port);
-    const coa = COA.generate(parent, kinship, P(0.1), type);
+    const coa = COA.generate(parent, kinship, P(0.1), type, pack.cultures, c);
     coa.shield = COA.getShield(c, state);
     COArenderer.add("province", province, coa, point[0], point[1]);
 

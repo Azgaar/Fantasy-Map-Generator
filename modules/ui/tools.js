@@ -308,7 +308,7 @@ function recreateStates() {
     const expansionism = rn(Math.random() * powerInput.value + 1, 1);
 
     const cultureType = pack.cultures[culture].type;
-    const coa = COA.generate(capital.coa, 0.3, null, cultureType);
+    const coa = COA.generate(capital.coa, 0.3, null, cultureType, pack.cultures, culture);
     coa.shield = capital.coa.shield;
 
     newStates.push({i, name, type, capital: capital.i, center: capital.cell, culture, expansionism, coa});
@@ -430,7 +430,7 @@ function regenerateEmblems() {
   pack.states.forEach(state => {
     if (!state.i || state.removed) return;
     const cultureType = pack.cultures[state.culture].type;
-    state.coa = COA.generate(null, null, null, cultureType);
+    state.coa = COA.generate(null, null, null, cultureType, pack.cultures, state.culture);
     state.coa.shield = COA.getShield(state.culture, null);
   });
 
@@ -442,7 +442,7 @@ function regenerateEmblems() {
     if (burg.capital) kinship += 0.1;
     else if (burg.port) kinship -= 0.1;
     if (state && burg.culture !== state.culture) kinship -= 0.25;
-    burg.coa = COA.generate(state ? state.coa : null, kinship, null, burg.type);
+    burg.coa = COA.generate(state ? state.coa : null, kinship, null, burg.type, pack.cultures, burg.culture);
     burg.coa.shield = COA.getShield(burg.culture, state ? burg.state : 0);
   });
 
@@ -464,7 +464,7 @@ function regenerateEmblems() {
     const kinship = dominion ? 0 : nameByBurg ? 0.8 : 0.4;
     const culture = pack.cells.culture[province.center];
     const type = BurgsAndStates.getType(province.center, parent.port);
-    province.coa = COA.generate(parent.coa, kinship, dominion, type);
+    province.coa = COA.generate(parent.coa, kinship, dominion, type, pack.cultures, culture);
     province.coa.shield = COA.getShield(culture, province.state);
   });
 

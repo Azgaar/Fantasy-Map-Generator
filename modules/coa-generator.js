@@ -933,6 +933,70 @@ window.COA = (function () {
       ornaments: 0, // 9 charges
       uploaded: 0
     },
+    typesNature: {
+      simpleShapes: 1,
+      beasts: 7,
+      beastHeads: 3,
+      birds: 3,
+      reptiles: 2,
+      bugs: 2,
+      fishes: 1,
+      molluscs: 1,
+      plants: 3,
+      fantastic: 5,
+      inescutcheon: 1
+    },
+    typesNatureAndThings: {
+      simpleShapes: 2,
+      beasts: 7,
+      beastHeads: 3,
+      birds: 3,
+      reptiles: 2,
+      bugs: 2,
+      fishes: 1,
+      molluscs: 1,
+      plants: 3,
+      fantastic: 5,
+      agriculture: 2,
+      arms: 5,
+      architecture: 3,
+      seafaring: 3,
+      tools: 3,
+      miscellaneous: 5,
+      inescutcheon: 1
+    },
+    typesThings: {
+      simpleShapes: 3,
+      agriculture: 2,
+      arms: 8,
+      architecture: 3,
+      seafaring: 3,
+      tools: 5,
+      miscellaneous: 5,
+      inescutcheon: 1
+    },
+    typesLimited: {
+      conventional: 33,
+      beasts: 7,
+      beastHeads: 3,
+      birds: 3,
+      reptiles: 2,
+      bugs: 2,
+      fishes: 1,
+      molluscs: 1,
+      plants: 3,
+      fantastic: 5,
+      agriculture: 2,
+      arms: 5,
+      architecture: 3,
+      seafaring: 3,
+      tools: 3,
+      miscellaneous: 5,
+      inescutcheon: 3
+    },
+    typesShapes: {
+      simpleShapes: 1
+    },
     single: {
       conventional: 10,
       crosses: 8,
@@ -959,14 +1023,103 @@ window.COA = (function () {
       conventional: 4,
       crosses: 1
     },
+    singleNature: {
+      simpleShapes: 1,
+      beasts: 7,
+      beastHeads: 3,
+      birds: 3,
+      reptiles: 2,
+      bugs: 2,
+      fishes: 1,
+      molluscs: 1,
+      plants: 3,
+      fantastic: 5,
+      inescutcheon: 1
+    },
+    singleNatureAndThings: {
+      simpleShapes: 2,
+      beasts: 7,
+      beastHeads: 3,
+      birds: 3,
+      reptiles: 2,
+      bugs: 2,
+      fishes: 1,
+      molluscs: 1,
+      plants: 3,
+      fantastic: 5,
+      agriculture: 2,
+      arms: 5,
+      architecture: 3,
+      seafaring: 3,
+      tools: 3,
+      miscellaneous: 5,
+      inescutcheon: 1
+    },
+    singleThings: {
+      simpleShapes: 3,
+      agriculture: 2,
+      arms: 5,
+      architecture: 3,
+      seafaring: 3,
+      tools: 3,
+      miscellaneous: 5,
+      inescutcheon: 1
+    },
+    singleLimited: {
+      conventional: 12,
+      beasts: 7,
+      beastHeads: 3,
+      birds: 3,
+      reptiles: 2,
+      bugs: 2,
+      fishes: 1,
+      molluscs: 1,
+      plants: 3,
+      fantastic: 5,
+      agriculture: 2,
+      arms: 5,
+      architecture: 3,
+      seafaring: 3,
+      tools: 3,
+      miscellaneous: 5,
+      inescutcheon: 1
+    },
+    singleShapes: {
+      simpleShapes: 1
+    },
+    semy: {conventional: 4, crosses: 1},
+    semyLimited: {conventional: 1},
+    semyShapes: {simpleShapes: 1},
+    simpleShapes: {
+      lozenge: 2,
+      fusil: 8,
+      mascle: 5,
+      rustre: 3,
+      lozengePloye: 1,
+      roundel: 10,
+      annulet: 7,
+      mullet: 4,
+      mulletPierced: 1,
+      mullet4: 5,
+      mullet6: 4,
+      mullet6Pierced: 1,
+      mullet7: 1,
+      mullet8: 5,
+      billet: 1,
+      delf: 8,
+      triangle: 8,
+      trianglePierced: 4,
+      carreau: 1,
+      spiral: 1
+    },
     conventional: {
       annulet: 4,
-      billet: 5,
+      billet: 3,
       carreau: 1,
       comet: 1,
       compassRose: 1,
       crescent: 5,
-      delf: 0,
+      delf: 3,
       estoile: 1,
       fleurDeLis: 6,
       fountain: 1,
@@ -1381,7 +1534,267 @@ window.COA = (function () {
       ribbon7: 1,
       ribbon8: 1
     },
-    data: chargeData
+    data: chargeData,
+    excludeNoCharges: [
+    ],
+    excludeUnusualCharges: [
+      "roundel2",
+      "mulletFaceted",
+      "mullet6Faceted",
+      "compassRose",
+      "heart",
+      "trefle",
+      "pique",
+      "fleurDeLis",
+      "sunInSplendour",
+      "sunInSplendour2",
+      "moonInCrescent",
+      "fountain",
+      "agnusDei",
+      "crown2",
+      "mitre",
+      "orb",
+      "fasces",
+      "cannon",
+      "centaur",
+      "sagittarius"
+    ],
+    excludeThingCharges: [
+      "garb",
+      "millstone",
+      "plough",
+      "ploughshare",
+      "rake",
+      "scythe",
+      "scythe2",
+      "sickle",
+      "arbalest",
+      "arbalest2",
+      "arrow",
+      "arrowsSheaf",
+      "axe",
+      "bow",
+      "bowWithArrow",
+      "bowWithThreeArrows",
+      "cannon",
+      "falchion",
+      "flamberge",
+      "flangedMace",
+      "gauntlet",
+      "grenade",
+      "hatchet",
+      "helmet",
+      "helmetCorinthian",
+      "helmetGreat",
+      "helmetZischagge",
+      "lanceHead",
+      "lanceWithBanner",
+      "lochaberAxe",
+      "mace",
+      "maces",
+      "mallet",
+      "rapier",
+      "sabre",
+      "sabre2",
+      "sabresCrossed",
+      "shield",
+      "spear",
+      "sword",
+      "bridge",
+      "bridge2",
+      "castle",
+      "castle2",
+      "column",
+      "lighthouse",
+      "palace",
+      "pillar",
+      "portcullis",
+      "tower",
+      "windmill",
+      "anchor",
+      "armillarySphere",
+      "boat",
+      "boat2",
+      "caravel",
+      "drakkar",
+      "lymphad",
+      "raft",
+      "shipWheel",
+      "anvil",
+      "drawingCompass",
+      "fan",
+      "hook",
+      "ladder",
+      "ladder2",
+      "pincers",
+      "saw",
+      "scale",
+      "scaleImbalanced",
+      "scalesHanging",
+      "scissors",
+      "scissors2",
+      "shears",
+      "trowel",
+      "attire",
+      "banner",
+      "bell",
+      "bookClosed",
+      "bookClosed2",
+      "bookOpen",
+      "bucket",
+      "buckle",
+      "bugleHorn",
+      "bugleHorn2",
+      "chain",
+      "chalice",
+      "cowHorns",
+      "crosier",
+      "crown",
+      "crown2",
+      "drum",
+      "fasces",
+      "feather",
+      "harp",
+      "horseshoe",
+      "hourglass",
+      "key",
+      "laurelWreath",
+      "laurelWreath2",
+      "log",
+      "lute",
+      "lyre",
+      "mitre",
+      "orb",
+      "pot",
+      "ramsHorn",
+      "sceptre",
+      "scrollClosed",
+      "snowflake",
+      "stagsAttires",
+      "stirrup",
+      "wheel",
+      "wing",
+      "wingSword"
+    ],
+    excludeNatureCharges: [
+      "agnusDei",
+      "badgerStatant",
+      "bearPassant",
+      "bearRampant",
+      "boarRampant",
+      "bullPassant",
+      "camel",
+      "catPassantGuardant",
+      "cowStatant",
+      "dolphin",
+      "elephant",
+      "goat",
+      "greyhoundCourant",
+      "greyhoundRampant",
+      "greyhoundSejant",
+      "hedgehog",
+      "hindStatant",
+      "horsePassant",
+      "horseRampant",
+      "horseSalient",
+      "lamb",
+      "lambPassantReguardant",
+      "lionPassant",
+      "lionPassantGuardant",
+      "lionRampant",
+      "lionSejant",
+      "martenCourant",
+      "mastiffStatant",
+      "porcupine",
+      "rabbitSejant",
+      "ramPassant",
+      "ratRampant",
+      "rhinoceros",
+      "squirrel",
+      "stagLodgedRegardant",
+      "stagPassant",
+      "talbotPassant",
+      "talbotSejant",
+      "wolfPassant",
+      "wolfRampant",
+      "wolfStatant",
+      "boarHeadErased",
+      "bullHeadCaboshed",
+      "deerHeadCaboshed",
+      "donkeyHeadCaboshed",
+      "elephantHeadErased",
+      "horseHeadCouped",
+      "lionHeadCaboshed",
+      "lionHeadErased",
+      "ramHeadErased",
+      "wolfHeadErased",
+      "cock",
+      "dove",
+      "doveDisplayed",
+      "duck",
+      "eagle",
+      "falcon",
+      "heron",
+      "owl",
+      "owlDisplayed",
+      "parrot",
+      "peacock",
+      "peacockInPride",
+      "raven",
+      "swallow",
+      "swan",
+      "swanErased",
+      "crocodile",
+      "frog",
+      "lizard",
+      "ouroboros",
+      "snake",
+      "bee",
+      "butterfly",
+      "cancer",
+      "dragonfly",
+      "fly",
+      "ladybird",
+      "scorpion",
+      "wasp",
+      "pike",
+      "plaice",
+      "salmon",
+      "escallop",
+      "snail",
+      "apple",
+      "cinquefoil",
+      "earOfWheat",
+      "grapeBunch",
+      "grapeBunch2",
+      "mapleLeaf",
+      "oak",
+      "palmTree",
+      "pear",
+      "pineCone",
+      "pineTree",
+      "quatrefoil",
+      "rose",
+      "sextifoil",
+      "thistle",
+      "tree",
+      "trefoil",
+      "wheatStalk",
+      "angel",
+      "basilisk",
+      "centaur",
+      "dragonPassant",
+      "dragonRampant",
+      "eagleTwoHeads",
+      "griffinPassant",
+      "griffinRampant",
+      "pegasus",
+      "sagittarius",
+      "serpent",
+      "unicornRampant",
+      "wyvern",
+      "wyvernWithWingsDisplayed",
+    ]
   };
 
   // charges specific to culture or burg type (FMG-only config, not coming from Armoria)
@@ -1640,6 +2053,66 @@ window.COA = (function () {
     firTrees: 1
   };
 
+  const excludeComplexLines = [
+    "engrailed",
+    "invecked",
+    "raguly",
+    "urdy",
+    "dentilly",
+    "bevilled",
+    "flechy",
+    "barby",
+    "enclavy",
+    "escartely",
+    "nowy",
+    "nowyReversed",
+    "embattledGhibellin",
+    "embattledNotched",
+    "embattledGrady",
+    "dovetailedIndented",
+    "dovetailed",
+    "potenty",
+    "potentyDexter",
+    "potentySinister",
+    "nebuly",
+    "firTrees"
+  ];
+
+  const excludeNonStraightLines = [
+    "wavy",
+    "engrailed",
+    "invecked",
+    "rayonne",
+    "embattled",
+    "raguly",
+    "urdy",
+    "dancetty",
+    "indented",
+    "dentilly",
+    "bevilled",
+    "angled",
+    "flechy",
+    "barby",
+    "enclavy",
+    "escartely",
+    "arched",
+    "archedReversed",
+    "nowy",
+    "nowyReversed",
+    "embattledGhibellin",
+    "embattledNotched",
+    "embattledGrady",
+    "dovetailedIndented",
+    "dovetailed",
+    "potenty",
+    "potentyDexter",
+    "potentySinister",
+    "nebuly",
+    "seaWaves",
+    "dragonTeeth",
+    "firTrees"
+  ];
+
   const divisions = {
     variants: {
       perPale: 5,
@@ -1854,21 +2327,112 @@ window.COA = (function () {
     middleEarth: {noldor: 1, gondor: 1, easterling: 1, erebor: 1, ironHills: 1, urukHai: 1, moriaOrc: 1}
   };
 
-  const generate = function (parent, kinship, dominion, type) {
+  const getCharges = function (cultures, culture) {
+    if (cultures[culture].charges) return cultures[culture].charges;
+    ERROR && console.error("Shield charges option is not defined on culture level", cultures[culture]);
+    return "Limited";
+  };
+
+  const getLines = function (cultures, culture) {
+    if (cultures[culture].lines) return cultures[culture].lines;
+    ERROR && console.error("Shield lines option is not defined on culture level", cultures[culture]);
+    return "Straight";
+  };
+
+  const getTinctures = function (cultures, culture) {
+    if (cultures[culture].tinctures) return cultures[culture].tinctures;
+    ERROR && console.error("Shield tinctures option is not defined on culture level", cultures[culture]);
+    return "TinctureOnly";
+  };
+
+  const generate = function (parent, kinship, dominion, type, cultures, culture) {
     if (!parent || parent.custom) {
       parent = null;
       kinship = 0;
       dominion = 0;
     }
 
+    const chargesSetting = getCharges(cultures, culture);
+    const linesSetting = getLines(cultures, culture);
+    const tincturesSetting = getTinctures(cultures, culture);
+
+    let chargesTypesSet = charges.types;
+    let chargesSingleSet = charges.single;
+    let chargesSemySet = charges.semy;
+
+    let excludeChargesSet = charges.excludeNoCharges;
+    let excludeCultureChargesSet = charges.excludeNoCharges;
+    let excludeLinesSet = [];
+    let excludeTincturesSet = [];
+
+    let allowCharges = true;
+    let allowOrdinaries = true;
+    let allowTypeMapping = true;
+
+    if (chargesSetting === "Shapes") {
+      chargesTypesSet = charges.typesShapes;
+      chargesSingleSet = charges.singleShapes;
+      chargesSemySet = charges.semyShapes;
+      excludeChargesSet = charges.excludeUnusualCharges;
+      allowTypeMapping = false;
+    } else if (chargesSetting === "Limited") {
+      chargesTypesSet = charges.typesLimited;
+      chargesSingleSet = charges.singleLimited;
+      chargesSemySet = charges.semyLimited;
+      excludeChargesSet = charges.excludeUnusualCharges;
+      excludeCultureChargesSet = charges.excludeUnusualCharges;
+    } else if (chargesSetting === "Nature") {
+      chargesTypesSet = charges.typesNature;
+      chargesSingleSet = charges.singleNature;
+      chargesSemySet = null;
+      excludeChargesSet = charges.excludeUnusualCharges;
+      excludeCultureChargesSet = charges.excludeThingCharges;
+    } else if (chargesSetting === "Nature&Things") {
+      chargesTypesSet = charges.typesLimited;
+      chargesSingleSet = charges.singleLimited;
+      chargesSemySet = charges.semyShapes;
+      excludeChargesSet = charges.excludeUnusualCharges;
+    } else if (chargesSetting === "Things") {
+      chargesTypesSet = charges.typesThings;
+      chargesSingleSet = charges.singleThings;
+      chargesSemySet = charges.semyShapes;
+      excludeChargesSet = charges.excludeUnusualCharges;
+      excludeCultureChargesSet = charges.excludeNatureCharges;
+    } else if (chargesSetting === "None") {
+      let allowCharges = false;
+      chargesTypesSet = charges.typesShapes;
+      chargesSingleSet = charges.singleShapes;
+      chargesSemySet = charges.semyShapes;
+      excludeChargesSet = charges.excludeUnusualCharges;
+      allowTypeMapping = false;
+    }
+
+    if (linesSetting === "Limited") {
+      excludeLinesSet = excludeComplexLines;
+    } else if (linesSetting === "Straight") {
+      excludeLinesSet = excludeNonStraightLines;
+    } else if (linesSetting === "None") {
+      // This option disables oridinaries
+      allowOrdinaries = false;
+      excludeLinesSet = excludeNonStraightLines;
+    }
+
+    if (tincturesSetting === "NoPatterns") {
+      excludeTincturesSet = ['patterns']
+    } else if (tincturesSetting === "NoStains") {
+      excludeTincturesSet = ['patterns', 'stains']
+    }
+
     let usedPattern = null;
     let usedTinctures = [];
 
-    const t1 = P(kinship) ? parent.t1 : getTincture("field");
+    const t1 = P(kinship) ? parent.t1 : getTincture("field", excludeTincturesSet);
     if (t1.includes("-")) usedPattern = t1;
     const coa = {t1};
 
-    const addCharge = P(usedPattern ? 0.5 : 0.93); // 80% for charge
+    let addCharge = allowCharges && P(usedPattern ? 0.5 : 0.93) ? true : false;
+    // 80% for charge if not chargesSetting == "None"
+
     const linedOrdinary =
       (addCharge && P(0.3)) || P(0.5)
         ? parent?.ordinaries && P(kinship)
@@ -1876,8 +2440,9 @@ window.COA = (function () {
           : rw(ordinaries.lined)
         : null;
 
+
     const ordinary =
-      (!addCharge && P(0.65)) || P(0.3) ? (linedOrdinary ? linedOrdinary : rw(ordinaries.straight)) : null; // 36% for ordinary
+      allowOrdinaries && ((!addCharge && P(0.65)) || P(0.3)) ? (linedOrdinary ? linedOrdinary : rw(ordinaries.straight)) : null; // 36% for ordinary if allowOrdinaries is true
 
     const rareDivided = ["chief", "terrace", "chevron", "quarter", "flaunches"].includes(ordinary);
 
@@ -1898,15 +2463,16 @@ window.COA = (function () {
     })();
 
     if (division) {
-      const t = getTincture("division", usedTinctures, P(0.98) ? coa.t1 : null);
+      const t = getTincture("division", excludeTincturesSet, usedTinctures, P(0.98) ? coa.t1 : null);
       coa.division = {division, t};
       if (divisions[division])
-        coa.division.line = usedPattern || (ordinary && P(0.7)) ? "straight" : rw(divisions[division]);
+        coa.division.line = usedPattern || (ordinary && P(0.7))
+          ? "straight" : rwx(divisions[division], excludeLinesSet);
     }
 
     if (ordinary) {
-      coa.ordinaries = [{ordinary, t: getTincture("charge", usedTinctures, coa.t1)}];
-      if (linedOrdinary) coa.ordinaries[0].line = usedPattern || (division && P(0.7)) ? "straight" : rw(lines);
+      coa.ordinaries = [{ordinary, t: getTincture("charge", excludeTincturesSet, usedTinctures, coa.t1)}];
+	if (linedOrdinary) coa.ordinaries[0].line = usedPattern || (division && P(0.7)) ? "straight" : rw(lines, excludeLinesSet);
       if (division && !addCharge && !usedPattern && P(0.5) && ordinary !== "bordure" && ordinary !== "orle") {
         if (P(0.8)) coa.ordinaries[0].divided = "counter";
         // 40%
@@ -1919,8 +2485,9 @@ window.COA = (function () {
     if (addCharge) {
       const charge = (() => {
         if (parent?.charges && P(kinship - 0.1)) return parent.charges[0].charge;
-        if (type && type !== "Generic" && P(0.3)) return rw(typeMapping[type]);
-        return selectCharge(ordinary || divisioned ? charges.types : charges.single);
+        if (type && allowTypeMapping && type !== "Generic" && P(0.3))
+          return rwx(typeMapping[type], excludeCultureChargesSet);
+        return selectCharge(ordinary || divisioned ? chargesTypesSet : chargesSingleSet, chargesTypesSet, chargesSingleSet, excludeCultureChargesSet);
       })();
       const chargeData = charges.data[charge] || {};
 
@@ -1933,54 +2500,56 @@ window.COA = (function () {
       if (ordinaryData?.positionsOn && P(0.8)) {
         // place charge over ordinary (use tincture of field type)
         p = rw(ordinaryData.positionsOn);
-        t = !usedPattern && P(0.3) ? coa.t1 : getTincture("charge", [], tOrdinary);
+        t = !usedPattern && P(0.3) ? coa.t1 : getTincture("charge", excludeTincturesSet, [], tOrdinary);
       } else if (ordinaryData?.positionsOff && P(0.95)) {
         // place charge out of ordinary (use tincture of ordinary type)
         p = rw(ordinaryData.positionsOff);
-        t = !usedPattern && P(0.3) ? tOrdinary : getTincture("charge", usedTinctures, coa.t1);
+        t = !usedPattern && P(0.3) ? tOrdinary : getTincture("charge", excludeTincturesSet, usedTinctures, coa.t1);
       } else if (positions.divisions[division]) {
         // place charge in fields made by division
         p = rw(positions.divisions[division]);
-        t = getTincture("charge", tOrdinary ? usedTinctures.concat(tOrdinary) : usedTinctures, coa.t1);
+        t = getTincture("charge", excludeTincturesSet, tOrdinary ? usedTinctures.concat(tOrdinary) : usedTinctures, coa.t1);
       } else if (chargeData.positions) {
         // place charge-suitable position
         p = rw(chargeData.positions);
-        t = getTincture("charge", usedTinctures, coa.t1);
+        t = getTincture("charge", excludeTincturesSet, usedTinctures, coa.t1);
       } else {
         // place in standard position (use new tincture)
         p = usedPattern ? "e" : charges.conventional[charge] ? rw(positions.conventional) : rw(positions.complex);
-        t = getTincture("charge", usedTinctures.concat(tOrdinary), coa.t1);
+        t = getTincture("charge", excludeTincturesSet, usedTinctures.concat(tOrdinary), coa.t1);
       }
 
       if (chargeData.natural && chargeData.natural !== t && chargeData.natural !== tOrdinary) t = chargeData.natural;
 
       const item = {charge: charge, t, p};
       const colors = chargeData.colors || 1;
-      if (colors > 1) item.t2 = P(0.25) ? getTincture("charge", usedTinctures, coa.t1) : t;
-      if (colors > 2 && item.t2) item.t3 = P(0.5) ? getTincture("charge", usedTinctures, coa.t1) : t;
+      if (colors > 1) item.t2 = P(0.25) ? getTincture("charge", excludeTincturesSet, usedTinctures, coa.t1) : t;
+      if (colors > 2 && item.t2) item.t3 = P(0.5) ? getTincture("charge", excludeTincturesSet, usedTinctures, coa.t1) : t;
       coa.charges = [item];
 
       if (p === "ABCDEFGHIKL" && P(0.95)) {
         // add central charge if charge is in bordure
-        coa.charges[0].charge = rw(charges.conventional);
-        const charge = selectCharge(charges.single);
-        const t = getTincture("charge", usedTinctures, coa.t1);
+        coa.charges[0].charge = rwx(chargesSingleSet, excludeChargesSet);
+        const charge = selectCharge(chargesSingleSet, chargesTypesSet, chargesSingleSet, excludeChargesSet)
+;
+        const t = getTincture("charge", excludeTincturesSet, usedTinctures, coa.t1);
         coa.charges.push({charge, t, p: "e"});
       } else if (P(0.8) && charge === "inescutcheon") {
         // add charge to inescutcheon
-        const charge = selectCharge(charges.types);
-        const t2 = getTincture("charge", [], t);
+        const charge = selectCharge(chargesTypesSet, chargesTypesSet, chargesSingleSet, excludeChargesSet)
+;
+        const t2 = getTincture("charge", excludeTincturesSet, [], t);
         coa.charges.push({charge, t: t2, p, size: 0.5});
       } else if (division && !ordinary) {
         const allowCounter = !usedPattern && (!coa.line || coa.line === "straight");
-
         // dimidiation: second charge at division basic positons
         if (P(0.3) && ["perPale", "perFess"].includes(division) && coa.line === "straight") {
           coa.charges[0].divided = "field";
           if (P(0.95)) {
             const p2 = p === "e" || P(0.5) ? "e" : rw(positions.divisions[division]);
-            const charge = selectCharge(charges.single);
-            const t = getTincture("charge", usedTinctures, coa.division.t);
+            const charge = selectCharge(chargesSingleSet, chargesTypesSet, chargesSingleSet, excludeChargesSet)
+;
+            const t = getTincture("charge", excludeTincturesSet, usedTinctures, coa.division.t);
             coa.charges.push({charge, t, p: p2, divided: "division"});
           }
         } else if (allowCounter && P(0.4)) coa.charges[0].divided = "counter";
@@ -1997,22 +2566,26 @@ window.COA = (function () {
               : ["j", "o"]; // perBendSinister
           coa.charges[0].p = p1;
 
-          const charge = selectCharge(charges.single);
-          const t = getTincture("charge", usedTinctures, coa.division.t);
+          const charge = selectCharge(chargesSingleSet, chargesTypesSet, chargesSingleSet, excludeChargesSet)
+;
+          const t = getTincture("charge", excludeTincturesSet, usedTinctures, coa.division.t);
           coa.charges.push({charge, t, p: p2});
         } else if (["perCross", "perSaltire"].includes(division) && P(0.5)) {
           // place 4 charges in division standard positions
           const [p1, p2, p3, p4] = division === "perCross" ? ["j", "l", "m", "o"] : ["b", "d", "f", "h"];
           coa.charges[0].p = p1;
 
-          const c2 = selectCharge(charges.single);
-          const t2 = getTincture("charge", [], coa.division.t);
+          const c2 = selectCharge(chargesSingleSet, chargesTypesSet, chargesSingleSet, excludeChargesSet)
+;
+          const t2 = getTincture("charge", excludeTincturesSet, [], coa.division.t);
 
-          const c3 = selectCharge(charges.single);
-          const t3 = getTincture("charge", [], coa.division.t);
+          const c3 = selectCharge(chargesSingleSet, chargesTypesSet, chargesSingleSet, excludeChargesSet)
+;
+          const t3 = getTincture("charge", excludeTincturesSet, [], coa.division.t);
 
-          const c4 = selectCharge(charges.single);
-          const t4 = getTincture("charge", [], coa.t1);
+          const c4 = selectCharge(chargesSingleSet, chargesTypesSet, chargesSingleSet, excludeChargesSet)
+;
+          const t4 = getTincture("charge", excludeTincturesSet, [], coa.t1);
           coa.charges.push({charge: c2, t: t2, p: p2}, {charge: c3, t: t3, p: p3}, {charge: c4, t: t4, p: p4});
         } else if (allowCounter && p.length > 1) coa.charges[0].divided = "counter"; // counterchanged, 40%
       }
@@ -2023,7 +2596,7 @@ window.COA = (function () {
     // dominions have canton with parent coa
     if (P(dominion) && parent.charges) {
       const invert = isSameType(parent.t1, coa.t1);
-      const t = invert ? getTincture("division", usedTinctures, coa.t1) : parent.t1;
+      const t = invert ? getTincture("division", excludeTincturesSet, usedTinctures, coa.t1) : parent.t1;
       const canton = {ordinary: "canton", t};
 
       coa.charges?.forEach((charge, i) => {
@@ -2036,7 +2609,7 @@ window.COA = (function () {
       if (charge === "inescutcheon" && parent.charges[1]) charge = parent.charges[1].charge;
 
       let t2 = invert ? parent.t1 : parent.charges[0].t;
-      if (isSameType(t, t2)) t2 = getTincture("charge", usedTinctures, t);
+      if (isSameType(t, t2)) t2 = getTincture("charge", excludeTincturesSet, usedTinctures, t);
 
       if (!coa.charges) coa.charges = [];
       coa.charges.push({charge, t: t2, p: "y", size: 0.5});
@@ -2044,19 +2617,19 @@ window.COA = (function () {
       coa.ordinaries ? coa.ordinaries.push(canton) : (coa.ordinaries = [canton]);
     }
 
-    function selectCharge(set) {
-      const type = set ? rw(set) : ordinary || divisioned ? rw(charges.types) : rw(charges.single);
-      return type === "inescutcheon" ? "inescutcheon" : rw(charges[type]);
+    function selectCharge(set, chargesTypesSet, chargesSingleSet, exclude) {
+      const type = set ? rw(set) : ordinary || divisioned ? rw(chargesTypesSet) : rw(chargesSingleSet);
+      return type === "inescutcheon" ? "inescutcheon" : rwx(charges[type], exclude);
     }
 
     // select tincture: element type (field, division, charge), used field tinctures, field type to follow RoT
-    function getTincture(element, fields = [], RoT) {
+    function getTincture(element, exclude, fields = [], RoT) {
       const base = RoT ? (RoT.includes("-") ? RoT.split("-")[1] : RoT) : null;
 
-      let type = rw(tinctures[element]); // metals, colours, stains, patterns
+      let type = rwx(tinctures[element], exclude); // metals, colours, stains, patterns
       if (RoT && type !== "patterns") type = getType(base) === "metals" ? "colours" : "metals"; // follow RoT
       if (type === "metals" && fields.includes("or") && fields.includes("argent")) type = "colours"; // exclude metals overuse
-      let tincture = rw(tinctures[type]);
+      let tincture = rwx(tinctures[type], exclude);
 
       while (tincture === base || fields.includes(tincture)) {
         tincture = rw(tinctures[type]);
@@ -2150,7 +2723,7 @@ window.COA = (function () {
           t1 = "gules";
           t2 = "argent";
         }
-      } else if (pattern === "semy") pattern += "_of_" + selectCharge(charges.semy);
+      } else if ((pattern === "semy") && (chargesSemySet !== null)) pattern += "_of_" + selectCharge(chargesSemySet, chargesTypesSet, chargesSingleSet, excludeChargesSet);
 
       if (!t1 || !t2) {
         const startWithMetal = P(0.7);
