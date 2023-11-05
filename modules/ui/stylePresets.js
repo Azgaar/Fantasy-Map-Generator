@@ -11,6 +11,7 @@ const systemPresets = [
   "clean",
   "atlas",
   "cyberpunk",
+  "night",
   "monochrome"
 ];
 const customPresetPrefix = "fmgStyle_";

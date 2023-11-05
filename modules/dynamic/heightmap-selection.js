@@ -177,7 +177,9 @@ function insertHtml() {
               <select id="heightmapSelectionColorScheme">
                 <option value="bright" selected>Bright</option>
                 <option value="light">Light</option>
+                <option value="natural">Natural</option>
                 <option value="green">Green</option>
+                <option value="livid">Livid</option>
                 <option value="monochrome">Monochrome</option>
               </select>
             </div>
