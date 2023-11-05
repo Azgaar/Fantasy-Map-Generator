@@ -37,6 +37,20 @@ function editStyle(element, group) {
   }, 1500);
 }
 
+const heightmapColorSchemes = {
+  bright: d3.scaleSequential(d3.interpolateSpectral),
+  light: d3.scaleSequential(d3.interpolateRdYlGn),
+  natural: d3.scaleSequential(d3.interpolateRgbBasis(["white", "#EEEECC", "tan", "green", "teal"])),
+  green: d3.scaleSequential(d3.interpolateGreens),
+  livid: d3.scaleSequential(d3.interpolateRgbBasis(["#BBBBDD", "#2A3440", "#17343B", "#0A1E24"])),
+  monochrome: d3.scaleSequential(d3.interpolateGreys)
+};
+
+// add color schemes to the lists
+document.getElementById("styleHeightmapScheme").innerHTML = Object.keys(heightmapColorSchemes)
+  .map(scheme => `<option value="${scheme}">${scheme}</option>`)
+  .join("");
+
 // Toggle style sections on element select
 styleElementSelect.addEventListener("change", selectStyleElement);
 function selectStyleElement() {

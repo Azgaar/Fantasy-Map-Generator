@@ -297,21 +297,12 @@ function drawHeightmap() {
   TIME && console.timeEnd("drawHeightmap");
 }
 
-const colorSchemes = {
-  bright: d3.scaleSequential(d3.interpolateSpectral),
-  light: d3.scaleSequential(d3.interpolateRdYlGn),
-  natural: d3.scaleSequential(d3.interpolateRgbBasis(["white", "#EEEECC", "tan", "green", "teal"])),
-  green: d3.scaleSequential(d3.interpolateGreens),
-  livid: d3.scaleSequential(d3.interpolateRgbBasis(["#BBBBDD", "#2A3440", "#17343B", "#0A1E24"])),
-  monochrome: d3.scaleSequential(d3.interpolateGreys)
-};
-
-function getColorScheme(scheme) {
-  if (scheme in colorSchemes) return colorSchemes[scheme];
+function getColorScheme(scheme = "bright") {
+  if (scheme in heightmapColorSchemes) return heightmapColorSchemes[scheme];
   throw new Error(`Unsupported color scheme: ${scheme}`);
 }
 
-function getColor(value, scheme = getColorScheme()) {
+function getColor(value, scheme = getColorScheme("bright")) {
   return scheme(1 - (value < 20 ? value - 5 : value) / 100);
 }
 
