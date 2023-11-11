@@ -5730,11 +5730,13 @@
             </select>
           </div>
 
-          <div data-tip="Set sun position (x, y, z) to define shadows">
-            <div>Sun position:</div>
-            <input id="options3dSunX" type="number" min="-2500" max="2500" step="100" style="width: 4.7em" />
-            <input id="options3dSunY" type="number" min="0" max="5000" step="100" style="width: 4.7em" />
-            <input id="options3dSunZ" type="number" min="-1500" max="1500" step="100" style="width: 4.7em" />
+          <div data-tip="Set sun position (x, y) and color" style="margin-top: 0.4em">
+            <label>Sun position and color:</label>
+            <div style="display: flex; gap: 0.2em">
+              <input id="options3dSunX" type="number" min="-2500" max="2500" step="100" style="width: 4.7em" />
+              <input id="options3dSunY" type="number" min="0" max="5000" step="100" style="width: 4.7em" />
+              <input id="options3dSunColor" type="color" style="padding: 0; height: 1.5em; border: none" />
+            </div>
           </div>
 
           <div data-tip="Toggle 3d labels" style="margin: 0.6em 0 0.3em -0.2em">
@@ -5752,18 +5754,9 @@
             style="margin: 0.6em 0 0.3em -0.2em"
           >
             <input id="options3dSubdivide" class="checkbox" type="checkbox" />
-            <label for="options3dSubdivide" class="checkbox-label">
-              <i>Smooth geometry <small style="color: darkred">[slow]</small></i>
-            </label>
-          </div>
-
-          <div data-tip="Set Sun Color" id="options3dSunColorSection">
-            <span>Sun Color:</span
-            ><input
-              id="options3dSunColor"
-              type="color"
-              style="width: 4.4em; height: 1em; border: 0; padding: 0; margin: 0 0.2em"
-            />
+            <label for="options3dSubdivide" class="checkbox-label"
+              ><i>Smooth geometry <small style="color: darkred">[slow]</small></i></label
+            >
           </div>
 
           <div data-tip="Set sky and water color" id="options3dColorSection" style="display: none">
@@ -5796,6 +5789,7 @@
               <option value="1">1x</option>
               <option value="2">2x</option>
               <option value="4">4x</option>
+              <option value="8">8x</option>
             </select>
           </div>
 
@@ -7989,7 +7983,7 @@
     <script src="modules/ui/stylePresets.js?v=1.93.07"></script>
 
     <script src="modules/ui/general.js?v=1.93.04"></script>
-    <script src="modules/ui/options.js?v=1.93.08"></script>
+    <script src="modules/ui/options.js?v=1.93.11"></script>
     <script src="main.js?v=1.93.02"></script>
 
     <script defer src="modules/relief-icons.js"></script>
@@ -8025,7 +8019,7 @@
     <script defer src="modules/ui/battle-screen.js"></script>
     <script defer src="modules/ui/emblems-editor.js?v=1.91.00"></script>
     <script defer src="modules/ui/markers-editor.js"></script>
-    <script defer src="modules/ui/3d.js?v=1.89.36"></script>
+    <script defer src="modules/ui/3d.js?v=1.93.11"></script>
     <script defer src="modules/ui/submap.js?v=1.92.00"></script>
     <script defer src="modules/ui/hotkeys.js?v=1.93.00"></script>
     <script defer src="modules/coa-renderer.js?v=1.91.00"></script>
