@@ -138,7 +138,7 @@
       }
     </style>
 
-    <link rel="preload" href="index.css?v=1.93.04" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+    <link rel="preload" href="index.css?v=1.93.10" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="icons.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="libs/jquery-ui.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
   </head>
@@ -4433,9 +4433,9 @@
           ></span>
         </div>
 
-        <div data-tip="Uncheck to not update state label on name change" style="padding: 0.2em">
+        <div data-tip="Uncheck to not update state label on name change" style="padding-block: 0.2em">
           <input id="stateNameEditorUpdateLabel" class="checkbox" type="checkbox" checked />
-          <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i>Update label</i></label>
+          <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i>Update label on Apply</i></label>
         </div>
       </div>
 
@@ -5268,24 +5268,20 @@
 
       <div id="burgsOverview" class="dialog stable" style="display: none">
         <div id="burgsHeader" class="header" style="grid-template-columns: 8em 6em 6em 7em 7em 4em 2em">
-          <div
-            data-tip="Click to sort by burg name"
-            class="sortable alphabetically icon-sort-name-up"
-            data-sortby="name"
-          >
-            Burg&nbsp;
-          </div>
+          <div data-tip="Click to sort by burg name" class="sortable alphabetically" data-sortby="name">Burg</div>
           <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">
-            Province&nbsp;
+            Province
           </div>
-          <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">
-            State&nbsp;
-          </div>
+          <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State</div>
           <div data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">
-            Culture&nbsp;
+            Culture
           </div>
-          <div data-tip="Click to sort by burg population" class="sortable" data-sortby="population">
-            Population&nbsp;
+          <div
+            data-tip="Click to sort by burg population"
+            class="sortable icon-sort-number-down"
+            data-sortby="population"
+          >
+            Population
           </div>
           <div data-tip="Click to sort by burg type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
           <div
@@ -5298,10 +5294,11 @@
 
         <div id="burgsBody" class="table"></div>
 
-        <div id="burgsFilters" data-tip="Apply a filter">
-          <span>State: </span>
+        <div id="burgsFilters" data-tip="Apply a filter" style="padding-block: 0.1em">
+          <label for="burgsFilterState">State:</label>
           <select id="burgsFilterState" style="width: 28%"></select>
-          <span>Culture:</span>
+
+          <label for="burgsFilterCulture">Culture:</label>
           <select id="burgsFilterCulture" style="width: 28%"></select>
         </div>
 
@@ -5309,6 +5306,7 @@
           <div data-tip="Burgs displayed" style="margin-left: 4px">
             Burgs:&nbsp;<span id="burgsFooterBurgs">0</span>
           </div>
+
           <div data-tip="Average population" style="margin-left: 14px">
             Average population:&nbsp;<span id="burgsFooterPopulation">0</span>
           </div>
@@ -7996,7 +7994,7 @@
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js?v=1.93.07"></script>
-    <script defer src="modules/ui/editors.js?v=1.92.00"></script>
+    <script defer src="modules/ui/editors.js?v=1.93.10"></script>
     <script defer src="modules/ui/tools.js?v=1.92.00"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.91.05"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=1.93.00"></script>
@@ -8018,7 +8016,7 @@
     <script defer src="modules/ui/notes-editor.js?v=1.93.09"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.88.04"></script>
     <script defer src="modules/ui/zones-editor.js"></script>
-    <script defer src="modules/ui/burgs-overview.js?v=1.89.20"></script>
+    <script defer src="modules/ui/burgs-overview.js?v=1.93.10"></script>
     <script defer src="modules/ui/rivers-overview.js"></script>
     <script defer src="modules/ui/military-overview.js"></script>
     <script defer src="modules/ui/regiments-overview.js?v=1.89.20"></script>

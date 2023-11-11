@@ -1990,7 +1990,7 @@ input[type="checkbox"] {
 .checkbox + .checkbox-label:before {
   content: "";
   display: inline-block;
-  vertical-align: middle;
+  vertical-align: bottom;
   width: 0.6em;
   height: 0.6em;
   padding: 0.2em;
@@ -1998,6 +1998,7 @@ input[type="checkbox"] {
   border: 1px solid darkgrey;
   border-radius: 15%;
   background: white;
+  font-family: var(--monospace);
 }
 
 .checkbox:checked + .checkbox-label:before {
