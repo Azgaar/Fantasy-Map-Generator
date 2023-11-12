@@ -625,7 +625,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 .tabcontent button.sideButton {
   border-radius: 15%;
   font-size: 0.8em;
-  margin-bottom: -1em;
+  margin-block: -1em;
 }
 
 #layersContent button.active,
