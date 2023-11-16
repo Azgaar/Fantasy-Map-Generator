@@ -37,19 +37,36 @@ function editStyle(element, group) {
   }, 1500);
 }
 
+// Color schemes
 const heightmapColorSchemes = {
   bright: d3.scaleSequential(d3.interpolateSpectral),
   light: d3.scaleSequential(d3.interpolateRdYlGn),
   natural: d3.scaleSequential(d3.interpolateRgbBasis(["white", "#EEEECC", "tan", "green", "teal"])),
   green: d3.scaleSequential(d3.interpolateGreens),
+  olive: d3.scaleSequential(d3.interpolateRgbBasis(["#ffffff", "#cea48d", "#d5b085", "#0c2c19", "#151320"])),
   livid: d3.scaleSequential(d3.interpolateRgbBasis(["#BBBBDD", "#2A3440", "#17343B", "#0A1E24"])),
   monochrome: d3.scaleSequential(d3.interpolateGreys)
 };
 
-// add color schemes to the lists
+// add default color schemes to the list of options
 byId("styleHeightmapScheme").innerHTML = Object.keys(heightmapColorSchemes)
   .map(scheme => `<option value="${scheme}">${scheme}</option>`)
   .join("");
+
+function addCustomColorScheme(scheme) {
+  const stops = scheme.split(",");
+  heightmapColorSchemes[scheme] = d3.scaleSequential(d3.interpolateRgbBasis(stops));
+  byId("styleHeightmapScheme").options.add(new Option(scheme, scheme, false, true));
+}
+
+function getColorScheme(scheme = "bright") {
+  if (!(scheme in heightmapColorSchemes)) {
+    const colors = scheme.split(",");
+    heightmapColorSchemes[scheme] = d3.scaleSequential(d3.interpolateRgbBasis(colors));
+  }
+
+  return heightmapColorSchemes[scheme];
+}
 
 // Toggle style sections on element select
 styleElementSelect.addEventListener("change", selectStyleElement);
@@ -575,9 +592,7 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
     const stops = openCreateHeightmapSchemeButton.dataset.stops;
     if (stops in heightmapColorSchemes) return tip("This scheme already exists", false, "error");
 
-    heightmapColorSchemes[stops] = d3.scaleSequential(d3.interpolateRgbBasis(stops.split(",")));
-    byId("styleHeightmapScheme").options.add(new Option(stops, stops, false, true));
-
+    addCustomColorScheme(stops);
     terrs.attr("scheme", stops);
     drawHeightmap();
 
