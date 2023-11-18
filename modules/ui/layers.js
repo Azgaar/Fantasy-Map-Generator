@@ -157,6 +157,7 @@ function getCurrentPreset() {
 
 // run on map regeneration
 function restoreLayers() {
+  if (layerIsOn("toggleTexture")) drawTexture();
   if (layerIsOn("toggleHeight")) drawHeightmap();
   if (layerIsOn("toggleCells")) drawCells();
   if (layerIsOn("toggleGrid")) drawGrid();
@@ -1509,16 +1510,28 @@ function toggleRelief(event) {
 function toggleTexture(event) {
   if (!layerIsOn("toggleTexture")) {
     turnButtonOn("toggleTexture");
-    // href is not set directly to avoid image loading when layer is off
-    const textureImage = byId("textureImage");
-    if (textureImage) textureImage.setAttribute("href", textureImage.getAttribute("src"));
-
+    drawTexture();
     if (event && isCtrlClick(event)) editStyle("texture");
   } else {
     if (event && isCtrlClick(event)) return editStyle("texture");
     turnButtonOff("toggleTexture");
-    texture.select("image").attr("href", null);
+    texture.select("image").remove();
   }
+}
+
+function drawTexture() {
+  const x = Number(texture.attr("data-x") || 0);
+  const y = Number(texture.attr("data-y") || 0);
+  const href = texture.attr("data-href");
+
+  texture
+    .append("image")
+    .attr("preserveAspectRatio", "xMidYMid slice")
+    .attr("x", x)
+    .attr("y", y)
+    .attr("width", graphWidth - x)
+    .attr("height", graphHeight - y)
+    .attr("href", href);
 }
 
 function toggleRivers(event) {

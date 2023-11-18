@@ -252,12 +252,12 @@ async function getMapURL(type, options = {}) {
 
   // replace texture href to base64
   if (location.hostname) {
-    const el = cloneEl.getElementById("textureImage");
-    const url = el?.getAttribute("href");
-    if (url) {
+    const image = document.querySelector("#texture > image");
+    if (image) {
+      const url = image.getAttribute("href");
       await new Promise(resolve => {
         getBase64(url, base64 => {
-          el.setAttribute("href", base64);
+          image.setAttribute("href", base64);
           resolve();
         });
       });

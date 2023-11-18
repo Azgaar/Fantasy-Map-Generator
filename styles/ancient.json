@@ -261,12 +261,10 @@
   "#texture": {
     "opacity": 0.6,
     "filter": "",
-    "mask": ""
-  },
-  "#textureImage": {
-    "x": 0,
-    "y": 0,
-    "src": "https://i2.wp.com/azgaar.files.wordpress.com/2019/07/antique-small.jpg"
+    "mask": "",
+    "data-x": 0,
+    "data-y": 0,
+    "data-href": "https://i2.wp.com/azgaar.files.wordpress.com/2019/07/antique-small.jpg"
   },
   "#zones": {
     "opacity": 0.6,
