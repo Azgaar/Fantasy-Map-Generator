@@ -162,7 +162,7 @@ function getPackCellsData() {
       religion: dataArrays.religion[cellId],
       province: dataArrays.province[cellId]
     })),
-    vertices: pack.vertices.c.map(vertexId => ({
+    vertices: Array.from(pack.vertices.p).map((_, vertexId) => ({
       i: vertexId,
       p: pack.vertices.p[vertexId],
       v: pack.vertices.v[vertexId],
@@ -203,11 +203,11 @@ function getGridCellsData() {
       temp: dataArrays.temp[cellId],
       prec: dataArrays.prec[cellId]
     })),
-    vertices: grid.vertices.c.map(vertexId => ({
+    vertices: Array.from(grid.vertices.p).map((_, vertexId) => ({
       i: vertexId,
-      p: pack.vertices.p[vertexId],
-      v: pack.vertices.v[vertexId],
-      c: pack.vertices.c[vertexId]
+      p: grid.vertices.p[vertexId],
+      v: grid.vertices.v[vertexId],
+      c: grid.vertices.c[vertexId]
     })),
     cellsDesired: grid.cellsDesired,
     spacing: grid.spacing,
