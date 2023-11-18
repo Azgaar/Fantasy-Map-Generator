@@ -199,10 +199,9 @@ function insertHtml() {
       const name = heightmapTemplates[key].name;
       Math.random = aleaPRNG(initialSeed);
       const heights = HeightmapGenerator.fromTemplate(graph, key);
-      const dataUrl = drawHeights(heights);
 
       return /* html */ `<article data-id="${key}" data-seed="${initialSeed}">
-        <img src="${dataUrl}" alt="${name}" />
+        <img src="${getHeightmapPreview(heights)}" alt="${name}" />
         <div>
           ${name}
           <span data-tip="Regenerate preview" class="icon-cw regeneratePreview"></span>
@@ -266,42 +265,16 @@ function getGraph(currentGraph) {
   return newGraph;
 }
 
-function drawHeights(heights) {
-  const canvas = document.createElement("canvas");
-  canvas.width = graph.cellsX;
-  canvas.height = graph.cellsY;
-  const ctx = canvas.getContext("2d");
-  const imageData = ctx.createImageData(graph.cellsX, graph.cellsY);
-
-  const scheme = getColorScheme(byId("heightmapSelectionColorScheme").value);
-  const renderOcean = byId("heightmapSelectionRenderOcean").checked;
-  const getHeight = height => (height < 20 ? (renderOcean ? height : 0) : height);
-
-  for (let i = 0; i < heights.length; i++) {
-    const color = scheme(1 - getHeight(heights[i]) / 100);
-    const {r, g, b} = d3.color(color);
-
-    const n = i * 4;
-    imageData.data[n] = r;
-    imageData.data[n + 1] = g;
-    imageData.data[n + 2] = b;
-    imageData.data[n + 3] = 255;
-  }
-
-  ctx.putImageData(imageData, 0, 0);
-  return canvas.toDataURL("image/png");
-}
-
 function drawTemplatePreview(id) {
   const heights = HeightmapGenerator.fromTemplate(graph, id);
-  const dataUrl = drawHeights(heights);
+  const dataUrl = getHeightmapPreview(heights);
   const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article.querySelector("img").src = dataUrl;
 }
 
 async function drawPrecreatedHeightmap(id) {
   const heights = await HeightmapGenerator.fromPrecreated(graph, id);
-  const dataUrl = drawHeights(heights);
+  const dataUrl = getHeightmapPreview(heights);
   const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article.querySelector("img").src = dataUrl;
 }
@@ -336,4 +309,11 @@ function confirmHeightmapEdit() {
     confirm: "Continue",
     onConfirm: () => editHeightmap({mode: "erase", tool})
   });
+}
+
+function getHeightmapPreview(heights) {
+  const scheme = getColorScheme(byId("heightmapSelectionColorScheme").value);
+  const renderOcean = byId("heightmapSelectionRenderOcean").checked;
+  const dataUrl = drawHeights({heights, width: grid.cellsX, height: grid.cellsY, scheme, renderOcean});
+  return dataUrl;
 }

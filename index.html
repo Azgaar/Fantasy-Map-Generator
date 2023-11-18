@@ -138,7 +138,7 @@
       }
     </style>
 
-    <link rel="preload" href="index.css?v=1.93.10" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+    <link rel="preload" href="index.css?v=1.93.12" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="icons.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="libs/jquery-ui.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
   </head>
@@ -1275,13 +1275,6 @@
             </tbody>
 
             <tbody id="styleHeightmap">
-              <tr data-tip="Select color scheme for the element">
-                <td>Color scheme</td>
-                <td>
-                  <select id="styleHeightmapScheme"></select>
-                </td>
-              </tr>
-
               <tr data-tip="Terracing rate. Set to 0 (toggle off) to improve performance">
                 <td>Terracing</td>
                 <td>
@@ -1289,6 +1282,7 @@
                   <output id="styleHeightmapTerracingOutput">0</output>
                 </td>
               </tr>
+
               <tr data-tip="Layers reduction rate. Increase to improve performance">
                 <td>Reduce layers</td>
                 <td>
@@ -1313,6 +1307,19 @@
                     <option value="1">Linear</option>
                     <option value="2">Rectangular</option>
                   </select>
+                </td>
+              </tr>
+
+              <tr data-tip="Select color scheme for the element">
+                <td>Color scheme</td>
+                <td>
+                  <select id="styleHeightmapScheme"></select>
+                  <button
+                    id="openCreateHeightmapSchemeButton"
+                    data-tip="Click to add a custom heightmap color scheme"
+                    data-stops="#ffffff,#EEEECC,#D2B48C,#008000,#008080"
+                    class="icon-plus sideButton"
+                  ></button>
                 </td>
               </tr>
             </tbody>
@@ -7947,7 +7954,7 @@
     <script src="utils/commonUtils.js?v=1.89.29"></script>
     <script src="utils/arrayUtils.js"></script>
     <script src="utils/colorUtils.js"></script>
-    <script src="utils/graphUtils.js?v=1.90.01"></script>
+    <script src="utils/graphUtils.js?v=1.93.12"></script>
     <script src="utils/nodeUtils.js"></script>
     <script src="utils/numberUtils.js?v=1.89.08"></script>
     <script src="utils/polyfills.js?v=1.93.00"></script>
@@ -7983,11 +7990,11 @@
     <script src="modules/ui/stylePresets.js?v=1.93.07"></script>
 
     <script src="modules/ui/general.js?v=1.93.04"></script>
-    <script src="modules/ui/options.js?v=1.93.11"></script>
+    <script src="modules/ui/options.js?v=1.93.12"></script>
     <script src="main.js?v=1.93.02"></script>
 
     <script defer src="modules/relief-icons.js"></script>
-    <script defer src="modules/ui/style.js?v=1.93.07"></script>
+    <script defer src="modules/ui/style.js?v=1.93.12"></script>
     <script defer src="modules/ui/editors.js?v=1.93.10"></script>
     <script defer src="modules/ui/tools.js?v=1.92.00"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.91.05"></script>

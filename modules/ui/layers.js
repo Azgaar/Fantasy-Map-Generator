@@ -297,11 +297,6 @@ function drawHeightmap() {
   TIME && console.timeEnd("drawHeightmap");
 }
 
-function getColorScheme(scheme = "bright") {
-  if (scheme in heightmapColorSchemes) return heightmapColorSchemes[scheme];
-  throw new Error(`Unsupported color scheme: ${scheme}`);
-}
-
 function getColor(value, scheme = getColorScheme("bright")) {
   return scheme(1 - (value < 20 ? value - 5 : value) / 100);
 }

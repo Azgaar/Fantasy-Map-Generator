@@ -454,10 +454,18 @@ async function parseLoadedData(data) {
     })();
 
     {
-      // dynamically import and run auto-udpdate script
+      // dynamically import and run auto-update script
       const versionNumber = parseFloat(params[0]);
       const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.93.00");
       resolveVersionConflicts(versionNumber);
+    }
+
+    {
+      // add custom heightmap color scheme if any
+      const scheme = terrs.attr("scheme");
+      if (!(scheme in heightmapColorSchemes)) {
+        addCustomColorScheme(scheme);
+      }
     }
 
     void (function checkDataIntegrity() {

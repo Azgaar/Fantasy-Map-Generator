@@ -97,9 +97,7 @@ function applyStyle(style) {
 
       // add custom heightmap color scheme
       if (selector === "#terrs" && attribute === "scheme" && !(value in heightmapColorSchemes)) {
-        const colors = value.split(",");
-        heightmapColorSchemes[value] = d3.scaleSequential(d3.interpolateRgbBasis(colors));
-        document.getElementById("styleHeightmapScheme").options.add(new Option(value, value));
+        addCustomColorScheme(value);
       }
     }
   }
