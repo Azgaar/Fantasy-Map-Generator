@@ -62,21 +62,19 @@ async function getStylePreset(desiredPreset) {
 }
 
 async function fetchSystemPreset(preset) {
-  const style = await fetch(`./styles/${preset}.json`)
-    .then(res => res.json())
-    .catch(err => {
-      ERROR && console.error("Error on loading style preset", preset, err);
-      return null;
-    });
-
-  if (!style) throw new Error("Cannot fetch style preset", preset);
-  return style;
+  try {
+    const res = await fetch(`./styles/${preset}.json`);
+    return await res.json();
+  } catch (err) {
+    throw new Error("Cannot fetch style preset", preset);
+  }
 }
 
 function applyStyle(style) {
   for (const selector in style) {
     const el = document.querySelector(selector);
     if (!el) continue;
+
     for (const attribute in style[selector]) {
       const value = style[selector][attribute];
 
@@ -91,8 +89,13 @@ function applyStyle(style) {
         el.setAttribute(attribute, value);
       }
 
-      if (layerIsOn("toggleTexture") && selector === "#textureImage" && attribute === "src") {
-        el.setAttribute("href", value);
+      if (selector === "#texture") {
+        const image = document.querySelector("#texture > image");
+        if (image) {
+          if (attribute === "data-x") image.setAttribute("x", value);
+          if (attribute === "data-y") image.setAttribute("y", value);
+          if (attribute === "data-href") image.setAttribute("href", value);
+        }
       }
 
       // add custom heightmap color scheme
@@ -105,10 +108,7 @@ function applyStyle(style) {
 
 function requestStylePresetChange(preset) {
   const isConfirmed = sessionStorage.getItem("styleChangeConfirmed");
-  if (isConfirmed) {
-    changeStyle(preset);
-    return;
-  }
+  if (isConfirmed) return changeStyle(preset);
 
   confirmationDialog({
     title: "Change style preset",
@@ -126,8 +126,8 @@ function requestStylePresetChange(preset) {
 
 async function changeStyle(desiredPreset) {
   const styleData = await getStylePreset(desiredPreset);
-  const [appliedPreset, style] = styleData;
-  localStorage.setItem("presetStyle", appliedPreset);
+  const [presetName, style] = styleData;
+  localStorage.setItem("presetStyle", presetName);
   applyStyleWithUiRefresh(style);
 }
 
@@ -234,8 +234,7 @@ function addStylePreset() {
       ],
       "#ice": ["opacity", "fill", "stroke", "stroke-width", "filter"],
       "#emblems": ["opacity", "stroke-width", "filter"],
-      "#texture": ["opacity", "filter", "mask"],
-      "#textureImage": ["x", "y", "src"],
+      "#texture": ["opacity", "filter", "mask", "data-x", "data-y", "data-href"],
       "#zones": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
       "#oceanLayers": ["filter", "layers"],
       "#oceanBase": ["fill"],

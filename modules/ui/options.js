@@ -178,7 +178,7 @@ function mapSizeInputChange() {
   }
 }
 
-// change svg size on manual size change or window resize, do not change graph size
+// change svg size on manual size change or window resize (do not change graph size!)
 function changeMapSize() {
   svgWidth = Math.min(+mapWidthInput.value, window.innerWidth);
   svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
@@ -186,16 +186,18 @@ function changeMapSize() {
 
   const maxWidth = Math.max(+mapWidthInput.value, graphWidth);
   const maxHeight = Math.max(+mapHeightInput.value, graphHeight);
+
   zoom.translateExtent([
     [0, 0],
     [maxWidth, maxHeight]
   ]);
+
   landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   fogging.selectAll("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   defs.select("mask#fog > rect").attr("width", maxWidth).attr("height", maxHeight);
-  texture.select("image").attr("width", maxWidth).attr("height", maxHeight);
+  defs.select("mask#water > rect").attr("width", maxWidth).attr("height", maxHeight);
 
   fitScaleBar();
   if (window.fitLegendBox) fitLegendBox();

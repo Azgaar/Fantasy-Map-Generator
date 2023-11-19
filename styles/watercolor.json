@@ -261,12 +261,10 @@
   "#texture": {
     "opacity": 0.2,
     "filter": null,
-    "mask": "url(#land)"
-  },
-  "#textureImage": {
-    "x": 0,
-    "y": 0,
-    "src": "https://i2.wp.com/azgaar.files.wordpress.com/2021/10/plaster.jpg"
+    "mask": "url(#land)",
+    "data-x": 0,
+    "data-y": 0,
+    "data-href": "./images/textures/plaster.jpg"
   },
   "#zones": {
     "opacity": 0.6,

@@ -236,28 +236,28 @@ async function getMapURL(type, options = {}) {
     cloneDefs.querySelector("#defs-emblems")?.remove();
   }
 
-  // replace ocean pattern href to base64
-  if (location.hostname) {
-    const el = cloneEl.getElementById("oceanicPattern");
-    const url = el?.getAttribute("href");
-    if (url) {
+  {
+    // replace ocean pattern href to base64
+    const image = cloneEl.getElementById("oceanicPattern");
+    const href = image?.getAttribute("href");
+    if (href) {
       await new Promise(resolve => {
-        getBase64(url, base64 => {
-          el.setAttribute("href", base64);
+        getBase64(href, base64 => {
+          image.setAttribute("href", base64);
           resolve();
         });
       });
     }
   }
 
-  // replace texture href to base64
-  if (location.hostname) {
-    const el = cloneEl.getElementById("textureImage");
-    const url = el?.getAttribute("href");
-    if (url) {
+  {
+    // replace texture href to base64
+    const image = cloneEl.querySelector("#texture > image");
+    const href = image?.getAttribute("href");
+    if (href) {
       await new Promise(resolve => {
-        getBase64(url, base64 => {
-          el.setAttribute("href", base64);
+        getBase64(href, base64 => {
+          image.setAttribute("href", base64);
           resolve();
         });
       });

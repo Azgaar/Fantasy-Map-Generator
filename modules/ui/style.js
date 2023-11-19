@@ -71,36 +71,36 @@ function getColorScheme(scheme = "bright") {
 // Toggle style sections on element select
 styleElementSelect.addEventListener("change", selectStyleElement);
 function selectStyleElement() {
-  const sel = styleElementSelect.value;
-  let el = d3.select("#" + sel);
+  const styleElement = styleElementSelect.value;
+  let el = d3.select("#" + styleElement);
 
   styleElements.querySelectorAll("tbody").forEach(e => (e.style.display = "none")); // hide all sections
 
   // show alert line if layer is not visible
-  const isLayerOff = sel !== "ocean" && (el.style("display") === "none" || !el.selectAll("*").size());
+  const isLayerOff = styleElement !== "ocean" && (el.style("display") === "none" || !el.selectAll("*").size());
   styleIsOff.style.display = isLayerOff ? "block" : "none";
 
   // active group element
   const group = styleGroupSelect.value;
-  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(sel)) {
+  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(styleElement)) {
     const gEl = group && el.select("#" + group);
     el = group && gEl.size() ? gEl : el.select("g");
   }
 
   // opacity
-  if (!["landmass", "ocean", "regions", "legend"].includes(sel)) {
+  if (!["landmass", "ocean", "regions", "legend"].includes(styleElement)) {
     styleOpacity.style.display = "block";
     styleOpacityInput.value = styleOpacityOutput.value = el.attr("opacity") || 1;
   }
 
   // filter
-  if (!["landmass", "legend", "regions"].includes(sel)) {
+  if (!["landmass", "legend", "regions"].includes(styleElement)) {
     styleFilter.style.display = "block";
     styleFilterInput.value = el.attr("filter") || "";
   }
 
   // fill
-  if (["rivers", "lakes", "landmass", "prec", "ice", "fogging"].includes(sel)) {
+  if (["rivers", "lakes", "landmass", "prec", "ice", "fogging"].includes(styleElement)) {
     styleFill.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill");
   }
@@ -122,7 +122,7 @@ function selectStyleElement() {
       "coordinates",
       "zones",
       "gridOverlay"
-    ].includes(sel)
+    ].includes(styleElement)
   ) {
     styleStroke.style.display = "block";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke");
@@ -132,7 +132,9 @@ function selectStyleElement() {
 
   // stroke dash
   if (
-    ["routes", "borders", "temperature", "legend", "population", "coordinates", "zones", "gridOverlay"].includes(sel)
+    ["routes", "borders", "temperature", "legend", "population", "coordinates", "zones", "gridOverlay"].includes(
+      styleElement
+    )
   ) {
     styleStrokeDash.style.display = "block";
     styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") || "";
@@ -152,16 +154,21 @@ function selectStyleElement() {
       "texture",
       "biomes",
       "zones"
-    ].includes(sel)
+    ].includes(styleElement)
   ) {
     styleClipping.style.display = "block";
     styleClippingInput.value = el.attr("mask") || "";
   }
 
   // show specific sections
-  if (sel === "texture") styleTexture.style.display = "block";
+  if (styleElement === "texture") {
+    styleTexture.style.display = "block";
+    styleTextureShiftX.value = el.attr("data-x") || 0;
+    styleTextureShiftY.value = el.attr("data-y") || 0;
+    updateTextureSelectValue(el.attr("data-href"));
+  }
 
-  if (sel === "terrs") {
+  if (styleElement === "terrs") {
     styleHeightmap.style.display = "block";
     styleHeightmapScheme.value = terrs.attr("scheme");
     styleHeightmapTerracingInput.value = styleHeightmapTerracingOutput.value = terrs.attr("terracing");
@@ -170,12 +177,12 @@ function selectStyleElement() {
     styleHeightmapCurve.value = terrs.attr("curve");
   }
 
-  if (sel === "markers") {
+  if (styleElement === "markers") {
     styleMarkers.style.display = "block";
     styleRescaleMarkers.checked = +markers.attr("rescale");
   }
 
-  if (sel === "gridOverlay") {
+  if (styleElement === "gridOverlay") {
     styleGrid.style.display = "block";
     styleGridType.value = el.attr("type");
     styleGridScale.value = el.attr("scale") || 1;
@@ -184,7 +191,7 @@ function selectStyleElement() {
     calculateFriendlyGridSize();
   }
 
-  if (sel === "compass") {
+  if (styleElement === "compass") {
     styleCompass.style.display = "block";
     const tr = parseTransform(compass.select("use").attr("transform"));
     styleCompassShiftX.value = tr[0];
@@ -192,14 +199,14 @@ function selectStyleElement() {
     styleCompassSizeInput.value = styleCompassSizeOutput.value = tr[2];
   }
 
-  if (sel === "terrain") {
+  if (styleElement === "terrain") {
     styleRelief.style.display = "block";
     styleReliefSizeOutput.innerHTML = styleReliefSizeInput.value = terrain.attr("size");
     styleReliefDensityOutput.innerHTML = styleReliefDensityInput.value = terrain.attr("density");
     styleReliefSet.value = terrain.attr("set");
   }
 
-  if (sel === "population") {
+  if (styleElement === "population") {
     stylePopulation.style.display = "block";
     stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = population
       .select("#rural")
@@ -211,7 +218,7 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || "";
   }
 
-  if (sel === "regions") {
+  if (styleElement === "regions") {
     styleStates.style.display = "block";
     styleStatesBodyOpacity.value = styleStatesBodyOpacityOutput.value = statesBody.attr("opacity") || 1;
     styleStatesBodyFilter.value = statesBody.attr("filter") || "";
@@ -221,7 +228,7 @@ function selectStyleElement() {
     styleStatesHaloBlur.value = styleStatesHaloBlurOutput.value = blur;
   }
 
-  if (sel === "labels") {
+  if (styleElement === "labels") {
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
@@ -239,7 +246,7 @@ function selectStyleElement() {
     styleFontSize.value = el.attr("data-size");
   }
 
-  if (sel === "provs") {
+  if (styleElement === "provs") {
     styleFill.style.display = "block";
     styleSize.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#111111";
@@ -249,7 +256,7 @@ function selectStyleElement() {
     styleFontSize.value = el.attr("data-size");
   }
 
-  if (sel == "burgIcons") {
+  if (styleElement == "burgIcons") {
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
@@ -263,7 +270,7 @@ function selectStyleElement() {
     styleRadiusInput.value = el.attr("size") || 1;
   }
 
-  if (sel == "anchors") {
+  if (styleElement == "anchors") {
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
@@ -274,7 +281,7 @@ function selectStyleElement() {
     styleIconSizeInput.value = el.attr("size") || 2;
   }
 
-  if (sel === "legend") {
+  if (styleElement === "legend") {
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
     styleSize.style.display = "block";
@@ -292,7 +299,7 @@ function selectStyleElement() {
     styleFontSize.value = el.attr("data-size");
   }
 
-  if (sel === "ocean") {
+  if (styleElement === "ocean") {
     styleOcean.style.display = "block";
     styleOceanFill.value = styleOceanFillOutput.value = oceanLayers.select("#oceanBase").attr("fill");
     styleOceanPattern.value = byId("oceanicPattern")?.getAttribute("href");
@@ -301,7 +308,7 @@ function selectStyleElement() {
     outlineLayers.value = oceanLayers.attr("layers");
   }
 
-  if (sel === "temperature") {
+  if (styleElement === "temperature") {
     styleStrokeWidth.style.display = "block";
     styleTemperature.style.display = "block";
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || "";
@@ -310,18 +317,18 @@ function selectStyleElement() {
     styleTemperatureFontSizeInput.value = styleTemperatureFontSizeOutput.value = el.attr("font-size") || "8px";
   }
 
-  if (sel === "coordinates") {
+  if (styleElement === "coordinates") {
     styleSize.style.display = "block";
     styleFontSize.value = el.attr("data-size");
   }
 
-  if (sel === "armies") {
+  if (styleElement === "armies") {
     styleArmies.style.display = "block";
     styleArmiesFillOpacity.value = styleArmiesFillOpacityOutput.value = el.attr("fill-opacity");
     styleArmiesSize.value = styleArmiesSizeOutput.value = el.attr("box-size");
   }
 
-  if (sel === "emblems") {
+  if (styleElement === "emblems") {
     styleEmblems.style.display = "block";
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = styleStrokeWidthOutput.value = el.attr("stroke-width") || 1;
@@ -329,8 +336,8 @@ function selectStyleElement() {
 
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
-  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(sel)) {
-    const groups = byId(sel).querySelectorAll("g");
+  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(styleElement)) {
+    const groups = byId(styleElement).querySelectorAll("g");
     groups.forEach(el => {
       if (el.id === "burgLabels") return;
       const option = new Option(`${el.id} (${el.childElementCount})`, el.id, false, false);
@@ -339,11 +346,11 @@ function selectStyleElement() {
     styleGroupSelect.value = el.attr("id");
     styleGroup.style.display = "block";
   } else {
-    styleGroupSelect.options.add(new Option(sel, sel, false, true));
+    styleGroupSelect.options.add(new Option(styleElement, styleElement, false, true));
     styleGroup.style.display = "none";
   }
 
-  if (sel === "coastline" && styleGroupSelect.value === "sea_island") {
+  if (styleElement === "coastline" && styleGroupSelect.value === "sea_island") {
     styleCoastline.style.display = "block";
     const auto = (styleCoastlineAuto.checked = coastline.select("#sea_island").attr("auto-filter"));
     if (auto) styleFilter.style.display = "none";
@@ -398,12 +405,26 @@ styleFilterInput.addEventListener("change", function () {
 });
 
 styleTextureInput.addEventListener("change", function () {
-  texture.select("image").attr("src", this.value);
-  if (layerIsOn("toggleTexture")) texture.select("image").attr("href", this.value);
-  zoom.scaleBy(svg, 1.00001);
+  changeTexture(this.value);
 });
 
+function changeTexture(href) {
+  texture.attr("data-href", href);
+  texture.select("image").attr("href", href);
+}
+
+function updateTextureSelectValue(href) {
+  const isAdded = Array.from(styleTextureInput.options).some(option => option.value === href);
+  if (isAdded) {
+    styleTextureInput.value = href;
+  } else {
+    const name = href.split("/").pop().slice(0, 20);
+    styleTextureInput.add(new Option(name, href, false, true));
+  }
+}
+
 styleTextureShiftX.addEventListener("input", function () {
+  texture.attr("data-x", this.value);
   texture
     .select("image")
     .attr("x", this.value)
@@ -411,6 +432,7 @@ styleTextureShiftX.addEventListener("input", function () {
 });
 
 styleTextureShiftY.addEventListener("input", function () {
+  texture.attr("data-y", this.value);
   texture
     .select("image")
     .attr("y", this.value)
@@ -905,27 +927,19 @@ emblemsBurgSizeInput.addEventListener("change", drawEmblems);
 
 // request a URL to image to be used as a texture
 function textureProvideURL() {
-  alertMessage.innerHTML = /* html */ `Provide an image URL to be used as a texture:
+  alertMessage.innerHTML = /* html */ `Provide a texture image URL:
     <input id="textureURL" type="url" style="width: 100%" placeholder="http://www.example.com/image.jpg" oninput="fetchTextureURL(this.value)" />
     <canvas id="texturePreview" width="256px" height="144px"></canvas>`;
+
   $("#alert").dialog({
     resizable: false,
     title: "Load custom texture",
-    width: "26em",
+    width: "28em",
     buttons: {
       Apply: function () {
-        const name = textureURL.value.split("/").pop();
-        if (!name || name === "") return tip("Please provide a valid URL", false, "error");
-
-        const opt = document.createElement("option");
-        opt.value = textureURL.value;
-        opt.text = name.slice(0, 20);
-        styleTextureInput.add(opt);
-        styleTextureInput.value = textureURL.value;
-
-        const image = texture.select("image");
-        image.attr("src", textureURL.value);
-        if (layerIsOn("toggleTexture")) image.attr("href", textureURL.value);
+        if (!textureURL.value) return tip("Please provide a valid URL", false, "error");
+        changeTexture(textureURL.value);
+        updateTextureSelectValue(textureURL.value);
         $(this).dialog("close");
       },
       Cancel: function () {

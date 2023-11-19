@@ -134,13 +134,6 @@ fogging
   .attr("fill", "#e8f0f6")
   .attr("filter", "url(#splotch)");
 
-texture
-  .append("image")
-  .attr("id", "textureImage")
-  .attr("preserveAspectRatio", "xMidYMid slice")
-  .attr("width", "100%")
-  .attr("height", "100%");
-
 // assign events separately as not a viewbox child
 scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
 legend
@@ -1955,7 +1948,9 @@ const regenerateMap = debounce(async function (options) {
 
 // clear the map
 function undraw() {
-  viewbox.selectAll("path, circle, polygon, line, text, use, #zones > g, #armies > g, #ruler > g").remove();
+  viewbox
+    .selectAll("path, circle, polygon, line, text, use, #texture > image, #zones > g, #armies > g, #ruler > g")
+    .remove();
   document
     .getElementById("deftemp")
     .querySelectorAll("path, clipPath, svg")
