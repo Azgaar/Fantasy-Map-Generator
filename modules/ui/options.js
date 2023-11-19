@@ -180,7 +180,6 @@ function mapSizeInputChange() {
 
 // on map creation
 function applyGraphSize() {
-  console.log("applyGraphSize");
   graphWidth = +mapWidthInput.value;
   graphHeight = +mapHeightInput.value;
 
@@ -194,7 +193,6 @@ function applyGraphSize() {
 
 // on generate, on load, on resize, on canvas size change
 function fitMapToScreen() {
-  console.log("fitMapToScreen");
   svgWidth = Math.min(+mapWidthInput.value, window.innerWidth);
   svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
@@ -204,7 +202,7 @@ function fitMapToScreen() {
     [graphWidth, graphHeight]
   ];
 
-  const zoomMin = rn(Math.max(svgWidth / graphWidth, svgHeight / graphHeight), 2);
+  const zoomMin = rn(Math.max(svgWidth / graphWidth, svgHeight / graphHeight), 3);
   zoomExtentMin.value = zoomMin;
   const zoomMax = +zoomExtentMax.value;
 
