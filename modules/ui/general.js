@@ -1,12 +1,11 @@
 "use strict";
-// Module to store general UI functions
+// Module to store generic UI functions
 
-// fit full-screen map if window is resized
 window.addEventListener("resize", function (e) {
   if (stored("mapWidth") && stored("mapHeight")) return;
   mapWidthInput.value = window.innerWidth;
   mapHeightInput.value = window.innerHeight;
-  changeMapSize();
+  fitMapToScreen();
 });
 
 if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
@@ -28,7 +27,7 @@ const tipBackgroundMap = {
   error: "linear-gradient(0.1turn, #ffffff00, #e11d1dcc, #ffffff00)"
 };
 
-function tip(tip = "Tip is undefined", main = false, type = "info", time = 0) {
+function tip(tip, main = false, type = "info", time = 0) {
   tooltip.innerHTML = tip;
   tooltip.style.background = tipBackgroundMap[type];
 
