@@ -62,15 +62,12 @@ async function getStylePreset(desiredPreset) {
 }
 
 async function fetchSystemPreset(preset) {
-  const style = await fetch(`./styles/${preset}.json`)
-    .then(res => res.json())
-    .catch(err => {
-      ERROR && console.error("Error on loading style preset", preset, err);
-      return null;
-    });
-
-  if (!style) throw new Error("Cannot fetch style preset", preset);
-  return style;
+  try {
+    const res = await fetch(`./styles/${preset}.json`);
+    return await res.json();
+  } catch (err) {
+    throw new Error("Cannot fetch style preset", preset);
+  }
 }
 
 function applyStyle(style) {

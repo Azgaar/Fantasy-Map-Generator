@@ -456,7 +456,7 @@ async function parseLoadedData(data) {
     {
       // dynamically import and run auto-update script
       const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.93.00");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.94.00");
       resolveVersionConflicts(versionNumber);
     }
 
