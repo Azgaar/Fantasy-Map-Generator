@@ -471,7 +471,7 @@ async function parseLoadedData(data) {
     {
       // add custom texture if any
       const textureHref = texture.attr("data-href");
-      updateTextureSelectValue(textureHref);
+      if (textureHref) updateTextureSelectValue(textureHref);
     }
 
     void (function checkDataIntegrity() {
