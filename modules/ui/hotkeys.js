@@ -23,8 +23,6 @@ function handleKeyup(event) {
   const shift = shiftKey || key === "Shift";
   const alt = altKey || key === "Alt";
 
-  console.log(code, key);
-
   if (code === "F1") showInfo();
   else if (code === "F2") regeneratePrompt();
   else if (code === "F6") saveMap("storage");

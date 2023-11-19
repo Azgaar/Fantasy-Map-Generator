@@ -27,7 +27,7 @@ const tipBackgroundMap = {
   error: "linear-gradient(0.1turn, #ffffff00, #e11d1dcc, #ffffff00)"
 };
 
-function tip(tip = "Tip is undefined", main = false, type = "info", time = 0) {
+function tip(tip, main = false, type = "info", time = 0) {
   tooltip.innerHTML = tip;
   tooltip.style.background = tipBackgroundMap[type];
 
