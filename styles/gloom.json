@@ -266,7 +266,7 @@
     "mask": "url(#land)",
     "data-x": 0,
     "data-y": 0,
-    "data-href": "https://i2.wp.com/azgaar.files.wordpress.com/2019/07/iran-small.jpg"
+    "data-href": "./images/textures/iran-small.jpg"
   },
   "#zones": {
     "opacity": 0.5,

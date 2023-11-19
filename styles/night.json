@@ -264,7 +264,7 @@
     "mask": "url(#water)",
     "data-x": 0,
     "data-y": 0,
-    "data-href": "https://i2.wp.com/azgaar.files.wordpress.com/2019/07/marble-blue-small.jpg"
+    "data-href": "./images/textures/marble-blue-small.jpg"
   },
   "#zones": {
     "opacity": 0.6,

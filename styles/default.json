@@ -264,7 +264,7 @@
     "mask": "url(#land)",
     "data-x": 0,
     "data-y": 0,
-    "data-href": "https://i2.wp.com/azgaar.files.wordpress.com/2021/10/marble-big.jpg"
+    "data-href": "./images/textures/marble-big.jpg"
   },
   "#zones": {
     "opacity": 0.6,
