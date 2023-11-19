@@ -42,7 +42,8 @@ window.Submap = (function () {
     applyGraphSize();
     grid = generateGrid();
 
-    drawScaleBar(scale);
+    drawScaleBar(scaleBar, scale);
+    fitScaleBar(scaleBar, svgWidth, svgHeight);
 
     const resampler = (points, qtree, f) => {
       for (const [i, [x, y]] of points.entries()) {

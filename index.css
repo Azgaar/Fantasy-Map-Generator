@@ -1632,7 +1632,7 @@ div.states > .riverType {
   padding: 0.3em 0;
 }
 
-#saveTilesScreen div.label {
+#exportToPngTilesScreen div.label {
   display: inline-block;
   width: 5em;
 }

@@ -5776,18 +5776,24 @@
         <div style="margin-bottom: 0.3em; font-weight: bold">Download image</div>
         <div>
           <button
-            onclick="saveSVG()"
+            onclick="exportToSvg()"
             data-tip="Download the map as vector image (open directly in browser or Inkscape)"
           >
             .svg
           </button>
-          <button onclick="savePNG()" data-tip="Download visible part of the map as .png (lossless compressed)">
+          <button onclick="exportToPng()" data-tip="Download visible part of the map as .png (lossless compressed)">
             .png
           </button>
-          <button onclick="saveJPEG()" data-tip="Download visible part of the map as .jpeg (lossy compressed) image">
+          <button
+            onclick="exportToJpeg()"
+            data-tip="Download visible part of the map as .jpeg (lossy compressed) image"
+          >
             .jpeg
           </button>
-          <button onclick="openSaveTiles()" data-tip="Split map into smaller png tiles and download as zip archive">
+          <button
+            onclick="openExportToPngTiles()"
+            data-tip="Split map into smaller png tiles and download as zip archive"
+          >
             tiles
           </button>
           <span data-tip="Check to not allow system to automatically hide labels">
@@ -5921,7 +5927,7 @@
         </div>
       </div>
 
-      <div id="saveTilesScreen" style="display: none" class="dialog">
+      <div id="exportToPngTilesScreen" style="display: none" class="dialog">
         <p>Map will be split into tiles and downloaded as a single zip file. Avoid saving to big images</p>
         <div data-tip="Number of columns" style="margin-bottom: 0.3em">
           <div class="label">Columns:</div>
@@ -7936,12 +7942,12 @@
     <script src="libs/alea.min.js"></script>
     <script src="modules/fonts.js?v=1.89.18"></script>
     <script src="modules/ui/layers.js?v=1.94.00"></script>
-    <script src="modules/ui/measurers.js?v=1.87.02"></script>
+    <script src="modules/ui/measurers.js?v=1.94.02"></script>
     <script src="modules/ui/stylePresets.js?v=1.94.00"></script>
 
     <script src="modules/ui/general.js?v=1.94.01"></script>
-    <script src="modules/ui/options.js?v=1.94.01"></script>
-    <script src="main.js?v=1.94.01"></script>
+    <script src="modules/ui/options.js?v=1.94.02"></script>
+    <script src="main.js?v=1.94.02"></script>
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js?v=1.94.00"></script>
@@ -7963,7 +7969,7 @@
     <script defer src="modules/ui/rivers-creator.js?v=1.89.13"></script>
     <script defer src="modules/ui/relief-editor.js"></script>
     <script defer src="modules/ui/burg-editor.js"></script>
-    <script defer src="modules/ui/units-editor.js"></script>
+    <script defer src="modules/ui/units-editor.js?v=1.94.02"></script>
     <script defer src="modules/ui/notes-editor.js?v=1.93.09"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.88.04"></script>
     <script defer src="modules/ui/zones-editor.js"></script>
@@ -7977,7 +7983,7 @@
     <script defer src="modules/ui/emblems-editor.js?v=1.91.00"></script>
     <script defer src="modules/ui/markers-editor.js"></script>
     <script defer src="modules/ui/3d.js?v=1.93.11"></script>
-    <script defer src="modules/ui/submap.js?v=1.92.00"></script>
+    <script defer src="modules/ui/submap.js?v=1.94.02"></script>
     <script defer src="modules/ui/hotkeys.js?v=1.93.00"></script>
     <script defer src="modules/coa-renderer.js?v=1.94.00"></script>
     <script defer src="libs/rgbquant.min.js"></script>
@@ -7985,7 +7991,7 @@
     <script defer src="modules/io/save.js?v=1.93.02"></script>
     <script defer src="modules/io/load.js?v=1.94.01"></script>
     <script defer src="modules/io/cloud.js"></script>
-    <script defer src="modules/io/export.js?v=1.94.00"></script>
+    <script defer src="modules/io/export.js?v=1.94.02"></script>
     <script defer src="modules/io/formats.js"></script>
 
     <!-- Web Components -->

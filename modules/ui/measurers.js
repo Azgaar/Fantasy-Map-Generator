@@ -534,7 +534,7 @@ class Planimeter extends Measurer {
 }
 
 // Scale bar
-function drawScaleBar(scaleLevel) {
+function drawScaleBar(scaleBar, scaleLevel) {
   if (scaleBar.style("display") === "none") return; // no need to re-draw hidden element
   scaleBar.selectAll("*").remove(); // fully redraw every time
 
@@ -589,7 +589,7 @@ function drawScaleBar(scaleLevel) {
     .append("text")
     .attr("x", d => rn((d * length) / 5, 2))
     .attr("y", 0)
-    .attr("dy", "-.5em")
+    .attr("dy", "-.6em")
     .attr("font-size", fontSize)
     .text(d => rn((((d * length) / 5) * distanceScale) / scaleLevel) + (d < 5 ? "" : " " + unit));
 
@@ -616,19 +616,17 @@ function drawScaleBar(scaleLevel) {
     .attr("filter", "url(#blur5)")
     .attr("fill", barBackColor.value)
     .attr("opacity", +barBackOpacity.value);
-
-  fitScaleBar();
 }
 
-// fit ScaleBar to canvas size
-function fitScaleBar() {
+// fit ScaleBar to screen size
+function fitScaleBar(scaleBar, fullWidth, fullHeight) {
   if (!scaleBar.select("rect").size() || scaleBar.style("display") === "none") return;
 
   const px = isNaN(+barPosX.value) ? 0.99 : barPosX.value / 100;
   const py = isNaN(+barPosY.value) ? 0.99 : barPosY.value / 100;
   const bbox = scaleBar.select("rect").node().getBBox();
 
-  const x = rn(svgWidth * px - bbox.width + 10);
-  const y = rn(svgHeight * py - bbox.height + 20);
+  const x = rn(fullWidth * px - bbox.width + 10);
+  const y = rn(fullHeight * py - bbox.height + 20);
   scaleBar.attr("transform", `translate(${x},${y})`);
 }
