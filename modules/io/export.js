@@ -253,8 +253,8 @@ async function getMapURL(type, options = {}) {
   {
     // replace texture href to base64
     const image = cloneEl.querySelector("#texture > image");
-    if (image) {
-      const href = image.getAttribute("href");
+    const href = image?.getAttribute("href");
+    if (href) {
       await new Promise(resolve => {
         getBase64(href, base64 => {
           image.setAttribute("href", base64);
