@@ -618,7 +618,7 @@ async function parseLoadedData(data) {
       }
     })();
 
-    changeMapSize();
+    fitMapToScreen();
 
     // remove href from emblems, to trigger rendering on load
     emblems.selectAll("use").attr("href", null);

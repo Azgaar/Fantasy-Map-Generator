@@ -39,7 +39,7 @@ window.Submap = (function () {
     DEBUG && console.log("Using Options:", options);
 
     // create new grid
-    applyMapSize();
+    applyGraphSize();
     grid = generateGrid();
 
     drawScaleBar(scale);

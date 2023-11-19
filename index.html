@@ -1410,9 +1410,11 @@
           </p>
           <table>
             <tr
-              data-tip="Canvas width and height in pixels. Defines map size on generation that cannot be changed later. Always keep canvas size equal to your screen size or less. The best option is to use the default value. For full-globe maps use aspect ratio 2:1"
+              data-tip="Set original map size on generation. It cannot be changed later. Always keep canvas size equal to your screen size or less. The best option is to use the default value. For full-globe maps use aspect ratio 2:1"
             >
-              <td></td>
+              <td>
+                <i data-tip="Restore default canvas size" id="restoreDefaultCanvasSize" class="icon-ccw"></i>
+              </td>
               <td>Canvas size</td>
               <td>
                 <input id="mapWidthInput" class="paired" type="number" min="240" value="960" />
@@ -1420,13 +1422,7 @@
                 <input id="mapHeightInput" class="paired" type="number" min="135" value="540" />
                 <span>px</span>
               </td>
-              <td>
-                <i
-                  data-tip="Toggle between the current screen size and the initial canvas size"
-                  id="toggleFullscreen"
-                  class="icon-resize-full-alt"
-                ></i>
-              </td>
+              <td></td>
             </tr>
 
             <tr data-tip="Map seed number. Seed produces the same map only if canvas size and options are the same">

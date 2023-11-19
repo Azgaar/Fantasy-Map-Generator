@@ -1,12 +1,11 @@
 "use strict";
-// Module to store general UI functions
+// Module to store generic UI functions
 
-// fit full-screen map if window is resized
 window.addEventListener("resize", function (e) {
   if (stored("mapWidth") && stored("mapHeight")) return;
   mapWidthInput.value = window.innerWidth;
   mapHeightInput.value = window.innerHeight;
-  changeMapSize();
+  fitMapToScreen();
 });
 
 if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {

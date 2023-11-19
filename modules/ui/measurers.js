@@ -623,10 +623,12 @@ function drawScaleBar(scaleLevel) {
 // fit ScaleBar to canvas size
 function fitScaleBar() {
   if (!scaleBar.select("rect").size() || scaleBar.style("display") === "none") return;
+
   const px = isNaN(+barPosX.value) ? 0.99 : barPosX.value / 100;
   const py = isNaN(+barPosY.value) ? 0.99 : barPosY.value / 100;
   const bbox = scaleBar.select("rect").node().getBBox();
-  const x = rn(svgWidth * px - bbox.width + 10),
-    y = rn(svgHeight * py - bbox.height + 20);
+
+  const x = rn(svgWidth * px - bbox.width + 10);
+  const y = rn(svgHeight * py - bbox.height + 20);
   scaleBar.attr("transform", `translate(${x},${y})`);
 }
