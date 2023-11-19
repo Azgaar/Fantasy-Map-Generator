@@ -359,8 +359,16 @@
         <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
           <image id="oceanicPattern" href="./images/pattern1.png" opacity="0.2"></image>
         </pattern>
+
+        <mask id="vignette-mask">
+          <rect x="0" y="0" width="100%" height="100%" fill="white"></rect>
+          <rect x="0" y="0" width="100%" height="100%" fill="black" filter="blur(50px)" rx="5%" ry="5%"></rect>
+        </mask>
       </defs>
       <g id="viewbox"></g>
+      <g id="vignette" mask="url(#vignette-mask)" fill="black" opacity="0.5">
+        <rect x="0" y="0" width="100%" height="100%" />
+      </g>
       <g id="scaleBar"></g>
     </svg>
 
