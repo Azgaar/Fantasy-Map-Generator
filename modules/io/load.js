@@ -21,22 +21,19 @@ async function createSharableDropboxLink() {
   const mapFile = document.querySelector("#loadFromDropbox select").value;
   const sharableLink = document.getElementById("sharableLink");
   const sharableLinkContainer = document.getElementById("sharableLinkContainer");
-  let url;
+
   try {
-    url = await Cloud.providers.dropbox.getLink(mapFile);
-  } catch {
+    const previewLink = await Cloud.providers.dropbox.getLink(mapFile);
+    const directLink = previewLink.replace("www.dropbox.com", "dl.dropboxusercontent.com"); // DL allows CORS
+    const finalLink = `${location.origin}${location.pathname}?maplink=${directLink}`;
+
+    sharableLink.innerText = finalLink.slice(0, 45) + "...";
+    sharableLink.setAttribute("href", finalLink);
+    sharableLinkContainer.style.display = "block";
+  } catch (error) {
+    ERROR && console.error(error);
     return tip("Dropbox API error. Can not create link.", true, "error", 2000);
   }
-
-  const fmg = window.location.href.split("?")[0];
-  const reallink = `${fmg}?maplink=${url}`;
-  // voodoo magic required by the yellow god of CORS
-  const link = reallink.replace("www.dropbox.com/s/", "dl.dropboxusercontent.com/1/view/");
-  const shortLink = link.slice(0, 50) + "...";
-
-  sharableLinkContainer.style.display = "block";
-  sharableLink.innerText = shortLink;
-  sharableLink.setAttribute("href", link);
 }
 
 function loadMapPrompt(blob) {
