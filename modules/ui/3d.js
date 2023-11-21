@@ -623,7 +623,7 @@ window.ThreeD = (function () {
       material.map = texture;
       if (addMesh) addGlobe3dMesh();
     };
-    img2.src = await getMapURL("mesh", {globe: true, fullMap: true});
+    img2.src = await getMapURL("mesh", {noScaleBar: true, fullMap: true});
   }
 
   function addGlobe3dMesh() {

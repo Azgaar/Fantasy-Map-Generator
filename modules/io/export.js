@@ -138,16 +138,15 @@ async function exportToPngTiles() {
 }
 
 // parse map svg to object url
-async function getMapURL(type, options = {}) {
+async function getMapURL(type, options) {
   const {
     debug = false,
-    globe = false,
     noLabels = false,
     noWater = false,
     noScaleBar = false,
     noIce = false,
     fullMap = false
-  } = options;
+  } = options || {};
 
   const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
   cloneEl.id = "fantasyMap";
@@ -160,7 +159,6 @@ async function getMapURL(type, options = {}) {
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern")?.remove();
-  if (globe) clone.select("#scaleBar")?.remove();
   if (noLabels) {
     clone.select("#labels #states")?.remove();
     clone.select("#labels #burgLabels")?.remove();
@@ -171,14 +169,17 @@ async function getMapURL(type, options = {}) {
     clone.select("#oceanPattern").attr("opacity", 0);
   }
   if (noIce) clone.select("#ice")?.remove();
-  if (noScaleBar) clone.select("#scaleBar")?.remove();
   if (fullMap) {
     // reset transform to show the whole map
     clone.attr("width", graphWidth).attr("height", graphHeight);
     clone.select("#viewbox").attr("transform", null);
-    drawScaleBar(clone.select("#scaleBar"), 1);
-    fitScaleBar(clone.select("#scaleBar"), graphWidth, graphHeight);
+
+    if (!noScaleBar) {
+      drawScaleBar(clone.select("#scaleBar"), 1);
+      fitScaleBar(clone.select("#scaleBar"), graphWidth, graphHeight);
+    }
   }
+  if (noScaleBar) clone.select("#scaleBar")?.remove();
 
   if (type === "svg") removeUnusedElements(clone);
   if (customization && type === "mesh") updateMeshCells(clone);
