@@ -362,7 +362,18 @@
 
         <mask id="vignette-mask">
           <rect x="0" y="0" width="100%" height="100%" fill="white"></rect>
-          <rect x="0" y="0" width="100%" height="100%" fill="black" filter="blur(50px)" rx="5%" ry="5%"></rect>
+          <rect
+            id="vignette-rect"
+            transform="translate(25%, 25%)"
+            x="0%"
+            y="0%"
+            width="100%"
+            height="100%"
+            fill="black"
+            filter="blur(50px)"
+            rx="5%"
+            ry="5%"
+          ></rect>
         </mask>
       </defs>
       <g id="viewbox"></g>
@@ -793,6 +804,7 @@
             <option value="regions" selected>States</option>
             <option value="temperature">Temperature</option>
             <option value="texture">Texture</option>
+            <option value="vignette">Vignette</option>
             <option value="compass">Wind Rose</option>
             <option value="zones">Zones</option>
           </select>
@@ -917,6 +929,44 @@
               </tr>
             </tbody>
 
+            <tbody id="styleVignette">
+              <tr data-tip="Vignette rectangle position (in percents)">
+                <td>Position</td>
+                <td style="display: flex; flex-direction: column; gap: 2px">
+                  <div>
+                    <span>x </span>
+                    <input id="styleVignetteX" type="number" min="0" max="100" style="width: 5em" />
+                    <span>width&nbsp; </span>
+                    <input id="styleVignetteWidth" type="number" min="0" max="100" style="width: 5em" />
+                  </div>
+                  <div>
+                    <span>y </span>
+                    <input id="styleVignetteY" type="number" min="0" max="100" style="width: 5em" />
+                    <span>height </span>
+                    <input id="styleVignetteHeight" type="number" min="0" max="100" style="width: 5em" />
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-tip="Set vignette X and Y radius (in percents)">
+                <td>Radius</td>
+                <td>
+                  <span>x </span>
+                  <input id="styleVignetteRx" type="number" min="0" max="50" style="width: 5em" />
+                  <span>y </span>
+                  <input id="styleVignetteRy" type="number" min="0" max="50" style="width: 5em" />
+                </td>
+              </tr>
+
+              <tr data-tip="Set vignette blue propagation (in pixels)">
+                <td>Blur</td>
+                <td>
+                  <input id="styleVignetteBlur" type="range" min="0" max="400" step="1" value="50" />
+                  <output id="styleVignetteBlurOutput">50</output>px
+                </td>
+              </tr>
+            </tbody>
+
             <tbody id="styleOcean">
               <tr data-tip="Select ocean pattern">
                 <td>Pattern</td>
@@ -994,16 +1044,6 @@
                 <td>
                   <input id="styleGridShiftX" type="number" data-tip="Shift by x axis in pixels" />
                   <input id="styleGridShiftY" type="number" data-tip="Shift by y axis in pixels" />
-                </td>
-              </tr>
-            </tbody>
-
-            <tbody id="styleShift">
-              <tr data-tip="Shift the element by axes">
-                <td>Shift by axes</td>
-                <td>
-                  <input id="styleShiftX" type="number" data-tip="Shift by x axis in pixels" />
-                  <input id="styleShiftY" type="number" data-tip="Shift by y axis in pixels" />
                 </td>
               </tr>
             </tbody>

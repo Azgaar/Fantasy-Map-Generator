@@ -384,5 +384,19 @@
     "opacity": 0.98,
     "fill": "#30426f",
     "filter": null
+  },
+  "#vignette": {
+    "opacity": 0.5,
+    "fill": "#000000",
+    "filter": null
+  },
+  "#vignette-rect": {
+    "x": "1%",
+    "y": "2%",
+    "width": "98%",
+    "height": "96%",
+    "rx": "10%",
+    "ry": "10%",
+    "filter": "blur(20px)"
   }
 }

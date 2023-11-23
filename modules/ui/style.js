@@ -100,7 +100,7 @@ function selectStyleElement() {
   }
 
   // fill
-  if (["rivers", "lakes", "landmass", "prec", "ice", "fogging"].includes(styleElement)) {
+  if (["rivers", "lakes", "landmass", "prec", "ice", "fogging", "vignette"].includes(styleElement)) {
     styleFill.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill");
   }
@@ -355,6 +355,22 @@ function selectStyleElement() {
     const auto = (styleCoastlineAuto.checked = coastline.select("#sea_island").attr("auto-filter"));
     if (auto) styleFilter.style.display = "none";
   }
+
+  if (styleElement === "vignette") {
+    styleVignette.style.display = "block";
+
+    const maskRect = byId("vignette-rect");
+    if (maskRect) {
+      const digit = str => str.replace(/[^\d.]/g, "");
+      styleVignetteX.value = digit(maskRect.getAttribute("x"));
+      styleVignetteY.value = digit(maskRect.getAttribute("y"));
+      styleVignetteWidth.value = digit(maskRect.getAttribute("width"));
+      styleVignetteHeight.value = digit(maskRect.getAttribute("height"));
+      styleVignetteRx.value = digit(maskRect.getAttribute("rx"));
+      styleVignetteRy.value = digit(maskRect.getAttribute("ry"));
+      styleVignetteBlur.value = styleVignetteBlurOutput.value = digit(maskRect.getAttribute("filter"));
+    }
+  }
 }
 
 // Handle style inputs change
@@ -470,15 +486,6 @@ styleGridShiftY.addEventListener("input", function () {
   getEl().attr("dy", this.value);
   if (layerIsOn("toggleGrid")) drawGrid();
 });
-
-styleShiftX.addEventListener("input", shiftElement);
-styleShiftY.addEventListener("input", shiftElement);
-
-function shiftElement() {
-  const x = styleShiftX.value || 0;
-  const y = styleShiftY.value || 0;
-  getEl().attr("transform", `translate(${x},${y})`);
-}
 
 styleRescaleMarkers.addEventListener("change", function () {
   markers.attr("rescale", +this.checked);
@@ -960,6 +967,35 @@ function fetchTextureURL(url) {
   };
   img.src = url;
 }
+
+styleVignetteX.addEventListener("input", function () {
+  byId("vignette-rect")?.setAttribute("x", `${this.value}%`);
+});
+
+styleVignetteWidth.addEventListener("input", function () {
+  byId("vignette-rect")?.setAttribute("width", `${this.value}%`);
+});
+
+styleVignetteY.addEventListener("input", function () {
+  byId("vignette-rect")?.setAttribute("y", `${this.value}%`);
+});
+
+styleVignetteHeight.addEventListener("input", function () {
+  byId("vignette-rect")?.setAttribute("height", `${this.value}%`);
+});
+
+styleVignetteRx.addEventListener("input", function () {
+  byId("vignette-rect")?.setAttribute("rx", `${this.value}%`);
+});
+
+styleVignetteRy.addEventListener("input", function () {
+  byId("vignette-rect")?.setAttribute("ry", `${this.value}%`);
+});
+
+styleVignetteBlur.addEventListener("input", function () {
+  styleVignetteBlurOutput.value = this.value;
+  byId("vignette-rect")?.setAttribute("filter", `blur(${this.value}px)`);
+});
 
 function updateElements() {
   // burgIcons to desired size
