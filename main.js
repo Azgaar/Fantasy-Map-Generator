@@ -306,9 +306,9 @@ async function checkLoadParameters() {
 async function generateMapOnLoad() {
   await applyStyleOnLoad(); // apply previously selected default or custom style
   await generate(); // generate map
-  focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   applyPreset(); // apply saved layers preset
   fitMapToScreen();
+  focusOn(); // based on searchParams focus on point, cell or burg from MFCG
 }
 
 // focus on coordinates, cell or burg provided in searchParams
