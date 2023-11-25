@@ -710,4 +710,30 @@ export function resolveVersionConflicts(version) {
       drawTexture();
     }
   }
+
+  if (version < 1.95) {
+    // v1.95.00 added vignette visual layer
+    const mask = defs.append("mask").attr("id", "vignette-mask");
+    mask.append("rect").attr("fill", "white").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
+    mask
+      .append("rect")
+      .attr("id", "vignette-rect")
+      .attr("fill", "black")
+      .attr("x", "0.3%")
+      .attr("y", "0.4%")
+      .attr("width", "99.4%")
+      .attr("height", "99.2%")
+      .attr("rx", "5%")
+      .attr("ry", "5%")
+      .attr("filter", "blur(20px)");
+
+    const vignette = svg
+      .append("g")
+      .attr("id", "vignette")
+      .attr("mask", "url(#vignette-mask)")
+      .attr("opacity", 0.3)
+      .attr("fill", "#000000")
+      .style("display", "none");
+    vignette.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
+  }
 }

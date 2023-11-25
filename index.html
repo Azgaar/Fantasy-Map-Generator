@@ -362,25 +362,14 @@
 
         <mask id="vignette-mask">
           <rect x="0" y="0" width="100%" height="100%" fill="white"></rect>
-          <rect
-            id="vignette-rect"
-            transform="translate(25%, 25%)"
-            x="0%"
-            y="0%"
-            width="100%"
-            height="100%"
-            fill="black"
-            filter="blur(50px)"
-            rx="5%"
-            ry="5%"
-          ></rect>
+          <rect id="vignette-rect" fill="black"></rect>
         </mask>
       </defs>
       <g id="viewbox"></g>
-      <g id="vignette" mask="url(#vignette-mask)" fill="black" opacity="0.5">
+      <g id="scaleBar"></g>
+      <g id="vignette" mask="url(#vignette-mask)">
         <rect x="0" y="0" width="100%" height="100%" />
       </g>
-      <g id="scaleBar"></g>
     </svg>
 
     <div id="loading">
@@ -722,6 +711,15 @@
             >
               Scale Bar
             </li>
+            <li
+              id="toggleVignette"
+              data-tip="Vignette (border fading): click to toggle. Ctrl + click to edit style"
+              data-shortcut="[ (left bracket)"
+              onclick="toggleVignette(event)"
+              class="solid"
+            >
+              Vignette
+            </li>
           </ul>
 
           <div id="viewMode" data-tip="Set view node">
@@ -935,15 +933,15 @@
                 <td style="display: flex; flex-direction: column; gap: 2px">
                   <div>
                     <span>x </span>
-                    <input id="styleVignetteX" type="number" min="0" max="100" style="width: 5em" />
+                    <input id="styleVignetteX" type="number" min="0" max="100" step="0.1" style="width: 5em" />
                     <span>width&nbsp; </span>
-                    <input id="styleVignetteWidth" type="number" min="0" max="100" style="width: 5em" />
+                    <input id="styleVignetteWidth" type="number" min="0" max="100" step="0.1" style="width: 5em" />
                   </div>
                   <div>
                     <span>y </span>
-                    <input id="styleVignetteY" type="number" min="0" max="100" style="width: 5em" />
+                    <input id="styleVignetteY" type="number" min="0" max="100" step="0.1" style="width: 5em" />
                     <span>height </span>
-                    <input id="styleVignetteHeight" type="number" min="0" max="100" style="width: 5em" />
+                    <input id="styleVignetteHeight" type="number" min="0" max="100" step="0.1" style="width: 5em" />
                   </div>
                 </td>
               </tr>
@@ -7971,7 +7969,7 @@
     <script src="config/heightmap-templates.js"></script>
     <script src="config/precreated-heightmaps.js"></script>
     <script src="modules/heightmap-generator.js?v=1.88.00"></script>
-    <script src="modules/ocean-layers.js?v=1.93.07"></script>
+    <script src="modules/ocean-layers.js?v=1.95.00"></script>
     <script src="modules/river-generator.js?v=1.89.13"></script>
     <script src="modules/lakes.js"></script>
     <script src="modules/biomes.js"></script>
@@ -8032,12 +8030,12 @@
     <script defer src="modules/ui/markers-editor.js"></script>
     <script defer src="modules/ui/3d.js?v=1.94.03"></script>
     <script defer src="modules/ui/submap.js?v=1.94.03"></script>
-    <script defer src="modules/ui/hotkeys.js?v=1.93.00"></script>
+    <script defer src="modules/ui/hotkeys.js?v=1.95.00"></script>
     <script defer src="modules/coa-renderer.js?v=1.94.00"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
     <script defer src="modules/io/save.js?v=1.93.02"></script>
-    <script defer src="modules/io/load.js?v=1.94.05"></script>
+    <script defer src="modules/io/load.js?v=1.95.00"></script>
     <script defer src="modules/io/cloud.js?v=1.94.04"></script>
     <script defer src="modules/io/export.js?v=1.94.03"></script>
     <script defer src="modules/io/formats.js"></script>

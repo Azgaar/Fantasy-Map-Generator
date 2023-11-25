@@ -10,7 +10,7 @@ async function quickLoad() {
 }
 
 async function loadFromDropbox() {
-  const mapPath = document.getElementById("loadFromDropboxSelect")?.value;
+  const mapPath = byId("loadFromDropboxSelect")?.value;
 
   DEBUG && console.log("Loading map from Dropbox:", mapPath);
   const blob = await Cloud.providers.dropbox.load(mapPath);
@@ -19,8 +19,8 @@ async function loadFromDropbox() {
 
 async function createSharableDropboxLink() {
   const mapFile = document.querySelector("#loadFromDropbox select").value;
-  const sharableLink = document.getElementById("sharableLink");
-  const sharableLinkContainer = document.getElementById("sharableLinkContainer");
+  const sharableLink = byId("sharableLink");
+  const sharableLinkContainer = byId("sharableLinkContainer");
 
   try {
     const previewLink = await Cloud.providers.dropbox.getLink(mapFile);
@@ -110,7 +110,7 @@ function uploadMap(file, callback) {
   const fileReader = new FileReader();
   fileReader.onloadend = async function (fileLoadedEvent) {
     if (callback) callback();
-    document.getElementById("coas").innerHTML = ""; // remove auto-generated emblems
+    byId("coas").innerHTML = ""; // remove auto-generated emblems
     const result = fileLoadedEvent.target.result;
     const [mapData, mapVersion] = await parseLoadedResult(result);
 
@@ -408,15 +408,14 @@ async function parseLoadedData(data) {
     })();
 
     void (function restoreLayersState() {
-      // helper functions
-      const notHidden = selection => selection.node() && selection.style("display") !== "none";
+      const isVisible = selection => selection.node() && selection.style("display") !== "none";
+      const isVisibleNode = node => node && node.style.display !== "none";
       const hasChildren = selection => selection.node()?.hasChildNodes();
       const hasChild = (selection, selector) => selection.node()?.querySelector(selector);
-      const turnOn = el => document.getElementById(el).classList.remove("buttonoff");
+      const turnOn = el => byId(el).classList.remove("buttonoff");
 
       // turn all layers off
-      document
-        .getElementById("mapLayers")
+      byId("mapLayers")
         .querySelectorAll("li")
         .forEach(el => el.classList.add("buttonoff"));
 
@@ -427,27 +426,28 @@ async function parseLoadedData(data) {
       if (hasChildren(cells)) turnOn("toggleCells");
       if (hasChildren(gridOverlay)) turnOn("toggleGrid");
       if (hasChildren(coordinates)) turnOn("toggleCoordinates");
-      if (notHidden(compass) && hasChild(compass, "use")) turnOn("toggleCompass");
+      if (isVisible(compass) && hasChild(compass, "use")) turnOn("toggleCompass");
       if (hasChildren(rivers)) turnOn("toggleRivers");
-      if (notHidden(terrain) && hasChildren(terrain)) turnOn("toggleRelief");
+      if (isVisible(terrain) && hasChildren(terrain)) turnOn("toggleRelief");
       if (hasChildren(relig)) turnOn("toggleReligions");
       if (hasChildren(cults)) turnOn("toggleCultures");
       if (hasChildren(statesBody)) turnOn("toggleStates");
       if (hasChildren(provs)) turnOn("toggleProvinces");
-      if (hasChildren(zones) && notHidden(zones)) turnOn("toggleZones");
-      if (notHidden(borders) && hasChild(borders, "path")) turnOn("toggleBorders");
-      if (notHidden(routes) && hasChild(routes, "path")) turnOn("toggleRoutes");
+      if (hasChildren(zones) && isVisible(zones)) turnOn("toggleZones");
+      if (isVisible(borders) && hasChild(borders, "path")) turnOn("toggleBorders");
+      if (isVisible(routes) && hasChild(routes, "path")) turnOn("toggleRoutes");
       if (hasChildren(temperature)) turnOn("toggleTemp");
       if (hasChild(population, "line")) turnOn("togglePopulation");
       if (hasChildren(ice)) turnOn("toggleIce");
       if (hasChild(prec, "circle")) turnOn("togglePrec");
-      if (notHidden(emblems) && hasChild(emblems, "use")) turnOn("toggleEmblems");
-      if (notHidden(labels)) turnOn("toggleLabels");
-      if (notHidden(icons)) turnOn("toggleIcons");
-      if (hasChildren(armies) && notHidden(armies)) turnOn("toggleMilitary");
+      if (isVisible(emblems) && hasChild(emblems, "use")) turnOn("toggleEmblems");
+      if (isVisible(labels)) turnOn("toggleLabels");
+      if (isVisible(icons)) turnOn("toggleIcons");
+      if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
       if (hasChildren(markers)) turnOn("toggleMarkers");
-      if (notHidden(ruler)) turnOn("toggleRulers");
-      if (notHidden(scaleBar)) turnOn("toggleScaleBar");
+      if (isVisible(ruler)) turnOn("toggleRulers");
+      if (isVisible(scaleBar)) turnOn("toggleScaleBar");
+      if (isVisibleNode(byId("vignette"))) turnOn("toggleVignette");
 
       getCurrentPreset();
     })();
@@ -462,7 +462,7 @@ async function parseLoadedData(data) {
     {
       // dynamically import and run auto-update script
       const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.94.00");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.95.00");
       resolveVersionConflicts(versionNumber);
     }
 

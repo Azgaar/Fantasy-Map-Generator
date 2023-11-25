@@ -91,6 +91,7 @@ function handleKeyup(event) {
   else if (code === "KeyK") toggleMarkers();
   else if (code === "Equal" && !customization) toggleRulers();
   else if (code === "Slash") toggleScaleBar();
+  else if (code === "BracketLeft") toggleVignette();
   else if (code === "ArrowLeft") zoom.translateBy(svg, 10, 0);
   else if (code === "ArrowRight") zoom.translateBy(svg, -10, 0);
   else if (code === "ArrowUp") zoom.translateBy(svg, 0, 10);
