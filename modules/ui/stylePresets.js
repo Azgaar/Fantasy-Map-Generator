@@ -299,7 +299,9 @@ function addStylePreset() {
         "font-family",
         "filter"
       ],
-      "#fogging": ["opacity", "fill", "filter"]
+      "#fogging": ["opacity", "fill", "filter"],
+      "#vignette": ["opacity", "fill", "filter"],
+      "#vignette-rect": ["x", "y", "width", "height", "rx", "ry", "filter"]
     };
 
     for (const selector in attributes) {
