@@ -118,9 +118,9 @@ window.Cloud = (function () {
     },
 
     async getLink(path) {
-      // return existitng shared link
+      // return existing shared link
       const sharedLinks = await this.call("sharingListSharedLinks", {path});
-      if (sharedLinks.result.links.length) return resp.result.links[0].url;
+      if (sharedLinks.result.links.length) return sharedLinks.result.links[0].url;
 
       // create new shared link
       const settings = {
