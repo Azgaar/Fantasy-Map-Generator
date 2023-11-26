@@ -386,7 +386,7 @@
     "filter": null
   },
   "#vignette": {
-    "opacity": 0.3,
+    "opacity": 0.2,
     "fill": "#000000",
     "filter": null
   },
@@ -397,6 +397,6 @@
     "height": "99.2%",
     "rx": "5%",
     "ry": "5%",
-    "filter": "blur(20px)"
+    "filter": "blur(30px)"
   }
 }

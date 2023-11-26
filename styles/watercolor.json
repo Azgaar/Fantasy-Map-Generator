@@ -386,7 +386,7 @@
     "filter": null
   },
   "#vignette": {
-    "opacity": 0.3,
+    "opacity": 0.2,
     "fill": "#000000",
     "filter": null
   },
