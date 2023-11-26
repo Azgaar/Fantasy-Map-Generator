@@ -968,6 +968,52 @@ function fetchTextureURL(url) {
   img.src = url;
 }
 
+const vignettePresets = {
+  default: `{ "#vignette": { "opacity": 0.3, "fill": "#000000", "filter": null }, "#vignette-rect": { "x": "0.3%", "y": "0.4%", "width": "99.6%", "height": "99.2%", "rx": "5%", "ry": "5%", "filter": "blur(20px)" } }`,
+  neon: `{ "#vignette": { "opacity": 0.5, "fill": "#7300ff", "filter": null }, "#vignette-rect": { "x": "0.3%", "y": "0.4%", "width": "99.6%", "height": "99.2%", "rx": "0%", "ry": "0%", "filter": "blur(15px)" } }`,
+  smoke: `{ "#vignette": { "opacity": 1, "fill": "#000000", "filter": "url(#splotch)" }, "#vignette-rect": { "x": "3%", "y": "5%", "width": "96%", "height": "90%", "rx": "10%", "ry": "10%", "filter": "blur(100px)" } }`,
+  wound: `{ "#vignette": { "opacity": 0.8, "fill": "#ff0000", "filter": "url(#paper)"}, "#vignette-rect": {"x": "0.5%", "y": "1%", "width": "99%", "height": "98%", "rx": "5%", "ry": "5%", "filter": "blur(50px)" } }`,
+  paper: `{ "#vignette": { "opacity": 1, "fill": "#000000", "filter": "url(#paper)" }, "#vignette-rect": { "x": "0.3%", "y": "0.4%", "width": "99.6%", "height": "99.2%", "rx": "20%", "ry": "20%", "filter": "blur(150px)" } }`,
+  granite: `{ "#vignette": { "opacity": 0.95, "fill": "#231b1b", "filter": "url(#crumpled)" }, "#vignette-rect": { "x": "3%", "y": "5%", "width": "94%", "height": "90%", "rx": "20%", "ry": "20%", "filter": "blur(150px)" } }`,
+  spotlight: `{ "#vignette": { "opacity": 0.96, "fill": "#000000", "filter": null }, "#vignette-rect": { "x": "20%", "y": "30%", "width": "24%", "height": "30%", "rx": "50%", "ry": "50%", "filter": "blur(30px) "} }`
+};
+
+Object.keys(vignettePresets).forEach(preset => {
+  styleVignettePreset.options.add(new Option(preset, preset, false, false));
+});
+
+styleVignettePreset.addEventListener("change", function () {
+  const attributes = JSON.parse(vignettePresets[this.value]);
+
+  for (const selector in attributes) {
+    const el = document.querySelector(selector);
+    if (!el) continue;
+    for (const attr in attributes[selector]) {
+      const value = attributes[selector][attr];
+      el.setAttribute(attr, value);
+    }
+  }
+
+  const vignette = byId("vignette");
+  if (vignette) {
+    styleOpacityInput.value = styleOpacityOutput.value = vignette.getAttribute("opacity");
+    styleFillInput.value = styleFillOutput.value = vignette.getAttribute("fill");
+    styleFilterInput.value = vignette.getAttribute("filter");
+  }
+
+  const maskRect = byId("vignette-rect");
+  if (maskRect) {
+    const digit = str => str.replace(/[^\d.]/g, "");
+    styleVignetteX.value = digit(maskRect.getAttribute("x"));
+    styleVignetteY.value = digit(maskRect.getAttribute("y"));
+    styleVignetteWidth.value = digit(maskRect.getAttribute("width"));
+    styleVignetteHeight.value = digit(maskRect.getAttribute("height"));
+    styleVignetteRx.value = digit(maskRect.getAttribute("rx"));
+    styleVignetteRy.value = digit(maskRect.getAttribute("ry"));
+    styleVignetteBlur.value = styleVignetteBlurOutput.value = digit(maskRect.getAttribute("filter"));
+  }
+});
+
 styleVignetteX.addEventListener("input", function () {
   byId("vignette-rect")?.setAttribute("x", `${this.value}%`);
 });
