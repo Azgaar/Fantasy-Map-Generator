@@ -28,7 +28,7 @@ const version = "1.95.00"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
-        <li>Vignette visual layer and vignette color options</li>
+        <li>Vignette visual layer and vignette styling options</li>
         <li>Ability to define custom heightmap color scheme</li>
         <li>New style preset Night and new heightmap color schemes</li>
         <li>Random encounter markers (integration with <a href="https://deorum.vercel.app/" target="_blank">Deorum</a>)</li>
