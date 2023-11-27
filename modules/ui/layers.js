@@ -14,7 +14,8 @@ function getDefaultPresets() {
       "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
-      "toggleStates"
+      "toggleStates",
+      "toggleVignette"
     ],
     cultural: [
       "toggleBorders",
@@ -23,7 +24,8 @@ function getDefaultPresets() {
       "toggleLabels",
       "toggleRivers",
       "toggleRoutes",
-      "toggleScaleBar"
+      "toggleScaleBar",
+      "toggleVignette"
     ],
     religions: [
       "toggleBorders",
@@ -32,12 +34,13 @@ function getDefaultPresets() {
       "toggleReligions",
       "toggleRivers",
       "toggleRoutes",
-      "toggleScaleBar"
+      "toggleScaleBar",
+      "toggleVignette"
     ],
-    provinces: ["toggleBorders", "toggleIcons", "toggleProvinces", "toggleRivers", "toggleScaleBar"],
-    biomes: ["toggleBiomes", "toggleIce", "toggleRivers", "toggleScaleBar"],
-    heightmap: ["toggleHeight", "toggleRivers"],
-    physical: ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleRivers", "toggleScaleBar"],
+    provinces: ["toggleBorders", "toggleIcons", "toggleProvinces", "toggleRivers", "toggleScaleBar", "toggleVignette"],
+    biomes: ["toggleBiomes", "toggleIce", "toggleRivers", "toggleScaleBar", "toggleVignette"],
+    heightmap: ["toggleHeight", "toggleRivers", "toggleVignette"],
+    physical: ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleRivers", "toggleScaleBar", "toggleVignette"],
     poi: [
       "toggleBorders",
       "toggleHeight",
@@ -46,7 +49,8 @@ function getDefaultPresets() {
       "toggleMarkers",
       "toggleRivers",
       "toggleRoutes",
-      "toggleScaleBar"
+      "toggleScaleBar",
+      "toggleVignette"
     ],
     military: [
       "toggleBorders",
@@ -56,7 +60,8 @@ function getDefaultPresets() {
       "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
-      "toggleStates"
+      "toggleStates",
+      "toggleVignette"
     ],
     emblems: [
       "toggleBorders",
@@ -66,7 +71,8 @@ function getDefaultPresets() {
       "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
-      "toggleStates"
+      "toggleStates",
+      "toggleVignette"
     ],
     landmass: ["toggleScaleBar"]
   };
@@ -1860,6 +1866,18 @@ function drawEmblems() {
   });
 
   TIME && console.timeEnd("drawEmblems");
+}
+
+function toggleVignette(event) {
+  if (!layerIsOn("toggleVignette")) {
+    turnButtonOn("toggleVignette");
+    $("#vignette").fadeIn();
+    if (event && isCtrlClick(event)) editStyle("vignette");
+  } else {
+    if (event && isCtrlClick(event)) return editStyle("vignette");
+    $("#vignette").fadeOut();
+    turnButtonOff("toggleVignette");
+  }
 }
 
 function layerIsOn(el) {

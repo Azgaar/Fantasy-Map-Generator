@@ -169,6 +169,7 @@ t,
 #temperature,
 #texture,
 #landmass,
+#vignette,
 #fogging {
   pointer-events: none;
 }

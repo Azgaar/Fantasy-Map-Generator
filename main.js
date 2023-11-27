@@ -1,7 +1,7 @@
-// Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2022. MIT License
+"use strict";
+// Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2023. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
-"use strict";
 // set debug options
 const PRODUCTION = location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
 const DEBUG = localStorage.getItem("debug");
