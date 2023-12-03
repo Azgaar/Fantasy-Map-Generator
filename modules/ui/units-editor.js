@@ -24,13 +24,6 @@ function editUnits() {
   byId("heightExponentInput").addEventListener("input", changeHeightExponent);
   byId("heightExponentOutput").addEventListener("input", changeHeightExponent);
   byId("temperatureScale").addEventListener("change", changeTemperatureScale);
-  byId("barSizeOutput").addEventListener("input", renderScaleBar);
-  byId("barSizeInput").addEventListener("input", renderScaleBar);
-  byId("barLabel").addEventListener("input", renderScaleBar);
-  byId("barPosX").addEventListener("input", fitScaleBar);
-  byId("barPosY").addEventListener("input", fitScaleBar);
-  byId("barBackOpacity").addEventListener("input", changeScaleBarOpacity);
-  byId("barBackColor").addEventListener("input", changeScaleBarColor);
 
   byId("populationRateOutput").addEventListener("input", changePopulationRate);
   byId("populationRateInput").addEventListener("change", changePopulationRate);
@@ -84,14 +77,6 @@ function editUnits() {
     if (layerIsOn("toggleTemp")) drawTemp();
   }
 
-  function changeScaleBarOpacity() {
-    scaleBar.select("rect").attr("opacity", this.value);
-  }
-
-  function changeScaleBarColor() {
-    scaleBar.select("rect").attr("fill", this.value);
-  }
-
   function changePopulationRate() {
     populationRate = +this.value;
   }
@@ -129,19 +114,6 @@ function editUnits() {
     localStorage.removeItem("heightExponent");
     calculateTemperatures();
 
-    // scale bar
-    barSizeOutput.value = barSizeInput.value = 2;
-    barLabel.value = "";
-    barBackOpacity.value = 0.2;
-    barBackColor.value = "#ffffff";
-    barPosX.value = barPosY.value = 99;
-
-    localStorage.removeItem("barSize");
-    localStorage.removeItem("barLabel");
-    localStorage.removeItem("barBackOpacity");
-    localStorage.removeItem("barBackColor");
-    localStorage.removeItem("barPosX");
-    localStorage.removeItem("barPosY");
     renderScaleBar();
 
     // population

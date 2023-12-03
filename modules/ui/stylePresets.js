@@ -301,7 +301,19 @@ function addStylePreset() {
       ],
       "#fogging": ["opacity", "fill", "filter"],
       "#vignette": ["opacity", "fill", "filter"],
-      "#vignette-rect": ["x", "y", "width", "height", "rx", "ry", "filter"]
+      "#vignette-rect": ["x", "y", "width", "height", "rx", "ry", "filter"],
+      "#scaleBar": ["opacity", "fill", "font-size", "data-size", "data-x", "data-y", "data-label"],
+      "#scaleBarBack": [
+        "opacity",
+        "fill",
+        "stroke",
+        "stroke-width",
+        "filter",
+        "data-top",
+        "data-right",
+        "data-bottom",
+        "data-left"
+      ]
     };
 
     for (const selector in attributes) {
