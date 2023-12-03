@@ -1719,7 +1719,7 @@ function drawScaleBar(scaleBar, scaleLevel) {
 
   const distanceScale = +distanceScaleInput.value;
   const unit = distanceUnitInput.value;
-  const size = +scaleBar.attr("data-size");
+  const size = +scaleBar.attr("data-bar-size");
 
   const length = (function () {
     const init = 100;

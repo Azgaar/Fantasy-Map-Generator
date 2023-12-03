@@ -401,22 +401,22 @@
   },
   "#scaleBar": {
     "opacity": 1,
-    "fill": "#353540",
-    "font-size": 10,
-    "data-size": 2,
+    "fill": "#d0d0dc",
+    "font-size": 11,
+    "data-bar-size": 2,
     "data-x": 99,
     "data-y": 99,
     "data-label": ""
   },
   "#scaleBarBack": {
-    "opacity": 0.2,
-    "fill": "#ffffff",
+    "opacity": 0.3,
+    "fill": "#05001f",
     "stroke": "#000000",
     "stroke-width": 1,
-    "filter": "url(#blur5)",
-    "data-top": 20,
-    "data-right": 15,
-    "data-bottom": 15,
-    "data-left": 10
+    "filter": "",
+    "data-top": 23,
+    "data-right": 18,
+    "data-bottom": 18,
+    "data-left": 12
   }
 }

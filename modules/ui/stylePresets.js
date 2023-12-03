@@ -140,6 +140,9 @@ function applyStyleWithUiRefresh(style) {
 
   invokeActiveZooming();
   setPresetRemoveButtonVisibiliy();
+
+  drawScaleBar(scaleBar, scale);
+  fitScaleBar(scaleBar, svgWidth, svgHeight);
 }
 
 function addStylePreset() {
@@ -302,7 +305,7 @@ function addStylePreset() {
       "#fogging": ["opacity", "fill", "filter"],
       "#vignette": ["opacity", "fill", "filter"],
       "#vignette-rect": ["x", "y", "width", "height", "rx", "ry", "filter"],
-      "#scaleBar": ["opacity", "fill", "font-size", "data-size", "data-x", "data-y", "data-label"],
+      "#scaleBar": ["opacity", "fill", "font-size", "data-bar-size", "data-x", "data-y", "data-label"],
       "#scaleBarBack": [
         "opacity",
         "fill",

@@ -360,7 +360,7 @@ function selectStyleElement() {
   if (styleElement === "scaleBar") {
     styleScaleBar.style.display = "block";
 
-    styleScaleBarSize.value = el.attr("data-size");
+    styleScaleBarSize.value = el.attr("data-bar-size");
     styleScaleBarFontSize.value = el.attr("font-size");
     styleScaleBarPositionX.value = el.attr("data-x") || "99";
     styleScaleBarPositionY.value = el.attr("data-y") || "99";
@@ -1075,7 +1075,7 @@ styleScaleBar.addEventListener("input", function (event) {
 
   const {id, value} = event.target;
 
-  if (id === "styleScaleBarSize") scaleBar.attr("data-size", value);
+  if (id === "styleScaleBarSize") scaleBar.attr("data-bar-size", value);
   else if (id === "styleScaleBarFontSize") scaleBar.attr("font-size", value);
   else if (id === "styleScaleBarPositionX") scaleBar.attr("data-x", value);
   else if (id === "styleScaleBarPositionY") scaleBar.attr("data-y", value);
