@@ -244,11 +244,13 @@ function editNamesbase() {
 
     Names.clearChains();
     if (override) nameBases = [];
+    const unsafe = new RegExp(/[|/]/, "g");
 
     data.forEach(base => {
-      const [name, min, max, d, m, names] = base.split("|");
-      const secureNames = names.replace(/[/|]/g, "");
-      nameBases.push({name, min, max, d, m, b: secureNames});
+      const [rawName, min, max, d, m, rawNames] = base.split("|");
+      const name = rawName.replace(unsafe, "");
+      const names = rawNames.replace(unsafe, "");
+      nameBases.push({name, min, max, d, m, b: names});
     });
 
     createBasesList();
