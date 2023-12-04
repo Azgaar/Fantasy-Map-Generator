@@ -15,6 +15,15 @@ if (Array.prototype.flat === undefined) {
   };
 }
 
+// at
+if (Array.prototype.at === undefined) {
+  Array.prototype.at = function (index) {
+    if (index < 0) index += this.length;
+    if (index < 0 || index >= this.length) return undefined;
+    return this[index];
+  };
+}
+
 // readable stream iterator: https://bugs.chromium.org/p/chromium/issues/detail?id=929585#c10
 if (ReadableStream.prototype[Symbol.asyncIterator] === undefined) {
   ReadableStream.prototype[Symbol.asyncIterator] = async function* () {
