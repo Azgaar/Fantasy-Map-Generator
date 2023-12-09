@@ -218,6 +218,7 @@ async function parseLoadedData(data) {
 
     INFO && console.group("Loaded Map " + seed);
 
+    // TODO: move all to options object
     void (function parseSettings() {
       const settings = data[1].split("|");
       if (settings[0]) applyOption(distanceUnitInput, settings[0]);
@@ -226,23 +227,16 @@ async function parseLoadedData(data) {
       if (settings[3]) applyOption(heightUnit, settings[3]);
       if (settings[4]) heightExponentInput.value = heightExponentOutput.value = settings[4];
       if (settings[5]) temperatureScale.value = settings[5];
-      if (settings[6]) barSizeInput.value = barSizeOutput.value = settings[6];
-      if (settings[7] !== undefined) barLabel.value = settings[7];
-      if (settings[8] !== undefined) barBackOpacity.value = settings[8];
-      if (settings[9]) barBackColor.value = settings[9];
-      if (settings[10]) barPosX.value = settings[10];
-      if (settings[11]) barPosY.value = settings[11];
+      // setting 6-11 (scaleBar) are part of style now, kept as "" in newer versions for compatibility
       if (settings[12]) populationRate = populationRateInput.value = populationRateOutput.value = settings[12];
       if (settings[13]) urbanization = urbanizationInput.value = urbanizationOutput.value = settings[13];
       if (settings[14]) mapSizeInput.value = mapSizeOutput.value = minmax(settings[14], 1, 100);
       if (settings[15]) latitudeInput.value = latitudeOutput.value = minmax(settings[15], 0, 100);
       if (settings[18]) precInput.value = precOutput.value = settings[18];
-
       if (settings[19]) options = JSON.parse(settings[19]);
       // setting 16 and 17 (temperature) are part of options now, kept as "" in newer versions for compatibility
       if (settings[16]) options.temperatureEquator = +settings[16];
       if (settings[17]) options.temperatureNorthPole = options.temperatureSouthPole = +settings[17];
-
       if (settings[20]) mapName.value = settings[20];
       if (settings[21]) hideLabels.checked = +settings[21];
       if (settings[22]) stylePreset.value = settings[22];
@@ -453,7 +447,6 @@ async function parseLoadedData(data) {
     })();
 
     void (function restoreEvents() {
-      scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
       legend
         .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
         .on("click", () => clearLegend());

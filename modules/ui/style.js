@@ -14,6 +14,7 @@
 
   byId("styleFilterInput").innerHTML = allOptions;
   byId("styleStatesBodyFilter").innerHTML = allOptions;
+  byId("styleScaleBarBackgroundFilter").innerHTML = allOptions;
 }
 
 // store some style inputs as options
@@ -94,13 +95,13 @@ function selectStyleElement() {
   }
 
   // filter
-  if (!["landmass", "legend", "regions"].includes(styleElement)) {
+  if (!["landmass", "legend", "regions", "scaleBar"].includes(styleElement)) {
     styleFilter.style.display = "block";
     styleFilterInput.value = el.attr("filter") || "";
   }
 
   // fill
-  if (["rivers", "lakes", "landmass", "prec", "ice", "fogging", "vignette"].includes(styleElement)) {
+  if (["rivers", "lakes", "landmass", "prec", "ice", "fogging", "scaleBar", "vignette"].includes(styleElement)) {
     styleFill.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill");
   }
@@ -354,6 +355,31 @@ function selectStyleElement() {
     styleCoastline.style.display = "block";
     const auto = (styleCoastlineAuto.checked = coastline.select("#sea_island").attr("auto-filter"));
     if (auto) styleFilter.style.display = "none";
+  }
+
+  if (styleElement === "scaleBar") {
+    styleScaleBar.style.display = "block";
+
+    styleScaleBarSize.value = el.attr("data-bar-size");
+    styleScaleBarFontSize.value = el.attr("font-size");
+    styleScaleBarPositionX.value = el.attr("data-x") || "99";
+    styleScaleBarPositionY.value = el.attr("data-y") || "99";
+    styleScaleBarLabel.value = el.attr("data-label") || "";
+
+    const scaleBarBack = el.select("#scaleBarBack");
+    if (scaleBarBack.size()) {
+      styleScaleBarBackgroundOpacityInput.value = styleScaleBarBackgroundOpacityOutput.value =
+        scaleBarBack.attr("opacity");
+      styleScaleBarBackgroundFillInput.value = styleScaleBarBackgroundFillOutput.value = scaleBarBack.attr("fill");
+      styleScaleBarBackgroundStrokeInput.value = styleScaleBarBackgroundStrokeOutput.value =
+        scaleBarBack.attr("stroke");
+      styleScaleBarBackgroundStrokeWidth.value = scaleBarBack.attr("stroke-width");
+      styleScaleBarBackgroundFilter.value = scaleBarBack.attr("filter");
+      styleScaleBarBackgroundPaddingTop.value = scaleBarBack.attr("data-top");
+      styleScaleBarBackgroundPaddingRight.value = scaleBarBack.attr("data-right");
+      styleScaleBarBackgroundPaddingBottom.value = scaleBarBack.attr("data-bottom");
+      styleScaleBarBackgroundPaddingLeft.value = scaleBarBack.attr("data-left");
+    }
   }
 
   if (styleElement === "vignette") {
@@ -1041,6 +1067,44 @@ styleVignetteRy.addEventListener("input", function () {
 styleVignetteBlur.addEventListener("input", function () {
   styleVignetteBlurOutput.value = this.value;
   byId("vignette-rect")?.setAttribute("filter", `blur(${this.value}px)`);
+});
+
+styleScaleBar.addEventListener("input", function (event) {
+  const scaleBarBack = scaleBar.select("#scaleBarBack");
+  if (!scaleBarBack.size()) return;
+
+  const {id, value} = event.target;
+
+  if (id === "styleScaleBarSize") scaleBar.attr("data-bar-size", value);
+  else if (id === "styleScaleBarFontSize") scaleBar.attr("font-size", value);
+  else if (id === "styleScaleBarPositionX") scaleBar.attr("data-x", value);
+  else if (id === "styleScaleBarPositionY") scaleBar.attr("data-y", value);
+  else if (id === "styleScaleBarLabel") scaleBar.attr("data-label", value);
+  else if (id === "styleScaleBarBackgroundOpacityInput") scaleBarBack.attr("opacity", value);
+  else if (id === "styleScaleBarBackgroundFillInput") scaleBarBack.attr("fill", value);
+  else if (id === "styleScaleBarBackgroundStrokeInput") scaleBarBack.attr("stroke", value);
+  else if (id === "styleScaleBarBackgroundStrokeWidth") scaleBarBack.attr("stroke-width", value);
+  else if (id === "styleScaleBarBackgroundFilter") scaleBarBack.attr("filter", value);
+  else if (id === "styleScaleBarBackgroundPaddingTop") scaleBarBack.attr("data-top", value);
+  else if (id === "styleScaleBarBackgroundPaddingRight") scaleBarBack.attr("data-right", value);
+  else if (id === "styleScaleBarBackgroundPaddingBottom") scaleBarBack.attr("data-bottom", value);
+  else if (id === "styleScaleBarBackgroundPaddingLeft") scaleBarBack.attr("data-left", value);
+
+  if (
+    [
+      "styleScaleBarSize",
+      "styleScaleBarPositionX",
+      "styleScaleBarPositionY",
+      "styleScaleBarLabel",
+      "styleScaleBarBackgroundPaddingLeft",
+      "styleScaleBarBackgroundPaddingTop",
+      "styleScaleBarBackgroundPaddingRight",
+      "styleScaleBarBackgroundPaddingBottom"
+    ].includes(id)
+  ) {
+    drawScaleBar(scaleBar, scale);
+    fitScaleBar(scaleBar, svgWidth, svgHeight);
+  }
 });
 
 function updateElements() {

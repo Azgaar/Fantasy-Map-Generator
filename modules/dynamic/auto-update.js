@@ -736,4 +736,38 @@ export function resolveVersionConflicts(version) {
       .style("display", "none");
     vignette.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
   }
+
+  if (version < 1.96) {
+    // v1.96.00 moved scaleBar options from units editor to style
+    d3.select("#scaleBar").remove();
+
+    scaleBar = svg
+      .insert("g", "#viewbox + *")
+      .attr("id", "scaleBar")
+      .attr("opacity", 1)
+      .attr("fill", "#353540")
+      .attr("font-size", 10)
+      .attr("data-size", 2)
+      .attr("data-x", 99)
+      .attr("data-y", 99)
+      .attr("data-label", "");
+
+    scaleBar
+      .append("rect")
+      .attr("id", "scaleBarBack")
+      .attr("opacity", 0.2)
+      .attr("fill", "#ffffff")
+      .attr("stroke", "#000000")
+      .attr("stroke-width", 1)
+      .attr("filter", "url(#blur5)")
+      .attr("data-top", 20)
+      .attr("data-right", 15)
+      .attr("data-bottom", 15)
+      .attr("data-left", 10);
+
+    drawScaleBar(scaleBar, scale);
+    fitScaleBar(scaleBar, svgWidth, svgHeight);
+
+    if (!layerIsOn("toggleScaleBar")) scaleBar.style("display", "none");
+  }
 }

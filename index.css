@@ -1876,12 +1876,6 @@ div.editorLine {
   margin: 0.4em 0 0 -0.9em;
 }
 
-#barBackColor {
-  width: 3.5em;
-  padding: 0px;
-  height: 1.2em;
-}
-
 #ruler {
   cursor: move;
   fill: none;
@@ -1919,18 +1913,6 @@ div.editorLine {
   fill-rule: evenodd;
   fill-opacity: 0.5;
   stroke: #737373;
-}
-
-#scaleBar {
-  stroke: none;
-  fill: none;
-  cursor: pointer;
-}
-
-#scaleBar text {
-  fill: #353540;
-  text-anchor: middle;
-  font-family: var(--serif);
 }
 
 #militaryOptionsTable select {
