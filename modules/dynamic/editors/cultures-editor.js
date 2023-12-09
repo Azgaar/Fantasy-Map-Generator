@@ -341,10 +341,7 @@ function cultureChangeColor() {
   const callback = newFill => {
     $el.fill = newFill;
     pack.cultures[cultureId].color = newFill;
-    cults
-      .select("#culture" + cultureId)
-      .attr("fill", newFill)
-      .attr("stroke", newFill);
+    cults.select("#culture" + cultureId).attr("fill", newFill);
     debug.select("#cultureCenter" + cultureId).attr("fill", newFill);
   };
 
