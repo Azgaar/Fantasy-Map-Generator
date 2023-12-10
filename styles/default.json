@@ -286,13 +286,24 @@
     "href": "./images/pattern1.png",
     "opacity": 0.2
   },
-  "#terrs": {
-    "opacity": null,
+  "#terrs > #oceanHeights": {
+    "data-render": 0,
+    "opacity": 1,
+    "scheme": "bright",
+    "terracing": 0,
+    "skip": 0,
+    "relax": 1,
+    "curve": "curveBasisClosed",
+    "filter": null,
+    "mask": null
+  },
+  "#terrs > #landHeights": {
+    "opacity": 1,
     "scheme": "bright",
     "terracing": 0,
     "skip": 5,
     "relax": 0,
-    "curve": 0,
+    "curve": "curveBasisClosed",
     "filter": null,
     "mask": "url(#land)"
   },

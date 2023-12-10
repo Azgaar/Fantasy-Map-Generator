@@ -188,92 +188,134 @@ function restoreLayers() {
 }
 
 function toggleHeight(event) {
-  if (customization === 1) {
-    tip("You cannot turn off the layer when heightmap is in edit mode", false, "error");
-    return;
-  }
+  if (customization === 1) return tip("You cannot turn off the layer when heightmap is in edit mode", false, "error");
 
-  if (!terrs.selectAll("*").size()) {
+  const children = terrs.selectAll("#oceanHeights > *, #landHeights > *");
+  if (!children.size()) {
     turnButtonOn("toggleHeight");
     drawHeightmap();
     if (event && isCtrlClick(event)) editStyle("terrs");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("terrs");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("terrs");
     turnButtonOff("toggleHeight");
-    terrs.selectAll("*").remove();
+    children.remove();
   }
 }
 
 function drawHeightmap() {
   TIME && console.time("drawHeightmap");
-  terrs.selectAll("*").remove();
 
-  const {cells, vertices} = pack;
-  const n = cells.i.length;
-  const used = new Uint8Array(cells.i.length);
-  const paths = new Array(101).fill("");
+  const ocean = terrs.select("#oceanHeights");
+  const land = terrs.select("#landHeights");
 
-  const scheme = getColorScheme(terrs.attr("scheme"));
-  const terracing = terrs.attr("terracing") / 10; // add additional shifted darker layer for pseudo-3d effect
-  const skip = +terrs.attr("skip") + 1;
-  const simplification = +terrs.attr("relax");
+  ocean.selectAll("*").remove();
+  land.selectAll("*").remove();
 
-  switch (+terrs.attr("curve")) {
-    case 0:
-      lineGen.curve(d3.curveBasisClosed);
-      break;
-    case 1:
-      lineGen.curve(d3.curveLinear);
-      break;
-    case 2:
-      lineGen.curve(d3.curveStep);
-      break;
-    default:
-      lineGen.curve(d3.curveBasisClosed);
+  const paths = new Array(101);
+
+  // ocean cells
+  const renderOceanCells = Boolean(+ocean.attr("data-render"));
+  if (renderOceanCells) {
+    const {cells, vertices} = grid;
+    const used = new Uint8Array(cells.i.length);
+
+    const skip = +ocean.attr("skip") + 1 || 1;
+    const relax = +ocean.attr("relax") || 0;
+
+    let currentLayer = 0;
+    const heights = cells.i.sort((a, b) => cells.h[a] - cells.h[b]);
+    for (const i of heights) {
+      const h = cells.h[i];
+      if (h > currentLayer) currentLayer += skip;
+      if (h < currentLayer) continue;
+      if (currentLayer >= 20) break;
+      if (used[i]) continue; // already marked
+      const onborder = cells.c[i].some(n => cells.h[n] < h);
+      if (!onborder) continue;
+      const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.h[i] < h));
+      const chain = connectVertices(cells, vertices, vertex, h, used);
+      if (chain.length < 3) continue;
+      const points = simplifyLine(chain, relax).map(v => vertices.p[v]);
+      if (!paths[h]) paths[h] = "";
+      paths[h] += round(lineGen(points));
+    }
   }
 
-  let currentLayer = 20;
-  const heights = cells.i.sort((a, b) => cells.h[a] - cells.h[b]);
-  for (const i of heights) {
-    const h = cells.h[i];
-    if (h > currentLayer) currentLayer += skip;
-    if (currentLayer > 100) break; // no layers possible with height > 100
-    if (h < currentLayer) continue;
-    if (used[i]) continue; // already marked
-    const onborder = cells.c[i].some(n => cells.h[n] < h);
-    if (!onborder) continue;
-    const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.h[i] < h));
-    const chain = connectVertices(vertex, h);
-    if (chain.length < 3) continue;
-    const points = simplifyLine(chain).map(v => vertices.p[v]);
-    paths[h] += round(lineGen(points));
+  // land cells
+  {
+    const {cells, vertices} = pack;
+    const used = new Uint8Array(cells.i.length);
+
+    const skip = +land.attr("skip") + 1 || 1;
+    const relax = +land.attr("relax") || 0;
+
+    let currentLayer = 20;
+    const heights = cells.i.sort((a, b) => cells.h[a] - cells.h[b]);
+    for (const i of heights) {
+      const h = cells.h[i];
+      if (h > currentLayer) currentLayer += skip;
+      if (h < currentLayer) continue;
+      if (currentLayer > 100) break; // no layers possible with height > 100
+      if (used[i]) continue; // already marked
+      const onborder = cells.c[i].some(n => cells.h[n] < h);
+      if (!onborder) continue;
+      const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.h[i] < h));
+      const chain = connectVertices(cells, vertices, vertex, h, used);
+      if (chain.length < 3) continue;
+      const points = simplifyLine(chain, relax).map(v => vertices.p[v]);
+      if (!paths[h]) paths[h] = "";
+      paths[h] += round(lineGen(points));
+    }
   }
 
-  terrs
-    .append("rect")
-    .attr("x", 0)
-    .attr("y", 0)
-    .attr("width", graphWidth)
-    .attr("height", graphHeight)
-    .attr("fill", scheme(0.8)); // draw base layer
-  for (const i of d3.range(20, 101)) {
-    if (paths[i].length < 10) continue;
-    const color = getColor(i, scheme);
-    if (terracing)
-      terrs
-        .append("path")
-        .attr("d", paths[i])
-        .attr("transform", "translate(.7,1.4)")
-        .attr("fill", d3.color(color).darker(terracing))
-        .attr("data-height", i);
-    terrs.append("path").attr("d", paths[i]).attr("fill", color).attr("data-height", i);
+  // render paths
+  for (const h of d3.range(0, 101)) {
+    const group = h < 20 ? ocean : land;
+    const scheme = getColorScheme(group.attr("scheme"));
+
+    if (h === 0 && renderOceanCells) {
+      // draw base ocean layer
+      group
+        .append("rect")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", graphWidth)
+        .attr("height", graphHeight)
+        .attr("fill", scheme(1));
+    }
+
+    if (h === 20) {
+      // draw base land layer
+      group
+        .append("rect")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", graphWidth)
+        .attr("height", graphHeight)
+        .attr("fill", scheme(0.8));
+    }
+
+    if (paths[h] && paths[h].length >= 10) {
+      const curve = group.attr("curve") || "curveBasisClosed";
+      lineGen.curve(d3[curve]);
+      const terracing = group.attr("terracing") / 10 || 0; // shifted darker layer for pseudo-3d effect
+      const color = getColor(h, scheme);
+
+      if (terracing && h >= 20) {
+        land
+          .append("path")
+          .attr("d", paths[h])
+          .attr("transform", "translate(.7,1.4)")
+          .attr("fill", d3.color(color).darker(terracing))
+          .attr("data-height", h);
+      }
+      group.append("path").attr("d", paths[h]).attr("fill", color).attr("data-height", h);
+    }
   }
 
   // connect vertices to chain
-  function connectVertices(start, h) {
+  function connectVertices(cells, vertices, start, h, used) {
+    const n = cells.i.length;
     const chain = []; // vertices chain to form a path
     for (let i = 0, current = start; i === 0 || (current !== start && i < 20000); i++) {
       const prev = chain[chain.length - 1]; // previous vertex in chain
@@ -295,7 +337,7 @@ function drawHeightmap() {
     return chain;
   }
 
-  function simplifyLine(chain) {
+  function simplifyLine(chain, simplification) {
     if (!simplification) return chain;
     const n = simplification + 1; // filter each nth element
     return chain.filter((d, i) => i % n === 0);

@@ -92,15 +92,18 @@ let fogging = viewbox
 let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
 let debug = viewbox.append("g").attr("id", "debug");
 
-// lake and coast groups
 lakes.append("g").attr("id", "freshwater");
 lakes.append("g").attr("id", "salt");
 lakes.append("g").attr("id", "sinkhole");
 lakes.append("g").attr("id", "frozen");
 lakes.append("g").attr("id", "lava");
 lakes.append("g").attr("id", "dry");
+
 coastline.append("g").attr("id", "sea_island");
 coastline.append("g").attr("id", "lake_island");
+
+terrs.append("g").attr("id", "oceanHeights");
+terrs.append("g").attr("id", "landHeights");
 
 labels.append("g").attr("id", "states");
 labels.append("g").attr("id", "addedLabels");
@@ -135,7 +138,6 @@ fogging
   .attr("filter", "url(#splotch)");
 
 // assign events separately as not a viewbox child
-scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
 legend
   .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
   .on("click", () => clearLegend());
