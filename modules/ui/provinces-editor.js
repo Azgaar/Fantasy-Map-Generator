@@ -44,14 +44,14 @@ function editProvinces() {
       cl = el.classList,
       line = el.parentNode,
       p = +line.dataset.id;
-    const stateId = +document.getElementById("provincesFilterState").value;
+    const stateId = pack.provinces[p].state;
 
     if (el.tagName === "FILL-BOX") changeFill(el);
     else if (cl.contains("name")) editProvinceName(p);
     else if (cl.contains("coaIcon")) editEmblem("province", "provinceCOA" + p, pack.provinces[p]);
     else if (cl.contains("icon-star-empty")) capitalZoomIn(p);
     else if (cl.contains("icon-flag-empty")) triggerIndependencePromps(p);
-    else if (cl.contains("icon-dot-circled")) overviewBurgs({stateId}); // {stateId}, filtered view for that state
+    else if (cl.contains("icon-dot-circled")) overviewBurgs({stateId});
     else if (cl.contains("culturePopulation")) changePopulation(p);
     else if (cl.contains("icon-pin")) toggleFog(p, cl);
     else if (cl.contains("icon-trash-empty")) removeProvince(p);
@@ -187,7 +187,6 @@ function editProvinces() {
 
     // update footer
     provincesFooterNumber.innerHTML = filtered.length;
-    byId("provincesFooterCells").innerHTML = pack.cells.h.filter(h => h >= 20).length;
     byId("provincesFooterBurgs").innerHTML = totalBurgs;
     provincesFooterArea.innerHTML = filtered.length ? si(totalArea / filtered.length) + unit : 0 + unit;
     provincesFooterPopulation.innerHTML = filtered.length ? si(totalPopulation / filtered.length) : 0;
