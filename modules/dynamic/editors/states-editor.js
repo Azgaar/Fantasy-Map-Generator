@@ -434,13 +434,13 @@ function editStateName(state) {
   modules.editStateName = true;
 
   // add listeners
-  byId("stateNameEditorShortCulture").on("click", regenerateShortNameCuture);
+  byId("stateNameEditorShortCulture").on("click", regenerateShortNameCulture);
   byId("stateNameEditorShortRandom").on("click", regenerateShortNameRandom);
   byId("stateNameEditorAddForm").on("click", addCustomForm);
   byId("stateNameEditorCustomForm").on("change", addCustomForm);
   byId("stateNameEditorFullRegenerate").on("click", regenerateFullName);
 
-  function regenerateShortNameCuture() {
+  function regenerateShortNameCulture() {
     const state = +stateNameEditor.dataset.state;
     const culture = pack.states[state].culture;
     const name = Names.getState(Names.getCultureShort(culture), culture);

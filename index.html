@@ -4450,7 +4450,7 @@
       </div>
 
       <div id="provincesEditor" class="dialog stable" style="display: none">
-        <div id="provincesHeader" class="header" style="grid-template-columns: 11em 8em 8em 8em 5em 8em">
+        <div id="provincesHeader" class="header" style="grid-template-columns: 11em 8em 8em 6em 6em 7em 8em">
           <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">
             Province&nbsp;
           </div>
@@ -4463,6 +4463,7 @@
           <div data-tip="Click to sort by province owner" class="sortable alphabetically" data-sortby="state">
             State&nbsp;
           </div>
+          <div data-tip="Click to sort by province burgs count" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
           <div data-tip="Click to sort by province area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
           <div data-tip="Click to sort by province population" class="sortable hide" data-sortby="population">
             Population&nbsp;
@@ -4475,6 +4476,12 @@
           <div data-tip="Provinces displayed" style="margin-left: 4px">
             Provinces:&nbsp;<span id="provincesFooterNumber">0</span>
           </div>
+          <div data-tip="Total land cells number" style="margin-left: 12px">
+            Cells:&nbsp;<span id="provincesFooterCells">0</span>
+          </div>
+          <div data-tip="Total burgs number" style="margin-left: 12px">
+            Burgs:&nbsp;<span id="provincesFooterBurgs">0</span>
+		  </div>
           <div data-tip="Average area" style="margin-left: 14px">
             Mean area:&nbsp;<span id="provincesFooterArea">0</span>
           </div>
