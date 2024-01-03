@@ -4612,7 +4612,7 @@
           <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
           <span
             id="provinceNameEditorShortCulture"
-            data-tip="Generate culture-specific name"
+            data-tip="Generate culture-specific name for the province"
             class="icon-book pointer"
           ></span>
           <span id="provinceNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
@@ -4688,6 +4688,13 @@
             class="icon-arrows-cw pointer"
           ></span>
         </div>
+		
+		<div id="provinceCultureName" data-tip="Dominant culture in the province. This decides the naming criteria">
+		Province culture:&nbsp;<span id="provinceCultureDisplay"></span>
+		</div>
+		<div id="provinceCultureBaseName" data-tip="Namesbase used by the dominant culture in the province.">
+		Province language:&nbsp;<span id="provinceLanguageDisplay"></span>
+		</div>
       </div>
 
       <div id="namesbaseEditor" class="dialog stable textual" style="display: none">

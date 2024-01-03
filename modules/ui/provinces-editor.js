@@ -294,7 +294,7 @@ function editProvinces() {
     // move all burgs to a new state
     province.burgs.forEach(b => (burgs[b].state = newStateId));
 
-    // difine new state attributes
+    // define new state attributes
     const {cell: center, culture} = burgs[burgId];
     const color = getRandomColor();
     const coa = province.coa;
@@ -500,6 +500,12 @@ function editProvinces() {
     document.getElementById("provinceNameEditorShort").value = p.name;
     applyOption(provinceNameEditorSelectForm, p.formName);
     document.getElementById("provinceNameEditorFull").value = p.fullName;
+	
+    const cultureName = pack.cultures[pack.cells.culture[pack.provinces[province].center]].name; // to display the culture name
+    const provinceLangID = pack.cultures[pack.cells.culture[pack.provinces[province].center]].base;
+    const provinceNameBase = Names.getNameBases()[provinceLangID].name;
+    document.getElementById("provinceCultureDisplay").innerText = cultureName;
+    document.getElementById("provinceLanguageDisplay").innerText = provinceNameBase;
 
     $("#provinceNameEditor").dialog({
       resizable: false,
@@ -520,12 +526,17 @@ function editProvinces() {
     modules.editProvinceName = true;
 
     // add listeners
-    document.getElementById("provinceNameEditorShortCulture").addEventListener("click", regenerateShortNameCuture);
+    document.getElementById("provinceNameEditorShortCulture").addEventListener("click", regenerateShortNameCulture);
     document.getElementById("provinceNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
     document.getElementById("provinceNameEditorAddForm").addEventListener("click", addCustomForm);
     document.getElementById("provinceNameEditorFullRegenerate").addEventListener("click", regenerateFullName);
+	
+    document.getElementById("provinceNameEditorShortCulture").addEventListener("mouseover", showdatatipNamesbase);
+    function showdatatipNamesbase() {
+      tip("namesbase " + this.id + Names.getNameBases()[provinceCultureID].name);
+	}
 
-    function regenerateShortNameCuture() {
+    function regenerateShortNameCulture() {
       const province = +provinceNameEditor.dataset.province;
       const culture = pack.cells.culture[pack.provinces[province].center];
       const name = Names.getState(Names.getCultureShort(culture), culture);
