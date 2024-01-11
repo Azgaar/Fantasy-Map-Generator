@@ -26,6 +26,7 @@ function overviewRivers() {
   document.getElementById("riversBasinHighlight").addEventListener("click", toggleBasinsHightlight);
   document.getElementById("riversExport").addEventListener("click", downloadRiversData);
   document.getElementById("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
+  document.getElementById("loadriverfromcsv").addEventListener("click", loadriverfromcsvfunction);
 
   // add line for each river
   function riversOverviewAddLines() {
@@ -178,7 +179,7 @@ function overviewRivers() {
     });
   }
 
-  function triggerAllRiversRemove() {
+  function removeAllRivers() {
     alertMessage.innerHTML = /* html */ `Are you sure you want to remove all rivers?`;
     $("#alert").dialog({
       resizable: false,
@@ -200,5 +201,21 @@ function overviewRivers() {
     pack.cells.r = new Uint16Array(pack.cells.i.length);
     rivers.selectAll("*").remove();
     riversOverviewAddLines();
+  }
+  
+  function loadriverfromcsvfunction() {
+    alertMessage.innerHTML = /* html */ `Are you sure you want to add river from csv?`;
+        $("#alert").dialog({
+          resizable: false,
+          title: "Import rivers",
+          buttons: {
+            Remove: function() {
+              $(this).dialog("close");
+            },
+            Cancel: function() {
+              $(this).dialog("close");
+            }
+          }
+        });
   }
 }
