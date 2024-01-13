@@ -165,7 +165,7 @@ function overviewRivers() {
     });
   }
 
-  function removeAllRivers() {
+  function triggerAllRiversRemove() {
     alertMessage.innerHTML = /* html */ `Are you sure you want to remove all rivers?`;
     $("#alert").dialog({
       resizable: false,
@@ -195,13 +195,18 @@ function overviewRivers() {
           resizable: false,
           title: "Import rivers",
           buttons: {
-            Remove: function() {
+            Import: function() {
               $(this).dialog("close");
+              loadriverscsv();
             },
             Cancel: function() {
               $(this).dialog("close");
             }
           }
         });
+  }
+  
+  function loadriverscsv() {
+    
   }
 }
