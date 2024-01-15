@@ -1,7 +1,7 @@
 "use strict";
 
 // version and caching control
-const version = "1.95.05"; // generator version, update each time
+const version = "1.95.06"; // generator version, update each time
 
 {
   document.title += " v" + version;
@@ -40,6 +40,7 @@ const version = "1.95.05"; // generator version, update each time
         <li>New 3D scene options and improvements</li>
         <li>Autosave feature (in Options)</li>
         <li>Google translation support (in Options)</li>
+        <li>Added feature to load river via saved file, It is accessible from river overview ui, by clicking on the upload button.</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
