@@ -49,6 +49,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
         <li>Configurable longitude</li>
         <li>Preview villages map</li>
         <li>Ability to render ocean heightmap</li>
+        <li>Added feature to load river via saved file, accessible from river overview UI</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
