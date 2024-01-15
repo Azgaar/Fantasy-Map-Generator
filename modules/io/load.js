@@ -769,3 +769,305 @@ async function parseLoadedData(data, mapVersion) {
     });
   }
 }
+
+
+
+async function loadRiversFromDropbox() {
+    const mapPath = byId("loadFromDropboxSelect")?.value;
+
+  DEBUG && console.log("Loading map from Dropbox:", mapPath);
+  const blob = await Cloud.providers.dropbox.load(mapPath);
+  uploadRiversMap(blob);
+}
+
+function uploadRiversMap(file, callback) {
+  uploadRiversMap.timeStart = performance.now();
+  const OLDEST_SUPPORTED_VERSION = 0.7;
+  const currentVersion = parseFloat(version);
+
+  const fileReader = new FileReader();
+  fileReader.onloadend = async function (fileLoadedEvent) {
+    if (callback) callback();
+    byId("coas").innerHTML = ""; // remove auto-generated emblems
+    const result = fileLoadedEvent.target.result;
+    const [mapData, mapVersion] = await parseLoadedResult(result);
+
+    const isInvalid = !mapData || isNaN(mapVersion) || mapData.length < 26 || !mapData[5];
+    const isUpdated = mapVersion === currentVersion;
+    const isAncient = mapVersion < OLDEST_SUPPORTED_VERSION;
+    const isNewer = mapVersion > currentVersion;
+    const isOutdated = mapVersion < currentVersion;
+
+    if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
+    if (isUpdated) return parseLoadedDataOnlyRivers(mapData);
+    if (isAncient) return showUploadMessage("ancient", mapData, mapVersion);
+    if (isNewer) return showUploadMessage("newer", mapData, mapVersion);
+    if (isOutdated) return showUploadMessage("outdated", mapData, mapVersion);
+  };
+
+  fileReader.readAsArrayBuffer(file);
+}
+function showUploadRiverMessage(type, mapData, mapVersion) {
+  const archive = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "archived version");
+  let message, title, canBeLoaded;
+
+  if (type === "invalid") {
+    message = `The file does not look like a valid save file.<br>Please check the data format`;
+    title = "Invalid file";
+    canBeLoaded = false;
+  } else if (type === "ancient") {
+    message = `The map version you are trying to load (${mapVersion}) is too old and cannot be updated to the current version.<br>Please keep using an ${archive}`;
+    title = "Ancient file";
+    canBeLoaded = false;
+  } else if (type === "newer") {
+    message = `The map version you are trying to load (${mapVersion}) is newer than the current version.<br>Please load the file in the appropriate version`;
+    title = "Newer file";
+    canBeLoaded = false;
+  } else if (type === "outdated") {
+    message = `The map version (${mapVersion}) does not match the Generator version (${version}).<br>That is fine, click OK to the get map <b style="color: #005000">auto-updated</b>.<br>In case of issues please keep using an ${archive} of the Generator`;
+    title = "Outdated file";
+    canBeLoaded = true;
+  }
+
+  alertMessage.innerHTML = message;
+  const buttons = {
+    OK: function () {
+      $(this).dialog("close");
+      if (canBeLoaded) parseLoadedDataOnlyRiversData(mapData);
+    }
+  };
+  $("#alert").dialog({title, buttons});
+}
+
+async function parseLoadedDataOnlyRivers(data) {
+  try {
+    // exit customization
+    if (window.closeDialogs) closeDialogs();
+    customization = 0;
+    if (customizationMenu.offsetParent) styleTab.click();
+
+    INFO && console.group("Loaded Map " + seed);
+
+
+    void (function parsePackData() {
+      reGraph();
+      reMarkFeatures();
+
+      pack.rivers = data[32] ? JSON.parse(data[32]) : [];
+
+      const cells = pack.cells;
+      cells.r = Uint16Array.from(data[22].split(","));
+
+    })();
+
+
+    {
+      // dynamically import and run auto-update script
+      const versionNumber = parseFloat(params[0]);
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.95.00");
+      resolveVersionConflicts(versionNumber);
+    }
+
+    {
+      // add custom heightmap color scheme if any
+      const scheme = terrs.attr("scheme");
+      if (!(scheme in heightmapColorSchemes)) {
+        addCustomColorScheme(scheme);
+      }
+    }
+
+    {
+      // add custom texture if any
+      const textureHref = texture.attr("data-href");
+      if (textureHref) updateTextureSelectValue(textureHref);
+    }
+
+    void (function checkDataIntegrity() {
+      const cells = pack.cells;
+
+      if (pack.cells.i.length !== pack.cells.state.length) {
+        const message = "Data Integrity Check. Striping issue detected. To fix edit the heightmap in erase mode";
+        ERROR && console.error(message);
+      }
+
+      const invalidStates = [...new Set(cells.state)].filter(s => !pack.states[s] || pack.states[s].removed);
+      invalidStates.forEach(s => {
+        const invalidCells = cells.i.filter(i => cells.state[i] === s);
+        invalidCells.forEach(i => (cells.state[i] = 0));
+        ERROR && console.error("Data Integrity Check. Invalid state", s, "is assigned to cells", invalidCells);
+      });
+
+      const invalidProvinces = [...new Set(cells.province)].filter(
+        p => p && (!pack.provinces[p] || pack.provinces[p].removed)
+      );
+      invalidProvinces.forEach(p => {
+        const invalidCells = cells.i.filter(i => cells.province[i] === p);
+        invalidCells.forEach(i => (cells.province[i] = 0));
+        ERROR && console.error("Data Integrity Check. Invalid province", p, "is assigned to cells", invalidCells);
+      });
+
+      const invalidCultures = [...new Set(cells.culture)].filter(c => !pack.cultures[c] || pack.cultures[c].removed);
+      invalidCultures.forEach(c => {
+        const invalidCells = cells.i.filter(i => cells.culture[i] === c);
+        invalidCells.forEach(i => (cells.province[i] = 0));
+        ERROR && console.error("Data Integrity Check. Invalid culture", c, "is assigned to cells", invalidCells);
+      });
+
+      const invalidReligions = [...new Set(cells.religion)].filter(
+        r => !pack.religions[r] || pack.religions[r].removed
+      );
+      invalidReligions.forEach(r => {
+        const invalidCells = cells.i.filter(i => cells.religion[i] === r);
+        invalidCells.forEach(i => (cells.religion[i] = 0));
+        ERROR && console.error("Data Integrity Check. Invalid religion", r, "is assigned to cells", invalidCells);
+      });
+
+      const invalidFeatures = [...new Set(cells.f)].filter(f => f && !pack.features[f]);
+      invalidFeatures.forEach(f => {
+        const invalidCells = cells.i.filter(i => cells.f[i] === f);
+        // No fix as for now
+        ERROR && console.error("Data Integrity Check. Invalid feature", f, "is assigned to cells", invalidCells);
+      });
+
+      const invalidBurgs = [...new Set(cells.burg)].filter(
+        burgId => burgId && (!pack.burgs[burgId] || pack.burgs[burgId].removed)
+      );
+      invalidBurgs.forEach(burgId => {
+        const invalidCells = cells.i.filter(i => cells.burg[i] === burgId);
+        invalidCells.forEach(i => (cells.burg[i] = 0));
+        ERROR && console.error("Data Integrity Check. Invalid burg", burgId, "is assigned to cells", invalidCells);
+      });
+
+      const invalidRivers = [...new Set(cells.r)].filter(r => r && !pack.rivers.find(river => river.i === r));
+      invalidRivers.forEach(r => {
+        const invalidCells = cells.i.filter(i => cells.r[i] === r);
+        invalidCells.forEach(i => (cells.r[i] = 0));
+        rivers.select("river" + r).remove();
+        ERROR && console.error("Data Integrity Check. Invalid river", r, "is assigned to cells", invalidCells);
+      });
+
+      pack.burgs.forEach(burg => {
+        if ((!burg.i || burg.removed) && burg.lock) {
+          ERROR &&
+            console.error(
+              `Data Integrity Check. Burg ${burg.i || "0"} is removed or invalid but still locked. Unlocking the burg`
+            );
+          delete burg.lock;
+          return;
+        }
+
+        if (!burg.i || burg.removed) return;
+        if (burg.cell === undefined || burg.x === undefined || burg.y === undefined) {
+          ERROR &&
+            console.error(
+              `Data Integrity Check. Burg ${burg.i} is missing cell info or coordinates. Removing the burg`
+            );
+          burg.removed = true;
+        }
+
+        if (burg.port < 0) {
+          ERROR && console.error("Data Integrity Check. Burg", burg.i, "has invalid port value", burg.port);
+          burg.port = 0;
+        }
+
+        if (burg.cell >= cells.i.length) {
+          ERROR && console.error("Data Integrity Check. Burg", burg.i, "is linked to invalid cell", burg.cell);
+          burg.cell = findCell(burg.x, burg.y);
+          cells.i.filter(i => cells.burg[i] === burg.i).forEach(i => (cells.burg[i] = 0));
+          cells.burg[burg.cell] = burg.i;
+        }
+
+        if (burg.state && !pack.states[burg.state]) {
+          ERROR && console.error("Data Integrity Check. Burg", burg.i, "is linked to invalid state", burg.state);
+          burg.state = 0;
+        }
+
+        if (burg.state && pack.states[burg.state].removed) {
+          ERROR && console.error("Data Integrity Check. Burg", burg.i, "is linked to removed state", burg.state);
+          burg.state = 0;
+        }
+
+        if (burg.state === undefined) {
+          ERROR && console.error("Data Integrity Check. Burg", burg.i, "has no state data");
+          burg.state = 0;
+        }
+      });
+
+      pack.provinces.forEach(p => {
+        if (!p.i || p.removed) return;
+        if (pack.states[p.state] && !pack.states[p.state].removed) return;
+        ERROR && console.error("Data Integrity Check. Province", p.i, "is linked to removed state", p.state);
+        p.removed = true; // remove incorrect province
+      });
+
+      {
+        const markerIds = [];
+        let nextId = last(pack.markers)?.i + 1 || 0;
+
+        pack.markers.forEach(marker => {
+          if (markerIds[marker.i]) {
+            ERROR && console.error("Data Integrity Check. Marker", marker.i, "has non-unique id. Changing to", nextId);
+
+            const domElements = document.querySelectorAll("#marker" + marker.i);
+            if (domElements[1]) domElements[1].id = "marker" + nextId; // rename 2nd dom element
+
+            const noteElements = notes.filter(note => note.id === "marker" + marker.i);
+            if (noteElements[1]) noteElements[1].id = "marker" + nextId; // rename 2nd note
+
+            marker.i = nextId;
+            nextId += 1;
+          } else {
+            markerIds[marker.i] = true;
+          }
+        });
+
+        // sort markers by index
+        pack.markers.sort((a, b) => a.i - b.i);
+      }
+    })();
+
+    fitMapToScreen();
+
+    // remove href from emblems, to trigger rendering on load
+    emblems.selectAll("use").attr("href", null);
+
+    // draw data layers (no kept in svg)
+    if (rulers && layerIsOn("toggleRulers")) rulers.draw();
+    if (layerIsOn("toggleGrid")) drawGrid();
+
+    if (window.restoreDefaultEvents) restoreDefaultEvents();
+    focusOn(); // based on searchParams focus on point, cell or burg
+    invokeActiveZooming();
+
+    WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadRiversMap.timeStart) / 1000, 2)}s`);
+    showStatistics();
+    INFO && console.groupEnd("Loaded Map " + seed);
+    tip("Map is successfully loaded", true, "success", 7000);
+  } catch (error) {
+    ERROR && console.error(error);
+    clearMainTip();
+
+    alertMessage.innerHTML = /* html */ `An error is occured on map loading. Select a different file to load, <br />generate a new random map or cancel the loading
+      <p id="errorBox">${parseError(error)}</p>`;
+
+    $("#alert").dialog({
+      resizable: false,
+      title: "Loading error",
+      maxWidth: "50em",
+      buttons: {
+        "Select file": function () {
+          $(this).dialog("close");
+          mapToLoad.click();
+        },
+        "New map": function () {
+          $(this).dialog("close");
+          regenerateMap("loading error");
+        },
+        Cancel: function () {
+          $(this).dialog("close");
+        }
+      },
+      position: {my: "center", at: "center", of: "svg"}
+    });
+  }
+}

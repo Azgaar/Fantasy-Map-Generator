@@ -26,7 +26,7 @@ function overviewRivers() {
   document.getElementById("riversBasinHighlight").addEventListener("click", toggleBasinsHightlight);
   document.getElementById("riversExport").addEventListener("click", downloadRiversData);
   document.getElementById("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
-  document.getElementById("loadriverfromcsv").addEventListener("click", loadriverfromcsvfunction);
+  document.getElementById("loadriverfromcsv").addEventListener("click", showLoadRiverPane);
 
   // add line for each river
   function riversOverviewAddLines() {
@@ -204,14 +204,14 @@ function overviewRivers() {
   }
   
   function loadriverfromcsvfunction() {
-    alertMessage.innerHTML = /* html */ `Are you sure you want to add river from csv?`;
+    alertMessage.innerHTML = /* html */ `Are you sure you want to add river from file?`;
         $("#alert").dialog({
           resizable: false,
           title: "Import rivers",
           buttons: {
             Import: function() {
-              $(this).dialog("close");
-              loadriverscsv();
+              $(this).dialog("load");
+              showLoadRiverPane();
             },
             Cancel: function() {
               $(this).dialog("close");
@@ -220,7 +220,92 @@ function overviewRivers() {
         });
   }
   
-  function loadriverscsv() {
-    
+async function showLoadRiverPane() {
+  $("#loadMapData").dialog({
+    title: "Load River from saved map",
+    resizable: false,
+    width: "auto",
+    position: {my: "center", at: "center", of: "svg"},
+    buttons: {
+      Close: function () {
+        $(this).dialog("close");
+      }
+    }
+  });
+
+  // already connected to Dropbox: list saved maps
+  if (Cloud.providers.dropbox.api) {
+    byId("dropboxConnectButton").style.display = "none";
+    byId("loadFromDropboxSelect").style.display = "block";
+    const loadFromDropboxButtons = byId("loadFromDropboxButtons");
+    const fileSelect = byId("loadFromDropboxSelect");
+    fileSelect.innerHTML = /* html */ `<option value="" disabled selected>Loading...</option>`;
+
+    const files = await Cloud.providers.dropbox.list();
+
+    if (!files) {
+      loadFromDropboxButtons.style.display = "none";
+      fileSelect.innerHTML = /* html */ `<option value="" disabled selected>Save files to Dropbox first</option>`;
+      return;
+    }
+
+    loadFromDropboxButtons.style.display = "block";
+    fileSelect.innerHTML = "";
+    files.forEach(({name, updated, size, path}) => {
+      const sizeMB = rn(size / 1024 / 1024, 2) + " MB";
+      const updatedOn = new Date(updated).toLocaleDateString();
+      const nameFormatted = `${updatedOn}: ${name} [${sizeMB}]`;
+      const option = new Option(nameFormatted, path);
+      fileSelect.options.add(option);
+    });
+
+    return;
   }
+
+  // not connected to Dropbox: show connect button
+  byId("dropboxConnectButton").style.display = "inline-block";
+  byId("loadFromDropboxButtons").style.display = "none";
+  byId("loadFromDropboxSelect").style.display = "none";
+}
+
+async function connectToDropbox() {
+  await Cloud.providers.dropbox.initialize();
+  if (Cloud.providers.dropbox.api) showLoadPane();
+}
+
+function loadURL() {
+  const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
+  const inner = `Provide URL to map file:
+    <input id="mapURL" type="url" style="width: 24em" placeholder="https://e-cloud.com/test.map">
+    <br><i>Please note server should allow CORS for file to be loaded. If CORS is not allowed, save file to Dropbox and provide a direct link</i>`;
+  alertMessage.innerHTML = inner;
+  $("#alert").dialog({
+    resizable: false,
+    title: "Load map from URL",
+    width: "27em",
+    buttons: {
+      Load: function () {
+        const value = mapURL.value;
+        if (!pattern.test(value)) {
+          tip("Please provide a valid URL", false, "error");
+          return;
+        }
+        loadMapFromURL(value);
+        $(this).dialog("close");
+      },
+      Cancel: function () {
+        $(this).dialog("close");
+      }
+    }
+  });
+}
+
+// load map
+byId("mapToLoad").addEventListener("change", function () {
+  const fileToLoad = this.files[0];
+  this.value = "";
+  closeDialogs();
+  uploadRiversMap(fileToLoad);
+});
+
 }
