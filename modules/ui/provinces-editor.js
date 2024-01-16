@@ -501,7 +501,8 @@ function editProvinces() {
     applyOption(provinceNameEditorSelectForm, p.formName);
     document.getElementById("provinceNameEditorFull").value = p.fullName;
 	
-    const cultureName = pack.cultures[pack.cells.culture[pack.provinces[province].center]].name; // to display the culture name
+    const cultureId = pack.cells.culture[p.center];
+    const cultureName = pack.cultures[cultureId].name;
     const provinceLangID = pack.cultures[pack.cells.culture[pack.provinces[province].center]].base;
     const provinceNameBase = Names.getNameBases()[provinceLangID].name;
     document.getElementById("provinceCultureDisplay").innerText = cultureName;
@@ -530,11 +531,6 @@ function editProvinces() {
     document.getElementById("provinceNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
     document.getElementById("provinceNameEditorAddForm").addEventListener("click", addCustomForm);
     document.getElementById("provinceNameEditorFullRegenerate").addEventListener("click", regenerateFullName);
-	
-    document.getElementById("provinceNameEditorShortCulture").addEventListener("mouseover", showdatatipNamesbase);
-    function showdatatipNamesbase() {
-      tip("namesbase " + this.id + Names.getNameBases()[provinceCultureID].name);
-	}
 
     function regenerateShortNameCulture() {
       const province = +provinceNameEditor.dataset.province;
