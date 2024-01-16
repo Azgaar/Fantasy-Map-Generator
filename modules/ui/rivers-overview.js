@@ -25,7 +25,7 @@ function overviewRivers() {
   document.getElementById("riversBasinHighlight").addEventListener("click", toggleBasinsHightlight);
   document.getElementById("riversExport").addEventListener("click", downloadRiversData);
   document.getElementById("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
-  document.getElementById("loadriverfromcsv").addEventListener("click", showLoadRiverPane);
+  document.getElementById("loadriverfromSavedMap").addEventListener("click", showLoadRiverPane);
 
   // add line for each river
   function riversOverviewAddLines() {
@@ -189,25 +189,9 @@ function overviewRivers() {
     riversOverviewAddLines();
   }
   
-  function loadriverfromcsvfunction() {
-    alertMessage.innerHTML = /* html */ `Are you sure you want to add river from file?`;
-        $("#alert").dialog({
-          resizable: false,
-          title: "Import rivers",
-          buttons: {
-            Import: function() {
-              $(this).dialog("load");
-              showLoadRiverPane();
-            },
-            Cancel: function() {
-              $(this).dialog("close");
-            }
-          }
-        });
-  }
-  
+
 async function showLoadRiverPane() {
-  $("#loadMapData").dialog({
+  $("#loadRiverMapData").dialog({
     title: "Load River from saved map",
     resizable: false,
     width: "auto",
@@ -222,20 +206,20 @@ async function showLoadRiverPane() {
   // already connected to Dropbox: list saved maps
   if (Cloud.providers.dropbox.api) {
     byId("dropboxConnectButton").style.display = "none";
-    byId("loadFromDropboxSelect").style.display = "block";
-    const loadFromDropboxButtons = byId("loadFromDropboxButtons");
-    const fileSelect = byId("loadFromDropboxSelect");
+    byId("loadRiverFromDropboxSelect").style.display = "block";
+    const loadRiverFromDropboxButtons = byId("loadRiverFromDropboxButtons");
+    const fileSelect = byId("loadRiverFromDropboxSelect");
     fileSelect.innerHTML = /* html */ `<option value="" disabled selected>Loading...</option>`;
 
     const files = await Cloud.providers.dropbox.list();
 
     if (!files) {
-      loadFromDropboxButtons.style.display = "none";
+      loadRiverFromDropboxButtons.style.display = "none";
       fileSelect.innerHTML = /* html */ `<option value="" disabled selected>Save files to Dropbox first</option>`;
       return;
     }
 
-    loadFromDropboxButtons.style.display = "block";
+    loadRiverFromDropboxButtons.style.display = "block";
     fileSelect.innerHTML = "";
     files.forEach(({name, updated, size, path}) => {
       const sizeMB = rn(size / 1024 / 1024, 2) + " MB";
@@ -250,16 +234,13 @@ async function showLoadRiverPane() {
 
   // not connected to Dropbox: show connect button
   byId("dropboxConnectButton").style.display = "inline-block";
-  byId("loadFromDropboxButtons").style.display = "none";
-  byId("loadFromDropboxSelect").style.display = "none";
+  byId("loadRiverFromDropboxButtons").style.display = "none";
+  byId("loadRiverFromDropboxSelect").style.display = "none";
 }
 
-async function connectToDropbox() {
-  await Cloud.providers.dropbox.initialize();
-  if (Cloud.providers.dropbox.api) showLoadPane();
-}
 
-function loadURL() {
+
+function loadRiverURL() {
   const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
   const inner = `Provide URL to map file:
     <input id="mapURL" type="url" style="width: 24em" placeholder="https://e-cloud.com/test.map">
@@ -287,7 +268,7 @@ function loadURL() {
 }
 
 // load map
-byId("mapToLoad").addEventListener("change", function () {
+byId("mapRiverToLoad").addEventListener("change", function () {
   const fileToLoad = this.files[0];
   this.value = "";
   closeDialogs();

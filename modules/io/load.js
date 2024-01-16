@@ -670,10 +670,27 @@ async function parseLoadedData(data) {
   }
 }
 
+async function createSharableRiverDropboxLink() {
+  const mapFile = document.querySelector("#loadRiverFromDropbox select").value;
+  const sharableLink = byId("sharableLink");
+  const sharableLinkContainer = byId("sharableLinkContainer");
 
+  try {
+    const previewLink = await Cloud.providers.dropbox.getLink(mapFile);
+    const directLink = previewLink.replace("www.dropbox.com", "dl.dropboxusercontent.com"); // DL allows CORS
+    const finalLink = `${location.origin}${location.pathname}?maplink=${directLink}`;
 
-async function loadRiversFromDropbox() {
-    const mapPath = byId("loadFromDropboxSelect")?.value;
+    sharableLink.innerText = finalLink.slice(0, 45) + "...";
+    sharableLink.setAttribute("href", finalLink);
+    sharableLinkContainer.style.display = "block";
+  } catch (error) {
+    ERROR && console.error(error);
+    return tip("Dropbox API error. Can not create link.", true, "error", 2000);
+  }
+}
+
+async function loadRiverFromDropbox() {
+    const mapPath = byId("loadRiverFromDropboxSelect")?.value;
 
   DEBUG && console.log("Loading map from Dropbox:", mapPath);
   const blob = await Cloud.providers.dropbox.load(mapPath);
@@ -746,21 +763,66 @@ async function parseLoadedDataOnlyRivers(data) {
     customization = 0;
     if (customizationMenu.offsetParent) styleTab.click();
 
+    const params = data[0].split("|");
+
+
     INFO && console.group("Loaded Map " + seed);
 
 
     void (function parsePackData() {
-      reGraph();
-      reMarkFeatures();
 
       pack.rivers = data[32] ? JSON.parse(data[32]) : [];
 
-      const cells = pack.cells;
-      cells.r = Uint16Array.from(data[22].split(","));
-
+      pack.cells.r = Uint16Array.from(data[22].split(","));
+ 
     })();
 
+    void (function restoreLayersState() {
+      const isVisible = selection => selection.node() && selection.style("display") !== "none";
+      const isVisibleNode = node => node && node.style.display !== "none";
+      const hasChildren = selection => selection.node()?.hasChildNodes();
+      const hasChild = (selection, selector) => selection.node()?.querySelector(selector);
+      const turnOn = el => byId(el).classList.remove("buttonoff");
 
+      toggleRivers();
+      toggleRivers();
+      // turn all layers off
+      byId("mapLayers")
+        .querySelectorAll("li")
+        .forEach(el => el.classList.add("buttonoff"));
+
+      // turn on active layers
+      if (hasChild(texture, "image")) turnOn("toggleTexture");
+      if (hasChildren(terrs)) turnOn("toggleHeight");
+      if (hasChildren(biomes)) turnOn("toggleBiomes");
+      if (hasChildren(cells)) turnOn("toggleCells");
+      if (hasChildren(gridOverlay)) turnOn("toggleGrid");
+      if (hasChildren(coordinates)) turnOn("toggleCoordinates");
+      if (isVisible(compass) && hasChild(compass, "use")) turnOn("toggleCompass");
+      if (hasChildren(rivers)) turnOn("toggleRivers");
+      if (isVisible(terrain) && hasChildren(terrain)) turnOn("toggleRelief");
+      if (hasChildren(relig)) turnOn("toggleReligions");
+      if (hasChildren(cults)) turnOn("toggleCultures");
+      if (hasChildren(statesBody)) turnOn("toggleStates");
+      if (hasChildren(provs)) turnOn("toggleProvinces");
+      if (hasChildren(zones) && isVisible(zones)) turnOn("toggleZones");
+      if (isVisible(borders) && hasChild(borders, "path")) turnOn("toggleBorders");
+      if (isVisible(routes) && hasChild(routes, "path")) turnOn("toggleRoutes");
+      if (hasChildren(temperature)) turnOn("toggleTemp");
+      if (hasChild(population, "line")) turnOn("togglePopulation");
+      if (hasChildren(ice)) turnOn("toggleIce");
+      if (hasChild(prec, "circle")) turnOn("togglePrec");
+      if (isVisible(emblems) && hasChild(emblems, "use")) turnOn("toggleEmblems");
+      if (isVisible(labels)) turnOn("toggleLabels");
+      if (isVisible(icons)) turnOn("toggleIcons");
+      if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
+      if (hasChildren(markers)) turnOn("toggleMarkers");
+      if (isVisible(ruler)) turnOn("toggleRulers");
+      if (isVisible(scaleBar)) turnOn("toggleScaleBar");
+      if (isVisibleNode(byId("vignette"))) turnOn("toggleVignette");
+
+      getCurrentPreset();
+    })();
     {
       // dynamically import and run auto-update script
       const versionNumber = parseFloat(params[0]);
@@ -776,11 +838,7 @@ async function parseLoadedDataOnlyRivers(data) {
       }
     }
 
-    {
-      // add custom texture if any
-      const textureHref = texture.attr("data-href");
-      if (textureHref) updateTextureSelectValue(textureHref);
-    }
+    fitMapToScreen();
 
     void (function checkDataIntegrity() {
       const cells = pack.cells;
