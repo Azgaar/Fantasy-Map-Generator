@@ -5462,7 +5462,7 @@
             class="icon-plus"
           ></button>
           <button id="riverCreateNew" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
-          <button id="loadriverfromcsv" data-tip="Generate river from saved map" class="icon-upload"></button>
+          <button id="loadriverfromSavedMap" data-tip="Generate river from saved map" class="icon-upload"></button>
           <button id="riversBasinHighlight" data-tip="Toggle basin highlight mode" class="icon-sitemap"></button>
           <button
             id="riversExport"
@@ -6143,6 +6143,55 @@
         </div>
       </div>
 
+      <div id="loadRiverMapData" style="display: none" class="dialog">
+        <div>
+          <strong>Load River map from</strong>
+          <button onclick="mapRiverToLoad.click()" data-tip="Load map file (.map or .gz) from your local disk">
+            machine
+          </button>
+          <button
+            onclick="loadRiverURL()"
+            data-tip="Load map file (.map or .gz) file from URL. Note that the server should allow CORS"
+          >
+            URL
+          </button>
+          <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
+        </div>
+
+        <p>Click on <i>storage</i> to open the last saved map.</p>
+
+        <div id="loadRiverFromDropbox">
+          <p style="margin-bottom: 0.3em">
+            Or load from your Dropbox account
+            <button
+              id="dropboxConnectButton"
+              onclick="connectToDropbox()"
+              data-tip="Connect your Dropbox account to be able to load maps from it"
+            >
+              Connect
+            </button>
+          </p>
+
+          <select id="loadRiverFromDropboxSelect" style="width: 22em"></select>
+          <div id="loadRiverFromDropboxButtons" style="margin-bottom: 0.6em">
+            <button onclick="loadRiverFromDropbox()" data-tip="Load map file (.map or .gz) from your Dropbox">Load</button>
+            <button
+              onclick="createSharableRiverDropboxLink()"
+              data-tip="Select file and create a link to share with your friends"
+            >
+              Share
+            </button>
+          </div>
+
+          <div style="margin-top: 0.3em">
+            <div id="sharableLinkContainer" style="display: none">
+              <a id="sharableLink" target="_blank"></a>
+              <i data-tip="Copy link to the clipboard" onclick="copyLinkToClickboard()" class="icon-clone pointer"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="exportToPngTilesScreen" style="display: none" class="dialog">
         <p>Map will be split into tiles and downloaded as a single zip file. Avoid saving too large images</p>
         <div data-tip="Number of columns" style="margin-bottom: 0.3em">
@@ -6220,6 +6269,7 @@
 
     <div id="fileInputs" style="display: none">
       <input type="file" accept=".map,.gz" id="mapToLoad" />
+      <input type="file" accept=".map,.gz" id="mapRiverToLoad" />
       <input type="file" accept=".txt,.csv" id="burgsListToLoad" />
       <input type="file" accept=".txt" id="legendsToLoad" />
       <input type="file" accept="image/*" id="imageToLoad" />
