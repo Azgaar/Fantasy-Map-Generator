@@ -584,14 +584,12 @@ function editProvinces() {
   function togglePercentageMode() {
     if (body.dataset.type === "absolute") {
       body.dataset.type = "percentage";
-      const totalCells = +byId("statesFooterCells").innerText;
       const totalBurgs = +byId("provincesFooterBurgs").innerText;
       const totalArea = +provincesFooterArea.dataset.area;
       const totalPopulation = +provincesFooterPopulation.dataset.population;
 
       body.querySelectorAll(":scope > div").forEach(function (el) {
         const {cells, burgs, area, population} = el.dataset;
-        el.querySelector(".provinceCells").innerText = rn((+cells / totalCells) * 100) + "%";
         el.querySelector(".provinceBurgs").innerText = rn((+burgs / totalBurgs) * 100) + "%";
         el.querySelector(".biomeArea").innerHTML = rn((+area / totalArea) * 100) + "%";
         el.querySelector(".culturePopulation").innerHTML = rn((+population / totalPopulation) * 100) + "%";
