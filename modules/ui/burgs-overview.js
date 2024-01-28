@@ -34,6 +34,7 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
   byId("burgsListToLoad").addEventListener("change", function () {
     uploadFile(this, importBurgNames);
   });
+  byId("burgGroupAssign").addEventListener("click", burgGroupAssignInBulk);
   byId("burgsLockAll").addEventListener("click", toggleLockAll);
   byId("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
   byId("burgsInvertLock").addEventListener("click", invertLock);
@@ -583,6 +584,32 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
       onConfirm
     });
   }
+
+  function burgGroupAssignInBulk() {
+  // Define the constants separately
+  let minpop = 1000 / populationRate;
+  let maxpop = null / populationRate;
+
+  // Define the function to filter and move burgs
+  const filterAndMoveBurgs = (burgs) => {
+  // Filter the burgs based on certain conditions using the previously defined constants
+  const filteredBurgs = burgs.filter(b => 
+    b.cell && 
+    b.port && 
+    !b.citadel && 
+    b.walls && 
+    b.plaza && 
+    b.temple && 
+    b.shanty && 
+    b.population >= minpop && 
+    b.population <= maxpop && 
+    !b.capital
+  );
+
+  // Move the filtered burgs to the 'towns' group
+  filteredBurgs.forEach(b => moveBurgToGroup(b.i, 'towns'));
+    }
+ }
 
   function triggerAllBurgsRemove() {
     const number = pack.burgs.filter(b => b.i && !b.removed && !b.capital && !b.lock).length;
