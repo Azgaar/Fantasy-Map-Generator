@@ -722,29 +722,9 @@ function markFeatures() {
   grid.features = [0];
 
   for (let i = 1, queue = [0]; queue[0] !== -1; i++) {
-    // [1864, 1731]
-    // if (queue[0] === 1864 || queue[0] === 1731) {
-    //   cells.f[queue[0]] = 1;
-    //   cells.t[queue[0]] = -1;
-    //   queue = [cells.f.findIndex(f => !f)];
-    //   i--;
-    //   continue;
-    // }
-
     cells.f[queue[0]] = i; // feature number
     const land = heights[queue[0]] >= 20;
     let border = false; // true if feature touches map border
-
-    // if (i === 11) {
-    //   debug
-    //     .append("g")
-    //     .attr("id", "feature11")
-    //     .append("circle")
-    //     .attr("cx", grid.points[queue[0]][0])
-    //     .attr("cy", grid.points[queue[0]][1])
-    //     .attr("r", 2)
-    //     .attr("fill", "red");
-    // }
 
     while (queue.length) {
       const q = queue.pop();
@@ -1276,13 +1256,6 @@ function drawCoastline() {
     features[f].vertices = vchain;
 
     const path = round(lineGen(points));
-
-    // debug
-    //   .append("path")
-    //   .attr("d", path)
-    //   .attr("id", "feature_" + features[f].type)
-    //   .attr("data-f", f) // draw the lake
-    //   .attr("fill", getRandomColor());
 
     if (features[f].type === "lake") {
       landMask
