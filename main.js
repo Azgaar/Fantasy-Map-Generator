@@ -604,7 +604,6 @@ void (function addDragToUpload() {
 
 async function generate(options) {
   try {
-    console.log("--- 1 ---", Math.random());
     const timeStart = performance.now();
     const {seed: precreatedSeed, graph: precreatedGraph} = options || {};
 
@@ -640,9 +639,7 @@ async function generate(options) {
     Biomes.define();
 
     rankCells();
-    console.log("--- 6 ---", Math.random());
     Cultures.generate();
-    console.log("--- 7 ---", Math.random());
     Cultures.expand();
     BurgsAndStates.generate();
     Religions.generate();
@@ -866,8 +863,8 @@ function openNearSeaLakes() {
   const LIMIT = 22; // max height that can be breached by water
 
   for (const i of cells.i) {
-    const lake = cells.f[i];
-    if (features[lake].type !== "lake") continue; // not a lake cell
+    const lakeFeatureId = cells.f[i];
+    if (features[lakeFeatureId].type !== "lake") continue; // not a lake
 
     check_neighbours: for (const c of cells.c[i]) {
       if (cells.t[c] !== 1 || cells.h[c] > LIMIT) continue; // water cannot break this
@@ -875,22 +872,24 @@ function openNearSeaLakes() {
       for (const n of cells.c[c]) {
         const ocean = cells.f[n];
         if (features[ocean].type !== "ocean") continue; // not an ocean
-        removeLake(c, lake, ocean);
+        removeLake(c, lakeFeatureId, ocean);
         break check_neighbours;
       }
     }
   }
 
-  function removeLake(threshold, lake, ocean) {
-    debugger;
-    console.log("removeLake", threshold, lake, ocean);
-    cells.h[threshold] = 19;
-    cells.t[threshold] = -1;
-    cells.f[threshold] = ocean;
-    cells.c[threshold].forEach(function (c) {
+  function removeLake(thresholdCellId, lakeFeatureId, oceanFeatureId) {
+    cells.h[thresholdCellId] = 19;
+    cells.t[thresholdCellId] = -1;
+    cells.f[thresholdCellId] = oceanFeatureId;
+    cells.c[thresholdCellId].forEach(function (c) {
       if (cells.h[c] >= 20) cells.t[c] = 1; // mark as coastline
     });
-    features[lake].type = "ocean"; // mark former lake as ocean
+
+    cells.i.forEach(i => {
+      if (cells.f[i] === lakeFeatureId) cells.f[i] = oceanFeatureId;
+    });
+    features[lakeFeatureId].type = "ocean"; // mark former lake as ocean
   }
 
   TIME && console.timeEnd("openLakes");
@@ -1277,6 +1276,14 @@ function drawCoastline() {
     features[f].vertices = vchain;
 
     const path = round(lineGen(points));
+
+    // debug
+    //   .append("path")
+    //   .attr("d", path)
+    //   .attr("id", "feature_" + features[f].type)
+    //   .attr("data-f", f) // draw the lake
+    //   .attr("fill", getRandomColor());
+
     if (features[f].type === "lake") {
       landMask
         .append("path")
@@ -1953,7 +1960,7 @@ function showStatistics() {
 
   mapId = Date.now(); // unique map id is it's creation date number
   mapHistory.push({seed, width: graphWidth, height: graphHeight, template: heightmap, created: mapId});
-  INFO && console.log(stats);
+  INFO && console.info(stats);
 }
 
 const regenerateMap = debounce(async function (options) {

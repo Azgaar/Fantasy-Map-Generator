@@ -221,9 +221,11 @@ function drawHeightmap() {
 
     const skip = +ocean.attr("skip") + 1 || 1;
     const relax = +ocean.attr("relax") || 0;
+    lineGen.curve(d3[ocean.attr("curve") || "curveBasisClosed"]);
 
     let currentLayer = 0;
-    const heights = cells.i.sort((a, b) => cells.h[a] - cells.h[b]);
+    const heights = Array.from(cells.i).sort((a, b) => cells.h[a] - cells.h[b]);
+
     for (const i of heights) {
       const h = cells.h[i];
       if (h > currentLayer) currentLayer += skip;
@@ -248,9 +250,10 @@ function drawHeightmap() {
 
     const skip = +land.attr("skip") + 1 || 1;
     const relax = +land.attr("relax") || 0;
+    lineGen.curve(d3[land.attr("curve") || "curveBasisClosed"]);
 
     let currentLayer = 20;
-    const heights = cells.i.sort((a, b) => cells.h[a] - cells.h[b]);
+    const heights = Array.from(cells.i).sort((a, b) => cells.h[a] - cells.h[b]);
     for (const i of heights) {
       const h = cells.h[i];
       if (h > currentLayer) currentLayer += skip;
@@ -267,8 +270,6 @@ function drawHeightmap() {
       paths[h] += round(lineGen(points));
     }
   }
-
-  return;
 
   // render paths
   for (const height of d3.range(0, 101)) {
@@ -298,8 +299,6 @@ function drawHeightmap() {
     }
 
     if (paths[height] && paths[height].length >= 10) {
-      const curve = group.attr("curve") || "curveBasisClosed";
-      lineGen.curve(d3[curve]);
       const terracing = group.attr("terracing") / 10 || 0;
       const color = getColor(height, scheme);
 
