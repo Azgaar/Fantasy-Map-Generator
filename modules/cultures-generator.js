@@ -54,6 +54,8 @@ window.Cultures = (function () {
     const colors = getColors(count);
     const emblemShape = document.getElementById("emblemShape").value;
 
+    console.log("--- c1 ---", Math.random());
+
     const codes = [];
 
     cultures.forEach(function (c, i) {
@@ -71,28 +73,40 @@ window.Cultures = (function () {
         return;
       }
 
-      const cell = (c.center = placeCenter(c.sort ? c.sort : i => cells.s[i]));
-      centers.add(cells.p[cell]);
+      console.log(JSON.stringify(c, null, 2));
+      console.log(Array.from(pack.cells.s).join());
+
+      const sortingFn = c.sort ? c.sort : i => cells.s[i];
+      const center = placeCenter(sortingFn);
+
+      console.log("--- c2-1 ---", i, Math.random());
+      centers.add(cells.p[center]);
+      c.center = center;
       c.i = newId;
       delete c.odd;
       delete c.sort;
       c.color = colors[i];
-      c.type = defineCultureType(cell);
+      console.log("--- c2-2 ---", i, Math.random());
+      c.type = defineCultureType(center);
+      console.log("--- c2-3 ---", i, Math.random());
       c.expansionism = defineCultureExpansionism(c.type);
       c.origins = [0];
       c.code = abbreviate(c.name, codes);
       codes.push(c.code);
-      cultureIds[cell] = newId;
+      cultureIds[center] = newId;
       if (emblemShape === "random") c.shield = getRandomShield();
+      console.log("--- c2-4 ---", i, Math.random());
     });
+
+    console.log("--- c3 ---", Math.random());
 
     cells.culture = cultureIds;
 
-    function placeCenter(v) {
+    function placeCenter(sortingFn) {
       let spacing = (graphWidth + graphHeight) / 2 / count;
       const MAX_ATTEMPTS = 100;
 
-      const sorted = [...populated].sort((a, b) => v(b) - v(a));
+      const sorted = [...populated].sort((a, b) => sortingFn(b) - sortingFn(a));
       const max = Math.floor(sorted.length / 2);
 
       let cellId = 0;

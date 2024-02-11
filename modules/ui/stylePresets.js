@@ -239,7 +239,18 @@ function addStylePreset() {
       "#oceanLayers": ["filter", "layers"],
       "#oceanBase": ["fill"],
       "#oceanicPattern": ["href", "opacity"],
-      "#terrs": ["opacity", "scheme", "terracing", "skip", "relax", "curve", "filter", "mask"],
+      "#terrs #oceanHeights": [
+        "data-render",
+        "opacity",
+        "scheme",
+        "terracing",
+        "skip",
+        "relax",
+        "curve",
+        "filter",
+        "mask"
+      ],
+      "#terrs #landHeights": ["opacity", "scheme", "terracing", "skip", "relax", "curve", "filter", "mask"],
       "#legend": [
         "data-size",
         "font-size",

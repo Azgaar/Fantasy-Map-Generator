@@ -268,12 +268,14 @@ function drawHeightmap() {
     }
   }
 
+  return;
+
   // render paths
-  for (const h of d3.range(0, 101)) {
-    const group = h < 20 ? ocean : land;
+  for (const height of d3.range(0, 101)) {
+    const group = height < 20 ? ocean : land;
     const scheme = getColorScheme(group.attr("scheme"));
 
-    if (h === 0 && renderOceanCells) {
+    if (height === 0 && renderOceanCells) {
       // draw base ocean layer
       group
         .append("rect")
@@ -284,7 +286,7 @@ function drawHeightmap() {
         .attr("fill", scheme(1));
     }
 
-    if (h === 20) {
+    if (height === 20) {
       // draw base land layer
       group
         .append("rect")
@@ -295,21 +297,21 @@ function drawHeightmap() {
         .attr("fill", scheme(0.8));
     }
 
-    if (paths[h] && paths[h].length >= 10) {
+    if (paths[height] && paths[height].length >= 10) {
       const curve = group.attr("curve") || "curveBasisClosed";
       lineGen.curve(d3[curve]);
-      const terracing = group.attr("terracing") / 10 || 0; // shifted darker layer for pseudo-3d effect
-      const color = getColor(h, scheme);
+      const terracing = group.attr("terracing") / 10 || 0;
+      const color = getColor(height, scheme);
 
-      if (terracing && h >= 20) {
-        land
+      if (terracing) {
+        group
           .append("path")
-          .attr("d", paths[h])
+          .attr("d", paths[height])
           .attr("transform", "translate(.7,1.4)")
           .attr("fill", d3.color(color).darker(terracing))
-          .attr("data-height", h);
+          .attr("data-height", height);
       }
-      group.append("path").attr("d", paths[h]).attr("fill", color).attr("data-height", h);
+      group.append("path").attr("d", paths[height]).attr("fill", color).attr("data-height", height);
     }
   }
 

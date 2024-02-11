@@ -604,6 +604,7 @@ void (function addDragToUpload() {
 
 async function generate(options) {
   try {
+    console.log("--- 1 ---", Math.random());
     const timeStart = performance.now();
     const {seed: precreatedSeed, graph: precreatedGraph} = options || {};
 
@@ -639,7 +640,9 @@ async function generate(options) {
     Biomes.define();
 
     rankCells();
+    console.log("--- 6 ---", Math.random());
     Cultures.generate();
+    console.log("--- 7 ---", Math.random());
     Cultures.expand();
     BurgsAndStates.generate();
     Religions.generate();
@@ -722,9 +725,29 @@ function markFeatures() {
   grid.features = [0];
 
   for (let i = 1, queue = [0]; queue[0] !== -1; i++) {
+    // [1864, 1731]
+    // if (queue[0] === 1864 || queue[0] === 1731) {
+    //   cells.f[queue[0]] = 1;
+    //   cells.t[queue[0]] = -1;
+    //   queue = [cells.f.findIndex(f => !f)];
+    //   i--;
+    //   continue;
+    // }
+
     cells.f[queue[0]] = i; // feature number
     const land = heights[queue[0]] >= 20;
     let border = false; // true if feature touches map border
+
+    // if (i === 11) {
+    //   debug
+    //     .append("g")
+    //     .attr("id", "feature11")
+    //     .append("circle")
+    //     .attr("cx", grid.points[queue[0]][0])
+    //     .attr("cy", grid.points[queue[0]][1])
+    //     .attr("r", 2)
+    //     .attr("fill", "red");
+    // }
 
     while (queue.length) {
       const q = queue.pop();
@@ -859,6 +882,8 @@ function openNearSeaLakes() {
   }
 
   function removeLake(threshold, lake, ocean) {
+    debugger;
+    console.log("removeLake", threshold, lake, ocean);
     cells.h[threshold] = 19;
     cells.t[threshold] = -1;
     cells.f[threshold] = ocean;
@@ -1349,21 +1374,13 @@ function drawCoastline() {
 // Re-mark features (ocean, lakes, islands)
 function reMarkFeatures() {
   TIME && console.time("reMarkFeatures");
-  const cells = pack.cells,
-    features = (pack.features = [0]);
+  const cells = pack.cells;
+  const features = (pack.features = [0]);
+
   cells.f = new Uint16Array(cells.i.length); // cell feature number
   cells.t = new Int8Array(cells.i.length); // cell type: 1 = land along coast; -1 = water along coast;
   cells.haven = cells.i.length < 65535 ? new Uint16Array(cells.i.length) : new Uint32Array(cells.i.length); // cell haven (opposite water cell);
   cells.harbor = new Uint8Array(cells.i.length); // cell harbor (number of adjacent water cells);
-
-  const defineHaven = i => {
-    const water = cells.c[i].filter(c => cells.h[c] < 20);
-    const dist2 = water.map(c => (cells.p[i][0] - cells.p[c][0]) ** 2 + (cells.p[i][1] - cells.p[c][1]) ** 2);
-    const closest = water[dist2.indexOf(Math.min.apply(Math, dist2))];
-
-    cells.haven[i] = closest;
-    cells.harbor[i] = water.length;
-  };
 
   if (!cells.i.length) return; // no cells -> there is nothing to do
   for (let i = 1, queue = [0]; queue[0] !== -1; i++) {
@@ -1404,6 +1421,15 @@ function reMarkFeatures() {
 
   // markupPackLand
   markup(pack.cells, 3, 1, 0);
+
+  function defineHaven(i) {
+    const water = cells.c[i].filter(c => cells.h[c] < 20);
+    const dist2 = water.map(c => (cells.p[i][0] - cells.p[c][0]) ** 2 + (cells.p[i][1] - cells.p[c][1]) ** 2);
+    const closest = water[dist2.indexOf(Math.min.apply(Math, dist2))];
+
+    cells.haven[i] = closest;
+    cells.harbor[i] = water.length;
+  }
 
   function defineOceanGroup(number) {
     if (number > grid.cells.i.length / 25) return "ocean";
