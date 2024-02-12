@@ -774,7 +774,7 @@ function showExportPane() {
 }
 
 async function exportToJson(type) {
-  const {exportToJson} = await import("../dynamic/export-json.js?v=1.93.03");
+  const {exportToJson} = await import("../dynamic/export-json.js?v=1.96.00");
   exportToJson(type);
 }
 

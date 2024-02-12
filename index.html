@@ -366,7 +366,9 @@
         </mask>
       </defs>
       <g id="viewbox"></g>
-      <g id="scaleBar"></g>
+      <g id="scaleBar">
+        <rect id="scaleBarBack"></rect>
+      </g>
       <g id="vignette" mask="url(#vignette-mask)">
         <rect x="0" y="0" width="100%" height="100%" />
       </g>
@@ -799,6 +801,7 @@
             <option value="rivers">Rivers</option>
             <option value="routes">Routes</option>
             <option value="ruler">Rulers</option>
+            <option value="scaleBar">Scale Bar</option>
             <option value="regions" selected>States</option>
             <option value="temperature">Temperature</option>
             <option value="texture">Texture</option>
@@ -1451,6 +1454,84 @@
                   <input id="rescaleLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked />
                   <label for="rescaleLabels" class="checkbox-label">Rescale on zoom</label>
                 </td>
+              </tr>
+            </tbody>
+
+            <tbody id="styleScaleBar">
+              <tr data-tip="Set bar and font size">
+                <td>Size</td>
+                <td>
+                  <span>Bar </span>
+                  <input id="styleScaleBarSize" type="number" min=".5" max="5" step=".1" />
+                  <span>Font </span>
+                  <input id="styleScaleBarFontSize" type="number" min="1" max="100" step=".1" />
+                </td>
+              </tr>
+
+              <tr data-tip="Set position of the Scale bar bottom right corner (in percents)">
+                <td>Position</td>
+                <td>
+                  <span>x </span>
+                  <input id="styleScaleBarPositionX" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+                  <span>y </span>
+                  <input id="styleScaleBarPositionY" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+                </td>
+              </tr>
+
+              <tr data-tip="Type scale bar label, leave blank to hide label">
+                <td>Label</td>
+                <td>
+                  <input id="styleScaleBarLabel" type="text" />
+                </td>
+              </tr>
+
+              <tr data-tip="Set background opacity. 0: transparent, 1: solid">
+                <td>Back opacity</td>
+                <td>
+                  <input id="styleScaleBarBackgroundOpacityInput" type="range" min="0" max="1" step="0.01" />
+                  <output id="styleScaleBarBackgroundOpacityOutput"></output>
+                </td>
+              </tr>
+
+              <tr data-tip="Set background fill color">
+                <td>Back fill</td>
+                <td>
+                  <input id="styleScaleBarBackgroundFillInput" type="color" />
+                  <output id="styleScaleBarBackgroundFillOutput"></output>
+                </td>
+              </tr>
+
+              <tr data-tip="Set background stroke color and width">
+                <td>Back stroke</td>
+                <td>
+                  <input id="styleScaleBarBackgroundStrokeInput" type="color" />
+                  <output id="styleScaleBarBackgroundStrokeOutput"></output>
+
+                  <span>Width </span>
+                  <input
+                    id="styleScaleBarBackgroundStrokeWidth"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    style="width: 5em"
+                  />
+                </td>
+              </tr>
+
+              <tr data-tip="Set background element padding: top, right, bottom, left (in pixels)">
+                <td>Back padding</td>
+                <td style="display: flex; gap: 4px">
+                  <input id="styleScaleBarBackgroundPaddingTop" type="number" min="0" max="100" style="width: 5em" />
+                  <input id="styleScaleBarBackgroundPaddingRight" type="number" min="0" max="100" style="width: 5em" />
+                  <input id="styleScaleBarBackgroundPaddingBottom" type="number" min="0" max="100" style="width: 5em" />
+                  <input id="styleScaleBarBackgroundPaddingLeft" type="number" min="0" max="100" style="width: 5em" />
+                </td>
+              </tr>
+
+              <tr data-tip="Select background filter">
+                <td>Back filter</td>
+                <td><select id="styleScaleBarBackgroundFilter" /></td>
               </tr>
             </tbody>
           </table>
@@ -5140,49 +5221,6 @@
           </div>
 
           <div class="unitsHeader">
-            <span class="icon-minus"></span>
-            <div>Scale bar:</div>
-          </div>
-
-          <div data-tip="Set scale bar size">
-            <div>Bar size:</div>
-            <input id="barSizeOutput" data-stored="barSize" type="range" min=".5" max="5" value="2" step=".1" />
-            <input id="barSizeInput" data-stored="barSize" type="number" min=".5" max="5" value="2" step=".1" />
-          </div>
-
-          <div data-tip="Type scale bar label, leave blank to hide label">
-            <div>Bar label:</div>
-            <input id="barLabel" data-stored="barLabel" type="text" placeholder="hidden" value="" />
-          </div>
-
-          <div data-tip="Set background for Scale bar">
-            <div>Bar background:</div>
-            <input
-              id="barBackOpacity"
-              data-stored="barBackOpacity"
-              type="range"
-              min="0"
-              max="1"
-              value=".2"
-              step=".01"
-            />
-            <input id="barBackColor" data-stored="barBackColor" type="color" value="#ffffff" />
-          </div>
-
-          <div data-tip="Set position of the Scale bar bottom right corner in percents">
-            <div>Bar position:</div>
-            x:<input id="barPosX" data-stored="barPosX" type="number" min="0" max="100" step=".1" value="99" /> y:<input
-              id="barPosY"
-              data-stored="barPosY"
-              type="number"
-              min="0"
-              max="100"
-              step=".1"
-              value="99"
-            />
-          </div>
-
-          <div class="unitsHeader">
             <span class="icon-male"></span>
             <div>Population:</div>
           </div>
@@ -8001,16 +8039,16 @@
     <script src="libs/lineclip.min.js"></script>
     <script src="libs/alea.min.js"></script>
     <script src="modules/fonts.js?v=1.89.18"></script>
-    <script src="modules/ui/layers.js?v=1.94.00"></script>
-    <script src="modules/ui/measurers.js?v=1.94.03"></script>
-    <script src="modules/ui/stylePresets.js?v=1.95.00"></script>
+    <script src="modules/ui/layers.js?v=1.96.00"></script>
+    <script src="modules/ui/measurers.js?v=1.96.00"></script>
+    <script src="modules/ui/stylePresets.js?v=1.96.00"></script>
 
     <script src="modules/ui/general.js?v=1.94.01"></script>
-    <script src="modules/ui/options.js?v=1.94.06"></script>
-    <script src="main.js?v=1.94.05"></script>
+    <script src="modules/ui/options.js?v=1.96.00"></script>
+    <script src="main.js?v=1.96.00"></script>
 
     <script defer src="modules/relief-icons.js"></script>
-    <script defer src="modules/ui/style.js?v=1.95.00"></script>
+    <script defer src="modules/ui/style.js?v=1.96.00"></script>
     <script defer src="modules/ui/editors.js?v=1.95.04"></script>
     <script defer src="modules/ui/tools.js?v=1.95.01"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.91.05"></script>
@@ -8029,7 +8067,7 @@
     <script defer src="modules/ui/rivers-creator.js?v=1.89.13"></script>
     <script defer src="modules/ui/relief-editor.js"></script>
     <script defer src="modules/ui/burg-editor.js"></script>
-    <script defer src="modules/ui/units-editor.js?v=1.94.02"></script>
+    <script defer src="modules/ui/units-editor.js?v=1.96.00"></script>
     <script defer src="modules/ui/notes-editor.js?v=1.93.09"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.88.04"></script>
     <script defer src="modules/ui/zones-editor.js"></script>
@@ -8048,10 +8086,10 @@
     <script defer src="modules/coa-renderer.js?v=1.94.00"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-    <script defer src="modules/io/save.js?v=1.93.02"></script>
-    <script defer src="modules/io/load.js?v=1.95.00"></script>
+    <script defer src="modules/io/save.js?v=1.96.00"></script>
+    <script defer src="modules/io/load.js?v=1.96.00"></script>
     <script defer src="modules/io/cloud.js?v=1.94.04"></script>
-    <script defer src="modules/io/export.js?v=1.94.03"></script>
+    <script defer src="modules/io/export.js?v=1.96.00"></script>
     <script defer src="modules/io/formats.js"></script>
 
     <!-- Web Components -->

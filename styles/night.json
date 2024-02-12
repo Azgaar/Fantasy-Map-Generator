@@ -400,5 +400,25 @@
     "rx": "5%",
     "ry": "5%",
     "filter": "blur(20px)"
+  },
+  "#scaleBar": {
+    "opacity": 1,
+    "fill": "#b5c1d4",
+    "font-size": 11,
+    "data-bar-size": 2,
+    "data-x": 99,
+    "data-y": 99,
+    "data-label": ""
+  },
+  "#scaleBarBack": {
+    "opacity": 0.5,
+    "fill": "#0a1e24",
+    "stroke": "#40547a",
+    "stroke-width": 1,
+    "filter": "",
+    "data-top": 22,
+    "data-right": 15,
+    "data-bottom": 16,
+    "data-left": 10
   }
 }
