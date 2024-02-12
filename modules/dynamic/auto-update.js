@@ -786,8 +786,8 @@ export function resolveVersionConflicts(version) {
       .attr("id", "scaleBar")
       .attr("opacity", 1)
       .attr("fill", "#353540")
+      .attr("data-bar-size", 2)
       .attr("font-size", 10)
-      .attr("data-size", 2)
       .attr("data-x", 99)
       .attr("data-y", 99)
       .attr("data-label", "");
