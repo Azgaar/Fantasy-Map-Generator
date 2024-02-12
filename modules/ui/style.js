@@ -32,6 +32,7 @@ function editStyle(element, group) {
 
   styleElementSelect.classList.add("glow");
   if (group) styleGroupSelect.classList.add("glow");
+
   setTimeout(() => {
     styleElementSelect.classList.remove("glow");
     if (group) styleGroupSelect.classList.remove("glow");
@@ -82,10 +83,10 @@ function selectStyleElement() {
   styleIsOff.style.display = isLayerOff ? "block" : "none";
 
   // active group element
-  const group = styleGroupSelect.value;
-  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(styleElement)) {
-    const gEl = group && el.select("#" + group);
-    el = group && gEl.size() ? gEl : el.select("g");
+  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders", "terrs"].includes(styleElement)) {
+    const group = styleGroupSelect.value;
+    const defaultGroupSelector = styleElement === "terrs" ? "#landHeights" : "g";
+    el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
   }
 
   // opacity
@@ -171,11 +172,14 @@ function selectStyleElement() {
 
   if (styleElement === "terrs") {
     styleHeightmap.style.display = "block";
-    styleHeightmapScheme.value = terrs.attr("scheme");
-    styleHeightmapTerracingInput.value = styleHeightmapTerracingOutput.value = terrs.attr("terracing");
-    styleHeightmapSkipInput.value = styleHeightmapSkipOutput.value = terrs.attr("skip");
-    styleHeightmapSimplificationInput.value = styleHeightmapSimplificationOutput.value = terrs.attr("relax");
-    styleHeightmapCurve.value = terrs.attr("curve");
+    styleHeightmapRenderOceanOption.style.display = el.attr("id") === "oceanHeights" ? "block" : "none";
+    styleHeightmapRenderOcean.checked = +el.attr("data-render");
+
+    styleHeightmapScheme.value = el.attr("scheme");
+    styleHeightmapTerracingInput.value = styleHeightmapTerracingOutput.value = el.attr("terracing");
+    styleHeightmapSkipInput.value = styleHeightmapSkipOutput.value = el.attr("skip");
+    styleHeightmapSimplificationInput.value = styleHeightmapSimplificationOutput.value = el.attr("relax");
+    styleHeightmapCurve.value = el.attr("curve");
   }
 
   if (styleElement === "markers") {
@@ -337,7 +341,7 @@ function selectStyleElement() {
 
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
-  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(styleElement)) {
+  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders", "terrs"].includes(styleElement)) {
     const groups = byId(styleElement).querySelectorAll("g");
     groups.forEach(el => {
       if (el.id === "burgLabels") return;
@@ -545,18 +549,16 @@ outlineLayers.addEventListener("change", function () {
 });
 
 styleHeightmapScheme.addEventListener("change", function () {
-  terrs.attr("scheme", this.value);
+  getEl().attr("scheme", this.value);
   drawHeightmap();
 });
 
 openCreateHeightmapSchemeButton.addEventListener("click", function () {
   // start with current scheme
-  this.dataset.stops = terrs.attr("scheme").startsWith("#")
-    ? terrs.attr("scheme")
-    : (function () {
-        const scheme = heightmapColorSchemes[terrs.attr("scheme")];
-        return [0, 0.25, 0.5, 0.75, 1].map(scheme).map(toHEX).join(",");
-      })();
+  const scheme = getEl().attr("scheme");
+  this.dataset.stops = scheme.startsWith("#")
+    ? scheme
+    : (() => [0, 0.25, 0.5, 0.75, 1].map(heightmapColorSchemes[scheme]).map(toHEX).join(","))();
 
   // render dialog base structure
   alertMessage.innerHTML = /* html */ `<div>
@@ -648,7 +650,7 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
     if (stops in heightmapColorSchemes) return tip("This scheme already exists", false, "error");
 
     addCustomColorScheme(stops);
-    terrs.attr("scheme", stops);
+    getEl().attr("scheme", stops);
     drawHeightmap();
 
     handleClose();
@@ -670,23 +672,28 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
   });
 });
 
+styleHeightmapRenderOcean.addEventListener("change", function () {
+  getEl().attr("data-render", +this.checked);
+  drawHeightmap();
+});
+
 styleHeightmapTerracingInput.addEventListener("input", function () {
-  terrs.attr("terracing", this.value);
+  getEl().attr("terracing", this.value);
   drawHeightmap();
 });
 
 styleHeightmapSkipInput.addEventListener("input", function () {
-  terrs.attr("skip", this.value);
+  getEl().attr("skip", this.value);
   drawHeightmap();
 });
 
 styleHeightmapSimplificationInput.addEventListener("input", function () {
-  terrs.attr("relax", this.value);
+  getEl().attr("relax", this.value);
   drawHeightmap();
 });
 
 styleHeightmapCurve.addEventListener("change", function () {
-  terrs.attr("curve", this.value);
+  getEl().attr("curve", this.value);
   drawHeightmap();
 });
 
@@ -983,7 +990,7 @@ function textureProvideURL() {
 }
 
 function fetchTextureURL(url) {
-  INFO && console.log("Provided URL is", url);
+  INFO && console.info("Provided URL is", url);
   const img = new Image();
   img.onload = function () {
     const canvas = byId("texturePreview");

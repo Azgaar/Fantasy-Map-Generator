@@ -329,7 +329,7 @@ function drawCellsValue(data) {
 function drawPolygons(data) {
   const max = d3.max(data),
     min = d3.min(data),
-    scheme = getColorScheme(terrs.attr("scheme"));
+    scheme = getColorScheme(terrs.select("#landHeights").attr("scheme"));
   data = data.map(d => 1 - normalize(d, min, max));
 
   debug.selectAll("polygon").remove();
@@ -338,7 +338,7 @@ function drawPolygons(data) {
     .data(data)
     .enter()
     .append("polygon")
-    .attr("points", (d, i) => getPackPolygon(i))
+    .attr("points", (d, i) => getGridPolygon(i))
     .attr("fill", d => scheme(d))
     .attr("stroke", d => scheme(d));
 }

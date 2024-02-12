@@ -827,6 +827,63 @@
               </tr>
             </tbody>
 
+            <tbody id="styleHeightmap">
+              <tr id="styleHeightmapRenderOceanOption" data-tip="Check to render ocean heights">
+                <td colspan="2">
+                  <input id="styleHeightmapRenderOcean" class="checkbox" type="checkbox" />
+                  <label for="styleHeightmapRenderOcean" class="checkbox-label">Render ocean heights</label>
+                </td>
+              </tr>
+
+              <tr data-tip="Terracing rate. Set to 0 (toggle off) to improve performance">
+                <td>Terracing</td>
+                <td>
+                  <input id="styleHeightmapTerracingInput" type="range" min="0" max="20" step="1" />
+                  <output id="styleHeightmapTerracingOutput">0</output>
+                </td>
+              </tr>
+
+              <tr data-tip="Layers reduction rate. Increase to improve performance">
+                <td>Reduce layers</td>
+                <td>
+                  <input id="styleHeightmapSkipInput" type="range" min="0" max="10" step="1" value="5" />
+                  <output id="styleHeightmapSkipOutput">5</output>
+                </td>
+              </tr>
+
+              <tr data-tip="Line simplification rate. Increase to slightly improve performance">
+                <td>Simplify line</td>
+                <td>
+                  <input id="styleHeightmapSimplificationInput" type="range" min="0" max="10" step="1" value="0" />
+                  <output id="styleHeightmapSimplificationOutput">0</output>
+                </td>
+              </tr>
+
+              <tr data-tip="Select line interpolation type">
+                <td>Line style</td>
+                <td>
+                  <select id="styleHeightmapCurve">
+                    <option value="curveBasisClosed" selected>Curved</option>
+                    <option value="curveLinear">Linear</option>
+                    <option value="curveStep">Rectangular</option>
+                  </select>
+                </td>
+              </tr>
+
+              <tr data-tip="Select color scheme for the element">
+                <td>Color scheme</td>
+                <td>
+                  <select id="styleHeightmapScheme"></select>
+                  <button
+                    id="openCreateHeightmapSchemeButton"
+                    data-tip="Click to add a custom heightmap color scheme"
+                    data-stops="#ffffff,#EEEECC,#D2B48C,#008000,#008080"
+                    class="icon-plus sideButton"
+                  ></button>
+                </td>
+              </tr>
+            </tbody>
+
             <tbody id="styleOpacity" style="display: none">
               <tr data-tip="Set opacity. 0: transparent, 1: solid">
                 <td>Opacity</td>
@@ -1280,56 +1337,6 @@
                 <td>
                   <input id="styleStatesHaloBlur" type="range" min="0" max="10" step="0.01" value="4" />
                   <output id="styleStatesHaloBlurOutput">4</output>
-                </td>
-              </tr>
-            </tbody>
-
-            <tbody id="styleHeightmap">
-              <tr data-tip="Terracing rate. Set to 0 (toggle off) to improve performance">
-                <td>Terracing</td>
-                <td>
-                  <input id="styleHeightmapTerracingInput" type="range" min="0" max="20" step="1" />
-                  <output id="styleHeightmapTerracingOutput">0</output>
-                </td>
-              </tr>
-
-              <tr data-tip="Layers reduction rate. Increase to improve performance">
-                <td>Reduce layers</td>
-                <td>
-                  <input id="styleHeightmapSkipInput" type="range" min="0" max="10" step="1" value="5" />
-                  <output id="styleHeightmapSkipOutput">5</output>
-                </td>
-              </tr>
-
-              <tr data-tip="Line simplification rate. Increase to slightly improve performance">
-                <td>Simplify line</td>
-                <td>
-                  <input id="styleHeightmapSimplificationInput" type="range" min="0" max="10" step="1" value="0" />
-                  <output id="styleHeightmapSimplificationOutput">0</output>
-                </td>
-              </tr>
-
-              <tr data-tip="Select line interpolation type">
-                <td>Line style</td>
-                <td>
-                  <select id="styleHeightmapCurve">
-                    <option value="0" selected>Curved</option>
-                    <option value="1">Linear</option>
-                    <option value="2">Rectangular</option>
-                  </select>
-                </td>
-              </tr>
-
-              <tr data-tip="Select color scheme for the element">
-                <td>Color scheme</td>
-                <td>
-                  <select id="styleHeightmapScheme"></select>
-                  <button
-                    id="openCreateHeightmapSchemeButton"
-                    data-tip="Click to add a custom heightmap color scheme"
-                    data-stops="#ffffff,#EEEECC,#D2B48C,#008000,#008080"
-                    class="icon-plus sideButton"
-                  ></button>
                 </td>
               </tr>
             </tbody>

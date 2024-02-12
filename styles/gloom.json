@@ -294,7 +294,9 @@
     "terracing": 2,
     "skip": 1,
     "relax": 2,
-    "curve": 0,
+    "curve": "curveBasisClosed",
+    "skipOcean": 0,
+    "relaxOcean": 1,
     "filter": "url(#filter-grayscale)",
     "mask": "url(#land)"
   },

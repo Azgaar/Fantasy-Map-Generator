@@ -292,7 +292,9 @@
     "terracing": 0,
     "skip": 10,
     "relax": 0,
-    "curve": 0,
+    "curve": "curveBasisClosed",
+    "skipOcean": 0,
+    "relaxOcean": 1,
     "filter": "url(#blurFilter)",
     "mask": "url(#land)"
   },

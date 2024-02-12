@@ -738,6 +738,46 @@ export function resolveVersionConflicts(version) {
   }
 
   if (version < 1.96) {
+    // v1.96 added ocean rendering for heightmap
+    terrs.selectAll("*").remove();
+
+    const opacity = terrs.attr("opacity");
+    const filter = terrs.attr("filter");
+    const scheme = terrs.attr("scheme");
+    const terracing = terrs.attr("terracing");
+    const skip = terrs.attr("skip");
+    const relax = terrs.attr("relax");
+
+    const curveTypes = {0: "curveBasisClosed", 1: "curveLinear", 2: "curveStep"};
+    const curve = curveTypes[terrs.attr("curve")] || "curveBasisClosed";
+
+    terrs.attr("scheme", null).attr("terracing", null).attr("skip", null).attr("relax", null).attr("curve", null);
+
+    terrs
+      .append("g")
+      .attr("id", "oceanHeights")
+      .attr("data-render", 0)
+      .attr("opacity", opacity)
+      .attr("filter", filter)
+      .attr("scheme", scheme)
+      .attr("terracing", 0)
+      .attr("skip", 0)
+      .attr("relax", 1)
+      .attr("curve", curve);
+    terrs
+      .append("g")
+      .attr("id", "landHeights")
+      .attr("opacity", opacity)
+      .attr("scheme", scheme)
+      .attr("filter", filter)
+      .attr("terracing", terracing)
+      .attr("skip", skip)
+      .attr("relax", relax)
+      .attr("curve", curve)
+      .attr("mask", "url(#land)");
+
+    if (layerIsOn("toggleHeight")) drawHeightmap();
+
     // v1.96.00 moved scaleBar options from units editor to style
     d3.select("#scaleBar").remove();
 

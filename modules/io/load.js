@@ -12,7 +12,7 @@ async function quickLoad() {
 async function loadFromDropbox() {
   const mapPath = byId("loadFromDropboxSelect")?.value;
 
-  DEBUG && console.log("Loading map from Dropbox:", mapPath);
+  DEBUG && console.info("Loading map from Dropbox:", mapPath);
   const blob = await Cloud.providers.dropbox.load(mapPath);
   uploadMap(blob);
 }
@@ -461,10 +461,10 @@ async function parseLoadedData(data) {
 
     {
       // add custom heightmap color scheme if any
-      const scheme = terrs.attr("scheme");
-      if (!(scheme in heightmapColorSchemes)) {
-        addCustomColorScheme(scheme);
-      }
+      const oceanScheme = terrs.select("#oceanHeights").attr("scheme");
+      const landScheme = terrs.select("#landHeights").attr("scheme");
+      if (!(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
+      if (!(landScheme in heightmapColorSchemes)) addCustomColorScheme(landScheme);
     }
 
     {
