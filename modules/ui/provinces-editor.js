@@ -1089,8 +1089,8 @@ function editProvinces() {
       data += el.dataset.capital + ",";
       data += el.dataset.area + ",";
       data += el.dataset.population + ",";
-      data += `${Math.round(provincePack.rural * populationRate)},`;
-      data += `${Math.round(provincePack.urban * populationRate * urbanization)},`;
+      data += Math.round(provincePack.rural * populationRate) + ",";
+      data += Math.round(provincePack.urban * populationRate * urbanization) + ",";
       data += el.dataset.burgs + "\n";
     });
 
