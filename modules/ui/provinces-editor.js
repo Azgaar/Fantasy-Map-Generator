@@ -500,13 +500,9 @@ function editProvinces() {
     document.getElementById("provinceNameEditorShort").value = p.name;
     applyOption(provinceNameEditorSelectForm, p.formName);
     document.getElementById("provinceNameEditorFull").value = p.fullName;
-	
+
     const cultureId = pack.cells.culture[p.center];
-    const cultureName = pack.cultures[cultureId].name;
-    const provinceLangID = pack.cultures[pack.cells.culture[pack.provinces[province].center]].base;
-    const provinceNameBase = Names.getNameBases()[provinceLangID].name;
-    document.getElementById("provinceCultureDisplay").innerText = cultureName;
-    document.getElementById("provinceLanguageDisplay").innerText = provinceNameBase;
+    document.getElementById("provinceCultureDisplay").innerText = pack.cultures[cultureId].name;
 
     $("#provinceNameEditor").dialog({
       resizable: false,
