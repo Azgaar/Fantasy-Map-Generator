@@ -751,7 +751,13 @@ export function resolveVersionConflicts(version) {
     const curveTypes = {0: "curveBasisClosed", 1: "curveLinear", 2: "curveStep"};
     const curve = curveTypes[terrs.attr("curve")] || "curveBasisClosed";
 
-    terrs.attr("scheme", null).attr("terracing", null).attr("skip", null).attr("relax", null).attr("curve", null);
+    terrs
+      .attr("mask", null)
+      .attr("scheme", null)
+      .attr("terracing", null)
+      .attr("skip", null)
+      .attr("relax", null)
+      .attr("curve", null);
 
     terrs
       .append("g")
