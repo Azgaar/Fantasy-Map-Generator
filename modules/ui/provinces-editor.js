@@ -73,9 +73,8 @@ function editProvinces() {
   }
 
   function collectStatistics() {
-    const cells = pack.cells,
-      provinces = pack.provinces,
-      burgs = pack.burgs;
+    const {cells, provinces, burgs} = pack;
+
     provinces.forEach(p => {
       if (!p.i || p.removed) return;
       p.area = p.rural = p.urban = 0;
@@ -116,9 +115,10 @@ function editProvinces() {
     let filtered = pack.provinces.filter(p => p.i && !p.removed); // all valid burgs
     if (selectedState != -1) filtered = filtered.filter(p => p.state === selectedState); // filtered by state
     body.innerHTML = "";
-    let lines = "",
-      totalArea = 0,
-      totalPopulation = 0;
+
+    let lines = "";
+    let totalArea = 0;
+    let totalPopulation = 0;
     let totalBurgs = 0;
 
     for (const p of filtered) {
@@ -186,12 +186,12 @@ function editProvinces() {
     body.innerHTML = lines;
 
     // update footer
-    provincesFooterNumber.innerHTML = filtered.length;
+    byId("provincesFooterNumber").innerHTML = filtered.length;
     byId("provincesFooterBurgs").innerHTML = totalBurgs;
-    provincesFooterArea.innerHTML = filtered.length ? si(totalArea / filtered.length) + unit : 0 + unit;
-    provincesFooterPopulation.innerHTML = filtered.length ? si(totalPopulation / filtered.length) : 0;
-    provincesFooterArea.dataset.area = totalArea;
-    provincesFooterPopulation.dataset.population = totalPopulation;
+    byId("provincesFooterArea").innerHTML = filtered.length ? si(totalArea / filtered.length) + unit : 0 + unit;
+    byId("provincesFooterPopulation").innerHTML = filtered.length ? si(totalPopulation / filtered.length) : 0;
+    byId("provincesFooterArea").dataset.area = totalArea;
+    byId("provincesFooterPopulation").dataset.population = totalPopulation;
 
     body.querySelectorAll("div.states").forEach(el => {
       el.addEventListener("click", selectProvinceOnLineClick);
@@ -1075,10 +1075,7 @@ function editProvinces() {
 
   function downloadProvincesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data =
-      "Id,Province,Full Name,Form,State,Color,Capital,Area " +
-      unit +
-      ",Total Population,Rural Population,Urban Population\n"; // headers
+    let data = `Id,Province,Full Name,Form,State,Color,Capital,Area ${unit},Total Population,Rural Population,Urban Population,Burgs\n`; // headers
 
     body.querySelectorAll(":scope > div").forEach(function (el) {
       const key = parseInt(el.dataset.id);
@@ -1093,7 +1090,8 @@ function editProvinces() {
       data += el.dataset.area + ",";
       data += el.dataset.population + ",";
       data += `${Math.round(provincePack.rural * populationRate)},`;
-      data += `${Math.round(provincePack.urban * populationRate * urbanization)}\n`;
+      data += `${Math.round(provincePack.urban * populationRate * urbanization)},`;
+      data += el.dataset.burgs + "\n";
     });
 
     const name = getFileName("Provinces") + ".csv";
