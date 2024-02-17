@@ -183,22 +183,22 @@ function showUploadMessage(type, mapData, mapVersion) {
     title = "Newer file";
     canBeLoaded = false;
   } else if (type === "outdated") {
-    message = `The map version (${mapVersion}) does not match the Generator version (${version}).<br>That is fine, click OK to the get map <b style="color: #005000">auto-updated</b>.<br>In case of issues please keep using an ${archive} of the Generator`;
-    title = "Outdated file";
-    canBeLoaded = true;
+    INFO && console.info(`Loading map. Auto-update from ${mapVersion} to ${version}`);
+    parseLoadedData(mapData, mapVersion);
+    return;
   }
 
   alertMessage.innerHTML = message;
   const buttons = {
     OK: function () {
       $(this).dialog("close");
-      if (canBeLoaded) parseLoadedData(mapData);
+      if (canBeLoaded) parseLoadedData(mapData, mapVersion);
     }
   };
   $("#alert").dialog({title, buttons});
 }
 
-async function parseLoadedData(data) {
+async function parseLoadedData(data, mapVersion) {
   try {
     // exit customization
     if (window.closeDialogs) closeDialogs();
@@ -638,7 +638,7 @@ async function parseLoadedData(data) {
     ERROR && console.error(error);
     clearMainTip();
 
-    alertMessage.innerHTML = /* html */ `An error is occured on map loading. Select a different file to load, <br />generate a new random map or cancel the loading
+    alertMessage.innerHTML = /* html */ `An error is occured on map loading. Select a different file to load, <br>generate a new random map or cancel the loading.<br>Map version: ${mapVersion}. Generator version: ${version}.
       <p id="errorBox">${parseError(error)}</p>`;
 
     $("#alert").dialog({
