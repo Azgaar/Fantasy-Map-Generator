@@ -480,10 +480,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   }
 
   function downloadBurgsData() {
-    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town`; // headers
-    if (options.showMFCGMap) data += `,City Generator Link`;
-    data += "\n";
-
+    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,City Generator Link\n`; // headers
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
@@ -504,6 +501,9 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
       data += getLatitude(b.y, 2) + ",";
       data += getLongitude(b.x, 2) + ",";
       data += parseInt(getHeight(pack.cells.h[b.cell])) + ",";
+      const temperature = grid.cells.temp[pack.cells.g[b.cell]];
+      data += convertTemperature(temperature) + ",";
+      data += getTemperatureLikeness(temperature) + ",";
 
       // add status data
       data += b.capital ? "capital," : ",";
@@ -513,7 +513,9 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
       data += b.plaza ? "plaza," : ",";
       data += b.temple ? "temple," : ",";
       data += b.shanty ? "shanty town," : ",";
-      if (options.showMFCGMap) data += getMFCGlink(b);
+      data += b.coa ? JSON.stringify(b.coa).replace(/"/g, "").replace(/,/g, ";") + "," : ",";
+      data += getMFCGlink(b);
+
       data += "\n";
     });
 
