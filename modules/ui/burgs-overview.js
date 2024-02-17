@@ -1,5 +1,5 @@
 "use strict";
-function overviewBurgs(options = {stateId: null, cultureId: null}) {
+function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   if (customization) return;
   closeDialogs("#burgsOverview, .stable");
   if (!layerIsOn("toggleIcons")) toggleIcons();
@@ -45,7 +45,7 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
 
   function updateFilter() {
     const stateFilter = byId("burgsFilterState");
-    const selectedState = options.stateId !== null ? options.stateId : stateFilter.value || -1;
+    const selectedState = settings.stateId !== null ? settings.stateId : stateFilter.value || -1;
     stateFilter.options.length = 0; // remove all options
     stateFilter.options.add(new Option("all", -1, false, selectedState === -1));
     stateFilter.options.add(new Option(pack.states[0].name, 0, false, selectedState === 0));
@@ -53,7 +53,7 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
     statesSorted.forEach(s => stateFilter.options.add(new Option(s.name, s.i, false, s.i == selectedState)));
 
     const cultureFilter = byId("burgsFilterCulture");
-    const selectedCulture = options.cultureId !== null ? options.cultureId : cultureFilter.value || -1;
+    const selectedCulture = settings.cultureId !== null ? settings.cultureId : cultureFilter.value || -1;
     cultureFilter.options.length = 0; // remove all options
     cultureFilter.options.add(new Option(`all`, -1, false, selectedCulture === -1));
     cultureFilter.options.add(new Option(pack.cultures[0].name, 0, false, selectedCulture === 0));
