@@ -447,6 +447,7 @@ async function parseLoadedData(data, mapVersion) {
     })();
 
     void (function restoreEvents() {
+      scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
       legend
         .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
         .on("click", () => clearLegend());
@@ -455,7 +456,7 @@ async function parseLoadedData(data, mapVersion) {
     {
       // dynamically import and run auto-update script
       const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.95.00");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.96.00");
       resolveVersionConflicts(versionNumber);
     }
 
