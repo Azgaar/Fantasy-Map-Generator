@@ -815,5 +815,16 @@ export function resolveVersionConflicts(version) {
     fitScaleBar(scaleBar, svgWidth, svgHeight);
 
     if (!layerIsOn("toggleScaleBar")) scaleBar.style("display", "none");
+
+    // v1.96.00 changed coloring approach for regiments
+    armies.selectAll(":scope > g").each(function () {
+      const fill = this.getAttribute("fill");
+      if (!fill) return;
+      const darkerColor = d3.color(fill).darker().hex();
+      this.setAttribute("color", darkerColor);
+      this.querySelectorAll("g > rect:nth-child(2)").forEach(rect => {
+        rect.setAttribute("fill", "currentColor");
+      });
+    });
   }
 }

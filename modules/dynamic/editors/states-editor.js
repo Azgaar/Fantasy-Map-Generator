@@ -1394,6 +1394,7 @@ function openStateMergeDialog() {
 
   function mergeStates(statesToMerge, rulingStateId) {
     const rulingState = pack.states[rulingStateId];
+    const rulingStateArmy = byId("army" + rulingStateId);
 
     // remove states to be merged
     statesToMerge.forEach(stateId => {
@@ -1410,27 +1411,25 @@ function openStateMergeDialog() {
       emblems.select(`#stateEmblems > use[data-i='${stateId}']`).remove();
 
       // add merged state regiments to the ruling state
-      state.military.forEach(m => {
-        const oldId = `regiment${stateId}-${m.i}`;
-
-        const newRegiment = {...m, i: rulingState.military.length};
-        rulingState.military.push(newRegiment);
-
-        const newId = `regiment${rulingStateId}-${newRegiment.i}`;
+      state.military.forEach(regiment => {
+        const oldId = `regiment${stateId}-${regiment.i}`;
+        const newIndex = rulingState.military.length;
+        rulingState.military.push({...regiment, i: newIndex});
+        const newId = `regiment${rulingStateId}-${newIndex}`;
 
         const note = notes.find(n => n.id === oldId);
         if (note) note.id = newId;
 
-        const rulingStateArmy = armies.select("g#army" + rulingStateId);
-        armies
-          .select("g#army" + stateId)
-          .selectAll("g")
-          .each(function () {
-            this.setAttribute("id", newId);
-            rulingStateArmy.node().appendChild(this);
-          });
-        armies.select("g#army" + stateId).remove();
+        const element = byId(oldId);
+        if (element) {
+          element.id = newId;
+          element.dataset.state = rulingStateId;
+          element.dataset.i = newIndex;
+          rulingStateArmy.appendChild(element);
+        }
       });
+
+      armies.select("g#army" + stateId).remove();
     });
 
     // reassing burgs
