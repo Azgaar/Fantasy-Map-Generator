@@ -12,7 +12,7 @@ async function quickLoad() {
 async function loadFromDropbox() {
   const mapPath = byId("loadFromDropboxSelect")?.value;
 
-  DEBUG && console.log("Loading map from Dropbox:", mapPath);
+  DEBUG && console.info("Loading map from Dropbox:", mapPath);
   const blob = await Cloud.providers.dropbox.load(mapPath);
   uploadMap(blob);
 }
@@ -183,22 +183,22 @@ function showUploadMessage(type, mapData, mapVersion) {
     title = "Newer file";
     canBeLoaded = false;
   } else if (type === "outdated") {
-    message = `The map version (${mapVersion}) does not match the Generator version (${version}).<br>That is fine, click OK to the get map <b style="color: #005000">auto-updated</b>.<br>In case of issues please keep using an ${archive} of the Generator`;
-    title = "Outdated file";
-    canBeLoaded = true;
+    INFO && console.info(`Loading map. Auto-update from ${mapVersion} to ${version}`);
+    parseLoadedData(mapData, mapVersion);
+    return;
   }
 
   alertMessage.innerHTML = message;
   const buttons = {
     OK: function () {
       $(this).dialog("close");
-      if (canBeLoaded) parseLoadedData(mapData);
+      if (canBeLoaded) parseLoadedData(mapData, mapVersion);
     }
   };
   $("#alert").dialog({title, buttons});
 }
 
-async function parseLoadedData(data) {
+async function parseLoadedData(data, mapVersion) {
   try {
     // exit customization
     if (window.closeDialogs) closeDialogs();
@@ -218,6 +218,7 @@ async function parseLoadedData(data) {
 
     INFO && console.group("Loaded Map " + seed);
 
+    // TODO: move all to options object
     void (function parseSettings() {
       const settings = data[1].split("|");
       if (settings[0]) applyOption(distanceUnitInput, settings[0]);
@@ -226,23 +227,16 @@ async function parseLoadedData(data) {
       if (settings[3]) applyOption(heightUnit, settings[3]);
       if (settings[4]) heightExponentInput.value = heightExponentOutput.value = settings[4];
       if (settings[5]) temperatureScale.value = settings[5];
-      if (settings[6]) barSizeInput.value = barSizeOutput.value = settings[6];
-      if (settings[7] !== undefined) barLabel.value = settings[7];
-      if (settings[8] !== undefined) barBackOpacity.value = settings[8];
-      if (settings[9]) barBackColor.value = settings[9];
-      if (settings[10]) barPosX.value = settings[10];
-      if (settings[11]) barPosY.value = settings[11];
+      // setting 6-11 (scaleBar) are part of style now, kept as "" in newer versions for compatibility
       if (settings[12]) populationRate = populationRateInput.value = populationRateOutput.value = settings[12];
       if (settings[13]) urbanization = urbanizationInput.value = urbanizationOutput.value = settings[13];
       if (settings[14]) mapSizeInput.value = mapSizeOutput.value = minmax(settings[14], 1, 100);
       if (settings[15]) latitudeInput.value = latitudeOutput.value = minmax(settings[15], 0, 100);
       if (settings[18]) precInput.value = precOutput.value = settings[18];
-
       if (settings[19]) options = JSON.parse(settings[19]);
       // setting 16 and 17 (temperature) are part of options now, kept as "" in newer versions for compatibility
       if (settings[16]) options.temperatureEquator = +settings[16];
       if (settings[17]) options.temperatureNorthPole = options.temperatureSouthPole = +settings[17];
-
       if (settings[20]) mapName.value = settings[20];
       if (settings[21]) hideLabels.checked = +settings[21];
       if (settings[22]) stylePreset.value = settings[22];
@@ -462,16 +456,16 @@ async function parseLoadedData(data) {
     {
       // dynamically import and run auto-update script
       const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.95.00");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.96.00");
       resolveVersionConflicts(versionNumber);
     }
 
     {
       // add custom heightmap color scheme if any
-      const scheme = terrs.attr("scheme");
-      if (!(scheme in heightmapColorSchemes)) {
-        addCustomColorScheme(scheme);
-      }
+      const oceanScheme = terrs.select("#oceanHeights").attr("scheme");
+      const landScheme = terrs.select("#landHeights").attr("scheme");
+      if (!(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
+      if (!(landScheme in heightmapColorSchemes)) addCustomColorScheme(landScheme);
     }
 
     {
@@ -645,7 +639,7 @@ async function parseLoadedData(data) {
     ERROR && console.error(error);
     clearMainTip();
 
-    alertMessage.innerHTML = /* html */ `An error is occured on map loading. Select a different file to load, <br />generate a new random map or cancel the loading
+    alertMessage.innerHTML = /* html */ `An error is occured on map loading. Select a different file to load, <br>generate a new random map or cancel the loading.<br>Map version: ${mapVersion}. Generator version: ${version}.
       <p id="errorBox">${parseError(error)}</p>`;
 
     $("#alert").dialog({

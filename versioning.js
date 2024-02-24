@@ -1,7 +1,7 @@
 "use strict";
 
 // version and caching control
-const version = "1.95.05"; // generator version, update each time
+const version = "1.96.00"; // generator version, update each time
 
 {
   document.title += " v" + version;
@@ -28,6 +28,8 @@ const version = "1.95.05"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Ability to render ocean heightmap</li>
+        <li>Scale bar styling features</li>
         <li>Vignette visual layer and vignette styling options</li>
         <li>Ability to define custom heightmap color scheme</li>
         <li>New style preset Night and new heightmap color schemes</li>

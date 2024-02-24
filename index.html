@@ -138,7 +138,7 @@
       }
     </style>
 
-    <link rel="preload" href="index.css?v=1.95.00" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+    <link rel="preload" href="index.css?v=1.96.00" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="icons.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="libs/jquery-ui.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
   </head>
@@ -366,7 +366,9 @@
         </mask>
       </defs>
       <g id="viewbox"></g>
-      <g id="scaleBar"></g>
+      <g id="scaleBar">
+        <rect id="scaleBarBack"></rect>
+      </g>
       <g id="vignette" mask="url(#vignette-mask)">
         <rect x="0" y="0" width="100%" height="100%" />
       </g>
@@ -799,6 +801,7 @@
             <option value="rivers">Rivers</option>
             <option value="routes">Routes</option>
             <option value="ruler">Rulers</option>
+            <option value="scaleBar">Scale Bar</option>
             <option value="regions" selected>States</option>
             <option value="temperature">Temperature</option>
             <option value="texture">Texture</option>
@@ -820,6 +823,63 @@
                 <td><b>Group</b></td>
                 <td>
                   <select id="styleGroupSelect"></select>
+                </td>
+              </tr>
+            </tbody>
+
+            <tbody id="styleHeightmap">
+              <tr id="styleHeightmapRenderOceanOption" data-tip="Check to render ocean heights">
+                <td colspan="2">
+                  <input id="styleHeightmapRenderOcean" class="checkbox" type="checkbox" />
+                  <label for="styleHeightmapRenderOcean" class="checkbox-label">Render ocean heights</label>
+                </td>
+              </tr>
+
+              <tr data-tip="Terracing rate. Set to 0 (toggle off) to improve performance">
+                <td>Terracing</td>
+                <td>
+                  <input id="styleHeightmapTerracingInput" type="range" min="0" max="20" step="1" />
+                  <output id="styleHeightmapTerracingOutput">0</output>
+                </td>
+              </tr>
+
+              <tr data-tip="Layers reduction rate. Increase to improve performance">
+                <td>Reduce layers</td>
+                <td>
+                  <input id="styleHeightmapSkipInput" type="range" min="0" max="10" step="1" value="5" />
+                  <output id="styleHeightmapSkipOutput">5</output>
+                </td>
+              </tr>
+
+              <tr data-tip="Line simplification rate. Increase to slightly improve performance">
+                <td>Simplify line</td>
+                <td>
+                  <input id="styleHeightmapSimplificationInput" type="range" min="0" max="10" step="1" value="0" />
+                  <output id="styleHeightmapSimplificationOutput">0</output>
+                </td>
+              </tr>
+
+              <tr data-tip="Select line interpolation type">
+                <td>Line style</td>
+                <td>
+                  <select id="styleHeightmapCurve">
+                    <option value="curveBasisClosed" selected>Curved</option>
+                    <option value="curveLinear">Linear</option>
+                    <option value="curveStep">Rectangular</option>
+                  </select>
+                </td>
+              </tr>
+
+              <tr data-tip="Select color scheme for the element">
+                <td>Color scheme</td>
+                <td>
+                  <select id="styleHeightmapScheme"></select>
+                  <button
+                    id="openCreateHeightmapSchemeButton"
+                    data-tip="Click to add a custom heightmap color scheme"
+                    data-stops="#ffffff,#EEEECC,#D2B48C,#008000,#008080"
+                    class="icon-plus sideButton"
+                  ></button>
                 </td>
               </tr>
             </tbody>
@@ -1281,56 +1341,6 @@
               </tr>
             </tbody>
 
-            <tbody id="styleHeightmap">
-              <tr data-tip="Terracing rate. Set to 0 (toggle off) to improve performance">
-                <td>Terracing</td>
-                <td>
-                  <input id="styleHeightmapTerracingInput" type="range" min="0" max="20" step="1" />
-                  <output id="styleHeightmapTerracingOutput">0</output>
-                </td>
-              </tr>
-
-              <tr data-tip="Layers reduction rate. Increase to improve performance">
-                <td>Reduce layers</td>
-                <td>
-                  <input id="styleHeightmapSkipInput" type="range" min="0" max="10" step="1" value="5" />
-                  <output id="styleHeightmapSkipOutput">5</output>
-                </td>
-              </tr>
-
-              <tr data-tip="Line simplification rate. Increase to slightly improve performance">
-                <td>Simplify line</td>
-                <td>
-                  <input id="styleHeightmapSimplificationInput" type="range" min="0" max="10" step="1" value="0" />
-                  <output id="styleHeightmapSimplificationOutput">0</output>
-                </td>
-              </tr>
-
-              <tr data-tip="Select line interpolation type">
-                <td>Line style</td>
-                <td>
-                  <select id="styleHeightmapCurve">
-                    <option value="0" selected>Curved</option>
-                    <option value="1">Linear</option>
-                    <option value="2">Rectangular</option>
-                  </select>
-                </td>
-              </tr>
-
-              <tr data-tip="Select color scheme for the element">
-                <td>Color scheme</td>
-                <td>
-                  <select id="styleHeightmapScheme"></select>
-                  <button
-                    id="openCreateHeightmapSchemeButton"
-                    data-tip="Click to add a custom heightmap color scheme"
-                    data-stops="#ffffff,#EEEECC,#D2B48C,#008000,#008080"
-                    class="icon-plus sideButton"
-                  ></button>
-                </td>
-              </tr>
-            </tbody>
-
             <tbody id="styleArmies">
               <tr data-tip="Set fill transparency. Set to 0 to make it fully transparent">
                 <td>Fill opacity</td>
@@ -1444,6 +1454,84 @@
                   <input id="rescaleLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked />
                   <label for="rescaleLabels" class="checkbox-label">Rescale on zoom</label>
                 </td>
+              </tr>
+            </tbody>
+
+            <tbody id="styleScaleBar">
+              <tr data-tip="Set bar and font size">
+                <td>Size</td>
+                <td>
+                  <span>Bar </span>
+                  <input id="styleScaleBarSize" type="number" min=".5" max="5" step=".1" />
+                  <span>Font </span>
+                  <input id="styleScaleBarFontSize" type="number" min="1" max="100" step=".1" />
+                </td>
+              </tr>
+
+              <tr data-tip="Set position of the Scale bar bottom right corner (in percents)">
+                <td>Position</td>
+                <td>
+                  <span>x </span>
+                  <input id="styleScaleBarPositionX" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+                  <span>y </span>
+                  <input id="styleScaleBarPositionY" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+                </td>
+              </tr>
+
+              <tr data-tip="Type scale bar label, leave blank to hide label">
+                <td>Label</td>
+                <td>
+                  <input id="styleScaleBarLabel" type="text" />
+                </td>
+              </tr>
+
+              <tr data-tip="Set background opacity. 0: transparent, 1: solid">
+                <td>Back opacity</td>
+                <td>
+                  <input id="styleScaleBarBackgroundOpacityInput" type="range" min="0" max="1" step="0.01" />
+                  <output id="styleScaleBarBackgroundOpacityOutput"></output>
+                </td>
+              </tr>
+
+              <tr data-tip="Set background fill color">
+                <td>Back fill</td>
+                <td>
+                  <input id="styleScaleBarBackgroundFillInput" type="color" />
+                  <output id="styleScaleBarBackgroundFillOutput"></output>
+                </td>
+              </tr>
+
+              <tr data-tip="Set background stroke color and width">
+                <td>Back stroke</td>
+                <td>
+                  <input id="styleScaleBarBackgroundStrokeInput" type="color" />
+                  <output id="styleScaleBarBackgroundStrokeOutput"></output>
+
+                  <span>Width </span>
+                  <input
+                    id="styleScaleBarBackgroundStrokeWidth"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    style="width: 5em"
+                  />
+                </td>
+              </tr>
+
+              <tr data-tip="Set background element padding: top, right, bottom, left (in pixels)">
+                <td>Back padding</td>
+                <td style="display: flex; gap: 4px">
+                  <input id="styleScaleBarBackgroundPaddingTop" type="number" min="0" max="100" style="width: 5em" />
+                  <input id="styleScaleBarBackgroundPaddingRight" type="number" min="0" max="100" style="width: 5em" />
+                  <input id="styleScaleBarBackgroundPaddingBottom" type="number" min="0" max="100" style="width: 5em" />
+                  <input id="styleScaleBarBackgroundPaddingLeft" type="number" min="0" max="100" style="width: 5em" />
+                </td>
+              </tr>
+
+              <tr data-tip="Select background filter">
+                <td>Back filter</td>
+                <td><select id="styleScaleBarBackgroundFilter" /></td>
               </tr>
             </tbody>
           </table>
@@ -4450,7 +4538,7 @@
       </div>
 
       <div id="provincesEditor" class="dialog stable" style="display: none">
-        <div id="provincesHeader" class="header" style="grid-template-columns: 11em 8em 8em 8em 5em 8em">
+        <div id="provincesHeader" class="header" style="grid-template-columns: 11em 8em 8em 6em 6em 6em 8em">
           <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">
             Province&nbsp;
           </div>
@@ -4463,6 +4551,9 @@
           <div data-tip="Click to sort by province owner" class="sortable alphabetically" data-sortby="state">
             State&nbsp;
           </div>
+          <div data-tip="Click to sort by province burgs count" class="sortable hide" data-sortby="burgs">
+            Burgs&nbsp;
+          </div>
           <div data-tip="Click to sort by province area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
           <div data-tip="Click to sort by province population" class="sortable hide" data-sortby="population">
             Population&nbsp;
@@ -4474,6 +4565,9 @@
         <div id="provincesFooter" class="totalLine">
           <div data-tip="Provinces displayed" style="margin-left: 4px">
             Provinces:&nbsp;<span id="provincesFooterNumber">0</span>
+          </div>
+          <div data-tip="Total burgs number" style="margin-left: 12px">
+            Burgs:&nbsp;<span id="provincesFooterBurgs">0</span>
           </div>
           <div data-tip="Average area" style="margin-left: 14px">
             Mean area:&nbsp;<span id="provincesFooterArea">0</span>
@@ -4612,7 +4706,7 @@
           <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
           <span
             id="provinceNameEditorShortCulture"
-            data-tip="Generate culture-specific name"
+            data-tip="Generate culture-specific name for the province"
             class="icon-book pointer"
           ></span>
           <span id="provinceNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
@@ -4687,6 +4781,14 @@
             data-tip="Click to re-generate full name"
             class="icon-arrows-cw pointer"
           ></span>
+        </div>
+
+        <div
+          id="provinceCultureName"
+          data-tip="Dominant culture in the province. This defines culture-based naming. Can be changed via the Cultures Editor"
+          style="margin-top: 0.2em"
+        >
+          Dominant culture:&nbsp;<span id="provinceCultureDisplay"></span>
         </div>
       </div>
 
@@ -5130,49 +5232,6 @@
               <option value="°Ré">degree Réaumur (°Ré)</option>
               <option value="°Rø">degree Rømer (°Rø)</option>
             </select>
-          </div>
-
-          <div class="unitsHeader">
-            <span class="icon-minus"></span>
-            <div>Scale bar:</div>
-          </div>
-
-          <div data-tip="Set scale bar size">
-            <div>Bar size:</div>
-            <input id="barSizeOutput" data-stored="barSize" type="range" min=".5" max="5" value="2" step=".1" />
-            <input id="barSizeInput" data-stored="barSize" type="number" min=".5" max="5" value="2" step=".1" />
-          </div>
-
-          <div data-tip="Type scale bar label, leave blank to hide label">
-            <div>Bar label:</div>
-            <input id="barLabel" data-stored="barLabel" type="text" placeholder="hidden" value="" />
-          </div>
-
-          <div data-tip="Set background for Scale bar">
-            <div>Bar background:</div>
-            <input
-              id="barBackOpacity"
-              data-stored="barBackOpacity"
-              type="range"
-              min="0"
-              max="1"
-              value=".2"
-              step=".01"
-            />
-            <input id="barBackColor" data-stored="barBackColor" type="color" value="#ffffff" />
-          </div>
-
-          <div data-tip="Set position of the Scale bar bottom right corner in percents">
-            <div>Bar position:</div>
-            x:<input id="barPosX" data-stored="barPosX" type="number" min="0" max="100" step=".1" value="99" /> y:<input
-              id="barPosY"
-              data-stored="barPosY"
-              type="number"
-              min="0"
-              max="100"
-              step=".1"
-              value="99"
-            />
           </div>
 
           <div class="unitsHeader">
@@ -7963,7 +8022,7 @@
     <script src="utils/commonUtils.js?v=1.89.29"></script>
     <script src="utils/arrayUtils.js"></script>
     <script src="utils/colorUtils.js"></script>
-    <script src="utils/graphUtils.js?v=1.93.12"></script>
+    <script src="utils/graphUtils.js?v=1.96.00"></script>
     <script src="utils/nodeUtils.js"></script>
     <script src="utils/numberUtils.js?v=1.89.08"></script>
     <script src="utils/polyfills.js?v=1.95.03"></script>
@@ -7976,39 +8035,39 @@
     <script src="config/heightmap-templates.js"></script>
     <script src="config/precreated-heightmaps.js"></script>
     <script src="modules/heightmap-generator.js?v=1.88.00"></script>
-    <script src="modules/ocean-layers.js?v=1.95.00"></script>
+    <script src="modules/ocean-layers.js?v=1.96.00"></script>
     <script src="modules/river-generator.js?v=1.89.13"></script>
     <script src="modules/lakes.js"></script>
     <script src="modules/biomes.js"></script>
     <script src="modules/names-generator.js?v=1.87.14"></script>
-    <script src="modules/cultures-generator.js?v=1.89.10"></script>
+    <script src="modules/cultures-generator.js?v=1.96.00"></script>
     <script src="modules/renderers/state-labels.js"></script>
     <script src="modules/burgs-and-states.js?v=1.92.00"></script>
     <script src="modules/routes-generator.js"></script>
     <script src="modules/religions-generator.js?v=1.93.08"></script>
-    <script src="modules/military-generator.js"></script>
+    <script src="modules/military-generator.js?v=1.96.00"></script>
     <script src="modules/markers-generator.js?v=1.93.04"></script>
     <script src="modules/coa-generator.js?v=1.91.05"></script>
-    <script src="modules/submap.js?v=1.94.01"></script>
+    <script src="modules/submap.js?v=1.96.00"></script>
     <script src="libs/polylabel.min.js"></script>
     <script src="libs/lineclip.min.js"></script>
     <script src="libs/alea.min.js"></script>
     <script src="modules/fonts.js?v=1.89.18"></script>
-    <script src="modules/ui/layers.js?v=1.94.00"></script>
-    <script src="modules/ui/measurers.js?v=1.94.03"></script>
-    <script src="modules/ui/stylePresets.js?v=1.95.00"></script>
+    <script src="modules/ui/layers.js?v=1.96.00"></script>
+    <script src="modules/ui/measurers.js?v=1.96.00"></script>
+    <script src="modules/ui/stylePresets.js?v=1.96.00"></script>
 
-    <script src="modules/ui/general.js?v=1.94.01"></script>
-    <script src="modules/ui/options.js?v=1.94.06"></script>
-    <script src="main.js?v=1.94.05"></script>
+    <script src="modules/ui/general.js?v=1.96.00"></script>
+    <script src="modules/ui/options.js?v=1.96.00"></script>
+    <script src="main.js?v=1.96.00"></script>
 
     <script defer src="modules/relief-icons.js"></script>
-    <script defer src="modules/ui/style.js?v=1.95.00"></script>
-    <script defer src="modules/ui/editors.js?v=1.95.04"></script>
+    <script defer src="modules/ui/style.js?v=1.96.00"></script>
+    <script defer src="modules/ui/editors.js?v=1.96.00"></script>
     <script defer src="modules/ui/tools.js?v=1.95.01"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.91.05"></script>
-    <script defer src="modules/ui/heightmap-editor.js?v=1.93.00"></script>
-    <script defer src="modules/ui/provinces-editor.js?v=1.92.00"></script>
+    <script defer src="modules/ui/heightmap-editor.js?v=1.96.00"></script>
+    <script defer src="modules/ui/provinces-editor.js?v=1.96.00"></script>
     <script defer src="modules/ui/biomes-editor.js?v=1.91.05"></script>
     <script defer src="modules/ui/namesbase-editor.js?v=1.95.02"></script>
     <script defer src="modules/ui/elevation-profile.js"></script>
@@ -8021,12 +8080,12 @@
     <script defer src="modules/ui/rivers-editor.js"></script>
     <script defer src="modules/ui/rivers-creator.js?v=1.89.13"></script>
     <script defer src="modules/ui/relief-editor.js"></script>
-    <script defer src="modules/ui/burg-editor.js"></script>
-    <script defer src="modules/ui/units-editor.js?v=1.94.02"></script>
+    <script defer src="modules/ui/burg-editor.js?v=1.96.00"></script>
+    <script defer src="modules/ui/units-editor.js?v=1.96.00"></script>
     <script defer src="modules/ui/notes-editor.js?v=1.93.09"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.88.04"></script>
     <script defer src="modules/ui/zones-editor.js"></script>
-    <script defer src="modules/ui/burgs-overview.js?v=1.93.10"></script>
+    <script defer src="modules/ui/burgs-overview.js?v=1.96.00"></script>
     <script defer src="modules/ui/rivers-overview.js"></script>
     <script defer src="modules/ui/military-overview.js"></script>
     <script defer src="modules/ui/regiments-overview.js?v=1.89.20"></script>
@@ -8036,15 +8095,15 @@
     <script defer src="modules/ui/emblems-editor.js?v=1.91.00"></script>
     <script defer src="modules/ui/markers-editor.js"></script>
     <script defer src="modules/ui/3d.js?v=1.94.03"></script>
-    <script defer src="modules/ui/submap.js?v=1.94.03"></script>
+    <script defer src="modules/ui/submap.js?v=1.96.00"></script>
     <script defer src="modules/ui/hotkeys.js?v=1.95.00"></script>
     <script defer src="modules/coa-renderer.js?v=1.94.00"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-    <script defer src="modules/io/save.js?v=1.93.02"></script>
-    <script defer src="modules/io/load.js?v=1.95.00"></script>
-    <script defer src="modules/io/cloud.js?v=1.94.04"></script>
-    <script defer src="modules/io/export.js?v=1.95.05"></script>
+    <script defer src="modules/io/save.js?v=1.96.00"></script>
+    <script defer src="modules/io/load.js?v=1.96.00"></script>
+    <script defer src="modules/io/cloud.js?v=1.96.00"></script>
+    <script defer src="modules/io/export.js?v=1.96.00"></script>
     <script defer src="modules/io/formats.js"></script>
 
     <!-- Web Components -->
