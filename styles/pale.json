@@ -286,16 +286,25 @@
     "href": "./images/kiwiroo.png",
     "opacity": 0.3
   },
-  "#terrs": {
+  "#terrs > #oceanHeights": {
+    "data-render": 0,
+    "opacity": 0.7,
+    "scheme": "bright",
+    "terracing": 0,
+    "skip": 0,
+    "relax": 1,
+    "curve": "curveBasisClosed",
+    "filter": null,
+    "mask": null
+  },
+  "#terrs > #landHeights": {
     "opacity": 0.7,
     "scheme": "bright",
     "terracing": 0,
     "skip": 2,
     "relax": 1,
     "curve": "curveBasisClosed",
-    "skipOcean": 0,
-    "relaxOcean": 1,
-    "filter": "",
+    "filter": null,
     "mask": "url(#land)"
   },
   "#legend": {

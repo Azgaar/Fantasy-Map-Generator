@@ -281,16 +281,25 @@
     "href": "",
     "opacity": 0.2
   },
-  "#terrs": {
+  "#terrs #oceanHeights": {
+    "data-render": 1,
     "opacity": 1,
     "scheme": "monochrome",
     "terracing": 0,
-    "skip": 5,
-    "relax": 0,
+    "skip": 0,
+    "relax": 1,
     "curve": "curveBasisClosed",
-    "skipOcean": 0,
-    "relaxOcean": 1,
-    "filter": "url(#blur3)",
+    "filter": "url(#turbulence)",
+    "mask": null
+  },
+  "#terrs #landHeights": {
+    "opacity": 1,
+    "scheme": "monochrome",
+    "terracing": 0,
+    "skip": 0,
+    "relax": 1,
+    "curve": "curveBasisClosed",
+    "filter": "url(#turbulence)",
     "mask": "url(#land)"
   },
   "#legend": {
