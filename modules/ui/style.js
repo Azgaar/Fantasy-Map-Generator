@@ -14,6 +14,7 @@
 
   byId("styleFilterInput").innerHTML = allOptions;
   byId("styleStatesBodyFilter").innerHTML = allOptions;
+  byId("styleScaleBarBackgroundFilter").innerHTML = allOptions;
 }
 
 // store some style inputs as options
@@ -31,6 +32,7 @@ function editStyle(element, group) {
 
   styleElementSelect.classList.add("glow");
   if (group) styleGroupSelect.classList.add("glow");
+
   setTimeout(() => {
     styleElementSelect.classList.remove("glow");
     if (group) styleGroupSelect.classList.remove("glow");
@@ -81,10 +83,10 @@ function selectStyleElement() {
   styleIsOff.style.display = isLayerOff ? "block" : "none";
 
   // active group element
-  const group = styleGroupSelect.value;
-  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(styleElement)) {
-    const gEl = group && el.select("#" + group);
-    el = group && gEl.size() ? gEl : el.select("g");
+  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders", "terrs"].includes(styleElement)) {
+    const group = styleGroupSelect.value;
+    const defaultGroupSelector = styleElement === "terrs" ? "#landHeights" : "g";
+    el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
   }
 
   // opacity
@@ -94,13 +96,13 @@ function selectStyleElement() {
   }
 
   // filter
-  if (!["landmass", "legend", "regions"].includes(styleElement)) {
+  if (!["landmass", "legend", "regions", "scaleBar"].includes(styleElement)) {
     styleFilter.style.display = "block";
     styleFilterInput.value = el.attr("filter") || "";
   }
 
   // fill
-  if (["rivers", "lakes", "landmass", "prec", "ice", "fogging", "vignette"].includes(styleElement)) {
+  if (["rivers", "lakes", "landmass", "prec", "ice", "fogging", "scaleBar", "vignette"].includes(styleElement)) {
     styleFill.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill");
   }
@@ -170,11 +172,14 @@ function selectStyleElement() {
 
   if (styleElement === "terrs") {
     styleHeightmap.style.display = "block";
-    styleHeightmapScheme.value = terrs.attr("scheme");
-    styleHeightmapTerracingInput.value = styleHeightmapTerracingOutput.value = terrs.attr("terracing");
-    styleHeightmapSkipInput.value = styleHeightmapSkipOutput.value = terrs.attr("skip");
-    styleHeightmapSimplificationInput.value = styleHeightmapSimplificationOutput.value = terrs.attr("relax");
-    styleHeightmapCurve.value = terrs.attr("curve");
+    styleHeightmapRenderOceanOption.style.display = el.attr("id") === "oceanHeights" ? "block" : "none";
+    styleHeightmapRenderOcean.checked = +el.attr("data-render");
+
+    styleHeightmapScheme.value = el.attr("scheme");
+    styleHeightmapTerracingInput.value = styleHeightmapTerracingOutput.value = el.attr("terracing");
+    styleHeightmapSkipInput.value = styleHeightmapSkipOutput.value = el.attr("skip");
+    styleHeightmapSimplificationInput.value = styleHeightmapSimplificationOutput.value = el.attr("relax");
+    styleHeightmapCurve.value = el.attr("curve");
   }
 
   if (styleElement === "markers") {
@@ -336,7 +341,7 @@ function selectStyleElement() {
 
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
-  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders"].includes(styleElement)) {
+  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders", "terrs"].includes(styleElement)) {
     const groups = byId(styleElement).querySelectorAll("g");
     groups.forEach(el => {
       if (el.id === "burgLabels") return;
@@ -354,6 +359,31 @@ function selectStyleElement() {
     styleCoastline.style.display = "block";
     const auto = (styleCoastlineAuto.checked = coastline.select("#sea_island").attr("auto-filter"));
     if (auto) styleFilter.style.display = "none";
+  }
+
+  if (styleElement === "scaleBar") {
+    styleScaleBar.style.display = "block";
+
+    styleScaleBarSize.value = el.attr("data-bar-size");
+    styleScaleBarFontSize.value = el.attr("font-size");
+    styleScaleBarPositionX.value = el.attr("data-x") || "99";
+    styleScaleBarPositionY.value = el.attr("data-y") || "99";
+    styleScaleBarLabel.value = el.attr("data-label") || "";
+
+    const scaleBarBack = el.select("#scaleBarBack");
+    if (scaleBarBack.size()) {
+      styleScaleBarBackgroundOpacityInput.value = styleScaleBarBackgroundOpacityOutput.value =
+        scaleBarBack.attr("opacity");
+      styleScaleBarBackgroundFillInput.value = styleScaleBarBackgroundFillOutput.value = scaleBarBack.attr("fill");
+      styleScaleBarBackgroundStrokeInput.value = styleScaleBarBackgroundStrokeOutput.value =
+        scaleBarBack.attr("stroke");
+      styleScaleBarBackgroundStrokeWidth.value = scaleBarBack.attr("stroke-width");
+      styleScaleBarBackgroundFilter.value = scaleBarBack.attr("filter");
+      styleScaleBarBackgroundPaddingTop.value = scaleBarBack.attr("data-top");
+      styleScaleBarBackgroundPaddingRight.value = scaleBarBack.attr("data-right");
+      styleScaleBarBackgroundPaddingBottom.value = scaleBarBack.attr("data-bottom");
+      styleScaleBarBackgroundPaddingLeft.value = scaleBarBack.attr("data-left");
+    }
   }
 
   if (styleElement === "vignette") {
@@ -519,18 +549,16 @@ outlineLayers.addEventListener("change", function () {
 });
 
 styleHeightmapScheme.addEventListener("change", function () {
-  terrs.attr("scheme", this.value);
+  getEl().attr("scheme", this.value);
   drawHeightmap();
 });
 
 openCreateHeightmapSchemeButton.addEventListener("click", function () {
   // start with current scheme
-  this.dataset.stops = terrs.attr("scheme").startsWith("#")
-    ? terrs.attr("scheme")
-    : (function () {
-        const scheme = heightmapColorSchemes[terrs.attr("scheme")];
-        return [0, 0.25, 0.5, 0.75, 1].map(scheme).map(toHEX).join(",");
-      })();
+  const scheme = getEl().attr("scheme");
+  this.dataset.stops = scheme.startsWith("#")
+    ? scheme
+    : (() => [0, 0.25, 0.5, 0.75, 1].map(heightmapColorSchemes[scheme]).map(toHEX).join(","))();
 
   // render dialog base structure
   alertMessage.innerHTML = /* html */ `<div>
@@ -622,7 +650,7 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
     if (stops in heightmapColorSchemes) return tip("This scheme already exists", false, "error");
 
     addCustomColorScheme(stops);
-    terrs.attr("scheme", stops);
+    getEl().attr("scheme", stops);
     drawHeightmap();
 
     handleClose();
@@ -644,23 +672,28 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
   });
 });
 
+styleHeightmapRenderOcean.addEventListener("change", function () {
+  getEl().attr("data-render", +this.checked);
+  drawHeightmap();
+});
+
 styleHeightmapTerracingInput.addEventListener("input", function () {
-  terrs.attr("terracing", this.value);
+  getEl().attr("terracing", this.value);
   drawHeightmap();
 });
 
 styleHeightmapSkipInput.addEventListener("input", function () {
-  terrs.attr("skip", this.value);
+  getEl().attr("skip", this.value);
   drawHeightmap();
 });
 
 styleHeightmapSimplificationInput.addEventListener("input", function () {
-  terrs.attr("relax", this.value);
+  getEl().attr("relax", this.value);
   drawHeightmap();
 });
 
 styleHeightmapCurve.addEventListener("change", function () {
-  terrs.attr("curve", this.value);
+  getEl().attr("curve", this.value);
   drawHeightmap();
 });
 
@@ -957,7 +990,7 @@ function textureProvideURL() {
 }
 
 function fetchTextureURL(url) {
-  INFO && console.log("Provided URL is", url);
+  INFO && console.info("Provided URL is", url);
   const img = new Image();
   img.onload = function () {
     const canvas = byId("texturePreview");
@@ -1041,6 +1074,44 @@ styleVignetteRy.addEventListener("input", function () {
 styleVignetteBlur.addEventListener("input", function () {
   styleVignetteBlurOutput.value = this.value;
   byId("vignette-rect")?.setAttribute("filter", `blur(${this.value}px)`);
+});
+
+styleScaleBar.addEventListener("input", function (event) {
+  const scaleBarBack = scaleBar.select("#scaleBarBack");
+  if (!scaleBarBack.size()) return;
+
+  const {id, value} = event.target;
+
+  if (id === "styleScaleBarSize") scaleBar.attr("data-bar-size", value);
+  else if (id === "styleScaleBarFontSize") scaleBar.attr("font-size", value);
+  else if (id === "styleScaleBarPositionX") scaleBar.attr("data-x", value);
+  else if (id === "styleScaleBarPositionY") scaleBar.attr("data-y", value);
+  else if (id === "styleScaleBarLabel") scaleBar.attr("data-label", value);
+  else if (id === "styleScaleBarBackgroundOpacityInput") scaleBarBack.attr("opacity", value);
+  else if (id === "styleScaleBarBackgroundFillInput") scaleBarBack.attr("fill", value);
+  else if (id === "styleScaleBarBackgroundStrokeInput") scaleBarBack.attr("stroke", value);
+  else if (id === "styleScaleBarBackgroundStrokeWidth") scaleBarBack.attr("stroke-width", value);
+  else if (id === "styleScaleBarBackgroundFilter") scaleBarBack.attr("filter", value);
+  else if (id === "styleScaleBarBackgroundPaddingTop") scaleBarBack.attr("data-top", value);
+  else if (id === "styleScaleBarBackgroundPaddingRight") scaleBarBack.attr("data-right", value);
+  else if (id === "styleScaleBarBackgroundPaddingBottom") scaleBarBack.attr("data-bottom", value);
+  else if (id === "styleScaleBarBackgroundPaddingLeft") scaleBarBack.attr("data-left", value);
+
+  if (
+    [
+      "styleScaleBarSize",
+      "styleScaleBarPositionX",
+      "styleScaleBarPositionY",
+      "styleScaleBarLabel",
+      "styleScaleBarBackgroundPaddingLeft",
+      "styleScaleBarBackgroundPaddingTop",
+      "styleScaleBarBackgroundPaddingRight",
+      "styleScaleBarBackgroundPaddingBottom"
+    ].includes(id)
+  ) {
+    drawScaleBar(scaleBar, scale);
+    fitScaleBar(scaleBar, svgWidth, svgHeight);
+  }
 });
 
 function updateElements() {

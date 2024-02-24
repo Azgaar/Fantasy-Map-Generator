@@ -49,12 +49,12 @@ function prepareMapData() {
     heightUnit.value,
     heightExponentInput.value,
     temperatureScale.value,
-    barSizeInput.value,
-    barLabel.value,
-    barBackOpacity.value,
-    barBackColor.value,
-    barPosX.value,
-    barPosY.value,
+    "", // previously used for barSize.value
+    "", // previously used for barLabel.value
+    "", // previously used for barBackColor.value
+    "", // previously used for barBackColor.value
+    "", // previously used for barPosX.value
+    "", // previously used for barPosY.value
     populationRate,
     urbanization,
     mapSizeOutput.value,

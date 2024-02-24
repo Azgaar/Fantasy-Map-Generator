@@ -92,15 +92,18 @@ let fogging = viewbox
 let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
 let debug = viewbox.append("g").attr("id", "debug");
 
-// lake and coast groups
 lakes.append("g").attr("id", "freshwater");
 lakes.append("g").attr("id", "salt");
 lakes.append("g").attr("id", "sinkhole");
 lakes.append("g").attr("id", "frozen");
 lakes.append("g").attr("id", "lava");
 lakes.append("g").attr("id", "dry");
+
 coastline.append("g").attr("id", "sea_island");
 coastline.append("g").attr("id", "lake_island");
+
+terrs.append("g").attr("id", "oceanHeights");
+terrs.append("g").attr("id", "landHeights");
 
 labels.append("g").attr("id", "states");
 labels.append("g").attr("id", "addedLabels");
@@ -841,8 +844,8 @@ function openNearSeaLakes() {
   const LIMIT = 22; // max height that can be breached by water
 
   for (const i of cells.i) {
-    const lake = cells.f[i];
-    if (features[lake].type !== "lake") continue; // not a lake cell
+    const lakeFeatureId = cells.f[i];
+    if (features[lakeFeatureId].type !== "lake") continue; // not a lake
 
     check_neighbours: for (const c of cells.c[i]) {
       if (cells.t[c] !== 1 || cells.h[c] > LIMIT) continue; // water cannot break this
@@ -850,20 +853,24 @@ function openNearSeaLakes() {
       for (const n of cells.c[c]) {
         const ocean = cells.f[n];
         if (features[ocean].type !== "ocean") continue; // not an ocean
-        removeLake(c, lake, ocean);
+        removeLake(c, lakeFeatureId, ocean);
         break check_neighbours;
       }
     }
   }
 
-  function removeLake(threshold, lake, ocean) {
-    cells.h[threshold] = 19;
-    cells.t[threshold] = -1;
-    cells.f[threshold] = ocean;
-    cells.c[threshold].forEach(function (c) {
+  function removeLake(thresholdCellId, lakeFeatureId, oceanFeatureId) {
+    cells.h[thresholdCellId] = 19;
+    cells.t[thresholdCellId] = -1;
+    cells.f[thresholdCellId] = oceanFeatureId;
+    cells.c[thresholdCellId].forEach(function (c) {
       if (cells.h[c] >= 20) cells.t[c] = 1; // mark as coastline
     });
-    features[lake].type = "ocean"; // mark former lake as ocean
+
+    cells.i.forEach(i => {
+      if (cells.f[i] === lakeFeatureId) cells.f[i] = oceanFeatureId;
+    });
+    features[lakeFeatureId].type = "ocean"; // mark former lake as ocean
   }
 
   TIME && console.timeEnd("openLakes");
@@ -1250,6 +1257,7 @@ function drawCoastline() {
     features[f].vertices = vchain;
 
     const path = round(lineGen(points));
+
     if (features[f].type === "lake") {
       landMask
         .append("path")
@@ -1347,21 +1355,13 @@ function drawCoastline() {
 // Re-mark features (ocean, lakes, islands)
 function reMarkFeatures() {
   TIME && console.time("reMarkFeatures");
-  const cells = pack.cells,
-    features = (pack.features = [0]);
+  const cells = pack.cells;
+  const features = (pack.features = [0]);
+
   cells.f = new Uint16Array(cells.i.length); // cell feature number
   cells.t = new Int8Array(cells.i.length); // cell type: 1 = land along coast; -1 = water along coast;
   cells.haven = cells.i.length < 65535 ? new Uint16Array(cells.i.length) : new Uint32Array(cells.i.length); // cell haven (opposite water cell);
   cells.harbor = new Uint8Array(cells.i.length); // cell harbor (number of adjacent water cells);
-
-  const defineHaven = i => {
-    const water = cells.c[i].filter(c => cells.h[c] < 20);
-    const dist2 = water.map(c => (cells.p[i][0] - cells.p[c][0]) ** 2 + (cells.p[i][1] - cells.p[c][1]) ** 2);
-    const closest = water[dist2.indexOf(Math.min.apply(Math, dist2))];
-
-    cells.haven[i] = closest;
-    cells.harbor[i] = water.length;
-  };
 
   if (!cells.i.length) return; // no cells -> there is nothing to do
   for (let i = 1, queue = [0]; queue[0] !== -1; i++) {
@@ -1402,6 +1402,15 @@ function reMarkFeatures() {
 
   // markupPackLand
   markup(pack.cells, 3, 1, 0);
+
+  function defineHaven(i) {
+    const water = cells.c[i].filter(c => cells.h[c] < 20);
+    const dist2 = water.map(c => (cells.p[i][0] - cells.p[c][0]) ** 2 + (cells.p[i][1] - cells.p[c][1]) ** 2);
+    const closest = water[dist2.indexOf(Math.min.apply(Math, dist2))];
+
+    cells.haven[i] = closest;
+    cells.harbor[i] = water.length;
+  }
 
   function defineOceanGroup(number) {
     if (number > grid.cells.i.length / 25) return "ocean";
@@ -1925,7 +1934,7 @@ function showStatistics() {
 
   mapId = Date.now(); // unique map id is it's creation date number
   mapHistory.push({seed, width: graphWidth, height: graphHeight, template: heightmap, created: mapId});
-  INFO && console.log(stats);
+  INFO && console.info(stats);
 }
 
 const regenerateMap = debounce(async function (options) {

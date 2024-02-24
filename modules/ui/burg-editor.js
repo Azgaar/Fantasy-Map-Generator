@@ -126,51 +126,6 @@ function editBurg(id) {
     }
   }
 
-  // in °C, array from -1 °C; source: https://en.wikipedia.org/wiki/List_of_cities_by_average_temperature
-  function getTemperatureLikeness(temperature) {
-    if (temperature < -5) return "Yakutsk";
-    const cities = [
-      "Snag (Yukon)",
-      "Yellowknife (Canada)",
-      "Okhotsk (Russia)",
-      "Fairbanks (Alaska)",
-      "Nuuk (Greenland)",
-      "Murmansk", // -5 - 0
-      "Arkhangelsk",
-      "Anchorage",
-      "Tromsø",
-      "Reykjavik",
-      "Riga",
-      "Stockholm",
-      "Halifax",
-      "Prague",
-      "Copenhagen",
-      "London", // 1 - 10
-      "Antwerp",
-      "Paris",
-      "Milan",
-      "Batumi",
-      "Rome",
-      "Dubrovnik",
-      "Lisbon",
-      "Barcelona",
-      "Marrakesh",
-      "Alexandria", // 11 - 20
-      "Tegucigalpa",
-      "Guangzhou",
-      "Rio de Janeiro",
-      "Dakar",
-      "Miami",
-      "Jakarta",
-      "Mogadishu",
-      "Bangkok",
-      "Aden",
-      "Khartoum"
-    ]; // 21 - 30
-    if (temperature > 30) return "Mecca";
-    return cities[temperature + 5] || null;
-  }
-
   function dragBurgLabel() {
     const tr = parseTransform(this.getAttribute("transform"));
     const dx = +tr[0] - d3.event.x,
@@ -284,7 +239,9 @@ function editBurg(id) {
     alertMessage.innerHTML = /* html */ `Are you sure you want to remove ${
       basic || capital ? "all unlocked elements in the burg group" : "the entire burg group"
     }?
-      <br />Please note that capital or locked burgs will not be deleted. <br /><br />Burgs to be removed: ${burgsToRemove.length}`;
+      <br />Please note that capital or locked burgs will not be deleted. <br /><br />Burgs to be removed: ${
+        burgsToRemove.length
+      }`;
     $("#alert").dialog({
       resizable: false,
       title: "Remove burg group",
@@ -433,7 +390,8 @@ function editBurg(id) {
   function addCustomMfcgLink() {
     const id = +elSelected.attr("data-id");
     const burg = pack.burgs[id];
-    const message = "Enter custom link to the burg map. It can be a link to Medieval Fantasy City Generator or other tool. Keep empty to use MFCG seed";
+    const message =
+      "Enter custom link to the burg map. It can be a link to Medieval Fantasy City Generator or other tool. Keep empty to use MFCG seed";
     prompt(message, {default: burg.link || "", required: false}, link => {
       if (link) burg.link = link;
       else delete burg.link;
@@ -580,4 +538,49 @@ function editBurg(id) {
     burgLabels.selectAll("text").call(d3.drag().on("drag", null)).classed("draggable", false);
     unselect();
   }
+}
+
+// in °C, array from -1 °C; source: https://en.wikipedia.org/wiki/List_of_cities_by_average_temperature
+function getTemperatureLikeness(temperature) {
+  if (temperature < -5) return "Yakutsk";
+  const cities = [
+    "Snag (Yukon)",
+    "Yellowknife (Canada)",
+    "Okhotsk (Russia)",
+    "Fairbanks (Alaska)",
+    "Nuuk (Greenland)",
+    "Murmansk", // -5 - 0
+    "Arkhangelsk",
+    "Anchorage",
+    "Tromsø",
+    "Reykjavik",
+    "Riga",
+    "Stockholm",
+    "Halifax",
+    "Prague",
+    "Copenhagen",
+    "London", // 1 - 10
+    "Antwerp",
+    "Paris",
+    "Milan",
+    "Batumi",
+    "Rome",
+    "Dubrovnik",
+    "Lisbon",
+    "Barcelona",
+    "Marrakesh",
+    "Alexandria", // 11 - 20
+    "Tegucigalpa",
+    "Guangzhou",
+    "Rio de Janeiro",
+    "Dakar",
+    "Miami",
+    "Jakarta",
+    "Mogadishu",
+    "Bangkok",
+    "Aden",
+    "Khartoum"
+  ]; // 21 - 30
+  if (temperature > 30) return "Mecca";
+  return cities[temperature + 5] || null;
 }
