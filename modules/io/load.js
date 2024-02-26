@@ -460,8 +460,8 @@ async function parseLoadedData(data, mapVersion) {
       resolveVersionConflicts(versionNumber);
     }
 
-    {
-      // add custom heightmap color scheme if any
+    // add custom heightmap color scheme if any
+    if (heightmapColorSchemes) {
       const oceanScheme = terrs.select("#oceanHeights").attr("scheme");
       const landScheme = terrs.select("#landHeights").attr("scheme");
       if (!(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
