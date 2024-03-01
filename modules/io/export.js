@@ -364,7 +364,7 @@ function removeUnusedElements(clone) {
 
 function updateMeshCells(clone) {
   const data = renderOcean.checked ? grid.cells.i : grid.cells.i.filter(i => grid.cells.h[i] >= 20);
-  const scheme = getColorScheme(terrs.attr("scheme"));
+  const scheme = getColorScheme(terrs.select("#landHeights").attr("scheme"));
   clone.select("#heights").attr("filter", "url(#blur1)");
   clone
     .select("#heights")
