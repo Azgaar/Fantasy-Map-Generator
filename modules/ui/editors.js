@@ -243,25 +243,22 @@ function removeBurg(id) {
   }
 }
 
-function toggleCapital(burg) {
-  const state = pack.burgs[burg].state;
-  if (!state) {
-    tip("Neutral lands cannot have a capital", false, "error");
-    return;
-  }
-  if (pack.burgs[burg].capital) {
-    tip("To change capital please assign a capital status to another burg of this state", false, "error");
-    return;
-  }
-  const old = pack.states[state].capital;
+function toggleCapital(burgId) {
+  const {burgs, states} = pack;
+  if (burgs[burgId].capital)
+    return tip("To change capital please assign a capital status to another burg of this state", false, "error");
 
-  // change statuses
-  pack.states[state].capital = burg;
-  pack.states[state].center = pack.burgs[burg].cell;
-  pack.burgs[burg].capital = 1;
-  pack.burgs[old].capital = 0;
-  moveBurgToGroup(burg, "cities");
-  moveBurgToGroup(old, "towns");
+  const stateId = burgs[burgId].state;
+  if (!stateId) return tip("Neutral lands cannot have a capital", false, "error");
+
+  const prevCapitalId = states[stateId].capital;
+  states[stateId].capital = burgId;
+  states[stateId].center = burgs[burgId].cell;
+  burgs[burgId].capital = 1;
+  burgs[prevCapitalId].capital = 0;
+
+  moveBurgToGroup(burgId, "cities");
+  moveBurgToGroup(prevCapitalId, "towns");
 }
 
 function togglePort(burg) {
@@ -1176,7 +1173,7 @@ function refreshAllEditors() {
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/states-editor.js?v=1.96.00");
+  const Editor = await import("../dynamic/editors/states-editor.js?v=1.96.06");
   Editor.open();
 }
 
