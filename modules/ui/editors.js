@@ -1093,12 +1093,12 @@ function selectIcon(initial, callback) {
   input.oninput = e => callback(input.value);
   table.onclick = e => {
     if (e.target.tagName === "TD") {
-      input.value = e.target.innerHTML;
+      input.value = e.target.textContent;
       callback(input.value);
     }
   };
   table.onmouseover = e => {
-    if (e.target.tagName === "TD") tip(`Click to select ${e.target.innerHTML} icon`);
+    if (e.target.tagName === "TD") tip(`Click to select ${e.target.textContent} icon`);
   };
 
   $("#iconSelector").dialog({
