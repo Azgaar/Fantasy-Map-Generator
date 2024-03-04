@@ -822,6 +822,7 @@ function addCulture() {
 
   if (pack.cells.h[center] < 20)
     return tip("You cannot place culture center into the water. Please click on a land cell", false, "error");
+
   const occupied = pack.cultures.some(c => !c.removed && c.center === center);
   if (occupied) return tip("This cell is already a culture center. Please select a different cell", false, "error");
 

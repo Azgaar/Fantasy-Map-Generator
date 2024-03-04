@@ -190,12 +190,13 @@ window.Cultures = (function () {
       name = Names.getCulture(culture, 5, 8, "");
       base = pack.cultures[culture].base;
     }
+
     const code = abbreviate(
       name,
       pack.cultures.map(c => c.code)
     );
     const i = pack.cultures.length;
-    const color = d3.color(d3.scaleSequential(d3.interpolateRainbow)(Math.random())).hex();
+    const color = getRandomColor();
 
     // define emblem shape
     let shield = culture.shield;
@@ -214,7 +215,7 @@ window.Cultures = (function () {
       area: 0,
       rural: 0,
       urban: 0,
-      origins: [0],
+      origins: [pack.cells.culture[center]],
       code,
       shield
     });
