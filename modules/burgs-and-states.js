@@ -859,9 +859,9 @@ window.BurgsAndStates = (function () {
           if (P(0.3) && s.diplomacy.includes("Vassal")) return "Protectorate"; // some vassals
         }
 
-        if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Khaganate"; // Turkic
+        if (base === 31 && (form === "Empire" || form === "Kingdom")) return "Khanate"; // Mongolian
         if (base === 5 && (form === "Empire" || form === "Kingdom")) return "Tsardom"; // Ruthenian
-        if ([16, 31].includes(base) && (form === "Empire" || form === "Kingdom")) return "Khaganate"; // Turkic, Mongolian
+        if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Khaganate"; // Turkic
         if (base === 12 && (form === "Kingdom" || form === "Grand Duchy")) return "Shogunate"; // Japanese
         if ([18, 17].includes(base) && form === "Empire") return "Caliphate"; // Arabic, Berber
         if (base === 18 && (form === "Grand Duchy" || form === "Duchy")) return "Emirate"; // Arabic
