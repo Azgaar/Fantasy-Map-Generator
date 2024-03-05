@@ -860,6 +860,7 @@ window.BurgsAndStates = (function () {
         }
 
         if (base === 31 && (form === "Empire" || form === "Kingdom")) return "Khanate"; // Mongolian
+        if (base === 31 && (form === "Principality" )) return "Beylik"; // Turkic
         if (base === 5 && (form === "Empire" || form === "Kingdom")) return "Tsardom"; // Ruthenian
         if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Khaganate"; // Turkic
         if (base === 12 && (form === "Kingdom" || form === "Grand Duchy")) return "Shogunate"; // Japanese
