@@ -252,13 +252,15 @@ window.BurgsAndStates = (function () {
       .filter(b => (newburg ? b.i == newburg.i : b.i && !b.removed))
       .forEach(b => {
         const pop = b.population;
-        b.citadel = b.capital || (pop > 50 && P(0.75)) || P(0.5) ? 1 : 0;
-        b.plaza = pop > 50 || (pop > 30 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.25) ? 1 : 0;
-        b.walls = b.capital || pop > 30 || (pop > 20 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.2) ? 1 : 0;
-        b.shanty = pop > 60 || (pop > 40 && P(0.75)) || (pop > 20 && b.walls && P(0.4)) ? 1 : 0;
+        b.citadel = Number(b.capital || (pop > 50 && P(0.75)) || (pop > 15 && P(0.5)) || P(0.1));
+        b.plaza = Number(pop > 20 || (pop > 10 && P(0.8)) || (pop > 4 && P(0.7)) || P(0.6));
+        b.walls = Number(b.capital || pop > 30 || (pop > 20 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.1));
+        b.shanty = Number(pop > 60 || (pop > 40 && P(0.75)) || (pop > 20 && b.walls && P(0.4)));
         const religion = cells.religion[b.cell];
         const theocracy = pack.states[b.state].form === "Theocracy";
-        b.temple = (religion && theocracy) || pop > 50 || (pop > 35 && P(0.75)) || (pop > 20 && P(0.5)) ? 1 : 0;
+        b.temple = Number(
+          (religion && theocracy && P(0.5)) || pop > 50 || (pop > 35 && P(0.75)) || (pop > 20 && P(0.5))
+        );
       });
   };
 
@@ -860,7 +862,7 @@ window.BurgsAndStates = (function () {
         }
 
         if (base === 31 && (form === "Empire" || form === "Kingdom")) return "Khanate"; // Mongolian
-        if (base === 16 && (form === "Principality" )) return "Beylik"; // Turkic
+        if (base === 16 && form === "Principality") return "Beylik"; // Turkic
         if (base === 5 && (form === "Empire" || form === "Kingdom")) return "Tsardom"; // Ruthenian
         if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Khaganate"; // Turkic
         if (base === 12 && (form === "Kingdom" || form === "Grand Duchy")) return "Shogunate"; // Japanese

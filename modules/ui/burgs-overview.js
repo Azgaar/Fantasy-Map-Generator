@@ -514,7 +514,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
       data += b.temple ? "temple," : ",";
       data += b.shanty ? "shanty town," : ",";
       data += b.coa ? JSON.stringify(b.coa).replace(/"/g, "").replace(/,/g, ";") + "," : ",";
-      data += getMFCGlink(b);
+      data += getBurgLink(b);
 
       data += "\n";
     });
