@@ -21,38 +21,37 @@ function editBurg(id) {
   modules.editBurg = true;
 
   // add listeners
-  document.getElementById("burgGroupShow").addEventListener("click", showGroupSection);
-  document.getElementById("burgGroupHide").addEventListener("click", hideGroupSection);
-  document.getElementById("burgSelectGroup").addEventListener("change", changeGroup);
-  document.getElementById("burgInputGroup").addEventListener("change", createNewGroup);
-  document.getElementById("burgAddGroup").addEventListener("click", toggleNewGroupInput);
-  document.getElementById("burgRemoveGroup").addEventListener("click", removeBurgsGroup);
+  byId("burgGroupShow").addEventListener("click", showGroupSection);
+  byId("burgGroupHide").addEventListener("click", hideGroupSection);
+  byId("burgSelectGroup").addEventListener("change", changeGroup);
+  byId("burgInputGroup").addEventListener("change", createNewGroup);
+  byId("burgAddGroup").addEventListener("click", toggleNewGroupInput);
+  byId("burgRemoveGroup").addEventListener("click", removeBurgsGroup);
 
-  document.getElementById("burgName").addEventListener("input", changeName);
-  document.getElementById("burgNameReRandom").addEventListener("click", generateNameRandom);
-  document.getElementById("burgType").addEventListener("input", changeType);
-  document.getElementById("burgCulture").addEventListener("input", changeCulture);
-  document.getElementById("burgNameReCulture").addEventListener("click", generateNameCulture);
-  document.getElementById("burgPopulation").addEventListener("change", changePopulation);
+  byId("burgName").addEventListener("input", changeName);
+  byId("burgNameReRandom").addEventListener("click", generateNameRandom);
+  byId("burgType").addEventListener("input", changeType);
+  byId("burgCulture").addEventListener("input", changeCulture);
+  byId("burgNameReCulture").addEventListener("click", generateNameCulture);
+  byId("burgPopulation").addEventListener("change", changePopulation);
   burgBody.querySelectorAll(".burgFeature").forEach(el => el.addEventListener("click", toggleFeature));
-  document.getElementById("mfcgBurgSeed").addEventListener("change", changeSeed);
-  document.getElementById("regenerateMFCGBurgSeed").addEventListener("click", randomizeSeed);
-  document.getElementById("addCustomMFCGBurgLink").addEventListener("click", addCustomMfcgLink);
+  byId("burgLinkOpen").addEventListener("click", openBurgLink);
+  byId("burgLinkEdit").addEventListener("click", changeBurgLink);
 
-  document.getElementById("burgStyleShow").addEventListener("click", showStyleSection);
-  document.getElementById("burgStyleHide").addEventListener("click", hideStyleSection);
-  document.getElementById("burgEditLabelStyle").addEventListener("click", editGroupLabelStyle);
-  document.getElementById("burgEditIconStyle").addEventListener("click", editGroupIconStyle);
-  document.getElementById("burgEditAnchorStyle").addEventListener("click", editGroupAnchorStyle);
+  byId("burgStyleShow").addEventListener("click", showStyleSection);
+  byId("burgStyleHide").addEventListener("click", hideStyleSection);
+  byId("burgEditLabelStyle").addEventListener("click", editGroupLabelStyle);
+  byId("burgEditIconStyle").addEventListener("click", editGroupIconStyle);
+  byId("burgEditAnchorStyle").addEventListener("click", editGroupAnchorStyle);
 
-  document.getElementById("burgEmblem").addEventListener("click", openEmblemEdit);
-  document.getElementById("burgToggleMFCGMap").addEventListener("click", toggleMFCGMap);
-  document.getElementById("burgEditEmblem").addEventListener("click", openEmblemEdit);
-  document.getElementById("burgRelocate").addEventListener("click", toggleRelocateBurg);
-  document.getElementById("burglLegend").addEventListener("click", editBurgLegend);
-  document.getElementById("burgLock").addEventListener("click", toggleBurgLockButton);
-  document.getElementById("burgRemove").addEventListener("click", removeSelectedBurg);
-  document.getElementById("burgTemperatureGraph").addEventListener("click", showTemperatureGraph);
+  byId("burgEmblem").addEventListener("click", openEmblemEdit);
+  byId("burgTogglePreview").addEventListener("click", toggleBurgPreview);
+  byId("burgEditEmblem").addEventListener("click", openEmblemEdit);
+  byId("burgRelocate").addEventListener("click", toggleRelocateBurg);
+  byId("burglLegend").addEventListener("click", editBurgLegend);
+  byId("burgLock").addEventListener("click", toggleBurgLockButton);
+  byId("burgRemove").addEventListener("click", removeSelectedBurg);
+  byId("burgTemperatureGraph").addEventListener("click", showTemperatureGraph);
 
   function updateBurgValues() {
     const id = +elSelected.attr("data-id");
@@ -60,46 +59,46 @@ function editBurg(id) {
     const province = pack.cells.province[b.cell];
     const provinceName = province ? pack.provinces[province].fullName + ", " : "";
     const stateName = pack.states[b.state].fullName || pack.states[b.state].name;
-    document.getElementById("burgProvinceAndState").innerHTML = provinceName + stateName;
+    byId("burgProvinceAndState").innerHTML = provinceName + stateName;
 
-    document.getElementById("burgName").value = b.name;
-    document.getElementById("burgType").value = b.type || "Generic";
-    document.getElementById("burgPopulation").value = rn(b.population * populationRate * urbanization);
-    document.getElementById("burgEditAnchorStyle").style.display = +b.port ? "inline-block" : "none";
+    byId("burgName").value = b.name;
+    byId("burgType").value = b.type || "Generic";
+    byId("burgPopulation").value = rn(b.population * populationRate * urbanization);
+    byId("burgEditAnchorStyle").style.display = +b.port ? "inline-block" : "none";
 
     // update list and select culture
-    const cultureSelect = document.getElementById("burgCulture");
+    const cultureSelect = byId("burgCulture");
     cultureSelect.options.length = 0;
     const cultures = pack.cultures.filter(c => !c.removed);
     cultures.forEach(c => cultureSelect.options.add(new Option(c.name, c.i, false, c.i === b.culture)));
 
     const temperature = grid.cells.temp[pack.cells.g[b.cell]];
-    document.getElementById("burgTemperature").innerHTML = convertTemperature(temperature);
-    document.getElementById("burgTemperatureLikeIn").innerHTML = getTemperatureLikeness(temperature);
-    document.getElementById("burgElevation").innerHTML = getHeight(pack.cells.h[b.cell]);
+    byId("burgTemperature").innerHTML = convertTemperature(temperature);
+    byId("burgTemperatureLikeIn").innerHTML = getTemperatureLikeness(temperature);
+    byId("burgElevation").innerHTML = getHeight(pack.cells.h[b.cell]);
 
     // toggle features
-    if (b.capital) document.getElementById("burgCapital").classList.remove("inactive");
-    else document.getElementById("burgCapital").classList.add("inactive");
-    if (b.port) document.getElementById("burgPort").classList.remove("inactive");
-    else document.getElementById("burgPort").classList.add("inactive");
-    if (b.citadel) document.getElementById("burgCitadel").classList.remove("inactive");
-    else document.getElementById("burgCitadel").classList.add("inactive");
-    if (b.walls) document.getElementById("burgWalls").classList.remove("inactive");
-    else document.getElementById("burgWalls").classList.add("inactive");
-    if (b.plaza) document.getElementById("burgPlaza").classList.remove("inactive");
-    else document.getElementById("burgPlaza").classList.add("inactive");
-    if (b.temple) document.getElementById("burgTemple").classList.remove("inactive");
-    else document.getElementById("burgTemple").classList.add("inactive");
-    if (b.shanty) document.getElementById("burgShanty").classList.remove("inactive");
-    else document.getElementById("burgShanty").classList.add("inactive");
+    if (b.capital) byId("burgCapital").classList.remove("inactive");
+    else byId("burgCapital").classList.add("inactive");
+    if (b.port) byId("burgPort").classList.remove("inactive");
+    else byId("burgPort").classList.add("inactive");
+    if (b.citadel) byId("burgCitadel").classList.remove("inactive");
+    else byId("burgCitadel").classList.add("inactive");
+    if (b.walls) byId("burgWalls").classList.remove("inactive");
+    else byId("burgWalls").classList.add("inactive");
+    if (b.plaza) byId("burgPlaza").classList.remove("inactive");
+    else byId("burgPlaza").classList.add("inactive");
+    if (b.temple) byId("burgTemple").classList.remove("inactive");
+    else byId("burgTemple").classList.add("inactive");
+    if (b.shanty) byId("burgShanty").classList.remove("inactive");
+    else byId("burgShanty").classList.add("inactive");
 
     //toggle lock
     updateBurgLockIcon();
 
     // select group
     const group = elSelected.node().parentNode.id;
-    const select = document.getElementById("burgSelectGroup");
+    const select = byId("burgSelectGroup");
     select.options.length = 0; // remove all options
 
     burgLabels.selectAll("g").each(function () {
@@ -109,20 +108,13 @@ function editBurg(id) {
     // set emlem image
     const coaID = "burgCOA" + id;
     COArenderer.trigger(coaID, b.coa);
-    document.getElementById("burgEmblem").setAttribute("href", "#" + coaID);
+    byId("burgEmblem").setAttribute("href", "#" + coaID);
 
-    if (options.showMFCGMap) {
-      document.getElementById("mfcgPreviewSection").style.display = "block";
-      updateMFCGFrame(b);
-
-      if (b.link) {
-        document.getElementById("mfcgBurgSeedSection").style.display = "none";
-      } else {
-        document.getElementById("mfcgBurgSeedSection").style.display = "inline-block";
-        document.getElementById("mfcgBurgSeed").value = getBurgSeed(b);
-      }
+    if (options.showBurgPreview) {
+      byId("burgPreviewSection").style.display = "block";
+      updateBurgPreview(b);
     } else {
-      document.getElementById("mfcgPreviewSection").style.display = "none";
+      byId("burgPreviewSection").style.display = "none";
     }
   }
 
@@ -141,15 +133,15 @@ function editBurg(id) {
 
   function showGroupSection() {
     document.querySelectorAll("#burgBottom > button").forEach(el => (el.style.display = "none"));
-    document.getElementById("burgGroupSection").style.display = "inline-block";
+    byId("burgGroupSection").style.display = "inline-block";
   }
 
   function hideGroupSection() {
     document.querySelectorAll("#burgBottom > button").forEach(el => (el.style.display = "inline-block"));
-    document.getElementById("burgGroupSection").style.display = "none";
-    document.getElementById("burgInputGroup").style.display = "none";
-    document.getElementById("burgInputGroup").value = "";
-    document.getElementById("burgSelectGroup").style.display = "inline-block";
+    byId("burgGroupSection").style.display = "none";
+    byId("burgInputGroup").style.display = "none";
+    byId("burgInputGroup").value = "";
+    byId("burgSelectGroup").style.display = "inline-block";
   }
 
   function changeGroup() {
@@ -178,7 +170,7 @@ function editBurg(id) {
       .replace(/ /g, "_")
       .replace(/[^\w\s]/gi, "");
 
-    if (document.getElementById(group)) {
+    if (byId(group)) {
       tip("Element with this id already exists. Please provide a unique name", false, "error");
       return;
     }
@@ -206,10 +198,10 @@ function editBurg(id) {
     // just rename if only 1 element left
     const count = elSelected.node().parentNode.childElementCount;
     if (oldGroup !== "cities" && oldGroup !== "towns" && count === 1) {
-      document.getElementById("burgSelectGroup").selectedOptions[0].remove();
-      document.getElementById("burgSelectGroup").options.add(new Option(group, group, false, true));
+      byId("burgSelectGroup").selectedOptions[0].remove();
+      byId("burgSelectGroup").options.add(new Option(group, group, false, true));
       toggleNewGroupInput();
-      document.getElementById("burgInputGroup").value = "";
+      byId("burgInputGroup").value = "";
       labelG.id = group;
       iconG.id = group;
       if (anchor) anchorG.id = group;
@@ -217,9 +209,9 @@ function editBurg(id) {
     }
 
     // create new groups
-    document.getElementById("burgSelectGroup").options.add(new Option(group, group, false, true));
+    byId("burgSelectGroup").options.add(new Option(group, group, false, true));
     toggleNewGroupInput();
-    document.getElementById("burgInputGroup").value = "";
+    byId("burgInputGroup").value = "";
 
     addBurgsGroup(group);
     moveBurgToGroup(id, group);
@@ -300,7 +292,10 @@ function editBurg(id) {
 
   function changePopulation() {
     const id = +elSelected.attr("data-id");
+    const burg = pack.burgs[id];
+
     pack.burgs[id].population = rn(burgPopulation.value / populationRate / urbanization, 4);
+    updateBurgPreview(burg);
   }
 
   function toggleFeature() {
@@ -314,9 +309,9 @@ function editBurg(id) {
     if (burg[feature]) this.classList.remove("inactive");
     else if (!burg[feature]) this.classList.add("inactive");
 
-    if (burg.port) document.getElementById("burgEditAnchorStyle").style.display = "inline-block";
-    else document.getElementById("burgEditAnchorStyle").style.display = "none";
-    updateMFCGFrame(burg);
+    if (burg.port) byId("burgEditAnchorStyle").style.display = "inline-block";
+    else byId("burgEditAnchorStyle").style.display = "none";
+    updateBurgPreview(burg);
   }
 
   function toggleBurgLockButton() {
@@ -331,22 +326,22 @@ function editBurg(id) {
     const id = +elSelected.attr("data-id");
     const b = pack.burgs[id];
     if (b.lock) {
-      document.getElementById("burgLock").classList.remove("icon-lock-open");
-      document.getElementById("burgLock").classList.add("icon-lock");
+      byId("burgLock").classList.remove("icon-lock-open");
+      byId("burgLock").classList.add("icon-lock");
     } else {
-      document.getElementById("burgLock").classList.remove("icon-lock");
-      document.getElementById("burgLock").classList.add("icon-lock-open");
+      byId("burgLock").classList.remove("icon-lock");
+      byId("burgLock").classList.add("icon-lock-open");
     }
   }
 
   function showStyleSection() {
     document.querySelectorAll("#burgBottom > button").forEach(el => (el.style.display = "none"));
-    document.getElementById("burgStyleSection").style.display = "inline-block";
+    byId("burgStyleSection").style.display = "inline-block";
   }
 
   function hideStyleSection() {
     document.querySelectorAll("#burgBottom > button").forEach(el => (el.style.display = "inline-block"));
-    document.getElementById("burgStyleSection").style.display = "none";
+    byId("burgStyleSection").style.display = "none";
   }
 
   function editGroupLabelStyle() {
@@ -364,39 +359,38 @@ function editBurg(id) {
     editStyle("anchors", g);
   }
 
-  function updateMFCGFrame(burg) {
-    const mfcgURL = getMFCGlink(burg);
-    document.getElementById("mfcgPreview").setAttribute("src", mfcgURL + "&preview=1");
-    document.getElementById("mfcgLink").setAttribute("href", mfcgURL);
+  function updateBurgPreview(burg) {
+    const src = getBurgLink(burg) + "&preview=1";
+
+    // recreate object to force reload (Chrome bug)
+    const container = byId("burgPreviewObject");
+    container.innerHTML = "";
+    const object = document.createElement("object");
+    object.style.width = "100%";
+    object.data = src;
+    container.insertBefore(object, null);
   }
 
-  function changeSeed() {
+  function openBurgLink() {
     const id = +elSelected.attr("data-id");
     const burg = pack.burgs[id];
-    const burgSeed = +this.value;
-    burg.MFCG = burgSeed;
-    updateMFCGFrame(burg);
+
+    openURL(getBurgLink(burg));
   }
 
-  function randomizeSeed() {
+  function changeBurgLink() {
     const id = +elSelected.attr("data-id");
     const burg = pack.burgs[id];
-    const burgSeed = rand(1e9 - 1);
-    burg.MFCG = burgSeed;
-    updateMFCGFrame(burg);
-    document.getElementById("mfcgBurgSeed").value = burgSeed;
-  }
 
-  function addCustomMfcgLink() {
-    const id = +elSelected.attr("data-id");
-    const burg = pack.burgs[id];
-    const message =
-      "Enter custom link to the burg map. It can be a link to Medieval Fantasy City Generator or other tool. Keep empty to use MFCG seed";
-    prompt(message, {default: burg.link || "", required: false}, link => {
-      if (link) burg.link = link;
-      else delete burg.link;
-      updateMFCGFrame(burg);
-    });
+    prompt(
+      "Provide custom link to the burg map. It can be a link to Medieval Fantasy City Generator, a different tool, or just an image. Leave empty to use the default map",
+      {default: getBurgLink(burg), required: false},
+      link => {
+        if (link) burg.link = link;
+        else delete burg.link;
+        updateBurgPreview(burg);
+      }
+    );
   }
 
   function openEmblemEdit() {
@@ -405,16 +399,16 @@ function editBurg(id) {
     editEmblem("burg", "burgCOA" + id, burg);
   }
 
-  function toggleMFCGMap() {
-    options.showMFCGMap = !options.showMFCGMap;
-    document.getElementById("mfcgPreviewSection").style.display = options.showMFCGMap ? "block" : "none";
-    document.getElementById("burgToggleMFCGMap").className = options.showMFCGMap ? "icon-map" : "icon-map-o";
+  function toggleBurgPreview() {
+    options.showBurgPreview = !options.showBurgPreview;
+    byId("burgPreviewSection").style.display = options.showBurgPreview ? "block" : "none";
+    byId("burgTogglePreview").className = options.showBurgPreview ? "icon-map" : "icon-map-o";
   }
 
   function toggleRelocateBurg() {
-    const toggler = document.getElementById("toggleCells");
-    document.getElementById("burgRelocate").classList.toggle("pressed");
-    if (document.getElementById("burgRelocate").classList.contains("pressed")) {
+    const toggler = byId("toggleCells");
+    byId("burgRelocate").classList.toggle("pressed");
+    if (byId("burgRelocate").classList.contains("pressed")) {
       viewbox.style("cursor", "crosshair").on("click", relocateBurgOnClick);
       tip("Click on map to relocate burg. Hold Shift for continuous move", true);
       if (!layerIsOn("toggleCells")) {
@@ -534,7 +528,7 @@ function editBurg(id) {
   }
 
   function closeBurgEditor() {
-    document.getElementById("burgRelocate").classList.remove("pressed");
+    byId("burgRelocate").classList.remove("pressed");
     burgLabels.selectAll("text").call(d3.drag().on("drag", null)).classed("draggable", false);
     unselect();
   }
