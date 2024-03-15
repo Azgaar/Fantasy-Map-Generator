@@ -381,29 +381,29 @@ window.Military = (function () {
       .text(d => d.icon);
   };
 
-  const drawRegiment = function (reg, s) {
+  const drawRegiment = function (reg, stateId) {
     const size = +armies.attr("box-size");
     const w = reg.n ? size * 4 : size * 6;
     const h = size * 2;
     const x1 = rn(reg.x - w / 2, 2);
     const y1 = rn(reg.y - size, 2);
 
-    let army = armies.select("g#army" + s);
+    let army = armies.select("g#army" + stateId);
     if (!army.size()) {
-      const baseColor = pack.states[s].color[0] === "#" ? pack.states[s].color : "#999";
-      const darkerColor = d3.color(army.attr("fill")).darker().hex();
+      const baseColor = pack.states[stateId].color[0] === "#" ? pack.states[stateId].color : "#999";
+      const darkerColor = d3.color(baseColor).darker().hex();
       army = armies
         .append("g")
-        .attr("id", "army" + s)
+        .attr("id", "army" + stateId)
         .attr("fill", baseColor)
         .attr("color", darkerColor);
     }
 
     const g = army
       .append("g")
-      .attr("id", "regiment" + s + "-" + reg.i)
+      .attr("id", "regiment" + stateId + "-" + reg.i)
       .attr("data-name", reg.name)
-      .attr("data-state", s)
+      .attr("data-state", stateId)
       .attr("data-id", reg.i);
     g.append("rect").attr("x", x1).attr("y", y1).attr("width", w).attr("height", h);
     g.append("text").attr("x", reg.x).attr("y", reg.y).text(getTotal(reg));
