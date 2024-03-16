@@ -539,6 +539,8 @@ async function parseLoadedData(data, mapVersion) {
       });
 
       pack.burgs.forEach(burg => {
+        if (typeof burg.capital === "boolean") burg.capital = Number(burg.capital);
+
         if (!burg.i && burg.lock) {
           ERROR && console.error(`Data integrity check. Burg 0 is marked as locked, removing the status`);
           delete burg.lock;
@@ -627,7 +629,7 @@ async function parseLoadedData(data, mapVersion) {
           return;
         }
 
-        if (stateBurgs.length && !capitalBurgs.length) {
+        if (state.i && stateBurgs.length && !capitalBurgs.length) {
           ERROR &&
             console.error(`Data integrity check. State ${state.i} has no capital. Assigning the first burg as capital`);
           stateBurgs[0].capital = 1;
