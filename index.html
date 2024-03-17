@@ -6032,7 +6032,7 @@
       </div>
 
       <div id="exportToPngTilesScreen" style="display: none" class="dialog">
-        <p>Map will be split into tiles and downloaded as a single zip file. Avoid saving to big images</p>
+        <p>Map will be split into tiles and downloaded as a single zip file. Avoid saving too large images</p>
         <div data-tip="Number of columns" style="margin-bottom: 0.3em">
           <div class="label">Columns:</div>
           <input
@@ -6040,7 +6040,7 @@
             data-stored="tileCols"
             type="range"
             min="2"
-            max="20"
+            max="26"
             value="8"
             style="width: 10em"
           />
@@ -6053,7 +6053,7 @@
             data-stored="tileRows"
             type="range"
             min="2"
-            max="20"
+            max="26"
             value="8"
             style="width: 10em"
           />
@@ -6076,7 +6076,7 @@
           <div class="label">Total size:</div>
           <div id="tileSize" style="display: inline-block">1000 x 1000 px</div>
         </div>
-        <div id="tileStatus" style="background-color: #33333310; font-style: italic"></div>
+        <div id="tileStatus" style="font-style: italic"></div>
       </div>
 
       <div id="resampleDialog" style="display: none" class="dialog">
@@ -8095,7 +8095,7 @@
     <script defer src="modules/io/save.js?v=1.96.00"></script>
     <script defer src="modules/io/load.js?v=1.97.02"></script>
     <script defer src="modules/io/cloud.js?v=1.96.00"></script>
-    <script defer src="modules/io/export.js?v=1.96.00"></script>
+    <script defer src="modules/io/export.js?v=1.97.03"></script>
 
     <!-- Web Components -->
     <script defer src="components/fill-box.js"></script>
