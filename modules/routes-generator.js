@@ -134,15 +134,15 @@ window.Routes = (function () {
       const routes = [];
 
       for (const {feature, cells} of mainRoads) {
-        routes.push({i: routes.length, type: "road", feature, cells});
+        routes.push({i: routes.length, group: "roads", feature, cells});
       }
 
       for (const {feature, cells} of trails) {
-        routes.push({i: routes.length, type: "trail", feature, cells});
+        routes.push({i: routes.length, group: "trails", feature, cells});
       }
 
       for (const {feature, cells} of seaRoutes) {
-        routes.push({i: routes.length, type: "sea", feature, cells});
+        routes.push({i: routes.length, group: "searoutes", feature, cells});
       }
 
       return routes;
