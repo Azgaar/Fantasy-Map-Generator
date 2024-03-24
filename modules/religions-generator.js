@@ -712,9 +712,9 @@ window.Religions = (function () {
 
     const religionsMap = new Map(religions.map(r => [r.i, r]));
 
-    const isMainRoad = cellId => cells.road[cellId] - cells.crossroad[cellId] > 4;
-    const isTrail = cellId => cells.h[cellId] > 19 && cells.road[cellId] - cells.crossroad[cellId] === 1;
-    const isSeaRoute = cellId => cells.h[cellId] < 20 && cells.road[cellId];
+    const isMainRoad = cellId => cells.route[cellId] === 1;
+    const isTrail = cellId => cells.route[cellId] === 2;
+    const isSeaRoute = cellId => cells.route[cellId] === 3;
     const isWater = cellId => cells.h[cellId] < 20;
 
     while (queue.length) {

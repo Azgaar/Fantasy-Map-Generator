@@ -644,6 +644,7 @@ async function generate(options) {
     Cultures.generate();
     Cultures.expand();
     BurgsAndStates.generate();
+    Routes.generate();
     Religions.generate();
     BurgsAndStates.defineStateForms();
     BurgsAndStates.generateProvinces();
@@ -1652,8 +1653,8 @@ function addZones(number = 1) {
       used[next.e] = 1;
 
       cells.c[next.e].forEach(function (e) {
-        const r = cells.road[next.e];
-        const c = r ? Math.max(10 - r, 1) : 100;
+        const r = cells.route[next.e];
+        const c = r ? 5 : 100;
         const p = next.p + c;
         if (p > power) return;
 
@@ -1780,10 +1781,10 @@ function addZones(number = 1) {
   }
 
   function addAvalanche() {
-    const roads = cells.i.filter(i => !used[i] && cells.road[i] && cells.h[i] >= 70);
-    if (!roads.length) return;
+    const routes = cells.i.filter(i => !used[i] && cells.route[i] && cells.h[i] >= 70);
+    if (!routes.length) return;
 
-    const cell = +ra(roads);
+    const cell = +ra(routes);
     const cellsArray = [],
       queue = [cell],
       power = rand(3, 15);

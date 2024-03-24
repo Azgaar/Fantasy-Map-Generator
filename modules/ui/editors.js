@@ -143,7 +143,7 @@ function addBurg(point) {
   const feature = cells.f[cell];
 
   const temple = pack.states[state].form === "Theocracy";
-  const population = Math.max((cells.s[cell] + cells.road[cell]) / 3 + i / 1000 + (cell % 100) / 1000, 0.1);
+  const population = Math.max(cells.s[cell] / 3 + i / 1000 + (cell % 100) / 1000, 0.1);
   const type = BurgsAndStates.getType(cell, false);
 
   // generate emblem
@@ -326,7 +326,7 @@ function createMfcgLink(burg) {
   const citadel = +burg.citadel;
   const urban_castle = +(citadel && each(2)(i));
 
-  const hub = +cells.road[cell] > 50;
+  const hub = +cells.route[cell] === 1;
 
   const walls = +burg.walls;
   const plaza = +burg.plaza;
@@ -371,7 +371,7 @@ function createVillageGeneratorLink(burg) {
   else if (cells.r[cell]) tags.push("river");
   else if (pop < 200 && each(4)(cell)) tags.push("pond");
 
-  const roadsAround = cells.c[cell].filter(c => cells.h[c] >= 20 && cells.road[c]).length;
+  const roadsAround = cells.c[cell].filter(c => cells.h[c] >= 20 && cells.route[c]).length;
   if (roadsAround > 1) tags.push("highway");
   else if (roadsAround === 1) tags.push("dead end");
   else tags.push("isolated");

@@ -6,27 +6,20 @@ window.BurgsAndStates = (function () {
     const n = cells.i.length;
 
     cells.burg = new Uint16Array(n); // cell burg
-    cells.road = new Uint16Array(n); // cell road power
-    cells.crossroad = new Uint16Array(n); // cell crossroad power
 
     const burgs = (pack.burgs = placeCapitals());
     pack.states = createStates();
-    const capitalRoutes = Routes.getRoads();
 
     placeTowns();
     expandStates();
     normalizeStates();
-    const townRoutes = Routes.getTrails();
     specifyBurgs();
-
-    const oceanRoutes = Routes.getSearoutes();
 
     collectStatistics();
     assignColors();
 
     generateCampaigns();
     generateDiplomacy();
-    Routes.draw(capitalRoutes, townRoutes, oceanRoutes);
     drawBurgs();
 
     function placeCapitals() {
@@ -167,7 +160,6 @@ window.BurgsAndStates = (function () {
   const specifyBurgs = function () {
     TIME && console.time("specifyBurgs");
     const cells = pack.cells,
-      vertices = pack.vertices,
       features = pack.features,
       temp = grid.cells.temp;
 
@@ -185,7 +177,7 @@ window.BurgsAndStates = (function () {
       } else b.port = 0;
 
       // define burg population (keep urbanization at about 10% rate)
-      b.population = rn(Math.max((cells.s[i] + cells.road[i] / 2) / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
+      b.population = rn(Math.max(cells.s[i] / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
       if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
 
       if (b.port) {

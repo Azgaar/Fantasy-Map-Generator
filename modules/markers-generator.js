@@ -279,7 +279,7 @@ window.Markers = (function () {
   }
 
   function listInns({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.h[i] >= 20 && cells.road[i] > 4 && cells.pop[i] > 10);
+    return cells.i.filter(i => !occupied[i] && cells.h[i] >= 20 && cells.route[i] === 1 && cells.pop[i] > 10);
   }
 
   function addInn(id, cell) {
@@ -542,7 +542,7 @@ window.Markers = (function () {
 
   function listLighthouses({cells}) {
     return cells.i.filter(
-      i => !occupied[i] && cells.harbor[i] > 6 && cells.c[i].some(c => cells.h[c] < 20 && cells.road[c])
+      i => !occupied[i] && cells.harbor[i] > 6 && cells.c[i].some(c => cells.h[c] < 20 && cells.route[c])
     );
   }
 
@@ -642,7 +642,7 @@ window.Markers = (function () {
 
   function listSeaMonsters({cells, features}) {
     return cells.i.filter(
-      i => !occupied[i] && cells.h[i] < 20 && cells.road[i] && features[cells.f[i]].type === "ocean"
+      i => !occupied[i] && cells.h[i] < 20 && cells.route[i] && features[cells.f[i]].type === "ocean"
     );
   }
 
@@ -792,7 +792,7 @@ window.Markers = (function () {
         cells.religion[i] &&
         cells.biome[i] === 1 &&
         cells.pop[i] > 1 &&
-        cells.road[i]
+        cells.route[i]
     );
   }
 
@@ -807,7 +807,7 @@ window.Markers = (function () {
   }
 
   function listBrigands({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.road[i] > 4);
+    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.route[i] === 1);
   }
 
   function addBrigands(id, cell) {
@@ -867,7 +867,7 @@ window.Markers = (function () {
 
   // Pirates spawn on sea routes
   function listPirates({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.h[i] < 20 && cells.road[i]);
+    return cells.i.filter(i => !occupied[i] && cells.h[i] < 20 && cells.route[i]);
   }
 
   function addPirates(id, cell) {
@@ -961,7 +961,7 @@ window.Markers = (function () {
   }
 
   function listCircuses({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.h[i] >= 20 && pack.cells.road[i]);
+    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.h[i] >= 20 && pack.cells.route[i]);
   }
 
   function addCircuse(id, cell) {

@@ -122,8 +122,7 @@ function getPackCellsData() {
     pop: Array.from(pack.cells.pop),
     culture: Array.from(pack.cells.culture),
     burg: Array.from(pack.cells.burg),
-    road: Array.from(pack.cells.road),
-    crossroad: Array.from(pack.cells.crossroad),
+    route: Array.from(pack.cells.route),
     state: Array.from(pack.cells.state),
     religion: Array.from(pack.cells.religion),
     province: Array.from(pack.cells.province)
@@ -150,8 +149,7 @@ function getPackCellsData() {
       pop: dataArrays.pop[cellId],
       culture: dataArrays.culture[cellId],
       burg: dataArrays.burg[cellId],
-      road: dataArrays.road[cellId],
-      crossroad: dataArrays.crossroad[cellId],
+      route: dataArrays.route[cellId],
       state: dataArrays.state[cellId],
       religion: dataArrays.religion[cellId],
       province: dataArrays.province[cellId]

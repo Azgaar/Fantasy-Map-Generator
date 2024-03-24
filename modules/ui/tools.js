@@ -129,7 +129,7 @@ function recalculatePopulation() {
     if (!b.i || b.removed || b.lock) return;
     const i = b.cell;
 
-    b.population = rn(Math.max((pack.cells.s[i] + pack.cells.road[i] / 2) / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
+    b.population = rn(Math.max(pack.cells.s[i] / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
     if (b.capital) b.population = b.population * 1.3; // increase capital population
     if (b.port) b.population = b.population * 1.3; // increase port population
     b.population = rn(b.population * gauss(2, 3, 0.6, 20, 3), 3);

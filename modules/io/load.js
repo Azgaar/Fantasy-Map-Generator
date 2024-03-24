@@ -383,12 +383,12 @@ async function parseLoadedData(data, mapVersion) {
       cells.fl = Uint16Array.from(data[20].split(","));
       cells.pop = Float32Array.from(data[21].split(","));
       cells.r = Uint16Array.from(data[22].split(","));
-      cells.road = Uint16Array.from(data[23].split(","));
+      cells.route = Uint8Array.from(data[23].split(","));
       cells.s = Uint16Array.from(data[24].split(","));
       cells.state = Uint16Array.from(data[25].split(","));
       cells.religion = data[26] ? Uint16Array.from(data[26].split(",")) : new Uint16Array(cells.i.length);
       cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(cells.i.length);
-      cells.crossroad = data[28] ? Uint16Array.from(data[28].split(",")) : new Uint16Array(cells.i.length);
+      // data[28] for deprecated cells.crossroad
 
       if (data[31]) {
         const namesDL = data[31].split("/");
