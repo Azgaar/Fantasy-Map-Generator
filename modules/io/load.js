@@ -456,16 +456,16 @@ async function parseLoadedData(data, mapVersion) {
     {
       // dynamically import and run auto-update script
       const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.97.00");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.97.04");
       resolveVersionConflicts(versionNumber);
     }
 
     // add custom heightmap color scheme if any
     if (heightmapColorSchemes) {
-      const oceanScheme = terrs.select("#oceanHeights").attr("scheme");
-      const landScheme = terrs.select("#landHeights").attr("scheme");
-      if (!(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
-      if (!(landScheme in heightmapColorSchemes)) addCustomColorScheme(landScheme);
+      const oceanScheme = byId("oceanHeights")?.getAttribute("scheme");
+      if (oceanScheme && !(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
+      const landScheme = byId("#landHeights")?.getAttribute("scheme");
+      if (landScheme && !(landScheme in heightmapColorSchemes)) addCustomColorScheme(landScheme);
     }
 
     {
