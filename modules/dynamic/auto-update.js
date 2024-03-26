@@ -743,7 +743,7 @@ export function resolveVersionConflicts(version) {
 
     const opacity = terrs.attr("opacity");
     const filter = terrs.attr("filter");
-    const scheme = terrs.attr("scheme");
+    const scheme = terrs.attr("scheme") || "bright";
     const terracing = terrs.attr("terracing");
     const skip = terrs.attr("skip");
     const relax = terrs.attr("relax");

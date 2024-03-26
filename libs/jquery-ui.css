@@ -313,8 +313,9 @@ body .ui-dialog {
   background-color: inherit;
 }
 .ui-dialog .ui-dialog-titlebar {
-  padding: 0.4em 1em;
-  position: relative;
+  display: flex;
+  padding: 0.4em 0.3em;
+  justify-content: space-evenly;
   font-size: 1.2em;
   min-width: 150px;
 }
@@ -328,9 +329,6 @@ body .ui-dialog {
 }
 
 .ui-dialog .ui-dialog-titlebar button {
-  position: absolute;
-  right: 0.5em;
-  top: 53%;
   padding: 0;
   width: 1.8em;
   height: 1.8em;
@@ -338,14 +336,6 @@ body .ui-dialog {
   background: none;
   font-size: 0.75em;
   border: 1px solid #c5c5c5;
-}
-
-.ui-dialog .ui-dialog-titlebar button.ui-dialog-titlebar-collapse {
-  margin: -1em 2.2em 0 0;
-}
-
-.ui-dialog .ui-dialog-titlebar button.ui-dialog-titlebar-close {
-  margin: -1em 0 0;
 }
 
 .ui-dialog .ui-dialog-titlebar button:active {
