@@ -1,27 +1,21 @@
 "use strict";
 // Functions to export map to image or data files
 
-// download map as SVG
-async function saveSVG() {
-  TIME && console.time("saveSVG");
+async function exportToSvg() {
+  TIME && console.time("exportToSvg");
   const url = await getMapURL("svg", {fullMap: true});
   const link = document.createElement("a");
   link.download = getFileName() + ".svg";
   link.href = url;
   link.click();
 
-  tip(
-    `${link.download} is saved. Open "Downloads" screen (ctrl + J) to check. You can set image scale in options`,
-    true,
-    "success",
-    5000
-  );
-  TIME && console.timeEnd("saveSVG");
+  const message = `${link.download} is saved. Open 'Downloads' screen (ctrl + J) to check`;
+  tip(message, true, "success", 5000);
+  TIME && console.timeEnd("exportToSvg");
 }
 
-// download map as PNG
-async function savePNG() {
-  TIME && console.time("savePNG");
+async function exportToPng() {
+  TIME && console.time("exportToPng");
   const url = await getMapURL("png");
 
   const link = document.createElement("a");
@@ -41,22 +35,18 @@ async function savePNG() {
       window.setTimeout(function () {
         canvas.remove();
         window.URL.revokeObjectURL(link.href);
-        tip(
-          `${link.download} is saved. Open "Downloads" screen (crtl + J) to check. You can set image scale in options`,
-          true,
-          "success",
-          5000
-        );
+
+        const message = `${link.download} is saved. Open 'Downloads' screen (ctrl + J) to check. You can set image scale in options`;
+        tip(message, true, "success", 5000);
       }, 1000);
     });
   };
 
-  TIME && console.timeEnd("savePNG");
+  TIME && console.timeEnd("exportToPng");
 }
 
-// download map as JPEG
-async function saveJPEG() {
-  TIME && console.time("saveJPEG");
+async function exportToJpeg() {
+  TIME && console.time("exportToJpeg");
   const url = await getMapURL("png");
 
   const canvas = document.createElement("canvas");
@@ -77,103 +67,122 @@ async function saveJPEG() {
     window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
   };
 
-  TIME && console.timeEnd("saveJPEG");
+  TIME && console.timeEnd("exportToJpeg");
 }
 
-// download map as png tiles
-async function saveTiles() {
-  return new Promise(async (resolve, reject) => {
-    // download schema
-    const urlSchema = await getMapURL("tiles", {debug: true, fullMap: true});
-    await import("../../libs/jszip.min.js");
-    const zip = new window.JSZip();
+async function exportToPngTiles() {
+  const status = byId("tileStatus");
+  status.innerHTML = "Preparing files...";
 
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = graphWidth;
-    canvas.height = graphHeight;
+  const urlSchema = await getMapURL("tiles", {debug: true, fullMap: true});
+  await import("../../libs/jszip.min.js");
+  const zip = new window.JSZip();
 
-    const imgSchema = new Image();
-    imgSchema.src = urlSchema;
-    imgSchema.onload = function () {
-      ctx.drawImage(imgSchema, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(blob => zip.file(`fmg_tile_schema.png`, blob));
-    };
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = graphWidth;
+  canvas.height = graphHeight;
 
-    // download tiles
-    const url = await getMapURL("tiles", {fullMap: true});
-    const tilesX = +document.getElementById("tileColsInput").value;
-    const tilesY = +document.getElementById("tileRowsInput").value;
-    const scale = +document.getElementById("tileScaleInput").value;
+  const imgSchema = new Image();
+  imgSchema.src = urlSchema;
+  await loadImage(imgSchema);
 
-    const tileW = (graphWidth / tilesX) | 0;
-    const tileH = (graphHeight / tilesY) | 0;
-    const tolesTotal = tilesX * tilesY;
+  status.innerHTML = "Drawing schema...";
+  ctx.drawImage(imgSchema, 0, 0, canvas.width, canvas.height);
+  const blob = await canvasToBlob(canvas, "image/png");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  zip.file("schema.png", blob);
 
-    const width = graphWidth * scale;
-    const height = width * (tileH / tileW);
-    canvas.width = width;
-    canvas.height = height;
+  // download tiles
+  const url = await getMapURL("tiles", {fullMap: true});
+  const tilesX = +byId("tileColsInput").value;
+  const tilesY = +byId("tileRowsInput").value;
+  const scale = +byId("tileScaleInput").value;
+  const tolesTotal = tilesX * tilesY;
 
-    let loaded = 0;
-    const img = new Image();
-    img.src = url;
-    img.onload = function () {
-      for (let y = 0, i = 0; y + tileH <= graphHeight; y += tileH) {
-        for (let x = 0; x + tileW <= graphWidth; x += tileW, i++) {
-          ctx.drawImage(img, x, y, tileW, tileH, 0, 0, width, height);
-          const name = `fmg_tile_${i}.png`;
-          canvas.toBlob(blob => {
-            zip.file(name, blob);
-            loaded += 1;
-            if (loaded === tolesTotal) return downloadZip();
-          });
-        }
-      }
-    };
+  const tileW = (graphWidth / tilesX) | 0;
+  const tileH = (graphHeight / tilesY) | 0;
 
-    function downloadZip() {
-      const name = `${getFileName()}.zip`;
-      zip.generateAsync({type: "blob"}).then(blob => {
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = name;
-        link.click();
-        link.remove();
+  const width = graphWidth * scale;
+  const height = width * (tileH / tileW);
+  canvas.width = width;
+  canvas.height = height;
 
-        setTimeout(() => URL.revokeObjectURL(link.href), 5000);
-        resolve(true);
-      });
+  const img = new Image();
+  img.src = url;
+  await loadImage(img);
+
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  for (let y = 0, row = 0, id = 1; y + tileH <= graphHeight; y += tileH, row++) {
+    const rowName = alphabet[row % alphabet.length];
+
+    for (let x = 0, cell = 1; x + tileW <= graphWidth; x += tileW, cell++, id++) {
+      status.innerHTML = `Drawing tile ${rowName}${cell} (${id} of ${tolesTotal})...`;
+      ctx.drawImage(img, x, y, tileW, tileH, 0, 0, width, height);
+      const blob = await canvasToBlob(canvas, "image/png");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      zip.file(`${rowName}${cell}.png`, blob);
     }
+  }
+
+  status.innerHTML = "Zipping files...";
+  zip.generateAsync({type: "blob"}).then(blob => {
+    status.innerHTML = "Downloading the archive...";
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = getFileName() + ".zip";
+    link.click();
+    link.remove();
+
+    status.innerHTML = 'Done. Check .zip file in "Downloads" (crtl + J)';
+    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
   });
+
+  // promisified img.onload
+  function loadImage(img) {
+    return new Promise((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = err => reject(err);
+    });
+  }
+
+  // promisified canvas.toBlob
+  function canvasToBlob(canvas, mimeType, qualityArgument = 1) {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        blob => {
+          if (blob) resolve(blob);
+          else reject(new Error("Canvas toBlob() error"));
+        },
+        mimeType,
+        qualityArgument
+      );
+    });
+  }
 }
 
 // parse map svg to object url
-async function getMapURL(type, options = {}) {
+async function getMapURL(type, options) {
   const {
     debug = false,
-    globe = false,
     noLabels = false,
     noWater = false,
     noScaleBar = false,
     noIce = false,
     fullMap = false
-  } = options;
+  } = options || {};
 
-  if (fullMap) drawScaleBar(1);
-
-  const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
+  const cloneEl = byId("map").cloneNode(true); // clone svg
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone = d3.select(cloneEl);
   if (!debug) clone.select("#debug")?.remove();
 
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
-  const svgDefs = document.getElementById("defElements");
+  const svgDefs = byId("defElements");
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern")?.remove();
-  if (globe) clone.select("#scaleBar")?.remove();
   if (noLabels) {
     clone.select("#labels #states")?.remove();
     clone.select("#labels #burgLabels")?.remove();
@@ -183,14 +192,18 @@ async function getMapURL(type, options = {}) {
     clone.select("#oceanBase").attr("opacity", 0);
     clone.select("#oceanPattern").attr("opacity", 0);
   }
-  if (noScaleBar) clone.select("#scaleBar")?.remove();
   if (noIce) clone.select("#ice")?.remove();
   if (fullMap) {
     // reset transform to show the whole map
     clone.attr("width", graphWidth).attr("height", graphHeight);
     clone.select("#viewbox").attr("transform", null);
-    drawScaleBar(scale);
+
+    if (!noScaleBar) {
+      drawScaleBar(clone.select("#scaleBar"), 1);
+      fitScaleBar(clone.select("#scaleBar"), graphWidth, graphHeight);
+    }
   }
+  if (noScaleBar) clone.select("#scaleBar")?.remove();
 
   if (type === "svg") removeUnusedElements(clone);
   if (customization && type === "mesh") updateMeshCells(clone);
@@ -229,35 +242,35 @@ async function getMapURL(type, options = {}) {
       .forEach(el => {
         const href = el.getAttribute("href") || el.getAttribute("xlink:href");
         if (!href) return;
-        const emblem = document.getElementById(href.slice(1));
+        const emblem = byId(href.slice(1));
         if (emblem) cloneDefs.append(emblem.cloneNode(true));
       });
   } else {
     cloneDefs.querySelector("#defs-emblems")?.remove();
   }
 
-  // replace ocean pattern href to base64
-  if (location.hostname) {
-    const el = cloneEl.getElementById("oceanicPattern");
-    const url = el?.getAttribute("href");
-    if (url) {
+  {
+    // replace ocean pattern href to base64
+    const image = cloneEl.getElementById("oceanicPattern");
+    const href = image?.getAttribute("href");
+    if (href) {
       await new Promise(resolve => {
-        getBase64(url, base64 => {
-          el.setAttribute("href", base64);
+        getBase64(href, base64 => {
+          image.setAttribute("href", base64);
           resolve();
         });
       });
     }
   }
 
-  // replace texture href to base64
-  if (location.hostname) {
-    const el = cloneEl.getElementById("textureImage");
-    const url = el?.getAttribute("href");
-    if (url) {
+  {
+    // replace texture href to base64
+    const image = cloneEl.querySelector("#texture > image");
+    const href = image?.getAttribute("href");
+    if (href) {
       await new Promise(resolve => {
-        getBase64(url, base64 => {
-          el.setAttribute("href", base64);
+        getBase64(href, base64 => {
+          image.setAttribute("href", base64);
           resolve();
         });
       });
@@ -375,7 +388,7 @@ function removeUnusedElements(clone) {
 
 function updateMeshCells(clone) {
   const data = renderOcean.checked ? grid.cells.i : grid.cells.i.filter(i => grid.cells.h[i] >= 20);
-  const scheme = getColorScheme(terrs.attr("scheme"));
+  const scheme = getColorScheme(terrs.select("#landHeights").attr("scheme"));
   clone.select("#heights").attr("filter", "url(#blur1)");
   clone
     .select("#heights")
@@ -399,12 +412,6 @@ function inlineStyle(clone) {
     for (let i = 0; i < compStyle.length; i++) {
       const key = compStyle[i];
       const value = compStyle.getPropertyValue(key);
-
-      // Firefox mask hack
-      if (key === "mask-image" && value !== defaultStyles.getPropertyValue(key)) {
-        style += "mask-image: url('#land');";
-        continue;
-      }
 
       if (key === "cursor") continue; // cursor should be default
       if (this.hasAttribute(key)) continue; // don't add style if there is the same attribute

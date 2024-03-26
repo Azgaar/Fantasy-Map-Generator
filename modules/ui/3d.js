@@ -3,19 +3,19 @@
 window.ThreeD = (function () {
   const options = {
     scale: 50,
-    lightness: 0.7,
+    lightness: 0.6,
     shadow: 0.5,
-    sun: {x: 100, y: 600, z: 1000},
+    sun: {x: 100, y: 800, z: 1000},
     rotateMesh: 0,
     rotateGlobe: 0.5,
     skyColor: "#9ecef5",
     waterColor: "#466eab",
+    sunColor: "#cccccc",
     extendedWater: 0,
     labels3d: 0,
     wireframe: 0,
     resolution: 2,
     resolutionScale: 2048,
-    sunColor: "#cccccc",
     subdivide: 0
   };
 
@@ -202,16 +202,16 @@ window.ThreeD = (function () {
   };
 
   const saveOBJ = async function () {
-    downloadFile(await getOBJ(), getFileName() + ".obj", "text/plain;charset=UTF-8");
+    const objexporter = await OBJExporter();
+    const obj = await objexporter.parse(mesh);
+
+    downloadFile(obj, getFileName() + ".obj", "text/plain;charset=UTF-8");
   };
 
   // start 3d view and heightmap edit preview
   async function newMesh(canvas) {
     const loaded = await loadTHREE();
-    if (!loaded) {
-      tip("Cannot load 3d library", false, "error", 4000);
-      return false;
-    }
+    if (!loaded) return tip("Cannot load 3d library", false, "error", 4000);
 
     scene = new THREE.Scene();
 
@@ -221,17 +221,16 @@ window.ThreeD = (function () {
     spotLight = new THREE.SpotLight(options.sunColor, 0.8, 2000, 0.8, 0, 0);
     spotLight.position.set(options.sun.x, options.sun.y, options.sun.z);
     spotLight.castShadow = true;
-    //maybe add a option for this. But changing the option will require to reinstance the spotLight.
     spotLight.shadow.mapSize.width = 2048;
     spotLight.shadow.mapSize.height = 2048;
     scene.add(spotLight);
-    //scene.add(new THREE.SpotLightHelper(spotLight));
+    // scene.add(new THREE.SpotLightHelper(spotLight));
 
     // Renderer
     Renderer = new THREE.WebGLRenderer({canvas, antialias: true, preserveDrawingBuffer: true});
     Renderer.setSize(canvas.width, canvas.height);
     Renderer.shadowMap.enabled = true;
-    // Renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    Renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     if (options.extendedWater) extendWater(graphWidth, graphHeight);
     createMesh(graphWidth, graphHeight, grid.cellsX, grid.cellsY);
 
@@ -241,8 +240,11 @@ window.ThreeD = (function () {
 
     // controls
     controls = await OrbitControls(camera, canvas);
-    controls.enableKeys = false;
-    controls.minDistance = 10;
+    controls.listenToKeyEvents(window);
+    controls.zoomSpeed = 0.25;
+
+    controls.panSpeed = 0.5;
+    controls.minDistance = 100;
     controls.maxDistance = 1000;
     controls.maxPolarAngle = Math.PI / 2;
     controls.autoRotate = Boolean(options.rotateMesh);
@@ -250,7 +252,6 @@ window.ThreeD = (function () {
     if (controls.autoRotate) animate();
 
     controls.addEventListener("change", render);
-
     return true;
   }
 
@@ -440,12 +441,11 @@ window.ThreeD = (function () {
 
   async function createMeshTextureUrl() {
     return new Promise(async (resolve, reject) => {
-      const mapOptions = {
+      const url = await getMapURL("mesh", {
         noLabels: options.labels3d,
         noWater: options.extendedWater,
         fullMap: true
-      };
-      const url = await getMapURL("mesh", mapOptions);
+      });
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       canvas.width = options.resolutionScale;
@@ -541,11 +541,6 @@ window.ThreeD = (function () {
 
   async function update3dTexture() {
     if (texture) texture.dispose();
-    const mapOptions = {
-      noLabels: options.labels3d,
-      noWater: options.extendedWater,
-      fullMap: true
-    };
     const url = await createMeshTextureUrl();
     window.setTimeout(() => window.URL.revokeObjectURL(url), 4000);
     texture = new THREE.TextureLoader().load(url, render);
@@ -580,7 +575,7 @@ window.ThreeD = (function () {
 
     // controls
     controls = await OrbitControls(camera, Renderer.domElement);
-    controls.enableKeys = false;
+    controls.zoomSpeed = 0.25;
     controls.minDistance = 1.8;
     controls.maxDistance = 10;
     controls.autoRotate = Boolean(options.rotateGlobe);
@@ -628,13 +623,7 @@ window.ThreeD = (function () {
       material.map = texture;
       if (addMesh) addGlobe3dMesh();
     };
-    img2.src = await getMapURL("mesh", {globe: true, fullMap: true});
-  }
-
-  async function getOBJ() {
-    const objexporter = await OBJExporter();
-    const data = await objexporter.parse(mesh);
-    return data;
+    img2.src = await getMapURL("mesh", {noScaleBar: true, fullMap: true});
   }
 
   function addGlobe3dMesh() {

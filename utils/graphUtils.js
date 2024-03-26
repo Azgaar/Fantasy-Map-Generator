@@ -325,11 +325,12 @@ function drawCellsValue(data) {
     .text(d => d);
 }
 
-// helper function non-used for the generation
+// helper function non-used for the main generation
 function drawPolygons(data) {
-  const max = d3.max(data),
-    min = d3.min(data),
-    scheme = getColorScheme(terrs.attr("scheme"));
+  const max = d3.max(data);
+  const min = d3.min(data);
+  const scheme = getColorScheme(terrs.select("#landHeights").attr("scheme"));
+
   data = data.map(d => 1 - normalize(d, min, max));
 
   debug.selectAll("polygon").remove();
@@ -338,7 +339,32 @@ function drawPolygons(data) {
     .data(data)
     .enter()
     .append("polygon")
-    .attr("points", (d, i) => getPackPolygon(i))
+    .attr("points", (d, i) => getGridPolygon(i))
     .attr("fill", d => scheme(d))
     .attr("stroke", d => scheme(d));
+}
+
+// draw raster heightmap preview (not used in main generation)
+function drawHeights({heights, width, height, scheme, renderOcean}) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  const imageData = ctx.createImageData(width, height);
+
+  const getHeight = height => (height < 20 ? (renderOcean ? height : 0) : height);
+
+  for (let i = 0; i < heights.length; i++) {
+    const color = scheme(1 - getHeight(heights[i]) / 100);
+    const {r, g, b} = d3.color(color);
+
+    const n = i * 4;
+    imageData.data[n] = r;
+    imageData.data[n + 1] = g;
+    imageData.data[n + 2] = b;
+    imageData.data[n + 3] = 255;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  return canvas.toDataURL("image/png");
 }

@@ -263,12 +263,10 @@
   "#texture": {
     "opacity": 0.8,
     "filter": null,
-    "mask": "url(#land)"
-  },
-  "#textureImage": {
-    "x": 0,
-    "y": 0,
-    "src": "https://i2.wp.com/azgaar.files.wordpress.com/2019/07/iran-small.jpg"
+    "mask": "url(#land)",
+    "data-x": 0,
+    "data-y": 0,
+    "data-href": "./images/textures/iran-small.jpg"
   },
   "#zones": {
     "opacity": 0.5,
@@ -290,14 +288,25 @@
     "href": "./images/pattern3.png",
     "opacity": 0.2
   },
-  "#terrs": {
-    "opacity": 1,
+  "#terrs > #oceanHeights": {
+    "data-render": 1,
+    "opacity": 0.8,
     "scheme": "bright",
     "terracing": 0,
     "skip": 0,
     "relax": 1,
-    "curve": 1,
-    "filter": "url(#filter-grayscale)",
+    "curve": "curveBasisClosed",
+    "filter": null,
+    "mask": null
+  },
+  "#terrs > #landHeights": {
+    "opacity": 0.8,
+    "scheme": "bright",
+    "terracing": 2,
+    "skip": 1,
+    "relax": 2,
+    "curve": "curveBasisClosed",
+    "filter": null,
     "mask": "url(#land)"
   },
   "#legend": {
@@ -388,5 +397,39 @@
     "opacity": 0.98,
     "fill": "#1b1423",
     "filter": null
+  },
+  "#vignette": {
+    "opacity": 0.5,
+    "fill": "#042603",
+    "filter": null
+  },
+  "#vignette-rect": {
+    "x": "0.1%",
+    "y": "0.2%",
+    "width": "99.8%",
+    "height": "99.6%",
+    "rx": "10%",
+    "ry": "10%",
+    "filter": "blur(30px)"
+  },
+  "#scaleBar": {
+    "opacity": 1,
+    "fill": "#121212",
+    "font-size": 10,
+    "data-bar-size": 2,
+    "data-x": 99,
+    "data-y": 99,
+    "data-label": ""
+  },
+  "#scaleBarBack": {
+    "opacity": 0.2,
+    "fill": "#607671",
+    "stroke": "#000000",
+    "stroke-width": 1,
+    "filter": "url(#blur5)",
+    "data-top": 20,
+    "data-right": 15,
+    "data-bottom": 15,
+    "data-left": 10
   }
 }

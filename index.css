@@ -169,6 +169,7 @@ t,
 #temperature,
 #texture,
 #landmass,
+#vignette,
 #fogging {
   pointer-events: none;
 }
@@ -625,7 +626,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 .tabcontent button.sideButton {
   border-radius: 15%;
   font-size: 0.8em;
-  margin-bottom: -1em;
+  margin-block: -1em;
 }
 
 #layersContent button.active,
@@ -1632,7 +1633,7 @@ div.states > .riverType {
   padding: 0.3em 0;
 }
 
-#saveTilesScreen div.label {
+#exportToPngTilesScreen div.label {
   display: inline-block;
   width: 5em;
 }
@@ -1875,12 +1876,6 @@ div.editorLine {
   margin: 0.4em 0 0 -0.9em;
 }
 
-#barBackColor {
-  width: 3.5em;
-  padding: 0px;
-  height: 1.2em;
-}
-
 #ruler {
   cursor: move;
   fill: none;
@@ -1918,18 +1913,6 @@ div.editorLine {
   fill-rule: evenodd;
   fill-opacity: 0.5;
   stroke: #737373;
-}
-
-#scaleBar {
-  stroke: none;
-  fill: none;
-  cursor: pointer;
-}
-
-#scaleBar text {
-  fill: #353540;
-  text-anchor: middle;
-  font-family: var(--serif);
 }
 
 #militaryOptionsTable select {
@@ -1990,7 +1973,7 @@ input[type="checkbox"] {
 .checkbox + .checkbox-label:before {
   content: "";
   display: inline-block;
-  vertical-align: middle;
+  vertical-align: bottom;
   width: 0.6em;
   height: 0.6em;
   padding: 0.2em;
@@ -1998,6 +1981,7 @@ input[type="checkbox"] {
   border: 1px solid darkgrey;
   border-radius: 15%;
   background: white;
+  font-family: var(--monospace);
 }
 
 .checkbox:checked + .checkbox-label:before {

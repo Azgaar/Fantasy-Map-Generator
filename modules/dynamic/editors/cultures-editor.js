@@ -341,10 +341,7 @@ function cultureChangeColor() {
   const callback = newFill => {
     $el.fill = newFill;
     pack.cultures[cultureId].color = newFill;
-    cults
-      .select("#culture" + cultureId)
-      .attr("fill", newFill)
-      .attr("stroke", newFill);
+    cults.select("#culture" + cultureId).attr("fill", newFill);
     debug.select("#cultureCenter" + cultureId).attr("fill", newFill);
   };
 
@@ -825,6 +822,7 @@ function addCulture() {
 
   if (pack.cells.h[center] < 20)
     return tip("You cannot place culture center into the water. Please click on a land cell", false, "error");
+
   const occupied = pack.cultures.some(c => !c.removed && c.center === center);
   if (occupied) return tip("This cell is already a culture center. Please select a different cell", false, "error");
 
@@ -860,8 +858,19 @@ function closeCulturesEditor() {
 }
 
 async function uploadCulturesData() {
-  const csv = await Formats.csvParser(this.files[0]);
+  const file = this.files[0];
   this.value = "";
+  const csv = await file.text();
+  const data = d3.csvParse(csv, d => ({
+    i: +d.Id,
+    name: d.Name,
+    color: d.Color,
+    expansionism: +d.Expansionism,
+    type: d.Type,
+    population: +d.Population,
+    emblemsShape: d["Emblems Shape"],
+    origins: d.Origins
+  }));
 
   const {cultures, cells} = pack;
   const shapes = Object.keys(COA.shields.types)
@@ -873,20 +882,26 @@ async function uploadCulturesData() {
     if (item.i) item.removed = true;
   });
 
-  for (const c of csv.iterator((a, b) => +a[0] > +b[0])) {
+  for (const culture of data) {
     let current;
-    if (+c.id < cultures.length) {
-      current = cultures[c.id];
+    if (culture.i < cultures.length) {
+      current = cultures[culture.i];
 
       const ratio = current.urban / (current.rural + current.urban);
-      applyPopulationChange(current.rural, current.urban, c.population * (1 - ratio), c.population * ratio, +c.id);
+      applyPopulationChange(
+        current.rural,
+        current.urban,
+        culture.population * (1 - ratio),
+        culture.population * ratio,
+        culture.i
+      );
     } else {
       current = {i: cultures.length, center: ra(populated), area: 0, cells: 0, origin: 0, rural: 0, urban: 0};
       cultures.push(current);
     }
 
     current.removed = false;
-    current.name = c.name;
+    current.name = culture.name;
 
     if (current.i) {
       current.code = abbreviate(
@@ -894,10 +909,10 @@ async function uploadCulturesData() {
         cultures.map(c => c.code)
       );
 
-      current.color = c.color;
-      current.expansionism = +c.expansionism;
+      current.color = culture.color;
+      current.expansionism = +culture.expansionism;
 
-      if (cultureTypes.includes(c.type)) current.type = c.type;
+      if (cultureTypes.includes(culture.type)) current.type = culture.type;
       else current.type = "Generic";
     }
 
@@ -916,13 +931,11 @@ async function uploadCulturesData() {
       current.origins = originIds.filter(id => id !== null);
       if (!current.origins.length) current.origins = [0];
     }
-    c.origins = current.i ? restoreOrigins(c.origins) : [null];
 
-    const shieldShape = c["emblems shape"].toLowerCase();
-    if (shapes.includes(shieldShape)) current.shield = shieldShape;
-    else current.shield = "heater";
+    culture.origins = current.i ? restoreOrigins(culture.origins || "") : [null];
+    current.shield = shapes.includes(culture.emblemsShape) ? culture.emblemsShape : "heater";
 
-    const nameBaseIndex = nameBases.findIndex(n => n.name == c.namesbase);
+    const nameBaseIndex = nameBases.findIndex(n => n.name == culture.namesbase);
     current.base = nameBaseIndex === -1 ? 0 : nameBaseIndex;
   }
 

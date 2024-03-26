@@ -1,5 +1,5 @@
 (window => {
-  const noTrack = !location.hostname || window.localStorage.getItem("noTrack");
+  const noTrack = window.localStorage.getItem("noTrack");
 
   const {
     screen: {width, height},

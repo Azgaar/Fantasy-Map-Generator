@@ -1,7 +1,7 @@
 "use strict";
 
 // version and caching control
-const version = "1.93.04"; // generator version, update each time
+const version = "1.97.04"; // generator version, update each time
 
 {
   document.title += " v" + version;
@@ -28,6 +28,12 @@ const version = "1.93.04"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Preview villages map</li>
+        <li>Ability to render ocean heightmap</li>
+        <li>Scale bar styling features</li>
+        <li>Vignette visual layer and vignette styling options</li>
+        <li>Ability to define custom heightmap color scheme</li>
+        <li>New style preset Night and new heightmap color schemes</li>
         <li>Random encounter markers (integration with <a href="https://deorum.vercel.app/" target="_blank">Deorum</a>)</li>
         <li>Auto-load of the last saved map is now optional (see <i>Onload behavior</i> in Options)</li>
         <li>New label placement algorithm for states</li>
@@ -37,8 +43,6 @@ const version = "1.93.04"; // generator version, update each time
         <li>New 3D scene options and improvements</li>
         <li>Autosave feature (in Options)</li>
         <li>Google translation support (in Options)</li>
-        <li>Religions can be edited and redrawn like cultures</li>
-        <li>Lock states, provinces, cultures, and religions from regeneration</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>

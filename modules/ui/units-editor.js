@@ -11,55 +11,51 @@ function editUnits() {
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
-  const drawBar = () => drawScaleBar(scale);
+  const renderScaleBar = () => {
+    drawScaleBar(scaleBar, scale);
+    fitScaleBar(scaleBar, svgWidth, svgHeight);
+  };
 
   // add listeners
-  document.getElementById("distanceUnitInput").addEventListener("change", changeDistanceUnit);
-  document.getElementById("distanceScaleOutput").addEventListener("input", changeDistanceScale);
-  document.getElementById("distanceScaleInput").addEventListener("change", changeDistanceScale);
-  document.getElementById("heightUnit").addEventListener("change", changeHeightUnit);
-  document.getElementById("heightExponentInput").addEventListener("input", changeHeightExponent);
-  document.getElementById("heightExponentOutput").addEventListener("input", changeHeightExponent);
-  document.getElementById("temperatureScale").addEventListener("change", changeTemperatureScale);
-  document.getElementById("barSizeOutput").addEventListener("input", drawBar);
-  document.getElementById("barSizeInput").addEventListener("input", drawBar);
-  document.getElementById("barLabel").addEventListener("input", drawBar);
-  document.getElementById("barPosX").addEventListener("input", fitScaleBar);
-  document.getElementById("barPosY").addEventListener("input", fitScaleBar);
-  document.getElementById("barBackOpacity").addEventListener("input", changeScaleBarOpacity);
-  document.getElementById("barBackColor").addEventListener("input", changeScaleBarColor);
+  byId("distanceUnitInput").addEventListener("change", changeDistanceUnit);
+  byId("distanceScaleOutput").addEventListener("input", changeDistanceScale);
+  byId("distanceScaleInput").addEventListener("change", changeDistanceScale);
+  byId("heightUnit").addEventListener("change", changeHeightUnit);
+  byId("heightExponentInput").addEventListener("input", changeHeightExponent);
+  byId("heightExponentOutput").addEventListener("input", changeHeightExponent);
+  byId("temperatureScale").addEventListener("change", changeTemperatureScale);
 
-  document.getElementById("populationRateOutput").addEventListener("input", changePopulationRate);
-  document.getElementById("populationRateInput").addEventListener("change", changePopulationRate);
-  document.getElementById("urbanizationOutput").addEventListener("input", changeUrbanizationRate);
-  document.getElementById("urbanizationInput").addEventListener("change", changeUrbanizationRate);
-  document.getElementById("urbanDensityOutput").addEventListener("input", changeUrbanDensity);
-  document.getElementById("urbanDensityInput").addEventListener("change", changeUrbanDensity);
+  byId("populationRateOutput").addEventListener("input", changePopulationRate);
+  byId("populationRateInput").addEventListener("change", changePopulationRate);
+  byId("urbanizationOutput").addEventListener("input", changeUrbanizationRate);
+  byId("urbanizationInput").addEventListener("change", changeUrbanizationRate);
+  byId("urbanDensityOutput").addEventListener("input", changeUrbanDensity);
+  byId("urbanDensityInput").addEventListener("change", changeUrbanDensity);
 
-  document.getElementById("addLinearRuler").addEventListener("click", addRuler);
-  document.getElementById("addOpisometer").addEventListener("click", toggleOpisometerMode);
-  document.getElementById("addRouteOpisometer").addEventListener("click", toggleRouteOpisometerMode);
-  document.getElementById("addPlanimeter").addEventListener("click", togglePlanimeterMode);
-  document.getElementById("removeRulers").addEventListener("click", removeAllRulers);
-  document.getElementById("unitsRestore").addEventListener("click", restoreDefaultUnits);
+  byId("addLinearRuler").addEventListener("click", addRuler);
+  byId("addOpisometer").addEventListener("click", toggleOpisometerMode);
+  byId("addRouteOpisometer").addEventListener("click", toggleRouteOpisometerMode);
+  byId("addPlanimeter").addEventListener("click", togglePlanimeterMode);
+  byId("removeRulers").addEventListener("click", removeAllRulers);
+  byId("unitsRestore").addEventListener("click", restoreDefaultUnits);
 
   function changeDistanceUnit() {
     if (this.value === "custom_name") {
       prompt("Provide a custom name for a distance unit", {default: ""}, custom => {
         this.options.add(new Option(custom, custom, false, true));
         lock("distanceUnit");
-        drawScaleBar(scale);
+        renderScaleBar();
         calculateFriendlyGridSize();
       });
       return;
     }
 
-    drawScaleBar(scale);
+    renderScaleBar();
     calculateFriendlyGridSize();
   }
 
   function changeDistanceScale() {
-    drawScaleBar(scale);
+    renderScaleBar();
     calculateFriendlyGridSize();
   }
 
@@ -81,14 +77,6 @@ function editUnits() {
     if (layerIsOn("toggleTemp")) drawTemp();
   }
 
-  function changeScaleBarOpacity() {
-    scaleBar.select("rect").attr("opacity", this.value);
-  }
-
-  function changeScaleBarColor() {
-    scaleBar.select("rect").attr("fill", this.value);
-  }
-
   function changePopulationRate() {
     populationRate = +this.value;
   }
@@ -104,8 +92,8 @@ function editUnits() {
   function restoreDefaultUnits() {
     // distanceScale
     distanceScale = 3;
-    document.getElementById("distanceScaleOutput").value = 3;
-    document.getElementById("distanceScaleInput").value = 3;
+    byId("distanceScaleOutput").value = 3;
+    byId("distanceScaleInput").value = 3;
     unlock("distanceScale");
 
     // units
@@ -126,20 +114,7 @@ function editUnits() {
     localStorage.removeItem("heightExponent");
     calculateTemperatures();
 
-    // scale bar
-    barSizeOutput.value = barSizeInput.value = 2;
-    barLabel.value = "";
-    barBackOpacity.value = 0.2;
-    barBackColor.value = "#ffffff";
-    barPosX.value = barPosY.value = 99;
-
-    localStorage.removeItem("barSize");
-    localStorage.removeItem("barLabel");
-    localStorage.removeItem("barBackOpacity");
-    localStorage.removeItem("barBackColor");
-    localStorage.removeItem("barPosX");
-    localStorage.removeItem("barPosY");
-    drawScaleBar(scale);
+    renderScaleBar();
 
     // population
     populationRate = populationRateOutput.value = populationRateInput.value = 1000;
@@ -152,7 +127,7 @@ function editUnits() {
 
   function addRuler() {
     if (!layerIsOn("toggleRulers")) toggleRulers();
-    const pt = document.getElementById("map").createSVGPoint();
+    const pt = byId("map").createSVGPoint();
     (pt.x = graphWidth / 2), (pt.y = graphHeight / 4);
     const p = pt.matrixTransform(viewbox.node().getScreenCTM().inverse());
     const dx = graphWidth / 4 / scale;

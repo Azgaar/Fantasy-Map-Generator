@@ -2,16 +2,14 @@
 
 function editNotes(id, name) {
   // elements
-  const notesLegend = document.getElementById("notesLegend");
-  const notesName = document.getElementById("notesName");
-  const notesSelect = document.getElementById("notesSelect");
-  const notesPin = document.getElementById("notesPin");
+  const notesLegend = byId("notesLegend");
+  const notesName = byId("notesName");
+  const notesSelect = byId("notesSelect");
+  const notesPin = byId("notesPin");
 
   // update list of objects
   notesSelect.options.length = 0;
-  for (const note of notes) {
-    notesSelect.options.add(new Option(note.id, note.id));
-  }
+  notes.forEach(({id}) => notesSelect.options.add(new Option(id, id)));
 
   // update pin notes icon
   const notesArePinned = options.pinNotes;
@@ -22,7 +20,7 @@ function editNotes(id, name) {
   if (notes.length || id) {
     if (!id) id = notes[0].id;
     let note = notes.find(note => note.id === id);
-    if (note === undefined) {
+    if (!note) {
       if (!name) name = id;
       note = {id, name, legend: ""};
       notes.push(note);
@@ -52,17 +50,17 @@ function editNotes(id, name) {
   modules.editNotes = true;
 
   // add listeners
-  document.getElementById("notesSelect").addEventListener("change", changeElement);
-  document.getElementById("notesName").addEventListener("input", changeName);
-  document.getElementById("notesLegend").addEventListener("blur", updateLegend);
-  document.getElementById("notesPin").addEventListener("click", toggleNotesPin);
-  document.getElementById("notesFocus").addEventListener("click", validateHighlightElement);
-  document.getElementById("notesDownload").addEventListener("click", downloadLegends);
-  document.getElementById("notesUpload").addEventListener("click", () => legendsToLoad.click());
-  document.getElementById("legendsToLoad").addEventListener("change", function () {
+  byId("notesSelect").addEventListener("change", changeElement);
+  byId("notesName").addEventListener("input", changeName);
+  byId("notesLegend").addEventListener("blur", updateLegend);
+  byId("notesPin").addEventListener("click", toggleNotesPin);
+  byId("notesFocus").addEventListener("click", validateHighlightElement);
+  byId("notesDownload").addEventListener("click", downloadLegends);
+  byId("notesUpload").addEventListener("click", () => legendsToLoad.click());
+  byId("legendsToLoad").addEventListener("change", function () {
     uploadFile(this, uploadLegends);
   });
-  document.getElementById("notesRemove").addEventListener("click", triggerNotesRemove);
+  byId("notesRemove").addEventListener("click", triggerNotesRemove);
 
   async function initEditor() {
     if (!window.tinymce) {
@@ -108,8 +106,8 @@ function editNotes(id, name) {
   }
 
   function updateNotesBox(note) {
-    document.getElementById("notesHeader").innerHTML = note.name;
-    document.getElementById("notesBody").innerHTML = note.legend;
+    byId("notesHeader").innerHTML = note.name;
+    byId("notesBody").innerHTML = note.legend;
   }
 
   function changeElement() {
@@ -131,7 +129,7 @@ function editNotes(id, name) {
   }
 
   function validateHighlightElement() {
-    const element = document.getElementById(notesSelect.value);
+    const element = byId(notesSelect.value);
     if (element) return highlightElement(element, 3);
 
     confirmationDialog({
@@ -157,23 +155,24 @@ function editNotes(id, name) {
   }
 
   function triggerNotesRemove() {
+    function removeLegend() {
+      notes = notes.filter(({id}) => id !== notesSelect.value);
+
+      if (!notes.length) {
+        $("#notesEditor").dialog("close");
+        return;
+      }
+
+      removeEditor();
+      editNotes(notes[0].id, notes[0].name);
+    }
+
     confirmationDialog({
       title: "Remove note",
       message: "Are you sure you want to remove the selected note? There is no way to undo this action",
       confirm: "Remove",
       onConfirm: removeLegend
     });
-  }
-
-  function removeLegend() {
-    const index = notes.findIndex(n => n.id === notesSelect.value);
-    notes.splice(index, 1);
-    notesSelect.options.length = 0;
-    if (!notes.length) {
-      $("#notesEditor").dialog("close");
-      return;
-    }
-    editNotes(notes[0].id, notes[0].name);
   }
 
   function toggleNotesPin() {

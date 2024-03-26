@@ -14,7 +14,8 @@ function getDefaultPresets() {
       "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
-      "toggleStates"
+      "toggleStates",
+      "toggleVignette"
     ],
     cultural: [
       "toggleBorders",
@@ -23,7 +24,8 @@ function getDefaultPresets() {
       "toggleLabels",
       "toggleRivers",
       "toggleRoutes",
-      "toggleScaleBar"
+      "toggleScaleBar",
+      "toggleVignette"
     ],
     religions: [
       "toggleBorders",
@@ -32,12 +34,13 @@ function getDefaultPresets() {
       "toggleReligions",
       "toggleRivers",
       "toggleRoutes",
-      "toggleScaleBar"
+      "toggleScaleBar",
+      "toggleVignette"
     ],
-    provinces: ["toggleBorders", "toggleIcons", "toggleProvinces", "toggleRivers", "toggleScaleBar"],
-    biomes: ["toggleBiomes", "toggleIce", "toggleRivers", "toggleScaleBar"],
-    heightmap: ["toggleHeight", "toggleRivers"],
-    physical: ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleRivers", "toggleScaleBar"],
+    provinces: ["toggleBorders", "toggleIcons", "toggleProvinces", "toggleRivers", "toggleScaleBar", "toggleVignette"],
+    biomes: ["toggleBiomes", "toggleIce", "toggleRivers", "toggleScaleBar", "toggleVignette"],
+    heightmap: ["toggleHeight", "toggleRivers", "toggleVignette"],
+    physical: ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleRivers", "toggleScaleBar", "toggleVignette"],
     poi: [
       "toggleBorders",
       "toggleHeight",
@@ -46,7 +49,8 @@ function getDefaultPresets() {
       "toggleMarkers",
       "toggleRivers",
       "toggleRoutes",
-      "toggleScaleBar"
+      "toggleScaleBar",
+      "toggleVignette"
     ],
     military: [
       "toggleBorders",
@@ -56,7 +60,8 @@ function getDefaultPresets() {
       "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
-      "toggleStates"
+      "toggleStates",
+      "toggleVignette"
     ],
     emblems: [
       "toggleBorders",
@@ -66,7 +71,8 @@ function getDefaultPresets() {
       "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
-      "toggleStates"
+      "toggleStates",
+      "toggleVignette"
     ],
     landmass: ["toggleScaleBar"]
   };
@@ -157,6 +163,7 @@ function getCurrentPreset() {
 
 // run on map regeneration
 function restoreLayers() {
+  if (layerIsOn("toggleTexture")) drawTexture();
   if (layerIsOn("toggleHeight")) drawHeightmap();
   if (layerIsOn("toggleCells")) drawCells();
   if (layerIsOn("toggleGrid")) drawGrid();
@@ -181,92 +188,135 @@ function restoreLayers() {
 }
 
 function toggleHeight(event) {
-  if (customization === 1) {
-    tip("You cannot turn off the layer when heightmap is in edit mode", false, "error");
-    return;
-  }
+  if (customization === 1) return tip("You cannot turn off the layer when heightmap is in edit mode", false, "error");
 
-  if (!terrs.selectAll("*").size()) {
+  const children = terrs.selectAll("#oceanHeights > *, #landHeights > *");
+  if (!children.size()) {
     turnButtonOn("toggleHeight");
     drawHeightmap();
     if (event && isCtrlClick(event)) editStyle("terrs");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("terrs");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("terrs");
     turnButtonOff("toggleHeight");
-    terrs.selectAll("*").remove();
+    children.remove();
   }
 }
 
 function drawHeightmap() {
   TIME && console.time("drawHeightmap");
-  terrs.selectAll("*").remove();
 
-  const {cells, vertices} = pack;
-  const n = cells.i.length;
-  const used = new Uint8Array(cells.i.length);
-  const paths = new Array(101).fill("");
+  const ocean = terrs.select("#oceanHeights");
+  const land = terrs.select("#landHeights");
 
-  const scheme = getColorScheme(terrs.attr("scheme"));
-  const terracing = terrs.attr("terracing") / 10; // add additional shifted darker layer for pseudo-3d effect
-  const skip = +terrs.attr("skip") + 1;
-  const simplification = +terrs.attr("relax");
+  ocean.selectAll("*").remove();
+  land.selectAll("*").remove();
 
-  switch (+terrs.attr("curve")) {
-    case 0:
-      lineGen.curve(d3.curveBasisClosed);
-      break;
-    case 1:
-      lineGen.curve(d3.curveLinear);
-      break;
-    case 2:
-      lineGen.curve(d3.curveStep);
-      break;
-    default:
-      lineGen.curve(d3.curveBasisClosed);
+  const paths = new Array(101);
+
+  // ocean cells
+  const renderOceanCells = Boolean(+ocean.attr("data-render"));
+  if (renderOceanCells) {
+    const {cells, vertices} = grid;
+    const used = new Uint8Array(cells.i.length);
+
+    const skip = +ocean.attr("skip") + 1 || 1;
+    const relax = +ocean.attr("relax") || 0;
+    lineGen.curve(d3[ocean.attr("curve") || "curveBasisClosed"]);
+
+    let currentLayer = 0;
+    const heights = Array.from(cells.i).sort((a, b) => cells.h[a] - cells.h[b]);
+
+    for (const i of heights) {
+      const h = cells.h[i];
+      if (h > currentLayer) currentLayer += skip;
+      if (h < currentLayer) continue;
+      if (currentLayer >= 20) break;
+      if (used[i]) continue; // already marked
+      const onborder = cells.c[i].some(n => cells.h[n] < h);
+      if (!onborder) continue;
+      const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.h[i] < h));
+      const chain = connectVertices(cells, vertices, vertex, h, used);
+      if (chain.length < 3) continue;
+      const points = simplifyLine(chain, relax).map(v => vertices.p[v]);
+      if (!paths[h]) paths[h] = "";
+      paths[h] += round(lineGen(points));
+    }
   }
 
-  let currentLayer = 20;
-  const heights = cells.i.sort((a, b) => cells.h[a] - cells.h[b]);
-  for (const i of heights) {
-    const h = cells.h[i];
-    if (h > currentLayer) currentLayer += skip;
-    if (currentLayer > 100) break; // no layers possible with height > 100
-    if (h < currentLayer) continue;
-    if (used[i]) continue; // already marked
-    const onborder = cells.c[i].some(n => cells.h[n] < h);
-    if (!onborder) continue;
-    const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.h[i] < h));
-    const chain = connectVertices(vertex, h);
-    if (chain.length < 3) continue;
-    const points = simplifyLine(chain).map(v => vertices.p[v]);
-    paths[h] += round(lineGen(points));
+  // land cells
+  {
+    const {cells, vertices} = pack;
+    const used = new Uint8Array(cells.i.length);
+
+    const skip = +land.attr("skip") + 1 || 1;
+    const relax = +land.attr("relax") || 0;
+    lineGen.curve(d3[land.attr("curve") || "curveBasisClosed"]);
+
+    let currentLayer = 20;
+    const heights = Array.from(cells.i).sort((a, b) => cells.h[a] - cells.h[b]);
+    for (const i of heights) {
+      const h = cells.h[i];
+      if (h > currentLayer) currentLayer += skip;
+      if (h < currentLayer) continue;
+      if (currentLayer > 100) break; // no layers possible with height > 100
+      if (used[i]) continue; // already marked
+      const onborder = cells.c[i].some(n => cells.h[n] < h);
+      if (!onborder) continue;
+      const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.h[i] < h));
+      const chain = connectVertices(cells, vertices, vertex, h, used);
+      if (chain.length < 3) continue;
+      const points = simplifyLine(chain, relax).map(v => vertices.p[v]);
+      if (!paths[h]) paths[h] = "";
+      paths[h] += round(lineGen(points));
+    }
   }
 
-  terrs
-    .append("rect")
-    .attr("x", 0)
-    .attr("y", 0)
-    .attr("width", graphWidth)
-    .attr("height", graphHeight)
-    .attr("fill", scheme(0.8)); // draw base layer
-  for (const i of d3.range(20, 101)) {
-    if (paths[i].length < 10) continue;
-    const color = getColor(i, scheme);
-    if (terracing)
-      terrs
-        .append("path")
-        .attr("d", paths[i])
-        .attr("transform", "translate(.7,1.4)")
-        .attr("fill", d3.color(color).darker(terracing))
-        .attr("data-height", i);
-    terrs.append("path").attr("d", paths[i]).attr("fill", color).attr("data-height", i);
+  // render paths
+  for (const height of d3.range(0, 101)) {
+    const group = height < 20 ? ocean : land;
+    const scheme = getColorScheme(group.attr("scheme"));
+
+    if (height === 0 && renderOceanCells) {
+      // draw base ocean layer
+      group
+        .append("rect")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", graphWidth)
+        .attr("height", graphHeight)
+        .attr("fill", scheme(1));
+    }
+
+    if (height === 20) {
+      // draw base land layer
+      group
+        .append("rect")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", graphWidth)
+        .attr("height", graphHeight)
+        .attr("fill", scheme(0.8));
+    }
+
+    if (paths[height] && paths[height].length >= 10) {
+      const terracing = group.attr("terracing") / 10 || 0;
+      const color = getColor(height, scheme);
+
+      if (terracing) {
+        group
+          .append("path")
+          .attr("d", paths[height])
+          .attr("transform", "translate(.7,1.4)")
+          .attr("fill", d3.color(color).darker(terracing))
+          .attr("data-height", height);
+      }
+      group.append("path").attr("d", paths[height]).attr("fill", color).attr("data-height", height);
+    }
   }
 
   // connect vertices to chain
-  function connectVertices(start, h) {
+  function connectVertices(cells, vertices, start, h, used) {
+    const n = cells.i.length;
     const chain = []; // vertices chain to form a path
     for (let i = 0, current = start; i === 0 || (current !== start && i < 20000); i++) {
       const prev = chain[chain.length - 1]; // previous vertex in chain
@@ -288,7 +338,7 @@ function drawHeightmap() {
     return chain;
   }
 
-  function simplifyLine(chain) {
+  function simplifyLine(chain, simplification) {
     if (!simplification) return chain;
     const n = simplification + 1; // filter each nth element
     return chain.filter((d, i) => i % n === 0);
@@ -297,15 +347,7 @@ function drawHeightmap() {
   TIME && console.timeEnd("drawHeightmap");
 }
 
-function getColorScheme(scheme) {
-  if (scheme === "bright") return d3.scaleSequential(d3.interpolateSpectral);
-  if (scheme === "light") return d3.scaleSequential(d3.interpolateRdYlGn);
-  if (scheme === "green") return d3.scaleSequential(d3.interpolateGreens);
-  if (scheme === "monochrome") return d3.scaleSequential(d3.interpolateGreys);
-  return d3.scaleSequential(d3.interpolateSpectral);
-}
-
-function getColor(value, scheme = getColorScheme()) {
+function getColor(value, scheme = getColorScheme("bright")) {
   return scheme(1 - (value < 20 ? value - 5 : value) / 100);
 }
 
@@ -1517,16 +1559,28 @@ function toggleRelief(event) {
 function toggleTexture(event) {
   if (!layerIsOn("toggleTexture")) {
     turnButtonOn("toggleTexture");
-    // href is not set directly to avoid image loading when layer is off
-    const textureImage = byId("textureImage");
-    if (textureImage) textureImage.setAttribute("href", textureImage.getAttribute("src"));
-
+    drawTexture();
     if (event && isCtrlClick(event)) editStyle("texture");
   } else {
     if (event && isCtrlClick(event)) return editStyle("texture");
     turnButtonOff("toggleTexture");
-    texture.select("image").attr("href", null);
+    texture.select("image").remove();
   }
+}
+
+function drawTexture() {
+  const x = Number(texture.attr("data-x") || 0);
+  const y = Number(texture.attr("data-y") || 0);
+  const href = texture.attr("data-href");
+
+  texture
+    .append("image")
+    .attr("preserveAspectRatio", "xMidYMid slice")
+    .attr("x", x)
+    .attr("y", y)
+    .attr("width", graphWidth - x)
+    .attr("height", graphHeight - y)
+    .attr("href", href);
 }
 
 function toggleRivers(event) {
@@ -1659,10 +1713,7 @@ function toggleLabels(event) {
     invokeActiveZooming();
     if (event && isCtrlClick(event)) editStyle("labels");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("labels");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("labels");
     turnButtonOff("toggleLabels");
     labels.style("display", "none");
   }
@@ -1674,10 +1725,7 @@ function toggleIcons(event) {
     $("#icons").fadeIn();
     if (event && isCtrlClick(event)) editStyle("burgIcons");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("burgIcons");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("burgIcons");
     turnButtonOff("toggleIcons");
     $("#icons").fadeOut();
   }
@@ -1690,10 +1738,7 @@ function toggleRulers(event) {
     rulers.draw();
     ruler.style("display", null);
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("ruler");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("ruler");
     turnButtonOff("toggleRulers");
     ruler.selectAll("*").remove();
     ruler.style("display", "none");
@@ -1704,15 +1749,111 @@ function toggleScaleBar(event) {
   if (!layerIsOn("toggleScaleBar")) {
     turnButtonOn("toggleScaleBar");
     $("#scaleBar").fadeIn();
-    if (event && isCtrlClick(event)) editUnits();
+    if (event && isCtrlClick(event)) editStyle("scaleBar");
   } else {
-    if (event && isCtrlClick(event)) {
-      editUnits();
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("scaleBar");
     $("#scaleBar").fadeOut();
     turnButtonOff("toggleScaleBar");
   }
+}
+
+function drawScaleBar(scaleBar, scaleLevel) {
+  if (!scaleBar.size() || scaleBar.style("display") === "none") return;
+
+  const distanceScale = +distanceScaleInput.value;
+  const unit = distanceUnitInput.value;
+  const size = +scaleBar.attr("data-bar-size");
+
+  const length = (function () {
+    const init = 100;
+    let val = (init * size * distanceScale) / scaleLevel; // bar length in distance unit
+    if (val > 900) val = rn(val, -3); // round to 1000
+    else if (val > 90) val = rn(val, -2); // round to 100
+    else if (val > 9) val = rn(val, -1); // round to 10
+    else val = rn(val); // round to 1
+    const length = (val * scaleLevel) / distanceScale; // actual length in pixels on this scale
+    return length;
+  })();
+
+  scaleBar.select("#scaleBarContent").remove(); // redraw content every time
+  const content = scaleBar.append("g").attr("id", "scaleBarContent");
+
+  const lines = content.append("g");
+  lines
+    .append("line")
+    .attr("x1", 0.5)
+    .attr("y1", 0)
+    .attr("x2", length + size - 0.5)
+    .attr("y2", 0)
+    .attr("stroke-width", size)
+    .attr("stroke", "white");
+  lines
+    .append("line")
+    .attr("x1", 0)
+    .attr("y1", size)
+    .attr("x2", length + size)
+    .attr("y2", size)
+    .attr("stroke-width", size)
+    .attr("stroke", "#3d3d3d");
+  lines
+    .append("line")
+    .attr("x1", 0)
+    .attr("y1", 0)
+    .attr("x2", length + size)
+    .attr("y2", 0)
+    .attr("stroke-width", rn(size * 3, 2))
+    .attr("stroke-dasharray", size + " " + rn(length / 5 - size, 2))
+    .attr("stroke", "#3d3d3d");
+
+  const texts = content.append("g").attr("text-anchor", "middle").attr("font-family", "var(--serif)");
+  texts
+    .selectAll("text")
+    .data(d3.range(0, 6))
+    .enter()
+    .append("text")
+    .attr("x", d => rn((d * length) / 5, 2))
+    .attr("y", 0)
+    .attr("dy", "-.6em")
+    .text(d => rn((((d * length) / 5) * distanceScale) / scaleLevel) + (d < 5 ? "" : " " + unit));
+
+  const label = scaleBar.attr("data-label");
+  if (label) {
+    texts
+      .append("text")
+      .attr("x", (length + 1) / 2)
+      .attr("dy", ".6em")
+      .attr("dominant-baseline", "text-before-edge")
+      .text(label);
+  }
+
+  const scaleBarBack = scaleBar.select("#scaleBarBack");
+  if (scaleBarBack.size()) {
+    const bbox = content.node().getBBox();
+    const paddingTop = +scaleBarBack.attr("data-top") || 0;
+    const paddingLeft = +scaleBarBack.attr("data-left") || 0;
+    const paddingRight = +scaleBarBack.attr("data-right") || 0;
+    const paddingBottom = +scaleBarBack.attr("data-bottom") || 0;
+
+    scaleBar
+      .select("#scaleBarBack")
+      .attr("x", -paddingLeft)
+      .attr("y", -paddingTop)
+      .attr("width", bbox.width + paddingRight)
+      .attr("height", bbox.height + paddingBottom);
+  }
+}
+
+// fit ScaleBar to screen size
+function fitScaleBar(scaleBar, fullWidth, fullHeight) {
+  if (!scaleBar.select("rect").size() || scaleBar.style("display") === "none") return;
+
+  const posX = +scaleBar.attr("data-x") || 99;
+  const posY = +scaleBar.attr("data-y") || 99;
+  const bbox = scaleBar.select("rect").node().getBBox();
+
+  const x = rn((fullWidth * posX) / 100 - bbox.width + 10);
+  const y = rn((fullHeight * posY) / 100 - bbox.height + 20);
+  scaleBar.attr("transform", `translate(${x},${y})`);
 }
 
 function toggleZones(event) {
@@ -1737,10 +1878,7 @@ function toggleEmblems(event) {
     $("#emblems").fadeIn();
     if (event && isCtrlClick(event)) editStyle("emblems");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("emblems");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("emblems");
     $("#emblems").fadeOut();
     turnButtonOff("toggleEmblems");
   }
@@ -1855,6 +1993,18 @@ function drawEmblems() {
   });
 
   TIME && console.timeEnd("drawEmblems");
+}
+
+function toggleVignette(event) {
+  if (!layerIsOn("toggleVignette")) {
+    turnButtonOn("toggleVignette");
+    $("#vignette").fadeIn();
+    if (event && isCtrlClick(event)) editStyle("vignette");
+  } else {
+    if (event && isCtrlClick(event)) return editStyle("vignette");
+    $("#vignette").fadeOut();
+    turnButtonOff("toggleVignette");
+  }
 }
 
 function layerIsOn(el) {

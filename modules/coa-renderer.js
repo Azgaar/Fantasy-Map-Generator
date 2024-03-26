@@ -1953,9 +1953,9 @@ window.COArenderer = (function () {
     return fetchedCharges.join("");
   }
 
-  const url = location.hostname ? "./charges/" : "http://armoria.herokuapp.com/charges/"; // on local machine fetch files from server
+  const PATH = "./charges/";
   async function fetchCharge(charge, id) {
-    const fetched = fetch(url + charge + ".svg")
+    const fetched = fetch(PATH + charge + ".svg")
       .then(res => {
         if (res.ok) return res.text();
         else throw new Error("Cannot fetch charge");

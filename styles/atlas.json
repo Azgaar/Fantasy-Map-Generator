@@ -261,12 +261,10 @@
   "#texture": {
     "opacity": 0.2,
     "filter": null,
-    "mask": "url(#land)"
-  },
-  "#textureImage": {
-    "x": 0,
-    "y": 0,
-    "src": "https://i2.wp.com/azgaar.files.wordpress.com/2021/10/plaster.jpg"
+    "mask": "url(#land)",
+    "data-x": 0,
+    "data-y": 0,
+    "data-href": "./images/textures/plaster.jpg"
   },
   "#zones": {
     "opacity": 0.6,
@@ -288,13 +286,24 @@
     "href": "",
     "opacity": 1
   },
-  "#terrs": {
-    "opacity": null,
+  "#terrs > #oceanHeights": {
+    "data-render": 1,
+    "opacity": 1,
+    "scheme": "bright",
+    "terracing": 0,
+    "skip": 0,
+    "relax": 1,
+    "curve": "curveBasisClosed",
+    "filter": null,
+    "mask": null
+  },
+  "#terrs > #landHeights": {
+    "opacity": 1,
     "scheme": "bright",
     "terracing": 0,
     "skip": 0,
     "relax": 0,
-    "curve": 0,
+    "curve": "curveBasisClosed",
     "filter": null,
     "mask": "url(#land)"
   },
@@ -386,5 +395,39 @@
     "opacity": 0.98,
     "fill": "#30426f",
     "filter": null
+  },
+  "#vignette": {
+    "opacity": 0.2,
+    "fill": "#000000",
+    "filter": null
+  },
+  "#vignette-rect": {
+    "x": "0.2%",
+    "y": "0.3%",
+    "width": "99.8%",
+    "height": "99.4%",
+    "rx": "5%",
+    "ry": "5%",
+    "filter": "blur(30px)"
+  },
+  "#scaleBar": {
+    "opacity": 1,
+    "fill": "#353540",
+    "font-size": 9,
+    "data-bar-size": 1.5,
+    "data-x": 99,
+    "data-y": 99,
+    "data-label": ""
+  },
+  "#scaleBarBack": {
+    "opacity": 0.2,
+    "fill": "#ffffff",
+    "stroke": "#000000",
+    "stroke-width": 1,
+    "filter": null,
+    "data-top": 18,
+    "data-right": 15,
+    "data-bottom": 15,
+    "data-left": 10
   }
 }

@@ -368,11 +368,11 @@ window.Religions = (function () {
       Totemism: 1
     },
     Organized: {
-      Polytheism: 14,
-      Monotheism: 12,
-      Dualism: 6,
-      Pantheism: 6,
-      "Non-theism": 4
+      Polytheism: 7,
+      Monotheism: 7,
+      Dualism: 3,
+      Pantheism: 2,
+      "Non-theism": 2
     },
     Cult: {
       Cult: 5,
@@ -418,12 +418,13 @@ window.Religions = (function () {
     Shamanism: {Beliefs: 3, Shamanism: 2, Druidism: 1, Spirits: 1},
     Animism: {Spirits: 3, Beliefs: 1},
     Polytheism: {Deities: 3, Faith: 1, Gods: 1, Pantheon: 1},
-    "Ancestor worship": {Beliefs: 1, Forefathers: 2, Ancestors: 2},
+    "Ancestor Worship": {Beliefs: 1, Forefathers: 2, Ancestors: 2},
     "Nature Worship": {Beliefs: 3, Druids: 1},
     Totemism: {Beliefs: 2, Totems: 2, Idols: 1},
 
     Monotheism: {Religion: 2, Church: 3, Faith: 1},
     Dualism: {Religion: 3, Faith: 1, Cult: 1},
+    Pantheism: {Religion: 1, Faith: 1},
     "Non-theism": {Beliefs: 3, Spirits: 1},
 
     Cult: {Cult: 4, Sect: 2, Arcanum: 1, Order: 1, Worship: 1},

@@ -261,12 +261,10 @@
   "#texture": {
     "opacity": 0.6,
     "filter": "",
-    "mask": ""
-  },
-  "#textureImage": {
-    "x": 0,
-    "y": 0,
-    "src": "https://i2.wp.com/azgaar.files.wordpress.com/2019/07/antique-small.jpg"
+    "mask": "",
+    "data-x": 0,
+    "data-y": 0,
+    "data-href": "./images/textures/antique-small.jpg"
   },
   "#zones": {
     "opacity": 0.6,
@@ -288,14 +286,25 @@
     "href": "./images/kiwiroo.png",
     "opacity": 0.4
   },
-  "#terrs": {
-    "opacity": null,
-    "scheme": "bright",
+  "#terrs > #oceanHeights": {
+    "data-render": 0,
+    "opacity": 1,
+    "scheme": "light",
+    "terracing": 0,
+    "skip": 0,
+    "relax": 1,
+    "curve": "curveBasisClosed",
+    "filter": "url(#filter-sepia)",
+    "mask": null
+  },
+  "#terrs > #landHeights": {
+    "opacity": 1,
+    "scheme": "light",
     "terracing": 0,
     "skip": 2,
     "relax": 1,
-    "curve": 0,
-    "filter": "url(#blur3)",
+    "curve": "curveBasisClosed",
+    "filter": "url(#filter-sepia)",
     "mask": "url(#land)"
   },
   "#legend": {
@@ -386,5 +395,39 @@
     "opacity": 0.98,
     "fill": "#30426f",
     "filter": null
+  },
+  "#vignette": {
+    "opacity": 0.2,
+    "fill": "#000000",
+    "filter": ""
+  },
+  "#vignette-rect": {
+    "x": "0%",
+    "y": "0%",
+    "width": "100%",
+    "height": "100%",
+    "rx": "0%",
+    "ry": "0%",
+    "filter": "blur(50px)"
+  },
+  "#scaleBar": {
+    "opacity": 1,
+    "fill": "#353540",
+    "font-size": 10,
+    "data-bar-size": 2,
+    "data-x": 99,
+    "data-y": 99,
+    "data-label": ""
+  },
+  "#scaleBarBack": {
+    "opacity": 0,
+    "fill": "#ffffff",
+    "stroke": "#000000",
+    "stroke-width": 1,
+    "filter": "url(#blur5)",
+    "data-top": 20,
+    "data-right": 15,
+    "data-bottom": 15,
+    "data-left": 10
   }
 }

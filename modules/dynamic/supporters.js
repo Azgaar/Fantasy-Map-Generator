@@ -535,4 +535,15 @@ Rob Frantz
 Driver
 Tr4v3l3r
 Cooper Cantrell
-Maximilien Bouillot`;
+Maximilien Bouillot
+J.E. Ellis
+Igor
+John Todd
+burning.rosary
+Shane Roppel
+Hank Agrippa
+Noah Morris
+Phil Karecki
+Matthew Jarocki
+Lucius Licinius Lucullus
+Andrew Haney`;

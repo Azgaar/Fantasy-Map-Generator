@@ -138,7 +138,7 @@
       }
     </style>
 
-    <link rel="preload" href="index.css?v=1.93.04" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+    <link rel="preload" href="index.css?v=1.96.00" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="icons.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="libs/jquery-ui.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
   </head>
@@ -359,9 +359,19 @@
         <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
           <image id="oceanicPattern" href="./images/pattern1.png" opacity="0.2"></image>
         </pattern>
+
+        <mask id="vignette-mask">
+          <rect x="0" y="0" width="100%" height="100%" fill="white"></rect>
+          <rect id="vignette-rect" fill="black"></rect>
+        </mask>
       </defs>
       <g id="viewbox"></g>
-      <g id="scaleBar"></g>
+      <g id="scaleBar">
+        <rect id="scaleBarBack"></rect>
+      </g>
+      <g id="vignette" mask="url(#vignette-mask)">
+        <rect x="0" y="0" width="100%" height="100%" />
+      </g>
     </svg>
 
     <div id="loading">
@@ -703,6 +713,15 @@
             >
               Scale Bar
             </li>
+            <li
+              id="toggleVignette"
+              data-tip="Vignette (border fading): click to toggle. Ctrl + click to edit style"
+              data-shortcut="[ (left bracket)"
+              onclick="toggleVignette(event)"
+              class="solid"
+            >
+              Vignette
+            </li>
           </ul>
 
           <div id="viewMode" data-tip="Set view node">
@@ -782,9 +801,11 @@
             <option value="rivers">Rivers</option>
             <option value="routes">Routes</option>
             <option value="ruler">Rulers</option>
+            <option value="scaleBar">Scale Bar</option>
             <option value="regions" selected>States</option>
             <option value="temperature">Temperature</option>
             <option value="texture">Texture</option>
+            <option value="vignette">Vignette</option>
             <option value="compass">Wind Rose</option>
             <option value="zones">Zones</option>
           </select>
@@ -802,6 +823,63 @@
                 <td><b>Group</b></td>
                 <td>
                   <select id="styleGroupSelect"></select>
+                </td>
+              </tr>
+            </tbody>
+
+            <tbody id="styleHeightmap">
+              <tr id="styleHeightmapRenderOceanOption" data-tip="Check to render ocean heights">
+                <td colspan="2">
+                  <input id="styleHeightmapRenderOcean" class="checkbox" type="checkbox" />
+                  <label for="styleHeightmapRenderOcean" class="checkbox-label">Render ocean heights</label>
+                </td>
+              </tr>
+
+              <tr data-tip="Terracing rate. Set to 0 (toggle off) to improve performance">
+                <td>Terracing</td>
+                <td>
+                  <input id="styleHeightmapTerracingInput" type="range" min="0" max="20" step="1" />
+                  <output id="styleHeightmapTerracingOutput">0</output>
+                </td>
+              </tr>
+
+              <tr data-tip="Layers reduction rate. Increase to improve performance">
+                <td>Reduce layers</td>
+                <td>
+                  <input id="styleHeightmapSkipInput" type="range" min="0" max="10" step="1" value="5" />
+                  <output id="styleHeightmapSkipOutput">5</output>
+                </td>
+              </tr>
+
+              <tr data-tip="Line simplification rate. Increase to slightly improve performance">
+                <td>Simplify line</td>
+                <td>
+                  <input id="styleHeightmapSimplificationInput" type="range" min="0" max="10" step="1" value="0" />
+                  <output id="styleHeightmapSimplificationOutput">0</output>
+                </td>
+              </tr>
+
+              <tr data-tip="Select line interpolation type">
+                <td>Line style</td>
+                <td>
+                  <select id="styleHeightmapCurve">
+                    <option value="curveBasisClosed" selected>Curved</option>
+                    <option value="curveLinear">Linear</option>
+                    <option value="curveStep">Rectangular</option>
+                  </select>
+                </td>
+              </tr>
+
+              <tr data-tip="Select color scheme for the element">
+                <td>Color scheme</td>
+                <td>
+                  <select id="styleHeightmapScheme"></select>
+                  <button
+                    id="openCreateHeightmapSchemeButton"
+                    data-tip="Click to add a custom heightmap color scheme"
+                    data-stops="#ffffff,#EEEECC,#D2B48C,#008000,#008080"
+                    class="icon-plus sideButton"
+                  ></button>
                 </td>
               </tr>
             </tbody>
@@ -866,77 +944,31 @@
                 <td>
                   <select id="styleTextureInput">
                     <option value="">No texture</option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/folded-paper-big.jpg">
-                      Folded paper big
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/folded-paper-small.jpg">
-                      Folded paper small
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/gray-paper.jpg">
-                      Gray paper
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/soiled-paper.jpg">
-                      Soiled paper horizontal
-                    </option>
-                    <option
-                      value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/soiled-paper-e1633784189147.jpg"
-                    >
-                      Soided paper vertical
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/plaster.jpg">Plaster</option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/ocean.jpg">Ocean</option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/antique-small.jpg">
-                      Antique small
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/antique-big.jpg">
-                      Antique big
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/pergamena-small.jpg">
-                      Pergamena small
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2021/10/marble-big.jpg" selected>
-                      Marble big
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/marble-small.jpg">
-                      Marble small
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/marble-blue-small.jpg">
-                      Marble Blue
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/marble-blue-big.jpg">
-                      Marble Blue big
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/stone-small.jpg">
-                      Stone small
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/stone-big.jpg">
-                      Stone big
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/timbercut-small.jpg">
-                      Timber Cut small
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/timbercut-big.jpg">
-                      Timber Cut big
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/mars-small.jpg">
-                      Mars small
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/mars-big.jpg">Mars big</option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/mercury-small.jpg">
-                      Mercury small
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/mercury-big.jpg">
-                      Mercury big
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/mauritania-small.jpg">
-                      Mauritania small
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/iran-small.jpg">
-                      Iran small
-                    </option>
-                    <option value="https://i2.wp.com/azgaar.files.wordpress.com/2019/07/spain-small.jpg">
-                      Spain small
-                    </option>
+                    <option value="./images/textures/folded-paper-big.jpg">Folded paper big</option>
+                    <option value="./images/textures/folded-paper-small.jpg">Folded paper small</option>
+                    <option value="./images/textures/gray-paper.jpg">Gray paper</option>
+                    <option value="./images/textures/soiled-paper.jpg">Soiled paper horizontal</option>
+                    <option value="./images/textures/soiled-paper-vertical.jpg">Soided paper vertical</option>
+                    <option value="./images/textures/plaster.jpg">Plaster</option>
+                    <option value="./images/textures/ocean.jpg">Ocean</option>
+                    <option value="./images/textures/antique-small.jpg">Antique small</option>
+                    <option value="./images/textures/antique-big.jpg">Antique big</option>
+                    <option value="./images/textures/pergamena-small.jpg">Pergamena small</option>
+                    <option value="./images/textures/marble-big.jpg" selected>Marble big</option>
+                    <option value="./images/textures/marble-small.jpg">Marble small</option>
+                    <option value="./images/textures/marble-blue-small.jpg">Marble Blue</option>
+                    <option value="./images/textures/marble-blue-big.jpg">Marble Blue big</option>
+                    <option value="./images/textures/stone-small.jpg">Stone small</option>
+                    <option value="./images/textures/stone-big.jpg">Stone big</option>
+                    <option value="./images/textures/timbercut-small.jpg">Timber Cut small</option>
+                    <option value="./images/textures/timbercut-big.jpg">Timber Cut big</option>
+                    <option value="./images/textures/mars-small.jpg">Mars small</option>
+                    <option value="./images/textures/mars-big.jpg">Mars big</option>
+                    <option value="./images/textures/mercury-small.jpg">Mercury small</option>
+                    <option value="./images/textures/mercury-big.jpg">Mercury big</option>
+                    <option value="./images/textures/mauritania-small.jpg">Mauritania small</option>
+                    <option value="./images/textures/iran-small.jpg">Iran small</option>
+                    <option value="./images/textures/spain-small.jpg">Spain small</option>
                   </select>
                   <button
                     data-tip="Click and provide a URL to image to be set as a texture"
@@ -951,6 +983,51 @@
                 <td>
                   <input id="styleTextureShiftX" type="number" value="0" data-tip="Shift texture by x axis in pixels" />
                   <input id="styleTextureShiftY" type="number" value="0" data-tip="Shift texture by y axis in pixels" />
+                </td>
+              </tr>
+            </tbody>
+
+            <tbody id="styleVignette">
+              <tr data-tip="Select precreated vignette">
+                <td>Preset</td>
+                <td>
+                  <select id="styleVignettePreset"></select>
+                </td>
+              </tr>
+
+              <tr data-tip="Vignette rectangle position (in percents)">
+                <td>Position</td>
+                <td style="display: flex; flex-direction: column; gap: 2px">
+                  <div>
+                    <span>x </span>
+                    <input id="styleVignetteX" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+                    <span>width&nbsp; </span>
+                    <input id="styleVignetteWidth" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+                  </div>
+                  <div>
+                    <span>y </span>
+                    <input id="styleVignetteY" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+                    <span>height </span>
+                    <input id="styleVignetteHeight" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-tip="Set vignette X and Y radius (in percents)">
+                <td>Radius</td>
+                <td>
+                  <span>x </span>
+                  <input id="styleVignetteRx" type="number" min="0" max="50" style="width: 5em" />
+                  <span>y </span>
+                  <input id="styleVignetteRy" type="number" min="0" max="50" style="width: 5em" />
+                </td>
+              </tr>
+
+              <tr data-tip="Set vignette blue propagation (in pixels)">
+                <td>Blur</td>
+                <td>
+                  <input id="styleVignetteBlur" type="range" min="0" max="400" step="1" value="50" />
+                  <output id="styleVignetteBlurOutput">50</output>px
                 </td>
               </tr>
             </tbody>
@@ -1032,16 +1109,6 @@
                 <td>
                   <input id="styleGridShiftX" type="number" data-tip="Shift by x axis in pixels" />
                   <input id="styleGridShiftY" type="number" data-tip="Shift by y axis in pixels" />
-                </td>
-              </tr>
-            </tbody>
-
-            <tbody id="styleShift">
-              <tr data-tip="Shift the element by axes">
-                <td>Shift by axes</td>
-                <td>
-                  <input id="styleShiftX" type="number" data-tip="Shift by x axis in pixels" />
-                  <input id="styleShiftY" type="number" data-tip="Shift by y axis in pixels" />
                 </td>
               </tr>
             </tbody>
@@ -1274,54 +1341,6 @@
               </tr>
             </tbody>
 
-            <tbody id="styleHeightmap">
-              <tr data-tip="Select color scheme for the element">
-                <td>Color scheme</td>
-                <td>
-                  <select id="styleHeightmapScheme">
-                    <option value="bright" selected>Bright</option>
-                    <option value="light">Light</option>
-                    <option value="green">Green</option>
-                    <option value="monochrome">Monochrome</option>
-                  </select>
-                </td>
-              </tr>
-
-              <tr data-tip="Terracing rate. Set to 0 (toggle off) to improve performance">
-                <td>Terracing</td>
-                <td>
-                  <input id="styleHeightmapTerracingInput" type="range" min="0" max="20" step="1" />
-                  <output id="styleHeightmapTerracingOutput">0</output>
-                </td>
-              </tr>
-              <tr data-tip="Layers reduction rate. Increase to improve performance">
-                <td>Reduce layers</td>
-                <td>
-                  <input id="styleHeightmapSkipInput" type="range" min="0" max="10" step="1" value="5" />
-                  <output id="styleHeightmapSkipOutput">5</output>
-                </td>
-              </tr>
-
-              <tr data-tip="Line simplification rate. Increase to slightly improve performance">
-                <td>Simplify line</td>
-                <td>
-                  <input id="styleHeightmapSimplificationInput" type="range" min="0" max="10" step="1" value="0" />
-                  <output id="styleHeightmapSimplificationOutput">0</output>
-                </td>
-              </tr>
-
-              <tr data-tip="Select line interpolation type">
-                <td>Line style</td>
-                <td>
-                  <select id="styleHeightmapCurve">
-                    <option value="0" selected>Curved</option>
-                    <option value="1">Linear</option>
-                    <option value="2">Rectangular</option>
-                  </select>
-                </td>
-              </tr>
-            </tbody>
-
             <tbody id="styleArmies">
               <tr data-tip="Set fill transparency. Set to 0 to make it fully transparent">
                 <td>Fill opacity</td>
@@ -1437,6 +1456,84 @@
                 </td>
               </tr>
             </tbody>
+
+            <tbody id="styleScaleBar">
+              <tr data-tip="Set bar and font size">
+                <td>Size</td>
+                <td>
+                  <span>Bar </span>
+                  <input id="styleScaleBarSize" type="number" min=".5" max="5" step=".1" />
+                  <span>Font </span>
+                  <input id="styleScaleBarFontSize" type="number" min="1" max="100" step=".1" />
+                </td>
+              </tr>
+
+              <tr data-tip="Set position of the Scale bar bottom right corner (in percents)">
+                <td>Position</td>
+                <td>
+                  <span>x </span>
+                  <input id="styleScaleBarPositionX" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+                  <span>y </span>
+                  <input id="styleScaleBarPositionY" type="number" min="0" max="100" step="0.1" style="width: 5em" />
+                </td>
+              </tr>
+
+              <tr data-tip="Type scale bar label, leave blank to hide label">
+                <td>Label</td>
+                <td>
+                  <input id="styleScaleBarLabel" type="text" />
+                </td>
+              </tr>
+
+              <tr data-tip="Set background opacity. 0: transparent, 1: solid">
+                <td>Back opacity</td>
+                <td>
+                  <input id="styleScaleBarBackgroundOpacityInput" type="range" min="0" max="1" step="0.01" />
+                  <output id="styleScaleBarBackgroundOpacityOutput"></output>
+                </td>
+              </tr>
+
+              <tr data-tip="Set background fill color">
+                <td>Back fill</td>
+                <td>
+                  <input id="styleScaleBarBackgroundFillInput" type="color" />
+                  <output id="styleScaleBarBackgroundFillOutput"></output>
+                </td>
+              </tr>
+
+              <tr data-tip="Set background stroke color and width">
+                <td>Back stroke</td>
+                <td>
+                  <input id="styleScaleBarBackgroundStrokeInput" type="color" />
+                  <output id="styleScaleBarBackgroundStrokeOutput"></output>
+
+                  <span>Width </span>
+                  <input
+                    id="styleScaleBarBackgroundStrokeWidth"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    style="width: 5em"
+                  />
+                </td>
+              </tr>
+
+              <tr data-tip="Set background element padding: top, right, bottom, left (in pixels)">
+                <td>Back padding</td>
+                <td style="display: flex; gap: 4px">
+                  <input id="styleScaleBarBackgroundPaddingTop" type="number" min="0" max="100" style="width: 5em" />
+                  <input id="styleScaleBarBackgroundPaddingRight" type="number" min="0" max="100" style="width: 5em" />
+                  <input id="styleScaleBarBackgroundPaddingBottom" type="number" min="0" max="100" style="width: 5em" />
+                  <input id="styleScaleBarBackgroundPaddingLeft" type="number" min="0" max="100" style="width: 5em" />
+                </td>
+              </tr>
+
+              <tr data-tip="Select background filter">
+                <td>Back filter</td>
+                <td><select id="styleScaleBarBackgroundFilter" /></td>
+              </tr>
+            </tbody>
           </table>
 
           <div id="mapFilters" data-tip="Set a filter to be applied to the map in general">
@@ -1454,9 +1551,11 @@
           </p>
           <table>
             <tr
-              data-tip="Canvas width and height in pixels. Defines map size on generation that cannot be changed later. Always keep canvas size equal to your screen size or less. The best option is to use the default value. For full-globe maps use aspect ratio 2:1"
+              data-tip="Set original map size on generation. It cannot be changed later. Always keep canvas size equal to your screen size or less. The best option is to use the default value. For full-globe maps use aspect ratio 2:1"
             >
-              <td></td>
+              <td>
+                <i data-tip="Restore default canvas size" id="restoreDefaultCanvasSize" class="icon-ccw"></i>
+              </td>
               <td>Canvas size</td>
               <td>
                 <input id="mapWidthInput" class="paired" type="number" min="240" value="960" />
@@ -1464,13 +1563,7 @@
                 <input id="mapHeightInput" class="paired" type="number" min="135" value="540" />
                 <span>px</span>
               </td>
-              <td>
-                <i
-                  data-tip="Toggle between the current screen size and the initial canvas size"
-                  id="toggleFullscreen"
-                  class="icon-resize-full-alt"
-                ></i>
-              </td>
+              <td></td>
             </tr>
 
             <tr data-tip="Map seed number. Seed produces the same map only if canvas size and options are the same">
@@ -1919,7 +2012,7 @@
               <td>
                 <select id="shapeRendering" data-stored="shapeRendering">
                   <option value="geometricPrecision">Best quality</option>
-                  <option value="optimizeSpeed" selected>Best performace</option>
+                  <option value="optimizeSpeed" selected>Best performance</option>
                 </select>
               </td>
               <td></td>
@@ -2308,6 +2401,10 @@
               • <a href="https://deorum.vercel.app" target="_blank">Deorum</a>: a vast gallery of customizable fantasy
               characters
             </div>
+          </div>
+
+          <div style="text-align: left; margin-top: 0.5em">
+            Chinese localization: <a href="https://www.8desk.top" target="_blank">8desk.top</a>
           </div>
 
           <ul class="share-buttons">
@@ -3233,6 +3330,22 @@
                 <input id="burgPopulation" type="number" min="0" step="1" style="width: 8em" />
               </div>
 
+              <div data-tip="Burg mean annual temperature and real-world city for comparison">
+                <div class="label">Temperature:</div>
+                <span id="burgTemperature"></span>, like in
+                <span id="burgTemperatureLikeIn"></span>
+                <i
+                  id="burgTemperatureGraph"
+                  data-tip="Show temperature graph for the burg"
+                  class="icon-chart-area pointer"
+                ></i>
+              </div>
+
+              <div data-tip="Burg height above mean sea level">
+                <div class="label">Elevation:</div>
+                <span id="burgElevation"></span> above sea level
+              </div>
+
               <div>
                 <div class="label">Features:</div>
                 <span
@@ -3282,49 +3395,23 @@
                   style="font-size: 1em"
                 ></span>
               </div>
-
-              <div data-tip="Burg mean annual temperature and real-world city for comparison">
-                <div class="label">Temperature:</div>
-                <span id="burgTemperature"></span>, like in
-                <span id="burgTemperatureLikeIn"></span>
-                <i
-                  id="burgTemperatureGraph"
-                  data-tip="Show temperature graph for the burg"
-                  class="icon-chart-area pointer"
-                ></i>
-              </div>
-
-              <div data-tip="Burg height above mean sea level">
-                <div class="label">Elevation:</div>
-                <span id="burgElevation"></span> above sea level
-              </div>
             </div>
           </div>
 
-          <div
-            id="mfcgPreviewSection"
-            data-tip="Burg preview in the Medieval Fantasy City Generator. Default seed is a combination of map seed and burg id"
-            style="display: flex; flex-direction: column"
-          >
-            <div>
-              See in <a id="mfcgLink" target="_blank">City Generator by Watabou</a>.
-              <div id="mfcgBurgSeedSection">
-                Seed: <input id="mfcgBurgSeed" style="width: 10em" type="number" min="1" max="1e13" step="1" />
+          <div id="burgPreviewSection" data-tip="Burg map preview" style="display: flex; flex-direction: column">
+            <div style="display: flex; justify-content: space-between">
+              <span>Burg preview:</span>
+              <div style="display: flex; gap: 0.5em">
                 <i
-                  id="regenerateMFCGBurgSeed"
-                  data-tip="Randomize Medieval Fantasy City Generator burg seed"
-                  class="icon-arrows-cw pointer"
-                  style="margin-left: 0.1em"
+                  id="burgLinkEdit"
+                  data-tip="Provide custom link to the burg map"
+                  class="icon-pencil pointer"
+                  style="margin-top: -0.1em"
                 ></i>
+                <i id="burgLinkOpen" data-tip="Open burg map in a new tab" class="icon-link-ext pointer"></i>
               </div>
-              <i
-                id="addCustomMFCGBurgLink"
-                data-tip="Provide custom link to the burg map"
-                class="icon-pencil pointer"
-                style="margin-left: 0.1em"
-              ></i>
             </div>
-            <iframe id="mfcgPreview" sandbox="allow-scripts"></iframe>
+            <div id="burgPreviewObject" style="max-width: 30em; pointer-events: none"></div>
           </div>
         </div>
 
@@ -3364,7 +3451,7 @@
           </div>
 
           <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
-          <button id="burgToggleMFCGMap" data-tip="Toggle MFCG map" class="icon-map"></button>
+          <button id="burgTogglePreview" data-tip="Toggle preview" class="icon-map"></button>
           <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
           <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
           <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
@@ -3810,8 +3897,8 @@
           <button id="battleNameShow" data-tip="Set battle name" class="icon-font"></button>
           <div id="battleNameSection" style="display: none">
             <button id="battleNameHide" data-tip="Hide the battle name section" class="icon-font"></button>
-            <input id="battleNamePlace" data-tip="Type place name"" style="width: 30%"> <input id="battleNameFull"
-            data-tip="Type full battle name"" style="width: 46%">
+            <input id="battleNamePlace" data-tip="Type place name" style="width: 30%" />
+            <input id="battleNameFull" data-tip="Type full battle name" style="width: 46%" />
             <button
               id="battleNameCulture"
               data-tip="Generate culture-specific name for place and battle"
@@ -4435,14 +4522,14 @@
           ></span>
         </div>
 
-        <div data-tip="Uncheck to not update state label on name change" style="padding: 0.2em">
+        <div data-tip="Uncheck to not update state label on name change" style="padding-block: 0.2em">
           <input id="stateNameEditorUpdateLabel" class="checkbox" type="checkbox" checked />
-          <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i>Update label</i></label>
+          <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i>Update label on Apply</i></label>
         </div>
       </div>
 
       <div id="provincesEditor" class="dialog stable" style="display: none">
-        <div id="provincesHeader" class="header" style="grid-template-columns: 11em 8em 8em 8em 5em 8em">
+        <div id="provincesHeader" class="header" style="grid-template-columns: 11em 8em 8em 6em 6em 6em 8em">
           <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">
             Province&nbsp;
           </div>
@@ -4455,6 +4542,9 @@
           <div data-tip="Click to sort by province owner" class="sortable alphabetically" data-sortby="state">
             State&nbsp;
           </div>
+          <div data-tip="Click to sort by province burgs count" class="sortable hide" data-sortby="burgs">
+            Burgs&nbsp;
+          </div>
           <div data-tip="Click to sort by province area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
           <div data-tip="Click to sort by province population" class="sortable hide" data-sortby="population">
             Population&nbsp;
@@ -4466,6 +4556,9 @@
         <div id="provincesFooter" class="totalLine">
           <div data-tip="Provinces displayed" style="margin-left: 4px">
             Provinces:&nbsp;<span id="provincesFooterNumber">0</span>
+          </div>
+          <div data-tip="Total burgs number" style="margin-left: 12px">
+            Burgs:&nbsp;<span id="provincesFooterBurgs">0</span>
           </div>
           <div data-tip="Average area" style="margin-left: 14px">
             Mean area:&nbsp;<span id="provincesFooterArea">0</span>
@@ -4604,7 +4697,7 @@
           <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
           <span
             id="provinceNameEditorShortCulture"
-            data-tip="Generate culture-specific name"
+            data-tip="Generate culture-specific name for the province"
             class="icon-book pointer"
           ></span>
           <span id="provinceNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
@@ -4679,6 +4772,14 @@
             data-tip="Click to re-generate full name"
             class="icon-arrows-cw pointer"
           ></span>
+        </div>
+
+        <div
+          id="provinceCultureName"
+          data-tip="Dominant culture in the province. This defines culture-based naming. Can be changed via the Cultures Editor"
+          style="margin-top: 0.2em"
+        >
+          Dominant culture:&nbsp;<span id="provinceCultureDisplay"></span>
         </div>
       </div>
 
@@ -5125,49 +5226,6 @@
           </div>
 
           <div class="unitsHeader">
-            <span class="icon-minus"></span>
-            <div>Scale bar:</div>
-          </div>
-
-          <div data-tip="Set scale bar size">
-            <div>Bar size:</div>
-            <input id="barSizeOutput" data-stored="barSize" type="range" min=".5" max="5" value="2" step=".1" />
-            <input id="barSizeInput" data-stored="barSize" type="number" min=".5" max="5" value="2" step=".1" />
-          </div>
-
-          <div data-tip="Type scale bar label, leave blank to hide label">
-            <div>Bar label:</div>
-            <input id="barLabel" data-stored="barLabel" type="text" placeholder="hidden" value="" />
-          </div>
-
-          <div data-tip="Set background for Scale bar">
-            <div>Bar background:</div>
-            <input
-              id="barBackOpacity"
-              data-stored="barBackOpacity"
-              type="range"
-              min="0"
-              max="1"
-              value=".2"
-              step=".01"
-            />
-            <input id="barBackColor" data-stored="barBackColor" type="color" value="#ffffff" />
-          </div>
-
-          <div data-tip="Set position of the Scale bar bottom right corner in percents">
-            <div>Bar position:</div>
-            x:<input id="barPosX" data-stored="barPosX" type="number" min="0" max="100" step=".1" value="99" /> y:<input
-              id="barPosY"
-              data-stored="barPosY"
-              type="number"
-              min="0"
-              max="100"
-              step=".1"
-              value="99"
-            />
-          </div>
-
-          <div class="unitsHeader">
             <span class="icon-male"></span>
             <div>Population:</div>
           </div>
@@ -5270,24 +5328,20 @@
 
       <div id="burgsOverview" class="dialog stable" style="display: none">
         <div id="burgsHeader" class="header" style="grid-template-columns: 8em 6em 6em 7em 7em 4em 2em">
-          <div
-            data-tip="Click to sort by burg name"
-            class="sortable alphabetically icon-sort-name-up"
-            data-sortby="name"
-          >
-            Burg&nbsp;
-          </div>
+          <div data-tip="Click to sort by burg name" class="sortable alphabetically" data-sortby="name">Burg</div>
           <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">
-            Province&nbsp;
+            Province
           </div>
-          <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">
-            State&nbsp;
-          </div>
+          <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State</div>
           <div data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">
-            Culture&nbsp;
+            Culture
           </div>
-          <div data-tip="Click to sort by burg population" class="sortable" data-sortby="population">
-            Population&nbsp;
+          <div
+            data-tip="Click to sort by burg population"
+            class="sortable icon-sort-number-down"
+            data-sortby="population"
+          >
+            Population
           </div>
           <div data-tip="Click to sort by burg type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
           <div
@@ -5300,10 +5354,11 @@
 
         <div id="burgsBody" class="table"></div>
 
-        <div id="burgsFilters" data-tip="Apply a filter">
-          <span>State: </span>
+        <div id="burgsFilters" data-tip="Apply a filter" style="padding-block: 0.1em">
+          <label for="burgsFilterState">State:</label>
           <select id="burgsFilterState" style="width: 28%"></select>
-          <span>Culture:</span>
+
+          <label for="burgsFilterCulture">Culture:</label>
           <select id="burgsFilterCulture" style="width: 28%"></select>
         </div>
 
@@ -5311,6 +5366,7 @@
           <div data-tip="Burgs displayed" style="margin-left: 4px">
             Burgs:&nbsp;<span id="burgsFooterBurgs">0</span>
           </div>
+
           <div data-tip="Average population" style="margin-left: 14px">
             Average population:&nbsp;<span id="burgsFooterPopulation">0</span>
           </div>
@@ -5532,7 +5588,9 @@
                 <th data-tip="Average number of people in crew (used for total personnel calculation)">Crew</th>
                 <th data-tip="Unit military power (used for battle simulation)">Power</th>
                 <th data-tip="Unit type to apply special rules on forces recalculation">Type</th>
-                <th data-tip="Check if unit is separate and can be stacked only with units of the same type">Sep.</th>
+                <th data-tip="Check if unit is separate and can be stacked only with units of the same type">
+                  Separate
+                </th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -5698,7 +5756,7 @@
         <table id="iconTable" class="table pointer" style="font-size: 2em; text-align: center; width: 100%"></table>
         <div style="font-style: italic; font-size: 1.2em; margin: 0.4em 0 0 0.4em">
           <span>Select from the list or paste a Unicode character here: </span>
-          <input id="iconInput" style="width: 2em" />
+          <input id="iconInput" style="width: 2.5em" />
           <span>. See <a href="https://emojipedia.org" target="_blank">Emojipedia</a> for reference</span>
         </div>
       </div>
@@ -5734,11 +5792,13 @@
             </select>
           </div>
 
-          <div data-tip="Set sun position (x, y, z) to define shadows">
-            <div>Sun position:</div>
-            <input id="options3dSunX" type="number" min="-2500" max="2500" step="100" style="width: 4.7em" />
-            <input id="options3dSunY" type="number" min="0" max="5000" step="100" style="width: 4.7em" />
-            <input id="options3dSunZ" type="number" min="-1500" max="1500" step="100" style="width: 4.7em" />
+          <div data-tip="Set sun position (x, y) and color" style="margin-top: 0.4em">
+            <label>Sun position and color:</label>
+            <div style="display: flex; gap: 0.2em">
+              <input id="options3dSunX" type="number" min="-2500" max="2500" step="100" style="width: 4.7em" />
+              <input id="options3dSunY" type="number" min="0" max="5000" step="100" style="width: 4.7em" />
+              <input id="options3dSunColor" type="color" style="padding: 0; height: 1.5em; border: none" />
+            </div>
           </div>
 
           <div data-tip="Toggle 3d labels" style="margin: 0.6em 0 0.3em -0.2em">
@@ -5756,18 +5816,9 @@
             style="margin: 0.6em 0 0.3em -0.2em"
           >
             <input id="options3dSubdivide" class="checkbox" type="checkbox" />
-            <label for="options3dSubdivide" class="checkbox-label">
-              <i>Smooth geometry <small style="color: darkred">[slow]</small></i>
-            </label>
-          </div>
-
-          <div data-tip="Set Sun Color" id="options3dSunColorSection">
-            <span>Sun Color:</span
-            ><input
-              id="options3dSunColor"
-              type="color"
-              style="width: 4.4em; height: 1em; border: 0; padding: 0; margin: 0 0.2em"
-            />
+            <label for="options3dSubdivide" class="checkbox-label"
+              ><i>Smooth geometry <small style="color: darkred">[slow]</small></i></label
+            >
           </div>
 
           <div data-tip="Set sky and water color" id="options3dColorSection" style="display: none">
@@ -5800,6 +5851,7 @@
               <option value="1">1x</option>
               <option value="2">2x</option>
               <option value="4">4x</option>
+              <option value="8">8x</option>
             </select>
           </div>
 
@@ -5829,18 +5881,24 @@
         <div style="margin-bottom: 0.3em; font-weight: bold">Download image</div>
         <div>
           <button
-            onclick="saveSVG()"
+            onclick="exportToSvg()"
             data-tip="Download the map as vector image (open directly in browser or Inkscape)"
           >
             .svg
           </button>
-          <button onclick="savePNG()" data-tip="Download visible part of the map as .png (lossless compressed)">
+          <button onclick="exportToPng()" data-tip="Download visible part of the map as .png (lossless compressed)">
             .png
           </button>
-          <button onclick="saveJPEG()" data-tip="Download visible part of the map as .jpeg (lossy compressed) image">
+          <button
+            onclick="exportToJpeg()"
+            data-tip="Download visible part of the map as .jpeg (lossy compressed) image"
+          >
             .jpeg
           </button>
-          <button onclick="openSaveTiles()" data-tip="Split map into smaller png tiles and download as zip archive">
+          <button
+            onclick="openExportToPngTiles()"
+            data-tip="Split map into smaller png tiles and download as zip archive"
+          >
             tiles
           </button>
           <span data-tip="Check to not allow system to automatically hide labels">
@@ -5974,8 +6032,8 @@
         </div>
       </div>
 
-      <div id="saveTilesScreen" style="display: none" class="dialog">
-        <p>Map will be split into tiles and downloaded as a single zip file. Avoid saving to big images</p>
+      <div id="exportToPngTilesScreen" style="display: none" class="dialog">
+        <p>Map will be split into tiles and downloaded as a single zip file. Avoid saving too large images</p>
         <div data-tip="Number of columns" style="margin-bottom: 0.3em">
           <div class="label">Columns:</div>
           <input
@@ -5983,7 +6041,7 @@
             data-stored="tileCols"
             type="range"
             min="2"
-            max="20"
+            max="26"
             value="8"
             style="width: 10em"
           />
@@ -5996,7 +6054,7 @@
             data-stored="tileRows"
             type="range"
             min="2"
-            max="20"
+            max="26"
             value="8"
             style="width: 10em"
           />
@@ -6019,7 +6077,7 @@
           <div class="label">Total size:</div>
           <div id="tileSize" style="display: inline-block">1000 x 1000 px</div>
         </div>
-        <div id="tileStatus" style="background-color: #33333310; font-style: italic"></div>
+        <div id="tileStatus" style="font-style: italic"></div>
       </div>
 
       <div id="resampleDialog" style="display: none" class="dialog">
@@ -7957,10 +8015,10 @@
     <script src="utils/commonUtils.js?v=1.89.29"></script>
     <script src="utils/arrayUtils.js"></script>
     <script src="utils/colorUtils.js"></script>
-    <script src="utils/graphUtils.js?v=1.90.01"></script>
+    <script src="utils/graphUtils.js?v=1.96.00"></script>
     <script src="utils/nodeUtils.js"></script>
     <script src="utils/numberUtils.js?v=1.89.08"></script>
-    <script src="utils/polyfills.js?v=1.93.00"></script>
+    <script src="utils/polyfills.js?v=1.95.03"></script>
     <script src="utils/probabilityUtils.js?v=1.88.00"></script>
     <script src="utils/stringUtils.js"></script>
     <script src="utils/languageUtils.js"></script>
@@ -7970,41 +8028,41 @@
     <script src="config/heightmap-templates.js"></script>
     <script src="config/precreated-heightmaps.js"></script>
     <script src="modules/heightmap-generator.js?v=1.88.00"></script>
-    <script src="modules/ocean-layers.js?v=1.91.02"></script>
+    <script src="modules/ocean-layers.js?v=1.96.00"></script>
     <script src="modules/river-generator.js?v=1.89.13"></script>
     <script src="modules/lakes.js"></script>
     <script src="modules/biomes.js"></script>
     <script src="modules/names-generator.js?v=1.87.14"></script>
-    <script src="modules/cultures-generator.js?v=1.89.10"></script>
-    <script src="modules/renderers/state-labels.js"></script>
-    <script src="modules/burgs-and-states.js?v=1.92.00"></script>
+    <script src="modules/cultures-generator.js?v=1.96.05"></script>
+    <script src="modules/renderers/state-labels.js?v=1.96.04"></script>
+    <script src="modules/burgs-and-states.js?v=1.97.00"></script>
     <script src="modules/routes-generator.js"></script>
-    <script src="modules/religions-generator.js?v=1.89.36"></script>
-    <script src="modules/military-generator.js"></script>
+    <script src="modules/religions-generator.js?v=1.93.08"></script>
+    <script src="modules/military-generator.js?v=1.96.01"></script>
     <script src="modules/markers-generator.js?v=1.93.04"></script>
-    <script src="modules/coa-generator.js?v=1.91.00"></script>
-    <script src="modules/submap.js?v=1.91.05"></script>
+    <script src="modules/coa-generator.js?v=1.91.05"></script>
+    <script src="modules/submap.js?v=1.96.00"></script>
     <script src="libs/polylabel.min.js"></script>
     <script src="libs/lineclip.min.js"></script>
     <script src="libs/alea.min.js"></script>
     <script src="modules/fonts.js?v=1.89.18"></script>
-    <script src="modules/ui/layers.js"></script>
-    <script src="modules/ui/measurers.js?v=1.87.02"></script>
-    <script src="modules/ui/stylePresets.js?v=1.89.11"></script>
+    <script src="modules/ui/layers.js?v=1.96.00"></script>
+    <script src="modules/ui/measurers.js?v=1.96.00"></script>
+    <script src="modules/ui/stylePresets.js?v=1.96.00"></script>
 
-    <script src="modules/ui/general.js?v=1.93.04"></script>
-    <script src="modules/ui/options.js?v=1.93.03"></script>
-    <script src="main.js?v=1.93.02"></script>
+    <script src="modules/ui/general.js?v=1.96.00"></script>
+    <script src="modules/ui/options.js?v=1.96.00"></script>
+    <script src="main.js?v=1.97.00"></script>
 
     <script defer src="modules/relief-icons.js"></script>
-    <script defer src="modules/ui/style.js"></script>
-    <script defer src="modules/ui/editors.js?v=1.92.00"></script>
-    <script defer src="modules/ui/tools.js?v=1.92.00"></script>
+    <script defer src="modules/ui/style.js?v=1.96.00"></script>
+    <script defer src="modules/ui/editors.js?v=1.97.00"></script>
+    <script defer src="modules/ui/tools.js?v=1.96.03"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.91.05"></script>
-    <script defer src="modules/ui/heightmap-editor.js?v=1.93.00"></script>
-    <script defer src="modules/ui/provinces-editor.js?v=1.92.00"></script>
+    <script defer src="modules/ui/heightmap-editor.js?v=1.96.00"></script>
+    <script defer src="modules/ui/provinces-editor.js?v=1.96.00"></script>
     <script defer src="modules/ui/biomes-editor.js?v=1.91.05"></script>
-    <script defer src="modules/ui/namesbase-editor.js?v=1.89.26"></script>
+    <script defer src="modules/ui/namesbase-editor.js?v=1.95.02"></script>
     <script defer src="modules/ui/elevation-profile.js"></script>
     <script defer src="modules/ui/temperature-graph.js?v=1.90.03"></script>
     <script defer src="modules/ui/routes-editor.js?v=1.89.04"></script>
@@ -8015,31 +8073,30 @@
     <script defer src="modules/ui/rivers-editor.js"></script>
     <script defer src="modules/ui/rivers-creator.js?v=1.89.13"></script>
     <script defer src="modules/ui/relief-editor.js"></script>
-    <script defer src="modules/ui/burg-editor.js"></script>
-    <script defer src="modules/ui/units-editor.js"></script>
-    <script defer src="modules/ui/notes-editor.js?v=1.89.03"></script>
+    <script defer src="modules/ui/burg-editor.js?v=1.97.00"></script>
+    <script defer src="modules/ui/units-editor.js?v=1.96.00"></script>
+    <script defer src="modules/ui/notes-editor.js?v=1.93.09"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.88.04"></script>
     <script defer src="modules/ui/zones-editor.js"></script>
-    <script defer src="modules/ui/burgs-overview.js?v=1.89.20"></script>
+    <script defer src="modules/ui/burgs-overview.js?v=1.97.00"></script>
     <script defer src="modules/ui/rivers-overview.js"></script>
-    <script defer src="modules/ui/military-overview.js"></script>
+    <script defer src="modules/ui/military-overview.js?v=1.96.07"></script>
     <script defer src="modules/ui/regiments-overview.js?v=1.89.20"></script>
     <script defer src="modules/ui/markers-overview.js?v=1.89.38"></script>
     <script defer src="modules/ui/regiment-editor.js"></script>
     <script defer src="modules/ui/battle-screen.js"></script>
     <script defer src="modules/ui/emblems-editor.js?v=1.91.00"></script>
     <script defer src="modules/ui/markers-editor.js"></script>
-    <script defer src="modules/ui/3d.js?v=1.89.36"></script>
-    <script defer src="modules/ui/submap.js?v=1.92.00"></script>
-    <script defer src="modules/ui/hotkeys.js?v=1.93.00"></script>
-    <script defer src="modules/coa-renderer.js?v=1.91.00"></script>
+    <script defer src="modules/ui/3d.js?v=1.94.03"></script>
+    <script defer src="modules/ui/submap.js?v=1.96.00"></script>
+    <script defer src="modules/ui/hotkeys.js?v=1.95.00"></script>
+    <script defer src="modules/coa-renderer.js?v=1.94.00"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-    <script defer src="modules/io/save.js?v=1.93.02"></script>
-    <script defer src="modules/io/load.js?v=1.93.02"></script>
-    <script defer src="modules/io/cloud.js"></script>
-    <script defer src="modules/io/export.js?v=1.89.36"></script>
-    <script defer src="modules/io/formats.js"></script>
+    <script defer src="modules/io/save.js?v=1.96.00"></script>
+    <script defer src="modules/io/load.js?v=1.97.04"></script>
+    <script defer src="modules/io/cloud.js?v=1.96.00"></script>
+    <script defer src="modules/io/export.js?v=1.97.03"></script>
 
     <!-- Web Components -->
     <script defer src="components/fill-box.js"></script>
