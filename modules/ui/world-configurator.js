@@ -113,10 +113,11 @@ function editWorld() {
 
     function toKilometer(v) {
       if (unit === "km") return v;
-      else if (unit === "mi") return v * 1.60934;
-      else if (unit === "lg") return v * 5.556;
-      else if (unit === "vr") return v * 1.0668;
-      else if (unit === "nmi") return v * 1.852;
+      if (unit === "mi") return v * 1.60934;
+      if (unit === "lg") return v * 4.828;
+      if (unit === "vr") return v * 1.0668;
+      if (unit === "nmi") return v * 1.852;
+      if (unit === "nlg") return v * 5.556;
       return 0; // 0 if distanceUnitInput is a custom unit
     }
 
