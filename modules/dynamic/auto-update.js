@@ -736,4 +736,111 @@ export function resolveVersionConflicts(version) {
       .style("display", "none");
     vignette.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
   }
+
+  if (version < 1.96) {
+    // v1.96 added ocean rendering for heightmap
+    terrs.selectAll("*").remove();
+
+    const opacity = terrs.attr("opacity");
+    const filter = terrs.attr("filter");
+    const scheme = terrs.attr("scheme") || "bright";
+    const terracing = terrs.attr("terracing");
+    const skip = terrs.attr("skip");
+    const relax = terrs.attr("relax");
+
+    const curveTypes = {0: "curveBasisClosed", 1: "curveLinear", 2: "curveStep"};
+    const curve = curveTypes[terrs.attr("curve")] || "curveBasisClosed";
+
+    terrs
+      .attr("mask", null)
+      .attr("scheme", null)
+      .attr("terracing", null)
+      .attr("skip", null)
+      .attr("relax", null)
+      .attr("curve", null);
+
+    terrs
+      .append("g")
+      .attr("id", "oceanHeights")
+      .attr("data-render", 0)
+      .attr("opacity", opacity)
+      .attr("filter", filter)
+      .attr("scheme", scheme)
+      .attr("terracing", 0)
+      .attr("skip", 0)
+      .attr("relax", 1)
+      .attr("curve", curve);
+    terrs
+      .append("g")
+      .attr("id", "landHeights")
+      .attr("opacity", opacity)
+      .attr("scheme", scheme)
+      .attr("filter", filter)
+      .attr("terracing", terracing)
+      .attr("skip", skip)
+      .attr("relax", relax)
+      .attr("curve", curve)
+      .attr("mask", "url(#land)");
+
+    if (layerIsOn("toggleHeight")) drawHeightmap();
+
+    // v1.96.00 moved scaleBar options from units editor to style
+    d3.select("#scaleBar").remove();
+
+    scaleBar = svg
+      .insert("g", "#viewbox + *")
+      .attr("id", "scaleBar")
+      .attr("opacity", 1)
+      .attr("fill", "#353540")
+      .attr("data-bar-size", 2)
+      .attr("font-size", 10)
+      .attr("data-x", 99)
+      .attr("data-y", 99)
+      .attr("data-label", "");
+
+    scaleBar
+      .append("rect")
+      .attr("id", "scaleBarBack")
+      .attr("opacity", 0.2)
+      .attr("fill", "#ffffff")
+      .attr("stroke", "#000000")
+      .attr("stroke-width", 1)
+      .attr("filter", "url(#blur5)")
+      .attr("data-top", 20)
+      .attr("data-right", 15)
+      .attr("data-bottom", 15)
+      .attr("data-left", 10);
+
+    drawScaleBar(scaleBar, scale);
+    fitScaleBar(scaleBar, svgWidth, svgHeight);
+
+    if (!layerIsOn("toggleScaleBar")) scaleBar.style("display", "none");
+
+    // v1.96.00 changed coloring approach for regiments
+    armies.selectAll(":scope > g").each(function () {
+      const fill = this.getAttribute("fill");
+      if (!fill) return;
+      const darkerColor = d3.color(fill).darker().hex();
+      this.setAttribute("color", darkerColor);
+      this.querySelectorAll("g > rect:nth-child(2)").forEach(rect => {
+        rect.setAttribute("fill", "currentColor");
+      });
+    });
+  }
+
+  if (version < 1.97) {
+    // v1.97.00 changed MFCG link to an arbitrary preview URL
+    options.villageMaxPopulation = 2000;
+    options.showBurgPreview = options.showMFCGMap;
+    delete options.showMFCGMap;
+
+    pack.burgs.forEach(burg => {
+      if (!burg.i || burg.removed) return;
+
+      if (burg.MFCG) {
+        burg.link = getBurgLink(burg);
+        delete burg.MFCG;
+      }
+    });
+  }
 }

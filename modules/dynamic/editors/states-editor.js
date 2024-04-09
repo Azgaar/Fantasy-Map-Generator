@@ -624,28 +624,36 @@ function stateRemovePrompt(state) {
   });
 }
 
-function stateRemove(state) {
-  statesBody.select("#state" + state).remove();
-  statesBody.select("#state-gap" + state).remove();
-  statesHalo.select("#state-border" + state).remove();
-  labels.select("#stateLabel" + state).remove();
-  defs.select("#textPath_stateLabel" + state).remove();
+function stateRemove(stateId) {
+  statesBody.select("#state" + stateId).remove();
+  statesBody.select("#state-gap" + stateId).remove();
+  statesHalo.select("#state-border" + stateId).remove();
+  labels.select("#stateLabel" + stateId).remove();
+  defs.select("#textPath_stateLabel" + stateId).remove();
 
-  unfog("focusState" + state);
-  pack.burgs.forEach(b => {
-    if (b.state === state) b.state = 0;
+  unfog("focusState" + stateId);
+
+  pack.burgs.forEach(burg => {
+    if (burg.state === stateId) {
+      burg.state = 0;
+      if (burg.capital) {
+        burg.capital = 0;
+        moveBurgToGroup(burg.i, "towns");
+      }
+    }
   });
+
   pack.cells.state.forEach((s, i) => {
-    if (s === state) pack.cells.state[i] = 0;
+    if (s === stateId) pack.cells.state[i] = 0;
   });
 
   // remove emblem
-  const coaId = "stateCOA" + state;
+  const coaId = "stateCOA" + stateId;
   byId(coaId).remove();
-  emblems.select(`#stateEmblems > use[data-i='${state}']`).remove();
+  emblems.select(`#stateEmblems > use[data-i='${stateId}']`).remove();
 
   // remove provinces
-  pack.states[state].provinces.forEach(p => {
+  pack.states[stateId].provinces.forEach(p => {
     pack.provinces[p] = {i: p, removed: true};
     pack.cells.province.forEach((pr, i) => {
       if (pr === p) pack.cells.province[i] = 0;
@@ -660,19 +668,14 @@ function stateRemove(state) {
   });
 
   // remove military
-  pack.states[state].military.forEach(m => {
-    const id = `regiment${state}-${m.i}`;
+  pack.states[stateId].military.forEach(m => {
+    const id = `regiment${stateId}-${m.i}`;
     const index = notes.findIndex(n => n.id === id);
     if (index != -1) notes.splice(index, 1);
   });
-  armies.select("g#army" + state).remove();
+  armies.select("g#army" + stateId).remove();
 
-  const capital = pack.states[state].capital;
-  pack.burgs[capital].capital = 0;
-  pack.burgs[capital].state = 0;
-  moveBurgToGroup(capital, "towns");
-
-  pack.states[state] = {i: state, removed: true};
+  pack.states[stateId] = {i: stateId, removed: true};
 
   debug.selectAll(".highlight").remove();
   if (!layerIsOn("toggleStates")) toggleStates();
@@ -1394,6 +1397,7 @@ function openStateMergeDialog() {
 
   function mergeStates(statesToMerge, rulingStateId) {
     const rulingState = pack.states[rulingStateId];
+    const rulingStateArmy = byId("army" + rulingStateId);
 
     // remove states to be merged
     statesToMerge.forEach(stateId => {
@@ -1410,27 +1414,25 @@ function openStateMergeDialog() {
       emblems.select(`#stateEmblems > use[data-i='${stateId}']`).remove();
 
       // add merged state regiments to the ruling state
-      state.military.forEach(m => {
-        const oldId = `regiment${stateId}-${m.i}`;
-
-        const newRegiment = {...m, i: rulingState.military.length};
-        rulingState.military.push(newRegiment);
-
-        const newId = `regiment${rulingStateId}-${newRegiment.i}`;
+      state.military.forEach(regiment => {
+        const oldId = `regiment${stateId}-${regiment.i}`;
+        const newIndex = rulingState.military.length;
+        rulingState.military.push({...regiment, i: newIndex});
+        const newId = `regiment${rulingStateId}-${newIndex}`;
 
         const note = notes.find(n => n.id === oldId);
         if (note) note.id = newId;
 
-        const rulingStateArmy = armies.select("g#army" + rulingStateId);
-        armies
-          .select("g#army" + stateId)
-          .selectAll("g")
-          .each(function () {
-            this.setAttribute("id", newId);
-            rulingStateArmy.node().appendChild(this);
-          });
-        armies.select("g#army" + stateId).remove();
+        const element = byId(oldId);
+        if (element) {
+          element.id = newId;
+          element.dataset.state = rulingStateId;
+          element.dataset.i = newIndex;
+          rulingStateArmy.appendChild(element);
+        }
       });
+
+      armies.select("g#army" + stateId).remove();
     });
 
     // reassing burgs

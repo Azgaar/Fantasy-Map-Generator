@@ -71,28 +71,31 @@ window.Cultures = (function () {
         return;
       }
 
-      const cell = (c.center = placeCenter(c.sort ? c.sort : i => cells.s[i]));
-      centers.add(cells.p[cell]);
+      const sortingFn = c.sort ? c.sort : i => cells.s[i];
+      const center = placeCenter(sortingFn);
+
+      centers.add(cells.p[center]);
+      c.center = center;
       c.i = newId;
       delete c.odd;
       delete c.sort;
       c.color = colors[i];
-      c.type = defineCultureType(cell);
+      c.type = defineCultureType(center);
       c.expansionism = defineCultureExpansionism(c.type);
       c.origins = [0];
       c.code = abbreviate(c.name, codes);
       codes.push(c.code);
-      cultureIds[cell] = newId;
+      cultureIds[center] = newId;
       if (emblemShape === "random") c.shield = getRandomShield();
     });
 
     cells.culture = cultureIds;
 
-    function placeCenter(v) {
+    function placeCenter(sortingFn) {
       let spacing = (graphWidth + graphHeight) / 2 / count;
       const MAX_ATTEMPTS = 100;
 
-      const sorted = [...populated].sort((a, b) => v(b) - v(a));
+      const sorted = [...populated].sort((a, b) => sortingFn(b) - sortingFn(a));
       const max = Math.floor(sorted.length / 2);
 
       let cellId = 0;
@@ -187,12 +190,13 @@ window.Cultures = (function () {
       name = Names.getCulture(culture, 5, 8, "");
       base = pack.cultures[culture].base;
     }
+
     const code = abbreviate(
       name,
       pack.cultures.map(c => c.code)
     );
     const i = pack.cultures.length;
-    const color = d3.color(d3.scaleSequential(d3.interpolateRainbow)(Math.random())).hex();
+    const color = getRandomColor();
 
     // define emblem shape
     let shield = culture.shield;
@@ -211,7 +215,7 @@ window.Cultures = (function () {
       area: 0,
       rural: 0,
       urban: 0,
-      origins: [0],
+      origins: [pack.cells.culture[center]],
       code,
       shield
     });

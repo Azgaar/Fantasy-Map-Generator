@@ -71,70 +71,94 @@ async function exportToJpeg() {
 }
 
 async function exportToPngTiles() {
-  return new Promise(async (resolve, reject) => {
-    // download schema
-    const urlSchema = await getMapURL("tiles", {debug: true, fullMap: true});
-    await import("../../libs/jszip.min.js");
-    const zip = new window.JSZip();
+  const status = byId("tileStatus");
+  status.innerHTML = "Preparing files...";
 
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = graphWidth;
-    canvas.height = graphHeight;
+  const urlSchema = await getMapURL("tiles", {debug: true, fullMap: true});
+  await import("../../libs/jszip.min.js");
+  const zip = new window.JSZip();
 
-    const imgSchema = new Image();
-    imgSchema.src = urlSchema;
-    imgSchema.onload = function () {
-      ctx.drawImage(imgSchema, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(blob => zip.file(`fmg_tile_schema.png`, blob));
-    };
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = graphWidth;
+  canvas.height = graphHeight;
 
-    // download tiles
-    const url = await getMapURL("tiles", {fullMap: true});
-    const tilesX = +document.getElementById("tileColsInput").value;
-    const tilesY = +document.getElementById("tileRowsInput").value;
-    const scale = +document.getElementById("tileScaleInput").value;
+  const imgSchema = new Image();
+  imgSchema.src = urlSchema;
+  await loadImage(imgSchema);
 
-    const tileW = (graphWidth / tilesX) | 0;
-    const tileH = (graphHeight / tilesY) | 0;
-    const tolesTotal = tilesX * tilesY;
+  status.innerHTML = "Drawing schema...";
+  ctx.drawImage(imgSchema, 0, 0, canvas.width, canvas.height);
+  const blob = await canvasToBlob(canvas, "image/png");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  zip.file("schema.png", blob);
 
-    const width = graphWidth * scale;
-    const height = width * (tileH / tileW);
-    canvas.width = width;
-    canvas.height = height;
+  // download tiles
+  const url = await getMapURL("tiles", {fullMap: true});
+  const tilesX = +byId("tileColsInput").value;
+  const tilesY = +byId("tileRowsInput").value;
+  const scale = +byId("tileScaleInput").value;
+  const tolesTotal = tilesX * tilesY;
 
-    let loaded = 0;
-    const img = new Image();
-    img.src = url;
-    img.onload = function () {
-      for (let y = 0, i = 0; y + tileH <= graphHeight; y += tileH) {
-        for (let x = 0; x + tileW <= graphWidth; x += tileW, i++) {
-          ctx.drawImage(img, x, y, tileW, tileH, 0, 0, width, height);
-          const name = `fmg_tile_${i}.png`;
-          canvas.toBlob(blob => {
-            zip.file(name, blob);
-            loaded += 1;
-            if (loaded === tolesTotal) return downloadZip();
-          });
-        }
-      }
-    };
+  const tileW = (graphWidth / tilesX) | 0;
+  const tileH = (graphHeight / tilesY) | 0;
 
-    function downloadZip() {
-      const name = `${getFileName()}.zip`;
-      zip.generateAsync({type: "blob"}).then(blob => {
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = name;
-        link.click();
-        link.remove();
+  const width = graphWidth * scale;
+  const height = width * (tileH / tileW);
+  canvas.width = width;
+  canvas.height = height;
 
-        setTimeout(() => URL.revokeObjectURL(link.href), 5000);
-        resolve(true);
-      });
+  const img = new Image();
+  img.src = url;
+  await loadImage(img);
+
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  for (let y = 0, row = 0, id = 1; y + tileH <= graphHeight; y += tileH, row++) {
+    const rowName = alphabet[row % alphabet.length];
+
+    for (let x = 0, cell = 1; x + tileW <= graphWidth; x += tileW, cell++, id++) {
+      status.innerHTML = `Drawing tile ${rowName}${cell} (${id} of ${tolesTotal})...`;
+      ctx.drawImage(img, x, y, tileW, tileH, 0, 0, width, height);
+      const blob = await canvasToBlob(canvas, "image/png");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      zip.file(`${rowName}${cell}.png`, blob);
     }
+  }
+
+  status.innerHTML = "Zipping files...";
+  zip.generateAsync({type: "blob"}).then(blob => {
+    status.innerHTML = "Downloading the archive...";
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = getFileName() + ".zip";
+    link.click();
+    link.remove();
+
+    status.innerHTML = 'Done. Check .zip file in "Downloads" (crtl + J)';
+    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
   });
+
+  // promisified img.onload
+  function loadImage(img) {
+    return new Promise((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = err => reject(err);
+    });
+  }
+
+  // promisified canvas.toBlob
+  function canvasToBlob(canvas, mimeType, qualityArgument = 1) {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        blob => {
+          if (blob) resolve(blob);
+          else reject(new Error("Canvas toBlob() error"));
+        },
+        mimeType,
+        qualityArgument
+      );
+    });
+  }
 }
 
 // parse map svg to object url
@@ -148,14 +172,14 @@ async function getMapURL(type, options) {
     fullMap = false
   } = options || {};
 
-  const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
+  const cloneEl = byId("map").cloneNode(true); // clone svg
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone = d3.select(cloneEl);
   if (!debug) clone.select("#debug")?.remove();
 
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
-  const svgDefs = document.getElementById("defElements");
+  const svgDefs = byId("defElements");
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern")?.remove();
@@ -218,7 +242,7 @@ async function getMapURL(type, options) {
       .forEach(el => {
         const href = el.getAttribute("href") || el.getAttribute("xlink:href");
         if (!href) return;
-        const emblem = document.getElementById(href.slice(1));
+        const emblem = byId(href.slice(1));
         if (emblem) cloneDefs.append(emblem.cloneNode(true));
       });
   } else {
@@ -364,7 +388,7 @@ function removeUnusedElements(clone) {
 
 function updateMeshCells(clone) {
   const data = renderOcean.checked ? grid.cells.i : grid.cells.i.filter(i => grid.cells.h[i] >= 20);
-  const scheme = getColorScheme(terrs.attr("scheme"));
+  const scheme = getColorScheme(terrs.select("#landHeights").attr("scheme"));
   clone.select("#heights").attr("filter", "url(#blur1)");
   clone
     .select("#heights")

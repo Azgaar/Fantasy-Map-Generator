@@ -28,7 +28,7 @@ window.Submap = (function () {
 
     const projection = options.projection;
     const inverse = options.inverse;
-    const stage = s => INFO && console.log("SUBMAP:", s);
+    const stage = s => INFO && console.info("SUBMAP:", s);
     const timeStart = performance.now();
     invokeActiveZooming();
 
@@ -36,7 +36,7 @@ window.Submap = (function () {
     seed = parentMap.seed;
     Math.random = aleaPRNG(seed);
     INFO && console.group("SubMap with seed: " + seed);
-    DEBUG && console.log("Using Options:", options);
+    DEBUG && console.info("Using Options:", options);
 
     // create new grid
     applyGraphSize();
@@ -396,7 +396,7 @@ window.Submap = (function () {
           b.removed = true;
           return;
         }
-        DEBUG && console.log(`Moving ${b.name} from ${cityCell} to ${newCell} near ${neighbor}.`);
+        DEBUG && console.info(`Moving ${b.name} from ${cityCell} to ${newCell} near ${neighbor}.`);
         [b.x, b.y] = b.port ? getMiddlePoint(newCell, neighbor) : cells.p[newCell];
         if (b.port) b.port = cells.f[neighbor]; // copy feature number
         b.cell = newCell;

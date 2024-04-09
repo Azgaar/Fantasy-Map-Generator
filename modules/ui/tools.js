@@ -247,13 +247,16 @@ function recreateStates() {
     capitalsTree.add([x, y]);
 
     // update label id reference
-    labels
-      .select("#states")
-      .select(`#stateLabel${state.i}`)
-      .attr("id", `stateLabel${newId}`)
-      .select("textPath")
-      .attr("xlink:href", `#textPath_stateLabel${newId}`);
-    defs.select("#textPaths").select(`#textPath_stateLabel${state.i}`).attr("id", `textPath_stateLabel${newId}`);
+    byId(`textPath_stateLabel${state.i}`)?.setAttribute("id", `textPath_stateLabel${newId}`);
+    const $label = byId(`stateLabel${state.i}`);
+    if ($label) {
+      $label.setAttribute("id", `stateLabel${newId}`);
+      const $textPath = $label.querySelector("textPath");
+      if ($textPath) {
+        $textPath.removeAttribute("href");
+        $textPath.setAttribute("href", `#textPath_stateLabel${newId}`);
+      }
+    }
 
     // update emblem id reference
     byId(`stateCOA${state.i}`)?.setAttribute("id", `stateCOA${newId}`);

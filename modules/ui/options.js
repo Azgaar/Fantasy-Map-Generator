@@ -691,7 +691,7 @@ function changeEra() {
 }
 
 async function openTemplateSelectionDialog() {
-  const HeightmapSelectionDialog = await import("../dynamic/heightmap-selection.js?v=1.93.12");
+  const HeightmapSelectionDialog = await import("../dynamic/heightmap-selection.js?v=1.96.00");
   HeightmapSelectionDialog.open();
 }
 
@@ -774,7 +774,7 @@ function showExportPane() {
 }
 
 async function exportToJson(type) {
-  const {exportToJson} = await import("../dynamic/export-json.js?v=1.93.03");
+  const {exportToJson} = await import("../dynamic/export-json.js?v=1.96.00");
   exportToJson(type);
 }
 
@@ -867,11 +867,9 @@ byId("mapToLoad").addEventListener("change", function () {
 });
 
 function openExportToPngTiles() {
+  byId("tileStatus").innerHTML = "";
   closeDialogs();
   updateTilesOptions();
-  const status = byId("tileStatus");
-  status.innerHTML = "";
-  let loading = null;
 
   const inputs = byId("exportToPngTilesScreen").querySelectorAll("input");
   inputs.forEach(input => input.addEventListener("input", updateTilesOptions));
@@ -881,16 +879,7 @@ function openExportToPngTiles() {
     title: "Download tiles",
     width: "23em",
     buttons: {
-      Download: function () {
-        status.innerHTML = "Preparing for download...";
-        setTimeout(() => (status.innerHTML = "Downloading. It may take some time."), 1000);
-        loading = setInterval(() => (status.innerHTML += "."), 1000);
-        exportToPngTiles().then(() => {
-          clearInterval(loading);
-          status.innerHTML = /* html */ `Done. Check file in "Downloads" (crtl + J)`;
-          setTimeout(() => (status.innerHTML = ""), 8000);
-        });
-      },
+      Download: () => exportToPngTiles(),
       Cancel: function () {
         $(this).dialog("close");
       }
@@ -898,7 +887,6 @@ function openExportToPngTiles() {
     close: () => {
       inputs.forEach(input => input.removeEventListener("input", updateTilesOptions));
       debug.selectAll("*").remove();
-      clearInterval(loading);
     }
   });
 }
@@ -928,18 +916,22 @@ function updateTilesOptions() {
   const labels = [];
   const tileW = (graphWidth / tilesX) | 0;
   const tileH = (graphHeight / tilesY) | 0;
-  for (let y = 0, i = 0; y + tileH <= graphHeight; y += tileH) {
-    for (let x = 0; x + tileW <= graphWidth; x += tileW, i++) {
+
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  for (let y = 0, row = 0; y + tileH <= graphHeight; y += tileH, row++) {
+    for (let x = 0, column = 1; x + tileW <= graphWidth; x += tileW, column++) {
       rects.push(`<rect x=${x} y=${y} width=${tileW} height=${tileH} />`);
-      labels.push(`<text x=${x + tileW / 2} y=${y + tileH / 2}>${i}</text>`);
+      const label = alphabet[row % alphabet.length] + column;
+      labels.push(`<text x=${x + tileW / 2} y=${y + tileH / 2}>${label}</text>`);
     }
   }
-  const rectsG = "<g fill='none' stroke='#000'>" + rects.join("") + "</g>";
-  const labelsG =
-    "<g fill='#000' stroke='none' text-anchor='middle' dominant-baseline='central' font-size='24px'>" +
-    labels.join("") +
-    "</g>";
-  debug.html(rectsG + labelsG);
+
+  debug.html(`
+    <g fill='none' stroke='#000'>${rects.join("")}</g>
+    <g fill='#000' stroke='none' text-anchor='middle' dominant-baseline='central' font-size='18px'>${labels.join(
+      ""
+    )}</g>
+  `);
 }
 
 // View mode

@@ -288,13 +288,24 @@
     "href": "",
     "opacity": 0.2
   },
-  "#terrs": {
+  "#terrs > #oceanHeights": {
+    "data-render": 1,
+    "opacity": 0.5,
+    "scheme": "bright",
+    "terracing": 0,
+    "skip": 0,
+    "relax": 1,
+    "curve": "curveBasisClosed",
+    "filter": null,
+    "mask": null
+  },
+  "#terrs > #landHeights": {
     "opacity": 0.5,
     "scheme": "bright",
     "terracing": 0,
     "skip": 5,
     "relax": 0,
-    "curve": 0,
+    "curve": "curveBasisClosed",
     "filter": null,
     "mask": "url(#land)"
   },
@@ -400,5 +411,25 @@
     "rx": "5%",
     "ry": "5%",
     "filter": "blur(20px)"
+  },
+  "#scaleBar": {
+    "opacity": 1,
+    "fill": "#353540",
+    "font-size": 8,
+    "data-bar-size": 1.5,
+    "data-x": 99,
+    "data-y": 99,
+    "data-label": ""
+  },
+  "#scaleBarBack": {
+    "opacity": 0,
+    "fill": "#ffffff",
+    "stroke": "#000000",
+    "stroke-width": 1,
+    "filter": "",
+    "data-top": 17,
+    "data-right": 15,
+    "data-bottom": 15,
+    "data-left": 10
   }
 }
