@@ -3335,6 +3335,22 @@
                 <input id="burgPopulation" type="number" min="0" step="1" style="width: 8em" />
               </div>
 
+              <div data-tip="Burg mean annual temperature and real-world city for comparison">
+                <div class="label">Temperature:</div>
+                <span id="burgTemperature"></span>, like in
+                <span id="burgTemperatureLikeIn"></span>
+                <i
+                  id="burgTemperatureGraph"
+                  data-tip="Show temperature graph for the burg"
+                  class="icon-chart-area pointer"
+                ></i>
+              </div>
+
+              <div data-tip="Burg height above mean sea level">
+                <div class="label">Elevation:</div>
+                <span id="burgElevation"></span> above sea level
+              </div>
+
               <div>
                 <div class="label">Features:</div>
                 <span
@@ -3384,49 +3400,23 @@
                   style="font-size: 1em"
                 ></span>
               </div>
-
-              <div data-tip="Burg mean annual temperature and real-world city for comparison">
-                <div class="label">Temperature:</div>
-                <span id="burgTemperature"></span>, like in
-                <span id="burgTemperatureLikeIn"></span>
-                <i
-                  id="burgTemperatureGraph"
-                  data-tip="Show temperature graph for the burg"
-                  class="icon-chart-area pointer"
-                ></i>
-              </div>
-
-              <div data-tip="Burg height above mean sea level">
-                <div class="label">Elevation:</div>
-                <span id="burgElevation"></span> above sea level
-              </div>
             </div>
           </div>
 
-          <div
-            id="mfcgPreviewSection"
-            data-tip="Burg preview in the Medieval Fantasy City Generator. Default seed is a combination of map seed and burg id"
-            style="display: flex; flex-direction: column"
-          >
-            <div>
-              See in <a id="mfcgLink" target="_blank">City Generator by Watabou</a>.
-              <div id="mfcgBurgSeedSection">
-                Seed: <input id="mfcgBurgSeed" style="width: 10em" type="number" min="1" max="1e13" step="1" />
+          <div id="burgPreviewSection" data-tip="Burg map preview" style="display: flex; flex-direction: column">
+            <div style="display: flex; justify-content: space-between">
+              <span>Burg preview:</span>
+              <div style="display: flex; gap: 0.5em">
                 <i
-                  id="regenerateMFCGBurgSeed"
-                  data-tip="Randomize Medieval Fantasy City Generator burg seed"
-                  class="icon-arrows-cw pointer"
-                  style="margin-left: 0.1em"
+                  id="burgLinkEdit"
+                  data-tip="Provide custom link to the burg map"
+                  class="icon-pencil pointer"
+                  style="margin-top: -0.1em"
                 ></i>
+                <i id="burgLinkOpen" data-tip="Open burg map in a new tab" class="icon-link-ext pointer"></i>
               </div>
-              <i
-                id="addCustomMFCGBurgLink"
-                data-tip="Provide custom link to the burg map"
-                class="icon-pencil pointer"
-                style="margin-left: 0.1em"
-              ></i>
             </div>
-            <iframe id="mfcgPreview" sandbox="allow-scripts"></iframe>
+            <div id="burgPreviewObject" style="max-width: 30em; pointer-events: none"></div>
           </div>
         </div>
 
@@ -3466,7 +3456,7 @@
           </div>
 
           <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
-          <button id="burgToggleMFCGMap" data-tip="Toggle MFCG map" class="icon-map"></button>
+          <button id="burgTogglePreview" data-tip="Toggle preview" class="icon-map"></button>
           <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
           <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
           <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
@@ -5165,6 +5155,8 @@
               <option value="km">Kilometer (km)</option>
               <option value="lg">League (lg)</option>
               <option value="vr">Versta (vr)</option>
+              <option value="nmi">Nautical mile (nmi)</option>
+              <option value="nlg">Nautical league (nlg)</option>
               <option value="custom_name">Custom name</option>
             </select>
           </div>
@@ -5603,7 +5595,9 @@
                 <th data-tip="Average number of people in crew (used for total personnel calculation)">Crew</th>
                 <th data-tip="Unit military power (used for battle simulation)">Power</th>
                 <th data-tip="Unit type to apply special rules on forces recalculation">Type</th>
-                <th data-tip="Check if unit is separate and can be stacked only with units of the same type">Sep.</th>
+                <th data-tip="Check if unit is separate and can be stacked only with units of the same type">
+                  Separate
+                </th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -5769,7 +5763,7 @@
         <table id="iconTable" class="table pointer" style="font-size: 2em; text-align: center; width: 100%"></table>
         <div style="font-style: italic; font-size: 1.2em; margin: 0.4em 0 0 0.4em">
           <span>Select from the list or paste a Unicode character here: </span>
-          <input id="iconInput" style="width: 2em" />
+          <input id="iconInput" style="width: 2.5em" />
           <span>. See <a href="https://emojipedia.org" target="_blank">Emojipedia</a> for reference</span>
         </div>
       </div>
@@ -6046,7 +6040,7 @@
       </div>
 
       <div id="exportToPngTilesScreen" style="display: none" class="dialog">
-        <p>Map will be split into tiles and downloaded as a single zip file. Avoid saving to big images</p>
+        <p>Map will be split into tiles and downloaded as a single zip file. Avoid saving too large images</p>
         <div data-tip="Number of columns" style="margin-bottom: 0.3em">
           <div class="label">Columns:</div>
           <input
@@ -6054,7 +6048,7 @@
             data-stored="tileCols"
             type="range"
             min="2"
-            max="20"
+            max="26"
             value="8"
             style="width: 10em"
           />
@@ -6067,7 +6061,7 @@
             data-stored="tileRows"
             type="range"
             min="2"
-            max="20"
+            max="26"
             value="8"
             style="width: 10em"
           />
@@ -6090,7 +6084,7 @@
           <div class="label">Total size:</div>
           <div id="tileSize" style="display: inline-block">1000 x 1000 px</div>
         </div>
-        <div id="tileStatus" style="background-color: #33333310; font-style: italic"></div>
+        <div id="tileStatus" style="font-style: italic"></div>
       </div>
 
       <div id="resampleDialog" style="display: none" class="dialog">
@@ -8064,12 +8058,12 @@
     <script src="modules/lakes.js"></script>
     <script src="modules/biomes.js"></script>
     <script src="modules/names-generator.js?v=1.87.14"></script>
-    <script src="modules/cultures-generator.js?v=1.96.00"></script>
-    <script src="modules/renderers/state-labels.js"></script>
-    <script src="modules/burgs-and-states.js?v=1.92.00"></script>
+    <script src="modules/cultures-generator.js?v=1.96.05"></script>
+    <script src="modules/renderers/state-labels.js?v=1.96.04"></script>
+    <script src="modules/burgs-and-states.js?v=1.97.00"></script>
     <script src="modules/routes-generator.js"></script>
     <script src="modules/religions-generator.js?v=1.93.08"></script>
-    <script src="modules/military-generator.js?v=1.96.00"></script>
+    <script src="modules/military-generator.js?v=1.96.01"></script>
     <script src="modules/markers-generator.js?v=1.93.04"></script>
     <script src="modules/coa-generator.js?v=1.91.05"></script>
     <script src="modules/submap.js?v=1.96.00"></script>
@@ -8083,13 +8077,13 @@
 
     <script src="modules/ui/general.js?v=1.96.00"></script>
     <script src="modules/ui/options.js?v=1.96.00"></script>
-    <script src="main.js?v=1.96.00"></script>
+    <script src="main.js?v=1.97.00"></script>
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js?v=1.96.00"></script>
-    <script defer src="modules/ui/editors.js?v=1.96.00"></script>
-    <script defer src="modules/ui/tools.js?v=1.95.01"></script>
-    <script defer src="modules/ui/world-configurator.js?v=1.91.05"></script>
+    <script defer src="modules/ui/editors.js?v=1.97.00"></script>
+    <script defer src="modules/ui/tools.js?v=1.96.03"></script>
+    <script defer src="modules/ui/world-configurator.js?v=1.98.00"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=1.96.00"></script>
     <script defer src="modules/ui/provinces-editor.js?v=1.96.00"></script>
     <script defer src="modules/ui/biomes-editor.js?v=1.91.05"></script>
@@ -8104,14 +8098,14 @@
     <script defer src="modules/ui/rivers-editor.js"></script>
     <script defer src="modules/ui/rivers-creator.js?v=1.89.13"></script>
     <script defer src="modules/ui/relief-editor.js"></script>
-    <script defer src="modules/ui/burg-editor.js?v=1.96.00"></script>
+    <script defer src="modules/ui/burg-editor.js?v=1.97.00"></script>
     <script defer src="modules/ui/units-editor.js?v=1.96.00"></script>
     <script defer src="modules/ui/notes-editor.js?v=1.93.09"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.88.04"></script>
     <script defer src="modules/ui/zones-editor.js"></script>
-    <script defer src="modules/ui/burgs-overview.js?v=1.96.00"></script>
+    <script defer src="modules/ui/burgs-overview.js?v=1.97.00"></script>
     <script defer src="modules/ui/rivers-overview.js"></script>
-    <script defer src="modules/ui/military-overview.js"></script>
+    <script defer src="modules/ui/military-overview.js?v=1.96.07"></script>
     <script defer src="modules/ui/regiments-overview.js?v=1.89.20"></script>
     <script defer src="modules/ui/markers-overview.js?v=1.89.38"></script>
     <script defer src="modules/ui/regiment-editor.js"></script>
@@ -8125,10 +8119,9 @@
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
     <script defer src="modules/io/save.js?v=1.96.00"></script>
-    <script defer src="modules/io/load.js?v=1.96.00"></script>
+    <script defer src="modules/io/load.js?v=1.97.04"></script>
     <script defer src="modules/io/cloud.js?v=1.96.00"></script>
-    <script defer src="modules/io/export.js?v=1.96.00"></script>
-    <script defer src="modules/io/formats.js"></script>
+    <script defer src="modules/io/export.js?v=1.97.03"></script>
 
     <!-- Web Components -->
     <script defer src="components/fill-box.js"></script>

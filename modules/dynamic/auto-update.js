@@ -743,7 +743,7 @@ export function resolveVersionConflicts(version) {
 
     const opacity = terrs.attr("opacity");
     const filter = terrs.attr("filter");
-    const scheme = terrs.attr("scheme");
+    const scheme = terrs.attr("scheme") || "bright";
     const terracing = terrs.attr("terracing");
     const skip = terrs.attr("skip");
     const relax = terrs.attr("relax");
@@ -825,6 +825,22 @@ export function resolveVersionConflicts(version) {
       this.querySelectorAll("g > rect:nth-child(2)").forEach(rect => {
         rect.setAttribute("fill", "currentColor");
       });
+    });
+  }
+
+  if (version < 1.97) {
+    // v1.97.00 changed MFCG link to an arbitrary preview URL
+    options.villageMaxPopulation = 2000;
+    options.showBurgPreview = options.showMFCGMap;
+    delete options.showMFCGMap;
+
+    pack.burgs.forEach(burg => {
+      if (!burg.i || burg.removed) return;
+
+      if (burg.MFCG) {
+        burg.link = getBurgLink(burg);
+        delete burg.MFCG;
+      }
     });
   }
 }

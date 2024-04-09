@@ -185,12 +185,13 @@ const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoomDebouced);
 // default options, based on Earth data
 let options = {
   pinNotes: false,
-  showMFCGMap: true,
   winds: [225, 45, 225, 315, 135, 315],
   temperatureEquator: 27,
   temperatureNorthPole: -30,
   temperatureSouthPole: -15,
-  stateLabelsMode: "auto"
+  stateLabelsMode: "auto",
+  showBurgPreview: true,
+  villageMaxPopulation: 2000
 };
 
 let mapCoordinates = {}; // map coordinates on globe
