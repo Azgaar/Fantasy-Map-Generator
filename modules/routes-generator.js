@@ -7,7 +7,6 @@ window.Routes = (function () {
 
   function generate() {
     const {cells, burgs} = pack;
-
     const cellRoutes = new Uint8Array(cells.h.length);
 
     const {capitalsByFeature, burgsByFeature, portsByFeature} = sortBurgsByFeature(burgs);
@@ -53,7 +52,7 @@ window.Routes = (function () {
           const start = featureCapitals[fromId].cell;
           const exit = featureCapitals[toId].cell;
 
-          const segments = findPathSegments({isWater: false, cellRoutes, connections, start, exit});
+          const segments = findPathSegments({isWater: false, connections, start, exit});
           for (const segment of segments) {
             addConnections(segment, ROUTES.MAIN_ROAD);
             mainRoads.push({feature: Number(key), cells: segment});
@@ -67,7 +66,6 @@ window.Routes = (function () {
 
     function generateTrails() {
       TIME && console.time("generateTrails");
-
       const trails = [];
 
       for (const [key, featureBurgs] of Object.entries(burgsByFeature)) {
@@ -77,7 +75,7 @@ window.Routes = (function () {
           const start = featureBurgs[fromId].cell;
           const exit = featureBurgs[toId].cell;
 
-          const segments = findPathSegments({isWater: false, cellRoutes, connections, start, exit});
+          const segments = findPathSegments({isWater: false, connections, start, exit});
           for (const segment of segments) {
             addConnections(segment, ROUTES.TRAIL);
             trails.push({feature: Number(key), cells: segment});
@@ -90,39 +88,43 @@ window.Routes = (function () {
     }
 
     function generateSeaRoutes() {
-      TIME && console.time("generateSearoutes");
-      const mainRoads = [];
+      TIME && console.time("generateSeaRoutes");
+      const seaRoutes = [];
 
-      for (const [key, featurePorts] of Object.entries(portsByFeature)) {
+      for (const [featureId, featurePorts] of Object.entries(portsByFeature)) {
         const points = featurePorts.map(burg => [burg.x, burg.y]);
         const urquhartEdges = calculateUrquhartEdges(points);
+        console.log(urquhartEdges);
         urquhartEdges.forEach(([fromId, toId]) => {
           const start = featurePorts[fromId].cell;
           const exit = featurePorts[toId].cell;
 
-          const segments = findPathSegments({isWater: true, cellRoutes, connections, start, exit});
+          const segments = findPathSegments({isWater: true, connections, start, exit});
           for (const segment of segments) {
             addConnections(segment, ROUTES.SEA_ROUTE);
-            mainRoads.push({feature: Number(key), cells: segment});
+            seaRoutes.push({feature: Number(featureId), cells: segment});
           }
         });
       }
 
-      TIME && console.timeEnd("generateSearoutes");
-      return mainRoads;
+      TIME && console.timeEnd("generateSeaRoutes");
+      return seaRoutes;
     }
 
-    function addConnections(segment, roadTypeId) {
+    function addConnections(segment, routeTypeId) {
       for (let i = 0; i < segment.length; i++) {
         const cellId = segment[i];
         const nextCellId = segment[i + 1];
-        if (nextCellId) connections.set(`${cellId}-${nextCellId}`, true);
-        if (!cellRoutes[cellId]) cellRoutes[cellId] = roadTypeId;
+        if (nextCellId) {
+          connections.set(`${cellId}-${nextCellId}`, true);
+          connections.set(`${nextCellId}-${cellId}`, true);
+        }
+        if (!cellRoutes[cellId]) cellRoutes[cellId] = routeTypeId;
       }
     }
 
-    function findPathSegments({isWater, cellRoutes, connections, start, exit}) {
-      const from = findPath(isWater, cellRoutes, start, exit, connections);
+    function findPathSegments({isWater, connections, start, exit}) {
+      const from = findPath(isWater, start, exit, connections);
       if (!from) return [];
 
       const pathCells = restorePath(start, exit, from);
@@ -149,7 +151,17 @@ window.Routes = (function () {
     }
   }
 
-  function findPath(isWater, cellRoutes, start, exit, connections) {
+  const MIN_PASSABLE_SEA_TEMP = -4;
+
+  const TYPE_MODIFIERS = {
+    "-1": 1, // coastline
+    "-2": 1.8, // sea
+    "-3": 3, // open sea
+    "-4": 5, // ocean
+    default: 8 // far ocean
+  };
+
+  function findPath(isWater, start, exit, connections) {
     const {temp} = grid.cells;
     const {cells} = pack;
 
@@ -174,11 +186,11 @@ window.Routes = (function () {
           const distanceCost = dist2(cells.p[next], cells.p[neibCellId]);
 
           const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
-          const heightModifier = 1 + Math.max(cells.h[neibCellId] - 50, 0) / 50; // [1, 2];
-          const roadModifier = cellRoutes[neibCellId] ? 1 : 2;
+          const heightModifier = 1 + Math.max(cells.h[neibCellId] - 25, 25) / 25; // [1, 3];
+          const connectionModifier = connections.has(`${next}-${neibCellId}`) ? 1 : 3;
           const burgModifier = cells.burg[neibCellId] ? 1 : 2;
 
-          const cellsCost = distanceCost * habitabilityModifier * heightModifier * roadModifier * burgModifier;
+          const cellsCost = distanceCost * habitabilityModifier * heightModifier * connectionModifier * burgModifier;
           const totalCost = priority + cellsCost;
 
           if (from[neibCellId] || totalCost >= cost[neibCellId]) continue;
@@ -195,8 +207,6 @@ window.Routes = (function () {
     }
 
     function findWaterPath() {
-      const MIN_PASSABLE_TEMP = -4;
-
       while (queue.length) {
         const priority = queue.peekValue();
         const next = queue.pop();
@@ -208,15 +218,13 @@ window.Routes = (function () {
           }
 
           if (cells.h[neibCellId] >= 20) continue; // ignore land cells
-          if (temp[cells.g[neibCellId]] < MIN_PASSABLE_TEMP) continue; // ignore to cold cells
+          if (temp[cells.g[neibCellId]] < MIN_PASSABLE_SEA_TEMP) continue; // ignore too cold cells
 
           const distanceCost = dist2(cells.p[next], cells.p[neibCellId]);
-          const typeModifier = Math.abs(cells.t[neibCellId]); // 1 for coastline, 2 for deep ocean, 3 for deeper ocean
-          const routeModifier = cellRoutes[neibCellId] ? 1 : 2;
-          const connectionModifier =
-            connections.has(`${next}-${neibCellId}`) || connections.has(`${neibCellId}-${next}`) ? 1 : 3;
+          const typeModifier = TYPE_MODIFIERS[cells.t[neibCellId]] || TYPE_MODIFIERS.default;
+          const connectionModifier = connections.has(`${next}-${neibCellId}`) ? 1 : 2;
 
-          const cellsCost = distanceCost * typeModifier * routeModifier * connectionModifier;
+          const cellsCost = distanceCost * typeModifier * connectionModifier;
           const totalCost = priority + cellsCost;
 
           if (from[neibCellId] || totalCost >= cost[neibCellId]) continue;

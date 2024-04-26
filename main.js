@@ -1169,15 +1169,26 @@ function reGraph() {
   for (const i of gridCells.i) {
     const height = gridCells.h[i];
     const type = gridCells.t[i];
-    if (height < 20 && type !== -1 && type !== -2) continue; // exclude all deep ocean points
-    if (type === -2 && (i % 4 === 0 || features[gridCells.f[i]].type === "lake")) continue; // exclude non-coastal lake points
-    const [x, y] = points[i];
+    const isOnBorder = gridCells.b[i];
 
+    // exclude most of ocean points
+    if (height < 20) {
+      const isLake = features[gridCells.f[i]].type === "lake";
+      if (isLake && type !== -1) continue;
+
+      if (type === 0) continue;
+      if (type < -4 && !each(24)(i)) continue;
+      if (type === -4 && !each(12)(i)) continue;
+      if (type === -3 && !each(6)(i)) continue;
+      if (type === -2 && !each(3)(i)) continue;
+    }
+
+    const [x, y] = points[i];
     addNewPoint(i, x, y, height);
 
     // add additional points for cells along coast
     if (type === 1 || type === -1) {
-      if (gridCells.b[i]) continue; // not for near-border cells
+      if (isOnBorder) continue; // not for near-border cells
       gridCells.c[i].forEach(function (e) {
         if (i > e) return;
         if (gridCells.t[e] === type) {
@@ -1402,8 +1413,8 @@ function reMarkFeatures() {
     queue[0] = cells.f.findIndex(f => !f); // find unmarked cell
   }
 
-  // markupPackLand
-  markup(pack.cells, 3, 1, 0);
+  markup(pack.cells, 3, 1, 0); // markupPackLand
+  markup(pack.cells, -2, -1, -10); // markupPackWater
 
   function defineHaven(i) {
     const water = cells.c[i].filter(c => cells.h[c] < 20);

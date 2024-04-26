@@ -1637,7 +1637,6 @@ function toggleRoutes(event) {
 function drawRoutes() {
   TIME && console.time("drawRoutes");
   const {cells, burgs} = pack;
-  const lineGen = d3.line();
 
   const SHARP_ANGLE = 135;
   const VERY_SHARP_ANGLE = 115;
@@ -1645,10 +1644,11 @@ function drawRoutes() {
   const points = adjustBurgPoints(); // mutable array of points
   const routePaths = {};
 
-  const lineGenMap = {
+  const lineGen = d3.line();
+  const curves = {
     roads: d3.curveCatmullRom.alpha(0.1),
     trails: d3.curveCatmullRom.alpha(0.1),
-    searoutes: d3.curveBasis,
+    searoutes: d3.curveCatmullRom.alpha(0.5),
     default: d3.curveCatmullRom.alpha(0.1)
   };
 
@@ -1656,7 +1656,24 @@ function drawRoutes() {
     if (group !== "searoutes") straightenPathAngles(cells); // mutates points
     const pathPoints = getPathPoints(cells);
 
-    lineGen.curve(lineGenMap[group] || lineGenMap.default);
+    // TODO: temporary view for searoutes
+    if (group === "searoutes2") {
+      const pathPoints = cells.map(cellId => points[cellId]);
+      const color = getMixedColor("#000000", 0.6);
+      const line = "M" + pathPoints.join("L");
+      pathPoints.forEach(([x, y]) =>
+        debug.append("circle").attr("r", 0.7).attr("cx", x).attr("cy", y).attr("fill", color)
+      );
+      if (!routePaths[group]) routePaths[group] = [];
+      routePaths[group].push(`<path id="route${i}" d="${line}" stroke=${color} />`);
+
+      lineGen.curve(curves[group] || curves.default);
+      const path = round(lineGen(pathPoints), 1);
+      routePaths[group].push(`<path id="route${i}" d="${path}" stroke-width="0.15"/> `);
+      continue;
+    }
+
+    lineGen.curve(curves[group] || curves.default);
     const path = round(lineGen(pathPoints), 1);
 
     if (!routePaths[group]) routePaths[group] = [];
