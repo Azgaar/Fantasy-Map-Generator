@@ -1653,11 +1653,11 @@ function drawRoutes() {
   };
 
   for (const {i, group, cells} of pack.routes) {
-    if (group !== "searoutes") straightenPathAngles(cells); // mutates points
+    // if (group !== "searoutes") straightenPathAngles(cells); // mutates points
     const pathPoints = getPathPoints(cells);
 
     // TODO: temporary view for searoutes
-    if (group === "searoutes2") {
+    if (group) {
       const pathPoints = cells.map(cellId => points[cellId]);
       const color = getMixedColor("#000000", 0.6);
       const line = "M" + pathPoints.join("L");
@@ -1667,9 +1667,9 @@ function drawRoutes() {
       if (!routePaths[group]) routePaths[group] = [];
       routePaths[group].push(`<path id="route${i}" d="${line}" stroke=${color} />`);
 
-      lineGen.curve(curves[group] || curves.default);
-      const path = round(lineGen(pathPoints), 1);
-      routePaths[group].push(`<path id="route${i}" d="${path}" stroke-width="0.15"/> `);
+      // lineGen.curve(curves[group] || curves.default);
+      // const path = round(lineGen(pathPoints), 1);
+      // routePaths[group].push(`<path id="route${i}" d="${path}" stroke-width="0.15"/> `);
       continue;
     }
 
@@ -1684,6 +1684,8 @@ function drawRoutes() {
   for (const group in routePaths) {
     routes.select("#" + group).html(routePaths[group].join(""));
   }
+
+  drawCellsValue(pack.cells.i);
 
   TIME && console.timeEnd("drawRoutes");
 

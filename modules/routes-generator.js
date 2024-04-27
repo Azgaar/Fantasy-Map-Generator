@@ -1,3 +1,20 @@
+// suggested data format
+
+// pack.cells.connectivity = {
+//   cellId1: {
+//     toCellId2: routeId2,
+//     toCellId3: routeId2,
+//   },
+//   cellId2: {
+//     toCellId1: routeId2,
+//     toCellId3: routeId1,
+//   }
+// }
+
+// pack.routes = [
+//   {i, group: "roads", feature: featureId, cells: [cellId], points?: [[x, y], [x, y]]}
+// ];
+
 window.Routes = (function () {
   const ROUTES = {
     MAIN_ROAD: 1,
@@ -91,13 +108,35 @@ window.Routes = (function () {
       TIME && console.time("generateSeaRoutes");
       const seaRoutes = [];
 
+      let skip = false;
+
       for (const [featureId, featurePorts] of Object.entries(portsByFeature)) {
         const points = featurePorts.map(burg => [burg.x, burg.y]);
         const urquhartEdges = calculateUrquhartEdges(points);
-        console.log(urquhartEdges);
+
         urquhartEdges.forEach(([fromId, toId]) => {
           const start = featurePorts[fromId].cell;
           const exit = featurePorts[toId].cell;
+
+          if (skip) return;
+          if (start === 444 && exit === 297) {
+            // if (segment.join(",") === "124,122,120") debugger;
+            skip = true;
+
+            for (const con of connections) {
+              const [from, to] = con[0].split("-").map(Number);
+              const [x1, y1] = cells.p[from];
+              const [x2, y2] = cells.p[to];
+              debug
+                .append("line")
+                .attr("x1", x1)
+                .attr("y1", y1)
+                .attr("x2", x2)
+                .attr("y2", y2)
+                .attr("stroke", "red")
+                .attr("stroke-width", 0.2);
+            }
+          }
 
           const segments = findPathSegments({isWater: true, connections, start, exit});
           for (const segment of segments) {
@@ -170,6 +209,8 @@ window.Routes = (function () {
     const queue = new FlatQueue();
     queue.push(start, 0);
 
+    const isDebug = start === 444 && exit === 297;
+
     return isWater ? findWaterPath() : findLandPath();
 
     function findLandPath() {
@@ -188,7 +229,7 @@ window.Routes = (function () {
           const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
           const heightModifier = 1 + Math.max(cells.h[neibCellId] - 25, 25) / 25; // [1, 3];
           const connectionModifier = connections.has(`${next}-${neibCellId}`) ? 1 : 3;
-          const burgModifier = cells.burg[neibCellId] ? 1 : 2;
+          const burgModifier = cells.burg[neibCellId] ? 1 : 3;
 
           const cellsCost = distanceCost * habitabilityModifier * heightModifier * connectionModifier * burgModifier;
           const totalCost = priority + cellsCost;
@@ -210,13 +251,16 @@ window.Routes = (function () {
       while (queue.length) {
         const priority = queue.peekValue();
         const next = queue.pop();
+        isDebug && console.log("next", next);
 
         for (const neibCellId of cells.c[next]) {
           if (neibCellId === exit) {
+            isDebug && console.log(`neib ${neibCellId} is exit`);
             from[neibCellId] = next;
             return from;
           }
 
+          // if (from[neibCellId]) continue; // don't go back
           if (cells.h[neibCellId] >= 20) continue; // ignore land cells
           if (temp[cells.g[neibCellId]] < MIN_PASSABLE_SEA_TEMP) continue; // ignore too cold cells
 
@@ -227,7 +271,17 @@ window.Routes = (function () {
           const cellsCost = distanceCost * typeModifier * connectionModifier;
           const totalCost = priority + cellsCost;
 
-          if (from[neibCellId] || totalCost >= cost[neibCellId]) continue;
+          if (isDebug) {
+            const lost = totalCost >= cost[neibCellId];
+            console.log(
+              `neib ${neibCellId}`,
+              `cellCost ${rn(cellsCost)}`,
+              `new ${rn(totalCost)} ${lost ? ">=" : "<"} prev ${rn(cost[neibCellId])}.`,
+              `${lost ? "lost" : "won"}`
+            );
+          }
+
+          if (totalCost >= cost[neibCellId]) continue;
           from[neibCellId] = next;
 
           cost[neibCellId] = totalCost;
