@@ -1652,9 +1652,10 @@ function addZones(number = 1) {
     const burg = ra(burgs.filter(b => !used[b.cell] && b.i && !b.removed)); // random burg
     if (!burg) return;
 
-    const cellsArray = [],
-      cost = [],
-      power = rand(20, 37);
+    const cellsArray = [];
+    const cost = [];
+    const power = rand(20, 37);
+
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     queue.queue({e: burg.cell, p: 0});
 
@@ -1663,15 +1664,14 @@ function addZones(number = 1) {
       if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
       used[next.e] = 1;
 
-      cells.c[next.e].forEach(function (e) {
-        const r = cells.route[next.e];
-        const c = r ? 5 : 100;
+      cells.c[next.e].forEach(nextCellId => {
+        const c = Routes.getRoute(next.e, nextCellId) ? 5 : 100;
         const p = next.p + c;
         if (p > power) return;
 
-        if (!cost[e] || p < cost[e]) {
-          cost[e] = p;
-          queue.queue({e, p});
+        if (!cost[nextCellId] || p < cost[nextCellId]) {
+          cost[nextCellId] = p;
+          queue.queue({e: nextCellId, p});
         }
       });
     }
@@ -1792,7 +1792,7 @@ function addZones(number = 1) {
   }
 
   function addAvalanche() {
-    const routes = cells.i.filter(i => !used[i] && cells.route[i] && cells.h[i] >= 70);
+    const routes = cells.i.filter(i => !used[i] && Routes.isConnected(i) && cells.h[i] >= 70);
     if (!routes.length) return;
 
     const cell = +ra(routes);

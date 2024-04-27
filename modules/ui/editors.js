@@ -326,8 +326,7 @@ function createMfcgLink(burg) {
   const citadel = +burg.citadel;
   const urban_castle = +(citadel && each(2)(i));
 
-  const hub = +cells.route[cell] === 1;
-
+  const hub = Routes.isCrossroad(cell);
   const walls = +burg.walls;
   const plaza = +burg.plaza;
   const temple = +burg.temple;
@@ -371,10 +370,12 @@ function createVillageGeneratorLink(burg) {
   else if (cells.r[cell]) tags.push("river");
   else if (pop < 200 && each(4)(cell)) tags.push("pond");
 
-  const roadsAround = cells.c[cell].filter(c => cells.h[c] >= 20 && cells.route[c]).length;
-  if (roadsAround > 1) tags.push("highway");
-  else if (roadsAround === 1) tags.push("dead end");
-  else tags.push("isolated");
+  const connections = pack.cells.routes[cell] || {};
+  const roads = Object.values(connections).filter(routeId => {
+    const route = pack.routes[routeId];
+    return route.group === "roads" || route.group === "trails";
+  }).length;
+  tags.push(roads > 1 ? "highway" : roads === 1 ? "dead end" : "isolated");
 
   const biome = cells.biome[cell];
   const arableBiomes = cells.r[cell] ? [1, 2, 3, 4, 5, 6, 7, 8] : [5, 6, 7, 8];

@@ -486,7 +486,7 @@ class RouteOpisometer extends Measurer {
       const cells = pack.cells;
 
       const c = findCell(mousePoint[0], mousePoint[1]);
-      if (!cells.route[c] && !d3.event.sourceEvent.shiftKey) return;
+      if (!Routes.isConnected(c) && !d3.event.sourceEvent.shiftKey) return;
 
       context.trackCell(c, rigth);
     });

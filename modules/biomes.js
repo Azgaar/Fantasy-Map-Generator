@@ -1,24 +1,8 @@
 "use strict";
 
-const MIN_LAND_HEIGHT = 20;
-
-const names = [
-  "Marine",
-  "Hot desert",
-  "Cold desert",
-  "Savanna",
-  "Grassland",
-  "Tropical seasonal forest",
-  "Temperate deciduous forest",
-  "Tropical rainforest",
-  "Temperate rainforest",
-  "Taiga",
-  "Tundra",
-  "Glacier",
-  "Wetland"
-];
-
 window.Biomes = (function () {
+  const MIN_LAND_HEIGHT = 20;
+
   const getDefault = () => {
     const name = [
       "Marine",
@@ -52,7 +36,7 @@ window.Biomes = (function () {
       "#0b9131"
     ];
     const habitability = [0, 4, 10, 22, 30, 50, 100, 80, 90, 12, 4, 0, 12];
-    const iconsDensity = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 150];
+    const iconsDensity = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 250];
     const icons = [
       {},
       {dune: 3, cactus: 6, deadTree: 1},

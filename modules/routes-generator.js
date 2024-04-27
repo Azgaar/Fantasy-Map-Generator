@@ -1,40 +1,14 @@
-// suggested data format
-
-// pack.cells.connectivity = {
-//   cellId1: {
-//     toCellId2: routeId2,
-//     toCellId3: routeId2,
-//   },
-//   cellId2: {
-//     toCellId1: routeId2,
-//     toCellId3: routeId1,
-//   }
-// }
-
-// pack.routes = [
-//   {i, group: "roads", feature: featureId, cells: [cellId], points?: [[x, y], [x, y]]}
-// ];
-
 window.Routes = (function () {
-  const ROUTES = {
-    MAIN_ROAD: 1,
-    TRAIL: 2,
-    SEA_ROUTE: 3
-  };
-
   function generate() {
-    const {cells, burgs} = pack;
-    const cellRoutes = new Uint8Array(cells.h.length);
-
-    const {capitalsByFeature, burgsByFeature, portsByFeature} = sortBurgsByFeature(burgs);
+    const {capitalsByFeature, burgsByFeature, portsByFeature} = sortBurgsByFeature(pack.burgs);
     const connections = new Map();
 
     const mainRoads = generateMainRoads();
     const trails = generateTrails();
     const seaRoutes = generateSeaRoutes();
 
-    cells.route = cellRoutes;
     pack.routes = combineRoutes();
+    pack.cells.routes = buildLinks(pack.routes);
 
     function sortBurgsByFeature(burgs) {
       const burgsByFeature = {};
@@ -71,7 +45,7 @@ window.Routes = (function () {
 
           const segments = findPathSegments({isWater: false, connections, start, exit});
           for (const segment of segments) {
-            addConnections(segment, ROUTES.MAIN_ROAD);
+            addConnections(segment);
             mainRoads.push({feature: Number(key), cells: segment});
           }
         });
@@ -94,7 +68,7 @@ window.Routes = (function () {
 
           const segments = findPathSegments({isWater: false, connections, start, exit});
           for (const segment of segments) {
-            addConnections(segment, ROUTES.TRAIL);
+            addConnections(segment);
             trails.push({feature: Number(key), cells: segment});
           }
         });
@@ -117,7 +91,7 @@ window.Routes = (function () {
           const exit = featurePorts[toId].cell;
           const segments = findPathSegments({isWater: true, connections, start, exit});
           for (const segment of segments) {
-            addConnections(segment, ROUTES.SEA_ROUTE);
+            addConnections(segment);
             seaRoutes.push({feature: Number(featureId), cells: segment});
           }
         });
@@ -127,7 +101,7 @@ window.Routes = (function () {
       return seaRoutes;
     }
 
-    function addConnections(segment, routeTypeId) {
+    function addConnections(segment) {
       for (let i = 0; i < segment.length; i++) {
         const cellId = segment[i];
         const nextCellId = segment[i + 1];
@@ -135,7 +109,6 @@ window.Routes = (function () {
           connections.set(`${cellId}-${nextCellId}`, true);
           connections.set(`${nextCellId}-${cellId}`, true);
         }
-        if (!cellRoutes[cellId]) cellRoutes[cellId] = routeTypeId;
       }
     }
 
@@ -165,10 +138,29 @@ window.Routes = (function () {
 
       return routes;
     }
+
+    function buildLinks(routes) {
+      const links = {};
+
+      for (const {cells, i: routeId} of routes) {
+        for (let i = 0; i < cells.length; i++) {
+          const cellId = cells[i];
+          const nextCellId = cells[i + 1];
+          if (nextCellId) {
+            if (!links[cellId]) links[cellId] = {};
+            links[cellId][nextCellId] = routeId;
+
+            if (!links[nextCellId]) links[nextCellId] = {};
+            links[nextCellId][cellId] = routeId;
+          }
+        }
+      }
+
+      return links;
+    }
   }
 
   const MIN_PASSABLE_SEA_TEMP = -4;
-
   const TYPE_MODIFIERS = {
     "-1": 1, // coastline
     "-2": 1.8, // sea
@@ -339,5 +331,36 @@ window.Routes = (function () {
     return edges;
   }
 
-  return {generate};
+  // utility functions
+  function isConnected(cellId) {
+    const {routes} = pack.cells;
+    return routes[cellId] && Object.keys(routes[cellId]).length > 0;
+  }
+
+  function areConnected(from, to) {
+    const routeId = pack.cells.routes[from]?.[to];
+    return routeId !== undefined;
+  }
+
+  function getRoute(from, to) {
+    const routeId = pack.cells.routes[from]?.[to];
+    return routeId === undefined ? null : pack.routes[routeId];
+  }
+
+  function hasRoad(cellId) {
+    const connections = pack.cells.routes[cellId];
+    if (!connections) return false;
+    return Object.values(connections).some(routeId => pack.routes[routeId].group === "roads");
+  }
+
+  function isCrossroad(cellId) {
+    const connections = pack.cells.routes[cellId];
+    if (!connections) return false;
+    return (
+      Object.keys(connections).length > 3 ||
+      Object.values(connections).filter(routeId => pack.routes[routeId].group === "roads").length > 2
+    );
+  }
+
+  return {generate, isConnected, areConnected, getRoute, hasRoad, isCrossroad};
 })();

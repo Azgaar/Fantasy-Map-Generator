@@ -97,6 +97,8 @@ function prepareMapData() {
   const provinces = JSON.stringify(pack.provinces);
   const rivers = JSON.stringify(pack.rivers);
   const markers = JSON.stringify(pack.markers);
+  const cellRoutes = JSON.stringify(pack.cells.routes);
+  const routes = JSON.stringify(pack.routes);
 
   // store name array only if not the same as default
   const defaultNB = Names.getNameBases();
@@ -135,7 +137,7 @@ function prepareMapData() {
     pack.cells.fl,
     pop,
     pack.cells.r,
-    pack.cells.route,
+    [], // deprecated pack.cells.road
     pack.cells.s,
     pack.cells.state,
     pack.cells.religion,
@@ -147,7 +149,9 @@ function prepareMapData() {
     rivers,
     rulersString,
     fonts,
-    markers
+    markers,
+    cellRoutes,
+    routes
   ].join("\r\n");
   return mapData;
 }

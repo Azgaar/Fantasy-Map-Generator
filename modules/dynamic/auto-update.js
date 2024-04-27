@@ -846,9 +846,9 @@ export function resolveVersionConflicts(version) {
 
   if (version < 1.98) {
     // v1.98.00 changed routes generation algorithm and data format
-    // 1. cells.road => cells.route; 1 = MAIN; 2 = TRAIL; 3 = SEA;
+    // 1. cells.road => cells.routes and now it an object of objects {i1: {i2: routeId, i3: routeId}}
     // 2. cells.crossroad is removed
-    // 3. pack.routes is added
+    // 3. pack.routes is added as an array of objects
     // 4. rendering is changed
   }
 }

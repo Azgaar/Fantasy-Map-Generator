@@ -103,7 +103,7 @@ function getSettings() {
 }
 
 function getPackCellsData() {
-  const dataArrays = {
+  const data = {
     v: pack.cells.v,
     c: pack.cells.c,
     p: pack.cells.p,
@@ -122,7 +122,7 @@ function getPackCellsData() {
     pop: Array.from(pack.cells.pop),
     culture: Array.from(pack.cells.culture),
     burg: Array.from(pack.cells.burg),
-    route: Array.from(pack.cells.route),
+    routes: pack.cells.routes,
     state: Array.from(pack.cells.state),
     religion: Array.from(pack.cells.religion),
     province: Array.from(pack.cells.province)
@@ -131,28 +131,28 @@ function getPackCellsData() {
   return {
     cells: Array.from(pack.cells.i).map(cellId => ({
       i: cellId,
-      v: dataArrays.v[cellId],
-      c: dataArrays.c[cellId],
-      p: dataArrays.p[cellId],
-      g: dataArrays.g[cellId],
-      h: dataArrays.h[cellId],
-      area: dataArrays.area[cellId],
-      f: dataArrays.f[cellId],
-      t: dataArrays.t[cellId],
-      haven: dataArrays.haven[cellId],
-      harbor: dataArrays.harbor[cellId],
-      fl: dataArrays.fl[cellId],
-      r: dataArrays.r[cellId],
-      conf: dataArrays.conf[cellId],
-      biome: dataArrays.biome[cellId],
-      s: dataArrays.s[cellId],
-      pop: dataArrays.pop[cellId],
-      culture: dataArrays.culture[cellId],
-      burg: dataArrays.burg[cellId],
-      route: dataArrays.route[cellId],
-      state: dataArrays.state[cellId],
-      religion: dataArrays.religion[cellId],
-      province: dataArrays.province[cellId]
+      v: data.v[cellId],
+      c: data.c[cellId],
+      p: data.p[cellId],
+      g: data.g[cellId],
+      h: data.h[cellId],
+      area: data.area[cellId],
+      f: data.f[cellId],
+      t: data.t[cellId],
+      haven: data.haven[cellId],
+      harbor: data.harbor[cellId],
+      fl: data.fl[cellId],
+      r: data.r[cellId],
+      conf: data.conf[cellId],
+      biome: data.biome[cellId],
+      s: data.s[cellId],
+      pop: data.pop[cellId],
+      culture: data.culture[cellId],
+      burg: data.burg[cellId],
+      routes: data.routes[cellId],
+      state: data.state[cellId],
+      religion: data.religion[cellId],
+      province: data.province[cellId]
     })),
     vertices: Array.from(pack.vertices.p).map((_, vertexId) => ({
       i: vertexId,
