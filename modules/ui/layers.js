@@ -393,7 +393,6 @@ function drawTemp() {
     const start = findStart(i, t);
     if (!start) continue;
     used[i] = 1;
-    //debug.append("circle").attr("r", 3).attr("cx", vertices.p[start][0]).attr("cy", vertices.p[start][1]).attr("fill", "red").attr("stroke", "black").attr("stroke-width", .3);
 
     const chain = connectVertices(start, t); // vertices chain to form a path
     const relaxed = chain.filter((v, i) => i % 4 === 0 || vertices.c[v].some(c => c >= n));
@@ -1638,9 +1637,6 @@ function drawRoutes() {
   TIME && console.time("drawRoutes");
   const {cells, burgs} = pack;
 
-  const SHARP_ANGLE = 135;
-  const VERY_SHARP_ANGLE = 115;
-
   const points = adjustBurgPoints(); // mutable array of points
   const routePaths = {};
 
@@ -1651,27 +1647,12 @@ function drawRoutes() {
     searoutes: d3.curveCatmullRom.alpha(0.5),
     default: d3.curveCatmullRom.alpha(0.1)
   };
+  const SHARP_ANGLE = 135;
+  const VERY_SHARP_ANGLE = 115;
 
   for (const {i, group, cells} of pack.routes) {
-    // if (group !== "searoutes") straightenPathAngles(cells); // mutates points
-    const pathPoints = getPathPoints(cells);
-
-    // TODO: temporary view for searoutes
-    if (group) {
-      const pathPoints = cells.map(cellId => points[cellId]);
-      const color = getMixedColor("#000000", 0.6);
-      const line = "M" + pathPoints.join("L");
-      pathPoints.forEach(([x, y]) =>
-        debug.append("circle").attr("r", 0.7).attr("cx", x).attr("cy", y).attr("fill", color)
-      );
-      if (!routePaths[group]) routePaths[group] = [];
-      routePaths[group].push(`<path id="route${i}" d="${line}" stroke=${color} />`);
-
-      // lineGen.curve(curves[group] || curves.default);
-      // const path = round(lineGen(pathPoints), 1);
-      // routePaths[group].push(`<path id="route${i}" d="${path}" stroke-width="0.15"/> `);
-      continue;
-    }
+    if (group !== "searoutes") straightenPathAngles(cells); // mutates points
+    const pathPoints = cells.map(cellId => points[cellId]);
 
     lineGen.curve(curves[group] || curves.default);
     const path = round(lineGen(pathPoints), 1);
@@ -1684,8 +1665,6 @@ function drawRoutes() {
   for (const group in routePaths) {
     routes.select("#" + group).html(routePaths[group].join(""));
   }
-
-  drawCellsValue(pack.cells.i);
 
   TIME && console.timeEnd("drawRoutes");
 
@@ -1732,46 +1711,6 @@ function drawRoutes() {
         points[cellId] = [newX, newY];
       }
     }
-  }
-
-  function getPathPoints(cellIds) {
-    const pathPoints = cellIds.map(cellId => points[cellId]);
-
-    if (pathPoints.length === 2) {
-      // curve and shorten 2-points line
-      const [[x1, y1], [x2, y2]] = pathPoints;
-
-      const middleX = (x1 + x2) / 2;
-      const middleY = (y1 + y2) / 2;
-
-      // add shifted point at the middle to curve the line a bit
-      const NORMAL_LENGTH = 0.3;
-      const normal = getNormal([x1, y1], [x2, y2]);
-      const sign = cellIds[0] % 2 ? 1 : -1;
-      const normalX = middleX + NORMAL_LENGTH * Math.cos(normal) * sign;
-      const normalY = middleY + NORMAL_LENGTH * Math.sin(normal) * sign;
-
-      // make line shorter to avoid overlapping with other lines
-      const SHORT_LINE_LENGTH_MODIFIER = 0.8;
-      const distX = x2 - x1;
-      const distY = y2 - y1;
-      const nx1 = x1 + distX * SHORT_LINE_LENGTH_MODIFIER;
-      const ny1 = y1 + distY * SHORT_LINE_LENGTH_MODIFIER;
-      const nx2 = x2 - distX * SHORT_LINE_LENGTH_MODIFIER;
-      const ny2 = y2 - distY * SHORT_LINE_LENGTH_MODIFIER;
-
-      return [
-        [nx1, ny1],
-        [normalX, normalY],
-        [nx2, ny2]
-      ];
-    }
-
-    return pathPoints;
-  }
-
-  function getNormal([x1, y1], [x2, y2]) {
-    return Math.atan2(y1 - y2, x1 - x2) + Math.PI / 2;
   }
 }
 
