@@ -1,10 +1,7 @@
 "use strict";
 
-const CONTROL_POINST_DISTANCE = 10;
-
-function editRoute(onClick) {
+function editRoute({node, mode}) {
   if (customization) return;
-  if (!onClick && elSelected && d3.event.target.id === elSelected.attr("id")) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
 
@@ -16,13 +13,12 @@ function editRoute(onClick) {
   });
 
   debug.append("g").attr("id", "controlPoints");
-  const node = onClick ? elSelected.node() : d3.event.target;
-  elSelected = d3.select(node).on("click", addInterimControlPoint);
+  d3.select(node).on("click", addInterimControlPoint);
   drawControlPoints(node);
   selectRouteGroup(node);
 
   viewbox.on("touchmove mousemove", showEditorTips);
-  if (onClick) toggleRouteCreationMode();
+  if (mode === "onclick") toggleRouteCreationMode();
 
   if (modules.editRoute) return;
   modules.editRoute = true;
@@ -45,12 +41,13 @@ function editRoute(onClick) {
   function showEditorTips() {
     showMainTip();
     if (routeNew.classList.contains("pressed")) return;
-    if (d3.event.target.id === elSelected.attr("id")) tip("Click to add a control point");
+    if (d3.event.target.id === node.getAttribute("id")) tip("Click to add a control point");
     else if (d3.event.target.parentNode.id === "controlPoints") tip("Drag to move, click to delete the control point");
   }
 
   function drawControlPoints(node) {
     const totalLength = node.getTotalLength();
+    const CONTROL_POINST_DISTANCE = 10;
     const increment = totalLength / Math.ceil(totalLength / CONTROL_POINST_DISTANCE);
     for (let i = 0; i <= totalLength; i += increment) {
       const point = node.getPointAtLength(i);
@@ -96,16 +93,15 @@ function editRoute(onClick) {
         points.push([this.getAttribute("cx"), this.getAttribute("cy")]);
       });
 
-    elSelected.attr("d", round(lineGen(points)));
-    const l = elSelected.node().getTotalLength();
-    routeLength.innerHTML = rn(l * distanceScaleInput.value) + " " + distanceUnitInput.value;
+    node.setAttribute("d", round(lineGen(points)));
+    routeLength.innerHTML = rn(node.getTotalLength() * distanceScaleInput.value) + " " + distanceUnitInput.value;
 
-    if (modules.elevation) showEPForRoute(elSelected.node());
+    if (modules.elevation) showEPForRoute(node);
   }
 
   function showElevationProfile() {
     modules.elevation = true;
-    showEPForRoute(elSelected.node());
+    showEPForRoute(node);
   }
 
   function showGroupSection() {
@@ -132,7 +128,7 @@ function editRoute(onClick) {
   }
 
   function changeRouteGroup() {
-    document.getElementById(this.value).appendChild(elSelected.node());
+    document.getElementById(this.value).appendChild(node);
   }
 
   function toggleNewGroupInput() {
@@ -166,7 +162,7 @@ function editRoute(onClick) {
       return;
     }
     // just rename if only 1 element left
-    const oldGroup = elSelected.node().parentNode;
+    const oldGroup = node.parentNode;
     const basic = ["roads", "trails", "searoutes"].includes(oldGroup.id);
     if (!basic && oldGroup.childElementCount === 1) {
       document.getElementById("routeGroup").selectedOptions[0].remove();
@@ -177,20 +173,20 @@ function editRoute(onClick) {
       return;
     }
 
-    const newGroup = elSelected.node().parentNode.cloneNode(false);
+    const newGroup = node.parentNode.cloneNode(false);
     document.getElementById("routes").appendChild(newGroup);
     newGroup.id = group;
     document.getElementById("routeGroup").options.add(new Option(group, group, false, true));
-    document.getElementById(group).appendChild(elSelected.node());
+    document.getElementById(group).appendChild(node);
 
     toggleNewGroupInput();
     document.getElementById("routeGroupName").value = "";
   }
 
   function removeRouteGroup() {
-    const group = elSelected.node().parentNode.id;
+    const group = node.parentNode.id;
     const basic = ["roads", "trails", "searoutes"].includes(group);
-    const count = elSelected.node().parentNode.childElementCount;
+    const count = node.parentNode.childElementCount;
     alertMessage.innerHTML = /* html */ `Are you sure you want to remove ${
       basic ? "all elements in the group" : "the entire route group"
     }? <br /><br />Routes to be
@@ -218,7 +214,7 @@ function editRoute(onClick) {
   }
 
   function editGroupStyle() {
-    const g = elSelected.node().parentNode.id;
+    const g = node.parentNode.id;
     editStyle("routes", g);
   }
 
@@ -237,12 +233,13 @@ function editRoute(onClick) {
 
   function splitRoute(clicked) {
     lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-    const group = d3.select(elSelected.node().parentNode);
+    const group = d3.select(node.parentNode);
     routeSplit.classList.remove("pressed");
 
-    const points1 = [],
-      points2 = [];
+    const points1 = [];
+    const points2 = [];
     let points = points1;
+
     debug
       .select("#controlPoints")
       .selectAll("circle")
@@ -255,11 +252,11 @@ function editRoute(onClick) {
         this.remove();
       });
 
-    elSelected.attr("d", round(lineGen(points1)));
+    node.setAttribute("d", round(lineGen(points1)));
     const id = getNextId("route");
     group.append("path").attr("id", id).attr("d", lineGen(points2));
     debug.select("#controlPoints").selectAll("circle").remove();
-    drawControlPoints(elSelected.node());
+    drawControlPoints(node);
   }
 
   function toggleRouteCreationMode() {
@@ -268,21 +265,22 @@ function editRoute(onClick) {
     if (document.getElementById("routeNew").classList.contains("pressed")) {
       tip("Click on map to add control points", true);
       viewbox.on("click", addPointOnClick).style("cursor", "crosshair");
-      elSelected.on("click", null);
+      d3.select(node).on("click", null);
     } else {
       clearMainTip();
       viewbox.on("click", clicked).style("cursor", "default");
-      elSelected.on("click", addInterimControlPoint).attr("data-new", null);
+      d3.select(node).on("click", addInterimControlPoint).attr("data-new", null);
     }
   }
 
   function addPointOnClick() {
     // create new route
-    if (!elSelected.attr("data-new")) {
+    if (!node.dataset.new) {
       debug.select("#controlPoints").selectAll("circle").remove();
-      const parent = elSelected.node().parentNode;
+      const parent = node.parentNode;
       const id = getNextId("route");
-      elSelected = d3.select(parent).append("path").attr("id", id).attr("data-new", 1);
+      const newRoute = d3.select(parent).append("path").attr("id", id).attr("data-new", 1);
+      node = newRoute.node();
     }
 
     addControlPoint(d3.mouse(this));
@@ -290,7 +288,7 @@ function editRoute(onClick) {
   }
 
   function editRouteLegend() {
-    const id = elSelected.attr("id");
+    const id = node.getAttribute("id");
     editNotes(id, id);
   }
 
@@ -302,7 +300,7 @@ function editRoute(onClick) {
       buttons: {
         Remove: function () {
           $(this).dialog("close");
-          elSelected.remove();
+          node.remove();
           $("#routeEditor").dialog("close");
         },
         Cancel: function () {
@@ -313,7 +311,8 @@ function editRoute(onClick) {
   }
 
   function closeRoutesEditor() {
-    elSelected.attr("data-new", null).on("click", null);
+    node.data.new = null;
+    d3.select(node).on("click", null);
     clearMainTip();
     routeSplit.classList.remove("pressed");
     routeNew.classList.remove("pressed");

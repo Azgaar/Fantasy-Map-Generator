@@ -791,15 +791,15 @@ function toggleAddRoute() {
 
 function addRouteOnClick() {
   unpressClickToAddButton();
-  const point = d3.mouse(this);
-  const id = getNextId("route");
-  elSelected = routes
+  const [x, y] = d3.mouse(this);
+
+  const newRoute = routes
     .select("g")
     .append("path")
-    .attr("id", id)
+    .attr("id", getNextId("route"))
     .attr("data-new", 1)
-    .attr("d", `M${point[0]},${point[1]}`);
-  editRoute(true);
+    .attr("d", `M${x},${y}`);
+  editRoute({node: newRoute.node(), mode: "onclick"});
 }
 
 function toggleAddMarker() {

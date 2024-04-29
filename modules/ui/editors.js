@@ -22,7 +22,7 @@ function clicked() {
 
   if (grand.id === "emblems") editEmblem();
   else if (parent.id === "rivers") editRiver(el.id);
-  else if (grand.id === "routes") editRoute();
+  else if (grand.id === "routes") editRoute({node: el});
   else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();
   else if (grand.id === "burgLabels") editBurg();
   else if (grand.id === "burgIcons") editBurg();
