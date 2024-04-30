@@ -752,6 +752,8 @@ export function resolveVersionConflicts(version) {
     const curve = curveTypes[terrs.attr("curve")] || "curveBasisClosed";
 
     terrs
+      .attr("opacity", null)
+      .attr("filter", null)
       .attr("mask", null)
       .attr("scheme", null)
       .attr("terracing", null)
