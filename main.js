@@ -429,7 +429,11 @@ function findBurgForMFCG(params) {
 function handleZoom(isScaleChanged, isPositionChanged) {
   viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
 
-  if (isPositionChanged) drawCoordinates();
+  if (isPositionChanged) {
+    drawCoordinates();
+    hideOutOfViewLabels();
+  }
+
 
   if (isScaleChanged) {
     invokeActiveZooming();
@@ -451,6 +455,35 @@ function handleZoom(isScaleChanged, isPositionChanged) {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   }
 }
+
+function hideOutOfViewLabels() {
+  const towns = pack.burgs.filter(b => b.i && !b.capital && !b.removed);
+  const townLabels = burgLabels.select("#towns");
+
+
+  const bounds = getViewBoxExtent()
+
+  const minX = bounds[0][0];
+  const maxX = bounds[1][0];
+
+  const minY = bounds[0][1];
+  const maxY = bounds[1][1];
+
+  console.log("TownLabels:", townLabels.selectAll("text"));
+
+  townLabels.selectAll("text").each(function (burg, i, z) {
+    burg = towns[i];
+    if(!burg) return;
+
+    if(burg.x < minX || burg.x > maxX || burg.y < minY || burg.y > maxY) {
+      d3.select(this).classed("hidden", true);
+    }
+    else {
+      d3.select(this).classed("hidden", false);
+    }
+  })
+}
+
 
 // Zoom to a specific point
 function zoomTo(x, y, z = 8, d = 2000) {
