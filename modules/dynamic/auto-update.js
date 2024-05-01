@@ -772,6 +772,7 @@ export function resolveVersionConflicts(version) {
       .attr("skip", 0)
       .attr("relax", 1)
       .attr("curve", curve);
+
     terrs
       .append("g")
       .attr("id", "landHeights")
