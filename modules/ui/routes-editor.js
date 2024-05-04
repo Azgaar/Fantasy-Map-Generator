@@ -35,8 +35,8 @@ function editRoute(id) {
 
   // add listeners
   byId("routeCreateSelectingCells").on("click", createRoute);
-  byId("routeEditStyle").on("click", () => editStyle("routes"));
-  byId("routeElevationProfile").on("click", showElevationProfile);
+  byId("routeEditStyle").on("click", editRouteGroupStyle);
+  byId("routeElevationProfile").on("click", showRouteElevationProfile);
   byId("routeLegend").on("click", editRouteLegend);
   byId("routeRemove").on("click", removeRoute);
   byId("routeName").on("input", changeName);
@@ -63,6 +63,9 @@ function editRoute(id) {
     });
 
     updateRouteLength(route);
+
+    const isWater = route.cells.some(cell => pack.cells.h[cell] < 20);
+    byId("routeElevationProfile").style.display = isWater ? "none" : "inline-block";
   }
 
   function generateRouteName(route) {
@@ -153,7 +156,7 @@ function editRoute(id) {
     elSelected.attr("d", path);
 
     updateRouteLength(route);
-    if (modules.elevation) showEPForRoute(elSelected.node());
+    if (byId("elevationProfile").offsetParent) showRouteElevationProfile();
   }
 
   function addControlPoint() {
@@ -248,15 +251,21 @@ function editRoute(id) {
     route.name = routeName.value = Names.getBase(rand(nameBases.length - 1));
   }
 
-  function showElevationProfile() {
-    modules.elevation = true;
-    showEPForRoute(elSelected.node());
+  function showRouteElevationProfile() {
+    const route = getRoute();
+    const routeLen = rn(route.length * distanceScaleInput.value);
+    showElevationProfile(route.cells, routeLen, false);
   }
 
   function editRouteLegend() {
     const id = elSelected.attr("id");
     const route = getRoute();
     editNotes(id, route.name);
+  }
+
+  function editRouteGroupStyle() {
+    const {group} = getRoute();
+    editStyle("routes", group);
   }
 
   function createRoute() {
