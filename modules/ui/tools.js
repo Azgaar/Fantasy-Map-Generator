@@ -793,13 +793,9 @@ function addRouteOnClick() {
   unpressClickToAddButton();
   const [x, y] = d3.mouse(this);
 
-  const newRoute = routes
-    .select("g")
-    .append("path")
-    .attr("id", getNextId("route"))
-    .attr("data-new", 1)
-    .attr("d", `M${x},${y}`);
-  editRoute({node: newRoute.node(), mode: "onclick"});
+  const id = getNextId("route");
+  routes.select("g").append("path").attr("id", id).attr("data-new", 1).attr("d", `M${x},${y}`);
+  editRoute(id);
 }
 
 function toggleAddMarker() {

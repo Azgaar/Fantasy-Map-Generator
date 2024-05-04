@@ -465,16 +465,11 @@ function saveGeoJSON_Cells() {
 }
 
 function saveGeoJSON_Routes() {
-  const json = {type: "FeatureCollection", features: []};
-
-  routes.selectAll("g > path").each(function () {
-    const coordinates = getRoutePoints(this);
-    const id = this.id;
-    const type = this.parentElement.id;
-
-    const feature = {type: "Feature", geometry: {type: "LineString", coordinates}, properties: {id, type}};
-    json.features.push(feature);
+  const features = pack.routes.map(({id, points, cells, group}) => {
+    const coordinates = points || getRoutePoints(cells, group);
+    return {type: "Feature", geometry: {type: "LineString", coordinates}, properties: {id, group}};
   });
+  const json = {type: "FeatureCollection", features};
 
   const fileName = getFileName("Routes") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
@@ -517,17 +512,6 @@ function getCellCoordinates(vertices) {
   const p = pack.vertices.p;
   const coordinates = vertices.map(n => getCoordinates(p[n][0], p[n][1], 2));
   return [coordinates.concat([coordinates[0]])];
-}
-
-function getRoutePoints(node) {
-  let points = [];
-  const l = node.getTotalLength();
-  const increment = l / Math.ceil(l / 2);
-  for (let i = 0; i <= l; i += increment) {
-    const p = node.getPointAtLength(i);
-    points.push(getCoordinates(p.x, p.y, 4));
-  }
-  return points;
 }
 
 function getRiverPoints(node) {

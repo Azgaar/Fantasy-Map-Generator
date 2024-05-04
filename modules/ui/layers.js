@@ -1633,29 +1633,23 @@ function toggleRoutes(event) {
   }
 }
 
+const ROUTE_CURVES = {
+  roads: d3.curveCatmullRom.alpha(0.1),
+  trails: d3.curveCatmullRom.alpha(0.1),
+  searoutes: d3.curveCatmullRom.alpha(0.5),
+  default: d3.curveCatmullRom.alpha(0.1)
+};
+
 function drawRoutes() {
   TIME && console.time("drawRoutes");
-  const {cells, burgs} = pack;
-
-  const points = adjustBurgPoints(); // mutable array of points
   const routePaths = {};
-
   const lineGen = d3.line();
-  const curves = {
-    roads: d3.curveCatmullRom.alpha(0.1),
-    trails: d3.curveCatmullRom.alpha(0.1),
-    searoutes: d3.curveCatmullRom.alpha(0.5),
-    default: d3.curveCatmullRom.alpha(0.1)
-  };
-  const SHARP_ANGLE = 135;
-  const VERY_SHARP_ANGLE = 115;
 
-  for (const {i, group, cells} of pack.routes) {
-    if (group !== "searoutes") straightenPathAngles(cells); // mutates points
-    const pathPoints = cells.map(cellId => points[cellId]);
-
-    lineGen.curve(curves[group] || curves.default);
-    const path = round(lineGen(pathPoints), 1);
+  for (const route of pack.routes) {
+    const {i, group} = route;
+    lineGen.curve(ROUTE_CURVES[group] || ROUTE_CURVES.default);
+    const routePoints = getRoutePoints(route);
+    const path = round(lineGen(routePoints), 1);
 
     if (!routePaths[group]) routePaths[group] = [];
     routePaths[group].push(`<path id="route${i}" d="${path}"/>`);
@@ -1667,27 +1661,33 @@ function drawRoutes() {
   }
 
   TIME && console.timeEnd("drawRoutes");
+}
 
-  function adjustBurgPoints() {
-    const points = Array.from(cells.p);
+const ROUTES_SHARP_ANGLE = 135;
+const ROUTES_VERY_SHARP_ANGLE = 115;
 
-    for (const burg of burgs) {
-      if (burg.i === 0) continue;
-      const {cell, x, y} = burg;
-      points[cell] = [x, y];
+function getRoutePoints({points, cells: cellIds, group}) {
+  if (points) return points;
+  const {cells, burgs} = pack;
+
+  const routePoints = cellIds.map(cellId => {
+    const burgId = cells.burg[cellId];
+    if (burgId) {
+      const {x, y} = burgs[burgId];
+      return [x, y];
     }
 
-    return points;
-  }
+    return cells.p[cellId];
+  });
 
-  function straightenPathAngles(cellIds) {
+  if (group !== "searoutes") {
     for (let i = 1; i < cellIds.length - 1; i++) {
       const cellId = cellIds[i];
       if (cells.burg[cellId]) continue;
 
-      const prev = points[cellIds[i - 1]];
-      const that = points[cellId];
-      const next = points[cellIds[i + 1]];
+      const prev = routePoints[i - 1];
+      const that = routePoints[i];
+      const next = routePoints[i + 1];
 
       const dAx = prev[0] - that[0];
       const dAy = prev[1] - that[1];
@@ -1695,24 +1695,28 @@ function drawRoutes() {
       const dBy = next[1] - that[1];
       const angle = (Math.atan2(dAx * dBy - dAy * dBx, dAx * dBx + dAy * dBy) * 180) / Math.PI;
 
-      if (Math.abs(angle) < SHARP_ANGLE) {
+      if (Math.abs(angle) < ROUTES_SHARP_ANGLE) {
         const middleX = (prev[0] + next[0]) / 2;
         const middleY = (prev[1] + next[1]) / 2;
 
-        if (Math.abs(angle) < VERY_SHARP_ANGLE) {
+        if (Math.abs(angle) < ROUTES_VERY_SHARP_ANGLE) {
           const newX = (that[0] + middleX * 2) / 3;
           const newY = (that[1] + middleY * 2) / 3;
-          points[cellId] = [newX, newY];
+          routePoints[i] = [newX, newY];
           continue;
         }
 
         const newX = (that[0] + middleX) / 2;
         const newY = (that[1] + middleY) / 2;
-        points[cellId] = [newX, newY];
+        routePoints[i] = [newX, newY];
       }
     }
   }
+
+  return routePoints;
 }
+
+function drawRoute() {}
 
 function toggleMilitary() {
   if (!layerIsOn("toggleMilitary")) {

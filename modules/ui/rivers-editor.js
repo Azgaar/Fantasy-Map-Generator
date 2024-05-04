@@ -10,7 +10,10 @@ function editRiver(id) {
 
   elSelected = d3.select("#" + id).on("click", addControlPoint);
 
-  tip("Drag control points to change the river course. Click on point to remove it. Click on river to add additional control point. For major changes please create a new river instead", true);
+  tip(
+    "Drag control points to change the river course. Click on point to remove it. Click on river to add additional control point. For major changes please create a new river instead",
+    true
+  );
   debug.append("g").attr("id", "controlCells");
   debug.append("g").attr("id", "controlPoints");
 
