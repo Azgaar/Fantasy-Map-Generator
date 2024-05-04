@@ -362,5 +362,164 @@ window.Routes = (function () {
     );
   }
 
-  return {generate, isConnected, areConnected, getRoute, hasRoad, isCrossroad};
+  // name generator data
+  const models = {
+    roads: {burg_suffix: 3, prefix_suffix: 6, the_descriptor_prefix_suffix: 2, the_descriptor_burg_suffix: 1},
+    trails: {burg_suffix: 8, prefix_suffix: 1, the_descriptor_burg_suffix: 1},
+    searoutes: {burg_suffix: 4, prefix_suffix: 2, the_descriptor_prefix_suffix: 1}
+  };
+
+  const prefixes = [
+    "King",
+    "Queen",
+    "Military",
+    "Old",
+    "New",
+    "Ancient",
+    "Royal",
+    "Imperial",
+    "Great",
+    "Grand",
+    "High",
+    "Silver",
+    "Dragon",
+    "Shadow",
+    "Star",
+    "Mystic",
+    "Whisper",
+    "Eagle",
+    "Golden",
+    "Crystal",
+    "Enchanted",
+    "Frost",
+    "Moon",
+    "Sun",
+    "Thunder",
+    "Phoenix",
+    "Sapphire",
+    "Celestial",
+    "Wandering",
+    "Echo",
+    "Twilight",
+    "Crimson",
+    "Serpent",
+    "Iron",
+    "Forest",
+    "Flower",
+    "Whispering",
+    "Eternal",
+    "Frozen",
+    "Rain",
+    "Luminous",
+    "Stardust",
+    "Arcane",
+    "Glimmering",
+    "Jade",
+    "Ember",
+    "Azure",
+    "Gilded",
+    "Divine",
+    "Shadowed",
+    "Cursed",
+    "Moonlit",
+    "Sable",
+    "Everlasting",
+    "Amber",
+    "Nightshade",
+    "Wraith",
+    "Scarlet",
+    "Platinum",
+    "Whirlwind",
+    "Obsidian",
+    "Ethereal",
+    "Ghost",
+    "Spike",
+    "Dusk",
+    "Raven",
+    "Spectral",
+    "Burning",
+    "Verdant",
+    "Copper",
+    "Velvet",
+    "Falcon",
+    "Enigma",
+    "Glowing",
+    "Silvered",
+    "Molten",
+    "Radiant",
+    "Astral",
+    "Wild",
+    "Flame",
+    "Amethyst",
+    "Aurora",
+    "Shadowy",
+    "Solar",
+    "Lunar",
+    "Whisperwind",
+    "Fading",
+    "Titan",
+    "Dawn",
+    "Crystalline",
+    "Jeweled",
+    "Sylvan",
+    "Twisted",
+    "Ebon",
+    "Thorn",
+    "Cerulean",
+    "Halcyon",
+    "Infernal",
+    "Storm",
+    "Eldritch",
+    "Sapphire",
+    "Crimson",
+    "Tranquil",
+    "Paved"
+  ];
+
+  const descriptors = [
+    "Great",
+    "Shrouded",
+    "Sacred",
+    "Fabled",
+    "Frosty",
+    "Winding",
+    "Echoing",
+    "Serpentine",
+    "Breezy",
+    "Misty",
+    "Rustic",
+    "Silent",
+    "Cobbled",
+    "Cracked",
+    "Shaky",
+    "Obscure"
+  ];
+
+  const suffixes = {
+    roads: {road: 3, route: 1, way: 1, highway: 1},
+    trails: {trail: 3, path: 1, track: 1, pass: 1},
+    searoutes: {"sea route": 3, lane: 2, passage: 1, seaway: 1}
+  };
+
+  function generateName({group, cells}) {
+    const model = rw(models[group]);
+    const suffix = rw(suffixes[group]);
+
+    if (model === "burg_suffix") return `${getBurgName()} ${suffix}`;
+    if (model === "prefix_suffix") return `${ra(prefixes)} ${suffix}`;
+    if (model === "the_descriptor_prefix_suffix") return `The ${ra(descriptors)} ${ra(prefixes)} ${suffix}`;
+    if (model === "the_descriptor_burg_suffix") return `The ${ra(descriptors)} ${getBurgName()} ${suffix}`;
+    return "Unnamed route";
+
+    function getBurgName() {
+      const priority = [cells.at(-1), cells.at(0), cells.slice(1, -1).reverse()];
+      for (const cellId of priority) {
+        const burgId = pack.cells.burg[cellId];
+        if (burgId) return getAdjective(pack.burgs[burgId].name);
+      }
+      return "Unnamed";
+    }
+  }
+
+  return {generate, isConnected, areConnected, getRoute, hasRoad, isCrossroad, generateName};
 })();

@@ -41,8 +41,7 @@ function editRoute(id) {
   byId("routeRemove").on("click", removeRoute);
   byId("routeName").on("input", changeName);
   byId("routeGroup").on("input", changeGroup);
-  byId("routeNameCulture").on("click", generateNameCulture);
-  byId("routeNameRandom").on("click", generateNameRandom);
+  byId("routeGenerateName").on("click", generateName);
 
   function getRoute() {
     const routeId = +elSelected.attr("id").slice(5);
@@ -53,7 +52,7 @@ function editRoute(id) {
   function updateRouteData() {
     const route = getRoute();
 
-    route.name = route.name || generateRouteName(route);
+    route.name = route.name || Routes.generateName(route);
     byId("routeName").value = route.name;
 
     const routeGroup = byId("routeGroup");
@@ -66,23 +65,6 @@ function editRoute(id) {
 
     const isWater = route.cells.some(cell => pack.cells.h[cell] < 20);
     byId("routeElevationProfile").style.display = isWater ? "none" : "inline-block";
-  }
-
-  function generateRouteName(route) {
-    const {cells, burgs} = pack;
-
-    const burgName = (() => {
-      const priority = [route.cells.at(-1), route.cells.at(0), route.cells.slice(1, -1).reverse()];
-      for (const cellId of priority) {
-        const burgId = cells.burg[cellId];
-        if (burgId) return burgs[burgId].name;
-      }
-    })();
-
-    const type = route.group.replace(/s$/, "");
-    if (burgName) return `${getAdjective(burgName)} ${type}`;
-
-    return "Unnamed route";
   }
 
   function updateRouteLength(route) {
@@ -239,16 +221,9 @@ function editRoute(id) {
     getRoute().group = group;
   }
 
-  function generateNameCulture() {
+  function generateName() {
     const route = getRoute();
-    const cell = ra(route.cells);
-    const cultureId = pack.cells.culture[cell];
-    route.name = routeName.value = Names.getCulture(cultureId);
-  }
-
-  function generateNameRandom() {
-    const route = getRoute();
-    route.name = routeName.value = Names.getBase(rand(nameBases.length - 1));
+    route.name = routeName.value = Routes.generateName(route);
   }
 
   function showRouteElevationProfile() {
