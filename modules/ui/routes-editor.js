@@ -273,16 +273,28 @@ function editRoute(id) {
   }
 
   function removeRoute() {
-    alertMessage.innerHTML = "Are you sure you want to remove the route and all its tributaries";
+    alertMessage.innerHTML = "Are you sure you want to remove the route";
     $("#alert").dialog({
       resizable: false,
       width: "22em",
-      title: "Remove route and tributaries",
+      title: "Remove route",
       buttons: {
         Remove: function () {
+          const route = getRoute();
+          const routes = pack.cells.routes;
+
+          for (const from of route.cells) {
+            for (const [to, routeId] of Object.entries(routes[from])) {
+              if (routeId === route.i) {
+                delete routes[from][to];
+                delete routes[to][from];
+              }
+            }
+          }
+
+          pack.routes = pack.routes.filter(r => r.i !== route.i);
+
           $(this).dialog("close");
-          const route = +elSelected.attr("id").slice(5);
-          Routes.remove(route);
           elSelected.remove();
           $("#routeEditor").dialog("close");
         },
