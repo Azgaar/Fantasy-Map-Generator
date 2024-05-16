@@ -128,7 +128,21 @@ window.Routes = (function () {
         routes.push({i: routes.length, group: "roads", feature, cells});
       }
 
-      for (const {feature, cells} of trails) {
+      // merge routes so that the last cells of one route are the first cells of the next route
+      for (let i = 0; i < trails.length; i++) {
+        const {cells, feature, merged} = trails[i];
+        if (merged) continue;
+
+        for (let j = i + 1; j < trails.length; j++) {
+          const nextTrail = trails[j];
+          if (nextTrail.merged) continue;
+
+          if (nextTrail.cells[0] === cells.at(-1)) {
+            cells.push(...nextTrail.cells.slice(1));
+            nextTrail.merged = true;
+          }
+        }
+
         routes.push({i: routes.length, group: "trails", feature, cells});
       }
 
@@ -502,6 +516,8 @@ window.Routes = (function () {
   };
 
   function generateName({group, cells}) {
+    if (cells.length < 4) return "Unnamed route segment";
+
     const model = rw(models[group]);
     const suffix = rw(suffixes[group]);
 
@@ -521,5 +537,24 @@ window.Routes = (function () {
     }
   }
 
-  return {generate, isConnected, areConnected, getRoute, hasRoad, isCrossroad, generateName};
+  function remove(route) {
+    const routes = pack.cells.routes;
+
+    for (const from of route.cells) {
+      for (const [to, routeId] of Object.entries(routes[from])) {
+        if (routeId === route.i) {
+          delete routes[from][to];
+          delete routes[to][from];
+        }
+      }
+    }
+
+    pack.routes = pack.routes.filter(r => r.i !== route.i);
+    viewbox
+      .select("#routes")
+      .select("#route" + route.i)
+      .remove();
+  }
+
+  return {generate, isConnected, areConnected, getRoute, hasRoad, isCrossroad, generateName, remove};
 })();

@@ -69,7 +69,7 @@ function editRoute(id) {
 
   function updateRouteLength(route) {
     route.length = rn(elSelected.node().getTotalLength() / 2, 2);
-    const lengthUI = `${rn(route.length * distanceScaleInput.value)} ${distanceUnitInput.value}`;
+    const lengthUI = `${rn(route.length * distanceScale)} ${distanceUnitInput.value}`;
     byId("routeLength").value = lengthUI;
   }
 
@@ -255,22 +255,8 @@ function editRoute(id) {
       title: "Remove route",
       buttons: {
         Remove: function () {
-          const route = getRoute();
-          const routes = pack.cells.routes;
-
-          for (const from of route.cells) {
-            for (const [to, routeId] of Object.entries(routes[from])) {
-              if (routeId === route.i) {
-                delete routes[from][to];
-                delete routes[to][from];
-              }
-            }
-          }
-
-          pack.routes = pack.routes.filter(r => r.i !== route.i);
-
+          Routes.remove(getRoute());
           $(this).dialog("close");
-          elSelected.remove();
           $("#routeEditor").dialog("close");
         },
         Cancel: function () {

@@ -2107,6 +2107,9 @@
             <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview" data-shortcut="Shift + T">
               Burgs
             </button>
+            <button id="overviewRoutesButton" data-tip="Click to open Routes Overview" data-shortcut="Shift + U">
+              Routes
+            </button>
             <button id="overviewRiversButton" data-tip="Click to open Rivers Overview" data-shortcut="Shift + V">
               Rivers
             </button>
@@ -5407,6 +5410,40 @@
         </div>
       </div>
 
+      <div id="routesOverview" class="dialog stable" style="display: none">
+        <div id="routesHeader" class="header" style="grid-template-columns: 17em 8em 8em">
+          <div data-tip="Click to sort by route name" class="sortable alphabetically" data-sortby="name">
+            Route&nbsp;
+          </div>
+          <div data-tip="Click to sort by route group" class="sortable alphabetically" data-sortby="group">
+            Group&nbsp;
+          </div>
+          <div data-tip="Click to sort by route length" class="sortable" data-sortby="length">Length&nbsp;</div>
+        </div>
+
+        <div id="routesBody" class="table"></div>
+
+        <div id="routesFooter" class="totalLine">
+          <div data-tip="Routes number" style="margin-left: 4px">
+            Total routes:&nbsp;<span id="routesFooterNumber">0</span>
+          </div>
+          <div data-tip="Average length" style="margin-left: 12px">
+            Average length:&nbsp;<span id="routesFooterLength">0</span>
+          </div>
+        </div>
+
+        <div id="routesBottom">
+          <button id="routesOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+          <button id="routeCreateNew" data-tip="Create new route selecting route cells" class="icon-map-pin"></button>
+          <button
+            id="routesExport"
+            data-tip="Save routes-related data as a text file (.csv)"
+            class="icon-download"
+          ></button>
+          <button id="routesRemoveAll" data-tip="Remove all routes" class="icon-trash"></button>
+        </div>
+      </div>
+
       <div id="riversOverview" class="dialog stable" style="display: none">
         <div id="riversHeader" class="header" style="grid-template-columns: 9em 4em 6em 6em 5em 9em">
           <div data-tip="Click to sort by river name" class="sortable alphabetically" data-sortby="name">
@@ -8092,6 +8129,7 @@
     <script defer src="modules/ui/diplomacy-editor.js?v=1.88.04"></script>
     <script defer src="modules/ui/zones-editor.js"></script>
     <script defer src="modules/ui/burgs-overview.js?v=1.97.00"></script>
+    <script defer src="modules/ui/routes-overview.js"></script>
     <script defer src="modules/ui/rivers-overview.js"></script>
     <script defer src="modules/ui/military-overview.js?v=1.96.07"></script>
     <script defer src="modules/ui/regiments-overview.js?v=1.89.20"></script>
