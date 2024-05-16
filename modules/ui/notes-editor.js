@@ -64,7 +64,7 @@ function editNotes(id, name) {
 
   async function initEditor() {
     if (!window.tinymce) {
-      const url = "https://cdn.tiny.cloud/1/4i6a79ymt2y0cagke174jp3meoi28vyecrch12e5puyw3p9a/tinymce/5/tinymce.min.js";
+      const url = "https://azgaar.github.io/Fantasy-Map-Generator/libs/tinymce/tinymce.min.js";
       try {
         await import(url);
       } catch (error) {
