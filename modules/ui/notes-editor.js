@@ -81,6 +81,7 @@ function editNotes(id, name) {
     if (window.tinymce) {
       window.tinymce._setBaseUrl("https://azgaar.github.io/Fantasy-Map-Generator/libs/tinymce");
       tinymce.init({
+        license_key: "gpl",
         selector: "#notesLegend",
         height: "90%",
         menubar: false,
