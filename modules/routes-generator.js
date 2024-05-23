@@ -124,33 +124,45 @@ window.Routes = (function () {
     function combineRoutes() {
       const routes = [];
 
-      for (const {feature, cells} of mainRoads) {
+      for (const {feature, cells, merged} of mergeRoutes(mainRoads)) {
+        if (merged) continue;
         routes.push({i: routes.length, group: "roads", feature, cells});
       }
 
-      // merge routes so that the last cells of one route are the first cells of the next route
-      for (let i = 0; i < trails.length; i++) {
-        const {cells, feature, merged} = trails[i];
+      for (const {feature, cells, merged} of mergeRoutes(trails)) {
         if (merged) continue;
-
-        for (let j = i + 1; j < trails.length; j++) {
-          const nextTrail = trails[j];
-          if (nextTrail.merged) continue;
-
-          if (nextTrail.cells[0] === cells.at(-1)) {
-            cells.push(...nextTrail.cells.slice(1));
-            nextTrail.merged = true;
-          }
-        }
-
         routes.push({i: routes.length, group: "trails", feature, cells});
       }
 
-      for (const {feature, cells} of seaRoutes) {
+      for (const {feature, cells, merged} of mergeRoutes(seaRoutes)) {
+        if (merged) continue;
         routes.push({i: routes.length, group: "searoutes", feature, cells});
       }
 
       return routes;
+    }
+
+    // merge routes so that the last cell of one route is the first cell of the next route
+    function mergeRoutes(routes) {
+      let routesMerged = 0;
+
+      for (let i = 0; i < routes.length; i++) {
+        const thisRoute = routes[i];
+        if (thisRoute.merged) continue;
+
+        for (let j = i + 1; j < routes.length; j++) {
+          const nextRoute = routes[j];
+          if (nextRoute.merged) continue;
+
+          if (nextRoute.cells.at(0) === thisRoute.cells.at(-1)) {
+            routesMerged++;
+            thisRoute.cells = thisRoute.cells.concat(nextRoute.cells.slice(1));
+            nextRoute.merged = true;
+          }
+        }
+      }
+
+      return routesMerged > 1 ? mergeRoutes(routes) : routes;
     }
 
     function buildLinks(routes) {

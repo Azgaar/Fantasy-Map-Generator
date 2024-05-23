@@ -1645,10 +1645,17 @@ function drawRoutes() {
   const routePaths = {};
   const lineGen = d3.line();
 
+  const {cells, burgs} = pack;
+  let points = cells.p.map(([x, y], cellId) => {
+    const burgId = cells.burg[cellId];
+    if (burgId) return [burgs[burgId].x, burgs[burgId].y];
+    return [x, y];
+  });
+
   for (const route of pack.routes) {
     const {i, group} = route;
     lineGen.curve(ROUTE_CURVES[group] || ROUTE_CURVES.default);
-    const routePoints = getRoutePoints(route);
+    const routePoints = getRoutePoints(route, points);
     const path = round(lineGen(routePoints), 1);
 
     if (!routePaths[group]) routePaths[group] = [];
@@ -1666,49 +1673,42 @@ function drawRoutes() {
 const ROUTES_SHARP_ANGLE = 135;
 const ROUTES_VERY_SHARP_ANGLE = 115;
 
-function getRoutePoints({points, cells: cellIds, group}) {
-  if (points) return points;
-  const {cells, burgs} = pack;
+function getRoutePoints(route, points) {
+  if (route.points) return route.points;
+  const routePoints = route.cells.map(cellId => points[cellId]);
 
-  const routePoints = cellIds.map(cellId => {
-    const burgId = cells.burg[cellId];
-    if (burgId) {
-      const {x, y} = burgs[burgId];
-      return [x, y];
-    }
+  if (route.group !== "searoutes2") {
+    for (let i = 1; i < route.cells.length - 1; i++) {
+      const cellId = route.cells[i];
+      if (pack.cells.burg[cellId]) continue;
 
-    return cells.p[cellId];
-  });
+      const [prevX, prevY] = routePoints[i - 1];
+      const [currX, currY] = routePoints[i];
+      const [nextX, nextY] = routePoints[i + 1];
 
-  if (group !== "searoutes") {
-    for (let i = 1; i < cellIds.length - 1; i++) {
-      const cellId = cellIds[i];
-      if (cells.burg[cellId]) continue;
+      const dAx = prevX - currX;
+      const dAy = prevY - currY;
+      const dBx = nextX - currX;
+      const dBy = nextY - currY;
+      const angle = Math.abs((Math.atan2(dAx * dBy - dAy * dBx, dAx * dBx + dAy * dBy) * 180) / Math.PI);
 
-      const prev = routePoints[i - 1];
-      const that = routePoints[i];
-      const next = routePoints[i + 1];
+      if (angle < ROUTES_SHARP_ANGLE) {
+        const middleX = (prevX + nextX) / 2;
+        const middleY = (prevY + nextY) / 2;
+        let newX, newY;
 
-      const dAx = prev[0] - that[0];
-      const dAy = prev[1] - that[1];
-      const dBx = next[0] - that[0];
-      const dBy = next[1] - that[1];
-      const angle = (Math.atan2(dAx * dBy - dAy * dBx, dAx * dBx + dAy * dBy) * 180) / Math.PI;
-
-      if (Math.abs(angle) < ROUTES_SHARP_ANGLE) {
-        const middleX = (prev[0] + next[0]) / 2;
-        const middleY = (prev[1] + next[1]) / 2;
-
-        if (Math.abs(angle) < ROUTES_VERY_SHARP_ANGLE) {
-          const newX = (that[0] + middleX * 2) / 3;
-          const newY = (that[1] + middleY * 2) / 3;
-          routePoints[i] = [newX, newY];
-          continue;
+        if (angle < ROUTES_VERY_SHARP_ANGLE) {
+          newX = rn((currX + middleX * 2) / 3, 2);
+          newY = rn((currY + middleY * 2) / 3, 2);
+        } else {
+          newX = rn((currX + middleX) / 2, 2);
+          newY = rn((currY + middleY) / 2, 2);
         }
 
-        const newX = (that[0] + middleX) / 2;
-        const newY = (that[1] + middleY) / 2;
-        routePoints[i] = [newX, newY];
+        if (findCell(newX, newY) === cellId) {
+          routePoints[i] = [newX, newY];
+          points[cellId] = routePoints[i]; // change cell coordinate for all routes
+        }
       }
     }
   }

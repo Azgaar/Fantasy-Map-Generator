@@ -465,9 +465,20 @@ function saveGeoJSON_Cells() {
 }
 
 function saveGeoJSON_Routes() {
-  const features = pack.routes.map(({id, points, cells, group}) => {
-    const coordinates = points || getRoutePoints(cells, group);
-    return {type: "Feature", geometry: {type: "LineString", coordinates}, properties: {id, group}};
+  const {cells, burgs} = pack;
+  let points = cells.p.map(([x, y], cellId) => {
+    const burgId = cells.burg[cellId];
+    if (burgId) return [burgs[burgId].x, burgs[burgId].y];
+    return [x, y];
+  });
+
+  const features = pack.routes.map(route => {
+    const coordinates = route.points || getRoutePoints(route, points);
+    return {
+      type: "Feature",
+      geometry: {type: "LineString", coordinates},
+      properties: {id: route.id, group: route.group}
+    };
   });
   const json = {type: "FeatureCollection", features};
 

@@ -20,7 +20,7 @@ function editRoute(id) {
 
   updateRouteData();
 
-  drawControlPoints(getRoutePoints(getRoute()));
+  drawControlPoints(getPoints());
   drawCells();
 
   $("#routeEditor").dialog({
@@ -47,6 +47,17 @@ function editRoute(id) {
     const routeId = +elSelected.attr("id").slice(5);
     const route = pack.routes.find(r => r.i === routeId);
     return route;
+  }
+
+  function getPoints() {
+    const {cells, burgs} = pack;
+    let points = cells.p.map(([x, y], cellId) => {
+      const burgId = cells.burg[cellId];
+      if (burgId) return [burgs[burgId].x, burgs[burgId].y];
+      return [x, y];
+    });
+
+    return getRoutePoints(getRoute(), points);
   }
 
   function updateRouteData() {
