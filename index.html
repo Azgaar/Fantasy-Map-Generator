@@ -1590,10 +1590,20 @@
             <tr
               data-tip="Set number of points to be used for graph generation. Highly affects performance. 10K is the only recommended value"
             >
-              <td></td>
+              <td>
+                <i data-locked="0" id="lock_points" class="icon-lock-open"></i>
+              </td>
               <td>Points number</td>
               <td>
-                <input id="pointsInput" type="range" min="1" max="13" value="4" data-cells="10000" />
+                <input
+                  id="pointsInput"
+                  data-stored="points"
+                  type="range"
+                  min="1"
+                  max="13"
+                  value="4"
+                  data-cells="10000"
+                />
               </td>
               <td>
                 <output id="pointsOutputFormatted" style="color: #053305">10K</output>
@@ -8052,8 +8062,8 @@
     <script src="modules/ui/stylePresets.js?v=1.96.00"></script>
 
     <script src="modules/ui/general.js?v=1.96.00"></script>
-    <script src="modules/ui/options.js?v=1.97.08"></script>
-    <script src="main.js?v=1.97.00"></script>
+    <script src="modules/ui/options.js?v=1.97.11"></script>
+    <script src="main.js?v=1.97.11"></script>
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js?v=1.96.00"></script>

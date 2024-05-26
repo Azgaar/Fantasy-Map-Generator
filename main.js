@@ -1208,7 +1208,7 @@ function reGraph() {
   pack.cells.g = createTypedArray({maxValue: grid.points.length, from: newCells.g});
   pack.cells.q = d3.quadtree(newCells.p.map(([x, y], i) => [x, y, i]));
   pack.cells.h = createTypedArray({maxValue: 100, from: newCells.h});
-  pack.cells.area = createTypedArray({maxValue: UINT16_MAX, from: pack.cells.i}).map(getCellArea);
+  pack.cells.area = createTypedArray({maxValue: UINT32_MAX, from: pack.cells.i}).map(getCellArea);
 
   TIME && console.timeEnd("reGraph");
 }
