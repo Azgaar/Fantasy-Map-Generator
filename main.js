@@ -1208,11 +1208,6 @@ function reGraph() {
     newCells.h.push(height);
   }
 
-  function getCellArea(i) {
-    const area = Math.abs(d3.polygonArea(getPackPolygon(i)));
-    return Math.min(area, UINT16_MAX);
-  }
-
   const {cells: packCells, vertices} = calculateVoronoi(newCells.p, grid.boundary);
   pack.vertices = vertices;
   pack.cells = packCells;
@@ -1220,7 +1215,10 @@ function reGraph() {
   pack.cells.g = createTypedArray({maxValue: grid.points.length, from: newCells.g});
   pack.cells.q = d3.quadtree(newCells.p.map(([x, y], i) => [x, y, i]));
   pack.cells.h = createTypedArray({maxValue: 100, from: newCells.h});
-  pack.cells.area = createTypedArray({maxValue: UINT16_MAX, from: pack.cells.i}).map(getCellArea);
+  pack.cells.area = createTypedArray({maxValue: UINT16_MAX, length: packCells.i.length}).map((_, cellId) => {
+    const area = Math.abs(d3.polygonArea(getPackPolygon(cellId)));
+    return Math.min(area, UINT16_MAX);
+  });
 
   TIME && console.timeEnd("reGraph");
 }

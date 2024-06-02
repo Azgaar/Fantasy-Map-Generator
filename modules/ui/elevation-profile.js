@@ -82,8 +82,8 @@ function showElevationProfile(data, routeLen, isRiver) {
   draw();
 
   function downloadCSV() {
-    let data =
-      "Point,X,Y,Cell,Height,Height value,Population,Burg,Burg population,Biome,Biome color,Culture,Culture color,Religion,Religion color,Province,Province color,State,State color\n"; // headers
+    let csv =
+      "Id,x,y,lat,lon,Cell,Height,Height value,Population,Burg,Burg population,Biome,Biome color,Culture,Culture color,Religion,Religion color,Province,Province color,State,State color\n"; // headers
 
     for (let k = 0; k < chartData.points.length; k++) {
       let cell = chartData.cell[k];
@@ -96,35 +96,39 @@ function showElevationProfile(data, routeLen, isRiver) {
       let pop = pack.cells.pop[cell];
       let h = pack.cells.h[cell];
 
-      data += k + 1 + ",";
-      data += chartData.points[k][0] + ",";
-      data += chartData.points[k][1] + ",";
-      data += cell + ",";
-      data += getHeight(h) + ",";
-      data += h + ",";
-      data += rn(pop * populationRate) + ",";
+      csv += k + 1 + ",";
+      const [x, y] = pack.cells.p[data[k]];
+      csv += x + ",";
+      csv += y + ",";
+      const lat = getLatitude(y, 2);
+      const lon = getLongitude(x, 2);
+      csv += lat + ",";
+      csv += lon + ",";
+      csv += cell + ",";
+      csv += getHeight(h) + ",";
+      csv += h + ",";
+      csv += rn(pop * populationRate) + ",";
       if (burg) {
-        data += pack.burgs[burg].name + ",";
-        data += pack.burgs[burg].population * populationRate * urbanization + ",";
+        csv += pack.burgs[burg].name + ",";
+        csv += pack.burgs[burg].population * populationRate * urbanization + ",";
       } else {
-        data += ",0,";
+        csv += ",0,";
       }
-      data += biomesData.name[biome] + ",";
-      data += biomesData.color[biome] + ",";
-      data += pack.cultures[culture].name + ",";
-      data += pack.cultures[culture].color + ",";
-      data += pack.religions[religion].name + ",";
-      data += pack.religions[religion].color + ",";
-      data += pack.provinces[province].name + ",";
-      data += pack.provinces[province].color + ",";
-      data += pack.states[state].name + ",";
-      data += pack.states[state].color + ",";
-
-      data = data + "\n";
+      csv += biomesData.name[biome] + ",";
+      csv += biomesData.color[biome] + ",";
+      csv += pack.cultures[culture].name + ",";
+      csv += pack.cultures[culture].color + ",";
+      csv += pack.religions[religion].name + ",";
+      csv += pack.religions[religion].color + ",";
+      csv += pack.provinces[province].name + ",";
+      csv += pack.provinces[province].color + ",";
+      csv += pack.states[state].name + ",";
+      csv += pack.states[state].color + ",";
+      csv += "\n";
     }
 
     const name = getFileName("elevation profile") + ".csv";
-    downloadFile(data, name);
+    downloadFile(csv, name);
   }
 
   function draw() {

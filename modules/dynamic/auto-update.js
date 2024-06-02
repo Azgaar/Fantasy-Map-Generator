@@ -752,6 +752,8 @@ export function resolveVersionConflicts(version) {
     const curve = curveTypes[terrs.attr("curve")] || "curveBasisClosed";
 
     terrs
+      .attr("opacity", null)
+      .attr("filter", null)
       .attr("mask", null)
       .attr("scheme", null)
       .attr("terracing", null)
@@ -770,6 +772,7 @@ export function resolveVersionConflicts(version) {
       .attr("skip", 0)
       .attr("relax", 1)
       .attr("curve", curve);
+
     terrs
       .append("g")
       .attr("id", "landHeights")

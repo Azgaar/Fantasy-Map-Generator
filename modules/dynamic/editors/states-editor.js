@@ -1427,7 +1427,7 @@ function openStateMergeDialog() {
         if (element) {
           element.id = newId;
           element.dataset.state = rulingStateId;
-          element.dataset.i = newIndex;
+          element.dataset.id = newIndex;
           rulingStateArmy.appendChild(element);
         }
       });
