@@ -20,7 +20,8 @@ function editRoute(id) {
 
   updateRouteData();
 
-  drawControlPoints(getPoints());
+  const route = getRoute();
+  drawControlPoints(Routes.getPoints(route, Routes.preparePointsArray()));
   drawCells();
 
   $("#routeEditor").dialog({
@@ -34,30 +35,20 @@ function editRoute(id) {
   modules.editRoute = true;
 
   // add listeners
-  byId("routeCreateSelectingCells").on("click", createRoute);
-  byId("routeEditStyle").on("click", editRouteGroupStyle);
+  byId("routeCreateSelectingCells").on("click", showCreationDialog);
   byId("routeElevationProfile").on("click", showRouteElevationProfile);
   byId("routeLegend").on("click", editRouteLegend);
   byId("routeRemove").on("click", removeRoute);
   byId("routeName").on("input", changeName);
   byId("routeGroup").on("input", changeGroup);
+  byId("routeGroupEdit").on("click", editRouteGroups);
+  byId("routeEditStyle").on("click", editRouteGroupStyle);
   byId("routeGenerateName").on("click", generateName);
 
   function getRoute() {
     const routeId = +elSelected.attr("id").slice(5);
     const route = pack.routes.find(r => r.i === routeId);
     return route;
-  }
-
-  function getPoints() {
-    const {cells, burgs} = pack;
-    let points = cells.p.map(([x, y], cellId) => {
-      const burgId = cells.burg[cellId];
-      if (burgId) return [burgs[burgId].x, burgs[burgId].y];
-      return [x, y];
-    });
-
-    return getRoutePoints(getRoute(), points);
   }
 
   function updateRouteData() {
@@ -181,23 +172,9 @@ function editRoute(id) {
     redrawRoute();
   }
 
-  function drawConnections() {
-    debug.selectAll("line").remove();
-    for (const [fromCellId, connections] of Object.entries(pack.cells.routes)) {
-      const from = pack.cells.p[fromCellId];
-      for (const toCellId of Object.keys(connections)) {
-        const to = pack.cells.p[toCellId];
-        debug
-          .append("line")
-          .attr("x1", from[0])
-          .attr("y1", from[1])
-          .attr("x2", to[0])
-          .attr("y2", to[1])
-          .attr("stroke", "red")
-          .attr("stroke-width", 0.4)
-          .attr("opacity", 0.5);
-      }
-    }
+  function showCreationDialog() {
+    const route = getRoute();
+    createRoute(route.group);
   }
 
   function removeConnection(from, to) {
@@ -252,10 +229,6 @@ function editRoute(id) {
   function editRouteGroupStyle() {
     const {group} = getRoute();
     editStyle("routes", group);
-  }
-
-  function createRoute() {
-    // TODO: white the code :)
   }
 
   function removeRoute() {

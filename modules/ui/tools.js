@@ -67,7 +67,7 @@ toolsContent.addEventListener("click", function (event) {
   if (button === "addLabel") toggleAddLabel();
   else if (button === "addBurgTool") toggleAddBurg();
   else if (button === "addRiver") toggleAddRiver();
-  else if (button === "addRoute") toggleAddRoute();
+  else if (button === "addRoute") createRoute();
   else if (button === "addMarker") toggleAddMarker();
   // click to create a new map buttons
   else if (button === "openSubmapMenu") UISubmap.openSubmapMenu();
@@ -773,30 +773,6 @@ function addRiverOnClick() {
     document.getElementById("addNewRiver").classList.remove("pressed");
     if (addNewRiver.offsetParent) riversOverviewRefresh.click();
   }
-}
-
-function toggleAddRoute() {
-  const pressed = document.getElementById("addRoute").classList.contains("pressed");
-  if (pressed) {
-    unpressClickToAddButton();
-    return;
-  }
-
-  addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
-  addRoute.classList.add("pressed");
-  closeDialogs(".stable");
-  viewbox.style("cursor", "crosshair").on("click", addRouteOnClick);
-  tip("Click on map to add a first control point", true);
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
-}
-
-function addRouteOnClick() {
-  unpressClickToAddButton();
-  const [x, y] = d3.mouse(this);
-
-  const id = getNextId("route");
-  routes.select("g").append("path").attr("id", id).attr("data-new", 1).attr("d", `M${x},${y}`);
-  editRoute(id);
 }
 
 function toggleAddMarker() {

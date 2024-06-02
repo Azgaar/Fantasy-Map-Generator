@@ -2221,7 +2221,7 @@
             >
               River
             </button>
-            <button id="addRoute" data-tip="Click on map to place a route" data-shortcut="Shift + 4">Route</button>
+            <button id="addRoute" data-tip="Open route creation dialog" data-shortcut="Shift + 4">Route</button>
             <button
               id="addMarker"
               data-tip="Click on map to place a marker. Hold Shift to add multiple"
@@ -2661,7 +2661,7 @@
             data-tip="Provide a name for the new group"
             style="display: none; width: 10em"
           />
-          <span id="labelGroupNew" data-tip="Create new group for this label" class="icon-plus pointer"></span>
+          <span id="labelGroupNew" data-tip="Create a new group for this label" class="icon-plus pointer"></span>
           <span
             id="labelGroupRemove"
             data-tip="Remove the Group with all labels"
@@ -2774,7 +2774,7 @@
         <div id="riverBottom">
           <button
             id="riverCreateSelectingCells"
-            data-tip="Create new river selecting river cells"
+            data-tip="Create a new river selecting river cells"
             class="icon-map-pin"
           ></button>
           <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
@@ -2818,7 +2818,7 @@
           <div data-tip="Type to change lake type (group)">
             <div class="label" style="width: 4.8em">Type:</div>
             <span id="lakeGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
-            <span id="lakeGroupAdd" data-tip="Create new type (group) for the lake" class="icon-plus pointer"></span>
+            <span id="lakeGroupAdd" data-tip="Create a new type (group) for the lake" class="icon-plus pointer"></span>
             <select id="lakeGroup" data-tip="Select lake type (group)"></select>
             <input
               id="lakeGroupName"
@@ -2922,6 +2922,7 @@
             <div class="label">Group:</div>
             <select id="routeGroup"></select>
             <span id="routeGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
+            <span id="routeEditStyle" data-tip="Edit style for the route group" class="icon-brush pointer"></span>
           </div>
 
           <div data-tip="Route length in selected units">
@@ -2933,10 +2934,9 @@
         <div id="routeBottom">
           <button
             id="routeCreateSelectingCells"
-            data-tip="Create new route selecting route cells"
+            data-tip="Create a new route selecting route cells"
             class="icon-map-pin"
           ></button>
-          <button id="routeEditStyle" data-tip="Edit style for all routes in Style Editor" class="icon-brush"></button>
           <button
             id="routeElevationProfile"
             data-tip="Show the elevation profile for the route"
@@ -2949,6 +2949,27 @@
             data-shortcut="Delete"
             class="icon-trash fastDelete"
           ></button>
+        </div>
+      </div>
+
+      <div id="routeCreator" class="dialog" style="display: none">
+        <div>Click on map to add/remove route cells</div>
+        <ol id="routeCreatorBody" class="table" style="margin: 0; padding: 0.3em 0 0.3em 2em"></ol>
+        <div id="routeCreatorBottom">
+          <button id="routeCreatorComplete" data-tip="Complete route creation" class="icon-check"></button>
+          <button id="routeCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
+          <div style="display: inline-block">
+            Group:
+            <select id="routeCreatorGroupSelect"></select>
+            <span id="routeCreatorGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="routeGroupsEditor" class="dialog" style="display: none">
+        <div id="routeGroupsEditorBody" class="table" style="padding: 0.3em 0; width: 100%"></div>
+        <div id="routeGroupsEditorBottom">
+          <button id="routeGroupsEditorAdd" data-tip="Add route group" class="icon-plus"></button>
         </div>
       </div>
 
@@ -2976,7 +2997,11 @@
             data-tip="Provide a name for the new group"
             style="display: none; width: 9em"
           />
-          <span id="coastlineGroupAdd" data-tip="Create new group for this coastline" class="icon-plus pointer"></span>
+          <span
+            id="coastlineGroupAdd"
+            data-tip="Create a new group for this coastline"
+            class="icon-plus pointer"
+          ></span>
           <span id="coastlineGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
         </div>
 
@@ -3447,10 +3472,10 @@
             <input
               id="burgInputGroup"
               placeholder="new group name"
-              data-tip="Create new Group for the Burg"
+              data-tip="Create a new Group for the Burg"
               style="display: none; width: 10em"
             />
-            <i id="burgAddGroup" data-tip="Create new group for the burg" class="icon-plus pointer"></i>
+            <i id="burgAddGroup" data-tip="Create a new group for the burg" class="icon-plus pointer"></i>
             <i id="burgRemoveGroup" data-tip="Remove selected burg group" class="icon-trash pointer"></i>
           </div>
 
@@ -3599,7 +3624,7 @@
 
         <div id="regimentBottom">
           <button id="regimentAttack" data-tip="Attack foreign regiment" class="icon-target"></button>
-          <button id="regimentAdd" data-tip="Create new regiment or fleet" class="icon-user-plus"></button>
+          <button id="regimentAdd" data-tip="Create a new regiment or fleet" class="icon-user-plus"></button>
           <button id="regimentSplit" data-tip="Split regiment into 2 separate ones" class="icon-half"></button>
           <button
             id="regimentAttach"
@@ -5446,7 +5471,7 @@
 
         <div id="routesBottom">
           <button id="routesOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-          <button id="routeCreateNew" data-tip="Create new route selecting route cells" class="icon-map-pin"></button>
+          <button id="routeCreateNew" data-tip="Create a new route selecting route cells" class="icon-map-pin"></button>
           <button
             id="routesExport"
             data-tip="Save routes-related data as a text file (.csv)"
@@ -5502,7 +5527,7 @@
             data-tip="Automatically add river starting from clicked cell. Hold Shift to add multiple"
             class="icon-plus"
           ></button>
-          <button id="riverCreateNew" data-tip="Create new river selecting river cells" class="icon-map-pin"></button>
+          <button id="riverCreateNew" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
           <button id="riversBasinHighlight" data-tip="Toggle basin highlight mode" class="icon-sitemap"></button>
           <button
             id="riversExport"
@@ -8128,6 +8153,8 @@
     <script defer src="modules/ui/elevation-profile.js?v=1.97.10"></script>
     <script defer src="modules/ui/temperature-graph.js?v=1.90.03"></script>
     <script defer src="modules/ui/routes-editor.js?v=1.89.04"></script>
+    <script defer src="modules/ui/routes-creator.js"></script>
+    <script defer src="modules/ui/route-group-editor.js"></script>
     <script defer src="modules/ui/ice-editor.js?v=1.89.08"></script>
     <script defer src="modules/ui/lakes-editor.js?v=1.87.10"></script>
     <script defer src="modules/ui/coastline-editor.js"></script>

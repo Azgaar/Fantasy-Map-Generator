@@ -1645,17 +1645,12 @@ function drawRoutes() {
   const routePaths = {};
   const lineGen = d3.line();
 
-  const {cells, burgs} = pack;
-  let points = cells.p.map(([x, y], cellId) => {
-    const burgId = cells.burg[cellId];
-    if (burgId) return [burgs[burgId].x, burgs[burgId].y];
-    return [x, y];
-  });
+  let points = Routes.preparePointsArray();
 
   for (const route of pack.routes) {
     const {i, group} = route;
     lineGen.curve(ROUTE_CURVES[group] || ROUTE_CURVES.default);
-    const routePoints = getRoutePoints(route, points);
+    const routePoints = Routes.getPoints(route, points);
     const path = round(lineGen(routePoints), 1);
 
     if (!routePaths[group]) routePaths[group] = [];
@@ -1672,49 +1667,6 @@ function drawRoutes() {
 
 const ROUTES_SHARP_ANGLE = 135;
 const ROUTES_VERY_SHARP_ANGLE = 115;
-
-function getRoutePoints(route, points) {
-  if (route.points) return route.points;
-  const routePoints = route.cells.map(cellId => points[cellId]);
-
-  if (route.group !== "searoutes2") {
-    for (let i = 1; i < route.cells.length - 1; i++) {
-      const cellId = route.cells[i];
-      if (pack.cells.burg[cellId]) continue;
-
-      const [prevX, prevY] = routePoints[i - 1];
-      const [currX, currY] = routePoints[i];
-      const [nextX, nextY] = routePoints[i + 1];
-
-      const dAx = prevX - currX;
-      const dAy = prevY - currY;
-      const dBx = nextX - currX;
-      const dBy = nextY - currY;
-      const angle = Math.abs((Math.atan2(dAx * dBy - dAy * dBx, dAx * dBx + dAy * dBy) * 180) / Math.PI);
-
-      if (angle < ROUTES_SHARP_ANGLE) {
-        const middleX = (prevX + nextX) / 2;
-        const middleY = (prevY + nextY) / 2;
-        let newX, newY;
-
-        if (angle < ROUTES_VERY_SHARP_ANGLE) {
-          newX = rn((currX + middleX * 2) / 3, 2);
-          newY = rn((currY + middleY * 2) / 3, 2);
-        } else {
-          newX = rn((currX + middleX) / 2, 2);
-          newY = rn((currY + middleY) / 2, 2);
-        }
-
-        if (findCell(newX, newY) === cellId) {
-          routePoints[i] = [newX, newY];
-          points[cellId] = routePoints[i]; // change cell coordinate for all routes
-        }
-      }
-    }
-  }
-
-  return routePoints;
-}
 
 function drawRoute() {}
 

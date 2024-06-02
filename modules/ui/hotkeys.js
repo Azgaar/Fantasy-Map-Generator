@@ -58,7 +58,7 @@ function handleKeyup(event) {
   else if (key === "!") toggleAddBurg();
   else if (key === "@") toggleAddLabel();
   else if (key === "#") toggleAddRiver();
-  else if (key === "$") toggleAddRoute();
+  else if (key === "$") createRoute();
   else if (key === "%") toggleAddMarker();
   else if (alt && code === "KeyB") console.table(pack.burgs);
   else if (alt && code === "KeyS") console.table(pack.states);
