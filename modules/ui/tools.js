@@ -335,29 +335,44 @@ function regenerateProvinces() {
 }
 
 function regenerateBurgs() {
-  const {cells, states} = pack;
-  const lockedburgs = pack.burgs.filter(b => b.i && !b.removed && b.lock);
+  const {cells, features, burgs, states, provinces} = pack;
+
   rankCells();
 
-  cells.burg = new Uint16Array(cells.i.length);
-  const burgs = (pack.burgs = [0]); // clear burgs array
-  states.filter(s => s.i).forEach(s => (s.capital = 0)); // clear state capitals
-  pack.provinces.filter(p => p.i).forEach(p => (p.burg = 0)); // clear province capitals
+  // remove notes for unlocked burgs
+  notes = notes.filter(note => {
+    if (note.id.startsWith("burg")) {
+      const burgId = +note.id.slice(4);
+      return burgs[burgId]?.lock;
+    }
+    return true;
+  });
+
+  const newBurgs = [0]; // new burgs array
   const burgsTree = d3.quadtree();
 
-  // add locked burgs
+  cells.burg = new Uint16Array(cells.i.length); // clear cells burg data
+  states.filter(s => s.i).forEach(s => (s.capital = 0)); // clear state capitals
+  provinces.filter(p => p.i).forEach(p => (p.burg = 0)); // clear province capitals
+
+  // readd locked burgs
+  const lockedburgs = burgs.filter(burg => burg.i && !burg.removed && burg.lock);
   for (let j = 0; j < lockedburgs.length; j++) {
-    const id = burgs.length;
     const lockedBurg = lockedburgs[j];
-    lockedBurg.i = id;
-    burgs.push(lockedBurg);
+    const newId = newBurgs.length;
+
+    const noteIndex = notes.findIndex(note => note.id === `burg${lockedBurg.i}`);
+    if (noteIndex !== -1) notes[noteIndex].id = `burg${newId}`;
+
+    lockedBurg.i = newId;
+    newBurgs.push(lockedBurg);
 
     burgsTree.add([lockedBurg.x, lockedBurg.y]);
-    cells.burg[lockedBurg.cell] = id;
+    cells.burg[lockedBurg.cell] = newId;
 
     if (lockedBurg.capital) {
       const stateId = lockedBurg.state;
-      states[stateId].capital = id;
+      states[stateId].capital = newId;
       states[stateId].center = lockedBurg.cell;
     }
   }
@@ -370,8 +385,8 @@ function regenerateBurgs() {
     existingStatesCount;
   const spacing = (graphWidth + graphHeight) / 150 / (burgsCount ** 0.7 / 66); // base min distance between towns
 
-  for (let i = 0; i < sorted.length && burgs.length < burgsCount; i++) {
-    const id = burgs.length;
+  for (let i = 0; i < sorted.length && newBurgs.length < burgsCount; i++) {
+    const id = newBurgs.length;
     const cell = sorted[i];
     const [x, y] = cells.p[cell];
 
@@ -387,24 +402,27 @@ function regenerateBurgs() {
 
     const culture = cells.culture[cell];
     const name = Names.getCulture(culture);
-    burgs.push({cell, x, y, state: stateId, i: id, culture, name, capital, feature: cells.f[cell]});
+    newBurgs.push({cell, x, y, state: stateId, i: id, culture, name, capital, feature: cells.f[cell]});
     burgsTree.add([x, y]);
     cells.burg[cell] = id;
   }
+
+  pack.burgs = newBurgs; // assign new burgs array
 
   // add a capital at former place for states without added capitals
   states
     .filter(s => s.i && !s.removed && !s.capital)
     .forEach(s => {
-      const burg = addBurg([cells.p[s.center][0], cells.p[s.center][1]]); // add new burg
-      s.capital = burg;
-      s.center = pack.burgs[burg].cell;
-      pack.burgs[burg].capital = 1;
-      pack.burgs[burg].state = s.i;
-      moveBurgToGroup(burg, "cities");
+      const [x, y] = cells.p[s.center];
+      const burgId = addBurg([x, y]);
+      s.capital = burgId;
+      s.center = pack.burgs[burgId].cell;
+      pack.burgs[burgId].capital = 1;
+      pack.burgs[burgId].state = s.i;
+      moveBurgToGroup(burgId, "cities");
     });
 
-  pack.features.forEach(f => {
+  features.forEach(f => {
     if (f.port) f.port = 0; // reset features ports counter
   });
 

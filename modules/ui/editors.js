@@ -223,17 +223,18 @@ function addBurgsGroup(group) {
 }
 
 function removeBurg(id) {
-  const label = document.querySelector("#burgLabels [data-id='" + id + "']");
-  const icon = document.querySelector("#burgIcons [data-id='" + id + "']");
-  const anchor = document.querySelector("#anchors [data-id='" + id + "']");
-  if (label) label.remove();
-  if (icon) icon.remove();
-  if (anchor) anchor.remove();
+  document.querySelector("#burgLabels [data-id='" + id + "']")?.remove();
+  document.querySelector("#burgIcons [data-id='" + id + "']")?.remove();
+  document.querySelector("#anchors [data-id='" + id + "']")?.remove();
 
-  const cells = pack.cells,
-    burg = pack.burgs[id];
+  const cells = pack.cells;
+  const burg = pack.burgs[id];
+
   burg.removed = true;
   cells.burg[burg.cell] = 0;
+
+  const noteId = notes.findIndex(note => note.id === `burg${id}`);
+  if (noteId !== -1) notes.splice(noteId, 1);
 
   if (burg.coa) {
     const coaId = "burgCOA" + id;
