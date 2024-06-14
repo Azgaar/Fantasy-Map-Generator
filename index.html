@@ -4912,34 +4912,44 @@
 
           <button id="zonesManually" data-tip="Re-assign zones" class="icon-brush"></button>
           <div id="zonesManuallyButtons" style="display: none">
-            <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic"
-              >Brush:
-              <input
-                id="zonesBrush"
-                oninput="tip('Brush size: '+this.value); zonesBrushNumber.value = this.value"
-                type="range"
-                min="5"
-                max="50"
-                value="7"
-                style="width: 9em"
-              />
-              <input
-                id="zonesBrushNumber"
-                oninput="tip('Brush size: '+this.value); zonesBrush.value = this.value"
-                type="number"
-                min="5"
-                max="50"
-                value="7"
-              /> </label
-            ><br />
-            <button id="zonesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
-            <button id="zonesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
-            <button
-              id="zonesRemove"
-              data-tip="Click to toggle the removal mode on brush dragging"
-              data-shortcut="Ctrl"
-              class="icon-eraser"
-            ></button>
+            <div>
+              <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic"
+                >Brush:
+                <input
+                  id="zonesBrush"
+                  oninput="tip('Brush size: '+this.value); zonesBrushNumber.value = this.value"
+                  type="range"
+                  min="5"
+                  max="50"
+                  value="7"
+                  style="width: 9em"
+                />
+                <input
+                  id="zonesBrushNumber"
+                  oninput="tip('Brush size: '+this.value); zonesBrush.value = this.value"
+                  type="number"
+                  min="5"
+                  max="50"
+                  value="7"
+                />
+              </label>
+            </div>
+
+            <div>
+              <input id="zonesBrushLandOnly" class="checkbox" type="checkbox" checked />
+              <label for="zonesBrushLandOnly" class="checkbox-label"><i>Change land only</i></label>
+            </div>
+
+            <div style="margin-top: 0.3em">
+              <button id="zonesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
+              <button id="zonesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
+              <button
+                id="zonesRemove"
+                data-tip="Click to toggle the removal mode on brush dragging"
+                data-shortcut="Ctrl"
+                class="icon-eraser"
+              ></button>
+            </div>
           </div>
 
           <button id="zonesAdd" data-tip="Add new zone layer" class="icon-plus"></button>
@@ -8088,7 +8098,7 @@
     <script defer src="modules/ui/units-editor.js?v=1.96.00"></script>
     <script defer src="modules/ui/notes-editor.js?v=1.97.09"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.88.04"></script>
-    <script defer src="modules/ui/zones-editor.js"></script>
+    <script defer src="modules/ui/zones-editor.js?v=1.97.13"></script>
     <script defer src="modules/ui/burgs-overview.js?v=1.97.00"></script>
     <script defer src="modules/ui/rivers-overview.js"></script>
     <script defer src="modules/ui/military-overview.js?v=1.96.07"></script>
