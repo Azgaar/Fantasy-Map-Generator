@@ -312,10 +312,7 @@ function showElevationProfile(data, routeLen, isRiver) {
       .attr("transform", "translate(" + xOffset + "," + parseInt(chartHeight + +yOffset + 20) + ")")
       .call(xAxis)
       .selectAll("text")
-      .style("text-anchor", "center")
-      .attr("transform", function (d) {
-        return "rotate(0)"; // used to rotate labels, - anti-clockwise, + clockwise
-      });
+      .style("text-anchor", "center");
 
     chart
       .append("g")

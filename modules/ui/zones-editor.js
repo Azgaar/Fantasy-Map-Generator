@@ -3,7 +3,7 @@
 function editZones() {
   closeDialogs();
   if (!layerIsOn("toggleZones")) toggleZones();
-  const body = document.getElementById("zonesBodySection");
+  const body = byId("zonesBodySection");
 
   updateFilters();
   zonesEditorAddLines();
@@ -20,20 +20,20 @@ function editZones() {
   });
 
   // add listeners
-  document.getElementById("zonesFilterType").addEventListener("click", updateFilters);
-  document.getElementById("zonesFilterType").addEventListener("change", filterZonesByType);
-  document.getElementById("zonesEditorRefresh").addEventListener("click", zonesEditorAddLines);
-  document.getElementById("zonesEditStyle").addEventListener("click", () => editStyle("zones"));
-  document.getElementById("zonesLegend").addEventListener("click", toggleLegend);
-  document.getElementById("zonesPercentage").addEventListener("click", togglePercentageMode);
-  document.getElementById("zonesManually").addEventListener("click", enterZonesManualAssignent);
-  document.getElementById("zonesManuallyApply").addEventListener("click", applyZonesManualAssignent);
-  document.getElementById("zonesManuallyCancel").addEventListener("click", cancelZonesManualAssignent);
-  document.getElementById("zonesAdd").addEventListener("click", addZonesLayer);
-  document.getElementById("zonesExport").addEventListener("click", downloadZonesData);
-  document.getElementById("zonesRemove").addEventListener("click", toggleEraseMode);
+  byId("zonesFilterType").on("click", updateFilters);
+  byId("zonesFilterType").on("change", filterZonesByType);
+  byId("zonesEditorRefresh").on("click", zonesEditorAddLines);
+  byId("zonesEditStyle").on("click", () => editStyle("zones"));
+  byId("zonesLegend").on("click", toggleLegend);
+  byId("zonesPercentage").on("click", togglePercentageMode);
+  byId("zonesManually").on("click", enterZonesManualAssignent);
+  byId("zonesManuallyApply").on("click", applyZonesManualAssignent);
+  byId("zonesManuallyCancel").on("click", cancelZonesManualAssignent);
+  byId("zonesAdd").on("click", addZonesLayer);
+  byId("zonesExport").on("click", downloadZonesData);
+  byId("zonesRemove").on("click", toggleEraseMode);
 
-  body.addEventListener("click", function (ev) {
+  body.on("click", function (ev) {
     const el = ev.target,
       cl = el.classList,
       zone = el.parentNode.dataset.id;
@@ -45,7 +45,7 @@ function editZones() {
     if (customization) selectZone(el);
   });
 
-  body.addEventListener("input", function (ev) {
+  body.on("input", function (ev) {
     const el = ev.target;
     const zone = zones.select("#" + el.parentNode.dataset.id);
 
@@ -58,7 +58,7 @@ function editZones() {
     const zones = Array.from(document.querySelectorAll("#zones > g"));
     const types = unique(zones.map(zone => zone.dataset.type));
 
-    const filterSelect = document.getElementById("zonesFilterType");
+    const filterSelect = byId("zonesFilterType");
     const typeToFilterBy = types.includes(zonesFilterType.value) ? zonesFilterType.value : "all";
 
     filterSelect.innerHTML =
@@ -70,7 +70,7 @@ function editZones() {
   function zonesEditorAddLines() {
     const unit = " " + getAreaUnit();
 
-    const typeToFilterBy = document.getElementById("zonesFilterType").value;
+    const typeToFilterBy = byId("zonesFilterType").value;
     const zones = Array.from(document.querySelectorAll("#zones > g"));
     const filteredZones = typeToFilterBy === "all" ? zones : zones.filter(zone => zone.dataset.type === typeToFilterBy);
 
@@ -127,8 +127,8 @@ function editZones() {
     zonesFooterPopulation.innerHTML = si(totalPop);
 
     // add listeners
-    body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => zoneHighlightOn(ev)));
-    body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => zoneHighlightOff(ev)));
+    body.querySelectorAll("div.states").forEach(el => el.on("mouseenter", ev => zoneHighlightOn(ev)));
+    body.querySelectorAll("div.states").forEach(el => el.on("mouseleave", ev => zoneHighlightOff(ev)));
 
     if (body.dataset.type === "percentage") {
       body.dataset.type = "absolute";
@@ -182,7 +182,7 @@ function editZones() {
     if (!layerIsOn("toggleZones")) toggleZones();
     customization = 10;
     document.querySelectorAll("#zonesBottom > *").forEach(el => (el.style.display = "none"));
-    document.getElementById("zonesManuallyButtons").style.display = "inline-block";
+    byId("zonesManuallyButtons").style.display = "inline-block";
 
     zonesEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
     zonesFooter.style.display = "none";
@@ -215,24 +215,27 @@ function editZones() {
   }
 
   function dragZoneBrush() {
-    const r = +zonesBrush.value;
+    const radius = +byId("zonesBrush").value;
+    const eraseMode = byId("zonesRemove").classList.contains("pressed");
+    const landOnly = byId("zonesBrushLandOnly").checked;
+
+    const selected = body.querySelector("div.selected");
+    const zone = zones.select("#" + selected.dataset.id);
+    const base = zone.attr("id") + "_"; // id generic part
 
     d3.event.on("drag", () => {
       if (!d3.event.dx && !d3.event.dy) return;
-      const p = d3.mouse(this);
-      moveCircle(p[0], p[1], r);
+      const [x, y] = d3.mouse(this);
+      moveCircle(x, y, radius);
 
-      const selection = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1])];
+      let selection = radius > 5 ? findAll(x, y, radius) : [findCell(x, y, radius)];
+      if (landOnly) selection = selection.filter(i => pack.cells.h[i] >= 20);
       if (!selection) return;
 
-      const selected = body.querySelector("div.selected");
-      const zone = zones.select("#" + selected.dataset.id);
-      const base = zone.attr("id") + "_"; // id generic part
       const dataCells = zone.attr("data-cells");
       let cells = dataCells ? dataCells.split(",").map(i => +i) : [];
 
-      const erase = document.getElementById("zonesRemove").classList.contains("pressed");
-      if (erase) {
+      if (eraseMode) {
         // remove
         selection.forEach(i => {
           const index = cells.indexOf(i);
@@ -300,7 +303,7 @@ function editZones() {
     customization = 0;
     removeCircle();
     document.querySelectorAll("#zonesBottom > *").forEach(el => (el.style.display = "inline-block"));
-    document.getElementById("zonesManuallyButtons").style.display = "none";
+    byId("zonesManuallyButtons").style.display = "none";
 
     zonesEditor.querySelectorAll(".hide:not(.show)").forEach(el => el.classList.remove("hidden"));
     zonesFooter.style.display = "block";
@@ -321,7 +324,7 @@ function editZones() {
     const fill = el.getAttribute("fill");
     const callback = newFill => {
       el.fill = newFill;
-      document.getElementById(el.parentNode.dataset.id).setAttribute("fill", newFill);
+      byId(el.parentNode.dataset.id).setAttribute("fill", newFill);
     };
 
     openPicker(fill, callback);

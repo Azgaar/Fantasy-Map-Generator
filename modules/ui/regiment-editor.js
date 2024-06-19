@@ -8,9 +8,10 @@ function editRegiment(selector) {
   armies.selectAll(":scope > g > g").call(d3.drag().on("drag", dragRegiment));
   elSelected = selector ? document.querySelector(selector) : d3.event.target.parentElement; // select g element
   if (!pack.states[elSelected.dataset.state]) return;
-  if (!regiment()) return;
-  updateRegimentData(regiment());
+  if (!getRegiment()) return;
+  updateRegimentData(getRegiment());
   drawBase();
+  drawRotationControl();
 
   $("#regimentEditor").dialog({
     title: "Edit Regiment",
@@ -37,8 +38,8 @@ function editRegiment(selector) {
   document.getElementById("regimentRemove").addEventListener("click", removeRegiment);
 
   // get regiment data element
-  function regiment() {
-    return pack.states[elSelected.dataset.state].military.find(r => r.i == elSelected.dataset.id);
+  function getRegiment() {
+    return pack.states[elSelected.dataset.state]?.military.find(r => r.i == elSelected.dataset.id);
   }
 
   function updateRegimentData(regiment) {
@@ -60,7 +61,7 @@ function editRegiment(selector) {
   }
 
   function drawBase() {
-    const reg = regiment();
+    const reg = getRegiment();
     const clr = pack.states[elSelected.dataset.state].color;
     const base = viewbox
       .insert("g", "g#armies")
@@ -69,12 +70,8 @@ function editRegiment(selector) {
       .attr("stroke", "#000")
       .attr("cursor", "move");
     base
-      .on("mouseenter", () => {
-        tip("Regiment base. Drag to re-base the regiment", true);
-      })
-      .on("mouseleave", () => {
-        tip("", true);
-      });
+      .on("mouseenter", () => tip("Regiment base. Drag to re-base the regiment", true))
+      .on("mouseleave", () => tip("", true));
 
     base
       .append("line")
@@ -92,8 +89,42 @@ function editRegiment(selector) {
       .call(d3.drag().on("drag", dragBase));
   }
 
+  function drawRotationControl() {
+    const reg = getRegiment();
+    const {x, width, y, height} = elSelected.getBBox();
+
+    debug
+      .append("circle")
+      .attr("id", "rotationControl")
+      .attr("cx", x + width)
+      .attr("cy", y + height / 2)
+      .attr("r", 1)
+      .attr("opacity", 1)
+      .attr("fill", "yellow")
+      .attr("stroke-width", 0.3)
+      .attr("stroke", "black")
+      .attr("cursor", "alias")
+      .attr("transform", `rotate(${reg.angle || 0})`)
+      .attr("transform-origin", `${reg.x}px ${reg.y}px`)
+      .on("mouseenter", () => tip("Drag to rotate the regiment", true))
+      .on("mouseleave", () => tip("", true))
+      .call(d3.drag().on("start", rotateRegiment));
+  }
+
+  function rotateRegiment() {
+    const reg = getRegiment();
+
+    d3.event.on("drag", function () {
+      const {x, y} = d3.event;
+      const angle = rn(Math.atan2(y - reg.y, x - reg.x) * (180 / Math.PI), 2);
+      elSelected.setAttribute("transform", `rotate(${angle})`);
+      this.setAttribute("transform", `rotate(${angle})`);
+      reg.angle = rn(angle, 2);
+    });
+  }
+
   function changeType() {
-    const reg = regiment();
+    const reg = getRegiment();
     reg.n = +!reg.n;
     document.getElementById("regimentType").className = reg.n ? "icon-anchor" : "icon-users";
 
@@ -110,11 +141,11 @@ function editRegiment(selector) {
   }
 
   function changeName() {
-    elSelected.dataset.name = regiment().name = this.value;
+    elSelected.dataset.name = getRegiment().name = this.value;
   }
 
   function restoreName() {
-    const reg = regiment(),
+    const reg = getRegiment(),
       regs = pack.states[elSelected.dataset.state].military;
     const name = Military.getName(reg, regs);
     elSelected.dataset.name = reg.name = document.getElementById("regimentName").value = name;
@@ -129,12 +160,12 @@ function editRegiment(selector) {
 
   function changeEmblem() {
     const emblem = document.getElementById("regimentEmblem").value;
-    regiment().icon = elSelected.querySelector(".regimentIcon").innerHTML = emblem;
+    getRegiment().icon = elSelected.querySelector(".regimentIcon").innerHTML = emblem;
   }
 
   function changeUnit() {
     const u = this.dataset.u;
-    const reg = regiment();
+    const reg = getRegiment();
     reg.u[u] = +this.value || 0;
     reg.a = d3.sum(Object.values(reg.u));
     elSelected.querySelector("text").innerHTML = Military.getTotal(reg);
@@ -143,7 +174,7 @@ function editRegiment(selector) {
   }
 
   function splitRegiment() {
-    const reg = regiment(),
+    const reg = getRegiment(),
       u1 = reg.u;
     const state = +elSelected.dataset.state,
       military = pack.states[state].military;
@@ -206,8 +237,7 @@ function editRegiment(selector) {
   function addRegimentOnClick() {
     const point = d3.mouse(this);
     const cell = findCell(point[0], point[1]);
-    const x = pack.cells.p[cell][0],
-      y = pack.cells.p[cell][1];
+    const [x, y] = pack.cells.p[cell];
     const state = +elSelected.dataset.state,
       military = pack.states[state].military;
     const i = military.length ? last(military).i + 1 : 0;
@@ -254,7 +284,7 @@ function editRegiment(selector) {
       return;
     }
 
-    const attacker = regiment();
+    const attacker = getRegiment();
     const defender = pack.states[regSelected.dataset.state].military.find(r => r.i == regSelected.dataset.id);
     if (!attacker.a || !defender.a) {
       tip("Regiment has no troops to battle", false, "error");
@@ -322,7 +352,7 @@ function editRegiment(selector) {
       return;
     }
 
-    const reg = regiment(); // reg to be attached
+    const reg = getRegiment(); // reg to be attached
     const sel = pack.states[newState].military.find(r => r.i == regSelected.dataset.id); // reg to attach to
 
     for (const unit of options.military) {
@@ -349,11 +379,11 @@ function editRegiment(selector) {
     if (index != -1) notes.splice(index, 1);
 
     const s = pack.states[elSelected.dataset.state];
-    Military.generateNote(regiment(), s);
+    Military.generateNote(getRegiment(), s);
   }
 
   function editLegend() {
-    editNotes(elSelected.id, regiment().name);
+    editNotes(elSelected.id, getRegiment().name);
   }
 
   function removeRegiment() {
@@ -365,7 +395,7 @@ function editRegiment(selector) {
         Remove: function () {
           $(this).dialog("close");
           const military = pack.states[elSelected.dataset.state].military;
-          const regIndex = military.indexOf(regiment());
+          const regIndex = military.indexOf(getRegiment());
           if (regIndex === -1) return;
           military.splice(regIndex, 1);
 
@@ -392,8 +422,6 @@ function editRegiment(selector) {
     const size = +armies.attr("box-size");
     const w = reg.n ? size * 4 : size * 6;
     const h = size * 2;
-    const x1 = x => rn(x - w / 2, 2);
-    const y1 = y => rn(y - size, 2);
 
     const baseRect = this.querySelector("rect");
     const text = this.querySelector("text");
@@ -402,26 +430,37 @@ function editRegiment(selector) {
 
     const self = elSelected === this;
     const baseLine = viewbox.select("g#regimentBase > line");
+    const rotationControl = debug.select("#rotationControl");
 
     d3.event.on("drag", function () {
-      const x = (reg.x = d3.event.x),
-        y = (reg.y = d3.event.y);
+      const {x, y} = d3.event;
+      reg.x = x;
+      reg.y = y;
+      const x1 = rn(x - w / 2, 2);
+      const y1 = rn(y - size, 2);
 
-      baseRect.setAttribute("x", x1(x));
-      baseRect.setAttribute("y", y1(y));
+      this.setAttribute("transform-origin", `${x}px ${y}px`);
+      baseRect.setAttribute("x", x1);
+      baseRect.setAttribute("y", y1);
       text.setAttribute("x", x);
       text.setAttribute("y", y);
-      iconRect.setAttribute("x", x1(x) - h);
-      iconRect.setAttribute("y", y1(y));
-      icon.setAttribute("x", x1(x) - size);
+      iconRect.setAttribute("x", x1 - h);
+      iconRect.setAttribute("y", y1);
+      icon.setAttribute("x", x1 - size);
       icon.setAttribute("y", y);
-      if (self) baseLine.attr("x2", x).attr("y2", y);
+      if (self) {
+        baseLine.attr("x2", x).attr("y2", y);
+        rotationControl
+          .attr("cx", x1 + w)
+          .attr("cy", y)
+          .attr("transform-origin", `${x}px ${y}px`);
+      }
     });
   }
 
   function dragBase() {
     const baseLine = viewbox.select("g#regimentBase > line");
-    const reg = regiment();
+    const reg = getRegiment();
 
     d3.event.on("drag", function () {
       this.setAttribute("cx", d3.event.x);
@@ -436,9 +475,10 @@ function editRegiment(selector) {
   }
 
   function closeEditor() {
+    debug.selectAll("*").remove();
+    viewbox.selectAll("g#regimentBase").remove();
     armies.selectAll(":scope > g").classed("draggable", false);
     armies.selectAll("g>g").call(d3.drag().on("drag", null));
-    viewbox.selectAll("g#regimentBase").remove();
     document.getElementById("regimentAdd").classList.remove("pressed");
     document.getElementById("regimentAttack").classList.remove("pressed");
     document.getElementById("regimentAttach").classList.remove("pressed");
