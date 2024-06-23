@@ -47,8 +47,7 @@ function editRoute(id) {
 
   function getRoute() {
     const routeId = +elSelected.attr("id").slice(5);
-    const route = pack.routes.find(r => r.i === routeId);
-    return route;
+    return pack.routes.find(route => route.i === routeId);
   }
 
   function updateRouteData() {
@@ -145,7 +144,6 @@ function editRoute(id) {
 
   function addControlPoint() {
     const [x, y] = d3.mouse(this);
-
     const route = getRoute();
     if (!route.points) route.points = debug.selectAll("#controlPoints > *").data();
 
@@ -172,6 +170,32 @@ function editRoute(id) {
     redrawRoute();
   }
 
+  function removeControlPoint() {
+    const route = getRoute();
+
+    if (!route.points) route.points = debug.selectAll("#controlPoints > *").data();
+    const [x, y] = d3.select(this).datum();
+    const cellId = findCell(x, y);
+    const routeAllCells = route.points.map(([x, y]) => findCell(x, y));
+
+    const isOnlyPointInCell = routeAllCells.filter(cell => cell === cellId).length === 1;
+    if (isOnlyPointInCell) {
+      const index = route.cells.indexOf(cellId);
+      const prev = route.cells[index - 1];
+      const next = route.cells[index + 1];
+      if (prev) removeConnection(prev, cellId);
+      if (next) removeConnection(cellId, next);
+      if (prev && next) addConnection(prev, next, route.i);
+    }
+
+    this.remove();
+    route.points = debug.selectAll("#controlPoints > *").data();
+    route.cells = unique(route.points.map(([x, y]) => findCell(x, y)));
+
+    drawCells();
+    redrawRoute();
+  }
+
   function showCreationDialog() {
     const route = getRoute();
     createRoute(route.group);
@@ -191,12 +215,6 @@ function editRoute(id) {
 
     if (!routes[to]) routes[to] = {};
     routes[to][from] = routeId;
-  }
-
-  function removeControlPoint() {
-    this.remove();
-    redrawRoute();
-    drawCells();
   }
 
   function changeName() {
