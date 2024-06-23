@@ -36,6 +36,7 @@ function editRoute(id) {
 
   // add listeners
   byId("routeCreateSelectingCells").on("click", showCreationDialog);
+  byId("routeSplit").on("click", toggleSplitRoute);
   byId("routeElevationProfile").on("click", showRouteElevationProfile);
   byId("routeLegend").on("click", editRouteLegend);
   byId("routeRemove").on("click", removeRoute);
@@ -84,7 +85,7 @@ function editRoute(id) {
       .attr("cy", d => d[1])
       .attr("r", 0.6)
       .call(d3.drag().on("start", dragControlPoint))
-      .on("click", removeControlPoint);
+      .on("click", handleControlPointClick);
   }
 
   function drawCells() {
@@ -170,35 +171,85 @@ function editRoute(id) {
     redrawRoute();
   }
 
-  function removeControlPoint() {
-    const route = getRoute();
+  function handleControlPointClick() {
+    const controlPoint = d3.select(this);
+    const isSplitMode = byId("routeSplit").classList.contains("pressed");
+    isSplitMode ? splitRoute(controlPoint) : removeControlPoint(controlPoint);
 
-    if (!route.points) route.points = debug.selectAll("#controlPoints > *").data();
-    const [x, y] = d3.select(this).datum();
-    const cellId = findCell(x, y);
-    const routeAllCells = route.points.map(([x, y]) => findCell(x, y));
+    function splitRoute(controlPoint) {
+      const allPoints = debug.selectAll("#controlPoints > *").data();
+      const pointIndex = allPoints.indexOf(controlPoint.datum());
 
-    const isOnlyPointInCell = routeAllCells.filter(cell => cell === cellId).length === 1;
-    if (isOnlyPointInCell) {
-      const index = route.cells.indexOf(cellId);
-      const prev = route.cells[index - 1];
-      const next = route.cells[index + 1];
-      if (prev) removeConnection(prev, cellId);
-      if (next) removeConnection(cellId, next);
-      if (prev && next) addConnection(prev, next, route.i);
+      const oldRoutePoints = allPoints.slice(0, pointIndex + 1);
+      const newRoutePoints = allPoints.slice(pointIndex);
+
+      // update old route
+      const oldRoute = getRoute();
+      oldRoute.points = oldRoutePoints;
+      oldRoute.cells = unique(oldRoute.points.map(([x, y]) => findCell(x, y)));
+      drawControlPoints(oldRoute.points);
+      drawCells();
+      redrawRoute();
+
+      // create new route
+      const newRoute = {
+        ...oldRoute,
+        i: Math.max(...pack.routes.map(route => route.i)) + 1,
+        cells: unique(newRoutePoints.map(([x, y]) => findCell(x, y))),
+        points: newRoutePoints
+      };
+      pack.routes.push(newRoute);
+
+      for (let i = 0; i < newRoute.cells.length; i++) {
+        const cellId = newRoute.cells[i];
+        const nextCellId = newRoute.cells[i + 1];
+        if (nextCellId) addConnection(cellId, nextCellId, newRoute.i);
+      }
+
+      const lineGen = d3.line();
+      lineGen.curve(ROUTE_CURVES[newRoute.group] || ROUTE_CURVES.default);
+      routes
+        .select("#" + newRoute.group)
+        .append("path")
+        .attr("d", round(lineGen(Routes.getPoints(newRoute, newRoutePoints)), 1))
+        .attr("id", "route" + newRoute.i);
+
+      byId("routeSplit").classList.remove("pressed");
     }
 
-    this.remove();
-    route.points = debug.selectAll("#controlPoints > *").data();
-    route.cells = unique(route.points.map(([x, y]) => findCell(x, y)));
+    function removeControlPoint(controlPoint) {
+      const route = getRoute();
 
-    drawCells();
-    redrawRoute();
+      if (!route.points) route.points = debug.selectAll("#controlPoints > *").data();
+      const cellId = findCell(...controlPoint.datum());
+      const routeAllCells = route.points.map(([x, y]) => findCell(x, y));
+
+      const isOnlyPointInCell = routeAllCells.filter(cell => cell === cellId).length === 1;
+      if (isOnlyPointInCell) {
+        const index = route.cells.indexOf(cellId);
+        const prev = route.cells[index - 1];
+        const next = route.cells[index + 1];
+        if (prev) removeConnection(prev, cellId);
+        if (next) removeConnection(cellId, next);
+        if (prev && next) addConnection(prev, next, route.i);
+      }
+
+      controlPoint.remove();
+      route.points = debug.selectAll("#controlPoints > *").data();
+      route.cells = unique(route.points.map(([x, y]) => findCell(x, y)));
+
+      drawCells();
+      redrawRoute();
+    }
   }
 
   function showCreationDialog() {
     const route = getRoute();
     createRoute(route.group);
+  }
+
+  function toggleSplitRoute() {
+    this.classList.toggle("pressed");
   }
 
   function removeConnection(from, to) {
