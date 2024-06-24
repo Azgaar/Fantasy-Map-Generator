@@ -36,7 +36,8 @@ function editRoute(id) {
 
   // add listeners
   byId("routeCreateSelectingCells").on("click", showCreationDialog);
-  byId("routeSplit").on("click", toggleSplitRoute);
+  byId("routeSplit").on("click", togglePressed);
+  byId("routeJoin").on("click", togglePressed);
   byId("routeElevationProfile").on("click", showRouteElevationProfile);
   byId("routeLegend").on("click", editRouteLegend);
   byId("routeRemove").on("click", removeRoute);
@@ -173,8 +174,16 @@ function editRoute(id) {
 
   function handleControlPointClick() {
     const controlPoint = d3.select(this);
+
+    const isJoinMode = byId("routeJoin").classList.contains("pressed");
+    if (isJoinMode) return joinRoute(controlPoint);
+
     const isSplitMode = byId("routeSplit").classList.contains("pressed");
-    isSplitMode ? splitRoute(controlPoint) : removeControlPoint(controlPoint);
+    if (isSplitMode) return splitRoute(controlPoint);
+
+    return removeControlPoint(controlPoint);
+
+    function joinRoute(controlPoint) {}
 
     function splitRoute(controlPoint) {
       const allPoints = debug.selectAll("#controlPoints > *").data();
@@ -248,7 +257,7 @@ function editRoute(id) {
     createRoute(route.group);
   }
 
-  function toggleSplitRoute() {
+  function togglePressed() {
     this.classList.toggle("pressed");
   }
 
