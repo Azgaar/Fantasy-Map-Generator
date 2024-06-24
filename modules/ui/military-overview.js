@@ -55,7 +55,9 @@ function overviewMilitary() {
     for (const u of options.military) {
       const label = capitalize(u.name.replace(/_/g, " "));
       insert(
-        `<div data-tip="State ${u.name} units number. Click to sort" class="sortable removable" data-sortby="${u.name}">${label}&nbsp;</div>`
+        `<div data-tip="State ${
+          u.name
+        } units number. Click to sort" class="sortable removable" data-sortby="${u.name.toLowerCase()}">${label}&nbsp;</div>`
       );
     }
     header.querySelectorAll(".removable").forEach(function (e) {
@@ -77,7 +79,7 @@ function overviewMilitary() {
       const total = options.military.reduce((s, u) => s + getForces(u) * u.crew, 0);
       const rate = (total / population) * 100;
 
-      const sortData = options.military.map(u => `data-${u.name}="${getForces(u)}"`).join(" ");
+      const sortData = options.military.map(u => `data-${u.name.toLowerCase()}="${getForces(u)}"`).join(" ");
       const lineData = options.military
         .map(u => `<div data-type="${u.name}" data-tip="State ${u.name} units number">${getForces(u)}</div>`)
         .join(" ");
@@ -469,7 +471,7 @@ function overviewMilitary() {
     body.querySelectorAll(":scope > div").forEach(function (el) {
       data += el.dataset.id + ",";
       data += el.dataset.state + ",";
-      data += units.map(u => el.dataset[u]).join(",") + ",";
+      data += units.map(u => el.dataset[u.toLowerCase()]).join(",") + ",";
       data += el.dataset.total + ",";
       data += el.dataset.population + ",";
       data += rn(el.dataset.rate, 2) + "%,";
