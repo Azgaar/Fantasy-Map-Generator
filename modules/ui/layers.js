@@ -169,6 +169,7 @@ function restoreLayers() {
   if (layerIsOn("toggleGrid")) drawGrid();
   if (layerIsOn("toggleCoordinates")) drawCoordinates();
   if (layerIsOn("toggleCompass")) compass.style("display", "block");
+  if (layerIsOn("toggleRoutes")) drawRoutes();
   if (layerIsOn("toggleTemp")) drawTemp();
   if (layerIsOn("togglePrec")) drawPrec();
   if (layerIsOn("togglePopulation")) drawPopulation();
@@ -392,7 +393,6 @@ function drawTemp() {
     const start = findStart(i, t);
     if (!start) continue;
     used[i] = 1;
-    //debug.append("circle").attr("r", 3).attr("cx", vertices.p[start][0]).attr("cy", vertices.p[start][1]).attr("fill", "red").attr("stroke", "black").attr("stroke-width", .3);
 
     const chain = connectVertices(start, t); // vertices chain to form a path
     const relaxed = chain.filter((v, i) => i % 4 === 0 || vertices.c[v].some(c => c >= n));
@@ -1624,17 +1624,51 @@ function drawRivers() {
 function toggleRoutes(event) {
   if (!layerIsOn("toggleRoutes")) {
     turnButtonOn("toggleRoutes");
-    $("#routes").fadeIn();
+    drawRoutes();
     if (event && isCtrlClick(event)) editStyle("routes");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("routes");
-      return;
-    }
-    $("#routes").fadeOut();
+    if (event && isCtrlClick(event)) return editStyle("routes");
+    routes.selectAll("path").remove();
     turnButtonOff("toggleRoutes");
   }
 }
+
+const ROUTE_CURVES = {
+  roads: d3.curveCatmullRom.alpha(0.1),
+  trails: d3.curveCatmullRom.alpha(0.1),
+  searoutes: d3.curveCatmullRom.alpha(0.5),
+  default: d3.curveCatmullRom.alpha(0.1)
+};
+
+function drawRoutes() {
+  TIME && console.time("drawRoutes");
+  const routePaths = {};
+  const lineGen = d3.line();
+
+  let points = Routes.preparePointsArray();
+
+  for (const route of pack.routes) {
+    const {i, group} = route;
+    lineGen.curve(ROUTE_CURVES[group] || ROUTE_CURVES.default);
+    const routePoints = Routes.getPoints(route, points);
+    const path = round(lineGen(routePoints), 1);
+
+    if (!routePaths[group]) routePaths[group] = [];
+    routePaths[group].push(`<path id="route${i}" d="${path}"/>`);
+  }
+
+  routes.selectAll("path").remove();
+  for (const group in routePaths) {
+    routes.select("#" + group).html(routePaths[group].join(""));
+  }
+
+  TIME && console.timeEnd("drawRoutes");
+}
+
+const ROUTES_SHARP_ANGLE = 135;
+const ROUTES_VERY_SHARP_ANGLE = 115;
+
+function drawRoute() {}
 
 function toggleMilitary() {
   if (!layerIsOn("toggleMilitary")) {

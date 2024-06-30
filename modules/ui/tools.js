@@ -22,6 +22,7 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "editZonesButton") editZones();
   else if (button === "overviewChartsButton") overviewCharts();
   else if (button === "overviewBurgsButton") overviewBurgs();
+  else if (button === "overviewRoutesButton") overviewRoutes();
   else if (button === "overviewRiversButton") overviewRivers();
   else if (button === "overviewMilitaryButton") overviewMilitary();
   else if (button === "overviewMarkersButton") overviewMarkers();
@@ -66,7 +67,7 @@ toolsContent.addEventListener("click", function (event) {
   if (button === "addLabel") toggleAddLabel();
   else if (button === "addBurgTool") toggleAddBurg();
   else if (button === "addRiver") toggleAddRiver();
-  else if (button === "addRoute") toggleAddRoute();
+  else if (button === "addRoute") createRoute();
   else if (button === "addMarker") toggleAddMarker();
   // click to create a new map buttons
   else if (button === "openSubmapMenu") UISubmap.openSubmapMenu();
@@ -129,7 +130,7 @@ function recalculatePopulation() {
     if (!b.i || b.removed || b.lock) return;
     const i = b.cell;
 
-    b.population = rn(Math.max((pack.cells.s[i] + pack.cells.road[i] / 2) / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
+    b.population = rn(Math.max(pack.cells.s[i] / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
     if (b.capital) b.population = b.population * 1.3; // increase capital population
     if (b.port) b.population = b.population * 1.3; // increase port population
     b.population = rn(b.population * gauss(2, 3, 0.6, 20, 3), 3);
@@ -790,34 +791,6 @@ function addRiverOnClick() {
     document.getElementById("addNewRiver").classList.remove("pressed");
     if (addNewRiver.offsetParent) riversOverviewRefresh.click();
   }
-}
-
-function toggleAddRoute() {
-  const pressed = document.getElementById("addRoute").classList.contains("pressed");
-  if (pressed) {
-    unpressClickToAddButton();
-    return;
-  }
-
-  addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
-  addRoute.classList.add("pressed");
-  closeDialogs(".stable");
-  viewbox.style("cursor", "crosshair").on("click", addRouteOnClick);
-  tip("Click on map to add a first control point", true);
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
-}
-
-function addRouteOnClick() {
-  unpressClickToAddButton();
-  const point = d3.mouse(this);
-  const id = getNextId("route");
-  elSelected = routes
-    .select("g")
-    .append("path")
-    .attr("id", id)
-    .attr("data-new", 1)
-    .attr("d", `M${point[0]},${point[1]}`);
-  editRoute(true);
 }
 
 function toggleAddMarker() {

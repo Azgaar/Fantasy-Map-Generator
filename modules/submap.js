@@ -145,8 +145,6 @@ window.Submap = (function () {
     cells.state = new Uint16Array(pn);
     cells.burg = new Uint16Array(pn);
     cells.religion = new Uint16Array(pn);
-    cells.road = new Uint16Array(pn);
-    cells.crossroad = new Uint16Array(pn);
     cells.province = new Uint16Array(pn);
 
     stage("Resampling culture, state and religion map.");
@@ -272,7 +270,7 @@ window.Submap = (function () {
 
     BurgsAndStates.drawBurgs();
 
-    stage("Regenerating road network.");
+    stage("Regenerating routes network.");
     Routes.regenerate();
 
     drawStates();
