@@ -53,7 +53,7 @@ let biomes = viewbox.append("g").attr("id", "biomes");
 let cells = viewbox.append("g").attr("id", "cells");
 let gridOverlay = viewbox.append("g").attr("id", "gridOverlay");
 let coordinates = viewbox.append("g").attr("id", "coordinates");
-let compass = viewbox.append("g").attr("id", "compass");
+let compass = viewbox.append("g").attr("id", "compass").style("display", "none");
 let rivers = viewbox.append("g").attr("id", "rivers");
 let terrain = viewbox.append("g").attr("id", "terrain");
 let relig = viewbox.append("g").attr("id", "relig");
@@ -125,6 +125,9 @@ population.append("g").attr("id", "urban");
 emblems.append("g").attr("id", "burgEmblems");
 emblems.append("g").attr("id", "provinceEmblems");
 emblems.append("g").attr("id", "stateEmblems");
+
+// compass
+compass.append("use").attr("xlink:href", "#defs-compass-rose");
 
 // fogging
 fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");

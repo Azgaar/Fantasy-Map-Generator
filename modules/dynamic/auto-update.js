@@ -846,4 +846,16 @@ export function resolveVersionConflicts(version) {
       }
     });
   }
+
+  if (version < 1.98) {
+    // v1.98.00 changed compass layer and rose element id
+    const rose = compass.select("use");
+    rose.attr("xlink:href", "#defs-compass-rose");
+
+    if (!compass.selectAll("*").size()) {
+      compass.style("display", "none");
+      compass.append("use").attr("xlink:href", "#defs-compass-rose");
+      shiftCompass();
+    }
+  }
 }

@@ -1525,10 +1525,6 @@ function toggleCompass(event) {
   if (!layerIsOn("toggleCompass")) {
     turnButtonOn("toggleCompass");
     $("#compass").fadeIn();
-    if (!compass.selectAll("*").size()) {
-      compass.append("use").attr("xlink:href", "#rose");
-      shiftCompass();
-    }
     if (event && isCtrlClick(event)) editStyle("compass");
   } else {
     if (event && isCtrlClick(event)) {
