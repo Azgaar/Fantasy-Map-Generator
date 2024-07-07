@@ -2181,7 +2181,7 @@ svg.button {
 #worldControls input[type="number"] {
   border: 1px solid #e5e5e5;
   padding: 0px;
-  width: 3.2em;
+  width: 4em;
 }
 
 #worldControls i.icon-lock-open,

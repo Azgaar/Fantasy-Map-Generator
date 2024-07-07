@@ -138,7 +138,7 @@
       }
     </style>
 
-    <link rel="preload" href="index.css?v=1.96.00" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+    <link rel="preload" href="index.css?v=1.97.16" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="icons.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="libs/jquery-ui.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
   </head>
@@ -2557,7 +2557,9 @@
             </div>
 
             <div>
-              <label data-tip="Set precipitation - water amount clouds can bring. Defines rivers and biomes generation">
+              <label
+                data-tip="Set precipitation - water amount clouds can bring. Defines rivers and biomes generation. Keep around 100% for default generation"
+              >
                 <i data-locked="0" id="lock_prec" class="icon-lock-open"></i>
                 <i>Precipitation:</i>
                 <input id="precInput" data-stored="prec" type="number" />%
@@ -2642,6 +2644,14 @@
               Restore winds
             </button>
           </div>
+        </div>
+
+        <div style="margin-top: 0.3em">
+          <i>Presets:</i>
+          <button id="wcWholeWorld" data-tip="Click to set map size to cover the whole world">Whole world</button>
+          <button id="wcNorthern" data-tip="Click to set map size to cover the Northern latitudes">Northern</button>
+          <button id="wcTropical" data-tip="Click to set map size to cover the Tropical latitudes">Tropical</button>
+          <button id="wcSouthern" data-tip="Click to set map size to cover the Southern latitudes">Southern</button>
         </div>
       </div>
 
@@ -8078,7 +8088,7 @@
     <script defer src="modules/ui/style.js?v=1.96.00"></script>
     <script defer src="modules/ui/editors.js?v=1.97.12"></script>
     <script defer src="modules/ui/tools.js?v=1.97.12"></script>
-    <script defer src="modules/ui/world-configurator.js?v=1.98.00"></script>
+    <script defer src="modules/ui/world-configurator.js?v=1.97.16"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=1.96.00"></script>
     <script defer src="modules/ui/provinces-editor.js?v=1.96.00"></script>
     <script defer src="modules/ui/biomes-editor.js?v=1.91.05"></script>
