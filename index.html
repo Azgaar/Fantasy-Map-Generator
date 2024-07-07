@@ -469,9 +469,7 @@
             onclick="removePreset()"
           ></button>
 
-          <p data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style">
-            Displayed layers and layers order:
-          </p>
+          <p>Displayed layers and layers order:</p>
           <ul
             data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style"
             id="mapLayers"
@@ -716,13 +714,15 @@
             <li
               id="toggleVignette"
               data-tip="Vignette (border fading): click to toggle. Ctrl + click to edit style"
-              data-shortcut="[ (left bracket)"
+              data-shortcut="[ (left square bracket)"
               onclick="toggleVignette(event)"
               class="solid"
             >
               Vignette
             </li>
           </ul>
+          <div class="tip">Click to toggle, drag to raise or lower the layer</div>
+          <div class="tip">Ctrl + click to edit layer style</div>
 
           <div id="viewMode" data-tip="Set view node">
             <p>View mode:</p>

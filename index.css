@@ -437,6 +437,14 @@ button.options:hover {
   margin: 0.8em 0 0 0;
 }
 
+#options .tip {
+  color: #444;
+  font-size: 0.9em;
+  font-family: sans-serif;
+  font-style: italic;
+  margin-left: 0.5em;
+}
+
 #aboutContent {
   text-align: justify;
 }
@@ -758,7 +766,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 
 #viewMode > button {
   padding: 0.35em;
-  margin: 0.2em 0.3em 0.6em 0.3em;
+  margin: 0.3em 0.3em 0.6em 0.3em;
   float: left;
   width: 30.7%;
 }
