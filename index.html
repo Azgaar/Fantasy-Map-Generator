@@ -138,7 +138,7 @@
       }
     </style>
 
-    <link rel="preload" href="index.css?v=1.96.00" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+    <link rel="preload" href="index.css?v=1.97.16" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="icons.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="libs/jquery-ui.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
   </head>
@@ -380,7 +380,7 @@
         <rect x="-1%" y="-1%" width="102%" height="102%" fill="url(#oceanic)" />
       </svg>
       <svg id="loading-rose" width="100%" height="100%" viewBox="0 0 700 700">
-        <use href="#rose" x="50%" y="50%" />
+        <use href="#defs-compass-rose" x="50%" y="50%" />
       </svg>
       <div id="loading-typography">
         <div id="titleName">Azgaar's</div>
@@ -469,9 +469,7 @@
             onclick="removePreset()"
           ></button>
 
-          <p data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style">
-            Displayed layers and layers order:
-          </p>
+          <p>Displayed layers and layers order:</p>
           <ul
             data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style"
             id="mapLayers"
@@ -716,13 +714,15 @@
             <li
               id="toggleVignette"
               data-tip="Vignette (border fading): click to toggle. Ctrl + click to edit style"
-              data-shortcut="[ (left bracket)"
+              data-shortcut="[ (left square bracket)"
               onclick="toggleVignette(event)"
               class="solid"
             >
               Vignette
             </li>
           </ul>
+          <div class="tip">Click to toggle, drag to raise or lower the layer</div>
+          <div class="tip">Ctrl + click to edit layer style</div>
 
           <div id="viewMode" data-tip="Set view node">
             <p>View mode:</p>
@@ -1590,10 +1590,20 @@
             <tr
               data-tip="Set number of points to be used for graph generation. Highly affects performance. 10K is the only recommended value"
             >
-              <td></td>
+              <td>
+                <i data-locked="0" id="lock_points" class="icon-lock-open"></i>
+              </td>
               <td>Points number</td>
               <td>
-                <input id="pointsInput" type="range" min="1" max="13" value="4" data-cells="10000" />
+                <input
+                  id="pointsInput"
+                  data-stored="points"
+                  type="range"
+                  min="1"
+                  max="13"
+                  value="4"
+                  data-cells="10000"
+                />
               </td>
               <td>
                 <output id="pointsOutputFormatted" style="color: #053305">10K</output>
@@ -2052,23 +2062,16 @@
         </div>
 
         <div id="toolsContent" class="tabcontent">
-          <p>Click to configure:</p>
-          <div>
-            <button
-              id="editHeightmapButton"
-              data-tip="Click to open Heightmap customization menu"
-              data-shortcut="Shift + H"
-            >
-              Heightmap
-            </button>
+          <div class="separator">Edit</div>
+          <div class="grid">
             <button id="editBiomesButton" data-tip="Click to open Biomes Editor" data-shortcut="Shift + B">
               Biomes
             </button>
-            <button id="editStatesButton" data-tip="Click to open States Editor" data-shortcut="Shift + S">
-              States
+            <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview" data-shortcut="Shift + T">
+              Burgs
             </button>
-            <button id="editProvincesButton" data-tip="Click to open Provinces Editor" data-shortcut="Shift + P">
-              Provinces
+            <button id="editCulturesButton" data-tip="Click to open Cultures Editor" data-shortcut="Shift + C">
+              Cultures
             </button>
             <button
               id="editDiplomacyButton"
@@ -2077,37 +2080,18 @@
             >
               Diplomacy
             </button>
-            <button id="editCulturesButton" data-tip="Click to open Cultures Editor" data-shortcut="Shift + C">
-              Cultures
-            </button>
-            <button id="editNamesBaseButton" data-tip="Click to open Namesbase Editor" data-shortcut="Shift + N">
-              Namesbase
-            </button>
-            <button id="editZonesButton" data-tip="Click to open Zones Editor" data-shortcut="Shift + Z">Zones</button>
-            <button id="editReligions" data-tip="Click to open Religions Editor" data-shortcut="Shift + R">
-              Religions
-            </button>
             <button id="editEmblemButton" data-tip="Click to open Emblem Editor" data-shortcut="Shift + Y">
               Emblems
             </button>
-            <button id="editUnitsButton" data-tip="Click to open Units Editor" data-shortcut="Shift + Q">Units</button>
-            <button id="editNotesButton" data-tip="Click to open Notes Editor" data-shortcut="Shift + O">Notes</button>
-          </div>
-
-          <p>Click to overview:</p>
-          <div>
             <button
-              id="overviewChartsButton"
-              data-tip="Click to open Charts to overview cells data"
-              data-shortcut="Shift + A"
+              id="editHeightmapButton"
+              data-tip="Click to open Heightmap customization menu"
+              data-shortcut="Shift + H"
             >
-              Charts
+              Heightmap
             </button>
-            <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview" data-shortcut="Shift + T">
-              Burgs
-            </button>
-            <button id="overviewRiversButton" data-tip="Click to open Rivers Overview" data-shortcut="Shift + V">
-              Rivers
+            <button id="overviewMarkersButton" data-tip="Click to open Markers Overview" data-shortcut="Shift + K">
+              Markers
             </button>
             <button
               id="overviewMilitaryButton"
@@ -2116,40 +2100,54 @@
             >
               Military
             </button>
-            <button id="overviewMarkersButton" data-tip="Click to open Markers Overview" data-shortcut="Shift + K">
-              Markers
+            <button id="editNamesBaseButton" data-tip="Click to open Namesbase Editor" data-shortcut="Shift + N">
+              Namesbase
             </button>
-            <button id="overviewCellsButton" data-tip="Click to open Cell details view" data-shortcut="Shift + E">
-              Cells
+            <button id="editNotesButton" data-tip="Click to open Notes Editor" data-shortcut="Shift + O">Notes</button>
+            <button id="editProvincesButton" data-tip="Click to open Provinces Editor" data-shortcut="Shift + P">
+              Provinces
             </button>
+            <button id="editReligions" data-tip="Click to open Religions Editor" data-shortcut="Shift + R">
+              Religions
+            </button>
+            <button id="overviewRiversButton" data-tip="Click to open Rivers Overview" data-shortcut="Shift + V">
+              Rivers
+            </button>
+            <button id="editStatesButton" data-tip="Click to open States Editor" data-shortcut="Shift + S">
+              States
+            </button>
+            <button id="editUnitsButton" data-tip="Click to open Units Editor" data-shortcut="Shift + Q">Units</button>
+            <button id="editZonesButton" data-tip="Click to open Zones Editor" data-shortcut="Shift + Z">Zones</button>
           </div>
 
-          <p>Click to regenerate:</p>
-          <div id="regenerateFeature">
+          <div class="separator">Regenerate</div>
+          <div id="regenerateFeature" class="grid">
+            <button
+              id="regenerateBurgs"
+              data-tip="Click to regenerate all unlocked burgs and routes. States will remain as they are. Note: burgs are only generated in populated areas with culture assigned"
+            >
+              Burgs
+            </button>
+            <button id="regenerateCultures" data-tip="Click to regenerate non-locked cultures">Cultures</button>
+            <button id="regenerateEmblems" data-tip="Click to regenerate all emblems">Emblems</button>
+            <button id="regenerateIce" data-tip="Click to regenerate icebergs and glaciers">Ice</button>
             <button
               id="regenerateStateLabels"
               data-tip="Click to update state labels placement based on current borders"
             >
               Labels
             </button>
-            <button
-              id="regenerateReliefIcons"
-              data-tip="Click to regenerate all relief icons based on current cell biome and elevation"
-            >
-              Relief
+            <button id="regenerateMarkers" data-tip="Click to regenerate unlocked markers">
+              Markers <i id="configRegenerateMarkers" class="icon-cog" data-tip="Click to set number multiplier"></i>
             </button>
-            <button id="regenerateRoutes" data-tip="Click to regenerate all routes">Routes</button>
-            <button id="regenerateRivers" data-tip="Click to regenerate all rivers (restore default state)">
-              Rivers
+            <button
+              id="regenerateMilitary"
+              data-tip="Click to recalculate military forces based on current military options"
+            >
+              Military
             </button>
             <button id="regeneratePopulation" data-tip="Click to recalculate rural and urban population">
               Population
-            </button>
-            <button
-              id="regenerateStates"
-              data-tip="Click to select new capitals and regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are"
-            >
-              States
             </button>
             <button
               id="regenerateProvinces"
@@ -2158,23 +2156,21 @@
               Provinces
             </button>
             <button
-              id="regenerateBurgs"
-              data-tip="Click to regenerate all unlocked burgs and routes. States will remain as they are. Note: burgs are only generated in populated areas with culture assigned"
+              id="regenerateReliefIcons"
+              data-tip="Click to regenerate all relief icons based on current cell biome and elevation"
             >
-              Burgs
+              Relief
             </button>
-            <button id="regenerateEmblems" data-tip="Click to regenerate all emblems">Emblems</button>
             <button id="regenerateReligions" data-tip="Click to regenerate non-locked religions">Religions</button>
-            <button id="regenerateCultures" data-tip="Click to regenerate non-locked cultures">Cultures</button>
-            <button
-              id="regenerateMilitary"
-              data-tip="Click to recalculate military forces based on current military options"
-            >
-              Military
+            <button id="regenerateRivers" data-tip="Click to regenerate all rivers (restore default state)">
+              Rivers
             </button>
-            <button id="regenerateIce" data-tip="Click to regenerate icebergs and glaciers">Ice</button>
-            <button id="regenerateMarkers" data-tip="Click to regenerate unlocked markers">
-              Markers <i id="configRegenerateMarkers" class="icon-cog" data-tip="Click to set number multiplier"></i>
+            <button id="regenerateRoutes" data-tip="Click to regenerate all routes">Routes</button>
+            <button
+              id="regenerateStates"
+              data-tip="Click to select new capitals and regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are"
+            >
+              States
             </button>
             <button
               id="regenerateZones"
@@ -2184,8 +2180,8 @@
             </button>
           </div>
 
-          <p>Click to add:</p>
-          <div id="addFeature">
+          <div class="separator">Add</div>
+          <div id="addFeature" class="grid">
             <button
               id="addBurgTool"
               data-tip="Click on map to place a burg. Hold Shift to add multiple"
@@ -2201,6 +2197,13 @@
               Label
             </button>
             <button
+              id="addMarker"
+              data-tip="Click on map to place a marker. Hold Shift to add multiple"
+              data-shortcut="Shift + 5"
+            >
+              Marker
+            </button>
+            <button
               id="addRiver"
               data-tip="Click on map to place a river. Hold Shift to add multiple"
               data-shortcut="Shift + 3"
@@ -2208,17 +2211,24 @@
               River
             </button>
             <button id="addRoute" data-tip="Click on map to place a route" data-shortcut="Shift + 4">Route</button>
+          </div>
+
+          <div class="separator">Show</div>
+          <div class="grid">
+            <button id="overviewCellsButton" data-tip="Click to open Cell details view" data-shortcut="Shift + E">
+              Cells
+            </button>
             <button
-              id="addMarker"
-              data-tip="Click on map to place a marker. Hold Shift to add multiple"
-              data-shortcut="Shift + 5"
+              id="overviewChartsButton"
+              data-tip="Click to open Charts to overview cells data"
+              data-shortcut="Shift + A"
             >
-              Marker
+              Charts
             </button>
           </div>
 
-          <p>Click to create a new map:</p>
-          <div>
+          <div class="separator">Create</div>
+          <div class="grid">
             <button id="openSubmapMenu" data-tip="Click to generate a submap from the current viewport">Submap</button>
             <button id="openResampleMenu" data-tip="Click to transform the map">Transform</button>
           </div>
@@ -2307,8 +2317,7 @@
 
         <div id="aboutContent" class="tabcontent">
           <p>
-            <a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is a
-            free
+            <a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank"
               >open source</a
             >
@@ -2327,7 +2336,7 @@
           <p>
             Join our <a href="https://discordapp.com/invite/X7E84HU" target="_blank">Discord server</a> and
             <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit community</a> to ask
-            questions, get help and share maps.
+            questions, get help and share maps. The created maps can be used for free, even for commercial purposes.
           </p>
 
           <p>
@@ -2549,7 +2558,9 @@
             </div>
 
             <div>
-              <label data-tip="Set precipitation - water amount clouds can bring. Defines rivers and biomes generation">
+              <label
+                data-tip="Set precipitation - water amount clouds can bring. Defines rivers and biomes generation. Keep around 100% for default generation"
+              >
                 <i data-locked="0" id="lock_prec" class="icon-lock-open"></i>
                 <i>Precipitation:</i>
                 <input id="precInput" data-stored="prec" type="number" />%
@@ -2634,6 +2645,14 @@
               Restore winds
             </button>
           </div>
+        </div>
+
+        <div style="margin-top: 0.3em">
+          <i>Presets:</i>
+          <button id="wcWholeWorld" data-tip="Click to set map size to cover the whole world">Whole world</button>
+          <button id="wcNorthern" data-tip="Click to set map size to cover the Northern latitudes">Northern</button>
+          <button id="wcTropical" data-tip="Click to set map size to cover the Tropical latitudes">Tropical</button>
+          <button id="wcSouthern" data-tip="Click to set map size to cover the Southern latitudes">Southern</button>
         </div>
       </div>
 
@@ -4903,34 +4922,44 @@
 
           <button id="zonesManually" data-tip="Re-assign zones" class="icon-brush"></button>
           <div id="zonesManuallyButtons" style="display: none">
-            <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic"
-              >Brush:
-              <input
-                id="zonesBrush"
-                oninput="tip('Brush size: '+this.value); zonesBrushNumber.value = this.value"
-                type="range"
-                min="5"
-                max="50"
-                value="7"
-                style="width: 9em"
-              />
-              <input
-                id="zonesBrushNumber"
-                oninput="tip('Brush size: '+this.value); zonesBrush.value = this.value"
-                type="number"
-                min="5"
-                max="50"
-                value="7"
-              /> </label
-            ><br />
-            <button id="zonesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
-            <button id="zonesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
-            <button
-              id="zonesRemove"
-              data-tip="Click to toggle the removal mode on brush dragging"
-              data-shortcut="Ctrl"
-              class="icon-eraser"
-            ></button>
+            <div>
+              <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic"
+                >Brush:
+                <input
+                  id="zonesBrush"
+                  oninput="tip('Brush size: '+this.value); zonesBrushNumber.value = this.value"
+                  type="range"
+                  min="5"
+                  max="50"
+                  value="7"
+                  style="width: 9em"
+                />
+                <input
+                  id="zonesBrushNumber"
+                  oninput="tip('Brush size: '+this.value); zonesBrush.value = this.value"
+                  type="number"
+                  min="5"
+                  max="50"
+                  value="7"
+                />
+              </label>
+            </div>
+
+            <div>
+              <input id="zonesBrushLandOnly" class="checkbox" type="checkbox" checked />
+              <label for="zonesBrushLandOnly" class="checkbox-label"><i>Change land only</i></label>
+            </div>
+
+            <div style="margin-top: 0.3em">
+              <button id="zonesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
+              <button id="zonesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
+              <button
+                id="zonesRemove"
+                data-tip="Click to toggle the removal mode on brush dragging"
+                data-shortcut="Ctrl"
+                class="icon-eraser"
+              ></button>
+            </div>
           </div>
 
           <button id="zonesAdd" data-tip="Add new zone layer" class="icon-plus"></button>
@@ -5150,6 +5179,8 @@
               <option value="km">Kilometer (km)</option>
               <option value="lg">League (lg)</option>
               <option value="vr">Versta (vr)</option>
+              <option value="nmi">Nautical mile (nmi)</option>
+              <option value="nlg">Nautical league (nlg)</option>
               <option value="custom_name">Custom name</option>
             </select>
           </div>
@@ -7789,18 +7820,19 @@
           </symbol>
         </g>
 
-        <g id="rose" stroke-width="1">
-          <g id="sL" stroke="#3f3f3f">
+        <g id="defs-compass-rose" stroke-width="1.1">
+          <g id="rose-coord-line" stroke="#3f3f3f">
             <line id="sL1" x1="0" y1="-20000" x2="0" y2="20000" />
             <line id="sL2" x1="-20000" y1="0" x2="20000" y2="0" />
           </g>
-          <use href="#sL" transform="rotate(45)" />
-          <use href="#sL" transform="rotate(22.5)" />
-          <use href="#sL" transform="rotate(-22.5)" />
-          <use href="#sL" transform="rotate(11.25)" />
-          <use href="#sL" transform="rotate(-11.25)" />
-          <use href="#sL" transform="rotate(56.25)" />
-          <use href="#sL" transform="rotate(-56.25)" />
+          <use href="#rose-coord-line" transform="rotate(45)" />
+          <use href="#rose-coord-line" transform="rotate(22.5)" />
+          <use href="#rose-coord-line" transform="rotate(-22.5)" />
+          <use href="#rose-coord-line" transform="rotate(11.25)" />
+          <use href="#rose-coord-line" transform="rotate(-11.25)" />
+          <use href="#rose-coord-line" transform="rotate(56.25)" />
+          <use href="#rose-coord-line" transform="rotate(-56.25)" />
+
           <g stroke-width="8" stroke-opacity="1" shape-rendering="geometricprecision">
             <circle r="9" stroke="#000000" fill="#1b1b1b" />
             <circle r="75" stroke="#008000" fill="#ffffff" fill-opacity=".1" />
@@ -8028,17 +8060,17 @@
     <script src="config/heightmap-templates.js"></script>
     <script src="config/precreated-heightmaps.js"></script>
     <script src="modules/heightmap-generator.js?v=1.88.00"></script>
-    <script src="modules/ocean-layers.js?v=1.96.00"></script>
+    <script src="modules/ocean-layers.js?v=1.98.00"></script>
     <script src="modules/river-generator.js?v=1.89.13"></script>
     <script src="modules/lakes.js"></script>
     <script src="modules/biomes.js"></script>
     <script src="modules/names-generator.js?v=1.87.14"></script>
     <script src="modules/cultures-generator.js?v=1.96.05"></script>
     <script src="modules/renderers/state-labels.js?v=1.96.04"></script>
-    <script src="modules/burgs-and-states.js?v=1.97.00"></script>
+    <script src="modules/burgs-and-states.js?v=1.97.07"></script>
     <script src="modules/routes-generator.js"></script>
     <script src="modules/religions-generator.js?v=1.93.08"></script>
-    <script src="modules/military-generator.js?v=1.96.01"></script>
+    <script src="modules/military-generator.js?v=1.97.14"></script>
     <script src="modules/markers-generator.js?v=1.93.04"></script>
     <script src="modules/coa-generator.js?v=1.91.05"></script>
     <script src="modules/submap.js?v=1.96.00"></script>
@@ -8051,19 +8083,19 @@
     <script src="modules/ui/stylePresets.js?v=1.96.00"></script>
 
     <script src="modules/ui/general.js?v=1.96.00"></script>
-    <script src="modules/ui/options.js?v=1.96.00"></script>
-    <script src="main.js?v=1.97.00"></script>
+    <script src="modules/ui/options.js?v=1.97.14"></script>
+    <script src="main.js?v=1.98.00"></script>
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js?v=1.96.00"></script>
-    <script defer src="modules/ui/editors.js?v=1.97.00"></script>
-    <script defer src="modules/ui/tools.js?v=1.96.03"></script>
-    <script defer src="modules/ui/world-configurator.js?v=1.91.05"></script>
+    <script defer src="modules/ui/editors.js?v=1.97.12"></script>
+    <script defer src="modules/ui/tools.js?v=1.97.12"></script>
+    <script defer src="modules/ui/world-configurator.js?v=1.97.16"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=1.96.00"></script>
     <script defer src="modules/ui/provinces-editor.js?v=1.96.00"></script>
     <script defer src="modules/ui/biomes-editor.js?v=1.91.05"></script>
     <script defer src="modules/ui/namesbase-editor.js?v=1.95.02"></script>
-    <script defer src="modules/ui/elevation-profile.js"></script>
+    <script defer src="modules/ui/elevation-profile.js?v=1.97.10"></script>
     <script defer src="modules/ui/temperature-graph.js?v=1.90.03"></script>
     <script defer src="modules/ui/routes-editor.js?v=1.89.04"></script>
     <script defer src="modules/ui/ice-editor.js?v=1.89.08"></script>
@@ -8075,15 +8107,15 @@
     <script defer src="modules/ui/relief-editor.js"></script>
     <script defer src="modules/ui/burg-editor.js?v=1.97.00"></script>
     <script defer src="modules/ui/units-editor.js?v=1.96.00"></script>
-    <script defer src="modules/ui/notes-editor.js?v=1.93.09"></script>
+    <script defer src="modules/ui/notes-editor.js?v=1.97.09"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.88.04"></script>
-    <script defer src="modules/ui/zones-editor.js"></script>
+    <script defer src="modules/ui/zones-editor.js?v=1.97.13"></script>
     <script defer src="modules/ui/burgs-overview.js?v=1.97.00"></script>
     <script defer src="modules/ui/rivers-overview.js"></script>
-    <script defer src="modules/ui/military-overview.js?v=1.96.07"></script>
+    <script defer src="modules/ui/military-overview.js?v=1.97.15"></script>
     <script defer src="modules/ui/regiments-overview.js?v=1.89.20"></script>
     <script defer src="modules/ui/markers-overview.js?v=1.89.38"></script>
-    <script defer src="modules/ui/regiment-editor.js"></script>
+    <script defer src="modules/ui/regiment-editor.js?v=1.97.14"></script>
     <script defer src="modules/ui/battle-screen.js"></script>
     <script defer src="modules/ui/emblems-editor.js?v=1.91.00"></script>
     <script defer src="modules/ui/markers-editor.js"></script>
@@ -8094,9 +8126,9 @@
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
     <script defer src="modules/io/save.js?v=1.96.00"></script>
-    <script defer src="modules/io/load.js?v=1.97.04"></script>
+    <script defer src="modules/io/load.js?v=1.98.00"></script>
     <script defer src="modules/io/cloud.js?v=1.96.00"></script>
-    <script defer src="modules/io/export.js?v=1.97.03"></script>
+    <script defer src="modules/io/export.js?v=1.98.00"></script>
 
     <!-- Web Components -->
     <script defer src="components/fill-box.js"></script>

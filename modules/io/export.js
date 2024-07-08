@@ -295,7 +295,7 @@ async function getMapURL(type, options) {
 
   // add wind rose
   if (cloneEl.getElementById("compass")) {
-    const rose = svgDefs.getElementById("rose");
+    const rose = svgDefs.getElementById("defs-compass-rose");
     if (rose) cloneDefs.appendChild(rose.cloneNode(true));
   }
 

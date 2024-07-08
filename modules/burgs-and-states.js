@@ -1,7 +1,7 @@
 "use strict";
 
-window.BurgsAndStates = (function () {
-  const generate = function () {
+window.BurgsAndStates = (() => {
+  const generate = () => {
     const {cells, cultures} = pack;
     const n = cells.i.length;
 
@@ -81,7 +81,7 @@ window.BurgsAndStates = (function () {
       const colors = getColors(burgs.length - 1);
       const each5th = each(5);
 
-      burgs.forEach(function (b, i) {
+      burgs.forEach((b, i) => {
         if (!i) return; // skip first element
 
         // burgs data
@@ -164,12 +164,10 @@ window.BurgsAndStates = (function () {
   };
 
   // define burg coordinates, coa, port status and define details
-  const specifyBurgs = function () {
+  const specifyBurgs = () => {
     TIME && console.time("specifyBurgs");
-    const cells = pack.cells,
-      vertices = pack.vertices,
-      features = pack.features,
-      temp = grid.cells.temp;
+    const {cells, features} = pack;
+    const temp = grid.cells.temp;
 
     for (const b of pack.burgs) {
       if (!b.i || b.lock) continue;
@@ -231,7 +229,7 @@ window.BurgsAndStates = (function () {
     TIME && console.timeEnd("specifyBurgs");
   };
 
-  const getType = function (i, port) {
+  const getType = (i, port) => {
     const cells = pack.cells;
     if (port) return "Naval";
     if (cells.haven[i] && pack.features[cells.f[cells.haven[i]]].type === "lake") return "Lake";
@@ -246,10 +244,11 @@ window.BurgsAndStates = (function () {
     return "Generic";
   };
 
-  const defineBurgFeatures = function (newburg) {
-    const cells = pack.cells;
+  const defineBurgFeatures = newburg => {
+    const {cells} = pack;
+
     pack.burgs
-      .filter(b => (newburg ? b.i == newburg.i : b.i && !b.removed))
+      .filter(b => (newburg ? b.i == newburg.i : b.i && !b.removed && !b.lock))
       .forEach(b => {
         const pop = b.population;
         b.citadel = Number(b.capital || (pop > 50 && P(0.75)) || (pop > 15 && P(0.5)) || P(0.1));
@@ -264,7 +263,7 @@ window.BurgsAndStates = (function () {
       });
   };
 
-  const drawBurgs = function () {
+  const drawBurgs = () => {
     TIME && console.time("drawBurgs");
 
     // remove old data
@@ -362,7 +361,7 @@ window.BurgsAndStates = (function () {
   };
 
   // expand cultures across the map (Dijkstra-like algorithm)
-  const expandStates = function () {
+  const expandStates = () => {
     TIME && console.time("expandStates");
     const {cells, states, cultures, burgs} = pack;
 
@@ -458,7 +457,7 @@ window.BurgsAndStates = (function () {
     TIME && console.timeEnd("expandStates");
   };
 
-  const normalizeStates = function () {
+  const normalizeStates = () => {
     TIME && console.time("normalizeStates");
     const cells = pack.cells,
       burgs = pack.burgs;
@@ -480,7 +479,7 @@ window.BurgsAndStates = (function () {
 
   // Resets the cultures of all burgs and states to their
   // cell or center cell's (respectively) culture.
-  const updateCultures = function () {
+  const updateCultures = () => {
     TIME && console.time("updateCulturesForBurgsAndStates");
 
     // Assign the culture associated with the burgs cell.
@@ -505,7 +504,7 @@ window.BurgsAndStates = (function () {
   };
 
   // calculate states data like area, population etc.
-  const collectStatistics = function () {
+  const collectStatistics = () => {
     TIME && console.time("collectStatistics");
     const {cells, states} = pack;
 
@@ -543,7 +542,7 @@ window.BurgsAndStates = (function () {
     TIME && console.timeEnd("collectStatistics");
   };
 
-  const assignColors = function () {
+  const assignColors = () => {
     TIME && console.time("assignColors");
     const colors = ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#ffd92f"]; // d3.schemeSet2;
 
@@ -579,6 +578,7 @@ window.BurgsAndStates = (function () {
     Expedition: 1,
     Crusade: 1
   };
+
   const generateCampaign = state => {
     const neighbors = state.neighbors.length ? state.neighbors : [0];
     return neighbors
@@ -592,7 +592,7 @@ window.BurgsAndStates = (function () {
   };
 
   // generate historical conflicts of each state
-  const generateCampaigns = function () {
+  const generateCampaigns = () => {
     pack.states.forEach(s => {
       if (!s.i || s.removed) return;
       s.campaigns = generateCampaign(s);
@@ -600,7 +600,7 @@ window.BurgsAndStates = (function () {
   };
 
   // generate Diplomatic Relationships
-  const generateDiplomacy = function () {
+  const generateDiplomacy = () => {
     TIME && console.time("generateDiplomacy");
     const cells = pack.cells,
       states = pack.states;
@@ -785,7 +785,7 @@ window.BurgsAndStates = (function () {
   };
 
   // select a forms for listed or all valid states
-  const defineStateForms = function (list) {
+  const defineStateForms = list => {
     TIME && console.time("defineStateForms");
     const states = pack.states.filter(s => s.i && !s.removed && !s.lock);
     if (states.length < 1) return;
@@ -933,14 +933,14 @@ window.BurgsAndStates = (function () {
     "Marches"
   ];
 
-  const getFullName = function (s) {
-    if (!s.formName) return s.name;
-    if (!s.name && s.formName) return "The " + s.formName;
-    const adjName = adjForms.includes(s.formName) && !/-| /.test(s.name);
-    return adjName ? `${getAdjective(s.name)} ${s.formName}` : `${s.formName} of ${s.name}`;
+  const getFullName = state => {
+    if (!state.formName) return state.name;
+    if (!state.name && state.formName) return "The " + state.formName;
+    const adjName = adjForms.includes(state.formName) && !/-| /.test(state.name);
+    return adjName ? `${getAdjective(state.name)} ${state.formName}` : `${state.formName} of ${state.name}`;
   };
 
-  const generateProvinces = function (regenerate = false, regenerateInLockedStates = false) {
+  const generateProvinces = (regenerate = false, regenerateInLockedStates = false) => {
     TIME && console.time("generateProvinces");
     const localSeed = regenerate ? generateSeed() : seed;
     Math.random = aleaPRNG(localSeed);
@@ -1128,14 +1128,14 @@ window.BurgsAndStates = (function () {
         const isleGroup = !singleIsle && !provCells.find(i => pack.features[cells.f[i]].group !== "isle");
         const colony = !singleIsle && !isleGroup && P(0.5) && !isPassable(s.center, center);
 
-        const name = (function () {
+        const name = (() => {
           const colonyName = colony && P(0.8) && getColonyName();
           if (colonyName) return colonyName;
           if (burgCell && P(0.5)) return burgs[burg].name;
           return Names.getState(Names.getCultureShort(c), c);
         })();
 
-        const formName = (function () {
+        const formName = (() => {
           if (singleIsle) return "Island";
           if (isleGroup) return "Islands";
           if (colony) return "Colony";

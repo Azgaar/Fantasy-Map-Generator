@@ -75,6 +75,8 @@ function getMapInfo() {
     description: "Azgaar's Fantasy Map Generator output: azgaar.github.io/Fantasy-map-generator",
     exportedAt: new Date().toISOString(),
     mapName: mapName.value,
+    width: graphWidth,
+    height: graphHeight,
     seed,
     mapId
   };

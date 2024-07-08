@@ -752,6 +752,8 @@ export function resolveVersionConflicts(version) {
     const curve = curveTypes[terrs.attr("curve")] || "curveBasisClosed";
 
     terrs
+      .attr("opacity", null)
+      .attr("filter", null)
       .attr("mask", null)
       .attr("scheme", null)
       .attr("terracing", null)
@@ -770,6 +772,7 @@ export function resolveVersionConflicts(version) {
       .attr("skip", 0)
       .attr("relax", 1)
       .attr("curve", curve);
+
     terrs
       .append("g")
       .attr("id", "landHeights")
@@ -842,5 +845,17 @@ export function resolveVersionConflicts(version) {
         delete burg.MFCG;
       }
     });
+  }
+
+  if (version < 1.98) {
+    // v1.98.00 changed compass layer and rose element id
+    const rose = compass.select("use");
+    rose.attr("xlink:href", "#defs-compass-rose");
+
+    if (!compass.selectAll("*").size()) {
+      compass.style("display", "none");
+      compass.append("use").attr("xlink:href", "#defs-compass-rose");
+      shiftCompass();
+    }
   }
 }
