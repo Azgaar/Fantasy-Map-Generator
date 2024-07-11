@@ -33,8 +33,9 @@ function editWorld() {
   if (modules.editWorld) return;
   modules.editWorld = true;
 
+  const graticule = d3.geoGraticule();
   globe.select("#globeWindArrows").on("click", handleWindChange);
-  globe.select("#globeGraticule").attr("d", round(path(d3.geoGraticule()()))); // globe graticule
+  globe.select("#globeGraticule").attr("d", round(path(graticule()))); // globe graticule
   updateWindDirections();
 
   byId("worldControls").on("input", handleControlsChange);

@@ -2534,15 +2534,15 @@
               <i data-locked="0" id="lock_mapSize" class="icon-lock-open"></i>
               <label data-tip="Set map size relative to the world size">
                 <i>Map size:</i>
-                <input id="mapSizeInput" data-stored="mapSize" type="number" min="1" max="100" />%
-                <input id="mapSizeOutput" data-stored="mapSize" type="range" min="1" max="100" />
+                <input id="mapSizeInput" data-stored="mapSize" type="number" min="1" max="100" step="0.1" />%
+                <input id="mapSizeOutput" data-stored="mapSize" type="range" min="1" max="100" step="0.1" />
               </label>
             </div>
             <div>
               <i data-locked="0" id="lock_latitude" class="icon-lock-open"></i>
-              <label data-tip="Set a North-South map shift">
+              <label data-tip="Set a North-South map shift, set to 50 to make map center lie on Equator">
                 <i>Latitudes:</i>
-                <input id="latitudeInput" data-stored="latitude" type="number" min="0" max="100" step="1" />
+                <input id="latitudeInput" data-stored="latitude" type="number" min="0" max="100" step="0.1" />
                 <br /><i>N</i
                 ><input
                   id="latitudeOutput"
@@ -2550,9 +2550,35 @@
                   type="range"
                   min="0"
                   max="100"
-                  step="1"
+                  step="0.1"
                   style="width: 10.3em"
                 /><i>S</i>
+              </label>
+            </div>
+
+            <div>
+              <i data-locked="0" id="lock_longitude" class="icon-lock-open"></i>
+              <label data-tip="Set a West-East map shift, set to 50 to make map center lie on Prime meridian">
+                <i>Longitudes:</i>
+                <input
+                  id="longitudeInput"
+                  data-stored="longitude"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value="50"
+                  step="0.1"
+                />
+                <br /><i>W</i
+                ><input
+                  id="longitudeOutput"
+                  data-stored="longitude"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  style="width: 10.3em"
+                /><i>E</i>
               </label>
             </div>
 
@@ -2634,8 +2660,10 @@
                 <text x="-15" y="190">60°</text>
                 <text x="-15" y="204">90°</text>
               </g>
-              <circle id="globeOutline" cx="100" cy="100" r="100" />
-              <line id="globeEquator" x1="1" x2="199" y1="100" y2="100" />
+              <circle id="globeGradient" cx="100" cy="100" r="100" fill="url(#temperatureGradient)" stroke="none" />
+              <line id="globePrimeMeridian" x1="100" x2="100" y1="0" y2="200" />
+              <line id="globeEquator" x1="1" x2="200" y1="100" y2="100" />
+              <circle id="globeOutline" cx="100" cy="100" r="100" fill="none" />
               <path id="globeGraticule" />
               <path id="globeArea" />
             </svg>
