@@ -2248,10 +2248,6 @@ svg.button {
   fill: blue;
 }
 
-#globeOutline {
-  fill: url(#temperatureGradient);
-}
-
 #globeArea {
   fill: white;
   fill-opacity: 0.3;
@@ -2260,6 +2256,11 @@ svg.button {
 #globeGraticule {
   fill: none;
   stroke-width: 0.2;
+}
+
+#globePrimeMeridian {
+  stroke: blue;
+  stroke-width: 1.4;
 }
 
 #globeEquator {
