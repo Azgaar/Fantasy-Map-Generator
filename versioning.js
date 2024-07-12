@@ -28,6 +28,7 @@ const version = "1.98.01"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Configurable longitude</li>
         <li>Preview villages map</li>
         <li>Ability to render ocean heightmap</li>
         <li>Scale bar styling features</li>
@@ -41,8 +42,6 @@ const version = "1.98.01"; // generator version, update each time
         <li>More than 70 new heraldic charges</li>
         <li>Multi-color heraldic charges support</li>
         <li>New 3D scene options and improvements</li>
-        <li>Autosave feature (in Options)</li>
-        <li>Google translation support (in Options)</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
