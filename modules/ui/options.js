@@ -921,11 +921,16 @@ function updateTilesOptions() {
   const tileH = (graphHeight / tilesY) | 0;
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  function getRowLabel(row) {
+    const first = row >= alphabet.length ? alphabet[Math.floor(row / alphabet.length) - 1] : "";
+    const last = alphabet[row % alphabet.length];
+    return first + last;
+  }
+
   for (let y = 0, row = 0; y + tileH <= graphHeight; y += tileH, row++) {
     for (let x = 0, column = 1; x + tileW <= graphWidth; x += tileW, column++) {
       rects.push(`<rect x=${x} y=${y} width=${tileW} height=${tileH} />`);
-      const label = alphabet[row % alphabet.length] + column;
-      labels.push(`<text x=${x + tileW / 2} y=${y + tileH / 2}>${label}</text>`);
+      labels.push(`<text x=${x + tileW / 2} y=${y + tileH / 2}>${getRowLabel(row)}${column}</text>`);
     }
   }
 
