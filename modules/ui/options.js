@@ -902,9 +902,9 @@ function updateTilesOptions() {
   }
 
   const tileSize = byId("tileSize");
-  const tilesX = +byId("tileColsOutput").value;
-  const tilesY = +byId("tileRowsOutput").value;
-  const scale = +byId("tileScaleOutput").value;
+  const tilesX = +byId("tileColsOutput").value || 2;
+  const tilesY = +byId("tileRowsOutput").value || 2;
+  const scale = +byId("tileScaleOutput").value || 1;
 
   // calculate size
   const sizeX = graphWidth * scale * tilesX;
