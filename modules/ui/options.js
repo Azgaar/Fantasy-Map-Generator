@@ -644,17 +644,16 @@ function randomizeCultureSet() {
 function setRendering(value) {
   viewbox.attr("shape-rendering", value);
 
-  // if (value === "optimizeSpeed") {
-  //   // block some styles
-  //   coastline.select("#sea_island").style("filter", "none");
-  //   statesHalo.style("display", "none");
-  //   emblems.style("opacity", 1);
-  // } else {
-  //   // remove style block
-  //   coastline.select("#sea_island").style("filter", null);
-  //   statesHalo.style("display", null);
-  //   emblems.style("opacity", null);
-  // }
+  if (value === "optimizeSpeed") {
+    // block some styles
+    coastline.select("#sea_island").style("filter", "none");
+    statesHalo.style("display", "none");
+  } else {
+    // remove style block
+    coastline.select("#sea_island").style("filter", null);
+    statesHalo.style("display", null);
+    if (pack.cells && statesHalo.selectAll("*").size() === 0) drawStates();
+  }
 }
 
 // generate current year and era name
