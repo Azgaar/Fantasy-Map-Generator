@@ -8,6 +8,9 @@ function shouldRegenerateGrid(grid, expectedSeed) {
   const cellsDesired = +byId("pointsInput").dataset.cells;
   if (cellsDesired !== grid.cellsDesired) return true;
 
+  const gridType = byId("gridType").value;
+  if (gridType !== grid.type) return true;
+
   const newSpacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2);
   const newCellsX = Math.floor((graphWidth + 0.5 * newSpacing - 1e-10) / newSpacing);
   const newCellsY = Math.floor((graphHeight + 0.5 * newSpacing - 1e-10) / newSpacing);
@@ -17,24 +20,9 @@ function shouldRegenerateGrid(grid, expectedSeed) {
 
 function generateGrid() {
   Math.random = aleaPRNG(seed); // reset PRNG
-  const {spacing, cellsDesired, boundary, points, cellsX, cellsY} = placePoints();
+  const {spacing, cellsDesired, type, boundary, points, cellsX, cellsY} = generatePoints();
   const {cells, vertices} = calculateVoronoi(points, boundary);
-  return {spacing, cellsDesired, boundary, points, cellsX, cellsY, cells, vertices, seed};
-}
-
-// place random points to calculate Voronoi diagram
-function placePoints() {
-  TIME && console.time("placePoints");
-  const cellsDesired = +byId("pointsInput").dataset.cells;
-  const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jirrering
-
-  const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
-  const points = getJitteredGrid(graphWidth, graphHeight, spacing); // points of jittered square grid
-  const cellsX = Math.floor((graphWidth + 0.5 * spacing - 1e-10) / spacing);
-  const cellsY = Math.floor((graphHeight + 0.5 * spacing - 1e-10) / spacing);
-  TIME && console.timeEnd("placePoints");
-
-  return {spacing, cellsDesired, boundary, points, cellsX, cellsY};
+  return {spacing, cellsDesired, type, boundary, points, cellsX, cellsY, cells, vertices, seed};
 }
 
 // calculate Delaunay and then Voronoi diagram
@@ -53,47 +41,6 @@ function calculateVoronoi(points, boundary) {
   TIME && console.timeEnd("calculateVoronoi");
 
   return {cells, vertices};
-}
-
-// add points along map edge to pseudo-clip voronoi cells
-function getBoundaryPoints(width, height, spacing) {
-  const offset = rn(-1 * spacing);
-  const bSpacing = spacing * 2;
-  const w = width - offset * 2;
-  const h = height - offset * 2;
-  const numberX = Math.ceil(w / bSpacing) - 1;
-  const numberY = Math.ceil(h / bSpacing) - 1;
-  const points = [];
-
-  for (let i = 0.5; i < numberX; i++) {
-    let x = Math.ceil((w * i) / numberX + offset);
-    points.push([x, offset], [x, h + offset]);
-  }
-
-  for (let i = 0.5; i < numberY; i++) {
-    let y = Math.ceil((h * i) / numberY + offset);
-    points.push([offset, y], [w + offset, y]);
-  }
-
-  return points;
-}
-
-// get points on a regular square grid and jitter them a bit
-function getJitteredGrid(width, height, spacing) {
-  const radius = spacing / 2; // square radius
-  const jittering = radius * 0.9; // max deviation
-  const doubleJittering = jittering * 2;
-  const jitter = () => Math.random() * doubleJittering - jittering;
-
-  let points = [];
-  for (let y = radius; y < height; y += spacing) {
-    for (let x = radius; x < width; x += spacing) {
-      const xj = Math.min(rn(x + jitter(), 2), width);
-      const yj = Math.min(rn(y + jitter(), 2), height);
-      points.push([xj, yj]);
-    }
-  }
-  return points;
 }
 
 // return cell index on a regular square grid

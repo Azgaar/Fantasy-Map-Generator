@@ -1610,6 +1610,22 @@
               </td>
             </tr>
 
+            <tr data-tip="Select points sampling algorithm. Defines structure of the underlying graph">
+              <td>
+                <i data-locked="0" id="lock_gridType" class="icon-lock-open"></i>
+              </td>
+              <td>Grid type</td>
+              <td>
+                <select id="gridType" data-stored="gridType">
+                  <option value="jittered" selected>Jittered</option>
+                  <option value="hexFlat">Hex flat</option>
+                  <option value="hexPointy">Hex pointy</option>
+                  <option value="square">Square</option>
+                </select>
+              </td>
+              <td></td>
+            </tr>
+
             <tr data-tip="Define map name (will be used to name downloaded files)">
               <td>
                 <i data-locked="0" id="lock_mapName" class="icon-lock-open"></i>
@@ -8074,7 +8090,7 @@
     <script src="utils/commonUtils.js?v=1.89.29"></script>
     <script src="utils/arrayUtils.js"></script>
     <script src="utils/colorUtils.js"></script>
-    <script src="utils/graphUtils.js?v=1.96.00"></script>
+    <script src="utils/graphUtils.js?v=1.99.00"></script>
     <script src="utils/nodeUtils.js"></script>
     <script src="utils/numberUtils.js?v=1.89.08"></script>
     <script src="utils/polyfills.js?v=1.95.03"></script>
@@ -8084,6 +8100,7 @@
     <script src="utils/unitUtils.js?v=1.87.00"></script>
 
     <script src="modules/voronoi.js"></script>
+    <script src="modules/points-generator.js"></script>
     <script src="config/heightmap-templates.js"></script>
     <script src="config/precreated-heightmaps.js"></script>
     <script src="modules/heightmap-generator.js?v=1.88.00"></script>
@@ -8111,7 +8128,7 @@
 
     <script src="modules/ui/general.js?v=1.98.01"></script>
     <script src="modules/ui/options.js?v=1.98.03"></script>
-    <script src="main.js?v=1.98.01"></script>
+    <script src="main.js?v=1.99.00"></script>
 
     <script defer src="modules/relief-icons.js"></script>
     <script defer src="modules/ui/style.js?v=1.96.00"></script>
@@ -8152,7 +8169,7 @@
     <script defer src="modules/coa-renderer.js?v=1.94.00"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-    <script defer src="modules/io/save.js?v=1.98.01"></script>
+    <script defer src="modules/io/save.js?v=1.99.00"></script>
     <script defer src="modules/io/load.js?v=1.98.01"></script>
     <script defer src="modules/io/cloud.js?v=1.96.00"></script>
     <script defer src="modules/io/export.js?v=1.98.01"></script>
