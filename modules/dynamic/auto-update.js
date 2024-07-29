@@ -858,4 +858,9 @@ export function resolveVersionConflicts(version) {
       shiftCompass();
     }
   }
+
+  if (version < 1.99) {
+    // v1.99.00 added alternative graph point sampling methods
+    if (!graph.type) graph.type = "jittered";
+  }
 }

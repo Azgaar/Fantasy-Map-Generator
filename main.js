@@ -310,12 +310,58 @@ async function checkLoadParameters() {
   generateMapOnLoad();
 }
 
+function debugGrids() {
+  // debug
+  //   .selectAll("circle.grid")
+  //   .data(grid.points)
+  //   .enter()
+  //   .append("circle")
+  //   .attr("data-id", (d, i) => "point-" + i)
+  //   .attr("cx", d => d[0])
+  //   .attr("cy", d => d[1])
+  //   .attr("r", 0.5)
+  //   .attr("fill", "blue");
+
+  let path = "";
+  grid.cells.i.forEach(i => (path += "M" + getGridPolygon(i)));
+  debug.append("path").attr("fill", "none").attr("stroke", "blue").attr("stroke-width", 0.3).attr("d", path);
+
+  // debug
+  //   .selectAll("circle.boundary")
+  //   .data(grid.boundary)
+  //   .enter()
+  //   .append("circle")
+  //   .attr("cx", d => d[0])
+  //   .attr("cy", d => d[1])
+  //   .attr("r", 0.3)
+  //   .attr("fill", "white");
+
+  zoom.translateExtent([
+    [-graphWidth / 2, -graphHeight / 2],
+    [graphWidth * 1.5, graphHeight * 1.5]
+  ]);
+
+  const text = debug
+    .append("g")
+    .style("font-size", "0.5px")
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "central");
+
+  for (let x = 0; x < 100; x++) {
+    for (let y = 0; y < 100; y++) {
+      const cellId = findGridCell(x, y, grid);
+      text.append("text").attr("x", x).attr("y", y).text(cellId);
+    }
+  }
+}
+
 async function generateMapOnLoad() {
   await applyStyleOnLoad(); // apply previously selected default or custom style
   await generate(); // generate map
   applyPreset(); // apply saved layers preset
   fitMapToScreen();
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
+  debugGrids();
 }
 
 // focus on coordinates, cell or burg provided in searchParams
@@ -1034,15 +1080,22 @@ function generatePrecipitation() {
   const MAX_PASSABLE_ELEVATION = 85;
 
   // define wind directions based on cells latitude and prevailing winds there
-  d3.range(0, cells.i.length, cellsX).forEach(function (c, i) {
+  d3.range(0, cells.i.length, cellsX).forEach(function (cellId, i) {
+    // debug
+    //   .append("circle")
+    //   .attr("cx", grid.points[cellId][0])
+    //   .attr("cy", grid.points[cellId][1])
+    //   .attr("r", 2)
+    //   .attr("fill", "blue");
+
     const lat = mapCoordinates.latN - (i / cellsY) * mapCoordinates.latT;
     const latBand = ((Math.abs(lat) - 1) / 5) | 0;
     const latMod = latitudeModifier[latBand];
     const windTier = (Math.abs(lat - 89) / 30) | 0; // 30d tiers from 0 to 5 from N to S
     const {isWest, isEast, isNorth, isSouth} = getWindDirections(windTier);
 
-    if (isWest) westerly.push([c, latMod, windTier]);
-    if (isEast) easterly.push([c + cellsX - 1, latMod, windTier]);
+    if (isWest) westerly.push([cellId, latMod, windTier]);
+    if (isEast) easterly.push([cellId + cellsX - 1, latMod, windTier]);
     if (isNorth) northerly++;
     if (isSouth) southerly++;
   });
@@ -1065,6 +1118,8 @@ function generatePrecipitation() {
     const maxPrecS = (southerly / vertT) * 60 * modifier * latModS;
     passWind(d3.range(cells.i.length - cellsX, cells.i.length, 1), maxPrecS, -cellsX, cellsY);
   }
+
+  drawWindDirection();
 
   function getWindDirections(tier) {
     const angle = options.winds[tier];
@@ -1120,24 +1175,25 @@ function generatePrecipitation() {
     return minmax(normalLoss + diff * mod, 1, humidity);
   }
 
-  void (function drawWindDirection() {
+  function drawWindDirection() {
     const wind = prec.append("g").attr("id", "wind");
 
-    d3.range(0, 6).forEach(function (t) {
+    options.winds.forEach((direction, tier) => {
       if (westerly.length > 1) {
-        const west = westerly.filter(w => w[2] === t);
+        const west = westerly.filter(w => w[2] === tier);
         if (west && west.length > 3) {
-          const from = west[0][0],
-            to = west[west.length - 1][0];
+          const from = west.at(0)[0];
+          const to = west.at(-1)[0];
           const y = (grid.points[from][1] + grid.points[to][1]) / 2;
           wind.append("text").attr("x", 20).attr("y", y).text("\u21C9");
         }
       }
+
       if (easterly.length > 1) {
-        const east = easterly.filter(w => w[2] === t);
+        const east = easterly.filter(w => w[2] === tier);
         if (east && east.length > 3) {
-          const from = east[0][0],
-            to = east[east.length - 1][0];
+          const from = east.at(0)[0];
+          const to = east.at(-1)[0];
           const y = (grid.points[from][1] + grid.points[to][1]) / 2;
           wind
             .append("text")
@@ -1160,7 +1216,7 @@ function generatePrecipitation() {
         .attr("x", graphWidth / 2)
         .attr("y", graphHeight - 20)
         .text("\u21C8");
-  })();
+  }
 
   TIME && console.timeEnd("generatePrecipitation");
 }
@@ -1169,20 +1225,24 @@ function generatePrecipitation() {
 function reGraph() {
   TIME && console.time("reGraph");
   const {cells: gridCells, points, features} = grid;
+  const repackGridCells = grid.type === "jittered";
   const newCells = {p: [], g: [], h: []}; // store new data
   const spacing2 = grid.spacing ** 2;
 
   for (const i of gridCells.i) {
     const height = gridCells.h[i];
     const type = gridCells.t[i];
-    if (height < 20 && type !== -1 && type !== -2) continue; // exclude all deep ocean points
-    if (type === -2 && (i % 4 === 0 || features[gridCells.f[i]].type === "lake")) continue; // exclude non-coastal lake points
-    const [x, y] = points[i];
 
+    if (repackGridCells) {
+      if (height < 20 && type !== -1 && type !== -2) continue; // exclude all deep ocean points
+      if (type === -2 && (i % 4 === 0 || features[gridCells.f[i]].type === "lake")) continue; // exclude non-coastal lake points
+    }
+
+    const [x, y] = points[i];
     addNewPoint(i, x, y, height);
 
     // add additional points for cells along coast
-    if (type === 1 || type === -1) {
+    if (repackGridCells && (type === 1 || type === -1)) {
       if (gridCells.b[i]) continue; // not for near-border cells
       gridCells.c[i].forEach(function (e) {
         if (i > e) return;
@@ -1253,6 +1313,8 @@ function drawCoastline() {
       vchain.map(v => vertices.p[v]),
       1
     );
+    if (points.length < 3) debugger;
+
     const area = d3.polygonArea(points); // area with lakes/islands
     if (area > 0 && features[f].type === "lake") {
       points = points.reverse();
@@ -1962,6 +2024,8 @@ const regenerateMap = debounce(async function (options) {
   fitMapToScreen();
   shouldShowLoading && hideLoading();
   clearMainTip();
+
+  debugGrids();
 }, 250);
 
 // clear the map

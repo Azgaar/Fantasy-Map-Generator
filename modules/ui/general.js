@@ -120,6 +120,8 @@ function showMapTooltip(point, e, i, g) {
   const subgroup = path[path.length - 8].id;
   const land = pack.cells.h[i] >= 20;
 
+  // console.log(findGridCell(point[0], point[1], grid));
+
   // specific elements
   if (group === "armies") return tip(e.target.parentNode.dataset.name + ". Click to edit");
 
