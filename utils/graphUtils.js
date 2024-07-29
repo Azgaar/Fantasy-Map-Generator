@@ -45,6 +45,61 @@ function calculateVoronoi(points, boundary) {
 
 // return cell index on a regular square grid
 function findGridCell(x, y, grid) {
+  if (grid.type === "hexFlat") return findHexCellIndex(x, y, false, grid.spacing, grid.cellsX);
+  if (grid.type === "hexPointy") return findHexCellIndex(x, y, true, grid.spacing, grid.cellsX);
+  return findSquareGridCell(x, y, grid);
+}
+
+const hexRatio = Math.sqrt(3) / 2;
+function findHexCellIndex(x, y, isPointy, spacing, cellsX) {
+  const spacingX = isPointy ? spacing / hexRatio : spacing * 2;
+  const spacingY = isPointy ? spacing : spacing / hexRatio / 2;
+
+  let col = Math.floor(x / spacingX);
+  let row = Math.floor((y + spacingY * 1.5) / spacingY);
+
+  if (isPointy) {
+    if (row % 2 === 1 && x < col * spacingX + spacingX / 2) col -= 1;
+  } else {
+    if (col % 2 === 1 && y < row * spacingY + spacingY / 2) row -= 1;
+  }
+
+  const suspect = row * cellsX + col;
+  const candidates = isPointy
+    ? [
+        suspect,
+        suspect - cellsX - 1,
+        suspect - cellsX,
+        suspect - 1,
+        suspect + 1,
+        suspect + cellsX - 1,
+        suspect + cellsX
+      ]
+    : [
+        suspect,
+        suspect - cellsX,
+        suspect - cellsX * 2,
+        suspect - cellsX + 1,
+        suspect + cellsX,
+        suspect + cellsX + 1,
+        suspect + cellsX * 2
+      ];
+
+  const closest = candidates.reduce(
+    (acc, candidate) => {
+      const point = grid.points[candidate];
+      if (!point) return acc;
+      const dist2 = Math.abs(x - point[0]) + Math.abs(y - point[1]);
+      if (dist2 < acc.dist2) return {dist2, cell: candidate};
+      return acc;
+    },
+    {dist2: Infinity, cell: suspect}
+  );
+
+  return closest.cell;
+}
+
+function findSquareGridCell(x, y, grid) {
   return (
     Math.floor(Math.min(y / grid.spacing, grid.cellsY - 1)) * grid.cellsX +
     Math.floor(Math.min(x / grid.spacing, grid.cellsX - 1))

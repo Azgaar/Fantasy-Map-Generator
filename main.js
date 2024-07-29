@@ -311,35 +311,48 @@ async function checkLoadParameters() {
 }
 
 function debugGrids() {
-  debug
-    .selectAll("circle.grid")
-    .data(grid.points)
-    .enter()
-    .append("circle")
-    .attr("data-id", (d, i) => "point-" + i)
-    .attr("cx", d => d[0])
-    .attr("cy", d => d[1])
-    .attr("r", 0.5)
-    .attr("fill", "blue");
+  // debug
+  //   .selectAll("circle.grid")
+  //   .data(grid.points)
+  //   .enter()
+  //   .append("circle")
+  //   .attr("data-id", (d, i) => "point-" + i)
+  //   .attr("cx", d => d[0])
+  //   .attr("cy", d => d[1])
+  //   .attr("r", 0.5)
+  //   .attr("fill", "blue");
 
   let path = "";
   grid.cells.i.forEach(i => (path += "M" + getGridPolygon(i)));
   debug.append("path").attr("fill", "none").attr("stroke", "blue").attr("stroke-width", 0.3).attr("d", path);
 
-  debug
-    .selectAll("circle.boundary")
-    .data(grid.boundary)
-    .enter()
-    .append("circle")
-    .attr("cx", d => d[0])
-    .attr("cy", d => d[1])
-    .attr("r", 0.3)
-    .attr("fill", "white");
+  // debug
+  //   .selectAll("circle.boundary")
+  //   .data(grid.boundary)
+  //   .enter()
+  //   .append("circle")
+  //   .attr("cx", d => d[0])
+  //   .attr("cy", d => d[1])
+  //   .attr("r", 0.3)
+  //   .attr("fill", "white");
 
   zoom.translateExtent([
     [-graphWidth / 2, -graphHeight / 2],
     [graphWidth * 1.5, graphHeight * 1.5]
   ]);
+
+  const text = debug
+    .append("g")
+    .style("font-size", "0.5px")
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "central");
+
+  for (let x = 0; x < 100; x++) {
+    for (let y = 0; y < 100; y++) {
+      const cellId = findGridCell(x, y, grid);
+      text.append("text").attr("x", x).attr("y", y).text(cellId);
+    }
+  }
 }
 
 async function generateMapOnLoad() {
@@ -1068,12 +1081,12 @@ function generatePrecipitation() {
 
   // define wind directions based on cells latitude and prevailing winds there
   d3.range(0, cells.i.length, cellsX).forEach(function (cellId, i) {
-    debug
-      .append("circle")
-      .attr("cx", grid.points[cellId][0])
-      .attr("cy", grid.points[cellId][1])
-      .attr("r", 2)
-      .attr("fill", "blue");
+    // debug
+    //   .append("circle")
+    //   .attr("cx", grid.points[cellId][0])
+    //   .attr("cy", grid.points[cellId][1])
+    //   .attr("r", 2)
+    //   .attr("fill", "blue");
 
     const lat = mapCoordinates.latN - (i / cellsY) * mapCoordinates.latT;
     const latBand = ((Math.abs(lat) - 1) / 5) | 0;
