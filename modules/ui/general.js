@@ -290,7 +290,7 @@ function toDMS(coord, c) {
   const minutes = Math.floor(minutesNotTruncated);
   const seconds = Math.floor((minutesNotTruncated - minutes) * 60);
   const cardinal = c === "lat" ? (coord >= 0 ? "N" : "S") : coord >= 0 ? "E" : "W";
-  return degrees + "° " + minutes + "′ " + seconds + "″ " + cardinal;
+  return degrees + "°" + minutes + "′" + seconds + "″" + cardinal;
 }
 
 // get surface elevation

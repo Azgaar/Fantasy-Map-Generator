@@ -242,6 +242,7 @@ async function parseLoadedData(data, mapVersion) {
       if (settings[22]) stylePreset.value = settings[22];
       if (settings[23]) rescaleLabels.checked = +settings[23];
       if (settings[24]) urbanDensity = urbanDensityInput.value = urbanDensityOutput.value = +settings[24];
+      if (settings[25]) longitudeInput.value = longitudeOutput.value = minmax(settings[25] || 50, 0, 100);
     })();
 
     void (function applyOptionsToUI() {
@@ -458,7 +459,7 @@ async function parseLoadedData(data, mapVersion) {
     {
       // dynamically import and run auto-update script
       const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.97.04");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.98.00");
       resolveVersionConflicts(versionNumber);
     }
 

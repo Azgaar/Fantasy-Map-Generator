@@ -53,7 +53,7 @@ let biomes = viewbox.append("g").attr("id", "biomes");
 let cells = viewbox.append("g").attr("id", "cells");
 let gridOverlay = viewbox.append("g").attr("id", "gridOverlay");
 let coordinates = viewbox.append("g").attr("id", "coordinates");
-let compass = viewbox.append("g").attr("id", "compass");
+let compass = viewbox.append("g").attr("id", "compass").style("display", "none");
 let rivers = viewbox.append("g").attr("id", "rivers");
 let terrain = viewbox.append("g").attr("id", "terrain");
 let relig = viewbox.append("g").attr("id", "relig");
@@ -126,6 +126,9 @@ emblems.append("g").attr("id", "burgEmblems");
 emblems.append("g").attr("id", "provinceEmblems");
 emblems.append("g").attr("id", "stateEmblems");
 
+// compass
+compass.append("use").attr("xlink:href", "#defs-compass-rose");
+
 // fogging
 fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
 fogging
@@ -195,10 +198,10 @@ let options = {
 };
 
 let mapCoordinates = {}; // map coordinates on globe
-let populationRate = +document.getElementById("populationRateInput").value;
-let distanceScale = +document.getElementById("distanceScaleInput").value;
-let urbanization = +document.getElementById("urbanizationInput").value;
-let urbanDensity = +document.getElementById("urbanDensityInput").value;
+let populationRate = +byId("populationRateInput").value;
+let distanceScale = +byId("distanceScaleInput").value;
+let urbanization = +byId("urbanizationInput").value;
+let urbanDensity = +byId("urbanDensityInput").value;
 
 applyStoredOptions();
 
@@ -439,10 +442,10 @@ function handleZoom(isScaleChanged, isPositionChanged) {
 
   // zoom image converter overlay
   if (customization === 1) {
-    const canvas = document.getElementById("canvas");
+    const canvas = byId("canvas");
     if (!canvas || canvas.style.opacity === "0") return;
 
-    const img = document.getElementById("imageToConvert");
+    const img = byId("imageToConvert");
     if (!img) return;
 
     const ctx = canvas.getContext("2d");
@@ -524,7 +527,7 @@ function invokeActiveZooming() {
   +markers.attr("rescale") &&
     pack.markers?.forEach(marker => {
       const {i, x, y, size = 30, hidden} = marker;
-      const el = !hidden && document.getElementById(`marker${i}`);
+      const el = !hidden && byId(`marker${i}`);
       if (!el) return;
 
       const zoomedSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
@@ -561,18 +564,18 @@ void (function addDragToUpload() {
   document.addEventListener("dragover", function (e) {
     e.stopPropagation();
     e.preventDefault();
-    document.getElementById("mapOverlay").style.display = null;
+    byId("mapOverlay").style.display = null;
   });
 
   document.addEventListener("dragleave", function (e) {
-    document.getElementById("mapOverlay").style.display = "none";
+    byId("mapOverlay").style.display = "none";
   });
 
   document.addEventListener("drop", function (e) {
     e.stopPropagation();
     e.preventDefault();
 
-    const overlay = document.getElementById("mapOverlay");
+    const overlay = byId("mapOverlay");
     overlay.style.display = "none";
     if (e.dataTransfer.items == null || e.dataTransfer.items.length !== 1) return; // no files or more than one
     const file = e.dataTransfer.items[0].getAsFile();
@@ -780,7 +783,7 @@ function addLakesInDeepDepressions() {
   TIME && console.time("addLakesInDeepDepressions");
   const {cells, features} = grid;
   const {c, h, b} = cells;
-  const ELEVATION_LIMIT = +document.getElementById("lakeElevationLimitOutput").value;
+  const ELEVATION_LIMIT = +byId("lakeElevationLimitOutput").value;
   if (ELEVATION_LIMIT === 80) return;
 
   for (const i of cells.i) {
@@ -880,73 +883,77 @@ function openNearSeaLakes() {
 
 // define map size and position based on template and random factor
 function defineMapSize() {
-  const [size, latitude] = getSizeAndLatitude();
+  const [size, latitude, longitude] = getSizeAndLatitude();
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
-  if (randomize || !locked("mapSize")) mapSizeOutput.value = mapSizeInput.value = rn(size);
-  if (randomize || !locked("latitude")) latitudeOutput.value = latitudeInput.value = rn(latitude);
+  if (randomize || !locked("mapSize")) mapSizeOutput.value = mapSizeInput.value = size;
+  if (randomize || !locked("latitude")) latitudeOutput.value = latitudeInput.value = latitude;
+  if (randomize || !locked("longitude")) longitudeOutput.value = longitudeInput.value = longitude;
 
   function getSizeAndLatitude() {
     const template = byId("templateInput").value; // heightmap template
 
-    if (template === "africa-centric") return [45, 53];
-    if (template === "arabia") return [20, 35];
-    if (template === "atlantics") return [42, 23];
-    if (template === "britain") return [7, 20];
-    if (template === "caribbean") return [15, 40];
-    if (template === "east-asia") return [11, 28];
-    if (template === "eurasia") return [38, 19];
-    if (template === "europe") return [20, 16];
-    if (template === "europe-accented") return [14, 22];
-    if (template === "europe-and-central-asia") return [25, 10];
-    if (template === "europe-central") return [11, 22];
-    if (template === "europe-north") return [7, 18];
-    if (template === "greenland") return [22, 7];
-    if (template === "hellenica") return [8, 27];
-    if (template === "iceland") return [2, 15];
-    if (template === "indian-ocean") return [45, 55];
-    if (template === "mediterranean-sea") return [10, 29];
-    if (template === "middle-east") return [8, 31];
-    if (template === "north-america") return [37, 17];
-    if (template === "us-centric") return [66, 27];
-    if (template === "us-mainland") return [16, 30];
-    if (template === "world") return [78, 27];
-    if (template === "world-from-pacific") return [75, 32];
+    if (template === "africa-centric") return [45, 53, 38];
+    if (template === "arabia") return [20, 35, 35];
+    if (template === "atlantics") return [42, 23, 65];
+    if (template === "britain") return [7, 20, 51.3];
+    if (template === "caribbean") return [15, 40, 74.8];
+    if (template === "east-asia") return [11, 28, 9.4];
+    if (template === "eurasia") return [38, 19, 27];
+    if (template === "europe") return [20, 16, 44.8];
+    if (template === "europe-accented") return [14, 22, 44.8];
+    if (template === "europe-and-central-asia") return [25, 10, 39.5];
+    if (template === "europe-central") return [11, 22, 46.4];
+    if (template === "europe-north") return [7, 18, 48.9];
+    if (template === "greenland") return [22, 7, 55.8];
+    if (template === "hellenica") return [8, 27, 43.5];
+    if (template === "iceland") return [2, 15, 55.3];
+    if (template === "indian-ocean") return [45, 55, 14];
+    if (template === "mediterranean-sea") return [10, 29, 45.8];
+    if (template === "middle-east") return [8, 31, 34.4];
+    if (template === "north-america") return [37, 17, 87];
+    if (template === "us-centric") return [66, 27, 100];
+    if (template === "us-mainland") return [16, 30, 77.5];
+    if (template === "world") return [78, 27, 40];
+    if (template === "world-from-pacific") return [75, 32, 30]; // longitude doesn't fit
 
     const part = grid.features.some(f => f.land && f.border); // if land goes over map borders
     const max = part ? 80 : 100; // max size
     const lat = () => gauss(P(0.5) ? 40 : 60, 20, 25, 75); // latitude shift
 
     if (!part) {
-      if (template === "Pangea") return [100, 50];
-      if (template === "Shattered" && P(0.7)) return [100, 50];
-      if (template === "Continents" && P(0.5)) return [100, 50];
-      if (template === "Archipelago" && P(0.35)) return [100, 50];
-      if (template === "High Island" && P(0.25)) return [100, 50];
-      if (template === "Low Island" && P(0.1)) return [100, 50];
+      if (template === "pangea") return [100, 50, 50];
+      if (template === "shattered" && P(0.7)) return [100, 50, 50];
+      if (template === "continents" && P(0.5)) return [100, 50, 50];
+      if (template === "archipelago" && P(0.35)) return [100, 50, 50];
+      if (template === "highIsland" && P(0.25)) return [100, 50, 50];
+      if (template === "lowIsland" && P(0.1)) return [100, 50, 50];
     }
 
-    if (template === "Pangea") return [gauss(70, 20, 30, max), lat()];
-    if (template === "Volcano") return [gauss(20, 20, 10, max), lat()];
-    if (template === "Mediterranean") return [gauss(25, 30, 15, 80), lat()];
-    if (template === "Peninsula") return [gauss(15, 15, 5, 80), lat()];
-    if (template === "Isthmus") return [gauss(15, 20, 3, 80), lat()];
-    if (template === "Atoll") return [gauss(5, 10, 2, max), lat()];
+    if (template === "pangea") return [gauss(70, 20, 30, max), lat(), 50];
+    if (template === "volcano") return [gauss(20, 20, 10, max), lat(), 50];
+    if (template === "mediterranean") return [gauss(25, 30, 15, 80), lat(), 50];
+    if (template === "peninsula") return [gauss(15, 15, 5, 80), lat(), 50];
+    if (template === "isthmus") return [gauss(15, 20, 3, 80), lat(), 50];
+    if (template === "atoll") return [gauss(3, 2, 1, 5, 1), lat(), 50];
 
-    return [gauss(30, 20, 15, max), lat()]; // Continents, Archipelago, High Island, Low Island
+    return [gauss(30, 20, 15, max), lat(), 50]; // Continents, Archipelago, High Island, Low Island
   }
 }
 
 // calculate map position on globe
 function calculateMapCoordinates() {
-  const size = +document.getElementById("mapSizeOutput").value;
-  const latShift = +document.getElementById("latitudeOutput").value;
+  const sizeFraction = +byId("mapSizeOutput").value / 100;
+  const latShift = +byId("latitudeOutput").value / 100;
+  const lonShift = +byId("longitudeOutput").value / 100;
 
-  const latT = rn((size / 100) * 180, 1);
-  const latN = rn(90 - ((180 - latT) * latShift) / 100, 1);
+  const latT = rn(sizeFraction * 180, 1);
+  const latN = rn(90 - (180 - latT) * latShift, 1);
   const latS = rn(latN - latT, 1);
 
-  const lon = rn(Math.min(((graphWidth / graphHeight) * latT) / 2, 180));
-  mapCoordinates = {latT, latN, latS, lonT: lon * 2, lonW: -lon, lonE: lon};
+  const lonT = rn(Math.min((graphWidth / graphHeight) * latT, 360), 1);
+  const lonE = rn(180 - (360 - lonT) * lonShift, 1);
+  const lonW = rn(lonE - lonT, 1);
+  mapCoordinates = {latT, latN, latS, lonT, lonW, lonE};
 }
 
 // temperature model, trying to follow real-world data
@@ -1759,7 +1766,7 @@ function addZones(number = 1) {
   }
 
   function addEruption() {
-    const volcano = document.getElementById("markers").querySelector("use[data-id='#marker_volcano']");
+    const volcano = byId("markers").querySelector("use[data-id='#marker_volcano']");
     if (!volcano) return;
 
     const x = +volcano.dataset.x,
@@ -1978,7 +1985,7 @@ function undraw() {
     .getElementById("deftemp")
     .querySelectorAll("path, clipPath, svg")
     .forEach(el => el.remove());
-  document.getElementById("coas").innerHTML = ""; // remove auto-generated emblems
+  byId("coas").innerHTML = ""; // remove auto-generated emblems
   notes = [];
   rulers = new Rulers();
   unfog();

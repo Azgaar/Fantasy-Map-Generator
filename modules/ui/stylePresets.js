@@ -63,7 +63,7 @@ async function getStylePreset(desiredPreset) {
 
 async function fetchSystemPreset(preset) {
   try {
-    const res = await fetch(`./styles/${preset}.json`);
+    const res = await fetch(`./styles/${preset}.json?v=${version}`);
     return await res.json();
   } catch (err) {
     throw new Error("Cannot fetch style preset", preset);
@@ -198,7 +198,7 @@ function addStylePreset() {
         "mask"
       ],
       "#compass": ["opacity", "transform", "filter", "mask", "shape-rendering"],
-      "#rose": ["transform"],
+      "#compass > use": ["transform"],
       "#relig": ["opacity", "stroke", "stroke-width", "filter"],
       "#cults": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
       "#landmass": ["opacity", "fill", "filter"],

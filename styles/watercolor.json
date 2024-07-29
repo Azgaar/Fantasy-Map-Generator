@@ -72,7 +72,7 @@
     "mask": "url(#water)",
     "shape-rendering": "optimizespeed"
   },
-  "#rose": {
+  "#compass > use": {
     "transform": "translate(80 80) scale(.25)"
   },
   "#relig": {

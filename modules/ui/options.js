@@ -644,17 +644,16 @@ function randomizeCultureSet() {
 function setRendering(value) {
   viewbox.attr("shape-rendering", value);
 
-  // if (value === "optimizeSpeed") {
-  //   // block some styles
-  //   coastline.select("#sea_island").style("filter", "none");
-  //   statesHalo.style("display", "none");
-  //   emblems.style("opacity", 1);
-  // } else {
-  //   // remove style block
-  //   coastline.select("#sea_island").style("filter", null);
-  //   statesHalo.style("display", null);
-  //   emblems.style("opacity", null);
-  // }
+  if (value === "optimizeSpeed") {
+    // block some styles
+    coastline.select("#sea_island").style("filter", "none");
+    statesHalo.style("display", "none");
+  } else {
+    // remove style block
+    coastline.select("#sea_island").style("filter", null);
+    statesHalo.style("display", null);
+    if (pack.cells && statesHalo.selectAll("*").size() === 0) drawStates();
+  }
 }
 
 // generate current year and era name
@@ -902,9 +901,9 @@ function updateTilesOptions() {
   }
 
   const tileSize = byId("tileSize");
-  const tilesX = +byId("tileColsOutput").value;
-  const tilesY = +byId("tileRowsOutput").value;
-  const scale = +byId("tileScaleOutput").value;
+  const tilesX = +byId("tileColsOutput").value || 2;
+  const tilesY = +byId("tileRowsOutput").value || 2;
+  const scale = +byId("tileScaleOutput").value || 1;
 
   // calculate size
   const sizeX = graphWidth * scale * tilesX;
@@ -921,11 +920,16 @@ function updateTilesOptions() {
   const tileH = (graphHeight / tilesY) | 0;
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  function getRowLabel(row) {
+    const first = row >= alphabet.length ? alphabet[Math.floor(row / alphabet.length) - 1] : "";
+    const last = alphabet[row % alphabet.length];
+    return first + last;
+  }
+
   for (let y = 0, row = 0; y + tileH <= graphHeight; y += tileH, row++) {
     for (let x = 0, column = 1; x + tileW <= graphWidth; x += tileW, column++) {
       rects.push(`<rect x=${x} y=${y} width=${tileW} height=${tileH} />`);
-      const label = alphabet[row % alphabet.length] + column;
-      labels.push(`<text x=${x + tileW / 2} y=${y + tileH / 2}>${label}</text>`);
+      labels.push(`<text x=${x + tileW / 2} y=${y + tileH / 2}>${getRowLabel(row)}${column}</text>`);
     }
   }
 

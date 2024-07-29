@@ -1070,27 +1070,29 @@ function drawStates() {
 
   const bodyData = body.map((p, s) => [p.length > 10 ? p : null, s, states[s].color]).filter(d => d[0]);
   const gapData = gap.map((p, s) => [p.length > 10 ? p : null, s, states[s].color]).filter(d => d[0]);
-  const haloData = halo.map((p, s) => [p.length > 10 ? p : null, s, states[s].color]).filter(d => d[0]);
 
   const bodyString = bodyData.map(d => `<path id="state${d[1]}" d="${d[0]}" fill="${d[2]}" stroke="none"/>`).join("");
   const gapString = gapData.map(d => `<path id="state-gap${d[1]}" d="${d[0]}" fill="none" stroke="${d[2]}"/>`).join("");
-  const clipString = bodyData
-    .map(d => `<clipPath id="state-clip${d[1]}"><use href="#state${d[1]}"/></clipPath>`)
-    .join("");
-  const haloString = haloData
-    .map(
-      d =>
-        `<path id="state-border${d[1]}" d="${d[0]}" clip-path="url(#state-clip${d[1]})" stroke="${
-          d3.color(d[2]) ? d3.color(d[2]).darker().hex() : "#666666"
-        }"/>`
-    )
-    .join("");
-
   statesBody.html(bodyString + gapString);
-  defs.select("#statePaths").html(clipString);
-  statesHalo.html(haloString);
 
-  // connect vertices to chain
+  const isOptimized = shapeRendering.value === "optimizeSpeed";
+  if (!isOptimized) {
+    const haloData = halo.map((p, s) => [p.length > 10 ? p : null, s, states[s].color]).filter(d => d[0]);
+
+    const haloString = haloData
+      .map(d => {
+        const stroke = d3.color(d[2]) ? d3.color(d[2]).darker().hex() : "#666666";
+        return `<path id="state-border${d[1]}" d="${d[0]}" clip-path="url(#state-clip${d[1]})" stroke="${stroke}"/>`;
+      })
+      .join("");
+    statesHalo.html(haloString);
+
+    const clipString = bodyData
+      .map(d => `<clipPath id="state-clip${d[1]}"><use href="#state${d[1]}"/></clipPath>`)
+      .join("");
+    defs.select("#statePaths").html(clipString);
+  }
+
   function connectVertices(start, state) {
     const chain = []; // vertices chain to form a path
     const getType = c => {
@@ -1525,10 +1527,6 @@ function toggleCompass(event) {
   if (!layerIsOn("toggleCompass")) {
     turnButtonOn("toggleCompass");
     $("#compass").fadeIn();
-    if (!compass.selectAll("*").size()) {
-      compass.append("use").attr("xlink:href", "#rose");
-      shiftCompass();
-    }
     if (event && isCtrlClick(event)) editStyle("compass");
   } else {
     if (event && isCtrlClick(event)) {
