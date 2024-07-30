@@ -12,7 +12,10 @@ window.Lakes = (function () {
       f.flux = f.shoreline.reduce((acc, c) => acc + grid.cells.prec[cells.g[c]], 0);
 
       // temperature and evaporation to detect closed lakes
-      f.temp = f.cells < 6 ? grid.cells.temp[cells.g[f.firstCell]] : rn(d3.mean(f.shoreline.map(c => grid.cells.temp[cells.g[c]])), 1);
+      f.temp =
+        f.cells < 6
+          ? grid.cells.temp[cells.g[f.firstCell]]
+          : rn(d3.mean(f.shoreline.map(c => grid.cells.temp[cells.g[c]])), 1);
       const height = (f.height - 18) ** heightExponentInput.value; // height in meters
       const evaporation = ((700 * (f.temp + 0.006 * height)) / 50 + 75) / (80 - f.temp); // based on Penman formula, [1-11]
       f.evaporation = rn(evaporation * f.cells);
@@ -31,6 +34,7 @@ window.Lakes = (function () {
   // get array of land cells aroound lake
   const getShoreline = function (lake) {
     const uniqueCells = new Set();
+    if (!lake.vertices) lake.vertices = [];
     lake.vertices.forEach(v => pack.vertices.c[v].forEach(c => pack.cells.h[c] >= 20 && uniqueCells.add(c)));
     lake.shoreline = [...uniqueCells];
   };
