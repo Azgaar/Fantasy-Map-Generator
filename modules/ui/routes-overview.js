@@ -79,7 +79,7 @@ function overviewRoutes() {
     routes
       .select("#route" + routeId)
       .attr("stroke", "red")
-      .attr("stroke-width", 3)
+      .attr("stroke-width", 2)
       .attr("stroke-dasharray", "none");
   }
 

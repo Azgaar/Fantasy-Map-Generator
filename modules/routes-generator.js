@@ -522,9 +522,9 @@ window.Routes = (function () {
   ];
 
   const suffixes = {
-    roads: {road: 3, route: 1, way: 1, highway: 1},
-    trails: {trail: 3, path: 1, track: 1, pass: 1},
-    searoutes: {"sea route": 3, lane: 2, passage: 1, seaway: 1}
+    roads: {road: 7, route: 3, way: 2, highway: 1},
+    trails: {trail: 4, path: 1, track: 1, pass: 1},
+    searoutes: {"sea route": 5, lane: 2, passage: 1, seaway: 1}
   };
 
   function generateName({group, cells}) {
