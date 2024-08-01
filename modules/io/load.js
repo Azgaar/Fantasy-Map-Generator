@@ -348,6 +348,10 @@ async function parseLoadedData(data, mapVersion) {
           .attr("id", "texture")
           .attr("data-href", "./images/textures/plaster.jpg");
       }
+
+      if (!emblems.size()) {
+        emblems = viewbox.insert("g", "#labels").attr("id", "emblems").style("display", "none");
+      }
     })();
 
     void (function parseGridData() {
@@ -459,7 +463,7 @@ async function parseLoadedData(data, mapVersion) {
     {
       // dynamically import and run auto-update script
       const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.98.00");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.99.00");
       resolveVersionConflicts(versionNumber);
     }
 

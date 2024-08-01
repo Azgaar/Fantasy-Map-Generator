@@ -243,10 +243,12 @@ export function resolveVersionConflicts(version) {
     rivers.selectAll("path").each(function () {
       const i = +this.id.slice(5);
       const length = this.getTotalLength() / 2;
-      const s = this.getPointAtLength(length),
-        e = this.getPointAtLength(0);
-      const source = findCell(s.x, s.y),
-        mouth = findCell(e.x, e.y);
+      if (!length) return;
+
+      const s = this.getPointAtLength(length);
+      const e = this.getPointAtLength(0);
+      const source = findCell(s.x, s.y);
+      const mouth = findCell(e.x, e.y);
       const name = Rivers.getName(mouth);
       const type = length < 25 ? rw({Creek: 9, River: 3, Brook: 3, Stream: 1}) : "River";
       pack.rivers.push({i, parent: 0, length, source, mouth, basin: i, name, type});
