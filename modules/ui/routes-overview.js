@@ -21,7 +21,7 @@ function overviewRoutes() {
 
   // add listeners
   byId("routesOverviewRefresh").on("click", routesOverviewAddLines);
-  // byId("routeCreateNew").on("click", createRoute);
+  byId("routeCreateNew").on("click", createRoute);
   byId("routesExport").on("click", downloadRoutesData);
   byId("routesRemoveAll").on("click", triggerAllRoutesRemove);
 

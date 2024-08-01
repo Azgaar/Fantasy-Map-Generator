@@ -17,7 +17,8 @@ function createRoute(defaultGroup) {
 
   // update route groups
   byId("routeCreatorGroupSelect").innerHTML = Array.from(routes.selectAll("g")._groups[0]).map(el => {
-    return `<option value="${el.id}" ${el.id === defaultGroup ? "selected" : ""}>${el.id}</option>`;
+    const selected = defaultGroup || "roads";
+    return `<option value="${el.id}" ${el.id === selected ? "selected" : ""}>${el.id}</option>`;
   });
 
   $("#routeCreator").dialog({
