@@ -44,7 +44,7 @@ function prepareMapData() {
   const params = [version, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
   const settings = [
     distanceUnitInput.value,
-    distanceScaleInput.value,
+    distanceScale,
     areaUnit.value,
     heightUnit.value,
     heightExponentInput.value,

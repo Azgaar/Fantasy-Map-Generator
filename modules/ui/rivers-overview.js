@@ -35,8 +35,8 @@ function overviewRivers() {
 
     for (const r of pack.rivers) {
       const discharge = r.discharge + " m³/s";
-      const length = rn(r.length * distanceScaleInput.value) + " " + unit;
-      const width = rn(r.width * distanceScaleInput.value, 3) + " " + unit;
+      const length = rn(r.length * distanceScale) + " " + unit;
+      const width = rn(r.width * distanceScale, 3) + " " + unit;
       const basin = pack.rivers.find(river => river.i === r.basin)?.name;
 
       lines += /* html */ `<div
@@ -67,9 +67,9 @@ function overviewRivers() {
     const averageDischarge = rn(d3.mean(pack.rivers.map(r => r.discharge)));
     riversFooterDischarge.innerHTML = averageDischarge + " m³/s";
     const averageLength = rn(d3.mean(pack.rivers.map(r => r.length)));
-    riversFooterLength.innerHTML = averageLength * distanceScaleInput.value + " " + unit;
+    riversFooterLength.innerHTML = averageLength * distanceScale + " " + unit;
     const averageWidth = rn(d3.mean(pack.rivers.map(r => r.width)), 3);
-    riversFooterWidth.innerHTML = rn(averageWidth * distanceScaleInput.value, 3) + " " + unit;
+    riversFooterWidth.innerHTML = rn(averageWidth * distanceScale, 3) + " " + unit;
 
     // add listeners
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => riverHighlightOn(ev)));
@@ -143,8 +143,8 @@ function overviewRivers() {
     body.querySelectorAll(":scope > div").forEach(function (el) {
       const d = el.dataset;
       const discharge = d.discharge + " m³/s";
-      const length = rn(d.length * distanceScaleInput.value) + " " + distanceUnitInput.value;
-      const width = rn(d.width * distanceScaleInput.value, 3) + " " + distanceUnitInput.value;
+      const length = rn(d.length * distanceScale) + " " + distanceUnitInput.value;
+      const width = rn(d.width * distanceScale, 3) + " " + distanceUnitInput.value;
       data += [d.id, d.name, d.type, discharge, length, width, d.basin].join(",") + "\n";
     });
 

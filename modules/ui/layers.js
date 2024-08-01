@@ -1792,7 +1792,6 @@ function toggleScaleBar(event) {
 function drawScaleBar(scaleBar, scaleLevel) {
   if (!scaleBar.size() || scaleBar.style("display") === "none") return;
 
-  const distanceScale = +distanceScaleInput.value;
   const unit = distanceUnitInput.value;
   const size = +scaleBar.attr("data-bar-size");
 

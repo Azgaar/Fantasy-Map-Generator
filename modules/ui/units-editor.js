@@ -55,6 +55,7 @@ function editUnits() {
   }
 
   function changeDistanceScale() {
+    distanceScale = +this.value;
     renderScaleBar();
     calculateFriendlyGridSize();
   }
@@ -90,10 +91,9 @@ function editUnits() {
   }
 
   function restoreDefaultUnits() {
-    // distanceScale
     distanceScale = 3;
-    byId("distanceScaleOutput").value = 3;
-    byId("distanceScaleInput").value = 3;
+    byId("distanceScaleOutput").value = distanceScale;
+    byId("distanceScaleInput").value = distanceScale;
     unlock("distanceScale");
 
     // units

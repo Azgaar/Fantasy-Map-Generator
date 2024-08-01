@@ -29,12 +29,11 @@ function overviewRoutes() {
   function routesOverviewAddLines() {
     body.innerHTML = "";
     let lines = "";
-    const unit = distanceUnitInput.value;
 
     for (const route of pack.routes) {
       route.name = route.name || Routes.generateName(route);
-      route.length = route.length || getRouteLength(route.i);
-      const length = rn(route.length * distanceScale) + " " + unit;
+      route.length = route.length || Routes.getLength(route.i);
+      const length = rn(route.length * distanceScale) + " " + distanceUnitInput.value;
 
       lines += /* html */ `<div
         class="states"
@@ -56,7 +55,7 @@ function overviewRoutes() {
     // update footer
     routesFooterNumber.innerHTML = pack.routes.length;
     const averageLength = rn(d3.mean(pack.routes.map(r => r.length)));
-    routesFooterLength.innerHTML = averageLength * distanceScale + " " + unit;
+    routesFooterLength.innerHTML = averageLength * distanceScale + " " + distanceUnitInput.value;
 
     // add listeners
     body.querySelectorAll("div.states").forEach(el => el.on("mouseenter", routeHighlightOn));
@@ -66,11 +65,6 @@ function overviewRoutes() {
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", triggerRouteRemove));
 
     applySorting(routesHeader);
-  }
-
-  function getRouteLength(routeId) {
-    const path = routes.select("#route" + routeId).node();
-    return rn(path.getTotalLength() / 2, 2);
   }
 
   function routeHighlightOn(event) {

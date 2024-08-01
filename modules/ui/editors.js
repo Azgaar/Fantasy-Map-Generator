@@ -1175,7 +1175,6 @@ function getAreaUnit(squareMark = "²") {
 }
 
 function getArea(rawArea) {
-  const distanceScale = byId("distanceScaleInput")?.value;
   return rawArea * distanceScale ** 2;
 }
 

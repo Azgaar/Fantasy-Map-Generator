@@ -81,7 +81,7 @@ function editRiver(id) {
 
   function updateRiverLength(river) {
     river.length = rn(elSelected.node().getTotalLength() / 2, 2);
-    const lengthUI = `${rn(river.length * distanceScaleInput.value)} ${distanceUnitInput.value}`;
+    const lengthUI = `${rn(river.length * distanceScale)} ${distanceUnitInput.value}`;
     byId("riverLength").value = lengthUI;
   }
 
@@ -91,7 +91,7 @@ function editRiver(id) {
     const meanderedPoints = addMeandering(cells);
     river.width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, sourceWidth));
 
-    const width = `${rn(river.width * distanceScaleInput.value, 3)} ${distanceUnitInput.value}`;
+    const width = `${rn(river.width * distanceScale, 3)} ${distanceUnitInput.value}`;
     byId("riverWidth").value = width;
   }
 
@@ -235,7 +235,7 @@ function editRiver(id) {
       .data()
       .map(([x, y]) => findCell(x, y));
     const river = getRiver();
-    const riverLen = rn(river.length * distanceScaleInput.value);
+    const riverLen = rn(river.length * distanceScale);
     showElevationProfile(points, riverLen, true);
   }
 

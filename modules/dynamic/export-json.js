@@ -86,7 +86,7 @@ function getMapInfo() {
 function getSettings() {
   return {
     distanceUnit: distanceUnitInput.value,
-    distanceScale: distanceScaleInput.value,
+    distanceScale,
     areaUnit: areaUnit.value,
     heightUnit: heightUnit.value,
     heightExponent: heightExponentInput.value,

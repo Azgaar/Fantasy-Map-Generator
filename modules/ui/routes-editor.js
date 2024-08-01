@@ -37,7 +37,7 @@ function editRoute(id) {
   // add listeners
   byId("routeCreateSelectingCells").on("click", showCreationDialog);
   byId("routeSplit").on("click", togglePressed);
-  byId("routeJoin").on("click", joinRoutes);
+  byId("routeJoin").on("click", openJoinRoutesDialog);
   byId("routeElevationProfile").on("click", showRouteElevationProfile);
   byId("routeLegend").on("click", editRouteLegend);
   byId("routeRemove").on("click", removeRoute);
@@ -71,9 +71,8 @@ function editRoute(id) {
   }
 
   function updateRouteLength(route) {
-    route.length = rn(elSelected.node().getTotalLength() / 2, 2);
-    const lengthUI = `${rn(route.length * distanceScale)} ${distanceUnitInput.value}`;
-    byId("routeLength").value = lengthUI;
+    route.length = Routes.getLength(route.i);
+    byId("routeLength").value = rn(route.length * distanceScale) + " " + distanceUnitInput.value;
   }
 
   function drawControlPoints(points) {
@@ -247,61 +246,86 @@ function editRoute(id) {
     }
   }
 
-  function joinRoutes() {
+  function openJoinRoutesDialog() {
     const route = getRoute();
     const firstCell = route.cells.at(0);
     const lastCell = route.cells.at(-1);
 
-    let joinedRoute = null;
-    for (const nextRoute of pack.routes) {
-      if (joinedRoute) break;
-      if (nextRoute.i === route.i) continue;
-      if (nextRoute.cells.at(0) === lastCell) joinedRoute = nextRoute;
-      if (nextRoute.cells.at(-1) === firstCell) joinedRoute = nextRoute;
-      if (nextRoute.cells.at(0) === firstCell) joinedRoute = nextRoute;
-      if (nextRoute.cells.at(-1) === lastCell) joinedRoute = nextRoute;
-    }
+    const candidateRoutes = pack.routes.filter(r => {
+      if (r.i === route.i) return false;
+      if (r.group !== route.group) return false;
+      if (r.cells.at(0) === lastCell) return true;
+      if (r.cells.at(-1) === firstCell) return true;
+      if (r.cells.at(0) === firstCell) return true;
+      if (r.cells.at(-1) === lastCell) return true;
+      return false;
+    });
 
-    if (joinedRoute) {
-      join(route, joinedRoute);
-      tip("Routes joined", false, "success", 5000);
+    if (candidateRoutes.length) {
+      const options = candidateRoutes.map(r => {
+        r.name = r.name || Routes.generateName(r);
+        r.length = r.length || getRouteLength(r.i);
+        const length = rn(r.length * distanceScale) + " " + unit;
+        return `<option value="${r.i}">${r.name} (${length})</option>`;
+      });
+      alertMessage.innerHTML = /* html */ `<div>Route to join with:
+        <select>${options.join("")}</select>
+      </div>`;
+
+      $("#alert").dialog({
+        title: "Join routes",
+        width: fitContent(),
+        position: {my: "center", at: "center", of: "svg"},
+        buttons: {
+          Cancel: () => {
+            $("#alert").dialog("close");
+          },
+          Join: () => {
+            const selectedRouteId = +alertMessage.querySelector("select").value;
+            const selectedRoute = pack.routes.find(r => r.i === selectedRouteId);
+            joinRoutes(route, selectedRoute);
+            tip("Routes joined", false, "success", 5000);
+            $("#alert").dialog("close");
+          }
+        }
+      });
     } else {
       tip("No routes to join with. Route must start or end at current route's start or end cell", false, "error", 4000);
     }
+  }
 
-    function join(route, joinedRoute) {
-      if (!route.points) route.points = debug.selectAll("#controlPoints > *").data();
-      if (!joinedRoute.points) joinedRoute.points = Routes.getPoints(joinedRoute, Routes.preparePointsArray());
+  function joinRoutes(route, joinedRoute) {
+    if (!route.points) route.points = debug.selectAll("#controlPoints > *").data();
+    if (!joinedRoute.points) joinedRoute.points = Routes.getPoints(joinedRoute, Routes.preparePointsArray());
 
-      if (route.cells.at(-1) === joinedRoute.cells.at(0)) {
-        // joinedRoute starts at the end of current route
-        route.cells = [...route.cells, ...joinedRoute.cells.slice(1)];
-        route.points = [...route.points, ...joinedRoute.points.slice(1)];
-      } else if (route.cells.at(0) === joinedRoute.cells.at(-1)) {
-        // joinedRoute ends at the start of current route
-        route.cells = [...joinedRoute.cells, ...route.cells.slice(1)];
-        route.points = [...joinedRoute.points, ...route.points.slice(1)];
-      } else if (route.cells.at(0) === joinedRoute.cells.at(0)) {
-        // joinedRoute and current route both start at the same cell
-        route.cells = [...route.cells.reverse(), ...joinedRoute.cells.slice(1)];
-        route.points = [...route.points.reverse(), ...joinedRoute.points.slice(1)];
-      } else if (route.cells.at(-1) === joinedRoute.cells.at(-1)) {
-        // joinedRoute and current route both end at the same cell
-        route.cells = [...route.cells, ...joinedRoute.cells.reverse().slice(1)];
-        route.points = [...route.points, ...joinedRoute.points.reverse().slice(1)];
-      }
-
-      for (let i = 0; i < route.cells.length; i++) {
-        const cellId = route.cells[i];
-        const nextCellId = route.cells[i + 1];
-        if (nextCellId) addConnection(cellId, nextCellId, route.i);
-      }
-
-      Routes.remove(joinedRoute);
-      drawControlPoints(route.points);
-      drawCells();
-      redrawRoute();
+    if (route.cells.at(-1) === joinedRoute.cells.at(0)) {
+      // joinedRoute starts at the end of current route
+      route.cells = [...route.cells, ...joinedRoute.cells.slice(1)];
+      route.points = [...route.points, ...joinedRoute.points.slice(1)];
+    } else if (route.cells.at(0) === joinedRoute.cells.at(-1)) {
+      // joinedRoute ends at the start of current route
+      route.cells = [...joinedRoute.cells, ...route.cells.slice(1)];
+      route.points = [...joinedRoute.points, ...route.points.slice(1)];
+    } else if (route.cells.at(0) === joinedRoute.cells.at(0)) {
+      // joinedRoute and current route both start at the same cell
+      route.cells = [...route.cells.reverse(), ...joinedRoute.cells.slice(1)];
+      route.points = [...route.points.reverse(), ...joinedRoute.points.slice(1)];
+    } else if (route.cells.at(-1) === joinedRoute.cells.at(-1)) {
+      // joinedRoute and current route both end at the same cell
+      route.cells = [...route.cells, ...joinedRoute.cells.reverse().slice(1)];
+      route.points = [...route.points, ...joinedRoute.points.reverse().slice(1)];
     }
+
+    for (let i = 0; i < route.cells.length; i++) {
+      const cellId = route.cells[i];
+      const nextCellId = route.cells[i + 1];
+      if (nextCellId) addConnection(cellId, nextCellId, route.i);
+    }
+
+    Routes.remove(joinedRoute);
+    drawControlPoints(route.points);
+    drawCells();
+    redrawRoute();
   }
 
   function showCreationDialog() {
@@ -346,8 +370,8 @@ function editRoute(id) {
 
   function showRouteElevationProfile() {
     const route = getRoute();
-    const routeLen = rn(route.length * distanceScaleInput.value);
-    showElevationProfile(route.cells, routeLen, false);
+    const length = rn(route.length * distanceScale);
+    showElevationProfile(route.cells, length, false);
   }
 
   function editRouteLegend() {

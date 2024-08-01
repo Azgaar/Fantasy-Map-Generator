@@ -601,6 +601,11 @@ window.Routes = (function () {
     return routePoints;
   }
 
+  function getLength(routeId) {
+    const path = routes.select("#route" + routeId).node();
+    return path.getTotalLength();
+  }
+
   function remove(route) {
     const routes = pack.cells.routes;
 
@@ -630,6 +635,7 @@ window.Routes = (function () {
     generateName,
     preparePointsArray,
     getPoints,
+    getLength,
     remove
   };
 })();
