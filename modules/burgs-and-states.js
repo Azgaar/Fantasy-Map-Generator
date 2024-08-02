@@ -131,9 +131,8 @@ window.BurgsAndStates = (() => {
       while (burgsAdded < burgsNumber && spacing > 1) {
         for (let i = 0; burgsAdded < burgsNumber && i < sorted.length; i++) {
           if (cells.burg[sorted[i]]) continue;
-          const cell = sorted[i],
-            x = cells.p[cell][0],
-            y = cells.p[cell][1];
+          const cell = sorted[i];
+          const [x, y] = cells.p[cell];
           const s = spacing * gauss(1, 0.3, 0.2, 2, 2); // randomize to make placement not uniform
           if (burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
           const burg = burgs.length;
@@ -181,7 +180,7 @@ window.BurgsAndStates = (() => {
 
       if (b.port) {
         b.population = b.population * 1.3; // increase port population
-        const [x, y] = getMiddlePoint(i, haven);
+        const [x, y] = getCloseToEdgePoint(i, haven);
         b.x = x;
         b.y = y;
       }
@@ -221,6 +220,23 @@ window.BurgsAndStates = (() => {
 
     TIME && console.timeEnd("specifyBurgs");
   };
+
+  function getCloseToEdgePoint(cell1, cell2) {
+    const {cells, vertices} = pack;
+
+    const [x0, y0] = cells.p[cell1];
+
+    const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
+    const [x1, y1] = vertices.p[commonVertices[0]];
+    const [x2, y2] = vertices.p[commonVertices[1]];
+    const xEdge = (x1 + x2) / 2;
+    const yEdge = (y1 + y2) / 2;
+
+    const x = rn(x0 + 0.95 * (xEdge - x0), 2);
+    const y = rn(y0 + 0.95 * (yEdge - y0), 2);
+
+    return [x, y];
+  }
 
   const getType = (i, port) => {
     const cells = pack.cells;

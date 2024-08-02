@@ -264,8 +264,8 @@ function editRoute(id) {
     if (candidateRoutes.length) {
       const options = candidateRoutes.map(r => {
         r.name = r.name || Routes.generateName(r);
-        r.length = r.length || getRouteLength(r.i);
-        const length = rn(r.length * distanceScale) + " " + unit;
+        r.length = r.length || Routes.getLength(r.i);
+        const length = rn(r.length * distanceScale) + " " + distanceUnitInput.value;
         return `<option value="${r.i}">${r.name} (${length})</option>`;
       });
       alertMessage.innerHTML = /* html */ `<div>Route to join with:
