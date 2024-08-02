@@ -457,7 +457,7 @@ function handleZoom(isScaleChanged, isPositionChanged) {
 
 // Zoom to a specific point
 function zoomTo(x, y, z = 8, d = 2000) {
-  const transform = d3.zoomIdentity.translate(x * -z + graphWidth / 2, y * -z + graphHeight / 2).scale(z);
+  const transform = d3.zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
   svg.transition().duration(d).call(zoom.transform, transform);
 }
 
