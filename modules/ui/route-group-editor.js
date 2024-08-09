@@ -63,6 +63,8 @@ function editRouteGroups() {
         .attr("stroke-linecap", "butt");
       byId("routeGroup")?.options.add(new Option(group, group));
       addLines();
+
+      byId("routeCreatorGroupSelect").options.add(new Option(group, group));
     });
   }
 

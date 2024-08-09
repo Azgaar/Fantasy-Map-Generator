@@ -10,9 +10,10 @@ function createRoute(defaultGroup) {
 
   tip("Click to add route point, click again to remove", true);
   debug.append("g").attr("id", "controlCells");
-  viewbox.style("cursor", "crosshair").on("click", onCellClick);
+  debug.append("g").attr("id", "controlPoints");
+  viewbox.style("cursor", "crosshair").on("click", onClick);
 
-  createRoute.cells = [];
+  createRoute.points = [];
   const body = byId("routeCreatorBody");
 
   // update route groups
@@ -32,85 +33,106 @@ function createRoute(defaultGroup) {
   modules.createRoute = true;
 
   // add listeners
+  byId("routeCreatorGroupSelect").on("change", () => drawRoute(createRoute.points));
   byId("routeCreatorGroupEdit").on("click", editRouteGroups);
   byId("routeCreatorComplete").on("click", completeCreation);
   byId("routeCreatorCancel").on("click", () => $("#routeCreator").dialog("close"));
   body.on("click", ev => {
-    if (ev.target.classList.contains("icon-trash-empty")) removeCell(+ev.target.parentNode.dataset.cell);
+    if (ev.target.classList.contains("icon-trash-empty")) removePoint(ev.target.parentNode.dataset.point);
   });
 
-  function onCellClick() {
-    const cell = findCell(...d3.mouse(this));
+  function onClick() {
+    const [x, y] = d3.mouse(this);
+    const cellId = findCell(x, y);
+    const point = [rn(x, 2), rn(y, 2), cellId];
+    createRoute.points.push(point);
 
-    if (createRoute.cells.includes(cell)) removeCell(cell);
-    else addCell(cell);
+    drawRoute(createRoute.points);
+
+    body.innerHTML += `<div class="editorLine" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1em;" data-point="${point.join(
+      "-"
+    )}">
+      <span><b>Cell</b>: ${cellId}</span>
+      <span><b>X</b>: ${point[0]}</span>
+      <span><b>Y</b>: ${point[1]}</span>
+      <span data-tip="Remove the point" class="icon-trash-empty pointer"></span>
+    </div>`;
   }
 
-  function addCell(cell) {
-    createRoute.cells.push(cell);
-    drawCells(createRoute.cells);
-
-    body.innerHTML += `<li class="editorLine" data-cell="${cell}">
-      <span>Cell ${cell}</span>
-      <span data-tip="Remove the cell" class="icon-trash-empty pointer"></span>
-    </li>`;
+  function removePoint(pointString) {
+    createRoute.points = createRoute.points.filter(p => p.join("-") !== pointString);
+    drawRoute(createRoute.points);
+    body.querySelector(`[data-point='${pointString}']`)?.remove();
   }
 
-  function removeCell(cell) {
-    createRoute.cells = createRoute.cells.filter(c => c !== cell);
-    drawCells(createRoute.cells);
-    body.querySelector(`[data-cell='${cell}']`)?.remove();
-  }
-
-  function drawCells(cells) {
+  function drawRoute(points) {
     debug
       .select("#controlCells")
       .selectAll("polygon")
-      .data(cells)
+      .data(points)
       .join("polygon")
-      .attr("points", getPackPolygon)
+      .attr("points", p => getPackPolygon(p[2]))
       .attr("class", "current");
-  }
 
-  function completeCreation() {
-    const routeCells = createRoute.cells;
-    if (routeCells.length < 2) return tip("Add at least 2 cells", false, "error");
+    debug
+      .select("#controlPoints")
+      .selectAll("circle")
+      .data(points)
+      .join("circle")
+      .attr("cx", d => d[0])
+      .attr("cy", d => d[1])
+      .attr("r", 0.6);
 
-    const routeId = Math.max(...pack.routes.map(route => route.i)) + 1;
     const group = byId("routeCreatorGroupSelect").value;
-    const feature = pack.cells.f[routeCells[0]];
-    const route = {cells: routeCells, group, feature, i: routeId};
-    pack.routes.push(route);
-
-    const links = pack.cells.routes;
-    for (let i = 0; i < routeCells.length; i++) {
-      const cellId = routeCells[i];
-      const nextCellId = routeCells[i + 1];
-      if (nextCellId) {
-        if (!links[cellId]) links[cellId] = {};
-        links[cellId][nextCellId] = routeId;
-
-        if (!links[nextCellId]) links[nextCellId] = {};
-        links[nextCellId][cellId] = routeId;
-      }
-    }
-
     const lineGen = d3.line();
     lineGen.curve(ROUTE_CURVES[group] || ROUTE_CURVES.default);
-    const routePoints = Routes.getPoints(route, Routes.preparePointsArray());
-    const path = round(lineGen(routePoints), 1);
+    const path = round(lineGen(points), 1);
+
+    routes.select("#routeTemp").remove();
     routes
       .select("#" + group)
       .append("path")
       .attr("d", path)
-      .attr("id", "route" + routeId);
+      .attr("id", "routeTemp");
+  }
 
+  function completeCreation() {
+    const points = createRoute.points;
+    if (points.length < 2) return tip("Add at least 2 points", false, "error");
+
+    const routeId = Math.max(...pack.routes.map(route => route.i)) + 1;
+    const group = byId("routeCreatorGroupSelect").value;
+    const feature = pack.cells.f[points[0][2]];
+    const route = {points, group, feature, i: routeId};
+    pack.routes.push(route);
+
+    const links = pack.cells.routes;
+    for (let i = 0; i < points.length; i++) {
+      const point = points[i];
+      const nextPoint = points[i + 1];
+
+      if (nextPoint) {
+        const cellId = point[2];
+        const nextId = nextPoint[2];
+
+        if (!links[cellId]) links[cellId] = {};
+        links[cellId][nextId] = routeId;
+
+        if (!links[nextId]) links[nextId] = {};
+        links[nextId][cellId] = routeId;
+      }
+    }
+
+    routes.select("#routeTemp").attr("id", "route" + routeId);
     editRoute("route" + routeId);
   }
 
   function closeRouteCreator() {
     body.innerHTML = "";
     debug.select("#controlCells").remove();
+    debug.select("#controlPoints").remove();
+    routes.select("#routeTemp").remove();
+
     restoreDefaultEvents();
     clearMainTip();
 

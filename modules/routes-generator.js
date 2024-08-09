@@ -1,3 +1,6 @@
+const ROUTES_SHARP_ANGLE = 135;
+const ROUTES_VERY_SHARP_ANGLE = 115;
+
 window.Routes = (function () {
   function generate() {
     const {capitalsByFeature, burgsByFeature, portsByFeature} = sortBurgsByFeature(pack.burgs);
@@ -7,7 +10,7 @@ window.Routes = (function () {
     const trails = generateTrails();
     const seaRoutes = generateSeaRoutes();
 
-    pack.routes = combineRoutes();
+    pack.routes = createRoutesData();
     pack.cells.routes = buildLinks(pack.routes);
 
     function sortBurgsByFeature(burgs) {
@@ -121,22 +124,26 @@ window.Routes = (function () {
       return segments;
     }
 
-    function combineRoutes() {
+    function createRoutesData() {
       const routes = [];
+      const pointsArray = preparePointsArray();
 
       for (const {feature, cells, merged} of mergeRoutes(mainRoads)) {
         if (merged) continue;
-        routes.push({i: routes.length, group: "roads", feature, cells});
+        const points = getPoints("roads", cells, pointsArray);
+        routes.push({i: routes.length, group: "roads", feature, points});
       }
 
       for (const {feature, cells, merged} of mergeRoutes(trails)) {
         if (merged) continue;
-        routes.push({i: routes.length, group: "trails", feature, cells});
+        const points = getPoints("trails", cells, pointsArray);
+        routes.push({i: routes.length, group: "trails", feature, points});
       }
 
       for (const {feature, cells, merged} of mergeRoutes(seaRoutes)) {
         if (merged) continue;
-        routes.push({i: routes.length, group: "searoutes", feature, cells});
+        const points = getPoints("searoutes", cells, pointsArray);
+        routes.push({i: routes.length, group: "searoutes", feature, points});
       }
 
       return routes;
@@ -165,14 +172,68 @@ window.Routes = (function () {
       return routesMerged > 1 ? mergeRoutes(routes) : routes;
     }
 
+    function preparePointsArray() {
+      const {cells, burgs} = pack;
+      return cells.p.map(([x, y], cellId) => {
+        const burgId = cells.burg[cellId];
+        if (burgId) return [burgs[burgId].x, burgs[burgId].y];
+        return [x, y];
+      });
+    }
+
+    function getPoints(group, cells, points) {
+      const data = cells.map(cellId => [...points[cellId], cellId]);
+
+      // resolve sharp angles
+      if (group !== "searoutes") {
+        for (let i = 1; i < cells.length - 1; i++) {
+          const cellId = cells[i];
+          if (pack.cells.burg[cellId]) continue;
+
+          const [prevX, prevY] = data[i - 1];
+          const [currX, currY] = data[i];
+          const [nextX, nextY] = data[i + 1];
+
+          const dAx = prevX - currX;
+          const dAy = prevY - currY;
+          const dBx = nextX - currX;
+          const dBy = nextY - currY;
+          const angle = Math.abs((Math.atan2(dAx * dBy - dAy * dBx, dAx * dBx + dAy * dBy) * 180) / Math.PI);
+
+          if (angle < ROUTES_SHARP_ANGLE) {
+            const middleX = (prevX + nextX) / 2;
+            const middleY = (prevY + nextY) / 2;
+            let newX, newY;
+
+            if (angle < ROUTES_VERY_SHARP_ANGLE) {
+              newX = rn((currX + middleX * 2) / 3, 2);
+              newY = rn((currY + middleY * 2) / 3, 2);
+            } else {
+              newX = rn((currX + middleX) / 2, 2);
+              newY = rn((currY + middleY) / 2, 2);
+            }
+
+            if (findCell(newX, newY) === cellId) {
+              data[i] = [newX, newY, cellId];
+              points[cellId] = [data[i][0], data[i][1]]; // change cell coordinate for all routes
+            }
+          }
+        }
+      }
+
+      return data; // [[x, y, cell], [x, y, cell]];
+    }
+
     function buildLinks(routes) {
       const links = {};
 
-      for (const {cells, i: routeId} of routes) {
+      for (const {points, i: routeId} of routes) {
+        const cells = points.map(p => p[2]);
+
         for (let i = 0; i < cells.length; i++) {
           const cellId = cells[i];
           const nextCellId = cells[i + 1];
-          if (nextCellId) {
+          if (nextCellId && cellId !== nextCellId) {
             if (!links[cellId]) links[cellId] = {};
             links[cellId][nextCellId] = routeId;
 
@@ -527,8 +588,8 @@ window.Routes = (function () {
     searoutes: {"sea route": 5, lane: 2, passage: 1, seaway: 1}
   };
 
-  function generateName({group, cells}) {
-    if (cells.length < 4) return "Unnamed route segment";
+  function generateName({group, points}) {
+    if (points.length < 4) return "Unnamed route segment";
 
     const model = rw(models[group]);
     const suffix = rw(suffixes[group]);
@@ -540,65 +601,13 @@ window.Routes = (function () {
     return "Unnamed route";
 
     function getBurgName() {
-      const priority = [cells.at(-1), cells.at(0), cells.slice(1, -1).reverse()];
-      for (const cellId of priority) {
+      const priority = [points.at(-1), points.at(0), points.slice(1, -1).reverse()];
+      for (const [x, y, cellId] of priority) {
         const burgId = pack.cells.burg[cellId];
         if (burgId) return getAdjective(pack.burgs[burgId].name);
       }
       return "Unnamed";
     }
-  }
-
-  function preparePointsArray() {
-    const {cells, burgs} = pack;
-    return cells.p.map(([x, y], cellId) => {
-      const burgId = cells.burg[cellId];
-      if (burgId) return [burgs[burgId].x, burgs[burgId].y];
-      return [x, y];
-    });
-  }
-
-  function getPoints(route, points) {
-    if (route.points) return route.points;
-    const routePoints = route.cells.map(cellId => points[cellId]);
-
-    if (route.group !== "searoutes2") {
-      for (let i = 1; i < route.cells.length - 1; i++) {
-        const cellId = route.cells[i];
-        if (pack.cells.burg[cellId]) continue;
-
-        const [prevX, prevY] = routePoints[i - 1];
-        const [currX, currY] = routePoints[i];
-        const [nextX, nextY] = routePoints[i + 1];
-
-        const dAx = prevX - currX;
-        const dAy = prevY - currY;
-        const dBx = nextX - currX;
-        const dBy = nextY - currY;
-        const angle = Math.abs((Math.atan2(dAx * dBy - dAy * dBx, dAx * dBx + dAy * dBy) * 180) / Math.PI);
-
-        if (angle < ROUTES_SHARP_ANGLE) {
-          const middleX = (prevX + nextX) / 2;
-          const middleY = (prevY + nextY) / 2;
-          let newX, newY;
-
-          if (angle < ROUTES_VERY_SHARP_ANGLE) {
-            newX = rn((currX + middleX * 2) / 3, 2);
-            newY = rn((currY + middleY * 2) / 3, 2);
-          } else {
-            newX = rn((currX + middleX) / 2, 2);
-            newY = rn((currY + middleY) / 2, 2);
-          }
-
-          if (findCell(newX, newY) === cellId) {
-            routePoints[i] = [newX, newY];
-            points[cellId] = routePoints[i]; // change cell coordinate for all routes
-          }
-        }
-      }
-    }
-
-    return routePoints;
   }
 
   function getLength(routeId) {
@@ -609,7 +618,9 @@ window.Routes = (function () {
   function remove(route) {
     const routes = pack.cells.routes;
 
-    for (const from of route.cells) {
+    for (const point of route.points) {
+      const from = point[2];
+
       for (const [to, routeId] of Object.entries(routes[from])) {
         if (routeId === route.i) {
           delete routes[from][to];
@@ -633,8 +644,6 @@ window.Routes = (function () {
     hasRoad,
     isCrossroad,
     generateName,
-    preparePointsArray,
-    getPoints,
     getLength,
     remove
   };

@@ -1643,13 +1643,11 @@ function drawRoutes() {
   const routePaths = {};
   const lineGen = d3.line();
 
-  let points = Routes.preparePointsArray();
-
   for (const route of pack.routes) {
     const {i, group} = route;
     lineGen.curve(ROUTE_CURVES[group] || ROUTE_CURVES.default);
-    const routePoints = Routes.getPoints(route, points);
-    const path = round(lineGen(routePoints), 1);
+    const points = route.points.map(p => [p[0], p[1]]);
+    const path = round(lineGen(points), 1);
 
     if (!routePaths[group]) routePaths[group] = [];
     routePaths[group].push(`<path id="route${i}" d="${path}"/>`);
@@ -1662,11 +1660,6 @@ function drawRoutes() {
 
   TIME && console.timeEnd("drawRoutes");
 }
-
-const ROUTES_SHARP_ANGLE = 135;
-const ROUTES_VERY_SHARP_ANGLE = 115;
-
-function drawRoute() {}
 
 function toggleMilitary() {
   if (!layerIsOn("toggleMilitary")) {
