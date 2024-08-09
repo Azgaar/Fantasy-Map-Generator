@@ -105,13 +105,12 @@ function editWorld() {
 
     calculateMapCoordinates();
     const mc = mapCoordinates;
-    const scale = +distanceScaleInput.value;
     const unit = distanceUnitInput.value;
-    const meridian = toKilometer(eqD * 2 * scale);
+    const meridian = toKilometer(eqD * 2 * distanceScale);
     byId("mapSize").innerHTML = `${graphWidth}x${graphHeight}`;
-    byId("mapSizeFriendly").innerHTML = `${rn(graphWidth * scale)}x${rn(graphHeight * scale)} ${unit}`;
+    byId("mapSizeFriendly").innerHTML = `${rn(graphWidth * distanceScale)}x${rn(graphHeight * distanceScale)} ${unit}`;
     byId("meridianLength").innerHTML = rn(eqD * 2);
-    byId("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * scale)} ${unit}`;
+    byId("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * distanceScale)} ${unit}`;
     byId("meridianLengthEarth").innerHTML = meridian ? " = " + rn(meridian / 200) + "%🌏" : "";
     byId("mapCoordinates").innerHTML = `${lat(mc.latN)} ${Math.abs(rn(mc.lonW))}°W; ${lat(mc.latS)} ${rn(mc.lonE)}°E`;
 

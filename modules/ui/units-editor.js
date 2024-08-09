@@ -55,6 +55,7 @@ function editUnits() {
   }
 
   function changeDistanceScale() {
+    distanceScale = +this.value;
     renderScaleBar();
     calculateFriendlyGridSize();
   }
@@ -90,10 +91,9 @@ function editUnits() {
   }
 
   function restoreDefaultUnits() {
-    // distanceScale
     distanceScale = 3;
-    byId("distanceScaleOutput").value = 3;
-    byId("distanceScaleInput").value = 3;
+    byId("distanceScaleOutput").value = distanceScale;
+    byId("distanceScaleInput").value = distanceScale;
     unlock("distanceScale");
 
     // units
@@ -179,13 +179,15 @@ function editUnits() {
       tip("Draw a curve along routes to measure length. Hold Shift to measure away from roads.", true);
       unitsBottom.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
       this.classList.add("pressed");
+
       viewbox.style("cursor", "crosshair").call(
         d3.drag().on("start", function () {
           const cells = pack.cells;
           const burgs = pack.burgs;
           const point = d3.mouse(this);
           const c = findCell(point[0], point[1]);
-          if (cells.road[c] || d3.event.sourceEvent.shiftKey) {
+
+          if (Routes.isConnected(c) || d3.event.sourceEvent.shiftKey) {
             const b = cells.burg[c];
             const x = b ? burgs[b].x : cells.p[c][0];
             const y = b ? burgs[b].y : cells.p[c][1];
@@ -194,7 +196,7 @@ function editUnits() {
             d3.event.on("drag", function () {
               const point = d3.mouse(this);
               const c = findCell(point[0], point[1]);
-              if (cells.road[c] || d3.event.sourceEvent.shiftKey) {
+              if (Routes.isConnected(c) || d3.event.sourceEvent.shiftKey) {
                 routeOpisometer.trackCell(c, true);
               }
             });

@@ -1,5 +1,3 @@
-import {rollups} from "../../../utils/functionUtils.js";
-
 const entitiesMap = {
   states: {
     label: "State",

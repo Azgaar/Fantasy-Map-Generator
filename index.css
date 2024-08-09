@@ -258,7 +258,6 @@ i.icon-lock {
   cursor: pointer;
 }
 
-#routeEditor > *,
 #labelEditor div {
   display: inline-block;
 }
@@ -1618,6 +1617,7 @@ div.states > .riverType {
 
 #burgBody > div > div,
 #riverBody > div,
+#routeBody > div,
 #lakeBody > div {
   padding: 0.1em;
 }
@@ -1625,11 +1625,18 @@ div.states > .riverType {
 #riverBody div.label,
 #riverBody input,
 #riverBody select,
+#routeBody div.label,
 #lakeBody div.label,
 #lakeBody input,
 #lakeBody select {
   display: inline-block;
   width: 7em;
+}
+
+#routeBody input,
+#routeBody select {
+  display: inline-block;
+  width: 10em;
 }
 
 #stateNameEditor div.label,

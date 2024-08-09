@@ -37,12 +37,22 @@ class Battle {
 
     // add listeners
     document.getElementById("battleType").addEventListener("click", ev => this.toggleChange(ev));
-    document.getElementById("battleType").nextElementSibling.addEventListener("click", ev => Battle.prototype.context.changeType(ev));
-    document.getElementById("battleNameShow").addEventListener("click", () => Battle.prototype.context.showNameSection());
-    document.getElementById("battleNamePlace").addEventListener("change", ev => (Battle.prototype.context.place = ev.target.value));
+    document
+      .getElementById("battleType")
+      .nextElementSibling.addEventListener("click", ev => Battle.prototype.context.changeType(ev));
+    document
+      .getElementById("battleNameShow")
+      .addEventListener("click", () => Battle.prototype.context.showNameSection());
+    document
+      .getElementById("battleNamePlace")
+      .addEventListener("change", ev => (Battle.prototype.context.place = ev.target.value));
     document.getElementById("battleNameFull").addEventListener("change", ev => Battle.prototype.context.changeName(ev));
-    document.getElementById("battleNameCulture").addEventListener("click", () => Battle.prototype.context.generateName("culture"));
-    document.getElementById("battleNameRandom").addEventListener("click", () => Battle.prototype.context.generateName("random"));
+    document
+      .getElementById("battleNameCulture")
+      .addEventListener("click", () => Battle.prototype.context.generateName("culture"));
+    document
+      .getElementById("battleNameRandom")
+      .addEventListener("click", () => Battle.prototype.context.generateName("random"));
     document.getElementById("battleNameHide").addEventListener("click", this.hideNameSection);
     document.getElementById("battleAddRegiment").addEventListener("click", this.addSide);
     document.getElementById("battleRoll").addEventListener("click", () => Battle.prototype.context.randomize());
@@ -52,11 +62,19 @@ class Battle {
     document.getElementById("battleWiki").addEventListener("click", () => wiki("Battle-Simulator"));
 
     document.getElementById("battlePhase_attackers").addEventListener("click", ev => this.toggleChange(ev));
-    document.getElementById("battlePhase_attackers").nextElementSibling.addEventListener("click", ev => Battle.prototype.context.changePhase(ev, "attackers"));
+    document
+      .getElementById("battlePhase_attackers")
+      .nextElementSibling.addEventListener("click", ev => Battle.prototype.context.changePhase(ev, "attackers"));
     document.getElementById("battlePhase_defenders").addEventListener("click", ev => this.toggleChange(ev));
-    document.getElementById("battlePhase_defenders").nextElementSibling.addEventListener("click", ev => Battle.prototype.context.changePhase(ev, "defenders"));
-    document.getElementById("battleDie_attackers").addEventListener("click", () => Battle.prototype.context.rollDie("attackers"));
-    document.getElementById("battleDie_defenders").addEventListener("click", () => Battle.prototype.context.rollDie("defenders"));
+    document
+      .getElementById("battlePhase_defenders")
+      .nextElementSibling.addEventListener("click", ev => Battle.prototype.context.changePhase(ev, "defenders"));
+    document
+      .getElementById("battleDie_attackers")
+      .addEventListener("click", () => Battle.prototype.context.rollDie("attackers"));
+    document
+      .getElementById("battleDie_defenders")
+      .addEventListener("click", () => Battle.prototype.context.rollDie("defenders"));
   }
 
   defineType() {
@@ -82,8 +100,12 @@ class Battle {
     document.getElementById("battleType").className = "icon-button-" + this.type;
 
     const sideSpecific = document.getElementById("battlePhases_" + this.type + "_attackers");
-    const attackers = sideSpecific ? sideSpecific.content : document.getElementById("battlePhases_" + this.type).content;
-    const defenders = sideSpecific ? document.getElementById("battlePhases_" + this.type + "_defenders").content : attackers;
+    const attackers = sideSpecific
+      ? sideSpecific.content
+      : document.getElementById("battlePhases_" + this.type).content;
+    const defenders = sideSpecific
+      ? document.getElementById("battlePhases_" + this.type + "_defenders").content
+      : attackers;
 
     document.getElementById("battlePhase_attackers").nextElementSibling.innerHTML = "";
     document.getElementById("battlePhase_defenders").nextElementSibling.innerHTML = "";
@@ -139,26 +161,37 @@ class Battle {
     regiment.survivors = Object.assign({}, regiment.u);
 
     const state = pack.states[regiment.state];
-    const distance = (Math.hypot(this.y - regiment.by, this.x - regiment.bx) * distanceScaleInput.value) | 0; // distance between regiment and its base
+    const distance = (Math.hypot(this.y - regiment.by, this.x - regiment.bx) * distanceScale) | 0; // distance between regiment and its base
     const color = state.color[0] === "#" ? state.color : "#999";
     const icon = `<svg width="1.4em" height="1.4em" style="margin-bottom: -.6em; stroke: #333">
       <rect x="0" y="0" width="100%" height="100%" fill="${color}"></rect>
       <text x="0" y="1.04em" style="">${regiment.icon}</text></svg>`;
     const body = `<tbody id="battle${state.i}-${regiment.i}">`;
 
-    let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment" data-tip="${regiment.name}">${regiment.name.slice(0, 24)}</td>`;
-    let casualties = `<tr class="battleCasualties"><td></td><td data-tip="${state.fullName}">${state.fullName.slice(0, 26)}</td>`;
+    let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment" data-tip="${
+      regiment.name
+    }">${regiment.name.slice(0, 24)}</td>`;
+    let casualties = `<tr class="battleCasualties"><td></td><td data-tip="${state.fullName}">${state.fullName.slice(
+      0,
+      26
+    )}</td>`;
     let survivors = `<tr class="battleSurvivors"><td></td><td data-tip="Supply line length, affects morale">Distance to base: ${distance} ${distanceUnitInput.value}</td>`;
 
     for (const u of options.military) {
-      initial += `<td data-tip="Initial forces" style="width: 2.5em; text-align: center">${regiment.u[u.name] || 0}</td>`;
+      initial += `<td data-tip="Initial forces" style="width: 2.5em; text-align: center">${
+        regiment.u[u.name] || 0
+      }</td>`;
       casualties += `<td data-tip="Casualties" style="width: 2.5em; text-align: center; color: red">0</td>`;
-      survivors += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">${regiment.u[u.name] || 0}</td>`;
+      survivors += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">${
+        regiment.u[u.name] || 0
+      }</td>`;
     }
 
     initial += `<td data-tip="Initial forces" style="width: 2.5em; text-align: center">${regiment.a || 0}</td></tr>`;
     casualties += `<td data-tip="Casualties"  style="width: 2.5em; text-align: center; color: red">0</td></tr>`;
-    survivors += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">${regiment.a || 0}</td></tr>`;
+    survivors += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">${
+      regiment.a || 0
+    }</td></tr>`;
 
     const div = side === "attackers" ? battleAttackers : battleDefenders;
     div.innerHTML += body + initial + casualties + survivors + "</tbody>";
@@ -173,17 +206,23 @@ class Battle {
       .filter(s => s.military && !s.removed)
       .map(s => s.military)
       .flat();
-    const distance = reg => rn(Math.hypot(context.y - reg.y, context.x - reg.x) * distanceScaleInput.value) + " " + distanceUnitInput.value;
-    const isAdded = reg => context.defenders.regiments.some(r => r === reg) || context.attackers.regiments.some(r => r === reg);
+    const distance = reg =>
+      rn(Math.hypot(context.y - reg.y, context.x - reg.x) * distanceScale) + " " + distanceUnitInput.value;
+    const isAdded = reg =>
+      context.defenders.regiments.some(r => r === reg) || context.attackers.regiments.some(r => r === reg);
 
     body.innerHTML = regiments
       .map(r => {
         const s = pack.states[r.state],
           added = isAdded(r),
           dist = added ? "0 " + distanceUnitInput.value : distance(r);
-        return `<div ${added ? "class='inactive'" : ""} data-s=${s.i} data-i=${r.i} data-state=${s.name} data-regiment=${r.name} 
+        return `<div ${added ? "class='inactive'" : ""} data-s=${s.i} data-i=${r.i} data-state=${
+          s.name
+        } data-regiment=${r.name} 
         data-total=${r.a} data-distance=${dist} data-tip="Click to select regiment">
-        <svg width=".9em" height=".9em" style="margin-bottom:-1px; stroke: #333"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" ></svg>
+        <svg width=".9em" height=".9em" style="margin-bottom:-1px; stroke: #333"><rect x="0" y="0" width="100%" height="100%" fill="${
+          s.color
+        }" ></svg>
         <div style="width:6em">${s.name.slice(0, 11)}</div>
         <div style="width:1.2em">${r.icon}</div>
         <div style="width:13em">${r.name.slice(0, 24)}</div>
@@ -267,7 +306,10 @@ class Battle {
   }
 
   generateName(type) {
-    const place = type === "culture" ? Names.getCulture(pack.cells.culture[this.cell], null, null, "") : Names.getBase(rand(nameBases.length - 1));
+    const place =
+      type === "culture"
+        ? Names.getCulture(pack.cells.culture[this.cell], null, null, "")
+        : Names.getBase(rand(nameBases.length - 1));
     document.getElementById("battleNamePlace").value = this.place = place;
     document.getElementById("battleNameFull").value = this.name = this.defineName();
     $("#battleScreen").dialog({title: this.name});
@@ -286,35 +328,161 @@ class Battle {
   calculateStrength(side) {
     const scheme = {
       // field battle phases
-      skirmish: {melee: 0.2, ranged: 2.4, mounted: 0.1, machinery: 3, naval: 1, armored: 0.2, aviation: 1.8, magical: 1.8}, // ranged excel
+      skirmish: {
+        melee: 0.2,
+        ranged: 2.4,
+        mounted: 0.1,
+        machinery: 3,
+        naval: 1,
+        armored: 0.2,
+        aviation: 1.8,
+        magical: 1.8
+      }, // ranged excel
       melee: {melee: 2, ranged: 1.2, mounted: 1.5, machinery: 0.5, naval: 0.2, armored: 2, aviation: 0.8, magical: 0.8}, // melee excel
       pursue: {melee: 1, ranged: 1, mounted: 4, machinery: 0.05, naval: 1, armored: 1, aviation: 1.5, magical: 0.6}, // mounted excel
-      retreat: {melee: 0.1, ranged: 0.01, mounted: 0.5, machinery: 0.01, naval: 0.2, armored: 0.1, aviation: 0.8, magical: 0.05}, // reduced
+      retreat: {
+        melee: 0.1,
+        ranged: 0.01,
+        mounted: 0.5,
+        machinery: 0.01,
+        naval: 0.2,
+        armored: 0.1,
+        aviation: 0.8,
+        magical: 0.05
+      }, // reduced
 
       // naval battle phases
       shelling: {melee: 0, ranged: 0.2, mounted: 0, machinery: 2, naval: 2, armored: 0, aviation: 0.1, magical: 0.5}, // naval and machinery excel
-      boarding: {melee: 1, ranged: 0.5, mounted: 0.5, machinery: 0, naval: 0.5, armored: 0.4, aviation: 0, magical: 0.2}, // melee excel
+      boarding: {
+        melee: 1,
+        ranged: 0.5,
+        mounted: 0.5,
+        machinery: 0,
+        naval: 0.5,
+        armored: 0.4,
+        aviation: 0,
+        magical: 0.2
+      }, // melee excel
       chase: {melee: 0, ranged: 0.15, mounted: 0, machinery: 1, naval: 1, armored: 0, aviation: 0.15, magical: 0.5}, // reduced
-      withdrawal: {melee: 0, ranged: 0.02, mounted: 0, machinery: 0.5, naval: 0.1, armored: 0, aviation: 0.1, magical: 0.3}, // reduced
+      withdrawal: {
+        melee: 0,
+        ranged: 0.02,
+        mounted: 0,
+        machinery: 0.5,
+        naval: 0.1,
+        armored: 0,
+        aviation: 0.1,
+        magical: 0.3
+      }, // reduced
 
       // siege phases
-      blockade: {melee: 0.25, ranged: 0.25, mounted: 0.2, machinery: 0.5, naval: 0.2, armored: 0.1, aviation: 0.25, magical: 0.25}, // no active actions
-      sheltering: {melee: 0.3, ranged: 0.5, mounted: 0.2, machinery: 0.5, naval: 0.2, armored: 0.1, aviation: 0.25, magical: 0.25}, // no active actions
+      blockade: {
+        melee: 0.25,
+        ranged: 0.25,
+        mounted: 0.2,
+        machinery: 0.5,
+        naval: 0.2,
+        armored: 0.1,
+        aviation: 0.25,
+        magical: 0.25
+      }, // no active actions
+      sheltering: {
+        melee: 0.3,
+        ranged: 0.5,
+        mounted: 0.2,
+        machinery: 0.5,
+        naval: 0.2,
+        armored: 0.1,
+        aviation: 0.25,
+        magical: 0.25
+      }, // no active actions
       sortie: {melee: 2, ranged: 0.5, mounted: 1.2, machinery: 0.2, naval: 0.1, armored: 0.5, aviation: 1, magical: 1}, // melee excel
-      bombardment: {melee: 0.2, ranged: 0.5, mounted: 0.2, machinery: 3, naval: 1, armored: 0.5, aviation: 1, magical: 1}, // machinery excel
-      storming: {melee: 1, ranged: 0.6, mounted: 0.5, machinery: 1, naval: 0.1, armored: 0.1, aviation: 0.5, magical: 0.5}, // melee excel
+      bombardment: {
+        melee: 0.2,
+        ranged: 0.5,
+        mounted: 0.2,
+        machinery: 3,
+        naval: 1,
+        armored: 0.5,
+        aviation: 1,
+        magical: 1
+      }, // machinery excel
+      storming: {
+        melee: 1,
+        ranged: 0.6,
+        mounted: 0.5,
+        machinery: 1,
+        naval: 0.1,
+        armored: 0.1,
+        aviation: 0.5,
+        magical: 0.5
+      }, // melee excel
       defense: {melee: 2, ranged: 3, mounted: 1, machinery: 1, naval: 0.1, armored: 1, aviation: 0.5, magical: 1}, // ranged excel
-      looting: {melee: 1.6, ranged: 1.6, mounted: 0.5, machinery: 0.2, naval: 0.02, armored: 0.2, aviation: 0.1, magical: 0.3}, // melee excel
-      surrendering: {melee: 0.1, ranged: 0.1, mounted: 0.05, machinery: 0.01, naval: 0.01, armored: 0.02, aviation: 0.01, magical: 0.03}, // reduced
+      looting: {
+        melee: 1.6,
+        ranged: 1.6,
+        mounted: 0.5,
+        machinery: 0.2,
+        naval: 0.02,
+        armored: 0.2,
+        aviation: 0.1,
+        magical: 0.3
+      }, // melee excel
+      surrendering: {
+        melee: 0.1,
+        ranged: 0.1,
+        mounted: 0.05,
+        machinery: 0.01,
+        naval: 0.01,
+        armored: 0.02,
+        aviation: 0.01,
+        magical: 0.03
+      }, // reduced
 
       // ambush phases
       surprise: {melee: 2, ranged: 2.4, mounted: 1, machinery: 1, naval: 1, armored: 1, aviation: 0.8, magical: 1.2}, // increased
-      shock: {melee: 0.5, ranged: 0.5, mounted: 0.5, machinery: 0.4, naval: 0.3, armored: 0.1, aviation: 0.4, magical: 0.5}, // reduced
+      shock: {
+        melee: 0.5,
+        ranged: 0.5,
+        mounted: 0.5,
+        machinery: 0.4,
+        naval: 0.3,
+        armored: 0.1,
+        aviation: 0.4,
+        magical: 0.5
+      }, // reduced
 
       // langing phases
-      landing: {melee: 0.8, ranged: 0.6, mounted: 0.6, machinery: 0.5, naval: 0.5, armored: 0.5, aviation: 0.5, magical: 0.6}, // reduced
-      flee: {melee: 0.1, ranged: 0.01, mounted: 0.5, machinery: 0.01, naval: 0.5, armored: 0.1, aviation: 0.2, magical: 0.05}, // reduced
-      waiting: {melee: 0.05, ranged: 0.5, mounted: 0.05, machinery: 0.5, naval: 2, armored: 0.05, aviation: 0.5, magical: 0.5}, // reduced
+      landing: {
+        melee: 0.8,
+        ranged: 0.6,
+        mounted: 0.6,
+        machinery: 0.5,
+        naval: 0.5,
+        armored: 0.5,
+        aviation: 0.5,
+        magical: 0.6
+      }, // reduced
+      flee: {
+        melee: 0.1,
+        ranged: 0.01,
+        mounted: 0.5,
+        machinery: 0.01,
+        naval: 0.5,
+        armored: 0.1,
+        aviation: 0.2,
+        magical: 0.05
+      }, // reduced
+      waiting: {
+        melee: 0.05,
+        ranged: 0.5,
+        mounted: 0.05,
+        machinery: 0.5,
+        naval: 2,
+        armored: 0.05,
+        aviation: 0.5,
+        magical: 0.5
+      }, // reduced
 
       // air battle phases
       maneuvering: {melee: 0, ranged: 0.1, mounted: 0, machinery: 0.2, naval: 0, armored: 0, aviation: 1, magical: 0.2}, // aviation
@@ -324,7 +492,8 @@ class Battle {
     const forces = this.getJoinedForces(this[side].regiments);
     const phase = this[side].phase;
     const adjuster = Math.max(populationRate / 10, 10); // population adjuster, by default 100
-    this[side].power = d3.sum(options.military.map(u => (forces[u.name] || 0) * u.power * scheme[phase][u.type])) / adjuster;
+    this[side].power =
+      d3.sum(options.military.map(u => (forces[u.name] || 0) * u.power * scheme[phase][u.type])) / adjuster;
     const UIvalue = this[side].power ? Math.max(this[side].power | 0, 1) : 0;
     document.getElementById("battlePower_" + side).innerHTML = UIvalue;
   }
@@ -723,11 +892,13 @@ class Battle {
 
     const status = battleStatus[+P(0.7)];
     const result = `The ${this.getTypeName(this.type)} ended in ${status}`;
-    const legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(this.attackers.regiments, 1)} and ${getSide(
-      this.defenders.regiments,
-      0
-    )}. ${result}.
-      \r\nAttackers losses: ${getLosses(this.attackers.casualties)}%, defenders losses: ${getLosses(this.defenders.casualties)}%`;
+    const legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(
+      this.attackers.regiments,
+      1
+    )} and ${getSide(this.defenders.regiments, 0)}. ${result}.
+      \r\nAttackers losses: ${getLosses(this.attackers.casualties)}%, defenders losses: ${getLosses(
+      this.defenders.casualties
+    )}%`;
     notes.push({id: `marker${i}`, name: this.name, legend});
 
     tip(`${this.name} is over. ${result}`, true, "success", 4000);

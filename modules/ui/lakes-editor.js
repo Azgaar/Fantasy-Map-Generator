@@ -48,8 +48,7 @@ function editLake() {
     document.getElementById("lakeArea").value = si(getArea(l.area)) + " " + getAreaUnit();
 
     const length = d3.polygonLength(l.vertices.map(v => pack.vertices.p[v]));
-    document.getElementById("lakeShoreLength").value =
-      si(length * distanceScaleInput.value) + " " + distanceUnitInput.value;
+    document.getElementById("lakeShoreLength").value = si(length * distanceScale) + " " + distanceUnitInput.value;
 
     const lakeCells = Array.from(cells.i.filter(i => cells.f[i] === l.i));
     const heights = lakeCells.map(i => cells.h[i]);

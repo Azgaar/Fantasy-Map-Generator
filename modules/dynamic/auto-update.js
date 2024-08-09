@@ -860,4 +860,13 @@ export function resolveVersionConflicts(version) {
       shiftCompass();
     }
   }
+
+  if (version < 1.99) {
+    // v1.99.00 changed routes generation algorithm and data format
+    // 1. cells.road => cells.routes and now it an object of objects {i1: {i2: routeId, i3: routeId}}
+    // 2. cells.crossroad is removed
+    // 3. pack.routes is added as an array of objects
+    // 4. rendering is changed
+    // v1.98.00 changed compass layer and rose element id
+  }
 }

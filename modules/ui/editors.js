@@ -22,7 +22,7 @@ function clicked() {
 
   if (grand.id === "emblems") editEmblem();
   else if (parent.id === "rivers") editRiver(el.id);
-  else if (grand.id === "routes") editRoute();
+  else if (grand.id === "routes") editRoute(el.id);
   else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();
   else if (grand.id === "burgLabels") editBurg();
   else if (grand.id === "burgIcons") editBurg();
@@ -143,7 +143,7 @@ function addBurg(point) {
   const feature = cells.f[cell];
 
   const temple = pack.states[state].form === "Theocracy";
-  const population = Math.max((cells.s[cell] + cells.road[cell]) / 3 + i / 1000 + (cell % 100) / 1000, 0.1);
+  const population = Math.max(cells.s[cell] / 3 + i / 1000 + (cell % 100) / 1000, 0.1);
   const type = BurgsAndStates.getType(cell, false);
 
   // generate emblem
@@ -327,8 +327,7 @@ function createMfcgLink(burg) {
   const citadel = +burg.citadel;
   const urban_castle = +(citadel && each(2)(i));
 
-  const hub = +cells.road[cell] > 50;
-
+  const hub = Routes.isCrossroad(cell);
   const walls = +burg.walls;
   const plaza = +burg.plaza;
   const temple = +burg.temple;
@@ -372,10 +371,12 @@ function createVillageGeneratorLink(burg) {
   else if (cells.r[cell]) tags.push("river");
   else if (pop < 200 && each(4)(cell)) tags.push("pond");
 
-  const roadsAround = cells.c[cell].filter(c => cells.h[c] >= 20 && cells.road[c]).length;
-  if (roadsAround > 1) tags.push("highway");
-  else if (roadsAround === 1) tags.push("dead end");
-  else tags.push("isolated");
+  const connections = pack.cells.routes[cell] || {};
+  const roads = Object.values(connections).filter(routeId => {
+    const route = pack.routes[routeId];
+    return route.group === "roads" || route.group === "trails";
+  }).length;
+  tags.push(roads > 1 ? "highway" : roads === 1 ? "dead end" : "isolated");
 
   const biome = cells.biome[cell];
   const arableBiomes = cells.r[cell] ? [1, 2, 3, 4, 5, 6, 7, 8] : [5, 6, 7, 8];
@@ -1174,7 +1175,6 @@ function getAreaUnit(squareMark = "²") {
 }
 
 function getArea(rawArea) {
-  const distanceScale = byId("distanceScaleInput")?.value;
   return rawArea * distanceScale ** 2;
 }
 
@@ -1225,7 +1225,7 @@ function refreshAllEditors() {
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/states-editor.js?v=1.97.06");
+  const Editor = await import("../dynamic/editors/states-editor.js?v=1.99.00");
   Editor.open();
 }
 

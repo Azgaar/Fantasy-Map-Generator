@@ -5,12 +5,15 @@ function editRiver(id) {
   closeDialogs(".stable");
   if (!layerIsOn("toggleRivers")) toggleRivers();
 
-  document.getElementById("toggleCells").dataset.forced = +!layerIsOn("toggleCells");
+  byId("toggleCells").dataset.forced = +!layerIsOn("toggleCells");
   if (!layerIsOn("toggleCells")) toggleCells();
 
   elSelected = d3.select("#" + id).on("click", addControlPoint);
 
-  tip("Drag control points to change the river course. Click on point to remove it. Click on river to add additional control point. For major changes please create a new river instead", true);
+  tip(
+    "Drag control points to change the river course. Click on point to remove it. Click on river to add additional control point. For major changes please create a new river instead",
+    true
+  );
   debug.append("g").attr("id", "controlCells");
   debug.append("g").attr("id", "controlPoints");
 
@@ -33,18 +36,18 @@ function editRiver(id) {
   modules.editRiver = true;
 
   // add listeners
-  document.getElementById("riverCreateSelectingCells").addEventListener("click", createRiver);
-  document.getElementById("riverEditStyle").addEventListener("click", () => editStyle("rivers"));
-  document.getElementById("riverElevationProfile").addEventListener("click", showElevationProfile);
-  document.getElementById("riverLegend").addEventListener("click", editRiverLegend);
-  document.getElementById("riverRemove").addEventListener("click", removeRiver);
-  document.getElementById("riverName").addEventListener("input", changeName);
-  document.getElementById("riverType").addEventListener("input", changeType);
-  document.getElementById("riverNameCulture").addEventListener("click", generateNameCulture);
-  document.getElementById("riverNameRandom").addEventListener("click", generateNameRandom);
-  document.getElementById("riverMainstem").addEventListener("change", changeParent);
-  document.getElementById("riverSourceWidth").addEventListener("input", changeSourceWidth);
-  document.getElementById("riverWidthFactor").addEventListener("input", changeWidthFactor);
+  byId("riverCreateSelectingCells").on("click", createRiver);
+  byId("riverEditStyle").on("click", () => editStyle("rivers"));
+  byId("riverElevationProfile").on("click", showRiverElevationProfile);
+  byId("riverLegend").on("click", editRiverLegend);
+  byId("riverRemove").on("click", removeRiver);
+  byId("riverName").on("input", changeName);
+  byId("riverType").on("input", changeType);
+  byId("riverNameCulture").on("click", generateNameCulture);
+  byId("riverNameRandom").on("click", generateNameRandom);
+  byId("riverMainstem").on("change", changeParent);
+  byId("riverSourceWidth").on("input", changeSourceWidth);
+  byId("riverWidthFactor").on("input", changeWidthFactor);
 
   function getRiver() {
     const riverId = +elSelected.attr("id").slice(5);
@@ -55,10 +58,10 @@ function editRiver(id) {
   function updateRiverData() {
     const r = getRiver();
 
-    document.getElementById("riverName").value = r.name;
-    document.getElementById("riverType").value = r.type;
+    byId("riverName").value = r.name;
+    byId("riverType").value = r.type;
 
-    const parentSelect = document.getElementById("riverMainstem");
+    const parentSelect = byId("riverMainstem");
     parentSelect.options.length = 0;
     const parent = r.parent || r.i;
     const sortedRivers = pack.rivers.slice().sort((a, b) => (a.name > b.name ? 1 : -1));
@@ -66,11 +69,11 @@ function editRiver(id) {
       const opt = new Option(river.name, river.i, false, river.i === parent);
       parentSelect.options.add(opt);
     });
-    document.getElementById("riverBasin").value = pack.rivers.find(river => river.i === r.basin).name;
+    byId("riverBasin").value = pack.rivers.find(river => river.i === r.basin).name;
 
-    document.getElementById("riverDischarge").value = r.discharge + " m³/s";
-    document.getElementById("riverSourceWidth").value = r.sourceWidth;
-    document.getElementById("riverWidthFactor").value = r.widthFactor;
+    byId("riverDischarge").value = r.discharge + " m³/s";
+    byId("riverSourceWidth").value = r.sourceWidth;
+    byId("riverWidthFactor").value = r.widthFactor;
 
     updateRiverLength(r);
     updateRiverWidth(r);
@@ -78,8 +81,8 @@ function editRiver(id) {
 
   function updateRiverLength(river) {
     river.length = rn(elSelected.node().getTotalLength() / 2, 2);
-    const lengthUI = `${rn(river.length * distanceScaleInput.value)} ${distanceUnitInput.value}`;
-    document.getElementById("riverLength").value = lengthUI;
+    const lengthUI = `${rn(river.length * distanceScale)} ${distanceUnitInput.value}`;
+    byId("riverLength").value = lengthUI;
   }
 
   function updateRiverWidth(river) {
@@ -88,8 +91,8 @@ function editRiver(id) {
     const meanderedPoints = addMeandering(cells);
     river.width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, sourceWidth));
 
-    const width = `${rn(river.width * distanceScaleInput.value, 3)} ${distanceUnitInput.value}`;
-    document.getElementById("riverWidth").value = width;
+    const width = `${rn(river.width * distanceScale, 3)} ${distanceUnitInput.value}`;
+    byId("riverWidth").value = width;
   }
 
   function drawControlPoints(points) {
@@ -163,7 +166,7 @@ function editRiver(id) {
     elSelected.attr("d", path);
 
     updateRiverLength(river);
-    if (modules.elevation) showEPForRiver(elSelected.node());
+    if (byId("elevationProfile").offsetParent) showRiverElevationProfile();
   }
 
   function addControlPoint() {
@@ -209,7 +212,7 @@ function editRiver(id) {
     const r = getRiver();
     r.parent = +this.value;
     r.basin = pack.rivers.find(river => river.i === r.parent).basin;
-    document.getElementById("riverBasin").value = pack.rivers.find(river => river.i === r.basin).name;
+    byId("riverBasin").value = pack.rivers.find(river => river.i === r.basin).name;
   }
 
   function changeSourceWidth() {
@@ -226,9 +229,14 @@ function editRiver(id) {
     redrawRiver();
   }
 
-  function showElevationProfile() {
-    modules.elevation = true;
-    showEPForRiver(elSelected.node());
+  function showRiverElevationProfile() {
+    const points = debug
+      .selectAll("#controlPoints > *")
+      .data()
+      .map(([x, y]) => findCell(x, y));
+    const river = getRiver();
+    const riverLen = rn(river.length * distanceScale);
+    showElevationProfile(points, riverLen, true);
   }
 
   function editRiverLegend() {
@@ -266,8 +274,8 @@ function editRiver(id) {
     unselect();
     clearMainTip();
 
-    const forced = +document.getElementById("toggleCells").dataset.forced;
-    document.getElementById("toggleCells").dataset.forced = 0;
+    const forced = +byId("toggleCells").dataset.forced;
+    byId("toggleCells").dataset.forced = 0;
     if (forced && layerIsOn("toggleCells")) toggleCells();
   }
 }
