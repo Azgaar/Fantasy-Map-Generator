@@ -113,8 +113,7 @@ function overviewRoutes() {
   function triggerRouteRemove() {
     const routeId = +this.parentNode.dataset.id;
 
-    alertMessage.innerHTML = /* html */ `Are you sure you want to remove the route? All tributaries will be auto-removed`;
-
+    alertMessage.innerHTML = `Are you sure you want to remove the route?`;
     $("#alert").dialog({
       resizable: false,
       width: "22em",

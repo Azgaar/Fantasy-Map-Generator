@@ -271,7 +271,7 @@ window.Submap = (function () {
     BurgsAndStates.drawBurgs();
 
     stage("Regenerating routes network.");
-    Routes.regenerate();
+    regenerateRoutes();
 
     drawStates();
     drawBorders();

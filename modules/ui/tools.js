@@ -80,7 +80,7 @@ function processFeatureRegeneration(event, button) {
     ReliefIcons();
     if (!layerIsOn("toggleRelief")) toggleRelief();
   } else if (button === "regenerateRoutes") {
-    Routes.regenerate();
+    regenerateRoutes();
     if (!layerIsOn("toggleRoutes")) toggleRoutes();
   } else if (button === "regenerateRivers") regenerateRivers();
   else if (button === "regeneratePopulation") recalculatePopulation();
@@ -114,6 +114,14 @@ async function openEmblemEditor() {
 
   await COArenderer.trigger(id, el.coa);
   editEmblem(type, id, el);
+}
+
+function regenerateRoutes() {
+  pack.routes = [];
+  pack.cells.routes = {};
+  routes.selectAll("path").remove();
+  Routes.generate();
+  if (layerIsOn("toggleRoutes")) drawRoutes();
 }
 
 function regenerateRivers() {
@@ -430,7 +438,7 @@ function regenerateBurgs() {
   BurgsAndStates.specifyBurgs();
   BurgsAndStates.defineBurgFeatures();
   BurgsAndStates.drawBurgs();
-  Routes.regenerate();
+  regenerateRoutes();
 
   // remove emblems
   document.querySelectorAll("[id^=burgCOA]").forEach(el => el.remove());
