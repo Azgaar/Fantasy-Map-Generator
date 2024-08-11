@@ -2996,6 +2996,7 @@
             class="icon-chart-area"
           ></button>
           <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
+          <button id="routeLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
           <button
             id="routeRemove"
             data-tip="Remove route"
@@ -5458,12 +5459,6 @@
             Population
           </div>
           <div data-tip="Click to sort by burg type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-          <div
-            id="burgsInvertLock"
-            style="color: #6e5e66"
-            data-tip="Click to invert lock for all burgs"
-            class="icon-lock pointer"
-          ></div>
         </div>
 
         <div id="burgsBody" class="table"></div>
@@ -5536,12 +5531,17 @@
 
         <div id="routesBottom">
           <button id="routesOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-          <button id="routeCreateNew" data-tip="Create a new route selecting route cells" class="icon-map-pin"></button>
+          <button
+            id="routesCreateNew"
+            data-tip="Create a new route selecting route cells"
+            class="icon-map-pin"
+          ></button>
           <button
             id="routesExport"
             data-tip="Save routes-related data as a text file (.csv)"
             class="icon-download"
           ></button>
+          <button id="routesLockAll" data-tip="Lock or unlock all routes" class="icon-lock"></button>
           <button id="routesRemoveAll" data-tip="Remove all routes" class="icon-trash"></button>
         </div>
       </div>

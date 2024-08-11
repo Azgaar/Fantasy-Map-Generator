@@ -117,10 +117,10 @@ async function openEmblemEditor() {
 }
 
 function regenerateRoutes() {
-  pack.routes = [];
-  pack.cells.routes = {};
+  const locked = pack.routes.filter(route => route.lock).map((route, index) => ({...route, i: index}));
+  Routes.generate(locked);
+
   routes.selectAll("path").remove();
-  Routes.generate();
   if (layerIsOn("toggleRoutes")) drawRoutes();
 }
 

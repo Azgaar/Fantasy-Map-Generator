@@ -2,15 +2,17 @@ const ROUTES_SHARP_ANGLE = 135;
 const ROUTES_VERY_SHARP_ANGLE = 115;
 
 window.Routes = (function () {
-  function generate() {
+  function generate(lockedRoutes = []) {
     const {capitalsByFeature, burgsByFeature, portsByFeature} = sortBurgsByFeature(pack.burgs);
+
     const connections = new Map();
+    lockedRoutes.forEach(route => addConnections(route.points.map(p => p[2])));
 
     const mainRoads = generateMainRoads();
     const trails = generateTrails();
     const seaRoutes = generateSeaRoutes();
 
-    pack.routes = createRoutesData();
+    pack.routes = createRoutesData(lockedRoutes);
     pack.cells.routes = buildLinks(pack.routes);
 
     function sortBurgsByFeature(burgs) {
@@ -124,8 +126,7 @@ window.Routes = (function () {
       return segments;
     }
 
-    function createRoutesData() {
-      const routes = [];
+    function createRoutesData(routes) {
       const pointsArray = preparePointsArray();
 
       for (const {feature, cells, merged} of mergeRoutes(mainRoads)) {

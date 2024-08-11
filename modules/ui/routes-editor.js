@@ -23,6 +23,7 @@ function editRoute(id) {
     updateRouteData(route);
     drawControlPoints(route.points);
     drawCells(route.points);
+    updateLockIcon();
   }
 
   $("#routeEditor").dialog({
@@ -41,6 +42,7 @@ function editRoute(id) {
   byId("routeJoin").on("click", openJoinRoutesDialog);
   byId("routeElevationProfile").on("click", showRouteElevationProfile);
   byId("routeLegend").on("click", editRouteLegend);
+  byId("routeLock").on("click", toggleLockButton);
   byId("routeRemove").on("click", removeRoute);
   byId("routeName").on("input", changeName);
   byId("routeGroup").on("input", changeGroup);
@@ -369,6 +371,23 @@ function editRoute(id) {
   function editRouteGroupStyle() {
     const {group} = getRoute();
     editStyle("routes", group);
+  }
+
+  function toggleLockButton() {
+    const route = getRoute();
+    route.lock = !route.lock;
+    updateLockIcon();
+  }
+
+  function updateLockIcon() {
+    const route = getRoute();
+    if (route.lock) {
+      byId("routeLock").classList.remove("icon-lock-open");
+      byId("routeLock").classList.add("icon-lock");
+    } else {
+      byId("routeLock").classList.remove("icon-lock");
+      byId("routeLock").classList.add("icon-lock-open");
+    }
   }
 
   function removeRoute() {

@@ -36,7 +36,6 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   });
   byId("burgsLockAll").addEventListener("click", toggleLockAll);
   byId("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
-  byId("burgsInvertLock").addEventListener("click", invertLock);
 
   function refreshBurgsEditor() {
     updateFilter();
@@ -601,11 +600,6 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
 
   function removeAllBurgs() {
     pack.burgs.filter(b => b.i && !(b.capital || b.lock)).forEach(b => removeBurg(b.i));
-    burgsOverviewAddLines();
-  }
-
-  function invertLock() {
-    pack.burgs = pack.burgs.map(burg => ({...burg, lock: !burg.lock}));
     burgsOverviewAddLines();
   }
 

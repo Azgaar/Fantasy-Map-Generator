@@ -21,8 +21,9 @@ function overviewRoutes() {
 
   // add listeners
   byId("routesOverviewRefresh").on("click", routesOverviewAddLines);
-  byId("routeCreateNew").on("click", createRoute);
+  byId("routesCreateNew").on("click", createRoute);
   byId("routesExport").on("click", downloadRoutesData);
+  byId("routesLockAll").on("click", toggleLockAll);
   byId("routesRemoveAll").on("click", triggerAllRoutesRemove);
 
   // add line for each route
@@ -47,6 +48,9 @@ function overviewRoutes() {
         <div data-tip="Route group" style="width: 8em;">${route.group}</div>
         <div data-tip="Route length" style="width: 6em;">${length}</div>
         <span data-tip="Edit route" class="icon-pencil"></span>
+        <span class="locks pointer ${
+          route.lock ? "icon-lock" : "icon-lock-open inactive"
+        }" onmouseover="showElementLockTip(event)"></span>
         <span data-tip="Remove route" class="icon-trash-empty"></span>
       </div>`;
     }
@@ -62,6 +66,7 @@ function overviewRoutes() {
     body.querySelectorAll("div.states").forEach(el => el.on("mouseleave", routeHighlightOff));
     body.querySelectorAll("div > span.icon-dot-circled").forEach(el => el.on("click", zoomToRoute));
     body.querySelectorAll("div > span.icon-pencil").forEach(el => el.on("click", openRouteEditor));
+    body.querySelectorAll("div > span.locks").forEach(el => el.addEventListener("click", toggleLockStatus));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", triggerRouteRemove));
 
     applySorting(routesHeader);
@@ -108,6 +113,33 @@ function overviewRoutes() {
   function openRouteEditor() {
     const id = "route" + this.parentNode.dataset.id;
     editRoute(id);
+  }
+
+  function toggleLockStatus() {
+    const routeId = +this.parentNode.dataset.id;
+    const route = pack.routes[routeId];
+    route.lock = !route.lock;
+
+    if (this.classList.contains("icon-lock")) {
+      this.classList.remove("icon-lock");
+      this.classList.add("icon-lock-open");
+      this.classList.add("inactive");
+    } else {
+      this.classList.remove("icon-lock-open");
+      this.classList.add("icon-lock");
+      this.classList.remove("inactive");
+    }
+  }
+
+  function toggleLockAll() {
+    const allLocked = pack.routes.every(route => route.lock);
+
+    pack.routes.forEach(route => {
+      route.lock = !allLocked;
+    });
+
+    routesOverviewAddLines();
+    byId("routesLockAll").className = allLocked ? "icon-lock" : "icon-lock-open";
   }
 
   function triggerRouteRemove() {
