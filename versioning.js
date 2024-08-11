@@ -28,11 +28,8 @@ const version = "1.99.00"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
-<<<<<<< HEAD
         <li>New routes generatation algorithm</li>
-=======
         <li>Configurable longitude</li>
->>>>>>> 00abd5213b446922a60e2053eaca711a6d4067e2
         <li>Preview villages map</li>
         <li>Ability to render ocean heightmap</li>
         <li>Scale bar styling features</li>
