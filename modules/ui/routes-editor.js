@@ -208,12 +208,10 @@ function editRoute(id) {
         if (nextPoint) addConnection(cellId, nextPoint[2], newRoute.i);
       }
 
-      const lineGen = d3.line();
-      lineGen.curve(ROUTE_CURVES[newRoute.group] || ROUTE_CURVES.default);
       routes
         .select("#" + newRoute.group)
         .append("path")
-        .attr("d", round(lineGen(newRoutePoints), 1))
+        .attr("d", Routes.getPath(newRoute))
         .attr("id", "route" + newRoute.i);
 
       byId("routeSplit").classList.remove("pressed");
