@@ -84,15 +84,12 @@ function createRoute(defaultGroup) {
       .attr("r", 0.6);
 
     const group = byId("routeCreatorGroupSelect").value;
-    const lineGen = d3.line();
-    lineGen.curve(ROUTE_CURVES[group] || ROUTE_CURVES.default);
-    const path = round(lineGen(points), 1);
 
     routes.select("#routeTemp").remove();
     routes
       .select("#" + group)
       .append("path")
-      .attr("d", path)
+      .attr("d", Routes.getPath({group, points}))
       .attr("id", "routeTemp");
   }
 

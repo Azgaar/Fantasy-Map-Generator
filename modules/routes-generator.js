@@ -172,58 +172,6 @@ window.Routes = (function () {
       return routesMerged > 1 ? mergeRoutes(routes) : routes;
     }
 
-    function preparePointsArray() {
-      const {cells, burgs} = pack;
-      return cells.p.map(([x, y], cellId) => {
-        const burgId = cells.burg[cellId];
-        if (burgId) return [burgs[burgId].x, burgs[burgId].y];
-        return [x, y];
-      });
-    }
-
-    function getPoints(group, cells, points) {
-      const data = cells.map(cellId => [...points[cellId], cellId]);
-
-      // resolve sharp angles
-      if (group !== "searoutes") {
-        for (let i = 1; i < cells.length - 1; i++) {
-          const cellId = cells[i];
-          if (pack.cells.burg[cellId]) continue;
-
-          const [prevX, prevY] = data[i - 1];
-          const [currX, currY] = data[i];
-          const [nextX, nextY] = data[i + 1];
-
-          const dAx = prevX - currX;
-          const dAy = prevY - currY;
-          const dBx = nextX - currX;
-          const dBy = nextY - currY;
-          const angle = Math.abs((Math.atan2(dAx * dBy - dAy * dBx, dAx * dBx + dAy * dBy) * 180) / Math.PI);
-
-          if (angle < ROUTES_SHARP_ANGLE) {
-            const middleX = (prevX + nextX) / 2;
-            const middleY = (prevY + nextY) / 2;
-            let newX, newY;
-
-            if (angle < ROUTES_VERY_SHARP_ANGLE) {
-              newX = rn((currX + middleX * 2) / 3, 2);
-              newY = rn((currY + middleY * 2) / 3, 2);
-            } else {
-              newX = rn((currX + middleX) / 2, 2);
-              newY = rn((currY + middleY) / 2, 2);
-            }
-
-            if (findCell(newX, newY) === cellId) {
-              data[i] = [newX, newY, cellId];
-              points[cellId] = [data[i][0], data[i][1]]; // change cell coordinate for all routes
-            }
-          }
-        }
-      }
-
-      return data; // [[x, y, cell], [x, y, cell]];
-    }
-
     function buildLinks(routes) {
       const links = {};
 
@@ -245,6 +193,58 @@ window.Routes = (function () {
 
       return links;
     }
+  }
+
+  function preparePointsArray() {
+    const {cells, burgs} = pack;
+    return cells.p.map(([x, y], cellId) => {
+      const burgId = cells.burg[cellId];
+      if (burgId) return [burgs[burgId].x, burgs[burgId].y];
+      return [x, y];
+    });
+  }
+
+  function getPoints(group, cells, points) {
+    const data = cells.map(cellId => [...points[cellId], cellId]);
+
+    // resolve sharp angles
+    if (group !== "searoutes") {
+      for (let i = 1; i < cells.length - 1; i++) {
+        const cellId = cells[i];
+        if (pack.cells.burg[cellId]) continue;
+
+        const [prevX, prevY] = data[i - 1];
+        const [currX, currY] = data[i];
+        const [nextX, nextY] = data[i + 1];
+
+        const dAx = prevX - currX;
+        const dAy = prevY - currY;
+        const dBx = nextX - currX;
+        const dBy = nextY - currY;
+        const angle = Math.abs((Math.atan2(dAx * dBy - dAy * dBx, dAx * dBx + dAy * dBy) * 180) / Math.PI);
+
+        if (angle < ROUTES_SHARP_ANGLE) {
+          const middleX = (prevX + nextX) / 2;
+          const middleY = (prevY + nextY) / 2;
+          let newX, newY;
+
+          if (angle < ROUTES_VERY_SHARP_ANGLE) {
+            newX = rn((currX + middleX * 2) / 3, 2);
+            newY = rn((currY + middleY * 2) / 3, 2);
+          } else {
+            newX = rn((currX + middleX) / 2, 2);
+            newY = rn((currY + middleY) / 2, 2);
+          }
+
+          if (findCell(newX, newY) === cellId) {
+            data[i] = [newX, newY, cellId];
+            points[cellId] = [data[i][0], data[i][1]]; // change cell coordinate for all routes
+          }
+        }
+      }
+    }
+
+    return data; // [[x, y, cell], [x, y, cell]];
   }
 
   const MIN_PASSABLE_SEA_TEMP = -4;
@@ -416,6 +416,80 @@ window.Routes = (function () {
     }
 
     return edges;
+  }
+
+  // connect cell with routes system by land
+  function connect(cellId) {
+    if (isConnected(cellId)) return;
+
+    const {cells, routes} = pack;
+
+    const path = findConnectionPath(cellId);
+    if (!path) return;
+
+    const pathCells = restorePath(...path);
+    const pointsArray = preparePointsArray();
+    const points = getPoints("trails", pathCells, pointsArray);
+    const feature = cells.f[cellId];
+
+    const routeId = Math.max(...routes.map(route => route.i)) + 1;
+    const newRoute = {i: routeId, group: "trails", feature, points};
+    routes.push(newRoute);
+
+    for (let i = 0; i < pathCells.length; i++) {
+      const cellId = pathCells[i];
+      const nextCellId = pathCells[i + 1];
+      if (nextCellId) addConnection(cellId, nextCellId, routeId);
+    }
+
+    return newRoute;
+
+    function findConnectionPath(start) {
+      const from = [];
+      const cost = [];
+      const queue = new FlatQueue();
+      queue.push(start, 0);
+
+      while (queue.length) {
+        const priority = queue.peekValue();
+        const next = queue.pop();
+
+        for (const neibCellId of cells.c[next]) {
+          if (isConnected(neibCellId)) {
+            from[neibCellId] = next;
+            return [start, neibCellId, from];
+          }
+
+          if (cells.h[neibCellId] < 20) continue; // ignore water cells
+          const habitability = biomesData.habitability[cells.biome[neibCellId]];
+          if (!habitability) continue; // inhabitable cells are not passable (eg. lava, glacier)
+
+          const distanceCost = dist2(cells.p[next], cells.p[neibCellId]);
+          const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
+          const heightModifier = 1 + Math.max(cells.h[neibCellId] - 25, 25) / 25; // [1, 3];
+
+          const cellsCost = distanceCost * habitabilityModifier * heightModifier;
+          const totalCost = priority + cellsCost;
+
+          if (totalCost >= cost[neibCellId]) continue;
+          from[neibCellId] = next;
+          cost[neibCellId] = totalCost;
+          queue.push(neibCellId, totalCost);
+        }
+      }
+
+      return null; // path is not found
+    }
+
+    function addConnection(from, to, routeId) {
+      const routes = pack.cells.routes;
+
+      if (!routes[from]) routes[from] = {};
+      routes[from][to] = routeId;
+
+      if (!routes[to]) routes[to] = {};
+      routes[to][from] = routeId;
+    }
   }
 
   // utility functions
@@ -610,6 +684,20 @@ window.Routes = (function () {
     }
   }
 
+  const ROUTE_CURVES = {
+    roads: d3.curveCatmullRom.alpha(0.1),
+    trails: d3.curveCatmullRom.alpha(0.1),
+    searoutes: d3.curveCatmullRom.alpha(0.5),
+    default: d3.curveCatmullRom.alpha(0.1)
+  };
+
+  function getPath({group, points}) {
+    const lineGen = d3.line();
+    lineGen.curve(ROUTE_CURVES[group] || ROUTE_CURVES.default);
+    const path = round(lineGen(points.map(p => [p[0], p[1]])), 1);
+    return path;
+  }
+
   function getLength(routeId) {
     const path = routes.select("#route" + routeId).node();
     return path.getTotalLength();
@@ -638,12 +726,14 @@ window.Routes = (function () {
 
   return {
     generate,
+    connect,
     isConnected,
     areConnected,
     getRoute,
     hasRoad,
     isCrossroad,
     generateName,
+    getPath,
     getLength,
     remove
   };

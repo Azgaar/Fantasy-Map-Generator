@@ -132,27 +132,43 @@ function applySorting(headers) {
 }
 
 function addBurg(point) {
-  const cells = pack.cells;
-  const x = rn(point[0], 2),
-    y = rn(point[1], 2);
-  const cell = findCell(x, point[1]);
-  const i = pack.burgs.length;
-  const culture = cells.culture[cell];
-  const name = Names.getCulture(culture);
-  const state = cells.state[cell];
-  const feature = cells.f[cell];
+  const {cells, states} = pack;
+  const x = rn(point[0], 2);
+  const y = rn(point[1], 2);
 
-  const temple = pack.states[state].form === "Theocracy";
-  const population = Math.max(cells.s[cell] / 3 + i / 1000 + (cell % 100) / 1000, 0.1);
-  const type = BurgsAndStates.getType(cell, false);
+  const cellId = findCell(x, y);
+  const i = pack.burgs.length;
+  const culture = cells.culture[cellId];
+  const name = Names.getCulture(culture);
+  const state = cells.state[cellId];
+  const feature = cells.f[cellId];
+
+  const population = Math.max(cells.s[cellId] / 3 + i / 1000 + (cellId % 100) / 1000, 0.1);
+  const type = BurgsAndStates.getType(cellId, false);
 
   // generate emblem
-  const coa = COA.generate(pack.states[state].coa, 0.25, null, type);
+  const coa = COA.generate(states[state].coa, 0.25, null, type);
   coa.shield = COA.getShield(culture, state);
   COArenderer.add("burg", i, coa, x, y);
 
-  pack.burgs.push({name, cell, x, y, state, i, culture, feature, capital: 0, port: 0, temple, population, coa, type});
-  cells.burg[cell] = i;
+  const burg = {
+    name,
+    cell: cellId,
+    x,
+    y,
+    state,
+    i,
+    culture,
+    feature,
+    capital: 0,
+    port: 0,
+    temple: 0,
+    population,
+    coa,
+    type
+  };
+  pack.burgs.push(burg);
+  cells.burg[cellId] = i;
 
   const townSize = burgIcons.select("#towns").attr("size") || 0.5;
   burgIcons
@@ -173,7 +189,17 @@ function addBurg(point) {
     .attr("dy", `${townSize * -1.5}px`)
     .text(name);
 
-  BurgsAndStates.defineBurgFeatures(pack.burgs[i]);
+  BurgsAndStates.defineBurgFeatures(burg);
+
+  const newRoute = Routes.connect(cellId);
+  if (newRoute && layerIsOn("toggleRoutes")) {
+    routes
+      .select("#" + newRoute.group)
+      .append("path")
+      .attr("d", Routes.getPath(newRoute))
+      .attr("id", "route" + newRoute.i);
+  }
+
   return i;
 }
 

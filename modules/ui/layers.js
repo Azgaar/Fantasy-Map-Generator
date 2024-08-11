@@ -1631,26 +1631,14 @@ function toggleRoutes(event) {
   }
 }
 
-const ROUTE_CURVES = {
-  roads: d3.curveCatmullRom.alpha(0.1),
-  trails: d3.curveCatmullRom.alpha(0.1),
-  searoutes: d3.curveCatmullRom.alpha(0.5),
-  default: d3.curveCatmullRom.alpha(0.1)
-};
-
 function drawRoutes() {
   TIME && console.time("drawRoutes");
   const routePaths = {};
-  const lineGen = d3.line();
 
   for (const route of pack.routes) {
     const {i, group} = route;
-    lineGen.curve(ROUTE_CURVES[group] || ROUTE_CURVES.default);
-    const points = route.points.map(p => [p[0], p[1]]);
-    const path = round(lineGen(points), 1);
-
     if (!routePaths[group]) routePaths[group] = [];
-    routePaths[group].push(`<path id="route${i}" d="${path}"/>`);
+    routePaths[group].push(`<path id="route${i}" d="${Routes.getPath(route)}"/>`);
   }
 
   routes.selectAll("path").remove();

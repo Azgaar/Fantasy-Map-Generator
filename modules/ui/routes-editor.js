@@ -134,13 +134,7 @@ function editRoute(id) {
   }
 
   function redrawRoute(route) {
-    const lineGen = d3.line();
-    lineGen.curve(ROUTE_CURVES[route.group] || ROUTE_CURVES.default);
-
-    const points = route.points.map(p => [p[0], p[1]]);
-    const path = round(lineGen(points), 1);
-    elSelected.attr("d", path);
-
+    elSelected.attr("d", Routes.getPath(route));
     updateRouteLength(route);
     if (byId("elevationProfile").offsetParent) showRouteElevationProfile();
   }

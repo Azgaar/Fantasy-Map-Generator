@@ -253,11 +253,11 @@ window.BurgsAndStates = (() => {
     return "Generic";
   };
 
-  const defineBurgFeatures = newburg => {
+  const defineBurgFeatures = burg => {
     const {cells} = pack;
 
     pack.burgs
-      .filter(b => (newburg ? b.i == newburg.i : b.i && !b.removed && !b.lock))
+      .filter(b => (burg ? b.i == burg.i : b.i && !b.removed && !b.lock))
       .forEach(b => {
         const pop = b.population;
         b.citadel = Number(b.capital || (pop > 50 && P(0.75)) || (pop > 15 && P(0.5)) || P(0.1));

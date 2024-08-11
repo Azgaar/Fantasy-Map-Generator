@@ -279,7 +279,8 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
 
   function addBurgOnClick() {
     const point = d3.mouse(this);
-    const cell = findCell(point[0], point[1]);
+    const cell = findCell(...point);
+
     if (pack.cells.h[cell] < 20)
       return tip("You cannot place state into the water. Please click on a land cell", false, "error");
     if (pack.cells.burg[cell])
