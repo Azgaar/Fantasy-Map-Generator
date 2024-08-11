@@ -42,10 +42,6 @@ const version = "1.99.00"; // generator version, update each time
         <li>North and South Poles temperature can be set independently</li>
         <li>More than 70 new heraldic charges</li>
         <li>Multi-color heraldic charges support</li>
-<<<<<<< HEAD
-=======
-        <li>New 3D scene options and improvements</li>
->>>>>>> 00abd5213b446922a60e2053eaca711a6d4067e2
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
