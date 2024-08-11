@@ -668,19 +668,20 @@ window.Routes = (function () {
     const model = rw(models[group]);
     const suffix = rw(suffixes[group]);
 
-    if (model === "burg_suffix") return `${getBurgName()} ${suffix}`;
+    const burgName = getBurgName();
+    if (model === "burg_suffix" && burgName) return `${burgName} ${suffix}`;
     if (model === "prefix_suffix") return `${ra(prefixes)} ${suffix}`;
     if (model === "the_descriptor_prefix_suffix") return `The ${ra(descriptors)} ${ra(prefixes)} ${suffix}`;
-    if (model === "the_descriptor_burg_suffix") return `The ${ra(descriptors)} ${getBurgName()} ${suffix}`;
+    if (model === "the_descriptor_burg_suffix" && burgName) return `The ${ra(descriptors)} ${burgName} ${suffix}`;
     return "Unnamed route";
 
     function getBurgName() {
       const priority = [points.at(-1), points.at(0), points.slice(1, -1).reverse()];
-      for (const [x, y, cellId] of priority) {
+      for (const [_x, _y, cellId] of priority) {
         const burgId = pack.cells.burg[cellId];
         if (burgId) return getAdjective(pack.burgs[burgId].name);
       }
-      return "Unnamed";
+      return null;
     }
   }
 
