@@ -179,10 +179,11 @@ window.Routes = (function () {
       for (const {points, i: routeId} of routes) {
         const cells = points.map(p => p[2]);
 
-        for (let i = 0; i < cells.length; i++) {
+        for (let i = 0; i < cells.length - 1; i++) {
           const cellId = cells[i];
           const nextCellId = cells[i + 1];
-          if (nextCellId && cellId !== nextCellId) {
+
+          if (cellId !== nextCellId) {
             if (!links[cellId]) links[cellId] = {};
             links[cellId][nextCellId] = routeId;
 

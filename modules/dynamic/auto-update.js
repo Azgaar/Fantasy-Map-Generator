@@ -867,9 +867,7 @@ export function resolveVersionConflicts(version) {
     delete cells.crossroad;
 
     pack.routes = [];
-    pack.cells.routes = {};
-
-    const POINT_DISTANCE = 10;
+    const POINT_DISTANCE = grid.spacing * 0.75;
 
     routes.selectAll("g").each(function () {
       const group = this.id;
@@ -881,7 +879,7 @@ export function resolveVersionConflicts(version) {
         const increment = totalLength / Math.ceil(totalLength / POINT_DISTANCE);
         const points = [];
 
-        for (let i = 0; i <= totalLength; i += increment) {
+        for (let i = 0; i <= totalLength + 0.1; i += increment) {
           const point = node.getPointAtLength(i);
           const x = rn(point.x, 2);
           const y = rn(point.y, 2);
@@ -900,5 +898,21 @@ export function resolveVersionConflicts(version) {
 
     routes.selectAll("path").remove();
     if (layerIsOn("toggleRoutes")) drawRoutes();
+
+    const links = (pack.cells.routes = {});
+    for (const route of pack.routes) {
+      for (let i = 0; i < route.points.length - 1; i++) {
+        const cellId = route.points[i][2];
+        const nextCellId = route.points[i + 1][2];
+
+        if (cellId !== nextCellId) {
+          if (!links[cellId]) links[cellId] = {};
+          links[cellId][nextCellId] = route.i;
+
+          if (!links[nextCellId]) links[nextCellId] = {};
+          links[nextCellId][cellId] = route.i;
+        }
+      }
+    }
   }
 }
