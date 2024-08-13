@@ -1177,17 +1177,8 @@ function reGraph() {
     const height = gridCells.h[i];
     const type = gridCells.t[i];
 
-    // exclude most of ocean points
-    if (height < 20) {
-      const isLake = features[gridCells.f[i]].type === "lake";
-      if (isLake && type !== -1) continue;
-
-      if (type === 0) continue;
-      if (type < -4 && !each(24)(i)) continue;
-      if (type === -4 && !each(12)(i)) continue;
-      if (type === -3 && !each(6)(i)) continue;
-      if (type === -2 && !each(3)(i)) continue;
-    }
+    if (height < 20 && type !== -1 && type !== -2) continue; // exclude all deep ocean points
+    if (type === -2 && (i % 4 === 0 || features[gridCells.f[i]].type === "lake")) continue; // exclude non-coastal lake points
 
     const [x, y] = points[i];
     addNewPoint(i, x, y, height);

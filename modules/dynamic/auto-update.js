@@ -898,8 +898,6 @@ export function resolveVersionConflicts(version) {
       }
     });
 
-    console.log(pack.routes);
-
     routes.selectAll("path").remove();
     if (layerIsOn("toggleRoutes")) drawRoutes();
   }
