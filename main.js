@@ -1176,7 +1176,6 @@ function reGraph() {
   for (const i of gridCells.i) {
     const height = gridCells.h[i];
     const type = gridCells.t[i];
-    const isOnBorder = gridCells.b[i];
 
     // exclude most of ocean points
     if (height < 20) {
@@ -1195,7 +1194,7 @@ function reGraph() {
 
     // add additional points for cells along coast
     if (type === 1 || type === -1) {
-      if (isOnBorder) continue; // not for near-border cells
+      if (gridCells.b[i]) continue; // not for near-border cells
       gridCells.c[i].forEach(function (e) {
         if (i > e) return;
         if (gridCells.t[e] === type) {

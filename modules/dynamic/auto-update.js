@@ -863,10 +863,44 @@ export function resolveVersionConflicts(version) {
 
   if (version < 1.99) {
     // v1.99.00 changed routes generation algorithm and data format
-    // 1. cells.road => cells.routes and now it an object of objects {i1: {i2: routeId, i3: routeId}}
-    // 2. cells.crossroad is removed
-    // 3. pack.routes is added as an array of objects
-    // 4. rendering is changed
-    // v1.98.00 changed compass layer and rose element id
+    delete cells.road;
+    delete cells.crossroad;
+
+    pack.routes = [];
+    pack.cells.routes = {};
+
+    const POINT_DISTANCE = 10;
+
+    routes.selectAll("g").each(function () {
+      const group = this.id;
+      if (!group) return;
+
+      for (const node of this.querySelectorAll("path")) {
+        const totalLength = node.getTotalLength();
+        if (!totalLength) debugger;
+        const increment = totalLength / Math.ceil(totalLength / POINT_DISTANCE);
+        const points = [];
+
+        for (let i = 0; i <= totalLength; i += increment) {
+          const point = node.getPointAtLength(i);
+          const x = rn(point.x, 2);
+          const y = rn(point.y, 2);
+          const cellId = findCell(x, y);
+          points.push([x, y, cellId]);
+        }
+
+        if (points.length < 2) return;
+
+        const secondCellId = points[1][2];
+        const feature = pack.cells.f[secondCellId];
+
+        pack.routes.push({i: pack.routes.length, group, feature, points});
+      }
+    });
+
+    console.log(pack.routes);
+
+    routes.selectAll("path").remove();
+    if (layerIsOn("toggleRoutes")) drawRoutes();
   }
 }
