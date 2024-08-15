@@ -869,13 +869,17 @@ export function resolveVersionConflicts(version) {
     pack.routes = [];
     const POINT_DISTANCE = grid.spacing * 0.75;
 
-    routes.selectAll("g").each(function () {
-      const group = this.id;
-      if (!group) return;
+    for (const g of document.querySelectorAll("#viewbox > #routes > g")) {
+      const group = g.id;
+      if (!group) continue;
 
-      for (const node of this.querySelectorAll("path")) {
+      for (const node of g.querySelectorAll("path")) {
         const totalLength = node.getTotalLength();
-        if (!totalLength) debugger;
+        if (!totalLength) {
+          ERROR && console.error("Route path has zero length", node);
+          continue;
+        }
+
         const increment = totalLength / Math.ceil(totalLength / POINT_DISTANCE);
         const points = [];
 
@@ -887,15 +891,17 @@ export function resolveVersionConflicts(version) {
           points.push([x, y, cellId]);
         }
 
-        if (points.length < 2) return;
+        if (points.length < 2) {
+          ERROR && console.error("Route path has less than 2 points", node);
+          continue;
+        }
 
         const secondCellId = points[1][2];
         const feature = pack.cells.f[secondCellId];
 
         pack.routes.push({i: pack.routes.length, group, feature, points});
       }
-    });
-
+    }
     routes.selectAll("path").remove();
     if (layerIsOn("toggleRoutes")) drawRoutes();
 
