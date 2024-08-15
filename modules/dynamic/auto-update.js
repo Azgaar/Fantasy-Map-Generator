@@ -863,6 +863,8 @@ export function resolveVersionConflicts(version) {
 
   if (version < 1.99) {
     // v1.99.00 changed routes generation algorithm and data format
+    routes.attr("display", null).attr("style", null);
+
     delete cells.road;
     delete cells.crossroad;
 
