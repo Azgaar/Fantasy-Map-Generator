@@ -1,43 +1,14 @@
 "use strict";
 
-function showEPForRoute(node) {
-  const points = [];
-  debug
-    .select("#controlPoints")
-    .selectAll("circle")
-    .each(function () {
-      const i = findCell(this.getAttribute("cx"), this.getAttribute("cy"));
-      points.push(i);
-    });
-
-  const routeLen = node.getTotalLength() * distanceScaleInput.value;
-  showElevationProfile(points, routeLen, false);
-}
-
-function showEPForRiver(node) {
-  const points = [];
-  debug
-    .select("#controlPoints")
-    .selectAll("circle")
-    .each(function () {
-      const i = findCell(this.getAttribute("cx"), this.getAttribute("cy"));
-      points.push(i);
-    });
-
-  const riverLen = (node.getTotalLength() / 2) * distanceScaleInput.value;
-  showElevationProfile(points, riverLen, true);
-}
-
+// data is an array of cell indexes, routeLen is the distance (in actual metres/feet), isRiver should be true for rivers, false otherwise
 function showElevationProfile(data, routeLen, isRiver) {
-  // data is an array of cell indexes, routeLen is the distance (in actual metres/feet), isRiver should be true for rivers, false otherwise
-  document.getElementById("epScaleRange").addEventListener("change", draw);
-  document.getElementById("epCurve").addEventListener("change", draw);
-  document.getElementById("epSave").addEventListener("click", downloadCSV);
+  byId("epScaleRange").on("change", draw);
+  byId("epCurve").on("change", draw);
+  byId("epSave").on("click", downloadCSV);
 
   $("#elevationProfile").dialog({
     title: "Elevation profile",
     resizable: false,
-    width: window.width,
     close: closeElevationProfile,
     position: {my: "left top", at: "left+20 bottom-500", of: window, collision: "fit"}
   });
@@ -45,18 +16,20 @@ function showElevationProfile(data, routeLen, isRiver) {
   // prevent river graphs from showing rivers as flowing uphill - remember the general slope
   let slope = 0;
   if (isRiver) {
-    if (pack.cells.h[data[0]] < pack.cells.h[data[data.length - 1]]) {
+    const firstCellHeight = pack.cells.h[data.at(0)];
+    const lastCellHeight = pack.cells.h[data.at(-1)];
+    if (firstCellHeight < lastCellHeight) {
       slope = 1; // up-hill
-    } else if (pack.cells.h[data[0]] > pack.cells.h[data[data.length - 1]]) {
+    } else if (firstCellHeight > lastCellHeight) {
       slope = -1; // down-hill
     }
   }
 
-  const chartWidth = window.innerWidth - 180,
-    chartHeight = 300; // height of our land/sea profile, excluding the biomes data below
-  const xOffset = 80,
-    yOffset = 80; // this is our drawing starting point from top-left (y = 0) of SVG
-  const biomesHeight = 40;
+  const chartWidth = window.innerWidth - 200;
+  const chartHeight = 300;
+  const xOffset = 80;
+  const yOffset = 80;
+  const biomesHeight = 10;
 
   let lastBurgIndex = 0;
   let lastBurgCell = 0;
@@ -174,7 +147,7 @@ function showElevationProfile(data, routeLen, isRiver) {
       chartData.points.push([xscale(i) + xOffset, yscale(chartData.height[i]) + yOffset]);
     }
 
-    document.getElementById("elevationGraph").innerHTML = "";
+    byId("elevationGraph").innerHTML = "";
 
     const chart = d3
       .select("#elevationGraph")
@@ -313,7 +286,7 @@ function showElevationProfile(data, routeLen, isRiver) {
         .attr("x", x)
         .attr("y", y)
         .attr("width", xscale(1))
-        .attr("height", 15)
+        .attr("height", biomesHeight)
         .attr("data-tip", dataTip);
     }
 
@@ -388,7 +361,7 @@ function showElevationProfile(data, routeLen, isRiver) {
           .attr("x", x1)
           .attr("y", y1)
           .attr("text-anchor", "middle");
-        document.getElementById("ep" + b).innerHTML = pack.burgs[b].name;
+        byId("ep" + b).innerHTML = pack.burgs[b].name;
 
         // arrow from burg name to graph line
         g.append("path")
@@ -413,10 +386,10 @@ function showElevationProfile(data, routeLen, isRiver) {
   }
 
   function closeElevationProfile() {
-    document.getElementById("epScaleRange").removeEventListener("change", draw);
-    document.getElementById("epCurve").removeEventListener("change", draw);
-    document.getElementById("epSave").removeEventListener("click", downloadCSV);
-    document.getElementById("elevationGraph").innerHTML = "";
+    byId("epScaleRange").removeEventListener("change", draw);
+    byId("epCurve").removeEventListener("change", draw);
+    byId("epSave").removeEventListener("click", downloadCSV);
+    byId("elevationGraph").innerHTML = "";
     modules.elevation = false;
   }
 }

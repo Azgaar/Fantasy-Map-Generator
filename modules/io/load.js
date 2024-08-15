@@ -379,6 +379,7 @@ async function parseLoadedData(data, mapVersion) {
       pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
       pack.rivers = data[32] ? JSON.parse(data[32]) : [];
       pack.markers = data[35] ? JSON.parse(data[35]) : [];
+      pack.routes = data[37] ? JSON.parse(data[37]) : [];
 
       const cells = pack.cells;
       cells.biome = Uint8Array.from(data[16].split(","));
@@ -388,12 +389,13 @@ async function parseLoadedData(data, mapVersion) {
       cells.fl = Uint16Array.from(data[20].split(","));
       cells.pop = Float32Array.from(data[21].split(","));
       cells.r = Uint16Array.from(data[22].split(","));
-      cells.road = Uint16Array.from(data[23].split(","));
+      // data[23] for deprecated cells.road
       cells.s = Uint16Array.from(data[24].split(","));
       cells.state = Uint16Array.from(data[25].split(","));
       cells.religion = data[26] ? Uint16Array.from(data[26].split(",")) : new Uint16Array(cells.i.length);
       cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(cells.i.length);
-      cells.crossroad = data[28] ? Uint16Array.from(data[28].split(",")) : new Uint16Array(cells.i.length);
+      // data[28] for deprecated cells.crossroad
+      cells.routes = data[36] ? JSON.parse(data[36]) : {};
 
       if (data[31]) {
         const namesDL = data[31].split("/");
@@ -461,7 +463,7 @@ async function parseLoadedData(data, mapVersion) {
     {
       // dynamically import and run auto-update script
       const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.98.06");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.99.00");
       resolveVersionConflicts(versionNumber);
     }
 

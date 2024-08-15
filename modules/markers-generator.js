@@ -27,7 +27,7 @@ window.Markers = (function () {
       {type: "water-sources", icon: "💧", min: 1, each: 1000, multiplier: 1, list: listWaterSources, add: addWaterSource},
       {type: "mines", icon: "⛏️", dx: 48, px: 13, min: 1, each: 15, multiplier: 1, list: listMines, add: addMine},
       {type: "bridges", icon: "🌉", px: 14, min: 1, each: 5, multiplier: 1, list: listBridges, add: addBridge},
-      {type: "inns", icon: "🍻", px: 14, min: 1, each: 100, multiplier: 1, list: listInns, add: addInn},
+      {type: "inns", icon: "🍻", px: 14, min: 1, each: 10, multiplier: 1, list: listInns, add: addInn},
       {type: "lighthouses", icon: "🚨", px: 14, min: 1, each: 2, multiplier: 1, list: listLighthouses, add: addLighthouse},
       {type: "waterfalls", icon: "⟱", dy: 54, px: 16, min: 1, each: 5, multiplier: 1, list: listWaterfalls, add: addWaterfall},
       {type: "battlefields", icon: "⚔️", dy: 52, min: 50, each: 700, multiplier: 1, list: listBattlefields, add: addBattlefield},
@@ -279,7 +279,8 @@ window.Markers = (function () {
   }
 
   function listInns({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.h[i] >= 20 && cells.road[i] > 4 && cells.pop[i] > 10);
+    const crossRoads = cells.i.filter(i => !occupied[i] && cells.pop[i] > 5 && Routes.isCrossroad(i));
+    return crossRoads;
   }
 
   function addInn(id, cell) {
@@ -542,7 +543,7 @@ window.Markers = (function () {
 
   function listLighthouses({cells}) {
     return cells.i.filter(
-      i => !occupied[i] && cells.harbor[i] > 6 && cells.c[i].some(c => cells.h[c] < 20 && cells.road[c])
+      i => !occupied[i] && cells.harbor[i] > 6 && cells.c[i].some(c => cells.h[c] < 20 && Routes.isConnected(c))
     );
   }
 
@@ -642,7 +643,7 @@ window.Markers = (function () {
 
   function listSeaMonsters({cells, features}) {
     return cells.i.filter(
-      i => !occupied[i] && cells.h[i] < 20 && cells.road[i] && features[cells.f[i]].type === "ocean"
+      i => !occupied[i] && cells.h[i] < 20 && Routes.isConnected(i) && features[cells.f[i]].type === "ocean"
     );
   }
 
@@ -792,7 +793,7 @@ window.Markers = (function () {
         cells.religion[i] &&
         cells.biome[i] === 1 &&
         cells.pop[i] > 1 &&
-        cells.road[i]
+        Routes.isConnected(i)
     );
   }
 
@@ -807,7 +808,7 @@ window.Markers = (function () {
   }
 
   function listBrigands({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.road[i] > 4);
+    return cells.i.filter(i => !occupied[i] && cells.culture[i] && Routes.hasRoad(i));
   }
 
   function addBrigands(id, cell) {
@@ -867,7 +868,7 @@ window.Markers = (function () {
 
   // Pirates spawn on sea routes
   function listPirates({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.h[i] < 20 && cells.road[i]);
+    return cells.i.filter(i => !occupied[i] && cells.h[i] < 20 && Routes.isConnected(i));
   }
 
   function addPirates(id, cell) {
@@ -961,7 +962,7 @@ window.Markers = (function () {
   }
 
   function listCircuses({cells}) {
-    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.h[i] >= 20 && pack.cells.road[i]);
+    return cells.i.filter(i => !occupied[i] && cells.culture[i] && cells.h[i] >= 20 && Routes.isConnected(i));
   }
 
   function addCircuse(id, cell) {
@@ -1254,16 +1255,16 @@ window.Markers = (function () {
 
     const name = `${toponym} ${type}`;
     const legend = ra([
-      "A foreboding necropolis shrouded in perpetual darkness, where eerie whispers echo through the winding corridors and spectral guardians stand watch over the tombs of long-forgotten souls",
-      "A towering necropolis adorned with macabre sculptures and guarded by formidable undead sentinels. Its ancient halls house the remains of fallen heroes, entombed alongside their cherished relics",
-      "This ethereal necropolis seems suspended between the realms of the living and the dead. Wisps of mist dance around the tombstones, while haunting melodies linger in the air, commemorating the departed",
-      "Rising from the desolate landscape, this sinister necropolis is a testament to necromantic power. Its skeletal spires cast ominous shadows, concealing forbidden knowledge and arcane secrets",
-      "An eerie necropolis where nature intertwines with death. Overgrown tombstones are entwined by thorny vines, and mournful spirits wander among the fading petals of once-vibrant flowers",
-      "A labyrinthine necropolis where each step echoes with haunting murmurs. The walls are adorned with ancient runes, and restless spirits guide or hinder those who dare to delve into its depths",
-      "This cursed necropolis is veiled in perpetual twilight, perpetuating a sense of impending doom. Dark enchantments shroud the tombs, and the moans of anguished souls resound through its crumbling halls",
-      "A sprawling necropolis built within a labyrinthine network of catacombs. Its halls are lined with countless alcoves, each housing the remains of the departed, while the distant sound of rattling bones fills the air",
-      "A desolate necropolis where an eerie stillness reigns. Time seems frozen amidst the decaying mausoleums, and the silence is broken only by the whispers of the wind and the rustle of tattered banners",
-      "A foreboding necropolis perched atop a jagged cliff, overlooking a desolate wasteland. Its towering walls harbor restless spirits, and the imposing gates bear the marks of countless battles and ancient curses"
+      "A foreboding necropolis shrouded in perpetual darkness, where eerie whispers echo through the winding corridors and spectral guardians stand watch over the tombs of long-forgotten souls.",
+      "A towering necropolis adorned with macabre sculptures and guarded by formidable undead sentinels. Its ancient halls house the remains of fallen heroes, entombed alongside their cherished relics.",
+      "This ethereal necropolis seems suspended between the realms of the living and the dead. Wisps of mist dance around the tombstones, while haunting melodies linger in the air, commemorating the departed.",
+      "Rising from the desolate landscape, this sinister necropolis is a testament to necromantic power. Its skeletal spires cast ominous shadows, concealing forbidden knowledge and arcane secrets.",
+      "An eerie necropolis where nature intertwines with death. Overgrown tombstones are entwined by thorny vines, and mournful spirits wander among the fading petals of once-vibrant flowers.",
+      "A labyrinthine necropolis where each step echoes with haunting murmurs. The walls are adorned with ancient runes, and restless spirits guide or hinder those who dare to delve into its depths.",
+      "This cursed necropolis is veiled in perpetual twilight, perpetuating a sense of impending doom. Dark enchantments shroud the tombs, and the moans of anguished souls resound through its crumbling halls.",
+      "A sprawling necropolis built within a labyrinthine network of catacombs. Its halls are lined with countless alcoves, each housing the remains of the departed, while the distant sound of rattling bones fills the air.",
+      "A desolate necropolis where an eerie stillness reigns. Time seems frozen amidst the decaying mausoleums, and the silence is broken only by the whispers of the wind and the rustle of tattered banners.",
+      "A foreboding necropolis perched atop a jagged cliff, overlooking a desolate wasteland. Its towering walls harbor restless spirits, and the imposing gates bear the marks of countless battles and ancient curses."
     ]);
 
     notes.push({id, name, legend});

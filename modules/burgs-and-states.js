@@ -6,27 +6,20 @@ window.BurgsAndStates = (() => {
     const n = cells.i.length;
 
     cells.burg = new Uint16Array(n); // cell burg
-    cells.road = new Uint16Array(n); // cell road power
-    cells.crossroad = new Uint16Array(n); // cell crossroad power
 
     const burgs = (pack.burgs = placeCapitals());
     pack.states = createStates();
-    const capitalRoutes = Routes.getRoads();
 
     placeTowns();
     expandStates();
     normalizeStates();
-    const townRoutes = Routes.getTrails();
     specifyBurgs();
-
-    const oceanRoutes = Routes.getSearoutes();
 
     collectStatistics();
     assignColors();
 
     generateCampaigns();
     generateDiplomacy();
-    Routes.draw(capitalRoutes, townRoutes, oceanRoutes);
     drawBurgs();
 
     function placeCapitals() {
@@ -138,9 +131,8 @@ window.BurgsAndStates = (() => {
       while (burgsAdded < burgsNumber && spacing > 1) {
         for (let i = 0; burgsAdded < burgsNumber && i < sorted.length; i++) {
           if (cells.burg[sorted[i]]) continue;
-          const cell = sorted[i],
-            x = cells.p[cell][0],
-            y = cells.p[cell][1];
+          const cell = sorted[i];
+          const [x, y] = cells.p[cell];
           const s = spacing * gauss(1, 0.3, 0.2, 2, 2); // randomize to make placement not uniform
           if (burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
           const burg = burgs.length;
@@ -183,12 +175,12 @@ window.BurgsAndStates = (() => {
       } else b.port = 0;
 
       // define burg population (keep urbanization at about 10% rate)
-      b.population = rn(Math.max((cells.s[i] + cells.road[i] / 2) / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
+      b.population = rn(Math.max(cells.s[i] / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
       if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
 
       if (b.port) {
         b.population = b.population * 1.3; // increase port population
-        const [x, y] = getMiddlePoint(i, haven);
+        const [x, y] = getCloseToEdgePoint(i, haven);
         b.x = x;
         b.y = y;
       }
@@ -229,6 +221,23 @@ window.BurgsAndStates = (() => {
     TIME && console.timeEnd("specifyBurgs");
   };
 
+  function getCloseToEdgePoint(cell1, cell2) {
+    const {cells, vertices} = pack;
+
+    const [x0, y0] = cells.p[cell1];
+
+    const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
+    const [x1, y1] = vertices.p[commonVertices[0]];
+    const [x2, y2] = vertices.p[commonVertices[1]];
+    const xEdge = (x1 + x2) / 2;
+    const yEdge = (y1 + y2) / 2;
+
+    const x = rn(x0 + 0.95 * (xEdge - x0), 2);
+    const y = rn(y0 + 0.95 * (yEdge - y0), 2);
+
+    return [x, y];
+  }
+
   const getType = (i, port) => {
     const cells = pack.cells;
     if (port) return "Naval";
@@ -244,11 +253,11 @@ window.BurgsAndStates = (() => {
     return "Generic";
   };
 
-  const defineBurgFeatures = newburg => {
+  const defineBurgFeatures = burg => {
     const {cells} = pack;
 
     pack.burgs
-      .filter(b => (newburg ? b.i == newburg.i : b.i && !b.removed && !b.lock))
+      .filter(b => (burg ? b.i == burg.i : b.i && !b.removed && !b.lock))
       .forEach(b => {
         const pop = b.population;
         b.citadel = Number(b.capital || (pop > 50 && P(0.75)) || (pop > 15 && P(0.5)) || P(0.1));

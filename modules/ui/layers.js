@@ -169,6 +169,7 @@ function restoreLayers() {
   if (layerIsOn("toggleGrid")) drawGrid();
   if (layerIsOn("toggleCoordinates")) drawCoordinates();
   if (layerIsOn("toggleCompass")) compass.style("display", "block");
+  if (layerIsOn("toggleRoutes")) drawRoutes();
   if (layerIsOn("toggleTemp")) drawTemp();
   if (layerIsOn("togglePrec")) drawPrec();
   if (layerIsOn("togglePopulation")) drawPopulation();
@@ -392,7 +393,6 @@ function drawTemp() {
     const start = findStart(i, t);
     if (!start) continue;
     used[i] = 1;
-    //debug.append("circle").attr("r", 3).attr("cx", vertices.p[start][0]).attr("cy", vertices.p[start][1]).attr("fill", "red").attr("stroke", "black").attr("stroke-width", .3);
 
     const chain = connectVertices(start, t); // vertices chain to form a path
     const relaxed = chain.filter((v, i) => i % 4 === 0 || vertices.c[v].some(c => c >= n));
@@ -1622,16 +1622,31 @@ function drawRivers() {
 function toggleRoutes(event) {
   if (!layerIsOn("toggleRoutes")) {
     turnButtonOn("toggleRoutes");
-    $("#routes").fadeIn();
+    drawRoutes();
     if (event && isCtrlClick(event)) editStyle("routes");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("routes");
-      return;
-    }
-    $("#routes").fadeOut();
+    if (event && isCtrlClick(event)) return editStyle("routes");
+    routes.selectAll("path").remove();
     turnButtonOff("toggleRoutes");
   }
+}
+
+function drawRoutes() {
+  TIME && console.time("drawRoutes");
+  const routePaths = {};
+
+  for (const route of pack.routes) {
+    const {i, group} = route;
+    if (!routePaths[group]) routePaths[group] = [];
+    routePaths[group].push(`<path id="route${i}" d="${Routes.getPath(route)}"/>`);
+  }
+
+  routes.selectAll("path").remove();
+  for (const group in routePaths) {
+    routes.select("#" + group).html(routePaths[group].join(""));
+  }
+
+  TIME && console.timeEnd("drawRoutes");
 }
 
 function toggleMilitary() {
@@ -1758,7 +1773,6 @@ function toggleScaleBar(event) {
 function drawScaleBar(scaleBar, scaleLevel) {
   if (!scaleBar.size() || scaleBar.style("display") === "none") return;
 
-  const distanceScale = +distanceScaleInput.value;
   const unit = distanceUnitInput.value;
   const size = +scaleBar.attr("data-bar-size");
 

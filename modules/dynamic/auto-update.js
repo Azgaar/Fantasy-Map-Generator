@@ -860,4 +860,59 @@ export function resolveVersionConflicts(version) {
       shiftCompass();
     }
   }
+
+  if (version < 1.99) {
+    // v1.99.00 changed routes generation algorithm and data format
+    delete cells.road;
+    delete cells.crossroad;
+
+    pack.routes = [];
+    const POINT_DISTANCE = grid.spacing * 0.75;
+
+    routes.selectAll("g").each(function () {
+      const group = this.id;
+      if (!group) return;
+
+      for (const node of this.querySelectorAll("path")) {
+        const totalLength = node.getTotalLength();
+        if (!totalLength) debugger;
+        const increment = totalLength / Math.ceil(totalLength / POINT_DISTANCE);
+        const points = [];
+
+        for (let i = 0; i <= totalLength + 0.1; i += increment) {
+          const point = node.getPointAtLength(i);
+          const x = rn(point.x, 2);
+          const y = rn(point.y, 2);
+          const cellId = findCell(x, y);
+          points.push([x, y, cellId]);
+        }
+
+        if (points.length < 2) return;
+
+        const secondCellId = points[1][2];
+        const feature = pack.cells.f[secondCellId];
+
+        pack.routes.push({i: pack.routes.length, group, feature, points});
+      }
+    });
+
+    routes.selectAll("path").remove();
+    if (layerIsOn("toggleRoutes")) drawRoutes();
+
+    const links = (pack.cells.routes = {});
+    for (const route of pack.routes) {
+      for (let i = 0; i < route.points.length - 1; i++) {
+        const cellId = route.points[i][2];
+        const nextCellId = route.points[i + 1][2];
+
+        if (cellId !== nextCellId) {
+          if (!links[cellId]) links[cellId] = {};
+          links[cellId][nextCellId] = route.i;
+
+          if (!links[nextCellId]) links[nextCellId] = {};
+          links[nextCellId][cellId] = route.i;
+        }
+      }
+    }
+  }
 }

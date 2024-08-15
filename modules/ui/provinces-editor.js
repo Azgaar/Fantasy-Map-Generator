@@ -886,7 +886,7 @@ function editProvinces() {
       const p = d3.mouse(this);
       moveCircle(p[0], p[1], r);
 
-      const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1], r)];
+      const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1])];
       const selection = found.filter(isLand);
       if (selection) changeForSelection(selection);
     });

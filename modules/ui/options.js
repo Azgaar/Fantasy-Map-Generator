@@ -545,6 +545,7 @@ function applyStoredOptions() {
     lock(key);
 
     if (key === "points") changeCellsDensity(+value);
+    if (key === "distanceScale") distanceScale = +value;
 
     // add saved style presets to options
     if (key.slice(0, 5) === "style") applyOption(stylePreset, key, key.slice(5));
@@ -605,7 +606,8 @@ function randomizeOptions() {
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
-  if (randomize || !locked("distanceScale")) distanceScaleOutput.value = distanceScaleInput.value = gauss(3, 1, 1, 5);
+  if (randomize || !locked("distanceScale"))
+    distanceScale = distanceScaleOutput.value = distanceScaleInput.value = gauss(3, 1, 1, 5);
   if (!stored("distanceUnit")) distanceUnitInput.value = US ? "mi" : "km";
   if (!stored("heightUnit")) heightUnit.value = US ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";

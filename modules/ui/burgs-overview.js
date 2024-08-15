@@ -36,7 +36,6 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   });
   byId("burgsLockAll").addEventListener("click", toggleLockAll);
   byId("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
-  byId("burgsInvertLock").addEventListener("click", invertLock);
 
   function refreshBurgsEditor() {
     updateFilter();
@@ -279,7 +278,8 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
 
   function addBurgOnClick() {
     const point = d3.mouse(this);
-    const cell = findCell(point[0], point[1]);
+    const cell = findCell(...point);
+
     if (pack.cells.h[cell] < 20)
       return tip("You cannot place state into the water. Please click on a land cell", false, "error");
     if (pack.cells.burg[cell])
@@ -600,11 +600,6 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
 
   function removeAllBurgs() {
     pack.burgs.filter(b => b.i && !(b.capital || b.lock)).forEach(b => removeBurg(b.i));
-    burgsOverviewAddLines();
-  }
-
-  function invertLock() {
-    pack.burgs = pack.burgs.map(burg => ({...burg, lock: !burg.lock}));
     burgsOverviewAddLines();
   }
 
