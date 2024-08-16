@@ -58,7 +58,7 @@ function overviewRoutes() {
 
     // update footer
     routesFooterNumber.innerHTML = pack.routes.length;
-    const averageLength = rn(d3.mean(pack.routes.map(r => r.length)));
+    const averageLength = rn(d3.mean(pack.routes.map(r => r.length)) || 0);
     routesFooterLength.innerHTML = averageLength * distanceScale + " " + distanceUnitInput.value;
 
     // add listeners
@@ -175,8 +175,8 @@ function overviewRoutes() {
           pack.routes = [];
           routes.selectAll("path").remove();
 
+          routesOverviewAddLines();
           $(this).dialog("close");
-          $("#routesOverview").dialog("close");
         },
         Cancel: function () {
           $(this).dialog("close");

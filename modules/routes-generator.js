@@ -434,7 +434,7 @@ window.Routes = (function () {
     const points = getPoints("trails", pathCells, pointsArray);
     const feature = cells.f[cellId];
 
-    const routeId = Math.max(...routes.map(route => route.i)) + 1;
+    const routeId = getNextId();
     const newRoute = {i: routeId, group: "trails", feature, points};
     routes.push(newRoute);
 
@@ -706,6 +706,10 @@ window.Routes = (function () {
     return path.getTotalLength();
   }
 
+  function getNextId() {
+    return pack.routes.length ? Math.max(...pack.routes.map(r => r.i)) + 1 : 0;
+  }
+
   function remove(route) {
     const routes = pack.cells.routes;
 
@@ -738,6 +742,7 @@ window.Routes = (function () {
     generateName,
     getPath,
     getLength,
+    getNextId,
     remove
   };
 })();

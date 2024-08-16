@@ -194,7 +194,7 @@ function editRoute(id) {
 
       // create new route
       const newRoute = {
-        i: Math.max(...pack.routes.map(route => route.i)) + 1,
+        i: Routes.getNextId(),
         group: route.group,
         feature: route.feature,
         name: route.name,

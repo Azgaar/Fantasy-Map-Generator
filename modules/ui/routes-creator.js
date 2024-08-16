@@ -97,7 +97,7 @@ function createRoute(defaultGroup) {
     const points = createRoute.points;
     if (points.length < 2) return tip("Add at least 2 points", false, "error");
 
-    const routeId = Math.max(...pack.routes.map(route => route.i)) + 1;
+    const routeId = Routes.getNextId();
     const group = byId("routeCreatorGroupSelect").value;
     const feature = pack.cells.f[points[0][2]];
     const route = {points, group, feature, i: routeId};
