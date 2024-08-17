@@ -10,6 +10,7 @@ const systemPresets = [
   "watercolor",
   "clean",
   "atlas",
+  "darkSeas",
   "cyberpunk",
   "night",
   "monochrome"
