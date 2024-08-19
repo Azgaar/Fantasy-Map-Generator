@@ -55,36 +55,18 @@ function insertEditorHtml() {
       <div id="statesRegenerateButtons" style="display: none">
         <button id="statesRegenerateBack" data-tip="Hide the regeneration menu" class="icon-cog-alt"></button>
         <button id="statesRandomize" data-tip="Randomize states Expansion value and re-calculate states and provinces" class="icon-shuffle"></button>
-        <span data-tip="Additional growth rate. Defines how many lands will stay neutral">
-          <label class="italic">Growth rate:</label>
-          <input
-            id="statesNeutral"
-            type="range"
-            min=".1"
-            max="3"
-            step=".05"
-            value="1"
-            style="width: 12em"
-          />
-          <input
-            id="statesNeutralNumber"
-            type="number"
-            min=".1"
-            max="3"
-            step=".05"
-            value="1"
-            style="width: 4em"
-          />
-        </span>
+        <div data-tip="Additional growth rate. Defines how many land cells remain neutral" style="display: inline-block">
+          <slider-input id="statesGrowthRate" min=".1" max="3" step=".05" value="1">Growth rate:</slider-input>
+        </div>
         <button id="statesRecalculate" data-tip="Recalculate states based on current values of growth-related attributes" class="icon-retweet"></button>
-        <span data-tip="Allow states neutral distance, expansion and type changes to take an immediate effect">
+        <div data-tip="Allow states neutral distance, expansion and type changes to take an immediate effect" style="display: inline-block">
           <input id="statesAutoChange" class="checkbox" type="checkbox" />
           <label for="statesAutoChange" class="checkbox-label"><i>auto-apply changes</i></label>
-        </span>
-        <span data-tip="Allow system to change state labels when states data is change">
+        </div>
+        <div data-tip="Allow system to change state labels when states data is change" style="display: inline-block">
           <input id="adjustLabels" class="checkbox" type="checkbox" />
           <label for="adjustLabels" class="checkbox-label"><i>auto-change labels</i></label>
-        </span>
+        </div>
       </div>
 
       <button id="statesManually" data-tip="Manually re-assign states" class="icon-brush"></button>
@@ -118,8 +100,7 @@ function addListeners() {
   byId("statesRegenerateBack").on("click", exitRegenerationMenu);
   byId("statesRecalculate").on("click", () => recalculateStates(true));
   byId("statesRandomize").on("click", randomizeStatesExpansion);
-  byId("statesNeutral").on("input", changeStatesGrowthRate);
-  byId("statesNeutralNumber").on("change", changeStatesGrowthRate);
+  byId("statesGrowthRate").on("input", () => recalculateStates(false));
   byId("statesManually").on("click", enterStatesManualAssignent);
   byId("statesManuallyApply").on("click", applyStatesManualAssignent);
   byId("statesManuallyCancel").on("click", () => exitStatesManualAssignment(false));
@@ -866,14 +847,6 @@ function recalculateStates(must) {
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (adjustLabels.checked) drawStateLabels();
   refreshStatesEditor();
-}
-
-function changeStatesGrowthRate() {
-  const growthRate = +this.value;
-  byId("statesNeutral").value = growthRate;
-  byId("statesNeutralNumber").value = growthRate;
-  tip("Growth rate: " + growthRate);
-  recalculateStates(false);
 }
 
 function randomizeStatesExpansion() {

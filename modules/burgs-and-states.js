@@ -378,9 +378,9 @@ window.BurgsAndStates = (() => {
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
-    const globalNeutralRate = byId("growthRate").valueAsNumber || 1;
-    const statesNeutralRate = byId("statesNeutral")?.valueAsNumber || 1;
-    const neutral = (cells.i.length / 2) * globalNeutralRate * statesNeutralRate; // limit cost for state growth
+    const globalGrowthRate = byId("growthRate").valueAsNumber || 1;
+    const statesGrowthRate = byId("statesGrowthRate")?.valueAsNumber || 1;
+    const growthRate = (cells.i.length / 2) * globalGrowthRate * statesGrowthRate; // limit cost for state growth
 
     // remove state from all cells except of locked
     for (const cellId of cells.i) {
@@ -419,7 +419,7 @@ window.BurgsAndStates = (() => {
         const cellCost = Math.max(cultureCost + populationCost + biomeCost + heightCost + riverCost + typeCost, 0);
         const totalCost = p + 10 + cellCost / states[s].expansionism;
 
-        if (totalCost > neutral) return;
+        if (totalCost > growthRate) return;
 
         if (!cost[e] || totalCost < cost[e]) {
           if (cells.h[e] >= 20) cells.state[e] = s; // assign state to cell
