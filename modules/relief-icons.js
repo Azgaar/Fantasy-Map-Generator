@@ -1,7 +1,7 @@
 "use strict";
 
 window.ReliefIcons = (function () {
-  const ReliefIcons = function () {
+  const draw = function () {
     TIME && console.time("drawRelief");
     terrain.selectAll("*").remove();
 
@@ -124,5 +124,5 @@ window.ReliefIcons = (function () {
     return "#relief-" + getOldIcon(type) + "-1"; // simple
   }
 
-  return ReliefIcons;
+  return {draw};
 })();

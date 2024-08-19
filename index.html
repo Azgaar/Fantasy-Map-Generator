@@ -836,27 +836,24 @@
                 </td>
               </tr>
 
-              <tr data-tip="Terracing rate. Set to 0 (toggle off) to improve performance">
+              <tr data-tip="Terracing power. Set to 0 to toggle off">
                 <td>Terracing</td>
                 <td>
-                  <input id="styleHeightmapTerracingInput" type="range" min="0" max="20" step="1" />
-                  <output id="styleHeightmapTerracingOutput">0</output>
+                  <slider-input id="styleHeightmapTerracing" min="0" max="20" step="1"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Layers reduction rate. Increase to improve performance">
                 <td>Reduce layers</td>
                 <td>
-                  <input id="styleHeightmapSkipInput" type="range" min="0" max="10" step="1" value="5" />
-                  <output id="styleHeightmapSkipOutput">5</output>
+                  <slider-input id="styleHeightmapSkip" min="0" max="10" step="1"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Line simplification rate. Increase to slightly improve performance">
                 <td>Simplify line</td>
                 <td>
-                  <input id="styleHeightmapSimplificationInput" type="range" min="0" max="10" step="1" value="0" />
-                  <output id="styleHeightmapSimplificationOutput">0</output>
+                  <slider-input id="styleHeightmapSimplification" min="0" max="10" step="1"></slider-input>
                 </td>
               </tr>
 
@@ -874,7 +871,7 @@
               <tr data-tip="Select color scheme for the element">
                 <td>Color scheme</td>
                 <td>
-                  <select id="styleHeightmapScheme"></select>
+                  <select id="styleHeightmapScheme" style="width: 86%"></select>
                   <button
                     id="openCreateHeightmapSchemeButton"
                     data-tip="Click to add a custom heightmap color scheme"
@@ -889,8 +886,7 @@
               <tr data-tip="Set opacity. 0: transparent, 1: solid">
                 <td>Opacity</td>
                 <td>
-                  <input id="styleOpacityInput" type="range" min="0" max="1" step="0.01" value=".4" />
-                  <output id="styleOpacityOutput">0.4</output>
+                  <slider-input id="styleOpacityInput" min="0" max="1" step="0.01"></slider-input>
                 </td>
               </tr>
             </tbody>
@@ -899,8 +895,7 @@
               <tr data-tip="Set maximum number of items in one column">
                 <td>Column items</td>
                 <td>
-                  <input id="styleLegendColItems" type="range" min="1" max="30" step="1" value="8" />
-                  <output id="styleLegendColItemsOutput">8</output>
+                  <slider-input id="styleLegendColItems" min="1" max="30" step="1"></slider-input>
                 </td>
               </tr>
 
@@ -915,8 +910,7 @@
               <tr data-tip="Set background opacity">
                 <td>Opacity</td>
                 <td>
-                  <input id="styleLegendOpacity" type="range" min="0" max="1" step="0.01" value="1" />
-                  <output id="styleLegendOpacityOutput">1</output>
+                  <slider-input id="styleLegendOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
               </tr>
             </tbody>
@@ -943,7 +937,7 @@
               <tr data-tip="Select texture image. Big textures can highly affect performance">
                 <td>Image</td>
                 <td>
-                  <select id="styleTextureInput">
+                  <select id="styleTextureInput" style="width: 86%">
                     <option value="">No texture</option>
                     <option value="./images/textures/folded-paper-big.jpg">Folded paper big</option>
                     <option value="./images/textures/folded-paper-small.jpg">Folded paper small</option>
@@ -1027,8 +1021,7 @@
               <tr data-tip="Set vignette blue propagation (in pixels)">
                 <td>Blur</td>
                 <td>
-                  <input id="styleVignetteBlur" type="range" min="0" max="400" step="1" value="50" />
-                  <output id="styleVignetteBlurOutput">50</output>px
+                  <slider-input id="styleVignetteBlur" min="0" max="400" step="1"></slider-input>
                 </td>
               </tr>
             </tbody>
@@ -1053,8 +1046,7 @@
               <tr data-tip="Set ocean pattern opacity">
                 <td>Pattern opacity</td>
                 <td>
-                  <input id="styleOceanPatternOpacity" type="range" min="0" max="1" step=".01" value=".2" />
-                  <output id="styleOceanPatternOpacityOutput">0.2</output>
+                  <slider-input id="styleOceanPatternOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
               </tr>
 
@@ -1118,8 +1110,7 @@
               <tr data-tip="Set wind (compass) rose size">
                 <td>Size</td>
                 <td>
-                  <input id="styleCompassSizeInput" type="range" min=".02" max="1" step=".01" value=".25" />
-                  <output id="styleCompassSizeOutput">.25</output>
+                  <slider-input id="styleCompassSizeInput" min=".02" max="1" step=".01"></slider-input>
                 </td>
               </tr>
 
@@ -1147,8 +1138,7 @@
               <tr data-tip="Define the size of relief icons. All relief icons will be regenerated">
                 <td>Size</td>
                 <td>
-                  <input id="styleReliefSizeInput" data-stored="reliefSize" type="range" min=".2" max="4" step=".01" />
-                  <output id="styleReliefSizeOutput"></output>
+                  <slider-input id="styleReliefSize" min=".2" max="4" step=".01"></slider-input>
                 </td>
               </tr>
 
@@ -1157,23 +1147,14 @@
               >
                 <td>Density</td>
                 <td>
-                  <input
-                    id="styleReliefDensityInput"
-                    data-stored="reliefDensity"
-                    type="range"
-                    min=".3"
-                    max=".8"
-                    step=".01"
-                    value=".4"
-                  />
-                  <output id="styleReliefDensityOutput">.4</output>
+                  <slider-input id="styleReliefDensity" min=".3" max=".8" step=".01"></slider-input>
                 </td>
               </tr>
             </tbody>
 
             <tbody id="styleFill">
               <tr data-tip="Set fill color">
-                <td>Fill</td>
+                <td>Fill color</td>
                 <td>
                   <input id="styleFillInput" type="color" value="#5E4FA2" />
                   <output id="styleFillOutput">#5E4FA2</output>
@@ -1183,7 +1164,7 @@
 
             <tbody id="styleStroke">
               <tr data-tip="Set stroke color">
-                <td>Stroke</td>
+                <td>Stroke color</td>
                 <td>
                   <input id="styleStrokeInput" type="color" value="#5E4FA2" />
                   <output id="styleStrokeOutput">#5E4FA2</output>
@@ -1195,8 +1176,7 @@
               <tr data-tip="Set stroke width">
                 <td>Stroke width</td>
                 <td>
-                  <input id="styleStrokeWidthInput" type="range" min="0" max="5" step=".01" value="1" />
-                  <output id="styleStrokeWidthOutput">1</output>
+                  <slider-input id="styleStrokeWidthInput" min="0" max="5" step=".01"></slider-input>
                 </td>
               </tr>
             </tbody>
@@ -1229,7 +1209,7 @@
               <tr data-tip="Select font">
                 <td>Font</td>
                 <td>
-                  <select id="styleSelectFont"></select>
+                  <select id="styleSelectFont" style="width: 85%"></select>
                   <button id="styleFontAdd" data-tip="Add a font" class="icon-plus sideButton"></button>
                 </td>
               </tr>
@@ -1241,7 +1221,7 @@
                 <td>
                   <button id="styleFontPlus" data-tip="Increase font" class="whiteButton">+</button>
                   <button id="styleFontMinus" data-tip="Descrease font" class="whiteButton">-</button>
-                  <input id="styleFontSize" type="number" min=".5" max="100" step=".1" value="14" />
+                  <input id="styleFontSize" type="number" min=".5" max="100" step=".1" />
                 </td>
               </tr>
             </tbody>
@@ -1281,16 +1261,14 @@
               <tr data-tip="Define transparency of temperature leyer. Set to 0 to make it fully transparent">
                 <td>Fill opacity</td>
                 <td>
-                  <input id="styleTemperatureFillOpacityInput" type="range" min="0" max="1" step=".01" value=".3" />
-                  <output id="styleTemperatureFillOpacityOutput">0.3</output>
+                  <slider-input id="styleTemperatureFillOpacityInput" min="0" max="1" step=".01"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Set labels size">
                 <td>Labels size</td>
                 <td>
-                  <input id="styleTemperatureFontSizeInput" type="range" min="0" max="30" value="8" />
-                  <output id="styleTemperatureFontSizeOutput">8</output>
+                  <slider-input id="styleTemperatureFontSizeInput" min="0" max="30" step="1"></slider-input>
                 </td>
               </tr>
 
@@ -1307,8 +1285,7 @@
               <tr data-tip="Set states fill opacity. 0: invisible, 1: solid">
                 <td>Body opacity</td>
                 <td>
-                  <input id="styleStatesBodyOpacity" type="range" min="0" max="1" step="0.01" />
-                  <output id="styleStatesBodyOpacityOutput"></output>
+                  <slider-input id="styleStatesBodyOpacity" min="0" max="1" step="0.01"></slider-input>
                 </td>
               </tr>
 
@@ -1326,24 +1303,21 @@
               <tr data-tip="Set states halo effect width">
                 <td>Halo width</td>
                 <td>
-                  <input id="styleStatesHaloWidth" type="range" min="0" max="30" step=".1" value="10" />
-                  <output id="styleStatesHaloWidthOutput">10</output>
+                  <slider-input id="styleStatesHaloWidth" min="0" max="30" step="0.1"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Set states halo effect opacity. 0: invisible, 1: solid">
                 <td>Halo opacity</td>
                 <td>
-                  <input id="styleStatesHaloOpacity" type="range" min="0" max="1" step="0.01" value="1" />
-                  <output id="styleStatesHaloOpacityOutput">1</output>
+                  <slider-input id="styleStatesHaloOpacity" min="0" max="1" step="0.01"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Select halo effect power (blur). Set to 0 to make it solid line" style="margin-bottom: 1em">
                 <td>Halo blur</td>
                 <td>
-                  <input id="styleStatesHaloBlur" type="range" min="0" max="10" step="0.01" value="4" />
-                  <output id="styleStatesHaloBlurOutput">4</output>
+                  <slider-input id="styleStatesHaloBlur" min="0" max="10" step="0.01"></slider-input>
                 </td>
               </tr>
             </tbody>
@@ -1352,22 +1326,20 @@
               <tr data-tip="Set fill transparency. Set to 0 to make it fully transparent">
                 <td>Fill opacity</td>
                 <td>
-                  <input id="styleArmiesFillOpacity" type="range" min="0" max="1" step=".01" value="1" />
-                  <output id="styleArmiesFillOpacityOutput">1</output>
+                  <slider-input id="styleArmiesFillOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
               </tr>
               <tr data-tip="Set regiment box size. All regiments will be redrawn on change (position will defaulted)">
                 <td>Box Size</td>
                 <td>
-                  <input id="styleArmiesSize" type="range" min="1" max="10" step=".1" value="3" />
-                  <output id="styleArmiesSizeOutput">3</output>
+                  <slider-input id="styleArmiesSize" min="0" max="10" step=".1"></slider-input>
                 </td>
               </tr>
             </tbody>
 
             <tbody id="styleEmblems">
               <tr data-tip="Set state emblems size multiplier">
-                <td>State Size</td>
+                <td>State size</td>
                 <td>
                   <input
                     id="emblemsStateSizeInput"
@@ -1382,7 +1354,7 @@
               </tr>
 
               <tr data-tip="Set province emblems size multiplier">
-                <td>Province Size</td>
+                <td>Province size</td>
                 <td>
                   <input
                     id="emblemsProvinceSizeInput"
@@ -1397,7 +1369,7 @@
               </tr>
 
               <tr data-tip="Set burg emblems size multiplier">
-                <td>Burg Size</td>
+                <td>Burg size</td>
                 <td>
                   <input
                     id="emblemsBurgSizeInput"
@@ -1495,15 +1467,14 @@
               <tr data-tip="Set background opacity. 0: transparent, 1: solid">
                 <td>Back opacity</td>
                 <td>
-                  <input id="styleScaleBarBackgroundOpacityInput" type="range" min="0" max="1" step="0.01" />
-                  <output id="styleScaleBarBackgroundOpacityOutput"></output>
+                  <slider-input id="styleScaleBarBackgroundOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Set background fill color">
                 <td>Back fill</td>
                 <td>
-                  <input id="styleScaleBarBackgroundFillInput" type="color" />
+                  <input id="styleScaleBarBackgroundFill" type="color" />
                   <output id="styleScaleBarBackgroundFillOutput"></output>
                 </td>
               </tr>
@@ -1511,7 +1482,7 @@
               <tr data-tip="Set background stroke color and width">
                 <td>Back stroke</td>
                 <td>
-                  <input id="styleScaleBarBackgroundStrokeInput" type="color" />
+                  <input id="styleScaleBarBackgroundStroke" type="color" />
                   <output id="styleScaleBarBackgroundStrokeOutput"></output>
 
                   <span>Width </span>
@@ -1712,53 +1683,41 @@
 
             <tr data-tip="Define how many states and capitals should be generated">
               <td>
-                <i data-locked="0" id="lock_regions" class="icon-lock-open"></i>
+                <i data-locked="0" id="lock_statesNumber" class="icon-lock-open"></i>
               </td>
               <td>States number</td>
-              <td>
-                <input id="regionsInput" data-stored="regions" type="range" min="0" max="99" value="13" />
-              </td>
-              <td>
-                <input id="regionsOutput" data-stored="regions" type="number" min="0" max="999" value="13" />
+              <td colspan="2">
+                <slider-input id="statesNumber" data-stored="statesNumber" min="0" max="100"></slider-input>
               </td>
             </tr>
 
             <tr data-tip="Define burgs percentage to form a separate province">
               <td>
-                <i data-locked="0" id="lock_provinces" class="icon-lock-open"></i>
+                <i data-locked="0" id="lock_provincesRatio" class="icon-lock-open"></i>
               </td>
               <td>Provinces ratio</td>
-              <td>
-                <input id="provincesInput" data-stored="provinces" type="range" min="0" max="100" value="30" />
-              </td>
-              <td>
-                <input id="provincesOutput" data-stored="provinces" type="number" min="0" max="100" value="30" />
+              <td colspan="2">
+                <slider-input id="provincesRatio" data-stored="provincesRatio" min="0" max="100"></slider-input>
               </td>
             </tr>
 
             <tr data-tip="Define how much states and cultures can vary in size. Defines expansionism value">
               <td>
-                <i data-locked="0" id="lock_power" class="icon-lock-open"></i>
+                <i data-locked="0" id="lock_sizeVariety" class="icon-lock-open"></i>
               </td>
               <td>Size variety</td>
-              <td>
-                <input id="powerInput" data-stored="power" type="range" min="0" max="10" step=".2" value="5" />
-              </td>
-              <td>
-                <input id="powerOutput" data-stored="power" type="number" min="0" max="10" step=".1" value="5" />
+              <td colspan="2">
+                <slider-input id="sizeVariety" data-stored="sizeVariety" min="0" max="10" step=".1"></slider-input>
               </td>
             </tr>
 
             <tr data-tip="Set state and cultures growth rate. Defines how many lands will stay neutral">
               <td>
-                <i data-locked="0" id="lock_neutral" class="icon-lock-open"></i>
+                <i data-locked="0" id="lock_growthRate" class="icon-lock-open"></i>
               </td>
               <td>Growth rate</td>
-              <td>
-                <input id="neutralInput" data-stored="neutral" type="range" min=".1" max="2" step=".1" value="1" />
-              </td>
-              <td>
-                <input id="neutralOutput" data-stored="neutral" type="number" min=".1" max="2" step=".1" value="1" />
+              <td colspan="2">
+                <slider-input id="growthRate" data-stored="growthRate" min=".1" max="2" step=".1"></slider-input>
               </td>
             </tr>
 
@@ -1779,14 +1738,17 @@
               data-tip="Define how many organized religions and cults should be generated. Cultures will have their own folk religions in any case"
             >
               <td>
-                <i data-locked="0" id="lock_religions" class="icon-lock-open"></i>
+                <i data-locked="0" id="lock_religionsNumber" class="icon-lock-open"></i>
               </td>
               <td>Religions number</td>
-              <td>
-                <input id="religionsInput" data-stored="religions" type="range" min="0" max="50" step="1" value="15" />
-              </td>
-              <td>
-                <output id="religionsOutput" data-stored="religions" value="auto"></output>
+              <td colspan="2">
+                <slider-input
+                  id="religionsNumber"
+                  data-stored="religionsNumber"
+                  min="0"
+                  max="50"
+                  step="1"
+                ></slider-input>
               </td>
             </tr>
 
@@ -1815,22 +1777,16 @@
             >
               <td></td>
               <td>Interface size</td>
-              <td>
-                <input id="uiSizeInput" data-stored="uiSize" type="range" min=".6" max="3" step=".1" />
-              </td>
-              <td>
-                <input id="uiSizeOutput" data-stored="uiSize" type="number" min=".6" max="3" step=".1" />
+              <td colspan="2">
+                <slider-input id="uiSize" data-stored="uiSize" min=".6" max="3" step=".1"></slider-input>
               </td>
             </tr>
 
             <tr data-tip="Set tooltip size">
               <td></td>
               <td>Tooltip size</td>
-              <td>
-                <input id="tooltipSizeInput" data-stored="tooltipSize" type="range" min="4" max="32" value="14" />
-              </td>
-              <td>
-                <input id="tooltipSizeOutput" data-stored="tooltipSize" type="number" min="0" max="256" value="14" />
+              <td colspan="2">
+                <slider-input id="tooltipSize" data-stored="tooltipSize" min="1" max="32" value="14"></slider-input>
               </td>
             </tr>
 
@@ -1850,11 +1806,8 @@
             <tr data-tip="Set dialog and tool windows transparency">
               <td></td>
               <td>Transparency</td>
-              <td>
-                <input id="transparencyInput" data-stored="transparency" type="range" min="0" max="100" />
-              </td>
-              <td>
-                <input id="transparencyOutput" data-stored="transparency" type="number" min="0" max="100" />
+              <td colspan="2">
+                <slider-input id="transparencyInput" data-stored="transparency" min="0" max="100"></slider-input>
               </td>
             </tr>
 
@@ -8154,6 +8107,9 @@
       </defs>
     </svg>
 
+    <script src="components/fill-box.js"></script>
+    <script src="components/slider-input.js"></script>
+
     <script src="libs/jquery-3.1.1.min.js"></script>
     <script src="libs/jquery-ui.min.js"></script>
     <script src="versioning.js"></script>
@@ -8254,8 +8210,5 @@
     <script defer src="modules/io/load.js?v=1.99.01"></script>
     <script defer src="modules/io/cloud.js?v=1.99.00"></script>
     <script defer src="modules/io/export.js?v=1.99.00"></script>
-
-    <!-- Web Components -->
-    <script defer src="components/fill-box.js"></script>
   </body>
 </html>

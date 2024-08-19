@@ -516,13 +516,14 @@ function fitLegendBox() {
 
 // draw legend with the same data, but using different settings
 function redrawLegend() {
-  if (!legend.select("rect").size()) return;
-  const name = legend.select("#legendLabel").text();
-  const data = legend
-    .attr("data")
-    .split("|")
-    .map(l => l.split(","));
-  drawLegend(name, data);
+  if (legend.select("rect").size()) {
+    const name = legend.select("#legendLabel").text();
+    const data = legend
+      .attr("data")
+      .split("|")
+      .map(l => l.split(","));
+    drawLegend(name, data);
+  }
 }
 
 function dragLegendBox() {

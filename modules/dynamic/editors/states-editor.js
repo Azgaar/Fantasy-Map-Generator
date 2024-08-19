@@ -728,7 +728,7 @@ function showStatesChart() {
     .sum(d => d.area)
     .sort((a, b) => b.value - a.value);
 
-  const size = 150 + 200 * uiSizeOutput.value;
+  const size = 150 + 200 * uiSize.value;
   const margin = {top: 0, right: -50, bottom: 0, left: -50};
   const w = size - margin.left - margin.right;
   const h = size - margin.top - margin.bottom;

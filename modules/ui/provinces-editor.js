@@ -628,8 +628,8 @@ function editProvinces() {
       .parentId(d => d.state)(data)
       .sum(d => d.area);
 
-    const width = 300 + 300 * uiSizeOutput.value,
-      height = 90 + 90 * uiSizeOutput.value;
+    const width = 300 + 300 * uiSize.value,
+      height = 90 + 90 * uiSize.value;
     const margin = {top: 10, right: 10, bottom: 0, left: 10};
     const w = width - margin.left - margin.right;
     const h = height - margin.top - margin.bottom;

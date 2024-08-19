@@ -340,8 +340,8 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
       .sum(d => d.population)
       .sort((a, b) => b.value - a.value);
 
-    const width = 150 + 200 * uiSizeOutput.value;
-    const height = 150 + 200 * uiSizeOutput.value;
+    const width = 150 + 200 * uiSize.value;
+    const height = 150 + 200 * uiSize.value;
     const margin = {top: 0, right: -50, bottom: -10, left: -50};
     const w = width - margin.left - margin.right;
     const h = height - margin.top - margin.bottom;

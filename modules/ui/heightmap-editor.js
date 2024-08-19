@@ -90,7 +90,7 @@ function editHeightmap(options) {
     if (!sessionStorage.getItem("noExitButtonAnimation")) {
       sessionStorage.setItem("noExitButtonAnimation", true);
       exitCustomization.style.opacity = 0;
-      const width = 12 * uiSizeOutput.value * 11;
+      const width = 12 * uiSize.value * 11;
       exitCustomization.style.right = (svgWidth - width) / 2 + "px";
       exitCustomization.style.bottom = svgHeight / 2 + "px";
       exitCustomization.style.transform = "scale(2)";
