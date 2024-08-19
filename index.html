@@ -4076,72 +4076,24 @@
         </div>
 
         <div id="brushesSliders" style="display: none">
-          <div data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" style="padding-bottom: 1px">
-            <div style="width: 3.2em; display: inline-block"><i>Radius:</i></div>
-            <input
-              id="brushRadius"
-              oninput="tip('Brush radius: '+this.value); brushRadiusNumber.value = this.value"
-              type="range"
-              min="1"
-              max="99"
-              value="25"
-              style="width: 13em"
-            />
-            <input
-              id="brushRadiusNumber"
-              oninput="tip('Brush radius: '+this.value); brushRadius.value = this.value"
-              type="number"
-              min="1"
-              max="99"
-              value="25"
-              style="border: 1px solid #d4d4d4"
-            />
+          <div data-tip="Change brush size. Shortcut: + to increase; – to decrease">
+            <slider-input id="heightmapBrushRadius" min="5" max="100" value="25">
+              <div style="width: 3.5em">Radius:</div>
+            </slider-input>
           </div>
 
-          <div data-tip="Set the brush power">
-            <div style="width: 3.2em; display: inline-block"><i>Power:</i></div>
-            <input
-              id="brushPower"
-              oninput="tip('Brush power: '+this.value); brushPowerNumber.value = this.value"
-              type="range"
-              min="1"
-              max="10"
-              value="5"
-              style="width: 13em"
-            />
-            <input
-              id="brushPowerNumber"
-              oninput="tip('Brush power: '+this.value); brushPower.value = this.value"
-              type="number"
-              min="1"
-              max="10"
-              value="5"
-              style="border: 1px solid #d4d4d4"
-            />
+          <div data-tip="Change brush power">
+            <slider-input id="heightmapBrushPower" min="1" max="10" value="5">
+              <div style="width: 3.5em">Power:</div>
+            </slider-input>
           </div>
         </div>
 
         <div id="lineSlider" style="display: none">
-          <div data-tip="Set change power">
-            <div style="width: 3.2em; display: inline-block"><i>Power:</i></div>
-            <input
-              id="linePower"
-              oninput="tip('Line power: '+this.value); linePowerNumber.value = this.value"
-              type="range"
-              min="-100"
-              max="100"
-              value="30"
-              style="width: 13em"
-            />
-            <input
-              id="linePowerNumber"
-              oninput="tip('Line power: '+this.value); linePower.value = this.value"
-              type="number"
-              min="-100"
-              max="100"
-              value="30"
-              style="border: 1px solid #d4d4d4"
-            />
+          <div data-tip="Change tool power. Shortcut: + to increase; – to decrease">
+            <slider-input id="heightmapLinePower" min="-100" max="100" value="30">
+              <div style="width: 3.5em">Power:</div>
+            </slider-input>
           </div>
         </div>
 
@@ -4407,26 +4359,10 @@
             class="icon-brush"
           ></button>
           <div id="biomesManuallyButtons" style="display: none">
-            <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic"
-              >Brush radius:
-              <input
-                id="biomesManuallyBrush"
-                oninput="tip('Brush radius: '+this.value); biomesManuallyBrushNumber.value = this.value"
-                type="range"
-                min="5"
-                max="99"
-                value="15"
-                style="width: 4em"
-              />
-              <input
-                id="biomesManuallyBrushNumber"
-                oninput="tip('Brush radius: '+this.value); biomesManuallyBrush.value = this.value"
-                type="number"
-                min="5"
-                max="99"
-                value="15"
-              /> </label
-            ><br />
+            <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em">
+              Brush size:
+              <slider-input id="biomesBrush" min="5" max="100" value="15"></slider-input>
+            </div>
             <button id="biomesManuallyApply" data-tip="Apply current assignment" class="icon-check"></button>
             <button id="biomesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
           </div>
@@ -4651,26 +4587,10 @@
 
           <button id="provincesManually" data-tip="Manually re-assign provinces" class="icon-brush"></button>
           <div id="provincesManuallyButtons" style="display: none">
-            <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic"
-              >Brush size:
-              <input
-                id="provincesManuallyBrush"
-                oninput="tip('Brush size: '+this.value); provincesManuallyBrushNumber.value = this.value"
-                type="range"
-                min="5"
-                max="99"
-                value="8"
-                style="width: 5em"
-              />
-              <input
-                id="provincesManuallyBrushNumber"
-                oninput="tip('Brush size: '+this.value); provincesManuallyBrush.value = this.value"
-                type="number"
-                min="5"
-                max="99"
-                value="8"
-              /> </label
-            ><br />
+            <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em">
+              Brush size:
+              <slider-input id="provincesBrush" min="5" max="100" value="8"></slider-input>
+            </div>
             <button id="provincesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
             <button id="provincesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
           </div>
@@ -4959,29 +4879,10 @@
 
           <button id="zonesManually" data-tip="Re-assign zones" class="icon-brush"></button>
           <div id="zonesManuallyButtons" style="display: none">
-            <div>
-              <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic"
-                >Brush:
-                <input
-                  id="zonesBrush"
-                  oninput="tip('Brush size: '+this.value); zonesBrushNumber.value = this.value"
-                  type="range"
-                  min="5"
-                  max="50"
-                  value="7"
-                  style="width: 9em"
-                />
-                <input
-                  id="zonesBrushNumber"
-                  oninput="tip('Brush size: '+this.value); zonesBrush.value = this.value"
-                  type="number"
-                  min="5"
-                  max="50"
-                  value="7"
-                />
-              </label>
+            <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em">
+              Brush size:
+              <slider-input id="zonesBrush" min="5" max="100" value="8"></slider-input>
             </div>
-
             <div>
               <input id="zonesBrushLandOnly" class="checkbox" type="checkbox" checked />
               <label for="zonesBrushLandOnly" class="checkbox-label"><i>Change land only</i></label>

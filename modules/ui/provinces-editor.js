@@ -879,7 +879,7 @@ function editProvinces() {
   }
 
   function dragBrush() {
-    const r = +provincesManuallyBrush.value;
+    const r = +provincesBrush.value;
 
     d3.event.on("drag", () => {
       if (!d3.event.dx && !d3.event.dy) return;
@@ -937,7 +937,7 @@ function editProvinces() {
   function moveBrush() {
     showMainTip();
     const point = d3.mouse(this);
-    const radius = +provincesManuallyBrush.value;
+    const radius = +provincesBrush.value;
     moveCircle(point[0], point[1], radius);
   }
 

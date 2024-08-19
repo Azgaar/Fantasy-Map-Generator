@@ -24,7 +24,7 @@ function insertEditorHtml() {
     <div id="statesHeader" class="header" style="grid-template-columns: 11em 8em 7em 7em 6em 6em 8em 6em 7em 6em">
       <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
       <div data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
-      <div data-tip="Click to sort by capital name" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
+      <div data-tip="Click to sort by capital name" class="sortable alphabetically" data-sortby="capital">Capital&nbsp;</div>
       <div data-tip="Click to sort by state dominant culture" class="sortable alphabetically hide" data-sortby="culture">Culture&nbsp;</div>
       <div data-tip="Click to sort by state burgs count" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
       <div data-tip="Click to sort by state area" class="sortable hide icon-sort-number-down" data-sortby="area">Area&nbsp;</div>
@@ -89,26 +89,9 @@ function insertEditorHtml() {
 
       <button id="statesManually" data-tip="Manually re-assign states" class="icon-brush"></button>
       <div id="statesManuallyButtons" style="display: none">
-        <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic"
-          >Brush size:
-          <input
-            id="statesManuallyBrush"
-            oninput="tip('Brush size: '+this.value); statesManuallyBrushNumber.value = this.value"
-            type="range"
-            min="5"
-            max="99"
-            value="15"
-            style="width: 5em"
-          />
-          <input
-            id="statesManuallyBrushNumber"
-            oninput="tip('Brush size: '+this.value); statesManuallyBrush.value = this.value"
-            type="number"
-            min="5"
-            max="99"
-            value="15"
-          /> </label
-        ><br />
+        <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em;">
+          <slider-input id="statesBrush" min="5" max="100" value="15">Brush size:</slider-input>
+        </div>
         <button id="statesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
         <button id="statesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
       </div>
@@ -228,10 +211,10 @@ function statesEditorAddLines() {
         <input data-tip="Neutral lands name. Click to change" class="stateName name pointer italic" value="${
           s.name
         }" readonly />
-        <svg class="coaIcon placeholder hide"></svg>
+        <svg class="coaIcon placeholder"></svg>
         <input class="stateForm placeholder" value="none" />
-        <span class="icon-star-empty placeholder hide"></span>
-        <input class="stateCapital placeholder hide" />
+        <span class="icon-star-empty placeholder"></span>
+        <input class="stateCapital placeholder" />
         <select class="stateCulture placeholder hide">${getCultureOptions(0)}</select>
         <span data-tip="Click to overview neutral burgs" class="icon-dot-circled pointer hide" style="padding-right: 1px"></span>
         <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
@@ -267,14 +250,14 @@ function statesEditorAddLines() {
     >
       <fill-box fill="${s.color}"></fill-box>
       <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly />
-      <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer hide" viewBox="0 0 200 200"><use href="#stateCOA${
+      <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer" viewBox="0 0 200 200"><use href="#stateCOA${
         s.i
       }"></use></svg>
       <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${
         s.formName
       }" readonly />
-      <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer hide"></span>
-      <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false" />
+      <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer"></span>
+      <input data-tip="Capital name. Click and type to rename" class="stateCapital" value="${capital}" autocorrect="off" spellcheck="false" />
       <select data-tip="Dominant culture. Click to change" class="stateCulture hide">${getCultureOptions(
         s.culture
       )}</select>
@@ -959,7 +942,7 @@ function selectStateOnMapClick() {
 }
 
 function dragStateBrush() {
-  const r = +statesManuallyBrush.value;
+  const r = +statesBrush.value;
 
   d3.event.on("drag", () => {
     if (!d3.event.dx && !d3.event.dy) return;
@@ -1002,7 +985,7 @@ function changeStateForSelection(selection) {
 function moveStateBrush() {
   showMainTip();
   const point = d3.mouse(this);
-  const radius = +statesManuallyBrush.value;
+  const radius = +statesBrush.value;
   moveCircle(point[0], point[1], radius);
 }
 
