@@ -521,7 +521,7 @@ window.Routes = (function () {
     if (!connections) return false;
     return (
       Object.keys(connections).length > 3 ||
-      Object.values(connections).filter(routeId => pack.routes[routeId].group === "roads").length > 2
+      Object.values(connections).filter(routeId => pack.routes[routeId]?.group === "roads").length > 2
     );
   }
 
