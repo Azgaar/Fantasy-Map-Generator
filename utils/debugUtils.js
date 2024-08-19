@@ -33,7 +33,7 @@ function drawPolygons(data) {
 
 function drawRouteConnections() {
   debug.select("#connections").remove();
-  const routes = debug.append("g").attr("id", "connections").attr("stroke-width", 0.4);
+  const routes = debug.append("g").attr("id", "connections").attr("stroke-width", 0.8);
 
   const points = pack.cells.p;
   const links = pack.cells.routes;
