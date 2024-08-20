@@ -24,13 +24,11 @@
     constructor() {
       super();
       this.appendChild(template.content.cloneNode(true));
-    }
 
-    connectedCallback() {
       const range = this.querySelector("input[type=range]");
       const number = this.querySelector("input[type=number]");
 
-      range.value = number.value = this.getAttribute("value") || 50;
+      range.value = number.value = this.value || this.getAttribute("value") || 50;
       range.min = number.min = this.getAttribute("min") || 0;
       range.max = number.max = this.getAttribute("max") || 100;
       range.step = number.step = this.getAttribute("step") || 1;

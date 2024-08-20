@@ -5107,11 +5107,11 @@
         <div id="unitsBody" style="margin-left: 1.1em">
           <div class="unitsHeader" style="margin-top: 0.4em">
             <span class="icon-map-signs"></span>
-            <div>Distance:</div>
+            <label>Distance:</label>
           </div>
 
           <div data-tip="Select a distance unit or provide a custom name">
-            <div>Distance unit:</div>
+            <label>Distance unit:</label>
             <select id="distanceUnitInput" data-stored="distanceUnit">
               <option value="mi" selected>Mile (mi)</option>
               <option value="km">Kilometer (km)</option>
@@ -5123,34 +5123,25 @@
             </select>
           </div>
 
-          <i data-locked="0" id="lock_distanceScale" class="icon-lock-open"></i>
           <div data-tip="Select how many distance units are in one pixel">
-            <div>1 map pixel =</div>
-            <input id="distanceScaleOutput" type="range" min=".01" max="20" step=".1" value="3" />
-            <input
-              id="distanceScaleInput"
-              data-stored="distanceScale"
-              type="number"
-              min=".01"
-              max="100"
-              step=".01"
-              value="3"
-              data-value="3"
-            />
+            <i data-locked="0" id="lock_distanceScale" class="icon-lock-open"></i>
+            <slider-input id="distanceScaleInput" data-stored="distanceScale" min=".01" max="20" step=".1" value="3">
+              <label>1 map pixel:</label>
+            </slider-input>
           </div>
 
           <div data-tip='Area unit name, type "square" to add ² to the distance unit'>
-            <div>Area unit:</div>
+            <label>Area unit:</label>
             <input id="areaUnit" data-stored="areaUnit" type="text" value="square" />
           </div>
 
           <div class="unitsHeader">
             <span class="icon-signal"></span>
-            <div>Altitude:</div>
+            <label>Altitude:</label>
           </div>
 
           <div data-tip="Select an altitude unit or provide a custom name">
-            <div>Height unit:</div>
+            <label>Height unit:</label>
             <select id="heightUnit" data-stored="heightUnit">
               <option value="ft" selected>Feet (ft)</option>
               <option value="m">Meters (m)</option>
@@ -5162,26 +5153,25 @@
           <div
             data-tip="Set height exponent, i.e. a value for altitude change sharpness. Altitude affects temperature and hence biomes"
           >
-            <div>Exponent:</div>
-            <input id="heightExponentOutput" type="range" min="1.5" max="2.2" value="2" step=".01" />
-            <input
+            <slider-input
               id="heightExponentInput"
               data-stored="heightExponent"
-              type="number"
               min="1.5"
               max="2.2"
-              value="2"
               step=".01"
-            />
+              value="2"
+            >
+              <label>Exponent:</label>
+            </slider-input>
           </div>
 
           <div class="unitsHeader" data-tip="Select Temperature scale">
             <span class="icon-temperature-high"></span>
-            <div>Temperature:</div>
+            <label>Temperature:</label>
           </div>
 
           <div>
-            <div>Temperature scale:</div>
+            <label>Temperature scale:</label>
             <select id="temperatureScale" data-stored="temperatureScale">
               <option value="°C" selected>degree Celsius (°C)</option>
               <option value="°F">degree Fahrenheit (°F)</option>
@@ -5196,73 +5186,32 @@
 
           <div class="unitsHeader">
             <span class="icon-male"></span>
-            <div>Population:</div>
+            <label>Population:</label>
           </div>
 
           <div data-tip="Set how many people are in one population point">
-            <div>1 population point =</div>
-            <input
-              id="populationRateOutput"
-              data-stored="populationRate"
-              type="range"
-              min="10"
-              max="9990"
-              step="10"
-              value="1000"
-            />
-            <input
+            <slider-input
               id="populationRateInput"
               data-stored="populationRate"
-              type="number"
               min="10"
-              max="9990"
+              max="10000"
               step="10"
               value="1000"
-            />
+            >
+              <label>1 population point:</label>
+            </slider-input>
           </div>
 
           <div data-tip="Set urbanization rate: burgs population relative to all population">
-            <div>Urbanization rate:</div>
-            <input
-              id="urbanizationOutput"
-              data-stored="urbanization"
-              type="range"
-              min=".01"
-              max="5"
-              step=".01"
-              value="1"
-            />
-            <input
-              id="urbanizationInput"
-              data-stored="urbanization"
-              type="number"
-              min=".01"
-              max="5"
-              step=".01"
-              value="1"
-            />
+            <slider-input id="urbanizationInput" data-stored="urbanization" min=".01" max="5" step=".01" value="1">
+              <label>Urbanization rate:</label>
+            </slider-input>
           </div>
 
           <div data-tip="Set urban density: average population per building in Medieval Fantasy City Generator">
-            <div>Urban density:</div>
-            <input
-              id="urbanDensityOutput"
-              data-stored="urbanDensity"
-              type="range"
-              min="1"
-              max="200"
-              step="1"
-              value="10"
-            />
-            <input
-              id="urbanDensityInput"
-              data-stored="urbanDensity"
-              type="number"
-              min="1"
-              max="200"
-              step="1"
-              value="10"
-            />
+            <slider-input id="urbanDensityInput" data-stored="urbanDensity" min="1" max="200" step="1" value="10">
+              <label>Urban density:</label>
+            </slider-input>
           </div>
         </div>
 

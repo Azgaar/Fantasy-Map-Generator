@@ -1820,11 +1820,6 @@ div.editorLine {
   padding: 0px 3px !important;
 }
 
-#unitsBody > div > * {
-  display: inline-block;
-  margin-bottom: 0.2em;
-}
-
 .unitsHeader {
   margin: 0.8em 0 0 -1.1em;
   font-weight: bold;
@@ -1836,26 +1831,19 @@ div.editorLine {
   margin: 6px 0 0 6px;
 }
 
-#unitsBody > div > div {
+#unitsBody label {
+  display: inline-block;
   width: 9em;
-}
-
-#unitsBody > div > input[type="range"] {
-  width: 7em;
 }
 
 #unitsBody > div > select,
 #unitsBody > div > input[type="text"] {
-  width: 12em;
-}
-
-#unitsBody > div > input[type="number"] {
-  width: 4.35em;
-}
-
-#unitsBody > div > input,
-#unitsBody > div > select {
+  width: 14.4em;
   border: 1px solid #e9e9e9;
+}
+
+#unitsBody input[type="range"] {
+  width: 9em;
 }
 
 #unitsEditor i.icon-lock-open,

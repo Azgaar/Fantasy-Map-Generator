@@ -222,14 +222,14 @@ async function parseLoadedData(data, mapVersion) {
     void (function parseSettings() {
       const settings = data[1].split("|");
       if (settings[0]) applyOption(distanceUnitInput, settings[0]);
-      if (settings[1]) distanceScale = distanceScaleInput.value = distanceScaleOutput.value = settings[1];
+      if (settings[1]) distanceScale = distanceScaleInput.value = settings[1];
       if (settings[2]) areaUnit.value = settings[2];
       if (settings[3]) applyOption(heightUnit, settings[3]);
-      if (settings[4]) heightExponentInput.value = heightExponentOutput.value = settings[4];
+      if (settings[4]) heightExponentInput.value = settings[4];
       if (settings[5]) temperatureScale.value = settings[5];
       // setting 6-11 (scaleBar) are part of style now, kept as "" in newer versions for compatibility
-      if (settings[12]) populationRate = populationRateInput.value = populationRateOutput.value = settings[12];
-      if (settings[13]) urbanization = urbanizationInput.value = urbanizationOutput.value = settings[13];
+      if (settings[12]) populationRate = populationRateInput.value = settings[12];
+      if (settings[13]) urbanization = urbanizationInput.value = settings[13];
       if (settings[14]) mapSizeInput.value = mapSizeOutput.value = minmax(settings[14], 1, 100);
       if (settings[15]) latitudeInput.value = latitudeOutput.value = minmax(settings[15], 0, 100);
       if (settings[18]) precInput.value = precOutput.value = settings[18];
@@ -241,7 +241,7 @@ async function parseLoadedData(data, mapVersion) {
       if (settings[21]) hideLabels.checked = +settings[21];
       if (settings[22]) stylePreset.value = settings[22];
       if (settings[23]) rescaleLabels.checked = +settings[23];
-      if (settings[24]) urbanDensity = urbanDensityInput.value = urbanDensityOutput.value = +settings[24];
+      if (settings[24]) urbanDensity = urbanDensityInput.value = +settings[24];
       if (settings[25]) longitudeInput.value = longitudeOutput.value = minmax(settings[25] || 50, 0, 100);
     })();
 

@@ -539,7 +539,6 @@ function applyStoredOptions() {
 
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-
     if (key === "speakerVoice") continue;
 
     const input = byId(key + "Input") || byId(key);
@@ -612,8 +611,7 @@ function randomizeOptions() {
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
-  if (randomize || !locked("distanceScale"))
-    distanceScale = distanceScaleOutput.value = distanceScaleInput.value = gauss(3, 1, 1, 5);
+  if (randomize || !locked("distanceScale")) distanceScale = distanceScaleInput.value = gauss(3, 1, 1, 5);
   if (!stored("distanceUnit")) distanceUnitInput.value = US ? "mi" : "km";
   if (!stored("heightUnit")) heightUnit.value = US ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";

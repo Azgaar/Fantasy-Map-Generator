@@ -258,15 +258,8 @@ window.UISubmap = (function () {
     byId("latitudeInput").value = latitudeOutput.value;
 
     // fix scale
-    distanceScale =
-      distanceScaleInput.value =
-      distanceScaleOutput.value =
-        rn((distanceScale = distanceScaleOutput.value / scale), 2);
-
-    populationRateInput.value = populationRateOutput.value = rn(
-      (populationRate = populationRateOutput.value / scale),
-      2
-    );
+    distanceScale = distanceScaleInput.value = rn(distanceScaleInput.value / scale, 2);
+    populationRate = populationRateInput.value = rn(populationRateInput.value / scale, 2);
 
     customization = 0;
     startResample(options);
