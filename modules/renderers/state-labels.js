@@ -4,6 +4,10 @@
 function drawStateLabels(list) {
   console.time("drawStateLabels");
 
+  // temporary make the labels visible
+  const layerDisplay = labels.style("display");
+  labels.style("display", null);
+
   const {cells, states, features} = pack;
   const stateIds = cells.state;
 
@@ -17,7 +21,11 @@ function drawStateLabels(list) {
   const MAX_ITERATIONS = 100;
 
   const labelPaths = getLabelPaths();
-  drawLabelPath();
+  const letterLength = checkExampleLetterLength();
+  drawLabelPath(letterLength);
+
+  // restore labels visibility
+  labels.style("display", layerDisplay);
 
   function getLabelPaths() {
     const labelPaths = [];
@@ -110,16 +118,21 @@ function drawStateLabels(list) {
     }
   }
 
-  function drawLabelPath() {
+  function checkExampleLetterLength() {
+    const textGroup = d3.select("g#labels > g#states");
+    const testLabel = textGroup.append("text").attr("x", 0).attr("y", 0).text("Example");
+    const letterLength = testLabel.node().getComputedTextLength() / 7; // approximate length of 1 letter
+    testLabel.remove();
+
+    return letterLength;
+  }
+
+  function drawLabelPath(letterLength) {
     const mode = options.stateLabelsMode || "auto";
     const lineGen = d3.line().curve(d3.curveBundle.beta(1));
 
     const textGroup = d3.select("g#labels > g#states");
     const pathGroup = d3.select("defs > g#deftemp > g#textPaths");
-
-    const testLabel = textGroup.append("text").attr("x", 0).attr("y", 0).text("Example");
-    const letterLength = testLabel.node().getComputedTextLength() / 7; // approximate length of 1 letter
-    testLabel.remove();
 
     for (const [stateId, pathPoints] of labelPaths) {
       const state = states[stateId];

@@ -1,0 +1,420 @@
+{
+  "#map": {
+    "background-color": "#000000",
+    "filter": null,
+    "data-filter": null
+  },
+  "#armies": {
+    "font-size": 8,
+    "box-size": 4,
+    "stroke": "#000",
+    "stroke-width": 0.3,
+    "fill-opacity": 1,
+    "filter": null
+  },
+  "#biomes": {
+    "opacity": 1,
+    "filter": null,
+    "mask": "url(#land)"
+  },
+  "#stateBorders": {
+    "opacity": 1,
+    "stroke": "#000000",
+    "stroke-width": 1.25,
+    "stroke-dasharray": 0,
+    "stroke-linecap": "butt",
+    "filter": null
+  },
+  "#provinceBorders": {
+    "opacity": 0.8,
+    "stroke": "#000000",
+    "stroke-width": 0.5,
+    "stroke-dasharray": 0,
+    "stroke-linecap": "round",
+    "filter": "url(#blurFilter)"
+  },
+  "#cells": {
+    "opacity": null,
+    "stroke": "#808080",
+    "stroke-width": 0.1,
+    "filter": null,
+    "mask": null
+  },
+  "#gridOverlay": {
+    "opacity": 1,
+    "scale": 7.99,
+    "dx": -2,
+    "dy": 3,
+    "type": "square",
+    "stroke": "#000000",
+    "stroke-width": 0.05,
+    "stroke-dasharray": null,
+    "stroke-linecap": null,
+    "transform": null,
+    "filter": null,
+    "mask": null
+  },
+  "#coordinates": {
+    "opacity": 1,
+    "data-size": 12,
+    "font-size": 12,
+    "stroke": "#d4d4d4",
+    "stroke-width": 1,
+    "stroke-dasharray": 5,
+    "stroke-linecap": null,
+    "filter": null,
+    "mask": null
+  },
+  "#compass": {
+    "opacity": 0.8,
+    "transform": null,
+    "filter": null,
+    "mask": "url(#water)",
+    "shape-rendering": "optimizespeed"
+  },
+  "#relig": {
+    "opacity": 0.7,
+    "stroke": "#777777",
+    "stroke-width": 0,
+    "filter": null
+  },
+  "#cults": {
+    "opacity": 0.6,
+    "stroke": "#777777",
+    "stroke-width": 0.5,
+    "stroke-dasharray": null,
+    "stroke-linecap": null,
+    "filter": null
+  },
+  "#landmass": {
+    "opacity": 1,
+    "fill": "#eef6fb",
+    "filter": null
+  },
+  "#markers": {
+    "opacity": null,
+    "rescale": 1,
+    "filter": null
+  },
+  "#prec": {
+    "opacity": null,
+    "stroke": "#000000",
+    "stroke-width": 0.1,
+    "fill": "#003dff",
+    "filter": null
+  },
+  "#population": {
+    "opacity": null,
+    "stroke-width": 1.6,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "filter": null
+  },
+  "#rural": {
+    "stroke": "#0000ff"
+  },
+  "#urban": {
+    "stroke": "#ff0000"
+  },
+  "#freshwater": {
+    "opacity": 1,
+    "fill": "#337379",
+    "stroke": "#236369",
+    "stroke-width": 1,
+    "filter": null
+  },
+  "#salt": {
+    "opacity": 1,
+    "fill": "#409b8a",
+    "stroke": "#388985",
+    "stroke-width": 1,
+    "filter": null
+  },
+  "#sinkhole": {
+    "opacity": 1,
+    "fill": "#5bc9fd",
+    "stroke": "#53a3b0",
+    "stroke-width": 1,
+    "filter": null
+  },
+  "#frozen": {
+    "opacity": 0.95,
+    "fill": "#cdd4e7",
+    "stroke": "#cfe0eb",
+    "stroke-width": 0,
+    "filter": null
+  },
+  "#lava": {
+    "opacity": 0.7,
+    "fill": "#90270d",
+    "stroke": "#f93e0c",
+    "stroke-width": 2,
+    "filter": "url(#crumpled)"
+  },
+  "#dry": {
+    "opacity": 1,
+    "fill": "#c9bfa7",
+    "stroke": "#8e816f",
+    "stroke-width": 1,
+    "filter": null
+  },
+  "#sea_island": {
+    "opacity": 1,
+    "stroke": "#028ac9",
+    "stroke-width": 1,
+    "filter": "",
+    "auto-filter": 0
+  },
+  "#lake_island": {
+    "opacity": 1,
+    "stroke": "#7c8eaf",
+    "stroke-width": 0.35,
+    "filter": null
+  },
+  "#rivers": {
+    "opacity": null,
+    "filter": null,
+    "fill": "#00254c"
+  },
+  "#ruler": {
+    "opacity": null,
+    "filter": null
+  },
+  "#roads": {
+    "opacity": 1,
+    "stroke": "#ff6000",
+    "stroke-width": 1.75,
+    "stroke-dasharray": 0,
+    "stroke-linecap": "butt",
+    "filter": null,
+    "mask": null
+  },
+  "#trails": {
+    "opacity": 1,
+    "stroke": "#ff6000",
+    "stroke-width": 1,
+    "stroke-dasharray": 0,
+    "stroke-linecap": "butt",
+    "filter": null,
+    "mask": null
+  },
+  "#searoutes": {
+    "opacity": 1,
+    "stroke": "#00aeff",
+    "stroke-width": 1,
+    "stroke-dasharray": "2 2",
+    "stroke-linecap": "butt",
+    "filter": null,
+    "mask": null
+  },
+  "#statesBody": {
+    "opacity": 0.5,
+    "filter": null
+  },
+  "#statesHalo": {
+    "opacity": 0,
+    "data-width": 0,
+    "stroke-width": 0,
+    "filter": null
+  },
+  "#provs": {
+    "opacity": 1,
+    "fill": "#000000",
+    "font-size": 10,
+    "font-family": "Georgia",
+    "filter": null
+  },
+  "#temperature": {
+    "opacity": null,
+    "font-size": "8px",
+    "fill": "#000000",
+    "fill-opacity": 0.3,
+    "stroke": null,
+    "stroke-width": 1.8,
+    "stroke-dasharray": null,
+    "stroke-linecap": null,
+    "filter": null
+  },
+  "#ice": {
+    "opacity": 0.8,
+    "fill": "#e8f0f6",
+    "stroke": "#e8f0f6",
+    "stroke-width": 1,
+    "filter": "url(#dropShadow05)"
+  },
+  "#emblems": {
+    "opacity": 1,
+    "stroke-width": 1,
+    "filter": null
+  },
+  "#texture": {
+    "opacity": 0.2,
+    "filter": null,
+    "mask": "url(#land)",
+    "data-x": 0,
+    "data-y": 0,
+    "data-href": "./images/textures/plaster.jpg"
+  },
+  "#zones": {
+    "opacity": 0.6,
+    "stroke": "#333333",
+    "stroke-width": 0,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "filter": null,
+    "mask": null
+  },
+  "#oceanLayers": {
+    "filter": "",
+    "layers": "none"
+  },
+  "#oceanBase": {
+    "fill": "#00254d"
+  },
+  "#oceanicPattern": {
+    "href": "",
+    "opacity": 1
+  },
+  "#terrs #oceanHeights": {
+    "data-render": 0,
+    "opacity": 1,
+    "scheme": "bright",
+    "terracing": 0,
+    "skip": 0,
+    "relax": 1,
+    "curve": "curveBasisClosed",
+    "filter": null,
+    "mask": null
+  },
+  "#terrs #landHeights": {
+    "opacity": 1,
+    "scheme": "natural",
+    "terracing": 5,
+    "skip": 0,
+    "relax": 1,
+    "curve": "curveBasisClosed",
+    "filter": null,
+    "mask": "url(#land)"
+  },
+  "#legend": {
+    "data-size": 13,
+    "font-size": 13,
+    "font-family": "Georgia",
+    "stroke": "#812929",
+    "stroke-width": 2.5,
+    "stroke-dasharray": "0 4 10 4",
+    "stroke-linecap": "round",
+    "data-x": 99,
+    "data-y": 93,
+    "data-columns": 8
+  },
+  "#burgLabels > #cities": {
+    "opacity": 1,
+    "fill": "#000000",
+    "text-shadow": "white 0px 0px 4px",
+    "data-size": 7,
+    "font-size": 7,
+    "font-family": "Lugrasimo"
+  },
+  "#burgIcons > #cities": {
+    "opacity": 0.7,
+    "fill": "#000000",
+    "size": 1.75,
+    "stroke": "#000000",
+    "stroke-width": 0,
+    "stroke-dasharray": 0,
+    "stroke-linecap": "butt"
+  },
+  "#anchors > #cities": {
+    "opacity": 1,
+    "fill": "#ffffff",
+    "size": 3.5,
+    "stroke": "#3e3e4b",
+    "stroke-width": 1.2
+  },
+  "#burgLabels > #towns": {
+    "opacity": 1,
+    "fill": "#000000",
+    "text-shadow": "white 0px 0px 4px",
+    "data-size": 5,
+    "font-size": 5,
+    "font-family": "Lugrasimo"
+  },
+  "#burgIcons > #towns": {
+    "opacity": 0.7,
+    "fill": "#000000",
+    "size": 1.25,
+    "stroke": "#000000",
+    "stroke-width": 0,
+    "stroke-dasharray": 0,
+    "stroke-linecap": "butt"
+  },
+  "#anchors > #towns": {
+    "opacity": 1,
+    "fill": "#ffffff",
+    "size": 2,
+    "stroke": "#3e3e4b",
+    "stroke-width": 1.2
+  },
+  "#labels > #states": {
+    "opacity": 1,
+    "fill": "#000000",
+    "stroke": "#000000",
+    "stroke-width": 0,
+    "text-shadow": "white 0px 0px 4px",
+    "data-size": 21,
+    "font-size": 21,
+    "font-family": "Eagle Lake",
+    "filter": null
+  },
+  "#labels > #addedLabels": {
+    "opacity": 1,
+    "fill": "#000000",
+    "stroke": "#000000",
+    "stroke-width": 0,
+    "text-shadow": "white 0px 0px 4px",
+    "data-size": 18,
+    "font-size": 18,
+    "font-family": "Eagle Lake",
+    "filter": null
+  },
+  "#fogging": {
+    "opacity": 0.98,
+    "fill": "#30426f",
+    "filter": null
+  },
+  "#vignette": {
+    "opacity": 0.2,
+    "fill": "#000000",
+    "filter": null
+  },
+  "#vignette-rect": {
+    "x": "0.2%",
+    "y": "0.3%",
+    "width": "99.8%",
+    "height": "99.4%",
+    "rx": "5%",
+    "ry": "5%",
+    "filter": "blur(30px)"
+  },
+  "#scaleBar": {
+    "opacity": 1,
+    "fill": "#f6f6f6",
+    "font-size": 10,
+    "data-bar-size": 2,
+    "data-x": 99,
+    "data-y": 99,
+    "data-label": ""
+  },
+  "#scaleBarBack": {
+    "opacity": 1,
+    "fill": "#00254d",
+    "stroke": "#00151d",
+    "stroke-width": 2,
+    "filter": null,
+    "data-top": 20,
+    "data-right": 15,
+    "data-bottom": 15,
+    "data-left": 10
+  }
+}

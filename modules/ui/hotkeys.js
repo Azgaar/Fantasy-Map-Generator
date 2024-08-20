@@ -50,6 +50,7 @@ function handleKeyup(event) {
   else if (shift && code === "KeyO") editNotes();
   else if (shift && code === "KeyA") overviewCharts();
   else if (shift && code === "KeyT") overviewBurgs();
+  else if (shift && code === "KeyU") overviewRoutes();
   else if (shift && code === "KeyV") overviewRivers();
   else if (shift && code === "KeyM") overviewMilitary();
   else if (shift && code === "KeyK") overviewMarkers();
@@ -57,7 +58,7 @@ function handleKeyup(event) {
   else if (key === "!") toggleAddBurg();
   else if (key === "@") toggleAddLabel();
   else if (key === "#") toggleAddRiver();
-  else if (key === "$") toggleAddRoute();
+  else if (key === "$") createRoute();
   else if (key === "%") toggleAddMarker();
   else if (alt && code === "KeyB") console.table(pack.burgs);
   else if (alt && code === "KeyS") console.table(pack.states);

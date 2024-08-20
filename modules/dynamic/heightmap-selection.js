@@ -314,6 +314,6 @@ function confirmHeightmapEdit() {
 function getHeightmapPreview(heights) {
   const scheme = getColorScheme(byId("heightmapSelectionColorScheme").value);
   const renderOcean = byId("heightmapSelectionRenderOcean").checked;
-  const dataUrl = drawHeights({heights, width: grid.cellsX, height: grid.cellsY, scheme, renderOcean});
+  const dataUrl = drawHeights({heights, width: graph.cellsX, height: graph.cellsY, scheme, renderOcean});
   return dataUrl;
 }

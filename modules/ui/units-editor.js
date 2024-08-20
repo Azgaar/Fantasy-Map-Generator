@@ -24,13 +24,6 @@ function editUnits() {
   byId("heightExponentInput").addEventListener("input", changeHeightExponent);
   byId("heightExponentOutput").addEventListener("input", changeHeightExponent);
   byId("temperatureScale").addEventListener("change", changeTemperatureScale);
-  byId("barSizeOutput").addEventListener("input", renderScaleBar);
-  byId("barSizeInput").addEventListener("input", renderScaleBar);
-  byId("barLabel").addEventListener("input", renderScaleBar);
-  byId("barPosX").addEventListener("input", fitScaleBar);
-  byId("barPosY").addEventListener("input", fitScaleBar);
-  byId("barBackOpacity").addEventListener("input", changeScaleBarOpacity);
-  byId("barBackColor").addEventListener("input", changeScaleBarColor);
 
   byId("populationRateOutput").addEventListener("input", changePopulationRate);
   byId("populationRateInput").addEventListener("change", changePopulationRate);
@@ -62,6 +55,7 @@ function editUnits() {
   }
 
   function changeDistanceScale() {
+    distanceScale = +this.value;
     renderScaleBar();
     calculateFriendlyGridSize();
   }
@@ -84,14 +78,6 @@ function editUnits() {
     if (layerIsOn("toggleTemp")) drawTemp();
   }
 
-  function changeScaleBarOpacity() {
-    scaleBar.select("rect").attr("opacity", this.value);
-  }
-
-  function changeScaleBarColor() {
-    scaleBar.select("rect").attr("fill", this.value);
-  }
-
   function changePopulationRate() {
     populationRate = +this.value;
   }
@@ -105,10 +91,9 @@ function editUnits() {
   }
 
   function restoreDefaultUnits() {
-    // distanceScale
     distanceScale = 3;
-    byId("distanceScaleOutput").value = 3;
-    byId("distanceScaleInput").value = 3;
+    byId("distanceScaleOutput").value = distanceScale;
+    byId("distanceScaleInput").value = distanceScale;
     unlock("distanceScale");
 
     // units
@@ -129,19 +114,6 @@ function editUnits() {
     localStorage.removeItem("heightExponent");
     calculateTemperatures();
 
-    // scale bar
-    barSizeOutput.value = barSizeInput.value = 2;
-    barLabel.value = "";
-    barBackOpacity.value = 0.2;
-    barBackColor.value = "#ffffff";
-    barPosX.value = barPosY.value = 99;
-
-    localStorage.removeItem("barSize");
-    localStorage.removeItem("barLabel");
-    localStorage.removeItem("barBackOpacity");
-    localStorage.removeItem("barBackColor");
-    localStorage.removeItem("barPosX");
-    localStorage.removeItem("barPosY");
     renderScaleBar();
 
     // population
@@ -207,13 +179,15 @@ function editUnits() {
       tip("Draw a curve along routes to measure length. Hold Shift to measure away from roads.", true);
       unitsBottom.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
       this.classList.add("pressed");
+
       viewbox.style("cursor", "crosshair").call(
         d3.drag().on("start", function () {
           const cells = pack.cells;
           const burgs = pack.burgs;
           const point = d3.mouse(this);
           const c = findCell(point[0], point[1]);
-          if (cells.road[c] || d3.event.sourceEvent.shiftKey) {
+
+          if (Routes.isConnected(c) || d3.event.sourceEvent.shiftKey) {
             const b = cells.burg[c];
             const x = b ? burgs[b].x : cells.p[c][0];
             const y = b ? burgs[b].y : cells.p[c][1];
@@ -222,7 +196,7 @@ function editUnits() {
             d3.event.on("drag", function () {
               const point = d3.mouse(this);
               const c = findCell(point[0], point[1]);
-              if (cells.road[c] || d3.event.sourceEvent.shiftKey) {
+              if (Routes.isConnected(c) || d3.event.sourceEvent.shiftKey) {
                 routeOpisometer.trackCell(c, true);
               }
             });

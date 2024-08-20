@@ -44,12 +44,14 @@ function editProvinces() {
       cl = el.classList,
       line = el.parentNode,
       p = +line.dataset.id;
+    const stateId = pack.provinces[p].state;
 
     if (el.tagName === "FILL-BOX") changeFill(el);
     else if (cl.contains("name")) editProvinceName(p);
     else if (cl.contains("coaIcon")) editEmblem("province", "provinceCOA" + p, pack.provinces[p]);
     else if (cl.contains("icon-star-empty")) capitalZoomIn(p);
     else if (cl.contains("icon-flag-empty")) triggerIndependencePromps(p);
+    else if (cl.contains("icon-dot-circled")) overviewBurgs({stateId});
     else if (cl.contains("culturePopulation")) changePopulation(p);
     else if (cl.contains("icon-pin")) toggleFog(p, cl);
     else if (cl.contains("icon-trash-empty")) removeProvince(p);
@@ -71,9 +73,8 @@ function editProvinces() {
   }
 
   function collectStatistics() {
-    const cells = pack.cells,
-      provinces = pack.provinces,
-      burgs = pack.burgs;
+    const {cells, provinces, burgs} = pack;
+
     provinces.forEach(p => {
       if (!p.i || p.removed) return;
       p.area = p.rural = p.urban = 0;
@@ -107,16 +108,18 @@ function editProvinces() {
     statesSorted.forEach(s => stateFilter.options.add(new Option(s.name, s.i, false, s.i == selectedState)));
   }
 
-  // add line for each state
+  // add line for each province
   function provincesEditorAddLines() {
     const unit = " " + getAreaUnit();
     const selectedState = +document.getElementById("provincesFilterState").value;
     let filtered = pack.provinces.filter(p => p.i && !p.removed); // all valid burgs
     if (selectedState != -1) filtered = filtered.filter(p => p.state === selectedState); // filtered by state
     body.innerHTML = "";
-    let lines = "",
-      totalArea = 0,
-      totalPopulation = 0;
+
+    let lines = "";
+    let totalArea = 0;
+    let totalPopulation = 0;
+    let totalBurgs = 0;
 
     for (const p of filtered) {
       const area = getArea(p.area);
@@ -128,6 +131,7 @@ function editProvinces() {
         rural
       )}; Urban population: ${si(urban)}`;
       totalPopulation += population;
+      totalBurgs += p.burgs.length;
 
       const stateName = pack.states[p.state].name;
       const capital = p.burg ? pack.burgs[p.burg].name : "";
@@ -144,6 +148,7 @@ function editProvinces() {
         data-state="${stateName}"
         data-area=${area}
         data-population=${population}
+        data-burgs=${p.burgs.length}
       >
         <fill-box fill="${p.color}"></fill-box>
         <input data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly />
@@ -163,6 +168,8 @@ function editProvinces() {
           ${p.burgs.length ? getCapitalOptions(p.burgs, p.burg) : ""}
         </select>
         <input data-tip="Province owner" class="provinceOwner" value="${stateName}" disabled">
+        <span data-tip="Click to overview province burgs" style="padding-right: 1px" class="icon-dot-circled pointer hide"></span>
+        <div data-tip="Burgs count" class="provinceBurgs hide">${p.burgs.length}</div>
         <span data-tip="Province area" style="padding-right: 4px" class="icon-map-o hide"></span>
         <div data-tip="Province area" class="biomeArea hide">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
@@ -179,11 +186,12 @@ function editProvinces() {
     body.innerHTML = lines;
 
     // update footer
-    provincesFooterNumber.innerHTML = filtered.length;
-    provincesFooterArea.innerHTML = filtered.length ? si(totalArea / filtered.length) + unit : 0 + unit;
-    provincesFooterPopulation.innerHTML = filtered.length ? si(totalPopulation / filtered.length) : 0;
-    provincesFooterArea.dataset.area = totalArea;
-    provincesFooterPopulation.dataset.population = totalPopulation;
+    byId("provincesFooterNumber").innerHTML = filtered.length;
+    byId("provincesFooterBurgs").innerHTML = totalBurgs;
+    byId("provincesFooterArea").innerHTML = filtered.length ? si(totalArea / filtered.length) + unit : 0 + unit;
+    byId("provincesFooterPopulation").innerHTML = filtered.length ? si(totalPopulation / filtered.length) : 0;
+    byId("provincesFooterArea").dataset.area = totalArea;
+    byId("provincesFooterPopulation").dataset.population = totalPopulation;
 
     body.querySelectorAll("div.states").forEach(el => {
       el.addEventListener("click", selectProvinceOnLineClick);
@@ -294,7 +302,7 @@ function editProvinces() {
     // move all burgs to a new state
     province.burgs.forEach(b => (burgs[b].state = newStateId));
 
-    // difine new state attributes
+    // define new state attributes
     const {cell: center, culture} = burgs[burgId];
     const color = getRandomColor();
     const coa = province.coa;
@@ -501,6 +509,9 @@ function editProvinces() {
     applyOption(provinceNameEditorSelectForm, p.formName);
     document.getElementById("provinceNameEditorFull").value = p.fullName;
 
+    const cultureId = pack.cells.culture[p.center];
+    document.getElementById("provinceCultureDisplay").innerText = pack.cultures[cultureId].name;
+
     $("#provinceNameEditor").dialog({
       resizable: false,
       title: "Change province name",
@@ -520,12 +531,12 @@ function editProvinces() {
     modules.editProvinceName = true;
 
     // add listeners
-    document.getElementById("provinceNameEditorShortCulture").addEventListener("click", regenerateShortNameCuture);
+    document.getElementById("provinceNameEditorShortCulture").addEventListener("click", regenerateShortNameCulture);
     document.getElementById("provinceNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
     document.getElementById("provinceNameEditorAddForm").addEventListener("click", addCustomForm);
     document.getElementById("provinceNameEditorFullRegenerate").addEventListener("click", regenerateFullName);
 
-    function regenerateShortNameCuture() {
+    function regenerateShortNameCulture() {
       const province = +provinceNameEditor.dataset.province;
       const culture = pack.cells.culture[pack.provinces[province].center];
       const name = Names.getState(Names.getCultureShort(culture), culture);
@@ -576,12 +587,15 @@ function editProvinces() {
   function togglePercentageMode() {
     if (body.dataset.type === "absolute") {
       body.dataset.type = "percentage";
+      const totalBurgs = +byId("provincesFooterBurgs").innerText;
       const totalArea = +provincesFooterArea.dataset.area;
       const totalPopulation = +provincesFooterPopulation.dataset.population;
 
       body.querySelectorAll(":scope > div").forEach(function (el) {
-        el.querySelector(".biomeArea").innerHTML = rn((+el.dataset.area / totalArea) * 100) + "%";
-        el.querySelector(".culturePopulation").innerHTML = rn((+el.dataset.population / totalPopulation) * 100) + "%";
+        const {cells, burgs, area, population} = el.dataset;
+        el.querySelector(".provinceBurgs").innerText = rn((+burgs / totalBurgs) * 100) + "%";
+        el.querySelector(".biomeArea").innerHTML = rn((+area / totalArea) * 100) + "%";
+        el.querySelector(".culturePopulation").innerHTML = rn((+population / totalPopulation) * 100) + "%";
       });
     } else {
       body.dataset.type = "absolute";
@@ -872,7 +886,7 @@ function editProvinces() {
       const p = d3.mouse(this);
       moveCircle(p[0], p[1], r);
 
-      const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1], r)];
+      const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1])];
       const selection = found.filter(isLand);
       if (selection) changeForSelection(selection);
     });
@@ -1064,10 +1078,7 @@ function editProvinces() {
 
   function downloadProvincesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data =
-      "Id,Province,Full Name,Form,State,Color,Capital,Area " +
-      unit +
-      ",Total Population,Rural Population,Urban Population\n"; // headers
+    let data = `Id,Province,Full Name,Form,State,Color,Capital,Area ${unit},Total Population,Rural Population,Urban Population,Burgs\n`; // headers
 
     body.querySelectorAll(":scope > div").forEach(function (el) {
       const key = parseInt(el.dataset.id);
@@ -1081,8 +1092,9 @@ function editProvinces() {
       data += el.dataset.capital + ",";
       data += el.dataset.area + ",";
       data += el.dataset.population + ",";
-      data += `${Math.round(provincePack.rural * populationRate)},`;
-      data += `${Math.round(provincePack.urban * populationRate * urbanization)}\n`;
+      data += Math.round(provincePack.rural * populationRate) + ",";
+      data += Math.round(provincePack.urban * populationRate * urbanization) + ",";
+      data += el.dataset.burgs + "\n";
     });
 
     const name = getFileName("Provinces") + ".csv";

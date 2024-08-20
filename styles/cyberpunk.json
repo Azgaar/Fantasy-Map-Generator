@@ -72,8 +72,8 @@
     "mask": "",
     "shape-rendering": "optimizespeed"
   },
-  "#rose": {
-    "transform": null
+  "#compass > use": {
+    "transform": "translate(80 80) scale(.25)"
   },
   "#relig": {
     "opacity": 0.5,
@@ -286,14 +286,25 @@
     "href": "",
     "opacity": 0.15
   },
-  "#terrs": {
+  "#terrs > #oceanHeights": {
+    "data-render": 1,
     "opacity": 1,
-    "scheme": "monochrome",
+    "scheme": "olive",
+    "terracing": 0,
+    "skip": 0,
+    "relax": 1,
+    "curve": "curveBasisClosed",
+    "filter": null,
+    "mask": null
+  },
+  "#terrs > #landHeights": {
+    "opacity": 0.8,
+    "scheme": "livid",
     "terracing": 6,
     "skip": 0,
     "relax": 2,
-    "curve": 0,
-    "filter": "",
+    "curve": "curveBasisClosed",
+    "filter": null,
     "mask": "url(#land)"
   },
   "#legend": {
@@ -398,5 +409,25 @@
     "rx": "5%",
     "ry": "5%",
     "filter": "blur(20px)"
+  },
+  "#scaleBar": {
+    "opacity": 1,
+    "fill": "#d0d0dc",
+    "font-size": 11,
+    "data-bar-size": 2,
+    "data-x": 99,
+    "data-y": 99,
+    "data-label": ""
+  },
+  "#scaleBarBack": {
+    "opacity": 0.3,
+    "fill": "#05001f",
+    "stroke": "#000000",
+    "stroke-width": 1,
+    "filter": "",
+    "data-top": 23,
+    "data-right": 18,
+    "data-bottom": 18,
+    "data-left": 12
   }
 }

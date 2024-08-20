@@ -73,8 +73,8 @@
     "mask": "url(#water)",
     "shape-rendering": "optimizespeed"
   },
-  "#rose": {
-    "transform": null
+  "#compass > use": {
+    "transform": "translate(80 80) scale(.25)"
   },
   "#relig": {
     "opacity": 0.7,
@@ -281,14 +281,25 @@
     "href": "",
     "opacity": 0.2
   },
-  "#terrs": {
+  "#terrs #oceanHeights": {
+    "data-render": 1,
     "opacity": 1,
     "scheme": "monochrome",
     "terracing": 0,
-    "skip": 5,
-    "relax": 0,
-    "curve": 0,
-    "filter": "url(#blur3)",
+    "skip": 0,
+    "relax": 1,
+    "curve": "curveBasisClosed",
+    "filter": "url(#turbulence)",
+    "mask": null
+  },
+  "#terrs #landHeights": {
+    "opacity": 1,
+    "scheme": "monochrome",
+    "terracing": 0,
+    "skip": 0,
+    "relax": 1,
+    "curve": "curveBasisClosed",
+    "filter": "url(#turbulence)",
     "mask": "url(#land)"
   },
   "#legend": {
@@ -394,5 +405,25 @@
     "rx": "5%",
     "ry": "5%",
     "filter": "blur(20px)"
+  },
+  "#scaleBar": {
+    "opacity": 1,
+    "fill": "#ffffff",
+    "font-size": 8,
+    "data-bar-size": 1.5,
+    "data-x": 99,
+    "data-y": 99,
+    "data-label": ""
+  },
+  "#scaleBarBack": {
+    "opacity": 0,
+    "fill": "#ffffff",
+    "stroke": "#000000",
+    "stroke-width": 1,
+    "filter": "",
+    "data-top": 18,
+    "data-right": 15,
+    "data-bottom": 15,
+    "data-left": 10
   }
 }

@@ -10,7 +10,18 @@ window.Military = (function () {
 
     const expn = d3.sum(valid.map(s => s.expansionism)); // total expansion
     const area = d3.sum(valid.map(s => s.area)); // total area
-    const rate = {x: 0, Ally: -0.2, Friendly: -0.1, Neutral: 0, Suspicion: 0.1, Enemy: 1, Unknown: 0, Rival: 0.5, Vassal: 0.5, Suzerain: -0.5};
+    const rate = {
+      x: 0,
+      Ally: -0.2,
+      Friendly: -0.1,
+      Neutral: 0,
+      Suspicion: 0.1,
+      Enemy: 1,
+      Unknown: 0,
+      Rival: 0.5,
+      Vassal: 0.5,
+      Suzerain: -0.5
+    };
 
     const stateModifier = {
       melee: {Nomadic: 0.5, Highland: 1.2, Lake: 1, Naval: 0.7, Hunting: 1.2, River: 1.1},
@@ -24,14 +35,59 @@ window.Military = (function () {
     };
 
     const cellTypeModifier = {
-      nomadic: {melee: 0.2, ranged: 0.5, mounted: 3, machinery: 0.4, naval: 0.3, armored: 1.6, aviation: 1, magical: 0.5},
-      wetland: {melee: 0.8, ranged: 2, mounted: 0.3, machinery: 1.2, naval: 1.0, armored: 0.2, aviation: 0.5, magical: 0.5},
-      highland: {melee: 1.2, ranged: 1.6, mounted: 0.3, machinery: 3, naval: 1.0, armored: 0.8, aviation: 0.3, magical: 2}
+      nomadic: {
+        melee: 0.2,
+        ranged: 0.5,
+        mounted: 3,
+        machinery: 0.4,
+        naval: 0.3,
+        armored: 1.6,
+        aviation: 1,
+        magical: 0.5
+      },
+      wetland: {
+        melee: 0.8,
+        ranged: 2,
+        mounted: 0.3,
+        machinery: 1.2,
+        naval: 1.0,
+        armored: 0.2,
+        aviation: 0.5,
+        magical: 0.5
+      },
+      highland: {
+        melee: 1.2,
+        ranged: 1.6,
+        mounted: 0.3,
+        machinery: 3,
+        naval: 1.0,
+        armored: 0.8,
+        aviation: 0.3,
+        magical: 2
+      }
     };
 
     const burgTypeModifier = {
-      nomadic: {melee: 0.3, ranged: 0.8, mounted: 3, machinery: 0.4, naval: 1.0, armored: 1.6, aviation: 1, magical: 0.5},
-      wetland: {melee: 1, ranged: 1.6, mounted: 0.2, machinery: 1.2, naval: 1.0, armored: 0.2, aviation: 0.5, magical: 0.5},
+      nomadic: {
+        melee: 0.3,
+        ranged: 0.8,
+        mounted: 3,
+        machinery: 0.4,
+        naval: 1.0,
+        armored: 1.6,
+        aviation: 1,
+        magical: 0.5
+      },
+      wetland: {
+        melee: 1,
+        ranged: 1.6,
+        mounted: 0.2,
+        machinery: 1.2,
+        naval: 1.0,
+        armored: 0.2,
+        aviation: 0.5,
+        magical: 0.5
+      },
       highland: {melee: 1.2, ranged: 2, mounted: 0.3, machinery: 3, naval: 1.0, armored: 0.8, aviation: 0.3, magical: 2}
     };
 
@@ -40,8 +96,16 @@ window.Military = (function () {
       const d = s.diplomacy;
 
       const expansionRate = minmax(s.expansionism / expn / (s.area / area), 0.25, 4); // how much state expansionism is realized
-      const diplomacyRate = d.some(d => d === "Enemy") ? 1 : d.some(d => d === "Rival") ? 0.8 : d.some(d => d === "Suspicion") ? 0.5 : 0.1; // peacefulness
-      const neighborsRateRaw = s.neighbors.map(n => (n ? pack.states[n].diplomacy[s.i] : "Suspicion")).reduce((s, r) => (s += rate[r]), 0.5);
+      const diplomacyRate = d.some(d => d === "Enemy")
+        ? 1
+        : d.some(d => d === "Rival")
+        ? 0.8
+        : d.some(d => d === "Suspicion")
+        ? 0.5
+        : 0.1; // peacefulness
+      const neighborsRateRaw = s.neighbors
+        .map(n => (n ? pack.states[n].diplomacy[s.i] : "Suspicion"))
+        .reduce((s, r) => (s += rate[r]), 0.5);
       const neighborsRate = minmax(neighborsRateRaw, 0.3, 3); // neighbors rate
       s.alert = minmax(rn(expansionRate * diplomacyRate * neighborsRate, 2), 0.1, 5); // alert rate (area modifier)
       s.temp.platoons = [];
@@ -86,8 +150,10 @@ window.Military = (function () {
 
       let modifier = cells.pop[i] / 100; // basic rural army in percentages
       if (culture !== stateObj.culture) modifier = stateObj.form === "Union" ? modifier / 1.2 : modifier / 2; // non-dominant culture
-      if (religion !== cells.religion[stateObj.center]) modifier = stateObj.form === "Theocracy" ? modifier / 2.2 : modifier / 1.4; // non-dominant religion
-      if (cells.f[i] !== cells.f[stateObj.center]) modifier = stateObj.type === "Naval" ? modifier / 1.2 : modifier / 1.8; // different landmass
+      if (religion !== cells.religion[stateObj.center])
+        modifier = stateObj.form === "Theocracy" ? modifier / 2.2 : modifier / 1.4; // non-dominant religion
+      if (cells.f[i] !== cells.f[stateObj.center])
+        modifier = stateObj.type === "Naval" ? modifier / 1.2 : modifier / 1.8; // different landmass
       const type = getType(i);
 
       for (const unit of options.military) {
@@ -111,7 +177,17 @@ window.Military = (function () {
           n = 1;
         }
 
-        stateObj.temp.platoons.push({cell: i, a: total, t: total, x, y, u: unit.name, n, s: unit.separate, type: unit.type});
+        stateObj.temp.platoons.push({
+          cell: i,
+          a: total,
+          t: total,
+          x,
+          y,
+          u: unit.name,
+          n,
+          s: unit.separate,
+          type: unit.type
+        });
       }
     }
 
@@ -153,7 +229,17 @@ window.Military = (function () {
           n = 1;
         }
 
-        stateObj.temp.platoons.push({cell: b.cell, a: total, t: total, x, y, u: unit.name, n, s: unit.separate, type: unit.type});
+        stateObj.temp.platoons.push({
+          cell: b.cell,
+          a: total,
+          t: total,
+          x,
+          y,
+          u: unit.name,
+          n,
+          s: unit.separate,
+          type: unit.type
+        });
       }
     }
 
@@ -261,7 +347,8 @@ window.Military = (function () {
     const army = armies
       .append("g")
       .attr("id", "army" + s)
-      .attr("fill", baseColor);
+      .attr("fill", baseColor)
+      .attr("color", darkerColor);
 
     const g = army
       .selectAll("g")
@@ -271,7 +358,9 @@ window.Military = (function () {
       .attr("id", d => "regiment" + s + "-" + d.i)
       .attr("data-name", d => d.name)
       .attr("data-state", s)
-      .attr("data-id", d => d.i);
+      .attr("data-id", d => d.i)
+      .attr("transform", d => (d.angle ? `rotate(${d.angle})` : null))
+      .attr("transform-origin", d => `${d.x}px ${d.y}px`);
     g.append("rect")
       .attr("x", d => x(d))
       .attr("y", d => y(d))
@@ -282,7 +371,7 @@ window.Military = (function () {
       .attr("y", d => d.y)
       .text(d => getTotal(d));
     g.append("rect")
-      .attr("fill", darkerColor)
+      .attr("fill", "currentColor")
       .attr("x", d => x(d) - h)
       .attr("y", d => y(d))
       .attr("width", h)
@@ -294,33 +383,36 @@ window.Military = (function () {
       .text(d => d.icon);
   };
 
-  const drawRegiment = function (reg, s) {
+  const drawRegiment = function (reg, stateId) {
     const size = +armies.attr("box-size");
     const w = reg.n ? size * 4 : size * 6;
     const h = size * 2;
     const x1 = rn(reg.x - w / 2, 2);
     const y1 = rn(reg.y - size, 2);
 
-    let army = armies.select("g#army" + s);
+    let army = armies.select("g#army" + stateId);
     if (!army.size()) {
-      const baseColor = pack.states[s].color[0] === "#" ? pack.states[s].color : "#999";
+      const baseColor = pack.states[stateId].color[0] === "#" ? pack.states[stateId].color : "#999";
+      const darkerColor = d3.color(baseColor).darker().hex();
       army = armies
         .append("g")
-        .attr("id", "army" + s)
-        .attr("fill", baseColor);
+        .attr("id", "army" + stateId)
+        .attr("fill", baseColor)
+        .attr("color", darkerColor);
     }
-    const darkerColor = d3.color(army.attr("fill")).darker().hex();
 
     const g = army
       .append("g")
-      .attr("id", "regiment" + s + "-" + reg.i)
+      .attr("id", "regiment" + stateId + "-" + reg.i)
       .attr("data-name", reg.name)
-      .attr("data-state", s)
-      .attr("data-id", reg.i);
+      .attr("data-state", stateId)
+      .attr("data-id", reg.i)
+      .attr("transform", `rotate(${reg.angle || 0})`)
+      .attr("transform-origin", `${reg.x}px ${reg.y}px`);
     g.append("rect").attr("x", x1).attr("y", y1).attr("width", w).attr("height", h);
     g.append("text").attr("x", reg.x).attr("y", reg.y).text(getTotal(reg));
     g.append("rect")
-      .attr("fill", darkerColor)
+      .attr("fill", "currentColor")
       .attr("x", x1 - h)
       .attr("y", y1)
       .attr("width", h)
@@ -379,7 +471,13 @@ window.Military = (function () {
   // get default regiment emblem
   const getEmblem = function (r) {
     if (!r.n && !Object.values(r.u).length) return "🔰"; // "Newbie" regiment without troops
-    if (!r.n && pack.states[r.state].form === "Monarchy" && pack.cells.burg[r.cell] && pack.burgs[pack.cells.burg[r.cell]].capital) return "👑"; // "Royal" regiment based in capital
+    if (
+      !r.n &&
+      pack.states[r.state].form === "Monarchy" &&
+      pack.cells.burg[r.cell] &&
+      pack.burgs[pack.cells.burg[r.cell]].capital
+    )
+      return "👑"; // "Royal" regiment based in capital
     const mainUnit = Object.entries(r.u).sort((a, b) => b[1] - a[1])[0][0]; // unit with more troops in regiment
     const unit = options.military.find(u => u.name === mainUnit);
     return unit.icon;
@@ -400,7 +498,9 @@ window.Military = (function () {
           .map(t => `— ${t}: ${r.u[t]}`)
           .join("\r\n")
       : null;
-    const troops = composition ? `\r\n\r\nRegiment composition in ${options.year} ${options.eraShort}:\r\n${composition}.` : "";
+    const troops = composition
+      ? `\r\n\r\nRegiment composition in ${options.year} ${options.eraShort}:\r\n${composition}.`
+      : "";
 
     const campaign = s.campaigns ? ra(s.campaigns) : null;
     const year = campaign ? rand(campaign.start, campaign.end) : gauss(options.year - 100, 150, 1, options.year - 6);
@@ -409,5 +509,16 @@ window.Military = (function () {
     notes.push({id: `regiment${s.i}-${r.i}`, name: `${r.icon} ${r.name}`, legend});
   };
 
-  return {generate, redraw, getDefaultOptions, getName, generateNote, drawRegiments, drawRegiment, moveRegiment, getTotal, getEmblem};
+  return {
+    generate,
+    redraw,
+    getDefaultOptions,
+    getName,
+    generateNote,
+    drawRegiments,
+    drawRegiment,
+    moveRegiment,
+    getTotal,
+    getEmblem
+  };
 })();

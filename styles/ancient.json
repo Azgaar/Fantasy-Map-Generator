@@ -72,8 +72,8 @@
     "mask": "url(#water)",
     "shape-rendering": "optimizespeed"
   },
-  "#rose": {
-    "transform": "translate(80 80) scale(.25)"
+  "#compass > use": {
+    "transform": "translate(80 80) scale(0.25)"
   },
   "#relig": {
     "opacity": 0.7,
@@ -286,14 +286,25 @@
     "href": "./images/kiwiroo.png",
     "opacity": 0.4
   },
-  "#terrs": {
-    "opacity": null,
-    "scheme": "bright",
+  "#terrs > #oceanHeights": {
+    "data-render": 0,
+    "opacity": 1,
+    "scheme": "light",
+    "terracing": 0,
+    "skip": 0,
+    "relax": 1,
+    "curve": "curveBasisClosed",
+    "filter": "url(#filter-sepia)",
+    "mask": null
+  },
+  "#terrs > #landHeights": {
+    "opacity": 1,
+    "scheme": "light",
     "terracing": 0,
     "skip": 2,
     "relax": 1,
-    "curve": 0,
-    "filter": "url(#blur3)",
+    "curve": "curveBasisClosed",
+    "filter": "url(#filter-sepia)",
     "mask": "url(#land)"
   },
   "#legend": {
@@ -398,5 +409,25 @@
     "rx": "0%",
     "ry": "0%",
     "filter": "blur(50px)"
+  },
+  "#scaleBar": {
+    "opacity": 1,
+    "fill": "#353540",
+    "font-size": 10,
+    "data-bar-size": 2,
+    "data-x": 99,
+    "data-y": 99,
+    "data-label": ""
+  },
+  "#scaleBarBack": {
+    "opacity": 0,
+    "fill": "#ffffff",
+    "stroke": "#000000",
+    "stroke-width": 1,
+    "filter": "url(#blur5)",
+    "data-top": 20,
+    "data-right": 15,
+    "data-bottom": 15,
+    "data-left": 10
   }
 }

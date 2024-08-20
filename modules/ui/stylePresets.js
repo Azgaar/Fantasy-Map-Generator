@@ -10,6 +10,7 @@ const systemPresets = [
   "watercolor",
   "clean",
   "atlas",
+  "darkSeas",
   "cyberpunk",
   "night",
   "monochrome"
@@ -63,7 +64,7 @@ async function getStylePreset(desiredPreset) {
 
 async function fetchSystemPreset(preset) {
   try {
-    const res = await fetch(`./styles/${preset}.json`);
+    const res = await fetch(`./styles/${preset}.json?v=${version}`);
     return await res.json();
   } catch (err) {
     throw new Error("Cannot fetch style preset", preset);
@@ -140,6 +141,9 @@ function applyStyleWithUiRefresh(style) {
 
   invokeActiveZooming();
   setPresetRemoveButtonVisibiliy();
+
+  drawScaleBar(scaleBar, scale);
+  fitScaleBar(scaleBar, svgWidth, svgHeight);
 }
 
 function addStylePreset() {
@@ -195,7 +199,7 @@ function addStylePreset() {
         "mask"
       ],
       "#compass": ["opacity", "transform", "filter", "mask", "shape-rendering"],
-      "#rose": ["transform"],
+      "#compass > use": ["transform"],
       "#relig": ["opacity", "stroke", "stroke-width", "filter"],
       "#cults": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
       "#landmass": ["opacity", "fill", "filter"],
@@ -239,7 +243,18 @@ function addStylePreset() {
       "#oceanLayers": ["filter", "layers"],
       "#oceanBase": ["fill"],
       "#oceanicPattern": ["href", "opacity"],
-      "#terrs": ["opacity", "scheme", "terracing", "skip", "relax", "curve", "filter", "mask"],
+      "#terrs #oceanHeights": [
+        "data-render",
+        "opacity",
+        "scheme",
+        "terracing",
+        "skip",
+        "relax",
+        "curve",
+        "filter",
+        "mask"
+      ],
+      "#terrs #landHeights": ["opacity", "scheme", "terracing", "skip", "relax", "curve", "filter", "mask"],
       "#legend": [
         "data-size",
         "font-size",
@@ -301,7 +316,19 @@ function addStylePreset() {
       ],
       "#fogging": ["opacity", "fill", "filter"],
       "#vignette": ["opacity", "fill", "filter"],
-      "#vignette-rect": ["x", "y", "width", "height", "rx", "ry", "filter"]
+      "#vignette-rect": ["x", "y", "width", "height", "rx", "ry", "filter"],
+      "#scaleBar": ["opacity", "fill", "font-size", "data-bar-size", "data-x", "data-y", "data-label"],
+      "#scaleBarBack": [
+        "opacity",
+        "fill",
+        "stroke",
+        "stroke-width",
+        "filter",
+        "data-top",
+        "data-right",
+        "data-bottom",
+        "data-left"
+      ]
     };
 
     for (const selector in attributes) {

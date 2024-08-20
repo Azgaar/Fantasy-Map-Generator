@@ -64,7 +64,7 @@ function editNotes(id, name) {
 
   async function initEditor() {
     if (!window.tinymce) {
-      const url = "https://cdn.tiny.cloud/1/4i6a79ymt2y0cagke174jp3meoi28vyecrch12e5puyw3p9a/tinymce/5/tinymce.min.js";
+      const url = "https://azgaar.github.io/Fantasy-Map-Generator/libs/tinymce/tinymce.min.js";
       try {
         await import(url);
       } catch (error) {
@@ -79,11 +79,13 @@ function editNotes(id, name) {
     }
 
     if (window.tinymce) {
+      window.tinymce._setBaseUrl("https://azgaar.github.io/Fantasy-Map-Generator/libs/tinymce");
       tinymce.init({
+        license_key: "gpl",
         selector: "#notesLegend",
         height: "90%",
         menubar: false,
-        plugins: `autolink lists link charmap print code fullscreen image link media table paste hr wordcount`,
+        plugins: `autolink lists link charmap code fullscreen image link media table wordcount`,
         toolbar: `code | undo redo | removeformat | bold italic strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | fontselect fontsizeselect | blockquote hr charmap | print fullscreen`,
         media_alt_source: false,
         media_poster: false,

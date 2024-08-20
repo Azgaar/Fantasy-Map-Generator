@@ -243,10 +243,12 @@ export function resolveVersionConflicts(version) {
     rivers.selectAll("path").each(function () {
       const i = +this.id.slice(5);
       const length = this.getTotalLength() / 2;
-      const s = this.getPointAtLength(length),
-        e = this.getPointAtLength(0);
-      const source = findCell(s.x, s.y),
-        mouth = findCell(e.x, e.y);
+      if (!length) return;
+
+      const s = this.getPointAtLength(length);
+      const e = this.getPointAtLength(0);
+      const source = findCell(s.x, s.y);
+      const mouth = findCell(e.x, e.y);
       const name = Rivers.getName(mouth);
       const type = length < 25 ? rw({Creek: 9, River: 3, Brook: 3, Stream: 1}) : "River";
       pack.rivers.push({i, parent: 0, length, source, mouth, basin: i, name, type});
@@ -735,5 +737,190 @@ export function resolveVersionConflicts(version) {
       .attr("fill", "#000000")
       .style("display", "none");
     vignette.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
+  }
+
+  if (version < 1.96) {
+    // v1.96 added ocean rendering for heightmap
+    terrs.selectAll("*").remove();
+
+    const opacity = terrs.attr("opacity");
+    const filter = terrs.attr("filter");
+    const scheme = terrs.attr("scheme") || "bright";
+    const terracing = terrs.attr("terracing");
+    const skip = terrs.attr("skip");
+    const relax = terrs.attr("relax");
+
+    const curveTypes = {0: "curveBasisClosed", 1: "curveLinear", 2: "curveStep"};
+    const curve = curveTypes[terrs.attr("curve")] || "curveBasisClosed";
+
+    terrs
+      .attr("opacity", null)
+      .attr("filter", null)
+      .attr("mask", null)
+      .attr("scheme", null)
+      .attr("terracing", null)
+      .attr("skip", null)
+      .attr("relax", null)
+      .attr("curve", null);
+
+    terrs
+      .append("g")
+      .attr("id", "oceanHeights")
+      .attr("data-render", 0)
+      .attr("opacity", opacity)
+      .attr("filter", filter)
+      .attr("scheme", scheme)
+      .attr("terracing", 0)
+      .attr("skip", 0)
+      .attr("relax", 1)
+      .attr("curve", curve);
+
+    terrs
+      .append("g")
+      .attr("id", "landHeights")
+      .attr("opacity", opacity)
+      .attr("scheme", scheme)
+      .attr("filter", filter)
+      .attr("terracing", terracing)
+      .attr("skip", skip)
+      .attr("relax", relax)
+      .attr("curve", curve)
+      .attr("mask", "url(#land)");
+
+    if (layerIsOn("toggleHeight")) drawHeightmap();
+
+    // v1.96.00 moved scaleBar options from units editor to style
+    d3.select("#scaleBar").remove();
+
+    scaleBar = svg
+      .insert("g", "#viewbox + *")
+      .attr("id", "scaleBar")
+      .attr("opacity", 1)
+      .attr("fill", "#353540")
+      .attr("data-bar-size", 2)
+      .attr("font-size", 10)
+      .attr("data-x", 99)
+      .attr("data-y", 99)
+      .attr("data-label", "");
+
+    scaleBar
+      .append("rect")
+      .attr("id", "scaleBarBack")
+      .attr("opacity", 0.2)
+      .attr("fill", "#ffffff")
+      .attr("stroke", "#000000")
+      .attr("stroke-width", 1)
+      .attr("filter", "url(#blur5)")
+      .attr("data-top", 20)
+      .attr("data-right", 15)
+      .attr("data-bottom", 15)
+      .attr("data-left", 10);
+
+    drawScaleBar(scaleBar, scale);
+    fitScaleBar(scaleBar, svgWidth, svgHeight);
+
+    if (!layerIsOn("toggleScaleBar")) scaleBar.style("display", "none");
+
+    // v1.96.00 changed coloring approach for regiments
+    armies.selectAll(":scope > g").each(function () {
+      const fill = this.getAttribute("fill");
+      if (!fill) return;
+      const darkerColor = d3.color(fill).darker().hex();
+      this.setAttribute("color", darkerColor);
+      this.querySelectorAll("g > rect:nth-child(2)").forEach(rect => {
+        rect.setAttribute("fill", "currentColor");
+      });
+    });
+  }
+
+  if (version < 1.97) {
+    // v1.97.00 changed MFCG link to an arbitrary preview URL
+    options.villageMaxPopulation = 2000;
+    options.showBurgPreview = options.showMFCGMap;
+    delete options.showMFCGMap;
+
+    pack.burgs.forEach(burg => {
+      if (!burg.i || burg.removed) return;
+
+      if (burg.MFCG) {
+        burg.link = getBurgLink(burg);
+        delete burg.MFCG;
+      }
+    });
+  }
+
+  if (version < 1.98) {
+    // v1.98.00 changed compass layer and rose element id
+    const rose = compass.select("use");
+    rose.attr("xlink:href", "#defs-compass-rose");
+
+    if (!compass.selectAll("*").size()) {
+      compass.style("display", "none");
+      compass.append("use").attr("xlink:href", "#defs-compass-rose");
+      shiftCompass();
+    }
+  }
+
+  if (version < 1.99) {
+    // v1.99.00 changed routes generation algorithm and data format
+    routes.attr("display", null).attr("style", null);
+
+    delete cells.road;
+    delete cells.crossroad;
+
+    pack.routes = [];
+    const POINT_DISTANCE = grid.spacing * 0.75;
+
+    for (const g of document.querySelectorAll("#viewbox > #routes > g")) {
+      const group = g.id;
+      if (!group) continue;
+
+      for (const node of g.querySelectorAll("path")) {
+        const totalLength = node.getTotalLength();
+        if (!totalLength) {
+          ERROR && console.error("Route path has zero length", node);
+          continue;
+        }
+
+        const increment = totalLength / Math.ceil(totalLength / POINT_DISTANCE);
+        const points = [];
+
+        for (let i = 0; i <= totalLength + 0.1; i += increment) {
+          const point = node.getPointAtLength(i);
+          const x = rn(point.x, 2);
+          const y = rn(point.y, 2);
+          const cellId = findCell(x, y);
+          points.push([x, y, cellId]);
+        }
+
+        if (points.length < 2) {
+          ERROR && console.error("Route path has less than 2 points", node);
+          continue;
+        }
+
+        const secondCellId = points[1][2];
+        const feature = pack.cells.f[secondCellId];
+
+        pack.routes.push({i: pack.routes.length, group, feature, points});
+      }
+    }
+    routes.selectAll("path").remove();
+    if (layerIsOn("toggleRoutes")) drawRoutes();
+
+    const links = (pack.cells.routes = {});
+    for (const route of pack.routes) {
+      for (let i = 0; i < route.points.length - 1; i++) {
+        const cellId = route.points[i][2];
+        const nextCellId = route.points[i + 1][2];
+
+        if (cellId !== nextCellId) {
+          if (!links[cellId]) links[cellId] = {};
+          links[cellId][nextCellId] = route.i;
+
+          if (!links[nextCellId]) links[nextCellId] = {};
+          links[nextCellId][cellId] = route.i;
+        }
+      }
+    }
   }
 }

@@ -258,7 +258,6 @@ i.icon-lock {
   cursor: pointer;
 }
 
-#routeEditor > *,
 #labelEditor div {
   display: inline-block;
 }
@@ -435,6 +434,14 @@ button.options:hover {
   font-style: italic;
   font-weight: bold;
   margin: 0.8em 0 0 0;
+}
+
+#options .tip {
+  color: #444;
+  font-size: 0.9em;
+  font-family: sans-serif;
+  font-style: italic;
+  margin-left: 0.5em;
 }
 
 #aboutContent {
@@ -734,7 +741,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   background-color: var(--header-active);
 }
 
-#toolsContent div {
+#toolsContent > .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   margin: 0.2em 0;
@@ -758,7 +765,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 
 #viewMode > button {
   padding: 0.35em;
-  margin: 0.2em 0.3em 0.6em 0.3em;
+  margin: 0.3em 0.3em 0.6em 0.3em;
   float: left;
   width: 30.7%;
 }
@@ -1610,6 +1617,7 @@ div.states > .riverType {
 
 #burgBody > div > div,
 #riverBody > div,
+#routeBody > div,
 #lakeBody > div {
   padding: 0.1em;
 }
@@ -1617,11 +1625,18 @@ div.states > .riverType {
 #riverBody div.label,
 #riverBody input,
 #riverBody select,
+#routeBody div.label,
 #lakeBody div.label,
 #lakeBody input,
 #lakeBody select {
   display: inline-block;
   width: 7em;
+}
+
+#routeBody input,
+#routeBody select {
+  display: inline-block;
+  width: 10em;
 }
 
 #stateNameEditor div.label,
@@ -1876,12 +1891,6 @@ div.editorLine {
   margin: 0.4em 0 0 -0.9em;
 }
 
-#barBackColor {
-  width: 3.5em;
-  padding: 0px;
-  height: 1.2em;
-}
-
 #ruler {
   cursor: move;
   fill: none;
@@ -1919,18 +1928,6 @@ div.editorLine {
   fill-rule: evenodd;
   fill-opacity: 0.5;
   stroke: #737373;
-}
-
-#scaleBar {
-  stroke: none;
-  fill: none;
-  cursor: pointer;
-}
-
-#scaleBar text {
-  fill: #353540;
-  text-anchor: middle;
-  font-family: var(--serif);
 }
 
 #militaryOptionsTable select {
@@ -2199,7 +2196,7 @@ svg.button {
 #worldControls input[type="number"] {
   border: 1px solid #e5e5e5;
   padding: 0px;
-  width: 3.2em;
+  width: 4em;
 }
 
 #worldControls i.icon-lock-open,
@@ -2258,10 +2255,6 @@ svg.button {
   fill: blue;
 }
 
-#globeOutline {
-  fill: url(#temperatureGradient);
-}
-
 #globeArea {
   fill: white;
   fill-opacity: 0.3;
@@ -2270,6 +2263,11 @@ svg.button {
 #globeGraticule {
   fill: none;
   stroke-width: 0.2;
+}
+
+#globePrimeMeridian {
+  stroke: blue;
+  stroke-width: 1.4;
 }
 
 #globeEquator {
@@ -2391,6 +2389,29 @@ svg.button {
 
 #markerTypeSelectMenu > button:hover {
   background: #ccc;
+}
+
+.separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+
+  font-style: italic;
+  font-weight: bold;
+  color: #222;
+  margin: 0.8em 0 0 0;
+}
+.separator::before,
+.separator::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #333;
+}
+.separator:not(:empty)::before {
+  margin-right: 0.25em;
+}
+.separator:not(:empty)::after {
+  margin-left: 0.25em;
 }
 
 @media print {
