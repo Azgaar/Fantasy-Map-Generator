@@ -38,21 +38,26 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   byId("burgsLockAll").addEventListener("click", toggleLockAll);
   byId("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
 
+//const indeterminates = document.querySelector("#burgMassAssignmentBody").querySelectorAll("input[type=checkbox]");
+//indeterminates.forEach(i => i.indeterminate = true);
+
   function refreshBurgsEditor() {
     updateFilter();
     burgsOverviewAddLines();
   }
 
-  function updateFilter() {
-    const stateFilter = byId("burgsFilterState");
+  function updateStateFilter(id) {
+    const stateFilter = byId(id);
     const selectedState = settings.stateId !== null ? settings.stateId : stateFilter.value || -1;
     stateFilter.options.length = 0; // remove all options
     stateFilter.options.add(new Option("all", -1, false, selectedState === -1));
     stateFilter.options.add(new Option(pack.states[0].name, 0, false, selectedState === 0));
     const statesSorted = pack.states.filter(s => s.i && !s.removed).sort((a, b) => (a.name > b.name ? 1 : -1));
     statesSorted.forEach(s => stateFilter.options.add(new Option(s.name, s.i, false, s.i == selectedState)));
+  }
 
-    const cultureFilter = byId("burgsFilterCulture");
+  function updateCultureFilter(id) {
+    const cultureFilter = byId(id);
     const selectedCulture = settings.cultureId !== null ? settings.cultureId : cultureFilter.value || -1;
     cultureFilter.options.length = 0; // remove all options
     cultureFilter.options.add(new Option(`all`, -1, false, selectedCulture === -1));
@@ -60,6 +65,14 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     const culturesSorted = pack.cultures.filter(c => c.i && !c.removed).sort((a, b) => (a.name > b.name ? 1 : -1));
     culturesSorted.forEach(c => cultureFilter.options.add(new Option(c.name, c.i, false, c.i == selectedCulture)));
   }
+
+  function updateFilter() {
+    updateStateFilter("burgsFilterState");
+    updateStateFilter("burgsAssignmentSelectedState");
+
+    updateCultureFilter("burgsFilterCulture");
+    updateCultureFilter("burgsAssignmentSelectedCulture");
+ }
 
   // add line for each burg
   function burgsOverviewAddLines() {
@@ -587,31 +600,74 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     });
   }
 
+  function updateBurgsGroupFilter(id, alreadySelectedGroup) {
+    const select = document.getElementById(id);
+    select.options.length = 0; // remove all options
+
+    burgLabels.selectAll("g").each(function () {
+      select.options.add(new Option(this.id, this.id, false, this.id === alreadySelectedGroup));
+    });
+  }
+
   function burgGroupAssignInBulk() {
-  // Define the constants separately
-  let minpop = 1000 / populationRate;
-  let maxpop = null / populationRate;
+    updateBurgsGroupFilter("burgsAssignmentAddToGroup", burgsAssignmentAddToGroup.value);
 
-  // Define the function to filter and move burgs
-  const filterAndMoveBurgs = (burgs) => {
+    $("#burgMassAssignment").dialog({
+      title: "Mass Burg Assignment",
+      resizable: false,
+      width: fitContent(),
+      //position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"},
+      position: {my: "center", at: "center", of: "svg"},
+      buttons: {
+        Proceed: function () {
+         $(this).dialog("close");
+          filterAndAssignBurgs();
+        },
+        Cancel: function () {
+         $(this).dialog("close");
+        }
+     }
+    });
+  }
+
+  // Define the function to filter and assign burgs to burg groups
+  function filterAndAssignBurgs() {
+    // Define the constants separately
+    let minpop = +burgsAssignmentMinimumPopulation.value / populationRate;
+    let maxpop = +burgsAssignmentMaximumPopulation.value / populationRate;
+    let checkPorts = burgsAssignmentIncludePorts.checked;
+    let checkCitadels = burgsAssignmentIncludeCitadels.checked;
+    let checkWalls = burgsAssignmentIncludeWalls.checked;
+      let checkPlazas = burgsAssignmentIncludePlazas.checked;
+    let checkTemples = burgsAssignmentIncludeTemples.checked;
+    let checkShantyTowns = burgsAssignmentIncludeShantyTowns.checked;
+    let checkPopMin = burgsAssignmentCheckPopMin.checked;
+    let checkPopMax = burgsAssignmentCheckPopMax.checked;
+    let selectedState = burgsAssignmentSelectedState.value;
+    let selectedCulture = burgsAssignmentSelectedCulture.value;
+
+    const burgs = pack.burgs;
+
   // Filter the burgs based on certain conditions using the previously defined constants
-  const filteredBurgs = burgs.filter(b => 
-    b.cell && 
-    b.port && 
-    !b.citadel && 
-    b.walls && 
-    b.plaza && 
-    b.temple && 
-    b.shanty && 
-    b.population >= minpop && 
-    b.population <= maxpop && 
-    !b.capital
-  );
+    const filteredBurgs = burgs.filter(b => 
+      !b.locked &&
+      b.cell && 
+      (checkPorts && b.port) && 
+      b.citadel && 
+      b.walls && 
+      b.plaza && 
+      b.temple && 
+      b.shanty && 
+      (checkPopMin && b.population >= minpop) && 
+      (checkPopMax && b.population <= maxpop) && 
+      (selectedState >= 0 && b.state == selectedState) &&
+      (selectedCulture >= 0 && b.culture == selectedCulture) &&
+      !b.capital
+    );
 
-  // Move the filtered burgs to the 'towns' group
-  filteredBurgs.forEach(b => moveBurgToGroup(b.i, 'towns'));
-    }
- }
+    // Move the filtered burgs to the 'towns' group
+    filteredBurgs.forEach(b => moveBurgToGroup(b.i, 'towns'));
+  }
 
   function triggerAllBurgsRemove() {
     const number = pack.burgs.filter(b => b.i && !b.removed && !b.capital && !b.lock).length;

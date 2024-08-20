@@ -5506,6 +5506,65 @@
         </div>
       </div>
 
+      <div id="burgMassAssignment" class="dialog" style="display: none">
+        <div style="display: flex; align-items: center">
+          <div id="burgMassAssignmentBody" style="padding-bottom: 0.3em">Include:
+            <div>
+            <input type="checkbox" class="checkbox" id="burgsAssignmentIncludePorts" name="burgsAssignmentIncludePorts"/>
+            <label for="burgsAssignmentIncludePorts" class="checkbox-label"><i>Burgs with ports</i></label>
+            </div>
+
+            <div>
+            <input type="checkbox" class="checkbox" id="burgsAssignmentIncludeCitadels" name="burgsAssignmentIncludeCitadels"/>
+            <label for="burgsAssignmentIncludeCitadels" class="checkbox-label"><i>Burgs with citadels</i></label>
+            </div>
+
+             <div>
+            <input type="checkbox" class="checkbox" id="burgsAssignmentIncludeWalls" name="burgsAssignmentIncludeWalls"/>
+            <label for="burgsAssignmentIncludeWalls" class="checkbox-label"><i>Burgs with walls</i></label>
+            </div>
+
+            <div>
+            <input type="checkbox" class="checkbox" id="burgsAssignmentIncludePlazas" name="burgsAssignmentIncludePlazas"/>
+            <label for="burgsAssignmentIncludePlazas" class="checkbox-label"><i>Burgs with plazas</i></label>
+            </div>
+
+            <div>
+            <input type="checkbox" class="checkbox" id="burgsAssignmentIncludeTemples" name="burgsAssignmentIncludeTemples"/>
+            <label for="burgsAssignmentIncludeTemples" class="checkbox-label"><i>Burgs with temples</i></label>
+            </div>
+
+            <div>
+            <input type="checkbox" class="checkbox" id="burgsAssignmentIncludeShantyTowns" name="burgsAssignmentIncludeShantyTowns"/>
+            <label for="burgsAssignmentIncludeShantyTowns" class="checkbox-label"><i>Burgs with shanty towns</i></label>
+            </div>
+
+             <div>States:
+            <select id="burgsAssignmentSelectedState" name="burgsAssignmentSelectedState"><option value="-1" selected>all</select>
+            </div>
+            <div>Cultures:
+            <select id="burgsAssignmentSelectedCulture" name="burgsAssignmentSelectedCulture"><option value="-1" selected>All</select>
+            </div>
+
+            <div>Minimum population: 
+            <input type="checkbox" class="checkbox" id="burgsAssignmentCheckPopMin" name="burgsAssignmentCheckPopMin"/>
+            <label for="burgsAssignmentCheckPopMin" class="checkbox-label"><i>&gt;= </i></label>
+            <input type="number" id="burgsAssignmentMinimumPopulation" name="burgsAssignmentMinimumPopulation" size=10 value="1000"/>
+            </div>
+
+            <div>Maximum population: 
+            <input type="checkbox" class="checkbox" id="burgsAssignmentCheckPopMax" name="burgsAssignmentCheckPopMax"/>
+            <label for="burgsAssignmentCheckPopMax" class="checkbox-label"><i>&lt;=</i></label>
+            <input type="number" id="burgsAssignmentMaximumPopulation" name="burgsAssignmentMaximumPopulation" size=10 value="99999999"/>
+            </div>
+
+             <div>Add to group: 
+            <select id="burgsAssignmentAddToGroup" name="burgsAssignmentAddToGroup"><option>Cities<option selected>Towns</select>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="routesOverview" class="dialog stable" style="display: none">
         <div id="routesHeader" class="header" style="grid-template-columns: 17em 8em 8em">
           <div data-tip="Click to sort by route name" class="sortable alphabetically" data-sortby="name">

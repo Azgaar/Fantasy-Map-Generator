@@ -98,14 +98,10 @@ function editBurg(id) {
 
     // select group
     const group = elSelected.node().parentNode.id;
-    const select = byId("burgSelectGroup");
-    select.options.length = 0; // remove all options
 
-    burgLabels.selectAll("g").each(function () {
-      select.options.add(new Option(this.id, this.id, false, this.id === group));
-    });
+    updateBurgsGroupFilter("burgSelectGroup", group);
 
-    // set emlem image
+    // set emblem image
     const coaID = "burgCOA" + id;
     COArenderer.trigger(coaID, b.coa);
     byId("burgEmblem").setAttribute("href", "#" + coaID);
@@ -142,6 +138,15 @@ function editBurg(id) {
     byId("burgInputGroup").style.display = "none";
     byId("burgInputGroup").value = "";
     byId("burgSelectGroup").style.display = "inline-block";
+  }
+
+  function updateBurgsGroupFilter(id, alreadySelectedGroup) {
+    const select = document.getElementById(id);
+    select.options.length = 0; // remove all options
+
+    burgLabels.selectAll("g").each(function () {
+      select.options.add(new Option(this.id, this.id, false, this.id === alreadySelectedGroup));
+    });
   }
 
   function changeGroup() {

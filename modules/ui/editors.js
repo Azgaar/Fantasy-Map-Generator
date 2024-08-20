@@ -204,6 +204,7 @@ function addBurg(point) {
 }
 
 function moveBurgToGroup(id, g) {
+  console.log("moveBurgToGroup(" + pack.burgs[id].name + ", " + g + ")");
   const label = document.querySelector("#burgLabels [data-id='" + id + "']");
   const icon = document.querySelector("#burgIcons [data-id='" + id + "']");
   const anchor = document.querySelector("#anchors [data-id='" + id + "']");
