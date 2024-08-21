@@ -40,13 +40,17 @@
     }
 
     handleEvent(e) {
+      const value = e.target.value;
+      const isNaN = Number.isNaN(Number(value));
+      if (isNaN || value === "") return e.stopPropagation();
+
       const range = this.querySelector("input[type=range]");
       const number = this.querySelector("input[type=number]");
-      this.value = range.value = number.value = e.target.value;
+      this.value = range.value = number.value = value;
 
       this.dispatchEvent(
         new CustomEvent(e.type, {
-          detail: {value: e.target.value},
+          detail: {value},
           bubbles: true,
           composed: true
         })
