@@ -2286,6 +2286,28 @@ svg.button {
   align-items: center;
 }
 
+.bmaCheck {
+  display: inline-flex;
+  width: 160px;
+  padding-top: 8px;
+}
+
+.bmaInclude, .bmaExclude {
+  display: inline-flex;
+  width: 45px;
+}
+
+.bmaStates, .bmaCultures, .bmaPopulation {
+  display: inline-flex;
+  width: 160px;
+  padding-top: 8px;
+}
+
+.bmaSelect, .bmaNumber {
+  width: 80px;
+}
+
+
 #errorBox {
   font-size: 0.9em;
   font-family: var(--monospace);

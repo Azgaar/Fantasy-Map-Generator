@@ -633,40 +633,48 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   // Define the function to filter and assign burgs to burg groups
   function filterAndAssignBurgs() {
     // Define the constants separately
-    let minpop = +burgsAssignmentMinimumPopulation.value / populationRate;
-    let maxpop = +burgsAssignmentMaximumPopulation.value / populationRate;
-    let checkPorts = burgsAssignmentIncludePorts.checked;
-    let checkCitadels = burgsAssignmentIncludeCitadels.checked;
-    let checkWalls = burgsAssignmentIncludeWalls.checked;
-      let checkPlazas = burgsAssignmentIncludePlazas.checked;
-    let checkTemples = burgsAssignmentIncludeTemples.checked;
-    let checkShantyTowns = burgsAssignmentIncludeShantyTowns.checked;
-    let checkPopMin = burgsAssignmentCheckPopMin.checked;
-    let checkPopMax = burgsAssignmentCheckPopMax.checked;
-    let selectedState = burgsAssignmentSelectedState.value;
-    let selectedCulture = burgsAssignmentSelectedCulture.value;
+    const minpop = +burgsAssignmentMinimumPopulation.value / populationRate;
+    const maxpop = +burgsAssignmentMaximumPopulation.value / populationRate;
+    const checkPorts = burgsAssignmentCheckPorts.checked;
+    const checkCitadels = burgsAssignmentCheckCitadels.checked;
+    const checkWalls = burgsAssignmentCheckWalls.checked;
+    const checkPlazas = burgsAssignmentCheckPlazas.checked;
+    const checkTemples = burgsAssignmentCheckTemples.checked;
+    const checkShantyTowns = burgsAssignmentCheckShantyTowns.checked;
+    const checkPopMin = burgsAssignmentCheckPopMin.checked;
+    const checkPopMax = burgsAssignmentCheckPopMax.checked;
+    const selectedState = burgsAssignmentSelectedState.value;
+    const selectedCulture = burgsAssignmentSelectedCulture.value;
 
     const burgs = pack.burgs;
 
-  // Filter the burgs based on certain conditions using the previously defined constants
+    const revPorts = burgsAssignmentIncludePorts.checked;
+    const revCitadels = burgsAssignmentIncludeCitadels.checked;
+    const revWalls = burgsAssignmentIncludeWalls.checked;
+    const revPlazas = burgsAssignmentIncludePlazas.checked;
+    const revTemples = burgsAssignmentIncludeTemples.checked;
+    const revShantyTowns = burgsAssignmentIncludeShantyTowns.checked;
+
     const filteredBurgs = burgs.filter(b => 
       !b.locked &&
       b.cell && 
-      (checkPorts && b.port) && 
-      b.citadel && 
-      b.walls && 
-      b.plaza && 
-      b.temple && 
-      b.shanty && 
-      (checkPopMin && b.population >= minpop) && 
-      (checkPopMax && b.population <= maxpop) && 
-      (selectedState >= 0 && b.state == selectedState) &&
-      (selectedCulture >= 0 && b.culture == selectedCulture) &&
+      (!checkPorts || (checkPorts && revPorts && b.port)) && 
+      (!checkCitadels || (checkCitadels && revCitadels && b.citade)) && 
+      (!checkWalls || (checkWalls && revWalls && b.walls)) && 
+      (!checkPlazas || (checkPlazas && revPlazas && b.plaza)) && 
+      (!checkTemples || (checkTemples && revTemples && b.temple)) && 
+      (!checkShantyTowns || (checkShantyTowns && revShantyTowns && b.shanty)) && 
+      (!checkPopMin || (checkPopMin && b.population >= minpop)) && 
+      (!checkPopMax || (checkPopMax && b.population <= maxpop)) && 
+      (selectedState == -1 || (selectedState >= 0 && b.state == selectedState)) &&
+      (selectedCulture == -1 || (selectedCulture >= 0 && b.culture == selectedCulture)) &&
       !b.capital
     );
+    console.log(filteredBurgs);
 
-    // Move the filtered burgs to the 'towns' group
-    filteredBurgs.forEach(b => moveBurgToGroup(b.i, 'towns'));
+    // Move the filtered burgs to the selected group
+    const selectedGroup = burgsAssignmentAddToGroup.value;
+    filteredBurgs.forEach(b => moveBurgToGroup(b.i, selectedGroup));
   }
 
   function triggerAllBurgsRemove() {

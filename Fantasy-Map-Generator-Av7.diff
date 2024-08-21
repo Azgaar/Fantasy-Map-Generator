@@ -1,0 +1,223 @@
+diff --git a/index.css b/index.css
+index 555b650..7c41e87 100644
+--- a/index.css
++++ b/index.css
+@@ -2286,6 +2286,28 @@ svg.button {
+   align-items: center;
+ }
+ 
++.bmaCheck {
++  display: inline-flex;
++  width: 160px;
++  padding-top: 8px;
++}
++
++.bmaInclude, .bmaExclude {
++  display: inline-flex;
++  width: 45px;
++}
++
++.bmaStates, .bmaCultures, .bmaPopulation {
++  display: inline-flex;
++  width: 160px;
++  padding-top: 8px;
++}
++
++.bmaSelect, .bmaNumber {
++  width: 80px;
++}
++
++
+ #errorBox {
+   font-size: 0.9em;
+   font-family: var(--monospace);
+diff --git a/index.html b/index.html
+index ae434d4..f5cb503 100644
+--- a/index.html
++++ b/index.html
+@@ -5508,58 +5508,83 @@
+ 
+       <div id="burgMassAssignment" class="dialog" style="display: none">
+         <div style="display: flex; align-items: center">
+-          <div id="burgMassAssignmentBody" style="padding-bottom: 0.3em">Include:
++          <div id="burgMassAssignmentBody" style="padding-bottom: 0.3em">
++            <div class="bmaCheck">Filter</div><div class="bmaInclude">Include</div><div class="bmaExclude">Exclude</div>
+             <div>
+-            <input type="checkbox" class="checkbox" id="burgsAssignmentIncludePorts" name="burgsAssignmentIncludePorts"/>
+-            <label for="burgsAssignmentIncludePorts" class="checkbox-label"><i>Burgs with ports</i></label>
++              <div class="bmaCheck">
++              <input type="checkbox" class="checkbox" id="burgsAssignmentCheckPorts" name="burgsAssignmentCheckPorts">
++              <label for="burgsAssignmentCheckPorts" class="checkbox-label"><i>Burgs with ports</i></label>
++              </div>
++              <div class="bmaInclude"><input type="radio" id="burgsAssignmentIncludePorts" name="burgsAssignmentIncludePorts" checked/></div>
++              <div class="bmaExclude"><input type="radio" id="burgsAssignmentExcludePorts" name="burgsAssignmentIncludePorts"/></div>
+             </div>
+ 
+             <div>
+-            <input type="checkbox" class="checkbox" id="burgsAssignmentIncludeCitadels" name="burgsAssignmentIncludeCitadels"/>
+-            <label for="burgsAssignmentIncludeCitadels" class="checkbox-label"><i>Burgs with citadels</i></label>
++              <div class="bmaCheck">
++              <input type="checkbox" class="checkbox" id="burgsAssignmentCheckCitadels" name="burgsAssignmentCheckCitadels"/>
++              <label for="burgsAssignmentCheckCitadels" class="checkbox-label"><i>Burgs with citadels</i></label>
++              </div>
++              <div class="bmaInclude"><input type="radio" id="burgsAssignmentIncludeCitadels" name="burgsAssignmentIncludeCitadels" checked/></div>
++              <div class="bmaExclude"><input type="radio" id="burgsAssignmentExcludeCitadels" name="burgsAssignmentIncludeCitadels"/></div>
+             </div>
+ 
+-             <div>
+-            <input type="checkbox" class="checkbox" id="burgsAssignmentIncludeWalls" name="burgsAssignmentIncludeWalls"/>
+-            <label for="burgsAssignmentIncludeWalls" class="checkbox-label"><i>Burgs with walls</i></label>
++            <div>
++              <div class="bmaCheck">
++              <input type="checkbox" class="checkbox" id="burgsAssignmentCheckWalls" name="burgsAssignmentCheckWalls"/>
++              <label for="burgsAssignmentCheckWalls" class="checkbox-label"><i>Burgs with walls</i></label>
++              </div>
++              <div class="bmaInclude"><input type="radio" id="burgsAssignmentIncludeWalls" name="burgsAssignmentIncludeWalls" checked/></div>
++              <div class="bmaExclude"><input type="radio" id="burgsAssignmentExcludeWalls" name="burgsAssignmentIncludeWalls"/></div>
+             </div>
+ 
+             <div>
+-            <input type="checkbox" class="checkbox" id="burgsAssignmentIncludePlazas" name="burgsAssignmentIncludePlazas"/>
+-            <label for="burgsAssignmentIncludePlazas" class="checkbox-label"><i>Burgs with plazas</i></label>
++              <div class="bmaCheck">
++              <input type="checkbox" class="checkbox" id="burgsAssignmentCheckPlazas" name="burgsAssignmentCheckPlazas"/>
++              <label for="burgsAssignmentCheckPlazas" class="checkbox-label"><i>Burgs with plazas</i></label>
++              </div>
++              <div class="bmaInclude"><input type="radio" id="burgsAssignmentIncludePlazas" name="burgsAssignmentIncludePlazas" checked/></div>
++              <div class="bmaExclude"><input type="radio" id="burgsAssignmentExcludePlazas" name="burgsAssignmentIncludePlazas"/></div>
+             </div>
+ 
+             <div>
+-            <input type="checkbox" class="checkbox" id="burgsAssignmentIncludeTemples" name="burgsAssignmentIncludeTemples"/>
+-            <label for="burgsAssignmentIncludeTemples" class="checkbox-label"><i>Burgs with temples</i></label>
++              <div class="bmaCheck">
++              <input type="checkbox" class="checkbox" id="burgsAssignmentCheckTemples" name="burgsAssignmentCheckTemples"/>
++              <label for="burgsAssignmentCheckTemples" class="checkbox-label"><i>Burgs with temples</i></label>
++              </div>
++              <div class="bmaInclude"><input type="radio" id="burgsAssignmentIncludeTemples" name="burgsAssignmentIncludeTemples" checked/></div>
++              <div class="bmaExclude"><input type="radio" id="burgsAssignmentExcludeTemples" name="burgsAssignmentIncludeTemples"/></div>
+             </div>
+ 
+             <div>
+-            <input type="checkbox" class="checkbox" id="burgsAssignmentIncludeShantyTowns" name="burgsAssignmentIncludeShantyTowns"/>
+-            <label for="burgsAssignmentIncludeShantyTowns" class="checkbox-label"><i>Burgs with shanty towns</i></label>
++              <div class="bmaCheck">
++              <input type="checkbox" class="checkbox" id="burgsAssignmentCheckShantyTowns" name="burgsAssignmentCheckShantyTowns"/>
++              <label for="burgsAssignmentCheckShantyTowns" class="checkbox-label"><i>Burgs with shanty towns</i></label>
++              </div>
++              <div class="bmaInclude"><input type="radio" id="burgsAssignmentIncludeShantyTowns" name="burgsAssignmentIncludeShantyTowns" checked/></div>
++              <div class="bmaExclude"><input type="radio" id="burgsAssignmentExcludeShantyTowns" name="burgsAssignmentIncludeShantyTowns"/></div>
+             </div>
+ 
+-             <div>States:
+-            <select id="burgsAssignmentSelectedState" name="burgsAssignmentSelectedState"><option value="-1" selected>all</select>
++            <div><div class="bmaStates">States: </div>
++            <select id="burgsAssignmentSelectedState" name="burgsAssignmentSelectedState" class="bmaSelect"><option value="-1" selected>all</select>
+             </div>
+-            <div>Cultures:
+-            <select id="burgsAssignmentSelectedCulture" name="burgsAssignmentSelectedCulture"><option value="-1" selected>All</select>
++            <div><div class="bmaCultures">Cultures: </div>
++            <select id="burgsAssignmentSelectedCulture" name="burgsAssignmentSelectedCulture" class="bmaSelect"><option value="-1" selected>All</select>
+             </div>
+ 
+-            <div>Minimum population: 
++            <div><div class="bmaPopulation">Minimum population: </div>
+             <input type="checkbox" class="checkbox" id="burgsAssignmentCheckPopMin" name="burgsAssignmentCheckPopMin"/>
+             <label for="burgsAssignmentCheckPopMin" class="checkbox-label"><i>&gt;= </i></label>
+-            <input type="number" id="burgsAssignmentMinimumPopulation" name="burgsAssignmentMinimumPopulation" size=10 value="1000"/>
++            <input type="number" id="burgsAssignmentMinimumPopulation" name="burgsAssignmentMinimumPopulation" class="bmaNumber" value="1000"/>
+             </div>
+ 
+-            <div>Maximum population: 
++            <div><div class="bmaPopulation">Maximum population: </div>
+             <input type="checkbox" class="checkbox" id="burgsAssignmentCheckPopMax" name="burgsAssignmentCheckPopMax"/>
+             <label for="burgsAssignmentCheckPopMax" class="checkbox-label"><i>&lt;=</i></label>
+-            <input type="number" id="burgsAssignmentMaximumPopulation" name="burgsAssignmentMaximumPopulation" size=10 value="99999999"/>
++            <input type="number" id="burgsAssignmentMaximumPopulation" name="burgsAssignmentMaximumPopulation" class="bmaNumber" value="99999999"/>
+             </div>
+ 
+-             <div>Add to group: 
+-            <select id="burgsAssignmentAddToGroup" name="burgsAssignmentAddToGroup"><option>Cities<option selected>Towns</select>
++            <div><div class="bmaPopulation">Move to group: </div>
++            <select id="burgsAssignmentAddToGroup" name="burgsAssignmentAddToGroup" class="bmaSelect"><option>Cities<option selected>Towns</select>
+             </div>
+           </div>
+         </div>
+diff --git a/modules/ui/burgs-overview.js b/modules/ui/burgs-overview.js
+index 5ec1ee5..c1037f6 100644
+--- a/modules/ui/burgs-overview.js
++++ b/modules/ui/burgs-overview.js
+@@ -633,40 +633,48 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
+   // Define the function to filter and assign burgs to burg groups
+   function filterAndAssignBurgs() {
+     // Define the constants separately
+-    let minpop = +burgsAssignmentMinimumPopulation.value / populationRate;
+-    let maxpop = +burgsAssignmentMaximumPopulation.value / populationRate;
+-    let checkPorts = burgsAssignmentIncludePorts.checked;
+-    let checkCitadels = burgsAssignmentIncludeCitadels.checked;
+-    let checkWalls = burgsAssignmentIncludeWalls.checked;
+-      let checkPlazas = burgsAssignmentIncludePlazas.checked;
+-    let checkTemples = burgsAssignmentIncludeTemples.checked;
+-    let checkShantyTowns = burgsAssignmentIncludeShantyTowns.checked;
+-    let checkPopMin = burgsAssignmentCheckPopMin.checked;
+-    let checkPopMax = burgsAssignmentCheckPopMax.checked;
+-    let selectedState = burgsAssignmentSelectedState.value;
+-    let selectedCulture = burgsAssignmentSelectedCulture.value;
++    const minpop = +burgsAssignmentMinimumPopulation.value / populationRate;
++    const maxpop = +burgsAssignmentMaximumPopulation.value / populationRate;
++    const checkPorts = burgsAssignmentCheckPorts.checked;
++    const checkCitadels = burgsAssignmentCheckCitadels.checked;
++    const checkWalls = burgsAssignmentCheckWalls.checked;
++    const checkPlazas = burgsAssignmentCheckPlazas.checked;
++    const checkTemples = burgsAssignmentCheckTemples.checked;
++    const checkShantyTowns = burgsAssignmentCheckShantyTowns.checked;
++    const checkPopMin = burgsAssignmentCheckPopMin.checked;
++    const checkPopMax = burgsAssignmentCheckPopMax.checked;
++    const selectedState = burgsAssignmentSelectedState.value;
++    const selectedCulture = burgsAssignmentSelectedCulture.value;
+ 
+     const burgs = pack.burgs;
+ 
+-  // Filter the burgs based on certain conditions using the previously defined constants
++    const revPorts = burgsAssignmentIncludePorts.checked;
++    const revCitadels = burgsAssignmentIncludeCitadels.checked;
++    const revWalls = burgsAssignmentIncludeWalls.checked;
++    const revPlazas = burgsAssignmentIncludePlazas.checked;
++    const revTemples = burgsAssignmentIncludeTemples.checked;
++    const revShantyTowns = burgsAssignmentIncludeShantyTowns.checked;
++
+     const filteredBurgs = burgs.filter(b => 
+       !b.locked &&
+       b.cell && 
+-      (checkPorts && b.port) && 
+-      b.citadel && 
+-      b.walls && 
+-      b.plaza && 
+-      b.temple && 
+-      b.shanty && 
+-      (checkPopMin && b.population >= minpop) && 
+-      (checkPopMax && b.population <= maxpop) && 
+-      (selectedState >= 0 && b.state == selectedState) &&
+-      (selectedCulture >= 0 && b.culture == selectedCulture) &&
++      (!checkPorts || (checkPorts && revPorts && b.port)) && 
++      (!checkCitadels || (checkCitadels && revCitadels && b.citade)) && 
++      (!checkWalls || (checkWalls && revWalls && b.walls)) && 
++      (!checkPlazas || (checkPlazas && revPlazas && b.plaza)) && 
++      (!checkTemples || (checkTemples && revTemples && b.temple)) && 
++      (!checkShantyTowns || (checkShantyTowns && revShantyTowns && b.shanty)) && 
++      (!checkPopMin || (checkPopMin && b.population >= minpop)) && 
++      (!checkPopMax || (checkPopMax && b.population <= maxpop)) && 
++      (selectedState == -1 || (selectedState >= 0 && b.state == selectedState)) &&
++      (selectedCulture == -1 || (selectedCulture >= 0 && b.culture == selectedCulture)) &&
+       !b.capital
+     );
++    console.log(filteredBurgs);
+ 
+-    // Move the filtered burgs to the 'towns' group
+-    filteredBurgs.forEach(b => moveBurgToGroup(b.i, 'towns'));
++    // Move the filtered burgs to the selected group
++    const selectedGroup = burgsAssignmentAddToGroup.value;
++    filteredBurgs.forEach(b => moveBurgToGroup(b.i, selectedGroup));
+   }
+ 
+   function triggerAllBurgsRemove() {
