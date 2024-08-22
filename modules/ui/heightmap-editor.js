@@ -90,7 +90,7 @@ function editHeightmap(options) {
     if (!sessionStorage.getItem("noExitButtonAnimation")) {
       sessionStorage.setItem("noExitButtonAnimation", true);
       exitCustomization.style.opacity = 0;
-      const width = 12 * uiSizeOutput.value * 11;
+      const width = 12 * uiSize.value * 11;
       exitCustomization.style.right = (svgWidth - width) / 2 + "px";
       exitCustomization.style.bottom = svgHeight / 2 + "px";
       exitCustomization.style.transform = "scale(2)";
@@ -136,7 +136,7 @@ function editHeightmap(options) {
       return;
     }
 
-    moveCircle(x, y, brushRadius.valueAsNumber, "#333");
+    moveCircle(x, y, heightmapBrushRadius.valueAsNumber, "#333");
   }
 
   // get user-friendly (real-world) height value from map data
@@ -664,7 +664,7 @@ function editHeightmap(options) {
       const fromCell = +lineCircle.attr("data-cell");
       debug.selectAll("*").remove();
 
-      const power = byId("linePower").valueAsNumber;
+      const power = byId("heightmapLinePower").valueAsNumber;
       if (power === 0) return tip("Power should not be zero", false, "error");
 
       const heights = grid.cells.h;
@@ -686,7 +686,7 @@ function editHeightmap(options) {
     }
 
     function dragBrush() {
-      const r = brushRadius.valueAsNumber;
+      const r = heightmapBrushRadius.valueAsNumber;
       const [x, y] = d3.mouse(this);
       const start = findGridCell(x, y, grid);
 
@@ -704,7 +704,7 @@ function editHeightmap(options) {
     }
 
     function changeHeightForSelection(selection, start) {
-      const power = brushPower.valueAsNumber;
+      const power = heightmapBrushPower.valueAsNumber;
 
       const interpolate = d3.interpolateRound(power, 1);
       const land = changeOnlyLand.checked;

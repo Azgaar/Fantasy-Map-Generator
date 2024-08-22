@@ -35,7 +35,6 @@ window.Rivers = (function () {
     TIME && console.timeEnd("generateRivers");
 
     function drainWater() {
-      //const MIN_FLUX_TO_FORM_RIVER = 10 * distanceScale;
       const MIN_FLUX_TO_FORM_RIVER = 30;
       const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
 

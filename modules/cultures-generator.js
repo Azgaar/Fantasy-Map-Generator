@@ -169,7 +169,7 @@ window.Cultures = (function () {
       else if (type === "Nomadic") base = 1.5;
       else if (type === "Hunting") base = 0.7;
       else if (type === "Highland") base = 1.2;
-      return rn(((Math.random() * powerInput.value) / 2 + 1) * base, 1);
+      return rn(((Math.random() * byId("sizeVariety").value) / 2 + 1) * base, 1);
     }
 
     TIME && console.timeEnd("generateCultures");

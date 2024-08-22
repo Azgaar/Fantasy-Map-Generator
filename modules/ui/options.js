@@ -66,12 +66,18 @@ document
       .querySelectorAll(".tabcontent")
       .forEach(e => (e.style.display = "none"));
 
-    if (id === "layersTab") layersContent.style.display = "block";
-    else if (id === "styleTab") styleContent.style.display = "block";
-    else if (id === "optionsTab") optionsContent.style.display = "block";
-    else if (id === "toolsTab")
+    if (id === "layersTab") {
+      layersContent.style.display = "block";
+    } else if (id === "styleTab") {
+      styleContent.style.display = "block";
+      selectStyleElement();
+    } else if (id === "optionsTab") {
+      optionsContent.style.display = "block";
+    } else if (id === "toolsTab") {
       customization === 1 ? (customizationMenu.style.display = "block") : (toolsContent.style.display = "block");
-    else if (id === "aboutTab") aboutContent.style.display = "block";
+    } else if (id === "aboutTab") {
+      aboutContent.style.display = "block";
+    }
   });
 
 // show popup with a list of Patreon supportes (updated manually)
@@ -125,9 +131,9 @@ optionsContent.addEventListener("input", event => {
   if (id === "mapWidthInput" || id === "mapHeightInput") mapSizeInputChange();
   else if (id === "pointsInput") changeCellsDensity(+value);
   else if (id === "culturesSet") changeCultureSet();
-  else if (id === "regionsInput" || id === "regionsOutput") changeStatesNumber(value);
+  else if (id === "statesNumber") changeStatesNumber(value);
   else if (id === "emblemShape") changeEmblemShape(value);
-  else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
+  else if (id === "tooltipSize") changeTooltipSize(value);
   else if (id === "themeHueInput") changeThemeHue(value);
   else if (id === "themeColorInput") changeDialogsTheme(themeColorInput.value, transparencyInput.value);
   else if (id === "transparencyInput") changeDialogsTheme(themeColorInput.value, value);
@@ -137,7 +143,7 @@ optionsContent.addEventListener("change", event => {
   const {id, value} = event.target;
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
   else if (id === "optionsSeed") generateMapWithSeed("seed change");
-  else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUiSize(value);
+  else if (id === "uiSize") changeUiSize(+value);
   else if (id === "shapeRendering") setRendering(value);
   else if (id === "yearInput") changeYear();
   else if (id === "eraInput") changeEra();
@@ -389,18 +395,18 @@ function changeEmblemShape(emblemShape) {
 }
 
 function changeStatesNumber(value) {
-  regionsOutput.style.color = +value ? null : "#b12117";
+  byId("statesNumber").style.color = +value ? null : "#b12117";
   burgLabels.select("#capitals").attr("data-size", Math.max(rn(6 - value / 20), 3));
   labels.select("#countries").attr("data-size", Math.max(rn(18 - value / 6), 4));
 }
 
 function changeUiSize(value) {
-  if (isNaN(+value) || +value < 0.5) return;
+  if (isNaN(value) || value < 0.5) return;
 
   const max = getUImaxSize();
-  if (+value > max) value = max;
+  if (value > max) value = max;
 
-  uiSizeInput.value = uiSizeOutput.value = value;
+  uiSize.value = value;
   document.getElementsByTagName("body")[0].style.fontSize = rn(value * 10, 2) + "px";
   byId("options").style.width = value * 300 + "px";
 }
@@ -427,7 +433,7 @@ function changeThemeHue(hue) {
 
 // change color and transparency for modal windows
 function changeDialogsTheme(themeColor, transparency) {
-  transparencyInput.value = transparencyOutput.value = transparency;
+  transparencyInput.value = transparency;
   const alpha = (100 - +transparency) / 100;
   const alphaReduced = Math.min(alpha + 0.3, 1);
 
@@ -489,11 +495,11 @@ function resetLanguage() {
   if (!languageSelect.value) return;
 
   languageSelect.value = "en";
-  languageSelect.dispatchEvent(new Event("change"));
+  languageSelect.handleChange(new Event("change"));
 
   // do once again to actually reset the language
   languageSelect.value = "en";
-  languageSelect.dispatchEvent(new Event("change"));
+  languageSelect.handleChange(new Event("change"));
 }
 
 function changeZoomExtent(value) {
@@ -533,7 +539,6 @@ function applyStoredOptions() {
 
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-
     if (key === "speakerVoice") continue;
 
     const input = byId(key + "Input") || byId(key);
@@ -560,8 +565,8 @@ function applyStoredOptions() {
   if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize"));
   if (stored("regions")) changeStatesNumber(stored("regions"));
 
-  uiSizeInput.max = uiSizeOutput.max = getUImaxSize();
-  if (stored("uiSize")) changeUiSize(stored("uiSize"));
+  uiSize.max = uiSize.max = getUImaxSize();
+  if (stored("uiSize")) changeUiSize(+stored("uiSize"));
   else changeUiSize(minmax(rn(mapWidthInput.value / 1280, 1), 1, 2.5));
 
   // search params overwrite stored and default options
@@ -586,15 +591,15 @@ function randomizeOptions() {
   // 'Options' settings
   if (randomize || !locked("points")) changeCellsDensity(4); // reset to default, no need to randomize
   if (randomize || !locked("template")) randomizeHeightmapTemplate();
-  if (randomize || !locked("regions")) regionsInput.value = regionsOutput.value = gauss(18, 5, 2, 30);
-  if (randomize || !locked("provinces")) provincesInput.value = provincesOutput.value = gauss(20, 10, 20, 100);
+  if (randomize || !locked("statesNumber")) statesNumber.value = gauss(18, 5, 2, 30);
+  if (randomize || !locked("provincesRatio")) provincesRatio.value = gauss(20, 10, 20, 100);
   if (randomize || !locked("manors")) {
     manorsInput.value = 1000;
     manorsOutput.value = "auto";
   }
-  if (randomize || !locked("religions")) religionsInput.value = religionsOutput.value = gauss(6, 3, 2, 10);
-  if (randomize || !locked("power")) powerInput.value = powerOutput.value = gauss(4, 2, 0, 10, 2);
-  if (randomize || !locked("neutral")) neutralInput.value = neutralOutput.value = rn(1 + Math.random(), 1);
+  if (randomize || !locked("religionsNumber")) religionsNumber.value = gauss(6, 3, 2, 10);
+  if (randomize || !locked("sizeVariety")) sizeVariety.value = gauss(4, 2, 0, 10, 1);
+  if (randomize || !locked("growthRate")) growthRate.value = rn(1 + Math.random(), 1);
   if (randomize || !locked("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
   if (randomize || !locked("culturesSet")) randomizeCultureSet();
 
@@ -606,8 +611,7 @@ function randomizeOptions() {
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
-  if (randomize || !locked("distanceScale"))
-    distanceScale = distanceScaleOutput.value = distanceScaleInput.value = gauss(3, 1, 1, 5);
+  if (randomize || !locked("distanceScale")) distanceScale = distanceScaleInput.value = gauss(3, 1, 1, 5);
   if (!stored("distanceUnit")) distanceUnitInput.value = US ? "mi" : "km";
   if (!stored("heightUnit")) heightUnit.value = US ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";

@@ -24,7 +24,7 @@ window.BurgsAndStates = (() => {
 
     function placeCapitals() {
       TIME && console.time("placeCapitals");
-      let count = +regionsOutput.value;
+      let count = +byId("statesNumber").value;
       let burgs = [0];
 
       const rand = () => 0.5 + Math.random() * 0.5;
@@ -85,7 +85,7 @@ window.BurgsAndStates = (() => {
         b.capital = 1;
 
         // states data
-        const expansionism = rn(Math.random() * powerInput.value + 1, 1);
+        const expansionism = rn(Math.random() * byId("sizeVariety").value + 1, 1);
         const basename = b.name.length < 9 && each5th(b.cell) ? b.name : Names.getCultureShort(b.culture);
         const name = Names.getState(basename, b.culture);
         const type = cultures[b.culture].type;
@@ -378,9 +378,9 @@ window.BurgsAndStates = (() => {
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
-    const globalNeutralRate = byId("neutralInput")?.valueAsNumber || 1;
-    const statesNeutralRate = byId("statesNeutral")?.valueAsNumber || 1;
-    const neutral = (cells.i.length / 2) * globalNeutralRate * statesNeutralRate; // limit cost for state growth
+    const globalGrowthRate = byId("growthRate").valueAsNumber || 1;
+    const statesGrowthRate = byId("statesGrowthRate")?.valueAsNumber || 1;
+    const growthRate = (cells.i.length / 2) * globalGrowthRate * statesGrowthRate; // limit cost for state growth
 
     // remove state from all cells except of locked
     for (const cellId of cells.i) {
@@ -419,7 +419,7 @@ window.BurgsAndStates = (() => {
         const cellCost = Math.max(cultureCost + populationCost + biomeCost + heightCost + riverCost + typeCost, 0);
         const totalCost = p + 10 + cellCost / states[s].expansionism;
 
-        if (totalCost > neutral) return;
+        if (totalCost > growthRate) return;
 
         if (!cost[e] || totalCost < cost[e]) {
           if (cells.h[e] >= 20) cells.state[e] = s; // assign state to cell
@@ -975,9 +975,8 @@ window.BurgsAndStates = (() => {
       });
     }
 
-    const percentage = +provincesInput.value;
-
-    const max = percentage == 100 ? 1000 : gauss(20, 5, 5, 100) * percentage ** 0.5; // max growth
+    const provincesRatio = +byId("provincesRatio").value;
+    const max = provincesRatio == 100 ? 1000 : gauss(20, 5, 5, 100) * provincesRatio ** 0.5; // max growth
 
     const forms = {
       Monarchy: {County: 22, Earldom: 6, Shire: 2, Landgrave: 2, Margrave: 2, Barony: 2, Captaincy: 1, Seneschalty: 1},
@@ -1000,7 +999,7 @@ window.BurgsAndStates = (() => {
         .sort((a, b) => b.population * gauss(1, 0.2, 0.5, 1.5, 3) - a.population)
         .sort((a, b) => b.capital - a.capital);
       if (stateBurgs.length < 2) return; // at least 2 provinces are required
-      const provincesNumber = Math.max(Math.ceil((stateBurgs.length * percentage) / 100), 2);
+      const provincesNumber = Math.max(Math.ceil((stateBurgs.length * provincesRatio) / 100), 2);
 
       const form = Object.assign({}, forms[s.form]);
 

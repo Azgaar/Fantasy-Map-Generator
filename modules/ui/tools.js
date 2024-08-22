@@ -77,7 +77,7 @@ toolsContent.addEventListener("click", function (event) {
 function processFeatureRegeneration(event, button) {
   if (button === "regenerateStateLabels") drawStateLabels();
   else if (button === "regenerateReliefIcons") {
-    ReliefIcons();
+    ReliefIcons.draw();
     if (!layerIsOn("toggleRelief")) toggleRelief();
   } else if (button === "regenerateRoutes") {
     regenerateRoutes();
@@ -176,7 +176,7 @@ function recreateStates() {
   const localSeed = generateSeed();
   Math.random = aleaPRNG(localSeed);
 
-  const statesCount = +regionsOutput.value;
+  const statesCount = +byId("").value;
   if (!statesCount) {
     tip(`<i>States Number</i> option value is zero. No counties are generated`, false, "error");
     return null;
@@ -198,7 +198,7 @@ function recreateStates() {
   const lockedStatesIds = lockedStates.map(s => s.i);
   const lockedStatesCapitals = lockedStates.map(s => s.capital);
 
-  if (lockedStates.length === validStates.length) {
+  if (validStates.length && lockedStates.length === validStates.length) {
     tip("Unable to regenerate as all states are locked", false, "error");
     return null;
   }
@@ -317,7 +317,7 @@ function recreateStates() {
       : pack.cultures[culture].type === "Nomadic"
       ? "Generic"
       : pack.cultures[culture].type;
-    const expansionism = rn(Math.random() * powerInput.value + 1, 1);
+    const expansionism = rn(Math.random() * byId("sizeVariety").value + 1, 1);
 
     const cultureType = pack.cultures[culture].type;
     const coa = COA.generate(capital.coa, 0.3, null, cultureType);

@@ -457,7 +457,7 @@ window.Religions = (function () {
     const lockedReligions = pack.religions?.filter(r => r.i && r.lock && !r.removed) || [];
 
     const folkReligions = generateFolkReligions();
-    const organizedReligions = generateOrganizedReligions(+religionsInput.value, lockedReligions);
+    const organizedReligions = generateOrganizedReligions(+religionsNumber.value, lockedReligions);
 
     const namedReligions = specifyReligions([...folkReligions, ...organizedReligions]);
     const indexedReligions = combineReligions(namedReligions, lockedReligions);
@@ -698,7 +698,8 @@ window.Religions = (function () {
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
-    const maxExpansionCost = (cells.i.length / 20) * neutralInput.value; // limit cost for organized religions growth
+    // limit cost for organized religions growth
+    const maxExpansionCost = (cells.i.length / 20) * byId("growthRate").valueAsNumber;
 
     religions
       .filter(r => r.i && !r.lock && r.type !== "Folk" && !r.removed)

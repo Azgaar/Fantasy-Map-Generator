@@ -516,13 +516,14 @@ function fitLegendBox() {
 
 // draw legend with the same data, but using different settings
 function redrawLegend() {
-  if (!legend.select("rect").size()) return;
-  const name = legend.select("#legendLabel").text();
-  const data = legend
-    .attr("data")
-    .split("|")
-    .map(l => l.split(","));
-  drawLegend(name, data);
+  if (legend.select("rect").size()) {
+    const name = legend.select("#legendLabel").text();
+    const data = legend
+      .attr("data")
+      .split("|")
+      .map(l => l.split(","));
+    drawLegend(name, data);
+  }
 }
 
 function dragLegendBox() {
@@ -1251,18 +1252,18 @@ function refreshAllEditors() {
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/states-editor.js?v=1.99.00");
+  const Editor = await import("../dynamic/editors/states-editor.js?v=1.99.05");
   Editor.open();
 }
 
 async function editCultures() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.96.01");
+  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.99.05");
   Editor.open();
 }
 
 async function editReligions() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/religions-editor.js?v=1.96.00");
+  const Editor = await import("../dynamic/editors/religions-editor.js?v=1.99.05");
   Editor.open();
 }

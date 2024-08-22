@@ -93,7 +93,7 @@ function restoreCustomPresets() {
 
 // run on map generation
 function applyPreset() {
-  const preset = localStorage.getItem("preset") || document.getElementById("layersPreset").value;
+  const preset = localStorage.getItem("preset") || byId("layersPreset").value;
   changePreset(preset);
 }
 
@@ -113,12 +113,12 @@ function changePreset(preset) {
   const isDefault = getDefaultPresets()[preset];
   removePresetButton.style.display = isDefault ? "none" : "inline-block";
   savePresetButton.style.display = "none";
-  if (document.getElementById("canvas3d")) setTimeout(ThreeD.update(), 400);
+  if (byId("canvas3d")) setTimeout(ThreeD.update(), 400);
 }
 
 function savePreset() {
   prompt("Please provide a preset name", {default: ""}, preset => {
-    presets[preset] = Array.from(document.getElementById("mapLayers").querySelectorAll("li:not(.buttonoff)"))
+    presets[preset] = Array.from(byId("mapLayers").querySelectorAll("li:not(.buttonoff)"))
       .map(node => node.id)
       .sort();
     layersPreset.add(new Option(preset, preset, false, true));
@@ -143,7 +143,7 @@ function removePreset() {
 }
 
 function getCurrentPreset() {
-  const layers = Array.from(document.getElementById("mapLayers").querySelectorAll("li:not(.buttonoff)"))
+  const layers = Array.from(byId("mapLayers").querySelectorAll("li:not(.buttonoff)"))
     .map(node => node.id)
     .sort();
   const defaultPresets = getDefaultPresets();
@@ -174,7 +174,7 @@ function restoreLayers() {
   if (layerIsOn("togglePrec")) drawPrec();
   if (layerIsOn("togglePopulation")) drawPopulation();
   if (layerIsOn("toggleBiomes")) drawBiomes();
-  if (layerIsOn("toggleRelief")) ReliefIcons();
+  if (layerIsOn("toggleRelief")) ReliefIcons.draw();
   if (layerIsOn("toggleCultures")) drawCultures();
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (layerIsOn("toggleReligions")) drawReligions();
@@ -1516,8 +1516,8 @@ function drawCoordinates() {
 
 // conver svg point into viewBox point
 function getViewPoint(x, y) {
-  const view = document.getElementById("viewbox");
-  const svg = document.getElementById("map");
+  const view = byId("viewbox");
+  const svg = byId("map");
   const pt = svg.createSVGPoint();
   (pt.x = x), (pt.y = y);
   return pt.matrixTransform(view.getScreenCTM().inverse());
@@ -1541,7 +1541,7 @@ function toggleCompass(event) {
 function toggleRelief(event) {
   if (!layerIsOn("toggleRelief")) {
     turnButtonOn("toggleRelief");
-    if (!terrain.selectAll("*").size()) ReliefIcons();
+    if (!terrain.selectAll("*").size()) ReliefIcons.draw();
     $("#terrain").fadeIn();
     if (event && isCtrlClick(event)) editStyle("terrain");
   } else {
@@ -1907,21 +1907,21 @@ function drawEmblems() {
   const getStateEmblemsSize = () => {
     const startSize = minmax((graphHeight + graphWidth) / 40, 10, 100);
     const statesMod = 1 + validStates.length / 100 - (15 - validStates.length) / 200; // states number modifier
-    const sizeMod = +document.getElementById("emblemsStateSizeInput").value || 1;
+    const sizeMod = +byId("emblemsStateSizeInput").value || 1;
     return rn((startSize / statesMod) * sizeMod); // target size ~50px on 1536x754 map with 15 states
   };
 
   const getProvinceEmblemsSize = () => {
     const startSize = minmax((graphHeight + graphWidth) / 100, 5, 70);
     const provincesMod = 1 + validProvinces.length / 1000 - (115 - validProvinces.length) / 1000; // states number modifier
-    const sizeMod = +document.getElementById("emblemsProvinceSizeInput").value || 1;
+    const sizeMod = +byId("emblemsProvinceSizeInput").value || 1;
     return rn((startSize / provincesMod) * sizeMod); // target size ~20px on 1536x754 map with 115 provinces
   };
 
   const getBurgEmblemSize = () => {
     const startSize = minmax((graphHeight + graphWidth) / 185, 2, 50);
     const burgsMod = 1 + validBurgs.length / 1000 - (450 - validBurgs.length) / 1000; // states number modifier
-    const sizeMod = +document.getElementById("emblemsBurgSizeInput").value || 1;
+    const sizeMod = +byId("emblemsBurgSizeInput").value || 1;
     return rn((startSize / burgsMod) * sizeMod); // target size ~8.5px on 1536x754 map with 450 burgs
   };
 
@@ -2020,17 +2020,17 @@ function toggleVignette(event) {
 }
 
 function layerIsOn(el) {
-  const buttonoff = document.getElementById(el).classList.contains("buttonoff");
+  const buttonoff = byId(el).classList.contains("buttonoff");
   return !buttonoff;
 }
 
 function turnButtonOff(el) {
-  document.getElementById(el).classList.add("buttonoff");
+  byId(el).classList.add("buttonoff");
   getCurrentPreset();
 }
 
 function turnButtonOn(el) {
-  document.getElementById(el).classList.remove("buttonoff");
+  byId(el).classList.remove("buttonoff");
   getCurrentPreset();
 }
 

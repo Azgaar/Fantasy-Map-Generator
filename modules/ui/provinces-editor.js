@@ -628,8 +628,8 @@ function editProvinces() {
       .parentId(d => d.state)(data)
       .sum(d => d.area);
 
-    const width = 300 + 300 * uiSizeOutput.value,
-      height = 90 + 90 * uiSizeOutput.value;
+    const width = 300 + 300 * uiSize.value,
+      height = 90 + 90 * uiSize.value;
     const margin = {top: 10, right: 10, bottom: 0, left: 10};
     const w = width - margin.left - margin.right;
     const h = height - margin.top - margin.bottom;
@@ -879,7 +879,7 @@ function editProvinces() {
   }
 
   function dragBrush() {
-    const r = +provincesManuallyBrush.value;
+    const r = +provincesBrush.value;
 
     d3.event.on("drag", () => {
       if (!d3.event.dx && !d3.event.dy) return;
@@ -937,7 +937,7 @@ function editProvinces() {
   function moveBrush() {
     showMainTip();
     const point = d3.mouse(this);
-    const radius = +provincesManuallyBrush.value;
+    const radius = +provincesBrush.value;
     moveCircle(point[0], point[1], radius);
   }
 

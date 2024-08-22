@@ -525,7 +525,48 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   font-size: smaller;
 }
 
+#options input[type="text"] {
+  border: 0px;
+  width: 62%;
+  font-size: smaller;
+}
+
+#options output {
+  text-align: right;
+  font-size: smaller;
+}
+
+#options input[type="number"] {
+  font-size: 0.8em;
+  border: 0;
+  text-align: right;
+  background-color: transparent;
+  width: 3.3em;
+}
+
+#options input[type="number"]::-webkit-inner-spin-button,
+#options input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#options input[type="number"]:hover {
+  outline: 1px solid var(--dark-solid);
+}
+
+#options input.paired {
+  text-align: center;
+  background-color: white;
+}
+
+#options input.long {
+  width: 100%;
+  background-color: white;
+  text-align: left;
+}
+
 #options input[type="range"] {
+  width: 100%;
   height: 8px;
   background: 0;
   appearance: none;
@@ -568,55 +609,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   height: 2px;
 }
 
-#options input[type="number"] {
-  font-size: 0.8em;
-}
-
-#options input[type="text"] {
-  border: 0px;
-  width: 62%;
-  font-size: smaller;
-}
-
-#optionsContent output {
-  text-align: right;
-  font-size: smaller;
-}
-
-#optionsContent input[type="number"] {
-  border: 0;
-  text-align: right;
-  background-color: transparent;
-  width: 3.3em;
-  -moz-appearance: textfield;
-}
-
-#optionsContent input[type="number"]::-webkit-inner-spin-button,
-#optionsContent input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-#optionsContent input[type="number"]:hover {
-  outline: 1px solid var(--dark-solid);
-}
-
-#optionsContent input.paired {
-  text-align: center;
-  background-color: white;
-}
-
-#optionsContent input.long {
-  width: 100%;
-  background-color: white;
-  text-align: left;
-}
-
-#optionsContent input[type="range"] {
-  width: 100%;
-}
-
-#optionsContent select {
+#options select {
   width: 100%;
 }
 
@@ -639,19 +632,6 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 #layersContent button.active,
 #styleContent button:active {
   transform: translate(0px, 1px);
-}
-
-#styleElements input[type="range"] {
-  width: 64%;
-}
-
-#styleElements select {
-  width: 64%;
-}
-
-#styleElements input[type="number"] {
-  width: 6em;
-  border: 0;
 }
 
 #styleSelectFont > option {
@@ -724,9 +704,6 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   padding: 0.45em 0.75em;
   margin: 0.35em 0;
   transition: 0.1s;
-  font-size: 1em;
-  text-transform: capitalize;
-
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -1268,7 +1245,6 @@ i.resetButton:active {
   padding: 0;
   height: 2px;
   background: #d4d4d4;
-  top: -0.35em;
   position: relative;
   appearance: none;
   -webkit-appearance: none;
@@ -1844,11 +1820,6 @@ div.editorLine {
   padding: 0px 3px !important;
 }
 
-#unitsBody > div > * {
-  display: inline-block;
-  margin-bottom: 0.2em;
-}
-
 .unitsHeader {
   margin: 0.8em 0 0 -1.1em;
   font-weight: bold;
@@ -1860,26 +1831,19 @@ div.editorLine {
   margin: 6px 0 0 6px;
 }
 
-#unitsBody > div > div {
+#unitsBody label {
+  display: inline-block;
   width: 9em;
-}
-
-#unitsBody > div > input[type="range"] {
-  width: 7em;
 }
 
 #unitsBody > div > select,
 #unitsBody > div > input[type="text"] {
-  width: 12em;
-}
-
-#unitsBody > div > input[type="number"] {
-  width: 4.35em;
-}
-
-#unitsBody > div > input,
-#unitsBody > div > select {
+  width: 14.4em;
   border: 1px solid #e9e9e9;
+}
+
+#unitsBody input[type="range"] {
+  width: 9em;
 }
 
 #unitsEditor i.icon-lock-open,

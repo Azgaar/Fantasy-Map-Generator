@@ -317,7 +317,7 @@ function editBiomes() {
   }
 
   function regenerateIcons() {
-    ReliefIcons();
+    ReliefIcons.draw();
     if (!layerIsOn("toggleRelief")) toggleRelief();
   }
 
@@ -383,7 +383,7 @@ function editBiomes() {
   }
 
   function dragBiomeBrush() {
-    const r = +biomesManuallyBrush.value;
+    const r = +biomesBrush.value;
 
     d3.event.on("drag", () => {
       if (!d3.event.dx && !d3.event.dy) return;
@@ -425,7 +425,7 @@ function editBiomes() {
   function moveBiomeBrush() {
     showMainTip();
     const point = d3.mouse(this);
-    const radius = +biomesManuallyBrush.value;
+    const radius = +biomesBrush.value;
     moveCircle(point[0], point[1], radius);
   }
 
