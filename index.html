@@ -4921,6 +4921,7 @@
         <div id="notesLegend" contenteditable="true"></div>
         <div style="margin-top: 0.3em">
           <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
+          <button id="notesGenerateWithAi" data-tip="Generate note with AI" class="icon-robot"></button>
           <button
             id="notesPin"
             data-tip="Toggle notes box dispay: hide or do not hide the box on mouse move"
@@ -4929,6 +4930,32 @@
           <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
           <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
           <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
+        </div>
+      </div>
+
+      <div id="aiGenerator" class="dialog stable" style="display: none">
+        <div style="display: flex; flex-direction: column; gap: 0.3em; width: 100%">
+          <textarea id="aiGeneratorResult" placeholder="Generated text will appear here" cols="30" rows="10"></textarea>
+          <textarea id="aiGeneratorPrompt" placeholder="Type a prompt here" cols="30" rows="5"></textarea>
+          <div style="display: flex; align-items: center; gap: 1em">
+            <label for="aiGeneratorModel"
+              >Model:
+              <select id="aiGeneratorModel"></select>
+            </label>
+
+            <label for="aiGeneratorKey"
+              >Key:
+              <input id="aiGeneratorKey" placeholder="Enter OpenAI API key" class="icon-key" />
+              <a
+                href="https://platform.openai.com/account/api-keys"
+                target="_blank"
+                rel="noreferrer"
+                class="icon-help-circled"
+                style="text-decoration: none"
+                data-tip="Get the key at OpenAI website. The key will be stored in your browser and send to OpenAI API directly. The Map Genenerator doesn't store the key or any generated data"
+              ></a>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -8037,7 +8064,8 @@
     <script defer src="modules/ui/relief-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/burg-editor.js?v=1.99.05"></script>
     <script defer src="modules/ui/units-editor.js?v=1.99.05"></script>
-    <script defer src="modules/ui/notes-editor.js?v=1.99.00"></script>
+    <script defer src="modules/ui/notes-editor.js?v=1.99.06"></script>
+    <script defer src="modules/ui/ai-generator.js?v=1.99.06"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/zones-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/burgs-overview.js?v=1.99.05"></script>
