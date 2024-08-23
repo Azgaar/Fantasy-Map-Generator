@@ -176,7 +176,7 @@ function recreateStates() {
   const localSeed = generateSeed();
   Math.random = aleaPRNG(localSeed);
 
-  const statesCount = +byId("").value;
+  const statesCount = +byId("statesNumber").value;
   if (!statesCount) {
     tip(`<i>States Number</i> option value is zero. No counties are generated`, false, "error");
     return null;

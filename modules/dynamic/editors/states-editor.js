@@ -72,7 +72,7 @@ function insertEditorHtml() {
       <button id="statesManually" data-tip="Manually re-assign states" class="icon-brush"></button>
       <div id="statesManuallyButtons" style="display: none">
         <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em;">
-          <slider-input id="statesBrush" min="5" max="100" value="15">Brush size:</slider-input>
+          <slider-input id="statesBrush" min="1" max="100" value="15">Brush size:</slider-input>
         </div>
         <button id="statesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
         <button id="statesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>

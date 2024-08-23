@@ -52,7 +52,7 @@ function insertEditorHtml() {
       <button id="culturesManually" data-tip="Manually re-assign cultures" class="icon-brush"></button>
       <div id="culturesManuallyButtons" style="display: none">
         <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em;">
-          <slider-input id="culturesBrush" min="5" max="100" value="15">Brush size:</slider-input>
+          <slider-input id="culturesBrush" min="1" max="100" value="15">Brush size:</slider-input>
         </div>
         <button id="culturesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
         <button id="culturesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
