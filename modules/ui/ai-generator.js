@@ -1,6 +1,6 @@
 "use strict";
 
-const GPT_MODELS = ["chatgpt-4o-latest", "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"];
+const GPT_MODELS = ["gpt-4o-mini", "chatgpt-4o-latest", "gpt-4o", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"];
 
 function geneateWithAi(defaultPrompt, onApply) {
   updateValues();
