@@ -1,6 +1,7 @@
 "use strict";
 
 const GPT_MODELS = ["gpt-4o-mini", "chatgpt-4o-latest", "gpt-4o", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"];
+const SYSTEM_MESSAGE = "I'm working on my fantasy map.";
 
 function geneateWithAi(defaultPrompt, onApply) {
   updateValues();
@@ -61,7 +62,7 @@ function geneateWithAi(defaultPrompt, onApply) {
         body: JSON.stringify({
           model,
           messages: [
-            {role: "system", content: "I'm working on my fantasy map"},
+            {role: "system", content: SYSTEM_MESSAGE},
             {role: "user", content: prompt}
           ],
           temperature: 1.2
