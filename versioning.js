@@ -28,7 +28,7 @@ const version = "1.99.06"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
-        <li>On-demand AI generation for markers</li>
+        <li>Notes Editor: on-demand AI text generation</li>
         <li>New style preset: Dark Seas</li>
         <li>New routes generation algorithm</li>
         <li>Routes overview tool</li>
