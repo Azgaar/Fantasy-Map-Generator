@@ -28,6 +28,8 @@ const version = "1.99.07"; // generator version, update each time
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Notes Editor: on-demand AI text generation</li>
+        <li>New style preset: Dark Seas</li>
         <li>New routes generation algorithm</li>
         <li>Routes overview tool</li>
         <li>Configurable longitude</li>
@@ -41,8 +43,6 @@ const version = "1.99.07"; // generator version, update each time
         <li>Auto-load of the last saved map is now optional (see <i>Onload behavior</i> in Options)</li>
         <li>New label placement algorithm for states</li>
         <li>North and South Poles temperature can be set independently</li>
-        <li>More than 70 new heraldic charges</li>
-        <li>Multi-color heraldic charges support</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
