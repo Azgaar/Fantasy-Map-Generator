@@ -725,13 +725,13 @@ styleTemperatureFillInput.addEventListener("input", e => {
 });
 
 stylePopulationRuralStrokeInput.addEventListener("input", e => {
-  population.select("#rural").attr("stroke", this.value);
-  stylePopulationRuralStrokeOutput.value = this.value;
+  population.select("#rural").attr("stroke", e.target.value);
+  stylePopulationRuralStrokeOutput.value = e.target.value;
 });
 
 stylePopulationUrbanStrokeInput.addEventListener("input", e => {
-  population.select("#urban").attr("stroke", this.value);
-  stylePopulationUrbanStrokeOutput.value = this.value;
+  population.select("#urban").attr("stroke", e.target.value);
+  stylePopulationUrbanStrokeOutput.value = e.target.value;
 });
 
 styleCompassSizeInput.addEventListener("input", shiftCompass);
