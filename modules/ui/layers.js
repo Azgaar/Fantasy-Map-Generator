@@ -1636,7 +1636,8 @@ function drawRoutes() {
   const routePaths = {};
 
   for (const route of pack.routes) {
-    const {i, group} = route;
+    const {i, group, points} = route;
+    if (!points || points.length < 2) continue;
     if (!routePaths[group]) routePaths[group] = [];
     routePaths[group].push(`<path id="route${i}" d="${Routes.getPath(route)}"/>`);
   }

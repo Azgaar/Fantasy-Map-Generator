@@ -651,6 +651,17 @@ async function parseLoadedData(data, mapVersion) {
         p.removed = true; // remove incorrect province
       });
 
+      pack.routes.forEach(({i, points}) => {
+        if (!points || points.length < 2) {
+          ERROR &&
+            console.error(
+              "Data integrity check. Route",
+              i,
+              "has less than 2 points. Route will be ignored on layer rendering"
+            );
+        }
+      });
+
       {
         const markerIds = [];
         let nextId = last(pack.markers)?.i + 1 || 0;
