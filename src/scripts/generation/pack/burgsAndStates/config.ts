@@ -77,7 +77,6 @@ export const culturalTheocracyFormsMap: {[key: number]: {[key in TMonarchyForms]
   [NB.Roman]: Catholic,
   [NB.Portuguese]: Catholic,
   [NB.Ruthenian]: Orthodox,
-  [NB.Ruthenian]: Orthodox,
   [NB.Turkish]: Islamic,
   [NB.Nigerian]: Islamic,
   [NB.Berber]: Islamic,
