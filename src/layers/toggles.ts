@@ -9,6 +9,7 @@ import {calculateFriendlyGridSize, editStyle, shiftCompass} from "modules/ui/sty
 import {getInputNumber, getInputValue} from "utils/nodeUtils";
 import {renderLayer} from "./renderers";
 import {layerIsOn, turnLayerButtonOff, turnLayerButtonOn} from "./utils";
+import { isCulture, isReligion } from "utils/typeUtils";
 
 const layerTogglesMap = {
   toggleBiomes,
@@ -187,7 +188,7 @@ function toggleIce(event?: MouseEvent) {
 }
 
 function toggleCultures(event?: MouseEvent) {
-  const cultures = pack.cultures.filter(({i, removed}) => i && !removed);
+  const cultures = pack.cultures.filter((culture) => isCulture(culture) && !culture.removed);
   const empty = !cults.selectAll("path").size();
   if (empty && cultures.length) {
     turnLayerButtonOn("toggleCultures");
@@ -204,7 +205,7 @@ function toggleCultures(event?: MouseEvent) {
 }
 
 function toggleReligions(event?: MouseEvent) {
-  const religions = pack.religions.filter(({i, removed}) => i && !removed);
+  const religions = pack.religions.filter((religion) => isReligion(religion) && !religion.removed);
   if (!relig.selectAll("path").size() && religions.length) {
     turnLayerButtonOn("toggleReligions");
     renderLayer("religions");
