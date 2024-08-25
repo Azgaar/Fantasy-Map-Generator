@@ -54,18 +54,24 @@ function geneateWithAi(defaultPrompt, onApply) {
 
     try {
       button.disabled = true;
-      byId("aiGeneratorResult").disabled = true;
+      const resultArea = byId("aiGeneratorResult");
+      resultArea.value = "";
+      resultArea.disabled = true;
 
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
-        headers: {"Content-Type": "application/json", Authorization: `Bearer ${key}`},
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${key}`
+        },
         body: JSON.stringify({
           model,
           messages: [
             {role: "system", content: SYSTEM_MESSAGE},
             {role: "user", content: prompt}
           ],
-          temperature: 1.2
+          temperature: 1.2,
+          stream: true // Enable streaming
         })
       });
 
@@ -74,9 +80,32 @@ function geneateWithAi(defaultPrompt, onApply) {
         throw new Error(json?.error?.message || "Failed to generate");
       }
 
-      const {choices} = await response.json();
-      const result = choices[0].message.content;
-      byId("aiGeneratorResult").value = result;
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, {stream: true});
+        const lines = buffer.split("\n");
+
+        for (let i = 0; i < lines.length - 1; i++) {
+          const line = lines[i].trim();
+          if (line.startsWith("data: ") && line !== "data: [DONE]") {
+            try {
+              const jsonData = JSON.parse(line.slice(6));
+              const content = jsonData.choices[0].delta.content;
+              if (content) resultArea.value += content;
+            } catch (jsonError) {
+              console.warn("Failed to parse JSON:", jsonError, "Line:", line);
+            }
+          }
+        }
+
+        buffer = lines[lines.length - 1];
+      }
     } catch (error) {
       return tip(error.message, true, "error", 4000);
     } finally {
