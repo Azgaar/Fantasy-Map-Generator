@@ -16,7 +16,8 @@
     "noImplicitReturns": true,
     "skipLibCheck": true,
     "types": ["vitest/globals"],
-    "baseUrl": "src"
+    "baseUrl": "src",
+    "allowJs": true,
   },
   "include": ["src"]
 }

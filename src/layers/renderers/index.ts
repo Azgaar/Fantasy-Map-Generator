@@ -3,23 +3,23 @@ import {drawBiomes} from "./drawBiomes";
 import {drawBorders} from "./drawBorders";
 import {drawBurgs} from "./drawBurgs";
 import {drawCells} from "./drawCells";
-import {drawCoordinates} from "drawCoordinates.js"; //MARKER: drawCoordinates.js
+import {drawCoordinates} from "./drawCoordinates.js"; //MARKER: drawCoordinates.js
 import {drawCultures} from "./drawCultures";
-import {drawEmblems} from "drawEmblems.js"; //MARKER: drawEmblems.js
+import {drawEmblems} from "./drawEmblems.js"; //MARKER: drawEmblems.js
 import {drawFeatures} from "./drawFeatures";
-import {drawGrid} from "drawGrid.js"; //MARKER: drawGrid.js
-import {drawHeightmap} from "drawHeightmap.js";
-import {drawIce} from "drawIce.js"; //MARKER: drawIce.js
+import {drawGrid} from "./drawGrid.js"; //MARKER: drawGrid.js
+import {drawHeightmap} from "./drawHeightmap.js";
+import {drawIce} from "./drawIce.js"; //MARKER: drawIce.js
 import {drawLabels} from "./drawLabels";
-import {drawMarkers} from "drawMarkers.js"; //MARKER: drawMarkers.js
-import {drawPopulation} from "drawPopulation.js"; //MARKER: drawPopulation.js
-import {drawPrecipitation} from "drawPrecipitation.js"; //MARKER: drawPrecipitation.js
+import {drawMarkers} from "./drawMarkers.js"; //MARKER: drawMarkers.js
+import {drawPopulation} from "./drawPopulation.js"; //MARKER: drawPopulation.js
+import {drawPrecipitation} from "./drawPrecipitation.js"; //MARKER: drawPrecipitation.js
 import {drawProvinces} from "./drawProvinces";
 import {drawReligions} from "./drawReligions";
 import {drawRivers} from "./drawRivers";
 import {drawRoutes} from "./drawRoutes";
 import {drawStates} from "./drawStates";
-import {drawTemperature} from "drawTemperature.js"; //MARKER: drawTemperature.js
+import {drawTemperature} from "./drawTemperature.js"; //MARKER: drawTemperature.js
 
 // Note: missed renderers are in toggle functions
 const layerRenderersMap = {
