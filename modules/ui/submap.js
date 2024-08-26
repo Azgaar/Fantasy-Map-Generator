@@ -316,11 +316,6 @@ window.UISubmap = (function () {
       bl.dataset["size"] = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
     }
 
-    // emblems
-    const emblemMod = minmax((scale - 1) * 0.3 + 1, 0.5, 5);
-    emblemsStateSizeInput.value = minmax(+emblemsStateSizeInput.value * emblemMod, 0.5, 5);
-    emblemsProvinceSizeInput.value = minmax(+emblemsProvinceSizeInput.value * emblemMod, 0.5, 5);
-    emblemsBurgSizeInput.value = minmax(+emblemsBurgSizeInput.value * emblemMod, 0.5, 5);
     drawEmblems();
   }
 

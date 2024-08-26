@@ -258,6 +258,15 @@
     "stroke-width": 0.8,
     "filter": "url(#dropShadow05)"
   },
+  "#emblems > #stateEmblems": {
+    "data-size": 1
+  },
+  "#emblems > #provinceEmblems": {
+    "data-size": 1
+  },
+  "#emblems > #burgEmblems": {
+    "data-size": 1
+  },
   "#texture": {
     "opacity": 0.6,
     "filter": "",

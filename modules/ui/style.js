@@ -337,6 +337,9 @@ function selectStyleElement() {
     styleEmblems.style.display = "block";
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = el.attr("stroke-width") || 1;
+    emblemsStateSizeInput.value = emblems.select("#stateEmblems").attr("data-size") || 1;
+    emblemsProvinceSizeInput.value = emblems.select("#provinceEmblems").attr("data-size") || 1;
+    emblemsBurgSizeInput.value = emblems.select("#burgEmblems").attr("data-size") || 1;
   }
 
   // update group options
@@ -945,9 +948,20 @@ styleArmiesSize.addEventListener("input", e => {
   });
 });
 
-emblemsStateSizeInput.addEventListener("change", drawEmblems);
-emblemsProvinceSizeInput.addEventListener("change", drawEmblems);
-emblemsBurgSizeInput.addEventListener("change", drawEmblems);
+emblemsStateSizeInput.addEventListener("change", e => {
+  emblems.select("#stateEmblems").attr("data-size", e.target.value);
+  drawEmblems();
+});
+
+emblemsProvinceSizeInput.addEventListener("change", e => {
+  emblems.select("#provinceEmblems").attr("data-size", e.target.value);
+  drawEmblems();
+});
+
+emblemsBurgSizeInput.addEventListener("change", e => {
+  emblems.select("#burgEmblems").attr("data-size", e.target.value);
+  drawEmblems();
+});
 
 // request a URL to image to be used as a texture
 function textureProvideURL() {
