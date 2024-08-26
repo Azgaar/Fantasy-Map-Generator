@@ -119,7 +119,7 @@ function uploadMap(file, callback) {
     const isOutdated = compareVersions(mapVersion, version).isOlder;
 
     if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
-    if (isUpdated) return parseLoadedData("updated", mapData, mapVersion);
+    if (isUpdated) return showUploadMessage("updated", mapData, mapVersion);
     if (isAncient) return showUploadMessage("ancient", mapData, mapVersion);
     if (isNewer) return showUploadMessage("newer", mapData, mapVersion);
     if (isOutdated) return showUploadMessage("outdated", mapData, mapVersion);
@@ -169,8 +169,8 @@ async function parseLoadedResult(result) {
     const decoded = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
 
     const mapData = decoded.split("\r\n");
-    const mapVersion = mapData[0].split("|")[0] || mapData[0];
-    return [mapData, mapVersion];
+    const mapVersionString = mapData[0].split("|")[0] || mapData[0] || "";
+    return [mapData, mapVersionString];
   } catch (error) {
     // map file can be compressed with gzip
     const uncompressedData = await uncompress(result);

@@ -9,10 +9,10 @@ const version = "1.100.00"; // generator version, update each time
   if (loadingScreenVersion) loadingScreenVersion.innerText = `v${version}`;
 
   const storedVersion = localStorage.getItem("version");
-  if (isOutdated(storedVersion)) await clearCache();
-
-  const showUpdate = storedVersion < versionNumber;
-  if (showUpdate) setTimeout(showUpdateWindow, 6000);
+  if (isOutdated(storedVersion)) {
+    await clearCache();
+    setTimeout(showUpdateWindow, 6000);
+  }
 
   function showUpdateWindow() {
     const changelog = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog";
