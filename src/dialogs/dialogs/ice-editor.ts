@@ -1,19 +1,14 @@
 import * as d3 from "d3";
 
-import {closeDialogs} from "dialogs/utils";
-import {layerIsOn, toggleLayer} from "layers";
-import {clearMainTip, tip} from "scripts/tooltips";
-import {findGridCell, getGridPolygon} from "utils/graphUtils";
-import {getInputNumber} from "utils/nodeUtils";
-import {rn} from "utils/numberUtils";
-import {rand} from "utils/probabilityUtils";
-import {byId} from "utils/shorthands";
-import {parseTransform} from "utils/stringUtils";
+import { closeDialogs } from "dialogs/utils";
+import { layerIsOn, toggleLayer } from "layers";
+import { clearMainTip, tip } from "scripts/tooltips";
+import { byId, findGridCell, getGridPolygon, getInputNumber, parseTransform, rand, rn } from "utils";
 // @ts-expect-error js module
-import {editStyle} from "modules/style";
-import {setDefaultEventHandlers} from "scripts/events";
+import { editStyle } from "modules/style";
+import { setDefaultEventHandlers } from "scripts/events";
 // @ts-expect-error js module
-import {unselect} from "modules/ui/editors";
+import { unselect } from "modules/ui/editors";
 
 let isLoaded = false;
 
