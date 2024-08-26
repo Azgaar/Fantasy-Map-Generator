@@ -2,8 +2,6 @@
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 import "./components";
-import "jquery";
-import "jqueryui";
 // @ts-expect-error js-module
 import {defineSvg} from "./modules/define-svg";
 // @ts-expect-error js-module
