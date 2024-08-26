@@ -558,6 +558,11 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   margin: 0;
 }
 
+#options input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
 #options input[type="number"]:hover {
   outline: 1px solid var(--dark-solid);
 }
