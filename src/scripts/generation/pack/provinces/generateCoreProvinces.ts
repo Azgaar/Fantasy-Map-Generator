@@ -35,8 +35,8 @@ export function generateCoreProvinces(states: TStates, burgs: TBurgs, cultures: 
       const fullName = name + " " + formName;
       const color = brighter(getMixedColor(state.color, 0.2), 0.3);
       const coa = generateEmblem(nameByBurg, burgEmblem, type, cultures, cultureId, state);
-
-      provinces.push({i: provinces.length + 1, name, formName, center, burg, state: state.i, fullName, color, coa});
+      const province : IProvince = {i: provinces.length + 1, name, formName, center, burg, state: state.i, fullName, color, coa,pole: state.pole};
+      provinces.push(province);
     }
   });
 

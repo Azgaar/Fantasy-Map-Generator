@@ -54,8 +54,8 @@ export function generateWildProvinces({
 
       const coa = generateEmblem(formName, state, burg, cultureId);
       const color = brighter(getMixedColor(state.color, 0.2), 0.3);
-
-      wildProvinces.push({i: provinceId, name, formName, center, burg: burgId, state: state.i, fullName, color, coa});
+      const province : IProvince = {i: provinceId, name, formName, center, burg: burgId, state: state.i, fullName, color, coa, pole: state.pole};
+      wildProvinces.push(province);
 
       // re-check
       noProvinceCellsInState = noProvinceCells.filter(i => cells.state[i] === state.i && !provinceIds[i]);
