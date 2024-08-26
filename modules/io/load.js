@@ -114,7 +114,7 @@ function uploadMap(file, callback) {
 
     const isInvalid = !mapData || !isValidVersion(mapVersion) || mapData.length < 26 || !mapData[5];
     const isUpdated = compareVersions(mapVersion, version).isEqual;
-    const isAncient = compareVersions(mapVersion, "0.7.00").isOlder;
+    const isAncient = compareVersions(mapVersion, "0.7.0").isOlder;
     const isNewer = compareVersions(mapVersion, version).isNewer;
     const isOutdated = compareVersions(mapVersion, version).isOlder;
 
@@ -126,23 +126,6 @@ function uploadMap(file, callback) {
   };
 
   fileReader.readAsArrayBuffer(file);
-}
-
-function isValidVersion(versionString) {
-  if (!versionString) return false;
-  const [major, minor, patch] = versionString.split(".");
-  return !isNaN(major) && !isNaN(minor) && !isNaN(patch);
-}
-
-function compareVersions(version1, version2) {
-  const [major1, minor1, patch1] = version1.split(".");
-  const [major2, minor2, patch2] = version2.split(".");
-
-  const isEqual = major1 === major2 && minor1 === minor2 && patch1 === patch2;
-  const isNewer = major1 > major2 || (major1 === major2 && (minor1 > minor2 || (minor1 === minor2 && patch1 > patch2)));
-  const isOlder = major1 < major2 || (major1 === major2 && (minor1 < minor2 || (minor1 === minor2 && patch1 < patch2)));
-
-  return {isEqual, isNewer, isOlder};
 }
 
 async function uncompress(compressedData) {
@@ -198,7 +181,7 @@ function showUploadMessage(type, mapData, mapVersion) {
     message = `The map version you are trying to load (${mapVersion}) is newer than the current version.<br>Please load the file in the appropriate version`;
     title = "Newer file";
   } else if (type === "outdated") {
-    INFO && console.info(`Loading map. Auto-update from ${mapVersion} to ${version}`);
+    INFO && console.info(`Loading map. Auto-updating from ${mapVersion} to ${version}`);
     parseLoadedData(mapData, mapVersion);
     return;
   }
@@ -478,9 +461,8 @@ async function parseLoadedData(data, mapVersion) {
 
     {
       // dynamically import and run auto-update script
-      const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.99.01");
-      resolveVersionConflicts(versionNumber);
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.100.00");
+      resolveVersionConflicts(mapVersion);
     }
 
     // add custom heightmap color scheme if any

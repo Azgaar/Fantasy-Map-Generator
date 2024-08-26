@@ -9,7 +9,7 @@ const version = "1.100.00"; // generator version, update each time
   if (loadingScreenVersion) loadingScreenVersion.innerText = `v${version}`;
 
   const storedVersion = localStorage.getItem("version");
-  if (isOutdated(storedVersion)) {
+  if (compareVersions(storedVersion, version).isOlder) {
     await clearCache();
     setTimeout(showUpdateWindow, 6000);
   }
@@ -81,4 +81,23 @@ const version = "1.100.00"; // generator version, update each time
     const cacheNames = await caches.keys();
     return Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
   }
+}
+
+function isValidVersion(versionString) {
+  if (!versionString) return false;
+  const [major, minor, patch] = versionString.split(".");
+  return !isNaN(major) && !isNaN(minor) && !isNaN(patch);
+}
+
+function compareVersions(version1, version2) {
+  if (!isValidVersion(version1) || !isValidVersion(version2)) return {isEqual: false, isNewer: false, isOlder: false};
+
+  const [major1, minor1, patch1] = version1.split(".").map(Number);
+  const [major2, minor2, patch2] = version2.split(".").map(Number);
+
+  const isEqual = major1 === major2 && minor1 === minor2 && patch1 === patch2;
+  const isNewer = major1 > major2 || (major1 === major2 && (minor1 > minor2 || (minor1 === minor2 && patch1 > patch2)));
+  const isOlder = major1 < major2 || (major1 === major2 && (minor1 < minor2 || (minor1 === minor2 && patch1 < patch2)));
+
+  return {isEqual, isNewer, isOlder};
 }
