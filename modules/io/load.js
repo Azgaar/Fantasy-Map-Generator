@@ -113,10 +113,10 @@ function uploadMap(file, callback) {
     const [mapData, mapVersion] = await parseLoadedResult(result);
 
     const isInvalid = !mapData || !isValidVersion(mapVersion) || mapData.length < 26 || !mapData[5];
-    const isUpdated = compareVersions(mapVersion, version).isEqual;
+    const isUpdated = compareVersions(mapVersion, VERSION).isEqual;
     const isAncient = compareVersions(mapVersion, "0.7.0").isOlder;
-    const isNewer = compareVersions(mapVersion, version).isNewer;
-    const isOutdated = compareVersions(mapVersion, version).isOlder;
+    const isNewer = compareVersions(mapVersion, VERSION).isNewer;
+    const isOutdated = compareVersions(mapVersion, VERSION).isOlder;
 
     if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
     if (isUpdated) return showUploadMessage("updated", mapData, mapVersion);
@@ -181,7 +181,7 @@ function showUploadMessage(type, mapData, mapVersion) {
     message = `The map version you are trying to load (${mapVersion}) is newer than the current version.<br>Please load the file in the appropriate version`;
     title = "Newer file";
   } else if (type === "outdated") {
-    INFO && console.info(`Loading map. Auto-updating from ${mapVersion} to ${version}`);
+    INFO && console.info(`Loading map. Auto-updating from ${mapVersion} to ${VERSION}`);
     parseLoadedData(mapData, mapVersion);
     return;
   }
@@ -707,7 +707,7 @@ async function parseLoadedData(data, mapVersion) {
     ERROR && console.error(error);
     clearMainTip();
 
-    alertMessage.innerHTML = /* html */ `An error is occured on map loading. Select a different file to load, <br>generate a new random map or cancel the loading.<br>Map version: ${mapVersion}. Generator version: ${version}.
+    alertMessage.innerHTML = /* html */ `An error is occured on map loading. Select a different file to load, <br>generate a new random map or cancel the loading.<br>Map version: ${mapVersion}. Generator version: ${VERSION}.
       <p id="errorBox">${parseError(error)}</p>`;
 
     $("#alert").dialog({

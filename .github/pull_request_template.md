@@ -14,8 +14,8 @@
 
 # Versioning
 
-<!-- Update the version if you want the PR to be merged fast. Currently it's a manual 3-steps process:
-  * update version in `versioning.js` using semver principle. Just set the next patch (for fixes) or minor version (for new features)
+<!-- Update the VERSION if you want the PR to be merged. Currently it's a manual 3-steps process:
+  * update VERSION in `versioning.js` using semver principle
   * for all changed files update hash (the part after `?`) in place where file is requested (usually it's `index.html`)
   * if the change can be really interesting for end-users, describe it inside the `showUpdateWindow()` function in `versioning.js` -->
 

@@ -1,15 +1,26 @@
 "use strict";
-
-// version and caching control
-const version = "1.100.00"; // generator version, update each time
+/**
+ * Version Control Guidelines
+ * --------------------------
+ * We use Semantic Versioning: major.minor.patch. Refer to https://semver.org
+ * Our .map file format is considered the public API.
+ *
+ * Update the version MANUALLY on each merge to main:
+ * 1. MAJOR version: Incompatible changes that break existing maps
+ * 2. MINOR version: Backwards-compatible changes requiring old .map files to be updated
+ * 3. PATCH version: Backwards-compatible bug fixes or features not affecting .map file format
+ *
+ * Example: 1.102.0 -> Major version 1, Minor version 102, Patch version 0
+ */
+const VERSION = "1.100.00";
 
 {
-  document.title += " v" + version;
+  document.title += " v" + VERSION;
   const loadingScreenVersion = document.getElementById("versionText");
-  if (loadingScreenVersion) loadingScreenVersion.innerText = `v${version}`;
+  if (loadingScreenVersion) loadingScreenVersion.innerText = `v${VERSION}`;
 
   const storedVersion = localStorage.getItem("version");
-  if (compareVersions(storedVersion, version).isOlder) setTimeout(showUpdateWindow, 6000);
+  if (compareVersions(storedVersion, VERSION).isOlder) setTimeout(showUpdateWindow, 6000);
 
   function showUpdateWindow() {
     const changelog = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog";
@@ -17,7 +28,7 @@ const version = "1.100.00"; // generator version, update each time
     const discord = "https://discordapp.com/invite/X7E84HU";
     const patreon = "https://www.patreon.com/azgaar";
 
-    alertMessage.innerHTML = /* html */ `The Fantasy Map Generator is updated up to version <strong>${version}</strong>. This version is compatible with <a href="${changelog}" target="_blank">previous versions</a>, loaded save files will be auto-updated.
+    alertMessage.innerHTML = /* html */ `The Fantasy Map Generator is updated up to version <strong>${VERSION}</strong>. This version is compatible with <a href="${changelog}" target="_blank">previous versions</a>, loaded save files will be auto-updated.
       ${storedVersion ? "<span>Reload the page to fetch fresh code.</span>" : ""}
 
       <ul>
@@ -49,7 +60,7 @@ const version = "1.100.00"; // generator version, update each time
           clearCache();
           localStorage.clear();
         }
-        localStorage.setItem("version", version);
+        localStorage.setItem("version", VERSION);
       }
     };
 
@@ -57,7 +68,7 @@ const version = "1.100.00"; // generator version, update each time
       buttons.Reload = () => {
         clearCache();
         localStorage.clear();
-        localStorage.setItem("version", version);
+        localStorage.setItem("version", VERSION);
         location.reload();
       };
     }

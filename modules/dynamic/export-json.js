@@ -72,7 +72,7 @@ function getGridDataJson() {
 
 function getMapInfo() {
   return {
-    version,
+    version: VERSION,
     description: "Azgaar's Fantasy Map Generator output: azgaar.github.io/Fantasy-map-generator",
     exportedAt: new Date().toISOString(),
     mapName: mapName.value,

@@ -684,7 +684,7 @@ async function generate(options) {
       buttons: {
         "Clear data": function () {
           localStorage.clear();
-          localStorage.setItem("version", version);
+          localStorage.setItem("version", VERSION);
         },
         Regenerate: function () {
           regenerateMap("generation error");
