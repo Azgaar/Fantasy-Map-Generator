@@ -9,10 +9,7 @@ const version = "1.100.00"; // generator version, update each time
   if (loadingScreenVersion) loadingScreenVersion.innerText = `v${version}`;
 
   const storedVersion = localStorage.getItem("version");
-  if (compareVersions(storedVersion, version).isOlder) {
-    await clearCache();
-    setTimeout(showUpdateWindow, 6000);
-  }
+  if (compareVersions(storedVersion, version).isOlder) setTimeout(showUpdateWindow, 6000);
 
   function showUpdateWindow() {
     const changelog = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog";
@@ -48,13 +45,17 @@ const version = "1.100.00"; // generator version, update each time
     const buttons = {
       Ok: function () {
         $(this).dialog("close");
-        if (storedVersion) localStorage.clear();
+        if (storedVersion) {
+          clearCache();
+          localStorage.clear();
+        }
         localStorage.setItem("version", version);
       }
     };
 
     if (storedVersion) {
       buttons.Reload = () => {
+        clearCache();
         localStorage.clear();
         localStorage.setItem("version", version);
         location.reload();
@@ -68,13 +69,6 @@ const version = "1.100.00"; // generator version, update each time
       position: {my: "center center-4em", at: "center", of: "svg"},
       buttons
     });
-  }
-
-  function isOutdated(storedVersion) {
-    if (!storedVersion) return true;
-    const [major, minor, _patch] = version.split(".");
-    const [storedMajor, storedMinor, _storedPatch] = storedVersion.split(".");
-    return storedMajor !== major || storedMinor !== minor; // ignore patch version
   }
 
   async function clearCache() {
