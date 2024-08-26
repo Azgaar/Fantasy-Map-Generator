@@ -104,8 +104,6 @@ function showUploadErrorMessage(error, URL, random) {
 
 function uploadMap(file, callback) {
   uploadMap.timeStart = performance.now();
-  const OLDEST_SUPPORTED_VERSION = 0.7;
-  const currentVersion = parseFloat(version);
 
   const fileReader = new FileReader();
   fileReader.onloadend = async function (fileLoadedEvent) {
@@ -114,20 +112,37 @@ function uploadMap(file, callback) {
     const result = fileLoadedEvent.target.result;
     const [mapData, mapVersion] = await parseLoadedResult(result);
 
-    const isInvalid = !mapData || isNaN(mapVersion) || mapData.length < 26 || !mapData[5];
-    const isUpdated = mapVersion === currentVersion;
-    const isAncient = mapVersion < OLDEST_SUPPORTED_VERSION;
-    const isNewer = mapVersion > currentVersion;
-    const isOutdated = mapVersion < currentVersion;
+    const isInvalid = !mapData || !isValidVersion(mapVersion) || mapData.length < 26 || !mapData[5];
+    const isUpdated = compareVersions(mapVersion, version).isEqual;
+    const isAncient = compareVersions(mapVersion, "0.7.00").isOlder;
+    const isNewer = compareVersions(mapVersion, version).isNewer;
+    const isOutdated = compareVersions(mapVersion, version).isOlder;
 
     if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
-    if (isUpdated) return parseLoadedData(mapData);
+    if (isUpdated) return parseLoadedData("updated", mapData, mapVersion);
     if (isAncient) return showUploadMessage("ancient", mapData, mapVersion);
     if (isNewer) return showUploadMessage("newer", mapData, mapVersion);
     if (isOutdated) return showUploadMessage("outdated", mapData, mapVersion);
   };
 
   fileReader.readAsArrayBuffer(file);
+}
+
+function isValidVersion(versionString) {
+  if (!versionString) return false;
+  const [major, minor, patch] = versionString.split(".");
+  return !isNaN(major) && !isNaN(minor) && !isNaN(patch);
+}
+
+function compareVersions(version1, version2) {
+  const [major1, minor1, patch1] = version1.split(".");
+  const [major2, minor2, patch2] = version2.split(".");
+
+  const isEqual = major1 === major2 && minor1 === minor2 && patch1 === patch2;
+  const isNewer = major1 > major2 || (major1 === major2 && (minor1 > minor2 || (minor1 === minor2 && patch1 > patch2)));
+  const isOlder = major1 < major2 || (major1 === major2 && (minor1 < minor2 || (minor1 === minor2 && patch1 < patch2)));
+
+  return {isEqual, isNewer, isOlder};
 }
 
 async function uncompress(compressedData) {
@@ -154,7 +169,7 @@ async function parseLoadedResult(result) {
     const decoded = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
 
     const mapData = decoded.split("\r\n");
-    const mapVersion = parseFloat(mapData[0].split("|")[0] || mapData[0]);
+    const mapVersion = mapData[0].split("|")[0] || mapData[0];
     return [mapData, mapVersion];
   } catch (error) {
     // map file can be compressed with gzip
@@ -167,21 +182,21 @@ async function parseLoadedResult(result) {
 }
 
 function showUploadMessage(type, mapData, mapVersion) {
-  const archive = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "archived version");
-  let message, title, canBeLoaded;
+  let message, title;
 
   if (type === "invalid") {
-    message = `The file does not look like a valid save file.<br>Please check the data format`;
+    message = "The file does not look like a valid save file.<br>Please check the data format";
     title = "Invalid file";
-    canBeLoaded = false;
+  } else if (type === "updated") {
+    parseLoadedData(mapData, mapVersion);
+    return;
   } else if (type === "ancient") {
+    const archive = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "archived version");
     message = `The map version you are trying to load (${mapVersion}) is too old and cannot be updated to the current version.<br>Please keep using an ${archive}`;
     title = "Ancient file";
-    canBeLoaded = false;
   } else if (type === "newer") {
     message = `The map version you are trying to load (${mapVersion}) is newer than the current version.<br>Please load the file in the appropriate version`;
     title = "Newer file";
-    canBeLoaded = false;
   } else if (type === "outdated") {
     INFO && console.info(`Loading map. Auto-update from ${mapVersion} to ${version}`);
     parseLoadedData(mapData, mapVersion);
@@ -189,13 +204,14 @@ function showUploadMessage(type, mapData, mapVersion) {
   }
 
   alertMessage.innerHTML = message;
-  const buttons = {
-    OK: function () {
-      $(this).dialog("close");
-      if (canBeLoaded) parseLoadedData(mapData, mapVersion);
+  $("#alert").dialog({
+    title,
+    buttons: {
+      OK: function () {
+        $(this).dialog("close");
+      }
     }
-  };
-  $("#alert").dialog({title, buttons});
+  });
 }
 
 async function parseLoadedData(data, mapVersion) {

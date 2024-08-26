@@ -2,17 +2,17 @@
 
 window.Zones = (function () {
   const config = {
-    invasion: {modifier: 1.8, generate: addInvasion}, // invasion of enemy lands
-    rebels: {modifier: 1.6, generate: addRebels}, // rebels along a state border
-    proselytism: {modifier: 1.6, generate: addProselytism}, // proselitism of organized religion
-    crusade: {modifier: 1.6, generate: addCrusade}, // crusade on heresy lands
-    disease: {modifier: 1.8, generate: addDisease}, // disease starting in a random city
-    disaster: {modifier: 1.4, generate: addDisaster}, // disaster starting in a random city
-    eruption: {modifier: 1.4, generate: addEruption}, // volcanic eruption aroung volcano
-    avalanche: {modifier: 1.0, generate: addAvalanche}, // avalanche impacting highland road
-    fault: {modifier: 1.4, generate: addFault}, // fault line in elevated areas
-    flood: {modifier: 1.4, generate: addFlood}, // flood on river banks
-    tsunami: {modifier: 1.2, generate: addTsunami} // tsunami starting near coast
+    invasion: {quantity: 1.8, generate: addInvasion}, // invasion of enemy lands
+    rebels: {quantity: 1.6, generate: addRebels}, // rebels along a state border
+    proselytism: {quantity: 1.6, generate: addProselytism}, // proselitism of organized religion
+    crusade: {quantity: 1.6, generate: addCrusade}, // crusade on heresy lands
+    disease: {quantity: 1.8, generate: addDisease}, // disease starting in a random city
+    disaster: {quantity: 1.2, generate: addDisaster}, // disaster starting in a random city
+    eruption: {quantity: 1.4, generate: addEruption}, // volcanic eruption aroung volcano
+    avalanche: {quantity: 1.0, generate: addAvalanche}, // avalanche impacting highland road
+    fault: {quantity: 1.4, generate: addFault}, // fault line in elevated areas
+    flood: {quantity: 1.4, generate: addFlood}, // flood on river banks
+    tsunami: {quantity: 1.2, generate: addTsunami} // tsunami starting near coast
   };
 
   const generate = function (globalModifier = 1) {
@@ -22,12 +22,13 @@ window.Zones = (function () {
     pack.zones = [];
 
     Object.values(config).forEach(type => {
-      const count = rn(Math.random() * type.modifier * globalModifier);
+      const count = rn(Math.random() * type.quantity * globalModifier);
       for (let i = 0; i < count; i++) {
         type.generate(usedCells);
       }
     });
 
+    console.table(pack.zones);
     drawZones();
 
     function drawZones() {
@@ -59,11 +60,11 @@ window.Zones = (function () {
     if (!atWar.length) return;
 
     const invader = ra(atWar);
-    const target = invader.diplomacy.findIndex(d => d === "Enemy");
+    const target = invader.diplomacy.find(d => d === "Enemy");
 
     const cells = pack.cells;
     const cell = ra(
-      cells.i.filter(i => cells.state[i] === target && cells.c[i].some(c => cells.state[c] === invader.i))
+      cells.i.filter(i => cells.state[i] === target.i && cells.c[i].some(c => cells.state[c] === invader.i))
     );
     if (!cell) return;
 
@@ -78,7 +79,7 @@ window.Zones = (function () {
 
       cells.c[q].forEach(e => {
         if (usedCells[e]) return;
-        if (cells.state[e] !== target) return;
+        if (cells.state[e] !== target.i) return;
         usedCells[e] = 1;
         queue.push(e);
       });
@@ -426,7 +427,7 @@ window.Zones = (function () {
       });
     }
 
-    const name = getAdjective(burgs[cells.burg[cell]].name) + " Flood";
+    const name = getAdjective(pack.burgs[cells.burg[cell]].name) + " Flood";
     pack.zones.push({name, type: "Disaster", cells: cellsArray, color: "url(#hatch13)"});
   }
 

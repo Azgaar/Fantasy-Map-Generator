@@ -8,11 +8,8 @@ const version = "1.100.00"; // generator version, update each time
   const loadingScreenVersion = document.getElementById("versionText");
   if (loadingScreenVersion) loadingScreenVersion.innerText = `v${version}`;
 
-  const versionNumber = parseFloat(version);
-  const storedVersion = localStorage.getItem("version") ? parseFloat(localStorage.getItem("version")) : 0;
-
-  const isOutdated = storedVersion !== versionNumber;
-  if (isOutdated) clearCache();
+  const storedVersion = localStorage.getItem("version");
+  if (isOutdated(storedVersion)) await clearCache();
 
   const showUpdate = storedVersion < versionNumber;
   if (showUpdate) setTimeout(showUpdateWindow, 6000);
@@ -73,8 +70,15 @@ const version = "1.100.00"; // generator version, update each time
     });
   }
 
+  function isOutdated(storedVersion) {
+    if (!storedVersion) return true;
+    const [major, minor, _patch] = version.split(".");
+    const [storedMajor, storedMinor, _storedPatch] = storedVersion.split(".");
+    return storedMajor !== major || storedMinor !== minor; // ignore patch version
+  }
+
   async function clearCache() {
     const cacheNames = await caches.keys();
-    Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+    return Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
   }
 }
