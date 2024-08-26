@@ -546,7 +546,7 @@ function regenerateZones(event) {
 
   function addNumberOfZones(number) {
     zones.selectAll("g").remove(); // remove existing zones
-    addZones(number);
+    Zones.generate(number);
     if (document.getElementById("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
     if (!layerIsOn("toggleZones")) toggleZones();
   }

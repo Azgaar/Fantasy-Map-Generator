@@ -310,7 +310,7 @@ window.Submap = (function () {
     stage("Redraw emblems.");
     drawEmblems();
     stage("Regenerating Zones.");
-    addZones();
+    Zones.generate();
     Names.getMapName();
     stage("Restoring Notes.");
     notes = parentMap.notes;

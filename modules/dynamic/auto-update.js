@@ -63,7 +63,7 @@ export function resolveVersionConflicts(version) {
       .attr("stroke-width", 0)
       .attr("stroke-dasharray", null)
       .attr("stroke-linecap", "butt");
-    addZones();
+    Zones.generate();
     if (!markers.selectAll("*").size()) {
       Markers.generate();
       turnButtonOn("toggleMarkers");
