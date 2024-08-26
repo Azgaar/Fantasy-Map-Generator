@@ -8,7 +8,7 @@
  * Update the version MANUALLY on each merge to main:
  * 1. MAJOR version: Incompatible changes that break existing maps
  * 2. MINOR version: Backwards-compatible changes requiring old .map files to be updated
- * 3. PATCH version: Backwards-compatible bug fixes or features not affecting .map file format
+ * 3. PATCH version: Backwards-compatible bug fixes not affecting .map file format
  *
  * Example: 1.102.0 -> Major version 1, Minor version 102, Patch version 0
  */
@@ -29,7 +29,7 @@ const VERSION = "1.100.00";
     const patreon = "https://www.patreon.com/azgaar";
 
     alertMessage.innerHTML = /* html */ `The Fantasy Map Generator is updated up to version <strong>${VERSION}</strong>. This version is compatible with <a href="${changelog}" target="_blank">previous versions</a>, loaded save files will be auto-updated.
-      ${storedVersion ? "<span>Reload the page to fetch fresh code.</span>" : ""}
+      ${storedVersion ? "<span>Click on OK and then reload the page to fetch fresh code.</span>" : ""}
 
       <ul>
         <strong>Latest changes:</strong>
