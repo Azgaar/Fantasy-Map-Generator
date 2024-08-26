@@ -358,7 +358,9 @@ window.Military = (function () {
       .attr("id", d => "regiment" + s + "-" + d.i)
       .attr("data-name", d => d.name)
       .attr("data-state", s)
-      .attr("data-id", d => d.i);
+      .attr("data-id", d => d.i)
+      .attr("transform", d => (d.angle ? `rotate(${d.angle})` : null))
+      .attr("transform-origin", d => `${d.x}px ${d.y}px`);
     g.append("rect")
       .attr("x", d => x(d))
       .attr("y", d => y(d))
@@ -404,7 +406,9 @@ window.Military = (function () {
       .attr("id", "regiment" + stateId + "-" + reg.i)
       .attr("data-name", reg.name)
       .attr("data-state", stateId)
-      .attr("data-id", reg.i);
+      .attr("data-id", reg.i)
+      .attr("transform", `rotate(${reg.angle || 0})`)
+      .attr("transform-origin", `${reg.x}px ${reg.y}px`);
     g.append("rect").attr("x", x1).attr("y", y1).attr("width", w).attr("height", h);
     g.append("text").attr("x", reg.x).attr("y", reg.y).text(getTotal(reg));
     g.append("rect")

@@ -1,37 +1,30 @@
 "use strict";
 
-window.BurgsAndStates = (function () {
-  const generate = function () {
+window.BurgsAndStates = (() => {
+  const generate = () => {
     const {cells, cultures} = pack;
     const n = cells.i.length;
 
     cells.burg = new Uint16Array(n); // cell burg
-    cells.road = new Uint16Array(n); // cell road power
-    cells.crossroad = new Uint16Array(n); // cell crossroad power
 
     const burgs = (pack.burgs = placeCapitals());
     pack.states = createStates();
-    const capitalRoutes = Routes.getRoads();
 
     placeTowns();
     expandStates();
     normalizeStates();
-    const townRoutes = Routes.getTrails();
     specifyBurgs();
-
-    const oceanRoutes = Routes.getSearoutes();
 
     collectStatistics();
     assignColors();
 
     generateCampaigns();
     generateDiplomacy();
-    Routes.draw(capitalRoutes, townRoutes, oceanRoutes);
     drawBurgs();
 
     function placeCapitals() {
       TIME && console.time("placeCapitals");
-      let count = +regionsOutput.value;
+      let count = +byId("statesNumber").value;
       let burgs = [0];
 
       const rand = () => 0.5 + Math.random() * 0.5;
@@ -81,7 +74,7 @@ window.BurgsAndStates = (function () {
       const colors = getColors(burgs.length - 1);
       const each5th = each(5);
 
-      burgs.forEach(function (b, i) {
+      burgs.forEach((b, i) => {
         if (!i) return; // skip first element
 
         // burgs data
@@ -92,7 +85,7 @@ window.BurgsAndStates = (function () {
         b.capital = 1;
 
         // states data
-        const expansionism = rn(Math.random() * powerInput.value + 1, 1);
+        const expansionism = rn(Math.random() * byId("sizeVariety").value + 1, 1);
         const basename = b.name.length < 9 && each5th(b.cell) ? b.name : Names.getCultureShort(b.culture);
         const name = Names.getState(basename, b.culture);
         const type = cultures[b.culture].type;
@@ -138,9 +131,8 @@ window.BurgsAndStates = (function () {
       while (burgsAdded < burgsNumber && spacing > 1) {
         for (let i = 0; burgsAdded < burgsNumber && i < sorted.length; i++) {
           if (cells.burg[sorted[i]]) continue;
-          const cell = sorted[i],
-            x = cells.p[cell][0],
-            y = cells.p[cell][1];
+          const cell = sorted[i];
+          const [x, y] = cells.p[cell];
           const s = spacing * gauss(1, 0.3, 0.2, 2, 2); // randomize to make placement not uniform
           if (burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
           const burg = burgs.length;
@@ -164,12 +156,10 @@ window.BurgsAndStates = (function () {
   };
 
   // define burg coordinates, coa, port status and define details
-  const specifyBurgs = function () {
+  const specifyBurgs = () => {
     TIME && console.time("specifyBurgs");
-    const cells = pack.cells,
-      vertices = pack.vertices,
-      features = pack.features,
-      temp = grid.cells.temp;
+    const {cells, features} = pack;
+    const temp = grid.cells.temp;
 
     for (const b of pack.burgs) {
       if (!b.i || b.lock) continue;
@@ -185,12 +175,12 @@ window.BurgsAndStates = (function () {
       } else b.port = 0;
 
       // define burg population (keep urbanization at about 10% rate)
-      b.population = rn(Math.max((cells.s[i] + cells.road[i] / 2) / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
+      b.population = rn(Math.max(cells.s[i] / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
       if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
 
       if (b.port) {
         b.population = b.population * 1.3; // increase port population
-        const [x, y] = getMiddlePoint(i, haven);
+        const [x, y] = getCloseToEdgePoint(i, haven);
         b.x = x;
         b.y = y;
       }
@@ -231,7 +221,24 @@ window.BurgsAndStates = (function () {
     TIME && console.timeEnd("specifyBurgs");
   };
 
-  const getType = function (i, port) {
+  function getCloseToEdgePoint(cell1, cell2) {
+    const {cells, vertices} = pack;
+
+    const [x0, y0] = cells.p[cell1];
+
+    const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
+    const [x1, y1] = vertices.p[commonVertices[0]];
+    const [x2, y2] = vertices.p[commonVertices[1]];
+    const xEdge = (x1 + x2) / 2;
+    const yEdge = (y1 + y2) / 2;
+
+    const x = rn(x0 + 0.95 * (xEdge - x0), 2);
+    const y = rn(y0 + 0.95 * (yEdge - y0), 2);
+
+    return [x, y];
+  }
+
+  const getType = (i, port) => {
     const cells = pack.cells;
     if (port) return "Naval";
     if (cells.haven[i] && pack.features[cells.f[cells.haven[i]]].type === "lake") return "Lake";
@@ -246,10 +253,11 @@ window.BurgsAndStates = (function () {
     return "Generic";
   };
 
-  const defineBurgFeatures = function (newburg) {
-    const cells = pack.cells;
+  const defineBurgFeatures = burg => {
+    const {cells} = pack;
+
     pack.burgs
-      .filter(b => (newburg ? b.i == newburg.i : b.i && !b.removed))
+      .filter(b => (burg ? b.i == burg.i : b.i && !b.removed && !b.lock))
       .forEach(b => {
         const pop = b.population;
         b.citadel = Number(b.capital || (pop > 50 && P(0.75)) || (pop > 15 && P(0.5)) || P(0.1));
@@ -264,7 +272,7 @@ window.BurgsAndStates = (function () {
       });
   };
 
-  const drawBurgs = function () {
+  const drawBurgs = () => {
     TIME && console.time("drawBurgs");
 
     // remove old data
@@ -362,7 +370,7 @@ window.BurgsAndStates = (function () {
   };
 
   // expand cultures across the map (Dijkstra-like algorithm)
-  const expandStates = function () {
+  const expandStates = () => {
     TIME && console.time("expandStates");
     const {cells, states, cultures, burgs} = pack;
 
@@ -370,9 +378,9 @@ window.BurgsAndStates = (function () {
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
-    const globalNeutralRate = byId("neutralInput")?.valueAsNumber || 1;
-    const statesNeutralRate = byId("statesNeutral")?.valueAsNumber || 1;
-    const neutral = (cells.i.length / 2) * globalNeutralRate * statesNeutralRate; // limit cost for state growth
+    const globalGrowthRate = byId("growthRate").valueAsNumber || 1;
+    const statesGrowthRate = byId("statesGrowthRate")?.valueAsNumber || 1;
+    const growthRate = (cells.i.length / 2) * globalGrowthRate * statesGrowthRate; // limit cost for state growth
 
     // remove state from all cells except of locked
     for (const cellId of cells.i) {
@@ -411,7 +419,7 @@ window.BurgsAndStates = (function () {
         const cellCost = Math.max(cultureCost + populationCost + biomeCost + heightCost + riverCost + typeCost, 0);
         const totalCost = p + 10 + cellCost / states[s].expansionism;
 
-        if (totalCost > neutral) return;
+        if (totalCost > growthRate) return;
 
         if (!cost[e] || totalCost < cost[e]) {
           if (cells.h[e] >= 20) cells.state[e] = s; // assign state to cell
@@ -458,7 +466,7 @@ window.BurgsAndStates = (function () {
     TIME && console.timeEnd("expandStates");
   };
 
-  const normalizeStates = function () {
+  const normalizeStates = () => {
     TIME && console.time("normalizeStates");
     const cells = pack.cells,
       burgs = pack.burgs;
@@ -480,7 +488,7 @@ window.BurgsAndStates = (function () {
 
   // Resets the cultures of all burgs and states to their
   // cell or center cell's (respectively) culture.
-  const updateCultures = function () {
+  const updateCultures = () => {
     TIME && console.time("updateCulturesForBurgsAndStates");
 
     // Assign the culture associated with the burgs cell.
@@ -505,7 +513,7 @@ window.BurgsAndStates = (function () {
   };
 
   // calculate states data like area, population etc.
-  const collectStatistics = function () {
+  const collectStatistics = () => {
     TIME && console.time("collectStatistics");
     const {cells, states} = pack;
 
@@ -543,7 +551,7 @@ window.BurgsAndStates = (function () {
     TIME && console.timeEnd("collectStatistics");
   };
 
-  const assignColors = function () {
+  const assignColors = () => {
     TIME && console.time("assignColors");
     const colors = ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#ffd92f"]; // d3.schemeSet2;
 
@@ -579,6 +587,7 @@ window.BurgsAndStates = (function () {
     Expedition: 1,
     Crusade: 1
   };
+
   const generateCampaign = state => {
     const neighbors = state.neighbors.length ? state.neighbors : [0];
     return neighbors
@@ -592,7 +601,7 @@ window.BurgsAndStates = (function () {
   };
 
   // generate historical conflicts of each state
-  const generateCampaigns = function () {
+  const generateCampaigns = () => {
     pack.states.forEach(s => {
       if (!s.i || s.removed) return;
       s.campaigns = generateCampaign(s);
@@ -600,7 +609,7 @@ window.BurgsAndStates = (function () {
   };
 
   // generate Diplomatic Relationships
-  const generateDiplomacy = function () {
+  const generateDiplomacy = () => {
     TIME && console.time("generateDiplomacy");
     const cells = pack.cells,
       states = pack.states;
@@ -785,7 +794,7 @@ window.BurgsAndStates = (function () {
   };
 
   // select a forms for listed or all valid states
-  const defineStateForms = function (list) {
+  const defineStateForms = list => {
     TIME && console.time("defineStateForms");
     const states = pack.states.filter(s => s.i && !s.removed && !s.lock);
     if (states.length < 1) return;
@@ -933,14 +942,14 @@ window.BurgsAndStates = (function () {
     "Marches"
   ];
 
-  const getFullName = function (s) {
-    if (!s.formName) return s.name;
-    if (!s.name && s.formName) return "The " + s.formName;
-    const adjName = adjForms.includes(s.formName) && !/-| /.test(s.name);
-    return adjName ? `${getAdjective(s.name)} ${s.formName}` : `${s.formName} of ${s.name}`;
+  const getFullName = state => {
+    if (!state.formName) return state.name;
+    if (!state.name && state.formName) return "The " + state.formName;
+    const adjName = adjForms.includes(state.formName) && !/-| /.test(state.name);
+    return adjName ? `${getAdjective(state.name)} ${state.formName}` : `${state.formName} of ${state.name}`;
   };
 
-  const generateProvinces = function (regenerate = false, regenerateInLockedStates = false) {
+  const generateProvinces = (regenerate = false, regenerateInLockedStates = false) => {
     TIME && console.time("generateProvinces");
     const localSeed = regenerate ? generateSeed() : seed;
     Math.random = aleaPRNG(localSeed);
@@ -966,9 +975,8 @@ window.BurgsAndStates = (function () {
       });
     }
 
-    const percentage = +provincesInput.value;
-
-    const max = percentage == 100 ? 1000 : gauss(20, 5, 5, 100) * percentage ** 0.5; // max growth
+    const provincesRatio = +byId("provincesRatio").value;
+    const max = provincesRatio == 100 ? 1000 : gauss(20, 5, 5, 100) * provincesRatio ** 0.5; // max growth
 
     const forms = {
       Monarchy: {County: 22, Earldom: 6, Shire: 2, Landgrave: 2, Margrave: 2, Barony: 2, Captaincy: 1, Seneschalty: 1},
@@ -991,7 +999,7 @@ window.BurgsAndStates = (function () {
         .sort((a, b) => b.population * gauss(1, 0.2, 0.5, 1.5, 3) - a.population)
         .sort((a, b) => b.capital - a.capital);
       if (stateBurgs.length < 2) return; // at least 2 provinces are required
-      const provincesNumber = Math.max(Math.ceil((stateBurgs.length * percentage) / 100), 2);
+      const provincesNumber = Math.max(Math.ceil((stateBurgs.length * provincesRatio) / 100), 2);
 
       const form = Object.assign({}, forms[s.form]);
 
@@ -1128,14 +1136,14 @@ window.BurgsAndStates = (function () {
         const isleGroup = !singleIsle && !provCells.find(i => pack.features[cells.f[i]].group !== "isle");
         const colony = !singleIsle && !isleGroup && P(0.5) && !isPassable(s.center, center);
 
-        const name = (function () {
+        const name = (() => {
           const colonyName = colony && P(0.8) && getColonyName();
           if (colonyName) return colonyName;
           if (burgCell && P(0.5)) return burgs[burg].name;
           return Names.getState(Names.getCultureShort(c), c);
         })();
 
-        const formName = (function () {
+        const formName = (() => {
           if (singleIsle) return "Island";
           if (isleGroup) return "Islands";
           if (colony) return "Colony";

@@ -93,7 +93,7 @@ function restoreCustomPresets() {
 
 // run on map generation
 function applyPreset() {
-  const preset = localStorage.getItem("preset") || document.getElementById("layersPreset").value;
+  const preset = localStorage.getItem("preset") || byId("layersPreset").value;
   changePreset(preset);
 }
 
@@ -113,12 +113,12 @@ function changePreset(preset) {
   const isDefault = getDefaultPresets()[preset];
   removePresetButton.style.display = isDefault ? "none" : "inline-block";
   savePresetButton.style.display = "none";
-  if (document.getElementById("canvas3d")) setTimeout(ThreeD.update(), 400);
+  if (byId("canvas3d")) setTimeout(ThreeD.update(), 400);
 }
 
 function savePreset() {
   prompt("Please provide a preset name", {default: ""}, preset => {
-    presets[preset] = Array.from(document.getElementById("mapLayers").querySelectorAll("li:not(.buttonoff)"))
+    presets[preset] = Array.from(byId("mapLayers").querySelectorAll("li:not(.buttonoff)"))
       .map(node => node.id)
       .sort();
     layersPreset.add(new Option(preset, preset, false, true));
@@ -143,7 +143,7 @@ function removePreset() {
 }
 
 function getCurrentPreset() {
-  const layers = Array.from(document.getElementById("mapLayers").querySelectorAll("li:not(.buttonoff)"))
+  const layers = Array.from(byId("mapLayers").querySelectorAll("li:not(.buttonoff)"))
     .map(node => node.id)
     .sort();
   const defaultPresets = getDefaultPresets();
@@ -169,11 +169,12 @@ function restoreLayers() {
   if (layerIsOn("toggleGrid")) drawGrid();
   if (layerIsOn("toggleCoordinates")) drawCoordinates();
   if (layerIsOn("toggleCompass")) compass.style("display", "block");
+  if (layerIsOn("toggleRoutes")) drawRoutes();
   if (layerIsOn("toggleTemp")) drawTemp();
   if (layerIsOn("togglePrec")) drawPrec();
   if (layerIsOn("togglePopulation")) drawPopulation();
   if (layerIsOn("toggleBiomes")) drawBiomes();
-  if (layerIsOn("toggleRelief")) ReliefIcons();
+  if (layerIsOn("toggleRelief")) ReliefIcons.draw();
   if (layerIsOn("toggleCultures")) drawCultures();
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (layerIsOn("toggleReligions")) drawReligions();
@@ -392,7 +393,6 @@ function drawTemp() {
     const start = findStart(i, t);
     if (!start) continue;
     used[i] = 1;
-    //debug.append("circle").attr("r", 3).attr("cx", vertices.p[start][0]).attr("cy", vertices.p[start][1]).attr("fill", "red").attr("stroke", "black").attr("stroke-width", .3);
 
     const chain = connectVertices(start, t); // vertices chain to form a path
     const relaxed = chain.filter((v, i) => i % 4 === 0 || vertices.c[v].some(c => c >= n));
@@ -1070,27 +1070,29 @@ function drawStates() {
 
   const bodyData = body.map((p, s) => [p.length > 10 ? p : null, s, states[s].color]).filter(d => d[0]);
   const gapData = gap.map((p, s) => [p.length > 10 ? p : null, s, states[s].color]).filter(d => d[0]);
-  const haloData = halo.map((p, s) => [p.length > 10 ? p : null, s, states[s].color]).filter(d => d[0]);
 
   const bodyString = bodyData.map(d => `<path id="state${d[1]}" d="${d[0]}" fill="${d[2]}" stroke="none"/>`).join("");
   const gapString = gapData.map(d => `<path id="state-gap${d[1]}" d="${d[0]}" fill="none" stroke="${d[2]}"/>`).join("");
-  const clipString = bodyData
-    .map(d => `<clipPath id="state-clip${d[1]}"><use href="#state${d[1]}"/></clipPath>`)
-    .join("");
-  const haloString = haloData
-    .map(
-      d =>
-        `<path id="state-border${d[1]}" d="${d[0]}" clip-path="url(#state-clip${d[1]})" stroke="${
-          d3.color(d[2]) ? d3.color(d[2]).darker().hex() : "#666666"
-        }"/>`
-    )
-    .join("");
-
   statesBody.html(bodyString + gapString);
-  defs.select("#statePaths").html(clipString);
-  statesHalo.html(haloString);
 
-  // connect vertices to chain
+  const isOptimized = shapeRendering.value === "optimizeSpeed";
+  if (!isOptimized) {
+    const haloData = halo.map((p, s) => [p.length > 10 ? p : null, s, states[s].color]).filter(d => d[0]);
+
+    const haloString = haloData
+      .map(d => {
+        const stroke = d3.color(d[2]) ? d3.color(d[2]).darker().hex() : "#666666";
+        return `<path id="state-border${d[1]}" d="${d[0]}" clip-path="url(#state-clip${d[1]})" stroke="${stroke}"/>`;
+      })
+      .join("");
+    statesHalo.html(haloString);
+
+    const clipString = bodyData
+      .map(d => `<clipPath id="state-clip${d[1]}"><use href="#state${d[1]}"/></clipPath>`)
+      .join("");
+    defs.select("#statePaths").html(clipString);
+  }
+
   function connectVertices(start, state) {
     const chain = []; // vertices chain to form a path
     const getType = c => {
@@ -1514,8 +1516,8 @@ function drawCoordinates() {
 
 // conver svg point into viewBox point
 function getViewPoint(x, y) {
-  const view = document.getElementById("viewbox");
-  const svg = document.getElementById("map");
+  const view = byId("viewbox");
+  const svg = byId("map");
   const pt = svg.createSVGPoint();
   (pt.x = x), (pt.y = y);
   return pt.matrixTransform(view.getScreenCTM().inverse());
@@ -1525,10 +1527,6 @@ function toggleCompass(event) {
   if (!layerIsOn("toggleCompass")) {
     turnButtonOn("toggleCompass");
     $("#compass").fadeIn();
-    if (!compass.selectAll("*").size()) {
-      compass.append("use").attr("xlink:href", "#rose");
-      shiftCompass();
-    }
     if (event && isCtrlClick(event)) editStyle("compass");
   } else {
     if (event && isCtrlClick(event)) {
@@ -1543,7 +1541,7 @@ function toggleCompass(event) {
 function toggleRelief(event) {
   if (!layerIsOn("toggleRelief")) {
     turnButtonOn("toggleRelief");
-    if (!terrain.selectAll("*").size()) ReliefIcons();
+    if (!terrain.selectAll("*").size()) ReliefIcons.draw();
     $("#terrain").fadeIn();
     if (event && isCtrlClick(event)) editStyle("terrain");
   } else {
@@ -1624,16 +1622,32 @@ function drawRivers() {
 function toggleRoutes(event) {
   if (!layerIsOn("toggleRoutes")) {
     turnButtonOn("toggleRoutes");
-    $("#routes").fadeIn();
+    drawRoutes();
     if (event && isCtrlClick(event)) editStyle("routes");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("routes");
-      return;
-    }
-    $("#routes").fadeOut();
+    if (event && isCtrlClick(event)) return editStyle("routes");
+    routes.selectAll("path").remove();
     turnButtonOff("toggleRoutes");
   }
+}
+
+function drawRoutes() {
+  TIME && console.time("drawRoutes");
+  const routePaths = {};
+
+  for (const route of pack.routes) {
+    const {i, group, points} = route;
+    if (!points || points.length < 2) continue;
+    if (!routePaths[group]) routePaths[group] = [];
+    routePaths[group].push(`<path id="route${i}" d="${Routes.getPath(route)}"/>`);
+  }
+
+  routes.selectAll("path").remove();
+  for (const group in routePaths) {
+    routes.select("#" + group).html(routePaths[group].join(""));
+  }
+
+  TIME && console.timeEnd("drawRoutes");
 }
 
 function toggleMilitary() {
@@ -1760,7 +1774,6 @@ function toggleScaleBar(event) {
 function drawScaleBar(scaleBar, scaleLevel) {
   if (!scaleBar.size() || scaleBar.style("display") === "none") return;
 
-  const distanceScale = +distanceScaleInput.value;
   const unit = distanceUnitInput.value;
   const size = +scaleBar.attr("data-bar-size");
 
@@ -1895,21 +1908,21 @@ function drawEmblems() {
   const getStateEmblemsSize = () => {
     const startSize = minmax((graphHeight + graphWidth) / 40, 10, 100);
     const statesMod = 1 + validStates.length / 100 - (15 - validStates.length) / 200; // states number modifier
-    const sizeMod = +document.getElementById("emblemsStateSizeInput").value || 1;
+    const sizeMod = +emblems.select("#stateEmblems").attr("data-size") || 1;
     return rn((startSize / statesMod) * sizeMod); // target size ~50px on 1536x754 map with 15 states
   };
 
   const getProvinceEmblemsSize = () => {
     const startSize = minmax((graphHeight + graphWidth) / 100, 5, 70);
     const provincesMod = 1 + validProvinces.length / 1000 - (115 - validProvinces.length) / 1000; // states number modifier
-    const sizeMod = +document.getElementById("emblemsProvinceSizeInput").value || 1;
+    const sizeMod = +emblems.select("#provinceEmblems").attr("data-size") || 1;
     return rn((startSize / provincesMod) * sizeMod); // target size ~20px on 1536x754 map with 115 provinces
   };
 
   const getBurgEmblemSize = () => {
     const startSize = minmax((graphHeight + graphWidth) / 185, 2, 50);
     const burgsMod = 1 + validBurgs.length / 1000 - (450 - validBurgs.length) / 1000; // states number modifier
-    const sizeMod = +document.getElementById("emblemsBurgSizeInput").value || 1;
+    const sizeMod = +emblems.select("#burgEmblems").attr("data-size") || 1;
     return rn((startSize / burgsMod) * sizeMod); // target size ~8.5px on 1536x754 map with 450 burgs
   };
 
@@ -2008,17 +2021,17 @@ function toggleVignette(event) {
 }
 
 function layerIsOn(el) {
-  const buttonoff = document.getElementById(el).classList.contains("buttonoff");
+  const buttonoff = byId(el).classList.contains("buttonoff");
   return !buttonoff;
 }
 
 function turnButtonOff(el) {
-  document.getElementById(el).classList.add("buttonoff");
+  byId(el).classList.add("buttonoff");
   getCurrentPreset();
 }
 
 function turnButtonOn(el) {
-  document.getElementById(el).classList.remove("buttonoff");
+  byId(el).classList.remove("buttonoff");
   getCurrentPreset();
 }
 

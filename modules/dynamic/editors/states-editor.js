@@ -24,7 +24,7 @@ function insertEditorHtml() {
     <div id="statesHeader" class="header" style="grid-template-columns: 11em 8em 7em 7em 6em 6em 8em 6em 7em 6em">
       <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
       <div data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
-      <div data-tip="Click to sort by capital name" class="sortable alphabetically hide" data-sortby="capital">Capital&nbsp;</div>
+      <div data-tip="Click to sort by capital name" class="sortable alphabetically" data-sortby="capital">Capital&nbsp;</div>
       <div data-tip="Click to sort by state dominant culture" class="sortable alphabetically hide" data-sortby="culture">Culture&nbsp;</div>
       <div data-tip="Click to sort by state burgs count" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
       <div data-tip="Click to sort by state area" class="sortable hide icon-sort-number-down" data-sortby="area">Area&nbsp;</div>
@@ -55,60 +55,25 @@ function insertEditorHtml() {
       <div id="statesRegenerateButtons" style="display: none">
         <button id="statesRegenerateBack" data-tip="Hide the regeneration menu" class="icon-cog-alt"></button>
         <button id="statesRandomize" data-tip="Randomize states Expansion value and re-calculate states and provinces" class="icon-shuffle"></button>
-        <span data-tip="Additional growth rate. Defines how many lands will stay neutral">
-          <label class="italic">Growth rate:</label>
-          <input
-            id="statesNeutral"
-            type="range"
-            min=".1"
-            max="3"
-            step=".05"
-            value="1"
-            style="width: 12em"
-          />
-          <input
-            id="statesNeutralNumber"
-            type="number"
-            min=".1"
-            max="3"
-            step=".05"
-            value="1"
-            style="width: 4em"
-          />
-        </span>
+        <div data-tip="Additional growth rate. Defines how many land cells remain neutral" style="display: inline-block">
+          <slider-input id="statesGrowthRate" min=".1" max="3" step=".05" value="1">Growth rate:</slider-input>
+        </div>
         <button id="statesRecalculate" data-tip="Recalculate states based on current values of growth-related attributes" class="icon-retweet"></button>
-        <span data-tip="Allow states neutral distance, expansion and type changes to take an immediate effect">
+        <div data-tip="Allow states neutral distance, expansion and type changes to take an immediate effect" style="display: inline-block">
           <input id="statesAutoChange" class="checkbox" type="checkbox" />
           <label for="statesAutoChange" class="checkbox-label"><i>auto-apply changes</i></label>
-        </span>
-        <span data-tip="Allow system to change state labels when states data is change">
+        </div>
+        <div data-tip="Allow system to change state labels when states data is change" style="display: inline-block">
           <input id="adjustLabels" class="checkbox" type="checkbox" />
           <label for="adjustLabels" class="checkbox-label"><i>auto-change labels</i></label>
-        </span>
+        </div>
       </div>
 
       <button id="statesManually" data-tip="Manually re-assign states" class="icon-brush"></button>
       <div id="statesManuallyButtons" style="display: none">
-        <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic"
-          >Brush size:
-          <input
-            id="statesManuallyBrush"
-            oninput="tip('Brush size: '+this.value); statesManuallyBrushNumber.value = this.value"
-            type="range"
-            min="5"
-            max="99"
-            value="15"
-            style="width: 5em"
-          />
-          <input
-            id="statesManuallyBrushNumber"
-            oninput="tip('Brush size: '+this.value); statesManuallyBrush.value = this.value"
-            type="number"
-            min="5"
-            max="99"
-            value="15"
-          /> </label
-        ><br />
+        <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em;">
+          <slider-input id="statesBrush" min="1" max="100" value="15">Brush size:</slider-input>
+        </div>
         <button id="statesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
         <button id="statesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
       </div>
@@ -135,8 +100,7 @@ function addListeners() {
   byId("statesRegenerateBack").on("click", exitRegenerationMenu);
   byId("statesRecalculate").on("click", () => recalculateStates(true));
   byId("statesRandomize").on("click", randomizeStatesExpansion);
-  byId("statesNeutral").on("input", changeStatesGrowthRate);
-  byId("statesNeutralNumber").on("change", changeStatesGrowthRate);
+  byId("statesGrowthRate").on("input", () => recalculateStates(false));
   byId("statesManually").on("click", enterStatesManualAssignent);
   byId("statesManuallyApply").on("click", applyStatesManualAssignent);
   byId("statesManuallyCancel").on("click", () => exitStatesManualAssignment(false));
@@ -228,10 +192,10 @@ function statesEditorAddLines() {
         <input data-tip="Neutral lands name. Click to change" class="stateName name pointer italic" value="${
           s.name
         }" readonly />
-        <svg class="coaIcon placeholder hide"></svg>
+        <svg class="coaIcon placeholder"></svg>
         <input class="stateForm placeholder" value="none" />
-        <span class="icon-star-empty placeholder hide"></span>
-        <input class="stateCapital placeholder hide" />
+        <span class="icon-star-empty placeholder"></span>
+        <input class="stateCapital placeholder" />
         <select class="stateCulture placeholder hide">${getCultureOptions(0)}</select>
         <span data-tip="Click to overview neutral burgs" class="icon-dot-circled pointer hide" style="padding-right: 1px"></span>
         <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
@@ -267,14 +231,14 @@ function statesEditorAddLines() {
     >
       <fill-box fill="${s.color}"></fill-box>
       <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly />
-      <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer hide" viewBox="0 0 200 200"><use href="#stateCOA${
+      <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer" viewBox="0 0 200 200"><use href="#stateCOA${
         s.i
       }"></use></svg>
       <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${
         s.formName
       }" readonly />
-      <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer hide"></span>
-      <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false" />
+      <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer"></span>
+      <input data-tip="Capital name. Click and type to rename" class="stateCapital" value="${capital}" autocorrect="off" spellcheck="false" />
       <select data-tip="Dominant culture. Click to change" class="stateCulture hide">${getCultureOptions(
         s.culture
       )}</select>
@@ -728,7 +692,7 @@ function showStatesChart() {
     .sum(d => d.area)
     .sort((a, b) => b.value - a.value);
 
-  const size = 150 + 200 * uiSizeOutput.value;
+  const size = 150 + 200 * uiSize.value;
   const margin = {top: 0, right: -50, bottom: 0, left: -50};
   const w = size - margin.left - margin.right;
   const h = size - margin.top - margin.bottom;
@@ -885,14 +849,6 @@ function recalculateStates(must) {
   refreshStatesEditor();
 }
 
-function changeStatesGrowthRate() {
-  const growthRate = +this.value;
-  byId("statesNeutral").value = growthRate;
-  byId("statesNeutralNumber").value = growthRate;
-  tip("Growth rate: " + growthRate);
-  recalculateStates(false);
-}
-
 function randomizeStatesExpansion() {
   pack.states.forEach(s => {
     if (!s.i || s.removed) return;
@@ -959,14 +915,14 @@ function selectStateOnMapClick() {
 }
 
 function dragStateBrush() {
-  const r = +statesManuallyBrush.value;
+  const r = +statesBrush.value;
 
   d3.event.on("drag", () => {
     if (!d3.event.dx && !d3.event.dy) return;
     const p = d3.mouse(this);
     moveCircle(p[0], p[1], r);
 
-    const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1], r)];
+    const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1])];
     const selection = found.filter(isLand);
     if (selection) changeStateForSelection(selection);
   });
@@ -1002,7 +958,7 @@ function changeStateForSelection(selection) {
 function moveStateBrush() {
   showMainTip();
   const point = d3.mouse(this);
-  const radius = +statesManuallyBrush.value;
+  const radius = +statesBrush.value;
   moveCircle(point[0], point[1], radius);
 }
 
@@ -1427,7 +1383,7 @@ function openStateMergeDialog() {
         if (element) {
           element.id = newId;
           element.dataset.state = rulingStateId;
-          element.dataset.i = newIndex;
+          element.dataset.id = newIndex;
           rulingStateArmy.appendChild(element);
         }
       });

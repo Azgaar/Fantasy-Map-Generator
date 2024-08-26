@@ -222,14 +222,14 @@ async function parseLoadedData(data, mapVersion) {
     void (function parseSettings() {
       const settings = data[1].split("|");
       if (settings[0]) applyOption(distanceUnitInput, settings[0]);
-      if (settings[1]) distanceScale = distanceScaleInput.value = distanceScaleOutput.value = settings[1];
+      if (settings[1]) distanceScale = distanceScaleInput.value = settings[1];
       if (settings[2]) areaUnit.value = settings[2];
       if (settings[3]) applyOption(heightUnit, settings[3]);
-      if (settings[4]) heightExponentInput.value = heightExponentOutput.value = settings[4];
+      if (settings[4]) heightExponentInput.value = settings[4];
       if (settings[5]) temperatureScale.value = settings[5];
       // setting 6-11 (scaleBar) are part of style now, kept as "" in newer versions for compatibility
-      if (settings[12]) populationRate = populationRateInput.value = populationRateOutput.value = settings[12];
-      if (settings[13]) urbanization = urbanizationInput.value = urbanizationOutput.value = settings[13];
+      if (settings[12]) populationRate = populationRateInput.value = settings[12];
+      if (settings[13]) urbanization = urbanizationInput.value = settings[13];
       if (settings[14]) mapSizeInput.value = mapSizeOutput.value = minmax(settings[14], 1, 100);
       if (settings[15]) latitudeInput.value = latitudeOutput.value = minmax(settings[15], 0, 100);
       if (settings[18]) precInput.value = precOutput.value = settings[18];
@@ -241,7 +241,8 @@ async function parseLoadedData(data, mapVersion) {
       if (settings[21]) hideLabels.checked = +settings[21];
       if (settings[22]) stylePreset.value = settings[22];
       if (settings[23]) rescaleLabels.checked = +settings[23];
-      if (settings[24]) urbanDensity = urbanDensityInput.value = urbanDensityOutput.value = +settings[24];
+      if (settings[24]) urbanDensity = urbanDensityInput.value = +settings[24];
+      if (settings[25]) longitudeInput.value = longitudeOutput.value = minmax(settings[25] || 50, 0, 100);
     })();
 
     void (function applyOptionsToUI() {
@@ -347,6 +348,10 @@ async function parseLoadedData(data, mapVersion) {
           .attr("id", "texture")
           .attr("data-href", "./images/textures/plaster.jpg");
       }
+
+      if (!emblems.size()) {
+        emblems = viewbox.insert("g", "#labels").attr("id", "emblems").style("display", "none");
+      }
     })();
 
     void (function parseGridData() {
@@ -374,6 +379,7 @@ async function parseLoadedData(data, mapVersion) {
       pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
       pack.rivers = data[32] ? JSON.parse(data[32]) : [];
       pack.markers = data[35] ? JSON.parse(data[35]) : [];
+      pack.routes = data[37] ? JSON.parse(data[37]) : [];
 
       const cells = pack.cells;
       cells.biome = Uint8Array.from(data[16].split(","));
@@ -383,12 +389,13 @@ async function parseLoadedData(data, mapVersion) {
       cells.fl = Uint16Array.from(data[20].split(","));
       cells.pop = Float32Array.from(data[21].split(","));
       cells.r = Uint16Array.from(data[22].split(","));
-      cells.road = Uint16Array.from(data[23].split(","));
+      // data[23] for deprecated cells.road
       cells.s = Uint16Array.from(data[24].split(","));
       cells.state = Uint16Array.from(data[25].split(","));
       cells.religion = data[26] ? Uint16Array.from(data[26].split(",")) : new Uint16Array(cells.i.length);
       cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(cells.i.length);
-      cells.crossroad = data[28] ? Uint16Array.from(data[28].split(",")) : new Uint16Array(cells.i.length);
+      // data[28] for deprecated cells.crossroad
+      cells.routes = data[36] ? JSON.parse(data[36]) : {};
 
       if (data[31]) {
         const namesDL = data[31].split("/");
@@ -456,7 +463,7 @@ async function parseLoadedData(data, mapVersion) {
     {
       // dynamically import and run auto-update script
       const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.97.04");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.99.01");
       resolveVersionConflicts(versionNumber);
     }
 
@@ -642,6 +649,17 @@ async function parseLoadedData(data, mapVersion) {
         if (pack.states[p.state] && !pack.states[p.state].removed) return;
         ERROR && console.error("Data integrity check. Province", p.i, "is linked to removed state", p.state);
         p.removed = true; // remove incorrect province
+      });
+
+      pack.routes.forEach(({i, points}) => {
+        if (!points || points.length < 2) {
+          ERROR &&
+            console.error(
+              "Data integrity check. Route",
+              i,
+              "has less than 2 points. Route will be ignored on layer rendering"
+            );
+        }
       });
 
       {

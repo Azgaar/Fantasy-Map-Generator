@@ -30,7 +30,7 @@ function handleKeyup(event) {
   else if (code === "Tab") toggleOptions(event);
   else if (code === "Escape") closeAllDialogs();
   else if (code === "Delete") removeElementOnKey();
-  else if (code === "KeyO" && document.getElementById("canvas3d")) toggle3dOptions();
+  else if (code === "KeyO" && byId("canvas3d")) toggle3dOptions();
   else if (ctrl && code === "KeyQ") toggleSaveReminder();
   else if (ctrl && code === "KeyS") saveMap("machine");
   else if (ctrl && code === "KeyC") saveMap("dropbox");
@@ -50,6 +50,7 @@ function handleKeyup(event) {
   else if (shift && code === "KeyO") editNotes();
   else if (shift && code === "KeyA") overviewCharts();
   else if (shift && code === "KeyT") overviewBurgs();
+  else if (shift && code === "KeyU") overviewRoutes();
   else if (shift && code === "KeyV") overviewRivers();
   else if (shift && code === "KeyM") overviewMilitary();
   else if (shift && code === "KeyK") overviewMarkers();
@@ -57,7 +58,7 @@ function handleKeyup(event) {
   else if (key === "!") toggleAddBurg();
   else if (key === "@") toggleAddLabel();
   else if (key === "#") toggleAddRiver();
-  else if (key === "$") toggleAddRoute();
+  else if (key === "$") createRoute();
   else if (key === "%") toggleAddMarker();
   else if (alt && code === "KeyB") console.table(pack.burgs);
   else if (alt && code === "KeyS") console.table(pack.states);
@@ -122,24 +123,21 @@ function allowHotkeys() {
 function handleSizeChange(key) {
   let brush = null;
 
-  if (document.getElementById("brushRadius")?.offsetParent) brush = document.getElementById("brushRadius");
-  else if (document.getElementById("linePower")?.offsetParent) brush = document.getElementById("linePower");
-  else if (document.getElementById("biomesManuallyBrush")?.offsetParent)
-    brush = document.getElementById("biomesManuallyBrush");
-  else if (document.getElementById("statesManuallyBrush")?.offsetParent)
-    brush = document.getElementById("statesManuallyBrush");
-  else if (document.getElementById("provincesManuallyBrush")?.offsetParent)
-    brush = document.getElementById("provincesManuallyBrush");
-  else if (document.getElementById("culturesManuallyBrush")?.offsetParent)
-    brush = document.getElementById("culturesManuallyBrush");
-  else if (document.getElementById("zonesBrush")?.offsetParent) brush = document.getElementById("zonesBrush");
-  else if (document.getElementById("religionsManuallyBrush")?.offsetParent)
-    brush = document.getElementById("religionsManuallyBrush");
+  if (byId("heightmapBrushRadius")?.offsetParent) brush = byId("heightmapBrushRadius");
+  else if (byId("heightmapLinePower")?.offsetParent) brush = byId("heightmapLinePower");
+  else if (byId("biomesBrush")?.offsetParent) brush = byId("biomesBrush");
+  else if (byId("culturesBrush")?.offsetParent) brush = byId("culturesBrush");
+  else if (byId("statesBrush")?.offsetParent) brush = byId("statesBrush");
+  else if (byId("provincesBrush")?.offsetParent) brush = byId("provincesBrush");
+  else if (byId("religionsBrush")?.offsetParent) brush = byId("religionsBrush");
+  else if (byId("zonesBrush")?.offsetParent) brush = byId("zonesBrush");
 
   if (brush) {
     const change = key === "-" ? -5 : 5;
-    const value = minmax(+brush.value + change, +brush.min, +brush.max);
-    brush.value = document.getElementById(brush.id + "Number").value = value;
+    const min = +brush.getAttribute("min") || 5;
+    const max = +brush.getAttribute("max") || 100;
+    const value = +brush.value + change;
+    brush.value = minmax(value, min, max);
     return;
   }
 

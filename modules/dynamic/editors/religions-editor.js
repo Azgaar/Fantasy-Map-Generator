@@ -26,7 +26,7 @@ function insertEditorHtml() {
     <div id="religionsHeader" class="header" style="grid-template-columns: 13em 6em 7em 18em 6em 7em 6em 7em">
       <div data-tip="Click to sort by religion name" class="sortable alphabetically" data-sortby="name">Religion&nbsp;</div>
       <div data-tip="Click to sort by religion type" class="sortable alphabetically icon-sort-name-down" data-sortby="type">Type&nbsp;</div>
-      <div data-tip="Click to sort by religion form" class="sortable alphabetically hide" data-sortby="form">Form&nbsp;</div>
+      <div data-tip="Click to sort by religion form" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
       <div data-tip="Click to sort by supreme deity" class="sortable alphabetically hide" data-sortby="deity">Supreme Deity&nbsp;</div>
       <div data-tip="Click to sort by religion area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
       <div data-tip="Click to sort by number of believers (religion area population)" class="sortable hide" data-sortby="population">Believers&nbsp;</div>
@@ -66,25 +66,9 @@ function insertEditorHtml() {
 
       <button id="religionsManually" data-tip="Manually re-assign religions" class="icon-brush"></button>
       <div id="religionsManuallyButtons" style="display: none">
-        <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic">Brush size:
-          <input
-            id="religionsManuallyBrush"
-            oninput="tip('Brush size: '+this.value); religionsManuallyBrushNumber.value = this.value"
-            type="range"
-            min="5"
-            max="99"
-            value="15"
-            style="width: 7em"
-          />
-          <input
-            id="religionsManuallyBrushNumber"
-            oninput="tip('Brush size: '+this.value); religionsManuallyBrush.value = this.value"
-            type="number"
-            min="5"
-            max="99"
-            value="15"
-          /> </label
-        ><br />
+        <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em;">
+          <slider-input id="religionsBrush" min="1" max="100" value="15">Brush size:</slider-input>
+        </div>
         <button id="religionsManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
         <button id="religionsManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
       </div>
@@ -183,7 +167,7 @@ function religionsEditorAddLines() {
         <select data-tip="Religion type" class="religionType placeholder" style="width: 5em">
           ${getTypeOptions(r.type)}
         </select>
-        <input data-tip="Religion form" class="religionForm placeholder hide" style="width: 6em" value="" autocorrect="off" spellcheck="false" />
+        <input data-tip="Religion form" class="religionForm placeholder" style="width: 6em" value="" autocorrect="off" spellcheck="false" />
         <span data-tip="Click to re-generate supreme deity" class="icon-arrows-cw placeholder hide"></span>
         <input data-tip="Religion supreme deity" class="religionDeity placeholder hide" style="width: 17em" value="" autocorrect="off" spellcheck="false" />
         <span data-tip="Religion area" style="padding-right: 4px" class="icon-map-o hide"></span>
@@ -215,7 +199,7 @@ function religionsEditorAddLines() {
       <select data-tip="Religion type" class="religionType" style="width: 5em">
         ${getTypeOptions(r.type)}
       </select>
-      <input data-tip="Religion form" class="religionForm hide" style="width: 6em"
+      <input data-tip="Religion form" class="religionForm" style="width: 6em"
         value="${r.form}" autocorrect="off" spellcheck="false" />
       <span data-tip="Click to re-generate supreme deity" class="icon-arrows-cw hide"></span>
       <input data-tip="Religion supreme deity" class="religionDeity hide" style="width: 17em"
@@ -696,7 +680,7 @@ function selectReligionOnMapClick() {
 }
 
 function dragReligionBrush() {
-  const radius = +byId("religionsManuallyBrushNumber").value;
+  const radius = +byId("religionsBrush").value;
 
   d3.event.on("drag", () => {
     if (!d3.event.dx && !d3.event.dy) return;
@@ -736,7 +720,7 @@ function changeReligionForSelection(selection) {
 function moveReligionBrush() {
   showMainTip();
   const [x, y] = d3.mouse(this);
-  const radius = +byId("religionsManuallyBrushNumber").value;
+  const radius = +byId("religionsBrush").value;
   moveCircle(x, y, radius);
 }
 

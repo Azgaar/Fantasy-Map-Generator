@@ -90,7 +90,7 @@ function editHeightmap(options) {
     if (!sessionStorage.getItem("noExitButtonAnimation")) {
       sessionStorage.setItem("noExitButtonAnimation", true);
       exitCustomization.style.opacity = 0;
-      const width = 12 * uiSizeOutput.value * 11;
+      const width = 12 * uiSize.value * 11;
       exitCustomization.style.right = (svgWidth - width) / 2 + "px";
       exitCustomization.style.bottom = svgHeight / 2 + "px";
       exitCustomization.style.transform = "scale(2)";
@@ -136,7 +136,7 @@ function editHeightmap(options) {
       return;
     }
 
-    moveCircle(x, y, brushRadius.valueAsNumber, "#333");
+    moveCircle(x, y, heightmapBrushRadius.valueAsNumber, "#333");
   }
 
   // get user-friendly (real-world) height value from map data
@@ -246,6 +246,7 @@ function editHeightmap(options) {
     Cultures.expand();
 
     BurgsAndStates.generate();
+    Routes.generate();
     Religions.generate();
     BurgsAndStates.defineStateForms();
     BurgsAndStates.generateProvinces();
@@ -281,8 +282,7 @@ function editHeightmap(options) {
     const l = grid.cells.i.length;
     const biome = new Uint8Array(l);
     const pop = new Uint16Array(l);
-    const road = new Uint16Array(l);
-    const crossroad = new Uint16Array(l);
+    const routes = {};
     const s = new Uint16Array(l);
     const burg = new Uint16Array(l);
     const state = new Uint16Array(l);
@@ -300,8 +300,7 @@ function editHeightmap(options) {
       biome[g] = pack.cells.biome[i];
       culture[g] = pack.cells.culture[i];
       pop[g] = pack.cells.pop[i];
-      road[g] = pack.cells.road[i];
-      crossroad[g] = pack.cells.crossroad[i];
+      routes[g] = pack.cells.routes[i];
       s[g] = pack.cells.s[i];
       state[g] = pack.cells.state[i];
       province[g] = pack.cells.province[i];
@@ -353,8 +352,7 @@ function editHeightmap(options) {
     // assign saved pack data from grid back to pack
     const n = pack.cells.i.length;
     pack.cells.pop = new Float32Array(n);
-    pack.cells.road = new Uint16Array(n);
-    pack.cells.crossroad = new Uint16Array(n);
+    pack.cells.routes = {};
     pack.cells.s = new Uint16Array(n);
     pack.cells.burg = new Uint16Array(n);
     pack.cells.state = new Uint16Array(n);
@@ -389,8 +387,7 @@ function editHeightmap(options) {
       if (!isLand) continue;
       pack.cells.culture[i] = culture[g];
       pack.cells.pop[i] = pop[g];
-      pack.cells.road[i] = road[g];
-      pack.cells.crossroad[i] = crossroad[g];
+      pack.cells.routes[i] = routes[g];
       pack.cells.s[i] = s[g];
       pack.cells.state[i] = state[g];
       pack.cells.province[i] = province[g];
@@ -667,7 +664,7 @@ function editHeightmap(options) {
       const fromCell = +lineCircle.attr("data-cell");
       debug.selectAll("*").remove();
 
-      const power = byId("linePower").valueAsNumber;
+      const power = byId("heightmapLinePower").valueAsNumber;
       if (power === 0) return tip("Power should not be zero", false, "error");
 
       const heights = grid.cells.h;
@@ -689,7 +686,7 @@ function editHeightmap(options) {
     }
 
     function dragBrush() {
-      const r = brushRadius.valueAsNumber;
+      const r = heightmapBrushRadius.valueAsNumber;
       const [x, y] = d3.mouse(this);
       const start = findGridCell(x, y, grid);
 
@@ -707,7 +704,7 @@ function editHeightmap(options) {
     }
 
     function changeHeightForSelection(selection, start) {
-      const power = brushPower.valueAsNumber;
+      const power = heightmapBrushPower.valueAsNumber;
 
       const interpolate = d3.interpolateRound(power, 1);
       const land = changeOnlyLand.checked;

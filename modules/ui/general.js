@@ -67,9 +67,9 @@ function showDataTip(event) {
 function showElementLockTip(event) {
   const locked = event?.target?.classList?.contains("icon-lock");
   if (locked) {
-    tip("Click to unlock the element and allow it to be changed by regeneration tools");
+    tip("Locked. Click to unlock the element and allow it to be changed by regeneration tools");
   } else {
-    tip("Click to lock the element and prevent changes to it by regeneration tools");
+    tip("Unlocked. Click to lock the element and prevent changes to it by regeneration tools");
   }
 }
 
@@ -151,7 +151,12 @@ function showMapTooltip(point, e, i, g) {
     return;
   }
 
-  if (group === "routes") return tip("Click to edit the Route");
+  if (group === "routes") {
+    const routeId = +e.target.id.slice(5);
+    const name = pack.routes[routeId]?.name;
+    if (name) return tip(`${name}. Click to edit the Route`);
+    return tip("Click to edit the Route");
+  }
 
   if (group === "terrain") return tip("Click to edit the Relief Icon");
 
@@ -285,7 +290,7 @@ function toDMS(coord, c) {
   const minutes = Math.floor(minutesNotTruncated);
   const seconds = Math.floor((minutesNotTruncated - minutes) * 60);
   const cardinal = c === "lat" ? (coord >= 0 ? "N" : "S") : coord >= 0 ? "E" : "W";
-  return degrees + "° " + minutes + "′ " + seconds + "″ " + cardinal;
+  return degrees + "°" + minutes + "′" + seconds + "″" + cardinal;
 }
 
 // get surface elevation

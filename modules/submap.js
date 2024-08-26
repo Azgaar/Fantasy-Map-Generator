@@ -145,8 +145,6 @@ window.Submap = (function () {
     cells.state = new Uint16Array(pn);
     cells.burg = new Uint16Array(pn);
     cells.religion = new Uint16Array(pn);
-    cells.road = new Uint16Array(pn);
-    cells.crossroad = new Uint16Array(pn);
     cells.province = new Uint16Array(pn);
 
     stage("Resampling culture, state and religion map.");
@@ -272,8 +270,8 @@ window.Submap = (function () {
 
     BurgsAndStates.drawBurgs();
 
-    stage("Regenerating road network.");
-    Routes.regenerate();
+    stage("Regenerating routes network.");
+    regenerateRoutes();
 
     drawStates();
     drawBorders();
@@ -397,7 +395,7 @@ window.Submap = (function () {
           return;
         }
         DEBUG && console.info(`Moving ${b.name} from ${cityCell} to ${newCell} near ${neighbor}.`);
-        [b.x, b.y] = b.port ? getMiddlePoint(newCell, neighbor) : cells.p[newCell];
+        [b.x, b.y] = b.port ? getCloseToEdgePoint(newCell, neighbor) : cells.p[newCell];
         if (b.port) b.port = cells.f[neighbor]; // copy feature number
         b.cell = newCell;
         if (b.port && !isWater(pack, neighbor)) console.error("betrayal! negihbor must be water!", b);
@@ -407,6 +405,23 @@ window.Submap = (function () {
       if (b.i && !b.lock) b.lock = options.lockBurgs;
       cells.burg[b.cell] = id;
     });
+  }
+
+  function getCloseToEdgePoint(cell1, cell2) {
+    const {cells, vertices} = pack;
+
+    const [x0, y0] = cells.p[cell1];
+
+    const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
+    const [x1, y1] = vertices.p[commonVertices[0]];
+    const [x2, y2] = vertices.p[commonVertices[1]];
+    const xEdge = (x1 + x2) / 2;
+    const yEdge = (y1 + y2) / 2;
+
+    const x = rn(x0 + 0.95 * (xEdge - x0), 2);
+    const y = rn(y0 + 0.95 * (yEdge - y0), 2);
+
+    return [x, y];
   }
 
   // export

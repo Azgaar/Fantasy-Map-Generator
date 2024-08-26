@@ -457,7 +457,7 @@ window.Religions = (function () {
     const lockedReligions = pack.religions?.filter(r => r.i && r.lock && !r.removed) || [];
 
     const folkReligions = generateFolkReligions();
-    const organizedReligions = generateOrganizedReligions(+religionsInput.value, lockedReligions);
+    const organizedReligions = generateOrganizedReligions(+religionsNumber.value, lockedReligions);
 
     const namedReligions = specifyReligions([...folkReligions, ...organizedReligions]);
     const indexedReligions = combineReligions(namedReligions, lockedReligions);
@@ -692,15 +692,14 @@ window.Religions = (function () {
 
   // growth algorithm to assign cells to religions
   function expandReligions(religions) {
-    const cells = pack.cells;
+    const {cells, routes} = pack;
     const religionIds = spreadFolkReligions(religions);
 
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
-    const maxExpansionCost = (cells.i.length / 20) * neutralInput.value; // limit cost for organized religions growth
-
-    const biomePassageCost = cellId => biomesData.cost[cells.biome[cellId]];
+    // limit cost for organized religions growth
+    const maxExpansionCost = (cells.i.length / 20) * byId("growthRate").valueAsNumber;
 
     religions
       .filter(r => r.i && !r.lock && r.type !== "Folk" && !r.removed)
@@ -711,11 +710,6 @@ window.Religions = (function () {
       });
 
     const religionsMap = new Map(religions.map(r => [r.i, r]));
-
-    const isMainRoad = cellId => cells.road[cellId] - cells.crossroad[cellId] > 4;
-    const isTrail = cellId => cells.h[cellId] > 19 && cells.road[cellId] - cells.crossroad[cellId] === 1;
-    const isSeaRoute = cellId => cells.h[cellId] < 20 && cells.road[cellId];
-    const isWater = cellId => cells.h[cellId] < 20;
 
     while (queue.length) {
       const {e: cellId, p, r, s: state} = queue.dequeue();
@@ -728,7 +722,7 @@ window.Religions = (function () {
 
         const cultureCost = culture !== cells.culture[nextCell] ? 10 : 0;
         const stateCost = state !== cells.state[nextCell] ? 10 : 0;
-        const passageCost = getPassageCost(nextCell);
+        const passageCost = getPassageCost(cellId, nextCell);
 
         const cellCost = cultureCost + stateCost + passageCost;
         const totalCost = p + 10 + cellCost / expansionism;
@@ -745,11 +739,18 @@ window.Religions = (function () {
 
     return religionIds;
 
-    function getPassageCost(cellId) {
-      if (isWater(cellId)) return isSeaRoute ? 50 : 500;
-      if (isMainRoad(cellId)) return 1;
-      const biomeCost = biomePassageCost(cellId);
-      return isTrail(cellId) ? biomeCost / 1.5 : biomeCost;
+    function getPassageCost(cellId, nextCellId) {
+      const route = Routes.getRoute(cellId, nextCellId);
+      if (isWater(cellId)) return route ? 50 : 500;
+
+      const biomePassageCost = biomesData.cost[cells.biome[nextCellId]];
+
+      if (route) {
+        if (route.group === "roads") return 1;
+        return biomePassageCost / 3; // trails and other routes
+      }
+
+      return biomePassageCost;
     }
   }
 

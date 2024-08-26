@@ -73,7 +73,7 @@
     "mask": "url(#water)",
     "shape-rendering": "optimizespeed"
   },
-  "#rose": {
+  "#compass > use": {
     "transform": "translate(100 100) scale(0.3)"
   },
   "#relig": {
@@ -259,6 +259,15 @@
     "opacity": 0.6,
     "stroke-width": 0.5,
     "filter": null
+  },
+  "#emblems > #stateEmblems": {
+    "data-size": 1
+  },
+  "#emblems > #provinceEmblems": {
+    "data-size": 1
+  },
+  "#emblems > #burgEmblems": {
+    "data-size": 1
   },
   "#texture": {
     "opacity": 0.8,

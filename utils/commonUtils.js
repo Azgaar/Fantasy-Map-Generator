@@ -9,7 +9,6 @@ function clipPoly(points, secure = 0) {
 // get segment of any point on polyline
 function getSegmentId(points, point, step = 10) {
   if (points.length === 2) return 1;
-  const d2 = (p1, p2) => (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2;
 
   let minSegment = 1;
   let minDist = Infinity;
@@ -18,7 +17,7 @@ function getSegmentId(points, point, step = 10) {
     const p1 = points[i];
     const p2 = points[i + 1];
 
-    const length = Math.sqrt(d2(p1, p2));
+    const length = Math.sqrt(dist2(p1, p2));
     const segments = Math.ceil(length / step);
     const dx = (p2[0] - p1[0]) / segments;
     const dy = (p2[1] - p1[1]) / segments;
@@ -26,29 +25,15 @@ function getSegmentId(points, point, step = 10) {
     for (let s = 0; s < segments; s++) {
       const x = p1[0] + s * dx;
       const y = p1[1] + s * dy;
-      const dist2 = d2(point, [x, y]);
+      const dist = dist2(point, [x, y]);
 
-      if (dist2 >= minDist) continue;
-      minDist = dist2;
+      if (dist >= minDist) continue;
+      minDist = dist;
       minSegment = i + 1;
     }
   }
 
   return minSegment;
-}
-
-// return center point of common edge of 2 pack cells
-function getMiddlePoint(cell1, cell2) {
-  const {cells, vertices} = pack;
-
-  const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
-  const [x1, y1] = vertices.p[commonVertices[0]];
-  const [x2, y2] = vertices.p[commonVertices[1]];
-
-  const x = (x1 + x2) / 2;
-  const y = (y1 + y2) / 2;
-
-  return [x, y];
 }
 
 function debounce(func, ms) {
