@@ -28,30 +28,6 @@ window.Zones = (function () {
       }
     });
 
-    console.table(pack.zones);
-    drawZones();
-
-    function drawZones() {
-      zones
-        .selectAll("g")
-        .data(pack.zones)
-        .enter()
-        .append("g")
-        .attr("id", d => "zone" + d.i)
-        .attr("data-description", d => d.name)
-        .attr("data-type", d => d.type)
-        .attr("data-cells", d => d.cells.join(","))
-        .attr("fill", d => d.color)
-        .selectAll("polygon")
-        .data(d => d.cells)
-        .enter()
-        .append("polygon")
-        .attr("points", d => getPackPolygon(d))
-        .attr("id", function (d) {
-          return this.parentNode.id + "_" + d;
-        });
-    }
-
     TIME && console.timeEnd("generateZones");
   };
 
@@ -98,7 +74,7 @@ window.Zones = (function () {
       Intervention: 1
     });
     const name = getAdjective(invader.name) + " " + invasion;
-    pack.zones.push({name, type: "Invasion", cells: cellsArray, color: "url(#hatch1)"});
+    pack.zones.push({i: pack.zones.length, name, type: "Invasion", cells: cellsArray, color: "url(#hatch1)"});
   }
 
   function addRebels(usedCells) {
@@ -145,7 +121,7 @@ window.Zones = (function () {
     });
 
     const name = getAdjective(states[neib].name) + " " + rebels;
-    pack.zones.push({name, type: "Rebels", cells: cellsArray, color: "url(#hatch3)"});
+    pack.zones.push({i: pack.zones.length, name, type: "Rebels", cells: cellsArray, color: "url(#hatch3)"});
   }
 
   function addProselytism(usedCells) {
@@ -183,7 +159,7 @@ window.Zones = (function () {
     }
 
     const name = getAdjective(organized.name.split(" ")[0]) + " Proselytism";
-    pack.zones.push({name, type: "Proselytism", cells: cellsArray, color: "url(#hatch6)"});
+    pack.zones.push({i: pack.zones.length, name, type: "Proselytism", cells: cellsArray, color: "url(#hatch6)"});
   }
 
   function addCrusade(usedCells) {
@@ -191,12 +167,18 @@ window.Zones = (function () {
     if (!heresy) return;
 
     const cells = pack.cells;
-    const cellsArray = cells.i.filter(i => !usedCells[i] && cells.religion[i] === heresy.i);
-    if (!cellsArray.length) return;
-    cellsArray.forEach(i => (usedCells[i] = 1));
+    const crusadeCells = cells.i.filter(i => !usedCells[i] && cells.religion[i] === heresy.i);
+    if (!crusadeCells.length) return;
+    crusadeCells.forEach(i => (usedCells[i] = 1));
 
     const name = getAdjective(heresy.name.split(" ")[0]) + " Crusade";
-    pack.zones.push({name, type: "Crusade", cells: cellsArray, color: "url(#hatch6)"});
+    pack.zones.push({
+      i: pack.zones.length,
+      name,
+      type: "Crusade",
+      cells: Array.from(crusadeCells),
+      color: "url(#hatch6)"
+    });
   }
 
   function addDisease(usedCells) {
@@ -276,8 +258,9 @@ window.Zones = (function () {
       Dropsy: 1,
       Leprosy: 2
     });
+
     const name = rw({[color()]: 4, [animal()]: 2, [adjective()]: 1}) + " " + type;
-    pack.zones.push({name, type: "Disease", cells: cellsArray, color: "url(#hatch12)"});
+    pack.zones.push({i: pack.zones.length, name, type: "Disease", cells: cellsArray, color: "url(#hatch12)"});
   }
 
   function addDisaster(usedCells) {
@@ -310,7 +293,7 @@ window.Zones = (function () {
 
     const type = rw({Famine: 5, Dearth: 1, Drought: 3, Earthquake: 3, Tornadoes: 1, Wildfires: 1});
     const name = getAdjective(burg.name) + " " + type;
-    pack.zones.push({name, type: "Disaster", cells: cellsArray, color: "url(#hatch5)"});
+    pack.zones.push({i: pack.zones.length, name, type: "Disaster", cells: cellsArray, color: "url(#hatch5)"});
   }
 
   function addEruption(usedCells) {
@@ -342,7 +325,7 @@ window.Zones = (function () {
       });
     }
 
-    pack.zones.push({name, type: "Disaster", cells: cellsArray, color: "url(#hatch7)"});
+    pack.zones.push({i: pack.zones.length, name, type: "Disaster", cells: cellsArray, color: "url(#hatch7)"});
   }
 
   function addAvalanche(usedCells) {
@@ -368,7 +351,7 @@ window.Zones = (function () {
 
     const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
     const name = proper + " Avalanche";
-    pack.zones.push({name, type: "Disaster", cells: cellsArray, color: "url(#hatch5)"});
+    pack.zones.push({i: pack.zones.length, name, type: "Disaster", cells: cellsArray, color: "url(#hatch5)"});
   }
 
   function addFault(usedCells) {
@@ -394,7 +377,7 @@ window.Zones = (function () {
 
     const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
     const name = proper + " Fault";
-    pack.zones.push({name, type: "Disaster", cells: cellsArray, color: "url(#hatch2)"});
+    pack.zones.push({i: pack.zones.length, name, type: "Disaster", cells: cellsArray, color: "url(#hatch2)"});
   }
 
   function addFlood(usedCells) {
@@ -428,7 +411,7 @@ window.Zones = (function () {
     }
 
     const name = getAdjective(pack.burgs[cells.burg[cell]].name) + " Flood";
-    pack.zones.push({name, type: "Disaster", cells: cellsArray, color: "url(#hatch13)"});
+    pack.zones.push({i: pack.zones.length, name, type: "Disaster", cells: cellsArray, color: "url(#hatch13)"});
   }
 
   function addTsunami(usedCells) {
@@ -459,7 +442,7 @@ window.Zones = (function () {
 
     const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
     const name = proper + " Tsunami";
-    pack.zones.push({name, type: "Disaster", cells: cellsArray, color: "url(#hatch13)"});
+    pack.zones.push({i: pack.zones.length, name, type: "Disaster", cells: cellsArray, color: "url(#hatch13)"});
   }
 
   return {generate};

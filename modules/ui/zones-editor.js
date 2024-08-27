@@ -14,7 +14,6 @@ function editZones() {
   $("#zonesEditor").dialog({
     title: "Zones Editor",
     resizable: false,
-    width: fitContent(),
     close: () => exitZonesManualAssignment("close"),
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
@@ -55,8 +54,7 @@ function editZones() {
 
   // update type filter with a list of used types
   function updateFilters() {
-    const zones = Array.from(document.querySelectorAll("#zones > g"));
-    const types = unique(zones.map(zone => zone.dataset.type));
+    const types = unique(pack.zones.map(zone => zone.type));
 
     const filterSelect = byId("zonesFilterType");
     const typeToFilterBy = types.includes(zonesFilterType.value) ? zonesFilterType.value : "all";
@@ -71,42 +69,37 @@ function editZones() {
     const unit = " " + getAreaUnit();
 
     const typeToFilterBy = byId("zonesFilterType").value;
-    const zones = Array.from(document.querySelectorAll("#zones > g"));
-    const filteredZones = typeToFilterBy === "all" ? zones : zones.filter(zone => zone.dataset.type === typeToFilterBy);
+    const filteredZones =
+      typeToFilterBy === "all" ? pack.zones : pack.zones.filter(zone => zone.type === typeToFilterBy);
 
-    const lines = filteredZones.map(zoneEl => {
-      const c = zoneEl.dataset.cells ? zoneEl.dataset.cells.split(",").map(c => +c) : [];
-      const description = zoneEl.dataset.description;
-      const type = zoneEl.dataset.type;
-      const fill = zoneEl.getAttribute("fill");
-      const area = getArea(d3.sum(c.map(i => pack.cells.area[i])));
-      const rural = d3.sum(c.map(i => pack.cells.pop[i])) * populationRate;
+    const lines = filteredZones.map(({i, name, type, cells, color, hidden}) => {
+      const area = getArea(d3.sum(cells.map(i => pack.cells.area[i])));
+      const rural = d3.sum(cells.map(i => pack.cells.pop[i])) * populationRate;
       const urban =
-        d3.sum(c.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization;
+        d3.sum(cells.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization;
       const population = rural + urban;
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(
         rural
       )}; Urban population: ${si(urban)}. Click to change`;
-      const inactive = zoneEl.style.display === "none";
-      const focused = defs.select("#fog #focus" + zoneEl.id).size();
+      const focused = defs.select("#fog #focusZone" + i).size();
 
-      return `<div class="states" data-id="${zoneEl.id}" data-fill="${fill}" data-description="${description}"
-        data-type="${type}" data-cells=${c.length} data-area=${area} data-population=${population}>
-        <fill-box fill="${fill}"></fill-box>
-        <input data-tip="Zone description. Click and type to change" style="width: 11em" class="zoneName" value="${description}" autocorrect="off" spellcheck="false">
+      return `<div class="states" data-id="zone${i}" data-fill="${color}" data-description="${name}"
+        data-type="${type}" data-cells=${cells.length} data-area=${area} data-population=${population}>
+        <fill-box fill="${color}"></fill-box>
+        <input data-tip="Zone description. Click and type to change" style="width: 11em" class="zoneName" value="${name}" autocorrect="off" spellcheck="false">
         <input data-tip="Zone type. Click and type to change" class="zoneType" value="${type}">
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
-        <div data-tip="Cells count" class="stateCells hide">${c.length}</div>
+        <div data-tip="Cells count" class="stateCells hide">${cells.length}</div>
         <span data-tip="Zone area" style="padding-right:4px" class="icon-map-o hide"></span>
         <div data-tip="Zone area" class="biomeArea hide">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
         <span data-tip="Drag to raise or lower the zone" class="icon-resize-vertical hide"></span>
         <span data-tip="Toggle zone focus" class="icon-pin ${focused ? "" : " inactive"} hide ${
-        c.length ? "" : " placeholder"
+        cells.length ? "" : " placeholder"
       }"></span>
-        <span data-tip="Toggle zone visibility" class="icon-eye ${inactive ? " inactive" : ""} hide ${
-        c.length ? "" : " placeholder"
+        <span data-tip="Toggle zone visibility" class="icon-eye ${hidden ? " inactive" : ""} hide ${
+        cells.length ? "" : " placeholder"
       }"></span>
         <span data-tip="Remove zone" class="icon-trash-empty hide"></span>
       </div>`;
@@ -121,14 +114,13 @@ function editZones() {
       (d3.sum(pack.cells.pop) + d3.sum(pack.burgs.filter(b => !b.removed).map(b => b.population)) * urbanization) *
       populationRate;
     zonesFooterPopulation.dataset.population = totalPop;
-    zonesFooterNumber.innerHTML = /* html */ `${filteredZones.length} of ${zones.length}`;
+    zonesFooterNumber.innerHTML = `${filteredZones.length} of ${zones.length}`;
     zonesFooterCells.innerHTML = pack.cells.i.length;
     zonesFooterArea.innerHTML = si(totalArea) + unit;
     zonesFooterPopulation.innerHTML = si(totalPop);
 
-    // add listeners
-    body.querySelectorAll("div.states").forEach(el => el.on("mouseenter", ev => zoneHighlightOn(ev)));
-    body.querySelectorAll("div.states").forEach(el => el.on("mouseleave", ev => zoneHighlightOff(ev)));
+    body.querySelectorAll("div.states").forEach(el => el.on("mouseenter", zoneHighlightOn));
+    body.querySelectorAll("div.states").forEach(el => el.on("mouseleave", zoneHighlightOff));
 
     if (body.dataset.type === "percentage") {
       body.dataset.type = "absolute";
@@ -167,7 +159,8 @@ function editZones() {
     axis: "y",
     update: movezone
   });
-  function movezone(ev, ui) {
+
+  function movezone(_ev, ui) {
     const zone = $("#" + ui.item.attr("data-id"));
     const prev = $("#" + ui.item.prev().attr("data-id"));
     if (prev) {

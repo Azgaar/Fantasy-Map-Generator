@@ -1872,16 +1872,23 @@ function fitScaleBar(scaleBar, fullWidth, fullHeight) {
 function toggleZones(event) {
   if (!layerIsOn("toggleZones")) {
     turnButtonOn("toggleZones");
-    $("#zones").fadeIn();
+    drawZones();
     if (event && isCtrlClick(event)) editStyle("zones");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("zones");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("zones");
     turnButtonOff("toggleZones");
-    $("#zones").fadeOut();
+    zones.selectAll("*").remove();
   }
+}
+
+function drawZones() {
+  const zonesHtml = pack.zones.map(drawZone);
+  zones.html(zonesHtml.join(""));
+}
+
+function drawZone({i, cells, color}) {
+  const cellsPath = cells.map(cell => "M" + getPackPolygon(cell).join(" ")).join(" ");
+  return `<path id="zone${i}" data-id="${i}" d="${cellsPath}" fill="${color}" />`;
 }
 
 function toggleEmblems(event) {

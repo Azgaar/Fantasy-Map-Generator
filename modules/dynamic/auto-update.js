@@ -925,4 +925,9 @@ export function resolveVersionConflicts(mapVersion) {
       }
     }
   }
+
+  if (isOlderThan("1.100.0")) {
+    // v1.100.00 added zones to pack data
+    zones.stlye("display", "none");
+  }
 }
