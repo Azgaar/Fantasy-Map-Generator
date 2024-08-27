@@ -192,7 +192,7 @@ const onHoverEventsMap: OnHoverEventMap = {
   religionsLayer: ({packCellId}) => {
     const religionId = pack.cells.religion[packCellId];
     const religion = pack.religions[religionId];
-    const {type, name} = isReligion(religion) ? religion : {}; //MARKER: religion check
+    const {type, name} = isReligion(religion) ? religion : {type: "None", name: "None"}; //MARKER: religion check
     const typeTip = type === "Cult" || type == "Heresy" ? type : type + " religion";
     tip(`${typeTip}: ${name}`);
 
