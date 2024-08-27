@@ -4,6 +4,7 @@ import {openDialog} from "dialogs";
 import {tip} from "scripts/tooltips";
 import {handleMapClick} from "./onclick";
 import {onMouseMove} from "./onhover";
+// @ts-expect-error js-module
 import {clearLegend, dragLegendBox} from "modules/legend.js"; //MARKER: modules/legend.js
 
 export function setDefaultEventHandlers() {
