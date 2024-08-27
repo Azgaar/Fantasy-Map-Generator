@@ -456,7 +456,7 @@ function saveGeoJsonCells() {
       const [x, y] = vertices.p[vertex];
       return getCoordinates(x, y, 4);
     });
-    return [...coordinates, coordinates[0]];
+    return [[...coordinates, coordinates[0]]];
   }
 
   cells.i.forEach(i => {
