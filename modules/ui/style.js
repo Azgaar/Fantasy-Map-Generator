@@ -75,7 +75,14 @@ styleElementSelect.addEventListener("change", selectStyleElement);
 
 function selectStyleElement() {
   const styleElement = styleElementSelect.value;
+  console.log("Selecting style for element:", styleElement);
   let el = d3.select("#" + styleElement);
+
+  // if element not found, return
+  if (!el.node()) {
+    console.warn(`Element ${styleElement} not found`);
+    return;
+  }
 
   styleElements.querySelectorAll("tbody").forEach(e => (e.style.display = "none")); // hide all sections
 
@@ -84,14 +91,14 @@ function selectStyleElement() {
   styleIsOff.style.display = isLayerOff ? "block" : "none";
 
   // active group element
-  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders", "terrs"].includes(styleElement)) {
+  if (["anchors", "borders", "burgIcons", "coastline", "labels", "lakes", "routes", "ruler", "terrs"].includes(styleElement)) {
     const group = styleGroupSelect.value;
     const defaultGroupSelector = styleElement === "terrs" ? "#landHeights" : "g";
     el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
   }
 
   // opacity
-  if (!["landmass", "ocean", "regions", "legend"].includes(styleElement)) {
+  if (!["landmass", "legend", "ocean", "regions"].includes(styleElement)) {
     styleOpacity.style.display = "block";
     styleOpacityInput.value = el.attr("opacity") || 1;
   }
@@ -103,7 +110,7 @@ function selectStyleElement() {
   }
 
   // fill
-  if (["rivers", "lakes", "landmass", "prec", "ice", "fogging", "scaleBar", "vignette"].includes(styleElement)) {
+  if (["fogging", "ice", "lakes", "landmass", "prec", "rivers", "scaleBar", "vignette"].includes(styleElement)) {
     styleFill.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill");
   }
@@ -112,19 +119,20 @@ function selectStyleElement() {
   if (
     [
       "armies",
-      "routes",
-      "lakes",
       "borders",
-      "cults",
-      "relig",
       "cells",
       "coastline",
-      "prec",
+      "coordinates",
+      "cults",
+      "gridOverlay",
       "ice",
       "icons",
-      "coordinates",
+      "lakes",
+      "prec",
+      "relig",
+      "routes",
+      "ruler",
       "zones",
-      "gridOverlay"
     ].includes(styleElement)
   ) {
     styleStroke.style.display = "block";
@@ -135,7 +143,7 @@ function selectStyleElement() {
 
   // stroke dash
   if (
-    ["routes", "borders", "temperature", "legend", "population", "coordinates", "zones", "gridOverlay"].includes(
+    ["borders", "coordinates", "gridOverlay", "legend", "population", "ruler", "routes", "temperature", "zones"].includes(
       styleElement
     )
   ) {
@@ -344,9 +352,52 @@ function selectStyleElement() {
     emblemsBurgSizeInput.value = emblems.select("#burgEmblems").attr("data-size") || 1;
   }
 
+  /* if (styleElement === "ruler") {
+    // styleRulers.style.display = "block";
+    styleSelectFont.value = el.attr("font-family");
+    styleFontSize.value = el.attr("data-size");
+
+  } */
+
+  if (styleElement === "ruler") {
+    styleRuler.style.display = "block";
+    styleStroke.style.display = "block";
+    styleStrokeInput.value = styleStrokeOutput.value = el.select("polyline").attr("stroke");
+    styleStrokeWidthRuler.style.display = "block";
+    styleStrokeWidthInput.value = el.select("polyline").attr("stroke-width") || 0;
+    styleStrokeWidthWhiteInput.value = el.select("polyline.white").attr("stroke-width") || 0;
+    styleStrokeWidthGrayInput.value = el.select("polyline.gray").attr("stroke-width") || 0;
+
+    styleStrokeDash.style.display = "block";
+    styleStrokeDasharrayInput.value = el.select("polyline").attr("stroke-dasharray") || "";
+    styleStrokeLinecapInput.value = el.select("polyline").attr("stroke-linecap") || "inherit";
+
+    styleFont.style.display = "block";
+    styleSelectFont.value = el.select("text").attr("font-family") || "inherit";
+    styleFontSize.value = el.select("text").attr("font-size") || "10px";
+
+    // Mostrar los controles de preferencias del ruler
+    const styleRulerInitialX = document.getElementById("rulerInitialX");
+    const styleRulerInitialY = document.getElementById("rulerInitialY");
+    const styleRulerInitialLength = document.getElementById("rulerInitialLength");
+
+    if (styleRulerInitialX) {
+      styleRulerInitialX.style.display = "block";
+      styleRulerInitialX.value = localStorage.getItem("rulerInitialX") || "50";
+    }
+    if (styleRulerInitialY) {
+      styleRulerInitialY.style.display = "block";
+      styleRulerInitialY.value = localStorage.getItem("rulerInitialY") || "50";
+    }
+    if (styleRulerInitialLength) {
+      styleRulerInitialLength.style.display = "block";
+      styleRulerInitialLength.value = localStorage.getItem("rulerInitialLength") || "100";
+    }
+  }
+
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
-  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders", "terrs"].includes(styleElement)) {
+  if (["anchors", "borders", "burgIcons", "coastline", "labels", "lakes", "routes", "ruler", "terrs"].includes(styleElement)) {
     const groups = byId(styleElement).querySelectorAll("g");
     groups.forEach(el => {
       if (el.id === "burgLabels") return;
@@ -427,9 +478,36 @@ styleStrokeInput.addEventListener("input", function () {
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
 });
 
-styleStrokeWidthInput.addEventListener("input", e => {
+const styleStrokeWidthInput = document.getElementById('styleStrokeWidthInput');
+if (styleStrokeWidthInput && styleStrokeWidthInput.querySelector('input')) {
+  styleStrokeWidthInput.querySelector('input').addEventListener("input", e => {
+    getEl().attr("stroke-width", e.target.value);
+    if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  });
+} else {
+  console.warn('styleStrokeWidthInput not found or does not contain an input element');
+}
+
+/* styleStrokeWidthInput.addEventListener("input", e => {
   getEl().attr("stroke-width", e.target.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  if (styleElementSelect.value === "ruler") {
+    getEl().select("polyline").attr("stroke-width", e.target.value);
+  }
+}); */
+
+styleStrokeWidthWhiteInput.addEventListener("input", e => {
+  const el = getEl();
+  if (el) {
+    el.selectAll("polyline.white").attr("stroke-width", e.target.value);
+  }
+});
+
+styleStrokeWidthGrayInput.addEventListener("input", e => {
+  const el = getEl();
+  if (el) {
+    el.selectAll("polyline.gray").attr("stroke-width", e.target.value);
+  }
 });
 
 styleStrokeDasharrayInput.addEventListener("input", function () {
@@ -1073,6 +1151,30 @@ styleVignetteRy.addEventListener("input", e => {
 
 styleVignetteBlur.addEventListener("input", e => {
   byId("vignette-rect")?.setAttribute("filter", `blur(${e.target.value}px)`);
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  const rulerInitialX = document.getElementById("rulerInitialX");
+  const rulerInitialY = document.getElementById("rulerInitialY");
+  const rulerInitialLength = document.getElementById("rulerInitialLength");
+
+  if (rulerInitialX) {
+    rulerInitialX.addEventListener("change", e => {
+      localStorage.setItem("rulerInitialX", e.target.value);
+    });
+  }
+
+  if (rulerInitialY) {
+    rulerInitialY.addEventListener("change", e => {
+      localStorage.setItem("rulerInitialY", e.target.value);
+    });
+  }
+
+  if (rulerInitialLength) {
+    rulerInitialLength.addEventListener("change", e => {
+      localStorage.setItem("rulerInitialLength", e.target.value);
+    });
+  }
 });
 
 styleScaleBar.addEventListener("input", function (event) {

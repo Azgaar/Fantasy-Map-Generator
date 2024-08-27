@@ -73,6 +73,11 @@ function prepareMapData() {
   const coords = JSON.stringify(mapCoordinates);
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
   const notesData = JSON.stringify(notes);
+  const rulerPreferences = JSON.stringify({
+    initialX: localStorage.getItem("rulerInitialX") || "50",
+    initialY: localStorage.getItem("rulerInitialY") || "50",
+    initialLength: localStorage.getItem("rulerInitialLength") || "100"
+  });
   const rulersString = rulers.toString();
   const fonts = JSON.stringify(getUsedFonts(svg.node()));
 
@@ -148,6 +153,7 @@ function prepareMapData() {
     provinces,
     namesData,
     rivers,
+    rulerPreferences,
     rulersString,
     fonts,
     markers,

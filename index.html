@@ -1181,6 +1181,17 @@
               </tr>
             </tbody>
 
+            <tbody id="styleStrokeWidthRuler">
+              <tr data-tip="Set stroke width for ruler lines">
+                <td>Stroke width</td>
+                <td>
+                  <slider-input id="styleStrokeWidthInput" min="0" max="5" step=".01"></slider-input>
+                  <input id="styleStrokeWidthWhiteInput" type="number" min="0" max="5" step=".01"></slider-input>
+                  <input id="styleStrokeWidthGrayInput" type="number" min="0" max="5" step=".01"></slider-input>
+                </td>
+              </tr>
+            </tbody>
+
             <tbody id="styleStrokeDash">
               <tr data-tip="Set stroke dash array (e.g. 5 2) and linecap">
                 <td>Stroke dash</td>
@@ -1409,6 +1420,21 @@
                   <input id="rescaleLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked />
                   <label for="rescaleLabels" class="checkbox-label">Rescale on zoom</label>
                 </td>
+              </tr>
+            </tbody>
+
+            <tbody id="styleRuler">
+              <tr data-tip="Set ruler initial X position">
+                <td><label for="rulerInitialX">Initial X position (%):</label></td>
+                <td><input type="number" id="rulerInitialX" min="0" max="100" step="1"></td>
+              </tr>
+              <tr data-tip="Set ruler initial Y position">
+                <td><label for="rulerInitialY">Initial Y position (%):</label></td>
+                <td><input type="number" id="rulerInitialY" min="0" max="100" step="1"></td>
+              </tr>
+              <tr data-tip="Set ruler initial length">
+                <td><label for="rulerInitialLength">Initial Length (%):</label></td>
+                <td><input type="number" id="rulerInitialLength" min="1" max="100" step="1"></td>
               </tr>
             </tbody>
 

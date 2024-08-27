@@ -122,12 +122,23 @@ function editUnits() {
   function addRuler() {
     if (!layerIsOn("toggleRulers")) toggleRulers();
     const pt = byId("map").createSVGPoint();
-    (pt.x = graphWidth / 2), (pt.y = graphHeight / 4);
+
+    // Use saved values on localStorage, or default values if not exist
+    const initialX = parseFloat(localStorage.getItem("rulerInitialX")) || 50;
+    const initialY = parseFloat(localStorage.getItem("rulerInitialY")) || 50;
+    const initialLength = parseFloat(localStorage.getItem("rulerInitialLength")) || 100;
+
+    // Calculate coordinates based on percentages
+    pt.x = graphWidth * (initialX / 100);
+    pt.y = graphHeight * (initialY / 100);
+
+    // const defaultvalue = (pt.x = graphWidth / 2), (pt.y = graphHeight / 4);
     const p = pt.matrixTransform(viewbox.node().getScreenCTM().inverse());
-    const dx = graphWidth / 4 / scale;
+    const dx = (initialLength / 200) * graphWidth / scale;
     const dy = (rulers.data.length * 40) % (graphHeight / 2);
-    const from = [(p.x - dx) | 0, (p.y + dy) | 0];
-    const to = [(p.x + dx) | 0, (p.y + dy) | 0];
+
+    const from = [(p.x - dx) | 0, p.y | 0];
+    const to = [(p.x + dx) | 0, p.y | 0];
     rulers.create(Ruler, [from, to]).draw();
   }
 
