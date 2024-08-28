@@ -131,7 +131,6 @@ function selectStyleElement() {
       "prec",
       "relig",
       "routes",
-      "ruler",
       "zones",
     ].includes(styleElement)
   ) {
@@ -361,12 +360,6 @@ function selectStyleElement() {
 
   if (styleElement === "ruler") {
     styleRuler.style.display = "block";
-    styleStroke.style.display = "block";
-    styleStrokeInput.value = styleStrokeOutput.value = el.select("polyline").attr("stroke");
-    styleStrokeWidthRuler.style.display = "block";
-    styleStrokeWidthInput.value = el.select("polyline").attr("stroke-width") || 0;
-    styleStrokeWidthWhiteInput.value = el.select("polyline.white").attr("stroke-width") || 0;
-    styleStrokeWidthGrayInput.value = el.select("polyline.gray").attr("stroke-width") || 0;
 
     styleStrokeDash.style.display = "block";
     styleStrokeDasharrayInput.value = el.select("polyline").attr("stroke-dasharray") || "";
@@ -377,22 +370,18 @@ function selectStyleElement() {
     styleFontSize.value = el.select("text").attr("font-size") || "10px";
 
     // Mostrar los controles de preferencias del ruler
-    const styleRulerInitialX = document.getElementById("rulerInitialX");
-    const styleRulerInitialY = document.getElementById("rulerInitialY");
     const styleRulerInitialLength = document.getElementById("rulerInitialLength");
 
-    if (styleRulerInitialX) {
-      styleRulerInitialX.style.display = "block";
-      styleRulerInitialX.value = localStorage.getItem("rulerInitialX") || "50";
-    }
-    if (styleRulerInitialY) {
-      styleRulerInitialY.style.display = "block";
-      styleRulerInitialY.value = localStorage.getItem("rulerInitialY") || "50";
-    }
     if (styleRulerInitialLength) {
       styleRulerInitialLength.style.display = "block";
       styleRulerInitialLength.value = localStorage.getItem("rulerInitialLength") || "100";
     }
+  }
+
+  if (styleElement === "ruler") {
+    styleRuler.style.display = "block";
+    styleRulerWhiteLineColor.value = localStorage.getItem("rulerWhiteLineColor") || "#ffffff";
+    styleRulerGrayLineColor.value = localStorage.getItem("rulerGrayLineColor") || "#808080";
   }
 
   // update group options
@@ -487,28 +476,6 @@ if (styleStrokeWidthInput && styleStrokeWidthInput.querySelector('input')) {
 } else {
   console.warn('styleStrokeWidthInput not found or does not contain an input element');
 }
-
-/* styleStrokeWidthInput.addEventListener("input", e => {
-  getEl().attr("stroke-width", e.target.value);
-  if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
-  if (styleElementSelect.value === "ruler") {
-    getEl().select("polyline").attr("stroke-width", e.target.value);
-  }
-}); */
-
-styleStrokeWidthWhiteInput.addEventListener("input", e => {
-  const el = getEl();
-  if (el) {
-    el.selectAll("polyline.white").attr("stroke-width", e.target.value);
-  }
-});
-
-styleStrokeWidthGrayInput.addEventListener("input", e => {
-  const el = getEl();
-  if (el) {
-    el.selectAll("polyline.gray").attr("stroke-width", e.target.value);
-  }
-});
 
 styleStrokeDasharrayInput.addEventListener("input", function () {
   getEl().attr("stroke-dasharray", this.value);
@@ -1154,21 +1121,7 @@ styleVignetteBlur.addEventListener("input", e => {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-  const rulerInitialX = document.getElementById("rulerInitialX");
-  const rulerInitialY = document.getElementById("rulerInitialY");
   const rulerInitialLength = document.getElementById("rulerInitialLength");
-
-  if (rulerInitialX) {
-    rulerInitialX.addEventListener("change", e => {
-      localStorage.setItem("rulerInitialX", e.target.value);
-    });
-  }
-
-  if (rulerInitialY) {
-    rulerInitialY.addEventListener("change", e => {
-      localStorage.setItem("rulerInitialY", e.target.value);
-    });
-  }
 
   if (rulerInitialLength) {
     rulerInitialLength.addEventListener("change", e => {

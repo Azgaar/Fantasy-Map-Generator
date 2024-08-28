@@ -74,9 +74,9 @@ function prepareMapData() {
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
   const notesData = JSON.stringify(notes);
   const rulerPreferences = JSON.stringify({
-    initialX: localStorage.getItem("rulerInitialX") || "50",
-    initialY: localStorage.getItem("rulerInitialY") || "50",
-    initialLength: localStorage.getItem("rulerInitialLength") || "100"
+    initialLength: localStorage.getItem("rulerInitialLength") || "100",
+    whiteColor: localStorage.getItem("rulerWhiteLineColor") || "#ffffff",
+    grayColor: localStorage.getItem("rulerGrayLineColor") || "#808080",
   });
   const rulersString = rulers.toString();
   const fonts = JSON.stringify(getUsedFonts(svg.node()));

@@ -34,6 +34,10 @@ function editUnits() {
   byId("removeRulers").on("click", removeAllRulers);
   byId("unitsRestore").on("click", restoreDefaultUnits);
 
+  // Add listeners for the new color controls
+  byId("rulerWhiteLineColor").on("change", changeRulerLineColor);
+  byId("rulerGrayLineColor").on("change", changeRulerLineColor);
+
   function changeDistanceUnit() {
     if (this.value === "custom_name") {
       prompt("Provide a custom name for a distance unit", {default: ""}, custom => {
@@ -119,27 +123,67 @@ function editUnits() {
     localStorage.removeItem("urbanDensity");
   }
 
+  function changeRulerLineColor() {
+    const whiteColor = byId("rulerWhiteLineColor").value;
+    const grayColor = byId("rulerGrayLineColor").value;
+  
+    // Update the colors of existing lines
+    d3.selectAll("g.ruler > polyline.white").style("stroke", whiteColor);
+    d3.selectAll("g.ruler > polyline.gray").style("stroke", grayColor);
+  
+    // Save the colors for future rulers
+    localStorage.setItem("rulerWhiteLineColor", whiteColor);
+    localStorage.setItem("rulerGrayLineColor", grayColor);
+  }
+
   function addRuler() {
     if (!layerIsOn("toggleRulers")) toggleRulers();
     const pt = byId("map").createSVGPoint();
 
-    // Use saved values on localStorage, or default values if not exist
-    const initialX = parseFloat(localStorage.getItem("rulerInitialX")) || 50;
-    const initialY = parseFloat(localStorage.getItem("rulerInitialY")) || 50;
-    const initialLength = parseFloat(localStorage.getItem("rulerInitialLength")) || 100;
+    // Initial position in the center.
+    let x = 50;
+    let y = 50;
+
+    const existingRulers = rulers.data;
+    const yStep = 10; // Percentage step for the Y coordinate
+
+    // Search for the last Y position used (in percentage)
+    let lastY = existingRulers.length > 0 ? (existingRulers[existingRulers.length - 1].points[0][1] / graphHeight) * 100 : null;
+
+    if (lastY !== null) {
+      // If there are existing rulers, calculate the new Y position
+      y = (lastY + yStep) % 100;
+      
+      // If we return to the center and it was the last operation, move one step more
+      if (y === 50 && lastY !== 50) {
+        y = (y + yStep) % 100;
+      }
+    }
 
     // Calculate coordinates based on percentages
-    pt.x = graphWidth * (initialX / 100);
-    pt.y = graphHeight * (initialY / 100);
+    pt.x = graphWidth * (x / 100);
+    pt.y = graphHeight * (y / 100);
 
-    // const defaultvalue = (pt.x = graphWidth / 2), (pt.y = graphHeight / 4);
     const p = pt.matrixTransform(viewbox.node().getScreenCTM().inverse());
+
+    // Use the rulerInitialLength value from localStorage or the default value
+    const initialLength = parseFloat(localStorage.getItem("rulerInitialLength")) || 10;
     const dx = (initialLength / 200) * graphWidth / scale;
-    const dy = (rulers.data.length * 40) % (graphHeight / 2);
 
     const from = [(p.x - dx) | 0, p.y | 0];
     const to = [(p.x + dx) | 0, p.y | 0];
-    rulers.create(Ruler, [from, to]).draw();
+
+    const whiteColor = localStorage.getItem("rulerWhiteLineColor") || "#ffffff";
+    const grayColor = localStorage.getItem("rulerGrayLineColor") || "#808080";
+  
+    const ruler = rulers.create(Ruler, [from, to]);
+    ruler.draw();
+  
+    // Apply the custom colors to the new ruler
+    ruler.el.select("polyline.white").style("stroke", whiteColor);
+    ruler.el.select("polyline.gray").style("stroke", grayColor);
+
+    console.log(`New ruler created at x: ${x.toFixed(2)}%, y: ${y.toFixed(2)}%, length: ${initialLength}%`);
   }
 
   function toggleOpisometerMode() {

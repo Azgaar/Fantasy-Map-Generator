@@ -933,6 +933,31 @@
               </tr>
             </tbody>
 
+            <tbody id="styleRuler">
+              <tr data-tip="Set ruler initial length. Percentage of screen width.">
+                <td><label for="rulerInitialLength">Initial Length (%):</label></td>
+                <td><input type="number" id="rulerInitialLength" min="1" max="100" step="1"></td>
+              </tr>
+              
+              <tr data-tip="Set ruler white line color">
+                <td>White line color</td>
+                <td>
+                  <input id="rulerWhiteLineColor" type="color" value="#ffffff" />
+                  <output id="rulerWhiteLineColorOutput">#ffffff</output>
+                </td>
+              </tr>
+
+              <tr data-tip="Set ruler gray line color">
+                <td>Gray line color</td>
+                <td>
+                  <input id="rulerGrayLineColor" type="color" value="#808080" />
+                  <output id="rulerGrayLineColorOutput">#808080</output>
+                </td>
+              </tr>
+            </tbody>
+
+            
+
             <tbody id="styleTexture">
               <tr data-tip="Select texture image. Big textures can highly affect performance">
                 <td>Image</td>
@@ -1181,17 +1206,6 @@
               </tr>
             </tbody>
 
-            <tbody id="styleStrokeWidthRuler">
-              <tr data-tip="Set stroke width for ruler lines">
-                <td>Stroke width</td>
-                <td>
-                  <slider-input id="styleStrokeWidthInput" min="0" max="5" step=".01"></slider-input>
-                  <input id="styleStrokeWidthWhiteInput" type="number" min="0" max="5" step=".01"></slider-input>
-                  <input id="styleStrokeWidthGrayInput" type="number" min="0" max="5" step=".01"></slider-input>
-                </td>
-              </tr>
-            </tbody>
-
             <tbody id="styleStrokeDash">
               <tr data-tip="Set stroke dash array (e.g. 5 2) and linecap">
                 <td>Stroke dash</td>
@@ -1420,21 +1434,6 @@
                   <input id="rescaleLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked />
                   <label for="rescaleLabels" class="checkbox-label">Rescale on zoom</label>
                 </td>
-              </tr>
-            </tbody>
-
-            <tbody id="styleRuler">
-              <tr data-tip="Set ruler initial X position">
-                <td><label for="rulerInitialX">Initial X position (%):</label></td>
-                <td><input type="number" id="rulerInitialX" min="0" max="100" step="1"></td>
-              </tr>
-              <tr data-tip="Set ruler initial Y position">
-                <td><label for="rulerInitialY">Initial Y position (%):</label></td>
-                <td><input type="number" id="rulerInitialY" min="0" max="100" step="1"></td>
-              </tr>
-              <tr data-tip="Set ruler initial length">
-                <td><label for="rulerInitialLength">Initial Length (%):</label></td>
-                <td><input type="number" id="rulerInitialLength" min="1" max="100" step="1"></td>
               </tr>
             </tbody>
 

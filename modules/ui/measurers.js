@@ -140,6 +140,8 @@ class Ruler extends Measurer {
     const points = this.getPointsString();
     const size = this.getSize();
     const dash = this.getDash();
+    const whiteColor = localStorage.getItem("rulerWhiteLineColor") || "#ffffff";
+    const grayColor = localStorage.getItem("rulerGrayLineColor") || "#808080";
 
     const el = (this.el = ruler
       .append("g")
@@ -149,11 +151,13 @@ class Ruler extends Measurer {
     el.append("polyline")
       .attr("points", points)
       .attr("class", "white")
+      .style("stroke", whiteColor)
       .attr("stroke-width", size)
       .call(d3.drag().on("start", () => this.addControl(this)));
     el.append("polyline")
       .attr("points", points)
       .attr("class", "gray")
+      .style("stroke", grayColor)
       .attr("stroke-width", rn(size * 1.2, 2))
       .attr("stroke-dasharray", dash);
     el.append("g")
