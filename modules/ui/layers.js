@@ -1882,13 +1882,16 @@ function toggleZones(event) {
 }
 
 function drawZones() {
-  const zonesHtml = pack.zones.map(drawZone);
+  const filterBy = byId("zonesFilterType").value;
+  const isFiltered = filterBy && filterBy !== "all";
+
+  const zonesHtml = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy)).map(drawZone);
   zones.html(zonesHtml.join(""));
 }
 
-function drawZone({i, cells, color}) {
+function drawZone({i, cells, type, color}) {
   const cellsPath = cells.map(cell => "M" + getPackPolygon(cell).join(" ")).join(" ");
-  return `<path id="zone${i}" data-id="${i}" d="${cellsPath}" fill="${color}" />`;
+  return `<path id="zone${i}" data-id="${i}" data-type="${type}" d="${cellsPath}" fill="${color}" />`;
 }
 
 function toggleEmblems(event) {
