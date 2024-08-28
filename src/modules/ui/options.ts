@@ -95,7 +95,7 @@ if (stored("disable_click_arrow_tooltip")) {
 }
 
 // Show options pane on trigger click
-function showOptions(event: MouseEvent) {
+export function showOptions(event: MouseEvent) {
   if (!stored("disable_click_arrow_tooltip")) {
     clearMainTip();
     localStorage.setItem("disable_click_arrow_tooltip", "true");
@@ -563,8 +563,8 @@ function changeZoomExtent(value: string) {
   if (Number(zoomExtentMin.value) > Number(zoomExtentMax.value)) {
     [zoomExtentMin.value, zoomExtentMax.value] = [zoomExtentMax.value, zoomExtentMin.value];
   }
-  const min = Math.max(Number(zoomExtentMin.value, 0.01);
-  const max = Math.min(Number(zoomExtentMax.value, 200);
+  const min = Math.max(Number(zoomExtentMin.value), 0.01);
+  const max = Math.min(Number(zoomExtentMax.value), 200);
   zoomExtentMin.value = min.toString();
   zoomExtentMax.value = max.toString();
   const scale = minmax(Number(value), 0.01, 200);
@@ -609,7 +609,7 @@ export function applyStoredOptions() {
       .getItem("winds")!
       .split(",")
       .map(w => Number(w));
-  if (stored("military") options.military = JSON.parse(stored("military")!); // MARKER: !
+  if (stored("military")) options.military = JSON.parse(stored("military")!); // MARKER: !
 
   if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize")!);
   if (stored("regions")) changeStatesNumber(stored("regions")!);
@@ -633,7 +633,7 @@ export function applyStoredOptions() {
   changeDialogsTheme(themeColor, transparency);
 
   setRendering(shapeRendering.value);
-  options.stateLabelsMode = stateLabelsModeInput.value;
+  options.stateLabelsMode = stateLabelsModeInput.value as "auto" | "short" | "full"; // MARKER: as conversion
 }
 
 // randomize options if randomization is allowed (not locked or options='default')

@@ -8,7 +8,6 @@ import {defineSvg} from "./modules/define-svg";
 import {clearLegend} from "./modules/legend";
 // @ts-expect-error js-module
 import {Rulers} from "./modules/measurers";
-// @ts-expect-error js-module
 import {applyStoredOptions} from "./modules/ui/options";
 import {addGlobalListeners} from "./scripts/listeners";
 import {checkForUpdates} from "./scripts/updater";
