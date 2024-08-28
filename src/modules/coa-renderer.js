@@ -1,6 +1,6 @@
 import {ERROR} from "config/logging";
 
-window.COArenderer = (function () {
+export const COArenderer = (function () {
   const colors = {
     argent: "#fafafa",
     or: "#ffe066",

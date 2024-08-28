@@ -41,7 +41,7 @@ export function lock(id: string) {
 }
 
 // unlock option
-function unlock(id: string) {
+export function unlock(id: string) {
   localStorage.removeItem(id);
   const $lock = document.getElementById("lock_" + id);
   if ($lock) {

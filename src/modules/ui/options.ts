@@ -2,7 +2,7 @@ import * as d3 from "d3";
 
 import {heightmapTemplates} from "config/heightmap-templates";
 import {precreatedHeightmaps} from "config/precreated-heightmaps";
-import {lock, locked} from "scripts/options/lock";
+import {lock, locked, unlock} from "scripts/options/lock";
 import {clearMainTip, tip} from "scripts/tooltips";
 import {last} from "utils/arrayUtils";
 import {applyDropdownOption} from "utils/nodeUtils";
@@ -10,14 +10,83 @@ import {minmax, rn} from "utils/numberUtils";
 import {gauss, P, rand, rw} from "utils/probabilityUtils";
 import {byId, stored} from "utils/shorthands";
 import {regenerateMap} from "scripts/generation/generation";
-import {fitScaleBar} from "modules/measurers";
+// @ts-expect-error js file
+import {fitScaleBar} from "modules/measurers.js";
 import {openDialog} from "dialogs";
 import {closeDialogs} from "dialogs/utils";
+// @ts-expect-error js file
 import {quickSave, saveToDropbox, dowloadMap} from "modules/io/save.js";
+// @ts-expect-error js file
+import {fitLegendBox} from "modules/legend.js";
+// @ts-expect-error js file
+import {COArenderer} from "modules/coa-renderer.js";
+import { isBurg, isCulture, isProvince, isState } from "utils/typeUtils.js";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#exitCustomization").draggable({handle: "div"});
 $("#mapLayers").disableSelection();
+
+// Window Objects
+const Zoom = window.Zoom;
+const COA = window.COA;
+
+// DIV elements
+const tooltip = byId("tooltip")! as HTMLDivElement;
+
+// Options pane elements
+const optionsTrigger = byId("optionsTrigger")! as HTMLButtonElement;
+const regenerate = byId("regenerate")! as HTMLButtonElement;
+const optionsDiv = byId("options")! as HTMLDivElement;
+const collapsible = byId("collapsible")! as HTMLDivElement;
+const layersContent = byId("layersContent")! as HTMLDivElement;
+const styleContent = byId("styleContent")! as HTMLDivElement;
+const customizationMenu = byId("customizationMenu")! as HTMLDivElement;
+const toolsContent = byId("toolsContent")! as HTMLDivElement;
+const aboutContent = byId("aboutContent")! as HTMLDivElement;
+const optionsContent = byId("optionsContent")! as HTMLDivElement;
+const alertMessage = byId("alertMessage")! as HTMLDivElement;
+const dialogDiv = byId("dialogs")! as HTMLDivElement;
+
+// Number inputs
+const themeColorInput = byId("themeColorInput")! as HTMLInputElement;
+const themeHueInput = byId("themeHueInput")! as HTMLInputElement;
+
+const transparencyInput = byId("transparencyInput")! as HTMLInputElement;
+const transparencyOutput = byId("transparencyOutput")! as HTMLInputElement;
+
+const mapWidthInput = byId("mapWidthInput")! as HTMLInputElement;
+const mapHeightInput = byId("mapHeightInput")! as HTMLInputElement;
+
+const zoomExtentMin = byId("zoomExtentMin")! as HTMLInputElement;
+const zoomExtentMax = byId("zoomExtentMax")! as HTMLInputElement;
+
+const optionsSeed = byId("optionsSeed")! as HTMLInputElement;
+const pointsInput = byId("pointsInput")! as HTMLInputElement;
+
+const culturesInput = byId("culturesInput")! as HTMLInputElement;
+const regionsOutput = byId("regionsOutput")! as HTMLInputElement;
+
+const uiSizeInput = byId("uiSizeInput")! as HTMLInputElement;
+const uiSizeOutput = byId("uiSizeOutput")! as HTMLInputElement;
+
+const distanceUnitInput = byId("distanceUnitInput")! as HTMLSelectElement;
+const heightUnitInput = byId("heightUnitInput")! as HTMLSelectElement;
+
+// Text inputs
+const mapName = byId("mapName")! as HTMLInputElement;
+const templateInput = byId("templateInput")! as HTMLSelectElement
+const culturesSet = byId("culturesSet")! as HTMLSelectElement;
+const culturesOutput = byId("culturesOutput")! as HTMLInputElement;
+
+const stylePreset = byId("stylePreset")! as HTMLSelectElement;
+
+const shapeRendering = byId("shapeRendering")! as HTMLSelectElement;
+const stateLabelsModeInput = byId("stateLabelsModeInput")! as HTMLSelectElement;
+
+// Outputs
+const manorsOutput = byId("manorsOutput")! as HTMLOutputElement;
+const pointsOutputFormatted = byId("pointsOutputFormatted")! as HTMLOutputElement;
+
 
 // remove glow if tip is aknowledged
 if (stored("disable_click_arrow_tooltip")) {
@@ -26,37 +95,37 @@ if (stored("disable_click_arrow_tooltip")) {
 }
 
 // Show options pane on trigger click
-function showOptions(event) {
+function showOptions(event: MouseEvent) {
   if (!stored("disable_click_arrow_tooltip")) {
     clearMainTip();
-    localStorage.setItem("disable_click_arrow_tooltip", true);
+    localStorage.setItem("disable_click_arrow_tooltip", "true");
     optionsTrigger.classList.remove("glow");
   }
 
   regenerate.style.display = "none";
-  byId("options").style.display = "block";
+  optionsDiv.style.display = "block";
   optionsTrigger.style.display = "none";
 
   if (event) event.stopPropagation();
 }
 
 // Hide options pane on trigger click
-export function hideOptions(event) {
-  byId("options").style.display = "none";
+export function hideOptions(event: Event) {
+  optionsDiv.style.display = "none";
   optionsTrigger.style.display = "block";
   if (event) event.stopPropagation();
 }
 
 // To toggle options on hotkey press
-export function toggleOptions(event) {
-  if (byId("options").style.display === "none") showOptions(event);
+export function toggleOptions(event: MouseEvent) {
+  if (optionsDiv.style.display === "none") showOptions(event);
   else hideOptions(event);
 }
 
 // Toggle "New Map!" pane on hover
 optionsTrigger.on("mouseenter", function () {
   if (optionsTrigger.classList.contains("glow")) return;
-  if (byId("options").style.display === "none") regenerate.style.display = "block";
+  if (optionsDiv.style.display === "none") regenerate.style.display = "block";
 });
 
 collapsible.on("mouseleave", function () {
@@ -64,21 +133,19 @@ collapsible.on("mouseleave", function () {
 });
 
 // Activate options tab on click
-document
-  .getElementById("options")
-  .querySelector("div.tab")
-  .on("click", function (event) {
+optionsDiv
+  .querySelector("div.tab")!
+  .on("click", function (event: any ) { // MARKER: any
     if (event.target.tagName !== "BUTTON") return;
     const id = event.target.id;
-    const active = byId("options").querySelector(".tab > button.active");
+    const active = optionsDiv.querySelector(".tab > button.active");
     if (active && id === active.id) return; // already active tab is clicked
 
     if (active) active.classList.remove("active");
-    byId(id).classList.add("active");
-    document
-      .getElementById("options")
-      .querySelectorAll(".tabcontent")
-      .forEach(e => (e.style.display = "none"));
+    byId(id)!.classList.add("active");
+    optionsDiv
+      .querySelectorAll<HTMLElement>(".tabcontent")
+      .forEach((e: HTMLElement) => {e.style.display = "none"});
 
     if (id === "layersTab") layersContent.style.display = "block";
     else if (id === "styleTab") styleContent.style.display = "block";
@@ -90,9 +157,10 @@ document
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
+  // @ts-expect-error js file
   const {supporters} = await import("../dynamic/supporters.js");
   alertMessage.innerHTML =
-    "<ul style='column-count: 5; column-gap: 2em'>" + supporters.map(n => `<li>${n}</li>`).join("") + "</ul>";
+    "<ul style='column-count: 5; column-gap: 2em'>" + (supporters as String[]).map(n => `<li>${n}</li>`).join("") + "</ul>"; // MARKER: as conversion
   $("#alert").dialog({
     resizable: false,
     title: "Patreon Supporters",
@@ -102,16 +170,16 @@ async function showSupporters() {
 }
 
 // on any option or dialog change
-byId("options").on("change", storeValueIfRequired);
-byId("dialogs").on("change", storeValueIfRequired);
-byId("options").on("input", updateOutputToFollowInput);
-byId("dialogs").on("input", updateOutputToFollowInput);
+optionsDiv.on("change", storeValueIfRequired);
+dialogDiv.on("change", storeValueIfRequired);
+optionsDiv.on("input", updateOutputToFollowInput);
+dialogDiv.on("input", updateOutputToFollowInput);
 
-function storeValueIfRequired(ev) {
+function storeValueIfRequired(ev: any) { // MARKER: any
   if (ev.target.dataset.stored) lock(ev.target.dataset.stored);
 }
 
-function updateOutputToFollowInput(ev) {
+function updateOutputToFollowInput(ev: any) { // MARKER: any
   const id = ev.target.id;
   const value = ev.target.value;
 
@@ -120,17 +188,17 @@ function updateOutputToFollowInput(ev) {
 
   // generic case
   if (id.slice(-5) === "Input") {
-    const output = byId(id.slice(0, -5) + "Output");
+    const output = byId(id.slice(0, -5) + "Output") as HTMLOutputElement; // MARKER: as conversion
     if (output) output.value = value;
   } else if (id.slice(-6) === "Output") {
-    const input = byId(id.slice(0, -6) + "Input");
+    const input = byId(id.slice(0, -6) + "Input") as HTMLInputElement; // MARKER: as conversion
     if (input) input.value = value;
   }
 }
 
 // Option listeners
-const optionsContent = byId("optionsContent");
-optionsContent.on("input", function (event) {
+
+optionsContent.on("input", function (event: any) { // MARKER: any
   const id = event.target.id;
   const value = event.target.value;
   if (id === "mapWidthInput" || id === "mapHeightInput") mapSizeInputChange();
@@ -144,12 +212,12 @@ optionsContent.on("input", function (event) {
   else if (id === "transparencyInput") changeDialogsTheme(themeColorInput.value, value);
 });
 
-optionsContent.on("change", function (event) {
+optionsContent.on("change", function (event: any) { // MARKER: any
   const id = event.target.id;
   const value = event.target.value;
 
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
-  else if (id === "optionsSeed") generateMapWithSeed("seed change");
+  else if (id === "optionsSeed") generateMapWithSeed();
   else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUIsize(value);
   else if (id === "shapeRendering") setRendering(value);
   else if (id === "yearInput") changeYear();
@@ -157,7 +225,7 @@ optionsContent.on("change", function (event) {
   else if (id === "stateLabelsModeInput") options.stateLabelsMode = value;
 });
 
-optionsContent.on("click", function (event) {
+optionsContent.on("click", function (event:any) { // MARKER: any
   const id = event.target.id;
   if (id === "toggleFullscreen") toggleFullscreen();
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
@@ -184,8 +252,8 @@ export function addResizeListener() {
     if (stored("mapWidth") && stored("mapHeight")) return;
 
     const {innerWidth, innerHeight} = window;
-    byId("mapWidthInput").value = innerWidth;
-    byId("mapHeightInput").value = innerHeight;
+    mapWidthInput.value = innerWidth.toString(); // MARKER: toString
+    mapHeightInput.value = innerHeight.toString(); // MARKER: toString
 
     changeMapSize();
   });
@@ -193,14 +261,14 @@ export function addResizeListener() {
 
 // change svg size on manual size change or window resize, do not change graph size
 function changeMapSize() {
-  svgWidth = Math.min(+mapWidthInput.value, window.innerWidth);
-  svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
+  svgWidth = Math.min(Number(mapWidthInput.value), window.innerWidth);
+  svgHeight = Math.min(Number(mapHeightInput.value), window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
 
-  const maxWidth = Math.max(+mapWidthInput.value, graphWidth);
-  const maxHeight = Math.max(+mapHeightInput.value, graphHeight);
+  const maxWidth = Math.max(Number(mapWidthInput.value), graphWidth);
+  const maxHeight = Math.max(Number(mapHeightInput.value), graphHeight);
 
-  Zoom.translateExtent([0, 0, maxWidth, maxHeight]);
+  Zoom.translateExtent([[0, 0], [maxWidth, maxHeight]]);
 
   landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
@@ -210,15 +278,15 @@ function changeMapSize() {
   texture.select("image").attr("width", maxWidth).attr("height", maxHeight);
 
   fitScaleBar();
-  if (window.fitLegendBox) fitLegendBox();
+  fitLegendBox();
 }
 
 // just apply canvas size that was already set
 export function applyMapSize() {
-  const zoomMin = +zoomExtentMin.value;
-  const zoomMax = +zoomExtentMax.value;
-  graphWidth = +mapWidthInput.value;
-  graphHeight = +mapHeightInput.value;
+  const zoomMin = Number(zoomExtentMin.value);
+  const zoomMax = Number(zoomExtentMax.value);
+  graphWidth = Number(mapWidthInput.value);
+  graphHeight = Number(mapHeightInput.value);
   svgWidth = Math.min(graphWidth, window.innerWidth);
   svgHeight = Math.min(graphHeight, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
@@ -231,19 +299,19 @@ export function applyMapSize() {
 }
 
 function toggleFullscreen() {
-  if (mapWidthInput.value != window.innerWidth || mapHeightInput.value != window.innerHeight) {
-    mapWidthInput.value = window.innerWidth;
-    mapHeightInput.value = window.innerHeight;
+  if (Number(mapWidthInput.value) != Number(window.innerWidth) || Number(mapHeightInput.value) != Number(window.innerHeight)) {
+    mapWidthInput.value = window.innerWidth.toString();
+    mapHeightInput.value = window.innerHeight.toString();
     localStorage.removeItem("mapHeight");
     localStorage.removeItem("mapWidth");
   } else {
-    mapWidthInput.value = graphWidth;
-    mapHeightInput.value = graphHeight;
+    mapWidthInput.value = graphWidth.toString();
+    mapHeightInput.value = graphHeight.toString();
   }
   changeMapSize();
 }
 
-function toggleTranslateExtent(el) {
+function toggleTranslateExtent(el: any) { // MARKER: any
   const on = !Number(el.dataset.on);
   const extent = on
     ? [-graphWidth / 2, -graphHeight / 2, graphWidth * 1.5, graphHeight * 1.5]
@@ -259,13 +327,13 @@ const voiceInterval = setInterval(function () {
   if (voices.length) clearInterval(voiceInterval);
   else return;
 
-  const select = byId("speakerVoice");
+  const select = byId("speakerVoice")! as HTMLSelectElement;
   voices.forEach((voice, i) => {
-    select.options.add(new Option(voice.name, i, false));
+    select.options.add(new Option(voice.name, i.toString(), false));
   });
-  if (stored("speakerVoice")) select.value = stored("speakerVoice");
+  if (stored("speakerVoice")) select.value = stored("speakerVoice")!; // MARKER: !
   // se voice to store
-  else select.value = voices.findIndex(voice => voice.lang === "en-US"); // or to first found English-US
+  else select.value = voices.findIndex(voice => voice.lang === "en-US").toString(); // or to first found English-US
 }, 1000);
 
 function testSpeaker() {
@@ -273,7 +341,7 @@ function testSpeaker() {
   const speaker = new SpeechSynthesisUtterance(text);
   const voices = speechSynthesis.getVoices();
   if (voices.length) {
-    const voiceId = +byId("speakerVoice").value;
+    const voiceId = Number((byId("speakerVoice") as HTMLInputElement).value); // MARKER: as conversion
     speaker.voice = voices[voiceId];
   }
   speechSynthesis.speak(speaker);
@@ -302,12 +370,12 @@ function showSeedHistoryDialog() {
 }
 
 // generate map with historical seed
-function restoreSeed(id) {
+function restoreSeed(id: number) {
   const {seed, width, height, template} = mapHistory[id];
-  byId("optionsSeed").value = seed;
-  byId("mapWidthInput").value = width;
-  byId("mapHeightInput").value = height;
-  byId("templateInput").value = template;
+  optionsSeed.value = seed;
+  mapWidthInput.value = width.toString();
+  mapHeightInput.value = height.toString();
+  templateInput.value = template;
 
   if (locked("template")) unlock("template");
 
@@ -315,8 +383,8 @@ function restoreSeed(id) {
 }
 
 function restoreDefaultZoomExtent() {
-  zoomExtentMin.value = 1;
-  zoomExtentMax.value = 20;
+  zoomExtentMin.value = "1";
+  zoomExtentMax.value = "20";
   Zoom.scaleExtent([1, 20]);
   Zoom.scaleTo(svg, 1);
 }
@@ -335,52 +403,52 @@ function copyMapURL() {
     .catch(err => tip("Could not copy URL: " + err, false, "error", 5000));
 }
 
-const cellsDensityMap = {
-  1: 1000,
-  2: 2000,
-  3: 5000,
-  4: 10000,
-  5: 20000,
-  6: 30000,
-  7: 40000,
-  8: 50000,
-  9: 60000,
-  10: 70000,
-  11: 80000,
-  12: 90000,
-  13: 100000
-};
+const cellsDensityMap = [
+  1000,
+  2000,
+  5000,
+  10000,
+  20000,
+  30000,
+  40000,
+  50000,
+  60000,
+  70000,
+  80000,
+  90000,
+  100000
+];
 
-function changeCellsDensity(value) {
+function changeCellsDensity(value: number) {
   const cells = cellsDensityMap[value] || 1000;
-  pointsInput.dataset.cells = cells;
+  pointsInput.dataset.cells = cells.toString();
   pointsOutputFormatted.value = getCellsDensityValue(cells);
   pointsOutputFormatted.style.color = getCellsDensityColor(cells);
 }
 
-function getCellsDensityValue(cells) {
+function getCellsDensityValue(cells: number) {
   return cells / 1000 + "K";
 }
 
-function getCellsDensityColor(cells) {
+function getCellsDensityColor(cells: number) {
   return cells > 50000 ? "#b12117" : cells !== 10000 ? "#dfdf12" : "#053305";
 }
 
 function changeCultureSet() {
-  const max = culturesSet.selectedOptions[0].dataset.max;
+  const max = culturesSet.selectedOptions[0].dataset.max!;
   culturesInput.max = culturesOutput.max = max;
-  if (+culturesOutput.value > +max) culturesInput.value = culturesOutput.value = max;
+  if (Number(culturesOutput.value) > Number(max)) culturesInput.value = culturesOutput.value = max;
 }
 
-function changeEmblemShape(emblemShape) {
-  const image = byId("emblemShapeImage");
-  const shapePath = window.COArenderer && COArenderer.shieldPaths[emblemShape];
+function changeEmblemShape(emblemShape: string) {
+  const image = <unknown>byId("emblemShapeImage")! as SVGPathElement;
+  const shapePath = COArenderer && COArenderer.shieldPaths[emblemShape];
   shapePath ? image.setAttribute("d", shapePath) : image.removeAttribute("d");
 
   const specificShape = ["culture", "state", "random"].includes(emblemShape) ? null : emblemShape;
-  if (emblemShape === "random") pack.cultures.filter(c => !c.removed).forEach(c => (c.shield = COA.getRandomShield()));
+  if (emblemShape === "random") pack.cultures.filter(c => isCulture(c) && !c.removed).forEach(c => (c.shield = COA.getRandomShield()));
 
-  const rerenderCOA = (id, coa) => {
+  const rerenderCOA = (id: string, coa: ICoa | string) => {
     const coaEl = byId(id);
     if (!coaEl) return; // not rendered
     coaEl.remove();
@@ -388,7 +456,7 @@ function changeEmblemShape(emblemShape) {
   };
 
   pack.states.forEach(state => {
-    if (!state.i || state.removed || !state.coa || state.coa === "custom") return;
+    if (!isState(state) || state.removed || !state.coa || state.coa === "custom") return;
 
     const newShield = specificShape || COA.getPackShield(state.culture, null);
     if (newShield === state.coa.shield) return;
@@ -397,7 +465,7 @@ function changeEmblemShape(emblemShape) {
   });
 
   pack.provinces.forEach(province => {
-    if (!province.i || province.removed || !province.coa || province.coa === "custom") return;
+    if (!isProvince(province) || province.removed || !province.coa || province.coa === "custom") return;
     const culture = pack.cells.culture[province.center];
     const newShield = specificShape || COA.getPackShield(culture, province.state);
     if (newShield === province.coa.shield) return;
@@ -406,7 +474,7 @@ function changeEmblemShape(emblemShape) {
   });
 
   pack.burgs.forEach(burg => {
-    if (!burg.i || burg.removed || !burg.coa || burg.coa === "custom") return;
+    if (!isBurg(burg) || burg.removed || !burg.coa || burg.coa === "custom") return;
     const newShield = specificShape || COA.getPackShield(burg.culture, burg.state);
     if (newShield === burg.coa.shield) return;
     burg.coa.shield = newShield;
@@ -414,28 +482,32 @@ function changeEmblemShape(emblemShape) {
   });
 }
 
-function changeStatesNumber(value) {
-  regionsOutput.style.color = +value ? null : "#b12117";
-  burgLabels.select("#capitals").attr("data-size", Math.max(rn(6 - value / 20), 3));
-  labels.select("#countries").attr("data-size", Math.max(rn(18 - value / 6), 4));
+function changeStatesNumber(value: string) {
+  if (Number(value)) {
+    regionsOutput.style.removeProperty("color");
+  } else {
+    regionsOutput.style.color = "#b12117";
+  }
+  burgLabels.select("#capitals").attr("data-size", Math.max(rn(6 - Number(value) / 20), 3));
+  labels.select("#countries").attr("data-size", Math.max(rn(18 - Number(value) / 6), 4));
 }
 
-function changeUIsize(value) {
-  if (isNaN(+value) || +value < 0.5) return;
+function changeUIsize(value: string) {
+  if (isNaN(Number(value)) || Number(value) < 0.5) return;
 
   const max = getUImaxSize();
-  if (+value > max) value = max;
+  if (Number(value) > max) value = max.toString();
 
   uiSizeInput.value = uiSizeOutput.value = value;
-  document.getElementsByTagName("body")[0].style.fontSize = rn(value * 10, 2) + "px";
-  byId("options").style.width = value * 300 + "px";
+  document.getElementsByTagName("body")[0].style.fontSize = rn(Number(value) * 10, 2) + "px";
+  optionsDiv.style.width = Number(value) * 300 + "px";
 }
 
 function getUImaxSize() {
   return rn(Math.min(window.innerHeight / 465, window.innerWidth / 302), 1);
 }
 
-function changeTooltipSize(value) {
+function changeTooltipSize(value: string) {
   tooltip.style.fontSize = `calc(${value}px + 0.5vw)`;
 }
 
@@ -445,23 +517,23 @@ function restoreDefaultThemeColor() {
   changeDialogsTheme(THEME_COLOR, transparencyInput.value);
 }
 
-function changeThemeHue(hue) {
+function changeThemeHue(hue: string) {
   const {s, l} = d3.hsl(themeColorInput.value);
-  const newColor = d3.hsl(+hue, s, l).hex();
+  const newColor = d3.hsl(+hue, s, l).formatHex();
   changeDialogsTheme(newColor, transparencyInput.value);
 }
 
 // change color and transparency for modal windows
-function changeDialogsTheme(themeColor, transparency) {
+function changeDialogsTheme(themeColor: string, transparency: string) {
   transparencyInput.value = transparencyOutput.value = transparency;
-  const alpha = (100 - +transparency) / 100;
+  const alpha = (100 - Number(transparency)) / 100;
   const alphaReduced = Math.min(alpha + 0.3, 1);
 
   const {h, s, l} = d3.hsl(themeColor || THEME_COLOR);
   themeColorInput.value = themeColor || THEME_COLOR;
-  themeHueInput.value = h;
+  themeHueInput.value = h.toString();
 
-  const getRGBA = (hue, saturation, lightness, alpha) => {
+  const getRGBA = (hue: number, saturation: number, lightness: number, alpha: number) => {
     const color = d3.hsl(hue, saturation, lightness, alpha);
     return color.toString();
   };
@@ -480,81 +552,84 @@ function changeDialogsTheme(themeColor, transparency) {
 
   const sx = document.documentElement.style;
   theme.forEach(({name, h, s, l, alpha}) => {
-    sx.setProperty(name, getRGBA(h, s, l, alpha));
+    sx.setProperty(name, getRGBA(h, s, l, alpha!)); // MARKER: !
   });
 }
 
-function changeZoomExtent(value) {
-  const zoomExtentMin = byId("zoomExtentMin");
-  const zoomExtentMax = byId("zoomExtentMax");
+function changeZoomExtent(value: string) {
+  const zoomExtentMin = byId("zoomExtentMin")! as HTMLInputElement;
+  const zoomExtentMax = byId("zoomExtentMax")! as HTMLInputElement;
 
-  if (+zoomExtentMin.value > +zoomExtentMax.value) {
+  if (Number(zoomExtentMin.value) > Number(zoomExtentMax.value)) {
     [zoomExtentMin.value, zoomExtentMax.value] = [zoomExtentMax.value, zoomExtentMin.value];
   }
-  const min = Math.max(+zoomExtentMin.value, 0.01);
-  const max = Math.min(+zoomExtentMax.value, 200);
-  zoomExtentMin.value = min;
-  zoomExtentMax.value = max;
-  zoom.scaleExtent([min, max]);
-  const scale = minmax(+value, 0.01, 200);
+  const min = Math.max(Number(zoomExtentMin.value, 0.01);
+  const max = Math.min(Number(zoomExtentMax.value, 200);
+  zoomExtentMin.value = min.toString();
+  zoomExtentMax.value = max.toString();
+  const scale = minmax(Number(value), 0.01, 200);
+  Zoom.scaleExtent([min, max]);
   Zoom.scaleTo(svg, scale);
 }
 
 // restore options stored in localStorage
 export function applyStoredOptions() {
   if (!stored("mapWidth") || !stored("mapHeight")) {
-    mapWidthInput.value = window.innerWidth;
-    mapHeightInput.value = window.innerHeight;
+    mapWidthInput.value = window.innerWidth.toString();
+    mapHeightInput.value = window.innerHeight.toString();
   }
 
   const heightmapId = stored("template");
   if (heightmapId) {
     const name = heightmapTemplates[heightmapId]?.name || precreatedHeightmaps[heightmapId]?.name || heightmapId;
-    applyDropdownOption(byId("templateInput"), heightmapId, name);
+    applyDropdownOption(templateInput, heightmapId, name);
   }
-
-  if (stored("distanceUnit")) applyDropdownOption(byId("distanceUnitInput"), stored("distanceUnit"));
-  if (stored("heightUnit")) applyDropdownOption(byId("heightUnit"), stored("heightUnit"));
+  
+  if (stored("distanceUnit")) applyDropdownOption(distanceUnitInput, stored("distanceUnit")!); // MARKER: !
+  if (stored("heightUnit")) applyDropdownOption(heightUnitInput, stored("heightUnit")!); // MARKER: !
 
   for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
+    const key = localStorage.key(i)!; // MARKER: !
 
     if (key === "speakerVoice") continue;
-    const input = byId(key + "Input") || byId(key);
-    const output = byId(key + "Output");
+    const input = (byId(key + "Input")! || byId(key)!) as HTMLInputElement; // MARKER: !
+    const output = (byId(key + "Output")!) as HTMLInputElement; // MARKER: !
 
     const value = stored(key);
-    if (input) input.value = value;
-    if (output) output.value = value;
+    if (input) input.value = value!; // MARKER: !
+    if (output) output.value = value!; // MARKER: !
     lock(key);
 
     // add saved style presets to options
-    if (key.slice(0, 5) === "style") applyDropdownOption(byId("stylePreset"), key, key.slice(5));
+    if (key.slice(0, 5) === "style") applyDropdownOption(stylePreset, key, key.slice(5));
   }
 
   if (stored("winds"))
     options.winds = localStorage
-      .getItem("winds")
+      .getItem("winds")!
       .split(",")
-      .map(w => +w);
-  if (stored("military")) options.military = JSON.parse(stored("military"));
+      .map(w => Number(w));
+  if (stored("military") options.military = JSON.parse(stored("military")!); // MARKER: !
 
-  if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize"));
-  if (stored("regions")) changeStatesNumber(stored("regions"));
+  if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize")!);
+  if (stored("regions")) changeStatesNumber(stored("regions")!);
 
-  uiSizeInput.max = uiSizeOutput.max = getUImaxSize();
-  if (stored("uiSize")) changeUIsize(stored("uiSize"));
-  else changeUIsize(minmax(rn(mapWidthInput.value / 1280, 1), 1, 2.5));
+  uiSizeInput.max = uiSizeOutput.max = getUImaxSize().toString();
+  if (stored("uiSize")) {
+    changeUIsize(stored("uiSize")!)
+  } else {
+    changeUIsize(minmax(rn(Number(mapWidthInput.value) / 1280, 1), 1, 2.5).toString());
+  }
 
   // search params overwrite stored and default options
   const params = new URL(window.location.href).searchParams;
-  const width = +params.get("width");
-  const height = +params.get("height");
-  if (width) mapWidthInput.value = width;
-  if (height) mapHeightInput.value = height;
+  const width = Number(params.get("width"));
+  const height = Number(params.get("height"));
+  if (width) mapWidthInput.value = width.toString();
+  if (height) mapHeightInput.value = height.toString();
 
-  const transparency = stored("transparency") || 5;
-  const themeColor = stored("themeColor");
+  const transparency = stored("transparency") || "5";
+  const themeColor = stored("themeColor") || THEME_COLOR;
   changeDialogsTheme(themeColor, transparency);
 
   setRendering(shapeRendering.value);
