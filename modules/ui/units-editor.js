@@ -35,8 +35,10 @@ function editUnits() {
   byId("unitsRestore").on("click", restoreDefaultUnits);
 
   // Add listeners for the new color controls
-  byId("rulerWhiteLineColor").on("change", changeRulerLineColor);
-  byId("rulerGrayLineColor").on("change", changeRulerLineColor);
+  byId("rulerWhiteLineColor").addEventListener("change", changeRulerLineColor);
+  byId("rulerGrayLineColor").addEventListener("change", changeRulerLineColor);
+  byId("rulerWhiteLineWidth").addEventListener("change", changeRulerLineWidth);
+  byId("rulerGrayLineWidth").addEventListener("change", changeRulerLineWidth);
 
   function changeDistanceUnit() {
     if (this.value === "custom_name") {
@@ -136,6 +138,25 @@ function editUnits() {
     localStorage.setItem("rulerGrayLineColor", grayColor);
   }
 
+  function changeRulerLineWidth() {
+    const whiteWidth = parseFloat(byId("rulerWhiteLineWidth").value);
+    const grayWidth = parseFloat(byId("rulerGrayLineWidth").value);
+
+    // Update the widths of existing lines with absolute values
+    d3.selectAll("g.ruler > polyline.white").each(function() {
+      const baseSize = parseFloat(d3.select(this.parentNode).attr("font-size")) / 10;
+      d3.select(this).style("stroke-width", baseSize * whiteWidth);
+    });
+    d3.selectAll("g.ruler > polyline.gray").each(function() {
+      const baseSize = parseFloat(d3.select(this.parentNode).attr("font-size")) / 10;
+      d3.select(this).style("stroke-width", baseSize * grayWidth);
+    });
+
+    // Save the width values for future rulers
+    localStorage.setItem("rulerWhiteLineWidth", whiteWidth);
+    localStorage.setItem("rulerGrayLineWidth", grayWidth);
+  }
+
   function addRuler() {
     if (!layerIsOn("toggleRulers")) toggleRulers();
     const pt = byId("map").createSVGPoint();
@@ -175,13 +196,20 @@ function editUnits() {
 
     const whiteColor = localStorage.getItem("rulerWhiteLineColor") || "#ffffff";
     const grayColor = localStorage.getItem("rulerGrayLineColor") || "#808080";
+    const whiteWidth = parseFloat(localStorage.getItem("rulerWhiteLineWidth")) || 1;
+    const grayWidth = parseFloat(localStorage.getItem("rulerGrayLineWidth")) || 1.2;
   
     const ruler = rulers.create(Ruler, [from, to]);
     ruler.draw();
   
-    // Apply the custom colors to the new ruler
-    ruler.el.select("polyline.white").style("stroke", whiteColor);
-    ruler.el.select("polyline.gray").style("stroke", grayColor);
+    // Apply the custom colors and widths to the new ruler
+    const baseSize = ruler.getSize();
+    ruler.el.select("polyline.white")
+      .style("stroke", whiteColor)
+      .style("stroke-width", baseSize * whiteWidth);
+    ruler.el.select("polyline.gray")
+      .style("stroke", grayColor)
+      .style("stroke-width", baseSize * grayWidth);
 
     console.log(`New ruler created at x: ${x.toFixed(2)}%, y: ${y.toFixed(2)}%, length: ${initialLength}%`);
   }

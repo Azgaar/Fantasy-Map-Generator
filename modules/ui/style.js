@@ -351,37 +351,41 @@ function selectStyleElement() {
     emblemsBurgSizeInput.value = emblems.select("#burgEmblems").attr("data-size") || 1;
   }
 
-  /* if (styleElement === "ruler") {
-    // styleRulers.style.display = "block";
-    styleSelectFont.value = el.attr("font-family");
-    styleFontSize.value = el.attr("data-size");
-
-  } */
-
   if (styleElement === "ruler") {
     styleRuler.style.display = "block";
-
     styleStrokeDash.style.display = "block";
-    styleStrokeDasharrayInput.value = el.select("polyline").attr("stroke-dasharray") || "";
-    styleStrokeLinecapInput.value = el.select("polyline").attr("stroke-linecap") || "inherit";
-
     styleFont.style.display = "block";
-    styleSelectFont.value = el.select("text").attr("font-family") || "inherit";
-    styleFontSize.value = el.select("text").attr("font-size") || "10px";
 
-    // Mostrar los controles de preferencias del ruler
-    const styleRulerInitialLength = document.getElementById("rulerInitialLength");
+    const rulerEl = el.select("polyline");
+    styleStrokeDasharrayInput.value = rulerEl.attr("stroke-dasharray") || "";
+    styleStrokeLinecapInput.value = rulerEl.attr("stroke-linecap") || "inherit";
 
-    if (styleRulerInitialLength) {
-      styleRulerInitialLength.style.display = "block";
-      styleRulerInitialLength.value = localStorage.getItem("rulerInitialLength") || "100";
+    const textEl = el.select("text");
+    styleSelectFont.value = textEl.attr("font-family") || "inherit";
+    styleFontSize.value = textEl.attr("font-size") || "10px";
+
+    // Ruler preferences
+    const rulerInitialLength = byId("rulerInitialLength");
+    if (rulerInitialLength) {
+      rulerInitialLength.value = localStorage.getItem("rulerInitialLength") || "10";
     }
-  }
 
-  if (styleElement === "ruler") {
-    styleRuler.style.display = "block";
-    styleRulerWhiteLineColor.value = localStorage.getItem("rulerWhiteLineColor") || "#ffffff";
-    styleRulerGrayLineColor.value = localStorage.getItem("rulerGrayLineColor") || "#808080";
+    // Color and width controls
+    const whiteLineColor = localStorage.getItem("rulerWhiteLineColor") || "#ffffff";
+    const grayLineColor = localStorage.getItem("rulerGrayLineColor") || "#808080";
+    const whiteLineWidth = localStorage.getItem("rulerWhiteLineWidth") || "1";
+    const grayLineWidth = localStorage.getItem("rulerGrayLineWidth") || "1.2";
+
+    byId("rulerWhiteLineColor").value = whiteLineColor;
+    byId("rulerGrayLineColor").value = grayLineColor;
+    byId("rulerWhiteLineWidth").value = whiteLineWidth;
+    byId("rulerGrayLineWidth").value = grayLineWidth;
+
+    // Update color outputs if they exist
+    const whiteColorOutput = byId("rulerWhiteLineColorOutput");
+    const grayColorOutput = byId("rulerGrayLineColorOutput");
+    if (whiteColorOutput) whiteColorOutput.value = whiteLineColor;
+    if (grayColorOutput) grayColorOutput.value = grayLineColor;
   }
 
   // update group options
