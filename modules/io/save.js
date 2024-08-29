@@ -76,7 +76,10 @@ function prepareMapData() {
   const rulerPreferences = JSON.stringify({
     initialLength: localStorage.getItem("rulerInitialLength") || "100",
     whiteColor: localStorage.getItem("rulerWhiteLineColor") || "#ffffff",
-    grayColor: localStorage.getItem("rulerGrayLineColor") || "#808080",
+    grayColor: localStorage.getItem("rulerGrayLineColor") || "#3d3d3d",
+    whiteWidth: parseFloat(localStorage.getItem("rulerWhiteLineWidth")) || 1,
+    grayWidth: parseFloat(localStorage.getItem("rulerGrayLineWidth")) || 1.2,
+    showText: localStorage.getItem("rulerShowText") || true
   });
   const rulersString = rulers.toString();
   const fonts = JSON.stringify(getUsedFonts(svg.node()));

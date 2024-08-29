@@ -1907,6 +1907,12 @@ div.editorLine {
   stroke: #737373;
 }
 
+#rulerShowText {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 5px;
+}
+
 #militaryOptionsTable select {
   border: 1px solid #d4d4d4;
 }

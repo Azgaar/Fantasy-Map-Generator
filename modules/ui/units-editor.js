@@ -34,11 +34,12 @@ function editUnits() {
   byId("removeRulers").on("click", removeAllRulers);
   byId("unitsRestore").on("click", restoreDefaultUnits);
 
-  // Add listeners for the new color controls
+  // Add listeners for the new ruler controls
   byId("rulerWhiteLineColor").addEventListener("change", changeRulerLineColor);
   byId("rulerGrayLineColor").addEventListener("change", changeRulerLineColor);
   byId("rulerWhiteLineWidth").addEventListener("change", changeRulerLineWidth);
   byId("rulerGrayLineWidth").addEventListener("change", changeRulerLineWidth);
+  byId("rulerShowText").addEventListener("change", toggleRulerText);
 
   function changeDistanceUnit() {
     if (this.value === "custom_name") {
@@ -123,6 +124,40 @@ function editUnits() {
     localStorage.removeItem("populationRate");
     localStorage.removeItem("urbanization");
     localStorage.removeItem("urbanDensity");
+
+    // Ruler defaults
+    localStorage.setItem("rulerShowText", "true");
+    localStorage.setItem("rulerInitialLength", "10");
+    localStorage.setItem("rulerWhiteLineColor", "#ffffff");
+    localStorage.setItem("rulerGrayLineColor", "#3d3d3d");
+    localStorage.setItem("rulerWhiteLineWidth", "1");
+    localStorage.setItem("rulerGrayLineWidth", "1.2");
+
+    // Update UI elements
+    byId("rulerShowText").checked = true;
+    byId("rulerInitialLength").value = "10";
+    byId("rulerWhiteLineColor").value = "#ffffff";
+    byId("rulerGrayLineColor").value = "#3d3d3d";
+    byId("rulerWhiteLineWidth").value = "1";
+    byId("rulerGrayLineWidth").value = "1.2";
+
+    // Update color outputs if they exist
+    const whiteColorOutput = byId("rulerWhiteLineColorOutput");
+    const grayColorOutput = byId("rulerGrayLineColorOutput");
+    if (whiteColorOutput) whiteColorOutput.value = "#ffffff";
+    if (grayColorOutput) grayColorOutput.value = "#3d3d3d";
+
+    // Apply changes to existing rulers
+    d3.selectAll("g.ruler").each(function() {
+      const ruler = d3.select(this);
+      ruler.select("text").style("display", "inline");
+      ruler.select("polyline.white")
+        .style("stroke", "#ffffff")
+        .style("stroke-width", ruler.attr("font-size") / 10);
+      ruler.select("polyline.gray")
+        .style("stroke", "#3d3d3d")
+        .style("stroke-width", ruler.attr("font-size") / 10 * 1.2);
+    });
   }
 
   function changeRulerLineColor() {
@@ -195,9 +230,10 @@ function editUnits() {
     const to = [(p.x + dx) | 0, p.y | 0];
 
     const whiteColor = localStorage.getItem("rulerWhiteLineColor") || "#ffffff";
-    const grayColor = localStorage.getItem("rulerGrayLineColor") || "#808080";
+    const grayColor = localStorage.getItem("rulerGrayLineColor") || "#3d3d3d";
     const whiteWidth = parseFloat(localStorage.getItem("rulerWhiteLineWidth")) || 1;
     const grayWidth = parseFloat(localStorage.getItem("rulerGrayLineWidth")) || 1.2;
+    const showText = localStorage.getItem("rulerShowText") !== "false";
   
     const ruler = rulers.create(Ruler, [from, to]);
     ruler.draw();
@@ -210,6 +246,10 @@ function editUnits() {
     ruler.el.select("polyline.gray")
       .style("stroke", grayColor)
       .style("stroke-width", baseSize * grayWidth);
+
+    // Apply the text visibility preference to the new ruler
+    ruler.el.select("text").style("display", showText ? "inline" : "none");
+
 
     console.log(`New ruler created at x: ${x.toFixed(2)}%, y: ${y.toFixed(2)}%, length: ${initialLength}%`);
   }

@@ -354,15 +354,10 @@ function selectStyleElement() {
   if (styleElement === "ruler") {
     styleRuler.style.display = "block";
     styleStrokeDash.style.display = "block";
-    styleFont.style.display = "block";
 
     const rulerEl = el.select("polyline");
     styleStrokeDasharrayInput.value = rulerEl.attr("stroke-dasharray") || "";
     styleStrokeLinecapInput.value = rulerEl.attr("stroke-linecap") || "inherit";
-
-    const textEl = el.select("text");
-    styleSelectFont.value = textEl.attr("font-family") || "inherit";
-    styleFontSize.value = textEl.attr("font-size") || "10px";
 
     // Ruler preferences
     const rulerInitialLength = byId("rulerInitialLength");
@@ -386,6 +381,13 @@ function selectStyleElement() {
     const grayColorOutput = byId("rulerGrayLineColorOutput");
     if (whiteColorOutput) whiteColorOutput.value = whiteLineColor;
     if (grayColorOutput) grayColorOutput.value = grayLineColor;
+
+    // Text visibility control
+    const rulerShowText = byId("rulerShowText");
+    if (rulerShowText) {
+      rulerShowText.checked = localStorage.getItem("rulerShowText") !== "false";
+      rulerShowText.addEventListener("change", toggleRulerText);
+    }
   }
 
   // update group options
@@ -1133,6 +1135,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+function toggleRulerText() {
+  const checkbox = byId("rulerShowText");
+  const showText = checkbox.checked;
+  
+  // Update visibility for existing rulers
+  d3.selectAll("g.ruler text").style("display", showText ? "inline" : "none");
+  console.log(`toggleRulerText called with showText: ${showText}`);
+
+  // Save the preference for future rulers
+  localStorage.setItem("rulerShowText", showText);
+}
 
 styleScaleBar.addEventListener("input", function (event) {
   const scaleBarBack = scaleBar.select("#scaleBarBack");

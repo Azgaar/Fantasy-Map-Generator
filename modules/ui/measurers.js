@@ -145,6 +145,8 @@ class Ruler extends Measurer {
     const grayColor = localStorage.getItem("rulerGrayLineColor") || "#808080";
     const whiteWidth = parseFloat(localStorage.getItem("rulerWhiteLineWidth")) || 1;
     const grayWidth = parseFloat(localStorage.getItem("rulerGrayLineWidth")) || 1.2;
+    const showText = localStorage.getItem("rulerShowText") !== "false"; // by default, show the text
+
 
     const el = (this.el = ruler
       .append("g")
@@ -170,6 +172,7 @@ class Ruler extends Measurer {
     el.append("text")
       .attr("dx", ".35em")
       .attr("dy", "-.45em")
+      .style("display", showText ? "inline" : "none")
       .on("click", () => rulers.remove(this.id));
     this.drawPoints(el);
     this.updateLabel();

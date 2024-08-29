@@ -938,6 +938,13 @@
                 <td><label for="rulerInitialLength">Initial Length (%):</label></td>
                 <td><input type="number" id="rulerInitialLength" min="1" max="100" step="1"></td>
               </tr>
+
+              <tr data-tip="Show or hide text for all rulers">
+                <td>
+                  <input id="rulerShowText" type="checkbox" class="checkbox" checked>
+                  <label for="rulerShowText">Show ruler text (click to toggle)</label>
+                </td>
+              </tr>
               
               <tr data-tip="Set ruler white line color">
                 <td>White line color</td>
@@ -955,18 +962,16 @@
                 </td>
               </tr>
 
-              <tr data-tip="Set ruler white line width multiplier">
+              <tr data-tip="Set ruler white line width value">
                 <td><label for="rulerWhiteLineWidth">White line width:</label></td>
                 <td><input type="number" id="rulerWhiteLineWidth" min="0.1" max="5" step="0.1" value="1"></td>
               </tr>
             
-              <tr data-tip="Set ruler gray line width multiplier">
+              <tr data-tip="Set ruler gray line width value">
                 <td><label for="rulerGrayLineWidth">Gray line width:</label></td>
                 <td><input type="number" id="rulerGrayLineWidth" min="0.1" max="5" step="0.1" value="1.2"></td>
               </tr>
             </tbody>
-
-            
 
             <tbody id="styleTexture">
               <tr data-tip="Select texture image. Big textures can highly affect performance">

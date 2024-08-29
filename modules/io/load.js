@@ -260,6 +260,9 @@ async function parseLoadedData(data, mapVersion) {
         localStorage.setItem("rulerInitialLength", rulerPreferences.initialLength);
         localStorage.setItem("rulerWhiteLineColor", rulerPreferences.whiteColor);
         localStorage.setItem("rulerGrayLineColor", rulerPreferences.grayColor);
+        localStorage.setItem("rulerWhiteLineWidth", rulerPreferences.whiteWidth);
+        localStorage.setItem("rulerGrayLineWidth", rulerPreferences.grayWidth);
+        localStorage.setItem("rulerShowText", rulerPreferences.showText);
       if (data[34]) {
         const usedFonts = JSON.parse(data[34]);
         usedFonts.forEach(usedFont => {
