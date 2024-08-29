@@ -30,29 +30,37 @@ function editZones() {
   byId("zonesManuallyCancel").on("click", cancelZonesManualAssignent);
   byId("zonesAdd").on("click", addZonesLayer);
   byId("zonesExport").on("click", downloadZonesData);
-  byId("zonesRemove").on("click", toggleEraseMode);
+  byId("zonesRemove").on("click", e => e.target.classList.toggle("pressed"));
 
   body.on("click", function (ev) {
     const el = ev.target;
     const cl = el.classList;
-    const zoneId = el.parentNode.dataset.id;
-    const zone = pack.zones.find(z => "zone" + z.i === zoneId);
+    const zoneId = +(cl.contains("states") ? el.dataset.id : el.parentNode.dataset.id);
+    const zone = pack.zones.find(z => z.i === zoneId);
     if (!zone) return;
 
-    if (el.tagName === "FILL-BOX") changeFill(el, zone);
+    if (customization) {
+      if (zone.hidden) return;
+      body.querySelector("div.selected").classList.remove("selected");
+      el.classList.add("selected");
+      return;
+    }
+
+    if (el.tagName === "FILL-BOX") changeFill(el.getAttribute("fill"), zone);
     else if (cl.contains("zonePopulation")) changePopulation(zone);
-    else if (cl.contains("icon-trash-empty")) zoneRemove(zoneId, zone);
+    else if (cl.contains("icon-trash-empty")) zoneRemove(zone);
     else if (cl.contains("icon-eye")) toggleVisibility(zone);
-    else if (cl.contains("icon-pin")) toggleFog(zoneId, cl);
-    if (customization) selectZone(el);
+    else if (cl.contains("icon-pin")) toggleFog(zone, cl);
   });
 
   body.on("input", function (ev) {
     const el = ev.target;
-    const zone = zones.select("#" + el.parentNode.dataset.id);
+    const zoneId = +el.parentNode.dataset.id;
+    const zone = pack.zones.find(z => z.i === zoneId);
+    if (!zone) return;
 
-    if (el.classList.contains("zoneName")) zone.attr("data-description", el.value);
-    else if (el.classList.contains("zoneType")) zone.attr("data-type", el.value);
+    if (el.classList.contains("zoneName")) changeDescription(zone, el.value);
+    else if (el.classList.contains("zoneType")) changeType(zone, el.value);
   });
 
   // update type filter with a list of used types
@@ -68,8 +76,6 @@ function editZones() {
 
   // add line for each zone
   function zonesEditorAddLines() {
-    const unit = " " + getAreaUnit();
-
     const typeToFilterBy = byId("zonesFilterType").value;
     const filteredZones =
       typeToFilterBy === "all" ? pack.zones : pack.zones.filter(zone => zone.type === typeToFilterBy);
@@ -85,22 +91,22 @@ function editZones() {
       )}; Urban population: ${si(urban)}. Click to change`;
       const focused = defs.select("#fog #focusZone" + i).size();
 
-      return /* html */ `<div class="states" style="${
-        hidden ? "opacity: 0.5" : null
-      }" data-id="zone${i}" data-fill="${color}" data-description="${name}"
-        data-type="${type}" data-cells=${cells.length} data-area=${area} data-population=${population}>
+      return /* html */ `<div class="states" data-id="${i}" data-color="${color}" data-description="${name}"
+        data-type="${type}" data-cells=${cells.length} data-area=${area} data-population=${population} style="${
+        hidden && "opacity: 0.5"
+      }">
         <fill-box fill="${color}"></fill-box>
         <input data-tip="Zone description. Click and type to change" style="width: 11em" class="zoneName" value="${name}" autocorrect="off" spellcheck="false">
         <input data-tip="Zone type. Click and type to change" class="zoneType" value="${type}">
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
         <div data-tip="Cells count" class="stateCells hide">${cells.length}</div>
         <span data-tip="Zone area" style="padding-right:4px" class="icon-map-o hide"></span>
-        <div data-tip="Zone area" class="biomeArea hide">${si(area) + unit}</div>
+        <div data-tip="Zone area" class="biomeArea hide">${si(area) + " " + getAreaUnit()}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="zonePopulation hide pointer">${si(population)}</div>
         <span data-tip="Drag to raise or lower the zone" class="icon-resize-vertical hide"></span>
-        <span data-tip="Toggle zone focus" class="icon-pin ${focused ? "" : " inactive"} hide ${
-        cells.length ? "" : " placeholder"
+        <span data-tip="Toggle zone focus" class="icon-pin ${focused ? "" : "inactive"} hide ${
+        cells.length ? "" : "placeholder"
       }"></span>
         <span data-tip="Toggle zone visibility" class="icon-eye hide ${cells.length ? "" : " placeholder"}"></span>
         <span data-tip="Remove zone" class="icon-trash-empty hide"></span>
@@ -118,7 +124,7 @@ function editZones() {
     zonesFooterPopulation.dataset.population = totalPop;
     zonesFooterNumber.innerHTML = `${filteredZones.length} of ${pack.zones.length}`;
     zonesFooterCells.innerHTML = pack.cells.i.length;
-    zonesFooterArea.innerHTML = si(totalArea) + unit;
+    zonesFooterArea.innerHTML = si(totalArea) + " " + getAreaUnit();
     zonesFooterPopulation.innerHTML = si(totalPop);
 
     body.querySelectorAll("div.states").forEach(el => el.on("mouseenter", zoneHighlightOn));
@@ -132,13 +138,13 @@ function editZones() {
   }
 
   function zoneHighlightOn(event) {
-    const zone = event.target.dataset.id;
-    zones.select("#" + zone).style("outline", "1px solid red");
+    const zoneId = event.target.dataset.id;
+    zones.select("#zone" + zoneId).style("outline", "1px solid red");
   }
 
   function zoneHighlightOff(event) {
-    const zone = event.target.dataset.id;
-    zones.select("#" + zone).style("outline", null);
+    const zoneId = event.target.dataset.id;
+    zones.select("#zone" + zoneId).style("outline", null);
   }
 
   function filterZonesByType() {
@@ -155,22 +161,22 @@ function editZones() {
   });
 
   function movezone(_ev, ui) {
-    const zone = $("#" + ui.item.attr("data-id"));
-    const prev = $("#" + ui.item.prev().attr("data-id"));
-    if (prev) {
-      zone.insertAfter(prev);
-      return;
-    }
-    const next = $("#" + ui.item.next().attr("data-id"));
-    if (next) zone.insertBefore(next);
+    const zone = pack.zones.find(z => z.i === +ui.item[0].dataset.id);
+    const oldIndex = pack.zones.indexOf(zone);
+    const newIndex = ui.item.index();
+    if (oldIndex === newIndex) return;
+
+    pack.zones.splice(oldIndex, 1);
+    pack.zones.splice(newIndex, 0, zone);
+    drawZones();
   }
 
   function enterZonesManualAssignent() {
     if (!layerIsOn("toggleZones")) toggleZones();
     customization = 10;
+
     document.querySelectorAll("#zonesBottom > *").forEach(el => (el.style.display = "none"));
     byId("zonesManuallyButtons").style.display = "inline-block";
-
     zonesEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
     zonesFooter.style.display = "none";
     body.querySelectorAll("div > input, select, svg").forEach(e => (e.style.pointerEvents = "none"));
@@ -184,21 +190,32 @@ function editZones() {
       .on("touchmove mousemove", moveZoneBrush);
 
     body.querySelector("div").classList.add("selected");
-    zones.selectAll("g").each(function () {
-      this.setAttribute("data-init", this.getAttribute("data-cells"));
-    });
-  }
 
-  function selectZone(el) {
-    body.querySelector("div.selected").classList.remove("selected");
-    el.classList.add("selected");
+    // draw zones as individual cells
+    zones.selectAll("*").remove();
+
+    const filterBy = byId("zonesFilterType").value;
+    const isFiltered = filterBy && filterBy !== "all";
+    const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
+    const data = visibleZones.map(({i, cells, color}) => cells.map(cell => ({cell, zoneId: i, fill: color}))).flat();
+    zones
+      .selectAll("polygon")
+      .data(data, d => `${d.zoneId}-${d.cell}`)
+      .enter()
+      .append("polygon")
+      .attr("points", d => getPackPolygon(d.cell))
+      .attr("fill", d => d.fill)
+      .attr("data-zone", d => d.zoneId)
+      .attr("data-cell", d => d.cell);
   }
 
   function selectZoneOnMapClick() {
-    if (d3.event.target.parentElement.parentElement.id !== "zones") return;
-    const zone = d3.event.target.parentElement.id;
-    const el = body.querySelector("div[data-id='" + zone + "']");
-    selectZone(el);
+    if (d3.event.target.parentElement.id !== "zones") return;
+    const zoneId = d3.event.target.dataset.zone;
+    const el = body.querySelector("div[data-id='" + zoneId + "']");
+
+    body.querySelector("div.selected").classList.remove("selected");
+    el.classList.add("selected");
   }
 
   function dragZoneBrush() {
@@ -206,43 +223,40 @@ function editZones() {
     const eraseMode = byId("zonesRemove").classList.contains("pressed");
     const landOnly = byId("zonesBrushLandOnly").checked;
 
-    const selected = body.querySelector("div.selected");
-    const zone = zones.select("#" + selected.dataset.id);
-    const base = zone.attr("id") + "_"; // id generic part
-
     d3.event.on("drag", () => {
       if (!d3.event.dx && !d3.event.dy) return;
       const [x, y] = d3.mouse(this);
       moveCircle(x, y, radius);
 
-      let selection = radius > 5 ? findAll(x, y, radius) : [findCell(x, y, radius)];
+      let selection = radius > 5 ? findAll(x, y, radius) : [findCell(x, y)];
       if (landOnly) selection = selection.filter(i => pack.cells.h[i] >= 20);
-      if (!selection) return;
+      if (!selection.length) return;
 
-      const dataCells = zone.attr("data-cells");
-      let cells = dataCells ? dataCells.split(",").map(i => +i) : [];
+      const zoneId = +body.querySelector("div.selected")?.dataset.id;
+      const zone = pack.zones.find(z => z.i === zoneId);
 
       if (eraseMode) {
-        // remove
-        selection.forEach(i => {
-          const index = cells.indexOf(i);
-          if (index === -1) return;
-          zone.select("polygon#" + base + i).remove();
-          cells.splice(index, 1);
-        });
+        const data = zones
+          .selectAll("polygon")
+          .data()
+          .filter(d => !(d.zoneId === zoneId && selection.includes(d.cell)));
+        zones
+          .selectAll("polygon")
+          .data(data, d => `${d.zoneId}-${d.cell}`)
+          .exit()
+          .remove();
       } else {
-        // add
-        selection.forEach(i => {
-          if (cells.includes(i)) return;
-          cells.push(i);
-          zone
-            .append("polygon")
-            .attr("points", getPackPolygon(i))
-            .attr("id", base + i);
-        });
+        const data = selection.map(cell => ({cell, zoneId, fill: zone.color}));
+        zones
+          .selectAll("polygon")
+          .data(data, d => `${d.zoneId}-${d.cell}`)
+          .enter()
+          .append("polygon")
+          .attr("points", d => getPackPolygon(d.cell))
+          .attr("fill", d => d.fill)
+          .attr("data-zone", d => d.zoneId)
+          .attr("data-cell", d => d.cell);
       }
-
-      zone.attr("data-cells", cells);
     });
   }
 
@@ -250,39 +264,29 @@ function editZones() {
     showMainTip();
     const point = d3.mouse(this);
     const radius = +zonesBrush.value;
-    moveCircle(point[0], point[1], radius);
+    moveCircle(...point, radius);
   }
 
   function applyZonesManualAssignent() {
-    zones.selectAll("g").each(function () {
-      if (this.dataset.cells) return;
-      // all zone cells are removed
-      unfog("focusZone" + this.id);
-      this.style.display = "block";
-    });
+    const data = zones.selectAll("polygon").data();
+    const zoneCells = data.reduce((acc, d) => {
+      if (!acc[d.zoneId]) acc[d.zoneId] = [];
+      acc[d.zoneId].push(d.cell);
+      return acc;
+    }, {});
 
+    const filterBy = byId("zonesFilterType").value;
+    const isFiltered = filterBy && filterBy !== "all";
+    const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
+    visibleZones.forEach(zone => (zone.cells = zoneCells[zone.i] || []));
+
+    drawZones();
     zonesEditorAddLines();
     exitZonesManualAssignment();
   }
 
-  // restore initial zone cells
   function cancelZonesManualAssignent() {
-    zones.selectAll("g").each(function () {
-      const zone = d3.select(this);
-      const dataCells = zone.attr("data-init");
-      const cells = dataCells ? dataCells.split(",").map(i => +i) : [];
-      zone.attr("data-cells", cells);
-      zone.selectAll("*").remove();
-      const base = zone.attr("id") + "_"; // id generic part
-      zone
-        .selectAll("*")
-        .data(cells)
-        .enter()
-        .append("polygon")
-        .attr("points", d => getPackPolygon(d))
-        .attr("id", d => base + d);
-    });
-
+    drawZones();
     exitZonesManualAssignment();
   }
 
@@ -300,19 +304,16 @@ function editZones() {
 
     restoreDefaultEvents();
     clearMainTip();
-    zones.selectAll("g").each(function () {
-      this.removeAttribute("data-init");
-    });
+
     const selected = body.querySelector("div.selected");
     if (selected) selected.classList.remove("selected");
   }
 
-  function changeFill(el, zone) {
-    const fill = el.getAttribute("fill");
+  function changeFill(fill, zone) {
     const callback = newFill => {
-      el.fill = newFill;
-      byId(el.parentNode.dataset.id).setAttribute("fill", newFill);
       zone.color = newFill;
+      drawZones();
+      zonesEditorAddLines();
     };
 
     openPicker(fill, callback);
@@ -327,20 +328,16 @@ function editZones() {
     zonesEditorAddLines();
   }
 
-  function toggleFog(z, cl) {
-    const dataCells = zones.select("#" + z).attr("data-cells");
-    if (!dataCells) return;
-
-    const path =
-        "M" +
-        dataCells
-          .split(",")
-          .map(c => getPackPolygon(+c))
-          .join("M") +
-        "Z",
-      id = "focusZone" + z;
-    cl.contains("inactive") ? fog(id, path) : unfog(id);
+  function toggleFog(zone, cl) {
+    const inactive = cl.contains("inactive");
     cl.toggle("inactive");
+
+    if (inactive) {
+      const path = zones.select("#zone" + zone.i).attr("d");
+      fog("focusZone" + zone.i, path);
+    } else {
+      unfog("focusZone" + zone.i);
+    }
   }
 
   function toggleLegend() {
@@ -370,28 +367,23 @@ function editZones() {
   }
 
   function addZonesLayer() {
-    const id = getNextId("zone");
-    const description = "Unknown zone";
+    const zoneId = pack.zones.length ? Math.max(...pack.zones.map(z => z.i)) + 1 : 0;
+    const name = "Unknown zone";
     const type = "Unknown";
-    const fill = "url(#hatch" + (id.slice(4) % 42) + ")";
-    zones
-      .append("g")
-      .attr("id", id)
-      .attr("data-description", description)
-      .attr("data-type", type)
-      .attr("data-cells", "")
-      .attr("fill", fill);
+    const color = "url(#hatch" + (zoneId % 42) + ")";
+    pack.zones.push({i: zoneId, name, type, color, cells: []});
 
     zonesEditorAddLines();
+    drawZones();
   }
 
   function downloadZonesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,Fill,Description,Type,Cells,Area " + unit + ",Population\n"; // headers
+    let data = "Id,Color,Description,Type,Cells,Area " + unit + ",Population\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function (el) {
       data += el.dataset.id + ",";
-      data += el.dataset.fill + ",";
+      data += el.dataset.color + ",";
       data += el.dataset.description + ",";
       data += el.dataset.type + ",";
       data += el.dataset.cells + ",";
@@ -403,8 +395,14 @@ function editZones() {
     downloadFile(data, name);
   }
 
-  function toggleEraseMode() {
-    this.classList.toggle("pressed");
+  function changeDescription(zone, value) {
+    zone.name = value;
+    zones.select("#zone" + zone.i).attr("data-description", value);
+  }
+
+  function changeType(zone, value) {
+    zone.type = value;
+    zones.select("#zone" + zone.i).attr("data-type", value);
   }
 
   function changePopulation(zone) {
@@ -478,15 +476,15 @@ function editZones() {
     }
   }
 
-  function zoneRemove(zoneId, zone) {
+  function zoneRemove(zone) {
     confirmationDialog({
       title: "Remove zone",
       message: "Are you sure you want to remove the zone? <br>This action cannot be reverted",
       confirm: "Remove",
       onConfirm: () => {
         pack.zones = pack.zones.filter(z => z.i !== zone.i);
-        zones.select("#" + zoneId).remove();
-        unfog("focusZone" + zoneId);
+        zones.select("#zone" + zone.i).remove();
+        unfog("focusZone" + zone.i);
         zonesEditorAddLines();
       }
     });
