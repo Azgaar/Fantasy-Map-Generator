@@ -153,10 +153,6 @@ a {
   fill-rule: evenodd;
 }
 
-#zones {
-  fill-rule: nonzero;
-}
-
 #coastline {
   fill: none;
   stroke-linejoin: round;

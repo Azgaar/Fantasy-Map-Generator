@@ -33,34 +33,31 @@ function editZones() {
   byId("zonesRemove").on("click", e => e.target.classList.toggle("pressed"));
 
   body.on("click", function (ev) {
-    const el = ev.target;
-    const classList = el.classList;
-    const zoneId = +(classList.contains("states") ? el.dataset.id : el.parentNode.dataset.id);
-    const zone = pack.zones.find(z => z.i === zoneId);
+    const line = ev.target.closest("div.states");
+    const zone = pack.zones.find(z => z.i === +line.dataset.id);
     if (!zone) return;
 
     if (customization) {
       if (zone.hidden) return;
       body.querySelector("div.selected").classList.remove("selected");
-      el.classList.add("selected");
+      line.classList.add("selected");
       return;
     }
 
-    if (el.closest("fill-box")) changeFill(el.getAttribute("fill"), zone);
-    else if (classList.contains("zonePopulation")) changePopulation(zone);
-    else if (classList.contains("icon-trash-empty")) zoneRemove(zone);
-    else if (classList.contains("icon-eye")) toggleVisibility(zone);
-    else if (classList.contains("icon-pin")) toggleFog(zone, classList);
+    if (ev.target.closest("fill-box")) changeFill(ev.target.closest("fill-box").getAttribute("fill"), zone);
+    else if (ev.target.classList.contains("zonePopulation")) changePopulation(zone);
+    else if (ev.target.classList.contains("icon-trash-empty")) zoneRemove(zone);
+    else if (ev.target.classList.contains("icon-eye")) toggleVisibility(zone);
+    else if (ev.target.classList.contains("icon-pin")) toggleFog(zone, ev.target.classList);
   });
 
   body.on("input", function (ev) {
-    const el = ev.target;
-    const zoneId = +el.parentNode.dataset.id;
-    const zone = pack.zones.find(z => z.i === zoneId);
+    const line = ev.target.closest("div.states");
+    const zone = pack.zones.find(z => z.i === +line.dataset.id);
     if (!zone) return;
 
-    if (el.classList.contains("zoneName")) changeDescription(zone, el.value);
-    else if (el.classList.contains("zoneType")) changeType(zone, el.value);
+    if (ev.target.classList.contains("zoneName")) changeDescription(zone, ev.target.value);
+    else if (ev.target.classList.contains("zoneType")) changeType(zone, ev.target.value);
   });
 
   // update type filter with a list of used types
