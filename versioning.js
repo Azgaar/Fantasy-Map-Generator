@@ -33,6 +33,7 @@ const VERSION = "1.100.00";
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Zones update</li>
         <li>Notes Editor: on-demand AI text generation</li>
         <li>New style preset: Dark Seas</li>
         <li>New routes generation algorithm</li>

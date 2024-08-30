@@ -928,6 +928,16 @@ export function resolveVersionConflicts(mapVersion) {
 
   if (isOlderThan("1.100.0")) {
     // v1.100.00 added zones to pack data
-    zones.stlye("display", "none");
+    pack.zones = [];
+    zones.selectAll("g").each(function () {
+      const i = pack.zones.length;
+      const name = this.dataset.description;
+      const type = this.dataset.type;
+      const color = this.getAttribute("fill");
+      const cells = this.dataset.cells.split(",").map(Number);
+      pack.zones.push({i, name, type, cells, color});
+    });
+    zones.style("display", null).selectAll("*").remove();
+    if (layerIsOn("toggleZones")) drawZones();
   }
 }
