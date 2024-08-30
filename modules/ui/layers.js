@@ -1885,13 +1885,45 @@ function drawZones() {
   const filterBy = byId("zonesFilterType").value;
   const isFiltered = filterBy && filterBy !== "all";
 
-  const zonesHtml = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy)).map(drawZone);
-  zones.html(zonesHtml.join(""));
+  const visibleZones = pack.zones.filter(
+    zone => !zone.hidden && zone.cells.length && (!isFiltered || zone.type === filterBy)
+  );
+  zones.html(visibleZones.map(drawZone).join(""));
 }
 
 function drawZone({i, cells, type, color}) {
-  const cellsPath = cells.map(cell => "M" + getPackPolygon(cell).join(" ")).join(" ");
-  return `<path id="zone${i}" data-id="${i}" data-type="${type}" d="${cellsPath}" fill="${color}" />`;
+  // find a path connecting all cells of zone
+  const path = getZonePath(cells);
+  if (!path) return;
+
+  function getZonePath(cells) {
+    const used = new Set();
+    const vertices = cells.map(c => pack.cells.v[c]).flat();
+    const points = vertices.map(v => pack.vertices.p[v]);
+    const boundary = getBoundaryPoints(points, used);
+    return boundary.length > 2 ? "M" + boundary.join("L") + "Z" : null;
+  }
+
+  function getBoundaryPoints(points, used) {
+    const boundary = [];
+    let currentPoint = points[0];
+
+    while (true) {
+      boundary.push(currentPoint);
+      used.add(currentPoint.toString());
+      let nextPoint = findNextPoint(currentPoint, points, used);
+      if (!nextPoint || nextPoint === boundary[0]) break;
+      currentPoint = nextPoint;
+    }
+
+    return boundary;
+  }
+
+  function findNextPoint(current, points, used) {
+    return points.find(p => !used.has(p.toString()) && Math.hypot(p[0] - current[0], p[1] - current[1]) < 20);
+  }
+
+  return `<path id="zone${i}" data-id="${i}" data-type="${type}" d="${path}" fill="${color}" />`;
 }
 
 function toggleEmblems(event) {
