@@ -379,6 +379,7 @@ async function parseLoadedData(data, mapVersion) {
       pack.rivers = data[32] ? JSON.parse(data[32]) : [];
       pack.markers = data[35] ? JSON.parse(data[35]) : [];
       pack.routes = data[37] ? JSON.parse(data[37]) : [];
+      pack.zones = data[38] ? JSON.parse(data[38]) : [];
 
       const cells = pack.cells;
       cells.biome = Uint8Array.from(data[16].split(","));

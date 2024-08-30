@@ -53,7 +53,8 @@ function getMinimalDataJson() {
     religions: pack.religions,
     rivers: pack.rivers,
     markers: pack.markers,
-    routes: pack.routes
+    routes: pack.routes,
+    zones: pack.zones
   };
   return JSON.stringify({info, settings, mapCoordinates, pack: packData, biomesData, notes, nameBases});
 }
@@ -172,7 +173,8 @@ function getPackCellsData() {
     religions: pack.religions,
     rivers: pack.rivers,
     markers: pack.markers,
-    routes: pack.routes
+    routes: pack.routes,
+    zones: pack.zones
   };
 }
 

@@ -34,8 +34,8 @@ function editZones() {
 
   body.on("click", function (ev) {
     const el = ev.target;
-    const cl = el.classList;
-    const zoneId = +(cl.contains("states") ? el.dataset.id : el.parentNode.dataset.id);
+    const classList = el.classList;
+    const zoneId = +(classList.contains("states") ? el.dataset.id : el.parentNode.dataset.id);
     const zone = pack.zones.find(z => z.i === zoneId);
     if (!zone) return;
 
@@ -46,11 +46,11 @@ function editZones() {
       return;
     }
 
-    if (el.tagName === "FILL-BOX") changeFill(el.getAttribute("fill"), zone);
-    else if (cl.contains("zonePopulation")) changePopulation(zone);
-    else if (cl.contains("icon-trash-empty")) zoneRemove(zone);
-    else if (cl.contains("icon-eye")) toggleVisibility(zone);
-    else if (cl.contains("icon-pin")) toggleFog(zone, cl);
+    if (el.closest("fill-box")) changeFill(el.getAttribute("fill"), zone);
+    else if (classList.contains("zonePopulation")) changePopulation(zone);
+    else if (classList.contains("icon-trash-empty")) zoneRemove(zone);
+    else if (classList.contains("icon-eye")) toggleVisibility(zone);
+    else if (classList.contains("icon-pin")) toggleFog(zone, classList);
   });
 
   body.on("input", function (ev) {
