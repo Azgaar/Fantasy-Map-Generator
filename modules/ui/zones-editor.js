@@ -46,9 +46,9 @@ function editZones() {
 
     if (ev.target.closest("fill-box")) changeFill(ev.target.closest("fill-box").getAttribute("fill"), zone);
     else if (ev.target.classList.contains("zonePopulation")) changePopulation(zone);
-    else if (ev.target.classList.contains("icon-trash-empty")) zoneRemove(zone);
-    else if (ev.target.classList.contains("icon-eye")) toggleVisibility(zone);
-    else if (ev.target.classList.contains("icon-pin")) toggleFog(zone, ev.target.classList);
+    else if (ev.target.classList.contains("zoneRemove")) zoneRemove(zone);
+    else if (ev.target.classList.contains("zoneHide")) toggleVisibility(zone);
+    else if (ev.target.classList.contains("zoneFog")) toggleFog(zone, ev.target.classList);
   });
 
   body.on("input", function (ev) {
@@ -82,7 +82,7 @@ function editZones() {
       const rural = d3.sum(cells.map(i => pack.cells.pop[i])) * populationRate;
       const urban =
         d3.sum(cells.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization;
-      const population = rural + urban;
+      const population = rn(rural + urban);
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(
         rural
       )}; Urban population: ${si(urban)}. Click to change`;
@@ -102,11 +102,13 @@ function editZones() {
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="zonePopulation hide pointer">${si(population)}</div>
         <span data-tip="Drag to raise or lower the zone" class="icon-resize-vertical hide"></span>
-        <span data-tip="Toggle zone focus" class="icon-pin ${focused ? "" : "inactive"} hide ${
+        <span data-tip="Toggle zone focus" class="zoneFog icon-pin ${focused ? "" : "inactive"} hide ${
         cells.length ? "" : "placeholder"
       }"></span>
-        <span data-tip="Toggle zone visibility" class="icon-eye hide ${cells.length ? "" : " placeholder"}"></span>
-        <span data-tip="Remove zone" class="icon-trash-empty hide"></span>
+        <span data-tip="Toggle zone visibility" class="zoneHide icon-eye hide ${
+          cells.length ? "" : " placeholder"
+        }"></span>
+        <span data-tip="Remove zone" class="zoneRemove icon-trash-empty hide"></span>
       </div>`;
     });
 

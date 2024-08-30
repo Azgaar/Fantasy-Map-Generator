@@ -1884,9 +1884,8 @@ function toggleZones(event) {
 function drawZones() {
   const filterBy = byId("zonesFilterType").value;
   const isFiltered = filterBy && filterBy !== "all";
-
   const visibleZones = pack.zones.filter(
-    zone => !zone.hidden && zone.cells.length && (!isFiltered || zone.type === filterBy)
+    ({hidden, cells, type}) => !hidden && cells.length && (!isFiltered || type === filterBy)
   );
   zones.html(visibleZones.map(drawZone).join(""));
 }
