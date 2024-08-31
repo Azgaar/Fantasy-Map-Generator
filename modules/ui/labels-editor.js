@@ -45,6 +45,10 @@ function editLabel() {
   document.getElementById("labelStartOffset").addEventListener("input", changeStartOffset);
   document.getElementById("labelRelativeSize").addEventListener("input", changeRelativeSize);
 
+  document.getElementById("labelLetterSpacingShow").addEventListener("click", showLetterSpacingSection);
+  document.getElementById("labelLetterSpacingHide").addEventListener("click", hideLetterSpacingSection);
+  document.getElementById("labelLetterSpacingSize").addEventListener("input", changeLetterSpacingSize);
+
   document.getElementById("labelAlign").addEventListener("click", editLabelAlign);
   document.getElementById("labelLegend").addEventListener("click", editLabelLegend);
   document.getElementById("labelRemoveSingle").addEventListener("click", removeLabel);
@@ -83,6 +87,8 @@ function editLabel() {
       .join("|");
     document.getElementById("labelStartOffset").value = parseFloat(textPath.getAttribute("startOffset"));
     document.getElementById("labelRelativeSize").value = parseFloat(textPath.getAttribute("font-size"));
+    let letterSpacingSize = (textPath.getAttribute("letter-spacing")) ? textPath.getAttribute("letter-spacing") : 0;
+    document.getElementById("labelLetterSpacingSize").value = parseFloat(letterSpacingSize);
   }
 
   function drawControlPointsAndLine() {
@@ -342,6 +348,16 @@ function editLabel() {
     document.getElementById("labelSizeSection").style.display = "none";
   }
 
+  function showLetterSpacingSection() {
+      document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "none"));
+      document.getElementById("labelLetterSpacingSection").style.display = "inline-block";
+  }
+
+  function hideLetterSpacingSection() {
+      document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "inline-block"));
+      document.getElementById("labelLetterSpacingSection").style.display = "none";
+  }
+
   function changeStartOffset() {
     elSelected.select("textPath").attr("startOffset", this.value + "%");
     tip("Label offset: " + this.value + "%");
@@ -350,6 +366,12 @@ function editLabel() {
   function changeRelativeSize() {
     elSelected.select("textPath").attr("font-size", this.value + "%");
     tip("Label relative size: " + this.value + "%");
+    changeText();
+  }
+
+  function changeLetterSpacingSize() {
+    elSelected.select("textPath").attr("letter-spacing", this.value + "px");
+    tip("Label letter-spacing size: " + this.value + "px");
     changeText();
   }
 
