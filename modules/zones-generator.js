@@ -6,13 +6,13 @@ window.Zones = (function () {
     rebels: {quantity: 1.5, generate: addRebels}, // rebels along a state border
     proselytism: {quantity: 1.6, generate: addProselytism}, // proselitism of organized religion
     crusade: {quantity: 1.6, generate: addCrusade}, // crusade on heresy lands
-    disease: {quantity: 1.8, generate: addDisease}, // disease starting in a random city
-    disaster: {quantity: 1.2, generate: addDisaster}, // disaster starting in a random city
-    eruption: {quantity: 1.2, generate: addEruption}, // volcanic eruption aroung volcano
+    disease: {quantity: 1.4, generate: addDisease}, // disease starting in a random city
+    disaster: {quantity: 1, generate: addDisaster}, // disaster starting in a random city
+    eruption: {quantity: 1, generate: addEruption}, // eruption aroung volcano
     avalanche: {quantity: 0.8, generate: addAvalanche}, // avalanche impacting highland road
-    fault: {quantity: 1.4, generate: addFault}, // fault line in elevated areas
-    flood: {quantity: 1.4, generate: addFlood}, // flood on river banks
-    tsunami: {quantity: 1.2, generate: addTsunami} // tsunami starting near coast
+    fault: {quantity: 1, generate: addFault}, // fault line in elevated areas
+    flood: {quantity: 1, generate: addFlood}, // flood on river banks
+    tsunami: {quantity: 1, generate: addTsunami} // tsunami starting near coast
   };
 
   const generate = function (globalModifier = 1) {
@@ -21,10 +21,9 @@ window.Zones = (function () {
     const usedCells = new Uint8Array(pack.cells.i.length);
     pack.zones = [];
 
-    Object.entries(config).forEach(([name, type]) => {
+    Object.values(config).forEach(type => {
       const expectedNumber = type.quantity * globalModifier;
       let number = gauss(expectedNumber, expectedNumber / 2, 0, 100);
-      console.log(name, number);
       while (number--) type.generate(usedCells);
     });
 
@@ -164,7 +163,7 @@ window.Zones = (function () {
       });
     }
 
-    const name = getAdjective(religion.name.split(" ")[0]) + " Proselytism";
+    const name = `${getAdjective(religion.name.split(" ")[0])} Proselytism`;
     pack.zones.push({i: pack.zones.length, name, type: "Proselytism", cells: proselytismCells, color: "url(#hatch6)"});
   }
 
@@ -190,13 +189,14 @@ window.Zones = (function () {
   }
 
   function addDisease(usedCells) {
-    const burg = ra(pack.burgs.filter(b => !usedCells[b.cell] && b.i && !b.removed)); // random burg
+    const {cells, burgs} = pack;
+
+    const burg = ra(burgs.filter(b => !usedCells[b.cell] && b.i && !b.removed)); // random burg
     if (!burg) return;
 
-    const cells = pack.cells;
     const cellsArray = [];
     const cost = [];
-    const power = rand(20, 37);
+    const maxCells = rand(20, 40);
 
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     queue.queue({e: burg.cell, p: 0});
@@ -209,7 +209,7 @@ window.Zones = (function () {
       cells.c[next.e].forEach(nextCellId => {
         const c = Routes.getRoute(next.e, nextCellId) ? 5 : 100;
         const p = next.p + c;
-        if (p > power) return;
+        if (p > maxCells) return;
 
         if (!cost[nextCellId] || p < cost[nextCellId]) {
           cost[nextCellId] = p;
@@ -218,67 +218,28 @@ window.Zones = (function () {
       });
     }
 
-    const adjective = () =>
-      ra(["Great", "Silent", "Severe", "Blind", "Unknown", "Loud", "Deadly", "Burning", "Bloody", "Brutal", "Fatal"]);
-    const animal = () =>
-      ra([
-        "Ape",
-        "Bear",
-        "Boar",
-        "Cat",
-        "Cow",
-        "Dog",
-        "Pig",
-        "Fox",
-        "Bird",
-        "Horse",
-        "Rat",
-        "Raven",
-        "Sheep",
-        "Spider",
-        "Wolf"
-      ]);
-    const color = () =>
-      ra([
-        "Golden",
-        "White",
-        "Black",
-        "Red",
-        "Pink",
-        "Purple",
-        "Blue",
-        "Green",
-        "Yellow",
-        "Amber",
-        "Orange",
-        "Brown",
-        "Grey"
-      ]);
+    // prettier-ignore
+    const name = `${(() => {
+      const model = rw({color: 2, animal: 1, adjective: 1});
+      if (model === "color") return ra(["Amber", "Azure", "Black", "Blue", "Brown", "Crimson", "Emerald", "Golden", "Green", "Grey", "Orange", "Pink", "Purple", "Red", "Ruby", "Scarlet", "Silver", "Violet", "White", "Yellow"]);
+      if (model === "animal") return ra(["Ape", "Bear", "Bird", "Boar", "Cat", "Cow", "Dog", "Fox", "Horse", "Lion", "Pig", "Rat", "Raven", "Sheep", "Spider", "Tiger", "Viper", "Wolf", "Worm", "Wyrm"]);
+      if (model === "adjective") return ra(["Blind", "Bloody", "Brutal", "Burning", "Deadly", "Fatal", "Furious", "Great", "Grim", "Horrible", "Invisible", "Lethal", "Loud", "Mortal", "Savage", "Severe", "Silent", "Unknown", "Venomous", "Vicious"]);
+    })()} ${rw({Fever: 5, Plague: 3, Cough: 3, Flu: 2, Pox: 2, Cholera: 2, Typhoid: 2, Leprosy: 1, Smallpox: 1, Pestilence: 1, Consumption: 1, Malaria: 1, Dropsy: 1})}`;
 
-    const type = rw({
-      Fever: 5,
-      Pestilence: 2,
-      Flu: 2,
-      Pox: 2,
-      Smallpox: 2,
-      Plague: 4,
-      Cholera: 2,
-      Dropsy: 1,
-      Leprosy: 2
-    });
-
-    const name = rw({[color()]: 4, [animal()]: 2, [adjective()]: 1}) + " " + type;
     pack.zones.push({i: pack.zones.length, name, type: "Disease", cells: cellsArray, color: "url(#hatch12)"});
   }
 
   function addDisaster(usedCells) {
-    const burg = ra(pack.burgs.filter(b => !usedCells[b.cell] && b.i && !b.removed)); // random burg
-    if (!burg) return;
+    const {cells, burgs} = pack;
 
-    const cells = pack.cells;
-    const cellsArray = [],
-      cost = [],
-      power = rand(5, 25);
+    const burg = ra(burgs.filter(b => !usedCells[b.cell] && b.i && !b.removed));
+    if (!burg) return;
+    usedCells[burg.cell] = 1;
+
+    const cellsArray = [];
+    const cost = [];
+    const maxCells = rand(5, 25);
+
     const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
     queue.queue({e: burg.cell, p: 0});
 
@@ -290,7 +251,7 @@ window.Zones = (function () {
       cells.c[next.e].forEach(function (e) {
         const c = rand(1, 10);
         const p = next.p + c;
-        if (p > power) return;
+        if (p > maxCells) return;
 
         if (!cost[e] || p < cost[e]) {
           cost[e] = p;
@@ -299,158 +260,183 @@ window.Zones = (function () {
       });
     }
 
-    const type = rw({Famine: 5, Dearth: 1, Drought: 3, Earthquake: 3, Tornadoes: 1, Wildfires: 1});
+    const type = rw({
+      Famine: 5,
+      Drought: 3,
+      Earthquake: 3,
+      Dearth: 1,
+      Tornadoes: 1,
+      Wildfires: 1,
+      Storms: 1,
+      Blight: 1
+    });
     const name = getAdjective(burg.name) + " " + type;
     pack.zones.push({i: pack.zones.length, name, type: "Disaster", cells: cellsArray, color: "url(#hatch5)"});
   }
 
   function addEruption(usedCells) {
-    const volcano = byId("markers").querySelector("use[data-id='#marker_volcano']");
-    if (!volcano) return;
+    const {cells, markers} = pack;
 
-    const cells = pack.cells;
-    const x = +volcano.dataset.x,
-      y = +volcano.dataset.y,
-      cell = findCell(x, y);
-    const id = volcano.id;
-    const note = notes.filter(n => n.id === id);
+    const volcanoe = markers.find(m => m.type === "volcanoes" && !usedCells[m.cell]);
+    if (!volcanoe) return;
+    usedCells[volcanoe.cell] = 1;
 
-    if (note[0]) note[0].legend = note[0].legend.replace("Active volcano", "Erupting volcano");
-    const name = note[0] ? note[0].name.replace(" Volcano", "") + " Eruption" : "Volcano Eruption";
+    const note = notes.find(n => n.id === "marker" + volcanoe.i);
+    if (note) note.legend = note.legend.replace("Active volcano", "Erupting volcano");
+    const name = note ? note.name.replace(" Volcano", "") + " Eruption" : "Volcano Eruption";
 
-    const cellsArray = [],
-      queue = [cell],
-      power = rand(10, 30);
+    const cellsArray = [];
+    const queue = [volcanoe.cell];
+    const maxCells = rand(10, 30);
 
     while (queue.length) {
-      const q = P(0.5) ? queue.shift() : queue.pop();
-      cellsArray.push(q);
-      if (cellsArray.length > power) break;
-      cells.c[q].forEach(e => {
-        if (usedCells[e] || cells.h[e] < 20) return;
-        usedCells[e] = 1;
-        queue.push(e);
+      const cellId = P(0.5) ? queue.shift() : queue.pop();
+      cellsArray.push(cellId);
+      if (cellsArray.length >= maxCells) break;
+
+      cells.c[cellId].forEach(neibCellId => {
+        if (usedCells[neibCellId] || cells.h[neibCellId] < 20) return;
+        usedCells[neibCellId] = 1;
+        queue.push(neibCellId);
       });
     }
 
-    pack.zones.push({i: pack.zones.length, name, type: "Disaster", cells: cellsArray, color: "url(#hatch7)"});
+    pack.zones.push({i: pack.zones.length, name, type: "Eruption", cells: cellsArray, color: "url(#hatch7)"});
   }
 
   function addAvalanche(usedCells) {
-    const cells = pack.cells;
-    const routes = cells.i.filter(i => !usedCells[i] && Routes.isConnected(i) && cells.h[i] >= 70);
-    if (!routes.length) return;
+    const {cells} = pack;
 
-    const cell = +ra(routes);
-    const cellsArray = [],
-      queue = [cell],
-      power = rand(3, 15);
+    const routeCells = cells.i.filter(i => !usedCells[i] && Routes.isConnected(i) && cells.h[i] >= 70);
+    if (!routeCells.length) return;
+
+    const startCell = ra(routeCells);
+    usedCells[startCell] = 1;
+
+    const cellsArray = [];
+    const queue = [startCell];
+    const maxCells = rand(3, 15);
 
     while (queue.length) {
-      const q = P(0.3) ? queue.shift() : queue.pop();
-      cellsArray.push(q);
-      if (cellsArray.length > power) break;
-      cells.c[q].forEach(e => {
-        if (usedCells[e] || cells.h[e] < 65) return;
-        usedCells[e] = 1;
-        queue.push(e);
+      const cellId = P(0.3) ? queue.shift() : queue.pop();
+      cellsArray.push(cellId);
+      if (cellsArray.length >= maxCells) break;
+
+      cells.c[cellId].forEach(neibCellId => {
+        if (usedCells[neibCellId] || cells.h[neibCellId] < 65) return;
+        usedCells[neibCellId] = 1;
+        queue.push(neibCellId);
       });
     }
 
-    const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
-    const name = proper + " Avalanche";
-    pack.zones.push({i: pack.zones.length, name, type: "Disaster", cells: cellsArray, color: "url(#hatch5)"});
+    const name = getAdjective(Names.getCultureShort(cells.culture[startCell])) + " Avalanche";
+    pack.zones.push({i: pack.zones.length, name, type: "Avalanche", cells: cellsArray, color: "url(#hatch5)"});
   }
 
   function addFault(usedCells) {
     const cells = pack.cells;
-    const elevated = cells.i.filter(i => !usedCells[i] && cells.h[i] > 50 && cells.h[i] < 70);
-    if (!elevated.length) return;
 
-    const cell = ra(elevated);
-    const cellsArray = [],
-      queue = [cell],
-      power = rand(3, 15);
+    const elevatedCells = cells.i.filter(i => !usedCells[i] && cells.h[i] > 50 && cells.h[i] < 70);
+    if (!elevatedCells.length) return;
+
+    const startCell = ra(elevatedCells);
+    usedCells[startCell] = 1;
+
+    const cellsArray = [];
+    const queue = [startCell];
+    const maxCells = rand(3, 15);
 
     while (queue.length) {
-      const q = queue.pop();
-      if (cells.h[q] >= 20) cellsArray.push(q);
-      if (cellsArray.length > power) break;
-      cells.c[q].forEach(e => {
-        if (usedCells[e] || cells.r[e]) return;
-        usedCells[e] = 1;
-        queue.push(e);
+      const cellId = queue.pop();
+      if (cells.h[cellId] >= 20) cellsArray.push(cellId);
+      if (cellsArray.length >= maxCells) break;
+
+      cells.c[cellId].forEach(neibCellId => {
+        if (usedCells[neibCellId] || cells.r[neibCellId]) return;
+        usedCells[neibCellId] = 1;
+        queue.push(neibCellId);
       });
     }
 
-    const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
-    const name = proper + " Fault";
-    pack.zones.push({i: pack.zones.length, name, type: "Disaster", cells: cellsArray, color: "url(#hatch2)"});
+    const name = getAdjective(Names.getCultureShort(cells.culture[startCell])) + " Fault";
+    pack.zones.push({i: pack.zones.length, name, type: "Fault", cells: cellsArray, color: "url(#hatch2)"});
   }
 
   function addFlood(usedCells) {
     const cells = pack.cells;
-    const fl = cells.fl.filter(fl => fl),
-      meanFlux = d3.mean(fl),
-      maxFlux = d3.max(fl),
-      flux = (maxFlux - meanFlux) / 2 + meanFlux;
-    const rivers = cells.i.filter(
-      i => !usedCells[i] && cells.h[i] < 50 && cells.r[i] && cells.fl[i] > flux && cells.burg[i]
-    );
-    if (!rivers.length) return;
 
-    const cell = +ra(rivers),
-      river = cells.r[cell];
-    const cellsArray = [],
-      queue = [cell],
-      power = rand(5, 30);
+    const fl = cells.fl.filter(Boolean);
+    const meanFlux = d3.mean(fl);
+    const maxFlux = d3.max(fl);
+    const fluxThreshold = (maxFlux - meanFlux) / 2 + meanFlux;
+
+    const bigRiverCells = cells.i.filter(
+      i => !usedCells[i] && cells.h[i] < 50 && cells.r[i] && cells.fl[i] > fluxThreshold && cells.burg[i]
+    );
+    if (!bigRiverCells.length) return;
+
+    const startCell = ra(bigRiverCells);
+    usedCells[startCell] = 1;
+
+    const riverId = cells.r[startCell];
+    const cellsArray = [];
+    const queue = [startCell];
+    const maxCells = rand(5, 30);
 
     while (queue.length) {
-      const q = queue.pop();
-      cellsArray.push(q);
-      if (cellsArray.length > power) break;
+      const cellId = queue.pop();
+      cellsArray.push(cellId);
+      if (cellsArray.length >= maxCells) break;
 
-      cells.c[q].forEach(e => {
-        if (usedCells[e] || cells.h[e] < 20 || cells.r[e] !== river || cells.h[e] > 50 || cells.fl[e] < meanFlux)
+      cells.c[cellId].forEach(neibCellId => {
+        if (
+          usedCells[neibCellId] ||
+          cells.h[neibCellId] < 20 ||
+          cells.r[neibCellId] !== riverId ||
+          cells.h[neibCellId] > 50 ||
+          cells.fl[neibCellId] < meanFlux
+        )
           return;
-        usedCells[e] = 1;
-        queue.push(e);
+        usedCells[neibCellId] = 1;
+        queue.push(neibCellId);
       });
     }
 
-    const name = getAdjective(pack.burgs[cells.burg[cell]].name) + " Flood";
-    pack.zones.push({i: pack.zones.length, name, type: "Disaster", cells: cellsArray, color: "url(#hatch13)"});
+    const name = getAdjective(pack.burgs[cells.burg[startCell]].name) + " Flood";
+    pack.zones.push({i: pack.zones.length, name, type: "Flood", cells: cellsArray, color: "url(#hatch13)"});
   }
 
   function addTsunami(usedCells) {
-    const cells = pack.cells;
-    const coastal = cells.i.filter(
-      i => !usedCells[i] && cells.t[i] === -1 && pack.features[cells.f[i]].type !== "lake"
-    );
-    if (!coastal.length) return;
+    const {cells, features} = pack;
 
-    const cell = +ra(coastal);
-    const cellsArray = [],
-      queue = [cell],
-      power = rand(10, 30);
+    const coastalCells = cells.i.filter(
+      i => !usedCells[i] && cells.t[i] === -1 && features[cells.f[i]].type !== "lake"
+    );
+    if (!coastalCells.length) return;
+
+    const startCell = ra(coastalCells);
+    usedCells[startCell] = 1;
+
+    const cellsArray = [];
+    const queue = [startCell];
+    const maxCells = rand(10, 30);
 
     while (queue.length) {
-      const q = queue.shift();
-      if (cells.t[q] === 1) cellsArray.push(q);
-      if (cellsArray.length > power) break;
+      const cellId = queue.shift();
+      if (cells.t[cellId] === 1) cellsArray.push(cellId);
+      if (cellsArray.length >= maxCells) break;
 
-      cells.c[q].forEach(e => {
-        if (usedCells[e]) return;
-        if (cells.t[e] > 2) return;
-        if (pack.features[cells.f[e]].type === "lake") return;
-        usedCells[e] = 1;
-        queue.push(e);
+      cells.c[cellId].forEach(neibCellId => {
+        if (usedCells[neibCellId]) return;
+        if (cells.t[neibCellId] > 2) return;
+        if (pack.features[cells.f[neibCellId]].type === "lake") return;
+        usedCells[neibCellId] = 1;
+        queue.push(neibCellId);
       });
     }
 
-    const proper = getAdjective(Names.getCultureShort(cells.culture[cell]));
-    const name = proper + " Tsunami";
-    pack.zones.push({i: pack.zones.length, name, type: "Disaster", cells: cellsArray, color: "url(#hatch13)"});
+    const name = getAdjective(Names.getCultureShort(cells.culture[startCell])) + " Tsunami";
+    pack.zones.push({i: pack.zones.length, name, type: "Tsunami", cells: cellsArray, color: "url(#hatch13)"});
   }
 
   return {generate};
