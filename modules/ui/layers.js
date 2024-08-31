@@ -181,6 +181,7 @@ function restoreLayers() {
   if (layerIsOn("toggleIce")) drawIce();
   if (layerIsOn("toggleEmblems")) drawEmblems();
   if (layerIsOn("toggleMarkers")) drawMarkers();
+  if (layerIsOn("toggleZones")) drawZones();
 
   // some layers are rendered each time, remove them if they are not on
   if (!layerIsOn("toggleBorders")) borders.selectAll("path").remove();
