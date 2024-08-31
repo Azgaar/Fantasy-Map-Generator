@@ -233,6 +233,7 @@ function editZones() {
 
       const zoneId = +body.querySelector("div.selected")?.dataset.id;
       const zone = pack.zones.find(z => z.i === zoneId);
+      if (!zone) return;
 
       if (eraseMode) {
         const data = zones

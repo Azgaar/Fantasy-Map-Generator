@@ -2,14 +2,14 @@
 
 window.Zones = (function () {
   const config = {
-    invasion: {quantity: 1.8, generate: addInvasion}, // invasion of enemy lands
-    rebels: {quantity: 1.6, generate: addRebels}, // rebels along a state border
+    invasion: {quantity: 2, generate: addInvasion}, // invasion of enemy lands
+    rebels: {quantity: 1.5, generate: addRebels}, // rebels along a state border
     proselytism: {quantity: 1.6, generate: addProselytism}, // proselitism of organized religion
     crusade: {quantity: 1.6, generate: addCrusade}, // crusade on heresy lands
     disease: {quantity: 1.8, generate: addDisease}, // disease starting in a random city
     disaster: {quantity: 1.2, generate: addDisaster}, // disaster starting in a random city
-    eruption: {quantity: 1.4, generate: addEruption}, // volcanic eruption aroung volcano
-    avalanche: {quantity: 1.0, generate: addAvalanche}, // avalanche impacting highland road
+    eruption: {quantity: 1.2, generate: addEruption}, // volcanic eruption aroung volcano
+    avalanche: {quantity: 0.8, generate: addAvalanche}, // avalanche impacting highland road
     fault: {quantity: 1.4, generate: addFault}, // fault line in elevated areas
     flood: {quantity: 1.4, generate: addFlood}, // flood on river banks
     tsunami: {quantity: 1.2, generate: addTsunami} // tsunami starting near coast
@@ -21,152 +21,160 @@ window.Zones = (function () {
     const usedCells = new Uint8Array(pack.cells.i.length);
     pack.zones = [];
 
-    Object.values(config).forEach(type => {
-      const count = rn(Math.random() * type.quantity * globalModifier);
-      for (let i = 0; i < count; i++) {
-        type.generate(usedCells);
-      }
+    Object.entries(config).forEach(([name, type]) => {
+      const expectedNumber = type.quantity * globalModifier;
+      let number = gauss(expectedNumber, expectedNumber / 2, 0, 100);
+      console.log(name, number);
+      while (number--) type.generate(usedCells);
     });
 
     TIME && console.timeEnd("generateZones");
   };
 
   function addInvasion(usedCells) {
-    const atWar = pack.states.filter(s => s.diplomacy && s.diplomacy.some(d => d === "Enemy"));
-    if (!atWar.length) return;
+    const {cells, states} = pack;
 
-    const invader = ra(atWar);
-    const target = invader.diplomacy.find(d => d === "Enemy");
+    const ongoingConflicts = states
+      .filter(s => s.i && !s.removed && s.campaigns)
+      .map(s => s.campaigns)
+      .flat()
+      .filter(c => !c.end);
+    if (!ongoingConflicts.length) return;
+    const {defender, attacker} = ra(ongoingConflicts);
 
-    const cells = pack.cells;
-    const cell = ra(
-      cells.i.filter(i => cells.state[i] === target.i && cells.c[i].some(c => cells.state[c] === invader.i))
-    );
-    if (!cell) return;
+    const borderCells = cells.i.filter(cellId => {
+      if (usedCells[cellId]) return false;
+      if (cells.state[cellId] !== defender) return false;
+      return cells.c[cellId].some(c => cells.state[c] === attacker);
+    });
 
-    const cellsArray = [],
-      queue = [cell],
-      power = rand(5, 30);
+    const startCell = ra(borderCells);
+    if (startCell === undefined) return;
+
+    const invationCells = [];
+    const queue = [startCell];
+    const maxCells = rand(5, 30);
 
     while (queue.length) {
-      const q = P(0.4) ? queue.shift() : queue.pop();
-      cellsArray.push(q);
-      if (cellsArray.length > power) break;
+      const cellId = P(0.4) ? queue.shift() : queue.pop();
+      invationCells.push(cellId);
+      if (invationCells.length >= maxCells) break;
 
-      cells.c[q].forEach(e => {
-        if (usedCells[e]) return;
-        if (cells.state[e] !== target.i) return;
-        usedCells[e] = 1;
-        queue.push(e);
+      cells.c[cellId].forEach(neibCellId => {
+        if (usedCells[neibCellId]) return;
+        if (cells.state[neibCellId] !== defender) return;
+        usedCells[neibCellId] = 1;
+        queue.push(neibCellId);
       });
     }
 
-    const invasion = rw({
-      Invasion: 4,
-      Occupation: 3,
-      Raid: 2,
-      Conquest: 2,
+    const subtype = rw({
+      Invasion: 5,
+      Occupation: 4,
+      Conquest: 3,
+      Incursion: 2,
+      Intervention: 2,
       Subjugation: 1,
       Foray: 1,
       Skirmishes: 1,
-      Incursion: 2,
       Pillaging: 1,
-      Intervention: 1
+      Raid: 1
     });
-    const name = getAdjective(invader.name) + " " + invasion;
-    pack.zones.push({i: pack.zones.length, name, type: "Invasion", cells: cellsArray, color: "url(#hatch1)"});
+    const name = getAdjective(states[attacker].name) + " " + subtype;
+
+    pack.zones.push({i: pack.zones.length, name, type: "Invasion", cells: invationCells, color: "url(#hatch1)"});
   }
 
   function addRebels(usedCells) {
     const {cells, states} = pack;
+
     const state = ra(states.filter(s => s.i && !s.removed && s.neighbors.some(Boolean)));
     if (!state) return;
 
-    const neib = ra(state.neighbors.filter(n => n && !states[n].removed));
-    if (!neib) return;
+    const neibStateId = ra(state.neighbors.filter(n => n && !states[n].removed));
+    if (!neibStateId) return;
 
-    const cell = cells.i.find(
-      i => cells.state[i] === state.i && !state.removed && cells.c[i].some(c => cells.state[c] === neib)
-    );
     const cellsArray = [];
     const queue = [];
-    if (cell) queue.push(cell);
-
-    const power = rand(10, 30);
+    const borderCellId = cells.i.find(
+      i => cells.state[i] === state.i && cells.c[i].some(c => cells.state[c] === neibStateId)
+    );
+    if (borderCellId) queue.push(borderCellId);
+    const maxCells = rand(10, 30);
 
     while (queue.length) {
-      const q = queue.shift();
-      cellsArray.push(q);
-      if (cellsArray.length > power) break;
+      const cellId = queue.shift();
+      cellsArray.push(cellId);
+      if (cellsArray.length >= maxCells) break;
 
-      cells.c[q].forEach(e => {
-        if (usedCells[e]) return;
-        if (cells.state[e] !== state.i) return;
-        usedCells[e] = 1;
-        if (e % 4 !== 0 && !cells.c[e].some(c => cells.state[c] === neib)) return;
-        queue.push(e);
+      cells.c[cellId].forEach(neibCellId => {
+        if (usedCells[neibCellId]) return;
+        if (cells.state[neibCellId] !== state.i) return;
+        usedCells[neibCellId] = 1;
+        if (neibCellId % 4 !== 0 && !cells.c[neibCellId].some(c => cells.state[c] === neibStateId)) return;
+        queue.push(neibCellId);
       });
     }
 
     const rebels = rw({
       Rebels: 5,
-      Insurgents: 2,
+      Insurrection: 2,
       Mutineers: 1,
+      Insurgents: 1,
       Rioters: 1,
       Separatists: 1,
       Secessionists: 1,
-      Insurrection: 2,
       Rebellion: 1,
-      Conspiracy: 2
+      Conspiracy: 1
     });
 
-    const name = getAdjective(states[neib].name) + " " + rebels;
+    const name = getAdjective(states[neibStateId].name) + " " + rebels;
     pack.zones.push({i: pack.zones.length, name, type: "Rebels", cells: cellsArray, color: "url(#hatch3)"});
   }
 
   function addProselytism(usedCells) {
-    const organized = ra(pack.religions.filter(r => r.type === "Organized"));
-    if (!organized) return;
+    const {cells, religions} = pack;
 
-    const cells = pack.cells;
-    const cell = ra(
-      cells.i.filter(
-        i =>
-          cells.religion[i] &&
-          cells.religion[i] !== organized.i &&
-          cells.c[i].some(c => cells.religion[c] === organized.i)
-      )
+    const organizedReligions = religions.filter(r => r.i && !r.removed && r.type === "Organized");
+    const religion = ra(organizedReligions);
+    if (!religion) return;
+
+    const targetBorderCells = cells.i.filter(
+      i => cells.religion[i] !== religion.i && cells.c[i].some(c => cells.religion[c] === religion.i)
     );
-    if (!cell) return;
-    const target = cells.religion[cell];
-    const cellsArray = [],
-      queue = [cell],
-      power = rand(10, 30);
+    const startCell = ra(targetBorderCells);
+    if (!startCell) return;
+
+    const targetReligionId = cells.religion[startCell];
+    const proselytismCells = [];
+    const queue = [startCell];
+    const maxCells = rand(10, 30);
 
     while (queue.length) {
-      const q = queue.shift();
-      cellsArray.push(q);
-      if (cellsArray.length > power) break;
+      const cellId = queue.shift();
+      proselytismCells.push(cellId);
+      if (proselytismCells.length >= maxCells) break;
 
-      cells.c[q].forEach(e => {
-        if (usedCells[e]) return;
-        if (cells.religion[e] !== target) return;
-        if (cells.h[e] < 20) return;
-        usedCells[e] = 1;
-        //if (e%2 !== 0 && !cells.c[e].some(c => cells.state[c] === neib)) return;
-        queue.push(e);
+      cells.c[cellId].forEach(neibCellId => {
+        if (usedCells[neibCellId]) return;
+        if (cells.religion[neibCellId] !== targetReligionId) return;
+        if (cells.h[neibCellId] < 20) return;
+        usedCells[neibCellId] = 1;
+        queue.push(neibCellId);
       });
     }
 
-    const name = getAdjective(organized.name.split(" ")[0]) + " Proselytism";
-    pack.zones.push({i: pack.zones.length, name, type: "Proselytism", cells: cellsArray, color: "url(#hatch6)"});
+    const name = getAdjective(religion.name.split(" ")[0]) + " Proselytism";
+    pack.zones.push({i: pack.zones.length, name, type: "Proselytism", cells: proselytismCells, color: "url(#hatch6)"});
   }
 
   function addCrusade(usedCells) {
-    const heresy = ra(pack.religions.filter(r => r.type === "Heresy"));
-    if (!heresy) return;
+    const {cells, religions} = pack;
 
-    const cells = pack.cells;
+    const heresies = religions.filter(r => !r.removed && r.type === "Heresy");
+    if (!heresies.length) return;
+
+    const heresy = ra(heresies);
     const crusadeCells = cells.i.filter(i => !usedCells[i] && cells.religion[i] === heresy.i);
     if (!crusadeCells.length) return;
     crusadeCells.forEach(i => (usedCells[i] = 1));

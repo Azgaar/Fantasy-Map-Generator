@@ -611,8 +611,7 @@ window.BurgsAndStates = (() => {
   // generate Diplomatic Relationships
   const generateDiplomacy = () => {
     TIME && console.time("generateDiplomacy");
-    const cells = pack.cells,
-      states = pack.states;
+    const {cells, states} = pack;
     const chronicle = (states[0].diplomacy = []);
     const valid = states.filter(s => s.i && !states.removed);
 
@@ -696,21 +695,23 @@ window.BurgsAndStates = (() => {
       const defender = ra(
         ad.map((r, d) => (r === "Rival" && !states[d].diplomacy.includes("Vassal") ? d : 0)).filter(d => d)
       );
-      let ap = states[attacker].area * states[attacker].expansionism,
-        dp = states[defender].area * states[defender].expansionism;
+      let ap = states[attacker].area * states[attacker].expansionism;
+      let dp = states[defender].area * states[defender].expansionism;
       if (ap < dp * gauss(1.6, 0.8, 0, 10, 2)) continue; // defender is too strong
-      const an = states[attacker].name,
-        dn = states[defender].name; // names
-      const attackers = [attacker],
-        defenders = [defender]; // attackers and defenders array
+
+      const an = states[attacker].name;
+      const dn = states[defender].name; // names
+      const attackers = [attacker];
+      const defenders = [defender]; // attackers and defenders array
       const dd = states[defender].diplomacy; // defender relations;
 
-      // start a war
-      const war = [`${an}-${trimVowels(dn)}ian War`, `${an} declared a war on its rival ${dn}`];
-      const end = options.year;
-      const start = end - gauss(2, 2, 0, 5);
-      states[attacker].campaigns.push({name: `${trimVowels(dn)}ian War`, start, end});
-      states[defender].campaigns.push({name: `${trimVowels(an)}ian War`, start, end});
+      // start an ongoing war
+      const name = `${an}-${trimVowels(dn)}ian War`;
+      const start = options.year - gauss(2, 3, 0, 10);
+      const war = [name, `${an} declared a war on its rival ${dn}`];
+      const campaign = {name, start, attacker, defender};
+      states[attacker].campaigns.push(campaign);
+      states[defender].campaigns.push(campaign);
 
       // attacker vassals join the war
       ad.forEach((r, d) => {
@@ -790,7 +791,6 @@ window.BurgsAndStates = (() => {
     }
 
     TIME && console.timeEnd("generateDiplomacy");
-    //console.table(states.map(s => s.diplomacy));
   };
 
   // select a forms for listed or all valid states
