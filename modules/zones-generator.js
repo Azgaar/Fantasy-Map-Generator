@@ -139,7 +139,11 @@ window.Zones = (function () {
     if (!religion) return;
 
     const targetBorderCells = cells.i.filter(
-      i => cells.religion[i] !== religion.i && cells.c[i].some(c => cells.religion[c] === religion.i)
+      i =>
+        cells.h[i] < 20 &&
+        cells.pop[i] &&
+        cells.religion[i] !== religion.i &&
+        cells.c[i].some(c => cells.religion[c] === religion.i)
     );
     const startCell = ra(targetBorderCells);
     if (!startCell) return;
@@ -157,7 +161,7 @@ window.Zones = (function () {
       cells.c[cellId].forEach(neibCellId => {
         if (usedCells[neibCellId]) return;
         if (cells.religion[neibCellId] !== targetReligionId) return;
-        if (cells.h[neibCellId] < 20) return;
+        if (cells.h[neibCellId] < 20 || !cells.pop[i]) return;
         usedCells[neibCellId] = 1;
         queue.push(neibCellId);
       });
