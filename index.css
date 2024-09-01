@@ -2400,6 +2400,19 @@ svg.button {
   }
 }
 
+#chat-widget-container {
+  animation: fadeIn 1s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media print {
   div,
   canvas {

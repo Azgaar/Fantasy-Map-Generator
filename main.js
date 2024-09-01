@@ -251,6 +251,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   restoreDefaultEvents(); // apply default viewbox events
   initiateAutosave();
+  setTipMessage();
 });
 
 function hideLoading() {
@@ -316,6 +317,7 @@ async function generateMapOnLoad() {
   applyPreset(); // apply saved layers preset
   fitMapToScreen();
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
+  loadAssistant();
 }
 
 // focus on coordinates, cell or burg provided in searchParams
@@ -363,6 +365,11 @@ function focusOn() {
     const y = +params.get("y") || graphHeight / 2;
     zoomTo(x, y, scale, 1600);
   }
+}
+
+function loadAssistant() {
+  const showAssistant = byId("azgaarAssistant").value === "show";
+  if (showAssistant) import("./libs/openwidget.min.js");
 }
 
 // find burg for MFCG and focus on it
