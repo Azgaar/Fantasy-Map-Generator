@@ -53,7 +53,8 @@ function getMinimalDataJson() {
     religions: pack.religions,
     rivers: pack.rivers,
     markers: pack.markers,
-    routes: pack.routes
+    routes: pack.routes,
+    zones: pack.zones
   };
   return JSON.stringify({info, settings, mapCoordinates, pack: packData, biomesData, notes, nameBases});
 }
@@ -72,7 +73,7 @@ function getGridDataJson() {
 
 function getMapInfo() {
   return {
-    version,
+    version: VERSION,
     description: "Azgaar's Fantasy Map Generator output: azgaar.github.io/Fantasy-map-generator",
     exportedAt: new Date().toISOString(),
     mapName: mapName.value,
@@ -172,7 +173,8 @@ function getPackCellsData() {
     religions: pack.religions,
     rivers: pack.rivers,
     markers: pack.markers,
-    routes: pack.routes
+    routes: pack.routes,
+    zones: pack.zones
   };
 }
 

@@ -261,7 +261,7 @@ function editHeightmap(options) {
 
     Military.generate();
     Markers.generate();
-    addZones();
+    Zones.generate();
     TIME && console.timeEnd("regenerateErasedData");
     INFO && console.groupEnd("Edit Heightmap");
   }
