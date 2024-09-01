@@ -2694,14 +2694,15 @@
             data-tip="Hide the letter spacing section"
             class="icon-text-width"
           ></button>
-          <input
+          <slider-input
             id="labelLetterSpacingSize"
-            data-tip="Set the letter spacing size for the particular label"
-            type="range"
+            style="display: inline-block"
+            data-tip="Set the letter spacing size for this label"
             min="0"
-            max="80"
-            style="width: 8em"
-          />
+            max="20"
+            step=".01"
+            value="0"
+          ></slider-input>
         </div>
 
         <button id="labelAlign" data-tip="Turn text path into a straight line" class="icon-resize-horizontal"></button>

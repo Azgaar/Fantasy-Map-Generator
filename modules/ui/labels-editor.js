@@ -26,32 +26,32 @@ function editLabel() {
   modules.editLabel = true;
 
   // add listeners
-  document.getElementById("labelGroupShow").addEventListener("click", showGroupSection);
-  document.getElementById("labelGroupHide").addEventListener("click", hideGroupSection);
-  document.getElementById("labelGroupSelect").addEventListener("click", changeGroup);
-  document.getElementById("labelGroupInput").addEventListener("change", createNewGroup);
-  document.getElementById("labelGroupNew").addEventListener("click", toggleNewGroupInput);
-  document.getElementById("labelGroupRemove").addEventListener("click", removeLabelsGroup);
+  byId("labelGroupShow").on("click", showGroupSection);
+  byId("labelGroupHide").on("click", hideGroupSection);
+  byId("labelGroupSelect").on("click", changeGroup);
+  byId("labelGroupInput").on("change", createNewGroup);
+  byId("labelGroupNew").on("click", toggleNewGroupInput);
+  byId("labelGroupRemove").on("click", removeLabelsGroup);
 
-  document.getElementById("labelTextShow").addEventListener("click", showTextSection);
-  document.getElementById("labelTextHide").addEventListener("click", hideTextSection);
-  document.getElementById("labelText").addEventListener("input", changeText);
-  document.getElementById("labelTextRandom").addEventListener("click", generateRandomName);
+  byId("labelTextShow").on("click", showTextSection);
+  byId("labelTextHide").on("click", hideTextSection);
+  byId("labelText").on("input", changeText);
+  byId("labelTextRandom").on("click", generateRandomName);
 
-  document.getElementById("labelEditStyle").addEventListener("click", editGroupStyle);
+  byId("labelEditStyle").on("click", editGroupStyle);
 
-  document.getElementById("labelSizeShow").addEventListener("click", showSizeSection);
-  document.getElementById("labelSizeHide").addEventListener("click", hideSizeSection);
-  document.getElementById("labelStartOffset").addEventListener("input", changeStartOffset);
-  document.getElementById("labelRelativeSize").addEventListener("input", changeRelativeSize);
+  byId("labelSizeShow").on("click", showSizeSection);
+  byId("labelSizeHide").on("click", hideSizeSection);
+  byId("labelStartOffset").on("input", changeStartOffset);
+  byId("labelRelativeSize").on("input", changeRelativeSize);
 
-  document.getElementById("labelLetterSpacingShow").addEventListener("click", showLetterSpacingSection);
-  document.getElementById("labelLetterSpacingHide").addEventListener("click", hideLetterSpacingSection);
-  document.getElementById("labelLetterSpacingSize").addEventListener("input", changeLetterSpacingSize);
+  byId("labelLetterSpacingShow").on("click", showLetterSpacingSection);
+  byId("labelLetterSpacingHide").on("click", hideLetterSpacingSection);
+  byId("labelLetterSpacingSize").on("input", changeLetterSpacingSize);
 
-  document.getElementById("labelAlign").addEventListener("click", editLabelAlign);
-  document.getElementById("labelLegend").addEventListener("click", editLabelLegend);
-  document.getElementById("labelRemoveSingle").addEventListener("click", removeLabel);
+  byId("labelAlign").on("click", editLabelAlign);
+  byId("labelLegend").on("click", editLabelLegend);
+  byId("labelRemoveSingle").on("click", removeLabel);
 
   function showEditorTips() {
     showMainTip();
@@ -66,12 +66,12 @@ function editLabel() {
     const group = text.parentNode.id;
 
     if (group === "states" || group === "burgLabels") {
-      document.getElementById("labelGroupShow").style.display = "none";
+      byId("labelGroupShow").style.display = "none";
       return;
     }
 
     hideGroupSection();
-    const select = document.getElementById("labelGroupSelect");
+    const select = byId("labelGroupSelect");
     select.options.length = 0; // remove all options
 
     labels.selectAll(":scope > g").each(function () {
@@ -82,19 +82,17 @@ function editLabel() {
   }
 
   function updateValues(textPath) {
-    document.getElementById("labelText").value = [...textPath.querySelectorAll("tspan")]
-      .map(tspan => tspan.textContent)
-      .join("|");
-    document.getElementById("labelStartOffset").value = parseFloat(textPath.getAttribute("startOffset"));
-    document.getElementById("labelRelativeSize").value = parseFloat(textPath.getAttribute("font-size"));
-    let letterSpacingSize = (textPath.getAttribute("letter-spacing")) ? textPath.getAttribute("letter-spacing") : 0;
-    document.getElementById("labelLetterSpacingSize").value = parseFloat(letterSpacingSize);
+    byId("labelText").value = [...textPath.querySelectorAll("tspan")].map(tspan => tspan.textContent).join("|");
+    byId("labelStartOffset").value = parseFloat(textPath.getAttribute("startOffset"));
+    byId("labelRelativeSize").value = parseFloat(textPath.getAttribute("font-size"));
+    let letterSpacingSize = textPath.getAttribute("letter-spacing") ? textPath.getAttribute("letter-spacing") : 0;
+    byId("labelLetterSpacingSize").value = parseFloat(letterSpacingSize);
   }
 
   function drawControlPointsAndLine() {
     debug.select("#controlPoints").remove();
     debug.append("g").attr("id", "controlPoints").attr("transform", elSelected.attr("transform"));
-    const path = document.getElementById("textPath_" + elSelected.attr("id"));
+    const path = byId("textPath_" + elSelected.attr("id"));
     debug.select("#controlPoints").append("path").attr("d", path.getAttribute("d")).on("click", addInterimControlPoint);
     const l = path.getTotalLength();
     if (!l) return;
@@ -123,7 +121,7 @@ function editLabel() {
   }
 
   function redrawLabelPath() {
-    const path = document.getElementById("textPath_" + elSelected.attr("id"));
+    const path = byId("textPath_" + elSelected.attr("id"));
     lineGen.curve(d3.curveBundle.beta(1));
     const points = [];
     debug
@@ -194,19 +192,19 @@ function editLabel() {
 
   function showGroupSection() {
     document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "none"));
-    document.getElementById("labelGroupSection").style.display = "inline-block";
+    byId("labelGroupSection").style.display = "inline-block";
   }
 
   function hideGroupSection() {
     document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "inline-block"));
-    document.getElementById("labelGroupSection").style.display = "none";
-    document.getElementById("labelGroupInput").style.display = "none";
-    document.getElementById("labelGroupInput").value = "";
-    document.getElementById("labelGroupSelect").style.display = "inline-block";
+    byId("labelGroupSection").style.display = "none";
+    byId("labelGroupInput").style.display = "none";
+    byId("labelGroupInput").value = "";
+    byId("labelGroupSelect").style.display = "inline-block";
   }
 
   function changeGroup() {
-    document.getElementById(this.value).appendChild(elSelected.node());
+    byId(this.value).appendChild(elSelected.node());
   }
 
   function toggleNewGroupInput() {
@@ -230,7 +228,7 @@ function editLabel() {
       .replace(/ /g, "_")
       .replace(/[^\w\s]/gi, "");
 
-    if (document.getElementById(group)) {
+    if (byId(group)) {
       tip("Element with this id already exists. Please provide a unique name", false, "error");
       return;
     }
@@ -243,22 +241,22 @@ function editLabel() {
     // just rename if only 1 element left
     const oldGroup = elSelected.node().parentNode;
     if (oldGroup !== "states" && oldGroup !== "addedLabels" && oldGroup.childElementCount === 1) {
-      document.getElementById("labelGroupSelect").selectedOptions[0].remove();
-      document.getElementById("labelGroupSelect").options.add(new Option(group, group, false, true));
+      byId("labelGroupSelect").selectedOptions[0].remove();
+      byId("labelGroupSelect").options.add(new Option(group, group, false, true));
       oldGroup.id = group;
       toggleNewGroupInput();
-      document.getElementById("labelGroupInput").value = "";
+      byId("labelGroupInput").value = "";
       return;
     }
 
     const newGroup = elSelected.node().parentNode.cloneNode(false);
-    document.getElementById("labels").appendChild(newGroup);
+    byId("labels").appendChild(newGroup);
     newGroup.id = group;
-    document.getElementById("labelGroupSelect").options.add(new Option(group, group, false, true));
-    document.getElementById(group).appendChild(elSelected.node());
+    byId("labelGroupSelect").options.add(new Option(group, group, false, true));
+    byId(group).appendChild(elSelected.node());
 
     toggleNewGroupInput();
-    document.getElementById("labelGroupInput").value = "";
+    byId("labelGroupInput").value = "";
   }
 
   function removeLabelsGroup() {
@@ -281,7 +279,7 @@ function editLabel() {
             .select("#" + group)
             .selectAll("text")
             .each(function () {
-              document.getElementById("textPath_" + this.id).remove();
+              byId("textPath_" + this.id).remove();
               this.remove();
             });
           if (!basic) labels.select("#" + group).remove();
@@ -295,16 +293,16 @@ function editLabel() {
 
   function showTextSection() {
     document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "none"));
-    document.getElementById("labelTextSection").style.display = "inline-block";
+    byId("labelTextSection").style.display = "inline-block";
   }
 
   function hideTextSection() {
     document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "inline-block"));
-    document.getElementById("labelTextSection").style.display = "none";
+    byId("labelTextSection").style.display = "none";
   }
 
   function changeText() {
-    const input = document.getElementById("labelText").value;
+    const input = byId("labelText").value;
     const el = elSelected.select("textPath").node();
 
     const lines = input.split("|");
@@ -329,7 +327,7 @@ function editLabel() {
       const culture = pack.cells.culture[cell];
       name = Names.getCulture(culture);
     }
-    document.getElementById("labelText").value = name;
+    byId("labelText").value = name;
     changeText();
   }
 
@@ -340,22 +338,22 @@ function editLabel() {
 
   function showSizeSection() {
     document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "none"));
-    document.getElementById("labelSizeSection").style.display = "inline-block";
+    byId("labelSizeSection").style.display = "inline-block";
   }
 
   function hideSizeSection() {
     document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "inline-block"));
-    document.getElementById("labelSizeSection").style.display = "none";
+    byId("labelSizeSection").style.display = "none";
   }
 
   function showLetterSpacingSection() {
-      document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "none"));
-      document.getElementById("labelLetterSpacingSection").style.display = "inline-block";
+    document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "none"));
+    byId("labelLetterSpacingSection").style.display = "inline-block";
   }
 
   function hideLetterSpacingSection() {
-      document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "inline-block"));
-      document.getElementById("labelLetterSpacingSection").style.display = "none";
+    document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "inline-block"));
+    byId("labelLetterSpacingSection").style.display = "none";
   }
 
   function changeStartOffset() {
