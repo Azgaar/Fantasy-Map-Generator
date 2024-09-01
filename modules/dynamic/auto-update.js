@@ -1,8 +1,10 @@
 "use strict";
 
 // update old map file to the current version
-export function resolveVersionConflicts(version) {
-  if (version < 1) {
+export function resolveVersionConflicts(mapVersion) {
+  const isOlderThan = tagVersion => compareVersions(mapVersion, tagVersion).isOlder;
+
+  if (isOlderThan("1.0.0")) {
     // v1.0 added a new religions layer
     relig = viewbox.insert("g", "#terrain").attr("id", "relig");
     Religions.generate();
@@ -63,7 +65,7 @@ export function resolveVersionConflicts(version) {
       .attr("stroke-width", 0)
       .attr("stroke-dasharray", null)
       .attr("stroke-linecap", "butt");
-    addZones();
+    Zones.generate();
     if (!markers.selectAll("*").size()) {
       Markers.generate();
       turnButtonOn("toggleMarkers");
@@ -107,11 +109,11 @@ export function resolveVersionConflicts(version) {
     biomesData.habitability.push(12);
   }
 
-  if (version < 1.1) {
-    // v1.0 initial code had a bug with religion layer id
+  if (isOlderThan("1.1.0")) {
+    // v1.0 code had a bug with religion layer id
     if (!relig.size()) relig = viewbox.insert("g", "#terrain").attr("id", "relig");
 
-    // v1.0 initially has Sympathy status then relaced with Friendly
+    // v1.0 had Sympathy status then relaced with Friendly
     for (const s of pack.states) {
       if (!s.diplomacy) continue;
       s.diplomacy = s.diplomacy.map(r => (r === "Sympathy" ? "Friendly" : r));
@@ -203,7 +205,7 @@ export function resolveVersionConflicts(version) {
     drawCoastline();
   }
 
-  if (version < 1.11) {
+  if (isOlderThan("1.11.0")) {
     // v1.11 added new attributes
     terrs.attr("scheme", "bright").attr("terracing", 0).attr("skip", 5).attr("relax", 0).attr("curve", 0);
     svg.select("#oceanic > *").attr("id", "oceanicPattern");
@@ -229,7 +231,7 @@ export function resolveVersionConflicts(version) {
     if (!terrain.attr("density")) terrain.attr("density", 0.4);
   }
 
-  if (version < 1.21) {
+  if (isOlderThan("1.21.0")) {
     // v1.11 replaced "display" attribute by "display" style
     viewbox.selectAll("g").each(function () {
       if (this.hasAttribute("display")) {
@@ -255,12 +257,12 @@ export function resolveVersionConflicts(version) {
     });
   }
 
-  if (version < 1.22) {
+  if (isOlderThan("1.22.0")) {
     // v1.22 changed state neighbors from Set object to array
     BurgsAndStates.collectStatistics();
   }
 
-  if (version < 1.3) {
+  if (isOlderThan("1.3.0")) {
     // v1.3 added global options object
     const winds = options.slice(); // previostly wind was saved in settings[19]
     const year = rand(100, 2000);
@@ -285,7 +287,7 @@ export function resolveVersionConflicts(version) {
     Military.generate();
   }
 
-  if (version < 1.4) {
+  if (isOlderThan("1.4.0")) {
     // v1.35 added dry lakes
     if (!lakes.select("#dry").size()) {
       lakes.append("g").attr("id", "dry");
@@ -329,7 +331,7 @@ export function resolveVersionConflicts(version) {
     pack.states.filter(s => s.military).forEach(s => s.military.forEach(r => (r.state = s.i)));
   }
 
-  if (version < 1.5) {
+  if (isOlderThan("1.5.0")) {
     // not need to store default styles from v 1.5
     localStorage.removeItem("styleClean");
     localStorage.removeItem("styleGloom");
@@ -367,7 +369,7 @@ export function resolveVersionConflicts(version) {
     });
   }
 
-  if (version < 1.6) {
+  if (isOlderThan("1.6.0")) {
     // v1.6 changed rivers data
     for (const river of pack.rivers) {
       const el = document.getElementById("river" + river.i);
@@ -399,7 +401,7 @@ export function resolveVersionConflicts(version) {
     }
   }
 
-  if (version < 1.61) {
+  if (isOlderThan("1.61.0")) {
     // v1.61 changed rulers data
     ruler.style("display", null);
     rulers = new Rulers();
@@ -453,12 +455,12 @@ export function resolveVersionConflicts(version) {
     pattern.innerHTML = /* html */ `<image id="oceanicPattern" href=${href} width="100" height="100" opacity="0.2"></image>`;
   }
 
-  if (version < 1.62) {
+  if (isOlderThan("1.62.0")) {
     // v1.62 changed grid data
     gridOverlay.attr("size", null);
   }
 
-  if (version < 1.63) {
+  if (isOlderThan("1.63.0")) {
     // v1.63 changed ocean pattern opacity element
     const oceanPattern = document.getElementById("oceanPattern");
     if (oceanPattern) oceanPattern.removeAttribute("opacity");
@@ -472,7 +474,7 @@ export function resolveVersionConflicts(version) {
     labels.select("#addedLabels").style("text-shadow", "white 0 0 4px");
   }
 
-  if (version < 1.64) {
+  if (isOlderThan("1.64.0")) {
     // v1.64 change states style
     const opacity = regions.attr("opacity");
     const filter = regions.attr("filter");
@@ -481,7 +483,7 @@ export function resolveVersionConflicts(version) {
     regions.attr("opacity", null).attr("filter", null);
   }
 
-  if (version < 1.65) {
+  if (isOlderThan("1.65.0")) {
     // v1.65 changed rivers data
     d3.select("#rivers").attr("style", null); // remove style to unhide layer
     const {cells, rivers} = pack;
@@ -523,13 +525,13 @@ export function resolveVersionConflicts(version) {
     }
   }
 
-  if (version < 1.652) {
+  if (isOlderThan("1.652.0")) {
     // remove style to unhide layers
     rivers.attr("style", null);
     borders.attr("style", null);
   }
 
-  if (version < 1.7) {
+  if (isOlderThan("1.7.0")) {
     // v1.7 changed markers data
     const defs = document.getElementById("defs-markers");
     const markersGroup = document.getElementById("markers");
@@ -587,7 +589,7 @@ export function resolveVersionConflicts(version) {
     }
   }
 
-  if (version < 1.72) {
+  if (isOlderThan("1.72.0")) {
     // v1.72 renamed custom style presets
     const storedStyles = Object.keys(localStorage).filter(key => key.startsWith("style"));
     storedStyles.forEach(styleName => {
@@ -598,7 +600,7 @@ export function resolveVersionConflicts(version) {
     });
   }
 
-  if (version < 1.73) {
+  if (isOlderThan("1.73.0")) {
     // v1.73 moved the hatching patterns out of the user's SVG
     document.getElementById("hatching")?.remove();
 
@@ -609,17 +611,17 @@ export function resolveVersionConflicts(version) {
     });
   }
 
-  if (version < 1.84) {
+  if (isOlderThan("1.84.0")) {
     // v1.84.0 added grid.cellsDesired to stored data
     if (!grid.cellsDesired) grid.cellsDesired = rn((graphWidth * graphHeight) / grid.spacing ** 2, -3);
   }
 
-  if (version < 1.85) {
+  if (isOlderThan("1.85.0")) {
     // v1.84.0 moved intial screen out of maon svg
     svg.select("#initial").remove();
   }
 
-  if (version < 1.86) {
+  if (isOlderThan("1.86.0")) {
     // v1.86.0 added multi-origin culture and religion hierarchy trees
     for (const culture of pack.cultures) {
       culture.origins = [culture.origin];
@@ -632,14 +634,14 @@ export function resolveVersionConflicts(version) {
     }
   }
 
-  if (version < 1.88) {
+  if (isOlderThan("1.88.0")) {
     // v1.87 may have incorrect shield for some reason
     pack.states.forEach(({coa}) => {
       if (coa?.shield === "state") delete coa.shield;
     });
   }
 
-  if (version < 1.91) {
+  if (isOlderThan("1.91.0")) {
     // from 1.91.00 custom coa is moved to coa object
     pack.states.forEach(state => {
       if (state.coa === "custom") state.coa = {custom: true};
@@ -688,14 +690,14 @@ export function resolveVersionConflicts(version) {
     });
   }
 
-  if (version < 1.92) {
+  if (isOlderThan("1.92.0")) {
     // v1.92 change labels text-anchor from 'start' to 'middle'
     labels.selectAll("tspan").each(function () {
       this.setAttribute("x", 0);
     });
   }
 
-  if (version < 1.94) {
+  if (isOlderThan("1.94.0")) {
     // from v1.94.00 texture image is removed when layer is off
     texture.style("display", null);
 
@@ -713,7 +715,7 @@ export function resolveVersionConflicts(version) {
     }
   }
 
-  if (version < 1.95) {
+  if (isOlderThan("1.95.0")) {
     // v1.95.00 added vignette visual layer
     const mask = defs.append("mask").attr("id", "vignette-mask");
     mask.append("rect").attr("fill", "white").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
@@ -739,7 +741,7 @@ export function resolveVersionConflicts(version) {
     vignette.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
   }
 
-  if (version < 1.96) {
+  if (isOlderThan("1.96.0")) {
     // v1.96 added ocean rendering for heightmap
     terrs.selectAll("*").remove();
 
@@ -833,7 +835,7 @@ export function resolveVersionConflicts(version) {
     });
   }
 
-  if (version < 1.97) {
+  if (isOlderThan("1.97.0")) {
     // v1.97.00 changed MFCG link to an arbitrary preview URL
     options.villageMaxPopulation = 2000;
     options.showBurgPreview = options.showMFCGMap;
@@ -849,7 +851,7 @@ export function resolveVersionConflicts(version) {
     });
   }
 
-  if (version < 1.98) {
+  if (isOlderThan("1.98.0")) {
     // v1.98.00 changed compass layer and rose element id
     const rose = compass.select("use");
     rose.attr("xlink:href", "#defs-compass-rose");
@@ -861,7 +863,7 @@ export function resolveVersionConflicts(version) {
     }
   }
 
-  if (version < 1.99) {
+  if (isOlderThan("1.99.0")) {
     // v1.99.00 changed routes generation algorithm and data format
     routes.attr("display", null).attr("style", null);
 
@@ -922,5 +924,20 @@ export function resolveVersionConflicts(version) {
         }
       }
     }
+  }
+
+  if (isOlderThan("1.100.0")) {
+    // v1.100.00 added zones to pack data
+    pack.zones = [];
+    zones.selectAll("g").each(function () {
+      const i = pack.zones.length;
+      const name = this.dataset.description;
+      const type = this.dataset.type;
+      const color = this.getAttribute("fill");
+      const cells = this.dataset.cells.split(",").map(Number);
+      pack.zones.push({i, name, type, cells, color});
+    });
+    zones.style("display", null).selectAll("*").remove();
+    if (layerIsOn("toggleZones")) drawZones();
   }
 }
