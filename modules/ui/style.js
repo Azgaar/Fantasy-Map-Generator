@@ -239,6 +239,7 @@ function selectStyleElement() {
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
+    styleLetterSpacing.style.display = "block";
 
     styleShadow.style.display = "block";
     styleSize.style.display = "block";
@@ -246,6 +247,7 @@ function selectStyleElement() {
     styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#3e3e4b";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3a3a3a";
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
+    styleLetterSpacingInput.value = el.attr("letter-spacing")+"px" || "0px";
     styleShadowInput.value = el.style("text-shadow") || "white 0 0 4px";
 
     styleFont.style.display = "block";
@@ -429,6 +431,11 @@ styleStrokeInput.addEventListener("input", function () {
 
 styleStrokeWidthInput.addEventListener("input", e => {
   getEl().attr("stroke-width", e.target.value);
+  if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+});
+
+styleLetterSpacingInput.addEventListener("input", e => {
+  getEl().attr("letter-spacing", e.target.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
 });
 
