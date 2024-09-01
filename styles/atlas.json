@@ -332,6 +332,7 @@
     "opacity": 1,
     "fill": "#000000",
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 5,
     "font-size": 5,
     "font-family": "Amarante"
@@ -357,6 +358,7 @@
     "opacity": 1,
     "fill": "#000000",
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 4,
     "font-size": 4,
     "font-family": "Amarante"
@@ -384,6 +386,7 @@
     "stroke": "#000000",
     "stroke-width": 0,
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 21,
     "font-size": 21,
     "font-family": "Amarante",
@@ -395,6 +398,7 @@
     "stroke": "#000000",
     "stroke-width": 0,
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 18,
     "font-size": 18,
     "font-family": "Amarante",

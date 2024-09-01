@@ -247,7 +247,7 @@ function selectStyleElement() {
     styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#3e3e4b";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3a3a3a";
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
-    styleLetterSpacingInput.value = el.attr("letter-spacing")+"px" || "0px";
+    styleLetterSpacingInput.value = el.attr("letter-spacing") || 0;
     styleShadowInput.value = el.style("text-shadow") || "white 0 0 4px";
 
     styleFont.style.display = "block";
@@ -436,7 +436,6 @@ styleStrokeWidthInput.addEventListener("input", e => {
 
 styleLetterSpacingInput.addEventListener("input", e => {
   getEl().attr("letter-spacing", e.target.value);
-  if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
 });
 
 styleStrokeDasharrayInput.addEventListener("input", function () {

@@ -271,7 +271,15 @@ function addStylePreset() {
         "data-columns"
       ],
       "#legendBox": ["fill", "fill-opacity"],
-      "#burgLabels > #cities": ["opacity", "fill", "text-shadow", "data-size", "font-size", "font-family"],
+      "#burgLabels > #cities": [
+        "opacity",
+        "fill",
+        "text-shadow",
+        "letter-spacing",
+        "data-size",
+        "font-size",
+        "font-family"
+      ],
       "#burgIcons > #cities": [
         "opacity",
         "fill",
@@ -283,7 +291,15 @@ function addStylePreset() {
         "stroke-linecap"
       ],
       "#anchors > #cities": ["opacity", "fill", "size", "stroke", "stroke-width"],
-      "#burgLabels > #towns": ["opacity", "fill", "text-shadow", "data-size", "font-size", "font-family"],
+      "#burgLabels > #towns": [
+        "opacity",
+        "fill",
+        "text-shadow",
+        "letter-spacing",
+        "data-size",
+        "font-size",
+        "font-family"
+      ],
       "#burgIcons > #towns": [
         "opacity",
         "fill",
@@ -301,6 +317,7 @@ function addStylePreset() {
         "stroke",
         "stroke-width",
         "text-shadow",
+        "letter-spacing",
         "data-size",
         "font-size",
         "font-family",
@@ -312,6 +329,7 @@ function addStylePreset() {
         "stroke",
         "stroke-width",
         "text-shadow",
+        "letter-spacing",
         "data-size",
         "font-size",
         "font-family",

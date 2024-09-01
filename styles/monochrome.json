@@ -328,6 +328,7 @@
     "opacity": 1,
     "fill": "#000000",
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 7,
     "font-size": 7,
     "font-family": "Courier New"
@@ -353,6 +354,7 @@
     "opacity": 1,
     "fill": "#000000",
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 4,
     "font-size": 4,
     "font-family": "Courier New"
@@ -380,6 +382,7 @@
     "stroke": "#3a3a3a",
     "stroke-width": 0,
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 18,
     "font-size": 18,
     "font-family": "Courier New",
@@ -390,7 +393,8 @@
     "fill": "#3e3e4b",
     "stroke": "#3a3a3a",
     "stroke-width": 0,
-    "text-shadow": "white 0 0 4px",
+    "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 18,
     "font-size": 18,
     "font-family": "Courier New",
