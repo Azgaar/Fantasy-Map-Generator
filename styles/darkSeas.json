@@ -321,6 +321,7 @@
     "opacity": 1,
     "fill": "#000000",
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 7,
     "font-size": 7,
     "font-family": "Lugrasimo"
@@ -345,6 +346,7 @@
     "opacity": 1,
     "fill": "#000000",
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 5,
     "font-size": 5,
     "font-family": "Lugrasimo"
@@ -371,6 +373,7 @@
     "stroke": "#000000",
     "stroke-width": 0,
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 21,
     "font-size": 21,
     "font-family": "Eagle Lake",
@@ -382,6 +385,7 @@
     "stroke": "#000000",
     "stroke-width": 0,
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 18,
     "font-size": 18,
     "font-family": "Eagle Lake",

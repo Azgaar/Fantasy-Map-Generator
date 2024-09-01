@@ -335,6 +335,7 @@
     "opacity": 1,
     "fill": "#3e3e4b",
     "text-shadow": "white 0 0 2px",
+    "letter-spacing": 0,
     "data-size": 8,
     "font-size": 8,
     "font-family": "Underdog"
@@ -359,6 +360,8 @@
   "#burgLabels > #towns": {
     "opacity": 1,
     "fill": "#3e3e4b",
+    "text-shadow": "none",
+    "letter-spacing": 0,
     "data-size": 4,
     "font-size": 4,
     "font-family": "Underdog"
@@ -386,6 +389,7 @@
     "stroke": "#b5b5b5",
     "stroke-width": 0,
     "text-shadow": "white 0 0 2px",
+    "letter-spacing": 0,
     "data-size": 20,
     "font-size": 20,
     "font-family": "Underdog",
@@ -397,6 +401,7 @@
     "stroke": "#3a3a3a",
     "stroke-width": 0,
     "text-shadow": "white 0 0 4px",
+    "letter-spacing": 0,
     "data-size": 18,
     "font-size": 18,
     "font-family": "Underdog",

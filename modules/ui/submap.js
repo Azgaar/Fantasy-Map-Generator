@@ -159,18 +159,6 @@ window.UISubmap = (function () {
     return canvas;
   }
 
-  // currently unused alternative to PNG version
-  async function loadPreviewSVG($container, w, h) {
-    $container.innerHTML = /*html*/ `
-      <svg id="submapPreviewSVG" viewBox="0 0 ${graphWidth} ${graphHeight}">
-        <rect width="100%" height="100%" fill="${byId("styleOceanFill").value}" />
-        <rect fill="url(#oceanic)" width="100%" height="100%" />
-        <use href="#map"></use>
-      </svg>
-    `;
-    return byId("submapPreviewSVG");
-  }
-
   // Resample the whole map to different cell resolution or shape
   const resampleCurrentMap = debounce(function () {
     WARN && console.warn("Resampling current map");

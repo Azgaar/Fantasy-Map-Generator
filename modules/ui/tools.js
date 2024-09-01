@@ -167,9 +167,9 @@ function regenerateStates() {
   Military.generate();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
-  if (document.getElementById("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
-  if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
-  if (document.getElementById("militaryOverviewRefresh")?.offsetParent) militaryOverviewRefresh.click();
+  if (byId("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
+  if (byId("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
+  if (byId("militaryOverviewRefresh")?.offsetParent) militaryOverviewRefresh.click();
 }
 
 function recreateStates() {
@@ -445,8 +445,8 @@ function regenerateBurgs() {
   emblems.selectAll("use").remove();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
-  if (document.getElementById("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
-  if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
+  if (byId("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
+  if (byId("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
 }
 
 function regenerateEmblems() {
@@ -521,7 +521,7 @@ function regenerateCultures() {
 function regenerateMilitary() {
   Military.generate();
   if (!layerIsOn("toggleMilitary")) toggleMilitary();
-  if (document.getElementById("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
+  if (byId("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
 }
 
 function regenerateIce() {
@@ -534,7 +534,7 @@ function regenerateMarkers() {
   Markers.regenerate();
   turnButtonOn("toggleMarkers");
   drawMarkers();
-  if (document.getElementById("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
+  if (byId("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
 }
 
 function regenerateZones(event) {
@@ -545,10 +545,9 @@ function regenerateZones(event) {
   else addNumberOfZones(gauss(1, 0.5, 0.6, 5, 2));
 
   function addNumberOfZones(number) {
-    zones.selectAll("g").remove(); // remove existing zones
-    addZones(number);
-    if (document.getElementById("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
-    if (!layerIsOn("toggleZones")) toggleZones();
+    Zones.generate(number);
+    if (byId("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
+    if (layerIsOn("toggleZones")) drawZones();
   }
 }
 
@@ -559,7 +558,7 @@ function unpressClickToAddButton() {
 }
 
 function toggleAddLabel() {
-  const pressed = document.getElementById("addLabel").classList.contains("pressed");
+  const pressed = byId("addLabel").classList.contains("pressed");
   if (pressed) {
     unpressClickToAddButton();
     return;
@@ -627,22 +626,22 @@ function addLabelOnClick() {
 
 function toggleAddBurg() {
   unpressClickToAddButton();
-  document.getElementById("addBurgTool").classList.add("pressed");
+  byId("addBurgTool").classList.add("pressed");
   overviewBurgs();
-  document.getElementById("addNewBurg").click();
+  byId("addNewBurg").click();
 }
 
 function toggleAddRiver() {
-  const pressed = document.getElementById("addRiver").classList.contains("pressed");
+  const pressed = byId("addRiver").classList.contains("pressed");
   if (pressed) {
     unpressClickToAddButton();
-    document.getElementById("addNewRiver").classList.remove("pressed");
+    byId("addNewRiver").classList.remove("pressed");
     return;
   }
 
   addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
   addRiver.classList.add("pressed");
-  document.getElementById("addNewRiver").classList.add("pressed");
+  byId("addNewRiver").classList.add("pressed");
   closeDialogs(".stable");
   viewbox.style("cursor", "crosshair").on("click", addRiverOnClick);
   tip("Click on map to place new river or extend an existing one. Hold Shift to place multiple rivers", true, "warn");
@@ -728,7 +727,7 @@ function addRiverOnClick() {
     }
 
     // continue old river
-    document.getElementById("river" + oldRiverId)?.remove();
+    byId("river" + oldRiverId)?.remove();
     riverCells.forEach(i => (cells.r[i] = oldRiverId));
     oldRiverCells.forEach(cell => {
       if (h[cell] > h[min]) {
@@ -796,13 +795,13 @@ function addRiverOnClick() {
   if (d3.event.shiftKey === false) {
     Lakes.cleanupLakeData();
     unpressClickToAddButton();
-    document.getElementById("addNewRiver").classList.remove("pressed");
+    byId("addNewRiver").classList.remove("pressed");
     if (addNewRiver.offsetParent) riversOverviewRefresh.click();
   }
 }
 
 function toggleAddMarker() {
-  const pressed = document.getElementById("addMarker")?.classList.contains("pressed");
+  const pressed = byId("addMarker")?.classList.contains("pressed");
   if (pressed) {
     unpressClickToAddButton();
     return;
@@ -830,7 +829,7 @@ function addMarkerOnClick() {
   const isMarkerSelected = markers.length && elSelected?.node()?.parentElement?.id === "markers";
   const selectedMarker = isMarkerSelected ? markers.find(marker => marker.i === +elSelected.attr("id").slice(6)) : null;
 
-  const selectedType = document.getElementById("addedMarkerType").value;
+  const selectedType = byId("addedMarkerType").value;
   const selectedConfig = Markers.getConfig().find(({type}) => type === selectedType);
 
   const baseMarker = selectedMarker || selectedConfig || {icon: "❓"};
@@ -840,13 +839,13 @@ function addMarkerOnClick() {
     selectedConfig.add("marker" + marker.i, cell);
   }
 
-  const markersElement = document.getElementById("markers");
+  const markersElement = byId("markers");
   const rescale = +markersElement.getAttribute("rescale");
   markersElement.insertAdjacentHTML("beforeend", drawMarker(marker, rescale));
 
   if (d3.event.shiftKey === false) {
-    document.getElementById("markerAdd").classList.remove("pressed");
-    document.getElementById("markersAddFromOverview").classList.remove("pressed");
+    byId("markerAdd").classList.remove("pressed");
+    byId("markersAddFromOverview").classList.remove("pressed");
     unpressClickToAddButton();
   }
 }

@@ -144,22 +144,14 @@ function overviewRoutes() {
 
   function triggerRouteRemove() {
     const routeId = +this.parentNode.dataset.id;
-
-    alertMessage.innerHTML = `Are you sure you want to remove the route?`;
-    $("#alert").dialog({
-      resizable: false,
-      width: "22em",
+    confirmationDialog({
       title: "Remove route",
-      buttons: {
-        Remove: function () {
-          const route = pack.routes.find(r => r.i === routeId);
-          Routes.remove(route);
-          routesOverviewAddLines();
-          $(this).dialog("close");
-        },
-        Cancel: function () {
-          $(this).dialog("close");
-        }
+      message: "Are you sure you want to remove the route? <br>This action cannot be reverted",
+      confirm: "Remove",
+      onConfirm: () => {
+        const route = pack.routes.find(r => r.i === routeId);
+        Routes.remove(route);
+        routesOverviewAddLines();
       }
     });
   }

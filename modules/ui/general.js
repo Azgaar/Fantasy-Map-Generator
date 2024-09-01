@@ -168,6 +168,7 @@ function showMapTooltip(point, e, i, g) {
     if (burgsOverview?.offsetParent) highlightEditorLine(burgsOverview, burg, 5000);
     return;
   }
+
   if (group === "labels") return tip("Click to edit the Label");
 
   if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note");
@@ -199,9 +200,11 @@ function showMapTooltip(point, e, i, g) {
   if (group === "coastline") return tip("Click to edit the coastline");
 
   if (group === "zones") {
-    const zone = path[path.length - 8];
-    tip(zone.dataset.description);
-    if (zonesEditor?.offsetParent) highlightEditorLine(zonesEditor, zone.id, 5000);
+    const element = path[path.length - 8];
+    const zoneId = +element.dataset.id;
+    const zone = pack.zones.find(zone => zone.i === zoneId);
+    tip(zone.name);
+    if (zonesEditor?.offsetParent) highlightEditorLine(zonesEditor, zoneId, 5000);
     return;
   }
 

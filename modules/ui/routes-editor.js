@@ -389,20 +389,13 @@ function editRoute(id) {
   }
 
   function removeRoute() {
-    alertMessage.innerHTML = "Are you sure you want to remove the route";
-    $("#alert").dialog({
-      resizable: false,
-      width: "22em",
+    confirmationDialog({
       title: "Remove route",
-      buttons: {
-        Remove: function () {
-          Routes.remove(getRoute());
-          $(this).dialog("close");
-          $("#routeEditor").dialog("close");
-        },
-        Cancel: function () {
-          $(this).dialog("close");
-        }
+      message: "Are you sure you want to remove the route? <br>This action cannot be reverted",
+      confirm: "Remove",
+      onConfirm: () => {
+        Routes.remove(getRoute());
+        $("#routeEditor").dialog("close");
       }
     });
   }
