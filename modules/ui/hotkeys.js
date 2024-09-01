@@ -18,10 +18,9 @@ function handleKeyup(event) {
 
   event.stopPropagation();
 
-  const {code, key, ctrlKey, metaKey, shiftKey, altKey} = event;
+  const {code, key, ctrlKey, metaKey, shiftKey} = event;
   const ctrl = ctrlKey || metaKey || key === "Control";
   const shift = shiftKey || key === "Shift";
-  const alt = altKey || key === "Alt";
 
   if (code === "F1") showInfo();
   else if (code === "F2") regeneratePrompt();
@@ -60,11 +59,6 @@ function handleKeyup(event) {
   else if (key === "#") toggleAddRiver();
   else if (key === "$") createRoute();
   else if (key === "%") toggleAddMarker();
-  else if (alt && code === "KeyB") console.table(pack.burgs);
-  else if (alt && code === "KeyS") console.table(pack.states);
-  else if (alt && code === "KeyC") console.table(pack.cultures);
-  else if (alt && code === "KeyR") console.table(pack.religions);
-  else if (alt && code === "KeyF") console.table(pack.features);
   else if (code === "KeyX") toggleTexture();
   else if (code === "KeyH") toggleHeight();
   else if (code === "KeyB") toggleBiomes();

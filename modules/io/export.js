@@ -440,14 +440,24 @@ function inlineStyle(clone) {
   emptyG.remove();
 }
 
-function saveGeoJSON_Cells() {
+function saveGeoJsonCells() {
+  const {cells, vertices} = pack;
   const json = {type: "FeatureCollection", features: []};
-  const cells = pack.cells;
+
   const getPopulation = i => {
     const [r, u] = getCellPopulation(i);
     return rn(r + u);
   };
-  const getHeight = i => parseInt(getFriendlyHeight([cells.p[i][0], cells.p[i][1]]));
+
+  const getHeight = i => parseInt(getFriendlyHeight([...cells.p[i]]));
+
+  function getCellCoordinates(cellVertices) {
+    const coordinates = cellVertices.map(vertex => {
+      const [x, y] = vertices.p[vertex];
+      return getCoordinates(x, y, 4);
+    });
+    return [[...coordinates, coordinates[0]]];
+  }
 
   cells.i.forEach(i => {
     const coordinates = getCellCoordinates(cells.v[i]);
@@ -470,20 +480,14 @@ function saveGeoJSON_Cells() {
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-function saveGeoJSON_Routes() {
-  const {cells, burgs} = pack;
-  let points = cells.p.map(([x, y], cellId) => {
-    const burgId = cells.burg[cellId];
-    if (burgId) return [burgs[burgId].x, burgs[burgId].y];
-    return [x, y];
-  });
-
-  const features = pack.routes.map(route => {
-    const coordinates = route.points || getRoutePoints(route, points);
+function saveGeoJsonRoutes() {
+  const features = pack.routes.map(({i, points, group, name = null}) => {
+    const coordinates = points.map(([x, y]) => getCoordinates(x, y, 4));
+    const id = `route${i}`;
     return {
       type: "Feature",
       geometry: {type: "LineString", coordinates},
-      properties: {id: route.id, group: route.group}
+      properties: {id, group, name}
     };
   });
   const json = {type: "FeatureCollection", features};
@@ -492,24 +496,27 @@ function saveGeoJSON_Routes() {
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-function saveGeoJSON_Rivers() {
-  const json = {type: "FeatureCollection", features: []};
-
-  rivers.selectAll("path").each(function () {
-    const river = pack.rivers.find(r => r.i === +this.id.slice(5));
-    if (!river) return;
-
-    const coordinates = getRiverPoints(this);
-    const properties = {...river, id: this.id};
-    const feature = {type: "Feature", geometry: {type: "LineString", coordinates}, properties};
-    json.features.push(feature);
-  });
+function saveGeoJsonRivers() {
+  const features = pack.rivers.map(
+    ({i, cells, points, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type}) => {
+      if (!cells || cells.length < 2) return;
+      const meanderedPoints = Rivers.addMeandering(cells, points);
+      const coordinates = meanderedPoints.map(([x, y]) => getCoordinates(x, y, 4));
+      const id = `river${i}`;
+      return {
+        type: "Feature",
+        geometry: {type: "LineString", coordinates},
+        properties: {id, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type}
+      };
+    }
+  );
+  const json = {type: "FeatureCollection", features};
 
   const fileName = getFileName("Rivers") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-function saveGeoJSON_Markers() {
+function saveGeoJsonMarkers() {
   const features = pack.markers.map(marker => {
     const {i, type, icon, x, y, size, fill, stroke} = marker;
     const coordinates = getCoordinates(x, y, 4);
@@ -523,23 +530,4 @@ function saveGeoJSON_Markers() {
 
   const fileName = getFileName("Markers") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
-}
-
-function getCellCoordinates(vertices) {
-  const p = pack.vertices.p;
-  const coordinates = vertices.map(n => getCoordinates(p[n][0], p[n][1], 2));
-  return [coordinates.concat([coordinates[0]])];
-}
-
-function getRiverPoints(node) {
-  let points = [];
-  const l = node.getTotalLength() / 2; // half-length
-  const increment = 0.25; // defines density of points
-  for (let i = l, c = i; i >= 0; i -= increment, c += increment) {
-    const p1 = node.getPointAtLength(i);
-    const p2 = node.getPointAtLength(c);
-    const [x, y] = getCoordinates((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, 4);
-    points.push([x, y]);
-  }
-  return points;
 }

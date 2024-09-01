@@ -147,15 +147,17 @@ function selectStyleElement() {
   // clipping
   if (
     [
-      "cells",
-      "gridOverlay",
-      "coordinates",
-      "compass",
-      "terrain",
-      "temperature",
-      "routes",
-      "texture",
       "biomes",
+      "cells",
+      "compass",
+      "coordinates",
+      "gridOverlay",
+      "population",
+      "prec",
+      "routes",
+      "temperature",
+      "terrain",
+      "texture",
       "zones"
     ].includes(styleElement)
   ) {
