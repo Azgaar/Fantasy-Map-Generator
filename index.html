@@ -1181,6 +1181,15 @@
               </tr>
             </tbody>
 
+            <tbody id="styleLetterSpacing">
+              <tr data-tip="Set letter spacing size">
+                <td>Letter spacing</td>
+                <td>
+                  <slider-input id="styleLetterSpacingInput" min="0" max="80"></slider-input>
+                </td>
+              </tr>
+            </tbody>
+
             <tbody id="styleStrokeDash">
               <tr data-tip="Set stroke dash array (e.g. 5 2) and linecap">
                 <td>Stroke dash</td>
@@ -2676,6 +2685,19 @@
             step="1"
             style="width: 4.5em"
           />
+        </div>
+
+        <button id="labelLetterSpacingShow" data-tip="Show the letter spacing section" class="icon-text-width"></button>
+        <div id="labelLetterSpacingSection" style="display: none">
+        <button id="labelLetterSpacingHide" data-tip="Hide the letter spacing section" class="icon-text-width"></button>
+        <input
+          id="labelLetterSpacingSize"
+          data-tip="Set the letter spacing size for the particular label"
+          type="range"
+          min="0"
+          max="80"
+          style="width: 8em"
+        />
         </div>
 
         <button id="labelAlign" data-tip="Turn text path into a straight line" class="icon-resize-horizontal"></button>
