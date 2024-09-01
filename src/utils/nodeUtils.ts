@@ -1,4 +1,40 @@
-import {byId} from "./shorthands";
+export type ElementMap = {
+  a: HTMLAnchorElement;
+  button: HTMLButtonElement;
+  div: HTMLDivElement;
+  img: HTMLImageElement;
+  input: HTMLInputElement;
+  output: HTMLOutputElement;
+  select: HTMLSelectElement;
+  // add more types as needed
+};
+
+type ElementMapKeys = keyof ElementMap;
+
+interface ByIdOptions {
+  throwOnNull?: boolean;
+  // add more options as needed
+}
+
+// function definition with overloads to account for different options
+export function byId<K extends ElementMapKeys>(id: string, options?: ByIdOptions & {throwOnNull: true}): ElementMap[K];
+export function byId<K extends ElementMapKeys>(id: string, options: ByIdOptions & {throwOnNull: boolean}): ElementMap[K]|null;
+/**
+ * Retrieves an element from the DOM by its ID.
+ * @template K - The key of the element in the ElementMap.
+ * @param {string} id - The ID of the element to retrieve.
+ * @param {ByIdOptions} [options] - The options for retrieving the element.
+ * @param {boolean} [options.throwOnNull=true] - Whether to throw an error if the element is not found.
+ * @returns {ElementMap[K] | null} The retrieved element or null if not found.
+ * @throws {Error} If the element is not found and options.throwOnNull is true.
+ */
+export function byId<K extends ElementMapKeys>(id: string, options: ByIdOptions = {throwOnNull: true}) {
+  const element = document.getElementById(id);
+  if (!element && options.throwOnNull) {
+    throw new Error(`Element ${id} not found`);
+  } 
+  return element as ElementMap[K] | null;
+}
 
 // get next unused id
 export function getNextId(core: string, index = 1) {

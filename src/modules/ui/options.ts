@@ -5,10 +5,10 @@ import {precreatedHeightmaps} from "config/precreated-heightmaps";
 import {lock, locked, unlock} from "scripts/options/lock";
 import {clearMainTip, tip} from "scripts/tooltips";
 import {last} from "utils/arrayUtils";
-import {applyDropdownOption} from "utils/nodeUtils";
+import {applyDropdownOption, byId } from "utils/nodeUtils";
 import {minmax, rn} from "utils/numberUtils";
 import {gauss, P, rand, rw} from "utils/probabilityUtils";
-import {byId, stored} from "utils/shorthands";
+import {stored} from "utils/shorthands";
 import {regenerateMap} from "scripts/generation/generation";
 // @ts-expect-error js file
 import {fitScaleBar} from "modules/measurers.js";
@@ -34,58 +34,60 @@ const COA = window.COA;
 const tooltip = byId("tooltip")! as HTMLDivElement;
 
 // Options pane elements
-const optionsTrigger = byId("optionsTrigger")! as HTMLButtonElement;
-const regenerate = byId("regenerate")! as HTMLButtonElement;
-const optionsDiv = byId("options")! as HTMLDivElement;
-const collapsible = byId("collapsible")! as HTMLDivElement;
-const layersContent = byId("layersContent")! as HTMLDivElement;
-const styleContent = byId("styleContent")! as HTMLDivElement;
-const customizationMenu = byId("customizationMenu")! as HTMLDivElement;
-const toolsContent = byId("toolsContent")! as HTMLDivElement;
-const aboutContent = byId("aboutContent")! as HTMLDivElement;
-const optionsContent = byId("optionsContent")! as HTMLDivElement;
-const alertMessage = byId("alertMessage")! as HTMLDivElement;
-const dialogDiv = byId("dialogs")! as HTMLDivElement;
+const optionsTrigger = byId<'button'>("optionsTriggerr");
+const regenerate = byId<'button'>("regenerate");
+const optionsDiv = byId<'div'>("optionsContainer");
+const collapsible = byId<'div'>("collapsible");
+const layersContent = byId<'div'>("layersContent");
+const styleContent = byId<'div'>("styleContent");
+const customizationMenu = byId<'div'>("customizationMenu");
+const toolsContent = byId<'div'>("toolsContent");
+const aboutContent = byId<'div'>("aboutContent");
+const optionsContent = byId<'div'>("optionsContent");
+const alertMessage = byId<'div'>("alertMessage");
+const dialogDiv = byId<'div'>("dialogs");
 
 // Number inputs
-const themeColorInput = byId("themeColorInput")! as HTMLInputElement;
-const themeHueInput = byId("themeHueInput")! as HTMLInputElement;
+const themeColorInput = byId<'input'>("themeColorInput");
+const themeHueInput = byId<'input'>("themeHueInput");
 
-const transparencyInput = byId("transparencyInput")! as HTMLInputElement;
-const transparencyOutput = byId("transparencyOutput")! as HTMLInputElement;
+const transparencyInput = byId<'input'>("transparencyInput");
+const transparencyOutput = byId<'input'>("transparencyOutput");
 
-const mapWidthInput = byId("mapWidthInput")! as HTMLInputElement;
-const mapHeightInput = byId("mapHeightInput")! as HTMLInputElement;
+const mapWidthInput = byId<'input'>("mapWidthInput");
+const mapHeightInput = byId<'input'>("mapHeightInput");
 
-const zoomExtentMin = byId("zoomExtentMin")! as HTMLInputElement;
-const zoomExtentMax = byId("zoomExtentMax")! as HTMLInputElement;
+const zoomExtentMin = byId<'input'>("zoomExtentMin");
+const zoomExtentMax = byId<'input'>("zoomExtentMax");
 
-const optionsSeed = byId("optionsSeed")! as HTMLInputElement;
-const pointsInput = byId("pointsInput")! as HTMLInputElement;
+const optionsSeed = byId<'input'>("optionsSeed");
+const pointsInput = byId<'input'>("pointsInput");
 
-const culturesInput = byId("culturesInput")! as HTMLInputElement;
-const regionsOutput = byId("regionsOutput")! as HTMLInputElement;
+const culturesInput = byId<'input'>("culturesInput");
+const regionsOutput = byId<'input'>("regionsOutput");
 
-const uiSizeInput = byId("uiSizeInput")! as HTMLInputElement;
-const uiSizeOutput = byId("uiSizeOutput")! as HTMLInputElement;
+const uiSizeInput = byId<'input'>("uiSizeInput");
+const uiSizeOutput = byId<'input'>("uiSizeOutput");
 
-const distanceUnitInput = byId("distanceUnitInput")! as HTMLSelectElement;
-const heightUnitInput = byId("heightUnitInput")! as HTMLSelectElement;
+const distanceUnitInput = byId<'select'>("distanceUnitInput");
+const heightUnitInput = byId<'select'>("heightUnitInput");
+
+const regionsInput = byId<'input'>("regionsInput");
 
 // Text inputs
-const mapName = byId("mapName")! as HTMLInputElement;
-const templateInput = byId("templateInput")! as HTMLSelectElement
-const culturesSet = byId("culturesSet")! as HTMLSelectElement;
-const culturesOutput = byId("culturesOutput")! as HTMLInputElement;
+const mapName = byId<"input">("mapName");
+const templateInput = byId<'select'>("templateInput")
+const culturesSet = byId<'select'>("culturesSet");
+const culturesOutput = byId<'input'>("culturesOutput");
 
-const stylePreset = byId("stylePreset")! as HTMLSelectElement;
+const stylePreset = byId<'select'>("stylePreset");
 
-const shapeRendering = byId("shapeRendering")! as HTMLSelectElement;
-const stateLabelsModeInput = byId("stateLabelsModeInput")! as HTMLSelectElement;
+const shapeRendering = byId<'select'>("shapeRendering");
+const stateLabelsModeInput = byId<'select'>("stateLabelsModeInput");
 
 // Outputs
-const manorsOutput = byId("manorsOutput")! as HTMLOutputElement;
-const pointsOutputFormatted = byId("pointsOutputFormatted")! as HTMLOutputElement;
+const manorsOutput = byId<'output'>("manorsOutput");
+const pointsOutputFormatted = byId<'output'>("pointsOutputFormatted");
 
 
 // remove glow if tip is aknowledged
