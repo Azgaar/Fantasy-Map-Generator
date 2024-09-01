@@ -1085,7 +1085,8 @@
                     <option value="square45deg">Square 45 degrees grid</option>
                     <option value="squareTruncated">Truncated square grid</option>
                     <option value="squareTetrakis">Tetrakis square grid</option>
-                    <option value="triangle">Triangle grid</option>
+                    <option value="triangleHorizontal">Triangle grid (horizontal)</option>
+                    <option value="triangleVertical">Triangle grid (vertical)</option>
                     <option value="trihexagonal">Trihexagonal grid</option>
                     <option value="rhombille">Rhombille grid</option>
                   </select>
@@ -7818,8 +7819,8 @@
           <pattern id="pattern_flatHex" width="43.4" height="25" patternUnits="userSpaceOnUse" fill="none">
             <path d="M 43.4,0 36.2,12.5 43.4,25 M 21.7,12.5 H 36.2 Z M 0,0 H 14.5 L 21.7,12.5 14.5,25 H 0" />
           </pattern>
-          <pattern id="pattern_square45deg" width="25" height="25" patternUnits="userSpaceOnUse" fill="none">
-            <path d="M 25 12.5 L 12.5 0 0 12.5 L 12.5 25 L 25 12.5" />
+          <pattern id="pattern_square45deg" width="35.355" height="35.355" patternUnits="userSpaceOnUse" fill="none">
+            <path d="M 0 0 L 35.355 35.355 M 0 35.355 L 35.355 0" />
           </pattern>
           <pattern id="pattern_squareTruncated" width="25" height="25" patternUnits="userSpaceOnUse" fill="none">
             <path d="M 8.33 25 L 0 16.66 V 8.33 L 8.33 0 16.66 0 25 8.33  M 16.66 25 L 25 16.66 L 25 8.33 M 8.33 25 L 16.66 25" />
@@ -7827,14 +7828,17 @@
           <pattern id="pattern_squareTetrakis" width="25" height="25" patternUnits="userSpaceOnUse" fill="none">
             <path d="M 25 0 L 0 0 0 25 M 0 0 L 25 25 M 0 25 L 25 0 M 12.5 0 L 12.5 25 M 0 12.5 L 25 12.5 M 0 25 L 25 25 L 25 0" />
           </pattern>
-          <pattern id="pattern_triangle" width="25" height="43.3" patternUnits="userSpaceOnUse" fill="none">
-            <path d="M 25 21.65 H 0 L 12.5 0 25 21.65 12.5 43.3 0 21.65 M 0 0 H 50 M 0 43.3 L 25 43.3" />
+          <pattern id="pattern_triangleHorizontal" width="41.76" height="72.33" patternUnits="userSpaceOnUse" fill="none">
+            <path d="M 41.76 36.165 H 0 L 20.88 0 41.76 36.165 20.88 72.33 0 36.165 M 0 0 H 72.33 M 0 72.33 L 41.76 72.33" />
+          </pattern>
+          <pattern id="pattern_triangleVertical" width="72.33" height="41.76" patternUnits="userSpaceOnUse" fill="none">
+            <path d="M 36.165 0 L 0 20.88 36.165 41.76 72.33 20.88 36.165 0 V 41.76 M 0 0 V 72.33 M 72.33 0 L 72.33 41.76">
           </pattern>
           <pattern id="pattern_trihexagonal" width="25" height="43.4" patternUnits="userSpaceOnUse" fill="none">
             <path d="M 25 10.85 H 0 L 18.85 43.4 25 32.55 H 0 L 18.85 0 25 10.85" />
           </pattern>
-          <pattern id="pattern_rhombille" width="41.25" height="25" patternUnits="userSpaceOnUse" fill="none">
-            <path d="M 6.9 25 L 0 12.5 6.9 0 H 20.6 L 13.75 12.5 20.6 25 27.5 12.5 20.6 0 34.4 0 41.25 12.5 34.4 25 M 0 12.5 H 13.75 M 27.5 12.5 H 41.25 M 6.9 25 H 20.6 L 34.4 25" />
+          <pattern id="pattern_rhombille" width="82.5" height="50" patternUnits="userSpaceOnUse" fill="none">
+            <path d="M 13.8 50 L 0 25 13.8 0 H 41.2 L 27.5 25 41.2 50 55 25 41.2 0 68.8 0 82.5 25 68.8 50 M 0 25 H 27.5 M 55 25 H 82.5 M 13.8 50 H 41.2 L 68.8 50" />
           </pattern>
         </g>
 
