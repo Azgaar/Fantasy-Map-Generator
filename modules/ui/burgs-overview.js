@@ -245,7 +245,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
 
     confirmationDialog({
       title: "Remove burg",
-      message: "Are you sure you want to remove the burg? This actiove cannot be reverted",
+      message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
       confirm: "Remove",
       onConfirm: () => {
         removeBurg(burg);
