@@ -21,7 +21,10 @@ function getVertexPaths({getType, options}) {
     if (onborderCell === undefined) continue;
 
     const feature = pack.features[cells.f[onborderCell]];
-    if (feature.type === "lake" && feature.shoreline.every(ofSameType)) continue; // inner lake
+    if (feature.type === "lake") {
+      if (!feature.shoreline) Lakes.getShoreline(feature);
+      if (feature.shoreline.every(ofSameType)) continue; // inner lake
+    }
 
     const startingVertex = cells.v[cellId].find(v => vertices.c[v].some(ofDifferentType));
     if (startingVertex === undefined) throw new Error(`Starting vertex for cell ${cellId} is not found`);
@@ -104,7 +107,10 @@ function getVertexPath(cellsArray) {
     if (onborderCell === undefined) continue;
 
     const feature = pack.features[cells.f[onborderCell]];
-    if (feature.type === "lake" && feature.shoreline.every(ofSameType)) continue; // inner lake
+    if (feature.type === "lake") {
+      if (!feature.shoreline) Lakes.getShoreline(feature);
+      if (feature.shoreline.every(ofSameType)) continue; // inner lake
+    }
 
     const startingVertex = cells.v[cellId].find(v => vertices.c[v].some(ofDifferentType));
     if (startingVertex === undefined) throw new Error(`Starting vertex for cell ${cellId} is not found`);
