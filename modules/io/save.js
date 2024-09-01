@@ -41,7 +41,7 @@ function prepareMapData() {
   const date = new Date();
   const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
-  const params = [version, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
+  const params = [VERSION, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
   const settings = [
     distanceUnitInput.value,
     distanceScale,
@@ -100,6 +100,7 @@ function prepareMapData() {
   const markers = JSON.stringify(pack.markers);
   const cellRoutes = JSON.stringify(pack.cells.routes);
   const routes = JSON.stringify(pack.routes);
+  const zones = JSON.stringify(pack.zones);
 
   // store name array only if not the same as default
   const defaultNB = Names.getNameBases();
@@ -152,7 +153,8 @@ function prepareMapData() {
     fonts,
     markers,
     cellRoutes,
-    routes
+    routes,
+    zones
   ].join("\r\n");
   return mapData;
 }

@@ -181,6 +181,7 @@ function restoreLayers() {
   if (layerIsOn("toggleIce")) drawIce();
   if (layerIsOn("toggleEmblems")) drawEmblems();
   if (layerIsOn("toggleMarkers")) drawMarkers();
+  if (layerIsOn("toggleZones")) drawZones();
 
   // some layers are rendered each time, remove them if they are not on
   if (!layerIsOn("toggleBorders")) borders.selectAll("path").remove();
@@ -1872,16 +1873,27 @@ function fitScaleBar(scaleBar, fullWidth, fullHeight) {
 function toggleZones(event) {
   if (!layerIsOn("toggleZones")) {
     turnButtonOn("toggleZones");
-    $("#zones").fadeIn();
+    drawZones();
     if (event && isCtrlClick(event)) editStyle("zones");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("zones");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("zones");
     turnButtonOff("toggleZones");
-    $("#zones").fadeOut();
+    zones.selectAll("*").remove();
   }
+}
+
+function drawZones() {
+  const filterBy = byId("zonesFilterType").value;
+  const isFiltered = filterBy && filterBy !== "all";
+  const visibleZones = pack.zones.filter(
+    ({hidden, cells, type}) => !hidden && cells.length && (!isFiltered || type === filterBy)
+  );
+  zones.html(visibleZones.map(drawZone).join(""));
+}
+
+function drawZone({i, cells, type, color}) {
+  const path = getVertexPath(cells);
+  return `<path id="zone${i}" data-id="${i}" data-type="${type}" d="${path}" fill="${color}" />`;
 }
 
 function toggleEmblems(event) {
