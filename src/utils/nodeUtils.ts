@@ -6,6 +6,7 @@ export type ElementMap = {
   input: HTMLInputElement;
   output: HTMLOutputElement;
   select: HTMLSelectElement;
+  canvas: HTMLCanvasElement;
   // add more types as needed
 };
 

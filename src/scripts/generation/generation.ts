@@ -8,7 +8,6 @@ import {initLayers, renderLayer, restoreLayers} from "layers";
 import {drawScaleBar, Rulers} from "modules/measurers";
 // @ts-expect-error js module
 import {unfog} from "modules/ui/editors";
-// @ts-expect-error js module
 import {applyMapSize, randomizeOptions} from "modules/ui/options";
 // @ts-expect-error js module
 import {applyStyleOnLoad} from "modules/ui/stylePresets";
@@ -30,7 +29,7 @@ import { isBurg } from "utils/typeUtils";
 
 const {Zoom, ThreeD} = window;
 
-interface IGenerationOptions {
+export interface IGenerationOptions {
   seed: string;
   graph: IGrid;
 }
