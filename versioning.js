@@ -33,7 +33,7 @@ const VERSION = "1.101.00";
 
       <ul>
         <strong>Latest changes:</strong>
-        <li>Labels editor: ability to set letter spacing</li>
+        <li>Style: ability to set letter spacing</li>
         <li>Zones update</li>
         <li>Notes Editor: on-demand AI text generation</li>
         <li>New style preset: Dark Seas</li>
