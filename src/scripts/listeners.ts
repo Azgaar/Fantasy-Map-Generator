@@ -3,7 +3,7 @@ import {addOnLoadListener} from "./loading";
 import {assignLockBehavior} from "./options/lock";
 import {addTooptipListers} from "./tooltips";
 import {assignSpeakerBehavior} from "./speaker";
-import {addResizeListener, hideOptions, showOptions} from "modules/ui/options";
+import {addResizeListener} from "modules/ui/options";
 // @ts-ignore
 import {addDragToUpload} from "modules/io/load";
 import {addHotkeyListeners} from "scripts/hotkeys";
@@ -24,7 +24,6 @@ export function addGlobalListeners() {
   assignSpeakerBehavior();
   addDragToUpload();
   addFindAll();
-  addOptionsListeners();
 }
 
 function registerServiceWorker() {
@@ -53,9 +52,4 @@ function addInstallationPrompt() {
 
 function addBeforeunloadListener() {
   window.onbeforeunload = () => "Are you sure you want to navigate away?";
-}
-
-function addOptionsListeners() {
-  document.querySelector<HTMLButtonElement>("#optionsTrigger")!.on("click", (evt) => showOptions(evt as MouseEvent));
-  document.querySelector<HTMLButtonElement>("#optionsHide")!.on("click", (evt) => hideOptions(evt as MouseEvent));
 }

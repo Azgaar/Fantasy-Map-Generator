@@ -26,12 +26,16 @@ $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode
 $("#exitCustomization").draggable({handle: "div"});
 $("#mapLayers").disableSelection();
 
+// add listeners to options pane
+byId<'button'>("#optionsTrigger").on("click", showOptions);
+byId<'button'>("#optionsHide").on("click", hideOptions);
+
 // Window Objects
 const Zoom = window.Zoom;
 const COA = window.COA;
 
 // DIV elements
-const tooltip = byId("tooltip")! as HTMLDivElement;
+const tooltip = byId<'div'>("tooltip");
 
 // Options pane elements
 const optionsTrigger = byId<'button'>("optionsTriggerr");
@@ -69,10 +73,32 @@ const regionsOutput = byId<'input'>("regionsOutput");
 const uiSizeInput = byId<'input'>("uiSizeInput");
 const uiSizeOutput = byId<'input'>("uiSizeOutput");
 
-const distanceUnitInput = byId<'select'>("distanceUnitInput");
-const heightUnitInput = byId<'select'>("heightUnitInput");
-
 const regionsInput = byId<'input'>("regionsInput");
+
+const provincesInput = byId<'input'>("provincesInput");
+const provincesOutput = byId<'input'>("provincesOutput");
+
+const manorsInput = byId<'input'>("manorsInput");
+
+const religionsInput = byId<'input'>("religionsInput");
+
+const powerInput = byId<'input'>("powerInput");
+const powerOutput = byId<'input'>("powerOutput");
+
+const neutralInput = byId<'input'>("neutralInput");
+const neutralOutput = byId<'input'>("neutralOutput");
+
+const precInput = byId<'input'>("precInput");
+const precOutput = byId<'input'>("precOutput");
+
+const temperatureEquatorInput = byId<'input'>("temperatureEquatorInput");
+const temperatureEquatorOutput = byId<'input'>("temperatureEquatorOutput");
+
+const temperaturePoleInput = byId<'input'>("temperaturePoleInput");
+const temperaturePoleOutput = byId<'input'>("temperaturePoleOutput");
+
+const distanceScaleInput = byId<'input'>("distanceScaleInput");
+const distanceScaleOutput = byId<'input'>("distanceScaleOutput");
 
 // Text inputs
 const mapName = byId<"input">("mapName");
@@ -85,9 +111,15 @@ const stylePreset = byId<'select'>("stylePreset");
 const shapeRendering = byId<'select'>("shapeRendering");
 const stateLabelsModeInput = byId<'select'>("stateLabelsModeInput");
 
+const distanceUnitInput = byId<'select'>("distanceUnitInput");
+const heightUnitInput = byId<'select'>("heightUnitInput");
+const heightUnit = byId<'select'>("heightUnit");
+const temperatureScale = byId<'select'>("temperatureScale");
+
 // Outputs
 const manorsOutput = byId<'output'>("manorsOutput");
 const pointsOutputFormatted = byId<'output'>("pointsOutputFormatted");
+const religionsOutput = byId<'output'>("religionsOutput");
 
 
 // remove glow if tip is aknowledged
@@ -97,7 +129,7 @@ if (stored("disable_click_arrow_tooltip")) {
 }
 
 // Show options pane on trigger click
-export function showOptions(event: MouseEvent) {
+export function showOptions(event: Event) {
   if (!stored("disable_click_arrow_tooltip")) {
     clearMainTip();
     localStorage.setItem("disable_click_arrow_tooltip", "true");
@@ -210,7 +242,7 @@ optionsContent.on("input", function (event: any) { // MARKER: any
   else if (id === "emblemShape") changeEmblemShape(value);
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
   else if (id === "themeHueInput") changeThemeHue(value);
-  else if (id === "themeColorInput") changeDialogsTheme(themeColorInput.value, transparencyInput.value);
+  else if (id === "themeColorInput") changeDialogsTheme(themeColorInput.value, transparencyInput.valueAsNumber);
   else if (id === "transparencyInput") changeDialogsTheme(themeColorInput.value, value);
 });
 
@@ -263,12 +295,12 @@ export function addResizeListener() {
 
 // change svg size on manual size change or window resize, do not change graph size
 function changeMapSize() {
-  svgWidth = Math.min(Number(mapWidthInput.value), window.innerWidth);
-  svgHeight = Math.min(Number(mapHeightInput.value), window.innerHeight);
+  svgWidth = Math.min(mapWidthInput.valueAsNumber, window.innerWidth);
+  svgHeight = Math.min(mapHeightInput.valueAsNumber, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
 
-  const maxWidth = Math.max(Number(mapWidthInput.value), graphWidth);
-  const maxHeight = Math.max(Number(mapHeightInput.value), graphHeight);
+  const maxWidth = Math.max(mapWidthInput.valueAsNumber, graphWidth);
+  const maxHeight = Math.max(mapHeightInput.valueAsNumber, graphHeight);
 
   Zoom.translateExtent([[0, 0], [maxWidth, maxHeight]]);
 
@@ -494,15 +526,15 @@ function changeStatesNumber(value: string) {
   labels.select("#countries").attr("data-size", Math.max(rn(18 - Number(value) / 6), 4));
 }
 
-function changeUIsize(value: string) {
-  if (isNaN(Number(value)) || Number(value) < 0.5) return;
+function changeUIsize(value: number) {
+  if (isNaN(value) || value < 0.5) return;
 
   const max = getUImaxSize();
-  if (Number(value) > max) value = max.toString();
+  if (value > max) value = max;
 
-  uiSizeInput.value = uiSizeOutput.value = value;
-  document.getElementsByTagName("body")[0].style.fontSize = rn(Number(value) * 10, 2) + "px";
-  optionsDiv.style.width = Number(value) * 300 + "px";
+  uiSizeInput.valueAsNumber = uiSizeOutput.valueAsNumber = value;
+  document.getElementsByTagName("body")[0].style.fontSize = rn(value * 10, 2) + "px";
+  optionsDiv.style.width = value * 300 + "px";
 }
 
 function getUImaxSize() {
@@ -516,24 +548,24 @@ function changeTooltipSize(value: string) {
 const THEME_COLOR = "#997787";
 function restoreDefaultThemeColor() {
   localStorage.removeItem("themeColor");
-  changeDialogsTheme(THEME_COLOR, transparencyInput.value);
+  changeDialogsTheme(THEME_COLOR, transparencyInput.valueAsNumber);
 }
 
-function changeThemeHue(hue: string) {
+function changeThemeHue(hue: number) {
   const {s, l} = d3.hsl(themeColorInput.value);
-  const newColor = d3.hsl(+hue, s, l).formatHex();
-  changeDialogsTheme(newColor, transparencyInput.value);
+  const newColor = d3.hsl(hue, s, l).formatHex();
+  changeDialogsTheme(newColor, transparencyInput.valueAsNumber);
 }
 
 // change color and transparency for modal windows
-function changeDialogsTheme(themeColor: string, transparency: string) {
-  transparencyInput.value = transparencyOutput.value = transparency;
-  const alpha = (100 - Number(transparency)) / 100;
+function changeDialogsTheme(themeColor: string, transparency: number) {
+  transparencyInput.valueAsNumber = transparencyOutput.valueAsNumber = transparency;
+  const alpha = (100 - transparency) / 100;
   const alphaReduced = Math.min(alpha + 0.3, 1);
 
   const {h, s, l} = d3.hsl(themeColor || THEME_COLOR);
   themeColorInput.value = themeColor || THEME_COLOR;
-  themeHueInput.value = h.toString();
+  themeHueInput.valueAsNumber = h;
 
   const getRGBA = (hue: number, saturation: number, lightness: number, alpha: number) => {
     const color = d3.hsl(hue, saturation, lightness, alpha);
@@ -558,18 +590,18 @@ function changeDialogsTheme(themeColor: string, transparency: string) {
   });
 }
 
-function changeZoomExtent(value: string) {
-  const zoomExtentMin = byId("zoomExtentMin")! as HTMLInputElement;
-  const zoomExtentMax = byId("zoomExtentMax")! as HTMLInputElement;
+function changeZoomExtent(value: number) {
+  const zoomExtentMin = byId<'input'>("zoomExtentMin");
+  const zoomExtentMax = byId<'input'>("zoomExtentMax");
 
-  if (Number(zoomExtentMin.value) > Number(zoomExtentMax.value)) {
+  if (zoomExtentMin.valueAsNumber > zoomExtentMax.valueAsNumber) {
     [zoomExtentMin.value, zoomExtentMax.value] = [zoomExtentMax.value, zoomExtentMin.value];
   }
-  const min = Math.max(Number(zoomExtentMin.value), 0.01);
-  const max = Math.min(Number(zoomExtentMax.value), 200);
-  zoomExtentMin.value = min.toString();
-  zoomExtentMax.value = max.toString();
-  const scale = minmax(Number(value), 0.01, 200);
+  const min = Math.max(zoomExtentMin.valueAsNumber, 0.01);
+  const max = Math.min(zoomExtentMax.valueAsNumber, 200);
+  zoomExtentMin.valueAsNumber = min;
+  zoomExtentMax.valueAsNumber = max;
+  const scale = minmax(value, 0.01, 200);
   Zoom.scaleExtent([min, max]);
   Zoom.scaleTo(svg, scale);
 }
@@ -577,8 +609,8 @@ function changeZoomExtent(value: string) {
 // restore options stored in localStorage
 export function applyStoredOptions() {
   if (!stored("mapWidth") || !stored("mapHeight")) {
-    mapWidthInput.value = window.innerWidth.toString();
-    mapHeightInput.value = window.innerHeight.toString();
+    mapWidthInput.valueAsNumber = window.innerWidth;
+    mapHeightInput.valueAsNumber = window.innerHeight;
   }
 
   const heightmapId = stored("template");
@@ -594,8 +626,8 @@ export function applyStoredOptions() {
     const key = localStorage.key(i)!; // MARKER: !
 
     if (key === "speakerVoice") continue;
-    const input = (byId(key + "Input")! || byId(key)!) as HTMLInputElement; // MARKER: !
-    const output = (byId(key + "Output")!) as HTMLInputElement; // MARKER: !
+    const input = byId<'input'>(key + "Input", {throwOnNull: false}) || byId<'input'>(key)!; // MARKER: !
+    const output = byId<'input'>(key + "Output")!; // MARKER: !
 
     const value = stored(key);
     if (input) input.value = value!; // MARKER: !
@@ -618,9 +650,9 @@ export function applyStoredOptions() {
 
   uiSizeInput.max = uiSizeOutput.max = getUImaxSize().toString();
   if (stored("uiSize")) {
-    changeUIsize(stored("uiSize")!)
+    changeUIsize(Number(stored("uiSize")!))
   } else {
-    changeUIsize(minmax(rn(Number(mapWidthInput.value) / 1280, 1), 1, 2.5).toString());
+    changeUIsize(minmax(rn(mapWidthInput.valueAsNumber / 1280, 1), 1, 2.5));
   }
 
   // search params overwrite stored and default options
@@ -630,7 +662,7 @@ export function applyStoredOptions() {
   if (width) mapWidthInput.value = width.toString();
   if (height) mapHeightInput.value = height.toString();
 
-  const transparency = stored("transparency") || "5";
+  const transparency = Number(stored("transparency")) || 5;
   const themeColor = stored("themeColor") || THEME_COLOR;
   changeDialogsTheme(themeColor, transparency);
 
@@ -644,30 +676,29 @@ export function randomizeOptions() {
 
   // 'Options' settings
   if (randomize || !locked("template")) randomizeHeightmapTemplate();
-  if (randomize || !locked("regions")) regionsInput.value = regionsOutput.value = gauss(18, 5, 2, 30);
-  if (randomize || !locked("provinces")) provincesInput.value = provincesOutput.value = gauss(5, 15, 3, 100);
+  if (randomize || !locked("regions")) regionsInput.valueAsNumber = regionsOutput.valueAsNumber = gauss(18, 5, 2, 30);
+  if (randomize || !locked("provinces")) provincesInput.valueAsNumber = provincesOutput.valueAsNumber = gauss(5, 15, 3, 100);
   if (randomize || !locked("manors")) {
-    manorsInput.value = 1000;
+    manorsInput.valueAsNumber = 1000;
     manorsOutput.value = "auto";
   }
-  if (randomize || !locked("religions")) religionsInput.value = religionsOutput.value = gauss(6, 3, 2, 10);
-  if (randomize || !locked("power")) powerInput.value = powerOutput.value = gauss(4, 2, 0, 10, 2);
-  if (randomize || !locked("neutral")) neutralInput.value = neutralOutput.value = rn(1 + Math.random(), 1);
-  if (randomize || !locked("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
+  if (randomize || !locked("religions")) religionsInput.value = religionsOutput.value = gauss(6, 3, 2, 10).toString();
+  if (randomize || !locked("power")) powerInput.valueAsNumber = powerOutput.valueAsNumber = gauss(4, 2, 0, 10, 2);
+  if (randomize || !locked("neutral")) neutralInput.valueAsNumber = neutralOutput.valueAsNumber = rn(1 + Math.random(), 1);
+  if (randomize || !locked("cultures")) culturesInput.valueAsNumber = culturesOutput.valueAsNumber = gauss(12, 3, 5, 30);
   if (randomize || !locked("culturesSet")) randomizeCultureSet();
 
   // 'Configure World' settings
-  if (randomize || !locked("prec")) precInput.value = precOutput.value = gauss(100, 40, 5, 500);
-  const tMax = 30,
-    tMin = -30; // temperature extremes
+  if (randomize || !locked("prec")) precInput.valueAsNumber = precOutput.valueAsNumber = gauss(100, 40, 5, 500);
+  const tMax = 30, tMin = -30; // temperature extremes
   if (randomize || !locked("temperatureEquator"))
-    temperatureEquatorOutput.value = temperatureEquatorInput.value = rand(tMax - 10, tMax);
+    temperatureEquatorOutput.valueAsNumber = temperatureEquatorInput.valueAsNumber = rand(tMax - 10, tMax);
   if (randomize || !locked("temperaturePole"))
-    temperaturePoleOutput.value = temperaturePoleInput.value = rand(tMin, tMin + 30);
+    temperaturePoleOutput.valueAsNumber = temperaturePoleInput.valueAsNumber = rand(tMin, tMin + 30);
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
-  if (randomize || !locked("distanceScale")) distanceScaleOutput.value = distanceScaleInput.value = gauss(3, 1, 1, 5);
+  if (randomize || !locked("distanceScale")) distanceScaleOutput.valueAsNumber = distanceScaleInput.valueAsNumber = gauss(3, 1, 1, 5);
   if (!stored("distanceUnit")) distanceUnitInput.value = US ? "mi" : "km";
   if (!stored("heightUnit")) heightUnit.value = US ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
@@ -678,13 +709,13 @@ export function randomizeOptions() {
 
 // select heightmap template pseudo-randomly
 function randomizeHeightmapTemplate() {
-  const templates = {};
+  const templates: Dict<number> = {};
   for (const key in heightmapTemplates) {
     templates[key] = heightmapTemplates[key].probability || 0;
   }
   const template = rw(templates);
   const name = heightmapTemplates[template].name;
-  applyDropdownOption(byId("templateInput"), template, name);
+  applyDropdownOption(templateInput, template, name);
 }
 
 // select culture set pseudo-randomly
@@ -703,7 +734,7 @@ function randomizeCultureSet() {
   changeCultureSet();
 }
 
-function setRendering(value) {
+function setRendering(value: string) {
   viewbox?.attr("shape-rendering", value);
 }
 
