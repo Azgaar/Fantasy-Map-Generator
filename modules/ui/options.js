@@ -148,6 +148,7 @@ optionsContent.addEventListener("change", event => {
   else if (id === "yearInput") changeYear();
   else if (id === "eraInput") changeEra();
   else if (id === "stateLabelsModeInput") options.stateLabelsMode = value;
+  else if (id === "azgaarAssistant") toggleAssistant();
 });
 
 optionsContent.addEventListener("click", event => {

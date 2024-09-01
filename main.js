@@ -317,7 +317,7 @@ async function generateMapOnLoad() {
   applyPreset(); // apply saved layers preset
   fitMapToScreen();
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
-  loadAssistant();
+  toggleAssistant();
 }
 
 // focus on coordinates, cell or burg provided in searchParams
@@ -367,9 +367,17 @@ function focusOn() {
   }
 }
 
-function loadAssistant() {
+let isAssistantLoaded = false;
+function toggleAssistant() {
+  const assistantContainer = byId("chat-widget-container");
   const showAssistant = byId("azgaarAssistant").value === "show";
-  if (showAssistant) import("./libs/openwidget.min.js");
+
+  if (showAssistant) {
+    if (isAssistantLoaded) assistantContainer.style.display = "block";
+    else import("./libs/openwidget.min.js").then(() => (isAssistantLoaded = true));
+  } else if (isAssistantLoaded) {
+    assistantContainer.style.display = "none";
+  }
 }
 
 // find burg for MFCG and focus on it
