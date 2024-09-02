@@ -429,17 +429,19 @@ function highlightEmblemElement(type, el) {
 
 // assign lock behavior
 document.querySelectorAll("[data-locked]").forEach(function (e) {
-  e.addEventListener("mouseover", function (event) {
+  e.addEventListener("mouseover", e => {
+    e.stopPropagation();
     if (this.className === "icon-lock")
       tip("Click to unlock the option and allow it to be randomized on new map generation");
     else tip("Click to lock the option and always use the current value on new map generation");
-    event.stopPropagation();
   });
 
   e.addEventListener("click", function () {
-    const id = this.id.slice(5);
-    if (this.className === "icon-lock") unlock(id);
-    else lock(id);
+    const fn = this.className === "icon-lock" ? unlock : lock;
+    const ids = this.dataset.ids.split(",");
+
+    if (ids.length) ids.forEach(fn);
+    else fn(this.id.slice(5));
   });
 });
 
