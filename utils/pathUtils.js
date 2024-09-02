@@ -1,9 +1,9 @@
 "use strict";
 
-// get continuous paths for all cells at once based on getType(cellId) comparison
-function getVertexPaths({getType, options}) {
+// get continuous paths (isolines) for all cells at once based on getType(cellId) comparison
+function getIsolines(getType, options = {polygons: false, fill: false, halo: false, waterGap: false}) {
   const {cells, vertices} = pack;
-  const paths = {};
+  const isolines = {};
 
   const checkedCells = new Uint8Array(cells.c.length);
   const addToChecked = cellId => (checkedCells[cellId] = 1);
@@ -32,10 +32,10 @@ function getVertexPaths({getType, options}) {
     const vertexChain = connectVertices({startingVertex, ofSameType, addToChecked, closeRing: true});
     if (vertexChain.length < 3) continue;
 
-    addPath(type, vertexChain);
+    addIsoline(type, vertexChain);
   }
 
-  return Object.entries(paths);
+  return Object.entries(isolines);
 
   function getBorderPath(vertexChain, discontinue) {
     let discontinued = true;
@@ -68,11 +68,12 @@ function getVertexPaths({getType, options}) {
     return adjacentCells.every(i => cells.h[i] >= 20);
   }
 
-  function addPath(index, vertexChain) {
-    if (!paths[index]) paths[index] = {fill: "", waterGap: "", halo: ""};
-    if (options.fill) paths[index].fill += getFillPath(vertexChain);
-    if (options.halo) paths[index].halo += getBorderPath(vertexChain, isBorderVertex);
-    if (options.waterGap) paths[index].waterGap += getBorderPath(vertexChain, isLandVertex);
+  function addIsoline(index, vertexChain) {
+    if (!isolines[index]) isolines[index] = {polygons: [], fill: "", waterGap: "", halo: ""};
+    if (options.polygons) isolines[index].polygons.push(vertexChain.map(getVertexPoint));
+    if (options.fill) isolines[index].fill += getFillPath(vertexChain);
+    if (options.halo) isolines[index].halo += getBorderPath(vertexChain, isBorderVertex);
+    if (options.waterGap) isolines[index].waterGap += getBorderPath(vertexChain, isLandVertex);
   }
 }
 
@@ -122,6 +123,18 @@ function getVertexPath(cellsArray) {
   }
 
   return path;
+}
+
+function getPolesOfInaccessibility(getType) {
+  const isolines = getIsolines(getType, {polygons: true});
+
+  const poles = isolines.map(([id, isoline]) => {
+    const multiPolygon = isoline.polygons.sort((a, b) => b.length - a.length);
+    const [x, y] = polylabel(multiPolygon, 20);
+    return [id, [rn(x), rn(y)]];
+  });
+
+  return Object.fromEntries(poles);
 }
 
 function connectVertices({startingVertex, ofSameType, addToChecked, closeRing}) {

@@ -845,6 +845,7 @@ function recalculateStates(must) {
   if (!layerIsOn("toggleBorders")) toggleBorders();
   else drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
+  BurgsAndStates.getPoles();
   if (adjustLabels.checked) drawStateLabels();
   refreshStatesEditor();
 }
@@ -981,6 +982,7 @@ function applyStatesManualAssignent() {
 
   if (affectedStates.length) {
     refreshStatesEditor();
+    BurgsAndStates.getPoles();
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     if (adjustLabels.checked) drawStateLabels([...new Set(affectedStates)]);
     adjustProvinces([...new Set(affectedProvinces)]);
@@ -1415,6 +1417,7 @@ function openStateMergeDialog() {
     unfog();
     debug.selectAll(".highlight").remove();
 
+    BurgsAndStates.getPoles();
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
     layerIsOn("toggleProvinces") && drawProvinces();

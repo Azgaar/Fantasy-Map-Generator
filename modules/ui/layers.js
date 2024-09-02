@@ -991,18 +991,14 @@ function drawStates() {
   TIME && console.time("drawStates");
   const {cells, states} = pack;
 
-  const renderHalo = shapeRendering.value === "geometricPrecision";
-  const paths = getVertexPaths({
-    getType: cellId => cells.state[cellId],
-    options: {fill: true, waterGap: true, halo: renderHalo}
-  });
-
   const maxLength = states.length - 1;
   const bodyPaths = new Array(maxLength);
   const clipPaths = new Array(maxLength);
   const haloPaths = new Array(maxLength);
 
-  for (const [index, {fill, waterGap, halo}] of paths) {
+  const renderHalo = shapeRendering.value === "geometricPrecision";
+  const isolines = getIsolines(cellId => cells.state[cellId], {fill: true, waterGap: true, halo: renderHalo});
+  for (const [index, {fill, waterGap, halo}] of isolines) {
     const color = states[index].color;
 
     bodyPaths.push(
@@ -1021,11 +1017,6 @@ function drawStates() {
   byId("statesBody").innerHTML = bodyPaths.join("");
   byId("statePaths").innerHTML = renderHalo ? clipPaths.join("") : "";
   byId("statesHalo").innerHTML = renderHalo ? haloPaths.join("") : "";
-
-  // vArray.forEach((ar, i) => {
-  //   const sorted = ar.sort((a, b) => b.length - a.length); // sort by points number
-  //   states[i].pole = polylabel(sorted, 1.0); // pole of inaccessibility
-  // });
 
   TIME && console.timeEnd("drawStates");
 }

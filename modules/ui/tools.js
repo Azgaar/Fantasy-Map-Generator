@@ -152,6 +152,7 @@ function regenerateStates() {
   pack.states = newStates;
   BurgsAndStates.expandStates();
   BurgsAndStates.normalizeStates();
+  BurgsAndStates.getPoles();
   BurgsAndStates.collectStatistics();
   BurgsAndStates.assignColors();
   BurgsAndStates.generateCampaigns();

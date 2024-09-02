@@ -13,6 +13,8 @@ window.BurgsAndStates = (() => {
     placeTowns();
     expandStates();
     normalizeStates();
+    getPoles();
+
     specifyBurgs();
 
     collectStatistics();
@@ -468,8 +470,7 @@ window.BurgsAndStates = (() => {
 
   const normalizeStates = () => {
     TIME && console.time("normalizeStates");
-    const cells = pack.cells,
-      burgs = pack.burgs;
+    const {cells, burgs} = pack;
 
     for (const i of cells.i) {
       if (cells.h[i] < 20 || cells.burg[i]) continue; // do not overwrite burgs
@@ -484,6 +485,17 @@ window.BurgsAndStates = (() => {
       cells.state[i] = cells.state[adversaries[0]];
     }
     TIME && console.timeEnd("normalizeStates");
+  };
+
+  // calculate pole of inaccessibility for each state
+  const getPoles = () => {
+    const getType = cellId => pack.cells.state[cellId];
+    const poles = getPolesOfInaccessibility(getType);
+
+    pack.states.forEach(s => {
+      if (!s.i || s.removed) return;
+      s.pole = poles[s.i] || [0, 0];
+    });
   };
 
   // Resets the cultures of all burgs and states to their
@@ -1194,6 +1206,7 @@ window.BurgsAndStates = (() => {
     generate,
     expandStates,
     normalizeStates,
+    getPoles,
     assignColors,
     drawBurgs,
     specifyBurgs,
