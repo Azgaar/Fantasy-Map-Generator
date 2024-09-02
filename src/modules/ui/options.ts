@@ -124,27 +124,6 @@ const manorsOutput = byId<'output'>("manorsOutput");
 const pointsOutputFormatted = byId<'output'>("pointsOutputFormatted");
 const religionsOutput = byId<'output'>("religionsOutput");
 
-// 3D options
-const options3dMesh = byId<'div'>("options3dMesh");
-const options3dGlobe = byId<'div'>("options3dGlobe");
-const options3dOBJSave = byId<'button'>("options3dOBJSave");
-const options3dScaleRange = byId<'input'>("options3dScaleRange");
-const options3dScaleNumber = byId<'input'>("options3dScaleNumber");
-const options3dLightnessRange = byId<'input'>("options3dLightnessRange");
-const options3dLightnessNumber = byId<'input'>("options3dLightnessNumber");
-const options3dSunX = byId<'input'>("options3dSunX");
-const options3dSunY = byId<'input'>("options3dSunY");
-const options3dSunZ = byId<'input'>("options3dSunZ");
-const options3dMeshRotationRange = byId<'input'>("options3dMeshRotationRange");
-const options3dMeshRotationNumber = byId<'input'>("options3dMeshRotationNumber");
-const options3dGlobeRotationRange = byId<'input'>("options3dGlobeRotationRange");
-const options3dGlobeRotationNumber = byId<'input'>("options3dGlobeRotationNumber");
-const options3dMeshLabels3d = byId<'input'>("options3dMeshLabels3d");
-const options3dMeshSkyMode = byId<'input'>("options3dMeshSkyMode");
-const options3dColorSection = byId<'div'>("options3dColorSection");
-const options3dMeshSky = byId<'input'>("options3dMeshSky");
-const options3dMeshWater = byId<'input'>("options3dMeshWater");
-const options3dGlobeResolution = byId<'select'>("options3dGlobeResolution");
 
 // remove glow if tip is aknowledged
 if (stored("disable_click_arrow_tooltip")) {
@@ -1180,6 +1159,28 @@ export function toggle3dOptions() {
   if (isLoaded) return;
   isLoaded = true;
 // MARKER: Move to separate file ThreeD.ts
+// 3D options
+const options3dMesh = byId<'div'>("options3dMesh");
+const options3dGlobe = byId<'div'>("options3dGlobe");
+const options3dOBJSave = byId<'button'>("options3dOBJSave");
+const options3dScaleRange = byId<'input'>("options3dScaleRange");
+const options3dScaleNumber = byId<'input'>("options3dScaleNumber");
+const options3dLightnessRange = byId<'input'>("options3dLightnessRange");
+const options3dLightnessNumber = byId<'input'>("options3dLightnessNumber");
+const options3dSunX = byId<'input'>("options3dSunX");
+const options3dSunY = byId<'input'>("options3dSunY");
+const options3dSunZ = byId<'input'>("options3dSunZ");
+const options3dMeshRotationRange = byId<'input'>("options3dMeshRotationRange");
+const options3dMeshRotationNumber = byId<'input'>("options3dMeshRotationNumber");
+const options3dGlobeRotationRange = byId<'input'>("options3dGlobeRotationRange");
+const options3dGlobeRotationNumber = byId<'input'>("options3dGlobeRotationNumber");
+const options3dMeshLabels3d = byId<'input'>("options3dMeshLabels3d");
+const options3dMeshSkyMode = byId<'input'>("options3dMeshSkyMode");
+const options3dColorSection = byId<'div'>("options3dColorSection");
+const options3dMeshSky = byId<'input'>("options3dMeshSky");
+const options3dMeshWater = byId<'input'>("options3dMeshWater");
+const options3dGlobeResolution = byId<'select'>("options3dGlobeResolution");
+
   options3dUpdate.on("click", ThreeD.update);
   byId("options3dConfigureWorld").on("click", () => openDialog("worldConfigurator"));
   byId("options3dSave").on("click", ThreeD.saveScreenshot);
