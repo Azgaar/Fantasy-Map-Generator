@@ -84,7 +84,7 @@ function getVertexPoint(vertexId) {
 function getFillPath(vertexChain) {
   const points = vertexChain.map(getVertexPoint);
   const firstPoint = points.shift();
-  return `M${firstPoint} L${points.join(" ")}`;
+  return `M${firstPoint} L${points.join(" ")} Z`;
 }
 
 // get single path for an non-continuous array of cells
@@ -171,4 +171,11 @@ function connectVertices({startingVertex, ofSameType, addToChecked, closeRing}) 
 
   if (closeRing) chain.push(startingVertex);
   return chain;
+}
+
+function drawFillWithGap(elementName, fill, waterGap, color, index) {
+  return /* html */ `
+    <path d="${fill}" fill="${color}" id="${elementName}${index}" />
+    <path d="${waterGap}" fill="none" stroke="${color}" stroke-width="5" id="${elementName}-gap${index}" />
+  `;
 }

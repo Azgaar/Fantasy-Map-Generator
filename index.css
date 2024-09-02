@@ -212,11 +212,6 @@ t,
   mask: url(#land);
 }
 
-#statesBody,
-#provincesBody {
-  stroke-width: 3;
-}
-
 #borders {
   stroke-linejoin: round;
   fill: none;
