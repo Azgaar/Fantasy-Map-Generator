@@ -65,7 +65,7 @@ function getVertexPaths({getType, options}) {
 
   function isLandVertex(vertex) {
     const adjacentCells = vertices.c[vertex];
-    return adjacentCells.every(i => cells.h[i] >= MIN_LAND_HEIGHT);
+    return adjacentCells.every(i => cells.h[i] >= 20);
   }
 
   function addPath(index, vertexChain) {
