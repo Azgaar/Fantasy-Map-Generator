@@ -273,7 +273,6 @@ window.Submap = (function () {
     stage("Regenerating routes network.");
     regenerateRoutes();
 
-    drawStates();
     drawBorders();
     drawStateLabels();
 

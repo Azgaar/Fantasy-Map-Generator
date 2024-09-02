@@ -642,10 +642,13 @@ function stateRemove(stateId) {
   pack.states[stateId] = {i: stateId, removed: true};
 
   debug.selectAll(".highlight").remove();
+
   if (!layerIsOn("toggleStates")) toggleStates();
   else drawStates();
+
   if (!layerIsOn("toggleBorders")) toggleBorders();
   else drawBorders();
+
   if (layerIsOn("toggleProvinces")) drawProvinces();
   refreshStatesEditor();
 }

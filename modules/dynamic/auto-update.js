@@ -51,7 +51,6 @@ export function resolveVersionConflicts(mapVersion) {
     BurgsAndStates.generateCampaigns();
     BurgsAndStates.generateDiplomacy();
     BurgsAndStates.defineStateForms();
-    drawStates();
     Provinces.generate();
     Provinces.getPoles();
     drawBorders();

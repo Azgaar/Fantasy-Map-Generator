@@ -704,84 +704,55 @@ function toggleIce(event) {
     if (!ice.selectAll("*").size()) drawIce();
     if (event && isCtrlClick(event)) editStyle("ice");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("ice");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("ice");
     $("#ice").fadeOut();
     turnButtonOff("toggleIce");
   }
 }
 
 function drawIce() {
-  const {cells, vertices} = grid;
-  const {temp, h} = cells;
-  const n = cells.i.length;
+  TIME && console.time("drawIce");
 
-  const used = new Uint8Array(cells.i.length);
+  const {cells, features} = grid;
+  const {temp, h} = cells;
   Math.random = aleaPRNG(seed);
 
-  const shieldMin = -8; // max temp to form ice shield (glacier)
-  const icebergMax = 1; // max temp to form an iceberg
+  const ICEBERG_MAX_TEMP = 1;
+  const ICE_SHIELD_MAX_TEMP = -8;
 
-  for (const i of grid.cells.i) {
-    const t = temp[i];
-    if (t > icebergMax) continue; // too warm: no ice
-    if (t > shieldMin && h[i] >= 20) continue; // non-glacier land: no ice
+  // very cold: draw ice shields
+  {
+    const type = "iceShield";
+    const getType = cellId => (temp[cellId] <= ICE_SHIELD_MAX_TEMP ? type : null);
+    const isolines = getIsolines(grid, getType, {polygons: true});
+    isolines[type]?.polygons?.forEach(points => {
+      const clipped = clipPoly(points);
+      ice.append("polygon").attr("points", clipped).attr("type", type);
+    });
+  }
 
-    if (t <= shieldMin) {
-      // very cold: ice shield
-      if (used[i]) continue; // already rendered
-      const onborder = cells.c[i].some(n => temp[n] > shieldMin);
-      if (!onborder) continue; // need to start from onborder cell
-      const vertex = cells.v[i].find(v => vertices.c[v].some(i => temp[i] > shieldMin));
-      const chain = connectVertices(vertex);
-      if (chain.length < 3) continue;
-      const points = clipPoly(chain.map(v => vertices.p[v]));
-      ice.append("polygon").attr("points", points).attr("type", "iceShield");
-      continue;
-    }
+  // mildly cold: draw icebergs
+  for (const cellId of grid.cells.i) {
+    const t = temp[cellId];
+    if (t > ICEBERG_MAX_TEMP) continue; // too warm: no icebergs
+    if (t <= ICE_SHIELD_MAX_TEMP) continue; // already drawn as ice shield
+    if (h[cellId] >= 20) continue; // no icebergs on land
+    if (features[cells.f[cellId]].type === "lake") continue; // no icebers on lakes
 
     const tNormalized = normalize(t, -8, 2);
     const randomFactor = t > -5 ? 0.4 + rand() * 1.2 : 1;
-
-    // mildly cold: iceberd
     if (P(tNormalized ** 0.5 * randomFactor)) continue; // cold: skip some cells
-    if (grid.features[cells.f[i]].type === "lake") continue; // lake: no icebers
 
-    let size = 1 - tNormalized; // iceberg size: 0 = zero size, 1 = full size
-    if (cells.t[i] === -1) size /= 1.3; // coasline: smaller icebers
-    resizePolygon(i, minmax(rn(size * randomFactor, 2), 0.08, 1));
+    let defaultSize = 1 - tNormalized; // iceberg size: 0 = zero size, 1 = full size
+    if (cells.t[cellId] === -1) defaultSize /= 1.3; // coasline: smaller icebergs
+    const size = minmax(rn(defaultSize * randomFactor, 2), 0.08, 1);
+
+    const [cx, cy] = grid.points[cellId];
+    const points = getGridPolygon(cellId).map(([x, y]) => [rn(lerp(cx, x, size), 2), rn(lerp(cy, y, size), 2)]);
+    ice.append("polygon").attr("points", points).attr("cell", cellId).attr("size", size);
   }
 
-  function resizePolygon(i, size) {
-    const [cx, cy] = grid.points[i];
-    const points = getGridPolygon(i).map(([x, y]) => [rn(lerp(cx, x, size), 2), rn(lerp(cy, y, size), 2)]);
-    ice.append("polygon").attr("points", points).attr("cell", i).attr("size", size);
-  }
-
-  // connect vertices to chain
-  function connectVertices(start) {
-    const chain = []; // vertices chain to form a path
-    for (let i = 0, current = start; i === 0 || (current !== start && i < 20000); i++) {
-      const prev = last(chain); // previous vertex in chain
-      chain.push(current); // add current vertex to sequence
-      const c = vertices.c[current]; // cells adjacent to vertex
-      c.filter(c => temp[c] <= shieldMin).forEach(c => (used[c] = 1));
-      const c0 = c[0] >= n || temp[c[0]] > shieldMin;
-      const c1 = c[1] >= n || temp[c[1]] > shieldMin;
-      const c2 = c[2] >= n || temp[c[2]] > shieldMin;
-      const v = vertices.v[current]; // neighboring vertices
-      if (v[0] !== prev && c0 !== c1) current = v[0];
-      else if (v[1] !== prev && c1 !== c2) current = v[1];
-      else if (v[2] !== prev && c0 !== c2) current = v[2];
-      if (current === chain[chain.length - 1]) {
-        ERROR && console.error("Next vertex is not found");
-        break;
-      }
-    }
-    return chain;
-  }
+  TIME && console.timeEnd("drawIce");
 }
 
 function toggleCultures(event) {
@@ -792,10 +763,7 @@ function toggleCultures(event) {
     drawCultures();
     if (event && isCtrlClick(event)) editStyle("cults");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("cults");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("cults");
     cults.selectAll("path").remove();
     turnButtonOff("toggleCultures");
   }
@@ -804,58 +772,17 @@ function toggleCultures(event) {
 function drawCultures() {
   TIME && console.time("drawCultures");
 
-  cults.selectAll("path").remove();
-  const {cells, vertices, cultures} = pack;
-  const n = cells.i.length;
-  const used = new Uint8Array(cells.i.length);
-  const paths = new Array(cultures.length).fill("");
+  const {cells, cultures} = pack;
 
-  for (const i of cells.i) {
-    if (!cells.culture[i]) continue;
-    if (used[i]) continue;
-    used[i] = 1;
-    const c = cells.culture[i];
-    const onborder = cells.c[i].some(n => cells.culture[n] !== c);
-    if (!onborder) continue;
-    const vertex = cells.v[i].find(v => vertices.c[v].some(i => cells.culture[i] !== c));
-    const chain = connectVertices(vertex, c);
-    if (chain.length < 3) continue;
-    const points = chain.map(v => vertices.p[v]);
-    paths[c] += "M" + points.join("L") + "Z";
-  }
+  const bodyPaths = new Array(cultures.length - 1);
+  const isolines = getIsolines(pack, cellId => cells.culture[cellId], {fill: true, waterGap: true});
+  Object.entries(isolines).forEach(([index, {fill, waterGap}]) => {
+    const color = cultures[index].color;
+    bodyPaths.push(getGappedFillPaths("culture", fill, waterGap, color, index));
+  });
 
-  const data = paths.map((p, i) => [p, i]).filter(d => d[0].length > 10);
-  cults
-    .selectAll("path")
-    .data(data)
-    .enter()
-    .append("path")
-    .attr("d", d => d[0])
-    .attr("fill", d => cultures[d[1]].color)
-    .attr("id", d => "culture" + d[1]);
+  byId("cults").innerHTML = bodyPaths.join("");
 
-  // connect vertices to chain
-  function connectVertices(start, t) {
-    const chain = []; // vertices chain to form a path
-    for (let i = 0, current = start; i === 0 || (current !== start && i < 20000); i++) {
-      const prev = chain[chain.length - 1]; // previous vertex in chain
-      chain.push(current); // add current vertex to sequence
-      const c = vertices.c[current]; // cells adjacent to vertex
-      c.filter(c => cells.culture[c] === t).forEach(c => (used[c] = 1));
-      const c0 = c[0] >= n || cells.culture[c[0]] !== t;
-      const c1 = c[1] >= n || cells.culture[c[1]] !== t;
-      const c2 = c[2] >= n || cells.culture[c[2]] !== t;
-      const v = vertices.v[current]; // neighboring vertices
-      if (v[0] !== prev && c0 !== c1) current = v[0];
-      else if (v[1] !== prev && c1 !== c2) current = v[1];
-      else if (v[2] !== prev && c0 !== c2) current = v[2];
-      if (current === chain[chain.length - 1]) {
-        ERROR && console.error("Next vertex is not found");
-        break;
-      }
-    }
-    return chain;
-  }
   TIME && console.timeEnd("drawCultures");
 }
 
@@ -866,10 +793,7 @@ function toggleReligions(event) {
     drawReligions();
     if (event && isCtrlClick(event)) editStyle("relig");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("relig");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("relig");
     relig.selectAll("path").remove();
     turnButtonOff("toggleReligions");
   }
@@ -881,11 +805,11 @@ function drawReligions() {
   const {cells, religions} = pack;
 
   const bodyPaths = new Array(religions.length - 1);
-  const isolines = getIsolines(cellId => cells.religion[cellId], {fill: true, waterGap: true});
-  for (const [index, {fill, waterGap}] of isolines) {
+  const isolines = getIsolines(pack, cellId => cells.religion[cellId], {fill: true, waterGap: true});
+  Object.entries(isolines).forEach(([index, {fill, waterGap}]) => {
     const color = religions[index].color;
-    bodyPaths.push(drawFillWithGap("religion", fill, waterGap, color, index));
-  }
+    bodyPaths.push(getGappedFillPaths("religion", fill, waterGap, color, index));
+  });
 
   byId("relig").innerHTML = bodyPaths.join("");
 
@@ -895,15 +819,11 @@ function drawReligions() {
 function toggleStates(event) {
   if (!layerIsOn("toggleStates")) {
     turnButtonOn("toggleStates");
-    regions.style("display", null);
     drawStates();
     if (event && isCtrlClick(event)) editStyle("regions");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("regions");
-      return;
-    }
-    regions.style("display", "none").selectAll("path").remove();
+    if (event && isCtrlClick(event)) return editStyle("regions");
+    regions.selectAll("path").remove();
     turnButtonOff("toggleStates");
   }
 }
@@ -918,10 +838,10 @@ function drawStates() {
   const haloPaths = new Array(maxLength);
 
   const renderHalo = shapeRendering.value === "geometricPrecision";
-  const isolines = getIsolines(cellId => cells.state[cellId], {fill: true, waterGap: true, halo: renderHalo});
-  for (const [index, {fill, waterGap, halo}] of isolines) {
+  const isolines = getIsolines(pack, cellId => cells.state[cellId], {fill: true, waterGap: true, halo: renderHalo});
+  Object.entries(isolines).forEach(([index, {fill, waterGap, halo}]) => {
     const color = states[index].color;
-    bodyPaths.push(drawFillWithGap("state", fill, waterGap, color, index));
+    bodyPaths.push(getGappedFillPaths("state", fill, waterGap, color, index));
 
     if (renderHalo) {
       const haloColor = d3.color(color)?.darker().hex() || "#666666";
@@ -930,7 +850,7 @@ function drawStates() {
         /* html */ `<path id="state-border${index}" d="${halo}" clip-path="url(#state-clip${index})" stroke="${haloColor}"/>`
       );
     }
-  }
+  });
 
   byId("statesBody").innerHTML = bodyPaths.join("");
   byId("statePaths").innerHTML = renderHalo ? clipPaths.join("") : "";
@@ -945,10 +865,7 @@ function toggleBorders(event) {
     drawBorders();
     if (event && isCtrlClick(event)) editStyle("borders");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("borders");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("borders");
     turnButtonOff("toggleBorders");
     borders.selectAll("path").remove();
   }
@@ -1079,11 +996,11 @@ function drawProvinces() {
   const {cells, provinces} = pack;
 
   const bodyPaths = new Array(provinces.length - 1);
-  const isolines = getIsolines(cellId => cells.province[cellId], {fill: true, waterGap: true});
-  for (const [index, {fill, waterGap}] of isolines) {
+  const isolines = getIsolines(pack, cellId => cells.province[cellId], {fill: true, waterGap: true});
+  Object.entries(isolines).forEach(([index, {fill, waterGap}]) => {
     const color = provinces[index].color;
-    bodyPaths.push(drawFillWithGap("province", fill, waterGap, color, index));
-  }
+    bodyPaths.push(getGappedFillPaths("province", fill, waterGap, color, index));
+  });
 
   const labels = provinces
     .filter(p => p.i && !p.removed)
@@ -1106,13 +1023,9 @@ function toggleGrid(event) {
     turnButtonOn("toggleGrid");
     drawGrid();
     calculateFriendlyGridSize();
-
     if (event && isCtrlClick(event)) editStyle("gridOverlay");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("gridOverlay");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("gridOverlay");
     turnButtonOff("toggleGrid");
     gridOverlay.selectAll("*").remove();
   }
@@ -1153,10 +1066,7 @@ function toggleCoordinates(event) {
     drawCoordinates();
     if (event && isCtrlClick(event)) editStyle("coordinates");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("coordinates");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("coordinates");
     turnButtonOff("toggleCoordinates");
     coordinates.selectAll("*").remove();
   }
@@ -1185,24 +1095,26 @@ function drawCoordinates() {
   const labels = coordinates.append("g").attr("id", "coordinateLabels");
 
   const p = getViewPoint(scale + desired + 2, scale + desired / 2); // on border point on viexBox
+
   const data = graticule.lines().map(d => {
-    const lat = d.coordinates[0][1] === d.coordinates[1][1]; // check if line is latitude or longitude
-    const c = d.coordinates[0],
-      pos = projection(c); // map coordinates
-    const [x, y] = lat ? [rn(p.x, 2), rn(pos[1], 2)] : [rn(pos[0], 2), rn(p.y, 2)]; // labels position
-    const v = lat ? c[1] : c[0]; // label
-    const text = !v
-      ? v
-      : Number.isInteger(v)
-      ? lat
-        ? c[1] < 0
-          ? -c[1] + "°S"
-          : c[1] + "°N"
-        : c[0] < 0
-        ? -c[0] + "°W"
-        : c[0] + "°E"
-      : "";
-    return {lat, x, y, text};
+    const isLatitude = d.coordinates[0][1] === d.coordinates[1][1];
+    const coordinate = d.coordinates[0];
+    const position = projection(coordinate); // map coordinates
+    const [x, y] = isLatitude ? [rn(p.x, 2), rn(position[1], 2)] : [rn(position[0], 2), rn(p.y, 2)]; // labels position
+    const value = isLatitude ? coordinate[1] : coordinate[0]; // label
+
+    let text = "";
+    if (!value) {
+      text = value;
+    } else if (Number.isInteger(value)) {
+      if (isLatitude) {
+        text = coordinate[1] < 0 ? -coordinate[1] + "°S" : coordinate[1] + "°N";
+      } else {
+        text = coordinate[0] < 0 ? -coordinate[0] + "°W" : coordinate[0] + "°E";
+      }
+    }
+
+    return {x, y, text};
   });
 
   const d = round(d3.geoPath(projection)(graticule()));
@@ -1217,13 +1129,10 @@ function drawCoordinates() {
     .text(d => d.text);
 }
 
-// conver svg point into viewBox point
+// convert svg point into viewBox point
 function getViewPoint(x, y) {
-  const view = byId("viewbox");
-  const svg = byId("map");
-  const pt = svg.createSVGPoint();
-  (pt.x = x), (pt.y = y);
-  return pt.matrixTransform(view.getScreenCTM().inverse());
+  const point = new DOMPoint(x, y);
+  return point.matrixTransform(byId("viewbox").getScreenCTM().inverse());
 }
 
 function toggleCompass(event) {
@@ -1232,10 +1141,7 @@ function toggleCompass(event) {
     $("#compass").fadeIn();
     if (event && isCtrlClick(event)) editStyle("compass");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("compass");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("compass");
     $("#compass").fadeOut();
     turnButtonOff("toggleCompass");
   }
@@ -1248,10 +1154,7 @@ function toggleRelief(event) {
     $("#terrain").fadeIn();
     if (event && isCtrlClick(event)) editStyle("terrain");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("terrain");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("terrain");
     $("#terrain").fadeOut();
     turnButtonOff("toggleRelief");
   }
@@ -1389,27 +1292,26 @@ function drawMarkers() {
   markers.html(html.join(""));
 }
 
+// prettier-ignore
+const pinShapes = {
+  bubble: (fill, stroke) => `<path d="M6,19 l9,10 L24,19" fill="${stroke}" stroke="none" /><circle cx="15" cy="15" r="10" fill="${fill}" stroke="${stroke}"/>`,
+  pin: (fill, stroke) => `<path d="m 15,3 c -5.5,0 -9.7,4.09 -9.7,9.3 0,6.8 9.7,17 9.7,17 0,0 9.7,-10.2 9.7,-17 C 24.7,7.09 20.5,3 15,3 Z" fill="${fill}" stroke="${stroke}"/>`,
+  square: (fill, stroke) => `<path d="m 20,25 -5,4 -5,-4 z" fill="${stroke}"/><path d="M 5,5 H 25 V 25 H 5 Z" fill="${fill}" stroke="${stroke}"/>`,
+  squarish: (fill, stroke) => `<path d="m 5,5 h 20 v 20 h -6 l -4,4 -4,-4 H 5 Z" fill="${fill}" stroke="${stroke}" />`,
+  diamond: (fill, stroke) => `<path d="M 2,15 15,1 28,15 15,29 Z" fill="${fill}" stroke="${stroke}" />`,
+  hex: (fill, stroke) => `<path d="M 15,29 4.61,21 V 9 L 15,3 25.4,9 v 12 z" fill="${fill}" stroke="${stroke}" />`,
+  hexy: (fill, stroke) => `<path d="M 15,29 6,21 5,8 15,4 25,8 24,21 Z" fill="${fill}" stroke="${stroke}" />`,
+  shieldy: (fill, stroke) => `<path d="M 15,29 6,21 5,7 c 0,0 5,-3 10,-3 5,0 10,3 10,3 l -1,14 z" fill="${fill}" stroke="${stroke}" />`,
+  shield: (fill, stroke) => `<path d="M 4.6,5.2 H 25 v 6.7 A 20.3,20.4 0 0 1 15,29 20.3,20.4 0 0 1 4.6,11.9 Z" fill="${fill}" stroke="${stroke}" />`,
+  pentagon: (fill, stroke) => `<path d="M 4,16 9,4 h 12 l 5,12 -11,13 z" fill="${fill}" stroke="${stroke}" />`,
+  heptagon: (fill, stroke) => `<path d="M 15,29 6,22 4,12 10,4 h 10 l 6,8 -2,10 z" fill="${fill}" stroke="${stroke}" />`,
+  circle: (fill, stroke) => `<circle cx="15" cy="15" r="11" fill="${fill}" stroke="${stroke}" />`,
+  no: () => ""
+};
+
 const getPin = (shape = "bubble", fill = "#fff", stroke = "#000") => {
-  if (shape === "bubble")
-    return `<path d="M6,19 l9,10 L24,19" fill="${stroke}" stroke="none" /><circle cx="15" cy="15" r="10" fill="${fill}" stroke="${stroke}"/>`;
-  if (shape === "pin")
-    return `<path d="m 15,3 c -5.5,0 -9.7,4.09 -9.7,9.3 0,6.8 9.7,17 9.7,17 0,0 9.7,-10.2 9.7,-17 C 24.7,7.09 20.5,3 15,3 Z" fill="${fill}" stroke="${stroke}"/>`;
-  if (shape === "square")
-    return `<path d="m 20,25 -5,4 -5,-4 z" fill="${stroke}"/><path d="M 5,5 H 25 V 25 H 5 Z" fill="${fill}" stroke="${stroke}"/>`;
-  if (shape === "squarish")
-    return `<path d="m 5,5 h 20 v 20 h -6 l -4,4 -4,-4 H 5 Z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "diamond") return `<path d="M 2,15 15,1 28,15 15,29 Z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "hex") return `<path d="M 15,29 4.61,21 V 9 L 15,3 25.4,9 v 12 z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "hexy") return `<path d="M 15,29 6,21 5,8 15,4 25,8 24,21 Z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "shieldy")
-    return `<path d="M 15,29 6,21 5,7 c 0,0 5,-3 10,-3 5,0 10,3 10,3 l -1,14 z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "shield")
-    return `<path d="M 4.6,5.2 H 25 v 6.7 A 20.3,20.4 0 0 1 15,29 20.3,20.4 0 0 1 4.6,11.9 Z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "pentagon") return `<path d="M 4,16 9,4 h 12 l 5,12 -11,13 z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "heptagon")
-    return `<path d="M 15,29 6,22 4,12 10,4 h 10 l 6,8 -2,10 z" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "circle") return `<circle cx="15" cy="15" r="11" fill="${fill}" stroke="${stroke}" />`;
-  if (shape === "no") return "";
+  const shapeFunction = pinShapes[shape] || pinShapes.bubble;
+  return shapeFunction(fill, stroke);
 };
 
 function drawMarker(marker, rescale = 1) {
@@ -1731,6 +1633,13 @@ function toggleVignette(event) {
     $("#vignette").fadeOut();
     turnButtonOff("toggleVignette");
   }
+}
+
+function getGappedFillPaths(elementName, fill, waterGap, color, index) {
+  return /* html */ `
+    <path d="${fill}" fill="${color}" id="${elementName}${index}" />
+    <path d="${waterGap}" fill="none" stroke="${color}" stroke-width="3" id="${elementName}-gap${index}" />
+  `;
 }
 
 function layerIsOn(el) {

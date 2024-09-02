@@ -490,7 +490,7 @@ window.BurgsAndStates = (() => {
   // calculate pole of inaccessibility for each state
   const getPoles = () => {
     const getType = cellId => pack.cells.state[cellId];
-    const poles = getPolesOfInaccessibility(getType);
+    const poles = getPolesOfInaccessibility(pack, getType);
 
     pack.states.forEach(s => {
       if (!s.i || s.removed) return;

@@ -245,7 +245,7 @@ window.Provinces = (function () {
   // calculate pole of inaccessibility for each province
   const getPoles = () => {
     const getType = cellId => pack.cells.province[cellId];
-    const poles = getPolesOfInaccessibility(getType);
+    const poles = getPolesOfInaccessibility(pack, getType);
 
     pack.provinces.forEach(province => {
       if (!province.i || province.removed) return;
