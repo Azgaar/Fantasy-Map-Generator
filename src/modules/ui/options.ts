@@ -32,10 +32,7 @@ byId<'button'>("optionsTrigger").on("click", showOptions);
 byId<'button'>("optionsHide").on("click", hideOptions);
 
 // Window Objects
-const Zoom = window.Zoom;
-const COA = window.COA;
-const Cloud = window.Cloud;
-const ThreeD = window.ThreeD;
+const {Zoom, COA, Cloud, ThreeD, Names} = window;
 
 // DIV elements
 const tooltip = byId<'div'>("tooltip");
@@ -535,7 +532,7 @@ function changeEmblemShape(emblemShape: string) {
   });
 
   pack.burgs.forEach(burg => {
-    if (!isBurg(burg) || burg.removed || !burg.coa || burg.coa === "custom") return;
+    if (!isBurg(burg) || burg.removed || !burg.coa || ( burg.coa === "custom")) return;
     const newShield = specificShape || COA.getPackShield(burg.culture, burg.state);
     if (newShield === burg.coa.shield) return;
     burg.coa.shield = newShield;
@@ -770,7 +767,7 @@ function generateEra() {
   if (!stored("year")) yearInput.valueAsNumber = rand(100, 2000); // current year
   if (!stored("era")) eraInput.value = Names.getBaseShort(P(0.7) ? 1 : rand(nameBases.length)) + " Era";
   options.year = yearInput.valueAsNumber;
-  options.era = eraInput.valueAsNumber;
+  options.era = eraInput.value;
   options.eraShort = options.era
     .split(" ")
     .map(w => w[0].toUpperCase())
@@ -798,7 +795,7 @@ function changeYear() {
 function changeEra() {
   if (!eraInput.valueAsNumber) return;
   lock("era");
-  options.era = eraInput.valueAsNumber;
+  options.era = eraInput.value;
 }
 
 // remove all saved data from LocalStorage and reload the page
@@ -998,9 +995,11 @@ function loadURL() {
 }
 
 // load map
-byId<'input'>("mapToLoad").on("change", function () {
-  const fileToLoad = this.files[0];
-  this.value = "";
+byId<'input'>("mapToLoad").on("change", () => function (element: HTMLInputElement) {
+  const fileList = element.files;
+  if (!fileList || !fileList.length) return;
+  const fileToLoad = fileList[0];
+  element.value = "";
   closeDialogs();
   uploadMap(fileToLoad);
 });
@@ -1013,7 +1012,7 @@ function openSaveTiles() {
   let loading: NodeJS.Timer;
 
   const inputs = byId("saveTilesScreen").querySelectorAll("input");
-  inputs.forEach(input => input.on("input", updateTilesOptions));
+  inputs.forEach(input => input.on("input", updateTilesOptionsValues));
 
   $("#saveTilesScreen").dialog({
     resizable: false,
@@ -1035,20 +1034,24 @@ function openSaveTiles() {
       }
     },
     close: () => {
-      inputs.forEach(input => input.removeEventListener("input", updateTilesOptions));
+      inputs.forEach(input => input.removeEventListener("input", updateTilesOptionsValues));
       debug.selectAll("*").remove();
       clearInterval(loading);
     }
   });
 }
 
-function updateTilesOptions() {
-  if (this?.tagName === "INPUT") {
+function updateTilesOptionsValues(this: HTMLInputElement) {
+  if (this.tagName === "INPUT") {
     const {nextElementSibling: next, previousElementSibling: prev} = this;
-    if (next?.tagName === "INPUT") next.value = this.value;
-    if (prev?.tagName === "INPUT") prev.value = this.value;
+    if (next?.tagName === "INPUT") (next as HTMLInputElement).value = this.value;
+    if (prev?.tagName === "INPUT") (prev as HTMLInputElement).value = this.value;
   }
 
+  updateTilesOptions();
+ }
+
+function updateTilesOptions() {
   const tileSize = byId("tileSize");
   const tilesX = byId<'input'>("tileColsOutput").valueAsNumber;
   const tilesY = byId<'input'>("tileRowsOutput").valueAsNumber;
@@ -1176,7 +1179,7 @@ export function toggle3dOptions() {
 
   if (isLoaded) return;
   isLoaded = true;
-
+// MARKER: Move to separate file ThreeD.ts
   options3dUpdate.on("click", ThreeD.update);
   byId("options3dConfigureWorld").on("click", () => openDialog("worldConfigurator"));
   byId("options3dSave").on("click", ThreeD.saveScreenshot);
@@ -1219,14 +1222,14 @@ export function toggle3dOptions() {
     options3dGlobeResolution.value = ThreeD.options.resolution;
   }
 
-  function changeHeightScale() {
+  function changeHeightScale(this: HTMLInputElement) {
     options3dScaleRange.value = options3dScaleNumber.value = this.value;
-    ThreeD.setScale(+this.value);
+    ThreeD.setScale(this.valueAsNumber);
   }
 
-  function changeLightness() {
+  function changeLightness(this: HTMLInputElement) {
     options3dLightnessRange.value = options3dLightnessNumber.value = this.value;
-    ThreeD.setLightness(this.value / 100);
+    ThreeD.setLightness(this.valueAsNumber / 100);
   }
 
   function changeSunPosition() {
@@ -1236,11 +1239,10 @@ export function toggle3dOptions() {
     ThreeD.setSun(x, y, z);
   }
 
-  function changeRotation() {
-    console.log(this, "\n", this.value);
-    // (this.nextElementSibling || this.previousElementSibling).value = this.value;
-    // const speed = +this.value;
-    // ThreeD.setRotation(speed);
+  function changeRotation(this: HTMLInputElement) {
+    ((this.nextElementSibling || this.previousElementSibling)! as HTMLInputElement).value = this.value;
+    const speed = +this.value;
+    ThreeD.setRotation(speed);
   }
 
   function toggleLabels3d() {
@@ -1257,7 +1259,7 @@ export function toggle3dOptions() {
     ThreeD.setColors(options3dMeshSky.value, options3dMeshWater.value);
   }
 
-  function changeResolution() {
+  function changeResolution(this: HTMLSelectElement) {
     ThreeD.setResolution(this.value);
   }
 }

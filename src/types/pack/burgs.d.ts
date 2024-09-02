@@ -9,7 +9,7 @@ interface IBurg {
   y: number;
   population: number;
   type: TCultureType;
-  coa: ICoa | "string";
+  coa: ICoa | "custom";
   capital: Logical; // 1 - capital, 0 - burg
   port: number; // port feature id, 0 - not a port
   citadel: Logical;

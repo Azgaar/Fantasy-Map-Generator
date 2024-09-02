@@ -11,7 +11,7 @@ interface IState {
   formName: string;
   fullName: string;
   pole: TPoint;
-  coa: ICoa | string;
+  coa: ICoa | "custom";
   area: number;
   cells: number;
   burgs: number;
