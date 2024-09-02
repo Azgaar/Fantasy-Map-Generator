@@ -52,7 +52,8 @@ export function resolveVersionConflicts(mapVersion) {
     BurgsAndStates.generateDiplomacy();
     BurgsAndStates.defineStateForms();
     drawStates();
-    BurgsAndStates.generateProvinces();
+    Provinces.generate();
+    Provinces.getPoles();
     drawBorders();
     if (!layerIsOn("toggleBorders")) $("#borders").fadeOut();
     if (!layerIsOn("toggleStates")) regions.attr("display", "none").selectAll("path").remove();
@@ -939,5 +940,11 @@ export function resolveVersionConflicts(mapVersion) {
     });
     zones.style("display", null).selectAll("*").remove();
     if (layerIsOn("toggleZones")) drawZones();
+  }
+
+  if (isOlderThan("1.103.0")) {
+    // v1.103.00 separated pole of inaccessibility detection from layer rendering
+    BurgsAndStates.getPoles();
+    Provinces.getPoles();
   }
 }

@@ -190,18 +190,10 @@ t,
   font-size: 0.8em;
 }
 
-#statesBody {
-  stroke-width: 3;
-}
-
 #statesHalo {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-#provincesBody {
-  stroke-width: 0.2;
 }
 
 #statesBody,
@@ -218,6 +210,11 @@ t,
 #relig,
 #cults {
   mask: url(#land);
+}
+
+#statesBody,
+#provincesBody {
+  stroke-width: 3;
 }
 
 #borders {

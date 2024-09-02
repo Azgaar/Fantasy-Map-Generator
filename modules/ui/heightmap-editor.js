@@ -249,7 +249,8 @@ function editHeightmap(options) {
     Routes.generate();
     Religions.generate();
     BurgsAndStates.defineStateForms();
-    BurgsAndStates.generateProvinces();
+    Provinces.generate();
+    Provinces.getPoles();
     BurgsAndStates.defineBurgFeatures();
 
     drawStates();

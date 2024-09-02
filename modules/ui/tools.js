@@ -158,7 +158,8 @@ function regenerateStates() {
   BurgsAndStates.generateCampaigns();
   BurgsAndStates.generateDiplomacy();
   BurgsAndStates.defineStateForms();
-  BurgsAndStates.generateProvinces(true);
+  Provinces.generate(true);
+  Provinces.getPoles();
 
   layerIsOn("toggleStates") ? drawStates() : toggleStates();
   layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
@@ -333,7 +334,8 @@ function recreateStates() {
 function regenerateProvinces() {
   unfog();
 
-  BurgsAndStates.generateProvinces(true, true);
+  Provinces.generate(true, true);
+  Provinces.getPoles();
   drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
 

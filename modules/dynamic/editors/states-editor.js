@@ -839,7 +839,8 @@ function recalculateStates(must) {
   if (!must && !statesAutoChange.checked) return;
 
   BurgsAndStates.expandStates();
-  BurgsAndStates.generateProvinces();
+  Provinces.generate();
+  Provinces.getPoles();
   if (!layerIsOn("toggleStates")) toggleStates();
   else drawStates();
   if (!layerIsOn("toggleBorders")) toggleBorders();
