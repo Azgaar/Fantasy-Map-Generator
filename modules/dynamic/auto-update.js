@@ -53,7 +53,6 @@ export function resolveVersionConflicts(mapVersion) {
     BurgsAndStates.defineStateForms();
     Provinces.generate();
     Provinces.getPoles();
-    drawBorders();
     if (!layerIsOn("toggleBorders")) $("#borders").fadeOut();
     if (!layerIsOn("toggleStates")) regions.attr("display", "none").selectAll("path").remove();
 

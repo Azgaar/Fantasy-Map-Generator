@@ -490,8 +490,7 @@ function editProvinces() {
           const g = provs.select("#provincesBody");
           g.select("#province" + p).remove();
           g.select("#province-gap" + p).remove();
-          if (!layerIsOn("toggleBorders")) toggleBorders();
-          else drawBorders();
+          if (layerIsOn("toggleBorders")) drawBorders();
           refreshProvincesEditor();
           $(this).dialog("close");
         },
@@ -950,12 +949,9 @@ function editProvinces() {
         pack.cells.province[i] = +this.dataset.province;
       });
 
-    if (!layerIsOn("toggleBorders")) toggleBorders();
-    else drawBorders();
-
     Provinces.getPoles();
-    if (!layerIsOn("toggleProvinces")) toggleProvinces();
-    else drawProvinces();
+    if (layerIsOn("toggleBorders")) drawBorders();
+    if (layerIsOn("toggleProvinces")) drawProvinces();
 
     exitProvincesManualAssignment();
     refreshProvincesEditor();
@@ -1047,10 +1043,9 @@ function editProvinces() {
       cells.province[c] = province;
     });
 
-    if (!layerIsOn("toggleBorders")) toggleBorders();
-    else drawBorders();
-    if (!layerIsOn("toggleProvinces")) toggleProvinces();
-    else drawProvinces();
+    if (layerIsOn("toggleBorders")) drawBorders();
+    if (layerIsOn("toggleProvinces")) drawProvinces();
+
     collectStatistics();
     byId("provincesFilterState").value = state;
     provincesEditorAddLines();
@@ -1123,8 +1118,7 @@ function editProvinces() {
           pack.states.forEach(s => (s.provinces = []));
 
           unfog();
-          if (!layerIsOn("toggleBorders")) toggleBorders();
-          else drawBorders();
+          if (layerIsOn("toggleBorders")) drawBorders();
           provs.select("#provincesBody").remove();
           turnButtonOff("toggleProvinces");
 

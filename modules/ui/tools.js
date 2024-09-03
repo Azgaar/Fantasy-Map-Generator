@@ -336,7 +336,8 @@ function regenerateProvinces() {
 
   Provinces.generate(true, true);
   Provinces.getPoles();
-  drawBorders();
+
+  if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
 
   // remove emblems

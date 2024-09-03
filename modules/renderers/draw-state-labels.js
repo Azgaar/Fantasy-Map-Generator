@@ -2,7 +2,7 @@
 
 // list - an optional array of stateIds to regenerate
 function drawStateLabels(list) {
-  console.time("drawStateLabels");
+  TIME && console.time("drawStateLabels");
 
   // temporary make the labels visible
   const layerDisplay = labels.style("display");
@@ -289,5 +289,5 @@ function drawStateLabels(list) {
     return false;
   }
 
-  console.timeEnd("drawStateLabels");
+  TIME && console.timeEnd("drawStateLabels");
 }

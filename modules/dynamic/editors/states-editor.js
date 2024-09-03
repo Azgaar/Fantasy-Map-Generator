@@ -643,13 +643,10 @@ function stateRemove(stateId) {
 
   debug.selectAll(".highlight").remove();
 
-  if (!layerIsOn("toggleStates")) toggleStates();
-  else drawStates();
-
-  if (!layerIsOn("toggleBorders")) toggleBorders();
-  else drawBorders();
-
+  if (layerIsOn("toggleStates")) drawStates();
+  if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
+
   refreshStatesEditor();
 }
 
@@ -844,13 +841,13 @@ function recalculateStates(must) {
   BurgsAndStates.expandStates();
   Provinces.generate();
   Provinces.getPoles();
-  if (!layerIsOn("toggleStates")) toggleStates();
-  else drawStates();
-  if (!layerIsOn("toggleBorders")) toggleBorders();
-  else drawBorders();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
   BurgsAndStates.getPoles();
+
+  if (layerIsOn("toggleStates")) drawStates();
+  if (layerIsOn("toggleBorders")) drawBorders();
+  if (layerIsOn("toggleProvinces")) drawProvinces();
   if (adjustLabels.checked) drawStateLabels();
+
   refreshStatesEditor();
 }
 

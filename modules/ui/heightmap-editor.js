@@ -253,7 +253,6 @@ function editHeightmap(options) {
     Provinces.getPoles();
     BurgsAndStates.defineBurgFeatures();
 
-    drawBorders();
     drawStateLabels();
 
     Rivers.specify();
@@ -440,7 +439,6 @@ function editHeightmap(options) {
     }
 
     drawStateLabels();
-    drawBorders();
 
     if (erosionAllowed) {
       Rivers.specify();
