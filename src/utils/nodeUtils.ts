@@ -10,26 +10,10 @@ export type ElementMap = {
   // add more types as needed
 };
 
-type ElementMapKeys = keyof ElementMap;
-
-interface ByIdOptions {
-  throwOnNull?: boolean;
-  // add more options as needed
-}
-
 // function definition with overloads to account for different options
-export function byId<K extends ElementMapKeys>(id: string, options?: ByIdOptions & {throwOnNull: true}): ElementMap[K];
-export function byId<K extends ElementMapKeys>(id: string, options: ByIdOptions & {throwOnNull: boolean}): ElementMap[K]|null;
-/**
- * Retrieves an element from the DOM by its ID.
- * @template K - The key of the element in the ElementMap.
- * @param {string} id - The ID of the element to retrieve.
- * @param {ByIdOptions} [options] - The options for retrieving the element.
- * @param {boolean} [options.throwOnNull=true] - Whether to throw an error if the element is not found.
- * @returns {ElementMap[K] | null} The retrieved element or null if not found.
- * @throws {Error} If the element is not found and options.throwOnNull is true.
- */
-export function byId<K extends ElementMapKeys>(id: string, options: ByIdOptions = {throwOnNull: true}) {
+export function byId<K extends keyof ElementMap>(id: string): ElementMap[K];
+export function byId<K extends keyof ElementMap>(id: string, options?: {throwOnNull: false}): ElementMap[K] | null;
+export function byId<K extends keyof ElementMap>(id: string, options = {throwOnNull: true}) {
   const element = document.getElementById(id);
   if (!element && options.throwOnNull) {
     throw new Error(`Element ${id} not found`);

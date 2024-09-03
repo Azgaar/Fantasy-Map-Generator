@@ -1083,7 +1083,7 @@ function enterStandardView() {
   byId("heightmap3DView").classList.remove("pressed");
   byId("viewStandard").classList.add("pressed");
 
-  if (!byId("canvas3d")) return;
+  if (!byId("canvas3d",{throwOnNull:false})) return;
   ThreeD.stop();
   byId("canvas3d").remove();
   if (byId("options3dUpdate").offsetParent) $("#options3d").dialog("close");
