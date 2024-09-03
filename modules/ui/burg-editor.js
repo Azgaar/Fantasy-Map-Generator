@@ -399,10 +399,10 @@ function editBurg(id) {
   }
 
   function zoomIntoBurg() {
-    const id = elSelected.attr("data-id");
-    const label = document.querySelector("#burgLabels [data-id='" + id + "']");
-    const x = +label.getAttribute("x");
-    const y = +label.getAttribute("y");
+    const id = +elSelected.attr("data-id");
+    const burg = pack.burgs[id];
+    const x = burg.x;
+    const y = burg.y;
     zoomTo(x, y, 8, 2000);
   }
 
