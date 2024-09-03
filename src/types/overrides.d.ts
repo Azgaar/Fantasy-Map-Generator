@@ -29,6 +29,7 @@ interface Window {
   Markers: any;
   COA: any;
   Routes: any;
+  Cloud: any;
 }
 
 interface Node {

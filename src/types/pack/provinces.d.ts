@@ -8,7 +8,7 @@ interface IProvince {
   state: number;
   center: number;
   pole: TPoint;
-  coa: ICoa | string;
+  coa: ICoa | "custom";
   removed?: boolean;
 }
 

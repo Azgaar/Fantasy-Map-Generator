@@ -23,9 +23,12 @@ declare let options: IOptions;
 interface IOptions {
   pinNotes: boolean;
   showMFCGMap: boolean;
-  winds: [number, number, number, number, number, number];
+  winds: number[];
   stateLabelsMode: "auto" | "short" | "full";
   year: number;
+  era: string;
+  eraShort: string;
+  military: any; //MARKER any
 }
 
 declare let populationRate: number;

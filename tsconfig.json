@@ -15,8 +15,9 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "skipLibCheck": true,
-    "types": ["vitest/globals"],
-    "baseUrl": "src"
+    "types": ["vitest/globals","jquery","jqueryui"],
+    "baseUrl": "src",
+    "allowJs": false,
   },
   "include": ["src"]
 }

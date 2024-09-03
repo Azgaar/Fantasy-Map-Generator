@@ -2,22 +2,128 @@ import * as d3 from "d3";
 
 import {heightmapTemplates} from "config/heightmap-templates";
 import {precreatedHeightmaps} from "config/precreated-heightmaps";
-import {lock, locked} from "scripts/options/lock";
+import {lock, locked, unlock} from "scripts/options/lock";
 import {clearMainTip, tip} from "scripts/tooltips";
 import {last} from "utils/arrayUtils";
-import {applyDropdownOption} from "utils/nodeUtils";
+import {applyDropdownOption, byId } from "utils/nodeUtils";
 import {minmax, rn} from "utils/numberUtils";
 import {gauss, P, rand, rw} from "utils/probabilityUtils";
-import {byId, stored} from "utils/shorthands";
-import {regenerateMap} from "scripts/generation/generation";
-import {fitScaleBar} from "modules/measurers";
+import {stored} from "utils/shorthands";
+import {IGenerationOptions, regenerateMap} from "scripts/generation/generation";
+// @ts-expect-error js file
+import {fitScaleBar} from "modules/measurers.js";
 import {openDialog} from "dialogs";
 import {closeDialogs} from "dialogs/utils";
+// @ts-expect-error js file
 import {quickSave, saveToDropbox, dowloadMap} from "modules/io/save.js";
+// @ts-expect-error js file
+import {fitLegendBox} from "modules/legend.js";
+// @ts-expect-error js file
+import {COArenderer} from "modules/coa-renderer.js";
+import { isBurg, isCulture, isProvince, isState } from "utils/typeUtils.js";
+import { DropboxFile } from "modules/io/cloudTypes.js";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#exitCustomization").draggable({handle: "div"});
 $("#mapLayers").disableSelection();
+
+// add listeners to options pane
+byId<'button'>("optionsTrigger").on("click", showOptions);
+byId<'button'>("optionsHide").on("click", hideOptions);
+
+// Window Objects
+const {Zoom, COA, Cloud, ThreeD, Names} = window;
+
+// DIV elements
+const tooltip = byId<'div'>("tooltip");
+
+// Options pane elements
+const optionsTrigger = byId<'button'>("optionsTrigger");
+const regenerate = byId<'button'>("regenerate");
+const optionsDiv = byId<'div'>("optionsContainer");
+const collapsible = byId<'div'>("collapsible");
+const layersContent = byId<'div'>("layersContent");
+const styleContent = byId<'div'>("styleContent");
+const customizationMenu = byId<'div'>("customizationMenu");
+const toolsContent = byId<'div'>("toolsContent");
+const aboutContent = byId<'div'>("aboutContent");
+const optionsContent = byId<'div'>("optionsContent");
+const alertMessage = byId<'div'>("alertMessage");
+const dialogDiv = byId<'div'>("dialogs");
+
+// Number inputs
+const themeColorInput = byId<'input'>("themeColorInput");
+const themeHueInput = byId<'input'>("themeHueInput");
+
+const transparencyInput = byId<'input'>("transparencyInput");
+const transparencyOutput = byId<'input'>("transparencyOutput");
+
+const mapWidthInput = byId<'input'>("mapWidthInput");
+const mapHeightInput = byId<'input'>("mapHeightInput");
+
+const zoomExtentMin = byId<'input'>("zoomExtentMin");
+const zoomExtentMax = byId<'input'>("zoomExtentMax");
+
+const optionsSeed = byId<'input'>("optionsSeed");
+const pointsInput = byId<'input'>("pointsInput");
+
+const culturesInput = byId<'input'>("culturesInput");
+const regionsOutput = byId<'input'>("regionsOutput");
+
+const uiSizeInput = byId<'input'>("uiSizeInput");
+const uiSizeOutput = byId<'input'>("uiSizeOutput");
+
+const regionsInput = byId<'input'>("regionsInput");
+
+const provincesInput = byId<'input'>("provincesInput");
+const provincesOutput = byId<'input'>("provincesOutput");
+
+const manorsInput = byId<'input'>("manorsInput");
+
+const religionsInput = byId<'input'>("religionsInput");
+
+const powerInput = byId<'input'>("powerInput");
+const powerOutput = byId<'input'>("powerOutput");
+
+const neutralInput = byId<'input'>("neutralInput");
+const neutralOutput = byId<'input'>("neutralOutput");
+
+const precInput = byId<'input'>("precInput");
+const precOutput = byId<'input'>("precOutput");
+
+const temperatureEquatorInput = byId<'input'>("temperatureEquatorInput");
+const temperatureEquatorOutput = byId<'input'>("temperatureEquatorOutput");
+
+const temperaturePoleInput = byId<'input'>("temperaturePoleInput");
+const temperaturePoleOutput = byId<'input'>("temperaturePoleOutput");
+
+const distanceScaleInput = byId<'input'>("distanceScaleInput");
+const distanceScaleOutput = byId<'input'>("distanceScaleOutput");
+
+const yearInput = byId<'input'>("yearInput");
+const eraInput = byId<'input'>("eraInput");
+
+// Text inputs
+const mapName = byId<"input">("mapName");
+const templateInput = byId<'select'>("templateInput")
+const culturesSet = byId<'select'>("culturesSet");
+const culturesOutput = byId<'input'>("culturesOutput");
+
+const stylePreset = byId<'select'>("stylePreset");
+
+const shapeRendering = byId<'select'>("shapeRendering");
+const stateLabelsModeInput = byId<'select'>("stateLabelsModeInput");
+
+const distanceUnitInput = byId<'select'>("distanceUnitInput");
+// const heightUnitInput = byId<'select'>("heightUnitInput");
+const heightUnit = byId<'select'>("heightUnit");
+const temperatureScale = byId<'select'>("temperatureScale");
+
+// Outputs
+const manorsOutput = byId<'output'>("manorsOutput");
+const pointsOutputFormatted = byId<'output'>("pointsOutputFormatted");
+const religionsOutput = byId<'output'>("religionsOutput");
+
 
 // remove glow if tip is aknowledged
 if (stored("disable_click_arrow_tooltip")) {
@@ -26,37 +132,37 @@ if (stored("disable_click_arrow_tooltip")) {
 }
 
 // Show options pane on trigger click
-function showOptions(event) {
+export function showOptions(event: Event) {
   if (!stored("disable_click_arrow_tooltip")) {
     clearMainTip();
-    localStorage.setItem("disable_click_arrow_tooltip", true);
+    localStorage.setItem("disable_click_arrow_tooltip", "true");
     optionsTrigger.classList.remove("glow");
   }
 
   regenerate.style.display = "none";
-  byId("options").style.display = "block";
+  optionsDiv.style.display = "block";
   optionsTrigger.style.display = "none";
 
   if (event) event.stopPropagation();
 }
 
 // Hide options pane on trigger click
-export function hideOptions(event) {
-  byId("options").style.display = "none";
+export function hideOptions(event: Event) {
+  optionsDiv.style.display = "none";
   optionsTrigger.style.display = "block";
   if (event) event.stopPropagation();
 }
 
 // To toggle options on hotkey press
-export function toggleOptions(event) {
-  if (byId("options").style.display === "none") showOptions(event);
+export function toggleOptions(event: MouseEvent) {
+  if (optionsDiv.style.display === "none") showOptions(event);
   else hideOptions(event);
 }
 
 // Toggle "New Map!" pane on hover
 optionsTrigger.on("mouseenter", function () {
   if (optionsTrigger.classList.contains("glow")) return;
-  if (byId("options").style.display === "none") regenerate.style.display = "block";
+  if (optionsDiv.style.display === "none") regenerate.style.display = "block";
 });
 
 collapsible.on("mouseleave", function () {
@@ -64,21 +170,19 @@ collapsible.on("mouseleave", function () {
 });
 
 // Activate options tab on click
-document
-  .getElementById("options")
-  .querySelector("div.tab")
-  .on("click", function (event) {
+optionsDiv
+  .querySelector("div.tab")!
+  .on("click", function (event: any ) { // MARKER: any
     if (event.target.tagName !== "BUTTON") return;
     const id = event.target.id;
-    const active = byId("options").querySelector(".tab > button.active");
+    const active = optionsDiv.querySelector(".tab > button.active");
     if (active && id === active.id) return; // already active tab is clicked
 
     if (active) active.classList.remove("active");
-    byId(id).classList.add("active");
-    document
-      .getElementById("options")
-      .querySelectorAll(".tabcontent")
-      .forEach(e => (e.style.display = "none"));
+    byId(id)!.classList.add("active");
+    optionsDiv
+      .querySelectorAll<HTMLElement>(".tabcontent")
+      .forEach((e: HTMLElement) => {e.style.display = "none"});
 
     if (id === "layersTab") layersContent.style.display = "block";
     else if (id === "styleTab") styleContent.style.display = "block";
@@ -90,9 +194,10 @@ document
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
+  // @ts-expect-error js file
   const {supporters} = await import("../dynamic/supporters.js");
   alertMessage.innerHTML =
-    "<ul style='column-count: 5; column-gap: 2em'>" + supporters.map(n => `<li>${n}</li>`).join("") + "</ul>";
+    "<ul style='column-count: 5; column-gap: 2em'>" + (supporters as String[]).map(n => `<li>${n}</li>`).join("") + "</ul>"; // MARKER: as conversion
   $("#alert").dialog({
     resizable: false,
     title: "Patreon Supporters",
@@ -102,16 +207,16 @@ async function showSupporters() {
 }
 
 // on any option or dialog change
-byId("options").on("change", storeValueIfRequired);
-byId("dialogs").on("change", storeValueIfRequired);
-byId("options").on("input", updateOutputToFollowInput);
-byId("dialogs").on("input", updateOutputToFollowInput);
+optionsDiv.on("change", storeValueIfRequired);
+dialogDiv.on("change", storeValueIfRequired);
+optionsDiv.on("input", updateOutputToFollowInput);
+dialogDiv.on("input", updateOutputToFollowInput);
 
-function storeValueIfRequired(ev) {
+function storeValueIfRequired(ev: any) { // MARKER: any
   if (ev.target.dataset.stored) lock(ev.target.dataset.stored);
 }
 
-function updateOutputToFollowInput(ev) {
+function updateOutputToFollowInput(ev: any) { // MARKER: any
   const id = ev.target.id;
   const value = ev.target.value;
 
@@ -120,17 +225,17 @@ function updateOutputToFollowInput(ev) {
 
   // generic case
   if (id.slice(-5) === "Input") {
-    const output = byId(id.slice(0, -5) + "Output");
+    const output = byId(id.slice(0, -5) + "Output") as HTMLOutputElement; // MARKER: as conversion
     if (output) output.value = value;
   } else if (id.slice(-6) === "Output") {
-    const input = byId(id.slice(0, -6) + "Input");
+    const input = byId(id.slice(0, -6) + "Input") as HTMLInputElement; // MARKER: as conversion
     if (input) input.value = value;
   }
 }
 
 // Option listeners
-const optionsContent = byId("optionsContent");
-optionsContent.on("input", function (event) {
+
+optionsContent.on("input", function (event: any) { // MARKER: any
   const id = event.target.id;
   const value = event.target.value;
   if (id === "mapWidthInput" || id === "mapHeightInput") mapSizeInputChange();
@@ -140,16 +245,16 @@ optionsContent.on("input", function (event) {
   else if (id === "emblemShape") changeEmblemShape(value);
   else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
   else if (id === "themeHueInput") changeThemeHue(value);
-  else if (id === "themeColorInput") changeDialogsTheme(themeColorInput.value, transparencyInput.value);
+  else if (id === "themeColorInput") changeDialogsTheme(themeColorInput.value, transparencyInput.valueAsNumber);
   else if (id === "transparencyInput") changeDialogsTheme(themeColorInput.value, value);
 });
 
-optionsContent.on("change", function (event) {
+optionsContent.on("change", function (event: any) { // MARKER: any
   const id = event.target.id;
   const value = event.target.value;
 
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
-  else if (id === "optionsSeed") generateMapWithSeed("seed change");
+  else if (id === "optionsSeed") generateMapWithSeed();
   else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUIsize(value);
   else if (id === "shapeRendering") setRendering(value);
   else if (id === "yearInput") changeYear();
@@ -157,7 +262,7 @@ optionsContent.on("change", function (event) {
   else if (id === "stateLabelsModeInput") options.stateLabelsMode = value;
 });
 
-optionsContent.on("click", function (event) {
+optionsContent.on("click", function (event:any) { // MARKER: any
   const id = event.target.id;
   if (id === "toggleFullscreen") toggleFullscreen();
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
@@ -184,8 +289,8 @@ export function addResizeListener() {
     if (stored("mapWidth") && stored("mapHeight")) return;
 
     const {innerWidth, innerHeight} = window;
-    byId("mapWidthInput").value = innerWidth;
-    byId("mapHeightInput").value = innerHeight;
+    mapWidthInput.value = innerWidth.toString(); // MARKER: toString
+    mapHeightInput.value = innerHeight.toString(); // MARKER: toString
 
     changeMapSize();
   });
@@ -193,14 +298,14 @@ export function addResizeListener() {
 
 // change svg size on manual size change or window resize, do not change graph size
 function changeMapSize() {
-  svgWidth = Math.min(+mapWidthInput.value, window.innerWidth);
-  svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
+  svgWidth = Math.min(mapWidthInput.valueAsNumber, window.innerWidth);
+  svgHeight = Math.min(mapHeightInput.valueAsNumber, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
 
-  const maxWidth = Math.max(+mapWidthInput.value, graphWidth);
-  const maxHeight = Math.max(+mapHeightInput.value, graphHeight);
+  const maxWidth = Math.max(mapWidthInput.valueAsNumber, graphWidth);
+  const maxHeight = Math.max(mapHeightInput.valueAsNumber, graphHeight);
 
-  Zoom.translateExtent([0, 0, maxWidth, maxHeight]);
+  Zoom.translateExtent([[0, 0], [maxWidth, maxHeight]]);
 
   landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
@@ -210,15 +315,15 @@ function changeMapSize() {
   texture.select("image").attr("width", maxWidth).attr("height", maxHeight);
 
   fitScaleBar();
-  if (window.fitLegendBox) fitLegendBox();
+  fitLegendBox();
 }
 
 // just apply canvas size that was already set
 export function applyMapSize() {
-  const zoomMin = +zoomExtentMin.value;
-  const zoomMax = +zoomExtentMax.value;
-  graphWidth = +mapWidthInput.value;
-  graphHeight = +mapHeightInput.value;
+  const zoomMin = Number(zoomExtentMin.value);
+  const zoomMax = Number(zoomExtentMax.value);
+  graphWidth = Number(mapWidthInput.value);
+  graphHeight = Number(mapHeightInput.value);
   svgWidth = Math.min(graphWidth, window.innerWidth);
   svgHeight = Math.min(graphHeight, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
@@ -231,19 +336,19 @@ export function applyMapSize() {
 }
 
 function toggleFullscreen() {
-  if (mapWidthInput.value != window.innerWidth || mapHeightInput.value != window.innerHeight) {
-    mapWidthInput.value = window.innerWidth;
-    mapHeightInput.value = window.innerHeight;
+  if (Number(mapWidthInput.value) != Number(window.innerWidth) || Number(mapHeightInput.value) != Number(window.innerHeight)) {
+    mapWidthInput.value = window.innerWidth.toString();
+    mapHeightInput.value = window.innerHeight.toString();
     localStorage.removeItem("mapHeight");
     localStorage.removeItem("mapWidth");
   } else {
-    mapWidthInput.value = graphWidth;
-    mapHeightInput.value = graphHeight;
+    mapWidthInput.value = graphWidth.toString();
+    mapHeightInput.value = graphHeight.toString();
   }
   changeMapSize();
 }
 
-function toggleTranslateExtent(el) {
+function toggleTranslateExtent(el: any) { // MARKER: any
   const on = !Number(el.dataset.on);
   const extent = on
     ? [-graphWidth / 2, -graphHeight / 2, graphWidth * 1.5, graphHeight * 1.5]
@@ -259,13 +364,13 @@ const voiceInterval = setInterval(function () {
   if (voices.length) clearInterval(voiceInterval);
   else return;
 
-  const select = byId("speakerVoice");
+  const select = byId("speakerVoice")! as HTMLSelectElement;
   voices.forEach((voice, i) => {
-    select.options.add(new Option(voice.name, i, false));
+    select.options.add(new Option(voice.name, i.toString(), false));
   });
-  if (stored("speakerVoice")) select.value = stored("speakerVoice");
+  if (stored("speakerVoice")) select.value = stored("speakerVoice")!; // MARKER: !
   // se voice to store
-  else select.value = voices.findIndex(voice => voice.lang === "en-US"); // or to first found English-US
+  else select.value = voices.findIndex(voice => voice.lang === "en-US").toString(); // or to first found English-US
 }, 1000);
 
 function testSpeaker() {
@@ -273,7 +378,7 @@ function testSpeaker() {
   const speaker = new SpeechSynthesisUtterance(text);
   const voices = speechSynthesis.getVoices();
   if (voices.length) {
-    const voiceId = +byId("speakerVoice").value;
+    const voiceId = Number((byId("speakerVoice") as HTMLInputElement).value); // MARKER: as conversion
     speaker.voice = voices[voiceId];
   }
   speechSynthesis.speak(speaker);
@@ -302,12 +407,12 @@ function showSeedHistoryDialog() {
 }
 
 // generate map with historical seed
-function restoreSeed(id) {
+function restoreSeed(id: number) {
   const {seed, width, height, template} = mapHistory[id];
-  byId("optionsSeed").value = seed;
-  byId("mapWidthInput").value = width;
-  byId("mapHeightInput").value = height;
-  byId("templateInput").value = template;
+  optionsSeed.value = seed;
+  mapWidthInput.value = width.toString();
+  mapHeightInput.value = height.toString();
+  templateInput.value = template;
 
   if (locked("template")) unlock("template");
 
@@ -315,8 +420,8 @@ function restoreSeed(id) {
 }
 
 function restoreDefaultZoomExtent() {
-  zoomExtentMin.value = 1;
-  zoomExtentMax.value = 20;
+  zoomExtentMin.value = "1";
+  zoomExtentMax.value = "20";
   Zoom.scaleExtent([1, 20]);
   Zoom.scaleTo(svg, 1);
 }
@@ -335,52 +440,52 @@ function copyMapURL() {
     .catch(err => tip("Could not copy URL: " + err, false, "error", 5000));
 }
 
-const cellsDensityMap = {
-  1: 1000,
-  2: 2000,
-  3: 5000,
-  4: 10000,
-  5: 20000,
-  6: 30000,
-  7: 40000,
-  8: 50000,
-  9: 60000,
-  10: 70000,
-  11: 80000,
-  12: 90000,
-  13: 100000
-};
+const cellsDensityMap = [
+  1000,
+  2000,
+  5000,
+  10000,
+  20000,
+  30000,
+  40000,
+  50000,
+  60000,
+  70000,
+  80000,
+  90000,
+  100000
+];
 
-function changeCellsDensity(value) {
+function changeCellsDensity(value: number) {
   const cells = cellsDensityMap[value] || 1000;
-  pointsInput.dataset.cells = cells;
+  pointsInput.dataset.cells = cells.toString();
   pointsOutputFormatted.value = getCellsDensityValue(cells);
   pointsOutputFormatted.style.color = getCellsDensityColor(cells);
 }
 
-function getCellsDensityValue(cells) {
+function getCellsDensityValue(cells: number) {
   return cells / 1000 + "K";
 }
 
-function getCellsDensityColor(cells) {
+function getCellsDensityColor(cells: number) {
   return cells > 50000 ? "#b12117" : cells !== 10000 ? "#dfdf12" : "#053305";
 }
 
 function changeCultureSet() {
-  const max = culturesSet.selectedOptions[0].dataset.max;
+  const max = culturesSet.selectedOptions[0].dataset.max!;
   culturesInput.max = culturesOutput.max = max;
-  if (+culturesOutput.value > +max) culturesInput.value = culturesOutput.value = max;
+  if (Number(culturesOutput.value) > Number(max)) culturesInput.value = culturesOutput.value = max;
 }
 
-function changeEmblemShape(emblemShape) {
-  const image = byId("emblemShapeImage");
-  const shapePath = window.COArenderer && COArenderer.shieldPaths[emblemShape];
+function changeEmblemShape(emblemShape: string) {
+  const image = <unknown>byId("emblemShapeImage")! as SVGPathElement;
+  const shapePath = COArenderer && COArenderer.shieldPaths[emblemShape];
   shapePath ? image.setAttribute("d", shapePath) : image.removeAttribute("d");
 
   const specificShape = ["culture", "state", "random"].includes(emblemShape) ? null : emblemShape;
-  if (emblemShape === "random") pack.cultures.filter(c => !c.removed).forEach(c => (c.shield = COA.getRandomShield()));
+  if (emblemShape === "random") pack.cultures.filter(c => isCulture(c) && !c.removed).forEach(c => (c.shield = COA.getRandomShield()));
 
-  const rerenderCOA = (id, coa) => {
+  const rerenderCOA = (id: string, coa: ICoa | string) => {
     const coaEl = byId(id);
     if (!coaEl) return; // not rendered
     coaEl.remove();
@@ -388,7 +493,7 @@ function changeEmblemShape(emblemShape) {
   };
 
   pack.states.forEach(state => {
-    if (!state.i || state.removed || !state.coa || state.coa === "custom") return;
+    if (!isState(state) || state.removed || !state.coa || state.coa === "custom") return;
 
     const newShield = specificShape || COA.getPackShield(state.culture, null);
     if (newShield === state.coa.shield) return;
@@ -397,7 +502,7 @@ function changeEmblemShape(emblemShape) {
   });
 
   pack.provinces.forEach(province => {
-    if (!province.i || province.removed || !province.coa || province.coa === "custom") return;
+    if (!isProvince(province) || province.removed || !province.coa || province.coa === "custom") return;
     const culture = pack.cells.culture[province.center];
     const newShield = specificShape || COA.getPackShield(culture, province.state);
     if (newShield === province.coa.shield) return;
@@ -406,7 +511,7 @@ function changeEmblemShape(emblemShape) {
   });
 
   pack.burgs.forEach(burg => {
-    if (!burg.i || burg.removed || !burg.coa || burg.coa === "custom") return;
+    if (!isBurg(burg) || burg.removed || !burg.coa || ( burg.coa === "custom")) return;
     const newShield = specificShape || COA.getPackShield(burg.culture, burg.state);
     if (newShield === burg.coa.shield) return;
     burg.coa.shield = newShield;
@@ -414,54 +519,58 @@ function changeEmblemShape(emblemShape) {
   });
 }
 
-function changeStatesNumber(value) {
-  regionsOutput.style.color = +value ? null : "#b12117";
-  burgLabels.select("#capitals").attr("data-size", Math.max(rn(6 - value / 20), 3));
-  labels.select("#countries").attr("data-size", Math.max(rn(18 - value / 6), 4));
+function changeStatesNumber(value: string) {
+  if (Number(value)) {
+    regionsOutput.style.removeProperty("color");
+  } else {
+    regionsOutput.style.color = "#b12117";
+  }
+  burgLabels.select("#capitals").attr("data-size", Math.max(rn(6 - Number(value) / 20), 3));
+  labels.select("#countries").attr("data-size", Math.max(rn(18 - Number(value) / 6), 4));
 }
 
-function changeUIsize(value) {
-  if (isNaN(+value) || +value < 0.5) return;
+function changeUIsize(value: number) {
+  if (isNaN(value) || value < 0.5) return;
 
   const max = getUImaxSize();
-  if (+value > max) value = max;
+  if (value > max) value = max;
 
-  uiSizeInput.value = uiSizeOutput.value = value;
+  uiSizeInput.valueAsNumber = uiSizeOutput.valueAsNumber = value;
   document.getElementsByTagName("body")[0].style.fontSize = rn(value * 10, 2) + "px";
-  byId("options").style.width = value * 300 + "px";
+  optionsDiv.style.width = value * 300 + "px";
 }
 
 function getUImaxSize() {
   return rn(Math.min(window.innerHeight / 465, window.innerWidth / 302), 1);
 }
 
-function changeTooltipSize(value) {
+function changeTooltipSize(value: string) {
   tooltip.style.fontSize = `calc(${value}px + 0.5vw)`;
 }
 
 const THEME_COLOR = "#997787";
 function restoreDefaultThemeColor() {
   localStorage.removeItem("themeColor");
-  changeDialogsTheme(THEME_COLOR, transparencyInput.value);
+  changeDialogsTheme(THEME_COLOR, transparencyInput.valueAsNumber);
 }
 
-function changeThemeHue(hue) {
+function changeThemeHue(hue: number) {
   const {s, l} = d3.hsl(themeColorInput.value);
-  const newColor = d3.hsl(+hue, s, l).hex();
-  changeDialogsTheme(newColor, transparencyInput.value);
+  const newColor = d3.hsl(hue, s, l).formatHex();
+  changeDialogsTheme(newColor, transparencyInput.valueAsNumber);
 }
 
 // change color and transparency for modal windows
-function changeDialogsTheme(themeColor, transparency) {
-  transparencyInput.value = transparencyOutput.value = transparency;
-  const alpha = (100 - +transparency) / 100;
+function changeDialogsTheme(themeColor: string, transparency: number) {
+  transparencyInput.valueAsNumber = transparencyOutput.valueAsNumber = transparency;
+  const alpha = (100 - transparency) / 100;
   const alphaReduced = Math.min(alpha + 0.3, 1);
 
   const {h, s, l} = d3.hsl(themeColor || THEME_COLOR);
   themeColorInput.value = themeColor || THEME_COLOR;
-  themeHueInput.value = h;
+  themeHueInput.valueAsNumber = h;
 
-  const getRGBA = (hue, saturation, lightness, alpha) => {
+  const getRGBA = (hue: number, saturation: number, lightness: number, alpha: number) => {
     const color = d3.hsl(hue, saturation, lightness, alpha);
     return color.toString();
   };
@@ -480,85 +589,88 @@ function changeDialogsTheme(themeColor, transparency) {
 
   const sx = document.documentElement.style;
   theme.forEach(({name, h, s, l, alpha}) => {
-    sx.setProperty(name, getRGBA(h, s, l, alpha));
+    sx.setProperty(name, getRGBA(h, s, l, alpha!)); // MARKER: !
   });
 }
 
-function changeZoomExtent(value) {
-  const zoomExtentMin = byId("zoomExtentMin");
-  const zoomExtentMax = byId("zoomExtentMax");
+function changeZoomExtent(value: number) {
+  const zoomExtentMin = byId<'input'>("zoomExtentMin");
+  const zoomExtentMax = byId<'input'>("zoomExtentMax");
 
-  if (+zoomExtentMin.value > +zoomExtentMax.value) {
+  if (zoomExtentMin.valueAsNumber > zoomExtentMax.valueAsNumber) {
     [zoomExtentMin.value, zoomExtentMax.value] = [zoomExtentMax.value, zoomExtentMin.value];
   }
-  const min = Math.max(+zoomExtentMin.value, 0.01);
-  const max = Math.min(+zoomExtentMax.value, 200);
-  zoomExtentMin.value = min;
-  zoomExtentMax.value = max;
-  zoom.scaleExtent([min, max]);
-  const scale = minmax(+value, 0.01, 200);
+  const min = Math.max(zoomExtentMin.valueAsNumber, 0.01);
+  const max = Math.min(zoomExtentMax.valueAsNumber, 200);
+  zoomExtentMin.valueAsNumber = min;
+  zoomExtentMax.valueAsNumber = max;
+  const scale = minmax(value, 0.01, 200);
+  Zoom.scaleExtent([min, max]);
   Zoom.scaleTo(svg, scale);
 }
 
 // restore options stored in localStorage
 export function applyStoredOptions() {
   if (!stored("mapWidth") || !stored("mapHeight")) {
-    mapWidthInput.value = window.innerWidth;
-    mapHeightInput.value = window.innerHeight;
+    mapWidthInput.valueAsNumber = window.innerWidth;
+    mapHeightInput.valueAsNumber = window.innerHeight;
   }
 
   const heightmapId = stored("template");
   if (heightmapId) {
     const name = heightmapTemplates[heightmapId]?.name || precreatedHeightmaps[heightmapId]?.name || heightmapId;
-    applyDropdownOption(byId("templateInput"), heightmapId, name);
+    applyDropdownOption(templateInput, heightmapId, name);
   }
-
-  if (stored("distanceUnit")) applyDropdownOption(byId("distanceUnitInput"), stored("distanceUnit"));
-  if (stored("heightUnit")) applyDropdownOption(byId("heightUnit"), stored("heightUnit"));
+  
+  if (stored("distanceUnit")) applyDropdownOption(distanceUnitInput, stored("distanceUnit")!); // MARKER: !
+  if (stored("heightUnit")) applyDropdownOption(heightUnit, stored("heightUnit")!); // MARKER: !
 
   for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
+    const key = localStorage.key(i)!; // MARKER: !
 
     if (key === "speakerVoice") continue;
-    const input = byId(key + "Input") || byId(key);
-    const output = byId(key + "Output");
+    const input = byId<'input'>(key + "Input", {throwOnNull: false}) || byId<'input'>(key, {throwOnNull: false}); // MARKER: !
+    const output = byId<'input'>(key + "Output", {throwOnNull: false}); // MARKER: !
 
     const value = stored(key);
-    if (input) input.value = value;
-    if (output) output.value = value;
+    if (input) input.value = value!; // MARKER: !
+    if (output) output.value = value!; // MARKER: !
     lock(key);
 
     // add saved style presets to options
-    if (key.slice(0, 5) === "style") applyDropdownOption(byId("stylePreset"), key, key.slice(5));
+    if (key.slice(0, 5) === "style") applyDropdownOption(stylePreset, key, key.slice(5));
   }
 
   if (stored("winds"))
     options.winds = localStorage
-      .getItem("winds")
+      .getItem("winds")!
       .split(",")
-      .map(w => +w);
-  if (stored("military")) options.military = JSON.parse(stored("military"));
+      .map(w => Number(w));
+  if (stored("military")) options.military = JSON.parse(stored("military")!); // MARKER: !
 
-  if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize"));
-  if (stored("regions")) changeStatesNumber(stored("regions"));
+  if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize")!);
+  if (stored("regions")) changeStatesNumber(stored("regions")!);
 
-  uiSizeInput.max = uiSizeOutput.max = getUImaxSize();
-  if (stored("uiSize")) changeUIsize(stored("uiSize"));
-  else changeUIsize(minmax(rn(mapWidthInput.value / 1280, 1), 1, 2.5));
+  uiSizeInput.max = uiSizeOutput.max = getUImaxSize().toString();
+  if (stored("uiSize")) {
+    changeUIsize(Number(stored("uiSize")!))
+  } else {
+    changeUIsize(minmax(rn(mapWidthInput.valueAsNumber / 1280, 1), 1, 2.5));
+  }
 
   // search params overwrite stored and default options
   const params = new URL(window.location.href).searchParams;
-  const width = +params.get("width");
-  const height = +params.get("height");
-  if (width) mapWidthInput.value = width;
-  if (height) mapHeightInput.value = height;
+  const width = Number(params.get("width"));
+  const height = Number(params.get("height"));
+  if (width) mapWidthInput.value = width.toString();
+  if (height) mapHeightInput.value = height.toString();
 
-  const transparency = stored("transparency") || 5;
-  const themeColor = stored("themeColor");
+  const transparency = Number(stored("transparency")) || 5;
+  const themeColor = stored("themeColor") || THEME_COLOR;
   changeDialogsTheme(themeColor, transparency);
 
   setRendering(shapeRendering.value);
-  options.stateLabelsMode = stateLabelsModeInput.value;
+  options.stateLabelsMode = stateLabelsModeInput.value as "auto" | "short" | "full"; // MARKER: as conversion
 }
 
 // randomize options if randomization is allowed (not locked or options='default')
@@ -567,30 +679,29 @@ export function randomizeOptions() {
 
   // 'Options' settings
   if (randomize || !locked("template")) randomizeHeightmapTemplate();
-  if (randomize || !locked("regions")) regionsInput.value = regionsOutput.value = gauss(18, 5, 2, 30);
-  if (randomize || !locked("provinces")) provincesInput.value = provincesOutput.value = gauss(5, 15, 3, 100);
+  if (randomize || !locked("regions")) regionsInput.valueAsNumber = regionsOutput.valueAsNumber = gauss(18, 5, 2, 30);
+  if (randomize || !locked("provinces")) provincesInput.valueAsNumber = provincesOutput.valueAsNumber = gauss(5, 15, 3, 100);
   if (randomize || !locked("manors")) {
-    manorsInput.value = 1000;
+    manorsInput.valueAsNumber = 1000;
     manorsOutput.value = "auto";
   }
-  if (randomize || !locked("religions")) religionsInput.value = religionsOutput.value = gauss(6, 3, 2, 10);
-  if (randomize || !locked("power")) powerInput.value = powerOutput.value = gauss(4, 2, 0, 10, 2);
-  if (randomize || !locked("neutral")) neutralInput.value = neutralOutput.value = rn(1 + Math.random(), 1);
-  if (randomize || !locked("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
+  if (randomize || !locked("religions")) religionsInput.value = religionsOutput.value = gauss(6, 3, 2, 10).toString();
+  if (randomize || !locked("power")) powerInput.valueAsNumber = powerOutput.valueAsNumber = gauss(4, 2, 0, 10, 2);
+  if (randomize || !locked("neutral")) neutralInput.valueAsNumber = neutralOutput.valueAsNumber = rn(1 + Math.random(), 1);
+  if (randomize || !locked("cultures")) culturesInput.valueAsNumber = culturesOutput.valueAsNumber = gauss(12, 3, 5, 30);
   if (randomize || !locked("culturesSet")) randomizeCultureSet();
 
   // 'Configure World' settings
-  if (randomize || !locked("prec")) precInput.value = precOutput.value = gauss(100, 40, 5, 500);
-  const tMax = 30,
-    tMin = -30; // temperature extremes
+  if (randomize || !locked("prec")) precInput.valueAsNumber = precOutput.valueAsNumber = gauss(100, 40, 5, 500);
+  const tMax = 30, tMin = -30; // temperature extremes
   if (randomize || !locked("temperatureEquator"))
-    temperatureEquatorOutput.value = temperatureEquatorInput.value = rand(tMax - 10, tMax);
+    temperatureEquatorOutput.valueAsNumber = temperatureEquatorInput.valueAsNumber = rand(tMax - 10, tMax);
   if (randomize || !locked("temperaturePole"))
-    temperaturePoleOutput.value = temperaturePoleInput.value = rand(tMin, tMin + 30);
+    temperaturePoleOutput.valueAsNumber = temperaturePoleInput.valueAsNumber = rand(tMin, tMin + 30);
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
-  if (randomize || !locked("distanceScale")) distanceScaleOutput.value = distanceScaleInput.value = gauss(3, 1, 1, 5);
+  if (randomize || !locked("distanceScale")) distanceScaleOutput.valueAsNumber = distanceScaleInput.valueAsNumber = gauss(3, 1, 1, 5);
   if (!stored("distanceUnit")) distanceUnitInput.value = US ? "mi" : "km";
   if (!stored("heightUnit")) heightUnit.value = US ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
@@ -601,13 +712,13 @@ export function randomizeOptions() {
 
 // select heightmap template pseudo-randomly
 function randomizeHeightmapTemplate() {
-  const templates = {};
+  const templates: Dict<number> = {};
   for (const key in heightmapTemplates) {
     templates[key] = heightmapTemplates[key].probability || 0;
   }
   const template = rw(templates);
   const name = heightmapTemplates[template].name;
-  applyDropdownOption(byId("templateInput"), template, name);
+  applyDropdownOption(templateInput, template, name);
 }
 
 // select culture set pseudo-randomly
@@ -626,15 +737,15 @@ function randomizeCultureSet() {
   changeCultureSet();
 }
 
-function setRendering(value) {
+function setRendering(value: string) {
   viewbox?.attr("shape-rendering", value);
 }
 
 // generate current year and era name
 function generateEra() {
-  if (!stored("year")) yearInput.value = rand(100, 2000); // current year
+  if (!stored("year")) yearInput.valueAsNumber = rand(100, 2000); // current year
   if (!stored("era")) eraInput.value = Names.getBaseShort(P(0.7) ? 1 : rand(nameBases.length)) + " Era";
-  options.year = +yearInput.value;
+  options.year = yearInput.valueAsNumber;
   options.era = eraInput.value;
   options.eraShort = options.era
     .split(" ")
@@ -652,16 +763,16 @@ function regenerateEra() {
 }
 
 function changeYear() {
-  if (!yearInput.value) return;
-  if (isNaN(+yearInput.value)) {
+  if (!yearInput.valueAsNumber) return;
+  if (isNaN(yearInput.valueAsNumber)) {
     tip("Current year should be a number", false, "error");
     return;
   }
-  options.year = +yearInput.value;
+  options.year = yearInput.valueAsNumber;
 }
 
 function changeEra() {
-  if (!eraInput.value) return;
+  if (!eraInput.valueAsNumber) return;
   lock("era");
   options.era = eraInput.value;
 }
@@ -673,8 +784,8 @@ function restoreDefaultOptions() {
 }
 
 // Sticked menu Options listeners
-byId("sticked").on("click", function (event) {
-  const id = event.target.id;
+byId("sticked").on("click", function (event: any) {
+  const id = event.target.id; // MARKER: any
   if (id === "newMapButton") regeneratePrompt();
   else if (id === "saveButton") showSavePane();
   else if (id === "exportButton") showExportPane();
@@ -682,9 +793,9 @@ byId("sticked").on("click", function (event) {
   else if (id === "zoomReset") Zoom.reset(1000);
 });
 
-byId("regenerate").on("click", regeneratePrompt);
+byId("regenerate").on("click", () => regeneratePrompt);
 
-export function regeneratePrompt(options) {
+export function regeneratePrompt(options? : IGenerationOptions) {
   if (customization)
     return tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
@@ -729,13 +840,13 @@ byId("saveToDropbox").on("click", saveToDropbox);
 byId("quickSave").on("click", quickSave);
 
 function copyLinkToClickboard() {
-  const shrableLink = byId("sharableLink");
-  const link = shrableLink.getAttribute("href");
+  const shrableLink = byId<'a'>("sharableLink");
+  const link = shrableLink.href;
   navigator.clipboard.writeText(link).then(() => tip("Link is copied to the clipboard", true, "success", 8000));
 }
 
 function showExportPane() {
-  byId("showLabels").checked = !hideLabels.checked;
+  byId<'input'>("showLabels").checked = !byId<'input'>("hideLabels").checked;
 
   $("#exportMapData").dialog({
     title: "Export map data",
@@ -785,13 +896,16 @@ async function showLoadPane() {
 
   // already connected to Dropbox: list saved maps
   if (Cloud.providers.dropbox.api) {
-    byId("dropboxConnectButton").style.display = "none";
-    byId("loadFromDropboxSelect").style.display = "block";
-    const loadFromDropboxButtons = byId("loadFromDropboxButtons");
-    const fileSelect = byId("loadFromDropboxSelect");
+    const dropboxConnectButton = byId<'button'>("dropboxConnectButton");
+    const loadFromDropboxSelect = byId<'select'>("loadFromDropboxSelect");
+    const loadFromDropboxButtons = byId<'button'>("loadFromDropboxButtons");
+    const fileSelect = byId<'select'>("loadFromDropboxSelect");
+
+    dropboxConnectButton.style.display = "none";
+    loadFromDropboxSelect.style.display = "block";
     fileSelect.innerHTML = /* html */ `<option value="" disabled selected>Loading...</option>`;
 
-    const files = await Cloud.providers.dropbox.list();
+    const files: DropboxFile[] = await Cloud.providers.dropbox.list();
 
     if (!files) {
       loadFromDropboxButtons.style.display = "none";
@@ -844,7 +958,7 @@ function loadURL() {
     width: "27em",
     buttons: {
       Load: function () {
-        const value = mapURL.value;
+        const value = byId<'input'>("mapURL").value;
         if (!pattern.test(value)) {
           tip("Please provide a valid URL", false, "error");
           return;
@@ -860,9 +974,11 @@ function loadURL() {
 }
 
 // load map
-byId("mapToLoad").on("change", function () {
-  const fileToLoad = this.files[0];
-  this.value = "";
+byId<'input'>("mapToLoad").on("change", () => function (element: HTMLInputElement) {
+  const fileList = element.files;
+  if (!fileList || !fileList.length) return;
+  const fileToLoad = fileList[0];
+  element.value = "";
   closeDialogs();
   uploadMap(fileToLoad);
 });
@@ -872,10 +988,10 @@ function openSaveTiles() {
   updateTilesOptions();
   const status = byId("tileStatus");
   status.innerHTML = "";
-  let loading = null;
+  let loading: NodeJS.Timer;
 
   const inputs = byId("saveTilesScreen").querySelectorAll("input");
-  inputs.forEach(input => input.on("input", updateTilesOptions));
+  inputs.forEach(input => input.on("input", updateTilesOptionsValues));
 
   $("#saveTilesScreen").dialog({
     resizable: false,
@@ -897,24 +1013,28 @@ function openSaveTiles() {
       }
     },
     close: () => {
-      inputs.forEach(input => input.removeEventListener("input", updateTilesOptions));
+      inputs.forEach(input => input.removeEventListener("input", updateTilesOptionsValues));
       debug.selectAll("*").remove();
       clearInterval(loading);
     }
   });
 }
 
-function updateTilesOptions() {
-  if (this?.tagName === "INPUT") {
+function updateTilesOptionsValues(this: HTMLInputElement) {
+  if (this.tagName === "INPUT") {
     const {nextElementSibling: next, previousElementSibling: prev} = this;
-    if (next?.tagName === "INPUT") next.value = this.value;
-    if (prev?.tagName === "INPUT") prev.value = this.value;
+    if (next?.tagName === "INPUT") (next as HTMLInputElement).value = this.value;
+    if (prev?.tagName === "INPUT") (prev as HTMLInputElement).value = this.value;
   }
 
+  updateTilesOptions();
+ }
+
+function updateTilesOptions() {
   const tileSize = byId("tileSize");
-  const tilesX = +byId("tileColsOutput").value;
-  const tilesY = +byId("tileRowsOutput").value;
-  const scale = +byId("tileScaleOutput").value;
+  const tilesX = byId<'input'>("tileColsOutput").valueAsNumber;
+  const tilesY = byId<'input'>("tileRowsOutput").valueAsNumber;
+  const scale = byId<'input'>("tileScaleOutput").valueAsNumber;
 
   // calculate size
   const sizeX = graphWidth * scale * tilesX;
@@ -944,30 +1064,30 @@ function updateTilesOptions() {
 }
 
 // View mode
-viewMode.on("click", changeViewMode);
-export function changeViewMode(event) {
+byId<'div'>("viewMode").on("click", changeViewMode);
+export function changeViewMode(event: any) { // MARKER: any
   const button = event.target;
   if (button.tagName !== "BUTTON") return;
   const pressed = button.classList.contains("pressed");
   enterStandardView();
 
   if (!pressed && button.id !== "viewStandard") {
-    viewStandard.classList.remove("pressed");
+    byId("viewStandard").classList.remove("pressed");
     button.classList.add("pressed");
     enter3dView(button.id);
   }
 }
 
 function enterStandardView() {
-  viewMode.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
-  heightmap3DView.classList.remove("pressed");
-  viewStandard.classList.add("pressed");
+  byId<'div'>("viewMode").querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
+  byId("heightmap3DView").classList.remove("pressed");
+  byId("viewStandard").classList.add("pressed");
 
-  if (!byId("canvas3d")) return;
+  if (!byId("canvas3d",{throwOnNull:false})) return;
   ThreeD.stop();
   byId("canvas3d").remove();
-  if (options3dUpdate.offsetParent) $("#options3d").dialog("close");
-  if (preview3d.offsetParent) $("#preview3d").dialog("close");
+  if (byId("options3dUpdate").offsetParent) $("#options3d").dialog("close");
+  if (byId("preview3d").offsetParent) $("#preview3d").dialog("close");
 }
 
 async function enter3dView(type) {
@@ -976,7 +1096,7 @@ async function enter3dView(type) {
   canvas.dataset.type = type;
 
   if (type === "heightmap3DView") {
-    canvas.width = parseFloat(preview3d.style.width) || graphWidth / 3;
+    canvas.width = parseFloat(byId("preview3d").style.width) || graphWidth / 3;
     canvas.height = canvas.width / (graphWidth / graphHeight);
     canvas.style.display = "block";
   } else {
@@ -993,8 +1113,8 @@ async function enter3dView(type) {
   canvas.onmouseenter = () => {
     const help =
       "Left mouse to change angle, middle mouse / mousewheel to zoom, right mouse to pan. <b>O</b> to toggle options";
-    +canvas.dataset.hovered > 2 ? tip("") : tip(help);
-    canvas.dataset.hovered = (+canvas.dataset.hovered | 0) + 1;
+    Number(canvas.dataset.hovered) > 2 ? tip("") : tip(help);
+    canvas.dataset.hovered = String((+canvas.dataset.hovered! | 0) + 1);
   };
 
   if (type === "heightmap3DView") {
@@ -1006,13 +1126,14 @@ async function enter3dView(type) {
       resizeStop: resize3d,
       close: enterStandardView
     });
-  } else document.body.insertBefore(canvas, optionsContainer);
+  } else document.body.insertBefore(canvas, optionsDiv);
 
   toggle3dOptions();
 }
 
 function resize3d() {
-  const canvas = byId("canvas3d");
+  const canvas = byId<'canvas'>("canvas3d");
+  const preview3d = byId<'div'>("preview3d");
   canvas.width = parseFloat(preview3d.style.width);
   canvas.height = parseFloat(preview3d.style.height) - 2;
   ThreeD.redraw();
@@ -1021,6 +1142,7 @@ function resize3d() {
 let isLoaded = false;
 
 export function toggle3dOptions() {
+  const options3dUpdate = byId("options3dUpdate");
   if (options3dUpdate.offsetParent) {
     $("#options3d").dialog("close");
     return;
@@ -1036,28 +1158,50 @@ export function toggle3dOptions() {
 
   if (isLoaded) return;
   isLoaded = true;
+// MARKER: Move to separate file ThreeD.ts
+// 3D options
+const options3dMesh = byId<'div'>("options3dMesh");
+const options3dGlobe = byId<'div'>("options3dGlobe");
+const options3dOBJSave = byId<'button'>("options3dOBJSave");
+const options3dScaleRange = byId<'input'>("options3dScaleRange");
+const options3dScaleNumber = byId<'input'>("options3dScaleNumber");
+const options3dLightnessRange = byId<'input'>("options3dLightnessRange");
+const options3dLightnessNumber = byId<'input'>("options3dLightnessNumber");
+const options3dSunX = byId<'input'>("options3dSunX");
+const options3dSunY = byId<'input'>("options3dSunY");
+const options3dSunZ = byId<'input'>("options3dSunZ");
+const options3dMeshRotationRange = byId<'input'>("options3dMeshRotationRange");
+const options3dMeshRotationNumber = byId<'input'>("options3dMeshRotationNumber");
+const options3dGlobeRotationRange = byId<'input'>("options3dGlobeRotationRange");
+const options3dGlobeRotationNumber = byId<'input'>("options3dGlobeRotationNumber");
+const options3dMeshLabels3d = byId<'input'>("options3dMeshLabels3d");
+const options3dMeshSkyMode = byId<'input'>("options3dMeshSkyMode");
+const options3dColorSection = byId<'div'>("options3dColorSection");
+const options3dMeshSky = byId<'input'>("options3dMeshSky");
+const options3dMeshWater = byId<'input'>("options3dMeshWater");
+const options3dGlobeResolution = byId<'select'>("options3dGlobeResolution");
 
-  byId("options3dUpdate").on("click", ThreeD.update);
+  options3dUpdate.on("click", ThreeD.update);
   byId("options3dConfigureWorld").on("click", () => openDialog("worldConfigurator"));
   byId("options3dSave").on("click", ThreeD.saveScreenshot);
-  byId("options3dOBJSave").on("click", ThreeD.saveOBJ);
+  options3dOBJSave.on("click", ThreeD.saveOBJ);
 
-  byId("options3dScaleRange").on("input", changeHeightScale);
-  byId("options3dScaleNumber").on("change", changeHeightScale);
-  byId("options3dLightnessRange").on("input", changeLightness);
-  byId("options3dLightnessNumber").on("change", changeLightness);
-  byId("options3dSunX").on("change", changeSunPosition);
-  byId("options3dSunY").on("change", changeSunPosition);
-  byId("options3dSunZ").on("change", changeSunPosition);
-  byId("options3dMeshRotationRange").on("input", changeRotation);
-  byId("options3dMeshRotationNumber").on("change", changeRotation);
-  byId("options3dGlobeRotationRange").on("input", changeRotation);
-  byId("options3dGlobeRotationNumber").on("change", changeRotation);
-  byId("options3dMeshLabels3d").on("change", toggleLabels3d);
-  byId("options3dMeshSkyMode").on("change", toggleSkyMode);
-  byId("options3dMeshSky").on("input", changeColors);
-  byId("options3dMeshWater").on("input", changeColors);
-  byId("options3dGlobeResolution").on("change", changeResolution);
+  options3dScaleRange.on("input", changeHeightScale);
+  options3dScaleNumber.on("change", changeHeightScale);
+  options3dLightnessRange.on("input", changeLightness);
+  options3dLightnessNumber.on("change", changeLightness);
+  options3dSunX.on("change", changeSunPosition);
+  options3dSunY.on("change", changeSunPosition);
+  options3dSunZ.on("change", changeSunPosition);
+  options3dMeshRotationRange.on("input", changeRotation);
+  options3dMeshRotationNumber.on("change", changeRotation);
+  options3dGlobeRotationRange.on("input", changeRotation);
+  options3dGlobeRotationNumber.on("change", changeRotation);
+  options3dMeshLabels3d.on("change", toggleLabels3d);
+  options3dMeshSkyMode.on("change", toggleSkyMode);
+  options3dMeshSky.on("input", changeColors);
+  options3dMeshWater.on("input", changeColors);
+  options3dGlobeResolution.on("change", changeResolution);
 
   function updateValues() {
     const globe = byId("canvas3d").dataset.type === "viewGlobe";
@@ -1065,7 +1209,7 @@ export function toggle3dOptions() {
     options3dGlobe.style.display = globe ? "block" : "none";
     options3dOBJSave.style.display = globe ? "none" : "inline-block";
     options3dScaleRange.value = options3dScaleNumber.value = ThreeD.options.scale;
-    options3dLightnessRange.value = options3dLightnessNumber.value = ThreeD.options.lightness * 100;
+    options3dLightnessRange.valueAsNumber = options3dLightnessNumber.valueAsNumber = ThreeD.options.lightness * 100;
     options3dSunX.value = ThreeD.options.sun.x;
     options3dSunY.value = ThreeD.options.sun.y;
     options3dSunZ.value = ThreeD.options.sun.z;
@@ -1079,25 +1223,25 @@ export function toggle3dOptions() {
     options3dGlobeResolution.value = ThreeD.options.resolution;
   }
 
-  function changeHeightScale() {
+  function changeHeightScale(this: HTMLInputElement) {
     options3dScaleRange.value = options3dScaleNumber.value = this.value;
-    ThreeD.setScale(+this.value);
+    ThreeD.setScale(this.valueAsNumber);
   }
 
-  function changeLightness() {
+  function changeLightness(this: HTMLInputElement) {
     options3dLightnessRange.value = options3dLightnessNumber.value = this.value;
-    ThreeD.setLightness(this.value / 100);
+    ThreeD.setLightness(this.valueAsNumber / 100);
   }
 
   function changeSunPosition() {
-    const x = +options3dSunX.value;
-    const y = +options3dSunY.value;
-    const z = +options3dSunZ.value;
+    const x = options3dSunX.valueAsNumber;
+    const y = options3dSunY.valueAsNumber;
+    const z = options3dSunZ.valueAsNumber;
     ThreeD.setSun(x, y, z);
   }
 
-  function changeRotation() {
-    (this.nextElementSibling || this.previousElementSibling).value = this.value;
+  function changeRotation(this: HTMLInputElement) {
+    ((this.nextElementSibling || this.previousElementSibling)! as HTMLInputElement).value = this.value;
     const speed = +this.value;
     ThreeD.setRotation(speed);
   }
@@ -1116,7 +1260,7 @@ export function toggle3dOptions() {
     ThreeD.setColors(options3dMeshSky.value, options3dMeshWater.value);
   }
 
-  function changeResolution() {
+  function changeResolution(this: HTMLSelectElement) {
     ThreeD.setResolution(this.value);
   }
 }

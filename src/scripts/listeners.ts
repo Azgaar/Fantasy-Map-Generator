@@ -3,7 +3,6 @@ import {addOnLoadListener} from "./loading";
 import {assignLockBehavior} from "./options/lock";
 import {addTooptipListers} from "./tooltips";
 import {assignSpeakerBehavior} from "./speaker";
-// @ts-ignore
 import {addResizeListener} from "modules/ui/options";
 // @ts-ignore
 import {addDragToUpload} from "modules/io/load";

@@ -1,6 +1,7 @@
 import {rn} from "./numberUtils";
 import {findCell, findGridCell} from "./graphUtils";
 import {getInputNumber, getInputValue} from "./nodeUtils";
+import { isBurg } from "./typeUtils";
 
 // ***
 // SI
@@ -136,7 +137,8 @@ export function getBurgPopulationPoints(burgPopulationValue: number) {
 export function getCellPopulation(cellId: number) {
   const rural = getRuralPopulation(pack.cells.pop[cellId]);
   const burgId = pack.cells.burg[cellId];
-  const urban = burgId ? getBurgPopulation(pack.burgs[burgId].population) : 0;
+  const burg = pack.burgs[burgId];
+  const urban = isBurg(burg) ? getBurgPopulation(burg.population) : 0;
   return [rural, urban];
 }
 

@@ -1,4 +1,25 @@
-import {byId} from "./shorthands";
+export type ElementMap = {
+  a: HTMLAnchorElement;
+  button: HTMLButtonElement;
+  div: HTMLDivElement;
+  img: HTMLImageElement;
+  input: HTMLInputElement;
+  output: HTMLOutputElement;
+  select: HTMLSelectElement;
+  canvas: HTMLCanvasElement;
+  // add more types as needed
+};
+
+// function definition with overloads to account for different options
+export function byId<K extends keyof ElementMap>(id: string): ElementMap[K];
+export function byId<K extends keyof ElementMap>(id: string, options?: {throwOnNull: false}): ElementMap[K] | null;
+export function byId<K extends keyof ElementMap>(id: string, options = {throwOnNull: true}) {
+  const element = document.getElementById(id);
+  if (!element && options.throwOnNull) {
+    throw new Error(`Element ${id} not found`);
+  } 
+  return element as ElementMap[K] | null;
+}
 
 // get next unused id
 export function getNextId(core: string, index = 1) {

@@ -8,7 +8,6 @@ import {initLayers, renderLayer, restoreLayers} from "layers";
 import {drawScaleBar, Rulers} from "modules/measurers";
 // @ts-expect-error js module
 import {unfog} from "modules/ui/editors";
-// @ts-expect-error js module
 import {applyMapSize, randomizeOptions} from "modules/ui/options";
 // @ts-expect-error js module
 import {applyStyleOnLoad} from "modules/ui/stylePresets";
@@ -26,10 +25,11 @@ import {createGrid} from "./grid/grid";
 import {createPack} from "./pack/pack";
 import {getInputValue, setInputValue} from "utils/nodeUtils";
 import {calculateMapCoordinates} from "modules/coordinates";
+import { isBurg } from "utils/typeUtils";
 
 const {Zoom, ThreeD} = window;
 
-interface IGenerationOptions {
+export interface IGenerationOptions {
   seed: string;
   graph: IGrid;
 }
@@ -195,6 +195,7 @@ function focusOn() {
     if (burgParam) {
       const burg = isNaN(+burgParam) ? pack.burgs.find(burg => burg.name === burgParam) : pack.burgs[+burgParam];
       if (!burg) return;
+      if (!isBurg(burg)) return;
 
       const {x, y} = burg;
       Zoom.to(x, y, scale, 1600);
@@ -209,8 +210,8 @@ function focusOn() {
 
 // find burg for MFCG and focus on it
 function findBurgForMFCG(params: URLSearchParams) {
-  const {cells, burgs} = pack;
-
+  const {cells, burgs: burgsT} = pack;
+  const burgs = burgsT.filter(isBurg);
   if (pack.burgs.length < 2) {
     ERROR && console.error("Cannot select a burg for MFCG");
     return;
@@ -247,13 +248,13 @@ function findBurgForMFCG(params: URLSearchParams) {
     if (param === "name") b.name = value;
     else if (param === "size") b.population = +value;
     else if (param === "seed") b.MFCG = +value;
-    else if (param === "shantytown") b.shanty = +value;
+    else if (param === "shantytown") b.shanty = +value > 0 ? 1 : 0;
   }
 
   const nameParam = params.get("name");
   if (nameParam && nameParam !== "null") b.name = nameParam;
 
-  const label = burgLabels.select("[data-id='" + burgId + "']");
+  const label = burgLabels.select<Element>("[data-id='" + burgId + "']");
   if (label.size()) {
     label
       .text(b.name)

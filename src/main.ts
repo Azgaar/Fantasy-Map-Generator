@@ -8,7 +8,6 @@ import {defineSvg} from "./modules/define-svg";
 import {clearLegend} from "./modules/legend";
 // @ts-expect-error js-module
 import {Rulers} from "./modules/measurers";
-// @ts-expect-error js-module
 import {applyStoredOptions} from "./modules/ui/options";
 import {addGlobalListeners} from "./scripts/listeners";
 import {checkForUpdates} from "./scripts/updater";
@@ -20,7 +19,8 @@ options = {
   pinNotes: false,
   showMFCGMap: true,
   winds: [225, 45, 225, 315, 135, 315],
-  stateLabelsMode: "auto"
+  stateLabelsMode: "auto",
+  year: 0,
 };
 
 checkForUpdates();

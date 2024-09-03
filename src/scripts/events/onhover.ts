@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 
 import {layerIsOn} from "layers";
-import {updateCellInfo} from "modules/ui/cell-info";
+import {updateCellInfo} from "modules/ui/cell-info.js";
 import {debounce} from "utils/functionUtils";
 import {findCell, findGridCell, isLand} from "utils/graphUtils";
 import {byId} from "utils/shorthands";
@@ -16,7 +16,7 @@ import {
 } from "utils/unitUtils";
 import {showMainTip, tip} from "scripts/tooltips";
 import {defineEmblemData} from "./utils";
-import {isState} from "utils/typeUtils";
+import {isBurg, isProvince, isReligion, isState} from "utils/typeUtils";
 
 export const onMouseMove = debounce(handleMouseMove, 100);
 
@@ -107,7 +107,7 @@ const onHoverEventsMap: OnHoverEventMap = {
     const emblemData = defineEmblemData(element);
     if (emblemData) {
       const {type, el} = emblemData;
-      const name = ("fullName" in el && el.fullName) || el.name;
+      const name = el !== 0 && (("fullname" in el && el.fullname) || el.name); //MARKER: el nutral check
       tip(`${name} ${type} emblem. Click to edit`);
     }
   },
@@ -127,7 +127,10 @@ const onHoverEventsMap: OnHoverEventMap = {
 
   burg: ({path}) => {
     const burgId = +(path.at(-10)?.dataset.id || 0);
-    const {population, name} = pack.burgs[burgId];
+    const burg = pack.burgs[burgId];
+    let population = 0;
+    const name = burg.name;
+    isBurg(burg) && (population = burg.population);
     tip(`${name}. Population: ${si(getBurgPopulation(population))}. Click to edit`);
 
     highlightDialogLine("burgOverview", burgId, 5000);
@@ -153,7 +156,8 @@ const onHoverEventsMap: OnHoverEventMap = {
 
   lake: ({element, subgroup}) => {
     const lakeId = +(element.dataset.f || 0);
-    const name = pack.features[lakeId]?.name;
+    const lake = pack.features[lakeId];
+    const name = lake ? (lake as IPackFeatureLake).name : ""; //MARKER: as IPackFeatureLake
     const fullName = subgroup === "freshwater" ? name : name + " " + subgroup;
     tip(`${fullName} lake. Click to edit`);
   },
@@ -187,7 +191,8 @@ const onHoverEventsMap: OnHoverEventMap = {
 
   religionsLayer: ({packCellId}) => {
     const religionId = pack.cells.religion[packCellId];
-    const {type, name} = pack.religions[religionId] || {};
+    const religion = pack.religions[religionId];
+    const {type, name} = isReligion(religion) ? religion : {type: "None", name: "None"}; //MARKER: religion check
     const typeTip = type === "Cult" || type == "Heresy" ? type : type + " religion";
     tip(`${typeTip}: ${name}`);
 
@@ -200,7 +205,8 @@ const onHoverEventsMap: OnHoverEventMap = {
     const stateName = isState(state) ? state.fullName : state.name;
 
     const provinceId = pack.cells.province[packCellId];
-    const provinceName = provinceId ? `${pack.provinces[provinceId].fullName}, ` : "";
+    const province = pack.provinces[provinceId];
+    const provinceName = isProvince(province) ? `${province.fullName}, ` : "";
     tip(provinceName + stateName);
 
     highlightDialogLine("statesEditor", stateId);
