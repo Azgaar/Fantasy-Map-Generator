@@ -153,7 +153,10 @@ async function parseLoadedResult(result) {
 
     const mapData = decoded.split("\r\n");
     const mapVersionString = mapData[0].split("|")[0] || mapData[0] || "";
-    return [mapData, mapVersionString];
+    const [major, minor, patch = "00"] = mapVersionString.split(".");
+    const mapVersion = `${major}.${minor}.${patch}`;
+
+    return [mapData, mapVersion];
   } catch (error) {
     // map file can be compressed with gzip
     const uncompressedData = await uncompress(result);
