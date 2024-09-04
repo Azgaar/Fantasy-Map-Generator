@@ -261,7 +261,6 @@ function drawPrec() {
   prec.selectAll("circle").remove();
   const {cells, points} = grid;
 
-  prec.style("display", "block");
   const show = d3.transition().duration(800).ease(d3.easeSinIn);
   prec.selectAll("text").attr("opacity", 0).transition(show).attr("opacity", 1);
 
@@ -270,6 +269,7 @@ function drawPrec() {
   const getRadius = prec => rn(Math.sqrt(prec / 4) / cellsNumberModifier, 2);
 
   prec
+    .style("display", "block")
     .selectAll("circle")
     .data(data)
     .enter()
@@ -287,11 +287,9 @@ function togglePopulation(event) {
     drawPopulation();
     if (event && isCtrlClick(event)) editStyle("population");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("population");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("population");
     turnButtonOff("togglePopulation");
+
     const isD3data = population.select("line").datum();
     if (!isD3data) {
       // just remove
