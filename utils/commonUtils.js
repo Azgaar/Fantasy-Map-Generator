@@ -138,6 +138,18 @@ function getCoordinates(x, y, decimals = 2) {
   return [getLongitude(x, decimals), getLatitude(y, decimals)];
 }
 
+function getLatitudeDescription(latitude) {
+  const equatorMargin = 1; // 1 degree margin around the equator
+
+  if (Math.abs(latitude) <= equatorMargin) return "Equator";
+  if (latitude > equatorMargin && latitude <= 23.5) return "Tropical North";
+  if (latitude > 23.5 && latitude <= 66.5) return "Temperate North";
+  if (latitude > 66.5) return "Arctic";
+  if (latitude < -equatorMargin && latitude >= -23.5) return "Tropical South";
+  if (latitude < -23.5 && latitude >= -66.5) return "Temperate South";
+  if (latitude < -66.5) return "Antarctic";
+}
+
 // prompt replacer (prompt does not work in Electron)
 void (function () {
   const prompt = document.getElementById("prompt");

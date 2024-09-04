@@ -257,12 +257,14 @@ function updateCellInfo(point, i, g) {
   const x = (infoX.innerHTML = rn(point[0]));
   const y = (infoY.innerHTML = rn(point[1]));
   const f = cells.f[i];
-  infoLat.innerHTML = toDMS(getLatitude(y, 4), "lat");
+  const latitude = getLatitude(y, 4);
+  const latitudeDescription = getLatitudeDescription(latitude);
+  infoLat.innerHTML = toDMS(latitude, "lat") + ` (${latitudeDescription})`;
   infoLon.innerHTML = toDMS(getLongitude(x, 4), "lon");
 
   infoCell.innerHTML = i;
   infoArea.innerHTML = cells.area[i] ? si(getArea(cells.area[i])) + " " + getAreaUnit() : "n/a";
-  infoEvelation.innerHTML = getElevation(pack.features[f], pack.cells.h[i]);
+  infoElevation.innerHTML = getElevation(pack.features[f], pack.cells.h[i]);
   infoDepth.innerHTML = getDepth(pack.features[f], point);
   infoTemp.innerHTML = convertTemperature(grid.cells.temp[g]);
   infoPrec.innerHTML = cells.h[i] >= 20 ? getFriendlyPrecipitation(i) : "n/a";

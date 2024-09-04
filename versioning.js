@@ -12,7 +12,7 @@
  *
  * Example: 1.102.0 -> Major version 1, Minor version 102, Patch version 0
  */
-const VERSION = "1.102.0";
+const VERSION = "1.102.01";
 
 {
   document.title += " v" + VERSION;
