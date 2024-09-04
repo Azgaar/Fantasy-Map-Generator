@@ -364,22 +364,17 @@ function toggleCells(event) {
     drawCells();
     if (event && isCtrlClick(event)) editStyle("cells");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("cells");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("cells");
     cells.selectAll("path").remove();
     turnButtonOff("toggleCells");
   }
 }
 
 function drawCells() {
-  cells.selectAll("path").remove();
-  const data = customization === 1 ? grid.cells.i : pack.cells.i;
+  const cells = customization === 1 ? grid.cells.i : pack.cells.i;
   const polygon = customization === 1 ? getGridPolygon : getPackPolygon;
-  let path = "";
-  data.forEach(i => (path += "M" + polygon(i)));
-  cells.append("path").attr("d", path);
+  const paths = Array.from(cells).map(i => "M" + polygon(i));
+  byId("cells").innerHTML = `<path d="${paths.join("")}" />`;
 }
 
 function toggleIce(event) {
