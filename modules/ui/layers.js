@@ -220,71 +220,26 @@ function toggleBiomes(event) {
     drawBiomes();
     if (event && isCtrlClick(event)) editStyle("biomes");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("biomes");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("biomes");
     biomes.selectAll("path").remove();
     turnButtonOff("toggleBiomes");
   }
 }
 
 function drawBiomes() {
-  biomes.selectAll("path").remove();
-  const cells = pack.cells,
-    vertices = pack.vertices,
-    n = cells.i.length;
-  const used = new Uint8Array(cells.i.length);
-  const paths = new Array(biomesData.i.length).fill("");
+  TIME && console.time("drawBiomes");
 
-  for (const i of cells.i) {
-    if (!cells.biome[i]) continue; // no need to mark marine biome (liquid water)
-    if (used[i]) continue; // already marked
-    const b = cells.biome[i];
-    const onborder = cells.c[i].some(n => cells.biome[n] !== b);
-    if (!onborder) continue;
-    const edgeVerticle = cells.v[i].find(v => vertices.c[v].some(i => cells.biome[i] !== b));
-    const chain = connectVertices(edgeVerticle, b);
-    if (chain.length < 3) continue;
-    const points = clipPoly(
-      chain.map(v => vertices.p[v]),
-      1
-    );
-    paths[b] += "M" + points.join("L") + "Z";
-  }
-
-  paths.forEach(function (d, i) {
-    if (d.length < 10) return;
-    biomes
-      .append("path")
-      .attr("d", d)
-      .attr("fill", biomesData.color[i])
-      .attr("stroke", biomesData.color[i])
-      .attr("id", "biome" + i);
+  const cells = pack.cells;
+  const bodyPaths = new Array(biomesData.i.length - 1);
+  const isolines = getIsolines(pack, cellId => cells.biome[cellId], {fill: true, waterGap: true});
+  Object.entries(isolines).forEach(([index, {fill, waterGap}]) => {
+    const color = biomesData.color[index];
+    bodyPaths.push(getGappedFillPaths("biome", fill, waterGap, color, index));
   });
 
-  // connect vertices to chain
-  function connectVertices(start, b) {
-    const chain = []; // vertices chain to form a path
-    for (let i = 0, current = start; i === 0 || (current !== start && i < 20000); i++) {
-      const prev = chain[chain.length - 1]; // previous vertex in chain
-      chain.push(current); // add current vertex to sequence
-      const c = vertices.c[current]; // cells adjacent to vertex
-      c.filter(c => cells.biome[c] === b).forEach(c => (used[c] = 1));
-      const c0 = c[0] >= n || cells.biome[c[0]] !== b;
-      const c1 = c[1] >= n || cells.biome[c[1]] !== b;
-      const c2 = c[2] >= n || cells.biome[c[2]] !== b;
-      const v = vertices.v[current]; // neighboring vertices
-      if (v[0] !== prev && c0 !== c1) current = v[0];
-      else if (v[1] !== prev && c1 !== c2) current = v[1];
-      else if (v[2] !== prev && c0 !== c2) current = v[2];
-      if (current === chain[chain.length - 1]) {
-        ERROR && console.error("Next vertex is not found");
-        break;
-      }
-    }
-    return chain;
-  }
+  byId("biomes").innerHTML = bodyPaths.join("");
+
+  TIME && console.timeEnd("drawBiomes");
 }
 
 function togglePrec(event) {
@@ -293,10 +248,7 @@ function togglePrec(event) {
     drawPrec();
     if (event && isCtrlClick(event)) editStyle("prec");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("prec");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("prec");
     turnButtonOff("togglePrec");
     const hide = d3.transition().duration(1000).ease(d3.easeSinIn);
     prec.selectAll("text").attr("opacity", 1).transition(hide).attr("opacity", 0);
@@ -1259,10 +1211,11 @@ function toggleVignette(event) {
 }
 
 function getGappedFillPaths(elementName, fill, waterGap, color, index) {
-  return /* html */ `
-    <path d="${fill}" fill="${color}" id="${elementName}${index}" />
-    <path d="${waterGap}" fill="none" stroke="${color}" stroke-width="3" id="${elementName}-gap${index}" />
-  `;
+  let html = "";
+  if (fill) html += /* html */ `<path d="${fill}" fill="${color}" id="${elementName}${index}" />`;
+  if (waterGap)
+    html += /* html */ `<path d="${waterGap}" fill="none" stroke="${color}" stroke-width="3" id="${elementName}-gap${index}" />`;
+  return html;
 }
 
 function layerIsOn(el) {

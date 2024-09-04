@@ -122,10 +122,6 @@ a {
   fill: none;
 }
 
-#biomes {
-  stroke-width: 0.7;
-}
-
 #landmass {
   mask: url(#land);
   fill-rule: evenodd;

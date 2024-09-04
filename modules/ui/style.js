@@ -114,6 +114,7 @@ function selectStyleElement() {
       "armies",
       "routes",
       "lakes",
+      "biomes",
       "borders",
       "cults",
       "relig",
