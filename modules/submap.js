@@ -208,7 +208,6 @@ window.Submap = (function () {
 
     stage("Regenerating river network.");
     Rivers.generate();
-    drawRivers();
     Lakes.defineGroup();
 
     // biome calculation based on (resampled) grid.cells.temp and prec

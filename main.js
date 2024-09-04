@@ -639,7 +639,6 @@ async function generate(options) {
     drawCoastline();
 
     Rivers.generate();
-    drawRivers();
     Lakes.defineGroup();
     Biomes.define();
 
