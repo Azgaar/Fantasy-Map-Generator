@@ -257,10 +257,9 @@ function updateCellInfo(point, i, g) {
   const x = (infoX.innerHTML = rn(point[0]));
   const y = (infoY.innerHTML = rn(point[1]));
   const f = cells.f[i];
-  const latitude = getLatitude(y, 4);
-  const latitudeDescription = getLatitudeDescription(latitude);
-  infoLat.innerHTML = toDMS(latitude, "lat") + ` (${latitudeDescription})`;
+  infoLat.innerHTML = toDMS(getLatitude(y, 4), "lat");
   infoLon.innerHTML = toDMS(getLongitude(x, 4), "lon");
+  infoGeozone.innerHTML = getGeozone(getLatitude(y, 4));
 
   infoCell.innerHTML = i;
   infoArea.innerHTML = cells.area[i] ? si(getArea(cells.area[i])) + " " + getAreaUnit() : "n/a";
@@ -286,6 +285,19 @@ function updateCellInfo(point, i, g) {
   infoBurg.innerHTML = cells.burg[i] ? pack.burgs[cells.burg[i]].name + " (" + cells.burg[i] + ")" : "no";
   infoFeature.innerHTML = f ? pack.features[f].group + " (" + f + ")" : "n/a";
   infoBiome.innerHTML = biomesData.name[cells.biome[i]];
+}
+
+function getGeozone(latitude) {
+
+  if (latitude > 66.5) return "Arctic";
+  if (latitude > 35) return "Temperate North";
+  if (latitude > 23.5) return "Subtropical North";
+  if (latitude > 1) return "Tropical North";
+  if (latitude > -1) return "Equatorial";
+  if (latitude > -23.5) return "Tropical South";
+  if (latitude > -35) return "Subtropical South";
+  if (latitude > -66.5) return "Temperate South";
+  return "Antarctic";
 }
 
 // convert coordinate to DMS format
