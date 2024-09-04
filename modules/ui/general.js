@@ -213,7 +213,7 @@ function showMapTooltip(point, e, i, g) {
   // covering elements
   if (layerIsOn("togglePrec") && land) tip("Annual Precipitation: " + getFriendlyPrecipitation(i));
   else if (layerIsOn("togglePopulation")) tip(getPopulationTip(i));
-  else if (layerIsOn("toggleTemp")) tip("Temperature: " + convertTemperature(grid.cells.temp[g]));
+  else if (layerIsOn("toggleTemperature")) tip("Temperature: " + convertTemperature(grid.cells.temp[g]));
   else if (layerIsOn("toggleBiomes") && pack.cells.biome[i]) {
     const biome = pack.cells.biome[i];
     tip("Biome: " + biomesData.name[biome]);

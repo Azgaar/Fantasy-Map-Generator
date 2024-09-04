@@ -437,7 +437,7 @@ async function parseLoadedData(data, mapVersion) {
       if (hasChildren(zones) && isVisible(zones)) turnOn("toggleZones");
       if (isVisible(borders) && hasChild(borders, "path")) turnOn("toggleBorders");
       if (isVisible(routes) && hasChild(routes, "path")) turnOn("toggleRoutes");
-      if (hasChildren(temperature)) turnOn("toggleTemp");
+      if (hasChildren(temperature)) turnOn("toggleTemperature");
       if (hasChild(population, "line")) turnOn("togglePopulation");
       if (hasChildren(ice)) turnOn("toggleIce");
       if (hasChild(prec, "circle")) turnOn("togglePrec");

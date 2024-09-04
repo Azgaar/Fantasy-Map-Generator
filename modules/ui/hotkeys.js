@@ -75,7 +75,7 @@ function handleKeyup(event) {
   else if (code === "KeyD") toggleBorders();
   else if (code === "KeyR") toggleReligions();
   else if (code === "KeyU") toggleRoutes();
-  else if (code === "KeyT") toggleTemp();
+  else if (code === "KeyT") toggleTemperature();
   else if (code === "KeyN") togglePopulation();
   else if (code === "KeyJ") toggleIce();
   else if (code === "KeyA") togglePrec();

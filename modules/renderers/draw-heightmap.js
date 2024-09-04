@@ -110,9 +110,11 @@ function drawHeightmap() {
 
   // connect vertices to chain: specific case for heightmap
   function connectVertices(cells, vertices, start, h, used) {
+    const MAX_ITERATIONS = vertices.c.length;
+
     const n = cells.i.length;
     const chain = []; // vertices chain to form a path
-    for (let i = 0, current = start; i === 0 || (current !== start && i < 20000); i++) {
+    for (let i = 0, current = start; i === 0 || (current !== start && i < MAX_ITERATIONS); i++) {
       const prev = chain[chain.length - 1]; // previous vertex in chain
       chain.push(current); // add current vertex to sequence
       const c = vertices.c[current]; // cells adjacent to vertex
@@ -136,6 +138,10 @@ function drawHeightmap() {
     if (!simplification) return chain;
     const n = simplification + 1; // filter each nth element
     return chain.filter((d, i) => i % n === 0);
+  }
+
+  function getColor(value, scheme = getColorScheme("bright")) {
+    return scheme(1 - (value < 20 ? value - 5 : value) / 100);
   }
 
   TIME && console.timeEnd("drawHeightmap");

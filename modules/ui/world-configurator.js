@@ -91,7 +91,7 @@ function editWorld() {
     pack.cells.h = new Float32Array(heights);
     Biomes.define();
 
-    if (layerIsOn("toggleTemp")) drawTemp();
+    if (layerIsOn("toggleTemperature")) drawTemperature();
     if (layerIsOn("togglePrec")) drawPrec();
     if (layerIsOn("toggleBiomes")) drawBiomes();
     if (layerIsOn("toggleCoordinates")) drawCoordinates();
