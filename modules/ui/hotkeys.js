@@ -78,7 +78,7 @@ function handleKeyup(event) {
   else if (code === "KeyT") toggleTemperature();
   else if (code === "KeyN") togglePopulation();
   else if (code === "KeyJ") toggleIce();
-  else if (code === "KeyA") togglePrec();
+  else if (code === "KeyA") togglePrecipitation();
   else if (code === "KeyY") toggleEmblems();
   else if (code === "KeyL") toggleLabels();
   else if (code === "KeyI") toggleIcons();

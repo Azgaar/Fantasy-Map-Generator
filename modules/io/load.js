@@ -440,7 +440,7 @@ async function parseLoadedData(data, mapVersion) {
       if (hasChildren(temperature)) turnOn("toggleTemperature");
       if (hasChild(population, "line")) turnOn("togglePopulation");
       if (hasChildren(ice)) turnOn("toggleIce");
-      if (hasChild(prec, "circle")) turnOn("togglePrec");
+      if (hasChild(prec, "circle")) turnOn("togglePrecipitation");
       if (isVisible(emblems) && hasChild(emblems, "use")) turnOn("toggleEmblems");
       if (isVisible(labels)) turnOn("toggleLabels");
       if (isVisible(icons)) turnOn("toggleIcons");

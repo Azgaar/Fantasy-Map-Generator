@@ -92,7 +92,7 @@ function editWorld() {
     Biomes.define();
 
     if (layerIsOn("toggleTemperature")) drawTemperature();
-    if (layerIsOn("togglePrec")) drawPrec();
+    if (layerIsOn("togglePrecipitation")) drawPrecipitation();
     if (layerIsOn("toggleBiomes")) drawBiomes();
     if (layerIsOn("toggleCoordinates")) drawCoordinates();
     if (layerIsOn("toggleRivers")) drawRivers();

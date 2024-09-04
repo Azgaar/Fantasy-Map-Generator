@@ -211,7 +211,7 @@ function showMapTooltip(point, e, i, g) {
   if (group === "ice") return tip("Click to edit the Ice");
 
   // covering elements
-  if (layerIsOn("togglePrec") && land) tip("Annual Precipitation: " + getFriendlyPrecipitation(i));
+  if (layerIsOn("togglePrecipitation") && land) tip("Annual Precipitation: " + getFriendlyPrecipitation(i));
   else if (layerIsOn("togglePopulation")) tip(getPopulationTip(i));
   else if (layerIsOn("toggleTemperature")) tip("Temperature: " + convertTemperature(grid.cells.temp[g]));
   else if (layerIsOn("toggleBiomes") && pack.cells.biome[i]) {

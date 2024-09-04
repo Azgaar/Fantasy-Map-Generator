@@ -171,7 +171,7 @@ function restoreLayers() {
   if (layerIsOn("toggleCompass")) compass.style("display", "block");
   if (layerIsOn("toggleRoutes")) drawRoutes();
   if (layerIsOn("toggleTemperature")) drawTemperature();
-  if (layerIsOn("togglePrec")) drawPrec();
+  if (layerIsOn("togglePrecipitation")) drawPrecipitation();
   if (layerIsOn("togglePopulation")) drawPopulation();
   if (layerIsOn("toggleBiomes")) drawBiomes();
   if (layerIsOn("toggleRelief")) ReliefIcons.draw();
@@ -242,14 +242,14 @@ function drawBiomes() {
   TIME && console.timeEnd("drawBiomes");
 }
 
-function togglePrec(event) {
+function togglePrecipitation(event) {
   if (!prec.selectAll("circle").size()) {
-    turnButtonOn("togglePrec");
-    drawPrec();
+    turnButtonOn("togglePrecipitation");
+    drawPrecipitation();
     if (event && isCtrlClick(event)) editStyle("prec");
   } else {
     if (event && isCtrlClick(event)) return editStyle("prec");
-    turnButtonOff("togglePrec");
+    turnButtonOff("togglePrecipitation");
     const hide = d3.transition().duration(1000).ease(d3.easeSinIn);
     prec.selectAll("text").attr("opacity", 1).transition(hide).attr("opacity", 0);
     prec.selectAll("circle").transition(hide).attr("r", 0).remove();
@@ -257,7 +257,9 @@ function togglePrec(event) {
   }
 }
 
-function drawPrec() {
+function drawPrecipitation() {
+  TIME && console.time("drawPrecipitation");
+
   prec.selectAll("circle").remove();
   const {cells, points} = grid;
 
@@ -279,6 +281,8 @@ function drawPrec() {
     .attr("r", 0)
     .transition(show)
     .attr("r", d => getRadius(cells.prec[d]));
+
+  TIME && console.timeEnd("drawPrecipitation");
 }
 
 function togglePopulation(event) {
@@ -1259,7 +1263,7 @@ function getLayer(id) {
   if (id === "toggleBorders") return $("#borders");
   if (id === "toggleRoutes") return $("#routes");
   if (id === "toggleTemperature") return $("#temperature");
-  if (id === "togglePrec") return $("#prec");
+  if (id === "togglePrecipitation") return $("#prec");
   if (id === "togglePopulation") return $("#population");
   if (id === "toggleIce") return $("#ice");
   if (id === "toggleTexture") return $("#texture");
