@@ -117,6 +117,7 @@ window.Markers = (function () {
       while (quantity && candidates.length) {
         const [cell] = extractAnyElement(candidates);
         const marker = addMarker({icon, type, dx, dy, px}, {cell});
+        if (!marker) continue;
         add("marker" + marker.i, cell);
         quantity--;
       }
@@ -150,6 +151,7 @@ window.Markers = (function () {
   }
 
   function addMarker(base, marker) {
+    if (marker.cell === undefined) return;
     const i = last(pack.markers)?.i + 1 || 0;
     const [x, y] = getMarkerCoordinates(marker.cell);
     marker = {...base, x, y, ...marker, i};

@@ -114,7 +114,7 @@ function uploadMap(file, callback) {
 
     const isInvalid = !mapData || !isValidVersion(mapVersion) || mapData.length < 26 || !mapData[5];
     const isUpdated = compareVersions(mapVersion, VERSION).isEqual;
-    const isAncient = compareVersions(mapVersion, "0.7.0").isOlder;
+    const isAncient = compareVersions(mapVersion, "0.70.0").isOlder;
     const isNewer = compareVersions(mapVersion, VERSION).isNewer;
     const isOutdated = compareVersions(mapVersion, VERSION).isOlder;
 
@@ -153,7 +153,7 @@ async function parseLoadedResult(result) {
 
     const mapData = decoded.split("\r\n");
     const mapVersionString = mapData[0].split("|")[0] || mapData[0] || "";
-    const [major, minor, patch = "00"] = mapVersionString.split(".");
+    const [major, minor, patch = 0] = mapVersionString.split(".").map(parseFloat);
     const mapVersion = `${major}.${minor}.${patch}`;
 
     return [mapData, mapVersion];
