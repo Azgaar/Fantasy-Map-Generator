@@ -318,17 +318,17 @@ function togglePopulation(event) {
   }
 }
 
-function drawPopulation(event) {
+function drawPopulation() {
   population.selectAll("line").remove();
-  const cells = pack.cells,
-    p = cells.p,
-    burgs = pack.burgs;
+
+  const {cells, burgs} = pack;
   const show = d3.transition().duration(2000).ease(d3.easeSinIn);
 
   const rural = Array.from(
     cells.i.filter(i => cells.pop[i] > 0),
-    i => [p[i][0], p[i][1], p[i][1] - cells.pop[i] / 8]
+    i => [...cells.p[i], cells.p[i][1] - cells.pop[i] / 5]
   );
+
   population
     .select("#rural")
     .selectAll("line")
@@ -342,7 +342,7 @@ function drawPopulation(event) {
     .transition(show)
     .attr("y2", d => d[2]);
 
-  const urban = burgs.filter(b => b.i && !b.removed).map(b => [b.x, b.y, b.y - (b.population / 8) * urbanization]);
+  const urban = burgs.filter(b => b.i && !b.removed).map(b => [b.x, b.y, b.y - (b.population / 5) * urbanization]);
   population
     .select("#urban")
     .selectAll("line")
