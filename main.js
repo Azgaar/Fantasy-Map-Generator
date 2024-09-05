@@ -1493,7 +1493,8 @@ function showStatistics() {
 
   const stats = `  Seed: ${seed}
     Canvas size: ${graphWidth}x${graphHeight} px
-    Heightmap: ${heightmap} (${isRandomTemplate}${heightmapType})
+    Heightmap: ${heightmap}
+    Template: ${isRandomTemplate}${heightmapType}
     Points: ${grid.points.length}
     Cells: ${pack.cells.i.length}
     Map size: ${mapSizeOutput.value}%
@@ -1501,7 +1502,7 @@ function showStatistics() {
     Provinces: ${pack.provinces.length - 1}
     Burgs: ${pack.burgs.length - 1}
     Religions: ${pack.religions.length - 1}
-    Culture set: ${culturesSet.selectedOptions[0].innerText}
+    Culture set: ${culturesSet.value}
     Cultures: ${pack.cultures.length - 1}`;
 
   mapId = Date.now(); // unique map id is it's creation date number
