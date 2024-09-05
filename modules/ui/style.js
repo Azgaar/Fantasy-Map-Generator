@@ -70,6 +70,31 @@ function getColorScheme(scheme = "bright") {
   return heightmapColorSchemes[scheme];
 }
 
+function createGridSection() {
+  const gridSection = byId("styleGrid");
+  if (!gridSection) return null;
+
+  // Verificar si el checkbox ya existe
+  if (byId("gridCellNumbers")) return;
+
+  const cellNumbersDiv = document.createElement("div");
+  cellNumbersDiv.className = "option";
+  
+  const checkbox = document.createElement("input");
+  checkbox.id = "gridCellNumbers";
+  checkbox.type = "checkbox";
+  
+  const label = document.createElement("label");
+  label.htmlFor = "gridCellNumbers";
+  label.textContent = "Show cell numbers";
+
+  cellNumbersDiv.appendChild(checkbox);
+  cellNumbersDiv.appendChild(label);
+  gridSection.appendChild(cellNumbersDiv);
+}
+
+document.addEventListener("DOMContentLoaded", createGridSection);
+
 // Toggle style sections on element select
 styleElementSelect.on("change", selectStyleElement);
 
@@ -191,12 +216,23 @@ function selectStyleElement() {
   }
 
   if (styleElement === "gridOverlay") {
+    const gridCellNumbers = byId("gridCellNumbers");
     styleGrid.style.display = "block";
     styleGridType.value = el.attr("type");
     styleGridScale.value = el.attr("scale") || 1;
     styleGridShiftX.value = el.attr("dx") || 0;
     styleGridShiftY.value = el.attr("dy") || 0;
     calculateFriendlyGridSize();
+  
+    if (gridCellNumbers) {
+      gridCellNumbers.checked = el.attr("cell-numbers") === "true";
+      gridCellNumbers.addEventListener("change", function() {
+        el.attr("cell-numbers", this.checked);
+        drawGrid();
+      });
+    } else {
+      console.warn("gridCellNumbers element not found");
+    }
   }
 
   if (styleElement === "compass") {
@@ -522,6 +558,16 @@ styleGridShiftX.on("input", function () {
 styleGridShiftY.on("input", function () {
   getEl().attr("dy", this.value);
   if (layerIsOn("toggleGrid")) drawGrid();
+});
+
+styleGridNumbers.on("change", function () {
+  getEl().attr("cell-numbers", this.checked);
+  if (layerIsOn("toggleGrid")) drawGrid();
+});
+
+byId("gridCellNumbers")?.addEventListener("change", function() {
+  gridOverlay.attr("cell-numbers", this.checked);
+  drawGrid();
 });
 
 styleRescaleMarkers.on("change", function () {
