@@ -485,10 +485,14 @@ function editHeightmap(options) {
     updateHistory();
   }
 
+  function getColor(value, scheme = getColorScheme()) {
+    return scheme(1 - (value < 20 ? value - 5 : value) / 100);
+  }
+
   // draw or update heightmap
   function mockHeightmap() {
     const data = renderOcean.checked ? grid.cells.i : grid.cells.i.filter(i => grid.cells.h[i] >= 20);
-    const scheme = getColorScheme();
+
     viewbox
       .select("#heights")
       .selectAll("polygon")
@@ -496,13 +500,12 @@ function editHeightmap(options) {
       .join("polygon")
       .attr("points", d => getGridPolygon(d))
       .attr("id", d => "cell" + d)
-      .attr("fill", d => getColor(grid.cells.h[d], scheme));
+      .attr("fill", d => getColor(grid.cells.h[d]));
   }
 
   // draw or update heightmap for a selection of cells
   function mockHeightmapSelection(selection) {
     const ocean = renderOcean.checked;
-    const scheme = getColorScheme();
 
     selection.forEach(function (i) {
       let cell = viewbox.select("#heights").select("#cell" + i);
@@ -514,7 +517,7 @@ function editHeightmap(options) {
           .append("polygon")
           .attr("points", getGridPolygon(i))
           .attr("id", "cell" + i);
-      cell.attr("fill", getColor(grid.cells.h[i], scheme));
+      cell.attr("fill", getColor(grid.cells.h[i]));
     });
   }
 
@@ -1345,7 +1348,7 @@ function editHeightmap(options) {
         return lum | 0; // land
       };
 
-      const scheme = d3.range(101).map(i => getColor(i, color()));
+      const scheme = d3.range(101).map(i => getColor(i));
       const hues = scheme.map(rgb => d3.hsl(rgb).h | 0);
       const getHeightByScheme = function (color) {
         let height = scheme.indexOf(color);
