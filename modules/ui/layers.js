@@ -689,12 +689,32 @@ function toggleCells(event) {
 }
 
 function drawCells() {
-  cells.selectAll("path").remove();
-  const data = customization === 1 ? grid.cells.i : pack.cells.i;
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = graphWidth * scale;
+  canvas.height = graphHeight * scale;
+  ctx.scale(scale, scale);
+
+  ctx.strokeStyle = cells.attr("stroke") || "#808080";
+  ctx.lineWidth = cells.attr("stroke-width") || 1;
+
+  const graphCells = customization === 1 ? grid.cells.i : pack.cells.i;
   const polygon = customization === 1 ? getGridPolygon : getPackPolygon;
-  let path = "";
-  data.forEach(i => (path += "M" + polygon(i)));
-  cells.append("path").attr("d", path);
+
+  for (const i of graphCells) {
+    const poly = polygon(i);
+    ctx.beginPath();
+    ctx.moveTo(...poly[0]);
+    for (let j = 1; j < poly.length; j++) {
+      ctx.lineTo(...poly[j]);
+    }
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  const dataUrl = canvas.toDataURL("image/png", 1);
+  byId("cells").innerHTML = `<image href="${dataUrl}" style="width:${graphWidth}px; height:${graphHeight}px;"/>`;
 }
 
 function toggleIce(event) {
