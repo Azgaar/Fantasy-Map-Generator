@@ -451,7 +451,6 @@ function toggleCultures(event) {
 
 function drawCultures() {
   TIME && console.time("drawCultures");
-
   const {cells, cultures} = pack;
 
   const bodyPaths = new Array(cultures.length - 1);
@@ -481,7 +480,6 @@ function toggleReligions(event) {
 
 function drawReligions() {
   TIME && console.time("drawReligions");
-
   const {cells, religions} = pack;
 
   const bodyPaths = new Array(religions.length - 1);
@@ -645,14 +643,15 @@ function toggleCoordinates(event) {
 }
 
 function drawCoordinates() {
-  if (!layerIsOn("toggleCoordinates")) return;
   coordinates.selectAll("*").remove(); // remove every time
+
   const steps = [0.5, 1, 2, 5, 10, 15, 30]; // possible steps
   const goal = mapCoordinates.lonT / scale / 10;
   const step = steps.reduce((p, c) => (Math.abs(c - goal) < Math.abs(p - goal) ? c : p));
 
   const desired = +coordinates.attr("data-size"); // desired label size
   coordinates.attr("font-size", Math.max(rn(desired / scale ** 0.8, 2), 0.1)); // actual label size
+
   const graticule = d3
     .geoGraticule()
     .extent([
@@ -666,7 +665,8 @@ function drawCoordinates() {
   const grid = coordinates.append("g").attr("id", "coordinateGrid");
   const labels = coordinates.append("g").attr("id", "coordinateLabels");
 
-  const p = getViewPoint(scale + desired + 2, scale + desired / 2); // on border point on viexBox
+  const point = new DOMPoint(scale + desired + 2, scale + desired / 2);
+  const p = point.matrixTransform(byId("viewbox").getScreenCTM().inverse());
 
   const data = graticule.lines().map(d => {
     const isLatitude = d.coordinates[0][1] === d.coordinates[1][1];
@@ -689,8 +689,8 @@ function drawCoordinates() {
     return {x, y, text};
   });
 
-  const d = round(d3.geoPath(projection)(graticule()));
-  grid.append("path").attr("d", d).attr("vector-effect", "non-scaling-stroke");
+  const path = round(d3.geoPath(projection)(graticule()));
+  grid.append("path").attr("d", path).attr("vector-effect", "non-scaling-stroke");
   labels
     .selectAll("text")
     .data(data)
@@ -699,12 +699,6 @@ function drawCoordinates() {
     .attr("x", d => d.x)
     .attr("y", d => d.y)
     .text(d => d.text);
-}
-
-// convert svg point into viewBox point
-function getViewPoint(x, y) {
-  const point = new DOMPoint(x, y);
-  return point.matrixTransform(byId("viewbox").getScreenCTM().inverse());
 }
 
 function toggleCompass(event) {
@@ -775,21 +769,20 @@ function drawRivers() {
   TIME && console.time("drawRivers");
   rivers.selectAll("*").remove();
 
-  const {addMeandering, getRiverPath} = Rivers;
   lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-
   const riverPaths = pack.rivers.map(({cells, points, i, widthFactor, sourceWidth}) => {
     if (!cells || cells.length < 2) return;
 
     if (points && points.length !== cells.length) {
       console.error(
-        `River ${i} has ${cells.length} cells, but only ${points.length} points defined. Resetting points data`
+        `River ${i} has ${cells.length} cells, but only ${points.length} points defined.`,
+        "Resetting points data"
       );
       points = undefined;
     }
 
-    const meanderedPoints = addMeandering(cells, points);
-    const path = getRiverPath(meanderedPoints, widthFactor, sourceWidth);
+    const meanderedPoints = Rivers.addMeandering(cells, points);
+    const path = Rivers.getRiverPath(meanderedPoints, widthFactor, sourceWidth);
     return `<path id="river${i}" d="${path}"/>`;
   });
   rivers.html(riverPaths.join(""));
@@ -828,16 +821,13 @@ function drawRoutes() {
   TIME && console.timeEnd("drawRoutes");
 }
 
-function toggleMilitary() {
+function toggleMilitary(event) {
   if (!layerIsOn("toggleMilitary")) {
     turnButtonOn("toggleMilitary");
     $("#armies").fadeIn();
     if (event && isCtrlClick(event)) editStyle("armies");
   } else {
-    if (event && isCtrlClick(event)) {
-      editStyle("armies");
-      return;
-    }
+    if (event && isCtrlClick(event)) return editStyle("armies");
     $("#armies").fadeOut();
     turnButtonOff("toggleMilitary");
   }
@@ -853,48 +843,6 @@ function toggleMarkers(event) {
     markers.selectAll("*").remove();
     turnButtonOff("toggleMarkers");
   }
-}
-
-function drawMarkers() {
-  const rescale = +markers.attr("rescale");
-  const pinned = +markers.attr("pinned");
-
-  const markersData = pinned ? pack.markers.filter(({pinned}) => pinned) : pack.markers;
-  const html = markersData.map(marker => drawMarker(marker, rescale));
-  markers.html(html.join(""));
-}
-
-// prettier-ignore
-const pinShapes = {
-  bubble: (fill, stroke) => `<path d="M6,19 l9,10 L24,19" fill="${stroke}" stroke="none" /><circle cx="15" cy="15" r="10" fill="${fill}" stroke="${stroke}"/>`,
-  pin: (fill, stroke) => `<path d="m 15,3 c -5.5,0 -9.7,4.09 -9.7,9.3 0,6.8 9.7,17 9.7,17 0,0 9.7,-10.2 9.7,-17 C 24.7,7.09 20.5,3 15,3 Z" fill="${fill}" stroke="${stroke}"/>`,
-  square: (fill, stroke) => `<path d="m 20,25 -5,4 -5,-4 z" fill="${stroke}"/><path d="M 5,5 H 25 V 25 H 5 Z" fill="${fill}" stroke="${stroke}"/>`,
-  squarish: (fill, stroke) => `<path d="m 5,5 h 20 v 20 h -6 l -4,4 -4,-4 H 5 Z" fill="${fill}" stroke="${stroke}" />`,
-  diamond: (fill, stroke) => `<path d="M 2,15 15,1 28,15 15,29 Z" fill="${fill}" stroke="${stroke}" />`,
-  hex: (fill, stroke) => `<path d="M 15,29 4.61,21 V 9 L 15,3 25.4,9 v 12 z" fill="${fill}" stroke="${stroke}" />`,
-  hexy: (fill, stroke) => `<path d="M 15,29 6,21 5,8 15,4 25,8 24,21 Z" fill="${fill}" stroke="${stroke}" />`,
-  shieldy: (fill, stroke) => `<path d="M 15,29 6,21 5,7 c 0,0 5,-3 10,-3 5,0 10,3 10,3 l -1,14 z" fill="${fill}" stroke="${stroke}" />`,
-  shield: (fill, stroke) => `<path d="M 4.6,5.2 H 25 v 6.7 A 20.3,20.4 0 0 1 15,29 20.3,20.4 0 0 1 4.6,11.9 Z" fill="${fill}" stroke="${stroke}" />`,
-  pentagon: (fill, stroke) => `<path d="M 4,16 9,4 h 12 l 5,12 -11,13 z" fill="${fill}" stroke="${stroke}" />`,
-  heptagon: (fill, stroke) => `<path d="M 15,29 6,22 4,12 10,4 h 10 l 6,8 -2,10 z" fill="${fill}" stroke="${stroke}" />`,
-  circle: (fill, stroke) => `<circle cx="15" cy="15" r="11" fill="${fill}" stroke="${stroke}" />`,
-  no: () => ""
-};
-
-const getPin = (shape = "bubble", fill = "#fff", stroke = "#000") => {
-  const shapeFunction = pinShapes[shape] || pinShapes.bubble;
-  return shapeFunction(fill, stroke);
-};
-
-function drawMarker(marker, rescale = 1) {
-  const {i, icon, x, y, dx = 50, dy = 50, px = 12, size = 30, pin, fill, stroke} = marker;
-  const id = `marker${i}`;
-  const zoomSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
-  const viewX = rn(x - zoomSize / 2, 1);
-  const viewY = rn(y - zoomSize, 1);
-  const pinHTML = getPin(pin, fill, stroke);
-
-  return `<svg id="${id}" viewbox="0 0 30 30" width="${zoomSize}" height="${zoomSize}" x="${viewX}" y="${viewY}"><g>${pinHTML}</g><text x="${dx}%" y="${dy}%" font-size="${px}px" >${icon}</text></svg>`;
 }
 
 function toggleLabels(event) {
