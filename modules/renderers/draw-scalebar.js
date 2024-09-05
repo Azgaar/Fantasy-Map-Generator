@@ -1,24 +1,12 @@
 "use strict";
 
 function drawScaleBar(scaleBar, scaleLevel) {
-  TIME && console.time("drawScaleBar");
-
   if (!scaleBar.size() || scaleBar.style("display") === "none") return;
 
   const unit = distanceUnitInput.value;
   const size = +scaleBar.attr("data-bar-size");
 
-  const length = (function () {
-    const init = 100;
-    let val = (init * size * distanceScale) / scaleLevel; // bar length in distance unit
-    if (val > 900) val = rn(val, -3); // round to 1000
-    else if (val > 90) val = rn(val, -2); // round to 100
-    else if (val > 9) val = rn(val, -1); // round to 10
-    else val = rn(val); // round to 1
-    const length = (val * scaleLevel) / distanceScale; // actual length in pixels on this scale
-    return length;
-  })();
-
+  const length = getLength(scaleLevel, size);
   scaleBar.select("#scaleBarContent").remove(); // redraw content every time
   const content = scaleBar.append("g").attr("id", "scaleBarContent");
 
@@ -85,8 +73,19 @@ function drawScaleBar(scaleBar, scaleLevel) {
       .attr("width", bbox.width + paddingRight)
       .attr("height", bbox.height + paddingBottom);
   }
+}
 
-  TIME && console.timeEnd("drawScaleBar");
+function getLength(scaleLevel) {
+  const init = 100;
+
+  const size = +scaleBar.attr("data-bar-size");
+  let val = (init * size * distanceScale) / scaleLevel; // bar length in distance unit
+  if (val > 900) val = rn(val, -3); // round to 1000
+  else if (val > 90) val = rn(val, -2); // round to 100
+  else if (val > 9) val = rn(val, -1); // round to 10
+  else val = rn(val); // round to 1
+  const length = (val * scaleLevel) / distanceScale; // actual length in pixels on this scale
+  return length;
 }
 
 function fitScaleBar(scaleBar, fullWidth, fullHeight) {
