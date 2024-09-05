@@ -185,6 +185,7 @@ function restoreLayers() {
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleRivers")) drawRivers();
+  if (layerIsOn("toggleMilitary")) drawMilitary();
 }
 
 function toggleHeight(event) {
@@ -824,11 +825,11 @@ function drawRoutes() {
 function toggleMilitary(event) {
   if (!layerIsOn("toggleMilitary")) {
     turnButtonOn("toggleMilitary");
-    $("#armies").fadeIn();
+    drawMilitary();
     if (event && isCtrlClick(event)) editStyle("armies");
   } else {
     if (event && isCtrlClick(event)) return editStyle("armies");
-    $("#armies").fadeOut();
+    armies.selectAll("g").remove();
     turnButtonOff("toggleMilitary");
   }
 }

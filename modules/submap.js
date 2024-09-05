@@ -53,7 +53,7 @@ window.Submap = (function () {
       }
     };
 
-    stage("Resampling heightmap, temperature and precipitation.");
+    stage("Resampling heightmap, temperature and precipitation");
     // resample heightmap from old WorldState
     const n = grid.points.length;
     grid.cells.h = new Uint8Array(n); // heightmap
@@ -87,7 +87,7 @@ window.Submap = (function () {
     }
 
     if (options.depressRivers) {
-      stage("Generating riverbeds.");
+      stage("Generating riverbeds");
       const rbeds = new Uint16Array(grid.cells.i.length);
 
       // and erode riverbeds
@@ -96,7 +96,7 @@ window.Submap = (function () {
           if (oldpc < 0) return; // ignore out-of-map marker (-1)
           const oldc = parentMap.pack.cells.g[oldpc];
           const targetCells = forwardGridMap[oldc];
-          if (!targetCells) throw "TargetCell shouldn't be empty.";
+          if (!targetCells) throw "TargetCell shouldn't be empty";
           targetCells.forEach(c => {
             if (grid.cells.h[c] < 20) return;
             rbeds[c] = 1;
@@ -110,7 +110,7 @@ window.Submap = (function () {
       });
     }
 
-    stage("Detect features, ocean and generating lakes.");
+    stage("Detect features, ocean and generating lakes");
     markFeatures();
     markupGridOcean();
 
@@ -125,11 +125,11 @@ window.Submap = (function () {
     calculateMapCoordinates();
     // calculateTemperatures();
     // generatePrecipitation();
-    stage("Cell cleanup.");
+    stage("Cell cleanup");
     reGraph();
 
     // remove misclassified cells
-    stage("Define coastline.");
+    stage("Define coastline");
     drawCoastline();
 
     /****************************************************/
@@ -147,7 +147,7 @@ window.Submap = (function () {
     cells.religion = new Uint16Array(pn);
     cells.province = new Uint16Array(pn);
 
-    stage("Resampling culture, state and religion map.");
+    stage("Resampling culture, state and religion map");
     for (const [id, gridCellId] of cells.g.entries()) {
       const oldGridId = reverseGridMap[gridCellId];
       if (oldGridId === undefined) {
@@ -206,13 +206,13 @@ window.Submap = (function () {
       forwardMap[oldid].push(id);
     }
 
-    stage("Regenerating river network.");
+    stage("Regenerating river network");
     Rivers.generate();
     Lakes.defineGroup();
 
     // biome calculation based on (resampled) grid.cells.temp and prec
     // it's safe to recalculate.
-    stage("Regenerating Biome.");
+    stage("Regenerating Biome");
     Biomes.define();
     // recalculate suitability and population
     // TODO: normalize according to the base-map
@@ -233,11 +233,11 @@ window.Submap = (function () {
       c.center = newCenters.length ? newCenters[0] : pack.cells.culture.findIndex(x => x === i);
     });
 
-    stage("Porting and locking burgs.");
+    stage("Porting and locking burgs");
     copyBurgs(parentMap, projection, options);
 
     // transfer states, mark states without land as removed.
-    stage("Porting states.");
+    stage("Porting states");
     const validStates = new Set(pack.cells.state);
     pack.states = parentMap.pack.states;
     // keep valid states and neighbors only
@@ -253,7 +253,7 @@ window.Submap = (function () {
     });
 
     // transfer provinces, mark provinces without land as removed.
-    stage("Porting provinces.");
+    stage("Porting provinces");
     const validProvinces = new Set(pack.cells.province);
     pack.provinces = parentMap.pack.provinces;
     // mark uneccesary provinces
@@ -269,7 +269,7 @@ window.Submap = (function () {
 
     BurgsAndStates.drawBurgs();
 
-    stage("Regenerating routes network.");
+    stage("Regenerating routes network");
     regenerateRoutes();
 
     drawStateLabels();
@@ -277,7 +277,7 @@ window.Submap = (function () {
     Rivers.specify();
     Lakes.generateName();
 
-    stage("Porting military.");
+    stage("Porting military");
     for (const s of pack.states) {
       if (!s.military) continue;
       for (const m of s.military) {
@@ -288,9 +288,9 @@ window.Submap = (function () {
       }
       s.military = s.military.filter(m => m.cell).map((m, i) => ({...m, i}));
     }
-    Military.redraw();
+    drawMilitary();
 
-    stage("Copying markers.");
+    stage("Copying markers");
     for (const m of pack.markers) {
       const [x, y] = projection(m.x, m.y);
       if (!inMap(x, y)) {
@@ -304,14 +304,14 @@ window.Submap = (function () {
     }
     if (layerIsOn("toggleMarkers")) drawMarkers();
 
-    stage("Redraw emblems.");
+    stage("Redraw emblems");
     drawEmblems();
-    stage("Regenerating Zones.");
+    stage("Regenerating Zones");
     Zones.generate();
     Names.getMapName();
-    stage("Restoring Notes.");
+    stage("Restoring Notes");
     notes = parentMap.notes;
-    stage("Submap done.");
+    stage("Submap done");
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     showStatistics();

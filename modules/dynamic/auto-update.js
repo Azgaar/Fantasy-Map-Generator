@@ -944,5 +944,8 @@ export function resolveVersionConflicts(mapVersion) {
     // v1.103.00 separated pole of inaccessibility detection from layer rendering
     BurgsAndStates.getPoles();
     Provinces.getPoles();
+
+    // v1.103.00 removed regiments from initial render
+    viewbox.select("#armies").style("display", null);
   }
 }

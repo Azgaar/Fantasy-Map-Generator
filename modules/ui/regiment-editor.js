@@ -246,7 +246,7 @@ function editRegiment(selector) {
     reg.name = Military.getName(reg, military);
     military.push(reg);
     Military.generateNote(reg, pack.states[state]); // add legend
-    Military.drawRegiment(reg, state);
+    drawRegiment(reg, state);
     if (regimentsOverviewRefresh.offsetParent) regimentsOverviewRefresh.click();
     toggleAdd();
   }
@@ -296,7 +296,7 @@ function editRegiment(selector) {
     (defender.px = defender.x), (defender.py = defender.y);
 
     // move attacker to defender
-    Military.moveRegiment(attacker, defender.x, defender.y - 8);
+    moveRegiment(attacker, defender.x, defender.y - 8);
 
     // draw battle icon
     const attack = d3

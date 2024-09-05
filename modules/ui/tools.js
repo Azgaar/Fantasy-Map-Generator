@@ -506,8 +506,8 @@ function regenerateEmblems() {
 
 function regenerateReligions() {
   Religions.generate();
-  if (!layerIsOn("toggleReligions")) toggleReligions();
-  else drawReligions();
+  if (layerIsOn("toggleReligions")) drawReligions();
+  else toggleReligions();
   refreshAllEditors();
 }
 
@@ -523,7 +523,9 @@ function regenerateCultures() {
 
 function regenerateMilitary() {
   Military.generate();
-  if (!layerIsOn("toggleMilitary")) toggleMilitary();
+  if (layerIsOn("toggleMilitary")) drawMilitary();
+  else toggleMilitary();
+
   if (byId("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
 }
 
