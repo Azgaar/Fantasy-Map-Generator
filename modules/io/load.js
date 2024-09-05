@@ -1,4 +1,5 @@
 "use strict";
+
 // Functions to load and parse .map/.gz files
 async function quickLoad() {
   const blob = await ldb.get("lastMap");
@@ -109,19 +110,23 @@ function uploadMap(file, callback) {
   fileReader.onloadend = async function (fileLoadedEvent) {
     if (callback) callback();
     byId("coas").innerHTML = ""; // remove auto-generated emblems
+
     const result = fileLoadedEvent.target.result;
     const [mapData, mapVersion] = await parseLoadedResult(result);
 
     const isInvalid = !mapData || !isValidVersion(mapVersion) || mapData.length < 26 || !mapData[5];
-    const isUpdated = compareVersions(mapVersion, VERSION).isEqual;
-    const isAncient = compareVersions(mapVersion, "0.70.0").isOlder;
-    const isNewer = compareVersions(mapVersion, VERSION).isNewer;
-    const isOutdated = compareVersions(mapVersion, VERSION).isOlder;
-
     if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
+
+    const isUpdated = compareVersions(mapVersion, VERSION).isEqual;
     if (isUpdated) return showUploadMessage("updated", mapData, mapVersion);
+
+    const isAncient = compareVersions(mapVersion, "0.70.0").isOlder;
     if (isAncient) return showUploadMessage("ancient", mapData, mapVersion);
+
+    const isNewer = compareVersions(mapVersion, VERSION).isNewer;
     if (isNewer) return showUploadMessage("newer", mapData, mapVersion);
+
+    const isOutdated = compareVersions(mapVersion, VERSION).isOlder;
     if (isOutdated) return showUploadMessage("outdated", mapData, mapVersion);
   };
 
@@ -151,19 +156,16 @@ async function parseLoadedResult(result) {
     const isDelimited = resultAsString.substring(0, 10).includes("|");
     const decoded = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
 
-    const mapData = decoded.split("\r\n");
-    const mapVersionString = mapData[0].split("|")[0] || mapData[0] || "";
-    const [major, minor, patch = 0] = mapVersionString.split(".").map(parseFloat);
-    const mapVersion = `${major}.${minor}.${patch}`;
+    const mapData = decoded.split("\r\n"); // split by CRLF
+    const mapVersion = parseMapVersion(mapData[0].split("|")[0] || mapData[0] || "");
 
-    return [mapData, mapVersion];
+    return {mapData, mapVersion};
   } catch (error) {
-    // map file can be compressed with gzip
-    const uncompressedData = await uncompress(result);
+    const uncompressedData = await uncompress(result); // file can be gzip compressed
     if (uncompressedData) return parseLoadedResult(uncompressedData);
 
     ERROR && console.error(error);
-    return [null, null];
+    return {mapData: null, mapVersion: null};
   }
 }
 
