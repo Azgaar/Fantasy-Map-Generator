@@ -109,3 +109,57 @@ function drawCoastline() {
 
   TIME && console.timeEnd("drawCoastline");
 }
+
+function drawFeatures() {
+  TIME && console.time("drawFeatures");
+  const {vertices, features} = pack;
+
+  const landMask = defs.select("#land");
+  const waterMask = defs.select("#water");
+  const lineGen = d3.line().curve(d3.curveBasisClosed);
+
+  for (const feature of features) {
+    if (!feature || feature.type === "ocean") continue;
+
+    const points = feature.vertices.map(vertex => vertices.p[vertex]);
+    const simplifiedPoints = simplify(points, 0.3);
+    const clippedPoints = clipPoly(simplifiedPoints, 1);
+    const path = round(lineGen(clippedPoints));
+
+    if (feature.type === "lake") {
+      landMask
+        .append("path")
+        .attr("d", path)
+        .attr("fill", "black")
+        .attr("id", "land_" + feature.i);
+
+      lakes
+        .select(`#${feature.group}`)
+        .append("path")
+        .attr("d", path)
+        .attr("id", "lake_" + feature.i)
+        .attr("data-f", feature.i);
+    } else {
+      landMask
+        .append("path")
+        .attr("d", path)
+        .attr("fill", "white")
+        .attr("id", "land_" + feature.i);
+
+      waterMask
+        .append("path")
+        .attr("d", path)
+        .attr("fill", "black")
+        .attr("id", "water_" + feature.i);
+
+      coastline
+        .select(`#${feature.group}`)
+        .append("path")
+        .attr("d", path)
+        .attr("id", "island_" + feature.i)
+        .attr("data-f", feature.i);
+    }
+  }
+
+  TIME && console.timeEnd("drawFeatures");
+}

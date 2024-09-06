@@ -111,14 +111,10 @@ window.Submap = (function () {
     }
 
     stage("Detect features, ocean and generating lakes");
-    markFeatures();
-    markupGridOcean();
+    Features.markupGrid();
 
-    // Warning: addLakesInDeepDepressions can be very slow!
-    if (options.addLakesInDepressions) {
-      addLakesInDeepDepressions();
-      openNearSeaLakes();
-    }
+    addLakesInDeepDepressions();
+    openNearSeaLakes();
 
     OceanLayers();
 
@@ -130,7 +126,7 @@ window.Submap = (function () {
 
     // remove misclassified cells
     stage("Define coastline");
-    reMarkFeatures();
+    Features.markupPack();
     drawCoastline();
     createDefaultRuler();
 

@@ -369,7 +369,7 @@ async function parseLoadedData(data, mapVersion) {
 
     void (function parsePackData() {
       reGraph();
-      reMarkFeatures();
+      Features.markupPack();
       pack.features = JSON.parse(data[12]);
       pack.cultures = JSON.parse(data[13]);
       pack.states = JSON.parse(data[14]);

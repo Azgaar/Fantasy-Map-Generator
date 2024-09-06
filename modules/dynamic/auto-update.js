@@ -202,7 +202,7 @@ export function resolveVersionConflicts(mapVersion) {
     coastline.selectAll("path").remove();
     lakes.selectAll("path").remove();
 
-    reMarkFeatures();
+    Features.markupPack();
     drawCoastline();
     createDefaultRuler();
   }

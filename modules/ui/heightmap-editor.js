@@ -215,8 +215,7 @@ function editHeightmap(options) {
     pack.religions = [];
 
     const erosionAllowed = allowErosion.checked;
-    markFeatures();
-    markupGridOcean();
+    Features.markupGrid();
     if (erosionAllowed) {
       addLakesInDeepDepressions();
       openNearSeaLakes();
@@ -225,7 +224,7 @@ function editHeightmap(options) {
     calculateTemperatures();
     generatePrecipitation();
     reGraph();
-    reMarkFeatures();
+    Features.markupPack();
     drawCoastline();
 
     Rivers.generate(erosionAllowed);
@@ -337,14 +336,13 @@ function editHeightmap(options) {
       zone.selectAll("*").remove();
     });
 
-    markFeatures();
-    markupGridOcean();
+    Features.markupGrid();
     if (erosionAllowed) addLakesInDeepDepressions();
     OceanLayers();
     calculateTemperatures();
     generatePrecipitation();
     reGraph();
-    reMarkFeatures();
+    Features.markupPack();
     drawCoastline();
 
     if (erosionAllowed) Rivers.generate(true);
