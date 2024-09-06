@@ -288,7 +288,6 @@ function updateCellInfo(point, i, g) {
 }
 
 function getGeozone(latitude) {
-
   if (latitude > 66.5) return "Arctic";
   if (latitude > 35) return "Temperate North";
   if (latitude > 23.5) return "Subtropical North";
@@ -443,7 +442,7 @@ function highlightEmblemElement(type, el) {
 
 // assign lock behavior
 document.querySelectorAll("[data-locked]").forEach(function (e) {
-  e.addEventListener("mouseover", e => {
+  e.addEventListener("mouseover", function (e) {
     e.stopPropagation();
     if (this.className === "icon-lock")
       tip("Click to unlock the option and allow it to be randomized on new map generation");
@@ -451,11 +450,9 @@ document.querySelectorAll("[data-locked]").forEach(function (e) {
   });
 
   e.addEventListener("click", function () {
+    const ids = this.dataset.ids ? this.dataset.ids.split(",") : [this.id.slice(5)];
     const fn = this.className === "icon-lock" ? unlock : lock;
-    const ids = this.dataset.ids.split(",");
-
-    if (ids.length) ids.forEach(fn);
-    else fn(this.id.slice(5));
+    ids.forEach(fn);
   });
 });
 
