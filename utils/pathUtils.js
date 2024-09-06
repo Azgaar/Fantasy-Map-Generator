@@ -159,6 +159,11 @@ function connectVertices({vertices, startingVertex, ofSameType, addToChecked, cl
     else if (v2 !== previous && c2 !== c3) next = v2;
     else if (v3 !== previous && c1 !== c3) next = v3;
 
+    if (!vertices.c[next]) {
+      ERROR && console.error("ConnectVertices: next vertex is out of bounds");
+      break;
+    }
+
     if (next === current) {
       ERROR && console.error("ConnectVertices: next vertex is not found");
       break;
