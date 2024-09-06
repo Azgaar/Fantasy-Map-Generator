@@ -183,9 +183,9 @@ window.Features = (function () {
         const getType = cellId => featureIds[cellId];
         const type = getType(firstCell);
         const ofSameType = cellId => getType(cellId) === type;
-        const ofDifferentType = cellId => borderCells[cellId] || getType(cellId) !== type;
+        const ofDifferentType = cellId => getType(cellId) !== type;
 
-        const isOnBorder = neighbors[firstCell].some(ofDifferentType);
+        const isOnBorder = borderCells[firstCell] || neighbors[firstCell].some(ofDifferentType);
         if (!isOnBorder) throw new Error(`Markup: firstCell ${firstCell} is not on the feature or map border`);
 
         const startingVertex = cells.v[firstCell].find(v => vertices.c[v].some(ofDifferentType));
