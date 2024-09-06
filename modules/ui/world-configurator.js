@@ -86,10 +86,10 @@ function editWorld() {
     generatePrecipitation();
     const heights = new Uint8Array(pack.cells.h);
     Rivers.generate();
-    Lakes.defineGroup();
     Rivers.specify();
     pack.cells.h = new Float32Array(heights);
     Biomes.define();
+    Features.specify();
 
     if (layerIsOn("toggleTemperature")) drawTemperature();
     if (layerIsOn("togglePrecipitation")) drawPrecipitation();

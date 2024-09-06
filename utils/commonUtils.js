@@ -3,6 +3,7 @@
 
 // clip polygon by graph bbox
 function clipPoly(points, secure = 0) {
+  if (points.length < 2) return points;
   return polygonclip(points, [0, 0, graphWidth, graphHeight], secure);
 }
 

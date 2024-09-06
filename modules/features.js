@@ -46,7 +46,7 @@ window.Features = (function () {
 
       while (queue.length) {
         const cellId = queue.pop();
-        if (borderCells[cellId]) border = true;
+        if (!border && borderCells[cellId]) border = true;
 
         for (const neighborId of neighbors[cellId]) {
           const isNeibLand = heights[neighborId] >= 20;
@@ -81,30 +81,16 @@ window.Features = (function () {
   function markupPack() {
     TIME && console.time("markupPack");
 
-    const gridCellsNumber = grid.cells.i.length;
-    const OCEAN_MIN_SIZE = gridCellsNumber / 25;
-    const SEA_MIN_SIZE = gridCellsNumber / 1000;
-    const CONTINENT_MIN_SIZE = gridCellsNumber / 10;
-    const ISLAND_MIN_SIZE = gridCellsNumber / 1000;
+    const {cells, vertices} = pack;
+    const {h: heights, c: neighbors, b: borderCells, i} = cells;
+    const packCellsNumber = i.length;
+    if (!packCellsNumber) return; // no cells -> there is nothing to do
 
-    const {h: heights, c: neighbors, b: borderCells, i} = pack.cells;
-    const cellsNumber = i.length;
-    if (!cellsNumber) return; // no cells -> there is nothing to do
-
-    const distanceField = new Int8Array(cellsNumber); // pack.cells.t
-    const featureIds = new Uint16Array(cellsNumber); // pack.cells.f
-    const haven = createTypedArray({maxValue: cellsNumber, length: cellsNumber}); // haven: opposite water cell
-    const harbor = new Uint8Array(cellsNumber); // harbor: number of adjacent water cells
+    const distanceField = new Int8Array(packCellsNumber); // pack.cells.t
+    const featureIds = new Uint16Array(packCellsNumber); // pack.cells.f
+    const haven = createTypedArray({maxValue: packCellsNumber, length: packCellsNumber}); // haven: opposite water cell
+    const harbor = new Uint8Array(packCellsNumber); // harbor: number of adjacent water cells
     const features = [0];
-
-    const defineHaven = cellId => {
-      const waterCells = neighbors[cellId].filter(isWater);
-      const distances = waterCells.map(c => dist2(cells.p[cellId], cells.p[c]));
-      const closest = distances.indexOf(Math.min.apply(Math, distances));
-
-      haven[cellId] = waterCells[closest];
-      harbor[cellId] = waterCells.length;
-    };
 
     const queue = [0];
     for (let featureId = 1; queue[0] !== -1; featureId++) {
@@ -112,12 +98,13 @@ window.Features = (function () {
       featureIds[firstCell] = featureId;
 
       const land = isLand(firstCell);
-      let border = false; // true if feature touches map border
+      let border = Boolean(borderCells[firstCell]); // true if feature touches map border
       let totalCells = 1; // count cells in a feature
 
       while (queue.length) {
         const cellId = queue.pop();
         if (borderCells[cellId]) border = true;
+        if (!border && borderCells[cellId]) border = true;
 
         for (const neighborId of neighbors[cellId]) {
           const isNeibLand = isLand(neighborId);
@@ -141,10 +128,7 @@ window.Features = (function () {
         }
       }
 
-      const featureVertices = getFeatureVertices({firstCell, vertices, cells, featureIds, featureId});
-      const points = clipPoly(featureVertices.map(vertex => vertices.p[vertex]));
-      const area = d3.polygonArea(points); // feature perimiter area
-      features.push(addFeature({firstCell, land, border, featureVertices, featureId, totalCells, area}));
+      features.push(addFeature({firstCell, land, border, featureId, totalCells}));
 
       queue[0] = featureIds.findIndex(f => f === UNMARKED); // find unmarked cell
     }
@@ -160,100 +144,112 @@ window.Features = (function () {
 
     TIME && console.timeEnd("markupPack");
 
-    function addFeature({firstCell, land, border, featureVertices, featureId, totalCells, area}) {
+    function defineHaven(cellId) {
+      const waterCells = neighbors[cellId].filter(isWater);
+      const distances = waterCells.map(neibCellId => dist2(cells.p[cellId], cells.p[neibCellId]));
+      const closest = distances.indexOf(Math.min.apply(Math, distances));
+
+      haven[cellId] = waterCells[closest];
+      harbor[cellId] = waterCells.length;
+    }
+
+    function addFeature({firstCell, land, border, featureId, totalCells}) {
+      const type = land ? "island" : border ? "ocean" : "lake";
+      const featureVertices = type === "ocean" ? [] : getFeatureVertices(firstCell);
+      const points = clipPoly(featureVertices.map(vertex => vertices.p[vertex]));
+      const area = d3.polygonArea(points); // feature perimiter area
       const absArea = Math.abs(rn(area));
 
-      if (land) return addIsland();
-      if (border) return addOcean();
-      return addLake();
+      const feature = {
+        i: featureId,
+        type,
+        land,
+        border,
+        firstCell,
+        cells: totalCells,
+        vertices: featureVertices,
+        area: absArea
+      };
 
-      function addIsland() {
-        const group = defineIslandGroup();
-        const feature = {
-          i: featureId,
-          type: "island",
-          group,
-          land: true,
-          border,
-          cells: totalCells,
-          firstCell,
-          vertices: featureVertices,
-          area: absArea
-        };
-        return feature;
+      if (type === "lake") {
+        if (area > 0) feature.vertices = feature.vertices.reverse();
+        feature.shoreline = unique(feature.vertices.map(vertex => vertices.c[vertex].filter(isLand)).flat());
+        feature.height = Lakes.getHeight(feature);
       }
 
-      function addOcean() {
-        const group = defineOceanGroup();
-        const feature = {
-          i: featureId,
-          type: "ocean",
-          group,
-          land: false,
-          border: false,
-          cells: totalCells,
-          firstCell,
-          vertices: featureVertices,
-          area: absArea
-        };
-        return feature;
-      }
+      return feature;
 
-      function addLake() {
-        const group = "freshwater"; // temp, to be defined later
-        const name = ""; // temp, to be defined later
+      function getFeatureVertices(firstCell) {
+        const getType = cellId => featureIds[cellId];
+        const type = getType(firstCell);
+        const ofSameType = cellId => getType(cellId) === type;
+        const ofDifferentType = cellId => borderCells[cellId] || getType(cellId) !== type;
 
-        // ensure lake ring is clockwise (to form a hole)
-        const lakeVertices = area > 0 ? featureVertices.reverse() : featureVertices;
+        const isOnBorder = neighbors[firstCell].some(ofDifferentType);
+        if (!isOnBorder) throw new Error(`Markup: firstCell ${firstCell} is not on the feature or map border`);
 
-        const shoreline = getShoreline(); // land cells around lake
-        const height = getLakeElevation();
+        const startingVertex = cells.v[firstCell].find(v => vertices.c[v].some(ofDifferentType));
+        if (startingVertex === undefined) throw new Error(`Markup: startingVertex for cell ${firstCell} is not found`);
 
-        function getShoreline() {
-          const isLand = cellId => heights[cellId] >= MIN_LAND_HEIGHT;
-          const cellsAround = lakeVertices.map(vertex => vertices.c[vertex].filter(isLand)).flat();
-          return unique(cellsAround);
-        }
-
-        function getLakeElevation() {
-          const MIN_ELEVATION_DELTA = 0.1;
-          const minShoreHeight = d3.min(shoreline.map(cellId => heights[cellId])) || MIN_LAND_HEIGHT;
-          return rn(minShoreHeight - MIN_ELEVATION_DELTA, 2);
-        }
-
-        const feature = {
-          i: featureId,
-          type: "lake",
-          group,
-          name,
-          land: false,
-          border: false,
-          cells: totalCells,
-          firstCell,
-          vertices: lakeVertices,
-          shoreline: shoreline,
-          height,
-          area: absArea
-        };
-        return feature;
-      }
-
-      function defineOceanGroup() {
-        if (totalCells > OCEAN_MIN_SIZE) return "ocean";
-        if (totalCells > SEA_MIN_SIZE) return "sea";
-        return "gulf";
-      }
-
-      function defineIslandGroup() {
-        const prevFeature = features[featureIds[firstCell - 1]];
-
-        if (prevFeature && prevFeature.type === "lake") return "lake_island";
-        if (totalCells > CONTINENT_MIN_SIZE) return "continent";
-        if (totalCells > ISLAND_MIN_SIZE) return "island";
-        return "isle";
+        return connectVertices({vertices, startingVertex, ofSameType, closeRing: true});
       }
     }
   }
 
-  return {markupGrid, markupPack};
+  // add properties to pack features
+  function specify() {
+    const gridCellsNumber = grid.cells.i.length;
+    const OCEAN_MIN_SIZE = gridCellsNumber / 25;
+    const SEA_MIN_SIZE = gridCellsNumber / 1000;
+    const CONTINENT_MIN_SIZE = gridCellsNumber / 10;
+    const ISLAND_MIN_SIZE = gridCellsNumber / 1000;
+
+    for (const feature of pack.features) {
+      if (!feature || feature.type === "ocean") continue;
+
+      feature.group = defineGroup(feature);
+
+      if (feature.type === "lake") {
+        feature.height = Lakes.getHeight(feature);
+        feature.name = Lakes.getName(feature);
+      }
+    }
+
+    function defineGroup(feature) {
+      if (feature.type === "island") return defineIslandGroup(feature);
+      if (feature.type === "ocean") return defineOceanGroup();
+      if (feature.type === "lake") return defineLakeGroup(feature);
+      throw new Error(`Markup: unknown feature type ${feature.type}`);
+    }
+
+    function defineOceanGroup(feature) {
+      if (feature.cells > OCEAN_MIN_SIZE) return "ocean";
+      if (feature.cells > SEA_MIN_SIZE) return "sea";
+      return "gulf";
+    }
+
+    function defineIslandGroup(feature) {
+      const prevFeature = pack.features[pack.cells.f[feature.firstCell - 1]];
+      if (prevFeature && prevFeature.type === "lake") return "lake_island";
+      if (feature.cells > CONTINENT_MIN_SIZE) return "continent";
+      if (feature.cells > ISLAND_MIN_SIZE) return "island";
+      return "isle";
+    }
+
+    function defineLakeGroup(feature) {
+      if (feature.temp < -3) return "frozen";
+      if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 10 === 0) return "lava";
+
+      if (!feature.inlets && !feature.outlet) {
+        if (feature.evaporation > feature.flux * 4) return "dry";
+        if (feature.cells < 3 && feature.firstCell % 10 === 0) return "sinkhole";
+      }
+
+      if (!feature.outlet && feature.evaporation > feature.flux) return "salt";
+
+      return "freshwater";
+    }
+  }
+
+  return {markupGrid, markupPack, specify};
 })();

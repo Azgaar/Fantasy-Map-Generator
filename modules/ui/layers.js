@@ -92,28 +92,23 @@ function restoreCustomPresets() {
 }
 
 // run on map generation
-function applyPreset() {
+function applyLayersPreset() {
   const preset = localStorage.getItem("preset") || byId("layersPreset").value;
-  changePreset(preset);
+  changeLayersPreset(preset);
 }
 
 // toggle layers on preset change
-function changePreset(preset) {
+function changeLayersPreset(preset) {
   const layers = presets[preset]; // layers to be turned on
-  document
-    .getElementById("mapLayers")
-    .querySelectorAll("li")
-    .forEach(function (e) {
-      if (layers.includes(e.id) && !layerIsOn(e.id)) e.click();
-      else if (!layers.includes(e.id) && layerIsOn(e.id)) e.click();
-    });
   layersPreset.value = preset;
   localStorage.setItem("preset", preset);
-
   const isDefault = getDefaultPresets()[preset];
-  removePresetButton.style.display = isDefault ? "none" : "inline-block";
-  savePresetButton.style.display = "none";
-  if (byId("canvas3d")) setTimeout(ThreeD.update(), 400);
+  byId("removePresetButton").style.display = isDefault ? "none" : "inline-block";
+  byId("savePresetButton").style.display = "none";
+
+  document.querySelectorAll("#mapLayers > li").forEach(e => (e.className = layers.includes(e.id) ? null : "buttonoff"));
+  drawLayers();
+  if (byId("canvas3d")) setTimeout(() => ThreeD.update(), 400);
 }
 
 function savePreset() {
@@ -161,8 +156,9 @@ function getCurrentPreset() {
   savePresetButton.style.display = "inline-block";
 }
 
-// run on map regeneration
-function restoreLayers() {
+// run on each map generation
+function drawLayers() {
+  drawFeatures();
   if (layerIsOn("toggleTexture")) drawTexture();
   if (layerIsOn("toggleHeight")) drawHeightmap();
   if (layerIsOn("toggleCells")) drawCells();

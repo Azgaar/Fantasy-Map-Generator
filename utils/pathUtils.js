@@ -110,8 +110,7 @@ function getVertexPath(cellsArray) {
     if (onborderCell === undefined) continue;
 
     const feature = pack.features[cells.f[onborderCell]];
-    if (feature.type === "lake") {
-      if (!feature.shoreline) Lakes.getShoreline(feature);
+    if (feature.type === "lake" && feature.shoreline) {
       if (feature.shoreline.every(ofSameType)) continue; // inner lake
     }
 

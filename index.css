@@ -768,7 +768,7 @@ fieldset {
   text-overflow: ellipsis;
 }
 
-.tabcontent .buttonoff {
+.tabcontent li.buttonoff {
   background-color: var(--bg-disabled);
   color: #444444aa;
 }

@@ -225,7 +225,6 @@ function editHeightmap(options) {
     generatePrecipitation();
     reGraph();
     Features.markupPack();
-    drawCoastline();
 
     Rivers.generate(erosionAllowed);
 
@@ -237,7 +236,6 @@ function editHeightmap(options) {
       }
     }
 
-    Lakes.defineGroup();
     Biomes.define();
     rankCells();
 
@@ -255,7 +253,7 @@ function editHeightmap(options) {
     drawStateLabels();
 
     Rivers.specify();
-    Lakes.generateName();
+    Features.specify();
 
     Military.generate();
     Markers.generate();
@@ -343,7 +341,6 @@ function editHeightmap(options) {
     generatePrecipitation();
     reGraph();
     Features.markupPack();
-    drawCoastline();
 
     if (erosionAllowed) Rivers.generate(true);
 

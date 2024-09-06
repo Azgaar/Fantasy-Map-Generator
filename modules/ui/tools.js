@@ -126,8 +126,8 @@ function regenerateRoutes() {
 
 function regenerateRivers() {
   Rivers.generate();
-  Lakes.defineGroup();
   Rivers.specify();
+  Features.specify();
   if (layerIsOn("toggleRivers")) drawRivers();
 }
 

@@ -14,6 +14,7 @@ const ERROR = true;
 const MOBILE = window.innerWidth < 600 || navigator.userAgentData?.mobile;
 
 // typed arrays max values
+const INT8_MAX = 127;
 const UINT8_MAX = 255;
 const UINT16_MAX = 65535;
 const UINT32_MAX = 4294967295;
@@ -313,9 +314,9 @@ async function checkLoadParameters() {
 async function generateMapOnLoad() {
   await applyStyleOnLoad(); // apply previously selected default or custom style
   await generate(); // generate map
-  applyPreset(); // apply saved layers preset
+  applyLayersPreset(); // apply saved layers preset and reder layers
   fitMapToScreen();
-  focusOn(); // based on searchParams focus on point, cell or burg from MFCG
+  focusOn(); // focus on point, cell or burg from MFCG based on url searchParams
 }
 
 // focus on coordinates, cell or burg provided in searchParams
@@ -638,11 +639,9 @@ async function generate(options) {
 
     reGraph();
     Features.markupPack();
-    drawCoastline();
     createDefaultRuler();
 
     Rivers.generate();
-    Lakes.defineGroup();
     Biomes.define();
 
     rankCells();
@@ -659,7 +658,7 @@ async function generate(options) {
     drawStateLabels();
 
     Rivers.specify();
-    Lakes.generateName();
+    Features.specify();
 
     Military.generate();
     Markers.generate();
@@ -1243,7 +1242,7 @@ const regenerateMap = debounce(async function (options) {
   resetZoom(1000);
   undraw();
   await generate(options);
-  restoreLayers();
+  drawLayers();
   if (ThreeD.options.isOn) ThreeD.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
 

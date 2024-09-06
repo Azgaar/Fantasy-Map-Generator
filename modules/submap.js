@@ -127,7 +127,6 @@ window.Submap = (function () {
     // remove misclassified cells
     stage("Define coastline");
     Features.markupPack();
-    drawCoastline();
     createDefaultRuler();
 
     // Packed Graph
@@ -203,7 +202,6 @@ window.Submap = (function () {
 
     stage("Regenerating river network");
     Rivers.generate();
-    Lakes.defineGroup();
 
     // biome calculation based on (resampled) grid.cells.temp and prec
     // it's safe to recalculate.
@@ -270,7 +268,7 @@ window.Submap = (function () {
     drawStateLabels();
 
     Rivers.specify();
-    Lakes.generateName();
+    Features.specify();
 
     stage("Porting military");
     for (const s of pack.states) {
