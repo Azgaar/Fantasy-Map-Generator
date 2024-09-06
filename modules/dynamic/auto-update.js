@@ -947,7 +947,8 @@ export function resolveVersionConflicts(mapVersion) {
     BurgsAndStates.getPoles();
     Provinces.getPoles();
 
-    // v1.104.00 removed regiments from initial render
+    // v1.104.00 removed some layers from initial render
     viewbox.select("#armies").style("display", null);
+    viewbox.select("#ice").style("display", null);
   }
 }
