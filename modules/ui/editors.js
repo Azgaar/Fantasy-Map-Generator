@@ -1252,18 +1252,18 @@ function refreshAllEditors() {
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/states-editor.js?v=1.104.00");
+  const Editor = await import("../dynamic/editors/states-editor.js?v=1.104.0");
   Editor.open();
 }
 
 async function editCultures() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.104.00");
+  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.104.0");
   Editor.open();
 }
 
 async function editReligions() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/religions-editor.js?v=1.104.00");
+  const Editor = await import("../dynamic/editors/religions-editor.js?v=1.104.0");
   Editor.open();
 }

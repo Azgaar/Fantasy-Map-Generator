@@ -186,6 +186,7 @@ function restoreLayers() {
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleRivers")) drawRivers();
   if (layerIsOn("toggleMilitary")) drawMilitary();
+  if (layerIsOn("toggleRulers")) rulers.draw();
 }
 
 function toggleHeight(event) {

@@ -225,6 +225,7 @@ function editHeightmap(options) {
     calculateTemperatures();
     generatePrecipitation();
     reGraph();
+    reMarkFeatures();
     drawCoastline();
 
     Rivers.generate(erosionAllowed);
@@ -343,6 +344,7 @@ function editHeightmap(options) {
     calculateTemperatures();
     generatePrecipitation();
     reGraph();
+    reMarkFeatures();
     drawCoastline();
 
     if (erosionAllowed) Rivers.generate(true);

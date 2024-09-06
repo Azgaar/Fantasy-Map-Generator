@@ -1,4 +1,5 @@
 "use strict";
+
 function editCoastline(node = d3.event.target) {
   if (customization) return;
   closeDialogs(".stable");
@@ -55,7 +56,9 @@ function editCoastline(node = d3.event.target) {
       .attr("r", 0.4)
       .attr("data-v", d => d)
       .call(d3.drag().on("drag", dragVertex))
-      .on("mousemove", () => tip("Drag to move the vertex, please use for fine-tuning only. Edit heightmap to change actual cell heights"));
+      .on("mousemove", () =>
+        tip("Drag to move the vertex, please use for fine-tuning only. Edit heightmap to change actual cell heights")
+      );
 
     const area = pack.features[f].area;
     coastlineArea.innerHTML = si(getArea(area)) + " " + getAreaUnit();
@@ -72,6 +75,7 @@ function editCoastline(node = d3.event.target) {
       .select("#vertices")
       .selectAll("polygon")
       .attr("points", d => getPackPolygon(d));
+
     redrawCoastline();
   }
 

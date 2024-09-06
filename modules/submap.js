@@ -130,13 +130,12 @@ window.Submap = (function () {
 
     // remove misclassified cells
     stage("Define coastline");
+    reMarkFeatures();
     drawCoastline();
+    createDefaultRuler();
 
-    /****************************************************/
-    /* Packed Graph */
-    /****************************************************/
+    // Packed Graph
     const oldCells = parentMap.pack.cells;
-    // const reverseMap = new Map(); // cellmap from new -> oldcell
     const forwardMap = parentMap.pack.cells.p.map(_ => []); // old -> [newcelllist]
 
     const pn = pack.cells.i.length;

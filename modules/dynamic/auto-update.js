@@ -201,7 +201,10 @@ export function resolveVersionConflicts(mapVersion) {
     defs.select("#water").selectAll("path").remove();
     coastline.selectAll("path").remove();
     lakes.selectAll("path").remove();
+
+    reMarkFeatures();
     drawCoastline();
+    createDefaultRuler();
   }
 
   if (isOlderThan("1.11.0")) {
@@ -940,12 +943,12 @@ export function resolveVersionConflicts(mapVersion) {
     if (layerIsOn("toggleZones")) drawZones();
   }
 
-  if (isOlderThan("1.103.0")) {
-    // v1.103.00 separated pole of inaccessibility detection from layer rendering
+  if (isOlderThan("1.104.0")) {
+    // v1.104.00 separated pole of inaccessibility detection from layer rendering
     BurgsAndStates.getPoles();
     Provinces.getPoles();
 
-    // v1.103.00 removed regiments from initial render
+    // v1.104.00 removed regiments from initial render
     viewbox.select("#armies").style("display", null);
   }
 }
