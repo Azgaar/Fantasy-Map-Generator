@@ -21,7 +21,7 @@ export function open() {
   const type = elSelected.attr("type") ? "Glacier" : "Iceberg";
   if (byId("iceRandomize")) byId("iceRandomize")!.style.display = type === "Glacier" ? "none" : "inline-block";
 
-  const $iceSize = byId("iceSize") as HTMLInputElement;
+  const $iceSize = byId<'input'>("iceSize");
   if ($iceSize) {
     $iceSize.style.display = type === "Glacier" ? "none" : "inline-block";
     if (type === "Iceberg") $iceSize.value = elSelected.attr("size");
