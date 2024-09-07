@@ -32,7 +32,8 @@ byId<'button'>("optionsTrigger").on("click", showOptions);
 byId<'button'>("optionsHide").on("click", hideOptions);
 
 // Window Objects
-const {Zoom, COA, Cloud, ThreeD, Names} = window;
+const {COA, Cloud, ThreeD, Names, Zoom} = window;
+
 
 // DIV elements
 const tooltip = byId<'div'>("tooltip");
@@ -40,7 +41,8 @@ const tooltip = byId<'div'>("tooltip");
 // Options pane elements
 const optionsTrigger = byId<'button'>("optionsTrigger");
 const regenerate = byId<'button'>("regenerate");
-const optionsDiv = byId<'div'>("optionsContainer");
+const optionsContainer = byId<'div'>("optionsContainer");
+const optionsDisplay = byId<'div'>("options");
 const collapsible = byId<'div'>("collapsible");
 const layersContent = byId<'div'>("layersContent");
 const styleContent = byId<'div'>("styleContent");
@@ -140,7 +142,7 @@ export function showOptions(event: Event) {
   }
 
   regenerate.style.display = "none";
-  optionsDiv.style.display = "block";
+  optionsDisplay.style.display = "block";
   optionsTrigger.style.display = "none";
 
   if (event) event.stopPropagation();
@@ -148,21 +150,21 @@ export function showOptions(event: Event) {
 
 // Hide options pane on trigger click
 export function hideOptions(event: Event) {
-  optionsDiv.style.display = "none";
+  optionsDisplay.style.display = "none";
   optionsTrigger.style.display = "block";
   if (event) event.stopPropagation();
 }
 
 // To toggle options on hotkey press
 export function toggleOptions(event: MouseEvent) {
-  if (optionsDiv.style.display === "none") showOptions(event);
+  if (optionsContainer.style.display === "none") showOptions(event);
   else hideOptions(event);
 }
 
 // Toggle "New Map!" pane on hover
 optionsTrigger.on("mouseenter", function () {
   if (optionsTrigger.classList.contains("glow")) return;
-  if (optionsDiv.style.display === "none") regenerate.style.display = "block";
+  if (optionsContainer.style.display === "none") regenerate.style.display = "block";
 });
 
 collapsible.on("mouseleave", function () {
@@ -170,17 +172,17 @@ collapsible.on("mouseleave", function () {
 });
 
 // Activate options tab on click
-optionsDiv
+optionsContainer
   .querySelector("div.tab")!
   .on("click", function (event: any ) { // MARKER: any
     if (event.target.tagName !== "BUTTON") return;
     const id = event.target.id;
-    const active = optionsDiv.querySelector(".tab > button.active");
+    const active = optionsContainer.querySelector(".tab > button.active");
     if (active && id === active.id) return; // already active tab is clicked
 
     if (active) active.classList.remove("active");
-    byId(id)!.classList.add("active");
-    optionsDiv
+    byId(id).classList.add("active");
+    optionsContainer
       .querySelectorAll<HTMLElement>(".tabcontent")
       .forEach((e: HTMLElement) => {e.style.display = "none"});
 
@@ -207,9 +209,9 @@ async function showSupporters() {
 }
 
 // on any option or dialog change
-optionsDiv.on("change", storeValueIfRequired);
+optionsContainer.on("change", storeValueIfRequired);
 dialogDiv.on("change", storeValueIfRequired);
-optionsDiv.on("input", updateOutputToFollowInput);
+optionsContainer.on("input", updateOutputToFollowInput);
 dialogDiv.on("input", updateOutputToFollowInput);
 
 function storeValueIfRequired(ev: any) { // MARKER: any
@@ -320,10 +322,10 @@ function changeMapSize() {
 
 // just apply canvas size that was already set
 export function applyMapSize() {
-  const zoomMin = Number(zoomExtentMin.value);
-  const zoomMax = Number(zoomExtentMax.value);
-  graphWidth = Number(mapWidthInput.value);
-  graphHeight = Number(mapHeightInput.value);
+  const zoomMin = zoomExtentMin.valueAsNumber;
+  const zoomMax = zoomExtentMax.valueAsNumber;
+  graphWidth = mapWidthInput.valueAsNumber;
+  graphHeight = mapHeightInput.valueAsNumber;
   svgWidth = Math.min(graphWidth, window.innerWidth);
   svgHeight = Math.min(graphHeight, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
@@ -537,7 +539,7 @@ function changeUIsize(value: number) {
 
   uiSizeInput.valueAsNumber = uiSizeOutput.valueAsNumber = value;
   document.getElementsByTagName("body")[0].style.fontSize = rn(value * 10, 2) + "px";
-  optionsDiv.style.width = value * 300 + "px";
+  optionsContainer.style.width = value * 300 + "px";
 }
 
 function getUImaxSize() {
@@ -1126,7 +1128,7 @@ async function enter3dView(type) {
       resizeStop: resize3d,
       close: enterStandardView
     });
-  } else document.body.insertBefore(canvas, optionsDiv);
+  } else document.body.insertBefore(canvas, optionsContainer);
 
   toggle3dOptions();
 }
