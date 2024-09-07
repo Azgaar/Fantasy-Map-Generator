@@ -1,6 +1,8 @@
 import {getGridPolygon} from "utils/graphUtils";
+import {P, normalize, rn, last} from "utils";
 import {aleaPRNG} from "scripts/aleaPRNG";
 import {clipPoly} from "utils/lineUtils";
+import { ERROR } from "config/logging";
 
 export function drawIce() {
   const {cells, vertices} = grid;
@@ -24,10 +26,11 @@ export function drawIce() {
       const onborder = cells.c[i].some(n => temp[n] > shieldMin);
       if (!onborder) continue; // need to start from onborder cell
       const vertex = cells.v[i].find(v => vertices.c[v].some(i => temp[i] > shieldMin));
+      if (vertex === undefined) continue; // no suitable vertex found
       const chain = connectVertices(vertex);
       if (chain.length < 3) continue;
       const points = clipPoly(chain.map(v => vertices.p[v]));
-      ice.append("polygon").attr("points", points).attr("type", "iceShield");
+      ice.append("polygon").attr("points", points.toString()).attr("type", "iceShield");
       continue;
     }
 
@@ -40,18 +43,18 @@ export function drawIce() {
     resizePolygon(i, size);
   }
 
-  function resizePolygon(i, s) {
+  function resizePolygon(i: number, size: number) {
     const c = grid.points[i];
-    const points = getGridPolygon(i).map(p => [(p[0] + (c[0] - p[0]) * s) | 0, (p[1] + (c[1] - p[1]) * s) | 0]);
+    const points = getGridPolygon(i).map(p => [(p[0] + (c[0] - p[0]) * size) | 0, (p[1] + (c[1] - p[1]) * size) | 0]);
     ice
       .append("polygon")
-      .attr("points", points)
+      .attr("points", points.toString())
       .attr("cell", i)
-      .attr("size", rn(1 - s, 2));
+      .attr("size", rn(1 - size, 2));
   }
 
   // connect vertices to chain
-  function connectVertices(start) {
+  function connectVertices(start: number) {
     const chain = []; // vertices chain to form a path
     for (let i = 0, current = start; i === 0 || (current !== start && i < 20000); i++) {
       const prev = last(chain); // previous vertex in chain
