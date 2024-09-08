@@ -655,8 +655,6 @@ async function generate(options) {
     Provinces.getPoles();
     BurgsAndStates.defineBurgFeatures();
 
-    drawStateLabels();
-
     Rivers.specify();
     Features.specify();
 

@@ -2,7 +2,7 @@
 function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   if (customization) return;
   closeDialogs("#burgsOverview, .stable");
-  if (!layerIsOn("toggleIcons")) toggleIcons();
+  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
   const body = byId("burgsBody");

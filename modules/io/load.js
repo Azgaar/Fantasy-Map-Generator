@@ -443,7 +443,7 @@ async function parseLoadedData(data, mapVersion) {
       if (hasChild(prec, "circle")) turnOn("togglePrecipitation");
       if (isVisible(emblems) && hasChild(emblems, "use")) turnOn("toggleEmblems");
       if (isVisible(labels)) turnOn("toggleLabels");
-      if (isVisible(icons)) turnOn("toggleIcons");
+      if (isVisible(icons)) turnOn("toggleBurgIcons");
       if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
       if (hasChildren(markers)) turnOn("toggleMarkers");
       if (isVisible(ruler)) turnOn("toggleRulers");

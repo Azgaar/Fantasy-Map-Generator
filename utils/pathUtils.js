@@ -120,7 +120,7 @@ function getVertexPath(cellsArray) {
     const vertexChain = connectVertices({vertices, startingVertex, ofSameType, addToChecked, closeRing: true});
     if (vertexChain.length < 3) continue;
 
-    path += getFillPath(vertexChain);
+    path += getFillPath(vertices, vertexChain);
   }
 
   return path;

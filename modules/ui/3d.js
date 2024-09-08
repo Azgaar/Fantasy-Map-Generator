@@ -373,7 +373,7 @@ window.ThreeD = (function () {
       }
 
       // icons
-      if (layerIsOn("toggleIcons")) {
+      if (layerIsOn("toggleBurgIcons")) {
         const geometry = isCity ? city_icon_geometry : town_icon_geometry;
         const material = isCity ? city_icon_material : town_icon_material;
         const iconMesh = new THREE.Mesh(geometry, material);

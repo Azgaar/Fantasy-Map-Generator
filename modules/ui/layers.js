@@ -8,7 +8,7 @@ function getDefaultPresets() {
   return {
     political: [
       "toggleBorders",
-      "toggleIcons",
+      "toggleBurgIcons",
       "toggleIce",
       "toggleLabels",
       "toggleRivers",
@@ -20,7 +20,7 @@ function getDefaultPresets() {
     cultural: [
       "toggleBorders",
       "toggleCultures",
-      "toggleIcons",
+      "toggleBurgIcons",
       "toggleLabels",
       "toggleRivers",
       "toggleRoutes",
@@ -29,7 +29,7 @@ function getDefaultPresets() {
     ],
     religions: [
       "toggleBorders",
-      "toggleIcons",
+      "toggleBurgIcons",
       "toggleLabels",
       "toggleReligions",
       "toggleRivers",
@@ -37,7 +37,14 @@ function getDefaultPresets() {
       "toggleScaleBar",
       "toggleVignette"
     ],
-    provinces: ["toggleBorders", "toggleIcons", "toggleProvinces", "toggleRivers", "toggleScaleBar", "toggleVignette"],
+    provinces: [
+      "toggleBorders",
+      "toggleBurgIcons",
+      "toggleProvinces",
+      "toggleRivers",
+      "toggleScaleBar",
+      "toggleVignette"
+    ],
     biomes: ["toggleBiomes", "toggleIce", "toggleRivers", "toggleScaleBar", "toggleVignette"],
     heightmap: ["toggleHeight", "toggleRivers", "toggleVignette"],
     physical: ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleRivers", "toggleScaleBar", "toggleVignette"],
@@ -45,7 +52,7 @@ function getDefaultPresets() {
       "toggleBorders",
       "toggleHeight",
       "toggleIce",
-      "toggleIcons",
+      "toggleBurgIcons",
       "toggleMarkers",
       "toggleRivers",
       "toggleRoutes",
@@ -54,7 +61,7 @@ function getDefaultPresets() {
     ],
     military: [
       "toggleBorders",
-      "toggleIcons",
+      "toggleBurgIcons",
       "toggleLabels",
       "toggleMilitary",
       "toggleRivers",
@@ -65,7 +72,7 @@ function getDefaultPresets() {
     ],
     emblems: [
       "toggleBorders",
-      "toggleIcons",
+      "toggleBurgIcons",
       "toggleIce",
       "toggleEmblems",
       "toggleRivers",
@@ -161,28 +168,32 @@ function drawLayers() {
   drawFeatures();
   if (layerIsOn("toggleTexture")) drawTexture();
   if (layerIsOn("toggleHeight")) drawHeightmap();
+  if (layerIsOn("toggleBiomes")) drawBiomes();
   if (layerIsOn("toggleCells")) drawCells();
   if (layerIsOn("toggleGrid")) drawGrid();
   if (layerIsOn("toggleCoordinates")) drawCoordinates();
   if (layerIsOn("toggleCompass")) compass.style("display", "block");
-  if (layerIsOn("toggleRoutes")) drawRoutes();
-  if (layerIsOn("toggleTemperature")) drawTemperature();
-  if (layerIsOn("togglePrecipitation")) drawPrecipitation();
-  if (layerIsOn("togglePopulation")) drawPopulation();
-  if (layerIsOn("toggleBiomes")) drawBiomes();
+  if (layerIsOn("toggleRivers")) drawRivers();
   if (layerIsOn("toggleRelief")) ReliefIcons.draw();
-  if (layerIsOn("toggleCultures")) drawCultures();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
   if (layerIsOn("toggleReligions")) drawReligions();
-  if (layerIsOn("toggleIce")) drawIce();
-  if (layerIsOn("toggleEmblems")) drawEmblems();
-  if (layerIsOn("toggleMarkers")) drawMarkers();
+  if (layerIsOn("toggleCultures")) drawCultures();
+  if (layerIsOn("toggleStates")) drawStates();
+  if (layerIsOn("toggleProvinces")) drawProvinces();
   if (layerIsOn("toggleZones")) drawZones();
   if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleStates")) drawStates();
-  if (layerIsOn("toggleRivers")) drawRivers();
+  if (layerIsOn("toggleRoutes")) drawRoutes();
+  if (layerIsOn("toggleTemperature")) drawTemperature();
+  if (layerIsOn("togglePopulation")) drawPopulation();
+  if (layerIsOn("toggleIce")) drawIce();
+  if (layerIsOn("togglePrecipitation")) drawPrecipitation();
+  if (layerIsOn("toggleEmblems")) drawEmblems();
+  if (layerIsOn("toggleLabels")) drawLabels();
+  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleMilitary")) drawMilitary();
+  if (layerIsOn("toggleMarkers")) drawMarkers();
   if (layerIsOn("toggleRulers")) rulers.draw();
+  // scale bar
+  // vignette
 }
 
 function toggleHeight(event) {
@@ -846,24 +857,33 @@ function toggleMarkers(event) {
 function toggleLabels(event) {
   if (!layerIsOn("toggleLabels")) {
     turnButtonOn("toggleLabels");
-    labels.style("display", null);
-    invokeActiveZooming();
+    $("#labels").fadeIn();
+    // don't redraw labels as they are not stored in data yet
+    if (labels.selectAll("text").size() === 0) drawLabels();
     if (event && isCtrlClick(event)) editStyle("labels");
   } else {
     if (event && isCtrlClick(event)) return editStyle("labels");
     turnButtonOff("toggleLabels");
-    labels.style("display", "none");
+    $("#labels").fadeOut();
   }
 }
 
-function toggleIcons(event) {
-  if (!layerIsOn("toggleIcons")) {
-    turnButtonOn("toggleIcons");
+function drawLabels() {
+  drawStateLabels();
+  drawBurgLabels();
+  invokeActiveZooming();
+}
+
+function toggleBurgIcons(event) {
+  if (!layerIsOn("toggleBurgIcons")) {
+    turnButtonOn("toggleBurgIcons");
     $("#icons").fadeIn();
+    drawBurgIcons();
     if (event && isCtrlClick(event)) editStyle("burgIcons");
   } else {
     if (event && isCtrlClick(event)) return editStyle("burgIcons");
-    turnButtonOff("toggleIcons");
+    turnButtonOff("toggleBurgIcons");
+    icons.selectAll("circle, use").remove();
     $("#icons").fadeOut();
   }
 }
@@ -954,8 +974,7 @@ function getGappedFillPaths(elementName, fill, waterGap, color, index) {
 }
 
 function layerIsOn(el) {
-  const buttonoff = byId(el).classList.contains("buttonoff");
-  return !buttonoff;
+  return byId(el).classList.contains("buttonoff") ? false : true;
 }
 
 function turnButtonOff(el) {
@@ -1002,7 +1021,7 @@ function getLayer(id) {
   if (id === "toggleTexture") return $("#texture");
   if (id === "toggleEmblems") return $("#emblems");
   if (id === "toggleLabels") return $("#labels");
-  if (id === "toggleIcons") return $("#icons");
+  if (id === "toggleBurgIcons") return $("#icons");
   if (id === "toggleMarkers") return $("#markers");
   if (id === "toggleRulers") return $("#ruler");
 }

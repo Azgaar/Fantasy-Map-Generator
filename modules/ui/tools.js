@@ -75,8 +75,10 @@ toolsContent.addEventListener("click", function (event) {
 });
 
 function processFeatureRegeneration(event, button) {
-  if (button === "regenerateStateLabels") drawStateLabels();
-  else if (button === "regenerateReliefIcons") {
+  if (button === "regenerateStateLabels") {
+    $("#labels").fadeIn();
+    drawStateLabels();
+  } else if (button === "regenerateReliefIcons") {
     ReliefIcons.draw();
     if (!layerIsOn("toggleRelief")) toggleRelief();
   } else if (button === "regenerateRoutes") {
@@ -440,7 +442,6 @@ function regenerateBurgs() {
 
   BurgsAndStates.specifyBurgs();
   BurgsAndStates.defineBurgFeatures();
-  BurgsAndStates.drawBurgs();
   regenerateRoutes();
 
   // remove emblems

@@ -22,7 +22,6 @@ window.BurgsAndStates = (() => {
 
     generateCampaigns();
     generateDiplomacy();
-    drawBurgs();
 
     function placeCapitals() {
       TIME && console.time("placeCapitals");
@@ -272,103 +271,6 @@ window.BurgsAndStates = (() => {
           (religion && theocracy && P(0.5)) || pop > 50 || (pop > 35 && P(0.75)) || (pop > 20 && P(0.5))
         );
       });
-  };
-
-  const drawBurgs = () => {
-    TIME && console.time("drawBurgs");
-
-    // remove old data
-    burgIcons.selectAll("circle").remove();
-    burgLabels.selectAll("text").remove();
-    icons.selectAll("use").remove();
-
-    // capitals
-    const capitals = pack.burgs.filter(b => b.capital && !b.removed);
-    const capitalIcons = burgIcons.select("#cities");
-    const capitalLabels = burgLabels.select("#cities");
-    const capitalSize = capitalIcons.attr("size") || 1;
-    const capitalAnchors = anchors.selectAll("#cities");
-    const caSize = capitalAnchors.attr("size") || 2;
-
-    capitalIcons
-      .selectAll("circle")
-      .data(capitals)
-      .enter()
-      .append("circle")
-      .attr("id", d => "burg" + d.i)
-      .attr("data-id", d => d.i)
-      .attr("cx", d => d.x)
-      .attr("cy", d => d.y)
-      .attr("r", capitalSize);
-
-    capitalLabels
-      .selectAll("text")
-      .data(capitals)
-      .enter()
-      .append("text")
-      .attr("id", d => "burgLabel" + d.i)
-      .attr("data-id", d => d.i)
-      .attr("x", d => d.x)
-      .attr("y", d => d.y)
-      .attr("dy", `${capitalSize * -1.5}px`)
-      .text(d => d.name);
-
-    capitalAnchors
-      .selectAll("use")
-      .data(capitals.filter(c => c.port))
-      .enter()
-      .append("use")
-      .attr("xlink:href", "#icon-anchor")
-      .attr("data-id", d => d.i)
-      .attr("x", d => rn(d.x - caSize * 0.47, 2))
-      .attr("y", d => rn(d.y - caSize * 0.47, 2))
-      .attr("width", caSize)
-      .attr("height", caSize);
-
-    // towns
-    const towns = pack.burgs.filter(b => b.i && !b.capital && !b.removed);
-    const townIcons = burgIcons.select("#towns");
-    const townLabels = burgLabels.select("#towns");
-    const townSize = townIcons.attr("size") || 0.5;
-    const townsAnchors = anchors.selectAll("#towns");
-    const taSize = townsAnchors.attr("size") || 1;
-
-    townIcons
-      .selectAll("circle")
-      .data(towns)
-      .enter()
-      .append("circle")
-      .attr("id", d => "burg" + d.i)
-      .attr("data-id", d => d.i)
-      .attr("cx", d => d.x)
-      .attr("cy", d => d.y)
-      .attr("r", townSize);
-
-    townLabels
-      .selectAll("text")
-      .data(towns)
-      .enter()
-      .append("text")
-      .attr("id", d => "burgLabel" + d.i)
-      .attr("data-id", d => d.i)
-      .attr("x", d => d.x)
-      .attr("y", d => d.y)
-      .attr("dy", `${townSize * -1.5}px`)
-      .text(d => d.name);
-
-    townsAnchors
-      .selectAll("use")
-      .data(towns.filter(c => c.port))
-      .enter()
-      .append("use")
-      .attr("xlink:href", "#icon-anchor")
-      .attr("data-id", d => d.i)
-      .attr("x", d => rn(d.x - taSize * 0.47, 2))
-      .attr("y", d => rn(d.y - taSize * 0.47, 2))
-      .attr("width", taSize)
-      .attr("height", taSize);
-
-    TIME && console.timeEnd("drawBurgs");
   };
 
   // expand cultures across the map (Dijkstra-like algorithm)
@@ -960,7 +862,6 @@ window.BurgsAndStates = (() => {
     normalizeStates,
     getPoles,
     assignColors,
-    drawBurgs,
     specifyBurgs,
     defineBurgFeatures,
     getType,

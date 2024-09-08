@@ -260,8 +260,6 @@ window.Submap = (function () {
       p.center = newCenters.length ? newCenters[0] : pack.cells.province.findIndex(x => x === i);
     });
 
-    BurgsAndStates.drawBurgs();
-
     stage("Regenerating routes network");
     regenerateRoutes();
 
