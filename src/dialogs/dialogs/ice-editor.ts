@@ -39,11 +39,11 @@ export function open() {
   isLoaded = true;
 
   // add listeners
-  byId("iceEditStyle")?.on("click", () => editStyle("ice"));
-  byId("iceRandomize")?.on("click", randomizeShape);
-  byId("iceSize")?.on("input", changeSize);
-  byId("iceNew")?.on("click", toggleAdd);
-  byId("iceRemove")?.on("click", removeIce);
+  byId("iceEditStyle").on("click", () => editStyle("ice"));
+  byId("iceRandomize").on("click", randomizeShape);
+  byId("iceSize").on("input", changeSize);
+  byId("iceNew").on("click", toggleAdd);
+  byId("iceRemove").on("click", removeIce);
 
   function randomizeShape() {
     const c = grid.points[+elSelected.attr("cell")];

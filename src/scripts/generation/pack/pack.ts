@@ -11,6 +11,7 @@ import {repackGrid} from "./repackGrid";
 import {generateRivers} from "./rivers/generateRivers";
 import {specifyRivers} from "./rivers/specifyRivers";
 import {generateRoutes} from "./routes/generateRoutes";
+import { generateIce } from "./generateIce";
 
 const {Biomes} = window;
 
@@ -161,6 +162,7 @@ export function createPack(grid: IGrid): IPack {
 
   const rivers = specifyRivers(rawRivers, cultureIds, cultures);
   const features = generateLakeNames(mergedFeatures, cultureIds, cultures);
+  const ice = generateIce(cells, vertices, temp, features, grid.cells);
 
   // Military.generate();
   // Markers.generate();
@@ -198,7 +200,8 @@ export function createPack(grid: IGrid): IPack {
     routes,
     religions,
     provinces,
-    events
+    events,
+    ice
   };
 
   return pack;
