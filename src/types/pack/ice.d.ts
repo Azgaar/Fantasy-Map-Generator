@@ -1,18 +1,18 @@
 
-export interface IIceBase {
-    points: number[][];
+interface IIceBase {
+    points: TPoints;
+    transform: {x: number, y: number};
 }
 
-export interface Iiceberg extends IIceBase {
+interface IiceBerg extends IIceBase {
     cell: number;
     size: number;
 }
 
-export interface IiceShield extends IIceBase {
-    type: string;
+interface IiceShield extends IIceBase {
 }
 
-export interface IIce{
-    icebergs: Iiceberg[];
+interface IIce{
+    icebergs: IiceBerg[];
     iceShields: IiceShield[];
 }
