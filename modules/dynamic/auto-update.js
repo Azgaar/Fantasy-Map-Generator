@@ -950,5 +950,9 @@ export function resolveVersionConflicts(mapVersion) {
     // v1.104.00 removed some layers from initial render
     viewbox.select("#armies").style("display", null);
     viewbox.select("#ice").style("display", null);
+
+    // v1.104.00 added featurePaths to defs
+    const featurePaths = defs.select("#featurePaths");
+    if (!featurePaths.size()) defs.append("g").attr("id", "featurePaths");
   }
 }

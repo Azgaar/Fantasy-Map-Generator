@@ -422,7 +422,7 @@ async function parseLoadedData(data, mapVersion) {
 
       // turn on active layers
       if (hasChild(texture, "image")) turnOn("toggleTexture");
-      if (hasChildren(terrs)) turnOn("toggleHeight");
+      if (hasChildren(terrs.select("#landHeights"))) turnOn("toggleHeight");
       if (hasChildren(biomes)) turnOn("toggleBiomes");
       if (hasChildren(cells)) turnOn("toggleCells");
       if (hasChildren(gridOverlay)) turnOn("toggleGrid");
