@@ -7,12 +7,13 @@
  *
  * Update the version MANUALLY on each merge to main:
  * 1. MAJOR version: Incompatible changes that break existing maps
- * 2. MINOR version: Backwards-compatible changes requiring old .map files to be updated
- * 3. PATCH version: Backwards-compatible bug fixes not affecting .map file format
+ * 2. MINOR version: Additions or changes that are backward-compatible but may require old .map files to be updated
+ * 3. PATCH version: Backward-compatible bug fixes and small features that do not affect the .map file format
  *
- * Example: 1.102.0 -> Major version 1, Minor version 102, Patch version 0
+ * Example: 1.102.2 -> Major version 1, Minor version 102, Patch version 2
  */
-const VERSION = "1.104.0";
+const VERSION = "1.103.5";
+if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format or parsing function");
 
 {
   document.title += " v" + VERSION;
@@ -78,6 +79,23 @@ const VERSION = "1.104.0";
     const cacheNames = await caches.keys();
     return Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
   }
+}
+
+function parseMapVersion(version) {
+  let [major, minor, patch] = version.split(".");
+
+  if (patch === undefined) {
+    // e.g. 1.732
+    minor = minor.slice(0, 2);
+    patch = minor.slice(2);
+  }
+
+  // e.g. 0.7b
+  major = parseInt(major) || 0;
+  minor = parseInt(minor) || 0;
+  patch = parseInt(patch) || 0;
+
+  return `${major}.${minor}.${patch}`;
 }
 
 function isValidVersion(versionString) {
