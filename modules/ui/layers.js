@@ -19,8 +19,8 @@ function getDefaultPresets() {
     ],
     cultural: [
       "toggleBorders",
-      "toggleCultures",
       "toggleBurgIcons",
+      "toggleCultures",
       "toggleLabels",
       "toggleRivers",
       "toggleRoutes",
@@ -50,9 +50,9 @@ function getDefaultPresets() {
     physical: ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleRivers", "toggleScaleBar", "toggleVignette"],
     poi: [
       "toggleBorders",
+      "toggleBurgIcons",
       "toggleHeight",
       "toggleIce",
-      "toggleBurgIcons",
       "toggleMarkers",
       "toggleRivers",
       "toggleRoutes",
@@ -162,17 +162,18 @@ function removePreset() {
 }
 
 function getCurrentPreset() {
-  const layers = Array.from(byId("mapLayers").querySelectorAll("li:not(.buttonoff)"))
+  const layers = Array.from(document.querySelectorAll("#mapLayers > li:not(.buttonoff)"))
     .map(node => node.id)
     .sort();
-  const defaultPresets = getDefaultPresets();
 
   for (const preset in presets) {
-    if (JSON.stringify(presets[preset]) !== JSON.stringify(layers)) continue;
-    layersPreset.value = preset;
-    removePresetButton.style.display = defaultPresets[preset] ? "none" : "inline-block";
-    savePresetButton.style.display = "none";
-    return;
+    if (JSON.stringify(presets[preset].sort()) === JSON.stringify(layers)) {
+      layersPreset.value = preset;
+      const isDefault = getDefaultPresets()[preset];
+      removePresetButton.style.display = isDefault ? "none" : "inline-block";
+      savePresetButton.style.display = "none";
+      return;
+    }
   }
 
   layersPreset.value = "custom";
