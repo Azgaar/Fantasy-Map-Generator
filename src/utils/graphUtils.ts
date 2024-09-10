@@ -56,8 +56,8 @@ export function getGridPolygon(i: number): TPoints {
   return grid.cells.v[i].map(v => grid.vertices.p[v]);
 }
 
-export function getGridPolygonWithGrid(i: number, cells: Pick<IGrid["cells"], "v">, vertices: IGraphVertices): TPoints {
-  return cells.v[i].map(v => vertices.p[v]);
+export function getGridPolygonLocal(i: number, grid: IGrid): TPoints { // TODO: find a better name
+  return grid.cells.v[i].map(v => grid.vertices.p[v]);
 }
 
 export function isLand(cellId: number) {
