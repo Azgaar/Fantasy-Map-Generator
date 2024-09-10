@@ -315,6 +315,7 @@ async function generateMapOnLoad() {
   await applyStyleOnLoad(); // apply previously selected default or custom style
   await generate(); // generate map
   applyLayersPreset(); // apply saved layers preset and reder layers
+  drawLayers();
   fitMapToScreen();
   focusOn(); // focus on point, cell or burg from MFCG based on url searchParams
 }

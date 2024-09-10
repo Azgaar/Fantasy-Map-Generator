@@ -101,20 +101,37 @@ function restoreCustomPresets() {
 // run on map generation
 function applyLayersPreset() {
   const preset = localStorage.getItem("preset") || byId("layersPreset").value;
-  changeLayersPreset(preset);
+  setLayersPreset(preset);
+
+  const layers = presets[preset]; // layers to be turned on
+  document.querySelectorAll("#mapLayers > li").forEach(el => {
+    const shouldBeOn = layers.includes(el.id);
+    if (shouldBeOn) el.classList.remove("buttonoff");
+    else el.classList.add("buttonoff");
+  });
 }
 
-// toggle layers on preset change
-function changeLayersPreset(preset) {
-  const layers = presets[preset]; // layers to be turned on
-  layersPreset.value = preset;
+function setLayersPreset(preset) {
+  byId("layersPreset").value = preset;
   localStorage.setItem("preset", preset);
+
   const isDefault = getDefaultPresets()[preset];
   byId("removePresetButton").style.display = isDefault ? "none" : "inline-block";
   byId("savePresetButton").style.display = "none";
+}
 
-  document.querySelectorAll("#mapLayers > li").forEach(e => (e.className = layers.includes(e.id) ? null : "buttonoff"));
-  drawLayers();
+// toggle layers on manual preset change
+function handleLayersPresetChange(preset) {
+  setLayersPreset(preset);
+
+  const layers = presets[preset]; // layers to be turned on
+  document.querySelectorAll("#mapLayers > li").forEach(el => {
+    const isOn = layerIsOn(el.id);
+    const shouldBeOn = layers.includes(el.id);
+    if (shouldBeOn && !isOn) el.click();
+    if (isOn && !shouldBeOn) el.click();
+  });
+
   if (byId("canvas3d")) setTimeout(() => ThreeD.update(), 400);
 }
 
