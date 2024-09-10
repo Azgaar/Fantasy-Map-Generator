@@ -1,30 +1,30 @@
-import {markupPackFeatures} from "scripts/generation/markup";
-import {rankCells} from "scripts/generation/pack/rankCells";
-import {pick} from "utils/functionUtils";
-import {generateBurgsAndStates} from "./burgsAndStates/generateBurgsAndStates";
-import {expandCultures} from "./cultures/expandCultures";
-import {generateCultures} from "./cultures/generateCultures";
-import {generateLakeNames} from "./lakes/generateLakeNames";
-import {generateProvinces} from "./provinces/generateProvinces";
-import {generateReligions} from "./religions/generateReligions";
-import {repackGrid} from "./repackGrid";
-import {generateRivers} from "./rivers/generateRivers";
-import {specifyRivers} from "./rivers/specifyRivers";
-import {generateRoutes} from "./routes/generateRoutes";
+import { markupPackFeatures } from "scripts/generation/markup";
+import { rankCells } from "scripts/generation/pack/rankCells";
+import { pick } from "utils/functionUtils";
+import { generateBurgsAndStates } from "./burgsAndStates/generateBurgsAndStates";
+import { expandCultures } from "./cultures/expandCultures";
+import { generateCultures } from "./cultures/generateCultures";
+import { generateLakeNames } from "./lakes/generateLakeNames";
+import { generateProvinces } from "./provinces/generateProvinces";
+import { generateReligions } from "./religions/generateReligions";
+import { repackGrid } from "./repackGrid";
+import { generateRivers } from "./rivers/generateRivers";
+import { specifyRivers } from "./rivers/specifyRivers";
+import { generateRoutes } from "./routes/generateRoutes";
 import { generateIce } from "./generateIce";
 
-const {Biomes} = window;
+const { Biomes } = window;
 
 export function createPack(grid: IGrid): IPack {
-  const {temp, prec} = grid.cells;
-  const {vertices, cells} = repackGrid(grid);
+  const { temp, prec } = grid.cells;
+  const { vertices, cells } = repackGrid(grid);
 
   const {
     features: rawFeatures,
     featureIds,
     distanceField,
     haven,
-    harbor
+    harbor,
   } = markupPackFeatures(grid, vertices, pick(cells, "v", "c", "b", "p", "h"));
 
   const {
@@ -33,9 +33,14 @@ export function createPack(grid: IGrid): IPack {
     riverIds,
     conf,
     rivers: rawRivers,
-    mergedFeatures
+    mergedFeatures,
   } = generateRivers(
-    {...pick(cells, "i", "c", "b", "g", "h", "p"), f: featureIds, t: distanceField, haven},
+    {
+      ...pick(cells, "i", "c", "b", "g", "h", "p"),
+      f: featureIds,
+      t: distanceField,
+      haven,
+    },
     rawFeatures,
     prec,
     temp
@@ -48,10 +53,10 @@ export function createPack(grid: IGrid): IPack {
     riverIds,
     heights,
     neighbors: cells.c,
-    gridReference: cells.g
+    gridReference: cells.g,
   });
 
-  const {suitability, population} = rankCells(mergedFeatures, {
+  const { suitability, population } = rankCells(mergedFeatures, {
     t: distanceField,
     f: featureIds,
     fl: flux,
@@ -61,7 +66,7 @@ export function createPack(grid: IGrid): IPack {
     area: cells.area,
     biome,
     haven,
-    harbor
+    harbor,
   });
 
   const cultures = generateCultures(
@@ -79,7 +84,7 @@ export function createPack(grid: IGrid): IPack {
       fl: flux,
       s: suitability,
       pop: population,
-      biome
+      biome,
     },
     temp
   );
@@ -93,42 +98,43 @@ export function createPack(grid: IGrid): IPack {
     r: riverIds,
     fl: flux,
     biome,
-    pop: population
+    pop: population,
   });
 
-  const {burgIds, stateIds, burgs, states, conflicts} = generateBurgsAndStates(
-    cultures,
-    mergedFeatures,
-    temp,
-    rawRivers,
-    vertices,
-    {
-      ...pick(cells, "v", "c", "p", "b", "i", "g", "area"),
-      h: heights,
-      f: featureIds,
-      t: distanceField,
-      haven,
-      harbor,
-      r: riverIds,
-      fl: flux,
-      biome,
-      s: suitability,
-      pop: population,
-      culture: cultureIds
-    }
-  );
+  const { burgIds, stateIds, burgs, states, conflicts } =
+    generateBurgsAndStates(
+      cultures,
+      mergedFeatures,
+      temp,
+      rawRivers,
+      vertices,
+      {
+        ...pick(cells, "v", "c", "p", "b", "i", "g", "area"),
+        h: heights,
+        f: featureIds,
+        t: distanceField,
+        haven,
+        harbor,
+        r: riverIds,
+        fl: flux,
+        biome,
+        s: suitability,
+        pop: population,
+        culture: cultureIds,
+      }
+    );
 
-  const {cellRoutes, routes} = generateRoutes(burgs, temp, {
+  const { cellRoutes, routes } = generateRoutes(burgs, temp, {
     c: cells.c,
     p: cells.p,
     g: cells.g,
     h: heights,
     t: distanceField,
     biome,
-    burg: burgIds
+    burg: burgIds,
   });
 
-  const {religionIds, religions} = generateReligions({
+  const { religionIds, religions } = generateReligions({
     states,
     cultures,
     burgs,
@@ -144,31 +150,38 @@ export function createPack(grid: IGrid): IPack {
       culture: cultureIds,
       burg: burgIds,
       state: stateIds,
-      route: cellRoutes
-    }
+      route: cellRoutes,
+    },
   });
 
-  const {provinceIds, provinces} = generateProvinces(states, burgs, cultures, mergedFeatures, vertices, {
-    i: cells.i,
-    c: cells.c,
-    v: cells.v,
-    h: heights,
-    t: distanceField,
-    f: featureIds,
-    culture: cultureIds,
-    state: stateIds,
-    burg: burgIds
-  });
+  const { provinceIds, provinces } = generateProvinces(
+    states,
+    burgs,
+    cultures,
+    mergedFeatures,
+    vertices,
+    {
+      i: cells.i,
+      c: cells.c,
+      v: cells.v,
+      h: heights,
+      t: distanceField,
+      f: featureIds,
+      culture: cultureIds,
+      state: stateIds,
+      burg: burgIds,
+    }
+  );
 
   const rivers = specifyRivers(rawRivers, cultureIds, cultures);
   const features = generateLakeNames(mergedFeatures, cultureIds, cultures);
-  const ice = generateIce(cells, vertices, temp, features, grid.cells);
+  const ice = generateIce(grid.cells, grid.vertices, grid.points, features);
 
   // Military.generate();
   // Markers.generate();
   // addZones(); // add to pack data
 
-  const events: IEvents = {conflicts};
+  const events: IEvents = { conflicts };
 
   const pack: IPack = {
     vertices,
@@ -190,7 +203,7 @@ export function createPack(grid: IGrid): IPack {
       state: stateIds,
       route: cellRoutes,
       religion: religionIds,
-      province: provinceIds
+      province: provinceIds,
     },
     features,
     rivers,
@@ -201,7 +214,7 @@ export function createPack(grid: IGrid): IPack {
     religions,
     provinces,
     events,
-    ice
+    ice,
   };
 
   return pack;
