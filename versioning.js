@@ -12,7 +12,7 @@
  *
  * Example: 1.102.2 -> Major version 1, Minor version 102, Patch version 2
  */
-const VERSION = "1.103.5";
+const VERSION = "1.103.6";
 if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format or parsing function");
 
 {
