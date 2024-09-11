@@ -50,14 +50,14 @@ window.Zones = (function () {
     const startCell = ra(borderCells);
     if (startCell === undefined) return;
 
-    const invationCells = [];
+    const invasionCells = [];
     const queue = [startCell];
     const maxCells = rand(5, 30);
 
     while (queue.length) {
       const cellId = P(0.4) ? queue.shift() : queue.pop();
-      invationCells.push(cellId);
-      if (invationCells.length >= maxCells) break;
+      invasionCells.push(cellId);
+      if (invasionCells.length >= maxCells) break;
 
       cells.c[cellId].forEach(neibCellId => {
         if (usedCells[neibCellId]) return;
