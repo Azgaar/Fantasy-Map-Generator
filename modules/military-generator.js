@@ -358,7 +358,9 @@ window.Military = (function () {
       .attr("id", d => "regiment" + s + "-" + d.i)
       .attr("data-name", d => d.name)
       .attr("data-state", s)
-      .attr("data-id", d => d.i);
+      .attr("data-id", d => d.i)
+      .attr("transform", d => (d.angle ? `rotate(${d.angle})` : null))
+      .attr("transform-origin", d => `${d.x}px ${d.y}px`);
     g.append("rect")
       .attr("x", d => x(d))
       .attr("y", d => y(d))
@@ -404,7 +406,9 @@ window.Military = (function () {
       .attr("id", "regiment" + stateId + "-" + reg.i)
       .attr("data-name", reg.name)
       .attr("data-state", stateId)
-      .attr("data-id", reg.i);
+      .attr("data-id", reg.i)
+      .attr("transform", `rotate(${reg.angle || 0})`)
+      .attr("transform-origin", `${reg.x}px ${reg.y}px`);
     g.append("rect").attr("x", x1).attr("y", y1).attr("width", w).attr("height", h);
     g.append("text").attr("x", reg.x).attr("y", reg.y).text(getTotal(reg));
     g.append("rect")
@@ -499,7 +503,9 @@ window.Military = (function () {
       : "";
 
     const campaign = s.campaigns ? ra(s.campaigns) : null;
-    const year = campaign ? rand(campaign.start, campaign.end) : gauss(options.year - 100, 150, 1, options.year - 6);
+    const year = campaign
+      ? rand(campaign.start, campaign.end || options.year)
+      : gauss(options.year - 100, 150, 1, options.year - 6);
     const conflict = campaign ? ` during the ${campaign.name}` : "";
     const legend = `Regiment was formed in ${year} ${options.era}${conflict}. ${station}${troops}`;
     notes.push({id: `regiment${s.i}-${r.i}`, name: `${r.icon} ${r.name}`, legend});

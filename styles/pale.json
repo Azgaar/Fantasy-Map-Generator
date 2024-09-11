@@ -72,8 +72,8 @@
     "mask": "url(#water)",
     "shape-rendering": "optimizespeed"
   },
-  "#rose": {
-    "transform": null
+  "#compass > use": {
+    "transform": "translate(80 80) scale(.25)"
   },
   "#relig": {
     "opacity": 0.5,
@@ -258,6 +258,15 @@
     "stroke-width": 1,
     "filter": null
   },
+  "#emblems > #stateEmblems": {
+    "data-size": 1
+  },
+  "#emblems > #provinceEmblems": {
+    "data-size": 1
+  },
+  "#emblems > #burgEmblems": {
+    "data-size": 1
+  },
   "#texture": {
     "opacity": 0.4,
     "filter": null,
@@ -323,6 +332,7 @@
     "opacity": 0.8,
     "fill": "#3a3a3a",
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 7,
     "font-size": 7,
     "font-family": "Arima Madurai"
@@ -348,6 +358,7 @@
     "opacity": 0.8,
     "fill": "#3e3e4b",
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 4,
     "font-size": 4,
     "font-family": "Arima Madurai"
@@ -375,6 +386,7 @@
     "stroke": "#000000",
     "stroke-width": 0,
     "text-shadow": "white 0px 0px 6px",
+    "letter-spacing": 0,
     "data-size": 14,
     "font-size": 14,
     "font-family": "Arima Madurai",
@@ -386,6 +398,7 @@
     "stroke": "#701b05",
     "stroke-width": 0.1,
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 6,
     "font-size": 6,
     "font-family": "Arima Madurai",

@@ -87,7 +87,7 @@ async function exportToPngTiles() {
   imgSchema.src = urlSchema;
   await loadImage(imgSchema);
 
-  status.innerHTML = "Drawing schema...";
+  status.innerHTML = "Rendering schema...";
   ctx.drawImage(imgSchema, 0, 0, canvas.width, canvas.height);
   const blob = await canvasToBlob(canvas, "image/png");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -95,9 +95,9 @@ async function exportToPngTiles() {
 
   // download tiles
   const url = await getMapURL("tiles", {fullMap: true});
-  const tilesX = +byId("tileColsInput").value;
-  const tilesY = +byId("tileRowsInput").value;
-  const scale = +byId("tileScaleInput").value;
+  const tilesX = +byId("tileColsOutput").value || 2;
+  const tilesY = +byId("tileRowsOutput").value || 2;
+  const scale = +byId("tileScaleOutput").value || 1;
   const tolesTotal = tilesX * tilesY;
 
   const tileW = (graphWidth / tilesX) | 0;
@@ -113,11 +113,17 @@ async function exportToPngTiles() {
   await loadImage(img);
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  function getRowLabel(row) {
+    const first = row >= alphabet.length ? alphabet[Math.floor(row / alphabet.length) - 1] : "";
+    const last = alphabet[row % alphabet.length];
+    return first + last;
+  }
+
   for (let y = 0, row = 0, id = 1; y + tileH <= graphHeight; y += tileH, row++) {
-    const rowName = alphabet[row % alphabet.length];
+    const rowName = getRowLabel(row);
 
     for (let x = 0, cell = 1; x + tileW <= graphWidth; x += tileW, cell++, id++) {
-      status.innerHTML = `Drawing tile ${rowName}${cell} (${id} of ${tolesTotal})...`;
+      status.innerHTML = `Rendering tile ${rowName}${cell} (${id} of ${tolesTotal})...`;
       ctx.drawImage(img, x, y, tileW, tileH, 0, 0, width, height);
       const blob = await canvasToBlob(canvas, "image/png");
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -295,7 +301,7 @@ async function getMapURL(type, options) {
 
   // add wind rose
   if (cloneEl.getElementById("compass")) {
-    const rose = svgDefs.getElementById("rose");
+    const rose = svgDefs.getElementById("defs-compass-rose");
     if (rose) cloneDefs.appendChild(rose.cloneNode(true));
   }
 
@@ -434,14 +440,24 @@ function inlineStyle(clone) {
   emptyG.remove();
 }
 
-function saveGeoJSON_Cells() {
+function saveGeoJsonCells() {
+  const {cells, vertices} = pack;
   const json = {type: "FeatureCollection", features: []};
-  const cells = pack.cells;
+
   const getPopulation = i => {
     const [r, u] = getCellPopulation(i);
     return rn(r + u);
   };
-  const getHeight = i => parseInt(getFriendlyHeight([cells.p[i][0], cells.p[i][1]]));
+
+  const getHeight = i => parseInt(getFriendlyHeight([...cells.p[i]]));
+
+  function getCellCoordinates(cellVertices) {
+    const coordinates = cellVertices.map(vertex => {
+      const [x, y] = vertices.p[vertex];
+      return getCoordinates(x, y, 4);
+    });
+    return [[...coordinates, coordinates[0]]];
+  }
 
   cells.i.forEach(i => {
     const coordinates = getCellCoordinates(cells.v[i]);
@@ -464,40 +480,43 @@ function saveGeoJSON_Cells() {
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-function saveGeoJSON_Routes() {
-  const json = {type: "FeatureCollection", features: []};
-
-  routes.selectAll("g > path").each(function () {
-    const coordinates = getRoutePoints(this);
-    const id = this.id;
-    const type = this.parentElement.id;
-
-    const feature = {type: "Feature", geometry: {type: "LineString", coordinates}, properties: {id, type}};
-    json.features.push(feature);
+function saveGeoJsonRoutes() {
+  const features = pack.routes.map(({i, points, group, name = null}) => {
+    const coordinates = points.map(([x, y]) => getCoordinates(x, y, 4));
+    const id = `route${i}`;
+    return {
+      type: "Feature",
+      geometry: {type: "LineString", coordinates},
+      properties: {id, group, name}
+    };
   });
+  const json = {type: "FeatureCollection", features};
 
   const fileName = getFileName("Routes") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-function saveGeoJSON_Rivers() {
-  const json = {type: "FeatureCollection", features: []};
-
-  rivers.selectAll("path").each(function () {
-    const river = pack.rivers.find(r => r.i === +this.id.slice(5));
-    if (!river) return;
-
-    const coordinates = getRiverPoints(this);
-    const properties = {...river, id: this.id};
-    const feature = {type: "Feature", geometry: {type: "LineString", coordinates}, properties};
-    json.features.push(feature);
-  });
+function saveGeoJsonRivers() {
+  const features = pack.rivers.map(
+    ({i, cells, points, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type}) => {
+      if (!cells || cells.length < 2) return;
+      const meanderedPoints = Rivers.addMeandering(cells, points);
+      const coordinates = meanderedPoints.map(([x, y]) => getCoordinates(x, y, 4));
+      const id = `river${i}`;
+      return {
+        type: "Feature",
+        geometry: {type: "LineString", coordinates},
+        properties: {id, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type}
+      };
+    }
+  );
+  const json = {type: "FeatureCollection", features};
 
   const fileName = getFileName("Rivers") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-function saveGeoJSON_Markers() {
+function saveGeoJsonMarkers() {
   const features = pack.markers.map(marker => {
     const {i, type, icon, x, y, size, fill, stroke} = marker;
     const coordinates = getCoordinates(x, y, 4);
@@ -511,34 +530,4 @@ function saveGeoJSON_Markers() {
 
   const fileName = getFileName("Markers") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
-}
-
-function getCellCoordinates(vertices) {
-  const p = pack.vertices.p;
-  const coordinates = vertices.map(n => getCoordinates(p[n][0], p[n][1], 2));
-  return [coordinates.concat([coordinates[0]])];
-}
-
-function getRoutePoints(node) {
-  let points = [];
-  const l = node.getTotalLength();
-  const increment = l / Math.ceil(l / 2);
-  for (let i = 0; i <= l; i += increment) {
-    const p = node.getPointAtLength(i);
-    points.push(getCoordinates(p.x, p.y, 4));
-  }
-  return points;
-}
-
-function getRiverPoints(node) {
-  let points = [];
-  const l = node.getTotalLength() / 2; // half-length
-  const increment = 0.25; // defines density of points
-  for (let i = l, c = i; i >= 0; i -= increment, c += increment) {
-    const p1 = node.getPointAtLength(i);
-    const p2 = node.getPointAtLength(c);
-    const [x, y] = getCoordinates((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, 4);
-    points.push([x, y]);
-  }
-  return points;
 }

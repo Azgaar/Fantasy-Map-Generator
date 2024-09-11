@@ -73,8 +73,8 @@
     "mask": "url(#water)",
     "shape-rendering": "optimizespeed"
   },
-  "#rose": {
-    "transform": null
+  "#compass > use": {
+    "transform": "translate(80 80) scale(.25)"
   },
   "#relig": {
     "opacity": 0.7,
@@ -260,6 +260,15 @@
     "stroke-width": 1,
     "filter": null
   },
+  "#emblems > #stateEmblems": {
+    "data-size": 1
+  },
+  "#emblems > #provinceEmblems": {
+    "data-size": 1
+  },
+  "#emblems > #burgEmblems": {
+    "data-size": 1
+  },
   "#texture": {
     "opacity": 0.2,
     "filter": null,
@@ -310,22 +319,22 @@
     "mask": "url(#land)"
   },
   "#legend": {
-    "data-size": 12.74,
-    "font-size": 12.74,
+    "data-size": 12,
+    "font-size": 12,
     "font-family": "Arial",
     "stroke": "#909090",
-    "stroke-width": 1.13,
+    "stroke-width": 1,
     "stroke-dasharray": 0,
     "stroke-linecap": "round",
-    "data-x": 98.39,
-    "data-y": 12.67,
-    "data-columns": null
+    "data-x": 99,
+    "data-y": 93,
+    "data-columns": 8
   },
-  "#legendBox": {},
   "#burgLabels > #cities": {
     "opacity": 1,
     "fill": "#414141",
     "text-shadow": "white 0 0 4px",
+    "letter-spacing": 0,
     "data-size": 7,
     "font-size": 7,
     "font-family": "Arial"
@@ -350,6 +359,8 @@
   "#burgLabels > #towns": {
     "opacity": 1,
     "fill": "#414141",
+    "text-shadow": "none",
+    "letter-spacing": 0,
     "data-size": 3,
     "font-size": 3,
     "font-family": "Arial"
@@ -377,6 +388,7 @@
     "stroke": "#303030",
     "stroke-width": 0,
     "text-shadow": "white 0 0 2px",
+    "letter-spacing": 0,
     "data-size": 10,
     "font-size": 10,
     "font-family": "Arial",
@@ -388,6 +400,7 @@
     "stroke": "#3a3a3a",
     "stroke-width": 0,
     "text-shadow": "white 0 0 4px",
+    "letter-spacing": 0,
     "data-size": 18,
     "font-size": 18,
     "font-family": "Arial",

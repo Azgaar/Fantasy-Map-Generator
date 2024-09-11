@@ -10,6 +10,7 @@ const systemPresets = [
   "watercolor",
   "clean",
   "atlas",
+  "darkSeas",
   "cyberpunk",
   "night",
   "monochrome"
@@ -63,7 +64,7 @@ async function getStylePreset(desiredPreset) {
 
 async function fetchSystemPreset(preset) {
   try {
-    const res = await fetch(`./styles/${preset}.json`);
+    const res = await fetch(`./styles/${preset}.json?v=${VERSION}`);
     return await res.json();
   } catch (err) {
     throw new Error("Cannot fetch style preset", preset);
@@ -198,7 +199,7 @@ function addStylePreset() {
         "mask"
       ],
       "#compass": ["opacity", "transform", "filter", "mask", "shape-rendering"],
-      "#rose": ["transform"],
+      "#compass > use": ["transform"],
       "#relig": ["opacity", "stroke", "stroke-width", "filter"],
       "#cults": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
       "#landmass": ["opacity", "fill", "filter"],
@@ -237,6 +238,9 @@ function addStylePreset() {
       ],
       "#ice": ["opacity", "fill", "stroke", "stroke-width", "filter"],
       "#emblems": ["opacity", "stroke-width", "filter"],
+      "#emblems > #stateEmblems": ["data-size"],
+      "#emblems > #provinceEmblems": ["data-size"],
+      "#emblems > #burgEmblems": ["data-size"],
       "#texture": ["opacity", "filter", "mask", "data-x", "data-y", "data-href"],
       "#zones": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
       "#oceanLayers": ["filter", "layers"],
@@ -267,7 +271,15 @@ function addStylePreset() {
         "data-columns"
       ],
       "#legendBox": ["fill", "fill-opacity"],
-      "#burgLabels > #cities": ["opacity", "fill", "text-shadow", "data-size", "font-size", "font-family"],
+      "#burgLabels > #cities": [
+        "opacity",
+        "fill",
+        "text-shadow",
+        "letter-spacing",
+        "data-size",
+        "font-size",
+        "font-family"
+      ],
       "#burgIcons > #cities": [
         "opacity",
         "fill",
@@ -279,7 +291,15 @@ function addStylePreset() {
         "stroke-linecap"
       ],
       "#anchors > #cities": ["opacity", "fill", "size", "stroke", "stroke-width"],
-      "#burgLabels > #towns": ["opacity", "fill", "text-shadow", "data-size", "font-size", "font-family"],
+      "#burgLabels > #towns": [
+        "opacity",
+        "fill",
+        "text-shadow",
+        "letter-spacing",
+        "data-size",
+        "font-size",
+        "font-family"
+      ],
       "#burgIcons > #towns": [
         "opacity",
         "fill",
@@ -297,6 +317,7 @@ function addStylePreset() {
         "stroke",
         "stroke-width",
         "text-shadow",
+        "letter-spacing",
         "data-size",
         "font-size",
         "font-family",
@@ -308,6 +329,7 @@ function addStylePreset() {
         "stroke",
         "stroke-width",
         "text-shadow",
+        "letter-spacing",
         "data-size",
         "font-size",
         "font-family",

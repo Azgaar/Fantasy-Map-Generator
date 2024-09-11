@@ -67,9 +67,9 @@ function showDataTip(event) {
 function showElementLockTip(event) {
   const locked = event?.target?.classList?.contains("icon-lock");
   if (locked) {
-    tip("Click to unlock the element and allow it to be changed by regeneration tools");
+    tip("Locked. Click to unlock the element and allow it to be changed by regeneration tools");
   } else {
-    tip("Click to lock the element and prevent changes to it by regeneration tools");
+    tip("Unlocked. Click to lock the element and prevent changes to it by regeneration tools");
   }
 }
 
@@ -151,7 +151,12 @@ function showMapTooltip(point, e, i, g) {
     return;
   }
 
-  if (group === "routes") return tip("Click to edit the Route");
+  if (group === "routes") {
+    const routeId = +e.target.id.slice(5);
+    const name = pack.routes[routeId]?.name;
+    if (name) return tip(`${name}. Click to edit the Route`);
+    return tip("Click to edit the Route");
+  }
 
   if (group === "terrain") return tip("Click to edit the Relief Icon");
 
@@ -163,6 +168,7 @@ function showMapTooltip(point, e, i, g) {
     if (burgsOverview?.offsetParent) highlightEditorLine(burgsOverview, burg, 5000);
     return;
   }
+
   if (group === "labels") return tip("Click to edit the Label");
 
   if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note");
@@ -194,9 +200,11 @@ function showMapTooltip(point, e, i, g) {
   if (group === "coastline") return tip("Click to edit the coastline");
 
   if (group === "zones") {
-    const zone = path[path.length - 8];
-    tip(zone.dataset.description);
-    if (zonesEditor?.offsetParent) highlightEditorLine(zonesEditor, zone.id, 5000);
+    const element = path[path.length - 8];
+    const zoneId = +element.dataset.id;
+    const zone = pack.zones.find(zone => zone.i === zoneId);
+    tip(zone.name);
+    if (zonesEditor?.offsetParent) highlightEditorLine(zonesEditor, zoneId, 5000);
     return;
   }
 
@@ -251,10 +259,11 @@ function updateCellInfo(point, i, g) {
   const f = cells.f[i];
   infoLat.innerHTML = toDMS(getLatitude(y, 4), "lat");
   infoLon.innerHTML = toDMS(getLongitude(x, 4), "lon");
+  infoGeozone.innerHTML = getGeozone(getLatitude(y, 4));
 
   infoCell.innerHTML = i;
   infoArea.innerHTML = cells.area[i] ? si(getArea(cells.area[i])) + " " + getAreaUnit() : "n/a";
-  infoEvelation.innerHTML = getElevation(pack.features[f], pack.cells.h[i]);
+  infoElevation.innerHTML = getElevation(pack.features[f], pack.cells.h[i]);
   infoDepth.innerHTML = getDepth(pack.features[f], point);
   infoTemp.innerHTML = convertTemperature(grid.cells.temp[g]);
   infoPrec.innerHTML = cells.h[i] >= 20 ? getFriendlyPrecipitation(i) : "n/a";
@@ -278,6 +287,18 @@ function updateCellInfo(point, i, g) {
   infoBiome.innerHTML = biomesData.name[cells.biome[i]];
 }
 
+function getGeozone(latitude) {
+  if (latitude > 66.5) return "Arctic";
+  if (latitude > 35) return "Temperate North";
+  if (latitude > 23.5) return "Subtropical North";
+  if (latitude > 1) return "Tropical North";
+  if (latitude > -1) return "Equatorial";
+  if (latitude > -23.5) return "Tropical South";
+  if (latitude > -35) return "Subtropical South";
+  if (latitude > -66.5) return "Temperate South";
+  return "Antarctic";
+}
+
 // convert coordinate to DMS format
 function toDMS(coord, c) {
   const degrees = Math.floor(Math.abs(coord));
@@ -285,7 +306,7 @@ function toDMS(coord, c) {
   const minutes = Math.floor(minutesNotTruncated);
   const seconds = Math.floor((minutesNotTruncated - minutes) * 60);
   const cardinal = c === "lat" ? (coord >= 0 ? "N" : "S") : coord >= 0 ? "E" : "W";
-  return degrees + "° " + minutes + "′ " + seconds + "″ " + cardinal;
+  return degrees + "°" + minutes + "′" + seconds + "″" + cardinal;
 }
 
 // get surface elevation
@@ -421,17 +442,17 @@ function highlightEmblemElement(type, el) {
 
 // assign lock behavior
 document.querySelectorAll("[data-locked]").forEach(function (e) {
-  e.addEventListener("mouseover", function (event) {
+  e.addEventListener("mouseover", function (e) {
+    e.stopPropagation();
     if (this.className === "icon-lock")
       tip("Click to unlock the option and allow it to be randomized on new map generation");
     else tip("Click to lock the option and always use the current value on new map generation");
-    event.stopPropagation();
   });
 
   e.addEventListener("click", function () {
-    const id = this.id.slice(5);
-    if (this.className === "icon-lock") unlock(id);
-    else lock(id);
+    const ids = this.dataset.ids ? this.dataset.ids.split(",") : [this.id.slice(5)];
+    const fn = this.className === "icon-lock" ? unlock : lock;
+    ids.forEach(fn);
   });
 });
 

@@ -41,10 +41,10 @@ function prepareMapData() {
   const date = new Date();
   const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
-  const params = [version, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
+  const params = [VERSION, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
   const settings = [
     distanceUnitInput.value,
-    distanceScaleInput.value,
+    distanceScale,
     areaUnit.value,
     heightUnit.value,
     heightExponentInput.value,
@@ -67,7 +67,8 @@ function prepareMapData() {
     +hideLabels.checked,
     stylePreset.value,
     +rescaleLabels.checked,
-    urbanDensity
+    urbanDensity,
+    longitudeOutput.value
   ].join("|");
   const coords = JSON.stringify(mapCoordinates);
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
@@ -97,6 +98,9 @@ function prepareMapData() {
   const provinces = JSON.stringify(pack.provinces);
   const rivers = JSON.stringify(pack.rivers);
   const markers = JSON.stringify(pack.markers);
+  const cellRoutes = JSON.stringify(pack.cells.routes);
+  const routes = JSON.stringify(pack.routes);
+  const zones = JSON.stringify(pack.zones);
 
   // store name array only if not the same as default
   const defaultNB = Names.getNameBases();
@@ -135,19 +139,22 @@ function prepareMapData() {
     pack.cells.fl,
     pop,
     pack.cells.r,
-    pack.cells.road,
+    [], // deprecated pack.cells.road
     pack.cells.s,
     pack.cells.state,
     pack.cells.religion,
     pack.cells.province,
-    pack.cells.crossroad,
+    [], // deprecated pack.cells.crossroad
     religions,
     provinces,
     namesData,
     rivers,
     rulersString,
     fonts,
-    markers
+    markers,
+    cellRoutes,
+    routes,
+    zones
   ].join("\r\n");
   return mapData;
 }

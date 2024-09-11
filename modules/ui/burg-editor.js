@@ -47,6 +47,7 @@ function editBurg(id) {
   byId("burgEmblem").addEventListener("click", openEmblemEdit);
   byId("burgTogglePreview").addEventListener("click", toggleBurgPreview);
   byId("burgEditEmblem").addEventListener("click", openEmblemEdit);
+  byId("burgLocate").addEventListener("click", zoomIntoBurg);
   byId("burgRelocate").addEventListener("click", toggleRelocateBurg);
   byId("burglLegend").addEventListener("click", editBurgLegend);
   byId("burgLock").addEventListener("click", toggleBurgLockButton);
@@ -228,34 +229,26 @@ function editBurg(id) {
     const burgsToRemove = burgsInGroup.filter(b => !(pack.burgs[b].capital || pack.burgs[b].lock));
     const capital = burgsToRemove.length < burgsInGroup.length;
 
-    alertMessage.innerHTML = /* html */ `Are you sure you want to remove ${
-      basic || capital ? "all unlocked elements in the burg group" : "the entire burg group"
-    }?
-      <br />Please note that capital or locked burgs will not be deleted. <br /><br />Burgs to be removed: ${
-        burgsToRemove.length
-      }`;
-    $("#alert").dialog({
-      resizable: false,
+    confirmationDialog({
       title: "Remove burg group",
-      buttons: {
-        Remove: function () {
-          $(this).dialog("close");
-          $("#burgEditor").dialog("close");
-          hideGroupSection();
-          burgsToRemove.forEach(b => removeBurg(b));
+      message: `Are you sure you want to remove ${
+        basic || capital ? "all unlocked elements in the burg group" : "the entire burg group"
+      }?<br />Please note that capital or locked burgs will not be deleted. <br /><br />Burgs to be removed: ${
+        burgsToRemove.length
+      }. This action cannot be reverted`,
+      confirm: "Remove",
+      onConfirm: () => {
+        $("#burgEditor").dialog("close");
+        hideGroupSection();
+        burgsToRemove.forEach(b => removeBurg(b));
 
-          if (!basic && !capital) {
-            // entirely remove group
-            const labelG = document.querySelector("#burgLabels > #" + group.id);
-            const iconG = document.querySelector("#burgIcons > #" + group.id);
-            const anchorG = document.querySelector("#anchors > #" + group.id);
-            if (labelG) labelG.remove();
-            if (iconG) iconG.remove();
-            if (anchorG) anchorG.remove();
-          }
-        },
-        Cancel: function () {
-          $(this).dialog("close");
+        if (!basic && !capital) {
+          const labelG = document.querySelector("#burgLabels > #" + group.id);
+          const iconG = document.querySelector("#burgIcons > #" + group.id);
+          const anchorG = document.querySelector("#anchors > #" + group.id);
+          if (labelG) labelG.remove();
+          if (iconG) iconG.remove();
+          if (anchorG) anchorG.remove();
         }
       }
     });
@@ -405,6 +398,14 @@ function editBurg(id) {
     byId("burgTogglePreview").className = options.showBurgPreview ? "icon-map" : "icon-map-o";
   }
 
+  function zoomIntoBurg() {
+    const id = +elSelected.attr("data-id");
+    const burg = pack.burgs[id];
+    const x = burg.x;
+    const y = burg.y;
+    zoomTo(x, y, 8, 2000);
+  }
+
   function toggleRelocateBurg() {
     const toggler = byId("toggleCells");
     byId("burgRelocate").classList.toggle("pressed");
@@ -509,19 +510,13 @@ function editBurg(id) {
         }
       });
     } else {
-      alertMessage.innerHTML = "Are you sure you want to remove the burg?";
-      $("#alert").dialog({
-        resizable: false,
+      confirmationDialog({
         title: "Remove burg",
-        buttons: {
-          Remove: function () {
-            $(this).dialog("close");
-            removeBurg(id); // see Editors module
-            $("#burgEditor").dialog("close");
-          },
-          Cancel: function () {
-            $(this).dialog("close");
-          }
+        message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
+        confirm: "Remove",
+        onConfirm: () => {
+          removeBurg(id); // see Editors module
+          $("#burgEditor").dialog("close");
         }
       });
     }

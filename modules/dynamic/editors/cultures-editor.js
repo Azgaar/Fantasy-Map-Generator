@@ -51,24 +51,9 @@ function insertEditorHtml() {
       <button id="culturesHeirarchy" data-tip="Show cultures hierarchy tree" class="icon-sitemap"></button>
       <button id="culturesManually" data-tip="Manually re-assign cultures" class="icon-brush"></button>
       <div id="culturesManuallyButtons" style="display: none">
-        <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic">Brush size:
-          <input
-            id="culturesManuallyBrush"
-            oninput="tip('Brush size: '+this.value); culturesManuallyBrushNumber.value = this.value"
-            type="range"
-            min="5"
-            max="99"
-            value="15"
-            style="width: 7em"
-          />
-          <input
-            id="culturesManuallyBrushNumber"
-            oninput="tip('Brush size: '+this.value); culturesManuallyBrush.value = this.value"
-            type="number"
-            min="5"
-            max="99"
-            value="15"
-          /> </label><br />
+        <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em;">
+          <slider-input id="culturesBrush" min="1" max="100" value="15">Brush size:</slider-input>
+        </div>
         <button id="culturesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
         <button id="culturesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
       </div>
@@ -718,7 +703,7 @@ function selectCultureOnMapClick() {
 }
 
 function dragCultureBrush() {
-  const radius = +culturesManuallyBrush.value;
+  const radius = +culturesBrush.value;
 
   d3.event.on("drag", () => {
     if (!d3.event.dx && !d3.event.dy) return;
@@ -759,7 +744,7 @@ function changeCultureForSelection(selection) {
 function moveCultureBrush() {
   showMainTip();
   const point = d3.mouse(this);
-  const radius = +culturesManuallyBrush.value;
+  const radius = +culturesBrush.value;
   moveCircle(point[0], point[1], radius);
 }
 

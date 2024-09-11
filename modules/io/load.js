@@ -1,4 +1,5 @@
 "use strict";
+
 // Functions to load and parse .map/.gz files
 async function quickLoad() {
   const blob = await ldb.get("lastMap");
@@ -104,26 +105,28 @@ function showUploadErrorMessage(error, URL, random) {
 
 function uploadMap(file, callback) {
   uploadMap.timeStart = performance.now();
-  const OLDEST_SUPPORTED_VERSION = 0.7;
-  const currentVersion = parseFloat(version);
 
   const fileReader = new FileReader();
   fileReader.onloadend = async function (fileLoadedEvent) {
     if (callback) callback();
     byId("coas").innerHTML = ""; // remove auto-generated emblems
+
     const result = fileLoadedEvent.target.result;
-    const [mapData, mapVersion] = await parseLoadedResult(result);
+    const {mapData, mapVersion} = await parseLoadedResult(result);
 
-    const isInvalid = !mapData || isNaN(mapVersion) || mapData.length < 26 || !mapData[5];
-    const isUpdated = mapVersion === currentVersion;
-    const isAncient = mapVersion < OLDEST_SUPPORTED_VERSION;
-    const isNewer = mapVersion > currentVersion;
-    const isOutdated = mapVersion < currentVersion;
-
+    const isInvalid = !mapData || !isValidVersion(mapVersion) || mapData.length < 26 || !mapData[5];
     if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
-    if (isUpdated) return parseLoadedData(mapData);
+
+    const isUpdated = compareVersions(mapVersion, VERSION).isEqual;
+    if (isUpdated) return showUploadMessage("updated", mapData, mapVersion);
+
+    const isAncient = compareVersions(mapVersion, "0.70.0").isOlder;
     if (isAncient) return showUploadMessage("ancient", mapData, mapVersion);
+
+    const isNewer = compareVersions(mapVersion, VERSION).isNewer;
     if (isNewer) return showUploadMessage("newer", mapData, mapVersion);
+
+    const isOutdated = compareVersions(mapVersion, VERSION).isOlder;
     if (isOutdated) return showUploadMessage("outdated", mapData, mapVersion);
   };
 
@@ -153,49 +156,50 @@ async function parseLoadedResult(result) {
     const isDelimited = resultAsString.substring(0, 10).includes("|");
     const decoded = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
 
-    const mapData = decoded.split("\r\n");
-    const mapVersion = parseFloat(mapData[0].split("|")[0] || mapData[0]);
-    return [mapData, mapVersion];
+    const mapData = decoded.split("\r\n"); // split by CRLF
+    const mapVersion = parseMapVersion(mapData[0].split("|")[0] || mapData[0] || "");
+
+    return {mapData, mapVersion};
   } catch (error) {
-    // map file can be compressed with gzip
-    const uncompressedData = await uncompress(result);
+    const uncompressedData = await uncompress(result); // file can be gzip compressed
     if (uncompressedData) return parseLoadedResult(uncompressedData);
 
     ERROR && console.error(error);
-    return [null, null];
+    return {mapData: null, mapVersion: null};
   }
 }
 
 function showUploadMessage(type, mapData, mapVersion) {
-  const archive = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "archived version");
-  let message, title, canBeLoaded;
+  let message, title;
 
   if (type === "invalid") {
-    message = `The file does not look like a valid save file.<br>Please check the data format`;
+    message = "The file does not look like a valid save file.<br>Please check the data format";
     title = "Invalid file";
-    canBeLoaded = false;
+  } else if (type === "updated") {
+    parseLoadedData(mapData, mapVersion);
+    return;
   } else if (type === "ancient") {
+    const archive = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "archived version");
     message = `The map version you are trying to load (${mapVersion}) is too old and cannot be updated to the current version.<br>Please keep using an ${archive}`;
     title = "Ancient file";
-    canBeLoaded = false;
   } else if (type === "newer") {
     message = `The map version you are trying to load (${mapVersion}) is newer than the current version.<br>Please load the file in the appropriate version`;
     title = "Newer file";
-    canBeLoaded = false;
   } else if (type === "outdated") {
-    INFO && console.info(`Loading map. Auto-update from ${mapVersion} to ${version}`);
+    INFO && console.info(`Loading map. Auto-updating from ${mapVersion} to ${VERSION}`);
     parseLoadedData(mapData, mapVersion);
     return;
   }
 
   alertMessage.innerHTML = message;
-  const buttons = {
-    OK: function () {
-      $(this).dialog("close");
-      if (canBeLoaded) parseLoadedData(mapData, mapVersion);
+  $("#alert").dialog({
+    title,
+    buttons: {
+      OK: function () {
+        $(this).dialog("close");
+      }
     }
-  };
-  $("#alert").dialog({title, buttons});
+  });
 }
 
 async function parseLoadedData(data, mapVersion) {
@@ -205,31 +209,29 @@ async function parseLoadedData(data, mapVersion) {
     customization = 0;
     if (customizationMenu.offsetParent) styleTab.click();
 
-    const params = data[0].split("|");
-    void (function parseParameters() {
+    {
+      const params = data[0].split("|");
       if (params[3]) {
         seed = params[3];
         optionsSeed.value = seed;
-      }
+        INFO && console.group("Loaded Map " + seed);
+      } else INFO && console.group("Loaded Map");
       if (params[4]) graphWidth = +params[4];
       if (params[5]) graphHeight = +params[5];
       mapId = params[6] ? +params[6] : Date.now();
-    })();
+    }
 
-    INFO && console.group("Loaded Map " + seed);
-
-    // TODO: move all to options object
-    void (function parseSettings() {
+    {
       const settings = data[1].split("|");
       if (settings[0]) applyOption(distanceUnitInput, settings[0]);
-      if (settings[1]) distanceScale = distanceScaleInput.value = distanceScaleOutput.value = settings[1];
+      if (settings[1]) distanceScale = distanceScaleInput.value = settings[1];
       if (settings[2]) areaUnit.value = settings[2];
       if (settings[3]) applyOption(heightUnit, settings[3]);
-      if (settings[4]) heightExponentInput.value = heightExponentOutput.value = settings[4];
+      if (settings[4]) heightExponentInput.value = settings[4];
       if (settings[5]) temperatureScale.value = settings[5];
       // setting 6-11 (scaleBar) are part of style now, kept as "" in newer versions for compatibility
-      if (settings[12]) populationRate = populationRateInput.value = populationRateOutput.value = settings[12];
-      if (settings[13]) urbanization = urbanizationInput.value = urbanizationOutput.value = settings[13];
+      if (settings[12]) populationRate = populationRateInput.value = settings[12];
+      if (settings[13]) urbanization = urbanizationInput.value = settings[13];
       if (settings[14]) mapSizeInput.value = mapSizeOutput.value = minmax(settings[14], 1, 100);
       if (settings[15]) latitudeInput.value = latitudeOutput.value = minmax(settings[15], 0, 100);
       if (settings[18]) precInput.value = precOutput.value = settings[18];
@@ -241,17 +243,18 @@ async function parseLoadedData(data, mapVersion) {
       if (settings[21]) hideLabels.checked = +settings[21];
       if (settings[22]) stylePreset.value = settings[22];
       if (settings[23]) rescaleLabels.checked = +settings[23];
-      if (settings[24]) urbanDensity = urbanDensityInput.value = urbanDensityOutput.value = +settings[24];
-    })();
+      if (settings[24]) urbanDensity = urbanDensityInput.value = +settings[24];
+      if (settings[25]) longitudeInput.value = longitudeOutput.value = minmax(settings[25] || 50, 0, 100);
+    }
 
-    void (function applyOptionsToUI() {
+    {
       stateLabelsModeInput.value = options.stateLabelsMode;
       yearInput.value = options.year;
       eraInput.value = options.era;
       shapeRendering.value = viewbox.attr("shape-rendering") || "geometricPrecision";
-    })();
+    }
 
-    void (function parseConfiguration() {
+    {
       if (data[2]) mapCoordinates = JSON.parse(data[2]);
       if (data[4]) notes = JSON.parse(data[4]);
       if (data[33]) rulers.fromString(data[33]);
@@ -267,13 +270,14 @@ async function parseLoadedData(data, mapVersion) {
           declareFont(usedFont);
         });
       }
+    }
 
+    {
       const biomes = data[3].split("|");
       biomesData = Biomes.getDefault();
       biomesData.color = biomes[0].split(",");
       biomesData.habitability = biomes[1].split(",").map(h => +h);
       biomesData.name = biomes[2].split(",");
-
       // push custom biomes if any
       for (let i = biomesData.i.length; i < biomesData.name.length; i++) {
         biomesData.i.push(biomesData.i.length);
@@ -281,14 +285,14 @@ async function parseLoadedData(data, mapVersion) {
         biomesData.icons.push([]);
         biomesData.cost.push(50);
       }
-    })();
+    }
 
-    void (function replaceSVG() {
+    {
       svg.remove();
       document.body.insertAdjacentHTML("afterbegin", data[5]);
-    })();
+    }
 
-    void (function redefineElements() {
+    {
       svg = d3.select("#map");
       defs = svg.select("#deftemp");
       viewbox = svg.select("#viewbox");
@@ -338,32 +342,31 @@ async function parseLoadedData(data, mapVersion) {
       fogging = viewbox.select("#fogging");
       debug = viewbox.select("#debug");
       burgLabels = labels.select("#burgLabels");
-    })();
 
-    void (function addMissingElements() {
       if (!texture.size()) {
         texture = viewbox
           .insert("g", "#landmass")
           .attr("id", "texture")
           .attr("data-href", "./images/textures/plaster.jpg");
       }
-    })();
+      if (!emblems.size()) {
+        emblems = viewbox.insert("g", "#labels").attr("id", "emblems").style("display", "none");
+      }
+    }
 
-    void (function parseGridData() {
+    {
       grid = JSON.parse(data[6]);
-
       const {cells, vertices} = calculateVoronoi(grid.points, grid.boundary);
       grid.cells = cells;
       grid.vertices = vertices;
-
       grid.cells.h = Uint8Array.from(data[7].split(","));
       grid.cells.prec = Uint8Array.from(data[8].split(","));
       grid.cells.f = Uint16Array.from(data[9].split(","));
       grid.cells.t = Int8Array.from(data[10].split(","));
       grid.cells.temp = Int8Array.from(data[11].split(","));
-    })();
+    }
 
-    void (function parsePackData() {
+    {
       reGraph();
       reMarkFeatures();
       pack.features = JSON.parse(data[12]);
@@ -374,21 +377,22 @@ async function parseLoadedData(data, mapVersion) {
       pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
       pack.rivers = data[32] ? JSON.parse(data[32]) : [];
       pack.markers = data[35] ? JSON.parse(data[35]) : [];
-
-      const cells = pack.cells;
-      cells.biome = Uint8Array.from(data[16].split(","));
-      cells.burg = Uint16Array.from(data[17].split(","));
-      cells.conf = Uint8Array.from(data[18].split(","));
-      cells.culture = Uint16Array.from(data[19].split(","));
-      cells.fl = Uint16Array.from(data[20].split(","));
-      cells.pop = Float32Array.from(data[21].split(","));
-      cells.r = Uint16Array.from(data[22].split(","));
-      cells.road = Uint16Array.from(data[23].split(","));
-      cells.s = Uint16Array.from(data[24].split(","));
-      cells.state = Uint16Array.from(data[25].split(","));
-      cells.religion = data[26] ? Uint16Array.from(data[26].split(",")) : new Uint16Array(cells.i.length);
-      cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(cells.i.length);
-      cells.crossroad = data[28] ? Uint16Array.from(data[28].split(",")) : new Uint16Array(cells.i.length);
+      pack.routes = data[37] ? JSON.parse(data[37]) : [];
+      pack.zones = data[38] ? JSON.parse(data[38]) : [];
+      pack.cells.biome = Uint8Array.from(data[16].split(","));
+      pack.cells.burg = Uint16Array.from(data[17].split(","));
+      pack.cells.conf = Uint8Array.from(data[18].split(","));
+      pack.cells.culture = Uint16Array.from(data[19].split(","));
+      pack.cells.fl = Uint16Array.from(data[20].split(","));
+      pack.cells.pop = Float32Array.from(data[21].split(","));
+      pack.cells.r = Uint16Array.from(data[22].split(","));
+      // data[23] had deprecated cells.road
+      pack.cells.s = Uint16Array.from(data[24].split(","));
+      pack.cells.state = Uint16Array.from(data[25].split(","));
+      pack.cells.religion = data[26] ? Uint16Array.from(data[26].split(",")) : new Uint16Array(pack.cells.i.length);
+      pack.cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(pack.cells.i.length);
+      // data[28] had deprecated cells.crossroad
+      pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
 
       if (data[31]) {
         const namesDL = data[31].split("/");
@@ -399,9 +403,9 @@ async function parseLoadedData(data, mapVersion) {
           nameBases[i] = {name: e[0], min: e[1], max: e[2], d: e[3], m: e[4], b};
         });
       }
-    })();
+    }
 
-    void (function restoreLayersState() {
+    {
       const isVisible = selection => selection.node() && selection.style("display") !== "none";
       const isVisibleNode = node => node && node.style.display !== "none";
       const hasChildren = selection => selection.node()?.hasChildNodes();
@@ -444,20 +448,19 @@ async function parseLoadedData(data, mapVersion) {
       if (isVisibleNode(byId("vignette"))) turnOn("toggleVignette");
 
       getCurrentPreset();
-    })();
+    }
 
-    void (function restoreEvents() {
+    {
       scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
       legend
         .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
         .on("click", () => clearLegend());
-    })();
+    }
 
     {
       // dynamically import and run auto-update script
-      const versionNumber = parseFloat(params[0]);
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.97.04");
-      resolveVersionConflicts(versionNumber);
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.100.00");
+      resolveVersionConflicts(mapVersion);
     }
 
     // add custom heightmap color scheme if any
@@ -474,7 +477,7 @@ async function parseLoadedData(data, mapVersion) {
       if (textureHref) updateTextureSelectValue(textureHref);
     }
 
-    void (function checkDataIntegrity() {
+    {
       const cells = pack.cells;
 
       if (pack.cells.i.length !== pack.cells.state.length) {
@@ -644,6 +647,17 @@ async function parseLoadedData(data, mapVersion) {
         p.removed = true; // remove incorrect province
       });
 
+      pack.routes.forEach(({i, points}) => {
+        if (!points || points.length < 2) {
+          ERROR &&
+            console.error(
+              "Data integrity check. Route",
+              i,
+              "has less than 2 points. Route will be ignored on layer rendering"
+            );
+        }
+      });
+
       {
         const markerIds = [];
         let nextId = last(pack.markers)?.i + 1 || 0;
@@ -668,20 +682,25 @@ async function parseLoadedData(data, mapVersion) {
         // sort markers by index
         pack.markers.sort((a, b) => a.i - b.i);
       }
-    })();
+    }
 
-    fitMapToScreen();
+    {
+      // remove href from emblems, to trigger rendering on load
+      emblems.selectAll("use").attr("href", null);
+    }
 
-    // remove href from emblems, to trigger rendering on load
-    emblems.selectAll("use").attr("href", null);
+    {
+      // draw data layers (not kept in svg)
+      if (rulers && layerIsOn("toggleRulers")) rulers.draw();
+      if (layerIsOn("toggleGrid")) drawGrid();
+    }
 
-    // draw data layers (no kept in svg)
-    if (rulers && layerIsOn("toggleRulers")) rulers.draw();
-    if (layerIsOn("toggleGrid")) drawGrid();
-
-    if (window.restoreDefaultEvents) restoreDefaultEvents();
-    focusOn(); // based on searchParams focus on point, cell or burg
-    invokeActiveZooming();
+    {
+      if (window.restoreDefaultEvents) restoreDefaultEvents();
+      focusOn(); // based on searchParams focus on point, cell or burg
+      invokeActiveZooming();
+      fitMapToScreen();
+    }
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadMap.timeStart) / 1000, 2)}s`);
     showStatistics();
@@ -691,7 +710,7 @@ async function parseLoadedData(data, mapVersion) {
     ERROR && console.error(error);
     clearMainTip();
 
-    alertMessage.innerHTML = /* html */ `An error is occured on map loading. Select a different file to load, <br>generate a new random map or cancel the loading.<br>Map version: ${mapVersion}. Generator version: ${version}.
+    alertMessage.innerHTML = /* html */ `An error is occured on map loading. Select a different file to load, <br>generate a new random map or cancel the loading.<br>Map version: ${mapVersion}. Generator version: ${VERSION}.
       <p id="errorBox">${parseError(error)}</p>`;
 
     $("#alert").dialog({

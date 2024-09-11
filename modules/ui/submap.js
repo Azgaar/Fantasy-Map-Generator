@@ -159,18 +159,6 @@ window.UISubmap = (function () {
     return canvas;
   }
 
-  // currently unused alternative to PNG version
-  async function loadPreviewSVG($container, w, h) {
-    $container.innerHTML = /*html*/ `
-      <svg id="submapPreviewSVG" viewBox="0 0 ${graphWidth} ${graphHeight}">
-        <rect width="100%" height="100%" fill="${byId("styleOceanFill").value}" />
-        <rect fill="url(#oceanic)" width="100%" height="100%" />
-        <use href="#map"></use>
-      </svg>
-    `;
-    return byId("submapPreviewSVG");
-  }
-
   // Resample the whole map to different cell resolution or shape
   const resampleCurrentMap = debounce(function () {
     WARN && console.warn("Resampling current map");
@@ -258,11 +246,9 @@ window.UISubmap = (function () {
     byId("latitudeInput").value = latitudeOutput.value;
 
     // fix scale
-    distanceScaleInput.value = distanceScaleOutput.value = rn((distanceScale = distanceScaleOutput.value / scale), 2);
-    populationRateInput.value = populationRateOutput.value = rn(
-      (populationRate = populationRateOutput.value / scale),
-      2
-    );
+    distanceScale = distanceScaleInput.value = rn(distanceScaleInput.value / scale, 2);
+    populationRate = populationRateInput.value = rn(populationRateInput.value / scale, 2);
+
     customization = 0;
     startResample(options);
   }, 1000);
@@ -318,11 +304,6 @@ window.UISubmap = (function () {
       bl.dataset["size"] = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
     }
 
-    // emblems
-    const emblemMod = minmax((scale - 1) * 0.3 + 1, 0.5, 5);
-    emblemsStateSizeInput.value = minmax(+emblemsStateSizeInput.value * emblemMod, 0.5, 5);
-    emblemsProvinceSizeInput.value = minmax(+emblemsProvinceSizeInput.value * emblemMod, 0.5, 5);
-    emblemsBurgSizeInput.value = minmax(+emblemsBurgSizeInput.value * emblemMod, 0.5, 5);
     drawEmblems();
   }
 

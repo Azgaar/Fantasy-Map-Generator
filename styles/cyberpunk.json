@@ -72,8 +72,8 @@
     "mask": "",
     "shape-rendering": "optimizespeed"
   },
-  "#rose": {
-    "transform": null
+  "#compass > use": {
+    "transform": "translate(80 80) scale(.25)"
   },
   "#relig": {
     "opacity": 0.5,
@@ -256,7 +256,16 @@
   "#emblems": {
     "opacity": 0.75,
     "stroke-width": 0.5,
-    "filter": ""
+    "filter": null
+  },
+  "#emblems > #stateEmblems": {
+    "data-size": 1
+  },
+  "#emblems > #provinceEmblems": {
+    "data-size": 1
+  },
+  "#emblems > #burgEmblems": {
+    "data-size": 1
   },
   "#texture": {
     "opacity": 0.2,
@@ -323,6 +332,7 @@
     "opacity": 1,
     "fill": "#ffffff",
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 8,
     "font-size": 8,
     "font-family": "Orbitron"
@@ -348,6 +358,7 @@
     "opacity": 1,
     "fill": "#ffffff",
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 3,
     "font-size": 3,
     "font-family": "Orbitron"
@@ -375,6 +386,7 @@
     "stroke": "#000000",
     "stroke-width": 0,
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 18,
     "font-size": 18,
     "font-family": "Orbitron",
@@ -386,6 +398,7 @@
     "stroke": "#000000",
     "stroke-width": 0,
     "text-shadow": "white 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 18,
     "font-size": 18,
     "font-family": "Almendra SC",
