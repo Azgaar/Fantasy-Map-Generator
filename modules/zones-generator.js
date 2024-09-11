@@ -81,8 +81,6 @@ window.Zones = (function () {
       Pillaging: 1,
       Plunder: 1,
       Raid: 1,
-      Siege: 1,
-      Subjugation: 1,
       Skirmishes: 1
     });
     const name = getAdjective(states[attacker].name) + " " + subtype;
