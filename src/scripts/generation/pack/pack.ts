@@ -175,7 +175,7 @@ export function createPack(grid: IGrid): IPack {
 
   const rivers = specifyRivers(rawRivers, cultureIds, cultures);
   const features = generateLakeNames(mergedFeatures, cultureIds, cultures);
-  const ice = generateIce(grid.cells, grid.vertices, grid.points, features);
+  const ice = generateIce(grid, features);
 
   // Military.generate();
   // Markers.generate();

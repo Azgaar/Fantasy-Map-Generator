@@ -1,15 +1,14 @@
 import { ERROR } from "config/logging";
 import { aleaPRNG } from "scripts/aleaPRNG";
-import { clipPoly, getGridPolygonWithGrid, last, normalize, P, rn } from "utils";
+import { clipPoly, getGridPolygonLocal, last, normalize, P, rn } from "utils";
 
 export function generateIce(
-  gridCells: Pick<IGrid["cells"],"i" | "h" | "c"| "v" | "f" | "t" | "temp">,
-  vertices: IGraphVertices,
-  gridPoints: TPoints,
+  grid: IGrid,
   features: TGridFeatures,
 ): IIce {
   const shieldMin = -8; // max temp to form ice shield (glacier)
   const icebergMax = 1; // max temp to form an iceberg
+  const { cells: gridCells, points: gridPoints, vertices } = grid;
   const nOfCells = gridCells.i.length;
   const used = new Uint8Array(gridCells.i.length);
 
@@ -52,7 +51,7 @@ export function generateIce(
   // Helper functions
   function generateIceberg(i: number, size: number): IiceBerg {
     const cellMidPoint = gridPoints[i];
-    const points: TPoints = getGridPolygonWithGrid(i, gridCells, vertices)
+    const points: TPoints = getGridPolygonLocal(i, grid)
       .map((point) => [
         (point[0] + (cellMidPoint[0] - point[0]) * size) | 0,
         (point[1] + (cellMidPoint[1] - point[1]) * size) | 0,
