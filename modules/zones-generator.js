@@ -50,14 +50,14 @@ window.Zones = (function () {
     const startCell = ra(borderCells);
     if (startCell === undefined) return;
 
-    const invationCells = [];
+    const invasionCells = [];
     const queue = [startCell];
     const maxCells = rand(5, 30);
 
     while (queue.length) {
       const cellId = P(0.4) ? queue.shift() : queue.pop();
-      invationCells.push(cellId);
-      if (invationCells.length >= maxCells) break;
+      invasionCells.push(cellId);
+      if (invasionCells.length >= maxCells) break;
 
       cells.c[cellId].forEach(neibCellId => {
         if (usedCells[neibCellId]) return;
@@ -73,11 +73,15 @@ window.Zones = (function () {
       Conquest: 3,
       Incursion: 2,
       Intervention: 2,
-      Subjugation: 1,
+      Assault: 1,
       Foray: 1,
-      Skirmishes: 1,
+      Intrusion: 1,
+      Irruption: 1,
+      Offensive: 1,
       Pillaging: 1,
-      Raid: 1
+      Plunder: 1,
+      Raid: 1,
+      Skirmishes: 1
     });
     const name = getAdjective(states[attacker].name) + " " + subtype;
 
@@ -120,10 +124,13 @@ window.Zones = (function () {
       Insurrection: 2,
       Mutineers: 1,
       Insurgents: 1,
+      Rebellion: 1,
+      Renegades: 1,
+      Revolters: 1,
+      Revolutionaries: 1,
       Rioters: 1,
       Separatists: 1,
       Secessionists: 1,
-      Rebellion: 1,
       Conspiracy: 1
     });
 
@@ -226,7 +233,7 @@ window.Zones = (function () {
     const name = `${(() => {
       const model = rw({color: 2, animal: 1, adjective: 1});
       if (model === "color") return ra(["Amber", "Azure", "Black", "Blue", "Brown", "Crimson", "Emerald", "Golden", "Green", "Grey", "Orange", "Pink", "Purple", "Red", "Ruby", "Scarlet", "Silver", "Violet", "White", "Yellow"]);
-      if (model === "animal") return ra(["Ape", "Bear", "Bird", "Boar", "Cat", "Cow", "Dog", "Fox", "Horse", "Lion", "Pig", "Rat", "Raven", "Sheep", "Spider", "Tiger", "Viper", "Wolf", "Worm", "Wyrm"]);
+      if (model === "animal") return ra(["Ape", "Bear", "Bird", "Boar", "Cat", "Cow", "Deer", "Dog", "Fox", "Goat", "Horse", "Lion", "Pig", "Rat", "Raven", "Sheep", "Spider", "Tiger", "Viper", "Wolf", "Worm", "Wyrm"]);
       if (model === "adjective") return ra(["Blind", "Bloody", "Brutal", "Burning", "Deadly", "Fatal", "Furious", "Great", "Grim", "Horrible", "Invisible", "Lethal", "Loud", "Mortal", "Savage", "Severe", "Silent", "Unknown", "Venomous", "Vicious"]);
     })()} ${rw({Fever: 5, Plague: 3, Cough: 3, Flu: 2, Pox: 2, Cholera: 2, Typhoid: 2, Leprosy: 1, Smallpox: 1, Pestilence: 1, Consumption: 1, Malaria: 1, Dropsy: 1})}`;
 
