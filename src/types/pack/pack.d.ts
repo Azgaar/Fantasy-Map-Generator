@@ -9,6 +9,7 @@ interface IPack extends IGraph {
   religions: TReligions;
   routes: TRoutes;
   events: IEvents;
+  ice: IIce;
 }
 
 interface IPackCells {

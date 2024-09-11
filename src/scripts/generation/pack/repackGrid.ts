@@ -9,6 +9,7 @@ import {calculateVoronoi} from "../graph";
 
 const {LAND_COAST, WATER_COAST, DEEPER_WATER} = DISTANCE_FIELD;
 
+
 // repack grid cells: discart deep water cells, add land cells along the coast
 export function repackGrid(grid: IGrid) {
   TIME && console.time("repackGrid");
