@@ -85,7 +85,7 @@ window.Zones = (function () {
     });
     const name = getAdjective(states[attacker].name) + " " + subtype;
 
-    pack.zones.push({i: pack.zones.length, name, type: "Invasion", cells: invationCells, color: "url(#hatch1)"});
+    pack.zones.push({i: pack.zones.length, name, type: "Invasion", cells: invasionCells, color: "url(#hatch1)"});
   }
 
   function addRebels(usedCells) {
