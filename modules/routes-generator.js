@@ -725,10 +725,7 @@ window.Routes = (function () {
     }
 
     pack.routes = pack.routes.filter(r => r.i !== route.i);
-    viewbox
-      .select("#routes")
-      .select("#route" + route.i)
-      .remove();
+    viewbox.select("#route" + route.i).remove();
   }
 
   return {
