@@ -70,6 +70,10 @@ function getColorScheme(scheme = "bright") {
   return heightmapColorSchemes[scheme];
 }
 
+function getColor(value, scheme = getColorScheme("bright")) {
+  return scheme(1 - (value < 20 ? value - 5 : value) / 100);
+}
+
 // Toggle style sections on element select
 styleElementSelect.on("change", selectStyleElement);
 

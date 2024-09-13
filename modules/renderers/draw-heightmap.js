@@ -140,9 +140,5 @@ function drawHeightmap() {
     return chain.filter((d, i) => i % n === 0);
   }
 
-  function getColor(value, scheme = getColorScheme("bright")) {
-    return scheme(1 - (value < 20 ? value - 5 : value) / 100);
-  }
-
   TIME && console.timeEnd("drawHeightmap");
 }
