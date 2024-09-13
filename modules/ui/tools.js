@@ -135,6 +135,7 @@ function regenerateRivers() {
 
 function recalculatePopulation() {
   rankCells();
+
   pack.burgs.forEach(b => {
     if (!b.i || b.removed || b.lock) return;
     const i = b.cell;
@@ -144,6 +145,8 @@ function recalculatePopulation() {
     if (b.port) b.population = b.population * 1.3; // increase port population
     b.population = rn(b.population * gauss(2, 3, 0.6, 20, 3), 3);
   });
+
+  if (layerIsOn("togglePopulation")) drawPopulation();
 }
 
 function regenerateStates() {

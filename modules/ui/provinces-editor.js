@@ -454,6 +454,7 @@ function editProvinces() {
         p.burgs.forEach(b => (pack.burgs[b].population = population));
       }
 
+      if (layerIsOn("togglePopulation")) drawPopulation();
       refreshProvincesEditor();
     }
   }

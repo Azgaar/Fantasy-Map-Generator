@@ -543,6 +543,7 @@ function changePopulation(stateId) {
       burgs.forEach(b => (b.population = population));
     }
 
+    if (layerIsOn("togglePopulation")) drawPopulation();
     refreshStatesEditor();
   }
 }
