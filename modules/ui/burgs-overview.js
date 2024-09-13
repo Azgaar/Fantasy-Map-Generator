@@ -154,9 +154,9 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   }
 
   function burgHighlightOn(event) {
-    if (!layerIsOn("toggleLabels")) toggleLabels();
     const burg = +event.target.dataset.id;
-    burgLabels.select("[data-id='" + burg + "']").classed("drag", true);
+    const label = burgLabels.select("[data-id='" + burg + "']");
+    if (label.size()) label.classed("drag", true);
   }
 
   function burgHighlightOff() {
