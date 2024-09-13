@@ -82,7 +82,7 @@ window.Features = (function () {
     TIME && console.time("markupPack");
 
     const {cells, vertices} = pack;
-    const {h: heights, c: neighbors, b: borderCells, i} = cells;
+    const {c: neighbors, b: borderCells, i} = cells;
     const packCellsNumber = i.length;
     if (!packCellsNumber) return; // no cells -> there is nothing to do
 
@@ -191,7 +191,7 @@ window.Features = (function () {
         const startingVertex = cells.v[firstCell].find(v => vertices.c[v].some(ofDifferentType));
         if (startingVertex === undefined) throw new Error(`Markup: startingVertex for cell ${firstCell} is not found`);
 
-        return connectVertices({vertices, startingVertex, ofSameType, closeRing: true});
+        return connectVertices({vertices, startingVertex, ofSameType, closeRing: false});
       }
     }
   }

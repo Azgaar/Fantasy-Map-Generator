@@ -2,24 +2,16 @@
 
 function drawFeatures() {
   TIME && console.time("drawFeatures");
-  const {vertices, features} = pack;
-
   const featurePaths = defs.select("#featurePaths");
   const landMask = defs.select("#land");
   const waterMask = defs.select("#water");
-  const lineGen = d3.line().curve(d3.curveBasisClosed);
 
-  for (const feature of features) {
+  for (const feature of pack.features) {
     if (!feature || feature.type === "ocean") continue;
-
-    const points = feature.vertices.map(vertex => vertices.p[vertex]);
-    const simplifiedPoints = simplify(points, 0.3);
-    const clippedPoints = clipPoly(simplifiedPoints, 1);
-    const path = round(lineGen(clippedPoints));
 
     featurePaths
       .append("path")
-      .attr("d", path)
+      .attr("d", getFeaturePath(feature))
       .attr("id", "feature_" + feature.i)
       .attr("data-f", feature.i);
 
@@ -55,4 +47,15 @@ function drawFeatures() {
   }
 
   TIME && console.timeEnd("drawFeatures");
+}
+
+function getFeaturePath(feature) {
+  const points = feature.vertices.map(vertex => pack.vertices.p[vertex]);
+  const simplifiedPoints = simplify(points, 0.3);
+  const clippedPoints = clipPoly(simplifiedPoints, 1);
+
+  const lineGen = d3.line().curve(d3.curveBasisClosed);
+  const path = round(lineGen(clippedPoints));
+
+  return path;
 }

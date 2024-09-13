@@ -10,31 +10,27 @@ function restoreDefaultEvents() {
   legend.call(d3.drag().on("start", dragLegendBox));
 }
 
-// on viewbox click event - run function based on target
+// handle viewbox click
 function clicked() {
   const el = d3.event.target;
-  if (!el || !el.parentElement || !el.parentElement.parentElement) return;
-  const parent = el.parentElement;
-  const grand = parent.parentElement;
-  const great = grand.parentElement;
-  const p = d3.mouse(this);
-  const i = findCell(p[0], p[1]);
+  const parent = el?.parentElement;
+  const grand = parent?.parentElement;
+  const great = grand?.parentElement;
+  const ancestor = great?.parentElement;
+  if (!ancestor) return;
 
   if (grand.id === "emblems") editEmblem();
   else if (parent.id === "rivers") editRiver(el.id);
   else if (grand.id === "routes") editRoute(el.id);
-  else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();
+  else if (ancestor.id === "labels" && el.tagName === "tspan") editLabel();
   else if (grand.id === "burgLabels") editBurg();
   else if (grand.id === "burgIcons") editBurg();
   else if (parent.id === "ice") editIce();
   else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
   else if (grand.id === "coastline") editCoastline();
+  else if (grand.id === "lakes") editLake();
   else if (great.id === "armies") editRegiment();
-  else if (pack.cells.t[i] === 1) {
-    const node = byId("island_" + pack.cells.f[i]);
-    editCoastline(node);
-  } else if (grand.id === "lakes") editLake();
 }
 
 // clear elSelected variable
