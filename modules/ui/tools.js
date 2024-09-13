@@ -444,6 +444,9 @@ function regenerateBurgs() {
   BurgsAndStates.defineBurgFeatures();
   regenerateRoutes();
 
+  drawBurgIcons();
+  drawBurgLabels();
+
   // remove emblems
   document.querySelectorAll("[id^=burgCOA]").forEach(el => el.remove());
   emblems.selectAll("use").remove();

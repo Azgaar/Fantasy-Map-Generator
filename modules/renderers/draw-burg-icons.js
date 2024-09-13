@@ -3,6 +3,8 @@
 function drawBurgIcons() {
   TIME && console.time("drawBurgIcons");
 
+  icons.selectAll("circle, use").remove(); // cleanup
+
   // capitals
   const capitals = pack.burgs.filter(b => b.capital && !b.removed);
   const capitalIcons = burgIcons.select("#cities");

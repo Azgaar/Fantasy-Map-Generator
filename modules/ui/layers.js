@@ -895,14 +895,12 @@ function drawLabels() {
 function toggleBurgIcons(event) {
   if (!layerIsOn("toggleBurgIcons")) {
     turnButtonOn("toggleBurgIcons");
-    $("#icons").fadeIn();
     drawBurgIcons();
     if (event && isCtrlClick(event)) editStyle("burgIcons");
   } else {
     if (event && isCtrlClick(event)) return editStyle("burgIcons");
     turnButtonOff("toggleBurgIcons");
     icons.selectAll("circle, use").remove();
-    $("#icons").fadeOut();
   }
 }
 

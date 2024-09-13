@@ -948,6 +948,7 @@ export function resolveVersionConflicts(mapVersion) {
     Provinces.getPoles();
 
     // v1.104.00 removed some layers from initial render
+    viewbox.select("#icons").style("display", null);
     viewbox.select("#armies").style("display", null);
     viewbox.select("#ice").style("display", null);
 

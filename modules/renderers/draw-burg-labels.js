@@ -3,6 +3,8 @@
 function drawBurgLabels() {
   TIME && console.time("drawBurgLabels");
 
+  burgLabels.selectAll("text").remove(); // cleanup
+
   const capitals = pack.burgs.filter(b => b.capital && !b.removed);
   const capitalSize = burgIcons.select("#cities").attr("size") || 1;
   burgLabels
