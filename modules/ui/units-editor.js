@@ -8,7 +8,7 @@ function editUnits() {
 
   $("#unitsEditor").dialog({
     title: "Units Editor",
-    position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
 
   const renderScaleBar = () => {
@@ -21,6 +21,7 @@ function editUnits() {
   byId("distanceScaleInput").on("change", changeDistanceScale);
   byId("heightUnit").on("change", changeHeightUnit);
   byId("heightExponentInput").on("input", changeHeightExponent);
+  byId("heightLegend").addEventListener("click", toggleLegend);
   byId("temperatureScale").on("change", changeTemperatureScale);
 
   byId("populationRateInput").on("change", changePopulationRate);
@@ -36,7 +37,7 @@ function editUnits() {
 
   function changeDistanceUnit() {
     if (this.value === "custom_name") {
-      prompt("Provide a custom name for a distance unit", {default: ""}, custom => {
+      prompt("Provide a custom name for a distance unit", { default: "" }, custom => {
         this.options.add(new Option(custom, custom, false, true));
         lock("distanceUnit");
         renderScaleBar();
@@ -58,15 +59,24 @@ function editUnits() {
   function changeHeightUnit() {
     if (this.value !== "custom_name") return;
 
-    prompt("Provide a custom name for a height unit", {default: ""}, custom => {
+    prompt("Provide a custom name for a height unit", { default: "" }, custom => {
       this.options.add(new Option(custom, custom, false, true));
       lock("heightUnit");
     });
+    updateLegendIfVisible();
   }
 
   function changeHeightExponent() {
     calculateTemperatures();
     if (layerIsOn("toggleTemp")) drawTemp();
+    updateLegendIfVisible();
+  }
+
+  function toggleLegend() {
+    if (legend.selectAll("*").size()) {
+      clearLegend();
+      return;
+    } // hide legend
   }
 
   function changeTemperatureScale() {
@@ -117,6 +127,80 @@ function editUnits() {
     localStorage.removeItem("populationRate");
     localStorage.removeItem("urbanization");
     localStorage.removeItem("urbanDensity");
+  }
+
+
+  function toggleLegend() {
+    const isVisible = legend.selectAll("*").size() > 0;
+    
+    if (isVisible) {
+      clearLegend();
+    } else {
+      updateAndDisplayLegend();
+    }
+  }
+  
+  function updateAndDisplayLegend() {
+    let arr = pack.cells.h;
+    let countMap = arr.reduce(
+      (map, value) => { map.set(value, (map.get(value) || 0) + 1); return map },
+      new Map()
+    );
+    const exponent = +heightExponentInput.value;
+    const scheme = getColorScheme();
+  
+    // Get the selected height unit
+    const heightUnit = document.getElementById('heightUnit').value;
+    const heightUnitName = heightUnit === 'custom_name' 
+      ? document.getElementById('heightUnit').nextElementSibling.value 
+      : document.getElementById('heightUnit').selectedOptions[0].text.match(/\(([^)]+)\)/)[1];
+  
+    const hmap = [];
+    countMap.forEach(function (mcount, mheight) {
+      const v = 1 - (mheight < 20 ? mheight - 5 : mheight) / 100;
+      const sRGB = scheme(v);
+      const a = mheight < 20 ? 0 : Math.pow(mheight - 18, exponent);
+      hmap.push({ height: mheight, count: mcount, altitude: a, color: sRGB });
+    });
+  
+    // Sort hmap by height
+    hmap.sort((a, b) => a.height - b.height);
+  
+    // Select a representative sample of heights across the range
+    const totalSamples = 10; // Adjust this number to change the number of legend items
+    const step = Math.max(1, Math.floor(hmap.length / totalSamples));
+    const sampledHmap = hmap.filter((_, index) => index % step === 0 || index === hmap.length - 1);
+  
+    const data = sampledHmap
+      .map(c => [rn(c.height, 0), c.color, rn(c.altitude, 1)]);
+  
+    // Set the number of items per column
+    styleLegendColItems.value = data.length;
+  
+    drawLegend(`Heights (in ${heightUnitName})`, data);
+  
+    // Center the legend label
+    const legendLabel = legend.select("#legendLabel");
+    const bbox = legend.node().getBBox();
+    legendLabel.attr("x", bbox.width / 2);
+  
+    // Adjust legend position to ensure it's fully visible
+    const legendBox = legend.select("#legendBox");
+    const legendWidth = legendBox.attr("width");
+    const legendHeight = legendBox.attr("height");
+    const svgWidth = +d3.select("svg").attr("width");
+    const svgHeight = +d3.select("svg").attr("height");
+  
+    let x = Math.max(10, Math.min(svgWidth - legendWidth - 10, +legend.attr("data-x") / 100 * svgWidth));
+    let y = Math.max(10, Math.min(svgHeight - legendHeight - 10, +legend.attr("data-y") / 100 * svgHeight));
+  
+    legend.attr("transform", `translate(${x},${y})`);
+  }
+  
+  function updateLegendIfVisible() {
+    if (legend.selectAll("*").size() > 0) {
+      updateAndDisplayLegend();
+    }
   }
 
   function addRuler() {
