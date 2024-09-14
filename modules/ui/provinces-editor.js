@@ -26,6 +26,7 @@ function editProvinces() {
   document.getElementById("provincesEditorRefresh").addEventListener("click", refreshProvincesEditor);
   document.getElementById("provincesEditStyle").addEventListener("click", () => editStyle("provs"));
   document.getElementById("provincesFilterState").addEventListener("change", provincesEditorAddLines);
+  document.getElementById("provincesLegend").addEventListener("click", toggleLegend);
   document.getElementById("provincesPercentage").addEventListener("click", togglePercentageMode);
   document.getElementById("provincesChart").addEventListener("click", showChart);
   document.getElementById("provincesToggleLabels").addEventListener("click", toggleLabels);
@@ -583,6 +584,17 @@ function editProvinces() {
     pack.provinces[p].center = pack.burgs[+value].cell;
     pack.provinces[p].burg = +value;
   }
+  
+  function toggleLegend() {
+  if (legend.selectAll("*").size()) return clearLegend(); // hide legend
+
+  const selectedState = +document.getElementById("provincesFilterState").value;
+  const data = pack.provinces
+    .filter(p => p.i && !p.removed && ((selectedState < 0) || (selectedState >= 0 && p.state == selectedState)))
+    .sort((a, b) => b.area - a.area)
+    .map(p => [p.i, p.color, p.name]);
+  drawLegend("Provinces", data);
+}
 
   function togglePercentageMode() {
     if (body.dataset.type === "absolute") {
