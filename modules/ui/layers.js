@@ -1447,13 +1447,10 @@ function drawGrid() {
     .attr("fill", "url(" + pattern + ")")
     .attr("stroke", "none");
 
-    // Check both the attribute and the checkbox state
     if (gridOverlay.attr("cell-numbers") === "true" || document.getElementById("gridCellNumbers").checked) {
       drawCellNumbers();
     }
 }
-
-
 
 function drawCellNumbers() {
   const pattern = gridOverlay.attr("type") || "pointyHex";
@@ -1471,6 +1468,8 @@ function drawCellNumbers() {
   const columns = Math.ceil(maxWidth / patternWidth);
   const rows = Math.ceil(maxHeight / patternHeight);
 
+  const labelStyle = gridOverlay.attr("data-label-style") || "stroke: #000000;";
+
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < columns; col++) {
       const x = col * patternWidth + dx;
@@ -1484,6 +1483,8 @@ function drawCellNumbers() {
         .attr("text-anchor", "middle")
         .attr("dominant-baseline", "central")
         .attr("font-size", Math.min(patternWidth, patternHeight) / 4)
+        .attr("fill", "none")  // Set fill to none so only stroke is visible
+        .attr("style", labelStyle)
         .text(cellNumber);
     }
   }

@@ -201,6 +201,8 @@ function selectStyleElement() {
   
     if (gridCellNumbers) {
       gridCellNumbers.checked = el.attr("cell-numbers") === "true";
+      styleStroke.style.display = "block";
+      styleStrokeInput.value = styleStrokeOutput.value = gridOverlay.attr("data-label-style")?.match(/stroke: ([^;]+)/)?.[1] || "#000000";
       gridCellNumbers.addEventListener("change", function() {
         el.attr("cell-numbers", this.checked);
         drawGrid();
@@ -208,6 +210,7 @@ function selectStyleElement() {
     } else {
       console.warn("gridCellNumbers element not found");
     }
+    
   }
 
   if (styleElement === "compass") {
@@ -542,9 +545,20 @@ styleGridNumbers.on("change", function () {
 
 byId("gridCellNumbers")?.addEventListener("change", function() {
   gridOverlay.attr("cell-numbers", this.checked);
-  // drawGrid(); // without condition of if layerIsOn.
+  updateGridCellNumbersStyle();
   if (layerIsOn("toggleGrid")) drawGrid();
 });
+
+document.getElementById("gridCellNumbersColor").addEventListener("input", updateGridCellNumbersStyle);
+
+function updateGridCellNumbersStyle() {
+  const color = document.getElementById("gridCellNumbersColor").value;
+  
+  const style = `stroke: ${color};`;
+  gridOverlay.attr("data-label-style", style);
+  
+  if (layerIsOn("toggleGrid")) drawGrid();
+}
 
 styleRescaleMarkers.on("change", function () {
   markers.attr("rescale", +this.checked);
