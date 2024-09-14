@@ -1414,6 +1414,9 @@ function toggleGrid(event) {
     turnButtonOff("toggleGrid");
     gridOverlay.selectAll("*").remove();
   }
+
+  // Update the checkbox state when toggling the grid
+  document.getElementById("gridCellNumbers").checked = gridOverlay.attr("cell-numbers") === "true";
 }
 
 function drawGrid() {
@@ -1443,10 +1446,14 @@ function drawGrid() {
     .attr("height", maxHeight)
     .attr("fill", "url(" + pattern + ")")
     .attr("stroke", "none");
-  if (gridOverlay.attr("cell-numbers") === "true") {
-    drawCellNumbers();
-  }
+
+    // Check both the attribute and the checkbox state
+    if (gridOverlay.attr("cell-numbers") === "true" || document.getElementById("gridCellNumbers").checked) {
+      drawCellNumbers();
+    }
 }
+
+
 
 function drawCellNumbers() {
   const pattern = gridOverlay.attr("type") || "pointyHex";

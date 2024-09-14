@@ -70,31 +70,6 @@ function getColorScheme(scheme = "bright") {
   return heightmapColorSchemes[scheme];
 }
 
-function createGridSection() {
-  const gridSection = byId("styleGrid");
-  if (!gridSection) return null;
-
-  // Verificar si el checkbox ya existe
-  if (byId("gridCellNumbers")) return;
-
-  const cellNumbersDiv = document.createElement("div");
-  cellNumbersDiv.className = "option";
-  
-  const checkbox = document.createElement("input");
-  checkbox.id = "gridCellNumbers";
-  checkbox.type = "checkbox";
-  
-  const label = document.createElement("label");
-  label.htmlFor = "gridCellNumbers";
-  label.textContent = "Show cell numbers";
-
-  cellNumbersDiv.appendChild(checkbox);
-  cellNumbersDiv.appendChild(label);
-  gridSection.appendChild(cellNumbersDiv);
-}
-
-document.addEventListener("DOMContentLoaded", createGridSection);
-
 // Toggle style sections on element select
 styleElementSelect.on("change", selectStyleElement);
 
@@ -567,7 +542,8 @@ styleGridNumbers.on("change", function () {
 
 byId("gridCellNumbers")?.addEventListener("change", function() {
   gridOverlay.attr("cell-numbers", this.checked);
-  drawGrid();
+  // drawGrid(); // without condition of if layerIsOn.
+  if (layerIsOn("toggleGrid")) drawGrid();
 });
 
 styleRescaleMarkers.on("change", function () {
