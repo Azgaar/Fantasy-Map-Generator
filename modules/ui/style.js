@@ -549,7 +549,7 @@ byId("gridCellNumbers")?.addEventListener("change", function() {
   if (layerIsOn("toggleGrid")) drawGrid();
 });
 
-document.getElementById("gridCellNumbersColor").addEventListener("input", updateGridCellNumbersStyle);
+ById("gridCellNumbersColor").addEventListener("input", updateGridCellNumbersStyle);
 
 function updateGridCellNumbersStyle() {
   const color = document.getElementById("gridCellNumbersColor").value;
