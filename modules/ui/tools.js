@@ -146,7 +146,7 @@ function recalculatePopulation() {
     b.population = rn(b.population * gauss(2, 3, 0.6, 20, 3), 3);
   });
 
-  if (layerIsOn("togglePopulation")) drawPopulation();
+  layerIsOn("togglePopulation") ? drawPopulation() : togglePopulation();
 }
 
 function regenerateStates() {
@@ -342,7 +342,7 @@ function regenerateProvinces() {
   Provinces.getPoles();
 
   if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
+  layerIsOn("toggleProvinces") ? drawProvinces() : toggleProvinces();
 
   // remove emblems
   document.querySelectorAll("[id^=provinceCOA]").forEach(el => el.remove());
@@ -508,7 +508,7 @@ function regenerateEmblems() {
     province.coa.shield = COA.getShield(culture, province.state);
   });
 
-  if (layerIsOn("toggleEmblems")) drawEmblems(); // redrawEmblems
+  layerIsOn("toggleEmblems") ? drawEmblems() : toggleEmblems();
 }
 
 function regenerateReligions() {
