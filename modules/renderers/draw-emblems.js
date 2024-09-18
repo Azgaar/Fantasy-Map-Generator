@@ -109,3 +109,21 @@ function drawEmblems() {
 
   TIME && console.timeEnd("drawEmblems");
 }
+
+const getDataAndType = id => {
+  if (id === "burgEmblems") return [pack.burgs, "burg"];
+  if (id === "provinceEmblems") return [pack.provinces, "province"];
+  if (id === "stateEmblems") return [pack.states, "state"];
+  throw new Error(`Unknown emblem type: ${id}`);
+};
+
+async function renderGroupCOAs(g) {
+  const [data, type] = getDataAndType(g.id);
+
+  for (let use of g.children) {
+    const i = +use.dataset.i;
+    const id = type + "COA" + i;
+    COArenderer.trigger(id, data[i].coa);
+    use.setAttribute("href", "#" + id);
+  }
+}

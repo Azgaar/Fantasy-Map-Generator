@@ -142,6 +142,7 @@ window.UISubmap = (function () {
       fullMap: true,
       noLabels: true,
       noScaleBar: true,
+      noVignette: true,
       noIce: true
     });
 

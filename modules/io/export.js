@@ -175,6 +175,7 @@ async function getMapURL(type, options) {
     noWater = false,
     noScaleBar = false,
     noIce = false,
+    noVignette = false,
     fullMap = false
   } = options || {};
 
@@ -199,6 +200,7 @@ async function getMapURL(type, options) {
     clone.select("#oceanPattern").attr("opacity", 0);
   }
   if (noIce) clone.select("#ice")?.remove();
+  if (noVignette) clone.select("#vignette")?.remove();
   if (fullMap) {
     // reset transform to show the whole map
     clone.attr("width", graphWidth).attr("height", graphHeight);

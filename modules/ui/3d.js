@@ -444,6 +444,7 @@ window.ThreeD = (function () {
       const url = await getMapURL("mesh", {
         noLabels: options.labels3d,
         noWater: options.extendedWater,
+        noViewbox: true,
         fullMap: true
       });
       const canvas = document.createElement("canvas");
@@ -623,7 +624,7 @@ window.ThreeD = (function () {
       material.map = texture;
       if (addMesh) addGlobe3dMesh();
     };
-    img2.src = await getMapURL("mesh", {noScaleBar: true, fullMap: true});
+    img2.src = await getMapURL("mesh", {noScaleBar: true, fullMap: true, noVignette: true});
   }
 
   function addGlobe3dMesh() {

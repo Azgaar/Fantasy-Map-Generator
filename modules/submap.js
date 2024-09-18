@@ -1,31 +1,26 @@
 "use strict";
-/*
-Cell resampler module used by submapper and resampler (transform)
-main function: resample(options);
-*/
 
 window.Submap = (function () {
   const isWater = (pack, id) => pack.cells.h[id] < 20;
   const inMap = (x, y) => x > 0 && x < graphWidth && y > 0 && y < graphHeight;
 
-  function resample(parentMap, options) {
-    /*
+  /*
     generate new map based on an existing one (resampling parentMap)
     parentMap: {seed, grid, pack} from original map
     options = {
-          projection: f(Number,Number)->[Number, Number]
-                      function to calculate new coordinates
-          inverse: g(Number,Number)->[Number, Number]
-                    inverse of f
-          depressRivers: Bool     carve out riverbeds?
-          smoothHeightMap: Bool   run smooth filter on heights
-          addLakesInDepressions:  call FMG original funtion on heightmap
+      projection: f(Number,Number)->[Number, Number]
+                  function to calculate new coordinates
+      inverse: g(Number,Number)->[Number, Number]
+                inverse of f
+      depressRivers: Bool     carve out riverbeds?
+      smoothHeightMap: Bool   run smooth filter on heights
+      addLakesInDepressions:  call FMG original funtion on heightmap
 
-          lockMarkers: Bool       Auto lock all copied markers
-          lockBurgs: Bool         Auto lock all copied burgs
+      lockMarkers: Bool       Auto lock all copied markers
+      lockBurgs: Bool         Auto lock all copied burgs
       }
     */
-
+  function resample(parentMap, options) {
     const projection = options.projection;
     const inverse = options.inverse;
     const stage = s => INFO && console.info("SUBMAP:", s);
@@ -38,7 +33,6 @@ window.Submap = (function () {
     INFO && console.group("SubMap with seed: " + seed);
     DEBUG && console.info("Using Options:", options);
 
-    // create new grid
     applyGraphSize();
     grid = generateGrid();
 
@@ -119,8 +113,8 @@ window.Submap = (function () {
     OceanLayers();
 
     calculateMapCoordinates();
-    // calculateTemperatures();
-    // generatePrecipitation();
+    calculateTemperatures();
+    generatePrecipitation();
     stage("Cell cleanup");
     reGraph();
 
@@ -244,6 +238,7 @@ window.Submap = (function () {
         ? pack.burgs[s.capital].cell // capital is the best bet
         : pack.cells.state.findIndex(x => x === i); // otherwise use the first valid cell
     });
+    BurgsAndStates.getPoles();
 
     // transfer provinces, mark provinces without land as removed.
     stage("Porting provinces");
@@ -259,11 +254,10 @@ window.Submap = (function () {
       const newCenters = forwardMap[p.center];
       p.center = newCenters.length ? newCenters[0] : pack.cells.province.findIndex(x => x === i);
     });
+    Provinces.getPoles();
 
     stage("Regenerating routes network");
     regenerateRoutes();
-
-    drawStateLabels();
 
     Rivers.specify();
     Features.specify();
@@ -279,7 +273,6 @@ window.Submap = (function () {
       }
       s.military = s.military.filter(m => m.cell).map((m, i) => ({...m, i}));
     }
-    drawMilitary();
 
     stage("Copying markers");
     for (const m of pack.markers) {
@@ -295,8 +288,6 @@ window.Submap = (function () {
     }
     if (layerIsOn("toggleMarkers")) drawMarkers();
 
-    stage("Redraw emblems");
-    drawEmblems();
     stage("Regenerating Zones");
     Zones.generate();
     Names.getMapName();

@@ -548,21 +548,6 @@ function invokeActiveZooming() {
   }
 }
 
-async function renderGroupCOAs(g) {
-  const [group, type] =
-    g.id === "burgEmblems"
-      ? [pack.burgs, "burg"]
-      : g.id === "provinceEmblems"
-      ? [pack.provinces, "province"]
-      : [pack.states, "state"];
-  for (let use of g.children) {
-    const i = +use.dataset.i;
-    const id = type + "COA" + i;
-    COArenderer.trigger(id, group[i].coa);
-    use.setAttribute("href", "#" + id);
-  }
-}
-
 // add drag to upload logic, pull request from @evyatron
 void (function addDragToUpload() {
   document.addEventListener("dragover", function (e) {
