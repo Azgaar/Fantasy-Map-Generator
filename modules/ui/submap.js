@@ -28,6 +28,7 @@ window.UISubmap = (function () {
     $("#submapOptionsDialog").dialog({
       title: "Create a submap",
       resizable: false,
+      width: "32em",
       position: {my: "center", at: "center", of: "svg"},
       buttons: {
         Submap: function () {
