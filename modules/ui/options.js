@@ -703,12 +703,6 @@ async function openTemplateSelectionDialog() {
   HeightmapSelectionDialog.open();
 }
 
-// remove all saved data from LocalStorage and reload the page
-function restoreDefaultOptions() {
-  localStorage.clear();
-  location.reload();
-}
-
 // Sticked menu Options listeners
 byId("sticked").addEventListener("click", function (event) {
   const id = event.target.id;

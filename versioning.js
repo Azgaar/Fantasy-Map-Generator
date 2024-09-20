@@ -12,7 +12,7 @@
  *
  * Example: 1.102.2 -> Major version 1, Minor version 102, Patch version 2
  */
-const VERSION = "1.104.1";
+const VERSION = "1.104.2";
 if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format or parsing function");
 
 {
@@ -21,7 +21,9 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
   if (loadingScreenVersion) loadingScreenVersion.innerText = `v${VERSION}`;
 
   const storedVersion = localStorage.getItem("version");
-  if (compareVersions(storedVersion, VERSION, {patch: false}).isOlder) setTimeout(showUpdateWindow, 6000);
+  if (compareVersions(storedVersion, VERSION, {major: true, minor: true, patch: false}).isOlder) {
+    setTimeout(showUpdateWindow, 6000);
+  }
 
   function showUpdateWindow() {
     const changelog = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog";
@@ -34,7 +36,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
 
       <ul>
         <strong>Latest changes:</strong>
-        <li>Style: ability to set letter spacing</li>
+        <li>Labels: ability to set letter spacing</li>
         <li>Zones update</li>
         <li>Notes Editor: on-demand AI text generation</li>
         <li>New style preset: Dark Seas</li>
@@ -44,41 +46,38 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
         <li>Preview villages map</li>
         <li>Ability to render ocean heightmap</li>
         <li>Scale bar styling features</li>
-        <li>Vignette visual layer and vignette styling options</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
       <span><i>Thanks for all supporters on <a href="${patreon}" target="_blank">Patreon</a>!</i></span>`;
-
-    const buttons = {
-      Ok: function () {
-        $(this).dialog("close");
-        localStorage.setItem("version", VERSION);
-      }
-    };
-
-    if (storedVersion) {
-      buttons.Cleanup = () => {
-        clearCache();
-        localStorage.clear();
-        localStorage.setItem("version", VERSION);
-        location.reload();
-      };
-    }
 
     $("#alert").dialog({
       resizable: false,
       title: "Fantasy Map Generator update",
       width: "28em",
       position: {my: "center center-4em", at: "center", of: "svg"},
-      buttons
+      buttons: {
+        "Cleanup data": () => cleanupData(),
+        "Don't show again": function () {
+          $(this).dialog("close");
+          localStorage.setItem("version", VERSION);
+        }
+      }
     });
   }
+}
 
-  async function clearCache() {
-    const cacheNames = await caches.keys();
-    return Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
-  }
+async function cleanupData() {
+  await clearCache();
+  localStorage.clear();
+  localStorage.setItem("version", VERSION);
+  localStorage.setItem("disable_click_arrow_tooltip", "true");
+  location.reload();
+}
+
+async function clearCache() {
+  const cacheNames = await caches.keys();
+  return Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
 }
 
 function parseMapVersion(version) {

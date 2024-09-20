@@ -666,10 +666,7 @@ async function generate(options) {
       title: "Generation error",
       width: "32em",
       buttons: {
-        "Clear data": function () {
-          localStorage.clear();
-          localStorage.setItem("version", VERSION);
-        },
+        "Cleanup data": cleanupData,
         Regenerate: function () {
           regenerateMap("generation error");
           $(this).dialog("close");
