@@ -1,7 +1,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/6.2.0/workbox-sw.js");
 
 const {Route, registerRoute} = workbox.routing;
-const {CacheFirst, NetworkFirst} = workbox.strategies;
+const {CacheFirst, NetworkFirst, StaleWhileRevalidate} = workbox.strategies;
 const {CacheableResponsePlugin} = workbox.cacheableResponse;
 const {ExpirationPlugin} = workbox.expiration;
 
@@ -18,8 +18,11 @@ registerRoute(
 
 registerRoute(
   ({request, url}) =>
-    request.destination === "script" && !url.pathname.endsWith("min.js") && !url.pathname.includes("versioning.js"),
-  new CacheFirst({
+    request.destination === "script" &&
+    !url.pathname.endsWith("min.js") &&
+    !url.pathname.includes("versioning.js") &&
+    !url.contains("google"),
+  new StaleWhileRevalidate({
     cacheName: "fmg-scripts",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
