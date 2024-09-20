@@ -277,7 +277,7 @@ class Battle {
         const shift = side === "attackers" ? attackers.length * -8 : (defenders.length - 1) * 8;
         regiment.px = regiment.x;
         regiment.py = regiment.y;
-        Military.moveRegiment(regiment, defenders[0].x, defenders[0].y + shift);
+        moveRegiment(regiment, defenders[0].x, defenders[0].y + shift);
       });
     }
 
@@ -909,7 +909,7 @@ class Battle {
 
   cancelResults() {
     // move regiments back to initial positions
-    this.attackers.regiments.concat(this.defenders.regiments).forEach(r => Military.moveRegiment(r, r.px, r.py));
+    this.attackers.regiments.concat(this.defenders.regiments).forEach(r => moveRegiment(r, r.px, r.py));
     $("#battleScreen").dialog("close");
     this.cleanData();
   }

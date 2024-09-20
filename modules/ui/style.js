@@ -70,6 +70,10 @@ function getColorScheme(scheme = "bright") {
   return heightmapColorSchemes[scheme];
 }
 
+function getColor(value, scheme = getColorScheme("bright")) {
+  return scheme(1 - (value < 20 ? value - 5 : value) / 100);
+}
+
 // Toggle style sections on element select
 styleElementSelect.on("change", selectStyleElement);
 
@@ -114,6 +118,7 @@ function selectStyleElement() {
       "armies",
       "routes",
       "lakes",
+      "biomes",
       "borders",
       "cults",
       "relig",
@@ -952,7 +957,7 @@ styleArmiesSize.on("input", e => {
   armies.selectAll("g").remove(); // clear armies layer
   pack.states.forEach(s => {
     if (!s.i || s.removed || !s.military.length) return;
-    Military.drawRegiments(s.military, s.i);
+    drawRegiments(s.military, s.i);
   });
 });
 

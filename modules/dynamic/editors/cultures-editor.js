@@ -485,6 +485,7 @@ function applyPopulationChange(oldRural, oldUrban, newRural, newUrban, culture) 
     burgs.forEach(b => (b.population = population));
   }
 
+  if (layerIsOn("togglePopulation")) drawPopulation();
   refreshCulturesEditor();
 }
 

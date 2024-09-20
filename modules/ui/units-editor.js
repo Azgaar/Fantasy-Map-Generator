@@ -66,11 +66,11 @@ function editUnits() {
 
   function changeHeightExponent() {
     calculateTemperatures();
-    if (layerIsOn("toggleTemp")) drawTemp();
+    if (layerIsOn("toggleTemperature")) drawTemperature();
   }
 
   function changeTemperatureScale() {
-    if (layerIsOn("toggleTemp")) drawTemp();
+    if (layerIsOn("toggleTemperature")) drawTemperature();
   }
 
   function changePopulationRate() {

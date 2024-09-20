@@ -161,12 +161,14 @@ function showMapTooltip(point, e, i, g) {
   if (group === "terrain") return tip("Click to edit the Relief Icon");
 
   if (subgroup === "burgLabels" || subgroup === "burgIcons") {
-    const burg = +path[path.length - 10].dataset.id;
-    const b = pack.burgs[burg];
-    const population = si(b.population * populationRate * urbanization);
-    tip(`${b.name}. Population: ${population}. Click to edit`);
-    if (burgsOverview?.offsetParent) highlightEditorLine(burgsOverview, burg, 5000);
-    return;
+    const burgId = +path[path.length - 10].dataset.id;
+    if (burgId) {
+      const burg = pack.burgs[burgId];
+      const population = si(burg.population * populationRate * urbanization);
+      tip(`${burg.name}. Population: ${population}. Click to edit`);
+      if (burgsOverview?.offsetParent) highlightEditorLine(burgsOverview, burgId, 5000);
+      return;
+    }
   }
 
   if (group === "labels") return tip("Click to edit the Label");
@@ -211,9 +213,9 @@ function showMapTooltip(point, e, i, g) {
   if (group === "ice") return tip("Click to edit the Ice");
 
   // covering elements
-  if (layerIsOn("togglePrec") && land) tip("Annual Precipitation: " + getFriendlyPrecipitation(i));
+  if (layerIsOn("togglePrecipitation") && land) tip("Annual Precipitation: " + getFriendlyPrecipitation(i));
   else if (layerIsOn("togglePopulation")) tip(getPopulationTip(i));
-  else if (layerIsOn("toggleTemp")) tip("Temperature: " + convertTemperature(grid.cells.temp[g]));
+  else if (layerIsOn("toggleTemperature")) tip("Temperature: " + convertTemperature(grid.cells.temp[g]));
   else if (layerIsOn("toggleBiomes") && pack.cells.biome[i]) {
     const biome = pack.cells.biome[i];
     tip("Biome: " + biomesData.name[biome]);

@@ -2,7 +2,7 @@
 function editBurg(id) {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleIcons")) toggleIcons();
+  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
   const burg = id || d3.event.target.dataset.id;

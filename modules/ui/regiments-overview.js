@@ -179,7 +179,7 @@ function overviewRegiments(state) {
     reg.name = Military.getName(reg, military);
     military.push(reg);
     Military.generateNote(reg, pack.states[state]); // add legend
-    Military.drawRegiment(reg, state);
+    drawRegiment(reg, state);
     toggleAdd();
   }
 
