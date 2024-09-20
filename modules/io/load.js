@@ -662,28 +662,28 @@ async function parseLoadedData(data, mapVersion) {
           ERROR && console.error(`[Data integrity] Route ${route.i} has less than 2 points. Removing the route`);
           Routes.remove(route);
         }
+      });
 
-        for (const from in pack.cells.routes) {
-          const value = pack.cells.routes[from];
-          if (!value) continue;
+      for (const from in pack.cells.routes) {
+        const value = pack.cells.routes[from];
+        if (!value) continue;
 
-          if (Object.keys(value).length === 0) {
-            // remove empty object
-            delete pack.cells.routes[from];
-            continue;
-          }
+        if (Object.keys(value).length === 0) {
+          // remove empty object
+          delete pack.cells.routes[from];
+          continue;
+        }
 
-          for (const to in value) {
-            const routeId = value[to];
-            const route = pack.routes.find(r => r.i === routeId);
-            if (!route) {
-              ERROR &&
-                console.error(`[Data integrity] Route ${routeId} from ${from} to ${to} is missing. Removing the route`);
-              delete pack.cells.routes[from][to];
-            }
+        for (const to in value) {
+          const routeId = value[to];
+          const route = pack.routes.find(r => r.i === routeId);
+          if (!route) {
+            ERROR &&
+              console.error(`[Data integrity] Route ${routeId} from ${from} to ${to} is missing. Removing the route`);
+            delete pack.cells.routes[from][to];
           }
         }
-      });
+      }
 
       {
         const markerIds = [];
