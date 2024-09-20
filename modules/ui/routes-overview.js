@@ -32,6 +32,7 @@ function overviewRoutes() {
     let lines = "";
 
     for (const route of pack.routes) {
+      if (!route.points || route.points.length < 2) continue;
       route.name = route.name || Routes.generateName(route);
       route.length = route.length || Routes.getLength(route.i);
       const length = rn(route.length * distanceScale) + " " + distanceUnitInput.value;
@@ -92,8 +93,8 @@ function overviewRoutes() {
   }
 
   function zoomToRoute() {
-    const r = +this.parentNode.dataset.id;
-    const route = routes.select("#route" + r).node();
+    const routeId = +this.parentNode.dataset.id;
+    const route = routes.select("#route" + routeId).node();
     highlightElement(route, 3);
   }
 
@@ -111,15 +112,16 @@ function overviewRoutes() {
   }
 
   function openRouteEditor() {
-    const id = "route" + this.parentNode.dataset.id;
-    editRoute(id);
+    const routeId = "route" + this.parentNode.dataset.id;
+    editRoute(routeId);
   }
 
   function toggleLockStatus() {
     const routeId = +this.parentNode.dataset.id;
-    const route = pack.routes[routeId];
-    route.lock = !route.lock;
+    const route = pack.routes.find(route => route.i === routeId);
+    if (!route) return;
 
+    route.lock = !route.lock;
     if (this.classList.contains("icon-lock")) {
       this.classList.remove("icon-lock");
       this.classList.add("icon-lock-open");

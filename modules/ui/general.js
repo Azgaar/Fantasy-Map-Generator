@@ -153,9 +153,11 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "routes") {
     const routeId = +e.target.id.slice(5);
-    const name = pack.routes[routeId]?.name;
-    if (name) return tip(`${name}. Click to edit the Route`);
-    return tip("Click to edit the Route");
+    const route = pack.routes.find(route => route.i === routeId);
+    if (route) {
+      if (route.name) return tip(`${route.name}. Click to edit the Route`);
+      return tip("Click to edit the Route");
+    }
   }
 
   if (group === "terrain") return tip("Click to edit the Relief Icon");

@@ -496,7 +496,7 @@ window.Routes = (function () {
 
   // utility functions
   function isConnected(cellId) {
-    const {routes} = pack.cells;
+    const routes = pack.cells.routes;
     return routes[cellId] && Object.keys(routes[cellId]).length > 0;
   }
 
@@ -507,22 +507,34 @@ window.Routes = (function () {
 
   function getRoute(from, to) {
     const routeId = pack.cells.routes[from]?.[to];
-    return routeId === undefined ? null : pack.routes[routeId];
+    if (routeId === undefined) return null;
+
+    const route = pack.routes.find(route => route.i === routeId);
+    if (!route) return null;
+
+    return route;
   }
 
   function hasRoad(cellId) {
     const connections = pack.cells.routes[cellId];
     if (!connections) return false;
-    return Object.values(connections).some(routeId => pack.routes[routeId].group === "roads");
+
+    return Object.values(connections).some(routeId => {
+      const route = pack.routes.find(route => route.i === routeId);
+      if (!route) return false;
+      return route.group === "roads";
+    });
   }
 
   function isCrossroad(cellId) {
     const connections = pack.cells.routes[cellId];
     if (!connections) return false;
-    return (
-      Object.keys(connections).length > 3 ||
-      Object.values(connections).filter(routeId => pack.routes[routeId]?.group === "roads").length > 2
-    );
+    if (Object.keys(connections).length > 3) return true;
+    const roadConnections = Object.values(connections).filter(routeId => {
+      const route = pack.routes.find(route => route.i === routeId);
+      return route?.group === "roads";
+    });
+    return roadConnections.length > 2;
   }
 
   // name generator data

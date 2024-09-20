@@ -393,12 +393,12 @@ function createVillageGeneratorLink(burg) {
   else if (cells.r[cell]) tags.push("river");
   else if (pop < 200 && each(4)(cell)) tags.push("pond");
 
-  const connections = pack.cells.routes[cell] || {};
-  const roads = Object.values(connections).filter(routeId => {
-    const route = pack.routes[routeId];
+  const roadsNumber = Object.values(pack.cells.routes[cell] || {}).filter(routeId => {
+    const route = pack.routes.find(route => route.i === routeId);
+    if (!route) return false;
     return route.group === "roads" || route.group === "trails";
   }).length;
-  tags.push(roads > 1 ? "highway" : roads === 1 ? "dead end" : "isolated");
+  tags.push(roadsNumber > 1 ? "highway" : roadsNumber === 1 ? "dead end" : "isolated");
 
   const biome = cells.biome[cell];
   const arableBiomes = cells.r[cell] ? [1, 2, 3, 4, 5, 6, 7, 8] : [5, 6, 7, 8];
