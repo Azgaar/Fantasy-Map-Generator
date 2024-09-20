@@ -956,4 +956,9 @@ export function resolveVersionConflicts(mapVersion) {
     const featurePaths = defs.select("#featurePaths");
     if (!featurePaths.size()) defs.append("g").attr("id", "featurePaths");
   }
+
+  if (isOlderThan("1.105.0")) {
+    // v1.104.0 introduced some bugs
+    viewbox.select("#regions").style("display", null);
+  }
 }
