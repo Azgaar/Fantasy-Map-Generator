@@ -530,3 +530,32 @@ class Planimeter extends Measurer {
     this.el.select("text").attr("x", c[0]).attr("y", c[1]).text(area);
   }
 }
+
+function createDefaultRuler() {
+  TIME && console.time("createDefaultRuler");
+  const {features, vertices} = pack;
+
+  const areas = features.map(f => (f.land ? f.area || 0 : -Infinity));
+  const largestLand = areas.indexOf(Math.max(...areas));
+  const featureVertices = features[largestLand].vertices;
+
+  const MIN_X = 100;
+  const MAX_X = graphWidth - 100;
+  const MIN_Y = 100;
+  const MAX_Y = graphHeight - 100;
+
+  let leftmostVertex = [graphWidth - MIN_X, graphHeight / 2];
+  let rightmostVertex = [MIN_X, graphHeight / 2];
+
+  for (const vertex of featureVertices) {
+    const [x, y] = vertices.p[vertex];
+    if (y < MIN_Y || y > MAX_Y) continue;
+    if (x < leftmostVertex[0] && x >= MIN_X) leftmostVertex = [x, y];
+    if (x > rightmostVertex[0] && x <= MAX_X) rightmostVertex = [x, y];
+  }
+
+  rulers = new Rulers();
+  rulers.create(Ruler, [leftmostVertex, rightmostVertex]);
+
+  TIME && console.timeEnd("createDefaultRuler");
+}

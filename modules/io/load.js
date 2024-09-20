@@ -369,7 +369,7 @@ async function parseLoadedData(data, mapVersion) {
 
     {
       reGraph();
-      reMarkFeatures();
+      Features.markupPack();
       pack.features = JSON.parse(data[12]);
       pack.cultures = JSON.parse(data[13]);
       pack.states = JSON.parse(data[14]);
@@ -421,7 +421,7 @@ async function parseLoadedData(data, mapVersion) {
 
       // turn on active layers
       if (hasChild(texture, "image")) turnOn("toggleTexture");
-      if (hasChildren(terrs)) turnOn("toggleHeight");
+      if (hasChildren(terrs.select("#landHeights"))) turnOn("toggleHeight");
       if (hasChildren(biomes)) turnOn("toggleBiomes");
       if (hasChildren(cells)) turnOn("toggleCells");
       if (hasChildren(gridOverlay)) turnOn("toggleGrid");
@@ -436,13 +436,13 @@ async function parseLoadedData(data, mapVersion) {
       if (hasChildren(zones) && isVisible(zones)) turnOn("toggleZones");
       if (isVisible(borders) && hasChild(borders, "path")) turnOn("toggleBorders");
       if (isVisible(routes) && hasChild(routes, "path")) turnOn("toggleRoutes");
-      if (hasChildren(temperature)) turnOn("toggleTemp");
+      if (hasChildren(temperature)) turnOn("toggleTemperature");
       if (hasChild(population, "line")) turnOn("togglePopulation");
       if (hasChildren(ice)) turnOn("toggleIce");
-      if (hasChild(prec, "circle")) turnOn("togglePrec");
+      if (hasChild(prec, "circle")) turnOn("togglePrecipitation");
       if (isVisible(emblems) && hasChild(emblems, "use")) turnOn("toggleEmblems");
       if (isVisible(labels)) turnOn("toggleLabels");
-      if (isVisible(icons)) turnOn("toggleIcons");
+      if (isVisible(icons)) turnOn("toggleBurgIcons");
       if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
       if (hasChildren(markers)) turnOn("toggleMarkers");
       if (isVisible(ruler)) turnOn("toggleRulers");
@@ -461,7 +461,7 @@ async function parseLoadedData(data, mapVersion) {
 
     {
       // dynamically import and run auto-update script
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.100.00");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.104.0");
       resolveVersionConflicts(mapVersion);
     }
 

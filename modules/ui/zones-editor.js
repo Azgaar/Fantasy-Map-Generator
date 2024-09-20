@@ -472,6 +472,7 @@ function editZones() {
         burgs.forEach(b => (b.population = population));
       }
 
+      if (layerIsOn("togglePopulation")) drawPopulation();
       zonesEditorAddLines();
     }
   }

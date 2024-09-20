@@ -23,17 +23,15 @@ function editLake() {
   modules.editLake = true;
 
   // add listeners
-  document.getElementById("lakeName").addEventListener("input", changeName);
-  document.getElementById("lakeNameCulture").addEventListener("click", generateNameCulture);
-  document.getElementById("lakeNameRandom").addEventListener("click", generateNameRandom);
-
-  document.getElementById("lakeGroup").addEventListener("change", changeLakeGroup);
-  document.getElementById("lakeGroupAdd").addEventListener("click", toggleNewGroupInput);
-  document.getElementById("lakeGroupName").addEventListener("change", createNewGroup);
-  document.getElementById("lakeGroupRemove").addEventListener("click", removeLakeGroup);
-
-  document.getElementById("lakeEditStyle").addEventListener("click", editGroupStyle);
-  document.getElementById("lakeLegend").addEventListener("click", editLakeLegend);
+  byId("lakeName").on("input", changeName);
+  byId("lakeNameCulture").on("click", generateNameCulture);
+  byId("lakeNameRandom").on("click", generateNameRandom);
+  byId("lakeGroup").on("change", changeLakeGroup);
+  byId("lakeGroupAdd").on("click", toggleNewGroupInput);
+  byId("lakeGroupName").on("change", createNewGroup);
+  byId("lakeGroupRemove").on("click", removeLakeGroup);
+  byId("lakeEditStyle").on("click", editGroupStyle);
+  byId("lakeLegend").on("click", editLakeLegend);
 
   function getLake() {
     const lakeId = +elSelected.attr("data-f");
@@ -41,85 +39,91 @@ function editLake() {
   }
 
   function updateLakeValues() {
-    const cells = pack.cells;
+    const {cells, vertices, rivers} = pack;
 
     const l = getLake();
-    document.getElementById("lakeName").value = l.name;
-    document.getElementById("lakeArea").value = si(getArea(l.area)) + " " + getAreaUnit();
+    byId("lakeName").value = l.name;
+    byId("lakeArea").value = si(getArea(l.area)) + " " + getAreaUnit();
 
-    const length = d3.polygonLength(l.vertices.map(v => pack.vertices.p[v]));
-    document.getElementById("lakeShoreLength").value = si(length * distanceScale) + " " + distanceUnitInput.value;
+    const length = d3.polygonLength(l.vertices.map(v => vertices.p[v]));
+    byId("lakeShoreLength").value = si(length * distanceScale) + " " + distanceUnitInput.value;
 
     const lakeCells = Array.from(cells.i.filter(i => cells.f[i] === l.i));
     const heights = lakeCells.map(i => cells.h[i]);
 
-    document.getElementById("lakeElevation").value = getHeight(l.height);
-    document.getElementById("lakeAverageDepth").value = getHeight(d3.mean(heights), "abs");
-    document.getElementById("lakeMaxDepth").value = getHeight(d3.min(heights), "abs");
+    byId("lakeElevation").value = getHeight(l.height);
+    byId("lakeAverageDepth").value = getHeight(d3.mean(heights), "abs");
+    byId("lakeMaxDepth").value = getHeight(d3.min(heights), "abs");
 
-    document.getElementById("lakeFlux").value = l.flux;
-    document.getElementById("lakeEvaporation").value = l.evaporation;
+    byId("lakeFlux").value = l.flux;
+    byId("lakeEvaporation").value = l.evaporation;
 
-    const inlets = l.inlets && l.inlets.map(inlet => pack.rivers.find(river => river.i === inlet)?.name);
-    const outlet = l.outlet ? pack.rivers.find(river => river.i === l.outlet)?.name : "no";
-    document.getElementById("lakeInlets").value = inlets ? inlets.length : "no";
-    document.getElementById("lakeInlets").title = inlets ? inlets.join(", ") : "";
-    document.getElementById("lakeOutlet").value = outlet;
+    const inlets = l.inlets && l.inlets.map(inlet => rivers.find(river => river.i === inlet)?.name);
+    const outlet = l.outlet ? rivers.find(river => river.i === l.outlet)?.name : "no";
+    byId("lakeInlets").value = inlets ? inlets.length : "no";
+    byId("lakeInlets").title = inlets ? inlets.join(", ") : "";
+    byId("lakeOutlet").value = outlet;
   }
 
   function drawLakeVertices() {
-    const v = getLake().vertices; // lake outer vertices
+    const vertices = getLake().vertices;
 
-    const c = [...new Set(v.map(v => pack.vertices.c[v]).flat())];
+    const neibCells = unique(vertices.map(v => pack.vertices.c[v]).flat());
     debug
       .select("#vertices")
       .selectAll("polygon")
-      .data(c)
+      .data(neibCells)
       .enter()
       .append("polygon")
-      .attr("points", d => getPackPolygon(d))
+      .attr("points", getPackPolygon)
       .attr("data-c", d => d);
 
     debug
       .select("#vertices")
       .selectAll("circle")
-      .data(v)
+      .data(vertices)
       .enter()
       .append("circle")
       .attr("cx", d => pack.vertices.p[d][0])
       .attr("cy", d => pack.vertices.p[d][1])
       .attr("r", 0.4)
       .attr("data-v", d => d)
-      .call(d3.drag().on("drag", dragVertex))
+      .call(d3.drag().on("drag", handleVertexDrag).on("end", handleVertexDragEnd))
       .on("mousemove", () =>
-        tip("Drag to move the vertex, please use for fine-tuning only. Edit heightmap to change actual cell heights")
+        tip("Drag to move the vertex. Please use for fine-tuning only! Edit heightmap to change actual cell heights")
       );
   }
 
-  function dragVertex() {
-    const x = rn(d3.event.x, 2),
-      y = rn(d3.event.y, 2);
+  function handleVertexDrag() {
+    const x = rn(d3.event.x, 2);
+    const y = rn(d3.event.y, 2);
     this.setAttribute("cx", x);
     this.setAttribute("cy", y);
-    const v = +this.dataset.v;
-    pack.vertices.p[v] = [x, y];
-    debug
-      .select("#vertices")
-      .selectAll("polygon")
-      .attr("points", d => getPackPolygon(d));
-    redrawLake();
+
+    const vertexId = d3.select(this).datum();
+    pack.vertices.p[vertexId] = [x, y];
+
+    const feature = getLake();
+
+    // update lake path
+    defs.select("#featurePaths > path#feature_" + feature.i).attr("d", getFeaturePath(feature));
+
+    // update area
+    const points = feature.vertices.map(vertex => pack.vertices.p[vertex]);
+    feature.area = Math.abs(d3.polygonArea(points));
+    byId("lakeArea").value = si(getArea(feature.area)) + " " + getAreaUnit();
+
+    // update cell
+    debug.select("#vertices").selectAll("polygon").attr("points", getPackPolygon);
   }
 
-  function redrawLake() {
-    lineGen.curve(d3.curveBasisClosed);
-    const feature = getLake();
-    const points = feature.vertices.map(v => pack.vertices.p[v]);
-    const d = round(lineGen(points));
-    elSelected.attr("d", d);
-    defs.select("mask#land > path#land_" + feature.i).attr("d", d); // update land mask
-
-    feature.area = Math.abs(d3.polygonArea(points));
-    document.getElementById("lakeArea").value = si(getArea(feature.area)) + " " + getAreaUnit();
+  function handleVertexDragEnd() {
+    if (layerIsOn("toggleStates")) drawStates();
+    if (layerIsOn("toggleProvinces")) drawProvinces();
+    if (layerIsOn("toggleBorders")) drawBorders();
+    if (layerIsOn("toggleBiomes")) drawBiomes();
+    if (layerIsOn("toggleReligions")) drawReligions();
+    if (layerIsOn("toggleCultures")) drawCultures();
   }
 
   function changeName() {
@@ -138,7 +142,7 @@ function editLake() {
 
   function selectLakeGroup(node) {
     const group = node.parentNode.id;
-    const select = document.getElementById("lakeGroup");
+    const select = byId("lakeGroup");
     select.options.length = 0; // remove all options
 
     lakes.selectAll("g").each(function () {
@@ -147,7 +151,7 @@ function editLake() {
   }
 
   function changeLakeGroup() {
-    document.getElementById(this.value).appendChild(elSelected.node());
+    byId(this.value).appendChild(elSelected.node());
     getLake().group = this.value;
   }
 
@@ -172,7 +176,7 @@ function editLake() {
       .replace(/ /g, "_")
       .replace(/[^\w\s]/gi, "");
 
-    if (document.getElementById(group)) {
+    if (byId(group)) {
       tip("Element with this id already exists. Please provide a unique name", false, "error");
       return;
     }
@@ -186,23 +190,23 @@ function editLake() {
     const oldGroup = elSelected.node().parentNode;
     const basic = ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(oldGroup.id);
     if (!basic && oldGroup.childElementCount === 1) {
-      document.getElementById("lakeGroup").selectedOptions[0].remove();
-      document.getElementById("lakeGroup").options.add(new Option(group, group, false, true));
+      byId("lakeGroup").selectedOptions[0].remove();
+      byId("lakeGroup").options.add(new Option(group, group, false, true));
       oldGroup.id = group;
       toggleNewGroupInput();
-      document.getElementById("lakeGroupName").value = "";
+      byId("lakeGroupName").value = "";
       return;
     }
 
     // create a new group
     const newGroup = elSelected.node().parentNode.cloneNode(false);
-    document.getElementById("lakes").appendChild(newGroup);
+    byId("lakes").appendChild(newGroup);
     newGroup.id = group;
-    document.getElementById("lakeGroup").options.add(new Option(group, group, false, true));
-    document.getElementById(group).appendChild(elSelected.node());
+    byId("lakeGroup").options.add(new Option(group, group, false, true));
+    byId(group).appendChild(elSelected.node());
 
     toggleNewGroupInput();
-    document.getElementById("lakeGroupName").value = "";
+    byId("lakeGroupName").value = "";
   }
 
   function removeLakeGroup() {
@@ -221,14 +225,14 @@ function editLake() {
       buttons: {
         Remove: function () {
           $(this).dialog("close");
-          const freshwater = document.getElementById("freshwater");
-          const groupEl = document.getElementById(group);
+          const freshwater = byId("freshwater");
+          const groupEl = byId(group);
           while (groupEl.childNodes.length) {
             freshwater.appendChild(groupEl.childNodes[0]);
           }
           groupEl.remove();
-          document.getElementById("lakeGroup").selectedOptions[0].remove();
-          document.getElementById("lakeGroup").value = "freshwater";
+          byId("lakeGroup").selectedOptions[0].remove();
+          byId("lakeGroup").value = "freshwater";
         },
         Cancel: function () {
           $(this).dialog("close");

@@ -2,7 +2,7 @@
 function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   if (customization) return;
   closeDialogs("#burgsOverview, .stable");
-  if (!layerIsOn("toggleIcons")) toggleIcons();
+  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
   const body = byId("burgsBody");
@@ -154,9 +154,9 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   }
 
   function burgHighlightOn(event) {
-    if (!layerIsOn("toggleLabels")) toggleLabels();
     const burg = +event.target.dataset.id;
-    burgLabels.select("[data-id='" + burg + "']").classed("drag", true);
+    const label = burgLabels.select("[data-id='" + burg + "']");
+    if (label.size()) label.classed("drag", true);
   }
 
   function burgHighlightOff() {

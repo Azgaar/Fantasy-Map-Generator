@@ -76,13 +76,13 @@ function handleKeyup(event) {
   else if (code === "KeyR") toggleReligions();
   else if (code === "KeyQ") toggleResources();
   else if (code === "KeyU") toggleRoutes();
-  else if (code === "KeyT") toggleTemp();
+  else if (code === "KeyT") toggleTemperature();
   else if (code === "KeyN") togglePopulation();
   else if (code === "KeyJ") toggleIce();
-  else if (code === "KeyA") togglePrec();
+  else if (code === "KeyA") togglePrecipitation();
   else if (code === "KeyY") toggleEmblems();
   else if (code === "KeyL") toggleLabels();
-  else if (code === "KeyI") toggleIcons();
+  else if (code === "KeyI") toggleBurgIcons();
   else if (code === "KeyM") toggleMilitary();
   else if (code === "KeyK") toggleMarkers();
   else if (code === "Equal" && !customization) toggleRulers();
