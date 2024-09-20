@@ -21,7 +21,7 @@ registerRoute(
     request.destination === "script" &&
     !url.pathname.endsWith("min.js") &&
     !url.pathname.includes("versioning.js") &&
-    !url.contains("google"),
+    !url.pathname.includes("google"),
   new StaleWhileRevalidate({
     cacheName: "fmg-scripts",
     plugins: [
