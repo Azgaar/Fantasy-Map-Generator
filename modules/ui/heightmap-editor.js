@@ -157,11 +157,7 @@ function editHeightmap(options) {
   // Exit customization mode
   function finalizeHeightmap() {
     if (viewbox.select("#heights").selectAll("*").size() < 200)
-      return tip(
-        "Insufficient land area! There should be at least 200 land cells to finalize the heightmap",
-        null,
-        "error"
-      );
+      return tip("Insufficient land area. There should be at least 200 land cells!", null, "error");
     if (byId("imageConverter").offsetParent) return tip("Please exit the Image Conversion mode first", null, "error");
 
     delete window.edits; // remove global variable
@@ -173,6 +169,7 @@ function editHeightmap(options) {
     if (byId("options").querySelector(".tab > button.active").id === "toolsTab") toolsContent.style.display = "block";
     layersPreset.disabled = false;
     exitCustomization.style.display = "none"; // hide finalize button
+
     restoreDefaultEvents();
     clearMainTip();
     closeDialogs();
@@ -187,6 +184,7 @@ function editHeightmap(options) {
     else if (mode === "risk") restoreRiskedData();
 
     // restore initial layers
+    drawFeatures();
     byId("heights").remove();
     turnButtonOff("toggleHeight");
     document
@@ -252,8 +250,6 @@ function editHeightmap(options) {
     Provinces.generate();
     Provinces.getPoles();
     BurgsAndStates.defineBurgFeatures();
-
-    drawStateLabels();
 
     Rivers.specify();
     Features.specify();
@@ -436,8 +432,6 @@ function editHeightmap(options) {
       if (!c.i || c.removed) continue;
       c.center = findCell(c.x, c.y);
     }
-
-    drawStateLabels();
 
     if (erosionAllowed) {
       Rivers.specify();
