@@ -949,7 +949,6 @@ export function resolveVersionConflicts(mapVersion) {
 
     // v1.104.00 removed some layers from initial render
     viewbox.select("#icons").style("display", null);
-    viewbox.select("#armies").style("display", null);
     viewbox.select("#ice").style("display", null);
 
     // v1.104.00 added featurePaths to defs
@@ -960,5 +959,6 @@ export function resolveVersionConflicts(mapVersion) {
   if (isOlderThan("1.105.0")) {
     // v1.104.0 introduced some bugs
     viewbox.select("#regions").style("display", null);
+    viewbox.select("#armies").style("display", null);
   }
 }
