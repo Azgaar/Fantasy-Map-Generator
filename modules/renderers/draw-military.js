@@ -84,7 +84,7 @@ const drawRegiment = function (reg, stateId) {
     .attr("transform", `rotate(${reg.angle || 0})`)
     .attr("transform-origin", `${reg.x}px ${reg.y}px`);
   g.append("rect").attr("x", x1).attr("y", y1).attr("width", w).attr("height", h);
-  g.append("text").attr("x", reg.x).attr("y", reg.y).text(getTotal(reg));
+  g.append("text").attr("x", reg.x).attr("y", reg.y).text(Military.getTotal(reg));
   g.append("rect")
     .attr("fill", "currentColor")
     .attr("x", x1 - h)
