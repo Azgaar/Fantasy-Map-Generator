@@ -75,7 +75,8 @@ function editHeightmap(options) {
       changeOnlyLand.checked = true;
     } else if (mode === "risk") {
       defs.selectAll("#land, #water").selectAll("path").remove();
-      viewbox.selectAll("#coastline path, #lakes path, #oceanLayers path").remove();
+      defs.select("#featurePaths").selectAll("path").remove();
+      viewbox.selectAll("#coastline use, #lakes path, #oceanLayers path").remove();
       changeOnlyLand.checked = false;
     }
 
@@ -432,7 +433,7 @@ function editHeightmap(options) {
 
     if (erosionAllowed) {
       Rivers.specify();
-      Lakes.generateName();
+      Features.specify();
     }
 
     // restore zones from grid
