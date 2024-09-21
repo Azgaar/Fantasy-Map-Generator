@@ -962,6 +962,7 @@ function toggleEmblems(event) {
     turnButtonOn("toggleEmblems");
     if (!emblems.selectAll("use").size()) drawEmblems();
     $("#emblems").fadeIn();
+    invokeActiveZooming();
     if (event && isCtrlClick(event)) editStyle("emblems");
   } else {
     if (event && isCtrlClick(event)) return editStyle("emblems");
