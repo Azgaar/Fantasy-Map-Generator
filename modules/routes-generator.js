@@ -727,6 +727,7 @@ window.Routes = (function () {
 
     for (const point of route.points) {
       const from = point[2];
+      if (!routes[from]) continue;
 
       for (const [to, routeId] of Object.entries(routes[from])) {
         if (routeId === route.i) {
