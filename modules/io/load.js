@@ -114,7 +114,7 @@ function uploadMap(file, callback) {
     const result = fileLoadedEvent.target.result;
     const {mapData, mapVersion} = await parseLoadedResult(result);
 
-    const isInvalid = !mapData || !isValidVersion(mapVersion) || mapData.length < 26 || !mapData[5];
+    const isInvalid = !mapData || !isValidVersion(mapVersion) || mapData.length < 10 || !mapData[5];
     if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
 
     const isUpdated = compareVersions(mapVersion, VERSION).isEqual;
