@@ -153,20 +153,24 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "routes") {
     const routeId = +e.target.id.slice(5);
-    const name = pack.routes[routeId]?.name;
-    if (name) return tip(`${name}. Click to edit the Route`);
-    return tip("Click to edit the Route");
+    const route = pack.routes.find(route => route.i === routeId);
+    if (route) {
+      if (route.name) return tip(`${route.name}. Click to edit the Route`);
+      return tip("Click to edit the Route");
+    }
   }
 
   if (group === "terrain") return tip("Click to edit the Relief Icon");
 
   if (subgroup === "burgLabels" || subgroup === "burgIcons") {
-    const burg = +path[path.length - 10].dataset.id;
-    const b = pack.burgs[burg];
-    const population = si(b.population * populationRate * urbanization);
-    tip(`${b.name}. Population: ${population}. Click to edit`);
-    if (burgsOverview?.offsetParent) highlightEditorLine(burgsOverview, burg, 5000);
-    return;
+    const burgId = +path[path.length - 10].dataset.id;
+    if (burgId) {
+      const burg = pack.burgs[burgId];
+      const population = si(burg.population * populationRate * urbanization);
+      tip(`${burg.name}. Population: ${population}. Click to edit`);
+      if (burgsOverview?.offsetParent) highlightEditorLine(burgsOverview, burgId, 5000);
+      return;
+    }
   }
 
   if (group === "labels") return tip("Click to edit the Label");
@@ -211,9 +215,9 @@ function showMapTooltip(point, e, i, g) {
   if (group === "ice") return tip("Click to edit the Ice");
 
   // covering elements
-  if (layerIsOn("togglePrec") && land) tip("Annual Precipitation: " + getFriendlyPrecipitation(i));
+  if (layerIsOn("togglePrecipitation") && land) tip("Annual Precipitation: " + getFriendlyPrecipitation(i));
   else if (layerIsOn("togglePopulation")) tip(getPopulationTip(i));
-  else if (layerIsOn("toggleTemp")) tip("Temperature: " + convertTemperature(grid.cells.temp[g]));
+  else if (layerIsOn("toggleTemperature")) tip("Temperature: " + convertTemperature(grid.cells.temp[g]));
   else if (layerIsOn("toggleBiomes") && pack.cells.biome[i]) {
     const biome = pack.cells.biome[i];
     tip("Biome: " + biomesData.name[biome]);
@@ -259,10 +263,11 @@ function updateCellInfo(point, i, g) {
   const f = cells.f[i];
   infoLat.innerHTML = toDMS(getLatitude(y, 4), "lat");
   infoLon.innerHTML = toDMS(getLongitude(x, 4), "lon");
+  infoGeozone.innerHTML = getGeozone(getLatitude(y, 4));
 
   infoCell.innerHTML = i;
   infoArea.innerHTML = cells.area[i] ? si(getArea(cells.area[i])) + " " + getAreaUnit() : "n/a";
-  infoEvelation.innerHTML = getElevation(pack.features[f], pack.cells.h[i]);
+  infoElevation.innerHTML = getElevation(pack.features[f], pack.cells.h[i]);
   infoDepth.innerHTML = getDepth(pack.features[f], point);
   infoTemp.innerHTML = convertTemperature(grid.cells.temp[g]);
   infoPrec.innerHTML = cells.h[i] >= 20 ? getFriendlyPrecipitation(i) : "n/a";
@@ -284,6 +289,18 @@ function updateCellInfo(point, i, g) {
   infoBurg.innerHTML = cells.burg[i] ? pack.burgs[cells.burg[i]].name + " (" + cells.burg[i] + ")" : "no";
   infoFeature.innerHTML = f ? pack.features[f].group + " (" + f + ")" : "n/a";
   infoBiome.innerHTML = biomesData.name[cells.biome[i]];
+}
+
+function getGeozone(latitude) {
+  if (latitude > 66.5) return "Arctic";
+  if (latitude > 35) return "Temperate North";
+  if (latitude > 23.5) return "Subtropical North";
+  if (latitude > 1) return "Tropical North";
+  if (latitude > -1) return "Equatorial";
+  if (latitude > -23.5) return "Tropical South";
+  if (latitude > -35) return "Subtropical South";
+  if (latitude > -66.5) return "Temperate South";
+  return "Antarctic";
 }
 
 // convert coordinate to DMS format
@@ -429,17 +446,17 @@ function highlightEmblemElement(type, el) {
 
 // assign lock behavior
 document.querySelectorAll("[data-locked]").forEach(function (e) {
-  e.addEventListener("mouseover", function (event) {
+  e.addEventListener("mouseover", function (e) {
+    e.stopPropagation();
     if (this.className === "icon-lock")
       tip("Click to unlock the option and allow it to be randomized on new map generation");
     else tip("Click to lock the option and always use the current value on new map generation");
-    event.stopPropagation();
   });
 
   e.addEventListener("click", function () {
-    const id = this.id.slice(5);
-    if (this.className === "icon-lock") unlock(id);
-    else lock(id);
+    const ids = this.dataset.ids ? this.dataset.ids.split(",") : [this.id.slice(5)];
+    const fn = this.className === "icon-lock" ? unlock : lock;
+    ids.forEach(fn);
   });
 });
 

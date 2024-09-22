@@ -75,8 +75,10 @@ toolsContent.addEventListener("click", function (event) {
 });
 
 function processFeatureRegeneration(event, button) {
-  if (button === "regenerateStateLabels") drawStateLabels();
-  else if (button === "regenerateReliefIcons") {
+  if (button === "regenerateStateLabels") {
+    $("#labels").fadeIn();
+    drawStateLabels();
+  } else if (button === "regenerateReliefIcons") {
     ReliefIcons.draw();
     if (!layerIsOn("toggleRelief")) toggleRelief();
   } else if (button === "regenerateRoutes") {
@@ -126,14 +128,14 @@ function regenerateRoutes() {
 
 function regenerateRivers() {
   Rivers.generate();
-  Lakes.defineGroup();
   Rivers.specify();
-  if (!layerIsOn("toggleRivers")) toggleRivers();
-  else drawRivers();
+  Features.specify();
+  if (layerIsOn("toggleRivers")) drawRivers();
 }
 
 function recalculatePopulation() {
   rankCells();
+
   pack.burgs.forEach(b => {
     if (!b.i || b.removed || b.lock) return;
     const i = b.cell;
@@ -143,6 +145,8 @@ function recalculatePopulation() {
     if (b.port) b.population = b.population * 1.3; // increase port population
     b.population = rn(b.population * gauss(2, 3, 0.6, 20, 3), 3);
   });
+
+  layerIsOn("togglePopulation") ? drawPopulation() : togglePopulation();
 }
 
 function regenerateStates() {
@@ -152,12 +156,14 @@ function regenerateStates() {
   pack.states = newStates;
   BurgsAndStates.expandStates();
   BurgsAndStates.normalizeStates();
+  BurgsAndStates.getPoles();
   BurgsAndStates.collectStatistics();
   BurgsAndStates.assignColors();
   BurgsAndStates.generateCampaigns();
   BurgsAndStates.generateDiplomacy();
   BurgsAndStates.defineStateForms();
-  BurgsAndStates.generateProvinces(true);
+  Provinces.generate(true);
+  Provinces.getPoles();
 
   layerIsOn("toggleStates") ? drawStates() : toggleStates();
   layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
@@ -332,9 +338,11 @@ function recreateStates() {
 function regenerateProvinces() {
   unfog();
 
-  BurgsAndStates.generateProvinces(true, true);
-  drawBorders();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
+  Provinces.generate(true, true);
+  Provinces.getPoles();
+
+  if (layerIsOn("toggleBorders")) drawBorders();
+  layerIsOn("toggleProvinces") ? drawProvinces() : toggleProvinces();
 
   // remove emblems
   document.querySelectorAll("[id^=provinceCOA]").forEach(el => el.remove());
@@ -437,8 +445,10 @@ function regenerateBurgs() {
 
   BurgsAndStates.specifyBurgs();
   BurgsAndStates.defineBurgFeatures();
-  BurgsAndStates.drawBurgs();
   regenerateRoutes();
+
+  drawBurgIcons();
+  drawBurgLabels();
 
   // remove emblems
   document.querySelectorAll("[id^=burgCOA]").forEach(el => el.remove());
@@ -498,13 +508,13 @@ function regenerateEmblems() {
     province.coa.shield = COA.getShield(culture, province.state);
   });
 
-  if (layerIsOn("toggleEmblems")) drawEmblems(); // redrawEmblems
+  layerIsOn("toggleEmblems") ? drawEmblems() : toggleEmblems();
 }
 
 function regenerateReligions() {
   Religions.generate();
-  if (!layerIsOn("toggleReligions")) toggleReligions();
-  else drawReligions();
+  if (layerIsOn("toggleReligions")) drawReligions();
+  else toggleReligions();
   refreshAllEditors();
 }
 
@@ -520,7 +530,9 @@ function regenerateCultures() {
 
 function regenerateMilitary() {
   Military.generate();
-  if (!layerIsOn("toggleMilitary")) toggleMilitary();
+  if (layerIsOn("toggleMilitary")) drawMilitary();
+  else toggleMilitary();
+
   if (byId("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
 }
 

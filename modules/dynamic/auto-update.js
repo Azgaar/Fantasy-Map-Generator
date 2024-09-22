@@ -51,9 +51,8 @@ export function resolveVersionConflicts(mapVersion) {
     BurgsAndStates.generateCampaigns();
     BurgsAndStates.generateDiplomacy();
     BurgsAndStates.defineStateForms();
-    drawStates();
-    BurgsAndStates.generateProvinces();
-    drawBorders();
+    Provinces.generate();
+    Provinces.getPoles();
     if (!layerIsOn("toggleBorders")) $("#borders").fadeOut();
     if (!layerIsOn("toggleStates")) regions.attr("display", "none").selectAll("path").remove();
 
@@ -202,7 +201,9 @@ export function resolveVersionConflicts(mapVersion) {
     defs.select("#water").selectAll("path").remove();
     coastline.selectAll("path").remove();
     lakes.selectAll("path").remove();
-    drawCoastline();
+
+    Features.markupPack();
+    createDefaultRuler();
   }
 
   if (isOlderThan("1.11.0")) {
@@ -939,5 +940,25 @@ export function resolveVersionConflicts(mapVersion) {
     });
     zones.style("display", null).selectAll("*").remove();
     if (layerIsOn("toggleZones")) drawZones();
+  }
+
+  if (isOlderThan("1.104.0")) {
+    // v1.104.00 separated pole of inaccessibility detection from layer rendering
+    BurgsAndStates.getPoles();
+    Provinces.getPoles();
+
+    // v1.104.00 removed some layers from initial render
+    viewbox.select("#icons").style("display", null);
+    viewbox.select("#ice").style("display", null);
+
+    // v1.104.00 added featurePaths to defs
+    const featurePaths = defs.select("#featurePaths");
+    if (!featurePaths.size()) defs.append("g").attr("id", "featurePaths");
+  }
+
+  if (isOlderThan("1.105.0")) {
+    // v1.104.0 introduced some bugs
+    viewbox.select("#regions").style("display", null);
+    viewbox.select("#armies").style("display", null);
   }
 }

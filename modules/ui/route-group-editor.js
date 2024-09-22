@@ -18,7 +18,7 @@ function editRouteGroups() {
   // add listeners
   byId("routeGroupsEditorAdd").addEventListener("click", addGroup);
   byId("routeGroupsEditorBody").on("click", ev => {
-    const group = ev.target.parentNode.dataset.id;
+    const group = ev.target.closest(".states")?.dataset.id;
     if (ev.target.classList.contains("editStyle")) editStyle("routes", group);
     else if (ev.target.classList.contains("removeGroup")) removeGroup(group);
   });
@@ -72,12 +72,11 @@ function editRouteGroups() {
     confirmationDialog({
       title: "Remove route group",
       message:
-        "Are you sure you want to remove the entire route group? All routes in this group will be removed. This action can't be reverted.",
+        "Are you sure you want to remove the entire route group? All routes in this group will be removed.<br>This action can't be reverted",
       confirm: "Remove",
       onConfirm: () => {
-        const routes = pack.routes.filter(r => r.group === group);
-        routes.forEach(r => Routes.remove(r));
-        if (DEFAULT_GROUPS.includes(group)) routes.select(`#${group}`).remove();
+        pack.routes.filter(r => r.group === group).forEach(Routes.remove);
+        if (!DEFAULT_GROUPS.includes(group)) routes.select(`#${group}`).remove();
         addLines();
       }
     });

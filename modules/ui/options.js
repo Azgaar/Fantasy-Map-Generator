@@ -251,8 +251,7 @@ const voiceInterval = setInterval(function () {
     select.options.add(new Option(voice.name, i, false));
   });
   if (stored("speakerVoice")) select.value = stored("speakerVoice");
-  // se voice to store
-  else select.value = voices.findIndex(voice => voice.lang === "en-US"); // or to first found English-US
+  else select.value = voices.findIndex(voice => voice.lang === "en-US");
 }, 1000);
 
 function testSpeaker() {
@@ -702,12 +701,6 @@ function changeEra() {
 async function openTemplateSelectionDialog() {
   const HeightmapSelectionDialog = await import("../dynamic/heightmap-selection.js?v=1.96.00");
   HeightmapSelectionDialog.open();
-}
-
-// remove all saved data from LocalStorage and reload the page
-function restoreDefaultOptions() {
-  localStorage.clear();
-  location.reload();
 }
 
 // Sticked menu Options listeners

@@ -543,6 +543,7 @@ function changePopulation(stateId) {
       burgs.forEach(b => (b.population = population));
     }
 
+    if (layerIsOn("togglePopulation")) drawPopulation();
     refreshStatesEditor();
   }
 }
@@ -642,11 +643,11 @@ function stateRemove(stateId) {
   pack.states[stateId] = {i: stateId, removed: true};
 
   debug.selectAll(".highlight").remove();
-  if (!layerIsOn("toggleStates")) toggleStates();
-  else drawStates();
-  if (!layerIsOn("toggleBorders")) toggleBorders();
-  else drawBorders();
+
+  if (layerIsOn("toggleStates")) drawStates();
+  if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
+
   refreshStatesEditor();
 }
 
@@ -839,13 +840,15 @@ function recalculateStates(must) {
   if (!must && !statesAutoChange.checked) return;
 
   BurgsAndStates.expandStates();
-  BurgsAndStates.generateProvinces();
-  if (!layerIsOn("toggleStates")) toggleStates();
-  else drawStates();
-  if (!layerIsOn("toggleBorders")) toggleBorders();
-  else drawBorders();
+  Provinces.generate();
+  Provinces.getPoles();
+  BurgsAndStates.getPoles();
+
+  if (layerIsOn("toggleStates")) drawStates();
+  if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (adjustLabels.checked) drawStateLabels();
+
   refreshStatesEditor();
 }
 
@@ -981,6 +984,7 @@ function applyStatesManualAssignent() {
 
   if (affectedStates.length) {
     refreshStatesEditor();
+    BurgsAndStates.getPoles();
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     if (adjustLabels.checked) drawStateLabels([...new Set(affectedStates)]);
     adjustProvinces([...new Set(affectedProvinces)]);
@@ -1415,6 +1419,7 @@ function openStateMergeDialog() {
     unfog();
     debug.selectAll(".highlight").remove();
 
+    BurgsAndStates.getPoles();
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
     layerIsOn("toggleProvinces") && drawProvinces();

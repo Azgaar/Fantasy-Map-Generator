@@ -138,7 +138,11 @@
       }
     </style>
 
+<<<<<<< HEAD
     <link rel="preload" href="index.css?v=1.102.00" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+=======
+    <link rel="preload" href="index.css?v=1.104.0" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+>>>>>>> 97e504d2aaa3575761ffebbb10698bdbc831576b
     <link rel="preload" href="icons.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="libs/jquery-ui.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
   </head>
@@ -344,6 +348,10 @@
         </g>
 
         <g id="deftemp">
+          <g id="featurePaths"></g>
+          <g id="textPaths"></g>
+          <g id="statePaths"></g>
+          <g id="defs-emblems"></g>
           <mask id="land"></mask>
           <mask id="water">
             <rect x="0" y="0" width="100%" height="100%" fill="white" />
@@ -351,9 +359,6 @@
           <mask id="fog" style="stroke-width: 10; stroke: black; stroke-linejoin: round; stroke-opacity: 0.1">
             <rect x="0" y="0" width="100%" height="100%" fill="white" stroke="none" />
           </mask>
-          <g id="textPaths"></g>
-          <g id="statePaths"></g>
-          <g id="defs-emblems"></g>
         </g>
 
         <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
@@ -438,7 +443,7 @@
           <select
             data-tip="Select a map layers preset"
             id="layersPreset"
-            onchange="changePreset(this.value)"
+            onchange="handleLayersPresetChange(this.value)"
             style="width: 45%"
           >
             <option value="political" selected>Political map</option>
@@ -478,7 +483,6 @@
               id="toggleTexture"
               data-tip="Texture overlay: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="X"
-              class="buttonoff"
               onclick="toggleTexture(event)"
             >
               Te<u>x</u>ture
@@ -487,7 +491,6 @@
               id="toggleHeight"
               data-tip="Heightmap: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="H"
-              class="buttonoff"
               onclick="toggleHeight(event)"
             >
               <u>H</u>eightmap
@@ -496,7 +499,6 @@
               id="toggleBiomes"
               data-tip="Biomes: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="B"
-              class="buttonoff"
               onclick="toggleBiomes(event)"
             >
               <u>B</u>iomes
@@ -505,7 +507,6 @@
               id="toggleCells"
               data-tip="Cells structure: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="E"
-              class="buttonoff"
               onclick="toggleCells(event)"
             >
               C<u>e</u>lls
@@ -514,7 +515,6 @@
               id="toggleGrid"
               data-tip="Grid: click to toggle, drag to raise or lower. Ctrl + click to edit layer style and select type"
               data-shortcut="G"
-              class="buttonoff"
               onclick="toggleGrid(event)"
             >
               <u>G</u>rid
@@ -523,7 +523,6 @@
               id="toggleCoordinates"
               data-tip="Coordinate grid: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="O"
-              class="buttonoff"
               onclick="toggleCoordinates(event)"
             >
               C<u>o</u>ordinates
@@ -532,7 +531,6 @@
               id="toggleCompass"
               data-tip="Wind (Compass) Rose: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="W"
-              class="buttonoff"
               onclick="toggleCompass(event)"
             >
               <u>W</u>ind Rose
@@ -549,7 +547,6 @@
               id="toggleRelief"
               data-tip="Relief and biome icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="F"
-              class="buttonoff"
               onclick="toggleRelief(event)"
             >
               Relie<u>f</u>
@@ -558,7 +555,6 @@
               id="toggleReligions"
               data-tip="Religions: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="R"
-              class="buttonoff"
               onclick="toggleReligions(event)"
             >
               <u>R</u>eligions
@@ -567,7 +563,6 @@
               id="toggleCultures"
               data-tip="Cultures: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="C"
-              class="buttonoff"
               onclick="toggleCultures(event)"
             >
               <u>C</u>ultures
@@ -584,7 +579,6 @@
               id="toggleProvinces"
               data-tip="Provinces: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="P"
-              class="buttonoff"
               onclick="toggleProvinces(event)"
             >
               <u>P</u>rovinces
@@ -593,7 +587,6 @@
               id="toggleZones"
               data-tip="Zones: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="Z"
-              class="buttonoff"
               onclick="toggleZones(event)"
             >
               <u>Z</u>ones
@@ -610,17 +603,15 @@
               id="toggleRoutes"
               data-tip="Trade routes: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="U"
-              class="buttonoff"
               onclick="toggleRoutes(event)"
             >
               Ro<u>u</u>tes
             </li>
             <li
-              id="toggleTemp"
+              id="toggleTemperature"
               data-tip="Temperature map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="T"
-              class="buttonoff"
-              onclick="toggleTemp(event)"
+              onclick="toggleTemperature(event)"
             >
               <u>T</u>emperature
             </li>
@@ -628,7 +619,6 @@
               id="togglePopulation"
               data-tip="Population map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="N"
-              class="buttonoff"
               onclick="togglePopulation(event)"
             >
               Populatio<u>n</u>
@@ -637,17 +627,15 @@
               id="toggleIce"
               data-tip="Icebergs and glaciers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="J"
-              class="buttonoff"
               onclick="toggleIce(event)"
             >
               Ice
             </li>
             <li
-              id="togglePrec"
+              id="togglePrecipitation"
               data-tip="Precipitation map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="A"
-              class="buttonoff"
-              onclick="togglePrec(event)"
+              onclick="togglePrecipitation(event)"
             >
               Precipit<u>a</u>tion
             </li>
@@ -655,7 +643,6 @@
               id="toggleEmblems"
               data-tip="Emblems: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="Y"
-              class="buttonoff"
               onclick="toggleEmblems(event)"
             >
               Emblems
@@ -669,10 +656,10 @@
               <u>L</u>abels
             </li>
             <li
-              id="toggleIcons"
+              id="toggleBurgIcons"
               data-tip="Burg icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="I"
-              onclick="toggleIcons(event)"
+              onclick="toggleBurgIcons(event)"
             >
               <u>I</u>cons
             </li>
@@ -680,7 +667,6 @@
               id="toggleMilitary"
               data-tip="Military forces: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="M"
-              class="buttonoff"
               onclick="toggleMilitary(event)"
             >
               <u>M</u>ilitary
@@ -689,7 +675,6 @@
               id="toggleMarkers"
               data-tip="Markers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="K"
-              class="buttonoff"
               onclick="toggleMarkers(event)"
             >
               Mar<u>k</u>ers
@@ -698,7 +683,6 @@
               id="toggleRulers"
               data-tip="Rulers: click to toggle, drag to move, click on label to delete. Ctrl + click to edit layer style"
               data-shortcut="= (equal sign)"
-              class="buttonoff"
               onclick="toggleRulers(event)"
             >
               Rulers
@@ -1082,6 +1066,13 @@
                     <option value="pointyHex">Hex grid (pointy)</option>
                     <option value="flatHex">Hex grid (flat)</option>
                     <option value="square">Square grid</option>
+                    <option value="square45deg">Square 45 degrees grid</option>
+                    <option value="squareTruncated">Truncated square grid</option>
+                    <option value="squareTetrakis">Tetrakis square grid</option>
+                    <option value="triangleHorizontal">Triangle grid (horizontal)</option>
+                    <option value="triangleVertical">Triangle grid (vertical)</option>
+                    <option value="trihexagonal">Trihexagonal grid</option>
+                    <option value="rhombille">Rhombille grid</option>
                   </select>
                 </td>
               </tr>
@@ -1094,6 +1085,9 @@
                     id="styleGridSizeFriendly"
                     data-tip="Distance between grid cell centers (in map scale)"
                   ></output>
+                  <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Scale-and-distance#grids" target="_blank">
+                    <span data-tip="Open wiki article scale and distance to know about grid scale" class="icon-info-circled pointer"></span>
+                  </a>
                 </td>
               </tr>
 
@@ -1529,7 +1523,9 @@
               <td></td>
             </tr>
 
-            <tr data-tip="Map seed number. Seed produces the same map only if canvas size and options are the same">
+            <tr
+              data-tip="Map seed number. Press 'Enter' to apply. Seed produces the same map only if canvas size and options are the same"
+            >
               <td>
                 <i
                   data-tip="Show seed history to apply a previous seed"
@@ -1595,7 +1591,7 @@
 
             <tr data-tip="Define current year and era name">
               <td>
-                <i data-locked="0" id="lock_era" class="icon-lock-open"></i>
+                <i data-locked="0" id="lock_year" data-ids="year,era" class="icon-lock-open"></i>
               </td>
               <td>Year and era</td>
               <td>
@@ -2008,8 +2004,8 @@
             </button>
             <button
               id="optionsReset"
-              data-tip="Click to restore default options (page will be reloaded)"
-              onclick="restoreDefaultOptions()"
+              data-tip="Click to restore default options and reload the page"
+              onclick="cleanupData()"
             >
               Reset to defaults
             </button>
@@ -2093,7 +2089,7 @@
               id="regenerateStateLabels"
               data-tip="Click to update state labels placement based on current borders"
             >
-              Labels
+              State Labels
             </button>
             <button id="regenerateMarkers" data-tip="Click to regenerate unlocked markers">
               Markers <i id="configRegenerateMarkers" class="icon-cog" data-tip="Click to set number multiplier"></i>
@@ -2126,7 +2122,7 @@
             <button id="regenerateRoutes" data-tip="Click to regenerate all unlocked routes">Routes</button>
             <button
               id="regenerateStates"
-              data-tip="Click to select new capitals and regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are"
+              data-tip="Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different"
             >
               States
             </button>
@@ -3521,7 +3517,8 @@
 
           <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
           <button id="burgTogglePreview" data-tip="Toggle preview" class="icon-map"></button>
-          <button id="burgRelocate" data-tip="Relocate burg" class="icon-target"></button>
+          <button id="burgLocate" data-tip="Zoom map and center view in the burg" class="icon-target"></button>
+          <button id="burgRelocate" data-tip="Relocate burg. Click on map to move the burg" class="icon-map-pin"></button>
           <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
           <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
           <button
@@ -5733,12 +5730,13 @@
         </p>
         <p><b>Latitude:</b> <span id="infoLat"></span></p>
         <p><b>Longitude:</b> <span id="infoLon"></span></p>
+        <p><b>Geozone:</b> <span id="infoGeozone"></span></p>
         <p><b>Area:</b> <span id="infoArea">0</span></p>
         <p><b>Type:</b> <span id="infoFeature">n/a</span></p>
         <p><b>Precipitation:</b> <span id="infoPrec">0</span></p>
         <p><b>River:</b> <span id="infoRiver">no</span></p>
         <p><b>Population:</b> <span id="infoPopulation">0</span></p>
-        <p><b>Elevation:</b> <span id="infoEvelation">0</span></p>
+        <p><b>Elevation:</b> <span id="infoElevation">0</span></p>
         <p><b>Depth:</b> <span id="infoDepth">0</span></p>
         <p><b>Temperature:</b> <span id="infoTemp">0</span></p>
         <p><b>Biome:</b> <span id="infoBiome">n/a</span></p>
@@ -7850,6 +7848,27 @@
           <pattern id="pattern_flatHex" width="43.4" height="25" patternUnits="userSpaceOnUse" fill="none">
             <path d="M 43.4,0 36.2,12.5 43.4,25 M 21.7,12.5 H 36.2 Z M 0,0 H 14.5 L 21.7,12.5 14.5,25 H 0" />
           </pattern>
+          <pattern id="pattern_square45deg" width="35.355" height="35.355" patternUnits="userSpaceOnUse" fill="none">
+            <path d="M 0 0 L 35.355 35.355 M 0 35.355 L 35.355 0" />
+          </pattern>
+          <pattern id="pattern_squareTruncated" width="25" height="25" patternUnits="userSpaceOnUse" fill="none">
+            <path d="M 8.33 25 L 0 16.66 V 8.33 L 8.33 0 16.66 0 25 8.33  M 16.66 25 L 25 16.66 L 25 8.33 M 8.33 25 L 16.66 25" />
+          </pattern>
+          <pattern id="pattern_squareTetrakis" width="25" height="25" patternUnits="userSpaceOnUse" fill="none">
+            <path d="M 25 0 L 0 0 0 25 M 0 0 L 25 25 M 0 25 L 25 0 M 12.5 0 L 12.5 25 M 0 12.5 L 25 12.5 M 0 25 L 25 25 L 25 0" />
+          </pattern>
+          <pattern id="pattern_triangleHorizontal" width="41.76" height="72.33" patternUnits="userSpaceOnUse" fill="none">
+            <path d="M 41.76 36.165 H 0 L 20.88 0 41.76 36.165 20.88 72.33 0 36.165 M 0 0 H 72.33 M 0 72.33 L 41.76 72.33" />
+          </pattern>
+          <pattern id="pattern_triangleVertical" width="72.33" height="41.76" patternUnits="userSpaceOnUse" fill="none">
+            <path d="M 36.165 0 L 0 20.88 36.165 41.76 72.33 20.88 36.165 0 V 41.76 M 0 0 V 72.33 M 72.33 0 L 72.33 41.76">
+          </pattern>
+          <pattern id="pattern_trihexagonal" width="25" height="43.4" patternUnits="userSpaceOnUse" fill="none">
+            <path d="M 25 10.85 H 0 L 18.85 43.4 25 32.55 H 0 L 18.85 0 25 10.85" />
+          </pattern>
+          <pattern id="pattern_rhombille" width="82.5" height="50" patternUnits="userSpaceOnUse" fill="none">
+            <path d="M 13.8 50 L 0 25 13.8 0 H 41.2 L 27.5 25 41.2 50 55 25 41.2 0 68.8 0 82.5 25 68.8 50 M 0 25 H 27.5 M 55 25 H 82.5 M 13.8 50 H 41.2 L 68.8 50" />
+          </pattern>
         </g>
 
         <g id="defs-hatching">
@@ -8014,7 +8033,7 @@
     <script src="libs/indexedDB.js?v=1.99.00"></script>
 
     <script src="utils/shorthands.js?v=1.99.00"></script>
-    <script src="utils/commonUtils.js?v=1.99.00"></script>
+    <script src="utils/commonUtils.js?v=1.103.0"></script>
     <script src="utils/arrayUtils.js?v=1.99.00"></script>
     <script src="utils/functionUtils.js?v=1.99.00"></script>
     <script src="utils/colorUtils.js?v=1.99.00"></script>
@@ -8026,54 +8045,55 @@
     <script src="utils/stringUtils.js?v=1.99.00"></script>
     <script src="utils/languageUtils.js?v=1.99.00"></script>
     <script src="utils/unitUtils.js?v=1.99.00"></script>
-    <script src="utils/pathUtils.js?v=1.100.00"></script>
+    <script src="utils/pathUtils.js?v=1.104.0"></script>
     <script defer src="utils/debugUtils.js?v=1.99.00"></script>
 
     <script src="modules/voronoi.js"></script>
     <script src="config/heightmap-templates.js"></script>
     <script src="config/precreated-heightmaps.js"></script>
     <script src="modules/heightmap-generator.js?v=1.99.00"></script>
-    <script src="modules/ocean-layers.js?v=1.100.00"></script>
+    <script src="modules/features.js?v=1.104.0"></script>
+    <script src="modules/ocean-layers.js?v=1.104.8"></script>
     <script src="modules/river-generator.js?v=1.99.05"></script>
     <script src="modules/lakes.js?v=1.99.00"></script>
     <script src="modules/biomes.js?v=1.99.00"></script>
     <script src="modules/names-generator.js?v=1.87.14"></script>
     <script src="modules/cultures-generator.js?v=1.99.05"></script>
-    <script src="modules/renderers/state-labels.js?v=1.96.04"></script>
-    <script src="modules/burgs-and-states.js?v=1.99.05"></script>
-    <script src="modules/routes-generator.js?v=1.99.04"></script>
+    <script src="modules/burgs-and-states.js?v=1.104.0"></script>
+    <script src="modules/provinces-generator.js?v=1.104.0"></script>
+    <script src="modules/routes-generator.js?v=1.104.10"></script>
     <script src="modules/religions-generator.js?v=1.99.05"></script>
-    <script src="modules/military-generator.js?v=1.99.00"></script>
-    <script src="modules/markers-generator.js?v=1.99.00"></script>
-    <script src="modules/zones-generator.js?v=1.100.00"></script>
+    <script src="modules/military-generator.js?v=1.104.0"></script>
+    <script src="modules/markers-generator.js?v=1.104.0"></script>
+    <script src="modules/zones-generator.js?v=1.104.0"></script>
     <script src="modules/coa-generator.js?v=1.99.00"></script>
-    <script src="modules/submap.js?v=1.100.00"></script>
+    <script src="modules/submap.js?v=1.104.0"></script>
+    <script src="libs/alea.min.js"></script>
     <script src="libs/polylabel.min.js"></script>
     <script src="libs/lineclip.min.js"></script>
-    <script src="libs/alea.min.js"></script>
+    <script src="libs/simplify.js"></script>
     <script src="modules/fonts.js?v=1.99.03"></script>
     <script src="modules/ui/layers.js?v=1.101.00"></script>
     <script src="modules/ui/measurers.js?v=1.99.00"></script>
     <script src="modules/ui/style-presets.js?v=1.100.00"></script>
-
     <script src="modules/ui/general.js?v=1.100.00"></script>
     <script src="modules/ui/options.js?v=1.102.00"></script>
-    <script src="main.js?v=1.102.00"></script>
+    <script src="main.js?v=1.105.0"></script>
 
     <script defer src="modules/relief-icons.js?v=1.99.05"></script>
-    <script defer src="modules/ui/style.js?v=1.101.00"></script>
-    <script defer src="modules/ui/editors.js?v=1.99.05"></script>
-    <script defer src="modules/ui/tools.js?v=1.100.00"></script>
-    <script defer src="modules/ui/world-configurator.js?v=1.99.00"></script>
-    <script defer src="modules/ui/heightmap-editor.js?v=1.100.00"></script>
-    <script defer src="modules/ui/provinces-editor.js?v=1.99.05"></script>
+    <script defer src="modules/ui/style.js?v=1.104.0"></script>
+    <script defer src="modules/ui/editors.js?v=1.104.3"></script>
+    <script defer src="modules/ui/tools.js?v=1.104.0"></script>
+    <script defer src="modules/ui/world-configurator.js?v=1.104.0"></script>
+    <script defer src="modules/ui/heightmap-editor.js?v=1.104.9"></script>
+    <script defer src="modules/ui/provinces-editor.js?v=1.104.0"></script>
     <script defer src="modules/ui/biomes-editor.js?v=1.99.05"></script>
     <script defer src="modules/ui/namesbase-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/elevation-profile.js?v=1.99.00"></script>
     <script defer src="modules/ui/temperature-graph.js?v=1.99.00"></script>
-    <script defer src="modules/ui/routes-editor.js?v=1.99.02"></script>
-    <script defer src="modules/ui/routes-creator.js?v=1.99.02"></script>
-    <script defer src="modules/ui/route-group-editor.js?v=1.99.00"></script>
+    <script defer src="modules/ui/routes-editor.js?v=1.104.3"></script>
+    <script defer src="modules/ui/routes-creator.js?v=1.104.3"></script>
+    <script defer src="modules/ui/route-group-editor.js?v=1.103.8"></script>
     <script defer src="modules/ui/ice-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/lakes-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/coastline-editor.js?v=1.99.00"></script>
@@ -8081,31 +8101,47 @@
     <script defer src="modules/ui/rivers-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/rivers-creator.js?v=1.99.00"></script>
     <script defer src="modules/ui/relief-editor.js?v=1.99.00"></script>
-    <script defer src="modules/ui/burg-editor.js?v=1.100.00"></script>
-    <script defer src="modules/ui/units-editor.js?v=1.99.05"></script>
+    <script defer src="modules/ui/burg-editor.js?v=1.102.00"></script>
+    <script defer src="modules/ui/units-editor.js?v=1.104.0"></script>
     <script defer src="modules/ui/notes-editor.js?v=1.99.06"></script>
     <script defer src="modules/ui/ai-generator.js?v=1.99.09"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/zones-editor.js?v=1.100.00"></script>
     <script defer src="modules/ui/burgs-overview.js?v=1.100.00"></script>
-    <script defer src="modules/ui/routes-overview.js?v=1.100.00"></script>
+    <script defer src="modules/ui/routes-overview.js?v=1.104.3"></script>
     <script defer src="modules/ui/rivers-overview.js?v=1.99.00"></script>
     <script defer src="modules/ui/military-overview.js?v=1.99.00"></script>
-    <script defer src="modules/ui/regiments-overview.js?v=1.99.00"></script>
+    <script defer src="modules/ui/regiments-overview.js?v=1.104.0"></script>
     <script defer src="modules/ui/markers-overview.js?v=1.99.00"></script>
-    <script defer src="modules/ui/regiment-editor.js?v=1.99.00"></script>
+    <script defer src="modules/ui/regiment-editor.js?v=1.104.14"></script>
     <script defer src="modules/ui/battle-screen.js?v=1.99.00"></script>
     <script defer src="modules/ui/emblems-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/markers-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/3d.js?v=1.99.00"></script>
     <script defer src="modules/ui/submap.js?v=1.99.10"></script>
-    <script defer src="modules/ui/hotkeys.js?v=1.99.15"></script>
+    <script defer src="modules/ui/hotkeys.js?v=1.104.0"></script>
     <script defer src="modules/coa-renderer.js?v=1.99.00"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
     <script defer src="modules/io/save.js?v=1.100.00"></script>
-    <script defer src="modules/io/load.js?v=1.100.00"></script>
+    <script defer src="modules/io/load.js?v=1.104.12"></script>
     <script defer src="modules/io/cloud.js?v=1.99.00"></script>
+<<<<<<< HEAD
     <script defer src="modules/io/export.js?v=1.99.14"></script>
+=======
+    <script defer src="modules/io/export.js?v=1.100.00"></script>
+
+    <script defer src="modules/renderers/draw-features.js?v=1.104.15"></script>
+    <script defer src="modules/renderers/draw-borders.js?v=1.104.0"></script>
+    <script defer src="modules/renderers/draw-heightmap.js?v=1.104.0"></script>
+    <script defer src="modules/renderers/draw-markers.js?v=1.104.0"></script>
+    <script defer src="modules/renderers/draw-scalebar.js?v=1.104.0"></script>
+    <script defer src="modules/renderers/draw-temperature.js?v=1.104.0"></script>
+    <script defer src="modules/renderers/draw-emblems.js?v=1.104.0"></script>
+    <script defer src="modules/renderers/draw-military.js?v=1.104.13"></script>
+    <script defer src="modules/renderers/draw-state-labels.js?v=1.104.0"></script>
+    <script defer src="modules/renderers/draw-burg-labels.js?v=1.104.0"></script>
+    <script defer src="modules/renderers/draw-burg-icons.js?v=1.104.0"></script>
+>>>>>>> 97e504d2aaa3575761ffebbb10698bdbc831576b
   </body>
 </html>

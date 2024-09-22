@@ -174,9 +174,10 @@ function editRoute(id) {
 
   function handleControlPointClick() {
     const controlPoint = d3.select(this);
-
     const point = controlPoint.datum();
     const route = getRoute();
+    if (route.points.length < 3) return; // can't remove or split point if only 2 points in route
+
     const index = route.points.indexOf(point);
 
     const isSplitMode = byId("routeSplit").classList.contains("pressed");

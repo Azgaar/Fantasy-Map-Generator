@@ -28,6 +28,7 @@ window.UISubmap = (function () {
     $("#submapOptionsDialog").dialog({
       title: "Create a submap",
       resizable: false,
+      width: "32em",
       position: {my: "center", at: "center", of: "svg"},
       buttons: {
         Submap: function () {
@@ -142,6 +143,7 @@ window.UISubmap = (function () {
       fullMap: true,
       noLabels: true,
       noScaleBar: true,
+      noVignette: true,
       noIce: true
     });
 
@@ -282,7 +284,7 @@ window.UISubmap = (function () {
 
     oldstate = null; // destroy old state to free memory
 
-    restoreLayers();
+    drawLayers();
     if (ThreeD.options.isOn) ThreeD.redraw();
     if ($("#worldConfigurator").is(":visible")) editWorld();
   }

@@ -2,7 +2,7 @@
 function editBurg(id) {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleIcons")) toggleIcons();
+  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
   const burg = id || d3.event.target.dataset.id;
@@ -47,6 +47,7 @@ function editBurg(id) {
   byId("burgEmblem").addEventListener("click", openEmblemEdit);
   byId("burgTogglePreview").addEventListener("click", toggleBurgPreview);
   byId("burgEditEmblem").addEventListener("click", openEmblemEdit);
+  byId("burgLocate").addEventListener("click", zoomIntoBurg);
   byId("burgRelocate").addEventListener("click", toggleRelocateBurg);
   byId("burglLegend").addEventListener("click", editBurgLegend);
   byId("burgLock").addEventListener("click", toggleBurgLockButton);
@@ -395,6 +396,14 @@ function editBurg(id) {
     options.showBurgPreview = !options.showBurgPreview;
     byId("burgPreviewSection").style.display = options.showBurgPreview ? "block" : "none";
     byId("burgTogglePreview").className = options.showBurgPreview ? "icon-map" : "icon-map-o";
+  }
+
+  function zoomIntoBurg() {
+    const id = +elSelected.attr("data-id");
+    const burg = pack.burgs[id];
+    const x = burg.x;
+    const y = burg.y;
+    zoomTo(x, y, 8, 2000);
   }
 
   function toggleRelocateBurg() {
