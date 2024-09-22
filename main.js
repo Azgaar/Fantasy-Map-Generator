@@ -252,7 +252,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   restoreDefaultEvents(); // apply default viewbox events
   initiateAutosave();
-  setTipMessage();
 });
 
 function hideLoading() {
