@@ -218,7 +218,7 @@ function editRegiment(selector) {
     newReg.name = Military.getName(newReg, military);
     military.push(newReg);
     Military.generateNote(newReg, pack.states[state]); // add legend
-    Military.drawRegiment(newReg, state); // draw new reg below
+    drawRegiment(newReg, state); // draw new reg below
 
     if (regimentsOverviewRefresh.offsetParent) regimentsOverviewRefresh.click();
   }
