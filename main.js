@@ -318,7 +318,8 @@ async function generateMapOnLoad() {
   applyLayersPreset(); // apply saved layers preset and reder layers
   drawLayers();
   fitMapToScreen();
-  focusOn(); // focus on point, cell or burg from MFCG based on url searchParams
+  focusOn(); // based on searchParams focus on point, cell or burg from MFCG
+  toggleAssistant();
 }
 
 // focus on coordinates, cell or burg provided in searchParams
@@ -365,6 +366,31 @@ function focusOn() {
     const x = +params.get("x") || graphWidth / 2;
     const y = +params.get("y") || graphHeight / 2;
     zoomTo(x, y, scale, 1600);
+  }
+}
+
+let isAssistantLoaded = false;
+function toggleAssistant() {
+  const assistantContainer = byId("chat-widget-container");
+  const showAssistant = byId("azgaarAssistant").value === "show";
+
+  if (showAssistant) {
+    if (isAssistantLoaded) {
+      assistantContainer.style.display = "block";
+    } else {
+      import("./libs/openwidget.min.js").then(() => {
+        isAssistantLoaded = true;
+        setTimeout(() => {
+          const bubble = byId("chat-widget-minimized");
+          if (bubble) {
+            bubble.dataset.tip = "Click to open the Assistant";
+            bubble.on("mouseover", showDataTip);
+          }
+        }, 5000);
+      });
+    }
+  } else if (isAssistantLoaded) {
+    assistantContainer.style.display = "none";
   }
 }
 

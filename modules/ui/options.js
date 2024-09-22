@@ -148,6 +148,7 @@ optionsContent.addEventListener("change", event => {
   else if (id === "yearInput") changeYear();
   else if (id === "eraInput") changeEra();
   else if (id === "stateLabelsModeInput") options.stateLabelsMode = value;
+  else if (id === "azgaarAssistant") toggleAssistant();
 });
 
 optionsContent.addEventListener("click", event => {
@@ -446,6 +447,7 @@ function changeDialogsTheme(themeColor, transparency) {
   };
 
   const theme = [
+    {name: "--bg-opacity", value: alpha},
     {name: "--bg-main", h, s, l, alpha},
     {name: "--bg-lighter", h, s, l: l + 0.02, alpha},
     {name: "--bg-light", h, s: s - 0.02, l: l + 0.06, alpha},
@@ -458,8 +460,9 @@ function changeDialogsTheme(themeColor, transparency) {
   ];
 
   const sx = document.documentElement.style;
-  theme.forEach(({name, h, s, l, alpha}) => {
-    sx.setProperty(name, getRGBA(h, s, l, alpha));
+  theme.forEach(({name, value, h, s, l, alpha}) => {
+    if (value !== undefined) sx.setProperty(name, value);
+    else sx.setProperty(name, getRGBA(h, s, l, alpha));
   });
 }
 

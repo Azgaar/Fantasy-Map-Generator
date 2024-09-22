@@ -2432,6 +2432,21 @@ svg.button {
   }
 }
 
+#chat-widget-minimized {
+  animation: fadeIn 1s ease-in;
+  transform: scale(0.65);
+  opacity: var(--bg-opacity);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: var(--bg-opacity);
+  }
+}
+
 @media print {
   div,
   canvas {
