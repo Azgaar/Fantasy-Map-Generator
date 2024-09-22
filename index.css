@@ -2388,8 +2388,10 @@ svg.button {
   }
 }
 
-#chat-widget-container {
+#chat-widget-minimized {
   animation: fadeIn 1s ease-in;
+  transform: scale(0.65);
+  opacity: var(--bg-opacity);
 }
 
 @keyframes fadeIn {
@@ -2397,7 +2399,7 @@ svg.button {
     opacity: 0;
   }
   to {
-    opacity: 1;
+    opacity: var(--bg-opacity);
   }
 }
 

@@ -36,6 +36,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Azgaar Bot to answer questions and provide help</li>
         <li>Labels: ability to set letter spacing</li>
         <li>Zones update</li>
         <li>Notes Editor: on-demand AI text generation</li>

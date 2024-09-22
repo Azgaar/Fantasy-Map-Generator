@@ -374,8 +374,20 @@ function toggleAssistant() {
   const showAssistant = byId("azgaarAssistant").value === "show";
 
   if (showAssistant) {
-    if (isAssistantLoaded) assistantContainer.style.display = "block";
-    else import("./libs/openwidget.min.js").then(() => (isAssistantLoaded = true));
+    if (isAssistantLoaded) {
+      assistantContainer.style.display = "block";
+    } else {
+      import("./libs/openwidget.min.js").then(() => {
+        isAssistantLoaded = true;
+        setTimeout(() => {
+          const bubble = byId("chat-widget-minimized");
+          if (bubble) {
+            bubble.dataset.tip = "Click to open the Assistant";
+            bubble.on("mouseover", showDataTip);
+          }
+        }, 5000);
+      });
+    }
   } else if (isAssistantLoaded) {
     assistantContainer.style.display = "none";
   }
