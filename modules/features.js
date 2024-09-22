@@ -129,7 +129,6 @@ window.Features = (function () {
       }
 
       features.push(addFeature({firstCell, land, border, featureId, totalCells}));
-
       queue[0] = featureIds.findIndex(f => f === UNMARKED); // find unmarked cell
     }
 
@@ -155,7 +154,7 @@ window.Features = (function () {
 
     function addFeature({firstCell, land, border, featureId, totalCells}) {
       const type = land ? "island" : border ? "ocean" : "lake";
-      const featureVertices = type === "ocean" ? [] : getFeatureVertices(firstCell);
+      const [startCell, featureVertices] = getCellsData(type, firstCell);
       const points = clipPoly(featureVertices.map(vertex => vertices.p[vertex]));
       const area = d3.polygonArea(points); // feature perimiter area
       const absArea = Math.abs(rn(area));
@@ -165,8 +164,8 @@ window.Features = (function () {
         type,
         land,
         border,
-        firstCell,
         cells: totalCells,
+        firstCell: startCell,
         vertices: featureVertices,
         area: absArea
       };
@@ -179,19 +178,36 @@ window.Features = (function () {
 
       return feature;
 
-      function getFeatureVertices(firstCell) {
+      function getCellsData(featureType, firstCell) {
+        if (featureType === "ocean") return [firstCell, []];
+
         const getType = cellId => featureIds[cellId];
         const type = getType(firstCell);
         const ofSameType = cellId => getType(cellId) === type;
         const ofDifferentType = cellId => getType(cellId) !== type;
 
-        const isOnBorder = borderCells[firstCell] || neighbors[firstCell].some(ofDifferentType);
-        if (!isOnBorder) throw new Error(`Markup: firstCell ${firstCell} is not on the feature or map border`);
+        const startCell = findOnBorderCell(firstCell);
+        const featureVertices = getFeatureVertices(startCell);
+        return [startCell, featureVertices];
 
-        const startingVertex = cells.v[firstCell].find(v => vertices.c[v].some(ofDifferentType));
-        if (startingVertex === undefined) throw new Error(`Markup: startingVertex for cell ${firstCell} is not found`);
+        function findOnBorderCell(firstCell) {
+          const isOnBorder = cellId => borderCells[cellId] || neighbors[cellId].some(ofDifferentType);
+          if (isOnBorder(firstCell)) return firstCell;
 
-        return connectVertices({vertices, startingVertex, ofSameType, closeRing: false});
+          const startCell = cells.i.filter(ofSameType).find(isOnBorder);
+          if (startCell === undefined)
+            throw new Error(`Markup: firstCell ${firstCell} is not on the feature or map border`);
+
+          return startCell;
+        }
+
+        function getFeatureVertices(startCell) {
+          const startingVertex = cells.v[startCell].find(v => vertices.c[v].some(ofDifferentType));
+          if (startingVertex === undefined)
+            throw new Error(`Markup: startingVertex for cell ${startCell} is not found`);
+
+          return connectVertices({vertices, startingVertex, ofSameType, closeRing: false});
+        }
       }
     }
   }
