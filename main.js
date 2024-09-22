@@ -171,7 +171,7 @@ let scale = 1;
 let viewX = 0;
 let viewY = 0;
 
-function onZoom() {
+const onZoom = debounce(function () {
   const {k, x, y} = d3.event.transform;
 
   const isScaleChanged = Boolean(scale - k);
@@ -183,9 +183,8 @@ function onZoom() {
   viewY = y;
 
   handleZoom(isScaleChanged, isPositionChanged);
-}
-const onZoomDebouced = debounce(onZoom, 50);
-const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoomDebouced);
+}, 50);
+const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoom);
 
 // default options, based on Earth data
 let options = {
