@@ -112,7 +112,9 @@ function editHeightmap(options) {
     layersPreset.value = "heightmap";
     layersPreset.disabled = true;
     mockHeightmap();
+
     viewbox.on("touchmove mousemove", moveCursor);
+    svg.on("dblclick.zoom", null);
 
     if (tool === "templateEditor") openTemplateEditor();
     else if (tool === "imageConverter") openImageConverter();

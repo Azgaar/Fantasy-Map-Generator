@@ -8,6 +8,7 @@ function restoreDefaultEvents() {
   svg.call(zoom);
   viewbox.style("cursor", "default").on(".drag", null).on("click", clicked).on("touchmove mousemove", onMouseMove);
   legend.call(d3.drag().on("start", dragLegendBox));
+  svg.call(zoom);
 }
 
 // handle viewbox click

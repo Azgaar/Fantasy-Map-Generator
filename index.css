@@ -673,6 +673,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   border: none;
   padding: 0.45em 0.75em;
   margin: 0.4em 0;
+  white-space: nowrap;
   font-family: var(--monospace);
   animation: glowing 2s infinite;
 }
@@ -2386,6 +2387,10 @@ svg.button {
   100% {
     transform: rotate(360deg);
   }
+}
+
+#chat-widget-container {
+  user-select: none;
 }
 
 #chat-widget-minimized {
