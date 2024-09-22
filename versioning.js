@@ -12,7 +12,7 @@
  *
  * Example: 1.102.2 -> Major version 1, Minor version 102, Patch version 2
  */
-const VERSION = "1.105.0";
+const VERSION = "1.105.1";
 if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format or parsing function");
 
 {
@@ -38,7 +38,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
         <strong>Latest changes:</strong>
         <li>Azgaar Bot to answer questions and provide help</li>
         <li>Labels: ability to set letter spacing</li>
-        <li>Zones update</li>
+        <li>Zones performance improvement</li>
         <li>Notes Editor: on-demand AI text generation</li>
         <li>New style preset: Dark Seas</li>
         <li>New routes generation algorithm</li>
