@@ -15,7 +15,7 @@ function editWorld() {
       pane.insertAdjacentHTML("afterbegin", checkbox);
 
       const button = this.parentElement.querySelector(".ui-dialog-buttonset > button");
-      button.on("mousemove", () => tip("Apply curreny settings to the map"));
+      button.on("mousemove", () => tip("Apply current settings to the map"));
     },
     close: function () {
       $(this).dialog("destroy");
