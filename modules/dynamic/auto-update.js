@@ -946,19 +946,23 @@ export function resolveVersionConflicts(mapVersion) {
     // v1.104.00 separated pole of inaccessibility detection from layer rendering
     BurgsAndStates.getPoles();
     Provinces.getPoles();
-
-    // v1.104.00 removed some layers from initial render
-    viewbox.select("#icons").style("display", null);
-    viewbox.select("#ice").style("display", null);
-
-    // v1.104.00 added featurePaths to defs
-    const featurePaths = defs.select("#featurePaths");
-    if (!featurePaths.size()) defs.append("g").attr("id", "featurePaths");
   }
 
   if (isOlderThan("1.105.0")) {
-    // v1.104.0 introduced some bugs
+    // v1.104.0 introduced some bugs with layers visibility
+    viewbox.select("#icons").style("display", null);
+    viewbox.select("#ice").style("display", null);
     viewbox.select("#regions").style("display", null);
     viewbox.select("#armies").style("display", null);
+  }
+
+  if (isOlderThan("1.106.0")) {
+    // v1.104.0 introduced bugs with coastlines. Redraw features
+    defs.select("#featurePaths").remove();
+    defs.append("g").attr("id", "featurePaths");
+    defs.select("#land").selectAll("path, use").remove();
+    defs.select("#water").selectAll("path, use").remove();
+    viewbox.select("#coastline").selectAll("path, use").remove();
+    drawFeatures();
   }
 }
