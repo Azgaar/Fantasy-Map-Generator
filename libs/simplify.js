@@ -42,8 +42,9 @@
     const newPoints = [prevPoint];
     let point;
 
-    for (let i = 1, len = points.length; i < len; i++) {
+    for (let i = 1; i < points.length; i++) {
       point = points[i];
+      if (!point) continue;
 
       if (getSqDist(point, prevPoint) > sqTolerance) {
         newPoints.push(point);
@@ -51,8 +52,7 @@
       }
     }
 
-    if (point && prevPoint !== point) newPoints.push(point);
-
+    if (prevPoint !== point) newPoints.push(point);
     return newPoints;
   }
 
