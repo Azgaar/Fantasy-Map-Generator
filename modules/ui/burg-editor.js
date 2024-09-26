@@ -94,6 +94,12 @@ function editBurg(id) {
     if (b.shanty) byId("burgShanty").classList.remove("inactive");
     else byId("burgShanty").classList.add("inactive");
 
+    // economics block
+    byId("burgProduction").innerHTML = getProduction(b.produced);
+    const deals = pack.trade.deals;
+    byId("burgExport").innerHTML = getExport(deals.filter((deal) => deal.exporter === b.i));
+    byId("burgImport").innerHTML = "";
+
     //toggle lock
     updateBurgLockIcon();
 
@@ -117,6 +123,38 @@ function editBurg(id) {
     } else {
       byId("burgPreviewSection").style.display = "none";
     }
+  }
+
+  function getProduction(pool) {
+    let html = "";
+
+    for (const resourceId in pool) {
+      const {name, unit, icon} = Resources.get(+resourceId);
+      const production = pool[resourceId];
+      const unitName = production > 1 ? unit + 's' : unit;
+
+      html += `<span data-tip="${name}: ${production} ${unitName}">
+      <svg class="resIcon"><use href="#{$icon}"></svg>
+      </span>`;
+    }
+    return html;
+  }
+
+  function getExport(dealsArray) {
+    if (!dealsArray.length) return 'no';
+
+    const totalIncome = rn(d3.sum(dealsArray.map((deal) => deal.burgIncome)));
+    const exported = dealsArray.map((deal) => {
+      const {resourceId, quantity, burgIncome} = deal;
+      const {name, unit, icon} = Resources.get(resourceId);
+      const unitName = quantity > 1 ? unit + 's' : unit;
+
+      return `<span data-tip="${name}: ${quantity} ${unitName}. Income: ${rn(burgIncome)}">
+      <svg class="resIcon"><use href="#${icon}"></svg>
+      <span style="margin: 0 0.2em 0 -0.2em">${quantity}</span>
+      </span>`;
+    });
+    return `${totalIncome}: ${exported.join('')}`;
   }
 
   function dragBurgLabel() {

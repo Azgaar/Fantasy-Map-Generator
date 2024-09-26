@@ -949,6 +949,29 @@ window.BurgsAndStates = (() => {
     return adjName ? `${getAdjective(state.name)} ${state.formName}` : `${state.formName} of ${state.name}`;
   };
 
+  const defineTaxes = () => {
+    const {states} = pack;
+    const maxTaxPerForm = {
+      Monarchy: 0.3,
+      Republic: 0.1,
+      Union: 0.2,
+      Thearchy: 0.3,
+      Anarchy: 0
+    };
+
+    for (const state of states) {
+      const {i, removed, form} = state;
+      if (removed) continue;
+      if (!i) {
+        state.salesTax = 0;
+        continue;
+      }
+
+      const maxTax = maxTaxPerForm[form] || 0;
+      state.salesTax = maxTax ? rn(Math.random() * maxTax, 2) : 0;
+    }
+  };
+
   const generateProvinces = (regenerate = false, regenerateInLockedStates = false) => {
     TIME && console.time("generateProvinces");
     const localSeed = regenerate ? generateSeed() : seed;
@@ -1205,6 +1228,7 @@ window.BurgsAndStates = (() => {
     generateDiplomacy,
     defineStateForms,
     getFullName,
+    defineTaxes,
     generateProvinces,
     updateCultures
   };

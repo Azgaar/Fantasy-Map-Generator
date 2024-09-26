@@ -240,6 +240,9 @@ function editHeightmap(options) {
     drawRivers();
     Lakes.defineGroup();
     Biomes.define();
+
+    Resources.generate();
+
     rankCells();
 
     Cultures.generate();

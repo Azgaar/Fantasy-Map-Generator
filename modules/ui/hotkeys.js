@@ -74,6 +74,7 @@ function handleKeyup(event) {
   else if (code === "KeyZ") toggleZones();
   else if (code === "KeyD") toggleBorders();
   else if (code === "KeyR") toggleReligions();
+  else if (code === "KeyQ") toggleResources();
   else if (code === "KeyU") toggleRoutes();
   else if (code === "KeyT") toggleTemp();
   else if (code === "KeyN") togglePopulation();

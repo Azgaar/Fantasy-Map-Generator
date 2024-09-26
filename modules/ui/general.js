@@ -142,6 +142,14 @@ function showMapTooltip(point, e, i, g) {
     return;
   }
 
+  if (group === "goods") {
+    const id = +e.target.dataset.i;
+    const resource = pack.resources.find(res => res.i === id);
+
+    tip("Resource: " + resource.name);
+    return;
+  }
+
   if (group === "rivers") {
     const river = +e.target.id.slice(5);
     const r = pack.rivers.find(r => r.i === river);

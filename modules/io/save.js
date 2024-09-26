@@ -97,6 +97,7 @@ function prepareMapData() {
   const religions = JSON.stringify(pack.religions);
   const provinces = JSON.stringify(pack.provinces);
   const rivers = JSON.stringify(pack.rivers);
+  const resource = JSON.stringify(pack.resources);
   const markers = JSON.stringify(pack.markers);
   const cellRoutes = JSON.stringify(pack.cells.routes);
   const routes = JSON.stringify(pack.routes);
@@ -116,45 +117,47 @@ function prepareMapData() {
 
   // data format as below
   const mapData = [
-    params,
-    settings,
-    coords,
-    biomes,
-    notesData,
-    serializedSVG,
-    gridGeneral,
-    grid.cells.h,
-    grid.cells.prec,
-    grid.cells.f,
-    grid.cells.t,
-    grid.cells.temp,
-    packFeatures,
-    cultures,
-    states,
-    burgs,
-    pack.cells.biome,
-    pack.cells.burg,
-    pack.cells.conf,
-    pack.cells.culture,
-    pack.cells.fl,
-    pop,
-    pack.cells.r,
-    [], // deprecated pack.cells.road
-    pack.cells.s,
-    pack.cells.state,
-    pack.cells.religion,
-    pack.cells.province,
-    [], // deprecated pack.cells.crossroad
-    religions,
-    provinces,
-    namesData,
-    rivers,
-    rulersString,
-    fonts,
-    markers,
-    cellRoutes,
-    routes,
-    zones
+    params,           //1
+    settings,         //2
+    coords, //3
+    biomes, //4
+    notesData, //5
+    serializedSVG, //6
+    gridGeneral, //7
+    grid.cells.h, //8
+    grid.cells.prec, //9
+    grid.cells.f, //10
+    grid.cells.t, //11
+    grid.cells.temp, //12
+    packFeatures, //13
+    cultures, //14
+    states, //15
+    burgs, //16
+    pack.cells.biome, //17
+    pack.cells.burg, //18
+    pack.cells.conf, //19
+    pack.cells.culture, //20
+    pack.cells.fl, //21
+    pop, //22
+    pack.cells.r, //23
+    [], // deprecated pack.cells.road 24
+    pack.cells.s, // 25
+    pack.cells.state, //26
+    pack.cells.religion, //27
+    pack.cells.province, //28
+    [], // deprecated pack.cells.crossroad 29
+    religions, //30
+    provinces, //31
+    namesData, //32
+    rivers, //33
+    rulersString, //34
+    fonts, //35
+    markers, //36
+    cellRoutes, //37
+    routes, //38
+    zones, //39
+    pack.cells.resources, //40
+    resources //41
   ].join("\r\n");
   return mapData;
 }

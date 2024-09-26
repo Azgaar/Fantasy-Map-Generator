@@ -331,6 +331,7 @@ async function parseLoadedData(data, mapVersion) {
       coastline = viewbox.select("#coastline");
       prec = viewbox.select("#prec");
       population = viewbox.select("#population");
+      resources = viewbox.select("#goods")
       emblems = viewbox.select("#emblems");
       labels = viewbox.select("#labels");
       icons = viewbox.select("#icons");
@@ -393,6 +394,7 @@ async function parseLoadedData(data, mapVersion) {
       pack.cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(pack.cells.i.length);
       // data[28] had deprecated cells.crossroad
       pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
+      pack.resources = data[40] ? JSON.parse(data[40]) : {};
 
       if (data[31]) {
         const namesDL = data[31].split("/");
@@ -540,6 +542,14 @@ async function parseLoadedData(data, mapVersion) {
         rivers.select("river" + r).remove();
         ERROR && console.error("Data integrity check. Invalid river", r, "is assigned to cells", invalidCells);
       });
+
+      const invalidResources = [...new Set(cells.r)].filter(r => r && !pack.resources.find(resource => resource.i === r));
+      invalidResources.forEach(r=> {
+        const invalidCells = cells.i.filter(i => cells.r[i] === r);
+        invalidCells.forEach(i => (cells.r[i] = 0));
+        rivers.select("resource" + r).remove();
+        ERROR && console.error("Data integrity check. Invalid resource", r, "is assigned to cells", invalidCells);
+      })
 
       pack.burgs.forEach(burg => {
         if (typeof burg.capital === "boolean") burg.capital = Number(burg.capital);

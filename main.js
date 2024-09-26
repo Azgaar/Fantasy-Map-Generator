@@ -76,6 +76,7 @@ let ice = viewbox.append("g").attr("id", "ice").style("display", "none");
 let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
 let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
+let goods = viewbox.append("g").attr("id", "goods");
 let labels = viewbox.append("g").attr("id", "labels");
 let icons = viewbox.append("g").attr("id", "icons");
 let burgIcons = icons.append("g").attr("id", "burgIcons");
@@ -643,6 +644,8 @@ async function generate(options) {
     Lakes.defineGroup();
     Biomes.define();
 
+    Resources.generate();
+
     rankCells();
     Cultures.generate();
     Cultures.expand();
@@ -652,6 +655,14 @@ async function generate(options) {
     BurgsAndStates.defineStateForms();
     BurgsAndStates.generateProvinces();
     BurgsAndStates.defineBurgFeatures();
+    BurgsAndStates.defineTaxes();
+
+    Production.collectResources();
+
+    Trade.defineCenters();
+    Trade.calculateDistances();
+    Trade.exportGoods();
+    Trade.importGoods();
 
     drawStates();
     drawBorders();
@@ -1452,6 +1463,7 @@ function rankCells() {
   const flMean = d3.median(cells.fl.filter(f => f)) || 0,
     flMax = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
   const areaMean = d3.mean(cells.area); // to adjust population by cell area
+  const getResValue = (i) => (cells.resource[i] ? Resources.get(cells.resource[i])?.value : 0); // get bonus resource scope
 
   for (const i of cells.i) {
     if (cells.h[i] < 20) continue; // no population in water
@@ -1476,7 +1488,12 @@ function rankCells() {
       }
     }
 
-    cells.s[i] = s / 5; // general population rate
+    // add bonus for resource around
+    const cellRes = getResValue(i);
+    const neibRes = d3.mean(cells.c[i].map((c) => getResValue(c)));
+    const resBonus = (cellRes ? cellRes + 10 : 0) + neibRes;
+
+    cells.s[i] = s / 5 + resBonus; // general population rate
     // cell rural population is suitability adjusted by cell area
     cells.pop[i] = cells.s[i] > 0 ? (cells.s[i] * cells.area[i]) / areaMean : 0;
   }

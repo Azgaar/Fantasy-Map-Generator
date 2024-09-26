@@ -346,6 +346,13 @@ function selectStyleElement() {
     emblemsBurgSizeInput.value = emblems.select("#burgEmblems").attr("data-size") || 1;
   }
 
+  if (styleElement === "goods") {
+    styleStrokeWidth.style.display = "block";
+    styleStrokeWidthInput.value = el.attr("stroke-width") || "";
+    styleResources.style.display = "block";
+    styleResourcesCircle.checked = +el.attr("data-circle");
+  }
+
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
   if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders", "terrs"].includes(styleElement)) {
@@ -970,6 +977,12 @@ emblemsBurgSizeInput.on("change", e => {
   emblems.select("#burgEmblems").attr("data-size", e.target.value);
   drawEmblems();
 });
+
+styleResourcesCircle.on("change", e => {
+  goods.attr("data-circle", +this.checked);
+  goods.selectAll("*").remove();
+  drawResources();
+})
 
 // request a URL to image to be used as a texture
 function textureProvideURL() {
