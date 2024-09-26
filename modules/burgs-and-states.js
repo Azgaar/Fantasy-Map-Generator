@@ -905,6 +905,9 @@ window.BurgsAndStates = (() => {
     getFullName,
     defineTaxes,
     updateCultures,
-    getCloseToEdgePoint
+    getCloseToEdgePoint,
+    defineTaxes,
+    generateProvinces,
+    updateCultures
   };
 })();
