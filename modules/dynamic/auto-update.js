@@ -964,5 +964,8 @@ export function resolveVersionConflicts(mapVersion) {
     defs.select("#water").selectAll("path, use").remove();
     viewbox.select("#coastline").selectAll("path, use").remove();
     drawFeatures();
+
+    // v1.106.0 change burg groups and added customizable icons
+    icons.selectAll("circle, use").remove();
   }
 }

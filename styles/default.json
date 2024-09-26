@@ -338,14 +338,16 @@
     "font-family": "Almendra SC"
   },
   "#burgIcons > #cities": {
+    "data-icon": "#icon-star",
     "opacity": 1,
     "fill": "#ffffff",
     "fill-opacity": 0.7,
-    "size": 1,
+    "font-size": 2,
     "stroke": "#3e3e4b",
-    "stroke-width": 0.24,
-    "stroke-dasharray": "",
-    "stroke-linecap": "butt"
+    "stroke-width": 10,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "round"
   },
   "#anchors > #cities": {
     "opacity": 1,
@@ -364,14 +366,16 @@
     "font-family": "Almendra SC"
   },
   "#burgIcons > #towns": {
+    "data-icon": "#icon-circle",
     "opacity": 1,
     "fill": "#ffffff",
     "fill-opacity": 0.7,
-    "size": 0.5,
+    "font-size": 1,
     "stroke": "#3e3e4b",
-    "stroke-width": 0.12,
-    "stroke-dasharray": "",
-    "stroke-linecap": "butt"
+    "stroke-width": 10,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "round"
   },
   "#anchors > #towns": {
     "opacity": 1,

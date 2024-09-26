@@ -8,20 +8,20 @@ function drawBurgIcons() {
   // capitals
   const capitals = pack.burgs.filter(b => b.capital && !b.removed);
   const capitalIcons = burgIcons.select("#cities");
-  const capitalSize = capitalIcons.attr("size") || 1;
+  const capitalIcon = capitalIcons.attr("data-icon") || "#icon-circle";
   const capitalAnchors = anchors.selectAll("#cities");
   const capitalAnchorsSize = capitalAnchors.attr("size") || 2;
 
   capitalIcons
-    .selectAll("circle")
+    .selectAll("use")
     .data(capitals)
     .enter()
-    .append("circle")
+    .append("use")
     .attr("id", d => "burg" + d.i)
+    .attr("href", capitalIcon)
     .attr("data-id", d => d.i)
-    .attr("cx", d => d.x)
-    .attr("cy", d => d.y)
-    .attr("r", capitalSize);
+    .attr("x", d => d.x)
+    .attr("y", d => d.y);
 
   capitalAnchors
     .selectAll("use")
@@ -38,20 +38,20 @@ function drawBurgIcons() {
   // towns
   const towns = pack.burgs.filter(b => b.i && !b.capital && !b.removed);
   const townIcons = burgIcons.select("#towns");
-  const townSize = townIcons.attr("size") || 0.5;
+  const townIcon = townIcons.attr("data-icon") || "#icon-circle";
   const townsAnchors = anchors.selectAll("#towns");
   const townsAnchorsSize = townsAnchors.attr("size") || 1;
 
   townIcons
-    .selectAll("circle")
+    .selectAll("use")
     .data(towns)
     .enter()
-    .append("circle")
+    .append("use")
     .attr("id", d => "burg" + d.i)
+    .attr("href", townIcon)
     .attr("data-id", d => d.i)
-    .attr("cx", d => d.x)
-    .attr("cy", d => d.y)
-    .attr("r", townSize);
+    .attr("x", d => d.x)
+    .attr("y", d => d.y);
 
   townsAnchors
     .selectAll("use")
