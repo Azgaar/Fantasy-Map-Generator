@@ -338,7 +338,7 @@
     "font-family": "Almendra SC"
   },
   "#burgIcons > #cities": {
-    "data-icon": "#icon-star",
+    "data-icon": "#icon-square",
     "opacity": 1,
     "fill": "#ffffff",
     "fill-opacity": 0.7,
