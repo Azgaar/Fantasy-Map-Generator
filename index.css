@@ -1511,20 +1511,6 @@ div.states > .burgCulture {
   width: 6em;
 }
 
-div.states .burgPopulation {
-  width: 4.8em;
-}
-
-div.states .burgType {
-  width: 3em;
-}
-
-div.states .burgType > span {
-  padding: 0 1px;
-  color: #6e5e66;
-  transition: 0.2s;
-}
-
 div.states span.inactive {
   color: #c6c2c2;
 }

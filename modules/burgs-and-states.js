@@ -239,16 +239,23 @@ window.BurgsAndStates = (() => {
     return [x, y];
   }
 
-  const getType = (i, port) => {
-    const cells = pack.cells;
-    if (port) return "Naval";
-    if (cells.haven[i] && pack.features[cells.f[cells.haven[i]]].type === "lake") return "Lake";
-    if (cells.h[i] > 60) return "Highland";
-    if (cells.r[i] && cells.r[i].length > 100 && cells.r[i].length >= pack.rivers[0].length) return "River";
+  const getType = (cellId, port) => {
+    const {cells, features, burgs} = pack;
 
-    if (!cells.burg[i] || pack.burgs[cells.burg[i]].population < 6) {
-      if (population < 5 && [1, 2, 3, 4].includes(cells.biome[i])) return "Nomadic";
-      if (cells.biome[i] > 4 && cells.biome[i] < 10) return "Hunting";
+    if (port) return "Naval";
+
+    const haven = cells.haven[cellId];
+    if (haven !== undefined && features[cells.f[haven]].type === "lake") return "Lake";
+
+    if (cells.h[cellId] > 60) return "Highland";
+
+    if (cells.r[cellId] && cells.fl[cellId] >= 100) return "River";
+
+    const biome = cells.biome[cellId];
+    const population = cells.pop[cellId];
+    if (!cells.burg[cellId] || population <= 5) {
+      if (population < 5 && [1, 2, 3, 4].includes(biome)) return "Nomadic";
+      if (biome > 4 && biome < 10) return "Hunting";
     }
 
     return "Generic";
