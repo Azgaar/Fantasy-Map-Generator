@@ -75,7 +75,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     for (const b of filtered) {
       const population = b.population * populationRate * urbanization;
       totalPopulation += population;
-      const type = b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg";
+      const features = b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg";
       const state = pack.states[b.state].name;
       const prov = pack.cells.province[b.cell];
       const province = prov ? pack.provinces[prov].name : "";
@@ -89,7 +89,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
         data-province="${province}"
         data-culture="${culture}"
         data-population=${population}
-        data-type="${type}"
+        data-features="${features}"
       >
         <span data-tip="Click to zoom into view" class="icon-dot-circled pointer"></span>
         <input data-tip="Burg name. Click and type to change" class="burgName" value="${
@@ -101,15 +101,16 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
           ${getCultureOptions(b.culture)}
         </select>
         <span data-tip="Burg population" class="icon-male"></span>
-        <input data-tip="Burg population. Type to change" class="burgPopulation" value=${si(population)} />
-        <div class="burgType">
+        <input data-tip="Burg population. Type to change" value=${si(
+          population
+        )} class="burgPopulation" style="width: 5em" />
+        <div style="width: 3em">
           <span
             data-tip="${b.capital ? " This burg is a state capital" : "Click to assign a capital status"}"
-            class="icon-star-empty${b.capital ? "" : " inactive pointer"}"
-          ></span>
+            class="icon-star-empty${b.capital ? "" : " inactive pointer"}" style="padding: 0 1px;"></span>
           <span data-tip="Click to toggle port status" class="icon-anchor pointer${
             b.port ? "" : " inactive"
-          }" style="font-size:.9em"></span>
+          }" style="font-size: .9em; padding: 0 1px;"></span>
         </div>
         <span data-tip="Edit burg" class="icon-pencil"></span>
         <span class="locks pointer ${
