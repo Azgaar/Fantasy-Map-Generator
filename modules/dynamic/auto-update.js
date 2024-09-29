@@ -969,7 +969,7 @@ export function resolveVersionConflicts(mapVersion) {
     icons.selectAll("circle, use").remove();
 
     options.burgs = {
-      groups: States.getDefaultGroups()
+      groups: Burgs.getDefaultGroups()
     };
   }
 }
