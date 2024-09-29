@@ -78,11 +78,10 @@ function getBorderPath(vertices, vertexChain, discontinue) {
     }
 
     const operation = discontinued ? "M" : "L";
-    const command = operation === lastOperation ? "" : operation;
-
     discontinued = false;
     lastOperation = operation;
 
+    const command = operation === "L" && operation === lastOperation ? "" : operation;
     return ` ${command}${vertices.p[vertexId]}`;
   });
 
