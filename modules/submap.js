@@ -238,7 +238,7 @@ window.Submap = (function () {
         ? pack.burgs[s.capital].cell // capital is the best bet
         : pack.cells.state.findIndex(x => x === i); // otherwise use the first valid cell
     });
-    BurgsAndStates.getPoles();
+    States.getPoles();
 
     // transfer provinces, mark provinces without land as removed.
     stage("Porting provinces");

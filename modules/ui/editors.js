@@ -141,7 +141,7 @@ function addBurg(point) {
   const feature = cells.f[cellId];
 
   const population = Math.max(cells.s[cellId] / 3 + i / 1000 + (cellId % 100) / 1000, 0.1);
-  const type = BurgsAndStates.getType(cellId, false);
+  const type = Burgs.getType(cellId, false);
 
   // generate emblem
   const coa = COA.generate(states[state].coa, 0.25, null, type);
@@ -186,7 +186,7 @@ function addBurg(point) {
     .attr("dy", `${townSize * -1.5}px`)
     .text(name);
 
-  BurgsAndStates.defineBurgFeatures(burg);
+  Burgs.defineBurgFeatures(burg);
 
   const newRoute = Routes.connect(cellId);
   if (newRoute && layerIsOn("toggleRoutes")) {

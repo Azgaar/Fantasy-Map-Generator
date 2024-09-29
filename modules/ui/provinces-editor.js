@@ -371,8 +371,8 @@ function editProvinces() {
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
 
-    BurgsAndStates.collectStatistics();
-    BurgsAndStates.defineStateForms(newStates);
+    States.collectStatistics();
+    States.defineStateForms(newStates);
     drawStateLabels(allStates);
 
     // redraw emblems
@@ -1030,7 +1030,7 @@ function editProvinces() {
     // generate emblem
     const kinship = burg ? 0.8 : 0.4;
     const parent = burg ? pack.burgs[burg].coa : pack.states[state].coa;
-    const type = BurgsAndStates.getType(center, parent.port);
+    const type = Burgs.getType(center, parent.port);
     const coa = COA.generate(parent, kinship, P(0.1), type);
     coa.shield = COA.getShield(c, state);
     COArenderer.add("province", province, coa, point[0], point[1]);

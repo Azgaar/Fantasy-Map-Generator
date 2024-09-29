@@ -243,13 +243,14 @@ function editHeightmap(options) {
     Cultures.generate();
     Cultures.expand();
 
-    BurgsAndStates.generate();
+    Burgs.generate();
+    States.generate();
     Routes.generate();
     Religions.generate();
-    BurgsAndStates.defineStateForms();
+    States.defineStateForms();
     Provinces.generate();
     Provinces.getPoles();
-    BurgsAndStates.defineBurgFeatures();
+    Burgs.specifyBurgs();
 
     Rivers.specify();
     Features.specify();

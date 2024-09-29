@@ -194,7 +194,10 @@ let options = {
   temperatureSouthPole: -15,
   stateLabelsMode: "auto",
   showBurgPreview: true,
-  villageMaxPopulation: 2000
+  villageMaxPopulation: 2000,
+  burgs: {
+    groups: Burgs.getDefaultGroups()
+  }
 };
 
 let mapCoordinates = {}; // map coordinates on globe
@@ -658,13 +661,14 @@ async function generate(options) {
     rankCells();
     Cultures.generate();
     Cultures.expand();
-    BurgsAndStates.generate();
+    Burgs.generate();
+    States.generate();
     Routes.generate();
     Religions.generate();
-    BurgsAndStates.defineStateForms();
+    States.defineStateForms();
     Provinces.generate();
     Provinces.getPoles();
-    BurgsAndStates.defineBurgFeatures();
+    Burgs.specifyBurgs();
 
     Rivers.specify();
     Features.specify();

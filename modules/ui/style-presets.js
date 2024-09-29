@@ -280,16 +280,6 @@ function addStylePreset() {
         "font-size",
         "font-family"
       ],
-      "#burgIcons > #cities": [
-        "opacity",
-        "fill",
-        "fill-opacity",
-        "size",
-        "stroke",
-        "stroke-width",
-        "stroke-dasharray",
-        "stroke-linecap"
-      ],
       "#anchors > #cities": ["opacity", "fill", "size", "stroke", "stroke-width"],
       "#burgLabels > #towns": [
         "opacity",
@@ -299,16 +289,6 @@ function addStylePreset() {
         "data-size",
         "font-size",
         "font-family"
-      ],
-      "#burgIcons > #towns": [
-        "opacity",
-        "fill",
-        "fill-opacity",
-        "size",
-        "stroke",
-        "stroke-width",
-        "stroke-dasharray",
-        "stroke-linecap"
       ],
       "#anchors > #towns": ["opacity", "fill", "size", "stroke", "stroke-width"],
       "#labels > #states": [
@@ -351,6 +331,20 @@ function addStylePreset() {
         "data-left"
       ]
     };
+
+    const burgIconsAttributes = [
+      "opacity",
+      "fill",
+      "fill-opacity",
+      "size",
+      "stroke",
+      "stroke-width",
+      "stroke-dasharray",
+      "stroke-linecap"
+    ];
+    options.burgs.groups.forEach(group => {
+      attributes[`#burgIcons > g[data-name='${group}']`] = burgIconsAttributes;
+    });
 
     for (const selector in attributes) {
       const el = document.querySelector(selector);

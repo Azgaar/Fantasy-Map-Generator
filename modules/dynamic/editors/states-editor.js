@@ -144,7 +144,7 @@ function addListeners() {
 }
 
 function refreshStatesEditor() {
-  BurgsAndStates.collectStatistics();
+  States.collectStatistics();
   statesEditorAddLines();
 }
 
@@ -839,10 +839,10 @@ function openRegenerationMenu() {
 function recalculateStates(must) {
   if (!must && !statesAutoChange.checked) return;
 
-  BurgsAndStates.expandStates();
+  States.expandStates();
   Provinces.generate();
   Provinces.getPoles();
-  BurgsAndStates.getPoles();
+  States.getPoles();
 
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleBorders")) drawBorders();
@@ -984,7 +984,7 @@ function applyStatesManualAssignent() {
 
   if (affectedStates.length) {
     refreshStatesEditor();
-    BurgsAndStates.getPoles();
+    States.getPoles();
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     if (adjustLabels.checked) drawStateLabels([...new Set(affectedStates)]);
     adjustProvinces([...new Set(affectedProvinces)]);
@@ -1102,7 +1102,7 @@ function adjustProvinces(affectedProvinces) {
     const color = getMixedColor(states[stateId].color);
 
     const kinship = nameByBurg ? 0.8 : 0.4;
-    const type = BurgsAndStates.getType(center, burg?.port);
+    const type = Burgs.getType(center, burg?.port);
     const coa = COA.generate(burg?.coa || states[stateId].coa, kinship, burg ? null : 0.9, type);
     coa.shield = COA.getShield(culture, stateId);
 
@@ -1253,8 +1253,8 @@ function addState() {
     coa,
     pole
   });
-  BurgsAndStates.collectStatistics();
-  BurgsAndStates.defineStateForms([newState]);
+  States.collectStatistics();
+  States.defineStateForms([newState]);
   adjustProvinces([cells.province[center]]);
 
   if (layerIsOn("toggleProvinces")) toggleProvinces();
@@ -1419,7 +1419,7 @@ function openStateMergeDialog() {
     unfog();
     debug.selectAll(".highlight").remove();
 
-    BurgsAndStates.getPoles();
+    States.getPoles();
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
     layerIsOn("toggleProvinces") && drawProvinces();

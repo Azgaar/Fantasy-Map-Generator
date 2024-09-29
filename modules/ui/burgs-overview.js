@@ -24,6 +24,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
 
   // add listeners
   byId("burgsOverviewRefresh").addEventListener("click", refreshBurgsEditor);
+  byId("burgsGroupsEditorButton").addEventListener("click", openBurgGroupsEditor);
   byId("burgsChart").addEventListener("click", showBurgsChart);
   byId("burgsFilterState").addEventListener("change", burgsOverviewAddLines);
   byId("burgsFilterCulture").addEventListener("change", burgsOverviewAddLines);
@@ -300,6 +301,30 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     clearMainTip();
     if (addBurgTool.classList.contains("pressed")) addBurgTool.classList.remove("pressed");
     if (addNewBurg.classList.contains("pressed")) addNewBurg.classList.remove("pressed");
+  }
+
+  function openBurgGroupsEditor() {
+    $("#burgGroupsEditor").dialog({
+      title: "Edit Burgs Groups",
+      resizable: false,
+      position: {my: "center", at: "center", of: "svg"},
+      buttons: {
+        Apply: applyMilitaryOptions,
+        Restore: restoreDefaultUnits,
+        Cancel: function () {
+          $(this).dialog("close");
+        }
+      },
+      open: function () {
+        const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button");
+        buttons[0].addEventListener("mousemove", () =>
+          tip("Apply military units settings. <span style='color:#cb5858'>All forces will be recalculated!</span>")
+        );
+        buttons[1].addEventListener("mousemove", () => tip("Add new military unit to the table"));
+        buttons[2].addEventListener("mousemove", () => tip("Restore default military units and settings"));
+        buttons[3].addEventListener("mousemove", () => tip("Close the window without saving the changes"));
+      }
+    });
   }
 
   function showBurgsChart() {
