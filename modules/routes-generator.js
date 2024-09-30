@@ -537,7 +537,7 @@ window.Routes = (function () {
     return roadConnections.length > 2;
   }
 
-  const connectivityRates = {
+  const connectivityRateMap = {
     roads: 0.2,
     trails: 0.1,
     searoutes: 0.2,
@@ -550,7 +550,7 @@ window.Routes = (function () {
 
     const connectivity = Object.values(connections).reduce((acc, routeId) => {
       const route = pack.routes.find(route => route.i === routeId);
-      const rate = connectivityRates[route.group] || connectivityRates.default;
+      const rate = connectivityRateMap[route.group] || connectivityRateMap.default;
       return acc + rate;
     }, 0.8);
 

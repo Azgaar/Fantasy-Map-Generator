@@ -168,8 +168,9 @@ async function exportToPngTiles() {
 }
 
 // parse map svg to object url
-async function getMapURL(type, options) {
-  const {
+async function getMapURL(
+  type,
+  {
     debug = false,
     noLabels = false,
     noWater = false,
@@ -177,8 +178,8 @@ async function getMapURL(type, options) {
     noIce = false,
     noVignette = false,
     fullMap = false
-  } = options || {};
-
+  } = {}
+) {
   const cloneEl = byId("map").cloneNode(true); // clone svg
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
@@ -305,6 +306,15 @@ async function getMapURL(type, options) {
   if (cloneEl.getElementById("compass")) {
     const rose = svgDefs.getElementById("defs-compass-rose");
     if (rose) cloneDefs.appendChild(rose.cloneNode(true));
+  }
+
+  // add burs icons
+  if (cloneEl.getElementById("burgIcons")) {
+    const groups = cloneEl.getElementById("burgIcons").querySelectorAll("g");
+    for (const group of Array.from(groups)) {
+      const icon = svgDefs.querySelector(group.dataset.icon);
+      if (icon) cloneDefs.appendChild(icon.cloneNode(true));
+    }
   }
 
   // add port icon
