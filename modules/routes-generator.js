@@ -537,6 +537,26 @@ window.Routes = (function () {
     return roadConnections.length > 2;
   }
 
+  const connectivityRates = {
+    roads: 0.2,
+    trails: 0.1,
+    searoutes: 0.2,
+    default: 0.1
+  };
+
+  function getConnectivityRate(cellId) {
+    const connections = pack.cells.routes[cellId];
+    if (!connections) return 0;
+
+    const connectivity = Object.values(connections).reduce((acc, routeId) => {
+      const route = pack.routes.find(route => route.i === routeId);
+      const rate = connectivityRates[route.group] || connectivityRates.default;
+      return acc + rate;
+    }, 0.8);
+
+    return connectivity;
+  }
+
   // name generator data
   const models = {
     roads: {burg_suffix: 3, prefix_suffix: 6, the_descriptor_prefix_suffix: 2, the_descriptor_burg_suffix: 1},
@@ -749,6 +769,7 @@ window.Routes = (function () {
     getRoute,
     hasRoad,
     isCrossroad,
+    getConnectivityRate,
     generateName,
     getPath,
     getLength,

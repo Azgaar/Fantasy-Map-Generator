@@ -287,7 +287,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     if (pack.cells.burg[cell])
       return tip("There is already a burg in this cell. Please select a free cell", false, "error");
 
-    addBurg(point); // add new burg
+    Burgs.add(point); // add new burg
 
     if (d3.event.shiftKey === false) {
       exitAddBurgMode();

@@ -342,8 +342,8 @@ function addStylePreset() {
       "stroke-dasharray",
       "stroke-linecap"
     ];
-    options.burgs.groups.forEach(group => {
-      attributes[`#burgIcons > g[data-name='${group}']`] = burgIconsAttributes;
+    options.burgs.groups.forEach(({name}) => {
+      attributes[`#burgIcons > g.${name}`] = burgIconsAttributes;
     });
 
     for (const selector in attributes) {

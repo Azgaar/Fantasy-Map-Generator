@@ -5,35 +5,37 @@ function drawBurgLabels() {
 
   burgLabels.selectAll("text").remove(); // cleanup
 
-  const capitals = pack.burgs.filter(b => b.capital && !b.removed);
-  const capitalSize = burgIcons.select("#cities").attr("size") || 1;
-  burgLabels
-    .select("#cities")
-    .selectAll("text")
-    .data(capitals)
-    .enter()
-    .append("text")
-    .attr("id", d => "burgLabel" + d.i)
-    .attr("data-id", d => d.i)
-    .attr("x", d => d.x)
-    .attr("y", d => d.y)
-    .attr("dy", `${capitalSize * -1.5}px`)
-    .text(d => d.name);
+  for (const {name} of options.burgs.groups) {
+    const burgsInGroup = pack.burgs.filter(b => b.group === name && !b.removed);
+    if (!burgsInGroup.length) continue;
 
-  const towns = pack.burgs.filter(b => b.i && !b.capital && !b.removed);
-  const townSize = burgIcons.select("#towns").attr("size") || 0.5;
-  burgLabels
-    .select("#towns")
-    .selectAll("text")
-    .data(towns)
-    .enter()
-    .append("text")
-    .attr("id", d => "burgLabel" + d.i)
-    .attr("data-id", d => d.i)
-    .attr("x", d => d.x)
-    .attr("y", d => d.y)
-    .attr("dy", `${townSize * -2}px`)
-    .text(d => d.name);
+    const labelGroup = burgLabels.select("#" + name);
+    if (labelGroup.empty()) continue;
+
+    labelGroup
+      .selectAll("text")
+      .data(burgsInGroup)
+      .enter()
+      .append("text")
+      .attr("id", d => "burgLabel" + d.i)
+      .attr("data-id", d => d.i)
+      .attr("x", d => d.x)
+      .attr("y", d => d.y)
+      .attr("dy", "-0.4em")
+      .text(d => d.name);
+  }
 
   TIME && console.timeEnd("drawBurgLabels");
+}
+
+function drawBurgLabel(burg) {
+  burgLabels
+    .select("#" + burg.group)
+    .append("text")
+    .attr("id", "burgLabel" + burg.i)
+    .attr("data-id", burg.i)
+    .attr("x", burg.x)
+    .attr("y", burg.y)
+    .attr("dy", "-0.4em")
+    .text(burg.name);
 }

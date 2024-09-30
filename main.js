@@ -108,15 +108,7 @@ terrs.append("g").attr("id", "landHeights");
 
 labels.append("g").attr("id", "states");
 labels.append("g").attr("id", "addedLabels");
-
 let burgLabels = labels.append("g").attr("id", "burgLabels");
-burgIcons.append("g").attr("id", "cities");
-burgLabels.append("g").attr("id", "cities");
-anchors.append("g").attr("id", "cities");
-
-burgIcons.append("g").attr("id", "towns");
-burgLabels.append("g").attr("id", "towns");
-anchors.append("g").attr("id", "towns");
 
 // population groups
 population.append("g").attr("id", "rural");
@@ -162,6 +154,29 @@ let customization = 0;
 let biomesData = Biomes.getDefault();
 let nameBases = Names.getNameBases(); // cultures-related data
 
+// default options, based on Earth data
+let options = {
+  pinNotes: false,
+  winds: [225, 45, 225, 315, 135, 315],
+  temperatureEquator: 27,
+  temperatureNorthPole: -30,
+  temperatureSouthPole: -15,
+  stateLabelsMode: "auto",
+  showBurgPreview: true,
+  villageMaxPopulation: 2000,
+  burgs: {
+    groups: Burgs.getDefaultGroups()
+  }
+};
+
+// create groups for each burg type
+{
+  for (const {name} of options.burgs.groups) {
+    burgIcons.append("g").attr("id", name);
+    burgLabels.append("g").attr("id", name);
+  }
+}
+
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
 
@@ -184,21 +199,6 @@ const onZoom = debounce(function () {
   handleZoom(isScaleChanged, isPositionChanged);
 }, 50);
 const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoom);
-
-// default options, based on Earth data
-let options = {
-  pinNotes: false,
-  winds: [225, 45, 225, 315, 135, 315],
-  temperatureEquator: 27,
-  temperatureNorthPole: -30,
-  temperatureSouthPole: -15,
-  stateLabelsMode: "auto",
-  showBurgPreview: true,
-  villageMaxPopulation: 2000,
-  burgs: {
-    groups: Burgs.getDefaultGroups()
-  }
-};
 
 let mapCoordinates = {}; // map coordinates on globe
 let populationRate = +byId("populationRateInput").value;
@@ -668,7 +668,7 @@ async function generate(options) {
     States.defineStateForms();
     Provinces.generate();
     Provinces.getPoles();
-    Burgs.specifyBurgs();
+    Burgs.specify();
 
     Rivers.specify();
     Features.specify();
@@ -1180,36 +1180,44 @@ function rankCells() {
   cells.s = new Int16Array(cells.i.length); // cell suitability array
   cells.pop = new Float32Array(cells.i.length); // cell population array
 
-  const flMean = d3.median(cells.fl.filter(f => f)) || 0,
-    flMax = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
-  const areaMean = d3.mean(cells.area); // to adjust population by cell area
+  const meanFlux = d3.median(cells.fl.filter(f => f)) || 0;
+  const maxFlux = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
+  const meanArea = d3.mean(cells.area); // to adjust population by cell area
+
+  const scoreMap = {
+    estuary: 15,
+    ocean_coast: 5,
+    save_harbor: 20,
+    freshwater: 30,
+    salt: 10,
+    frozen: 1,
+    dry: -5,
+    sinkhole: -5,
+    lava: -30
+  };
 
   for (const i of cells.i) {
     if (cells.h[i] < 20) continue; // no population in water
-    let s = +biomesData.habitability[cells.biome[i]]; // base suitability derived from biome habitability
-    if (!s) continue; // uninhabitable biomes has 0 suitability
-    if (flMean) s += normalize(cells.fl[i] + cells.conf[i], flMean, flMax) * 250; // big rivers and confluences are valued
-    s -= (cells.h[i] - 50) / 5; // low elevation is valued, high is not;
+    let score = biomesData.habitability[cells.biome[i]]; // base suitability derived from biome habitability
+    if (!score) continue; // uninhabitable biomes has 0 suitability
+
+    if (meanFlux) score += normalize(cells.fl[i] + cells.conf[i], meanFlux, maxFlux) * 250; // big rivers and confluences are valued
+    score -= (cells.h[i] - 50) / 5; // low elevation is valued, high is not;
 
     if (cells.t[i] === 1) {
-      if (cells.r[i]) s += 15; // estuary is valued
+      if (cells.r[i]) score += scoreMap.estuary;
       const feature = features[cells.f[cells.haven[i]]];
       if (feature.type === "lake") {
-        if (feature.group === "freshwater") s += 30;
-        else if (feature.group == "salt") s += 10;
-        else if (feature.group == "frozen") s += 1;
-        else if (feature.group == "dry") s -= 5;
-        else if (feature.group == "sinkhole") s -= 5;
-        else if (feature.group == "lava") s -= 30;
+        score += scoreMap[feature.water] || 0;
       } else {
-        s += 5; // ocean coast is valued
-        if (cells.harbor[i] === 1) s += 20; // safe sea harbor is valued
+        score += scoreMap.ocean_coast;
+        if (cells.harbor[i] === 1) score += scoreMap.save_harbor;
       }
     }
 
-    cells.s[i] = s / 5; // general population rate
+    cells.s[i] = score / 5; // general population rate
     // cell rural population is suitability adjusted by cell area
-    cells.pop[i] = cells.s[i] > 0 ? (cells.s[i] * cells.area[i]) / areaMean : 0;
+    cells.pop[i] = cells.s[i] > 0 ? (cells.s[i] * cells.area[i]) / meanArea : 0;
   }
 
   TIME && console.timeEnd("rankCells");

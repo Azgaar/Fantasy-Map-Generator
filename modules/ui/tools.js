@@ -431,7 +431,7 @@ function regenerateBurgs() {
     .filter(s => s.i && !s.removed && !s.capital)
     .forEach(s => {
       const [x, y] = cells.p[s.center];
-      const burgId = addBurg([x, y]);
+      const burgId = Burgs.add([x, y]);
       s.capital = burgId;
       s.center = pack.burgs[burgId].cell;
       pack.burgs[burgId].capital = 1;
@@ -443,7 +443,7 @@ function regenerateBurgs() {
     if (f.port) f.port = 0; // reset features ports counter
   });
 
-  Burgs.specifyBurgs();
+  Burgs.specify();
   regenerateRoutes();
 
   drawBurgIcons();

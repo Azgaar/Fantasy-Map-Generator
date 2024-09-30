@@ -250,7 +250,7 @@ function editHeightmap(options) {
     States.defineStateForms();
     Provinces.generate();
     Provinces.getPoles();
-    Burgs.specifyBurgs();
+    Burgs.specify();
 
     Rivers.specify();
     Features.specify();

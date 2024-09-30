@@ -5,65 +5,47 @@ function drawBurgIcons() {
 
   icons.selectAll("circle, use").remove(); // cleanup
 
-  // capitals
-  const capitals = pack.burgs.filter(b => b.capital && !b.removed);
-  const capitalIcons = burgIcons.select("#cities");
-  const capitalIcon = capitalIcons.attr("data-icon") || "#icon-circle";
-  const capitalAnchors = anchors.selectAll("#cities");
-  const capitalAnchorsSize = capitalAnchors.attr("size") || 2;
+  for (const {name} of options.burgs.groups) {
+    const burgsInGroup = pack.burgs.filter(b => b.group === name && !b.removed);
+    if (!burgsInGroup.length) continue;
 
-  capitalIcons
-    .selectAll("use")
-    .data(capitals)
-    .enter()
-    .append("use")
-    .attr("id", d => "burg" + d.i)
-    .attr("href", capitalIcon)
-    .attr("data-id", d => d.i)
-    .attr("x", d => d.x)
-    .attr("y", d => d.y);
+    const g = burgIcons.select("#" + name);
+    if (g.empty()) continue;
 
-  capitalAnchors
-    .selectAll("use")
-    .data(capitals.filter(c => c.port))
-    .enter()
-    .append("use")
-    .attr("xlink:href", "#icon-anchor")
-    .attr("data-id", d => d.i)
-    .attr("x", d => rn(d.x - capitalAnchorsSize * 0.47, 2))
-    .attr("y", d => rn(d.y - capitalAnchorsSize * 0.47, 2))
-    .attr("width", capitalAnchorsSize)
-    .attr("height", capitalAnchorsSize);
+    const icon = g.attr("data-icon") || "#icon-circle";
+    g.selectAll("use")
+      .data(burgsInGroup)
+      .enter()
+      .append("use")
+      .attr("href", icon)
+      .attr("id", d => "burg" + d.i)
+      .attr("data-id", d => d.i)
+      .attr("x", d => d.x)
+      .attr("y", d => d.y);
 
-  // towns
-  const towns = pack.burgs.filter(b => b.i && !b.capital && !b.removed);
-  const townIcons = burgIcons.select("#towns");
-  const townIcon = townIcons.attr("data-icon") || "#icon-circle";
-  const townsAnchors = anchors.selectAll("#towns");
-  const townsAnchorsSize = townsAnchors.attr("size") || 1;
-
-  townIcons
-    .selectAll("use")
-    .data(towns)
-    .enter()
-    .append("use")
-    .attr("id", d => "burg" + d.i)
-    .attr("href", townIcon)
-    .attr("data-id", d => d.i)
-    .attr("x", d => d.x)
-    .attr("y", d => d.y);
-
-  townsAnchors
-    .selectAll("use")
-    .data(towns.filter(c => c.port))
-    .enter()
-    .append("use")
-    .attr("xlink:href", "#icon-anchor")
-    .attr("data-id", d => d.i)
-    .attr("x", d => rn(d.x - townsAnchorsSize * 0.47, 2))
-    .attr("y", d => rn(d.y - townsAnchorsSize * 0.47, 2))
-    .attr("width", townsAnchorsSize)
-    .attr("height", townsAnchorsSize);
+    // capitalAnchors
+    //   .selectAll("use")
+    //   .data(capitals.filter(c => c.port))
+    //   .enter()
+    //   .append("use")
+    //   .attr("xlink:href", "#icon-anchor")
+    //   .attr("data-id", d => d.i)
+    //   .attr("x", d => rn(d.x - capitalAnchorsSize * 0.47, 2))
+    //   .attr("y", d => rn(d.y - capitalAnchorsSize * 0.47, 2))
+    //   .attr("width", capitalAnchorsSize)
+    //   .attr("height", capitalAnchorsSize);
+  }
 
   TIME && console.timeEnd("drawBurgIcons");
+}
+
+function drawBurgIcon(burg) {
+  burgIcons
+    .select("#" + burg.group)
+    .append("use")
+    .attr("href", "#icon-circle")
+    .attr("id", "burg" + burg.i)
+    .attr("data-id", burg.i)
+    .attr("x", burg.x)
+    .attr("y", burg.y);
 }

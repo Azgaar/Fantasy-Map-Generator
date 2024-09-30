@@ -1184,7 +1184,7 @@ function addState() {
   if (burg && burgs[burg].capital)
     return tip("Existing capital cannot be selected as a new state capital! Select other cell", false, "error");
 
-  if (!burg) burg = addBurg(point); // add new burg
+  if (!burg) burg = Burgs.add(point);
 
   const oldState = cells.state[center];
   const newState = states.length;

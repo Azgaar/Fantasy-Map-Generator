@@ -17,6 +17,7 @@ window.Burgs = (() => {
     let quadtree = d3.quadtree();
     generateCapitals();
     generateTowns();
+    shiftBurgs();
 
     pack.burgs = burgs;
     TIME && console.timeEnd("generateBurgs");
@@ -108,136 +109,92 @@ window.Burgs = (() => {
         spacing *= 0.5;
       }
     }
+
+    // define port status and shift ports and burgs on rivers
+    function shiftBurgs() {
+      const {cells, features} = pack;
+      const temp = grid.cells.temp;
+
+      // port is a capital with any harbor OR any burg with a safe harbor
+      const featurePorts = {};
+      for (const burg of burgs) {
+        if (!burg.i || burg.lock) continue;
+        const i = burg.cell;
+
+        const haven = cells.haven[i];
+        const harbor = cells.harbor[i];
+
+        if (haven !== undefined && temp[cells.g[i]] > 0) {
+          const featureId = cells.f[haven];
+          const canBePort = features[featureId].cells > 1 && ((burg.capital && harbor) || harbor === 1);
+          if (canBePort) {
+            if (!featurePorts[featureId]) featurePorts[featureId] = [];
+            featurePorts[featureId].push(burg);
+          }
+        }
+      }
+
+      // shift ports to the edge of the water body. Only bodies with 2+ ports are considered
+      Object.entries(featurePorts).forEach(([featureId, burgs]) => {
+        if (burgs.length < 2) return;
+        burgs.forEach(burg => {
+          burg.port = featureId;
+          const haven = cells.haven[burg.cell];
+          const [x, y] = getCloseToEdgePoint(burg.cell, haven);
+          burg.x = x;
+          burg.y = y;
+        });
+      });
+
+      // shift non-port river burgs a bit
+      for (const burg of burgs) {
+        if (!burg.i || burg.lock || burg.port || !cells.r[burg.cell]) continue;
+        const cellId = burg.cell;
+        const shift = Math.min(cells.fl[cellId] / 150, 1);
+        burg.x = cellId % 2 ? rn(burg.x + shift, 2) : rn(burg.x - shift, 2);
+        burg.y = cells.r[cellId] % 2 ? rn(burg.y + shift, 2) : rn(burg.y - shift, 2);
+      }
+
+      function getCloseToEdgePoint(cell1, cell2) {
+        const {cells, vertices} = pack;
+
+        const [x0, y0] = cells.p[cell1];
+        const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
+        const [x1, y1] = vertices.p[commonVertices[0]];
+        const [x2, y2] = vertices.p[commonVertices[1]];
+        const xEdge = (x1 + x2) / 2;
+        const yEdge = (y1 + y2) / 2;
+
+        const x = rn(x0 + 0.95 * (xEdge - x0), 2);
+        const y = rn(y0 + 0.95 * (yEdge - y0), 2);
+
+        return [x, y];
+      }
+    }
   };
 
-  const getDefaultGroups = () => [
-    {name: "capitals", active: true, features: {capital: true}, preview: "watabou-city-generator"},
-    {name: "cities", active: true, percentile: 90, preview: "watabou-city-generator"},
-    {
-      name: "forts",
-      active: true,
-      features: {citadel: true, walls: false, plaza: false, port: false},
-      population: [0, 1],
-      preview: null
-    },
-    {
-      name: "monasteries",
-      active: true,
-      features: {temple: true, walls: false, plaza: false, port: false},
-      population: [0, 1],
-      preview: null
-    },
-    {
-      name: "caravanserais",
-      active: true,
-      features: {port: false},
-      population: [0, 1],
-      biomes: [1, 2, 3],
-      preview: null
-    },
-    {
-      name: "trading posts",
-      active: true,
-      features: {plaza: true},
-      population: [0, 1],
-      biomes: [1, 2, 3],
-      preview: null
-    },
-    {name: "villages", active: true, population: [0.1, 2], preview: "watabou-village-generator"},
-    {
-      name: "hamlets",
-      active: true,
-      features: {plaza: true, walls: false, plaza: false},
-      population: [0, 0.1],
-      preview: "watabou-village-generator"
-    },
-    {name: "towns", active: true, isDefault: true, preview: "watabou-city-generator"}
-  ];
-
-  // define burg coordinates, coa, port status and define details
-  const specifyBurgs = () => {
+  const specify = () => {
     TIME && console.time("specifyBurgs");
-    const {cells, features} = pack;
-    const temp = grid.cells.temp;
 
-    for (const burg of pack.burgs) {
-      if (!burg.i || burg.lock) continue;
-      const i = burg.cell;
+    pack.burgs.forEach(burg => {
+      if (!burg.i || burg.removed || burg.lock) return;
+      definePopulation(burg);
+      defineEmblem(burg);
+      defineFeatures(burg);
+    });
 
-      // asign port status to some coastline burgs with temp > 0 °C
-      const haven = cells.haven[i];
-      if (haven && temp[cells.g[i]] > 0) {
-        const f = cells.f[haven]; // water body id
-        // port is a capital with any harbor OR town with good harbor
-        const port = features[f].cells > 1 && ((burg.capital && cells.harbor[i]) || cells.harbor[i] === 1);
-        burg.port = port ? f : 0; // port is defined by water body id it lays on
-      } else burg.port = 0;
+    const populations = pack.burgs
+      .filter(b => b.i && !b.removed)
+      .map(b => b.population)
+      .sort((a, b) => a - b); // ascending
 
-      // define burg population (keep urbanization at about 10% rate)
-      burg.population = rn(Math.max(cells.s[i] / 8 + burg.i / 1000 + (i % 100) / 1000, 0.1), 3);
-      if (burg.capital) burg.population = rn(burg.population * 1.3, 3); // increase capital population
-
-      if (burg.port) {
-        burg.population = burg.population * 1.3; // increase port population
-        const [x, y] = getCloseToEdgePoint(i, haven);
-        burg.x = x;
-        burg.y = y;
-      }
-
-      // add random factor
-      burg.population = rn(burg.population * gauss(2, 3, 0.6, 20, 3), 3);
-
-      // shift burgs on rivers semi-randomly and just a bit
-      if (!burg.port && cells.r[i]) {
-        const shift = Math.min(cells.fl[i] / 150, 1);
-        if (i % 2) burg.x = rn(burg.x + shift, 2);
-        else burg.x = rn(burg.x - shift, 2);
-        if (cells.r[i] % 2) burg.y = rn(burg.y + shift, 2);
-        else burg.y = rn(burg.y - shift, 2);
-      }
-
-      // define emblem
-      const state = pack.states[burg.state];
-      const stateCOA = state.coa;
-      let kinship = 0.25;
-      if (burg.capital) kinship += 0.1;
-      else if (burg.port) kinship -= 0.1;
-      if (burg.culture !== state.culture) kinship -= 0.25;
-      burg.type = getType(i, burg.port);
-      const type = burg.capital && P(0.2) ? "Capital" : burg.type === "Generic" ? "City" : burg.type;
-      burg.coa = COA.generate(stateCOA, kinship, null, type);
-      burg.coa.shield = COA.getShield(burg.culture, burg.state);
-    }
-
-    // de-assign port status if it's the only one on feature
-    const ports = pack.burgs.filter(b => !b.removed && b.port > 0);
-    for (const f of features) {
-      if (!f.i || f.land || f.border) continue;
-      const featurePorts = ports.filter(b => b.port === f.i);
-      if (featurePorts.length === 1) featurePorts[0].port = 0;
-    }
-
-    pack.burgs.filter(b => b.i && !b.removed && !b.lock).forEach(defineBurgFeatures);
+    pack.burgs.forEach(burg => {
+      if (!burg.i || burg.removed || burg.lock) return;
+      defineGroup(burg, populations);
+    });
 
     TIME && console.timeEnd("specifyBurgs");
   };
-
-  function getCloseToEdgePoint(cell1, cell2) {
-    const {cells, vertices} = pack;
-
-    const [x0, y0] = cells.p[cell1];
-
-    const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
-    const [x1, y1] = vertices.p[commonVertices[0]];
-    const [x2, y2] = vertices.p[commonVertices[1]];
-    const xEdge = (x1 + x2) / 2;
-    const yEdge = (y1 + y2) / 2;
-
-    const x = rn(x0 + 0.95 * (xEdge - x0), 2);
-    const y = rn(y0 + 0.95 * (yEdge - y0), 2);
-
-    return [x, y];
-  }
 
   const getType = (cellId, port) => {
     const {cells, features} = pack;
@@ -261,19 +218,180 @@ window.Burgs = (() => {
     return "Generic";
   };
 
-  const defineBurgFeatures = burg => {
-    const {cells, states} = pack;
+  function definePopulation(burg) {
+    const cellId = burg.cell;
+    let population = pack.cells.s[cellId] / 5;
+    if (burg.capital) population *= 1.5;
+    const connectivityRate = Routes.getConnectivityRate(cellId);
+    if (connectivityRate) population *= connectivityRate;
+    population *= gauss(1, 1, 0.25, 4, 5); // randomize
+    population += ((burg.i % 100) - (cellId % 100)) / 1000; // unround
+    burg.population = rn(Math.max(population, 0.01), 3);
+  }
+
+  function defineEmblem(burg) {
+    burg.type = getType(burg.cell, burg.port);
+
+    const state = pack.states[burg.state];
+    const stateCOA = state.coa;
+
+    let kinship = 0.25;
+    if (burg.capital) kinship += 0.1;
+    else if (burg.port) kinship -= 0.1;
+    if (burg.culture !== state.culture) kinship -= 0.25;
+
+    const type = burg.capital && P(0.2) ? "Capital" : burg.type === "Generic" ? "City" : burg.type;
+    burg.coa = COA.generate(stateCOA, kinship, null, type);
+    burg.coa.shield = COA.getShield(burg.culture, burg.state);
+  }
+
+  function defineFeatures(burg) {
     const pop = burg.population;
     burg.citadel = Number(burg.capital || (pop > 50 && P(0.75)) || (pop > 15 && P(0.5)) || P(0.1));
-    burg.plaza = Number(pop > 20 || (pop > 10 && P(0.8)) || (pop > 4 && P(0.7)) || P(0.6));
+    burg.plaza = Number(
+      Routes.isCrossroad(burg.cell) || (Routes.hasRoad(burg.cell) && P(0.7)) || pop > 20 || (pop > 10 && P(0.8))
+    );
     burg.walls = Number(burg.capital || pop > 30 || (pop > 20 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.1));
     burg.shanty = Number(pop > 60 || (pop > 40 && P(0.75)) || (pop > 20 && burg.walls && P(0.4)));
-    const religion = cells.religion[burg.cell];
-    const theocracy = states[burg.state].form === "Theocracy";
+    const religion = pack.cells.religion[burg.cell];
+    const theocracy = pack.states[burg.state].form === "Theocracy";
     burg.temple = Number(
       (religion && theocracy && P(0.5)) || pop > 50 || (pop > 35 && P(0.75)) || (pop > 20 && P(0.5))
     );
-  };
+  }
 
-  return {generate, getDefaultGroups, specifyBurgs, getType, defineBurgFeatures};
+  const getDefaultGroups = () => [
+    {name: "capitals", active: true, features: {capital: true}, preview: "watabou-city-generator"},
+    {name: "cities", active: true, percentile: 90, population: [5, Infinity], preview: "watabou-city-generator"},
+    {
+      name: "forts",
+      active: true,
+      features: {citadel: true, walls: false, plaza: false, port: false},
+      population: [0, 1],
+      preview: null
+    },
+    {
+      name: "monasteries",
+      active: true,
+      features: {temple: true, walls: false, plaza: false, port: false},
+      population: [0, 0.8],
+      preview: null
+    },
+    {
+      name: "caravanserais",
+      active: true,
+      features: {port: false, plaza: true},
+      population: [0, 0.8],
+      biomes: [1, 2, 3],
+      preview: null
+    },
+    {
+      name: "trading_posts",
+      active: true,
+      features: {plaza: true},
+      population: [0, 0.8],
+      biomes: [5, 6, 7, 8, 9, 10, 11, 12],
+      preview: null
+    },
+    {
+      name: "villages",
+      active: true,
+      population: [0.1, 2],
+      features: {walls: false},
+      preview: "watabou-village-generator"
+    },
+    {
+      name: "hamlets",
+      active: true,
+      features: {walls: false, plaza: false},
+      population: [0, 0.1],
+      preview: "watabou-village-generator"
+    },
+    {name: "towns", active: true, isDefault: true, preview: "watabou-city-generator"}
+  ];
+
+  function defineGroup(burg, populations) {
+    for (const group of options.burgs.groups) {
+      if (!group.active) continue;
+
+      if (group.population) {
+        const [min, max] = group.population;
+        const isFit = burg.population >= min && burg.population <= max;
+        if (!isFit) continue;
+      }
+
+      if (group.features) {
+        const isFit = Object.entries(group.features).every(([feature, value]) => Boolean(burg[feature]) === value);
+        if (!isFit) continue;
+      }
+
+      if (group.biomes) {
+        const isFit = group.biomes.includes(pack.cells.biome[burg.cell]);
+        if (!isFit) continue;
+      }
+
+      if (group.percentile) {
+        const index = populations.indexOf(burg.population);
+        const isFit = index >= Math.floor((populations.length * group.percentile) / 100);
+        if (!isFit) continue;
+      }
+
+      // apply fitting or default group
+      burg.group = group.name;
+      return;
+    }
+  }
+
+  function add([x, y]) {
+    const {cells} = pack;
+
+    const burgId = pack.burgs.length;
+    const cellId = findCell(x, y);
+    const culture = cells.culture[cellId];
+    const name = Names.getCulture(culture);
+    const state = cells.state[cellId];
+    const feature = cells.f[cellId];
+
+    const burg = {
+      cell: cellId,
+      x,
+      y,
+      i: burgId,
+      state,
+      culture,
+      name,
+      feature,
+      capital: 0,
+      port: 0
+    };
+    definePopulation(burg);
+    defineEmblem(burg);
+    defineFeatures(burg);
+
+    const populations = pack.burgs
+      .filter(b => b.i && !b.removed)
+      .map(b => b.population)
+      .sort((a, b) => a - b); // ascending
+    defineGroup(burg, populations);
+
+    pack.burgs.push(burg);
+    cells.burg[cellId] = burgId;
+
+    const newRoute = Routes.connect(cellId);
+    if (newRoute && layerIsOn("toggleRoutes")) {
+      const path = Routes.getPath(newRoute);
+      routes
+        .select("#" + newRoute.group)
+        .append("path")
+        .attr("d", path)
+        .attr("id", "route" + newRoute.i);
+    }
+
+    drawBurgIcon(burg);
+    drawBurgLabel(burg);
+
+    return burgId;
+  }
+
+  return {generate, getDefaultGroups, specify, getType, add};
 })();

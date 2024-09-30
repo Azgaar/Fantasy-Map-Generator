@@ -968,8 +968,9 @@ export function resolveVersionConflicts(mapVersion) {
     // v1.106.0 change burg groups and added customizable icons
     icons.selectAll("circle, use").remove();
 
+    const groups = Array.from(document.querySelectorAll("#burgIcons > g")).map(g => g.id);
     options.burgs = {
-      groups: Burgs.getDefaultGroups()
+      groups: groups.map(name => ({name, active: true, preview: null}))
     };
   }
 }
