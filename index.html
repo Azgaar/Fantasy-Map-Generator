@@ -3361,6 +3361,16 @@
                 ></span>
               </div>
 
+              <div data-tip="Select burg group. Groups defines burg icon, label size and style">
+                <div class="label">Group:</div>
+                <select id="burgGroup" style="width: 9em"></select>
+                <span
+                id="burgGroupEdit"
+                data-tip="Edit burg groups"
+                class="icon-pencil pointer"
+              ></span>
+              </div>
+
               <div data-tip="Select burg type. Type slightly affects emblem generation">
                 <div class="label">Type:</div>
                 <select id="burgType" style="width: 9em">
@@ -3475,20 +3485,6 @@
         </div>
 
         <div id="burgBottom">
-          <button id="burgGroupShow" data-tip="Show group change section" class="icon-tags"></button>
-          <div id="burgGroupSection" style="display: none">
-            <button id="burgGroupHide" data-tip="Hide group change section" class="icon-tags"></button>
-            <select id="burgSelectGroup" data-tip="Select a group for this burg" style="width: 10em"></select>
-            <input
-              id="burgInputGroup"
-              placeholder="new group name"
-              data-tip="Create a new Group for the Burg"
-              style="display: none; width: 10em"
-            />
-            <i id="burgAddGroup" data-tip="Create a new group for the burg" class="icon-plus pointer"></i>
-            <i id="burgRemoveGroup" data-tip="Remove selected burg group" class="icon-trash pointer"></i>
-          </div>
-
           <button id="burgStyleShow" data-tip="Show style edit section" class="icon-brush"></button>
           <div id="burgStyleSection" style="display: none">
             <button id="burgStyleHide" data-tip="Hide style edit section" class="icon-brush"></button>
@@ -5280,7 +5276,7 @@
       </div>
 
       <div id="burgsOverview" class="dialog stable" style="display: none">
-        <div id="burgsHeader" class="header" style="grid-template-columns: 8em 6em 6em 6em 8em 6em">
+        <div id="burgsHeader" class="header" style="grid-template-columns: 9em 7em 7em 7em 7em 7em 6em">
           <div data-tip="Click to sort by burg name" class="sortable alphabetically" data-sortby="name">Burg</div>
           <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">
             Province
@@ -5288,6 +5284,9 @@
           <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State</div>
           <div data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">
             Culture
+          </div>
+          <div data-tip="Click to sort by culture group" class="sortable alphabetically" data-sortby="group">
+            Group
           </div>
           <div
             data-tip="Click to sort by burg population"
@@ -8139,6 +8138,7 @@
     <script defer src="modules/ui/rivers-creator.js?v=1.99.00"></script>
     <script defer src="modules/ui/relief-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/burg-editor.js?v=1.102.00"></script>
+    <script defer src="modules/ui/burg-group-editor.js?v=1.106.0"></script>
     <script defer src="modules/ui/units-editor.js?v=1.104.0"></script>
     <script defer src="modules/ui/notes-editor.js?v=1.99.06"></script>
     <script defer src="modules/ui/ai-generator.js?v=1.99.09"></script>

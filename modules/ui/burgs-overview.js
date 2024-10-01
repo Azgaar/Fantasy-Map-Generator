@@ -24,7 +24,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
 
   // add listeners
   byId("burgsOverviewRefresh").addEventListener("click", refreshBurgsEditor);
-  byId("burgsGroupsEditorButton").addEventListener("click", openBurgGroupsEditor);
+  byId("burgsGroupsEditorButton").addEventListener("click", editBurgGroups);
   byId("burgsChart").addEventListener("click", showBurgsChart);
   byId("burgsFilterState").addEventListener("change", burgsOverviewAddLines);
   byId("burgsFilterCulture").addEventListener("change", burgsOverviewAddLines);
@@ -89,29 +89,24 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
         data-state="${state}"
         data-province="${province}"
         data-culture="${culture}"
+        data-group="${b.group}"
         data-population=${population}
         data-features="${features}"
       >
         <span data-tip="Click to zoom into view" class="icon-dot-circled pointer"></span>
-        <input data-tip="Burg name. Click and type to change" class="burgName" value="${
-          b.name
-        }" autocorrect="off" spellcheck="false" />
-        <input data-tip="Burg province" class="burgState" value="${province}" disabled />
-        <input data-tip="Burg state" class="burgState" value="${state}" disabled />
-        <select data-tip="Dominant culture. Click to change burg culture (to change cell culture use Cultures Editor)" class="stateCulture">
-          ${getCultureOptions(b.culture)}
-        </select>
+        <input data-tip="Burg name" class="burgName" value="${b.name}" disabled />
+        <input data-tip="Burg province" value="${province}" disabled />
+        <input data-tip="Burg state" value="${state}" disabled />
+        <input data-tip="Dominant culture" value="${culture}" disabled />
+        <input data-tip="Burg group" value="${b.group}" disabled />
         <span data-tip="Burg population" class="icon-male"></span>
-        <input data-tip="Burg population. Type to change" value=${si(
-          population
-        )} class="burgPopulation" style="width: 5em" />
+        <input data-tip="Burg population" value=${si(population)} style="width: 5em" disabled />
         <div style="width: 3em">
           <span
-            data-tip="${b.capital ? " This burg is a state capital" : "Click to assign a capital status"}"
-            class="icon-star-empty${b.capital ? "" : " inactive pointer"}" style="padding: 0 1px;"></span>
-          <span data-tip="Click to toggle port status" class="icon-anchor pointer${
-            b.port ? "" : " inactive"
-          }" style="font-size: .9em; padding: 0 1px;"></span>
+            data-tip="${b.capital ? " This burg is a state capital" : "This burg is a NOT state capital"}"
+            class="icon-star-empty${b.capital ? "" : " inactive"}" style="padding: 0 1px;"></span>
+          <span data-tip="${b.port ? " This burg is a port" : "This burg is NOT a port"}"
+          class="icon-anchor${b.port ? "" : " inactive"}" style="font-size: .9em; padding: 0 1px;"></span>
         </div>
         <span data-tip="Edit burg" class="icon-pencil"></span>
         <span class="locks pointer ${
@@ -130,16 +125,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     // add listeners
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => burgHighlightOn(ev)));
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => burgHighlightOff(ev)));
-    body.querySelectorAll("div > input.burgName").forEach(el => el.addEventListener("input", changeBurgName));
     body.querySelectorAll("div > span.icon-dot-circled").forEach(el => el.addEventListener("click", zoomIntoBurg));
-    body.querySelectorAll("div > select.stateCulture").forEach(el => el.addEventListener("change", changeBurgCulture));
-    body
-      .querySelectorAll("div > input.burgPopulation")
-      .forEach(el => el.addEventListener("change", changeBurgPopulation));
-    body
-      .querySelectorAll("div > span.icon-star-empty")
-      .forEach(el => el.addEventListener("click", toggleCapitalStatus));
-    body.querySelectorAll("div > span.icon-anchor").forEach(el => el.addEventListener("click", togglePortStatus));
     body.querySelectorAll("div > span.locks").forEach(el => el.addEventListener("click", toggleBurgLockStatus));
     body.querySelectorAll("div > span.icon-pencil").forEach(el => el.addEventListener("click", openBurgEditor));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", triggerBurgRemove));
@@ -165,57 +151,12 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     burgLabels.selectAll("text.drag").classed("drag", false);
   }
 
-  function changeBurgName() {
-    if (this.value == "") tip("Please provide a name", false, "error");
-    const burg = +this.parentNode.dataset.id;
-    pack.burgs[burg].name = this.value;
-    this.parentNode.dataset.name = this.value;
-    const label = document.querySelector("#burgLabels [data-id='" + burg + "']");
-    if (label) label.innerHTML = this.value;
-  }
-
   function zoomIntoBurg() {
     const burg = +this.parentNode.dataset.id;
     const label = document.querySelector("#burgLabels [data-id='" + burg + "']");
     const x = +label.getAttribute("x");
     const y = +label.getAttribute("y");
     zoomTo(x, y, 8, 2000);
-  }
-
-  function changeBurgCulture() {
-    const burg = +this.parentNode.dataset.id;
-    const v = +this.value;
-    pack.burgs[burg].culture = v;
-    this.parentNode.dataset.culture = pack.cultures[v].name;
-  }
-
-  function changeBurgPopulation() {
-    const burg = +this.parentNode.dataset.id;
-    if (this.value == "" || isNaN(+this.value)) {
-      tip("Please provide an integer number (like 10000, not 10K)", false, "error");
-      this.value = si(pack.burgs[burg].population * populationRate * urbanization);
-      return;
-    }
-    pack.burgs[burg].population = this.value / populationRate / urbanization;
-    this.parentNode.dataset.population = this.value;
-    this.value = si(this.value);
-
-    const population = [];
-    body.querySelectorAll(":scope > div").forEach(el => population.push(+getInteger(el.dataset.population)));
-    burgsFooterPopulation.innerHTML = si(d3.mean(population));
-  }
-
-  function toggleCapitalStatus() {
-    const burg = +this.parentNode.parentNode.dataset.id;
-    toggleCapital(burg);
-    burgsOverviewAddLines();
-  }
-
-  function togglePortStatus() {
-    const burg = +this.parentNode.parentNode.dataset.id;
-    togglePort(burg);
-    if (this.classList.contains("inactive")) this.classList.remove("inactive");
-    else this.classList.add("inactive");
   }
 
   function toggleBurgLockStatus() {
@@ -301,30 +242,6 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     clearMainTip();
     if (addBurgTool.classList.contains("pressed")) addBurgTool.classList.remove("pressed");
     if (addNewBurg.classList.contains("pressed")) addNewBurg.classList.remove("pressed");
-  }
-
-  function openBurgGroupsEditor() {
-    $("#burgGroupsEditor").dialog({
-      title: "Edit Burgs Groups",
-      resizable: false,
-      position: {my: "center", at: "center", of: "svg"},
-      buttons: {
-        Apply: applyMilitaryOptions,
-        Restore: restoreDefaultUnits,
-        Cancel: function () {
-          $(this).dialog("close");
-        }
-      },
-      open: function () {
-        const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button");
-        buttons[0].addEventListener("mousemove", () =>
-          tip("Apply military units settings. <span style='color:#cb5858'>All forces will be recalculated!</span>")
-        );
-        buttons[1].addEventListener("mousemove", () => tip("Add new military unit to the table"));
-        buttons[2].addEventListener("mousemove", () => tip("Restore default military units and settings"));
-        buttons[3].addEventListener("mousemove", () => tip("Close the window without saving the changes"));
-      }
-    });
   }
 
   function showBurgsChart() {
@@ -506,7 +423,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   }
 
   function downloadBurgsData() {
-    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,City Generator Link\n`; // headers
+    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,City Generator Link\n`; // headers
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
@@ -519,6 +436,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
       data += pack.states[b.state].fullName + ",";
       data += pack.cultures[b.culture].name + ",";
       data += pack.religions[pack.cells.religion[b.cell]].name + ",";
+      data += b.group + ",";
       data += rn(b.population * populationRate * urbanization) + ",";
 
       // add geography data
@@ -633,7 +551,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     const activeBurgs = pack.burgs.filter(b => b.i && !b.removed);
     const allLocked = activeBurgs.every(burg => burg.lock);
 
-    pack.burgs.forEach(burg => {
+    activeBurgs.forEach(burg => {
       burg.lock = !allLocked;
     });
 

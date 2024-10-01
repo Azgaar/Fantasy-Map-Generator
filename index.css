@@ -1505,12 +1505,6 @@ div.states > select {
   appearance: none;
 }
 
-div.states > .burgName,
-div.states > .burgState,
-div.states > .burgCulture {
-  width: 6em;
-}
-
 div.states span.inactive {
   color: #c6c2c2;
 }

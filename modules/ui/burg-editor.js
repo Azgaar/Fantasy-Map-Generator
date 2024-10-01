@@ -8,6 +8,7 @@ function editBurg(id) {
   const burg = id || d3.event.target.dataset.id;
   elSelected = burgLabels.select("[data-id='" + burg + "']");
   burgLabels.selectAll("text").call(d3.drag().on("start", dragBurgLabel)).classed("draggable", true);
+  updateGroupsList();
   updateBurgValues();
 
   $("#burgEditor").dialog({
@@ -21,38 +22,40 @@ function editBurg(id) {
   modules.editBurg = true;
 
   // add listeners
-  byId("burgGroupShow").addEventListener("click", showGroupSection);
-  byId("burgGroupHide").addEventListener("click", hideGroupSection);
-  byId("burgSelectGroup").addEventListener("change", changeGroup);
-  byId("burgInputGroup").addEventListener("change", createNewGroup);
-  byId("burgAddGroup").addEventListener("click", toggleNewGroupInput);
-  byId("burgRemoveGroup").addEventListener("click", removeBurgsGroup);
+  byId("burgName").on("input", changeName);
+  byId("burgNameReRandom").on("click", generateNameRandom);
+  byId("burgGroup").on("change", changeGroup);
+  byId("burgGroupEdit").on("change", editBurgGroups);
+  byId("burgType").on("change", changeType);
+  byId("burgCulture").on("change", changeCulture);
+  byId("burgNameReCulture").on("click", generateNameCulture);
+  byId("burgPopulation").on("change", changePopulation);
+  burgBody.querySelectorAll(".burgFeature").forEach(el => el.on("click", toggleFeature));
+  byId("burgLinkOpen").on("click", openBurgLink);
+  byId("burgLinkEdit").on("click", changeBurgLink);
 
-  byId("burgName").addEventListener("input", changeName);
-  byId("burgNameReRandom").addEventListener("click", generateNameRandom);
-  byId("burgType").addEventListener("input", changeType);
-  byId("burgCulture").addEventListener("input", changeCulture);
-  byId("burgNameReCulture").addEventListener("click", generateNameCulture);
-  byId("burgPopulation").addEventListener("change", changePopulation);
-  burgBody.querySelectorAll(".burgFeature").forEach(el => el.addEventListener("click", toggleFeature));
-  byId("burgLinkOpen").addEventListener("click", openBurgLink);
-  byId("burgLinkEdit").addEventListener("click", changeBurgLink);
+  byId("burgStyleShow").on("click", showStyleSection);
+  byId("burgStyleHide").on("click", hideStyleSection);
+  byId("burgEditLabelStyle").on("click", editGroupLabelStyle);
+  byId("burgEditIconStyle").on("click", editGroupIconStyle);
+  byId("burgEditAnchorStyle").on("click", editGroupAnchorStyle);
 
-  byId("burgStyleShow").addEventListener("click", showStyleSection);
-  byId("burgStyleHide").addEventListener("click", hideStyleSection);
-  byId("burgEditLabelStyle").addEventListener("click", editGroupLabelStyle);
-  byId("burgEditIconStyle").addEventListener("click", editGroupIconStyle);
-  byId("burgEditAnchorStyle").addEventListener("click", editGroupAnchorStyle);
+  byId("burgEmblem").on("click", openEmblemEdit);
+  byId("burgTogglePreview").on("click", toggleBurgPreview);
+  byId("burgEditEmblem").on("click", openEmblemEdit);
+  byId("burgLocate").on("click", zoomIntoBurg);
+  byId("burgRelocate").on("click", toggleRelocateBurg);
+  byId("burglLegend").on("click", editBurgLegend);
+  byId("burgLock").on("click", toggleBurgLockButton);
+  byId("burgRemove").on("click", removeSelectedBurg);
+  byId("burgTemperatureGraph").on("click", showTemperatureGraph);
 
-  byId("burgEmblem").addEventListener("click", openEmblemEdit);
-  byId("burgTogglePreview").addEventListener("click", toggleBurgPreview);
-  byId("burgEditEmblem").addEventListener("click", openEmblemEdit);
-  byId("burgLocate").addEventListener("click", zoomIntoBurg);
-  byId("burgRelocate").addEventListener("click", toggleRelocateBurg);
-  byId("burglLegend").addEventListener("click", editBurgLegend);
-  byId("burgLock").addEventListener("click", toggleBurgLockButton);
-  byId("burgRemove").addEventListener("click", removeSelectedBurg);
-  byId("burgTemperatureGraph").addEventListener("click", showTemperatureGraph);
+  function updateGroupsList() {
+    byId("burgGroup").options.length = 0; // remove all options
+    for (const {name} of options.burgs.groups) {
+      byId("burgGroup").options.add(new Option(name, name));
+    }
+  }
 
   function updateBurgValues() {
     const id = +elSelected.attr("data-id");
@@ -63,6 +66,7 @@ function editBurg(id) {
     byId("burgProvinceAndState").innerHTML = provinceName + stateName;
 
     byId("burgName").value = b.name;
+    byId("burgGroup").value = b.group;
     byId("burgType").value = b.type || "Generic";
     byId("burgPopulation").value = rn(b.population * populationRate * urbanization);
     byId("burgEditAnchorStyle").style.display = +b.port ? "inline-block" : "none";
@@ -94,17 +98,7 @@ function editBurg(id) {
     if (b.shanty) byId("burgShanty").classList.remove("inactive");
     else byId("burgShanty").classList.add("inactive");
 
-    //toggle lock
     updateBurgLockIcon();
-
-    // select group
-    const group = elSelected.node().parentNode.id;
-    const select = byId("burgSelectGroup");
-    select.options.length = 0; // remove all options
-
-    burgLabels.selectAll("g").each(function () {
-      select.options.add(new Option(this.id, this.id, false, this.id === group));
-    });
 
     // set emlem image
     const coaID = "burgCOA" + id;
@@ -132,128 +126,6 @@ function editBurg(id) {
     });
   }
 
-  function showGroupSection() {
-    document.querySelectorAll("#burgBottom > button").forEach(el => (el.style.display = "none"));
-    byId("burgGroupSection").style.display = "inline-block";
-  }
-
-  function hideGroupSection() {
-    document.querySelectorAll("#burgBottom > button").forEach(el => (el.style.display = "inline-block"));
-    byId("burgGroupSection").style.display = "none";
-    byId("burgInputGroup").style.display = "none";
-    byId("burgInputGroup").value = "";
-    byId("burgSelectGroup").style.display = "inline-block";
-  }
-
-  function changeGroup() {
-    const id = +elSelected.attr("data-id");
-    moveBurgToGroup(id, this.value);
-  }
-
-  function toggleNewGroupInput() {
-    if (burgInputGroup.style.display === "none") {
-      burgInputGroup.style.display = "inline-block";
-      burgInputGroup.focus();
-      burgSelectGroup.style.display = "none";
-    } else {
-      burgInputGroup.style.display = "none";
-      burgSelectGroup.style.display = "inline-block";
-    }
-  }
-
-  function createNewGroup() {
-    if (!this.value) {
-      tip("Please provide a valid group name", false, "error");
-      return;
-    }
-    const group = this.value
-      .toLowerCase()
-      .replace(/ /g, "_")
-      .replace(/[^\w\s]/gi, "");
-
-    if (byId(group)) {
-      tip("Element with this id already exists. Please provide a unique name", false, "error");
-      return;
-    }
-
-    if (Number.isFinite(+group.charAt(0))) {
-      tip("Group name should start with a letter", false, "error");
-      return;
-    }
-
-    const id = +elSelected.attr("data-id");
-    const oldGroup = elSelected.node().parentNode.id;
-
-    const label = document.querySelector("#burgLabels [data-id='" + id + "']");
-    const icon = document.querySelector("#burgIcons [data-id='" + id + "']");
-    const anchor = document.querySelector("#anchors [data-id='" + id + "']");
-    if (!label || !icon) {
-      ERROR && console.error("Cannot find label or icon elements");
-      return;
-    }
-
-    const labelG = document.querySelector("#burgLabels > #" + oldGroup);
-    const iconG = document.querySelector("#burgIcons > #" + oldGroup);
-    const anchorG = document.querySelector("#anchors > #" + oldGroup);
-
-    // just rename if only 1 element left
-    const count = elSelected.node().parentNode.childElementCount;
-    if (oldGroup !== "cities" && oldGroup !== "towns" && count === 1) {
-      byId("burgSelectGroup").selectedOptions[0].remove();
-      byId("burgSelectGroup").options.add(new Option(group, group, false, true));
-      toggleNewGroupInput();
-      byId("burgInputGroup").value = "";
-      labelG.id = group;
-      iconG.id = group;
-      if (anchor) anchorG.id = group;
-      return;
-    }
-
-    // create new groups
-    byId("burgSelectGroup").options.add(new Option(group, group, false, true));
-    toggleNewGroupInput();
-    byId("burgInputGroup").value = "";
-
-    addBurgsGroup(group);
-    moveBurgToGroup(id, group);
-  }
-
-  function removeBurgsGroup() {
-    const group = elSelected.node().parentNode;
-    const basic = group.id === "cities" || group.id === "towns";
-
-    const burgsInGroup = [];
-    for (let i = 0; i < group.children.length; i++) {
-      burgsInGroup.push(+group.children[i].dataset.id);
-    }
-    const burgsToRemove = burgsInGroup.filter(b => !(pack.burgs[b].capital || pack.burgs[b].lock));
-    const capital = burgsToRemove.length < burgsInGroup.length;
-
-    confirmationDialog({
-      title: "Remove burg group",
-      message: `Are you sure you want to remove ${
-        basic || capital ? "all unlocked elements in the burg group" : "the entire burg group"
-      }?<br />Please note that capital or locked burgs will not be deleted. <br /><br />Burgs to be removed: ${
-        burgsToRemove.length
-      }. This action cannot be reverted`,
-      confirm: "Remove",
-      onConfirm: () => {
-        $("#burgEditor").dialog("close");
-        hideGroupSection();
-        burgsToRemove.forEach(b => removeBurg(b));
-
-        if (!basic && !capital) {
-          const labelG = document.querySelector("#burgLabels > #" + group.id);
-          const iconG = document.querySelector("#burgIcons > #" + group.id);
-          const anchorG = document.querySelector("#anchors > #" + group.id);
-          if (labelG) labelG.remove();
-          if (iconG) iconG.remove();
-          if (anchorG) anchorG.remove();
-        }
-      }
-    });
-  }
-
   function changeName() {
     const id = +elSelected.attr("data-id");
     pack.burgs[id].name = burgName.value;
@@ -264,6 +136,12 @@ function editBurg(id) {
     const base = rand(nameBases.length - 1);
     burgName.value = Names.getBase(base);
     changeName();
+  }
+
+  function changeGroup() {
+    const id = +elSelected.attr("data-id");
+    pack.burgs[id].group = this.value;
+    moveBurgToGroup(id, this.value);
   }
 
   function changeType() {
