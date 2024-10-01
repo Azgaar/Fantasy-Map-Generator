@@ -96,6 +96,7 @@ function showUploadErrorMessage(error, URL, random) {
     title: "Loading error",
     width: "32em",
     buttons: {
+      "Clear cache": () => cleanupData(),
       OK: function () {
         $(this).dialog("close");
       }
@@ -195,6 +196,7 @@ function showUploadMessage(type, mapData, mapVersion) {
   $("#alert").dialog({
     title,
     buttons: {
+      "Clear cache": () => cleanupData(),
       OK: function () {
         $(this).dialog("close");
       }
@@ -745,6 +747,7 @@ async function parseLoadedData(data, mapVersion) {
       title: "Loading error",
       maxWidth: "50em",
       buttons: {
+        "Clear cache": () => cleanupData(),
         "Select file": function () {
           $(this).dialog("close");
           mapToLoad.click();

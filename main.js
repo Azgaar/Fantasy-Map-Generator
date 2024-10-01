@@ -702,7 +702,7 @@ async function generate(options) {
       title: "Generation error",
       width: "32em",
       buttons: {
-        "Cleanup data": cleanupData,
+        "Clear cache": () => cleanupData(),
         Regenerate: function () {
           regenerateMap("generation error");
           $(this).dialog("close");
