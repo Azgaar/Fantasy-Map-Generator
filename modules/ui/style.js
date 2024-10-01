@@ -196,12 +196,26 @@ function selectStyleElement() {
   }
 
   if (styleElement === "gridOverlay") {
+    const gridCellNumbers = byId("gridCellNumbers");
     styleGrid.style.display = "block";
     styleGridType.value = el.attr("type");
     styleGridScale.value = el.attr("scale") || 1;
     styleGridShiftX.value = el.attr("dx") || 0;
     styleGridShiftY.value = el.attr("dy") || 0;
     calculateFriendlyGridSize();
+  
+    if (gridCellNumbers) {
+      gridCellNumbers.checked = el.attr("cell-numbers") === "true";
+      styleStroke.style.display = "block";
+      styleStrokeInput.value = styleStrokeOutput.value = gridOverlay.attr("data-label-style")?.match(/stroke: ([^;]+)/)?.[1] || "#000000";
+      gridCellNumbers.addEventListener("change", function() {
+        el.attr("cell-numbers", this.checked);
+        drawGrid();
+      });
+    } else {
+      console.warn("gridCellNumbers element not found");
+    }
+    
   }
 
   if (styleElement === "compass") {
@@ -528,6 +542,28 @@ styleGridShiftY.on("input", function () {
   getEl().attr("dy", this.value);
   if (layerIsOn("toggleGrid")) drawGrid();
 });
+
+styleGridNumbers.on("change", function () {
+  getEl().attr("cell-numbers", this.checked);
+  if (layerIsOn("toggleGrid")) drawGrid();
+});
+
+byId("gridCellNumbers")?.addEventListener("change", function() {
+  gridOverlay.attr("cell-numbers", this.checked);
+  updateGridCellNumbersStyle();
+  if (layerIsOn("toggleGrid")) drawGrid();
+});
+
+ById("gridCellNumbersColor").addEventListener("input", updateGridCellNumbersStyle);
+
+function updateGridCellNumbersStyle() {
+  const color = document.getElementById("gridCellNumbersColor").value;
+  
+  const style = `stroke: ${color};`;
+  gridOverlay.attr("data-label-style", style);
+  
+  if (layerIsOn("toggleGrid")) drawGrid();
+}
 
 styleRescaleMarkers.on("change", function () {
   markers.attr("rescale", +this.checked);
