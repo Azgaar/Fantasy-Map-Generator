@@ -12,7 +12,7 @@
  *
  * Example: 1.102.2 -> Major version 1, Minor version 102, Patch version 2
  */
-const VERSION = "1.105.8";
+const VERSION = "1.105.9";
 if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format or parsing function");
 
 {
@@ -58,7 +58,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
       width: "28em",
       position: {my: "center center-4em", at: "center", of: "svg"},
       buttons: {
-        "Cleanup data": () => cleanupData(),
+        "Clear cache": () => cleanupData(),
         "Don't show again": function () {
           $(this).dialog("close");
           localStorage.setItem("version", VERSION);
