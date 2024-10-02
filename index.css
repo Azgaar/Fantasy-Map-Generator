@@ -19,6 +19,11 @@ font {
   pointer-events: none;
 }
 
+form input:invalid {
+  outline: 1px solid #ed4337;
+  outline-offset: 1px;
+}
+
 input,
 select,
 button {
@@ -53,6 +58,7 @@ input:read-only {
 input[type="radio"] {
   vertical-align: bottom;
   cursor: pointer;
+  accent-color: var(--header);
 }
 
 textarea {
@@ -1889,7 +1895,8 @@ div.editorLine {
   width: 5em;
 }
 
-#militaryOptionsTable button {
+#militaryOptionsTable button,
+#burgGroupsBody button {
   width: 100%;
 }
 
@@ -1922,7 +1929,12 @@ ul.share-buttons img {
   width: 2em;
 }
 
-input[type="checkbox"] {
+input[type="checkbox"].native {
+  accent-color: var(--header);
+  cursor: pointer;
+}
+
+input[type="checkbox"]:not(.native) {
   display: none;
 }
 

@@ -3364,11 +3364,7 @@
               <div data-tip="Select burg group. Groups defines burg icon, label size and style">
                 <div class="label">Group:</div>
                 <select id="burgGroup" style="width: 9em"></select>
-                <span
-                id="burgGroupEdit"
-                data-tip="Edit burg groups"
-                class="icon-pencil pointer"
-              ></span>
+                <span id="burgGroupConfigure" data-tip="Configure burg groups" class="icon-cog pointer"></span>
               </div>
 
               <div data-tip="Select burg type. Type slightly affects emblem generation">
@@ -5344,28 +5340,43 @@
       </div>
 
       <div id="burgGroupsEditor" class="dialog stable" style="display: none">
-        <div class="table">
+        <form id="burgGroupsForm" class="table">
           <table>
+            <colgroup>
+              <col style="width: 1em" />
+              <col style="width: 6em" />
+              <col style="width: 4em" />
+              <col style="width: 4em" />
+              <col style="width: 4em" />
+              <col style="width: 5em" />
+              <col style="width: 5em" />
+              <col style="width: 5em" />
+              <col style="width: 5em" />
+              <col style="width: 5em" />
+              <col style="width: 1em" />
+              <col style="width: 1em" />
+            </colgroup>
             <thead>
               <tr>
-                <th data-tip="Unit icon">Icon</th>
-                <th data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Unit name</th>
-                <th style="width: 5em" data-tip="Select allowed biomes">Biomes</th>
-                <th style="width: 5em" data-tip="Select allowed states">States</th>
-                <th style="width: 5em" data-tip="Select allowed cultures">Cultures</th>
-                <th style="width: 5em" data-tip="Select allowed religions">Religions</th>
-                <th data-tip="Conscription percentage for rural population">Rural</th>
-                <th data-tip="Conscription percentage for urban population">Urban</th>
-                <th data-tip="Average number of people in crew (used for total personnel calculation)">Crew</th>
-                <th data-tip="Unit military power (used for battle simulation)">Power</th>
-                <th data-tip="Unit type to apply special rules on forces recalculation">Type</th>
-                <th data-tip="Check if unit is separate and can be stacked only with units of the same type">
-                  Separate
-                </th>
+                <th data-tip="Select group to be assigned if other groups are not passed">Default</th>
+                <th data-tip="Type group name">Name</th>
+                <th data-tip="Set min population constraint" colspan="2">Population</th>
+                <th data-tip="Set population percentile: 0-100, where 90 means the burg must have a population higher than 90% of all burgs">Percentile</th>
+                <th data-tip="Select allowed biomes">Biomes</th>
+                <th data-tip="Select allowed states">States</th>
+                <th data-tip="Select allowed cultures">Cultures</th>
+                <th data-tip="Select allowed religions">Religions</th>
+                <th data-tip="Select allowed features">Features</th>
+                <th data-tip="Number of burgs in group">Count</th>
+                <th data-tip="Activate/deactivate group">Active</th>
               </tr>
             </thead>
-            <tbody></tbody>
+            <tbody id="burgGroupsBody"></tbody>
           </table>
+        </form>
+        <div id="burgGroupsBottom" style="margin-top: .3em">
+          <button id="burgGroupsEditorAdd" data-tip="Create a new burgs group" class="icon-plus"></button>
+          <button id="burgGroupsEditStyle" data-tip="Open burgs Style setup menu" class="icon-brush"></button>
         </div>
       </div>
 

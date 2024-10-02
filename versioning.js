@@ -32,7 +32,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
     const patreon = "https://www.patreon.com/azgaar";
 
     alertMessage.innerHTML = /* html */ `The Fantasy Map Generator is updated up to version <strong>${VERSION}</strong>. This version is compatible with <a href="${changelog}" target="_blank">previous versions</a>, loaded save files will be auto-updated.
-      ${storedVersion ? "<span>Click on OK and then reload the page to fetch fresh code.</span>" : ""}
+      ${storedVersion ? "<span>In case of errors reload the page to update the code.</span>" : ""}
 
       <ul>
         <strong>Latest changes:</strong>

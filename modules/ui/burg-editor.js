@@ -25,7 +25,7 @@ function editBurg(id) {
   byId("burgName").on("input", changeName);
   byId("burgNameReRandom").on("click", generateNameRandom);
   byId("burgGroup").on("change", changeGroup);
-  byId("burgGroupEdit").on("change", editBurgGroups);
+  byId("burgGroupConfigure").on("click", editBurgGroups);
   byId("burgType").on("change", changeType);
   byId("burgCulture").on("change", changeCulture);
   byId("burgNameReCulture").on("click", generateNameCulture);

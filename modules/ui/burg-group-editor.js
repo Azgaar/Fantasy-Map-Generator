@@ -2,42 +2,57 @@
 
 function editBurgGroups() {
   if (customization) return;
-  if (!layerIsOn("toggleBurgs")) toggleBurgs();
-
   addLines();
 
   $("#burgGroupsEditor").dialog({
-    title: "Edit Burg groups",
+    title: "Configure Burg groups",
     resizable: false,
-    position: {my: "left top", at: "left+10 top+140", of: "#map"}
+    position: {my: "center", at: "center", of: "svg"},
+    buttons: {
+      Apply: () => byId("burgGroupsForm").requestSubmit(),
+      Cancel: function () {
+        $(this).dialog("close");
+      }
+    }
   });
 
   if (modules.editBurgGroups) return;
   modules.editBurgGroups = true;
 
   // add listeners
-  byId("burgGroupsEditorAdd").addEventListener("click", addGroup);
-  byId("burgGroupsEditorBody").on("click", ev => {
+  byId("burgGroupsForm").on("submit", submitForm);
+  byId("burgGroupsForm").on("change", validateForm);
+  byId("burgGroupsEditorAdd").on("click", addGroup);
+  byId("burgGroupsEditStyle").on("click", () => editStyle("burgIcons"));
+  byId("burgGroupsBody").on("click", ev => {
     const group = ev.target.closest(".states")?.dataset.id;
     if (ev.target.classList.contains("editStyle")) editStyle("burgs", group);
     else if (ev.target.classList.contains("removeGroup")) removeGroup(group);
   });
 
   function addLines() {
-    byId("burgGroupsEditorBody").innerHTML = "";
+    byId("burgGroupsBody").innerHTML = "";
 
-    const lines = Array.from(burgs.selectAll("g")._groups[0]).map(el => {
-      const count = el.children.length;
-      return /* html */ `<div data-id="${el.id}" class="states" style="display: flex; justify-content: space-between;">
-          <span>${el.id} (${count})</span>
-          <div style="width: auto; display: flex; gap: 0.4em;">
-            <span data-tip="Edit style" class="editStyle icon-brush pointer" style="font-size: smaller;"></span>
-            <span data-tip="Remove group" class="removeGroup icon-trash pointer"></span>
-          </div>
-        </div>`;
+    const lines = options.burgs.groups.map(group => {
+      const count = pack.burgs.filter(burg => !burg.removed && burg.group === group.name).length;
+      // prettier-ignore
+      return /* html */ `<tr name="${group.name}">
+        <td data-tip="Select group to be assigned if other groups are not passed"><input type="radio" name="isDefault" ${group.isDefault && "checked"}></td>
+        <td data-tip="Type group name. It can contain only text, digits and underscore"><input type="text" name="name" value="${group.name}" required pattern="\\w+" /></td>
+        <td data-tip="Set min population constraint"><input type="number" name="min" min="0" step="any" value="${group.min || ''}" /></td>
+        <td data-tip="Set max population constraint"><input type="number" name="max" min="0" step="any" value="${group.max || ''}" /></td>
+        <td data-tip="Set population percentile"><input type="number" name="percentile" min="0" max="100" step="any" value="${group.percentile || ''}" /></td>
+        <td data-tip="Select allowed biomes"><button name="biomes">${group.biomes ? "some" : "all"}</button></td>
+        <td data-tip="Select allowed states"><button name="states">${group.states ? "some" : "all"}</button></td>
+        <td data-tip="Select allowed cultures"><button name="cultures">${group.cultures ? "some" : "all"}</button></td>
+        <td data-tip="Select allowed religions"><button name="religions">${group.religions ? "some" : "all"}</button></td>
+        <td data-tip="Select allowed features" ><button name="features">${group.features ? "some" : "all"}</button></td>
+        <td data-tip="Number of burgs in group">${count}</td>
+        <td data-tip="Activate/deactivate group"><input type="checkbox" name="active" class="native" ${group.active && "checked"} /></td>
+      </tr>`;
     });
 
-    byId("burgGroupsEditorBody").innerHTML = lines.join("");
+    byId("burgGroupsBody").innerHTML = lines.join("");
   }
 
   const DEFAULT_GROUPS = ["roads", "trails", "seaburgs"];
@@ -80,5 +95,50 @@ function editBurgGroups() {
         addLines();
       }
     });
+  }
+
+  function validateForm(event) {
+    const form = event.target.form;
+
+    const names = Array.from(form.name).map(input => input.value);
+    form.name.forEach(nameInput => {
+      const value = nameInput.value;
+      const isUnique = names.filter(n => n === value).length === 1;
+      nameInput.setCustomValidity(isUnique ? "" : "Group name should be unique");
+      nameInput.reportValidity();
+    });
+
+    const active = Array.from(form.active).map(input => input.checked);
+    form.active[0].setCustomValidity(active.includes(true) ? "" : "At least one group should be active");
+    form.active[0].reportValidity();
+  }
+
+  function submitForm(event) {
+    event.preventDefault();
+
+    function parseInput(input) {
+      if (input.name === "name") return sanitizeId(input.value);
+      if (input.type === "radio") return input.checked;
+      if (input.type === "checkbox") return input.checked;
+      if (input.type === "number") {
+        const value = input.valueAsNumber;
+        if (value === 0 || isNaN(value)) return null;
+        return value;
+      }
+      return input.value;
+    }
+
+    const lines = Array.from(byId("burgGroupsBody").children);
+    options.burgs.groups = lines.map(line => {
+      const inputs = line.querySelectorAll("input");
+      const group = Array.from(inputs).reduce((obj, input) => {
+        const value = parseInput(input);
+        if (value !== null) obj[input.name] = value;
+        return obj;
+      }, {});
+      return group;
+    });
+
+    $("#burgGroupsEditor").dialog("close");
   }
 }

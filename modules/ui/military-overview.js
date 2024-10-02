@@ -414,7 +414,7 @@ function overviewMilitary() {
 
     function applyMilitaryOptions() {
       const unitLines = Array.from(tableBody.querySelectorAll("tr"));
-      const names = unitLines.map(r => r.querySelector("input").value.replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, "_"));
+      const names = unitLines.map(r => sanitizeId(r.querySelector("input").value));
       if (new Set(names).size !== names.length) return tip("All units should have unique names", false, "error");
 
       $("#militaryOptions").dialog("close");

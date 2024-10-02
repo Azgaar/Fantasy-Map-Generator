@@ -262,26 +262,26 @@ window.Burgs = (() => {
 
   const getDefaultGroups = () => [
     {name: "capitals", active: true, features: {capital: true}, preview: "watabou-city-generator"},
-    {name: "cities", active: true, percentile: 90, population: [5, Infinity], preview: "watabou-city-generator"},
+    {name: "cities", active: true, percentile: 90, min: 5, preview: "watabou-city-generator"},
     {
       name: "forts",
       active: true,
       features: {citadel: true, walls: false, plaza: false, port: false},
-      population: [0, 1],
+      max: 1,
       preview: null
     },
     {
       name: "monasteries",
       active: true,
       features: {temple: true, walls: false, plaza: false, port: false},
-      population: [0, 0.8],
+      max: 0.8,
       preview: null
     },
     {
       name: "caravanserais",
       active: true,
       features: {port: false, plaza: true},
-      population: [0, 0.8],
+      max: 0.8,
       biomes: [1, 2, 3],
       preview: null
     },
@@ -289,14 +289,15 @@ window.Burgs = (() => {
       name: "trading_posts",
       active: true,
       features: {plaza: true},
-      population: [0, 0.8],
+      max: 0.8,
       biomes: [5, 6, 7, 8, 9, 10, 11, 12],
       preview: null
     },
     {
       name: "villages",
       active: true,
-      population: [0.1, 2],
+      min: 0.1,
+      max: 2,
       features: {walls: false},
       preview: "watabou-village-generator"
     },
@@ -304,7 +305,7 @@ window.Burgs = (() => {
       name: "hamlets",
       active: true,
       features: {walls: false, plaza: false},
-      population: [0, 0.1],
+      max: 0.1,
       preview: "watabou-village-generator"
     },
     {name: "towns", active: true, isDefault: true, preview: "watabou-city-generator"}
@@ -314,9 +315,13 @@ window.Burgs = (() => {
     for (const group of options.burgs.groups) {
       if (!group.active) continue;
 
-      if (group.population) {
-        const [min, max] = group.population;
-        const isFit = burg.population >= min && burg.population <= max;
+      if (group.min) {
+        const isFit = burg.population >= group.min;
+        if (!isFit) continue;
+      }
+
+      if (group.max) {
+        const isFit = burg.population <= group.max;
         if (!isFit) continue;
       }
 
