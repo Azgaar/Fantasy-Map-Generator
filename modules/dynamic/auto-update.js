@@ -964,5 +964,13 @@ export function resolveVersionConflicts(mapVersion) {
     defs.select("#water").selectAll("path, use").remove();
     viewbox.select("#coastline").selectAll("path, use").remove();
     drawFeatures();
+
+    // v1.104.0 introduced bugs with state borders
+    regions
+      .attr("opacity", null)
+      .attr("stroke-width", null)
+      .attr("letter-spacing", null)
+      .attr("fill", null)
+      .attr("stroke", null);
   }
 }
