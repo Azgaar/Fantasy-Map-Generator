@@ -261,12 +261,13 @@ window.Burgs = (() => {
   }
 
   const getDefaultGroups = () => [
-    {name: "capitals", active: true, features: {capital: true}, preview: "watabou-city-generator"},
-    {name: "cities", active: true, percentile: 90, min: 5, preview: "watabou-city-generator"},
+    {name: "capitals", active: true, order: 9, features: {capital: true}, preview: "watabou-city-generator"},
+    {name: "cities", active: true, order: 8, percentile: 90, min: 5, preview: "watabou-city-generator"},
     {
       name: "forts",
       active: true,
       features: {citadel: true, walls: false, plaza: false, port: false},
+      order: 6,
       max: 1,
       preview: null
     },
@@ -274,6 +275,7 @@ window.Burgs = (() => {
       name: "monasteries",
       active: true,
       features: {temple: true, walls: false, plaza: false, port: false},
+      order: 5,
       max: 0.8,
       preview: null
     },
@@ -281,6 +283,7 @@ window.Burgs = (() => {
       name: "caravanserais",
       active: true,
       features: {port: false, plaza: true},
+      order: 4,
       max: 0.8,
       biomes: [1, 2, 3],
       preview: null
@@ -288,6 +291,7 @@ window.Burgs = (() => {
     {
       name: "trading_posts",
       active: true,
+      order: 3,
       features: {plaza: true},
       max: 0.8,
       biomes: [5, 6, 7, 8, 9, 10, 11, 12],
@@ -296,6 +300,7 @@ window.Burgs = (() => {
     {
       name: "villages",
       active: true,
+      order: 2,
       min: 0.1,
       max: 2,
       features: {walls: false},
@@ -304,11 +309,12 @@ window.Burgs = (() => {
     {
       name: "hamlets",
       active: true,
+      order: 1,
       features: {walls: false, plaza: false},
       max: 0.1,
       preview: "watabou-village-generator"
     },
-    {name: "towns", active: true, isDefault: true, preview: "watabou-city-generator"}
+    {name: "towns", active: true, order: 7, isDefault: true, preview: "watabou-city-generator"}
   ];
 
   function defineGroup(burg, populations) {

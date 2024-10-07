@@ -238,8 +238,8 @@ function editHeightmap(options) {
     }
 
     Biomes.define();
-    rankCells();
 
+    rankCells();
     Cultures.generate();
     Cultures.expand();
 
@@ -247,10 +247,13 @@ function editHeightmap(options) {
     States.generate();
     Routes.generate();
     Religions.generate();
+
+    Burgs.specify();
+    States.collectStatistics();
     States.defineStateForms();
+
     Provinces.generate();
     Provinces.getPoles();
-    Burgs.specify();
 
     Rivers.specify();
     Features.specify();

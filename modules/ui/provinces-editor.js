@@ -371,6 +371,7 @@ function editProvinces() {
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
 
+    States.findNeighbors();
     States.collectStatistics();
     States.defineStateForms(newStates);
     drawStateLabels(allStates);

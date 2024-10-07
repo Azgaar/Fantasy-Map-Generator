@@ -4,14 +4,11 @@ window.States = (() => {
   const generate = () => {
     TIME && console.time("generateStates");
     pack.states = createStates();
-
     expandStates();
-    normalizeStates();
+    normalize();
     getPoles();
-
-    collectStatistics();
+    findNeighbors();
     assignColors();
-
     generateCampaigns();
     generateDiplomacy();
 
@@ -144,7 +141,7 @@ window.States = (() => {
     TIME && console.timeEnd("expandStates");
   };
 
-  const normalizeStates = () => {
+  const normalize = () => {
     TIME && console.time("normalizeStates");
     const {cells, burgs} = pack;
 
@@ -174,14 +171,11 @@ window.States = (() => {
     });
   };
 
-  // calculate states data like area, population etc.
-  const collectStatistics = () => {
-    TIME && console.time("collectStatistics");
+  const findNeighbors = () => {
     const {cells, states} = pack;
 
     states.forEach(s => {
       if (s.removed) return;
-      s.cells = s.area = s.burgs = s.rural = s.urban = 0;
       s.neighbors = new Set();
     });
 
@@ -189,28 +183,16 @@ window.States = (() => {
       if (cells.h[i] < 20) continue;
       const s = cells.state[i];
 
-      // check for neighboring states
       cells.c[i]
         .filter(c => cells.h[c] >= 20 && cells.state[c] !== s)
         .forEach(c => states[s].neighbors.add(cells.state[c]));
-
-      // collect stats
-      states[s].cells += 1;
-      states[s].area += cells.area[i];
-      states[s].rural += cells.pop[i];
-      if (cells.burg[i]) {
-        states[s].urban += pack.burgs[cells.burg[i]].population;
-        states[s].burgs++;
-      }
     }
 
     // convert neighbors Set object into array
     states.forEach(s => {
-      if (!s.neighbors) return;
+      if (!s.neighbors || s.removed) return;
       s.neighbors = Array.from(s.neighbors);
     });
-
-    TIME && console.timeEnd("collectStatistics");
   };
 
   const assignColors = () => {
@@ -236,6 +218,33 @@ window.States = (() => {
     });
 
     TIME && console.timeEnd("assignColors");
+  };
+
+  // calculate states data like area, population etc.
+  const collectStatistics = () => {
+    TIME && console.time("collectStatistics");
+    const {cells, states} = pack;
+
+    states.forEach(s => {
+      if (s.removed) return;
+      s.cells = s.area = s.burgs = s.rural = s.urban = 0;
+    });
+
+    for (const i of cells.i) {
+      if (cells.h[i] < 20) continue;
+      const s = cells.state[i];
+
+      // collect stats
+      states[s].cells += 1;
+      states[s].area += cells.area[i];
+      states[s].rural += cells.pop[i];
+      if (cells.burg[i]) {
+        states[s].urban += pack.burgs[cells.burg[i]].population;
+        states[s].burgs++;
+      }
+    }
+
+    TIME && console.timeEnd("collectStatistics");
   };
 
   const wars = {
@@ -614,8 +623,9 @@ window.States = (() => {
   return {
     generate,
     expandStates,
-    normalizeStates,
+    normalize,
     getPoles,
+    findNeighbors,
     assignColors,
     collectStatistics,
     generateCampaign,

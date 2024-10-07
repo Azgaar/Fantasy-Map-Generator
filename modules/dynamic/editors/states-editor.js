@@ -1253,6 +1253,8 @@ function addState() {
     coa,
     pole
   });
+
+  States.findNeighbors();
   States.collectStatistics();
   States.defineStateForms([newState]);
   adjustProvinces([cells.province[center]]);

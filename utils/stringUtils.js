@@ -51,10 +51,10 @@ function parseTransform(string) {
 JSON.isValid = str => {
   try {
     JSON.parse(str);
+    return true;
   } catch (e) {
     return false;
   }
-  return true;
 };
 
 function sanitizeId(string) {

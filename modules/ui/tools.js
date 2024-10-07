@@ -155,13 +155,15 @@ function regenerateStates() {
 
   pack.states = newStates;
   States.expandStates();
-  States.normalizeStates();
+  States.normalize();
   States.getPoles();
+  States.findNeighbors();
   States.collectStatistics();
   States.assignColors();
   States.generateCampaigns();
   States.generateDiplomacy();
   States.defineStateForms();
+
   Provinces.generate(true);
   Provinces.getPoles();
 

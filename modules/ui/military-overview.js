@@ -368,14 +368,17 @@ function overviewMilitary() {
 
       const filtered = data.filter(datum => datum.i && !datum.removed);
       const lines = filtered.map(
-        ({i, name, fullName, color}) =>
-          `<tr data-tip="${name}"><td><span style="color:${color}">⬤</span></td>
-            <td><input data-i="${i}" id="el${i}" type="checkbox" class="checkbox" ${
-            !initial.length || initial.includes(i) ? "checked" : ""
-          } >
-            <label for="el${i}" class="checkbox-label">${fullName || name}</label>
-          </td></tr>`
+        ({i, name, fullName, color}) => /* html */ `
+          <tr data-tip="${name}">
+            <td><span style="color:${color}">⬤</span></td>
+            <td>
+              <input data-i="${i}" id="el${i}" type="checkbox" class="checkbox"
+                ${!initial.length || initial.includes(i) ? "checked" : ""} >
+              <label for="el${i}" class="checkbox-label">${fullName || name}</label>
+            </td>
+          </tr>`
       );
+
       alertMessage.innerHTML = /* html */ `<b>Limit unit by ${type}:</b>
         <table style="margin-top:.3em">
           <tbody>
@@ -385,7 +388,7 @@ function overviewMilitary() {
 
       $("#alert").dialog({
         width: fitContent(),
-        title: `Limit unit`,
+        title: "Limit unit",
         buttons: {
           Invert: function () {
             alertMessage.querySelectorAll("input").forEach(el => (el.checked = !el.checked));

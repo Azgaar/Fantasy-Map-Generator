@@ -171,7 +171,8 @@ let options = {
 
 // create groups for each burg type
 {
-  for (const {name} of options.burgs.groups) {
+  const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
+  for (const {name} of sortedGroups) {
     burgIcons.append("g").attr("id", name);
     burgLabels.append("g").attr("id", name);
   }
@@ -661,14 +662,18 @@ async function generate(options) {
     rankCells();
     Cultures.generate();
     Cultures.expand();
+
     Burgs.generate();
     States.generate();
     Routes.generate();
     Religions.generate();
+
+    Burgs.specify();
+    States.collectStatistics();
     States.defineStateForms();
+
     Provinces.generate();
     Provinces.getPoles();
-    Burgs.specify();
 
     Rivers.specify();
     Features.specify();
@@ -695,7 +700,7 @@ async function generate(options) {
       title: "Generation error",
       width: "32em",
       buttons: {
-        "Cleanup data": cleanupData,
+        "Cleanup data": () => cleanupData(),
         Regenerate: function () {
           regenerateMap("generation error");
           $(this).dialog("close");
