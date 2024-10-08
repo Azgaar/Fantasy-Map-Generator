@@ -211,6 +211,7 @@ function editBurgGroups() {
 
           el.previousElementSibling.value = JSON.stringify(values);
           el.innerHTML = Object.keys(values).length ? "some" : "any";
+
           $(this).dialog("close");
         },
         Cancel: function () {
@@ -304,6 +305,14 @@ function editBurgGroups() {
       }, {});
       return group;
     });
+
+    // put burgs to new groups
+    const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
+    const populations = validBurgs.map(b => b.population).sort((a, b) => a - b);
+    validBurgs.forEach(burg => Burgs.defineGroup(burg, populations));
+
+    if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
+    if (layerIsOn("toggleLabels")) drawBurgLabels();
 
     $("#burgGroupsEditor").dialog("close");
   }

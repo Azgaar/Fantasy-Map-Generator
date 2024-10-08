@@ -240,13 +240,10 @@ function togglePort(burg) {
     .attr("height", size);
 }
 
+// TODO: rework this function to use the new data structure
 function getBurgLink(burg) {
   if (burg.link) return burg.link;
-
-  const population = burg.population * populationRate * urbanization;
-  if (population >= options.villageMaxPopulation || burg.citadel || burg.walls || burg.temple || burg.shanty)
-    return createMfcgLink(burg);
-
+  if (burg.citadel || burg.walls || burg.temple || burg.shanty) return createMfcgLink(burg);
   return createVillageGeneratorLink(burg);
 }
 

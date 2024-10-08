@@ -838,7 +838,6 @@ export function resolveVersionConflicts(mapVersion) {
 
   if (isOlderThan("1.97.0")) {
     // v1.97.00 changed MFCG link to an arbitrary preview URL
-    options.villageMaxPopulation = 2000;
     options.showBurgPreview = options.showMFCGMap;
     delete options.showMFCGMap;
 
@@ -972,5 +971,7 @@ export function resolveVersionConflicts(mapVersion) {
     options.burgs = {
       groups: groups.map(name => ({name, active: true, preview: null}))
     };
+
+    delete options.villageMaxPopulation;
   }
 }

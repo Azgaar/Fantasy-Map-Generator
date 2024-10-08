@@ -151,10 +151,7 @@ let notes = [];
 let rulers = new Rulers();
 let customization = 0;
 
-let biomesData = Biomes.getDefault();
-let nameBases = Names.getNameBases(); // cultures-related data
-
-// default options, based on Earth data
+// global options; in v2.0 to be used for all UI settings
 let options = {
   pinNotes: false,
   winds: [225, 45, 225, 315, 135, 315],
@@ -163,21 +160,19 @@ let options = {
   temperatureSouthPole: -15,
   stateLabelsMode: "auto",
   showBurgPreview: true,
-  villageMaxPopulation: 2000,
   burgs: {
     groups: Burgs.getDefaultGroups()
   }
 };
 
-// create groups for each burg type
-{
-  const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
-  for (const {name} of sortedGroups) {
-    burgIcons.append("g").attr("id", name);
-    burgLabels.append("g").attr("id", name);
-  }
-}
+// global style object; in v2.0 to be used for all map styles and render settings
+let style = {
+  burgLabels: {},
+  burgIcons: {}
+};
 
+let biomesData = Biomes.getDefault();
+let nameBases = Names.getNameBases(); // cultures-related data
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
 

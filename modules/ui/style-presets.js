@@ -71,13 +71,22 @@ async function fetchSystemPreset(preset) {
   }
 }
 
-function applyStyle(style) {
-  for (const selector in style) {
+function applyStyle(styleJSON) {
+  for (const selector in styleJSON) {
+    if (selector.startsWith("#burgLabels")) {
+      const group = selector.replace("#burgLabels > g#", "");
+      style.burgLabels[group] = styleJSON[selector];
+    }
+    if (selector.startsWith("#burgIcons")) {
+      const group = selector.replace("#burgIcons > g#", "");
+      style.burgIcons[group] = styleJSON[selector];
+    }
+
     const el = document.querySelector(selector);
     if (!el) continue;
 
-    for (const attribute in style[selector]) {
-      const value = style[selector][attribute];
+    for (const attribute in styleJSON[selector]) {
+      const value = styleJSON[selector][attribute];
 
       if (value === "null" || value === null) {
         el.removeAttribute(attribute);
@@ -342,8 +351,18 @@ function addStylePreset() {
       "stroke-dasharray",
       "stroke-linecap"
     ];
+    const burgLabelsAttributes = [
+      "opacity",
+      "fill",
+      "text-shadow",
+      "letter-spacing",
+      "data-size",
+      "font-size",
+      "font-family"
+    ];
     options.burgs.groups.forEach(({name}) => {
       attributes[`#burgIcons > g.${name}`] = burgIconsAttributes;
+      attributes[`#burgLabels > g#${name}`] = burgLabelsAttributes;
     });
 
     for (const selector in attributes) {

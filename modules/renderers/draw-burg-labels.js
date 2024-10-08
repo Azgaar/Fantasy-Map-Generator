@@ -2,8 +2,7 @@
 
 function drawBurgLabels() {
   TIME && console.time("drawBurgLabels");
-
-  burgLabels.selectAll("text").remove(); // cleanup
+  createLabelGroups();
 
   for (const {name} of options.burgs.groups) {
     const burgsInGroup = pack.burgs.filter(b => b.group === name && !b.removed);
@@ -38,4 +37,28 @@ function drawBurgLabel(burg) {
     .attr("y", burg.y)
     .attr("dy", "-0.4em")
     .text(burg.name);
+}
+
+function createLabelGroups() {
+  const defaultStyle = style.burgLabels.towns || Object.values(style.burgLabels)[0];
+
+  // save existing styles and remove all groups
+  document.querySelectorAll("g#burgLabels > g").forEach(group => {
+    const groupStyle = Object.keys(defaultStyle).reduce((acc, key) => {
+      acc[key] = group.getAttribute(key);
+      return acc;
+    }, {});
+    style.burgLabels[group.id] = groupStyle;
+    group.remove();
+  });
+
+  // create groups for each burg group and apply stored or default style
+  const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
+  for (const {name} of sortedGroups) {
+    const group = burgLabels.append("g").attr("id", name);
+    const styles = style.burgLabels[name] || defaultStyle;
+    Object.entries(styles).forEach(([key, value]) => {
+      group.attr(key, value);
+    });
+  }
 }

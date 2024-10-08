@@ -189,7 +189,7 @@ window.Burgs = (() => {
       .sort((a, b) => a - b); // ascending
 
     pack.burgs.forEach(burg => {
-      if (!burg.i || burg.removed || burg.lock) return;
+      if (!burg.i || burg.removed) return;
       defineGroup(burg, populations);
     });
 
@@ -318,6 +318,12 @@ window.Burgs = (() => {
   ];
 
   function defineGroup(burg, populations) {
+    if (burg.lock) {
+      // locked bugrgs: don't change group if it still exists
+      const group = options.burgs.groups.find(g => g.name === burg.group);
+      if (group) return;
+    }
+
     for (const group of options.burgs.groups) {
       if (!group.active) continue;
 
@@ -404,5 +410,5 @@ window.Burgs = (() => {
     return burgId;
   }
 
-  return {generate, getDefaultGroups, specify, getType, add};
+  return {generate, getDefaultGroups, specify, defineGroup, getType, add};
 })();

@@ -2,8 +2,7 @@
 
 function drawBurgIcons() {
   TIME && console.time("drawBurgIcons");
-
-  icons.selectAll("circle, use").remove(); // cleanup
+  createIconGroups();
 
   for (const {name} of options.burgs.groups) {
     const burgsInGroup = pack.burgs.filter(b => b.group === name && !b.removed);
@@ -48,4 +47,28 @@ function drawBurgIcon(burg) {
     .attr("data-id", burg.i)
     .attr("x", burg.x)
     .attr("y", burg.y);
+}
+
+function createIconGroups() {
+  const defaultStyle = style.burgIcons.towns || Object.values(style.burgIcons)[0];
+
+  // save existing styles and remove all groups
+  document.querySelectorAll("g#burgIcons > g").forEach(group => {
+    const groupStyle = Object.keys(defaultStyle).reduce((acc, key) => {
+      acc[key] = group.getAttribute(key);
+      return acc;
+    }, {});
+    style.burgIcons[group.id] = groupStyle;
+    group.remove();
+  });
+
+  // create groups for each burg group and apply stored or default style
+  const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
+  for (const {name} of sortedGroups) {
+    const group = burgIcons.append("g").attr("id", name);
+    const styles = style.burgIcons[name] || defaultStyle;
+    Object.entries(styles).forEach(([key, value]) => {
+      group.attr(key, value);
+    });
+  }
 }
