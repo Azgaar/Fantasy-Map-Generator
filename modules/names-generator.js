@@ -48,18 +48,28 @@ window.Names = (function () {
     return chain;
   };
 
-  // update chain for specific base
-  const updateChain = i => (chains[i] = nameBases[i] || nameBases[i].b ? calculateChain(nameBases[i].b) : null);
+  const updateChain = i => {
+    chains[i] = nameBases[i]?.b ? calculateChain(nameBases[i].b) : null;
+  };
 
-  // update chains for all used bases
-  const clearChains = () => (chains = []);
+  const clearChains = () => {
+    chains = [];
+  };
 
   // generate name using Markov's chain
   const getBase = function (base, min, max, dupl) {
-    if (base === undefined) {
-      ERROR && console.error("Please define a base");
-      return;
+    if (base === undefined) return ERROR && console.error("Please define a base");
+
+    if (nameBases[base] === undefined) {
+      if (nameBases[0]) {
+        WARN && console.warn("Namebase " + base + " is not found. First available namebase will be used");
+        base = 0;
+      } else {
+        ERROR && console.error("Namebase " + base + " is not found");
+        return "ERROR";
+      }
     }
+
     if (!chains[base]) updateChain(base);
 
     const data = chains[base];
@@ -141,16 +151,8 @@ window.Names = (function () {
 
   // generate short name for base
   const getBaseShort = function (base) {
-    if (nameBases[base] === undefined) {
-      tip(
-        `Namebase ${base} does not exist. Please upload custom namebases of change the base in Cultures Editor`,
-        false,
-        "error"
-      );
-      base = 1;
-    }
-    const min = nameBases[base].min - 1;
-    const max = Math.max(nameBases[base].max - 2, min);
+    const min = nameBases[base] ? nameBases[base].min - 1 : null;
+    const max = min ? Math.max(nameBases[base].max - 2, min) : null;
     return getBase(base, min, max, "", 0);
   };
 

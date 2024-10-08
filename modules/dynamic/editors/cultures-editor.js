@@ -266,6 +266,7 @@ function getTypeOptions(type) {
 function getBaseOptions(base) {
   let options = "";
   nameBases.forEach((n, i) => (options += `<option ${base === i ? "selected" : ""} value="${i}">${n.name}</option>`));
+  if (!nameBases[base]) options += `<option selected value="${base}">removed</option>`; // in case namesbase was removed
   return options;
 }
 
