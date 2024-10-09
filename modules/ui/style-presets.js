@@ -93,11 +93,7 @@ function applyStyle(styleJSON) {
         continue;
       }
 
-      if (attribute === "text-shadow") {
-        el.style[attribute] = value;
-      } else {
-        el.setAttribute(attribute, value);
-      }
+      el.setAttribute(attribute, value);
 
       if (selector === "#texture") {
         const image = document.querySelector("#texture > image");
@@ -280,32 +276,12 @@ function addStylePreset() {
         "data-columns"
       ],
       "#legendBox": ["fill", "fill-opacity"],
-      "#burgLabels > #cities": [
-        "opacity",
-        "fill",
-        "text-shadow",
-        "letter-spacing",
-        "data-size",
-        "font-size",
-        "font-family"
-      ],
-      "#anchors > #cities": ["opacity", "fill", "size", "stroke", "stroke-width"],
-      "#burgLabels > #towns": [
-        "opacity",
-        "fill",
-        "text-shadow",
-        "letter-spacing",
-        "data-size",
-        "font-size",
-        "font-family"
-      ],
-      "#anchors > #towns": ["opacity", "fill", "size", "stroke", "stroke-width"],
       "#labels > #states": [
         "opacity",
         "fill",
         "stroke",
         "stroke-width",
-        "text-shadow",
+        "style",
         "letter-spacing",
         "data-size",
         "font-size",
@@ -317,7 +293,7 @@ function addStylePreset() {
         "fill",
         "stroke",
         "stroke-width",
-        "text-shadow",
+        "style",
         "letter-spacing",
         "data-size",
         "font-size",
@@ -354,14 +330,14 @@ function addStylePreset() {
     const burgLabelsAttributes = [
       "opacity",
       "fill",
-      "text-shadow",
+      "style",
       "letter-spacing",
       "data-size",
       "font-size",
       "font-family"
     ];
     options.burgs.groups.forEach(({name}) => {
-      attributes[`#burgIcons > g.${name}`] = burgIconsAttributes;
+      attributes[`#burgIcons > g#${name}`] = burgIconsAttributes;
       attributes[`#burgLabels > g#${name}`] = burgLabelsAttributes;
     });
 

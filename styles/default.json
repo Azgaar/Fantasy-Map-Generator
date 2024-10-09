@@ -331,7 +331,7 @@
   "#burgLabels > g#capitals": {
     "opacity": 1,
     "fill": "#3e3e4b",
-    "text-shadow": "white 0px 0px 4px",
+    "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 7,
     "font-size": 7,
@@ -352,7 +352,7 @@
   "#burgLabels > g#cities": {
     "opacity": 1,
     "fill": "#3e3e4b",
-    "text-shadow": "white 0px 0px 4px",
+    "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 5,
     "font-size": 5,
@@ -373,7 +373,7 @@
   "#burgLabels > g#forts": {
     "opacity": 1,
     "fill": "#3e3e4b",
-    "text-shadow": "white 0px 0px 4px",
+    "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 2,
     "font-size": 2,
@@ -394,7 +394,7 @@
   "#burgLabels > g#monasteries": {
     "opacity": 1,
     "fill": "#3e3e4b",
-    "text-shadow": "white 0px 0px 4px",
+    "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 2,
     "font-size": 2,
@@ -415,7 +415,7 @@
   "#burgLabels > g#caravanserais": {
     "opacity": 1,
     "fill": "#3e3e4b",
-    "text-shadow": "white 0px 0px 4px",
+    "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 2,
     "font-size": 2,
@@ -436,7 +436,7 @@
   "#burgLabels > g#trading_posts": {
     "opacity": 1,
     "fill": "#3e3e4b",
-    "text-shadow": "white 0px 0px 4px",
+    "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 2,
     "font-size": 2,
@@ -457,7 +457,7 @@
   "#burgLabels > g#villages": {
     "opacity": 1,
     "fill": "#3e3e4b",
-    "text-shadow": "white 0px 0px 4px",
+    "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 3,
     "font-size": 3,
@@ -478,7 +478,7 @@
   "#burgLabels > g#hamlets": {
     "opacity": 1,
     "fill": "#3e3e4b",
-    "text-shadow": "white 0px 0px 4px",
+    "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 2,
     "font-size": 2,
@@ -499,7 +499,7 @@
   "#burgLabels > g#towns": {
     "opacity": 1,
     "fill": "#3e3e4b",
-    "text-shadow": "white 0px 0px 4px",
+    "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 4,
     "font-size": 4,
@@ -522,7 +522,7 @@
     "fill": "#3e3e4b",
     "stroke": "#3a3a3a",
     "stroke-width": 0,
-    "text-shadow": "white 0px 0px 4px",
+    "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 22,
     "font-size": 22,
@@ -534,7 +534,7 @@
     "fill": "#3e3e4b",
     "stroke": "#3a3a3a",
     "stroke-width": 0,
-    "text-shadow": "white 0px 0px 4px",
+    "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 18,
     "font-size": 18,

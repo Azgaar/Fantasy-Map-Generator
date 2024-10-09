@@ -467,12 +467,6 @@ export function resolveVersionConflicts(mapVersion) {
     if (oceanPattern) oceanPattern.removeAttribute("opacity");
     const oceanicPattern = document.getElementById("oceanicPattern");
     if (!oceanicPattern.getAttribute("opacity")) oceanicPattern.setAttribute("opacity", 0.2);
-
-    // v 1.63 moved label text-shadow from css to editable inline style
-    burgLabels.select("#cities").style("text-shadow", "white 0 0 4px");
-    burgLabels.select("#towns").style("text-shadow", "white 0 0 4px");
-    labels.select("#states").style("text-shadow", "white 0 0 4px");
-    labels.select("#addedLabels").style("text-shadow", "white 0 0 4px");
   }
 
   if (isOlderThan("1.64.0")) {
