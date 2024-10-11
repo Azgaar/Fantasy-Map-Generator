@@ -423,7 +423,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   }
 
   function downloadBurgsData() {
-    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,City Generator Link\n`; // headers
+    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,Preview link\n`; // headers
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
@@ -458,7 +458,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
       data += b.temple ? "temple," : ",";
       data += b.shanty ? "shanty town," : ",";
       data += b.coa ? JSON.stringify(b.coa).replace(/"/g, "").replace(/,/g, ";") + "," : ",";
-      data += getBurgLink(b);
+      data += Burgs.getPreview(b).link;
 
       data += "\n";
     });

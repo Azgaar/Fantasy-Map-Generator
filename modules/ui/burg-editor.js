@@ -32,7 +32,6 @@ function editBurg(id) {
   byId("burgPopulation").on("change", changePopulation);
   burgBody.querySelectorAll(".burgFeature").forEach(el => el.on("click", toggleFeature));
   byId("burgLinkOpen").on("click", openBurgLink);
-  byId("burgLinkEdit").on("click", changeBurgLink);
 
   byId("burgStyleShow").on("click", showStyleSection);
   byId("burgStyleHide").on("click", hideStyleSection);
@@ -41,7 +40,7 @@ function editBurg(id) {
   byId("burgEditAnchorStyle").on("click", editGroupAnchorStyle);
 
   byId("burgEmblem").on("click", openEmblemEdit);
-  byId("burgTogglePreview").on("click", toggleBurgPreview);
+  byId("burgSetPreviewLink").on("click", setCustomPreview);
   byId("burgEditEmblem").on("click", openEmblemEdit);
   byId("burgLocate").on("click", zoomIntoBurg);
   byId("burgRelocate").on("click", toggleRelocateBurg);
@@ -105,12 +104,7 @@ function editBurg(id) {
     COArenderer.trigger(coaID, b.coa);
     byId("burgEmblem").setAttribute("href", "#" + coaID);
 
-    if (options.showBurgPreview) {
-      byId("burgPreviewSection").style.display = "block";
-      updateBurgPreview(b);
-    } else {
-      byId("burgPreviewSection").style.display = "none";
-    }
+    updateBurgPreview(b);
   }
 
   function dragBurgLabel() {
@@ -231,31 +225,37 @@ function editBurg(id) {
   }
 
   function updateBurgPreview(burg) {
-    const src = getBurgLink(burg) + "&preview=1";
+    const preview = Burgs.getPreview(burg).preview;
+    if (!preview) {
+      byId("burgPreviewSection").style.display = "none";
+      return;
+    }
+
+    byId("burgPreviewSection").style.display = "block";
 
     // recreate object to force reload (Chrome bug)
     const container = byId("burgPreviewObject");
     container.innerHTML = "";
     const object = document.createElement("object");
     object.style.width = "100%";
-    object.data = src;
+    object.data = preview;
     container.insertBefore(object, null);
   }
 
   function openBurgLink() {
     const id = +elSelected.attr("data-id");
     const burg = pack.burgs[id];
-
-    openURL(getBurgLink(burg));
+    const link = Burgs.getPreview(burg).link;
+    if (link) openURL(link);
   }
 
-  function changeBurgLink() {
+  function setCustomPreview() {
     const id = +elSelected.attr("data-id");
     const burg = pack.burgs[id];
 
     prompt(
-      "Provide custom link to the burg map. It can be a link to Medieval Fantasy City Generator, a different tool, or just an image. Leave empty to use the default map",
-      {default: getBurgLink(burg), required: false},
+      "Provide custom URL to the burg map. It can be a link to a generator or just an image. Leave empty to use the default map preview",
+      {default: Burgs.getPreview(burg).link, required: false},
       link => {
         if (link) burg.link = link;
         else delete burg.link;
@@ -265,15 +265,9 @@ function editBurg(id) {
   }
 
   function openEmblemEdit() {
-    const id = +elSelected.attr("data-id"),
-      burg = pack.burgs[id];
+    const id = +elSelected.attr("data-id");
+    const burg = pack.burgs[id];
     editEmblem("burg", "burgCOA" + id, burg);
-  }
-
-  function toggleBurgPreview() {
-    options.showBurgPreview = !options.showBurgPreview;
-    byId("burgPreviewSection").style.display = options.showBurgPreview ? "block" : "none";
-    byId("burgTogglePreview").className = options.showBurgPreview ? "icon-map" : "icon-map-o";
   }
 
   function zoomIntoBurg() {

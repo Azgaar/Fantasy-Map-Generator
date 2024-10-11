@@ -3467,12 +3467,6 @@
             <div style="display: flex; justify-content: space-between">
               <span>Burg preview:</span>
               <div style="display: flex; gap: 0.5em">
-                <i
-                  id="burgLinkEdit"
-                  data-tip="Provide custom link to the burg map"
-                  class="icon-pencil pointer"
-                  style="margin-top: -0.1em"
-                ></i>
                 <i id="burgLinkOpen" data-tip="Open burg map in a new tab" class="icon-link-ext pointer"></i>
               </div>
             </div>
@@ -3502,7 +3496,7 @@
           </div>
 
           <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
-          <button id="burgTogglePreview" data-tip="Toggle preview" class="icon-map"></button>
+          <button id="burgSetPreviewLink" data-tip="Set custom burg map URL" class="icon-map-o"></button>
           <button id="burgLocate" data-tip="Zoom map and center view in the burg" class="icon-target"></button>
           <button id="burgRelocate" data-tip="Relocate burg. Click on map to move the burg" class="icon-map-pin"></button>
           <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
@@ -5340,30 +5334,13 @@
       </div>
 
       <div id="burgGroupsEditor" class="dialog stable" style="display: none">
-        <form id="burgGroupsForm" class="table">
-          <table>
-            <colgroup>
-              <col style="width: 1em" />
-              <col style="width: 6em" />
-              <col style="width: 4em" />
-              <col style="width: 4em" />
-              <col style="width: 4em" />
-              <col style="width: 4em" />
-              <col style="width: 4em" />
-              <col style="width: 4em" />
-              <col style="width: 4em" />
-              <col style="width: 4em" />
-              <col style="width: 1em" />
-              <col style="width: 1em" />
-              <col style="width: 1em" />
-              <col style="width: 1em" />
-              <col style="width: 1em" />
-              <col style="width: 1em" />
-            </colgroup>
+        <form id="burgGroupsForm">
+          <table class="table">
             <thead>
               <tr>
                 <th data-tip="Rendering order: higher values are rendered on top">Order</th>
                 <th data-tip="Type group name">Name</th>
+                <th data-tip="Burg preview generator">Preview generator</th>
                 <th data-tip="Set min population constraint" colspan="2">Population</th>
                 <th data-tip="Set population percentile: 0-100, where 90 means the burg must have a population higher than 90% of all burgs">Percentile</th>
                 <th data-tip="Select allowed biomes">Biomes</th>

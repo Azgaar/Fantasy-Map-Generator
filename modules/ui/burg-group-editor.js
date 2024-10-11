@@ -61,6 +61,14 @@ function editBurgGroups() {
     return /* html */ `<tr name="${group.name}">
       <td data-tip="Rendering order: higher values are rendered on top"><input type="number" name="order" min="1" max="999" step="1" required value="${group.order || ''}" /></td>
       <td data-tip="Type group name. It can contain only text, digits and underscore"><input type="text" name="name" value="${group.name}" required pattern="\\w+" /></td>
+      <td data-tip="Burg preview generator">
+        <select name="preview">
+          <option value="" ${!group.preview ? "selected" : ""}>no</option>
+          <option value="watabou-city" ${group.preview === "watabou-city" ? "selected" : ""}>Watabou City</option>
+          <option value="watabou-village" ${group.preview === "watabou-village" ? "selected" : ""}>Watabou Village</option>
+          <option value="watabou-dwelling" ${group.preview === "watabou-dwellings" ? "selected" : ""}>Watabou Dwelling</option>
+        </select>
+      </td>
       <td data-tip="Set min population constraint"><input type="number" name="min" min="0" step="any" value="${group.min || ''}" /></td>
       <td data-tip="Set max population constraint"><input type="number" name="max" min="0" step="any" value="${group.max || ''}" /></td>
       <td data-tip="Set population percentile"><input type="number" name="percentile" min="0" max="100" step="any" value="${group.percentile || ''}" /></td>

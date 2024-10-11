@@ -830,21 +830,6 @@ export function resolveVersionConflicts(mapVersion) {
     });
   }
 
-  if (isOlderThan("1.97.0")) {
-    // v1.97.00 changed MFCG link to an arbitrary preview URL
-    options.showBurgPreview = options.showMFCGMap;
-    delete options.showMFCGMap;
-
-    pack.burgs.forEach(burg => {
-      if (!burg.i || burg.removed) return;
-
-      if (burg.MFCG) {
-        burg.link = getBurgLink(burg);
-        delete burg.MFCG;
-      }
-    });
-  }
-
   if (isOlderThan("1.98.0")) {
     // v1.98.00 changed compass layer and rose element id
     const rose = compass.select("use");
@@ -966,6 +951,17 @@ export function resolveVersionConflicts(mapVersion) {
       groups: groups.map(name => ({name, active: true, preview: null}))
     };
 
+    pack.burgs.forEach(burg => {
+      if (!burg.i || burg.removed) return;
+
+      if (burg.MFCG) {
+        burg.link = getBurgLink(burg);
+        delete burg.MFCG;
+      }
+    });
+
+    delete options.showBurgPreview;
+    delete options.showMFCGMap;
     delete options.villageMaxPopulation;
   }
 }

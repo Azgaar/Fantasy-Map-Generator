@@ -261,23 +261,21 @@ window.Burgs = (() => {
   }
 
   const getDefaultGroups = () => [
-    {name: "capitals", active: true, order: 9, features: {capital: true}, preview: "watabou-city-generator"},
-    {name: "cities", active: true, order: 8, percentile: 90, min: 5, preview: "watabou-city-generator"},
+    {name: "capitals", active: true, order: 9, features: {capital: true}, preview: "watabou-city"},
+    {name: "cities", active: true, order: 8, percentile: 90, min: 5, preview: "watabou-city"},
     {
       name: "forts",
       active: true,
       features: {citadel: true, walls: false, plaza: false, port: false},
       order: 6,
-      max: 1,
-      preview: null
+      max: 1
     },
     {
       name: "monasteries",
       active: true,
       features: {temple: true, walls: false, plaza: false, port: false},
       order: 5,
-      max: 0.8,
-      preview: null
+      max: 0.8
     },
     {
       name: "caravanserais",
@@ -285,8 +283,7 @@ window.Burgs = (() => {
       features: {port: false, plaza: true},
       order: 4,
       max: 0.8,
-      biomes: [1, 2, 3],
-      preview: null
+      biomes: [1, 2, 3]
     },
     {
       name: "trading_posts",
@@ -295,7 +292,7 @@ window.Burgs = (() => {
       features: {plaza: true},
       max: 0.8,
       biomes: [5, 6, 7, 8, 9, 10, 11, 12],
-      preview: null
+      preview: "watabou-dwelling"
     },
     {
       name: "villages",
@@ -304,7 +301,7 @@ window.Burgs = (() => {
       min: 0.1,
       max: 2,
       features: {walls: false},
-      preview: "watabou-village-generator"
+      preview: "watabou-village"
     },
     {
       name: "hamlets",
@@ -312,9 +309,9 @@ window.Burgs = (() => {
       order: 1,
       features: {walls: false, plaza: false},
       max: 0.1,
-      preview: "watabou-village-generator"
+      preview: "watabou-village"
     },
-    {name: "towns", active: true, order: 7, isDefault: true, preview: "watabou-city-generator"}
+    {name: "towns", active: true, order: 7, isDefault: true, preview: "watabou-city"}
   ];
 
   function defineGroup(burg, populations) {
@@ -357,6 +354,146 @@ window.Burgs = (() => {
       burg.group = group.name;
       return;
     }
+  }
+
+  const previewGeneratorsMap = {
+    "watabou-city": createWatabouCityLinks,
+    "watabou-village": createWatabouVillageLinks,
+    "watabou-dwelling": createWatabouDwellingLinks
+  };
+
+  function getPreview(burg) {
+    if (burg.link) return {link: burg.link, preview: burg.link};
+
+    const group = options.burgs.groups.find(g => g.name === burg.group);
+    if (!group?.preview || !previewGeneratorsMap[group.preview]) return {link: null, preview: null};
+
+    return previewGeneratorsMap[group.preview](burg);
+  }
+
+  function createWatabouCityLinks(burg) {
+    const cells = pack.cells;
+    const {i, name, population: burgPopulation, cell} = burg;
+    const burgSeed = burg.MFCG || seed + String(burg.i).padStart(4, 0);
+
+    const sizeRaw = 2.13 * Math.pow((burgPopulation * populationRate) / urbanDensity, 0.385);
+    const size = minmax(Math.ceil(sizeRaw), 6, 100);
+    const population = rn(burgPopulation * populationRate * urbanization);
+
+    const river = cells.r[cell] ? 1 : 0;
+    const coast = Number(burg.port > 0);
+    const sea = (() => {
+      if (!coast || !cells.haven[cell]) return null;
+
+      // calculate see direction: 0 = south, 0.5 = west, 1 = north, 1.5 = east
+      const p1 = cells.p[cell];
+      const p2 = cells.p[cells.haven[cell]];
+      let deg = (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI - 90;
+      if (deg < 0) deg += 360;
+      return rn(normalize(deg, 0, 360) * 2, 2);
+    })();
+
+    const arableBiomes = river ? [1, 2, 3, 4, 5, 6, 7, 8] : [5, 6, 7, 8];
+    const farms = +arableBiomes.includes(cells.biome[cell]);
+
+    const citadel = +burg.citadel;
+    const urban_castle = +(citadel && each(2)(i));
+
+    const hub = Routes.isCrossroad(cell);
+    const walls = +burg.walls;
+    const plaza = +burg.plaza;
+    const temple = +burg.temple;
+    const shantytown = +burg.shanty;
+
+    const url = new URL("https://watabou.github.io/city-generator/");
+    url.search = new URLSearchParams({
+      name,
+      population,
+      size,
+      seed: burgSeed,
+      river,
+      coast,
+      farms,
+      citadel,
+      urban_castle,
+      hub,
+      plaza,
+      temple,
+      walls,
+      shantytown,
+      gates: -1
+    });
+    if (sea) url.searchParams.append("sea", sea);
+
+    const link = url.toString();
+    return {link, preview: link + "&preview=1"};
+  }
+
+  function createWatabouVillageLinks(burg) {
+    const {cells, features} = pack;
+    const {i, population, cell} = burg;
+
+    const burgSeed = seed + String(i).padStart(4, 0);
+    const pop = rn(population * populationRate * urbanization);
+    const tags = [];
+
+    if (cells.r[cell] && cells.haven[cell]) tags.push("estuary");
+    else if (cells.haven[cell] && features[cells.f[cell]].cells === 1) tags.push("island,district");
+    else if (burg.port) tags.push("coast");
+    else if (cells.conf[cell]) tags.push("confluence");
+    else if (cells.r[cell]) tags.push("river");
+    else if (pop < 200 && each(4)(cell)) tags.push("pond");
+
+    const connectivityRate = Routes.getConnectivityRate(cell);
+    tags.push(connectivityRate > 1 ? "highway" : connectivityRate === 1 ? "dead end" : "isolated");
+
+    const biome = cells.biome[cell];
+    const arableBiomes = cells.r[cell] ? [1, 2, 3, 4, 5, 6, 7, 8] : [5, 6, 7, 8];
+    if (!arableBiomes.includes(biome)) tags.push("uncultivated");
+    else if (each(6)(cell)) tags.push("farmland");
+
+    const temp = grid.cells.temp[cells.g[cell]];
+    if (temp <= 0 || temp > 28 || (temp > 25 && each(3)(cell))) tags.push("no orchards");
+
+    if (!burg.plaza) tags.push("no square");
+
+    if (pop < 100) tags.push("sparse");
+    else if (pop > 300) tags.push("dense");
+
+    const width = (() => {
+      if (pop > 1500) return 1600;
+      if (pop > 1000) return 1400;
+      if (pop > 500) return 1000;
+      if (pop > 200) return 800;
+      if (pop > 100) return 600;
+      return 400;
+    })();
+    const height = rn(width / 2.05);
+
+    const url = new URL("https://watabou.github.io/village-generator/");
+    url.search = new URLSearchParams({pop, name: "", seed: burgSeed, width, height, tags});
+
+    const link = url.toString();
+    return {link, preview: link + "&preview=1"};
+  }
+
+  function createWatabouDwellingLinks(burg) {
+    const burgSeed = seed + String(burg.i).padStart(4, 0);
+    const pop = rn(burg.population * populationRate * urbanization);
+
+    const tags = (() => {
+      if (pop > 200) return ["large", "tall"];
+      if (pop > 100) return ["large"];
+      if (pop > 50) return ["tall"];
+      if (pop > 20) return ["low"];
+      return ["small"];
+    })();
+
+    const url = new URL("https://watabou.github.io/dwellings/");
+    url.search = new URLSearchParams({pop, name: "", seed: burgSeed, tags});
+
+    const link = url.toString();
+    return {link, preview: link + "&preview=1"};
   }
 
   function add([x, y]) {
@@ -410,5 +547,5 @@ window.Burgs = (() => {
     return burgId;
   }
 
-  return {generate, getDefaultGroups, specify, defineGroup, getType, add};
+  return {generate, getDefaultGroups, specify, defineGroup, getPreview, getType, add};
 })();
