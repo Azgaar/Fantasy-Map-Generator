@@ -522,8 +522,8 @@ function regenerateEmblems() {
 
 function regenerateReligions() {
   Religions.generate();
-  if (layerIsOn("toggleReligions")) drawReligions();
-  else toggleReligions();
+
+  layerIsOn("toggleReligions") ? drawReligions() : toggleReligions();
   refreshAllEditors();
 }
 
@@ -532,8 +532,8 @@ function regenerateCultures() {
   Cultures.expand();
   BurgsAndStates.updateCultures();
   Religions.updateCultures();
-  if (!layerIsOn("toggleCultures")) toggleCultures();
-  else drawCultures();
+
+  layerIsOn("toggleCultures") ? drawCultures() : toggleCultures();
   refreshAllEditors();
 }
 

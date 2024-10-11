@@ -558,10 +558,10 @@ function applyStoredOptions() {
     if (key.slice(0, 5) === "style") applyOption(stylePreset, key, key.slice(5));
   }
 
-  if (stored("winds")) options.winds = localStorage.getItem("winds").split(",").map(Number);
-  if (stored("temperatureEquator")) options.temperatureEquator = +localStorage.getItem("temperatureEquator");
-  if (stored("temperatureNorthPole")) options.temperatureNorthPole = +localStorage.getItem("temperatureNorthPole");
-  if (stored("temperatureSouthPole")) options.temperatureSouthPole = +localStorage.getItem("temperatureSouthPole");
+  if (stored("winds")) options.winds = stored("winds").split(",").map(Number);
+  if (stored("temperatureEquator")) options.temperatureEquator = +stored("temperatureEquator");
+  if (stored("temperatureNorthPole")) options.temperatureNorthPole = +stored("temperatureNorthPole");
+  if (stored("temperatureSouthPole")) options.temperatureSouthPole = +stored("temperatureSouthPole");
   if (stored("military")) options.military = JSON.parse(stored("military"));
 
   if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize"));
