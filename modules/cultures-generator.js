@@ -8,7 +8,10 @@ window.Cultures = (function () {
     cells = pack.cells;
 
     const cultureIds = new Uint16Array(cells.i.length); // cell cultures
-    let count = Math.min(+culturesInput.value, +culturesSet.selectedOptions[0].dataset.max);
+
+    const culturesInputNumber = +byId("culturesInput").value;
+    const culturesInSetNumber = +byId("culturesSet").selectedOptions[0].dataset.max;
+    let count = Math.min(culturesInputNumber, culturesInSetNumber);
 
     const populated = cells.i.filter(i => cells.s[i]); // populated cells
     if (populated.length < count * 25) {
