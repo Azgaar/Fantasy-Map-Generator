@@ -123,26 +123,26 @@ window.Cultures = (function () {
     cultures.forEach(c => (c.base = c.base % nameBases.length));
 
     function selectCultures(culturesNumber) {
-      let def = getDefault(culturesNumber);
+      let defaultCultures = getDefault(culturesNumber);
       const cultures = [];
 
       pack.cultures?.forEach(function (culture) {
-        if (culture.lock) cultures.push(culture);
+        if (culture.lock && !culture.removed) cultures.push(culture);
       });
 
       if (!cultures.length) {
-        if (culturesNumber === def.length) return def;
-        if (def.every(d => d.odd === 1)) return def.splice(0, culturesNumber);
+        if (culturesNumber === defaultCultures.length) return defaultCultures;
+        if (defaultCultures.every(d => d.odd === 1)) return defaultCultures.splice(0, culturesNumber);
       }
 
-      for (let culture, rnd, i = 0; cultures.length < culturesNumber && def.length > 0; ) {
+      for (let culture, rnd, i = 0; cultures.length < culturesNumber && defaultCultures.length > 0; ) {
         do {
-          rnd = rand(def.length - 1);
-          culture = def[rnd];
+          rnd = rand(defaultCultures.length - 1);
+          culture = defaultCultures[rnd];
           i++;
         } while (i < 200 && !P(culture.odd));
         cultures.push(culture);
-        def.splice(rnd, 1);
+        defaultCultures.splice(rnd, 1);
       }
       return cultures;
     }
