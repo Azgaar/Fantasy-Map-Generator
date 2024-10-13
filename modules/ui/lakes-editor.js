@@ -15,7 +15,7 @@ function editLake() {
   debug.append("g").attr("id", "vertices");
   elSelected = d3.select(node);
   updateLakeValues();
-  selectLakeGroup(node);
+  selectLakeGroup();
   drawLakeVertices();
   viewbox.on("touchmove mousemove", null);
 
@@ -140,13 +140,13 @@ function editLake() {
     lake.name = lakeName.value = Names.getBase(rand(nameBases.length - 1));
   }
 
-  function selectLakeGroup(node) {
-    const group = node.parentNode.id;
+  function selectLakeGroup() {
+    const lake = getLake();
+
     const select = byId("lakeGroup");
     select.options.length = 0; // remove all options
-
     lakes.selectAll("g").each(function () {
-      select.options.add(new Option(this.id, this.id, false, this.id === group));
+      select.options.add(new Option(this.id, this.id, false, this.id === lake.group));
     });
   }
 
