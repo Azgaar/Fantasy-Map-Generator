@@ -3,7 +3,7 @@
 // module to control the Tools options (click to edit, to re-geenerate, tp add)
 
 toolsContent.addEventListener("click", function (event) {
-  if (customization) return tip("Please exit the customization mode first", false, "warning");
+  if (customization) return tip("Please exit the customization mode first", false, "error");
   if (!["BUTTON", "I"].includes(event.target.tagName)) return;
   const button = event.target.id;
 
@@ -70,8 +70,8 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "addRoute") createRoute();
   else if (button === "addMarker") toggleAddMarker();
   // click to create a new map buttons
-  else if (button === "openSubmapMenu") UISubmap.openSubmapMenu();
-  else if (button === "openResampleMenu") UISubmap.openResampleMenu();
+  else if (button === "openSubmapTool") openSubmapTool();
+  else if (button === "openTransformTool") openTransformTool();
 });
 
 function processFeatureRegeneration(event, button) {

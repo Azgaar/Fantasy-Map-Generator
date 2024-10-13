@@ -2,75 +2,51 @@
 
 window.Submap = (function () {
   const isWater = (pack, id) => pack.cells.h[id] < 20;
-  const inMap = (x, y) => x > 0 && x < graphWidth && y > 0 && y < graphHeight;
+  const inMap = (x, y) => x => 0 && x <= graphWidth && y >= 0 && y <= graphHeight;
 
   /*
     generate new map based on an existing one (resampling parentMap)
-    parentMap: {seed, grid, pack} from original map
+    parentMap: {grid, pack, notes} from original map
     options = {
-      projection: f(Number,Number)->[Number, Number]
+      projection: f(Number, Number) -> [Number, Number]
                   function to calculate new coordinates
-      inverse: g(Number,Number)->[Number, Number]
+      inverse: g(Number, Number) -> [Number, Number]
                 inverse of f
-      depressRivers: Bool     carve out riverbeds?
+      depressRivers: Bool     carve out riverbeds
       smoothHeightMap: Bool   run smooth filter on heights
       addLakesInDepressions:  call FMG original funtion on heightmap
-
       lockMarkers: Bool       Auto lock all copied markers
       lockBurgs: Bool         Auto lock all copied burgs
       }
     */
   function resample(parentMap, options) {
-    const projection = options.projection;
-    const inverse = options.inverse;
-    const stage = s => INFO && console.info("SUBMAP:", s);
-    const timeStart = performance.now();
-    invokeActiveZooming();
+    const {grid: parentGrid, pack: parentPack} = parentMap;
+    const {projection, inverse} = options;
 
-    // copy seed
-    seed = parentMap.seed;
-    Math.random = aleaPRNG(seed);
-    INFO && console.group("SubMap with seed: " + seed);
-    DEBUG && console.info("Using Options:", options);
-
-    applyGraphSize();
     grid = generateGrid();
 
-    drawScaleBar(scaleBar, scale);
-    fitScaleBar(scaleBar, svgWidth, svgHeight);
-
-    const resampler = (points, qtree, f) => {
-      for (const [i, [x, y]] of points.entries()) {
-        const [tx, ty] = inverse(x, y);
-        const oldid = qtree.find(tx, ty, Infinity)[2];
-        f(i, oldid);
-      }
-    };
-
-    stage("Resampling heightmap, temperature and precipitation");
     // resample heightmap from old WorldState
     const n = grid.points.length;
     grid.cells.h = new Uint8Array(n); // heightmap
     grid.cells.temp = new Int8Array(n); // temperature
     grid.cells.prec = new Uint8Array(n); // precipitation
     const reverseGridMap = new Uint32Array(n); // cellmap from new -> oldcell
+    const forwardGridMap = parentGrid.points.map(_ => []); // old -> [newcelllist]
 
-    const oldGrid = parentMap.grid;
-    // build cache old -> [newcelllist]
-    const forwardGridMap = parentMap.grid.points.map(_ => []);
-    resampler(grid.points, parentMap.pack.cells.q, (id, oldid) => {
-      const cid = parentMap.pack.cells.g[oldid];
-      grid.cells.h[id] = oldGrid.cells.h[cid];
-      grid.cells.temp[id] = oldGrid.cells.temp[cid];
-      grid.cells.prec[id] = oldGrid.cells.prec[cid];
-      if (options.depressRivers) forwardGridMap[cid].push(id);
-      reverseGridMap[id] = cid;
-    });
-    // TODO: add smooth/noise function for h, temp, prec n times
+    for (const [gridId, [x, y]] of grid.points.entries()) {
+      const [parentX, parentY] = inverse(x, y);
+      const parentPackId = parentPack.cells.q.find(parentX, parentY, Infinity)[2];
+      const parentGridId = parentPack.cells.g[parentPackId];
 
-    // smooth heightmap
-    // smoothing should never change cell type (land->water or water->land)
+      grid.cells.h[gridId] = parentGrid.cells.h[parentGridId];
+      grid.cells.temp[gridId] = parentGrid.cells.temp[parentGridId];
+      grid.cells.prec[gridId] = parentGrid.cells.prec[parentGridId];
 
+      if (options.depressRivers) forwardGridMap[parentGridId].push(gridId);
+      reverseGridMap[gridId] = parentGridId;
+    }
+
+    // smoothing should not change cell type (land -> water or vice versa)
     if (options.smoothHeightMap) {
       const gcells = grid.cells;
       gcells.h.forEach((h, i) => {
@@ -81,7 +57,6 @@ window.Submap = (function () {
     }
 
     if (options.depressRivers) {
-      stage("Generating riverbeds");
       const rbeds = new Uint16Array(grid.cells.i.length);
 
       // and erode riverbeds
@@ -97,6 +72,7 @@ window.Submap = (function () {
           });
         })
       );
+
       // raise every land cell a bit except riverbeds
       grid.cells.h.forEach((h, i) => {
         if (rbeds[i] || h < 20) return;
@@ -104,7 +80,6 @@ window.Submap = (function () {
       });
     }
 
-    stage("Detect features, ocean and generating lakes");
     Features.markupGrid();
 
     addLakesInDeepDepressions();
@@ -115,11 +90,8 @@ window.Submap = (function () {
     calculateMapCoordinates();
     calculateTemperatures();
     generatePrecipitation();
-    stage("Cell cleanup");
     reGraph();
 
-    // remove misclassified cells
-    stage("Define coastline");
     Features.markupPack();
     createDefaultRuler();
 
@@ -135,7 +107,6 @@ window.Submap = (function () {
     cells.religion = new Uint16Array(pn);
     cells.province = new Uint16Array(pn);
 
-    stage("Resampling culture, state and religion map");
     for (const [id, gridCellId] of cells.g.entries()) {
       const oldGridId = reverseGridMap[gridCellId];
       if (oldGridId === undefined) {
@@ -148,8 +119,8 @@ window.Submap = (function () {
 
       if (!oldChildren.length) {
         // it *must* be a (deleted) deep ocean cell
-        if (!oldGrid.cells.h[oldGridId] < 20) {
-          console.error(`Warning, ${gridCellId} should be water cell, not ${oldGrid.cells.h[oldGridId]}`);
+        if (!parentGrid.cells.h[oldGridId] < 20) {
+          console.error(`Warning, ${gridCellId} should be water cell, not ${parentGrid.cells.h[oldGridId]}`);
           continue;
         }
         // find replacement: closest water cell
@@ -166,9 +137,9 @@ window.Submap = (function () {
         let d = Infinity;
         oldChildren.forEach(oid => {
           // this should be always true, unless some algo modded the height!
-          if (isWater(parentMap.pack, oid) !== isWater(pack, id)) {
+          if (isWater(parentMap.pack, oid) !== isWater(pack, id))
             console.warn(`cell sank because of addLakesInDepressions: ${oid}`);
-          }
+
           const [oldpx, oldpy] = oldCells.p[oid];
           const nd = distance(projection(oldpx, oldpy));
           if (isNaN(nd)) {
@@ -194,18 +165,15 @@ window.Submap = (function () {
       forwardMap[oldid].push(id);
     }
 
-    stage("Regenerating river network");
     Rivers.generate();
 
     // biome calculation based on (resampled) grid.cells.temp and prec
     // it's safe to recalculate.
-    stage("Regenerating Biome");
     Biomes.define();
     // recalculate suitability and population
     // TODO: normalize according to the base-map
     rankCells();
 
-    stage("Porting Cultures");
     pack.cultures = parentMap.pack.cultures;
     // fix culture centers
     const validCultures = new Set(pack.cells.culture);
@@ -220,11 +188,9 @@ window.Submap = (function () {
       c.center = newCenters.length ? newCenters[0] : pack.cells.culture.findIndex(x => x === i);
     });
 
-    stage("Porting and locking burgs");
     copyBurgs(parentMap, projection, options);
 
     // transfer states, mark states without land as removed.
-    stage("Porting states");
     const validStates = new Set(pack.cells.state);
     pack.states = parentMap.pack.states;
     // keep valid states and neighbors only
@@ -241,7 +207,6 @@ window.Submap = (function () {
     BurgsAndStates.getPoles();
 
     // transfer provinces, mark provinces without land as removed.
-    stage("Porting provinces");
     const validProvinces = new Set(pack.cells.province);
     pack.provinces = parentMap.pack.provinces;
     // mark uneccesary provinces
@@ -255,14 +220,11 @@ window.Submap = (function () {
       p.center = newCenters.length ? newCenters[0] : pack.cells.province.findIndex(x => x === i);
     });
     Provinces.getPoles();
-
-    stage("Regenerating routes network");
     regenerateRoutes();
 
     Rivers.specify();
     Features.specify();
 
-    stage("Porting military");
     for (const s of pack.states) {
       if (!s.military) continue;
       for (const m of s.military) {
@@ -274,7 +236,6 @@ window.Submap = (function () {
       s.military = s.military.filter(m => m.cell).map((m, i) => ({...m, i}));
     }
 
-    stage("Copying markers");
     for (const m of pack.markers) {
       const [x, y] = projection(m.x, m.y);
       if (!inMap(x, y)) {
@@ -288,16 +249,11 @@ window.Submap = (function () {
     }
     if (layerIsOn("toggleMarkers")) drawMarkers();
 
-    stage("Regenerating Zones");
     Zones.generate();
     Names.getMapName();
-    stage("Restoring Notes");
     notes = parentMap.notes;
-    stage("Submap done");
 
-    WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     showStatistics();
-    INFO && console.groupEnd("Generated Map " + seed);
   }
 
   /* find the nearest cell accepted by filter f *and* having at
@@ -403,6 +359,5 @@ window.Submap = (function () {
     return [x, y];
   }
 
-  // export
-  return {resample, findNearest};
+  return {resample};
 })();
