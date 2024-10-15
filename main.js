@@ -724,10 +724,11 @@ function setSeed(precreatedSeed) {
 
 function addLakesInDeepDepressions() {
   TIME && console.time("addLakesInDeepDepressions");
+  const elevationLimit = +byId("lakeElevationLimitOutput").value;
+  if (elevationLimit === 80) return;
+
   const {cells, features} = grid;
   const {c, h, b} = cells;
-  const ELEVATION_LIMIT = +byId("lakeElevationLimitOutput").value;
-  if (ELEVATION_LIMIT === 80) return;
 
   for (const i of cells.i) {
     if (b[i] || h[i] < 20) continue;
@@ -736,7 +737,7 @@ function addLakesInDeepDepressions() {
     if (h[i] > minHeight) continue;
 
     let deep = true;
-    const threshold = h[i] + ELEVATION_LIMIT;
+    const threshold = h[i] + elevationLimit;
     const queue = [i];
     const checked = [];
     checked[i] = true;

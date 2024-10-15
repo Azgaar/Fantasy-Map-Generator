@@ -17,8 +17,8 @@ function openSubmapTool() {
     }
   });
 
-  if (modules.openSubmapMenu) return;
-  modules.openSubmapMenu = true;
+  if (modules.openSubmapTool) return;
+  modules.openSubmapTool = true;
 
   async function generateSubmap() {
     INFO && console.group("generateSubmap");
@@ -34,18 +34,15 @@ function openSubmapTool() {
     byId("mapSizeInput").value = mapSizeOutput.value;
     byId("latitudeInput").value = latitudeOutput.value;
 
-    distanceScale = distanceScaleInput.value = rn(distanceScaleInput.value / scale, 2);
-    populationRate = populationRateInput.value = rn(populationRateInput.value / scale, 2);
+    distanceScale = distanceScaleInput.value = rn(distanceScale / scale, 2);
+    populationRate = populationRateInput.value = rn(populationRate / scale, 2);
 
     const parentMap = {grid: deepCopy(grid), pack: deepCopy(pack), notes: deepCopy(notes)};
     const options = {
-      lockMarkers: byId("submapLockMarkers").checked,
-      lockBurgs: byId("submapLockBurgs").checked,
+      smoothHeightmap: byId("submapSmoothHeightmap").checked,
       depressRivers: byId("submapDepressRivers").checked,
-      addLakesInDepressions: byId("submapAddLakeInDepression").checked,
-      smoothHeightMap: scale > 2,
-      inverse: (x, y) => [x / scale + x0, y / scale + y0],
       projection: (x, y) => [(x - x0) * scale, (y - y0) * scale],
+      inverse: (x, y) => [x / scale + x0, y / scale + y0],
       scale
     };
 

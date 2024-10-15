@@ -45,6 +45,7 @@ async function openTransformTool() {
 
     const options = {noWater: true, fullMap: true, noLabels: true, noScaleBar: true, noVignette: true, noIce: true};
     const url = await getMapURL("png", options);
+    const SCALE = 4;
 
     const img = new Image();
     img.src = url;
@@ -52,9 +53,9 @@ async function openTransformTool() {
       const $canvas = byId("transformPreviewCanvas");
       $canvas.style.width = width + "px";
       $canvas.style.height = height + "px";
-      $canvas.width = width * 2;
-      $canvas.height = height * 2;
-      $canvas.getContext("2d").drawImage(img, 0, 0, width * 2, height * 2);
+      $canvas.width = width * SCALE;
+      $canvas.height = height * SCALE;
+      $canvas.getContext("2d").drawImage(img, 0, 0, width * SCALE, height * SCALE);
     };
   }
 
@@ -124,16 +125,7 @@ async function openTransformTool() {
 
     const parentMap = {grid: deepCopy(grid), pack: deepCopy(pack), notes: deepCopy(notes)};
     const [projection, inverse] = getProjection();
-    const options = {
-      lockMarkers: false,
-      lockBurgs: false,
-      depressRivers: false,
-      addLakesInDepressions: false,
-      smoothHeightMap: false,
-      scale: 1,
-      inverse,
-      projection
-    };
+    const options = {depressRivers: false, smoothHeightmap: false, scale: 1, inverse, projection};
 
     const cellsNumber = +byId("transformPointsInput").value;
     changeCellsDensity(cellsNumber);
