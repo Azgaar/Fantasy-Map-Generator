@@ -90,6 +90,9 @@ function drawStateLabels(list) {
 
       const pathPoints = [[x1, y1], state.pole, [x2, y2]];
       if (x1 > x2) pathPoints.reverse();
+
+      DEBUG && drawPoint(state.pole, {color: "red", radius: 2});
+      DEBUG && drawPath(pathPoints, {color: "red", width: 1});
       labelPaths.push([state.i, pathPoints]);
     }
 
@@ -102,7 +105,7 @@ function drawStateLabels(list) {
         const [x, y] = [point.x + distance * dx, point.y + distance * dy];
         const cellId = findCell(x, y, DISTANCE_STEP);
 
-        // drawPoint([x, y], {color: cellId && isPassable(cellId) ? "blue" : "red", radius: 0.8});
+        DEBUG && drawPoint([x, y], {color: cellId && isPassable(cellId) ? "blue" : "red", radius: 0.8});
 
         if (!cellId || !isPassable(cellId)) break;
         distance += DISTANCE_STEP;
