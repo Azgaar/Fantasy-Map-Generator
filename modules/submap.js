@@ -133,28 +133,35 @@ window.Submap = (function () {
 
   function restoreBurgs(parentMap, projection, options) {
     const packLandCellsQuadtree = d3.quadtree(groupCellsByType(pack).land);
+    const findLandCell = (x, y) => packLandCellsQuadtree.find(x, y, Infinity)?.[2];
 
     pack.burgs = parentMap.pack.burgs.map(burg => {
       if (!burg.i || burg.removed) return burg;
       burg.population *= options.scale; // adjust for populationRate change
 
       const [xp, yp] = projection(burg.x, burg.y);
-      const [x, y] = [rn(xp, 2), rn(yp, 2)];
-      if (!isInMap(x, y)) return {...burg, removed: true, lock: false};
+      if (!isInMap(xp, yp)) return {...burg, removed: true, lock: false};
 
-      const cell = packLandCellsQuadtree.find(x, y, Infinity)?.[2];
-      if (!cell) {
-        ERROR && console.error(`Could not find cell for burg ${burg.name} (${burg.i}). Had to remove it`);
-        return {...burg, removed: true, lock: false};
-      }
+      const closestCell = findCell(xp, yp);
+      const cell = isWater(pack, closestCell) ? findLandCell(xp, yp) : closestCell;
+
       if (pack.cells.burg[cell]) {
-        WARN && console.warn(`Cell ${cell} already has a burg. Had to remove burg ${burg.name} (${burg.i})`);
+        WARN && console.warn(`Cell ${cell} already has a burg. Removing burg ${burg.name} (${burg.i})`);
         return {...burg, removed: true, lock: false};
       }
 
       pack.cells.burg[cell] = burg.i;
-      return {...burg, x, y, cell};
+      const [x, y] = getBurgCoordinates(burg, closestCell, cell, xp, yp);
+      return {...burg, cell, x, y};
     });
+
+    function getBurgCoordinates(burg, closestCell, cell, xp, yp) {
+      const haven = pack.cells.haven[cell];
+      if (burg.port && haven) return BurgsAndStates.getCloseToEdgePoint(cell, haven);
+
+      if (closestCell !== cell) return pack.cells.p[cell];
+      return [rn(xp, 2), rn(yp, 2)];
+    }
   }
 
   function restoreStates(parentMap, projection) {
