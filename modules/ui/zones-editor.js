@@ -341,6 +341,8 @@ function editZones() {
   }
 
   function toggleLegend() {
+    if (legend.selectAll("*").size()) return clearLegend(); // hide legend
+
     const filterBy = byId("zonesFilterType").value;
     const isFiltered = filterBy && filterBy !== "all";
     const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
