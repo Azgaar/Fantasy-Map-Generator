@@ -106,10 +106,10 @@ coastline.append("g").attr("id", "lake_island");
 terrs.append("g").attr("id", "oceanHeights");
 terrs.append("g").attr("id", "landHeights");
 
+let burgLabels = labels.append("g").attr("id", "burgLabels");
 labels.append("g").attr("id", "states");
 labels.append("g").attr("id", "addedLabels");
 
-let burgLabels = labels.append("g").attr("id", "burgLabels");
 burgIcons.append("g").attr("id", "cities");
 burgLabels.append("g").attr("id", "cities");
 anchors.append("g").attr("id", "cities");

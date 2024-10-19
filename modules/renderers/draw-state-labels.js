@@ -14,11 +14,11 @@ function drawStateLabels(list) {
   // increase step to 15 or 30 to make it faster and more horyzontal
   // decrease step to 5 to improve accuracy
   const ANGLE_STEP = 9;
-  const raycast = precalculateAngles(ANGLE_STEP);
+  const angles = precalculateAngles(ANGLE_STEP);
 
-  const INITIAL_DISTANCE = 10;
-  const DISTANCE_STEP = 15;
-  const MAX_ITERATIONS = 100;
+  const LENGTH_START = 5;
+  const LENGTH_STEP = 5;
+  const LENGTH_MAX = 300;
 
   const labelPaths = getLabelPaths();
   const letterLength = checkExampleLetterLength();
@@ -35,90 +35,25 @@ function drawStateLabels(list) {
       if (list && !list.includes(state.i)) continue;
 
       const offset = getOffsetWidth(state.cells);
-      const maxLakeSize = state.cells / 50;
+      const maxLakeSize = state.cells / 20;
       const [x0, y0] = state.pole;
 
-      const offsetPoints = new Map(
-        (offset ? raycast : []).map(({angle, x: x1, y: y1}) => {
-          const [x, y] = [x0 + offset * x1, y0 + offset * y1];
-          return [angle, {x, y}];
-        })
-      );
-
-      const distances = raycast.map(({angle, x: dx, y: dy, modifier}) => {
-        let distanceMin;
-        const distance1 = getMaxDistance(state.i, {x: x0, y: y0}, dx, dy, maxLakeSize);
-
-        if (offset) {
-          const point2 = offsetPoints.get(angle - 90 < 0 ? angle + 270 : angle - 90);
-          const distance2 = getMaxDistance(state.i, point2, dx, dy, maxLakeSize);
-
-          const point3 = offsetPoints.get(angle + 90 >= 360 ? angle - 270 : angle + 90);
-          const distance3 = getMaxDistance(state.i, point3, dx, dy, maxLakeSize);
-
-          distanceMin = Math.min(distance1, distance2, distance3);
-        } else {
-          distanceMin = distance1;
-        }
-
-        const [x, y] = [x0 + distanceMin * dx, y0 + distanceMin * dy];
-        return {angle, distance: distanceMin * modifier, x, y};
+      const rays = angles.map(({angle, dx, dy}) => {
+        const {length, x, y} = raycast({stateId: state.i, x0, y0, dx, dy, maxLakeSize, offset});
+        return {angle, length, x, y};
       });
+      const [ray1, ray2] = findBestRayPair(rays);
 
-      const {
-        angle,
-        x: x1,
-        y: y1
-      } = distances.reduce(
-        (acc, {angle, distance, x, y}) => {
-          if (distance > acc.distance) return {angle, distance, x, y};
-          return acc;
-        },
-        {angle: 0, distance: 0, x: 0, y: 0}
-      );
+      const pathPoints = [[ray1.x, ray1.y], state.pole, [ray2.x, ray2.y]];
+      if (ray1.x > ray2.x) pathPoints.reverse();
 
-      const oppositeAngle = angle >= 180 ? angle - 180 : angle + 180;
-      const {x: x2, y: y2} = distances.reduce(
-        (acc, {angle, distance, x, y}) => {
-          const angleDif = getAnglesDif(angle, oppositeAngle);
-          const score = distance * getAngleModifier(angleDif);
-          if (score > acc.score) return {angle, score, x, y};
-          return acc;
-        },
-        {angle: 0, score: 0, x: 0, y: 0}
-      );
+      DEBUG && drawPoint(state.pole, {color: "black", radius: 1});
+      DEBUG && drawPath(pathPoints, {color: "black", width: 0.2});
 
-      const pathPoints = [[x1, y1], state.pole, [x2, y2]];
-      if (x1 > x2) pathPoints.reverse();
-
-      DEBUG && drawPoint(state.pole, {color: "red", radius: 2});
-      DEBUG && drawPath(pathPoints, {color: "red", width: 1});
       labelPaths.push([state.i, pathPoints]);
     }
 
     return labelPaths;
-
-    function getMaxDistance(stateId, point, dx, dy, maxLakeSize) {
-      let distance = INITIAL_DISTANCE;
-
-      for (let i = 0; i < MAX_ITERATIONS; i++) {
-        const [x, y] = [point.x + distance * dx, point.y + distance * dy];
-        const cellId = findCell(x, y, DISTANCE_STEP);
-
-        DEBUG && drawPoint([x, y], {color: cellId && isPassable(cellId) ? "blue" : "red", radius: 0.8});
-
-        if (!cellId || !isPassable(cellId)) break;
-        distance += DISTANCE_STEP;
-      }
-
-      return distance;
-
-      function isPassable(cellId) {
-        const feature = features[cells.f[cellId]];
-        if (feature.type === "lake") return feature.cells <= maxLakeSize;
-        return stateIds[cellId] === stateId;
-      }
-    }
   }
 
   function checkExampleLetterLength() {
@@ -132,7 +67,7 @@ function drawStateLabels(list) {
 
   function drawLabelPath(letterLength) {
     const mode = options.stateLabelsMode || "auto";
-    const lineGen = d3.line().curve(d3.curveBundle.beta(1));
+    const lineGen = d3.line().curve(d3.curveNatural);
 
     const textGroup = d3.select("g#labels > g#states");
     const pathGroup = d3.select("defs > g#deftemp > g#textPaths");
@@ -195,35 +130,15 @@ function drawStateLabels(list) {
       const text = pathLength > state.fullName.length * 1.8 ? state.fullName : state.name;
       textElement.innerHTML = `<tspan x="0">${text}</tspan>`;
 
-      const correctedRatio = minmax(rn((pathLength / text.length) * 50), 40, 130);
+      const correctedRatio = minmax(rn((pathLength / text.length) * 50), 50, 130);
       textElement.setAttribute("font-size", correctedRatio + "%");
     }
   }
 
-  // point offset to reduce label overlap with state borders
   function getOffsetWidth(cellsNumber) {
-    if (cellsNumber < 80) return 0;
-    if (cellsNumber < 140) return 5;
-    if (cellsNumber < 200) return 15;
-    if (cellsNumber < 300) return 20;
-    if (cellsNumber < 500) return 25;
-    return 30;
-  }
-
-  // difference between two angles in range [0, 180]
-  function getAnglesDif(angle1, angle2) {
-    return 180 - Math.abs(Math.abs(angle1 - angle2) - 180);
-  }
-
-  // score multiplier based on angle difference betwee left and right sides
-  function getAngleModifier(angleDif) {
-    if (angleDif === 0) return 1;
-    if (angleDif <= 15) return 0.95;
-    if (angleDif <= 30) return 0.9;
-    if (angleDif <= 45) return 0.6;
-    if (angleDif <= 60) return 0.3;
-    if (angleDif <= 90) return 0.1;
-    return 0; // >90
+    if (cellsNumber < 40) return 0;
+    if (cellsNumber < 200) return 5;
+    return 10;
   }
 
   function precalculateAngles(step) {
@@ -231,37 +146,133 @@ function drawStateLabels(list) {
     const RAD = Math.PI / 180;
 
     for (let angle = 0; angle < 360; angle += step) {
-      const x = Math.cos(angle * RAD);
-      const y = Math.sin(angle * RAD);
-      const angleDif = 90 - Math.abs((angle % 180) - 90);
-      const modifier = 1 - angleDif / 120; // [0.25, 1]
-      angles.push({angle, modifier, x, y});
+      const dx = Math.cos(angle * RAD);
+      const dy = Math.sin(angle * RAD);
+      angles.push({angle, dx, dy});
     }
 
     return angles;
   }
 
+  function raycast({stateId, x0, y0, dx, dy, maxLakeSize, offset}) {
+    let ray = {length: 0, x: x0, y: y0};
+
+    for (let length = LENGTH_START; length < LENGTH_MAX; length += LENGTH_STEP) {
+      const [x, y] = [x0 + length * dx, y0 + length * dy];
+      // offset points are perpendicular to the ray
+      const offset1 = [x + -dy * offset, y + dx * offset];
+      const offset2 = [x + dy * offset, y + -dx * offset];
+
+      DEBUG && drawPoint([x, y], {color: isInsideState(x, y) ? "blue" : "red", radius: 0.8});
+      DEBUG && drawPoint(offset1, {color: isInsideState(...offset1) ? "blue" : "red", radius: 0.4});
+      DEBUG && drawPoint(offset2, {color: isInsideState(...offset2) ? "blue" : "red", radius: 0.4});
+
+      const inState = isInsideState(x, y) && isInsideState(...offset1) && isInsideState(...offset2);
+      if (!inState) break;
+      ray = {length, x, y};
+    }
+
+    return ray;
+
+    function isInsideState(x, y) {
+      if (x < 0 || x > graphWidth || y < 0 || y > graphHeight) return false;
+      const cellId = findCell(x, y);
+
+      const feature = features[cells.f[cellId]];
+      if (feature.type === "lake") return isInnerLake(feature) || isSmallLake(feature);
+
+      return stateIds[cellId] === stateId;
+    }
+
+    function isInnerLake(feature) {
+      return feature.shoreline.every(cellId => stateIds[cellId] === stateId);
+    }
+
+    function isSmallLake(feature) {
+      return feature.cells <= maxLakeSize;
+    }
+  }
+
+  function findBestRayPair(rays) {
+    let bestPair = null;
+    let bestScore = -Infinity;
+
+    for (let i = 0; i < rays.length; i++) {
+      const score1 = rays[i].length * scoreRayAngle(rays[i].angle);
+
+      for (let j = i + 1; j < rays.length; j++) {
+        const score2 = rays[j].length * scoreRayAngle(rays[j].angle);
+        const pairScore = (score1 + score2) * scoreCurvature(rays[i].angle, rays[j].angle);
+
+        if (pairScore > bestScore) {
+          bestScore = pairScore;
+          bestPair = [rays[i], rays[j]];
+        }
+      }
+    }
+
+    return bestPair;
+  }
+
+  function scoreRayAngle(angle) {
+    const normalizedAngle = Math.abs(angle % 180); // [0, 180]
+    const horizontality = Math.abs(normalizedAngle - 90) / 90; // [0, 1]
+
+    if (horizontality === 1) return 1; // Best: horizontal
+    if (horizontality >= 0.75) return 0.9; // Very good: slightly slanted
+    if (horizontality >= 0.5) return 0.6; // Good: moderate slant
+    if (horizontality >= 0.25) return 0.5; // Acceptable: more slanted
+    if (horizontality >= 0.15) return 0.2; // Poor: almost vertical
+    return 0.1; // Very poor: almost vertical
+  }
+
+  function scoreCurvature(angle1, angle2) {
+    const delta = getAngleDelta(angle1, angle2);
+    const similarity = evaluateArc(angle1, angle2);
+
+    if (delta === 180) return 1; // straight line: best
+    if (delta < 90) return 0; // acute: not allowed
+    if (delta < 120) return 0.6 * similarity;
+    if (delta < 140) return 0.7 * similarity;
+    if (delta < 160) return 0.8 * similarity;
+
+    return similarity;
+  }
+
+  function getAngleDelta(angle1, angle2) {
+    let delta = Math.abs(angle1 - angle2) % 360;
+    if (delta > 180) delta = 360 - delta; // [0, 180]
+    return delta;
+  }
+
+  // compute arc similarity towards x-axis
+  function evaluateArc(angle1, angle2) {
+    const proximity1 = Math.abs((angle1 % 180) - 90);
+    const proximity2 = Math.abs((angle2 % 180) - 90);
+    return 1 - Math.abs(proximity1 - proximity2) / 90;
+  }
+
   function getLinesAndRatio(mode, name, fullName, pathLength) {
-    // short name
-    if (mode === "short" || (mode === "auto" && pathLength <= name.length)) {
-      const lines = splitInTwo(name);
+    if (mode === "short") return getShortOneLine();
+    if (pathLength > fullName.length * 2) return getFullOneLine();
+    return getFullTwoLines();
+
+    function getShortOneLine() {
+      const ratio = pathLength / name.length;
+      return [[name], minmax(rn(ratio * 60), 50, 150)];
+    }
+
+    function getFullOneLine() {
+      const ratio = pathLength / fullName.length;
+      return [[fullName], minmax(rn(ratio * 70), 70, 170)];
+    }
+
+    function getFullTwoLines() {
+      const lines = splitInTwo(fullName);
       const longestLineLength = d3.max(lines.map(({length}) => length));
       const ratio = pathLength / longestLineLength;
-      return [lines, minmax(rn(ratio * 60), 50, 150)];
+      return [lines, minmax(rn(ratio * 60), 70, 150)];
     }
-
-    // full name: one line
-    if (pathLength > fullName.length * 2) {
-      const lines = [fullName];
-      const ratio = pathLength / lines[0].length;
-      return [lines, minmax(rn(ratio * 70), 70, 170)];
-    }
-
-    // full name: two lines
-    const lines = splitInTwo(fullName);
-    const longestLineLength = d3.max(lines.map(({length}) => length));
-    const ratio = pathLength / longestLineLength;
-    return [lines, minmax(rn(ratio * 60), 70, 150)];
   }
 
   // check whether multi-lined label is mostly inside the state. If no, replace it with short name label
