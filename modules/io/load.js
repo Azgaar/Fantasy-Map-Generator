@@ -153,11 +153,21 @@ async function uncompress(compressedData) {
 async function parseLoadedResult(result) {
   try {
     const resultAsString = new TextDecoder().decode(result);
+
     // data can be in FMG internal format or base64 encoded
     const isDelimited = resultAsString.substring(0, 10).includes("|");
-    const decoded = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
+    let content = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
 
-    const mapData = decoded.split("\r\n"); // split by CRLF
+    // fix if svg part has CRLF line endings instead of LF
+    const svgMatch = content.match(/<svg[^>]*id="map"[\s\S]*?<\/svg>/);
+    const svgContent = svgMatch[0];
+    const hasCrlfEndings = svgContent.includes("\r\n");
+    if (hasCrlfEndings) {
+      const correctedSvgContent = svgContent.replace(/\r\n/g, "\n");
+      content = content.replace(svgContent, correctedSvgContent);
+    }
+
+    const mapData = content.split("\r\n"); // split by CRLF
     const mapVersion = parseMapVersion(mapData[0].split("|")[0] || mapData[0] || "");
 
     return {mapData, mapVersion};
