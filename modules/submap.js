@@ -42,12 +42,11 @@ window.Submap = (function () {
     restoreCultures(parentMap, projection);
     restoreBurgs(parentMap, projection, options);
     restoreStates(parentMap, projection);
+    restoreRoutes(parentMap, projection);
     restoreReligions(parentMap, projection);
     restoreProvinces(parentMap);
     restoreMarkers(parentMap, projection);
     restoreZones(parentMap, projection, options);
-
-    Routes.generate();
 
     Rivers.specify();
     Features.specify();
@@ -188,6 +187,30 @@ window.Submap = (function () {
       const capital = pack.burgs[state.capital];
       state.center = !capital?.removed ? capital.cell : findCell(...state.pole);
     });
+  }
+
+  function restoreRoutes(parentMap, projection) {
+    pack.routes = parentMap.pack.routes
+      .map(route => {
+        const points = route.points
+          .map(([parentX, parentY]) => {
+            const [x, y] = projection(parentX, parentY);
+            if (!isInMap(x, y)) return null;
+
+            const cell = findCell(x, y);
+            return [rn(x, 2), rn(y, 2), cell];
+          })
+          .filter(Boolean);
+
+        if (points.length < 2) return null;
+
+        const firstCell = points[0][2];
+        const feature = pack.cells.f[firstCell];
+        return {...route, feature, points};
+      })
+      .filter(Boolean);
+
+    pack.cells.routes = Routes.buildLinks(pack.routes);
   }
 
   function restoreReligions(parentMap, projection) {

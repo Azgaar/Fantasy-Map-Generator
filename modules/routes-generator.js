@@ -172,29 +172,29 @@ window.Routes = (function () {
 
       return routesMerged > 1 ? mergeRoutes(routes) : routes;
     }
+  }
 
-    function buildLinks(routes) {
-      const links = {};
+  function buildLinks(routes) {
+    const links = {};
 
-      for (const {points, i: routeId} of routes) {
-        const cells = points.map(p => p[2]);
+    for (const {points, i: routeId} of routes) {
+      const cells = points.map(p => p[2]);
 
-        for (let i = 0; i < cells.length - 1; i++) {
-          const cellId = cells[i];
-          const nextCellId = cells[i + 1];
+      for (let i = 0; i < cells.length - 1; i++) {
+        const cellId = cells[i];
+        const nextCellId = cells[i + 1];
 
-          if (cellId !== nextCellId) {
-            if (!links[cellId]) links[cellId] = {};
-            links[cellId][nextCellId] = routeId;
+        if (cellId !== nextCellId) {
+          if (!links[cellId]) links[cellId] = {};
+          links[cellId][nextCellId] = routeId;
 
-            if (!links[nextCellId]) links[nextCellId] = {};
-            links[nextCellId][cellId] = routeId;
-          }
+          if (!links[nextCellId]) links[nextCellId] = {};
+          links[nextCellId][cellId] = routeId;
         }
       }
-
-      return links;
     }
+
+    return links;
   }
 
   function preparePointsArray() {
@@ -743,6 +743,7 @@ window.Routes = (function () {
 
   return {
     generate,
+    buildLinks,
     connect,
     isConnected,
     areConnected,
