@@ -122,7 +122,7 @@ function editLabel() {
 
   function redrawLabelPath() {
     const path = byId("textPath_" + elSelected.attr("id"));
-    lineGen.curve(d3.curveBundle.beta(1));
+    lineGen.curve(d3.curveNatural);
     const points = [];
     debug
       .select("#controlPoints")
