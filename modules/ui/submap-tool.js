@@ -38,37 +38,22 @@ function openSubmapTool() {
     populationRate = populationRateInput.value = rn(populationRate / scale, 2);
 
     const parentMap = {grid: deepCopy(grid), pack: deepCopy(pack), notes: deepCopy(notes)};
-    const options = {
-      smoothHeightmap: byId("submapSmoothHeightmap").checked,
-      depressRivers: byId("submapDepressRivers").checked,
-      projection: (x, y) => [(x - x0) * scale, (y - y0) * scale],
-      inverse: (x, y) => [x / scale + x0, y / scale + y0],
-      scale
-    };
+    const smoothHeightmap = byId("submapSmoothHeightmap").checked;
+    const depressRivers = byId("submapDepressRivers").checked;
+    const projection = (x, y) => [(x - x0) * scale, (y - y0) * scale];
+    const inverse = (x, y) => [x / scale + x0, y / scale + y0];
+    const options = {smoothHeightmap, depressRivers, projection, inverse, scale};
 
     resetZoom(0);
     undraw();
-
-    const oldScale = scale;
     await Submap.resample(parentMap, options);
-
-    if (byId("submapPromoteTowns").checked) {
-      const groupName = "largetowns";
-      moveAllBurgsToGroup("towns", groupName);
-      changeRadius(rn(oldScale * 0.8, 2), groupName);
-      changeFontSize(svg.select(`#labels #${groupName}`), rn(oldScale * 2, 2));
-      invokeActiveZooming();
-    }
-
-    if (byId("submapRescaleStyles").checked) changeStyles(oldScale);
-
+    rescaleBurgStyles(scale);
     drawLayers();
 
     INFO && console.groupEnd("generateSubmap");
   }
 
-  function changeStyles(scale) {
-    // resize burgIcons
+  function rescaleBurgStyles(scale) {
     const burgIcons = [...byId("burgIcons").querySelectorAll("g")];
     for (const bi of burgIcons) {
       const newRadius = rn(minmax(bi.getAttribute("size") * scale, 0.2, 10), 2);
@@ -77,13 +62,10 @@ function openSubmapTool() {
       swAttr.value = +swAttr.value * scale;
     }
 
-    // burglabels
     const burgLabels = [...byId("burgLabels").querySelectorAll("g")];
     for (const bl of burgLabels) {
       const size = +bl.dataset["size"];
       bl.dataset["size"] = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
     }
-
-    drawEmblems();
   }
 }

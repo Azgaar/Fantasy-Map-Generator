@@ -45,11 +45,10 @@ window.Submap = (function () {
     restoreRoutes(parentMap, projection);
     restoreReligions(parentMap, projection);
     restoreProvinces(parentMap);
+    restoreRiverDetails(parentMap, inverse);
+    restoreFeatureDetails(parentMap, inverse);
     restoreMarkers(parentMap, projection);
     restoreZones(parentMap, projection, options);
-    restoreFeatureDetails(parentMap, inverse);
-
-    Rivers.specify();
 
     showStatistics();
   }
@@ -274,6 +273,15 @@ window.Submap = (function () {
         .flat();
 
       return {...zone, cells: unique(cells)};
+    });
+  }
+
+  // TODO: actually restore rivers
+  function restoreRiverDetails(parentMap, inverse) {
+    pack.rivers.forEach(river => {
+      river.basin = Rivers.getBasin(river.i);
+      river.name = Rivers.getName(river.mouth);
+      river.type = Rivers.getType(river);
     });
   }
 

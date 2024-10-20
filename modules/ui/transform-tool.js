@@ -123,12 +123,12 @@ async function openTransformTool() {
   async function transformMap() {
     INFO && console.group("transformMap");
 
+    const cellsNumber = +byId("transformPointsInput").value;
+    changeCellsDensity(cellsNumber);
+
     const parentMap = {grid: deepCopy(grid), pack: deepCopy(pack), notes: deepCopy(notes)};
     const [projection, inverse] = getProjection();
     const options = {depressRivers: false, smoothHeightmap: false, scale: 1, inverse, projection};
-
-    const cellsNumber = +byId("transformPointsInput").value;
-    changeCellsDensity(cellsNumber);
 
     resetZoom(0);
     undraw();
