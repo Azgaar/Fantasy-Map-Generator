@@ -47,9 +47,9 @@ window.Submap = (function () {
     restoreProvinces(parentMap);
     restoreMarkers(parentMap, projection);
     restoreZones(parentMap, projection, options);
+    restoreFeatureDetails(parentMap, inverse);
 
     Rivers.specify();
-    Features.specify();
 
     showStatistics();
   }
@@ -274,6 +274,21 @@ window.Submap = (function () {
         .flat();
 
       return {...zone, cells: unique(cells)};
+    });
+  }
+
+  function restoreFeatureDetails(parentMap, inverse) {
+    pack.features.forEach(feature => {
+      if (!feature) return;
+      const [x, y] = pack.cells.p[feature.firstCell];
+      const [parentX, parentY] = inverse(x, y);
+      const parentCell = parentMap.pack.cells.q.find(parentX, parentY, Infinity)[2];
+      if (parentCell === undefined) return;
+      const parentFeature = parentMap.pack.features[parentMap.pack.cells.f[parentCell]];
+
+      if (parentFeature.group) feature.group = parentFeature.group;
+      if (parentFeature.name) feature.name = parentFeature.name;
+      if (parentFeature.height) feature.height = parentFeature.height;
     });
   }
 
