@@ -20,7 +20,7 @@ function openSubmapTool() {
   if (modules.openSubmapTool) return;
   modules.openSubmapTool = true;
 
-  async function generateSubmap() {
+  function generateSubmap() {
     INFO && console.group("generateSubmap");
     const [[x0, y0]] = getViewBoxExtent();
 
@@ -46,7 +46,7 @@ function openSubmapTool() {
 
     resetZoom(0);
     undraw();
-    await Submap.resample(parentMap, options);
+    Resample.process(parentMap, options);
     rescaleBurgStyles(scale);
     drawLayers();
 

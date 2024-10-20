@@ -120,7 +120,7 @@ async function openTransformTool() {
     handleInput();
   }
 
-  async function transformMap() {
+  function transformMap() {
     INFO && console.group("transformMap");
 
     const cellsNumber = +byId("transformPointsInput").value;
@@ -132,7 +132,7 @@ async function openTransformTool() {
 
     resetZoom(0);
     undraw();
-    await Submap.resample(parentMap, options);
+    Resample.process(parentMap, options);
     drawLayers();
 
     INFO && console.groupEnd("transformMap");

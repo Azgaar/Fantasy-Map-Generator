@@ -1,6 +1,6 @@
 "use strict";
 
-window.Submap = (function () {
+window.Resample = (function () {
   /*
     generate new map based on an existing one (resampling parentMap)
     parentMap: {grid, pack, notes} from original map
@@ -11,7 +11,7 @@ window.Submap = (function () {
       inverse: f(Number, Number) -> [Number, Number]
     }
     */
-  function resample(parentMap, options) {
+  function process(parentMap, options) {
     const {projection, inverse} = options;
 
     grid = generateGrid();
@@ -33,19 +33,17 @@ window.Submap = (function () {
     Features.markupPack();
     createDefaultRuler();
 
-    Rivers.generate();
-    Biomes.define();
-
+    restoreCellData(parentMap, inverse);
+    restoreRivers(parentMap, projection);
     rankCells();
 
-    restoreSecondaryCellData(parentMap, inverse);
     restoreCultures(parentMap, projection);
     restoreBurgs(parentMap, projection, options);
     restoreStates(parentMap, projection);
     restoreRoutes(parentMap, projection);
     restoreReligions(parentMap, projection);
     restoreProvinces(parentMap);
-    restoreRiverDetails(parentMap, inverse);
+    restoreRiverDetails();
     restoreFeatureDetails(parentMap, inverse);
     restoreMarkers(parentMap, projection);
     restoreZones(parentMap, projection, options);
@@ -90,7 +88,9 @@ window.Submap = (function () {
     });
   }
 
-  function restoreSecondaryCellData(parentMap, inverse) {
+  function restoreCellData(parentMap, inverse) {
+    pack.cells.biome = new Uint8Array(pack.cells.i.length);
+    pack.cells.fl = new Uint16Array(pack.cells.i.length);
     pack.cells.culture = new Uint16Array(pack.cells.i.length);
     pack.cells.state = new Uint16Array(pack.cells.i.length);
     pack.cells.burg = new Uint16Array(pack.cells.i.length);
@@ -102,16 +102,42 @@ window.Submap = (function () {
 
     for (const newPackCell of pack.cells.i) {
       const [x, y] = inverse(...pack.cells.p[newPackCell]);
+      if (isWater(pack, newPackCell)) continue;
 
-      if (isWater(pack, newPackCell)) {
-      } else {
-        const parentPackCell = parentPackLandCellsQuadtree.find(x, y, Infinity)[2];
-        pack.cells.culture[newPackCell] = parentMap.pack.cells.culture[parentPackCell];
-        pack.cells.state[newPackCell] = parentMap.pack.cells.state[parentPackCell];
-        pack.cells.religion[newPackCell] = parentMap.pack.cells.religion[parentPackCell];
-        pack.cells.province[newPackCell] = parentMap.pack.cells.province[parentPackCell];
-      }
+      const parentPackCell = parentPackLandCellsQuadtree.find(x, y, Infinity)[2];
+      pack.cells.biome[newPackCell] = parentMap.pack.cells.biome[parentPackCell];
+      pack.cells.fl[newPackCell] = parentMap.pack.cells.fl[parentPackCell];
+      pack.cells.culture[newPackCell] = parentMap.pack.cells.culture[parentPackCell];
+      pack.cells.state[newPackCell] = parentMap.pack.cells.state[parentPackCell];
+      pack.cells.religion[newPackCell] = parentMap.pack.cells.religion[parentPackCell];
+      pack.cells.province[newPackCell] = parentMap.pack.cells.province[parentPackCell];
     }
+  }
+
+  function restoreRivers(parentMap, projection) {
+    pack.cells.r = new Uint16Array(pack.cells.i.length);
+    pack.cells.conf = new Uint8Array(pack.cells.i.length);
+
+    pack.rivers = parentMap.pack.rivers
+      .map(river => {
+        const parentPoints = river.points || river.cells.map(cellId => parentMap.pack.cells.p[cellId]);
+        const points = parentPoints
+          .map(([parentX, parentY]) => {
+            const [x, y] = projection(parentX, parentY);
+            return isInMap(x, y) ? [rn(x, 2), rn(y, 2)] : null;
+          })
+          .filter(Boolean);
+        if (points.length < 2) return null;
+
+        const cells = points.map(point => findCell(...point));
+        cells.forEach(cellId => {
+          if (pack.cells.r[cellId]) pack.cells.conf[cellId] = 1;
+          pack.cells.r[cellId] = river.i;
+        });
+
+        return {...river, cells, points, source: cells.at(0), mouth: cells.at(-2)};
+      })
+      .filter(Boolean);
   }
 
   function restoreCultures(parentMap, projection) {
@@ -276,12 +302,9 @@ window.Submap = (function () {
     });
   }
 
-  // TODO: actually restore rivers
-  function restoreRiverDetails(parentMap, inverse) {
+  function restoreRiverDetails() {
     pack.rivers.forEach(river => {
       river.basin = Rivers.getBasin(river.i);
-      river.name = Rivers.getName(river.mouth);
-      river.type = Rivers.getType(river);
     });
   }
 
@@ -319,5 +342,5 @@ window.Submap = (function () {
     return x >= 0 && x <= graphWidth && y >= 0 && y <= graphHeight;
   }
 
-  return {resample};
+  return {process};
 })();
