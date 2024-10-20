@@ -38,15 +38,12 @@ function openSubmapTool() {
     populationRate = populationRateInput.value = rn(populationRate / scale, 2);
 
     const parentMap = {grid: deepCopy(grid), pack: deepCopy(pack), notes: deepCopy(notes)};
-    const smoothHeightmap = byId("submapSmoothHeightmap").checked;
-    const depressRivers = byId("submapDepressRivers").checked;
     const projection = (x, y) => [(x - x0) * scale, (y - y0) * scale];
     const inverse = (x, y) => [x / scale + x0, y / scale + y0];
-    const options = {smoothHeightmap, depressRivers, projection, inverse, scale};
 
     resetZoom(0);
     undraw();
-    Resample.process(parentMap, options);
+    Resample.process({parentMap, projection, inverse, scale});
     rescaleBurgStyles(scale);
     drawLayers();
 

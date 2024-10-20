@@ -128,11 +128,10 @@ async function openTransformTool() {
 
     const parentMap = {grid: deepCopy(grid), pack: deepCopy(pack), notes: deepCopy(notes)};
     const [projection, inverse] = getProjection();
-    const options = {depressRivers: false, smoothHeightmap: false, scale: 1, inverse, projection};
 
     resetZoom(0);
     undraw();
-    Resample.process(parentMap, options);
+    Resample.process({parentMap, projection, inverse, scale: 1});
     drawLayers();
 
     INFO && console.groupEnd("transformMap");

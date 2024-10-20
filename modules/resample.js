@@ -4,21 +4,16 @@ window.Resample = (function () {
   /*
     generate new map based on an existing one (resampling parentMap)
     parentMap: {grid, pack, notes} from original map
-    options = {
-      smoothHeightmap: Bool; run smooth filter on heights
-      depressRivers: Bool; lower elevation of riverbed cells
-      projection: f(Number, Number) -> [Number, Number]
-      inverse: f(Number, Number) -> [Number, Number]
-    }
-    */
-  function process(parentMap, options) {
-    const {projection, inverse} = options;
-
+    projection: f(Number, Number) -> [Number, Number]
+    inverse: f(Number, Number) -> [Number, Number]
+    scale: Number
+  */
+  function process({parentMap, projection, inverse, scale}) {
     grid = generateGrid();
     pack = {};
     notes = parentMap.notes;
 
-    resamplePrimaryGridData(parentMap, inverse);
+    resamplePrimaryGridData(parentMap, inverse, scale);
 
     Features.markupGrid();
     addLakesInDeepDepressions();
@@ -38,20 +33,19 @@ window.Resample = (function () {
     rankCells();
 
     restoreCultures(parentMap, projection);
-    restoreBurgs(parentMap, projection, options);
+    restoreBurgs(parentMap, projection, scale);
     restoreStates(parentMap, projection);
     restoreRoutes(parentMap, projection);
     restoreReligions(parentMap, projection);
     restoreProvinces(parentMap);
-    restoreRiverDetails();
     restoreFeatureDetails(parentMap, inverse);
     restoreMarkers(parentMap, projection);
-    restoreZones(parentMap, projection, options);
+    restoreZones(parentMap, projection, scale);
 
     showStatistics();
   }
 
-  function resamplePrimaryGridData(parentMap, inverse) {
+  function resamplePrimaryGridData(parentMap, inverse, scale) {
     grid.cells.h = new Uint8Array(grid.points.length);
     grid.cells.temp = new Int8Array(grid.points.length);
     grid.cells.prec = new Uint8Array(grid.points.length);
@@ -66,8 +60,7 @@ window.Resample = (function () {
       grid.cells.prec[newGridCell] = parentMap.grid.cells.prec[parentGridCell];
     });
 
-    if (options.smoothHeightmap) smoothHeightmap();
-    if (options.depressRivers) depressRivers(parentMap, inverse);
+    if (scale >= 2) smoothHeightmap();
   }
 
   function smoothHeightmap() {
@@ -75,16 +68,6 @@ window.Resample = (function () {
       const heights = [height, ...grid.cells.c[newGridCell].map(c => grid.cells.h[c])];
       const meanHeight = d3.mean(heights);
       grid.cells.h[newGridCell] = isWater(grid, newGridCell) ? Math.min(meanHeight, 19) : Math.max(meanHeight, 20);
-    });
-  }
-
-  function depressRivers(parentMap, inverse) {
-    // lower elevation of cells with rivers by 1
-    grid.cells.points.forEach(([x, y], newGridCell) => {
-      const [parentX, parentY] = inverse(x, y);
-      const parentPackCell = parentMap.pack.cells.q.find(parentX, parentY, Infinity)[2];
-      const hasRiver = Boolean(parentMap.pack.cells.r[parentPackCell]);
-      if (hasRiver && grid.cells.h[newGridCell] > 20) grid.cells.h[newGridCell] -= 1;
     });
   }
 
@@ -138,6 +121,11 @@ window.Resample = (function () {
         return {...river, cells, points, source: cells.at(0), mouth: cells.at(-2)};
       })
       .filter(Boolean);
+
+    pack.rivers.forEach(river => {
+      river.basin = Rivers.getBasin(river.i);
+      river.length = Rivers.getApproximateLength(river.points);
+    });
   }
 
   function restoreCultures(parentMap, projection) {
@@ -155,13 +143,13 @@ window.Resample = (function () {
     });
   }
 
-  function restoreBurgs(parentMap, projection, options) {
+  function restoreBurgs(parentMap, projection, scale) {
     const packLandCellsQuadtree = d3.quadtree(groupCellsByType(pack).land);
     const findLandCell = (x, y) => packLandCellsQuadtree.find(x, y, Infinity)?.[2];
 
     pack.burgs = parentMap.pack.burgs.map(burg => {
       if (!burg.i || burg.removed) return burg;
-      burg.population *= options.scale; // adjust for populationRate change
+      burg.population *= scale; // adjust for populationRate change
 
       const [xp, yp] = projection(burg.x, burg.y);
       if (!isInMap(xp, yp)) return {...burg, removed: true, lock: false};
@@ -285,8 +273,8 @@ window.Resample = (function () {
     });
   }
 
-  function restoreZones(parentMap, projection, options) {
-    const getSearchRadius = cellId => Math.sqrt(parentMap.pack.cells.area[cellId] / Math.PI) * options.scale;
+  function restoreZones(parentMap, projection, scale) {
+    const getSearchRadius = cellId => Math.sqrt(parentMap.pack.cells.area[cellId] / Math.PI) * scale;
 
     pack.zones = parentMap.pack.zones.map(zone => {
       const cells = zone.cells
@@ -299,12 +287,6 @@ window.Resample = (function () {
         .flat();
 
       return {...zone, cells: unique(cells)};
-    });
-  }
-
-  function restoreRiverDetails() {
-    pack.rivers.forEach(river => {
-      river.basin = Rivers.getBasin(river.i);
     });
   }
 
