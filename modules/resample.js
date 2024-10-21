@@ -22,16 +22,13 @@ window.Resample = (function () {
     OceanLayers();
     calculateMapCoordinates();
     calculateTemperatures();
-    generatePrecipitation();
 
     reGraph();
     Features.markupPack();
     createDefaultRuler();
 
-    restoreCellData(parentMap, inverse);
-    restoreRivers(parentMap, projection);
-    rankCells();
-
+    restoreCellData(parentMap, inverse, scale);
+    restoreRivers(parentMap, projection, scale);
     restoreCultures(parentMap, projection);
     restoreBurgs(parentMap, projection, scale);
     restoreStates(parentMap, projection);
@@ -71,9 +68,11 @@ window.Resample = (function () {
     });
   }
 
-  function restoreCellData(parentMap, inverse) {
+  function restoreCellData(parentMap, inverse, scale) {
     pack.cells.biome = new Uint8Array(pack.cells.i.length);
     pack.cells.fl = new Uint16Array(pack.cells.i.length);
+    pack.cells.s = new Int16Array(pack.cells.i.length);
+    pack.cells.pop = new Float32Array(pack.cells.i.length);
     pack.cells.culture = new Uint16Array(pack.cells.i.length);
     pack.cells.state = new Uint16Array(pack.cells.i.length);
     pack.cells.burg = new Uint16Array(pack.cells.i.length);
@@ -88,8 +87,14 @@ window.Resample = (function () {
       if (isWater(pack, newPackCell)) continue;
 
       const parentPackCell = parentPackLandCellsQuadtree.find(x, y, Infinity)[2];
+      const parentCellArea = parentMap.pack.cells.area[parentPackCell];
+      const areaRatio = pack.cells.area[newPackCell] / parentCellArea;
+      const scaleRatio = areaRatio / scale;
+
       pack.cells.biome[newPackCell] = parentMap.pack.cells.biome[parentPackCell];
       pack.cells.fl[newPackCell] = parentMap.pack.cells.fl[parentPackCell];
+      pack.cells.s[newPackCell] = parentMap.pack.cells.s[parentPackCell] * scaleRatio;
+      pack.cells.pop[newPackCell] = parentMap.pack.cells.pop[parentPackCell] * scaleRatio;
       pack.cells.culture[newPackCell] = parentMap.pack.cells.culture[parentPackCell];
       pack.cells.state[newPackCell] = parentMap.pack.cells.state[parentPackCell];
       pack.cells.religion[newPackCell] = parentMap.pack.cells.religion[parentPackCell];
@@ -97,9 +102,10 @@ window.Resample = (function () {
     }
   }
 
-  function restoreRivers(parentMap, projection) {
+  function restoreRivers(parentMap, projection, scale) {
     pack.cells.r = new Uint16Array(pack.cells.i.length);
     pack.cells.conf = new Uint8Array(pack.cells.i.length);
+    const offset = grid.spacing * 2;
 
     pack.rivers = parentMap.pack.rivers
       .map(river => {
@@ -107,7 +113,7 @@ window.Resample = (function () {
         const points = parentPoints
           .map(([parentX, parentY]) => {
             const [x, y] = projection(parentX, parentY);
-            return isInMap(x, y) ? [rn(x, 2), rn(y, 2)] : null;
+            return isInMap(x, y, offset) ? [rn(x, 2), rn(y, 2)] : null;
           })
           .filter(Boolean);
         if (points.length < 2) return null;
@@ -118,7 +124,8 @@ window.Resample = (function () {
           pack.cells.r[cellId] = river.i;
         });
 
-        return {...river, cells, points, source: cells.at(0), mouth: cells.at(-2)};
+        const widthFactor = river.widthFactor * scale;
+        return {...river, cells, points, source: cells.at(0), mouth: cells.at(-2), widthFactor};
       })
       .filter(Boolean);
 
@@ -203,12 +210,14 @@ window.Resample = (function () {
   }
 
   function restoreRoutes(parentMap, projection) {
+    const offset = grid.spacing * 2;
+
     pack.routes = parentMap.pack.routes
       .map(route => {
         const points = route.points
           .map(([parentX, parentY]) => {
             const [x, y] = projection(parentX, parentY);
-            if (!isInMap(x, y)) return null;
+            if (!isInMap(x, y, offset)) return null;
 
             const cell = findCell(x, y);
             return [rn(x, 2), rn(y, 2), cell];
@@ -320,8 +329,8 @@ window.Resample = (function () {
     return graph.cells.h[cellId] < 20;
   }
 
-  function isInMap(x, y) {
-    return x >= 0 && x <= graphWidth && y >= 0 && y <= graphHeight;
+  function isInMap(x, y, offset = 0) {
+    return x + offset >= 0 && x - offset <= graphWidth && y + offset >= 0 && y - offset <= graphHeight;
   }
 
   return {process};

@@ -74,13 +74,10 @@ function createRiver() {
 
   function addRiver() {
     const {rivers, cells} = pack;
-    const {addMeandering, getApproximateLength, getWidth, getOffset, getName, getRiverPath, getBasin, getNextId} =
-      Rivers;
-
     const riverCells = createRiver.cells;
     if (riverCells.length < 2) return tip("Add at least 2 cells", false, "error");
 
-    const riverId = getNextId(rivers);
+    const riverId = Rivers.getNextId(rivers);
     const parent = cells.r[last(riverCells)] || riverId;
 
     riverCells.forEach(cell => {
@@ -89,17 +86,24 @@ function createRiver() {
 
     const source = riverCells[0];
     const mouth = parent === riverId ? last(riverCells) : riverCells[riverCells.length - 2];
-    const sourceWidth = 0.05;
+    const sourceWidth = Rivers.getSourceWidth(cells.fl[source]);
     const defaultWidthFactor = rn(1 / (pointsInput.dataset.cells / 10000) ** 0.25, 2);
     const widthFactor = 1.2 * defaultWidthFactor;
 
-    const meanderedPoints = addMeandering(riverCells);
+    const meanderedPoints = Rivers.addMeandering(riverCells);
 
     const discharge = cells.fl[mouth]; // m3 in second
-    const length = getApproximateLength(meanderedPoints);
-    const width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, sourceWidth));
-    const name = getName(mouth);
-    const basin = getBasin(parent);
+    const length = Rivers.getApproximateLength(meanderedPoints);
+    const width = Rivers.getWidth(
+      Rivers.getOffset({
+        flux: discharge,
+        pointIndex: meanderedPoints.length,
+        widthFactor,
+        startingWidth: sourceWidth
+      })
+    );
+    const name = Rivers.getName(mouth);
+    const basin = Rivers.getBasin(parent);
 
     rivers.push({
       i: riverId,
@@ -124,7 +128,7 @@ function createRiver() {
       .select("#rivers")
       .append("path")
       .attr("id", id)
-      .attr("d", getRiverPath(meanderedPoints, widthFactor, sourceWidth));
+      .attr("d", Rivers.getRiverPath(meanderedPoints, widthFactor, sourceWidth));
 
     editRiver(id);
   }
