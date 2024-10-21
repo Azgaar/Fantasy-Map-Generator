@@ -86,10 +86,16 @@ function editRiver(id) {
   }
 
   function updateRiverWidth(river) {
-    const {addMeandering, getWidth, getOffset} = Rivers;
     const {cells, discharge, widthFactor, sourceWidth} = river;
-    const meanderedPoints = addMeandering(cells);
-    river.width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, sourceWidth));
+    const meanderedPoints = Rivers.addMeandering(cells);
+    river.width = Rivers.getWidth(
+      Rivers.getOffset({
+        flux: discharge,
+        pointIndex: meanderedPoints.length,
+        widthFactor,
+        startingWidth: sourceWidth
+      })
+    );
 
     const width = `${rn(river.width * distanceScale, 3)} ${distanceUnitInput.value}`;
     byId("riverWidth").value = width;
