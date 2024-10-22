@@ -1,7 +1,7 @@
 "use strict";
 
 function editZones() {
-  closeDialogs();
+  closeDialogs("#zonesEditor, .stable");
   if (!layerIsOn("toggleZones")) toggleZones();
   const body = byId("zonesBodySection");
 
