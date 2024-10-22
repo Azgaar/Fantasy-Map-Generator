@@ -1,7 +1,7 @@
 /**
  * @template T
  */
-class PriorityQueue extends Array {
+export class PriorityQueue extends Array {
     /**
      * @param {{comparator: (a:T, B:T) => number | boolean}} options
      */
@@ -25,5 +25,5 @@ class PriorityQueue extends Array {
         return this.shift();
     }
 }
-
+export default PriorityQueue;
 globalThis.PriorityQueue = PriorityQueue;
