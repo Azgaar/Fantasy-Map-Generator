@@ -56,3 +56,11 @@ JSON.isValid = str => {
   }
   return true;
 };
+
+JSON.safeParse = str => {
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    return null;
+  }
+};

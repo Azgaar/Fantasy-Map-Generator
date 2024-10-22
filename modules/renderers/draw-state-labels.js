@@ -47,8 +47,10 @@ function drawStateLabels(list) {
       const pathPoints = [[ray1.x, ray1.y], state.pole, [ray2.x, ray2.y]];
       if (ray1.x > ray2.x) pathPoints.reverse();
 
-      DEBUG && drawPoint(state.pole, {color: "black", radius: 1});
-      DEBUG && drawPath(pathPoints, {color: "black", width: 0.2});
+      if (DEBUG.stateLabels) {
+        drawPoint(state.pole, {color: "black", radius: 1});
+        drawPath(pathPoints, {color: "black", width: 0.2});
+      }
 
       labelPaths.push([state.i, pathPoints]);
     }
@@ -163,9 +165,11 @@ function drawStateLabels(list) {
       const offset1 = [x + -dy * offset, y + dx * offset];
       const offset2 = [x + dy * offset, y + -dx * offset];
 
-      DEBUG && drawPoint([x, y], {color: isInsideState(x, y) ? "blue" : "red", radius: 0.8});
-      DEBUG && drawPoint(offset1, {color: isInsideState(...offset1) ? "blue" : "red", radius: 0.4});
-      DEBUG && drawPoint(offset2, {color: isInsideState(...offset2) ? "blue" : "red", radius: 0.4});
+      if (DEBUG.stateLabels) {
+        drawPoint([x, y], {color: isInsideState(x, y) ? "blue" : "red", radius: 0.8});
+        drawPoint(offset1, {color: isInsideState(...offset1) ? "blue" : "red", radius: 0.4});
+        drawPoint(offset2, {color: isInsideState(...offset2) ? "blue" : "red", radius: 0.4});
+      }
 
       const inState = isInsideState(x, y) && isInsideState(...offset1) && isInsideState(...offset2);
       if (!inState) break;
