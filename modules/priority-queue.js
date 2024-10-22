@@ -1,8 +1,3 @@
-
-
-
-
-
 /**
  * @template T
  */
@@ -31,6 +26,4 @@ class PriorityQueue extends Array {
     }
 }
 
-
 globalThis.PriorityQueue = PriorityQueue;
-
