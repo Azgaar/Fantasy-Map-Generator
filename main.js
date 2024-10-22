@@ -495,14 +495,6 @@ function resetZoom(d = 1000) {
   svg.transition().duration(d).call(zoom.transform, d3.zoomIdentity);
 }
 
-// calculate x y extreme points of viewBox
-function getViewBoxExtent() {
-  return [
-    [Math.abs(viewX / scale), Math.abs(viewY / scale)],
-    [Math.abs(viewX / scale) + graphWidth / scale, Math.abs(viewY / scale) + graphHeight / scale]
-  ];
-}
-
 // active zooming feature
 function invokeActiveZooming() {
   const isOptimized = shapeRendering.value === "optimizeSpeed";
@@ -724,10 +716,11 @@ function setSeed(precreatedSeed) {
 
 function addLakesInDeepDepressions() {
   TIME && console.time("addLakesInDeepDepressions");
+  const elevationLimit = +byId("lakeElevationLimitOutput").value;
+  if (elevationLimit === 80) return;
+
   const {cells, features} = grid;
   const {c, h, b} = cells;
-  const ELEVATION_LIMIT = +byId("lakeElevationLimitOutput").value;
-  if (ELEVATION_LIMIT === 80) return;
 
   for (const i of cells.i) {
     if (b[i] || h[i] < 20) continue;
@@ -736,7 +729,7 @@ function addLakesInDeepDepressions() {
     if (h[i] > minHeight) continue;
 
     let deep = true;
-    const threshold = h[i] + ELEVATION_LIMIT;
+    const threshold = h[i] + elevationLimit;
     const queue = [i];
     const checked = [];
     checked[i] = true;
@@ -1176,8 +1169,8 @@ function rankCells() {
   cells.s = new Int16Array(cells.i.length); // cell suitability array
   cells.pop = new Float32Array(cells.i.length); // cell population array
 
-  const flMean = d3.median(cells.fl.filter(f => f)) || 0,
-    flMax = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
+  const flMean = d3.median(cells.fl.filter(f => f)) || 0;
+  const flMax = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
   const areaMean = d3.mean(cells.area); // to adjust population by cell area
 
   for (const i of cells.i) {

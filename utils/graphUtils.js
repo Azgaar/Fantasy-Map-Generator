@@ -241,10 +241,8 @@ void (function addFindAll() {
   };
 
   const tree_filter = function (x, y, radius) {
-    var t = {x, y, x0: this._x0, y0: this._y0, x3: this._x1, y3: this._y1, quads: [], node: this._root};
-    if (t.node) {
-      t.quads.push(new Quad(t.node, t.x0, t.y0, t.x3, t.y3));
-    }
+    const t = {x, y, x0: this._x0, y0: this._y0, x3: this._x1, y3: this._y1, quads: [], node: this._root};
+    if (t.node) t.quads.push(new Quad(t.node, t.x0, t.y0, t.x3, t.y3));
     radiusSearchInit(t, radius);
 
     var i = 0;
