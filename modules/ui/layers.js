@@ -626,6 +626,9 @@ function toggleGrid(event) {
     turnButtonOff("toggleGrid");
     gridOverlay.selectAll("*").remove();
   }
+
+  // Update the checkbox state when toggling the grid
+  document.getElementById("gridCellNumbers").checked = gridOverlay.attr("cell-numbers") === "true";
 }
 
 function drawGrid() {
@@ -655,6 +658,48 @@ function drawGrid() {
     .attr("height", maxHeight)
     .attr("fill", "url(" + pattern + ")")
     .attr("stroke", "none");
+
+    if (gridOverlay.attr("cell-numbers") === "true" || document.getElementById("gridCellNumbers").checked) {
+      drawCellNumbers();
+    }
+}
+
+function drawCellNumbers() {
+  const pattern = gridOverlay.attr("type") || "pointyHex";
+  const scale = +gridOverlay.attr("scale") || 1;
+  const dx = +gridOverlay.attr("dx") || 0;
+  const dy = +gridOverlay.attr("dy") || 0;
+
+  const patternElement = document.getElementById("pattern_" + pattern);
+  const patternWidth = +patternElement.getAttribute("width") * scale;
+  const patternHeight = +patternElement.getAttribute("height") * scale;
+
+  const maxWidth = Math.max(+mapWidthInput.value, graphWidth);
+  const maxHeight = Math.max(+mapHeightInput.value, graphHeight);
+
+  const columns = Math.ceil(maxWidth / patternWidth);
+  const rows = Math.ceil(maxHeight / patternHeight);
+
+  const labelStyle = gridOverlay.attr("data-label-style") || "stroke: #000000;";
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < columns; col++) {
+      const x = col * patternWidth + dx;
+      const y = row * patternHeight + dy;
+      const cellNumber = row * columns + col + 1;
+
+      gridOverlay
+        .append("text")
+        .attr("x", x + patternWidth / 2)
+        .attr("y", y + patternHeight / 2)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "central")
+        .attr("font-size", Math.min(patternWidth, patternHeight) / 4)
+        .attr("fill", "none")  // Set fill to none so only stroke is visible
+        .attr("style", labelStyle)
+        .text(cellNumber);
+    }
+  }
 }
 
 function toggleCoordinates(event) {
