@@ -20,34 +20,46 @@ function openSubmapTool() {
   if (modules.openSubmapTool) return;
   modules.openSubmapTool = true;
 
+  // add listeners
+  byId("submapPointsInput").on("input", handleCellsChange);
+
   function generateSubmap() {
     INFO && console.group("generateSubmap");
-    const [[x0, y0]] = getViewBoxExtent();
 
-    // converting map position on the planet. TODO: fix, coordinates are wrong
-    const mapSizeOutput = byId("mapSizeOutput");
-    const latitudeOutput = byId("latitudeOutput");
-    const latN = 90 - ((180 - (mapSizeInput.value / 100) * 180) * latitudeOutput.value) / 100;
-    const newLatN = latN - ((y0 / graphHeight) * mapSizeOutput.value * 180) / 100;
-    mapSizeOutput.value /= scale;
-    latitudeOutput.value = ((90 - newLatN) / (180 - (mapSizeOutput.value / 100) * 180)) * 100;
-    byId("mapSizeInput").value = mapSizeOutput.value;
-    byId("latitudeInput").value = latitudeOutput.value;
+    const [x0, y0] = [Math.abs(viewX / scale), Math.abs(viewY / scale)]; // top-left corner
+    recalculateMapSize(x0, y0);
 
-    distanceScale = distanceScaleInput.value = rn(distanceScale / scale, 2);
-    populationRate = populationRateInput.value = rn(populationRate / scale, 2);
+    const cellsNumber = +byId("submapPointsInput").value;
+    changeCellsDensity(cellsNumber);
 
-    const parentMap = {grid: deepCopy(grid), pack: deepCopy(pack), notes: deepCopy(notes)};
     const projection = (x, y) => [(x - x0) * scale, (y - y0) * scale];
     const inverse = (x, y) => [x / scale + x0, y / scale + y0];
 
     resetZoom(0);
     undraw();
-    Resample.process({parentMap, projection, inverse, scale});
+    Resample.process({projection, inverse, scale});
     rescaleBurgStyles(scale);
     drawLayers();
 
     INFO && console.groupEnd("generateSubmap");
+  }
+
+  function recalculateMapSize(x0, y0) {
+    const mapSize = +byId("mapSizeOutput").value;
+    byId("mapSizeOutput").value = byId("mapSizeInput").value = rn(mapSize / scale, 2);
+
+    const latT = mapCoordinates.latT / scale;
+    const latN = getLatitude(y0);
+    const latShift = (90 - latN) / (180 - latT);
+    byId("latitudeOutput").value = byId("latitudeInput").value = rn(latShift * 100, 2);
+
+    const lotT = mapCoordinates.lonT / scale;
+    const lonE = getLongitude(x0 + graphWidth / scale);
+    const lonShift = (180 - lonE) / (360 - lotT);
+    byId("longitudeOutput").value = byId("longitudeInput").value = rn(lonShift * 100, 2);
+
+    distanceScale = distanceScaleInput.value = rn(distanceScale / scale, 2);
+    populationRate = populationRateInput.value = rn(populationRate / scale, 2);
   }
 
   function rescaleBurgStyles(scale) {
@@ -64,5 +76,13 @@ function openSubmapTool() {
       const size = +bl.dataset["size"];
       bl.dataset["size"] = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
     }
+  }
+
+  function handleCellsChange() {
+    const cells = cellsDensityMap[+this.value] || 1000;
+    this.dataset.cells = cells;
+    const output = byId("submapPointsFormatted");
+    output.value = getCellsDensityValue(cells);
+    output.style.color = getCellsDensityColor(cells);
   }
 }

@@ -8,7 +8,9 @@ window.Resample = (function () {
     inverse: f(Number, Number) -> [Number, Number]
     scale: Number
   */
-  function process({parentMap, projection, inverse, scale}) {
+  function process({projection, inverse, scale}) {
+    const parentMap = {grid: deepCopy(grid), pack: deepCopy(pack), notes: deepCopy(notes)};
+
     grid = generateGrid();
     pack = {};
     notes = parentMap.notes;
