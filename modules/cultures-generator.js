@@ -518,7 +518,7 @@ window.Cultures = (function () {
     TIME && console.time("expandCultures");
     const {cells, cultures} = pack;
 
-    const queue = new PriorityQueue({comparator: (a, b) => a.priority - b.priority});
+    const queue = new globalThis.PriorityQueue({comparator: (a, b) => a.priority - b.priority});
     const cost = [];
 
     const neutralRate = byId("neutralRate")?.valueAsNumber || 1;

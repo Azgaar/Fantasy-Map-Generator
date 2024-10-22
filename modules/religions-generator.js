@@ -695,7 +695,7 @@ window.Religions = (function () {
     const {cells, routes} = pack;
     const religionIds = spreadFolkReligions(religions);
 
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    const queue = new globalThis.PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
     // limit cost for organized religions growth

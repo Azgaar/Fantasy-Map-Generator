@@ -286,7 +286,7 @@ window.BurgsAndStates = (() => {
     const {cells, states, cultures, burgs} = pack;
 
     cells.state = cells.state || new Uint16Array(cells.i.length);
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    const queue = new globalThis.PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
     const globalGrowthRate = byId("growthRate").valueAsNumber || 1;

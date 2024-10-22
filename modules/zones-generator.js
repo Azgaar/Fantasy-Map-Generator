@@ -209,7 +209,7 @@ window.Zones = (function () {
     const cost = [];
     const maxCells = rand(20, 40);
 
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    const queue = new globalThis.PriorityQueue({comparator: (a, b) => a.p - b.p});
     queue.queue({e: burg.cell, p: 0});
 
     while (queue.length) {
@@ -251,7 +251,7 @@ window.Zones = (function () {
     const cost = [];
     const maxCells = rand(5, 25);
 
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    const queue = new globalThis.PriorityQueue({comparator: (a, b) => a.p - b.p});
     queue.queue({e: burg.cell, p: 0});
 
     while (queue.length) {

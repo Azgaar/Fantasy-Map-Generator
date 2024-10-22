@@ -77,7 +77,7 @@ window.Provinces = (function () {
     });
 
     // expand generated provinces
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    const queue = new globalThis.PriorityQueue({comparator: (a, b) => a.p - b.p});
     const cost = [];
 
     provinces.forEach(p => {
