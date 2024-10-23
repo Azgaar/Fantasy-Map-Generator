@@ -695,7 +695,7 @@ window.Religions = (function () {
     const {cells, routes} = pack;
     const religionIds = spreadFolkReligions(religions);
 
-    const queue = new globalThis.PriorityQueue({comparator: (a, b) => a.p - b.p});
+    const queue = new FlatQueue();
     const cost = [];
 
     // limit cost for organized religions growth
@@ -705,14 +705,14 @@ window.Religions = (function () {
       .filter(r => r.i && !r.lock && r.type !== "Folk" && !r.removed)
       .forEach(r => {
         religionIds[r.center] = r.i;
-        queue.queue({e: r.center, p: 0, r: r.i, s: cells.state[r.center]});
+        queue.push({e: r.center, p: 0, r: r.i, s: cells.state[r.center]}, 0);
         cost[r.center] = 1;
       });
 
     const religionsMap = new Map(religions.map(r => [r.i, r]));
 
     while (queue.length) {
-      const {e: cellId, p, r, s: state} = queue.dequeue();
+      const {e: cellId, p, r, s: state} = queue.pop();
       const {culture, expansion, expansionism} = religionsMap.get(r);
 
       cells.c[cellId].forEach(nextCell => {
@@ -732,7 +732,7 @@ window.Religions = (function () {
           if (cells.culture[nextCell]) religionIds[nextCell] = r; // assign religion to cell
           cost[nextCell] = totalCost;
 
-          queue.queue({e: nextCell, p: totalCost, r, s: state});
+          queue.push({e: nextCell, p: totalCost, r, s: state}, totalCost);
         }
       });
     }

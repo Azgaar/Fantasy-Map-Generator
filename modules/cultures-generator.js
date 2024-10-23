@@ -518,7 +518,7 @@ window.Cultures = (function () {
     TIME && console.time("expandCultures");
     const {cells, cultures} = pack;
 
-    const queue = new globalThis.PriorityQueue({comparator: (a, b) => a.priority - b.priority});
+    const queue = new FlatQueue();
     const cost = [];
 
     const neutralRate = byId("neutralRate")?.valueAsNumber || 1;
@@ -538,11 +538,11 @@ window.Cultures = (function () {
 
     for (const culture of cultures) {
       if (!culture.i || culture.removed || culture.lock) continue;
-      queue.queue({cellId: culture.center, cultureId: culture.i, priority: 0});
+      queue.push({cellId: culture.center, cultureId: culture.i, priority: 0}, priority);
     }
 
     while (queue.length) {
-      const {cellId, priority, cultureId} = queue.dequeue();
+      const {cellId, priority, cultureId} = queue.pop();
       const {type, expansionism} = cultures[cultureId];
 
       cells.c[cellId].forEach(neibCellId => {
@@ -566,7 +566,7 @@ window.Cultures = (function () {
         if (!cost[neibCellId] || totalCost < cost[neibCellId]) {
           if (cells.pop[neibCellId] > 0) cells.culture[neibCellId] = cultureId; // assign culture to populated cell
           cost[neibCellId] = totalCost;
-          queue.queue({cellId: neibCellId, cultureId, priority: totalCost});
+          queue.push({cellId: neibCellId, cultureId, priority: totalCost}, totalCost);
         }
       });
     }
