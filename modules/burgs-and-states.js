@@ -286,7 +286,8 @@ window.BurgsAndStates = (() => {
     const {cells, states, cultures, burgs} = pack;
 
     cells.state = cells.state || new Uint16Array(cells.i.length);
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+
+    const queue = new FlatQueue();
     const cost = [];
 
     const globalGrowthRate = byId("growthRate").valueAsNumber || 1;
@@ -307,12 +308,13 @@ window.BurgsAndStates = (() => {
       cells.state[capitalCell] = state.i;
       const cultureCenter = cultures[state.culture].center;
       const b = cells.biome[cultureCenter]; // state native biome
-      queue.queue({e: state.center, p: 0, s: state.i, b});
+      queue.push({e: state.center, p: 0, s: state.i, b}, 0);
       cost[state.center] = 1;
     }
 
     while (queue.length) {
-      const next = queue.dequeue();
+      const next = queue.pop();
+
       const {e, p, s, b} = next;
       const {type, culture} = states[s];
 
@@ -335,7 +337,7 @@ window.BurgsAndStates = (() => {
         if (!cost[e] || totalCost < cost[e]) {
           if (cells.h[e] >= 20) cells.state[e] = s; // assign state to cell
           cost[e] = totalCost;
-          queue.queue({e, p: totalCost, s, b});
+          queue.push({e, p: totalCost, s, b}, totalCost);
         }
       });
     }
