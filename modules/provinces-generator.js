@@ -77,7 +77,7 @@ window.Provinces = (function () {
     });
 
     // expand generated provinces
-    const queue = new Flatqueue();
+    const queue = new FlatQueue();
     const cost = [];
 
     provinces.forEach(p => {
