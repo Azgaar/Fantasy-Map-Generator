@@ -140,7 +140,7 @@ function selectStyleElement() {
 
   // stroke dash
   if (
-    ["borders", "coordinates", "gridOverlay", "legend", "population", "routes", "temperature", "zones"].includes(
+    ["borders", "cells", "coordinates", "gridOverlay", "legend", "population", "routes", "temperature", "zones"].includes(
       styleElement
     )
   ) {
