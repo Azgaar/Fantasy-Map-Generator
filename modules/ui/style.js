@@ -116,20 +116,20 @@ function selectStyleElement() {
   if (
     [
       "armies",
-      "routes",
-      "lakes",
       "biomes",
       "borders",
-      "cults",
-      "relig",
       "cells",
       "coastline",
-      "prec",
+      "coordinates",
+      "cults",
+      "gridOverlay",
       "ice",
       "icons",
-      "coordinates",
-      "zones",
-      "gridOverlay"
+      "lakes",
+      "prec",
+      "relig",
+      "routes",
+      "zones"
     ].includes(styleElement)
   ) {
     styleStroke.style.display = "block";
@@ -140,7 +140,7 @@ function selectStyleElement() {
 
   // stroke dash
   if (
-    ["routes", "borders", "temperature", "legend", "population", "coordinates", "zones", "gridOverlay"].includes(
+    ["borders", "cells", "coordinates", "gridOverlay", "legend", "population", "routes", "temperature", "zones"].includes(
       styleElement
     )
   ) {
@@ -795,7 +795,7 @@ styleShadowInput.on("input", function () {
 styleFontAdd.on("click", function () {
   addFontNameInput.value = "";
   addFontURLInput.value = "";
-
+ 
   $("#addFontDialog").dialog({
     title: "Add custom font",
     width: "26em",
