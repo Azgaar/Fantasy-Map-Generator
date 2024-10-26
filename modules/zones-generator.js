@@ -266,7 +266,7 @@ window.Zones = (function () {
 
         if (!cost[e] || p < cost[e]) {
           cost[e] = p;
-          queue.push({e, p}), p;
+          queue.push({e, p}, p);
         }
       });
     }
