@@ -209,11 +209,11 @@ window.Zones = (function () {
     const cost = [];
     const maxCells = rand(20, 40);
 
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
-    queue.queue({e: burg.cell, p: 0});
+    const queue = new FlatQueue();
+    queue.push({e: burg.cell, p: 0}, 0);
 
     while (queue.length) {
-      const next = queue.dequeue();
+      const next = queue.pop();
       if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
       usedCells[next.e] = 1;
 
@@ -224,7 +224,7 @@ window.Zones = (function () {
 
         if (!cost[nextCellId] || p < cost[nextCellId]) {
           cost[nextCellId] = p;
-          queue.queue({e: nextCellId, p});
+          queue.push({e: nextCellId, p}, p);
         }
       });
     }
@@ -251,11 +251,11 @@ window.Zones = (function () {
     const cost = [];
     const maxCells = rand(5, 25);
 
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
-    queue.queue({e: burg.cell, p: 0});
+    const queue = new FlatQueue();
+    queue.push({e: burg.cell, p: 0}, 0);
 
     while (queue.length) {
-      const next = queue.dequeue();
+      const next = queue.pop();
       if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
       usedCells[next.e] = 1;
 
@@ -266,7 +266,7 @@ window.Zones = (function () {
 
         if (!cost[e] || p < cost[e]) {
           cost[e] = p;
-          queue.queue({e, p});
+          queue.push({e, p}), p;
         }
       });
     }
