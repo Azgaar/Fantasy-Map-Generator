@@ -109,17 +109,23 @@ window.Resample = (function () {
     pack.cells.conf = new Uint8Array(pack.cells.i.length);
     const offset = grid.spacing * 2;
 
+    const getCellCost = cellId => {
+      if (pack.cells.h[cellId] < 20) return Infinity;
+      return pack.cells.h[cellId];
+    };
+
     pack.rivers = parentMap.pack.rivers
       .map(river => {
         const parentPoints = river.points || river.cells.map(cellId => parentMap.pack.cells.p[cellId]);
-        const points = parentPoints
+        const newPoints = parentPoints
           .map(([parentX, parentY]) => {
             const [x, y] = projection(parentX, parentY);
             return isInMap(x, y, offset) ? [rn(x, 2), rn(y, 2)] : null;
           })
           .filter(Boolean);
-        if (points.length < 2) return null;
+        if (newPoints.length < 2) return null;
 
+        const points = addIntermidiatePoints(newPoints, getCellCost);
         const cells = points.map(point => findCell(...point));
         cells.forEach(cellId => {
           if (pack.cells.r[cellId]) pack.cells.conf[cellId] = 1;
@@ -325,6 +331,23 @@ window.Resample = (function () {
       },
       {land: [], water: []}
     );
+  }
+
+  // fill gaps in points array with intermidiate points
+  function addIntermidiatePoints(points, getCellCost) {
+    const newPoints = [];
+
+    for (let i = 0; i < points.length; i++) {
+      newPoints.push(points[i]);
+      if (points[i + 1]) {
+        const start = findCell(...points[i]);
+        const exit = findCell(...points[i + 1]);
+        const pathCells = findPath(start, exit, getCellCost);
+        if (pathCells) newPoints.push(...pathCells.map(cellId => pack.cells.p[cellId]));
+      }
+    }
+
+    return newPoints;
   }
 
   function isWater(graph, cellId) {

@@ -176,3 +176,66 @@ function connectVertices({vertices, startingVertex, ofSameType, addToChecked, cl
   if (closeRing) chain.push(startingVertex);
   return chain;
 }
+
+/**
+ * Finds the shortest path between two cells using a cost-based pathfinding algorithm.
+ * @param {number} start - The ID of the starting cell.
+ * @param {number} exit - The ID of the destination cell.
+ * @param {function} getCellCost - A function that returns the cost of a cell. Should return Infinity for impassable cells.
+ * @returns {number[]|null} An array of cell IDs of the path from start to exit, or null if no path is found or start and exit are the same.
+ */
+function findPath(start, exit, getCellCost) {
+  if (start === exit) return null;
+
+  const from = [];
+  const cost = [];
+  const queue = new FlatQueue();
+  queue.push(start, 0);
+
+  let iteration = 0;
+
+  while (queue.length) {
+    const priority = queue.peekValue();
+    const next = queue.pop();
+    iteration++;
+    console.log(iteration, next);
+
+    for (const neibCellId of pack.cells.c[next]) {
+      if (neibCellId === exit) {
+        from[neibCellId] = next;
+        return restorePath(start, exit, from);
+      }
+
+      const cellCost = getCellCost(neibCellId);
+      if (cellCost === Infinity) continue; // impassable cell
+
+      const distanceCost = dist2(pack.cells.p[next], pack.cells.p[neibCellId]);
+      const totalCost = priority + distanceCost + getCellCost(neibCellId);
+
+      if (totalCost >= cost[neibCellId]) continue;
+      from[neibCellId] = next;
+      cost[neibCellId] = totalCost;
+      queue.push(neibCellId, totalCost);
+    }
+  }
+
+  return null;
+}
+
+// supplementary function for findPath
+function restorePath(start, exit, from) {
+  const pathCells = [];
+
+  let current = exit;
+  let prev = exit;
+
+  while (current !== start) {
+    pathCells.push(current);
+    prev = from[current];
+    current = prev;
+  }
+
+  pathCells.push(current);
+
+  return pathCells;
+}

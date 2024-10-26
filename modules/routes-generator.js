@@ -290,8 +290,8 @@ window.Routes = (function () {
           const connectionModifier = connections.has(`${next}-${neibCellId}`) ? 1 : 2;
           const burgModifier = cells.burg[neibCellId] ? 1 : 3;
 
-          const cellsCost = distanceCost * habitabilityModifier * heightModifier * connectionModifier * burgModifier;
-          const totalCost = priority + cellsCost;
+          const cellCost = distanceCost * habitabilityModifier * heightModifier * connectionModifier * burgModifier;
+          const totalCost = priority + cellCost;
 
           if (totalCost >= cost[neibCellId]) continue;
           from[neibCellId] = next;
