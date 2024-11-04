@@ -3,7 +3,7 @@
 const GPT_MODELS = ["gpt-4o-mini", "chatgpt-4o-latest", "gpt-4o", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"];
 const SYSTEM_MESSAGE = "I'm working on my fantasy map.";
 
-function geneateWithAi(defaultPrompt, onApply) {
+function generateWithAi(defaultPrompt, onApply) {
   updateValues();
 
   $("#aiGenerator").dialog({
@@ -26,8 +26,8 @@ function geneateWithAi(defaultPrompt, onApply) {
     }
   });
 
-  if (modules.geneateWithAi) return;
-  modules.geneateWithAi = true;
+  if (modules.generateWithAi) return;
+  modules.generateWithAi = true;
 
   function updateValues() {
     byId("aiGeneratorResult").value = "";
