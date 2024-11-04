@@ -33,6 +33,7 @@ function geneateWithAi(defaultPrompt, onApply) {
     byId("aiGeneratorResult").value = "";
     byId("aiGeneratorPrompt").value = defaultPrompt;
     byId("aiGeneratorKey").value = localStorage.getItem("fmg-ai-kl") || "";
+    byId("aiGeneratorTemperature").value = localStorage.getItem("fmg-ai-temperature") || "1.2";
 
     const select = byId("aiGeneratorModel");
     select.options.length = 0;
@@ -52,6 +53,12 @@ function geneateWithAi(defaultPrompt, onApply) {
     const prompt = byId("aiGeneratorPrompt").value;
     if (!prompt) return tip("Please enter a prompt", true, "error", 4000);
 
+    const temperature = parseFloat(byId("aiGeneratorTemperature").value);
+    if (isNaN(temperature) || temperature < 0 || temperature > 2) {
+      return tip("Temperature must be a number between 0 and 2", true, "error", 4000);
+    }
+    localStorage.setItem("fmg-ai-temperature", temperature.toString());
+
     try {
       button.disabled = true;
       const resultArea = byId("aiGeneratorResult");
@@ -70,7 +77,7 @@ function geneateWithAi(defaultPrompt, onApply) {
             {role: "system", content: SYSTEM_MESSAGE},
             {role: "user", content: prompt}
           ],
-          temperature: 1.2,
+          temperature: temperature,
           stream: true // Enable streaming
         })
       });
