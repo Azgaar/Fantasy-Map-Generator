@@ -160,7 +160,7 @@ function editNotes(id, name) {
       }
     };
 
-    geneateWithAi(prompt, onApply);
+    generateWithAi(prompt, onApply);
   }
 
   function downloadLegends() {
