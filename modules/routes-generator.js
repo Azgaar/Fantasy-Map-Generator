@@ -1,6 +1,15 @@
 const ROUTES_SHARP_ANGLE = 135;
 const ROUTES_VERY_SHARP_ANGLE = 115;
 
+const MIN_PASSABLE_SEA_TEMP = -4;
+const ROUTE_TYPE_MODIFIERS = {
+  "-1": 1, // coastline
+  "-2": 1.8, // sea
+  "-3": 4, // open sea
+  "-4": 6, // ocean
+  default: 8 // far ocean
+};
+
 window.Routes = (function () {
   function generate(lockedRoutes = []) {
     const {capitalsByFeature, burgsByFeature, portsByFeature} = sortBurgsByFeature(pack.burgs);
@@ -118,10 +127,8 @@ window.Routes = (function () {
     }
 
     function findPathSegments({isWater, connections, start, exit}) {
-      const from = findPath(isWater, start, exit, connections);
-      if (!from) return [];
-
-      const pathCells = restorePath(start, exit, from);
+      const getCost = createCostEvaluator({isWater, connections});
+      const pathCells = findPath(start, current => current === exit, getCost);
       const segments = getRouteSegments(pathCells, connections);
       return segments;
     }
@@ -171,6 +178,38 @@ window.Routes = (function () {
       }
 
       return routesMerged > 1 ? mergeRoutes(routes) : routes;
+    }
+  }
+
+  function createCostEvaluator({isWater, connections}) {
+    return isWater ? getWaterPathCost : getLandPathCost;
+
+    function getLandPathCost(current, next) {
+      if (pack.cells.h[next] < 20) return Infinity; // ignore water cells
+
+      const habitability = biomesData.habitability[pack.cells.biome[next]];
+      if (!habitability) return Infinity; // inhabitable cells are not passable (e.g. glacier)
+
+      const distanceCost = dist2(pack.cells.p[current], pack.cells.p[next]);
+      const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
+      const heightModifier = 1 + Math.max(pack.cells.h[next] - 25, 25) / 25; // [1, 3];
+      const connectionModifier = connections.has(`${current}-${next}`) ? 0.5 : 1;
+      const burgModifier = pack.cells.burg[next] ? 1 : 3;
+
+      const pathCost = distanceCost * habitabilityModifier * heightModifier * connectionModifier * burgModifier;
+      return pathCost;
+    }
+
+    function getWaterPathCost(current, next) {
+      if (pack.cells.h[next] >= 20) return Infinity; // ignore land cells
+      if (grid.cells.temp[pack.cells.g[next]] < MIN_PASSABLE_SEA_TEMP) return Infinity; // ignore too cold cells
+
+      const distanceCost = dist2(pack.cells.p[current], pack.cells.p[next]);
+      const typeModifier = ROUTE_TYPE_MODIFIERS[pack.cells.t[next]] || ROUTE_TYPE_MODIFIERS.default;
+      const connectionModifier = connections.has(`${current}-${next}`) ? 0.5 : 1;
+
+      const pathCost = distanceCost * typeModifier * connectionModifier;
+      return pathCost;
     }
   }
 
@@ -249,109 +288,6 @@ window.Routes = (function () {
     return data; // [[x, y, cell], [x, y, cell]];
   }
 
-  const MIN_PASSABLE_SEA_TEMP = -4;
-  const TYPE_MODIFIERS = {
-    "-1": 1, // coastline
-    "-2": 1.8, // sea
-    "-3": 4, // open sea
-    "-4": 6, // ocean
-    default: 8 // far ocean
-  };
-
-  function findPath(isWater, start, exit, connections) {
-    const {temp} = grid.cells;
-    const {cells} = pack;
-
-    const from = [];
-    const cost = [];
-    const queue = new FlatQueue();
-    queue.push(start, 0);
-
-    return isWater ? findWaterPath() : findLandPath();
-
-    function findLandPath() {
-      while (queue.length) {
-        const priority = queue.peekValue();
-        const next = queue.pop();
-
-        for (const neibCellId of cells.c[next]) {
-          if (neibCellId === exit) {
-            from[neibCellId] = next;
-            return from;
-          }
-
-          if (cells.h[neibCellId] < 20) continue; // ignore water cells
-          const habitability = biomesData.habitability[cells.biome[neibCellId]];
-          if (!habitability) continue; // inhabitable cells are not passable (eg. lava, glacier)
-
-          const distanceCost = dist2(cells.p[next], cells.p[neibCellId]);
-          const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
-          const heightModifier = 1 + Math.max(cells.h[neibCellId] - 25, 25) / 25; // [1, 3];
-          const connectionModifier = connections.has(`${next}-${neibCellId}`) ? 1 : 2;
-          const burgModifier = cells.burg[neibCellId] ? 1 : 3;
-
-          const cellCost = distanceCost * habitabilityModifier * heightModifier * connectionModifier * burgModifier;
-          const totalCost = priority + cellCost;
-
-          if (totalCost >= cost[neibCellId]) continue;
-          from[neibCellId] = next;
-          cost[neibCellId] = totalCost;
-          queue.push(neibCellId, totalCost);
-        }
-      }
-
-      return null; // path is not found
-    }
-
-    function findWaterPath() {
-      while (queue.length) {
-        const priority = queue.peekValue();
-        const next = queue.pop();
-
-        for (const neibCellId of cells.c[next]) {
-          if (neibCellId === exit) {
-            from[neibCellId] = next;
-            return from;
-          }
-
-          if (cells.h[neibCellId] >= 20) continue; // ignore land cells
-          if (temp[cells.g[neibCellId]] < MIN_PASSABLE_SEA_TEMP) continue; // ignore too cold cells
-
-          const distanceCost = dist2(cells.p[next], cells.p[neibCellId]);
-          const typeModifier = TYPE_MODIFIERS[cells.t[neibCellId]] || TYPE_MODIFIERS.default;
-          const connectionModifier = connections.has(`${next}-${neibCellId}`) ? 1 : 2;
-
-          const cellsCost = distanceCost * typeModifier * connectionModifier;
-          const totalCost = priority + cellsCost;
-
-          if (totalCost >= cost[neibCellId]) continue;
-          from[neibCellId] = next;
-          cost[neibCellId] = totalCost;
-          queue.push(neibCellId, totalCost);
-        }
-      }
-
-      return null; // path is not found
-    }
-  }
-
-  function restorePath(start, end, from) {
-    const cells = [];
-
-    let current = end;
-    let prev = end;
-
-    while (current !== start) {
-      cells.push(current);
-      prev = from[current];
-      current = prev;
-    }
-
-    cells.push(current);
-
-    return cells;
-  }
-
   function getRouteSegments(pathCells, connections) {
     const segments = [];
     let segment = [];
@@ -422,21 +358,16 @@ window.Routes = (function () {
 
   // connect cell with routes system by land
   function connect(cellId) {
-    if (isConnected(cellId)) return;
+    const getCost = createCostEvaluator({isWater: false, connections: new Map()});
+    const pathCells = findPath(cellId, isConnected, getCost);
+    if (!pathCells) return;
 
-    const {cells, routes} = pack;
-
-    const path = findConnectionPath(cellId);
-    if (!path) return;
-
-    const pathCells = restorePath(...path);
     const pointsArray = preparePointsArray();
     const points = getPoints("trails", pathCells, pointsArray);
-    const feature = cells.f[cellId];
-
+    const feature = pack.cells.f[cellId];
     const routeId = getNextId();
     const newRoute = {i: routeId, group: "trails", feature, points};
-    routes.push(newRoute);
+    pack.routes.push(newRoute);
 
     for (let i = 0; i < pathCells.length; i++) {
       const cellId = pathCells[i];
@@ -445,43 +376,6 @@ window.Routes = (function () {
     }
 
     return newRoute;
-
-    function findConnectionPath(start) {
-      const from = [];
-      const cost = [];
-      const queue = new FlatQueue();
-      queue.push(start, 0);
-
-      while (queue.length) {
-        const priority = queue.peekValue();
-        const next = queue.pop();
-
-        for (const neibCellId of cells.c[next]) {
-          if (isConnected(neibCellId)) {
-            from[neibCellId] = next;
-            return [start, neibCellId, from];
-          }
-
-          if (cells.h[neibCellId] < 20) continue; // ignore water cells
-          const habitability = biomesData.habitability[cells.biome[neibCellId]];
-          if (!habitability) continue; // inhabitable cells are not passable (eg. lava, glacier)
-
-          const distanceCost = dist2(cells.p[next], cells.p[neibCellId]);
-          const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
-          const heightModifier = 1 + Math.max(cells.h[neibCellId] - 25, 25) / 25; // [1, 3];
-
-          const cellsCost = distanceCost * habitabilityModifier * heightModifier;
-          const totalCost = priority + cellsCost;
-
-          if (totalCost >= cost[neibCellId]) continue;
-          from[neibCellId] = next;
-          cost[neibCellId] = totalCost;
-          queue.push(neibCellId, totalCost);
-        }
-      }
-
-      return null; // path is not found
-    }
 
     function addConnection(from, to, routeId) {
       const routes = pack.cells.routes;

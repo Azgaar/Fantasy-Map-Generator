@@ -10,6 +10,7 @@ window.Resample = (function () {
   */
   function process({projection, inverse, scale}) {
     const parentMap = {grid: deepCopy(grid), pack: deepCopy(pack), notes: deepCopy(notes)};
+    const riversData = saveRiversData(pack.rivers);
 
     grid = generateGrid();
     pack = {};
@@ -30,7 +31,7 @@ window.Resample = (function () {
     createDefaultRuler();
 
     restoreCellData(parentMap, inverse, scale);
-    restoreRivers(parentMap, projection, scale);
+    restoreRivers(riversData, projection, scale);
     restoreCultures(parentMap, projection);
     restoreBurgs(parentMap, projection, scale);
     restoreStates(parentMap, projection);
@@ -104,28 +105,30 @@ window.Resample = (function () {
     }
   }
 
-  function restoreRivers(parentMap, projection, scale) {
+  function saveRiversData(parentRivers) {
+    return parentRivers.map(river => {
+      const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
+      return {...river, meanderedPoints};
+    });
+  }
+
+  function restoreRivers(riversData, projection, scale) {
     pack.cells.r = new Uint16Array(pack.cells.i.length);
     pack.cells.conf = new Uint8Array(pack.cells.i.length);
-    const offset = grid.spacing * 2;
 
-    const getCellCost = cellId => {
-      if (pack.cells.h[cellId] < 20) return Infinity;
-      return pack.cells.h[cellId];
-    };
-
-    pack.rivers = parentMap.pack.rivers
+    pack.rivers = riversData
       .map(river => {
-        const parentPoints = river.points || river.cells.map(cellId => parentMap.pack.cells.p[cellId]);
-        const newPoints = parentPoints
-          .map(([parentX, parentY]) => {
-            const [x, y] = projection(parentX, parentY);
-            return isInMap(x, y, offset) ? [rn(x, 2), rn(y, 2)] : null;
-          })
-          .filter(Boolean);
-        if (newPoints.length < 2) return null;
+        let wasInMap = true;
+        const points = [];
 
-        const points = addIntermidiatePoints(newPoints, getCellCost);
+        river.meanderedPoints.forEach(([parentX, parentY]) => {
+          const [x, y] = projection(parentX, parentY);
+          const inMap = isInMap(x, y);
+          if (inMap || wasInMap) points.push([rn(x, 2), rn(y, 2)]);
+          wasInMap = inMap;
+        });
+        if (points.length < 2) return null;
+
         const cells = points.map(point => findCell(...point));
         cells.forEach(cellId => {
           if (pack.cells.r[cellId]) pack.cells.conf[cellId] = 1;
@@ -218,20 +221,17 @@ window.Resample = (function () {
   }
 
   function restoreRoutes(parentMap, projection) {
-    const offset = grid.spacing * 2;
-
     pack.routes = parentMap.pack.routes
       .map(route => {
-        const points = route.points
-          .map(([parentX, parentY]) => {
-            const [x, y] = projection(parentX, parentY);
-            if (!isInMap(x, y, offset)) return null;
+        let wasInMap = true;
+        const points = [];
 
-            const cell = findCell(x, y);
-            return [rn(x, 2), rn(y, 2), cell];
-          })
-          .filter(Boolean);
-
+        route.points.forEach(([parentX, parentY]) => {
+          const [x, y] = projection(parentX, parentY);
+          const inMap = isInMap(x, y);
+          if (inMap || wasInMap) points.push([rn(x, 2), rn(y, 2)]);
+          wasInMap = inMap;
+        });
         if (points.length < 2) return null;
 
         const firstCell = points[0][2];
@@ -333,29 +333,12 @@ window.Resample = (function () {
     );
   }
 
-  // fill gaps in points array with intermidiate points
-  function addIntermidiatePoints(points, getCellCost) {
-    const newPoints = [];
-
-    for (let i = 0; i < points.length; i++) {
-      newPoints.push(points[i]);
-      if (points[i + 1]) {
-        const start = findCell(...points[i]);
-        const exit = findCell(...points[i + 1]);
-        const pathCells = findPath(start, exit, getCellCost);
-        if (pathCells) newPoints.push(...pathCells.map(cellId => pack.cells.p[cellId]));
-      }
-    }
-
-    return newPoints;
-  }
-
   function isWater(graph, cellId) {
     return graph.cells.h[cellId] < 20;
   }
 
-  function isInMap(x, y, offset = 0) {
-    return x + offset >= 0 && x - offset <= graphWidth && y + offset >= 0 && y - offset <= graphHeight;
+  function isInMap(x, y) {
+    return x >= 0 && x <= graphWidth && y >= 0 && y <= graphHeight;
   }
 
   return {process};

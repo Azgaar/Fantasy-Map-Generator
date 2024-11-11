@@ -180,42 +180,36 @@ function connectVertices({vertices, startingVertex, ofSameType, addToChecked, cl
 /**
  * Finds the shortest path between two cells using a cost-based pathfinding algorithm.
  * @param {number} start - The ID of the starting cell.
- * @param {number} exit - The ID of the destination cell.
- * @param {function} getCellCost - A function that returns the cost of a cell. Should return Infinity for impassable cells.
- * @returns {number[]|null} An array of cell IDs of the path from start to exit, or null if no path is found or start and exit are the same.
+ * @param {(id: number) => boolean} isExit - A function that returns true if the cell is the exit cell.
+ * @param {(current: number, next: number) => number} getCost - A function that returns the path cost from current cell to the next cell. Must return `Infinity` for impassable connections.
+ * @returns {number[] | null} An array of cell IDs of the path from start to exit, or null if no path is found or start and exit are the same.
  */
-function findPath(start, exit, getCellCost) {
-  if (start === exit) return null;
+function findPath(start, isExit, getCost) {
+  if (isExit(start)) return null;
 
   const from = [];
   const cost = [];
   const queue = new FlatQueue();
   queue.push(start, 0);
 
-  let iteration = 0;
-
   while (queue.length) {
-    const priority = queue.peekValue();
-    const next = queue.pop();
-    iteration++;
-    console.log(iteration, next);
+    const currentCost = queue.peekValue();
+    const current = queue.pop();
 
-    for (const neibCellId of pack.cells.c[next]) {
-      if (neibCellId === exit) {
-        from[neibCellId] = next;
-        return restorePath(start, exit, from);
+    for (const next of pack.cells.c[current]) {
+      if (isExit(next)) {
+        from[next] = current;
+        return restorePath(next, start, from);
       }
 
-      const cellCost = getCellCost(neibCellId);
-      if (cellCost === Infinity) continue; // impassable cell
+      const nextCost = getCost(current, next);
+      if (nextCost === Infinity) continue; // impassable cell
+      const totalCost = currentCost + nextCost;
 
-      const distanceCost = dist2(pack.cells.p[next], pack.cells.p[neibCellId]);
-      const totalCost = priority + distanceCost + getCellCost(neibCellId);
-
-      if (totalCost >= cost[neibCellId]) continue;
-      from[neibCellId] = next;
-      cost[neibCellId] = totalCost;
-      queue.push(neibCellId, totalCost);
+      if (totalCost >= cost[next]) continue; // has cheaper path
+      from[next] = current;
+      cost[next] = totalCost;
+      queue.push(next, totalCost);
     }
   }
 
@@ -223,7 +217,7 @@ function findPath(start, exit, getCellCost) {
 }
 
 // supplementary function for findPath
-function restorePath(start, exit, from) {
+function restorePath(exit, start, from) {
   const pathCells = [];
 
   let current = exit;
@@ -237,5 +231,5 @@ function restorePath(start, exit, from) {
 
   pathCells.push(current);
 
-  return pathCells;
+  return pathCells.reverse();
 }

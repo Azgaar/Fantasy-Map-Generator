@@ -793,7 +793,6 @@ function addRiverOnClick() {
   }
 
   // render river
-  lineGen.curve(d3.curveCatmullRom.alpha(0.1));
   const path = Rivers.getRiverPath(meanderedPoints, widthFactor, sourceWidth);
   const id = "river" + riverId;
   const riversG = viewbox.select("#rivers");

@@ -164,11 +164,9 @@ function editRiver(id) {
     river.points = debug.selectAll("#controlPoints > *").data();
     river.cells = river.points.map(([x, y]) => findCell(x, y));
 
-    const {widthFactor, sourceWidth} = river;
-    const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
-
     lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-    const path = Rivers.getRiverPath(meanderedPoints, widthFactor, sourceWidth);
+    const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
+    const path = Rivers.getRiverPath(meanderedPoints, river.widthFactor, river.sourceWidth);
     elSelected.attr("d", path);
 
     updateRiverLength(river);
