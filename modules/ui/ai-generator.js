@@ -102,110 +102,105 @@ function generateWithAi(defaultPrompt, onApply) {
       resultArea.disabled = true;
 
       if (model.includes("claude")) {
-        const baseUrl = "https://api.anthropic.com/v1/messages";
-
-        const response = await fetch(baseUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": key,
-            "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true"
-          },
-          body: JSON.stringify({
-            model,
-            messages: [{role: "user", content: prompt}],
-            stream: true,
-            max_tokens: 4096
-          })
-        });
-
-        if (!response.ok) {
-          const json = await response.json();
-          throw new Error(json?.error?.message || "Failed to generate with Claude");
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let buffer = "";
-
-        while (true) {
-          const {done, value} = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, {stream: true});
-          const lines = buffer.split("\n");
-
-          for (let i = 0; i < lines.length - 1; i++) {
-            const line = lines[i].trim();
-            if (line.startsWith("data: ")) {
-              try {
-                const jsonData = JSON.parse(line.slice(6));
-                const content = jsonData.delta?.text;
-                if (content) resultArea.value += content;
-              } catch (jsonError) {
-                console.warn("Failed to parse Claude JSON:", jsonError, "Line:", line);
-              }
-            }
-          }
-
-          buffer = lines[lines.length - 1];
-        }
+        await generateWithClaude(key, model, prompt, temperature, resultArea);
       } else {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${key}`
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              {role: "system", content: SYSTEM_MESSAGE},
-              {role: "user", content: prompt}
-            ],
-            temperature: 1.2,
-            stream: true
-          })
-        });
-
-        if (!response.ok) {
-          const json = await response.json();
-          throw new Error(json?.error?.message || "Failed to generate");
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let buffer = "";
-
-        while (true) {
-          const {done, value} = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, {stream: true});
-          const lines = buffer.split("\n");
-
-          for (let i = 0; i < lines.length - 1; i++) {
-            const line = lines[i].trim();
-            if (line.startsWith("data: ") && line !== "data: [DONE]") {
-              try {
-                const jsonData = JSON.parse(line.slice(6));
-                const content = jsonData.choices[0].delta.content;
-                if (content) resultArea.value += content;
-              } catch (jsonError) {
-                console.warn("Failed to parse JSON:", jsonError, "Line:", line);
-              }
-            }
-          }
-
-          buffer = lines[lines.length - 1];
-        }
+        await generateWithGPT(key, model, prompt, temperature, resultArea);
       }
     } catch (error) {
       return tip(error.message, true, "error", 4000);
     } finally {
       button.disabled = false;
       byId("aiGeneratorResult").disabled = false;
+    }
+  }
+
+  async function generateWithClaude(key, model, prompt, temperature, resultArea) {
+    const baseUrl = "https://api.anthropic.com/v1/messages";
+    const response = await fetch(baseUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{role: "user", content: prompt}],
+        stream: true,
+        max_tokens: 4096,
+        temperature
+      })
+    });
+
+    if (!response.ok) {
+      const json = await response.json();
+      throw new Error(json?.error?.message || "Failed to generate with Claude");
+    }
+
+    await handleStream(response, resultArea, true);
+  }
+
+  async function generateWithGPT(key, model, prompt, temperature, resultArea) {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {role: "system", content: SYSTEM_MESSAGE},
+          {role: "user", content: prompt}
+        ],
+        temperature,
+        stream: true
+      })
+    });
+
+    if (!response.ok) {
+      const json = await response.json();
+      throw new Error(json?.error?.message || "Failed to generate with GPT");
+    }
+
+    await handleStream(response, resultArea, false);
+  }
+
+  async function handleStream(response, resultArea, isClaude) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, {stream: true});
+      const lines = buffer.split("\n");
+
+      for (let i = 0; i < lines.length - 1; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith("data: ") && (!isClaude && line !== "data: [DONE]")) {
+          try {
+            const jsonData = JSON.parse(line.slice(6));
+            const content = isClaude 
+              ? jsonData.delta?.text 
+              : jsonData.choices[0].delta.content;
+            
+            if (content) resultArea.value += content;
+          } catch (jsonError) {
+            console.warn(
+              `Failed to parse ${isClaude ? "Claude" : "OpenAI"} JSON:`,
+              jsonError,
+              "Line:",
+              line
+            );
+          }
+        }
+      }
+
+      buffer = lines[lines.length - 1];
     }
   }
 }
