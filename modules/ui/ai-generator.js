@@ -44,6 +44,7 @@ function generateWithAi(defaultPrompt, onApply) {
     updateValues();
   }
 
+
   function updateValues() {
     byId("aiGeneratorResult").value = "";
     byId("aiGeneratorPrompt").value = defaultPrompt;
