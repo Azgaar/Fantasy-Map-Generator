@@ -4951,29 +4951,18 @@
               >Model:
               <select id="aiGeneratorModel"></select>
             </label>
-            <label for="aiGeneratorTemperature"
-              >Temperature:
-              <input id="aiGeneratorTemperature" type="number" min="0" max="2" placeholder="1.2" class="icon-key" />
-              <a
-                href="https://platform.openai.com/docs/api-reference/chat/create#chat-create-temperature"
-                target="_blank"
-                rel="noreferrer"
-                class="icon-help-circled"
-                style="text-decoration: none"
-                data-tip="Between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic."
-              ></a>
+            <label for="aiGeneratorTemperature" data-tip="Temperature controls response randomness; higher values mean more creativity, lower values mean more predictability">
+              Temperature:
+              <input id="aiGeneratorTemperature" type="number" min="-1" max="2" step=".1" class="icon-key" />
             </label>
             <label for="aiGeneratorKey"
               >Key:
-              <input id="aiGeneratorKey" placeholder="Enter OpenAI API key" class="icon-key" />
-              <a
-                href="https://platform.openai.com/account/api-keys"
-                target="_blank"
-                rel="noreferrer"
+              <input id="aiGeneratorKey" placeholder="Enter API key" class="icon-key" />
+              <button
+                id="aiGeneratorKeyHelp"
                 class="icon-help-circled"
-                style="text-decoration: none"
-                data-tip="Get the key at OpenAI website. The key will be stored in your browser and send to OpenAI API directly. The Map Genenerator doesn't store the key or any generated data"
-              ></a>
+                data-tip="Open provider's website to get the API key there. Note: the Map Genenerator doesn't store the key or any generated data"
+              />
             </label>
           </div>
         </div>
@@ -8109,7 +8098,6 @@
     <script defer src="modules/ui/burg-editor.js?v=1.102.00"></script>
     <script defer src="modules/ui/units-editor.js?v=1.104.0"></script>
     <script defer src="modules/ui/notes-editor.js?v=1.99.06"></script>
-    <script defer src="modules/ui/ai-generator.js?v=1.105.23"></script>
     <script defer src="modules/ui/ai-generator.js?v=1.105.22"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/zones-editor.js?v=1.105.20"></script>
