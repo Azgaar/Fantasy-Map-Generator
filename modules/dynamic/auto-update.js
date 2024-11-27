@@ -972,5 +972,9 @@ export function resolveVersionConflicts(mapVersion) {
       .attr("letter-spacing", null)
       .attr("fill", null)
       .attr("stroke", null);
+
+    // pole can be missing for some states/provinces
+    BurgsAndStates.getPoles();
+    Provinces.getPoles();
   }
 }
