@@ -198,25 +198,45 @@ window.Resample = (function () {
     const validStates = new Set(pack.cells.state);
     pack.states = parentMap.pack.states.map(state => {
       if (!state.i || state.removed) return state;
-      if (!validStates.has(state.i)) return {...state, removed: true, lock: false};
+      if (validStates.has(state.i)) return state;
+      return {...state, removed: true, lock: false};
+    });
+
+    BurgsAndStates.getPoles();
+    const regimentCellsMap = {};
+    const VERTICAL_GAP = 8;
+
+    pack.states = pack.states.map(state => {
+      if (!state.i || state.removed) return state;
+
+      const capital = pack.burgs[state.capital];
+      state.center = !capital || capital.removed ? findCell(...state.pole) : capital.cell;
 
       const military = state.military.map(regiment => {
-        const cell = findCell(...projection(...parentMap.pack.cells.p[regiment.cell]));
+        const cellCoords = projection(...parentMap.pack.cells.p[regiment.cell]);
+        const cell = isInMap(...cellCoords) ? findCell(...cellCoords) : state.center;
+
+        const [xPos, yPos] = projection(regiment.x, regiment.y);
         const [xBase, yBase] = projection(regiment.bx, regiment.by);
-        const [xCurrent, yCurrent] = projection(regiment.x, regiment.y);
-        return {...regiment, cell, bx: rn(xBase, 2), by: rn(yBase, 2), x: rn(xCurrent, 2), y: rn(yCurrent, 2)};
+        const [xCell, yCell] = pack.cells.p[cell];
+
+        const regsOnCell = regimentCellsMap[cell] || 0;
+        regimentCellsMap[cell] = regsOnCell + 1;
+
+        const name =
+          isInMap(xPos, yPos) || regiment.name.includes("[relocated]") ? regiment.name : `[relocated] ${regiment.name}`;
+
+        const pos = isInMap(xPos, yPos)
+          ? {x: rn(xPos, 2), y: rn(yPos, 2)}
+          : {x: xCell, y: yCell + regsOnCell * VERTICAL_GAP};
+
+        const base = isInMap(xBase, yBase) ? {bx: rn(xBase, 2), by: rn(yBase, 2)} : {bx: xCell, by: yCell};
+
+        return {...regiment, cell, name, ...base, ...pos};
       });
 
       const neighbors = state.neighbors.filter(stateId => validStates.has(stateId));
       return {...state, neighbors, military};
-    });
-
-    BurgsAndStates.getPoles();
-
-    pack.states.forEach(state => {
-      if (!state.i || state.removed) return;
-      const capital = pack.burgs[state.capital];
-      state.center = !capital?.removed ? capital.cell : findCell(...state.pole);
     });
   }
 
