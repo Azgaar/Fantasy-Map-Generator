@@ -129,6 +129,7 @@ window.Routes = (function () {
     function findPathSegments({isWater, connections, start, exit}) {
       const getCost = createCostEvaluator({isWater, connections});
       const pathCells = findPath(start, current => current === exit, getCost);
+      if (!pathCells) return [];
       const segments = getRouteSegments(pathCells, connections);
       return segments;
     }
