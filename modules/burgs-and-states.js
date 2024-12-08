@@ -880,6 +880,7 @@ window.BurgsAndStates = (() => {
     generateDiplomacy,
     defineStateForms,
     getFullName,
-    updateCultures
+    updateCultures,
+    getCloseToEdgePoint
   };
 })();
