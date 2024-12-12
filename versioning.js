@@ -37,6 +37,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Submap and Transform tools rework</li>
         <li>Azgaar Bot to answer questions and provide help</li>
         <li>Labels: ability to set letter spacing</li>
         <li>Zones performance improvement</li>
@@ -47,7 +48,6 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
         <li>Configurable longitude</li>
         <li>Preview villages map</li>
         <li>Ability to render ocean heightmap</li>
-        <li>Scale bar styling features</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
