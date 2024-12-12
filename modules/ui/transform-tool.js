@@ -32,7 +32,6 @@ async function openTransformTool() {
 
   // add listeners
   byId("transformToolBody").on("input", handleInput);
-  byId("transformPointsInput").on("input", handleCellsChange);
   byId("transformPreview")
     .on("mousedown", handleMousedown)
     .on("mouseup", _ => (mouseIsDown = false))
@@ -69,6 +68,18 @@ async function openTransformTool() {
     byId("transformShiftX").value = 0;
     byId("transformShiftY").value = 0;
     handleInput();
+
+    updateCellsNumber(byId("pointsInput").value);
+    byId("transformPointsInput").oninput = e => updateCellsNumber(e.target.value);
+
+    function updateCellsNumber(value) {
+      byId("transformPointsInput").value = value;
+      const cells = cellsDensityMap[value];
+      byId("transformPointsInput").dataset.cells = cells;
+      const output = byId("transformPointsFormatted");
+      output.value = cells / 1000 + "K";
+      output.style.color = getCellsDensityColor(cells);
+    }
   }
 
   function handleInput() {
@@ -87,14 +98,6 @@ async function openTransformTool() {
       scale(${mirrorH ? -scale : scale}, ${mirrorV ? -scale : scale})
       rotate(${angle}rad)
     `;
-  }
-
-  function handleCellsChange() {
-    const cells = cellsDensityMap[+this.value] || 1000;
-    this.dataset.cells = cells;
-    const output = byId("transformPointsFormatted");
-    output.value = getCellsDensityValue(cells);
-    output.style.color = getCellsDensityColor(cells);
   }
 
   function handleMousedown(e) {
@@ -123,8 +126,9 @@ async function openTransformTool() {
   function transformMap() {
     INFO && console.group("transformMap");
 
-    const cellsNumber = +byId("transformPointsInput").value;
-    changeCellsDensity(cellsNumber);
+    const transformPointsValue = byId("transformPointsInput").value;
+    const globalPointsValue = byId("pointsInput").value;
+    if (transformPointsValue !== globalPointsValue) changeCellsDensity(transformPointsValue);
 
     const [projection, inverse] = getProjection();
 

@@ -1,6 +1,8 @@
 "use strict";
 
 function openSubmapTool() {
+  resetInputs();
+
   $("#submapTool").dialog({
     title: "Create a submap",
     resizable: false,
@@ -20,8 +22,19 @@ function openSubmapTool() {
   if (modules.openSubmapTool) return;
   modules.openSubmapTool = true;
 
-  // add listeners
-  byId("submapPointsInput").on("input", handleCellsChange);
+  function resetInputs() {
+    updateCellsNumber(byId("pointsInput").value);
+    byId("submapPointsInput").oninput = e => updateCellsNumber(e.target.value);
+
+    function updateCellsNumber(value) {
+      byId("submapPointsInput").value = value;
+      const cells = cellsDensityMap[value];
+      byId("submapPointsInput").dataset.cells = cells;
+      const output = byId("submapPointsFormatted");
+      output.value = cells / 1000 + "K";
+      output.style.color = getCellsDensityColor(cells);
+    }
+  }
 
   function generateSubmap() {
     INFO && console.group("generateSubmap");
@@ -29,8 +42,9 @@ function openSubmapTool() {
     const [x0, y0] = [Math.abs(viewX / scale), Math.abs(viewY / scale)]; // top-left corner
     recalculateMapSize(x0, y0);
 
-    const cellsNumber = +byId("submapPointsInput").value;
-    changeCellsDensity(cellsNumber);
+    const submapPointsValue = byId("submapPointsInput").value;
+    const globalPointsValue = byId("pointsInput").value;
+    if (submapPointsValue !== globalPointsValue) changeCellsDensity(submapPointsValue);
 
     const projection = (x, y) => [(x - x0) * scale, (y - y0) * scale];
     const inverse = (x, y) => [x / scale + x0, y / scale + y0];
@@ -76,13 +90,5 @@ function openSubmapTool() {
       const size = +bl.dataset["size"];
       bl.dataset["size"] = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
     }
-  }
-
-  function handleCellsChange() {
-    const cells = cellsDensityMap[+this.value] || 1000;
-    this.dataset.cells = cells;
-    const output = byId("submapPointsFormatted");
-    output.value = getCellsDensityValue(cells);
-    output.style.color = getCellsDensityColor(cells);
   }
 }

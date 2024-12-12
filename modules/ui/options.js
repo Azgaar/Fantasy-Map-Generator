@@ -332,14 +332,10 @@ const cellsDensityMap = {
 
 function changeCellsDensity(value) {
   pointsInput.value = value;
-  const cells = cellsDensityMap[value] || 1000;
+  const cells = cellsDensityMap[value] || pointsInput.dataset.cells;
   pointsInput.dataset.cells = cells;
-  pointsOutputFormatted.value = getCellsDensityValue(cells);
+  pointsOutputFormatted.value = cells / 1000 + "K";
   pointsOutputFormatted.style.color = getCellsDensityColor(cells);
-}
-
-function getCellsDensityValue(cells) {
-  return cells / 1000 + "K";
 }
 
 function getCellsDensityColor(cells) {
