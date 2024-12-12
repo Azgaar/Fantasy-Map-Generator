@@ -5775,11 +5775,18 @@
           Don't forget to save the .map file to your machine first!
         </p>
 
-        <div style="display: flex; gap: 1em">
-          <div>Points number</div>
-          <div>
-            <input id="submapPointsInput" type="range" min="1" max="13" value="4" />
-            <output id="submapPointsFormatted" style="color: #053305">10K</output>
+        <div style="display: flex; flex-direction: column; gap: 0.5em">
+          <div data-tip="Set points (cells) number of the submap" style="display: flex; gap: 1em">
+            <div>Points number</div>
+            <div>
+              <input id="submapPointsInput" type="range" min="1" max="13" value="4" />
+              <output id="submapPointsFormatted" style="color: #053305">10K</output>
+            </div>
+          </div>
+
+          <div data-tip="Check to fit burg styles (icon and label size) to the submap scale">
+            <input type="checkbox" class="checkbox" id="submapRescaleBurgStyles" checked />
+            <label for="submapRescaleBurgStyles" class="checkbox-label">Rescale burg styles</label>
           </div>
         </div>
       </div>

@@ -52,7 +52,8 @@ function openSubmapTool() {
     resetZoom(0);
     undraw();
     Resample.process({projection, inverse, scale});
-    rescaleBurgStyles(scale);
+
+    if (byId("submapRescaleBurgStyles").checked) rescaleBurgStyles(scale);
     drawLayers();
 
     INFO && console.groupEnd("generateSubmap");
@@ -78,17 +79,17 @@ function openSubmapTool() {
 
   function rescaleBurgStyles(scale) {
     const burgIcons = [...byId("burgIcons").querySelectorAll("g")];
-    for (const bi of burgIcons) {
-      const newRadius = rn(minmax(bi.getAttribute("size") * scale, 0.2, 10), 2);
-      changeRadius(newRadius, bi.id);
-      const swAttr = bi.attributes["stroke-width"];
-      swAttr.value = +swAttr.value * scale;
+    for (const group of burgIcons) {
+      const newRadius = rn(minmax(group.getAttribute("size") * scale, 0.2, 10), 2);
+      changeRadius(newRadius, group.id);
+      const strokeWidth = group.attributes["stroke-width"];
+      strokeWidth.value = strokeWidth.value * scale;
     }
 
     const burgLabels = [...byId("burgLabels").querySelectorAll("g")];
-    for (const bl of burgLabels) {
-      const size = +bl.dataset["size"];
-      bl.dataset["size"] = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
+    for (const group of burgLabels) {
+      const size = +group.dataset.size;
+      group.dataset.size = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
     }
   }
 }
