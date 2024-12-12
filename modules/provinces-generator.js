@@ -77,18 +77,18 @@ window.Provinces = (function () {
     });
 
     // expand generated provinces
-    const queue = new PriorityQueue({comparator: (a, b) => a.p - b.p});
+    const queue = new FlatQueue();
     const cost = [];
 
     provinces.forEach(p => {
       if (!p.i || p.removed || isProvinceLocked(p)) return;
       provinceIds[p.center] = p.i;
-      queue.queue({e: p.center, p: 0, province: p.i, state: p.state});
+      queue.push({e: p.center, province: p.i, state: p.state, p: 0}, 0);
       cost[p.center] = 1;
     });
 
     while (queue.length) {
-      const {e, p, province, state} = queue.dequeue();
+      const {e, p, province, state} = queue.pop();
 
       cells.c[e].forEach(e => {
         if (isProvinceCellLocked(e)) return; // do not overwrite cell of locked provinces
@@ -103,7 +103,7 @@ window.Provinces = (function () {
         if (!cost[e] || totalCost < cost[e]) {
           if (land) provinceIds[e] = province; // assign province to a cell
           cost[e] = totalCost;
-          queue.queue({e, p: totalCost, province, state});
+          queue.push({e, province, state, p: totalCost}, totalCost);
         }
       });
     }
@@ -158,9 +158,9 @@ window.Provinces = (function () {
         // expand province
         const cost = [];
         cost[center] = 1;
-        queue.queue({e: center, p: 0});
+        queue.push({e: center, p: 0}, 0);
         while (queue.length) {
-          const {e, p} = queue.dequeue();
+          const {e, p} = queue.pop();
 
           cells.c[e].forEach(nextCellId => {
             if (provinceIds[nextCellId]) return;
@@ -173,7 +173,7 @@ window.Provinces = (function () {
             if (!cost[nextCellId] || totalCost < cost[nextCellId]) {
               if (land && cells.state[nextCellId] === s.i) provinceIds[nextCellId] = provinceId; // assign province to a cell
               cost[nextCellId] = totalCost;
-              queue.queue({e: nextCellId, p: totalCost});
+              queue.push({e: nextCellId, p: totalCost}, totalCost);
             }
           });
         }
@@ -216,15 +216,15 @@ window.Provinces = (function () {
         // check if there is a land way within the same state between two cells
         function isPassable(from, to) {
           if (cells.f[from] !== cells.f[to]) return false; // on different islands
-          const queue = [from],
+          const passableQueue = [from],
             used = new Uint8Array(cells.i.length),
             state = cells.state[from];
-          while (queue.length) {
-            const current = queue.pop();
+          while (passableQueue.length) {
+            const current = passableQueue.pop();
             if (current === to) return true; // way is found
             cells.c[current].forEach(c => {
               if (used[c] || cells.h[c] < 20 || cells.state[c] !== state) return;
-              queue.push(c);
+              passableQueue.push(c);
               used[c] = 1;
             });
           }

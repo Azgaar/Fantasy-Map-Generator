@@ -266,6 +266,7 @@ function getTypeOptions(type) {
 function getBaseOptions(base) {
   let options = "";
   nameBases.forEach((n, i) => (options += `<option ${base === i ? "selected" : ""} value="${i}">${n.name}</option>`));
+  if (!nameBases[base]) options += `<option selected value="${base}">removed</option>`; // in case namesbase was removed
   return options;
 }
 
@@ -344,10 +345,13 @@ function cultureChangeName() {
 }
 
 function cultureRegenerateName() {
-  const culture = +this.parentNode.dataset.id;
-  const name = Names.getCultureShort(culture);
+  const cultureId = +this.parentNode.dataset.id;
+  const base = pack.cultures[cultureId].base;
+  if (!nameBases[base]) return tip("Namesbase is not defined, please select a valid namesbase", false, "error", 5000);
+
+  const name = Names.getCultureShort(cultureId);
   this.parentNode.querySelector("input.cultureName").value = name;
-  pack.cultures[culture].name = name;
+  pack.cultures[cultureId].name = name;
 }
 
 function cultureChangeExpansionism() {
@@ -493,12 +497,15 @@ function cultureRegenerateBurgs() {
   if (customization === 4) return;
 
   const cultureId = +this.parentNode.dataset.id;
-  const cBurgs = pack.burgs.filter(b => b.culture === cultureId && !b.lock);
-  cBurgs.forEach(b => {
+  const base = pack.cultures[cultureId].base;
+  if (!nameBases[base]) return tip("Namesbase is not defined, please select a valid namesbase", false, "error", 5000);
+
+  const cultureBurgs = pack.burgs.filter(b => b.culture === cultureId && !b.removed && !b.lock);
+  cultureBurgs.forEach(b => {
     b.name = Names.getCulture(cultureId);
     labels.select("[data-id='" + b.i + "']").text(b.name);
   });
-  tip(`Names for ${cBurgs.length} burgs are regenerated`, false, "success");
+  tip(`Names for ${cultureBurgs.length} burgs are regenerated`, false, "success");
 }
 
 function removeCulture(cultureId) {
@@ -848,14 +855,15 @@ async function uploadCulturesData() {
   this.value = "";
   const csv = await file.text();
   const data = d3.csvParse(csv, d => ({
-    i: +d.Id,
     name: d.Name,
+    i: +d.Id,
     color: d.Color,
     expansionism: +d.Expansionism,
     type: d.Type,
     population: +d.Population,
     emblemsShape: d["Emblems Shape"],
-    origins: d.Origins
+    origins: d.Origins,
+    namesbase: d.Namesbase
   }));
 
   const {cultures, cells} = pack;
@@ -882,7 +890,7 @@ async function uploadCulturesData() {
         culture.i
       );
     } else {
-      current = {i: cultures.length, center: ra(populated), area: 0, cells: 0, origin: 0, rural: 0, urban: 0};
+      current = {i: cultures.length, center: ra(populated), area: 0, cells: 0, origins: [0], rural: 0, urban: 0};
       cultures.push(current);
     }
 
@@ -902,6 +910,10 @@ async function uploadCulturesData() {
       else current.type = "Generic";
     }
 
+    culture.origins = current.i ? restoreOrigins(culture.origins || "") : [null];
+    current.shield = shapes.includes(culture.emblemsShape) ? culture.emblemsShape : "heater";
+    current.base = nameBases.findIndex(n => n.name == culture.namesbase); // can be -1 if namesbase is not found
+
     function restoreOrigins(originsString) {
       const originNames = originsString
         .replaceAll('"', "")
@@ -917,12 +929,6 @@ async function uploadCulturesData() {
       current.origins = originIds.filter(id => id !== null);
       if (!current.origins.length) current.origins = [0];
     }
-
-    culture.origins = current.i ? restoreOrigins(culture.origins || "") : [null];
-    current.shield = shapes.includes(culture.emblemsShape) ? culture.emblemsShape : "heater";
-
-    const nameBaseIndex = nameBases.findIndex(n => n.name == culture.namesbase);
-    current.base = nameBaseIndex === -1 ? 0 : nameBaseIndex;
   }
 
   cultures.filter(c => c.removed).forEach(c => removeCulture(c.i));

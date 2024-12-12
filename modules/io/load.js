@@ -13,7 +13,7 @@ async function quickLoad() {
 async function loadFromDropbox() {
   const mapPath = byId("loadFromDropboxSelect")?.value;
 
-  DEBUG && console.info("Loading map from Dropbox:", mapPath);
+  console.info("Loading map from Dropbox:", mapPath);
   const blob = await Cloud.providers.dropbox.load(mapPath);
   uploadMap(blob);
 }
@@ -96,6 +96,7 @@ function showUploadErrorMessage(error, URL, random) {
     title: "Loading error",
     width: "32em",
     buttons: {
+      "Clear cache": () => cleanupData(),
       OK: function () {
         $(this).dialog("close");
       }
@@ -152,11 +153,21 @@ async function uncompress(compressedData) {
 async function parseLoadedResult(result) {
   try {
     const resultAsString = new TextDecoder().decode(result);
+
     // data can be in FMG internal format or base64 encoded
     const isDelimited = resultAsString.substring(0, 10).includes("|");
-    const decoded = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
+    let content = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
 
-    const mapData = decoded.split("\r\n"); // split by CRLF
+    // fix if svg part has CRLF line endings instead of LF
+    const svgMatch = content.match(/<svg[^>]*id="map"[\s\S]*?<\/svg>/);
+    const svgContent = svgMatch[0];
+    const hasCrlfEndings = svgContent.includes("\r\n");
+    if (hasCrlfEndings) {
+      const correctedSvgContent = svgContent.replace(/\r\n/g, "\n");
+      content = content.replace(svgContent, correctedSvgContent);
+    }
+
+    const mapData = content.split("\r\n"); // split by CRLF
     const mapVersion = parseMapVersion(mapData[0].split("|")[0] || mapData[0] || "");
 
     return {mapData, mapVersion};
@@ -195,6 +206,7 @@ function showUploadMessage(type, mapData, mapVersion) {
   $("#alert").dialog({
     title,
     buttons: {
+      "Clear cache": () => cleanupData(),
       OK: function () {
         $(this).dialog("close");
       }
@@ -459,7 +471,7 @@ async function parseLoadedData(data, mapVersion) {
 
     {
       // dynamically import and run auto-update script
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.105.5");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.105.24");
       resolveVersionConflicts(mapVersion);
     }
 
@@ -735,6 +747,7 @@ async function parseLoadedData(data, mapVersion) {
       title: "Loading error",
       maxWidth: "50em",
       buttons: {
+        "Clear cache": () => cleanupData(),
         "Select file": function () {
           $(this).dialog("close");
           mapToLoad.click();

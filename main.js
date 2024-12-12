@@ -4,7 +4,7 @@
 
 // set debug options
 const PRODUCTION = location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
-const DEBUG = localStorage.getItem("debug");
+const DEBUG = JSON.safeParse(localStorage.getItem("debug")) || {};
 const INFO = true;
 const TIME = true;
 const WARN = true;
@@ -494,14 +494,6 @@ function resetZoom(d = 1000) {
   svg.transition().duration(d).call(zoom.transform, d3.zoomIdentity);
 }
 
-// calculate x y extreme points of viewBox
-function getViewBoxExtent() {
-  return [
-    [Math.abs(viewX / scale), Math.abs(viewY / scale)],
-    [Math.abs(viewX / scale) + graphWidth / scale, Math.abs(viewY / scale) + graphHeight / scale]
-  ];
-}
-
 // active zooming feature
 function invokeActiveZooming() {
   const isOptimized = shapeRendering.value === "optimizeSpeed";
@@ -728,10 +720,11 @@ function setSeed(precreatedSeed) {
 
 function addLakesInDeepDepressions() {
   TIME && console.time("addLakesInDeepDepressions");
+  const elevationLimit = +byId("lakeElevationLimitOutput").value;
+  if (elevationLimit === 80) return;
+
   const {cells, features} = grid;
   const {c, h, b} = cells;
-  const ELEVATION_LIMIT = +byId("lakeElevationLimitOutput").value;
-  if (ELEVATION_LIMIT === 80) return;
 
   for (const i of cells.i) {
     if (b[i] || h[i] < 20) continue;
@@ -740,7 +733,7 @@ function addLakesInDeepDepressions() {
     if (h[i] > minHeight) continue;
 
     let deep = true;
-    const threshold = h[i] + ELEVATION_LIMIT;
+    const threshold = h[i] + elevationLimit;
     const queue = [i];
     const checked = [];
     checked[i] = true;
@@ -926,7 +919,7 @@ function calculateTemperatures() {
     const [, y] = grid.points[rowCellId];
     const rowLatitude = mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT; // [90; -90]
     const tempSeaLevel = calculateSeaLevelTemp(rowLatitude);
-    DEBUG && console.info(`${rn(rowLatitude)}° sea temperature: ${rn(tempSeaLevel)}°C`);
+    DEBUG.temperature && console.info(`${rn(rowLatitude)}° sea temperature: ${rn(tempSeaLevel)}°C`);
 
     for (let cellId = rowCellId; cellId < rowCellId + grid.cellsX; cellId++) {
       const tempAltitudeDrop = getAltitudeTemperatureDrop(cells.h[cellId]);

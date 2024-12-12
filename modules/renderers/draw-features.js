@@ -55,7 +55,7 @@ function getFeaturePath(feature) {
   const clippedPoints = clipPoly(simplifiedPoints, 1);
 
   const lineGen = d3.line().curve(d3.curveBasisClosed);
-  const path = round(lineGen(clippedPoints));
+  const path = round(lineGen(clippedPoints)) + "Z";
 
   return path;
 }

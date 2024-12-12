@@ -57,6 +57,14 @@ JSON.isValid = str => {
   }
 };
 
+JSON.safeParse = str => {
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    return null;
+  }
+};
+
 function sanitizeId(string) {
   if (!string) throw new Error("No string provided");
 

@@ -31,7 +31,6 @@ window.Submap = (function () {
     seed = parentMap.seed;
     Math.random = aleaPRNG(seed);
     INFO && console.group("SubMap with seed: " + seed);
-    DEBUG && console.info("Using Options:", options);
 
     applyGraphSize();
     grid = generateGrid();
@@ -373,7 +372,7 @@ window.Submap = (function () {
           b.removed = true;
           return;
         }
-        DEBUG && console.info(`Moving ${b.name} from ${cityCell} to ${newCell} near ${neighbor}.`);
+
         [b.x, b.y] = b.port ? getCloseToEdgePoint(newCell, neighbor) : cells.p[newCell];
         if (b.port) b.port = cells.f[neighbor]; // copy feature number
         b.cell = newCell;

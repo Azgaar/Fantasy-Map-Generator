@@ -78,11 +78,10 @@ function getBorderPath(vertices, vertexChain, discontinue) {
     }
 
     const operation = discontinued ? "M" : "L";
-    const command = operation === lastOperation ? "" : operation;
-
     discontinued = false;
     lastOperation = operation;
 
+    const command = operation === "L" && operation === lastOperation ? "" : operation;
     return ` ${command}${vertices.p[vertexId]}`;
   });
 
@@ -176,4 +175,61 @@ function connectVertices({vertices, startingVertex, ofSameType, addToChecked, cl
 
   if (closeRing) chain.push(startingVertex);
   return chain;
+}
+
+/**
+ * Finds the shortest path between two cells using a cost-based pathfinding algorithm.
+ * @param {number} start - The ID of the starting cell.
+ * @param {(id: number) => boolean} isExit - A function that returns true if the cell is the exit cell.
+ * @param {(current: number, next: number) => number} getCost - A function that returns the path cost from current cell to the next cell. Must return `Infinity` for impassable connections.
+ * @returns {number[] | null} An array of cell IDs of the path from start to exit, or null if no path is found or start and exit are the same.
+ */
+function findPath(start, isExit, getCost) {
+  if (isExit(start)) return null;
+
+  const from = [];
+  const cost = [];
+  const queue = new FlatQueue();
+  queue.push(start, 0);
+
+  while (queue.length) {
+    const currentCost = queue.peekValue();
+    const current = queue.pop();
+
+    for (const next of pack.cells.c[current]) {
+      if (isExit(next)) {
+        from[next] = current;
+        return restorePath(next, start, from);
+      }
+
+      const nextCost = getCost(current, next);
+      if (nextCost === Infinity) continue; // impassable cell
+      const totalCost = currentCost + nextCost;
+
+      if (totalCost >= cost[next]) continue; // has cheaper path
+      from[next] = current;
+      cost[next] = totalCost;
+      queue.push(next, totalCost);
+    }
+  }
+
+  return null;
+}
+
+// supplementary function for findPath
+function restorePath(exit, start, from) {
+  const pathCells = [];
+
+  let current = exit;
+  let prev = exit;
+
+  while (current !== start) {
+    pathCells.push(current);
+    prev = from[current];
+    current = prev;
+  }
+
+  pathCells.push(current);
+
+  return pathCells.reverse();
 }

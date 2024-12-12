@@ -56,3 +56,17 @@ function drawRouteConnections() {
     }
   }
 }
+
+function drawPoint([x, y], {color = "red", radius = 0.5}) {
+  debug.append("circle").attr("cx", x).attr("cy", y).attr("r", radius).attr("fill", color);
+}
+
+function drawPath(points, {color = "red", width = 0.5}) {
+  const lineGen = d3.line().curve(d3.curveBundle);
+  debug
+    .append("path")
+    .attr("d", round(lineGen(points)))
+    .attr("stroke", color)
+    .attr("stroke-width", width)
+    .attr("fill", "none");
+}

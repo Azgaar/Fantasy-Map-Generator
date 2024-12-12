@@ -8,7 +8,10 @@ window.Cultures = (function () {
     cells = pack.cells;
 
     const cultureIds = new Uint16Array(cells.i.length); // cell cultures
-    let count = Math.min(+culturesInput.value, +culturesSet.selectedOptions[0].dataset.max);
+
+    const culturesInputNumber = +byId("culturesInput").value;
+    const culturesInSetNumber = +byId("culturesSet").selectedOptions[0].dataset.max;
+    let count = Math.min(culturesInputNumber, culturesInSetNumber);
 
     const populated = cells.i.filter(i => cells.s[i]); // populated cells
     if (populated.length < count * 25) {
@@ -120,26 +123,26 @@ window.Cultures = (function () {
     cultures.forEach(c => (c.base = c.base % nameBases.length));
 
     function selectCultures(culturesNumber) {
-      let def = getDefault(culturesNumber);
+      let defaultCultures = getDefault(culturesNumber);
       const cultures = [];
 
       pack.cultures?.forEach(function (culture) {
-        if (culture.lock) cultures.push(culture);
+        if (culture.lock && !culture.removed) cultures.push(culture);
       });
 
       if (!cultures.length) {
-        if (culturesNumber === def.length) return def;
-        if (def.every(d => d.odd === 1)) return def.splice(0, culturesNumber);
+        if (culturesNumber === defaultCultures.length) return defaultCultures;
+        if (defaultCultures.every(d => d.odd === 1)) return defaultCultures.splice(0, culturesNumber);
       }
 
-      for (let culture, rnd, i = 0; cultures.length < culturesNumber && def.length > 0; ) {
+      for (let culture, rnd, i = 0; cultures.length < culturesNumber && defaultCultures.length > 0; ) {
         do {
-          rnd = rand(def.length - 1);
-          culture = def[rnd];
+          rnd = rand(defaultCultures.length - 1);
+          culture = defaultCultures[rnd];
           i++;
         } while (i < 200 && !P(culture.odd));
         cultures.push(culture);
-        def.splice(rnd, 1);
+        defaultCultures.splice(rnd, 1);
       }
       return cultures;
     }
@@ -515,7 +518,7 @@ window.Cultures = (function () {
     TIME && console.time("expandCultures");
     const {cells, cultures} = pack;
 
-    const queue = new PriorityQueue({comparator: (a, b) => a.priority - b.priority});
+    const queue = new FlatQueue();
     const cost = [];
 
     const neutralRate = byId("neutralRate")?.valueAsNumber || 1;
@@ -535,11 +538,11 @@ window.Cultures = (function () {
 
     for (const culture of cultures) {
       if (!culture.i || culture.removed || culture.lock) continue;
-      queue.queue({cellId: culture.center, cultureId: culture.i, priority: 0});
+      queue.push({cellId: culture.center, cultureId: culture.i, priority: 0}, 0);
     }
 
     while (queue.length) {
-      const {cellId, priority, cultureId} = queue.dequeue();
+      const {cellId, priority, cultureId} = queue.pop();
       const {type, expansionism} = cultures[cultureId];
 
       cells.c[cellId].forEach(neibCellId => {
@@ -563,7 +566,7 @@ window.Cultures = (function () {
         if (!cost[neibCellId] || totalCost < cost[neibCellId]) {
           if (cells.pop[neibCellId] > 0) cells.culture[neibCellId] = cultureId; // assign culture to populated cell
           cost[neibCellId] = totalCost;
-          queue.queue({cellId: neibCellId, cultureId, priority: totalCost});
+          queue.push({cellId: neibCellId, cultureId, priority: totalCost}, totalCost);
         }
       });
     }

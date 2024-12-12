@@ -943,7 +943,21 @@ export function resolveVersionConflicts(mapVersion) {
     viewbox.select("#coastline").selectAll("path, use").remove();
     drawFeatures();
 
-    // v1.106.0 change burg groups and added customizable icons
+    // v1.104.0 introduced bugs with state borders
+    regions
+      .attr("opacity", null)
+      .attr("stroke-width", null)
+      .attr("letter-spacing", null)
+      .attr("fill", null)
+      .attr("stroke", null);
+
+    // pole can be missing for some states/provinces
+    BurgsAndStates.getPoles();
+    Provinces.getPoles();
+  }
+
+  if (isOlderThan("1.107.0")) {
+    // v1.107.0 changeв burg groups and added customizable icons
     icons.selectAll("circle, use").remove();
 
     const groups = Array.from(document.querySelectorAll("#burgIcons > g")).map(g => g.id);

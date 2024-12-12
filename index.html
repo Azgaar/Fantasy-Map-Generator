@@ -1081,8 +1081,14 @@
                     id="styleGridSizeFriendly"
                     data-tip="Distance between grid cell centers (in map scale)"
                   ></output>
-                  <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Scale-and-distance#grids" target="_blank">
-                    <span data-tip="Open wiki article scale and distance to know about grid scale" class="icon-info-circled pointer"></span>
+                  <a
+                    href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Scale-and-distance#grids"
+                    target="_blank"
+                  >
+                    <span
+                      data-tip="Open wiki article scale and distance to know about grid scale"
+                      class="icon-info-circled pointer"
+                    ></span>
                   </a>
                 </td>
               </tr>
@@ -1631,10 +1637,10 @@
               </td>
               <td>Cultures number</td>
               <td>
-                <input id="culturesInput" data-stored="cultures" type="range" min="1" max="32" value="14" />
+                <input id="culturesInput" data-stored="cultures" type="range" min="1" />
               </td>
               <td>
-                <input id="culturesOutput" data-stored="cultures" type="number" min="1" max="32" value="14" />
+                <input id="culturesOutput" data-stored="cultures" type="number" min="1" />
               </td>
             </tr>
 
@@ -1834,6 +1840,7 @@
                 <select id="azgaarAssistant" data-stored="azgaarAssistant">
                   <option value="show" selected>Show</option>
                   <option value="hide">Hide</option>
+                </select>
               </td>
             </tr>
 
@@ -2179,8 +2186,8 @@
 
           <div class="separator">Create</div>
           <div class="grid">
-            <button id="openSubmapMenu" data-tip="Click to generate a submap from the current viewport">Submap</button>
-            <button id="openResampleMenu" data-tip="Click to transform the map">Transform</button>
+            <button id="openSubmapTool" data-tip="Click to generate a submap from the current viewport">Submap</button>
+            <button id="openTransformTool" data-tip="Click to transform the map">Transform</button>
           </div>
         </div>
 
@@ -2418,7 +2425,9 @@
 
     <div id="exitCustomization">
       <div data-tip="Drag to move the pane">
-        <button data-tip="Finalize the heightmap and exit the edit mode" id="finalizeHeightmap">Exit Customization</button>
+        <button data-tip="Finalize the heightmap and exit the edit mode" id="finalizeHeightmap">
+          Exit Customization
+        </button>
       </div>
     </div>
 
@@ -3498,7 +3507,11 @@
           <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
           <button id="burgSetPreviewLink" data-tip="Set custom burg map URL" class="icon-map-o"></button>
           <button id="burgLocate" data-tip="Zoom map and center view in the burg" class="icon-target"></button>
-          <button id="burgRelocate" data-tip="Relocate burg. Click on map to move the burg" class="icon-map-pin"></button>
+          <button
+            id="burgRelocate"
+            data-tip="Relocate burg. Click on map to move the burg"
+            class="icon-map-pin"
+          ></button>
           <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
           <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
           <button
@@ -4756,7 +4769,7 @@
           <span style="margin-left: 2px">Names data: </span>
         </div>
 
-        <div id="namesbaseBody" style="margin-block: 2px">
+        <div id="namesbaseBody" style="margin-block: 2px; width: auto">
           <textarea
             id="namesbaseTextarea"
             data-base="0"
@@ -4765,6 +4778,7 @@
             placeholder="Provide a names data: a comma separated list of source names"
             autocorrect="off"
             spellcheck="false"
+            style="resize: none"
           ></textarea>
 
           <div>
@@ -4936,18 +4950,21 @@
               >Model:
               <select id="aiGeneratorModel"></select>
             </label>
-
+            <label
+              for="aiGeneratorTemperature"
+              data-tip="Temperature controls response randomness; higher values mean more creativity, lower values mean more predictability"
+            >
+              Temperature:
+              <input id="aiGeneratorTemperature" type="number" min="-1" max="2" step=".1" class="icon-key" />
+            </label>
             <label for="aiGeneratorKey"
               >Key:
-              <input id="aiGeneratorKey" placeholder="Enter OpenAI API key" class="icon-key" />
-              <a
-                href="https://platform.openai.com/account/api-keys"
-                target="_blank"
-                rel="noreferrer"
+              <input id="aiGeneratorKey" placeholder="Enter API key" class="icon-key" />
+              <button
+                id="aiGeneratorKeyHelp"
                 class="icon-help-circled"
-                style="text-decoration: none"
-                data-tip="Get the key at OpenAI website. The key will be stored in your browser and send to OpenAI API directly. The Map Genenerator doesn't store the key or any generated data"
-              ></a>
+                data-tip="Open provider's website to get the API key there. Note: the Map Genenerator doesn't store the key or any generated data"
+              />
             </label>
           </div>
         </div>
@@ -5275,9 +5292,7 @@
           <div data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">
             Culture
           </div>
-          <div data-tip="Click to sort by culture group" class="sortable alphabetically" data-sortby="group">
-            Group
-          </div>
+          <div data-tip="Click to sort by culture group" class="sortable alphabetically" data-sortby="group">Group</div>
           <div
             data-tip="Click to sort by burg population"
             class="sortable icon-sort-number-down"
@@ -5285,7 +5300,9 @@
           >
             Population
           </div>
-          <div data-tip="Click to sort by burg features" class="sortable alphabetically" data-sortby="features">Features&nbsp;</div>
+          <div data-tip="Click to sort by burg features" class="sortable alphabetically" data-sortby="features">
+            Features&nbsp;
+          </div>
         </div>
 
         <div id="burgsBody" class="table"></div>
@@ -5342,7 +5359,11 @@
                 <th data-tip="Type group name">Name</th>
                 <th data-tip="Burg preview generator">Preview generator</th>
                 <th data-tip="Set min population constraint" colspan="2">Population</th>
-                <th data-tip="Set population percentile: 0-100, where 90 means the burg must have a population higher than 90% of all burgs">Percentile</th>
+                <th
+                  data-tip="Set population percentile: 0-100, where 90 means the burg must have a population higher than 90% of all burgs"
+                >
+                  Percentile
+                </th>
                 <th data-tip="Select allowed biomes">Biomes</th>
                 <th data-tip="Select allowed states">States</th>
                 <th data-tip="Select allowed cultures">Cultures</th>
@@ -5765,6 +5786,83 @@
         </div>
       </div>
 
+      <div id="submapTool" style="display: none" class="dialog">
+        <p style="font-weight: bold">
+          This operation is destructive and irreversible. It will create a completely new map based on the current one.
+          Don't forget to save the .map file to your machine first!
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.5em">
+          <div data-tip="Set points (cells) number of the submap" style="display: flex; gap: 1em">
+            <div>Points number</div>
+            <div>
+              <input id="submapPointsInput" type="range" min="1" max="13" value="4" />
+              <output id="submapPointsFormatted" style="color: #053305">10K</output>
+            </div>
+          </div>
+
+          <div data-tip="Check to fit burg styles (icon and label size) to the submap scale">
+            <input type="checkbox" class="checkbox" id="submapRescaleBurgStyles" checked />
+            <label for="submapRescaleBurgStyles" class="checkbox-label">Rescale burg styles</label>
+          </div>
+        </div>
+      </div>
+
+      <div id="transformTool" style="display: none" class="dialog">
+        <div style="padding-top: 0.5em; width: 40em; font-weight: bold">
+          This operation is destructive and irreversible. It will create a completely new map based on the current one.
+          Don't forget to save the .map file to your machine first!
+        </div>
+
+        <div
+          id="transformToolBody"
+          style="
+            padding: 0.5em 0;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: repeat(5, 1fr);
+            align-items: center;
+          "
+        >
+          <div>Points number</div>
+          <div>
+            <input id="transformPointsInput" type="range" min="1" max="13" value="4" />
+            <output id="transformPointsFormatted" style="color: #053305">10K</output>
+          </div>
+
+          <div>Shift</div>
+          <div>
+            <label>X: <input id="transformShiftX" type="number" size="4" value="0" /></label>
+            <label>Y: <input id="transformShiftY" type="number" size="4" value="0" /></label>
+          </div>
+
+          <div>Rotate</div>
+          <div>
+            <input id="transformAngleInput" type="range" min="0" max="359" value="0" />
+            <output id="transformAngleOutput">0</output>°
+          </div>
+
+          <div>Scale</div>
+          <div>
+            <input id="transformScaleInput" type="range" min="-25" max="25" value="0" />
+            <output id="transformScaleResult">1</output>x
+          </div>
+
+          <div>Mirror</div>
+          <div style="display: flex; gap: 0.5em">
+            <input type="checkbox" class="checkbox" id="transformMirrorH" />
+            <label for="transformMirrorH" class="checkbox-label">horizontally</label>
+            <input type="checkbox" class="checkbox" id="transformMirrorV" />
+            <label for="transformMirrorV" class="checkbox-label">vertically</label>
+          </div>
+        </div>
+
+        <div id="transformPreview" style="position: relative; overflow: hidden; outline: 1px solid #666">
+          <canvas id="transformPreviewCanvas" style="position: absolute; transform-origin: center"></canvas>
+        </div>
+      </div>
+
       <div id="options3d" class="dialog stable" style="display: none">
         <div id="options3dMesh" style="display: none">
           <div data-tip="Set map rotation speed. Set to 0 is you want to toggle off the rotation">
@@ -6082,105 +6180,6 @@
           <div id="tileSize" style="display: inline-block">1000 x 1000 px</div>
         </div>
         <div id="tileStatus" style="font-style: italic"></div>
-      </div>
-
-      <div id="resampleDialog" style="display: none" class="dialog">
-        <div style="width: 34em; max-width: 80vw; font-weight: bold; padding: 6px">
-          This operation is destructive and irreversible. It will create a completely new map based on the current one.
-          Don't forget to save the current project to your machine first!
-        </div>
-
-        <div
-          style="
-            width: auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: repeat(5, 1fr);
-            align-items: center;
-            padding: 0.5em;
-          "
-        >
-          <div>Points number</div>
-          <div>
-            <input id="submapPointsInput" type="range" min="1" max="13" value="4" />
-            <output id="submapPointsOutputFormatted" style="color: #053305">10K</output>
-          </div>
-
-          <div>Shift</div>
-          <div>
-            <label>X: <input id="submapShiftX" type="number" size="4" value="0" /></label>
-            <label>Y: <input id="submapShiftY" type="number" size="4" value="0" /></label>
-          </div>
-
-          <div>Rotate</div>
-          <div>
-            <input id="submapAngleInput" type="range" min="0" max="359" value="0" />
-            <output id="submapAngleOutput">0</output>°
-          </div>
-
-          <div>Scale</div>
-          <div>
-            <input id="submapScaleInput" type="range" min="-25" max="25" value="0" />
-            <output id="submapScaleOutput">1</output>x
-          </div>
-
-          <div>Mirror</div>
-          <div>
-            <input type="checkbox" class="checkbox" id="submapMirrorH" />
-            <label for="submapMirrorH" class="checkbox-label">horizontally</label>
-            &nbsp;
-            <input type="checkbox" class="checkbox" id="submapMirrorV" />
-            <label for="submapMirrorV" class="checkbox-label">vertically</label>
-          </div>
-        </div>
-
-        <div
-          id="submapPreview"
-          style="border: 1px solid #666; margin: 1em auto; overflow: hidden; position: relative"
-        ></div>
-      </div>
-
-      <div id="submapOptionsDialog" style="display: none" class="dialog">
-        <p style="font-weight: bold">
-          This operation is destructive and irreversible. It will create a completely new map based on the current one.
-          Don't forget to save the current project as a .map file first!
-        </p>
-
-        <p>Settings to be changed: population rate, map pixel size</p>
-        <p>
-          Data to be copied: heightmap, biomes, religions, population, precipitation, cultures, states, provinces,
-          military regiments
-        </p>
-        <p>Data to be regenerated: zones, routes, rivers</p>
-        <p>Burgs may be remapped incorrectly, manual change is required</p>
-
-        <p>Keep data for:</p>
-        <div data-tip="Lock all markers copied from the original map">
-          <input id="submapLockMarkers" class="checkbox" type="checkbox" checked />
-          <label for="submapLockMarkers" class="checkbox-label">Markers</label>
-        </div>
-        <div data-tip="Lock all burgs copied from the original map">
-          <input id="submapLockBurgs" class="checkbox" type="checkbox" checked />
-          <label for="submapLockBurgs" class="checkbox-label">Burgs</label>
-        </div>
-
-        <p>Experimental features:</p>
-        <div data-tip="Rivers on the parent map will errode land (helps to get similar river network)">
-          <input id="submapDepressRivers" class="checkbox" type="checkbox" />
-          <label for="submapDepressRivers" class="checkbox-label">Errode riverbeds</label>
-        </div>
-        <div data-tip="Rescale styles (burg labels, emblem size) to match the new scale">
-          <input id="submapRescaleStyles" class="checkbox" type="checkbox" checked />
-          <label for="submapRescaleStyles" class="checkbox-label">Rescale styles</label>
-        </div>
-        <div data-tip="Move all existing towns to the 'largetown' burg group">
-          <input id="submapPromoteTowns" class="checkbox" type="checkbox" />
-          <label for="submapPromoteTowns" class="checkbox-label">Promote towns to largetowns</label>
-        </div>
-        <div data-tip="Add lakes in depressions (can be very slow on big landmasses)">
-          <input id="submapAddLakeInDepression" class="checkbox" type="checkbox" />
-          <label for="submapAddLakeInDepression" class="checkbox-label">Add lakes in depressions (slow)</label>
-        </div>
       </div>
 
       <div id="alert" style="display: none" class="dialog">
@@ -7798,9 +7797,11 @@
           </symbol>
 
           <symbol id="icon-store" viewBox="0 0 616 512">
-            <path d="M602 118.6L537.1 15C531.3 5.7 521 0 510 0H106C95 0 84.7 5.7 78.9 15L14 118.6c-33.5 53.5-3.8 127.9 58.8 136.4 4.5.6 9.1.9 13.7.9 29.6 0 55.8-13 73.8-33.1 18 20.1 44.3 33.1 73.8 33.1 29.6 0 55.8-13 73.8-33.1 18 20.1 44.3 33.1 73.8 33.1 29.6 0 55.8-13 73.8-33.1 18.1 20.1 44.3 33.1 73.8 33.1 4.7 0 9.2-.3 13.7-.9 62.8-8.4 92.6-82.8 59-136.4zM529.5 288c-10 0-19.9-1.5-29.5-3.8V384H116v-99.8c-9.6 2.2-19.5 3.8-29.5 3.8-6 0-12.1-.4-18-1.2-5.6-.8-11.1-2.1-16.4-3.6V480c0 17.7 14.3 32 32 32h448c17.7 0 32-14.3 32-32V283.2c-5.4 1.6-10.8 2.9-16.4 3.6-6.1.8-12.1 1.2-18.2 1.2z" />
+            <path
+              d="M602 118.6L537.1 15C531.3 5.7 521 0 510 0H106C95 0 84.7 5.7 78.9 15L14 118.6c-33.5 53.5-3.8 127.9 58.8 136.4 4.5.6 9.1.9 13.7.9 29.6 0 55.8-13 73.8-33.1 18 20.1 44.3 33.1 73.8 33.1 29.6 0 55.8-13 73.8-33.1 18 20.1 44.3 33.1 73.8 33.1 29.6 0 55.8-13 73.8-33.1 18.1 20.1 44.3 33.1 73.8 33.1 4.7 0 9.2-.3 13.7-.9 62.8-8.4 92.6-82.8 59-136.4zM529.5 288c-10 0-19.9-1.5-29.5-3.8V384H116v-99.8c-9.6 2.2-19.5 3.8-29.5 3.8-6 0-12.1-.4-18-1.2-5.6-.8-11.1-2.1-16.4-3.6V480c0 17.7 14.3 32 32 32h448c17.7 0 32-14.3 32-32V283.2c-5.4 1.6-10.8 2.9-16.4 3.6-6.1.8-12.1 1.2-18.2 1.2z"
+            />
           </symbol>
-  
+
           <symbol id="icon-route" viewBox="0 0 512 512">
             <path
               d="M416 320h-96c-17.6 0-32-14.4-32-32s14.4-32 32-32h96s96-107 96-160-43-96-96-96-96 43-96 96c0 25.5 22.2 63.4 45.3 96H320c-52.9 0-96 43.1-96 96s43.1 96 96 96h96c17.6 0 32 14.4 32 32s-14.4 32-32 32H185.5c-16 24.8-33.8 47.7-47.3 64H416c52.9 0 96-43.1 96-96s-43.1-96-96-96zm0-256c17.7 0 32 14.3 32 32s-14.3 32-32 32-32-14.3-32-32 14.3-32 32-32zM96 256c-53 0-96 43-96 96s96 160 96 160 96-107 96-160-43-96-96-96zm0 128c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"
@@ -7866,32 +7867,57 @@
           <pattern id="pattern_square" width="25" height="25" patternUnits="userSpaceOnUse" fill="none">
             <path d="M 25 0 L 0 0 0 25" />
           </pattern>
+
           <pattern id="pattern_pointyHex" width="25" height="43.4" patternUnits="userSpaceOnUse" fill="none">
             <path d="M 0,0 12.5,7.2 25,0 M 12.5,21.7 V 7.2 Z M 0,43.4 V 28.9 L 12.5,21.7 25,28.9 v 14.5" />
           </pattern>
+
           <pattern id="pattern_flatHex" width="43.4" height="25" patternUnits="userSpaceOnUse" fill="none">
             <path d="M 43.4,0 36.2,12.5 43.4,25 M 21.7,12.5 H 36.2 Z M 0,0 H 14.5 L 21.7,12.5 14.5,25 H 0" />
           </pattern>
+
           <pattern id="pattern_square45deg" width="35.355" height="35.355" patternUnits="userSpaceOnUse" fill="none">
             <path d="M 0 0 L 35.355 35.355 M 0 35.355 L 35.355 0" />
           </pattern>
+
           <pattern id="pattern_squareTruncated" width="25" height="25" patternUnits="userSpaceOnUse" fill="none">
-            <path d="M 8.33 25 L 0 16.66 V 8.33 L 8.33 0 16.66 0 25 8.33  M 16.66 25 L 25 16.66 L 25 8.33 M 8.33 25 L 16.66 25" />
+            <path
+              d="M 8.33 25 L 0 16.66 V 8.33 L 8.33 0 16.66 0 25 8.33  M 16.66 25 L 25 16.66 L 25 8.33 M 8.33 25 L 16.66 25"
+            />
           </pattern>
+
           <pattern id="pattern_squareTetrakis" width="25" height="25" patternUnits="userSpaceOnUse" fill="none">
-            <path d="M 25 0 L 0 0 0 25 M 0 0 L 25 25 M 0 25 L 25 0 M 12.5 0 L 12.5 25 M 0 12.5 L 25 12.5 M 0 25 L 25 25 L 25 0" />
+            <path
+              d="M 25 0 L 0 0 0 25 M 0 0 L 25 25 M 0 25 L 25 0 M 12.5 0 L 12.5 25 M 0 12.5 L 25 12.5 M 0 25 L 25 25 L 25 0"
+            />
           </pattern>
-          <pattern id="pattern_triangleHorizontal" width="41.76" height="72.33" patternUnits="userSpaceOnUse" fill="none">
-            <path d="M 41.76 36.165 H 0 L 20.88 0 41.76 36.165 20.88 72.33 0 36.165 M 0 0 H 72.33 M 0 72.33 L 41.76 72.33" />
+
+          <pattern
+            id="pattern_triangleHorizontal"
+            width="41.76"
+            height="72.33"
+            patternUnits="userSpaceOnUse"
+            fill="none"
+          >
+            <path
+              d="M 41.76 36.165 H 0 L 20.88 0 41.76 36.165 20.88 72.33 0 36.165 M 0 0 H 72.33 M 0 72.33 L 41.76 72.33"
+            />
           </pattern>
+
           <pattern id="pattern_triangleVertical" width="72.33" height="41.76" patternUnits="userSpaceOnUse" fill="none">
-            <path d="M 36.165 0 L 0 20.88 36.165 41.76 72.33 20.88 36.165 0 V 41.76 M 0 0 V 72.33 M 72.33 0 L 72.33 41.76">
+            <path
+              d="M 36.165 0 L 0 20.88 36.165 41.76 72.33 20.88 36.165 0 V 41.76 M 0 0 V 72.33 M 72.33 0 L 72.33 41.76"
+            />
           </pattern>
+
           <pattern id="pattern_trihexagonal" width="25" height="43.4" patternUnits="userSpaceOnUse" fill="none">
             <path d="M 25 10.85 H 0 L 18.85 43.4 25 32.55 H 0 L 18.85 0 25 10.85" />
           </pattern>
+
           <pattern id="pattern_rhombille" width="82.5" height="50" patternUnits="userSpaceOnUse" fill="none">
-            <path d="M 13.8 50 L 0 25 13.8 0 H 41.2 L 27.5 25 41.2 50 55 25 41.2 0 68.8 0 82.5 25 68.8 50 M 0 25 H 27.5 M 55 25 H 82.5 M 13.8 50 H 41.2 L 68.8 50" />
+            <path
+              d="M 13.8 50 L 0 25 13.8 0 H 41.2 L 27.5 25 41.2 50 55 25 41.2 0 68.8 0 82.5 25 68.8 50 M 0 25 H 27.5 M 55 25 H 82.5 M 13.8 50 H 41.2 L 68.8 50"
+            />
           </pattern>
         </g>
 
@@ -8051,26 +8077,25 @@
     <script src="libs/jquery-ui.min.js"></script>
     <script src="versioning.js"></script>
     <script src="libs/d3.min.js"></script>
-    <script src="libs/priority-queue.min.js"></script>
     <script src="libs/flatqueue.js"></script>
     <script src="libs/delaunator.min.js"></script>
     <script src="libs/indexedDB.js?v=1.99.00"></script>
 
-    <script src="utils/shorthands.js?v=1.99.00"></script>
+    <script src="utils/shorthands.js?v=1.106.0"></script>
     <script src="utils/commonUtils.js?v=1.103.0"></script>
     <script src="utils/arrayUtils.js?v=1.99.00"></script>
     <script src="utils/functionUtils.js?v=1.99.00"></script>
     <script src="utils/colorUtils.js?v=1.99.00"></script>
-    <script src="utils/graphUtils.js?v=1.99.00"></script>
+    <script src="utils/graphUtils.js?v=1.106.0"></script>
     <script src="utils/nodeUtils.js?v=1.99.00"></script>
     <script src="utils/numberUtils.js?v=1.99.00"></script>
     <script src="utils/polyfills.js?v=1.99.00"></script>
     <script src="utils/probabilityUtils.js?v=1.99.05"></script>
-    <script src="utils/stringUtils.js?v=1.99.00"></script>
+    <script src="utils/stringUtils.js?v=1.106.0"></script>
     <script src="utils/languageUtils.js?v=1.99.00"></script>
     <script src="utils/unitUtils.js?v=1.99.00"></script>
-    <script src="utils/pathUtils.js?v=1.105.6"></script>
-    <script defer src="utils/debugUtils.js?v=1.99.00"></script>
+    <script src="utils/pathUtils.js?v=1.106.0"></script>
+    <script defer src="utils/debugUtils.js?v=1.106.0"></script>
 
     <script src="modules/voronoi.js"></script>
     <script src="config/heightmap-templates.js"></script>
@@ -8078,62 +8103,61 @@
     <script src="modules/heightmap-generator.js?v=1.99.00"></script>
     <script src="modules/features.js?v=1.104.0"></script>
     <script src="modules/ocean-layers.js?v=1.104.8"></script>
-    <script src="modules/river-generator.js?v=1.99.05"></script>
+    <script src="modules/river-generator.js?v=1.106.0"></script>
     <script src="modules/lakes.js?v=1.99.00"></script>
     <script src="modules/biomes.js?v=1.99.00"></script>
-    <script src="modules/names-generator.js?v=1.87.14"></script>
-    <script src="modules/cultures-generator.js?v=1.99.05"></script>
-    <script src="modules/burgs-generator.js?v=1.105.7"></script>
-    <script src="modules/states-generator.js?v=1.105.7"></script>
-    <script src="modules/provinces-generator.js?v=1.104.0"></script>
-    <script src="modules/routes-generator.js?v=1.104.10"></script>
-    <script src="modules/religions-generator.js?v=1.99.05"></script>
+    <script src="modules/names-generator.js?v=1.106.0"></script>
+    <script src="modules/cultures-generator.js?v=1.106.0"></script>
+    <script src="modules/burgs-and-states.js?v=1.106.0"></script>
+    <script src="modules/provinces-generator.js?v=1.106.0"></script>
+    <script src="modules/routes-generator.js?v=1.106.0"></script>
+    <script src="modules/religions-generator.js?v=1.106.0"></script>
     <script src="modules/military-generator.js?v=1.104.0"></script>
     <script src="modules/markers-generator.js?v=1.104.0"></script>
-    <script src="modules/zones-generator.js?v=1.104.0"></script>
+    <script src="modules/zones-generator.js?v=1.106.0"></script>
     <script src="modules/coa-generator.js?v=1.99.00"></script>
-    <script src="modules/submap.js?v=1.104.0"></script>
+    <script src="modules/resample.js?v=1.105.13"></script>
     <script src="libs/alea.min.js?v1.105.0"></script>
     <script src="libs/polylabel.min.js?v1.105.0"></script>
     <script src="libs/lineclip.min.js?v1.105.0"></script>
     <script src="libs/simplify.js?v1.105.6"></script>
     <script src="modules/fonts.js?v=1.99.03"></script>
-    <script src="modules/ui/layers.js?v=1.101.00"></script>
+    <script src="modules/ui/layers.js?v=1.106.0"></script>
     <script src="modules/ui/measurers.js?v=1.99.00"></script>
     <script src="modules/ui/style-presets.js?v=1.100.00"></script>
     <script src="modules/ui/general.js?v=1.100.00"></script>
-    <script src="modules/ui/options.js?v=1.105.0"></script>
-    <script src="main.js?v=1.105.2"></script>
+    <script src="modules/ui/options.js?v=1.106.0"></script>
+    <script src="main.js?v=1.106.0"></script>
 
     <script defer src="modules/relief-icons.js?v=1.99.05"></script>
     <script defer src="modules/ui/style.js?v=1.104.0"></script>
-    <script defer src="modules/ui/editors.js?v=1.105.2"></script>
-    <script defer src="modules/ui/tools.js?v=1.104.0"></script>
+    <script defer src="modules/ui/editors.js?v=1.105.23"></script>
+    <script defer src="modules/ui/tools.js?v=1.106.0"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.105.4"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=1.105.2"></script>
     <script defer src="modules/ui/provinces-editor.js?v=1.104.0"></script>
     <script defer src="modules/ui/biomes-editor.js?v=1.99.05"></script>
-    <script defer src="modules/ui/namesbase-editor.js?v=1.99.00"></script>
+    <script defer src="modules/ui/namesbase-editor.js?v=1.105.11"></script>
     <script defer src="modules/ui/elevation-profile.js?v=1.99.00"></script>
     <script defer src="modules/ui/temperature-graph.js?v=1.99.00"></script>
     <script defer src="modules/ui/routes-editor.js?v=1.104.3"></script>
     <script defer src="modules/ui/routes-creator.js?v=1.104.3"></script>
     <script defer src="modules/ui/route-group-editor.js?v=1.103.8"></script>
     <script defer src="modules/ui/ice-editor.js?v=1.99.00"></script>
-    <script defer src="modules/ui/lakes-editor.js?v=1.99.00"></script>
+    <script defer src="modules/ui/lakes-editor.js?v=1.106.0"></script>
     <script defer src="modules/ui/coastline-editor.js?v=1.99.00"></script>
-    <script defer src="modules/ui/labels-editor.js?v=1.101.00"></script>
-    <script defer src="modules/ui/rivers-editor.js?v=1.99.00"></script>
-    <script defer src="modules/ui/rivers-creator.js?v=1.99.00"></script>
+    <script defer src="modules/ui/labels-editor.js?v=1.106.0"></script>
+    <script defer src="modules/ui/rivers-editor.js?v=1.106.0"></script>
+    <script defer src="modules/ui/rivers-creator.js?v=1.106.0"></script>
     <script defer src="modules/ui/relief-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/burg-editor.js?v=1.102.00"></script>
     <script defer src="modules/ui/burg-group-editor.js?v=1.106.0"></script>
     <script defer src="modules/ui/units-editor.js?v=1.104.0"></script>
     <script defer src="modules/ui/notes-editor.js?v=1.99.06"></script>
-    <script defer src="modules/ui/ai-generator.js?v=1.99.09"></script>
+    <script defer src="modules/ui/ai-generator.js?v=1.105.22"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.99.00"></script>
-    <script defer src="modules/ui/zones-editor.js?v=1.100.00"></script>
-    <script defer src="modules/ui/burgs-overview.js?v=1.105.7"></script>
+    <script defer src="modules/ui/zones-editor.js?v=1.105.20"></script>
+    <script defer src="modules/ui/burgs-overview.js?v=1.105.15"></script>
     <script defer src="modules/ui/routes-overview.js?v=1.104.3"></script>
     <script defer src="modules/ui/rivers-overview.js?v=1.99.00"></script>
     <script defer src="modules/ui/military-overview.js?v=1.99.00"></script>
@@ -8144,17 +8168,18 @@
     <script defer src="modules/ui/emblems-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/markers-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/3d.js?v=1.99.00"></script>
-    <script defer src="modules/ui/submap.js?v=1.99.10"></script>
+    <script defer src="modules/ui/submap-tool.js?v=1.105.13"></script>
+    <script defer src="modules/ui/transform-tool.js?v=1.105.13"></script>
     <script defer src="modules/ui/hotkeys.js?v=1.104.0"></script>
     <script defer src="modules/coa-renderer.js?v=1.99.00"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
     <script defer src="modules/io/save.js?v=1.100.00"></script>
-    <script defer src="modules/io/load.js?v=1.105.5"></script>
-    <script defer src="modules/io/cloud.js?v=1.99.00"></script>
+    <script defer src="modules/io/load.js?v=1.105.24"></script>
+    <script defer src="modules/io/cloud.js?v=1.106.0"></script>
     <script defer src="modules/io/export.js?v=1.100.00"></script>
 
-    <script defer src="modules/renderers/draw-features.js?v=1.104.15"></script>
+    <script defer src="modules/renderers/draw-features.js?v=1.106.0"></script>
     <script defer src="modules/renderers/draw-borders.js?v=1.104.0"></script>
     <script defer src="modules/renderers/draw-heightmap.js?v=1.104.0"></script>
     <script defer src="modules/renderers/draw-markers.js?v=1.104.0"></script>
@@ -8162,7 +8187,7 @@
     <script defer src="modules/renderers/draw-temperature.js?v=1.104.0"></script>
     <script defer src="modules/renderers/draw-emblems.js?v=1.104.0"></script>
     <script defer src="modules/renderers/draw-military.js?v=1.104.13"></script>
-    <script defer src="modules/renderers/draw-state-labels.js?v=1.104.0"></script>
+    <script defer src="modules/renderers/draw-state-labels.js?v=1.106.0"></script>
     <script defer src="modules/renderers/draw-burg-labels.js?v=1.104.0"></script>
     <script defer src="modules/renderers/draw-burg-icons.js?v=1.104.0"></script>
   </body>
