@@ -86,10 +86,16 @@ function editRiver(id) {
   }
 
   function updateRiverWidth(river) {
-    const {addMeandering, getWidth, getOffset} = Rivers;
     const {cells, discharge, widthFactor, sourceWidth} = river;
-    const meanderedPoints = addMeandering(cells);
-    river.width = getWidth(getOffset(discharge, meanderedPoints.length, widthFactor, sourceWidth));
+    const meanderedPoints = Rivers.addMeandering(cells);
+    river.width = Rivers.getWidth(
+      Rivers.getOffset({
+        flux: discharge,
+        pointIndex: meanderedPoints.length,
+        widthFactor,
+        startingWidth: sourceWidth
+      })
+    );
 
     const width = `${rn(river.width * distanceScale, 3)} ${distanceUnitInput.value}`;
     byId("riverWidth").value = width;
@@ -158,11 +164,9 @@ function editRiver(id) {
     river.points = debug.selectAll("#controlPoints > *").data();
     river.cells = river.points.map(([x, y]) => findCell(x, y));
 
-    const {widthFactor, sourceWidth} = river;
-    const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
-
     lineGen.curve(d3.curveCatmullRom.alpha(0.1));
-    const path = Rivers.getRiverPath(meanderedPoints, widthFactor, sourceWidth);
+    const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
+    const path = Rivers.getRiverPath(meanderedPoints, river.widthFactor, river.sourceWidth);
     elSelected.attr("d", path);
 
     updateRiverLength(river);
