@@ -240,7 +240,6 @@ t,
 #routes {
   fill: none;
   cursor: pointer;
-  mask: url(#land);
 }
 
 i.icon-lock {
