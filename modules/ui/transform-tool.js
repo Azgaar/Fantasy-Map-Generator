@@ -132,9 +132,12 @@ async function openTransformTool() {
 
     const [projection, inverse] = getProjection();
 
+    applyGraphSize();
+    fitMapToScreen();
     resetZoom(0);
     undraw();
     Resample.process({projection, inverse, scale: 1});
+
     drawLayers();
 
     INFO && console.groupEnd("transformMap");
