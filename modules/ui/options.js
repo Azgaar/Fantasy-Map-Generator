@@ -210,16 +210,16 @@ function fitMapToScreen() {
   svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
 
-  const zoomExtent = [
-    [0, 0],
-    [graphWidth, graphHeight]
-  ];
-
   const zoomMin = rn(Math.max(svgWidth / graphWidth, svgHeight / graphHeight), 3);
   zoomExtentMin.value = zoomMin;
   const zoomMax = +zoomExtentMax.value;
 
-  zoom.translateExtent(zoomExtent).scaleExtent([zoomMin, zoomMax]).scaleTo(svg, zoomMin);
+  zoom
+    .translateExtent([
+      [0, 0],
+      [graphWidth, graphHeight]
+    ])
+    .scaleExtent([zoomMin, zoomMax]);
 
   fitScaleBar(scaleBar, svgWidth, svgHeight);
   if (window.fitLegendBox) fitLegendBox();
