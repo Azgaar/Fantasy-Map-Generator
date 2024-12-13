@@ -371,6 +371,7 @@ function editProvinces() {
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
 
+    States.getPoles();
     States.findNeighbors();
     States.collectStatistics();
     States.defineStateForms(newStates);
@@ -382,6 +383,10 @@ function editProvinces() {
       const {coa, pole} = pack.states[stateId];
       COArenderer.add("state", stateId, coa, ...pole);
     });
+
+    layerIsOn("toggleProvinces") && toggleProvinces();
+    layerIsOn("toggleStates") ? drawStates() : toggleStates();
+    layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
 
     unfog();
     closeDialogs();

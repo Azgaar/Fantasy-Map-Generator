@@ -1200,7 +1200,6 @@ function addState() {
   const basename = center % 5 === 0 ? burgs[burg].name : Names.getCulture(culture);
   const name = Names.getState(basename, culture);
   const color = getRandomColor();
-  const pole = cells.p[center];
 
   // generate emblem
   const cultureType = pack.cultures[culture].type;
@@ -1250,40 +1249,22 @@ function addState() {
     culture,
     military: [],
     alert: 1,
-    coa,
-    pole
+    coa
   });
 
+  States.getPoles();
   States.findNeighbors();
   States.collectStatistics();
   States.defineStateForms([newState]);
   adjustProvinces([cells.province[center]]);
 
-  if (layerIsOn("toggleProvinces")) toggleProvinces();
-  if (!layerIsOn("toggleStates")) toggleStates();
-  else drawStates();
-  if (!layerIsOn("toggleBorders")) toggleBorders();
-  else drawBorders();
-
-  // add label
-  defs
-    .select("#textPaths")
-    .append("path")
-    .attr("d", `M${pole[0] - 50},${pole[1] + 6}h${100}`)
-    .attr("id", "textPath_stateLabel" + newState);
-  labels
-    .select("#states")
-    .append("text")
-    .attr("id", "stateLabel" + newState)
-    .append("textPath")
-    .attr("xlink:href", "#textPath_stateLabel" + newState)
-    .attr("startOffset", "50%")
-    .attr("font-size", "50%")
-    .append("tspan")
-    .attr("x", name.length * -3)
-    .text(name);
-
+  drawStateLabels([newState]);
   COArenderer.add("state", newState, coa, states[newState].pole[0], states[newState].pole[1]);
+
+  layerIsOn("toggleProvinces") && toggleProvinces();
+  layerIsOn("toggleStates") ? drawStates() : toggleStates();
+  layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
+
   statesEditorAddLines();
 }
 
