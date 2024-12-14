@@ -254,9 +254,11 @@ window.Resample = (function () {
         });
         if (points.length < 2) return null;
 
-        const firstCell = points[0][2];
+        const bbox = [0, 0, graphWidth, graphHeight];
+        const clipped = lineclip(points, bbox)[0].map(([x, y]) => [rn(x, 2), rn(y, 2), findCell(x, y)]);
+        const firstCell = clipped[0][2];
         const feature = pack.cells.f[firstCell];
-        return {...route, feature, points};
+        return {...route, feature, points: clipped};
       })
       .filter(Boolean);
 
