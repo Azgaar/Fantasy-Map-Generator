@@ -3403,15 +3403,19 @@
                 <input id="burgPopulation" type="number" min="0" step="1" style="width: 9em" />
               </div>
 
-              <div data-tip="Burg mean annual temperature and real-world city for comparison">
-                <div class="label">Temperature:</div>
-                <span id="burgTemperature"></span>, like in
-                <span id="burgTemperatureLikeIn"></span>
-                <i
-                  id="burgTemperatureGraph"
-                  data-tip="Show temperature graph for the burg"
-                  class="icon-chart-area pointer"
-                ></i>
+              <div data-tip="Burg average yearly temperature" style="display: flex; justify-content: space-between">
+                <div>
+                  <div class="label">Temperature:</div>
+                  <span id="burgTemperature"></span>
+                </div>
+                <div style="display: flex; gap: 0.5em">
+                  <i class="icon-info-circled" id="burgTemperatureLikeIn"></i>
+                  <i
+                    id="burgTemperatureGraph"
+                    data-tip="Show temperature graph for the burg"
+                    class="icon-chart-area pointer"
+                  ></i>
+                </div>
               </div>
 
               <div data-tip="Burg height above mean sea level">
@@ -8110,7 +8114,7 @@
     <script defer src="modules/ui/biomes-editor.js?v=1.99.05"></script>
     <script defer src="modules/ui/namesbase-editor.js?v=1.105.11"></script>
     <script defer src="modules/ui/elevation-profile.js?v=1.99.00"></script>
-    <script defer src="modules/ui/temperature-graph.js?v=1.99.00"></script>
+    <script defer src="modules/ui/temperature-graph.js?v=1.106.6"></script>
     <script defer src="modules/ui/routes-editor.js?v=1.104.3"></script>
     <script defer src="modules/ui/routes-creator.js?v=1.104.3"></script>
     <script defer src="modules/ui/route-group-editor.js?v=1.103.8"></script>
@@ -8121,7 +8125,7 @@
     <script defer src="modules/ui/rivers-editor.js?v=1.106.0"></script>
     <script defer src="modules/ui/rivers-creator.js?v=1.106.0"></script>
     <script defer src="modules/ui/relief-editor.js?v=1.99.00"></script>
-    <script defer src="modules/ui/burg-editor.js?v=1.102.00"></script>
+    <script defer src="modules/ui/burg-editor.js?v=1.106.6"></script>
     <script defer src="modules/ui/units-editor.js?v=1.104.0"></script>
     <script defer src="modules/ui/notes-editor.js?v=1.99.06"></script>
     <script defer src="modules/ui/ai-generator.js?v=1.105.22"></script>

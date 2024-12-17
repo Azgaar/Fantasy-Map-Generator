@@ -47,11 +47,13 @@ function showBurgTemperatureGraph(id) {
 
   // Standard deviation for average temperature for the year from [0, 1] to [min, max]
   const yearSig = lstOut[0] * 62.9466411977018 + 0.28613807855649165;
+
   // Standard deviation for the difference between the minimum and maximum temperatures for the year
   const yearDelTmpSig =
     lstOut[1] * 13.541688670361175 + 0.1414213562373084 > yearSig
       ? yearSig
       : lstOut[1] * 13.541688670361175 + 0.1414213562373084;
+
   // Expected value for the difference between the minimum and maximum temperatures for the year
   const yearDelTmpMu = lstOut[2] * 15.266666666666667 + 0.6416666666666663;
 
@@ -60,7 +62,7 @@ function showBurgTemperatureGraph(id) {
   const minT = burgTemp - Math.max(yearSig + delT, 15);
   const maxT = burgTemp + (burgTemp - minT);
 
-  const chartWidth = Math.max(window.innerWidth / 2, 580);
+  const chartWidth = Math.max(window.innerWidth / 2, 520);
   const chartHeight = 300;
 
   // drawing starting point from top-left (y = 0) of SVG
@@ -107,9 +109,9 @@ function showBurgTemperatureGraph(id) {
   });
 
   drawGraph();
+
   $("#alert").dialog({
-    title: "Annual temperature in " + b.name,
-    width: "auto",
+    title: "Average temperature in " + b.name,
     position: {my: "center", at: "center", of: "svg"}
   });
 
