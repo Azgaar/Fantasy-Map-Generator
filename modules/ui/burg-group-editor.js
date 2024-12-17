@@ -305,7 +305,7 @@ function editBurgGroups() {
     }
 
     options.burgs.groups = lines.map(line => {
-      const inputs = line.querySelectorAll("input");
+      const inputs = line.querySelectorAll("input, select");
       const group = Array.from(inputs).reduce((obj, input) => {
         const value = parseInput(input);
         if (value !== null) obj[input.name] = value;
