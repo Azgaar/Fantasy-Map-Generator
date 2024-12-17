@@ -154,14 +154,16 @@ function regenerateStates() {
   if (!newStates) return;
 
   pack.states = newStates;
-  BurgsAndStates.expandStates();
-  BurgsAndStates.normalizeStates();
-  BurgsAndStates.getPoles();
-  BurgsAndStates.collectStatistics();
-  BurgsAndStates.assignColors();
-  BurgsAndStates.generateCampaigns();
-  BurgsAndStates.generateDiplomacy();
-  BurgsAndStates.defineStateForms();
+  States.expandStates();
+  States.normalize();
+  States.getPoles();
+  States.findNeighbors();
+  States.collectStatistics();
+  States.assignColors();
+  States.generateCampaigns();
+  States.generateDiplomacy();
+  States.defineStateForms();
+
   Provinces.generate(true);
   Provinces.getPoles();
 
@@ -431,7 +433,7 @@ function regenerateBurgs() {
     .filter(s => s.i && !s.removed && !s.capital)
     .forEach(s => {
       const [x, y] = cells.p[s.center];
-      const burgId = addBurg([x, y]);
+      const burgId = Burgs.add([x, y]);
       s.capital = burgId;
       s.center = pack.burgs[burgId].cell;
       pack.burgs[burgId].capital = 1;
@@ -443,8 +445,7 @@ function regenerateBurgs() {
     if (f.port) f.port = 0; // reset features ports counter
   });
 
-  BurgsAndStates.specifyBurgs();
-  BurgsAndStates.defineBurgFeatures();
+  Burgs.specify();
   regenerateRoutes();
 
   drawBurgIcons();
@@ -503,7 +504,7 @@ function regenerateEmblems() {
     const nameByBurg = province.burg && province.name.slice(0, 3) === parent.name.slice(0, 3);
     const kinship = dominion ? 0 : nameByBurg ? 0.8 : 0.4;
     const culture = pack.cells.culture[province.center];
-    const type = BurgsAndStates.getType(province.center, parent.port);
+    const type = Burgs.getType(province.center, parent.port);
     province.coa = COA.generate(parent.coa, kinship, dominion, type);
     province.coa.shield = COA.getShield(culture, province.state);
   });
@@ -521,8 +522,24 @@ function regenerateReligions() {
 function regenerateCultures() {
   Cultures.generate();
   Cultures.expand();
-  BurgsAndStates.updateCultures();
-  Religions.updateCultures();
+
+  // update culture for states
+  pack.states = pack.states.map(state => {
+    if (!state.i || state.removed) return state;
+    return {...state, culture: pack.cells.culture[state.center]};
+  });
+
+  // update culture for burgs
+  pack.burgs = pack.burgs.map(burg => {
+    if (!burg.i || burg.removed) return burg;
+    return {...burg, culture: pack.cells.culture[burg.cell]};
+  });
+
+  // update culture for religions
+  pack.religions = pack.religions.map(religion => {
+    if (!religion.i || religion.removed) return religion;
+    return {...religion, culture: pack.cells.culture[religion.center]};
+  });
 
   layerIsOn("toggleCultures") ? drawCultures() : toggleCultures();
   refreshAllEditors();

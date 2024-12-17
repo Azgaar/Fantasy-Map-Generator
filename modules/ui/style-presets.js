@@ -71,24 +71,29 @@ async function fetchSystemPreset(preset) {
   }
 }
 
-function applyStyle(style) {
-  for (const selector in style) {
+function applyStyle(styleJSON) {
+  for (const selector in styleJSON) {
+    if (selector.startsWith("#burgLabels")) {
+      const group = selector.replace("#burgLabels > g#", "");
+      style.burgLabels[group] = styleJSON[selector];
+    }
+    if (selector.startsWith("#burgIcons")) {
+      const group = selector.replace("#burgIcons > g#", "");
+      style.burgIcons[group] = styleJSON[selector];
+    }
+
     const el = document.querySelector(selector);
     if (!el) continue;
 
-    for (const attribute in style[selector]) {
-      const value = style[selector][attribute];
+    for (const attribute in styleJSON[selector]) {
+      const value = styleJSON[selector][attribute];
 
       if (value === "null" || value === null) {
         el.removeAttribute(attribute);
         continue;
       }
 
-      if (attribute === "text-shadow") {
-        el.style[attribute] = value;
-      } else {
-        el.setAttribute(attribute, value);
-      }
+      el.setAttribute(attribute, value);
 
       if (selector === "#texture") {
         const image = document.querySelector("#texture > image");
@@ -271,52 +276,12 @@ function addStylePreset() {
         "data-columns"
       ],
       "#legendBox": ["fill", "fill-opacity"],
-      "#burgLabels > #cities": [
-        "opacity",
-        "fill",
-        "text-shadow",
-        "letter-spacing",
-        "data-size",
-        "font-size",
-        "font-family"
-      ],
-      "#burgIcons > #cities": [
-        "opacity",
-        "fill",
-        "fill-opacity",
-        "size",
-        "stroke",
-        "stroke-width",
-        "stroke-dasharray",
-        "stroke-linecap"
-      ],
-      "#anchors > #cities": ["opacity", "fill", "size", "stroke", "stroke-width"],
-      "#burgLabels > #towns": [
-        "opacity",
-        "fill",
-        "text-shadow",
-        "letter-spacing",
-        "data-size",
-        "font-size",
-        "font-family"
-      ],
-      "#burgIcons > #towns": [
-        "opacity",
-        "fill",
-        "fill-opacity",
-        "size",
-        "stroke",
-        "stroke-width",
-        "stroke-dasharray",
-        "stroke-linecap"
-      ],
-      "#anchors > #towns": ["opacity", "fill", "size", "stroke", "stroke-width"],
       "#labels > #states": [
         "opacity",
         "fill",
         "stroke",
         "stroke-width",
-        "text-shadow",
+        "style",
         "letter-spacing",
         "data-size",
         "font-size",
@@ -328,7 +293,7 @@ function addStylePreset() {
         "fill",
         "stroke",
         "stroke-width",
-        "text-shadow",
+        "style",
         "letter-spacing",
         "data-size",
         "font-size",
@@ -351,6 +316,30 @@ function addStylePreset() {
         "data-left"
       ]
     };
+
+    const burgIconsAttributes = [
+      "opacity",
+      "fill",
+      "fill-opacity",
+      "size",
+      "stroke",
+      "stroke-width",
+      "stroke-dasharray",
+      "stroke-linecap"
+    ];
+    const burgLabelsAttributes = [
+      "opacity",
+      "fill",
+      "style",
+      "letter-spacing",
+      "data-size",
+      "font-size",
+      "font-family"
+    ];
+    options.burgs.groups.forEach(({name}) => {
+      attributes[`#burgIcons > g#${name}`] = burgIconsAttributes;
+      attributes[`#burgLabels > g#${name}`] = burgLabelsAttributes;
+    });
 
     for (const selector in attributes) {
       const el = document.querySelector(selector);

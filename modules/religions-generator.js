@@ -851,13 +851,6 @@ window.Religions = (function () {
     cells.religion[center] = i;
   };
 
-  function updateCultures() {
-    pack.religions = pack.religions.map((religion, index) => {
-      if (index === 0) return religion;
-      return {...religion, culture: pack.cells.culture[religion.center]};
-    });
-  }
-
   // get supreme deity name
   const getDeityName = function (culture) {
     if (culture === undefined) {
@@ -924,5 +917,5 @@ window.Religions = (function () {
     return [trimVowels(random()) + "ism", "global"]; // else
   }
 
-  return {generate, add, getDeityName, updateCultures, recalculate};
+  return {generate, add, getDeityName, recalculate};
 })();

@@ -47,10 +47,10 @@ export function resolveVersionConflicts(mapVersion) {
 
     // v1.0 added state relations, provinces, forms and full names
     provs = viewbox.insert("g", "#borders").attr("id", "provs").attr("opacity", 0.6);
-    BurgsAndStates.collectStatistics();
-    BurgsAndStates.generateCampaigns();
-    BurgsAndStates.generateDiplomacy();
-    BurgsAndStates.defineStateForms();
+    States.collectStatistics();
+    States.generateCampaigns();
+    States.generateDiplomacy();
+    States.defineStateForms();
     Provinces.generate();
     Provinces.getPoles();
     if (!layerIsOn("toggleBorders")) $("#borders").fadeOut();
@@ -260,7 +260,7 @@ export function resolveVersionConflicts(mapVersion) {
 
   if (isOlderThan("1.22.0")) {
     // v1.22 changed state neighbors from Set object to array
-    BurgsAndStates.collectStatistics();
+    States.collectStatistics();
   }
 
   if (isOlderThan("1.3.0")) {
@@ -273,7 +273,7 @@ export function resolveVersionConflicts(mapVersion) {
     options = {winds, year, era, eraShort, military};
 
     // v1.3 added campaings data for all states
-    BurgsAndStates.generateCampaigns();
+    States.generateCampaigns();
 
     // v1.3 added militry layer
     armies = viewbox.insert("g", "#icons").attr("id", "armies");
@@ -348,7 +348,7 @@ export function resolveVersionConflicts(mapVersion) {
     // v1.5 added burg type value
     pack.burgs.forEach(burg => {
       if (!burg.i || burg.removed) return;
-      burg.type = BurgsAndStates.getType(burg.cell, burg.port);
+      burg.type = Burgs.getType(burg.cell, burg.port);
     });
 
     // v1.5 added emblems
@@ -467,12 +467,6 @@ export function resolveVersionConflicts(mapVersion) {
     if (oceanPattern) oceanPattern.removeAttribute("opacity");
     const oceanicPattern = document.getElementById("oceanicPattern");
     if (!oceanicPattern.getAttribute("opacity")) oceanicPattern.setAttribute("opacity", 0.2);
-
-    // v 1.63 moved label text-shadow from css to editable inline style
-    burgLabels.select("#cities").style("text-shadow", "white 0 0 4px");
-    burgLabels.select("#towns").style("text-shadow", "white 0 0 4px");
-    labels.select("#states").style("text-shadow", "white 0 0 4px");
-    labels.select("#addedLabels").style("text-shadow", "white 0 0 4px");
   }
 
   if (isOlderThan("1.64.0")) {
@@ -836,22 +830,6 @@ export function resolveVersionConflicts(mapVersion) {
     });
   }
 
-  if (isOlderThan("1.97.0")) {
-    // v1.97.00 changed MFCG link to an arbitrary preview URL
-    options.villageMaxPopulation = 2000;
-    options.showBurgPreview = options.showMFCGMap;
-    delete options.showMFCGMap;
-
-    pack.burgs.forEach(burg => {
-      if (!burg.i || burg.removed) return;
-
-      if (burg.MFCG) {
-        burg.link = getBurgLink(burg);
-        delete burg.MFCG;
-      }
-    });
-  }
-
   if (isOlderThan("1.98.0")) {
     // v1.98.00 changed compass layer and rose element id
     const rose = compass.select("use");
@@ -944,7 +922,7 @@ export function resolveVersionConflicts(mapVersion) {
 
   if (isOlderThan("1.104.0")) {
     // v1.104.00 separated pole of inaccessibility detection from layer rendering
-    BurgsAndStates.getPoles();
+    States.getPoles();
     Provinces.getPoles();
   }
 
@@ -976,5 +954,28 @@ export function resolveVersionConflicts(mapVersion) {
     // pole can be missing for some states/provinces
     BurgsAndStates.getPoles();
     Provinces.getPoles();
+  }
+
+  if (isOlderThan("1.107.0")) {
+    // v1.107.0 changeв burg groups and added customizable icons
+    icons.selectAll("circle, use").remove();
+
+    const groups = Array.from(document.querySelectorAll("#burgIcons > g")).map(g => g.id);
+    options.burgs = {
+      groups: groups.map(name => ({name, active: true, preview: null}))
+    };
+
+    pack.burgs.forEach(burg => {
+      if (!burg.i || burg.removed) return;
+
+      if (burg.MFCG) {
+        burg.link = getBurgLink(burg);
+        delete burg.MFCG;
+      }
+    });
+
+    delete options.showBurgPreview;
+    delete options.showMFCGMap;
+    delete options.villageMaxPopulation;
   }
 }

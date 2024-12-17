@@ -1125,39 +1125,6 @@ styleScaleBar.on("input", function (event) {
 });
 
 function updateElements() {
-  // burgIcons to desired size
-  burgIcons.selectAll("g").each(function () {
-    const size = +this.getAttribute("size");
-    d3.select(this)
-      .selectAll("circle")
-      .each(function () {
-        this.setAttribute("r", size);
-      });
-    burgLabels
-      .select("g#" + this.id)
-      .selectAll("text")
-      .each(function () {
-        this.setAttribute("dy", `${size * -1.5}px`);
-      });
-  });
-
-  // anchor icons to desired size
-  anchors.selectAll("g").each(function (d) {
-    const size = +this.getAttribute("size");
-    d3.select(this)
-      .selectAll("use")
-      .each(function () {
-        const id = +this.dataset.id;
-        const x = pack.burgs[id].x,
-          y = pack.burgs[id].y;
-        this.setAttribute("x", rn(x - size * 0.47, 2));
-        this.setAttribute("y", rn(y - size * 0.47, 2));
-        this.setAttribute("width", size);
-        this.setAttribute("height", size);
-      });
-  });
-
-  // redraw elements
   if (layerIsOn("toggleHeight")) drawHeightmap();
   if (legend.selectAll("*").size() && window.redrawLegend) redrawLegend();
   oceanLayers.selectAll("path").remove();
