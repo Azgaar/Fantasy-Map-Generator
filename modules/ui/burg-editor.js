@@ -302,41 +302,26 @@ function editBurg(id) {
   function relocateBurgOnClick() {
     const cells = pack.cells;
     const point = d3.mouse(this);
-    const cell = findCell(point[0], point[1]);
+    const cellId = findCell(...point);
     const id = +elSelected.attr("data-id");
     const burg = pack.burgs[id];
 
-    if (cells.h[cell] < 20) {
-      tip("Cannot place burg into the water! Select a land cell", false, "error");
-      return;
-    }
+    if (cells.h[cellId] < 20) return tip("Cannot place burg into the water! Select a land cell", false, "error");
+    if (cells.burg[cellId] && cells.burg[cellId] !== id)
+      return tip("There is already a burg in this cell. Please select a free cell", false, "error");
 
-    if (cells.burg[cell] && cells.burg[cell] !== id) {
-      tip("There is already a burg in this cell. Please select a free cell", false, "error");
-      return;
-    }
-
-    const newState = cells.state[cell];
+    const newState = cells.state[cellId];
     const oldState = burg.state;
-
-    if (newState !== oldState && burg.capital) {
-      tip("Capital cannot be relocated into another state!", false, "error");
-      return;
-    }
+    if (newState !== oldState && burg.capital)
+      return tip("Capital cannot be relocated into another state!", false, "error");
 
     // change UI
-    const x = rn(point[0], 2),
-      y = rn(point[1], 2);
-    burgIcons
-      .select("[data-id='" + id + "']")
-      .attr("transform", null)
-      .attr("cx", x)
-      .attr("cy", y);
-    burgLabels
-      .select("text[data-id='" + id + "']")
-      .attr("transform", null)
-      .attr("x", x)
-      .attr("y", y);
+    const x = rn(point[0], 2);
+    const y = rn(point[1], 2);
+
+    burgIcons.select(`#burg${id}`).attr("x", x).attr("y", y);
+    burgLabels.select(`#burgLabel${id}`).attr("transform", null).attr("x", x).attr("y", y);
+
     const anchor = anchors.select("use[data-id='" + id + "']");
     if (anchor.size()) {
       const size = anchor.attr("width");
@@ -347,8 +332,8 @@ function editBurg(id) {
 
     // change data
     cells.burg[burg.cell] = 0;
-    cells.burg[cell] = id;
-    burg.cell = cell;
+    cells.burg[cellId] = id;
+    burg.cell = cellId;
     burg.state = newState;
     burg.x = x;
     burg.y = y;
