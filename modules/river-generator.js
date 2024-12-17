@@ -196,7 +196,7 @@ window.Rivers = (function () {
             flux: discharge,
             pointIndex: meanderedPoints.length,
             widthFactor,
-            sourceWidth
+            startingWidth: sourceWidth
           })
         );
 
@@ -387,13 +387,12 @@ window.Rivers = (function () {
   const LENGTH_FACTOR = 200;
   const LENGTH_STEP_WIDTH = 1 / LENGTH_FACTOR;
   const LENGTH_PROGRESSION = [1, 1, 2, 3, 5, 8, 13, 21, 34].map(n => n / LENGTH_FACTOR);
-  const MAX_PROGRESSION = last(LENGTH_PROGRESSION);
 
   const getOffset = ({flux, pointIndex, widthFactor, startingWidth}) => {
     if (pointIndex === 0) return startingWidth;
 
     const fluxWidth = Math.min(flux ** 0.7 / FLUX_FACTOR, MAX_FLUX_WIDTH);
-    const lengthWidth = pointIndex * LENGTH_STEP_WIDTH + (LENGTH_PROGRESSION[pointIndex] || MAX_PROGRESSION);
+    const lengthWidth = pointIndex * LENGTH_STEP_WIDTH + (LENGTH_PROGRESSION[pointIndex] || LENGTH_PROGRESSION.at(-1));
     return widthFactor * (lengthWidth + fluxWidth) + startingWidth;
   };
 
