@@ -343,7 +343,7 @@ function editDiplomacy() {
   }
 
   function regenerateRelations() {
-    BurgsAndStates.generateDiplomacy();
+    States.generateDiplomacy();
     refreshDiplomacyEditor();
   }
 

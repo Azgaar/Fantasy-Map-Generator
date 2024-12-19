@@ -67,7 +67,7 @@ window.Provinces = (function () {
         const fullName = name + " " + formName;
         const color = getMixedColor(s.color);
         const kinship = nameByBurg ? 0.8 : 0.4;
-        const type = BurgsAndStates.getType(center, burg.port);
+        const type = Burgs.getType(center, burg.port);
         const coa = COA.generate(stateBurgs[i].coa, kinship, null, type);
         coa.shield = COA.getShield(c, s.i);
 
@@ -206,7 +206,7 @@ window.Provinces = (function () {
 
         const dominion = colony ? P(0.95) : singleIsle || isleGroup ? P(0.7) : P(0.3);
         const kinship = dominion ? 0 : 0.4;
-        const type = BurgsAndStates.getType(center, burgs[burg]?.port);
+        const type = Burgs.getType(center, burgs[burg]?.port);
         const coa = COA.generate(s.coa, kinship, dominion, type);
         coa.shield = COA.getShield(c, s.i);
 

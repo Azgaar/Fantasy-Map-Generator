@@ -2,68 +2,73 @@
 
 function drawBurgIcons() {
   TIME && console.time("drawBurgIcons");
+  createIconGroups();
 
-  icons.selectAll("circle, use").remove(); // cleanup
+  for (const {name} of options.burgs.groups) {
+    const burgsInGroup = pack.burgs.filter(b => b.group === name && !b.removed);
+    if (!burgsInGroup.length) continue;
 
-  // capitals
-  const capitals = pack.burgs.filter(b => b.capital && !b.removed);
-  const capitalIcons = burgIcons.select("#cities");
-  const capitalSize = capitalIcons.attr("size") || 1;
-  const capitalAnchors = anchors.selectAll("#cities");
-  const capitalAnchorsSize = capitalAnchors.attr("size") || 2;
+    const g = burgIcons.select("#" + name);
+    if (g.empty()) continue;
 
-  capitalIcons
-    .selectAll("circle")
-    .data(capitals)
-    .enter()
-    .append("circle")
-    .attr("id", d => "burg" + d.i)
-    .attr("data-id", d => d.i)
-    .attr("cx", d => d.x)
-    .attr("cy", d => d.y)
-    .attr("r", capitalSize);
+    const icon = g.attr("data-icon") || "#icon-circle";
+    g.selectAll("use")
+      .data(burgsInGroup)
+      .enter()
+      .append("use")
+      .attr("href", icon)
+      .attr("id", d => "burg" + d.i)
+      .attr("data-id", d => d.i)
+      .attr("x", d => d.x)
+      .attr("y", d => d.y);
 
-  capitalAnchors
-    .selectAll("use")
-    .data(capitals.filter(c => c.port))
-    .enter()
-    .append("use")
-    .attr("xlink:href", "#icon-anchor")
-    .attr("data-id", d => d.i)
-    .attr("x", d => rn(d.x - capitalAnchorsSize * 0.47, 2))
-    .attr("y", d => rn(d.y - capitalAnchorsSize * 0.47, 2))
-    .attr("width", capitalAnchorsSize)
-    .attr("height", capitalAnchorsSize);
-
-  // towns
-  const towns = pack.burgs.filter(b => b.i && !b.capital && !b.removed);
-  const townIcons = burgIcons.select("#towns");
-  const townSize = townIcons.attr("size") || 0.5;
-  const townsAnchors = anchors.selectAll("#towns");
-  const townsAnchorsSize = townsAnchors.attr("size") || 1;
-
-  townIcons
-    .selectAll("circle")
-    .data(towns)
-    .enter()
-    .append("circle")
-    .attr("id", d => "burg" + d.i)
-    .attr("data-id", d => d.i)
-    .attr("cx", d => d.x)
-    .attr("cy", d => d.y)
-    .attr("r", townSize);
-
-  townsAnchors
-    .selectAll("use")
-    .data(towns.filter(c => c.port))
-    .enter()
-    .append("use")
-    .attr("xlink:href", "#icon-anchor")
-    .attr("data-id", d => d.i)
-    .attr("x", d => rn(d.x - townsAnchorsSize * 0.47, 2))
-    .attr("y", d => rn(d.y - townsAnchorsSize * 0.47, 2))
-    .attr("width", townsAnchorsSize)
-    .attr("height", townsAnchorsSize);
+    // capitalAnchors
+    //   .selectAll("use")
+    //   .data(capitals.filter(c => c.port))
+    //   .enter()
+    //   .append("use")
+    //   .attr("xlink:href", "#icon-anchor")
+    //   .attr("data-id", d => d.i)
+    //   .attr("x", d => rn(d.x - capitalAnchorsSize * 0.47, 2))
+    //   .attr("y", d => rn(d.y - capitalAnchorsSize * 0.47, 2))
+    //   .attr("width", capitalAnchorsSize)
+    //   .attr("height", capitalAnchorsSize);
+  }
 
   TIME && console.timeEnd("drawBurgIcons");
+}
+
+function drawBurgIcon(burg) {
+  burgIcons
+    .select("#" + burg.group)
+    .append("use")
+    .attr("href", "#icon-circle")
+    .attr("id", "burg" + burg.i)
+    .attr("data-id", burg.i)
+    .attr("x", burg.x)
+    .attr("y", burg.y);
+}
+
+function createIconGroups() {
+  const defaultStyle = style.burgIcons.towns || Object.values(style.burgIcons)[0];
+
+  // save existing styles and remove all groups
+  document.querySelectorAll("g#burgIcons > g").forEach(group => {
+    const groupStyle = Object.keys(defaultStyle).reduce((acc, key) => {
+      acc[key] = group.getAttribute(key);
+      return acc;
+    }, {});
+    style.burgIcons[group.id] = groupStyle;
+    group.remove();
+  });
+
+  // create groups for each burg group and apply stored or default style
+  const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
+  for (const {name} of sortedGroups) {
+    const group = burgIcons.append("g").attr("id", name);
+    const styles = style.burgIcons[name] || defaultStyle;
+    Object.entries(styles).forEach(([key, value]) => {
+      group.attr(key, value);
+    });
+  }
 }

@@ -592,7 +592,7 @@ window.Markers = (function () {
     const {cells, states} = pack;
 
     const state = states[cells.state[cell]];
-    if (!state.campaigns) state.campaigns = BurgsAndStates.generateCampaign(state);
+    if (!state.campaigns) state.campaigns = States.generateCampaign(state);
     const campaign = ra(state.campaigns);
     const date = generateDate(campaign.start, campaign.end);
     const name = Names.getCulture(cells.culture[cell]) + " Battlefield";

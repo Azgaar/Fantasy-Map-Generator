@@ -82,10 +82,11 @@ function openSubmapTool() {
   function rescaleBurgStyles(scale) {
     const burgIcons = [...byId("burgIcons").querySelectorAll("g")];
     for (const group of burgIcons) {
-      const newRadius = rn(minmax(group.getAttribute("size") * scale, 0.2, 10), 2);
-      changeRadius(newRadius, group.id);
-      const strokeWidth = group.attributes["stroke-width"];
-      strokeWidth.value = strokeWidth.value * scale;
+      const newSize = rn(minmax(group.getAttribute("size") * scale, 0.2, 10), 2);
+      group.setAttribute("font-size", newSize);
+
+      const newStroke = rn(group.getAttribute("stroke-width") * scale, 2);
+      group.setAttribute("stroke-width", newStroke);
     }
 
     const burgLabels = [...byId("burgLabels").querySelectorAll("g")];
