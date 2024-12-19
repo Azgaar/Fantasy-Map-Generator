@@ -317,16 +317,6 @@ function addStylePreset() {
       ]
     };
 
-    const burgIconsAttributes = [
-      "opacity",
-      "fill",
-      "fill-opacity",
-      "size",
-      "stroke",
-      "stroke-width",
-      "stroke-dasharray",
-      "stroke-linecap"
-    ];
     const burgLabelsAttributes = [
       "opacity",
       "fill",
@@ -334,11 +324,24 @@ function addStylePreset() {
       "letter-spacing",
       "data-size",
       "font-size",
-      "font-family"
+      "font-family",
+      "data-dy"
+    ];
+    const burgIconsAttributes = [
+      "opacity",
+      "data-icon",
+      "font-size",
+      "fill",
+      "fill-opacity",
+      "stroke",
+      "stroke-width",
+      "stroke-dasharray",
+      "stroke-linecap",
+      "stroke-linejoin"
     ];
     options.burgs.groups.forEach(({name}) => {
-      attributes[`#burgIcons > g#${name}`] = burgIconsAttributes;
       attributes[`#burgLabels > g#${name}`] = burgLabelsAttributes;
+      attributes[`#burgIcons > g#${name}`] = burgIconsAttributes;
     });
 
     for (const selector in attributes) {

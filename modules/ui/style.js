@@ -140,9 +140,17 @@ function selectStyleElement() {
 
   // stroke dash
   if (
-    ["borders", "cells", "coordinates", "gridOverlay", "legend", "population", "routes", "temperature", "zones"].includes(
-      styleElement
-    )
+    [
+      "borders",
+      "cells",
+      "coordinates",
+      "gridOverlay",
+      "legend",
+      "population",
+      "routes",
+      "temperature",
+      "zones"
+    ].includes(styleElement)
   ) {
     styleStrokeDash.style.display = "block";
     styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") || "";
@@ -240,6 +248,16 @@ function selectStyleElement() {
     styleStatesHaloBlur.value = parseFloat(statesHalo.attr("filter")?.match(/blur\(([^)]+)\)/)?.[1]) || 0;
   }
 
+  if (styleElement === "provs") {
+    styleFill.style.display = "block";
+    styleSize.style.display = "block";
+    styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#111111";
+
+    styleFont.style.display = "block";
+    styleSelectFont.value = el.attr("font-family");
+    styleFontSize.value = el.attr("font-size");
+  }
+
   if (styleElement === "labels") {
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
@@ -258,41 +276,38 @@ function selectStyleElement() {
     styleFont.style.display = "block";
     styleSelectFont.value = el.attr("font-family");
     styleFontSize.value = el.attr("data-size");
-  }
 
-  if (styleElement === "provs") {
-    styleFill.style.display = "block";
-    styleSize.style.display = "block";
-    styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#111111";
-
-    styleFont.style.display = "block";
-    styleSelectFont.value = el.attr("font-family");
-    styleFontSize.value = el.attr("font-size");
+    if (el.node().parentNode.id === "burgLabels") {
+      styleFontShift.style.display = "block";
+      styleFontShiftY.value = el.attr("data-dy") || 0;
+    }
   }
 
   if (styleElement == "burgIcons") {
+    styleBurgIcons.style.display = "block";
+    styleBurgIconsIcon.value = el.attr("data-icon");
+    styleBurgIconsIconSize.value = el.attr("font-size");
+    styleBurgIconsStrokeLinejoin.value = el.attr("stroke-linejoin");
+    styleBurgIconsFillOpacity.value = el.attr("fill-opacity");
+
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
     styleStrokeDash.style.display = "block";
-    styleRadius.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#ffffff";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3e3e4b";
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0.24;
     styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") || "";
     styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
-    styleRadiusInput.value = el.attr("size") || 1;
   }
 
   if (styleElement == "anchors") {
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
-    styleIconSize.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#ffffff";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3e3e4b";
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0.24;
-    styleIconSizeInput.value = el.attr("size") || 2;
   }
 
   if (styleElement === "legend") {
@@ -750,6 +765,25 @@ stylePopulationUrbanStrokeInput.on("input", e => {
   stylePopulationUrbanStrokeOutput.value = e.target.value;
 });
 
+styleBurgIconsIcon.on("change", e => {
+  getEl()
+    .attr("data-icon", e.target.value)
+    .selectAll("use")
+    .attr("href", d => e.target.value);
+});
+
+styleBurgIconsIconSize.on("input", e => {
+  getEl().attr("font-size", e.target.value);
+});
+
+styleBurgIconsStrokeLinejoin.on("change", e => {
+  getEl().attr("stroke-linejoin", e.target.value);
+});
+
+styleBurgIconsFillOpacity.on("input", e => {
+  getEl().attr("fill-opacity", e.target.value);
+});
+
 styleCompassSizeInput.on("input", shiftCompass);
 styleCompassShiftX.on("input", shiftCompass);
 styleCompassShiftY.on("input", shiftCompass);
@@ -788,7 +822,7 @@ styleShadowInput.on("input", function () {
 styleFontAdd.on("click", function () {
   addFontNameInput.value = "";
   addFontURLInput.value = "";
- 
+
   $("#addFontDialog").dialog({
     title: "Add custom font",
     width: "26em",
@@ -858,70 +892,12 @@ function changeFontSize(el, size) {
   if (styleElementSelect.value === "legend") redrawLegend();
 }
 
-styleRadiusInput.on("change", function () {
-  changeRadius(+this.value);
-});
-
-styleRadiusPlus.on("click", function () {
-  const size = Math.max(rn(getEl().attr("size") * 1.1, 2), 0.2);
-  changeRadius(size);
-});
-
-styleRadiusMinus.on("click", function () {
-  const size = Math.max(rn(getEl().attr("size") * 0.9, 2), 0.2);
-  changeRadius(size);
-});
-
-function changeRadius(size, group) {
-  const el = group ? burgIcons.select("#" + group) : getEl();
-  const g = el.attr("id");
-  el.attr("size", size);
-  el.selectAll("circle").each(function () {
-    this.setAttribute("r", size);
-  });
-  styleRadiusInput.value = size;
-  burgLabels
-    .select("g#" + g)
+styleFontShiftY.on("input", e => {
+  getEl()
+    .attr("data-dy", e.target.value)
     .selectAll("text")
-    .each(function () {
-      this.setAttribute("dy", `${size * -1.5}px`);
-    });
-  changeIconSize(size * 2, g); // change also anchor icons
-}
-
-styleIconSizeInput.on("change", function () {
-  changeIconSize(+this.value);
+    .attr("dy", e.target.value + "em");
 });
-
-styleIconSizePlus.on("click", function () {
-  const size = Math.max(rn(getEl().attr("size") * 1.1, 2), 0.2);
-  changeIconSize(size);
-});
-
-styleIconSizeMinus.on("click", function () {
-  const size = Math.max(rn(getEl().attr("size") * 0.9, 2), 0.2);
-  changeIconSize(size);
-});
-
-function changeIconSize(size, group) {
-  const el = group ? anchors.select("#" + group) : getEl();
-  if (!el.size()) {
-    console.warn(`Group ${group} not found. Can not set icon size!`);
-    return;
-  }
-  const oldSize = +el.attr("size");
-  const shift = (size - oldSize) / 2;
-  el.attr("size", size);
-  el.selectAll("use").each(function () {
-    const x = +this.getAttribute("x");
-    const y = +this.getAttribute("y");
-    this.setAttribute("x", x - shift);
-    this.setAttribute("y", y - shift);
-    this.setAttribute("width", size);
-    this.setAttribute("height", size);
-  });
-  styleIconSizeInput.value = size;
-}
 
 styleStatesBodyOpacity.on("input", e => {
   statesBody.attr("opacity", e.target.value);

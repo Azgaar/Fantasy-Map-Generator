@@ -1059,6 +1059,46 @@
               </tr>
             </tbody>
 
+            <tbody id="styleBurgIcons">
+              <tr data-tip="Select group icon">
+                <td>Icon</td>
+                <td>
+                  <select id="styleBurgIconsIcon">
+                    <option value="#icon-circle">Circle</option>
+                    <option value="#icon-square">Square</option>
+                    <option value="#icon-triangle">Triangle</option>
+                    <option value="#icon-star">Star</option>
+                  </select>
+                </td>
+              </tr>
+
+              <tr data-tip="Set icon size">
+                <td>Icon size</td>
+                <td>
+                  <slider-input id="styleBurgIconsIconSize" min="0.01" max="20" step=".01"></slider-input>
+                </td>
+              </tr>
+
+              <tr data-tip="Set icon stroke linejoin"></tr>
+                <td>Stroke linejoin</td>
+                <td>
+                  <select id="styleBurgIconsStrokeLinejoin">
+                    <option value="inherit" selected>Inherit</option>
+                    <option value="butt">Butt</option>
+                    <option value="round">Round</option>
+                    <option value="square">Square</option>
+                  </select>
+                </td>
+              </tr>
+
+              <tr data-tip="Define transparency of fill color">
+                <td>Fill opacity</td>
+                <td>
+                  <slider-input id="styleBurgIconsFillOpacity" min="0" max="1" step=".01"></slider-input>
+                </td>
+              </tr>
+            </tbody>
+
             <tbody id="styleGrid">
               <tr data-tip="Select grid overlay type">
                 <td>Type</td>
@@ -1177,7 +1217,7 @@
               <tr data-tip="Set stroke width">
                 <td>Stroke width</td>
                 <td>
-                  <slider-input id="styleStrokeWidthInput" min="0" max="5" step=".01"></slider-input>
+                  <slider-input id="styleStrokeWidthInput" min="0" max="10" step=".01"></slider-input>
                 </td>
               </tr>
             </tbody>
@@ -1186,7 +1226,7 @@
               <tr data-tip="Set letter spacing">
                 <td>Letter spacing</td>
                 <td>
-                  <slider-input id="styleLetterSpacingInput" min="0" max="20" step=".01"></slider-input>
+                  <slider-input id="styleLetterSpacingInput" min="-1" max="10" step=".01"></slider-input>
                 </td>
               </tr>
             </tbody>
@@ -1236,24 +1276,11 @@
               </tr>
             </tbody>
 
-            <tbody id="styleRadius">
-              <tr data-tip="Set icon size">
-                <td>Radius</td>
+            <tbody id="styleFontShift">
+              <tr data-tip="Set font shoft along Y axis">
+                <td>Font shift Y</td>
                 <td>
-                  <button id="styleRadiusPlus" data-tip="Multiply radius by 1.1" class="whiteButton">+</button>
-                  <button id="styleRadiusMinus" data-tip="Multiply radius by 1.1" class="whiteButton">-</button>
-                  <input id="styleRadiusInput" type="number" min=".2" max="10" step=".02" value="1" />
-                </td>
-              </tr>
-            </tbody>
-
-            <tbody id="styleIconSize">
-              <tr data-tip="Set icon size">
-                <td>Size</td>
-                <td>
-                  <button id="styleIconSizePlus" data-tip="Multiply size by 1.1" class="whiteButton">+</button>
-                  <button id="styleIconSizeMinus" data-tip="Multiply size by 1.1" class="whiteButton">-</button>
-                  <input id="styleIconSizeInput" type="number" min=".2" max="10" step=".02" value="1" />
+                  <slider-input id="styleFontShiftY" min="-5" max="5" step=".01"></slider-input>
                 </td>
               </tr>
             </tbody>
