@@ -279,6 +279,7 @@ function selectStyleElement() {
 
     if (el.node().parentNode.id === "burgLabels") {
       styleFontShift.style.display = "block";
+      styleFontShiftX.value = el.attr("data-dx") || 0;
       styleFontShiftY.value = el.attr("data-dy") || 0;
     }
   }
@@ -891,6 +892,13 @@ function changeFontSize(el, size) {
 
   if (styleElementSelect.value === "legend") redrawLegend();
 }
+
+styleFontShiftX.on("input", e => {
+  getEl()
+    .attr("data-dx", e.target.value)
+    .selectAll("text")
+    .attr("dx", e.target.value + "em");
+});
 
 styleFontShiftY.on("input", e => {
   getEl()

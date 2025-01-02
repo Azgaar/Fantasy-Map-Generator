@@ -135,6 +135,7 @@ async function changeStyle(desiredPreset) {
   const [presetName, style] = styleData;
   localStorage.setItem("presetStyle", presetName);
   applyStyleWithUiRefresh(style);
+  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
 }
 
 function applyStyleWithUiRefresh(style) {
@@ -325,6 +326,7 @@ function addStylePreset() {
       "data-size",
       "font-size",
       "font-family",
+      "data-dx",
       "data-dy"
     ];
     const burgIconsAttributes = [

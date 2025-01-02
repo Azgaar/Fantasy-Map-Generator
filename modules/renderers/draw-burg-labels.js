@@ -10,6 +10,8 @@ function drawBurgLabels() {
 
     const labelGroup = burgLabels.select("#" + name);
     if (labelGroup.empty()) continue;
+
+    const dx = labelGroup.attr("data-dx");
     const dy = labelGroup.attr("data-dy");
 
     labelGroup
@@ -21,6 +23,7 @@ function drawBurgLabels() {
       .attr("data-id", d => d.i)
       .attr("x", d => d.x)
       .attr("y", d => d.y)
+      .attr("dx", dx + "em")
       .attr("dy", dy + "em")
       .text(d => d.name);
   }
@@ -30,6 +33,7 @@ function drawBurgLabels() {
 
 function drawBurgLabel(burg) {
   const group = burgLabels.select("#" + burg.group);
+  const dx = labelGroup.attr("data-dx");
   const dy = labelGroup.attr("data-dy");
 
   group
@@ -38,6 +42,7 @@ function drawBurgLabel(burg) {
     .attr("data-id", burg.i)
     .attr("x", burg.x)
     .attr("y", burg.y)
+    .attr("dx", dx + "em")
     .attr("dy", dy + "em")
     .text(burg.name);
 }

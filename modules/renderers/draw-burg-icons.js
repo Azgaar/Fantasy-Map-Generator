@@ -12,6 +12,7 @@ function drawBurgIcons() {
     if (g.empty()) continue;
 
     const icon = g.attr("data-icon") || "#icon-circle";
+
     g.selectAll("use")
       .data(burgsInGroup)
       .enter()
@@ -21,6 +22,17 @@ function drawBurgIcons() {
       .attr("data-id", d => d.i)
       .attr("x", d => d.x)
       .attr("y", d => d.y);
+
+    // g.selectAll("circle")
+    //   .data(burgsInGroup)
+    //   .enter()
+    //   .append("circle")
+    //   .attr("id", d => "burg_circle" + d.i)
+    //   .attr("cx", d => d.x)
+    //   .attr("cy", d => d.y)
+    //   .attr("r", 0.2)
+    //   .attr("fill", "red")
+    //   .attr("stroke", "none");
 
     // capitalAnchors
     //   .selectAll("use")
