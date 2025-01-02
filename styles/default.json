@@ -328,7 +328,7 @@
     "data-y": 93,
     "data-columns": 8
   },
-  "#burgLabels > g#capitals": {
+  "#burgLabels > g#capital": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
@@ -338,7 +338,7 @@
     "font-family": "Almendra SC",
     "data-dy": -0.4
   },
-  "#burgIcons > g#capitals": {
+  "#burgIcons > g#capital": {
     "data-icon": "#icon-square",
     "opacity": 1,
     "fill": "#ffffff",
@@ -350,7 +350,7 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#cities": {
+  "#burgLabels > g#city": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
@@ -360,7 +360,7 @@
     "font-family": "Almendra SC",
     "data-dy": -0.4
   },
-  "#burgIcons > g#cities": {
+  "#burgIcons > g#city": {
     "data-icon": "#icon-circle",
     "opacity": 1,
     "fill": "#ffffff",
@@ -372,7 +372,7 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#forts": {
+  "#burgLabels > g#fort": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
@@ -382,7 +382,7 @@
     "font-family": "Almendra SC",
     "data-dy": -0.4
   },
-  "#burgIcons > g#forts": {
+  "#burgIcons > g#fort": {
     "data-icon": "#icon-triangle",
     "opacity": 1,
     "fill": "#ffffff",
@@ -394,7 +394,7 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#monasteries": {
+  "#burgLabels > g#monastery": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
@@ -404,7 +404,7 @@
     "font-family": "Almendra SC",
     "data-dy": -0.4
   },
-  "#burgIcons > g#monasteries": {
+  "#burgIcons > g#monastery": {
     "data-icon": "#icon-triangle",
     "opacity": 1,
     "fill": "#ffffff",
@@ -416,7 +416,7 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#caravanserais": {
+  "#burgLabels > g#caravanserai": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
@@ -426,7 +426,7 @@
     "font-family": "Almendra SC",
     "data-dy": -0.4
   },
-  "#burgIcons > g#caravanserais": {
+  "#burgIcons > g#caravanserai": {
     "data-icon": "#icon-triangle",
     "opacity": 1,
     "fill": "#ffffff",
@@ -438,7 +438,7 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#trading_posts": {
+  "#burgLabels > g#trading_post": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
@@ -448,7 +448,7 @@
     "font-family": "Almendra SC",
     "data-dy": -0.4
   },
-  "#burgIcons > g#trading_posts": {
+  "#burgIcons > g#trading_post": {
     "data-icon": "#icon-triangle",
     "opacity": 1,
     "fill": "#ffffff",
@@ -460,7 +460,7 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#villages": {
+  "#burgLabels > g#village": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
@@ -470,7 +470,7 @@
     "font-family": "Almendra SC",
     "data-dy": -0.4
   },
-  "#burgIcons > g#villages": {
+  "#burgIcons > g#village": {
     "data-icon": "#icon-circle",
     "opacity": 1,
     "fill": "#ffffff",
@@ -482,7 +482,7 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#hamlets": {
+  "#burgLabels > g#hamlet": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
@@ -492,7 +492,7 @@
     "font-family": "Almendra SC",
     "data-dy": -0.4
   },
-  "#burgIcons > g#hamlets": {
+  "#burgIcons > g#hamlet": {
     "data-icon": "#icon-circle",
     "opacity": 1,
     "fill": "#ffffff",
@@ -504,7 +504,7 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#towns": {
+  "#burgLabels > g#town": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
@@ -514,7 +514,7 @@
     "font-family": "Almendra SC",
     "data-dy": -0.4
   },
-  "#burgIcons > g#towns": {
+  "#burgIcons > g#town": {
     "data-icon": "#icon-circle",
     "opacity": 1,
     "fill": "#ffffff",

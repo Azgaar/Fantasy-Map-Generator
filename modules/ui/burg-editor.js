@@ -387,7 +387,7 @@ function editBurg(id) {
   }
 }
 
-// in °C, array from -1 °C; source: https://en.wikipedia.org/wiki/List_of_cities_by_average_temperature
+// in °C, array from -1 °C; source: https://en.wikipedia.org/wiki/List_of_city_by_average_temperature
 const meanTempCityMap = {
   "-5": "Snag (Yukon)",
   "-4": "Yellowknife (Canada)",

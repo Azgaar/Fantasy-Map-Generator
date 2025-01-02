@@ -649,20 +649,20 @@
               Emblems
             </li>
             <li
-              id="toggleLabels"
-              data-tip="Labels: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
-              data-shortcut="L"
-              onclick="toggleLabels(event)"
-            >
-              <u>L</u>abels
-            </li>
-            <li
               id="toggleBurgIcons"
               data-tip="Burg icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="I"
               onclick="toggleBurgIcons(event)"
             >
               <u>I</u>cons
+            </li>
+            <li
+              id="toggleLabels"
+              data-tip="Labels: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
+              data-shortcut="L"
+              onclick="toggleLabels(event)"
+            >
+              <u>L</u>abels
             </li>
             <li
               id="toggleMilitary"
@@ -1743,11 +1743,11 @@
               </td>
             </tr>
 
-            <tr data-tip="Define a number of towns to be placed (if enough suitable land exists)">
+            <tr data-tip="Define a number of non-capital settlements to be placed (if enough suitable land exists)">
               <td>
                 <i data-locked="0" id="lock_manors" class="icon-lock-open"></i>
               </td>
-              <td>Towns number</td>
+              <td>Burgs number</td>
               <td>
                 <input id="manorsInput" data-stored="manors" type="range" min="0" max="1000" step="1" value="1000" />
               </td>
@@ -7957,6 +7957,45 @@
                 <path d="M 9.463,-36.614 L 11.032,-36.614 L 11.032,-39.185 L 10.756,-39.737 L 9.739,-39.737 L 9.463,-39.185 L 9.463,-36.614"/>
                 <path d="M -5,0 V -5 H -8 V 0"/>
               </g>
+            </g>
+            <circle fill="#EBE8DF" stroke-width="3" cx="0" cy="0" r="10" />
+          </symbol>
+
+          <symbol id="icon-watabou-caravanserai" viewBox="0 0 100 100" width="1em" height="1em" overflow="visible">
+            <g fill="#E59189" stroke="#4D3F36" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4" transform="translate(21 -2) scale(2 2)">
+              <path d="M -7.316,1.248 L -24.272,1.248 L -22.919,-10.943 L -15.456,-10.943 L -7.993,-10.943 L -7.316,1.248 M 3.531,1.248 L -7.316,1.248 L -7.993,-10.943 L -15.456,-10.943 L -12.913,-10.943 L -10.371,-10.943 L -7.828,-10.943 L -5.286,-10.943 L 2.177,-10.943 L 3.531,1.248 M -7.993,-10.943 L 2.177,-10.943" fill="#EBE8DF"/>
+              <path d="M -14.585,1.248 L -16.326,1.248 L -16.326,-2.59 L -16.15,-2.943 L -14.761,-2.943 L -14.585,-2.59 L -14.585,1.248" fill="#4D3F36"/>
+              <path d="M -10.371,-14.623 L -10.371,-14.623 L -7.542,-14.187 L -4.975,-12.922 L -2.908,-10.943 L -17.833,-10.943 L -15.766,-12.922 L -13.199,-14.187 L -10.371,-14.623"/>
+            </g>
+            <circle fill="#EBE8DF" stroke-width="3" cx="0" cy="0" r="10" />
+          </symbol>
+
+          <symbol id="icon-watabou-monastery" viewBox="0 0 100 100" width="1em" height="1em" overflow="visible">
+            <g fill="#E59189" stroke="#4D3F36" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4" transform="translate(20 -10) scale(2 2)">
+              <g transform="translate(0 6)">
+                <path d="M -9.764,-0.93 L -29.859,-0.93 L -29.954,-10.141 L -25.873,-31.202 L -20.814,-31.292 L -15.755,-31.322 L -10.695,-31.292 L -5.636,-31.202 L -9.716,-10.141 L -9.764,-0.93 M -29.954,-10.141 L -9.716,-10.141 M -1.651,-0.93 L -9.764,-0.93 L -9.716,-10.141 L -5.636,-31.202 L -1.556,-10.141 L -1.651,-0.93" fill="#EBE8DF" stroke="#4D3F36"/>
+                <path d="M -9.716,-10.141 L -29.954,-10.141 L -25.873,-31.202 L -20.814,-31.292 L -15.755,-31.322 L -10.695,-31.292 L -5.636,-31.202 L -9.716,-10.141"/>
+                <path stroke="none" d="M -23.484,-0.93 L -26.304,-0.93 L -26.304,-8.18 L -26.046,-8.696 L -23.742,-8.696 L -23.484,-8.18 L -23.484,-0.93" fill="#4D3F36"/>
+                <path stroke="none" d="M -18.425,-0.93 L -21.245,-0.93 L -21.245,-8.18 L -20.987,-8.696 L -18.683,-8.696 L -18.425,-8.18 L -18.425,-0.93" fill="#4D3F36"/>
+                <path stroke="none" d="M -13.366,-0.93 L -16.185,-0.93 L -16.185,-8.18 L -15.928,-8.696 L -13.623,-8.696 L -13.366,-8.18 L -13.366,-0.93" fill="#4D3F36"/>
+              </g>
+              <path d="M 0.927,5.327 L -10.543,5.327 L -10.815,-20.976 L -4.876,-33.337 L 1.063,-20.976 L 0.927,5.327 M 8.952,5.327 L 0.927,5.327 L 1.063,-20.976 L -4.876,-33.337 L -2.836,-33.39 L -0.795,-33.408 L 1.245,-33.39 L 3.285,-33.337 L 9.224,-20.976 L 8.952,5.327" fill="#EBE8DF" stroke="#4D3F36"/>
+              <path d="M 9.224,-20.976 L 1.063,-20.976 L -4.876,-33.337 L -2.836,-33.39 L -0.795,-33.408 L 1.245,-33.39 L 3.285,-33.337 L 9.224,-20.976"/>
+              <path stroke="none" d="M -5.445,5.327 L -8.265,5.327 L -8.265,-1.923 L -8.007,-2.439 L -5.703,-2.439 L -5.445,-1.923 L -5.445,5.327" fill="#4D3F36"/>
+              <path stroke="none" d="M -1.486,5.327 L -4.306,5.327 L -4.306,-1.923 L -4.048,-2.439 L -1.744,-2.439 L -1.486,-1.923 L -1.486,5.327" fill="#4D3F36"/>
+              <circle cx="-5" cy="-20" r="1.6" fill="#4D3F36"/>
+            </g>
+            <circle fill="#EBE8DF" stroke-width="3" cx="0" cy="0" r="10" />
+          </symbol>
+
+          <symbol id="icon-watabou-post" viewBox="0 0 100 100" width="1em" height="1em" overflow="visible">
+            <g fill="#E59189" stroke="#4D3F36" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4" transform="translate(-10 -10) scale(2 2)">
+              <path d="M 12.321,4.738 L -8.119,4.738 L -8.522,-8.706 L 2,-23.172 L 12.522,-8.706 L 12.321,4.738 M 22.814,4.738 L 12.321,4.738 L 12.522,-8.706 L 2,-23.172 L 4.674,-22.56 L 7.347,-22.356 L 10.021,-22.56 L 12.695,-23.172 L 23.217,-8.706 L 22.814,4.738" fill="#EBE8DF"/>
+              <path d="M 23.217,-8.706 L 12.522,-8.706 L 2,-23.172 L 4.674,-22.56 L 7.347,-22.356 L 10.021,-22.56 L 12.695,-23.172 L 23.217,-8.706" />
+              <path d="M -4,-8 v12 M 9,-8 v12"/>
+              <path d="M -10,-4.6 h24 l-2,-4 h-20 z"/>
+              <path d="M 4.5,4.5 V -1 H 0 V 4" fill="#4D3F36"/>
+              <circle cx="2.2" cy="-13" r="1" fill="#4D3F36"/>
             </g>
             <circle fill="#EBE8DF" stroke-width="3" cx="0" cy="0" r="10" />
           </symbol>

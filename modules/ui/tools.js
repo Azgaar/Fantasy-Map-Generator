@@ -211,12 +211,12 @@ function recreateStates() {
     return null;
   }
 
-  // turn all old capitals into towns, except for the capitals of locked states
+  // turn all old capitals into town, except for the capitals of locked states
   for (const burg of validBurgs) {
     if (!burg.capital) continue;
     if (lockedStatesCapitals.includes(burg.i)) continue;
 
-    moveBurgToGroup(burg.i, "towns");
+    moveBurgToGroup(burg.i, "town");
     burg.capital = 0;
   }
 
@@ -304,7 +304,7 @@ function recreateStates() {
         burg.capital = 1;
         capital = burg;
         capitalsTree.add([x, y]);
-        moveBurgToGroup(burg.i, "cities");
+        moveBurgToGroup(burg.i, "city");
         break;
       }
 
@@ -402,7 +402,7 @@ function regenerateBurgs() {
   const burgsCount =
     (manorsInput.value === "1000" ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8) : +manorsInput.value) +
     existingStatesCount;
-  const spacing = (graphWidth + graphHeight) / 150 / (burgsCount ** 0.7 / 66); // base min distance between towns
+  const spacing = (graphWidth + graphHeight) / 150 / (burgsCount ** 0.7 / 66); // base min distance between town
 
   for (let i = 0; i < sorted.length && newBurgs.length < burgsCount; i++) {
     const id = newBurgs.length;
@@ -438,7 +438,7 @@ function regenerateBurgs() {
       s.center = pack.burgs[burgId].cell;
       pack.burgs[burgId].capital = 1;
       pack.burgs[burgId].state = s.i;
-      moveBurgToGroup(burgId, "cities");
+      moveBurgToGroup(burgId, "city");
     });
 
   features.forEach(f => {

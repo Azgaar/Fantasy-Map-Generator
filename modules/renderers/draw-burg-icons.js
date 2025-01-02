@@ -36,7 +36,7 @@ function drawBurgIcons() {
 
     // capitalAnchors
     //   .selectAll("use")
-    //   .data(capitals.filter(c => c.port))
+    //   .data(capital.filter(c => c.port))
     //   .enter()
     //   .append("use")
     //   .attr("xlink:href", "#icon-anchor")
@@ -62,7 +62,7 @@ function drawBurgIcon(burg) {
 }
 
 function createIconGroups() {
-  const defaultStyle = style.burgIcons.towns || Object.values(style.burgIcons)[0];
+  const defaultStyle = style.burgIcons.town || Object.values(style.burgIcons)[0];
 
   // save existing styles and remove all groups
   document.querySelectorAll("g#burgIcons > g").forEach(group => {

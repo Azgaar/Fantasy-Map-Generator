@@ -298,10 +298,10 @@ window.ThreeD = (function () {
     raycaster.set(new THREE.Vector3(0, 1000, 0), new THREE.Vector3(0, -1, 0));
 
     const states = viewbox.select("#labels #states");
-    const cities = burgLabels.select("#cities");
-    const towns = burgLabels.select("#towns");
-    const city_icons = burgIcons.select("#cities");
-    const town_icons = burgIcons.select("#towns");
+    const city = burgLabels.select("#city");
+    const town = burgLabels.select("#town");
+    const city_icons = burgIcons.select("#city");
+    const town_icons = burgIcons.select("#town");
 
     const stateOptions = {
       font: states.attr("font-family"),
@@ -312,25 +312,25 @@ window.ThreeD = (function () {
     };
 
     const cityOptions = {
-      font: cities.attr("font-family"),
-      size: +cities.attr("data-size"),
-      color: cities.attr("fill"),
+      font: city.attr("font-family"),
+      size: +city.attr("data-size"),
+      color: city.attr("fill"),
       elevation: 10,
       quality: 20,
       iconSize: 1,
       iconColor: "#666",
-      line: 10 - cities.attr("data-size") / 2
+      line: 10 - city.attr("data-size") / 2
     };
 
     const townOptions = {
-      font: towns.attr("font-family"),
-      size: +towns.attr("data-size"),
-      color: towns.attr("fill"),
+      font: townttr("font-family"),
+      size: +town.attr("data-size"),
+      color: town.attr("fill"),
       elevation: 5,
       quality: 30,
       iconSize: 0.5,
       iconColor: "#666",
-      line: 5 - towns.attr("data-size") / 2
+      line: 5 - town.attr("data-size") / 2
     };
 
     const city_icon_material = new THREE.MeshPhongMaterial({color: cityOptions.iconColor});

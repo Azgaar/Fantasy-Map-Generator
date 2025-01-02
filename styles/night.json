@@ -328,7 +328,7 @@
     "data-y": 99.37,
     "data-columns": null
   },
-  "#burgLabels > #cities": {
+  "#burgLabels > #city": {
     "opacity": 1,
     "fill": "#dbdbe1",
     "style": "text-shadow: black 0px 0px 4px",
@@ -337,7 +337,7 @@
     "font-size": 8,
     "font-family": "Courier New"
   },
-  "#burgIcons > #cities": {
+  "#burgIcons > #city": {
     "opacity": 1,
     "fill": "#ffffff",
     "fill-opacity": 0.7,
@@ -347,14 +347,14 @@
     "stroke-dasharray": "",
     "stroke-linecap": "butt"
   },
-  "#anchors > #cities": {
+  "#anchors > #city": {
     "opacity": 1,
     "fill": "#ffffff",
     "size": 4.2,
     "stroke": "#000000",
     "stroke-width": 1.46
   },
-  "#burgLabels > #towns": {
+  "#burgLabels > #town": {
     "opacity": 1,
     "fill": "#ffffff",
     "style": "text-shadow: black 0px 0px 4px",
@@ -363,7 +363,7 @@
     "font-size": 4.28,
     "font-family": "Courier New"
   },
-  "#burgIcons > #towns": {
+  "#burgIcons > #town": {
     "opacity": 1,
     "fill": "#ffffff",
     "fill-opacity": 0.7,
@@ -373,7 +373,7 @@
     "stroke-dasharray": "",
     "stroke-linecap": "butt"
   },
-  "#anchors > #towns": {
+  "#anchors > #town": {
     "opacity": 1,
     "fill": "#ffffff",
     "size": 1.6,

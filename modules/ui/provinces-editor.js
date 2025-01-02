@@ -297,7 +297,7 @@ function editProvinces() {
 
     // turn province burg into a capital
     burgs[burgId].capital = 1;
-    moveBurgToGroup(burgId, "cities");
+    moveBurgToGroup(burgId, "city");
 
     // move all burgs to a new state
     province.burgs.forEach(b => (burgs[b].state = newStateId));

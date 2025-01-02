@@ -1203,7 +1203,7 @@ window.Markers = (function () {
     const burgName = burgs[cells.burg[cell]].name;
 
     const name = `${burgName} Portal`;
-    const legend = `An element of the magic portal system connecting major cities. The portals were installed centuries ago, but still work fine.`;
+    const legend = `An element of the magic portal system connecting major city. The portals were installed centuries ago, but still work fine.`;
     notes.push({id, name, legend});
   }
 

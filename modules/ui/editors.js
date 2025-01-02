@@ -163,9 +163,9 @@ function moveAllBurgsToGroup(fromGroup, toGroup) {
 
 function addBurgsGroup(group) {
   if (document.querySelector(`#burgLabels > #${group}`)) return;
-  const labelCopy = document.querySelector("#burgLabels > #towns").cloneNode(false);
-  const iconCopy = document.querySelector("#burgIcons > #towns").cloneNode(false);
-  const anchorCopy = document.querySelector("#anchors > #towns").cloneNode(false);
+  const labelCopy = document.querySelector("#burgLabels > #town").cloneNode(false);
+  const iconCopy = document.querySelector("#burgIcons > #town").cloneNode(false);
+  const anchorCopy = document.querySelector("#anchors > #town").cloneNode(false);
 
   // FIXME: using the same id is against the spec!
   document.querySelector("#burgLabels").appendChild(labelCopy).id = group;
@@ -209,8 +209,8 @@ function toggleCapital(burgId) {
   burgs[burgId].capital = 1;
   burgs[prevCapitalId].capital = 0;
 
-  moveBurgToGroup(burgId, "cities");
-  moveBurgToGroup(prevCapitalId, "towns");
+  moveBurgToGroup(burgId, "city");
+  moveBurgToGroup(prevCapitalId, "town");
 }
 
 function togglePort(burg) {
@@ -227,7 +227,7 @@ function togglePort(burg) {
   if (!haven) tip("Port haven is not found, system won't be able to make a searoute", false, "warn");
   b.port = port;
 
-  const g = b.capital ? "cities" : "towns";
+  const g = b.capital ? "city" : "town";
   const group = anchors.select("g#" + g);
   const size = +group.attr("size");
   group

@@ -328,17 +328,17 @@
     "data-y": 93,
     "data-columns": 8
   },
-  "#burgLabels > g#capitals": {
-    "opacity": 1,
+  "#burgLabels > g#capital": {
+    "opacity": 0.9,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 7,
-    "font-size": 7,
-    "font-family": "Great Vibes",
-    "data-dy": 0.6
+    "data-size": 6,
+    "font-size": 6,
+    "font-family": "UnifrakturMaguntia",
+    "data-dy": 0.8
   },
-  "#burgIcons > g#capitals": {
+  "#burgIcons > g#capital": {
     "data-icon": "#icon-watabou-capital",
     "opacity": 1,
     "fill": "#E59189",
@@ -350,17 +350,17 @@
     "stroke-linecap": "round",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#cities": {
-    "opacity": 1,
+  "#burgLabels > g#city": {
+    "opacity": 0.9,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 5,
     "font-size": 5,
-    "font-family": "Great Vibes",
-    "data-dy": 0.6
+    "font-family": "UnifrakturMaguntia",
+    "data-dy": 0.8
   },
-  "#burgIcons > g#cities": {
+  "#burgIcons > g#city": {
     "data-icon": "#icon-watabou-city",
     "opacity": 1,
     "fill": "#ffffff",
@@ -372,17 +372,17 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#forts": {
-    "opacity": 1,
+  "#burgLabels > g#fort": {
+    "opacity": 0.9,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 3,
     "font-size": 3,
-    "font-family": "Great Vibes",
+    "font-family": "UnifrakturMaguntia",
     "data-dy": 0.8
   },
-  "#burgIcons > g#forts": {
+  "#burgIcons > g#fort": {
     "data-icon": "#icon-watabou-fort",
     "opacity": 1,
     "fill": "#ffffff",
@@ -394,18 +394,18 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#monasteries": {
-    "opacity": 1,
+  "#burgLabels > g#monastery": {
+    "opacity": 0.9,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 2,
     "font-size": 2,
-    "font-family": "Great Vibes",
+    "font-family": "UnifrakturMaguntia",
     "data-dy": 0.8
   },
-  "#burgIcons > g#monasteries": {
-    "data-icon": "#icon-triangle",
+  "#burgIcons > g#monastery": {
+    "data-icon": "#icon-watabou-monastery",
     "opacity": 1,
     "fill": "#ffffff",
     "fill-opacity": 1,
@@ -416,18 +416,18 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#caravanserais": {
-    "opacity": 1,
+  "#burgLabels > g#caravanserai": {
+    "opacity": 0.9,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 2,
     "font-size": 2,
-    "font-family": "Great Vibes",
+    "font-family": "UnifrakturMaguntia",
     "data-dy": 0.8
   },
-  "#burgIcons > g#caravanserais": {
-    "data-icon": "#icon-triangle",
+  "#burgIcons > g#caravanserai": {
+    "data-icon": "#icon-watabou-caravanserai",
     "opacity": 1,
     "fill": "#ffffff",
     "fill-opacity": 1,
@@ -438,18 +438,18 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#trading_posts": {
-    "opacity": 1,
+  "#burgLabels > g#trading_post": {
+    "opacity": 0.9,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 2,
     "font-size": 2,
-    "font-family": "Great Vibes",
+    "font-family": "UnifrakturMaguntia",
     "data-dy": 0.8
   },
-  "#burgIcons > g#trading_posts": {
-    "data-icon": "#icon-triangle",
+  "#burgIcons > g#trading_post": {
+    "data-icon": "#icon-watabou-post",
     "opacity": 1,
     "fill": "#ffffff",
     "fill-opacity": 1,
@@ -460,17 +460,17 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#villages": {
-    "opacity": 1,
+  "#burgLabels > g#village": {
+    "opacity": 0.9,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 3,
     "font-size": 3,
-    "font-family": "Great Vibes",
+    "font-family": "UnifrakturMaguntia",
     "data-dy": 0.8
   },
-  "#burgIcons > g#villages": {
+  "#burgIcons > g#village": {
     "data-icon": "#icon-watabou-village",
     "opacity": 1,
     "fill": "#ffffff",
@@ -482,19 +482,19 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#hamlets": {
-    "opacity": 1,
+  "#burgLabels > g#hamlet": {
+    "opacity": 0.9,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 2,
     "font-size": 2,
-    "font-family": "Great Vibes",
+    "font-family": "UnifrakturMaguntia",
     "data-dy": 0.8
   },
-  "#burgIcons > g#hamlets": {
+  "#burgIcons > g#hamlet": {
     "data-icon": "#icon-watabou-hamlet",
-    "opacity": 1,
+    "opacity": 0.9,
     "fill": "#ffffff",
     "fill-opacity": 1,
     "font-size": 2,
@@ -504,17 +504,17 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
-  "#burgLabels > g#towns": {
-    "opacity": 1,
+  "#burgLabels > g#town": {
+    "opacity": 0.9,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 3,
     "font-size": 3,
-    "font-family": "Great Vibes",
+    "font-family": "UnifrakturMaguntia",
     "data-dy": 0.8
   },
-  "#burgIcons > g#towns": {
+  "#burgIcons > g#town": {
     "data-icon": "#icon-watabou-town",
     "opacity": 1,
     "fill": "#ffffff",

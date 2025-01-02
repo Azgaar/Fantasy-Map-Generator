@@ -603,7 +603,7 @@ function stateRemove(stateId) {
       burg.state = 0;
       if (burg.capital) {
         burg.capital = 0;
-        moveBurgToGroup(burg.i, "towns");
+        moveBurgToGroup(burg.i, "town");
       }
     }
   });
@@ -1192,7 +1192,7 @@ function addState() {
   // turn burg into a capital
   burgs[burg].capital = 1;
   burgs[burg].state = newState;
-  moveBurgToGroup(burg, "cities");
+  moveBurgToGroup(burg, "city");
 
   if (d3.event.shiftKey === false) exitAddStateMode();
 
@@ -1382,7 +1382,7 @@ function openStateMergeDialog() {
     pack.burgs.forEach(b => {
       if (statesToMerge.includes(b.state)) {
         if (b.capital) {
-          moveBurgToGroup(b.i, "towns");
+          moveBurgToGroup(b.i, "town");
           b.capital = 0;
         }
         b.state = rulingStateId;

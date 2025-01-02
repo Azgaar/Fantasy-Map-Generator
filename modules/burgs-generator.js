@@ -86,7 +86,7 @@ window.Burgs = (() => {
       const sorted = populatedCells.sort((a, b) => score[b] - score[a]);
 
       const burgsNumber = getTownsNumber();
-      let spacing = (graphWidth + graphHeight) / 150 / (burgsNumber ** 0.7 / 66); // min distance between towns
+      let spacing = (graphWidth + graphHeight) / 150 / (burgsNumber ** 0.7 / 66); // min distance between town
 
       for (let added = 0; added < burgsNumber && spacing > 1; ) {
         for (let i = 0; added < burgsNumber && i < sorted.length; i++) {
@@ -261,24 +261,24 @@ window.Burgs = (() => {
   }
 
   const getDefaultGroups = () => [
-    {name: "capitals", active: true, order: 9, features: {capital: true}, preview: "watabou-city"},
-    {name: "cities", active: true, order: 8, percentile: 90, min: 5, preview: "watabou-city"},
+    {name: "capital", active: true, order: 9, features: {capital: true}, preview: "watabou-city"},
+    {name: "city", active: true, order: 8, percentile: 90, min: 5, preview: "watabou-city"},
     {
-      name: "forts",
+      name: "fort",
       active: true,
       features: {citadel: true, walls: false, plaza: false, port: false},
       order: 6,
       max: 1
     },
     {
-      name: "monasteries",
+      name: "monastery",
       active: true,
       features: {temple: true, walls: false, plaza: false, port: false},
       order: 5,
       max: 0.8
     },
     {
-      name: "caravanserais",
+      name: "caravanserai",
       active: true,
       features: {port: false, plaza: true},
       order: 4,
@@ -286,16 +286,15 @@ window.Burgs = (() => {
       biomes: [1, 2, 3]
     },
     {
-      name: "trading_posts",
+      name: "trading_post",
       active: true,
       order: 3,
       features: {plaza: true},
       max: 0.8,
-      biomes: [5, 6, 7, 8, 9, 10, 11, 12],
-      preview: "watabou-dwelling"
+      biomes: [5, 6, 7, 8, 9, 10, 11, 12]
     },
     {
-      name: "villages",
+      name: "village",
       active: true,
       order: 2,
       min: 0.1,
@@ -304,14 +303,14 @@ window.Burgs = (() => {
       preview: "watabou-village"
     },
     {
-      name: "hamlets",
+      name: "hamlet",
       active: true,
       order: 1,
       features: {walls: false, plaza: false},
       max: 0.1,
       preview: "watabou-village"
     },
-    {name: "towns", active: true, order: 7, isDefault: true, preview: "watabou-city"}
+    {name: "town", active: true, order: 7, isDefault: true, preview: "watabou-city"}
   ];
 
   function defineGroup(burg, populations) {

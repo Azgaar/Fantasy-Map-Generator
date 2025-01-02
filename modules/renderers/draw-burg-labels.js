@@ -11,8 +11,8 @@ function drawBurgLabels() {
     const labelGroup = burgLabels.select("#" + name);
     if (labelGroup.empty()) continue;
 
-    const dx = labelGroup.attr("data-dx");
-    const dy = labelGroup.attr("data-dy");
+    const dx = labelGroup.attr("data-dx") || 0;
+    const dy = labelGroup.attr("data-dy") || 0;
 
     labelGroup
       .selectAll("text")
@@ -33,8 +33,8 @@ function drawBurgLabels() {
 
 function drawBurgLabel(burg) {
   const group = burgLabels.select("#" + burg.group);
-  const dx = labelGroup.attr("data-dx");
-  const dy = labelGroup.attr("data-dy");
+  const dx = labelGroup.attr("data-dx") || 0;
+  const dy = labelGroup.attr("data-dy") || 0;
 
   group
     .append("text")
@@ -48,7 +48,7 @@ function drawBurgLabel(burg) {
 }
 
 function createLabelGroups() {
-  const defaultStyle = style.burgLabels.towns || Object.values(style.burgLabels)[0];
+  const defaultStyle = style.burgLabels.town || Object.values(style.burgLabels)[0];
 
   // save existing styles and remove all groups
   document.querySelectorAll("g#burgLabels > g").forEach(group => {
