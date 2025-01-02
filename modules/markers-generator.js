@@ -592,7 +592,7 @@ window.Markers = (function () {
     const {cells, states} = pack;
 
     const state = states[cells.state[cell]];
-    if (!state.campaigns) state.campaigns = BurgsAndStates.generateCampaign(state);
+    if (!state.campaigns) state.campaigns = States.generateCampaign(state);
     const campaign = ra(state.campaigns);
     const date = generateDate(campaign.start, campaign.end);
     const name = Names.getCulture(cells.culture[cell]) + " Battlefield";
@@ -1203,7 +1203,7 @@ window.Markers = (function () {
     const burgName = burgs[cells.burg[cell]].name;
 
     const name = `${burgName} Portal`;
-    const legend = `An element of the magic portal system connecting major cities. The portals were installed centuries ago, but still work fine.`;
+    const legend = `An element of the magic portal system connecting major city. The portals were installed centuries ago, but still work fine.`;
     notes.push({id, name, legend});
   }
 

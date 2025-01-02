@@ -615,12 +615,12 @@ async function parseLoadedData(data, mapVersion) {
             console.error(
               `[Data integrity] Neutral burgs (${capitalBurgs
                 .map(b => b.i)
-                .join(", ")}) marked as capitals. Moving them to towns`
+                .join(", ")}) marked as capitals. Moving them to town`
             );
 
           capitalBurgs.forEach(burg => {
             burg.capital = 0;
-            moveBurgToGroup(burg.i, "towns");
+            moveBurgToGroup(burg.i, "town");
           });
 
           return;
@@ -629,13 +629,13 @@ async function parseLoadedData(data, mapVersion) {
         if (capitalBurgs.length > 1) {
           const message = `[Data integrity] State ${state.i} has multiple capitals (${capitalBurgs
             .map(b => b.i)
-            .join(", ")}) assigned. Keeping the first as capital and moving others to towns`;
+            .join(", ")}) assigned. Keeping the first as capital and moving others to town`;
           ERROR && console.error(message);
 
           capitalBurgs.forEach((burg, i) => {
             if (!i) return;
             burg.capital = 0;
-            moveBurgToGroup(burg.i, "towns");
+            moveBurgToGroup(burg.i, "town");
           });
 
           return;
@@ -645,7 +645,7 @@ async function parseLoadedData(data, mapVersion) {
           ERROR &&
             console.error(`[Data integrity] State ${state.i} has no capital. Assigning the first burg as capital`);
           stateBurgs[0].capital = 1;
-          moveBurgToGroup(stateBurgs[0].i, "cities");
+          moveBurgToGroup(stateBurgs[0].i, "city");
         }
       });
 
