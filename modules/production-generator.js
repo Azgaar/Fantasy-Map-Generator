@@ -66,7 +66,7 @@ window.Production = (function () {
         cells.h[cell] >= 50 && HILLS_PRODUCTION.forEach(({resource, production}) => addResource(resource, production));
       }
 
-      const queue = new PriorityQueue({comparator: (a, b) => b.priority - a.priority});
+      const queue = new FlatQueue();
       for (const resourceId in resourcesPull) {
         const baseProduction = resourcesPull[resourceId];
         const resource = Resources.get(+resourceId);
@@ -79,7 +79,7 @@ window.Production = (function () {
 
         const basePriority = production * value;
         const priority = basePriority * (isFood ? FOOD_MULTIPLIER : 1);
-        queue.queue({resourceId: +resourceId, basePriority, priority, production, isFood});
+        queue.push({resourceId: +resourceId, basePriority, priority, production, isFood},0);
       }
 
       let foodProduced = 0;
@@ -90,7 +90,7 @@ window.Production = (function () {
       };
 
       for (let i = 0; i < population; i++) {
-        const occupation = queue.dequeue();
+        const occupation = queue.pop();
         const {resourceId, production, basePriority, isFood} = occupation;
         addProduction(resourceId, production);
         if (isFood) foodProduced += production;
@@ -99,7 +99,7 @@ window.Production = (function () {
         const newBasePriority = basePriority / 2;
         const newPriority = newBasePriority * foodModifier;
 
-        queue.queue({...occupation, basePriority: newBasePriority, priority: newPriority});
+        queue.push({...occupation, basePriority: newBasePriority, priority: newPriority},0);
       }
 
       burg.produced = {};
