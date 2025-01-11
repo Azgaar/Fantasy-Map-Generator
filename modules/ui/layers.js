@@ -1002,10 +1002,10 @@ function drawResources() {
     //   continue;
     // }
 
-    resourcesHTML += `<g>
+    resourcesHTML += `<svg>
       <circle data-i="${resource.i}" cx=${x} cy=${y} r="3" fill="${resource.color}" stroke="${stroke}" />
       <use href="#${resource.icon}" x="${x - 3}" y="${y - 3}" width="6" height="6"/>
-    </g>`;
+    </svg>`;
   }
 
   goods.html(resourcesHTML);

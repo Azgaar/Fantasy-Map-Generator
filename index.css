@@ -1618,6 +1618,13 @@ div.states > div.resourceBonus > span.icon-male {
   width: 6em;
 }
 
+#burgBody .resIcon{
+  width: 1.5em;
+  height: 1.5em;
+  vertical-align: middle;
+  margin-right: 0.2em;
+}
+
 #burgBody > div > div,
 #riverBody > div,
 #routeBody > div,
