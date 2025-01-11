@@ -1,83 +1,84 @@
-'use strict';
+"use strict";
+
 function editResources() {
   if (customization) return;
-  closeDialogs('#resourcesEditor, .stable');
-  if (!layerIsOn('toggleResources')) toggleResources();
-  const body = document.getElementById('resourcesBody');
+  closeDialogs("#resourcesEditor, .stable");
+  if (!layerIsOn("toggleResources")) toggleResources();
+  const body = byId("resourcesBody");
 
   resourcesEditorAddLines();
 
   if (modules.editResources) return;
   modules.editResources = true;
 
-  $('#resourcesEditor').dialog({
-    title: 'Resources Editor',
+  $("#resourcesEditor").dialog({
+    title: "Resources Editor",
     resizable: false,
     width: fitContent(),
     close: closeResourcesEditor,
-    position: {my: 'right top', at: 'right-10 top+10', of: 'svg'}
+    position: {my: "right top", at: "right-10 top+10", of: "svg"}
   });
 
   // add listeners
-  document.getElementById('resourcesEditorRefresh').addEventListener('click', resourcesEditorAddLines);
-  document.getElementById('resourcesRegenerate').addEventListener('click', regenerateCurrentResources);
-  document.getElementById('resourcesLegend').addEventListener('click', toggleLegend);
-  document.getElementById('resourcesPercentage').addEventListener('click', togglePercentageMode);
-  document.getElementById('resourcesAssign').addEventListener('click', enterResourceAssignMode);
-  document.getElementById('resourcesAdd').addEventListener('click', resourceAdd);
-  document.getElementById('resourcesRestore').addEventListener('click', resourcesRestoreDefaults);
-  document.getElementById('resourcesExport').addEventListener('click', downloadResourcesData);
-  document.getElementById('resourcesUnpinAll').addEventListener('click', unpinAllResources);
+  byId("resourcesEditorRefresh").addEventListener("click", resourcesEditorAddLines);
+  byId("resourcesRegenerate").addEventListener("click", regenerateCurrentResources);
+  byId("resourcesLegend").addEventListener("click", toggleLegend);
+  byId("resourcesPercentage").addEventListener("click", togglePercentageMode);
+  byId("resourcesAssign").addEventListener("click", enterResourceAssignMode);
+  byId("resourcesAdd").addEventListener("click", resourceAdd);
+  byId("resourcesRestore").addEventListener("click", resourcesRestoreDefaults);
+  byId("resourcesExport").addEventListener("click", downloadResourcesData);
+  byId("resourcesUnpinAll").addEventListener("click", unpinAllResources);
 
-  body.addEventListener('click', function (ev) {
+  body.addEventListener("click", function (ev) {
     const el = ev.target,
       cl = el.classList,
       line = el.parentNode;
     const resource = Resources.get(+line.dataset.id);
-    if (cl.contains('resourceIcon')) return changeIcon(resource, line, el);
-    if (cl.contains('resourceCategory')) return changeCategory(resource, line, el);
-    if (cl.contains('resourceModel')) return changeModel(resource, line, el);
-    if (cl.contains('resourceBonus')) return changeBonus(resource, line, el);
-    if (cl.contains('icon-pin')) return pinResource(resource, el);
-    if (cl.contains('icon-trash-empty')) return removeResource(resource, line);
+    if (cl.contains("resourceIcon")) return changeIcon(resource, line, el);
+    if (cl.contains("resourceCategory")) return changeCategory(resource, line, el);
+    if (cl.contains("resourceModel")) return changeModel(resource, line, el);
+    if (cl.contains("resourceBonus")) return changeBonus(resource, line, el);
+    if (cl.contains("icon-pin")) return pinResource(resource, el);
+    if (cl.contains("icon-trash-empty")) return removeResource(resource, line);
   });
 
-  body.addEventListener('change', function (ev) {
+  body.addEventListener("change", function (ev) {
     const el = ev.target,
       cl = el.classList,
       line = el.parentNode;
     const resource = Resources.get(+line.dataset.id);
-    if (cl.contains('resourceName')) return changeName(resource, el.value, line);
-    if (cl.contains('resourceValue')) return changeValue(resource, el.value, line);
-    if (cl.contains('resourceChance')) return changeChance(resource, el.value, line);
+    if (cl.contains("resourceName")) return changeName(resource, el.value, line);
+    if (cl.contains("resourceValue")) return changeValue(resource, el.value, line);
+    if (cl.contains("resourceChance")) return changeChance(resource, el.value, line);
   });
 
   function getBonusIcon(bonus) {
-    if (bonus === 'fleet') return `<span data-tip="Fleet bonus" class="icon-anchor"></span>`;
-    if (bonus === 'defence') return `<span data-tip="Defence bonus" class="icon-chess-rook"></span>`;
-    if (bonus === 'prestige') return `<span data-tip="Prestige bonus" class="icon-star"></span>`;
-    if (bonus === 'artillery') return `<span data-tip="Artillery bonus" class="icon-rocket"></span>`;
-    if (bonus === 'infantry') return `<span data-tip="Infantry bonus" class="icon-chess-pawn"></span>`;
-    if (bonus === 'population') return `<span data-tip="Population bonus" class="icon-male"></span>`;
-    if (bonus === 'archers') return `<span data-tip="Archers bonus" class="icon-dot-circled"></span>`;
-    if (bonus === 'cavalry') return `<span data-tip="Cavalry bonus" class="icon-chess-knight"></span>`;
+    if (bonus === "fleet") return `<span data-tip="Fleet bonus" class="icon-anchor"></span>`;
+    if (bonus === "defence") return `<span data-tip="Defence bonus" class="icon-chess-rook"></span>`;
+    if (bonus === "prestige") return `<span data-tip="Prestige bonus" class="icon-star"></span>`;
+    if (bonus === "artillery") return `<span data-tip="Artillery bonus" class="icon-rocket"></span>`;
+    if (bonus === "infantry") return `<span data-tip="Infantry bonus" class="icon-chess-pawn"></span>`;
+    if (bonus === "population") return `<span data-tip="Population bonus" class="icon-male"></span>`;
+    if (bonus === "archers") return `<span data-tip="Archers bonus" class="icon-dot-circled"></span>`;
+    if (bonus === "cavalry") return `<span data-tip="Cavalry bonus" class="icon-chess-knight"></span>`;
   }
 
   // add line for each resource
   function resourcesEditorAddLines() {
-    const addTitle = (string, max) => (string.length < max ? '' : `title="${string}"`);
-    let lines = '';
+    const addTitle = (string, max) => (string.length < max ? "" : `title="${string}"`);
+    let lines = "";
 
     for (const r of pack.resources) {
       const stroke = Resources.getStroke(r.color);
-      const model = r.model.replaceAll('_', ' ');
+      const model = r.model.replaceAll("_", " ");
       const bonusArray = Object.entries(r.bonus)
         .map((e) => Array(e[1]).fill(e[0]))
         .flat();
-      const bonusHTML = bonusArray.map((bonus) => getBonusIcon(bonus)).join('');
+      const bonusHTML = bonusArray.map((bonus) => getBonusIcon(bonus)).join("");
       const bonusString = Object.entries(r.bonus)
-        .map((e) => e.join(': '))
-        .join('; ');
+        .map((e) => e.join(": "))
+        .join("; ");
 
       lines += `<div class="states resources"
           data-id=${r.i} data-name="${r.name}" data-color="${r.color}"
@@ -103,22 +104,22 @@ function editResources() {
     body.innerHTML = lines;
 
     // update footer
-    document.getElementById('resourcesNumber').innerHTML = pack.resources.length;
+    byId("resourcesNumber").innerHTML = pack.resources.length;
 
     // add listeners
-    body.querySelectorAll('div.states').forEach((el) => el.addEventListener('click', selectResourceOnLineClick));
+    body.querySelectorAll("div.states").forEach((el) => el.addEventListener("click", selectResourceOnLineClick));
 
-    if (body.dataset.type === 'percentage') {
-      body.dataset.type = 'absolute';
+    if (body.dataset.type === "percentage") {
+      body.dataset.type = "absolute";
       togglePercentageMode();
     }
     applySorting(resourcesHeader);
-    $('#resourcesEditor').dialog({width: fitContent()});
+    $("#resourcesEditor").dialog({width: fitContent()});
   }
 
   function changeCategory(resource, line, el) {
     const categories = [...new Set(pack.resources.map((r) => r.category))].sort();
-    const categoryOptions = (category) => categories.map((c) => `<option ${c === category ? 'selected' : ''} value="${c}">${c}</option>`).join('');
+    const categoryOptions = (category) => categories.map((c) => `<option ${c === category ? "selected" : ""} value="${c}">${c}</option>`).join("");
 
     alertMessage.innerHTML = `
       <div style="margin-bottom:.2em" data-tip="Select category from the list">
@@ -132,23 +133,23 @@ function editResources() {
       </div>
     `;
 
-    $('#alert').dialog({
+    $("#alert").dialog({
       resizable: false,
-      title: 'Change category',
+      title: "Change category",
       buttons: {
         Cancel: function () {
-          $(this).dialog('close');
+          $(this).dialog("close");
         },
         Apply: function () {
           applyChanges();
-          $(this).dialog('close');
+          $(this).dialog("close");
         }
       }
     });
 
     function applyChanges() {
-      const custom = document.getElementById('resouceCategoryAdd').value;
-      const select = document.getElementById('resouceCategorySelect').value;
+      const custom = byId("resouceCategoryAdd").value;
+      const select = byId("resouceCategorySelect").value;
       const category = custom ? capitalize(custom) : select;
       resource.category = line.dataset.category = el.innerHTML = category;
     }
@@ -158,9 +159,9 @@ function editResources() {
     const model = line.dataset.model;
     const modelOptions = Object.keys(models)
       .sort()
-      .map((m) => `<option ${m === model ? 'selected' : ''} value="${m}">${m.replaceAll('_', ' ')}</option>`)
-      .join('');
-    const wikiURL = 'https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Resources:-spread-functions';
+      .map((m) => `<option ${m === model ? "selected" : ""} value="${m}">${m.replaceAll("_", " ")}</option>`)
+      .join("");
+    const wikiURL = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Resources:-spread-functions";
     const onSelect = "resouceModelFunction.innerHTML = Resources.models[this.value] || ' '; resouceModelCustomName.value = ''; resouceModelCustomFunction.value = ''";
 
     alertMessage.innerHTML = `
@@ -177,12 +178,12 @@ function editResources() {
         <div style="margin-bottom:.2em">
           <div style="display: inline-block; width: 6em">Function:</div>
           <div id="resouceModelFunction" style="display: inline-block; width: 18em; font-family: monospace; border: 1px solid #ccc; padding: 3px; font-size: .95em;vertical-align: middle">
-            ${models[model] || ' '}
+            ${models[model] || " "}
           </div>
         </div>
       </fieldset>
 
-      <fieldset data-tip="Advanced option. Define custom spread model, click on 'Help' for details" style="border: 1px solid #999">
+      <fieldset data-tip="Advanced option. Define custom spread model, click on "Help" for details" style="border: 1px solid #999">
         <legend>Custom model</legend>
         <div style="margin-bottom:.2em">
           <div style="display: inline-block; width: 6em">Name:</div>
@@ -198,13 +199,13 @@ function editResources() {
       <div id="resourceModelMessage" style="color: #b20000; margin: .4em 1em 0"></div>
     `;
 
-    $('#alert').dialog({
+    $("#alert").dialog({
       resizable: false,
-      title: 'Change spread model',
+      title: "Change spread model",
       buttons: {
         Help: () => openURL(wikiURL),
         Cancel: function () {
-          $(this).dialog('close');
+          $(this).dialog("close");
         },
         Apply: function () {
           applyChanges(this);
@@ -213,10 +214,10 @@ function editResources() {
     });
 
     function applyChanges(dialog) {
-      const customName = document.getElementById('resouceModelCustomName').value;
-      const customFn = document.getElementById('resouceModelCustomFunction').value;
+      const customName = byId("resouceModelCustomName").value;
+      const customFn = byId("resouceModelCustomFunction").value;
 
-      const message = document.getElementById('resourceModelMessage');
+      const message = byId("resourceModelMessage");
       if (customName && !customFn) return (message.innerHTML = 'Error. Custom model function is required');
       if (!customName && customFn) return (message.innerHTML = 'Error. Custom model name is required');
       message.innerHTML = '';
@@ -238,7 +239,7 @@ function editResources() {
         return;
       }
 
-      const model = document.getElementById('resouceModelSelect').value;
+      const model = byId('resouceModelSelect').value;
       if (!model) return (message.innerHTML = 'Error. Model is not set');
 
       resource.model = line.dataset.model = el.innerHTML = model;
@@ -275,7 +276,7 @@ function editResources() {
     function applyChanges() {
       const bonusObj = {};
       bonuses.forEach((bonus) => {
-        const el = document.getElementById('resourceBonus_' + bonus);
+        const el = byId('resourceBonus_' + bonus);
         const value = parseInt(el.value);
         if (isNaN(value) || !value) return;
         bonusObj[bonus] = value;
@@ -305,21 +306,21 @@ function editResources() {
   }
 
   function changeIcon(resource, line, el) {
-    const standardIcons = Array.from(document.getElementById('resource-icons').querySelectorAll('symbol')).map((el) => el.id);
+    const standardIcons = Array.from(byId('resource-icons').querySelectorAll('symbol')).map((el) => el.id);
     const standardIconsOptions = standardIcons.map((icon) => `<option value=${icon}>${icon}</option>`);
 
-    const customIconsEl = document.getElementById('defs-icons');
-    const customIcons = customIconsEl ? Array.from(document.getElementById('defs-icons').querySelectorAll('svg')).map((el) => el.id) : [];
+    const customIconsEl = byId('defs-icons');
+    const customIcons = customIconsEl ? Array.from(byId('defs-icons').querySelectorAll('svg')).map((el) => el.id) : [];
     const customIconsOptions = customIcons.map((icon) => `<option value=${icon}>${icon}</option>`);
 
-    const select = document.getElementById('resourceSelectIcon');
+    const select = byId('resourceSelectIcon');
     select.innerHTML = standardIconsOptions + customIconsOptions;
     select.value = resource.icon;
 
-    const preview = document.getElementById('resourceIconPreview');
+    const preview = byId('resourceIconPreview');
     preview.setAttribute('href', '#' + resource.icon);
 
-    const viewBoxSection = document.getElementById('resourceIconEditorViewboxFields');
+    const viewBoxSection = byId('resourceIconEditorViewboxFields');
     viewBoxSection.style.display = 'none';
 
     $('#resourceIconEditor').dialog({
@@ -341,7 +342,7 @@ function editResources() {
       position: {my: 'center bottom', at: 'center', of: 'svg'}
     });
 
-    const uploadTo = document.getElementById('defs-icons');
+    const uploadTo = byId('defs-icons');
     const onUpload = (type, id) => {
       preview.setAttribute('href', '#' + id);
       select.innerHTML += `<option value=${id}>${id}</option>`;
@@ -350,7 +351,7 @@ function editResources() {
       if (type === 'image') return;
 
       // let user set viewBox for svg image
-      const el = document.getElementById(id);
+      const el = byId(id);
       viewBoxSection.style.display = 'block';
       const viewBoxAttr = el.getAttribute('viewBox');
       const initialViewBox = viewBoxAttr ? viewBoxAttr.split(' ') : [0, 0, 200, 200];
@@ -369,14 +370,14 @@ function editResources() {
 
     // add listeners
     select.onchange = () => preview.setAttribute('href', '#' + select.value);
-    document.getElementById('resourceUploadIconRaster').onclick = () => imageToLoad.click();
-    document.getElementById('resourceUploadIconVector').onclick = () => svgToLoad.click();
-    document.getElementById('imageToLoad').onchange = () => uploadImage('image', uploadTo, onUpload);
-    document.getElementById('svgToLoad').onchange = () => uploadImage('svg', uploadTo, onUpload);
+    byId('resourceUploadIconRaster').onclick = () => imageToLoad.click();
+    byId('resourceUploadIconVector').onclick = () => svgToLoad.click();
+    byId('imageToLoad').onchange = () => uploadImage('image', uploadTo, onUpload);
+    byId('svgToLoad').onchange = () => uploadImage('svg', uploadTo, onUpload);
   }
 
   function uploadImage(type, uploadTo, callback) {
-    const input = type === 'image' ? document.getElementById('imageToLoad') : document.getElementById('svgToLoad');
+    const input = type === 'image' ? byId('imageToLoad') : byId('svgToLoad');
     const file = input.files[0];
     input.value = '';
 
@@ -465,8 +466,8 @@ function editResources() {
   }
 
   function togglePercentageMode() {
-    if (body.dataset.type === 'absolute') {
-      body.dataset.type = 'percentage';
+    if (body.dataset.type === "absolute") {
+      body.dataset.type = "percentage";
       const totalCells = pack.cells.resource.filter((r) => r !== 0).length;
 
       body.querySelectorAll(':scope > div').forEach(function (el) {
@@ -484,7 +485,7 @@ function editResources() {
     this.classList.add('pressed');
     if (!layerIsOn('toggleResources')) toggleResources();
     if (!layerIsOn('toggleCells')) {
-      const toggler = document.getElementById('toggleCells');
+      const toggler = byId('toggleCells');
       toggler.dataset.forced = true;
       toggleCells();
     }
@@ -493,7 +494,7 @@ function editResources() {
       .getElementById('resourcesEditor')
       .querySelectorAll('.hide')
       .forEach((el) => el.classList.add('hidden'));
-    document.getElementById('resourcesFooter').style.display = 'none';
+    byId('resourcesFooter').style.display = 'none';
     body.querySelectorAll('.resourceName, .resourceCategory, .resourceChance, .resourceCells, svg').forEach((e) => (e.style.pointerEvents = 'none'));
     $('#resourcesEditor').dialog({position: {my: 'right top', at: 'right-10 top+10', of: 'svg', collision: 'fit'}});
 
@@ -538,10 +539,10 @@ function editResources() {
 
   function exitResourceAssignMode(close) {
     customization = 0;
-    document.getElementById('resourcesAssign').classList.remove('pressed');
+    byId('resourcesAssign').classList.remove('pressed');
 
     if (layerIsOn('toggleCells')) {
-      const toggler = document.getElementById('toggleCells');
+      const toggler = byId('toggleCells');
       if (toggler.dataset.forced) toggleCells();
       delete toggler.dataset.forced;
     }
@@ -550,7 +551,7 @@ function editResources() {
       .getElementById('resourcesEditor')
       .querySelectorAll('.hide')
       .forEach((el) => el.classList.remove('hidden'));
-    document.getElementById('resourcesFooter').style.display = 'block';
+    byId('resourcesFooter').style.display = 'block';
     body.querySelectorAll('.resourceName, .resourceCategory, .resourceChance, .resourceCells, svg').forEach((e) => delete e.style.pointerEvents);
     !close && $('#resourcesEditor').dialog({position: {my: 'right top', at: 'right-10 top+10', of: 'svg', collision: 'fit'}});
 
@@ -604,7 +605,7 @@ function editResources() {
 
     // manage top unpin all button state
     const someArePinned = pack.resources.some((resource) => resource.pinned);
-    const unpinAll = document.getElementById('resourcesUnpinAll');
+    const unpinAll = byId('resourcesUnpinAll');
     someArePinned ? unpinAll.classList.remove('hidden') : unpinAll.classList.add('hidden');
   }
 
@@ -613,7 +614,7 @@ function editResources() {
     goods.selectAll('*').remove();
     drawResources();
 
-    document.getElementById('resourcesUnpinAll').classList.add('hidden');
+    byId('resourcesUnpinAll').classList.add('hidden');
     body.querySelectorAll(':scope > div > span.icon-pin').forEach((el) => el.classList.add('inactive'));
   }
 
@@ -634,12 +635,12 @@ function editResources() {
       goods.selectAll('*').remove();
       drawResources();
     };
-    confirmationDialog({title: 'Remove resource', message, confirm: 'Remove', onConfirm});
+    confirmationDialog({title: "Remove resource", message, confirm: "Remove", onConfirm});
   }
 
   function closeResourcesEditor() {
-    if (customization === 14) exitResourceAssignMode('close');
+    if (customization === 14) exitResourceAssignMode("close");
     unpinAllResources();
-    body.innerHTML = '';
+    body.innerHTML = "";
   }
 }

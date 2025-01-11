@@ -987,7 +987,7 @@ function toggleResources(event) {
 function drawResources() {
   console.time('drawResources');
   const someArePinned = pack.resources.some((resource) => resource.pinned);
-  const drawCircle = +goods.attr('data-circle');
+  // const drawCircle = +goods.attr('data-circle');
 
   let resourcesHTML = '';
   for (const i of pack.cells.i) {
@@ -997,10 +997,10 @@ function drawResources() {
     const [x, y] = pack.cells.p[i];
     const stroke = Resources.getStroke(resource.color);
 
-    if (!drawCircle) {
-      resourcesHTML += `<use data-i="${resource.i}" href="#${resource.icon}" x="${x - 3}" y="${y - 3}" width="6" height="6"/>`;
-      continue;
-    }
+    // if (!drawCircle) {
+    //   resourcesHTML += `<use data-i="${resource.i}" href="#${resource.icon}" x="${x - 3}" y="${y - 3}" width="6" height="6"/>`;
+    //   continue;
+    // }
 
     resourcesHTML += `<g>
       <circle data-i="${resource.i}" cx=${x} cy=${y} r="3" fill="${resource.color}" stroke="${stroke}" />
