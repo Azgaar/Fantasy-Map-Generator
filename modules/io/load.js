@@ -458,7 +458,20 @@ async function parseLoadedData(data, mapVersion) {
       if (isVisible(ruler)) turnOn("toggleRulers");
       if (isVisible(scaleBar)) turnOn("toggleScaleBar");
       if (isVisibleNode(byId("vignette"))) turnOn("toggleVignette");
-
+  
+      window.uniquePictures = [];
+      window.iconReload = true;
+      $("#armies").each(function(id, armyGroup) {
+        $(armyGroup).children().each(function(aId, army){
+          $(army).children().each(function(rId, regiment){
+            if($(regiment).find(".regimentImage").length !== 0 && $(regiment).find(".regimentImage").attr('href')) {
+              let icon = $(regiment).find(".regimentImage").attr('href');
+              window.uniquePictures.push(icon);
+            }
+          });
+        });
+      });
+      window.uniquePictures = [...new Set(uniquePictures)];
       getCurrentPreset();
     }
 

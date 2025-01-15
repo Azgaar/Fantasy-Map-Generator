@@ -45,7 +45,11 @@ function editRegiment(selector) {
   function updateRegimentData(regiment) {
     document.getElementById("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
     document.getElementById("regimentName").value = regiment.name;
-    document.getElementById("regimentEmblem").value = regiment.icon;
+    if(regiment.image) {
+      document.getElementById("regimentEmblem").value = regiment.image;
+    } else {
+      document.getElementById("regimentEmblem").value = regiment.icon;
+    }
     const composition = document.getElementById("regimentComposition");
 
     composition.innerHTML = options.military
@@ -132,6 +136,7 @@ function editRegiment(selector) {
     const baseRect = elSelected.querySelectorAll("rect")[0];
     const iconRect = elSelected.querySelectorAll("rect")[1];
     const icon = elSelected.querySelector(".regimentIcon");
+    const image = elSelected.querySelector(".regimentIcon");
     const x = reg.n ? reg.x - size * 2 : reg.x - size * 3;
     baseRect.setAttribute("x", x);
     baseRect.setAttribute("width", reg.n ? size * 4 : size * 6);
@@ -160,7 +165,13 @@ function editRegiment(selector) {
 
   function changeEmblem() {
     const emblem = document.getElementById("regimentEmblem").value;
-    getRegiment().icon = elSelected.querySelector(".regimentIcon").innerHTML = emblem;
+    if(emblem.includes("http")) {
+      elSelected.querySelector(".regimentImage").setAttribute("href", emblem);
+      getRegiment().icon = elSelected.querySelector(".regimentIcon").innerHTML = "";
+    } else {
+      getRegiment().icon = elSelected.querySelector(".regimentIcon").innerHTML = emblem;
+      elSelected.querySelector(".regimentImage").setAttribute("href", "");
+    }
   }
 
   function changeUnit() {
@@ -213,7 +224,7 @@ function editRegiment(selector) {
       bx: reg.bx,
       by: reg.by,
       state,
-      icon: reg.icon
+      icon: reg.icon,
     };
     newReg.name = Military.getName(newReg, military);
     military.push(newReg);
@@ -427,6 +438,7 @@ function editRegiment(selector) {
     const text = this.querySelector("text");
     const iconRect = this.querySelectorAll("rect")[1];
     const icon = this.querySelector(".regimentIcon");
+    const image = this.querySelector(".regimentImage");
 
     const self = elSelected === this;
     const baseLine = viewbox.select("g#regimentBase > line");
@@ -448,7 +460,9 @@ function editRegiment(selector) {
       iconRect.setAttribute("y", y1);
       icon.setAttribute("x", x1 - size);
       icon.setAttribute("y", y);
-      if (self) {
+      image.setAttribute("x", x1 - h);
+      image.setAttribute("y", y1);
+      if (self) {;
         baseLine.attr("x2", x).attr("y2", y);
         rotationControl
           .attr("cx", x1 + w)

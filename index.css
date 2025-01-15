@@ -186,6 +186,11 @@ t,
   font-size: 0.8em;
 }
 
+.regimentImage {
+  object-fit: contain;
+  width: 6px !important;
+}
+
 #statesHalo {
   fill: none;
   stroke-linecap: round;

@@ -55,6 +55,13 @@ const drawRegiments = function (regiments, s) {
     .attr("x", d => x(d) - size)
     .attr("y", d => d.y)
     .text(d => d.icon);
+  g.append("image")
+    .attr("class", "regimentImage")
+    .attr("x", d => x(d) - h)
+    .attr("y", d => y(d))
+    .attr("height", '6')
+    .attr("width", '6')
+    .text(d => d.image);
 };
 
 const drawRegiment = function (reg, stateId) {
@@ -96,6 +103,13 @@ const drawRegiment = function (reg, stateId) {
     .attr("x", x1 - size)
     .attr("y", reg.y)
     .text(reg.icon);
+  g.append("image")
+    .attr("class", "regimentImage")
+    .attr("x", x1 - h)
+    .attr("y", y1)
+    .attr("height", '6')
+    .attr("width", '6')
+    .text(reg.image);
 };
 
 // move one regiment to another
@@ -122,5 +136,13 @@ const moveRegiment = function (reg, x, y) {
   el.select(".regimentIcon")
     .transition(move)
     .attr("x", x1(x) - size)
-    .attr("y", y);
+    .attr("y", y)
+    .attr("height", '6')
+    .attr("width", '6');
+  el.select(".regimentImage")
+    .transition(move)
+    .attr("x", x1(x) - h)
+    .attr("y", y1(y))
+    .attr("height", '6')
+    .attr("width", '6')
 };
