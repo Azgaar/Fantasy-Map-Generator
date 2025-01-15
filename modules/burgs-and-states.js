@@ -887,6 +887,7 @@ window.BurgsAndStates = (() => {
       state.salesTax = maxTax ? rn(Math.random() * maxTax, 2) : 0;
     }
   };
+  
   return {
     generate,
     expandStates,
@@ -902,7 +903,6 @@ window.BurgsAndStates = (() => {
     generateDiplomacy,
     defineStateForms,
     getFullName,
-    defineTaxes,
     updateCultures,
     getCloseToEdgePoint,
     defineTaxes
