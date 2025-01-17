@@ -59,8 +59,8 @@ const drawRegiments = function (regiments, s) {
     .attr("class", "regimentImage")
     .attr("x", d => x(d) - h)
     .attr("y", d => y(d))
-    .attr("height", '6')
-    .attr("width", '6')
+    .attr("height", h)
+    .attr("width", h)
     .text(d => d.image);
 };
 
@@ -107,8 +107,8 @@ const drawRegiment = function (reg, stateId) {
     .attr("class", "regimentImage")
     .attr("x", x1 - h)
     .attr("y", y1)
-    .attr("height", '6')
-    .attr("width", '6')
+    .attr("height", h)
+    .attr("width", h)
     .text(reg.image);
 };
 

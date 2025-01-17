@@ -188,7 +188,6 @@ t,
 
 .regimentImage {
   object-fit: contain;
-  width: 6px !important;
 }
 
 #statesHalo {
