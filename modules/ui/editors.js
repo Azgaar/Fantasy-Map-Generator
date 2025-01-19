@@ -960,6 +960,30 @@ function highlightElement(element, zoom) {
   }
 }
 
+$('#addImage').click(function(){
+  let icon = $('#imageInput').val();
+  addImage(icon);
+});
+
+function addImage(icon) {
+  let row = "";
+  let lastRowId = $('#iconTable').children('tbody').children('tr').length;
+  let lastRow = $('#iconTable').children('tbody').children('tr:last-child');
+  let countLastRow = lastRow.children().length;
+  if(icon.includes("http")) {
+    icon = '<img height="46" width="46" src="'+icon+'"/>';
+    const table = byId("iconTable");
+    if(countLastRow > 16) {
+      row = table.insertRow(lastRowId);
+    } else {
+      row = table.rows[lastRowId-1];
+    }
+    
+    const cell = row.insertCell(lastRow % 17);
+    cell.innerHTML = icon;
+  }
+};
+
 function selectIcon(initial, callback) {
   if (!callback) return;
   $("#iconSelector").dialog();
@@ -967,8 +991,11 @@ function selectIcon(initial, callback) {
   const table = byId("iconTable");
   const input = byId("iconInput");
   input.value = initial;
-
-  if (!table.innerHTML) {
+  if(window.iconReload) {
+    table.innerHTML = null;
+    window.iconReload = false;
+  }
+  if (!table.innerHTML.includes('⚔️')) {
     const icons = [
       "⚔️",
       "🏹",
@@ -1156,26 +1183,40 @@ function selectIcon(initial, callback) {
       "🍻",
       "🍺",
       "🍲",
-      "🍷"
+      "🍷",
     ];
-
+    if(window.uniquePictures) { //if a load has been load, we might get already installed pictures list
+      window.uniquePictures.forEach((element) => icons.push(element));
+    }
     let row = "";
     for (let i = 0; i < icons.length; i++) {
+      if(icons[i].includes("http")) {
+        icons[i] = '<img height="46" width="46" src="'+icons[i]+'"/>';
+      }
       if (i % 17 === 0) row = table.insertRow((i / 17) | 0);
       const cell = row.insertCell(i % 17);
       cell.innerHTML = icons[i];
     }
   }
 
-  input.oninput = e => callback(input.value);
+  
   table.onclick = e => {
-    if (e.target.tagName === "TD") {
+    if (e.target.tagName === "TD" && e.target.textContent) {
       input.value = e.target.textContent;
-      callback(input.value);
     }
+    if (e.target.tagName === "IMG" && e.target.src) {
+      input.value = e.target.src;
+    }
+    input.oninput = e => callback(input.value);
+    callback(input.value || "⠀");
   };
   table.onmouseover = e => {
-    if (e.target.tagName === "TD") tip(`Click to select ${e.target.textContent} icon`);
+    if (e.target.tagName === "TD" && e.target.textContent) {
+      tip(`Click to select ${e.target.textContent} icon`);
+    }
+    if (e.target.tagName === "IMG" && e.target.src) {
+      tip(`Click to select ${e.target.src} icon`);
+    }
   };
 
   $("#iconSelector").dialog({
