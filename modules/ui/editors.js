@@ -960,30 +960,6 @@ function highlightElement(element, zoom) {
   }
 }
 
-$('#addImage').click(function(){
-  let icon = $('#imageInput').val();
-  addImage(icon);
-});
-
-function addImage(icon) {
-  let row = "";
-  let lastRowId = $('#iconTable').children('tbody').children('tr').length;
-  let lastRow = $('#iconTable').children('tbody').children('tr:last-child');
-  let countLastRow = lastRow.children().length;
-  if(icon.includes("http")) {
-    icon = '<img height="46" width="46" src="'+icon+'"/>';
-    const table = byId("iconTable");
-    if(countLastRow > 16) {
-      row = table.insertRow(lastRowId);
-    } else {
-      row = table.rows[lastRowId-1];
-    }
-    
-    const cell = row.insertCell(lastRow % 17);
-    cell.innerHTML = icon;
-  }
-};
-
 function selectIcon(initial, callback) {
   if (!callback) return;
   $("#iconSelector").dialog();
@@ -991,11 +967,8 @@ function selectIcon(initial, callback) {
   const table = byId("iconTable");
   const input = byId("iconInput");
   input.value = initial;
-  if(window.iconReload) {
-    table.innerHTML = null;
-    window.iconReload = false;
-  }
-  if (!table.innerHTML.includes('⚔️')) {
+
+  if (!table.innerHTML) {
     const icons = [
       "⚔️",
       "🏹",
@@ -1183,48 +1156,75 @@ function selectIcon(initial, callback) {
       "🍻",
       "🍺",
       "🍲",
-      "🍷",
+      "🍷"
     ];
-    if(window.uniquePictures) { //if a load has been load, we might get already installed pictures list
-      window.uniquePictures.forEach((element) => icons.push(element));
-    }
+
     let row = "";
     for (let i = 0; i < icons.length; i++) {
-      if(icons[i].includes("http")) {
-        icons[i] = '<img height="46" width="46" src="'+icons[i]+'"/>';
-      }
       if (i % 17 === 0) row = table.insertRow((i / 17) | 0);
       const cell = row.insertCell(i % 17);
       cell.innerHTML = icons[i];
     }
+
+    // find external images used as icons and show them
+    const externalResources = new Set();
+    const isExternal = url => url.startsWith("http");
+
+    options.military.forEach(unit => {
+      if (isExternal(unit.icon)) externalResources.add(unit.icon);
+    });
+
+    pack.states.forEach(state => {
+      state?.military?.forEach(regiment => {
+        if (isExternal(regiment.icon)) externalResources.add(regiment.icon);
+      });
+    });
+
+    externalResources.forEach(addExternalImage);
   }
 
-  
+  input.oninput = () => callback(input.value);
+
   table.onclick = e => {
-    if (e.target.tagName === "TD" && e.target.textContent) {
+    if (e.target.tagName === "TD") {
       input.value = e.target.textContent;
+      callback(input.value);
     }
-    if (e.target.tagName === "IMG" && e.target.src) {
-      input.value = e.target.src;
-    }
-    input.oninput = e => callback(input.value);
-    callback(input.value || "⠀");
   };
+
   table.onmouseover = e => {
-    if (e.target.tagName === "TD" && e.target.textContent) {
-      tip(`Click to select ${e.target.textContent} icon`);
-    }
-    if (e.target.tagName === "IMG" && e.target.src) {
-      tip(`Click to select ${e.target.src} icon`);
-    }
+    if (e.target.tagName === "TD") tip(`Click to select ${e.target.textContent} icon`);
   };
+
+  function addExternalImage(url) {
+    const addedIcons = byId("addedIcons");
+    const image = document.createElement("div");
+    image.style.cssText = `width: 2.2em; height: 2.2em; background-size: cover; background-image: url(${url})`;
+    addedIcons.appendChild(image);
+    image.onclick = () => callback(ulr);
+  }
+
+  byId("addImage").onclick = function () {
+    const input = this.previousElementSibling;
+    const ulr = input.value;
+    if (!ulr) return tip("Enter image URL to add", false, "error", 4000);
+    if (!ulr.match(/^(http|https):\/\//)) return tip("Enter valid URL", false, "error", 4000);
+    addExternalImage(ulr);
+    callback(ulr);
+    input.value = "";
+  };
+
+  byId("addedIcons")
+    .querySelectorAll("div")
+    .forEach(div => {
+      div.onclick = () => callback(div.style.backgroundImage.slice(5, -2));
+    });
 
   $("#iconSelector").dialog({
     width: fitContent(),
     title: "Select Icon",
     buttons: {
       Apply: function () {
-        callback(input.value || "⠀");
         $(this).dialog("close");
       },
       Close: function () {

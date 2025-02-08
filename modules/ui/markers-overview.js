@@ -69,18 +69,24 @@ function overviewMarkers() {
   function addLines() {
     const lines = pack.markers
       .map(({i, type, icon, pinned, lock}) => {
-        return `<div class="states" data-i=${i} data-type="${type}">
-        <div data-tip="Marker icon and type" style="width:12em">${icon} ${type}</div>
-        <span style="padding-right:.1em" data-tip="Edit marker" class="icon-pencil"></span>
-        <span style="padding-right:.1em" data-tip="Focus on marker position" class="icon-dot-circled pointer"></span>
-        <span style="padding-right:.1em" data-tip="Pin marker (display only pinned markers)" class="icon-pin ${
-          pinned ? "" : "inactive"
-        }" pointer"></span>
-        <span style="padding-right:.1em" class="locks pointer ${
-          lock ? "icon-lock" : "icon-lock-open inactive"
-        }" onmouseover="showElementLockTip(event)"></span>
-        <span data-tip="Remove marker" class="icon-trash-empty"></span>
-      </div>`;
+        return /* html */ `
+          <div class="states" data-i=${i} data-type="${type}">
+            ${
+              icon.startsWith("http")
+                ? `<img src="${icon}" data-tip="Marker icon" style="width:1.2em; height:1.2em; vertical-align: middle;">`
+                : `<span data-tip="Marker icon" style="width:1.2em">${icon}</span>`
+            }
+            <div data-tip="Marker type" style="width:10em">${type}</div>
+            <span style="padding-right:.1em" data-tip="Edit marker" class="icon-pencil"></span>
+            <span style="padding-right:.1em" data-tip="Focus on marker position" class="icon-dot-circled pointer"></span>
+            <span style="padding-right:.1em" data-tip="Pin marker (display only pinned markers)" class="icon-pin ${
+              pinned ? "" : "inactive"
+            }" pointer"></span>
+            <span style="padding-right:.1em" class="locks pointer ${
+              lock ? "icon-lock" : "icon-lock-open inactive"
+            }" onmouseover="showElementLockTip(event)"></span>
+            <span data-tip="Remove marker" class="icon-trash-empty"></span>
+          </div>`;
       })
       .join("");
 

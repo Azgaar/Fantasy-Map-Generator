@@ -54,14 +54,14 @@ const drawRegiments = function (regiments, s) {
     .attr("class", "regimentIcon")
     .attr("x", d => x(d) - size)
     .attr("y", d => d.y)
-    .text(d => d.icon);
+    .text(d => (d.icon.startsWith("http") ? "" : d.icon));
   g.append("image")
     .attr("class", "regimentImage")
     .attr("x", d => x(d) - h)
     .attr("y", d => y(d))
     .attr("height", h)
     .attr("width", h)
-    .text(d => d.image);
+    .attr("href", d => (d.icon.startsWith("http") ? d.icon : ""));
 };
 
 const drawRegiment = function (reg, stateId) {
@@ -102,14 +102,14 @@ const drawRegiment = function (reg, stateId) {
     .attr("class", "regimentIcon")
     .attr("x", x1 - size)
     .attr("y", reg.y)
-    .text(reg.icon);
+    .text(reg.icon.startsWith("http") ? "" : reg.icon);
   g.append("image")
     .attr("class", "regimentImage")
     .attr("x", x1 - h)
     .attr("y", y1)
     .attr("height", h)
     .attr("width", h)
-    .text(reg.image);
+    .attr("href", reg.icon.startsWith("http") ? reg.icon : "");
 };
 
 // move one regiment to another
@@ -137,12 +137,12 @@ const moveRegiment = function (reg, x, y) {
     .transition(move)
     .attr("x", x1(x) - size)
     .attr("y", y)
-    .attr("height", '6')
-    .attr("width", '6');
+    .attr("height", "6")
+    .attr("width", "6");
   el.select(".regimentImage")
     .transition(move)
     .attr("x", x1(x) - h)
     .attr("y", y1(y))
-    .attr("height", '6')
-    .attr("width", '6')
+    .attr("height", "6")
+    .attr("width", "6");
 };
