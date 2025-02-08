@@ -380,7 +380,7 @@ window.Military = (function () {
       : gauss(options.year - 100, 150, 1, options.year - 6);
     const conflict = campaign ? ` during the ${campaign.name}` : "";
     const legend = `Regiment was formed in ${year} ${options.era}${conflict}. ${station}${troops}`;
-    notes.push({id: `regiment${s.i}-${r.i}`, name: `${r.icon} ${r.name}`, legend});
+    notes.push({id: `regiment${s.i}-${r.i}`, name: r.name, legend});
   };
 
   return {

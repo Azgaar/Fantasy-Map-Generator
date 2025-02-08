@@ -860,33 +860,47 @@ function configMarkersGeneration() {
   drawConfigTable();
 
   function drawConfigTable() {
-    const {markers} = pack;
     const config = Markers.getConfig();
-    const headers = `<thead style='font-weight:bold'><tr>
+
+    const headers = /* html */ `<thead style='font-weight:bold'><tr>
       <td data-tip="Marker type name">Type</td>
       <td data-tip="Marker icon">Icon</td>
       <td data-tip="Marker number multiplier">Multiplier</td>
       <td data-tip="Number of markers of that type on the current map">Number</td>
     </tr></thead>`;
-    const lines = config.map(({type, icon, multiplier}, index) => {
-      const inputId = `markerIconInput${index}`;
-      return `<tr>
-        <td><input value="${type}" /></td>
+
+    const lines = config.map(({type, icon, multiplier}) => {
+      const isExternal = icon.startsWith("http");
+
+      return /* html */ `<tr>
+        <td><input class="type" value="${type}" /></td>
         <td style="position: relative">
-          <input id="${inputId}" style="width: 5em" value="${icon}" />
-          <i class="icon-edit pointer" style="position: absolute; margin:.4em 0 0 -1.4em; font-size:.85em"></i>
+          <img class="image" src="${isExternal ? icon : ""}" ${
+        isExternal ? "" : "hidden"
+      } style="width:1.2em; height:1.2em; vertical-align: middle;">
+          <span class="emoji" style="font-size:1.2em">${isExternal ? "" : icon}</span>
+          <button class="changeIcon icon-pencil"></button>
         </td>
-        <td><input type="number" min="0" max="100" step="0.1" value="${multiplier}" /></td>
-        <td style="text-align:center">${markers.filter(marker => marker.type === type).length}</td>
+        <td><input class="multiplier" type="number" min="0" max="100" step="0.1" value="${multiplier}" /></td>
+        <td style="text-align:center">${pack.markers.filter(marker => marker.type === type).length}</td>
       </tr>`;
     });
+
     const table = `<table class="table">${headers}<tbody>${lines.join("")}</tbody></table>`;
     alertMessage.innerHTML = table;
 
-    alertMessage.querySelectorAll("i").forEach(selectIconButton => {
+    alertMessage.querySelectorAll("button.changeIcon").forEach(selectIconButton => {
       selectIconButton.addEventListener("click", function () {
-        const input = this.previousElementSibling;
-        selectIcon(input.value, icon => (input.value = icon));
+        const image = this.parentElement.querySelector(".image");
+        const emoji = this.parentElement.querySelector(".emoji");
+        const icon = image.getAttribute("src") || emoji.textContent;
+
+        selectIcon(icon, value => {
+          const isExternal = value.startsWith("http");
+          image.setAttribute("src", isExternal ? value : "");
+          image.hidden = !isExternal;
+          emoji.textContent = isExternal ? "" : value;
+        });
       });
     });
   }
@@ -894,12 +908,14 @@ function configMarkersGeneration() {
   const applyChanges = () => {
     const rows = alertMessage.querySelectorAll("tbody > tr");
     const rowsData = Array.from(rows).map(row => {
-      const inputs = row.querySelectorAll("input");
-      return {
-        type: inputs[0].value,
-        icon: inputs[1].value,
-        multiplier: parseFloat(inputs[2].value)
-      };
+      const type = row.querySelector(".type").value;
+
+      const image = row.querySelector(".image");
+      const emoji = row.querySelector(".emoji");
+      const icon = image.getAttribute("src") || emoji.textContent;
+
+      const multiplier = parseFloat(row.querySelector(".multiplier").value);
+      return {type, icon, multiplier};
     });
 
     const config = Markers.getConfig();

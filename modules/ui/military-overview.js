@@ -284,7 +284,14 @@ function overviewMilitary() {
       if (el.tagName !== "BUTTON") return;
       const type = el.dataset.type;
 
-      if (type === "icon") return selectIcon(el.textContent, v => (el.textContent = v));
+      if (type === "icon") {
+        return selectIcon(el.textContent, function (value) {
+          el.innerHTML = value.startsWith("http")
+            ? `<img src="${value}" style="width:1.2em;height:1.2em;pointer-events:none;">`
+            : value;
+        });
+      }
+
       if (type === "biomes") {
         const {i, name, color} = biomesData;
         const biomesArray = Array(i.length).fill(null);
@@ -329,9 +336,15 @@ function overviewMilitary() {
           ${getLimitText(unit[attr])}
         </button>`;
 
-      row.innerHTML = /* html */ `<td><button data-type="icon" data-tip="Click to select unit icon">${
-        icon || " "
-      }</button></td>
+      row.innerHTML = /* html */ `<td>
+          <button data-type="icon" data-tip="Click to select unit icon">
+            ${
+              icon.startsWith("http")
+                ? `<img src="${icon}" style="width:1.2em;height:1.2em;pointer-events:none;">`
+                : icon || ""
+            }
+          </button>
+        </td>
         <td><input data-tip="Type unit name. If name is changed for existing unit, old unit will be replaced" value="${name}" /></td>
         <td>${getLimitButton("biomes")}</td>
         <td>${getLimitButton("states")}</td>
@@ -424,7 +437,11 @@ function overviewMilitary() {
         const [icon, name, biomes, states, cultures, religions, rural, urban, crew, power, type, separate] =
           elements.map(el => {
             const {type, value} = el.dataset || {};
-            if (type === "icon") return el.textContent || "⠀";
+            if (type === "icon") {
+              const value = el.innerHTML.trim();
+              const isImage = value.startsWith("<img");
+              return isImage ? value.match(/src="([^"]*)"/)[1] : value || "⠀";
+            }
             if (type) return value ? value.split(",").map(v => parseInt(v)) : null;
             if (el.type === "number") return +el.value || 0;
             if (el.type === "checkbox") return +el.checked || 0;

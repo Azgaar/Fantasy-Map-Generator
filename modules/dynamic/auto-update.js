@@ -977,4 +977,10 @@ export function resolveVersionConflicts(mapVersion) {
     BurgsAndStates.getPoles();
     Provinces.getPoles();
   }
+
+  if (isOlderThan("1.107.0")) {
+    // v1.107.0 allowed custom images for markers and regiments
+    if (layerIsOn("toggleMarkers")) drawMarkers();
+    if (layerIsOn("toggleMilitary")) drawMilitary();
+  }
 }

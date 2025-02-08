@@ -3555,9 +3555,9 @@
             <input id="markerType" style="width: 10.3em" />
           </div>
 
-          <div data-tip="Marker icon. Paste any Unicode symbol or select from the predefined list">
+          <div data-tip="Marker icon" style="display: flex; align-items: center">
             <div class="label">Icon:</div>
-            <input id="markerIcon" style="width: 5em" />
+            <div id="markerIcon" style="font-size: 1.5em; width: 3.7em">👑</div>
             <button id="markerIconSelect" style="width: 5em">select</button>
           </div>
 
@@ -3646,10 +3646,10 @@
             ></i>
           </div>
 
-          <div data-tip="Regiment emblem. Paste any Unicode symbol or select from the predefined list">
-            <div class="label italic">Emblem:</div>
-            <input id="regimentEmblem" style="width: 5em" />
-            <button id="regimentEmblemSelect" style="padding: 0; width: 4.5em">select</button>
+          <div data-tip="Regiment emblem" style="display: flex; align-items: center">
+            <div class="label">Emblem:</div>
+            <div id="regimentEmblem" style="font-size: 1.5em; width: 3.7em"></div>
+            <button id="regimentEmblemChange" style="padding: 0; width: 4.5em">change</button>
           </div>
 
           <div id="regimentComposition" class="table"></div>
@@ -5770,11 +5770,24 @@
       </div>
 
       <div id="iconSelector" style="display: none" class="dialog">
-        <table id="iconTable" class="table pointer" style="font-size: 2em; text-align: center; width: 100%"></table>
-        <div style="font-style: italic; font-size: 1.2em; margin: 0.4em 0 0 0.4em">
-          <span>Select from the list or paste a Unicode character here: </span>
-          <input id="iconInput" style="width: 2.5em" />
-          <span>. See <a href="https://emojipedia.org" target="_blank">Emojipedia</a> for reference</span>
+        <div>
+          <b>Unicode emojis</b>
+          <div style="font-style: italic">
+            <span>Select from the list or paste a Unicode character here: </span>
+            <input id="iconInput" style="width: 2.5em" />
+            <span>. See <a href="https://emojidb.org" target="_blank">EmojiDB</a> to search for emojis</span>
+          </div>
+          <table id="iconTable" class="table pointer" style="font-size: 2em; text-align: center; width: 100%"></table>
+        </div>
+
+        <div style="margin-top: 0.5em">
+          <b>External images</b>
+          <div style="font-style: italic">
+            <span>Paste link to the image here: </span>
+            <input id="imageInput" style="width: 20em" />
+            <button id="addImage" type="button">Add</button>
+          </div>
+          <div id="addedIcons" class="pointer" style="display: flex; flex-wrap: wrap; max-width: 420px"></div>
         </div>
       </div>
 
@@ -8087,8 +8100,8 @@
     <script src="modules/provinces-generator.js?v=1.106.0"></script>
     <script src="modules/routes-generator.js?v=1.106.0"></script>
     <script src="modules/religions-generator.js?v=1.106.0"></script>
-    <script src="modules/military-generator.js?v=1.104.0"></script>
-    <script src="modules/markers-generator.js?v=1.104.0"></script>
+    <script src="modules/military-generator.js?v=1.107.0"></script>
+    <script src="modules/markers-generator.js?v=1.107.0"></script>
     <script src="modules/zones-generator.js?v=1.106.0"></script>
     <script src="modules/coa-generator.js?v=1.99.00"></script>
     <script src="modules/resample.js?v=1.106.4"></script>
@@ -8106,8 +8119,8 @@
 
     <script defer src="modules/relief-icons.js?v=1.99.05"></script>
     <script defer src="modules/ui/style.js?v=1.104.0"></script>
-    <script defer src="modules/ui/editors.js?v=1.106.1"></script>
-    <script defer src="modules/ui/tools.js?v=1.106.0"></script>
+    <script defer src="modules/ui/editors.js?v=1.107.0"></script>
+    <script defer src="modules/ui/tools.js?v=1.107.0"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.105.4"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=1.105.2"></script>
     <script defer src="modules/ui/provinces-editor.js?v=1.106.1"></script>
@@ -8134,13 +8147,13 @@
     <script defer src="modules/ui/burgs-overview.js?v=1.105.15"></script>
     <script defer src="modules/ui/routes-overview.js?v=1.104.3"></script>
     <script defer src="modules/ui/rivers-overview.js?v=1.99.00"></script>
-    <script defer src="modules/ui/military-overview.js?v=1.99.00"></script>
-    <script defer src="modules/ui/regiments-overview.js?v=1.104.0"></script>
-    <script defer src="modules/ui/markers-overview.js?v=1.99.00"></script>
-    <script defer src="modules/ui/regiment-editor.js?v=1.104.14"></script>
+    <script defer src="modules/ui/military-overview.js?v=1.107.0"></script>
+    <script defer src="modules/ui/regiments-overview.js?v=1.107.0"></script>
+    <script defer src="modules/ui/markers-overview.js?v=1.107.0"></script>
+    <script defer src="modules/ui/regiment-editor.js?v=1.107.0"></script>
     <script defer src="modules/ui/battle-screen.js?v=1.99.00"></script>
     <script defer src="modules/ui/emblems-editor.js?v=1.99.00"></script>
-    <script defer src="modules/ui/markers-editor.js?v=1.99.00"></script>
+    <script defer src="modules/ui/markers-editor.js?v=1.107.0"></script>
     <script defer src="modules/ui/3d.js?v=1.99.00"></script>
     <script defer src="modules/ui/submap-tool.js?v=1.106.2"></script>
     <script defer src="modules/ui/transform-tool.js?v=1.106.2"></script>
@@ -8156,11 +8169,11 @@
     <script defer src="modules/renderers/draw-features.js?v=1.106.0"></script>
     <script defer src="modules/renderers/draw-borders.js?v=1.104.0"></script>
     <script defer src="modules/renderers/draw-heightmap.js?v=1.104.0"></script>
-    <script defer src="modules/renderers/draw-markers.js?v=1.104.0"></script>
+    <script defer src="modules/renderers/draw-markers.js?v=1.107.0"></script>
     <script defer src="modules/renderers/draw-scalebar.js?v=1.104.0"></script>
     <script defer src="modules/renderers/draw-temperature.js?v=1.104.0"></script>
     <script defer src="modules/renderers/draw-emblems.js?v=1.104.0"></script>
-    <script defer src="modules/renderers/draw-military.js?v=1.104.13"></script>
+    <script defer src="modules/renderers/draw-military.js?v=1.107.0"></script>
     <script defer src="modules/renderers/draw-state-labels.js?v=1.106.0"></script>
     <script defer src="modules/renderers/draw-burg-labels.js?v=1.104.0"></script>
     <script defer src="modules/renderers/draw-burg-icons.js?v=1.104.0"></script>

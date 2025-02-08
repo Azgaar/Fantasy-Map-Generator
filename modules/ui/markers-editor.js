@@ -8,25 +8,24 @@ function editMarker(markerI) {
 
   elSelected = d3.select(element).raise().call(d3.drag().on("start", dragMarker)).classed("draggable", true);
 
-  if (document.getElementById("notesEditor").offsetParent) editNotes(element.id, element.id);
+  if (byId("notesEditor").offsetParent) editNotes(element.id, element.id);
 
   // dom elements
-  const markerType = document.getElementById("markerType");
-  const markerIcon = document.getElementById("markerIcon");
-  const markerIconSelect = document.getElementById("markerIconSelect");
-  const markerIconSize = document.getElementById("markerIconSize");
-  const markerIconShiftX = document.getElementById("markerIconShiftX");
-  const markerIconShiftY = document.getElementById("markerIconShiftY");
-  const markerSize = document.getElementById("markerSize");
-  const markerPin = document.getElementById("markerPin");
-  const markerFill = document.getElementById("markerFill");
-  const markerStroke = document.getElementById("markerStroke");
+  const markerType = byId("markerType");
+  const markerIconSelect = byId("markerIconSelect");
+  const markerIconSize = byId("markerIconSize");
+  const markerIconShiftX = byId("markerIconShiftX");
+  const markerIconShiftY = byId("markerIconShiftY");
+  const markerSize = byId("markerSize");
+  const markerPin = byId("markerPin");
+  const markerFill = byId("markerFill");
+  const markerStroke = byId("markerStroke");
 
-  const markerNotes = document.getElementById("markerNotes");
-  const markerLock = document.getElementById("markerLock");
-  const addMarker = document.getElementById("addMarker");
-  const markerAdd = document.getElementById("markerAdd");
-  const markerRemove = document.getElementById("markerRemove");
+  const markerNotes = byId("markerNotes");
+  const markerLock = byId("markerLock");
+  const addMarker = byId("addMarker");
+  const markerAdd = byId("markerAdd");
+  const markerRemove = byId("markerRemove");
 
   updateInputs();
 
@@ -39,8 +38,7 @@ function editMarker(markerI) {
 
   const listeners = [
     listen(markerType, "change", changeMarkerType),
-    listen(markerIcon, "input", changeMarkerIcon),
-    listen(markerIconSelect, "click", selectMarkerIcon),
+    listen(markerIconSelect, "click", changeMarkerIcon),
     listen(markerIconSize, "input", changeIconSize),
     listen(markerIconShiftX, "input", changeIconShiftX),
     listen(markerIconShiftY, "input", changeIconShiftY),
@@ -61,7 +59,7 @@ function editMarker(markerI) {
       return [element, marker];
     }
 
-    const element = document.getElementById(`marker${markerI}`);
+    const element = byId(`marker${markerI}`);
     const marker = pack.markers.find(({i}) => i === markerI);
     return [element, marker];
   }
@@ -97,19 +95,20 @@ function editMarker(markerI) {
   }
 
   function updateInputs() {
-    const {icon, type = "", size = 30, dx = 50, dy = 50, px = 12, stroke = "#000000", fill = "#ffffff", pin = "bubble", lock} = marker;
+    byId("markerIcon").innerHTML = marker.icon.startsWith("http")
+      ? `<img src="${marker.icon}" style="width: 1em; height: 1em;">`
+      : marker.icon;
 
-    markerType.value = type;
-    markerIcon.value = icon;
-    markerIconSize.value = px;
-    markerIconShiftX.value = dx;
-    markerIconShiftY.value = dy;
-    markerSize.value = size;
-    markerPin.value = pin;
-    markerFill.value = fill;
-    markerStroke.value = stroke;
+    markerType.value = marker.type || "";
+    markerIconSize.value = marker.px || 12;
+    markerIconShiftX.value = marker.dx || 50;
+    markerIconShiftY.value = marker.dy || 50;
+    markerSize.value = marker.size || 30;
+    markerPin.value = marker.pin || "bubble";
+    markerFill.value = marker.fill || "#ffffff";
+    markerStroke.value = marker.stroke || "#000000";
 
-    markerLock.className = lock ? "icon-lock" : "icon-lock-open";
+    markerLock.className = marker.lock ? "icon-lock" : "icon-lock-open";
   }
 
   function changeMarkerType() {
@@ -117,18 +116,12 @@ function editMarker(markerI) {
   }
 
   function changeMarkerIcon() {
-    const icon = this.value;
-    getSameTypeMarkers().forEach(marker => {
-      marker.icon = icon;
-      redrawIcon(marker);
-    });
-  }
+    selectIcon(marker.icon, value => {
+      const isExternal = value.startsWith("http");
+      byId("markerIcon").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
 
-  function selectMarkerIcon() {
-    selectIcon(marker.icon, icon => {
-      markerIcon.value = icon;
       getSameTypeMarkers().forEach(marker => {
-        marker.icon = icon;
+        marker.icon = value;
         redrawIcon(marker);
       });
     });
@@ -165,7 +158,7 @@ function editMarker(markerI) {
     getSameTypeMarkers().forEach(marker => {
       marker.size = size;
       const {i, x, y, hidden} = marker;
-      const el = !hidden && document.getElementById(`marker${i}`);
+      const el = !hidden && byId(`marker${i}`);
       if (!el) return;
 
       const zoomedSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
@@ -201,12 +194,23 @@ function editMarker(markerI) {
   }
 
   function redrawIcon({i, hidden, icon, dx = 50, dy = 50, px = 12}) {
-    const iconElement = !hidden && document.querySelector(`#marker${i} > text`);
-    if (iconElement) {
-      iconElement.innerHTML = icon;
-      iconElement.setAttribute("x", dx + "%");
-      iconElement.setAttribute("y", dy + "%");
-      iconElement.setAttribute("font-size", px + "px");
+    const isExternal = icon.startsWith("http");
+
+    const iconText = !hidden && document.querySelector(`#marker${i} > text`);
+    if (iconText) {
+      iconText.innerHTML = isExternal ? "" : icon;
+      iconText.setAttribute("x", dx + "%");
+      iconText.setAttribute("y", dy + "%");
+      iconText.setAttribute("font-size", px + "px");
+    }
+
+    const iconImage = !hidden && document.querySelector(`#marker${i} > image`);
+    if (iconImage) {
+      iconImage.setAttribute("x", dx / 2 + "%");
+      iconImage.setAttribute("y", dy / 2 + "%");
+      iconImage.setAttribute("width", px + "px");
+      iconImage.setAttribute("height", px + "px");
+      iconImage.setAttribute("href", isExternal ? icon : "");
     }
   }
 
@@ -241,10 +245,10 @@ function editMarker(markerI) {
   }
 
   function deleteMarker() {
-    Markers.deleteMarker(marker.i)
+    Markers.deleteMarker(marker.i);
     element.remove();
     $("#markerEditor").dialog("close");
-    if (document.getElementById("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
+    if (byId("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
   }
 
   function closeMarkerEditor() {

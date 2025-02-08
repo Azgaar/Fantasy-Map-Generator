@@ -37,6 +37,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Ability to set custom image as Marker or Regiment icon</li>
         <li>Submap and Transform tools rework</li>
         <li>Azgaar Bot to answer questions and provide help</li>
         <li>Labels: ability to set letter spacing</li>

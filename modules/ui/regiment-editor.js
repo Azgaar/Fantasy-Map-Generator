@@ -24,18 +24,17 @@ function editRegiment(selector) {
   modules.editRegiment = true;
 
   // add listeners
-  document.getElementById("regimentNameRestore").addEventListener("click", restoreName);
-  document.getElementById("regimentType").addEventListener("click", changeType);
-  document.getElementById("regimentName").addEventListener("change", changeName);
-  document.getElementById("regimentEmblem").addEventListener("input", changeEmblem);
-  document.getElementById("regimentEmblemSelect").addEventListener("click", selectEmblem);
-  document.getElementById("regimentAttack").addEventListener("click", toggleAttack);
-  document.getElementById("regimentRegenerateLegend").addEventListener("click", regenerateLegend);
-  document.getElementById("regimentLegend").addEventListener("click", editLegend);
-  document.getElementById("regimentSplit").addEventListener("click", splitRegiment);
-  document.getElementById("regimentAdd").addEventListener("click", toggleAdd);
-  document.getElementById("regimentAttach").addEventListener("click", toggleAttach);
-  document.getElementById("regimentRemove").addEventListener("click", removeRegiment);
+  byId("regimentNameRestore").addEventListener("click", restoreName);
+  byId("regimentType").addEventListener("click", changeType);
+  byId("regimentName").addEventListener("change", changeName);
+  byId("regimentEmblemChange").addEventListener("click", changeEmblem);
+  byId("regimentAttack").addEventListener("click", toggleAttack);
+  byId("regimentRegenerateLegend").addEventListener("click", regenerateLegend);
+  byId("regimentLegend").addEventListener("click", editLegend);
+  byId("regimentSplit").addEventListener("click", splitRegiment);
+  byId("regimentAdd").addEventListener("click", toggleAdd);
+  byId("regimentAttach").addEventListener("click", toggleAttach);
+  byId("regimentRemove").addEventListener("click", removeRegiment);
 
   // get regiment data element
   function getRegiment() {
@@ -43,11 +42,13 @@ function editRegiment(selector) {
   }
 
   function updateRegimentData(regiment) {
-    document.getElementById("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
-    document.getElementById("regimentName").value = regiment.name;
-    document.getElementById("regimentEmblem").value = regiment.icon;
-    const composition = document.getElementById("regimentComposition");
+    byId("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
+    byId("regimentName").value = regiment.name;
+    byId("regimentEmblem").innerHTML = regiment.icon.startsWith("http")
+      ? `<img src="${regiment.icon}" style="width: 1em; height: 1em;">`
+      : regiment.icon;
 
+    const composition = byId("regimentComposition");
     composition.innerHTML = options.military
       .map(u => {
         return `<div data-tip="${capitalize(u.name)} number. Input to change">
@@ -126,12 +127,13 @@ function editRegiment(selector) {
   function changeType() {
     const reg = getRegiment();
     reg.n = +!reg.n;
-    document.getElementById("regimentType").className = reg.n ? "icon-anchor" : "icon-users";
+    byId("regimentType").className = reg.n ? "icon-anchor" : "icon-users";
 
     const size = +armies.attr("box-size");
     const baseRect = elSelected.querySelectorAll("rect")[0];
     const iconRect = elSelected.querySelectorAll("rect")[1];
     const icon = elSelected.querySelector(".regimentIcon");
+    const image = elSelected.querySelector(".regimentIcon");
     const x = reg.n ? reg.x - size * 2 : reg.x - size * 3;
     baseRect.setAttribute("x", x);
     baseRect.setAttribute("width", reg.n ? size * 4 : size * 6);
@@ -148,19 +150,19 @@ function editRegiment(selector) {
     const reg = getRegiment(),
       regs = pack.states[elSelected.dataset.state].military;
     const name = Military.getName(reg, regs);
-    elSelected.dataset.name = reg.name = document.getElementById("regimentName").value = name;
-  }
-
-  function selectEmblem() {
-    selectIcon(regimentEmblem.value, v => {
-      regimentEmblem.value = v;
-      changeEmblem();
-    });
+    elSelected.dataset.name = reg.name = byId("regimentName").value = name;
   }
 
   function changeEmblem() {
-    const emblem = document.getElementById("regimentEmblem").value;
-    getRegiment().icon = elSelected.querySelector(".regimentIcon").innerHTML = emblem;
+    const regiment = getRegiment();
+
+    selectIcon(regiment.icon, value => {
+      regiment.icon = value;
+      const isExternal = value.startsWith("http");
+      byId("regimentEmblem").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
+      elSelected.querySelector(".regimentIcon").innerHTML = isExternal ? "" : value;
+      elSelected.querySelector(".regimentImage").setAttribute("href", isExternal ? value : "");
+    });
   }
 
   function changeUnit() {
@@ -224,8 +226,8 @@ function editRegiment(selector) {
   }
 
   function toggleAdd() {
-    document.getElementById("regimentAdd").classList.toggle("pressed");
-    if (document.getElementById("regimentAdd").classList.contains("pressed")) {
+    byId("regimentAdd").classList.toggle("pressed");
+    if (byId("regimentAdd").classList.contains("pressed")) {
       viewbox.style("cursor", "crosshair").on("click", addRegimentOnClick);
       tip("Click on map to create new regiment or fleet", true);
     } else {
@@ -252,8 +254,8 @@ function editRegiment(selector) {
   }
 
   function toggleAttack() {
-    document.getElementById("regimentAttack").classList.toggle("pressed");
-    if (document.getElementById("regimentAttack").classList.contains("pressed")) {
+    byId("regimentAttack").classList.toggle("pressed");
+    if (byId("regimentAttack").classList.contains("pressed")) {
       viewbox.style("cursor", "crosshair").on("click", attackRegimentOnClick);
       tip("Click on another regiment to initiate battle", true);
       armies.selectAll(":scope > g").classed("draggable", false);
@@ -324,8 +326,8 @@ function editRegiment(selector) {
   }
 
   function toggleAttach() {
-    document.getElementById("regimentAttach").classList.toggle("pressed");
-    if (document.getElementById("regimentAttach").classList.contains("pressed")) {
+    byId("regimentAttach").classList.toggle("pressed");
+    if (byId("regimentAttach").classList.contains("pressed")) {
       viewbox.style("cursor", "crosshair").on("click", attachRegimentOnClick);
       tip("Click on another regiment to unite both regiments. The current regiment will be removed", true);
       armies.selectAll(":scope > g").classed("draggable", false);
@@ -427,6 +429,7 @@ function editRegiment(selector) {
     const text = this.querySelector("text");
     const iconRect = this.querySelectorAll("rect")[1];
     const icon = this.querySelector(".regimentIcon");
+    const image = this.querySelector(".regimentImage");
 
     const self = elSelected === this;
     const baseLine = viewbox.select("g#regimentBase > line");
@@ -448,6 +451,8 @@ function editRegiment(selector) {
       iconRect.setAttribute("y", y1);
       icon.setAttribute("x", x1 - size);
       icon.setAttribute("y", y);
+      image.setAttribute("x", x1 - h);
+      image.setAttribute("y", y1);
       if (self) {
         baseLine.attr("x2", x).attr("y2", y);
         rotationControl
@@ -479,9 +484,9 @@ function editRegiment(selector) {
     viewbox.selectAll("g#regimentBase").remove();
     armies.selectAll(":scope > g").classed("draggable", false);
     armies.selectAll("g>g").call(d3.drag().on("drag", null));
-    document.getElementById("regimentAdd").classList.remove("pressed");
-    document.getElementById("regimentAttack").classList.remove("pressed");
-    document.getElementById("regimentAttach").classList.remove("pressed");
+    byId("regimentAdd").classList.remove("pressed");
+    byId("regimentAttack").classList.remove("pressed");
+    byId("regimentAttach").classList.remove("pressed");
     restoreDefaultEvents();
     elSelected = null;
   }
