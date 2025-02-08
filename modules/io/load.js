@@ -489,12 +489,16 @@ async function parseLoadedData(data, mapVersion) {
       if (textureHref) updateTextureSelectValue(textureHref);
     }
 
+    // data integrity checks
     {
-      const cells = pack.cells;
+      const {cells, vertices} = pack;
 
-      if (pack.cells.i.length !== pack.cells.state.length) {
-        const message = "[Data integrity] Striping issue detected. To fix edit the heightmap in ERASE mode";
-        ERROR && console.error(message);
+      const cellsMismatch = cells.i.length !== cells.state.length;
+      const featureVerticesMismatch = pack.features.some(f => f?.vertices?.some(vertex => !vertices.p[vertex]));
+
+      if (cellsMismatch || featureVerticesMismatch) {
+        const message = "[Data integrity] Striping issue detected. To fix try to edit the heightmap in ERASE mode";
+        throw new Error(message);
       }
 
       const invalidStates = [...new Set(cells.state)].filter(s => !pack.states[s] || pack.states[s].removed);
@@ -745,7 +749,7 @@ async function parseLoadedData(data, mapVersion) {
     $("#alert").dialog({
       resizable: false,
       title: "Loading error",
-      maxWidth: "50em",
+      maxWidth: "40em",
       buttons: {
         "Clear cache": () => cleanupData(),
         "Select file": function () {

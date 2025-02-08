@@ -51,6 +51,11 @@ function drawFeatures() {
 
 function getFeaturePath(feature) {
   const points = feature.vertices.map(vertex => pack.vertices.p[vertex]);
+  if (points.some(point => point === undefined)) {
+    ERROR && console.error("Undefined point in getFeaturePath");
+    return "";
+  }
+
   const simplifiedPoints = simplify(points, 0.3);
   const clippedPoints = clipPoly(simplifiedPoints, 1);
 
