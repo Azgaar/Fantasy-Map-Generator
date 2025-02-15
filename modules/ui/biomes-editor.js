@@ -317,7 +317,7 @@ function editBiomes() {
   }
 
   function regenerateIcons() {
-    ReliefIcons.draw();
+    drawReliefIcons();
     if (!layerIsOn("toggleRelief")) toggleRelief();
   }
 

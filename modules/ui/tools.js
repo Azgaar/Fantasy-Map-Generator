@@ -79,7 +79,7 @@ function processFeatureRegeneration(event, button) {
     $("#labels").fadeIn();
     drawStateLabels();
   } else if (button === "regenerateReliefIcons") {
-    ReliefIcons.draw();
+    drawReliefIcons();
     if (!layerIsOn("toggleRelief")) toggleRelief();
   } else if (button === "regenerateRoutes") {
     regenerateRoutes();
