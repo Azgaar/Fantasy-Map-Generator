@@ -248,10 +248,10 @@
   },
   "#ice": {
     "opacity": 0.9,
-    "fill": "#e8f0f6",
+    "fill": "#f1f8fe",
     "stroke": "#e8f0f6",
-    "stroke-width": 1,
-    "filter": "url(#dropShadow05)"
+    "stroke-width": 0.5,
+    "filter": "url(#dropShadow01)"
   },
   "#emblems": {
     "opacity": 0.9,
