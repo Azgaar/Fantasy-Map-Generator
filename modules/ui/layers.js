@@ -723,6 +723,7 @@ function drawCoordinates() {
     .data(data)
     .enter()
     .append("text")
+    .attr("text-rendering", "optimizeSpeed")
     .attr("x", d => d.x)
     .attr("y", d => d.y)
     .text(d => d.text);

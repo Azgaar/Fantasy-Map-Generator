@@ -179,6 +179,7 @@ function addBurg(point) {
   burgLabels
     .select("#towns")
     .append("text")
+    .attr("text-rendering", "optimizeSpeed")
     .attr("id", "burgLabel" + i)
     .attr("data-id", i)
     .attr("x", x)
@@ -464,6 +465,7 @@ function drawLegend(name, data) {
 
       labels
         .append("text")
+        .attr("text-rendering", "optimizeSpeed")
         .text(data[i][2])
         .attr("x", offset + colorBoxSize * 1.6)
         .attr("y", fontSize / 1.6 + lineHeight + l * lineHeight + vOffset);
@@ -474,6 +476,7 @@ function drawLegend(name, data) {
   const offset = colOffset + legend.node().getBBox().width / 2;
   labels
     .append("text")
+    .attr("text-rendering", "optimizeSpeed")
     .attr("text-anchor", "middle")
     .attr("font-weight", "bold")
     .attr("font-size", "1.2em")
@@ -1290,7 +1293,7 @@ function refreshAllEditors() {
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/states-editor.js?v=1.106.1");
+  const Editor = await import("../dynamic/editors/states-editor.js?v=1.108.1");
   Editor.open();
 }
 

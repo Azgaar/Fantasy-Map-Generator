@@ -743,6 +743,7 @@ function showStatesChart() {
 
   node
     .append("text")
+    .attr("text-rendering", "optimizeSpeed")
     .style("font-size", d => rn((d.r ** 0.97 * 4) / lp(d.data.name), 2) + "px")
     .selectAll("tspan")
     .data(d => d.data.name.split(exp))

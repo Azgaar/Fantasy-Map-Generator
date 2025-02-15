@@ -309,6 +309,7 @@ function editRegiment(selector) {
       .on("end", () => new Battle(attacker, defender));
     svg
       .append("text")
+      .attr("text-rendering", "optimizeSpeed")
       .attr("x", window.innerWidth / 2)
       .attr("y", window.innerHeight / 2)
       .text("⚔️")

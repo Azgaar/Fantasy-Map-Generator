@@ -706,6 +706,7 @@ function editProvinces() {
 
     node
       .append("text")
+      .attr("text-rendering", "optimizeSpeed")
       .attr("dx", ".2em")
       .attr("dy", "1em")
       .attr("x", d => d.x0)

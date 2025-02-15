@@ -43,6 +43,7 @@ const drawRegiments = function (regiments, s) {
   g.append("text")
     .attr("x", d => d.x)
     .attr("y", d => d.y)
+    .attr("text-rendering", "optimizeSpeed")
     .text(d => Military.getTotal(d));
   g.append("rect")
     .attr("fill", "currentColor")
@@ -52,6 +53,7 @@ const drawRegiments = function (regiments, s) {
     .attr("height", h);
   g.append("text")
     .attr("class", "regimentIcon")
+    .attr("text-rendering", "optimizeSpeed")
     .attr("x", d => x(d) - size)
     .attr("y", d => d.y)
     .text(d => (d.icon.startsWith("http") ? "" : d.icon));
@@ -91,7 +93,11 @@ const drawRegiment = function (reg, stateId) {
     .attr("transform", `rotate(${reg.angle || 0})`)
     .attr("transform-origin", `${reg.x}px ${reg.y}px`);
   g.append("rect").attr("x", x1).attr("y", y1).attr("width", w).attr("height", h);
-  g.append("text").attr("x", reg.x).attr("y", reg.y).text(Military.getTotal(reg));
+  g.append("text")
+    .attr("x", reg.x)
+    .attr("y", reg.y)
+    .attr("text-rendering", "optimizeSpeed")
+    .text(Military.getTotal(reg));
   g.append("rect")
     .attr("fill", "currentColor")
     .attr("x", x1 - h)
@@ -100,6 +106,7 @@ const drawRegiment = function (reg, stateId) {
     .attr("height", h);
   g.append("text")
     .attr("class", "regimentIcon")
+    .attr("text-rendering", "optimizeSpeed")
     .attr("x", x1 - size)
     .attr("y", reg.y)
     .text(reg.icon.startsWith("http") ? "" : reg.icon);

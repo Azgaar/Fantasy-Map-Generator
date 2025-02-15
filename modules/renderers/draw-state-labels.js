@@ -106,6 +106,7 @@ function drawStateLabels(list) {
 
       const textElement = textGroup
         .append("text")
+        .attr("text-rendering", "optimizeSpeed")
         .attr("id", "stateLabel" + stateId)
         .append("textPath")
         .attr("startOffset", "50%")

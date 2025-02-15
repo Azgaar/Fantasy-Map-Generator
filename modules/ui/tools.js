@@ -618,8 +618,10 @@ function addLabelOnClick() {
   group.classed("hidden", false);
   group
     .append("text")
+    .attr("text-rendering", "optimizeSpeed")
     .attr("id", id)
     .append("textPath")
+    .attr("text-rendering", "optimizeSpeed")
     .attr("xlink:href", "#textPath_" + id)
     .attr("startOffset", "50%")
     .attr("font-size", "100%")
