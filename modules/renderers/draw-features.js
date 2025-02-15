@@ -36,12 +36,14 @@ function drawFeatures() {
   defs.select("#land").html(html.landMask.join(""));
   defs.select("#water").html(html.waterMask.join(""));
 
-  Object.entries(html.coastline).forEach(([group, paths]) => {
-    coastline.select("#" + group).html(paths.join(""));
+  coastline.selectAll("g").each(function () {
+    const paths = html.coastline[this.id] || [];
+    d3.select(this).html(paths.join(""));
   });
 
-  Object.entries(html.lakes).forEach(([group, paths]) => {
-    lakes.select("#" + group).html(paths.join(""));
+  lakes.selectAll("g").each(function () {
+    const paths = html.lakes[this.id] || [];
+    d3.select(this).html(paths.join(""));
   });
 
   TIME && console.timeEnd("drawFeatures");
