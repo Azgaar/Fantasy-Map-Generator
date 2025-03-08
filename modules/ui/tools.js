@@ -872,7 +872,7 @@ function configMarkersGeneration() {
     </tr></thead>`;
 
     const lines = config.map(({type, icon, multiplier}) => {
-      const isExternal = icon.startsWith("http");
+      const isExternal = icon.startsWith("http") || icon.startsWith("data:image");
 
       return /* html */ `<tr>
         <td><input class="type" value="${type}" /></td>
@@ -898,7 +898,7 @@ function configMarkersGeneration() {
         const icon = image.getAttribute("src") || emoji.textContent;
 
         selectIcon(icon, value => {
-          const isExternal = value.startsWith("http");
+          const isExternal = value.startsWith("http") || value.startsWith("data:image");
           image.setAttribute("src", isExternal ? value : "");
           image.hidden = !isExternal;
           emoji.textContent = isExternal ? "" : value;

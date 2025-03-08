@@ -95,7 +95,7 @@ function editMarker(markerI) {
   }
 
   function updateInputs() {
-    byId("markerIcon").innerHTML = marker.icon.startsWith("http")
+    byId("markerIcon").innerHTML = marker.icon.startsWith("http") || marker.icon.startsWith("data:image")
       ? `<img src="${marker.icon}" style="width: 1em; height: 1em;">`
       : marker.icon;
 
@@ -117,7 +117,7 @@ function editMarker(markerI) {
 
   function changeMarkerIcon() {
     selectIcon(marker.icon, value => {
-      const isExternal = value.startsWith("http");
+      const isExternal = value.startsWith("http") || value.startsWith("data:image");
       byId("markerIcon").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
 
       getSameTypeMarkers().forEach(marker => {
@@ -194,7 +194,7 @@ function editMarker(markerI) {
   }
 
   function redrawIcon({i, hidden, icon, dx = 50, dy = 50, px = 12}) {
-    const isExternal = icon.startsWith("http");
+    const isExternal = icon.startsWith("http") || icon.startsWith("data:image/");
 
     const iconText = !hidden && document.querySelector(`#marker${i} > text`);
     if (iconText) {

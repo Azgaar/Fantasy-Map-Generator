@@ -56,14 +56,14 @@ const drawRegiments = function (regiments, s) {
     .attr("text-rendering", "optimizeSpeed")
     .attr("x", d => x(d) - size)
     .attr("y", d => d.y)
-    .text(d => (d.icon.startsWith("http") ? "" : d.icon));
+    .text(d => (d.icon.startsWith("http") || d.icon.startsWith("data:image") ? "" : d.icon));
   g.append("image")
     .attr("class", "regimentImage")
     .attr("x", d => x(d) - h)
     .attr("y", d => y(d))
     .attr("height", h)
     .attr("width", h)
-    .attr("href", d => (d.icon.startsWith("http") ? d.icon : ""));
+    .attr("href", d => (d.icon.startsWith("http") || d.icon.startsWith("data:image") ? d.icon : ""));
 };
 
 const drawRegiment = function (reg, stateId) {
@@ -109,14 +109,14 @@ const drawRegiment = function (reg, stateId) {
     .attr("text-rendering", "optimizeSpeed")
     .attr("x", x1 - size)
     .attr("y", reg.y)
-    .text(reg.icon.startsWith("http") ? "" : reg.icon);
+    .text(reg.icon.startsWith("http") || reg.icon.startsWith("data:image") ? "" : reg.icon);
   g.append("image")
     .attr("class", "regimentImage")
     .attr("x", x1 - h)
     .attr("y", y1)
     .attr("height", h)
     .attr("width", h)
-    .attr("href", reg.icon.startsWith("http") ? reg.icon : "");
+    .attr("href", (d.icon.startsWith("http") || d.icon.startsWith("data:image") ? reg.icon : ""));
 };
 
 // move one regiment to another

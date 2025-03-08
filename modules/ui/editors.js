@@ -1171,7 +1171,7 @@ function selectIcon(initial, callback) {
 
     // find external images used as icons and show them
     const externalResources = new Set();
-    const isExternal = url => url.startsWith("http");
+    const isExternal = url => url.startsWith("http") || url.startsWith("data:image");
 
     options.military.forEach(unit => {
       if (isExternal(unit.icon)) externalResources.add(unit.icon);
@@ -1204,14 +1204,14 @@ function selectIcon(initial, callback) {
     const image = document.createElement("div");
     image.style.cssText = `width: 2.2em; height: 2.2em; background-size: cover; background-image: url(${url})`;
     addedIcons.appendChild(image);
-    image.onclick = () => callback(ulr);
+    image.onclick = () => callback(url);
   }
 
   byId("addImage").onclick = function () {
     const input = this.previousElementSibling;
     const ulr = input.value;
     if (!ulr) return tip("Enter image URL to add", false, "error", 4000);
-    if (!ulr.match(/^(http|https):\/\//)) return tip("Enter valid URL", false, "error", 4000);
+    if (!ulr.match(/^((http|https):\/\/)|data\:image\//)) return tip("Enter valid URL", false, "error", 4000);
     addExternalImage(ulr);
     callback(ulr);
     input.value = "";
