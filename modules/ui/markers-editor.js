@@ -194,7 +194,7 @@ function editMarker(markerI) {
   }
 
   function redrawIcon({i, hidden, icon, dx = 50, dy = 50, px = 12}) {
-    const isExternal = icon.startsWith("http") || icon.startsWith("data:image/");
+    const isExternal = icon.startsWith("http") || icon.startsWith("data:image");
 
     const iconText = !hidden && document.querySelector(`#marker${i} > text`);
     if (iconText) {
