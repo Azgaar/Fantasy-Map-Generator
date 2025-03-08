@@ -131,7 +131,7 @@ class Battle {
 
     for (const u of options.military) {
       const label = capitalize(u.name.replace(/_/g, " "));
-      const isExternal = u.icon.startsWith("http");
+      const isExternal = u.icon.startsWith("http") || u.icon.startsWith("data:image");
       const iconHTML = isExternal ? `<img src="${u.icon}" width="15" height="15">` : u.icon;
       headers += `<th data-tip="${label}">${iconHTML}</th>`;
     }
@@ -148,7 +148,7 @@ class Battle {
     const distance = (Math.hypot(this.y - regiment.by, this.x - regiment.bx) * distanceScale) | 0; // distance between regiment and its base
     const color = state.color[0] === "#" ? state.color : "#999";
 
-    const isExternal = regiment.icon.startsWith("http");
+    const isExternal = regiment.icon.startsWith("http") || regiment.icon.startsWith("data:image");
     const iconHtml = isExternal
       ? `<image href="${regiment.icon}" x="0.1em" y="0.1em" width="1.2em" height="1.2em"></image>`
       : `<text x="50%" y="1em" style="text-anchor: middle">${regiment.icon}</text>`;

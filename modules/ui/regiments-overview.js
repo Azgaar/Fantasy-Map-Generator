@@ -73,7 +73,7 @@ function overviewRegiments(state) {
           <fill-box data-tip="${s.fullName}" fill="${s.color}" disabled></fill-box>
           <input data-tip="${s.fullName}" style="width:6em" value="${s.name}" readonly />
           ${
-            r.icon.startsWith("http")
+            r.icon.startsWith("http") || r.icon.startsWith("data:image")
               ? `<img src="${r.icon}" data-tip="Regiment's emblem" style="width:1.2em; height:1.2em; vertical-align: middle;">`
               : `<span data-tip="Regiment's emblem" style="width:1em">${r.icon}</span>`
           }

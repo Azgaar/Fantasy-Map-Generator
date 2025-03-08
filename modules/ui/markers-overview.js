@@ -72,7 +72,7 @@ function overviewMarkers() {
         return /* html */ `
           <div class="states" data-i=${i} data-type="${type}">
             ${
-              icon.startsWith("http")
+              icon.startsWith("http") || icon.startsWith("data:image")
                 ? `<img src="${icon}" data-tip="Marker icon" style="width:1.2em; height:1.2em; vertical-align: middle;">`
                 : `<span data-tip="Marker icon" style="width:1.2em">${icon}</span>`
             }

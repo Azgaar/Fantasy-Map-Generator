@@ -286,7 +286,7 @@ function overviewMilitary() {
 
       if (type === "icon") {
         return selectIcon(el.textContent, function (value) {
-          el.innerHTML = value.startsWith("http")
+          el.innerHTML = value.startsWith("http") || value.startsWith("data:image")
             ? `<img src="${value}" style="width:1.2em;height:1.2em;pointer-events:none;">`
             : value;
         });
@@ -339,7 +339,7 @@ function overviewMilitary() {
       row.innerHTML = /* html */ `<td>
           <button data-type="icon" data-tip="Click to select unit icon">
             ${
-              icon.startsWith("http")
+              icon.startsWith("http") || icon.startsWith("data:image")
                 ? `<img src="${icon}" style="width:1.2em;height:1.2em;pointer-events:none;">`
                 : icon || ""
             }

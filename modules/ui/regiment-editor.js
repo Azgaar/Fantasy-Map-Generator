@@ -44,7 +44,7 @@ function editRegiment(selector) {
   function updateRegimentData(regiment) {
     byId("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
     byId("regimentName").value = regiment.name;
-    byId("regimentEmblem").innerHTML = regiment.icon.startsWith("http")
+    byId("regimentEmblem").innerHTML = regiment.icon.startsWith("http") || regiment.icon.startsWith("data:image")
       ? `<img src="${regiment.icon}" style="width: 1em; height: 1em;">`
       : regiment.icon;
 
@@ -158,7 +158,7 @@ function editRegiment(selector) {
 
     selectIcon(regiment.icon, value => {
       regiment.icon = value;
-      const isExternal = value.startsWith("http");
+      const isExternal = value.startsWith("http") || value.startsWith("data:image");
       byId("regimentEmblem").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
       elSelected.querySelector(".regimentIcon").innerHTML = isExternal ? "" : value;
       elSelected.querySelector(".regimentImage").setAttribute("href", isExternal ? value : "");
