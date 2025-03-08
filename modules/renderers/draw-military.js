@@ -116,7 +116,7 @@ const drawRegiment = function (reg, stateId) {
     .attr("y", y1)
     .attr("height", h)
     .attr("width", h)
-    .attr("href", (d.icon.startsWith("http") || d.icon.startsWith("data:image") ? reg.icon : ""));
+    .attr("href", reg.icon.startsWith("http") || reg.icon.startsWith("data:image") ? reg.icon : "");
 };
 
 // move one regiment to another
