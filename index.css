@@ -166,6 +166,7 @@ t,
 #texture,
 #landmass,
 #vignette,
+#gridOverlay,
 #fogging {
   pointer-events: none;
 }
