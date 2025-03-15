@@ -131,7 +131,9 @@ class Battle {
 
     for (const u of options.military) {
       const label = capitalize(u.name.replace(/_/g, " "));
-      headers += `<th data-tip="${label}">${u.icon}</th>`;
+      const isExternal = u.icon.startsWith("http") || u.icon.startsWith("data:image");
+      const iconHTML = isExternal ? `<img src="${u.icon}" width="15" height="15">` : u.icon;
+      headers += `<th data-tip="${label}">${iconHTML}</th>`;
     }
 
     headers += "<th data-tip='Total military''>Total</th></tr></thead>";
@@ -145,9 +147,13 @@ class Battle {
     const state = pack.states[regiment.state];
     const distance = (Math.hypot(this.y - regiment.by, this.x - regiment.bx) * distanceScale) | 0; // distance between regiment and its base
     const color = state.color[0] === "#" ? state.color : "#999";
+
+    const isExternal = regiment.icon.startsWith("http") || regiment.icon.startsWith("data:image");
+    const iconHtml = isExternal
+      ? `<image href="${regiment.icon}" x="0.1em" y="0.1em" width="1.2em" height="1.2em"></image>`
+      : `<text x="50%" y="1em" style="text-anchor: middle">${regiment.icon}</text>`;
     const icon = `<svg width="1.4em" height="1.4em" style="margin-bottom: -.6em; stroke: #333">
-      <rect x="0" y="0" width="100%" height="100%" fill="${color}"></rect>
-      <text x="0" y="1.04em" style="">${regiment.icon}</text></svg>`;
+      <rect x="0" y="0" width="100%" height="100%" fill="${color}"></rect>${iconHtml}</svg>`;
     const body = `<tbody id="battle${state.i}-${regiment.i}">`;
 
     let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment" data-tip="${

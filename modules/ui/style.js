@@ -727,19 +727,19 @@ styleHeightmapCurve.on("change", e => {
 
 styleReliefSet.on("change", e => {
   terrain.attr("set", e.target.value);
-  ReliefIcons.draw();
+  drawReliefIcons();
   if (!layerIsOn("toggleRelief")) toggleRelief();
 });
 
 styleReliefSize.on("change", e => {
   terrain.attr("size", e.target.value);
-  ReliefIcons.draw();
+  drawReliefIcons();
   if (!layerIsOn("toggleRelief")) toggleRelief();
 });
 
 styleReliefDensity.on("change", e => {
   terrain.attr("density", e.target.value);
-  ReliefIcons.draw();
+  drawReliefIcons();
   if (!layerIsOn("toggleRelief")) toggleRelief();
 });
 

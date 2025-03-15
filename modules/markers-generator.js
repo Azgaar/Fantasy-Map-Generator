@@ -11,7 +11,7 @@ window.Markers = (function () {
     /*
       Default markers config:
       type - short description (snake-case)
-      icon - unicode character, make sure it's supported by most of the browsers. Source: emojipedia.org
+      icon - unicode character or url to image
       dx: icon offset in x direction, in pixels
       dy: icon offset in y direction, in pixels
       min: minimum number of candidates to add at least 1 marker

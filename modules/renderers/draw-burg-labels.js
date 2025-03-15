@@ -19,6 +19,7 @@ function drawBurgLabels() {
       .data(burgsInGroup)
       .enter()
       .append("text")
+      .attr("text-rendering", "optimizeSpeed")
       .attr("id", d => "burgLabel" + d.i)
       .attr("data-id", d => d.i)
       .attr("x", d => d.x)
@@ -38,6 +39,7 @@ function drawBurgLabel(burg) {
 
   group
     .append("text")
+    .attr("text-rendering", "optimizeSpeed")
     .attr("id", "burgLabel" + burg.i)
     .attr("data-id", burg.i)
     .attr("x", burg.x)

@@ -42,9 +42,12 @@ function drawMarker(marker, rescale = 1) {
   const viewX = rn(x - zoomSize / 2, 1);
   const viewY = rn(y - zoomSize, 1);
 
+  const isExternal = icon.startsWith("http") || icon.startsWith("data:image");
+
   return /* html */ `
     <svg id="${id}" viewbox="0 0 30 30" width="${zoomSize}" height="${zoomSize}" x="${viewX}" y="${viewY}">
       <g>${getPin(pin, fill, stroke)}</g>
-      <text x="${dx}%" y="${dy}%" font-size="${px}px" >${icon}</text>
+      <text x="${dx}%" y="${dy}%" font-size="${px}px" >${isExternal ? "" : icon}</text>
+      <image x="${dx / 2}%" y="${dy / 2}%" width="${px}px" height="${px}px" href="${isExternal ? icon : ""}" />
     </svg>`;
 }

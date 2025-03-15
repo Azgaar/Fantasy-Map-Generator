@@ -192,7 +192,7 @@ function drawLayers() {
   if (layerIsOn("toggleCoordinates")) drawCoordinates();
   if (layerIsOn("toggleCompass")) compass.style("display", "block");
   if (layerIsOn("toggleRivers")) drawRivers();
-  if (layerIsOn("toggleRelief")) ReliefIcons.draw();
+  if (layerIsOn("toggleRelief")) drawReliefIcons();
   if (layerIsOn("toggleReligions")) drawReligions();
   if (layerIsOn("toggleCultures")) drawCultures();
   if (layerIsOn("toggleStates")) drawStates();
@@ -424,13 +424,14 @@ function drawIce() {
   const {temp, h} = cells;
   Math.random = aleaPRNG(seed);
 
-  const ICEBERG_MAX_TEMP = 1;
-  const ICE_SHIELD_MAX_TEMP = -8;
+  const ICEBERG_MAX_TEMP = 0;
+  const GLACIER_MAX_TEMP = -8;
+  const minMaxTemp = d3.min(temp);
 
-  // very cold: draw ice shields
+  // cold land: draw glaciers
   {
     const type = "iceShield";
-    const getType = cellId => (temp[cellId] <= ICE_SHIELD_MAX_TEMP ? type : null);
+    const getType = cellId => (h[cellId] >= 20 && temp[cellId] <= GLACIER_MAX_TEMP ? type : null);
     const isolines = getIsolines(grid, getType, {polygons: true});
     isolines[type]?.polygons?.forEach(points => {
       const clipped = clipPoly(points);
@@ -438,21 +439,18 @@ function drawIce() {
     });
   }
 
-  // mildly cold: draw icebergs
+  // cold water: draw icebergs
   for (const cellId of grid.cells.i) {
     const t = temp[cellId];
-    if (t > ICEBERG_MAX_TEMP) continue; // too warm: no icebergs
-    if (t <= ICE_SHIELD_MAX_TEMP) continue; // already drawn as ice shield
     if (h[cellId] >= 20) continue; // no icebergs on land
+    if (t > ICEBERG_MAX_TEMP) continue; // too warm: no icebergs
     if (features[cells.f[cellId]].type === "lake") continue; // no icebers on lakes
+    if (P(0.8)) continue; // skip most of eligible cells
 
-    const tNormalized = normalize(t, -8, 2);
-    const randomFactor = t > -5 ? 0.4 + rand() * 1.2 : 1;
-    if (P(tNormalized ** 0.5 * randomFactor)) continue; // cold: skip some cells
-
-    let defaultSize = 1 - tNormalized; // iceberg size: 0 = zero size, 1 = full size
-    if (cells.t[cellId] === -1) defaultSize /= 1.3; // coasline: smaller icebergs
-    const size = minmax(rn(defaultSize * randomFactor, 2), 0.08, 1);
+    const randomFactor = 0.8 + rand() * 0.4; // random size factor
+    let baseSize = (1 - normalize(t, minMaxTemp, 1)) * 0.8; // size: 0 = zero size, 1 = full size
+    if (cells.t[cellId] === -1) baseSize /= 1.3; // coasline: smaller icebergs
+    const size = minmax(rn(baseSize * randomFactor, 2), 0.1, 1);
 
     const [cx, cy] = grid.points[cellId];
     const points = getGridPolygon(cellId).map(([x, y]) => [rn(lerp(cx, x, size), 2), rn(lerp(cy, y, size), 2)]);
@@ -723,6 +721,7 @@ function drawCoordinates() {
     .data(data)
     .enter()
     .append("text")
+    .attr("text-rendering", "optimizeSpeed")
     .attr("x", d => d.x)
     .attr("y", d => d.y)
     .text(d => d.text);
@@ -743,7 +742,7 @@ function toggleCompass(event) {
 function toggleRelief(event) {
   if (!layerIsOn("toggleRelief")) {
     turnButtonOn("toggleRelief");
-    if (!terrain.selectAll("*").size()) ReliefIcons.draw();
+    if (!terrain.selectAll("*").size()) drawReliefIcons();
     $("#terrain").fadeIn();
     if (event && isCtrlClick(event)) editStyle("terrain");
   } else {

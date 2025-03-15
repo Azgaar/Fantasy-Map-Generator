@@ -43,6 +43,7 @@ function drawScaleBar(scaleBar, scaleLevel) {
     .data(d3.range(0, 6))
     .enter()
     .append("text")
+    .attr("text-rendering", "optimizeSpeed")
     .attr("x", d => rn((d * length) / 5, 2))
     .attr("y", 0)
     .attr("dy", "-.6em")
@@ -52,6 +53,7 @@ function drawScaleBar(scaleBar, scaleLevel) {
   if (label) {
     texts
       .append("text")
+      .attr("text-rendering", "optimizeSpeed")
       .attr("x", (length + 1) / 2)
       .attr("dy", ".6em")
       .attr("dominant-baseline", "text-before-edge")

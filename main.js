@@ -1071,7 +1071,7 @@ function generatePrecipitation() {
           const from = west[0][0],
             to = west[west.length - 1][0];
           const y = (grid.points[from][1] + grid.points[to][1]) / 2;
-          wind.append("text").attr("x", 20).attr("y", y).text("\u21C9");
+          wind.append("text").attr("text-rendering", "optimizeSpeed").attr("x", 20).attr("y", y).text("\u21C9");
         }
       }
       if (easterly.length > 1) {
@@ -1082,6 +1082,7 @@ function generatePrecipitation() {
           const y = (grid.points[from][1] + grid.points[to][1]) / 2;
           wind
             .append("text")
+            .attr("text-rendering", "optimizeSpeed")
             .attr("x", graphWidth - 52)
             .attr("y", y)
             .text("\u21C7");
@@ -1092,12 +1093,14 @@ function generatePrecipitation() {
     if (northerly)
       wind
         .append("text")
+        .attr("text-rendering", "optimizeSpeed")
         .attr("x", graphWidth / 2)
         .attr("y", 42)
         .text("\u21CA");
     if (southerly)
       wind
         .append("text")
+        .attr("text-rendering", "optimizeSpeed")
         .attr("x", graphWidth / 2)
         .attr("y", graphHeight - 20)
         .text("\u21C8");

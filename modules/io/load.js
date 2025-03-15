@@ -257,6 +257,7 @@ async function parseLoadedData(data, mapVersion) {
       if (settings[23]) rescaleLabels.checked = +settings[23];
       if (settings[24]) urbanDensity = urbanDensityInput.value = +settings[24];
       if (settings[25]) longitudeInput.value = longitudeOutput.value = minmax(settings[25] || 50, 0, 100);
+      if (settings[26]) growthRate.value = settings[26];
     }
 
     {
@@ -471,7 +472,7 @@ async function parseLoadedData(data, mapVersion) {
 
     {
       // dynamically import and run auto-update script
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.105.24");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.108.0");
       resolveVersionConflicts(mapVersion);
     }
 
@@ -489,12 +490,16 @@ async function parseLoadedData(data, mapVersion) {
       if (textureHref) updateTextureSelectValue(textureHref);
     }
 
+    // data integrity checks
     {
-      const cells = pack.cells;
+      const {cells, vertices} = pack;
 
-      if (pack.cells.i.length !== pack.cells.state.length) {
-        const message = "[Data integrity] Striping issue detected. To fix edit the heightmap in ERASE mode";
-        ERROR && console.error(message);
+      const cellsMismatch = cells.i.length !== cells.state.length;
+      const featureVerticesMismatch = pack.features.some(f => f?.vertices?.some(vertex => !vertices.p[vertex]));
+
+      if (cellsMismatch || featureVerticesMismatch) {
+        const message = "[Data integrity] Striping issue detected. To fix try to edit the heightmap in ERASE mode";
+        throw new Error(message);
       }
 
       const invalidStates = [...new Set(cells.state)].filter(s => !pack.states[s] || pack.states[s].removed);
@@ -745,7 +750,7 @@ async function parseLoadedData(data, mapVersion) {
     $("#alert").dialog({
       resizable: false,
       title: "Loading error",
-      maxWidth: "50em",
+      maxWidth: "40em",
       buttons: {
         "Clear cache": () => cleanupData(),
         "Select file": function () {

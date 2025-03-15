@@ -11,8 +11,8 @@
       name="description"
       content="Free web app that helps fantasy writers, game masters, and cartographers create and edit fantasy maps"
     />
-
     <meta property="og:url" content="https://azgaar.github.io/Fantasy-Map-Generator" />
+
     <meta property="og:title" content="Azgaar's Fantasy Map Generator" />
     <meta
       property="og:description"
@@ -138,7 +138,7 @@
       }
     </style>
 
-    <link rel="preload" href="index.css?v=1.106.3" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+    <link rel="preload" href="index.css?v=1.108.6" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link rel="preload" href="icons.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
     <link
       rel="preload"
@@ -354,9 +354,7 @@
           <g id="statePaths"></g>
           <g id="defs-emblems"></g>
           <mask id="land"></mask>
-          <mask id="water">
-            <rect x="0" y="0" width="100%" height="100%" fill="white" />
-          </mask>
+          <mask id="water"></mask>
           <mask id="fog" style="stroke-width: 10; stroke: black; stroke-linejoin: round; stroke-opacity: 0.1">
             <rect x="0" y="0" width="100%" height="100%" fill="white" stroke="none" />
           </mask>
@@ -3575,9 +3573,9 @@
             <input id="markerType" style="width: 10.3em" />
           </div>
 
-          <div data-tip="Marker icon. Paste any Unicode symbol or select from the predefined list">
+          <div data-tip="Marker icon" style="display: flex; align-items: center">
             <div class="label">Icon:</div>
-            <input id="markerIcon" style="width: 5em" />
+            <div id="markerIcon" style="font-size: 1.5em; width: 3.7em">👑</div>
             <button id="markerIconSelect" style="width: 5em">select</button>
           </div>
 
@@ -3666,10 +3664,10 @@
             ></i>
           </div>
 
-          <div data-tip="Regiment emblem. Paste any Unicode symbol or select from the predefined list">
-            <div class="label italic">Emblem:</div>
-            <input id="regimentEmblem" style="width: 5em" />
-            <button id="regimentEmblemSelect" style="padding: 0; width: 4.5em">select</button>
+          <div data-tip="Regiment emblem" style="display: flex; align-items: center">
+            <div class="label">Emblem:</div>
+            <div id="regimentEmblem" style="font-size: 1.5em; width: 3.7em"></div>
+            <button id="regimentEmblemChange" style="padding: 0; width: 4.5em">change</button>
           </div>
 
           <div id="regimentComposition" class="table"></div>
@@ -5823,11 +5821,24 @@
       </div>
 
       <div id="iconSelector" style="display: none" class="dialog">
-        <table id="iconTable" class="table pointer" style="font-size: 2em; text-align: center; width: 100%"></table>
-        <div style="font-style: italic; font-size: 1.2em; margin: 0.4em 0 0 0.4em">
-          <span>Select from the list or paste a Unicode character here: </span>
-          <input id="iconInput" style="width: 2.5em" />
-          <span>. See <a href="https://emojipedia.org" target="_blank">Emojipedia</a> for reference</span>
+        <div>
+          <b>Unicode emojis</b>
+          <div style="font-style: italic">
+            <span>Select from the list or paste a Unicode character here: </span>
+            <input id="iconInput" style="width: 2.5em" />
+            <span>. See <a href="https://emojidb.org" target="_blank">EmojiDB</a> to search for emojis</span>
+          </div>
+          <table id="iconTable" class="table pointer" style="font-size: 2em; text-align: center; width: 100%"></table>
+        </div>
+
+        <div style="margin-top: 0.5em">
+          <b>External images</b>
+          <div style="font-style: italic">
+            <span>Paste link to the image here: </span>
+            <input id="imageInput" style="width: 20em" />
+            <button id="addImage" type="button">Add</button>
+          </div>
+          <div id="addedIcons" class="pointer" style="display: flex; flex-wrap: wrap; max-width: 420px"></div>
         </div>
       </div>
 
@@ -8312,7 +8323,7 @@
     <script src="config/precreated-heightmaps.js"></script>
     <script src="modules/heightmap-generator.js?v=1.99.00"></script>
     <script src="modules/features.js?v=1.104.0"></script>
-    <script src="modules/ocean-layers.js?v=1.104.8"></script>
+    <script src="modules/ocean-layers.js?v=1.108.4"></script>
     <script src="modules/river-generator.js?v=1.106.7"></script>
     <script src="modules/lakes.js?v=1.99.00"></script>
     <script src="modules/biomes.js?v=1.99.00"></script>
@@ -8323,8 +8334,8 @@
     <script src="modules/provinces-generator.js?v=1.106.0"></script>
     <script src="modules/routes-generator.js?v=1.106.0"></script>
     <script src="modules/religions-generator.js?v=1.106.0"></script>
-    <script src="modules/military-generator.js?v=1.104.0"></script>
-    <script src="modules/markers-generator.js?v=1.104.0"></script>
+    <script src="modules/military-generator.js?v=1.107.0"></script>
+    <script src="modules/markers-generator.js?v=1.107.0"></script>
     <script src="modules/zones-generator.js?v=1.106.0"></script>
     <script src="modules/coa-generator.js?v=1.99.00"></script>
     <script src="modules/resample.js?v=1.106.4"></script>
@@ -8333,21 +8344,20 @@
     <script src="libs/lineclip.min.js?v1.105.0"></script>
     <script src="libs/simplify.js?v1.105.6"></script>
     <script src="modules/fonts.js?v=1.99.03"></script>
-    <script src="modules/ui/layers.js?v=1.106.0"></script>
+    <script src="modules/ui/layers.js?v=1.108.4"></script>
     <script src="modules/ui/measurers.js?v=1.99.00"></script>
     <script src="modules/ui/style-presets.js?v=1.100.00"></script>
     <script src="modules/ui/general.js?v=1.100.00"></script>
     <script src="modules/ui/options.js?v=1.106.2"></script>
-    <script src="main.js?v=1.106.0"></script>
+    <script src="main.js?v=1.108.1"></script>
 
-    <script defer src="modules/relief-icons.js?v=1.99.05"></script>
-    <script defer src="modules/ui/style.js?v=1.104.0"></script>
-    <script defer src="modules/ui/editors.js?v=1.106.1"></script>
-    <script defer src="modules/ui/tools.js?v=1.106.0"></script>
+    <script defer src="modules/ui/style.js?v=1.108.4"></script>
+    <script defer src="modules/ui/editors.js?v=1.108.5"></script>
+    <script defer src="modules/ui/tools.js?v=1.108.5"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.105.4"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=1.105.2"></script>
-    <script defer src="modules/ui/provinces-editor.js?v=1.106.1"></script>
-    <script defer src="modules/ui/biomes-editor.js?v=1.99.05"></script>
+    <script defer src="modules/ui/provinces-editor.js?v=1.108.1"></script>
+    <script defer src="modules/ui/biomes-editor.js?v=1.108.4"></script>
     <script defer src="modules/ui/namesbase-editor.js?v=1.105.11"></script>
     <script defer src="modules/ui/elevation-profile.js?v=1.99.00"></script>
     <script defer src="modules/ui/temperature-graph.js?v=1.106.6"></script>
@@ -8364,20 +8374,20 @@
     <script defer src="modules/ui/burg-group-editor.js?v=1.106.0"></script>
     <script defer src="modules/ui/burg-editor.js?v=1.106.6"></script>
     <script defer src="modules/ui/units-editor.js?v=1.104.0"></script>
-    <script defer src="modules/ui/notes-editor.js?v=1.99.06"></script>
+    <script defer src="modules/ui/notes-editor.js?v=1.107.3"></script>
     <script defer src="modules/ui/ai-generator.js?v=1.105.22"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/zones-editor.js?v=1.105.20"></script>
     <script defer src="modules/ui/burgs-overview.js?v=1.105.15"></script>
     <script defer src="modules/ui/routes-overview.js?v=1.104.3"></script>
     <script defer src="modules/ui/rivers-overview.js?v=1.99.00"></script>
-    <script defer src="modules/ui/military-overview.js?v=1.99.00"></script>
-    <script defer src="modules/ui/regiments-overview.js?v=1.104.0"></script>
-    <script defer src="modules/ui/markers-overview.js?v=1.99.00"></script>
-    <script defer src="modules/ui/regiment-editor.js?v=1.104.14"></script>
-    <script defer src="modules/ui/battle-screen.js?v=1.99.00"></script>
+    <script defer src="modules/ui/military-overview.js?v=1.108.5"></script>
+    <script defer src="modules/ui/regiments-overview.js?v=1.108.5"></script>
+    <script defer src="modules/ui/markers-overview.js?v=1.108.5"></script>
+    <script defer src="modules/ui/regiment-editor.js?v=1.108.5"></script>
+    <script defer src="modules/ui/battle-screen.js?v=1.108.5"></script>
     <script defer src="modules/ui/emblems-editor.js?v=1.99.00"></script>
-    <script defer src="modules/ui/markers-editor.js?v=1.99.00"></script>
+    <script defer src="modules/ui/markers-editor.js?v=1.108.5"></script>
     <script defer src="modules/ui/3d.js?v=1.99.00"></script>
     <script defer src="modules/ui/submap-tool.js?v=1.106.2"></script>
     <script defer src="modules/ui/transform-tool.js?v=1.106.2"></script>
@@ -8385,21 +8395,22 @@
     <script defer src="modules/coa-renderer.js?v=1.99.00"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-    <script defer src="modules/io/save.js?v=1.100.00"></script>
-    <script defer src="modules/io/load.js?v=1.105.24"></script>
+    <script defer src="modules/io/save.js?v=1.107.4"></script>
+    <script defer src="modules/io/load.js?v=1.108.0"></script>
     <script defer src="modules/io/cloud.js?v=1.106.0"></script>
     <script defer src="modules/io/export.js?v=1.100.00"></script>
 
-    <script defer src="modules/renderers/draw-features.js?v=1.106.0"></script>
+    <script defer src="modules/renderers/draw-features.js?v=1.108.2"></script>
     <script defer src="modules/renderers/draw-borders.js?v=1.104.0"></script>
     <script defer src="modules/renderers/draw-heightmap.js?v=1.104.0"></script>
-    <script defer src="modules/renderers/draw-markers.js?v=1.104.0"></script>
-    <script defer src="modules/renderers/draw-scalebar.js?v=1.104.0"></script>
+    <script defer src="modules/renderers/draw-markers.js?v=1.108.5"></script>
+    <script defer src="modules/renderers/draw-scalebar.js?v=1.108.1"></script>
     <script defer src="modules/renderers/draw-temperature.js?v=1.104.0"></script>
     <script defer src="modules/renderers/draw-emblems.js?v=1.104.0"></script>
-    <script defer src="modules/renderers/draw-military.js?v=1.104.13"></script>
-    <script defer src="modules/renderers/draw-state-labels.js?v=1.106.0"></script>
-    <script defer src="modules/renderers/draw-burg-labels.js?v=1.104.0"></script>
+    <script defer src="modules/renderers/draw-military.js?v=1.108.5"></script>
+    <script defer src="modules/renderers/draw-state-labels.js?v=1.108.1"></script>
+    <script defer src="modules/renderers/draw-burg-labels.js?v=1.108.1"></script>
     <script defer src="modules/renderers/draw-burg-icons.js?v=1.104.0"></script>
+    <script defer src="modules/renderers/draw-relief-icons.js?v=1.108.4"></script>
   </body>
 </html>

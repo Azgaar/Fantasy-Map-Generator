@@ -68,7 +68,8 @@ function prepareMapData() {
     stylePreset.value,
     +rescaleLabels.checked,
     urbanDensity,
-    longitudeOutput.value
+    longitudeOutput.value,
+    growthRate.value
   ].join("|");
   const coords = JSON.stringify(mapCoordinates);
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
