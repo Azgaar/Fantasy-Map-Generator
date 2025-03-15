@@ -313,6 +313,7 @@ function editBurgGroups() {
       }, {});
       return group;
     });
+    localStorage.setItem("burg-groups", JSON.stringify(options.burgs.groups));
 
     // put burgs to new groups
     const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
@@ -321,6 +322,7 @@ function editBurgGroups() {
 
     if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
     if (layerIsOn("toggleLabels")) drawBurgLabels();
+    if (byId("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
 
     $("#burgGroupsEditor").dialog("close");
   }

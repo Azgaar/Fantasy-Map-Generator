@@ -161,7 +161,7 @@ let options = {
   stateLabelsMode: "auto",
   showBurgPreview: true,
   burgs: {
-    groups: Burgs.getDefaultGroups()
+    groups: JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups()
   }
 };
 
