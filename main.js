@@ -166,10 +166,7 @@ let options = {
 };
 
 // global style object; in v2.0 to be used for all map styles and render settings
-let style = {
-  burgLabels: {},
-  burgIcons: {}
-};
+let style = {burgLabels: {}, burgIcons: {}, anchors: {}};
 
 let biomesData = Biomes.getDefault();
 let nameBases = Names.getNameBases(); // cultures-related data

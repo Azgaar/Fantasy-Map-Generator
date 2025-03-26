@@ -284,7 +284,7 @@ function selectStyleElement() {
     }
   }
 
-  if (styleElement == "burgIcons") {
+  if (styleElement === "burgIcons") {
     styleBurgIcons.style.display = "block";
     styleBurgIconsIcon.value = el.attr("data-icon");
     styleBurgIconsIconSize.value = el.attr("font-size");
@@ -302,13 +302,15 @@ function selectStyleElement() {
     styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
   }
 
-  if (styleElement == "anchors") {
+  if (styleElement === "anchors") {
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
+    styleSize.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#ffffff";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3e3e4b";
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0.24;
+    styleFontSize.value = el.attr("font-size") || 1;
   }
 
   if (styleElement === "legend") {

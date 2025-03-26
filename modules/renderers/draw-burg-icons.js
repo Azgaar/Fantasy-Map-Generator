@@ -8,43 +8,23 @@ function drawBurgIcons() {
     const burgsInGroup = pack.burgs.filter(b => b.group === name && !b.removed);
     if (!burgsInGroup.length) continue;
 
-    const g = burgIcons.select("#" + name);
-    if (g.empty()) continue;
+    const burgGroup = document.querySelector("#burgIcons > g#" + name);
+    if (!burgGroup) continue;
 
-    const icon = g.attr("data-icon") || "#icon-circle";
+    const icon = burgGroup.dataset.icon || "#icon-circle";
+    burgGroup.innerHTML = burgsInGroup
+      .map(b => `<use id="burg${b.i}" data-id="${b.i}" href="${icon}" x="${b.x}" y="${b.y}"></use>`)
+      .join("");
 
-    g.selectAll("use")
-      .data(burgsInGroup)
-      .enter()
-      .append("use")
-      .attr("href", icon)
-      .attr("id", d => "burg" + d.i)
-      .attr("data-id", d => d.i)
-      .attr("x", d => d.x)
-      .attr("y", d => d.y);
+    const portsInGroup = burgsInGroup.filter(b => b.port);
+    if (!portsInGroup.length) continue;
 
-    // g.selectAll("circle")
-    //   .data(burgsInGroup)
-    //   .enter()
-    //   .append("circle")
-    //   .attr("id", d => "burg_circle" + d.i)
-    //   .attr("cx", d => d.x)
-    //   .attr("cy", d => d.y)
-    //   .attr("r", 0.2)
-    //   .attr("fill", "red")
-    //   .attr("stroke", "none");
+    const portGroup = document.querySelector("#anchors > g#" + name);
+    if (!portGroup) continue;
 
-    // capitalAnchors
-    //   .selectAll("use")
-    //   .data(capital.filter(c => c.port))
-    //   .enter()
-    //   .append("use")
-    //   .attr("xlink:href", "#icon-anchor")
-    //   .attr("data-id", d => d.i)
-    //   .attr("x", d => rn(d.x - capitalAnchorsSize * 0.47, 2))
-    //   .attr("y", d => rn(d.y - capitalAnchorsSize * 0.47, 2))
-    //   .attr("width", capitalAnchorsSize)
-    //   .attr("height", capitalAnchorsSize);
+    portGroup.innerHTML = portsInGroup
+      .map(b => `<use id="anchor${b.i}" data-id="${b.i}" href="#icon-anchor" x="${b.x}" y="${b.y}"></use>`)
+      .join("");
   }
 
   TIME && console.timeEnd("drawBurgIcons");
@@ -59,14 +39,26 @@ function drawBurgIcon(burg) {
     .attr("data-id", burg.i)
     .attr("x", burg.x)
     .attr("y", burg.y);
+
+  if (burg.port) {
+    anchors
+      .select("#" + burg.group)
+      .append("use")
+      .attr("href", "#icon-anchor")
+      .attr("id", "anchor" + burg.i)
+      .attr("data-id", burg.i)
+      .attr("x", burg.x)
+      .attr("y", burg.y);
+  }
 }
 
 function createIconGroups() {
-  const defaultStyle = style.burgIcons.town || Object.values(style.burgIcons)[0];
+  const defaultIconStyle = style.burgIcons.town || Object.values(style.burgIcons)[0];
+  const defaultAnchorStyle = style.anchors.town || Object.values(style.anchors)[0];
 
   // save existing styles and remove all groups
   document.querySelectorAll("g#burgIcons > g").forEach(group => {
-    const groupStyle = Object.keys(defaultStyle).reduce((acc, key) => {
+    const groupStyle = Object.keys(defaultIconStyle).reduce((acc, key) => {
       acc[key] = group.getAttribute(key);
       return acc;
     }, {});
@@ -74,13 +66,28 @@ function createIconGroups() {
     group.remove();
   });
 
+  document.querySelectorAll("g#anchors > g").forEach(group => {
+    const groupStyle = Object.keys(defaultAnchorStyle).reduce((acc, key) => {
+      acc[key] = group.getAttribute(key);
+      return acc;
+    }, {});
+    style.anchors[group.id] = groupStyle;
+    group.remove();
+  });
+
   // create groups for each burg group and apply stored or default style
   const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
   for (const {name} of sortedGroups) {
-    const group = burgIcons.append("g").attr("id", name);
-    const styles = style.burgIcons[name] || defaultStyle;
-    Object.entries(styles).forEach(([key, value]) => {
-      group.attr(key, value);
+    const burgGroup = burgIcons.append("g").attr("id", name);
+    const iconStyles = style.burgIcons[name] || defaultIconStyle;
+    Object.entries(iconStyles).forEach(([key, value]) => {
+      burgGroup.attr(key, value);
+    });
+
+    const anchorGroup = anchors.append("g").attr("id", name);
+    const anchorStyles = style.anchors[name] || defaultAnchorStyle;
+    Object.entries(anchorStyles).forEach(([key, value]) => {
+      anchorGroup.attr(key, value);
     });
   }
 }

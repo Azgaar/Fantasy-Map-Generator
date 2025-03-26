@@ -77,9 +77,15 @@ function applyStyle(styleJSON) {
       const group = selector.replace("#burgLabels > g#", "");
       style.burgLabels[group] = styleJSON[selector];
     }
+
     if (selector.startsWith("#burgIcons")) {
       const group = selector.replace("#burgIcons > g#", "");
       style.burgIcons[group] = styleJSON[selector];
+    }
+
+    if (selector.startsWith("#anchors")) {
+      const group = selector.replace("#anchors > g#", "");
+      style.anchors[group] = styleJSON[selector];
     }
 
     const el = document.querySelector(selector);
