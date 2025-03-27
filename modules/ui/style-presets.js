@@ -327,6 +327,8 @@ function addStylePreset() {
     const burgLabelsAttributes = [
       "opacity",
       "fill",
+      "stroke",
+      "stroke-width",
       "style",
       "letter-spacing",
       "data-size",
@@ -345,11 +347,14 @@ function addStylePreset() {
       "stroke-width",
       "stroke-dasharray",
       "stroke-linecap",
-      "stroke-linejoin"
+      "stroke-linejoin",
+      "fitler"
     ];
+    const anchorsAttributes = ["opacity", "fill", "font-size", "stroke", "stroke-width", "filter"];
     options.burgs.groups.forEach(({name}) => {
       attributes[`#burgLabels > g#${name}`] = burgLabelsAttributes;
       attributes[`#burgIcons > g#${name}`] = burgIconsAttributes;
+      attributes[`#anchors > g#${name}`] = anchorsAttributes;
     });
 
     for (const selector in attributes) {

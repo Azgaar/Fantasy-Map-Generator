@@ -201,6 +201,151 @@
     "filter": null,
     "mask": null
   },
+  "#burgLabels > g#capital": {
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "style": "text-shadow: #4a4a4a 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 7,
+    "font-size": 7,
+    "font-family": "Almendra SC",
+    "data-dy": -0.4
+  },
+  "#burgIcons > g#capital": {
+    "data-icon": "#icon-square",
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "fill-opacity": 0.9,
+    "font-size": 2,
+    "stroke": "#4a4a4a",
+    "stroke-width": 10,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "round"
+  },
+  "#anchors > g#capital": {
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "font-size": 2,
+    "stroke": "#4a4a4a",
+    "stroke-width": 1.2
+  },
+  "#burgLabels > g#city": {
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "style": "text-shadow: #4a4a4a 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 5,
+    "font-size": 5,
+    "font-family": "Almendra SC",
+    "data-dy": -0.4
+  },
+  "#burgIcons > g#city": {
+    "data-icon": "#icon-circle",
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "fill-opacity": 0.9,
+    "font-size": 1.5,
+    "stroke": "#4a4a4a",
+    "stroke-width": 8,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "round"
+  },
+  "#anchors > g#city": {
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "font-size": 1.5,
+    "stroke": "#4a4a4a",
+    "stroke-width": 1.2
+  },
+  "#burgLabels > g#town": {
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "style": "text-shadow: #4a4a4a 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 4,
+    "font-size": 4,
+    "font-family": "Almendra SC",
+    "data-dy": -0.4
+  },
+  "#burgIcons > g#town": {
+    "data-icon": "#icon-circle",
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "fill-opacity": 0.9,
+    "font-size": 1,
+    "stroke": "#4a4a4a",
+    "stroke-width": 12,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "round"
+  },
+  "#anchors > g#town": {
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "font-size": 1,
+    "stroke": "#4a4a4a",
+    "stroke-width": 1.2
+  },
+  "#burgLabels > g#village": {
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "style": "text-shadow: #4a4a4a 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 3,
+    "font-size": 3,
+    "font-family": "Almendra SC",
+    "data-dy": -0.4
+  },
+  "#burgIcons > g#village": {
+    "data-icon": "#icon-circle",
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "fill-opacity": 0.9,
+    "font-size": 0.7,
+    "stroke": "#4a4a4a",
+    "stroke-width": 12,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "round"
+  },
+  "#anchors > g#village": {
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "font-size": 0.7,
+    "stroke": "#4a4a4a",
+    "stroke-width": 1.2
+  },
+  "#burgLabels > g#hamlet": {
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "style": "text-shadow: #4a4a4a 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 2,
+    "font-size": 2,
+    "font-family": "Almendra SC",
+    "data-dy": -0.4
+  },
+  "#burgIcons > g#hamlet": {
+    "data-icon": "#icon-circle",
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "fill-opacity": 0.9,
+    "font-size": 0.5,
+    "stroke": "#4a4a4a",
+    "stroke-width": 12,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "round"
+  },
+  "#anchors > g#hamlet": {
+    "opacity": 1,
+    "fill": "#2a2a33",
+    "font-size": 0.5,
+    "stroke": "#4a4a4a",
+    "stroke-width": 1.2
+  },
   "#trails": {
     "opacity": 1,
     "stroke": "#844017",

@@ -526,6 +526,13 @@
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
   },
+  "#anchors > g#town": {
+    "opacity": 1,
+    "fill": "#ffffff",
+    "font-size": 1,
+    "stroke": "#3e3e4b",
+    "stroke-width": 1.2
+  },
   "#labels > #states": {
     "opacity": 1,
     "fill": "#3e3e4b",
