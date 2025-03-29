@@ -271,7 +271,7 @@ function selectStyleElement() {
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3a3a3a";
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
     styleLetterSpacingInput.value = el.attr("letter-spacing") || 0;
-    styleShadowInput.value = el.style("text-shadow") || "white 0 0 4px";
+    styleShadowInput.value = el.style("text-shadow") || "";
 
     styleFont.style.display = "block";
     styleSelectFont.value = el.attr("font-family");
@@ -769,10 +769,7 @@ stylePopulationUrbanStrokeInput.on("input", e => {
 });
 
 styleBurgIconsIcon.on("change", e => {
-  getEl()
-    .attr("data-icon", e.target.value)
-    .selectAll("use")
-    .attr("href", d => e.target.value);
+  getEl().attr("data-icon", e.target.value).selectAll("use").attr("href", e.target.value);
 });
 
 styleBurgIconsIconSize.on("input", e => {

@@ -53,10 +53,8 @@ function drawBurgIcon(burg) {
 }
 
 function createIconGroups() {
-  const defaultIconStyle = style.burgIcons.town || Object.values(style.burgIcons)[0];
-  const defaultAnchorStyle = style.anchors.town || Object.values(style.anchors)[0];
-
   // save existing styles and remove all groups
+  const defaultIconStyle = style.burgIcons.town || Object.values(style.burgIcons)[0];
   document.querySelectorAll("g#burgIcons > g").forEach(group => {
     const groupStyle = Object.keys(defaultIconStyle).reduce((acc, key) => {
       acc[key] = group.getAttribute(key);
@@ -66,6 +64,7 @@ function createIconGroups() {
     group.remove();
   });
 
+  const defaultAnchorStyle = style.anchors.town || Object.values(style.anchors)[0];
   document.querySelectorAll("g#anchors > g").forEach(group => {
     const groupStyle = Object.keys(defaultAnchorStyle).reduce((acc, key) => {
       acc[key] = group.getAttribute(key);

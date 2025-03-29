@@ -74,17 +74,17 @@ async function fetchSystemPreset(preset) {
 function applyStyle(styleJSON) {
   for (const selector in styleJSON) {
     if (selector.startsWith("#burgLabels")) {
-      const group = selector.replace("#burgLabels > g#", "");
+      const group = selector.split("#").pop();
       style.burgLabels[group] = styleJSON[selector];
     }
 
     if (selector.startsWith("#burgIcons")) {
-      const group = selector.replace("#burgIcons > g#", "");
+      const group = selector.split("#").pop();
       style.burgIcons[group] = styleJSON[selector];
     }
 
     if (selector.startsWith("#anchors")) {
-      const group = selector.replace("#anchors > g#", "");
+      const group = selector.split("#").pop();
       style.anchors[group] = styleJSON[selector];
     }
 
@@ -142,6 +142,10 @@ async function changeStyle(desiredPreset) {
   localStorage.setItem("presetStyle", presetName);
   applyStyleWithUiRefresh(style);
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
+  if (layerIsOn("toggleLabels")) {
+    drawBurgLabels();
+    drawStateLabels();
+  }
 }
 
 function applyStyleWithUiRefresh(style) {

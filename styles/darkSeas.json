@@ -317,31 +317,6 @@
     "data-y": 93,
     "data-columns": 8
   },
-  "#burgLabels > #capital": {
-    "opacity": 1,
-    "fill": "#000000",
-    "style": "text-shadow: white 0px 0px 4px",
-    "letter-spacing": 0,
-    "data-size": 9,
-    "font-size": 9,
-    "font-family": "Lugrasimo"
-  },
-  "#burgIcons > #capital": {
-    "opacity": 0.7,
-    "fill": "#000000",
-    "size": 2.25,
-    "stroke": "#000000",
-    "stroke-width": 0,
-    "stroke-dasharray": 0,
-    "stroke-linecap": "butt"
-  },
-  "#anchors > #capital": {
-    "opacity": 1,
-    "fill": "#ffffff",
-    "size": 4.5,
-    "stroke": "#3e3e4b",
-    "stroke-width": 1.4
-  },
   "#burgLabels > #city": {
     "opacity": 1,
     "fill": "#000000",
@@ -349,12 +324,13 @@
     "letter-spacing": 0,
     "data-size": 7,
     "font-size": 7,
-    "font-family": "Lugrasimo"
+    "font-family": "Lugrasimo",
+    "data-dy": -0.4
   },
   "#burgIcons > #city": {
     "opacity": 0.7,
     "fill": "#000000",
-    "size": 1.75,
+    "font-size": 2,
     "stroke": "#000000",
     "stroke-width": 0,
     "stroke-dasharray": 0,
@@ -363,157 +339,7 @@
   "#anchors > #city": {
     "opacity": 1,
     "fill": "#ffffff",
-    "size": 3.5,
-    "stroke": "#3e3e4b",
-    "stroke-width": 1.2
-  },
-  "#burgLabels > #fort": {
-    "opacity": 1,
-    "fill": "#000000",
-    "style": "text-shadow: white 0px 0px 4px",
-    "letter-spacing": 0,
-    "data-size": 4,
-    "font-size": 4,
-    "font-family": "Lugrasimo"
-  },
-  "#burgIcons > #fort": {
-    "opacity": 0.7,
-    "fill": "#000000",
-    "size": 1,
-    "stroke": "#000000",
-    "stroke-width": 0,
-    "stroke-dasharray": 0,
-    "stroke-linecap": "butt"
-  },
-  "#anchors > #fort": {
-    "opacity": 1,
-    "fill": "#ffffff",
-    "size": 2,
-    "stroke": "#3e3e4b",
-    "stroke-width": 1.2
-  },
-  "#burgLabels > #monastery": {
-    "opacity": 1,
-    "fill": "#000000",
-    "style": "text-shadow: white 0px 0px 4px",
-    "letter-spacing": 0,
-    "data-size": 4,
-    "font-size": 4,
-    "font-family": "Lugrasimo"
-  },
-  "#burgIcons > #monastery": {
-    "opacity": 0.7,
-    "fill": "#000000",
-    "size": 1,
-    "stroke": "#000000",
-    "stroke-width": 0,
-    "stroke-dasharray": 0,
-    "stroke-linecap": "butt"
-  },
-  "#anchors > #monastery": {
-    "opacity": 1,
-    "fill": "#ffffff",
-    "size": 2,
-    "stroke": "#3e3e4b",
-    "stroke-width": 1.2
-  },
-  "#burgLabels > #caravanserai": {
-    "opacity": 1,
-    "fill": "#000000",
-    "style": "text-shadow: white 0px 0px 4px",
-    "letter-spacing": 0,
-    "data-size": 4,
-    "font-size": 4,
-    "font-family": "Lugrasimo"
-  },
-  "#burgIcons > #caravanserai": {
-    "opacity": 0.7,
-    "fill": "#000000",
-    "size": 1,
-    "stroke": "#000000",
-    "stroke-width": 0,
-    "stroke-dasharray": 0,
-    "stroke-linecap": "butt"
-  },
-  "#anchors > #caravanserai": {
-    "opacity": 1,
-    "fill": "#ffffff",
-    "size": 2,
-    "stroke": "#3e3e4b",
-    "stroke-width": 1.2
-  },
-  "#burgLabels > #trading_post": {
-    "opacity": 1,
-    "fill": "#000000",
-    "style": "text-shadow: white 0px 0px 4px",
-    "letter-spacing": 0,
-    "data-size": 4,
-    "font-size": 4,
-    "font-family": "Lugrasimo"
-  },
-  "#burgIcons > #trading_post": {
-    "opacity": 0.7,
-    "fill": "#000000",
-    "size": 1,
-    "stroke": "#000000",
-    "stroke-width": 0,
-    "stroke-dasharray": 0,
-    "stroke-linecap": "butt"
-  },
-  "#anchors > #trading_post": {
-    "opacity": 1,
-    "fill": "#ffffff",
-    "size": 2,
-    "stroke": "#3e3e4b",
-    "stroke-width": 1.2
-  },
-  "#burgLabels > #village": {
-    "opacity": 1,
-    "fill": "#000000",
-    "style": "text-shadow: white 0px 0px 4px",
-    "letter-spacing": 0,
-    "data-size": 3,
-    "font-size": 3,
-    "font-family": "Lugrasimo"
-  },
-  "#burgIcons > #village": {
-    "opacity": 0.7,
-    "fill": "#000000",
-    "size": 0.75,
-    "stroke": "#000000",
-    "stroke-width": 0,
-    "stroke-dasharray": 0,
-    "stroke-linecap": "butt"
-  },
-  "#anchors > #village": {
-    "opacity": 1,
-    "fill": "#ffffff",
-    "size": 1.5,
-    "stroke": "#3e3e4b",
-    "stroke-width": 1.2
-  },
-  "#burgLabels > #hamlet": {
-    "opacity": 1,
-    "fill": "#000000",
-    "style": "text-shadow: white 0px 0px 4px",
-    "letter-spacing": 0,
-    "data-size": 2,
     "font-size": 2,
-    "font-family": "Lugrasimo"
-  },
-  "#burgIcons > #hamlet": {
-    "opacity": 0.7,
-    "fill": "#000000",
-    "size": 0.5,
-    "stroke": "#000000",
-    "stroke-width": 0,
-    "stroke-dasharray": 0,
-    "stroke-linecap": "butt"
-  },
-  "#anchors > #hamlet": {
-    "opacity": 1,
-    "fill": "#ffffff",
-    "size": 1,
     "stroke": "#3e3e4b",
     "stroke-width": 1.2
   },
@@ -524,12 +350,13 @@
     "letter-spacing": 0,
     "data-size": 5,
     "font-size": 5,
-    "font-family": "Lugrasimo"
+    "font-family": "Lugrasimo",
+    "data-dy": -0.4
   },
   "#burgIcons > #town": {
     "opacity": 0.7,
     "fill": "#000000",
-    "size": 1.25,
+    "font-size": 1.25,
     "stroke": "#000000",
     "stroke-width": 0,
     "stroke-dasharray": 0,
@@ -538,7 +365,7 @@
   "#anchors > #town": {
     "opacity": 1,
     "fill": "#ffffff",
-    "size": 2,
+    "font-size": 1.25,
     "stroke": "#3e3e4b",
     "stroke-width": 1.2
   },

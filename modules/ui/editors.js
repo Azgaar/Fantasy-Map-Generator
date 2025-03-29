@@ -129,29 +129,19 @@ function applySorting(headers) {
 }
 
 function moveBurgToGroup(id, g) {
-  const label = document.querySelector("#burgLabels [data-id='" + id + "']");
-  const icon = document.querySelector("#burgIcons [data-id='" + id + "']");
-  const anchor = document.querySelector("#anchors [data-id='" + id + "']");
-  if (!label || !icon) {
-    ERROR && console.error(`Cannot find label or icon elements for id ${id}`);
-    return;
-  }
+  const label = document.querySelector(`#burgLabels [data-id='${id}']`);
+  const icon = document.querySelector(`#burgIcons [data-id='${id}']`);
+  const anchor = document.querySelector(`#anchors [data-id='${id}']`);
+  if (!label || !icon) return tip("Cannot find label or icon for burg " + id, false, "error");
 
   document.querySelector("#burgLabels > #" + g).appendChild(label);
   document.querySelector("#burgIcons > #" + g).appendChild(icon);
+  if (anchor) document.querySelector("#anchors > #" + g).appendChild(anchor);
 
-  const iconSize = icon.parentNode.getAttribute("size");
-  icon.setAttribute("r", iconSize);
-  label.setAttribute("dy", `${iconSize * -1.5}px`);
-
-  if (anchor) {
-    document.querySelector("#anchors > #" + g).appendChild(anchor);
-    const anchorSize = +anchor.parentNode.getAttribute("size");
-    anchor.setAttribute("width", anchorSize);
-    anchor.setAttribute("height", anchorSize);
-    anchor.setAttribute("x", rn(pack.burgs[id].x - anchorSize * 0.47, 2));
-    anchor.setAttribute("y", rn(pack.burgs[id].y - anchorSize * 0.47, 2));
-  }
+  icon.setAttribute("href", icon.parentElement.dataset.icon);
+  const {dx, dy} = label.parentElement.dataset;
+  dx ? label.setAttribute("dx", dx + "em") : label.removeAttribute("dx");
+  dy ? label.setAttribute("dy", dy + "em") : label.removeAttribute("dy");
 }
 
 function moveAllBurgsToGroup(fromGroup, toGroup) {

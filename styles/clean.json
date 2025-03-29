@@ -337,22 +337,23 @@
     "letter-spacing": 0,
     "data-size": 7,
     "font-size": 7,
-    "font-family": "Arial"
+    "font-family": "Arial",
+    "data-dy": -0.4
   },
   "#burgIcons > #city": {
     "opacity": 1,
     "fill": "#ffffff",
     "fill-opacity": 0.7,
-    "size": 1,
+    "font-size": 1,
     "stroke": "#3e3e4b",
-    "stroke-width": 0.24,
+    "stroke-width": 10,
     "stroke-dasharray": "",
     "stroke-linecap": "butt"
   },
   "#anchors > #city": {
     "opacity": 1,
     "fill": "#ffffff",
-    "size": 2,
+    "font-size": 1,
     "stroke": "#303030",
     "stroke-width": 1.7
   },
@@ -363,24 +364,25 @@
     "letter-spacing": 0,
     "data-size": 3,
     "font-size": 3,
-    "font-family": "Arial"
+    "font-family": "Arial",
+    "data-dy": -0.4
   },
   "#burgIcons > #town": {
     "opacity": 1,
     "fill": "#ffffff",
     "fill-opacity": 0.7,
-    "size": 0.5,
+    "font-size": 0.5,
     "stroke": "#3e3e4b",
-    "stroke-width": 0.12,
+    "stroke-width": 10,
     "stroke-dasharray": "",
     "stroke-linecap": "butt"
   },
   "#anchors > #town": {
     "opacity": 1,
     "fill": "#ffffff",
-    "size": 1,
+    "font-size": 0.5,
     "stroke": "#3e3e4b",
-    "stroke-width": 1.06
+    "stroke-width": 1
   },
   "#labels > #states": {
     "opacity": 1,

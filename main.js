@@ -527,12 +527,6 @@ function invokeActiveZooming() {
     });
   }
 
-  // turn off ocean pattern if scale is big (improves performance)
-  oceanPattern
-    .select("rect")
-    .attr("fill", scale > 10 ? "#fff" : "url(#oceanic)")
-    .attr("opacity", scale > 10 ? 0.2 : null);
-
   // change states halo width
   if (!customization && !isOptimized) {
     const desired = +statesHalo.attr("data-width");
