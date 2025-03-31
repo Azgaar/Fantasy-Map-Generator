@@ -299,14 +299,13 @@ window.Burgs = (() => {
       order: 2,
       min: 0.1,
       max: 2,
-      features: {walls: false},
       preview: "watabou-village"
     },
     {
       name: "hamlet",
       active: true,
       order: 1,
-      features: {walls: false, plaza: false},
+      features: {plaza: false},
       max: 0.1,
       preview: "watabou-village"
     },
@@ -384,12 +383,13 @@ window.Burgs = (() => {
     const sea = (() => {
       if (!coast || !cells.haven[cell]) return null;
 
-      // calculate see direction: 0 = south, 0.5 = west, 1 = north, 1.5 = east
-      const p1 = cells.p[cell];
-      const p2 = cells.p[cells.haven[cell]];
-      let deg = (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI - 90;
-      if (deg < 0) deg += 360;
-      return rn(normalize(deg, 0, 360) * 2, 2);
+      // calculate see direction: 0 = east, 0.5 = north, 1 = west, 1.5 = south
+      const [x1, y1] = cells.p[cell];
+      const [x2, y2] = cells.p[cells.haven[cell]];
+      const deg = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
+
+      if (deg <= 0) return normalize(Math.abs(deg), 0, 180);
+      return 2 - normalize(deg, 0, 180);
     })();
 
     const arableBiomes = river ? [1, 2, 3, 4, 5, 6, 7, 8] : [5, 6, 7, 8];
@@ -403,6 +403,8 @@ window.Burgs = (() => {
     const plaza = +burg.plaza;
     const temple = +burg.temple;
     const shantytown = +burg.shanty;
+
+    const style = "bw";
 
     const url = new URL("https://watabou.github.io/city-generator/");
     url.search = new URLSearchParams({
@@ -420,7 +422,8 @@ window.Burgs = (() => {
       temple,
       walls,
       shantytown,
-      gates: -1
+      gates: -1,
+      style
     });
     if (sea) url.searchParams.append("sea", sea);
 
@@ -455,6 +458,7 @@ window.Burgs = (() => {
     if (temp <= 0 || temp > 28 || (temp > 25 && each(3)(cell))) tags.push("no orchards");
 
     if (!burg.plaza) tags.push("no square");
+    if (burg.walls) tags.push("palisade");
 
     if (pop < 100) tags.push("sparse");
     else if (pop > 300) tags.push("dense");
@@ -469,8 +473,14 @@ window.Burgs = (() => {
     })();
     const height = rn(width / 2.05);
 
+    const style = (() => {
+      if ([1, 2].includes(biome)) return "sand";
+      if (temp <= 5 || [9, 10, 11].includes(biome)) return "snow";
+      return "minimal";
+    })();
+
     const url = new URL("https://watabou.github.io/village-generator/");
-    url.search = new URLSearchParams({pop, name: "", seed: burgSeed, width, height, tags});
+    url.search = new URLSearchParams({pop, name: burg.name, seed: burgSeed, width, height, style, tags});
 
     const link = url.toString();
     return {link, preview: link + "&preview=1"};
