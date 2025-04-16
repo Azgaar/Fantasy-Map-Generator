@@ -182,16 +182,16 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   }
 
   function triggerBurgRemove() {
-    const burg = +this.parentNode.dataset.id;
-    if (pack.burgs[burg].capital)
-      return tip("You cannot remove the capital. Please change the capital first", false, "error");
+    const burgId = +this.parentNode.dataset.id;
+    if (pack.burgs[burgId].capital)
+      return tip("You cannot remove the capital. Please change the state capital first", false, "error");
 
     confirmationDialog({
       title: "Remove burg",
       message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
       confirm: "Remove",
       onConfirm: () => {
-        removeBurg(burg);
+        Burgs.remove(burgId);
         burgsOverviewAddLines();
       }
     });
@@ -536,15 +536,13 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
       title: `Remove ${number} burgs`,
       message: `
         Are you sure you want to remove all <i>unlocked</i> burgs except for capitals?
-        <br><i>To remove a capital you have to remove a state first</i>`,
+        <br><i>To remove a capital you have to remove its state first</i>`,
       confirm: "Remove",
-      onConfirm: removeAllBurgs
+      onConfirm: () => {
+        pack.burgs.filter(b => b.i && !(b.capital || b.lock)).forEach(b => Burgs.remove(b.i));
+        burgsOverviewAddLines();
+      }
     });
-  }
-
-  function removeAllBurgs() {
-    pack.burgs.filter(b => b.i && !(b.capital || b.lock)).forEach(b => removeBurg(b.i));
-    burgsOverviewAddLines();
   }
 
   function toggleLockAll() {

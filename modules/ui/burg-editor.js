@@ -83,20 +83,13 @@ function editBurg(id) {
     byId("burgElevation").innerHTML = getHeight(pack.cells.h[b.cell]);
 
     // toggle features
-    if (b.capital) byId("burgCapital").classList.remove("inactive");
-    else byId("burgCapital").classList.add("inactive");
-    if (b.port) byId("burgPort").classList.remove("inactive");
-    else byId("burgPort").classList.add("inactive");
-    if (b.citadel) byId("burgCitadel").classList.remove("inactive");
-    else byId("burgCitadel").classList.add("inactive");
-    if (b.walls) byId("burgWalls").classList.remove("inactive");
-    else byId("burgWalls").classList.add("inactive");
-    if (b.plaza) byId("burgPlaza").classList.remove("inactive");
-    else byId("burgPlaza").classList.add("inactive");
-    if (b.temple) byId("burgTemple").classList.remove("inactive");
-    else byId("burgTemple").classList.add("inactive");
-    if (b.shanty) byId("burgShanty").classList.remove("inactive");
-    else byId("burgShanty").classList.add("inactive");
+    byId("burgCapital").classList.toggle("inactive", !b.capital);
+    byId("burgPort").classList.toggle("inactive", !b.port);
+    byId("burgCitadel").classList.toggle("inactive", !b.citadel);
+    byId("burgWalls").classList.toggle("inactive", !b.walls);
+    byId("burgPlaza").classList.toggle("inactive", !b.plaza);
+    byId("burgTemple").classList.toggle("inactive", !b.temple);
+    byId("burgShanty").classList.toggle("inactive", !b.shanty);
 
     updateBurgLockIcon();
 
@@ -135,8 +128,8 @@ function editBurg(id) {
 
   function changeGroup() {
     const id = +elSelected.attr("data-id");
-    pack.burgs[id].group = this.value;
-    moveBurgToGroup(id, this.value);
+    const burg = pack.burgs[id];
+    Burgs.changeGroup(burg, this.value);
   }
 
   function changeType() {
@@ -165,19 +158,66 @@ function editBurg(id) {
   }
 
   function toggleFeature() {
-    const id = +elSelected.attr("data-id");
-    const burg = pack.burgs[id];
-    const feature = this.dataset.feature;
-    const turnOn = this.classList.contains("inactive");
-    if (feature === "port") togglePort(id);
-    else if (feature === "capital") toggleCapital(id);
-    else burg[feature] = +turnOn;
-    if (burg[feature]) this.classList.remove("inactive");
-    else if (!burg[feature]) this.classList.add("inactive");
+    const burgId = +elSelected.attr("data-id");
+    const burg = pack.burgs[burgId];
 
-    if (burg.port) byId("burgEditAnchorStyle").style.display = "inline-block";
-    else byId("burgEditAnchorStyle").style.display = "none";
+    const feature = this.dataset.feature;
+    const value = Number(this.classList.contains("inactive"));
+
+    if (feature === "port") togglePort(burgId);
+    else if (feature === "capital") toggleCapital(burgId);
+    else burg[feature] = value;
+
+    this.classList.toggle("inactive", !burg[feature]);
+
+    byId("burgEditAnchorStyle").style.display = burg.port ? "inline-block" : "none";
     updateBurgPreview(burg);
+  }
+
+  function togglePort(burgId) {
+    const burg = pack.burgs[burgId];
+    if (burg.port) {
+      burg.port = 0;
+
+      const anchor = document.querySelector("#anchors [data-id='" + burgId + "']");
+      if (anchor) anchor.remove();
+    } else {
+      const haven = pack.cells.haven[burg.cell];
+      if (!haven) tip("Port haven is not found, system won't be able to make a searoute", false, "warn");
+      const portFeature = haven ? pack.cells.f[haven] : -1;
+      burg.port = portFeature;
+
+      anchors
+        .select("#" + burg.group)
+        .append("use")
+        .attr("href", "#icon-anchor")
+        .attr("id", "anchor" + burg.i)
+        .attr("data-id", burg.i)
+        .attr("x", burg.x)
+        .attr("y", burg.y);
+    }
+  }
+
+  function toggleCapital(burgId) {
+    const {burgs, states} = pack;
+
+    if (burgs[burgId].capital)
+      return tip("To change capital please assign a capital status to another burg of this state", false, "error");
+
+    const stateId = burgs[burgId].state;
+    if (!stateId) return tip("Neutral lands cannot have a capital", false, "error");
+
+    const oldCapitalId = states[stateId].capital;
+    states[stateId].capital = burgId;
+    states[stateId].center = burgs[burgId].cell;
+
+    const capital = burgs[burgId];
+    capital.capital = 1;
+    Burgs.changeGroup(capital);
+
+    const oldCapital = burgs[oldCapitalId];
+    oldCapital.capital = 0;
+    Burgs.changeGroup(oldCapital);
   }
 
   function toggleBurgLockButton() {
@@ -354,10 +394,11 @@ function editBurg(id) {
   }
 
   function removeSelectedBurg() {
-    const id = +elSelected.attr("data-id");
-    if (pack.burgs[id].capital) {
-      alertMessage.innerHTML = /* html */ `You cannot remove the burg as it is a state capital.<br /><br />
-        You can change the capital using Burgs Editor (shift + T)`;
+    const burgId = +elSelected.attr("data-id");
+    const burg = pack.burgs[burgId];
+
+    if (burg.capital) {
+      alertMessage.innerHTML = /* html */ `You cannot remove the capital. You must change the state capital first`;
       $("#alert").dialog({
         resizable: false,
         title: "Remove burg",
@@ -373,7 +414,7 @@ function editBurg(id) {
         message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
         confirm: "Remove",
         onConfirm: () => {
-          removeBurg(id); // see Editors module
+          Burgs.remove(burgId);
           $("#burgEditor").dialog("close");
         }
       });

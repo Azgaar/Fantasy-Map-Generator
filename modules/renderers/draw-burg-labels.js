@@ -33,11 +33,14 @@ function drawBurgLabels() {
 }
 
 function drawBurgLabel(burg) {
-  const group = burgLabels.select("#" + burg.group);
+  removeBurgLabel(burg.i);
+
+  const labelGroup = burgLabels.select("#" + burg.group);
+  if (labelGroup.empty()) return;
   const dx = labelGroup.attr("data-dx") || 0;
   const dy = labelGroup.attr("data-dy") || 0;
 
-  group
+  labelGroup
     .append("text")
     .attr("text-rendering", "optimizeSpeed")
     .attr("id", "burgLabel" + burg.i)
@@ -49,26 +52,30 @@ function drawBurgLabel(burg) {
     .text(burg.name);
 }
 
-function createLabelGroups() {
-  const defaultStyle = style.burgLabels.town || Object.values(style.burgLabels)[0];
+function removeBurgLabel(burgId) {
+  const existingLabel = document.getElementById("burgLabel" + burgId);
+  if (existingLabel) existingLabel.remove();
+}
 
+function createLabelGroups() {
   // save existing styles and remove all groups
   document.querySelectorAll("g#burgLabels > g").forEach(group => {
-    const groupStyle = Object.keys(defaultStyle).reduce((acc, key) => {
-      acc[key] = group.getAttribute(key);
+    style.burgLabels[group.id] = Array.from(group.attributes).reduce((acc, attribute) => {
+      acc[attribute.name] = attribute.value;
       return acc;
     }, {});
-    style.burgLabels[group.id] = groupStyle;
     group.remove();
   });
 
   // create groups for each burg group and apply stored or default style
+  const defaultStyle = style.burgLabels.town || Object.values(style.burgLabels)[0];
   const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
   for (const {name} of sortedGroups) {
-    const group = burgLabels.append("g").attr("id", name);
+    const group = burgLabels.append("g");
     const styles = style.burgLabels[name] || defaultStyle;
     Object.entries(styles).forEach(([key, value]) => {
       group.attr(key, value);
     });
+    group.attr("id", name);
   }
 }

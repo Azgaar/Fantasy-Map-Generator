@@ -213,11 +213,11 @@ function recreateStates() {
 
   // turn all old capitals into town, except for the capitals of locked states
   for (const burg of validBurgs) {
-    if (!burg.capital) continue;
-    if (lockedStatesCapitals.includes(burg.i)) continue;
-
-    moveBurgToGroup(burg.i, "town");
-    burg.capital = 0;
+    if (burg.capital) {
+      if (lockedStatesCapitals.includes(burg.i)) continue;
+      burg.capital = 0;
+      Burgs.changeGroup(burg);
+    }
   }
 
   // remove labels and emblems for non-locked states
@@ -304,7 +304,7 @@ function recreateStates() {
         burg.capital = 1;
         capital = burg;
         capitalsTree.add([x, y]);
-        moveBurgToGroup(burg.i, "city");
+        Burgs.changeGroup(capital);
         break;
       }
 
@@ -436,9 +436,11 @@ function regenerateBurgs() {
       const burgId = Burgs.add([x, y]);
       s.capital = burgId;
       s.center = pack.burgs[burgId].cell;
-      pack.burgs[burgId].capital = 1;
-      pack.burgs[burgId].state = s.i;
-      moveBurgToGroup(burgId, "city");
+
+      const burg = pack.burgs[burgId];
+      burg.state = s.i;
+      burg.capital = 1;
+      Burgs.changeGroup(burg);
     });
 
   features.forEach(f => {

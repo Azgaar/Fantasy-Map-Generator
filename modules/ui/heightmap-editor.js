@@ -409,7 +409,7 @@ function editHeightmap(options) {
       b.feature = pack.cells.f[b.cell];
 
       pack.cells.burg[b.cell] = b.i;
-      if (!b.capital && pack.cells.h[b.cell] < 20) removeBurg(b.i);
+      if (!b.capital && pack.cells.h[b.cell] < 20) Burgs.remove(b.i);
       if (b.capital) pack.states[b.state].center = b.cell;
     }
 

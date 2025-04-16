@@ -603,7 +603,7 @@ function stateRemove(stateId) {
       burg.state = 0;
       if (burg.capital) {
         burg.capital = 0;
-        moveBurgToGroup(burg.i, "town");
+        Burgs.changeGroup(burg);
       }
     }
   });
@@ -1181,30 +1181,30 @@ function addState() {
   if (cells.h[center] < 20)
     return tip("You cannot place state into the water. Please click on a land cell", false, "error");
 
-  let burg = cells.burg[center];
-  if (burg && burgs[burg].capital)
+  let burgId = cells.burg[center];
+  if (burgId && burgs[burgId].capital)
     return tip("Existing capital cannot be selected as a new state capital! Select other cell", false, "error");
 
-  if (!burg) burg = Burgs.add(point);
+  if (!burgId) burgId = Burgs.add(point);
 
   const oldState = cells.state[center];
   const newState = states.length;
 
   // turn burg into a capital
-  burgs[burg].capital = 1;
-  burgs[burg].state = newState;
-  moveBurgToGroup(burg, "city");
+  burgs[burgId].capital = 1;
+  burgs[burgId].state = newState;
+  Burgs.changeGroup(burgs[burgId]);
 
   if (d3.event.shiftKey === false) exitAddStateMode();
 
   const culture = cells.culture[center];
-  const basename = center % 5 === 0 ? burgs[burg].name : Names.getCulture(culture);
+  const basename = center % 5 === 0 ? burgs[burgId].name : Names.getCulture(culture);
   const name = Names.getState(basename, culture);
   const color = getRandomColor();
 
   // generate emblem
   const cultureType = pack.cultures[culture].type;
-  const coa = COA.generate(burgs[burg].coa, 0.4, null, cultureType);
+  const coa = COA.generate(burgs[burgId].coa, 0.4, null, cultureType);
   coa.shield = COA.getShield(culture, null);
 
   // update diplomacy and reverse relations
@@ -1244,7 +1244,7 @@ function addState() {
     provinces: [],
     color,
     expansionism: 0.5,
-    capital: burg,
+    capital: burgId,
     type: "Generic",
     center,
     culture,
@@ -1380,19 +1380,19 @@ function openStateMergeDialog() {
     });
 
     // reassing burgs
-    pack.burgs.forEach(b => {
-      if (statesToMerge.includes(b.state)) {
-        if (b.capital) {
-          moveBurgToGroup(b.i, "town");
-          b.capital = 0;
+    pack.burgs.forEach(burg => {
+      if (statesToMerge.includes(burg.state)) {
+        if (burg.capital) {
+          burg.capital = 0;
+          Burgs.changeGroup(burg);
         }
-        b.state = rulingStateId;
+        burg.state = rulingStateId;
       }
     });
 
     // reassign provinces
-    pack.provinces.forEach((p, i) => {
-      if (statesToMerge.includes(p.state)) p.state = rulingStateId;
+    pack.provinces.forEach(province => {
+      if (statesToMerge.includes(province.state)) province.state = rulingStateId;
     });
 
     // reassing cells

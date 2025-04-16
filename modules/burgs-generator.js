@@ -314,10 +314,17 @@ window.Burgs = (() => {
 
   function defineGroup(burg, populations) {
     if (burg.lock) {
-      // locked bugrgs: don't change group if it still exists
+      // locked burgs: don't change group if it still exists
       const group = options.burgs.groups.find(g => g.name === burg.group);
       if (group) return;
     }
+
+    const defaultGroup = options.burgs.groups.find(g => g.isDefault);
+    if (!defaultGroup) {
+      ERROR & console.error("No default group defined");
+      return;
+    }
+    burg.group = defaultGroup.name;
 
     for (const group of options.burgs.groups) {
       if (!group.active) continue;
@@ -348,8 +355,7 @@ window.Burgs = (() => {
         if (!isFit) continue;
       }
 
-      // apply fitting or default group
-      burg.group = group.name;
+      burg.group = group.name; // apply fitting group
       return;
     }
   }
@@ -404,7 +410,7 @@ window.Burgs = (() => {
     const temple = +burg.temple;
     const shantytown = +burg.shanty;
 
-    const style = "bw";
+    const style = "natural";
 
     const url = new URL("https://watabou.github.io/city-generator/");
     url.search = new URLSearchParams({
@@ -476,7 +482,7 @@ window.Burgs = (() => {
     const style = (() => {
       if ([1, 2].includes(biome)) return "sand";
       if (temp <= 5 || [9, 10, 11].includes(biome)) return "snow";
-      return "minimal";
+      return "default";
     })();
 
     const url = new URL("https://watabou.github.io/village-generator/");
@@ -556,5 +562,38 @@ window.Burgs = (() => {
     return burgId;
   }
 
-  return {generate, getDefaultGroups, specify, defineGroup, getPreview, getType, add};
+  function changeGroup(burg, group) {
+    if (group) {
+      burg.group = group;
+    } else {
+      const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
+      const populations = validBurgs.map(b => b.population).sort((a, b) => a - b);
+      defineGroup(burg, populations);
+    }
+
+    drawBurgIcon(burg);
+    drawBurgLabel(burg);
+  }
+
+  function remove(burgId) {
+    const burg = pack.burgs[burgId];
+    if (!burg) return tip(`Burg ${burgId} not found`, false, "error");
+
+    pack.cells.burg[burg.cell] = 0;
+    burg.removed = true;
+
+    const noteId = notes.findIndex(note => note.id === `burg${burgId}`);
+    if (noteId !== -1) notes.splice(noteId, 1);
+
+    if (burg.coa) {
+      byId("burgCOA" + burgId)?.remove();
+      emblems.select(`#burgEmblems > use[data-i='${burgId}']`).remove();
+      delete burg.coa;
+    }
+
+    removeBurgIcon(burg.i);
+    removeBurgLabel(burg.i);
+  }
+
+  return {generate, getDefaultGroups, specify, defineGroup, getPreview, getType, add, changeGroup, remove};
 })();

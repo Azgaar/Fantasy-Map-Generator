@@ -234,7 +234,7 @@ function editBurgGroups() {
     if (lines.length < 2) return tip("At least one group should be defined", false, "error");
 
     confirmationDialog({
-      title: this.dataset.tip,
+      title: "Remove group",
       message:
         "Are you sure you want to remove the group? <br>This WON'T change the burgs unless the changes are applied",
       confirm: "Remove",
