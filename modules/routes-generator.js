@@ -360,7 +360,8 @@ window.Routes = (function () {
   // connect cell with routes system by land
   function connect(cellId) {
     const getCost = createCostEvaluator({isWater: false, connections: new Map()});
-    const pathCells = findPath(cellId, isConnected, getCost);
+    const isExit = cellId => isLand(cellId) && isConnected(cellId);
+    const pathCells = findPath(cellId, isExit, getCost);
     if (!pathCells) return;
 
     const pointsArray = preparePointsArray();

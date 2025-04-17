@@ -547,14 +547,7 @@ window.Burgs = (() => {
     cells.burg[cellId] = burgId;
 
     const newRoute = Routes.connect(cellId);
-    if (newRoute && layerIsOn("toggleRoutes")) {
-      const path = Routes.getPath(newRoute);
-      routes
-        .select("#" + newRoute.group)
-        .append("path")
-        .attr("d", path)
-        .attr("id", "route" + newRoute.i);
-    }
+    if (newRoute && layerIsOn("toggleRoutes")) drawRoute(newRoute);
 
     drawBurgIcon(burg);
     drawBurgLabel(burg);
