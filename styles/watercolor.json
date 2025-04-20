@@ -328,7 +328,7 @@
     "data-y": 93,
     "data-columns": 8
   },
-  "#burgLabels > #city": {
+  "#burgLabels > g#city": {
     "opacity": 1,
     "fill": "#043449",
     "style": "text-shadow: white 0px 0px 2px",
@@ -338,26 +338,26 @@
     "font-family": "Comfortaa",
     "data-dy": -0.4
   },
-  "#burgIcons > #city": {
+  "#burgIcons > g#city": {
     "opacity": 1,
     "fill": "#ffffff",
     "fill-opacity": 0.7,
-    "font-size": 1,
+    "font-size": 1.5,
     "stroke": "#3e3e4b",
     "stroke-width": 12,
     "stroke-dasharray": "",
     "stroke-linecap": "butt"
   },
-  "#anchors > #city": {
+  "#anchors > g#city": {
     "opacity": 1,
     "fill": "#ffffff",
-    "font-size": 1,
+    "font-size": 1.5,
     "stroke": "#3e3e4b",
     "stroke-width": 1.2
   },
-  "#burgLabels > #town": {
+  "#burgLabels > g#town": {
     "opacity": 1,
-    "fill": "#3e3e4b",
+    "fill": "#043449",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
     "data-size": 3,
@@ -365,17 +365,220 @@
     "font-family": "Comfortaa",
     "data-dy": -0.4
   },
-  "#burgIcons > #town": {
+  "#burgIcons > g#town": {
+    "opacity": 1,
+    "fill": "#ffffff",
+    "fill-opacity": 0.7,
+    "font-size": 1,
+    "stroke": "#3e3e4b",
+    "stroke-width": 12,
+    "stroke-dasharray": "",
+    "stroke-linecap": "butt"
+  },
+  "#anchors > g#town": {
+    "opacity": 1,
+    "fill": "#ffffff",
+    "font-size": 1,
+    "stroke": "#3e3e4b",
+    "stroke-width": 1.2
+  },
+  "#burgLabels > g#capital": {
+    "opacity": 1,
+    "fill": "#043449",
+    "style": "text-shadow: white 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 7,
+    "font-size": 7,
+    "font-family": "Comfortaa",
+    "data-dy": -0.4
+  },
+  "#burgIcons > g#capital": {
+    "data-icon": "#icon-square",
+    "opacity": 1,
+    "fill": "#ffffff",
+    "fill-opacity": 0.7,
+    "font-size": 2,
+    "stroke": "#3e3e4b",
+    "stroke-width": 10,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "round"
+  },
+  "#anchors > g#capital": {
+    "opacity": 1,
+    "fill": "#ffffff",
+    "font-size": 1.9,
+    "stroke": "#3e3e4b",
+    "stroke-width": 1.2
+  },
+  "#burgLabels > g#fort": {
+    "opacity": 1,
+    "fill": "#043449",
+    "style": "text-shadow: white 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 2,
+    "font-size": 2,
+    "font-family": "Comfortaa",
+    "data-dy": -0.4
+  },
+  "#burgIcons > g#fort": {
+    "data-icon": "#icon-triangle",
+    "opacity": 1,
+    "fill": "#ffffff",
+    "fill-opacity": 0.7,
+    "font-size": 0.7,
+    "stroke": "#3e3e4b",
+    "stroke-width": 10,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "round"
+  },
+  "#anchors > g#fort": {
+    "opacity": 1,
+    "fill": "#ffffff",
+    "font-size": 0.7,
+    "stroke": "#3e3e4b",
+    "stroke-width": 1.2
+  },
+  "#burgLabels > g#monastery": {
+    "opacity": 1,
+    "fill": "#043449",
+    "style": "text-shadow: white 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 2,
+    "font-size": 2,
+    "font-family": "Comfortaa",
+    "data-dy": -0.4
+  },
+  "#burgIcons > g#monastery": {
+    "data-icon": "#icon-triangle",
+    "opacity": 1,
+    "fill": "#ffffff",
+    "fill-opacity": 0.7,
+    "font-size": 0.7,
+    "stroke": "#3e3e4b",
+    "stroke-width": 10,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "round"
+  },
+  "#anchors > g#monastery": {
+    "opacity": 1,
+    "fill": "#ffffff",
+    "font-size": 0.7,
+    "stroke": "#3e3e4b",
+    "stroke-width": 1.2
+  },
+  "#burgLabels > g#caravanserai": {
+    "opacity": 1,
+    "fill": "#043449",
+    "style": "text-shadow: white 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 2,
+    "font-size": 2,
+    "font-family": "Comfortaa",
+    "data-dy": -0.4
+  },
+  "#burgIcons > g#caravanserai": {
+    "data-icon": "#icon-triangle",
+    "opacity": 1,
+    "fill": "#ffffff",
+    "fill-opacity": 0.7,
+    "font-size": 0.7,
+    "stroke": "#3e3e4b",
+    "stroke-width": 10,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "round"
+  },
+  "#anchors > g#caravanserai": {
+    "opacity": 1,
+    "fill": "#ffffff",
+    "font-size": 0.7,
+    "stroke": "#3e3e4b",
+    "stroke-width": 1.2
+  },
+  "#burgLabels > g#trading_post": {
+    "opacity": 1,
+    "fill": "#043449",
+    "style": "text-shadow: white 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 2,
+    "font-size": 2,
+    "font-family": "Comfortaa",
+    "data-dy": -0.4
+  },
+  "#burgIcons > g#trading_post": {
+    "data-icon": "#icon-triangle",
+    "opacity": 1,
+    "fill": "#ffffff",
+    "fill-opacity": 0.7,
+    "font-size": 0.7,
+    "stroke": "#3e3e4b",
+    "stroke-width": 10,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "round"
+  },
+  "#anchors > g#trading_post": {
+    "opacity": 1,
+    "fill": "#ffffff",
+    "font-size": 0.7,
+    "stroke": "#3e3e4b",
+    "stroke-width": 1.2
+  },
+  "#burgLabels > g#village": {
+    "opacity": 1,
+    "fill": "#043449",
+    "style": "text-shadow: white 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 3,
+    "font-size": 3,
+    "font-family": "Comfortaa",
+    "data-dy": -0.4
+  },
+  "#burgIcons > g#village": {
+    "data-icon": "#icon-circle",
+    "opacity": 1,
+    "fill": "#ffffff",
+    "fill-opacity": 0.7,
+    "font-size": 0.7,
+    "stroke": "#3e3e4b",
+    "stroke-width": 12,
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "round"
+  },
+  "#anchors > g#village": {
+    "opacity": 1,
+    "fill": "#ffffff",
+    "font-size": 0.7,
+    "stroke": "#3e3e4b",
+    "stroke-width": 1.2
+  },
+  "#burgLabels > g#hamlet": {
+    "opacity": 1,
+    "fill": "#043449",
+    "style": "text-shadow: white 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 2,
+    "font-size": 2,
+    "font-family": "Comfortaa",
+    "data-dy": -0.4
+  },
+  "#burgIcons > g#hamlet": {
+    "data-icon": "#icon-circle",
     "opacity": 1,
     "fill": "#ffffff",
     "fill-opacity": 0.7,
     "font-size": 0.5,
     "stroke": "#3e3e4b",
     "stroke-width": 12,
-    "stroke-dasharray": "",
-    "stroke-linecap": "butt"
+    "stroke-dasharray": null,
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "round"
   },
-  "#anchors > #town": {
+  "#anchors > g#hamlet": {
     "opacity": 1,
     "fill": "#ffffff",
     "font-size": 0.5,
