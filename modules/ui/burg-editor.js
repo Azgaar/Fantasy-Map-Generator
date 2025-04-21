@@ -252,16 +252,19 @@ function editBurg(id) {
 
   function editGroupLabelStyle() {
     const g = elSelected.node().parentNode.id;
+    closeDialogs(".stable");
     editStyle("labels", g);
   }
 
   function editGroupIconStyle() {
     const g = elSelected.node().parentNode.id;
+    closeDialogs(".stable");
     editStyle("burgIcons", g);
   }
 
   function editGroupAnchorStyle() {
     const g = elSelected.node().parentNode.id;
+    closeDialogs(".stable");
     editStyle("anchors", g);
   }
 

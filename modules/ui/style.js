@@ -866,12 +866,12 @@ styleFontSize.on("change", function () {
 
 styleFontPlus.on("click", function () {
   const current = +styleFontSize.value || 12;
-  changeFontSize(getEl(), Math.min(current + 1, 999));
+  changeFontSize(getEl(), Math.min(rn(current + 0.1, 1), 999));
 });
 
 styleFontMinus.on("click", function () {
   const current = +styleFontSize.value || 12;
-  changeFontSize(getEl(), Math.max(current - 1, 1));
+  changeFontSize(getEl(), Math.max(rn(current - 0.1, 1), 0.1));
 });
 
 function changeFontSize(el, size) {
