@@ -392,11 +392,11 @@
     "fitler": null
   },
   "#anchors > g#city": {
-    "opacity": 0.8,
+    "opacity": 1,
     "fill": "#ffffff",
-    "font-size": 1.5,
+    "font-size": 1.2,
     "stroke": "#3e3e4b",
-    "stroke-width": 1,
+    "stroke-width": 1.2,
     "filter": null
   },
   "#burgLabels > g#fort": {

@@ -434,7 +434,7 @@
     "data-dy": -0.4
   },
   "#burgIcons > g#monastery": {
-    "data-icon": "#icon-triangle",
+    "data-icon": "#icon-cross",
     "opacity": 0.7,
     "fill": "#000000",
     "font-size": 0.7,
