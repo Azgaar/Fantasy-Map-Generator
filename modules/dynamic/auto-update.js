@@ -984,9 +984,9 @@ export function resolveVersionConflicts(mapVersion) {
 
     options.burgs = {groups: []};
 
-    burgIcons.selectAll("g").each(function () {
+    burgIcons.selectAll("g").each(function (_el, index) {
       const name = this.id;
-      options.burgs.groups.push({name, active: true, preview: "watabou-city"});
+      options.burgs.groups.push({name, active: true, order: index + 1, preview: "watabou-city"});
 
       const size = Number(this.getAttribute("size") || 2) * 2;
       this.removeAttribute("size");
