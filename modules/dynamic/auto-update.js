@@ -974,13 +974,32 @@ export function resolveVersionConflicts(mapVersion) {
   }
 
   if (isOlderThan("1.109.0")) {
-    // v1.107.0 changeв burg groups and added customizable icons
-    icons.selectAll("circle, use").remove();
+    // v1.109.0 added customizable burg groups and icons
+    burgIcons.selectAll("circle, use").each(function () {
+      const group = this.parentNode.id;
+      const id = this.id.replace(/^burg/, "");
+      const burg = pack.burgs[id];
+      if (burg) burg.group = group;
+    });
 
-    const groups = Array.from(document.querySelectorAll("#burgIcons > g")).map(g => g.id);
-    options.burgs = {
-      groups: groups.map(name => ({name, active: true, preview: null}))
-    };
+    options.burgs = {groups: []};
+
+    burgIcons.selectAll("g").each(function () {
+      const name = this.id;
+      options.burgs.groups.push({name, active: true, preview: "watabou-city"});
+
+      const size = Number(this.getAttribute("size") || 2) * 2;
+      this.removeAttribute("size");
+      this.setAttribute("font-size", size);
+
+      this.setAttribute("stroke-width", 10);
+    });
+
+    anchors.selectAll("g").each(function () {
+      const size = Number(this.getAttribute("size") || 1);
+      this.removeAttribute("size");
+      this.setAttribute("font-size", size);
+    });
 
     pack.burgs.forEach(burg => {
       if (!burg.i || burg.removed) return;
@@ -990,6 +1009,8 @@ export function resolveVersionConflicts(mapVersion) {
         delete burg.MFCG;
       }
     });
+
+    layerIsOn("toggleBurgIcons") && drawBurgIcons();
 
     delete options.showBurgPreview;
     delete options.showMFCGMap;

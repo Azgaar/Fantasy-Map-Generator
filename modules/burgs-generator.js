@@ -313,7 +313,7 @@ window.Burgs = (() => {
   ];
 
   function defineGroup(burg, populations) {
-    if (burg.lock) {
+    if (burg.lock && burg.group) {
       // locked burgs: don't change group if it still exists
       const group = options.burgs.groups.find(g => g.name === burg.group);
       if (group) return;
