@@ -986,7 +986,8 @@ export function resolveVersionConflicts(mapVersion) {
 
     burgIcons.selectAll("g").each(function (_el, index) {
       const name = this.id;
-      options.burgs.groups.push({name, active: true, order: index + 1, preview: "watabou-city"});
+      const isDefault = name === "towns";
+      options.burgs.groups.push({name, active: true, order: index + 1, isDefault, preview: "watabou-city"});
 
       const size = Number(this.getAttribute("size") || 2) * 2;
       this.removeAttribute("size");
@@ -994,6 +995,14 @@ export function resolveVersionConflicts(mapVersion) {
 
       this.setAttribute("stroke-width", 10);
     });
+
+    if (!options.burgs.groups.length) {
+      options.burgs.groups = Burgs.getDefaultGroups();
+    }
+
+    if (options.burgs.groups.filter(g => g.isDefault).length === 0) {
+      options.burgs.groups[0].isDefault = true;
+    }
 
     anchors.selectAll("g").each(function () {
       const size = Number(this.getAttribute("size") || 1);
