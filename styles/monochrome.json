@@ -334,12 +334,13 @@
     "data-dy": -0.4
   },
   "#burgIcons > g#city": {
+    "data-icon": "#icon-circle",
     "opacity": 1,
     "fill": "#ffffff",
     "fill-opacity": 0.7,
     "font-size": 1.5,
     "stroke": "#3e3e4b",
-    "stroke-width": 10,
+    "stroke-width": 1,
     "stroke-dasharray": "",
     "stroke-linecap": "butt"
   },
@@ -360,12 +361,13 @@
     "data-dy": -0.4
   },
   "#burgIcons > g#town": {
+    "data-icon": "#icon-circle",
     "opacity": 1,
     "fill": "#ffffff",
     "fill-opacity": 0.7,
     "font-size": 1,
     "stroke": "#3e3e4b",
-    "stroke-width": 12,
+    "stroke-width": 1.2,
     "stroke-dasharray": "",
     "stroke-linecap": "butt"
   },
@@ -393,7 +395,7 @@
     "fill-opacity": 0.7,
     "font-size": 2,
     "stroke": "#3e3e4b",
-    "stroke-width": 10,
+    "stroke-width": 1,
     "stroke-dasharray": null,
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
@@ -422,7 +424,7 @@
     "fill-opacity": 0.7,
     "font-size": 0.7,
     "stroke": "#3e3e4b",
-    "stroke-width": 10,
+    "stroke-width": 1,
     "stroke-dasharray": null,
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
@@ -451,7 +453,7 @@
     "fill-opacity": 0.7,
     "font-size": 0.7,
     "stroke": "#3e3e4b",
-    "stroke-width": 10,
+    "stroke-width": 1,
     "stroke-dasharray": null,
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
@@ -480,7 +482,7 @@
     "fill-opacity": 0.7,
     "font-size": 0.7,
     "stroke": "#3e3e4b",
-    "stroke-width": 10,
+    "stroke-width": 1,
     "stroke-dasharray": null,
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
@@ -509,7 +511,7 @@
     "fill-opacity": 0.7,
     "font-size": 0.7,
     "stroke": "#3e3e4b",
-    "stroke-width": 10,
+    "stroke-width": 1,
     "stroke-dasharray": null,
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
@@ -538,7 +540,7 @@
     "fill-opacity": 0.7,
     "font-size": 0.7,
     "stroke": "#3e3e4b",
-    "stroke-width": 12,
+    "stroke-width": 1.2,
     "stroke-dasharray": null,
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"
@@ -567,7 +569,7 @@
     "fill-opacity": 0.7,
     "font-size": 0.5,
     "stroke": "#3e3e4b",
-    "stroke-width": 12,
+    "stroke-width": 1.2,
     "stroke-dasharray": null,
     "stroke-linecap": "butt",
     "stroke-linejoin": "round"

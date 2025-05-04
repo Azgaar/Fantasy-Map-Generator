@@ -328,6 +328,7 @@
     "data-dy": -0.4
   },
   "#burgIcons > g#city": {
+    "data-icon": "#icon-circle",
     "opacity": 0.7,
     "fill": "#000000",
     "font-size": 2,
@@ -354,6 +355,7 @@
     "data-dy": -0.4
   },
   "#burgIcons > g#town": {
+    "data-icon": "#icon-circle",
     "opacity": 0.7,
     "fill": "#000000",
     "font-size": 1.25,

@@ -993,7 +993,7 @@ export function resolveVersionConflicts(mapVersion) {
       this.removeAttribute("size");
       this.setAttribute("font-size", size);
 
-      this.setAttribute("stroke-width", 10);
+      this.setAttribute("stroke-width", 1);
     });
 
     if (!options.burgs.groups.length) {
