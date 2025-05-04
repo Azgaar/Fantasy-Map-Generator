@@ -296,8 +296,9 @@ function editProvinces() {
     const newStateId = states.length;
 
     // turn province burg into a capital
-    burgs[burgId].capital = 1;
-    moveBurgToGroup(burgId, "cities");
+    const capital = burgs[burgId];
+    capital.capital = 1;
+    Burgs.changeGroup(capital);
 
     // move all burgs to a new state
     province.burgs.forEach(b => (burgs[b].state = newStateId));
@@ -367,9 +368,14 @@ function editProvinces() {
   function updateStatesPostRelease(oldStates, newStates) {
     const allStates = unique([...oldStates, ...newStates]);
 
-    BurgsAndStates.getPoles();
-    BurgsAndStates.collectStatistics();
-    BurgsAndStates.defineStateForms(newStates);
+    layerIsOn("toggleProvinces") && toggleProvinces();
+    layerIsOn("toggleStates") ? drawStates() : toggleStates();
+    layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
+
+    States.getPoles();
+    States.findNeighbors();
+    States.collectStatistics();
+    States.defineStateForms(newStates);
     drawStateLabels(allStates);
 
     // redraw emblems
@@ -1032,7 +1038,7 @@ function editProvinces() {
     // generate emblem
     const kinship = burg ? 0.8 : 0.4;
     const parent = burg ? pack.burgs[burg].coa : pack.states[state].coa;
-    const type = BurgsAndStates.getType(center, parent.port);
+    const type = Burgs.getType(center, parent.port);
     const coa = COA.generate(parent, kinship, P(0.1), type);
     coa.shield = COA.getShield(c, state);
     COArenderer.add("province", province, coa, point[0], point[1]);

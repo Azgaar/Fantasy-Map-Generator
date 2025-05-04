@@ -381,14 +381,17 @@ function overviewMilitary() {
 
       const filtered = data.filter(datum => datum.i && !datum.removed);
       const lines = filtered.map(
-        ({i, name, fullName, color}) =>
-          `<tr data-tip="${name}"><td><span style="color:${color}">⬤</span></td>
-            <td><input data-i="${i}" id="el${i}" type="checkbox" class="checkbox" ${
-            !initial.length || initial.includes(i) ? "checked" : ""
-          } >
-            <label for="el${i}" class="checkbox-label">${fullName || name}</label>
-          </td></tr>`
+        ({i, name, fullName, color}) => /* html */ `
+          <tr data-tip="${name}">
+            <td><span style="color:${color}">⬤</span></td>
+            <td>
+              <input data-i="${i}" id="el${i}" type="checkbox" class="checkbox"
+                ${!initial.length || initial.includes(i) ? "checked" : ""} >
+              <label for="el${i}" class="checkbox-label">${fullName || name}</label>
+            </td>
+          </tr>`
       );
+
       alertMessage.innerHTML = /* html */ `<b>Limit unit by ${type}:</b>
         <table style="margin-top:.3em">
           <tbody>
@@ -398,7 +401,7 @@ function overviewMilitary() {
 
       $("#alert").dialog({
         width: fitContent(),
-        title: `Limit unit`,
+        title: "Limit unit",
         buttons: {
           Invert: function () {
             alertMessage.querySelectorAll("input").forEach(el => (el.checked = !el.checked));
@@ -427,7 +430,7 @@ function overviewMilitary() {
 
     function applyMilitaryOptions() {
       const unitLines = Array.from(tableBody.querySelectorAll("tr"));
-      const names = unitLines.map(r => r.querySelector("input").value.replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, "_"));
+      const names = unitLines.map(r => sanitizeId(r.querySelector("input").value));
       if (new Set(names).size !== names.length) return tip("All units should have unique names", false, "error");
 
       $("#militaryOptions").dialog("close");

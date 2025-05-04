@@ -360,7 +360,8 @@ window.Routes = (function () {
   // connect cell with routes system by land
   function connect(cellId) {
     const getCost = createCostEvaluator({isWater: false, connections: new Map()});
-    const pathCells = findPath(cellId, isConnected, getCost);
+    const isExit = cellId => isLand(cellId) && isConnected(cellId);
+    const pathCells = findPath(cellId, isExit, getCost);
     if (!pathCells) return;
 
     const pointsArray = preparePointsArray();
@@ -430,6 +431,26 @@ window.Routes = (function () {
       return route?.group === "roads";
     });
     return roadConnections.length > 2;
+  }
+
+  const connectivityRateMap = {
+    roads: 0.2,
+    trails: 0.1,
+    searoutes: 0.2,
+    default: 0.1
+  };
+
+  function getConnectivityRate(cellId) {
+    const connections = pack.cells.routes[cellId];
+    if (!connections) return 0;
+
+    const connectivity = Object.values(connections).reduce((acc, routeId) => {
+      const route = pack.routes.find(route => route.i === routeId);
+      const rate = connectivityRateMap[route.group] || connectivityRateMap.default;
+      return acc + rate;
+    }, 0.8);
+
+    return connectivity;
   }
 
   // name generator data
@@ -645,6 +666,7 @@ window.Routes = (function () {
     getRoute,
     hasRoad,
     isCrossroad,
+    getConnectivityRate,
     generateName,
     getPath,
     getLength,

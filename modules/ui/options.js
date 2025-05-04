@@ -392,7 +392,7 @@ function changeEmblemShape(emblemShape) {
 
 function changeStatesNumber(value) {
   byId("statesNumber").style.color = +value ? null : "#b12117";
-  burgLabels.select("#capitals").attr("data-size", Math.max(rn(6 - value / 20), 3));
+  burgLabels.select("#capital").attr("data-size", Math.max(rn(6 - value / 20), 3));
   labels.select("#countries").attr("data-size", Math.max(rn(18 - value / 6), 4));
 }
 

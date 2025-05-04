@@ -47,10 +47,10 @@ export function resolveVersionConflicts(mapVersion) {
 
     // v1.0 added state relations, provinces, forms and full names
     provs = viewbox.insert("g", "#borders").attr("id", "provs").attr("opacity", 0.6);
-    BurgsAndStates.collectStatistics();
-    BurgsAndStates.generateCampaigns();
-    BurgsAndStates.generateDiplomacy();
-    BurgsAndStates.defineStateForms();
+    States.collectStatistics();
+    States.generateCampaigns();
+    States.generateDiplomacy();
+    States.defineStateForms();
     Provinces.generate();
     Provinces.getPoles();
     if (!layerIsOn("toggleBorders")) $("#borders").fadeOut();
@@ -260,7 +260,7 @@ export function resolveVersionConflicts(mapVersion) {
 
   if (isOlderThan("1.22.0")) {
     // v1.22 changed state neighbors from Set object to array
-    BurgsAndStates.collectStatistics();
+    States.collectStatistics();
   }
 
   if (isOlderThan("1.3.0")) {
@@ -273,7 +273,7 @@ export function resolveVersionConflicts(mapVersion) {
     options = {winds, year, era, eraShort, military};
 
     // v1.3 added campaings data for all states
-    BurgsAndStates.generateCampaigns();
+    States.generateCampaigns();
 
     // v1.3 added militry layer
     armies = viewbox.insert("g", "#icons").attr("id", "armies");
@@ -348,7 +348,7 @@ export function resolveVersionConflicts(mapVersion) {
     // v1.5 added burg type value
     pack.burgs.forEach(burg => {
       if (!burg.i || burg.removed) return;
-      burg.type = BurgsAndStates.getType(burg.cell, burg.port);
+      burg.type = Burgs.getType(burg.cell, burg.port);
     });
 
     // v1.5 added emblems
@@ -467,12 +467,6 @@ export function resolveVersionConflicts(mapVersion) {
     if (oceanPattern) oceanPattern.removeAttribute("opacity");
     const oceanicPattern = document.getElementById("oceanicPattern");
     if (!oceanicPattern.getAttribute("opacity")) oceanicPattern.setAttribute("opacity", 0.2);
-
-    // v 1.63 moved label text-shadow from css to editable inline style
-    burgLabels.select("#cities").style("text-shadow", "white 0 0 4px");
-    burgLabels.select("#towns").style("text-shadow", "white 0 0 4px");
-    labels.select("#states").style("text-shadow", "white 0 0 4px");
-    labels.select("#addedLabels").style("text-shadow", "white 0 0 4px");
   }
 
   if (isOlderThan("1.64.0")) {
@@ -836,22 +830,6 @@ export function resolveVersionConflicts(mapVersion) {
     });
   }
 
-  if (isOlderThan("1.97.0")) {
-    // v1.97.00 changed MFCG link to an arbitrary preview URL
-    options.villageMaxPopulation = 2000;
-    options.showBurgPreview = options.showMFCGMap;
-    delete options.showMFCGMap;
-
-    pack.burgs.forEach(burg => {
-      if (!burg.i || burg.removed) return;
-
-      if (burg.MFCG) {
-        burg.link = getBurgLink(burg);
-        delete burg.MFCG;
-      }
-    });
-  }
-
   if (isOlderThan("1.98.0")) {
     // v1.98.00 changed compass layer and rose element id
     const rose = compass.select("use");
@@ -944,7 +922,7 @@ export function resolveVersionConflicts(mapVersion) {
 
   if (isOlderThan("1.104.0")) {
     // v1.104.00 separated pole of inaccessibility detection from layer rendering
-    BurgsAndStates.getPoles();
+    States.getPoles();
     Provinces.getPoles();
   }
 
@@ -993,5 +971,58 @@ export function resolveVersionConflicts(mapVersion) {
 
     // some old maps has incorrect "heights" groups
     viewbox.selectAll("#heights").remove();
+  }
+
+  if (isOlderThan("1.109.0")) {
+    // v1.109.0 added customizable burg groups and icons
+    burgIcons.selectAll("circle, use").each(function () {
+      const group = this.parentNode.id;
+      const id = this.id.replace(/^burg/, "");
+      const burg = pack.burgs[id];
+      if (burg) burg.group = group;
+    });
+
+    options.burgs = {groups: []};
+
+    burgIcons.selectAll("g").each(function (_el, index) {
+      const name = this.id;
+      const isDefault = name === "towns";
+      options.burgs.groups.push({name, active: true, order: index + 1, isDefault, preview: "watabou-city"});
+
+      const size = Number(this.getAttribute("size") || 2) * 2;
+      this.removeAttribute("size");
+      this.setAttribute("font-size", size);
+
+      this.setAttribute("stroke-width", 1);
+    });
+
+    if (!options.burgs.groups.length) {
+      options.burgs.groups = Burgs.getDefaultGroups();
+    }
+
+    if (options.burgs.groups.filter(g => g.isDefault).length === 0) {
+      options.burgs.groups[0].isDefault = true;
+    }
+
+    anchors.selectAll("g").each(function () {
+      const size = Number(this.getAttribute("size") || 1);
+      this.removeAttribute("size");
+      this.setAttribute("font-size", size);
+    });
+
+    pack.burgs.forEach(burg => {
+      if (!burg.i || burg.removed) return;
+
+      if (burg.MFCG) {
+        burg.link = getBurgLink(burg);
+        delete burg.MFCG;
+      }
+    });
+
+    layerIsOn("toggleBurgIcons") && drawBurgIcons();
+
+    delete options.showBurgPreview;
+    delete options.showMFCGMap;
+    delete options.villageMaxPopulation;
   }
 }

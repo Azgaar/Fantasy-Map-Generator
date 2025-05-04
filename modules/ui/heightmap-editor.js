@@ -238,18 +238,22 @@ function editHeightmap(options) {
     }
 
     Biomes.define();
-    rankCells();
 
+    rankCells();
     Cultures.generate();
     Cultures.expand();
 
-    BurgsAndStates.generate();
+    Burgs.generate();
+    States.generate();
     Routes.generate();
     Religions.generate();
-    BurgsAndStates.defineStateForms();
+
+    Burgs.specify();
+    States.collectStatistics();
+    States.defineStateForms();
+
     Provinces.generate();
     Provinces.getPoles();
-    BurgsAndStates.defineBurgFeatures();
 
     Rivers.specify();
     Features.specify();
@@ -405,7 +409,7 @@ function editHeightmap(options) {
       b.feature = pack.cells.f[b.cell];
 
       pack.cells.burg[b.cell] = b.i;
-      if (!b.capital && pack.cells.h[b.cell] < 20) removeBurg(b.i);
+      if (!b.capital && pack.cells.h[b.cell] < 20) Burgs.remove(b.i);
       if (b.capital) pack.states[b.state].center = b.cell;
     }
 

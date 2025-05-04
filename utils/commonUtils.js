@@ -169,6 +169,7 @@ void (function () {
     input.required = options.required === false ? false : true;
     input.placeholder = "type a " + type;
     input.value = options.default;
+    input.style.width = promptText.length > 10 ? "100%" : "auto";
     prompt.style.display = "block";
 
     form.addEventListener(

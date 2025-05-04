@@ -144,7 +144,7 @@ function addListeners() {
 }
 
 function refreshStatesEditor() {
-  BurgsAndStates.collectStatistics();
+  States.collectStatistics();
   statesEditorAddLines();
 }
 
@@ -603,7 +603,7 @@ function stateRemove(stateId) {
       burg.state = 0;
       if (burg.capital) {
         burg.capital = 0;
-        moveBurgToGroup(burg.i, "towns");
+        Burgs.changeGroup(burg);
       }
     }
   });
@@ -840,10 +840,10 @@ function openRegenerationMenu() {
 function recalculateStates(must) {
   if (!must && !statesAutoChange.checked) return;
 
-  BurgsAndStates.expandStates();
+  States.expandStates();
   Provinces.generate();
   Provinces.getPoles();
-  BurgsAndStates.getPoles();
+  States.getPoles();
 
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleBorders")) drawBorders();
@@ -985,7 +985,7 @@ function applyStatesManualAssignent() {
 
   if (affectedStates.length) {
     refreshStatesEditor();
-    BurgsAndStates.getPoles();
+    States.getPoles();
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     if (adjustLabels.checked) drawStateLabels([...new Set(affectedStates)]);
     adjustProvinces([...new Set(affectedProvinces)]);
@@ -1103,7 +1103,7 @@ function adjustProvinces(affectedProvinces) {
     const color = getMixedColor(states[stateId].color);
 
     const kinship = nameByBurg ? 0.8 : 0.4;
-    const type = BurgsAndStates.getType(center, burg?.port);
+    const type = Burgs.getType(center, burg?.port);
     const coa = COA.generate(burg?.coa || states[stateId].coa, kinship, burg ? null : 0.9, type);
     coa.shield = COA.getShield(culture, stateId);
 
@@ -1181,30 +1181,30 @@ function addState() {
   if (cells.h[center] < 20)
     return tip("You cannot place state into the water. Please click on a land cell", false, "error");
 
-  let burg = cells.burg[center];
-  if (burg && burgs[burg].capital)
+  let burgId = cells.burg[center];
+  if (burgId && burgs[burgId].capital)
     return tip("Existing capital cannot be selected as a new state capital! Select other cell", false, "error");
 
-  if (!burg) burg = addBurg(point); // add new burg
+  if (!burgId) burgId = Burgs.add(point);
 
   const oldState = cells.state[center];
   const newState = states.length;
 
   // turn burg into a capital
-  burgs[burg].capital = 1;
-  burgs[burg].state = newState;
-  moveBurgToGroup(burg, "cities");
+  burgs[burgId].capital = 1;
+  burgs[burgId].state = newState;
+  Burgs.changeGroup(burgs[burgId]);
 
   if (d3.event.shiftKey === false) exitAddStateMode();
 
   const culture = cells.culture[center];
-  const basename = center % 5 === 0 ? burgs[burg].name : Names.getCulture(culture);
+  const basename = center % 5 === 0 ? burgs[burgId].name : Names.getCulture(culture);
   const name = Names.getState(basename, culture);
   const color = getRandomColor();
 
   // generate emblem
   const cultureType = pack.cultures[culture].type;
-  const coa = COA.generate(burgs[burg].coa, 0.4, null, cultureType);
+  const coa = COA.generate(burgs[burgId].coa, 0.4, null, cultureType);
   coa.shield = COA.getShield(culture, null);
 
   // update diplomacy and reverse relations
@@ -1244,7 +1244,7 @@ function addState() {
     provinces: [],
     color,
     expansionism: 0.5,
-    capital: burg,
+    capital: burgId,
     type: "Generic",
     center,
     culture,
@@ -1253,9 +1253,10 @@ function addState() {
     coa
   });
 
-  BurgsAndStates.getPoles();
-  BurgsAndStates.collectStatistics();
-  BurgsAndStates.defineStateForms([newState]);
+  States.getPoles();
+  States.findNeighbors();
+  States.collectStatistics();
+  States.defineStateForms([newState]);
   adjustProvinces([cells.province[center]]);
 
   drawStateLabels([newState]);
@@ -1379,19 +1380,19 @@ function openStateMergeDialog() {
     });
 
     // reassing burgs
-    pack.burgs.forEach(b => {
-      if (statesToMerge.includes(b.state)) {
-        if (b.capital) {
-          moveBurgToGroup(b.i, "towns");
-          b.capital = 0;
+    pack.burgs.forEach(burg => {
+      if (statesToMerge.includes(burg.state)) {
+        if (burg.capital) {
+          burg.capital = 0;
+          Burgs.changeGroup(burg);
         }
-        b.state = rulingStateId;
+        burg.state = rulingStateId;
       }
     });
 
     // reassign provinces
-    pack.provinces.forEach((p, i) => {
-      if (statesToMerge.includes(p.state)) p.state = rulingStateId;
+    pack.provinces.forEach(province => {
+      if (statesToMerge.includes(province.state)) province.state = rulingStateId;
     });
 
     // reassing cells
@@ -1402,7 +1403,7 @@ function openStateMergeDialog() {
     unfog();
     debug.selectAll(".highlight").remove();
 
-    BurgsAndStates.getPoles();
+    States.getPoles();
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
     layerIsOn("toggleProvinces") && drawProvinces();
