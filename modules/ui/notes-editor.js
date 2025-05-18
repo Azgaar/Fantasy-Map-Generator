@@ -55,7 +55,7 @@ function editNotes(id, name) {
   byId("notesLegend").addEventListener("blur", updateLegend);
   byId("notesPin").addEventListener("click", toggleNotesPin);
   byId("notesFocus").addEventListener("click", validateHighlightElement);
-  byId("notesGenerateWithAi").addEventListener("click", openAiGenerator);
+  byId("notesGenerateWithAi").addEventListener("click", openAiGenerator); // Ensure the original listener attachment is present and correct
   byId("notesDownload").addEventListener("click", downloadLegends);
   byId("notesUpload").addEventListener("click", () => legendsToLoad.click());
   byId("legendsToLoad").addEventListener("change", function () {
