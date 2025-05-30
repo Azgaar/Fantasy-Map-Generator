@@ -10,7 +10,7 @@ const PROVIDERS = {
     generate: generateWithAnthropic
   },
   ollama: {
-    keyLink: "https://ollama.com/library", // Link to Ollama model library
+    keyLink: "https://ollama.com/library",
     generate: generateWithOllama
   }
 };
@@ -27,12 +27,11 @@ const MODELS = {
   "claude-3-5-haiku-latest": "anthropic",
   "claude-3-5-sonnet-latest": "anthropic",
   "claude-3-opus-latest": "anthropic",
-  "Ollama (enter model in key field)": "ollama" // Entry for Ollama
+  "Ollama (enter model in key field)": "ollama" 
 };
 
 const SYSTEM_MESSAGE = "I'm working on my fantasy map.";
 
-// Initialize a flag for one-time setup if it doesn't exist
 if (typeof modules.generateWithAi_setupDone === 'undefined') {
   modules.generateWithAi_setupDone = false;
 }
@@ -153,7 +152,7 @@ async function handleStream(response, getContent, providerType) {
     for (let i = 0; i < lines.length - 1; i++) {
       const line = lines[i].trim();
       if (providerType === "ollama") {
-        if (line) { // Ollama sends JSON objects directly, hopefully one per line
+        if (line) {
           try {
             const json = JSON.parse(line);
             getContent(json);
@@ -161,7 +160,7 @@ async function handleStream(response, getContent, providerType) {
             ERROR && console.error(`Failed to parse JSON from Ollama:`, jsonError, `Line: ${line}`);
           }
         }
-      } else { // Existing logic for OpenAI/Anthropic (SSE)
+      } else { 
         if (line.startsWith("data: ") && line !== "data: [DONE]") {
           try {
             const json = JSON.parse(line.slice(6));
@@ -178,14 +177,14 @@ async function handleStream(response, getContent, providerType) {
 }
 
 function generateWithAi(defaultPrompt, onApply) {
-  // Helper function to update dialog UI elements
+
   function updateDialogElements() {
     byId("aiGeneratorResult").value = "";
     byId("aiGeneratorPrompt").value = defaultPrompt;
     byId("aiGeneratorTemperature").value = localStorage.getItem("fmg-ai-temperature") || "1";
 
     const select = byId("aiGeneratorModel");
-    const currentModelVal = select.value; // Preserve current selection if possible before clearing
+    const currentModelVal = select.value; 
     select.options.length = 0;
     Object.keys(MODELS).forEach(model => select.options.add(new Option(model, model)));
     
@@ -197,11 +196,11 @@ function generateWithAi(defaultPrompt, onApply) {
     } else {
       select.value = DEFAULT_MODEL;
     }
-    if (!select.value || !MODELS[select.value]) select.value = DEFAULT_MODEL; // Final fallback
+    if (!select.value || !MODELS[select.value]) select.value = DEFAULT_MODEL; 
 
     const provider = MODELS[select.value];
-    const keyInput = byId("aiGeneratorKey"); // Define keyInput here
-    if (keyInput) { // Check if keyInput exists
+    const keyInput = byId("aiGeneratorKey");
+    if (keyInput) { 
         keyInput.value = localStorage.getItem(`fmg-ai-kl-${provider}`) || "";
         if (provider === "ollama") {
           keyInput.placeholder = "Enter Ollama model name (e.g., llama3)";
@@ -213,7 +212,6 @@ function generateWithAi(defaultPrompt, onApply) {
     }
   }
 
-  // Async helper function for the "Generate" button
   async function doGenerate(button) {
     const key = byId("aiGeneratorKey").value;
     const modelValue = byId("aiGeneratorModel").value;
@@ -260,7 +258,7 @@ function generateWithAi(defaultPrompt, onApply) {
     width: Math.min(600, window.innerWidth - 20),
     modal: true,
     open: function() {
-      // Perform one-time setup for event listeners if not already done
+
       if (!modules.generateWithAi_setupDone) {
         const keyHelpButton = byId("aiGeneratorKeyHelp");
         if (keyHelpButton) {
@@ -289,7 +287,7 @@ function generateWithAi(defaultPrompt, onApply) {
                 } else {
                     keyInput.placeholder = "Enter API Key";
                 }
-                // Load the stored key for the newly selected provider
+
                 keyInput.value = localStorage.getItem(`fmg-ai-kl-${newProvider}`) || "";
               } else {
                 ERROR && console.error("AI Generator: Could not find 'aiGeneratorKey' element during model change listener.");
@@ -301,12 +299,11 @@ function generateWithAi(defaultPrompt, onApply) {
         modules.generateWithAi_setupDone = true;
       }
 
-      // Always update dialog elements when dialog is opened
       updateDialogElements();
     },
     buttons: {
       "Generate": function (e) {
-        // The button passed to doGenerate is the DOM element itself, not the jQuery event object.
+
         doGenerate(e.currentTarget || e.target);
       },
       "Apply": function () {
@@ -322,6 +319,4 @@ function generateWithAi(defaultPrompt, onApply) {
   });
 }
 
-// Expose the generateWithAi function
-modules.generateWithAi = generateWithAi;
 window.generateWithAi = generateWithAi;
