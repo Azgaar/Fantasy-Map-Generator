@@ -1,4 +1,3 @@
-# Fantasy Map Generator - Ck3
 
 ## Recent Changes (May 18, 2025)
 
