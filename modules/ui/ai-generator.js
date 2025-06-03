@@ -132,7 +132,7 @@ async function handleStream(response, getContent, providerType) {
         errorMessage = json?.error?.message || json?.error || `Failed to generate (${response.status} ${response.statusText})`;
       }
     } catch (e) {
-      // Error message is already set, or parsing failed.
+      
       ERROR && console.error("Failed to parse error response JSON:", e)
     }
     throw new Error(errorMessage);
