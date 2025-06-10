@@ -214,7 +214,7 @@ function overviewMarkers() {
 
     const body = pack.markers.map(marker => {
       const {i, type, icon, x, y} = marker;
-      const id = `marker${i}`;
+      
       const note = notes.find(note => note.id === id);
       const name = note ? quote(note.name) : "Unknown";
       const legend = note ? quote(note.legend) : "";
@@ -222,7 +222,7 @@ function overviewMarkers() {
       const lat = getLatitude(y, 2);
       const lon = getLongitude(x, 2);
 
-      return [id, type, icon, name, legend, x, y, lat, lon].join(",");
+      return [i, type, icon, name, legend, x, y, lat, lon].join(",");
     });
 
     const data = headers + body.join("\n");
