@@ -485,11 +485,10 @@ function saveGeoJsonCells() {
 function saveGeoJsonRoutes() {
   const features = pack.routes.map(({i, points, group, name = null}) => {
     const coordinates = points.map(([x, y]) => getCoordinates(x, y, 4));
-    const id = `route${i}`;
     return {
       type: "Feature",
       geometry: {type: "LineString", coordinates},
-      properties: {id, group, name}
+      properties: {id: i, group, name}
     };
   });
   const json = {type: "FeatureCollection", features};
@@ -504,11 +503,10 @@ function saveGeoJsonRivers() {
       if (!cells || cells.length < 2) return;
       const meanderedPoints = Rivers.addMeandering(cells, points);
       const coordinates = meanderedPoints.map(([x, y]) => getCoordinates(x, y, 4));
-      const id = `river${i}`;
       return {
         type: "Feature",
         geometry: {type: "LineString", coordinates},
-        properties: {id, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type}
+        properties: {id: i, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type}
       };
     }
   );
@@ -522,9 +520,8 @@ function saveGeoJsonMarkers() {
   const features = pack.markers.map(marker => {
     const {i, type, icon, x, y, size, fill, stroke} = marker;
     const coordinates = getCoordinates(x, y, 4);
-    const id = `marker${i}`;
     const note = notes.find(note => note.id === id);
-    const properties = {id, type, icon, x, y, ...note, size, fill, stroke};
+    const properties = {id: i, type, icon, x, y, ...note, size, fill, stroke};
     return {type: "Feature", geometry: {type: "Point", coordinates}, properties};
   });
 
