@@ -8,6 +8,10 @@ const PROVIDERS = {
   anthropic: {
     keyLink: "https://console.anthropic.com/account/keys",
     generate: generateWithAnthropic
+  },
+  ollama: {
+    keyLink: "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Ollama-text-generation",
+    generate: generateWithOllama
   }
 };
 
@@ -18,11 +22,16 @@ const MODELS = {
   "chatgpt-4o-latest": "openai",
   "gpt-4o": "openai",
   "gpt-4-turbo": "openai",
-  "o1-preview": "openai",
-  "o1-mini": "openai",
+  o3: "openai",
+  "o3-mini": "openai",
+  "o3-pro": "openai",
+  "o4-mini": "openai",
+  "claude-opus-4-20250514": "anthropic",
+  "claude-sonnet-4-20250514": "anthropic",
   "claude-3-5-haiku-latest": "anthropic",
   "claude-3-5-sonnet-latest": "anthropic",
-  "claude-3-opus-latest": "anthropic"
+  "claude-3-opus-latest": "anthropic",
+  "ollama (local models)": "ollama"
 };
 
 const SYSTEM_MESSAGE = "I'm working on my fantasy map.";
@@ -76,10 +85,36 @@ async function generateWithAnthropic({key, model, prompt, temperature, onContent
   await handleStream(response, getContent);
 }
 
+async function generateWithOllama({key, model, prompt, temperature, onContent}) {
+  const ollamaModelName = key; // for Ollama, 'key' is the actual model name entered by the user
+
+  const response = await fetch("http://localhost:11434/api/generate", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      model: ollamaModelName,
+      prompt,
+      system: SYSTEM_MESSAGE,
+      options: {temperature},
+      stream: true
+    })
+  });
+
+  const getContent = json => {
+    if (json.response) onContent(json.response);
+  };
+
+  await handleStream(response, getContent);
+}
+
 async function handleStream(response, getContent) {
   if (!response.ok) {
-    const json = await response.json();
-    throw new Error(json?.error?.message || "Failed to generate");
+    let errorMessage = `Failed to generate (${response.status} ${response.statusText})`;
+    try {
+      const json = await response.json();
+      errorMessage = json.error?.message || json.error || errorMessage;
+    } catch {}
+    throw new Error(errorMessage);
   }
 
   const reader = response.body.getReader();
@@ -95,13 +130,14 @@ async function handleStream(response, getContent) {
 
     for (let i = 0; i < lines.length - 1; i++) {
       const line = lines[i].trim();
-      if (line.startsWith("data: ") && line !== "data: [DONE]") {
-        try {
-          const json = JSON.parse(line.slice(6));
-          getContent(json);
-        } catch (jsonError) {
-          ERROR && console.error(`Failed to parse JSON:`, jsonError, `Line: ${line}`);
-        }
+      if (!line) continue;
+      if (line === "data: [DONE]") break;
+
+      try {
+        const parsed = line.startsWith("data: ") ? JSON.parse(line.slice(6)) : JSON.parse(line);
+        getContent(parsed);
+      } catch (error) {
+        ERROR && console.error("Failed to parse line:", line, error);
       }
     }
 
