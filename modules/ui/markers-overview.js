@@ -214,8 +214,8 @@ function overviewMarkers() {
 
     const body = pack.markers.map(marker => {
       const {i, type, icon, x, y} = marker;
-      
-      const note = notes.find(note => note.id === id);
+
+      const note = notes.find(note => note.id === i);
       const name = note ? quote(note.name) : "Unknown";
       const legend = note ? quote(note.legend) : "";
 
