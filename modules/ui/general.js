@@ -523,7 +523,7 @@ function showInfo() {
   const Discord = link("https://discordapp.com/invite/X7E84HU", "Discord");
   const Reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit");
   const Patreon = link("https://www.patreon.com/azgaar", "Patreon");
-  const Armoria = link("https://azgaar.github.io/Armoria", "Armoria");
+  const Armoria = link("https://armoria.vercel.app", "Armoria");
   const Deorum = link("https://deorum.vercel.app", "Deorum");
 
   const QuickStart = link(
