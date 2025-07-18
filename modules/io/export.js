@@ -320,6 +320,40 @@ async function getMapURL(type, options) {
     if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
   }
 
+  {
+    // replace external marker icons
+    const externalMarkerImages = cloneEl.querySelectorAll('#markers image[href]:not([href=""])');
+    const imageHrefs = Array.from(externalMarkerImages).map(img => img.getAttribute("href"));
+
+    for (const url of imageHrefs) {
+      await new Promise(resolve => {
+        getBase64(url, base64 => {
+          externalMarkerImages.forEach(img => {
+            if (img.getAttribute("href") === url) img.setAttribute("href", base64);
+          });
+          resolve();
+        });
+      });
+    }
+  }
+
+  {
+    // replace external regiment icons
+    const externalRegimentImages = cloneEl.querySelectorAll('#armies image[href]:not([href=""])');
+    const imageHrefs = Array.from(externalRegimentImages).map(img => img.getAttribute("href"));
+
+    for (const url of imageHrefs) {
+      await new Promise(resolve => {
+        getBase64(url, base64 => {
+          externalRegimentImages.forEach(img => {
+            if (img.getAttribute("href") === url) img.setAttribute("href", base64);
+          });
+          resolve();
+        });
+      });
+    }
+  }
+
   if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog")?.remove(); // remove unused fog
   if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths")?.remove(); // removed unused statePaths
   if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths")?.remove(); // removed unused textPaths
