@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" /> <!-- You can change this later -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fantasy Map Generator (Vite)</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+
+<body>
+  <div id="app">
+    <!-- All your FMG UI elements (options panel, buttons, etc.) will go here -->
+    <div id="optionsContainer">
+      <!-- e.g., <input type="text" id="optionsSeed" /> -->
+      <!-- Add inside #optionsContainer in index.html -->
+      <input type="text" id="optionsSeed" placeholder="Enter seed" />
+      <button id="generateMapButton">Generate Map</button>
+      <button id="newMapButton">New Map</button>
+    </div>
+
+    <!-- The main SVG map container -->
+    <svg id="map" version="1.1" xmlns="http://www.w3.org/2000/svg">
+      <defs id="deftemp"></defs>
+      <g id="viewbox"></g>
+      <!-- ... other static SVG groups -->
+    </svg>
+  </div>
+  <!-- Comment out the old script loading order -->
+  <!-- <script type="module" src="/main.js"></script> -->
+  
+  <!-- Add the new entry point -->
+  <script type="module" src="src/viewer/main.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
+  <g id="crossPattee" stroke-width=".5">
+    <path d="M 77,62 C 88,71 95,82 96,96 82,95 71,88 62,77 v 46 c 9,-11 20,-18 34,-19 -1,14 -8,25 -19,34 h 46 c -11,-9 -18,-20 -19,-34 14,1 25,8 34,19 V 77 c -9,11 -20,18 -34,19 1,-14 8,-25 19,-34 z"/>
+  </g>
+</svg>

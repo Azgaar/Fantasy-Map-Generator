@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+<metadata source="https://commons.wikimedia.org/wiki/File:Meuble_h%C3%A9raldique_lance_avec_banderole.svg" author="Jean-Paul Gibert" license="https://creativecommons.org/licenses/by/4.0"/>
+  <g id="lanceWithBanner" stroke-width="2.5" transform="matrix(0.185,0,0,0.185,140.3,114.6)">
+    <path class="secondary" d="M-249.73-27.31c-6.8-23.97-14.78-27.25-20.1-44.83 19.47-34.63 60.7-23.43 60.7-23.43l.08-151.9c-11 3.58-67.14 22.88-83.09 105.12-15.94 82.25 1.82 116.19 11.8 129.06 3.54 4 6.95 8.28 10.62 12.06-1.65 7.64-7.84 29.4-23.88 33.26 11.67 12.83 31.04 4.67 38.94-2.97 6.3-8.78 12.12-31.02 4.93-56.37z"/>
+    <path d="M-200.5-247.46h-8.39l-.28 382.6 8.38.01z"/>
+    <path class="tertiary" d="M-204.65-291.64l-12.93 25.9s8.59 7.63 8.58 18.24h8.39c0-10.6 8.84-18.23 8.84-18.23z"/>
+    <path fill="none" d="M-269.72-1.23c8.01 8.1 16.19 14.95 15.06 30.3m-25.69-42.36s-7-29.76 10.51-58.85"/>
+  </g>
+</svg>

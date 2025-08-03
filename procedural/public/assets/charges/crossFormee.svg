@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
+  <g id="crossFormee" stroke-width=".5">
+    <path d="m 90,60 h 20 c -3,8 -6,30 -5,35 5,1 27,-2 35,-5 v 20 c -8,-3 -30,-6 -35,-5 -1,5 2,27 5,35 H 90 c 3,-8 6,-30 5,-35 -4,-1 -27,2 -35,5 V 90 c 8,3 30,6 35,5 1,-5 -2,-27 -5,-35 z"/>
+  </g>
+</svg>

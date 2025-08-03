@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
+  <g id="crossFitchy" stroke-width=".5">
+    <path d="M 92,92 V 70 l 8,-10 8,10 v 22 h 22 l 10,8 -10,8 h -22 v 22 l -8,10 -8,-10 V 108 H 70 l -10,-8 10,-8 z"/>
+  </g>
+</svg>
