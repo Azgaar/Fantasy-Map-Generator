@@ -1,8 +1,9 @@
 "use strict";
 
 export function generate(pack, config, utils, notes) {
-  const {TIME, minmax, rn, ra, rand, gauss, si, nth, d3, populationRate, urbanization} = utils;
-  
+  const { minmax, rn, ra, rand, gauss, si, nth, d3, populationRate, urbanization} = utils;
+  const { TIME } = config.debug;
+
   TIME && console.time("generateMilitary");
   const {cells, states, burgs, provinces} = pack;
   const {p} = cells;
@@ -312,7 +313,7 @@ export function generate(pack, config, utils, notes) {
   }
 
   TIME && console.timeEnd("generateMilitary");
-  
+
   return pack;
 }
 

@@ -1,8 +1,9 @@
 "use strict";
 
 export const generate = function (pack, grid, config, utils) {
-  const { TIME, WARN, ERROR, rand, rn, P, minmax, biased, rw, abbreviate } = utils;
-  
+  const { WARN, ERROR, rand, rn, P, minmax, biased, rw, abbreviate } = utils;
+  const { TIME } = config.debug;
+
   TIME && console.time("generateCultures");
   const cells = pack.cells;
 
@@ -19,7 +20,7 @@ export const generate = function (pack, grid, config, utils) {
       WARN && console.warn(`There are no populated cells. Cannot generate cultures`);
       const cultures = [{name: "Wildlands", i: 0, base: 1, shield: "round"}];
       cells.culture = cultureIds;
-      
+
       // Return data structure with error info for UI handling
       return {
         cultures,
@@ -90,7 +91,7 @@ export const generate = function (pack, grid, config, utils) {
   cultures.forEach(c => (c.base = c.base % utils.nameBases.length));
 
   TIME && console.timeEnd("generateCultures");
-  
+
   return {
     cultures,
     cells: { culture: cultureIds }
@@ -101,7 +102,7 @@ function placeCenter(sortingFn, populated, cultureIds, centers, cells, config, u
   const graphWidth = config.graphWidth;
   const graphHeight = config.graphHeight;
   const count = populated.length;
-  
+
   let spacing = (graphWidth + graphHeight) / 2 / count;
   const MAX_ATTEMPTS = 100;
 
@@ -568,7 +569,7 @@ export const expand = function (pack, config, utils) {
   }
 
   TIME && console.timeEnd("expandCultures");
-  
+
   return {
     cells: { culture: cells.culture }
   };

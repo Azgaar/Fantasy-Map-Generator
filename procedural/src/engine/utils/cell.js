@@ -3,11 +3,12 @@
 
 // calculate cell suitability and population based on various factors
 function rankCells(pack, grid, utils, modules) {
-  const { TIME, normalize } = utils;
+  const { normalize } = utils;
+  const { TIME } = config.debug;
   const { biomesData } = modules;
-  
+
   TIME && console.time("rankCells");
-  
+
   const { cells, features } = pack;
   const s = new Int16Array(cells.i.length); // cell suitability array
   const pop = new Float32Array(cells.i.length); // cell population array
@@ -18,10 +19,10 @@ function rankCells(pack, grid, utils, modules) {
 
   for (const i of cells.i) {
     if (cells.h[i] < 20) continue; // no population in water
-    
+
     let suitability = +biomesData.habitability[cells.biome[i]]; // base suitability derived from biome habitability
     if (!suitability) continue; // uninhabitable biomes has 0 suitability
-    
+
     if (flMean) suitability += normalize(cells.fl[i] + cells.conf[i], flMean, flMax) * 250; // big rivers and confluences are valued
     suitability -= (cells.h[i] - 50) / 5; // low elevation is valued, high is not;
 
@@ -47,7 +48,7 @@ function rankCells(pack, grid, utils, modules) {
   }
 
   TIME && console.timeEnd("rankCells");
-  
+
   return { s, pop };
 }
 

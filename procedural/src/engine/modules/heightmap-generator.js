@@ -1,19 +1,19 @@
 "use strict";
 
 export async function generate(graph, config, utils) {
-  const { aleaPRNG, heightmapTemplates, TIME } = utils;
+  const { aleaPRNG, heightmapTemplates } = utils;
+  const { TIME } = config.debug;
   const { templateId, seed } = config;
 
   TIME && console.time("defineHeightmap");
-  
-  Math.random = aleaPRNG(seed);
+
   const isTemplate = templateId in heightmapTemplates;
-  const heights = isTemplate 
-    ? fromTemplate(graph, templateId, config, utils) 
+  const heights = isTemplate
+    ? fromTemplate(graph, templateId, config, utils)
     : await fromPrecreated(graph, templateId, config, utils);
-  
+
   TIME && console.timeEnd("defineHeightmap");
-  
+
   return heights;
 }
 
@@ -35,7 +35,7 @@ export function fromTemplate(graph, id, config, utils) {
   const steps = templateString.split("\n");
 
   if (!steps.length) throw new Error(`Heightmap template: no steps. Template: ${id}. Steps: ${steps}`);
-  
+
   let { heights, blobPower, linePower } = setGraph(graph, utils);
 
   for (const step of steps) {
@@ -53,7 +53,7 @@ function setGraph(graph, utils) {
   const heights = cells.h ? Uint8Array.from(cells.h) : createTypedArray({ maxValue: 100, length: points.length });
   const blobPower = getBlobPower(cellsDesired);
   const linePower = getLinePower(cellsDesired);
-  
+
   return { heights, blobPower, linePower };
 }
 
@@ -113,10 +113,10 @@ function getLinePower(cells) {
 export function addHill(heights, graph, blobPower, config, utils, count, height, rangeX, rangeY) {
   const { getNumberInRange, lim, findGridCell } = utils;
   const { graphWidth, graphHeight } = config;
-  
+
   heights = new Uint8Array(heights);
   count = getNumberInRange(count);
-  
+
   while (count > 0) {
     addOneHill();
     count--;
@@ -149,17 +149,17 @@ export function addHill(heights, graph, blobPower, config, utils, count, height,
 
     heights = heights.map((h, i) => lim(h + change[i]));
   }
-  
+
   return heights;
 }
 
 export function addPit(heights, graph, blobPower, config, utils, count, height, rangeX, rangeY) {
   const { getNumberInRange, lim, findGridCell } = utils;
   const { graphWidth, graphHeight } = config;
-  
+
   heights = new Uint8Array(heights);
   count = getNumberInRange(count);
-  
+
   while (count > 0) {
     addOnePit();
     count--;
@@ -192,17 +192,17 @@ export function addPit(heights, graph, blobPower, config, utils, count, height, 
       });
     }
   }
-  
+
   return heights;
 }
 
 export function addRange(heights, graph, linePower, config, utils, count, height, rangeX, rangeY, startCell, endCell) {
   const { getNumberInRange, lim, findGridCell, d3 } = utils;
   const { graphWidth, graphHeight } = config;
-  
+
   heights = new Uint8Array(heights);
   count = getNumberInRange(count);
-  
+
   while (count > 0) {
     addOneRange();
     count--;
@@ -291,17 +291,17 @@ export function addRange(heights, graph, linePower, config, utils, count, height
       }
     });
   }
-  
+
   return heights;
 }
 
 export function addTrough(heights, graph, linePower, config, utils, count, height, rangeX, rangeY, startCell, endCell) {
   const { getNumberInRange, lim, findGridCell, d3 } = utils;
   const { graphWidth, graphHeight } = config;
-  
+
   heights = new Uint8Array(heights);
   count = getNumberInRange(count);
-  
+
   while (count > 0) {
     addOneTrough();
     count--;
@@ -396,18 +396,18 @@ export function addTrough(heights, graph, linePower, config, utils, count, heigh
       }
     });
   }
-  
+
   return heights;
 }
 
 export function addStrait(heights, graph, config, utils, width, direction = "vertical") {
   const { getNumberInRange, findGridCell, P } = utils;
   const { graphWidth, graphHeight } = config;
-  
+
   heights = new Uint8Array(heights);
   width = Math.min(getNumberInRange(width), graph.cellsX / 3);
   if (width < 1 && P(width)) return heights;
-  
+
   const used = new Uint8Array(heights.length);
   const vert = direction === "vertical";
   const startX = vert ? Math.floor(Math.random() * graphWidth * 0.4 + graphWidth * 0.3) : 5;
@@ -461,13 +461,13 @@ export function addStrait(heights, graph, config, utils, width, direction = "ver
 
     width--;
   }
-  
+
   return heights;
 }
 
 export function modify(heights, range, add, mult, power, utils) {
   const { lim } = utils;
-  
+
   heights = new Uint8Array(heights);
   const min = range === "land" ? 20 : range === "all" ? 0 : +range.split("-")[0];
   const max = range === "land" || range === "all" ? 100 : +range.split("-")[1];
@@ -481,13 +481,13 @@ export function modify(heights, range, add, mult, power, utils) {
     if (power) h = isLand ? (h - 20) ** power + 20 : h ** power;
     return lim(h);
   });
-  
+
   return heights;
 }
 
 export function smooth(heights, graph, utils, fr = 2, add = 0) {
   const { lim, d3 } = utils;
-  
+
   heights = new Uint8Array(heights);
   heights = heights.map((h, i) => {
     const a = [h];
@@ -495,14 +495,14 @@ export function smooth(heights, graph, utils, fr = 2, add = 0) {
     if (fr === 1) return d3.mean(a) + add;
     return lim((h * (fr - 1) + d3.mean(a) + add) / fr);
   });
-  
+
   return heights;
 }
 
 export function mask(heights, graph, config, utils, power = 1) {
   const { lim } = utils;
   const { graphWidth, graphHeight } = config;
-  
+
   heights = new Uint8Array(heights);
   const fr = power ? Math.abs(power) : 1;
 
@@ -515,13 +515,13 @@ export function mask(heights, graph, config, utils, power = 1) {
     const masked = h * distance;
     return lim((h * (fr - 1) + masked) / fr);
   });
-  
+
   return heights;
 }
 
 export function invert(heights, graph, config, utils, count, axes) {
   const { P } = utils;
-  
+
   if (!P(count)) return heights;
 
   heights = new Uint8Array(heights);
@@ -544,7 +544,7 @@ export function invert(heights, graph, config, utils, count, axes) {
 
 function getPointInRange(range, length, utils) {
   const { rand } = utils;
-  
+
   if (typeof range !== "string") {
     console.error("Range should be a string");
     return;

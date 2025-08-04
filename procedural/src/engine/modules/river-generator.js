@@ -1,12 +1,12 @@
 "use strict";
 
 export const generate = function (pack, grid, config, utils, modules, allowErosion = true) {
-  const {TIME, seed, aleaPRNG, resolveDepressionsSteps, cellsCount, graphWidth, graphHeight, WARN} = config;
+  const { seed, aleaPRNG, resolveDepressionsSteps, cellsCount, graphWidth, graphHeight, WARN} = config;
   const {rn, rw, each, round, d3, lineGen} = utils;
   const {Lakes, Names} = modules;
+  const { TIME } = config.debug;
 
   TIME && console.time("generateRivers");
-  Math.random = aleaPRNG(seed);
   const {cells, features} = pack;
 
   const riversData = {}; // rivers data
@@ -531,7 +531,7 @@ export const getWidth = (utils, offset) => {
 export const remove = function (pack, grid, id) {
   const cells = pack.cells;
   const riversToRemove = pack.rivers.filter(r => r.i === id || r.parent === id || r.basin === id).map(r => r.i);
-  
+
   // Update cells data
   cells.r.forEach((r, i) => {
     if (!r || !riversToRemove.includes(r)) return;

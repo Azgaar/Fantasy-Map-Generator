@@ -452,7 +452,7 @@ const expansionismMap = {
 };
 
 export function generate(pack, grid, config, utils) {
-  const {TIME} = utils;
+  const { TIME } = config.debug;
   TIME && console.time("generateReligions");
   const lockedReligions = pack.religions?.filter(r => r.i && r.lock && !r.removed) || [];
 
@@ -627,7 +627,7 @@ function combineReligions(namedReligions, lockedReligions, utils) {
       .map(religion => {
         // and filter their origins to locked religions
         let newOrigin = religion.origins.filter(n => lockedReligions.some(({i: index}) => index === n));
-        if (newOrigin === []) newOrigin = [0];
+        if (newOrigin.length === 0) newOrigin = [0];
         return {...religion, origins: newOrigin};
       })
       .sort((a, b) => a.i - b.i);

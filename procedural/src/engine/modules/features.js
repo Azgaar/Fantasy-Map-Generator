@@ -26,11 +26,10 @@ function markup({distanceField, neighbors, start, increment, limit = utils.INT8_
 
 // mark Grid features (ocean, lakes, islands) and calculate distance field
 export function markupGrid(grid, config, utils) {
-  const {TIME, seed, aleaPRNG} = config;
   const {rn} = utils;
+  const { TIME } = config.debug;
 
   TIME && console.time("markupGrid");
-  Math.random = aleaPRNG(seed); // get the same result on heightmap edit in Erase mode
 
   const {h: heights, c: neighbors, b: borderCells, i} = grid.cells;
   const cellsNumber = i.length;

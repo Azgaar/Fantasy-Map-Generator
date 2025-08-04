@@ -1,7 +1,7 @@
 "use strict";
 
 export const generate = (pack, grid, config, utils) => {
-  
+
   const {cells, cultures} = pack;
   const n = cells.i.length;
 
@@ -36,7 +36,8 @@ export const generate = (pack, grid, config, utils) => {
 };
 
 function placeCapitals(pack, grid, config, utils) {
-  const {TIME, WARN, d3, graphWidth, graphHeight} = utils;
+  const { WARN, d3, graphWidth, graphHeight} = utils;
+  const { TIME } = config.debug;
   TIME && console.time("placeCapitals");
   let count = config.statesNumber;
   let burgs = [0];

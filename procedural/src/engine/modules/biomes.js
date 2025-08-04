@@ -53,7 +53,7 @@ export const getDefault = () => {
   ];
   const cost = [10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150]; // biome movement cost
   const biomesMartix = [
-    // hot ” cold [>19°C; <-4°C]; dry • wet
+    // hot ï¿½ cold [>19ï¿½C; <-4ï¿½C]; dry ï¿½ wet
     new Uint8Array([1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 10]),
     new Uint8Array([3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 9, 9, 9, 9, 10, 10, 10]),
     new Uint8Array([5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 9, 9, 9, 9, 9, 10, 10, 10]),
@@ -77,7 +77,8 @@ export const getDefault = () => {
 
 // assign biome id for each cell
 export function define(pack, grid, config, utils) {
-  const {TIME, d3, rn} = utils;
+  const { d3, rn} = utils;
+  const { TIME } = config.debug;
   TIME && console.time("defineBiomes");
 
   const {fl: flux, r: riverIds, h: heights, c: neighbors, g: gridReference} = pack.cells;
@@ -109,7 +110,7 @@ export function define(pack, grid, config, utils) {
 
 export function getId(moisture, temperature, height, hasRiver, biomesData = null) {
   const data = biomesData || getDefault();
-  
+
   if (height < 20) return 0; // all water cells: marine biome
   if (temperature < -5) return 11; // too cold: permafrost biome
   if (temperature >= 25 && !hasRiver && moisture < 8) return 1; // too hot and dry: hot desert biome

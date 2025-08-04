@@ -10,22 +10,22 @@ const forms = {
 };
 
 export const generate = (pack, config, utils, regenerate = false, regenerateLockedStates = false) => {
-  const { 
-    TIME, 
-    generateSeed, 
-    aleaPRNG, 
-    gauss, 
-    P, 
-    Names, 
-    rw, 
-    getMixedColor, 
-    BurgsAndStates, 
-    COA, 
-    FlatQueue, 
-    d3, 
-    rand 
+  const {
+    generateSeed,
+    aleaPRNG,
+    gauss,
+    P,
+    Names,
+    rw,
+    getMixedColor,
+    BurgsAndStates,
+    COA,
+    FlatQueue,
+    d3,
+    rand
   } = utils;
-  
+  const { TIME } = config.debug;
+
   TIME && console.time("generateProvinces");
   const localSeed = regenerate ? generateSeed() : config.seed;
   Math.random = aleaPRNG(localSeed);
@@ -262,7 +262,7 @@ export const generate = (pack, config, utils, regenerate = false, regenerateLock
 // calculate pole of inaccessibility for each province
 export const getPoles = (pack, utils) => {
   const { getPolesOfInaccessibility } = utils;
-  
+
   const getType = cellId => pack.cells.province[cellId];
   const poles = getPolesOfInaccessibility(pack, getType);
 

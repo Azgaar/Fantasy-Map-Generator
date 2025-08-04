@@ -1,5 +1,7 @@
 "use strict";
 
+import { UINT8_MAX, UINT16_MAX, UINT32_MAX } from "./numberUtils.js";
+
 function last(array) {
   return array[array.length - 1];
 }

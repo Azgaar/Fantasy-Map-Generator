@@ -10,5 +10,10 @@
   },
   "devDependencies": {
     "vite": "^7.0.4"
+  },
+  "dependencies": {
+    "aleaprng": "^1.0.1",
+    "d3": "^5.16.0",
+    "delaunator": "^5.0.1"
   }
 }

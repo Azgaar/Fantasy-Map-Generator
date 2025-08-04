@@ -58,7 +58,7 @@ export function getDefaultMarkersConfig(config, utils) {
 }
 
 export function generateMarkers(pack, config, utils) {
-  const {TIME} = utils;
+  const { TIME } = config.debug;
   const markersConfig = getDefaultMarkersConfig(config, utils);
   const markers = [];
   const notes = [];
@@ -100,7 +100,7 @@ export function regenerateMarkers(pack, existingMarkers, config, utils) {
   });
 
   const { markers: newMarkers, notes } = generateMarkers(pack, config, utils);
-  
+
   return {
     markers: [...filteredMarkers, ...newMarkers],
     notes,
@@ -112,7 +112,7 @@ export function addSingleMarker(marker, pack, config, utils) {
   const markersConfig = getDefaultMarkersConfig(config, utils);
   const base = markersConfig.find(c => c.type === marker.type);
   const notes = [];
-  
+
   if (base) {
     const {icon, type, dx, dy, px} = base;
     const newMarker = addMarker({icon, type, dx, dy, px}, marker, pack, [], utils);
@@ -294,9 +294,9 @@ function listInns({cells}, utils) {
 
 function addInn(id, cell, pack, notes, utils) {
   const {P, ra, capitalize} = utils;
-  
+
   const colors = [
-    "Dark", "Light", "Bright", "Golden", "White", "Black", "Red", "Pink", "Purple", "Blue", 
+    "Dark", "Light", "Bright", "Golden", "White", "Black", "Red", "Pink", "Purple", "Blue",
     "Green", "Yellow", "Amber", "Orange", "Brown", "Grey"
   ];
   const animals = [

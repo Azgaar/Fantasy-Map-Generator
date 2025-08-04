@@ -1,6 +1,9 @@
 "use strict";
 // FMG utils related to randomness
 
+import { rn, minmax, lim, normalize, lerp } from "./numberUtils.js";
+import * as d3 from 'd3'; // Or import specific d3 modules
+
 // random number in a range
 function rand(min, max) {
   if (min === undefined && max === undefined) return Math.random();

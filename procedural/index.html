@@ -1,37 +1,308 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fantasy Map Generator - Procedural Engine</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" /> <!-- You can change this later -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fantasy Map Generator (Vite)</title>
-  <link rel="stylesheet" href="/style.css" />
-</head>
+  <body>
+    <div id="app">
+      <!-- Configuration Panel -->
+      <div id="optionsContainer">
+        <h2>Map Configuration</h2>
+        
+        <!-- Preset Selector -->
+        <div class="config-section">
+          <label for="presetSelector">Preset:</label>
+          <select id="presetSelector">
+            <option value="custom">Custom</option>
+          </select>
+        </div>
 
-<body>
-  <div id="app">
-    <!-- All your FMG UI elements (options panel, buttons, etc.) will go here -->
-    <div id="optionsContainer">
-      <!-- e.g., <input type="text" id="optionsSeed" /> -->
-      <!-- Add inside #optionsContainer in index.html -->
-      <input type="text" id="optionsSeed" placeholder="Enter seed" />
-      <button id="generateMapButton">Generate Map</button>
-      <button id="newMapButton">New Map</button>
+        <!-- Core Settings -->
+        <div class="config-section">
+          <h3>Core Settings</h3>
+          <label for="optionsSeed">Seed:</label>
+          <input type="text" id="optionsSeed" placeholder="Auto-generate" />
+          <input type="text" id="seed" placeholder="Alternative seed input" />
+          
+          <label for="mapWidthInput">Width:</label>
+          <input type="number" id="mapWidthInput" value="1920" min="100" max="8192" />
+          
+          <label for="mapHeightInput">Height:</label>
+          <input type="number" id="mapHeightInput" value="1080" min="100" max="8192" />
+        </div>
+
+        <!-- Graph Settings -->
+        <div class="config-section">
+          <h3>Graph Settings</h3>
+          <label for="pointsInput">Cells:</label>
+          <input type="number" id="pointsInput" value="10000" min="1000" max="100000" data-cells="10000" />
+          
+          <label for="cellsNumber">Cell Count:</label>
+          <input type="number" id="cellsNumber" value="10000" readonly />
+          
+          <label for="pointsNumber">Points:</label>
+          <input type="number" id="pointsNumber" value="10000" readonly />
+          
+          <label for="boundary">Boundary:</label>
+          <select id="boundary">
+            <option value="box">Box</option>
+            <option value="circle">Circle</option>
+          </select>
+        </div>
+
+        <!-- Heightmap Settings -->
+        <div class="config-section">
+          <h3>Heightmap</h3>
+          <label for="templateInput">Template:</label>
+          <select id="templateInput">
+            <option value="continents">Continents</option>
+            <option value="archipelago">Archipelago</option>
+            <option value="highland">Highland</option>
+            <option value="inland">Inland</option>
+            <option value="lakes">Lakes</option>
+            <option value="islands">Islands</option>
+            <option value="atoll">Atoll</option>
+            <option value="volcano">Volcano</option>
+            <option value="crater">Crater</option>
+          </select>
+        </div>
+
+        <!-- Temperature Settings -->
+        <div class="config-section">
+          <h3>Temperature</h3>
+          <label for="temperatureEquatorOutput">Equator:</label>
+          <input type="number" id="temperatureEquatorOutput" value="30" />
+          
+          <label for="temperatureNorthPoleOutput">North Pole:</label>
+          <input type="number" id="temperatureNorthPoleOutput" value="-10" />
+          
+          <label for="temperatureSouthPoleOutput">South Pole:</label>
+          <input type="number" id="temperatureSouthPoleOutput" value="-15" />
+          
+          <label for="heightExponentInput">Height Exponent:</label>
+          <input type="number" id="heightExponentInput" value="1.8" min="0.5" max="5" step="0.1" />
+          
+          <label for="temperatureScale">Scale:</label>
+          <select id="temperatureScale">
+            <option value="C">Celsius</option>
+            <option value="F">Fahrenheit</option>
+          </select>
+          
+          <label for="temperatureBase">Base Temp:</label>
+          <input type="number" id="temperatureBase" value="25" />
+        </div>
+
+        <!-- Precipitation Settings -->
+        <div class="config-section">
+          <h3>Precipitation</h3>
+          <label for="precInput">Precipitation:</label>
+          <input type="number" id="precInput" value="100" />
+          
+          <label for="moisture">Moisture:</label>
+          <input type="number" id="moisture" value="1" min="0.1" max="2" step="0.1" />
+        </div>
+
+        <!-- Map Settings -->
+        <div class="config-section">
+          <h3>Map Settings</h3>
+          <label for="coordinatesSize">Coordinate Size:</label>
+          <input type="number" id="coordinatesSize" value="1" min="0.1" max="10" step="0.1" />
+          
+          <label for="latitude">Latitude:</label>
+          <input type="number" id="latitude" value="0" min="-90" max="90" />
+        </div>
+
+        <!-- Lakes Settings -->
+        <div class="config-section">
+          <h3>Lakes</h3>
+          <label for="lakeElevationLimitOutput">Elevation Limit:</label>
+          <input type="number" id="lakeElevationLimitOutput" value="50" min="0" max="100" />
+        </div>
+
+        <!-- Rivers Settings -->
+        <div class="config-section">
+          <h3>Rivers</h3>
+          <label for="resolveDepressionsStepsOutput">Depression Steps:</label>
+          <input type="number" id="resolveDepressionsStepsOutput" value="1000" min="100" max="10000" />
+        </div>
+
+        <!-- Ocean Layers -->
+        <div class="config-section">
+          <h3>Ocean</h3>
+          <div id="oceanLayers" layers="-1,-2,-3"></div>
+        </div>
+
+        <!-- Cultures Settings -->
+        <div class="config-section">
+          <h3>Cultures</h3>
+          <label for="culturesInput">Number of Cultures:</label>
+          <input type="number" id="culturesInput" value="12" min="0" max="99" />
+          
+          <label for="culturesSet">Culture Set:</label>
+          <select id="culturesSet">
+            <option value="european" data-max="15">European</option>
+            <option value="oriental" data-max="20">Oriental</option>
+            <option value="english" data-max="10">English</option>
+            <option value="antique" data-max="12">Antique</option>
+            <option value="highFantasy" data-max="30">High Fantasy</option>
+            <option value="darkFantasy" data-max="20">Dark Fantasy</option>
+            <option value="random" data-max="25">Random</option>
+            <option value="all-world" data-max="20">All World</option>
+          </select>
+          
+          <label for="emblemShape">Emblem Shape:</label>
+          <select id="emblemShape">
+            <option value="random">Random</option>
+            <optgroup label="Basic">
+              <option value="heater">Heater</option>
+              <option value="spanish">Spanish</option>
+              <option value="french">French</option>
+              <option value="round">Round</option>
+              <option value="oval">Oval</option>
+              <option value="square">Square</option>
+            </optgroup>
+            <optgroup label="Historical">
+              <option value="roman">Roman</option>
+              <option value="kite">Kite</option>
+              <option value="oldFrench">Old French</option>
+              <option value="renaissance">Renaissance</option>
+              <option value="baroque">Baroque</option>
+            </optgroup>
+            <optgroup label="Fantasy">
+              <option value="fantasy1">Fantasy Style 1</option>
+              <option value="fantasy2">Fantasy Style 2</option>
+              <option value="fantasy3">Fantasy Style 3</option>
+              <option value="gothic">Gothic</option>
+            </optgroup>
+            <optgroup label="Diversiform">
+              <option value="flag">Flag</option>
+              <option value="pennon">Pennon</option>
+              <option value="banner">Banner</option>
+            </optgroup>
+          </select>
+          
+          <label for="neutralRate">Neutral Rate:</label>
+          <input type="number" id="neutralRate" value="1" min="0.1" max="10" step="0.1" />
+        </div>
+
+        <!-- States & Burgs Settings -->
+        <div class="config-section">
+          <h3>States & Burgs</h3>
+          <label for="statesNumber">Number of States:</label>
+          <input type="number" id="statesNumber" value="15" min="0" max="999" />
+          
+          <label for="manorsInput">Number of Towns:</label>
+          <input type="number" id="manorsInput" value="1000" min="0" max="10000" title="1000 = auto-calculate" />
+          
+          <label for="sizeVariety">Size Variety:</label>
+          <input type="number" id="sizeVariety" value="1" min="0" max="5" step="0.1" />
+          
+          <label for="growthRate">Growth Rate:</label>
+          <input type="number" id="growthRate" value="1" min="0.1" max="10" step="0.1" />
+          
+          <label for="statesGrowthRate">States Growth Rate:</label>
+          <input type="number" id="statesGrowthRate" value="1" min="0.1" max="10" step="0.1" />
+        </div>
+
+        <!-- Religions Settings -->
+        <div class="config-section">
+          <h3>Religions</h3>
+          <label for="religionsNumber">Number of Religions:</label>
+          <input type="number" id="religionsNumber" value="5" min="0" max="99" />
+        </div>
+
+        <!-- Provinces Settings -->
+        <div class="config-section">
+          <h3>Provinces</h3>
+          <label for="provincesRatio">Provinces Ratio:</label>
+          <input type="number" id="provincesRatio" value="50" min="0" max="100" />
+        </div>
+
+        <!-- Military Settings -->
+        <div class="config-section">
+          <h3>Military</h3>
+          <label for="year">Year:</label>
+          <input type="number" id="year" value="1400" />
+          
+          <label for="eraShort">Era (Short):</label>
+          <input type="text" id="eraShort" value="AD" />
+          
+          <label for="era">Era:</label>
+          <input type="text" id="era" value="Anno Domini" />
+        </div>
+
+        <!-- Zones Settings -->
+        <div class="config-section">
+          <h3>Zones</h3>
+          <label for="zonesGlobalModifier">Global Modifier:</label>
+          <input type="number" id="zonesGlobalModifier" value="1" min="0.1" max="10" step="0.1" />
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="config-section controls">
+          <h3>Actions</h3>
+          <button id="newMapButton" class="primary">🗺️ Generate Map</button>
+          <button id="generateButton" class="primary">Generate (Alt)</button>
+          
+          <div class="button-group">
+            <button id="saveConfigButton">💾 Save Config</button>
+            <label for="loadConfigInput" class="button">📁 Load Config</label>
+            <input type="file" id="loadConfigInput" accept=".json" style="display: none;" />
+          </div>
+          
+          <label>
+            <input type="checkbox" id="restoreSession" checked />
+            Restore last session
+          </label>
+        </div>
+
+        <!-- Status/Info -->
+        <div class="config-section">
+          <h3>Info</h3>
+          <div id="status">Ready</div>
+          <div id="shortcuts">
+            <small>
+              <strong>Shortcuts:</strong><br/>
+              Ctrl+G - Generate Map<br/>
+              Ctrl+Shift+S - Save Config
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- The main SVG map container -->
+      <svg id="map" version="1.1" xmlns="http://www.w3.org/2000/svg">
+        <defs id="deftemp"></defs>
+        <g id="viewbox"></g>
+        <!-- Additional SVG groups will be added by the renderer -->
+      </svg>
     </div>
 
-    <!-- The main SVG map container -->
-    <svg id="map" version="1.1" xmlns="http://www.w3.org/2000/svg">
-      <defs id="deftemp"></defs>
-      <g id="viewbox"></g>
-      <!-- ... other static SVG groups -->
-    </svg>
-  </div>
-  <!-- Comment out the old script loading order -->
-  <!-- <script type="module" src="/main.js"></script> -->
-  
-  <!-- Add the new entry point -->
-  <script type="module" src="src/viewer/main.js"></script>
-</body>
+    <!-- Custom prompt dialog (required by commonUtils.js) -->
+    <div id="prompt" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 1px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10000;">
+      <form id="promptForm">
+        <div id="promptText">Please provide an input</div>
+        <input type="text" id="promptInput" style="margin: 10px 0; width: 100%;" />
+        <button type="submit">OK</button>
+        <button type="button" id="promptCancel">Cancel</button>
+      </form>
+    </div>
 
+    <!-- Load the viewer with config system -->
+    <script type="module" src="src/viewer/main.js"></script>
+
+    <!-- Helper function for backwards compatibility -->
+    <script>
+      // Global byId helper for modules that expect it
+      window.byId = function(id) {
+        return document.getElementById(id);
+      };
+    </script>
+
+  </body>
 </html>

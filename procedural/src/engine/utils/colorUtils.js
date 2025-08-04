@@ -1,6 +1,8 @@
 "use strict";
 // FMG utils related to colors
 
+import * as d3 from 'd3';
+
 // convert RGB color string to HEX without #
 function toHEX(rgb) {
   if (rgb.charAt(0) === "#") return rgb;
