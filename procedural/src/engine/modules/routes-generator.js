@@ -10,7 +10,34 @@ const ROUTE_TYPE_MODIFIERS = {
   default: 8 // far ocean
 };
 
+/**
+ * Generates routes (roads, trails, sea routes) connecting settlements
+ *
+ * REQUIRES:
+ *   - pack.cells.burg (from BurgsAndStates module)
+ *   - pack.burgs (from BurgsAndStates module)
+ *   - pack.cells.h (heights from heightmap processing)
+ *   - pack.cells.t (distance field from features module)
+ *
+ * PROVIDES:
+ *   - pack.routes (routes array)
+ *   - pack.cells.routes (route connections)
+ */
 export function generate(pack, grid, utils, lockedRoutes = []) {
+  // Check required properties exist
+  if (!pack.cells.burg) {
+    throw new Error("Routes module requires cells.burg from BurgsAndStates module");
+  }
+  if (!pack.burgs) {
+    throw new Error("Routes module requires pack.burgs from BurgsAndStates module");
+  }
+  if (!pack.cells.h) {
+    throw new Error("Routes module requires cells.h (heights) from heightmap processing");
+  }
+  if (!pack.cells.t) {
+    throw new Error("Routes module requires cells.t (distance field) from features module");
+  }
+
   const { dist2, findPath, findCell, rn } = utils;
   const { capitalsByFeature, burgsByFeature, portsByFeature } = sortBurgsByFeature(pack.burgs);
 

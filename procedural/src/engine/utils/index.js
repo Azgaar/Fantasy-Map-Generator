@@ -1,6 +1,8 @@
 import "./polyfills.js";
+import * as d3 from 'd3';
 
 export { aleaPRNG } from './alea.js'
+export { d3 };
 export {
   last,
   unique,
@@ -39,9 +41,25 @@ export {
 } from "./debugUtils.js";
 export { rollups, nest, dist2 } from "./functionUtils.js";
 export {
-  generateGrid,
-  reGraph,
+  reGraph
 } from "./graph.js";
+export {
+  generateGrid,
+  placePoints,
+  calculateVoronoi,
+  getBoundaryPoints,
+  getJitteredGrid,
+  findGridCell,
+  findGridAll,
+  find,
+  findCell,
+  findAll,
+  getPackPolygon,
+  getGridPolygon,
+  poissonDiscSampler,
+  isLand,
+  isWater
+} from "./graphUtils.js";
 export {
   removeParent,
   getComposedPath,
@@ -88,3 +106,4 @@ export {
 export { convertTemperature, si, getInteger } from "./unitUtils.js";
 export { simplify } from "./simplify.js";
 export { lineclip } from "./lineclip.js";
+export { heightmapTemplates } from "./heightmap-templates.js";

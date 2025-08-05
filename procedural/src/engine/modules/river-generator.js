@@ -1,6 +1,38 @@
 "use strict";
 
+/**
+ * Generates river systems for the map
+ *
+ * REQUIRES:
+ *   - pack.cells.h (heights from heightmap processing)
+ *   - pack.cells.t (distance field from features module)
+ *   - pack.features (features from features module)
+ *   - modules.Lakes (Lakes module dependency)
+ *   - config.debug (debug configuration)
+ *
+ * PROVIDES:
+ *   - pack.cells.fl (water flux)
+ *   - pack.cells.r (river assignments)
+ *   - pack.cells.conf (confluence data)
+ */
 export const generate = function (pack, grid, config, utils, modules, allowErosion = true) {
+  // Check required properties exist
+  if (!pack.cells.h) {
+    throw new Error("Rivers module requires pack.cells.h (heights) from heightmap processing");
+  }
+  if (!pack.cells.t) {
+    throw new Error("Rivers module requires pack.cells.t (distance field) from features module");
+  }
+  if (!pack.features) {
+    throw new Error("Rivers module requires pack.features from features module");
+  }
+  if (!modules.Lakes) {
+    throw new Error("Rivers module requires Lakes module dependency");
+  }
+  if (!config.debug) {
+    throw new Error("Rivers module requires config.debug section");
+  }
+
   const { seed, aleaPRNG, resolveDepressionsSteps, cellsCount, graphWidth, graphHeight, WARN} = config;
   const {rn, rw, each, round, d3, lineGen} = utils;
   const {Lakes, Names} = modules;
@@ -27,13 +59,13 @@ export const generate = function (pack, grid, config, utils, modules, allowErosi
   let riverNext = 1; // first river id is 1
 
   const h = alterHeights(pack, utils);
-  Lakes.detectCloseLakes(h);
+  Lakes.detectCloseLakes(pack, grid, h, config);
   const resolvedH = resolveDepressions(pack, config, utils, h);
   const {updatedCells, updatedFeatures, updatedRivers} = drainWater(pack, grid, config, utils, modules, newCells, resolvedH, riversData, riverParents, riverNext);
   const {finalCells, finalRivers} = defineRivers(pack, config, utils, updatedCells, riversData, riverParents);
 
   calculateConfluenceFlux(finalCells, resolvedH);
-  Lakes.cleanupLakeData();
+  Lakes.cleanupLakeData(pack);
 
   let finalH = resolvedH;
   if (allowErosion) {
@@ -64,7 +96,7 @@ export const generate = function (pack, grid, config, utils, modules, allowErosi
 
     const prec = grid.cells.prec;
     const land = cells.i.filter(i => h[i] >= 20).sort((a, b) => h[b] - h[a]);
-    const lakeOutCells = Lakes.defineClimateData(h);
+    const lakeOutCells = Lakes.defineClimateData(pack, grid, h, config, utils);
 
     land.forEach(function (i) {
       cells.fl[i] += prec[cells.g[i]] / cellsNumberModifier; // add flux from precipitation

@@ -2,8 +2,31 @@
 
 const LAKE_ELEVATION_DELTA = 0.1;
 
-// check if lake can be potentially open (not in deep depression)
+/**
+ * Check if lake can be potentially open (not in deep depression)
+ *
+ * REQUIRES:
+ *   - pack.cells (pack cells data structure)
+ *   - pack.features (features array)
+ *   - pack.cells.c (cell neighbors)
+ *   - pack.cells.f (cell features)
+ *   - heights array (cell height values)
+ *
+ * PROVIDES:
+ *   - Updated pack.features with closed property
+ */
 export function detectCloseLakes(pack, grid, heights, config) {
+  // Check required properties exist
+  if (!pack || !pack.cells || !pack.features) {
+    throw new Error("Lakes module requires pack with cells and features structures");
+  }
+  if (!pack.cells.c || !pack.cells.f) {
+    throw new Error("Lakes module requires pack.cells.c (neighbors) and pack.cells.f (features)");
+  }
+  if (!heights || !Array.isArray(heights)) {
+    throw new Error("Lakes module requires heights array");
+  }
+  
   const {cells, features} = pack;
   const ELEVATION_LIMIT = config.lakeElevationLimit;
 

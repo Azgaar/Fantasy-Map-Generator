@@ -2,7 +2,7 @@
 // FMG utils related to cell ranking and population
 
 // calculate cell suitability and population based on various factors
-function rankCells(pack, grid, utils, modules) {
+function rankCells(pack, grid, config, utils, modules) {
   const { normalize } = utils;
   const { TIME } = config.debug;
   const { biomesData } = modules;

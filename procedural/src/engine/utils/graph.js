@@ -5,17 +5,6 @@ import { createTypedArray } from './arrayUtils.js';
 // import { UINT16_MAX } from './arrayUtils.js';
 import * as d3 from 'd3'; // Or import specific d3 modules
 
-/**
- * Generates the initial grid object based on configuration.
- * Assumes Math.random() has already been seeded by the orchestrator.
- * @param {object} config - The graph configuration, e.g., { width, height, cellsDesired }.
- */
-export function generateGrid(config) {
-  // REMOVED: Math.random = aleaPRNG(seed); This is now handled by engine/main.js.
-  const { spacing, cellsDesired, boundary, points, cellsX, cellsY } = placePoints(config);
-  const { cells, vertices } = calculateVoronoi(points, boundary);
-  return { spacing, cellsDesired, boundary, points, cellsX, cellsY, cells, vertices };
-}
 
 // place random points to calculate Voronoi diagram
 function placePoints(config) {
@@ -38,10 +27,19 @@ function calculateVoronoi(points, boundary) {
 
   const cells = voronoi.cells;
   cells.i = createTypedArray({ maxValue: points.length, length: points.length }).map((_, i) => i);
+
+  // Ensure all cells have neighbor arrays initialized
+  for (let i = 0; i < points.length; i++) {
+    if (!cells.c[i]) cells.c[i] = [];
+    if (!cells.v[i]) cells.v[i] = [];
+    if (!cells.b[i]) cells.b[i] = 0;
+  }
+
   const vertices = voronoi.vertices;
 
   return { cells, vertices };
 }
+
 
 // add points along map edge to pseudo-clip voronoi cells
 function getBoundaryPoints(width, height, spacing) {

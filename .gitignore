@@ -1,5 +1,7 @@
-.vscode
-.idea
+.vscode/
+.idea/
+.claude/
+.obsidian/
 /node_modules
 /dist
 /coverage

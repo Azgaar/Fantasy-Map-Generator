@@ -8,7 +8,7 @@ const WATER_COAST = -1;
 const DEEP_WATER = -2;
 
 // calculate distance to coast for every cell
-function markup({distanceField, neighbors, start, increment, limit = utils.INT8_MAX}) {
+function markup({distanceField, neighbors, start, increment, limit = 127}) {
   for (let distance = start, marked = Infinity; marked > 0 && distance !== limit; distance += increment) {
     marked = 0;
     const prevDistance = distance - increment;
@@ -24,8 +24,31 @@ function markup({distanceField, neighbors, start, increment, limit = utils.INT8_
   }
 }
 
-// mark Grid features (ocean, lakes, islands) and calculate distance field
+/**
+ * Mark Grid features (ocean, lakes, islands) and calculate distance field
+ *
+ * REQUIRES:
+ *   - grid.cells.h (heights from heightmap generation)
+ *   - grid.cells.c (cell neighbors from grid generation)
+ *   - config.debug (debug configuration)
+ *
+ * PROVIDES:
+ *   - grid.cells.f (feature assignments)
+ *   - grid.cells.t (distance field)
+ *   - grid.features (features array)
+ */
 export function markupGrid(grid, config, utils) {
+  // Check required properties exist
+  if (!grid.cells.h) {
+    throw new Error("Features module requires grid.cells.h (heights) from heightmap generation");
+  }
+  if (!grid.cells.c) {
+    throw new Error("Features module requires grid.cells.c (neighbors) from grid generation");
+  }
+  if (!config.debug) {
+    throw new Error("Features module requires config.debug section");
+  }
+
   const {rn} = utils;
   const { TIME } = config.debug;
 
@@ -86,8 +109,31 @@ export function markupGrid(grid, config, utils) {
   return updatedGrid;
 }
 
-// mark Pack features (ocean, lakes, islands), calculate distance field and add properties
+/**
+ * Mark Pack features (ocean, lakes, islands), calculate distance field and add properties
+ *
+ * REQUIRES:
+ *   - pack.cells.h (heights from pack generation)
+ *   - pack.cells.c (cell neighbors from pack generation)
+ *   - grid.features (features from grid markup)
+ *
+ * PROVIDES:
+ *   - pack.cells.f (feature assignments)
+ *   - pack.cells.t (distance field)
+ *   - pack.features (features array)
+ */
 export function markupPack(pack, grid, config, utils, modules) {
+  // Check required properties exist
+  if (!pack.cells.h) {
+    throw new Error("Features markupPack requires pack.cells.h (heights) from pack generation");
+  }
+  if (!pack.cells.c) {
+    throw new Error("Features markupPack requires pack.cells.c (neighbors) from pack generation");
+  }
+  if (!grid.features) {
+    throw new Error("Features markupPack requires grid.features from grid markup");
+  }
+
   const {TIME} = config;
   const {isLand, isWater, dist2, rn, clipPoly, unique, createTypedArray, connectVertices} = utils;
   const {Lakes} = modules;
@@ -111,7 +157,7 @@ export function markupPack(pack, grid, config, utils, modules) {
     const firstCell = queue[0];
     featureIds[firstCell] = featureId;
 
-    const land = isLand(firstCell);
+    const land = isLand(firstCell, pack);
     let border = Boolean(borderCells[firstCell]); // true if feature touches map border
     let totalCells = 1; // count cells in a feature
 
@@ -121,7 +167,7 @@ export function markupPack(pack, grid, config, utils, modules) {
       if (!border && borderCells[cellId]) border = true;
 
       for (const neighborId of neighbors[cellId]) {
-        const isNeibLand = isLand(neighborId);
+        const isNeibLand = isLand(neighborId, pack);
 
         if (land && !isNeibLand) {
           distanceField[cellId] = LAND_COAST;
@@ -166,7 +212,7 @@ export function markupPack(pack, grid, config, utils, modules) {
   return updatedPack;
 
   function defineHaven(cellId) {
-    const waterCells = neighbors[cellId].filter(isWater);
+    const waterCells = neighbors[cellId].filter(i => isWater(i, pack));
     const distances = waterCells.map(neibCellId => dist2(cells.p[cellId], cells.p[neibCellId]));
     const closest = distances.indexOf(Math.min.apply(Math, distances));
 
@@ -177,7 +223,7 @@ export function markupPack(pack, grid, config, utils, modules) {
   function addFeature({firstCell, land, border, featureId, totalCells}) {
     const type = land ? "island" : border ? "ocean" : "lake";
     const [startCell, featureVertices] = getCellsData(type, firstCell);
-    const points = clipPoly(featureVertices.map(vertex => vertices.p[vertex]));
+    const points = clipPoly(featureVertices.map(vertex => vertices.p[vertex]), config);
     const area = d3.polygonArea(points); // feature perimiter area
     const absArea = Math.abs(rn(area));
 
@@ -194,8 +240,8 @@ export function markupPack(pack, grid, config, utils, modules) {
 
     if (type === "lake") {
       if (area > 0) feature.vertices = feature.vertices.reverse();
-      feature.shoreline = unique(feature.vertices.map(vertex => vertices.c[vertex].filter(isLand)).flat());
-      feature.height = Lakes.getHeight(feature);
+      feature.shoreline = unique(feature.vertices.map(vertex => vertices.c[vertex].filter(i => isLand(i, pack))).flat());
+      feature.height = Lakes.getHeight(feature, pack, utils);
     }
 
     return feature;

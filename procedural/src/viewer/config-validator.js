@@ -78,6 +78,9 @@ export function validateConfig(config) {
   // Validate logical constraints
   validateLogicalConstraints(config, result);
   
+  // Validate required fields for modules
+  validateRequiredFields(config, result);
+  
   // Set valid flag based on errors
   result.valid = result.errors.length === 0;
   
@@ -303,6 +306,49 @@ function validateLogicalConstraints(config, result) {
       );
     }
   }
+}
+
+/**
+ * Validate required fields for modules
+ */
+function validateRequiredFields(config, result) {
+  const requiredFields = {
+    'cultures.culturesInSetNumber': (config) => {
+      // Ensure this field exists based on culturesSet
+      const maxCultures = getCultureSetMax(config.cultures.culturesSet);
+      return maxCultures;
+    },
+    'rivers.cellsCount': (config) => {
+      // Ensure this matches the actual cell count
+      return config.graph.cellsDesired || 10000;
+    }
+  };
+
+  // Check each required field
+  Object.keys(requiredFields).forEach(fieldPath => {
+    const value = getNestedProperty(config, fieldPath);
+    if (value === undefined) {
+      const defaultValue = requiredFields[fieldPath](config);
+      result.warnings.push(`Missing field ${fieldPath}, would default to ${defaultValue}`);
+    }
+  });
+}
+
+/**
+ * Get maximum cultures for a culture set
+ */
+function getCultureSetMax(culturesSet) {
+  const sets = {
+    european: 25,
+    oriental: 20,
+    english: 15,
+    antique: 18,
+    highFantasy: 30,
+    darkFantasy: 25,
+    random: 50,
+    'all-world': 100
+  };
+  return sets[culturesSet] || 25;
 }
 
 /**

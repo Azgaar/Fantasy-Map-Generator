@@ -1,14 +1,18 @@
 "use strict";
+import { polygonclip } from './lineclip.js';
+
 // FMG helper functions
 
 // clip polygon by graph bbox
-function clipPoly(points, secure = 0) {
+function clipPoly(points, config, secure = 0) {
   if (points.length < 2) return points;
   if (points.some(point => point === undefined)) {
-    ERROR && console.error("Undefined point in clipPoly", points);
+    console.error("Undefined point in clipPoly", points);
     return points;
   }
 
+  const graphWidth = config.graph.width || 1000;
+  const graphHeight = config.graph.height || 1000;
   return polygonclip(points, [0, 0, graphWidth, graphHeight], secure);
 }
 

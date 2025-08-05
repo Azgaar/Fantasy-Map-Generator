@@ -451,7 +451,38 @@ const expansionismMap = {
   Heresy: (utils) => utils.gauss(1, 0.5, 0, 5, 1)
 };
 
+/**
+ * Generates religions for the map
+ *
+ * REQUIRES:
+ *   - pack.cells.culture (from cultures module)
+ *   - pack.cells.state (from BurgsAndStates module)
+ *   - pack.cultures (from cultures module)
+ *   - config.religionsNumber (number of religions to generate)
+ *   - config.debug (debug configuration)
+ *
+ * PROVIDES:
+ *   - pack.cells.religion (religion assignments)
+ *   - pack.religions (religions array)
+ */
 export function generate(pack, grid, config, utils) {
+  // Check required properties exist
+  if (!pack.cells.culture) {
+    throw new Error("Religions module requires cells.culture from Cultures module");
+  }
+  if (!pack.cells.state) {
+    throw new Error("Religions module requires cells.state from BurgsAndStates module");
+  }
+  if (!pack.cultures) {
+    throw new Error("Religions module requires pack.cultures from Cultures module");
+  }
+  if (!config.religionsNumber) {
+    throw new Error("Religions module requires config.religionsNumber");
+  }
+  if (!config.debug) {
+    throw new Error("Religions module requires config.debug section");
+  }
+
   const { TIME } = config.debug;
   TIME && console.time("generateReligions");
   const lockedReligions = pack.religions?.filter(r => r.i && r.lock && !r.removed) || [];

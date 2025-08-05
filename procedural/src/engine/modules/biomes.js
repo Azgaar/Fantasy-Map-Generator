@@ -75,8 +75,34 @@ export const getDefault = () => {
   return {i: Array.from({length: name.length}, (_, i) => i), name, color, biomesMartix, habitability, iconsDensity, icons, cost};
 };
 
-// assign biome id for each cell
+/**
+ * Assign biome id for each cell
+ *
+ * REQUIRES:
+ *   - pack.cells.h (heights from heightmap processing)
+ *   - grid.cells.temp (temperature from geography module)
+ *   - grid.cells.prec (precipitation from geography module)
+ *   - pack.cells.g (grid reference from pack generation)
+ *   - config.debug (debug configuration)
+ *
+ * PROVIDES:
+ *   - pack.cells.biome (biome assignments for each cell)
+ */
 export function define(pack, grid, config, utils) {
+  // Check required properties exist
+  if (!pack.cells.h) {
+    throw new Error("Biomes module requires pack.cells.h (heights) from heightmap processing");
+  }
+  if (!grid.cells.temp || !grid.cells.prec) {
+    throw new Error("Biomes module requires grid.cells.temp and grid.cells.prec from geography module");
+  }
+  if (!pack.cells.g) {
+    throw new Error("Biomes module requires pack.cells.g (grid reference) from pack generation");
+  }
+  if (!config.debug) {
+    throw new Error("Biomes module requires config.debug section");
+  }
+
   const { d3, rn} = utils;
   const { TIME } = config.debug;
   TIME && console.time("defineBiomes");

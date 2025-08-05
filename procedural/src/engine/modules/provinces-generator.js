@@ -9,7 +9,38 @@ const forms = {
   Wild: {Territory: 10, Land: 5, Region: 2, Tribe: 1, Clan: 1, Dependency: 1, Area: 1}
 };
 
+/**
+ * Generates provinces for states
+ *
+ * REQUIRES:
+ *   - pack.cells.state (from BurgsAndStates module)
+ *   - pack.cells.burg (from BurgsAndStates module)
+ *   - pack.states (from BurgsAndStates module)
+ *   - pack.burgs (from BurgsAndStates module)
+ *   - config.debug (debug configuration)
+ *
+ * PROVIDES:
+ *   - pack.cells.province (province assignments)
+ *   - pack.provinces (provinces array)
+ */
 export const generate = (pack, config, utils, regenerate = false, regenerateLockedStates = false) => {
+  // Check required properties exist
+  if (!pack.cells.state) {
+    throw new Error("Provinces module requires cells.state from BurgsAndStates module");
+  }
+  if (!pack.cells.burg) {
+    throw new Error("Provinces module requires cells.burg from BurgsAndStates module");
+  }
+  if (!pack.states) {
+    throw new Error("Provinces module requires pack.states from BurgsAndStates module");
+  }
+  if (!pack.burgs) {
+    throw new Error("Provinces module requires pack.burgs from BurgsAndStates module");
+  }
+  if (!config.debug) {
+    throw new Error("Provinces module requires config.debug section");
+  }
+
   const {
     generateSeed,
     aleaPRNG,

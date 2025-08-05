@@ -29,7 +29,7 @@ import {
 /**
  * Handle map generation with validation
  */
-function handleGenerateClick() {
+async function handleGenerateClick() {
     console.log("Building config from UI and calling engine...");
     
     // Build configuration from current UI state
@@ -67,7 +67,7 @@ function handleGenerateClick() {
     }
     
     // Single, clean call to the engine with validated config
-    const mapData = generateMapEngine(fixed);
+    const mapData = await generateMapEngine(fixed);
 
     console.log("Engine finished. Map data generated:", mapData);
     // The renderer will take over from here

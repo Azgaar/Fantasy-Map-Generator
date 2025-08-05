@@ -28,6 +28,7 @@ export function generateOceanLayers(grid, config, utils) {
     if (relaxed.length < 4) continue;
     const points = clipPoly(
       relaxed.map(v => vertices.p[v]),
+      config,
       1
     );
     chains.push([t, points]);

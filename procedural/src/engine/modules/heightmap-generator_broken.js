@@ -1,73 +1,95 @@
 "use strict";
 
-export function fromTemplate(grid, templateId, config, utils) {
-  const { heightmapTemplates, aleaPRNG } = utils;
-  const templateString = heightmapTemplates[templateId]?.template || "";
-  const steps = templateString.split("\n");
-
-  if (!steps.length) throw new Error(`Heightmap template: no steps. Template: ${templateId}. Steps: ${steps}`);
-
-  const { cellsDesired, cells, points } = grid;
-  let heights = cells.h ? Uint8Array.from(cells.h) : createTypedArray({ maxValue: 100, length: points.length });
-  const blobPower = getBlobPower(cellsDesired);
-  const linePower = getLinePower(cellsDesired);
-
-  // Set up PRNG if seed is provided
-  if (config.seed !== undefined) {
-    Math.random = aleaPRNG(config.seed);
-  }
-
-  for (const step of steps) {
-    const elements = step.trim().split(" ");
-    if (elements.length < 2) throw new Error(`Heightmap template: steps < 2. Template: ${templateId}. Step: ${elements}`);
-    heights = addStep(heights, grid, blobPower, linePower, utils, ...elements);
-  }
-
-  return heights;
-}
-
-export async function fromPrecreated(grid, imageId, config, utils) {
-  // This function requires browser-specific Canvas API and Image loading
-  // It should be handled by the viewer layer, not the headless engine
-  throw new Error("fromPrecreated requires browser environment - should be handled by viewer layer");
-}
-
+/**
+ * Generates heightmap data for the grid
+ *
+ * REQUIRES:
+ *   - grid.cells (from grid generation)
+ *   - config.heightmap.templateId (heightmap configuration)
+ *   - config.debug (debug configuration)
+ *
+ * PROVIDES:
+ *   - grid.cells.h (height values for each cell)
+ */
 export async function generate(grid, config, utils) {
-  const { TIME, aleaPRNG } = utils;
+  // Check required properties exist
+  if (!grid || !grid.cells) {
+    throw new Error("Heightmap module requires grid with cells structure");
+  }
+  if (!config.heightmap || !config.heightmap.templateId) {
+    throw new Error("Heightmap module requires config.heightmap.templateId");
+  }
+  if (!config.debug) {
+    throw new Error("Heightmap module requires config.debug section");
+  }
+
+  const { aleaPRNG, heightmapTemplates } = utils;
+  const { TIME } = config.debug;
+  const { templateId } = config.heightmap;
+
   TIME && console.time("defineHeightmap");
 
-  const templateId = config.heightmap.templateId;
-
-  // Set up PRNG if seed is provided
-  if (config.seed !== undefined) {
-    Math.random = aleaPRNG(config.seed);
-  }
-
-  const { heightmapTemplates } = utils;
   const isTemplate = templateId in heightmapTemplates;
+  const heights = isTemplate
+    ? fromTemplate(grid, templateId, config, utils)
+    : await fromPrecreated(grid, templateId, config, utils);
 
-  if (!isTemplate) {
-    throw new Error(`Template "${templateId}" not found. Available templates: ${Object.keys(heightmapTemplates).join(', ')}`);
-  }
-
-  const heights = fromTemplate(grid, templateId, config, utils);
   TIME && console.timeEnd("defineHeightmap");
 
   return heights;
 }
 
-function addStep(heights, grid, blobPower, linePower, utils, tool, a2, a3, a4, a5) {
-  if (tool === "Hill") return addHill(heights, grid, blobPower, utils, a2, a3, a4, a5);
-  if (tool === "Pit") return addPit(heights, grid, blobPower, utils, a2, a3, a4, a5);
-  if (tool === "Range") return addRange(heights, grid, linePower, utils, a2, a3, a4, a5);
-  if (tool === "Trough") return addTrough(heights, grid, linePower, utils, a2, a3, a4, a5);
-  if (tool === "Strait") return addStrait(heights, grid, utils, a2, a3);
-  if (tool === "Mask") return mask(heights, grid, a2);
-  if (tool === "Invert") return invert(heights, grid, a2, a3);
-  if (tool === "Add") return modify(heights, a3, +a2, 1);
-  if (tool === "Multiply") return modify(heights, a3, 0, +a2);
-  if (tool === "Smooth") return smooth(heights, grid, utils, a2);
+// Placeholder function for processing precreated heightmaps
+// This will need further refactoring to work headlessly (see heightmap-generator_render.md)
+export async function fromPrecreated(grid, id, config, utils) {
+  // TODO: Implement headless image processing
+  // This function currently requires DOM/Canvas which was removed
+  // Future implementation will need:
+  // - utils.loadImage() function to load PNG files headlessly
+  // - Image processing library (e.g., canvas package for Node.js)
+  // - getHeightsFromImageData() refactored for headless operation
+  throw new Error(`fromPrecreated not yet implemented for headless operation. Template ID: ${id}`);
+}
 
+export function fromTemplate(grid, id, config, utils) {
+  const { heightmapTemplates } = utils;
+  const templateString = heightmapTemplates[id]?.template || "";
+  const steps = templateString.split("\n");
+
+  if (!steps.length) throw new Error(`Heightmap template: no steps. Template: ${id}. Steps: ${steps}`);
+
+  let { heights, blobPower, linePower } = setGrid(grid, utils);
+
+  for (const step of steps) {
+    const elements = step.trim().split(" ");
+    if (elements.length < 2) throw new Error(`Heightmap template: steps < 2. Template: ${id}. Step: ${elements}`);
+    heights = addStep(heights, grid, blobPower, linePower, config, utils, ...elements);
+  }
+
+  return heights;
+}
+
+function setGrid(grid, utils) {
+  const { createTypedArray } = utils;
+  const { cellsDesired, cells, points } = grid;
+  const heights = cells.h ? Uint8Array.from(cells.h) : createTypedArray({ maxValue: 100, length: points.length });
+  const blobPower = getBlobPower(cellsDesired);
+  const linePower = getLinePower(cellsDesired);
+
+  return { heights, blobPower, linePower };
+}
+
+function addStep(heights, grid, blobPower, linePower, config, utils, tool, a2, a3, a4, a5) {
+  if (tool === "Hill") return addHill(heights, grid, blobPower, config, utils, a2, a3, a4, a5);
+  if (tool === "Pit") return addPit(heights, grid, blobPower, config, utils, a2, a3, a4, a5);
+  if (tool === "Range") return addRange(heights, grid, linePower, config, utils, a2, a3, a4, a5);
+  if (tool === "Trough") return addTrough(heights, grid, linePower, config, utils, a2, a3, a4, a5);
+  if (tool === "Strait") return addStrait(heights, grid, config, utils, a2, a3);
+  if (tool === "Mask") return mask(heights, grid, config, utils, a2);
+  if (tool === "Invert") return invert(heights, grid, config, utils, a2, a3);
+  if (tool === "Add") return modify(heights, a3, +a2, 1, utils);
+  if (tool === "Multiply") return modify(heights, a3, 0, +a2, utils);
+  if (tool === "Smooth") return smooth(heights, grid, utils, a2);
   return heights;
 }
 
@@ -110,13 +132,12 @@ function getLinePower(cells) {
   return linePowerMap[cells] || 0.81;
 }
 
-function addHill(heights, grid, blobPower, utils, count, height, rangeX, rangeY) {
-  const { getNumberInRange, findGridCell, lim } = utils;
-  const graphWidth = grid.cellsX;
-  const graphHeight = grid.cellsY;
+export function addHill(heights, grid, blobPower, config, utils, count, height, rangeX, rangeY) {
+  const { getNumberInRange, lim, findGridCell } = utils;
+  const { graphWidth, graphHeight } = config;
 
+  heights = new Uint8Array(heights);
   count = getNumberInRange(count);
-  let newHeights = new Uint8Array(heights);
 
   while (count > 0) {
     addOneHill();
@@ -134,7 +155,7 @@ function addHill(heights, grid, blobPower, utils, count, height, rangeX, rangeY)
       const y = getPointInRange(rangeY, graphHeight, utils);
       start = findGridCell(x, y, grid);
       limit++;
-    } while (newHeights[start] + h > 90 && limit < 50);
+    } while (heights[start] + h > 90 && limit < 50);
 
     change[start] = h;
     const queue = [start];
@@ -148,19 +169,18 @@ function addHill(heights, grid, blobPower, utils, count, height, rangeX, rangeY)
       }
     }
 
-    newHeights = newHeights.map((h, i) => lim(h + change[i]));
+    heights = heights.map((h, i) => lim(h + change[i]));
   }
 
-  return newHeights;
+  return heights;
 }
 
-function addPit(heights, grid, blobPower, utils, count, height, rangeX, rangeY) {
-  const { getNumberInRange, findGridCell, lim } = utils;
-  const graphWidth = grid.cellsX;
-  const graphHeight = grid.cellsY;
+export function addPit(heights, graph, blobPower, config, utils, count, height, rangeX, rangeY) {
+  const { getNumberInRange, lim, findGridCell } = utils;
+  const { graphWidth, graphHeight } = config;
 
+  heights = new Uint8Array(heights);
   count = getNumberInRange(count);
-  let newHeights = new Uint8Array(heights);
 
   while (count > 0) {
     addOnePit();
@@ -169,7 +189,8 @@ function addPit(heights, grid, blobPower, utils, count, height, rangeX, rangeY) 
 
   function addOnePit() {
     const used = new Uint8Array(heights.length);
-    let limit = 0, start;
+    let limit = 0,
+      start;
     let h = lim(getNumberInRange(height));
 
     do {
@@ -177,7 +198,7 @@ function addPit(heights, grid, blobPower, utils, count, height, rangeX, rangeY) 
       const y = getPointInRange(rangeY, graphHeight, utils);
       start = findGridCell(x, y, grid);
       limit++;
-    } while (newHeights[start] < 20 && limit < 50);
+    } while (heights[start] < 20 && limit < 50);
 
     const queue = [start];
     while (queue.length) {
@@ -187,24 +208,22 @@ function addPit(heights, grid, blobPower, utils, count, height, rangeX, rangeY) 
 
       grid.cells.c[q].forEach(function (c, i) {
         if (used[c]) return;
-        newHeights[c] = lim(newHeights[c] - h * (Math.random() * 0.2 + 0.9));
+        heights[c] = lim(heights[c] - h * (Math.random() * 0.2 + 0.9));
         used[c] = 1;
         queue.push(c);
       });
     }
   }
 
-  return newHeights;
+  return heights;
 }
 
-// fromCell, toCell are options cell ids
-function addRange(heights, grid, linePower, utils, count, height, rangeX, rangeY, startCell, endCell) {
-  const { getNumberInRange, findGridCell, lim, d3 } = utils;
-  const graphWidth = grid.cellsX;
-  const graphHeight = grid.cellsY;
+export function addRange(heights, grid, linePower, config, utils, count, height, rangeX, rangeY, startCell, endCell) {
+  const { getNumberInRange, lim, findGridCell, d3 } = utils;
+  const { graphWidth, graphHeight } = config;
 
+  heights = new Uint8Array(heights);
   count = getNumberInRange(count);
-  let newHeights = new Uint8Array(heights);
 
   while (count > 0) {
     addOneRange();
@@ -220,7 +239,10 @@ function addRange(heights, grid, linePower, utils, count, height, rangeX, rangeY
       const startX = getPointInRange(rangeX, graphWidth, utils);
       const startY = getPointInRange(rangeY, graphHeight, utils);
 
-      let dist = 0, limit = 0, endX, endY;
+      let dist = 0,
+        limit = 0,
+        endX,
+        endY;
 
       do {
         endX = Math.random() * graphWidth * 0.8 + graphWidth * 0.1;
@@ -229,8 +251,8 @@ function addRange(heights, grid, linePower, utils, count, height, rangeX, rangeY
         limit++;
       } while ((dist < graphWidth / 8 || dist > graphWidth / 3) && limit < 50);
 
-      startCell = findGridCell(startX, startY, grid);
-      endCell = findGridCell(endX, endY, grid);
+      startCell = findGridCell(startX, startY, graph);
+      endCell = findGridCell(endX, endY, graph);
     }
 
     let range = getRange(startCell, endCell);
@@ -261,12 +283,13 @@ function addRange(heights, grid, linePower, utils, count, height, rangeX, rangeY
     }
 
     // add height to ridge and cells around
-    let queue = range.slice(), i = 0;
+    let queue = range.slice(),
+      i = 0;
     while (queue.length) {
       const frontier = queue.slice();
       (queue = []), i++;
       frontier.forEach(i => {
-        newHeights[i] = lim(newHeights[i] + h * (Math.random() * 0.3 + 0.85));
+        heights[i] = lim(heights[i] + h * (Math.random() * 0.3 + 0.85));
       });
       h = h ** linePower - 1;
       if (h < 2) break;
@@ -284,23 +307,22 @@ function addRange(heights, grid, linePower, utils, count, height, rangeX, rangeY
     range.forEach((cur, d) => {
       if (d % 6 !== 0) return;
       for (const l of d3.range(i)) {
-        const min = grid.cells.c[cur][d3.scan(grid.cells.c[cur], (a, b) => newHeights[a] - newHeights[b])]; // downhill cell
-        newHeights[min] = (newHeights[cur] * 2 + newHeights[min]) / 3;
+        const min = grid.cells.c[cur][d3.scan(grid.cells.c[cur], (a, b) => heights[a] - heights[b])]; // downhill cell
+        heights[min] = (heights[cur] * 2 + heights[min]) / 3;
         cur = min;
       }
     });
   }
 
-  return newHeights;
+  return heights;
 }
 
-function addTrough(heights, grid, linePower, utils, count, height, rangeX, rangeY, startCell, endCell) {
-  const { getNumberInRange, findGridCell, lim, d3 } = utils;
-  const graphWidth = grid.cellsX;
-  const graphHeight = grid.cellsY;
+export function addTrough(heights, grid, linePower, config, utils, count, height, rangeX, rangeY, startCell, endCell) {
+  const { getNumberInRange, lim, findGridCell, d3 } = utils;
+  const { graphWidth, graphHeight } = config;
 
+  heights = new Uint8Array(heights);
   count = getNumberInRange(count);
-  let newHeights = new Uint8Array(heights);
 
   while (count > 0) {
     addOneTrough();
@@ -313,13 +335,18 @@ function addTrough(heights, grid, linePower, utils, count, height, rangeX, range
 
     if (rangeX && rangeY) {
       // find start and end points
-      let limit = 0, startX, startY, dist = 0, endX, endY;
+      let limit = 0,
+        startX,
+        startY,
+        dist = 0,
+        endX,
+        endY;
       do {
         startX = getPointInRange(rangeX, graphWidth, utils);
         startY = getPointInRange(rangeY, graphHeight, utils);
-        startCell = findGridCell(startX, startY, grid);
+        startCell = findGridCell(startX, startY, graph);
         limit++;
-      } while (newHeights[startCell] < 20 && limit < 50);
+      } while (heights[startCell] < 20 && limit < 50);
 
       limit = 0;
       do {
@@ -329,7 +356,7 @@ function addTrough(heights, grid, linePower, utils, count, height, rangeX, range
         limit++;
       } while ((dist < graphWidth / 8 || dist > graphWidth / 2) && limit < 50);
 
-      endCell = findGridCell(endX, endY, grid);
+      endCell = findGridCell(endX, endY, graph);
     }
 
     let range = getRange(startCell, endCell);
@@ -360,12 +387,13 @@ function addTrough(heights, grid, linePower, utils, count, height, rangeX, range
     }
 
     // add height to ridge and cells around
-    let queue = range.slice(), i = 0;
+    let queue = range.slice(),
+      i = 0;
     while (queue.length) {
       const frontier = queue.slice();
       (queue = []), i++;
       frontier.forEach(i => {
-        newHeights[i] = lim(newHeights[i] - h * (Math.random() * 0.3 + 0.85));
+        heights[i] = lim(heights[i] - h * (Math.random() * 0.3 + 0.85));
       });
       h = h ** linePower - 1;
       if (h < 2) break;
@@ -383,25 +411,25 @@ function addTrough(heights, grid, linePower, utils, count, height, rangeX, range
     range.forEach((cur, d) => {
       if (d % 6 !== 0) return;
       for (const l of d3.range(i)) {
-        const min = grid.cells.c[cur][d3.scan(grid.cells.c[cur], (a, b) => newHeights[a] - newHeights[b])]; // downhill cell
-        newHeights[min] = (newHeights[cur] * 2 + newHeights[min]) / 3;
+        const min = grid.cells.c[cur][d3.scan(grid.cells.c[cur], (a, b) => heights[a] - heights[b])]; // downhill cell
+        //debug.append("circle").attr("cx", p[min][0]).attr("cy", p[min][1]).attr("r", 1);
+        heights[min] = (heights[cur] * 2 + heights[min]) / 3;
         cur = min;
       }
     });
   }
 
-  return newHeights;
+  return heights;
 }
 
-function addStrait(heights, grid, utils, width, direction = "vertical") {
+export function addStrait(heights, grid, config, utils, width, direction = "vertical") {
   const { getNumberInRange, findGridCell, P } = utils;
-  const graphWidth = grid.cellsX;
-  const graphHeight = grid.cellsY;
+  const { graphWidth, graphHeight } = config;
 
+  heights = new Uint8Array(heights);
   width = Math.min(getNumberInRange(width), grid.cellsX / 3);
   if (width < 1 && P(width)) return heights;
 
-  let newHeights = new Uint8Array(heights);
   const used = new Uint8Array(heights.length);
   const vert = direction === "vertical";
   const startX = vert ? Math.floor(Math.random() * graphWidth * 0.4 + graphWidth * 0.3) : 5;
@@ -413,8 +441,8 @@ function addStrait(heights, grid, utils, width, direction = "vertical") {
     ? graphHeight - 5
     : Math.floor(graphHeight - startY - graphHeight * 0.1 + Math.random() * graphHeight * 0.2);
 
-  const start = findGridCell(startX, startY, grid);
-  const end = findGridCell(endX, endY, grid);
+  const start = findGridCell(startX, startY, graph);
+  const end = findGridCell(endX, endY, graph);
   let range = getRange(start, end);
   const query = [];
 
@@ -447,8 +475,8 @@ function addStrait(heights, grid, utils, width, direction = "vertical") {
         if (used[e]) return;
         used[e] = 1;
         query.push(e);
-        newHeights[e] **= exp;
-        if (newHeights[e] > 100) newHeights[e] = 5;
+        heights[e] **= exp;
+        if (heights[e] > 100) heights[e] = 5;
       });
     });
     range = query.slice();
@@ -456,16 +484,18 @@ function addStrait(heights, grid, utils, width, direction = "vertical") {
     width--;
   }
 
-  return newHeights;
+  return heights;
 }
 
-function modify(heights, range, add, mult, power) {
-  const { lim } = { lim: val => Math.max(0, Math.min(100, val)) };
+export function modify(heights, range, add, mult, power, utils) {
+  const { lim } = utils;
+
+  heights = new Uint8Array(heights);
   const min = range === "land" ? 20 : range === "all" ? 0 : +range.split("-")[0];
   const max = range === "land" || range === "all" ? 100 : +range.split("-")[1];
   const isLand = min === 20;
 
-  return heights.map(h => {
+  heights = heights.map(h => {
     if (h < min || h > max) return h;
 
     if (add) h = isLand ? Math.max(h + add, 20) : h + add;
@@ -473,26 +503,32 @@ function modify(heights, range, add, mult, power) {
     if (power) h = isLand ? (h - 20) ** power + 20 : h ** power;
     return lim(h);
   });
+
+  return heights;
 }
 
-function smooth(heights, grid, utils, fr = 2, add = 0) {
-  const { d3, lim } = utils;
+export function smooth(heights, grid, utils, fr = 2, add = 0) {
+  const { lim, d3 } = utils;
 
-  return heights.map((h, i) => {
+  heights = new Uint8Array(heights);
+  heights = heights.map((h, i) => {
     const a = [h];
     grid.cells.c[i].forEach(c => a.push(heights[c]));
     if (fr === 1) return d3.mean(a) + add;
     return lim((h * (fr - 1) + d3.mean(a) + add) / fr);
   });
+
+  return heights;
 }
 
-function mask(heights, grid, power = 1) {
-  const { lim } = { lim: val => Math.max(0, Math.min(100, val)) };
-  const graphWidth = grid.cellsX;
-  const graphHeight = grid.cellsY;
+export function mask(heights, grid, config, utils, power = 1) {
+  const { lim } = utils;
+  const { graphWidth, graphHeight } = config;
+
+  heights = new Uint8Array(heights);
   const fr = power ? Math.abs(power) : 1;
 
-  return heights.map((h, i) => {
+  heights = heights.map((h, i) => {
     const [x, y] = grid.points[i];
     const nx = (2 * x) / graphWidth - 1; // [-1, 1], 0 is center
     const ny = (2 * y) / graphHeight - 1; // [-1, 1], 0 is center
@@ -501,12 +537,16 @@ function mask(heights, grid, power = 1) {
     const masked = h * distance;
     return lim((h * (fr - 1) + masked) / fr);
   });
+
+  return heights;
 }
 
-function invert(heights, grid, count, axes) {
-  const { P } = { P: probability => Math.random() < probability };
+export function invert(heights, grid, config, utils, count, axes) {
+  const { P } = utils;
+
   if (!P(count)) return heights;
 
+  heights = new Uint8Array(heights);
   const invertX = axes !== "y";
   const invertY = axes !== "x";
   const { cellsX, cellsY } = grid;
@@ -525,9 +565,10 @@ function invert(heights, grid, count, axes) {
 }
 
 function getPointInRange(range, length, utils) {
-  const { ERROR, rand } = utils;
+  const { rand } = utils;
+
   if (typeof range !== "string") {
-    ERROR && console.error("Range should be a string");
+    console.error("Range should be a string");
     return;
   }
 
@@ -535,20 +576,3 @@ function getPointInRange(range, length, utils) {
   const max = range.split("-")[1] / 100 || min;
   return rand(min * length, max * length);
 }
-
-function createTypedArray({ maxValue, length }) {
-  return new Uint8Array(length);
-}
-
-// Export utility functions for standalone use
-export {
-  addHill,
-  addPit,
-  addRange,
-  addTrough,
-  addStrait,
-  smooth,
-  modify,
-  mask,
-  invert
-};

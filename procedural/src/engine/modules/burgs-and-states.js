@@ -1,6 +1,34 @@
 "use strict";
 
+/**
+ * Generates burgs (settlements) and states (political entities)
+ *
+ * REQUIRES:
+ *   - pack.cells.culture (from cultures module)
+ *   - pack.cells.s (from cell ranking)
+ *   - pack.cultures (from cultures module)
+ *   - config.statesNumber (number of states to generate)
+ *
+ * PROVIDES:
+ *   - pack.burgs (burgs array)
+ *   - pack.states (states array)
+ *   - pack.cells.burg (burg assignments)
+ *   - pack.cells.state (state assignments)
+ */
 export const generate = (pack, grid, config, utils) => {
+  // Check required properties exist
+  if (!pack.cells.culture) {
+    throw new Error("BurgsAndStates module requires cells.culture from Cultures module");
+  }
+  if (!pack.cells.s) {
+    throw new Error("BurgsAndStates module requires cells.s (suitability) from Cell ranking");
+  }
+  if (!pack.cultures) {
+    throw new Error("BurgsAndStates module requires pack.cultures from Cultures module");
+  }
+  if (!config.statesNumber) {
+    throw new Error("BurgsAndStates module requires config.statesNumber");
+  }
 
   const {cells, cultures} = pack;
   const n = cells.i.length;

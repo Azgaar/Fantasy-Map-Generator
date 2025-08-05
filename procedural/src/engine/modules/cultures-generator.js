@@ -1,16 +1,37 @@
 "use strict";
 
-export const generate = function (pack, grid, config, utils) {
+/**
+ * Generates cultures (races, language zones) for the map
+ *
+ * REQUIRES:
+ *   - pack.cells.s (suitability from cell ranking)
+ *   - config.culturesInput (number of cultures to generate)
+ *   - config.culturesInSetNumber (max cultures for culture set)
+ *
+ * PROVIDES:
+ *   - pack.cells.culture (culture assignments for each cell)
+ *   - pack.cultures (cultures array)
+ */
+export const generate = function (pack, grid, config, utils, modules) {
+  // Check required properties exist
+  if (!pack.cells.s) {
+    throw new Error("Cultures module requires cells.s (suitability) from Cell ranking");
+  }
+  if (!config.cultures || !config.cultures.culturesInput || !config.cultures.culturesInSetNumber) {
+    throw new Error("Cultures module requires config.cultures.culturesInput and config.cultures.culturesInSetNumber");
+  }
+
   const { WARN, ERROR, rand, rn, P, minmax, biased, rw, abbreviate } = utils;
   const { TIME } = config.debug;
+  const { Names } = modules;
 
   TIME && console.time("generateCultures");
   const cells = pack.cells;
 
   const cultureIds = new Uint16Array(cells.i.length); // cell cultures
 
-  const culturesInputNumber = config.culturesInput;
-  const culturesInSetNumber = config.culturesInSetNumber;
+  const culturesInputNumber = config.cultures.culturesInput;
+  const culturesInSetNumber = config.cultures.culturesInSetNumber;
   let count = Math.min(culturesInputNumber, culturesInSetNumber);
 
   const populated = cells.i.filter(i => cells.s[i]); // populated cells
@@ -37,7 +58,7 @@ export const generate = function (pack, grid, config, utils) {
     }
   }
 
-  const cultures = selectCultures(count, config, pack, utils);
+  const cultures = selectCultures(count, config, pack, grid, utils);
   const centers = utils.d3.quadtree();
   const colors = getColors(count, utils);
   const emblemShape = config.emblemShape;
@@ -83,9 +104,9 @@ export const generate = function (pack, grid, config, utils) {
   cultures.unshift({name: "Wildlands", i: 0, base: 1, origins: [null], shield: "round"});
 
   // make sure all bases exist in nameBases
-  if (!utils.nameBases.length) {
+  if (!utils.nameBases || !utils.nameBases.length) {
     ERROR && console.error("Name base is empty, default nameBases will be applied");
-    utils.nameBases = utils.Names.getNameBases();
+    utils.nameBases = Names.getNameBases();
   }
 
   cultures.forEach(c => (c.base = c.base % utils.nameBases.length));
@@ -119,8 +140,8 @@ function placeCenter(sortingFn, populated, cultureIds, centers, cells, config, u
   return cellId;
 }
 
-function selectCultures(culturesNumber, config, pack, utils) {
-  let defaultCultures = getDefault(culturesNumber, config, pack, utils);
+function selectCultures(culturesNumber, config, pack, grid, utils) {
+  let defaultCultures = getDefault(culturesNumber, config, pack, grid, utils);
   const cultures = [];
 
   pack.cultures?.forEach(function (culture) {
@@ -220,14 +241,14 @@ export const add = function (center, pack, config, utils) {
   return newCulture;
 };
 
-export const getDefault = function (count, config, pack, utils) {
+export const getDefault = function (count, config, pack, grid, utils) {
   // generic sorting functions
   const cells = pack.cells,
     s = cells.s,
     sMax = utils.d3.max(s),
     t = cells.t,
     h = cells.h,
-    temp = utils.grid.cells.temp;
+    temp = grid.cells.temp;
   const n = cell => Math.ceil((s[cell] / sMax) * 3); // normalized cell score
   const td = (cell, goal) => {
     const d = Math.abs(temp[cells.g[cell]] - goal);

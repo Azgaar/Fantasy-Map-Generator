@@ -1,6 +1,32 @@
 "use strict";
 
+/**
+ * Generates military forces for states
+ *
+ * REQUIRES:
+ *   - pack.cells.state (from BurgsAndStates module)
+ *   - pack.states (from BurgsAndStates module)
+ *   - pack.burgs (from BurgsAndStates module)
+ *   - config.debug (debug configuration)
+ *
+ * PROVIDES:
+ *   - pack.states[].military (military units for each state)
+ */
 export function generate(pack, config, utils, notes) {
+  // Check required properties exist
+  if (!pack.cells.state) {
+    throw new Error("Military module requires cells.state from BurgsAndStates module");
+  }
+  if (!pack.states) {
+    throw new Error("Military module requires pack.states from BurgsAndStates module");
+  }
+  if (!pack.burgs) {
+    throw new Error("Military module requires pack.burgs from BurgsAndStates module");
+  }
+  if (!config.debug) {
+    throw new Error("Military module requires config.debug section");
+  }
+
   const { minmax, rn, ra, rand, gauss, si, nth, d3, populationRate, urbanization} = utils;
   const { TIME } = config.debug;
 
