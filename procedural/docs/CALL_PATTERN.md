@@ -31,8 +31,6 @@ config.cultures.culturesInSetNumber
 
 **Pattern**: `config.{property}` vs `config.{section}.{property}`
 
-**Files affected**: `cultures-generator.js`, `biomes.js`, `river-generator.js`
-
 ### 2. Missing Config Parameter
 
 **Problem**: Modules expect full `config` object but are passed only a subsection.
@@ -47,8 +45,6 @@ Biomes.define(pack, grid, config, Utils)
 ```
 
 **Pattern**: Modules need `config.debug` but receive `config.{section}`
-
-**Files affected**: `biomes.js`, `river-generator.js`
 
 ### 3. Missing Module Dependencies
 
@@ -69,7 +65,6 @@ function generate(pack, grid, config, utils, modules) {
 }
 ```
 
-**Files affected**: `cultures-generator.js`
 
 ### 4. Missing Parameter Propagation
 
@@ -84,7 +79,6 @@ Lakes.defineClimateData(h)
 Lakes.defineClimateData(pack, grid, h, config, utils)
 ```
 
-**Files affected**: `river-generator.js`, `features.js`
 
 ### 5. Global Variable References
 
@@ -106,7 +100,6 @@ function clipPoly(points, config, secure = 0) {
 }
 ```
 
-**Files affected**: `commonUtils.js`
 
 ### 6. Context-Aware Wrappers
 
@@ -121,7 +114,6 @@ neighbors[cellId].filter(isLand)
 neighbors[cellId].filter(i => isLand(i, pack))
 ```
 
-**Files affected**: `features.js`
 
 ## Systematic Detection Strategy
 
@@ -170,6 +162,9 @@ grep -rn "\.generate\|\.define\|\.markup" src/engine/main.js
 
 ## Systematic Fix Pattern
 
+Document actual config structure from `config-builder.js` into CONFIG_STRUCTURE.md. 
+
+Then take every file in `javascript_files_list.md` through these four steps. 
 ### Step 1: Audit Function Signatures
 1. List all exported functions in modules
 2. Document expected parameters
@@ -177,9 +172,9 @@ grep -rn "\.generate\|\.define\|\.markup" src/engine/main.js
 4. Identify mismatches
 
 ### Step 2: Config Structure Mapping
-1. Document actual config structure from `config-builder.js`
-2. Find all `config.{property}` accesses in modules
-3. Map correct paths (`config.section.property`)
+1. Find all `config.{property}` accesses in modules
+2. Map correct paths (`config.section.property`)
+3. Ensure every single module/parameter/path related to config is resolved.
 
 ### Step 3: Dependency Injection Fix
 1. Ensure all functions receive required parameters
@@ -191,31 +186,8 @@ grep -rn "\.generate\|\.define\|\.markup" src/engine/main.js
 2. Determine correct source (config, utils, passed parameters)
 3. Update function signatures if needed
 
-## Files Requiring Systematic Review
-
-### High Priority (Core Generation Flow)
-- `src/engine/main.js` - All module calls
-- `src/engine/modules/biomes.js`
-- `src/engine/modules/cultures-generator.js` 
-- `src/engine/modules/river-generator.js`
-- `src/engine/modules/burgs-and-states.js`
-- `src/engine/modules/features.js`
-
-### Medium Priority (Utilities)
-- `src/engine/utils/commonUtils.js`
-- `src/engine/utils/cell.js`
-- `src/engine/modules/lakes.js`
-
-### Low Priority (Supporting Modules)
-- `src/engine/modules/provinces-generator.js`
-- `src/engine/modules/religions-generator.js`
-- `src/engine/modules/military-generator.js`
-- All other utility modules
-
-## Verification Checklist
-
-For each module function:
-- [ ] Function signature matches all call sites
+For each file (log this detail into `javascript_files_list.md`):
+- [ ] Every function signature matches all call sites
 - [ ] All required parameters are passed
 - [ ] Config properties accessed via correct path
 - [ ] No global variable references
