@@ -120,7 +120,7 @@ window.BurgsAndStates = (() => {
         .sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
 
       const desiredNumber =
-        manorsInput.value == 1000
+        manorsInput.value == 100000
           ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8)
           : manorsInput.valueAsNumber;
       const burgsNumber = Math.min(desiredNumber, sorted.length); // towns to generate

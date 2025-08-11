@@ -249,7 +249,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     hideLoading();
     await checkLoadParameters();
   }
-  restoreDefaultEvents(); // apply default viewbox events
+  restoreDefaultEvents; // apply default viewbox events
   initiateAutosave();
 });
 
@@ -647,10 +647,11 @@ async function generate(options) {
     Rivers.generate();
     Biomes.define();
 
-    rankCells();
+    rankCells(); // original suitability
     Cultures.generate();
     Cultures.expand();
     BurgsAndStates.generate();
+    updateSuitabilityFromHubs(); // <-- recalculate suitability based on distance from hubs
     Routes.generate();
     Religions.generate();
     BurgsAndStates.defineStateForms();
@@ -1172,9 +1173,10 @@ function rankCells() {
   cells.s = new Int16Array(cells.i.length); // cell suitability array
   cells.pop = new Float32Array(cells.i.length); // cell population array
 
-  const flMean = d3.median(cells.fl.filter(f => f)) || 0;
-  const flMax = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
-  const areaMean = d3.mean(cells.area); // to adjust population by cell area
+  // --- ORIGINAL LOGIC RESTORED ---
+  const flMean = d3.median(cells.fl?.filter(f => f)) || 0;
+  const flMax = d3.max(cells.fl || []) + d3.max(cells.conf || []); // to normalize flux
+  const areaMean = d3.mean(cells.area);
 
   for (const i of cells.i) {
     if (cells.h[i] < 20) continue; // no population in water
@@ -1186,14 +1188,14 @@ function rankCells() {
     if (cells.t[i] === 1) {
       if (cells.r[i]) s += 15; // estuary is valued
       const feature = features[cells.f[cells.haven[i]]];
-      if (feature.type === "lake") {
+      if (feature && feature.type === "lake") {
         if (feature.group === "freshwater") s += 30;
         else if (feature.group == "salt") s += 10;
         else if (feature.group == "frozen") s += 1;
         else if (feature.group == "dry") s -= 5;
         else if (feature.group == "sinkhole") s -= 5;
         else if (feature.group == "lava") s -= 30;
-      } else {
+      } else if (feature) {
         s += 5; // ocean coast is valued
         if (cells.harbor[i] === 1) s += 20; // safe sea harbor is valued
       }
@@ -1205,6 +1207,44 @@ function rankCells() {
   }
 
   TIME && console.timeEnd("rankCells");
+}
+
+// --- NEW FUNCTION: Update suitability based on distance from capitals/ports ---
+function updateSuitabilityFromHubs() {
+  TIME && console.time("updateSuitabilityFromHubs");
+  const {cells} = pack;
+  if (!pack.burgs) return;
+
+  const burgs = pack.burgs.filter(b => b.i && !b.removed);
+  const hubs = burgs.filter(b => b.capital || b.port).map(b => b.cell);
+  if (!hubs.length) return;
+
+  const cellCoords = cells.p;
+  const maxSuitability = 100;
+  const decayRate = 0.02;
+  const areaMean = d3.mean(cells.area);
+
+  function minDistToHub(cellId) {
+    const [x, y] = cellCoords[cellId];
+    let minDist = Infinity;
+    for (const hubCell of hubs) {
+      const [hx, hy] = cellCoords[hubCell];
+      const dist = Math.hypot(x - hx, y - hy);
+      if (dist < minDist) minDist = dist;
+    }
+    return minDist;
+  }
+
+  for (const i of cells.i) {
+    if (cells.h[i] < 20) continue;
+    const dist = minDistToHub(i);
+    let s = maxSuitability * Math.exp(-decayRate * dist);
+    s *= +biomesData.habitability[cells.biome[i]] / 100;
+    cells.s[i] = s;
+    cells.pop[i] = s > 0 ? (s * cells.area[i]) / areaMean : 0;
+  }
+
+  TIME && console.timeEnd("updateSuitabilityFromHubs");
 }
 
 // show map stats on generation complete
