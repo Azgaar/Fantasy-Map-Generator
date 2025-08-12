@@ -476,9 +476,143 @@ function inlineStyle(clone) {
   emptyG.remove();
 }
 
+// Helper function to get meters per pixel based on distance unit
+function getMetersPerPixel() {
+  const unit = distanceUnitInput.value.toLowerCase();
+
+  switch(unit) {
+    case 'km':
+      return distanceScale * 1000;
+    case 'm':
+    case 'meter':
+    case 'meters':
+      return distanceScale;
+    case 'mi':
+    case 'mile':
+    case 'miles':
+      return distanceScale * 1609.344;
+    case 'yd':
+    case 'yard':
+    case 'yards':
+      return distanceScale * 0.9144;
+    case 'ft':
+    case 'foot':
+    case 'feet':
+      return distanceScale * 0.3048;
+    case 'league':
+    case 'leagues':
+      return distanceScale * 4828.032;
+    default:
+      console.warn(`Unknown distance unit: ${unit}, defaulting to km`);
+      return distanceScale * 1000;
+  }
+}
+
+// Convert from map pixel coordinates to fantasy world coordinates
+// Using the exact same values as prepareMapData
+function getFantasyCoordinates(x, y, decimals = 2) {
+  // Convert distanceScale to meters based on the unit
+  let pixelScaleInMeters;
+  const unit = distanceUnitInput.value.toLowerCase();
+
+  switch(unit) {
+    case 'km':
+      pixelScaleInMeters = distanceScale * 1000; // km to meters
+      break;
+    case 'm':
+    case 'meter':
+    case 'meters':
+      pixelScaleInMeters = distanceScale; // already in meters
+      break;
+    case 'mi':
+    case 'mile':
+    case 'miles':
+      pixelScaleInMeters = distanceScale * 1609.344; // miles to meters
+      break;
+    case 'yd':
+    case 'yard':
+    case 'yards':
+      pixelScaleInMeters = distanceScale * 0.9144; // yards to meters
+      break;
+    case 'ft':
+    case 'foot':
+    case 'feet':
+      pixelScaleInMeters = distanceScale * 0.3048; // feet to meters
+      break;
+    case 'league':
+    case 'leagues':
+      pixelScaleInMeters = distanceScale * 4828.032; // leagues (3 miles) to meters
+      break;
+    default:
+      // Default to km if unit is not recognized
+      console.warn(`Unknown distance unit: ${unit}, defaulting to km`);
+      pixelScaleInMeters = distanceScale * 1000;
+  }
+
+  // Convert pixel coordinates to world coordinates in meters
+  const worldX = x * pixelScaleInMeters;
+  const worldY = -y * pixelScaleInMeters; // Negative because Y increases downward in pixels
+
+  // Round to specified decimal places
+  const factor = Math.pow(10, decimals);
+  return [
+    Math.round(worldX * factor) / factor,
+    Math.round(worldY * factor) / factor
+  ];
+}
+
 function saveGeoJsonCells() {
   const {cells, vertices} = pack;
-  const json = {type: "FeatureCollection", features: []};
+
+  // Calculate meters per pixel based on unit
+  const metersPerPixel = getMetersPerPixel();
+
+  // Use the same global variables as prepareMapData
+  const json = {
+    type: "FeatureCollection",
+    features: [],
+    // Include metadata using the same sources as prepareMapData
+    metadata: {
+      generator: "Azgaar's Fantasy Map Generator",
+      version: VERSION,
+      mapName: mapName.value,
+      mapId: mapId,
+      seed: seed,
+      dimensions: {
+        width_px: graphWidth,
+        height_px: graphHeight
+      },
+      scale: {
+        distance: distanceScale,
+        unit: distanceUnitInput.value,
+        meters_per_pixel: metersPerPixel
+      },
+      units: {
+        distance: distanceUnitInput.value,
+        area: areaUnit.value,
+        height: heightUnit.value,
+        temperature: temperatureScale.value
+      },
+      bounds_meters: {
+        minX: 0,
+        maxX: graphWidth * metersPerPixel,
+        minY: -(graphHeight * metersPerPixel),
+        maxY: 0
+      },
+      settings: {
+        populationRate: populationRate,
+        urbanization: urbanization,
+        urbanDensity: urbanDensity,
+        growthRate: growthRate.value,
+        mapSize: mapSizeOutput.value,
+        latitude: latitudeOutput.value,
+        longitude: longitudeOutput.value,
+        precipitation: precOutput.value
+      },
+      crs: "Fantasy Map Cartesian (meters)",
+      exportedAt: new Date().toISOString()
+    }
+  };
 
   const getPopulation = i => {
     const [r, u] = getCellPopulation(i);
@@ -490,7 +624,7 @@ function saveGeoJsonCells() {
   function getCellCoordinates(cellVertices) {
     const coordinates = cellVertices.map(vertex => {
       const [x, y] = vertices.p[vertex];
-      return getCoordinates(x, y, 4);
+      return getFantasyCoordinates(x, y, 2);
     });
     return [[...coordinates, coordinates[0]]];
   }
@@ -517,49 +651,101 @@ function saveGeoJsonCells() {
 }
 
 function saveGeoJsonRoutes() {
+  const metersPerPixel = getMetersPerPixel();
   const features = pack.routes.map(({i, points, group, name = null}) => {
-    const coordinates = points.map(([x, y]) => getCoordinates(x, y, 4));
+    const coordinates = points.map(([x, y]) => getFantasyCoordinates(x, y, 2));
     return {
       type: "Feature",
       geometry: {type: "LineString", coordinates},
       properties: {id: i, group, name}
     };
   });
-  const json = {type: "FeatureCollection", features};
+
+  const json = {
+    type: "FeatureCollection",
+    features,
+    metadata: {
+      crs: "Fantasy Map Cartesian (meters)",
+      mapName: mapName.value,
+      scale: {
+        distance: distanceScale,
+        unit: distanceUnitInput.value,
+        meters_per_pixel: metersPerPixel
+      }
+    }
+  };
 
   const fileName = getFileName("Routes") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
 function saveGeoJsonRivers() {
+  const metersPerPixel = getMetersPerPixel();
   const features = pack.rivers.map(
     ({i, cells, points, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type}) => {
       if (!cells || cells.length < 2) return;
       const meanderedPoints = Rivers.addMeandering(cells, points);
-      const coordinates = meanderedPoints.map(([x, y]) => getCoordinates(x, y, 4));
+      const coordinates = meanderedPoints.map(([x, y]) => getFantasyCoordinates(x, y, 2));
       return {
         type: "Feature",
         geometry: {type: "LineString", coordinates},
         properties: {id: i, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type}
       };
     }
-  );
-  const json = {type: "FeatureCollection", features};
+  ).filter(f => f); // Remove undefined entries
+
+  const json = {
+    type: "FeatureCollection",
+    features,
+    metadata: {
+      crs: "Fantasy Map Cartesian (meters)",
+      mapName: mapName.value,
+      scale: {
+        distance: distanceScale,
+        unit: distanceUnitInput.value,
+        meters_per_pixel: metersPerPixel
+      }
+    }
+  };
 
   const fileName = getFileName("Rivers") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
 function saveGeoJsonMarkers() {
+  const metersPerPixel = getMetersPerPixel();
   const features = pack.markers.map(marker => {
     const {i, type, icon, x, y, size, fill, stroke} = marker;
-    const coordinates = getCoordinates(x, y, 4);
-    const note = notes.find(note => note.id === id);
-    const properties = {id: i, type, icon, x, y, ...note, size, fill, stroke};
+    const coordinates = getFantasyCoordinates(x, y, 2);
+    // Find the associated note if it exists
+    const note = notes.find(note => note.id === `marker${i}`);
+    const properties = {
+      id: i,
+      type,
+      icon,
+      x_px: x,
+      y_px: y,
+      size,
+      fill,
+      stroke,
+      ...(note && {note: note.legend}) // Add note text if it exists
+    };
     return {type: "Feature", geometry: {type: "Point", coordinates}, properties};
   });
 
-  const json = {type: "FeatureCollection", features};
+  const json = {
+    type: "FeatureCollection",
+    features,
+    metadata: {
+      crs: "Fantasy Map Cartesian (meters)",
+      mapName: mapName.value,
+      scale: {
+        distance: distanceScale,
+        unit: distanceUnitInput.value,
+        meters_per_pixel: metersPerPixel
+      }
+    }
+  };
 
   const fileName = getFileName("Markers") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
