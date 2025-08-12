@@ -99,6 +99,7 @@ function overviewRoutes() {
   }
 
   function downloadRoutesData() {
+    // Export all route types: roads (main), secondary (plaza connections), trails, searoutes
     let data = "Id,Route,Group,Length\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function (el) {

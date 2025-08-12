@@ -9,7 +9,9 @@ window.BurgsAndStates = (() => {
 
     const burgs = (pack.burgs = placeCapitals());
     pack.states = createStates();
-
+    
+    identifyLargePorts();
+    placeRegionalCenters();
     placeTowns();
     expandStates();
     normalizeStates();
@@ -111,35 +113,248 @@ window.BurgsAndStates = (() => {
       return states;
     }
 
-    // place secondary settlements based on geo and economical evaluation
+    // identify and mark large ports as primary population centers
+    function identifyLargePorts() {
+      TIME && console.time("identifyLargePorts");
+      const {cells, features} = pack;
+      const temp = grid.cells.temp;
+      
+      // Track primary population centers (capitals + large ports)
+      pack.primaryCenters = burgs.slice(1).map(b => b.i); // Start with capitals
+      
+      const potentialPorts = [];
+      
+      // Find potential large port locations
+      for (const b of burgs) {
+        if (!b.i || b.i === 0) continue; // Skip first element and undefined burgs
+        
+        const i = b.cell;
+        const haven = cells.haven[i];
+        
+        if (haven && temp[cells.g[i]] > 0) {
+          const f = cells.f[haven];
+          const waterBodySize = features[f].cells;
+          const harborQuality = cells.harbor[i];
+          
+          // Large port criteria: large water body and good harbor
+          if (waterBodySize > 10 && harborQuality === 1) {
+            const portScore = waterBodySize * harborQuality + cells.s[i];
+            potentialPorts.push({burg: b, score: portScore, waterBody: f});
+          }
+        }
+      }
+      
+      // Sort by score and select best ports, ensuring spacing
+      potentialPorts.sort((a, b) => b.score - a.score);
+      const burgsTree = d3.quadtree();
+      
+      // Add existing capitals to tree
+      for (const b of burgs) {
+        if (b.i && b.capital) {
+          burgsTree.add([b.x, b.y]);
+        }
+      }
+      
+      const minPortSpacing = (graphWidth + graphHeight) / 8; // Minimum spacing between major ports
+      
+      for (const portData of potentialPorts) {
+        const b = portData.burg;
+        if (burgsTree.find(b.x, b.y, minPortSpacing) === undefined) {
+          b.isLargePort = true;
+          b.port = portData.waterBody;
+          pack.primaryCenters.push(b.i);
+          burgsTree.add([b.x, b.y]);
+        }
+      }
+      
+      TIME && console.timeEnd("identifyLargePorts");
+    }
+
+    // place regional centers (plaza burgs) between primary population centers
+    function placeRegionalCenters() {
+      TIME && console.time("placeRegionalCenters");
+      const {cells} = pack;
+      
+      if (!pack.primaryCenters || pack.primaryCenters.length < 2) {
+        pack.regionalCenters = [];
+        TIME && console.timeEnd("placeRegionalCenters");
+        return;
+      }
+      
+      pack.regionalCenters = [];
+      const primaryBurgs = pack.primaryCenters.map(id => burgs[id]);
+      
+      // Calculate target number of regional centers
+      const targetRegionalCenters = Math.max(1, Math.floor(pack.primaryCenters.length * 0.6));
+      
+      const score = new Int16Array(cells.s.map(s => s * (0.7 + Math.random() * 0.6))); // Regional center score
+      const candidates = cells.i
+        .filter(i => !cells.burg[i] && score[i] > 0 && cells.culture[i])
+        .sort((a, b) => score[b] - score[a]);
+      
+      const burgsTree = d3.quadtree();
+      
+      // Add primary centers to tree
+      primaryBurgs.forEach(b => burgsTree.add([b.x, b.y]));
+      
+      const minPrimaryDistance = (graphWidth + graphHeight) / 12; // Min distance from primary centers
+      const minRegionalSpacing = (graphWidth + graphHeight) / 20; // Min distance between regional centers
+      
+      let placedRegional = 0;
+      
+      for (const cell of candidates) {
+        if (placedRegional >= targetRegionalCenters) break;
+        
+        const [x, y] = cells.p[cell];
+        
+        // Check distance from primary centers (should be far enough to be useful)
+        const nearestPrimary = burgsTree.find(x, y, minPrimaryDistance);
+        if (nearestPrimary) continue;
+        
+        // Check distance from other regional centers
+        let tooClose = false;
+        for (const regionalId of pack.regionalCenters) {
+          const regional = burgs[regionalId];
+          const distance = Math.sqrt((x - regional.x) ** 2 + (y - regional.y) ** 2);
+          if (distance < minRegionalSpacing) {
+            tooClose = true;
+            break;
+          }
+        }
+        if (tooClose) continue;
+        
+        // Create regional center burg
+        const burg = burgs.length;
+        const culture = cells.culture[cell];
+        const name = Names.getCulture(culture);
+        
+        burgs.push({
+          cell, x, y, 
+          state: 0, 
+          i: burg, 
+          culture, 
+          name, 
+          capital: 0, 
+          feature: cells.f[cell],
+          isRegionalCenter: true,
+          guaranteedPlaza: true
+        });
+        
+        cells.burg[cell] = burg;
+        pack.regionalCenters.push(burg);
+        placedRegional++;
+      }
+      
+      TIME && console.timeEnd("placeRegionalCenters");
+    }
+
+    // place secondary settlements based on hierarchical population distribution
     function placeTowns() {
       TIME && console.time("placeTowns");
-      const score = new Int16Array(cells.s.map(s => s * gauss(1, 3, 0, 20, 3))); // a bit randomized cell score for towns placement
+      
+      // Helper function to calculate distance-based population multiplier
+      const getPopulationMultiplier = (cellId) => {
+        const [x, y] = cells.p[cellId];
+        let minDistanceToPrimary = Infinity;
+        let minDistanceToRegional = Infinity;
+        
+        // Find distance to nearest primary center (capital or large port)
+        if (pack.primaryCenters) {
+          for (const primaryId of pack.primaryCenters) {
+            const primary = burgs[primaryId];
+            if (primary) {
+              const distance = Math.sqrt((x - primary.x) ** 2 + (y - primary.y) ** 2);
+              minDistanceToPrimary = Math.min(minDistanceToPrimary, distance);
+            }
+          }
+        }
+        
+        // Find distance to nearest regional center
+        if (pack.regionalCenters) {
+          for (const regionalId of pack.regionalCenters) {
+            const regional = burgs[regionalId];
+            if (regional) {
+              const distance = Math.sqrt((x - regional.x) ** 2 + (y - regional.y) ** 2);
+              minDistanceToRegional = Math.min(minDistanceToRegional, distance);
+            }
+          }
+        }
+        
+        // Calculate influence from primary centers (stronger influence)
+        const primaryInfluence = minDistanceToPrimary === Infinity ? 0 : 
+          Math.max(0, 1 - (minDistanceToPrimary / ((graphWidth + graphHeight) / 4)));
+        
+        // Calculate influence from regional centers (medium influence)
+        const regionalInfluence = minDistanceToRegional === Infinity ? 0 : 
+          Math.max(0, 0.6 - (minDistanceToRegional / ((graphWidth + graphHeight) / 6)));
+        
+        // Combine influences with primary having more weight
+        const combinedInfluence = Math.max(primaryInfluence * 1.0, regionalInfluence * 0.7);
+        
+        // Return multiplier between 0.3 and 1.5
+        return 0.3 + combinedInfluence * 1.2;
+      };
+      
+      // Calculate hierarchical score for each cell
+      const baseScore = cells.s.map(s => s * gauss(1, 3, 0, 20, 3));
+      const hierarchicalScore = new Float32Array(cells.i.length);
+      
+      for (const i of cells.i) {
+        if (cells.burg[i] || !cells.culture[i] || baseScore[i] <= 0) {
+          hierarchicalScore[i] = 0;
+          continue;
+        }
+        
+        const populationMultiplier = getPopulationMultiplier(i);
+        hierarchicalScore[i] = baseScore[i] * populationMultiplier;
+      }
+      
       const sorted = cells.i
-        .filter(i => !cells.burg[i] && score[i] > 0 && cells.culture[i])
-        .sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
+        .filter(i => hierarchicalScore[i] > 0)
+        .sort((a, b) => hierarchicalScore[b] - hierarchicalScore[a]);
 
       const desiredNumber =
         manorsInput.value == 100000
           ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8)
           : manorsInput.valueAsNumber;
-      const burgsNumber = Math.min(desiredNumber, sorted.length); // towns to generate
+      const burgsNumber = Math.min(desiredNumber, sorted.length);
       let burgsAdded = 0;
 
       const burgsTree = burgs[0];
-      let spacing = (graphWidth + graphHeight) / 150 / (burgsNumber ** 0.7 / 66); // min distance between towns
+      let spacing = (graphWidth + graphHeight) / 150 / (burgsNumber ** 0.7 / 66);
+      
+      // Add existing burgs to tree for spacing calculations
+      for (let i = 1; i < burgs.length; i++) {
+        if (burgs[i] && burgs[i].x !== undefined) {
+          burgsTree.add([burgs[i].x, burgs[i].y]);
+        }
+      }
 
       while (burgsAdded < burgsNumber && spacing > 1) {
         for (let i = 0; burgsAdded < burgsNumber && i < sorted.length; i++) {
           if (cells.burg[sorted[i]]) continue;
           const cell = sorted[i];
           const [x, y] = cells.p[cell];
-          const s = spacing * gauss(1, 0.3, 0.2, 2, 2); // randomize to make placement not uniform
-          if (burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
+          
+          // Adjust spacing based on hierarchy - closer spacing near population centers
+          const populationMultiplier = getPopulationMultiplier(cell);
+          const adjustedSpacing = spacing * gauss(1, 0.3, 0.2, 2, 2) * (2 - populationMultiplier);
+          
+          if (burgsTree.find(x, y, adjustedSpacing) !== undefined) continue;
+          
           const burg = burgs.length;
           const culture = cells.culture[cell];
           const name = Names.getCulture(culture);
-          burgs.push({cell, x, y, state: 0, i: burg, culture, name, capital: 0, feature: cells.f[cell]});
+          burgs.push({
+            cell, x, y, 
+            state: 0, 
+            i: burg, 
+            culture, 
+            name, 
+            capital: 0, 
+            feature: cells.f[cell],
+            hierarchicalScore: hierarchicalScore[cell]
+          });
           burgsTree.add([x, y]);
           cells.burg[cell] = burg;
           burgsAdded++;
@@ -151,7 +366,7 @@ window.BurgsAndStates = (() => {
         ERROR && console.error(`Cannot place all burgs. Requested ${desiredNumber}, placed ${burgsAdded}`);
       }
 
-      burgs[0] = {name: undefined}; // do not store burgsTree anymore
+      burgs[0] = {name: undefined};
       TIME && console.timeEnd("placeTowns");
     }
   };
@@ -175,19 +390,38 @@ window.BurgsAndStates = (() => {
         b.port = port ? f : 0; // port is defined by water body id it lays on
       } else b.port = 0;
 
-      // define burg population (keep urbanization at about 10% rate)
-      b.population = rn(Math.max(cells.s[i] / 8 + b.i / 1000 + (i % 100) / 1000, 0.1), 3);
-      if (b.capital) b.population = rn(b.population * 1.3, 3); // increase capital population
+      // calculate hierarchical population based on burg type and position
+      let basePopulation = Math.max(cells.s[i] / 8 + b.i / 1000 + (i % 100) / 1000, 0.1);
+      
+      // Apply hierarchical multipliers
+      if (b.capital) {
+        basePopulation *= 1.8; // Capitals are major population centers
+      } else if (b.isLargePort) {
+        basePopulation *= 1.6; // Large ports are significant population centers
+      } else if (b.isRegionalCenter) {
+        basePopulation *= 1.3; // Regional centers have elevated population
+      } else if (b.hierarchicalScore) {
+        // Use the hierarchical score calculated during placement for population gradient
+        const maxHierarchicalScore = Math.max(...pack.burgs.filter(burg => burg.hierarchicalScore).map(burg => burg.hierarchicalScore));
+        if (maxHierarchicalScore > 0) {
+          const hierarchicalMultiplier = 0.7 + (b.hierarchicalScore / maxHierarchicalScore) * 0.6;
+          basePopulation *= hierarchicalMultiplier;
+        }
+      }
+      
+      b.population = rn(basePopulation, 3);
 
       if (b.port) {
-        b.population = b.population * 1.3; // increase port population
+        if (!b.isLargePort) {
+          b.population = b.population * 1.2; // Moderate boost for regular ports
+        }
         const [x, y] = getCloseToEdgePoint(i, haven);
         b.x = x;
         b.y = y;
       }
 
-      // add random factor
-      b.population = rn(b.population * gauss(2, 3, 0.6, 20, 3), 3);
+      // add random factor (reduced to maintain hierarchy)
+      b.population = rn(b.population * gauss(1.8, 2.5, 0.7, 15, 2.5), 3);
 
       // shift burgs on rivers semi-randomly and just a bit
       if (!b.port && cells.r[i]) {
@@ -268,15 +502,53 @@ window.BurgsAndStates = (() => {
       .filter(b => (burg ? b.i == burg.i : b.i && !b.removed && !b.lock))
       .forEach(b => {
         const pop = b.population;
-        b.citadel = Number(b.capital || (pop > 50 && P(0.75)) || (pop > 15 && P(0.5)) || P(0.1));
-        b.plaza = Number(pop > 20 || (pop > 10 && P(0.8)) || (pop > 4 && P(0.7)) || P(0.6));
-        b.walls = Number(b.capital || pop > 30 || (pop > 20 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.1));
+        
+        // Citadel assignment - capitals and major centers get priority
+        b.citadel = Number(b.capital || b.isLargePort || (pop > 50 && P(0.75)) || (pop > 15 && P(0.5)) || P(0.1));
+        
+        // Plaza assignment - ensure regional centers get plazas, scale with hierarchy
+        if (b.guaranteedPlaza || b.isRegionalCenter) {
+          b.plaza = 1; // Regional centers always get plazas
+        } else if (b.capital || b.isLargePort) {
+          b.plaza = Number(P(0.9)); // Primary centers very likely to have plazas
+        } else {
+          // Regular settlements based on population and proximity to centers
+          let plazaChance = 0.6;
+          if (pop > 20) plazaChance = 0.9;
+          else if (pop > 10) plazaChance = 0.8;
+          else if (pop > 4) plazaChance = 0.7;
+          
+          // Reduce chance if far from any major center
+          if (b.hierarchicalScore) {
+            const maxScore = Math.max(...pack.burgs.filter(burg => burg.hierarchicalScore).map(burg => burg.hierarchicalScore));
+            if (maxScore > 0) {
+              const hierarchyFactor = b.hierarchicalScore / maxScore;
+              plazaChance *= (0.5 + hierarchyFactor * 0.5); // Scale with hierarchy
+            }
+          }
+          
+          b.plaza = Number(P(plazaChance));
+        }
+        
+        // Walls assignment - hierarchy-aware
+        b.walls = Number(b.capital || b.isLargePort || pop > 30 || (pop > 20 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.1));
+        
+        // Shanty assignment - more common in larger population centers
         b.shanty = Number(pop > 60 || (pop > 40 && P(0.75)) || (pop > 20 && b.walls && P(0.4)));
+        
+        // Temple assignment - influenced by hierarchy and theocracy
         const religion = cells.religion[b.cell];
         const theocracy = pack.states[b.state].form === "Theocracy";
-        b.temple = Number(
-          (religion && theocracy && P(0.5)) || pop > 50 || (pop > 35 && P(0.75)) || (pop > 20 && P(0.5))
-        );
+        let templeChance = 0;
+        
+        if (religion && theocracy && P(0.5)) templeChance = 1;
+        else if (b.capital || b.isLargePort) templeChance = 0.8;
+        else if (b.isRegionalCenter) templeChance = 0.6;
+        else if (pop > 50) templeChance = 0.7;
+        else if (pop > 35) templeChance = 0.5;
+        else if (pop > 20) templeChance = 0.3;
+        
+        b.temple = Number(P(templeChance));
       });
   };
 

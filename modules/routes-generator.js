@@ -12,12 +12,13 @@ const ROUTE_TYPE_MODIFIERS = {
 
 window.Routes = (function () {
   function generate(lockedRoutes = []) {
-    const {capitalsByFeature, burgsByFeature, portsByFeature} = sortBurgsByFeature(pack.burgs);
+    const {capitalsByFeature, burgsByFeature, portsByFeature, primaryByFeature, plazaByFeature, unconnectedBurgsByFeature} = sortBurgsByFeature(pack.burgs);
 
     const connections = new Map();
     lockedRoutes.forEach(route => addConnections(route.points.map(p => p[2])));
 
     const mainRoads = generateMainRoads();
+    const secondaryRoads = generateSecondaryRoads();
     const trails = generateTrails();
     const seaRoutes = generateSeaRoutes();
 
@@ -28,6 +29,9 @@ window.Routes = (function () {
       const burgsByFeature = {};
       const capitalsByFeature = {};
       const portsByFeature = {};
+      const primaryByFeature = {}; // capitals + large ports
+      const plazaByFeature = {}; // plaza burgs (excluding primary centers)
+      const unconnectedBurgsByFeature = {}; // burgs not connected by main roads or secondary roads
 
       const addBurg = (object, feature, burg) => {
         if (!object[feature]) object[feature] = [];
@@ -38,24 +42,40 @@ window.Routes = (function () {
         if (burg.i && !burg.removed) {
           const {feature, capital, port} = burg;
           addBurg(burgsByFeature, feature, burg);
+          
           if (capital) addBurg(capitalsByFeature, feature, burg);
           if (port) addBurg(portsByFeature, port, burg);
+          
+          // Primary centers: capitals and large ports
+          if (capital || burg.isLargePort) {
+            addBurg(primaryByFeature, feature, burg);
+          }
+          
+          // Plaza burgs: those with plazas but not primary centers
+          if ((burg.plaza || burg.isRegionalCenter || burg.guaranteedPlaza) && !capital && !burg.isLargePort) {
+            addBurg(plazaByFeature, feature, burg);
+          }
+          
+          // Unconnected burgs: those not already connected by main roads or secondary roads
+          if (!capital && !burg.isLargePort && !(burg.plaza || burg.isRegionalCenter || burg.guaranteedPlaza)) {
+            addBurg(unconnectedBurgsByFeature, feature, burg);
+          }
         }
       }
 
-      return {burgsByFeature, capitalsByFeature, portsByFeature};
+      return {burgsByFeature, capitalsByFeature, portsByFeature, primaryByFeature, plazaByFeature, unconnectedBurgsByFeature};
     }
 
     function generateMainRoads() {
       TIME && console.time("generateMainRoads");
       const mainRoads = [];
 
-      for (const [key, featureCapitals] of Object.entries(capitalsByFeature)) {
-        const points = featureCapitals.map(burg => [burg.x, burg.y]);
+      for (const [key, featurePrimary] of Object.entries(primaryByFeature)) {
+        const points = featurePrimary.map(burg => [burg.x, burg.y]);
         const urquhartEdges = calculateUrquhartEdges(points);
         urquhartEdges.forEach(([fromId, toId]) => {
-          const start = featureCapitals[fromId].cell;
-          const exit = featureCapitals[toId].cell;
+          const start = featurePrimary[fromId].cell;
+          const exit = featurePrimary[toId].cell;
 
           const segments = findPathSegments({isWater: false, connections, start, exit});
           for (const segment of segments) {
@@ -69,27 +89,141 @@ window.Routes = (function () {
       return mainRoads;
     }
 
+    function generateSecondaryRoads() {
+      TIME && console.time("generateSecondaryRoads");
+      const secondaryRoads = [];
+
+      for (const [key, featurePlazas] of Object.entries(plazaByFeature)) {
+        // Skip if no plaza burgs in this feature
+        if (featurePlazas.length === 0) continue;
+        
+        const featurePrimary = primaryByFeature[key] || [];
+        
+        // Combine plaza burgs with primary centers for connection network
+        const allConnectableBurgs = [...featurePlazas, ...featurePrimary];
+        
+        // If we have primary centers in this feature, connect plazas to them
+        if (featurePrimary.length > 0 && featurePlazas.length > 0) {
+          // Connect each plaza to the nearest primary center
+          for (const plazaBurg of featurePlazas) {
+            let nearestPrimary = null;
+            let minDistance = Infinity;
+            
+            for (const primaryBurg of featurePrimary) {
+              const distance = Math.sqrt(
+                (plazaBurg.x - primaryBurg.x) ** 2 + (plazaBurg.y - primaryBurg.y) ** 2
+              );
+              if (distance < minDistance) {
+                minDistance = distance;
+                nearestPrimary = primaryBurg;
+              }
+            }
+            
+            if (nearestPrimary) {
+              const segments = findPathSegments({
+                isWater: false, 
+                connections, 
+                start: plazaBurg.cell, 
+                exit: nearestPrimary.cell
+              });
+              for (const segment of segments) {
+                addConnections(segment);
+                secondaryRoads.push({feature: Number(key), cells: segment});
+              }
+            }
+          }
+        }
+        
+        // Connect plaza burgs to each other if there are multiple
+        if (featurePlazas.length >= 2) {
+          const points = featurePlazas.map(burg => [burg.x, burg.y]);
+          const urquhartEdges = calculateUrquhartEdges(points);
+          urquhartEdges.forEach(([fromId, toId]) => {
+            const start = featurePlazas[fromId].cell;
+            const exit = featurePlazas[toId].cell;
+
+            const segments = findPathSegments({isWater: false, connections, start, exit});
+            for (const segment of segments) {
+              addConnections(segment);
+              secondaryRoads.push({feature: Number(key), cells: segment});
+            }
+          });
+        }
+      }
+
+      TIME && console.timeEnd("generateSecondaryRoads");
+      return secondaryRoads;
+    }
+
     function generateTrails() {
       TIME && console.time("generateTrails");
       const trails = [];
 
-      for (const [key, featureBurgs] of Object.entries(burgsByFeature)) {
-        const points = featureBurgs.map(burg => [burg.x, burg.y]);
-        const urquhartEdges = calculateUrquhartEdges(points);
-        urquhartEdges.forEach(([fromId, toId]) => {
-          const start = featureBurgs[fromId].cell;
-          const exit = featureBurgs[toId].cell;
+      for (const [key, unconnectedBurgs] of Object.entries(unconnectedBurgsByFeature)) {
+        // Skip if no unconnected burgs in this feature
+        if (unconnectedBurgs.length === 0) continue;
+        
+        // Get all connected burgs in this feature (primary + plaza)
+        const connectedBurgs = [...(primaryByFeature[key] || []), ...(plazaByFeature[key] || [])];
+        
+        // Connect unconnected burgs to the network
+        for (const unconnectedBurg of unconnectedBurgs) {
+          if (connectedBurgs.length > 0) {
+            // Find the best connection point (could be a burg or a point on an existing route)
+            const bestConnection = findBestConnectionPoint(unconnectedBurg, connectedBurgs, connections);
+            
+            if (bestConnection) {
+              const segments = findPathSegments({
+                isWater: false, 
+                connections, 
+                start: unconnectedBurg.cell, 
+                exit: bestConnection.cell
+              });
+              for (const segment of segments) {
+                addConnections(segment);
+                trails.push({feature: Number(key), cells: segment});
+              }
+            }
+          } else if (unconnectedBurgs.length >= 2) {
+            // If no connected burgs exist, create minimal trail network between unconnected burgs
+            const points = unconnectedBurgs.map(burg => [burg.x, burg.y]);
+            const urquhartEdges = calculateUrquhartEdges(points);
+            urquhartEdges.forEach(([fromId, toId]) => {
+              const start = unconnectedBurgs[fromId].cell;
+              const exit = unconnectedBurgs[toId].cell;
 
-          const segments = findPathSegments({isWater: false, connections, start, exit});
-          for (const segment of segments) {
-            addConnections(segment);
-            trails.push({feature: Number(key), cells: segment});
+              const segments = findPathSegments({isWater: false, connections, start, exit});
+              for (const segment of segments) {
+                addConnections(segment);
+                trails.push({feature: Number(key), cells: segment});
+              }
+            });
+            break; // Only do this once per feature
           }
-        });
+        }
       }
 
       TIME && console.timeEnd("generateTrails");
       return trails;
+    }
+
+    // Helper function to find the best connection point for a trail
+    function findBestConnectionPoint(unconnectedBurg, connectedBurgs, connections) {
+      let bestConnection = null;
+      let minDistance = Infinity;
+      
+      // First, try connecting to the nearest connected burg
+      for (const connectedBurg of connectedBurgs) {
+        const distance = Math.sqrt(
+          (unconnectedBurg.x - connectedBurg.x) ** 2 + (unconnectedBurg.y - connectedBurg.y) ** 2
+        );
+        if (distance < minDistance) {
+          minDistance = distance;
+          bestConnection = connectedBurg;
+        }
+      }
+      
+      return bestConnection;
     }
 
     function generateSeaRoutes() {
@@ -141,6 +275,12 @@ window.Routes = (function () {
         if (merged) continue;
         const points = getPoints("roads", cells, pointsArray);
         routes.push({i: routes.length, group: "roads", feature, points});
+      }
+
+      for (const {feature, cells, merged} of mergeRoutes(secondaryRoads)) {
+        if (merged) continue;
+        const points = getPoints("secondary", cells, pointsArray);
+        routes.push({i: routes.length, group: "secondary", feature, points});
       }
 
       for (const {feature, cells, merged} of mergeRoutes(trails)) {
@@ -421,20 +561,32 @@ window.Routes = (function () {
     });
   }
 
+  function hasSecondaryRoad(cellId) {
+    const connections = pack.cells.routes[cellId];
+    if (!connections) return false;
+
+    return Object.values(connections).some(routeId => {
+      const route = pack.routes.find(route => route.i === routeId);
+      if (!route) return false;
+      return route.group === "secondary";
+    });
+  }
+
   function isCrossroad(cellId) {
     const connections = pack.cells.routes[cellId];
     if (!connections) return false;
     if (Object.keys(connections).length > 3) return true;
-    const roadConnections = Object.values(connections).filter(routeId => {
+    const majorRoadConnections = Object.values(connections).filter(routeId => {
       const route = pack.routes.find(route => route.i === routeId);
-      return route?.group === "roads";
+      return route?.group === "roads" || route?.group === "secondary";
     });
-    return roadConnections.length > 2;
+    return majorRoadConnections.length > 2;
   }
 
   // name generator data
   const models = {
     roads: {burg_suffix: 3, prefix_suffix: 6, the_descriptor_prefix_suffix: 2, the_descriptor_burg_suffix: 1},
+    secondary: {burg_suffix: 5, prefix_suffix: 4, the_descriptor_prefix_suffix: 1, the_descriptor_burg_suffix: 2},
     trails: {burg_suffix: 8, prefix_suffix: 1, the_descriptor_burg_suffix: 1},
     searoutes: {burg_suffix: 4, prefix_suffix: 2, the_descriptor_prefix_suffix: 1}
   };
@@ -567,6 +719,7 @@ window.Routes = (function () {
 
   const suffixes = {
     roads: {road: 7, route: 3, way: 2, highway: 1},
+    secondary: {road: 4, route: 2, way: 3, avenue: 1, boulevard: 1},
     trails: {trail: 4, path: 1, track: 1, pass: 1},
     searoutes: {"sea route": 5, lane: 2, passage: 1, seaway: 1}
   };
@@ -596,6 +749,7 @@ window.Routes = (function () {
 
   const ROUTE_CURVES = {
     roads: d3.curveCatmullRom.alpha(0.1),
+    secondary: d3.curveCatmullRom.alpha(0.1),
     trails: d3.curveCatmullRom.alpha(0.1),
     searoutes: d3.curveCatmullRom.alpha(0.5),
     default: d3.curveCatmullRom.alpha(0.1)
@@ -610,6 +764,20 @@ window.Routes = (function () {
 
   function getLength(routeId) {
     const path = routes.select("#route" + routeId).node();
+    if (!path) {
+      // Fallback: calculate length from route points if DOM element not available
+      const route = pack.routes.find(r => r.i === routeId);
+      if (route && route.points) {
+        let length = 0;
+        for (let i = 0; i < route.points.length - 1; i++) {
+          const [x1, y1] = route.points[i];
+          const [x2, y2] = route.points[i + 1];
+          length += Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        }
+        return length;
+      }
+      return 0;
+    }
     return path.getTotalLength();
   }
 
@@ -644,6 +812,7 @@ window.Routes = (function () {
     areConnected,
     getRoute,
     hasRoad,
+    hasSecondaryRoad,
     isCrossroad,
     generateName,
     getPath,
