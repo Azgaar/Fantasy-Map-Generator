@@ -480,49 +480,100 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     });
   }
 
-  function downloadBurgsData() {
-    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,City Generator Link\n`; // headers
-    const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
+// Helper function to get meters per pixel (add this if it doesn't exist)
+function getMetersPerPixel() {
+  const unit = distanceUnitInput.value.toLowerCase();
 
-    valid.forEach(b => {
-      data += b.i + ",";
-      data += b.name + ",";
-      const province = pack.cells.province[b.cell];
-      data += province ? pack.provinces[province].name + "," : ",";
-      data += province ? pack.provinces[province].fullName + "," : ",";
-      data += pack.states[b.state].name + ",";
-      data += pack.states[b.state].fullName + ",";
-      data += pack.cultures[b.culture].name + ",";
-      data += pack.religions[pack.cells.religion[b.cell]].name + ",";
-      data += rn(b.population * populationRate * urbanization) + ",";
-
-      // add geography data
-      data += b.x + ",";
-      data += b.y + ",";
-      data += getLatitude(b.y, 2) + ",";
-      data += getLongitude(b.x, 2) + ",";
-      data += parseInt(getHeight(pack.cells.h[b.cell])) + ",";
-      const temperature = grid.cells.temp[pack.cells.g[b.cell]];
-      data += convertTemperature(temperature) + ",";
-      data += getTemperatureLikeness(temperature) + ",";
-
-      // add status data
-      data += b.capital ? "capital," : ",";
-      data += b.port ? "port," : ",";
-      data += b.citadel ? "citadel," : ",";
-      data += b.walls ? "walls," : ",";
-      data += b.plaza ? "plaza," : ",";
-      data += b.temple ? "temple," : ",";
-      data += b.shanty ? "shanty town," : ",";
-      data += b.coa ? JSON.stringify(b.coa).replace(/"/g, "").replace(/,/g, ";") + "," : ",";
-      data += getBurgLink(b);
-
-      data += "\n";
-    });
-
-    const name = getFileName("Burgs") + ".csv";
-    downloadFile(data, name);
+  switch(unit) {
+    case 'km':
+      return distanceScale * 1000;
+    case 'm':
+    case 'meter':
+    case 'meters':
+      return distanceScale;
+    case 'mi':
+    case 'mile':
+    case 'miles':
+      return distanceScale * 1609.344;
+    case 'yd':
+    case 'yard':
+    case 'yards':
+      return distanceScale * 0.9144;
+    case 'ft':
+    case 'foot':
+    case 'feet':
+      return distanceScale * 0.3048;
+    case 'league':
+    case 'leagues':
+      return distanceScale * 4828.032;
+    default:
+      console.warn(`Unknown distance unit: ${unit}, defaulting to km`);
+      return distanceScale * 1000;
   }
+}
+
+function downloadBurgsData() {
+  // Calculate meters per pixel for world coordinates
+  const metersPerPixel = getMetersPerPixel();
+
+  // Build headers with new world coordinate columns
+  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,`;
+  data += `X_World (m),Y_World (m),X_Pixel,Y_Pixel,`; // New world coords + renamed pixel coords
+  data += `Latitude,Longitude,`; // Keep for compatibility
+  data += `Elevation (${heightUnit.value}),Temperature,Temperature likeness,`;
+  data += `Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,City Generator Link\n`;
+
+  const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
+
+  valid.forEach(b => {
+    data += b.i + ",";
+    data += b.name + ",";
+    const province = pack.cells.province[b.cell];
+    data += province ? pack.provinces[province].name + "," : ",";
+    data += province ? pack.provinces[province].fullName + "," : ",";
+    data += pack.states[b.state].name + ",";
+    data += pack.states[b.state].fullName + ",";
+    data += pack.cultures[b.culture].name + ",";
+    data += pack.religions[pack.cells.religion[b.cell]].name + ",";
+    data += rn(b.population * populationRate * urbanization) + ",";
+
+    // Add world coordinates in meters
+    const xWorld = b.x * metersPerPixel;
+    const yWorld = -b.y * metersPerPixel; // Negative because Y increases downward
+    data += rn(xWorld, 2) + ",";
+    data += rn(yWorld, 2) + ",";
+
+    // Add pixel coordinates (renamed for clarity)
+    data += b.x + ",";
+    data += b.y + ",";
+
+    // Keep lat/lon for compatibility (even though not used in fantasy map)
+    data += getLatitude(b.y, 2) + ",";
+    data += getLongitude(b.x, 2) + ",";
+
+    // Continue with elevation and other data
+    data += parseInt(getHeight(pack.cells.h[b.cell])) + ",";
+    const temperature = grid.cells.temp[pack.cells.g[b.cell]];
+    data += convertTemperature(temperature) + ",";
+    data += getTemperatureLikeness(temperature) + ",";
+
+    // Add status data
+    data += b.capital ? "capital," : ",";
+    data += b.port ? "port," : ",";
+    data += b.citadel ? "citadel," : ",";
+    data += b.walls ? "walls," : ",";
+    data += b.plaza ? "plaza," : ",";
+    data += b.temple ? "temple," : ",";
+    data += b.shanty ? "shanty town," : ",";
+    data += b.coa ? JSON.stringify(b.coa).replace(/"/g, "").replace(/,/g, ";") + "," : ",";
+    data += getBurgLink(b);
+
+    data += "\n";
+  });
+
+  const name = getFileName("Burgs") + ".csv";
+  downloadFile(data, name);
+}
 
   function renameBurgsInBulk() {
     alertMessage.innerHTML = /* html */ `Download burgs list as a text file, make changes and re-upload the file. Make sure the file is a plain text document with each
