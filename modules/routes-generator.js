@@ -10,20 +10,48 @@ const ROUTE_TYPE_MODIFIERS = {
   default: 8 // far ocean
 };
 
+// Route tier modifiers for different route types (lower = preferred)
+const ROUTE_TIER_MODIFIERS = {
+  majorSea: { cost: 0.3, priority: "immediate" },     // Major maritime trade routes
+  royal: { cost: 0.4, priority: "immediate" },        // Capital-to-capital roads
+  market: { cost: 1.0, priority: "background" },      // Regional trade roads
+  local: { cost: 1.5, priority: "background" },       // Village-to-market roads
+  footpath: { cost: 2.0, priority: "background" },    // Hamlet paths
+  regional: { cost: 1.2, priority: "background" }     // Regional sea routes
+};
+
 window.Routes = (function () {
   function generate(lockedRoutes = []) {
+    TIME && console.time("generateRoutes");
     const {capitalsByFeature, burgsByFeature, portsByFeature, primaryByFeature, plazaByFeature, unconnectedBurgsByFeature} = sortBurgsByFeature(pack.burgs);
 
     const connections = new Map();
     lockedRoutes.forEach(route => addConnections(route.points.map(p => p[2])));
 
-    const mainRoads = generateMainRoads();
-    const secondaryRoads = generateSecondaryRoads();
-    const trails = generateTrails();
-    const seaRoutes = generateSeaRoutes();
+    // PHASE 1: IMMEDIATE PROCESSING (blocking - critical routes for trade and diplomacy)
+    TIME && console.time("generateCriticalRoutes");
+    const majorSeaRoutes = generateMajorSeaRoutes(); // Tier 1: Long-distance maritime trade
+    const royalRoads = generateRoyalRoads();         // Tier 2: Capital-to-capital connections
+    TIME && console.timeEnd("generateCriticalRoutes");
 
+    // Create initial routes with critical paths only
     pack.routes = createRoutesData(lockedRoutes);
     pack.cells.routes = buildLinks(pack.routes);
+
+    // PHASE 2: BACKGROUND PROCESSING (non-blocking - local and regional routes)
+    setTimeout(() => {
+      TIME && console.time("generateRegionalRoutes");
+      const marketRoads = generateMarketRoads();     // Tier 3: Regional trade networks (was mainRoads)
+      const localRoads = generateLocalRoads();       // Tier 4: Village-to-market connections (was secondaryRoads)
+      const footpaths = generateFootpaths();         // Tier 5: Hamlet networks (was trails)
+      const regionalSeaRoutes = generateRegionalSeaRoutes(); // Regional sea connections
+      TIME && console.timeEnd("generateRegionalRoutes");
+      
+      // Append regional routes to existing critical routes
+      appendRoutesToPack(marketRoads, localRoads, footpaths, regionalSeaRoutes);
+    }, 100);
+
+    TIME && console.timeEnd("generateRoutes");
 
     function sortBurgsByFeature(burgs) {
       const burgsByFeature = {};
@@ -64,6 +92,467 @@ window.Routes = (function () {
       }
 
       return {burgsByFeature, capitalsByFeature, portsByFeature, primaryByFeature, plazaByFeature, unconnectedBurgsByFeature};
+    }
+
+    // Tier 1: Major Sea Routes - Connect capitals and major ports across ALL water bodies
+    // Simulates long-distance maritime trade like Hanseatic League routes
+    function generateMajorSeaRoutes() {
+      TIME && console.time("generateMajorSeaRoutes");
+      const majorSeaRoutes = [];
+      
+      // Get all significant ports for major trade routes
+      const allMajorPorts = [];
+      pack.burgs.forEach(b => {
+        if (b.i && !b.removed && b.port) {
+          // Include more ports in major routes: capitals, large ports, and wealthy market towns
+          if (b.capital || 
+              b.isLargePort || 
+              (b.population >= 5 && b.plaza) || // Major market towns (5000+ pop with plaza)
+              (b.population >= 10)) { // Large cities regardless of status
+            allMajorPorts.push(b);
+          }
+        }
+      });
+      
+      if (allMajorPorts.length < 2) {
+        TIME && console.timeEnd("generateMajorSeaRoutes");
+        return majorSeaRoutes;
+      }
+      
+      // Sort ports by importance (capitals first, then by population)
+      allMajorPorts.sort((a, b) => {
+        if (a.capital && !b.capital) return -1;
+        if (!a.capital && b.capital) return 1;
+        return b.population - a.population;
+      });
+      
+      // Create a more comprehensive trade network
+      // Primary hubs: ALL capital ports and top large ports
+      const capitalPorts = allMajorPorts.filter(p => p.capital);
+      const largePorts = allMajorPorts.filter(p => !p.capital && (p.isLargePort || p.population >= 10));
+      const mediumPorts = allMajorPorts.filter(p => !p.capital && !p.isLargePort && p.population < 10);
+      
+      // Use all capitals and top large ports as primary hubs
+      const hubs = [...capitalPorts, ...largePorts.slice(0, Math.max(10, Math.floor(largePorts.length * 0.5)))];
+      const secondaryHubs = [...largePorts.slice(Math.max(10, Math.floor(largePorts.length * 0.5))), ...mediumPorts.slice(0, 20)];
+      
+      // Connect primary hubs strategically (not all-to-all to avoid too many routes)
+      // Connect capitals to each other
+      for (let i = 0; i < capitalPorts.length; i++) {
+        for (let j = i + 1; j < capitalPorts.length; j++) {
+          const start = capitalPorts[i].cell;
+          const exit = capitalPorts[j].cell;
+          const distance = Math.sqrt((capitalPorts[i].x - capitalPorts[j].x) ** 2 + (capitalPorts[i].y - capitalPorts[j].y) ** 2);
+          
+          // Connect if reasonably distant (long-distance trade) or same cultural sphere
+          if (distance > 50 || capitalPorts[i].culture === capitalPorts[j].culture) {
+            const segments = findPathSegments({isWater: true, connections, start, exit, routeType: "majorSea"});
+            for (const segment of segments) {
+              addConnections(segment);
+              majorSeaRoutes.push({feature: -1, cells: segment, type: "majorSea"});
+            }
+          }
+        }
+      }
+      
+      // Connect large ports to nearest 2-3 capitals for trade network
+      largePorts.slice(0, 15).forEach(port => {
+        const nearestCapitals = capitalPorts
+          .map(cap => ({
+            cap,
+            distance: Math.sqrt((port.x - cap.x) ** 2 + (port.y - cap.y) ** 2)
+          }))
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, Math.min(3, capitalPorts.length)); // Connect to up to 3 nearest capitals
+        
+        nearestCapitals.forEach(({cap}) => {
+          const segments = findPathSegments({
+            isWater: true,
+            connections,
+            start: port.cell,
+            exit: cap.cell,
+            routeType: "majorSea"
+          });
+          for (const segment of segments) {
+            addConnections(segment);
+            majorSeaRoutes.push({feature: -1, cells: segment, type: "majorSea"});
+          }
+        });
+      });
+      
+      // Connect secondary hubs to nearest primary hub
+      secondaryHubs.forEach(port => {
+        let nearestHub = null;
+        let minDistance = Infinity;
+        
+        hubs.forEach(hub => {
+          const distance = Math.sqrt((port.x - hub.x) ** 2 + (port.y - hub.y) ** 2);
+          if (distance < minDistance) {
+            minDistance = distance;
+            nearestHub = hub;
+          }
+        });
+        
+        if (nearestHub) {
+          const segments = findPathSegments({
+            isWater: true, 
+            connections, 
+            start: port.cell, 
+            exit: nearestHub.cell,
+            routeType: "majorSea"
+          });
+          for (const segment of segments) {
+            addConnections(segment);
+            majorSeaRoutes.push({feature: -1, cells: segment, type: "majorSea"});
+          }
+        }
+      });
+      
+      TIME && console.timeEnd("generateMajorSeaRoutes");
+      return majorSeaRoutes;
+    }
+
+    // Tier 2: Royal Roads - Connect all state capitals for diplomatic and military movement
+    function generateRoyalRoads() {
+      TIME && console.time("generateRoyalRoads");
+      const royalRoads = [];
+      
+      // Get all state capitals
+      const capitals = [];
+      pack.states.forEach(state => {
+        if (state.i && !state.removed && state.capital) {
+          const capital = pack.burgs[state.capital];
+          if (capital && !capital.removed) {
+            capitals.push(capital);
+          }
+        }
+      });
+      
+      if (capitals.length < 2) {
+        TIME && console.timeEnd("generateRoyalRoads");
+        return royalRoads;
+      }
+      
+      // Create a minimum spanning tree of capitals using Kruskal's algorithm
+      // This ensures all capitals are connected with minimal total distance
+      const edges = [];
+      for (let i = 0; i < capitals.length; i++) {
+        for (let j = i + 1; j < capitals.length; j++) {
+          const distance = Math.sqrt(
+            (capitals[i].x - capitals[j].x) ** 2 + 
+            (capitals[i].y - capitals[j].y) ** 2
+          );
+          edges.push({
+            from: i,
+            to: j,
+            distance,
+            fromCell: capitals[i].cell,
+            toCell: capitals[j].cell
+          });
+        }
+      }
+      
+      // Sort edges by distance
+      edges.sort((a, b) => a.distance - b.distance);
+      
+      // Use union-find to build minimum spanning tree
+      const parent = Array.from({length: capitals.length}, (_, i) => i);
+      const find = (x) => {
+        if (parent[x] !== x) parent[x] = find(parent[x]);
+        return parent[x];
+      };
+      const union = (x, y) => {
+        const px = find(x);
+        const py = find(y);
+        if (px !== py) {
+          parent[px] = py;
+          return true;
+        }
+        return false;
+      };
+      
+      // Build the tree
+      for (const edge of edges) {
+        if (union(edge.from, edge.to)) {
+          const segments = findPathSegments({
+            isWater: false,
+            connections,
+            start: edge.fromCell,
+            exit: edge.toCell,
+            routeType: "royal"
+          });
+          for (const segment of segments) {
+            addConnections(segment);
+            royalRoads.push({
+              feature: pack.cells.f[edge.fromCell],
+              cells: segment,
+              type: "royal"
+            });
+          }
+        }
+      }
+      
+      TIME && console.timeEnd("generateRoyalRoads");
+      return royalRoads;
+    }
+
+    // Tier 3: Market Roads - Regional trade networks (enhanced main roads)
+    function generateMarketRoads() {
+      TIME && console.time("generateMarketRoads");
+      const marketRoads = [];
+      
+      // Get all market towns (from new settlement hierarchy)
+      const marketTowns = pack.burgs.filter(b => 
+        b.i && !b.removed && (b.settlementType === "marketTown" || b.plaza === 1)
+      );
+      
+      // Group market towns by feature/region
+      const marketsByFeature = {};
+      marketTowns.forEach(town => {
+        const feature = town.feature;
+        if (!marketsByFeature[feature]) marketsByFeature[feature] = [];
+        marketsByFeature[feature].push(town);
+      });
+      
+      // Connect market towns within regions (15-30 km spacing as per research)
+      for (const [feature, towns] of Object.entries(marketsByFeature)) {
+        if (towns.length < 2) continue;
+        
+        // Use Delaunay triangulation for regional connections
+        const points = towns.map(t => [t.x, t.y]);
+        const edges = calculateUrquhartEdges(points);
+        
+        edges.forEach(([fromId, toId]) => {
+          const fromTown = towns[fromId];
+          const toTown = towns[toId];
+          
+          // Check distance is within daily travel range (15-30 km)
+          const distance = Math.sqrt((fromTown.x - toTown.x) ** 2 + (fromTown.y - toTown.y) ** 2);
+          const mapScale = Math.sqrt(graphWidth * graphHeight / 1000000);
+          const kmDistance = distance / mapScale;
+          
+          // Only connect if within reasonable market day travel distance
+          if (kmDistance <= 35) {
+            const segments = findPathSegments({
+              isWater: false,
+              connections,
+              start: fromTown.cell,
+              exit: toTown.cell,
+              routeType: "market"
+            });
+            
+            for (const segment of segments) {
+              addConnections(segment);
+              marketRoads.push({
+                feature: Number(feature),
+                cells: segment,
+                type: "market"
+              });
+            }
+          }
+        });
+      }
+      
+      // Also use existing main roads logic for primary centers
+      const mainRoads = generateMainRoads();
+      marketRoads.push(...mainRoads);
+      
+      TIME && console.timeEnd("generateMarketRoads");
+      return marketRoads;
+    }
+    
+    // Tier 4: Local Roads - Village to nearest market town connections  
+    function generateLocalRoads() {
+      TIME && console.time("generateLocalRoads");
+      const localRoads = [];
+      
+      // Get villages from settlement hierarchy
+      const villages = pack.burgs.filter(b => 
+        b.i && !b.removed && (
+          b.settlementType === "largeVillage" || 
+          b.settlementType === "smallVillage"
+        )
+      );
+      
+      // Get market towns and regional centers
+      const marketCenters = pack.burgs.filter(b =>
+        b.i && !b.removed && (
+          b.settlementType === "marketTown" ||
+          b.plaza === 1 ||
+          b.isRegionalCenter ||
+          b.capital
+        )
+      );
+      
+      // Connect each village to nearest market center
+      villages.forEach(village => {
+        let nearestMarket = null;
+        let minDistance = Infinity;
+        
+        marketCenters.forEach(market => {
+          const distance = Math.sqrt(
+            (village.x - market.x) ** 2 + 
+            (village.y - market.y) ** 2
+          );
+          
+          // Prefer markets in same state/culture
+          let culturalModifier = 1;
+          if (village.state === market.state) culturalModifier = 0.8;
+          if (village.culture === market.culture) culturalModifier *= 0.9;
+          
+          const adjustedDistance = distance * culturalModifier;
+          
+          if (adjustedDistance < minDistance) {
+            minDistance = adjustedDistance;
+            nearestMarket = market;
+          }
+        });
+        
+        if (nearestMarket) {
+          const segments = findPathSegments({
+            isWater: false,
+            connections,
+            start: village.cell,
+            exit: nearestMarket.cell,
+            routeType: "local"
+          });
+          
+          for (const segment of segments) {
+            addConnections(segment);
+            localRoads.push({
+              feature: village.feature,
+              cells: segment,
+              type: "local"
+            });
+          }
+        }
+      });
+      
+      // Also include existing secondary roads
+      const secondaryRoads = generateSecondaryRoads();
+      localRoads.push(...secondaryRoads);
+      
+      TIME && console.timeEnd("generateLocalRoads");
+      return localRoads;
+    }
+    
+    // Tier 5: Footpaths - Hamlet to village networks
+    function generateFootpaths() {
+      TIME && console.time("generateFootpaths");
+      const footpaths = [];
+      
+      // Get hamlets from settlement hierarchy
+      const hamlets = pack.burgs.filter(b => 
+        b.i && !b.removed && b.settlementType === "hamlet"
+      );
+      
+      // Get villages and larger settlements
+      const largerSettlements = pack.burgs.filter(b =>
+        b.i && !b.removed && (
+          b.settlementType === "smallVillage" ||
+          b.settlementType === "largeVillage" ||
+          b.settlementType === "marketTown" ||
+          b.plaza === 1
+        )
+      );
+      
+      // Connect each hamlet to nearest village (3-6 km as per research)
+      hamlets.forEach(hamlet => {
+        let nearestVillage = null;
+        let minDistance = Infinity;
+        
+        largerSettlements.forEach(village => {
+          const distance = Math.sqrt(
+            (hamlet.x - village.x) ** 2 + 
+            (hamlet.y - village.y) ** 2
+          );
+          
+          // Strong preference for same culture/state
+          let modifier = 1;
+          if (hamlet.state === village.state) modifier = 0.7;
+          if (hamlet.culture === village.culture) modifier *= 0.8;
+          
+          const adjustedDistance = distance * modifier;
+          
+          // Only connect to nearby settlements (6 km max range)
+          const mapScale = Math.sqrt(graphWidth * graphHeight / 1000000);
+          const kmDistance = distance / mapScale;
+          
+          if (kmDistance <= 8 && adjustedDistance < minDistance) {
+            minDistance = adjustedDistance;
+            nearestVillage = village;
+          }
+        });
+        
+        if (nearestVillage) {
+          const segments = findPathSegments({
+            isWater: false,
+            connections,
+            start: hamlet.cell,
+            exit: nearestVillage.cell,
+            routeType: "footpath"
+          });
+          
+          for (const segment of segments) {
+            addConnections(segment);
+            footpaths.push({
+              feature: hamlet.feature,
+              cells: segment,
+              type: "footpath"
+            });
+          }
+        }
+      });
+      
+      // Also include existing trails for backward compatibility
+      const trails = generateTrails();
+      footpaths.push(...trails);
+      
+      TIME && console.timeEnd("generateFootpaths");
+      return footpaths;
+    }
+    
+    // Regional sea routes (within water bodies)
+    function generateRegionalSeaRoutes() {
+      TIME && console.time("generateRegionalSeaRoutes");
+      const regionalSeaRoutes = [];
+      
+      // Filter ports to only include significant ones (500+ population or special status)
+      // Small fishing villages don't participate in trade routes
+      const significantPortsByFeature = {};
+      
+      for (const [featureId, featurePorts] of Object.entries(portsByFeature)) {
+        const significantPorts = featurePorts.filter(burg => 
+          burg.population >= 0.5 || // 500+ population (in thousands)
+          burg.capital ||           // Capital cities
+          burg.isLargePort ||       // Designated large ports
+          burg.plaza ||             // Market towns with plazas
+          burg.isRegionalCenter     // Regional centers
+        );
+        
+        if (significantPorts.length >= 2) {
+          significantPortsByFeature[featureId] = significantPorts;
+        }
+      }
+      
+      // Connect significant ports within each water body
+      for (const [featureId, featurePorts] of Object.entries(significantPortsByFeature)) {
+        const points = featurePorts.map(burg => [burg.x, burg.y]);
+        const urquhartEdges = calculateUrquhartEdges(points);
+
+        urquhartEdges.forEach(([fromId, toId]) => {
+          const start = featurePorts[fromId].cell;
+          const exit = featurePorts[toId].cell;
+          const segments = findPathSegments({isWater: true, connections, start, exit, routeType: "regional"});
+          for (const segment of segments) {
+            addConnections(segment);
+            regionalSeaRoutes.push({feature: Number(featureId), cells: segment, type: "regional"});
+          }
+        });
+      }
+
+      TIME && console.timeEnd("generateRegionalSeaRoutes");
+      return regionalSeaRoutes;
     }
 
     function generateMainRoads() {
@@ -260,8 +749,8 @@ window.Routes = (function () {
       }
     }
 
-    function findPathSegments({isWater, connections, start, exit}) {
-      const getCost = createCostEvaluator({isWater, connections});
+    function findPathSegments({isWater, connections, start, exit, routeType}) {
+      const getCost = createCostEvaluator({isWater, connections, routeType});
       const pathCells = findPath(start, current => current === exit, getCost);
       if (!pathCells) return [];
       const segments = getRouteSegments(pathCells, connections);
@@ -271,31 +760,87 @@ window.Routes = (function () {
     function createRoutesData(routes) {
       const pointsArray = preparePointsArray();
 
-      for (const {feature, cells, merged} of mergeRoutes(mainRoads)) {
-        if (merged) continue;
-        const points = getPoints("roads", cells, pointsArray);
-        routes.push({i: routes.length, group: "roads", feature, points});
-      }
-
-      for (const {feature, cells, merged} of mergeRoutes(secondaryRoads)) {
-        if (merged) continue;
-        const points = getPoints("secondary", cells, pointsArray);
-        routes.push({i: routes.length, group: "secondary", feature, points});
-      }
-
-      for (const {feature, cells, merged} of mergeRoutes(trails)) {
-        if (merged) continue;
-        const points = getPoints("trails", cells, pointsArray);
-        routes.push({i: routes.length, group: "trails", feature, points});
-      }
-
-      for (const {feature, cells, merged} of mergeRoutes(seaRoutes)) {
+      // Process critical routes (Tier 1 & 2) - these run immediately
+      for (const {feature, cells, merged, type} of mergeRoutes(majorSeaRoutes)) {
         if (merged) continue;
         const points = getPoints("searoutes", cells, pointsArray);
-        routes.push({i: routes.length, group: "searoutes", feature, points});
+        routes.push({i: routes.length, group: "searoutes", feature, points, type: type || "majorSea"});
+      }
+
+      for (const {feature, cells, merged, type} of mergeRoutes(royalRoads)) {
+        if (merged) continue;
+        const points = getPoints("roads", cells, pointsArray);
+        routes.push({i: routes.length, group: "roads", feature, points, type: type || "royal"});
       }
 
       return routes;
+    }
+    
+    // Function to append background-generated routes to pack
+    function appendRoutesToPack(marketRoads, localRoads, footpaths, regionalSeaRoutes) {
+      const pointsArray = preparePointsArray();
+      const routes = pack.routes;
+      
+      // Tier 3: Market Roads
+      for (const {feature, cells, merged} of mergeRoutes(marketRoads)) {
+        if (merged) continue;
+        const points = getPoints("roads", cells, pointsArray);
+        const routeId = getNextId();
+        routes.push({i: routeId, group: "roads", feature, points, type: "market"});
+        
+        // Update cell routes
+        for (let i = 0; i < cells.length - 1; i++) {
+          addRouteConnection(cells[i], cells[i + 1], routeId);
+        }
+      }
+      
+      // Tier 4: Local Roads
+      for (const {feature, cells, merged} of mergeRoutes(localRoads)) {
+        if (merged) continue;
+        const points = getPoints("secondary", cells, pointsArray);
+        const routeId = getNextId();
+        routes.push({i: routeId, group: "secondary", feature, points, type: "local"});
+        
+        for (let i = 0; i < cells.length - 1; i++) {
+          addRouteConnection(cells[i], cells[i + 1], routeId);
+        }
+      }
+      
+      // Tier 5: Footpaths
+      for (const {feature, cells, merged} of mergeRoutes(footpaths)) {
+        if (merged) continue;
+        const points = getPoints("trails", cells, pointsArray);
+        const routeId = getNextId();
+        routes.push({i: routeId, group: "trails", feature, points, type: "footpath"});
+        
+        for (let i = 0; i < cells.length - 1; i++) {
+          addRouteConnection(cells[i], cells[i + 1], routeId);
+        }
+      }
+      
+      // Regional Sea Routes
+      for (const {feature, cells, merged} of mergeRoutes(regionalSeaRoutes)) {
+        if (merged) continue;
+        const points = getPoints("searoutes", cells, pointsArray);
+        const routeId = getNextId();
+        routes.push({i: routeId, group: "searoutes", feature, points, type: "regional"});
+        
+        for (let i = 0; i < cells.length - 1; i++) {
+          addRouteConnection(cells[i], cells[i + 1], routeId);
+        }
+      }
+      
+      // Rebuild route links after adding new routes
+      pack.cells.routes = buildLinks(pack.routes);
+    }
+    
+    function addRouteConnection(from, to, routeId) {
+      const routes = pack.cells.routes || {};
+      if (!routes[from]) routes[from] = {};
+      routes[from][to] = routeId;
+      if (!routes[to]) routes[to] = {};
+      routes[to][from] = routeId;
+      pack.cells.routes = routes;
     }
 
     // merge routes so that the last cell of one route is the first cell of the next route
@@ -322,7 +867,7 @@ window.Routes = (function () {
     }
   }
 
-  function createCostEvaluator({isWater, connections}) {
+  function createCostEvaluator({isWater, connections, routeType = "market"}) {
     return isWater ? getWaterPathCost : getLandPathCost;
 
     function getLandPathCost(current, next) {
@@ -336,8 +881,16 @@ window.Routes = (function () {
       const heightModifier = 1 + Math.max(pack.cells.h[next] - 25, 25) / 25; // [1, 3];
       const connectionModifier = connections.has(`${current}-${next}`) ? 0.5 : 1;
       const burgModifier = pack.cells.burg[next] ? 1 : 3;
+      
+      // Medieval travel constraints
+      const riverCrossingPenalty = pack.cells.r[next] && !pack.cells.burg[next] ? 1.5 : 1; // Bridges rare except at settlements
+      const borderPenalty = getBorderPenalty(current, next, routeType); // Political boundaries affect some routes
+      
+      // Apply route tier modifier
+      const tierModifier = ROUTE_TIER_MODIFIERS[routeType]?.cost || 1;
 
-      const pathCost = distanceCost * habitabilityModifier * heightModifier * connectionModifier * burgModifier;
+      const pathCost = distanceCost * habitabilityModifier * heightModifier * connectionModifier * 
+                      burgModifier * riverCrossingPenalty * borderPenalty * tierModifier;
       return pathCost;
     }
 
@@ -348,9 +901,27 @@ window.Routes = (function () {
       const distanceCost = dist2(pack.cells.p[current], pack.cells.p[next]);
       const typeModifier = ROUTE_TYPE_MODIFIERS[pack.cells.t[next]] || ROUTE_TYPE_MODIFIERS.default;
       const connectionModifier = connections.has(`${current}-${next}`) ? 0.5 : 1;
+      
+      // Apply route tier modifier for sea routes
+      const tierModifier = ROUTE_TIER_MODIFIERS[routeType]?.cost || 1;
 
-      const pathCost = distanceCost * typeModifier * connectionModifier;
+      const pathCost = distanceCost * typeModifier * connectionModifier * tierModifier;
       return pathCost;
+    }
+    
+    function getBorderPenalty(current, next, routeType) {
+      // Royal roads and major sea routes ignore borders (diplomatic/trade importance)
+      if (routeType === "royal" || routeType === "majorSea") return 1;
+      
+      // Check if crossing state border
+      const currentState = pack.cells.state[current];
+      const nextState = pack.cells.state[next];
+      if (currentState === nextState) return 1;
+      
+      // Higher penalty for local routes crossing borders
+      if (routeType === "footpath") return 3;
+      if (routeType === "local") return 2;
+      return 1.5; // Market roads have moderate border penalty
     }
   }
 

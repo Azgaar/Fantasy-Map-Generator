@@ -79,9 +79,17 @@ function editZones() {
 
     const lines = filteredZones.map(({i, name, type, cells, color, hidden}) => {
       const area = getArea(d3.sum(cells.map(i => pack.cells.area[i])));
-      const rural = d3.sum(cells.map(i => pack.cells.pop[i])) * populationRate;
-      const urban =
-        d3.sum(cells.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization;
+      // Calculate population: burg population for settled cells, cells.pop for unsettled
+      let rural = 0, urban = 0;
+      cells.forEach(i => {
+        if (pack.cells.burg[i]) {
+          // Burg represents ALL population for this cell
+          urban += pack.burgs[pack.cells.burg[i]].population * 1000 * urbanization;
+        } else {
+          // Only count cells.pop for unsettled areas
+          rural += pack.cells.pop[i] * populationRate;
+        }
+      });
       const population = rn(rural + urban);
       const populationTip = `Total population: ${si(population)}; Rural population: ${si(
         rural
@@ -412,10 +420,19 @@ function editZones() {
     if (!landCells.length) return tip("Zone does not have any land cells, cannot change population", false, "error");
 
     const burgs = pack.burgs.filter(b => !b.removed && landCells.includes(b.cell));
-    const rural = rn(d3.sum(landCells.map(i => pack.cells.pop[i])) * populationRate);
-    const urban = rn(
-      d3.sum(landCells.map(i => pack.cells.burg[i]).map(b => pack.burgs[b].population)) * populationRate * urbanization
-    );
+    // Calculate population: burg population for settled cells, cells.pop for unsettled
+    let rural = 0, urban = 0;
+    landCells.forEach(i => {
+      if (pack.cells.burg[i]) {
+        // Burg represents ALL population for this cell
+        urban += pack.burgs[pack.cells.burg[i]].population * 1000 * urbanization;
+      } else {
+        // Only count cells.pop for unsettled areas
+        rural += pack.cells.pop[i] * populationRate;
+      }
+    });
+    rural = rn(rural);
+    urban = rn(urban);
     const total = rural + urban;
     const l = n => Number(n).toLocaleString();
 

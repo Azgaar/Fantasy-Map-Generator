@@ -136,9 +136,12 @@ window.Military = (function () {
       return true;
     }
 
+    // Rural military generation disabled - all military now comes from burgs only
+    /* 
     // rural cells
     for (const i of cells.i) {
-      if (!cells.pop[i]) continue;
+      // Only generate rural regiments for cells without burgs (unsettled areas)
+      if (!cells.pop[i] || cells.burg[i]) continue;
 
       const biome = cells.biome[i];
       const state = cells.state[i];
@@ -148,7 +151,10 @@ window.Military = (function () {
       const stateObj = states[state];
       if (!state || stateObj.removed) continue;
 
-      let modifier = cells.pop[i] / 100; // basic rural army in percentages
+      // Medieval military: typically 1-3% of population could be mobilized
+      // cells.pop is the rural population for this cell
+      // modifier represents the base military force from this cell
+      let modifier = cells.pop[i] / 50; // ~2% mobilization rate
       if (culture !== stateObj.culture) modifier = stateObj.form === "Union" ? modifier / 1.2 : modifier / 2; // non-dominant culture
       if (religion !== cells.religion[stateObj.center])
         modifier = stateObj.form === "Theocracy" ? modifier / 2.2 : modifier / 1.4; // non-dominant religion
@@ -164,7 +170,7 @@ window.Military = (function () {
 
         const cellTypeMod = type === "generic" ? 1 : cellTypeModifier[type][unit.type]; // cell specific modifier
         const army = modifier * perc * cellTypeMod; // rural cell army
-        const total = rn(army * stateObj.temp[unit.name] * populationRate); // total troops
+        const total = rn(army * stateObj.temp[unit.name]); // total troops - NO populationRate multiplier!
         if (!total) continue;
 
         let [x, y] = p[i];
@@ -190,6 +196,7 @@ window.Military = (function () {
         });
       }
     }
+    */
 
     // burgs
     for (const b of pack.burgs) {
@@ -201,7 +208,13 @@ window.Military = (function () {
       const religion = cells.religion[b.cell];
 
       const stateObj = states[state];
-      let m = (b.population * urbanization) / 100; // basic urban army in percentages
+      
+      // Only burgs with significant population can maintain military forces
+      const actualPopulation = b.population * 1000; // Convert from thousands to actual people
+      if (actualPopulation < 500) continue; // Skip burgs under 500 people
+      
+      // Medieval military: 2-3% mobilization rate for settlements
+      let m = actualPopulation / 40; // ~2.5% mobilization rate based on actual burg population
       if (b.capital) m *= 1.2; // capital has household troops
       if (culture !== stateObj.culture) m = stateObj.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
       if (religion !== cells.religion[stateObj.center]) m = stateObj.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
@@ -212,11 +225,12 @@ window.Military = (function () {
         const perc = +unit.urban;
         if (isNaN(perc) || perc <= 0 || !stateObj.temp[unit.name]) continue;
         if (!passUnitLimits(unit, biome, state, culture, religion)) continue;
-        if (unit.type === "naval" && (!b.port || !cells.haven[b.cell])) continue; // only ports create naval units
+        // Naval units only from significant ports
+        if (unit.type === "naval" && (!b.port || !cells.haven[b.cell] || b.population < 0.5)) continue;
 
         const mod = type === "generic" ? 1 : burgTypeModifier[type][unit.type]; // cell specific modifier
         const army = m * perc * mod; // urban cell army
-        const total = rn(army * stateObj.temp[unit.name] * populationRate); // total troops
+        const total = rn(army * stateObj.temp[unit.name]); // total troops - NO populationRate multiplier!
         if (!total) continue;
 
         let [x, y] = p[b.cell];
@@ -243,7 +257,7 @@ window.Military = (function () {
       }
     }
 
-    const expected = 3 * populationRate; // expected regiment size
+    const expected = 300; // expected regiment size - realistic medieval unit (company/battalion)
     const mergeable = (n0, n1) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
 
     // get regiments for each state

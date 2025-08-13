@@ -161,7 +161,7 @@ function statesEditorAddLines() {
     if (s.removed) continue;
     const area = getArea(s.area);
     const rural = s.rural * populationRate;
-    const urban = s.urban * populationRate * urbanization;
+    const urban = s.urban * 1000 * urbanization;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(
       urban
@@ -1417,10 +1417,12 @@ function downloadStatesCsv() {
   const headers = `Id,State,Full Name,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area ${unit},Total Population,Rural Population,Urban Population`;
   const lines = Array.from($body.querySelectorAll(":scope > div"));
   const data = lines.map($line => {
-    const {id, name, form, color, capital, culture, type, expansionism, cells, burgs, area, population} = $line.dataset;
+    const {id, name, form, color, capital, culture, type, expansionism, cells, burgs, area} = $line.dataset;
     const {fullName = "", rural, urban} = pack.states[+id];
+    // Rural: convert abstract points to people, Urban: already in thousands so convert to people
     const ruralPopulation = Math.round(rural * populationRate);
-    const urbanPopulation = Math.round(urban * populationRate * urbanization);
+    const urbanPopulation = Math.round(urban * 1000 * urbanization);
+    const totalPopulation = ruralPopulation + urbanPopulation; // Ensure total matches parts
     return [
       id,
       name,
@@ -1434,7 +1436,7 @@ function downloadStatesCsv() {
       cells,
       burgs,
       area,
-      population,
+      totalPopulation, // Use calculated total instead of dataset.population
       ruralPopulation,
       urbanPopulation
     ].join(",");

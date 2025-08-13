@@ -119,9 +119,14 @@ function religionsCollectStatistics() {
     const religionId = cells.religion[i];
     religions[religionId].cells += 1;
     religions[religionId].area += cells.area[i];
-    religions[religionId].rural += cells.pop[i];
     const burgId = cells.burg[i];
-    if (burgId) religions[religionId].urban += burgs[burgId].population;
+    if (burgId) {
+      // Burg represents ALL population for this cell (stored in thousands)
+      religions[religionId].urban += burgs[burgId].population;
+    } else {
+      // Only count cells.pop for unsettled areas (no burg present)
+      religions[religionId].rural += cells.pop[i];
+    }
   }
 }
 
@@ -138,7 +143,7 @@ function religionsEditorAddLines() {
 
     const area = getArea(r.area);
     const rural = r.rural * populationRate;
-    const urban = r.urban * populationRate * urbanization;
+    const urban = r.urban * 1000 * urbanization;
     const population = rn(rural + urban);
     const populationTip = `Believers: ${si(population)}; Rural areas: ${si(rural)}; Urban areas: ${si(
       urban
@@ -610,7 +615,7 @@ async function showHierarchy() {
     };
 
     const formText = form === type ? "" : ". " + form;
-    const population = rural * populationRate + urban * populationRate * urbanization;
+    const population = rural * populationRate + urban * 1000 * urbanization;
     const populationText = population > 0 ? si(rn(population)) + " people" : "Extinct";
 
     return `${name}${getTypeText()}${formText}. ${populationText}`;

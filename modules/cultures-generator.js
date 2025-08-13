@@ -166,12 +166,40 @@ window.Cultures = (function () {
 
     function defineCultureExpansionism(type) {
       let base = 1; // Generic
-      if (type === "Lake") base = 0.8;
-      else if (type === "Naval") base = 1.5;
-      else if (type === "River") base = 0.9;
-      else if (type === "Nomadic") base = 1.5;
-      else if (type === "Hunting") base = 0.7;
-      else if (type === "Highland") base = 1.2;
+      let routeDensity = 1; // Route density modifier
+      let settlementPattern = "clustered"; // Settlement distribution pattern
+      
+      // Define cultural characteristics that affect routes and settlements
+      if (type === "Lake") {
+        base = 0.8;
+        routeDensity = 0.9; // Moderate route density around lakes
+        settlementPattern = "lakeside";
+      } else if (type === "Naval") {
+        base = 1.5;
+        routeDensity = 1.3; // High route density for maritime trade
+        settlementPattern = "coastal";
+      } else if (type === "River") {
+        base = 0.9;
+        routeDensity = 1.2; // Dense routes along rivers
+        settlementPattern = "linear"; // Settlements follow river lines
+      } else if (type === "Nomadic") {
+        base = 1.5;
+        routeDensity = 0.5; // Few permanent routes
+        settlementPattern = "dispersed";
+      } else if (type === "Hunting") {
+        base = 0.7;
+        routeDensity = 0.6; // Minimal routes, mostly trails
+        settlementPattern = "scattered";
+      } else if (type === "Highland") {
+        base = 1.2;
+        routeDensity = 0.8; // Routes follow valleys
+        settlementPattern = "valley";
+      }
+      
+      // Store additional cultural characteristics
+      cultures[cultures.length - 1].routeDensity = routeDensity;
+      cultures[cultures.length - 1].settlementPattern = settlementPattern;
+      
       return rn(((Math.random() * byId("sizeVariety").value) / 2 + 1) * base, 1);
     }
 

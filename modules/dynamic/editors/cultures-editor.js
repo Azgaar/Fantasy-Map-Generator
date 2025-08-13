@@ -109,9 +109,14 @@ function culturesCollectStatistics() {
     const cultureId = cells.culture[i];
     cultures[cultureId].cells += 1;
     cultures[cultureId].area += cells.area[i];
-    cultures[cultureId].rural += cells.pop[i];
     const burgId = cells.burg[i];
-    if (burgId) cultures[cultureId].urban += burgs[burgId].population;
+    if (burgId) {
+      // Burg represents ALL population for this cell (stored in thousands)
+      cultures[cultureId].urban += burgs[burgId].population;
+    } else {
+      // Only count cells.pop for unsettled areas (no burg present)
+      cultures[cultureId].rural += cells.pop[i];
+    }
   }
 }
 
@@ -128,7 +133,7 @@ function culturesEditorAddLines() {
     if (c.removed) continue;
     const area = getArea(c.area);
     const rural = c.rural * populationRate;
-    const urban = c.urban * populationRate * urbanization;
+    const urban = c.urban * 1000 * urbanization;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}. Rural population: ${si(rural)}. Urban population: ${si(
       urban
@@ -635,7 +640,7 @@ async function showHierarchy() {
   const getDescription = culture => {
     const {name, type, rural, urban} = culture;
 
-    const population = rural * populationRate + urban * populationRate * urbanization;
+    const population = rural * populationRate + urban * 1000 * urbanization;
     const populationText = population > 0 ? si(rn(population)) + " people" : "Extinct";
     return `${name} culture. ${type}. ${populationText}`;
   };

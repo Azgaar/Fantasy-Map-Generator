@@ -7,17 +7,23 @@ window.BurgsAndStates = (() => {
 
     cells.burg = new Uint16Array(n); // cell burg
 
-    const burgs = (pack.burgs = placeCapitals());
-    pack.states = createStates();
+    // Measure performance of each phase
+    const perf = window.PerformanceOptimizer || { measureTime: (name, fn) => fn() };
     
-    identifyLargePorts();
-    placeRegionalCenters();
-    placeTowns();
+    const burgs = (pack.burgs = perf.measureTime('burgGeneration', () => placeCapitals()));
+    pack.states = createStates();
+
+    perf.measureTime('burgGeneration', () => {
+      identifyLargePorts();
+      placeRegionalCenters();
+      placeTowns();
+    });
+    
     expandStates();
     normalizeStates();
     getPoles();
 
-    specifyBurgs();
+    perf.measureTime('burgGeneration', () => specifyBurgs());
 
     collectStatistics();
     assignColors();
@@ -118,24 +124,24 @@ window.BurgsAndStates = (() => {
       TIME && console.time("identifyLargePorts");
       const {cells, features} = pack;
       const temp = grid.cells.temp;
-      
+
       // Track primary population centers (capitals + large ports)
       pack.primaryCenters = burgs.slice(1).map(b => b.i); // Start with capitals
-      
+
       const potentialPorts = [];
-      
+
       // Find potential large port locations
       for (const b of burgs) {
         if (!b.i || b.i === 0) continue; // Skip first element and undefined burgs
-        
+
         const i = b.cell;
         const haven = cells.haven[i];
-        
+
         if (haven && temp[cells.g[i]] > 0) {
           const f = cells.f[haven];
           const waterBodySize = features[f].cells;
           const harborQuality = cells.harbor[i];
-          
+
           // Large port criteria: large water body and good harbor
           if (waterBodySize > 10 && harborQuality === 1) {
             const portScore = waterBodySize * harborQuality + cells.s[i];
@@ -143,20 +149,20 @@ window.BurgsAndStates = (() => {
           }
         }
       }
-      
+
       // Sort by score and select best ports, ensuring spacing
       potentialPorts.sort((a, b) => b.score - a.score);
       const burgsTree = d3.quadtree();
-      
+
       // Add existing capitals to tree
       for (const b of burgs) {
         if (b.i && b.capital) {
           burgsTree.add([b.x, b.y]);
         }
       }
-      
+
       const minPortSpacing = (graphWidth + graphHeight) / 8; // Minimum spacing between major ports
-      
+
       for (const portData of potentialPorts) {
         const b = portData.burg;
         if (burgsTree.find(b.x, b.y, minPortSpacing) === undefined) {
@@ -166,7 +172,7 @@ window.BurgsAndStates = (() => {
           burgsTree.add([b.x, b.y]);
         }
       }
-      
+
       TIME && console.timeEnd("identifyLargePorts");
     }
 
@@ -174,43 +180,43 @@ window.BurgsAndStates = (() => {
     function placeRegionalCenters() {
       TIME && console.time("placeRegionalCenters");
       const {cells} = pack;
-      
+
       if (!pack.primaryCenters || pack.primaryCenters.length < 2) {
         pack.regionalCenters = [];
         TIME && console.timeEnd("placeRegionalCenters");
         return;
       }
-      
+
       pack.regionalCenters = [];
       const primaryBurgs = pack.primaryCenters.map(id => burgs[id]);
-      
+
       // Calculate target number of regional centers
       const targetRegionalCenters = Math.max(1, Math.floor(pack.primaryCenters.length * 0.6));
-      
+
       const score = new Int16Array(cells.s.map(s => s * (0.7 + Math.random() * 0.6))); // Regional center score
       const candidates = cells.i
         .filter(i => !cells.burg[i] && score[i] > 0 && cells.culture[i])
         .sort((a, b) => score[b] - score[a]);
-      
+
       const burgsTree = d3.quadtree();
-      
+
       // Add primary centers to tree
       primaryBurgs.forEach(b => burgsTree.add([b.x, b.y]));
-      
+
       const minPrimaryDistance = (graphWidth + graphHeight) / 12; // Min distance from primary centers
       const minRegionalSpacing = (graphWidth + graphHeight) / 20; // Min distance between regional centers
-      
+
       let placedRegional = 0;
-      
+
       for (const cell of candidates) {
         if (placedRegional >= targetRegionalCenters) break;
-        
+
         const [x, y] = cells.p[cell];
-        
+
         // Check distance from primary centers (should be far enough to be useful)
         const nearestPrimary = burgsTree.find(x, y, minPrimaryDistance);
         if (nearestPrimary) continue;
-        
+
         // Check distance from other regional centers
         let tooClose = false;
         for (const regionalId of pack.regionalCenters) {
@@ -222,151 +228,318 @@ window.BurgsAndStates = (() => {
           }
         }
         if (tooClose) continue;
-        
+
         // Create regional center burg
         const burg = burgs.length;
         const culture = cells.culture[cell];
         const name = Names.getCulture(culture);
-        
+
         burgs.push({
-          cell, x, y, 
-          state: 0, 
-          i: burg, 
-          culture, 
-          name, 
-          capital: 0, 
+          cell, x, y,
+          state: 0,
+          i: burg,
+          culture: culture,
+          name,
+          capital: 0,
           feature: cells.f[cell],
           isRegionalCenter: true,
           guaranteedPlaza: true
         });
-        
+
         cells.burg[cell] = burg;
         pack.regionalCenters.push(burg);
         placedRegional++;
       }
-      
+
       TIME && console.timeEnd("placeRegionalCenters");
     }
 
-    // place secondary settlements based on hierarchical population distribution
-    function placeTowns() {
-      TIME && console.time("placeTowns");
-      
-      // Helper function to calculate distance-based population multiplier
-      const getPopulationMultiplier = (cellId) => {
-        const [x, y] = cells.p[cellId];
-        let minDistanceToPrimary = Infinity;
-        let minDistanceToRegional = Infinity;
-        
-        // Find distance to nearest primary center (capital or large port)
-        if (pack.primaryCenters) {
-          for (const primaryId of pack.primaryCenters) {
-            const primary = burgs[primaryId];
-            if (primary) {
-              const distance = Math.sqrt((x - primary.x) ** 2 + (y - primary.y) ** 2);
-              minDistanceToPrimary = Math.min(minDistanceToPrimary, distance);
-            }
-          }
-        }
-        
-        // Find distance to nearest regional center
-        if (pack.regionalCenters) {
-          for (const regionalId of pack.regionalCenters) {
-            const regional = burgs[regionalId];
-            if (regional) {
-              const distance = Math.sqrt((x - regional.x) ** 2 + (y - regional.y) ** 2);
-              minDistanceToRegional = Math.min(minDistanceToRegional, distance);
-            }
-          }
-        }
-        
-        // Calculate influence from primary centers (stronger influence)
-        const primaryInfluence = minDistanceToPrimary === Infinity ? 0 : 
-          Math.max(0, 1 - (minDistanceToPrimary / ((graphWidth + graphHeight) / 4)));
-        
-        // Calculate influence from regional centers (medium influence)
-        const regionalInfluence = minDistanceToRegional === Infinity ? 0 : 
-          Math.max(0, 0.6 - (minDistanceToRegional / ((graphWidth + graphHeight) / 6)));
-        
-        // Combine influences with primary having more weight
-        const combinedInfluence = Math.max(primaryInfluence * 1.0, regionalInfluence * 0.7);
-        
-        // Return multiplier between 0.3 and 1.5
-        return 0.3 + combinedInfluence * 1.2;
-      };
-      
-      // Calculate hierarchical score for each cell
-      const baseScore = cells.s.map(s => s * gauss(1, 3, 0, 20, 3));
-      const hierarchicalScore = new Float32Array(cells.i.length);
-      
-      for (const i of cells.i) {
-        if (cells.burg[i] || !cells.culture[i] || baseScore[i] <= 0) {
-          hierarchicalScore[i] = 0;
-          continue;
-        }
-        
-        const populationMultiplier = getPopulationMultiplier(i);
-        hierarchicalScore[i] = baseScore[i] * populationMultiplier;
-      }
-      
-      const sorted = cells.i
-        .filter(i => hierarchicalScore[i] > 0)
-        .sort((a, b) => hierarchicalScore[b] - hierarchicalScore[a]);
+    // Place hamlets - smallest settlements (10-50 pop)
+    function placeHamlets() {
+      TIME && console.time("placeHamlets");
 
-      const desiredNumber =
-        manorsInput.value == 100000
-          ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8)
-          : manorsInput.valueAsNumber;
-      const burgsNumber = Math.min(desiredNumber, sorted.length);
-      let burgsAdded = 0;
+      const score = new Int16Array(cells.s.map(s => s * gauss(0.8, 1.2, 0, 10, 2)));
+      const candidates = cells.i
+        .filter(i => !cells.burg[i] && score[i] > 0 && cells.culture[i])
+        .sort((a, b) => score[b] - score[a]);
+
+      // Calculate desired number of hamlets (should be ~60% of all settlements)
+      const totalSettlements = manorsInput.value == 100000
+        ? rn(candidates.length / 5 / (grid.points.length / 10000) ** 0.8)
+        : manorsInput.valueAsNumber;
+      const hamletCount = Math.floor(totalSettlements * 0.6);
 
       const burgsTree = burgs[0];
-      let spacing = (graphWidth + graphHeight) / 150 / (burgsNumber ** 0.7 / 66);
-      
-      // Add existing burgs to tree for spacing calculations
+      const mapScale = Math.sqrt(graphWidth * graphHeight / 1000000); // Normalize to 1000x1000 map
+      let spacing = 3 * mapScale; // 1-3 km spacing scaled to map size
+
+      let hamletsAdded = 0;
+
+      while (hamletsAdded < hamletCount && spacing > 0.5) {
+        for (let i = 0; hamletsAdded < hamletCount && i < candidates.length; i++) {
+          const cell = candidates[i];
+          const [x, y] = cells.p[cell];
+
+          // Get cultural modifiers
+          const culture = pack.cultures[cells.culture[cell]];
+          let culturalSpacingModifier = 1;
+
+          if (culture && culture.settlementPattern) {
+            // Adjust spacing based on cultural settlement patterns
+            switch(culture.settlementPattern) {
+              case "dispersed": culturalSpacingModifier = 1.5; break; // Nomadic - wider spacing
+              case "scattered": culturalSpacingModifier = 1.3; break; // Hunting - scattered
+              case "coastal": // Naval cultures cluster near coasts
+                if (cells.t[cell] === 1) culturalSpacingModifier = 0.7;
+                else culturalSpacingModifier = 1.2;
+                break;
+              case "linear": // River cultures follow waterways
+                if (cells.r[cell]) culturalSpacingModifier = 0.6;
+                break;
+              case "valley": // Highland cultures in valleys
+                if (cells.h[cell] > 44 && cells.h[cell] < 62) culturalSpacingModifier = 0.7;
+                break;
+              case "lakeside": // Lake cultures near water
+                if (cells.haven[cell]) culturalSpacingModifier = 0.7;
+                break;
+              default: culturalSpacingModifier = 1; // Clustered/Generic
+            }
+          }
+
+          // Biome-based spacing modifier
+          const biome = cells.biome[cell];
+          let biomeModifier = 1;
+          if (biome === 6 || biome === 8) biomeModifier = 0.5; // Fertile regions
+          else if (cells.h[cell] > 50) biomeModifier = 2; // Mountains
+
+          const adjustedSpacing = spacing * biomeModifier * culturalSpacingModifier * gauss(1, 0.2, 0.5, 1.5, 2);
+
+          if (burgsTree.find(x, y, adjustedSpacing) !== undefined) continue;
+
+          const burg = burgs.length;
+          const cultureId = cells.culture[cell];
+          const name = Names.getCulture(cultureId);
+          burgs.push({
+            cell, x, y,
+            state: 0,
+            i: burg,
+            culture: cultureId,
+            name,
+            capital: 0,
+            feature: cells.f[cell],
+            settlementType: "hamlet",
+            basePopulation: gauss(30, 20, 10, 50, 2) // 10-50 population
+          });
+          burgsTree.add([x, y]);
+          cells.burg[cell] = burg;
+          hamletsAdded++;
+        }
+        spacing *= 0.8;
+      }
+
+      TIME && console.timeEnd("placeHamlets");
+      return hamletsAdded;
+    }
+
+    // Place small villages (50-500 pop)
+    function placeSmallVillages() {
+      TIME && console.time("placeSmallVillages");
+
+      const score = new Int16Array(cells.s.map(s => s * gauss(1, 1.5, 0, 15, 2)));
+      const candidates = cells.i
+        .filter(i => !cells.burg[i] && score[i] > 0 && cells.culture[i])
+        .sort((a, b) => score[b] - score[a]);
+
+      // Small villages should be ~20% of settlements
+      const totalSettlements = manorsInput.value == 100000
+        ? rn(candidates.length / 5 / (grid.points.length / 10000) ** 0.8)
+        : manorsInput.valueAsNumber;
+      const villageCount = Math.floor(totalSettlements * 0.2);
+
+      const burgsTree = burgs[0];
+      const mapScale = Math.sqrt(graphWidth * graphHeight / 1000000);
+      let spacing = 6 * mapScale; // 3-6 km spacing
+
+      let villagesAdded = 0;
+
+      while (villagesAdded < villageCount && spacing > 1) {
+        for (let i = 0; villagesAdded < villageCount && i < candidates.length; i++) {
+          const cell = candidates[i];
+          const [x, y] = cells.p[cell];
+
+          // Biome and river modifiers
+          const biome = cells.biome[cell];
+          let modifier = 1;
+          if (biome === 6 || biome === 8) modifier = 0.7; // Fertile
+          if (cells.r[cell]) modifier *= 0.8; // Near river
+          if (cells.h[cell] > 50) modifier = 1.5; // Mountains
+
+          const adjustedSpacing = spacing * modifier * gauss(1, 0.25, 0.5, 1.5, 2);
+
+          if (burgsTree.find(x, y, adjustedSpacing) !== undefined) continue;
+
+          const burg = burgs.length;
+          const cultureId = cells.culture[cell];
+          const name = Names.getCulture(cultureId);
+          burgs.push({
+            cell, x, y,
+            state: 0,
+            i: burg,
+            culture: cultureId,
+            name,
+            capital: 0,
+            feature: cells.f[cell],
+            settlementType: "smallVillage",
+            basePopulation: gauss(275, 225, 50, 500, 2) // 50-500 population
+          });
+          burgsTree.add([x, y]);
+          cells.burg[cell] = burg;
+          villagesAdded++;
+        }
+        spacing *= 0.8;
+      }
+
+      TIME && console.timeEnd("placeSmallVillages");
+      return villagesAdded;
+    }
+
+    // Place large villages (200-1000 pop)
+    function placeLargeVillages() {
+      TIME && console.time("placeLargeVillages");
+
+      const score = new Int16Array(cells.s.map(s => s * gauss(1.2, 2, 0, 20, 3)));
+      const candidates = cells.i
+        .filter(i => !cells.burg[i] && score[i] > 0 && cells.culture[i])
+        .sort((a, b) => score[b] - score[a]);
+
+      // Large villages should be ~12% of settlements
+      const totalSettlements = manorsInput.value == 100000
+        ? rn(candidates.length / 5 / (grid.points.length / 10000) ** 0.8)
+        : manorsInput.valueAsNumber;
+      const villageCount = Math.floor(totalSettlements * 0.12);
+
+      const burgsTree = burgs[0];
+      const mapScale = Math.sqrt(graphWidth * graphHeight / 1000000);
+      let spacing = 12 * mapScale; // 8-12 km spacing
+
+      let villagesAdded = 0;
+
+      while (villagesAdded < villageCount && spacing > 2) {
+        for (let i = 0; villagesAdded < villageCount && i < candidates.length; i++) {
+          const cell = candidates[i];
+          const [x, y] = cells.p[cell];
+
+          const adjustedSpacing = spacing * gauss(1, 0.3, 0.5, 1.5, 2);
+
+          if (burgsTree.find(x, y, adjustedSpacing) !== undefined) continue;
+
+          const burg = burgs.length;
+          const cultureId = cells.culture[cell];
+          const name = Names.getCulture(cultureId);
+          burgs.push({
+            cell, x, y,
+            state: 0,
+            i: burg,
+            culture: cultureId,
+            name,
+            capital: 0,
+            feature: cells.f[cell],
+            settlementType: "largeVillage",
+            basePopulation: gauss(600, 400, 200, 1000, 2) // 200-1000 population
+          });
+          burgsTree.add([x, y]);
+          cells.burg[cell] = burg;
+          villagesAdded++;
+        }
+        spacing *= 0.8;
+      }
+
+      TIME && console.timeEnd("placeLargeVillages");
+      return villagesAdded;
+    }
+
+    // Place market towns (1000-10000 pop)
+    function placeMarketTowns() {
+      TIME && console.time("placeMarketTowns");
+
+      const score = new Int16Array(cells.s.map(s => s * gauss(1.5, 3, 0, 25, 3)));
+      const candidates = cells.i
+        .filter(i => !cells.burg[i] && score[i] > 0 && cells.culture[i])
+        .sort((a, b) => score[b] - score[a]);
+
+      // Market towns should be ~7% of settlements
+      const totalSettlements = manorsInput.value == 100000
+        ? rn(candidates.length / 5 / (grid.points.length / 10000) ** 0.8)
+        : manorsInput.valueAsNumber;
+      const townCount = Math.floor(totalSettlements * 0.07);
+
+      const burgsTree = burgs[0];
+      const mapScale = Math.sqrt(graphWidth * graphHeight / 1000000);
+      let spacing = 25 * mapScale; // 15-30 km spacing (market day walking distance)
+
+      let townsAdded = 0;
+
+      // Add existing burgs to tree
       for (let i = 1; i < burgs.length; i++) {
         if (burgs[i] && burgs[i].x !== undefined) {
           burgsTree.add([burgs[i].x, burgs[i].y]);
         }
       }
 
-      while (burgsAdded < burgsNumber && spacing > 1) {
-        for (let i = 0; burgsAdded < burgsNumber && i < sorted.length; i++) {
-          if (cells.burg[sorted[i]]) continue;
-          const cell = sorted[i];
+      while (townsAdded < townCount && spacing > 5) {
+        for (let i = 0; townsAdded < townCount && i < candidates.length; i++) {
+          const cell = candidates[i];
           const [x, y] = cells.p[cell];
-          
-          // Adjust spacing based on hierarchy - closer spacing near population centers
-          const populationMultiplier = getPopulationMultiplier(cell);
-          const adjustedSpacing = spacing * gauss(1, 0.3, 0.2, 2, 2) * (2 - populationMultiplier);
-          
+
+          const adjustedSpacing = spacing * gauss(1, 0.3, 0.7, 1.3, 2);
+
           if (burgsTree.find(x, y, adjustedSpacing) !== undefined) continue;
-          
+
           const burg = burgs.length;
-          const culture = cells.culture[cell];
-          const name = Names.getCulture(culture);
+          const cultureId = cells.culture[cell];
+          const name = Names.getCulture(cultureId);
           burgs.push({
-            cell, x, y, 
-            state: 0, 
-            i: burg, 
-            culture, 
-            name, 
-            capital: 0, 
+            cell, x, y,
+            state: 0,
+            i: burg,
+            culture: cultureId,
+            name,
+            capital: 0,
             feature: cells.f[cell],
-            hierarchicalScore: hierarchicalScore[cell]
+            settlementType: "marketTown",
+            basePopulation: gauss(5500, 4500, 1000, 10000, 2), // 1000-10000 population
+            plaza: 1 // Market towns always have market squares
           });
           burgsTree.add([x, y]);
           cells.burg[cell] = burg;
-          burgsAdded++;
+          townsAdded++;
         }
-        spacing *= 0.5;
-      }
-
-      if (manorsInput.value != 1000 && burgsAdded < desiredNumber) {
-        ERROR && console.error(`Cannot place all burgs. Requested ${desiredNumber}, placed ${burgsAdded}`);
+        spacing *= 0.8;
       }
 
       burgs[0] = {name: undefined};
+      TIME && console.timeEnd("placeMarketTowns");
+      return townsAdded;
+    }
+
+    // Modified placeTowns to call the tiered functions
+    function placeTowns() {
+      TIME && console.time("placeTowns");
+
+      // Place settlements in hierarchical order
+      const hamletsPlaced = placeHamlets();
+      const smallVillagesPlaced = placeSmallVillages();
+      const largeVillagesPlaced = placeLargeVillages();
+      const marketTownsPlaced = placeMarketTowns();
+
+      const totalPlaced = hamletsPlaced + smallVillagesPlaced + largeVillagesPlaced + marketTownsPlaced;
+
+      INFO && console.info(`Settlements placed: ${totalPlaced} total`);
+      INFO && console.info(`- Hamlets (10-50 pop): ${hamletsPlaced}`);
+      INFO && console.info(`- Small villages (50-500 pop): ${smallVillagesPlaced}`);
+      INFO && console.info(`- Large villages (200-1000 pop): ${largeVillagesPlaced}`);
+      INFO && console.info(`- Market towns (1000-10000 pop): ${marketTownsPlaced}`);
+
       TIME && console.timeEnd("placeTowns");
     }
   };
@@ -390,25 +563,28 @@ window.BurgsAndStates = (() => {
         b.port = port ? f : 0; // port is defined by water body id it lays on
       } else b.port = 0;
 
-      // calculate hierarchical population based on burg type and position
-      let basePopulation = Math.max(cells.s[i] / 8 + b.i / 1000 + (i % 100) / 1000, 0.1);
-      
-      // Apply hierarchical multipliers
-      if (b.capital) {
-        basePopulation *= 1.8; // Capitals are major population centers
+      // Use settlement type-based population if available (from new tiered system)
+      let basePopulation;
+
+      if (b.basePopulation) {
+        // New tiered settlements have predefined base populations
+        basePopulation = b.basePopulation / 1000; // Convert to thousands for consistency
+      } else if (b.capital) {
+        // Capitals: major cities (10,000-200,000)
+        basePopulation = gauss(50, 75, 10, 200, 2);
       } else if (b.isLargePort) {
-        basePopulation *= 1.6; // Large ports are significant population centers
-      } else if (b.isRegionalCenter) {
-        basePopulation *= 1.3; // Regional centers have elevated population
-      } else if (b.hierarchicalScore) {
-        // Use the hierarchical score calculated during placement for population gradient
-        const maxHierarchicalScore = Math.max(...pack.burgs.filter(burg => burg.hierarchicalScore).map(burg => burg.hierarchicalScore));
-        if (maxHierarchicalScore > 0) {
-          const hierarchicalMultiplier = 0.7 + (b.hierarchicalScore / maxHierarchicalScore) * 0.6;
-          basePopulation *= hierarchicalMultiplier;
-        }
+        // Large ports: significant cities (5,000-50,000)
+        basePopulation = gauss(20, 30, 5, 50, 2);
+      } else if (b.isRegionalCenter || b.guaranteedPlaza) {
+        // Regional centers: market towns (1,000-10,000)
+        basePopulation = gauss(5.5, 4.5, 1, 10, 2);
+      } else {
+        // Default: scale down significantly for medieval demographics
+        // Most settlements should be under 100 people
+        const cellScore = Math.max(cells.s[i] / 80, 0.01); // Reduced from /8 to /80
+        basePopulation = cellScore * gauss(0.05, 0.045, 0.01, 0.1, 2); // 10-100 people for most
       }
-      
+
       b.population = rn(basePopulation, 3);
 
       if (b.port) {
@@ -420,8 +596,12 @@ window.BurgsAndStates = (() => {
         b.y = y;
       }
 
-      // add random factor (reduced to maintain hierarchy)
-      b.population = rn(b.population * gauss(1.8, 2.5, 0.7, 15, 2.5), 3);
+      // Apply minor random variation while maintaining hierarchy
+      // Much reduced from original to preserve medieval demographics
+      if (!b.basePopulation) {
+        // Only apply variation to non-tiered settlements
+        b.population = rn(b.population * gauss(1, 0.2, 0.8, 1.2, 3), 3);
+      }
 
       // shift burgs on rivers semi-randomly and just a bit
       if (!b.port && cells.r[i]) {
@@ -432,17 +612,34 @@ window.BurgsAndStates = (() => {
         else b.y = rn(b.y - shift, 2);
       }
 
-      // define emblem
-      const state = pack.states[b.state];
-      const stateCOA = state.coa;
-      let kinship = 0.25;
-      if (b.capital) kinship += 0.1;
-      else if (b.port) kinship -= 0.1;
-      if (b.culture !== state.culture) kinship -= 0.25;
-      b.type = getType(i, b.port);
-      const type = b.capital && P(0.2) ? "Capital" : b.type === "Generic" ? "City" : b.type;
-      b.coa = COA.generate(stateCOA, kinship, null, type);
-      b.coa.shield = COA.getShield(b.culture, b.state);
+      // define emblem - only for settlements with 500+ population (0.5 in thousands)
+      // Small hamlets and tiny villages don't have coats of arms
+      if (b.population >= 0.5 || b.capital || b.port) {
+        const state = pack.states[b.state];
+        const stateCOA = state.coa;
+        let kinship = 0.25;
+        if (b.capital) kinship += 0.1;
+        else if (b.port) kinship -= 0.1;
+        if (b.culture !== state.culture) kinship -= 0.25;
+        b.type = getType(i, b.port);
+        const type = b.capital && P(0.2) ? "Capital" : b.type === "Generic" ? "City" : b.type;
+        
+        // Use performance optimizer for COA generation if available
+        const perf = window.PerformanceOptimizer;
+        if (perf) {
+          perf.measureTime('coaGeneration', () => {
+            b.coa = COA.generate(stateCOA, kinship, null, type);
+            b.coa.shield = COA.getShield(b.culture, b.state);
+          });
+        } else {
+          b.coa = COA.generate(stateCOA, kinship, null, type);
+          b.coa.shield = COA.getShield(b.culture, b.state);
+        }
+      } else {
+        // No COA for tiny settlements
+        b.type = getType(i, b.port);
+        b.coa = null;
+      }
     }
 
     // de-assign port status if it's the only one on feature
@@ -495,6 +692,80 @@ window.BurgsAndStates = (() => {
     return "Generic";
   };
 
+  // Assign economic features based on strategic location
+  const assignEconomicFeatures = burg => {
+    const {cells, routes} = pack;
+    const cellId = burg.cell;
+
+    // Trading Post: Located at river crossings, mountain passes, or route intersections
+    burg.tradingPost = 0;
+    burg.seasonalFair = 0;
+
+    // Check if at river crossing
+    const isRiverCrossing = cells.r[cellId] && Routes.isCrossroad(cellId);
+
+    // Check if at mountain pass (moderate elevation with routes)
+    const isMountainPass = cells.h[cellId] > 50 && cells.h[cellId] < 67 && Routes.hasRoad(cellId);
+
+    // Check if at route intersection
+    const isRouteHub = Routes.isCrossroad(cellId);
+
+    // Trading posts at strategic locations
+    if (isRiverCrossing || isMountainPass || isRouteHub) {
+      // Higher chance for larger settlements
+      let tradingPostChance = 0.2;
+      if (burg.settlementType === "marketTown" || burg.plaza === 1) tradingPostChance = 0.8;
+      else if (burg.settlementType === "largeVillage") tradingPostChance = 0.5;
+      else if (burg.settlementType === "smallVillage") tradingPostChance = 0.3;
+
+      burg.tradingPost = Number(P(tradingPostChance));
+    }
+
+    // Seasonal Fairs: Market towns and larger settlements
+    // Based on medieval Champagne fairs model - 6 major fairs rotating through the year
+    if (burg.settlementType === "marketTown" || burg.capital || burg.population > 5) {
+      let fairChance = 0.3;
+      if (burg.capital) fairChance = 0.7;
+      if (burg.population > 10) fairChance = 0.8;
+      if (burg.tradingPost) fairChance *= 1.2; // Trading posts more likely to have fairs
+
+      burg.seasonalFair = Number(P(Math.min(fairChance, 1)));
+
+      // Assign fair season if settlement has a fair
+      if (burg.seasonalFair) {
+        const seasons = ["Spring", "Summer", "Autumn", "Winter"];
+        const months = [
+          "Early Spring", "Mid Spring", "Late Spring",
+          "Early Summer", "Midsummer", "Late Summer",
+          "Early Autumn", "Harvest", "Late Autumn",
+          "Early Winter", "Midwinter", "Late Winter"
+        ];
+
+        // Major fairs get specific months, smaller get seasons
+        if (burg.capital || burg.population > 15) {
+          burg.fairTime = ra(months);
+        } else {
+          burg.fairTime = ra(seasons);
+        }
+      }
+    }
+
+    // Port markets - enhanced maritime trade
+    if (burg.port) {
+      // All ports have some market activity
+      if (!burg.plaza) burg.plaza = Number(P(0.7));
+
+      // Major ports likely to have permanent markets and fairs
+      if (burg.isLargePort) {
+        burg.plaza = 1;
+        if (!burg.seasonalFair) {
+          burg.seasonalFair = Number(P(0.6));
+          if (burg.seasonalFair) burg.fairTime = "Maritime Trade Season";
+        }
+      }
+    }
+  };
+
   const defineBurgFeatures = burg => {
     const {cells} = pack;
 
@@ -502,53 +773,84 @@ window.BurgsAndStates = (() => {
       .filter(b => (burg ? b.i == burg.i : b.i && !b.removed && !b.lock))
       .forEach(b => {
         const pop = b.population;
-        
-        // Citadel assignment - capitals and major centers get priority
-        b.citadel = Number(b.capital || b.isLargePort || (pop > 50 && P(0.75)) || (pop > 15 && P(0.5)) || P(0.1));
-        
-        // Plaza assignment - ensure regional centers get plazas, scale with hierarchy
-        if (b.guaranteedPlaza || b.isRegionalCenter) {
-          b.plaza = 1; // Regional centers always get plazas
-        } else if (b.capital || b.isLargePort) {
-          b.plaza = Number(P(0.9)); // Primary centers very likely to have plazas
-        } else {
-          // Regular settlements based on population and proximity to centers
-          let plazaChance = 0.6;
-          if (pop > 20) plazaChance = 0.9;
-          else if (pop > 10) plazaChance = 0.8;
-          else if (pop > 4) plazaChance = 0.7;
-          
-          // Reduce chance if far from any major center
-          if (b.hierarchicalScore) {
-            const maxScore = Math.max(...pack.burgs.filter(burg => burg.hierarchicalScore).map(burg => burg.hierarchicalScore));
-            if (maxScore > 0) {
-              const hierarchyFactor = b.hierarchicalScore / maxScore;
-              plazaChance *= (0.5 + hierarchyFactor * 0.5); // Scale with hierarchy
-            }
+
+        // Check for strategic economic locations
+        assignEconomicFeatures(b);
+
+        // Settlement type-based feature assignment for new tiered system
+        if (b.settlementType) {
+          switch(b.settlementType) {
+            case "hamlet":
+              b.citadel = 0;
+              b.plaza = Number(P(0.05)); // Very rare
+              b.walls = 0;
+              b.shanty = 0;
+              b.temple = Number(P(0.1)); // Small shrine maybe
+              break;
+            case "smallVillage":
+              b.citadel = Number(P(0.05));
+              b.plaza = Number(P(0.2)); // Some have small market areas
+              b.walls = Number(P(0.1)); // Rarely walled
+              b.shanty = 0;
+              b.temple = Number(P(0.3)); // Parish church
+              break;
+            case "largeVillage":
+              b.citadel = Number(P(0.1));
+              b.plaza = Number(P(0.5)); // Half have market squares
+              b.walls = Number(P(0.25)); // Some are walled
+              b.shanty = Number(P(0.05));
+              b.temple = Number(P(0.6)); // Most have churches
+              break;
+            case "marketTown":
+              b.citadel = Number(P(0.4));
+              b.plaza = 1; // All market towns have market squares
+              b.walls = Number(P(0.7)); // Most are walled
+              b.shanty = Number(P(0.2));
+              b.temple = Number(P(0.8)); // Most have significant churches
+              break;
           }
-          
-          b.plaza = Number(P(plazaChance));
+        } else {
+          // Original logic for non-tiered settlements
+          // Citadel assignment - capitals and major centers get priority
+          b.citadel = Number(b.capital || b.isLargePort || (pop > 50 && P(0.75)) || (pop > 15 && P(0.5)) || P(0.1));
+
+          // Plaza assignment - ensure regional centers get plazas, scale with hierarchy
+          if (b.guaranteedPlaza || b.isRegionalCenter || b.plaza === 1) {
+            b.plaza = 1; // Keep existing plazas and regional centers
+          } else if (b.capital || b.isLargePort) {
+            b.plaza = Number(P(0.9)); // Primary centers very likely to have plazas
+          } else {
+            // Adjusted for medieval scale populations
+            let plazaChance = 0.1;
+            if (pop > 10) plazaChance = 0.8;
+            else if (pop > 5) plazaChance = 0.6;
+            else if (pop > 1) plazaChance = 0.3;
+            else if (pop > 0.5) plazaChance = 0.15;
+
+            b.plaza = Number(P(plazaChance));
+          }
+
+          // Walls assignment - adjusted for medieval populations
+          b.walls = Number(b.capital || b.isLargePort || pop > 10 || (pop > 5 && P(0.6)) || (pop > 1 && P(0.3)) || P(0.05));
+
+          // Shanty assignment - adjusted for medieval populations
+          b.shanty = Number(pop > 20 || (pop > 10 && P(0.5)) || (pop > 5 && b.walls && P(0.2)));
+
+          // Temple assignment - influenced by hierarchy and theocracy
+          const religion = cells.religion[b.cell];
+          const theocracy = pack.states[b.state].form === "Theocracy";
+          let templeChance = 0;
+
+          if (religion && theocracy && P(0.5)) templeChance = 1;
+          else if (b.capital || b.isLargePort) templeChance = 0.8;
+          else if (b.isRegionalCenter) templeChance = 0.6;
+          else if (pop > 10) templeChance = 0.6;
+          else if (pop > 5) templeChance = 0.4;
+          else if (pop > 1) templeChance = 0.2;
+          else templeChance = 0.05;
+
+          b.temple = Number(P(templeChance));
         }
-        
-        // Walls assignment - hierarchy-aware
-        b.walls = Number(b.capital || b.isLargePort || pop > 30 || (pop > 20 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.1));
-        
-        // Shanty assignment - more common in larger population centers
-        b.shanty = Number(pop > 60 || (pop > 40 && P(0.75)) || (pop > 20 && b.walls && P(0.4)));
-        
-        // Temple assignment - influenced by hierarchy and theocracy
-        const religion = cells.religion[b.cell];
-        const theocracy = pack.states[b.state].form === "Theocracy";
-        let templeChance = 0;
-        
-        if (religion && theocracy && P(0.5)) templeChance = 1;
-        else if (b.capital || b.isLargePort) templeChance = 0.8;
-        else if (b.isRegionalCenter) templeChance = 0.6;
-        else if (pop > 50) templeChance = 0.7;
-        else if (pop > 35) templeChance = 0.5;
-        else if (pop > 20) templeChance = 0.3;
-        
-        b.temple = Number(P(templeChance));
       });
   };
 
@@ -723,10 +1025,13 @@ window.BurgsAndStates = (() => {
       // collect stats
       states[s].cells += 1;
       states[s].area += cells.area[i];
-      states[s].rural += cells.pop[i];
       if (cells.burg[i]) {
+        // Burg represents ALL population for this cell (stored in thousands)
         states[s].urban += pack.burgs[cells.burg[i]].population;
         states[s].burgs++;
+      } else {
+        // Only count cells.pop for unsettled areas (no burg present)
+        states[s].rural += cells.pop[i];
       }
     }
 

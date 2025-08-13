@@ -87,10 +87,14 @@ function editProvinces() {
       if (!p) continue;
 
       provinces[p].area += cells.area[i];
-      provinces[p].rural += cells.pop[i];
-      if (!cells.burg[i]) continue;
-      provinces[p].urban += burgs[cells.burg[i]].population;
-      provinces[p].burgs.push(cells.burg[i]);
+      if (cells.burg[i]) {
+        // Burg represents ALL population for this cell (stored in thousands)
+        provinces[p].urban += burgs[cells.burg[i]].population;
+        provinces[p].burgs.push(cells.burg[i]);
+      } else {
+        // Only count cells.pop for unsettled areas (no burg present)
+        provinces[p].rural += cells.pop[i];
+      }
     }
 
     provinces.forEach(p => {
@@ -1092,9 +1096,13 @@ function editProvinces() {
       data += el.dataset.color + ",";
       data += el.dataset.capital + ",";
       data += el.dataset.area + ",";
-      data += el.dataset.population + ",";
-      data += Math.round(provincePack.rural * populationRate) + ",";
-      data += Math.round(provincePack.urban * populationRate * urbanization) + ",";
+      // Rural: convert abstract points to people, Urban: already in thousands so convert to people
+      const ruralPop = Math.round(provincePack.rural * populationRate);
+      const urbanPop = Math.round(provincePack.urban * 1000 * urbanization);
+      const totalPop = ruralPop + urbanPop;
+      data += totalPop + ",";
+      data += ruralPop + ",";
+      data += urbanPop + ",";
       data += el.dataset.burgs + "\n";
     });
 

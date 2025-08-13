@@ -70,8 +70,13 @@ function editBiomes() {
       const b = cells.biome[i];
       biomesData.cells[b] += 1;
       biomesData.area[b] += cells.area[i];
-      biomesData.rural[b] += cells.pop[i];
-      if (cells.burg[i]) biomesData.urban[b] += pack.burgs[cells.burg[i]].population;
+      if (cells.burg[i]) {
+        // Burg represents ALL population for this cell (stored in thousands)
+        biomesData.urban[b] += pack.burgs[cells.burg[i]].population;
+      } else {
+        // Only count cells.pop for unsettled areas (no burg present)
+        biomesData.rural[b] += cells.pop[i];
+      }
     }
   }
 

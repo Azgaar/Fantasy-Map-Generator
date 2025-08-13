@@ -51,24 +51,40 @@ window.Provinces = (function () {
         .sort((a, b) => b.population * gauss(1, 0.2, 0.5, 1.5, 3) - a.population)
         .sort((a, b) => b.capital - a.capital);
       if (stateBurgs.length < 2) return; // at least 2 provinces are required
-      const provincesNumber = Math.max(Math.ceil((stateBurgs.length * provincesRatio) / 100), 2);
+      
+      // Cap provinces based on state size and importance, not total burgs
+      // Use only major settlements (capitals, market towns, large villages) as province centers
+      const majorBurgs = stateBurgs.filter(b => 
+        b.capital || 
+        b.settlementType === "marketTown" || 
+        b.settlementType === "largeVillage" ||
+        b.isRegionalCenter ||
+        b.population > 1 // population in thousands
+      );
+      
+      // If not enough major burgs, use the most populous ones
+      const provinceCenters = majorBurgs.length >= 2 ? majorBurgs : stateBurgs.slice(0, Math.min(20, stateBurgs.length));
+      
+      // Reasonable number of provinces: 2-20 based on ratio
+      const targetProvinces = Math.max(2, Math.min(20, Math.ceil(provinceCenters.length * provincesRatio / 100)));
+      const provincesNumber = Math.min(targetProvinces, provinceCenters.length);
 
       const form = Object.assign({}, forms[s.form]);
 
       for (let i = 0; i < provincesNumber; i++) {
         const provinceId = provinces.length;
-        const center = stateBurgs[i].cell;
-        const burg = stateBurgs[i].i;
-        const c = stateBurgs[i].culture;
+        const center = provinceCenters[i].cell;
+        const burg = provinceCenters[i].i;
+        const c = provinceCenters[i].culture;
         const nameByBurg = P(0.5);
-        const name = nameByBurg ? stateBurgs[i].name : Names.getState(Names.getCultureShort(c), c);
+        const name = nameByBurg ? provinceCenters[i].name : Names.getState(Names.getCultureShort(c), c);
         const formName = rw(form);
         form[formName] += 10;
         const fullName = name + " " + formName;
         const color = getMixedColor(s.color);
         const kinship = nameByBurg ? 0.8 : 0.4;
-        const type = BurgsAndStates.getType(center, burg.port);
-        const coa = COA.generate(stateBurgs[i].coa, kinship, null, type);
+        const type = BurgsAndStates.getType(center, provinceCenters[i].port);
+        const coa = COA.generate(provinceCenters[i].coa, kinship, null, type);
         coa.shield = COA.getShield(c, s.i);
 
         s.provinces.push(provinceId);

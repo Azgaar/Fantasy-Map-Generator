@@ -74,7 +74,7 @@ function overviewMilitary() {
     const states = pack.states.filter(s => s.i && !s.removed);
 
     for (const s of states) {
-      const population = rn((s.rural + s.urban * urbanization) * populationRate);
+      const population = rn((s.rural * populationRate) + (s.urban * 1000 * urbanization));
       const getForces = u => s.military.reduce((s, r) => s + (r.u[u.name] || 0), 0);
       const total = options.military.reduce((s, u) => s + getForces(u) * u.crew, 0);
       const rate = (total / population) * 100;
@@ -146,7 +146,7 @@ function overviewMilitary() {
       u => (line.dataset[u.name] = line.querySelector(`div[data-type='${u.name}']`).innerHTML = getForces(u))
     );
 
-    const population = rn((s.rural + s.urban * urbanization) * populationRate);
+    const population = rn((s.rural * populationRate) + (s.urban * 1000 * urbanization));
     const total = (line.dataset.total = options.military.reduce((s, u) => s + getForces(u) * u.crew, 0));
     const rate = (line.dataset.rate = (total / population) * 100);
     line.querySelector("div[data-type='total']").innerHTML = si(total);
