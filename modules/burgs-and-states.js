@@ -1026,13 +1026,17 @@ window.BurgsAndStates = (() => {
       states[s].cells += 1;
       states[s].area += cells.area[i];
       if (cells.burg[i]) {
-        // Burg represents ALL population for this cell (stored in thousands)
-        states[s].urban += pack.burgs[cells.burg[i]].population;
+        const burgPopulation = pack.burgs[cells.burg[i]].population;
+        if (burgPopulation > 0.1) {
+          // Large burg (>100 people) = urban population
+          states[s].urban += burgPopulation;
+        } else {
+          // Small burg (≤100 people) = rural population
+          states[s].rural += burgPopulation;
+        }
         states[s].burgs++;
-      } else {
-        // Only count cells.pop for unsettled areas (no burg present)
-        states[s].rural += cells.pop[i];
       }
+      // Cells without burgs have no population (rural population is housed in small burgs)
     }
 
     // convert neighbors Set object into array

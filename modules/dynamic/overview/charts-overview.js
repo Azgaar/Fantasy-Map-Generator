@@ -672,7 +672,14 @@ function getUrbanPopulation(cellId) {
 }
 
 function getRuralPopulation(cellId) {
-  return pack.cells.pop[cellId] * populationRate;
+  const burgId = pack.cells.burg[cellId];
+  if (!burgId) return 0; // No burg = no rural population
+  
+  const burgPopulation = pack.burgs[burgId].population;
+  if (burgPopulation > 0.1) return 0; // Burg has >100 people = no rural population
+  
+  // Small burg (≤100 people) = count the burg's actual population as rural
+  return burgPopulation * 1000 * populationRate;
 }
 
 function sortData(data, sorting) {
