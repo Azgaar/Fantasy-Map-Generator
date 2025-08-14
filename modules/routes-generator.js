@@ -353,9 +353,6 @@ window.Routes = (function () {
         });
       }
       
-      // Also use existing main roads logic for primary centers
-      const mainRoads = generateMainRoads();
-      marketRoads.push(...mainRoads);
       
       TIME && console.timeEnd("generateMarketRoads");
       return marketRoads;
@@ -428,9 +425,6 @@ window.Routes = (function () {
         }
       });
       
-      // Also include existing secondary roads
-      const secondaryRoads = generateSecondaryRoads();
-      localRoads.push(...secondaryRoads);
       
       TIME && console.timeEnd("generateLocalRoads");
       return localRoads;
@@ -504,9 +498,6 @@ window.Routes = (function () {
         }
       });
       
-      // Also include existing trails for backward compatibility
-      const trails = generateTrails();
-      footpaths.push(...trails);
       
       TIME && console.timeEnd("generateFootpaths");
       return footpaths;
@@ -757,8 +748,9 @@ window.Routes = (function () {
       return segments;
     }
 
-    function createRoutesData(routes) {
+    function createRoutesData(lockedRoutes) {
       const pointsArray = preparePointsArray();
+      const routes = [...lockedRoutes]; // Create a new array from locked routes
 
       // Process critical routes (Tier 1 & 2) - these run immediately
       for (const {feature, cells, merged, type} of mergeRoutes(majorSeaRoutes)) {

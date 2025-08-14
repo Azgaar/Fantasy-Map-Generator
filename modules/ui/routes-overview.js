@@ -37,16 +37,19 @@ function overviewRoutes() {
       route.length = route.length || Routes.getLength(route.i);
       const length = rn(route.length * distanceScale) + " " + distanceUnitInput.value;
 
+      const routeType = route.type || route.group; // Use specific type if available
       lines += /* html */ `<div
         class="states"
         data-id="${route.i}"
         data-name="${route.name}"
         data-group="${route.group}"
+        data-type="${routeType}"
         data-length="${route.length}"
       >
         <span data-tip="Click to focus on route" class="icon-dot-circled pointer"></span>
-        <div data-tip="Route name" style="width: 15em; margin-left: 0.4em;">${route.name}</div>
-        <div data-tip="Route group" style="width: 8em;">${route.group}</div>
+        <div data-tip="Route name" style="width: 12em; margin-left: 0.4em;">${route.name}</div>
+        <div data-tip="Route group" style="width: 6em;">${route.group}</div>
+        <div data-tip="Route type" style="width: 6em;">${routeType}</div>
         <div data-tip="Route length" style="width: 6em;">${length}</div>
         <span data-tip="Edit route" class="icon-pencil"></span>
         <span class="locks pointer ${
@@ -99,13 +102,16 @@ function overviewRoutes() {
   }
 
   function downloadRoutesData() {
-    // Export all route types: roads (main), secondary (plaza connections), trails, searoutes
-    let data = "Id,Route,Group,Length\n"; // headers
+    // Export all route types with specific type identifiers
+    let data = "Id,Route,Group,Type,Length\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function (el) {
       const d = el.dataset;
+      const routeId = +d.id;
+      const route = pack.routes.find(r => r.i === routeId);
+      const routeType = route?.type || d.group; // Use specific type if available, fallback to group
       const length = rn(d.length * distanceScale) + " " + distanceUnitInput.value;
-      data += [d.id, d.name, d.group, length].join(",") + "\n";
+      data += [d.id, d.name, d.group, routeType, length].join(",") + "\n";
     });
 
     const name = getFileName("Routes") + ".csv";
