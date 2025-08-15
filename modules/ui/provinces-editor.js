@@ -91,10 +91,8 @@ function editProvinces() {
         // Burg represents ALL population for this cell (stored in thousands)
         provinces[p].urban += burgs[cells.burg[i]].population;
         provinces[p].burgs.push(cells.burg[i]);
-      } else {
-        // Only count cells.pop for unsettled areas (no burg present)
-        provinces[p].rural += cells.pop[i];
       }
+      // No population in cells without burgs - all population is in burgs
     }
 
     provinces.forEach(p => {

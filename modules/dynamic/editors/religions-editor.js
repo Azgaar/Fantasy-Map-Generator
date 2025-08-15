@@ -123,10 +123,8 @@ function religionsCollectStatistics() {
     if (burgId) {
       // Burg represents ALL population for this cell (stored in thousands)
       religions[religionId].urban += burgs[burgId].population;
-    } else {
-      // Only count cells.pop for unsettled areas (no burg present)
-      religions[religionId].rural += cells.pop[i];
     }
+    // No population in cells without burgs - all population is in burgs
   }
 }
 

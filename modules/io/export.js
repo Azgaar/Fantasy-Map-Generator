@@ -652,12 +652,12 @@ function saveGeoJsonCells() {
 
 function saveGeoJsonRoutes() {
   const metersPerPixel = getMetersPerPixel();
-  const features = pack.routes.map(({i, points, group, name = null}) => {
+  const features = pack.routes.map(({i, points, group, name = null, type, feature}) => {
     const coordinates = points.map(([x, y]) => getFantasyCoordinates(x, y, 2));
     return {
       type: "Feature",
       geometry: {type: "LineString", coordinates},
-      properties: {id: i, group, name}
+      properties: {id: i, group, name, type, feature}
     };
   });
 
@@ -682,14 +682,14 @@ function saveGeoJsonRoutes() {
 function saveGeoJsonRivers() {
   const metersPerPixel = getMetersPerPixel();
   const features = pack.rivers.map(
-    ({i, cells, points, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type}) => {
+    ({i, cells, points, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, length, width, name, type}) => {
       if (!cells || cells.length < 2) return;
       const meanderedPoints = Rivers.addMeandering(cells, points);
       const coordinates = meanderedPoints.map(([x, y]) => getFantasyCoordinates(x, y, 2));
       return {
         type: "Feature",
         geometry: {type: "LineString", coordinates},
-        properties: {id: i, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type}
+        properties: {id: i, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, length, width, name, type}
       };
     }
   ).filter(f => f); // Remove undefined entries
@@ -748,5 +748,70 @@ function saveGeoJsonMarkers() {
   };
 
   const fileName = getFileName("Markers") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
+}
+
+function saveGeoJsonBurgs() {
+  const metersPerPixel = getMetersPerPixel();
+  const valid = pack.burgs.filter(b => b.i && !b.removed);
+  
+  const features = valid.map(b => {
+    const coordinates = getFantasyCoordinates(b.x, b.y, 2);
+    const province = pack.cells.province[b.cell];
+    const temperature = grid.cells.temp[pack.cells.g[b.cell]];
+    
+    // Calculate world coordinates same as CSV export
+    const xWorld = b.x * metersPerPixel;
+    const yWorld = -b.y * metersPerPixel;
+    
+    return {
+      type: "Feature",
+      geometry: {type: "Point", coordinates},
+      properties: {
+        id: b.i,
+        name: b.name,
+        province: province ? pack.provinces[province].name : null,
+        provinceFull: province ? pack.provinces[province].fullName : null,
+        state: pack.states[b.state].name,
+        stateFull: pack.states[b.state].fullName,
+        culture: pack.cultures[b.culture].name,
+        religion: pack.religions[pack.cells.religion[b.cell]].name,
+        population: rn(b.population * populationRate * urbanization),
+        populationRaw: b.population,
+        xWorld: rn(xWorld, 2),
+        yWorld: rn(yWorld, 2),
+        xPixel: b.x,
+        yPixel: b.y,
+        elevation: parseInt(getHeight(pack.cells.h[b.cell])),
+        temperature: convertTemperature(temperature),
+        temperatureLikeness: getTemperatureLikeness(temperature),
+        capital: !!b.capital,
+        port: !!b.port,
+        citadel: !!b.citadel,
+        walls: !!b.walls,
+        plaza: !!b.plaza,
+        temple: !!b.temple,
+        shanty: !!b.shanty,
+        emblem: b.coa || null,
+        cell: b.cell
+      }
+    };
+  });
+
+  const json = {
+    type: "FeatureCollection",
+    features,
+    metadata: {
+      crs: "Fantasy Map Cartesian (meters)",
+      mapName: mapName.value,
+      scale: {
+        distance: distanceScale,
+        unit: distanceUnitInput.value,
+        meters_per_pixel: metersPerPixel
+      }
+    }
+  };
+
+  const fileName = getFileName("Burgs") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }

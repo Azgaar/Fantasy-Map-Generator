@@ -113,10 +113,8 @@ function culturesCollectStatistics() {
     if (burgId) {
       // Burg represents ALL population for this cell (stored in thousands)
       cultures[cultureId].urban += burgs[burgId].population;
-    } else {
-      // Only count cells.pop for unsettled areas (no burg present)
-      cultures[cultureId].rural += cells.pop[i];
     }
+    // No population in cells without burgs - all population is in burgs
   }
 }
 
