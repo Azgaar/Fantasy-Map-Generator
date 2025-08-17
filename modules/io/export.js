@@ -815,3 +815,77 @@ function saveGeoJsonBurgs() {
   const fileName = getFileName("Burgs") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
+
+function saveGeoJsonRegiments() {
+  const metersPerPixel = getMetersPerPixel();
+  const allRegiments = [];
+  
+  // Collect all regiments from all states
+  for (const s of pack.states) {
+    if (!s.i || s.removed || !s.military.length) continue;
+    for (const r of s.military) {
+      allRegiments.push({regiment: r, state: s});
+    }
+  }
+  
+  const features = allRegiments.map(({regiment: r, state: s}) => {
+    const coordinates = getFantasyCoordinates(r.x, r.y, 2);
+    const baseCoordinates = getFantasyCoordinates(r.bx, r.by, 2);
+    
+    // Calculate world coordinates same as CSV export
+    const xWorld = r.x * metersPerPixel;
+    const yWorld = -r.y * metersPerPixel;
+    const bxWorld = r.bx * metersPerPixel;
+    const byWorld = -r.by * metersPerPixel;
+    
+    // Collect military unit data
+    const units = {};
+    options.military.forEach(u => {
+      units[u.name] = r.u[u.name] || 0;
+    });
+    
+    return {
+      type: "Feature",
+      geometry: {type: "Point", coordinates},
+      properties: {
+        id: r.i,
+        name: r.name,
+        icon: r.icon,
+        state: s.name,
+        stateFull: s.fullName,
+        stateId: s.i,
+        units: units,
+        totalUnits: r.a,
+        xWorld: rn(xWorld, 2),
+        yWorld: rn(yWorld, 2),
+        xPixel: r.x,
+        yPixel: r.y,
+        baseXWorld: rn(bxWorld, 2),
+        baseYWorld: rn(byWorld, 2),
+        baseXPixel: r.bx,
+        baseYPixel: r.by,
+        baseCoordinates: baseCoordinates
+      }
+    };
+  });
+
+  const json = {
+    type: "FeatureCollection",
+    features,
+    metadata: {
+      crs: "Fantasy Map Cartesian (meters)",
+      mapName: mapName.value,
+      scale: {
+        distance: distanceScale,
+        unit: distanceUnitInput.value,
+        meters_per_pixel: metersPerPixel
+      },
+      military: {
+        unitTypes: options.military.map(u => u.name)
+      }
+    }
+  };
+
+  const fileName = getFileName("Regiments") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
+}

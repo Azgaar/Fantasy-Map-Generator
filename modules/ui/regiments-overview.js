@@ -193,12 +193,36 @@ function overviewRegiments(state) {
     toggleAdd();
   }
 
+  // Helper function to get meters per pixel for world coordinates
+  function getMetersPerPixel() {
+    const unit = distanceUnitInput.value.toLowerCase();
+
+    switch(unit) {
+      case 'km':
+        return distanceScale * 1000;
+      case 'm':
+      case 'meter':
+      case 'meters':
+        return distanceScale;
+      case 'mi':
+      case 'mile':
+      case 'miles':
+        return distanceScale * 1609.34;
+      default:
+        console.warn(`Unknown distance unit: ${unit}, defaulting to km`);
+        return distanceScale * 1000;
+    }
+  }
+
   function downloadRegimentsData() {
+    // Calculate meters per pixel for world coordinates
+    const metersPerPixel = getMetersPerPixel();
+    
     const units = options.military.map(u => u.name);
     let data =
       "State,Id,Icon,Name," +
       units.map(u => capitalize(u)).join(",") +
-      ",X,Y,Latitude,Longitude,Base X,Base Y,Base Latitude,Base Longitude\n"; // headers
+      ",X_World (m),Y_World (m),X_Pixel,Y_Pixel,Latitude,Longitude,Base X_World (m),Base Y_World (m),Base X_Pixel,Base Y_Pixel,Base Latitude,Base Longitude\n"; // headers
 
     for (const s of pack.states) {
       if (!s.i || s.removed || !s.military.length) continue;
@@ -210,11 +234,25 @@ function overviewRegiments(state) {
         data += r.name + ",";
         data += units.map(unit => r.u[unit]).join(",") + ",";
 
+        // Add world coordinates in meters
+        const xWorld = r.x * metersPerPixel;
+        const yWorld = -r.y * metersPerPixel; // Negative because Y increases downward
+        data += rn(xWorld, 2) + ",";
+        data += rn(yWorld, 2) + ",";
+        
+        // Add pixel coordinates (renamed for clarity)
         data += r.x + ",";
         data += r.y + ",";
         data += getLatitude(r.y, 2) + ",";
         data += getLongitude(r.x, 2) + ",";
 
+        // Add base world coordinates in meters
+        const bxWorld = r.bx * metersPerPixel;
+        const byWorld = -r.by * metersPerPixel; // Negative because Y increases downward
+        data += rn(bxWorld, 2) + ",";
+        data += rn(byWorld, 2) + ",";
+        
+        // Add base pixel coordinates (renamed for clarity)
         data += r.bx + ",";
         data += r.by + ",";
         data += getLatitude(r.by, 2) + ",";
