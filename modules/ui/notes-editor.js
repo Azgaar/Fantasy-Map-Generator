@@ -67,16 +67,26 @@ function editNotes(id, name) {
     if (!window.tinymce) {
       const url = "https://azgaar.github.io/Fantasy-Map-Generator/libs/tinymce/tinymce.min.js";
       try {
-        await import(url);
+        await loadScript(url);
       } catch (error) {
         // error may be caused by failed request being cached, try again with random hash
         try {
           const hash = Math.random().toString(36).substring(2, 15);
-          await import(`${url}#${hash}`);
+          await loadScript(`${url}#${hash}`);
         } catch (error) {
           console.error(error);
         }
       }
+    }
+
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
     }
 
     if (window.tinymce) {
