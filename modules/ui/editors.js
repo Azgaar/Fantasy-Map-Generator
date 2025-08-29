@@ -892,10 +892,15 @@ function unfog(id) {
   if (!defs.selectAll("#fog path").size()) fogging.style("display", "none");
 }
 
-function getFileName(dataType) {
+function getFileName(dataType, customName = null, includeTimestamp = true) {
   const formatTime = time => (time < 10 ? "0" + time : time);
-  const name = mapName.value;
+  const name = customName || mapName.value;
   const type = dataType ? dataType + " " : "";
+  
+  if (!includeTimestamp) {
+    return name + (type ? " " + type.trim() : "");
+  }
+  
   const date = new Date();
   const year = date.getFullYear();
   const month = formatTime(date.getMonth() + 1);
