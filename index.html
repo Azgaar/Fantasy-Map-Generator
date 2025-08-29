@@ -6076,21 +6076,37 @@
 
       <div id="saveMapData" style="display: none" class="dialog">
         <div style="margin-top: 0.3em">
-          <strong>Save map to</strong>
-          <button onclick="saveMap('machine')" data-tip="Download map file to your local disk" data-shortcut="Ctrl + S">
-            machine
-          </button>
-          <button onclick="saveMap('dropbox')" data-tip="Save map file to your Dropbox" data-shortcut="Ctrl + C">
-            dropbox
-          </button>
-          <button onclick="saveMap('storage')" data-tip="Save the project to browser storage only" data-shortcut="F6">
-            browser
-          </button>
+          <div style="margin-bottom: 0.8em">
+            <label for="customFileName" style="display: block; margin-bottom: 0.3em;"><strong>File name:</strong></label>
+            <input type="text" id="customFileName" style="width: 250px; margin-bottom: 0.3em;" placeholder="Enter custom filename (without .map extension)">
+            <div>
+              <input type="checkbox" id="includeTimestamp" checked>
+              <label for="includeTimestamp">Include timestamp in filename</label>
+            </div>
+          </div>
+          <div style="margin-bottom: 0.5em">
+            <strong>Save map to</strong>
+          </div>
+          <div>
+            <button onclick="saveMap('machine')" data-tip="Download map file to your local disk" data-shortcut="Ctrl + S">
+              machine
+            </button>
+            <button onclick="saveMap('dropbox')" data-tip="Save map file to your Dropbox" data-shortcut="Ctrl + C">
+              dropbox
+            </button>
+            <button onclick="saveMap('storage')" data-tip="Save the project to browser storage only" data-shortcut="F6">
+              browser
+            </button>
+          </div>
         </div>
-        <p>
-          Maps are saved in <i>.map</i> format, that can be loaded back via the <i>Load</i> in menu. There is no way to
-          restore the progress if file is lost. Please keep old save files on your machine or cloud storage as backups.
-        </p>
+        <div style="background-color: #ffe6e6; border: 1px solid #ff9999; padding: 0.8em; margin-top: 0.8em; border-radius: 4px;">
+          <p style="margin: 0; font-weight: bold; color: #cc0000;">⚠️ Important Backup Warning</p>
+          <p style="margin: 0.3em 0 0 0;">
+            Maps are saved in <i>.map</i> format, that can be loaded back via the <i>Load</i> in menu. <strong>There is no way to
+            restore the progress if file is lost.</strong> Please keep old save files on your machine or cloud storage as backups.
+            When saving to machine, files may be automatically renamed if a file with the same name already exists.
+          </p>
+        </div>
       </div>
 
       <div id="loadMapData" style="display: none" class="dialog">

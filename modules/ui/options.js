@@ -738,10 +738,24 @@ function showSavePane() {
   const sharableLinkContainer = byId("sharableLinkContainer");
   sharableLinkContainer.style.display = "none";
 
+  // Initialize the custom filename input with current map name
+  const customFileNameInput = byId("customFileName");
+  const includeTimestampCheckbox = byId("includeTimestamp");
+  
+  if (customFileNameInput) {
+    customFileNameInput.value = mapName.value || "Fantasy Map";
+    // Store default state
+    customFileNameInput.dataset.defaultValue = customFileNameInput.value;
+  }
+  
+  if (includeTimestampCheckbox) {
+    includeTimestampCheckbox.checked = true;
+  }
+
   $("#saveMapData").dialog({
     title: "Save map",
     resizable: false,
-    width: "25em",
+    width: "32em",
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Close: function () {

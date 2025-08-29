@@ -7,7 +7,24 @@ async function saveMap(method) {
 
   try {
     const mapData = prepareMapData();
-    const filename = getFileName() + ".map";
+    
+    // Get custom filename settings from the dialog
+    const customFileNameInput = byId("customFileName");
+    const includeTimestampCheckbox = byId("includeTimestamp");
+    
+    const customName = customFileNameInput?.value?.trim() || null;
+    const includeTimestamp = includeTimestampCheckbox?.checked !== false;
+    
+    const filename = getFileName(null, customName, includeTimestamp) + ".map";
+
+    // For browser storage, check if file exists and ask for confirmation
+    if (method === "storage") {
+      const existingFile = await checkIfStorageFileExists(filename);
+      if (existingFile) {
+        const confirmOverwrite = await showOverwriteConfirmation(filename);
+        if (!confirmOverwrite) return;
+      }
+    }
 
     saveToStorage(mapData, method === "storage"); // any method saves to indexedDB
     if (method === "machine") saveToMachine(mapData, filename);
@@ -258,4 +275,47 @@ function toggleSaveReminder() {
     localStorage.removeItem("noReminder");
     saveReminder();
   }
+}
+
+// Helper function to check if a file exists in browser storage
+async function checkIfStorageFileExists(filename) {
+  try {
+    // For browser storage, we only have one slot ("lastMap"), so we don't need to check filename
+    // This function is prepared for future enhancement if multiple saves are supported
+    const existingFile = await ldb.get("lastMap");
+    return existingFile !== null;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Helper function to show overwrite confirmation dialog
+async function showOverwriteConfirmation(filename) {
+  return new Promise((resolve) => {
+    alertMessage.innerHTML = /* html */ `
+      <p><strong>A map is already saved in browser storage.</strong></p>
+      <p>Do you want to overwrite the existing saved map with the current one?</p>
+      <p style="color: #cc6600; font-style: italic;">
+        ⚠️ The previous map will be permanently lost if you continue. 
+        Consider saving to machine first as a backup.
+      </p>
+    `;
+
+    $("#alert").dialog({
+      resizable: false,
+      title: "Overwrite existing save?",
+      width: "28em",
+      buttons: {
+        "Yes, overwrite": function () {
+          $(this).dialog("close");
+          resolve(true);
+        },
+        "Cancel": function () {
+          $(this).dialog("close");
+          resolve(false);
+        }
+      },
+      position: {my: "center", at: "center", of: "svg"}
+    });
+  });
 }
