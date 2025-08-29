@@ -121,14 +121,60 @@ function editUnits() {
 
   function addRuler() {
     if (!layerIsOn("toggleRulers")) toggleRulers();
-    const pt = byId("map").createSVGPoint();
-    (pt.x = graphWidth / 2), (pt.y = graphHeight / 4);
-    const p = pt.matrixTransform(viewbox.node().getScreenCTM().inverse());
-    const dx = graphWidth / 4 / scale;
-    const dy = (rulers.data.length * 40) % (graphHeight / 2);
-    const from = [(p.x - dx) | 0, (p.y + dy) | 0];
-    const to = [(p.x + dx) | 0, (p.y + dy) | 0];
-    rulers.create(Ruler, [from, to]).draw();
+    
+    // Get the current viewbox transform to determine visible bounds
+    const transform = d3.zoomTransform(viewbox.node());
+    const viewboxBounds = viewbox.node().getBBox();
+    
+    // Calculate visible area bounds in viewbox coordinates
+    const visibleLeft = -transform.x / transform.k;
+    const visibleTop = -transform.y / transform.k;
+    const visibleWidth = svgWidth / transform.k;
+    const visibleHeight = svgHeight / transform.k;
+    const visibleRight = visibleLeft + visibleWidth;
+    const visibleBottom = visibleTop + visibleHeight;
+    
+    // Constrain visible bounds to the actual graph bounds
+    const boundedLeft = Math.max(visibleLeft, 0);
+    const boundedTop = Math.max(visibleTop, 0);
+    const boundedRight = Math.min(visibleRight, graphWidth);
+    const boundedBottom = Math.min(visibleBottom, graphHeight);
+    
+    // Calculate ruler position within the visible and bounded area
+    const centerX = (boundedLeft + boundedRight) / 2;
+    const centerY = (boundedTop + boundedBottom) / 2;
+    
+    // Set ruler length to be a reasonable portion of the visible width, but not too long
+    const maxRulerLength = Math.min((boundedRight - boundedLeft) * 0.6, graphWidth / 4);
+    const rulerLength = Math.max(maxRulerLength, 50); // Minimum ruler length of 50 units
+    const dx = rulerLength / 2;
+    
+    // Vertical offset for multiple rulers
+    const dy = (rulers.data.length * 40) % ((boundedBottom - boundedTop) / 2);
+    
+    // Calculate ruler endpoints, ensuring they stay within bounds
+    let from = [centerX - dx, centerY + dy];
+    let to = [centerX + dx, centerY + dy];
+    
+    // Adjust if ruler extends beyond visible bounds
+    if (from[0] < boundedLeft) {
+      const offset = boundedLeft - from[0];
+      from[0] = boundedLeft;
+      to[0] += offset;
+    }
+    if (to[0] > boundedRight) {
+      const offset = to[0] - boundedRight;
+      to[0] = boundedRight;
+      from[0] -= offset;
+    }
+    
+    // Final bounds check and adjustment
+    from[0] = Math.max(from[0], boundedLeft);
+    to[0] = Math.min(to[0], boundedRight);
+    from[1] = Math.max(Math.min(from[1], boundedBottom), boundedTop);
+    to[1] = Math.max(Math.min(to[1], boundedBottom), boundedTop);
+    
+    rulers.create(Ruler, [[from[0] | 0, from[1] | 0], [to[0] | 0, to[1] | 0]]).draw();
   }
 
   function toggleOpisometerMode() {
