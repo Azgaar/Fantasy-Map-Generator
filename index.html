@@ -6053,11 +6053,30 @@
           <button onclick="saveGeoJsonMarkers()" data-tip="Download markers data in GeoJSON format">markers</button>
           <button onclick="saveGeoJsonBurgs()" data-tip="Download burgs data in GeoJSON format">burgs</button>
           <button onclick="saveGeoJsonRegiments()" data-tip="Download regiments data in GeoJSON format">regiments</button>
+          <br />
+          <button onclick="saveGeoJsonStates()" data-tip="Download states in GeoJSON format">states</button>
+          <button onclick="saveGeoJsonProvinces()" data-tip="Download provinces in GeoJSON format">provinces</button>
+          <button onclick="saveGeoJsonCultures()" data-tip="Download cultures in GeoJSON format">cultures</button>
+          <button onclick="saveGeoJsonReligions()" data-tip="Download religions in GeoJSON format">religions</button>
+          <button onclick="saveGeoJsonZones()" data-tip="Download zones in GeoJSON format">zones</button>
+          <br />
+          <button onclick="saveAllGeoJson()" data-tip="Download all GeoJSON datasets as a ZIP">all (zip)</button>
         </div>
         <p>
           GeoJSON format is used in GIS tools such as QGIS. Check out
           <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a>
           for guidance.
+        </p>
+
+        <div style="margin: 1em 0 0.3em; font-weight: bold">Export height raster (QGIS)</div>
+        <div>
+          <button onclick="saveAsciiGridHeightmap()" data-tip="Export heightmap as ESRI ASCII Grid (.asc) for QGIS">
+            height (.asc)
+          </button>
+        </div>
+        <p>
+          Load the .asc in QGIS as a raster layer. Use Raster → Extraction → Contour to make contour lines,
+          and Raster → Analysis → Hillshade for shaded relief. CRS: Fantasy Map Cartesian (meters).
         </p>
 
         <div style="margin: 1em 0 0.3em; font-weight: bold">Export To JSON</div>

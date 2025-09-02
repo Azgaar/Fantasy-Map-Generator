@@ -561,7 +561,7 @@ function getFantasyCoordinates(x, y, decimals = 2) {
   ];
 }
 
-function saveGeoJsonCells() {
+function buildGeoJsonCells() {
   const {cells, vertices} = pack;
 
   // Calculate meters per pixel based on unit
@@ -646,11 +646,16 @@ function saveGeoJsonCells() {
     json.features.push(feature);
   });
 
+  return json;
+}
+
+function saveGeoJsonCells() {
+  const json = buildGeoJsonCells();
   const fileName = getFileName("Cells") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-function saveGeoJsonRoutes() {
+function buildGeoJsonRoutes() {
   const metersPerPixel = getMetersPerPixel();
   const features = pack.routes.map(({i, points, group, name = null, type, feature}) => {
     const coordinates = points.map(([x, y]) => getFantasyCoordinates(x, y, 2));
@@ -674,12 +679,16 @@ function saveGeoJsonRoutes() {
       }
     }
   };
+  return json;
+}
 
+function saveGeoJsonRoutes() {
+  const json = buildGeoJsonRoutes();
   const fileName = getFileName("Routes") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-function saveGeoJsonRivers() {
+function buildGeoJsonRivers() {
   const metersPerPixel = getMetersPerPixel();
   const features = pack.rivers.map(
     ({i, cells, points, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, length, width, name, type}) => {
@@ -707,21 +716,27 @@ function saveGeoJsonRivers() {
       }
     }
   };
+  return json;
+}
 
+function saveGeoJsonRivers() {
+  const json = buildGeoJsonRivers();
   const fileName = getFileName("Rivers") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-function saveGeoJsonMarkers() {
+function buildGeoJsonMarkers() {
   const metersPerPixel = getMetersPerPixel();
   const features = pack.markers.map(marker => {
     const {i, type, icon, x, y, size, fill, stroke} = marker;
     const coordinates = getFantasyCoordinates(x, y, 2);
     // Find the associated note if it exists
     const note = notes.find(note => note.id === `marker${i}`);
+    const name = note ? note.name : "Unknown";
     const properties = {
       id: i,
       type,
+      name,
       icon,
       x_px: x,
       y_px: y,
@@ -746,24 +761,28 @@ function saveGeoJsonMarkers() {
       }
     }
   };
+  return json;
+}
 
+function saveGeoJsonMarkers() {
+  const json = buildGeoJsonMarkers();
   const fileName = getFileName("Markers") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-function saveGeoJsonBurgs() {
+function buildGeoJsonBurgs() {
   const metersPerPixel = getMetersPerPixel();
   const valid = pack.burgs.filter(b => b.i && !b.removed);
-  
+
   const features = valid.map(b => {
     const coordinates = getFantasyCoordinates(b.x, b.y, 2);
     const province = pack.cells.province[b.cell];
     const temperature = grid.cells.temp[pack.cells.g[b.cell]];
-    
+
     // Calculate world coordinates same as CSV export
     const xWorld = b.x * metersPerPixel;
     const yWorld = -b.y * metersPerPixel;
-    
+
     return {
       type: "Feature",
       geometry: {type: "Point", coordinates},
@@ -811,15 +830,19 @@ function saveGeoJsonBurgs() {
       }
     }
   };
+  return json;
+}
 
+function saveGeoJsonBurgs() {
+  const json = buildGeoJsonBurgs();
   const fileName = getFileName("Burgs") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-function saveGeoJsonRegiments() {
+function buildGeoJsonRegiments() {
   const metersPerPixel = getMetersPerPixel();
   const allRegiments = [];
-  
+
   // Collect all regiments from all states
   for (const s of pack.states) {
     if (!s.i || s.removed || !s.military.length) continue;
@@ -827,23 +850,23 @@ function saveGeoJsonRegiments() {
       allRegiments.push({regiment: r, state: s});
     }
   }
-  
+
   const features = allRegiments.map(({regiment: r, state: s}) => {
     const coordinates = getFantasyCoordinates(r.x, r.y, 2);
     const baseCoordinates = getFantasyCoordinates(r.bx, r.by, 2);
-    
+
     // Calculate world coordinates same as CSV export
     const xWorld = r.x * metersPerPixel;
     const yWorld = -r.y * metersPerPixel;
     const bxWorld = r.bx * metersPerPixel;
     const byWorld = -r.by * metersPerPixel;
-    
+
     // Collect military unit data
     const units = {};
     options.military.forEach(u => {
       units[u.name] = r.u[u.name] || 0;
     });
-    
+
     return {
       type: "Feature",
       geometry: {type: "Point", coordinates},
@@ -885,7 +908,401 @@ function saveGeoJsonRegiments() {
       }
     }
   };
+  return json;
+}
 
+function saveGeoJsonRegiments() {
+  const json = buildGeoJsonRegiments();
   const fileName = getFileName("Regiments") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
+}
+
+// Export heightmap as ESRI ASCII Grid (.asc) for QGIS
+function saveAsciiGridHeightmap() {
+  if (!grid?.cells?.h || !grid.cellsX || !grid.cellsY) {
+    tip("Height grid is not available", false, "error");
+    return;
+  }
+
+  const ncols = grid.cellsX;
+  const nrows = grid.cellsY;
+  const metersPerPixel = getMetersPerPixel();
+  const cellsize = (graphWidth / ncols) * metersPerPixel; // meters per grid cell
+
+  // Lower-left origin in world meters matches other exports
+  const xllcorner = 0;
+  const yllcorner = -(graphHeight * metersPerPixel);
+  const NODATA = -9999;
+
+  // Convert FMG height (0..100, 20 sea level) to meters (signed)
+  const exp = +heightExponentInput.value;
+  function elevationInMeters(h) {
+    if (h >= 20) return Math.pow(h - 18, exp); // above sea level
+    if (h > 0) return ((h - 20) / h) * 50; // below sea level (negative)
+    return 0; // treat 0 as 0
+  }
+
+  let lines = [];
+  lines.push(`ncols ${ncols}`);
+  lines.push(`nrows ${nrows}`);
+  lines.push(`xllcorner ${xllcorner}`);
+  lines.push(`yllcorner ${yllcorner}`);
+  lines.push(`cellsize ${cellsize}`);
+  lines.push(`NODATA_value ${NODATA}`);
+
+  // ESRI ASCII expects rows from top (north) to bottom (south)
+  for (let row = 0; row < nrows; row++) {
+    const vals = new Array(ncols);
+    for (let col = 0; col < ncols; col++) {
+      const i = col + row * ncols;
+      const h = grid.cells.h[i];
+      const z = elevationInMeters(h);
+      vals[col] = Number.isFinite(z) ? rn(z, 2) : NODATA;
+    }
+    lines.push(vals.join(" "));
+  }
+
+  const content = lines.join("\n");
+  const fileName = getFileName("Heightmap") + ".asc";
+  downloadFile(content, fileName, "text/plain");
+}
+
+// Helpers to build MultiPolygons from cell sets
+function getCellPolygonCoordinates(cellVertices) {
+  const {vertices} = pack;
+  const coordinates = cellVertices.map(vertex => {
+    const [x, y] = vertices.p[vertex];
+    return getFantasyCoordinates(x, y, 2);
+  });
+  // Close the ring
+  return [[...coordinates, coordinates[0]]];
+}
+
+function buildMultiPolygonFromCells(cellIds) {
+  const {cells} = pack;
+  const polygons = cellIds.map(i => getCellPolygonCoordinates(cells.v[i]));
+  // polygons is an array of [ [ ring ] ] — wrap for MultiPolygon
+  return polygons;
+}
+
+function aggregatePopulationByCells(cellIds) {
+  // Follow editor logic: population lives in burgs; rural is accounted for via small burgs only
+  // Return values in absolute people, matching CSV exports
+  let ruralK = 0; // thousands-equivalent for rural (as tracked in states)
+  let urbanK = 0; // thousands for urban from burgs
+  for (const i of cellIds) {
+    const burgId = pack.cells.burg[i];
+    if (!burgId) continue;
+    const k = pack.burgs[burgId].population; // in thousands
+    // Mirror states stats split: <= 0.1k as rural, otherwise urban
+    if (k > 0.1) urbanK += k; else ruralK += k;
+  }
+  const rural = Math.round(ruralK * populationRate);
+  const urban = Math.round(urbanK * 1000 * urbanization);
+  return {rural, urban, total: rural + urban};
+}
+
+function sumAreaByCells(cellIds) {
+  const sum = cellIds.reduce((acc, i) => acc + (pack.cells.area[i] || 0), 0);
+  return getArea(sum);
+}
+
+function getCellsFor(type, id) {
+  const {cells} = pack;
+  switch (type) {
+    case "state":
+      return cells.i.filter(i => cells.h[i] >= 20 && cells.state[i] === id);
+    case "province":
+      return cells.i.filter(i => cells.h[i] >= 20 && cells.province[i] === id);
+    case "culture":
+      return cells.i.filter(i => cells.h[i] >= 20 && cells.culture[i] === id);
+    case "religion":
+      return cells.i.filter(i => cells.h[i] >= 20 && cells.religion[i] === id);
+    default:
+      return [];
+  }
+}
+
+function buildGeoJsonCultures() {
+  const metersPerPixel = getMetersPerPixel();
+  const features = pack.cultures
+    .filter(c => c.i && !c.removed)
+    .map(c => {
+      const cellIds = getCellsFor("culture", c.i);
+      if (!cellIds.length) return null;
+      const geometry = {type: "MultiPolygon", coordinates: buildMultiPolygonFromCells(cellIds)};
+      const {total} = aggregatePopulationByCells(cellIds);
+      const area = sumAreaByCells(cellIds);
+      const namesbase = nameBases[c.base]?.name;
+      const origins = (c.origins || []).filter(o => o).map(o => pack.cultures[o]?.name).filter(Boolean);
+      const properties = {
+        id: c.i,
+        name: c.name,
+        color: c.color,
+        cells: cellIds.length,
+        expansionism: c.expansionism,
+        type: c.type,
+        area,
+        population: rn(total),
+        namesbase: namesbase || "",
+        emblemsShape: c.emblemsShape || "",
+        origins
+      };
+      return {type: "Feature", geometry, properties};
+    })
+    .filter(Boolean);
+
+  const json = {
+    type: "FeatureCollection",
+    features,
+    metadata: {
+      crs: "Fantasy Map Cartesian (meters)",
+      mapName: mapName.value,
+      scale: {
+        distance: distanceScale,
+        unit: distanceUnitInput.value,
+        meters_per_pixel: metersPerPixel
+      }
+    }
+  };
+  return json;
+}
+
+function saveGeoJsonCultures() {
+  const json = buildGeoJsonCultures();
+  const fileName = getFileName("Cultures") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
+}
+
+function buildGeoJsonReligions() {
+  const metersPerPixel = getMetersPerPixel();
+  const features = pack.religions
+    .filter(r => r.i && !r.removed)
+    .map(r => {
+      const cellIds = getCellsFor("religion", r.i);
+      if (!cellIds.length) return null;
+      const geometry = {type: "MultiPolygon", coordinates: buildMultiPolygonFromCells(cellIds)};
+      const {total} = aggregatePopulationByCells(cellIds);
+      const area = sumAreaByCells(cellIds);
+      const origins = (r.origins || []).filter(o => o).map(o => pack.religions[o]?.name).filter(Boolean);
+      const properties = {
+        id: r.i,
+        name: r.name,
+        color: r.color,
+        type: r.type,
+        form: r.form,
+        deity: r.deity || "",
+        area,
+        believers: rn(total),
+        origins,
+        potential: r.expansion,
+        expansionism: r.expansionism
+      };
+      return {type: "Feature", geometry, properties};
+    })
+    .filter(Boolean);
+
+  const json = {
+    type: "FeatureCollection",
+    features,
+    metadata: {
+      crs: "Fantasy Map Cartesian (meters)",
+      mapName: mapName.value,
+      scale: {
+        distance: distanceScale,
+        unit: distanceUnitInput.value,
+        meters_per_pixel: metersPerPixel
+      }
+    }
+  };
+  return json;
+}
+
+function saveGeoJsonReligions() {
+  const json = buildGeoJsonReligions();
+  const fileName = getFileName("Religions") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
+}
+
+function buildGeoJsonStates() {
+  const metersPerPixel = getMetersPerPixel();
+  const features = pack.states
+    .filter(s => s.i && !s.removed)
+    .map(s => {
+      const cellIds = getCellsFor("state", s.i);
+      if (!cellIds.length) return null;
+      const geometry = {type: "MultiPolygon", coordinates: buildMultiPolygonFromCells(cellIds)};
+      const {rural, urban, total} = aggregatePopulationByCells(cellIds);
+      const area = sumAreaByCells(cellIds);
+      const properties = {
+        id: s.i,
+        name: s.name,
+        fullName: s.fullName || "",
+        form: s.form || "",
+        color: s.color,
+        capital: s.capital || 0,
+        culture: s.culture,
+        type: s.type,
+        expansionism: s.expansionism,
+        cells: cellIds.length,
+        burgs: s.burgs || 0,
+        area,
+        totalPopulation: total,
+        ruralPopulation: rural,
+        urbanPopulation: urban
+      };
+      return {type: "Feature", geometry, properties};
+    })
+    .filter(Boolean);
+
+  const json = {
+    type: "FeatureCollection",
+    features,
+    metadata: {
+      crs: "Fantasy Map Cartesian (meters)",
+      mapName: mapName.value,
+      scale: {
+        distance: distanceScale,
+        unit: distanceUnitInput.value,
+        meters_per_pixel: metersPerPixel
+      }
+    }
+  };
+  return json;
+}
+
+function saveGeoJsonStates() {
+  const json = buildGeoJsonStates();
+  const fileName = getFileName("States") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
+}
+
+function buildGeoJsonProvinces() {
+  const metersPerPixel = getMetersPerPixel();
+  const features = pack.provinces
+    .filter(p => p.i && !p.removed)
+    .map(p => {
+      const cellIds = getCellsFor("province", p.i);
+      if (!cellIds.length) return null;
+      const geometry = {type: "MultiPolygon", coordinates: buildMultiPolygonFromCells(cellIds)};
+      const {rural, urban, total} = aggregatePopulationByCells(cellIds);
+      const area = sumAreaByCells(cellIds);
+      const properties = {
+        id: p.i,
+        name: p.name,
+        fullName: p.fullName || "",
+        form: p.form || "",
+        state: p.state,
+        color: p.color,
+        capital: p.burg || 0,
+        area,
+        totalPopulation: total,
+        ruralPopulation: rural,
+        urbanPopulation: urban,
+        burgs: (p.burgs && p.burgs.length) || 0
+      };
+      return {type: "Feature", geometry, properties};
+    })
+    .filter(Boolean);
+
+  const json = {
+    type: "FeatureCollection",
+    features,
+    metadata: {
+      crs: "Fantasy Map Cartesian (meters)",
+      mapName: mapName.value,
+      scale: {
+        distance: distanceScale,
+        unit: distanceUnitInput.value,
+        meters_per_pixel: metersPerPixel
+      }
+    }
+  };
+  return json;
+}
+
+function saveGeoJsonProvinces() {
+  const json = buildGeoJsonProvinces();
+  const fileName = getFileName("Provinces") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
+}
+
+function buildGeoJsonZones() {
+  const metersPerPixel = getMetersPerPixel();
+  const features = (pack.zones || [])
+    .map(z => {
+      if (!z || z.hidden) return null;
+      const cellIds = (z.cells || []).filter(i => pack.cells.h[i] >= 20);
+      if (!cellIds.length) return null;
+      const geometry = {type: "MultiPolygon", coordinates: buildMultiPolygonFromCells(cellIds)};
+      const {total} = aggregatePopulationByCells(cellIds);
+      const area = sumAreaByCells(cellIds);
+      const properties = {
+        id: z.i,
+        color: z.color,
+        description: z.name,
+        type: z.type,
+        cells: cellIds.length,
+        area,
+        population: rn(total)
+      };
+      return {type: "Feature", geometry, properties};
+    })
+    .filter(Boolean);
+
+  const json = {
+    type: "FeatureCollection",
+    features,
+    metadata: {
+      crs: "Fantasy Map Cartesian (meters)",
+      mapName: mapName.value,
+      scale: {
+        distance: distanceScale,
+        unit: distanceUnitInput.value,
+        meters_per_pixel: metersPerPixel
+      }
+    }
+  };
+  return json;
+}
+
+function saveGeoJsonZones() {
+  const json = buildGeoJsonZones();
+  const fileName = getFileName("Zones") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
+}
+
+// Convenience: export all GeoJSONs into a single ZIP
+async function saveAllGeoJson() {
+  await import("../../libs/jszip.min.js");
+  const zip = new window.JSZip();
+
+  const files = [
+    {name: getFileName("Cells") + ".geojson", json: buildGeoJsonCells()},
+    {name: getFileName("Routes") + ".geojson", json: buildGeoJsonRoutes()},
+    {name: getFileName("Rivers") + ".geojson", json: buildGeoJsonRivers()},
+    {name: getFileName("Markers") + ".geojson", json: buildGeoJsonMarkers()},
+    {name: getFileName("Burgs") + ".geojson", json: buildGeoJsonBurgs()},
+    {name: getFileName("Regiments") + ".geojson", json: buildGeoJsonRegiments()},
+    {name: getFileName("States") + ".geojson", json: buildGeoJsonStates()},
+    {name: getFileName("Provinces") + ".geojson", json: buildGeoJsonProvinces()},
+    {name: getFileName("Cultures") + ".geojson", json: buildGeoJsonCultures()},
+    {name: getFileName("Religions") + ".geojson", json: buildGeoJsonReligions()},
+    {name: getFileName("Zones") + ".geojson", json: buildGeoJsonZones()}
+  ];
+
+  for (const f of files) {
+    try {
+      zip.file(f.name, JSON.stringify(f.json));
+    } catch (e) {
+      console.error("Failed to add", f.name, e);
+    }
+  }
+
+  const blob = await zip.generateAsync({type: "blob"});
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = getFileName("GeoJSON") + ".zip";
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 5000);
 }
