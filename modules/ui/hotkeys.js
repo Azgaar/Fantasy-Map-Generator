@@ -61,6 +61,7 @@ function handleKeyup(event) {
   else if (key === "%") toggleAddMarker();
   else if (code === "KeyX") toggleTexture();
   else if (code === "KeyH") toggleHeight();
+  else if (code === "KeyQ") toggleTopography();
   else if (code === "KeyB") toggleBiomes();
   else if (code === "KeyE") toggleCells();
   else if (code === "KeyG") toggleGrid();

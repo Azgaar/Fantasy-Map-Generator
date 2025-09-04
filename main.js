@@ -50,6 +50,7 @@ let lakes = viewbox.append("g").attr("id", "lakes");
 let landmass = viewbox.append("g").attr("id", "landmass");
 let texture = viewbox.append("g").attr("id", "texture");
 let terrs = viewbox.append("g").attr("id", "terrs");
+let topography = viewbox.append("g").attr("id", "topography");
 let biomes = viewbox.append("g").attr("id", "biomes");
 let cells = viewbox.append("g").attr("id", "cells");
 let gridOverlay = viewbox.append("g").attr("id", "gridOverlay");
@@ -249,7 +250,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     hideLoading();
     await checkLoadParameters();
   }
-  restoreDefaultEvents; // apply default viewbox events
+  restoreDefaultEvents(); // apply default viewbox events
   initiateAutosave();
 });
 

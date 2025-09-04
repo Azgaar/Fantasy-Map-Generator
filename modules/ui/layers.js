@@ -186,6 +186,7 @@ function drawLayers() {
   drawFeatures();
   if (layerIsOn("toggleTexture")) drawTexture();
   if (layerIsOn("toggleHeight")) drawHeightmap();
+  if (layerIsOn("toggleTopography")) drawTopography();
   if (layerIsOn("toggleBiomes")) drawBiomes();
   if (layerIsOn("toggleCells")) drawCells();
   if (layerIsOn("toggleGrid")) drawGrid();
@@ -226,6 +227,18 @@ function toggleHeight(event) {
     if (event && isCtrlClick(event)) return editStyle("terrs");
     turnButtonOff("toggleHeight");
     children.remove();
+  }
+}
+
+function toggleTopography(event) {
+  const group = d3.select('#topography');
+  const hasContent = group.selectAll('*').size() > 0;
+  if (!hasContent) {
+    turnButtonOn('toggleTopography');
+    drawTopography();
+  } else {
+    turnButtonOff('toggleTopography');
+    group.selectAll('*').remove();
   }
 }
 
@@ -1015,6 +1028,7 @@ function moveLayer(event, ui) {
 // define connection between option layer buttons and actual svg groups to move the element
 function getLayer(id) {
   if (id === "toggleHeight") return $("#terrs");
+  if (id === "toggleTopography") return $("#topography");
   if (id === "toggleBiomes") return $("#biomes");
   if (id === "toggleCells") return $("#cells");
   if (id === "toggleGrid") return $("#gridOverlay");
