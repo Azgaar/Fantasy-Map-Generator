@@ -98,7 +98,21 @@ function overviewRoutes() {
   function zoomToRoute() {
     const routeId = +this.parentNode.dataset.id;
     const route = routes.select("#route" + routeId).node();
-    highlightElement(route, 3);
+    if (route) {
+      highlightElement(route, 3);
+      return;
+    }
+    // Fallback if SVG element not yet in DOM: center on route points
+    const r = pack.routes.find(r => r.i === routeId);
+    if (!r || !r.points || r.points.length === 0) return;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const [x, y] of r.points) {
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    zoomTo(cx, cy, 3, 1200);
   }
 
   function downloadRoutesData() {

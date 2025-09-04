@@ -862,7 +862,8 @@ window.BurgsAndStates = (() => {
     cells.state = cells.state || new Uint16Array(cells.i.length);
 
     const queue = new FlatQueue();
-    const cost = [];
+    const cost = new Float32Array(cells.i.length);
+    cost.fill(Infinity);
 
     const globalGrowthRate = byId("growthRate").valueAsNumber || 1;
     const statesGrowthRate = byId("statesGrowthRate")?.valueAsNumber || 1;
@@ -889,31 +890,39 @@ window.BurgsAndStates = (() => {
     while (queue.length) {
       const next = queue.pop();
 
-      const {e, p, s, b} = next;
-      const {type, culture} = states[s];
+      const e0 = next.e;
+      const p0 = next.p;
+      const s0 = next.s;
+      const b0 = next.b;
+      const st = states[s0];
+      const type = st.type;
+      const culture = st.culture;
 
-      cells.c[e].forEach(e => {
-        const state = states[cells.state[e]];
-        if (state.lock) return; // do not overwrite cell of locked states
-        if (cells.state[e] && e === state.center) return; // do not overwrite capital cells
+      const neigh = cells.c[e0];
+      for (let idx = 0; idx < neigh.length; idx++) {
+        const e = neigh[idx];
+        const stateOnCell = states[cells.state[e]];
+        if (stateOnCell.lock) continue; // do not overwrite cell of locked states
+        if (cells.state[e] && e === stateOnCell.center) continue; // do not overwrite capital cells
 
         const cultureCost = culture === cells.culture[e] ? -9 : 100;
-        const populationCost = cells.h[e] < 20 ? 0 : cells.s[e] ? Math.max(20 - cells.s[e], 0) : 5000;
-        const biomeCost = getBiomeCost(b, cells.biome[e], type);
+        const sVal = cells.s[e];
+        const populationCost = cells.h[e] < 20 ? 0 : sVal ? Math.max(20 - sVal, 0) : 5000;
+        const biomeCost = getBiomeCost(b0, cells.biome[e], type);
         const heightCost = getHeightCost(pack.features[cells.f[e]], cells.h[e], type);
         const riverCost = getRiverCost(cells.r[e], e, type);
         const typeCost = getTypeCost(cells.t[e], type);
         const cellCost = Math.max(cultureCost + populationCost + biomeCost + heightCost + riverCost + typeCost, 0);
-        const totalCost = p + 10 + cellCost / states[s].expansionism;
+        const totalCost = p0 + 10 + cellCost / st.expansionism;
 
-        if (totalCost > growthRate) return;
+        if (totalCost > growthRate) continue;
 
-        if (!cost[e] || totalCost < cost[e]) {
-          if (cells.h[e] >= 20) cells.state[e] = s; // assign state to cell
+        if (totalCost < cost[e]) {
+          if (cells.h[e] >= 20) cells.state[e] = s0; // assign state to cell
           cost[e] = totalCost;
-          queue.push({e, p: totalCost, s, b}, totalCost);
+          queue.push({e, p: totalCost, s: s0, b: b0}, totalCost);
         }
-      });
+      }
     }
 
     burgs.filter(b => b.i && !b.removed).forEach(b => (b.state = cells.state[b.cell])); // assign state to burgs

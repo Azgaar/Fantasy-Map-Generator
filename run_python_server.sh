@@ -8,6 +8,6 @@ else
 	exit 1
 fi
 
-chromium http://localhost:8000
+chromium http://localhost:9001
 
-$PYTHON -m http.server 8000
+$PYTHON -m http.server 9001

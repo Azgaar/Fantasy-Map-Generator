@@ -1219,25 +1219,42 @@ function updateSuitabilityFromHubs() {
   const hubs = burgs.filter(b => b.capital || b.port).map(b => b.cell);
   if (!hubs.length) return;
 
-  const cellCoords = cells.p;
+  // Multi-source Dijkstra to compute min distance (in pixels) from any hub to every cell
+  const n = cells.i.length;
+  const distArr = new Float32Array(n);
+  for (let i = 0; i < n; i++) distArr[i] = Infinity;
+  const q = new FlatQueue();
+  for (const hub of hubs) {
+    distArr[hub] = 0;
+    q.push(hub, 0);
+  }
+  while (q.length) {
+    const d0 = q.peekValue();
+    const u = q.pop();
+    if (d0 !== distArr[u]) continue;
+    const [ux, uy] = cells.p[u];
+    const neigh = cells.c[u];
+    for (let k = 0; k < neigh.length; k++) {
+      const v = neigh[k];
+      // skip water for suitability
+      if (cells.h[v] < 20) continue;
+      const [vx, vy] = cells.p[v];
+      const w = Math.hypot(vx - ux, vy - uy);
+      const nd = d0 + w;
+      if (nd < distArr[v]) {
+        distArr[v] = nd;
+        q.push(v, nd);
+      }
+    }
+  }
+
   const maxSuitability = 100;
   const decayRate = 0.02;
   const areaMean = d3.mean(cells.area);
 
-  function minDistToHub(cellId) {
-    const [x, y] = cellCoords[cellId];
-    let minDist = Infinity;
-    for (const hubCell of hubs) {
-      const [hx, hy] = cellCoords[hubCell];
-      const dist = Math.hypot(x - hx, y - hy);
-      if (dist < minDist) minDist = dist;
-    }
-    return minDist;
-  }
-
   for (const i of cells.i) {
     if (cells.h[i] < 20) continue;
-    const dist = minDistToHub(i);
+    const dist = distArr[i];
     let s = maxSuitability * Math.exp(-decayRate * dist);
     s *= +biomesData.habitability[cells.biome[i]] / 100;
     cells.s[i] = s;

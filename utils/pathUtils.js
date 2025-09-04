@@ -216,6 +216,62 @@ function findPath(start, isExit, getCost) {
   return null;
 }
 
+/**
+ * A* shortest path between two cells using an admissible heuristic.
+ * Uses a reusable FlatQueue and typed arrays to minimize allocations.
+ * @param {number} start - start cell id
+ * @param {number} goal - goal cell id
+ * @param {(current:number,next:number)=>number} getCost - edge cost; return Infinity for impassable
+ * @param {(id:number)=>number} heuristic - estimated remaining cost from id to goal; must be admissible
+ * @returns {number[]|null}
+ */
+function findPathAStar(start, goal, getCost, heuristic) {
+  if (start === goal) return null;
+
+  // reusable arrays sized to pack.cells.c.length
+  const n = pack.cells.c.length;
+  if (!findPathAStar._g || findPathAStar._g.length !== n) {
+    findPathAStar._g = new Float64Array(n);
+    findPathAStar._f = new Float64Array(n);
+    findPathAStar._from = new Int32Array(n);
+  }
+  const g = findPathAStar._g;
+  const f = findPathAStar._f;
+  const from = findPathAStar._from;
+  for (let i = 0; i < n; i++) { g[i] = Infinity; f[i] = Infinity; from[i] = -1; }
+
+  const open = new FlatQueue();
+  g[start] = 0;
+  f[start] = heuristic(start);
+  open.push(start, f[start]);
+
+  // simple safety cap to avoid pathological searches
+  const maxPops = n * 4;
+  let pops = 0;
+  while (open.length) {
+    if (pops++ > maxPops) return null;
+    const currentF = open.peekValue();
+    const current = open.pop();
+    if (current === goal) return restorePath(goal, start, from);
+    if (currentF > f[current]) continue; // stale entry
+
+    const neigh = pack.cells.c[current];
+    for (let k = 0; k < neigh.length; k++) {
+      const next = neigh[k];
+      const edge = getCost(current, next);
+      if (edge === Infinity) continue;
+      const tentativeG = g[current] + edge;
+      if (tentativeG >= g[next]) continue;
+      from[next] = current;
+      g[next] = tentativeG;
+      f[next] = tentativeG + heuristic(next);
+      open.push(next, f[next]);
+    }
+  }
+
+  return null;
+}
+
 // supplementary function for findPath
 function restorePath(exit, start, from) {
   const pathCells = [];

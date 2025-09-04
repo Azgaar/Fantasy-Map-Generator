@@ -21,10 +21,16 @@ const ROUTE_TIER_MODIFIERS = {
 };
 
 window.Routes = (function () {
+  // Per-cell cost cache for fast path evaluations
+  let RC = null;
   function generate(lockedRoutes = []) {
     TIME && console.time("generateRoutes");
     const {capitalsByFeature, burgsByFeature, portsByFeature, primaryByFeature, plazaByFeature, unconnectedBurgsByFeature} = sortBurgsByFeature(pack.burgs);
 
+    // Build per-cell route cost factors once
+    RC = buildRouteCostCache();
+
+    // connections: Map<cellId, Set<neighborCellId>> for O(1) adjacency checks without string keys
     const connections = new Map();
     lockedRoutes.forEach(route => addConnections(route.points.map(p => p[2])));
 
@@ -94,6 +100,36 @@ window.Routes = (function () {
       return {burgsByFeature, capitalsByFeature, portsByFeature, primaryByFeature, plazaByFeature, unconnectedBurgsByFeature};
     }
 
+    // Precompute per-cell route modifiers to avoid hot-path branching
+    function buildRouteCostCache() {
+      const {cells} = pack;
+      const n = cells.i.length;
+      const landHabitability = new Float32Array(n);
+      const landHeight = new Float32Array(n);
+      const isPassableLand = new Uint8Array(n);
+      const waterType = new Float32Array(n);
+      const isPassableWater = new Uint8Array(n);
+      const stateId = new Uint32Array(n);
+      const burgFactor = new Float32Array(n);
+
+      for (let i = 0; i < n; i++) {
+        const h = pack.cells.h[i];
+        const hab = biomesData.habitability[pack.cells.biome[i]];
+        isPassableLand[i] = h >= 20 && hab > 0 ? 1 : 0;
+        landHabitability[i] = 1 + Math.max(100 - hab, 0) / 1000;
+        landHeight[i] = 1 + Math.max(h - 25, 25) / 25;
+        stateId[i] = pack.cells.state[i] >>> 0;
+        burgFactor[i] = pack.cells.burg[i] ? 1 : 3;
+
+        const t = pack.cells.t[i];
+        waterType[i] = ROUTE_TYPE_MODIFIERS[t] || ROUTE_TYPE_MODIFIERS.default;
+        const temp = grid.cells.temp[pack.cells.g[i]];
+        isPassableWater[i] = h < 20 && temp >= MIN_PASSABLE_SEA_TEMP ? 1 : 0;
+      }
+
+      return {landHabitability, landHeight, isPassableLand, waterType, isPassableWater, stateId, burgFactor};
+    }
+
     // Tier 1: Major Sea Routes - Connect capitals and major ports across ALL water bodies
     // Simulates long-distance maritime trade like Hanseatic League routes
     function generateMajorSeaRoutes() {
@@ -101,18 +137,30 @@ window.Routes = (function () {
       const majorSeaRoutes = [];
       
       // Get all significant ports for major trade routes
-      const allMajorPorts = [];
+      let allMajorPorts = [];
       pack.burgs.forEach(b => {
-        if (b.i && !b.removed && b.port) {
-          // Include more ports in major routes: capitals, large ports, and wealthy market towns
-          if (b.capital || 
-              b.isLargePort || 
-              (b.population >= 5 && b.plaza) || // Major market towns (5000+ pop with plaza)
-              (b.population >= 10)) { // Large cities regardless of status
+        if (!b.i || b.removed) return;
+        if (b.port) {
+          if (b.capital || b.isLargePort || (b.population >= 5 && b.plaza) || (b.population >= 10)) {
             allMajorPorts.push(b);
           }
         }
       });
+
+      // Fallback: if there are <2 declared ports (e.g., single-port water bodies),
+      // consider coastal capitals/markets as pseudo-ports to ensure some sea routes.
+      if (allMajorPorts.length < 2) {
+        const coastalCandidates = pack.burgs.filter(b => {
+          if (!b.i || b.removed) return false;
+          const cell = b.cell;
+          const coastal = pack.cells.t[cell] === 1; // coastline
+          const tempOK = grid.cells.temp[pack.cells.g[cell]] >= MIN_PASSABLE_SEA_TEMP;
+          return coastal && tempOK && (b.capital || b.plaza || b.isLargePort || b.population >= 5);
+        });
+        // take up to 12 best by importance
+        coastalCandidates.sort((a, b) => (b.capital - a.capital) || (b.population - a.population));
+        allMajorPorts = coastalCandidates.slice(0, Math.min(12, coastalCandidates.length));
+      }
       
       if (allMajorPorts.length < 2) {
         TIME && console.timeEnd("generateMajorSeaRoutes");
@@ -133,39 +181,38 @@ window.Routes = (function () {
       const mediumPorts = allMajorPorts.filter(p => !p.capital && !p.isLargePort && p.population < 10);
       
       // Use all capitals and top large ports as primary hubs
-      const hubs = [...capitalPorts, ...largePorts.slice(0, Math.max(10, Math.floor(largePorts.length * 0.5)))];
+      let hubs = [...capitalPorts, ...largePorts.slice(0, Math.max(10, Math.floor(largePorts.length * 0.5)))];
+      if (hubs.length < 2) hubs = [...largePorts.slice(0, Math.min(20, largePorts.length))];
       const secondaryHubs = [...largePorts.slice(Math.max(10, Math.floor(largePorts.length * 0.5))), ...mediumPorts.slice(0, 20)];
       
-      // Connect primary hubs strategically (not all-to-all to avoid too many routes)
-      // Connect capitals to each other
-      for (let i = 0; i < capitalPorts.length; i++) {
-        for (let j = i + 1; j < capitalPorts.length; j++) {
-          const start = capitalPorts[i].cell;
-          const exit = capitalPorts[j].cell;
-          const distance = Math.sqrt((capitalPorts[i].x - capitalPorts[j].x) ** 2 + (capitalPorts[i].y - capitalPorts[j].y) ** 2);
-          
-          // Connect if reasonably distant (long-distance trade) or same cultural sphere
-          if (distance > 50 || capitalPorts[i].culture === capitalPorts[j].culture) {
-            const segments = findPathSegments({isWater: true, connections, start, exit, routeType: "majorSea"});
-            for (const segment of segments) {
-              addConnections(segment);
-              majorSeaRoutes.push({feature: -1, cells: segment, type: "majorSea"});
-            }
+      // Connect primary hubs strategically using sparse graph (Urquhart edges)
+      if (hubs.length >= 2) {
+        const points = hubs.map(p => [p.x, p.y]);
+        const edges = calculateUrquhartEdges(points);
+        edges.forEach(([ai, bi]) => {
+          const a = hubs[ai];
+          const b = hubs[bi];
+          const start = a.cell;
+          const exit = b.cell;
+          const segments = findPathSegments({isWater: true, connections, start, exit, routeType: "majorSea"});
+          for (const segment of segments) {
+            addConnections(segment);
+            majorSeaRoutes.push({feature: -1, cells: segment, type: "majorSea"});
           }
-        }
+        });
       }
       
-      // Connect large ports to nearest 2-3 capitals for trade network
+      // Connect large ports to nearest 1-2 hubs for trade network
       largePorts.slice(0, 15).forEach(port => {
-        const nearestCapitals = capitalPorts
+        const nearestHubs = hubs
           .map(cap => ({
             cap,
-            distance: Math.sqrt((port.x - cap.x) ** 2 + (port.y - cap.y) ** 2)
+            distance2: (port.x - cap.x) ** 2 + (port.y - cap.y) ** 2
           }))
-          .sort((a, b) => a.distance - b.distance)
-          .slice(0, Math.min(3, capitalPorts.length)); // Connect to up to 3 nearest capitals
+          .sort((a, b) => a.distance2 - b.distance2)
+          .slice(0, Math.min(2, hubs.length)); // Connect to up to 2 nearest hubs
         
-        nearestCapitals.forEach(({cap}) => {
+        nearestHubs.forEach(({cap}) => {
           const segments = findPathSegments({
             isWater: true,
             connections,
@@ -186,9 +233,9 @@ window.Routes = (function () {
         let minDistance = Infinity;
         
         hubs.forEach(hub => {
-          const distance = Math.sqrt((port.x - hub.x) ** 2 + (port.y - hub.y) ** 2);
-          if (distance < minDistance) {
-            minDistance = distance;
+          const dx = port.x - hub.x; const dy = port.y - hub.y; const d2 = dx*dx + dy*dy;
+          if (d2 < minDistance) {
+            minDistance = d2;
             nearestHub = hub;
           }
         });
@@ -238,10 +285,9 @@ window.Routes = (function () {
       const edges = [];
       for (let i = 0; i < capitals.length; i++) {
         for (let j = i + 1; j < capitals.length; j++) {
-          const distance = Math.sqrt(
-            (capitals[i].x - capitals[j].x) ** 2 + 
-            (capitals[i].y - capitals[j].y) ** 2
-          );
+          const dx = (capitals[i].x - capitals[j].x);
+          const dy = (capitals[i].y - capitals[j].y);
+          const distance = dx*dx + dy*dy; // squared distance is sufficient for sorting
           edges.push({
             from: i,
             to: j,
@@ -382,30 +428,30 @@ window.Routes = (function () {
       );
       
       // Connect each village to nearest market center
+      const mapScaleLocal = Math.sqrt(graphWidth * graphHeight / 1000000);
+      const maxLocalKm = 60; // cap local road reach
+      const maxLocalDist2 = (maxLocalKm * mapScaleLocal) ** 2;
+      const radiusPx = maxLocalKm * mapScaleLocal;
+      const hashMarkets = makeSpatialHash(marketCenters, b => [b.x, b.y], radiusPx);
+
       villages.forEach(village => {
         let nearestMarket = null;
         let minDistance = Infinity;
         
-        marketCenters.forEach(market => {
-          const distance = Math.sqrt(
-            (village.x - market.x) ** 2 + 
-            (village.y - market.y) ** 2
-          );
-          
+        const candidates = queryCandidatesWithinRadius(hashMarkets, village.x, village.y, radiusPx);
+        for (const market of candidates) {
+          const dx = village.x - market.x;
+          const dy = village.y - market.y;
+          const d2 = dx*dx + dy*dy;
           // Prefer markets in same state/culture
           let culturalModifier = 1;
           if (village.state === market.state) culturalModifier = 0.8;
           if (village.culture === market.culture) culturalModifier *= 0.9;
-          
-          const adjustedDistance = distance * culturalModifier;
-          
-          if (adjustedDistance < minDistance) {
-            minDistance = adjustedDistance;
-            nearestMarket = market;
-          }
-        });
+          const adjustedDistance = d2 * culturalModifier;
+          if (adjustedDistance < minDistance) { minDistance = adjustedDistance; nearestMarket = market; }
+        }
         
-        if (nearestMarket) {
+        if (nearestMarket && minDistance <= maxLocalDist2) {
           const segments = findPathSegments({
             isWater: false,
             connections,
@@ -415,6 +461,10 @@ window.Routes = (function () {
           });
           
           for (const segment of segments) {
+            // Skip excessively long local segments
+            const pxLen = pathCellsLengthPx(segment);
+            const kmLen = pxLen / mapScaleLocal;
+            if (kmLen > maxLocalKm) continue;
             addConnections(segment);
             localRoads.push({
               feature: village.feature,
@@ -450,33 +500,27 @@ window.Routes = (function () {
         )
       );
       
-      // Connect each hamlet to nearest village (3-6 km as per research)
+      // Connect each hamlet to nearest village (limit to <= 8 km)
+      const mapScaleFoot = Math.sqrt(graphWidth * graphHeight / 1000000);
+      const maxFootKm = 8;
+      const maxFootDist2 = (maxFootKm * mapScaleFoot) ** 2;
+      const radiusFootPx = maxFootKm * mapScaleFoot;
+      const hashSettlements = makeSpatialHash(largerSettlements, b => [b.x, b.y], radiusFootPx);
       hamlets.forEach(hamlet => {
         let nearestVillage = null;
         let minDistance = Infinity;
         
-        largerSettlements.forEach(village => {
-          const distance = Math.sqrt(
-            (hamlet.x - village.x) ** 2 + 
-            (hamlet.y - village.y) ** 2
-          );
-          
-          // Strong preference for same culture/state
+        const candidates = queryCandidatesWithinRadius(hashSettlements, hamlet.x, hamlet.y, radiusFootPx);
+        for (const village of candidates) {
+          const dx = hamlet.x - village.x;
+          const dy = hamlet.y - village.y;
+          const d2 = dx*dx + dy*dy;
           let modifier = 1;
           if (hamlet.state === village.state) modifier = 0.7;
           if (hamlet.culture === village.culture) modifier *= 0.8;
-          
-          const adjustedDistance = distance * modifier;
-          
-          // Only connect to nearby settlements (6 km max range)
-          const mapScale = Math.sqrt(graphWidth * graphHeight / 1000000);
-          const kmDistance = distance / mapScale;
-          
-          if (kmDistance <= 8 && adjustedDistance < minDistance) {
-            minDistance = adjustedDistance;
-            nearestVillage = village;
-          }
-        });
+          const adjustedDistance = d2 * modifier;
+          if (d2 <= maxFootDist2 && adjustedDistance < minDistance) { minDistance = adjustedDistance; nearestVillage = village; }
+        }
         
         if (nearestVillage) {
           const segments = findPathSegments({
@@ -488,6 +532,9 @@ window.Routes = (function () {
           });
           
           for (const segment of segments) {
+            const pxLen = pathCellsLengthPx(segment);
+            const kmLen = pxLen / mapScaleFoot;
+            if (kmLen > maxFootKm) continue;
             addConnections(segment);
             footpaths.push({
               feature: hamlet.feature,
@@ -694,11 +741,11 @@ window.Routes = (function () {
       
       // First, try connecting to the nearest connected burg
       for (const connectedBurg of connectedBurgs) {
-        const distance = Math.sqrt(
-          (unconnectedBurg.x - connectedBurg.x) ** 2 + (unconnectedBurg.y - connectedBurg.y) ** 2
-        );
-        if (distance < minDistance) {
-          minDistance = distance;
+        const dx = unconnectedBurg.x - connectedBurg.x;
+        const dy = unconnectedBurg.y - connectedBurg.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < minDistance) {
+          minDistance = d2;
           bestConnection = connectedBurg;
         }
       }
@@ -730,19 +777,38 @@ window.Routes = (function () {
     }
 
     function addConnections(segment) {
-      for (let i = 0; i < segment.length; i++) {
-        const cellId = segment[i];
-        const nextCellId = segment[i + 1];
-        if (nextCellId) {
-          connections.set(`${cellId}-${nextCellId}`, true);
-          connections.set(`${nextCellId}-${cellId}`, true);
-        }
+      for (let i = 0; i < segment.length - 1; i++) {
+        const a = segment[i];
+        const b = segment[i + 1];
+        let setA = connections.get(a);
+        if (!setA) { setA = new Set(); connections.set(a, setA); }
+        setA.add(b);
+        let setB = connections.get(b);
+        if (!setB) { setB = new Set(); connections.set(b, setB); }
+        setB.add(a);
       }
+    }
+
+    function hasConnection(a, b) {
+      const s = connections.get(a);
+      return s ? s.has(b) : false;
     }
 
     function findPathSegments({isWater, connections, start, exit, routeType}) {
       const getCost = createCostEvaluator({isWater, connections, routeType});
-      const pathCells = findPath(start, current => current === exit, getCost);
+      const heuristicScale = getHeuristicScale(routeType, isWater);
+      const heuristic = (node) => {
+        const [ax, ay] = pack.cells.p[node];
+        const [bx, by] = pack.cells.p[exit];
+        const dx = ax - bx, dy = ay - by;
+        const d = Math.hypot(dx, dy);
+        return d * heuristicScale;
+      };
+      let pathCells = findPathAStar(start, exit, getCost, heuristic);
+      if (!pathCells) {
+        // Fallback to Dijkstra if A* fails or exceeds caps
+        pathCells = findPath(start, current => current === exit, getCost);
+      }
       if (!pathCells) return [];
       const segments = getRouteSegments(pathCells, connections);
       return segments;
@@ -859,20 +925,53 @@ window.Routes = (function () {
     }
   }
 
+  // Simple spatial hash for fast radius queries
+  function makeSpatialHash(items, getXY, binSize) {
+    const bins = new Map();
+    for (const it of items) {
+      const [x, y] = getXY(it);
+      const ix = Math.floor(x / binSize);
+      const iy = Math.floor(y / binSize);
+      const key = ix + "," + iy;
+      let arr = bins.get(key);
+      if (!arr) { arr = []; bins.set(key, arr); }
+      arr.push(it);
+    }
+    return {bins, binSize};
+  }
+
+  function queryCandidatesWithinRadius(hash, x, y, radius) {
+    const out = [];
+    const s = hash.binSize;
+    const r = Math.ceil(radius / s);
+    const ix0 = Math.floor((x - radius) / s);
+    const iy0 = Math.floor((y - radius) / s);
+    const ix1 = Math.floor((x + radius) / s);
+    const iy1 = Math.floor((y + radius) / s);
+    for (let ix = ix0; ix <= ix1; ix++) {
+      for (let iy = iy0; iy <= iy1; iy++) {
+        const arr = hash.bins.get(ix + "," + iy);
+        if (!arr) continue;
+        for (const it of arr) out.push(it);
+      }
+    }
+    return out;
+  }
+
   function createCostEvaluator({isWater, connections, routeType = "market"}) {
     return isWater ? getWaterPathCost : getLandPathCost;
 
     function getLandPathCost(current, next) {
-      if (pack.cells.h[next] < 20) return Infinity; // ignore water cells
+      if (!RC || !RC.isPassableLand[next]) return Infinity;
 
-      const habitability = biomesData.habitability[pack.cells.biome[next]];
-      if (!habitability) return Infinity; // inhabitable cells are not passable (e.g. glacier)
-
-      const distanceCost = dist2(pack.cells.p[current], pack.cells.p[next]);
-      const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
-      const heightModifier = 1 + Math.max(pack.cells.h[next] - 25, 25) / 25; // [1, 3];
-      const connectionModifier = connections.has(`${current}-${next}`) ? 0.5 : 1;
-      const burgModifier = pack.cells.burg[next] ? 1 : 3;
+      const [ax, ay] = pack.cells.p[current];
+      const [bx, by] = pack.cells.p[next];
+      const distanceCost = Math.hypot(ax - bx, ay - by);
+      const habitabilityModifier = RC.landHabitability[next];
+      const heightModifier = RC.landHeight[next];
+      const setA = connections.get(current);
+      const connectionModifier = setA && setA.has(next) ? 0.5 : 1;
+      const burgModifier = RC.burgFactor[next];
       
       // Medieval travel constraints
       const riverCrossingPenalty = pack.cells.r[next] && !pack.cells.burg[next] ? 1.5 : 1; // Bridges rare except at settlements
@@ -887,12 +986,14 @@ window.Routes = (function () {
     }
 
     function getWaterPathCost(current, next) {
-      if (pack.cells.h[next] >= 20) return Infinity; // ignore land cells
-      if (grid.cells.temp[pack.cells.g[next]] < MIN_PASSABLE_SEA_TEMP) return Infinity; // ignore too cold cells
+      if (!RC || !RC.isPassableWater[next]) return Infinity;
 
-      const distanceCost = dist2(pack.cells.p[current], pack.cells.p[next]);
-      const typeModifier = ROUTE_TYPE_MODIFIERS[pack.cells.t[next]] || ROUTE_TYPE_MODIFIERS.default;
-      const connectionModifier = connections.has(`${current}-${next}`) ? 0.5 : 1;
+      const [ax, ay] = pack.cells.p[current];
+      const [bx, by] = pack.cells.p[next];
+      const distanceCost = Math.hypot(ax - bx, ay - by);
+      const typeModifier = RC.waterType[next];
+      const setA = connections.get(current);
+      const connectionModifier = setA && setA.has(next) ? 0.5 : 1;
       
       // Apply route tier modifier for sea routes
       const tierModifier = ROUTE_TIER_MODIFIERS[routeType]?.cost || 1;
@@ -915,6 +1016,12 @@ window.Routes = (function () {
       if (routeType === "local") return 2;
       return 1.5; // Market roads have moderate border penalty
     }
+  }
+
+  function getHeuristicScale(routeType, isWater) {
+    // Conservative lower bound for per-edge modifier to keep heuristic admissible
+    const tier = ROUTE_TIER_MODIFIERS[routeType]?.cost || 1;
+    return 0.5 * tier;
   }
 
   function buildLinks(routes) {
@@ -999,7 +1106,7 @@ window.Routes = (function () {
     for (let i = 0; i < pathCells.length; i++) {
       const cellId = pathCells[i];
       const nextCellId = pathCells[i + 1];
-      const isConnected = connections.has(`${cellId}-${nextCellId}`) || connections.has(`${nextCellId}-${cellId}`);
+      const isConnected = nextCellId !== undefined && ((connections.get(cellId)?.has(nextCellId)) || (connections.get(nextCellId)?.has(cellId)));
 
       if (isConnected) {
         if (segment.length) {
@@ -1288,7 +1395,19 @@ window.Routes = (function () {
   };
 
   function generateName({group, points}) {
-    if (points.length < 4) return "Unnamed route segment";
+    if (points.length < 4) {
+      const start = points[0]?.[2];
+      const end = points.at(-1)?.[2];
+      const startB = start != null ? pack.cells.burg[start] : 0;
+      const endB = end != null ? pack.cells.burg[end] : 0;
+      const startName = startB ? getAdjective(pack.burgs[startB].name) : null;
+      const endName = endB ? getAdjective(pack.burgs[endB].name) : null;
+      const base = group === "searoutes" ? "Sea route" : group === "secondary" || group === "roads" ? "Road" : "Trail";
+      if (startName && endName) return `${base} ${startName}–${endName}`;
+      if (startName) return `${base} from ${startName}`;
+      if (endName) return `${base} to ${endName}`;
+      return `${base} segment`;
+    }
 
     const model = rw(models[group]);
     const suffix = rw(suffixes[group]);
@@ -1298,7 +1417,7 @@ window.Routes = (function () {
     if (model === "prefix_suffix") return `${ra(prefixes)} ${suffix}`;
     if (model === "the_descriptor_prefix_suffix") return `The ${ra(descriptors)} ${ra(prefixes)} ${suffix}`;
     if (model === "the_descriptor_burg_suffix" && burgName) return `The ${ra(descriptors)} ${burgName} ${suffix}`;
-    return "Unnamed route";
+    return group === "searoutes" ? "Sea route" : "Route";
 
     function getBurgName() {
       const priority = [points.at(-1), points.at(0), points.slice(1, -1).reverse()];
@@ -1323,6 +1442,17 @@ window.Routes = (function () {
     lineGen.curve(ROUTE_CURVES[group] || ROUTE_CURVES.default);
     const path = round(lineGen(points.map(p => [p[0], p[1]])), 1);
     return path;
+  }
+
+  // Compute path length in pixels from list of cell ids
+  function pathCellsLengthPx(cells) {
+    let len = 0;
+    for (let i = 0; i < cells.length - 1; i++) {
+      const [x1, y1] = pack.cells.p[cells[i]];
+      const [x2, y2] = pack.cells.p[cells[i + 1]];
+      len += Math.hypot(x2 - x1, y2 - y1);
+    }
+    return len;
   }
 
   function getLength(routeId) {

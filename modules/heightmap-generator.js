@@ -134,7 +134,10 @@ window.HeightmapGenerator = (function () {
     }
 
     function addOneHill() {
-      const change = new Uint8Array(heights.length);
+      // reuse a scratch buffer to avoid reallocations
+      if (!addHill._change || addHill._change.length !== heights.length) addHill._change = new Uint8Array(heights.length);
+      const change = addHill._change;
+      change.fill(0);
       let limit = 0;
       let start;
       let h = lim(getNumberInRange(height));
@@ -148,17 +151,18 @@ window.HeightmapGenerator = (function () {
 
       change[start] = h;
       const queue = [start];
-      while (queue.length) {
-        const q = queue.shift();
-
-        for (const c of grid.cells.c[q]) {
+      for (let qi = 0; qi < queue.length; qi++) {
+        const q = queue[qi];
+        const neibs = grid.cells.c[q];
+        for (let k = 0; k < neibs.length; k++) {
+          const c = neibs[k];
           if (change[c]) continue;
           change[c] = change[q] ** blobPower * (Math.random() * 0.2 + 0.9);
           if (change[c] > 1) queue.push(c);
         }
       }
 
-      heights = heights.map((h, i) => lim(h + change[i]));
+      for (let i = 0; i < heights.length; i++) heights[i] = lim(heights[i] + change[i]);
     }
   };
 
@@ -170,7 +174,9 @@ window.HeightmapGenerator = (function () {
     }
 
     function addOnePit() {
-      const used = new Uint8Array(heights.length);
+      if (!addPit._used || addPit._used.length !== heights.length) addPit._used = new Uint8Array(heights.length);
+      const used = addPit._used;
+      used.fill(0);
       let limit = 0,
         start;
       let h = lim(getNumberInRange(height));
@@ -183,17 +189,18 @@ window.HeightmapGenerator = (function () {
       } while (heights[start] < 20 && limit < 50);
 
       const queue = [start];
-      while (queue.length) {
-        const q = queue.shift();
+      for (let qi = 0; qi < queue.length; qi++) {
+        const q = queue[qi];
         h = h ** blobPower * (Math.random() * 0.2 + 0.9);
         if (h < 1) return;
-
-        grid.cells.c[q].forEach(function (c, i) {
-          if (used[c]) return;
+        const neibs = grid.cells.c[q];
+        for (let k = 0; k < neibs.length; k++) {
+          const c = neibs[k];
+          if (used[c]) continue;
           heights[c] = lim(heights[c] - h * (Math.random() * 0.2 + 0.9));
           used[c] = 1;
           queue.push(c);
-        });
+        }
       }
     }
   };
@@ -207,7 +214,9 @@ window.HeightmapGenerator = (function () {
     }
 
     function addOneRange() {
-      const used = new Uint8Array(heights.length);
+      if (!addRange._used || addRange._used.length !== heights.length) addRange._used = new Uint8Array(heights.length);
+      const used = addRange._used;
+      used.fill(0);
       let h = lim(getNumberInRange(height));
 
       if (rangeX && rangeY) {
@@ -259,35 +268,44 @@ window.HeightmapGenerator = (function () {
       }
 
       // add height to ridge and cells around
-      let queue = range.slice(),
-        i = 0;
+      let queue = range.slice();
+      let i = 0;
       while (queue.length) {
         const frontier = queue.slice();
-        (queue = []), i++;
-        frontier.forEach(i => {
-          heights[i] = lim(heights[i] + h * (Math.random() * 0.3 + 0.85));
-        });
+        queue.length = 0; i++;
+        for (let fi = 0; fi < frontier.length; fi++) {
+          const idx = frontier[fi];
+          heights[idx] = lim(heights[idx] + h * (Math.random() * 0.3 + 0.85));
+        }
         h = h ** linePower - 1;
         if (h < 2) break;
-        frontier.forEach(f => {
-          grid.cells.c[f].forEach(i => {
-            if (!used[i]) {
-              queue.push(i);
-              used[i] = 1;
-            }
-          });
-        });
+        for (let fi = 0; fi < frontier.length; fi++) {
+          const f = frontier[fi];
+          const neibs = grid.cells.c[f];
+          for (let k = 0; k < neibs.length; k++) {
+            const idx = neibs[k];
+            if (!used[idx]) { queue.push(idx); used[idx] = 1; }
+          }
+        }
       }
 
       // generate prominences
-      range.forEach((cur, d) => {
-        if (d % 6 !== 0) return;
-        for (const l of d3.range(i)) {
-          const min = grid.cells.c[cur][d3.scan(grid.cells.c[cur], (a, b) => heights[a] - heights[b])]; // downhill cell
-          heights[min] = (heights[cur] * 2 + heights[min]) / 3;
-          cur = min;
+      for (let d = 0; d < range.length; d++) {
+        if (d % 6 !== 0) continue;
+        let cur = range[d];
+        for (let l = 0; l < i; l++) {
+          const nbrs = grid.cells.c[cur];
+          let minIdx = nbrs[0];
+          let minVal = heights[minIdx];
+          for (let k = 1; k < nbrs.length; k++) {
+            const idk = nbrs[k];
+            const hv = heights[idk];
+            if (hv < minVal) { minVal = hv; minIdx = idk; }
+          }
+          heights[minIdx] = (heights[cur] * 2 + heights[minIdx]) / 3;
+          cur = minIdx;
         }
-      });
+      }
     }
   };
 
@@ -299,7 +317,9 @@ window.HeightmapGenerator = (function () {
     }
 
     function addOneTrough() {
-      const used = new Uint8Array(heights.length);
+      if (!addTrough._used || addTrough._used.length !== heights.length) addTrough._used = new Uint8Array(heights.length);
+      const used = addTrough._used;
+      used.fill(0);
       let h = lim(getNumberInRange(height));
 
       if (rangeX && rangeY) {
@@ -356,36 +376,44 @@ window.HeightmapGenerator = (function () {
       }
 
       // add height to ridge and cells around
-      let queue = range.slice(),
-        i = 0;
+      let queue = range.slice();
+      let i = 0;
       while (queue.length) {
         const frontier = queue.slice();
-        (queue = []), i++;
-        frontier.forEach(i => {
-          heights[i] = lim(heights[i] - h * (Math.random() * 0.3 + 0.85));
-        });
+        queue.length = 0; i++;
+        for (let fi = 0; fi < frontier.length; fi++) {
+          const idx = frontier[fi];
+          heights[idx] = lim(heights[idx] - h * (Math.random() * 0.3 + 0.85));
+        }
         h = h ** linePower - 1;
         if (h < 2) break;
-        frontier.forEach(f => {
-          grid.cells.c[f].forEach(i => {
-            if (!used[i]) {
-              queue.push(i);
-              used[i] = 1;
-            }
-          });
-        });
+        for (let fi = 0; fi < frontier.length; fi++) {
+          const f = frontier[fi];
+          const neibs = grid.cells.c[f];
+          for (let k = 0; k < neibs.length; k++) {
+            const idx = neibs[k];
+            if (!used[idx]) { queue.push(idx); used[idx] = 1; }
+          }
+        }
       }
 
       // generate prominences
-      range.forEach((cur, d) => {
-        if (d % 6 !== 0) return;
-        for (const l of d3.range(i)) {
-          const min = grid.cells.c[cur][d3.scan(grid.cells.c[cur], (a, b) => heights[a] - heights[b])]; // downhill cell
-          //debug.append("circle").attr("cx", p[min][0]).attr("cy", p[min][1]).attr("r", 1);
-          heights[min] = (heights[cur] * 2 + heights[min]) / 3;
-          cur = min;
+      for (let d = 0; d < range.length; d++) {
+        if (d % 6 !== 0) continue;
+        let cur = range[d];
+        for (let l = 0; l < i; l++) {
+          const nbrs = grid.cells.c[cur];
+          let minIdx = nbrs[0];
+          let minVal = heights[minIdx];
+          for (let k = 1; k < nbrs.length; k++) {
+            const idk = nbrs[k];
+            const hv = heights[idk];
+            if (hv < minVal) { minVal = hv; minIdx = idk; }
+          }
+          heights[minIdx] = (heights[cur] * 2 + heights[minIdx]) / 3;
+          cur = minIdx;
         }
-      });
+      }
     }
   };
 
@@ -452,37 +480,39 @@ window.HeightmapGenerator = (function () {
     const max = range === "land" || range === "all" ? 100 : +range.split("-")[1];
     const isLand = min === 20;
 
-    heights = heights.map(h => {
-      if (h < min || h > max) return h;
-
+    for (let i = 0; i < heights.length; i++) {
+      let h = heights[i];
+      if (h < min || h > max) continue;
       if (add) h = isLand ? Math.max(h + add, 20) : h + add;
       if (mult !== 1) h = isLand ? (h - 20) * mult + 20 : h * mult;
       if (power) h = isLand ? (h - 20) ** power + 20 : h ** power;
-      return lim(h);
-    });
+      heights[i] = lim(h);
+    }
   };
 
   const smooth = (fr = 2, add = 0) => {
-    heights = heights.map((h, i) => {
-      const a = [h];
-      grid.cells.c[i].forEach(c => a.push(heights[c]));
-      if (fr === 1) return d3.mean(a) + add;
-      return lim((h * (fr - 1) + d3.mean(a) + add) / fr);
-    });
+    for (let i = 0; i < heights.length; i++) {
+      const h = heights[i];
+      const nbrs = grid.cells.c[i];
+      let sum = h;
+      for (let k = 0; k < nbrs.length; k++) sum += heights[nbrs[k]];
+      const mean = sum / (nbrs.length + 1);
+      heights[i] = fr === 1 ? mean + add : lim((h * (fr - 1) + mean + add) / fr);
+    }
   };
 
   const mask = (power = 1) => {
     const fr = power ? Math.abs(power) : 1;
-
-    heights = heights.map((h, i) => {
+    for (let i = 0; i < heights.length; i++) {
+      const h = heights[i];
       const [x, y] = grid.points[i];
-      const nx = (2 * x) / graphWidth - 1; // [-1, 1], 0 is center
-      const ny = (2 * y) / graphHeight - 1; // [-1, 1], 0 is center
-      let distance = (1 - nx ** 2) * (1 - ny ** 2); // 1 is center, 0 is edge
-      if (power < 0) distance = 1 - distance; // inverted, 0 is center, 1 is edge
+      const nx = (2 * x) / graphWidth - 1; // [-1, 1]
+      const ny = (2 * y) / graphHeight - 1; // [-1, 1]
+      let distance = (1 - nx * nx) * (1 - ny * ny);
+      if (power < 0) distance = 1 - distance;
       const masked = h * distance;
-      return lim((h * (fr - 1) + masked) / fr);
-    });
+      heights[i] = lim((h * (fr - 1) + masked) / fr);
+    }
   };
 
   const invert = (count, axes) => {
