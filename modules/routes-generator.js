@@ -37,7 +37,8 @@ window.Routes = (function () {
     // PHASE 1: IMMEDIATE PROCESSING (blocking - critical routes for trade and diplomacy)
     TIME && console.time("generateCriticalRoutes");
     const majorSeaRoutes = generateMajorSeaRoutes(); // Tier 1: Long-distance maritime trade
-    const royalRoads = generateRoyalRoads();         // Tier 2: Capital-to-capital connections
+    const royalRoads = generateRoyalRoads();         // Tier 2: Capital-to-capital roads
+    const airRoutes = generateAirRoutes();           // Sky trade between sky ports
     TIME && console.timeEnd("generateCriticalRoutes");
 
     // Create initial routes with critical paths only
@@ -831,7 +832,40 @@ window.Routes = (function () {
         routes.push({i: routes.length, group: "roads", feature, points, type: type || "royal"});
       }
 
+      // Air routes
+      for (const {feature, cells, merged, type} of mergeRoutes(airRoutes)) {
+        if (merged) continue;
+        const points = getPoints("airroutes", cells, pointsArray);
+        routes.push({i: routes.length, group: "airroutes", feature, points, type: type || "air"});
+      }
+
       return routes;
+    }
+
+    // Connect sky ports (flying burgs) using sparse graph
+    function generateAirRoutes() {
+      TIME && console.time("generateAirRoutes");
+      const air = [];
+
+      const skyPorts = pack.burgs.filter(b => b && b.i && !b.removed && (b.skyPort || b.flying));
+      if (skyPorts.length < 2) {
+        TIME && console.timeEnd("generateAirRoutes");
+        return air;
+      }
+
+      // Use Urquhart edges to avoid a complete graph
+      const points = skyPorts.map(b => [b.x, b.y]);
+      const edges = calculateUrquhartEdges(points);
+      edges.forEach(([ai, bi]) => {
+        const a = skyPorts[ai];
+        const b = skyPorts[bi];
+        if (!a || !b) return;
+        // For air routes, we can connect directly between burg cells
+        air.push({feature: -1, cells: [a.cell, b.cell], type: "air"});
+      });
+
+      TIME && console.timeEnd("generateAirRoutes");
+      return air;
     }
     
     // Function to append background-generated routes to pack
@@ -1258,7 +1292,8 @@ window.Routes = (function () {
     roads: {burg_suffix: 3, prefix_suffix: 6, the_descriptor_prefix_suffix: 2, the_descriptor_burg_suffix: 1},
     secondary: {burg_suffix: 5, prefix_suffix: 4, the_descriptor_prefix_suffix: 1, the_descriptor_burg_suffix: 2},
     trails: {burg_suffix: 8, prefix_suffix: 1, the_descriptor_burg_suffix: 1},
-    searoutes: {burg_suffix: 4, prefix_suffix: 2, the_descriptor_prefix_suffix: 1}
+    searoutes: {burg_suffix: 4, prefix_suffix: 2, the_descriptor_prefix_suffix: 1},
+    airroutes: {burg_suffix: 3, prefix_suffix: 5, the_descriptor_prefix_suffix: 2}
   };
 
   const prefixes = [
@@ -1391,7 +1426,8 @@ window.Routes = (function () {
     roads: {road: 7, route: 3, way: 2, highway: 1},
     secondary: {road: 4, route: 2, way: 3, avenue: 1, boulevard: 1},
     trails: {trail: 4, path: 1, track: 1, pass: 1},
-    searoutes: {"sea route": 5, lane: 2, passage: 1, seaway: 1}
+    searoutes: {"sea route": 5, lane: 2, passage: 1, seaway: 1},
+    airroutes: {"sky route": 5, "air lane": 3, skyway: 2, airway: 2, "aerial path": 1}
   };
 
   function generateName({group, points}) {
@@ -1402,7 +1438,13 @@ window.Routes = (function () {
       const endB = end != null ? pack.cells.burg[end] : 0;
       const startName = startB ? getAdjective(pack.burgs[startB].name) : null;
       const endName = endB ? getAdjective(pack.burgs[endB].name) : null;
-      const base = group === "searoutes" ? "Sea route" : group === "secondary" || group === "roads" ? "Road" : "Trail";
+      const base = group === "searoutes"
+        ? "Sea route"
+        : group === "airroutes"
+        ? "Sky route"
+        : group === "secondary" || group === "roads"
+        ? "Road"
+        : "Trail";
       if (startName && endName) return `${base} ${startName}–${endName}`;
       if (startName) return `${base} from ${startName}`;
       if (endName) return `${base} to ${endName}`;
@@ -1417,7 +1459,7 @@ window.Routes = (function () {
     if (model === "prefix_suffix") return `${ra(prefixes)} ${suffix}`;
     if (model === "the_descriptor_prefix_suffix") return `The ${ra(descriptors)} ${ra(prefixes)} ${suffix}`;
     if (model === "the_descriptor_burg_suffix" && burgName) return `The ${ra(descriptors)} ${burgName} ${suffix}`;
-    return group === "searoutes" ? "Sea route" : "Route";
+    return group === "searoutes" ? "Sea route" : group === "airroutes" ? "Sky route" : "Route";
 
     function getBurgName() {
       const priority = [points.at(-1), points.at(0), points.slice(1, -1).reverse()];
@@ -1434,6 +1476,7 @@ window.Routes = (function () {
     secondary: d3.curveCatmullRom.alpha(0.1),
     trails: d3.curveCatmullRom.alpha(0.1),
     searoutes: d3.curveCatmullRom.alpha(0.5),
+    airroutes: d3.curveCatmullRom.alpha(0.5),
     default: d3.curveCatmullRom.alpha(0.1)
   };
 

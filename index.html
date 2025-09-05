@@ -3409,6 +3409,11 @@
                 <input id="burgPopulation" type="number" min="0" step="1" style="width: 9em" />
               </div>
 
+              <div id="burgAltitudeRow" data-tip="Sky altitude above mean sea level" style="display: none">
+                <div class="label">Altitude:</div>
+                <input id="burgAltitude" type="number" min="0" step="50" style="width: 9em" /> m
+              </div>
+
               <div data-tip="Burg average yearly temperature" style="display: flex; justify-content: space-between">
                 <div>
                   <div class="label">Temperature:</div>
@@ -3442,6 +3447,18 @@
                   data-tip="Shows whether the burg is a port. Click to toggle"
                   data-feature="port"
                   class="burgFeature icon-anchor"
+                ></span>
+                <span
+                  id="burgSkyPort"
+                  data-tip="Shows whether the burg is a sky port (air routes). Click to toggle"
+                  data-feature="skyPort"
+                  class="burgFeature icon-rocket"
+                ></span>
+                <span
+                  id="burgFlying"
+                  data-tip="Shows whether the burg is flying (can stay over water). Click to toggle"
+                  data-feature="flying"
+                  class="burgFeature icon-cloud"
                 ></span>
                 <span
                   id="burgCitadel"

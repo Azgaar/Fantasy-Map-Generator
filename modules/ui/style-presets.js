@@ -222,6 +222,7 @@ function addStylePreset() {
       "#roads": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
       "#trails": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
       "#searoutes": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
+      "#airroutes": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
       "#statesBody": ["opacity", "filter"],
       "#statesHalo": ["opacity", "data-width", "stroke-width", "filter"],
       "#provs": ["opacity", "fill", "font-size", "font-family", "filter"],
@@ -281,6 +282,16 @@ function addStylePreset() {
         "font-family"
       ],
       "#burgIcons > #cities": [
+        "opacity",
+        "fill",
+        "fill-opacity",
+        "size",
+        "stroke",
+        "stroke-width",
+        "stroke-dasharray",
+        "stroke-linecap"
+      ],
+      "#burgIcons > #skyburgs": [
         "opacity",
         "fill",
         "fill-opacity",

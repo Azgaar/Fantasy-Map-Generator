@@ -401,11 +401,14 @@ function editHeightmap(options) {
     // find best cell for burgs
     for (const b of pack.burgs) {
       if (!b.i || b.removed) continue;
-      b.cell = findBurgCell(b.x, b.y);
+      // Keep flying burgs at their current (possibly water) cell
+      if (!b.flying) {
+        b.cell = findBurgCell(b.x, b.y);
+      }
       b.feature = pack.cells.f[b.cell];
 
       pack.cells.burg[b.cell] = b.i;
-      if (!b.capital && pack.cells.h[b.cell] < 20) removeBurg(b.i);
+      if (!b.capital && pack.cells.h[b.cell] < 20 && !b.flying) removeBurg(b.i);
       if (b.capital) pack.states[b.state].center = b.cell;
     }
 

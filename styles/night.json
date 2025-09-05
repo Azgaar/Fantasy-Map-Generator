@@ -218,6 +218,15 @@
     "filter": "",
     "mask": ""
   },
+  "#airroutes": {
+    "opacity": 0.95,
+    "stroke": "#d8b4fe",
+    "stroke-width": 0.6,
+    "stroke-dasharray": "2 3",
+    "stroke-linecap": "round",
+    "filter": null,
+    "mask": null
+  },
   "#statesBody": {
     "opacity": 0.07,
     "filter": ""

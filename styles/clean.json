@@ -219,6 +219,15 @@
     "filter": null,
     "mask": "url(#water)"
   },
+  "#airroutes": {
+    "opacity": 0.95,
+    "stroke": "#8a2be2",
+    "stroke-width": 0.6,
+    "stroke-dasharray": "2 3",
+    "stroke-linecap": "round",
+    "filter": null,
+    "mask": null
+  },
   "#statesBody": {
     "opacity": 0.3,
     "filter": null

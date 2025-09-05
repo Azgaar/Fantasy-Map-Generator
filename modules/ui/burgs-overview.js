@@ -281,12 +281,25 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     const point = d3.mouse(this);
     const cell = findCell(...point);
 
-    if (pack.cells.h[cell] < 20)
-      return tip("You cannot place state into the water. Please click on a land cell", false, "error");
+    // Allow placing over water as a flying burg when Alt is held
+    if (pack.cells.h[cell] < 20 && !d3.event.altKey)
+      return tip("Hold Alt to place a flying burg over water", false, "error");
     if (pack.cells.burg[cell])
       return tip("There is already a burg in this cell. Please select a free cell", false, "error");
 
-    addBurg(point); // add new burg
+    const id = addBurg(point); // add new burg
+
+    // Mark flying burgs and assign to Sky State, make them sky ports
+    if (pack.cells.h[cell] < 20) {
+      const burg = pack.burgs[id];
+      burg.flying = 1;
+      burg.skyPort = 1;
+      if (burg.altitude == null) burg.altitude = 1000;
+      const skyStateId = ensureSkyState(id);
+      if (burg.state !== skyStateId) burg.state = skyStateId;
+      // Keep as non-sea port
+      burg.port = 0;
+    }
 
     if (d3.event.shiftKey === false) {
       exitAddBurgMode();
@@ -520,7 +533,7 @@ function downloadBurgsData() {
   let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,`;
   data += `X_World (m),Y_World (m),X_Pixel,Y_Pixel,`; // New world coords + renamed pixel coords
   data += `Latitude,Longitude,`; // Keep for compatibility
-  data += `Elevation (${heightUnit.value}),Temperature,Temperature likeness,`;
+  data += `Elevation (${heightUnit.value}),Sky Altitude (m),Temperature,Temperature likeness,`;
   data += `Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,City Generator Link\n`;
 
   const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
@@ -553,6 +566,8 @@ function downloadBurgsData() {
 
     // Continue with elevation and other data
     data += parseInt(getHeight(pack.cells.h[b.cell])) + ",";
+    // Sky altitude in meters (only for flying burgs), else blank
+    data += (b.flying ? (b.altitude ?? 1000) : "") + ",";
     const temperature = grid.cells.temp[pack.cells.g[b.cell]];
     data += convertTemperature(temperature) + ",";
     data += getTemperatureLikeness(temperature) + ",";
