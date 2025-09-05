@@ -366,7 +366,7 @@ function getBurgLink(burg) {
 
   const population = burg.population * populationRate * urbanization;
   if (population >= options.villageMaxPopulation || burg.citadel || burg.walls || burg.temple || burg.shanty)
-    return createMfcgLink(burg, false);
+    return createMfcgLink(burg);
 
   return createVillageGeneratorLink(burg);
 }
