@@ -13,7 +13,7 @@
  * Example: 1.102.2 -> Major version 1, Minor version 102, Patch version 2
  */
 
-const VERSION = "1.108.12";
+const VERSION = "1.109.0";
 if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format or parsing function");
 
 {
@@ -37,18 +37,12 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
 
       <ul>
         <strong>Latest changes:</strong>
-        <li>Ability to set custom image as Marker or Regiment icon</li>
-        <li>Submap and Transform tools rework</li>
-        <li>Azgaar Bot to answer questions and provide help</li>
-        <li>Labels: ability to set letter spacing</li>
-        <li>Zones performance improvement</li>
-        <li>Notes Editor: on-demand AI text generation</li>
-        <li>New style preset: Dark Seas</li>
-        <li>New routes generation algorithm</li>
-        <li>Routes overview tool</li>
-        <li>Configurable longitude</li>
-        <li>Preview villages map</li>
-        <li>Ability to render ocean heightmap</li>
+        <li>Flying cities: Sky burgs join a dedicated locked Sky Realm</li>
+        <li>Air routes: curved, named connections rendered in new <code>#airroutes</code> layer</li>
+        <li>Burg Editor: Sky Port and Flying toggles, plus altitude control</li>
+        <li>Relocation: Flying burgs can be placed over water (Alt or Flying)</li>
+        <li>Heightmap reapply: Flying burgs are preserved even over water</li>
+        <li>Styling: separate <code>#burgIcons &gt; #skyburgs</code> group for sky burg icons</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
