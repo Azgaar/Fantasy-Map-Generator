@@ -114,6 +114,7 @@ labels.append("g").attr("id", "states");
 labels.append("g").attr("id", "addedLabels");
 
 burgIcons.append("g").attr("id", "cities");
+burgIcons.append("g").attr("id", "skyburgs");
 burgLabels.append("g").attr("id", "cities");
 anchors.append("g").attr("id", "cities");
 

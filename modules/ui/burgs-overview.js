@@ -288,7 +288,6 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
       return tip("There is already a burg in this cell. Please select a free cell", false, "error");
 
     const id = addBurg(point); // add new burg
-
     // Mark flying burgs and assign to Sky State, make them sky ports
     if (pack.cells.h[cell] < 20) {
       const burg = pack.burgs[id];
@@ -299,6 +298,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
       if (burg.state !== skyStateId) burg.state = skyStateId;
       // Keep as non-sea port
       burg.port = 0;
+      if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
     }
 
     if (d3.event.shiftKey === false) {

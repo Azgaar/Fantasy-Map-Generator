@@ -334,6 +334,7 @@ function editBurg(id) {
       }
       // Regenerate routes to reflect air network
       regenerateRoutes();
+      if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
     }
     else if (feature === "flying") {
       burg.flying = +turnOn;
@@ -348,6 +349,7 @@ function editBurg(id) {
         } catch (e) { ERROR && console.error(e); }
       }
       regenerateRoutes();
+      if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
     }
     else if (feature === "capital") toggleCapital(id);
     else burg[feature] = +turnOn;
@@ -541,9 +543,16 @@ function editBurg(id) {
     }
     burg.x = x;
     burg.y = y;
-    if (burg.capital) pack.states[newState].center = burg.cell;
-
+    if (burg.capital) pack.states[burg.state].center = burg.cell;
+    
     if (d3.event.shiftKey === false) toggleRelocateBurg();
+  }
+
+  function changeAltitude() {
+    const id = +elSelected.attr("data-id");
+    const burg = pack.burgs[id];
+    burg.altitude = Math.max(0, Math.round(+byId("burgAltitude").value));
+    if (burg.flying) byId("burgElevation").innerHTML = `${burg.altitude} m (sky altitude)`;
   }
 
   function editBurgLegend() {

@@ -189,7 +189,9 @@ function addBurg(point) {
 
   BurgsAndStates.defineBurgFeatures(burg);
 
-  const newRoute = Routes.connect(cellId);
+  // Do not auto-connect routes for water-placed (flying) burgs
+  const isWater = cells.h[cellId] < 20;
+  const newRoute = isWater ? null : Routes.connect(cellId);
   if (newRoute && layerIsOn("toggleRoutes")) {
     routes
       .select("#" + newRoute.group)
@@ -230,7 +232,6 @@ function moveBurgToGroup(id, g) {
 // Ensure a dedicated locked Sky State exists; create if missing and return its id
 function ensureSkyState(anchorBurgId) {
   const {states, burgs, cultures, cells} = pack;
-
   // Reuse existing sky state if present
   let sky = states.find(s => s && s.i && !s.removed && s.skyRealm);
   if (sky) return sky.i;
@@ -258,7 +259,6 @@ function ensureSkyState(anchorBurgId) {
     lock: 1,
     skyRealm: 1
   };
-
   states.push(newState);
 
   // Assign the burg and its cell to the Sky State
@@ -269,7 +269,6 @@ function ensureSkyState(anchorBurgId) {
     // Move to cities layer for capitals
     moveBurgToGroup(anchorBurgId, "cities");
   }
-
   return i;
 }
 
@@ -367,7 +366,7 @@ function getBurgLink(burg) {
 
   const population = burg.population * populationRate * urbanization;
   if (population >= options.villageMaxPopulation || burg.citadel || burg.walls || burg.temple || burg.shanty)
-    return createMfcgLink(burg);
+    return createMfcgLink(burg, false);
 
   return createVillageGeneratorLink(burg);
 }
@@ -386,6 +385,7 @@ function createMfcgLink(burg, isSky = false) {
 
   const sea = !isSky && coast && cells.haven[cell]
     ? (() => {
+        // calculate sea direction: 0 = south, 0.5 = west, 1 = north, 1.5 = east
         const p1 = cells.p[cell];
         const p2 = cells.p[cells.haven[cell]];
         let deg = (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI - 90;
@@ -407,6 +407,7 @@ function createMfcgLink(burg, isSky = false) {
   const greens = isSky ? 1 : undefined;
   const gates = isSky ? 0 : -1;
 
+  const url = new URL("https://watabou.github.io/city-generator/");
   const params = {
     name,
     population,
@@ -425,8 +426,6 @@ function createMfcgLink(burg, isSky = false) {
   };
   if (greens !== undefined) params.greens = greens;
   if (gates !== undefined) params.gates = gates;
-
-  const url = new URL("https://watabou.github.io/city-generator/");
   url.search = new URLSearchParams(params);
   if (sea) url.searchParams.append("sea", sea);
 
@@ -481,6 +480,15 @@ function createVillageGeneratorLink(burg) {
   const url = new URL("https://watabou.github.io/village-generator/");
   url.search = new URLSearchParams({pop, name: "", seed: burgSeed, width, height, tags});
   return url.toString();
+}
+
+// helper: draw legend entry for Air routes
+function drawAirRoutesLegend() {
+  const group = document.querySelector("#airroutes");
+  if (!group) return tip("Air routes group not found", false, "error");
+  const stroke = group.getAttribute("stroke") || "#8a2be2";
+  const data = [["airroutes", stroke, "Air routes"]];
+  drawLegend("Routes", data);
 }
 
 // draw legend box

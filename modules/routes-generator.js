@@ -75,6 +75,8 @@ window.Routes = (function () {
 
       for (const burg of burgs) {
         if (burg.i && !burg.removed) {
+          // Exclude flying / sky port burgs from land road/trail graphs
+          if (burg.flying || burg.skyPort) continue;
           const {feature, capital, port} = burg;
           addBurg(burgsByFeature, feature, burg);
           
@@ -846,13 +848,11 @@ window.Routes = (function () {
     function generateAirRoutes() {
       TIME && console.time("generateAirRoutes");
       const air = [];
-
       const skyPorts = pack.burgs.filter(b => b && b.i && !b.removed && (b.skyPort || b.flying));
       if (skyPorts.length < 2) {
         TIME && console.timeEnd("generateAirRoutes");
         return air;
       }
-
       // Use Urquhart edges to avoid a complete graph
       const points = skyPorts.map(b => [b.x, b.y]);
       const edges = calculateUrquhartEdges(points);
