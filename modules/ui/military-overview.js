@@ -176,6 +176,7 @@ function overviewMilitary() {
 
     if (!layerIsOn("toggleStates")) return;
     const d = regions.select("#state" + state).attr("d");
+    if (!d) return; // no geometry to highlight (e.g., Sky Realm)
 
     const path = debug
       .append("path")

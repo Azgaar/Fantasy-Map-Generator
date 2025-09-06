@@ -259,10 +259,22 @@ function ensureSkyState(anchorBurgId) {
     lock: 1,
     skyRealm: 1
   };
+  // initialize minimal diplomacy for the new Sky State
+  try {
+    const diplomacy = states.map(s => (s && s.i && !s.removed ? "Neutral" : "x"));
+    diplomacy[i] = "x";
+    newState.diplomacy = diplomacy;
+    // extend existing states' diplomacy; skip state 0 (chronicle holder)
+    for (const s of states) {
+      if (s && s.i && !s.removed && Array.isArray(s.diplomacy)) s.diplomacy.push("Neutral");
+    }
+  } catch (err) {
+    // fail-safe: do nothing if diplomacy cannot be set up
+  }
+
   states.push(newState);
 
-  // Assign the burg and its cell to the Sky State
-  if (cells && typeof b.cell === "number") cells.state[b.cell] = i;
+  // Do not assign the cell itself to Sky state; keep underlying ground state mapping
   if (b) {
     b.state = i;
     b.capital = 1;
@@ -361,8 +373,8 @@ function togglePort(burg) {
 function getBurgLink(burg) {
   if (burg.link) return burg.link;
 
-  // Sky burgs: force MFCG with sky-friendly parameters
-  if (burg.flying || burg.skyPort) return createMfcgLink(burg, true);
+  // Sky-only: use sky generator options only for truly flying burgs
+  if (burg.flying) return createMfcgLink(burg, true);
 
   const population = burg.population * populationRate * urbanization;
   if (population >= options.villageMaxPopulation || burg.citadel || burg.walls || burg.temple || burg.shanty)

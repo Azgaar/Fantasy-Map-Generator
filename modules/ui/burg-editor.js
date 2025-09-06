@@ -81,8 +81,10 @@ function editBurg(id) {
     const altitudeRow = byId("burgAltitudeRow");
     if (b.flying) {
       altitudeRow.style.display = "flex";
-      byId("burgAltitude").value = b.altitude ?? 1000;
-      byId("burgElevation").innerHTML = `${b.altitude ?? 1000} m (sky altitude)`;
+      const defAlt = getDefaultSkyAltitude();
+      const altitude = b.altitude ?? defAlt;
+      byId("burgAltitude").value = altitude;
+      byId("burgElevation").innerHTML = `${altitude} m (sky altitude)`;
     } else {
       altitudeRow.style.display = "none";
       byId("burgElevation").innerHTML = getHeight(pack.cells.h[b.cell]);
@@ -318,20 +320,8 @@ function editBurg(id) {
     const turnOn = this.classList.contains("inactive");
     if (feature === "port") togglePort(id);
     else if (feature === "skyPort") {
+      // Sky port should not change land restrictions or state
       burg.skyPort = +turnOn;
-      // Assign to Sky State when turning on (if not a state capital)
-      if (turnOn) {
-        try {
-          if (!burg.capital) {
-            const skyId = ensureSkyState(id);
-            if (burg.state !== skyId) {
-              // Reassign cell ownership
-              pack.cells.state[burg.cell] = skyId;
-              burg.state = skyId;
-            }
-          }
-        } catch (e) { ERROR && console.error(e); }
-      }
       // Regenerate routes to reflect air network
       regenerateRoutes();
       if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
@@ -342,11 +332,15 @@ function editBurg(id) {
         try {
           const skyId = ensureSkyState(id);
           if (burg.state !== skyId) {
-            pack.cells.state[burg.cell] = skyId;
             burg.state = skyId;
           }
-          if (burg.altitude == null) burg.altitude = 1000;
+          if (burg.altitude == null) burg.altitude = getDefaultSkyAltitude();
         } catch (e) { ERROR && console.error(e); }
+      } else {
+        // Turning flying off: restore ground state ownership for the burg
+        // Do not change cells.state here; use the underlying cell state
+        const groundState = pack.cells.state[burg.cell] || 0;
+        burg.state = groundState;
       }
       regenerateRoutes();
       if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
@@ -532,9 +526,10 @@ function editBurg(id) {
     cells.burg[burg.cell] = 0;
     cells.burg[cell] = id;
     burg.cell = cell;
-
+    if (isWater) {
+    
     // Set target state based on terrain and sky features
-    if (isWater || burg.flying) {
+    if (isWater) {
       const skyId = ensureSkyState(id);
       cells.state[cell] = skyId;
       burg.state = skyId;
@@ -553,6 +548,12 @@ function editBurg(id) {
     const burg = pack.burgs[id];
     burg.altitude = Math.max(0, Math.round(+byId("burgAltitude").value));
     if (burg.flying) byId("burgElevation").innerHTML = `${burg.altitude} m (sky altitude)`;
+  }
+
+  function getDefaultSkyAltitude() {
+    const el = byId("burgDefaultSkyAltitude");
+    const v = el ? +el.value : NaN;
+    return Number.isFinite(v) && v >= 0 ? v : 1000;
   }
 
   function editBurgLegend() {

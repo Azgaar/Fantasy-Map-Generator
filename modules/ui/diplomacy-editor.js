@@ -151,6 +151,7 @@ function editDiplomacy() {
     const state = +event.target.dataset.id;
     if (customization || !state) return;
     const d = regions.select("#state" + state).attr("d");
+    if (!d) return; // no geometry to highlight (e.g., Sky Realm)
 
     const path = debug
       .append("path")

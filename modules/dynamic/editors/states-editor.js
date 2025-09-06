@@ -572,8 +572,11 @@ function stateChangeExpansionism(state, line, value) {
 
 function toggleFog(state, cl) {
   if (customization) return;
+  // Skip virtual/sky states that have no geometry
+  if (pack.states[state]?.skyRealm) return;
   const path = statesBody.select("#state" + state).attr("d"),
     id = "focusState" + state;
+  if (!path) return; // nothing to fog/unfog
   cl.contains("inactive") ? fog(id, path) : unfog(id);
   cl.toggle("inactive");
 }

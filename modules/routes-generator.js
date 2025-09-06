@@ -74,8 +74,8 @@ window.Routes = (function () {
       };
 
       for (const burg of burgs) {
-        if (burg.i && !burg.removed && !burg.flying && !burg.skyPort) {
-          // Exclude flying / sky port burgs from land road/trail graphs
+        if (burg.i && !burg.removed && !burg.flying) {
+          // Exclude only flying burgs from land road/trail graphs
           const {feature, capital, port} = burg;
           addBurg(burgsByFeature, feature, burg);
           
