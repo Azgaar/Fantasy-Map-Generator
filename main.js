@@ -173,6 +173,8 @@ const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with defaul
 let scale = 1;
 let viewX = 0;
 let viewY = 0;
+// Track last applied zoom visibility bucket to avoid redundant DOM work
+let zoomVisibilityBucket = -1;
 
 const onZoom = debounce(function () {
   const {k, x, y} = d3.event.transform;
@@ -566,6 +568,126 @@ function invokeActiveZooming() {
   if (ruler.style("display") !== "none") {
     const size = rn((10 / scale ** 0.3) * 2, 2);
     ruler.selectAll("text").attr("font-size", size);
+  }
+
+  // Update zoom-based visibility for burgs and routes
+  updateBurgsAndRoutesVisibility();
+}
+
+// Toggle visibility of towns, labels and route types based on current zoom level
+function updateBurgsAndRoutesVisibility() {
+  // Determine a coarse bucket from the continuous zoom scale to minimize toggles
+  // Bucket 4: scale >= 7 (show everything)
+  // Bucket 3: 4 <= scale < 7 (hide smallest hamlets)
+  // Bucket 2: 3 <= scale < 4 (hide small villages)
+  // Bucket 1: 2 <= scale < 3 (hide most towns)
+  // Bucket 0: 1 <= scale < 2 (only capitals, main roads and sea routes)
+  let bucket = 0;
+  if (scale >= 7) bucket = 4;
+  else if (scale >= 4) bucket = 3;
+  else if (scale >= 3) bucket = 2;
+  else if (scale >= 2) bucket = 1;
+
+  if (bucket === zoomVisibilityBucket) return; // nothing to update
+  zoomVisibilityBucket = bucket;
+
+  // Safeguards for early lifecycle stages
+  const burgsReady = !!pack?.burgs?.length;
+  const routesLayerReady = !!routes?.size && routes.size();
+
+  // Compute population threshold for non-capital town visibility per bucket
+  // Note: burg.population is a relative value in FMG; thresholds are heuristic
+  let popThreshold = 0;
+  switch (bucket) {
+    case 4: // very close
+      popThreshold = 0; // show all
+      break;
+    case 3: // close
+      popThreshold = 1; // hide hamlets / very small villages
+      break;
+    case 2: // mid
+      popThreshold = 2; // hide more small towns
+      break;
+    case 1: // far
+      popThreshold = 5; // keep only larger towns (and all capitals)
+      break;
+    case 0: // very far
+    default:
+      popThreshold = Infinity; // only capitals
+      break;
+  }
+
+  if (burgsReady) {
+    // Icons: capitals always visible
+    const townIcons = burgIcons.select("#towns");
+    const townAnchors = anchors.select("#towns");
+    const cityIcons = burgIcons.select("#cities");
+    const cityAnchors = anchors.select("#cities");
+
+    // Labels: capitals always visible; towns filtered
+    const townLabels = burgLabels.select("#towns");
+    const cityLabels = burgLabels.select("#cities");
+
+    // Show capitals consistently
+    cityIcons.style("display", null);
+    cityAnchors.style("display", null);
+    cityLabels.style("display", null);
+
+    // Toggle towns by population threshold
+    if (popThreshold === Infinity) {
+      townIcons.style("display", "none");
+      townAnchors.style("display", "none");
+      townLabels.style("display", "none");
+    } else if (popThreshold === 0) {
+      townIcons.style("display", null);
+      townAnchors.style("display", null);
+      townLabels.style("display", null);
+    } else {
+      // For performance, bulk show groups, then hide specific small towns
+      townIcons.style("display", null);
+      townAnchors.style("display", null);
+      townLabels.style("display", null);
+
+      // Hide individual small towns (icons, anchors, labels) below threshold
+      const hideSmallTown = d => d && !d.capital && (d.population || 0) < popThreshold;
+
+      // Icons
+      townIcons
+        .selectAll("circle")
+        .style("display", function () {
+          const id = +this.getAttribute("data-id");
+          return hideSmallTown(pack.burgs[id]) ? "none" : null;
+        });
+      // Anchors (for ports)
+      townAnchors
+        .selectAll("use")
+        .style("display", function () {
+          const id = +this.getAttribute("data-id");
+          return hideSmallTown(pack.burgs[id]) ? "none" : null;
+        });
+      // Labels
+      townLabels
+        .selectAll("text")
+        .style("display", function () {
+          const id = +this.getAttribute("data-id");
+          return hideSmallTown(pack.burgs[id]) ? "none" : null;
+        });
+    }
+  }
+
+  // Routes visibility: show fewer types when zoomed far out
+  if (routesLayerReady) {
+    // Trails (foot paths) drop first
+    const showTrails = bucket >= 3; // show only at close zoom
+    routes.select("#trails").style("display", showTrails ? null : "none");
+
+    // Roads (main / royal) remain at all zooms
+    routes.select("#roads").style("display", null);
+
+    // Sea routes: keep visible at all zooms (treated as major routes)
+    routes.select("#searoutes").style("display", null);
+
+    // Air routes: keep as-is based on layer toggle; do not alter here
   }
 }
 

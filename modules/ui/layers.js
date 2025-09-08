@@ -213,6 +213,8 @@ function drawLayers() {
   if (layerIsOn("toggleRulers")) rulers.draw();
   // scale bar
   // vignette
+  // apply zoom-based visibility after all layers rendered
+  if (typeof invokeActiveZooming === "function") invokeActiveZooming();
 }
 
 function toggleHeight(event) {
