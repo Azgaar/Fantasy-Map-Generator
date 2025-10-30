@@ -330,6 +330,40 @@ async function getMapURL(
     if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
   }
 
+  {
+    // replace external marker icons
+    const externalMarkerImages = cloneEl.querySelectorAll('#markers image[href]:not([href=""])');
+    const imageHrefs = Array.from(externalMarkerImages).map(img => img.getAttribute("href"));
+
+    for (const url of imageHrefs) {
+      await new Promise(resolve => {
+        getBase64(url, base64 => {
+          externalMarkerImages.forEach(img => {
+            if (img.getAttribute("href") === url) img.setAttribute("href", base64);
+          });
+          resolve();
+        });
+      });
+    }
+  }
+
+  {
+    // replace external regiment icons
+    const externalRegimentImages = cloneEl.querySelectorAll('#armies image[href]:not([href=""])');
+    const imageHrefs = Array.from(externalRegimentImages).map(img => img.getAttribute("href"));
+
+    for (const url of imageHrefs) {
+      await new Promise(resolve => {
+        getBase64(url, base64 => {
+          externalRegimentImages.forEach(img => {
+            if (img.getAttribute("href") === url) img.setAttribute("href", base64);
+          });
+          resolve();
+        });
+      });
+    }
+  }
+
   if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog")?.remove(); // remove unused fog
   if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths")?.remove(); // removed unused statePaths
   if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths")?.remove(); // removed unused textPaths
@@ -495,11 +529,10 @@ function saveGeoJsonCells() {
 function saveGeoJsonRoutes() {
   const features = pack.routes.map(({i, points, group, name = null}) => {
     const coordinates = points.map(([x, y]) => getCoordinates(x, y, 4));
-    const id = `route${i}`;
     return {
       type: "Feature",
       geometry: {type: "LineString", coordinates},
-      properties: {id, group, name}
+      properties: {id: i, group, name}
     };
   });
   const json = {type: "FeatureCollection", features};
@@ -514,11 +547,10 @@ function saveGeoJsonRivers() {
       if (!cells || cells.length < 2) return;
       const meanderedPoints = Rivers.addMeandering(cells, points);
       const coordinates = meanderedPoints.map(([x, y]) => getCoordinates(x, y, 4));
-      const id = `river${i}`;
       return {
         type: "Feature",
         geometry: {type: "LineString", coordinates},
-        properties: {id, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type}
+        properties: {id: i, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type}
       };
     }
   );
@@ -532,9 +564,8 @@ function saveGeoJsonMarkers() {
   const features = pack.markers.map(marker => {
     const {i, type, icon, x, y, size, fill, stroke} = marker;
     const coordinates = getCoordinates(x, y, 4);
-    const id = `marker${i}`;
     const note = notes.find(note => note.id === id);
-    const properties = {id, type, icon, x, y, ...note, size, fill, stroke};
+    const properties = {id: i, type, icon, x, y, ...note, size, fill, stroke};
     return {type: "Feature", geometry: {type: "Point", coordinates}, properties};
   });
 

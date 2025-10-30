@@ -135,7 +135,7 @@ const adjectivizationRules = [
   {
     name: "an",
     probability: 0.5,
-    condition: new RegExp("^[a-zA-Z]{0-7}$"),
+    condition: new RegExp("^[a-zA-Z]{0,7}$"),
     action: noun => trimVowels(noun) + "an"
   }
 ];
