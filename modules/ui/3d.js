@@ -39,6 +39,7 @@ window.ThreeD = (function () {
   let labels = [];
   let icons = [];
   let lines = [];
+  let gridToPackCellMap = null; // Map from grid cell index to pack cell index
 
   const context2d = document.createElement("canvas").getContext("2d");
 
@@ -486,8 +487,20 @@ window.ThreeD = (function () {
       };
     });
   }
+
   // create a mesh from pixel data
   async function createMesh(width, height, segmentsX, segmentsY) {
+    // Build lookup map from grid cell index to pack cell index
+    gridToPackCellMap = new Map();
+    if (pack.cells?.g && pack.cells?.i) {
+      for (const packCellIndex of pack.cells.i) {
+        const gridCellIndex = pack.cells.g[packCellIndex];
+        if (!gridToPackCellMap.has(gridCellIndex)) {
+          gridToPackCellMap.set(gridCellIndex, packCellIndex);
+        }
+      }
+    }
+
     if (texture) texture.dispose();
     if (!options.wireframe) {
       texture = new THREE.TextureLoader().load(await createMeshTextureUrl(), render);
@@ -541,9 +554,32 @@ window.ThreeD = (function () {
     }
   }
 
+  const LOWER_BY_WATER = 18;
+  const DIVIDER = 100 - LOWER_BY_WATER;
+
   function getMeshHeight(i) {
-    const h = grid.cells.h[i];
-    return h < 20 ? 0 : ((h - 18) / 82) * options.scale;
+    const height = grid.cells.h[i];
+
+    let waterCellId = null;
+    if (height < 20) {
+      waterCellId = i;
+    } else if (grid.cells.c[i]) {
+      waterCellId = grid.cells.c[i].find(c => grid.cells.h[c] < 20) ?? null;
+    }
+
+    // If water vertex, get uniform elevation
+    if (waterCellId !== null) {
+      const packCellIndex = gridToPackCellMap.get(waterCellId);
+      const featureId = pack.cells.f[packCellIndex];
+      if (featureId === undefined) return 0;
+
+      const feature = pack.features[featureId];
+      const waterHeight = feature.type === "lake" && feature.height ? feature.height : 20;
+      return ((waterHeight - LOWER_BY_WATER) / DIVIDER) * options.scale;
+    }
+
+    // Land vertex
+    return ((height - LOWER_BY_WATER) / DIVIDER) * options.scale;
   }
 
   function extendWater(width, height) {
@@ -699,6 +735,7 @@ window.ThreeD = (function () {
       script.onerror = () => resolve(false);
     });
   }
+
   function OrbitControls(camera, domElement) {
     if (THREE.OrbitControls) return new THREE.OrbitControls(camera, domElement);
 
