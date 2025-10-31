@@ -186,6 +186,48 @@ window.ThreeD = (function () {
     render();
   };
 
+  // Time of day presets
+  const timeOfDayPresets = {
+    dawn: {
+      sun: {x: -500, y: 400, z: 800},
+      sunColor: "#ff9a56",
+      lightness: 0.4,
+      skyColor: "#ffccaa",
+      waterColor: "#2d4d6b"
+    },
+    noon: {
+      sun: {x: 100, y: 800, z: 1000},
+      sunColor: "#cccccc",
+      lightness: 0.6,
+      skyColor: "#9ecef5",
+      waterColor: "#466eab"
+    },
+    evening: {
+      sun: {x: 500, y: 400, z: 800},
+      sunColor: "#ff6b35",
+      lightness: 0.5,
+      skyColor: "#ff8c42",
+      waterColor: "#1e3a52"
+    },
+    night: {
+      sun: {x: 0, y: -500, z: 1000},
+      sunColor: "#4a5568",
+      lightness: 0.2,
+      skyColor: "#1a1a2e",
+      waterColor: "#0f1419"
+    }
+  };
+
+  const setTimeOfDay = function (presetName) {
+    const preset = timeOfDayPresets[presetName];
+    if (!preset) return;
+
+    setSun(preset.sun.x, preset.sun.y, preset.sun.z);
+    setSunColor(preset.sunColor);
+    setLightness(preset.lightness);
+    if (options.extendedWater) setColors(preset.skyColor, preset.waterColor);
+  };
+
   const setResolution = function (resolution) {
     options.resolution = resolution;
     update();
@@ -778,6 +820,8 @@ window.ThreeD = (function () {
     toggleSky,
     setResolution,
     setColors,
+    setTimeOfDay,
+    timeOfDayPresets,
     saveScreenshot,
     saveOBJ
   };
