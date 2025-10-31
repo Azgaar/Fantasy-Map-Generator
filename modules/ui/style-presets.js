@@ -352,7 +352,7 @@ function addStylePreset() {
       "stroke-dasharray",
       "stroke-linecap",
       "stroke-linejoin",
-      "fitler"
+      "filter"
     ];
     const anchorsAttributes = ["opacity", "fill", "font-size", "stroke", "stroke-width", "filter"];
     options.burgs.groups.forEach(({name}) => {

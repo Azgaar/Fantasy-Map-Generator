@@ -300,8 +300,6 @@ window.ThreeD = (function () {
     const states = viewbox.select("#labels #states");
     const city = burgLabels.select("#city");
     const town = burgLabels.select("#town");
-    const city_icons = burgIcons.select("#city");
-    const town_icons = burgIcons.select("#town");
 
     const stateOptions = {
       font: states.attr("font-family"),

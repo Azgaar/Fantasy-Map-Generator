@@ -355,7 +355,7 @@
     "stroke-dasharray": null,
     "stroke-linecap": "round",
     "stroke-linejoin": "round",
-    "fitler": null
+    "filter": null
   },
   "#anchors > g#capital": {
     "opacity": 1,
@@ -389,7 +389,7 @@
     "stroke-dasharray": null,
     "stroke-linecap": "round",
     "stroke-linejoin": "round",
-    "fitler": null
+    "filter": null
   },
   "#anchors > g#city": {
     "opacity": 1,
@@ -423,7 +423,7 @@
     "stroke-dasharray": null,
     "stroke-linecap": "round",
     "stroke-linejoin": "round",
-    "fitler": null
+    "filter": null
   },
   "#anchors > g#fort": {
     "opacity": 1,
@@ -457,7 +457,7 @@
     "stroke-dasharray": null,
     "stroke-linecap": "round",
     "stroke-linejoin": "round",
-    "fitler": null
+    "filter": null
   },
   "#anchors > g#monastery": {
     "opacity": 1,
@@ -491,7 +491,7 @@
     "stroke-dasharray": null,
     "stroke-linecap": "round",
     "stroke-linejoin": "round",
-    "fitler": null
+    "filter": null
   },
   "#anchors > g#caravanserai": {
     "opacity": 1,
@@ -525,7 +525,7 @@
     "stroke-dasharray": null,
     "stroke-linecap": "round",
     "stroke-linejoin": "round",
-    "fitler": null
+    "filter": null
   },
   "#anchors > g#trading_post": {
     "opacity": 1,
@@ -559,7 +559,7 @@
     "stroke-dasharray": null,
     "stroke-linecap": "round",
     "stroke-linejoin": "round",
-    "fitler": null
+    "filter": null
   },
   "#anchors > g#village": {
     "opacity": 1,
@@ -593,7 +593,7 @@
     "stroke-dasharray": null,
     "stroke-linecap": "round",
     "stroke-linejoin": "round",
-    "fitler": null
+    "filter": null
   },
   "#anchors > g#hamlet": {
     "opacity": 1,
@@ -627,7 +627,7 @@
     "stroke-dasharray": null,
     "stroke-linecap": "round",
     "stroke-linejoin": "round",
-    "fitler": null
+    "filter": null
   },
   "#anchors > g#town": {
     "opacity": 1,
