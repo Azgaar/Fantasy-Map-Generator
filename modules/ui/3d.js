@@ -298,8 +298,6 @@ window.ThreeD = (function () {
     raycaster.set(new THREE.Vector3(0, 1000, 0), new THREE.Vector3(0, -1, 0));
 
     const states = viewbox.select("#labels #states");
-    const city = burgLabels.select("#city");
-    const town = burgLabels.select("#town");
 
     const stateOptions = {
       font: states.attr("font-family"),
@@ -309,62 +307,81 @@ window.ThreeD = (function () {
       quality: 20
     };
 
-    const cityOptions = {
-      font: city.attr("font-family"),
-      size: +city.attr("data-size"),
-      color: city.attr("fill"),
-      elevation: 10,
-      quality: 20,
-      iconSize: 1,
-      iconColor: "#666",
-      line: 10 - city.attr("data-size") / 2
-    };
+    // Cache icon materials and geometries by group to avoid recreating them
+    const iconMaterials = {};
+    const iconGeometries = {};
+    const lineMaterials = {};
 
-    const townOptions = {
-      font: townttr("font-family"),
-      size: +town.attr("data-size"),
-      color: town.attr("fill"),
-      elevation: 5,
-      quality: 30,
-      iconSize: 0.5,
-      iconColor: "#666",
-      line: 5 - town.attr("data-size") / 2
-    };
+    // Helper function to get burg label options from its group
+    function getBurgLabelOptions(burg) {
+      if (!burg.group) return null;
 
-    const city_icon_material = new THREE.MeshPhongMaterial({color: cityOptions.iconColor});
-    city_icon_material.wireframe = options.wireframe;
-    const town_icon_material = new THREE.MeshPhongMaterial({color: townOptions.iconColor});
-    town_icon_material.wireframe = options.wireframe;
-    const city_icon_geometry = new THREE.CylinderGeometry(
-      cityOptions.iconSize * 2,
-      cityOptions.iconSize * 2,
-      cityOptions.iconSize,
-      16,
-      1
-    );
-    const town_icon_geometry = new THREE.CylinderGeometry(
-      townOptions.iconSize * 2,
-      townOptions.iconSize * 2,
-      townOptions.iconSize,
-      16,
-      1
-    );
-    const line_material = new THREE.LineBasicMaterial({color: cityOptions.iconColor});
+      const labelGroup = burgLabels.select("#" + burg.group);
+      if (labelGroup.empty()) return null;
+
+      const font = labelGroup.attr("font-family") || "Arial";
+      const size = +labelGroup.attr("data-size") || 10;
+      const color = labelGroup.attr("fill") || "#000";
+
+      // Calculate elevation, icon size, and line height based on label size
+      // Larger labels get higher elevation and larger icons
+      const elevation = Math.max(5, size * 0.5);
+      const iconSize = Math.max(0.3, size * 0.08);
+      const iconColor = "#666";
+
+      return {
+        font,
+        size,
+        color,
+        elevation,
+        quality: 20,
+        iconSize,
+        iconColor
+      };
+    }
+
+    // Helper function to get or create icon material for a group
+    function getIconMaterial(groupName, iconColor) {
+      if (!iconMaterials[groupName]) {
+        const material = new THREE.MeshPhongMaterial({color: iconColor});
+        material.wireframe = options.wireframe;
+        iconMaterials[groupName] = material;
+      }
+      return iconMaterials[groupName];
+    }
+
+    // Helper function to get or create icon geometry for a group
+    function getIconGeometry(groupName, iconSize) {
+      const key = `${groupName}_${iconSize.toFixed(2)}`;
+      if (!iconGeometries[key]) {
+        iconGeometries[key] = new THREE.CylinderGeometry(iconSize * 2, iconSize * 2, iconSize, 16, 1);
+      }
+      return iconGeometries[key];
+    }
+
+    // Helper function to get or create line material for a group
+    function getLineMaterial(groupName, iconColor) {
+      if (!lineMaterials[groupName]) {
+        lineMaterials[groupName] = new THREE.LineBasicMaterial({color: iconColor});
+      }
+      return lineMaterials[groupName];
+    }
 
     // burg labels
     for (let i = 1; i < pack.burgs.length; i++) {
       const burg = pack.burgs[i];
       if (burg.removed) continue;
 
-      const isCity = burg.capital;
+      const burgOptions = getBurgLabelOptions(burg);
+      if (!burgOptions) continue;
+
       const [x, y, z] = get3dCoords(burg.x, burg.y);
-      const options = isCity ? cityOptions : townOptions;
 
       if (layerIsOn("toggleLabels")) {
-        const burgSprite = await createTextLabel({text: burg.name, ...options});
+        const burgSprite = await createTextLabel({text: burg.name, ...burgOptions});
 
-        burgSprite.position.set(x, y + options.elevation, z);
-        burgSprite.size = options.size;
+        burgSprite.position.set(x, y + burgOptions.elevation, z);
+        burgSprite.size = burgOptions.size;
 
         labels.push(burgSprite);
         scene.add(burgSprite);
@@ -372,15 +389,19 @@ window.ThreeD = (function () {
 
       // icons
       if (layerIsOn("toggleBurgIcons")) {
-        const geometry = isCity ? city_icon_geometry : town_icon_geometry;
-        const material = isCity ? city_icon_material : town_icon_material;
+        const geometry = getIconGeometry(burg.group, burgOptions.iconSize);
+        const material = getIconMaterial(burg.group, burgOptions.iconColor);
         const iconMesh = new THREE.Mesh(geometry, material);
         iconMesh.position.set(x, y, z);
 
         icons.push(iconMesh);
         scene.add(iconMesh);
 
-        const points = [new THREE.Vector3(x, y, z), new THREE.Vector3(x, y + options.line, z)];
+        const line_material = getLineMaterial(burg.group, burgOptions.iconColor);
+        // Line starts from top of icon (iconSize/2 above ground) and goes to just below label
+        const lineStart = y + burgOptions.iconSize / 2;
+        const lineEnd = y + burgOptions.elevation - burgOptions.size * 0.5;
+        const points = [new THREE.Vector3(x, lineStart, z), new THREE.Vector3(x, lineEnd, z)];
         const line_geometry = new THREE.BufferGeometry().setFromPoints(points);
         const line = new THREE.Line(line_geometry, line_material);
 
@@ -575,7 +596,7 @@ window.ThreeD = (function () {
     // controls
     controls = await OrbitControls(camera, Renderer.domElement);
     controls.zoomSpeed = 0.25;
-    controls.minDistance = 1.8;
+    controls.minDistance = 1.5;
     controls.maxDistance = 10;
     controls.autoRotate = Boolean(options.rotateGlobe);
     controls.autoRotateSpeed = options.rotateGlobe;
