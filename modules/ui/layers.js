@@ -797,12 +797,24 @@ function drawRivers() {
 
   const riverPaths = pack.rivers.map(({cells, points, i, widthFactor, sourceWidth}) => {
     if (!cells || cells.length < 2) return;
+  const {addMeandering, getRiverPath} = Rivers;
+  lineGen.curve(d3.curveCatmullRom.alpha(0.1));
+
+  // PERFORMANCE OPTIMIZATION: Filter invalid rivers before processing
+  const validRivers = pack.rivers.filter(r => r.cells && r.cells.length >= 2);
+
+  // PERFORMANCE OPTIMIZATION: Pre-allocate array with exact size
+  const riverPaths = new Array(validRivers.length);
+
+  for (let idx = 0; idx < validRivers.length; idx++) {
+    const {cells, points, i, widthFactor, sourceWidth} = validRivers[idx];
+    let riverPoints = points;
 
     if (points && points.length !== cells.length) {
       console.error(
         `River ${i} has ${cells.length} cells, but only ${points.length} points defined. Resetting points data`
       );
-      points = undefined;
+      riverPoints = undefined;
     }
 
     const meanderedPoints = Rivers.addMeandering(cells, points);
@@ -810,6 +822,13 @@ function drawRivers() {
     return `<path id="river${i}" d="${path}"/>`;
   });
   rivers.html(riverPaths.join(""));
+    const meanderedPoints = addMeandering(cells, riverPoints);
+    const path = getRiverPath(meanderedPoints, widthFactor, sourceWidth);
+    riverPaths[idx] = `<path id="river${i}" d="${path}"/>`;
+  }
+
+  // PERFORMANCE: Use single innerHTML write
+  rivers.node().innerHTML = riverPaths.join("");
 
   TIME && console.timeEnd("drawRivers");
 }
