@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FMG WebSocket Demo</title>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #f5f5f5;
+    }
+
+    .header {
+      background: #2c3e50;
+      color: white;
+      padding: 15px 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 350px;
+      background: white;
+      border-right: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .panel {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .panel h2 {
+      font-size: 16px;
+      margin-bottom: 15px;
+      color: #2c3e50;
+    }
+
+    .control-group {
+      margin-bottom: 15px;
+    }
+
+    .control-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 5px;
+      color: #555;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      width: 100%;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #2980b9;
+    }
+
+    button:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background: #95a5a6;
+    }
+
+    button.secondary:hover {
+      background: #7f8c8d;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .event-log {
+      flex: 1;
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      overflow-y: auto;
+    }
+
+    .log-entry {
+      padding: 8px;
+      border-left: 3px solid transparent;
+      margin-bottom: 5px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+    }
+
+    .log-entry.event {
+      border-left-color: #50fa7b;
+    }
+
+    .log-entry.send {
+      border-left-color: #8be9fd;
+    }
+
+    .log-entry.error {
+      border-left-color: #ff5555;
+    }
+
+    .log-entry.info {
+      border-left-color: #f1fa8c;
+    }
+
+    .log-time {
+      color: #6272a4;
+      margin-right: 10px;
+    }
+
+    .log-type {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+
+    .event.log-type {
+      color: #50fa7b;
+    }
+
+    .send.log-type {
+      color: #8be9fd;
+    }
+
+    .error.log-type {
+      color: #ff5555;
+    }
+
+    .info.log-type {
+      color: #f1fa8c;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status.connected {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status.disconnected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .status.connecting {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .stat-card {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 4px;
+      border-left: 3px solid #3498db;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #7f8c8d;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-top: 4px;
+    }
+
+    .event-list {
+      list-style: none;
+      margin-top: 10px;
+    }
+
+    .event-item {
+      padding: 8px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      margin-bottom: 5px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .event-name {
+      font-family: monospace;
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .event-count {
+      background: #3498db;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Fantasy Map Generator - WebSocket Real-Time Demo</h1>
+  </div>
+
+  <div class="container">
+    <!-- Sidebar Controls -->
+    <div class="sidebar">
+      <!-- Connection -->
+      <div class="panel">
+        <h2>WebSocket Connection</h2>
+
+        <div class="control-group">
+          <label>Server URL</label>
+          <input type="text" id="serverUrl" value="http://localhost:3000">
+        </div>
+
+        <button onclick="connect()" id="connectBtn">Connect</button>
+        <button onclick="disconnect()" id="disconnectBtn" class="secondary" disabled>Disconnect</button>
+
+        <div style="margin-top: 15px;">
+          <span id="connectionStatus" class="status disconnected">Disconnected</span>
+        </div>
+      </div>
+
+      <!-- Send Custom Event -->
+      <div class="panel">
+        <h2>Send Custom Event</h2>
+
+        <div class="control-group">
+          <label>Event Name</label>
+          <input type="text" id="eventName" placeholder="e.g., map:update">
+        </div>
+
+        <div class="control-group">
+          <label>Event Data (JSON)</label>
+          <textarea id="eventData" placeholder='{"mapId":"map_123","updates":{...}}'></textarea>
+        </div>
+
+        <button onclick="sendEvent()" id="sendBtn" disabled>Send Event</button>
+      </div>
+
+      <!-- Statistics -->
+      <div class="panel">
+        <h2>Statistics</h2>
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-label">Events Sent</div>
+            <div class="stat-value" id="sentCount">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Events Received</div>
+            <div class="stat-value" id="receivedCount">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event Types -->
+      <div class="panel">
+        <h2>Event Types Received</h2>
+        <ul id="eventTypes" class="event-list"></ul>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="panel">
+        <h2>Quick Actions</h2>
+
+        <div class="control-group">
+          <label>Map ID</label>
+          <input type="text" id="quickMapId" placeholder="map_...">
+        </div>
+
+        <button onclick="simulateMapCreated()" id="actionBtn1" disabled>Simulate: Map Created</button>
+        <button onclick="simulateRiversUpdated()" id="actionBtn2" disabled>Simulate: Rivers Updated</button>
+        <button onclick="simulateBurgAdded()" id="actionBtn3" disabled>Simulate: Burg Added</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="color: #2c3e50;">Real-Time Event Log</h2>
+        <button onclick="clearEventLog()" class="secondary">Clear Log</button>
+      </div>
+      <div id="eventLog" class="event-log"></div>
+    </div>
+  </div>
+
+  <script>
+    let socket = null;
+    let sentCount = 0;
+    let receivedCount = 0;
+    let eventTypeCounts = {};
+
+    // Connect to WebSocket server
+    function connect() {
+      const serverUrl = document.getElementById('serverUrl').value.trim();
+
+      if (socket && socket.connected) {
+        logEvent('Already connected', 'info');
+        return;
+      }
+
+      logEvent(`Connecting to ${serverUrl}...`, 'info');
+
+      document.getElementById('connectionStatus').textContent = 'Connecting...';
+      document.getElementById('connectionStatus').className = 'status connecting';
+
+      socket = io(serverUrl);
+
+      // Connection events
+      socket.on('connect', () => {
+        logEvent(`Connected! Socket ID: ${socket.id}`, 'event');
+        document.getElementById('connectionStatus').textContent = 'Connected';
+        document.getElementById('connectionStatus').className = 'status connected';
+
+        document.getElementById('connectBtn').disabled = true;
+        document.getElementById('disconnectBtn').disabled = false;
+        document.getElementById('sendBtn').disabled = false;
+        document.getElementById('actionBtn1').disabled = false;
+        document.getElementById('actionBtn2').disabled = false;
+        document.getElementById('actionBtn3').disabled = false;
+      });
+
+      socket.on('disconnect', () => {
+        logEvent('Disconnected from server', 'error');
+        document.getElementById('connectionStatus').textContent = 'Disconnected';
+        document.getElementById('connectionStatus').className = 'status disconnected';
+
+        document.getElementById('connectBtn').disabled = false;
+        document.getElementById('disconnectBtn').disabled = true;
+        document.getElementById('sendBtn').disabled = true;
+        document.getElementById('actionBtn1').disabled = true;
+        document.getElementById('actionBtn2').disabled = true;
+        document.getElementById('actionBtn3').disabled = true;
+      });
+
+      socket.on('connect_error', (error) => {
+        logEvent(`Connection error: ${error.message}`, 'error');
+      });
+
+      // Listen for all map-related events
+      const eventNames = [
+        'map:creating',
+        'map:created',
+        'map:updated',
+        'map:deleted',
+        'map:loaded',
+        'rivers:updated',
+        'rivers:imported',
+        'cultures:updated',
+        'states:updated',
+        'burgs:updated',
+        'burg:added',
+        'export:request',
+        'export:completed'
+      ];
+
+      eventNames.forEach(eventName => {
+        socket.on(eventName, (data) => {
+          receivedCount++;
+          document.getElementById('receivedCount').textContent = receivedCount;
+
+          if (!eventTypeCounts[eventName]) {
+            eventTypeCounts[eventName] = 0;
+          }
+          eventTypeCounts[eventName]++;
+          updateEventTypes();
+
+          logEvent(`${eventName}: ${JSON.stringify(data, null, 2)}`, 'event');
+        });
+      });
+
+      // Catch-all for any other events
+      socket.onAny((eventName, ...args) => {
+        if (!eventNames.includes(eventName)) {
+          receivedCount++;
+          document.getElementById('receivedCount').textContent = receivedCount;
+
+          if (!eventTypeCounts[eventName]) {
+            eventTypeCounts[eventName] = 0;
+          }
+          eventTypeCounts[eventName]++;
+          updateEventTypes();
+
+          logEvent(`${eventName}: ${JSON.stringify(args, null, 2)}`, 'event');
+        }
+      });
+    }
+
+    // Disconnect from WebSocket server
+    function disconnect() {
+      if (socket) {
+        socket.disconnect();
+        logEvent('Disconnecting...', 'info');
+      }
+    }
+
+    // Send custom event
+    function sendEvent() {
+      if (!socket || !socket.connected) {
+        logEvent('Not connected!', 'error');
+        return;
+      }
+
+      const eventName = document.getElementById('eventName').value.trim();
+      const eventDataStr = document.getElementById('eventData').value.trim();
+
+      if (!eventName) {
+        logEvent('Event name is required', 'error');
+        return;
+      }
+
+      try {
+        const eventData = eventDataStr ? JSON.parse(eventDataStr) : {};
+
+        socket.emit(eventName, eventData);
+
+        sentCount++;
+        document.getElementById('sentCount').textContent = sentCount;
+
+        logEvent(`Sent ${eventName}: ${JSON.stringify(eventData, null, 2)}`, 'send');
+      } catch (error) {
+        logEvent(`Error: Invalid JSON - ${error.message}`, 'error');
+      }
+    }
+
+    // Quick actions
+    function simulateMapCreated() {
+      const mapId = document.getElementById('quickMapId').value.trim() || 'map_' + Date.now();
+
+      const data = {
+        mapId,
+        mapData: {
+          seed: 'test-seed',
+          pack: {
+            cultures: [{i: 0, name: 'Test Culture'}],
+            states: [{i: 0, name: 'Test State'}],
+            burgs: [{i: 0, name: 'Test City'}],
+            rivers: [{i: 0, name: 'Test River'}]
+          }
+        }
+      };
+
+      socket.emit('map:created', data);
+
+      sentCount++;
+      document.getElementById('sentCount').textContent = sentCount;
+      logEvent(`Sent map:created: ${JSON.stringify(data, null, 2)}`, 'send');
+    }
+
+    function simulateRiversUpdated() {
+      const mapId = document.getElementById('quickMapId').value.trim() || 'map_' + Date.now();
+
+      const data = {
+        mapId,
+        rivers: [
+          {i: 1, name: 'Mystic River', type: 'River', discharge: 100},
+          {i: 2, name: 'Crystal Brook', type: 'River', discharge: 50}
+        ]
+      };
+
+      socket.emit('rivers:updated', data);
+
+      sentCount++;
+      document.getElementById('sentCount').textContent = sentCount;
+      logEvent(`Sent rivers:updated: ${JSON.stringify(data, null, 2)}`, 'send');
+    }
+
+    function simulateBurgAdded() {
+      const mapId = document.getElementById('quickMapId').value.trim() || 'map_' + Date.now();
+
+      const data = {
+        mapId,
+        burg: {
+          i: 10,
+          name: 'New Settlement',
+          x: 500,
+          y: 400,
+          cell: 1234,
+          population: 5,
+          type: 'town'
+        }
+      };
+
+      socket.emit('burg:added', data);
+
+      sentCount++;
+      document.getElementById('sentCount').textContent = sentCount;
+      logEvent(`Sent burg:added: ${JSON.stringify(data, null, 2)}`, 'send');
+    }
+
+    // Update event types list
+    function updateEventTypes() {
+      const listEl = document.getElementById('eventTypes');
+      const sorted = Object.entries(eventTypeCounts)
+        .sort((a, b) => b[1] - a[1]);
+
+      listEl.innerHTML = sorted.map(([name, count]) => `
+        <li class="event-item">
+          <span class="event-name">${name}</span>
+          <span class="event-count">${count}</span>
+        </li>
+      `).join('');
+    }
+
+    // Logging
+    function logEvent(message, type = 'info') {
+      const logEl = document.getElementById('eventLog');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+
+      const time = new Date().toLocaleTimeString();
+      entry.innerHTML = `
+        <span class="log-time">${time}</span>
+        <span class="log-type ${type}">${type.toUpperCase()}</span>
+        <span>${escapeHtml(message)}</span>
+      `;
+
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+
+      // Keep only last 100 entries
+      while (logEl.children.length > 100) {
+        logEl.removeChild(logEl.firstChild);
+      }
+    }
+
+    function clearEventLog() {
+      document.getElementById('eventLog').innerHTML = '';
+      sentCount = 0;
+      receivedCount = 0;
+      eventTypeCounts = {};
+      document.getElementById('sentCount').textContent = '0';
+      document.getElementById('receivedCount').textContent = '0';
+      updateEventTypes();
+      logEvent('Log cleared', 'info');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Auto-connect on load
+    window.addEventListener('load', () => {
+      logEvent('WebSocket demo loaded. Click "Connect" to start.', 'info');
+    });
+  </script>
+</body>
+</html>
