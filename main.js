@@ -10,6 +10,12 @@ const TIME = true;
 const WARN = true;
 const ERROR = true;
 
+// PERFORMANCE OPTIMIZATION: Layer lazy loading state
+const layerRenderState = {
+  rendered: new Set(),
+  pending: new Set()
+};
+
 // detect device
 const MOBILE = window.innerWidth < 600 || navigator.userAgentData?.mobile;
 
@@ -467,9 +473,34 @@ function getViewBoxExtent() {
   ];
 }
 
+// Performance optimization: check if element is in viewport
+function isElementInViewport(element, viewBox, buffer = 200) {
+  try {
+    const bbox = element.getBBox();
+    return (
+      bbox.x < viewBox.x + viewBox.width + buffer &&
+      bbox.x + bbox.width > viewBox.x - buffer &&
+      bbox.y < viewBox.y + viewBox.height + buffer &&
+      bbox.y + bbox.height > viewBox.y - buffer
+    );
+  } catch (e) {
+    // If getBBox fails, assume element is visible
+    return true;
+  }
+}
+
 // active zooming feature
 function invokeActiveZooming() {
   const isOptimized = shapeRendering.value === "optimizeSpeed";
+
+  // PERFORMANCE OPTIMIZATION: Get viewport bounds for culling
+  const transform = d3.zoomTransform(svg.node());
+  const viewBox = {
+    x: -transform.x / transform.k,
+    y: -transform.y / transform.k,
+    width: graphWidth / transform.k,
+    height: graphHeight / transform.k
+  };
 
   if (coastline.select("#sea_island").size() && +coastline.select("#sea_island").attr("auto-filter")) {
     // toggle shade/blur filter for coatline on zoom
@@ -477,10 +508,18 @@ function invokeActiveZooming() {
     coastline.select("#sea_island").attr("filter", filter);
   }
 
-  // rescale labels on zoom
+  // rescale labels on zoom (OPTIMIZED with viewport culling)
   if (labels.style("display") !== "none") {
     labels.selectAll("g").each(function () {
       if (this.id === "burgLabels") return;
+
+      // PERFORMANCE: Skip processing if element is outside viewport
+      if (!isElementInViewport(this, viewBox)) {
+        this.style.display = "none";
+        return;
+      }
+      this.style.display = null;
+
       const desired = +this.dataset.size;
       const relative = Math.max(rn((desired + desired / scale) / 2, 2), 1);
       if (rescaleLabels.checked) this.setAttribute("font-size", relative);
@@ -491,9 +530,16 @@ function invokeActiveZooming() {
     });
   }
 
-  // rescale emblems on zoom
+  // rescale emblems on zoom (OPTIMIZED with viewport culling)
   if (emblems.style("display") !== "none") {
     emblems.selectAll("g").each(function () {
+      // PERFORMANCE: Skip processing if element is outside viewport
+      if (!isElementInViewport(this, viewBox)) {
+        this.style.display = "none";
+        return;
+      }
+      this.style.display = null;
+
       const size = this.getAttribute("font-size") * scale;
       const hidden = hideEmblems.checked && (size < 25 || size > 300);
       if (hidden) this.classList.add("hidden");
@@ -516,12 +562,20 @@ function invokeActiveZooming() {
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }
 
-  // rescale map markers
-  +markers.attr("rescale") &&
-    pack.markers?.forEach(marker => {
+  // rescale map markers (OPTIMIZED with viewport culling)
+  if (+markers.attr("rescale") && pack.markers) {
+    pack.markers.forEach(marker => {
       const {i, x, y, size = 30, hidden} = marker;
       const el = !hidden && document.getElementById(`marker${i}`);
       if (!el) return;
+
+      // PERFORMANCE: Check if marker is in viewport
+      if (x < viewBox.x - 100 || x > viewBox.x + viewBox.width + 100 ||
+          y < viewBox.y - 100 || y > viewBox.y + viewBox.height + 100) {
+        el.style.display = "none";
+        return;
+      }
+      el.style.display = null;
 
       const zoomedSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
       el.setAttribute("width", zoomedSize);
@@ -529,6 +583,7 @@ function invokeActiveZooming() {
       el.setAttribute("x", rn(x - zoomedSize / 2, 1));
       el.setAttribute("y", rn(y - zoomedSize, 1));
     });
+  }
 
   // rescale rulers to have always the same size
   if (ruler.style("display") !== "none") {
@@ -1962,4 +2017,90 @@ function undraw() {
   notes = [];
   rulers = new Rulers();
   unfog();
+}
+
+// PERFORMANCE OPTIMIZATION: Performance measurement utilities
+window.FMGPerformance = {
+  measure() {
+    const svgElement = svg.node();
+    const allElements = svgElement.querySelectorAll('*').length;
+    const visibleElements = svgElement.querySelectorAll('*:not([style*="display: none"])').length;
+
+    const metrics = {
+      timestamp: new Date().toISOString(),
+      svgElementsTotal: allElements,
+      svgElementsVisible: visibleElements,
+      packCells: pack?.cells?.i?.length || 0,
+      rivers: pack?.rivers?.length || 0,
+      states: pack?.states?.length || 0,
+      burgs: pack?.burgs?.length || 0,
+      labels: labels.selectAll('g').size(),
+      markers: pack?.markers?.length || 0,
+      currentZoom: scale.toFixed(2)
+    };
+
+    if (performance.memory) {
+      metrics.memoryUsedMB = (performance.memory.usedJSHeapSize / 1048576).toFixed(2);
+      metrics.memoryTotalMB = (performance.memory.totalJSHeapSize / 1048576).toFixed(2);
+    }
+
+    return metrics;
+  },
+
+  logMetrics() {
+    const metrics = this.measure();
+    console.group('🔍 FMG Performance Metrics');
+    console.table(metrics);
+    console.groupEnd();
+    return metrics;
+  },
+
+  startFPSMonitor(duration = 5000) {
+    let frameCount = 0;
+    let lastTime = performance.now();
+    let running = true;
+
+    const tick = () => {
+      if (!running) return;
+      frameCount++;
+      requestAnimationFrame(tick);
+    };
+
+    tick();
+
+    setTimeout(() => {
+      running = false;
+      const elapsed = (performance.now() - lastTime) / 1000;
+      const fps = (frameCount / elapsed).toFixed(2);
+      console.log(`📊 Average FPS over ${duration}ms: ${fps}`);
+    }, duration);
+
+    console.log(`📹 FPS monitoring started for ${duration}ms...`);
+  },
+
+  compareOptimization(label, fn) {
+    const beforeMetrics = this.measure();
+    const startTime = performance.now();
+
+    fn();
+
+    const duration = performance.now() - startTime;
+    const afterMetrics = this.measure();
+
+    console.group(`⚡ Optimization Comparison: ${label}`);
+    console.log(`Duration: ${duration.toFixed(2)}ms`);
+    console.log(`Elements before: ${beforeMetrics.svgElementsVisible}`);
+    console.log(`Elements after: ${afterMetrics.svgElementsVisible}`);
+    console.log(`Change: ${afterMetrics.svgElementsVisible - beforeMetrics.svgElementsVisible}`);
+    console.groupEnd();
+
+    return { duration, beforeMetrics, afterMetrics };
+  }
+};
+
+// Add global shortcut for performance debugging
+if (DEBUG) {
+  window.perf = window.FMGPerformance;
+  console.log('🛠️ Performance utilities available: window.perf or window.FMGPerformance');
+  console.log('   Usage: perf.logMetrics() | perf.startFPSMonitor() | perf.compareOptimization(label, fn)');
 }
