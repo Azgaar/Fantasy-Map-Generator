@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FMG REST API Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #7f8c8d;
+      margin-bottom: 30px;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #2c3e50;
+    }
+
+    .control-group {
+      margin-bottom: 15px;
+    }
+
+    .control-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 5px;
+      color: #555;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      margin-right: 10px;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #2980b9;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.secondary {
+      background: #95a5a6;
+    }
+
+    button.secondary:hover {
+      background: #7f8c8d;
+    }
+
+    button.danger {
+      background: #e74c3c;
+    }
+
+    button.danger:hover {
+      background: #c0392b;
+    }
+
+    .response-area {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 15px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .status.online {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status.offline {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .map-list {
+      list-style: none;
+    }
+
+    .map-item {
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .map-item:hover {
+      background: #f8f9fa;
+    }
+
+    .map-info {
+      flex: 1;
+    }
+
+    .map-id {
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .map-date {
+      font-size: 12px;
+      color: #7f8c8d;
+    }
+
+    .map-actions button {
+      padding: 6px 12px;
+      font-size: 12px;
+      margin: 0 5px;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #3498db;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    code {
+      background: #e9ecef;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Fantasy Map Generator - REST API Demo</h1>
+    <p class="subtitle">Interactive demo for testing the REST API endpoints</p>
+
+    <!-- Server Status -->
+    <div class="panel">
+      <h2>Server Status</h2>
+      <div class="control-group">
+        <label>API Base URL</label>
+        <input type="text" id="apiBaseUrl" value="http://localhost:3000/api">
+      </div>
+      <button onclick="checkHealth()">Check Health</button>
+      <div id="serverStatus"></div>
+    </div>
+
+    <!-- Create Map -->
+    <div class="panel">
+      <h2>Create New Map</h2>
+      <div class="control-group">
+        <label>Seed (optional)</label>
+        <input type="text" id="createSeed" placeholder="e.g., myseed123">
+      </div>
+      <button onclick="createMap()">Create Map</button>
+      <div id="createResponse" class="response-area" style="margin-top: 15px; display: none;"></div>
+    </div>
+
+    <!-- Map List -->
+    <div class="panel">
+      <h2>Maps</h2>
+      <button onclick="listMaps()">Refresh List</button>
+      <ul id="mapList" class="map-list" style="margin-top: 15px;"></ul>
+    </div>
+
+    <div class="grid">
+      <!-- Get Map Data -->
+      <div class="panel">
+        <h2>Get Map Data</h2>
+        <div class="control-group">
+          <label>Map ID</label>
+          <input type="text" id="getMapId" placeholder="map_...">
+        </div>
+        <button onclick="getMap()">Get Map</button>
+        <div id="getMapResponse" class="response-area" style="margin-top: 15px; display: none;"></div>
+      </div>
+
+      <!-- Get Rivers -->
+      <div class="panel">
+        <h2>Get Rivers</h2>
+        <div class="control-group">
+          <label>Map ID</label>
+          <input type="text" id="getRiversMapId" placeholder="map_...">
+        </div>
+        <button onclick="getRivers()">Get Rivers</button>
+        <div id="getRiversResponse" class="response-area" style="margin-top: 15px; display: none;"></div>
+      </div>
+
+      <!-- Get Cultures -->
+      <div class="panel">
+        <h2>Get Cultures</h2>
+        <div class="control-group">
+          <label>Map ID</label>
+          <input type="text" id="getCulturesMapId" placeholder="map_...">
+        </div>
+        <button onclick="getCultures()">Get Cultures</button>
+        <div id="getCulturesResponse" class="response-area" style="margin-top: 15px; display: none;"></div>
+      </div>
+
+      <!-- Get States -->
+      <div class="panel">
+        <h2>Get States</h2>
+        <div class="control-group">
+          <label>Map ID</label>
+          <input type="text" id="getStatesMapId" placeholder="map_...">
+        </div>
+        <button onclick="getStates()">Get States</button>
+        <div id="getStatesResponse" class="response-area" style="margin-top: 15px; display: none;"></div>
+      </div>
+
+      <!-- Get Burgs -->
+      <div class="panel">
+        <h2>Get Burgs</h2>
+        <div class="control-group">
+          <label>Map ID</label>
+          <input type="text" id="getBurgsMapId" placeholder="map_...">
+        </div>
+        <button onclick="getBurgs()">Get Burgs</button>
+        <div id="getBurgsResponse" class="response-area" style="margin-top: 15px; display: none;"></div>
+      </div>
+    </div>
+
+    <!-- Update Rivers -->
+    <div class="panel">
+      <h2>Update Rivers</h2>
+      <div class="control-group">
+        <label>Map ID</label>
+        <input type="text" id="updateRiversMapId" placeholder="map_...">
+      </div>
+      <div class="control-group">
+        <label>Rivers JSON</label>
+        <textarea id="riversData" placeholder='[{"i":1,"name":"New River","type":"River",...}]'></textarea>
+      </div>
+      <button onclick="updateRivers()">Update Rivers</button>
+      <div id="updateRiversResponse" class="response-area" style="margin-top: 15px; display: none;"></div>
+    </div>
+
+    <!-- Import Rivers CSV -->
+    <div class="panel">
+      <h2>Import Rivers from CSV</h2>
+      <div class="control-group">
+        <label>Map ID</label>
+        <input type="text" id="importRiversMapId" placeholder="map_...">
+      </div>
+      <div class="control-group">
+        <label>CSV File</label>
+        <input type="file" id="csvFile" accept=".csv">
+      </div>
+      <button onclick="importRiversCSV()">Import Rivers</button>
+      <div id="importRiversResponse" class="response-area" style="margin-top: 15px; display: none;"></div>
+    </div>
+
+    <!-- Add Burg -->
+    <div class="panel">
+      <h2>Add New Burg</h2>
+      <div class="control-group">
+        <label>Map ID</label>
+        <input type="text" id="addBurgMapId" placeholder="map_...">
+      </div>
+      <div class="control-group">
+        <label>Burg Data (JSON)</label>
+        <textarea id="burgData" placeholder='{"name":"New City","x":100,"y":100,"cell":500,"population":10,"type":"city"}'></textarea>
+      </div>
+      <button onclick="addBurg()">Add Burg</button>
+      <div id="addBurgResponse" class="response-area" style="margin-top: 15px; display: none;"></div>
+    </div>
+  </div>
+
+  <script>
+    const getBaseUrl = () => document.getElementById('apiBaseUrl').value.trim();
+
+    // Helper to make API calls
+    async function apiCall(endpoint, method = 'GET', body = null) {
+      const url = `${getBaseUrl()}${endpoint}`;
+
+      const options = {
+        method,
+        headers: {}
+      };
+
+      if (body) {
+        if (body instanceof FormData) {
+          options.body = body;
+        } else {
+          options.headers['Content-Type'] = 'application/json';
+          options.body = JSON.stringify(body);
+        }
+      }
+
+      try {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        return {response, data};
+      } catch (error) {
+        return {error: error.message};
+      }
+    }
+
+    // Display response
+    function displayResponse(elementId, data) {
+      const el = document.getElementById(elementId);
+      el.style.display = 'block';
+      el.textContent = JSON.stringify(data, null, 2);
+    }
+
+    // Server health check
+    async function checkHealth() {
+      const statusEl = document.getElementById('serverStatus');
+      statusEl.innerHTML = '<div class="loading"></div> Checking...';
+
+      const {data, error} = await apiCall('/health');
+
+      if (error) {
+        statusEl.innerHTML = `<div class="status offline">Offline</div><p>Error: ${error}</p>`;
+      } else {
+        statusEl.innerHTML = `<div class="status online">Online</div><pre>${JSON.stringify(data, null, 2)}</pre>`;
+      }
+    }
+
+    // Create map
+    async function createMap() {
+      const seed = document.getElementById('createSeed').value.trim();
+      const body = seed ? {seed} : {};
+
+      const {data, error} = await apiCall('/maps', 'POST', body);
+
+      if (error) {
+        displayResponse('createResponse', {error});
+      } else {
+        displayResponse('createResponse', data);
+        if (data.mapId) {
+          // Auto-fill map IDs in other forms
+          document.getElementById('getMapId').value = data.mapId;
+          document.getElementById('getRiversMapId').value = data.mapId;
+          document.getElementById('getCulturesMapId').value = data.mapId;
+          document.getElementById('getStatesMapId').value = data.mapId;
+          document.getElementById('getBurgsMapId').value = data.mapId;
+        }
+      }
+    }
+
+    // List maps
+    async function listMaps() {
+      const {data, error} = await apiCall('/maps');
+      const listEl = document.getElementById('mapList');
+
+      if (error) {
+        listEl.innerHTML = `<li>Error: ${error}</li>`;
+        return;
+      }
+
+      if (!data.maps || data.maps.length === 0) {
+        listEl.innerHTML = '<li>No maps found</li>';
+        return;
+      }
+
+      listEl.innerHTML = data.maps.map(map => `
+        <li class="map-item">
+          <div class="map-info">
+            <div class="map-id">${map.id}</div>
+            <div class="map-date">Created: ${map.createdAt}</div>
+          </div>
+          <div class="map-actions">
+            <button onclick="selectMap('${map.id}')" class="secondary">Select</button>
+            <button onclick="deleteMap('${map.id}')" class="danger">Delete</button>
+          </div>
+        </li>
+      `).join('');
+    }
+
+    // Select map (fill in all forms)
+    function selectMap(mapId) {
+      document.getElementById('getMapId').value = mapId;
+      document.getElementById('getRiversMapId').value = mapId;
+      document.getElementById('getCulturesMapId').value = mapId;
+      document.getElementById('getStatesMapId').value = mapId;
+      document.getElementById('getBurgsMapId').value = mapId;
+      document.getElementById('updateRiversMapId').value = mapId;
+      document.getElementById('importRiversMapId').value = mapId;
+      document.getElementById('addBurgMapId').value = mapId;
+    }
+
+    // Delete map
+    async function deleteMap(mapId) {
+      if (!confirm(`Delete map ${mapId}?`)) return;
+
+      const {data, error} = await apiCall(`/maps/${mapId}`, 'DELETE');
+
+      if (error) {
+        alert(`Error: ${error}`);
+      } else {
+        alert('Map deleted');
+        listMaps();
+      }
+    }
+
+    // Get map
+    async function getMap() {
+      const mapId = document.getElementById('getMapId').value.trim();
+      if (!mapId) {
+        alert('Please enter a map ID');
+        return;
+      }
+
+      const {data, error} = await apiCall(`/maps/${mapId}`);
+      displayResponse('getMapResponse', error ? {error} : data);
+    }
+
+    // Get rivers
+    async function getRivers() {
+      const mapId = document.getElementById('getRiversMapId').value.trim();
+      if (!mapId) {
+        alert('Please enter a map ID');
+        return;
+      }
+
+      const {data, error} = await apiCall(`/maps/${mapId}/rivers`);
+      displayResponse('getRiversResponse', error ? {error} : data);
+    }
+
+    // Get cultures
+    async function getCultures() {
+      const mapId = document.getElementById('getCulturesMapId').value.trim();
+      if (!mapId) {
+        alert('Please enter a map ID');
+        return;
+      }
+
+      const {data, error} = await apiCall(`/maps/${mapId}/cultures`);
+      displayResponse('getCulturesResponse', error ? {error} : data);
+    }
+
+    // Get states
+    async function getStates() {
+      const mapId = document.getElementById('getStatesMapId').value.trim();
+      if (!mapId) {
+        alert('Please enter a map ID');
+        return;
+      }
+
+      const {data, error} = await apiCall(`/maps/${mapId}/states`);
+      displayResponse('getStatesResponse', error ? {error} : data);
+    }
+
+    // Get burgs
+    async function getBurgs() {
+      const mapId = document.getElementById('getBurgsMapId').value.trim();
+      if (!mapId) {
+        alert('Please enter a map ID');
+        return;
+      }
+
+      const {data, error} = await apiCall(`/maps/${mapId}/burgs`);
+      displayResponse('getBurgsResponse', error ? {error} : data);
+    }
+
+    // Update rivers
+    async function updateRivers() {
+      const mapId = document.getElementById('updateRiversMapId').value.trim();
+      const riversJSON = document.getElementById('riversData').value.trim();
+
+      if (!mapId) {
+        alert('Please enter a map ID');
+        return;
+      }
+
+      if (!riversJSON) {
+        alert('Please enter rivers data');
+        return;
+      }
+
+      try {
+        const rivers = JSON.parse(riversJSON);
+        const {data, error} = await apiCall(`/maps/${mapId}/rivers`, 'PUT', {rivers});
+        displayResponse('updateRiversResponse', error ? {error} : data);
+      } catch (e) {
+        displayResponse('updateRiversResponse', {error: `Invalid JSON: ${e.message}`});
+      }
+    }
+
+    // Import rivers from CSV
+    async function importRiversCSV() {
+      const mapId = document.getElementById('importRiversMapId').value.trim();
+      const fileInput = document.getElementById('csvFile');
+
+      if (!mapId) {
+        alert('Please enter a map ID');
+        return;
+      }
+
+      if (!fileInput.files[0]) {
+        alert('Please select a CSV file');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      const {data, error} = await apiCall(`/maps/${mapId}/rivers/import`, 'POST', formData);
+      displayResponse('importRiversResponse', error ? {error} : data);
+    }
+
+    // Add burg
+    async function addBurg() {
+      const mapId = document.getElementById('addBurgMapId').value.trim();
+      const burgJSON = document.getElementById('burgData').value.trim();
+
+      if (!mapId) {
+        alert('Please enter a map ID');
+        return;
+      }
+
+      if (!burgJSON) {
+        alert('Please enter burg data');
+        return;
+      }
+
+      try {
+        const burgData = JSON.parse(burgJSON);
+        const {data, error} = await apiCall(`/maps/${mapId}/burgs`, 'POST', burgData);
+        displayResponse('addBurgResponse', error ? {error} : data);
+      } catch (e) {
+        displayResponse('addBurgResponse', {error: `Invalid JSON: ${e.message}`});
+      }
+    }
+
+    // Auto-check health on load
+    window.addEventListener('load', () => {
+      checkHealth();
+      listMaps();
+    });
+  </script>
+</body>
+</html>

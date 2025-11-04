@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FMG PostMessage Integration Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #f5f5f5;
+    }
+
+    .header {
+      background: #2c3e50;
+      color: white;
+      padding: 15px 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 350px;
+      background: white;
+      border-right: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .panel {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .panel h2 {
+      font-size: 16px;
+      margin-bottom: 15px;
+      color: #2c3e50;
+    }
+
+    .control-group {
+      margin-bottom: 15px;
+    }
+
+    .control-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 5px;
+      color: #555;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      width: 100%;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #2980b9;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.secondary {
+      background: #95a5a6;
+    }
+
+    button.secondary:hover {
+      background: #7f8c8d;
+    }
+
+    button.danger {
+      background: #e74c3c;
+    }
+
+    button.danger:hover {
+      background: #c0392b;
+    }
+
+    .map-container {
+      flex: 1;
+      position: relative;
+      background: #ecf0f1;
+    }
+
+    #mapFrame {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .log {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 11px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #3d3d3d;
+    }
+
+    .log-entry.event {
+      color: #50fa7b;
+    }
+
+    .log-entry.response {
+      color: #8be9fd;
+    }
+
+    .log-entry.error {
+      color: #ff5555;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .stat-card {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 4px;
+      border-left: 3px solid #3498db;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #7f8c8d;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-top: 4px;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status.connected {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status.disconnected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Fantasy Map Generator - PostMessage Integration Demo</h1>
+  </div>
+
+  <div class="container">
+    <!-- Sidebar Controls -->
+    <div class="sidebar">
+      <!-- Connection Status -->
+      <div class="panel">
+        <h2>Connection Status</h2>
+        <span id="status" class="status disconnected">Disconnected</span>
+      </div>
+
+      <!-- Map Controls -->
+      <div class="panel">
+        <h2>Map Controls</h2>
+
+        <div class="control-group">
+          <label>Seed (optional)</label>
+          <input type="text" id="seedInput" placeholder="e.g., 1234567890">
+        </div>
+
+        <button onclick="createMap()">Create New Map</button>
+        <button onclick="saveMap()" class="secondary">Save Map</button>
+        <button onclick="getMapState()" class="secondary">Get Map State</button>
+      </div>
+
+      <!-- Data Management -->
+      <div class="panel">
+        <h2>Data Management</h2>
+
+        <button onclick="getRivers()">Get Rivers</button>
+        <button onclick="getCultures()">Get Cultures</button>
+        <button onclick="getStates()">Get States</button>
+        <button onclick="getBurgs()">Get Burgs</button>
+      </div>
+
+      <!-- Custom Data Update -->
+      <div class="panel">
+        <h2>Update Rivers</h2>
+
+        <div class="control-group">
+          <label>Rivers JSON</label>
+          <textarea id="riversInput" placeholder='[{"i":1,"name":"River Name",...}]'></textarea>
+        </div>
+
+        <button onclick="updateRivers()">Update Rivers</button>
+      </div>
+
+      <!-- Export -->
+      <div class="panel">
+        <h2>Export</h2>
+
+        <button onclick="exportSVG()">Export SVG</button>
+        <button onclick="exportPNG()">Export PNG</button>
+        <button onclick="exportJSON()">Export JSON</button>
+      </div>
+
+      <!-- Statistics -->
+      <div class="panel">
+        <h2>Statistics</h2>
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-label">Rivers</div>
+            <div class="stat-value" id="riverCount">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Cultures</div>
+            <div class="stat-value" id="cultureCount">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">States</div>
+            <div class="stat-value" id="stateCount">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Burgs</div>
+            <div class="stat-value" id="burgCount">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event Log -->
+      <div class="panel">
+        <h2>Event Log</h2>
+        <div class="log" id="eventLog"></div>
+        <button onclick="clearLog()" class="secondary" style="margin-top: 10px;">Clear Log</button>
+      </div>
+    </div>
+
+    <!-- Map Frame -->
+    <div class="map-container">
+      <iframe id="mapFrame" src="../index.html"></iframe>
+    </div>
+  </div>
+
+  <script>
+    const mapFrame = document.getElementById('mapFrame');
+    const statusEl = document.getElementById('status');
+    const eventLog = document.getElementById('eventLog');
+    let requestId = 0;
+    const pendingRequests = new Map();
+
+    // Initialize when iframe loads
+    mapFrame.addEventListener('load', () => {
+      log('Iframe loaded', 'event');
+      statusEl.textContent = 'Connected';
+      statusEl.className = 'status connected';
+
+      // Request initial state
+      setTimeout(() => {
+        sendMessage('GET_STATE');
+      }, 2000);
+    });
+
+    // Listen for messages from iframe
+    window.addEventListener('message', (event) => {
+      const {type, payload, requestId: respId, timestamp} = event.data;
+
+      if (!type) return;
+
+      log(`← ${type}`, type === 'ERROR' ? 'error' : type === 'RESPONSE' ? 'response' : 'event');
+
+      // Handle responses
+      if (type === 'RESPONSE' && respId && pendingRequests.has(respId)) {
+        const resolver = pendingRequests.get(respId);
+        resolver(payload);
+        pendingRequests.delete(respId);
+        return;
+      }
+
+      // Handle events
+      if (type === 'EVENT') {
+        const {event, data} = payload;
+        log(`Event: ${event}`, 'event');
+
+        // Update statistics based on events
+        if (event === 'map:changed' || event === 'map:loaded' || event === 'map:created') {
+          updateStatistics(data);
+        }
+      }
+
+      // Handle errors
+      if (type === 'ERROR') {
+        console.error('Error from iframe:', payload);
+      }
+    });
+
+    // Send message to iframe
+    function sendMessage(type, payload = null) {
+      const reqId = ++requestId;
+
+      log(`→ ${type}`, 'response');
+
+      mapFrame.contentWindow.postMessage({
+        type,
+        payload,
+        requestId: reqId
+      }, '*');
+
+      // Return promise that resolves when response is received
+      return new Promise((resolve) => {
+        pendingRequests.set(reqId, resolve);
+
+        // Timeout after 30 seconds
+        setTimeout(() => {
+          if (pendingRequests.has(reqId)) {
+            pendingRequests.delete(reqId);
+            resolve({success: false, error: 'Request timeout'});
+          }
+        }, 30000);
+      });
+    }
+
+    // Map controls
+    async function createMap() {
+      const seed = document.getElementById('seedInput').value.trim();
+      const options = seed ? {seed} : {};
+
+      log('Creating new map...', 'event');
+      const result = await sendMessage('CREATE_MAP', options);
+
+      if (result.success) {
+        log('Map created successfully', 'event');
+        updateStatistics(result.state);
+      } else {
+        log(`Error: ${result.error}`, 'error');
+      }
+    }
+
+    async function saveMap() {
+      log('Saving map...', 'event');
+      const result = await sendMessage('SAVE_MAP', {format: 'data'});
+
+      if (result.success) {
+        log('Map saved', 'event');
+
+        // Download the map file
+        const blob = new Blob([result.data], {type: 'text/plain'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = result.filename || 'map.map';
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        log(`Error: ${result.error}`, 'error');
+      }
+    }
+
+    async function getMapState() {
+      log('Getting map state...', 'event');
+      const result = await sendMessage('GET_STATE');
+
+      if (result.success) {
+        log('Map state retrieved', 'event');
+        console.log('Map state:', result.data);
+        updateStatistics(result.data);
+      } else {
+        log(`Error: ${result.error}`, 'error');
+      }
+    }
+
+    // Data retrieval
+    async function getRivers() {
+      log('Getting rivers...', 'event');
+      const result = await sendMessage('GET_RIVERS');
+
+      if (result.success) {
+        log(`Retrieved ${result.data.length} rivers`, 'event');
+        console.log('Rivers:', result.data);
+        document.getElementById('riverCount').textContent = result.data.length;
+      } else {
+        log(`Error: ${result.error}`, 'error');
+      }
+    }
+
+    async function getCultures() {
+      log('Getting cultures...', 'event');
+      const result = await sendMessage('GET_CULTURES');
+
+      if (result.success) {
+        log(`Retrieved ${result.data.length} cultures`, 'event');
+        console.log('Cultures:', result.data);
+        document.getElementById('cultureCount').textContent = result.data.length;
+      } else {
+        log(`Error: ${result.error}`, 'error');
+      }
+    }
+
+    async function getStates() {
+      log('Getting states...', 'event');
+      const result = await sendMessage('GET_STATES');
+
+      if (result.success) {
+        log(`Retrieved ${result.data.length} states`, 'event');
+        console.log('States:', result.data);
+        document.getElementById('stateCount').textContent = result.data.length;
+      } else {
+        log(`Error: ${result.error}`, 'error');
+      }
+    }
+
+    async function getBurgs() {
+      log('Getting burgs...', 'event');
+      const result = await sendMessage('GET_BURGS');
+
+      if (result.success) {
+        log(`Retrieved ${result.data.length} burgs`, 'event');
+        console.log('Burgs:', result.data);
+        document.getElementById('burgCount').textContent = result.data.length;
+      } else {
+        log(`Error: ${result.error}`, 'error');
+      }
+    }
+
+    // Data updates
+    async function updateRivers() {
+      const riversJSON = document.getElementById('riversInput').value.trim();
+
+      if (!riversJSON) {
+        log('Error: No rivers data provided', 'error');
+        return;
+      }
+
+      try {
+        const rivers = JSON.parse(riversJSON);
+        log('Updating rivers...', 'event');
+
+        const result = await sendMessage('UPDATE_RIVERS', rivers);
+
+        if (result.success) {
+          log('Rivers updated successfully', 'event');
+        } else {
+          log(`Error: ${result.error}`, 'error');
+        }
+      } catch (error) {
+        log(`Error: Invalid JSON - ${error.message}`, 'error');
+      }
+    }
+
+    // Export functions
+    async function exportSVG() {
+      log('Exporting SVG...', 'event');
+      const result = await sendMessage('EXPORT_SVG');
+
+      if (result.success) {
+        log('SVG exported', 'event');
+
+        // Download SVG
+        const blob = new Blob([result.data], {type: 'image/svg+xml'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'map.svg';
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        log(`Error: ${result.error}`, 'error');
+      }
+    }
+
+    async function exportPNG() {
+      log('Exporting PNG (this may take a while)...', 'event');
+      const result = await sendMessage('EXPORT_PNG', {width: 2048, height: 2048});
+
+      if (result.success) {
+        log('PNG exported', 'event');
+
+        // result.data is a data URL
+        const a = document.createElement('a');
+        a.href = result.data;
+        a.download = 'map.png';
+        a.click();
+      } else {
+        log(`Error: ${result.error}`, 'error');
+      }
+    }
+
+    async function exportJSON() {
+      log('Exporting JSON...', 'event');
+      const result = await sendMessage('EXPORT_JSON');
+
+      if (result.success) {
+        log('JSON exported', 'event');
+
+        // Download JSON
+        const blob = new Blob([result.data], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'map.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        log(`Error: ${result.error}`, 'error');
+      }
+    }
+
+    // Update statistics display
+    function updateStatistics(state) {
+      if (!state || !state.pack) return;
+
+      document.getElementById('riverCount').textContent = state.pack.rivers?.length || 0;
+      document.getElementById('cultureCount').textContent = state.pack.cultures?.length || 0;
+      document.getElementById('stateCount').textContent = state.pack.states?.length || 0;
+      document.getElementById('burgCount').textContent = state.pack.burgs?.length || 0;
+    }
+
+    // Logging
+    function log(message, type = 'event') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      eventLog.appendChild(entry);
+      eventLog.scrollTop = eventLog.scrollHeight;
+    }
+
+    function clearLog() {
+      eventLog.innerHTML = '';
+    }
+  </script>
+</body>
+</html>
