@@ -67,14 +67,24 @@ function overviewRegiments(state) {
           )
           .join(" ");
 
-        lines += /* html */ `<div class="states" data-id="${r.i}" data-s="${s.i}" data-state="${s.name}" data-name="${r.name}" ${sortData} data-total="${r.a}">
+        lines += /* html */ `<div class="states" data-id="${r.i}" data-s="${s.i}" data-state="${s.name}" data-name="${
+          r.name
+        }" ${sortData} data-total="${r.a}">
           <fill-box data-tip="${s.fullName}" fill="${s.color}" disabled></fill-box>
           <input data-tip="${s.fullName}" style="width:6em" value="${s.name}" readonly />
-          <span data-tip="Regiment's emblem" style="width:1em">${r.icon}</span>
+          ${
+            r.icon.startsWith("http") || r.icon.startsWith("data:image")
+              ? `<img src="${r.icon}" data-tip="Regiment's emblem" style="width:1.2em; height:1.2em; vertical-align: middle;">`
+              : `<span data-tip="Regiment's emblem" style="width:1em">${r.icon}</span>`
+          }
           <input data-tip="Regiment's name" style="width:13em" value="${r.name}" readonly />
           ${lineData}
-          <div data-type="total" data-tip="Total military personnel (not considering crew)" style="font-weight: bold">${r.a}</div>
-          <span data-tip="Edit regiment" onclick="editRegiment('#regiment${s.i}-${r.i}')" class="icon-pencil pointer"></span>
+          <div data-type="total" data-tip="Total military personnel (not considering crew)" style="font-weight: bold">${
+            r.a
+          }</div>
+          <span data-tip="Edit regiment" onclick="editRegiment('#regiment${s.i}-${
+          r.i
+        }')" class="icon-pencil pointer"></span>
         </div>`;
 
         regiments.push(r);
@@ -179,7 +189,7 @@ function overviewRegiments(state) {
     reg.name = Military.getName(reg, military);
     military.push(reg);
     Military.generateNote(reg, pack.states[state]); // add legend
-    Military.drawRegiment(reg, state);
+    drawRegiment(reg, state);
     toggleAdd();
   }
 

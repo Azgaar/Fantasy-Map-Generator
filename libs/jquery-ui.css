@@ -313,39 +313,43 @@ body .ui-dialog {
   background-color: inherit;
 }
 .ui-dialog .ui-dialog-titlebar {
-  padding: 0.4em 1em;
-  position: relative;
+  display: flex;
+  padding: 0.3em 0.8em;
+  justify-content: space-between;
+  align-items: center;
   font-size: 1.2em;
   min-width: 150px;
 }
 .ui-dialog .ui-dialog-title {
-  float: left;
-  margin: 0.1em 0;
   white-space: nowrap;
-  width: 90%;
+  width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .ui-dialog .ui-dialog-titlebar button {
-  position: absolute;
-  right: 0.5em;
-  top: 53%;
-  padding: 0;
-  width: 1.8em;
-  height: 1.8em;
+  padding: 3px;
+  margin-left: 5px;
+  width: 19px;
+  height: 18px;
   color: #ffffff;
   background: none;
-  font-size: 0.75em;
+  font-size: 0.8em;
   border: 1px solid #c5c5c5;
 }
 
-.ui-dialog .ui-dialog-titlebar button.ui-dialog-titlebar-collapse {
-  margin: -1em 2.2em 0 0;
-}
+@media (max-width: 600px) {
+  .ui-dialog .ui-dialog-title {
+    font-size: 1.6em;
+  }
 
-.ui-dialog .ui-dialog-titlebar button.ui-dialog-titlebar-close {
-  margin: -1em 0 0;
+  .ui-dialog .ui-dialog-titlebar button {
+    padding: 3px;
+    margin-left: 10px;
+    width: 40px;
+    height: 32px;
+    font-size: 1.6em;
+  }
 }
 
 .ui-dialog .ui-dialog-titlebar button:active {

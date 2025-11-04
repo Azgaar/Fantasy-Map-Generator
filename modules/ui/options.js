@@ -66,17 +66,23 @@ document
       .querySelectorAll(".tabcontent")
       .forEach(e => (e.style.display = "none"));
 
-    if (id === "layersTab") layersContent.style.display = "block";
-    else if (id === "styleTab") styleContent.style.display = "block";
-    else if (id === "optionsTab") optionsContent.style.display = "block";
-    else if (id === "toolsTab")
+    if (id === "layersTab") {
+      layersContent.style.display = "block";
+    } else if (id === "styleTab") {
+      styleContent.style.display = "block";
+      selectStyleElement();
+    } else if (id === "optionsTab") {
+      optionsContent.style.display = "block";
+    } else if (id === "toolsTab") {
       customization === 1 ? (customizationMenu.style.display = "block") : (toolsContent.style.display = "block");
-    else if (id === "aboutTab") aboutContent.style.display = "block";
+    } else if (id === "aboutTab") {
+      aboutContent.style.display = "block";
+    }
   });
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
-  const {supporters} = await import("../dynamic/supporters.js?v=1.93.08");
+  const {supporters} = await import("../dynamic/supporters.js?v=1.97.14");
   const list = supporters.split("\n").sort();
   const columns = window.innerWidth < 800 ? 2 : 5;
 
@@ -119,35 +125,34 @@ function updateOutputToFollowInput(ev) {
 
 // Option listeners
 const optionsContent = byId("optionsContent");
-optionsContent.addEventListener("input", function (event) {
-  const id = event.target.id;
-  const value = event.target.value;
+
+optionsContent.addEventListener("input", event => {
+  const {id, value} = event.target;
   if (id === "mapWidthInput" || id === "mapHeightInput") mapSizeInputChange();
   else if (id === "pointsInput") changeCellsDensity(+value);
   else if (id === "culturesSet") changeCultureSet();
-  else if (id === "regionsInput" || id === "regionsOutput") changeStatesNumber(value);
+  else if (id === "statesNumber") changeStatesNumber(value);
   else if (id === "emblemShape") changeEmblemShape(value);
-  else if (id === "tooltipSizeInput" || id === "tooltipSizeOutput") changeTooltipSize(value);
+  else if (id === "tooltipSize") changeTooltipSize(value);
   else if (id === "themeHueInput") changeThemeHue(value);
   else if (id === "themeColorInput") changeDialogsTheme(themeColorInput.value, transparencyInput.value);
   else if (id === "transparencyInput") changeDialogsTheme(themeColorInput.value, value);
 });
 
-optionsContent.addEventListener("change", function (event) {
-  const id = event.target.id;
-  const value = event.target.value;
-
+optionsContent.addEventListener("change", event => {
+  const {id, value} = event.target;
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
   else if (id === "optionsSeed") generateMapWithSeed("seed change");
-  else if (id === "uiSizeInput" || id === "uiSizeOutput") changeUiSize(value);
+  else if (id === "uiSize") changeUiSize(+value);
   else if (id === "shapeRendering") setRendering(value);
   else if (id === "yearInput") changeYear();
   else if (id === "eraInput") changeEra();
   else if (id === "stateLabelsModeInput") options.stateLabelsMode = value;
+  else if (id === "azgaarAssistant") toggleAssistant();
 });
 
-optionsContent.addEventListener("click", function (event) {
-  const id = event.target.id;
+optionsContent.addEventListener("click", event => {
+  const {id} = event.target;
   if (id === "restoreDefaultCanvasSize") restoreDefaultCanvasSize();
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
   else if (id === "optionsCopySeed") copyMapURL();
@@ -205,16 +210,16 @@ function fitMapToScreen() {
   svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
 
-  const zoomExtent = [
-    [0, 0],
-    [graphWidth, graphHeight]
-  ];
-
   const zoomMin = rn(Math.max(svgWidth / graphWidth, svgHeight / graphHeight), 3);
   zoomExtentMin.value = zoomMin;
   const zoomMax = +zoomExtentMax.value;
 
-  zoom.translateExtent(zoomExtent).scaleExtent([zoomMin, zoomMax]).scaleTo(svg, zoomMin);
+  zoom
+    .translateExtent([
+      [0, 0],
+      [graphWidth, graphHeight]
+    ])
+    .scaleExtent([zoomMin, zoomMax]);
 
   fitScaleBar(scaleBar, svgWidth, svgHeight);
   if (window.fitLegendBox) fitLegendBox();
@@ -246,8 +251,7 @@ const voiceInterval = setInterval(function () {
     select.options.add(new Option(voice.name, i, false));
   });
   if (stored("speakerVoice")) select.value = stored("speakerVoice");
-  // se voice to store
-  else select.value = voices.findIndex(voice => voice.lang === "en-US"); // or to first found English-US
+  else select.value = voices.findIndex(voice => voice.lang === "en-US");
 }, 1000);
 
 function testSpeaker() {
@@ -327,14 +331,11 @@ const cellsDensityMap = {
 };
 
 function changeCellsDensity(value) {
-  const cells = cellsDensityMap[value] || 1000;
+  pointsInput.value = value;
+  const cells = cellsDensityMap[value] || pointsInput.dataset.cells;
   pointsInput.dataset.cells = cells;
-  pointsOutputFormatted.value = getCellsDensityValue(cells);
+  pointsOutputFormatted.value = cells / 1000 + "K";
   pointsOutputFormatted.style.color = getCellsDensityColor(cells);
-}
-
-function getCellsDensityValue(cells) {
-  return cells / 1000 + "K";
 }
 
 function getCellsDensityColor(cells) {
@@ -390,18 +391,18 @@ function changeEmblemShape(emblemShape) {
 }
 
 function changeStatesNumber(value) {
-  regionsOutput.style.color = +value ? null : "#b12117";
+  byId("statesNumber").style.color = +value ? null : "#b12117";
   burgLabels.select("#capitals").attr("data-size", Math.max(rn(6 - value / 20), 3));
   labels.select("#countries").attr("data-size", Math.max(rn(18 - value / 6), 4));
 }
 
 function changeUiSize(value) {
-  if (isNaN(+value) || +value < 0.5) return;
+  if (isNaN(value) || value < 0.5) return;
 
   const max = getUImaxSize();
-  if (+value > max) value = max;
+  if (value > max) value = max;
 
-  uiSizeInput.value = uiSizeOutput.value = value;
+  uiSize.value = value;
   document.getElementsByTagName("body")[0].style.fontSize = rn(value * 10, 2) + "px";
   byId("options").style.width = value * 300 + "px";
 }
@@ -428,7 +429,7 @@ function changeThemeHue(hue) {
 
 // change color and transparency for modal windows
 function changeDialogsTheme(themeColor, transparency) {
-  transparencyInput.value = transparencyOutput.value = transparency;
+  transparencyInput.value = transparency;
   const alpha = (100 - +transparency) / 100;
   const alphaReduced = Math.min(alpha + 0.3, 1);
 
@@ -442,6 +443,7 @@ function changeDialogsTheme(themeColor, transparency) {
   };
 
   const theme = [
+    {name: "--bg-opacity", value: alpha},
     {name: "--bg-main", h, s, l, alpha},
     {name: "--bg-lighter", h, s, l: l + 0.02, alpha},
     {name: "--bg-light", h, s: s - 0.02, l: l + 0.06, alpha},
@@ -454,8 +456,9 @@ function changeDialogsTheme(themeColor, transparency) {
   ];
 
   const sx = document.documentElement.style;
-  theme.forEach(({name, h, s, l, alpha}) => {
-    sx.setProperty(name, getRGBA(h, s, l, alpha));
+  theme.forEach(({name, value, h, s, l, alpha}) => {
+    if (value !== undefined) sx.setProperty(name, value);
+    else sx.setProperty(name, getRGBA(h, s, l, alpha));
   });
 }
 
@@ -490,11 +493,11 @@ function resetLanguage() {
   if (!languageSelect.value) return;
 
   languageSelect.value = "en";
-  languageSelect.dispatchEvent(new Event("change"));
+  languageSelect.handleChange(new Event("change"));
 
   // do once again to actually reset the language
   languageSelect.value = "en";
-  languageSelect.dispatchEvent(new Event("change"));
+  languageSelect.handleChange(new Event("change"));
 }
 
 function changeZoomExtent(value) {
@@ -534,8 +537,8 @@ function applyStoredOptions() {
 
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-
     if (key === "speakerVoice") continue;
+
     const input = byId(key + "Input") || byId(key);
     const output = byId(key + "Output");
 
@@ -544,21 +547,24 @@ function applyStoredOptions() {
     if (output) output.value = value;
     lock(key);
 
+    if (key === "points") changeCellsDensity(+value);
+    if (key === "distanceScale") distanceScale = +value;
+
     // add saved style presets to options
     if (key.slice(0, 5) === "style") applyOption(stylePreset, key, key.slice(5));
   }
 
-  if (stored("winds")) options.winds = localStorage.getItem("winds").split(",").map(Number);
-  if (stored("temperatureEquator")) options.temperatureEquator = +localStorage.getItem("temperatureEquator");
-  if (stored("temperatureNorthPole")) options.temperatureNorthPole = +localStorage.getItem("temperatureNorthPole");
-  if (stored("temperatureSouthPole")) options.temperatureSouthPole = +localStorage.getItem("temperatureSouthPole");
+  if (stored("winds")) options.winds = stored("winds").split(",").map(Number);
+  if (stored("temperatureEquator")) options.temperatureEquator = +stored("temperatureEquator");
+  if (stored("temperatureNorthPole")) options.temperatureNorthPole = +stored("temperatureNorthPole");
+  if (stored("temperatureSouthPole")) options.temperatureSouthPole = +stored("temperatureSouthPole");
   if (stored("military")) options.military = JSON.parse(stored("military"));
 
   if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize"));
   if (stored("regions")) changeStatesNumber(stored("regions"));
 
-  uiSizeInput.max = uiSizeOutput.max = getUImaxSize();
-  if (stored("uiSize")) changeUiSize(stored("uiSize"));
+  uiSize.max = uiSize.max = getUImaxSize();
+  if (stored("uiSize")) changeUiSize(+stored("uiSize"));
   else changeUiSize(minmax(rn(mapWidthInput.value / 1280, 1), 1, 2.5));
 
   // search params overwrite stored and default options
@@ -581,16 +587,17 @@ function randomizeOptions() {
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
 
   // 'Options' settings
+  if (randomize || !locked("points")) changeCellsDensity(4); // reset to default, no need to randomize
   if (randomize || !locked("template")) randomizeHeightmapTemplate();
-  if (randomize || !locked("regions")) regionsInput.value = regionsOutput.value = gauss(18, 5, 2, 30);
-  if (randomize || !locked("provinces")) provincesInput.value = provincesOutput.value = gauss(20, 10, 20, 100);
+  if (randomize || !locked("statesNumber")) statesNumber.value = gauss(18, 5, 2, 30);
+  if (randomize || !locked("provincesRatio")) provincesRatio.value = gauss(20, 10, 20, 100);
   if (randomize || !locked("manors")) {
     manorsInput.value = 1000;
     manorsOutput.value = "auto";
   }
-  if (randomize || !locked("religions")) religionsInput.value = religionsOutput.value = gauss(6, 3, 2, 10);
-  if (randomize || !locked("power")) powerInput.value = powerOutput.value = gauss(4, 2, 0, 10, 2);
-  if (randomize || !locked("neutral")) neutralInput.value = neutralOutput.value = rn(1 + Math.random(), 1);
+  if (randomize || !locked("religionsNumber")) religionsNumber.value = gauss(6, 3, 2, 10);
+  if (randomize || !locked("sizeVariety")) sizeVariety.value = gauss(4, 2, 0, 10, 1);
+  if (randomize || !locked("growthRate")) growthRate.value = rn(1 + Math.random(), 1);
   if (randomize || !locked("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
   if (randomize || !locked("culturesSet")) randomizeCultureSet();
 
@@ -602,7 +609,7 @@ function randomizeOptions() {
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
-  if (randomize || !locked("distanceScale")) distanceScaleOutput.value = distanceScaleInput.value = gauss(3, 1, 1, 5);
+  if (randomize || !locked("distanceScale")) distanceScale = distanceScaleInput.value = gauss(3, 1, 1, 5);
   if (!stored("distanceUnit")) distanceUnitInput.value = US ? "mi" : "km";
   if (!stored("heightUnit")) heightUnit.value = US ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
@@ -641,17 +648,16 @@ function randomizeCultureSet() {
 function setRendering(value) {
   viewbox.attr("shape-rendering", value);
 
-  // if (value === "optimizeSpeed") {
-  //   // block some styles
-  //   coastline.select("#sea_island").style("filter", "none");
-  //   statesHalo.style("display", "none");
-  //   emblems.style("opacity", 1);
-  // } else {
-  //   // remove style block
-  //   coastline.select("#sea_island").style("filter", null);
-  //   statesHalo.style("display", null);
-  //   emblems.style("opacity", null);
-  // }
+  if (value === "optimizeSpeed") {
+    // block some styles
+    coastline.select("#sea_island").style("filter", "none");
+    statesHalo.style("display", "none");
+  } else {
+    // remove style block
+    coastline.select("#sea_island").style("filter", null);
+    statesHalo.style("display", null);
+    if (pack.cells && statesHalo.selectAll("*").size() === 0) drawStates();
+  }
 }
 
 // generate current year and era name
@@ -691,14 +697,8 @@ function changeEra() {
 }
 
 async function openTemplateSelectionDialog() {
-  const HeightmapSelectionDialog = await import("../dynamic/heightmap-selection.js?v=1.93.12");
+  const HeightmapSelectionDialog = await import("../dynamic/heightmap-selection.js?v=1.96.00");
   HeightmapSelectionDialog.open();
-}
-
-// remove all saved data from LocalStorage and reload the page
-function restoreDefaultOptions() {
-  localStorage.clear();
-  location.reload();
 }
 
 // Sticked menu Options listeners
@@ -774,7 +774,7 @@ function showExportPane() {
 }
 
 async function exportToJson(type) {
-  const {exportToJson} = await import("../dynamic/export-json.js?v=1.93.03");
+  const {exportToJson} = await import("../dynamic/export-json.js?v=1.100.00");
   exportToJson(type);
 }
 
@@ -867,11 +867,9 @@ byId("mapToLoad").addEventListener("change", function () {
 });
 
 function openExportToPngTiles() {
+  byId("tileStatus").innerHTML = "";
   closeDialogs();
   updateTilesOptions();
-  const status = byId("tileStatus");
-  status.innerHTML = "";
-  let loading = null;
 
   const inputs = byId("exportToPngTilesScreen").querySelectorAll("input");
   inputs.forEach(input => input.addEventListener("input", updateTilesOptions));
@@ -881,16 +879,7 @@ function openExportToPngTiles() {
     title: "Download tiles",
     width: "23em",
     buttons: {
-      Download: function () {
-        status.innerHTML = "Preparing for download...";
-        setTimeout(() => (status.innerHTML = "Downloading. It may take some time."), 1000);
-        loading = setInterval(() => (status.innerHTML += "."), 1000);
-        exportToPngTiles().then(() => {
-          clearInterval(loading);
-          status.innerHTML = /* html */ `Done. Check file in "Downloads" (crtl + J)`;
-          setTimeout(() => (status.innerHTML = ""), 8000);
-        });
-      },
+      Download: () => exportToPngTiles(),
       Cancel: function () {
         $(this).dialog("close");
       }
@@ -898,7 +887,6 @@ function openExportToPngTiles() {
     close: () => {
       inputs.forEach(input => input.removeEventListener("input", updateTilesOptions));
       debug.selectAll("*").remove();
-      clearInterval(loading);
     }
   });
 }
@@ -911,9 +899,9 @@ function updateTilesOptions() {
   }
 
   const tileSize = byId("tileSize");
-  const tilesX = +byId("tileColsOutput").value;
-  const tilesY = +byId("tileRowsOutput").value;
-  const scale = +byId("tileScaleOutput").value;
+  const tilesX = +byId("tileColsOutput").value || 2;
+  const tilesY = +byId("tileRowsOutput").value || 2;
+  const scale = +byId("tileScaleOutput").value || 1;
 
   // calculate size
   const sizeX = graphWidth * scale * tilesX;
@@ -928,18 +916,27 @@ function updateTilesOptions() {
   const labels = [];
   const tileW = (graphWidth / tilesX) | 0;
   const tileH = (graphHeight / tilesY) | 0;
-  for (let y = 0, i = 0; y + tileH <= graphHeight; y += tileH) {
-    for (let x = 0; x + tileW <= graphWidth; x += tileW, i++) {
+
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  function getRowLabel(row) {
+    const first = row >= alphabet.length ? alphabet[Math.floor(row / alphabet.length) - 1] : "";
+    const last = alphabet[row % alphabet.length];
+    return first + last;
+  }
+
+  for (let y = 0, row = 0; y + tileH <= graphHeight; y += tileH, row++) {
+    for (let x = 0, column = 1; x + tileW <= graphWidth; x += tileW, column++) {
       rects.push(`<rect x=${x} y=${y} width=${tileW} height=${tileH} />`);
-      labels.push(`<text x=${x + tileW / 2} y=${y + tileH / 2}>${i}</text>`);
+      labels.push(`<text x=${x + tileW / 2} y=${y + tileH / 2}>${getRowLabel(row)}${column}</text>`);
     }
   }
-  const rectsG = "<g fill='none' stroke='#000'>" + rects.join("") + "</g>";
-  const labelsG =
-    "<g fill='#000' stroke='none' text-anchor='middle' dominant-baseline='central' font-size='24px'>" +
-    labels.join("") +
-    "</g>";
-  debug.html(rectsG + labelsG);
+
+  debug.html(`
+    <g fill='none' stroke='#000'>${rects.join("")}</g>
+    <g fill='#000' stroke='none' text-anchor='middle' dominant-baseline='central' font-size='18px'>${labels.join(
+      ""
+    )}</g>
+  `);
 }
 
 // View mode

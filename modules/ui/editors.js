@@ -8,33 +8,30 @@ function restoreDefaultEvents() {
   svg.call(zoom);
   viewbox.style("cursor", "default").on(".drag", null).on("click", clicked).on("touchmove mousemove", onMouseMove);
   legend.call(d3.drag().on("start", dragLegendBox));
+  svg.call(zoom);
 }
 
-// on viewbox click event - run function based on target
+// handle viewbox click
 function clicked() {
   const el = d3.event.target;
-  if (!el || !el.parentElement || !el.parentElement.parentElement) return;
-  const parent = el.parentElement;
-  const grand = parent.parentElement;
-  const great = grand.parentElement;
-  const p = d3.mouse(this);
-  const i = findCell(p[0], p[1]);
+  const parent = el?.parentElement;
+  const grand = parent?.parentElement;
+  const great = grand?.parentElement;
+  const ancestor = great?.parentElement;
+  if (!ancestor) return;
 
   if (grand.id === "emblems") editEmblem();
   else if (parent.id === "rivers") editRiver(el.id);
-  else if (grand.id === "routes") editRoute();
-  else if (el.tagName === "tspan" && grand.parentNode.parentNode.id === "labels") editLabel();
+  else if (grand.id === "routes") editRoute(el.id);
+  else if (ancestor.id === "labels" && el.tagName === "tspan") editLabel();
   else if (grand.id === "burgLabels") editBurg();
   else if (grand.id === "burgIcons") editBurg();
   else if (parent.id === "ice") editIce();
   else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
   else if (grand.id === "coastline") editCoastline();
+  else if (grand.id === "lakes") editLake();
   else if (great.id === "armies") editRegiment();
-  else if (pack.cells.t[i] === 1) {
-    const node = byId("island_" + pack.cells.f[i]);
-    editCoastline(node);
-  } else if (grand.id === "lakes") editLake();
 }
 
 // clear elSelected variable
@@ -132,27 +129,43 @@ function applySorting(headers) {
 }
 
 function addBurg(point) {
-  const cells = pack.cells;
-  const x = rn(point[0], 2),
-    y = rn(point[1], 2);
-  const cell = findCell(x, point[1]);
-  const i = pack.burgs.length;
-  const culture = cells.culture[cell];
-  const name = Names.getCulture(culture);
-  const state = cells.state[cell];
-  const feature = cells.f[cell];
+  const {cells, states} = pack;
+  const x = rn(point[0], 2);
+  const y = rn(point[1], 2);
 
-  const temple = pack.states[state].form === "Theocracy";
-  const population = Math.max((cells.s[cell] + cells.road[cell]) / 3 + i / 1000 + (cell % 100) / 1000, 0.1);
-  const type = BurgsAndStates.getType(cell, false);
+  const cellId = findCell(x, y);
+  const i = pack.burgs.length;
+  const culture = cells.culture[cellId];
+  const name = Names.getCulture(culture);
+  const state = cells.state[cellId];
+  const feature = cells.f[cellId];
+
+  const population = Math.max(cells.s[cellId] / 3 + i / 1000 + (cellId % 100) / 1000, 0.1);
+  const type = BurgsAndStates.getType(cellId, false);
 
   // generate emblem
-  const coa = COA.generate(pack.states[state].coa, 0.25, null, type);
+  const coa = COA.generate(states[state].coa, 0.25, null, type);
   coa.shield = COA.getShield(culture, state);
   COArenderer.add("burg", i, coa, x, y);
 
-  pack.burgs.push({name, cell, x, y, state, i, culture, feature, capital: 0, port: 0, temple, population, coa, type});
-  cells.burg[cell] = i;
+  const burg = {
+    name,
+    cell: cellId,
+    x,
+    y,
+    state,
+    i,
+    culture,
+    feature,
+    capital: 0,
+    port: 0,
+    temple: 0,
+    population,
+    coa,
+    type
+  };
+  pack.burgs.push(burg);
+  cells.burg[cellId] = i;
 
   const townSize = burgIcons.select("#towns").attr("size") || 0.5;
   burgIcons
@@ -166,6 +179,7 @@ function addBurg(point) {
   burgLabels
     .select("#towns")
     .append("text")
+    .attr("text-rendering", "optimizeSpeed")
     .attr("id", "burgLabel" + i)
     .attr("data-id", i)
     .attr("x", x)
@@ -173,7 +187,17 @@ function addBurg(point) {
     .attr("dy", `${townSize * -1.5}px`)
     .text(name);
 
-  BurgsAndStates.defineBurgFeatures(pack.burgs[i]);
+  BurgsAndStates.defineBurgFeatures(burg);
+
+  const newRoute = Routes.connect(cellId);
+  if (newRoute && layerIsOn("toggleRoutes")) {
+    routes
+      .select("#" + newRoute.group)
+      .append("path")
+      .attr("d", Routes.getPath(newRoute))
+      .attr("id", "route" + newRoute.i);
+  }
+
   return i;
 }
 
@@ -223,17 +247,18 @@ function addBurgsGroup(group) {
 }
 
 function removeBurg(id) {
-  const label = document.querySelector("#burgLabels [data-id='" + id + "']");
-  const icon = document.querySelector("#burgIcons [data-id='" + id + "']");
-  const anchor = document.querySelector("#anchors [data-id='" + id + "']");
-  if (label) label.remove();
-  if (icon) icon.remove();
-  if (anchor) anchor.remove();
+  document.querySelector("#burgLabels [data-id='" + id + "']")?.remove();
+  document.querySelector("#burgIcons [data-id='" + id + "']")?.remove();
+  document.querySelector("#anchors [data-id='" + id + "']")?.remove();
 
-  const cells = pack.cells,
-    burg = pack.burgs[id];
+  const cells = pack.cells;
+  const burg = pack.burgs[id];
+
   burg.removed = true;
   cells.burg[burg.cell] = 0;
+
+  const noteId = notes.findIndex(note => note.id === `burg${id}`);
+  if (noteId !== -1) notes.splice(noteId, 1);
 
   if (burg.coa) {
     const coaId = "burgCOA" + id;
@@ -243,25 +268,22 @@ function removeBurg(id) {
   }
 }
 
-function toggleCapital(burg) {
-  const state = pack.burgs[burg].state;
-  if (!state) {
-    tip("Neutral lands cannot have a capital", false, "error");
-    return;
-  }
-  if (pack.burgs[burg].capital) {
-    tip("To change capital please assign a capital status to another burg of this state", false, "error");
-    return;
-  }
-  const old = pack.states[state].capital;
+function toggleCapital(burgId) {
+  const {burgs, states} = pack;
+  if (burgs[burgId].capital)
+    return tip("To change capital please assign a capital status to another burg of this state", false, "error");
 
-  // change statuses
-  pack.states[state].capital = burg;
-  pack.states[state].center = pack.burgs[burg].cell;
-  pack.burgs[burg].capital = 1;
-  pack.burgs[old].capital = 0;
-  moveBurgToGroup(burg, "cities");
-  moveBurgToGroup(old, "towns");
+  const stateId = burgs[burgId].state;
+  if (!stateId) return tip("Neutral lands cannot have a capital", false, "error");
+
+  const prevCapitalId = states[stateId].capital;
+  states[stateId].capital = burgId;
+  states[stateId].center = burgs[burgId].cell;
+  burgs[burgId].capital = 1;
+  burgs[prevCapitalId].capital = 0;
+
+  moveBurgToGroup(burgId, "cities");
+  moveBurgToGroup(prevCapitalId, "towns");
 }
 
 function togglePort(burg) {
@@ -291,16 +313,20 @@ function togglePort(burg) {
     .attr("height", size);
 }
 
-function getBurgSeed(burg) {
-  return burg.MFCG || Number(`${seed}${String(burg.i).padStart(4, 0)}`);
-}
-
-function getMFCGlink(burg) {
+function getBurgLink(burg) {
   if (burg.link) return burg.link;
 
+  const population = burg.population * populationRate * urbanization;
+  if (population >= options.villageMaxPopulation || burg.citadel || burg.walls || burg.temple || burg.shanty)
+    return createMfcgLink(burg);
+
+  return createVillageGeneratorLink(burg);
+}
+
+function createMfcgLink(burg) {
   const {cells} = pack;
   const {i, name, population: burgPopulation, cell} = burg;
-  const seed = getBurgSeed(burg);
+  const burgSeed = burg.MFCG || seed + String(burg.i).padStart(4, 0);
 
   const sizeRaw = 2.13 * Math.pow((burgPopulation * populationRate) / urbanDensity, 0.385);
   const size = minmax(Math.ceil(sizeRaw), 6, 100);
@@ -308,35 +334,35 @@ function getMFCGlink(burg) {
 
   const river = cells.r[cell] ? 1 : 0;
   const coast = Number(burg.port > 0);
-  const sea = coast && cells.haven[cell] ? getSeaDirections(cell) : null;
+  const sea = (() => {
+    if (!coast || !cells.haven[cell]) return null;
 
-  const biome = cells.biome[cell];
+    // calculate see direction: 0 = south, 0.5 = west, 1 = north, 1.5 = east
+    const p1 = cells.p[cell];
+    const p2 = cells.p[cells.haven[cell]];
+    let deg = (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI - 90;
+    if (deg < 0) deg += 360;
+    return rn(normalize(deg, 0, 360) * 2, 2);
+  })();
+
   const arableBiomes = river ? [1, 2, 3, 4, 5, 6, 7, 8] : [5, 6, 7, 8];
-  const farms = +arableBiomes.includes(biome);
+  const farms = +arableBiomes.includes(cells.biome[cell]);
 
   const citadel = +burg.citadel;
   const urban_castle = +(citadel && each(2)(i));
 
-  const hub = +cells.road[cell] > 50;
-
+  const hub = Routes.isCrossroad(cell);
   const walls = +burg.walls;
   const plaza = +burg.plaza;
   const temple = +burg.temple;
   const shantytown = +burg.shanty;
 
-  function getSeaDirections(i) {
-    const p1 = cells.p[i];
-    const p2 = cells.p[cells.haven[i]];
-    let deg = (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI - 90;
-    if (deg < 0) deg += 360;
-    return rn(normalize(deg, 0, 360) * 2, 2); // 0 = south, 0.5 = west, 1 = north, 1.5 = east
-  }
-
-  const parameters = {
+  const url = new URL("https://watabou.github.io/city-generator/");
+  url.search = new URLSearchParams({
     name,
     population,
     size,
-    seed,
+    seed: burgSeed,
     river,
     coast,
     farms,
@@ -348,11 +374,59 @@ function getMFCGlink(burg) {
     walls,
     shantytown,
     gates: -1
-  };
-  const url = new URL("https://watabou.github.io/city-generator/");
-  url.search = new URLSearchParams(parameters);
+  });
   if (sea) url.searchParams.append("sea", sea);
 
+  return url.toString();
+}
+
+function createVillageGeneratorLink(burg) {
+  const {cells, features} = pack;
+  const {i, population, cell} = burg;
+
+  const pop = rn(population * populationRate * urbanization);
+  const burgSeed = seed + String(i).padStart(4, 0);
+  const tags = [];
+
+  if (cells.r[cell] && cells.haven[cell]) tags.push("estuary");
+  else if (cells.haven[cell] && features[cells.f[cell]].cells === 1) tags.push("island,district");
+  else if (burg.port) tags.push("coast");
+  else if (cells.conf[cell]) tags.push("confluence");
+  else if (cells.r[cell]) tags.push("river");
+  else if (pop < 200 && each(4)(cell)) tags.push("pond");
+
+  const roadsNumber = Object.values(pack.cells.routes[cell] || {}).filter(routeId => {
+    const route = pack.routes.find(route => route.i === routeId);
+    if (!route) return false;
+    return route.group === "roads" || route.group === "trails";
+  }).length;
+  tags.push(roadsNumber > 1 ? "highway" : roadsNumber === 1 ? "dead end" : "isolated");
+
+  const biome = cells.biome[cell];
+  const arableBiomes = cells.r[cell] ? [1, 2, 3, 4, 5, 6, 7, 8] : [5, 6, 7, 8];
+  if (!arableBiomes.includes(biome)) tags.push("uncultivated");
+  else if (each(6)(cell)) tags.push("farmland");
+
+  const temp = grid.cells.temp[cells.g[cell]];
+  if (temp <= 0 || temp > 28 || (temp > 25 && each(3)(cell))) tags.push("no orchards");
+
+  if (!burg.plaza) tags.push("no square");
+
+  if (pop < 100) tags.push("sparse");
+  else if (pop > 300) tags.push("dense");
+
+  const width = (() => {
+    if (pop > 1500) return 1600;
+    if (pop > 1000) return 1400;
+    if (pop > 500) return 1000;
+    if (pop > 200) return 800;
+    if (pop > 100) return 600;
+    return 400;
+  })();
+  const height = rn(width / 2.2);
+
+  const url = new URL("https://watabou.github.io/village-generator/");
+  url.search = new URLSearchParams({pop, name: "", seed: burgSeed, width, height, tags});
   return url.toString();
 }
 
@@ -391,6 +465,7 @@ function drawLegend(name, data) {
 
       labels
         .append("text")
+        .attr("text-rendering", "optimizeSpeed")
         .text(data[i][2])
         .attr("x", offset + colorBoxSize * 1.6)
         .attr("y", fontSize / 1.6 + lineHeight + l * lineHeight + vOffset);
@@ -401,6 +476,7 @@ function drawLegend(name, data) {
   const offset = colOffset + legend.node().getBBox().width / 2;
   labels
     .append("text")
+    .attr("text-rendering", "optimizeSpeed")
     .attr("text-anchor", "middle")
     .attr("font-weight", "bold")
     .attr("font-size", "1.2em")
@@ -440,13 +516,14 @@ function fitLegendBox() {
 
 // draw legend with the same data, but using different settings
 function redrawLegend() {
-  if (!legend.select("rect").size()) return;
-  const name = legend.select("#legendLabel").text();
-  const data = legend
-    .attr("data")
-    .split("|")
-    .map(l => l.split(","));
-  drawLegend(name, data);
+  if (legend.select("rect").size()) {
+    const name = legend.select("#legendLabel").text();
+    const data = legend
+      .attr("data")
+      .split("|")
+      .map(l => l.split(","));
+    drawLegend(name, data);
+  }
 }
 
 function dragLegendBox() {
@@ -1091,25 +1168,66 @@ function selectIcon(initial, callback) {
       const cell = row.insertCell(i % 17);
       cell.innerHTML = icons[i];
     }
+
+    // find external images used as icons and show them
+    const externalResources = new Set();
+    const isExternal = url => url.startsWith("http") || url.startsWith("data:image");
+
+    options.military.forEach(unit => {
+      if (isExternal(unit.icon)) externalResources.add(unit.icon);
+    });
+
+    pack.states.forEach(state => {
+      state?.military?.forEach(regiment => {
+        if (isExternal(regiment.icon)) externalResources.add(regiment.icon);
+      });
+    });
+
+    externalResources.forEach(addExternalImage);
   }
 
-  input.oninput = e => callback(input.value);
+  input.oninput = () => callback(input.value);
+
   table.onclick = e => {
     if (e.target.tagName === "TD") {
-      input.value = e.target.innerHTML;
+      input.value = e.target.textContent;
       callback(input.value);
     }
   };
+
   table.onmouseover = e => {
-    if (e.target.tagName === "TD") tip(`Click to select ${e.target.innerHTML} icon`);
+    if (e.target.tagName === "TD") tip(`Click to select ${e.target.textContent} icon`);
   };
+
+  function addExternalImage(url) {
+    const addedIcons = byId("addedIcons");
+    const image = document.createElement("div");
+    image.style.cssText = `width: 2.2em; height: 2.2em; background-size: cover; background-image: url(${url})`;
+    addedIcons.appendChild(image);
+    image.onclick = () => callback(url);
+  }
+
+  byId("addImage").onclick = function () {
+    const input = this.previousElementSibling;
+    const ulr = input.value;
+    if (!ulr) return tip("Enter image URL to add", false, "error", 4000);
+    if (!ulr.match(/^((http|https):\/\/)|data\:image\//)) return tip("Enter valid URL", false, "error", 4000);
+    addExternalImage(ulr);
+    callback(ulr);
+    input.value = "";
+  };
+
+  byId("addedIcons")
+    .querySelectorAll("div")
+    .forEach(div => {
+      div.onclick = () => callback(div.style.backgroundImage.slice(5, -2));
+    });
 
   $("#iconSelector").dialog({
     width: fitContent(),
     title: "Select Icon",
     buttons: {
       Apply: function () {
-        callback(input.value || "⠀");
         $(this).dialog("close");
       },
       Close: function () {
@@ -1125,7 +1243,6 @@ function getAreaUnit(squareMark = "²") {
 }
 
 function getArea(rawArea) {
-  const distanceScale = byId("distanceScaleInput")?.value;
   return rawArea * distanceScale ** 2;
 }
 
@@ -1176,18 +1293,18 @@ function refreshAllEditors() {
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/states-editor.js?v=1.93.10");
+  const Editor = await import("../dynamic/editors/states-editor.js?v=1.108.1");
   Editor.open();
 }
 
 async function editCultures() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.95.04");
+  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.105.23");
   Editor.open();
 }
 
 async function editReligions() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/religions-editor.js?v=1.89.10");
+  const Editor = await import("../dynamic/editors/religions-editor.js?v=1.104.0");
   Editor.open();
 }

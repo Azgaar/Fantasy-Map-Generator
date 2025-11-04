@@ -1,8 +1,10 @@
 "use strict";
 
 // update old map file to the current version
-export function resolveVersionConflicts(version) {
-  if (version < 1) {
+export function resolveVersionConflicts(mapVersion) {
+  const isOlderThan = tagVersion => compareVersions(mapVersion, tagVersion).isOlder;
+
+  if (isOlderThan("1.0.0")) {
     // v1.0 added a new religions layer
     relig = viewbox.insert("g", "#terrain").attr("id", "relig");
     Religions.generate();
@@ -49,9 +51,8 @@ export function resolveVersionConflicts(version) {
     BurgsAndStates.generateCampaigns();
     BurgsAndStates.generateDiplomacy();
     BurgsAndStates.defineStateForms();
-    drawStates();
-    BurgsAndStates.generateProvinces();
-    drawBorders();
+    Provinces.generate();
+    Provinces.getPoles();
     if (!layerIsOn("toggleBorders")) $("#borders").fadeOut();
     if (!layerIsOn("toggleStates")) regions.attr("display", "none").selectAll("path").remove();
 
@@ -63,7 +64,7 @@ export function resolveVersionConflicts(version) {
       .attr("stroke-width", 0)
       .attr("stroke-dasharray", null)
       .attr("stroke-linecap", "butt");
-    addZones();
+    Zones.generate();
     if (!markers.selectAll("*").size()) {
       Markers.generate();
       turnButtonOn("toggleMarkers");
@@ -107,11 +108,11 @@ export function resolveVersionConflicts(version) {
     biomesData.habitability.push(12);
   }
 
-  if (version < 1.1) {
-    // v1.0 initial code had a bug with religion layer id
+  if (isOlderThan("1.1.0")) {
+    // v1.0 code had a bug with religion layer id
     if (!relig.size()) relig = viewbox.insert("g", "#terrain").attr("id", "relig");
 
-    // v1.0 initially has Sympathy status then relaced with Friendly
+    // v1.0 had Sympathy status then relaced with Friendly
     for (const s of pack.states) {
       if (!s.diplomacy) continue;
       s.diplomacy = s.diplomacy.map(r => (r === "Sympathy" ? "Friendly" : r));
@@ -200,10 +201,12 @@ export function resolveVersionConflicts(version) {
     defs.select("#water").selectAll("path").remove();
     coastline.selectAll("path").remove();
     lakes.selectAll("path").remove();
-    drawCoastline();
+
+    Features.markupPack();
+    createDefaultRuler();
   }
 
-  if (version < 1.11) {
+  if (isOlderThan("1.11.0")) {
     // v1.11 added new attributes
     terrs.attr("scheme", "bright").attr("terracing", 0).attr("skip", 5).attr("relax", 0).attr("curve", 0);
     svg.select("#oceanic > *").attr("id", "oceanicPattern");
@@ -229,7 +232,7 @@ export function resolveVersionConflicts(version) {
     if (!terrain.attr("density")) terrain.attr("density", 0.4);
   }
 
-  if (version < 1.21) {
+  if (isOlderThan("1.21.0")) {
     // v1.11 replaced "display" attribute by "display" style
     viewbox.selectAll("g").each(function () {
       if (this.hasAttribute("display")) {
@@ -243,22 +246,24 @@ export function resolveVersionConflicts(version) {
     rivers.selectAll("path").each(function () {
       const i = +this.id.slice(5);
       const length = this.getTotalLength() / 2;
-      const s = this.getPointAtLength(length),
-        e = this.getPointAtLength(0);
-      const source = findCell(s.x, s.y),
-        mouth = findCell(e.x, e.y);
+      if (!length) return;
+
+      const s = this.getPointAtLength(length);
+      const e = this.getPointAtLength(0);
+      const source = findCell(s.x, s.y);
+      const mouth = findCell(e.x, e.y);
       const name = Rivers.getName(mouth);
       const type = length < 25 ? rw({Creek: 9, River: 3, Brook: 3, Stream: 1}) : "River";
       pack.rivers.push({i, parent: 0, length, source, mouth, basin: i, name, type});
     });
   }
 
-  if (version < 1.22) {
+  if (isOlderThan("1.22.0")) {
     // v1.22 changed state neighbors from Set object to array
     BurgsAndStates.collectStatistics();
   }
 
-  if (version < 1.3) {
+  if (isOlderThan("1.3.0")) {
     // v1.3 added global options object
     const winds = options.slice(); // previostly wind was saved in settings[19]
     const year = rand(100, 2000);
@@ -283,7 +288,7 @@ export function resolveVersionConflicts(version) {
     Military.generate();
   }
 
-  if (version < 1.4) {
+  if (isOlderThan("1.4.0")) {
     // v1.35 added dry lakes
     if (!lakes.select("#dry").size()) {
       lakes.append("g").attr("id", "dry");
@@ -327,7 +332,7 @@ export function resolveVersionConflicts(version) {
     pack.states.filter(s => s.military).forEach(s => s.military.forEach(r => (r.state = s.i)));
   }
 
-  if (version < 1.5) {
+  if (isOlderThan("1.5.0")) {
     // not need to store default styles from v 1.5
     localStorage.removeItem("styleClean");
     localStorage.removeItem("styleGloom");
@@ -365,7 +370,7 @@ export function resolveVersionConflicts(version) {
     });
   }
 
-  if (version < 1.6) {
+  if (isOlderThan("1.6.0")) {
     // v1.6 changed rivers data
     for (const river of pack.rivers) {
       const el = document.getElementById("river" + river.i);
@@ -397,7 +402,7 @@ export function resolveVersionConflicts(version) {
     }
   }
 
-  if (version < 1.61) {
+  if (isOlderThan("1.61.0")) {
     // v1.61 changed rulers data
     ruler.style("display", null);
     rulers = new Rulers();
@@ -451,12 +456,12 @@ export function resolveVersionConflicts(version) {
     pattern.innerHTML = /* html */ `<image id="oceanicPattern" href=${href} width="100" height="100" opacity="0.2"></image>`;
   }
 
-  if (version < 1.62) {
+  if (isOlderThan("1.62.0")) {
     // v1.62 changed grid data
     gridOverlay.attr("size", null);
   }
 
-  if (version < 1.63) {
+  if (isOlderThan("1.63.0")) {
     // v1.63 changed ocean pattern opacity element
     const oceanPattern = document.getElementById("oceanPattern");
     if (oceanPattern) oceanPattern.removeAttribute("opacity");
@@ -470,7 +475,7 @@ export function resolveVersionConflicts(version) {
     labels.select("#addedLabels").style("text-shadow", "white 0 0 4px");
   }
 
-  if (version < 1.64) {
+  if (isOlderThan("1.64.0")) {
     // v1.64 change states style
     const opacity = regions.attr("opacity");
     const filter = regions.attr("filter");
@@ -479,7 +484,7 @@ export function resolveVersionConflicts(version) {
     regions.attr("opacity", null).attr("filter", null);
   }
 
-  if (version < 1.65) {
+  if (isOlderThan("1.65.0")) {
     // v1.65 changed rivers data
     d3.select("#rivers").attr("style", null); // remove style to unhide layer
     const {cells, rivers} = pack;
@@ -521,13 +526,13 @@ export function resolveVersionConflicts(version) {
     }
   }
 
-  if (version < 1.652) {
+  if (isOlderThan("1.652.0")) {
     // remove style to unhide layers
     rivers.attr("style", null);
     borders.attr("style", null);
   }
 
-  if (version < 1.7) {
+  if (isOlderThan("1.7.0")) {
     // v1.7 changed markers data
     const defs = document.getElementById("defs-markers");
     const markersGroup = document.getElementById("markers");
@@ -585,7 +590,7 @@ export function resolveVersionConflicts(version) {
     }
   }
 
-  if (version < 1.72) {
+  if (isOlderThan("1.72.0")) {
     // v1.72 renamed custom style presets
     const storedStyles = Object.keys(localStorage).filter(key => key.startsWith("style"));
     storedStyles.forEach(styleName => {
@@ -596,7 +601,7 @@ export function resolveVersionConflicts(version) {
     });
   }
 
-  if (version < 1.73) {
+  if (isOlderThan("1.73.0")) {
     // v1.73 moved the hatching patterns out of the user's SVG
     document.getElementById("hatching")?.remove();
 
@@ -607,17 +612,17 @@ export function resolveVersionConflicts(version) {
     });
   }
 
-  if (version < 1.84) {
+  if (isOlderThan("1.84.0")) {
     // v1.84.0 added grid.cellsDesired to stored data
     if (!grid.cellsDesired) grid.cellsDesired = rn((graphWidth * graphHeight) / grid.spacing ** 2, -3);
   }
 
-  if (version < 1.85) {
+  if (isOlderThan("1.85.0")) {
     // v1.84.0 moved intial screen out of maon svg
     svg.select("#initial").remove();
   }
 
-  if (version < 1.86) {
+  if (isOlderThan("1.86.0")) {
     // v1.86.0 added multi-origin culture and religion hierarchy trees
     for (const culture of pack.cultures) {
       culture.origins = [culture.origin];
@@ -630,14 +635,14 @@ export function resolveVersionConflicts(version) {
     }
   }
 
-  if (version < 1.88) {
+  if (isOlderThan("1.88.0")) {
     // v1.87 may have incorrect shield for some reason
     pack.states.forEach(({coa}) => {
       if (coa?.shield === "state") delete coa.shield;
     });
   }
 
-  if (version < 1.91) {
+  if (isOlderThan("1.91.0")) {
     // from 1.91.00 custom coa is moved to coa object
     pack.states.forEach(state => {
       if (state.coa === "custom") state.coa = {custom: true};
@@ -686,14 +691,14 @@ export function resolveVersionConflicts(version) {
     });
   }
 
-  if (version < 1.92) {
+  if (isOlderThan("1.92.0")) {
     // v1.92 change labels text-anchor from 'start' to 'middle'
     labels.selectAll("tspan").each(function () {
       this.setAttribute("x", 0);
     });
   }
 
-  if (version < 1.94) {
+  if (isOlderThan("1.94.0")) {
     // from v1.94.00 texture image is removed when layer is off
     texture.style("display", null);
 
@@ -711,7 +716,7 @@ export function resolveVersionConflicts(version) {
     }
   }
 
-  if (version < 1.95) {
+  if (isOlderThan("1.95.0")) {
     // v1.95.00 added vignette visual layer
     const mask = defs.append("mask").attr("id", "vignette-mask");
     mask.append("rect").attr("fill", "white").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
@@ -735,5 +740,258 @@ export function resolveVersionConflicts(version) {
       .attr("fill", "#000000")
       .style("display", "none");
     vignette.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
+  }
+
+  if (isOlderThan("1.96.0")) {
+    // v1.96 added ocean rendering for heightmap
+    terrs.selectAll("*").remove();
+
+    const opacity = terrs.attr("opacity");
+    const filter = terrs.attr("filter");
+    const scheme = terrs.attr("scheme") || "bright";
+    const terracing = terrs.attr("terracing");
+    const skip = terrs.attr("skip");
+    const relax = terrs.attr("relax");
+
+    const curveTypes = {0: "curveBasisClosed", 1: "curveLinear", 2: "curveStep"};
+    const curve = curveTypes[terrs.attr("curve")] || "curveBasisClosed";
+
+    terrs
+      .attr("opacity", null)
+      .attr("filter", null)
+      .attr("mask", null)
+      .attr("scheme", null)
+      .attr("terracing", null)
+      .attr("skip", null)
+      .attr("relax", null)
+      .attr("curve", null);
+
+    terrs
+      .append("g")
+      .attr("id", "oceanHeights")
+      .attr("data-render", 0)
+      .attr("opacity", opacity)
+      .attr("filter", filter)
+      .attr("scheme", scheme)
+      .attr("terracing", 0)
+      .attr("skip", 0)
+      .attr("relax", 1)
+      .attr("curve", curve);
+
+    terrs
+      .append("g")
+      .attr("id", "landHeights")
+      .attr("opacity", opacity)
+      .attr("scheme", scheme)
+      .attr("filter", filter)
+      .attr("terracing", terracing)
+      .attr("skip", skip)
+      .attr("relax", relax)
+      .attr("curve", curve)
+      .attr("mask", "url(#land)");
+
+    if (layerIsOn("toggleHeight")) drawHeightmap();
+
+    // v1.96.00 moved scaleBar options from units editor to style
+    d3.select("#scaleBar").remove();
+
+    scaleBar = svg
+      .insert("g", "#viewbox + *")
+      .attr("id", "scaleBar")
+      .attr("opacity", 1)
+      .attr("fill", "#353540")
+      .attr("data-bar-size", 2)
+      .attr("font-size", 10)
+      .attr("data-x", 99)
+      .attr("data-y", 99)
+      .attr("data-label", "");
+
+    scaleBar
+      .append("rect")
+      .attr("id", "scaleBarBack")
+      .attr("opacity", 0.2)
+      .attr("fill", "#ffffff")
+      .attr("stroke", "#000000")
+      .attr("stroke-width", 1)
+      .attr("filter", "url(#blur5)")
+      .attr("data-top", 20)
+      .attr("data-right", 15)
+      .attr("data-bottom", 15)
+      .attr("data-left", 10);
+
+    drawScaleBar(scaleBar, scale);
+    fitScaleBar(scaleBar, svgWidth, svgHeight);
+
+    if (!layerIsOn("toggleScaleBar")) scaleBar.style("display", "none");
+
+    // v1.96.00 changed coloring approach for regiments
+    armies.selectAll(":scope > g").each(function () {
+      const fill = this.getAttribute("fill");
+      if (!fill) return;
+      const darkerColor = d3.color(fill).darker().hex();
+      this.setAttribute("color", darkerColor);
+      this.querySelectorAll("g > rect:nth-child(2)").forEach(rect => {
+        rect.setAttribute("fill", "currentColor");
+      });
+    });
+  }
+
+  if (isOlderThan("1.97.0")) {
+    // v1.97.00 changed MFCG link to an arbitrary preview URL
+    options.villageMaxPopulation = 2000;
+    options.showBurgPreview = options.showMFCGMap;
+    delete options.showMFCGMap;
+
+    pack.burgs.forEach(burg => {
+      if (!burg.i || burg.removed) return;
+
+      if (burg.MFCG) {
+        burg.link = getBurgLink(burg);
+        delete burg.MFCG;
+      }
+    });
+  }
+
+  if (isOlderThan("1.98.0")) {
+    // v1.98.00 changed compass layer and rose element id
+    const rose = compass.select("use");
+    rose.attr("xlink:href", "#defs-compass-rose");
+
+    if (!compass.selectAll("*").size()) {
+      compass.style("display", "none");
+      compass.append("use").attr("xlink:href", "#defs-compass-rose");
+      shiftCompass();
+    }
+  }
+
+  if (isOlderThan("1.99.0")) {
+    // v1.99.00 changed routes generation algorithm and data format
+    routes.attr("display", null).attr("style", null);
+
+    delete cells.road;
+    delete cells.crossroad;
+
+    pack.routes = [];
+    const POINT_DISTANCE = grid.spacing * 0.75;
+
+    for (const g of document.querySelectorAll("#viewbox > #routes > g")) {
+      const group = g.id;
+      if (!group) continue;
+
+      for (const node of g.querySelectorAll("path")) {
+        const totalLength = node.getTotalLength();
+        if (!totalLength) {
+          ERROR && console.error("Route path has zero length", node);
+          continue;
+        }
+
+        const increment = totalLength / Math.ceil(totalLength / POINT_DISTANCE);
+        const points = [];
+
+        for (let i = 0; i <= totalLength + 0.1; i += increment) {
+          const point = node.getPointAtLength(i);
+          const x = rn(point.x, 2);
+          const y = rn(point.y, 2);
+          const cellId = findCell(x, y);
+          points.push([x, y, cellId]);
+        }
+
+        if (points.length < 2) {
+          ERROR && console.error("Route path has less than 2 points", node);
+          continue;
+        }
+
+        const secondCellId = points[1][2];
+        const feature = pack.cells.f[secondCellId];
+
+        pack.routes.push({i: pack.routes.length, group, feature, points});
+      }
+    }
+    routes.selectAll("path").remove();
+    if (layerIsOn("toggleRoutes")) drawRoutes();
+
+    const links = (pack.cells.routes = {});
+    for (const route of pack.routes) {
+      for (let i = 0; i < route.points.length - 1; i++) {
+        const cellId = route.points[i][2];
+        const nextCellId = route.points[i + 1][2];
+
+        if (cellId !== nextCellId) {
+          if (!links[cellId]) links[cellId] = {};
+          links[cellId][nextCellId] = route.i;
+
+          if (!links[nextCellId]) links[nextCellId] = {};
+          links[nextCellId][cellId] = route.i;
+        }
+      }
+    }
+  }
+
+  if (isOlderThan("1.100.0")) {
+    // v1.100.00 added zones to pack data
+    pack.zones = [];
+    zones.selectAll("g").each(function () {
+      const i = pack.zones.length;
+      const name = this.dataset.description;
+      const type = this.dataset.type;
+      const color = this.getAttribute("fill");
+      const cells = this.dataset.cells.split(",").map(Number);
+      pack.zones.push({i, name, type, cells, color});
+    });
+    zones.style("display", null).selectAll("*").remove();
+    if (layerIsOn("toggleZones")) drawZones();
+  }
+
+  if (isOlderThan("1.104.0")) {
+    // v1.104.00 separated pole of inaccessibility detection from layer rendering
+    BurgsAndStates.getPoles();
+    Provinces.getPoles();
+  }
+
+  if (isOlderThan("1.105.0")) {
+    // v1.104.0 introduced some bugs with layers visibility
+    viewbox.select("#icons").style("display", null);
+    viewbox.select("#ice").style("display", null);
+    viewbox.select("#regions").style("display", null);
+    viewbox.select("#armies").style("display", null);
+  }
+
+  if (isOlderThan("1.106.0")) {
+    // v1.104.0 introduced bugs with coastlines. Redraw features
+    defs.select("#featurePaths").remove();
+    defs.append("g").attr("id", "featurePaths");
+    defs.select("#land").selectAll("path, use").remove();
+    defs.select("#water").selectAll("path, use").remove();
+    viewbox.select("#coastline").selectAll("path, use").remove();
+
+    // v1.104.0 introduced bugs with state borders
+    regions
+      .attr("opacity", null)
+      .attr("stroke-width", null)
+      .attr("letter-spacing", null)
+      .attr("fill", null)
+      .attr("stroke", null);
+
+    // pole can be missing for some states/provinces
+    BurgsAndStates.getPoles();
+    Provinces.getPoles();
+  }
+
+  if (isOlderThan("1.107.0")) {
+    // v1.107.0 allowed custom images for markers and regiments
+    if (layerIsOn("toggleMarkers")) drawMarkers();
+    if (layerIsOn("toggleMilitary")) drawMilitary();
+  }
+
+  if (isOlderThan("1.108.0")) {
+    // v1.108.0 changed features rendering method
+    pack.features.forEach(f => {
+      // fix lakes with missing group
+      if (f?.type === "lake" && !f.group) f.group = "freshwater";
+    });
+    drawFeatures();
+
+    // some old maps has incorrect "heights" groups
+    viewbox.selectAll("#heights").remove();
   }
 }

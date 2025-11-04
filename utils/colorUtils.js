@@ -14,11 +14,27 @@ function toHEX(rgb) {
     : "";
 }
 
+const C_12 = [
+  "#dababf",
+  "#fb8072",
+  "#80b1d3",
+  "#fdb462",
+  "#b3de69",
+  "#fccde5",
+  "#c6b9c1",
+  "#bc80bd",
+  "#ccebc5",
+  "#ffed6f",
+  "#8dd3c7",
+  "#eb8de7"
+];
+const scaleRainbow = d3.scaleSequential(d3.interpolateRainbow);
+
 // return array of standard shuffled colors
 function getColors(number) {
-  const c12 = ["#dababf", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#fccde5", "#c6b9c1", "#bc80bd", "#ccebc5", "#ffed6f", "#8dd3c7", "#eb8de7"];
-  const cRB = d3.scaleSequential(d3.interpolateRainbow);
-  const colors = d3.shuffle(d3.range(number).map(i => (i < 12 ? c12[i] : d3.color(cRB((i - 12) / (number - 12))).hex())));
+  const colors = d3.shuffle(
+    d3.range(number).map(i => (i < 12 ? C_12[i] : d3.color(scaleRainbow((i - 12) / (number - 12))).hex()))
+  );
   return colors;
 }
 

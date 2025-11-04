@@ -1,92 +1,85 @@
 "use strict";
 
 window.Lakes = (function () {
-  const setClimateData = function (h) {
-    const cells = pack.cells;
-    const lakeOutCells = new Uint16Array(cells.i.length);
+  const LAKE_ELEVATION_DELTA = 0.1;
 
-    pack.features.forEach(f => {
-      if (f.type !== "lake") return;
+  // check if lake can be potentially open (not in deep depression)
+  const detectCloseLakes = h => {
+    const {cells} = pack;
+    const ELEVATION_LIMIT = +byId("lakeElevationLimitOutput").value;
 
-      // default flux: sum of precipitation around lake
-      f.flux = f.shoreline.reduce((acc, c) => acc + grid.cells.prec[cells.g[c]], 0);
+    pack.features.forEach(feature => {
+      if (feature.type !== "lake") return;
+      delete feature.closed;
 
-      // temperature and evaporation to detect closed lakes
-      f.temp = f.cells < 6 ? grid.cells.temp[cells.g[f.firstCell]] : rn(d3.mean(f.shoreline.map(c => grid.cells.temp[cells.g[c]])), 1);
-      const height = (f.height - 18) ** heightExponentInput.value; // height in meters
-      const evaporation = ((700 * (f.temp + 0.006 * height)) / 50 + 75) / (80 - f.temp); // based on Penman formula, [1-11]
-      f.evaporation = rn(evaporation * f.cells);
-
-      // no outlet for lakes in depressed areas
-      if (f.closed) return;
-
-      // lake outlet cell
-      f.outCell = f.shoreline[d3.scan(f.shoreline, (a, b) => h[a] - h[b])];
-      lakeOutCells[f.outCell] = f.i;
-    });
-
-    return lakeOutCells;
-  };
-
-  // get array of land cells aroound lake
-  const getShoreline = function (lake) {
-    const uniqueCells = new Set();
-    lake.vertices.forEach(v => pack.vertices.c[v].forEach(c => pack.cells.h[c] >= 20 && uniqueCells.add(c)));
-    lake.shoreline = [...uniqueCells];
-  };
-
-  const prepareLakeData = h => {
-    const cells = pack.cells;
-    const ELEVATION_LIMIT = +document.getElementById("lakeElevationLimitOutput").value;
-
-    pack.features.forEach(f => {
-      if (f.type !== "lake") return;
-      delete f.flux;
-      delete f.inlets;
-      delete f.outlet;
-      delete f.height;
-      delete f.closed;
-      !f.shoreline && Lakes.getShoreline(f);
-
-      // lake surface height is as lowest land cells around
-      const min = f.shoreline.sort((a, b) => h[a] - h[b])[0];
-      f.height = h[min] - 0.1;
-
-      // check if lake can be open (not in deep depression)
-      if (ELEVATION_LIMIT === 80) {
-        f.closed = false;
+      const MAX_ELEVATION = feature.height + ELEVATION_LIMIT;
+      if (MAX_ELEVATION > 99) {
+        feature.closed = false;
         return;
       }
 
-      let deep = true;
-      const threshold = f.height + ELEVATION_LIMIT;
-      const queue = [min];
+      let isDeep = true;
+      const lowestShorelineCell = feature.shoreline.sort((a, b) => h[a] - h[b])[0];
+      const queue = [lowestShorelineCell];
       const checked = [];
-      checked[min] = true;
+      checked[lowestShorelineCell] = true;
 
-      // check if elevated lake can potentially pour to another water body
-      while (deep && queue.length) {
-        const q = queue.pop();
+      while (queue.length && isDeep) {
+        const cellId = queue.pop();
 
-        for (const n of cells.c[q]) {
-          if (checked[n]) continue;
-          if (h[n] >= threshold) continue;
+        for (const neibCellId of cells.c[cellId]) {
+          if (checked[neibCellId]) continue;
+          if (h[neibCellId] >= MAX_ELEVATION) continue;
 
-          if (h[n] < 20) {
-            const nFeature = pack.features[cells.f[n]];
-            if (nFeature.type === "ocean" || f.height > nFeature.height) {
-              deep = false;
-              break;
-            }
+          if (h[neibCellId] < 20) {
+            const nFeature = pack.features[cells.f[neibCellId]];
+            if (nFeature.type === "ocean" || feature.height > nFeature.height) isDeep = false;
           }
 
-          checked[n] = true;
-          queue.push(n);
+          checked[neibCellId] = true;
+          queue.push(neibCellId);
         }
       }
 
-      f.closed = deep;
+      feature.closed = isDeep;
     });
+  };
+
+  const defineClimateData = function (heights) {
+    const {cells, features} = pack;
+    const lakeOutCells = new Uint16Array(cells.i.length);
+
+    features.forEach(feature => {
+      if (feature.type !== "lake") return;
+      feature.flux = getFlux(feature);
+      feature.temp = getLakeTemp(feature);
+      feature.evaporation = getLakeEvaporation(feature);
+      if (feature.closed) return; // no outlet for lakes in depressed areas
+
+      feature.outCell = getLowestShoreCell(feature);
+      lakeOutCells[feature.outCell] = feature.i;
+    });
+
+    return lakeOutCells;
+
+    function getFlux(lake) {
+      return lake.shoreline.reduce((acc, c) => acc + grid.cells.prec[cells.g[c]], 0);
+    }
+
+    function getLakeTemp(lake) {
+      if (lake.cells < 6) return grid.cells.temp[cells.g[lake.firstCell]];
+      return rn(d3.mean(lake.shoreline.map(c => grid.cells.temp[cells.g[c]])), 1);
+    }
+
+    function getLakeEvaporation(lake) {
+      const height = (lake.height - 18) ** heightExponentInput.value; // height in meters
+      const evaporation = ((700 * (lake.temp + 0.006 * height)) / 50 + 75) / (80 - lake.temp); // based on Penman formula, [1-11]
+      return rn(evaporation * lake.cells);
+    }
+
+    function getLowestShoreCell(lake) {
+      return lake.shoreline.sort((a, b) => heights[a] - heights[b])[0];
+    }
   };
 
   const cleanupLakeData = function () {
@@ -107,23 +100,10 @@ window.Lakes = (function () {
     }
   };
 
-  const defineGroup = function () {
-    for (const feature of pack.features) {
-      if (feature.type !== "lake") continue;
-      const lakeEl = lakes.select(`[data-f="${feature.i}"]`).node();
-      if (!lakeEl) continue;
-
-      feature.group = getGroup(feature);
-      document.getElementById(feature.group).appendChild(lakeEl);
-    }
-  };
-
-  const generateName = function () {
-    Math.random = aleaPRNG(seed);
-    for (const feature of pack.features) {
-      if (feature.type !== "lake") continue;
-      feature.name = getName(feature);
-    }
+  const getHeight = function (feature) {
+    const heights = pack.cells.h;
+    const minShoreHeight = d3.min(feature.shoreline.map(cellId => heights[cellId])) || 20;
+    return rn(minShoreHeight - LAKE_ELEVATION_DELTA, 2);
   };
 
   const getName = function (feature) {
@@ -132,19 +112,5 @@ window.Lakes = (function () {
     return Names.getCulture(culture);
   };
 
-  function getGroup(feature) {
-    if (feature.temp < -3) return "frozen";
-    if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 10 === 0) return "lava";
-
-    if (!feature.inlets && !feature.outlet) {
-      if (feature.evaporation > feature.flux * 4) return "dry";
-      if (feature.cells < 3 && feature.firstCell % 10 === 0) return "sinkhole";
-    }
-
-    if (!feature.outlet && feature.evaporation > feature.flux) return "salt";
-
-    return "freshwater";
-  }
-
-  return {setClimateData, cleanupLakeData, prepareLakeData, defineGroup, generateName, getName, getShoreline};
+  return {defineClimateData, cleanupLakeData, detectCloseLakes, getHeight, getName};
 })();

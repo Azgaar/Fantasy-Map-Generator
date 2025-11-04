@@ -17,34 +17,22 @@ function editUnits() {
   };
 
   // add listeners
-  byId("distanceUnitInput").addEventListener("change", changeDistanceUnit);
-  byId("distanceScaleOutput").addEventListener("input", changeDistanceScale);
-  byId("distanceScaleInput").addEventListener("change", changeDistanceScale);
-  byId("heightUnit").addEventListener("change", changeHeightUnit);
-  byId("heightExponentInput").addEventListener("input", changeHeightExponent);
-  byId("heightExponentOutput").addEventListener("input", changeHeightExponent);
-  byId("temperatureScale").addEventListener("change", changeTemperatureScale);
-  byId("barSizeOutput").addEventListener("input", renderScaleBar);
-  byId("barSizeInput").addEventListener("input", renderScaleBar);
-  byId("barLabel").addEventListener("input", renderScaleBar);
-  byId("barPosX").addEventListener("input", fitScaleBar);
-  byId("barPosY").addEventListener("input", fitScaleBar);
-  byId("barBackOpacity").addEventListener("input", changeScaleBarOpacity);
-  byId("barBackColor").addEventListener("input", changeScaleBarColor);
+  byId("distanceUnitInput").on("change", changeDistanceUnit);
+  byId("distanceScaleInput").on("change", changeDistanceScale);
+  byId("heightUnit").on("change", changeHeightUnit);
+  byId("heightExponentInput").on("input", changeHeightExponent);
+  byId("temperatureScale").on("change", changeTemperatureScale);
 
-  byId("populationRateOutput").addEventListener("input", changePopulationRate);
-  byId("populationRateInput").addEventListener("change", changePopulationRate);
-  byId("urbanizationOutput").addEventListener("input", changeUrbanizationRate);
-  byId("urbanizationInput").addEventListener("change", changeUrbanizationRate);
-  byId("urbanDensityOutput").addEventListener("input", changeUrbanDensity);
-  byId("urbanDensityInput").addEventListener("change", changeUrbanDensity);
+  byId("populationRateInput").on("change", changePopulationRate);
+  byId("urbanizationInput").on("change", changeUrbanizationRate);
+  byId("urbanDensityInput").on("change", changeUrbanDensity);
 
-  byId("addLinearRuler").addEventListener("click", addRuler);
-  byId("addOpisometer").addEventListener("click", toggleOpisometerMode);
-  byId("addRouteOpisometer").addEventListener("click", toggleRouteOpisometerMode);
-  byId("addPlanimeter").addEventListener("click", togglePlanimeterMode);
-  byId("removeRulers").addEventListener("click", removeAllRulers);
-  byId("unitsRestore").addEventListener("click", restoreDefaultUnits);
+  byId("addLinearRuler").on("click", addRuler);
+  byId("addOpisometer").on("click", toggleOpisometerMode);
+  byId("addRouteOpisometer").on("click", toggleRouteOpisometerMode);
+  byId("addPlanimeter").on("click", togglePlanimeterMode);
+  byId("removeRulers").on("click", removeAllRulers);
+  byId("unitsRestore").on("click", restoreDefaultUnits);
 
   function changeDistanceUnit() {
     if (this.value === "custom_name") {
@@ -62,6 +50,7 @@ function editUnits() {
   }
 
   function changeDistanceScale() {
+    distanceScale = +this.value;
     renderScaleBar();
     calculateFriendlyGridSize();
   }
@@ -77,19 +66,11 @@ function editUnits() {
 
   function changeHeightExponent() {
     calculateTemperatures();
-    if (layerIsOn("toggleTemp")) drawTemp();
+    if (layerIsOn("toggleTemperature")) drawTemperature();
   }
 
   function changeTemperatureScale() {
-    if (layerIsOn("toggleTemp")) drawTemp();
-  }
-
-  function changeScaleBarOpacity() {
-    scaleBar.select("rect").attr("opacity", this.value);
-  }
-
-  function changeScaleBarColor() {
-    scaleBar.select("rect").attr("fill", this.value);
+    if (layerIsOn("toggleTemperature")) drawTemperature();
   }
 
   function changePopulationRate() {
@@ -105,10 +86,8 @@ function editUnits() {
   }
 
   function restoreDefaultUnits() {
-    // distanceScale
     distanceScale = 3;
-    byId("distanceScaleOutput").value = 3;
-    byId("distanceScaleInput").value = 3;
+    byId("distanceScaleInput").value = distanceScale;
     unlock("distanceScale");
 
     // units
@@ -125,29 +104,16 @@ function editUnits() {
     calculateFriendlyGridSize();
 
     // height exponent
-    heightExponentInput.value = heightExponentOutput.value = 1.8;
+    heightExponentInput.value = 1.8;
     localStorage.removeItem("heightExponent");
     calculateTemperatures();
 
-    // scale bar
-    barSizeOutput.value = barSizeInput.value = 2;
-    barLabel.value = "";
-    barBackOpacity.value = 0.2;
-    barBackColor.value = "#ffffff";
-    barPosX.value = barPosY.value = 99;
-
-    localStorage.removeItem("barSize");
-    localStorage.removeItem("barLabel");
-    localStorage.removeItem("barBackOpacity");
-    localStorage.removeItem("barBackColor");
-    localStorage.removeItem("barPosX");
-    localStorage.removeItem("barPosY");
     renderScaleBar();
 
     // population
-    populationRate = populationRateOutput.value = populationRateInput.value = 1000;
-    urbanization = urbanizationOutput.value = urbanizationInput.value = 1;
-    urbanDensity = urbanDensityOutput.value = urbanDensityInput.value = 10;
+    populationRate = populationRateInput.value = 1000;
+    urbanization = urbanizationInput.value = 1;
+    urbanDensity = urbanDensityInput.value = 10;
     localStorage.removeItem("populationRate");
     localStorage.removeItem("urbanization");
     localStorage.removeItem("urbanDensity");
@@ -155,11 +121,16 @@ function editUnits() {
 
   function addRuler() {
     if (!layerIsOn("toggleRulers")) toggleRulers();
+
+    const width = Math.min(graphWidth, svgWidth);
+    const height = Math.min(graphHeight, svgHeight);
     const pt = byId("map").createSVGPoint();
-    (pt.x = graphWidth / 2), (pt.y = graphHeight / 4);
+    pt.x = width / 2;
+    pt.y = height / 4;
     const p = pt.matrixTransform(viewbox.node().getScreenCTM().inverse());
-    const dx = graphWidth / 4 / scale;
-    const dy = (rulers.data.length * 40) % (graphHeight / 2);
+
+    const dx = width / 4 / scale;
+    const dy = (rulers.data.length * 40) % (height / 2);
     const from = [(p.x - dx) | 0, (p.y + dy) | 0];
     const to = [(p.x + dx) | 0, (p.y + dy) | 0];
     rulers.create(Ruler, [from, to]).draw();
@@ -207,13 +178,15 @@ function editUnits() {
       tip("Draw a curve along routes to measure length. Hold Shift to measure away from roads.", true);
       unitsBottom.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
       this.classList.add("pressed");
+
       viewbox.style("cursor", "crosshair").call(
         d3.drag().on("start", function () {
           const cells = pack.cells;
           const burgs = pack.burgs;
           const point = d3.mouse(this);
           const c = findCell(point[0], point[1]);
-          if (cells.road[c] || d3.event.sourceEvent.shiftKey) {
+
+          if (Routes.isConnected(c) || d3.event.sourceEvent.shiftKey) {
             const b = cells.burg[c];
             const x = b ? burgs[b].x : cells.p[c][0];
             const y = b ? burgs[b].y : cells.p[c][1];
@@ -222,7 +195,7 @@ function editUnits() {
             d3.event.on("drag", function () {
               const point = d3.mouse(this);
               const c = findCell(point[0], point[1]);
-              if (cells.road[c] || d3.event.sourceEvent.shiftKey) {
+              if (Routes.isConnected(c) || d3.event.sourceEvent.shiftKey) {
                 routeOpisometer.trackCell(c, true);
               }
             });

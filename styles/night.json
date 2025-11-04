@@ -72,7 +72,7 @@
     "mask": "url(#water)",
     "shape-rendering": "optimizespeed"
   },
-  "#rose": {
+  "#compass > use": {
     "transform": "translate(80 80) scale(0.25)"
   },
   "#relig": {
@@ -258,6 +258,15 @@
     "stroke-width": null,
     "filter": null
   },
+  "#emblems > #stateEmblems": {
+    "data-size": 1
+  },
+  "#emblems > #provinceEmblems": {
+    "data-size": 1
+  },
+  "#emblems > #burgEmblems": {
+    "data-size": 1
+  },
   "#texture": {
     "opacity": 0.1,
     "filter": null,
@@ -286,14 +295,25 @@
     "href": "",
     "opacity": 0.3
   },
-  "#terrs": {
+  "#terrs > #oceanHeights": {
+    "data-render": 1,
+    "opacity": 0.5,
+    "scheme": "livid",
+    "terracing": 0,
+    "skip": 0,
+    "relax": 1,
+    "curve": "curveBasisClosed",
+    "filter": null,
+    "mask": null
+  },
+  "#terrs > #landHeights": {
     "opacity": 1,
     "scheme": "livid",
     "terracing": 0,
     "skip": 10,
     "relax": 0,
-    "curve": 0,
-    "filter": "url(#blurFilter)",
+    "curve": "curveBasisClosed",
+    "filter": null,
     "mask": "url(#land)"
   },
   "#legend": {
@@ -312,6 +332,7 @@
     "opacity": 1,
     "fill": "#dbdbe1",
     "text-shadow": "black 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 8,
     "font-size": 8,
     "font-family": "Courier New"
@@ -337,6 +358,7 @@
     "opacity": 1,
     "fill": "#ffffff",
     "text-shadow": "black 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 4.28,
     "font-size": 4.28,
     "font-family": "Courier New"
@@ -364,6 +386,7 @@
     "stroke": "#7a83ae",
     "stroke-width": 0.3,
     "text-shadow": "black 0px 0px 0.1px",
+    "letter-spacing": 0,
     "data-size": 14,
     "font-size": 14,
     "font-family": "Courier New",
@@ -374,7 +397,8 @@
     "fill": "#3e3e4b",
     "stroke": "#3a3a3a",
     "stroke-width": 0,
-    "text-shadow": "white 0px 0px 4px",
+    "text-shadow": "black 0px 0px 4px",
+    "letter-spacing": 0,
     "data-size": 18,
     "font-size": 18,
     "font-family": "Almendra SC",
@@ -398,5 +422,25 @@
     "rx": "5%",
     "ry": "5%",
     "filter": "blur(20px)"
+  },
+  "#scaleBar": {
+    "opacity": 1,
+    "fill": "#b5c1d4",
+    "font-size": 11,
+    "data-bar-size": 2,
+    "data-x": 99,
+    "data-y": 99,
+    "data-label": ""
+  },
+  "#scaleBarBack": {
+    "opacity": 0.5,
+    "fill": "#0a1e24",
+    "stroke": "#40547a",
+    "stroke-width": 1,
+    "filter": "",
+    "data-top": 22,
+    "data-right": 15,
+    "data-bottom": 16,
+    "data-left": 10
   }
 }

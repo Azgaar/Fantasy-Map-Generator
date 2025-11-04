@@ -8,9 +8,10 @@ function editRegiment(selector) {
   armies.selectAll(":scope > g > g").call(d3.drag().on("drag", dragRegiment));
   elSelected = selector ? document.querySelector(selector) : d3.event.target.parentElement; // select g element
   if (!pack.states[elSelected.dataset.state]) return;
-  if (!regiment()) return;
-  updateRegimentData(regiment());
+  if (!getRegiment()) return;
+  updateRegimentData(getRegiment());
   drawBase();
+  drawRotationControl();
 
   $("#regimentEditor").dialog({
     title: "Edit Regiment",
@@ -23,30 +24,31 @@ function editRegiment(selector) {
   modules.editRegiment = true;
 
   // add listeners
-  document.getElementById("regimentNameRestore").addEventListener("click", restoreName);
-  document.getElementById("regimentType").addEventListener("click", changeType);
-  document.getElementById("regimentName").addEventListener("change", changeName);
-  document.getElementById("regimentEmblem").addEventListener("input", changeEmblem);
-  document.getElementById("regimentEmblemSelect").addEventListener("click", selectEmblem);
-  document.getElementById("regimentAttack").addEventListener("click", toggleAttack);
-  document.getElementById("regimentRegenerateLegend").addEventListener("click", regenerateLegend);
-  document.getElementById("regimentLegend").addEventListener("click", editLegend);
-  document.getElementById("regimentSplit").addEventListener("click", splitRegiment);
-  document.getElementById("regimentAdd").addEventListener("click", toggleAdd);
-  document.getElementById("regimentAttach").addEventListener("click", toggleAttach);
-  document.getElementById("regimentRemove").addEventListener("click", removeRegiment);
+  byId("regimentNameRestore").addEventListener("click", restoreName);
+  byId("regimentType").addEventListener("click", changeType);
+  byId("regimentName").addEventListener("change", changeName);
+  byId("regimentEmblemChange").addEventListener("click", changeEmblem);
+  byId("regimentAttack").addEventListener("click", toggleAttack);
+  byId("regimentRegenerateLegend").addEventListener("click", regenerateLegend);
+  byId("regimentLegend").addEventListener("click", editLegend);
+  byId("regimentSplit").addEventListener("click", splitRegiment);
+  byId("regimentAdd").addEventListener("click", toggleAdd);
+  byId("regimentAttach").addEventListener("click", toggleAttach);
+  byId("regimentRemove").addEventListener("click", removeRegiment);
 
   // get regiment data element
-  function regiment() {
-    return pack.states[elSelected.dataset.state].military.find(r => r.i == elSelected.dataset.id);
+  function getRegiment() {
+    return pack.states[elSelected.dataset.state]?.military.find(r => r.i == elSelected.dataset.id);
   }
 
   function updateRegimentData(regiment) {
-    document.getElementById("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
-    document.getElementById("regimentName").value = regiment.name;
-    document.getElementById("regimentEmblem").value = regiment.icon;
-    const composition = document.getElementById("regimentComposition");
+    byId("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
+    byId("regimentName").value = regiment.name;
+    byId("regimentEmblem").innerHTML = regiment.icon.startsWith("http") || regiment.icon.startsWith("data:image")
+      ? `<img src="${regiment.icon}" style="width: 1em; height: 1em;">`
+      : regiment.icon;
 
+    const composition = byId("regimentComposition");
     composition.innerHTML = options.military
       .map(u => {
         return `<div data-tip="${capitalize(u.name)} number. Input to change">
@@ -60,7 +62,7 @@ function editRegiment(selector) {
   }
 
   function drawBase() {
-    const reg = regiment();
+    const reg = getRegiment();
     const clr = pack.states[elSelected.dataset.state].color;
     const base = viewbox
       .insert("g", "g#armies")
@@ -69,12 +71,8 @@ function editRegiment(selector) {
       .attr("stroke", "#000")
       .attr("cursor", "move");
     base
-      .on("mouseenter", () => {
-        tip("Regiment base. Drag to re-base the regiment", true);
-      })
-      .on("mouseleave", () => {
-        tip("", true);
-      });
+      .on("mouseenter", () => tip("Regiment base. Drag to re-base the regiment", true))
+      .on("mouseleave", () => tip("", true));
 
     base
       .append("line")
@@ -92,15 +90,50 @@ function editRegiment(selector) {
       .call(d3.drag().on("drag", dragBase));
   }
 
+  function drawRotationControl() {
+    const reg = getRegiment();
+    const {x, width, y, height} = elSelected.getBBox();
+
+    debug
+      .append("circle")
+      .attr("id", "rotationControl")
+      .attr("cx", x + width)
+      .attr("cy", y + height / 2)
+      .attr("r", 1)
+      .attr("opacity", 1)
+      .attr("fill", "yellow")
+      .attr("stroke-width", 0.3)
+      .attr("stroke", "black")
+      .attr("cursor", "alias")
+      .attr("transform", `rotate(${reg.angle || 0})`)
+      .attr("transform-origin", `${reg.x}px ${reg.y}px`)
+      .on("mouseenter", () => tip("Drag to rotate the regiment", true))
+      .on("mouseleave", () => tip("", true))
+      .call(d3.drag().on("start", rotateRegiment));
+  }
+
+  function rotateRegiment() {
+    const reg = getRegiment();
+
+    d3.event.on("drag", function () {
+      const {x, y} = d3.event;
+      const angle = rn(Math.atan2(y - reg.y, x - reg.x) * (180 / Math.PI), 2);
+      elSelected.setAttribute("transform", `rotate(${angle})`);
+      this.setAttribute("transform", `rotate(${angle})`);
+      reg.angle = rn(angle, 2);
+    });
+  }
+
   function changeType() {
-    const reg = regiment();
+    const reg = getRegiment();
     reg.n = +!reg.n;
-    document.getElementById("regimentType").className = reg.n ? "icon-anchor" : "icon-users";
+    byId("regimentType").className = reg.n ? "icon-anchor" : "icon-users";
 
     const size = +armies.attr("box-size");
     const baseRect = elSelected.querySelectorAll("rect")[0];
     const iconRect = elSelected.querySelectorAll("rect")[1];
     const icon = elSelected.querySelector(".regimentIcon");
+    const image = elSelected.querySelector(".regimentIcon");
     const x = reg.n ? reg.x - size * 2 : reg.x - size * 3;
     baseRect.setAttribute("x", x);
     baseRect.setAttribute("width", reg.n ? size * 4 : size * 6);
@@ -110,31 +143,31 @@ function editRegiment(selector) {
   }
 
   function changeName() {
-    elSelected.dataset.name = regiment().name = this.value;
+    elSelected.dataset.name = getRegiment().name = this.value;
   }
 
   function restoreName() {
-    const reg = regiment(),
+    const reg = getRegiment(),
       regs = pack.states[elSelected.dataset.state].military;
     const name = Military.getName(reg, regs);
-    elSelected.dataset.name = reg.name = document.getElementById("regimentName").value = name;
-  }
-
-  function selectEmblem() {
-    selectIcon(regimentEmblem.value, v => {
-      regimentEmblem.value = v;
-      changeEmblem();
-    });
+    elSelected.dataset.name = reg.name = byId("regimentName").value = name;
   }
 
   function changeEmblem() {
-    const emblem = document.getElementById("regimentEmblem").value;
-    regiment().icon = elSelected.querySelector(".regimentIcon").innerHTML = emblem;
+    const regiment = getRegiment();
+
+    selectIcon(regiment.icon, value => {
+      regiment.icon = value;
+      const isExternal = value.startsWith("http") || value.startsWith("data:image");
+      byId("regimentEmblem").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
+      elSelected.querySelector(".regimentIcon").innerHTML = isExternal ? "" : value;
+      elSelected.querySelector(".regimentImage").setAttribute("href", isExternal ? value : "");
+    });
   }
 
   function changeUnit() {
     const u = this.dataset.u;
-    const reg = regiment();
+    const reg = getRegiment();
     reg.u[u] = +this.value || 0;
     reg.a = d3.sum(Object.values(reg.u));
     elSelected.querySelector("text").innerHTML = Military.getTotal(reg);
@@ -143,7 +176,7 @@ function editRegiment(selector) {
   }
 
   function splitRegiment() {
-    const reg = regiment(),
+    const reg = getRegiment(),
       u1 = reg.u;
     const state = +elSelected.dataset.state,
       military = pack.states[state].military;
@@ -187,14 +220,14 @@ function editRegiment(selector) {
     newReg.name = Military.getName(newReg, military);
     military.push(newReg);
     Military.generateNote(newReg, pack.states[state]); // add legend
-    Military.drawRegiment(newReg, state); // draw new reg below
+    drawRegiment(newReg, state); // draw new reg below
 
     if (regimentsOverviewRefresh.offsetParent) regimentsOverviewRefresh.click();
   }
 
   function toggleAdd() {
-    document.getElementById("regimentAdd").classList.toggle("pressed");
-    if (document.getElementById("regimentAdd").classList.contains("pressed")) {
+    byId("regimentAdd").classList.toggle("pressed");
+    if (byId("regimentAdd").classList.contains("pressed")) {
       viewbox.style("cursor", "crosshair").on("click", addRegimentOnClick);
       tip("Click on map to create new regiment or fleet", true);
     } else {
@@ -206,8 +239,7 @@ function editRegiment(selector) {
   function addRegimentOnClick() {
     const point = d3.mouse(this);
     const cell = findCell(point[0], point[1]);
-    const x = pack.cells.p[cell][0],
-      y = pack.cells.p[cell][1];
+    const [x, y] = pack.cells.p[cell];
     const state = +elSelected.dataset.state,
       military = pack.states[state].military;
     const i = military.length ? last(military).i + 1 : 0;
@@ -216,14 +248,14 @@ function editRegiment(selector) {
     reg.name = Military.getName(reg, military);
     military.push(reg);
     Military.generateNote(reg, pack.states[state]); // add legend
-    Military.drawRegiment(reg, state);
+    drawRegiment(reg, state);
     if (regimentsOverviewRefresh.offsetParent) regimentsOverviewRefresh.click();
     toggleAdd();
   }
 
   function toggleAttack() {
-    document.getElementById("regimentAttack").classList.toggle("pressed");
-    if (document.getElementById("regimentAttack").classList.contains("pressed")) {
+    byId("regimentAttack").classList.toggle("pressed");
+    if (byId("regimentAttack").classList.contains("pressed")) {
       viewbox.style("cursor", "crosshair").on("click", attackRegimentOnClick);
       tip("Click on another regiment to initiate battle", true);
       armies.selectAll(":scope > g").classed("draggable", false);
@@ -254,7 +286,7 @@ function editRegiment(selector) {
       return;
     }
 
-    const attacker = regiment();
+    const attacker = getRegiment();
     const defender = pack.states[regSelected.dataset.state].military.find(r => r.i == regSelected.dataset.id);
     if (!attacker.a || !defender.a) {
       tip("Regiment has no troops to battle", false, "error");
@@ -266,7 +298,7 @@ function editRegiment(selector) {
     (defender.px = defender.x), (defender.py = defender.y);
 
     // move attacker to defender
-    Military.moveRegiment(attacker, defender.x, defender.y - 8);
+    moveRegiment(attacker, defender.x, defender.y - 8);
 
     // draw battle icon
     const attack = d3
@@ -277,6 +309,7 @@ function editRegiment(selector) {
       .on("end", () => new Battle(attacker, defender));
     svg
       .append("text")
+      .attr("text-rendering", "optimizeSpeed")
       .attr("x", window.innerWidth / 2)
       .attr("y", window.innerHeight / 2)
       .text("⚔️")
@@ -294,8 +327,8 @@ function editRegiment(selector) {
   }
 
   function toggleAttach() {
-    document.getElementById("regimentAttach").classList.toggle("pressed");
-    if (document.getElementById("regimentAttach").classList.contains("pressed")) {
+    byId("regimentAttach").classList.toggle("pressed");
+    if (byId("regimentAttach").classList.contains("pressed")) {
       viewbox.style("cursor", "crosshair").on("click", attachRegimentOnClick);
       tip("Click on another regiment to unite both regiments. The current regiment will be removed", true);
       armies.selectAll(":scope > g").classed("draggable", false);
@@ -322,7 +355,7 @@ function editRegiment(selector) {
       return;
     }
 
-    const reg = regiment(); // reg to be attached
+    const reg = getRegiment(); // reg to be attached
     const sel = pack.states[newState].military.find(r => r.i == regSelected.dataset.id); // reg to attach to
 
     for (const unit of options.military) {
@@ -349,11 +382,11 @@ function editRegiment(selector) {
     if (index != -1) notes.splice(index, 1);
 
     const s = pack.states[elSelected.dataset.state];
-    Military.generateNote(regiment(), s);
+    Military.generateNote(getRegiment(), s);
   }
 
   function editLegend() {
-    editNotes(elSelected.id, regiment().name);
+    editNotes(elSelected.id, getRegiment().name);
   }
 
   function removeRegiment() {
@@ -365,7 +398,7 @@ function editRegiment(selector) {
         Remove: function () {
           $(this).dialog("close");
           const military = pack.states[elSelected.dataset.state].military;
-          const regIndex = military.indexOf(regiment());
+          const regIndex = military.indexOf(getRegiment());
           if (regIndex === -1) return;
           military.splice(regIndex, 1);
 
@@ -392,36 +425,48 @@ function editRegiment(selector) {
     const size = +armies.attr("box-size");
     const w = reg.n ? size * 4 : size * 6;
     const h = size * 2;
-    const x1 = x => rn(x - w / 2, 2);
-    const y1 = y => rn(y - size, 2);
 
     const baseRect = this.querySelector("rect");
     const text = this.querySelector("text");
     const iconRect = this.querySelectorAll("rect")[1];
     const icon = this.querySelector(".regimentIcon");
+    const image = this.querySelector(".regimentImage");
 
     const self = elSelected === this;
     const baseLine = viewbox.select("g#regimentBase > line");
+    const rotationControl = debug.select("#rotationControl");
 
     d3.event.on("drag", function () {
-      const x = (reg.x = d3.event.x),
-        y = (reg.y = d3.event.y);
+      const {x, y} = d3.event;
+      reg.x = x;
+      reg.y = y;
+      const x1 = rn(x - w / 2, 2);
+      const y1 = rn(y - size, 2);
 
-      baseRect.setAttribute("x", x1(x));
-      baseRect.setAttribute("y", y1(y));
+      this.setAttribute("transform-origin", `${x}px ${y}px`);
+      baseRect.setAttribute("x", x1);
+      baseRect.setAttribute("y", y1);
       text.setAttribute("x", x);
       text.setAttribute("y", y);
-      iconRect.setAttribute("x", x1(x) - h);
-      iconRect.setAttribute("y", y1(y));
-      icon.setAttribute("x", x1(x) - size);
+      iconRect.setAttribute("x", x1 - h);
+      iconRect.setAttribute("y", y1);
+      icon.setAttribute("x", x1 - size);
       icon.setAttribute("y", y);
-      if (self) baseLine.attr("x2", x).attr("y2", y);
+      image.setAttribute("x", x1 - h);
+      image.setAttribute("y", y1);
+      if (self) {
+        baseLine.attr("x2", x).attr("y2", y);
+        rotationControl
+          .attr("cx", x1 + w)
+          .attr("cy", y)
+          .attr("transform-origin", `${x}px ${y}px`);
+      }
     });
   }
 
   function dragBase() {
     const baseLine = viewbox.select("g#regimentBase > line");
-    const reg = regiment();
+    const reg = getRegiment();
 
     d3.event.on("drag", function () {
       this.setAttribute("cx", d3.event.x);
@@ -436,12 +481,13 @@ function editRegiment(selector) {
   }
 
   function closeEditor() {
+    debug.selectAll("*").remove();
+    viewbox.selectAll("g#regimentBase").remove();
     armies.selectAll(":scope > g").classed("draggable", false);
     armies.selectAll("g>g").call(d3.drag().on("drag", null));
-    viewbox.selectAll("g#regimentBase").remove();
-    document.getElementById("regimentAdd").classList.remove("pressed");
-    document.getElementById("regimentAttack").classList.remove("pressed");
-    document.getElementById("regimentAttach").classList.remove("pressed");
+    byId("regimentAdd").classList.remove("pressed");
+    byId("regimentAttack").classList.remove("pressed");
+    byId("regimentAttach").classList.remove("pressed");
     restoreDefaultEvents();
     elSelected = null;
   }

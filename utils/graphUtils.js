@@ -241,10 +241,8 @@ void (function addFindAll() {
   };
 
   const tree_filter = function (x, y, radius) {
-    var t = {x, y, x0: this._x0, y0: this._y0, x3: this._x1, y3: this._y1, quads: [], node: this._root};
-    if (t.node) {
-      t.quads.push(new Quad(t.node, t.x0, t.y0, t.x3, t.y3));
-    }
+    const t = {x, y, x0: this._x0, y0: this._y0, x3: this._x1, y3: this._y1, quads: [], node: this._root};
+    if (t.node) t.quads.push(new Quad(t.node, t.x0, t.y0, t.x3, t.y3));
     radiusSearchInit(t, radius);
 
     var i = 0;
@@ -311,37 +309,6 @@ void (function addFindAll() {
     }
   };
 })();
-
-// helper function non-used for the generation
-function drawCellsValue(data) {
-  debug.selectAll("text").remove();
-  debug
-    .selectAll("text")
-    .data(data)
-    .enter()
-    .append("text")
-    .attr("x", (d, i) => pack.cells.p[i][0])
-    .attr("y", (d, i) => pack.cells.p[i][1])
-    .text(d => d);
-}
-
-// helper function non-used for the main generation
-function drawPolygons(data) {
-  const max = d3.max(data),
-    min = d3.min(data),
-    scheme = getColorScheme(terrs.attr("scheme"));
-  data = data.map(d => 1 - normalize(d, min, max));
-
-  debug.selectAll("polygon").remove();
-  debug
-    .selectAll("polygon")
-    .data(data)
-    .enter()
-    .append("polygon")
-    .attr("points", (d, i) => getPackPolygon(i))
-    .attr("fill", d => scheme(d))
-    .attr("stroke", d => scheme(d));
-}
 
 // draw raster heightmap preview (not used in main generation)
 function drawHeights({heights, width, height, scheme, renderOcean}) {

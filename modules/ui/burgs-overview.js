@@ -1,8 +1,8 @@
 "use strict";
-function overviewBurgs(options = {stateId: null, cultureId: null}) {
+function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   if (customization) return;
   closeDialogs("#burgsOverview, .stable");
-  if (!layerIsOn("toggleIcons")) toggleIcons();
+  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
   const body = byId("burgsBody");
@@ -36,7 +36,6 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
   });
   byId("burgsLockAll").addEventListener("click", toggleLockAll);
   byId("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
-  byId("burgsInvertLock").addEventListener("click", invertLock);
 
   function refreshBurgsEditor() {
     updateFilter();
@@ -45,7 +44,7 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
 
   function updateFilter() {
     const stateFilter = byId("burgsFilterState");
-    const selectedState = options.stateId !== null ? options.stateId : stateFilter.value || -1;
+    const selectedState = settings.stateId !== null ? settings.stateId : stateFilter.value || -1;
     stateFilter.options.length = 0; // remove all options
     stateFilter.options.add(new Option("all", -1, false, selectedState === -1));
     stateFilter.options.add(new Option(pack.states[0].name, 0, false, selectedState === 0));
@@ -53,7 +52,7 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
     statesSorted.forEach(s => stateFilter.options.add(new Option(s.name, s.i, false, s.i == selectedState)));
 
     const cultureFilter = byId("burgsFilterCulture");
-    const selectedCulture = options.cultureId !== null ? options.cultureId : cultureFilter.value || -1;
+    const selectedCulture = settings.cultureId !== null ? settings.cultureId : cultureFilter.value || -1;
     cultureFilter.options.length = 0; // remove all options
     cultureFilter.options.add(new Option(`all`, -1, false, selectedCulture === -1));
     cultureFilter.options.add(new Option(pack.cultures[0].name, 0, false, selectedCulture === 0));
@@ -76,7 +75,7 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
     for (const b of filtered) {
       const population = b.population * populationRate * urbanization;
       totalPopulation += population;
-      const type = b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg";
+      const features = b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg";
       const state = pack.states[b.state].name;
       const prov = pack.cells.province[b.cell];
       const province = prov ? pack.provinces[prov].name : "";
@@ -90,7 +89,7 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
         data-province="${province}"
         data-culture="${culture}"
         data-population=${population}
-        data-type="${type}"
+        data-features="${features}"
       >
         <span data-tip="Click to zoom into view" class="icon-dot-circled pointer"></span>
         <input data-tip="Burg name. Click and type to change" class="burgName" value="${
@@ -102,15 +101,16 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
           ${getCultureOptions(b.culture)}
         </select>
         <span data-tip="Burg population" class="icon-male"></span>
-        <input data-tip="Burg population. Type to change" class="burgPopulation" value=${si(population)} />
-        <div class="burgType">
+        <input data-tip="Burg population. Type to change" value=${si(
+          population
+        )} class="burgPopulation" style="width: 5em" />
+        <div style="width: 3em">
           <span
             data-tip="${b.capital ? " This burg is a state capital" : "Click to assign a capital status"}"
-            class="icon-star-empty${b.capital ? "" : " inactive pointer"}"
-          ></span>
+            class="icon-star-empty${b.capital ? "" : " inactive pointer"}" style="padding: 0 1px;"></span>
           <span data-tip="Click to toggle port status" class="icon-anchor pointer${
             b.port ? "" : " inactive"
-          }" style="font-size:.9em"></span>
+          }" style="font-size: .9em; padding: 0 1px;"></span>
         </div>
         <span data-tip="Edit burg" class="icon-pencil"></span>
         <span class="locks pointer ${
@@ -155,9 +155,9 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
   }
 
   function burgHighlightOn(event) {
-    if (!layerIsOn("toggleLabels")) toggleLabels();
     const burg = +event.target.dataset.id;
-    burgLabels.select("[data-id='" + burg + "']").classed("drag", true);
+    const label = burgLabels.select("[data-id='" + burg + "']");
+    if (label.size()) label.classed("drag", true);
   }
 
   function burgHighlightOff() {
@@ -246,7 +246,7 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
 
     confirmationDialog({
       title: "Remove burg",
-      message: "Are you sure you want to remove the burg? This actiove cannot be reverted",
+      message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
       confirm: "Remove",
       onConfirm: () => {
         removeBurg(burg);
@@ -279,7 +279,8 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
 
   function addBurgOnClick() {
     const point = d3.mouse(this);
-    const cell = findCell(point[0], point[1]);
+    const cell = findCell(...point);
+
     if (pack.cells.h[cell] < 20)
       return tip("You cannot place state into the water. Please click on a land cell", false, "error");
     if (pack.cells.burg[cell])
@@ -340,8 +341,8 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
       .sum(d => d.population)
       .sort((a, b) => b.value - a.value);
 
-    const width = 150 + 200 * uiSizeOutput.value;
-    const height = 150 + 200 * uiSizeOutput.value;
+    const width = 150 + 200 * uiSize.value;
+    const height = 150 + 200 * uiSize.value;
     const margin = {top: 0, right: -50, bottom: -10, left: -50};
     const w = width - margin.left - margin.right;
     const h = height - margin.top - margin.bottom;
@@ -480,10 +481,7 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
   }
 
   function downloadBurgsData() {
-    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town`; // headers
-    if (options.showMFCGMap) data += `,City Generator Link`;
-    data += "\n";
-
+    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,City Generator Link\n`; // headers
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
@@ -504,6 +502,9 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
       data += getLatitude(b.y, 2) + ",";
       data += getLongitude(b.x, 2) + ",";
       data += parseInt(getHeight(pack.cells.h[b.cell])) + ",";
+      const temperature = grid.cells.temp[pack.cells.g[b.cell]];
+      data += convertTemperature(temperature) + ",";
+      data += getTemperatureLikeness(temperature) + ",";
 
       // add status data
       data += b.capital ? "capital," : ",";
@@ -513,7 +514,9 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
       data += b.plaza ? "plaza," : ",";
       data += b.temple ? "temple," : ",";
       data += b.shanty ? "shanty town," : ",";
-      if (options.showMFCGMap) data += getMFCGlink(b);
+      data += b.coa ? JSON.stringify(b.coa).replace(/"/g, "").replace(/,/g, ";") + "," : ",";
+      data += getBurgLink(b);
+
       data += "\n";
     });
 
@@ -601,16 +604,11 @@ function overviewBurgs(options = {stateId: null, cultureId: null}) {
     burgsOverviewAddLines();
   }
 
-  function invertLock() {
-    pack.burgs = pack.burgs.map(burg => ({...burg, lock: !burg.lock}));
-    burgsOverviewAddLines();
-  }
-
   function toggleLockAll() {
     const activeBurgs = pack.burgs.filter(b => b.i && !b.removed);
     const allLocked = activeBurgs.every(burg => burg.lock);
 
-    pack.burgs.forEach(burg => {
+    activeBurgs.forEach(burg => {
       burg.lock = !allLocked;
     });
 

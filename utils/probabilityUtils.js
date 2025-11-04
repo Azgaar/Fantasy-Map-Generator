@@ -22,7 +22,14 @@ function each(n) {
   return i => i % n === 0;
 }
 
-// random number (normal or gaussian distribution)
+/* Random Gaussian number generator
+ * @param {number} expected - expected value
+ * @param {number} deviation - standard deviation
+ * @param {number} min - minimum value
+ * @param {number} max - maximum value
+ * @param {number} round - round value to n decimals
+ * @return {number} random number
+ */
 function gauss(expected = 100, deviation = 30, min = 0, max = 300, round = 0) {
   return rn(minmax(d3.randomNormal(expected, deviation)(), min, max), round);
 }

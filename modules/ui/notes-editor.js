@@ -40,8 +40,8 @@ function editNotes(id, name) {
 
   $("#notesEditor").dialog({
     title: "Notes Editor",
-    width: window.innerWidth * 0.8,
-    height: window.innerHeight * 0.75,
+    width: svgWidth * 0.8,
+    height: svgHeight * 0.75,
     position: {my: "center", at: "center", of: "svg"},
     close: removeEditor
   });
@@ -55,6 +55,7 @@ function editNotes(id, name) {
   byId("notesLegend").addEventListener("blur", updateLegend);
   byId("notesPin").addEventListener("click", toggleNotesPin);
   byId("notesFocus").addEventListener("click", validateHighlightElement);
+  byId("notesGenerateWithAi").addEventListener("click", openAiGenerator);
   byId("notesDownload").addEventListener("click", downloadLegends);
   byId("notesUpload").addEventListener("click", () => legendsToLoad.click());
   byId("legendsToLoad").addEventListener("change", function () {
@@ -64,7 +65,7 @@ function editNotes(id, name) {
 
   async function initEditor() {
     if (!window.tinymce) {
-      const url = "https://cdn.tiny.cloud/1/4i6a79ymt2y0cagke174jp3meoi28vyecrch12e5puyw3p9a/tinymce/5/tinymce.min.js";
+      const url = "https://azgaar.github.io/Fantasy-Map-Generator/libs/tinymce/tinymce.min.js";
       try {
         await import(url);
       } catch (error) {
@@ -79,11 +80,13 @@ function editNotes(id, name) {
     }
 
     if (window.tinymce) {
+      window.tinymce._setBaseUrl("https://azgaar.github.io/Fantasy-Map-Generator/libs/tinymce");
       tinymce.init({
+        license_key: "gpl",
         selector: "#notesLegend",
         height: "90%",
         menubar: false,
-        plugins: `autolink lists link charmap print code fullscreen image link media table paste hr wordcount`,
+        plugins: `autolink lists link charmap code fullscreen image link media table wordcount`,
         toolbar: `code | undo redo | removeformat | bold italic strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | fontselect fontsizeselect | blockquote hr charmap | print fullscreen`,
         media_alt_source: false,
         media_poster: false,
@@ -139,6 +142,25 @@ function editNotes(id, name) {
       cancel: "Keep",
       onConfirm: removeLegend
     });
+  }
+
+  function openAiGenerator() {
+    const note = notes.find(note => note.id === notesSelect.value);
+
+    let prompt = `Respond with description. Use simple dry language. Invent facts, names and details. Split to paragraphs and format to HTML. Remove h tags, remove markdown.`;
+    if (note?.name) prompt += ` Name: ${note.name}.`;
+    if (note?.legend) prompt += ` Data: ${note.legend}`;
+
+    const onApply = result => {
+      notesLegend.innerHTML = result;
+      if (note) {
+        note.legend = result;
+        updateNotesBox(note);
+        if (window.tinymce) tinymce.activeEditor.setContent(note.legend);
+      }
+    };
+
+    generateWithAi(prompt, onApply);
   }
 
   function downloadLegends() {

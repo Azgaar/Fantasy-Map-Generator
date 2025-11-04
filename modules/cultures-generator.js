@@ -8,7 +8,10 @@ window.Cultures = (function () {
     cells = pack.cells;
 
     const cultureIds = new Uint16Array(cells.i.length); // cell cultures
-    let count = Math.min(+culturesInput.value, +culturesSet.selectedOptions[0].dataset.max);
+
+    const culturesInputNumber = +byId("culturesInput").value;
+    const culturesInSetNumber = +byId("culturesSet").selectedOptions[0].dataset.max;
+    let count = Math.min(culturesInputNumber, culturesInSetNumber);
 
     const populated = cells.i.filter(i => cells.s[i]); // populated cells
     if (populated.length < count * 25) {
@@ -71,28 +74,31 @@ window.Cultures = (function () {
         return;
       }
 
-      const cell = (c.center = placeCenter(c.sort ? c.sort : i => cells.s[i]));
-      centers.add(cells.p[cell]);
+      const sortingFn = c.sort ? c.sort : i => cells.s[i];
+      const center = placeCenter(sortingFn);
+
+      centers.add(cells.p[center]);
+      c.center = center;
       c.i = newId;
       delete c.odd;
       delete c.sort;
       c.color = colors[i];
-      c.type = defineCultureType(cell);
+      c.type = defineCultureType(center);
       c.expansionism = defineCultureExpansionism(c.type);
       c.origins = [0];
       c.code = abbreviate(c.name, codes);
       codes.push(c.code);
-      cultureIds[cell] = newId;
+      cultureIds[center] = newId;
       if (emblemShape === "random") c.shield = getRandomShield();
     });
 
     cells.culture = cultureIds;
 
-    function placeCenter(v) {
+    function placeCenter(sortingFn) {
       let spacing = (graphWidth + graphHeight) / 2 / count;
       const MAX_ATTEMPTS = 100;
 
-      const sorted = [...populated].sort((a, b) => v(b) - v(a));
+      const sorted = [...populated].sort((a, b) => sortingFn(b) - sortingFn(a));
       const max = Math.floor(sorted.length / 2);
 
       let cellId = 0;
@@ -117,26 +123,26 @@ window.Cultures = (function () {
     cultures.forEach(c => (c.base = c.base % nameBases.length));
 
     function selectCultures(culturesNumber) {
-      let def = getDefault(culturesNumber);
+      let defaultCultures = getDefault(culturesNumber);
       const cultures = [];
 
       pack.cultures?.forEach(function (culture) {
-        if (culture.lock) cultures.push(culture);
+        if (culture.lock && !culture.removed) cultures.push(culture);
       });
 
       if (!cultures.length) {
-        if (culturesNumber === def.length) return def;
-        if (def.every(d => d.odd === 1)) return def.splice(0, culturesNumber);
+        if (culturesNumber === defaultCultures.length) return defaultCultures;
+        if (defaultCultures.every(d => d.odd === 1)) return defaultCultures.splice(0, culturesNumber);
       }
 
-      for (let culture, rnd, i = 0; cultures.length < culturesNumber && def.length > 0; ) {
+      for (let culture, rnd, i = 0; cultures.length < culturesNumber && defaultCultures.length > 0; ) {
         do {
-          rnd = rand(def.length - 1);
-          culture = def[rnd];
+          rnd = rand(defaultCultures.length - 1);
+          culture = defaultCultures[rnd];
           i++;
         } while (i < 200 && !P(culture.odd));
         cultures.push(culture);
-        def.splice(rnd, 1);
+        defaultCultures.splice(rnd, 1);
       }
       return cultures;
     }
@@ -166,7 +172,7 @@ window.Cultures = (function () {
       else if (type === "Nomadic") base = 1.5;
       else if (type === "Hunting") base = 0.7;
       else if (type === "Highland") base = 1.2;
-      return rn(((Math.random() * powerInput.value) / 2 + 1) * base, 1);
+      return rn(((Math.random() * byId("sizeVariety").value) / 2 + 1) * base, 1);
     }
 
     TIME && console.timeEnd("generateCultures");
@@ -187,12 +193,13 @@ window.Cultures = (function () {
       name = Names.getCulture(culture, 5, 8, "");
       base = pack.cultures[culture].base;
     }
+
     const code = abbreviate(
       name,
       pack.cultures.map(c => c.code)
     );
     const i = pack.cultures.length;
-    const color = d3.color(d3.scaleSequential(d3.interpolateRainbow)(Math.random())).hex();
+    const color = getRandomColor();
 
     // define emblem shape
     let shield = culture.shield;
@@ -211,7 +218,7 @@ window.Cultures = (function () {
       area: 0,
       rural: 0,
       urban: 0,
-      origins: [0],
+      origins: [pack.cells.culture[center]],
       code,
       shield
     });
@@ -511,7 +518,7 @@ window.Cultures = (function () {
     TIME && console.time("expandCultures");
     const {cells, cultures} = pack;
 
-    const queue = new PriorityQueue({comparator: (a, b) => a.priority - b.priority});
+    const queue = new FlatQueue();
     const cost = [];
 
     const neutralRate = byId("neutralRate")?.valueAsNumber || 1;
@@ -531,11 +538,11 @@ window.Cultures = (function () {
 
     for (const culture of cultures) {
       if (!culture.i || culture.removed || culture.lock) continue;
-      queue.queue({cellId: culture.center, cultureId: culture.i, priority: 0});
+      queue.push({cellId: culture.center, cultureId: culture.i, priority: 0}, 0);
     }
 
     while (queue.length) {
-      const {cellId, priority, cultureId} = queue.dequeue();
+      const {cellId, priority, cultureId} = queue.pop();
       const {type, expansionism} = cultures[cultureId];
 
       cells.c[cellId].forEach(neibCellId => {
@@ -559,7 +566,7 @@ window.Cultures = (function () {
         if (!cost[neibCellId] || totalCost < cost[neibCellId]) {
           if (cells.pop[neibCellId] > 0) cells.culture[neibCellId] = cultureId; // assign culture to populated cell
           cost[neibCellId] = totalCost;
-          queue.queue({cellId: neibCellId, cultureId, priority: totalCost});
+          queue.push({cellId: neibCellId, cultureId, priority: totalCost}, totalCost);
         }
       });
     }

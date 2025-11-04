@@ -71,70 +71,100 @@ async function exportToJpeg() {
 }
 
 async function exportToPngTiles() {
-  return new Promise(async (resolve, reject) => {
-    // download schema
-    const urlSchema = await getMapURL("tiles", {debug: true, fullMap: true});
-    await import("../../libs/jszip.min.js");
-    const zip = new window.JSZip();
+  const status = byId("tileStatus");
+  status.innerHTML = "Preparing files...";
 
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = graphWidth;
-    canvas.height = graphHeight;
+  const urlSchema = await getMapURL("tiles", {debug: true, fullMap: true});
+  await import("../../libs/jszip.min.js");
+  const zip = new window.JSZip();
 
-    const imgSchema = new Image();
-    imgSchema.src = urlSchema;
-    imgSchema.onload = function () {
-      ctx.drawImage(imgSchema, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(blob => zip.file(`fmg_tile_schema.png`, blob));
-    };
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = graphWidth;
+  canvas.height = graphHeight;
 
-    // download tiles
-    const url = await getMapURL("tiles", {fullMap: true});
-    const tilesX = +document.getElementById("tileColsInput").value;
-    const tilesY = +document.getElementById("tileRowsInput").value;
-    const scale = +document.getElementById("tileScaleInput").value;
+  const imgSchema = new Image();
+  imgSchema.src = urlSchema;
+  await loadImage(imgSchema);
 
-    const tileW = (graphWidth / tilesX) | 0;
-    const tileH = (graphHeight / tilesY) | 0;
-    const tolesTotal = tilesX * tilesY;
+  status.innerHTML = "Rendering schema...";
+  ctx.drawImage(imgSchema, 0, 0, canvas.width, canvas.height);
+  const blob = await canvasToBlob(canvas, "image/png");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  zip.file("schema.png", blob);
 
-    const width = graphWidth * scale;
-    const height = width * (tileH / tileW);
-    canvas.width = width;
-    canvas.height = height;
+  // download tiles
+  const url = await getMapURL("tiles", {fullMap: true});
+  const tilesX = +byId("tileColsOutput").value || 2;
+  const tilesY = +byId("tileRowsOutput").value || 2;
+  const scale = +byId("tileScaleOutput").value || 1;
+  const tolesTotal = tilesX * tilesY;
 
-    let loaded = 0;
-    const img = new Image();
-    img.src = url;
-    img.onload = function () {
-      for (let y = 0, i = 0; y + tileH <= graphHeight; y += tileH) {
-        for (let x = 0; x + tileW <= graphWidth; x += tileW, i++) {
-          ctx.drawImage(img, x, y, tileW, tileH, 0, 0, width, height);
-          const name = `fmg_tile_${i}.png`;
-          canvas.toBlob(blob => {
-            zip.file(name, blob);
-            loaded += 1;
-            if (loaded === tolesTotal) return downloadZip();
-          });
-        }
-      }
-    };
+  const tileW = (graphWidth / tilesX) | 0;
+  const tileH = (graphHeight / tilesY) | 0;
 
-    function downloadZip() {
-      const name = `${getFileName()}.zip`;
-      zip.generateAsync({type: "blob"}).then(blob => {
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = name;
-        link.click();
-        link.remove();
+  const width = graphWidth * scale;
+  const height = width * (tileH / tileW);
+  canvas.width = width;
+  canvas.height = height;
 
-        setTimeout(() => URL.revokeObjectURL(link.href), 5000);
-        resolve(true);
-      });
+  const img = new Image();
+  img.src = url;
+  await loadImage(img);
+
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  function getRowLabel(row) {
+    const first = row >= alphabet.length ? alphabet[Math.floor(row / alphabet.length) - 1] : "";
+    const last = alphabet[row % alphabet.length];
+    return first + last;
+  }
+
+  for (let y = 0, row = 0, id = 1; y + tileH <= graphHeight; y += tileH, row++) {
+    const rowName = getRowLabel(row);
+
+    for (let x = 0, cell = 1; x + tileW <= graphWidth; x += tileW, cell++, id++) {
+      status.innerHTML = `Rendering tile ${rowName}${cell} (${id} of ${tolesTotal})...`;
+      ctx.drawImage(img, x, y, tileW, tileH, 0, 0, width, height);
+      const blob = await canvasToBlob(canvas, "image/png");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      zip.file(`${rowName}${cell}.png`, blob);
     }
+  }
+
+  status.innerHTML = "Zipping files...";
+  zip.generateAsync({type: "blob"}).then(blob => {
+    status.innerHTML = "Downloading the archive...";
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = getFileName() + ".zip";
+    link.click();
+    link.remove();
+
+    status.innerHTML = 'Done. Check .zip file in "Downloads" (crtl + J)';
+    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
   });
+
+  // promisified img.onload
+  function loadImage(img) {
+    return new Promise((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = err => reject(err);
+    });
+  }
+
+  // promisified canvas.toBlob
+  function canvasToBlob(canvas, mimeType, qualityArgument = 1) {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        blob => {
+          if (blob) resolve(blob);
+          else reject(new Error("Canvas toBlob() error"));
+        },
+        mimeType,
+        qualityArgument
+      );
+    });
+  }
 }
 
 // parse map svg to object url
@@ -145,17 +175,18 @@ async function getMapURL(type, options) {
     noWater = false,
     noScaleBar = false,
     noIce = false,
+    noVignette = false,
     fullMap = false
   } = options || {};
 
-  const cloneEl = document.getElementById("map").cloneNode(true); // clone svg
+  const cloneEl = byId("map").cloneNode(true); // clone svg
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone = d3.select(cloneEl);
   if (!debug) clone.select("#debug")?.remove();
 
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
-  const svgDefs = document.getElementById("defElements");
+  const svgDefs = byId("defElements");
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern")?.remove();
@@ -169,6 +200,7 @@ async function getMapURL(type, options) {
     clone.select("#oceanPattern").attr("opacity", 0);
   }
   if (noIce) clone.select("#ice")?.remove();
+  if (noVignette) clone.select("#vignette")?.remove();
   if (fullMap) {
     // reset transform to show the whole map
     clone.attr("width", graphWidth).attr("height", graphHeight);
@@ -218,7 +250,7 @@ async function getMapURL(type, options) {
       .forEach(el => {
         const href = el.getAttribute("href") || el.getAttribute("xlink:href");
         if (!href) return;
-        const emblem = document.getElementById(href.slice(1));
+        const emblem = byId(href.slice(1));
         if (emblem) cloneDefs.append(emblem.cloneNode(true));
       });
   } else {
@@ -271,7 +303,7 @@ async function getMapURL(type, options) {
 
   // add wind rose
   if (cloneEl.getElementById("compass")) {
-    const rose = svgDefs.getElementById("rose");
+    const rose = svgDefs.getElementById("defs-compass-rose");
     if (rose) cloneDefs.appendChild(rose.cloneNode(true));
   }
 
@@ -286,6 +318,40 @@ async function getMapURL(type, options) {
     const type = cloneEl.getElementById("gridOverlay").getAttribute("type");
     const pattern = svgDefs.getElementById("pattern_" + type);
     if (pattern) cloneDefs.appendChild(pattern.cloneNode(true));
+  }
+
+  {
+    // replace external marker icons
+    const externalMarkerImages = cloneEl.querySelectorAll('#markers image[href]:not([href=""])');
+    const imageHrefs = Array.from(externalMarkerImages).map(img => img.getAttribute("href"));
+
+    for (const url of imageHrefs) {
+      await new Promise(resolve => {
+        getBase64(url, base64 => {
+          externalMarkerImages.forEach(img => {
+            if (img.getAttribute("href") === url) img.setAttribute("href", base64);
+          });
+          resolve();
+        });
+      });
+    }
+  }
+
+  {
+    // replace external regiment icons
+    const externalRegimentImages = cloneEl.querySelectorAll('#armies image[href]:not([href=""])');
+    const imageHrefs = Array.from(externalRegimentImages).map(img => img.getAttribute("href"));
+
+    for (const url of imageHrefs) {
+      await new Promise(resolve => {
+        getBase64(url, base64 => {
+          externalRegimentImages.forEach(img => {
+            if (img.getAttribute("href") === url) img.setAttribute("href", base64);
+          });
+          resolve();
+        });
+      });
+    }
   }
 
   if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog")?.remove(); // remove unused fog
@@ -364,7 +430,7 @@ function removeUnusedElements(clone) {
 
 function updateMeshCells(clone) {
   const data = renderOcean.checked ? grid.cells.i : grid.cells.i.filter(i => grid.cells.h[i] >= 20);
-  const scheme = getColorScheme(terrs.attr("scheme"));
+  const scheme = getColorScheme(terrs.select("#landHeights").attr("scheme"));
   clone.select("#heights").attr("filter", "url(#blur1)");
   clone
     .select("#heights")
@@ -410,14 +476,24 @@ function inlineStyle(clone) {
   emptyG.remove();
 }
 
-function saveGeoJSON_Cells() {
+function saveGeoJsonCells() {
+  const {cells, vertices} = pack;
   const json = {type: "FeatureCollection", features: []};
-  const cells = pack.cells;
+
   const getPopulation = i => {
     const [r, u] = getCellPopulation(i);
     return rn(r + u);
   };
-  const getHeight = i => parseInt(getFriendlyHeight([cells.p[i][0], cells.p[i][1]]));
+
+  const getHeight = i => parseInt(getFriendlyHeight([...cells.p[i]]));
+
+  function getCellCoordinates(cellVertices) {
+    const coordinates = cellVertices.map(vertex => {
+      const [x, y] = vertices.p[vertex];
+      return getCoordinates(x, y, 4);
+    });
+    return [[...coordinates, coordinates[0]]];
+  }
 
   cells.i.forEach(i => {
     const coordinates = getCellCoordinates(cells.v[i]);
@@ -440,46 +516,46 @@ function saveGeoJSON_Cells() {
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-function saveGeoJSON_Routes() {
-  const json = {type: "FeatureCollection", features: []};
-
-  routes.selectAll("g > path").each(function () {
-    const coordinates = getRoutePoints(this);
-    const id = this.id;
-    const type = this.parentElement.id;
-
-    const feature = {type: "Feature", geometry: {type: "LineString", coordinates}, properties: {id, type}};
-    json.features.push(feature);
+function saveGeoJsonRoutes() {
+  const features = pack.routes.map(({i, points, group, name = null}) => {
+    const coordinates = points.map(([x, y]) => getCoordinates(x, y, 4));
+    return {
+      type: "Feature",
+      geometry: {type: "LineString", coordinates},
+      properties: {id: i, group, name}
+    };
   });
+  const json = {type: "FeatureCollection", features};
 
   const fileName = getFileName("Routes") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-function saveGeoJSON_Rivers() {
-  const json = {type: "FeatureCollection", features: []};
-
-  rivers.selectAll("path").each(function () {
-    const river = pack.rivers.find(r => r.i === +this.id.slice(5));
-    if (!river) return;
-
-    const coordinates = getRiverPoints(this);
-    const properties = {...river, id: this.id};
-    const feature = {type: "Feature", geometry: {type: "LineString", coordinates}, properties};
-    json.features.push(feature);
-  });
+function saveGeoJsonRivers() {
+  const features = pack.rivers.map(
+    ({i, cells, points, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type}) => {
+      if (!cells || cells.length < 2) return;
+      const meanderedPoints = Rivers.addMeandering(cells, points);
+      const coordinates = meanderedPoints.map(([x, y]) => getCoordinates(x, y, 4));
+      return {
+        type: "Feature",
+        geometry: {type: "LineString", coordinates},
+        properties: {id: i, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type}
+      };
+    }
+  );
+  const json = {type: "FeatureCollection", features};
 
   const fileName = getFileName("Rivers") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-function saveGeoJSON_Markers() {
+function saveGeoJsonMarkers() {
   const features = pack.markers.map(marker => {
     const {i, type, icon, x, y, size, fill, stroke} = marker;
     const coordinates = getCoordinates(x, y, 4);
-    const id = `marker${i}`;
     const note = notes.find(note => note.id === id);
-    const properties = {id, type, icon, x, y, ...note, size, fill, stroke};
+    const properties = {id: i, type, icon, x, y, ...note, size, fill, stroke};
     return {type: "Feature", geometry: {type: "Point", coordinates}, properties};
   });
 
@@ -487,34 +563,4 @@ function saveGeoJSON_Markers() {
 
   const fileName = getFileName("Markers") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
-}
-
-function getCellCoordinates(vertices) {
-  const p = pack.vertices.p;
-  const coordinates = vertices.map(n => getCoordinates(p[n][0], p[n][1], 2));
-  return [coordinates.concat([coordinates[0]])];
-}
-
-function getRoutePoints(node) {
-  let points = [];
-  const l = node.getTotalLength();
-  const increment = l / Math.ceil(l / 2);
-  for (let i = 0; i <= l; i += increment) {
-    const p = node.getPointAtLength(i);
-    points.push(getCoordinates(p.x, p.y, 4));
-  }
-  return points;
-}
-
-function getRiverPoints(node) {
-  let points = [];
-  const l = node.getTotalLength() / 2; // half-length
-  const increment = 0.25; // defines density of points
-  for (let i = l, c = i; i >= 0; i -= increment, c += increment) {
-    const p1 = node.getPointAtLength(i);
-    const p2 = node.getPointAtLength(c);
-    const [x, y] = getCoordinates((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, 4);
-    points.push([x, y]);
-  }
-  return points;
 }

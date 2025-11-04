@@ -51,24 +51,9 @@ function insertEditorHtml() {
       <button id="culturesHeirarchy" data-tip="Show cultures hierarchy tree" class="icon-sitemap"></button>
       <button id="culturesManually" data-tip="Manually re-assign cultures" class="icon-brush"></button>
       <div id="culturesManuallyButtons" style="display: none">
-        <label data-tip="Change brush size" data-shortcut="+ (increase), – (decrease)" class="italic">Brush size:
-          <input
-            id="culturesManuallyBrush"
-            oninput="tip('Brush size: '+this.value); culturesManuallyBrushNumber.value = this.value"
-            type="range"
-            min="5"
-            max="99"
-            value="15"
-            style="width: 7em"
-          />
-          <input
-            id="culturesManuallyBrushNumber"
-            oninput="tip('Brush size: '+this.value); culturesManuallyBrush.value = this.value"
-            type="number"
-            min="5"
-            max="99"
-            value="15"
-          /> </label><br />
+        <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em;">
+          <slider-input id="culturesBrush" min="1" max="100" value="15">Brush size:</slider-input>
+        </div>
         <button id="culturesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
         <button id="culturesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
       </div>
@@ -281,6 +266,7 @@ function getTypeOptions(type) {
 function getBaseOptions(base) {
   let options = "";
   nameBases.forEach((n, i) => (options += `<option ${base === i ? "selected" : ""} value="${i}">${n.name}</option>`));
+  if (!nameBases[base]) options += `<option selected value="${base}">removed</option>`; // in case namesbase was removed
   return options;
 }
 
@@ -359,10 +345,13 @@ function cultureChangeName() {
 }
 
 function cultureRegenerateName() {
-  const culture = +this.parentNode.dataset.id;
-  const name = Names.getCultureShort(culture);
+  const cultureId = +this.parentNode.dataset.id;
+  const base = pack.cultures[cultureId].base;
+  if (!nameBases[base]) return tip("Namesbase is not defined, please select a valid namesbase", false, "error", 5000);
+
+  const name = Names.getCultureShort(cultureId);
   this.parentNode.querySelector("input.cultureName").value = name;
-  pack.cultures[culture].name = name;
+  pack.cultures[cultureId].name = name;
 }
 
 function cultureChangeExpansionism() {
@@ -500,6 +489,7 @@ function applyPopulationChange(oldRural, oldUrban, newRural, newUrban, culture) 
     burgs.forEach(b => (b.population = population));
   }
 
+  if (layerIsOn("togglePopulation")) drawPopulation();
   refreshCulturesEditor();
 }
 
@@ -507,12 +497,15 @@ function cultureRegenerateBurgs() {
   if (customization === 4) return;
 
   const cultureId = +this.parentNode.dataset.id;
-  const cBurgs = pack.burgs.filter(b => b.culture === cultureId && !b.lock);
-  cBurgs.forEach(b => {
+  const base = pack.cultures[cultureId].base;
+  if (!nameBases[base]) return tip("Namesbase is not defined, please select a valid namesbase", false, "error", 5000);
+
+  const cultureBurgs = pack.burgs.filter(b => b.culture === cultureId && !b.removed && !b.lock);
+  cultureBurgs.forEach(b => {
     b.name = Names.getCulture(cultureId);
     labels.select("[data-id='" + b.i + "']").text(b.name);
   });
-  tip(`Names for ${cBurgs.length} burgs are regenerated`, false, "success");
+  tip(`Names for ${cultureBurgs.length} burgs are regenerated`, false, "success");
 }
 
 function removeCulture(cultureId) {
@@ -718,7 +711,7 @@ function selectCultureOnMapClick() {
 }
 
 function dragCultureBrush() {
-  const radius = +culturesManuallyBrush.value;
+  const radius = +culturesBrush.value;
 
   d3.event.on("drag", () => {
     if (!d3.event.dx && !d3.event.dy) return;
@@ -759,7 +752,7 @@ function changeCultureForSelection(selection) {
 function moveCultureBrush() {
   showMainTip();
   const point = d3.mouse(this);
-  const radius = +culturesManuallyBrush.value;
+  const radius = +culturesBrush.value;
   moveCircle(point[0], point[1], radius);
 }
 
@@ -822,6 +815,7 @@ function addCulture() {
 
   if (pack.cells.h[center] < 20)
     return tip("You cannot place culture center into the water. Please click on a land cell", false, "error");
+
   const occupied = pack.cultures.some(c => !c.removed && c.center === center);
   if (occupied) return tip("This cell is already a culture center. Please select a different cell", false, "error");
 
@@ -857,8 +851,20 @@ function closeCulturesEditor() {
 }
 
 async function uploadCulturesData() {
-  const csv = await Formats.csvParser(this.files[0]);
+  const file = this.files[0];
   this.value = "";
+  const csv = await file.text();
+  const data = d3.csvParse(csv, d => ({
+    name: d.Name,
+    i: +d.Id,
+    color: d.Color,
+    expansionism: +d.Expansionism,
+    type: d.Type,
+    population: +d.Population,
+    emblemsShape: d["Emblems Shape"],
+    origins: d.Origins,
+    namesbase: d.Namesbase
+  }));
 
   const {cultures, cells} = pack;
   const shapes = Object.keys(COA.shields.types)
@@ -870,20 +876,26 @@ async function uploadCulturesData() {
     if (item.i) item.removed = true;
   });
 
-  for (const c of csv.iterator((a, b) => +a[0] > +b[0])) {
+  for (const culture of data) {
     let current;
-    if (+c.id < cultures.length) {
-      current = cultures[c.id];
+    if (culture.i < cultures.length) {
+      current = cultures[culture.i];
 
       const ratio = current.urban / (current.rural + current.urban);
-      applyPopulationChange(current.rural, current.urban, c.population * (1 - ratio), c.population * ratio, +c.id);
+      applyPopulationChange(
+        current.rural,
+        current.urban,
+        culture.population * (1 - ratio),
+        culture.population * ratio,
+        culture.i
+      );
     } else {
-      current = {i: cultures.length, center: ra(populated), area: 0, cells: 0, origin: 0, rural: 0, urban: 0};
+      current = {i: cultures.length, center: ra(populated), area: 0, cells: 0, origins: [0], rural: 0, urban: 0};
       cultures.push(current);
     }
 
     current.removed = false;
-    current.name = c.name;
+    current.name = culture.name;
 
     if (current.i) {
       current.code = abbreviate(
@@ -891,12 +903,16 @@ async function uploadCulturesData() {
         cultures.map(c => c.code)
       );
 
-      current.color = c.color;
-      current.expansionism = +c.expansionism;
+      current.color = culture.color;
+      current.expansionism = +culture.expansionism;
 
-      if (cultureTypes.includes(c.type)) current.type = c.type;
+      if (cultureTypes.includes(culture.type)) current.type = culture.type;
       else current.type = "Generic";
     }
+
+    culture.origins = current.i ? restoreOrigins(culture.origins || "") : [null];
+    current.shield = shapes.includes(culture.emblemsShape) ? culture.emblemsShape : "heater";
+    current.base = nameBases.findIndex(n => n.name == culture.namesbase); // can be -1 if namesbase is not found
 
     function restoreOrigins(originsString) {
       const originNames = originsString
@@ -913,14 +929,6 @@ async function uploadCulturesData() {
       current.origins = originIds.filter(id => id !== null);
       if (!current.origins.length) current.origins = [0];
     }
-    c.origins = current.i ? restoreOrigins(c.origins) : [null];
-
-    const shieldShape = c["emblems shape"].toLowerCase();
-    if (shapes.includes(shieldShape)) current.shield = shieldShape;
-    else current.shield = "heater";
-
-    const nameBaseIndex = nameBases.findIndex(n => n.name == c.namesbase);
-    current.base = nameBaseIndex === -1 ? 0 : nameBaseIndex;
   }
 
   cultures.filter(c => c.removed).forEach(c => removeCulture(c.i));
