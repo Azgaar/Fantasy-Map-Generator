@@ -291,6 +291,14 @@ async function checkLoadParameters() {
     return;
   }
 
+  // restore onloadBehavior from localStorage if saved
+  const storedBehavior = localStorage.getItem("onloadBehavior");
+  WARN && console.warn("Stored onloadBehavior:", storedBehavior);
+  if (storedBehavior) {
+    byId("onloadBehavior").value = storedBehavior;
+  }
+  WARN && console.warn("Current onloadBehavior value:", byId("onloadBehavior").value);
+
   // check if there is a default map saved to indexedDB
   if (byId("onloadBehavior").value === "default") {
     try {
