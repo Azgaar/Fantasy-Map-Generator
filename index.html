@@ -1830,6 +1830,7 @@
               <td>
                 <select id="onloadBehavior" data-stored="onloadBehavior">
                   <option value="random" selected>Generate random map</option>
+                  <option value="default">Open default map</option>
                   <option value="lastSaved">Open last saved map</option>
                 </select>
               </td>
@@ -6087,6 +6088,15 @@
             browser
           </button>
         </div>
+        <div style="margin-top: 0.8em; padding-top: 0.8em; border-top: 1px solid #ccc">
+          <strong>Default map</strong>
+          <button onclick="saveAsDefaultMap()" data-tip="Set this map as the default that opens on load (requires 'Open default map' onload behavior)">
+            Set as default
+          </button>
+          <button onclick="clearDefaultMap()" data-tip="Clear the current default map setting">
+            Clear default
+          </button>
+        </div>
         <p>
           Maps are saved in <i>.map</i> format, that can be loaded back via the <i>Load</i> in menu. There is no way to
           restore the progress if file is lost. Please keep old save files on your machine or cloud storage as backups.
@@ -8118,7 +8128,7 @@
     <script src="modules/ui/style-presets.js?v=1.100.00"></script>
     <script src="modules/ui/general.js?v=1.100.00"></script>
     <script src="modules/ui/options.js?v=1.106.2"></script>
-    <script src="main.js?v=1.108.1"></script>
+    <script src="main.js?v=1.108.12">
 
     <script defer src="modules/ui/style.js?v=1.108.4"></script>
     <script defer src="modules/ui/editors.js?v=1.108.5"></script>
@@ -8163,7 +8173,7 @@
     <script defer src="modules/coa-renderer.js?v=1.99.00"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-    <script defer src="modules/io/save.js?v=1.107.4"></script>
+    <script defer src="modules/io/save.js?v=1.108.12">
     <script defer src="modules/io/load.js?v=1.108.0"></script>
     <script defer src="modules/io/cloud.js?v=1.106.0"></script>
     <script defer src="modules/io/export.js?v=1.108.11"></script>
