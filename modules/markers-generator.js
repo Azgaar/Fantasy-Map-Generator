@@ -1,3 +1,26 @@
+// Assign biome and province info to existing markers, burgs, and provinces after loading a map
+window.assignBiomeAndProvinceInfo = function() {
+  // Markers
+  if (pack.markers && pack.cells && pack.cells.biome) {
+    pack.markers.forEach(marker => {
+      if (marker.cell !== undefined) {
+        marker.biome = pack.cells.biome[marker.cell];
+        marker.province = pack.cells.province ? pack.cells.province[marker.cell] : undefined;
+      }
+    });
+  }
+  // Burgs
+  if (pack.burgs && pack.cells && pack.cells.biome) {
+    pack.burgs.forEach(burg => {
+      if (burg.cell !== undefined) {
+        burg.biome = pack.cells.biome[burg.cell];
+        burg.province = pack.cells.province ? pack.cells.province[burg.cell] : undefined;
+      }
+    });
+  }
+  // Provinces (if you want to attach biome info, though provinces are usually collections of cells)
+  // You could aggregate biomes for each province if needed
+};
 "use strict";
 
 window.Markers = (function () {
@@ -154,10 +177,20 @@ window.Markers = (function () {
     if (marker.cell === undefined) return;
     const i = last(pack.markers)?.i + 1 || 0;
     const [x, y] = getMarkerCoordinates(marker.cell);
-    marker = {...base, x, y, ...marker, i};
-    pack.markers.push(marker);
-    occupied[marker.cell] = true;
-    return marker;
+  // Attach biome and province info
+  const biome = pack.cells.biome[marker.cell];
+  const province = pack.cells.province ? pack.cells.province[marker.cell] : undefined;
+  // Add Obsidian note path (customize as needed)
+  const obsidianNotePath = `Neblub/Orbis/Markers/${marker.type}-${marker.cell}`;
+  marker = {...base, x, y, ...marker, i, biome, province, obsidianNotePath};
+// Utility to open Obsidian note for a marker
+window.openObsidianNote = function(notePath) {
+  const uri = `obsidian://open?vault=Neblub&file=${encodeURIComponent(notePath)}`;
+  window.open(uri, '_blank');
+};
+  pack.markers.push(marker);
+  occupied[marker.cell] = true;
+  return marker;
   }
 
   function deleteMarker(markerId) {

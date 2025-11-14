@@ -68,7 +68,9 @@ function overviewMarkers() {
 
   function addLines() {
     const lines = pack.markers
-      .map(({i, type, icon, pinned, lock}) => {
+      .map(({i, type, icon, pinned, lock, biome, province}) => {
+        const biomeName = biome !== undefined ? window.Biomes.getDefault().name[biome] : "";
+        const provinceName = province !== undefined && pack.provinces[province] ? pack.provinces[province].name : "";
         return /* html */ `
           <div class="states" data-i=${i} data-type="${type}">
             ${
@@ -77,6 +79,8 @@ function overviewMarkers() {
                 : `<span data-tip="Marker icon" style="width:1.2em">${icon}</span>`
             }
             <div data-tip="Marker type" style="width:10em">${type}</div>
+            <div data-tip="Biome" style="width:10em">${biomeName}</div>
+            <div data-tip="Province" style="width:10em">${provinceName}</div>
             <span style="padding-right:.1em" data-tip="Edit marker" class="icon-pencil"></span>
             <span style="padding-right:.1em" data-tip="Focus on marker position" class="icon-dot-circled pointer"></span>
             <span style="padding-right:.1em" data-tip="Pin marker (display only pinned markers)" class="icon-pin ${
@@ -209,11 +213,11 @@ function overviewMarkers() {
   }
 
   function exportMarkers() {
-    const headers = "Id,Type,Icon,Name,Note,X,Y,Latitude,Longitude\n";
+  const headers = "Id,Type,Icon,Name,Note,X,Y,Latitude,Longitude,Biome,Province\n";
     const quote = s => '"' + s.replaceAll('"', '""') + '"';
 
     const body = pack.markers.map(marker => {
-      const {i, type, icon, x, y} = marker;
+      const {i, type, icon, x, y, biome, province} = marker;
 
       const note = notes.find(note => note.id === "marker" + i);
       const name = note ? quote(note.name) : "Unknown";
@@ -221,8 +225,10 @@ function overviewMarkers() {
 
       const lat = getLatitude(y, 2);
       const lon = getLongitude(x, 2);
+      const biomeName = biome !== undefined ? window.Biomes.getDefault().name[biome] : "";
+      const provinceName = province !== undefined && pack.provinces[province] ? pack.provinces[province].name : "";
 
-      return [i, type, icon, name, legend, x, y, lat, lon].join(",");
+      return [i, type, icon, name, legend, x, y, lat, lon, biomeName, provinceName].join(",");
     });
 
     const data = headers + body.join("\n");

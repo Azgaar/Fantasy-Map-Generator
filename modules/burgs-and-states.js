@@ -198,17 +198,22 @@ window.BurgsAndStates = (() => {
         else b.y = rn(b.y - shift, 2);
       }
 
-      // define emblem
-      const state = pack.states[b.state];
-      const stateCOA = state.coa;
-      let kinship = 0.25;
-      if (b.capital) kinship += 0.1;
-      else if (b.port) kinship -= 0.1;
-      if (b.culture !== state.culture) kinship -= 0.25;
-      b.type = getType(i, b.port);
-      const type = b.capital && P(0.2) ? "Capital" : b.type === "Generic" ? "City" : b.type;
-      b.coa = COA.generate(stateCOA, kinship, null, type);
-      b.coa.shield = COA.getShield(b.culture, b.state);
+  // Attach biome info
+  b.biome = pack.cells.biome[i];
+  // Attach province info if available
+  b.province = pack.cells.province ? pack.cells.province[i] : undefined;
+
+  // define emblem
+  const state = pack.states[b.state];
+  const stateCOA = state.coa;
+  let kinship = 0.25;
+  if (b.capital) kinship += 0.1;
+  else if (b.port) kinship -= 0.1;
+  if (b.culture !== state.culture) kinship -= 0.25;
+  b.type = getType(i, b.port);
+  const type = b.capital && P(0.2) ? "Capital" : b.type === "Generic" ? "City" : b.type;
+  b.coa = COA.generate(stateCOA, kinship, null, type);
+  b.coa.shield = COA.getShield(b.culture, b.state);
     }
 
     // de-assign port status if it's the only one on feature

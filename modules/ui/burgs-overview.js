@@ -481,7 +481,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   }
 
   function downloadBurgsData() {
-    let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,City Generator Link\n`; // headers
+  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Temperature,Temperature likeness,Biome,Province Id,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,City Generator Link\n`; // headers
     const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
     valid.forEach(b => {
@@ -505,6 +505,11 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
       const temperature = grid.cells.temp[pack.cells.g[b.cell]];
       data += convertTemperature(temperature) + ",";
       data += getTemperatureLikeness(temperature) + ",";
+
+      // add biome and province id
+      const biomeName = b.biome !== undefined ? window.Biomes.getDefault().name[b.biome] : "";
+      data += biomeName + ",";
+      data += b.province !== undefined ? b.province + "," : ",";
 
       // add status data
       data += b.capital ? "capital," : ",";
