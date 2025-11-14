@@ -34,7 +34,7 @@ function showSearchMethodDialog(elementId, elementType, coordinates) {
     title: "Select Note",
     width: "450px",
     buttons: {
-      "🔍 Search": function () {
+      "Search": function () {
         $(this).dialog("close");
         // Show loading and do automatic search
         showLoadingDialog();
@@ -48,7 +48,7 @@ function showSearchMethodDialog(elementId, elementType, coordinates) {
             closeDialogs("#obsidianNoteLoading");
           });
       },
-      "📁 Browse": async function () {
+      "Browse": async function () {
         $(this).dialog("close");
         try {
           const noteData = await promptCreateNewNote(elementId, elementType, coordinates);
