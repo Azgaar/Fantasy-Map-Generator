@@ -216,6 +216,13 @@ async function promptCreateNewNote(elementId, elementType, coordinates) {
 
             const {frontmatter} = ObsidianBridge.parseFrontmatter(template);
 
+            // Add to FMG ID index for instant future lookups
+            const fmgId = frontmatter["fmg-id"] || frontmatter.fmgId;
+            if (fmgId) {
+              ObsidianBridge.addToFmgIdIndex(fmgId, notePath);
+              INFO && console.log(`New note added to index: ${fmgId} → ${notePath}`);
+            }
+
             resolve({
               path: notePath,
               name,
@@ -590,6 +597,17 @@ async function saveObsidianNote() {
 
   try {
     await ObsidianBridge.updateNote(path, content);
+
+    // Update the FMG ID index if this note has an fmg-id
+    if (elementId) {
+      const {frontmatter} = ObsidianBridge.parseFrontmatter(content);
+      const fmgId = frontmatter["fmg-id"] || frontmatter.fmgId;
+      if (fmgId) {
+        // Add to index using internal method
+        ObsidianBridge.addToFmgIdIndex(fmgId, path);
+      }
+    }
+
     showMarkdownEditor.originalContent = content;
     // Update the editor to show the new frontmatter
     byId("obsidianMarkdownEditor").value = content;

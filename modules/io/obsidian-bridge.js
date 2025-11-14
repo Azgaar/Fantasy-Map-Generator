@@ -20,6 +20,9 @@ const ObsidianBridge = (() => {
     ttl: 5 * 60 * 1000 // 5 minutes cache
   };
 
+  // Index: fmg-id → file path for fast lookups
+  let fmgIdIndex = {};
+
   // Initialize from localStorage
   function init() {
     const stored = localStorage.getItem("obsidianConfig");
@@ -29,6 +32,18 @@ const ObsidianBridge = (() => {
         Object.assign(config, parsed);
       } catch (error) {
         ERROR && console.error("Failed to load Obsidian config:", error);
+      }
+    }
+
+    // Load FMG ID index from localStorage
+    const storedIndex = localStorage.getItem("obsidianFmgIdIndex");
+    if (storedIndex) {
+      try {
+        fmgIdIndex = JSON.parse(storedIndex);
+        INFO && console.log(`Loaded FMG ID index with ${Object.keys(fmgIdIndex).length} entries`);
+      } catch (error) {
+        ERROR && console.error("Failed to load FMG ID index:", error);
+        fmgIdIndex = {};
       }
     }
   }
@@ -106,6 +121,29 @@ const ObsidianBridge = (() => {
     vaultFilesCache.files = null;
     vaultFilesCache.timestamp = null;
     INFO && console.log("Vault file cache cleared");
+  }
+
+  // Save FMG ID index to localStorage
+  function saveFmgIdIndex() {
+    try {
+      localStorage.setItem("obsidianFmgIdIndex", JSON.stringify(fmgIdIndex));
+      DEBUG && console.log(`Saved FMG ID index with ${Object.keys(fmgIdIndex).length} entries`);
+    } catch (error) {
+      ERROR && console.error("Failed to save FMG ID index:", error);
+    }
+  }
+
+  // Add entry to FMG ID index
+  function addToFmgIdIndex(fmgId, filePath) {
+    if (!fmgId) return;
+    fmgIdIndex[fmgId] = filePath;
+    saveFmgIdIndex();
+    DEBUG && console.log(`Added to index: ${fmgId} → ${filePath}`);
+  }
+
+  // Get file path from FMG ID index
+  function getFromFmgIdIndex(fmgId) {
+    return fmgIdIndex[fmgId] || null;
   }
 
   // Get all markdown files from vault (recursively, with caching)
@@ -374,9 +412,43 @@ const ObsidianBridge = (() => {
     }
   }
 
-  // Find note by FMG ID in frontmatter
+  // Find note by FMG ID in frontmatter (with index for fast lookup)
   async function findNoteByFmgId(fmgId) {
+    if (!fmgId) return null;
+
     try {
+      // First, check the index for instant lookup
+      const indexedPath = getFromFmgIdIndex(fmgId);
+      if (indexedPath) {
+        INFO && console.log(`Found note in index: ${fmgId} → ${indexedPath}`);
+        try {
+          const content = await getNote(indexedPath);
+          const {frontmatter} = parseFrontmatter(content);
+
+          // Verify the fmg-id still matches (file might have been modified)
+          if (frontmatter["fmg-id"] === fmgId || frontmatter.fmgId === fmgId) {
+            return {
+              path: indexedPath,
+              name: indexedPath.replace(/\.md$/, "").split("/").pop(),
+              content,
+              frontmatter
+            };
+          } else {
+            // Index is stale, remove the entry
+            WARN && console.warn(`Index entry stale for ${fmgId}, removing`);
+            delete fmgIdIndex[fmgId];
+            saveFmgIdIndex();
+          }
+        } catch (error) {
+          // File no longer exists, remove from index
+          WARN && console.warn(`Indexed file not found: ${indexedPath}, removing from index`);
+          delete fmgIdIndex[fmgId];
+          saveFmgIdIndex();
+        }
+      }
+
+      // Not in index or index was stale, search all files
+      INFO && console.log(`Searching vault for fmg-id: ${fmgId}`);
       const files = await getVaultFiles();
       const mdFiles = files.filter(f => f.endsWith(".md"));
 
@@ -386,6 +458,10 @@ const ObsidianBridge = (() => {
           const {frontmatter} = parseFrontmatter(content);
 
           if (frontmatter["fmg-id"] === fmgId || frontmatter.fmgId === fmgId) {
+            // Found it! Add to index for next time
+            addToFmgIdIndex(fmgId, filePath);
+            INFO && console.log(`Found note and added to index: ${fmgId} → ${filePath}`);
+
             return {
               path: filePath,
               name: filePath.replace(/\.md$/, "").split("/").pop(),
@@ -560,7 +636,9 @@ Add your lore here...
     generateNoteTemplate,
     searchNotes,
     listAllNotes,
-    listAllNotePaths
+    listAllNotePaths,
+    addToFmgIdIndex,
+    getFromFmgIdIndex
   };
 })();
 
