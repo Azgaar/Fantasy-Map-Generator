@@ -280,7 +280,7 @@ async function parseLoadedData(data, mapVersion) {
               family === usedFamily && unicodeRange === usedRange && variant === usedVariant
           );
           if (!defaultFont) fonts.push(usedFont);
-          declareFont(usedFont);
+          if (typeof declareFont !== "undefined") declareFont(usedFont);
         });
       }
     }
@@ -460,7 +460,7 @@ async function parseLoadedData(data, mapVersion) {
       if (isVisible(scaleBar)) turnOn("toggleScaleBar");
       if (isVisibleNode(byId("vignette"))) turnOn("toggleVignette");
 
-      getCurrentPreset();
+      if (typeof getCurrentPreset !== "undefined") getCurrentPreset();
     }
 
     {
@@ -477,7 +477,7 @@ async function parseLoadedData(data, mapVersion) {
     }
 
     // add custom heightmap color scheme if any
-    if (typeof heightmapColorSchemes !== "undefined" && heightmapColorSchemes) {
+    if (typeof heightmapColorSchemes !== "undefined" && heightmapColorSchemes && typeof addCustomColorScheme !== "undefined") {
       const oceanScheme = byId("oceanHeights")?.getAttribute("scheme");
       if (oceanScheme && !(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
       const landScheme = byId("#landHeights")?.getAttribute("scheme");
@@ -487,7 +487,7 @@ async function parseLoadedData(data, mapVersion) {
     {
       // add custom texture if any
       const textureHref = texture.attr("data-href");
-      if (textureHref) updateTextureSelectValue(textureHref);
+      if (textureHref && typeof updateTextureSelectValue !== "undefined") updateTextureSelectValue(textureHref);
     }
 
     // data integrity checks
@@ -625,7 +625,7 @@ async function parseLoadedData(data, mapVersion) {
 
           capitalBurgs.forEach(burg => {
             burg.capital = 0;
-            moveBurgToGroup(burg.i, "towns");
+            if (typeof moveBurgToGroup !== "undefined") moveBurgToGroup(burg.i, "towns");
           });
 
           return;
@@ -640,7 +640,7 @@ async function parseLoadedData(data, mapVersion) {
           capitalBurgs.forEach((burg, i) => {
             if (!i) return;
             burg.capital = 0;
-            moveBurgToGroup(burg.i, "towns");
+            if (typeof moveBurgToGroup !== "undefined") moveBurgToGroup(burg.i, "towns");
           });
 
           return;
@@ -650,7 +650,7 @@ async function parseLoadedData(data, mapVersion) {
           ERROR &&
             console.error(`[Data integrity] State ${state.i} has no capital. Assigning the first burg as capital`);
           stateBurgs[0].capital = 1;
-          moveBurgToGroup(stateBurgs[0].i, "cities");
+          if (typeof moveBurgToGroup !== "undefined") moveBurgToGroup(stateBurgs[0].i, "cities");
         }
       });
 
@@ -731,9 +731,9 @@ async function parseLoadedData(data, mapVersion) {
 
     {
       if (window.restoreDefaultEvents) restoreDefaultEvents();
-      focusOn(); // based on searchParams focus on point, cell or burg
-      invokeActiveZooming();
-      fitMapToScreen();
+      if (typeof focusOn !== "undefined") focusOn(); // based on searchParams focus on point, cell or burg
+      if (typeof invokeActiveZooming !== "undefined") invokeActiveZooming();
+      if (typeof fitMapToScreen !== "undefined") fitMapToScreen();
     }
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadMap.timeStart) / 1000, 2)}s`);
