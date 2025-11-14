@@ -99,9 +99,50 @@ const ObsidianBridge = (() => {
       INFO && console.log("Pre-warming vault file cache...");
       await getVaultFiles();
       INFO && console.log("Vault file cache pre-warmed successfully!");
+
+      // Also build the complete FMG ID index
+      await buildCompleteIndex();
     } catch (error) {
       WARN && console.warn("Failed to pre-warm cache:", error);
       // Don't throw - this is just optimization
+    }
+  }
+
+  // Build complete index of all fmg-ids in the vault
+  async function buildCompleteIndex() {
+    try {
+      INFO && console.log("Building complete FMG ID index...");
+      TIME && console.time("buildCompleteIndex");
+
+      const files = vaultFilesCache.files || await getVaultFiles();
+      let indexed = 0;
+      let skipped = 0;
+
+      for (const filePath of files) {
+        try {
+          const content = await getNote(filePath);
+          const {frontmatter} = parseFrontmatter(content);
+
+          const fmgId = frontmatter["fmg-id"] || frontmatter.fmgId;
+          if (fmgId) {
+            fmgIdIndex[fmgId] = filePath;
+            indexed++;
+          } else {
+            skipped++;
+          }
+        } catch (error) {
+          DEBUG && console.debug(`Skipping file ${filePath}:`, error);
+          skipped++;
+        }
+      }
+
+      // Save the complete index
+      saveFmgIdIndex();
+
+      TIME && console.timeEnd("buildCompleteIndex");
+      INFO && console.log(`Complete FMG ID index built: ${indexed} notes indexed, ${skipped} skipped`);
+    } catch (error) {
+      ERROR && console.error("Failed to build complete index:", error);
     }
   }
 
@@ -660,7 +701,8 @@ Add your lore here...
     listAllNotes,
     listAllNotePaths,
     addToFmgIdIndex,
-    getFromFmgIdIndex
+    getFromFmgIdIndex,
+    buildCompleteIndex
   };
 })();
 
