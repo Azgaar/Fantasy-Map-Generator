@@ -46,6 +46,12 @@ const ObsidianBridge = (() => {
         fmgIdIndex = {};
       }
     }
+
+    // Pre-warm cache if Obsidian is already enabled
+    if (config.enabled) {
+      INFO && console.log("Obsidian enabled, pre-warming cache...");
+      prewarmCache();
+    }
   }
 
   // Save configuration
@@ -74,12 +80,28 @@ const ObsidianBridge = (() => {
       INFO && console.log("Obsidian connection successful:", data);
       config.enabled = true;
       saveConfig();
+
+      // Pre-warm the cache in the background (don't await)
+      prewarmCache();
+
       return true;
     } catch (error) {
       ERROR && console.error("Obsidian connection failed:", error);
       config.enabled = false;
       saveConfig();
       throw error;
+    }
+  }
+
+  // Pre-warm the vault files cache in the background
+  async function prewarmCache() {
+    try {
+      INFO && console.log("Pre-warming vault file cache...");
+      await getVaultFiles();
+      INFO && console.log("Vault file cache pre-warmed successfully!");
+    } catch (error) {
+      WARN && console.warn("Failed to pre-warm cache:", error);
+      // Don't throw - this is just optimization
     }
   }
 
