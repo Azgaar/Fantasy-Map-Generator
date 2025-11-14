@@ -343,13 +343,13 @@ const ObsidianBridge = (() => {
   }
 
   // Generate note template for FMG element
-  function generateNoteTemplate(element, type) {
+  function generateNoteTemplate(element, type, elementId) {
     const {x, y} = element;
     const lat = pack.cells.lat?.[element.cell] || 0;
     const lon = pack.cells.lon?.[element.cell] || 0;
 
     const frontmatter = {
-      "fmg-id": element.id || `${type}${element.i}`,
+      "fmg-id": elementId || element.id || `${type}${element.i}`,
       "fmg-type": type,
       coordinates: {x, y, lat, lon},
       tags: [type],

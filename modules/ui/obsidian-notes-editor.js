@@ -11,7 +11,7 @@ function editObsidianNote(elementId, elementType, coordinates) {
   // Try to find note by FMG ID first, then by coordinates
   findOrCreateNote(elementId, elementType, coordinates)
     .then(noteData => {
-      showMarkdownEditor(noteData, elementType);
+      showMarkdownEditor(noteData, elementType, elementId, coordinates);
     })
     .catch(error => {
       ERROR && console.error("Failed to load note:", error);
@@ -211,7 +211,7 @@ async function promptCreateNewNote(elementId, elementType, coordinates) {
           $(this).dialog("close");
 
           try {
-            const template = ObsidianBridge.generateNoteTemplate(element, elementType);
+            const template = ObsidianBridge.generateNoteTemplate(element, elementType, elementId);
             await ObsidianBridge.createNote(notePath, template);
 
             const {frontmatter} = ObsidianBridge.parseFrontmatter(template);
@@ -404,7 +404,7 @@ function getElementData(elementId, elementType) {
   }
 }
 
-function showMarkdownEditor(noteData, elementType) {
+function showMarkdownEditor(noteData, elementType, elementId, coordinates) {
   const {path, name, content, frontmatter, isNew} = noteData;
 
   // Extract frontmatter and body
@@ -416,9 +416,12 @@ function showMarkdownEditor(noteData, elementType) {
   byId("obsidianMarkdownEditor").value = content;
   byId("obsidianMarkdownPreview").innerHTML = renderMarkdown(bodyContent);
 
-  // Store current note data
+  // Store current note data and FMG element info
   showMarkdownEditor.currentNote = noteData;
   showMarkdownEditor.originalContent = content;
+  showMarkdownEditor.elementId = elementId;
+  showMarkdownEditor.elementType = elementType;
+  showMarkdownEditor.coordinates = coordinates;
 
   $("#obsidianNotesEditor").dialog({
     title: `Obsidian Note: ${name}`,
@@ -491,17 +494,53 @@ async function saveObsidianNote() {
     return;
   }
 
-  const content = byId("obsidianMarkdownEditor").value;
+  let content = byId("obsidianMarkdownEditor").value;
   const {path} = showMarkdownEditor.currentNote;
+  const elementId = showMarkdownEditor.elementId;
+  const coordinates = showMarkdownEditor.coordinates;
+
+  // Update/add frontmatter with FMG ID and coordinates
+  if (elementId && coordinates) {
+    content = updateFrontmatterWithFmgData(content, elementId, coordinates);
+  }
 
   try {
     await ObsidianBridge.updateNote(path, content);
     showMarkdownEditor.originalContent = content;
-    tip("Note saved to Obsidian vault", true, "success", 2000);
+    // Update the editor to show the new frontmatter
+    byId("obsidianMarkdownEditor").value = content;
+    tip("Note saved to Obsidian vault (linked to FMG element)", true, "success", 3000);
   } catch (error) {
     ERROR && console.error("Failed to save note:", error);
     tip("Failed to save note: " + error.message, true, "error", 5000);
   }
+}
+
+function updateFrontmatterWithFmgData(content, elementId, coordinates) {
+  const {x, y} = coordinates;
+  const {frontmatter, content: bodyContent} = ObsidianBridge.parseFrontmatter(content);
+
+  // Update frontmatter with FMG data
+  frontmatter["fmg-id"] = elementId;
+  frontmatter["x"] = Math.round(x * 100) / 100;
+  frontmatter["y"] = Math.round(y * 100) / 100;
+
+  // Rebuild frontmatter
+  let frontmatterLines = ["---"];
+  for (const [key, value] of Object.entries(frontmatter)) {
+    if (typeof value === "object" && value !== null) {
+      // Handle nested objects
+      frontmatterLines.push(`${key}:`);
+      for (const [nestedKey, nestedValue] of Object.entries(value)) {
+        frontmatterLines.push(`  ${nestedKey}: ${nestedValue}`);
+      }
+    } else {
+      frontmatterLines.push(`${key}: ${value}`);
+    }
+  }
+  frontmatterLines.push("---");
+
+  return frontmatterLines.join("\n") + "\n" + bodyContent;
 }
 
 function openInObsidian() {
