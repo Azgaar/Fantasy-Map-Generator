@@ -61,35 +61,60 @@ const ObsidianBridge = (() => {
     }
   }
 
-  // Get all markdown files from vault
+  // Recursively scan a directory and all subdirectories for .md files
+  async function scanDirectory(path = "") {
+    const response = await fetch(`${config.apiUrl}/vault/${encodeURIComponent(path)}`, {
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch directory ${path}: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const entries = data.files || [];
+    const mdFiles = [];
+
+    for (const entry of entries) {
+      const fullPath = path ? `${path}${entry}` : entry;
+
+      if (entry.endsWith("/")) {
+        // It's a directory - recurse into it
+        DEBUG && console.log(`Scanning directory: ${fullPath}`);
+        const subFiles = await scanDirectory(fullPath);
+        mdFiles.push(...subFiles);
+      } else if (entry.endsWith(".md")) {
+        // It's a markdown file - add it
+        mdFiles.push(fullPath);
+      }
+    }
+
+    return mdFiles;
+  }
+
+  // Get all markdown files from vault (recursively)
   async function getVaultFiles() {
     if (!config.enabled) {
       throw new Error("Obsidian not connected");
     }
 
     try {
-      const response = await fetch(`${config.apiUrl}/vault/`, {
-        headers: {
-          Authorization: `Bearer ${config.apiKey}`
-        }
-      });
+      TIME && console.time("getVaultFiles");
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch vault files: ${response.status}`);
-      }
+      // Recursively scan all directories
+      const mdFiles = await scanDirectory("");
 
-      const data = await response.json();
-      const files = data.files || [];
-
-      // Filter to only .md files
-      const mdFiles = files.filter(f => f.endsWith(".md"));
-
-      INFO && console.log(`getVaultFiles: Found ${files.length} total files, ${mdFiles.length} markdown files`);
+      INFO && console.log(`getVaultFiles: Found ${mdFiles.length} markdown files (recursive scan)`);
       DEBUG && console.log("Sample files:", mdFiles.slice(0, 10));
+
+      TIME && console.timeEnd("getVaultFiles");
 
       return mdFiles;
     } catch (error) {
       ERROR && console.error("Failed to get vault files:", error);
+      TIME && console.timeEnd("getVaultFiles");
       throw error;
     }
   }
