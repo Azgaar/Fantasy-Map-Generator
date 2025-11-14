@@ -28,7 +28,9 @@ async function findOrCreateNote(elementId, elementType, coordinates) {
 
   if (note) {
     INFO && console.log("Found note by FMG ID:", note.path);
-    return note;
+    closeDialogs("#obsidianNoteLoading");
+    // Show dialog with option to open linked note or choose different one
+    return await showLinkedNoteDialog(note, elementId, elementType, coordinates);
   }
 
   // Find by coordinates
@@ -55,6 +57,46 @@ async function findOrCreateNote(elementId, elementType, coordinates) {
 
   // Multiple matches - show selection dialog
   return await showNoteSelectionDialog(matches, elementId, elementType, coordinates);
+}
+
+async function showLinkedNoteDialog(note, elementId, elementType, coordinates) {
+  return new Promise((resolve, reject) => {
+    alertMessage.innerHTML = `
+      <div style="padding: 1em;">
+        <p style="margin-bottom: 1em;"><strong>✓ Found linked note:</strong></p>
+        <div style="padding: 12px; background: #f0f8ff; border: 1px solid #0066cc; border-radius: 4px; margin-bottom: 1.5em;">
+          <div style="font-weight: bold; margin-bottom: 4px;">${note.name}</div>
+          <div style="font-size: 0.9em; color: #666;">Path: ${note.path}</div>
+        </div>
+        <p style="font-size: 0.9em; color: #666;">This element is already linked to the note above. You can open it or choose a different note.</p>
+      </div>
+    `;
+
+    $("#alert").dialog({
+      title: "Linked Note Found",
+      width: "500px",
+      buttons: {
+        "Open Linked Note": function () {
+          $(this).dialog("close");
+          resolve(note);
+        },
+        "Choose Different Note": async function () {
+          $(this).dialog("close");
+          try {
+            const differentNote = await promptCreateNewNote(elementId, elementType, coordinates);
+            resolve(differentNote);
+          } catch (error) {
+            reject(error);
+          }
+        },
+        Cancel: function () {
+          $(this).dialog("close");
+          reject(new Error("Cancelled"));
+        }
+      },
+      position: {my: "center", at: "center", of: "svg"}
+    });
+  });
 }
 
 function showLoadingDialog() {
