@@ -343,13 +343,13 @@ const ObsidianBridge = (() => {
   }
 
   // Generate note template for FMG element
-  function generateNoteTemplate(element, type) {
+  function generateNoteTemplate(element, type, elementId) {
     const {x, y} = element;
     const lat = pack.cells.lat?.[element.cell] || 0;
     const lon = pack.cells.lon?.[element.cell] || 0;
 
     const frontmatter = {
-      "fmg-id": element.id || `${type}${element.i}`,
+      "fmg-id": elementId || element.id || `${type}${element.i}`,
       "fmg-type": type,
       coordinates: {x, y, lat, lon},
       tags: [type],
@@ -396,6 +396,66 @@ Add your lore here...
 `;
   }
 
+  // Search notes by text query (searches in filename and frontmatter)
+  async function searchNotes(query) {
+    if (!query || query.trim() === "") {
+      return [];
+    }
+
+    const allFiles = await getVaultFiles();
+    const searchTerm = query.toLowerCase();
+    const results = [];
+
+    for (const filePath of allFiles) {
+      const fileName = filePath.split("/").pop().replace(".md", "").toLowerCase();
+
+      // Check if filename matches
+      if (fileName.includes(searchTerm)) {
+        try {
+          const content = await getNote(filePath);
+          const {frontmatter} = parseFrontmatter(content);
+
+          results.push({
+            path: filePath,
+            name: filePath.split("/").pop().replace(".md", ""),
+            frontmatter,
+            matchType: "filename"
+          });
+        } catch (error) {
+          WARN && console.warn(`Could not read file ${filePath}:`, error);
+        }
+      }
+    }
+
+    return results;
+  }
+
+  // List all notes with basic info
+  async function listAllNotes() {
+    const allFiles = await getVaultFiles();
+    const notes = [];
+
+    for (const filePath of allFiles) {
+      try {
+        const content = await getNote(filePath);
+        const {frontmatter} = parseFrontmatter(content);
+
+        notes.push({
+          path: filePath,
+          name: filePath.split("/").pop().replace(".md", ""),
+          frontmatter,
+          folder: filePath.includes("/") ? filePath.substring(0, filePath.lastIndexOf("/")) : ""
+        });
+      } catch (error) {
+        WARN && console.warn(`Could not read file ${filePath}:`, error);
+      }
+    }
+
+    // Sort by path
+    notes.sort((a, b) => a.path.localeCompare(b.path));
+    return notes;
+  }
+
   return {
     init,
     config,
@@ -408,7 +468,9 @@ Add your lore here...
     parseFrontmatter,
     findNotesByCoordinates,
     findNoteByFmgId,
-    generateNoteTemplate
+    generateNoteTemplate,
+    searchNotes,
+    listAllNotes
   };
 })();
 
