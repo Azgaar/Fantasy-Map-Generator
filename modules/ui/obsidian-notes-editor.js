@@ -300,15 +300,18 @@ async function promptCreateNewNote(elementId, elementType, coordinates) {
     };
 
     const showBrowse = async () => {
-      resultsDiv.innerHTML = "<p>Loading all notes...</p>";
+      resultsDiv.innerHTML = "<p>Loading file list...</p>";
 
       try {
-        const allNotes = await ObsidianBridge.listAllNotes();
+        // Use fast path-only listing (doesn't read file contents)
+        const allNotes = await ObsidianBridge.listAllNotePaths();
 
         if (allNotes.length === 0) {
           resultsDiv.innerHTML = "<p style='color: #999;'>No notes in vault</p>";
           return;
         }
+
+        INFO && console.log(`Displaying ${allNotes.length} notes in folder tree`);
 
         // Build folder tree
         const tree = buildFolderTree(allNotes);
@@ -321,12 +324,15 @@ async function promptCreateNewNote(elementId, elementType, coordinates) {
             $("#alert").dialog("close");
             try {
               const note = allNotes[index];
+              // Read the file content only when clicked
               const content = await ObsidianBridge.getNote(note.path);
+              const {frontmatter} = ObsidianBridge.parseFrontmatter(content);
+
               resolve({
                 path: note.path,
                 name: note.name,
                 content,
-                frontmatter: note.frontmatter
+                frontmatter
               });
             } catch (error) {
               reject(error);
