@@ -463,7 +463,7 @@ Add your lore here...
     return results;
   }
 
-  // List all notes with basic info
+  // List all notes with basic info (reads frontmatter - slow for large vaults)
   async function listAllNotes() {
     const allFiles = await getVaultFiles();
     const notes = [];
@@ -495,6 +495,25 @@ Add your lore here...
     return notes;
   }
 
+  // List just file paths (fast - no content reading)
+  async function listAllNotePaths() {
+    const allFiles = await getVaultFiles();
+
+    INFO && console.log(`listAllNotePaths: Found ${allFiles.length} files`);
+
+    // Convert to note objects with just path and name
+    const notes = allFiles.map(filePath => ({
+      path: filePath,
+      name: filePath.split("/").pop().replace(".md", ""),
+      folder: filePath.includes("/") ? filePath.substring(0, filePath.lastIndexOf("/")) : ""
+    }));
+
+    // Sort by path
+    notes.sort((a, b) => a.path.localeCompare(b.path));
+
+    return notes;
+  }
+
   return {
     init,
     config,
@@ -509,7 +528,8 @@ Add your lore here...
     findNoteByFmgId,
     generateNoteTemplate,
     searchNotes,
-    listAllNotes
+    listAllNotes,
+    listAllNotePaths
   };
 })();
 
