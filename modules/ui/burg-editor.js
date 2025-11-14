@@ -492,7 +492,7 @@ function editBurg(id) {
     // Use Obsidian integration if available, otherwise fall back to old notes system
     if (typeof editObsidianNote !== "undefined") {
       const coordinates = {x: burg.x, y: burg.y};
-      editObsidianNote(id, "burg", coordinates);
+      editObsidianNote("burg" + id, "burg", coordinates);
     } else {
       const name = elSelected.text();
       editNotes("burg" + id, name);
