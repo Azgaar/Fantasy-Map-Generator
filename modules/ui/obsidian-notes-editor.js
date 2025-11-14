@@ -5,19 +5,67 @@
 function editObsidianNote(elementId, elementType, coordinates) {
   const {x, y} = coordinates;
 
-  // Show loading dialog
-  showLoadingDialog();
+  // Show choice dialog: automatic search or manual browse
+  showSearchMethodDialog(elementId, elementType, coordinates);
+}
 
-  // Try to find note by FMG ID first, then by coordinates
-  findOrCreateNote(elementId, elementType, coordinates)
-    .then(noteData => {
-      showMarkdownEditor(noteData, elementType, elementId, coordinates);
-    })
-    .catch(error => {
-      ERROR && console.error("Failed to load note:", error);
-      tip("Failed to load Obsidian note: " + error.message, true, "error", 5000);
-      closeDialogs("#obsidianNoteLoading");
-    });
+function showSearchMethodDialog(elementId, elementType, coordinates) {
+  const element = getElementData(elementId, elementType);
+  const elementName = element.name || elementId;
+
+  alertMessage.innerHTML = `
+    <div style="padding: 1em;">
+      <p style="margin-bottom: 1em;"><strong>${elementName}</strong></p>
+      <p style="margin-bottom: 1.5em; color: #666;">How would you like to find the note for this ${elementType}?</p>
+
+      <div style="margin: 1em 0; padding: 12px; background: #f0f8ff; border: 1px solid #0066cc; border-radius: 4px;">
+        <div style="font-weight: bold; margin-bottom: 4px;">🔍 Automatic Search</div>
+        <div style="font-size: 0.9em; color: #666;">Search by linked ID or nearby coordinates</div>
+      </div>
+
+      <div style="margin: 1em 0; padding: 12px; background: #fff8e1; border: 1px solid #ffa000; border-radius: 4px;">
+        <div style="font-weight: bold; margin-bottom: 4px;">📁 Browse Manually</div>
+        <div style="font-size: 0.9em; color: #666;">Browse your vault's folder tree</div>
+      </div>
+    </div>
+  `;
+
+  $("#alert").dialog({
+    title: "Select Note",
+    width: "450px",
+    buttons: {
+      "🔍 Search": function () {
+        $(this).dialog("close");
+        // Show loading and do automatic search
+        showLoadingDialog();
+        findOrCreateNote(elementId, elementType, coordinates)
+          .then(noteData => {
+            showMarkdownEditor(noteData, elementType, elementId, coordinates);
+          })
+          .catch(error => {
+            ERROR && console.error("Failed to load note:", error);
+            tip("Failed to load Obsidian note: " + error.message, true, "error", 5000);
+            closeDialogs("#obsidianNoteLoading");
+          });
+      },
+      "📁 Browse": async function () {
+        $(this).dialog("close");
+        try {
+          const noteData = await promptCreateNewNote(elementId, elementType, coordinates);
+          showMarkdownEditor(noteData, elementType, elementId, coordinates);
+        } catch (error) {
+          if (error.message !== "Cancelled") {
+            ERROR && console.error("Failed to load note:", error);
+            tip("Failed to load Obsidian note: " + error.message, true, "error", 5000);
+          }
+        }
+      },
+      Cancel: function () {
+        $(this).dialog("close");
+      }
+    },
+    position: {my: "center", at: "center", of: "svg"}
+  });
 }
 
 async function findOrCreateNote(elementId, elementType, coordinates) {
