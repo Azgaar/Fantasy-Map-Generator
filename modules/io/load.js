@@ -477,7 +477,7 @@ async function parseLoadedData(data, mapVersion) {
     }
 
     // add custom heightmap color scheme if any
-    if (heightmapColorSchemes) {
+    if (typeof heightmapColorSchemes !== "undefined" && heightmapColorSchemes) {
       const oceanScheme = byId("oceanHeights")?.getAttribute("scheme");
       if (oceanScheme && !(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
       const landScheme = byId("#landHeights")?.getAttribute("scheme");
