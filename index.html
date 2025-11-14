@@ -2062,6 +2062,9 @@
               Namesbase
             </button>
             <button id="editNotesButton" data-tip="Click to open Notes Editor" data-shortcut="Shift + O">Notes</button>
+            <button id="obsidianConfigButton" data-tip="Configure Obsidian vault integration for modern Markdown notes" onclick="openObsidianConfig()">
+              ⚙ Obsidian
+            </button>
             <button id="editProvincesButton" data-tip="Click to open Provinces Editor" data-shortcut="Shift + P">
               Provinces
             </button>
@@ -4960,6 +4963,107 @@
           <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
           <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
           <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
+        </div>
+      </div>
+
+      <!-- Obsidian Notes Editor (Modern Markdown) -->
+      <div id="obsidianNotesEditor" class="dialog stable" style="display: none">
+        <div style="margin-bottom: 0.8em; padding-bottom: 0.8em; border-bottom: 1px solid #ddd">
+          <div style="display: flex; align-items: center; gap: 1em; margin-bottom: 0.5em;">
+            <div style="flex: 1;">
+              <span style="font-size: 0.9em; color: #666;">📁 </span>
+              <span id="obsidianNotePath" style="font-size: 0.9em; color: #666;"></span>
+            </div>
+            <button id="openInObsidian" onclick="openInObsidian()" data-tip="Open this note in Obsidian app" style="padding: 4px 12px;">
+              Open in Obsidian
+            </button>
+          </div>
+          <input id="obsidianNoteName" type="text" placeholder="Note name" style="width: 100%; padding: 8px; font-size: 1.1em; font-weight: bold; border: 1px solid #ddd; border-radius: 4px;"/>
+        </div>
+
+        <div style="display: flex; gap: 12px; height: calc(100% - 120px);">
+          <!-- Editor pane -->
+          <div style="flex: 1; display: flex; flex-direction: column;">
+            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <strong style="color: #666;">Markdown</strong>
+              <button id="togglePreview" onclick="togglePreviewMode()" style="padding: 4px 12px;">👁 Preview</button>
+            </div>
+            <textarea
+              id="obsidianMarkdownEditor"
+              oninput="updateMarkdownPreview()"
+              style="flex: 1; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace; font-size: 14px; padding: 12px; border: 1px solid #ddd; border-radius: 4px; resize: none;"
+              placeholder="Write your markdown here..."
+            ></textarea>
+            <div
+              id="obsidianMarkdownPreview"
+              style="display: none; flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 4px; overflow-y: auto; background: #fafafa;"
+            ></div>
+          </div>
+        </div>
+
+        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd; display: flex; justify-content: space-between;">
+          <div>
+            <span style="font-size: 0.9em; color: #666;">💡 Tip: Use [[wikilinks]] to link to other notes</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button onclick="$('#obsidianNotesEditor').dialog('close')" style="padding: 6px 16px;">Cancel</button>
+            <button onclick="saveObsidianNote()" style="padding: 6px 16px; background: #5e81ac; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              💾 Save to Vault
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Obsidian Configuration Dialog -->
+      <div id="obsidianConfig" class="dialog stable" style="display: none">
+        <div style="padding: 1em;">
+          <p style="margin-bottom: 1em;">Configure connection to your Obsidian vault via the Local REST API plugin.</p>
+
+          <div style="margin-bottom: 1em;">
+            <label for="obsidianApiUrl" style="display: block; margin-bottom: 0.5em; font-weight: bold;">API URL:</label>
+            <input
+              id="obsidianApiUrl"
+              type="text"
+              value="http://127.0.0.1:27123"
+              style="width: 100%; padding: 8px; font-family: monospace;"
+              placeholder="http://127.0.0.1:27123"
+            />
+            <small style="color: #666;">Default: http://127.0.0.1:27123</small>
+          </div>
+
+          <div style="margin-bottom: 1em;">
+            <label for="obsidianApiKey" style="display: block; margin-bottom: 0.5em; font-weight: bold;">API Key:</label>
+            <input
+              id="obsidianApiKey"
+              type="password"
+              style="width: 100%; padding: 8px; font-family: monospace;"
+              placeholder="Enter your API key from Obsidian plugin settings"
+            />
+            <small style="color: #666;">Get this from Obsidian → Settings → Local REST API</small>
+          </div>
+
+          <div style="margin-bottom: 1em;">
+            <label for="obsidianVaultName" style="display: block; margin-bottom: 0.5em; font-weight: bold;">Vault Name:</label>
+            <input
+              id="obsidianVaultName"
+              type="text"
+              style="width: 100%; padding: 8px;"
+              placeholder="My Vault"
+            />
+            <small style="color: #666;">Name of your Obsidian vault (for opening links)</small>
+          </div>
+
+          <div style="margin: 1.5em 0; padding: 1em; background: #f0f0f0; border-radius: 4px;">
+            <strong>Status:</strong> <span id="obsidianStatus" style="color: #666;">Not configured</span>
+          </div>
+
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button onclick="testObsidianConnection()" style="padding: 8px 16px;">Test Connection</button>
+            <button onclick="$('#obsidianConfig').dialog('close')" style="padding: 8px 16px;">Cancel</button>
+            <button onclick="saveObsidianConfig()" style="padding: 8px 16px; background: #5e81ac; color: white; border: none; border-radius: 4px;">
+              Save Configuration
+            </button>
+          </div>
         </div>
       </div>
 
@@ -8173,10 +8277,13 @@
     <script defer src="modules/coa-renderer.js?v=1.99.00"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-    <script defer src="modules/io/save.js?v=1.108.12">
+    <script defer src="modules/io/save.js?v=1.108.12"></script>
     <script defer src="modules/io/load.js?v=1.108.0"></script>
     <script defer src="modules/io/cloud.js?v=1.106.0"></script>
     <script defer src="modules/io/export.js?v=1.108.11"></script>
+    <script defer src="modules/io/obsidian-bridge.js?v=1.108.13"></script>
+    <script defer src="modules/ui/obsidian-notes-editor.js?v=1.108.13"></script>
+    <script defer src="modules/ui/obsidian-config.js?v=1.108.13"></script>
 
     <script defer src="modules/renderers/draw-features.js?v=1.108.2"></script>
     <script defer src="modules/renderers/draw-borders.js?v=1.104.0"></script>
