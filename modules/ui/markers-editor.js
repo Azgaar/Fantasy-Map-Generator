@@ -221,7 +221,14 @@ function editMarker(markerI) {
 
   function editMarkerLegend() {
     const id = element.id;
-    editNotes(id, id);
+
+    // Use Obsidian integration if available, otherwise fall back to old notes system
+    if (typeof editObsidianNote !== "undefined" && marker) {
+      const coordinates = {x: marker.x, y: marker.y};
+      editObsidianNote(marker.i, "marker", coordinates);
+    } else {
+      editNotes(id, id);
+    }
   }
 
   function toggleMarkerLock() {
