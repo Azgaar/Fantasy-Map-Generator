@@ -360,13 +360,18 @@ async function promptCreateNewNote(elementId, elementType, coordinates) {
 function buildFolderTree(notes) {
   const root = {folders: {}, files: []};
 
+  INFO && console.log(`buildFolderTree: Processing ${notes.length} notes`);
+
   notes.forEach((note, index) => {
     const parts = note.path.split("/");
     const fileName = parts[parts.length - 1];
 
+    DEBUG && console.log(`Processing note ${index}: ${note.path} (${parts.length} parts)`);
+
     if (parts.length === 1) {
       // Root level file
       root.files.push({name: fileName, index, path: note.path});
+      DEBUG && console.log(`  -> Added to root files: ${fileName}`);
     } else {
       // Navigate/create folder structure
       let current = root;
@@ -374,13 +379,17 @@ function buildFolderTree(notes) {
         const folderName = parts[i];
         if (!current.folders[folderName]) {
           current.folders[folderName] = {folders: {}, files: []};
+          DEBUG && console.log(`  -> Created folder: ${folderName}`);
         }
         current = current.folders[folderName];
       }
       // Add file to final folder
       current.files.push({name: fileName, index, path: note.path});
+      DEBUG && console.log(`  -> Added to folder: ${fileName}`);
     }
   });
+
+  INFO && console.log("Folder tree structure:", root);
 
   return root;
 }

@@ -79,7 +79,15 @@ const ObsidianBridge = (() => {
       }
 
       const data = await response.json();
-      return data.files || [];
+      const files = data.files || [];
+
+      // Filter to only .md files
+      const mdFiles = files.filter(f => f.endsWith(".md"));
+
+      INFO && console.log(`getVaultFiles: Found ${files.length} total files, ${mdFiles.length} markdown files`);
+      DEBUG && console.log("Sample files:", mdFiles.slice(0, 10));
+
+      return mdFiles;
     } catch (error) {
       ERROR && console.error("Failed to get vault files:", error);
       throw error;
@@ -435,6 +443,8 @@ Add your lore here...
     const allFiles = await getVaultFiles();
     const notes = [];
 
+    INFO && console.log(`listAllNotes: Processing ${allFiles.length} files`);
+
     for (const filePath of allFiles) {
       try {
         const content = await getNote(filePath);
@@ -453,6 +463,10 @@ Add your lore here...
 
     // Sort by path
     notes.sort((a, b) => a.path.localeCompare(b.path));
+
+    INFO && console.log(`listAllNotes: Returning ${notes.length} notes`);
+    DEBUG && console.log("Sample note paths:", notes.slice(0, 5).map(n => n.path));
+
     return notes;
   }
 
