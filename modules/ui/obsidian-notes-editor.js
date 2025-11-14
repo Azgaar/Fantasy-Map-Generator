@@ -44,15 +44,16 @@ async function findOrCreateNote(elementId, elementType, coordinates) {
   }
 
   if (matches.length === 1) {
-    // Single match - load it
+    // Single match - show dialog with option to use it or choose different one
     const match = matches[0];
     const content = await ObsidianBridge.getNote(match.path);
-    return {
+    const noteData = {
       path: match.path,
       name: match.name,
       content,
       frontmatter: match.frontmatter
     };
+    return await showSingleMatchDialog(noteData, elementId, elementType, coordinates);
   }
 
   // Multiple matches - show selection dialog
@@ -81,6 +82,46 @@ async function showLinkedNoteDialog(note, elementId, elementType, coordinates) {
           resolve(note);
         },
         "Choose Different Note": async function () {
+          $(this).dialog("close");
+          try {
+            const differentNote = await promptCreateNewNote(elementId, elementType, coordinates);
+            resolve(differentNote);
+          } catch (error) {
+            reject(error);
+          }
+        },
+        Cancel: function () {
+          $(this).dialog("close");
+          reject(new Error("Cancelled"));
+        }
+      },
+      position: {my: "center", at: "center", of: "svg"}
+    });
+  });
+}
+
+async function showSingleMatchDialog(note, elementId, elementType, coordinates) {
+  return new Promise((resolve, reject) => {
+    alertMessage.innerHTML = `
+      <div style="padding: 1em;">
+        <p style="margin-bottom: 1em;"><strong>✓ Found note by coordinates:</strong></p>
+        <div style="padding: 12px; background: #f0fff0; border: 1px solid #00aa00; border-radius: 4px; margin-bottom: 1.5em;">
+          <div style="font-weight: bold; margin-bottom: 4px;">${note.name}</div>
+          <div style="font-size: 0.9em; color: #666;">Path: ${note.path}</div>
+        </div>
+        <p style="font-size: 0.9em; color: #666;">Found a note near this location. You can use it or browse for a different one.</p>
+      </div>
+    `;
+
+    $("#alert").dialog({
+      title: "Note Found Nearby",
+      width: "500px",
+      buttons: {
+        "Use This Note": function () {
+          $(this).dialog("close");
+          resolve(note);
+        },
+        "Browse/Search": async function () {
           $(this).dialog("close");
           try {
             const differentNote = await promptCreateNewNote(elementId, elementType, coordinates);
