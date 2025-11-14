@@ -486,9 +486,17 @@ function editBurg(id) {
   }
 
   function editBurgLegend() {
-    const id = elSelected.attr("data-id");
-    const name = elSelected.text();
-    editNotes("burg" + id, name);
+    const id = +elSelected.attr("data-id");
+    const burg = pack.burgs[id];
+
+    // Use Obsidian integration if available, otherwise fall back to old notes system
+    if (typeof editObsidianNote !== "undefined") {
+      const coordinates = {x: burg.x, y: burg.y};
+      editObsidianNote(id, "burg", coordinates);
+    } else {
+      const name = elSelected.text();
+      editNotes("burg" + id, name);
+    }
   }
 
   function showTemperatureGraph() {

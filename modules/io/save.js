@@ -177,7 +177,6 @@ async function saveAsDefaultMap() {
     await ldb.set("defaultMap", blob);
     localStorage.setItem("onloadBehavior", "default");
     byId("onloadBehavior").value = "default";
-    WARN && console.warn("Default map saved. onloadBehavior set to:", localStorage.getItem("onloadBehavior"));
     tip("Map is set as default and will open on load", true, "success", 5000);
   } catch (error) {
     ERROR && console.error(error);
