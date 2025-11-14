@@ -175,6 +175,8 @@ async function saveAsDefaultMap() {
     const mapData = prepareMapData();
     const blob = new Blob([mapData], {type: "text/plain"});
     await ldb.set("defaultMap", blob);
+    localStorage.setItem("onloadBehavior", "default");
+    byId("onloadBehavior").value = "default";
     tip("Map is set as default and will open on load", true, "success", 5000);
   } catch (error) {
     ERROR && console.error(error);
@@ -186,6 +188,8 @@ async function saveAsDefaultMap() {
 async function clearDefaultMap() {
   try {
     await ldb.set("defaultMap", null);
+    localStorage.removeItem("onloadBehavior");
+    byId("onloadBehavior").value = "random";
     tip("Default map cleared", false, "success", 2000);
   } catch (error) {
     ERROR && console.error(error);
