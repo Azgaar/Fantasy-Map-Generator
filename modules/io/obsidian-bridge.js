@@ -61,13 +61,46 @@ const ObsidianBridge = (() => {
     }
   }
 
-  // Get all markdown files from vault
+  // Get all markdown files from vault (recursively)
   async function getVaultFiles() {
     if (!config.enabled) {
       throw new Error("Obsidian not connected");
     }
 
     try {
+      // Try using the search endpoint to get all .md files recursively
+      // The /search/ endpoint with an empty query or wildcard should return all files
+      const searchResponse = await fetch(`${config.apiUrl}/search/?query=.md`, {
+        headers: {
+          Authorization: `Bearer ${config.apiKey}`
+        }
+      });
+
+      if (searchResponse.ok) {
+        const searchData = await searchResponse.json();
+        INFO && console.log("Using search endpoint, found:", searchData);
+
+        // Extract file paths from search results
+        // The format might be different, check what we get
+        const files = searchData.files || searchData.results || searchData;
+
+        if (Array.isArray(files)) {
+          const mdFiles = files
+            .filter(f => {
+              const path = typeof f === 'string' ? f : f.path || f.filename;
+              return path && path.endsWith(".md");
+            })
+            .map(f => typeof f === 'string' ? f : f.path || f.filename);
+
+          INFO && console.log(`getVaultFiles (search): Found ${mdFiles.length} markdown files`);
+          DEBUG && console.log("Sample files:", mdFiles.slice(0, 10));
+
+          return mdFiles;
+        }
+      }
+
+      // Fallback to /vault/ endpoint if search doesn't work
+      INFO && console.log("Search endpoint failed, falling back to /vault/");
       const response = await fetch(`${config.apiUrl}/vault/`, {
         headers: {
           Authorization: `Bearer ${config.apiKey}`
@@ -84,8 +117,9 @@ const ObsidianBridge = (() => {
       // Filter to only .md files
       const mdFiles = files.filter(f => f.endsWith(".md"));
 
-      INFO && console.log(`getVaultFiles: Found ${files.length} total files, ${mdFiles.length} markdown files`);
+      INFO && console.log(`getVaultFiles (vault): Found ${files.length} total files, ${mdFiles.length} markdown files`);
       DEBUG && console.log("Sample files:", mdFiles.slice(0, 10));
+      WARN && console.warn("Note: /vault/ endpoint may only return root-level files. Nested folders may not be visible.");
 
       return mdFiles;
     } catch (error) {
