@@ -48,19 +48,20 @@ function showSearchMethodDialog(elementId, elementType, coordinates) {
             closeDialogs("#obsidianNoteLoading");
           });
       },
-      "Browse": async function () {
+      "Browse": function () {
         $(this).dialog("close");
-        try {
-          const noteData = await promptCreateNewNote(elementId, elementType, coordinates);
-          showMarkdownEditor(noteData, elementType, elementId, coordinates);
-        } catch (error) {
-          if (error.message !== "Cancelled") {
-            ERROR && console.error("Failed to load note:", error);
-            tip("Failed to load Obsidian note: " + error.message, true, "error", 5000);
-          }
-        }
+        promptCreateNewNote(elementId, elementType, coordinates)
+          .then(noteData => {
+            showMarkdownEditor(noteData, elementType, elementId, coordinates);
+          })
+          .catch(error => {
+            if (error.message !== "Cancelled") {
+              ERROR && console.error("Failed to load note:", error);
+              tip("Failed to load Obsidian note: " + error.message, true, "error", 5000);
+            }
+          });
       },
-      Cancel: function () {
+      "Cancel": function () {
         $(this).dialog("close");
       }
     },
