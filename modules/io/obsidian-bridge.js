@@ -13,6 +13,13 @@ const ObsidianBridge = (() => {
     vaultName: ""
   };
 
+  // Cache for vault file list
+  let vaultFilesCache = {
+    files: null,
+    timestamp: null,
+    ttl: 5 * 60 * 1000 // 5 minutes cache
+  };
+
   // Initialize from localStorage
   function init() {
     const stored = localStorage.getItem("obsidianConfig");
@@ -94,19 +101,42 @@ const ObsidianBridge = (() => {
     return mdFiles;
   }
 
-  // Get all markdown files from vault (recursively)
-  async function getVaultFiles() {
+  // Clear the vault files cache
+  function clearVaultCache() {
+    vaultFilesCache.files = null;
+    vaultFilesCache.timestamp = null;
+    INFO && console.log("Vault file cache cleared");
+  }
+
+  // Get all markdown files from vault (recursively, with caching)
+  async function getVaultFiles(forceRefresh = false) {
     if (!config.enabled) {
       throw new Error("Obsidian not connected");
     }
 
+    // Check cache
+    const now = Date.now();
+    const cacheValid = vaultFilesCache.files !== null &&
+                       vaultFilesCache.timestamp !== null &&
+                       (now - vaultFilesCache.timestamp) < vaultFilesCache.ttl;
+
+    if (cacheValid && !forceRefresh) {
+      INFO && console.log(`getVaultFiles: Using cached list (${vaultFilesCache.files.length} files)`);
+      return vaultFilesCache.files;
+    }
+
     try {
       TIME && console.time("getVaultFiles");
+      INFO && console.log("getVaultFiles: Scanning vault (cache miss or expired)...");
 
       // Recursively scan all directories
       const mdFiles = await scanDirectory("");
 
-      INFO && console.log(`getVaultFiles: Found ${mdFiles.length} markdown files (recursive scan)`);
+      // Update cache
+      vaultFilesCache.files = mdFiles;
+      vaultFilesCache.timestamp = now;
+
+      INFO && console.log(`getVaultFiles: Found ${mdFiles.length} markdown files (recursive scan, cached)`);
       DEBUG && console.log("Sample files:", mdFiles.slice(0, 10));
 
       TIME && console.timeEnd("getVaultFiles");
@@ -520,6 +550,7 @@ Add your lore here...
     saveConfig,
     testConnection,
     getVaultFiles,
+    clearVaultCache,
     getNote,
     updateNote,
     createNote,
