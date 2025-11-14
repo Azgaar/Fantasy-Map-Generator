@@ -487,7 +487,7 @@ async function parseLoadedData(data, mapVersion) {
     {
       // add custom texture if any
       const textureHref = texture.attr("data-href");
-      if (textureHref) updateTextureSelectValue(textureHref);
+      if (textureHref && typeof updateTextureSelectValue !== "undefined") updateTextureSelectValue(textureHref);
     }
 
     // data integrity checks
