@@ -153,21 +153,49 @@ async function promptCreateNewNote(elementId, elementType, coordinates) {
     const element = getElementData(elementId, elementType);
     const suggestedName = element.name || `${elementType}-${element.i}`;
 
+    // Build context info for the element
+    let contextInfo = "";
+    if (element.state) {
+      contextInfo += `<div style="color: #666; font-size: 0.9em;">State: ${element.state}</div>`;
+    }
+    if (element.province) {
+      contextInfo += `<div style="color: #666; font-size: 0.9em;">Province: ${element.province}</div>`;
+    }
+
+    // Pre-fill search with state or element name
+    const defaultSearch = element.state || element.name || "";
+
     alertMessage.innerHTML = `
-      <p>No matching notes found. Create a new note in your Obsidian vault?</p>
-      <div style="margin: 1em 0;">
-        <label for="newNoteName" style="display: block; margin-bottom: 0.5em;">Note name:</label>
-        <input id="newNoteName" type="text" value="${suggestedName}" style="width: 100%; padding: 8px; font-size: 1em;"/>
+      <div style="margin-bottom: 1.5em;">
+        <p><strong>${element.name || elementId}</strong></p>
+        ${contextInfo}
+        <p style="margin-top: 0.5em;">No matching notes found by coordinates.</p>
       </div>
-      <div style="margin: 1em 0;">
-        <label for="newNotePath" style="display: block; margin-bottom: 0.5em;">Folder (optional):</label>
-        <input id="newNotePath" type="text" placeholder="e.g., Locations/Cities" style="width: 100%; padding: 8px; font-size: 1em;"/>
+
+      <div style="margin: 1.5em 0; padding: 1em; background: #f5f5f5; border-radius: 4px;">
+        <label for="obsidianSearch" style="display: block; margin-bottom: 0.5em; font-weight: bold;">Search your vault:</label>
+        <input id="obsidianSearch" type="text" placeholder="Type to search..." value="${defaultSearch}" style="width: 100%; padding: 8px; font-size: 1em; margin-bottom: 8px;"/>
+        <button id="obsidianSearchBtn" style="padding: 6px 12px;">Search</button>
+        <button id="obsidianBrowseBtn" style="padding: 6px 12px; margin-left: 8px;">Browse All Notes</button>
+        <div id="obsidianSearchResults" style="margin-top: 1em; max-height: 200px; overflow-y: auto;"></div>
+      </div>
+
+      <div style="margin-top: 1.5em; padding-top: 1.5em; border-top: 1px solid #ddd;">
+        <p style="font-weight: bold; margin-bottom: 1em;">Or create a new note:</p>
+        <div style="margin: 1em 0;">
+          <label for="newNoteName" style="display: block; margin-bottom: 0.5em;">Note name:</label>
+          <input id="newNoteName" type="text" value="${suggestedName}" style="width: 100%; padding: 8px; font-size: 1em;"/>
+        </div>
+        <div style="margin: 1em 0;">
+          <label for="newNotePath" style="display: block; margin-bottom: 0.5em;">Folder (optional):</label>
+          <input id="newNotePath" type="text" placeholder="e.g., Locations/Cities" style="width: 100%; padding: 8px; font-size: 1em;"/>
+        </div>
       </div>
     `;
 
     $("#alert").dialog({
-      title: "Create New Note",
-      width: "500px",
+      title: "Find or Create Note",
+      width: "600px",
       buttons: {
         Create: async function () {
           const name = byId("newNoteName").value.trim();
@@ -206,6 +234,128 @@ async function promptCreateNewNote(elementId, elementType, coordinates) {
       },
       position: {my: "center", at: "center", of: "svg"}
     });
+
+    // Add event handlers for search and browse
+    const searchBtn = byId("obsidianSearchBtn");
+    const browseBtn = byId("obsidianBrowseBtn");
+    const searchInput = byId("obsidianSearch");
+    const resultsDiv = byId("obsidianSearchResults");
+
+    const performSearch = async () => {
+      const query = searchInput.value.trim();
+      if (!query) {
+        resultsDiv.innerHTML = "<p style='color: #999;'>Enter a search term</p>";
+        return;
+      }
+
+      resultsDiv.innerHTML = "<p>Searching...</p>";
+
+      try {
+        const results = await ObsidianBridge.searchNotes(query);
+
+        if (results.length === 0) {
+          resultsDiv.innerHTML = "<p style='color: #999;'>No matching notes found</p>";
+          return;
+        }
+
+        resultsDiv.innerHTML = results
+          .map(
+            (note, index) => `
+          <div class="search-result" data-index="${index}" style="
+            padding: 8px;
+            margin: 4px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            background: white;
+          " onmouseover="this.style.background='#e8e8e8'" onmouseout="this.style.background='white'">
+            <div style="font-weight: bold;">${note.name}</div>
+            <div style="font-size: 0.85em; color: #666;">${note.path}</div>
+          </div>
+        `
+          )
+          .join("");
+
+        // Add click handlers
+        document.querySelectorAll(".search-result").forEach((el, index) => {
+          el.addEventListener("click", async () => {
+            $("#alert").dialog("close");
+            try {
+              const note = results[index];
+              const content = await ObsidianBridge.getNote(note.path);
+              resolve({
+                path: note.path,
+                name: note.name,
+                content,
+                frontmatter: note.frontmatter
+              });
+            } catch (error) {
+              reject(error);
+            }
+          });
+        });
+      } catch (error) {
+        resultsDiv.innerHTML = `<p style='color: red;'>Search failed: ${error.message}</p>`;
+      }
+    };
+
+    const showBrowse = async () => {
+      resultsDiv.innerHTML = "<p>Loading all notes...</p>";
+
+      try {
+        const allNotes = await ObsidianBridge.listAllNotes();
+
+        if (allNotes.length === 0) {
+          resultsDiv.innerHTML = "<p style='color: #999;'>No notes in vault</p>";
+          return;
+        }
+
+        resultsDiv.innerHTML = allNotes
+          .map(
+            (note, index) => `
+          <div class="browse-result" data-index="${index}" style="
+            padding: 8px;
+            margin: 4px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            background: white;
+          " onmouseover="this.style.background='#e8e8e8'" onmouseout="this.style.background='white'">
+            <div style="font-weight: bold;">${note.name}</div>
+            <div style="font-size: 0.85em; color: #666;">${note.path}</div>
+          </div>
+        `
+          )
+          .join("");
+
+        // Add click handlers
+        document.querySelectorAll(".browse-result").forEach((el, index) => {
+          el.addEventListener("click", async () => {
+            $("#alert").dialog("close");
+            try {
+              const note = allNotes[index];
+              const content = await ObsidianBridge.getNote(note.path);
+              resolve({
+                path: note.path,
+                name: note.name,
+                content,
+                frontmatter: note.frontmatter
+              });
+            } catch (error) {
+              reject(error);
+            }
+          });
+        });
+      } catch (error) {
+        resultsDiv.innerHTML = `<p style='color: red;'>Failed to load notes: ${error.message}</p>`;
+      }
+    };
+
+    searchBtn.addEventListener("click", performSearch);
+    browseBtn.addEventListener("click", showBrowse);
+    searchInput.addEventListener("keypress", e => {
+      if (e.key === "Enter") performSearch();
+    });
   });
 }
 
@@ -213,10 +363,35 @@ function getElementData(elementId, elementType) {
   // Extract element data based on type
   if (elementType === "burg") {
     const burgId = parseInt(elementId.replace("burg", ""));
-    return pack.burgs[burgId];
+    const burg = pack.burgs[burgId];
+
+    // Enhance with state and province names
+    const stateId = burg.state;
+    const provinceId = burg.province;
+
+    return {
+      ...burg,
+      state: stateId && pack.states[stateId] ? pack.states[stateId].name : null,
+      province: provinceId && pack.provinces[provinceId] ? pack.provinces[provinceId].name : null
+    };
   } else if (elementType === "marker") {
     const markerId = parseInt(elementId.replace("marker", ""));
-    return pack.markers[markerId];
+    const marker = pack.markers[markerId];
+
+    // Enhance with state and province if marker has a cell
+    if (marker.cell) {
+      const cell = pack.cells;
+      const stateId = cell.state[marker.cell];
+      const provinceId = cell.province[marker.cell];
+
+      return {
+        ...marker,
+        state: stateId && pack.states[stateId] ? pack.states[stateId].name : null,
+        province: provinceId && pack.provinces[provinceId] ? pack.provinces[provinceId].name : null
+      };
+    }
+
+    return marker;
   } else {
     // Generic element
     const el = document.getElementById(elementId);
