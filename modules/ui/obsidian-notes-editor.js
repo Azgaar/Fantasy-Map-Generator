@@ -310,27 +310,14 @@ async function promptCreateNewNote(elementId, elementType, coordinates) {
           return;
         }
 
-        resultsDiv.innerHTML = allNotes
-          .map(
-            (note, index) => `
-          <div class="browse-result" data-index="${index}" style="
-            padding: 8px;
-            margin: 4px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            background: white;
-          " onmouseover="this.style.background='#e8e8e8'" onmouseout="this.style.background='white'">
-            <div style="font-weight: bold;">${note.name}</div>
-            <div style="font-size: 0.85em; color: #666;">${note.path}</div>
-          </div>
-        `
-          )
-          .join("");
+        // Build folder tree
+        const tree = buildFolderTree(allNotes);
+        resultsDiv.innerHTML = renderFolderTree(tree, allNotes);
 
-        // Add click handlers
-        document.querySelectorAll(".browse-result").forEach((el, index) => {
+        // Add click handlers to files
+        document.querySelectorAll(".tree-file").forEach(el => {
           el.addEventListener("click", async () => {
+            const index = parseInt(el.dataset.index);
             $("#alert").dialog("close");
             try {
               const note = allNotes[index];
@@ -346,6 +333,17 @@ async function promptCreateNewNote(elementId, elementType, coordinates) {
             }
           });
         });
+
+        // Add click handlers to folder toggles
+        document.querySelectorAll(".tree-folder-toggle").forEach(el => {
+          el.addEventListener("click", e => {
+            e.stopPropagation();
+            const folder = el.parentElement.nextElementSibling;
+            const isCollapsed = folder.style.display === "none";
+            folder.style.display = isCollapsed ? "block" : "none";
+            el.textContent = isCollapsed ? "▼" : "▶";
+          });
+        });
       } catch (error) {
         resultsDiv.innerHTML = `<p style='color: red;'>Failed to load notes: ${error.message}</p>`;
       }
@@ -357,6 +355,77 @@ async function promptCreateNewNote(elementId, elementType, coordinates) {
       if (e.key === "Enter") performSearch();
     });
   });
+}
+
+function buildFolderTree(notes) {
+  const root = {folders: {}, files: []};
+
+  notes.forEach((note, index) => {
+    const parts = note.path.split("/");
+    const fileName = parts[parts.length - 1];
+
+    if (parts.length === 1) {
+      // Root level file
+      root.files.push({name: fileName, index, path: note.path});
+    } else {
+      // Navigate/create folder structure
+      let current = root;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const folderName = parts[i];
+        if (!current.folders[folderName]) {
+          current.folders[folderName] = {folders: {}, files: []};
+        }
+        current = current.folders[folderName];
+      }
+      // Add file to final folder
+      current.files.push({name: fileName, index, path: note.path});
+    }
+  });
+
+  return root;
+}
+
+function renderFolderTree(node, allNotes, indent = 0) {
+  let html = "";
+  const indentPx = indent * 20;
+
+  // Render folders
+  for (const [folderName, folderData] of Object.entries(node.folders || {})) {
+    html += `
+      <div style="margin-left: ${indentPx}px;">
+        <div style="padding: 4px; cursor: pointer; user-select: none;">
+          <span class="tree-folder-toggle" style="display: inline-block; width: 16px; font-size: 12px;">▼</span>
+          <span style="font-weight: bold;">📁 ${folderName}</span>
+        </div>
+        <div class="tree-folder-content" style="display: block;">
+          ${renderFolderTree(folderData, allNotes, indent + 1)}
+        </div>
+      </div>
+    `;
+  }
+
+  // Render files in current folder
+  html += renderFiles(node.files || [], indent);
+
+  return html;
+}
+
+function renderFiles(files, indent) {
+  const indentPx = indent * 20;
+  return files
+    .map(
+      file => `
+    <div class="tree-file" data-index="${file.index}" style="
+      margin-left: ${indentPx}px;
+      padding: 4px 8px;
+      cursor: pointer;
+      border-radius: 3px;
+    " onmouseover="this.style.background='#e8e8e8'" onmouseout="this.style.background='transparent'">
+      <span style="font-size: 12px;">📄</span> ${file.name.replace(".md", "")}
+    </div>
+  `
+    )
+    .join("");
 }
 
 function getElementData(elementId, elementType) {
