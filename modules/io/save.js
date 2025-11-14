@@ -167,6 +167,32 @@ async function saveToStorage(mapData, showTip = false) {
   showTip && tip("Map is saved to the browser storage", false, "success");
 }
 
+// save current map as the default map
+async function saveAsDefaultMap() {
+  if (customization) return tip("Map cannot be saved in EDIT mode, please complete the edit and retry", false, "error");
+
+  try {
+    const mapData = prepareMapData();
+    const blob = new Blob([mapData], {type: "text/plain"});
+    await ldb.set("defaultMap", blob);
+    tip("Map is set as default and will open on load", true, "success", 5000);
+  } catch (error) {
+    ERROR && console.error(error);
+    tip("Failed to set default map", true, "error", 3000);
+  }
+}
+
+// clear the default map setting
+async function clearDefaultMap() {
+  try {
+    await ldb.set("defaultMap", null);
+    tip("Default map cleared", false, "success", 2000);
+  } catch (error) {
+    ERROR && console.error(error);
+    tip("Failed to clear default map", false, "error", 2000);
+  }
+}
+
 // download map file
 function saveToMachine(mapData, filename) {
   const blob = new Blob([mapData], {type: "text/plain"});
