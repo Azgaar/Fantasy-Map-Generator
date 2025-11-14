@@ -225,7 +225,7 @@ function editMarker(markerI) {
     // Use Obsidian integration if available, otherwise fall back to old notes system
     if (typeof editObsidianNote !== "undefined" && marker) {
       const coordinates = {x: marker.x, y: marker.y};
-      editObsidianNote(marker.i, "marker", coordinates);
+      editObsidianNote(id, "marker", coordinates);
     } else {
       editNotes(id, id);
     }
