@@ -177,20 +177,15 @@ window.Markers = (function () {
     if (marker.cell === undefined) return;
     const i = last(pack.markers)?.i + 1 || 0;
     const [x, y] = getMarkerCoordinates(marker.cell);
-  // Attach biome and province info
-  const biome = pack.cells.biome[marker.cell];
-  const province = pack.cells.province ? pack.cells.province[marker.cell] : undefined;
-  // Add Obsidian note path (customize as needed)
-  const obsidianNotePath = `Neblub/Orbis/Markers/${marker.type}-${marker.cell}`;
-  marker = {...base, x, y, ...marker, i, biome, province, obsidianNotePath};
-// Utility to open Obsidian note for a marker
-window.openObsidianNote = function(notePath) {
-  const uri = `obsidian://open?vault=Neblub&file=${encodeURIComponent(notePath)}`;
-  window.open(uri, '_blank');
-};
-  pack.markers.push(marker);
-  occupied[marker.cell] = true;
-  return marker;
+
+    // Attach biome and province info
+    const biome = pack.cells.biome[marker.cell];
+    const province = pack.cells.province ? pack.cells.province[marker.cell] : undefined;
+
+    marker = {...base, x, y, ...marker, i, biome, province};
+    pack.markers.push(marker);
+    occupied[marker.cell] = true;
+    return marker;
   }
 
   function deleteMarker(markerId) {

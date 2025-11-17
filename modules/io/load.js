@@ -716,6 +716,9 @@ async function parseLoadedData(data, mapVersion) {
         // sort markers by index
         pack.markers.sort((a, b) => a.i - b.i);
       }
+
+      // assign biome and province info to markers for old maps or maps without this data
+      if (typeof assignBiomeAndProvinceInfo !== "undefined") assignBiomeAndProvinceInfo();
     }
 
     {
