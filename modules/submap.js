@@ -200,6 +200,7 @@ window.Submap = (function () {
     // it's safe to recalculate.
     stage("Regenerating Biome");
     Biomes.define();
+    Features.defineGroups();
     // recalculate suitability and population
     // TODO: normalize according to the base-map
     rankCells();
@@ -259,7 +260,7 @@ window.Submap = (function () {
     regenerateRoutes();
 
     Rivers.specify();
-    Features.specify();
+    Lakes.defineNames();
 
     stage("Porting military");
     for (const s of pack.states) {

@@ -238,6 +238,7 @@ function editHeightmap(options) {
     }
 
     Biomes.define();
+    Features.defineGroups();
 
     rankCells();
     Cultures.generate();
@@ -256,7 +257,7 @@ function editHeightmap(options) {
     Provinces.getPoles();
 
     Rivers.specify();
-    Features.specify();
+    Lakes.defineNames();
 
     Military.generate();
     Markers.generate();
@@ -345,7 +346,10 @@ function editHeightmap(options) {
     reGraph();
     Features.markupPack();
 
-    if (erosionAllowed) Rivers.generate(true);
+    if (erosionAllowed) {
+      Rivers.generate(true);
+      Features.defineGroups();
+    }
 
     // assign saved pack data from grid back to pack
     const n = pack.cells.i.length;
@@ -439,7 +443,7 @@ function editHeightmap(options) {
 
     if (erosionAllowed) {
       Rivers.specify();
-      Features.specify();
+      Lakes.defineNames();
     }
 
     // restore zones from grid

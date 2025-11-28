@@ -360,7 +360,7 @@ window.Routes = (function () {
   // connect cell with routes system by land
   function connect(cellId) {
     const getCost = createCostEvaluator({isWater: false, connections: new Map()});
-    const isExit = cellId => isLand(cellId) && isConnected(cellId);
+    const isExit = c => isLand(c) && isConnected(c);
     const pathCells = findPath(cellId, isExit, getCost);
     if (!pathCells) return;
 
@@ -372,9 +372,9 @@ window.Routes = (function () {
     pack.routes.push(newRoute);
 
     for (let i = 0; i < pathCells.length; i++) {
-      const cellId = pathCells[i];
+      const currentCell = pathCells[i];
       const nextCellId = pathCells[i + 1];
-      if (nextCellId) addConnection(cellId, nextCellId, routeId);
+      if (nextCellId) addConnection(currentCell, nextCellId, routeId);
     }
 
     return newRoute;
@@ -446,6 +446,7 @@ window.Routes = (function () {
 
     const connectivity = Object.values(connections).reduce((acc, routeId) => {
       const route = pack.routes.find(route => route.i === routeId);
+      if (!route) return acc;
       const rate = connectivityRateMap[route.group] || connectivityRateMap.default;
       return acc + rate;
     }, 0.8);

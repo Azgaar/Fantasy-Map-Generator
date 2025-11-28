@@ -951,7 +951,7 @@ export function resolveVersionConflicts(mapVersion) {
       .attr("stroke", null);
 
     // pole can be missing for some states/provinces
-    BurgsAndStates.getPoles();
+    States.getPoles();
     Provinces.getPoles();
   }
 

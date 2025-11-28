@@ -85,8 +85,8 @@ function createIconGroups() {
   });
 
   // create groups for each burg group and apply stored or default style
-  const defaultIconStyle = style.burgIcons.town || Object.values(style.burgIcons)[0];
-  const defaultAnchorStyle = style.anchors.town || Object.values(style.anchors)[0];
+  const defaultIconStyle = style.burgIcons.town || Object.values(style.burgIcons)[0] || {};
+  const defaultAnchorStyle = style.anchors.town || Object.values(style.anchors)[0] || {};
   const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
   for (const {name} of sortedGroups) {
     const burgGroup = burgIcons.append("g");

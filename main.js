@@ -636,6 +636,7 @@ async function generate(options) {
 
     Rivers.generate();
     Biomes.define();
+    Features.defineGroups();
 
     rankCells();
     Cultures.generate();
@@ -654,7 +655,7 @@ async function generate(options) {
     Provinces.getPoles();
 
     Rivers.specify();
-    Features.specify();
+    Lakes.defineNames();
 
     Military.generate();
     Markers.generate();
@@ -1195,7 +1196,7 @@ function rankCells() {
       if (cells.r[i]) score += scoreMap.estuary;
       const feature = features[cells.f[cells.haven[i]]];
       if (feature.type === "lake") {
-        score += scoreMap[feature.water] || 0;
+        score += scoreMap[feature.group] || 0;
       } else {
         score += scoreMap.ocean_coast;
         if (cells.harbor[i] === 1) score += scoreMap.save_harbor;

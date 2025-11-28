@@ -106,11 +106,18 @@ window.Lakes = (function () {
     return rn(minShoreHeight - LAKE_ELEVATION_DELTA, 2);
   };
 
+  const defineNames = function () {
+    pack.features.forEach(feature => {
+      if (feature.type !== "lake") return;
+      feature.name = getName(feature);
+    });
+  };
+
   const getName = function (feature) {
-    const landCell = pack.cells.c[feature.firstCell].find(c => pack.cells.h[c] >= 20);
+    const landCell = feature.shoreline[0];
     const culture = pack.cells.culture[landCell];
     return Names.getCulture(culture);
   };
 
-  return {defineClimateData, cleanupLakeData, detectCloseLakes, getHeight, getName};
+  return {defineClimateData, cleanupLakeData, detectCloseLakes, getHeight, defineNames, getName};
 })();

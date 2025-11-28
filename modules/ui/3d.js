@@ -68,10 +68,11 @@ window.ThreeD = (function () {
 
   // try to clean the memory as much as possible
   const stop = function () {
+    if (controls) controls.dispose();
     cancelAnimationFrame(animationFrame);
-    texture.dispose();
-    geometry.dispose();
-    material.dispose();
+    if (texture) texture.dispose();
+    if (geometry) geometry.dispose();
+    if (material) material.dispose();
     if (waterPlane) waterPlane.dispose();
     if (waterMaterial) waterMaterial.dispose();
     deleteLabels();
@@ -255,7 +256,6 @@ window.ThreeD = (function () {
   async function newMesh(canvas) {
     const loaded = await loadTHREE();
     if (!loaded) return tip("Cannot load 3d library", false, "error", 4000);
-
     scene = new THREE.Scene();
 
     // light
@@ -267,7 +267,6 @@ window.ThreeD = (function () {
     spotLight.shadow.mapSize.width = 2048;
     spotLight.shadow.mapSize.height = 2048;
     scene.add(spotLight);
-    // scene.add(new THREE.SpotLightHelper(spotLight));
 
     // Renderer
     Renderer = new THREE.WebGLRenderer({canvas, antialias: true, preserveDrawingBuffer: true});
@@ -277,22 +276,32 @@ window.ThreeD = (function () {
     if (options.extendedWater) extendWater(graphWidth, graphHeight);
     createMesh(graphWidth, graphHeight, grid.cellsX, grid.cellsY);
 
-    // camera
     camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 2000);
-    camera.position.set(0, rn(svgWidth / 3.5), 500);
+    camera.position.set(0, 400, 500); // Set initial camera position for isometric view
+    controls = await MapControls(camera, canvas); // Google Maps-style navigation
+    if (!controls) return false;
 
-    // controls
-    controls = await OrbitControls(camera, canvas);
-    controls.listenToKeyEvents(window);
-    controls.zoomSpeed = 0.25;
+    // Set initial target at map center
+    if (controls.target) controls.target.set(0, 0, 0);
 
-    controls.panSpeed = 0.5;
-    controls.minDistance = 100;
+    // Configure for bird's eye view with Google Maps-style controls
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.screenSpacePanning = false;
+    controls.minDistance = 50;
     controls.maxDistance = 1000;
-    controls.maxPolarAngle = Math.PI / 2;
+    controls.minZoom = 0.05;
+    controls.maxZoom = 4;
+    controls.zoomSpeed = 0.6;
+    controls.panSpeed = 1.6;
+    controls.enableRotate = true;
+    controls.rotateSpeed = 0.5;
+    controls.maxPolarAngle = Math.PI / 2; // Prevent camera from going below horizon
+    controls.minPolarAngle = 0; // Allow full 90 degrees top-down view
+
     controls.autoRotate = Boolean(options.rotateMesh);
     controls.autoRotateSpeed = options.rotateMesh;
-    if (controls.autoRotate) animate();
+    animate();
 
     controls.addEventListener("change", render);
     return true;
@@ -344,10 +353,10 @@ window.ThreeD = (function () {
 
     const stateOptions = {
       font: states.attr("font-family"),
-      size: +states.attr("data-size"),
+      size: +states.attr("data-size") / 2,
       color: states.attr("fill"),
       elevation: 20,
-      quality: 20
+      quality: 80
     };
 
     // Cache icon materials and geometries by group to avoid recreating them
@@ -377,7 +386,7 @@ window.ThreeD = (function () {
         size,
         color,
         elevation,
-        quality: 20,
+        quality: 40,
         iconSize,
         iconColor
       };
@@ -545,9 +554,20 @@ window.ThreeD = (function () {
 
     if (texture) texture.dispose();
     if (!options.wireframe) {
-      texture = new THREE.TextureLoader().load(await createMeshTextureUrl(), render);
-      texture.needsUpdate = true;
-      texture.anisotropy = Renderer.capabilities.getMaxAnisotropy();
+      const url = await createMeshTextureUrl();
+      await new Promise(resolve => {
+        texture = new THREE.TextureLoader().load(
+          url,
+          t => {
+            resolve(t);
+          },
+          undefined,
+          () => resolve(null)
+        );
+      });
+      if (texture) {
+        texture.anisotropy = Renderer.capabilities.getMaxAnisotropy();
+      }
     }
 
     if (material) material.dispose();
@@ -589,10 +609,11 @@ window.ThreeD = (function () {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     scene.add(mesh);
+    render();
 
     if (options.labels3d) {
-      render();
       await createLabels();
+      render();
     }
   }
 
@@ -671,16 +692,57 @@ window.ThreeD = (function () {
     // camera
     camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 1000).translateZ(5);
 
-    // controls
-    controls = await OrbitControls(camera, Renderer.domElement);
+    controls = await OrbitControls(camera, Renderer.domElement); // OrbitControls for globe view
+    if (!controls) return false;
     controls.zoomSpeed = 0.25;
     controls.minDistance = 1.5;
     controls.maxDistance = 10;
     controls.autoRotate = Boolean(options.rotateGlobe);
     controls.autoRotateSpeed = options.rotateGlobe;
+
+    // ensure OrbitControls behavior (reset potentially changed defaults by MapControls)
+    controls.mouseButtons = {
+      LEFT: THREE.MOUSE.ROTATE,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.PAN
+    };
+    controls.screenSpacePanning = true;
+    controls.minPolarAngle = 0;
+    controls.maxPolarAngle = Math.PI;
+
     controls.addEventListener("change", render);
 
     return true;
+  }
+
+  function OrbitControls(camera, domElement) {
+    if (THREE.OrbitControls) return new THREE.OrbitControls(camera, domElement);
+
+    return new Promise(resolve => {
+      const script = document.createElement("script");
+      script.src = "libs/orbitControls.min.js";
+      document.head.append(script);
+      script.onload = () => resolve(new THREE.OrbitControls(camera, domElement));
+      script.onerror = () => resolve(false);
+    });
+  }
+
+  function MapControls(camera, domElement) {
+    if (THREE.MapControls) return new THREE.MapControls(camera, domElement);
+
+    return new Promise(resolve => {
+      const script = document.createElement("script");
+      script.src = "libs/mapControls.min.js";
+      document.head.append(script);
+      script.onload = () => {
+        if (THREE.MapControls) {
+          resolve(new THREE.MapControls(camera, domElement));
+        } else {
+          resolve(false);
+        }
+      };
+      script.onerror = () => resolve(false);
+    });
   }
 
   async function updateGlobeTexure(addMesh) {
@@ -751,7 +813,7 @@ window.ThreeD = (function () {
   // animate 3d scene and camera
   function animate() {
     animationFrame = requestAnimationFrame(animate);
-    controls.update();
+    if (controls && controls.update) controls.update();
   }
 
   function loadTHREE() {
@@ -774,18 +836,6 @@ window.ThreeD = (function () {
       script.src = "libs/loopsubdivison.min.js";
       document.head.append(script);
       script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-    });
-  }
-
-  function OrbitControls(camera, domElement) {
-    if (THREE.OrbitControls) return new THREE.OrbitControls(camera, domElement);
-
-    return new Promise(resolve => {
-      const script = document.createElement("script");
-      script.src = "libs/orbitControls.min.js";
-      document.head.append(script);
-      script.onload = () => resolve(new THREE.OrbitControls(camera, domElement));
       script.onerror = () => resolve(false);
     });
   }

@@ -89,7 +89,8 @@ function editWorld() {
     Rivers.specify();
     pack.cells.h = new Float32Array(heights);
     Biomes.define();
-    Features.specify();
+    Features.defineGroups();
+    Lakes.defineNames();
 
     if (layerIsOn("toggleTemperature")) drawTemperature();
     if (layerIsOn("togglePrecipitation")) drawPrecipitation();

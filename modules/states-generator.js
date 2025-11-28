@@ -18,11 +18,12 @@ window.States = (() => {
     function createStates() {
       const states = [{i: 0, name: "Neutrals"}];
       const each5th = each(5);
+      const sizeVariety = byId("sizeVariety").valueAsNumber;
 
       pack.burgs.forEach(burg => {
         if (!burg.i || !burg.capital) return;
 
-        const expansionism = rn(Math.random() * byId("sizeVariety").value + 1, 1);
+        const expansionism = rn(Math.random() * sizeVariety + 1, 1);
         const basename = burg.name.length < 9 && each5th(burg.cell) ? burg.name : Names.getCultureShort(burg.culture);
         const name = Names.getState(basename, burg.culture);
         const type = pack.cultures[burg.culture].type;

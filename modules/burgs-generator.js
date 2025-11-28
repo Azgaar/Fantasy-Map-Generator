@@ -22,25 +22,6 @@ window.Burgs = (() => {
     pack.burgs = burgs;
     TIME && console.timeEnd("generateBurgs");
 
-    function getCapitalsNumber() {
-      let number = +byId("statesNumber").value;
-
-      if (populatedCells.length < number * 10) {
-        WARN && console.warn(`Not enough populated cells. Generating only ${number} capitals/states`);
-        number = Math.floor(sorted.length / 10);
-      }
-
-      return number;
-    }
-
-    function getTownsNumber() {
-      const manorsInput = byId("manorsInput");
-      const isAuto = manorsInput.value === "1000"; // '1000' is considered as auto
-      if (isAuto) return rn(populatedCells.length / 5 / (grid.points.length / 10000) ** 0.8);
-
-      return Math.min(manorsInput.valueAsNumber, sorted.length);
-    }
-
     function generateCapitals() {
       const randomize = score => score * (0.5 + Math.random() * 0.5);
       const score = new Int16Array(cells.s.map(randomize));
@@ -108,6 +89,25 @@ window.Burgs = (() => {
 
         spacing *= 0.5;
       }
+    }
+
+    function getCapitalsNumber() {
+      let number = +byId("statesNumber").value;
+
+      if (populatedCells.length < number * 10) {
+        number = Math.floor(populatedCells.length / 10);
+        WARN && console.warn(`Not enough populated cells. Generating only ${number} capitals/states`);
+      }
+
+      return number;
+    }
+
+    function getTownsNumber() {
+      const manorsInput = byId("manorsInput");
+      const isAuto = manorsInput.value === "1000"; // '1000' is considered as auto
+      if (isAuto) return rn(populatedCells.length / 5 / (grid.points.length / 10000) ** 0.8);
+
+      return Math.min(manorsInput.valueAsNumber, populatedCells.length);
     }
 
     // define port status and shift ports and burgs on rivers
@@ -321,7 +321,7 @@ window.Burgs = (() => {
 
     const defaultGroup = options.burgs.groups.find(g => g.isDefault);
     if (!defaultGroup) {
-      ERROR & console.error("No default group defined");
+      ERROR && console.error("No default group defined");
       return;
     }
     burg.group = defaultGroup.name;

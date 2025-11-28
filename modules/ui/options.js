@@ -987,8 +987,7 @@ async function enter3dView(type) {
 
   canvas.style.display = "block";
   canvas.onmouseenter = () => {
-    const help =
-      "Left mouse to change angle, middle mouse. Mousewheel to zoom. Right mouse or hold Shift to pan. <b>O</b> to toggle options";
+    const help = "Drag to pan • Scroll to zoom • Right-click drag to rotate • <b>O</b> to toggle options";
     +canvas.dataset.hovered > 2 ? tip("") : tip(help);
     canvas.dataset.hovered = (+canvas.dataset.hovered | 0) + 1;
   };

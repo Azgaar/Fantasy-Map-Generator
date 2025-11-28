@@ -66,7 +66,7 @@ function editBurgGroups() {
           <option value="" ${!group.preview ? "selected" : ""}>no</option>
           <option value="watabou-city" ${group.preview === "watabou-city" ? "selected" : ""}>Watabou City</option>
           <option value="watabou-village" ${group.preview === "watabou-village" ? "selected" : ""}>Watabou Village</option>
-          <option value="watabou-dwelling" ${group.preview === "watabou-dwellings" ? "selected" : ""}>Watabou Dwelling</option>
+          <option value="watabou-dwelling" ${group.preview === "watabou-dwelling" ? "selected" : ""}>Watabou Dwelling</option>
         </select>
       </td>
       <td data-tip="Set min population constraint"><input type="number" name="min" min="0" step="any" value="${group.min || ''}" /></td>
