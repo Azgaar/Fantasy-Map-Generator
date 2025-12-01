@@ -51,14 +51,14 @@ window.Provinces = (function () {
         .sort((a, b) => b.population * gauss(1, 0.2, 0.5, 1.5, 3) - a.population)
         .sort((a, b) => b.capital - a.capital);
       if (stateBurgs.length < 2) return; // at least 2 provinces are required
-      const provincesNumber = Math.max(Math.ceil((stateBurgs.length * provincesRatio) / 100), 2);
 
+      const provincesNumber = Math.max(Math.ceil((stateBurgs.length * provincesRatio) / 100), 2);
       const form = Object.assign({}, forms[s.form]);
 
       for (let i = 0; i < provincesNumber; i++) {
         const provinceId = provinces.length;
         const center = stateBurgs[i].cell;
-        const burg = stateBurgs[i].i;
+        const burg = stateBurgs[i];
         const c = stateBurgs[i].culture;
         const nameByBurg = P(0.5);
         const name = nameByBurg ? stateBurgs[i].name : Names.getState(Names.getCultureShort(c), c);
@@ -72,7 +72,7 @@ window.Provinces = (function () {
         coa.shield = COA.getShield(c, s.i);
 
         s.provinces.push(provinceId);
-        provinces.push({i: provinceId, state: s.i, center, burg, name, formName, fullName, color, coa});
+        provinces.push({i: provinceId, state: s.i, center, burg: burg.i, name, formName, fullName, color, coa});
       }
     });
 
