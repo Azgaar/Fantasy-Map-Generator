@@ -209,6 +209,9 @@ function selectStyleElement() {
     styleGridScale.value = el.attr("scale") || 1;
     styleGridShiftX.value = el.attr("dx") || 0;
     styleGridShiftY.value = el.attr("dy") || 0;
+    styleGridShowNumbers.checked = el.attr("data-show-numbers") === "1";
+    styleGridNumberSize.value = el.attr("data-number-size") || 8;
+    styleGridNumberColor.value = styleGridNumberColorOutput.value = el.attr("data-number-color") || "#808080";
     calculateFriendlyGridSize();
   }
 
@@ -515,6 +518,12 @@ styleGridType.on("change", function () {
   calculateFriendlyGridSize();
 });
 
+// Grid numbering UI elements
+const styleGridShowNumbers = byId("styleGridShowNumbers");
+const styleGridNumberSize = byId("styleGridNumberSize");
+const styleGridNumberColor = byId("styleGridNumberColor");
+const styleGridNumberColorOutput = byId("styleGridNumberColorOutput");
+
 styleGridScale.on("input", function () {
   getEl().attr("scale", this.value);
   if (layerIsOn("toggleGrid")) drawGrid();
@@ -536,6 +545,23 @@ styleGridShiftY.on("input", function () {
   getEl().attr("dy", this.value);
   if (layerIsOn("toggleGrid")) drawGrid();
 });
+
+styleGridShowNumbers.on("change", function () {
+  getEl().attr("data-show-numbers", this.checked ? "1" : "0");
+  if (layerIsOn("toggleGrid")) drawGrid();
+});
+
+styleGridNumberSize.on("input", function () {
+  getEl().attr("data-number-size", this.value);
+  if (layerIsOn("toggleGrid")) drawGrid();
+});
+
+styleGridNumberColor.on("input", function () {
+  styleGridNumberColorOutput.value = this.value;
+  getEl().attr("data-number-color", this.value);
+  if (layerIsOn("toggleGrid")) drawGrid();
+});
+
 
 styleRescaleMarkers.on("change", function () {
   markers.attr("rescale", +this.checked);
@@ -626,36 +652,36 @@ openCreateHeightmapSchemeButton.on("click", function () {
 
     Array.from(container.querySelectorAll("input.stop")).forEach(
       (input, index) =>
-        (input.oninput = function () {
-          stops[index] = this.value;
-          openCreateHeightmapSchemeButton.dataset.stops = stops.join(",");
-          renderPreview();
-          renderGradient();
-        })
+      (input.oninput = function () {
+        stops[index] = this.value;
+        openCreateHeightmapSchemeButton.dataset.stops = stops.join(",");
+        renderPreview();
+        renderGradient();
+      })
     );
 
     Array.from(container.querySelectorAll("button.remove")).forEach(
       button =>
-        (button.onclick = function () {
-          const index = +this.dataset.index;
-          stops.splice(index, 1);
-          openCreateHeightmapSchemeButton.dataset.stops = stops.join(",");
-          renderPreview();
-          renderStops();
-          renderGradient();
-        })
+      (button.onclick = function () {
+        const index = +this.dataset.index;
+        stops.splice(index, 1);
+        openCreateHeightmapSchemeButton.dataset.stops = stops.join(",");
+        renderPreview();
+        renderStops();
+        renderGradient();
+      })
     );
 
     Array.from(container.querySelectorAll("button.add")).forEach(
       (button, index) =>
-        (button.onclick = function () {
-          const middleColor = d3.interpolateRgb(stops[index], stops[index + 1])(0.5);
-          stops.splice(index + 1, 0, toHEX(middleColor));
-          openCreateHeightmapSchemeButton.dataset.stops = stops.join(",");
-          renderPreview();
-          renderStops();
-          renderGradient();
-        })
+      (button.onclick = function () {
+        const middleColor = d3.interpolateRgb(stops[index], stops[index + 1])(0.5);
+        stops.splice(index + 1, 0, toHEX(middleColor));
+        openCreateHeightmapSchemeButton.dataset.stops = stops.join(",");
+        renderPreview();
+        renderStops();
+        renderGradient();
+      })
     );
   }
 
@@ -687,7 +713,7 @@ openCreateHeightmapSchemeButton.on("click", function () {
       Create: handleCreate,
       Cancel: handleClose
     },
-    position: {my: "center top+150", at: "center top", of: "svg"}
+    position: { my: "center top+150", at: "center top", of: "svg" }
   });
 });
 
@@ -800,7 +826,7 @@ styleFontAdd.on("click", function () {
   $("#addFontDialog").dialog({
     title: "Add custom font",
     width: "26em",
-    position: {my: "center", at: "center", of: "svg"},
+    position: { my: "center", at: "center", of: "svg" },
     buttons: {
       Add: function () {
         const family = addFontNameInput.value;
@@ -1098,7 +1124,7 @@ styleScaleBar.on("input", function (event) {
   const scaleBarBack = scaleBar.select("#scaleBarBack");
   if (!scaleBarBack.size()) return;
 
-  const {id, value} = event.target;
+  const { id, value } = event.target;
 
   if (id === "styleScaleBarSize") scaleBar.attr("data-bar-size", value);
   else if (id === "styleScaleBarFontSize") scaleBar.attr("font-size", value);
