@@ -1,3 +1,79 @@
+# Azgaar Fantasy Map Generator - Enhanced Fork
+
+This is a personal fork of [Azgaar's Fantasy Map Generator](https://github.com/Azgaar/Fantasy-Map-Generator) with custom enhancements for D&D campaign management.
+
+## Original Project
+
+**Original Repository**: [Azgaar/Fantasy-Map-Generator](https://github.com/Azgaar/Fantasy-Map-Generator)  
+**Original Author**: Max Haniyeu (Azgaar)  
+**License**: MIT License
+
+Full credit to Azgaar for creating this incredible fantasy map generation tool. Please visit and star the original repository!
+
+---
+
+## Custom Enhancements in This Fork
+
+### ✨ Grid Auto-Numbering Feature
+
+Added sequential numbering to grid cells for easy location referencing in D&D campaigns.
+
+**Features:**
+- Sequential numbering (0001, 0002, 0003...) starting from top-left
+- Customizable font size and color
+- Toggle on/off in Style panel
+- Perfect alignment for pointy hex, square, and truncated square grids
+
+**Usage:**
+1. Enable Grid layer (press `G`)
+2. Open Style panel → Select "Grid"
+3. Check "Show grid numbers"
+4. Adjust size and color as desired
+
+**Documentation:** See [`GRID-NUMBERING-README.md`](./GRID-NUMBERING-README.md) for full implementation details.
+
+---
+
+## Running Locally
+
+```bash
+# Clone this fork
+git clone [your-fork-url]
+cd Fantasy-Map-Generator
+
+# Open in browser
+# Just open index.html in your web browser
+```
+
+---
+
+## Contributing Back to Original Project
+
+If you're interested in the grid numbering feature, please check out the [original Azgaar repository](https://github.com/Azgaar/Fantasy-Map-Generator) and consider starring it! The feature could potentially be contributed upstream if there's interest.
+
+---
+
+## License
+
+This fork maintains the original MIT License. See [LICENSE](./LICENSE) for full details.
+
+**Copyright 2017-2024 Max Haniyeu (Azgaar)**  
+Grid numbering enhancements © 2024
+
+---
+
+## Acknowledgments
+
+- **Azgaar** - For creating and maintaining this fantastic map generator
+- **Original Contributors** - Everyone who has contributed to the main project
+- **D&D Community** - For inspiration and use cases
+
+---
+
+**Original README follows below:**
+
+---
+
 # Fantasy Map Generator
 
 Azgaar's _Fantasy Map Generator_ is a free web application that helps fantasy writers, game masters, and cartographers create and edit fantasy maps.
