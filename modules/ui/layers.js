@@ -136,7 +136,7 @@ function handleLayersPresetChange(preset) {
 }
 
 function savePreset() {
-  prompt("Please provide a preset name", {default: ""}, preset => {
+  prompt("Please provide a preset name", { default: "" }, preset => {
     presets[preset] = Array.from(byId("mapLayers").querySelectorAll("li:not(.buttonoff)"))
       .map(node => node.id)
       .sort();
@@ -258,8 +258,8 @@ function drawBiomes() {
 
   const cells = pack.cells;
   const bodyPaths = new Array(biomesData.i.length - 1);
-  const isolines = getIsolines(pack, cellId => cells.biome[cellId], {fill: true, waterGap: true});
-  Object.entries(isolines).forEach(([index, {fill, waterGap}]) => {
+  const isolines = getIsolines(pack, cellId => cells.biome[cellId], { fill: true, waterGap: true });
+  Object.entries(isolines).forEach(([index, { fill, waterGap }]) => {
     const color = biomesData.color[index];
     bodyPaths.push(getGappedFillPaths("biome", fill, waterGap, color, index));
   });
@@ -288,7 +288,7 @@ function drawPrecipitation() {
   TIME && console.time("drawPrecipitation");
 
   prec.selectAll("circle").remove();
-  const {cells, points} = grid;
+  const { cells, points } = grid;
 
   const show = d3.transition().duration(800).ease(d3.easeSinIn);
   prec.selectAll("text").attr("opacity", 0).transition(show).attr("opacity", 1);
@@ -348,7 +348,7 @@ function togglePopulation(event) {
 function drawPopulation() {
   population.selectAll("line").remove();
 
-  const {cells, burgs} = pack;
+  const { cells, burgs } = pack;
   const show = d3.transition().duration(2000).ease(d3.easeSinIn);
 
   const rural = Array.from(
@@ -420,8 +420,8 @@ function toggleIce(event) {
 function drawIce() {
   TIME && console.time("drawIce");
 
-  const {cells, features} = grid;
-  const {temp, h} = cells;
+  const { cells, features } = grid;
+  const { temp, h } = cells;
   Math.random = aleaPRNG(seed);
 
   const ICEBERG_MAX_TEMP = 0;
@@ -432,7 +432,7 @@ function drawIce() {
   {
     const type = "iceShield";
     const getType = cellId => (h[cellId] >= 20 && temp[cellId] <= GLACIER_MAX_TEMP ? type : null);
-    const isolines = getIsolines(grid, getType, {polygons: true});
+    const isolines = getIsolines(grid, getType, { polygons: true });
     isolines[type]?.polygons?.forEach(points => {
       const clipped = clipPoly(points);
       ice.append("polygon").attr("points", clipped).attr("type", type);
@@ -476,11 +476,11 @@ function toggleCultures(event) {
 
 function drawCultures() {
   TIME && console.time("drawCultures");
-  const {cells, cultures} = pack;
+  const { cells, cultures } = pack;
 
   const bodyPaths = new Array(cultures.length - 1);
-  const isolines = getIsolines(pack, cellId => cells.culture[cellId], {fill: true, waterGap: true});
-  Object.entries(isolines).forEach(([index, {fill, waterGap}]) => {
+  const isolines = getIsolines(pack, cellId => cells.culture[cellId], { fill: true, waterGap: true });
+  Object.entries(isolines).forEach(([index, { fill, waterGap }]) => {
     const color = cultures[index].color;
     bodyPaths.push(getGappedFillPaths("culture", fill, waterGap, color, index));
   });
@@ -505,11 +505,11 @@ function toggleReligions(event) {
 
 function drawReligions() {
   TIME && console.time("drawReligions");
-  const {cells, religions} = pack;
+  const { cells, religions } = pack;
 
   const bodyPaths = new Array(religions.length - 1);
-  const isolines = getIsolines(pack, cellId => cells.religion[cellId], {fill: true, waterGap: true});
-  Object.entries(isolines).forEach(([index, {fill, waterGap}]) => {
+  const isolines = getIsolines(pack, cellId => cells.religion[cellId], { fill: true, waterGap: true });
+  Object.entries(isolines).forEach(([index, { fill, waterGap }]) => {
     const color = religions[index].color;
     bodyPaths.push(getGappedFillPaths("religion", fill, waterGap, color, index));
   });
@@ -533,7 +533,7 @@ function toggleStates(event) {
 
 function drawStates() {
   TIME && console.time("drawStates");
-  const {cells, states} = pack;
+  const { cells, states } = pack;
 
   const maxLength = states.length - 1;
   const bodyPaths = new Array(maxLength);
@@ -541,8 +541,8 @@ function drawStates() {
   const haloPaths = new Array(maxLength);
 
   const renderHalo = shapeRendering.value === "geometricPrecision";
-  const isolines = getIsolines(pack, cellId => cells.state[cellId], {fill: true, waterGap: true, halo: renderHalo});
-  Object.entries(isolines).forEach(([index, {fill, waterGap, halo}]) => {
+  const isolines = getIsolines(pack, cellId => cells.state[cellId], { fill: true, waterGap: true, halo: renderHalo });
+  Object.entries(isolines).forEach(([index, { fill, waterGap, halo }]) => {
     const color = states[index].color;
     bodyPaths.push(getGappedFillPaths("state", fill, waterGap, color, index));
 
@@ -588,11 +588,11 @@ function toggleProvinces(event) {
 
 function drawProvinces() {
   TIME && console.time("drawProvinces");
-  const {cells, provinces} = pack;
+  const { cells, provinces } = pack;
 
   const bodyPaths = new Array(provinces.length - 1);
-  const isolines = getIsolines(pack, cellId => cells.province[cellId], {fill: true, waterGap: true});
-  Object.entries(isolines).forEach(([index, {fill, waterGap}]) => {
+  const isolines = getIsolines(pack, cellId => cells.province[cellId], { fill: true, waterGap: true });
+  Object.entries(isolines).forEach(([index, { fill, waterGap }]) => {
     const color = provinces[index].color;
     bodyPaths.push(getGappedFillPaths("province", fill, waterGap, color, index));
   });
@@ -653,7 +653,133 @@ function drawGrid() {
     .attr("height", maxHeight)
     .attr("fill", "url(" + pattern + ")")
     .attr("stroke", "none");
+
+  // Add grid numbering if enabled
+  const showNumbers = gridOverlay.attr("data-show-numbers") === "1";
+  if (showNumbers) {
+    drawGridNumbers(maxWidth, maxHeight, scale, dx, dy);
+  }
 }
+
+function drawGridNumbers(maxWidth, maxHeight, scale, dx, dy) {
+  const gridType = gridOverlay.attr("type") || "pointyHex";
+  const fontSize = gridOverlay.attr("data-number-size") || 8;
+  const numberColor = gridOverlay.attr("data-number-color") || "#808080";
+
+  // Get cell dimensions based on grid type
+  const cellDimensions = getGridCellDimensions(gridType);
+  const cellWidth = cellDimensions.width * scale;
+  const cellHeight = cellDimensions.height * scale;
+
+  // Calculate grid dimensions based on ACTUAL spacing used
+  const rowSpacing = cellHeight * 0.5; // Same as used in getGridCellCenter
+  const cols = Math.ceil(maxWidth / cellWidth) + 2; // Add extra to cover edges
+  const rows = Math.ceil(maxHeight / rowSpacing) + 2; // Use rowSpacing, not cellHeight
+
+  // Create numbers group
+  const numbersGroup = gridOverlay.append("g").attr("id", "gridNumbers");
+
+  let counter = 1;
+  // Generate grid numbers for ALL cells (positioning is now perfect)
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const position = getGridCellCenter(gridType, col, row, cellWidth, cellHeight, dx, dy);
+
+      numbersGroup
+        .append("text")
+        .attr("x", position.x)
+        .attr("y", position.y)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle")
+        .attr("font-size", fontSize)
+        .attr("fill", numberColor)
+        .attr("pointer-events", "none")
+        .text(String(counter).padStart(4, "0"));
+
+      counter++;
+    }
+  }
+}
+
+function getGridCellDimensions(gridType) {
+  // Base dimensions from pattern definitions
+  switch (gridType) {
+    case "square":
+      return { width: 25, height: 25 };
+    case "pointyHex":
+      return { width: 25, height: 43.4 };
+    case "flatHex":
+      return { width: 43.4, height: 25 };
+    case "square45deg":
+      return { width: 35.355, height: 35.355 };
+    case "squareTruncated":
+    case "squareTetrakis":
+      return { width: 25, height: 25 };
+    case "triangleHorizontal":
+      return { width: 41.76, height: 72.33 };
+    case "triangleVertical":
+      return { width: 72.33, height: 41.76 };
+    case "trihexagonal":
+      return { width: 25, height: 43.4 };
+    case "rhombille":
+      return { width: 82.5, height: 50 };
+    default:
+      return { width: 25, height: 43.4 };
+  }
+}
+
+function getGridCellCenter(gridType, col, row, cellWidth, cellHeight, dx, dy) {
+  let x, y;
+
+  if (gridType === "pointyHex") {
+    // Pointy hex pattern: width=25, height=43.4
+    // Hexagons interlock: each row is spaced at 3/4 height
+    // Based on user's marker placement, need to adjust Y-center
+
+    // Vertical spacing adjusting based on visual alignment (not pure geometry)
+    const rowSpacing = cellHeight * 0.5;
+
+    x = col * cellWidth;
+    y = row * rowSpacing;
+
+    // Every other row (EVEN rows: 0, 2, 4...) is offset horizontally
+    if (row % 2 === 0) {
+      x += cellWidth / 2;
+    }
+
+    // Center the number in the hexagon
+    x += cellWidth / 2;
+    // Top row is perfect at 0.35
+    y += cellHeight * 0.35;
+
+  } else if (gridType === "flatHex") {
+    // Flat hex grid: hexagons with flat sides up/down
+    // Columns are horizontally compressed (overlap by 25%)
+    x = col * (cellWidth * 0.75);
+    y = row * cellHeight;
+
+    // Every other column is offset vertically by half height
+    if (col % 2 === 1) {
+      y += cellHeight / 2;
+    }
+
+    // Center the number in the hexagon
+    x += cellWidth / 2;
+    y += cellHeight / 2;
+
+  } else {
+    // Square and other regular grids - simple grid
+    x = col * cellWidth + cellWidth / 2;
+    y = row * cellHeight + cellHeight / 2;
+  }
+
+  // Apply shift offsets
+  x += parseFloat(dx) || 0;
+  y += parseFloat(dy) || 0;
+
+  return { x: rn(x, 2), y: rn(y, 2) };
+}
+
 
 function toggleCoordinates(event) {
   if (!coordinates.selectAll("*").size()) {
@@ -711,7 +837,7 @@ function drawCoordinates() {
       }
     }
 
-    return {x, y, text};
+    return { x, y, text };
   });
 
   const path = round(d3.geoPath(projection)(graticule()));
@@ -795,7 +921,7 @@ function drawRivers() {
   TIME && console.time("drawRivers");
   rivers.selectAll("*").remove();
 
-  const riverPaths = pack.rivers.map(({cells, points, i, widthFactor, sourceWidth}) => {
+  const riverPaths = pack.rivers.map(({ cells, points, i, widthFactor, sourceWidth }) => {
     if (!cells || cells.length < 2) return;
 
     if (points && points.length !== cells.length) {
@@ -831,7 +957,7 @@ function drawRoutes() {
   const routePaths = {};
 
   for (const route of pack.routes) {
-    const {i, group, points} = route;
+    const { i, group, points } = route;
     if (!points || points.length < 2) continue;
     if (!routePaths[group]) routePaths[group] = [];
     routePaths[group].push(`<path id="route${i}" d="${Routes.getPath(route)}"/>`);
@@ -943,12 +1069,12 @@ function drawZones() {
   const filterBy = byId("zonesFilterType").value;
   const isFiltered = filterBy && filterBy !== "all";
   const visibleZones = pack.zones.filter(
-    ({hidden, cells, type}) => !hidden && cells.length && (!isFiltered || type === filterBy)
+    ({ hidden, cells, type }) => !hidden && cells.length && (!isFiltered || type === filterBy)
   );
   zones.html(visibleZones.map(drawZone).join(""));
 }
 
-function drawZone({i, cells, type, color}) {
+function drawZone({ i, cells, type, color }) {
   const path = getVertexPath(cells);
   return `<path id="zone${i}" data-id="${i}" data-type="${type}" d="${path}" fill="${color}" />`;
 }
@@ -1002,7 +1128,7 @@ function turnButtonOn(el) {
 }
 
 // move layers on mapLayers dragging (jquery sortable)
-$("#mapLayers").sortable({items: "li:not(.solid)", containment: "parent", cancel: ".solid", update: moveLayer});
+$("#mapLayers").sortable({ items: "li:not(.solid)", containment: "parent", cancel: ".solid", update: moveLayer });
 function moveLayer(event, ui) {
   const el = getLayer(ui.item.attr("id"));
   if (!el) return;

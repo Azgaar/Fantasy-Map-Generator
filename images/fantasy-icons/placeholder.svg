@@ -1,0 +1,15 @@
+<!-- Placeholder fantasy icon - replace with detailed artwork -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B4513;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4A2511;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Skull shape -->
+  <ellipse cx="16" cy="14" rx="10" ry="12" fill="#D3D3D3" stroke="#666" stroke-width="0.5"/>
+  <circle cx="12" cy="12" r="2" fill="#000"/>
+  <circle cx="20" cy="12" r="2" fill="#000"/>
+  <path d="M 13 18 L 15 20 L 17 20 L 19 18" stroke="#000" stroke-width="1" fill="none"/>
+  <text x="16" y="28" font-size="8" fill="#8B4513" text-anchor="middle" font-family="serif">⚔</text>
+</svg>
