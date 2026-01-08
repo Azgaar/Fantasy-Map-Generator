@@ -29,9 +29,9 @@ window.Routes = (function () {
       const capitalsByFeature = {};
       const portsByFeature = {};
 
-      const addBurg = (object, feature, burg) => {
-        if (!object[feature]) object[feature] = [];
-        object[feature].push(burg);
+      const addBurg = (collection, feature, burg) => {
+        if (!collection[feature]) collection[feature] = [];
+        collection[feature].push(burg);
       };
 
       for (const burg of burgs) {

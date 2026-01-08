@@ -428,6 +428,7 @@ function regenerateBurgs() {
   }
 
   pack.burgs = newBurgs; // assign new burgs array
+  Burgs.shift();
 
   // add a capital at former place for states without added capitals
   states
@@ -443,10 +444,6 @@ function regenerateBurgs() {
       burg.capital = 1;
       Burgs.changeGroup(burg);
     });
-
-  features.forEach(f => {
-    if (f.port) f.port = 0; // reset features ports counter
-  });
 
   Burgs.specify();
   regenerateRoutes();

@@ -10,16 +10,17 @@ window.Burgs = (() => {
 
     const populatedCells = cells.i.filter(i => cells.s[i] > 0 && cells.culture[i]);
     if (!populatedCells.length) {
-      WARN && console.warn("There is no populated cells. Cannot generate states");
+      ERROR && console.error("There is no populated cells with culture assigned. Cannot generate states");
       return burgs;
     }
 
     let quadtree = d3.quadtree();
     generateCapitals();
     generateTowns();
-    shiftBurgs();
 
     pack.burgs = burgs;
+    shift();
+
     TIME && console.timeEnd("generateBurgs");
 
     function generateCapitals() {
@@ -109,69 +110,73 @@ window.Burgs = (() => {
 
       return Math.min(manorsInput.valueAsNumber, populatedCells.length);
     }
+  };
 
-    // define port status and shift ports and burgs on rivers
-    function shiftBurgs() {
-      const {cells, features} = pack;
-      const temp = grid.cells.temp;
+  // define port status and shift ports and burgs on rivers close to the edge of the water body
+  function shift() {
+    const {cells, features, burgs} = pack;
+    const temp = grid.cells.temp;
 
-      // port is a capital with any harbor OR any burg with a safe harbor
-      const featurePorts = {};
-      for (const burg of burgs) {
-        if (!burg.i || burg.lock) continue;
-        const i = burg.cell;
+    // port is a capital with any harbor OR any burg with a safe harbor
+    // safe harbor is a cell having just one adjacent water cell
+    const featurePortCandidates = {};
+    for (const burg of burgs) {
+      if (!burg.i || burg.lock) continue;
+      delete burg.port; // reset port status
+      const cellId = burg.cell;
 
-        const haven = cells.haven[i];
-        const harbor = cells.harbor[i];
+      const haven = cells.haven[cellId];
+      const harbor = cells.harbor[cellId];
+      const featureId = cells.f[haven];
+      if (!featureId) continue; // no adjacent water body
 
-        if (haven !== undefined && temp[cells.g[i]] > 0) {
-          const featureId = cells.f[haven];
-          const canBePort = features[featureId].cells > 1 && ((burg.capital && harbor) || harbor === 1);
-          if (canBePort) {
-            if (!featurePorts[featureId]) featurePorts[featureId] = [];
-            featurePorts[featureId].push(burg);
-          }
-        }
-      }
+      const isMulticell = features[featureId].cells > 1;
+      const isHarbor = (harbor && burg.capital) || harbor === 1;
+      const isFrozen = temp[cells.g[cellId]] <= 0;
 
-      // shift ports to the edge of the water body. Only bodies with 2+ ports are considered
-      Object.entries(featurePorts).forEach(([featureId, burgs]) => {
-        if (burgs.length < 2) return;
-        burgs.forEach(burg => {
-          burg.port = featureId;
-          const haven = cells.haven[burg.cell];
-          const [x, y] = getCloseToEdgePoint(burg.cell, haven);
-          burg.x = x;
-          burg.y = y;
-        });
-      });
-
-      // shift non-port river burgs a bit
-      for (const burg of burgs) {
-        if (!burg.i || burg.lock || burg.port || !cells.r[burg.cell]) continue;
-        const cellId = burg.cell;
-        const shift = Math.min(cells.fl[cellId] / 150, 1);
-        burg.x = cellId % 2 ? rn(burg.x + shift, 2) : rn(burg.x - shift, 2);
-        burg.y = cells.r[cellId] % 2 ? rn(burg.y + shift, 2) : rn(burg.y - shift, 2);
-      }
-
-      function getCloseToEdgePoint(cell1, cell2) {
-        const {cells, vertices} = pack;
-
-        const [x0, y0] = cells.p[cell1];
-        const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
-        const [x1, y1] = vertices.p[commonVertices[0]];
-        const [x2, y2] = vertices.p[commonVertices[1]];
-        const xEdge = (x1 + x2) / 2;
-        const yEdge = (y1 + y2) / 2;
-
-        const x = rn(x0 + 0.95 * (xEdge - x0), 2);
-        const y = rn(y0 + 0.95 * (yEdge - y0), 2);
-
-        return [x, y];
+      if (isMulticell && isHarbor && !isFrozen) {
+        if (!featurePortCandidates[featureId]) featurePortCandidates[featureId] = [];
+        featurePortCandidates[featureId].push(burg);
       }
     }
-  };
+
+    // shift ports to the edge of the water body
+    Object.entries(featurePortCandidates).forEach(([featureId, burgs]) => {
+      if (burgs.length < 2) return; // only one port on water body - skip
+      burgs.forEach(burg => {
+        burg.port = featureId;
+        const haven = cells.haven[burg.cell];
+        const [x, y] = getCloseToEdgePoint(burg.cell, haven);
+        burg.x = x;
+        burg.y = y;
+      });
+    });
+
+    // shift non-port river burgs a bit
+    for (const burg of burgs) {
+      if (!burg.i || burg.lock || burg.port || !cells.r[burg.cell]) continue;
+      const cellId = burg.cell;
+      const shift = Math.min(cells.fl[cellId] / 150, 1);
+      burg.x = cellId % 2 ? rn(burg.x + shift, 2) : rn(burg.x - shift, 2);
+      burg.y = cells.r[cellId] % 2 ? rn(burg.y + shift, 2) : rn(burg.y - shift, 2);
+    }
+
+    function getCloseToEdgePoint(cell1, cell2) {
+      const {cells, vertices} = pack;
+
+      const [x0, y0] = cells.p[cell1];
+      const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
+      const [x1, y1] = vertices.p[commonVertices[0]];
+      const [x2, y2] = vertices.p[commonVertices[1]];
+      const xEdge = (x1 + x2) / 2;
+      const yEdge = (y1 + y2) / 2;
+
+      const x = rn(x0 + 0.95 * (xEdge - x0), 2);
+      const y = rn(y0 + 0.95 * (yEdge - y0), 2);
+
+      return [x, y];
+    }
+  }
 
   const specify = () => {
     TIME && console.time("specifyBurgs");
@@ -588,5 +593,5 @@ window.Burgs = (() => {
     removeBurgLabel(burg.i);
   }
 
-  return {generate, getDefaultGroups, specify, defineGroup, getPreview, getType, add, changeGroup, remove};
+  return {generate, getDefaultGroups, shift, specify, defineGroup, getPreview, getType, add, changeGroup, remove};
 })();
