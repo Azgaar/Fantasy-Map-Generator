@@ -392,7 +392,7 @@ function changeEmblemShape(emblemShape) {
 
 function changeStatesNumber(value) {
   byId("statesNumber").style.color = +value ? null : "#b12117";
-  burgLabels.select("#capitals").attr("data-size", Math.max(rn(6 - value / 20), 3));
+  burgLabels.select("#capital").attr("data-size", Math.max(rn(6 - value / 20), 3));
   labels.select("#countries").attr("data-size", Math.max(rn(18 - value / 6), 4));
 }
 
@@ -987,8 +987,7 @@ async function enter3dView(type) {
 
   canvas.style.display = "block";
   canvas.onmouseenter = () => {
-    const help =
-      "Left mouse to change angle, middle mouse. Mousewheel to zoom. Right mouse or hold Shift to pan. <b>O</b> to toggle options";
+    const help = "Drag to pan • Scroll to zoom • Right-click drag to rotate • <b>O</b> to toggle options";
     +canvas.dataset.hovered > 2 ? tip("") : tip(help);
     canvas.dataset.hovered = (+canvas.dataset.hovered | 0) + 1;
   };
@@ -1051,9 +1050,10 @@ function toggle3dOptions() {
   byId("options3dMeshSky").addEventListener("input", changeColors);
   byId("options3dMeshWater").addEventListener("input", changeColors);
   byId("options3dGlobeResolution").addEventListener("change", changeResolution);
-  // byId("options3dMeshWireframeMode").addEventListener("change",toggleWireframe3d);
+  byId("options3dMeshWireframeMode").addEventListener("change", toggleWireframe3d);
   byId("options3dSunColor").addEventListener("input", changeSunColor);
   byId("options3dSubdivide").addEventListener("change", toggle3dSubdivision);
+  byId("options3dTimeOfDay").addEventListener("change", changeTimeOfDay);
 
   function updateValues() {
     const globe = byId("canvas3d").dataset.type === "viewGlobe";
@@ -1075,6 +1075,41 @@ function toggle3dOptions() {
     options3dGlobeResolution.value = ThreeD.options.resolution;
     options3dSunColor.value = ThreeD.options.sunColor;
     options3dSubdivide.value = ThreeD.options.subdivide;
+    updateTimeOfDayPreset();
+  }
+
+  function updateTimeOfDayPreset() {
+    const presetSelect = byId("options3dTimeOfDay");
+    if (!presetSelect) return;
+
+    const currentSunX = ThreeD.options.sun.x;
+    const currentSunY = ThreeD.options.sun.y;
+    const currentSunZ = ThreeD.options.sun.z;
+    const currentSunColor = ThreeD.options.sunColor;
+    const currentLightness = ThreeD.options.lightness;
+
+    let matchingPreset = "custom";
+    for (const [name, preset] of Object.entries(ThreeD.timeOfDayPresets)) {
+      if (
+        preset.sun.x === currentSunX &&
+        preset.sun.y === currentSunY &&
+        preset.sun.z === currentSunZ &&
+        preset.sunColor === currentSunColor &&
+        Math.abs(preset.lightness - currentLightness) < 0.05
+      ) {
+        matchingPreset = name;
+        break;
+      }
+    }
+
+    presetSelect.value = matchingPreset;
+  }
+
+  function changeTimeOfDay() {
+    const presetName = this.value;
+    if (presetName === "custom") return;
+    ThreeD.setTimeOfDay(presetName);
+    updateValues();
   }
 
   function changeHeightScale() {
@@ -1090,16 +1125,31 @@ function toggle3dOptions() {
   function changeLightness() {
     options3dLightnessRange.value = options3dLightnessNumber.value = this.value;
     ThreeD.setLightness(this.value / 100);
+    // Mark as custom when user manually changes lightness
+    const presetSelect = byId("options3dTimeOfDay");
+    if (presetSelect && presetSelect.value !== "custom") {
+      presetSelect.value = "custom";
+    }
   }
 
   function changeSunColor() {
     ThreeD.setSunColor(options3dSunColor.value);
+    // Mark as custom when user manually changes sun color
+    const presetSelect = byId("options3dTimeOfDay");
+    if (presetSelect && presetSelect.value !== "custom") {
+      presetSelect.value = "custom";
+    }
   }
 
   function changeSunPosition() {
     const x = +options3dSunX.value;
     const y = +options3dSunY.value;
     ThreeD.setSun(x, y);
+    // Mark as custom when user manually changes sun position
+    const presetSelect = byId("options3dTimeOfDay");
+    if (presetSelect && presetSelect.value !== "custom") {
+      presetSelect.value = "custom";
+    }
   }
 
   function changeRotation() {
@@ -1116,9 +1166,9 @@ function toggle3dOptions() {
     ThreeD.toggle3dSubdivision();
   }
 
-  // function toggleWireframe3d() {
-  //   ThreeD.toggleWireframe();
-  // }
+  function toggleWireframe3d() {
+    ThreeD.toggleWireframe();
+  }
 
   function toggleSkyMode() {
     const hide = ThreeD.options.extendedWater;

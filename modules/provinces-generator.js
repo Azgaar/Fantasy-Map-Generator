@@ -51,14 +51,14 @@ window.Provinces = (function () {
         .sort((a, b) => b.population * gauss(1, 0.2, 0.5, 1.5, 3) - a.population)
         .sort((a, b) => b.capital - a.capital);
       if (stateBurgs.length < 2) return; // at least 2 provinces are required
-      const provincesNumber = Math.max(Math.ceil((stateBurgs.length * provincesRatio) / 100), 2);
 
+      const provincesNumber = Math.max(Math.ceil((stateBurgs.length * provincesRatio) / 100), 2);
       const form = Object.assign({}, forms[s.form]);
 
       for (let i = 0; i < provincesNumber; i++) {
         const provinceId = provinces.length;
         const center = stateBurgs[i].cell;
-        const burg = stateBurgs[i].i;
+        const burg = stateBurgs[i];
         const c = stateBurgs[i].culture;
         const nameByBurg = P(0.5);
         const name = nameByBurg ? stateBurgs[i].name : Names.getState(Names.getCultureShort(c), c);
@@ -67,12 +67,12 @@ window.Provinces = (function () {
         const fullName = name + " " + formName;
         const color = getMixedColor(s.color);
         const kinship = nameByBurg ? 0.8 : 0.4;
-        const type = BurgsAndStates.getType(center, burg.port);
+        const type = Burgs.getType(center, burg.port);
         const coa = COA.generate(stateBurgs[i].coa, kinship, null, type);
         coa.shield = COA.getShield(c, s.i);
 
         s.provinces.push(provinceId);
-        provinces.push({i: provinceId, state: s.i, center, burg, name, formName, fullName, color, coa});
+        provinces.push({i: provinceId, state: s.i, center, burg: burg.i, name, formName, fullName, color, coa});
       }
     });
 
@@ -206,7 +206,7 @@ window.Provinces = (function () {
 
         const dominion = colony ? P(0.95) : singleIsle || isleGroup ? P(0.7) : P(0.3);
         const kinship = dominion ? 0 : 0.4;
-        const type = BurgsAndStates.getType(center, burgs[burg]?.port);
+        const type = Burgs.getType(center, burgs[burg]?.port);
         const coa = COA.generate(s.coa, kinship, dominion, type);
         coa.shield = COA.getShield(c, s.i);
 

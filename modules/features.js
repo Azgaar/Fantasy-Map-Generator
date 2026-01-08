@@ -213,7 +213,7 @@ window.Features = (function () {
   }
 
   // add properties to pack features
-  function specify() {
+  function defineGroups() {
     const gridCellsNumber = grid.cells.i.length;
     const OCEAN_MIN_SIZE = gridCellsNumber / 25;
     const SEA_MIN_SIZE = gridCellsNumber / 1000;
@@ -223,12 +223,8 @@ window.Features = (function () {
     for (const feature of pack.features) {
       if (!feature || feature.type === "ocean") continue;
 
+      if (feature.type === "lake") feature.height = Lakes.getHeight(feature);
       feature.group = defineGroup(feature);
-
-      if (feature.type === "lake") {
-        feature.height = Lakes.getHeight(feature);
-        feature.name = Lakes.getName(feature);
-      }
     }
 
     function defineGroup(feature) {
@@ -267,5 +263,5 @@ window.Features = (function () {
     }
   }
 
-  return {markupGrid, markupPack, specify};
+  return {markupGrid, markupPack, defineGroups};
 })();

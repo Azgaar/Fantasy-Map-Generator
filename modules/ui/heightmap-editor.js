@@ -238,21 +238,26 @@ function editHeightmap(options) {
     }
 
     Biomes.define();
-    rankCells();
+    Features.defineGroups();
 
+    rankCells();
     Cultures.generate();
     Cultures.expand();
 
-    BurgsAndStates.generate();
+    Burgs.generate();
+    States.generate();
     Routes.generate();
     Religions.generate();
-    BurgsAndStates.defineStateForms();
+
+    Burgs.specify();
+    States.collectStatistics();
+    States.defineStateForms();
+
     Provinces.generate();
     Provinces.getPoles();
-    BurgsAndStates.defineBurgFeatures();
 
     Rivers.specify();
-    Features.specify();
+    Lakes.defineNames();
 
     Military.generate();
     Markers.generate();
@@ -341,7 +346,10 @@ function editHeightmap(options) {
     reGraph();
     Features.markupPack();
 
-    if (erosionAllowed) Rivers.generate(true);
+    if (erosionAllowed) {
+      Rivers.generate(true);
+      Features.defineGroups();
+    }
 
     // assign saved pack data from grid back to pack
     const n = pack.cells.i.length;
@@ -405,7 +413,7 @@ function editHeightmap(options) {
       b.feature = pack.cells.f[b.cell];
 
       pack.cells.burg[b.cell] = b.i;
-      if (!b.capital && pack.cells.h[b.cell] < 20) removeBurg(b.i);
+      if (!b.capital && pack.cells.h[b.cell] < 20) Burgs.remove(b.i);
       if (b.capital) pack.states[b.state].center = b.cell;
     }
 
@@ -435,7 +443,7 @@ function editHeightmap(options) {
 
     if (erosionAllowed) {
       Rivers.specify();
-      Features.specify();
+      Lakes.defineNames();
     }
 
     // restore zones from grid

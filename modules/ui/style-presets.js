@@ -71,24 +71,35 @@ async function fetchSystemPreset(preset) {
   }
 }
 
-function applyStyle(style) {
-  for (const selector in style) {
+function applyStyle(styleJSON) {
+  for (const selector in styleJSON) {
+    if (selector.startsWith("#burgLabels")) {
+      const group = selector.split("#").pop();
+      style.burgLabels[group] = styleJSON[selector];
+    }
+
+    if (selector.startsWith("#burgIcons")) {
+      const group = selector.split("#").pop();
+      style.burgIcons[group] = styleJSON[selector];
+    }
+
+    if (selector.startsWith("#anchors")) {
+      const group = selector.split("#").pop();
+      style.anchors[group] = styleJSON[selector];
+    }
+
     const el = document.querySelector(selector);
     if (!el) continue;
 
-    for (const attribute in style[selector]) {
-      const value = style[selector][attribute];
+    for (const attribute in styleJSON[selector]) {
+      const value = styleJSON[selector][attribute];
 
       if (value === "null" || value === null) {
         el.removeAttribute(attribute);
         continue;
       }
 
-      if (attribute === "text-shadow") {
-        el.style[attribute] = value;
-      } else {
-        el.setAttribute(attribute, value);
-      }
+      el.setAttribute(attribute, value);
 
       if (selector === "#texture") {
         const image = document.querySelector("#texture > image");
@@ -130,6 +141,11 @@ async function changeStyle(desiredPreset) {
   const [presetName, style] = styleData;
   localStorage.setItem("presetStyle", presetName);
   applyStyleWithUiRefresh(style);
+  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
+  if (layerIsOn("toggleLabels")) {
+    drawBurgLabels();
+    drawStateLabels();
+  }
 }
 
 function applyStyleWithUiRefresh(style) {
@@ -271,52 +287,12 @@ function addStylePreset() {
         "data-columns"
       ],
       "#legendBox": ["fill", "fill-opacity"],
-      "#burgLabels > #cities": [
-        "opacity",
-        "fill",
-        "text-shadow",
-        "letter-spacing",
-        "data-size",
-        "font-size",
-        "font-family"
-      ],
-      "#burgIcons > #cities": [
-        "opacity",
-        "fill",
-        "fill-opacity",
-        "size",
-        "stroke",
-        "stroke-width",
-        "stroke-dasharray",
-        "stroke-linecap"
-      ],
-      "#anchors > #cities": ["opacity", "fill", "size", "stroke", "stroke-width"],
-      "#burgLabels > #towns": [
-        "opacity",
-        "fill",
-        "text-shadow",
-        "letter-spacing",
-        "data-size",
-        "font-size",
-        "font-family"
-      ],
-      "#burgIcons > #towns": [
-        "opacity",
-        "fill",
-        "fill-opacity",
-        "size",
-        "stroke",
-        "stroke-width",
-        "stroke-dasharray",
-        "stroke-linecap"
-      ],
-      "#anchors > #towns": ["opacity", "fill", "size", "stroke", "stroke-width"],
       "#labels > #states": [
         "opacity",
         "fill",
         "stroke",
         "stroke-width",
-        "text-shadow",
+        "style",
         "letter-spacing",
         "data-size",
         "font-size",
@@ -328,7 +304,7 @@ function addStylePreset() {
         "fill",
         "stroke",
         "stroke-width",
-        "text-shadow",
+        "style",
         "letter-spacing",
         "data-size",
         "font-size",
@@ -351,6 +327,39 @@ function addStylePreset() {
         "data-left"
       ]
     };
+
+    const burgLabelsAttributes = [
+      "opacity",
+      "fill",
+      "stroke",
+      "stroke-width",
+      "style",
+      "letter-spacing",
+      "data-size",
+      "font-size",
+      "font-family",
+      "data-dx",
+      "data-dy"
+    ];
+    const burgIconsAttributes = [
+      "opacity",
+      "data-icon",
+      "font-size",
+      "fill",
+      "fill-opacity",
+      "stroke",
+      "stroke-width",
+      "stroke-dasharray",
+      "stroke-linecap",
+      "stroke-linejoin",
+      "filter"
+    ];
+    const anchorsAttributes = ["opacity", "fill", "font-size", "stroke", "stroke-width", "filter"];
+    options.burgs.groups.forEach(({name}) => {
+      attributes[`#burgLabels > g#${name}`] = burgLabelsAttributes;
+      attributes[`#burgIcons > g#${name}`] = burgIconsAttributes;
+      attributes[`#anchors > g#${name}`] = anchorsAttributes;
+    });
 
     for (const selector in attributes) {
       const el = document.querySelector(selector);

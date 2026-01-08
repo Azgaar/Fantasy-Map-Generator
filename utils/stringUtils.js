@@ -51,10 +51,10 @@ function parseTransform(string) {
 JSON.isValid = str => {
   try {
     JSON.parse(str);
+    return true;
   } catch (e) {
     return false;
   }
-  return true;
 };
 
 JSON.safeParse = str => {
@@ -64,3 +64,18 @@ JSON.safeParse = str => {
     return null;
   }
 };
+
+function sanitizeId(string) {
+  if (!string) throw new Error("No string provided");
+
+  let sanitized = string
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-_]/g, "") // no invalid characters
+    .replace(/\s+/g, "-"); // replace spaces with hyphens
+
+  // remove leading numbers
+  if (sanitized.match(/^\d/)) sanitized = "_" + sanitized;
+
+  return sanitized;
+}

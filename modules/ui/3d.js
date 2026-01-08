@@ -39,6 +39,7 @@ window.ThreeD = (function () {
   let labels = [];
   let icons = [];
   let lines = [];
+  let gridToPackCellMap = null; // Map from grid cell index to pack cell index
 
   const context2d = document.createElement("canvas").getContext("2d");
 
@@ -67,10 +68,11 @@ window.ThreeD = (function () {
 
   // try to clean the memory as much as possible
   const stop = function () {
+    if (controls) controls.dispose();
     cancelAnimationFrame(animationFrame);
-    texture.dispose();
-    geometry.dispose();
-    material.dispose();
+    if (texture) texture.dispose();
+    if (geometry) geometry.dispose();
+    if (material) material.dispose();
     if (waterPlane) waterPlane.dispose();
     if (waterMaterial) waterMaterial.dispose();
     deleteLabels();
@@ -185,6 +187,48 @@ window.ThreeD = (function () {
     render();
   };
 
+  // Time of day presets
+  const timeOfDayPresets = {
+    dawn: {
+      sun: {x: -500, y: 400, z: 800},
+      sunColor: "#ff9a56",
+      lightness: 0.4,
+      skyColor: "#ffccaa",
+      waterColor: "#2d4d6b"
+    },
+    noon: {
+      sun: {x: 100, y: 800, z: 1000},
+      sunColor: "#cccccc",
+      lightness: 0.6,
+      skyColor: "#9ecef5",
+      waterColor: "#466eab"
+    },
+    evening: {
+      sun: {x: 500, y: 400, z: 800},
+      sunColor: "#ff6b35",
+      lightness: 0.5,
+      skyColor: "#ff8c42",
+      waterColor: "#1e3a52"
+    },
+    night: {
+      sun: {x: 0, y: -500, z: 1000},
+      sunColor: "#4a5568",
+      lightness: 0.2,
+      skyColor: "#1a1a2e",
+      waterColor: "#0f1419"
+    }
+  };
+
+  const setTimeOfDay = function (presetName) {
+    const preset = timeOfDayPresets[presetName];
+    if (!preset) return;
+
+    setSun(preset.sun.x, preset.sun.y, preset.sun.z);
+    setSunColor(preset.sunColor);
+    setLightness(preset.lightness);
+    if (options.extendedWater) setColors(preset.skyColor, preset.waterColor);
+  };
+
   const setResolution = function (resolution) {
     options.resolution = resolution;
     update();
@@ -212,7 +256,6 @@ window.ThreeD = (function () {
   async function newMesh(canvas) {
     const loaded = await loadTHREE();
     if (!loaded) return tip("Cannot load 3d library", false, "error", 4000);
-
     scene = new THREE.Scene();
 
     // light
@@ -224,7 +267,6 @@ window.ThreeD = (function () {
     spotLight.shadow.mapSize.width = 2048;
     spotLight.shadow.mapSize.height = 2048;
     scene.add(spotLight);
-    // scene.add(new THREE.SpotLightHelper(spotLight));
 
     // Renderer
     Renderer = new THREE.WebGLRenderer({canvas, antialias: true, preserveDrawingBuffer: true});
@@ -234,22 +276,32 @@ window.ThreeD = (function () {
     if (options.extendedWater) extendWater(graphWidth, graphHeight);
     createMesh(graphWidth, graphHeight, grid.cellsX, grid.cellsY);
 
-    // camera
     camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 2000);
-    camera.position.set(0, rn(svgWidth / 3.5), 500);
+    camera.position.set(0, 400, 500); // Set initial camera position for isometric view
+    controls = await MapControls(camera, canvas); // Google Maps-style navigation
+    if (!controls) return false;
 
-    // controls
-    controls = await OrbitControls(camera, canvas);
-    controls.listenToKeyEvents(window);
-    controls.zoomSpeed = 0.25;
+    // Set initial target at map center
+    if (controls.target) controls.target.set(0, 0, 0);
 
-    controls.panSpeed = 0.5;
-    controls.minDistance = 100;
+    // Configure for bird's eye view with Google Maps-style controls
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.screenSpacePanning = false;
+    controls.minDistance = 50;
     controls.maxDistance = 1000;
-    controls.maxPolarAngle = Math.PI / 2;
+    controls.minZoom = 0.05;
+    controls.maxZoom = 4;
+    controls.zoomSpeed = 0.6;
+    controls.panSpeed = 1.6;
+    controls.enableRotate = true;
+    controls.rotateSpeed = 0.5;
+    controls.maxPolarAngle = Math.PI / 2; // Prevent camera from going below horizon
+    controls.minPolarAngle = 0; // Allow full 90 degrees top-down view
+
     controls.autoRotate = Boolean(options.rotateMesh);
     controls.autoRotateSpeed = options.rotateMesh;
-    if (controls.autoRotate) animate();
+    animate();
 
     controls.addEventListener("change", render);
     return true;
@@ -298,75 +350,90 @@ window.ThreeD = (function () {
     raycaster.set(new THREE.Vector3(0, 1000, 0), new THREE.Vector3(0, -1, 0));
 
     const states = viewbox.select("#labels #states");
-    const cities = burgLabels.select("#cities");
-    const towns = burgLabels.select("#towns");
-    const city_icons = burgIcons.select("#cities");
-    const town_icons = burgIcons.select("#towns");
 
     const stateOptions = {
       font: states.attr("font-family"),
-      size: +states.attr("data-size"),
+      size: +states.attr("data-size") / 2,
       color: states.attr("fill"),
       elevation: 20,
-      quality: 20
+      quality: 80
     };
 
-    const cityOptions = {
-      font: cities.attr("font-family"),
-      size: +cities.attr("data-size"),
-      color: cities.attr("fill"),
-      elevation: 10,
-      quality: 20,
-      iconSize: 1,
-      iconColor: "#666",
-      line: 10 - cities.attr("data-size") / 2
-    };
+    // Cache icon materials and geometries by group to avoid recreating them
+    const iconMaterials = {};
+    const iconGeometries = {};
+    const lineMaterials = {};
 
-    const townOptions = {
-      font: towns.attr("font-family"),
-      size: +towns.attr("data-size"),
-      color: towns.attr("fill"),
-      elevation: 5,
-      quality: 30,
-      iconSize: 0.5,
-      iconColor: "#666",
-      line: 5 - towns.attr("data-size") / 2
-    };
+    // Helper function to get burg label options from its group
+    function getBurgLabelOptions(burg) {
+      if (!burg.group) return null;
 
-    const city_icon_material = new THREE.MeshPhongMaterial({color: cityOptions.iconColor});
-    city_icon_material.wireframe = options.wireframe;
-    const town_icon_material = new THREE.MeshPhongMaterial({color: townOptions.iconColor});
-    town_icon_material.wireframe = options.wireframe;
-    const city_icon_geometry = new THREE.CylinderGeometry(
-      cityOptions.iconSize * 2,
-      cityOptions.iconSize * 2,
-      cityOptions.iconSize,
-      16,
-      1
-    );
-    const town_icon_geometry = new THREE.CylinderGeometry(
-      townOptions.iconSize * 2,
-      townOptions.iconSize * 2,
-      townOptions.iconSize,
-      16,
-      1
-    );
-    const line_material = new THREE.LineBasicMaterial({color: cityOptions.iconColor});
+      const labelGroup = burgLabels.select("#" + burg.group);
+      if (labelGroup.empty()) return null;
+
+      const font = labelGroup.attr("font-family") || "Arial";
+      const size = +labelGroup.attr("data-size") || 10;
+      const color = labelGroup.attr("fill") || "#000";
+
+      // Calculate elevation, icon size, and line height based on label size
+      // Larger labels get higher elevation and larger icons
+      const elevation = Math.max(5, size * 0.5);
+      const iconSize = Math.max(0.3, size * 0.08);
+      const iconColor = "#666";
+
+      return {
+        font,
+        size,
+        color,
+        elevation,
+        quality: 40,
+        iconSize,
+        iconColor
+      };
+    }
+
+    // Helper function to get or create icon material for a group
+    function getIconMaterial(groupName, iconColor) {
+      if (!iconMaterials[groupName]) {
+        const material = new THREE.MeshPhongMaterial({color: iconColor});
+        material.wireframe = options.wireframe;
+        iconMaterials[groupName] = material;
+      }
+      return iconMaterials[groupName];
+    }
+
+    // Helper function to get or create icon geometry for a group
+    function getIconGeometry(groupName, iconSize) {
+      const key = `${groupName}_${iconSize.toFixed(2)}`;
+      if (!iconGeometries[key]) {
+        iconGeometries[key] = new THREE.CylinderGeometry(iconSize * 2, iconSize * 2, iconSize, 16, 1);
+      }
+      return iconGeometries[key];
+    }
+
+    // Helper function to get or create line material for a group
+    function getLineMaterial(groupName, iconColor) {
+      if (!lineMaterials[groupName]) {
+        lineMaterials[groupName] = new THREE.LineBasicMaterial({color: iconColor});
+      }
+      return lineMaterials[groupName];
+    }
 
     // burg labels
     for (let i = 1; i < pack.burgs.length; i++) {
       const burg = pack.burgs[i];
       if (burg.removed) continue;
 
-      const isCity = burg.capital;
+      const burgOptions = getBurgLabelOptions(burg);
+      if (!burgOptions) continue;
+
       const [x, y, z] = get3dCoords(burg.x, burg.y);
-      const options = isCity ? cityOptions : townOptions;
 
       if (layerIsOn("toggleLabels")) {
-        const burgSprite = await createTextLabel({text: burg.name, ...options});
+        const burgSprite = await createTextLabel({text: burg.name, ...burgOptions});
 
-        burgSprite.position.set(x, y + options.elevation, z);
-        burgSprite.size = options.size;
+        burgSprite.position.set(x, y + burgOptions.elevation, z);
+        burgSprite.size = burgOptions.size;
 
         labels.push(burgSprite);
         scene.add(burgSprite);
@@ -374,15 +441,19 @@ window.ThreeD = (function () {
 
       // icons
       if (layerIsOn("toggleBurgIcons")) {
-        const geometry = isCity ? city_icon_geometry : town_icon_geometry;
-        const material = isCity ? city_icon_material : town_icon_material;
+        const geometry = getIconGeometry(burg.group, burgOptions.iconSize);
+        const material = getIconMaterial(burg.group, burgOptions.iconColor);
         const iconMesh = new THREE.Mesh(geometry, material);
         iconMesh.position.set(x, y, z);
 
         icons.push(iconMesh);
         scene.add(iconMesh);
 
-        const points = [new THREE.Vector3(x, y, z), new THREE.Vector3(x, y + options.line, z)];
+        const line_material = getLineMaterial(burg.group, burgOptions.iconColor);
+        // Line starts from top of icon (iconSize/2 above ground) and goes to just below label
+        const lineStart = y + burgOptions.iconSize / 2;
+        const lineEnd = y + burgOptions.elevation - burgOptions.size * 0.5;
+        const points = [new THREE.Vector3(x, lineStart, z), new THREE.Vector3(x, lineEnd, z)];
         const line_geometry = new THREE.BufferGeometry().setFromPoints(points);
         const line = new THREE.Line(line_geometry, line_material);
 
@@ -467,13 +538,36 @@ window.ThreeD = (function () {
       };
     });
   }
+
   // create a mesh from pixel data
   async function createMesh(width, height, segmentsX, segmentsY) {
+    // Build lookup map from grid cell index to pack cell index
+    gridToPackCellMap = new Map();
+    if (pack.cells?.g && pack.cells?.i) {
+      for (const packCellIndex of pack.cells.i) {
+        const gridCellIndex = pack.cells.g[packCellIndex];
+        if (!gridToPackCellMap.has(gridCellIndex)) {
+          gridToPackCellMap.set(gridCellIndex, packCellIndex);
+        }
+      }
+    }
+
     if (texture) texture.dispose();
     if (!options.wireframe) {
-      texture = new THREE.TextureLoader().load(await createMeshTextureUrl(), render);
-      texture.needsUpdate = true;
-      texture.anisotropy = Renderer.capabilities.getMaxAnisotropy();
+      const url = await createMeshTextureUrl();
+      await new Promise(resolve => {
+        texture = new THREE.TextureLoader().load(
+          url,
+          t => {
+            resolve(t);
+          },
+          undefined,
+          () => resolve(null)
+        );
+      });
+      if (texture) {
+        texture.anisotropy = Renderer.capabilities.getMaxAnisotropy();
+      }
     }
 
     if (material) material.dispose();
@@ -515,16 +609,40 @@ window.ThreeD = (function () {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     scene.add(mesh);
+    render();
 
     if (options.labels3d) {
-      render();
       await createLabels();
+      render();
     }
   }
 
+  const LOWER_BY_WATER = 18;
+  const DIVIDER = 100 - LOWER_BY_WATER;
+
   function getMeshHeight(i) {
-    const h = grid.cells.h[i];
-    return h < 20 ? 0 : ((h - 18) / 82) * options.scale;
+    const height = grid.cells.h[i];
+
+    let waterCellId = null;
+    if (height < 20) {
+      waterCellId = i;
+    } else if (grid.cells.c[i]) {
+      waterCellId = grid.cells.c[i].find(c => grid.cells.h[c] < 20) ?? null;
+    }
+
+    // If water vertex, get uniform elevation
+    if (waterCellId !== null) {
+      const packCellIndex = gridToPackCellMap.get(waterCellId);
+      const featureId = pack.cells.f[packCellIndex];
+      if (featureId === undefined) return 0;
+
+      const feature = pack.features[featureId];
+      const waterHeight = feature.type === "lake" && feature.height ? feature.height : 20;
+      return ((waterHeight - LOWER_BY_WATER) / DIVIDER) * options.scale;
+    }
+
+    // Land vertex
+    return ((height - LOWER_BY_WATER) / DIVIDER) * options.scale;
   }
 
   function extendWater(width, height) {
@@ -574,16 +692,57 @@ window.ThreeD = (function () {
     // camera
     camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 1000).translateZ(5);
 
-    // controls
-    controls = await OrbitControls(camera, Renderer.domElement);
+    controls = await OrbitControls(camera, Renderer.domElement); // OrbitControls for globe view
+    if (!controls) return false;
     controls.zoomSpeed = 0.25;
-    controls.minDistance = 1.8;
+    controls.minDistance = 1.5;
     controls.maxDistance = 10;
     controls.autoRotate = Boolean(options.rotateGlobe);
     controls.autoRotateSpeed = options.rotateGlobe;
+
+    // ensure OrbitControls behavior (reset potentially changed defaults by MapControls)
+    controls.mouseButtons = {
+      LEFT: THREE.MOUSE.ROTATE,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.PAN
+    };
+    controls.screenSpacePanning = true;
+    controls.minPolarAngle = 0;
+    controls.maxPolarAngle = Math.PI;
+
     controls.addEventListener("change", render);
 
     return true;
+  }
+
+  function OrbitControls(camera, domElement) {
+    if (THREE.OrbitControls) return new THREE.OrbitControls(camera, domElement);
+
+    return new Promise(resolve => {
+      const script = document.createElement("script");
+      script.src = "libs/orbitControls.min.js";
+      document.head.append(script);
+      script.onload = () => resolve(new THREE.OrbitControls(camera, domElement));
+      script.onerror = () => resolve(false);
+    });
+  }
+
+  function MapControls(camera, domElement) {
+    if (THREE.MapControls) return new THREE.MapControls(camera, domElement);
+
+    return new Promise(resolve => {
+      const script = document.createElement("script");
+      script.src = "libs/mapControls.min.js";
+      document.head.append(script);
+      script.onload = () => {
+        if (THREE.MapControls) {
+          resolve(new THREE.MapControls(camera, domElement));
+        } else {
+          resolve(false);
+        }
+      };
+      script.onerror = () => resolve(false);
+    });
   }
 
   async function updateGlobeTexure(addMesh) {
@@ -654,7 +813,7 @@ window.ThreeD = (function () {
   // animate 3d scene and camera
   function animate() {
     animationFrame = requestAnimationFrame(animate);
-    controls.update();
+    if (controls && controls.update) controls.update();
   }
 
   function loadTHREE() {
@@ -677,17 +836,6 @@ window.ThreeD = (function () {
       script.src = "libs/loopsubdivison.min.js";
       document.head.append(script);
       script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-    });
-  }
-  function OrbitControls(camera, domElement) {
-    if (THREE.OrbitControls) return new THREE.OrbitControls(camera, domElement);
-
-    return new Promise(resolve => {
-      const script = document.createElement("script");
-      script.src = "libs/orbitControls.min.js";
-      document.head.append(script);
-      script.onload = () => resolve(new THREE.OrbitControls(camera, domElement));
       script.onerror = () => resolve(false);
     });
   }
@@ -722,6 +870,8 @@ window.ThreeD = (function () {
     toggleSky,
     setResolution,
     setColors,
+    setTimeOfDay,
+    timeOfDayPresets,
     saveScreenshot,
     saveOBJ
   };

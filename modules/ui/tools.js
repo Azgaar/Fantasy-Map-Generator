@@ -129,7 +129,8 @@ function regenerateRoutes() {
 function regenerateRivers() {
   Rivers.generate();
   Rivers.specify();
-  Features.specify();
+  Features.defineGroups();
+  Lakes.defineNames();
   if (layerIsOn("toggleRivers")) drawRivers();
 }
 
@@ -154,14 +155,16 @@ function regenerateStates() {
   if (!newStates) return;
 
   pack.states = newStates;
-  BurgsAndStates.expandStates();
-  BurgsAndStates.normalizeStates();
-  BurgsAndStates.getPoles();
-  BurgsAndStates.collectStatistics();
-  BurgsAndStates.assignColors();
-  BurgsAndStates.generateCampaigns();
-  BurgsAndStates.generateDiplomacy();
-  BurgsAndStates.defineStateForms();
+  States.expandStates();
+  States.normalize();
+  States.getPoles();
+  States.findNeighbors();
+  States.collectStatistics();
+  States.assignColors();
+  States.generateCampaigns();
+  States.generateDiplomacy();
+  States.defineStateForms();
+
   Provinces.generate(true);
   Provinces.getPoles();
 
@@ -209,13 +212,13 @@ function recreateStates() {
     return null;
   }
 
-  // turn all old capitals into towns, except for the capitals of locked states
+  // turn all old capitals into town, except for the capitals of locked states
   for (const burg of validBurgs) {
-    if (!burg.capital) continue;
-    if (lockedStatesCapitals.includes(burg.i)) continue;
-
-    moveBurgToGroup(burg.i, "towns");
-    burg.capital = 0;
+    if (burg.capital) {
+      if (lockedStatesCapitals.includes(burg.i)) continue;
+      burg.capital = 0;
+      Burgs.changeGroup(burg);
+    }
   }
 
   // remove labels and emblems for non-locked states
@@ -302,7 +305,7 @@ function recreateStates() {
         burg.capital = 1;
         capital = burg;
         capitalsTree.add([x, y]);
-        moveBurgToGroup(burg.i, "cities");
+        Burgs.changeGroup(capital);
         break;
       }
 
@@ -400,7 +403,7 @@ function regenerateBurgs() {
   const burgsCount =
     (manorsInput.value === "1000" ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8) : +manorsInput.value) +
     existingStatesCount;
-  const spacing = (graphWidth + graphHeight) / 150 / (burgsCount ** 0.7 / 66); // base min distance between towns
+  const spacing = (graphWidth + graphHeight) / 150 / (burgsCount ** 0.7 / 66); // base min distance between town
 
   for (let i = 0; i < sorted.length && newBurgs.length < burgsCount; i++) {
     const id = newBurgs.length;
@@ -425,26 +428,24 @@ function regenerateBurgs() {
   }
 
   pack.burgs = newBurgs; // assign new burgs array
+  Burgs.shift();
 
   // add a capital at former place for states without added capitals
   states
     .filter(s => s.i && !s.removed && !s.capital)
     .forEach(s => {
       const [x, y] = cells.p[s.center];
-      const burgId = addBurg([x, y]);
+      const burgId = Burgs.add([x, y]);
       s.capital = burgId;
       s.center = pack.burgs[burgId].cell;
-      pack.burgs[burgId].capital = 1;
-      pack.burgs[burgId].state = s.i;
-      moveBurgToGroup(burgId, "cities");
+
+      const burg = pack.burgs[burgId];
+      burg.state = s.i;
+      burg.capital = 1;
+      Burgs.changeGroup(burg);
     });
 
-  features.forEach(f => {
-    if (f.port) f.port = 0; // reset features ports counter
-  });
-
-  BurgsAndStates.specifyBurgs();
-  BurgsAndStates.defineBurgFeatures();
+  Burgs.specify();
   regenerateRoutes();
 
   drawBurgIcons();
@@ -503,7 +504,7 @@ function regenerateEmblems() {
     const nameByBurg = province.burg && province.name.slice(0, 3) === parent.name.slice(0, 3);
     const kinship = dominion ? 0 : nameByBurg ? 0.8 : 0.4;
     const culture = pack.cells.culture[province.center];
-    const type = BurgsAndStates.getType(province.center, parent.port);
+    const type = Burgs.getType(province.center, parent.port);
     province.coa = COA.generate(parent.coa, kinship, dominion, type);
     province.coa.shield = COA.getShield(culture, province.state);
   });
@@ -521,8 +522,24 @@ function regenerateReligions() {
 function regenerateCultures() {
   Cultures.generate();
   Cultures.expand();
-  BurgsAndStates.updateCultures();
-  Religions.updateCultures();
+
+  // update culture for states
+  pack.states = pack.states.map(state => {
+    if (!state.i || state.removed) return state;
+    return {...state, culture: pack.cells.culture[state.center]};
+  });
+
+  // update culture for burgs
+  pack.burgs = pack.burgs.map(burg => {
+    if (!burg.i || burg.removed) return burg;
+    return {...burg, culture: pack.cells.culture[burg.cell]};
+  });
+
+  // update culture for religions
+  pack.religions = pack.religions.map(religion => {
+    if (!religion.i || religion.removed) return religion;
+    return {...religion, culture: pack.cells.culture[religion.center]};
+  });
 
   layerIsOn("toggleCultures") ? drawCultures() : toggleCultures();
   refreshAllEditors();

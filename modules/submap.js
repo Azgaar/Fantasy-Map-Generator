@@ -200,6 +200,7 @@ window.Submap = (function () {
     // it's safe to recalculate.
     stage("Regenerating Biome");
     Biomes.define();
+    Features.defineGroups();
     // recalculate suitability and population
     // TODO: normalize according to the base-map
     rankCells();
@@ -237,7 +238,7 @@ window.Submap = (function () {
         ? pack.burgs[s.capital].cell // capital is the best bet
         : pack.cells.state.findIndex(x => x === i); // otherwise use the first valid cell
     });
-    BurgsAndStates.getPoles();
+    States.getPoles();
 
     // transfer provinces, mark provinces without land as removed.
     stage("Porting provinces");
@@ -259,7 +260,7 @@ window.Submap = (function () {
     regenerateRoutes();
 
     Rivers.specify();
-    Features.specify();
+    Lakes.defineNames();
 
     stage("Porting military");
     for (const s of pack.states) {

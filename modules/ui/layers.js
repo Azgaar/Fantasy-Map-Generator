@@ -845,6 +845,14 @@ function drawRoutes() {
   TIME && console.timeEnd("drawRoutes");
 }
 
+function drawRoute(route) {
+  routes
+    .select("#" + route.group)
+    .append("path")
+    .attr("d", Routes.getPath(route))
+    .attr("id", "route" + route.i);
+}
+
 function toggleMilitary(event) {
   if (!layerIsOn("toggleMilitary")) {
     turnButtonOn("toggleMilitary");

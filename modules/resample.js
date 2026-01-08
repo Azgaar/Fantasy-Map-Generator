@@ -187,10 +187,26 @@ window.Resample = (function () {
 
     function getBurgCoordinates(burg, closestCell, cell, xp, yp) {
       const haven = pack.cells.haven[cell];
-      if (burg.port && haven) return BurgsAndStates.getCloseToEdgePoint(cell, haven);
+      if (burg.port && haven) return getCloseToEdgePoint(cell, haven);
 
       if (closestCell !== cell) return pack.cells.p[cell];
       return [rn(xp, 2), rn(yp, 2)];
+    }
+
+    function getCloseToEdgePoint(cell1, cell2) {
+      const {cells, vertices} = pack;
+
+      const [x0, y0] = cells.p[cell1];
+      const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
+      const [x1, y1] = vertices.p[commonVertices[0]];
+      const [x2, y2] = vertices.p[commonVertices[1]];
+      const xEdge = (x1 + x2) / 2;
+      const yEdge = (y1 + y2) / 2;
+
+      const x = rn(x0 + 0.95 * (xEdge - x0), 2);
+      const y = rn(y0 + 0.95 * (yEdge - y0), 2);
+
+      return [x, y];
     }
   }
 
@@ -202,7 +218,7 @@ window.Resample = (function () {
       return {...state, removed: true, lock: false};
     });
 
-    BurgsAndStates.getPoles();
+    States.getPoles();
     const regimentCellsMap = {};
     const VERTICAL_GAP = 8;
 
