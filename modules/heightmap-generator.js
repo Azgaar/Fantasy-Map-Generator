@@ -106,7 +106,7 @@ window.HeightmapGenerator = (function () {
     return blobPowerMap[cells] || 0.98;
   }
 
-  function getLinePower() {
+  function getLinePower(cells) {
     const linePowerMap = {
       1000: 0.75,
       2000: 0.77,
