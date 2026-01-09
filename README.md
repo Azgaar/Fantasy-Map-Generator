@@ -1,6 +1,6 @@
 # Azgaar Fantasy Map Generator - Enhanced Fork
 
-# Note: I use AI to assist with my writing due to mild dyslexia and parkinson's. The ideas and I would say 50% of the code are mine; the formatting is assisted.
+# Note: I use AI to assist with my writing due to mild dyslexia and other issues. The ideas and I would say 50% of the code are mine; the formatting is assisted.
 
 
 This is a personal fork of [Azgaar's Fantasy Map Generator](https://github.com/Azgaar/Fantasy-Map-Generator) with custom enhancements for D&D campaign management.
@@ -106,4 +106,5 @@ _Inspiration:_
 - Amit Patel's [_Polygonal Map Generation for Games_](http://www-cs-students.stanford.edu/~amitp/game-programming/polygon-map-generation)
 
 - Scott Turner's [_Here Dragons Abound_](https://heredragonsabound.blogspot.com)
+
 
