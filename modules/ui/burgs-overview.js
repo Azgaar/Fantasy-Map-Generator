@@ -28,6 +28,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   byId("burgsChart").addEventListener("click", showBurgsChart);
   byId("burgsFilterState").addEventListener("change", burgsOverviewAddLines);
   byId("burgsFilterCulture").addEventListener("change", burgsOverviewAddLines);
+  byId("burgsSearch").addEventListener("input", burgsOverviewAddLines);
   byId("regenerateBurgNames").addEventListener("click", regenerateNames);
   byId("addNewBurg").addEventListener("click", enterAddBurgMode);
   byId("burgsExport").addEventListener("click", downloadBurgsData);
@@ -65,9 +66,22 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   function burgsOverviewAddLines() {
     const selectedStateId = +byId("burgsFilterState").value;
     const selectedCultureId = +byId("burgsFilterCulture").value;
+    const searchText = (byId("burgsSearch").value || "").toLowerCase().trim();
     let filtered = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
     if (selectedStateId !== -1) filtered = filtered.filter(b => b.state === selectedStateId); // filtered by state
     if (selectedCultureId !== -1) filtered = filtered.filter(b => b.culture === selectedCultureId); // filtered by culture
+    
+    // filter by search text
+    if (searchText) {
+      filtered = filtered.filter(b => {
+        const name = (b.name || "").toLowerCase();
+        const state = (pack.states[b.state]?.name || "").toLowerCase();
+        const prov = pack.cells.province[b.cell];
+        const province = prov ? (pack.provinces[prov]?.name || "").toLowerCase() : "";
+        const culture = (pack.cultures[b.culture]?.name || "").toLowerCase();
+        return name.includes(searchText) || state.includes(searchText) || province.includes(searchText) || culture.includes(searchText);
+      });
+    }
 
     body.innerHTML = "";
     let lines = "";

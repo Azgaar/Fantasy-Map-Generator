@@ -26,14 +26,28 @@ function overviewRivers() {
   document.getElementById("riversBasinHighlight").addEventListener("click", toggleBasinsHightlight);
   document.getElementById("riversExport").addEventListener("click", downloadRiversData);
   document.getElementById("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
+  document.getElementById("riversSearch").addEventListener("input", riversOverviewAddLines);
 
   // add line for each river
   function riversOverviewAddLines() {
     body.innerHTML = "";
     let lines = "";
     const unit = distanceUnitInput.value;
+    const searchText = (document.getElementById("riversSearch").value || "").toLowerCase().trim();
+    let filteredRivers = pack.rivers;
 
-    for (const r of pack.rivers) {
+    // filter by search text
+    if (searchText) {
+      filteredRivers = filteredRivers.filter(r => {
+        const name = (r.name || "").toLowerCase();
+        const type = (r.type || "").toLowerCase();
+        const basin = pack.rivers.find(river => river.i === r.basin);
+        const basinName = basin ? (basin.name || "").toLowerCase() : "";
+        return name.includes(searchText) || type.includes(searchText) || basinName.includes(searchText);
+      });
+    }
+
+    for (const r of filteredRivers) {
       const discharge = r.discharge + " m³/s";
       const length = rn(r.length * distanceScale) + " " + unit;
       const width = rn(r.width * distanceScale, 3) + " " + unit;
@@ -63,12 +77,12 @@ function overviewRivers() {
     body.insertAdjacentHTML("beforeend", lines);
 
     // update footer
-    riversFooterNumber.innerHTML = pack.rivers.length;
-    const averageDischarge = rn(d3.mean(pack.rivers.map(r => r.discharge)));
+    riversFooterNumber.innerHTML = filteredRivers.length;
+    const averageDischarge = rn(d3.mean(filteredRivers.map(r => r.discharge)));
     riversFooterDischarge.innerHTML = averageDischarge + " m³/s";
-    const averageLength = rn(d3.mean(pack.rivers.map(r => r.length)));
+    const averageLength = rn(d3.mean(filteredRivers.map(r => r.length)));
     riversFooterLength.innerHTML = averageLength * distanceScale + " " + unit;
-    const averageWidth = rn(d3.mean(pack.rivers.map(r => r.width)), 3);
+    const averageWidth = rn(d3.mean(filteredRivers.map(r => r.width)), 3);
     riversFooterWidth.innerHTML = rn(averageWidth * distanceScale, 3) + " " + unit;
 
     // add listeners

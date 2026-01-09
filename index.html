@@ -5369,12 +5369,22 @@
 
         <div id="burgsBody" class="table"></div>
 
-        <div id="burgsFilters" data-tip="Apply a filter" style="padding-block: 0.1em">
-          <label for="burgsFilterState">State:</label>
-          <select id="burgsFilterState" style="width: 28%"></select>
+        <div
+          id="burgsFilters"
+          data-tip="Apply a filter"
+          style="padding-block: 0.1em; display: flex; gap: 0.5em; width: 100%"
+        >
+          <label for="burgsSearch">Search: <input id="burgsSearch" type="search" /></label>
 
-          <label for="burgsFilterCulture">Culture:</label>
-          <select id="burgsFilterCulture" style="width: 28%"></select>
+          <label for="burgsFilterState"
+            >State:
+            <select id="burgsFilterState"></select
+          ></label>
+
+          <label for="burgsFilterCulture"
+            >Culture:
+            <select id="burgsFilterCulture"></select
+          ></label>
         </div>
 
         <div id="burgsFooter" class="totalLine">
@@ -5456,6 +5466,10 @@
           </div>
         </div>
 
+        <div style="padding: 0.3em 0.5em">
+          <input id="routesSearch" type="text" placeholder="Search by name or group..." style="width: 100%" />
+        </div>
+
         <div id="routesBody" class="table"></div>
 
         <div id="routesFooter" class="totalLine">
@@ -5504,6 +5518,10 @@
           <div data-tip="Click to sort by river basin" class="sortable alphabetically" data-sortby="basin">
             Basin&nbsp;
           </div>
+        </div>
+
+        <div style="padding: 0.3em 0.5em">
+          <input id="riversSearch" type="text" placeholder="Search by name, type, or basin..." style="width: 100%" />
         </div>
 
         <div id="riversBody" class="table"></div>
@@ -5703,6 +5721,10 @@
             data-tip="Click to invert lock state for all markers"
             class="icon-lock pointer"
           ></div>
+        </div>
+
+        <div style="padding: 0.3em 0.5em">
+          <input id="markersSearch" type="text" placeholder="Search by type..." style="width: 100%" />
         </div>
 
         <div id="markersBody" class="table"></div>

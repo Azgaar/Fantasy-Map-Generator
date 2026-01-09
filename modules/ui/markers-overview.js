@@ -27,6 +27,8 @@ function overviewMarkers() {
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
+  const markersSearch = document.getElementById("markersSearch");
+  
   const listeners = [
     listen(body, "click", handleLineClick),
     listen(markersInverPin, "click", invertPin),
@@ -36,7 +38,8 @@ function overviewMarkers() {
     listen(markersGenerationConfig, "click", configMarkersGeneration),
     listen(markersRemoveAll, "click", triggerRemoveAll),
     listen(markersExport, "click", exportMarkers),
-    listen(markerTypeSelector, "click", toggleMarkerTypeMenu)
+    listen(markerTypeSelector, "click", toggleMarkerTypeMenu),
+    listen(markersSearch, "input", addLines)
   ];
 
   const types = [{type: "empty", icon: "❓"}, ...Markers.getConfig()];
@@ -67,7 +70,19 @@ function overviewMarkers() {
   }
 
   function addLines() {
-    const lines = pack.markers
+    const searchInput = document.getElementById("markersSearch");
+    const searchText = (searchInput?.value || "").toLowerCase().trim();
+    let markers = pack.markers;
+    
+    // filter by search text
+    if (searchText) {
+      markers = markers.filter(marker => {
+        const type = (marker.type || "").toLowerCase();
+        return type.includes(searchText);
+      });
+    }
+    
+    const lines = markers
       .map(({i, type, icon, pinned, lock}) => {
         return /* html */ `
           <div class="states" data-i=${i} data-type="${type}">
@@ -91,7 +106,7 @@ function overviewMarkers() {
       .join("");
 
     body.innerHTML = lines;
-    markersFooterNumber.innerText = pack.markers.length;
+    markersFooterNumber.innerText = markers.length;
 
     applySorting(markersHeader);
   }
