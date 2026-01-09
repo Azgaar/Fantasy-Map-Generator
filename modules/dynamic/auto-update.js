@@ -977,48 +977,39 @@ export function resolveVersionConflicts(mapVersion) {
     // v1.109.0 added customizable burg groups and icons
     options.burgs = {groups: []};
 
-    // default groups were 'cities' and 'towns'
-    const iconGroups = burgIcons.selectAll("g");
-    const citiesGroup = burgIcons.select("#cities");
-    const townsGroup = burgIcons.select("#towns");
-    if (!iconGroups.size() || (iconGroups.size() === 2 && citiesGroup.size() && townsGroup.size())) {
-      // it looks the loaded map has old default groups
-      options.burgs.groups = Burgs.getDefaultGroups();
-    } else {
-      burgIcons.selectAll("circle, use").each(function () {
-        const group = this.parentNode.id;
-        const id = this.id.replace(/^burg/, "");
-        const burg = pack.burgs[id];
-        if (group && burg) burg.group = group;
-      });
+    burgIcons.selectAll("circle, use").each(function () {
+      const group = this.parentNode.id;
+      const id = this.id.replace(/^burg/, "");
+      const burg = pack.burgs[id];
+      if (group && burg) burg.group = group;
+    });
 
-      burgIcons.selectAll("g").each(function (_el, index) {
-        const name = this.id;
-        const isDefault = name === "towns";
-        options.burgs.groups.push({name, active: true, order: index + 1, isDefault, preview: "watabou-city"});
-        if (!this.dataset.icon) this.dataset.icon = "#icon-circle";
+    burgIcons.selectAll("g").each(function (_el, index) {
+      const name = this.id;
+      const isDefault = name === "towns";
+      options.burgs.groups.push({name, active: true, order: index + 1, isDefault, preview: "watabou-city"});
+      if (!this.dataset.icon) this.dataset.icon = "#icon-circle";
 
-        const size = Number(this.getAttribute("size") || 2) * 2;
-        this.removeAttribute("size");
-        this.setAttribute("font-size", size);
+      const size = Number(this.getAttribute("size") || 2) * 2;
+      this.removeAttribute("size");
+      this.setAttribute("font-size", size);
 
-        this.setAttribute("stroke-width", 1);
-      });
+      this.setAttribute("stroke-width", 1);
+    });
 
-      if (options.burgs.groups.filter(g => g.isDefault).length === 0) {
-        options.burgs.groups[0].isDefault = true;
-      }
-
-      anchors.selectAll("g").each(function () {
-        const size = Number(this.getAttribute("size") || 1);
-        this.removeAttribute("size");
-        this.setAttribute("font-size", size);
-      });
-
-      burgLabels.selectAll("g").each(function () {
-        if (!this.dataset.dy) this.dataset.dy = -0.4;
-      });
+    if (options.burgs.groups.filter(g => g.isDefault).length === 0) {
+      options.burgs.groups[0].isDefault = true;
     }
+
+    anchors.selectAll("g").each(function () {
+      const size = Number(this.getAttribute("size") || 1);
+      this.removeAttribute("size");
+      this.setAttribute("font-size", size);
+    });
+
+    burgLabels.selectAll("g").each(function () {
+      if (!this.dataset.dy) this.dataset.dy = -0.4;
+    });
 
     const anchorSymbol = byId("icon-anchor");
     if (anchorSymbol) {

@@ -31,11 +31,13 @@ function drawBurgIcons() {
 }
 
 function drawBurgIcon(burg) {
-  removeBurgIcon(burg.i);
-
   const iconGroup = burgIcons.select("#" + burg.group);
-  if (iconGroup.empty()) return;
+  if (iconGroup.empty()) {
+    drawBurgIcons();
+    return; // redraw all icons if group is missing
+  }
 
+  removeBurgIcon(burg.i);
   const icon = iconGroup.attr("data-icon") || "#icon-circle";
   burgIcons
     .select("#" + burg.group)

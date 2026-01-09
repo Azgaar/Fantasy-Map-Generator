@@ -33,13 +33,16 @@ function drawBurgLabels() {
 }
 
 function drawBurgLabel(burg) {
-  removeBurgLabel(burg.i);
-
   const labelGroup = burgLabels.select("#" + burg.group);
-  if (labelGroup.empty()) return;
+  if (labelGroup.empty()) {
+    drawBurgLabels();
+    return; // redraw all labels if group is missing
+  }
+
   const dx = labelGroup.attr("data-dx") || 0;
   const dy = labelGroup.attr("data-dy") || 0;
 
+  removeBurgLabel(burg.i);
   labelGroup
     .append("text")
     .attr("text-rendering", "optimizeSpeed")
