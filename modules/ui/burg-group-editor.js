@@ -13,7 +13,7 @@ function editBurgGroups() {
         byId("burgGroupsForm").requestSubmit();
       },
       Add: () => {
-        byId("burgGroupsBody").innerHTML += createLine({name: "", active: true, preview: null});
+        byId("burgGroupsBody").insertAdjacentHTML("beforeend", createLine({name: "", active: true, preview: null}));
       },
       Restore: () => {
         options.burgs.groups = Burgs.getDefaultGroups();
@@ -69,9 +69,9 @@ function editBurgGroups() {
           <option value="watabou-dwelling" ${group.preview === "watabou-dwelling" ? "selected" : ""}>Watabou Dwelling</option>
         </select>
       </td>
-      <td data-tip="Set min population constraint"><input type="number" name="min" min="0" step="any" value="${group.min || ''}" /></td>
-      <td data-tip="Set max population constraint"><input type="number" name="max" min="0" step="any" value="${group.max || ''}" /></td>
-      <td data-tip="Set population percentile"><input type="number" name="percentile" min="0" max="100" step="any" value="${group.percentile || ''}" /></td>
+      <td data-tip="Set min population constraint in population points (see the multiplier in Units Editor)"><input type="number" name="min" min="0" step="any" value="${group.min || ''}" /></td>
+      <td data-tip="Set max population constraint in population points (see the multiplier in Units Editor)"><input type="number" name="max" min="0" step="any" value="${group.max || ''}" /></td>
+      <td data-tip="Set population percentile: 0-100, where 90 means the burg must have a population higher than 90% of all burgs"><input type="number" name="percentile" min="0" max="100" step="any" value="${group.percentile || ''}" /></td>
       <td data-tip="Select allowed biomes">
         <input type="hidden" name="biomes" value="${group.biomes || ""}">
         <button type="button" name="biomes">${group.biomes ? "some" : "all"}</button>

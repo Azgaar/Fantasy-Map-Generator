@@ -399,8 +399,8 @@ window.Burgs = (() => {
       const [x2, y2] = cells.p[cells.haven[cell]];
       const deg = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
 
-      if (deg <= 0) return normalize(Math.abs(deg), 0, 180);
-      return 2 - normalize(deg, 0, 180);
+      if (deg <= 0) return rn(normalize(Math.abs(deg), 0, 180), 2);
+      return rn(2 - normalize(deg, 0, 180), 2);
     })();
 
     const arableBiomes = river ? [1, 2, 3, 4, 5, 6, 7, 8] : [5, 6, 7, 8];
