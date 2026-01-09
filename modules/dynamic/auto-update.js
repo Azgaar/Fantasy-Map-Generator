@@ -1033,7 +1033,7 @@ export function resolveVersionConflicts(mapVersion) {
       if (!burg.group) Burgs.defineGroup(burg, populations);
 
       if (burg.MFCG) {
-        burg.link = getBurgLink(burg);
+        burg.link = Burgs.getPreview(burg)?.link;
         delete burg.MFCG;
       }
     });
