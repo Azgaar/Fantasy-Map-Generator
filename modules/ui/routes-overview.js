@@ -25,16 +25,16 @@ function overviewRoutes() {
   byId("routesExport").on("click", downloadRoutesData);
   byId("routesLockAll").on("click", toggleLockAll);
   byId("routesRemoveAll").on("click", triggerAllRoutesRemove);
-  byId("routesSearch").addEventListener("input", routesOverviewAddLines);
+  byId("routesSearch").on("input", routesOverviewAddLines);
 
   // add line for each route
   function routesOverviewAddLines() {
     body.innerHTML = "";
     let lines = "";
-    const searchText = (byId("routesSearch").value || "").toLowerCase().trim();
+
     let filteredRoutes = pack.routes;
 
-    // filter by search text
+    const searchText = byId("routesSearch").value.toLowerCase().trim();
     if (searchText) {
       filteredRoutes = filteredRoutes.filter(route => {
         const name = (route.name || "").toLowerCase();
@@ -70,8 +70,8 @@ function overviewRoutes() {
     body.insertAdjacentHTML("beforeend", lines);
 
     // update footer
-    routesFooterNumber.innerHTML = filteredRoutes.length;
-    const averageLength = rn(d3.mean(filteredRoutes.map(r => r.length)) || 0);
+    routesFooterNumber.innerHTML = `${filteredRoutes.length} of ${pack.routes.length}`;
+    const averageLength = rn(d3.mean(filteredRoutes.map(r => r.length)) || 0) || 0;
     routesFooterLength.innerHTML = averageLength * distanceScale + " " + distanceUnitInput.value;
 
     // add listeners
@@ -79,7 +79,7 @@ function overviewRoutes() {
     body.querySelectorAll("div.states").forEach(el => el.on("mouseleave", routeHighlightOff));
     body.querySelectorAll("div > span.icon-dot-circled").forEach(el => el.on("click", zoomToRoute));
     body.querySelectorAll("div > span.icon-pencil").forEach(el => el.on("click", openRouteEditor));
-    body.querySelectorAll("div > span.locks").forEach(el => el.addEventListener("click", toggleLockStatus));
+    body.querySelectorAll("div > span.locks").forEach(el => el.on("click", toggleLockStatus));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", triggerRouteRemove));
 
     applySorting(routesHeader);

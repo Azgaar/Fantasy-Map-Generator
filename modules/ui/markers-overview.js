@@ -4,18 +4,19 @@ function overviewMarkers() {
   closeDialogs("#markersOverview, .stable");
   if (!layerIsOn("toggleMarkers")) toggleMarkers();
 
-  const markerGroup = document.getElementById("markers");
-  const body = document.getElementById("markersBody");
-  const markersInverPin = document.getElementById("markersInverPin");
-  const markersInverLock = document.getElementById("markersInverLock");
-  const markersFooterNumber = document.getElementById("markersFooterNumber");
-  const markersOverviewRefresh = document.getElementById("markersOverviewRefresh");
-  const markersAddFromOverview = document.getElementById("markersAddFromOverview");
-  const markersGenerationConfig = document.getElementById("markersGenerationConfig");
-  const markersRemoveAll = document.getElementById("markersRemoveAll");
-  const markersExport = document.getElementById("markersExport");
-  const markerTypeInput = document.getElementById("addedMarkerType");
-  const markerTypeSelector = document.getElementById("markerTypeSelector");
+  const markerGroup = byId("markers");
+  const body = byId("markersBody");
+  const markersInverPin = byId("markersInverPin");
+  const markersInverLock = byId("markersInverLock");
+  const markersFooterNumber = byId("markersFooterNumber");
+  const markersOverviewRefresh = byId("markersOverviewRefresh");
+  const markersAddFromOverview = byId("markersAddFromOverview");
+  const markersGenerationConfig = byId("markersGenerationConfig");
+  const markersRemoveAll = byId("markersRemoveAll");
+  const markersExport = byId("markersExport");
+  const markerTypeInput = byId("addedMarkerType");
+  const markerTypeSelector = byId("markerTypeSelector");
+  const markersSearch = byId("markersSearch");
 
   addLines();
 
@@ -27,8 +28,6 @@ function overviewMarkers() {
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
-  const markersSearch = document.getElementById("markersSearch");
-  
   const listeners = [
     listen(body, "click", handleLineClick),
     listen(markersInverPin, "click", invertPin),
@@ -70,18 +69,16 @@ function overviewMarkers() {
   }
 
   function addLines() {
-    const searchInput = document.getElementById("markersSearch");
-    const searchText = (searchInput?.value || "").toLowerCase().trim();
     let markers = pack.markers;
-    
-    // filter by search text
+
+    const searchText = byId("markersSearch").value.toLowerCase().trim();
     if (searchText) {
       markers = markers.filter(marker => {
         const type = (marker.type || "").toLowerCase();
         return type.includes(searchText);
       });
     }
-    
+
     const lines = markers
       .map(({i, type, icon, pinned, lock}) => {
         return /* html */ `
@@ -107,6 +104,7 @@ function overviewMarkers() {
 
     body.innerHTML = lines;
     markersFooterNumber.innerText = markers.length;
+    markersFooterTotal.innerText = pack.markers.length;
 
     applySorting(markersHeader);
   }
@@ -142,7 +140,7 @@ function overviewMarkers() {
   }
 
   function focusOnMarker(i) {
-    highlightElement(document.getElementById(`marker${i}`), 2);
+    highlightElement(byId(`marker${i}`), 2);
   }
 
   function pinMarker(el, i) {
@@ -180,7 +178,7 @@ function overviewMarkers() {
   }
 
   function toggleMarkerTypeMenu() {
-    document.getElementById("markerTypeSelectMenu").classList.toggle("visible");
+    byId("markerTypeSelectMenu").classList.toggle("visible");
   }
 
   function toggleAddMarker() {
@@ -197,7 +195,7 @@ function overviewMarkers() {
   function removeMarker(i) {
     notes = notes.filter(note => note.id !== `marker${i}`);
     pack.markers = pack.markers.filter(marker => marker.i !== i);
-    document.getElementById(`marker${i}`)?.remove();
+    byId(`marker${i}`)?.remove();
     addLines();
   }
 
@@ -215,7 +213,7 @@ function overviewMarkers() {
       if (lock) return true;
 
       const id = `marker${i}`;
-      document.getElementById(id)?.remove();
+      byId(id)?.remove();
       notes = notes.filter(note => note.id !== id);
       return false;
     });

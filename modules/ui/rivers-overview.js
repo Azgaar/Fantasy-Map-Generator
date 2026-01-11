@@ -5,7 +5,7 @@ function overviewRivers() {
   closeDialogs("#riversOverview, .stable");
   if (!layerIsOn("toggleRivers")) toggleRivers();
 
-  const body = document.getElementById("riversBody");
+  const body = byId("riversBody");
   riversOverviewAddLines();
   $("#riversOverview").dialog();
 
@@ -20,23 +20,22 @@ function overviewRivers() {
   });
 
   // add listeners
-  document.getElementById("riversOverviewRefresh").addEventListener("click", riversOverviewAddLines);
-  document.getElementById("addNewRiver").addEventListener("click", toggleAddRiver);
-  document.getElementById("riverCreateNew").addEventListener("click", createRiver);
-  document.getElementById("riversBasinHighlight").addEventListener("click", toggleBasinsHightlight);
-  document.getElementById("riversExport").addEventListener("click", downloadRiversData);
-  document.getElementById("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
-  document.getElementById("riversSearch").addEventListener("input", riversOverviewAddLines);
+  byId("riversOverviewRefresh").on("click", riversOverviewAddLines);
+  byId("addNewRiver").on("click", toggleAddRiver);
+  byId("riverCreateNew").on("click", createRiver);
+  byId("riversBasinHighlight").on("click", toggleBasinsHightlight);
+  byId("riversExport").on("click", downloadRiversData);
+  byId("riversRemoveAll").on("click", triggerAllRiversRemove);
+  byId("riversSearch").on("input", riversOverviewAddLines);
 
   // add line for each river
   function riversOverviewAddLines() {
     body.innerHTML = "";
     let lines = "";
     const unit = distanceUnitInput.value;
-    const searchText = (document.getElementById("riversSearch").value || "").toLowerCase().trim();
-    let filteredRivers = pack.rivers;
 
-    // filter by search text
+    let filteredRivers = pack.rivers;
+    const searchText = byId("riversSearch").value.toLowerCase().trim();
     if (searchText) {
       filteredRivers = filteredRivers.filter(r => {
         const name = (r.name || "").toLowerCase();
@@ -77,22 +76,20 @@ function overviewRivers() {
     body.insertAdjacentHTML("beforeend", lines);
 
     // update footer
-    riversFooterNumber.innerHTML = filteredRivers.length;
-    const averageDischarge = rn(d3.mean(filteredRivers.map(r => r.discharge)));
+    riversFooterNumber.innerHTML = `${filteredRivers.length} of ${pack.rivers.length}`;
+    const averageDischarge = rn(d3.mean(filteredRivers.map(r => r.discharge))) || 0;
     riversFooterDischarge.innerHTML = averageDischarge + " m³/s";
-    const averageLength = rn(d3.mean(filteredRivers.map(r => r.length)));
+    const averageLength = rn(d3.mean(filteredRivers.map(r => r.length))) || 0;
     riversFooterLength.innerHTML = averageLength * distanceScale + " " + unit;
-    const averageWidth = rn(d3.mean(filteredRivers.map(r => r.width)), 3);
+    const averageWidth = rn(d3.mean(filteredRivers.map(r => r.width)), 3) || 0;
     riversFooterWidth.innerHTML = rn(averageWidth * distanceScale, 3) + " " + unit;
 
     // add listeners
-    body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => riverHighlightOn(ev)));
-    body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => riverHighlightOff(ev)));
-    body.querySelectorAll("div > span.icon-dot-circled").forEach(el => el.addEventListener("click", zoomToRiver));
-    body.querySelectorAll("div > span.icon-pencil").forEach(el => el.addEventListener("click", openRiverEditor));
-    body
-      .querySelectorAll("div > span.icon-trash-empty")
-      .forEach(el => el.addEventListener("click", triggerRiverRemove));
+    body.querySelectorAll("div.states").forEach(el => el.on("mouseenter", ev => riverHighlightOn(ev)));
+    body.querySelectorAll("div.states").forEach(el => el.on("mouseleave", ev => riverHighlightOff(ev)));
+    body.querySelectorAll("div > span.icon-dot-circled").forEach(el => el.on("click", zoomToRiver));
+    body.querySelectorAll("div > span.icon-pencil").forEach(el => el.on("click", openRiverEditor));
+    body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", triggerRiverRemove));
 
     applySorting(riversHeader);
   }
