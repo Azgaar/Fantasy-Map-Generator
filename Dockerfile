@@ -22,5 +22,5 @@ FROM nginx:stable-alpine
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Move the customized nginx config file to the nginx folder
-RUN mv /usr/share/nginx/html/.docker/default.conf /etc/nginx/conf.d/default.conf
+# Copy the customized nginx config file to the nginx folder
+COPY .docker/default.conf /etc/nginx/conf.d/default.conf
