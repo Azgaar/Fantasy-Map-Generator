@@ -420,42 +420,31 @@ function toggleIce(event) {
 function drawIce() {
   TIME && console.time("drawIce");
 
-  const {cells, features} = grid;
-  const {temp, h} = cells;
-  Math.random = aleaPRNG(seed);
+  // Clear existing ice SVG
+  ice.selectAll("*").remove();
 
-  const ICEBERG_MAX_TEMP = 0;
-  const GLACIER_MAX_TEMP = -8;
-  const minMaxTemp = d3.min(temp);
+  // Draw glaciers
+  pack.ice.glaciers.forEach((glacier, index) => {
+    ice
+      .append("polygon")
+      .attr("points", glacier.points)
+      .attr("type", "iceShield")
+      .attr("data-index", index)
+      .attr("class", "glacier")
+      .attr("transform", glacier.offset ? `translate(${glacier.offset[0]},${glacier.offset[1]})` : null);
+  });
 
-  // cold land: draw glaciers
-  {
-    const type = "iceShield";
-    const getType = cellId => (h[cellId] >= 20 && temp[cellId] <= GLACIER_MAX_TEMP ? type : null);
-    const isolines = getIsolines(grid, getType, {polygons: true});
-    isolines[type]?.polygons?.forEach(points => {
-      const clipped = clipPoly(points);
-      ice.append("polygon").attr("points", clipped).attr("type", type);
-    });
-  }
-
-  // cold water: draw icebergs
-  for (const cellId of grid.cells.i) {
-    const t = temp[cellId];
-    if (h[cellId] >= 20) continue; // no icebergs on land
-    if (t > ICEBERG_MAX_TEMP) continue; // too warm: no icebergs
-    if (features[cells.f[cellId]].type === "lake") continue; // no icebers on lakes
-    if (P(0.8)) continue; // skip most of eligible cells
-
-    const randomFactor = 0.8 + rand() * 0.4; // random size factor
-    let baseSize = (1 - normalize(t, minMaxTemp, 1)) * 0.8; // size: 0 = zero size, 1 = full size
-    if (cells.t[cellId] === -1) baseSize /= 1.3; // coasline: smaller icebergs
-    const size = minmax(rn(baseSize * randomFactor, 2), 0.1, 1);
-
-    const [cx, cy] = grid.points[cellId];
-    const points = getGridPolygon(cellId).map(([x, y]) => [rn(lerp(cx, x, size), 2), rn(lerp(cy, y, size), 2)]);
-    ice.append("polygon").attr("points", points).attr("cell", cellId).attr("size", size);
-  }
+  // Draw icebergs
+  pack.ice.icebergs.forEach((iceberg, index) => {
+    ice
+      .append("polygon")
+      .attr("points", iceberg.points)
+      .attr("cell", iceberg.cellId)
+      .attr("size", iceberg.size)
+      .attr("data-index", index)
+      .attr("class", "iceberg")
+      .attr("transform", iceberg.offset ? `translate(${iceberg.offset[0]},${iceberg.offset[1]})` : null);
+  });
 
   TIME && console.timeEnd("drawIce");
 }

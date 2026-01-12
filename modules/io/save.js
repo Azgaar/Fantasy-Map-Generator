@@ -102,6 +102,7 @@ function prepareMapData() {
   const cellRoutes = JSON.stringify(pack.cells.routes);
   const routes = JSON.stringify(pack.routes);
   const zones = JSON.stringify(pack.zones);
+  const ice = JSON.stringify(pack.ice);
 
   // store name array only if not the same as default
   const defaultNB = Names.getNameBases();
@@ -155,7 +156,8 @@ function prepareMapData() {
     markers,
     cellRoutes,
     routes,
-    zones
+    zones,
+    ice
   ].join("\r\n");
   return mapData;
 }
