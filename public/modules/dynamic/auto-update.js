@@ -1036,4 +1036,69 @@ export function resolveVersionConflicts(mapVersion) {
     delete options.showMFCGMap;
     delete options.villageMaxPopulation;
   }
+
+  if (isOlderThan("1.110.0")) {
+    // v1.110.0 moved ice data from SVG to data model
+    // Migrate old ice SVG elements to new pack.ice structure
+    if (!pack.ice) pack.ice = { glaciers: [], icebergs: [] };
+
+    const iceLayer = document.getElementById("ice");
+    if (iceLayer) {
+      // Migrate glaciers (type="iceShield")
+      iceLayer.querySelectorAll("polygon[type='iceShield']").forEach(polygon => {
+        const pointsStr = polygon.getAttribute("points");
+        if (!pointsStr) return;
+
+        // Parse points string "x1,y1 x2,y2 x3,y3 ..." into array [[x1,y1], [x2,y2], ...]
+        const points = pointsStr
+          .split(" ")
+          .map(pair => pair.split(",").map(Number));
+
+        const transform = polygon.getAttribute("transform");
+        const offset = transform ? parseTransform(transform) : null;
+        pack.ice.glaciers.push({
+          points,
+          offset
+        });
+      });
+
+      // Migrate icebergs
+      iceLayer.querySelectorAll("polygon:not([type])").forEach(polygon => {
+        const pointsStr = polygon.getAttribute("points");
+        const cellId = +polygon.getAttribute("cell");
+        const size = +polygon.getAttribute("size");
+
+        if (!pointsStr || !cellId || !size) return;
+
+        // Parse points string "x1,y1 x2,y2 x3,y3 ..." into array [[x1,y1], [x2,y2], ...]
+        const points = pointsStr
+          .split(" ")
+          .map(pair => pair.split(",").map(Number));
+
+        const transform = polygon.getAttribute("transform");
+        const offset = transform ? parseTransform(transform) : null;
+        pack.ice.icebergs.push({
+          cellId,
+          size,
+          points,
+          offset
+        });
+      });
+
+      // Clear old SVG elements - use d3 selection
+      d3.select(iceLayer).selectAll("*").remove();
+    } else {
+      // If ice layer element doesn't exist, create it
+      ice = viewbox.insert("g", "#coastline").attr("id", "ice");
+      ice
+        .attr("opacity", null)
+        .attr("fill", "#e8f0f6")
+        .attr("stroke", "#e8f0f6")
+        .attr("stroke-width", 1)
+        .attr("filter", "url(#dropShadow05)");
+    }
+
+    // Re-render ice from migrated data
+    if (layerIsOn("toggleIce")) drawIce();
+  }
 }

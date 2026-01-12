@@ -14,6 +14,7 @@ function drawIce() {
       .attr("points", glacier.points)
       .attr("type", "iceShield")
       .attr("data-index", index)
+      .attr("transform", glacier.offset ? `translate(${glacier.offset[0]},${glacier.offset[1]})` : null)
       .attr("class", "glacier");
   });
 
@@ -25,6 +26,7 @@ function drawIce() {
       .attr("cell", iceberg.cellId)
       .attr("size", iceberg.size)
       .attr("data-index", index)
+      .attr("transform", iceberg.offset ? `translate(${iceberg.offset[0]},${iceberg.offset[1]})` : null)
       .attr("class", "iceberg");
   });
 
