@@ -406,6 +406,7 @@ async function parseLoadedData(data, mapVersion) {
       pack.cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(pack.cells.i.length);
       // data[28] had deprecated cells.crossroad
       pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
+      pack.ice = data[39] ? JSON.parse(data[39]) : {glaciers: [], icebergs: []};
 
       if (data[31]) {
         const namesDL = data[31].split("/");
@@ -449,7 +450,11 @@ async function parseLoadedData(data, mapVersion) {
       if (isVisible(routes) && hasChild(routes, "path")) turnOn("toggleRoutes");
       if (hasChildren(temperature)) turnOn("toggleTemperature");
       if (hasChild(population, "line")) turnOn("togglePopulation");
-      if (hasChildren(ice)) turnOn("toggleIce");
+      if (pack.ice?.glaciers?.length || pack.ice?.icebergs?.length) {
+        ice.selectAll("*").remove(); // clear old SVG
+        drawIce(); // re-render ice from data
+        turnOn("toggleIce");
+      }
       if (hasChild(prec, "circle")) turnOn("togglePrecipitation");
       if (isVisible(emblems) && hasChild(emblems, "use")) turnOn("toggleEmblems");
       if (isVisible(labels)) turnOn("toggleLabels");
