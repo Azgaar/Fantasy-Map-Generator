@@ -12,7 +12,6 @@
   },
   "license": "MIT",
   "author": "Azgaar",
-  "type": "module",
   "main": "main.js",
   "scripts": {
     "dev": "vite",
