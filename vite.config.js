@@ -4,5 +4,5 @@ export default {
         outDir: '../dist',
         assetsDir: './',
     },
-    publicDir: '../src',
+    publicDir: '../public',
 }
