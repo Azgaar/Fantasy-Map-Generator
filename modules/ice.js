@@ -12,6 +12,7 @@ window.Ice = (function () {
 
   // Generate glaciers and icebergs based on temperature and height
   function generate() {
+    clear();
     const {cells, features} = grid;
     const {temp, h} = cells;
     Math.random = aleaPRNG(seed);
@@ -31,8 +32,7 @@ window.Ice = (function () {
         isolines[type].polygons.forEach(points => {
           const clipped = clipPoly(points);
           pack.ice.glaciers.push({
-            points: clipped,
-            offset: null
+            points: clipped
           });
         });
       }
