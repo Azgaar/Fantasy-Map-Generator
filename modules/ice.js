@@ -65,33 +65,41 @@ window.Ice = (function () {
     }
   }
 
-  // Add a new iceberg (manual editing)
   function addIceberg(cellId, size) {
     const [cx, cy] = grid.points[cellId];
     const points = getGridPolygon(cellId).map(([x, y]) => [
       rn(lerp(cx, x, size), 2),
       rn(lerp(cy, y, size), 2)
     ]);
-
-    pack.ice.icebergs.push({
-      cellId,
-      size,
-      points
-    });
-
-    return pack.ice.icebergs.length - 1; // return index
-  }
-
-  // Remove ice element by index
-  function removeIce(type, index) {
-    if (type === "glacier" && pack.ice.glaciers[index]) {
-      pack.ice.glaciers.splice(index, 1);
-    } else if (type === "iceberg" && pack.ice.icebergs[index]) {
-      pack.ice.icebergs.splice(index, 1);
+    //here we use the lose equality to find the first undefined or empty or null slot
+    const nextIndex = pack.ice.icebergs.findIndex(iceberg => iceberg == undefined);
+    if (nextIndex !== -1) {
+      pack.ice.icebergs[nextIndex] = {
+        cellId,
+        size,
+        points
+      };
+      redrawIceberg(nextIndex);
+    } else {
+      pack.ice.icebergs.push({
+        cellId,
+        size,
+        points
+      });
+      redrawIceberg(pack.ice.icebergs.length - 1);
     }
   }
 
-  // Update iceberg points and size
+  function removeIce(type, index) {
+    if (type === "glacier" && pack.ice.glaciers[index]) {
+      delete pack.ice.glaciers[index];
+      redrawGlacier(index);
+    } else if (type === "iceberg" && pack.ice.icebergs[index]) {
+      delete pack.ice.icebergs[index];
+      redrawIceberg(index);
+    }
+  }
+
   function updateIceberg(index, points, size) {
     if (pack.ice.icebergs[index]) {
       pack.ice.icebergs[index].points = points;
@@ -99,7 +107,6 @@ window.Ice = (function () {
     }
   }
 
-  // Randomize iceberg shape
   function randomizeIcebergShape(index) {
     const iceberg = pack.ice.icebergs[index];
     if (!iceberg) return;
@@ -120,7 +127,6 @@ window.Ice = (function () {
     iceberg.points = points;
   }
 
-  // Change iceberg size and recalculate points
   function changeIcebergSize(index, newSize) {
     const iceberg = pack.ice.icebergs[index];
     if (!iceberg) return;
@@ -129,7 +135,6 @@ window.Ice = (function () {
     const [cx, cy] = grid.points[cellId];
     const oldSize = iceberg.size;
 
-    // Recalculate points based on new size
     const flat = iceberg.points.flat();
     const pairs = [];
     while (flat.length) pairs.push(flat.splice(0, 2));
@@ -143,7 +148,6 @@ window.Ice = (function () {
     iceberg.size = newSize;
   }
 
-  // Get all ice data
   function getData() {
     return pack.ice;
   }
