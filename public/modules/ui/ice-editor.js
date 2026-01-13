@@ -23,7 +23,7 @@ function editIce() {
   });
 
   if (!modules.editIce) {
-    modules.editIce = {currentIndex: index};
+    modules.editIce = {currentIndex: index, isGlacier: isGlacier};
     // add listeners
     document.getElementById("iceEditStyle").addEventListener("click", () => editStyle("ice"));
     document.getElementById("iceRandomize").addEventListener("click", randomizeShape);
@@ -32,19 +32,20 @@ function editIce() {
     document.getElementById("iceRemove").addEventListener("click", removeIce);
   }
   modules.editIce.currentIndex = index;
+  modules.editIce.isGlacier = isGlacier;
 
 
   function randomizeShape() {
     const idx = modules.editIce.currentIndex;
     Ice.randomizeIcebergShape(idx);
-    redrawIce();
+    redrawIceberg(idx);
   }
 
   function changeSize() {
     const newSize = +this.value;
     const idx = modules.editIce.currentIndex;
     Ice.changeIcebergSize(idx, newSize);
-    redrawIce();
+    redrawIceberg(idx);
   }
 
   function toggleAdd() {
@@ -64,13 +65,12 @@ function editIce() {
     const size = +document.getElementById("iceSize")?.value || 1;
 
     Ice.addIceberg(i, size);
-    redrawIce();
 
     if (d3.event.shiftKey === false) toggleAdd();
   }
 
   function removeIce() {
-    const type = isGlacier ? "Glacier" : "Iceberg";
+    const type = modules.editIce.isGlacier ? "Glacier" : "Iceberg";
     alertMessage.innerHTML = /* html */ `Are you sure you want to remove the ${type}?`;
     $("#alert").dialog({
       resizable: false,
@@ -78,8 +78,7 @@ function editIce() {
       buttons: {
         Remove: function () {
           $(this).dialog("close");
-          Ice.removeIce(isGlacier ? "glacier" : "iceberg", index);
-          redrawIce();
+          Ice.removeIce(type.toLowerCase(), modules.editIce.currentIndex);
           $("#iceEditor").dialog("close");
         },
         Cancel: function () {
