@@ -38,8 +38,6 @@ function editIce() {
     const idx = modules.editIce.currentIndex;
     Ice.randomizeIcebergShape(idx);
     redrawIce();
-    elSelected = ice.selectAll(`[data-index="${idx}"]`).node();
-    elSelected = d3.select(elSelected);
   }
 
   function changeSize() {
@@ -47,8 +45,6 @@ function editIce() {
     const idx = modules.editIce.currentIndex;
     Ice.changeIcebergSize(idx, newSize);
     redrawIce();
-    elSelected = ice.selectAll(`[data-index="${idx}"]`).node();
-    elSelected = d3.select(elSelected);
   }
 
   function toggleAdd() {
