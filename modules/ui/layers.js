@@ -417,38 +417,6 @@ function toggleIce(event) {
   }
 }
 
-function drawIce() {
-  TIME && console.time("drawIce");
-
-  // Clear existing ice SVG
-  ice.selectAll("*").remove();
-
-  // Draw glaciers
-  pack.ice.glaciers.forEach((glacier, index) => {
-    ice
-      .append("polygon")
-      .attr("points", glacier.points)
-      .attr("type", "iceShield")
-      .attr("data-index", index)
-      .attr("class", "glacier")
-      .attr("transform", glacier.offset ? `translate(${glacier.offset[0]},${glacier.offset[1]})` : null);
-  });
-
-  // Draw icebergs
-  pack.ice.icebergs.forEach((iceberg, index) => {
-    ice
-      .append("polygon")
-      .attr("points", iceberg.points)
-      .attr("cell", iceberg.cellId)
-      .attr("size", iceberg.size)
-      .attr("data-index", index)
-      .attr("class", "iceberg")
-      .attr("transform", iceberg.offset ? `translate(${iceberg.offset[0]},${iceberg.offset[1]})` : null);
-  });
-
-  TIME && console.timeEnd("drawIce");
-}
-
 function toggleCultures(event) {
   const cultures = pack.cultures.filter(c => c.i && !c.removed);
   const empty = !cults.selectAll("path").size();

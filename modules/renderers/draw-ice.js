@@ -7,28 +7,19 @@ function drawIce() {
   // Clear existing ice SVG
   ice.selectAll("*").remove();
 
+  let html = "";
+
   // Draw glaciers
   pack.ice.glaciers.forEach((glacier, index) => {
-    ice
-      .append("polygon")
-      .attr("points", glacier.points)
-      .attr("type", "iceShield")
-      .attr("data-index", index)
-      .attr("transform", glacier.offset ? `translate(${glacier.offset[0]},${glacier.offset[1]})` : null)
-      .attr("class", "glacier");
+    html += `<polygon points="${glacier.points}" type="iceShield" data-index="${index}" ${glacier.offset ? `transform="translate(${glacier.offset[0]},${glacier.offset[1]})"` : ""} class="glacier"/>`;
   });
 
   // Draw icebergs
   pack.ice.icebergs.forEach((iceberg, index) => {
-    ice
-      .append("polygon")
-      .attr("points", iceberg.points)
-      .attr("cell", iceberg.cellId)
-      .attr("size", iceberg.size)
-      .attr("data-index", index)
-      .attr("transform", iceberg.offset ? `translate(${iceberg.offset[0]},${iceberg.offset[1]})` : null)
-      .attr("class", "iceberg");
+    html += `<polygon points="${iceberg.points}" cell="${iceberg.cellId}" size="${iceberg.size}" data-index="${index}" ${iceberg.offset ? `transform="translate(${iceberg.offset[0]},${iceberg.offset[1]})"` : ""} class="iceberg"/>`;
   });
+
+  ice.html(html);
 
   TIME && console.timeEnd("drawIce");
 }

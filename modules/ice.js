@@ -1,7 +1,7 @@
 "use strict";
 
 // Ice layer data model - separates ice data from SVG rendering
-const Ice = (() => {
+window.Ice = (function () {
   // Initialize ice data structure
   function initialize() {
     pack.ice = {
@@ -60,8 +60,7 @@ const Ice = (() => {
       pack.ice.icebergs.push({
         cellId,
         size,
-        points,
-        offset: null
+        points
       });
     }
   }
@@ -77,8 +76,7 @@ const Ice = (() => {
     pack.ice.icebergs.push({
       cellId,
       size,
-      points,
-      offset: null
+      points
     });
 
     return pack.ice.icebergs.length - 1; // return index
