@@ -23,7 +23,7 @@ function editIce() {
   });
 
   if (modules.editIce) return;
-  modules.editIce = true;
+  modules.editIce = { currentIndex: index };
 
   // add listeners
   document.getElementById("iceEditStyle").addEventListener("click", () => editStyle("ice"));
@@ -33,17 +33,19 @@ function editIce() {
   document.getElementById("iceRemove").addEventListener("click", removeIce);
 
   function randomizeShape() {
-    Ice.randomizeIcebergShape(index);
+    const idx = modules.editIce.currentIndex;
+    Ice.randomizeIcebergShape(idx);
     redrawIce();
-    elSelected = ice.selectAll(`[data-index="${index}"]`).node();
+    elSelected = ice.selectAll(`[data-index="${idx}"]`).node();
     elSelected = d3.select(elSelected);
   }
 
   function changeSize() {
     const newSize = +this.value;
-    Ice.changeIcebergSize(index, newSize);
+    const idx = modules.editIce.currentIndex;
+    Ice.changeIcebergSize(idx, newSize);
     redrawIce();
-    elSelected = ice.selectAll(`[data-index="${index}"]`).node();
+    elSelected = ice.selectAll(`[data-index="${idx}"]`).node();
     elSelected = d3.select(elSelected);
   }
 
@@ -117,6 +119,10 @@ function editIce() {
     clearMainTip();
     iceNew.classList.remove("pressed");
     unselect();
+    // Clean up handlers
+    if (modules.editIce && typeof modules.editIce === "object") {
+      modules.editIce = false;
+    }
   }
 }
 
