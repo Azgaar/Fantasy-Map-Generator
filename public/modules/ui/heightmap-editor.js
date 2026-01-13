@@ -468,7 +468,6 @@ function editHeightmap(options) {
     });
 
     // recalculate ice
-    Ice.clear();
     Ice.generate();
     drawIce();
 
