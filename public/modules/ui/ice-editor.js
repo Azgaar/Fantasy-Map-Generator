@@ -22,15 +22,17 @@ function editIce() {
     close: closeEditor
   });
 
-  if (modules.editIce) return;
-  modules.editIce = { currentIndex: index };
+  if (!modules.editIce) {
+    modules.editIce = {currentIndex: index};
+    // add listeners
+    document.getElementById("iceEditStyle").addEventListener("click", () => editStyle("ice"));
+    document.getElementById("iceRandomize").addEventListener("click", randomizeShape);
+    document.getElementById("iceSize").addEventListener("input", changeSize);
+    document.getElementById("iceNew").addEventListener("click", toggleAdd);
+    document.getElementById("iceRemove").addEventListener("click", removeIce);
+  }
+  modules.editIce.currentIndex = index;
 
-  // add listeners
-  document.getElementById("iceEditStyle").addEventListener("click", () => editStyle("ice"));
-  document.getElementById("iceRandomize").addEventListener("click", randomizeShape);
-  document.getElementById("iceSize").addEventListener("input", changeSize);
-  document.getElementById("iceNew").addEventListener("click", toggleAdd);
-  document.getElementById("iceRemove").addEventListener("click", removeIce);
 
   function randomizeShape() {
     const idx = modules.editIce.currentIndex;
@@ -119,10 +121,6 @@ function editIce() {
     clearMainTip();
     iceNew.classList.remove("pressed");
     unselect();
-    // Clean up handlers
-    if (modules.editIce && typeof modules.editIce === "object") {
-      modules.editIce = false;
-    }
   }
 }
 
