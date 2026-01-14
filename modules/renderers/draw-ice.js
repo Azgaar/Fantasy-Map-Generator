@@ -22,14 +22,6 @@ function drawIce() {
   ice.html(html);
 
   TIME && console.timeEnd("drawIce");
-
-  function getGlacierHtml(glacier, index) {
-    return `<polygon points="${glacier.points}" type="iceShield" data-index="${index}" ${glacier.offset ? `transform="translate(${glacier.offset[0]},${glacier.offset[1]})"` : ""} class="glacier"/>`;
-  }
-
-  function getIcebergHtml(iceberg, index) {
-    return `<polygon points="${iceberg.points}" cell="${iceberg.cellId}" size="${iceberg.size}" data-index="${index}" ${iceberg.offset ? `transform="translate(${iceberg.offset[0]},${iceberg.offset[1]})"` : ""} class="iceberg"/>`;
-  }
 }
 
 function redrawIceberg(index) {
@@ -46,15 +38,9 @@ function redrawIceberg(index) {
       el = ice.selectAll(`.iceberg[data-index="${index}"]`);
     }
     el.attr("points", iceberg.points);
-    el.attr("size", iceberg.size);
-    el.attr("cell", iceberg.cellId);
     el.attr("transform", iceberg.offset ? `translate(${iceberg.offset[0]},${iceberg.offset[1]})` : null);
   }
   TIME && console.timeEnd("redrawIceberg");
-
-  function getIcebergHtml(iceberg, index) {
-    return `<polygon points="${iceberg.points}" cell="${iceberg.cellId}" size="${iceberg.size}" data-index="${index}" ${iceberg.offset ? `transform="translate(${iceberg.offset[0]},${iceberg.offset[1]})"` : ""} class="iceberg"/>`;
-  }
 }
 
 function redrawGlacier(index) {
@@ -74,13 +60,12 @@ function redrawGlacier(index) {
     el.attr("transform", glacier.offset ? `translate(${glacier.offset[0]},${glacier.offset[1]})` : null);
   }
   TIME && console.timeEnd("redrawGlacier");
-
-  function getGlacierHtml(glacier, index) {
-    return `<polygon points="${glacier.points}" type="iceShield" data-index="${index}" ${glacier.offset ? `transform="translate(${glacier.offset[0]},${glacier.offset[1]})"` : ""} class="glacier"/>`;
-  }
 }
 
-// Re-render ice layer from data model
-function redrawIce() {
-  drawIce();
+function getGlacierHtml(glacier, index) {
+  return `<polygon points="${glacier.points}" data-index="${index}" ${glacier.offset ? `transform="translate(${glacier.offset[0]},${glacier.offset[1]})"` : ""} class="glacier"/>`;
+}
+
+function getIcebergHtml(iceberg, index) {
+  return `<polygon points="${iceberg.points}" data-index="${index}" ${iceberg.offset ? `transform="translate(${iceberg.offset[0]},${iceberg.offset[1]})"` : ""} class="iceberg"/>`;
 }

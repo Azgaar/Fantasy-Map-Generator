@@ -638,7 +638,6 @@ async function generate(options) {
     Biomes.define();
     Features.defineGroups();
 
-    Ice.initialize();
     Ice.generate();
 
     rankCells();
