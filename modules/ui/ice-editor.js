@@ -1,49 +1,48 @@
 "use strict";
-function editIce() {
+function editIce(element) {
   if (customization) return;
+  if (elSelected && element === elSelected.node()) return;
+
   closeDialogs(".stable");
   if (!layerIsOn("toggleIce")) toggleIce();
 
   elSelected = d3.select(d3.event.target);
   const index = +elSelected.attr("data-index");
-  const isGlacier = elSelected.attr("type") === "iceShield";
+  const isGlacier = elSelected.attr("type") === "glacier";
   const type = isGlacier ? "Glacier" : "Iceberg";
 
   document.getElementById("iceRandomize").style.display = isGlacier ? "none" : "inline-block";
   document.getElementById("iceSize").style.display = isGlacier ? "none" : "inline-block";
-  if (!isGlacier) document.getElementById("iceSize").value = +elSelected.attr("size");
+  if (!isGlacier) document.getElementById("iceSize").value = isGlacier ? "" : pack.ice.icebergs[index].size;
 
   ice.selectAll("*").classed("draggable", true).call(d3.drag().on("drag", dragElement));
 
   $("#iceEditor").dialog({
     title: "Edit " + type,
     resizable: false,
-    position: {my: "center top+60", at: "top", of: d3.event, collision: "fit"},
+    position: { my: "center top+60", at: "top", of: d3.event, collision: "fit" },
     close: closeEditor
   });
 
-  if (!modules.editIce) {
-    modules.editIce = {currentIndex: index, isGlacier: isGlacier};
-    // add listeners
-    document.getElementById("iceEditStyle").addEventListener("click", () => editStyle("ice"));
-    document.getElementById("iceRandomize").addEventListener("click", randomizeShape);
-    document.getElementById("iceSize").addEventListener("input", changeSize);
-    document.getElementById("iceNew").addEventListener("click", toggleAdd);
-    document.getElementById("iceRemove").addEventListener("click", removeIce);
-  }
-  modules.editIce.currentIndex = index;
-  modules.editIce.isGlacier = isGlacier;
+  if (modules.editIce) return;
+  modules.editIce = true;
+  // add listeners
+  document.getElementById("iceEditStyle").addEventListener("click", () => editStyle("ice"));
+  document.getElementById("iceRandomize").addEventListener("click", randomizeShape);
+  document.getElementById("iceSize").addEventListener("input", changeSize);
+  document.getElementById("iceNew").addEventListener("click", toggleAdd);
+  document.getElementById("iceRemove").addEventListener("click", removeIce);
 
 
   function randomizeShape() {
-    const idx = modules.editIce.currentIndex;
+    const idx = +elSelected.attr("data-index");
     Ice.randomizeIcebergShape(idx);
     redrawIceberg(idx);
   }
 
   function changeSize() {
     const newSize = +this.value;
-    const idx = modules.editIce.currentIndex;
+    const idx = +elSelected.attr("data-index");
     Ice.changeIcebergSize(idx, newSize);
     redrawIceberg(idx);
   }
@@ -70,7 +69,7 @@ function editIce() {
   }
 
   function removeIce() {
-    const type = modules.editIce.isGlacier ? "Glacier" : "Iceberg";
+    const type = elSelected.attr("type") === "glacier" ? "Glacier" : "Iceberg";
     alertMessage.innerHTML = /* html */ `Are you sure you want to remove the ${type}?`;
     $("#alert").dialog({
       resizable: false,
@@ -78,7 +77,7 @@ function editIce() {
       buttons: {
         Remove: function () {
           $(this).dialog("close");
-          Ice.removeIce(type.toLowerCase(), modules.editIce.currentIndex);
+          Ice.removeIce(type.toLowerCase(), +elSelected.attr("data-index"));
           $("#iceEditor").dialog("close");
         },
         Cancel: function () {
@@ -89,7 +88,6 @@ function editIce() {
   }
 
   function dragElement() {
-    const isGlacier = elSelected.attr("type") === "iceShield";
     const idx = +elSelected.attr("data-index");
     const initialTransform = parseTransform(this.getAttribute("transform"));
     const dx = initialTransform[0] - d3.event.x;
@@ -100,10 +98,10 @@ function editIce() {
       const y = d3.event.y;
       const transform = `translate(${dx + x},${dy + y})`;
       this.setAttribute("transform", transform);
-      
+
       // Update data model with new position
       const offset = [dx + x, dy + y];
-      const iceData = isGlacier ? pack.ice.glaciers[idx] : pack.ice.icebergs[idx];
+      const iceData = elSelected.attr("type") === "glacier" ? pack.ice.glaciers[idx] : pack.ice.icebergs[idx];
       if (iceData) {
         // Store offset for visual positioning, actual geometry stays in points
         iceData.offset = offset;
