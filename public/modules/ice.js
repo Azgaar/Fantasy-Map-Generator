@@ -12,9 +12,9 @@ window.Ice = (function () {
 
   // Generate glaciers and icebergs based on temperature and height
   function generate() {
-    clear();
-    const {cells, features} = grid;
-    const {temp, h} = cells;
+    initialize();
+    const { cells, features } = grid;
+    const { temp, h } = cells;
     Math.random = aleaPRNG(seed);
 
     const ICEBERG_MAX_TEMP = 0;
@@ -26,7 +26,7 @@ window.Ice = (function () {
       const type = "iceShield";
       const getType = cellId =>
         h[cellId] >= 20 && temp[cellId] <= GLACIER_MAX_TEMP ? type : null;
-      const isolines = getIsolines(grid, getType, {polygons: true});
+      const isolines = getIsolines(grid, getType, { polygons: true });
 
       if (isolines[type]?.polygons) {
         isolines[type].polygons.forEach(points => {
@@ -148,10 +148,6 @@ window.Ice = (function () {
     iceberg.size = newSize;
   }
 
-  function getData() {
-    return pack.ice;
-  }
-
   // Clear all ice
   function clear() {
     pack.ice.glaciers = [];
@@ -166,7 +162,6 @@ window.Ice = (function () {
     updateIceberg,
     randomizeIcebergShape,
     changeIcebergSize,
-    getData,
     clear
   };
 })();
