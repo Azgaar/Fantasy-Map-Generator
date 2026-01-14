@@ -13,12 +13,6 @@ const ERROR = true;
 // detect device
 const MOBILE = window.innerWidth < 600 || navigator.userAgentData?.mobile;
 
-// typed arrays max values
-const INT8_MAX = 127;
-const UINT8_MAX = 255;
-const UINT16_MAX = 65535;
-const UINT32_MAX = 4294967295;
-
 if (PRODUCTION && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(err => {
@@ -91,7 +85,7 @@ let fogging = viewbox
   .attr("id", "fogging")
   .style("display", "none");
 let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
-let debug = viewbox.append("g").attr("id", "debug");
+var debug = viewbox.append("g").attr("id", "debug");
 
 lakes.append("g").attr("id", "freshwater");
 lakes.append("g").attr("id", "salt");
@@ -140,9 +134,9 @@ legend
   .on("click", () => clearLegend());
 
 // main data variables
-let grid = {}; // initial graph based on jittered square grid and data
-let pack = {}; // packed graph and data
-let seed;
+var grid = {}; // initial graph based on jittered square grid and data
+var pack = {}; // packed graph and data
+var seed;
 let mapId;
 let mapHistory = [];
 let elSelected;
@@ -202,8 +196,8 @@ let urbanDensity = +byId("urbanDensityInput").value;
 applyStoredOptions();
 
 // voronoi graph extension, cannot be changed after generation
-let graphWidth = +mapWidthInput.value;
-let graphHeight = +mapHeightInput.value;
+var graphWidth = +mapWidthInput.value;
+var graphHeight = +mapHeightInput.value;
 
 // svg canvas resolution, can be changed
 let svgWidth = graphWidth;
