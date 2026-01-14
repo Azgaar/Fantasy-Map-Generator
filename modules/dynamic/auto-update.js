@@ -1068,7 +1068,8 @@ export function resolveVersionConflicts(mapVersion) {
         const cellId = +polygon.getAttribute("cell");
         const size = +polygon.getAttribute("size");
 
-        if (!pointsStr || !cellId || !size) return;
+        // points string must exist, cell attribute must be present, and size must be non-zero
+        if (!pointsStr || polygon.getAttribute("cell") === null || !size) return;
 
         // Parse points string "x1,y1 x2,y2 x3,y3 ..." into array [[x1,y1], [x2,y2], ...]
         const points = pointsStr
