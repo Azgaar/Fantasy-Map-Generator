@@ -469,7 +469,7 @@ function editHeightmap(options) {
 
     // recalculate ice
     Ice.generate();
-    drawIce();
+    ice.selectAll("*").remove();
 
     TIME && console.timeEnd("restoreRiskedData");
     INFO && console.groupEnd("Edit Heightmap");
