@@ -450,11 +450,7 @@ async function parseLoadedData(data, mapVersion) {
       if (isVisible(routes) && hasChild(routes, "path")) turnOn("toggleRoutes");
       if (hasChildren(temperature)) turnOn("toggleTemperature");
       if (hasChild(population, "line")) turnOn("togglePopulation");
-      if (pack.ice?.glaciers?.length || pack.ice?.icebergs?.length) {
-        ice.selectAll("*").remove(); // clear old SVG
-        drawIce(); // re-render ice from data
-        turnOn("toggleIce");
-      }
+      if (isVisible(ice)) turnOn("toggleIce");
       if (hasChild(prec, "circle")) turnOn("togglePrecipitation");
       if (isVisible(emblems) && hasChild(emblems, "use")) turnOn("toggleEmblems");
       if (isVisible(labels)) turnOn("toggleLabels");
