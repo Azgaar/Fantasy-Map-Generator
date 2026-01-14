@@ -39,11 +39,6 @@ async function saveMap(method) {
 
 function prepareMapData() {
 
-  function compactPackData() {
-    // Place all the compaction functions here
-    pack.ice.glaciers = pack.ice.glaciers.filter(g => g !== undefined);
-    pack.ice.icebergs = pack.ice.icebergs.filter(i => i !== undefined);
-  }
   const date = new Date();
   const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
@@ -95,8 +90,6 @@ function prepareMapData() {
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
-  compactPackData();
-
   const {spacing, cellsX, cellsY, boundary, points, features, cellsDesired} = grid;
   const gridGeneral = JSON.stringify({spacing, cellsX, cellsY, boundary, points, features, cellsDesired});
   const packFeatures = JSON.stringify(pack.features);
@@ -110,7 +103,10 @@ function prepareMapData() {
   const cellRoutes = JSON.stringify(pack.cells.routes);
   const routes = JSON.stringify(pack.routes);
   const zones = JSON.stringify(pack.zones);
-  const ice = JSON.stringify(pack.ice);
+
+  const icebergs = pack.ice.icebergs.filter(iceberg => iceberg !== undefined);
+  const glaciers = pack.ice.glaciers.filter(glacier => glacier !== undefined);
+  const ice = JSON.stringify({icebergs, glaciers});
 
   // store name array only if not the same as default
   const defaultNB = Names.getNameBases();
