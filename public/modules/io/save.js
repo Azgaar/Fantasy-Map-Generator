@@ -32,7 +32,7 @@ async function saveMap(method) {
           $(this).dialog("close");
         }
       },
-      position: {my: "center", at: "center", of: "svg"}
+      position: { my: "center", at: "center", of: "svg" }
     });
   }
 }
@@ -90,8 +90,8 @@ function prepareMapData() {
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
-  const {spacing, cellsX, cellsY, boundary, points, features, cellsDesired} = grid;
-  const gridGeneral = JSON.stringify({spacing, cellsX, cellsY, boundary, points, features, cellsDesired});
+  const { spacing, cellsX, cellsY, boundary, points, features, cellsDesired } = grid;
+  const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, boundary, points, features, cellsDesired });
   const packFeatures = JSON.stringify(pack.features);
   const cultures = JSON.stringify(pack.cultures);
   const states = JSON.stringify(pack.states);
@@ -103,10 +103,7 @@ function prepareMapData() {
   const cellRoutes = JSON.stringify(pack.cells.routes);
   const routes = JSON.stringify(pack.routes);
   const zones = JSON.stringify(pack.zones);
-
-  const icebergs = pack.ice.icebergs.filter(iceberg => iceberg !== undefined);
-  const glaciers = pack.ice.glaciers.filter(glacier => glacier !== undefined);
-  const ice = JSON.stringify({icebergs, glaciers});
+  const ice = JSON.stringify(pack.ice);
 
   // store name array only if not the same as default
   const defaultNB = Names.getNameBases();
@@ -168,14 +165,14 @@ function prepareMapData() {
 
 // save map file to indexedDB
 async function saveToStorage(mapData, showTip = false) {
-  const blob = new Blob([mapData], {type: "text/plain"});
+  const blob = new Blob([mapData], { type: "text/plain" });
   await ldb.set("lastMap", blob);
   showTip && tip("Map is saved to the browser storage", false, "success");
 }
 
 // download map file
 function saveToMachine(mapData, filename) {
-  const blob = new Blob([mapData], {type: "text/plain"});
+  const blob = new Blob([mapData], { type: "text/plain" });
   const URL = window.URL.createObjectURL(blob);
 
   const link = document.createElement("a");

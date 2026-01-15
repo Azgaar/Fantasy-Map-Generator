@@ -2,17 +2,16 @@
 
 // Ice layer data model - separates ice data from SVG rendering
 window.Ice = (function () {
-  // Initialize ice data structure
-  function initialize() {
-    pack.ice = {
-      glaciers: [], // auto-generated glaciers on cold land
-      icebergs: [] // manually edited and auto-generated icebergs on cold water
-    };
+
+  // Find next available id for new ice element
+  function getNextId() {
+    if (pack.ice.length === 0) return 0;
+    return Math.max(...pack.ice.map(element => element.i)) + 1;
   }
 
   // Generate glaciers and icebergs based on temperature and height
   function generate() {
-    initialize();
+    clear();
     const { cells, features } = grid;
     const { temp, h } = cells;
     Math.random = aleaPRNG(seed);
@@ -31,8 +30,10 @@ window.Ice = (function () {
       if (isolines[type]?.polygons) {
         isolines[type].polygons.forEach(points => {
           const clipped = clipPoly(points);
-          pack.ice.glaciers.push({
-            points: clipped
+          pack.ice.push({
+            i: getNextId(),
+            points: clipped,
+            type: "glacier"
           });
         });
       }
@@ -57,10 +58,12 @@ window.Ice = (function () {
         rn(lerp(cy, y, size), 2)
       ]);
 
-      pack.ice.icebergs.push({
+      pack.ice.push({
+        i: getNextId(),
+        points,
+        type: "iceberg",
         cellId,
-        size,
-        points
+        size
       });
     }
   }
@@ -71,44 +74,41 @@ window.Ice = (function () {
       rn(lerp(cx, x, size), 2),
       rn(lerp(cy, y, size), 2)
     ]);
-    //here we use the lose equality to find the first undefined or empty or null slot
-    const nextIndex = pack.ice.icebergs.findIndex(iceberg => iceberg == undefined);
-    if (nextIndex !== -1) {
-      pack.ice.icebergs[nextIndex] = {
-        cellId,
-        size,
-        points
-      };
-      redrawIceberg(nextIndex);
-    } else {
-      pack.ice.icebergs.push({
-        cellId,
-        size,
-        points
-      });
-      redrawIceberg(pack.ice.icebergs.length - 1);
+    const id = getNextId();
+    pack.ice.push({
+      i: id,
+      points,
+      type: "iceberg",
+      cellId,
+      size
+    });
+    redrawIceberg(id);
+  }
+
+  function removeIce(id) {
+    const index = pack.ice.findIndex(element => element.i === id);
+    if (index !== -1) {
+      const type = pack.ice.find(element => element.i === id).type;
+      pack.ice.splice(index, 1);
+      if (type === "glacier") {
+        redrawGlacier(id);
+      } else {
+        redrawIceberg(id);
+      }
+      
     }
   }
 
-  function removeIce(type, index) {
-    if (type === "glacier" && pack.ice.glaciers[index]) {
-      delete pack.ice.glaciers[index];
-      redrawGlacier(index);
-    } else if (type === "iceberg" && pack.ice.icebergs[index]) {
-      delete pack.ice.icebergs[index];
-      redrawIceberg(index);
+  function updateIceberg(id, points, size) {
+    const iceberg = pack.ice.find(element => element.i === id);
+    if (iceberg) {
+      iceberg.points = points;
+      iceberg.size = size;
     }
   }
 
-  function updateIceberg(index, points, size) {
-    if (pack.ice.icebergs[index]) {
-      pack.ice.icebergs[index].points = points;
-      pack.ice.icebergs[index].size = size;
-    }
-  }
-
-  function randomizeIcebergShape(index) {
-    const iceberg = pack.ice.icebergs[index];
+  function randomizeIcebergShape(id) {
+    const iceberg = pack.ice.find(element => element.i === id);
     if (!iceberg) return;
 
     const cellId = iceberg.cellId;
@@ -127,8 +127,8 @@ window.Ice = (function () {
     iceberg.points = points;
   }
 
-  function changeIcebergSize(index, newSize) {
-    const iceberg = pack.ice.icebergs[index];
+  function changeIcebergSize(id, newSize) {
+    const iceberg = pack.ice.find(element => element.i === id);
     if (!iceberg) return;
 
     const cellId = iceberg.cellId;
@@ -150,12 +150,10 @@ window.Ice = (function () {
 
   // Clear all ice
   function clear() {
-    pack.ice.glaciers = [];
-    pack.ice.icebergs = [];
+    pack.ice = [];
   }
 
   return {
-    initialize,
     generate,
     addIceberg,
     removeIce,
