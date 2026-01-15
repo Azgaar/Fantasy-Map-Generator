@@ -3,10 +3,15 @@
 // Ice layer data model - separates ice data from SVG rendering
 window.Ice = (function () {
 
-  // Find next available id for new ice element
+  // Find next available id for new ice element idealy filling gaps
   function getNextId() {
     if (pack.ice.length === 0) return 0;
-    return Math.max(...pack.ice.map(element => element.i)) + 1;
+    // find gaps in existing ids
+    const existingIds = pack.ice.map(e => e.i).sort((a, b) => a - b);
+    for (let id = 0; id < existingIds[existingIds.length - 1]; id++) {
+      if (!existingIds.includes(id)) return id;
+    }
+    return existingIds[existingIds.length - 1] + 1;
   }
 
   // Generate glaciers and icebergs based on temperature and height
