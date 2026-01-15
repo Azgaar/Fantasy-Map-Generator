@@ -9,14 +9,13 @@ function drawIce() {
 
   let html = "";
 
-  // Draw glaciers
-  pack.ice.glaciers.forEach((glacier, index) => {
-    html += getGlacierHtml(glacier, index);
-  });
-
-  // Draw icebergs
-  pack.ice.icebergs.forEach((iceberg, index) => {
-    html += getIcebergHtml(iceberg, index);
+  // Draw all ice elements
+  pack.ice.forEach(iceElement => {
+    if (iceElement.type === "glacier") {
+      html += getGlacierHtml(iceElement);
+    } else if (iceElement.type === "iceberg") {
+      html += getIcebergHtml(iceElement);
+    }
   });
 
   ice.html(html);
@@ -24,18 +23,18 @@ function drawIce() {
   TIME && console.timeEnd("drawIce");
 }
 
-function redrawIceberg(index) {
+function redrawIceberg(id) {
   TIME && console.time("redrawIceberg");
-  const iceberg = pack.ice.icebergs[index];
-  let el = ice.selectAll(`polygon[data-index="${index}"]:not([type="glacier"])`);
+  const iceberg = pack.ice.find(element => element.i === id);
+  let el = ice.selectAll(`polygon[data-id="${id}"]:not([type="glacier"])`);
   if (!iceberg && !el.empty()) {
     el.remove();
   } else {
     if (el.empty()) {
       // Create new element if it doesn't exist
-      const polygon = getIcebergHtml(iceberg, index);
+      const polygon = getIcebergHtml(iceberg);
       ice.node().insertAdjacentHTML("beforeend", polygon);
-      el = ice.selectAll(`polygon[data-index="${index}"]:not([type="glacier"])`);
+      el = ice.selectAll(`polygon[data-id="${id}"]:not([type="glacier"])`);
     }
     el.attr("points", iceberg.points);
     el.attr("transform", iceberg.offset ? `translate(${iceberg.offset[0]},${iceberg.offset[1]})` : null);
@@ -43,18 +42,18 @@ function redrawIceberg(index) {
   TIME && console.timeEnd("redrawIceberg");
 }
 
-function redrawGlacier(index) {
+function redrawGlacier(id) {
   TIME && console.time("redrawGlacier");
-  const glacier = pack.ice.glaciers[index];
-  let el = ice.selectAll(`polygon[data-index="${index}"][type="glacier"]`);
+  const glacier = pack.ice.find(element => element.i === id);
+  let el = ice.selectAll(`polygon[data-id="${id}"][type="glacier"]`);
   if (!glacier && !el.empty()) {
     el.remove();
   } else {
     if (el.empty()) {
       // Create new element if it doesn't exist
-      const polygon = getGlacierHtml(glacier, index);
+      const polygon = getGlacierHtml(glacier);
       ice.node().insertAdjacentHTML("beforeend", polygon);
-      el = ice.selectAll(`polygon[data-index="${index}"][type="glacier"]`);
+      el = ice.selectAll(`polygon[data-id="${id}"][type="glacier"]`);
     }
     el.attr("points", glacier.points);
     el.attr("transform", glacier.offset ? `translate(${glacier.offset[0]},${glacier.offset[1]})` : null);
@@ -62,10 +61,10 @@ function redrawGlacier(index) {
   TIME && console.timeEnd("redrawGlacier");
 }
 
-function getGlacierHtml(glacier, index) {
-  return `<polygon points="${glacier.points}" type="glacier" data-index="${index}" ${glacier.offset ? `transform="translate(${glacier.offset[0]},${glacier.offset[1]})"` : ""}/>`;
+function getGlacierHtml(glacier) {
+  return `<polygon points="${glacier.points}" type="glacier" data-id="${glacier.i}" ${glacier.offset ? `transform="translate(${glacier.offset[0]},${glacier.offset[1]})"` : ""}/>`;
 }
 
-function getIcebergHtml(iceberg, index) {
-  return `<polygon points="${iceberg.points}" data-index="${index}" ${iceberg.offset ? `transform="translate(${iceberg.offset[0]},${iceberg.offset[1]})"` : ""}/>`;
+function getIcebergHtml(iceberg) {
+  return `<polygon points="${iceberg.points}" data-id="${iceberg.i}" ${iceberg.offset ? `transform="translate(${iceberg.offset[0]},${iceberg.offset[1]})"` : ""}/>`;
 }

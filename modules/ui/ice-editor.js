@@ -7,13 +7,14 @@ function editIce(element) {
   if (!layerIsOn("toggleIce")) toggleIce();
 
   elSelected = d3.select(d3.event.target);
-  const index = +elSelected.attr("data-index");
+  const id = +elSelected.attr("data-id");
+  const iceElement = pack.ice.find(el => el.i === id);
   const isGlacier = elSelected.attr("type") === "glacier";
   const type = isGlacier ? "Glacier" : "Iceberg";
 
   document.getElementById("iceRandomize").style.display = isGlacier ? "none" : "inline-block";
   document.getElementById("iceSize").style.display = isGlacier ? "none" : "inline-block";
-  if (!isGlacier) document.getElementById("iceSize").value = isGlacier ? "" : pack.ice.icebergs[index].size;
+  if (!isGlacier) document.getElementById("iceSize").value = iceElement?.size || "";
 
   ice.selectAll("*").classed("draggable", true).call(d3.drag().on("drag", dragElement));
 
@@ -35,16 +36,16 @@ function editIce(element) {
 
 
   function randomizeShape() {
-    const idx = +elSelected.attr("data-index");
-    Ice.randomizeIcebergShape(idx);
-    redrawIceberg(idx);
+    const selectedId = +elSelected.attr("data-id");
+    Ice.randomizeIcebergShape(selectedId);
+    redrawIceberg(selectedId);
   }
 
   function changeSize() {
     const newSize = +this.value;
-    const idx = +elSelected.attr("data-index");
-    Ice.changeIcebergSize(idx, newSize);
-    redrawIceberg(idx);
+    const selectedId = +elSelected.attr("data-id");
+    Ice.changeIcebergSize(selectedId, newSize);
+    redrawIceberg(selectedId);
   }
 
   function toggleAdd() {
@@ -77,7 +78,7 @@ function editIce(element) {
       buttons: {
         Remove: function () {
           $(this).dialog("close");
-          Ice.removeIce(type.toLowerCase(), +elSelected.attr("data-index"));
+          Ice.removeIce(+elSelected.attr("data-id"));
           $("#iceEditor").dialog("close");
         },
         Cancel: function () {
@@ -88,7 +89,7 @@ function editIce(element) {
   }
 
   function dragElement() {
-    const idx = +elSelected.attr("data-index");
+    const selectedId = +elSelected.attr("data-id");
     const initialTransform = parseTransform(this.getAttribute("transform"));
     const dx = initialTransform[0] - d3.event.x;
     const dy = initialTransform[1] - d3.event.y;
@@ -101,7 +102,7 @@ function editIce(element) {
 
       // Update data model with new position
       const offset = [dx + x, dy + y];
-      const iceData = elSelected.attr("type") === "glacier" ? pack.ice.glaciers[idx] : pack.ice.icebergs[idx];
+      const iceData = pack.ice.find(element => element.i === selectedId);
       if (iceData) {
         // Store offset for visual positioning, actual geometry stays in points
         iceData.offset = offset;

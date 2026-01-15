@@ -1041,7 +1041,8 @@ export function resolveVersionConflicts(mapVersion) {
     // v1.110.0 moved ice data from SVG to data model
     // Migrate old ice SVG elements to new pack.ice structure
     if (!pack.ice) {
-      pack.ice = { glaciers: [], icebergs: [] };
+      pack.ice = [];
+      let iceId = 0;
   
       const iceLayer = document.getElementById("ice");
       if (iceLayer) {
@@ -1051,15 +1052,15 @@ export function resolveVersionConflicts(mapVersion) {
           const points = [...polygon.points].map(svgPoint => [svgPoint.x, svgPoint.y]);
   
           const transform = polygon.getAttribute("transform");
-
-          if (transform) {
-          pack.ice.glaciers.push({
+          const iceElement = {
+            i: iceId++,
             points,
-            offset: parseTransform(transform)
-          });
-          } else {
-            pack.ice.glaciers.push({ points });
+            type: "glacier"
+          };
+          if (transform) {
+            iceElement.offset = parseTransform(transform);
           }
+          pack.ice.push(iceElement);
         });
   
         // Migrate icebergs
@@ -1074,21 +1075,17 @@ export function resolveVersionConflicts(mapVersion) {
           const points = [...polygon.points].map(svgPoint => [svgPoint.x, svgPoint.y]);
   
           const transform = polygon.getAttribute("transform");
+          const iceElement = {
+            i: iceId++,
+            points,
+            type: "iceberg",
+            cellId,
+            size
+          };
           if (transform) {
-            pack.ice.icebergs.push({
-              cellId,
-              size,
-              points,
-              offset: parseTransform(transform)
-            });
-          } else {
-            pack.ice.icebergs.push({
-              cellId,
-              size,
-              points
-            });
+            iceElement.offset = parseTransform(transform);
           }
-
+          pack.ice.push(iceElement);
         });
   
         // Clear old SVG elements
