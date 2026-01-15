@@ -1036,4 +1036,74 @@ export function resolveVersionConflicts(mapVersion) {
     delete options.showMFCGMap;
     delete options.villageMaxPopulation;
   }
+
+  if (isOlderThan("1.110.0")) {
+    // v1.110.0 moved ice data from SVG to data model
+    // Migrate old ice SVG elements to new pack.ice structure
+    if (!pack.ice) {
+      pack.ice = [];
+      let iceId = 0;
+  
+      const iceLayer = document.getElementById("ice");
+      if (iceLayer) {
+        // Migrate glaciers (type="iceShield")
+        iceLayer.querySelectorAll("polygon[type='iceShield']").forEach(polygon => {
+          // Parse points string "x1,y1 x2,y2 x3,y3 ..." into array [[x1,y1], [x2,y2], ...]
+          const points = [...polygon.points].map(svgPoint => [svgPoint.x, svgPoint.y]);
+  
+          const transform = polygon.getAttribute("transform");
+          const iceElement = {
+            i: iceId++,
+            points,
+            type: "glacier"
+          };
+          if (transform) {
+            iceElement.offset = parseTransform(transform);
+          }
+          pack.ice.push(iceElement);
+        });
+  
+        // Migrate icebergs
+        iceLayer.querySelectorAll("polygon:not([type])").forEach(polygon => {
+          const cellId = +polygon.getAttribute("cell");
+          const size = +polygon.getAttribute("size");
+  
+          // points string must exist, cell attribute must be present, and size must be non-zero
+          if (polygon.getAttribute("cell") === null || !size) return;
+  
+          // Parse points string "x1,y1 x2,y2 x3,y3 ..." into array [[x1,y1], [x2,y2], ...]
+          const points = [...polygon.points].map(svgPoint => [svgPoint.x, svgPoint.y]);
+  
+          const transform = polygon.getAttribute("transform");
+          const iceElement = {
+            i: iceId++,
+            points,
+            type: "iceberg",
+            cellId,
+            size
+          };
+          if (transform) {
+            iceElement.offset = parseTransform(transform);
+          }
+          pack.ice.push(iceElement);
+        });
+  
+        // Clear old SVG elements
+        iceLayer.querySelectorAll("*").forEach(el => el.remove());
+      } else {
+        // If ice layer element doesn't exist, create it
+        ice = viewbox.insert("g", "#coastline").attr("id", "ice");
+        ice
+          .attr("opacity", null)
+          .attr("fill", "#e8f0f6")
+          .attr("stroke", "#e8f0f6")
+          .attr("stroke-width", 1)
+          .attr("filter", "url(#dropShadow05)");
+      }
+  
+      // Re-render ice from migrated data
+      if (layerIsOn("toggleIce")) drawIce();
+    }
+    
+  }
 }
