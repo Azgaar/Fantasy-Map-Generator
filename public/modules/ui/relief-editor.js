@@ -201,7 +201,7 @@ function editReliefIcon() {
     d3.event.on("drag", function () {
       const p = d3.mouse(this);
       moveCircle(p[0], p[1], r);
-      tree.findAll(p[0], p[1], r).forEach(f => f[2].remove());
+      findAllInQuadtree(p[0], p[1], r, tree).forEach(f => f[2].remove());
     });
   }
 

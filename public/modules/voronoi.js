@@ -133,3 +133,5 @@ class Voronoi {
     ];
   }
 }
+
+window.Voronoi = Voronoi;

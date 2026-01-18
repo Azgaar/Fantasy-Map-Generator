@@ -271,7 +271,7 @@ window.Military = (function () {
         }
         if (node.t > expected) return;
         const r = (expected - node.t) / (node.s ? 40 : 20); // search radius
-        const candidates = tree.findAll(node.x, node.y, r);
+        const candidates = findAllInQuadtree(node.x, node.y, r, tree);
         for (const c of candidates) {
           if (c.t < expected && mergeable(node, c)) {
             merge(node, c);
