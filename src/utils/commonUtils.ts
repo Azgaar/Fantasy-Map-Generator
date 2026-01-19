@@ -11,7 +11,7 @@ import { last } from "./arrayUtils";
  * @param secure - Secure clipping to avoid edge artifacts
  * @returns Clipped polygon points
  */
-export const clipPoly = (points: [number, number][], graphWidth: number, graphHeight: number, secure: number = 0) => {
+export const clipPoly = (points: [number, number][], graphWidth?: number, graphHeight?: number, secure: number = 0) => {
   if (points.length < 2) return points;
   if (points.some(point => point === undefined)) {
     window.ERROR && console.error("Undefined point in clipPoly", points);
