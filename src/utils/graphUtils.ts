@@ -139,7 +139,7 @@ export const calculateVoronoi = (points: Point[], boundary: Point[]): {cells: Ce
   const voronoi = new Voronoi(delaunay, allPoints, points.length);
 
   const cells = voronoi.cells;
-  cells.i = createTypedArray({maxValue: points.length, length: points.length}).map((_, i) => i) as Uint32Array<ArrayBufferLike>; // array of indexes
+  cells.i = createTypedArray({maxValue: points.length, length: points.length}).map((_, i) => i) as Uint32Array; // array of indexes
   const vertices = voronoi.vertices;
   TIME && console.timeEnd("calculateVoronoi");
 
