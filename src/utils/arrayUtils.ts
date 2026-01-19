@@ -78,7 +78,7 @@ export const getTypedArray = (maxValue: number) => {
  * @param {Array} [options.from] - An optional array to create the typed array from
  * @returns The created typed array
  */
-export const createTypedArray = ({maxValue, length, from}: {maxValue: number; length: number; from?: ArrayLike<number>}) => {
+export const createTypedArray = ({maxValue, length, from}: {maxValue: number; length: number; from?: ArrayLike<number>}): Uint8Array | Uint16Array | Uint32Array => {
   const typedArray = getTypedArray(maxValue);
   if (!from) return new typedArray(length);
   return typedArray.from(from);

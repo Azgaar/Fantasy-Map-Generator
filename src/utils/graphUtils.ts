@@ -4,6 +4,7 @@ import { color } from "d3";
 import { byId } from "./shorthands";
 import { rn } from "./numberUtils";
 import { createTypedArray } from "./arrayUtils";
+import { Cells, Vertices, Voronoi, Point } from "../modules/voronoi";
 
 /**
  * Get boundary points on a regular square grid
@@ -12,14 +13,14 @@ import { createTypedArray } from "./arrayUtils";
  * @param {number} spacing - The spacing between points
  * @returns {Array} - An array of boundary points
  */
-const getBoundaryPoints = (width: number, height: number, spacing: number) => {
+const getBoundaryPoints = (width: number, height: number, spacing: number): Point[] => {
   const offset = rn(-1 * spacing);
   const bSpacing = spacing * 2;
   const w = width - offset * 2;
   const h = height - offset * 2;
   const numberX = Math.ceil(w / bSpacing) - 1;
   const numberY = Math.ceil(h / bSpacing) - 1;
-  const points = [];
+  const points: Point[] = [];
 
   for (let i = 0.5; i < numberX; i++) {
     let x = Math.ceil((w * i) / numberX + offset);
@@ -41,13 +42,13 @@ const getBoundaryPoints = (width: number, height: number, spacing: number) => {
  * @param {number} spacing - The spacing between points
  * @returns {Array} - An array of jittered grid points
  */
-const getJitteredGrid = (width: number, height: number, spacing: number): number[][] => {
+const getJitteredGrid = (width: number, height: number, spacing: number): Point[] => {
   const radius = spacing / 2; // square radius
   const jittering = radius * 0.9; // max deviation
   const doubleJittering = jittering * 2;
   const jitter = () => Math.random() * doubleJittering - jittering;
 
-  let points: number[][] = [];
+  let points: Point[] = [];
   for (let y = radius; y < height; y += spacing) {
     for (let x = radius; x < width; x += spacing) {
       const xj = Math.min(rn(x + jitter(), 2), width);
@@ -64,18 +65,18 @@ const getJitteredGrid = (width: number, height: number, spacing: number): number
  * @param {number} graphHeight - The height of the graph
  * @returns {Object} - An object containing spacing, cellsDesired, boundary points, grid points, cellsX, and cellsY
  */
-const placePoints = (graphWidth: number, graphHeight: number) => {
-  window.TIME && console.time("placePoints");
+const placePoints = (graphWidth: number, graphHeight: number): {spacing: number, cellsDesired: number, boundary: Point[], points: Point[], cellsX: number, cellsY: number} => {
+  TIME && console.time("placePoints");
   const cellsDesired = +(byId("pointsInput")?.dataset.cells || 0);
-  const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jirrering
+  const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jittering
 
   const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
   const points = getJitteredGrid(graphWidth, graphHeight, spacing); // points of jittered square grid
-  const cellsX = Math.floor((graphWidth + 0.5 * spacing - 1e-10) / spacing);
-  const cellsY = Math.floor((graphHeight + 0.5 * spacing - 1e-10) / spacing);
-  window.TIME && console.timeEnd("placePoints");
+  const cellCountX = Math.floor((graphWidth + 0.5 * spacing - 1e-10) / spacing); // number of cells in x direction
+  const cellCountY = Math.floor((graphHeight + 0.5 * spacing - 1e-10) / spacing); // number of cells in y direction
+  TIME && console.timeEnd("placePoints");
 
-  return {spacing, cellsDesired, boundary, points, cellsX, cellsY};
+  return {spacing, cellsDesired, boundary, points, cellsX: cellCountX, cellsY: cellCountY};
 }
 
 
@@ -100,11 +101,22 @@ export const shouldRegenerateGrid = (grid: any, expectedSeed: number, graphWidth
   return grid.spacing !== newSpacing || grid.cellsX !== newCellsX || grid.cellsY !== newCellsY;
 }
 
+interface Grid {
+  spacing: number;
+  cellsDesired: number;
+  boundary: Point[];
+  points: Point[];
+  cellsX: number;
+  cellsY: number;
+  seed: string | number;
+  cells: Cells;
+  vertices: Vertices;
+}
 /**
  * Generates a Voronoi grid based on jittered grid points
  * @returns {Object} - The generated grid object containing spacing, cellsDesired, boundary, points, cellsX, cellsY, cells, vertices, and seed
  */
-export const generateGrid = (seed: string, graphWidth: number, graphHeight: number) => {
+export const generateGrid = (seed: string, graphWidth: number, graphHeight: number): Grid => {
   Math.random = Alea(seed); // reset PRNG
   const {spacing, cellsDesired, boundary, points, cellsX, cellsY} = placePoints(graphWidth, graphHeight);
   const {cells, vertices} = calculateVoronoi(points, boundary);
@@ -117,19 +129,19 @@ export const generateGrid = (seed: string, graphWidth: number, graphHeight: numb
  * @param {Array} boundary - The boundary points to clip the Voronoi cells
  * @returns {Object} - An object containing Voronoi cells and vertices
  */
-export const calculateVoronoi = (points: number[][], boundary: number[][]) => {
-  window.TIME && console.time("calculateDelaunay");
+export const calculateVoronoi = (points: Point[], boundary: Point[]): {cells: Cells, vertices: Vertices} => {
+  TIME && console.time("calculateDelaunay");
   const allPoints = points.concat(boundary);
   const delaunay = Delaunator.from(allPoints);
-  window.TIME && console.timeEnd("calculateDelaunay");
+  TIME && console.timeEnd("calculateDelaunay");
 
-  window.TIME && console.time("calculateVoronoi");
-  const voronoi = new window.Voronoi(delaunay, allPoints, points.length);
+  TIME && console.time("calculateVoronoi");
+  const voronoi = new Voronoi(delaunay, allPoints, points.length);
 
   const cells = voronoi.cells;
-  cells.i = createTypedArray({maxValue: points.length, length: points.length}).map((_, i) => i); // array of indexes
+  cells.i = createTypedArray({maxValue: points.length, length: points.length}).map((_, i) => i) as Uint32Array; // array of indexes
   const vertices = voronoi.vertices;
-  window.TIME && console.timeEnd("calculateVoronoi");
+  TIME && console.timeEnd("calculateVoronoi");
 
   return {cells, vertices};
 }
@@ -432,9 +444,8 @@ export const drawHeights = ({heights, width, height, scheme, renderOcean}: {heig
 }
 
 declare global {
+  var TIME: boolean;
   interface Window {
-    TIME: boolean;
-    Voronoi: any;
     
     shouldRegenerateGrid: typeof shouldRegenerateGrid;
     generateGrid: typeof generateGrid;
