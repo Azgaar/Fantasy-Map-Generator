@@ -7,6 +7,8 @@ declare global {
     HeightmapGenerator: HeightmapGenerator;
   }
   var heightmapTemplates: any;
+  var TIME: boolean;
+  var ERROR: boolean;
 }
 
 type Tool = "Hill" | "Pit" | "Range" | "Trough" | "Strait" | "Mask" | "Invert" | "Add" | "Multiply" | "Smooth";
