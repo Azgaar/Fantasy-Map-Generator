@@ -544,7 +544,7 @@ class HeightmapGenerator {
 
   fromPrecreated(graph: any, id: string): Promise<Uint8Array> {
     return new Promise(resolve => {
-      // create canvas where 1px corresponts to a cell
+      // create canvas where 1px corresponds to a cell
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
       const {cellsX, cellsY} = graph;
