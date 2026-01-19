@@ -1,6 +1,6 @@
 import Alea from "alea";
 import { range as d3Range, leastIndex, mean } from "d3";
-import { createTypedArray, byId,findGridCell,getNumberInRange,lim,minmax,P,rand } from "../utils";
+import { createTypedArray, byId, findGridCell, getNumberInRange, lim, minmax, P, rand } from "../utils";
 
 declare global {
   interface Window {
