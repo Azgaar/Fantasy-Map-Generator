@@ -1,6 +1,6 @@
 import Alea from "alea";
 import { range as d3Range, leastIndex, mean } from "d3";
-import { createTypedArray, byId,findGridCell,getNumberInRange,lim,minmax,P,rand } from "../utils";
+import { createTypedArray, byId, findGridCell, getNumberInRange, lim, minmax, P, rand } from "../utils";
 
 declare global {
   interface Window {
@@ -546,7 +546,7 @@ class HeightmapGenerator {
 
   fromPrecreated(graph: any, id: string): Promise<Uint8Array> {
     return new Promise(resolve => {
-      // create canvas where 1px corresponts to a cell
+      // create canvas where 1px corresponds to a cell
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
       const {cellsX, cellsY} = graph;
