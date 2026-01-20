@@ -141,6 +141,9 @@ class FeatureModule {
     TIME && console.timeEnd("markupGrid");
   }
 
+  /**
+   * mark PackedGraph features (oceans, lakes, islands) and calculate distance field
+   */
   markupPack() {
     const defineHaven = (cellId: number) => {
       const waterCells = neighbors[cellId].filter((index: number) => isWater(index, this.packedGraph));
@@ -277,6 +280,9 @@ class FeatureModule {
     TIME && console.timeEnd("markupPack");
   }
 
+  /**
+   * define feature groups (ocean, sea, gulf, continent, island, isle, freshwater lake, salt lake, etc.)
+   */
   defineGroups() {
     const gridCellsNumber = this.grid.cells.i.length;
     const OCEAN_MIN_SIZE = gridCellsNumber / 25;
