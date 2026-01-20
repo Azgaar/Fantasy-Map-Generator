@@ -1,6 +1,6 @@
 export default {
     root: './src',
-    base: '/Fantasy-Map-Generator/',
+    base: process.env.NETLIFY ? '/' : '/Fantasy-Map-Generator/',
     build: {
         outDir: '../dist',
         assetsDir: './',
