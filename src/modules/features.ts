@@ -28,11 +28,20 @@ interface Feature {
   height: number;
   group: string;
   temp: number;
+  flux: number;
+  evaporation: number;
   inlets: number;
   outlet: number;
-  evaporation: number;
-  flux: number;
 }
+
+interface GridFeature {
+  i: number;
+  land: boolean;
+  border: boolean;
+  type: FeatureType;
+}
+
+interface PackedGraphFeature extends Omit<Feature, 'group' | 'temp' | 'flux' | 'evaporation' | 'inlets' | 'outlet'> {}
 
 class FeatureModule {
   private DEEPER_LAND = 3;
@@ -90,7 +99,7 @@ class FeatureModule {
     const cellsNumber = i.length;
     const distanceField = new Int8Array(cellsNumber); // gird.cells.t
     const featureIds = new Uint16Array(cellsNumber); // gird.cells.f
-    const features: any[] = [0];
+    const features: GridFeature[] = [];
 
     const queue = [0];
     for (let featureId = 1; queue[0] !== -1; featureId++) {
@@ -127,7 +136,7 @@ class FeatureModule {
     this.markup({ distanceField, neighbors, start: this.DEEP_WATER, increment: -1, limit: -10 });
     this.grid.cells.t = distanceField;
     this.grid.cells.f = featureIds;
-    this.grid.features = features;
+    this.grid.features = [0, ...features];
 
     TIME && console.timeEnd("markupGrid");
   }
@@ -174,14 +183,14 @@ class FeatureModule {
       }
     }
 
-    const addFeature = ({ firstCell, land, border, featureId, totalCells }: { firstCell: number; land: boolean; border: boolean; featureId: number; totalCells: number }): Feature => {
+    const addFeature = ({ firstCell, land, border, featureId, totalCells }: { firstCell: number; land: boolean; border: boolean; featureId: number; totalCells: number }): PackedGraphFeature => {
       const type = land ? "island" : border ? "ocean" : "lake";
       const [startCell, featureVertices] = getCellsData(type, firstCell);
       const points = clipPoly(featureVertices.map((vertex: number) => vertices.p[vertex]));
       const area = polygonArea(points); // feature perimiter area
       const absArea = Math.abs(rn(area));
 
-      const feature: Partial<Feature> = {
+      const feature: PackedGraphFeature = {
         i: featureId,
         type,
         land,
@@ -189,16 +198,18 @@ class FeatureModule {
         cells: totalCells,
         firstCell: startCell,
         vertices: featureVertices,
-        area: absArea
+        area: absArea,
+        shoreline: [],
+        height: 0,
       };
 
       if (type === "lake") {
-        if (area > 0) feature.vertices = feature.vertices?.reverse();
-        feature.shoreline = unique(feature.vertices?.map(vertex => vertices.c[vertex].filter((index: number) => isLand(index, this.packedGraph))).flat() || []);
+        if (area > 0) feature.vertices = feature.vertices.reverse();
+        feature.shoreline = unique(feature.vertices.map(vertex => vertices.c[vertex].filter((index: number) => isLand(index, this.packedGraph))).flat() || []);
         feature.height = Lakes.getHeight(feature);
       }
 
-      return feature as Feature;
+      return feature;
     }
 
     TIME && console.time("markupPack");
@@ -212,7 +223,7 @@ class FeatureModule {
     const featureIds = new Uint16Array(packCellsNumber); // pack.cells.f
     const haven = createTypedArray({ maxValue: packCellsNumber, length: packCellsNumber }); // haven: opposite water cell
     const harbor = new Uint8Array(packCellsNumber); // harbor: number of adjacent water cells
-    const features: Feature[] = [];
+    const features: PackedGraphFeature[] = [];
 
     const queue = [0];
     for (let featureId = 1; queue[0] !== -1; featureId++) {
