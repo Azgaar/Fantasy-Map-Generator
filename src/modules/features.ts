@@ -15,7 +15,7 @@ declare global {
 
 type FeatureType = "ocean" | "lake" | "island";
 
-interface Feature {
+export interface PackedGraphFeature {
   i: number;
   type: FeatureType;
   land: boolean;
@@ -30,18 +30,19 @@ interface Feature {
   temp: number;
   flux: number;
   evaporation: number;
-  inlets: number;
+  inlets: number[];
   outlet: number;
+  river: number;
+  enteringFlux: number;
+  closed: boolean;
 }
 
-interface GridFeature {
+export interface GridFeature {
   i: number;
   land: boolean;
   border: boolean;
   type: FeatureType;
 }
-
-interface PackedGraphFeature extends Omit<Feature, 'group' | 'temp' | 'flux' | 'evaporation' | 'inlets' | 'outlet'> {}
 
 class FeatureModule {
   private DEEPER_LAND = 3;
@@ -193,7 +194,7 @@ class FeatureModule {
       const area = polygonArea(points); // feature perimiter area
       const absArea = Math.abs(rn(area));
 
-      const feature: PackedGraphFeature = {
+      const feature: Partial<PackedGraphFeature> = {
         i: featureId,
         type,
         land,
@@ -207,12 +208,14 @@ class FeatureModule {
       };
 
       if (type === "lake") {
-        if (area > 0) feature.vertices = feature.vertices.reverse();
-        feature.shoreline = unique(feature.vertices.map(vertex => vertices.c[vertex].filter((index: number) => isLand(index, this.packedGraph))).flat() || []);
+        if (area > 0) feature.vertices = (feature.vertices as number[]).reverse();
+        feature.shoreline = unique((feature.vertices as number[]).map(vertex => vertices.c[vertex].filter((index: number) => isLand(index, this.packedGraph))).flat() || []);
         feature.height = Lakes.getHeight(feature);
       }
 
-      return feature;
+      return {
+        ...feature
+      } as PackedGraphFeature;
     }
 
     TIME && console.time("markupPack");
@@ -290,7 +293,7 @@ class FeatureModule {
     const CONTINENT_MIN_SIZE = gridCellsNumber / 10;
     const ISLAND_MIN_SIZE = gridCellsNumber / 1000;
 
-    const defineIslandGroup = (feature: Feature) => {
+    const defineIslandGroup = (feature: PackedGraphFeature) => {
       const prevFeature = this.packedGraph.features[this.packedGraph.cells.f[feature.firstCell - 1]];
       if (prevFeature && prevFeature.type === "lake") return "lake_island";
       if (feature.cells > CONTINENT_MIN_SIZE) return "continent";
@@ -298,13 +301,13 @@ class FeatureModule {
       return "isle";
     }
 
-    const defineOceanGroup = (feature: Feature) => {
+    const defineOceanGroup = (feature: PackedGraphFeature) => {
       if (feature.cells > OCEAN_MIN_SIZE) return "ocean";
       if (feature.cells > SEA_MIN_SIZE) return "sea";
       return "gulf";
     }
 
-    const defineLakeGroup = (feature: Feature) => {
+    const defineLakeGroup = (feature: PackedGraphFeature) => {
       if (feature.temp < -3) return "frozen";
       if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 10 === 0) return "lava";
 
@@ -318,7 +321,7 @@ class FeatureModule {
       return "freshwater";
     }
 
-    const defineGroup = (feature: Feature) => {
+    const defineGroup = (feature: PackedGraphFeature) => {
       if (feature.type === "island") return defineIslandGroup(feature);
       if (feature.type === "ocean") return defineOceanGroup(feature);
       if (feature.type === "lake") return defineLakeGroup(feature);
