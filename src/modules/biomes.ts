@@ -1,10 +1,11 @@
 import { range, mean } from "d3";
 import { rn } from "../utils";
+import { PackedGraph } from "./PackedGraph";
 
 declare global {
   var Biomes: BiomesModule;
 
-  var pack: any;
+  var pack: PackedGraph;
   var grid: any;
   var TIME: boolean;
 

@@ -1,15 +1,17 @@
 import { clipPoly, connectVertices, createTypedArray, distanceSquared, isLand, isWater, rn, TYPED_ARRAY_MAX_VALUES,unique } from "../utils";
 import Alea from "alea";
 import { polygonArea } from "d3";
+import { LakesModule } from "./lakes";
+import { PackedGraph } from "./PackedGraph";
 
 declare global {
   interface Window {
     Features: any;
   }
   var TIME: boolean;
-  var Lakes: any;
+  var Lakes: LakesModule;
   var grid: any;
-  var pack: any;
+  var pack: PackedGraph;
   var seed: string;
 }
 
@@ -30,11 +32,15 @@ export interface PackedGraphFeature {
   temp: number;
   flux: number;
   evaporation: number;
-  inlets: number[];
-  outlet: number;
-  river: number;
-  enteringFlux: number;
-  closed: boolean;
+  name: string;
+
+  // River related
+  inlets?: number[];
+  outlet?: number;
+  river?: number;
+  enteringFlux?: number;
+  closed?: boolean;
+  outCell?: number;
 }
 
 export interface GridFeature {
@@ -210,7 +216,7 @@ class FeatureModule {
       if (type === "lake") {
         if (area > 0) feature.vertices = (feature.vertices as number[]).reverse();
         feature.shoreline = unique((feature.vertices as number[]).map(vertex => vertices.c[vertex].filter((index: number) => isLand(index, this.packedGraph))).flat() || []);
-        feature.height = Lakes.getHeight(feature);
+        feature.height = Lakes.getHeight(feature as PackedGraphFeature);
       }
 
       return {
@@ -278,7 +284,7 @@ class FeatureModule {
     this.packedGraph.cells.f = featureIds;
     this.packedGraph.cells.haven = haven;
     this.packedGraph.cells.harbor = harbor;
-    this.packedGraph.features = [0, ...features];
+    this.packedGraph.features = [0 as unknown as PackedGraphFeature, ...features];
 
     TIME && console.timeEnd("markupPack");
   }

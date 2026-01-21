@@ -7,6 +7,7 @@ rn,round,
 rw} from "../utils";
 import { PackedGraphFeature } from "./features";
 import { PackedGraph } from "./PackedGraph";
+import { LakesModule } from "./lakes";
 
 declare global {
   interface Window {
@@ -16,7 +17,7 @@ declare global {
   var WARN: boolean;
   var graphHeight: number;
   var graphWidth: number;
-  var pack: any;
+  var pack: PackedGraph;
 
   var rivers: Selection<SVGElement, unknown, null, undefined>;
   var pointsInput: HTMLInputElement;
@@ -25,7 +26,7 @@ declare global {
   var TIME: boolean;
 
   var Names: any;
-  var Lakes: any;
+  var Lakes: LakesModule;
 }
 
 export interface River {
@@ -114,8 +115,8 @@ class RiverModule {
             const sameRiver = cells.c[lakeCell].some((c: number) => cells.r[c] === lake.river);
 
             if (sameRiver) {
-              cells.r[lakeCell] = lake.river;
-              addCellToRiver(lakeCell, lake.river);
+              cells.r[lakeCell] = lake.river as number;
+              addCellToRiver(lakeCell, lake.river as number);
             } else {
               cells.r[lakeCell] = riverNext;
               addCellToRiver(lakeCell, riverNext);
@@ -132,7 +133,7 @@ class RiverModule {
         for (const lake of lakes) {
           if (!Array.isArray(lake.inlets)) continue;
           for (const inlet of lake.inlets) {
-            riverParents[inlet] = outlet;
+            riverParents[inlet] = outlet as number;
           }
         }
 
@@ -199,7 +200,7 @@ class RiverModule {
         // pour water to the water body
         const waterBody = features[cells.f[toCell]];
         if (waterBody.type === "lake") {
-          if (!waterBody.river || fromFlux > waterBody.enteringFlux) {
+          if (!waterBody.river || fromFlux > (waterBody.enteringFlux as number)) {
             waterBody.river = river;
             waterBody.enteringFlux = fromFlux;
           }
@@ -320,16 +321,16 @@ class RiverModule {
     TIME && console.timeEnd("generateRivers");
   };
 
-  alterHeights() {
+  alterHeights(): Uint8Array {
     const {h, c, t} = this.pack.cells as {h: Uint8Array, c: number[][], t: Uint8Array};
-    return Array.from(h).map((h, i) => {
+    return Uint8Array.from(Array.from(h).map((h, i) => {
       if (h < 20 || t[i] < 1) return h;
       return h + t[i] / 100 + (mean(c[i].map(c => t[c])) || 0) / 10000;
-    });
+    }));
   };
 
   // depression filling algorithm (for a correct water flux modeling)
-  resolveDepressions(h: number[]) {
+  resolveDepressions(h: Uint8Array) {
     const {cells, features} = this.pack;
     const maxIterations = +(document.getElementById("resolveDepressionsStepsOutput") as HTMLInputElement)?.value;
     const checkLakeMaxIteration = maxIterations * 0.85;
