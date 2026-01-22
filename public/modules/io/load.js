@@ -406,7 +406,6 @@ async function parseLoadedData(data, mapVersion) {
       pack.cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(pack.cells.i.length);
       // data[28] had deprecated cells.crossroad
       pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
-      pack.ice = data[39] ? JSON.parse(data[39]) : [];
 
       if (data[31]) {
         const namesDL = data[31].split("/");
@@ -450,7 +449,7 @@ async function parseLoadedData(data, mapVersion) {
       if (isVisible(routes) && hasChild(routes, "path")) turnOn("toggleRoutes");
       if (hasChildren(temperature)) turnOn("toggleTemperature");
       if (hasChild(population, "line")) turnOn("togglePopulation");
-      if (isVisible(ice)) turnOn("toggleIce");
+      if (hasChildren(ice)) turnOn("toggleIce");
       if (hasChild(prec, "circle")) turnOn("togglePrecipitation");
       if (isVisible(emblems) && hasChild(emblems, "use")) turnOn("toggleEmblems");
       if (isVisible(labels)) turnOn("toggleLabels");

@@ -259,8 +259,6 @@ function editHeightmap(options) {
     Rivers.specify();
     Lakes.defineNames();
 
-    Ice.generate();
-
     Military.generate();
     Markers.generate();
     Zones.generate();
@@ -466,10 +464,6 @@ function editHeightmap(options) {
         .attr("points", d => getPackPolygon(d))
         .attr("id", d => base + d);
     });
-
-    // recalculate ice
-    Ice.generate();
-    ice.selectAll("*").remove();
 
     TIME && console.timeEnd("restoreRiskedData");
     INFO && console.groupEnd("Edit Heightmap");
