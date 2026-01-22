@@ -34,13 +34,16 @@ function overviewRivers() {
     let lines = "";
     const unit = distanceUnitInput.value;
 
+    // Precompute a lookup map from river id to river for efficient basin lookup
+    const riversById = new Map(pack.rivers.map(river => [river.i, river]));
+
     let filteredRivers = pack.rivers;
     const searchText = byId("riversSearch").value.toLowerCase().trim();
     if (searchText) {
       filteredRivers = filteredRivers.filter(r => {
         const name = (r.name || "").toLowerCase();
         const type = (r.type || "").toLowerCase();
-        const basin = pack.rivers.find(river => river.i === r.basin);
+        const basin = riversById.get(r.basin);
         const basinName = basin ? (basin.name || "").toLowerCase() : "";
         return name.includes(searchText) || type.includes(searchText) || basinName.includes(searchText);
       });
@@ -50,7 +53,7 @@ function overviewRivers() {
       const discharge = r.discharge + " m³/s";
       const length = rn(r.length * distanceScale) + " " + unit;
       const width = rn(r.width * distanceScale, 3) + " " + unit;
-      const basin = pack.rivers.find(river => river.i === r.basin)?.name;
+      const basin = riversById.get(r.basin)?.name;
 
       lines += /* html */ `<div
         class="states"
