@@ -1040,7 +1040,7 @@ export function resolveVersionConflicts(mapVersion) {
   if (isOlderThan("1.111.0")) {
     // v1.111.0 moved ice data from SVG to data model
     // Migrate old ice SVG elements to new pack.ice structure
-    if (!pack.ice) {
+    if (!pack.ice.length) {
       pack.ice = [];
       let iceId = 0;
 
