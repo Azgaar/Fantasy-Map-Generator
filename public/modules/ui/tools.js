@@ -555,7 +555,7 @@ function regenerateMilitary() {
 
 function regenerateIce() {
   if (!layerIsOn("toggleIce")) toggleIce();
-  ice.selectAll("*").remove();
+  Ice.generate();
   drawIce();
 }
 
