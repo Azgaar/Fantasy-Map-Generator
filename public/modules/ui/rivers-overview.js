@@ -5,7 +5,7 @@ function overviewRivers() {
   closeDialogs("#riversOverview, .stable");
   if (!layerIsOn("toggleRivers")) toggleRivers();
 
-  const body = document.getElementById("riversBody");
+  const body = byId("riversBody");
   riversOverviewAddLines();
   $("#riversOverview").dialog();
 
@@ -20,12 +20,13 @@ function overviewRivers() {
   });
 
   // add listeners
-  document.getElementById("riversOverviewRefresh").addEventListener("click", riversOverviewAddLines);
-  document.getElementById("addNewRiver").addEventListener("click", toggleAddRiver);
-  document.getElementById("riverCreateNew").addEventListener("click", createRiver);
-  document.getElementById("riversBasinHighlight").addEventListener("click", toggleBasinsHightlight);
-  document.getElementById("riversExport").addEventListener("click", downloadRiversData);
-  document.getElementById("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
+  byId("riversOverviewRefresh").on("click", riversOverviewAddLines);
+  byId("addNewRiver").on("click", toggleAddRiver);
+  byId("riverCreateNew").on("click", createRiver);
+  byId("riversBasinHighlight").on("click", toggleBasinsHightlight);
+  byId("riversExport").on("click", downloadRiversData);
+  byId("riversRemoveAll").on("click", triggerAllRiversRemove);
+  byId("riversSearch").on("input", riversOverviewAddLines);
 
   // add line for each river
   function riversOverviewAddLines() {
@@ -33,11 +34,26 @@ function overviewRivers() {
     let lines = "";
     const unit = distanceUnitInput.value;
 
-    for (const r of pack.rivers) {
+    // Precompute a lookup map from river id to river for efficient basin lookup
+    const riversById = new Map(pack.rivers.map(river => [river.i, river]));
+
+    let filteredRivers = pack.rivers;
+    const searchText = byId("riversSearch").value.toLowerCase().trim();
+    if (searchText) {
+      filteredRivers = filteredRivers.filter(r => {
+        const name = (r.name || "").toLowerCase();
+        const type = (r.type || "").toLowerCase();
+        const basin = riversById.get(r.basin);
+        const basinName = basin ? (basin.name || "").toLowerCase() : "";
+        return name.includes(searchText) || type.includes(searchText) || basinName.includes(searchText);
+      });
+    }
+
+    for (const r of filteredRivers) {
       const discharge = r.discharge + " m³/s";
       const length = rn(r.length * distanceScale) + " " + unit;
       const width = rn(r.width * distanceScale, 3) + " " + unit;
-      const basin = pack.rivers.find(river => river.i === r.basin)?.name;
+      const basin = riversById.get(r.basin)?.name;
 
       lines += /* html */ `<div
         class="states"
@@ -63,22 +79,20 @@ function overviewRivers() {
     body.insertAdjacentHTML("beforeend", lines);
 
     // update footer
-    riversFooterNumber.innerHTML = pack.rivers.length;
-    const averageDischarge = rn(d3.mean(pack.rivers.map(r => r.discharge)));
+    riversFooterNumber.innerHTML = `${filteredRivers.length} of ${pack.rivers.length}`;
+    const averageDischarge = rn(d3.mean(filteredRivers.map(r => r.discharge))) || 0;
     riversFooterDischarge.innerHTML = averageDischarge + " m³/s";
-    const averageLength = rn(d3.mean(pack.rivers.map(r => r.length)));
+    const averageLength = rn(d3.mean(filteredRivers.map(r => r.length))) || 0;
     riversFooterLength.innerHTML = averageLength * distanceScale + " " + unit;
-    const averageWidth = rn(d3.mean(pack.rivers.map(r => r.width)), 3);
+    const averageWidth = rn(d3.mean(filteredRivers.map(r => r.width)), 3) || 0;
     riversFooterWidth.innerHTML = rn(averageWidth * distanceScale, 3) + " " + unit;
 
     // add listeners
-    body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => riverHighlightOn(ev)));
-    body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseleave", ev => riverHighlightOff(ev)));
-    body.querySelectorAll("div > span.icon-dot-circled").forEach(el => el.addEventListener("click", zoomToRiver));
-    body.querySelectorAll("div > span.icon-pencil").forEach(el => el.addEventListener("click", openRiverEditor));
-    body
-      .querySelectorAll("div > span.icon-trash-empty")
-      .forEach(el => el.addEventListener("click", triggerRiverRemove));
+    body.querySelectorAll("div.states").forEach(el => el.on("mouseenter", ev => riverHighlightOn(ev)));
+    body.querySelectorAll("div.states").forEach(el => el.on("mouseleave", ev => riverHighlightOff(ev)));
+    body.querySelectorAll("div > span.icon-dot-circled").forEach(el => el.on("click", zoomToRiver));
+    body.querySelectorAll("div > span.icon-pencil").forEach(el => el.on("click", openRiverEditor));
+    body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", triggerRiverRemove));
 
     applySorting(riversHeader);
   }

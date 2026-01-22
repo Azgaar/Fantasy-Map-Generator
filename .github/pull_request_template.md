@@ -4,7 +4,7 @@
 
 # Type of change
 
-<!-- Please put X into brackers of required option OR delete options that are not relevant -->
+<!-- Please put X into brackets of required option OR delete options that are not relevant -->
 
 - [ ] Bug fix
 - [ ] New feature
