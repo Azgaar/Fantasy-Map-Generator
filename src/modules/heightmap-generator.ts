@@ -560,9 +560,7 @@ class HeightmapGenerator {
         if(!ctx) {
           throw new Error("Could not get canvas context");
         }
-        if(!this.heights) {
-          throw new Error("Heights array is not initialized");
-        }
+        this.heights = this.heights || new Uint8Array(cellsX * cellsY);
         ctx.drawImage(img, 0, 0, cellsX, cellsY);
         const imageData = ctx.getImageData(0, 0, cellsX, cellsY);
         this.setGraph(graph);
