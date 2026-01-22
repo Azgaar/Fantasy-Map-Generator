@@ -75,10 +75,10 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
       // filter by search text
       filtered = filtered.filter(b => {
         const name = b.name.toLowerCase();
-        const state = (pack.states[b.state].name || "").toLowerCase();
+        const state = (pack.states[b.state]?.name || "").toLowerCase();
         const prov = pack.cells.province[b.cell];
         const province = prov ? pack.provinces[prov]?.name.toLowerCase() : "";
-        const culture = (pack.cultures[b.culture].name || "").toLowerCase();
+        const culture = (pack.cultures[b.culture]?.name || "").toLowerCase();
         return (
           name.includes(searchText) ||
           state.includes(searchText) ||
