@@ -37,6 +37,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
 
       <ul>
         <strong>Latest changes:</strong>
+        <li>Search input in Overview dialogs</li>
         <li>Custom burg grouping and icon selection</li>
         <li>Ability to set custom image as Marker or Regiment icon</li>
         <li>Submap and Transform tools rework</li>
@@ -48,8 +49,6 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
         <li>New routes generation algorithm</li>
         <li>Routes overview tool</li>
         <li>Configurable longitude</li>
-        <li>Preview villages map</li>
-        <li>Ability to render ocean heightmap</li>
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>

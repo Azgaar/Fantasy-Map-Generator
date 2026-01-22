@@ -28,6 +28,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   byId("burgsChart").addEventListener("click", showBurgsChart);
   byId("burgsFilterState").addEventListener("change", burgsOverviewAddLines);
   byId("burgsFilterCulture").addEventListener("change", burgsOverviewAddLines);
+  byId("burgsSearch").addEventListener("input", burgsOverviewAddLines);
   byId("regenerateBurgNames").addEventListener("click", regenerateNames);
   byId("addNewBurg").addEventListener("click", enterAddBurgMode);
   byId("burgsExport").addEventListener("click", downloadBurgsData);
@@ -63,9 +64,30 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
 
   // add line for each burg
   function burgsOverviewAddLines() {
+    const searchText = byId("burgsSearch").value.toLowerCase().trim();
     const selectedStateId = +byId("burgsFilterState").value;
     const selectedCultureId = +byId("burgsFilterCulture").value;
-    let filtered = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
+
+    const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
+    let filtered = validBurgs;
+
+    if (searchText) {
+      // filter by search text
+      filtered = filtered.filter(b => {
+        const name = b.name.toLowerCase();
+        const state = (pack.states[b.state]?.name || "").toLowerCase();
+        const prov = pack.cells.province[b.cell];
+        const province = prov ? pack.provinces[prov]?.name.toLowerCase() : "";
+        const culture = (pack.cultures[b.culture]?.name || "").toLowerCase();
+        return (
+          name.includes(searchText) ||
+          state.includes(searchText) ||
+          province.includes(searchText) ||
+          culture.includes(searchText) ||
+          b.group.toLowerCase().includes(searchText)
+        );
+      });
+    }
     if (selectedStateId !== -1) filtered = filtered.filter(b => b.state === selectedStateId); // filtered by state
     if (selectedCultureId !== -1) filtered = filtered.filter(b => b.culture === selectedCultureId); // filtered by culture
 
@@ -119,7 +141,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     body.insertAdjacentHTML("beforeend", lines);
 
     // update footer
-    burgsFooterBurgs.innerHTML = filtered.length;
+    burgsFooterBurgs.innerHTML = `${filtered.length} of ${validBurgs.length}`;
     burgsFooterPopulation.innerHTML = filtered.length ? si(totalPopulation / filtered.length) : 0;
 
     // add listeners
