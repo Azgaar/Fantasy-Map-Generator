@@ -675,7 +675,7 @@ function editHeightmap(options) {
       if (power === 0) return tip("Power should not be zero", false, "error");
 
       const heights = grid.cells.h;
-      const operation = power > 0 ? HeightmapGenerator.addRange : HeightmapGenerator.addTrough;
+      const operation = power > 0 ? HeightmapGenerator.addRange.bind(HeightmapGenerator) : HeightmapGenerator.addTrough.bind(HeightmapGenerator);
       HeightmapGenerator.setGraph(grid);
       operation("1", String(Math.abs(power)), null, null, fromCell, toCell);
       const changedHeights = HeightmapGenerator.getHeights();
