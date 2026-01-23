@@ -15,7 +15,7 @@ test.describe('map layers', () => {
     // NOTE:
     // - We use a fixed seed ("test-seed") to make map generation deterministic for snapshot tests.
     // - Snapshots are OS-independent (configured in playwright.config.ts).
-    await page.goto('/?seed=test-seed')
+    await page.goto('/?seed=test-seed&&width=1280&height=720')
     
     // Wait for map generation to complete by checking window.mapId
     // mapId is exposed on window at the very end of showStatistics()
