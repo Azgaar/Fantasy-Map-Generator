@@ -10,13 +10,13 @@ jobs:
     - uses: actions/checkout@v5
     - uses: actions/setup-node@v5
       with:
-        node-version: lts/*
+        node-version: '24'
     - name: Install dependencies
       run: npm ci
     - name: Install Playwright Browsers
       run: playwright install --with-deps
     - name: Run Playwright tests
-      run: playwright test
+      run: npm run test:e2e
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:

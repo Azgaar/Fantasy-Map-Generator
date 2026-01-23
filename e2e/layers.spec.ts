@@ -12,6 +12,13 @@ test.describe('map layers', () => {
     })
     
     // Navigate with seed parameter
+    // NOTE:
+    // - We use a fixed seed ("test-seed") to make map generation deterministic for snapshot tests.
+    // - The resulting snapshots are platform-specific (Playwright stores them with suffixes such as
+    //   "-darwin", "-linux", "-win32").
+    // - Currently, only macOS ("-darwin") snapshots may be present in the repository. On other
+    //   platforms (Linux/Windows), you must generate/update the corresponding snapshots for the
+    //   tests to pass, or configure Playwright to use per-platform snapshot directories.
     await page.goto('/?seed=test-seed')
 
     const mapElement = page.locator('#map')
@@ -21,7 +28,6 @@ test.describe('map layers', () => {
     await expect(mapElement.locator('#terrs')).toBeAttached({ timeout: 30000 })
     await expect(mapElement.locator('#labels')).toBeAttached()
     await expect(page.locator('#loading')).toBeHidden({ timeout: 30000 })
-    await page.waitForTimeout(1000)
   })
 
   // Ocean and water layers
