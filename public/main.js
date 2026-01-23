@@ -632,6 +632,8 @@ async function generate(options) {
     Biomes.define();
     Features.defineGroups();
 
+    Ice.generate();
+
     rankCells();
     Cultures.generate();
     Cultures.expand();
