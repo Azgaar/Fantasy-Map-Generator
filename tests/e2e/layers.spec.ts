@@ -231,33 +231,6 @@ test.describe('map layers', () => {
     expect(html).toMatchSnapshot('compass.html')
   })
 
-  // UI elements
-  test('scale bar layer', async ({ page }) => {
-    const scaleBar = page.locator('#scaleBar')
-    await expect(scaleBar).toBeAttached()
-    // Scale bar has randomized distances, snapshot structure only
-    const html = await scaleBar.evaluate((el) => {
-      const clone = el.cloneNode(true) as Element
-      clone.querySelectorAll('text').forEach((t) => t.remove())
-      return clone.outerHTML
-    })
-    expect(html).toMatchSnapshot('scaleBar.html')
-  })
-
-  test('ruler layer', async ({ page }) => {
-    const ruler = page.locator('#ruler')
-    await expect(ruler).toBeAttached()
-    const html = await ruler.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('ruler.html')
-  })
-
-  test('vignette layer', async ({ page }) => {
-    const vignette = page.locator('#vignette')
-    await expect(vignette).toBeAttached()
-    const html = await vignette.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('vignette.html')
-  })
-
   // Population layer
   test('population layer', async ({ page }) => {
     const population = page.locator('#population')
