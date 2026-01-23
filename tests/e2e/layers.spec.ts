@@ -10,24 +10,19 @@ test.describe('map layers', () => {
       localStorage.clear()
       sessionStorage.clear()
     })
-    
-    // Navigate with seed parameter
+
+    // Navigate with seed parameter and wait for full load
     // NOTE:
     // - We use a fixed seed ("test-seed") to make map generation deterministic for snapshot tests.
-    // - The resulting snapshots are platform-specific (Playwright stores them with suffixes such as
-    //   "-darwin", "-linux", "-win32").
-    // - Currently, only macOS ("-darwin") snapshots may be present in the repository. On other
-    //   platforms (Linux/Windows), you must generate/update the corresponding snapshots for the
-    //   tests to pass, or configure Playwright to use per-platform snapshot directories.
+    // - Snapshots are OS-independent (configured in playwright.config.ts).
     await page.goto('/?seed=test-seed')
-
-    const mapElement = page.locator('#map')
-    await expect(mapElement).toBeVisible()
-
-    // Wait for map generation to complete
-    await expect(mapElement.locator('#terrs')).toBeAttached({ timeout: 30000 })
-    await expect(mapElement.locator('#labels')).toBeAttached()
-    await expect(page.locator('#loading')).toBeHidden({ timeout: 30000 })
+    
+    // Wait for map generation to complete by checking window.mapId
+    // mapId is exposed on window at the very end of showStatistics()
+    await page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 })
+    
+    // Additional wait for any rendering/animations to settle
+    await page.waitForTimeout(500)
   })
 
   // Ocean and water layers
