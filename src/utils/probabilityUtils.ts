@@ -38,6 +38,7 @@ export const each = (n: number) => {
 
 /**
  * Random Gaussian number generator
+ * Uses randomNormal.source(Math.random) to ensure it uses the current PRNG
  * @param {number} expected - expected value
  * @param {number} deviation - standard deviation
  * @param {number} min - minimum value
@@ -46,7 +47,8 @@ export const each = (n: number) => {
  * @return {number} random number
  */
 export const gauss = (expected = 100, deviation = 30, min = 0, max = 300, round = 0) => {
-  return rn(minmax(randomNormal(expected, deviation)(), min, max), round);
+  // Use .source() to get a version that uses the current Math.random (which may be seeded)
+  return rn(minmax(randomNormal.source(() => Math.random())(expected, deviation)(), min, max), round);
 }
 
 /**
