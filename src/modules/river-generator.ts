@@ -1,10 +1,8 @@
 import Alea from "alea";
-import { curveBasis,
-line,
-mean, min, sum, curveCatmullRom } from "d3";
-import { each,
-rn,round, 
-rw} from "../utils";
+import { each, rn, round, rw} from "../utils";
+import { curveBasis, line, mean, min, sum, curveCatmullRom } from "d3";
+
+
 
 declare global {
   var Rivers: RiverModule;
@@ -62,7 +60,7 @@ class RiverModule {
 
     const drainWater = () => {
       const MIN_FLUX_TO_FORM_RIVER = 30;
-      const cellsNumberModifier = (parseInt(pointsInput.dataset.cells || "10000") / 10000) ** 0.25;
+      const cellsNumberModifier = ((pointsInput.dataset.cells as any) / 10000) ** 0.25;
 
       const prec = grid.cells.prec;
       const land = cells.i.filter((i: number) => h[i] >= 20).sort((a: number, b: number) => h[b] - h[a]);
@@ -76,7 +74,7 @@ class RiverModule {
           ? features.filter((feature: any) => i === feature.outCell && feature.flux > feature.evaporation)
           : [];
         for (const lake of lakes) {
-          const lakeCell: number = cells.c[i].find((c: number) => h[c] < 20 && cells.f[c] === lake.i) || i;
+          const lakeCell = cells.c[i].find((c: number) => h[c] < 20 && cells.f[c] === lake.i)!;
           cells.fl[lakeCell] += Math.max(lake.flux - lake.evaporation, 0); // not evaporated lake water drains to outlet
 
           // allow chain lakes to retain identity
@@ -191,7 +189,7 @@ class RiverModule {
       cells.conf = new Uint16Array(cells.i.length);
       pack.rivers = [];
 
-      const defaultWidthFactor = rn(1 / (parseInt(pointsInput.dataset.cells || "10000") / 10000) ** 0.25, 2);
+      const defaultWidthFactor = rn(1 / ((pointsInput.dataset.cells as any) / 10000) ** 0.25, 2);
       const mainStemWidthFactor = defaultWidthFactor * 1.2;
 
       for (const key in riversData) {
@@ -290,16 +288,16 @@ class RiverModule {
     TIME && console.timeEnd("generateRivers");
   };
 
-  alterHeights(): Uint8Array {
+  alterHeights(): number[] {
     const {h, c, t} = pack.cells as {h: Uint8Array, c: number[][], t: Uint8Array};
-    return Uint8Array.from(Array.from(h).map((h, i) => {
+    return Array.from(h).map((h, i) => {
       if (h < 20 || t[i] < 1) return h;
-      return h + t[i] / 100 + (mean(c[i].map(c => t[c])) || 0) / 10000;
-    }));
+      return h + t[i] / 100 + (mean(c[i].map(c => t[c])) as number) / 10000;
+    });
   };
 
   // depression filling algorithm (for a correct water flux modeling)
-  resolveDepressions(h: Uint8Array) {
+  resolveDepressions(h: number[]) {
     const {cells, features} = pack;
     const maxIterations = +(document.getElementById("resolveDepressionsStepsOutput") as HTMLInputElement)?.value;
     const checkLakeMaxIteration = maxIterations * 0.85;
@@ -327,23 +325,23 @@ class RiverModule {
       if (iteration < checkLakeMaxIteration) {
         for (const l of lakes) {
           if (l.closed) continue;
-          const minHeight: number = min<number>(l.shoreline.map((s: number) => h[s])) || 100;
+          const minHeight = min(l.shoreline.map((s: number) => h[s])) as number;
           if (minHeight >= 100 || l.height > minHeight) continue;
 
           if (iteration > elevateLakeMaxIteration) {
             l.shoreline.forEach((i: number) => (h[i] = cells.h[i]));
-            l.height = (min<number>(l.shoreline.map((s: number) => h[s])) || 100) - 1;
+            l.height = (min(l.shoreline.map((s: number) => h[s])) as number) - 1;
             l.closed = true;
             continue;
           }
 
           depressions++;
-          l.height = minHeight + 0.2;
+          l.height = (minHeight as number) + 0.2;
         }
       }
 
       for (const i of land) {
-        const minHeight = min<number>(cells.c[i].map((c: number) => height(c))) || 100;
+        const minHeight = min(cells.c[i].map((c: number) => height(c))) as number;
         if (minHeight >= 100 || h[i] > minHeight) continue;
 
         depressions++;
@@ -430,7 +428,7 @@ class RiverModule {
     if (pointIndex === 0) return startingWidth;
 
     const fluxWidth = Math.min(flux ** 0.7 / this.FLUX_FACTOR, this.MAX_FLUX_WIDTH);
-    const lengthWidth = pointIndex * this.LENGTH_STEP_WIDTH + (this.LENGTH_PROGRESSION[pointIndex] || this.LENGTH_PROGRESSION.at(-1) || 0);
+    const lengthWidth = pointIndex * this.LENGTH_STEP_WIDTH + (this.LENGTH_PROGRESSION[pointIndex] || this.LENGTH_PROGRESSION.at(-1) as number);
     return widthFactor * (lengthWidth + fluxWidth) + startingWidth;
   };
 

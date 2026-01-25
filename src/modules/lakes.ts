@@ -47,7 +47,7 @@ export class LakesModule {
     }
   };
 
-  defineClimateData(heights: Uint8Array) {
+  defineClimateData(heights: number[] | Uint8Array) {
     const {cells, features} = pack;
     const lakeOutCells = new Uint16Array(cells.i.length);
     
@@ -85,7 +85,7 @@ export class LakesModule {
   };
 
   // check if lake can be potentially open (not in deep depression)
-  detectCloseLakes(h: Uint8Array) {
+  detectCloseLakes(h: number[] | Uint8Array) {
     const {cells} = pack;
     const ELEVATION_LIMIT = +(byId("lakeElevationLimitOutput") as HTMLInputElement)?.value;
 

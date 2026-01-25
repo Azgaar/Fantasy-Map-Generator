@@ -90,8 +90,8 @@ class OceanModule {
       
       const points = clipPoly(
         relaxed.map(v => this.vertices.p[v]),
-        undefined,
-        undefined,
+        graphWidth,
+        graphHeight,
         1
       );
       chains.push([t, points]);
