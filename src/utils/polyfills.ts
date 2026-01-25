@@ -44,7 +44,7 @@ declare global {
   }
 
   interface Array<T> {
-    flat(depth?: number): T;
+    flat(depth?: number): T[];
     at(index: number): T | undefined;
   }
 

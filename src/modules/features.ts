@@ -1,4 +1,4 @@
-import { clipPoly, connectVertices, createTypedArray, distanceSquared, isLand, isWater, rn, TYPED_ARRAY_MAX_VALUES,unique } from "../utils";
+import { clipPoly, connectVertices, createTypedArray, distanceSquared, isLand, isWater, rn, TYPED_ARRAY_MAX_VALUES, unique } from "../utils";
 import Alea from "alea";
 import { polygonArea } from "d3";
 
@@ -194,7 +194,12 @@ class FeatureModule {
 
       if (type === "lake") {
         if (area > 0) feature.vertices = (feature.vertices as number[]).reverse();
-        feature.shoreline = unique((feature.vertices as number[]).map(vertex => vertices.c[vertex].filter((index: number) => isLand(index, pack))).flat() || []);
+        feature.shoreline = unique(
+          (feature.vertices as number[])
+            .flatMap(
+              vertexIndex => vertices.c[vertexIndex].filter((index) => isLand(index, pack))
+            )
+        );
         feature.height = Lakes.getHeight(feature as PackedGraphFeature);
       }
 
@@ -228,7 +233,6 @@ class FeatureModule {
       while (queue.length) {
         const cellId = queue.pop() as number;
         if (borderCells[cellId]) border = true;
-        if (!border && borderCells[cellId]) border = true;
 
         for (const neighborId of neighbors[cellId]) {
           const isNeibLand = isLand(neighborId, pack);

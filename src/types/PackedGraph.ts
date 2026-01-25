@@ -1,5 +1,5 @@
-import { PackedGraphFeature } from "../modules/features";
-import { River } from "../modules/river-generator";
+import type { PackedGraphFeature } from "../modules/features";
+import type { River } from "../modules/river-generator";
 
 
 type TypedArray = Uint8Array | Uint16Array | Uint32Array | Int8Array | Int16Array | Float32Array | Float64Array;
@@ -25,7 +25,7 @@ export interface PackedGraph {
   };
   vertices: {
     i: number[]; // vertex indices
-    c: number[][]; // neighboring cells
+    c: [number, number, number][]; // neighboring cells
     v: number[][]; // neighboring vertices
     x: number[]; // x coordinates
     y: number[]; // y coordinates
