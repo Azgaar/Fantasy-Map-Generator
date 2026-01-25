@@ -1,24 +1,8 @@
 import { range, mean } from "d3";
 import { rn } from "../utils";
-import { PackedGraph } from "./PackedGraph";
 
 declare global {
   var Biomes: BiomesModule;
-
-  var pack: PackedGraph;
-  var grid: any;
-  var TIME: boolean;
-
-  var biomesData: {
-    i: number[];
-    name: string[];
-    color: string[];
-    biomesMartix: Uint8Array[];
-    habitability: number[];
-    iconsDensity: number[];
-    icons: string[][];
-    cost: number[];
-  };
 }
 
 class BiomesModule {
@@ -74,7 +58,7 @@ class BiomesModule {
       {swamp: 1}
     ];
     const cost: number[] = [10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150]; // biome movement cost
-    const biomesMartix: Uint8Array[] = [
+    const biomesMatrix: Uint8Array[] = [
       // hot ↔ cold [>19°C; <-4°C]; dry ↕ wet
       new Uint8Array([1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 10]),
       new Uint8Array([3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 9, 9, 9, 9, 10, 10, 10]),
@@ -95,7 +79,7 @@ class BiomesModule {
       parsedIcons[i] = parsed;
     }
 
-    return {i: range(0, name.length), name, color, biomesMartix, habitability, iconsDensity, icons: parsedIcons, cost};
+    return {i: range(0, name.length), name, color, biomesMatrix, habitability, iconsDensity, icons: parsedIcons, cost};
   };
 
   define() {
@@ -135,7 +119,7 @@ class BiomesModule {
     // in other cases use biome matrix
     const moistureBand = Math.min((moisture / 5) | 0, 4); // [0-4]
     const temperatureBand = Math.min(Math.max(20 - temperature, 0), 25); // [0-25]
-    return biomesData.biomesMartix[moistureBand][temperatureBand];
+    return biomesData.biomesMatrix[moistureBand][temperatureBand];
   }
 
   private isWetland(moisture: number, temperature: number, height: number) {

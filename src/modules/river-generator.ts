@@ -1,32 +1,13 @@
 import Alea from "alea";
 import { curveBasis,
 line,
-mean, min, sum, curveCatmullRom, Selection } from "d3";
+mean, min, sum, curveCatmullRom } from "d3";
 import { each,
 rn,round, 
 rw} from "../utils";
-import { PackedGraphFeature } from "./features";
-import { PackedGraph } from "./PackedGraph";
-import { LakesModule } from "./lakes";
 
 declare global {
-  interface Window {
-    Rivers: any;
-  }
-
-  var WARN: boolean;
-  var graphHeight: number;
-  var graphWidth: number;
-  var pack: PackedGraph;
-
-  var rivers: Selection<SVGElement, unknown, null, undefined>;
-  var pointsInput: HTMLInputElement;
-  var grid: any;
-  var seed: string;
-  var TIME: boolean;
-
-  var Names: any;
-  var Lakes: LakesModule;
+  var Rivers: RiverModule;
 }
 
 export interface River {
@@ -66,22 +47,10 @@ class RiverModule {
 
   smallLength: number | null = null;
 
-  get graphHeight() {
-    return graphHeight;
-  }
-
-  get graphWidth() {
-    return graphWidth;
-  }
-
-  get pack(): PackedGraph {
-    return pack;
-  }
-
   generate(allowErosion = true) {
     TIME && console.time("generateRivers");
     Math.random = Alea(seed);
-    const {cells, features} = this.pack;
+    const {cells, features} = pack;
 
     const riversData: {[riverId: number]: number[]} = {};
     const riverParents: {[key: number]: number} = {};
@@ -220,7 +189,7 @@ class RiverModule {
       // re-initialize rivers and confluence arrays
       cells.r = new Uint16Array(cells.i.length);
       cells.conf = new Uint16Array(cells.i.length);
-      this.pack.rivers = [];
+      pack.rivers = [];
 
       const defaultWidthFactor = rn(1 / (parseInt(pointsInput.dataset.cells || "10000") / 10000) ** 0.25, 2);
       const mainStemWidthFactor = defaultWidthFactor * 1.2;
@@ -256,7 +225,7 @@ class RiverModule {
           })
         );
 
-        this.pack.rivers.push({
+        pack.rivers.push({
           i: riverId,
           source,
           mouth,
@@ -274,7 +243,7 @@ class RiverModule {
     const downcutRivers = () => {
       const MAX_DOWNCUT = 5;
 
-      for (const i of this.pack.cells.i) {
+      for (const i of pack.cells.i) {
         if (cells.h[i] < 35) continue; // don't donwcut lowlands
         if (!cells.fl[i]) continue;
 
@@ -322,7 +291,7 @@ class RiverModule {
   };
 
   alterHeights(): Uint8Array {
-    const {h, c, t} = this.pack.cells as {h: Uint8Array, c: number[][], t: Uint8Array};
+    const {h, c, t} = pack.cells as {h: Uint8Array, c: number[][], t: Uint8Array};
     return Uint8Array.from(Array.from(h).map((h, i) => {
       if (h < 20 || t[i] < 1) return h;
       return h + t[i] / 100 + (mean(c[i].map(c => t[c])) || 0) / 10000;
@@ -331,14 +300,14 @@ class RiverModule {
 
   // depression filling algorithm (for a correct water flux modeling)
   resolveDepressions(h: Uint8Array) {
-    const {cells, features} = this.pack;
+    const {cells, features} = pack;
     const maxIterations = +(document.getElementById("resolveDepressionsStepsOutput") as HTMLInputElement)?.value;
     const checkLakeMaxIteration = maxIterations * 0.85;
     const elevateLakeMaxIteration = maxIterations * 0.75;
 
     const height = (i: number) => features[cells.f[i]].height || h[i]; // height of lake or specific cell
 
-    const lakes = features.filter((feature: PackedGraphFeature) => feature.type === "lake");
+    const lakes = features.filter((feature) => feature.type === "lake");
     const land = cells.i.filter((i: number) => h[i] >= 20 && !cells.b[i]); // exclude near-border cells
     land.sort((a: number, b: number) => h[a] - h[b]); // lowest cells go first
 
@@ -389,7 +358,7 @@ class RiverModule {
   };
 
   addMeandering(riverCells: number[], riverPoints = null, meandering = 0.5): [number, number, number][] {
-    const {fl, h} = this.pack.cells;
+    const {fl, h} = pack.cells;
     const meandered = [];
     const lastStep = riverCells.length - 1;
     const points = this.getRiverPoints(riverCells, riverPoints);
@@ -441,7 +410,7 @@ class RiverModule {
   getRiverPoints(riverCells: number[], riverPoints: [number, number][] | null) {
     if (riverPoints) return riverPoints;
 
-    const {p} = this.pack.cells;
+    const {p} = pack.cells;
     return riverCells.map((cell, i) => {
       if (cell === -1) return this.getBorderPoint(riverCells[i - 1]);
       return p[cell];
@@ -449,12 +418,12 @@ class RiverModule {
   };
 
   getBorderPoint(i: number) {
-    const [x, y] = this.pack.cells.p[i];
-    const min = Math.min(y, this.graphHeight - y, x, this.graphWidth - x);
+    const [x, y] = pack.cells.p[i];
+    const min = Math.min(y, graphHeight - y, x, graphWidth - x);
     if (min === y) return [x, 0];
-    else if (min === this.graphHeight - y) return [x, this.graphHeight];
+    else if (min === graphHeight - y) return [x, graphHeight];
     else if (min === x) return [0, y];
-    return [this.graphWidth, y];
+    return [graphWidth, y];
   };
 
   getOffset({flux, pointIndex, widthFactor, startingWidth}: {flux: number, pointIndex: number, widthFactor: number, startingWidth: number}) {
@@ -499,7 +468,7 @@ class RiverModule {
   };
 
   specify() {
-    const rivers = this.pack.rivers;
+    const rivers = pack.rivers;
     if (!rivers.length) return;
 
     for (const river of rivers) {
@@ -510,13 +479,13 @@ class RiverModule {
   };
 
   getName(cell: number) {
-    return Names.getCulture(this.pack.cells.culture[cell]);
+    return Names.getCulture(pack.cells.culture[cell]);
   };
 
   getType({i, length, parent}: River) {
     if (this.smallLength === null) {
-      const threshold = Math.ceil(this.pack.rivers.length * 0.15);
-      this.smallLength = this.pack.rivers.map(r => r.length || 0).sort((a: number, b: number) => a - b)[threshold];
+      const threshold = Math.ceil(pack.rivers.length * 0.15);
+      this.smallLength = pack.rivers.map(r => r.length || 0).sort((a: number, b: number) => a - b)[threshold];
     }
 
     const isSmall: boolean = length < (this.smallLength as number);
@@ -537,8 +506,8 @@ class RiverModule {
 
   // remove river and all its tributaries
   remove(id: number) {
-    const cells = this.pack.cells;
-    const riversToRemove = this.pack.rivers.filter(r => r.i === id || r.parent === id || r.basin === id).map(r => r.i);
+    const cells = pack.cells;
+    const riversToRemove = pack.rivers.filter(r => r.i === id || r.parent === id || r.basin === id).map(r => r.i);
     riversToRemove.forEach(r => rivers.select("#river" + r).remove());
     cells.r.forEach((r, i) => {
       if (!r || !riversToRemove.includes(r)) return;
@@ -546,11 +515,11 @@ class RiverModule {
       cells.fl[i] = grid.cells.prec[cells.g[i]];
       cells.conf[i] = 0;
     });
-    this.pack.rivers = this.pack.rivers.filter(r => !riversToRemove.includes(r.i));
+    pack.rivers = pack.rivers.filter(r => !riversToRemove.includes(r.i));
   };
 
   getBasin(r: number): number {
-    const parent = this.pack.rivers.find(river => river.i === r)?.parent;
+    const parent = pack.rivers.find(river => river.i === r)?.parent;
     if (!parent || r === parent) return r;
     return this.getBasin(parent);
   };

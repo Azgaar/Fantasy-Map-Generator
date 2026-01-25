@@ -1,5 +1,5 @@
-import { PackedGraphFeature } from "./features";
-import { River } from "./river-generator";
+import { PackedGraphFeature } from "../modules/features";
+import { River } from "../modules/river-generator";
 
 
 type TypedArray = Uint8Array | Uint16Array | Uint32Array | Int8Array | Int16Array | Float32Array | Float64Array;

@@ -1,18 +1,9 @@
 import { clipPoly, connectVertices, createTypedArray, distanceSquared, isLand, isWater, rn, TYPED_ARRAY_MAX_VALUES,unique } from "../utils";
 import Alea from "alea";
 import { polygonArea } from "d3";
-import { LakesModule } from "./lakes";
-import { PackedGraph } from "./PackedGraph";
 
 declare global {
-  interface Window {
-    Features: any;
-  }
-  var TIME: boolean;
-  var Lakes: LakesModule;
-  var grid: any;
-  var pack: PackedGraph;
-  var seed: string;
+  var Features: FeatureModule;
 }
 
 type FeatureType = "ocean" | "lake" | "island";
@@ -58,18 +49,6 @@ class FeatureModule {
   private WATER_COAST = -1;
   private DEEP_WATER = -2;
 
-  private get grid() {
-    return grid;
-  }
-
-  private get packedGraph() {
-    return pack;
-  }
-
-  private get seed() {
-    return seed;
-  }
-
   /**
    * calculate distance to coast for every cell
    */
@@ -100,9 +79,9 @@ class FeatureModule {
    */
   markupGrid() {
     TIME && console.time("markupGrid");
-    Math.random = Alea(this.seed); // get the same result on heightmap edit in Erase mode
+    Math.random = Alea(seed); // get the same result on heightmap edit in Erase mode
 
-    const { h: heights, c: neighbors, b: borderCells, i } = this.grid.cells;
+    const { h: heights, c: neighbors, b: borderCells, i } = grid.cells;
     const cellsNumber = i.length;
     const distanceField = new Int8Array(cellsNumber); // gird.cells.t
     const featureIds = new Uint16Array(cellsNumber); // gird.cells.f
@@ -141,9 +120,9 @@ class FeatureModule {
 
     // markup deep ocean cells
     this.markup({ distanceField, neighbors, start: this.DEEP_WATER, increment: -1, limit: -10 });
-    this.grid.cells.t = distanceField;
-    this.grid.cells.f = featureIds;
-    this.grid.features = [0, ...features];
+    grid.cells.t = distanceField;
+    grid.cells.f = featureIds;
+    grid.features = [0, ...features];
 
     TIME && console.timeEnd("markupGrid");
   }
@@ -153,7 +132,7 @@ class FeatureModule {
    */
   markupPack() {
     const defineHaven = (cellId: number) => {
-      const waterCells = neighbors[cellId].filter((index: number) => isWater(index, this.packedGraph));
+      const waterCells = neighbors[cellId].filter((index: number) => isWater(index, pack));
       const distances = waterCells.map((neibCellId: number) => distanceSquared(cells.p[cellId], cells.p[neibCellId]));
       const closest = distances.indexOf(Math.min.apply(Math, distances));
 
@@ -215,7 +194,7 @@ class FeatureModule {
 
       if (type === "lake") {
         if (area > 0) feature.vertices = (feature.vertices as number[]).reverse();
-        feature.shoreline = unique((feature.vertices as number[]).map(vertex => vertices.c[vertex].filter((index: number) => isLand(index, this.packedGraph))).flat() || []);
+        feature.shoreline = unique((feature.vertices as number[]).map(vertex => vertices.c[vertex].filter((index: number) => isLand(index, pack))).flat() || []);
         feature.height = Lakes.getHeight(feature as PackedGraphFeature);
       }
 
@@ -226,7 +205,7 @@ class FeatureModule {
 
     TIME && console.time("markupPack");
 
-    const { cells, vertices } = this.packedGraph;
+    const { cells, vertices } = pack;
     const { c: neighbors, b: borderCells, i } = cells;
     const packCellsNumber = i.length;
     if (!packCellsNumber) return; // no cells -> there is nothing to do
@@ -242,7 +221,7 @@ class FeatureModule {
       const firstCell = queue[0];
       featureIds[firstCell] = featureId;
 
-      const land = isLand(firstCell, this.packedGraph);
+      const land = isLand(firstCell, pack);
       let border = Boolean(borderCells[firstCell]); // true if feature touches map border
       let totalCells = 1; // count cells in a feature
 
@@ -252,7 +231,7 @@ class FeatureModule {
         if (!border && borderCells[cellId]) border = true;
 
         for (const neighborId of neighbors[cellId]) {
-          const isNeibLand = isLand(neighborId, this.packedGraph);
+          const isNeibLand = isLand(neighborId, pack);
 
           if (land && !isNeibLand) {
             distanceField[cellId] = this.LAND_COAST;
@@ -280,12 +259,11 @@ class FeatureModule {
     this.markup({ distanceField, neighbors, start: this.DEEPER_LAND, increment: 1 }); // markup pack land
     this.markup({ distanceField, neighbors, start: this.DEEP_WATER, increment: -1, limit: -10 }); // markup pack water
 
-    this.packedGraph.cells.t = distanceField;
-    this.packedGraph.cells.f = featureIds;
-    this.packedGraph.cells.haven = haven;
-    this.packedGraph.cells.harbor = harbor;
-    this.packedGraph.features = [0 as unknown as PackedGraphFeature, ...features];
-
+    pack.cells.t = distanceField;
+    pack.cells.f = featureIds;
+    pack.cells.haven = haven;
+    pack.cells.harbor = harbor;
+    pack.features = [0 as unknown as PackedGraphFeature, ...features];
     TIME && console.timeEnd("markupPack");
   }
 
@@ -293,14 +271,14 @@ class FeatureModule {
    * define feature groups (ocean, sea, gulf, continent, island, isle, freshwater lake, salt lake, etc.)
    */
   defineGroups() {
-    const gridCellsNumber = this.grid.cells.i.length;
+    const gridCellsNumber = grid.cells.i.length;
     const OCEAN_MIN_SIZE = gridCellsNumber / 25;
     const SEA_MIN_SIZE = gridCellsNumber / 1000;
     const CONTINENT_MIN_SIZE = gridCellsNumber / 10;
     const ISLAND_MIN_SIZE = gridCellsNumber / 1000;
 
     const defineIslandGroup = (feature: PackedGraphFeature) => {
-      const prevFeature = this.packedGraph.features[this.packedGraph.cells.f[feature.firstCell - 1]];
+      const prevFeature = pack.features[pack.cells.f[feature.firstCell - 1]];
       if (prevFeature && prevFeature.type === "lake") return "lake_island";
       if (feature.cells > CONTINENT_MIN_SIZE) return "continent";
       if (feature.cells > ISLAND_MIN_SIZE) return "island";
@@ -334,7 +312,7 @@ class FeatureModule {
       throw new Error(`Markup: unknown feature type ${feature.type}`);
     }
 
-    for (const feature of this.packedGraph.features) {
+    for (const feature of pack.features) {
       if (!feature || feature.type === "ocean") continue;
 
       if (feature.type === "lake") feature.height = Lakes.getHeight(feature);

@@ -2,14 +2,9 @@ import { PackedGraphFeature } from "./features";
 import { min, mean } from "d3";
 import { byId,
 rn } from "../utils";
-import { PackedGraph } from "./PackedGraph";
 
 declare global {
   var Lakes: LakesModule;
-  var pack: PackedGraph;
-  var Names: any;
-
-  var heightExponentInput: HTMLInputElement;
 }
 
 export class LakesModule {

@@ -3,14 +3,7 @@ import type { Selection } from 'd3';
 import { clipPoly,P,rn,round } from '../utils';
 
 declare global {
-  interface Window {
-    OceanLayers: any;
-  }
-
-  var TIME: boolean;
-  var ERROR: boolean;
-  var grid: any;
-  var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
+  var OceanLayers: typeof OceanModule.prototype.draw;
 }
 class OceanModule {
   private cells: any;
@@ -23,10 +16,6 @@ class OceanModule {
 
   constructor(oceanLayers: Selection<SVGGElement, unknown, null, undefined>) {
     this.oceanLayers = oceanLayers;
-  }
-
-  get grid(): any {
-    return grid;
   }
 
   randomizeOutline() {
