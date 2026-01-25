@@ -1,14 +1,31 @@
-"use strict";
+import { capitalize, isVowel, last, P, ra, rand } from "../utils";
 
-window.Names = (function () {
-  let chains = [];
+declare global {
+  var Names: NamesGenerator;
+}
 
-  // calculate Markov chain for a namesbase
-  const calculateChain = function (string) {
-    const chain = [];
-    const array = string.split(",");
+export interface NameBase {
+  name: string; // name of the base
+  i: number; // index of the base
+  min: number; // minimum length of generated names
+  max: number; // maximum length of generated names
+  d: string; // letters allowed to duplicate
+  m: number; // multi-word name rate [deprecated]
+  b: string; // base string with names separated by comma
+}
 
-    for (const n of array) {
+// Markov chain lookup table: key is a letter (or empty string for word start), value is array of possible next syllables
+// Note: Uses array with string keys (sparse array) to match original JS behavior
+type MarkovChain = string[][] & Record<string, string[]>;
+
+class NamesGenerator {
+  chains: (MarkovChain | null)[] = []; // Markov chains for namebases
+
+  calculateChain(namesList: string): MarkovChain {
+    const chain: MarkovChain = [] as unknown as MarkovChain;
+    const availableNames = namesList.split(",");
+
+     for (const n of availableNames) {
       let name = n.trim().toLowerCase();
       const basic = !/[^\u0000-\u007f]/.test(name); // basic chars and English rules can be applied
 
@@ -24,7 +41,7 @@ window.Names = (function () {
           if (syllable === " " || syllable === "-") break; // syllable starts with space or hyphen
           if (!next || next === " " || next === "-") break; // no need to check
 
-          if (vowel(that)) v = 1; // check if letter is vowel
+          if (isVowel(that)) v = 1; // check if letter is vowel
 
           // do not split some diphthongs
           if (that === "y" && next === "e") continue; // 'ye'
@@ -36,11 +53,11 @@ window.Names = (function () {
             if (that === "c" && next === "h") continue; // 'ch'
           }
 
-          if (vowel(that) === next) break; // two same vowels in a row
-          if (v && vowel(name[c + 2])) break; // syllable has vowel and additional vowel is expected soon
+          if (isVowel(that) === (next as unknown as boolean)) break; // two same vowels in a row (original quirky behavior)
+          if (v && isVowel(name[c + 2])) break; // syllable has vowel and additional vowel is expected soon
         }
 
-        if (chain[prev] === undefined) chain[prev] = [];
+        if (!chain[prev]) chain[prev] = [];
         chain[prev].push(syllable);
       }
     }
@@ -48,17 +65,20 @@ window.Names = (function () {
     return chain;
   };
 
-  const updateChain = i => {
-    chains[i] = nameBases[i]?.b ? calculateChain(nameBases[i].b) : null;
+  updateChain(index: number): void {
+    this.chains[index] = nameBases[index]?.b ? this.calculateChain(nameBases[index].b) : null;
   };
 
-  const clearChains = () => {
-    chains = [];
+  clearChains(): void {
+    this.chains = [];
   };
 
   // generate name using Markov's chain
-  const getBase = function (base, min, max, dupl) {
-    if (base === undefined) return ERROR && console.error("Please define a base");
+  getBase(base: number, min?: number, max?: number, dupl?: string): string {
+    if (base === undefined) {
+      ERROR && console.error("Please define a base");
+      return "ERROR";
+    }
 
     if (nameBases[base] === undefined) {
       if (nameBases[0]) {
@@ -70,9 +90,9 @@ window.Names = (function () {
       }
     }
 
-    if (!chains[base]) updateChain(base);
+    if (!this.chains[base]) this.updateChain(base);
 
-    const data = chains[base];
+    const data = this.chains[base];
     if (!data || data[""] === undefined) {
       tip("Namesbase " + base + " is incorrect. Please check in namesbase editor", false, "error");
       ERROR && console.error("Namebase " + base + " is incorrect!");
@@ -99,7 +119,7 @@ window.Names = (function () {
           // word too long
           if (w.length < min) w += cur;
           break;
-        } else v = data[last(cur)] || data[""];
+        } else v = data[last(cur.split("")) as string] || data[""];
       }
 
       w += cur;
@@ -107,7 +127,7 @@ window.Names = (function () {
     }
 
     // parse word to get a final name
-    const l = last(w); // last letter
+    const l = last(w.split("")); // last letter
     if (l === "'" || l === " " || l === "-") w = w.slice(0, -1); // not allow some characters at the end
 
     let name = [...w].reduce(function (r, c, i, d) {
@@ -137,29 +157,57 @@ window.Names = (function () {
   };
 
   // generate name for culture
-  const getCulture = function (culture, min, max, dupl) {
-    if (culture === undefined) return ERROR && console.error("Please define a culture");
+  getCulture(culture: number, min?: number, max?: number, dupl?: string): string {
+    if (culture === undefined) {
+      ERROR && console.error("Please define a culture");
+      return "ERROR";
+    }
     const base = pack.cultures[culture].base;
-    return getBase(base, min, max, dupl);
+    return this.getBase(base, min, max, dupl);
   };
 
   // generate short name for culture
-  const getCultureShort = function (culture) {
-    if (culture === undefined) return ERROR && console.error("Please define a culture");
-    return getBaseShort(pack.cultures[culture].base);
+  getCultureShort(culture: number): string {
+    if (culture === undefined) {
+      ERROR && console.error("Please define a culture");
+      return "ERROR";
+    }
+    return this.getBaseShort(pack.cultures[culture].base);
   };
 
   // generate short name for base
-  const getBaseShort = function (base) {
-    const min = nameBases[base] ? nameBases[base].min - 1 : null;
-    const max = min ? Math.max(nameBases[base].max - 2, min) : null;
-    return getBase(base, min, max, "", 0);
+  getBaseShort(base: number): string {
+    const min = nameBases[base] ? nameBases[base].min - 1 : undefined;
+    const max = min ? Math.max(nameBases[base].max - 2, min) : undefined;
+    return this.getBase(base, min, max, "");
   };
 
+  private validateSuffix(name: string, suffix: string): string {
+    if (name.slice(-1 * suffix.length) === suffix) return name; // no suffix if name already ends with it
+    const s1 = suffix.charAt(0);
+    if (name.slice(-1) === s1) name = name.slice(0, -1); // remove name last letter if it's a suffix first letter
+    if (isVowel(s1) === isVowel(name.slice(-1)) && isVowel(s1) === isVowel(name.slice(-2, -1))) name = name.slice(0, -1); // remove name last char if 2 last chars are the same type as suffix's 1st
+    if (name.slice(-1) === s1) name = name.slice(0, -1); // remove name last letter if it's a suffix first letter
+    return name + suffix;
+  };
+
+  private addSuffix(name: string): string {
+    const suffix = P(0.8) ? "ia" : "land";
+    if (suffix === "ia" && name.length > 6) name = name.slice(0, -(name.length - 3));
+    else if (suffix === "land" && name.length > 6) name = name.slice(0, -(name.length - 5));
+    return this.validateSuffix(name, suffix);
+  }
+
   // generate state name based on capital or random name and culture-specific suffix
-  const getState = function (name, culture, base) {
-    if (name === undefined) return ERROR && console.error("Please define a base name");
-    if (culture === undefined && base === undefined) return ERROR && console.error("Please define a culture");
+  getState(name: string, culture: number, base: number): string {
+    if (name === undefined)  {
+      ERROR && console.error("Please define a base name");
+      return "ERROR";
+    }
+    if (culture === undefined && base === undefined) {
+      ERROR && console.error("Please define a culture");
+      return "ERROR";
+    }
     if (base === undefined) base = pack.cultures[culture].base;
 
     // exclude endings inappropriate for states name
@@ -169,17 +217,17 @@ window.Names = (function () {
 
     if (base === 5 && ["sk", "ev", "ov"].includes(name.slice(-2))) name = name.slice(0, -2);
     // remove -sk/-ev/-ov for Ruthenian
-    else if (base === 12) return vowel(name.slice(-1)) ? name : name + "u";
+    else if (base === 12) return isVowel(name.slice(-1)) ? name : name + "u";
     // Japanese ends on any vowel or -u
     else if (base === 18 && P(0.4))
-      name = vowel(name.slice(0, 1).toLowerCase()) ? "Al" + name.toLowerCase() : "Al " + name; // Arabic starts with -Al
+      name = isVowel(name.slice(0, 1).toLowerCase()) ? "Al" + name.toLowerCase() : "Al " + name; // Arabic starts with -Al
 
     // no suffix for fantasy bases
     if (base > 32 && base < 42) return name;
 
     // define if suffix should be used
-    if (name.length > 3 && vowel(name.slice(-1))) {
-      if (vowel(name.slice(-2, -1)) && P(0.85)) name = name.slice(0, -2);
+    if (name.length > 3 && isVowel(name.slice(-1))) {
+      if (isVowel(name.slice(-2, -1)) && P(0.85)) name = name.slice(0, -2);
       // 85% for vv
       else if (P(0.7)) name = name.slice(0, -1);
       // ~60% for cv
@@ -225,20 +273,11 @@ window.Names = (function () {
     // Berber
     else if (base === 18 && rnd < 0.8) suffix = "a"; // Arabic
 
-    return validateSuffix(name, suffix);
+    return this.validateSuffix(name, suffix);
   };
 
-  function validateSuffix(name, suffix) {
-    if (name.slice(-1 * suffix.length) === suffix) return name; // no suffix if name already ends with it
-    const s1 = suffix.charAt(0);
-    if (name.slice(-1) === s1) name = name.slice(0, -1); // remove name last letter if it's a suffix first letter
-    if (vowel(s1) === vowel(name.slice(-1)) && vowel(s1) === vowel(name.slice(-2, -1))) name = name.slice(0, -1); // remove name last char if 2 last chars are the same type as suffix's 1st
-    if (name.slice(-1) === s1) name = name.slice(0, -1); // remove name last letter if it's a suffix first letter
-    return name + suffix;
-  }
-
   // generato name for the map
-  const getMapName = function (force) {
+  getMapName(force: boolean) {
     if (!force && locked("mapName")) return;
     if (force && locked("mapName")) unlock("mapName");
     const base = P(0.7) ? 2 : P(0.5) ? rand(0, 6) : rand(0, 31);
@@ -248,19 +287,12 @@ window.Names = (function () {
     }
     const min = nameBases[base].min - 1;
     const max = Math.max(nameBases[base].max - 3, min);
-    const baseName = getBase(base, min, max, "", 0);
-    const name = P(0.7) ? addSuffix(baseName) : baseName;
+    const baseName = this.getBase(base, min, max, "") as string;
+    const name = P(0.7) ? this.addSuffix(baseName) : baseName;
     mapName.value = name;
   };
 
-  function addSuffix(name) {
-    const suffix = P(0.8) ? "ia" : "land";
-    if (suffix === "ia" && name.length > 6) name = name.slice(0, -(name.length - 3));
-    else if (suffix === "land" && name.length > 6) name = name.slice(0, -(name.length - 5));
-    return validateSuffix(name, suffix);
-  }
-
-  const getNameBases = function () {
+  getNameBases(): NameBase[] {
     // name, min length, max length, letters to allow duplication, multi-word name rate [deprecated]
     // prettier-ignore
     return [
@@ -312,17 +344,6 @@ window.Names = (function () {
       {name: "Levantine", i: 42, min: 4, max: 12, d: "ankprs", m: 0, b: "Adme,Adramet,Agadir,Akko,Akzib,Alimas,Alis-Ubbo,Alqosh,Amid,Ammon,Ampi,Amurru,Andarig,Anpa,Araden,Aram,Arwad,Ashkelon,Athar,Atiq,Aza,Azeka,Baalbek,Babel,Batrun,Beerot,Beersheba,Beit Shemesh,Berytus,Bet Agus,Bet Anya,Beth-Horon,Bethel,Bethlehem,Bethuel,Bet Nahrin,Bet Nohadra,Bet Zalin,Birmula,Biruta,Bit Agushi,Bitan,Bit Zamani,Cerne,Dammeseq,Darmsuq,Dor,Eddial,Eden Ekron,Elah,Emek,Emun,Ephratah,Eyn Ganim,Finike,Gades,Galatia,Gaza,Gebal,Gedera,Gerizzim,Gethsemane,Gibeon,Gilead,Gilgal,Golgotha,Goshen,Gytte,Hagalil,Haifa,Halab,Haqel Dma,Har Habayit,Har Nevo,Har Pisga,Havilah,Hazor,Hebron,Hormah,Iboshim,Iriho,Irinem,Irridu,Israel,Kadesh,Kanaan,Kapara,Karaly,Kart-Hadasht,Keret Chadeshet,Kernah,Kesed,Keysariya,Kfar,Kfar Nahum,Khalibon,Khalpe,Khamat,Kiryat,Kittim,Kurda,Lapethos,Larna,Lepqis,Lepriptza,Liksos,Lod,Luv,Malaka,Malet,Marat,Megido,Melitta,Merdin,Metsada,Mishmarot,Mitzrayim,Moab,Mopsos,Motye,Mukish,Nampigi,Nampigu,Natzrat,Nimrud,Nineveh,Nob,Nuhadra,Oea,Ofir,Oyat,Phineka,Phoenicus,Pleshet,Qart-Tubah Sarepta,Qatna,Rabat Amon,Rakkath,Ramat Aviv,Ramitha,Ramta,Rehovot,Reshef,Rushadir,Rushakad,Samrin,Sefarad,Sehyon,Sepat,Sexi,Sharon,Shechem,Shefelat,Shfanim,Shiloh,Shmaya,Shomron,Sidon,Sinay,Sis,Solki,Sur,Suria,Tabetu,Tadmur,Tarshish,Tartus,Teberya,Tefessedt,Tekoa,Teyman,Tinga,Tipasa,Tsabratan,Tur Abdin,Tzarfat,Tziyon,Tzor,Ugarit,Unubaal,Ureshlem,Urhay,Urushalim,Vaga,Yaffa,Yamhad,Yam hamelach,Yam Kineret,Yamutbal,Yathrib,Yaudi,Yavne,Yehuda,Yerushalayim,Yev,Yevus,Yizreel,Yurdnan,Zarefat,Zeboim,Zeurta,Zeytim,Zikhron,Zmurna"}
     ];
   };
+}
 
-  return {
-    getBase,
-    getCulture,
-    getCultureShort,
-    getBaseShort,
-    getState,
-    updateChain,
-    clearChains,
-    getNameBases,
-    getMapName,
-    calculateChain
-  };
-})();
+window.Names = new NamesGenerator();

@@ -33,4 +33,5 @@ export interface PackedGraph {
   };
   rivers: River[];
   features: PackedGraphFeature[];
+  cultures: any[];
 }

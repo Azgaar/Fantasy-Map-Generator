@@ -1,5 +1,6 @@
 import type { Selection } from 'd3';
 import { PackedGraph } from "./PackedGraph";
+import { NameBase } from '../modules/names-generator';
 
 declare global {
   var seed: string;
@@ -13,10 +14,11 @@ declare global {
   var ERROR: boolean;
 
   var heightmapTemplates: any;
-  var Names: any;
+  var nameBases: NameBase[];
   
   var pointsInput: HTMLInputElement;
   var heightExponentInput: HTMLInputElement;
+  var mapName: HTMLInputElement;
 
   var rivers: Selection<SVGElement, unknown, null, undefined>;
   var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
@@ -30,4 +32,8 @@ declare global {
     icons: string[][];
     cost: number[];
   };
+
+  var tip: (message: string, autoHide?: boolean, type?: "info" | "warning" | "error") => void;
+  var locked: (settingId: string) => boolean;
+  var unlock: (settingId: string) => void;  
 }
