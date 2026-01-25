@@ -1,10 +1,15 @@
-import Delaunator from "delaunator";
 import Alea from "alea";
 import { color } from "d3";
-import { byId } from "./shorthands";
-import { rn } from "./numberUtils";
+import Delaunator from "delaunator";
+import {
+  type Cells,
+  type Point,
+  type Vertices,
+  Voronoi,
+} from "../modules/voronoi";
 import { createTypedArray } from "./arrayUtils";
-import { Cells, Vertices, Voronoi, Point } from "../modules/voronoi";
+import { rn } from "./numberUtils";
+import { byId } from "./shorthands";
 
 /**
  * Get boundary points on a regular square grid
@@ -13,7 +18,11 @@ import { Cells, Vertices, Voronoi, Point } from "../modules/voronoi";
  * @param {number} spacing - The spacing between points
  * @returns {Array} - An array of boundary points
  */
-const getBoundaryPoints = (width: number, height: number, spacing: number): Point[] => {
+const getBoundaryPoints = (
+  width: number,
+  height: number,
+  spacing: number,
+): Point[] => {
   const offset = rn(-1 * spacing);
   const bSpacing = spacing * 2;
   const w = width - offset * 2;
@@ -23,17 +32,17 @@ const getBoundaryPoints = (width: number, height: number, spacing: number): Poin
   const points: Point[] = [];
 
   for (let i = 0.5; i < numberX; i++) {
-    let x = Math.ceil((w * i) / numberX + offset);
+    const x = Math.ceil((w * i) / numberX + offset);
     points.push([x, offset], [x, h + offset]);
   }
 
   for (let i = 0.5; i < numberY; i++) {
-    let y = Math.ceil((h * i) / numberY + offset);
+    const y = Math.ceil((h * i) / numberY + offset);
     points.push([offset, y], [w + offset, y]);
   }
 
   return points;
-}
+};
 
 /**
  * Get points on a jittered square grid
@@ -42,13 +51,17 @@ const getBoundaryPoints = (width: number, height: number, spacing: number): Poin
  * @param {number} spacing - The spacing between points
  * @returns {Array} - An array of jittered grid points
  */
-const getJitteredGrid = (width: number, height: number, spacing: number): Point[] => {
+const getJitteredGrid = (
+  width: number,
+  height: number,
+  spacing: number,
+): Point[] => {
   const radius = spacing / 2; // square radius
   const jittering = radius * 0.9; // max deviation
   const doubleJittering = jittering * 2;
   const jitter = () => Math.random() * doubleJittering - jittering;
 
-  let points: Point[] = [];
+  const points: Point[] = [];
   for (let y = radius; y < height; y += spacing) {
     for (let x = radius; x < width; x += spacing) {
       const xj = Math.min(rn(x + jitter(), 2), width);
@@ -57,7 +70,7 @@ const getJitteredGrid = (width: number, height: number, spacing: number): Point[
     }
   }
   return points;
-}
+};
 
 /**
  * Places points on a jittered grid and calculates spacing and cell counts
@@ -65,7 +78,17 @@ const getJitteredGrid = (width: number, height: number, spacing: number): Point[
  * @param {number} graphHeight - The height of the graph
  * @returns {Object} - An object containing spacing, cellsDesired, boundary points, grid points, cellsX, and cellsY
  */
-const placePoints = (graphWidth: number, graphHeight: number): {spacing: number, cellsDesired: number, boundary: Point[], points: Point[], cellsX: number, cellsY: number} => {
+const placePoints = (
+  graphWidth: number,
+  graphHeight: number,
+): {
+  spacing: number;
+  cellsDesired: number;
+  boundary: Point[];
+  points: Point[];
+  cellsX: number;
+  cellsY: number;
+} => {
   TIME && console.time("placePoints");
   const cellsDesired = +(byId("pointsInput")?.dataset.cells || 0);
   const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jittering
@@ -73,12 +96,20 @@ const placePoints = (graphWidth: number, graphHeight: number): {spacing: number,
   const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
   const points = getJitteredGrid(graphWidth, graphHeight, spacing); // points of jittered square grid
   const cellCountX = Math.floor((graphWidth + 0.5 * spacing - 1e-10) / spacing); // number of cells in x direction
-  const cellCountY = Math.floor((graphHeight + 0.5 * spacing - 1e-10) / spacing); // number of cells in y direction
+  const cellCountY = Math.floor(
+    (graphHeight + 0.5 * spacing - 1e-10) / spacing,
+  ); // number of cells in y direction
   TIME && console.timeEnd("placePoints");
 
-  return {spacing, cellsDesired, boundary, points, cellsX: cellCountX, cellsY: cellCountY};
-}
-
+  return {
+    spacing,
+    cellsDesired,
+    boundary,
+    points,
+    cellsX: cellCountX,
+    cellsY: cellCountY,
+  };
+};
 
 /**
  * Checks if the grid needs to be regenerated based on desired parameters
@@ -88,18 +119,34 @@ const placePoints = (graphWidth: number, graphHeight: number): {spacing: number,
  * @param {number} graphHeight - The height of the graph
  * @returns {boolean} - True if the grid should be regenerated, false otherwise
  */
-export const shouldRegenerateGrid = (grid: any, expectedSeed: number, graphWidth: number, graphHeight: number) => {
+export const shouldRegenerateGrid = (
+  grid: any,
+  expectedSeed: number,
+  graphWidth: number,
+  graphHeight: number,
+) => {
   if (expectedSeed && expectedSeed !== grid.seed) return true;
 
   const cellsDesired = +(byId("pointsInput")?.dataset?.cells || 0);
   if (cellsDesired !== grid.cellsDesired) return true;
 
-  const newSpacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2);
-  const newCellsX = Math.floor((graphWidth + 0.5 * newSpacing - 1e-10) / newSpacing);
-  const newCellsY = Math.floor((graphHeight + 0.5 * newSpacing - 1e-10) / newSpacing);
+  const newSpacing = rn(
+    Math.sqrt((graphWidth * graphHeight) / cellsDesired),
+    2,
+  );
+  const newCellsX = Math.floor(
+    (graphWidth + 0.5 * newSpacing - 1e-10) / newSpacing,
+  );
+  const newCellsY = Math.floor(
+    (graphHeight + 0.5 * newSpacing - 1e-10) / newSpacing,
+  );
 
-  return grid.spacing !== newSpacing || grid.cellsX !== newCellsX || grid.cellsY !== newCellsY;
-}
+  return (
+    grid.spacing !== newSpacing ||
+    grid.cellsX !== newCellsX ||
+    grid.cellsY !== newCellsY
+  );
+};
 
 interface Grid {
   spacing: number;
@@ -116,12 +163,27 @@ interface Grid {
  * Generates a Voronoi grid based on jittered grid points
  * @returns {Object} - The generated grid object containing spacing, cellsDesired, boundary, points, cellsX, cellsY, cells, vertices, and seed
  */
-export const generateGrid = (seed: string, graphWidth: number, graphHeight: number): Grid => {
+export const generateGrid = (
+  seed: string,
+  graphWidth: number,
+  graphHeight: number,
+): Grid => {
   Math.random = Alea(seed); // reset PRNG
-  const {spacing, cellsDesired, boundary, points, cellsX, cellsY} = placePoints(graphWidth, graphHeight);
-  const {cells, vertices} = calculateVoronoi(points, boundary);
-  return {spacing, cellsDesired, boundary, points, cellsX, cellsY, cells, vertices, seed};
-}
+  const { spacing, cellsDesired, boundary, points, cellsX, cellsY } =
+    placePoints(graphWidth, graphHeight);
+  const { cells, vertices } = calculateVoronoi(points, boundary);
+  return {
+    spacing,
+    cellsDesired,
+    boundary,
+    points,
+    cellsX,
+    cellsY,
+    cells,
+    vertices,
+    seed,
+  };
+};
 
 /**
  * Calculates the Voronoi diagram from given points and boundary
@@ -129,7 +191,10 @@ export const generateGrid = (seed: string, graphWidth: number, graphHeight: numb
  * @param {Array} boundary - The boundary points to clip the Voronoi cells
  * @returns {Object} - An object containing Voronoi cells and vertices
  */
-export const calculateVoronoi = (points: Point[], boundary: Point[]): {cells: Cells, vertices: Vertices} => {
+export const calculateVoronoi = (
+  points: Point[],
+  boundary: Point[],
+): { cells: Cells; vertices: Vertices } => {
   TIME && console.time("calculateDelaunay");
   const allPoints = points.concat(boundary);
   const delaunay = Delaunator.from(allPoints);
@@ -139,12 +204,15 @@ export const calculateVoronoi = (points: Point[], boundary: Point[]): {cells: Ce
   const voronoi = new Voronoi(delaunay, allPoints, points.length);
 
   const cells = voronoi.cells;
-  cells.i = createTypedArray({maxValue: points.length, length: points.length}).map((_, i) => i) as Uint32Array; // array of indexes
+  cells.i = createTypedArray({
+    maxValue: points.length,
+    length: points.length,
+  }).map((_, i) => i) as Uint32Array; // array of indexes
   const vertices = voronoi.vertices;
   TIME && console.timeEnd("calculateVoronoi");
 
-  return {cells, vertices};
-}
+  return { cells, vertices };
+};
 
 /**
  * Returns a cell index on a regular square grid based on x and y coordinates
@@ -158,9 +226,9 @@ export const findGridCell = (x: number, y: number, grid: any): number => {
     Math.floor(Math.min(y / grid.spacing, grid.cellsY - 1)) * grid.cellsX +
     Math.floor(Math.min(x / grid.spacing, grid.cellsX - 1))
   );
-}
+};
 
-/** 
+/**
  * return array of cell indexes in radius on a regular square grid
  * @param {number} x - The x coordinate
  * @param {number} y - The y coordinate
@@ -168,7 +236,12 @@ export const findGridCell = (x: number, y: number, grid: any): number => {
  * @param {Object} grid - The grid object containing spacing, cellsX, and cellsY
  * @returns {Array} - An array of cell indexes within the specified radius
  */
-export const findGridAll = (x: number, y: number, radius: number, grid: any): number[] => {
+export const findGridAll = (
+  x: number,
+  y: number,
+  radius: number,
+  grid: any,
+): number[] => {
   const c = grid.cells.c;
   let r = Math.floor(radius / grid.spacing);
   let found = [findGridCell(x, y, grid)];
@@ -177,10 +250,10 @@ export const findGridAll = (x: number, y: number, radius: number, grid: any): nu
   if (r > 1) {
     let frontier = c[found[0]];
     while (r > 1) {
-      let cycle = frontier.slice();
+      const cycle = frontier.slice();
       frontier = [];
-      cycle.forEach(function (s: number) {
-        c[s].forEach(function (e: number) {
+      cycle.forEach((s: number) => {
+        c[s].forEach((e: number) => {
           if (found.indexOf(e) !== -1) return;
           found.push(e);
           frontier.push(e);
@@ -191,7 +264,7 @@ export const findGridAll = (x: number, y: number, radius: number, grid: any): nu
   }
 
   return found;
-}
+};
 
 /**
  * Returns the index of the packed cell containing the given x and y coordinates
@@ -200,11 +273,16 @@ export const findGridAll = (x: number, y: number, radius: number, grid: any): nu
  * @param {number} radius - The search radius (default is Infinity)
  * @returns {number|undefined} - The index of the found cell or undefined if not found
  */
-export const findClosestCell = (x: number, y: number, radius = Infinity, packedGraph: any): number | undefined => {
+export const findClosestCell = (
+  x: number,
+  y: number,
+  radius = Infinity,
+  packedGraph: any,
+): number | undefined => {
   if (!packedGraph.cells?.q) return;
   const found = packedGraph.cells.q.find(x, y, radius);
   return found ? found[2] : undefined;
-}
+};
 
 /**
  * Searches a quadtree for all points within a given radius
@@ -215,21 +293,31 @@ export const findClosestCell = (x: number, y: number, radius = Infinity, packedG
  * @param {Object} quadtree - The D3 quadtree to search
  * @returns {Array} - An array of found data points within the radius
  */
-export const findAllInQuadtree = (x: number, y: number, radius: number, quadtree: any) => {
+export const findAllInQuadtree = (
+  x: number,
+  y: number,
+  radius: number,
+  quadtree: any,
+) => {
+  let dx: number, dy: number, d2: number;
+
   const radiusSearchInit = (t: any, radius: number) => {
     t.result = [];
-    (t.x0 = t.x - radius), (t.y0 = t.y - radius);
-    (t.x3 = t.x + radius), (t.y3 = t.y + radius);
+    t.x0 = t.x - radius;
+    t.y0 = t.y - radius;
+    t.x3 = t.x + radius;
+    t.y3 = t.y + radius;
     t.radius = radius * radius;
   };
 
   const radiusSearchVisit = (t: any, d2: number) => {
     t.node.data.scanned = true;
     if (d2 < t.radius) {
-      do {
+      while (t.node) {
         t.result.push(t.node.data);
         t.node.data.selected = true;
-      } while ((t.node = t.node.next));
+        t.node = t.node.next;
+      }
     }
   };
 
@@ -248,39 +336,52 @@ export const findAllInQuadtree = (x: number, y: number, radius: number, quadtree
     }
   }
 
-  const t: any = {x, y, x0: quadtree._x0, y0: quadtree._y0, x3: quadtree._x1, y3: quadtree._y1, quads: [], node: quadtree._root};
+  const t: any = {
+    x,
+    y,
+    x0: quadtree._x0,
+    y0: quadtree._y0,
+    x3: quadtree._x1,
+    y3: quadtree._y1,
+    quads: [],
+    node: quadtree._root,
+  };
   if (t.node) t.quads.push(new Quad(t.node, t.x0, t.y0, t.x3, t.y3));
   radiusSearchInit(t, radius);
 
-  var i = 0;
-  while ((t.q = t.quads.pop())) {
-    i++;
+  var _i = 0;
+  t.q = t.quads.pop();
+  while (t.q) {
+    _i++;
+
+    t.node = t.q.node;
+    t.x1 = t.q.x0;
+    t.y1 = t.q.y0;
+    t.x2 = t.q.x1;
+    t.y2 = t.q.y1;
 
     // Stop searching if this quadrant can't contain a closer node.
-    if (
-      !(t.node = t.q.node) ||
-      (t.x1 = t.q.x0) > t.x3 ||
-      (t.y1 = t.q.y0) > t.y3 ||
-      (t.x2 = t.q.x1) < t.x0 ||
-      (t.y2 = t.q.y1) < t.y0
-    )
+    if (!t.node || t.x1 > t.x3 || t.y1 > t.y3 || t.x2 < t.x0 || t.y2 < t.y0) {
+      t.q = t.quads.pop();
       continue;
+    }
 
     // Bisect the current quadrant.
     if (t.node.length) {
       t.node.explored = true;
-      var xm: number = (t.x1 + t.x2) / 2,
+      const xm: number = (t.x1 + t.x2) / 2,
         ym: number = (t.y1 + t.y2) / 2;
 
       t.quads.push(
         new Quad(t.node[3], xm, ym, t.x2, t.y2),
         new Quad(t.node[2], t.x1, ym, xm, t.y2),
         new Quad(t.node[1], xm, t.y1, t.x2, ym),
-        new Quad(t.node[0], t.x1, t.y1, xm, ym)
+        new Quad(t.node[0], t.x1, t.y1, xm, ym),
       );
 
       // Visit the closest quadrant first.
-      if ((t.i = (+(y >= ym) << 1) | +(x >= xm))) {
+      t.i = (+(y >= ym) << 1) | +(x >= xm);
+      if (t.i) {
         t.q = t.quads[t.quads.length - 1];
         t.quads[t.quads.length - 1] = t.quads[t.quads.length - 1 - t.i];
         t.quads[t.quads.length - 1 - t.i] = t.q;
@@ -289,14 +390,15 @@ export const findAllInQuadtree = (x: number, y: number, radius: number, quadtree
 
     // Visit this point. (Visiting coincident points isn't necessary!)
     else {
-      var dx = x - +quadtree._x.call(null, t.node.data),
-        dy = y - +quadtree._y.call(null, t.node.data),
-        d2 = dx * dx + dy * dy;
+      dx = x - +quadtree._x.call(null, t.node.data);
+      dy = y - +quadtree._y.call(null, t.node.data);
+      d2 = dx * dx + dy * dy;
       radiusSearchVisit(t, d2);
     }
+    t.q = t.quads.pop();
   }
   return t.result;
-}
+};
 
 /**
  * Returns an array of packed cell indexes within a specified radius from given x and y coordinates
@@ -306,11 +408,16 @@ export const findAllInQuadtree = (x: number, y: number, radius: number, quadtree
  * @param {Object} packedGraph - The packed graph containing cells with quadtree
  * @returns {number[]} - An array of cell indexes within the radius
  */
-export const findAllCellsInRadius = (x: number, y: number, radius: number, packedGraph: any): number[] => {
+export const findAllCellsInRadius = (
+  x: number,
+  y: number,
+  radius: number,
+  packedGraph: any,
+): number[] => {
   // Use findAllInQuadtree directly instead of relying on prototype extension
   const found = findAllInQuadtree(x, y, radius, packedGraph.cells.q);
   return found.map((r: any) => r[2]);
-}
+};
 
 /**
  * Returns the polygon points for a packed cell given its index
@@ -318,8 +425,10 @@ export const findAllCellsInRadius = (x: number, y: number, radius: number, packe
  * @returns {Array} - An array of polygon points for the specified cell
  */
 export const getPackPolygon = (cellIndex: number, packedGraph: any) => {
-  return packedGraph.cells.v[cellIndex].map((v: number) => packedGraph.vertices.p[v]);
-}
+  return packedGraph.cells.v[cellIndex].map(
+    (v: number) => packedGraph.vertices.p[v],
+  );
+};
 
 /**
  * Returns the polygon points for a grid cell given its index
@@ -328,7 +437,7 @@ export const getPackPolygon = (cellIndex: number, packedGraph: any) => {
  */
 export const getGridPolygon = (i: number, grid: any) => {
   return grid.cells.v[i].map((v: number) => grid.vertices.p[v]);
-}
+};
 
 /**
  * mbostock's poissonDiscSampler implementation
@@ -341,7 +450,14 @@ export const getGridPolygon = (i: number, grid: any) => {
  * @param {number} k - The number of attempts before rejection (default is 3)
  * @yields {Array} - An array containing the x and y coordinates of a generated point
  */
-export function* poissonDiscSampler(x0: number, y0: number, x1: number, y1: number, r: number, k = 3) {
+export function* poissonDiscSampler(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  r: number,
+  k = 3,
+) {
   if (!(x1 >= x0) || !(y1 >= y0) || !(r > 0)) throw new Error();
 
   const width = x1 - x0;
@@ -377,7 +493,8 @@ export function* poissonDiscSampler(x0: number, y0: number, x1: number, y1: numb
 
   function sample(x: number, y: number) {
     const point: [number, number] = [x, y];
-    queue.push((grid[gridWidth * ((y / cellSize) | 0) + ((x / cellSize) | 0)] = point));
+    grid[gridWidth * ((y / cellSize) | 0) + ((x / cellSize) | 0)] = point;
+    queue.push(point);
     return [x + x0, y + y0];
   }
 
@@ -410,7 +527,7 @@ export function* poissonDiscSampler(x0: number, y0: number, x1: number, y1: numb
  */
 export const isLand = (i: number, packedGraph: any) => {
   return packedGraph.cells.h[i] >= 20;
-}
+};
 
 /**
  * Checks if a packed cell is water based on its height
@@ -419,8 +536,7 @@ export const isLand = (i: number, packedGraph: any) => {
  */
 export const isWater = (i: number, packedGraph: any) => {
   return packedGraph.cells.h[i] < 20;
-}
-
+};
 
 // draw raster heightmap preview (not used in main generation)
 /**
@@ -433,18 +549,31 @@ export const isWater = (i: number, packedGraph: any) => {
  * @param {boolean} options.renderOcean - Whether to render ocean heights
  * @returns {string} - A data URL representing the drawn heightmap image
  */
-export const drawHeights = ({heights, width, height, scheme, renderOcean}: {heights: number[], width: number, height: number, scheme: (value: number) => string, renderOcean: boolean}) => {
+export const drawHeights = ({
+  heights,
+  width,
+  height,
+  scheme,
+  renderOcean,
+}: {
+  heights: number[];
+  width: number;
+  height: number;
+  scheme: (value: number) => string;
+  renderOcean: boolean;
+}) => {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d")!;
   const imageData = ctx.createImageData(width, height);
 
-  const getHeight = (height: number) => (height < 20 ? (renderOcean ? height : 0) : height);
+  const getHeight = (height: number) =>
+    height < 20 ? (renderOcean ? height : 0) : height;
 
   for (let i = 0; i < heights.length; i++) {
     const colorScheme = scheme(1 - getHeight(heights[i]) / 100);
-    const {r, g, b} = color(colorScheme)!.rgb();
+    const { r, g, b } = color(colorScheme)?.rgb() ?? { r: 0, g: 0, b: 0 };
 
     const n = i * 4;
     imageData.data[n] = r;
@@ -455,12 +584,11 @@ export const drawHeights = ({heights, width, height, scheme, renderOcean}: {heig
 
   ctx.putImageData(imageData, 0, 0);
   return canvas.toDataURL("image/png");
-}
+};
 
 declare global {
   var TIME: boolean;
   interface Window {
-    
     shouldRegenerateGrid: typeof shouldRegenerateGrid;
     generateGrid: typeof generateGrid;
     findCell: typeof findClosestCell;

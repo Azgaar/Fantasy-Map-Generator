@@ -1,7 +1,7 @@
-import {curveBundle, line, max, min} from "d3";
-import { normalize } from "./numberUtils";
-import { getGridPolygon } from "./graphUtils";
+import { curveBundle, line, max, min } from "d3";
 import { C_12 } from "./colorUtils";
+import { getGridPolygon } from "./graphUtils";
+import { normalize } from "./numberUtils";
 import { round } from "./stringUtils";
 
 /**
@@ -19,7 +19,7 @@ export const drawCellsValue = (data: any[], packedGraph: any): void => {
     .attr("x", (_d: any, i: number) => packedGraph.cells.p[i][0])
     .attr("y", (_d: any, i: number) => packedGraph.cells.p[i][1])
     .text((d: any) => d);
-}
+};
 /**
  * Drawing polygons colored according to data values for debugging purposes
  * @param {number[]} data - Array of numerical values corresponding to each cell
@@ -28,9 +28,11 @@ export const drawCellsValue = (data: any[], packedGraph: any): void => {
 export const drawPolygons = (data: number[], terrs: any, grid: any): void => {
   const maximum: number = max(data) as number;
   const minimum: number = min(data) as number;
-  const scheme = window.getColorScheme(terrs.select("#landHeights").attr("scheme"));
+  const scheme = window.getColorScheme(
+    terrs.select("#landHeights").attr("scheme"),
+  );
 
-  data = data.map(d => 1 - normalize(d, minimum, maximum));
+  data = data.map((d) => 1 - normalize(d, minimum, maximum));
   window.debug.selectAll("polygon").remove();
   window.debug
     .selectAll("polygon")
@@ -40,7 +42,7 @@ export const drawPolygons = (data: number[], terrs: any, grid: any): void => {
     .attr("points", (_d: number, i: number) => getGridPolygon(i, grid))
     .attr("fill", (d: number) => scheme(d))
     .attr("stroke", (d: number) => scheme(d));
-}
+};
 
 /**
  * Drawing route connections for debugging purposes
@@ -48,7 +50,10 @@ export const drawPolygons = (data: number[], terrs: any, grid: any): void => {
  */
 export const drawRouteConnections = (packedGraph: any): void => {
   window.debug.select("#connections").remove();
-  const routes = window.debug.append("g").attr("id", "connections").attr("stroke-width", 0.8);
+  const routes = window.debug
+    .append("g")
+    .attr("id", "connections")
+    .attr("stroke-width", 0.8);
 
   const points = packedGraph.cells.p;
   const links = packedGraph.cells.routes;
@@ -70,7 +75,7 @@ export const drawRouteConnections = (packedGraph: any): void => {
         .attr("stroke", C_12[routeId % 12]);
     }
   }
-}
+};
 
 /**
  * Drawing a point for debugging purposes
@@ -79,9 +84,17 @@ export const drawRouteConnections = (packedGraph: any): void => {
  * @param {string} options.color - Color of the point
  * @param {number} options.radius - Radius of the point
  */
-export const drawPoint = ([x, y]: [number, number], {color = "red", radius = 0.5}): void => {
-  window.debug.append("circle").attr("cx", x).attr("cy", y).attr("r", radius).attr("fill", color);
-}
+export const drawPoint = (
+  [x, y]: [number, number],
+  { color = "red", radius = 0.5 },
+): void => {
+  window.debug
+    .append("circle")
+    .attr("cx", x)
+    .attr("cy", y)
+    .attr("r", radius)
+    .attr("fill", color);
+};
 
 /**
  * Drawing a path for debugging purposes
@@ -90,7 +103,10 @@ export const drawPoint = ([x, y]: [number, number], {color = "red", radius = 0.5
  * @param {string} options.color - Color of the path
  * @param {number} options.width - Stroke width of the path
  */
-export const drawPath = (points: [number, number][], {color = "red", width = 0.5}): void => {
+export const drawPath = (
+  points: [number, number][],
+  { color = "red", width = 0.5 },
+): void => {
   const lineGen = line().curve(curveBundle);
   window.debug
     .append("path")
@@ -98,17 +114,17 @@ export const drawPath = (points: [number, number][], {color = "red", width = 0.5
     .attr("stroke", color)
     .attr("stroke-width", width)
     .attr("fill", "none");
-}
+};
 
 declare global {
   interface Window {
     debug: any;
     getColorScheme: (name: string) => (t: number) => string;
-    
+
     drawCellsValue: typeof drawCellsValue;
     drawPolygons: typeof drawPolygons;
     drawRouteConnections: typeof drawRouteConnections;
     drawPoint: typeof drawPoint;
     drawPath: typeof drawPath;
-  } 
+  }
 }

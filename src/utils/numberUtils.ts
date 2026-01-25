@@ -5,9 +5,9 @@
  * @returns The rounded number.
  */
 export const rn = (v: number, d: number = 0) => {
-  const m = Math.pow(10, d);
+  const m = 10 ** d;
   return Math.round(v * m) / m;
-}
+};
 
 /**
  * Clamps a number between a minimum and maximum value.
@@ -18,7 +18,7 @@ export const rn = (v: number, d: number = 0) => {
  */
 export const minmax = (value: number, min: number, max: number) => {
   return Math.min(Math.max(value, min), max);
-}
+};
 
 /**
  * Clamps a number between 0 and 100.
@@ -27,7 +27,7 @@ export const minmax = (value: number, min: number, max: number) => {
  */
 export const lim = (v: number) => {
   return minmax(v, 0, 100);
-}
+};
 
 /**
  * Normalizes a number within a specified range to a value between 0 and 1.
@@ -38,7 +38,7 @@ export const lim = (v: number) => {
  */
 export const normalize = (val: number, min: number, max: number) => {
   return minmax((val - min) / (max - min), 0, 1);
-}
+};
 
 /**
  * Performs linear interpolation between two values.
@@ -49,7 +49,7 @@ export const normalize = (val: number, min: number, max: number) => {
  */
 export const lerp = (a: number, b: number, t: number) => {
   return a + (b - a) * t;
-}
+};
 
 declare global {
   interface Window {
