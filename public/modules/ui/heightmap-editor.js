@@ -259,6 +259,8 @@ function editHeightmap(options) {
     Rivers.specify();
     Lakes.defineNames();
 
+    Ice.generate();
+
     Military.generate();
     Markers.generate();
     Zones.generate();
@@ -465,6 +467,10 @@ function editHeightmap(options) {
         .attr("id", d => base + d);
     });
 
+    // recalculate ice
+    Ice.generate();
+    ice.selectAll("*").remove();
+
     TIME && console.timeEnd("restoreRiskedData");
     INFO && console.groupEnd("Edit Heightmap");
   }
@@ -669,7 +675,7 @@ function editHeightmap(options) {
       if (power === 0) return tip("Power should not be zero", false, "error");
 
       const heights = grid.cells.h;
-      const operation = power > 0 ? HeightmapGenerator.addRange : HeightmapGenerator.addTrough;
+      const operation = power > 0 ? HeightmapGenerator.addRange.bind(HeightmapGenerator) : HeightmapGenerator.addTrough.bind(HeightmapGenerator);
       HeightmapGenerator.setGraph(grid);
       operation("1", String(Math.abs(power)), null, null, fromCell, toCell);
       const changedHeights = HeightmapGenerator.getHeights();

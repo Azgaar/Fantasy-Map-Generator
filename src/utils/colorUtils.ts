@@ -1,4 +1,4 @@
-import { color, interpolate, interpolateRainbow, range, RGBColor, scaleSequential, shuffle } from "d3";
+import { color, interpolate, interpolateRainbow, range, RGBColor, scaleSequential, shuffler } from "d3";
 
 /**
  * Convert RGB or RGBA color to HEX
@@ -35,11 +35,14 @@ export const C_12 = [
 
 /** 
  * Get an array of distinct colors
+ * Uses shuffler with current Math.random to ensure seeded randomness works
  * @param {number} count - The count of colors to generate
  * @returns {string[]} - The array of HEX color strings
 */
 export const getColors = (count: number): string[] => {
   const scaleRainbow = scaleSequential(interpolateRainbow);
+  // Use shuffler() to create a shuffle function that uses the current Math.random
+  const shuffle = shuffler(() => Math.random());
   const colors = shuffle(
     range(count).map(i => (i < 12 ? C_12[i] : color(scaleRainbow((i - 12) / (count - 12)))?.formatHex()))
   );
