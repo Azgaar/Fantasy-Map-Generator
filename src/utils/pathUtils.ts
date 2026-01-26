@@ -8,10 +8,10 @@ import { rn } from "./numberUtils";
  * @returns {string} SVG path data for the filled shape.
  */
 const getFillPath = (vertices: any, vertexChain: number[]) => {
-  const points = vertexChain.map(vertexId => vertices.p[vertexId]);
+  const points = vertexChain.map((vertexId) => vertices.p[vertexId]);
   const firstPoint = points.shift();
   return `M${firstPoint} L${points.join(" ")} Z`;
-}
+};
 
 /**
  * Generates SVG path data for borders based on a chain of vertices and a discontinuation condition.
@@ -20,10 +20,14 @@ const getFillPath = (vertices: any, vertexChain: number[]) => {
  * @param {(vertexId: number) => boolean} discontinue - A function that determines if the path should discontinue at a vertex.
  * @returns {string} SVG path data for the border.
  */
-const getBorderPath = (vertices: any, vertexChain: number[], discontinue: (vertexId: number) => boolean) => {
+const getBorderPath = (
+  vertices: any,
+  vertexChain: number[],
+  discontinue: (vertexId: number) => boolean,
+) => {
   let discontinued = true;
   let lastOperation = "";
-  const path = vertexChain.map(vertexId => {
+  const path = vertexChain.map((vertexId) => {
     if (discontinue(vertexId)) {
       discontinued = true;
       return "";
@@ -33,12 +37,13 @@ const getBorderPath = (vertices: any, vertexChain: number[], discontinue: (verte
     discontinued = false;
     lastOperation = operation;
 
-    const command = operation === "L" && operation === lastOperation ? "" : operation;
+    const command =
+      operation === "L" && operation === lastOperation ? "" : operation;
     return ` ${command}${vertices.p[vertexId]}`;
   });
 
   return path.join("").trim();
-}
+};
 
 /**
  * Restores the path from exit to start using the 'from' mapping.
@@ -62,7 +67,7 @@ const restorePath = (exit: number, start: number, from: number[]) => {
   pathCells.push(current);
 
   return pathCells.reverse();
-}
+};
 
 /**
  * Returns isolines (borders) for different types of cells in the graph.
@@ -75,12 +80,23 @@ const restorePath = (exit: number, start: number, from: number[]) => {
  * @param {boolean} [options.waterGap=false] - Whether to generate water gap paths for each type.
  * @returns {object} An object containing isolines for each type based on the specified options.
  */
-export const getIsolines = (graph: any, getType: (cellId: number) => any, options: {polygons?: boolean, fill?: boolean, halo?: boolean, waterGap?: boolean} = {polygons: false, fill: false, halo: false, waterGap: false}): any => {
-  const {cells, vertices} = graph;
+export const getIsolines = (
+  graph: any,
+  getType: (cellId: number) => any,
+  options: {
+    polygons?: boolean;
+    fill?: boolean;
+    halo?: boolean;
+    waterGap?: boolean;
+  } = { polygons: false, fill: false, halo: false, waterGap: false },
+): any => {
+  const { cells, vertices } = graph;
   const isolines: any = {};
 
   const checkedCells = new Uint8Array(cells.i.length);
-  const addToChecked = (cellId: number) => (checkedCells[cellId] = 1);
+  const addToChecked = (cellId: number) => {
+    checkedCells[cellId] = 1;
+  };
   const isChecked = (cellId: number) => checkedCells[cellId] === 1;
 
   for (const cellId of cells.i) {
@@ -96,12 +112,22 @@ export const getIsolines = (graph: any, getType: (cellId: number) => any, option
 
     // check if inner lake. Note there is no shoreline for grid features
     const feature = graph.features[cells.f[onborderCell]];
-    if (feature.type === "lake" && feature.shoreline?.every(ofSameType)) continue;
+    if (feature.type === "lake" && feature.shoreline?.every(ofSameType))
+      continue;
 
-    const startingVertex = cells.v[cellId].find((v: number) => vertices.c[v].some(ofDifferentType));
-    if (startingVertex === undefined) throw new Error(`Starting vertex for cell ${cellId} is not found`);
+    const startingVertex = cells.v[cellId].find((v: number) =>
+      vertices.c[v].some(ofDifferentType),
+    );
+    if (startingVertex === undefined)
+      throw new Error(`Starting vertex for cell ${cellId} is not found`);
 
-    const vertexChain = connectVertices({vertices, startingVertex, ofSameType, addToChecked, closeRing: true});
+    const vertexChain = connectVertices({
+      vertices,
+      startingVertex,
+      ofSameType,
+      addToChecked,
+      closeRing: true,
+    });
     if (vertexChain.length < 3) continue;
 
     addIsolineTo(type, vertices, vertexChain, isolines, options);
@@ -109,12 +135,20 @@ export const getIsolines = (graph: any, getType: (cellId: number) => any, option
 
   return isolines;
 
-  function addIsolineTo(type: any, vertices: any, vertexChain: number[], isolines: any, options: any) {
+  function addIsolineTo(
+    type: any,
+    vertices: any,
+    vertexChain: number[],
+    isolines: any,
+    options: any,
+  ) {
     if (!isolines[type]) isolines[type] = {};
 
     if (options.polygons) {
       if (!isolines[type].polygons) isolines[type].polygons = [];
-      isolines[type].polygons.push(vertexChain.map(vertexId => vertices.p[vertexId]));
+      isolines[type].polygons.push(
+        vertexChain.map((vertexId) => vertices.p[vertexId]),
+      );
     }
 
     if (options.fill) {
@@ -124,18 +158,27 @@ export const getIsolines = (graph: any, getType: (cellId: number) => any, option
 
     if (options.waterGap) {
       if (!isolines[type].waterGap) isolines[type].waterGap = "";
-      const isLandVertex = (vertexId: number) => vertices.c[vertexId].every((i: number) => cells.h[i] >= 20);
-      isolines[type].waterGap += getBorderPath(vertices, vertexChain, isLandVertex);
+      const isLandVertex = (vertexId: number) =>
+        vertices.c[vertexId].every((i: number) => cells.h[i] >= 20);
+      isolines[type].waterGap += getBorderPath(
+        vertices,
+        vertexChain,
+        isLandVertex,
+      );
     }
 
     if (options.halo) {
       if (!isolines[type].halo) isolines[type].halo = "";
-      const isBorderVertex = (vertexId: number) => vertices.c[vertexId].some((i: number) => cells.b[i]);
-      isolines[type].halo += getBorderPath(vertices, vertexChain, isBorderVertex);
+      const isBorderVertex = (vertexId: number) =>
+        vertices.c[vertexId].some((i: number) => cells.b[i]);
+      isolines[type].halo += getBorderPath(
+        vertices,
+        vertexChain,
+        isBorderVertex,
+      );
     }
   }
-}
-
+};
 
 /**
  * Generates SVG path data for the border of a shape defined by a chain of vertices.
@@ -144,14 +187,18 @@ export const getIsolines = (graph: any, getType: (cellId: number) => any, option
  * @returns {string} SVG path data for the border of the shape.
  */
 export const getVertexPath = (cellsArray: number[], packedGraph: any = {}) => {
-  const {cells, vertices} = packedGraph;
+  const { cells, vertices } = packedGraph;
 
-  const cellsObj = Object.fromEntries(cellsArray.map(cellId => [cellId, true]));
+  const cellsObj = Object.fromEntries(
+    cellsArray.map((cellId) => [cellId, true]),
+  );
   const ofSameType = (cellId: number) => cellsObj[cellId];
   const ofDifferentType = (cellId: number) => !cellsObj[cellId];
 
   const checkedCells = new Uint8Array(cells.c.length);
-  const addToChecked = (cellId: number) => (checkedCells[cellId] = 1);
+  const addToChecked = (cellId: number) => {
+    checkedCells[cellId] = 1;
+  };
   const isChecked = (cellId: number) => checkedCells[cellId] === 1;
   let path = "";
 
@@ -166,17 +213,26 @@ export const getVertexPath = (cellsArray: number[], packedGraph: any = {}) => {
       if (feature.shoreline.every(ofSameType)) continue; // inner lake
     }
 
-    const startingVertex = cells.v[cellId].find((v: number) => vertices.c[v].some(ofDifferentType));
-    if (startingVertex === undefined) throw new Error(`Starting vertex for cell ${cellId} is not found`);
+    const startingVertex = cells.v[cellId].find((v: number) =>
+      vertices.c[v].some(ofDifferentType),
+    );
+    if (startingVertex === undefined)
+      throw new Error(`Starting vertex for cell ${cellId} is not found`);
 
-    const vertexChain = connectVertices({vertices, startingVertex, ofSameType, addToChecked, closeRing: true});
+    const vertexChain = connectVertices({
+      vertices,
+      startingVertex,
+      ofSameType,
+      addToChecked,
+      closeRing: true,
+    });
     if (vertexChain.length < 3) continue;
 
     path += getFillPath(vertices, vertexChain);
   }
 
   return path;
-}
+};
 
 /**
  * Finds the poles of inaccessibility for each type of cell in the graph.
@@ -184,17 +240,22 @@ export const getVertexPath = (cellsArray: number[], packedGraph: any = {}) => {
  * @param {(cellId: number) => any} getType - A function that returns the type of a cell given its ID.
  * @returns {object} An object mapping each type to its pole of inaccessibility coordinates [x, y].
  */
-export const getPolesOfInaccessibility = (graph: any, getType: (cellId: number) => any) => {
-  const isolines = getIsolines(graph, getType, {polygons: true});
+export const getPolesOfInaccessibility = (
+  graph: any,
+  getType: (cellId: number) => any,
+) => {
+  const isolines = getIsolines(graph, getType, { polygons: true });
 
   const poles = Object.entries(isolines).map(([id, isoline]) => {
-    const multiPolygon = (isoline as any).polygons.sort((a: any, b: any) => b.length - a.length);
+    const multiPolygon = (isoline as any).polygons.sort(
+      (a: any, b: any) => b.length - a.length,
+    );
     const [x, y] = polylabel(multiPolygon, 20);
     return [id, [rn(x), rn(y)]];
   });
 
   return Object.fromEntries(poles);
-}
+};
 
 /**
  * Connects vertices to form a closed path based on cell type.
@@ -206,7 +267,19 @@ export const getPolesOfInaccessibility = (graph: any, getType: (cellId: number) 
  * @param {boolean} [options.closeRing=false] - Whether to close the path into a ring.
  * @returns {number[]} An array of vertex IDs forming the connected path.
  */
-export const connectVertices = ({vertices, startingVertex, ofSameType, addToChecked, closeRing}: {vertices: any, startingVertex: number, ofSameType: (cellId: number) => boolean, addToChecked?: (cellId: number) => void, closeRing?: boolean}) => {
+export const connectVertices = ({
+  vertices,
+  startingVertex,
+  ofSameType,
+  addToChecked,
+  closeRing,
+}: {
+  vertices: any;
+  startingVertex: number;
+  ofSameType: (cellId: number) => boolean;
+  addToChecked?: (cellId: number) => void;
+  closeRing?: boolean;
+}) => {
   const MAX_ITERATIONS = vertices.c.length;
   const chain = []; // vertices chain to form a path
 
@@ -227,24 +300,30 @@ export const connectVertices = ({vertices, startingVertex, ofSameType, addToChec
     else if (v3 !== previous && c1 !== c3) next = v3;
 
     if (next >= vertices.c.length) {
-      window.ERROR && console.error("ConnectVertices: next vertex is out of bounds");
+      window.ERROR &&
+        console.error("ConnectVertices: next vertex is out of bounds");
       break;
     }
 
     if (next === current) {
-      window.ERROR && console.error("ConnectVertices: next vertex is not found");
+      window.ERROR &&
+        console.error("ConnectVertices: next vertex is not found");
       break;
     }
 
     if (i === MAX_ITERATIONS) {
-      window.ERROR && console.error("ConnectVertices: max iterations reached", MAX_ITERATIONS);
+      window.ERROR &&
+        console.error(
+          "ConnectVertices: max iterations reached",
+          MAX_ITERATIONS,
+        );
       break;
     }
   }
 
   if (closeRing) chain.push(startingVertex);
   return chain;
-}
+};
 
 /**
  * Finds the shortest path between two cells using a cost-based pathfinding algorithm.
@@ -254,7 +333,12 @@ export const connectVertices = ({vertices, startingVertex, ofSameType, addToChec
  * @param {object} packedGraph - The packed graph object containing cells and their connections.
  * @returns {number[] | null} An array of cell IDs of the path from start to exit, or null if no path is found or start and exit are the same.
  */
-export const findPath = (start: number, isExit: (id: number) => boolean, getCost: (current: number, next: number) => number, packedGraph: any = {}): number[] | null => {
+export const findPath = (
+  start: number,
+  isExit: (id: number) => boolean,
+  getCost: (current: number, next: number) => number,
+  packedGraph: any = {},
+): number[] | null => {
   if (isExit(start)) return null;
 
   const from = [];
@@ -284,7 +368,7 @@ export const findPath = (start: number, isExit: (id: number) => boolean, getCost
   }
 
   return null;
-}
+};
 
 declare global {
   interface Window {

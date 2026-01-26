@@ -4,7 +4,7 @@
  * @param {Function} reduce - The reduce function to apply to each group
  * @param  {...Function} keys - The key functions to group by
  * @returns {Map} - The regrouped and reduced Map
- * 
+ *
  * @example
  * const data = [
  *   {category: 'A', type: 'X', value: 10},
@@ -24,11 +24,20 @@
  * //   'B' => Map { 'X' => 30, 'Y' => 40 }
  * // }
  */
-export const rollups = (values: any[], reduce: (values: any[]) => any, ...keys: ((value: any, index: number, array: any[]) => any)[]) => {
+export const rollups = (
+  values: any[],
+  reduce: (values: any[]) => any,
+  ...keys: ((value: any, index: number, array: any[]) => any)[]
+) => {
   return nest(values, Array.from, reduce, keys);
-}
+};
 
-const nest = (values: any[], map: (iterable: Iterable<any>) => any, reduce: (values: any[]) => any, keys: ((value: any, index: number, array: any[]) => any)[]) => {
+const nest = (
+  values: any[],
+  map: (iterable: Iterable<any>) => any,
+  reduce: (values: any[]) => any,
+  keys: ((value: any, index: number, array: any[]) => any)[],
+) => {
   return (function regroup(values, i) {
     if (i >= keys.length) return reduce(values);
     const groups = new Map();
@@ -45,7 +54,7 @@ const nest = (values: any[], map: (iterable: Iterable<any>) => any, reduce: (val
     }
     return map(groups);
   })(values, 0);
-}
+};
 
 /**
  * Calculate squared distance between two points
@@ -53,9 +62,12 @@ const nest = (values: any[], map: (iterable: Iterable<any>) => any, reduce: (val
  * @param {[number, number]} p2 - Second point [x2, y2]
  * @returns {number} - Squared distance between p1 and p2
  */
-export const distanceSquared = ([x1, y1]: [number, number], [x2, y2]: [number, number]) => {
+export const distanceSquared = (
+  [x1, y1]: [number, number],
+  [x2, y2]: [number, number],
+) => {
   return (x1 - x2) ** 2 + (y1 - y2) ** 2;
-}
+};
 declare global {
   interface Window {
     rollups: typeof rollups;

@@ -1,8 +1,14 @@
 import type { PackedGraphFeature } from "../modules/features";
 import type { River } from "../modules/river-generator";
 
-
-type TypedArray = Uint8Array | Uint16Array | Uint32Array | Int8Array | Int16Array | Float32Array | Float64Array;
+type TypedArray =
+  | Uint8Array
+  | Uint16Array
+  | Uint32Array
+  | Int8Array
+  | Int16Array
+  | Float32Array
+  | Float64Array;
 
 export interface PackedGraph {
   cells: {
