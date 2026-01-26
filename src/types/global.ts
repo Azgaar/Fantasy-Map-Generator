@@ -35,5 +35,5 @@ declare global {
 
   var tip: (message: string, autoHide?: boolean, type?: "info" | "warning" | "error") => void;
   var locked: (settingId: string) => boolean;
-  var unlock: (settingId: string) => void;  
+  var unlock: (settingId: string) => void;
 }
