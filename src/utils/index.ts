@@ -116,7 +116,7 @@ window.isLand = (i: number) => isLand(i, (window as any).pack);
 window.isWater = (i: number) => isWater(i, (window as any).pack);
 
 import { clipPoly, getSegmentId, debounce, throttle, parseError, getBase64, openURL, wiki, link, isCtrlClick, generateDate, getLongitude, getLatitude, getCoordinates, initializePrompt } from "./commonUtils";
-window.clipPoly = (points: [number, number][], secure?: number) => clipPoly(points, (window as any).graphWidth, (window as any).graphHeight, secure);
+window.clipPoly = (points: [number, number][], secure?: number) => clipPoly(points, graphWidth, graphHeight, secure);
 window.getSegmentId = getSegmentId;
 window.debounce = debounce;
 window.throttle = throttle;
@@ -127,9 +127,9 @@ window.wiki = wiki;
 window.link = link;
 window.isCtrlClick = isCtrlClick;
 window.generateDate = generateDate;
-window.getLongitude = (x: number, decimals?: number) => getLongitude(x, (window as any).mapCoordinates, (window as any).graphWidth, decimals);
-window.getLatitude = (y: number, decimals?: number) => getLatitude(y, (window as any).mapCoordinates, (window as any).graphHeight, decimals);
-window.getCoordinates = (x: number, y: number, decimals?: number) => getCoordinates(x, y, (window as any).mapCoordinates, (window as any).graphWidth, (window as any).graphHeight, decimals);
+window.getLongitude = (x: number, decimals?: number) => getLongitude(x, mapCoordinates, graphWidth, decimals);
+window.getLatitude = (y: number, decimals?: number) => getLatitude(y, mapCoordinates, graphHeight, decimals);
+window.getCoordinates = (x: number, y: number, decimals?: number) => getCoordinates(x, y, mapCoordinates, graphWidth, graphHeight, decimals);
 
 // Initialize prompt when DOM is ready
 if (document.readyState === 'loading') {
