@@ -231,12 +231,7 @@ import {
 } from "./commonUtils";
 
 window.clipPoly = (points: [number, number][], secure?: number) =>
-  clipPoly(
-    points,
-    graphWidth,
-    graphHeight,
-    secure,
-  );
+  clipPoly(points, graphWidth, graphHeight, secure);
 window.getSegmentId = getSegmentId;
 window.debounce = debounce;
 window.throttle = throttle;
@@ -248,28 +243,11 @@ window.link = link;
 window.isCtrlClick = isCtrlClick;
 window.generateDate = generateDate;
 window.getLongitude = (x: number, decimals?: number) =>
-  getLongitude(
-    x,
-    mapCoordinates,
-    graphWidth,
-    decimals,
-  );
+  getLongitude(x, mapCoordinates, graphWidth, decimals);
 window.getLatitude = (y: number, decimals?: number) =>
-  getLatitude(
-    y,
-    mapCoordinates,
-    graphHeight,
-    decimals,
-  );
+  getLatitude(y, mapCoordinates, graphHeight, decimals);
 window.getCoordinates = (x: number, y: number, decimals?: number) =>
-  getCoordinates(
-    x,
-    y,
-    mapCoordinates,
-    graphWidth,
-    graphHeight,
-    decimals,
-  );
+  getCoordinates(x, y, mapCoordinates, graphWidth, graphHeight, decimals);
 
 // Initialize prompt when DOM is ready
 if (document.readyState === "loading") {
