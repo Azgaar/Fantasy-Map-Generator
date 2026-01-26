@@ -233,8 +233,8 @@ import {
 window.clipPoly = (points: [number, number][], secure?: number) =>
   clipPoly(
     points,
-    (window as any).graphWidth,
-    (window as any).graphHeight,
+    graphWidth,
+    graphHeight,
     secure,
   );
 window.getSegmentId = getSegmentId;
@@ -250,24 +250,24 @@ window.generateDate = generateDate;
 window.getLongitude = (x: number, decimals?: number) =>
   getLongitude(
     x,
-    (window as any).mapCoordinates,
-    (window as any).graphWidth,
+    mapCoordinates,
+    graphWidth,
     decimals,
   );
 window.getLatitude = (y: number, decimals?: number) =>
   getLatitude(
     y,
-    (window as any).mapCoordinates,
-    (window as any).graphHeight,
+    mapCoordinates,
+    graphHeight,
     decimals,
   );
 window.getCoordinates = (x: number, y: number, decimals?: number) =>
   getCoordinates(
     x,
     y,
-    (window as any).mapCoordinates,
-    (window as any).graphWidth,
-    (window as any).graphHeight,
+    mapCoordinates,
+    graphWidth,
+    graphHeight,
     decimals,
   );
 

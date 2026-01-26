@@ -187,7 +187,7 @@ const onZoom = debounce(function () {
 }, 50);
 const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoom);
 
-let mapCoordinates = {}; // map coordinates on globe
+var mapCoordinates = {}; // map coordinates on globe
 let populationRate = +byId("populationRateInput").value;
 let distanceScale = +byId("distanceScaleInput").value;
 let urbanization = +byId("urbanizationInput").value;
