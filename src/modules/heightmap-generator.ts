@@ -3,12 +3,7 @@ import { range as d3Range, leastIndex, mean } from "d3";
 import { createTypedArray, byId, findGridCell, getNumberInRange, lim, minmax, P, rand } from "../utils";
 
 declare global {
-  interface Window {
-    HeightmapGenerator: HeightmapGenerator;
-  }
-  var heightmapTemplates: any;
-  var TIME: boolean;
-  var ERROR: boolean;
+  var HeightmapGenerator: HeightmapGenerator;
 }
 
 type Tool = "Hill" | "Pit" | "Range" | "Trough" | "Strait" | "Mask" | "Invert" | "Add" | "Multiply" | "Smooth";
@@ -18,21 +13,6 @@ class HeightmapGenerator {
   heights: Uint8Array | null = null;
   blobPower: number = 0;
   linePower: number = 0;
-
-   // TODO: remove after migration to TS and use param in constructor
-  get seed() {
-    return (window as any).seed;
-  }
-  get graphWidth() {
-    return (window as any).graphWidth;
-  }
-  get graphHeight() {
-    return (window as any).graphHeight;
-  }
-
-  constructor() {
-
-  }
 
   private clearData() {
     this.heights = null;
@@ -107,8 +87,8 @@ class HeightmapGenerator {
       let h = lim(getNumberInRange(height));
 
       do {
-        const x = this.getPointInRange(rangeX, this.graphWidth);
-        const y = this.getPointInRange(rangeY, this.graphHeight);
+        const x = this.getPointInRange(rangeX, graphWidth);
+        const y = this.getPointInRange(rangeY, graphHeight);
         if (x === undefined || y === undefined) return;
         start = findGridCell(x, y, this.grid);
         limit++;
@@ -143,8 +123,8 @@ class HeightmapGenerator {
       let h = lim(getNumberInRange(height));
 
       do {
-        const x = this.getPointInRange(rangeX, this.graphWidth);
-        const y = this.getPointInRange(rangeY, this.graphHeight);
+        const x = this.getPointInRange(rangeX, graphWidth);
+        const y = this.getPointInRange(rangeY, graphHeight);
         if (x === undefined || y === undefined) return;
         start = findGridCell(x, y, this.grid);
         limit++;
@@ -207,8 +187,8 @@ class HeightmapGenerator {
 
       if (rangeX && rangeY) {
         // find start and end points
-        const startX = this.getPointInRange(rangeX, this.graphWidth) as number;
-        const startY = this.getPointInRange(rangeY, this.graphHeight) as number;
+        const startX = this.getPointInRange(rangeX, graphWidth) as number;
+        const startY = this.getPointInRange(rangeY, graphHeight) as number;
 
         let dist = 0;
         let limit = 0;
@@ -216,11 +196,11 @@ class HeightmapGenerator {
         let endX;
 
         do {
-          endX = Math.random() * this.graphWidth * 0.8 + this.graphWidth * 0.1;
-          endY = Math.random() * this.graphHeight * 0.7 + this.graphHeight * 0.15;
+          endX = Math.random() * graphWidth * 0.8 + graphWidth * 0.1;
+          endY = Math.random() * graphHeight * 0.7 + graphHeight * 0.15;
           dist = Math.abs(endY - startY) + Math.abs(endX - startX);
           limit++;
-        } while ((dist < this.graphWidth / 8 || dist > this.graphWidth / 3) && limit < 50);
+        } while ((dist < graphWidth / 8 || dist > graphWidth / 3) && limit < 50);
 
         startCellId = findGridCell(startX, startY, this.grid);
         endCellId = findGridCell(endX, endY, this.grid);
@@ -311,19 +291,19 @@ class HeightmapGenerator {
         let endX: number;
         let endY: number;
         do {
-          startX = this.getPointInRange(rangeX, this.graphWidth) as number;
-          startY = this.getPointInRange(rangeY, this.graphHeight) as number;
+          startX = this.getPointInRange(rangeX, graphWidth) as number;
+          startY = this.getPointInRange(rangeY, graphHeight) as number;
           startCellId = findGridCell(startX, startY, this.grid);
           limit++;
         } while (this.heights[startCellId] < 20 && limit < 50);
         
         limit = 0;
         do {
-          endX = Math.random() * this.graphWidth * 0.8 + this.graphWidth * 0.1;
-          endY = Math.random() * this.graphHeight * 0.7 + this.graphHeight * 0.15;
+          endX = Math.random() * graphWidth * 0.8 + graphWidth * 0.1;
+          endY = Math.random() * graphHeight * 0.7 + graphHeight * 0.15;
           dist = Math.abs(endY - startY) + Math.abs(endX - startX);
           limit++;
-        } while ((dist < this.graphWidth / 8 || dist > this.graphWidth / 2) && limit < 50);
+        } while ((dist < graphWidth / 8 || dist > graphWidth / 2) && limit < 50);
         
         endCellId = findGridCell(endX, endY, this.grid);
       }
@@ -378,14 +358,14 @@ class HeightmapGenerator {
     if (desiredWidth < 1 && P(desiredWidth)) return;
     const used = new Uint8Array(this.heights.length);
     const vert = direction === "vertical";
-    const startX = vert ? Math.floor(Math.random() * this.graphWidth * 0.4 + this.graphWidth * 0.3) : 5;
-    const startY = vert ? 5 : Math.floor(Math.random() * this.graphHeight * 0.4 + this.graphHeight * 0.3);
+    const startX = vert ? Math.floor(Math.random() * graphWidth * 0.4 + graphWidth * 0.3) : 5;
+    const startY = vert ? 5 : Math.floor(Math.random() * graphHeight * 0.4 + graphHeight * 0.3);
     const endX = vert
-      ? Math.floor(this.graphWidth - startX - this.graphWidth * 0.1 + Math.random() * this.graphWidth * 0.2)
-      : this.graphWidth - 5;
+      ? Math.floor(graphWidth - startX - graphWidth * 0.1 + Math.random() * graphWidth * 0.2)
+      : graphWidth - 5;
     const endY = vert
-      ? this.graphHeight - 5
-      : Math.floor(this.graphHeight - startY - this.graphHeight * 0.1 + Math.random() * this.graphHeight * 0.2);
+      ? graphHeight - 5
+      : Math.floor(graphHeight - startY - graphHeight * 0.1 + Math.random() * graphHeight * 0.2);
 
     const start = findGridCell(startX, startY, this.grid);
     const end = findGridCell(endX, endY, this.grid);
@@ -462,8 +442,8 @@ class HeightmapGenerator {
 
     this.heights = this.heights.map((h, i) => {
       const [x, y] = this.grid.points[i];
-      const nx = (2 * x) / this.graphWidth - 1; // [-1, 1], 0 is center
-      const ny = (2 * y) / this.graphHeight - 1; // [-1, 1], 0 is center
+      const nx = (2 * x) / graphWidth - 1; // [-1, 1], 0 is center
+      const ny = (2 * y) / graphHeight - 1; // [-1, 1], 0 is center
       let distance = (1 - nx ** 2) * (1 - ny ** 2); // 1 is center, 0 is edge
       if (power < 0) distance = 1 - distance; // inverted, 0 is center, 1 is edge
       const masked = h * distance;
@@ -509,7 +489,7 @@ class HeightmapGenerator {
     TIME && console.time("defineHeightmap");
     const id = (byId("templateInput")! as HTMLInputElement).value;
     
-    Math.random = Alea(this.seed);
+    Math.random = Alea(seed);
     const isTemplate = id in heightmapTemplates;
     
     const heights = isTemplate ? this.fromTemplate(graph, id) : await this.fromPrecreated(graph, id);
