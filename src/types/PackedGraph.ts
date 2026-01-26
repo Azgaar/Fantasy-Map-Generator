@@ -1,3 +1,4 @@
+import type { Culture } from "../modules/cultures-generator";
 import type { PackedGraphFeature } from "../modules/features";
 import type { River } from "../modules/river-generator";
 
@@ -13,15 +14,18 @@ export interface PackedGraph {
     b: boolean[]; // cell is on border
     h: TypedArray; // cell heights
     t: TypedArray; // cell terrain types
-    r: Uint16Array; // river id passing through cell
-    f: Uint16Array; // feature id occupying cell
+    r: TypedArray; // river id passing through cell
+    f: TypedArray; // feature id occupying cell
     fl: TypedArray; // flux presence in cell
+    s: TypedArray; // cell suitability
+    pop: TypedArray; // cell population
     conf: TypedArray; // cell water confidence
     haven: TypedArray; // cell is a haven
     g: number[]; // cell ground type
     culture: number[]; // cell culture id
     biome: TypedArray; // cell biome id
     harbor: TypedArray; // cell harbour presence
+    area: TypedArray; // cell area
   };
   vertices: {
     i: number[]; // vertex indices
@@ -33,4 +37,5 @@ export interface PackedGraph {
   };
   rivers: River[];
   features: PackedGraphFeature[];
+  cultures: Culture[];
 }

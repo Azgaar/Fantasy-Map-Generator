@@ -14,9 +14,14 @@ declare global {
 
   var heightmapTemplates: any;
   var Names: any;
-  
+  var nameBases: any;
   var pointsInput: HTMLInputElement;
+  var culturesInput: HTMLInputElement;
+  var culturesSet: HTMLSelectElement;
   var heightExponentInput: HTMLInputElement;
+  var alertMessage: HTMLElement;
+
+  var $: (selector: any) => any;
 
   var rivers: Selection<SVGElement, unknown, null, undefined>;
   var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
@@ -30,4 +35,6 @@ declare global {
     icons: string[][];
     cost: number[];
   };
+  var COA: any;
+  var FlatQueue: any;
 }
