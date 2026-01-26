@@ -595,7 +595,6 @@ class HeightmapModule {
   async generate(graph: any): Promise<Uint8Array> {
     TIME && console.time("defineHeightmap");
     const id = (byId("templateInput")! as HTMLInputElement).value;
-
     Math.random = Alea(seed);
     const isTemplate = id in heightmapTemplates;
 

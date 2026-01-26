@@ -7,14 +7,12 @@ declare global {
   var grid: any;
   var graphHeight: number;
   var graphWidth: number;
-
   var TIME: boolean;
   var WARN: boolean;
   var ERROR: boolean;
 
   var heightmapTemplates: any;
   var Names: any;
-
   var pointsInput: HTMLInputElement;
   var heightExponentInput: HTMLInputElement;
 
