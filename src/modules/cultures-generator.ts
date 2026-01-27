@@ -273,7 +273,7 @@ class CulturesModule {
     }
 
     if (culturesSet.value === "english") {
-      const getName = () => Names.getBase(1, 5, 9, "", 0);
+      const getName = () => Names.getBase(1, 5, 9, "");
       return [
         { name: getName(), base: 1, odd: 1, shield: "heater" },
         { name: getName(), base: 1, odd: 1, shield: "wedged" },
