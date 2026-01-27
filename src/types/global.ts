@@ -40,7 +40,7 @@ declare global {
     icons: string[][];
     cost: number[];
   };
-  var COA: any
+  var COA: any;
   var notes: any[];
 
   var layerIsOn: (layerId: string) => boolean;
