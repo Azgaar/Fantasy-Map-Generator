@@ -5,3 +5,4 @@ import "./lakes";
 import "./ocean-layers";
 import "./river-generator";
 import "./biomes";
+import "./states-generator";

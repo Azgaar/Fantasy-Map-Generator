@@ -28,4 +28,7 @@ declare global {
     icons: string[][];
     cost: number[];
   };
+
+  var COA: any;
+  var options: any;
 }

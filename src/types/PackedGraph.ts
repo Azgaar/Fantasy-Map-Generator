@@ -1,5 +1,6 @@
 import type { PackedGraphFeature } from "../modules/features";
 import type { River } from "../modules/river-generator";
+import type { State } from "../modules/states-generator";
 
 type TypedArray =
   | Uint8Array
@@ -28,6 +29,12 @@ export interface PackedGraph {
     culture: number[]; // cell culture id
     biome: TypedArray; // cell biome id
     harbor: TypedArray; // cell harbour presence
+    state: Uint16Array; // state id occupying cell
+    s: TypedArray; // cell population score
+    burg: number[]; // burg id in cell
+    area: number[]; // cell area
+    pop: number[]; // cell population
+    religion: number[]; // cell religion id
   };
   vertices: {
     i: number[]; // vertex indices
@@ -39,4 +46,8 @@ export interface PackedGraph {
   };
   rivers: River[];
   features: PackedGraphFeature[];
+  states: State[];
+  burgs: any[]; // TODO: import Burg type when burgs-generator is fully migrated
+  cultures: any[];
+  religions: any[];
 }
