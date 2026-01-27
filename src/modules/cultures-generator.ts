@@ -1147,7 +1147,7 @@ class CulturesModule {
     const defineCultureType = (i: number) => {
       if (this.cells.h[i] < 70 && [1, 2, 4].includes(this.cells.biome[i]))
         return "Nomadic"; // high penalty in forest biomes and near coastline
-      if (this.cells.h[i] > 50) return "Highland"; // no penalty for hills and moutains, high for other elevations
+      if (this.cells.h[i] > 50) return "Highland"; // no penalty for hills and mountains, high for other elevations
       const f = pack.features[this.cells.f[this.cells.haven[i]]]; // opposite feature
       if (f.type === "lake" && f.cells > 5) return "Lake"; // low water cross penalty and high for growth not along coastline
       if (
