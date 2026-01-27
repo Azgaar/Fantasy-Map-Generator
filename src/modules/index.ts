@@ -5,4 +5,4 @@ import "./names-generator";
 import "./ocean-layers";
 import "./lakes";
 import "./river-generator";
-import "./biomes"
+import "./biomes";
