@@ -1,6 +1,6 @@
-import type { Selection } from 'd3';
+import type { Selection } from "d3";
+import type { NameBase } from "../modules/names-generator";
 import type { PackedGraph } from "./PackedGraph";
-import type { NameBase } from '../modules/names-generator';
 
 declare global {
   var seed: string;
@@ -14,8 +14,7 @@ declare global {
 
   var heightmapTemplates: any;
   var nameBases: NameBase[];
-  
-  var Names: any;
+
   var pointsInput: HTMLInputElement;
   var heightExponentInput: HTMLInputElement;
   var mapName: HTMLInputElement;
@@ -33,7 +32,11 @@ declare global {
     cost: number[];
   };
 
-  var tip: (message: string, autoHide?: boolean, type?: "info" | "warning" | "error") => void;
+  var tip: (
+    message: string,
+    autoHide?: boolean,
+    type?: "info" | "warning" | "error",
+  ) => void;
   var locked: (settingId: string) => boolean;
   var unlock: (settingId: string) => void;
 }
