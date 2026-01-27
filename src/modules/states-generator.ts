@@ -208,7 +208,12 @@ class StatesModule {
         const riverCost = this.getRiverCost(cells.r[e], e, type!);
         const typeCost = this.getTypeCost(cells.t[e], type!);
         const cellCost = Math.max(
-          cultureCost + populationCost + biomeCost + heightCost + riverCost + typeCost,
+          cultureCost +
+            populationCost +
+            biomeCost +
+            heightCost +
+            riverCost +
+            typeCost,
           0,
         );
         const totalCost = p + 10 + cellCost / states[s].expansionism!;
@@ -517,13 +522,15 @@ class StatesModule {
                 .join("")
                 .includes(String(t));
 
-        let status = (naval
-          ? rw(navals)
-          : neib
-            ? rw(neibs)
-            : neibOfNeib
-              ? rw(neibsOfNeibs)
-              : rw(far)) as DiplomacyStatus;
+        let status = (
+          naval
+            ? rw(navals)
+            : neib
+              ? rw(neibs)
+              : neibOfNeib
+                ? rw(neibsOfNeibs)
+                : rw(far)
+        ) as DiplomacyStatus;
 
         // add Vassal
         if (
@@ -593,12 +600,8 @@ class StatesModule {
         }
       });
 
-      ap = sum(
-        attackers.map((a) => states[a].area! * states[a].expansionism!),
-      ); // attackers joined power
-      dp = sum(
-        defenders.map((d) => states[d].area! * states[d].expansionism!),
-      ); // defender joined power
+      ap = sum(attackers.map((a) => states[a].area! * states[a].expansionism!)); // attackers joined power
+      dp = sum(defenders.map((d) => states[d].area! * states[d].expansionism!)); // defender joined power
 
       // defender allies join
       dd.forEach((r, d) => {
@@ -709,16 +712,22 @@ class StatesModule {
     };
 
     const median = (window as any).d3.median(pack.states.map((s) => s.area));
-    const empireMin = states
-      .map((s) => s.area!)
-      .sort((a, b) => b - a)[Math.max(Math.ceil(states.length ** 0.4) - 2, 0)];
+    const empireMin = states.map((s) => s.area!).sort((a, b) => b - a)[
+      Math.max(Math.ceil(states.length ** 0.4) - 2, 0)
+    ];
     const expTiers = pack.states.map((s) => {
       let tier = Math.min(Math.floor((s.area! / median) * 2.6), 4);
       if (tier === 4 && s.area! < empireMin) tier = 3;
       return tier;
     });
 
-    const monarchy = ["Duchy", "Grand Duchy", "Principality", "Kingdom", "Empire"]; // per expansionism tier
+    const monarchy = [
+      "Duchy",
+      "Grand Duchy",
+      "Principality",
+      "Kingdom",
+      "Empire",
+    ]; // per expansionism tier
     const republic: Record<string, number> = {
       Republic: 75,
       Federation: 4,
@@ -768,7 +777,15 @@ class StatesModule {
       if (isTheocracy) s.form = "Theocracy";
       else if (isAnarchy) s.form = "Anarchy";
       else s.form = s.type === "Naval" ? rw(naval) : rw(generic);
-      s.formName = this.selectForm(s, tier, monarchy, republic, union, theocracy, anarchy);
+      s.formName = this.selectForm(
+        s,
+        tier,
+        monarchy,
+        republic,
+        union,
+        theocracy,
+        anarchy,
+      );
       s.fullName = this.getFullName(s);
     }
 
@@ -854,8 +871,7 @@ class StatesModule {
         if (tier > 2) return "Patriarchate";
       }
       if (P(0.9) && [21, 16].includes(base)) return "Imamah"; // Nigerian, Turkish
-      if (tier > 2 && P(0.8) && [18, 17, 28].includes(base))
-        return "Caliphate"; // Arabic, Berber, Swahili
+      if (tier > 2 && P(0.8) && [18, 17, 28].includes(base)) return "Caliphate"; // Arabic, Berber, Swahili
       return rw(theocracy);
     }
 
