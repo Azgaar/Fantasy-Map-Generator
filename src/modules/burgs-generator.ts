@@ -639,9 +639,9 @@ class BurgModule {
       string,
       (burg: Burg) => { link: string | null; preview: string | null }
     > = {
-      "watabou-city": this.createWatabouCityLinks,
-      "watabou-village": this.createWatabouVillageLinks,
-      "watabou-dwelling": this.createWatabouDwellingLinks,
+      "watabou-city": (burg: Burg) => this.createWatabouCityLinks(burg),
+      "watabou-village": (burg: Burg) => this.createWatabouVillageLinks(burg),
+      "watabou-dwelling": (burg: Burg) => this.createWatabouDwellingLinks(burg),
     };
     if (burg.link) return { link: burg.link, preview: burg.link };
 
