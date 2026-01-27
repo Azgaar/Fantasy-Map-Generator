@@ -1,4 +1,5 @@
 import type { Selection } from "d3";
+import type { NameBase } from "../modules/names-generator";
 import type { PackedGraph } from "./PackedGraph";
 
 declare global {
@@ -12,15 +13,14 @@ declare global {
   var ERROR: boolean;
 
   var heightmapTemplates: any;
-  var Names: any;
-  var nameBases: any;
+  var nameBases: NameBase[];
+
   var pointsInput: HTMLInputElement;
   var culturesInput: HTMLInputElement;
   var culturesSet: HTMLSelectElement;
   var heightExponentInput: HTMLInputElement;
   var alertMessage: HTMLElement;
-
-  var $: (selector: any) => any;
+  var mapName: HTMLInputElement;
 
   var rivers: Selection<SVGElement, unknown, null, undefined>;
   var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
@@ -36,4 +36,13 @@ declare global {
   };
   var COA: any;
   var FlatQueue: any;
+
+  var tip: (
+    message: string,
+    autoHide?: boolean,
+    type?: "info" | "warning" | "error",
+  ) => void;
+  var locked: (settingId: string) => boolean;
+  var unlock: (settingId: string) => void;
+  var $: (selector: any) => any;
 }
