@@ -4,4 +4,5 @@ import "./features";
 import "./lakes";
 import "./ocean-layers";
 import "./river-generator";
+import "./burgs-generator";
 import "./biomes";

@@ -1,3 +1,4 @@
+import type { Burg } from "../modules/burgs-generator";
 import type { PackedGraphFeature } from "../modules/features";
 import type { River } from "../modules/river-generator";
 
@@ -22,12 +23,17 @@ export interface PackedGraph {
     r: Uint16Array; // river id passing through cell
     f: Uint16Array; // feature id occupying cell
     fl: TypedArray; // flux presence in cell
+    s: TypedArray; // cell suitability
+    pop: TypedArray; // cell population density
     conf: TypedArray; // cell water confidence
     haven: TypedArray; // cell is a haven
     g: number[]; // cell ground type
     culture: number[]; // cell culture id
     biome: TypedArray; // cell biome id
     harbor: TypedArray; // cell harbour presence
+    burg: TypedArray; // cell burg id
+    religion: TypedArray; // cell religion id
+    state: number[]; // cell state id
   };
   vertices: {
     i: number[]; // vertex indices
@@ -39,4 +45,6 @@ export interface PackedGraph {
   };
   rivers: River[];
   features: PackedGraphFeature[];
+  burgs: Burg[];
+  states: any[];
 }
