@@ -7,10 +7,10 @@ import { rn } from "./numberUtils";
  * @returns {string} - The string with rounded numbers
  */
 export const round = (inputString: string = "", decimals: number = 1) => {
-  return inputString.replace(/[\d\.-][\d\.e-]*/g, (n: string) => {
+  return inputString.replace(/[\d.-][\d.e-]*/g, (n: string) => {
     return rn(parseFloat(n), decimals).toString();
   });
-}
+};
 
 /**
  * Capitalize the first letter of a string
@@ -19,7 +19,7 @@ export const round = (inputString: string = "", decimals: number = 1) => {
  */
 export const capitalize = (inputString: string) => {
   return inputString.charAt(0).toUpperCase() + inputString.slice(1);
-}
+};
 
 /**
  * Split a string into two parts, trying to balance their lengths
@@ -46,13 +46,13 @@ export const splitInTwo = (inputString: string): string[] => {
   if (!last) return [first, middle];
   if (first.length < last.length) return [first + middle, last];
   return [first, middle + last];
-}
+};
 
 /**
  * Parse an SVG transform string into an array of numbers
  * @param {string} string - The SVG transform string
  * @returns {[number, number, number, number, number, number]} - The parsed transform as an array
- * 
+ *
  * @example
  * parseTransform("matrix(1, 0, 0, 1, 100, 200)") // returns [1, 0, 0, 1, 100, 200]
  * parseTransform("translate(50, 75)") // returns [50, 75, 0, 0, 0, 1]
@@ -65,7 +65,7 @@ export const parseTransform = (string: string) => {
     .replace(/[ ]/g, ",")
     .split(",");
   return [a[0] || 0, a[1] || 0, a[2] || 0, a[3] || 0, a[4] || 0, a[5] || 1];
-}
+};
 
 /**
  * Check if a string is valid JSON
@@ -76,7 +76,7 @@ export const isValidJSON = (str: string): boolean => {
   try {
     JSON.parse(str);
     return true;
-  } catch (e) {
+  } catch (_e) {
     return false;
   }
 };
@@ -89,7 +89,7 @@ export const isValidJSON = (str: string): boolean => {
 export const safeParseJSON = (str: string) => {
   try {
     return JSON.parse(str);
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 };
@@ -109,10 +109,10 @@ export const sanitizeId = (inputString: string) => {
     .replace(/\s+/g, "-"); // replace spaces with hyphens
 
   // remove leading numbers
-  if (sanitized.match(/^\d/)) sanitized = "_" + sanitized;
+  if (sanitized.match(/^\d/)) sanitized = `_${sanitized}`;
 
   return sanitized;
-}
+};
 
 declare global {
   interface Window {

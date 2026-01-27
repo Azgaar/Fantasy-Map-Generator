@@ -1,5 +1,5 @@
-import type { Selection } from 'd3';
-import { PackedGraph } from "./PackedGraph";
+import type { Selection } from "d3";
+import type { PackedGraph } from "./PackedGraph";
 
 declare global {
   var seed: string;
@@ -7,7 +7,6 @@ declare global {
   var grid: any;
   var graphHeight: number;
   var graphWidth: number;
-  
   var TIME: boolean;
   var WARN: boolean;
   var ERROR: boolean;
