@@ -27,7 +27,7 @@ class NamesGenerator {
 
     for (const n of availableNames) {
       const name = n.trim().toLowerCase();
-      const basic = !/[^\u0000-\u007f]/.test(name); // basic chars and English rules can be applied
+      const basic = !/[^\x20-\x7e]/.test(name); // basic printable ASCII chars and English rules can be applied
 
       // split word into pseudo-syllables
       for (
