@@ -16,7 +16,10 @@ declare global {
   var nameBases: NameBase[];
 
   var pointsInput: HTMLInputElement;
+  var culturesInput: HTMLInputElement;
+  var culturesSet: HTMLSelectElement;
   var heightExponentInput: HTMLInputElement;
+  var alertMessage: HTMLElement;
   var mapName: HTMLInputElement;
 
   var rivers: Selection<SVGElement, unknown, null, undefined>;
@@ -31,6 +34,8 @@ declare global {
     icons: string[][];
     cost: number[];
   };
+  var COA: any;
+  var FlatQueue: any;
 
   var tip: (
     message: string,
@@ -39,4 +44,5 @@ declare global {
   ) => void;
   var locked: (settingId: string) => boolean;
   var unlock: (settingId: string) => void;
+  var $: (selector: any) => any;
 }
