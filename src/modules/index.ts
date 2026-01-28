@@ -8,3 +8,4 @@ import "./river-generator";
 import "./burgs-generator";
 import "./biomes";
 import "./cultures-generator";
+import "./states-generator";
