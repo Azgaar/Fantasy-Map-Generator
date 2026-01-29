@@ -408,7 +408,7 @@ class StatesModule {
     valid.forEach((s) => {
       s.diplomacy = new Array(states.length).fill("x"); // clear all relationships
     });
-    if (valid.length < 2) return; // no states to renerate relations with
+    if (valid.length < 2) return; // no states to generate relations with
     const areaMean: number = mean(valid.map((s) => s.area!)) as number; // average state area
 
     // generic relations
