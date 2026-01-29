@@ -34,4 +34,5 @@ This feature was built to solve a specific table-top gaming need for my own D&D 
 ## Credits & License
 * **Original Author:** Max Haniyeu (Azgaar) - [Original Repository](https://github.com/Azgaar/Fantasy-Map-Generator)
 * **License:** MIT License
-* **Fork Enhancements:** rstandow (2024)
+* **Fork Enhancements:** rstandow (2024) ( Will continue work on this Late Feb 2026 ) 
+
