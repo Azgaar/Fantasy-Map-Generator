@@ -30,6 +30,8 @@ declare global {
   var rivers: Selection<SVGElement, unknown, null, undefined>;
   var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
   var emblems: Selection<SVGElement, unknown, null, undefined>;
+  var viewbox: Selection<SVGElement, unknown, null, undefined>;
+  var routes: Selection<SVGElement, unknown, null, undefined>;
   var biomesData: {
     i: number[];
     name: string[];
