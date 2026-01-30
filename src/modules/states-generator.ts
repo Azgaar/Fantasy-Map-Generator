@@ -609,7 +609,7 @@ class StatesModule {
           .forEach((v) => {
             attackers.push(v);
             // TODO: I think here is a bug, it should be ap instead of dp
-            dp += states[v].area! * states[v].expansionism;
+            ap += states[v].area! * states[v].expansionism;
             war.push(
               `${states[d].name}'s vassal ${states[v].name} joined the war on attackers side`,
             );
