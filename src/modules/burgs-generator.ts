@@ -15,7 +15,7 @@ export interface Burg {
   feature?: number;
   capital?: number;
   lock?: boolean;
-  port?: string;
+  port?: number;
   removed?: boolean;
   population?: number;
   type?: string;
@@ -81,7 +81,7 @@ class BurgModule {
     Object.entries(featurePortCandidates).forEach(([featureId, burgs]) => {
       if (burgs.length < 2) return; // only one port on water body - skip
       burgs.forEach((burg) => {
-        burg.port = featureId;
+        burg.port = Number(featureId);
         const haven = cells.haven[burg.cell];
         const [x, y] = getCloseToEdgePoint(burg.cell, haven);
         burg.x = x;
@@ -237,7 +237,7 @@ class BurgModule {
     }
   }
 
-  getType(cellId: number, port: string) {
+  getType(cellId: number, port?: number) {
     const { cells, features } = pack;
 
     if (port) return "Naval";
@@ -272,7 +272,7 @@ class BurgModule {
   }
 
   private defineEmblem(burg: Burg) {
-    burg.type = this.getType(burg.cell, burg.port as string);
+    burg.type = this.getType(burg.cell, burg.port);
 
     const state = pack.states[burg.state as number];
     const stateCOA = state.coa;
@@ -485,7 +485,7 @@ class BurgModule {
     const population = rn(burgPopulation! * populationRate * urbanization);
 
     const river = cells.r[cell] ? 1 : 0;
-    const coast = Number(parseInt(burg.port as string, 10) > 0);
+    const coast = Number((burg.port || 0) > 0);
     const sea = (() => {
       if (!coast || !cells.haven[cell]) return null;
 
@@ -672,7 +672,7 @@ class BurgModule {
       name,
       feature,
       capital: 0,
-      port: "0",
+      port: 0,
     };
     this.definePopulation(burg);
     this.defineEmblem(burg);
