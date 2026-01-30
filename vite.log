@@ -1,0 +1,42 @@
+
+> fantasy-map-generator@1.110.0 dev
+> vite
+
+
+  VITE v7.3.1  ready in 450 ms
+
+  ➜  Local:   http://localhost:5173/Fantasy-Map-Generator/
+  ➜  Network: use --host to expose
+2:38:15 AM [vite] (client) page reload engine/main.ts
+2:38:15 AM [vite] (client) page reload engine/main.ts
+2:39:59 AM [vite] (client) page reload engine/render/Renderer.ts
+2:40:29 AM [vite] (client) page reload engine/render/Renderer.ts
+2:41:26 AM [vite] (client) page reload engine/render/Renderer.ts
+2:42:14 AM [vite] (client) page reload engine/render/Renderer.ts
+2:42:20 AM [vite] (client) page reload engine/render/Renderer.ts
+2:42:57 AM [vite] (client) page reload engine/render/Renderer.ts
+2:43:43 AM [vite] (client) page reload engine/render/Renderer.ts
+2:44:03 AM [vite] (client) page reload engine/render/Renderer.ts
+2:44:59 AM [vite] (client) page reload engine/render/Renderer.ts
+2:45:06 AM [vite] (client) page reload engine/main.ts
+2:45:43 AM [vite] (client) page reload engine/render/Renderer.ts
+2:45:48 AM [vite] (client) page reload engine/render/Renderer.ts
+2:47:15 AM [vite] (client) page reload engine/render/Renderer.ts
+2:47:57 AM [vite] (client) page reload engine/main.ts
+2:48:50 AM [vite] (client) page reload engine/render/Renderer.ts
+3:08:38 AM [vite] (client) page reload engine/bridge.ts
+3:08:38 AM [vite] (client) page reload engine/data/Quadtree.ts
+3:08:38 AM [vite] (client) page reload engine/control/Camera.ts
+3:08:38 AM [vite] (client) page reload engine/main.ts
+3:08:38 AM [vite] (client) page reload engine/worker/generation.worker.ts
+3:08:38 AM [vite] (client) page reload engine/render/Renderer.ts
+3:09:35 AM [vite] (client) page reload engine/control/Camera.ts
+3:09:55 AM [vite] (client) page reload engine/control/Camera.ts
+3:10:16 AM [vite] (client) page reload engine/control/Camera.ts
+3:29:26 AM [vite] vite.config.ts changed, restarting server...
+3:29:27 AM [vite] server restarted.
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+3:40:37 AM [vite] vite.config.ts changed, restarting server...
+3:40:38 AM [vite] server restarted.

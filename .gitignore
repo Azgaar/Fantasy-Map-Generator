@@ -6,3 +6,10 @@
 /coverage
 /playwright-report
 /test-results
+
+# Flutter
+mobile_app/build/
+mobile_app/.dart_tool/
+mobile_app/.flutter-plugins
+mobile_app/.flutter-plugins-dependencies
+mobile_app/assets/www/

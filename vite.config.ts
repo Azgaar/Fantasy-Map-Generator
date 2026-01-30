@@ -1,9 +1,21 @@
 export default {
     root: './src',
-    base: process.env.NETLIFY ? '/' : '/Fantasy-Map-Generator/',
+    base: './',
     build: {
         outDir: '../dist',
-        assetsDir: './',
+        assetsDir: 'assets', // Cleaner
+        rollupOptions: {
+            input: {
+                main: './src/index.html',
+                engine: './src/engine/engine.html',
+            },
+        },
     },
     publicDir: '../public',
+    server: {
+        headers: {
+            'Cross-Origin-Opener-Policy': 'same-origin',
+            'Cross-Origin-Embedder-Policy': 'require-corp',
+        },
+    },
 }

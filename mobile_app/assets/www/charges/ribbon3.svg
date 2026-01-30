@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+  <metadata author="Gaeser" source="https://commons.wikimedia.org/wiki/File:Georgian_heraldry_motto.svg" license="https://creativecommons.org/licenses/by-sa/3.0"/>
+  <g id="ribbon3" stroke-width=".19">
+    <path d="M77.83 97.5a74.3 74.3 0 0 0 44.26 0l-1.16-4.01c4.91-1 9.12-3.2 12.12-5l6.9 9.37a42.68 42.68 0 0 1-7.64 3.58l2.06 3.27c-22.23 9.47-45.38 10-69 0l2.14-3.3c-2.95-.88-5.17-2.25-7.56-3.5l6.81-9.28c3.74 2.1 7.74 3.79 12.08 5l-1.01 3.86z"/>
+    <path fill="none" d="m132.32 101.44-4.12-6.38"/>
+    <path fill="none" d="m67.45 101.49 4.25-6.38"/>
+    <g fill="#000" fill-opacity=".5" stroke-linejoin="round">
+      <path d="m78.84 93.62-1.01 3.87-6.13-2.38z"/>
+      <path d="m120.95 93.53 1.14 3.96 6.16-2.36z"/>
+    </g>
+  </g>
+</svg>
