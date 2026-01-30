@@ -694,12 +694,11 @@ class RoutesModule {
     for (const point of route.points) {
       const from = point[2];
       if (!routes[from]) continue;
-      console.log(Object.entries(routes[from]));
 
       for (const [to, routeId] of Object.entries(routes[from])) {
         if (routeId === route.i) {
-          delete routes[from][to];
-          delete routes[to][from];
+          delete routes[from][parseInt(to, 10)];
+          delete routes[parseInt(to, 10)][from];
         }
       }
     }
