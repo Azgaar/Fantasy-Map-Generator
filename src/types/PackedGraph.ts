@@ -37,6 +37,7 @@ export interface PackedGraph {
     religion: TypedArray; // cell religion id
     state: number[]; // cell state id
     area: TypedArray; // cell area
+    province: TypedArray; // cell province id
   };
   vertices: {
     i: number[]; // vertex indices
@@ -50,6 +51,9 @@ export interface PackedGraph {
   features: PackedGraphFeature[];
   burgs: Burg[];
   states: State[];
+  provinces: any[];
   cultures: Culture[];
   religions: any[];
+  ice: any[];
+  markers: any[];
 }
