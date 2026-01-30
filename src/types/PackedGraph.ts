@@ -1,6 +1,7 @@
 import type { Burg } from "../modules/burgs-generator";
 import type { Culture } from "../modules/cultures-generator";
 import type { PackedGraphFeature } from "../modules/features";
+import type { Province } from "../modules/provinces-generator";
 import type { River } from "../modules/river-generator";
 import type { State } from "../modules/states-generator";
 
@@ -37,6 +38,7 @@ export interface PackedGraph {
     religion: TypedArray; // cell religion id
     state: number[]; // cell state id
     area: TypedArray; // cell area
+    province: TypedArray; // cell province id
   };
   vertices: {
     i: number[]; // vertex indices
@@ -52,4 +54,5 @@ export interface PackedGraph {
   states: State[];
   cultures: Culture[];
   religions: any[];
+  provinces: Province[];
 }

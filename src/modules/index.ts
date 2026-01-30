@@ -9,3 +9,4 @@ import "./burgs-generator";
 import "./biomes";
 import "./cultures-generator";
 import "./states-generator";
+import "./provinces-generator";
