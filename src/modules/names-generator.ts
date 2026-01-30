@@ -223,7 +223,7 @@ class NamesGenerator {
   }
 
   // generate state name based on capital or random name and culture-specific suffix
-  getState(name: string, culture: number, base: number): string {
+  getState(name: string, culture: number, base?: number): string {
     if (name === undefined) {
       ERROR && console.error("Please define a base name");
       return "ERROR";
