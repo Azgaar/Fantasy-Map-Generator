@@ -727,8 +727,8 @@ class BurgModule {
       delete burg.coa;
     }
 
-    removeBurgIcon(burg.i);
-    removeBurgLabel(burg.i);
+    removeBurgIcon(burg.i!);
+    removeBurgLabel(burg.i!);
   }
 }
 window.Burgs = new BurgModule();

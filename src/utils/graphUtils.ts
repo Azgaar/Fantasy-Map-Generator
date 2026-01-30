@@ -491,7 +491,7 @@ export function* poissonDiscSampler(
     return true;
   }
 
-  function sample(x: number, y: number) {
+  function sample(x: number, y: number): [number, number] {
     const point: [number, number] = [x, y];
     grid[gridWidth * ((y / cellSize) | 0) + ((x / cellSize) | 0)] = point;
     queue.push(point);
