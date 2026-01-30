@@ -622,7 +622,7 @@ class RoutesModule {
       connections: new Map(),
     });
     const isExit = (c: number) => isLand(c, pack) && this.isConnected(c);
-    const pathCells = findPath(cellId, isExit, getCost);
+    const pathCells = findPath(cellId, isExit, getCost, pack);
     if (!pathCells) return;
 
     const pointsArray = this.preparePointsArray();
