@@ -374,7 +374,12 @@ class RoutesModule {
     exit: number;
   }) {
     const getCost = this.createCostEvaluator({ isWater, connections });
-    const pathCells = findPath(start, (current) => current === exit, getCost, pack);
+    const pathCells = findPath(
+      start,
+      (current) => current === exit,
+      getCost,
+      pack,
+    );
     if (!pathCells) return [];
     const segments = this.getRouteSegments(pathCells, connections);
     return segments;
