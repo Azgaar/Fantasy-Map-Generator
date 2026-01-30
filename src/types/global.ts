@@ -46,6 +46,8 @@ declare global {
   var getColor: (height: number, scheme: (t: number) => string) => string;
   var svgWidth: number;
   var svgHeight: number;
+  var viewbox: Selection<SVGElement, unknown, null, undefined>;
+  var routes: Selection<SVGElement, unknown, null, undefined>;
   var biomesData: {
     i: number[];
     name: string[];
