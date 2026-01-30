@@ -128,7 +128,7 @@ class ProvinceModule {
         Math.ceil((stateBurgs.length * provincesRatio) / 100),
         2,
       );
-      const form = Object.assign({}, this.forms[s.form]);
+      const form = Object.assign({}, this.forms[s.form!]);
 
       for (let i = 0; i < provincesNumber; i++) {
         const provinceId = provinces.length;
@@ -142,7 +142,7 @@ class ProvinceModule {
         const formName = rw(form);
         form[formName] += 10;
         const fullName = `${name} ${formName}`;
-        const color = getMixedColor(s.color);
+        const color = getMixedColor(s.color!);
         const kinship = nameByBurg ? 0.8 : 0.4;
         const type = Burgs.getType(center, burg.port);
         const coa = COA.generate(stateBurgs[i].coa, kinship, null, type);
@@ -234,7 +234,7 @@ class ProvinceModule {
     states.forEach((s) => {
       if (!s.i || s.removed) return;
       if (s.lock && !regenerateLockedStates) return;
-      if (!s.provinces.length) return;
+      if (!s.provinces?.length) return;
 
       const coreProvinceNames = s.provinces.map((p) => provinces[p]?.name);
       const colonyNamePool = [s.name, ...coreProvinceNames].filter(
@@ -293,7 +293,7 @@ class ProvinceModule {
         // generate "wild" province name
         const c = cells.culture[center];
         const f = pack.features[cells.f[center]];
-        const color = getMixedColor(s.color);
+        const color = getMixedColor(s.color!);
 
         const provCells = stateNoProvince.filter(
           (i) => provinceIds[i] === provinceId,
