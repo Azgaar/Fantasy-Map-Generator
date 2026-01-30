@@ -3,6 +3,7 @@ import type { Culture } from "../modules/cultures-generator";
 import type { PackedGraphFeature } from "../modules/features";
 import type { Province } from "../modules/provinces-generator";
 import type { River } from "../modules/river-generator";
+import type { Route } from "../modules/routes-generator";
 import type { State } from "../modules/states-generator";
 
 type TypedArray =
@@ -22,6 +23,7 @@ export interface PackedGraph {
     p: [number, number][]; // cell polygon points
     b: boolean[]; // cell is on border
     h: TypedArray; // cell heights
+    /** Terrain type */
     t: TypedArray; // cell terrain types
     r: TypedArray; // river id passing through cell
     f: TypedArray; // feature id occupying cell
@@ -39,6 +41,7 @@ export interface PackedGraph {
     state: number[]; // cell state id
     area: TypedArray; // cell area
     province: TypedArray; // cell province id
+    routes: Record<number, Record<number, number>>;
   };
   vertices: {
     i: number[]; // vertex indices
@@ -53,6 +56,7 @@ export interface PackedGraph {
   burgs: Burg[];
   states: State[];
   cultures: Culture[];
+  routes: Route[];
   religions: any[];
   provinces: Province[];
 }
