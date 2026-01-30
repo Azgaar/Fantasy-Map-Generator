@@ -3,6 +3,7 @@ import type { Culture } from "../modules/cultures-generator";
 import type { PackedGraphFeature } from "../modules/features";
 import type { River } from "../modules/river-generator";
 import type { Route } from "../modules/routes-generator";
+import type { State } from "../modules/states-generator";
 
 type TypedArray =
   | Uint8Array
@@ -51,7 +52,8 @@ export interface PackedGraph {
   rivers: River[];
   features: PackedGraphFeature[];
   burgs: Burg[];
-  states: any[];
+  states: State[];
   cultures: Culture[];
   routes: Route[];
+  religions: any[];
 }
