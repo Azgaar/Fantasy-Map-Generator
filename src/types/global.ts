@@ -26,6 +26,7 @@ declare global {
   var heightExponentInput: HTMLInputElement;
   var alertMessage: HTMLElement;
   var mapName: HTMLInputElement;
+  var religionsNumber: HTMLInputElement;
 
   var rivers: Selection<SVGElement, unknown, null, undefined>;
   var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
