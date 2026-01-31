@@ -10,3 +10,4 @@ import "./biomes";
 import "./cultures-generator";
 import "./routes-generator";
 import "./states-generator";
+import "./zones-generator";
