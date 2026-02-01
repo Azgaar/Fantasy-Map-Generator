@@ -50,6 +50,7 @@ export interface State {
   formName?: string;
   fullName?: string;
   form?: string;
+  provinces?: number[];
 }
 
 class StatesModule {
