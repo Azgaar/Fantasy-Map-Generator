@@ -28,6 +28,7 @@ window.Resample = (function () {
 
     reGraph();
     Features.markupPack();
+    Ice.generate()
     createDefaultRuler();
 
     restoreCellData(parentMap, inverse, scale);
