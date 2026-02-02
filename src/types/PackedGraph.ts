@@ -58,5 +58,7 @@ export interface PackedGraph {
   cultures: Culture[];
   routes: Route[];
   religions: any[];
+  ice: any[];
+  markers: any[];
   provinces: Province[];
 }
