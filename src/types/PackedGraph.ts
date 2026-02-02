@@ -62,6 +62,5 @@ export interface PackedGraph {
   zones: Zone[];
   markers: any[];
   ice: any[];
-  markers: any[];
   provinces: Province[];
 }
