@@ -11,4 +11,5 @@ import "./cultures-generator";
 import "./routes-generator";
 import "./states-generator";
 import "./zones-generator";
+import "./religions-generator";
 import "./provinces-generator";
