@@ -136,11 +136,13 @@ function editBiomes() {
     body.innerHTML = lines;
 
     // update footer
+    const totalMapArea = getArea(d3.sum(pack.cells.area));
     biomesFooterBiomes.innerHTML = body.querySelectorAll(":scope > div").length;
     biomesFooterCells.innerHTML = pack.cells.h.filter(h => h >= 20).length;
     biomesFooterArea.innerHTML = si(totalArea) + unit;
     biomesFooterPopulation.innerHTML = si(totalPopulation);
     biomesFooterArea.dataset.area = totalArea;
+    biomesFooterArea.dataset.mapArea = totalMapArea;
     biomesFooterPopulation.dataset.population = totalPopulation;
 
     // add listeners
@@ -255,6 +257,7 @@ function editBiomes() {
       body.dataset.type = "percentage";
       const totalCells = +biomesFooterCells.innerHTML;
       const totalArea = +biomesFooterArea.dataset.area;
+      const totalMapArea = +biomesFooterArea.dataset.mapArea;
       const totalPopulation = +biomesFooterPopulation.dataset.population;
 
       body.querySelectorAll(":scope>  div").forEach(function (el) {
@@ -262,6 +265,9 @@ function editBiomes() {
         el.querySelector(".biomeArea").innerHTML = rn((+el.dataset.area / totalArea) * 100) + "%";
         el.querySelector(".biomePopulation").innerHTML = rn((+el.dataset.population / totalPopulation) * 100) + "%";
       });
+
+      // update footer to show land percentage of total map
+      biomesFooterArea.innerHTML = rn((totalArea / totalMapArea) * 100) + "%";
     } else {
       body.dataset.type = "absolute";
       biomesEditorAddLines();

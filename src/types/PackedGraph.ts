@@ -1,6 +1,7 @@
 import type { Burg } from "../modules/burgs-generator";
 import type { Culture } from "../modules/cultures-generator";
 import type { PackedGraphFeature } from "../modules/features";
+import type { Province } from "../modules/provinces-generator";
 import type { River } from "../modules/river-generator";
 import type { Route } from "../modules/routes-generator";
 import type { State } from "../modules/states-generator";
@@ -54,10 +55,10 @@ export interface PackedGraph {
   features: PackedGraphFeature[];
   burgs: Burg[];
   states: State[];
-  provinces: any[];
   cultures: Culture[];
   routes: Route[];
   religions: any[];
   ice: any[];
   markers: any[];
+  provinces: Province[];
 }
