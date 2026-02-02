@@ -107,7 +107,7 @@ const base = {
     "Goddess",
     "Guardian",
     "Guide",
-    "Hierach",
+    "Hierarch",
     "Lady",
     "Lord",
     "Maker",
