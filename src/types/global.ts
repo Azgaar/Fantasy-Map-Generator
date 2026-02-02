@@ -42,6 +42,9 @@ declare global {
   var terrs: Selection<SVGGElement, unknown, null, undefined>;
   var temperature: Selection<SVGGElement, unknown, null, undefined>;
   var markers: Selection<SVGGElement, unknown, null, undefined>;
+  var defs: Selection<SVGDefsElement, unknown, null, undefined>;
+  var coastline: Selection<SVGGElement, unknown, null, undefined>;
+  var lakes: Selection<SVGGElement, unknown, null, undefined>;
   var getColorScheme: (scheme: string | null) => (t: number) => string;
   var getColor: (height: number, scheme: (t: number) => string) => string;
   var svgWidth: number;

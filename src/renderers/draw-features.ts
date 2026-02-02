@@ -4,10 +4,6 @@ import { clipPoly, round } from "../utils";
 
 declare global {
   var drawFeatures: () => void;
-
-  var defs: d3.Selection<SVGDefsElement, unknown, null, undefined>;
-  var coastline: d3.Selection<SVGGElement, unknown, null, undefined>;
-  var lakes: d3.Selection<SVGGElement, unknown, null, undefined>;
   var simplify: (
     points: [number, number][],
     tolerance: number,
@@ -95,7 +91,7 @@ function getFeaturePath(feature: PackedGraphFeature): string {
   }
 
   const simplifiedPoints = simplify(points, 0.3);
-  const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight);
+  const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight, 1);
 
   const lineGen = line().curve(curveBasisClosed);
   const path = `${round(lineGen(clippedPoints) || "")}Z`;
