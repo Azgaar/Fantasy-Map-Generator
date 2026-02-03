@@ -9,6 +9,7 @@ declare global {
     tolerance: number,
     highestQuality?: boolean,
   ) => [number, number][];
+  var getFeaturePath: (feature: PackedGraphFeature) => string;
 }
 
 interface FeaturesHtml {
@@ -34,7 +35,7 @@ const featuresRenderer = (): void => {
     if (!feature || feature.type === "ocean") continue;
 
     html.paths.push(
-      `<path d="${getFeaturePath(feature)}" id="feature_${feature.i}" data-f="${feature.i}"></path>`,
+      `<path d="${featurePathRenderer(feature)}" id="feature_${feature.i}" data-f="${feature.i}"></path>`,
     );
 
     if (feature.type === "lake") {
@@ -81,7 +82,7 @@ const featuresRenderer = (): void => {
   TIME && console.timeEnd("drawFeatures");
 };
 
-function getFeaturePath(feature: PackedGraphFeature): string {
+function featurePathRenderer(feature: PackedGraphFeature): string {
   const points: [number, number][] = feature.vertices.map(
     (vertex: number) => pack.vertices.p[vertex],
   );
@@ -100,3 +101,4 @@ function getFeaturePath(feature: PackedGraphFeature): string {
 }
 
 window.drawFeatures = featuresRenderer;
+window.getFeaturePath = featurePathRenderer;
