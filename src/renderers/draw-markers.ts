@@ -17,6 +17,7 @@ interface Marker {
 
 declare global {
   var drawMarkers: () => void;
+  var drawMarker: (marker: Marker, rescale?: number) => string;
 }
 
 type PinShapeFunction = (fill: string, stroke: string) => string;
@@ -56,7 +57,7 @@ const getPin = (shape = "bubble", fill = "#fff", stroke = "#000"): string => {
   return shapeFunction(fill, stroke);
 };
 
-function drawMarker(marker: Marker, rescale = 1): string {
+function markerRenderer(marker: Marker, rescale = 1): string {
   const {
     i,
     icon,
@@ -94,10 +95,11 @@ const markersRenderer = (): void => {
   const markersData: Marker[] = pinned
     ? pack.markers.filter((m: Marker) => m.pinned)
     : pack.markers;
-  const html = markersData.map((marker) => drawMarker(marker, rescale));
+  const html = markersData.map((marker) => markerRenderer(marker, rescale));
   markers.html(html.join(""));
 
   TIME && console.timeEnd("drawMarkers");
 };
 
 window.drawMarkers = markersRenderer;
+window.drawMarker = markerRenderer;
