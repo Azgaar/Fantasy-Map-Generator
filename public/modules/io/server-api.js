@@ -60,7 +60,7 @@ window.ServerAPI = (function () {
                 return data;
 
             } catch (e) {
-                console.error("ServerAPI JSON-parse failed:", e);
+                console.debug("ServerAPI JSON-parse failed:", e);
                 ok = false;
                 return null;
             }
@@ -80,7 +80,7 @@ window.ServerAPI = (function () {
                 return { ok: false, info: text };
             }
         } catch (e) {
-            console.error("ServerAPI plain-parse failed:", e);
+            console.debug("ServerAPI plain-parse failed:", e);
             ok = false;
             return null;
         }
@@ -97,13 +97,13 @@ window.ServerAPI = (function () {
 
             if (!res.ok) {
                 const payload = await readJsonSafe(res);
-                console.error("ServerAPI GET failed:", { url, status: res.status, payload });
+                console.debug("ServerAPI GET failed:", { url, status: res.status, payload });
                 return null;
             }
 
             return await readJsonSafe(res);
         } catch (error) {
-            console.error("ServerAPI GET error:", { url, error });
+            console.debug("ServerAPI GET error:", { url, error });
             return null;
         }
     }
@@ -123,13 +123,13 @@ window.ServerAPI = (function () {
 
             if (!res.ok) {
                 const payload = await readJsonSafe(res);
-                console.error("ServerAPI POST failed:", { url, status: res.status, payload });
+                console.debug("ServerAPI POST failed:", { url, status: res.status, payload });
                 return null;
             }
 
             return await readJsonSafe(res);
         } catch (error) {
-            console.error("ServerAPI POST error:", { url, error });
+            console.debug("ServerAPI POST error:", { url, error });
             return null;
         }
     }
