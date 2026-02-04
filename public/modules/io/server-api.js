@@ -111,7 +111,7 @@ window.ServerAPI = (function () {
         }
     }
 
-    async function postMapData(path, mapData, params) {
+    async function postData(path, mapData, params) {
         if (!ok) {return null;}
 
         const url = buildUrl(path, params);
@@ -140,7 +140,7 @@ window.ServerAPI = (function () {
     return {
         checkData,
         getJson,
-        postMapData
+        postData
     };
 })();
 
@@ -150,5 +150,5 @@ window.ServerAPI = (function () {
         return;
     }
 
-    console.log("Ответ сервера (JSON):", data.info);
+    console.log("[ServerAPI][enabled]: ", data.info);
 })();
