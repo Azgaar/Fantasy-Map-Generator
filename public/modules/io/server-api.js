@@ -12,8 +12,7 @@ window.ServerAPI = (function () {
             return false;
         }
 
-        ok = data.ok;
-        return true;
+        return data.ok;
     }
 
 
@@ -57,7 +56,7 @@ window.ServerAPI = (function () {
         if (looksJson) {
             try {
                 const data = await res.json();
-                checkData(data);
+                ok = checkData(data);
                 return data;
 
             } catch (e) {
@@ -73,7 +72,7 @@ window.ServerAPI = (function () {
 
             try {
                 const data = JSON.parse(text);
-                checkData(data);
+                ok = checkData(data);
                 return data;
 
             } catch (e) {
@@ -88,8 +87,6 @@ window.ServerAPI = (function () {
     }
 
     async function getJson(path, params) {
-        if (!ok) {return null;}
-
         const url = buildUrl(path, params);
 
         try {
