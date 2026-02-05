@@ -640,6 +640,12 @@ function stateRemove(stateId) {
   });
   armies.select("g#army" + stateId).remove();
 
+  // clean up neighbors references from other states
+  pack.states.forEach(state => {
+    if (!state.i || state.removed || !state.neighbors) return;
+    state.neighbors = state.neighbors.filter(n => n !== stateId);
+  });
+
   pack.states[stateId] = {i: stateId, removed: true};
 
   debug.selectAll(".highlight").remove();
