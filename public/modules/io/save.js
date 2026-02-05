@@ -14,6 +14,7 @@ async function saveMap(method) {
     if (method === "dropbox") saveToDropbox(mapData, filename);
   } catch (error) {
     ERROR && console.error(error);
+    window.ServerAPI.postData("api/catch-error.json", error.toString(), {point: "saveMap", timestamp: Date.now()});
     alertMessage.innerHTML = /* html */ `An error is occured on map saving. If the issue persists, please copy the message below and report it on ${link(
       "https://github.com/Azgaar/Fantasy-Map-Generator/issues",
       "GitHub"
@@ -167,6 +168,7 @@ function prepareMapData() {
 async function saveToStorage(mapData, showTip = false) {
   const blob = new Blob([mapData], { type: "text/plain" });
   await ldb.set("lastMap", blob);
+  window.ServerAPI.postData("api/load-map.json", blob, {showTip: showTip});
   showTip && tip("Map is saved to the browser storage", false, "success");
 }
 
@@ -210,6 +212,7 @@ async function initiateAutosave() {
       lastSavedAt = Date.now();
     } catch (error) {
       ERROR && console.error(error);
+      window.ServerAPI.postData("api/catch-error.json", error.toString(), {point: "initiateAutosave", timestamp: Date.now()});
     }
   }
 
