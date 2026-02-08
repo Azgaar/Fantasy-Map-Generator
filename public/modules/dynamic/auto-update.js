@@ -1106,4 +1106,105 @@ export function resolveVersionConflicts(mapVersion) {
     }
 
   }
+
+  if (isOlderThan("1.113.0")) {
+    // v1.113 separates label data from view layer by introducing pack.labels array
+    // Migrate labels from SVG to pack.labels for backward compatibility
+    if (!pack.labels || pack.labels.length === 0) {
+      pack.labels = [];
+      
+      // Extract burg labels from SVG
+      burgLabels.selectAll("text").each(function() {
+        const textEl = d3.select(this);
+        const burgId = +textEl.attr("data-id");
+        const id = textEl.attr("id");
+        const group = this.parentNode.id;
+        
+        if (id && burgId !== undefined) {
+          pack.labels.push({
+            i: id,
+            type: "burg",
+            name: textEl.text(),
+            group: group,
+            burgId: burgId
+          });
+        }
+      });
+      
+      // Extract state labels from SVG
+      labels.select("g#states").selectAll("text").each(function() {
+        const textEl = d3.select(this);
+        const id = textEl.attr("id");
+        const stateId = id ? +id.replace("stateLabel", "") : null;
+        
+        if (id && stateId !== null) {
+          const textPathEl = textEl.select("textPath");
+          const pathId = textPathEl.attr("href")?.replace("#textPath_", "");
+          const path = pathId ? defs.select(`#textPath_${id}`) : null;
+          
+          let pathData;
+          if (path && !path.empty()) {
+            pathData = path.attr("d");
+          }
+          
+          const lines = [];
+          textPathEl.selectAll("tspan").each(function() {
+            lines.push(d3.select(this).text());
+          });
+          
+          pack.labels.push({
+            i: id,
+            type: "state",
+            name: lines.join("|"),
+            stateId: stateId,
+            pathData: pathData,
+            startOffset: parseFloat(textPathEl.attr("startOffset")) || 50,
+            fontSize: parseFloat(textPathEl.attr("font-size")) || 100,
+            letterSpacing: parseFloat(textPathEl.attr("letter-spacing")) || 0,
+            transform: textEl.attr("transform") || ""
+          });
+        }
+      });
+      
+      // Extract custom labels from other groups
+      labels.selectAll(":scope > g").each(function() {
+        const groupId = this.id;
+        if (groupId === "states" || groupId === "burgLabels") return;
+        
+        d3.select(this).selectAll("text").each(function() {
+          const textEl = d3.select(this);
+          const id = textEl.attr("id");
+          
+          if (id) {
+            const textPathEl = textEl.select("textPath");
+            const pathId = textPathEl.attr("href")?.replace("#textPath_", "");
+            const path = pathId ? defs.select(`#textPath_${id}`) : null;
+            
+            let pathData;
+            if (path && !path.empty()) {
+              pathData = path.attr("d");
+            }
+            
+            const lines = [];
+            textPathEl.selectAll("tspan").each(function() {
+              lines.push(d3.select(this).text());
+            });
+            
+            pack.labels.push({
+              i: id,
+              type: "custom",
+              name: lines.join("|"),
+              group: groupId,
+              pathData: pathData,
+              startOffset: parseFloat(textPathEl.attr("startOffset")) || 50,
+              fontSize: parseFloat(textPathEl.attr("font-size")) || 100,
+              letterSpacing: parseFloat(textPathEl.attr("letter-spacing")) || 0,
+              transform: textEl.attr("transform") || ""
+            });
+          }
+        });
+      });
+    }
+  }
+
 }

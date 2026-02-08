@@ -392,6 +392,7 @@ async function parseLoadedData(data, mapVersion) {
       pack.markers = data[35] ? JSON.parse(data[35]) : [];
       pack.routes = data[37] ? JSON.parse(data[37]) : [];
       pack.zones = data[38] ? JSON.parse(data[38]) : [];
+      pack.labels = data[40] ? JSON.parse(data[40]) : [];
       pack.cells.biome = Uint8Array.from(data[16].split(","));
       pack.cells.burg = Uint16Array.from(data[17].split(","));
       pack.cells.conf = Uint8Array.from(data[18].split(","));

@@ -5,6 +5,7 @@ import "./draw-emblems";
 import "./draw-features";
 import "./draw-heightmap";
 import "./draw-ice";
+import "./draw-labels";
 import "./draw-markers";
 import "./draw-military";
 import "./draw-relief-icons";

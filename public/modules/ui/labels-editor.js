@@ -1,4 +1,77 @@
 "use strict";
+
+// Helper function to sync label data with pack.labels
+function syncLabelToPack(labelId) {
+  if (!pack.labels) pack.labels = [];
+  
+  const textEl = document.getElementById(labelId);
+  if (!textEl) return;
+  
+  const group = textEl.parentNode.id;
+  const isBurgLabel = labelId.startsWith("burgLabel");
+  const isStateLabel = labelId.startsWith("stateLabel");
+  
+  // Remove existing entry
+  const existingIndex = pack.labels.findIndex(l => l.i === labelId);
+  
+  // Gather label data
+  const labelData = {
+    i: labelId,
+    type: isBurgLabel ? "burg" : isStateLabel ? "state" : "custom"
+  };
+  
+  if (isBurgLabel) {
+    const burgId = +textEl.getAttribute("data-id");
+    labelData.name = textEl.textContent;
+    labelData.group = group;
+    labelData.burgId = burgId;
+  } else {
+    // State or custom label with textPath
+    const textPathEl = textEl.querySelector("textPath");
+    if (textPathEl) {
+      const lines = [];
+      textPathEl.querySelectorAll("tspan").forEach(tspan => {
+        lines.push(tspan.textContent);
+      });
+      labelData.name = lines.join("|");
+      labelData.startOffset = parseFloat(textPathEl.getAttribute("startOffset")) || 50;
+      labelData.fontSize = parseFloat(textPathEl.getAttribute("font-size")) || 100;
+      labelData.letterSpacing = parseFloat(textPathEl.getAttribute("letter-spacing")) || 0;
+      labelData.transform = textEl.getAttribute("transform") || "";
+      
+      if (isStateLabel) {
+        const stateId = +labelId.replace("stateLabel", "");
+        labelData.stateId = stateId;
+      } else {
+        labelData.group = group;
+      }
+      
+      // Extract path points
+      const pathId = `textPath_${labelId}`;
+      const pathEl = document.getElementById(pathId);
+      if (pathEl) {
+        const pathData = pathEl.getAttribute("d");
+        // Store the path data - ideally we'd parse it into points, but for now store as-is
+        // This will be improved when we implement more sophisticated label editing
+        labelData.pathData = pathData;
+      }
+    }
+  }
+  
+  // Update or add to pack.labels
+  if (existingIndex >= 0) {
+    pack.labels[existingIndex] = labelData;
+  } else {
+    pack.labels.push(labelData);
+  }
+}
+
+// Helper function to remove label from pack.labels
+function removeLabelFromPack(labelId) {
+  if (!pack.labels) return;
+  pack.labels = pack.labels.filter(l => l.i !== labelId);
+}
+
 function editLabel() {
   if (customization) return;
   closeDialogs();
@@ -133,6 +206,9 @@ function editLabel() {
     const d = round(lineGen(points));
     path.setAttribute("d", d);
     debug.select("#controlPoints > path").attr("d", d);
+    
+    // Sync changes to pack.labels
+    syncLabelToPack(elSelected.attr("id"));
   }
 
   function clickControlPoint() {
@@ -188,6 +264,11 @@ function editLabel() {
       elSelected.attr("transform", transform);
       debug.select("#controlPoints").attr("transform", transform);
     });
+    
+    d3.event.on("end", function () {
+      // Sync changes to pack.labels after drag ends
+      syncLabelToPack(elSelected.attr("id"));
+    });
   }
 
   function showGroupSection() {
@@ -205,6 +286,9 @@ function editLabel() {
 
   function changeGroup() {
     byId(this.value).appendChild(elSelected.node());
+    
+    // Sync changes to pack.labels
+    syncLabelToPack(elSelected.attr("id"));
   }
 
   function toggleNewGroupInput() {
@@ -280,6 +364,10 @@ function editLabel() {
             .selectAll("text")
             .each(function () {
               byId("textPath_" + this.id).remove();
+              
+              // Remove from pack.labels
+              removeLabelFromPack(this.id);
+              
               this.remove();
             });
           if (!basic) labels.select("#" + group).remove();
@@ -313,6 +401,9 @@ function editLabel() {
 
     if (elSelected.attr("id").slice(0, 10) === "stateLabel")
       tip("Use States Editor to change an actual state name, not just a label", false, "warning");
+    
+    // Sync changes to pack.labels
+    syncLabelToPack(elSelected.attr("id"));
   }
 
   function generateRandomName() {
@@ -359,6 +450,9 @@ function editLabel() {
   function changeStartOffset() {
     elSelected.select("textPath").attr("startOffset", this.value + "%");
     tip("Label offset: " + this.value + "%");
+    
+    // Sync changes to pack.labels
+    syncLabelToPack(elSelected.attr("id"));
   }
 
   function changeRelativeSize() {
@@ -395,9 +489,13 @@ function editLabel() {
       buttons: {
         Remove: function () {
           $(this).dialog("close");
-          defs.select("#textPath_" + elSelected.attr("id")).remove();
+          const labelId = elSelected.attr("id");
+          defs.select("#textPath_" + labelId).remove();
           elSelected.remove();
           $("#labelEditor").dialog("close");
+          
+          // Remove from pack.labels
+          removeLabelFromPack(labelId);
         },
         Cancel: function () {
           $(this).dialog("close");

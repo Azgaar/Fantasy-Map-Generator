@@ -6,6 +6,7 @@ import type { River } from "../modules/river-generator";
 import type { Route } from "../modules/routes-generator";
 import type { State } from "../modules/states-generator";
 import type { Zone } from "../modules/zones-generator";
+import type { Label } from "../renderers/draw-labels";
 
 type TypedArray =
   | Uint8Array
@@ -63,4 +64,5 @@ export interface PackedGraph {
   markers: any[];
   ice: any[];
   provinces: Province[];
+  labels: Label[];
 }
