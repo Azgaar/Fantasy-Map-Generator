@@ -1,10 +1,15 @@
-"use strict";
+import Alea from "alea";
+import { min } from 'd3';
+import { clipPoly, getGridPolygon, getIsolines, lerp, minmax, normalize, P, ra, rand, rn } from "../utils";
+import { Point } from "./voronoi";
 
-// Ice layer data model - separates ice data from SVG rendering
-window.Ice = (function () {
+declare global {
+  var Ice: IceModule;
+}
 
+class IceModule {
   // Find next available id for new ice element idealy filling gaps
-  function getNextId() {
+  private getNextId() {
     if (pack.ice.length === 0) return 0;
     // find gaps in existing ids
     const existingIds = pack.ice.map(e => e.i).sort((a, b) => a - b);
@@ -14,29 +19,34 @@ window.Ice = (function () {
     return existingIds[existingIds.length - 1] + 1;
   }
 
+  // Clear all ice
+  private clear() {
+    pack.ice = [];
+  }
+
   // Generate glaciers and icebergs based on temperature and height
-  function generate() {
-    clear();
+  public generate() {
+    this.clear();
     const { cells, features } = grid;
     const { temp, h } = cells;
-    Math.random = aleaPRNG(seed);
+    Math.random = Alea(seed);
 
     const ICEBERG_MAX_TEMP = 0;
     const GLACIER_MAX_TEMP = -8;
-    const minMaxTemp = d3.min(temp);
+    const minMaxTemp = min<number>(temp)!;
 
     // Generate glaciers on cold land
     {
       const type = "iceShield";
-      const getType = cellId =>
+      const getType = (cellId: number) =>
         h[cellId] >= 20 && temp[cellId] <= GLACIER_MAX_TEMP ? type : null;
       const isolines = getIsolines(grid, getType, { polygons: true });
 
       if (isolines[type]?.polygons) {
-        isolines[type].polygons.forEach(points => {
-          const clipped = clipPoly(points);
+        isolines[type].polygons.forEach((points: Point[]) => {
+          const clipped = clipPoly(points, graphWidth, graphHeight);
           pack.ice.push({
-            i: getNextId(),
+            i: this.getNextId(),
             points: clipped,
             type: "glacier"
           });
@@ -58,13 +68,13 @@ window.Ice = (function () {
       const size = minmax(rn(baseSize * randomFactor, 2), 0.1, 1);
 
       const [cx, cy] = grid.points[cellId];
-      const points = getGridPolygon(cellId).map(([x, y]) => [
+      const points = getGridPolygon(cellId, grid).map(([x, y]: Point) => [
         rn(lerp(cx, x, size), 2),
         rn(lerp(cy, y, size), 2)
       ]);
 
       pack.ice.push({
-        i: getNextId(),
+        i: this.getNextId(),
         points,
         type: "iceberg",
         cellId,
@@ -73,13 +83,13 @@ window.Ice = (function () {
     }
   }
 
-  function addIceberg(cellId, size) {
+  addIceberg(cellId: number, size: number) {
     const [cx, cy] = grid.points[cellId];
-    const points = getGridPolygon(cellId).map(([x, y]) => [
+    const points = getGridPolygon(cellId, grid).map(([x, y]: Point) => [
       rn(lerp(cx, x, size), 2),
       rn(lerp(cy, y, size), 2)
     ]);
-    const id = getNextId();
+    const id = this.getNextId();
     pack.ice.push({
       i: id,
       points,
@@ -90,7 +100,7 @@ window.Ice = (function () {
     redrawIceberg(id);
   }
 
-  function removeIce(id) {
+  removeIce(id: number) {
     const index = pack.ice.findIndex(element => element.i === id);
     if (index !== -1) {
       const type = pack.ice.find(element => element.i === id).type;
@@ -104,15 +114,7 @@ window.Ice = (function () {
     }
   }
 
-  function updateIceberg(id, points, size) {
-    const iceberg = pack.ice.find(element => element.i === id);
-    if (iceberg) {
-      iceberg.points = points;
-      iceberg.size = size;
-    }
-  }
-
-  function randomizeIcebergShape(id) {
+  randomizeIcebergShape(id: number) {
     const iceberg = pack.ice.find(element => element.i === id);
     if (!iceberg) return;
 
@@ -123,8 +125,8 @@ window.Ice = (function () {
     // Get a different random cell for the polygon template
     const i = ra(grid.cells.i);
     const cn = grid.points[i];
-    const poly = getGridPolygon(i).map(p => [p[0] - cn[0], p[1] - cn[1]]);
-    const points = poly.map(p => [
+    const poly = getGridPolygon(i, grid).map((p: Point) => [p[0] - cn[0], p[1] - cn[1]]);
+    const points = poly.map((p: Point) => [
       rn(cx + p[0] * size, 2),
       rn(cy + p[1] * size, 2)
     ]);
@@ -132,7 +134,7 @@ window.Ice = (function () {
     iceberg.points = points;
   }
 
-  function changeIcebergSize(id, newSize) {
+  changeIcebergSize(id: number, newSize: number) {
     const iceberg = pack.ice.find(element => element.i === id);
     if (!iceberg) return;
 
@@ -152,19 +154,6 @@ window.Ice = (function () {
     iceberg.points = points;
     iceberg.size = newSize;
   }
+}
 
-  // Clear all ice
-  function clear() {
-    pack.ice = [];
-  }
-
-  return {
-    generate,
-    addIceberg,
-    removeIce,
-    updateIceberg,
-    randomizeIcebergShape,
-    changeIcebergSize,
-    clear
-  };
-})();
+window.Ice = new IceModule();

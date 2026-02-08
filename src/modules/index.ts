@@ -13,3 +13,4 @@ import "./states-generator";
 import "./zones-generator";
 import "./religions-generator";
 import "./provinces-generator";
+import "./ice";

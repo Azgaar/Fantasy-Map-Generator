@@ -7,13 +7,13 @@ import { minmax, rn } from "./numberUtils";
  * @param {number} max - maximum value
  * @return {number} random integer between min and max
  */
-export const rand = (min: number, max?: number): number => {
+export const rand = (min?: number, max?: number): number => {
   if (min === undefined && max === undefined) return Math.random();
   if (max === undefined) {
     max = min;
     min = 0;
   }
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  return Math.floor(Math.random() * (max! - min! + 1)) + min!;
 };
 
 /**
