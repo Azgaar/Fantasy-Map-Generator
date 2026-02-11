@@ -664,7 +664,8 @@ function saveGeoJsonZones() {
     const coordinates = getZonePolygonCoordinates(zone.cells);
     
     // Only add feature if we have valid coordinates
-    if (coordinates[0].length > 1) {
+    // GeoJSON LinearRing requires at least 4 positions (with first == last)
+    if (coordinates[0].length >= 4) {
       const properties = {
         id: zone.i,
         name: zone.name,
