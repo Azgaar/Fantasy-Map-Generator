@@ -574,3 +574,116 @@ function saveGeoJsonMarkers() {
   const fileName = getFileName("Markers") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
+
+function saveGeoJsonZones() {
+  const {zones, cells, vertices} = pack;
+  const json = {type: "FeatureCollection", features: []};
+
+  // Helper function to convert zone cells to polygon coordinates
+  function getZonePolygonCoordinates(zoneCells) {
+    // Create a set of cells in this zone for quick lookup
+    const cellsInZone = new Set(zoneCells);
+    const ofSameType = (cellId) => cellsInZone.has(cellId);
+    const ofDifferentType = (cellId) => !cellsInZone.has(cellId);
+    
+    const checkedCells = new Set();
+    const coordinates = [];
+    
+    // Find boundary vertices by tracing the zone boundary
+    for (const cellId of zoneCells) {
+      if (checkedCells.has(cellId)) continue;
+      
+      // Check if this cell is on the boundary (has a neighbor outside the zone)
+      const neighbors = cells.c[cellId];
+      const onBorder = neighbors.some(ofDifferentType);
+      if (!onBorder) continue;
+      
+      // Find a starting vertex that's on the boundary
+      const cellVertices = cells.v[cellId];
+      let startingVertex = null;
+      
+      for (const vertexId of cellVertices) {
+        const vertexCells = vertices.c[vertexId];
+        if (vertexCells.some(ofDifferentType)) {
+          startingVertex = vertexId;
+          break;
+        }
+      }
+      
+      if (startingVertex === null) continue;
+      
+      // Trace the boundary by connecting vertices
+      const vertexChain = [];
+      let current = startingVertex;
+      let previous = null;
+      const maxIterations = vertices.c.length;
+      
+      for (let i = 0; i < maxIterations; i++) {
+        vertexChain.push(current);
+        
+        // Mark cells adjacent to this vertex as checked
+        const adjacentCells = vertices.c[current];
+        adjacentCells.filter(ofSameType).forEach(c => checkedCells.add(c));
+        
+        // Find the next vertex along the boundary
+        const [c1, c2, c3] = adjacentCells.map(ofSameType);
+        const [v1, v2, v3] = vertices.v[current];
+        
+        let next = null;
+        if (v1 !== previous && c1 !== c2) next = v1;
+        else if (v2 !== previous && c2 !== c3) next = v2;
+        else if (v3 !== previous && c1 !== c3) next = v3;
+        
+        if (next === null || next === current) break;
+        if (next === startingVertex) break; // Completed the ring
+        
+        previous = current;
+        current = next;
+      }
+      
+      // Convert vertex chain to coordinates
+      for (const vertexId of vertexChain) {
+        const [x, y] = vertices.p[vertexId];
+        coordinates.push(getCoordinates(x, y, 4));
+      }
+    }
+    
+    // Close the polygon ring (first coordinate = last coordinate)
+    if (coordinates.length > 0) {
+      coordinates.push(coordinates[0]);
+    }
+    
+    return [coordinates];
+  }
+
+  // Filter and process zones
+  zones.forEach(zone => {
+    // Exclude hidden zones and zones with no cells
+    if (zone.hidden || !zone.cells || zone.cells.length === 0) return;
+
+    const coordinates = getZonePolygonCoordinates(zone.cells);
+    
+    // Only add feature if we have valid coordinates
+    // GeoJSON LinearRing requires at least 4 positions (with first == last)
+    if (coordinates[0].length >= 4) {
+      const properties = {
+        id: zone.i,
+        name: zone.name,
+        type: zone.type,
+        color: zone.color,
+        cells: zone.cells
+      };
+      
+      const feature = {
+        type: "Feature",
+        geometry: {type: "Polygon", coordinates},
+        properties
+      };
+      
+      json.features.push(feature);
+    }
+  });
+
+  const fileName = getFileName("Zones") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
+}
