@@ -4,10 +4,11 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { PackedGraph } from "../../types/PackedGraph";
 
 // Mock global functions and objects
 declare global {
-  var pack: any;
+  var pack: PackedGraph;
   var getCoordinates: (
     x: number,
     y: number,
@@ -21,7 +22,7 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
   beforeEach(() => {
     // Mock getCoordinates function
     globalThis.getCoordinates = vi.fn(
-      (x: number, y: number, decimals: number) => {
+      (x: number, y: number, decimals: number): [number, number] => {
         const lon = Number((x / 10).toFixed(decimals));
         const lat = Number((y / 10).toFixed(decimals));
         return [lon, lat];
@@ -97,7 +98,11 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
         ],
       };
 
-      globalThis.pack = { zones, cells: mockCells, vertices: mockVertices };
+      globalThis.pack = {
+        zones,
+        cells: mockCells,
+        vertices: mockVertices,
+      } as any;
 
       // Execute
       const saveGeoJsonZones = new Function(`
@@ -176,7 +181,7 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
 
           const coordinates = getZonePolygonCoordinates(zone.cells);
           
-          if (coordinates[0].length > 1) {
+          if (coordinates[0].length >= 4) {
             const properties = {
               id: zone.i,
               name: zone.name,
@@ -246,7 +251,11 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
         ],
       };
 
-      globalThis.pack = { zones, cells: mockCells, vertices: mockVertices };
+      globalThis.pack = {
+        zones,
+        cells: mockCells,
+        vertices: mockVertices,
+      } as any;
 
       // Execute
       const saveGeoJsonZones = new Function(`
@@ -325,7 +334,7 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
 
           const coordinates = getZonePolygonCoordinates(zone.cells);
           
-          if (coordinates[0].length > 1) {
+          if (coordinates[0].length >= 4) {
             const properties = {
               id: zone.i,
               name: zone.name,
@@ -377,34 +386,41 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
 
       const mockCells = {
         v: [
-          [0, 1, 2],
-          [0, 1, 2],
+          [0, 1, 2, 3], // cell 0 - square with 4 vertices
+          [0, 1, 2, 3], // cell 1 - square with 4 vertices
         ],
         c: [
-          [1, 2, 3],
-          [0, 2, 3],
-        ], // Cell 0 has neighbors 1,2,3 where 2,3 are outside the zone
+          [1, 2, 3, 4], // Cell 0 has neighbors 1,2,3,4 where 2,3,4 are outside the zone
+          [0, 2, 3, 4], // Cell 1 has neighbors 0,2,3,4 where 2,3,4 are outside the zone
+        ],
       };
 
       const mockVertices = {
         p: [
           [0, 0],
           [10, 0],
-          [5, 10],
+          [10, 10],
+          [0, 10], // 4 vertices forming a square
         ],
         c: [
           [0, 1, 2],
           [0, 1, 3],
           [0, 1, 2],
+          [0, 1, 3],
         ], // Vertices connected to cells including outside cells
         v: [
-          [1, 2],
-          [0, 2],
-          [0, 1],
+          [1, 2, 3],
+          [0, 2, 3],
+          [0, 1, 3],
+          [0, 1, 2],
         ],
       };
 
-      globalThis.pack = { zones, cells: mockCells, vertices: mockVertices };
+      globalThis.pack = {
+        zones,
+        cells: mockCells,
+        vertices: mockVertices,
+      } as any;
 
       // Execute
       const saveGeoJsonZones = new Function(`
@@ -483,7 +499,7 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
 
           const coordinates = getZonePolygonCoordinates(zone.cells);
           
-          if (coordinates[0].length > 1) {
+          if (coordinates[0].length >= 4) {
             const properties = {
               id: zone.i,
               name: zone.name,
@@ -567,42 +583,61 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
 
       const mockCells = {
         v: [
-          [0, 1, 2],
-          [0, 1, 2],
-          [0, 1, 2],
-          [0, 1, 2],
-          [0, 1, 2],
-          [0, 1, 2],
+          [0, 1, 2, 3], // cell 0 - zone 0, uses vertices 0-3 (left square)
+          [0, 1, 2, 3], // cell 1 - zone 0, uses vertices 0-3 (left square)
+          [0, 1, 2, 3], // cell 2 - zone 1 (hidden), uses vertices 0-3
+          [0, 1, 2, 3], // cell 3 - zone 1 (hidden), uses vertices 0-3
+          [4, 5, 6, 7], // cell 4 - zone 2, uses vertices 4-7 (right square)
+          [4, 5, 6, 7], // cell 5 - zone 2, uses vertices 4-7 (right square)
         ],
         c: [
-          [1, 2, 3],
-          [0, 2, 3],
-          [0, 1, 3],
-          [0, 1, 2],
-          [5, 2, 3],
-          [4, 2, 3],
+          [1, 2, 3, 8], // cell 0 neighbors (1 is same zone, 2,3,8 are different)
+          [0, 2, 3, 8], // cell 1 neighbors (0 is same zone, 2,3,8 are different)
+          [0, 1, 3, 8], // cell 2 neighbors (hidden zone)
+          [0, 1, 2, 8], // cell 3 neighbors (hidden zone)
+          [5, 0, 1, 8], // cell 4 neighbors (5 is same zone, 0,1,8 are different)
+          [4, 0, 1, 8], // cell 5 neighbors (4 is same zone, 0,1,8 are different)
         ],
       };
 
       const mockVertices = {
         p: [
-          [0, 0],
-          [10, 0],
-          [5, 10],
+          [0, 0], // vertex 0 - left square
+          [10, 0], // vertex 1
+          [10, 10], // vertex 2
+          [0, 10], // vertex 3
+          [20, 0], // vertex 4 - right square
+          [30, 0], // vertex 5
+          [30, 10], // vertex 6
+          [20, 10], // vertex 7
         ],
         c: [
-          [0, 1, 2, 3, 4, 5],
-          [0, 1, 2, 3, 4, 5],
-          [0, 1, 2, 3, 4, 5],
+          [0, 1, 2, 3], // vertex 0 adjacent cells (left square cells)
+          [0, 1, 2, 3], // vertex 1 adjacent cells
+          [0, 1, 2, 3], // vertex 2 adjacent cells
+          [0, 1, 2, 3], // vertex 3 adjacent cells
+          [4, 5, 0, 1], // vertex 4 adjacent cells (right square cells + some from left)
+          [4, 5, 0, 1], // vertex 5 adjacent cells
+          [4, 5, 0, 1], // vertex 6 adjacent cells
+          [4, 5, 0, 1], // vertex 7 adjacent cells
         ],
         v: [
-          [1, 2],
-          [0, 2],
-          [0, 1],
+          [1, 2, 3], // vertex 0 neighbors
+          [0, 2, 3], // vertex 1 neighbors
+          [0, 1, 3], // vertex 2 neighbors
+          [0, 1, 2], // vertex 3 neighbors
+          [5, 6, 7], // vertex 4 neighbors
+          [4, 6, 7], // vertex 5 neighbors
+          [4, 5, 7], // vertex 6 neighbors
+          [4, 5, 6], // vertex 7 neighbors
         ],
       };
 
-      globalThis.pack = { zones, cells: mockCells, vertices: mockVertices };
+      globalThis.pack = {
+        zones,
+        cells: mockCells,
+        vertices: mockVertices,
+      } as any;
 
       // Execute
       const saveGeoJsonZones = new Function(`
@@ -681,7 +716,7 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
 
           const coordinates = getZonePolygonCoordinates(zone.cells);
           
-          if (coordinates[0].length > 1) {
+          if (coordinates[0].length >= 4) {
             const properties = {
               id: zone.i,
               name: zone.name,
