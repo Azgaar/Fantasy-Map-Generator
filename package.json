@@ -21,7 +21,8 @@
     "test:browser": "vitest --config=vitest.browser.config.ts",
     "test:e2e": "playwright test",
     "lint": "biome check --write",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "catalog-errors": "tsx scripts/catalog-errors.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.13",
@@ -34,6 +35,7 @@
     "@vitest/browser-playwright": "^4.0.18",
     "fast-check": "^4.5.3",
     "playwright": "^1.57.0",
+    "tsx": "^4.19.2",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"

@@ -6,3 +6,7 @@
 /coverage
 /playwright-report
 /test-results
+
+# TypeScript error cataloging
+error-catalog.json
+error-report.txt

@@ -3,13 +3,17 @@
  * Feature: zones-geojson-export
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as fc from "fast-check";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock global functions and objects
 declare global {
   var pack: any;
-  var getCoordinates: (x: number, y: number, decimals: number) => [number, number];
+  var getCoordinates: (
+    x: number,
+    y: number,
+    decimals: number,
+  ) => [number, number];
   var getFileName: (dataType: string) => string;
   var downloadFile: (data: string, fileName: string, mimeType: string) => void;
 }
@@ -17,11 +21,13 @@ declare global {
 describe("zones GeoJSON export - Property-Based Tests", () => {
   beforeEach(() => {
     // Mock getCoordinates function
-    globalThis.getCoordinates = vi.fn((x: number, y: number, decimals: number) => {
-      const lon = Number((x / 10).toFixed(decimals));
-      const lat = Number((y / 10).toFixed(decimals));
-      return [lon, lat];
-    });
+    globalThis.getCoordinates = vi.fn(
+      (x: number, y: number, decimals: number) => {
+        const lon = Number((x / 10).toFixed(decimals));
+        const lat = Number((y / 10).toFixed(decimals));
+        return [lon, lat];
+      },
+    );
 
     // Mock getFileName function
     globalThis.getFileName = vi.fn((dataType: string) => {
@@ -36,7 +42,7 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
    * Property 1: Valid GeoJSON Structure
    * Feature: zones-geojson-export, Property 1: Valid GeoJSON Structure
    * Validates: Requirements 1.1, 5.4
-   * 
+   *
    * For any exported zones data, the output SHALL be a valid GeoJSON FeatureCollection
    * with a "type" field equal to "FeatureCollection" and a "features" array.
    */
@@ -44,35 +50,54 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
     fc.assert(
       fc.property(
         // Generate random zones with varying properties
-        fc.array(
-          fc.record({
-            i: fc.integer({ min: 0, max: 1000 }),
-            name: fc.string({ minLength: 1, maxLength: 50 }),
-            type: fc.oneof(fc.constant("Unknown"), fc.constant("Territory"), fc.constant("Climate")),
-            color: fc.oneof(
-              fc.constant("#ff0000"),
-              fc.constant("#00ff00"),
-              fc.constant("url(#hatch1)")
-            ),
-            cells: fc.array(fc.integer({ min: 0, max: 100 }), { minLength: 0, maxLength: 10 }),
-            hidden: fc.boolean(),
+        fc
+          .array(
+            fc.record({
+              i: fc.integer({ min: 0, max: 1000 }),
+              name: fc.string({ minLength: 1, maxLength: 50 }),
+              type: fc.oneof(
+                fc.constant("Unknown"),
+                fc.constant("Territory"),
+                fc.constant("Climate"),
+              ),
+              color: fc.oneof(
+                fc.constant("#ff0000"),
+                fc.constant("#00ff00"),
+                fc.constant("url(#hatch1)"),
+              ),
+              cells: fc.array(fc.integer({ min: 0, max: 100 }), {
+                minLength: 0,
+                maxLength: 10,
+              }),
+              hidden: fc.boolean(),
+            }),
+            { minLength: 0, maxLength: 20 },
+          )
+          .map((zones) => {
+            // Ensure unique zone IDs
+            return zones.map((zone, index) => ({ ...zone, i: index }));
           }),
-          { minLength: 0, maxLength: 20 }
-        ).map(zones => {
-          // Ensure unique zone IDs
-          return zones.map((zone, index) => ({ ...zone, i: index }));
-        }),
         (zones) => {
           // Setup mock pack data
           const mockCells = {
-            v: Array(101).fill(null).map(() => [0, 1, 2]), // Simple triangular cells
-            c: Array(101).fill(null).map(() => [0, 1, 2]), // Neighbors
+            v: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]), // Simple triangular cells
+            c: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]), // Neighbors
           };
 
           const mockVertices = {
-            p: Array(3).fill(null).map((_, i) => [i * 10, i * 10]),
-            c: Array(3).fill(null).map(() => [0, 1, 2]),
-            v: Array(3).fill(null).map(() => [0, 1, 2]),
+            p: Array(3)
+              .fill(null)
+              .map((_, i) => [i * 10, i * 10]),
+            c: Array(3)
+              .fill(null)
+              .map(() => [0, 1, 2]),
+            v: Array(3)
+              .fill(null)
+              .map(() => [0, 1, 2]),
           };
 
           globalThis.pack = {
@@ -188,7 +213,7 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
           expect(result.type).toBe("FeatureCollection");
           expect(result).toHaveProperty("features");
           expect(Array.isArray(result.features)).toBe(true);
-          
+
           // Verify each feature has the correct structure
           for (const feature of result.features) {
             expect(feature).toHaveProperty("type", "Feature");
@@ -197,9 +222,9 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
             expect(feature.geometry).toHaveProperty("type");
             expect(feature.geometry).toHaveProperty("coordinates");
           }
-        }
+        },
       ),
-      { numRuns: 100 }
+      { numRuns: 100 },
     );
   });
 
@@ -207,7 +232,7 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
    * Property 2: Visible Zones Only
    * Feature: zones-geojson-export, Property 2: Visible Zones Only
    * Validates: Requirements 1.3, 1.4
-   * 
+   *
    * For any zone in the exported GeoJSON, that zone SHALL NOT be marked as hidden
    * in pack.zones and SHALL have at least one cell.
    */
@@ -215,35 +240,54 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
     fc.assert(
       fc.property(
         // Generate random zones with mixed visibility and cell counts
-        fc.array(
-          fc.record({
-            i: fc.integer({ min: 0, max: 1000 }),
-            name: fc.string({ minLength: 1, maxLength: 50 }),
-            type: fc.oneof(fc.constant("Unknown"), fc.constant("Territory"), fc.constant("Climate")),
-            color: fc.oneof(
-              fc.constant("#ff0000"),
-              fc.constant("#00ff00"),
-              fc.constant("url(#hatch1)")
-            ),
-            cells: fc.array(fc.integer({ min: 0, max: 100 }), { minLength: 0, maxLength: 10 }),
-            hidden: fc.boolean(), // Mix of hidden and visible zones
+        fc
+          .array(
+            fc.record({
+              i: fc.integer({ min: 0, max: 1000 }),
+              name: fc.string({ minLength: 1, maxLength: 50 }),
+              type: fc.oneof(
+                fc.constant("Unknown"),
+                fc.constant("Territory"),
+                fc.constant("Climate"),
+              ),
+              color: fc.oneof(
+                fc.constant("#ff0000"),
+                fc.constant("#00ff00"),
+                fc.constant("url(#hatch1)"),
+              ),
+              cells: fc.array(fc.integer({ min: 0, max: 100 }), {
+                minLength: 0,
+                maxLength: 10,
+              }),
+              hidden: fc.boolean(), // Mix of hidden and visible zones
+            }),
+            { minLength: 0, maxLength: 20 },
+          )
+          .map((zones) => {
+            // Ensure unique zone IDs
+            return zones.map((zone, index) => ({ ...zone, i: index }));
           }),
-          { minLength: 0, maxLength: 20 }
-        ).map(zones => {
-          // Ensure unique zone IDs
-          return zones.map((zone, index) => ({ ...zone, i: index }));
-        }),
         (zones) => {
           // Setup mock pack data
           const mockCells = {
-            v: Array(101).fill(null).map(() => [0, 1, 2]), // Simple triangular cells
-            c: Array(101).fill(null).map(() => [0, 1, 2]), // Neighbors
+            v: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]), // Simple triangular cells
+            c: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]), // Neighbors
           };
 
           const mockVertices = {
-            p: Array(3).fill(null).map((_, i) => [i * 10, i * 10]),
-            c: Array(3).fill(null).map(() => [0, 1, 2]),
-            v: Array(3).fill(null).map(() => [0, 1, 2]),
+            p: Array(3)
+              .fill(null)
+              .map((_, i) => [i * 10, i * 10]),
+            c: Array(3)
+              .fill(null)
+              .map(() => [0, 1, 2]),
+            v: Array(3)
+              .fill(null)
+              .map(() => [0, 1, 2]),
           };
 
           globalThis.pack = {
@@ -354,22 +398,22 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
           const result = saveGeoJsonZones();
 
           // Calculate expected visible zones (not hidden AND has cells)
-          const expectedVisibleZones = zones.filter(
-            zone => !zone.hidden && zone.cells && zone.cells.length > 0
+          const _expectedVisibleZones = zones.filter(
+            (zone) => !zone.hidden && zone.cells && zone.cells.length > 0,
           );
 
           // Verify that all exported features correspond to visible zones only
           for (const feature of result.features) {
             const zoneId = feature.properties.id;
-            const originalZone = zones.find(z => z.i === zoneId);
-            
+            const originalZone = zones.find((z) => z.i === zoneId);
+
             // Verify the zone exists
             expect(originalZone).toBeDefined();
-            
+
             if (originalZone) {
               // Verify the zone is not hidden
               expect(originalZone.hidden).not.toBe(true);
-              
+
               // Verify the zone has cells
               expect(originalZone.cells).toBeDefined();
               expect(originalZone.cells.length).toBeGreaterThan(0);
@@ -377,22 +421,26 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
           }
 
           // Verify no hidden zones are in the export
-          const exportedZoneIds = new Set(result.features.map(f => f.properties.id));
-          const hiddenZones = zones.filter(z => z.hidden === true);
-          
+          const exportedZoneIds = new Set(
+            result.features.map((f) => f.properties.id),
+          );
+          const hiddenZones = zones.filter((z) => z.hidden === true);
+
           for (const hiddenZone of hiddenZones) {
             expect(exportedZoneIds.has(hiddenZone.i)).toBe(false);
           }
 
           // Verify no zones with empty cells are in the export
-          const emptyZones = zones.filter(z => !z.cells || z.cells.length === 0);
-          
+          const emptyZones = zones.filter(
+            (z) => !z.cells || z.cells.length === 0,
+          );
+
           for (const emptyZone of emptyZones) {
             expect(exportedZoneIds.has(emptyZone.i)).toBe(false);
           }
-        }
+        },
       ),
-      { numRuns: 100 }
+      { numRuns: 100 },
     );
   });
 
@@ -400,7 +448,7 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
    * Property 3: Polygon Geometry Type
    * Feature: zones-geojson-export, Property 3: Polygon Geometry Type
    * Validates: Requirements 1.2
-   * 
+   *
    * For any exported zone feature, the geometry SHALL have type "Polygon" with a coordinates
    * array containing at least one coordinate ring.
    */
@@ -408,35 +456,54 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
     fc.assert(
       fc.property(
         // Generate random zones with varying properties
-        fc.array(
-          fc.record({
-            i: fc.integer({ min: 0, max: 1000 }),
-            name: fc.string({ minLength: 1, maxLength: 50 }),
-            type: fc.oneof(fc.constant("Unknown"), fc.constant("Territory"), fc.constant("Climate")),
-            color: fc.oneof(
-              fc.constant("#ff0000"),
-              fc.constant("#00ff00"),
-              fc.constant("url(#hatch1)")
-            ),
-            cells: fc.array(fc.integer({ min: 0, max: 100 }), { minLength: 1, maxLength: 10 }),
-            hidden: fc.constant(false), // Only visible zones
+        fc
+          .array(
+            fc.record({
+              i: fc.integer({ min: 0, max: 1000 }),
+              name: fc.string({ minLength: 1, maxLength: 50 }),
+              type: fc.oneof(
+                fc.constant("Unknown"),
+                fc.constant("Territory"),
+                fc.constant("Climate"),
+              ),
+              color: fc.oneof(
+                fc.constant("#ff0000"),
+                fc.constant("#00ff00"),
+                fc.constant("url(#hatch1)"),
+              ),
+              cells: fc.array(fc.integer({ min: 0, max: 100 }), {
+                minLength: 1,
+                maxLength: 10,
+              }),
+              hidden: fc.constant(false), // Only visible zones
+            }),
+            { minLength: 1, maxLength: 20 },
+          )
+          .map((zones) => {
+            // Ensure unique zone IDs
+            return zones.map((zone, index) => ({ ...zone, i: index }));
           }),
-          { minLength: 1, maxLength: 20 }
-        ).map(zones => {
-          // Ensure unique zone IDs
-          return zones.map((zone, index) => ({ ...zone, i: index }));
-        }),
         (zones) => {
           // Setup mock pack data
           const mockCells = {
-            v: Array(101).fill(null).map(() => [0, 1, 2]), // Simple triangular cells
-            c: Array(101).fill(null).map(() => [0, 1, 2]), // Neighbors
+            v: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]), // Simple triangular cells
+            c: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]), // Neighbors
           };
 
           const mockVertices = {
-            p: Array(3).fill(null).map((_, i) => [i * 10, i * 10]),
-            c: Array(3).fill(null).map(() => [0, 1, 2]),
-            v: Array(3).fill(null).map(() => [0, 1, 2]),
+            p: Array(3)
+              .fill(null)
+              .map((_, i) => [i * 10, i * 10]),
+            c: Array(3)
+              .fill(null)
+              .map(() => [0, 1, 2]),
+            v: Array(3)
+              .fill(null)
+              .map(() => [0, 1, 2]),
           };
 
           globalThis.pack = {
@@ -548,26 +615,28 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
 
           // Verify all features have Polygon geometry type
           expect(result.features.length).toBeGreaterThan(0);
-          
+
           for (const feature of result.features) {
             // Verify geometry exists
             expect(feature.geometry).toBeDefined();
-            
+
             // Verify geometry type is "Polygon"
             expect(feature.geometry.type).toBe("Polygon");
-            
+
             // Verify coordinates array exists
             expect(feature.geometry.coordinates).toBeDefined();
             expect(Array.isArray(feature.geometry.coordinates)).toBe(true);
-            
+
             // Verify at least one coordinate ring exists
-            expect(feature.geometry.coordinates.length).toBeGreaterThanOrEqual(1);
-            
+            expect(feature.geometry.coordinates.length).toBeGreaterThanOrEqual(
+              1,
+            );
+
             // Verify the first element is a coordinate ring (array of coordinates)
             const firstRing = feature.geometry.coordinates[0];
             expect(Array.isArray(firstRing)).toBe(true);
             expect(firstRing.length).toBeGreaterThan(0);
-            
+
             // Verify each coordinate in the ring is a [lon, lat] pair
             for (const coord of firstRing) {
               expect(Array.isArray(coord)).toBe(true);
@@ -576,9 +645,9 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
               expect(typeof coord[1]).toBe("number"); // latitude
             }
           }
-        }
+        },
       ),
-      { numRuns: 100 }
+      { numRuns: 100 },
     );
   });
 
@@ -586,7 +655,7 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
    * Property 4: Closed Polygon Rings
    * Feature: zones-geojson-export, Property 4: Closed Polygon Rings
    * Validates: Requirements 3.2
-   * 
+   *
    * For any zone feature's polygon coordinates, the first coordinate SHALL equal the last
    * coordinate (closed ring requirement).
    */
@@ -594,35 +663,54 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
     fc.assert(
       fc.property(
         // Generate random zones with varying properties
-        fc.array(
-          fc.record({
-            i: fc.integer({ min: 0, max: 1000 }),
-            name: fc.string({ minLength: 1, maxLength: 50 }),
-            type: fc.oneof(fc.constant("Unknown"), fc.constant("Territory"), fc.constant("Climate")),
-            color: fc.oneof(
-              fc.constant("#ff0000"),
-              fc.constant("#00ff00"),
-              fc.constant("url(#hatch1)")
-            ),
-            cells: fc.array(fc.integer({ min: 0, max: 100 }), { minLength: 1, maxLength: 10 }),
-            hidden: fc.constant(false), // Only visible zones
+        fc
+          .array(
+            fc.record({
+              i: fc.integer({ min: 0, max: 1000 }),
+              name: fc.string({ minLength: 1, maxLength: 50 }),
+              type: fc.oneof(
+                fc.constant("Unknown"),
+                fc.constant("Territory"),
+                fc.constant("Climate"),
+              ),
+              color: fc.oneof(
+                fc.constant("#ff0000"),
+                fc.constant("#00ff00"),
+                fc.constant("url(#hatch1)"),
+              ),
+              cells: fc.array(fc.integer({ min: 0, max: 100 }), {
+                minLength: 1,
+                maxLength: 10,
+              }),
+              hidden: fc.constant(false), // Only visible zones
+            }),
+            { minLength: 1, maxLength: 20 },
+          )
+          .map((zones) => {
+            // Ensure unique zone IDs
+            return zones.map((zone, index) => ({ ...zone, i: index }));
           }),
-          { minLength: 1, maxLength: 20 }
-        ).map(zones => {
-          // Ensure unique zone IDs
-          return zones.map((zone, index) => ({ ...zone, i: index }));
-        }),
         (zones) => {
           // Setup mock pack data
           const mockCells = {
-            v: Array(101).fill(null).map(() => [0, 1, 2]), // Simple triangular cells
-            c: Array(101).fill(null).map(() => [0, 1, 2]), // Neighbors
+            v: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]), // Simple triangular cells
+            c: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]), // Neighbors
           };
 
           const mockVertices = {
-            p: Array(3).fill(null).map((_, i) => [i * 10, i * 10]),
-            c: Array(3).fill(null).map(() => [0, 1, 2]),
-            v: Array(3).fill(null).map(() => [0, 1, 2]),
+            p: Array(3)
+              .fill(null)
+              .map((_, i) => [i * 10, i * 10]),
+            c: Array(3)
+              .fill(null)
+              .map(() => [0, 1, 2]),
+            v: Array(3)
+              .fill(null)
+              .map(() => [0, 1, 2]),
           };
 
           globalThis.pack = {
@@ -734,34 +822,34 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
 
           // Verify all polygon rings are closed
           expect(result.features.length).toBeGreaterThan(0);
-          
+
           for (const feature of result.features) {
             expect(feature.geometry.type).toBe("Polygon");
             expect(feature.geometry.coordinates).toBeDefined();
             expect(Array.isArray(feature.geometry.coordinates)).toBe(true);
-            
+
             // Check each coordinate ring in the polygon
             for (const ring of feature.geometry.coordinates) {
               expect(Array.isArray(ring)).toBe(true);
               expect(ring.length).toBeGreaterThanOrEqual(2);
-              
+
               // Verify the ring is closed: first coordinate equals last coordinate
               const firstCoord = ring[0];
               const lastCoord = ring[ring.length - 1];
-              
+
               expect(Array.isArray(firstCoord)).toBe(true);
               expect(Array.isArray(lastCoord)).toBe(true);
               expect(firstCoord.length).toBe(2);
               expect(lastCoord.length).toBe(2);
-              
+
               // Check that first and last coordinates are equal
               expect(firstCoord[0]).toBe(lastCoord[0]); // longitude
               expect(firstCoord[1]).toBe(lastCoord[1]); // latitude
             }
           }
-        }
+        },
       ),
-      { numRuns: 100 }
+      { numRuns: 100 },
     );
   });
 
@@ -769,7 +857,7 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
    * Property 5: Complete Zone Properties
    * Feature: zones-geojson-export, Property 5: Complete Zone Properties
    * Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.5
-   * 
+   *
    * For any exported zone feature, the properties object SHALL contain all required fields:
    * id, name, type, color, and cells array.
    */
@@ -777,35 +865,54 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
     fc.assert(
       fc.property(
         // Generate random zones with all required properties
-        fc.array(
-          fc.record({
-            i: fc.integer({ min: 0, max: 1000 }),
-            name: fc.string({ minLength: 1, maxLength: 50 }),
-            type: fc.oneof(fc.constant("Unknown"), fc.constant("Territory"), fc.constant("Climate")),
-            color: fc.oneof(
-              fc.constant("#ff0000"),
-              fc.constant("#00ff00"),
-              fc.constant("url(#hatch1)")
-            ),
-            cells: fc.array(fc.integer({ min: 0, max: 100 }), { minLength: 1, maxLength: 10 }),
-            hidden: fc.constant(false), // Only visible zones
+        fc
+          .array(
+            fc.record({
+              i: fc.integer({ min: 0, max: 1000 }),
+              name: fc.string({ minLength: 1, maxLength: 50 }),
+              type: fc.oneof(
+                fc.constant("Unknown"),
+                fc.constant("Territory"),
+                fc.constant("Climate"),
+              ),
+              color: fc.oneof(
+                fc.constant("#ff0000"),
+                fc.constant("#00ff00"),
+                fc.constant("url(#hatch1)"),
+              ),
+              cells: fc.array(fc.integer({ min: 0, max: 100 }), {
+                minLength: 1,
+                maxLength: 10,
+              }),
+              hidden: fc.constant(false), // Only visible zones
+            }),
+            { minLength: 1, maxLength: 20 },
+          )
+          .map((zones) => {
+            // Ensure unique zone IDs
+            return zones.map((zone, index) => ({ ...zone, i: index }));
           }),
-          { minLength: 1, maxLength: 20 }
-        ).map(zones => {
-          // Ensure unique zone IDs
-          return zones.map((zone, index) => ({ ...zone, i: index }));
-        }),
         (zones) => {
           // Setup mock pack data
           const mockCells = {
-            v: Array(101).fill(null).map(() => [0, 1, 2]), // Simple triangular cells
-            c: Array(101).fill(null).map(() => [0, 1, 2]), // Neighbors
+            v: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]), // Simple triangular cells
+            c: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]), // Neighbors
           };
 
           const mockVertices = {
-            p: Array(3).fill(null).map((_, i) => [i * 10, i * 10]),
-            c: Array(3).fill(null).map(() => [0, 1, 2]),
-            v: Array(3).fill(null).map(() => [0, 1, 2]),
+            p: Array(3)
+              .fill(null)
+              .map((_, i) => [i * 10, i * 10]),
+            c: Array(3)
+              .fill(null)
+              .map(() => [0, 1, 2]),
+            v: Array(3)
+              .fill(null)
+              .map(() => [0, 1, 2]),
           };
 
           globalThis.pack = {
@@ -917,7 +1024,7 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
 
           // Verify all features have complete properties
           expect(result.features.length).toBeGreaterThan(0);
-          
+
           for (const feature of result.features) {
             expect(feature.properties).toBeDefined();
             expect(feature.properties).toHaveProperty("id");
@@ -925,25 +1032,27 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
             expect(feature.properties).toHaveProperty("type");
             expect(feature.properties).toHaveProperty("color");
             expect(feature.properties).toHaveProperty("cells");
-            
+
             // Verify types
             expect(typeof feature.properties.id).toBe("number");
             expect(typeof feature.properties.name).toBe("string");
             expect(typeof feature.properties.type).toBe("string");
             expect(typeof feature.properties.color).toBe("string");
             expect(Array.isArray(feature.properties.cells)).toBe(true);
-            
+
             // Verify values match input zones
-            const matchingZone = zones.find(z => z.i === feature.properties.id);
+            const matchingZone = zones.find(
+              (z) => z.i === feature.properties.id,
+            );
             expect(matchingZone).toBeDefined();
             expect(feature.properties.name).toBe(matchingZone.name);
             expect(feature.properties.type).toBe(matchingZone.type);
             expect(feature.properties.color).toBe(matchingZone.color);
             expect(feature.properties.cells).toEqual(matchingZone.cells);
           }
-        }
+        },
       ),
-      { numRuns: 100 }
+      { numRuns: 100 },
     );
   });
 
@@ -951,7 +1060,7 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
    * Property 6: Coordinate Precision
    * Feature: zones-geojson-export, Property 6: Coordinate Precision
    * Validates: Requirements 3.1
-   * 
+   *
    * For any coordinate in the exported GeoJSON, both longitude and latitude SHALL be
    * rounded to 4 decimal places.
    */
@@ -959,45 +1068,65 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
     fc.assert(
       fc.property(
         // Generate random zones with varying properties
-        fc.array(
-          fc.record({
-            i: fc.integer({ min: 0, max: 1000 }),
-            name: fc.string({ minLength: 1, maxLength: 50 }),
-            type: fc.oneof(fc.constant("Unknown"), fc.constant("Territory"), fc.constant("Climate")),
-            color: fc.oneof(
-              fc.constant("#ff0000"),
-              fc.constant("#00ff00"),
-              fc.constant("url(#hatch1)")
-            ),
-            cells: fc.array(fc.integer({ min: 0, max: 100 }), { minLength: 1, maxLength: 10 }),
-            hidden: fc.constant(false), // Only visible zones
+        fc
+          .array(
+            fc.record({
+              i: fc.integer({ min: 0, max: 1000 }),
+              name: fc.string({ minLength: 1, maxLength: 50 }),
+              type: fc.oneof(
+                fc.constant("Unknown"),
+                fc.constant("Territory"),
+                fc.constant("Climate"),
+              ),
+              color: fc.oneof(
+                fc.constant("#ff0000"),
+                fc.constant("#00ff00"),
+                fc.constant("url(#hatch1)"),
+              ),
+              cells: fc.array(fc.integer({ min: 0, max: 100 }), {
+                minLength: 1,
+                maxLength: 10,
+              }),
+              hidden: fc.constant(false), // Only visible zones
+            }),
+            { minLength: 1, maxLength: 20 },
+          )
+          .map((zones) => {
+            // Ensure unique zone IDs
+            return zones.map((zone, index) => ({ ...zone, i: index }));
           }),
-          { minLength: 1, maxLength: 20 }
-        ).map(zones => {
-          // Ensure unique zone IDs
-          return zones.map((zone, index) => ({ ...zone, i: index }));
-        }),
         // Generate random vertex coordinates with varying precision
         fc.array(
           fc.tuple(
             fc.float({ min: -1000, max: 1000 }),
-            fc.float({ min: -1000, max: 1000 })
+            fc.float({ min: -1000, max: 1000 }),
           ),
-          { minLength: 3, maxLength: 10 }
+          { minLength: 3, maxLength: 10 },
         ),
         (zones, vertexCoords) => {
           // Setup mock pack data with random vertex coordinates
           const mockCells = {
-            v: Array(101).fill(null).map((_, i) => 
-              Array.from({ length: Math.min(vertexCoords.length, 10) }, (_, j) => j)
-            ),
-            c: Array(101).fill(null).map(() => [0, 1, 2]),
+            v: Array(101)
+              .fill(null)
+              .map((_, _i) =>
+                Array.from(
+                  { length: Math.min(vertexCoords.length, 10) },
+                  (_, j) => j,
+                ),
+              ),
+            c: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]),
           };
 
           const mockVertices = {
             p: vertexCoords,
-            c: Array(vertexCoords.length).fill(null).map(() => [0, 1, 2]),
-            v: Array(vertexCoords.length).fill(null).map(() => [0, 1, 2]),
+            c: Array(vertexCoords.length)
+              .fill(null)
+              .map(() => [0, 1, 2]),
+            v: Array(vertexCoords.length)
+              .fill(null)
+              .map(() => [0, 1, 2]),
           };
 
           globalThis.pack = {
@@ -1110,42 +1239,42 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
           // Helper function to count decimal places
           const countDecimals = (num: number): number => {
             const str = num.toString();
-            if (!str.includes('.')) return 0;
-            return str.split('.')[1].length;
+            if (!str.includes(".")) return 0;
+            return str.split(".")[1].length;
           };
 
           // Verify all coordinates have at most 4 decimal places
           expect(result.features.length).toBeGreaterThan(0);
-          
+
           for (const feature of result.features) {
             expect(feature.geometry.type).toBe("Polygon");
             expect(feature.geometry.coordinates).toBeDefined();
-            
+
             // Check each coordinate ring
             for (const ring of feature.geometry.coordinates) {
               expect(Array.isArray(ring)).toBe(true);
-              
+
               // Check each coordinate in the ring
               for (const coord of ring) {
                 expect(Array.isArray(coord)).toBe(true);
                 expect(coord.length).toBe(2);
-                
+
                 const [lon, lat] = coord;
-                
+
                 // Verify both longitude and latitude are numbers
                 expect(typeof lon).toBe("number");
                 expect(typeof lat).toBe("number");
-                
+
                 // Verify precision is at most 4 decimal places
                 expect(countDecimals(lon)).toBeLessThanOrEqual(4);
                 expect(countDecimals(lat)).toBeLessThanOrEqual(4);
-                
+
                 // Verify that the coordinate matches what getCoordinates would return
                 // with precision 4 (i.e., it's properly rounded)
                 // Note: We need to handle -0 vs +0 edge case in JavaScript
                 const lonRounded = Number(lon.toFixed(4));
                 const latRounded = Number(lat.toFixed(4));
-                
+
                 // Use Math.abs to handle -0 vs +0 comparison
                 if (lon === 0 && lonRounded === 0) {
                   // Both are zero (either +0 or -0), which is acceptable
@@ -1153,7 +1282,7 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
                 } else {
                   expect(lonRounded).toBe(lon);
                 }
-                
+
                 if (lat === 0 && latRounded === 0) {
                   // Both are zero (either +0 or -0), which is acceptable
                   expect(Math.abs(lat)).toBe(Math.abs(latRounded));
@@ -1163,9 +1292,9 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
               }
             }
           }
-        }
+        },
       ),
-      { numRuns: 100 }
+      { numRuns: 100 },
     );
   });
 
@@ -1173,7 +1302,7 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
    * Property 7: Single Polygon Per Zone
    * Feature: zones-geojson-export, Property 7: Single Polygon Per Zone
    * Validates: Requirements 3.3
-   * 
+   *
    * For any zone with multiple cells, the export SHALL produce exactly one Feature with
    * one Polygon geometry (not MultiPolygon).
    */
@@ -1181,36 +1310,55 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
     fc.assert(
       fc.property(
         // Generate random zones with multiple cells to test merging
-        fc.array(
-          fc.record({
-            i: fc.integer({ min: 0, max: 1000 }),
-            name: fc.string({ minLength: 1, maxLength: 50 }),
-            type: fc.oneof(fc.constant("Unknown"), fc.constant("Territory"), fc.constant("Climate")),
-            color: fc.oneof(
-              fc.constant("#ff0000"),
-              fc.constant("#00ff00"),
-              fc.constant("url(#hatch1)")
-            ),
-            // Generate zones with multiple cells (2-10 cells per zone)
-            cells: fc.array(fc.integer({ min: 0, max: 100 }), { minLength: 2, maxLength: 10 }),
-            hidden: fc.constant(false), // Only visible zones
+        fc
+          .array(
+            fc.record({
+              i: fc.integer({ min: 0, max: 1000 }),
+              name: fc.string({ minLength: 1, maxLength: 50 }),
+              type: fc.oneof(
+                fc.constant("Unknown"),
+                fc.constant("Territory"),
+                fc.constant("Climate"),
+              ),
+              color: fc.oneof(
+                fc.constant("#ff0000"),
+                fc.constant("#00ff00"),
+                fc.constant("url(#hatch1)"),
+              ),
+              // Generate zones with multiple cells (2-10 cells per zone)
+              cells: fc.array(fc.integer({ min: 0, max: 100 }), {
+                minLength: 2,
+                maxLength: 10,
+              }),
+              hidden: fc.constant(false), // Only visible zones
+            }),
+            { minLength: 1, maxLength: 20 },
+          )
+          .map((zones) => {
+            // Ensure unique zone IDs
+            return zones.map((zone, index) => ({ ...zone, i: index }));
           }),
-          { minLength: 1, maxLength: 20 }
-        ).map(zones => {
-          // Ensure unique zone IDs
-          return zones.map((zone, index) => ({ ...zone, i: index }));
-        }),
         (zones) => {
           // Setup mock pack data
           const mockCells = {
-            v: Array(101).fill(null).map(() => [0, 1, 2]), // Simple triangular cells
-            c: Array(101).fill(null).map(() => [0, 1, 2]), // Neighbors
+            v: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]), // Simple triangular cells
+            c: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]), // Neighbors
           };
 
           const mockVertices = {
-            p: Array(3).fill(null).map((_, i) => [i * 10, i * 10]),
-            c: Array(3).fill(null).map(() => [0, 1, 2]),
-            v: Array(3).fill(null).map(() => [0, 1, 2]),
+            p: Array(3)
+              .fill(null)
+              .map((_, i) => [i * 10, i * 10]),
+            c: Array(3)
+              .fill(null)
+              .map(() => [0, 1, 2]),
+            v: Array(3)
+              .fill(null)
+              .map(() => [0, 1, 2]),
           };
 
           globalThis.pack = {
@@ -1325,18 +1473,21 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
 
           // Create a map of zone IDs to their feature count
           const zoneIdToFeatureCount = new Map<number, number>();
-          
+
           for (const feature of result.features) {
             const zoneId = feature.properties.id;
-            zoneIdToFeatureCount.set(zoneId, (zoneIdToFeatureCount.get(zoneId) || 0) + 1);
+            zoneIdToFeatureCount.set(
+              zoneId,
+              (zoneIdToFeatureCount.get(zoneId) || 0) + 1,
+            );
           }
 
           // Verify each zone produces exactly ONE feature
           for (const zone of zones) {
             if (zone.hidden || !zone.cells || zone.cells.length === 0) continue;
-            
+
             const featureCount = zoneIdToFeatureCount.get(zone.i) || 0;
-            
+
             // Each zone should produce exactly one feature
             expect(featureCount).toBe(1);
           }
@@ -1345,15 +1496,17 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
           for (const feature of result.features) {
             expect(feature.geometry.type).toBe("Polygon");
             expect(feature.geometry.type).not.toBe("MultiPolygon");
-            
+
             // Verify the geometry structure is a Polygon (array of rings)
             expect(Array.isArray(feature.geometry.coordinates)).toBe(true);
-            expect(feature.geometry.coordinates.length).toBeGreaterThanOrEqual(1);
-            
+            expect(feature.geometry.coordinates.length).toBeGreaterThanOrEqual(
+              1,
+            );
+
             // Verify the first element is a coordinate ring (not nested arrays like MultiPolygon)
             const firstRing = feature.geometry.coordinates[0];
             expect(Array.isArray(firstRing)).toBe(true);
-            
+
             // Verify each element in the ring is a coordinate pair [lon, lat]
             // (not another array of rings like in MultiPolygon)
             for (const coord of firstRing) {
@@ -1365,27 +1518,31 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
           }
 
           // Additional verification: zones with multiple cells should still produce single Polygon
-          const multiCellZones = zones.filter(z => !z.hidden && z.cells && z.cells.length > 1);
-          
+          const multiCellZones = zones.filter(
+            (z) => !z.hidden && z.cells && z.cells.length > 1,
+          );
+
           for (const zone of multiCellZones) {
-            const features = result.features.filter(f => f.properties.id === zone.i);
-            
+            const features = result.features.filter(
+              (f) => f.properties.id === zone.i,
+            );
+
             // Should have exactly one feature
             expect(features.length).toBe(1);
-            
+
             if (features.length === 1) {
               const feature = features[0];
-              
+
               // Should be Polygon, not MultiPolygon
               expect(feature.geometry.type).toBe("Polygon");
-              
+
               // The zone has multiple cells, verify they're merged into one polygon
               expect(zone.cells.length).toBeGreaterThan(1);
             }
           }
-        }
+        },
       ),
-      { numRuns: 100 }
+      { numRuns: 100 },
     );
   });
 
@@ -1393,7 +1550,7 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
    * Property 8: File Download with Correct Filename
    * Feature: zones-geojson-export, Property 8: File Download with Correct Filename
    * Validates: Requirements 1.5, 5.5
-   * 
+   *
    * For any export operation, the downloadFile function SHALL be called with a filename
    * matching the pattern "{MapName}_Zones_{timestamp}.geojson" and MIME type "application/json".
    */
@@ -1401,31 +1558,46 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
     fc.assert(
       fc.property(
         // Generate random zones
-        fc.array(
-          fc.record({
-            i: fc.integer({ min: 0, max: 1000 }),
-            name: fc.string({ minLength: 1, maxLength: 50 }),
-            type: fc.string({ minLength: 1, maxLength: 20 }),
-            color: fc.string({ minLength: 1, maxLength: 20 }),
-            cells: fc.array(fc.integer({ min: 0, max: 100 }), { minLength: 1, maxLength: 10 }),
-            hidden: fc.constant(false),
+        fc
+          .array(
+            fc.record({
+              i: fc.integer({ min: 0, max: 1000 }),
+              name: fc.string({ minLength: 1, maxLength: 50 }),
+              type: fc.string({ minLength: 1, maxLength: 20 }),
+              color: fc.string({ minLength: 1, maxLength: 20 }),
+              cells: fc.array(fc.integer({ min: 0, max: 100 }), {
+                minLength: 1,
+                maxLength: 10,
+              }),
+              hidden: fc.constant(false),
+            }),
+            { minLength: 1, maxLength: 10 },
+          )
+          .map((zones) => {
+            // Ensure unique zone IDs
+            return zones.map((zone, index) => ({ ...zone, i: index }));
           }),
-          { minLength: 1, maxLength: 10 }
-        ).map(zones => {
-          // Ensure unique zone IDs
-          return zones.map((zone, index) => ({ ...zone, i: index }));
-        }),
         (zones) => {
           // Setup mock pack data
           const mockCells = {
-            v: Array(101).fill(null).map(() => [0, 1, 2]),
-            c: Array(101).fill(null).map(() => [0, 1, 2]),
+            v: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]),
+            c: Array(101)
+              .fill(null)
+              .map(() => [0, 1, 2]),
           };
 
           const mockVertices = {
-            p: Array(3).fill(null).map((_, i) => [i * 10, i * 10]),
-            c: Array(3).fill(null).map(() => [0, 1, 2]),
-            v: Array(3).fill(null).map(() => [0, 1, 2]),
+            p: Array(3)
+              .fill(null)
+              .map((_, i) => [i * 10, i * 10]),
+            c: Array(3)
+              .fill(null)
+              .map(() => [0, 1, 2]),
+            v: Array(3)
+              .fill(null)
+              .map(() => [0, 1, 2]),
           };
 
           globalThis.pack = {
@@ -1544,7 +1716,8 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
           expect(globalThis.downloadFile).toHaveBeenCalledTimes(1);
 
           // Get the call arguments
-          const [data, fileName, mimeType] = vi.mocked(globalThis.downloadFile).mock.calls[0];
+          const [data, fileName, mimeType] = vi.mocked(globalThis.downloadFile)
+            .mock.calls[0];
 
           // Verify filename pattern
           expect(fileName).toMatch(/.*_Zones_.*\.geojson$/);
@@ -1559,9 +1732,9 @@ describe("zones GeoJSON export - Property-Based Tests", () => {
           const parsedData = JSON.parse(data);
           expect(parsedData).toHaveProperty("type", "FeatureCollection");
           expect(parsedData).toHaveProperty("features");
-        }
+        },
       ),
-      { numRuns: 100 }
+      { numRuns: 100 },
     );
   });
 });

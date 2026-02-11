@@ -3,12 +3,16 @@
  * Feature: zones-geojson-export
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock global functions and objects
 declare global {
   var pack: any;
-  var getCoordinates: (x: number, y: number, decimals: number) => [number, number];
+  var getCoordinates: (
+    x: number,
+    y: number,
+    decimals: number,
+  ) => [number, number];
   var getFileName: (dataType: string) => string;
   var downloadFile: (data: string, fileName: string, mimeType: string) => void;
 }
@@ -16,11 +20,13 @@ declare global {
 describe("zones GeoJSON export - Edge Case Unit Tests", () => {
   beforeEach(() => {
     // Mock getCoordinates function
-    globalThis.getCoordinates = vi.fn((x: number, y: number, decimals: number) => {
-      const lon = Number((x / 10).toFixed(decimals));
-      const lat = Number((y / 10).toFixed(decimals));
-      return [lon, lat];
-    });
+    globalThis.getCoordinates = vi.fn(
+      (x: number, y: number, decimals: number) => {
+        const lon = Number((x / 10).toFixed(decimals));
+        const lat = Number((y / 10).toFixed(decimals));
+        return [lon, lat];
+      },
+    );
 
     // Mock getFileName function
     globalThis.getFileName = vi.fn((dataType: string) => {
@@ -40,19 +46,55 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
     it("should generate empty FeatureCollection when all zones are hidden", () => {
       // Setup: All zones are hidden
       const zones = [
-        { i: 0, name: "Zone 1", type: "Territory", color: "#ff0000", cells: [0, 1], hidden: true },
-        { i: 1, name: "Zone 2", type: "Climate", color: "#00ff00", cells: [2, 3], hidden: true },
+        {
+          i: 0,
+          name: "Zone 1",
+          type: "Territory",
+          color: "#ff0000",
+          cells: [0, 1],
+          hidden: true,
+        },
+        {
+          i: 1,
+          name: "Zone 2",
+          type: "Climate",
+          color: "#00ff00",
+          cells: [2, 3],
+          hidden: true,
+        },
       ];
 
       const mockCells = {
-        v: [[0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2]],
-        c: [[1, 2, 3], [0, 2, 3], [0, 1, 3], [0, 1, 2]],
+        v: [
+          [0, 1, 2],
+          [0, 1, 2],
+          [0, 1, 2],
+          [0, 1, 2],
+        ],
+        c: [
+          [1, 2, 3],
+          [0, 2, 3],
+          [0, 1, 3],
+          [0, 1, 2],
+        ],
       };
 
       const mockVertices = {
-        p: [[0, 0], [10, 0], [5, 10]],
-        c: [[0, 1], [0, 1], [0, 1]],
-        v: [[1, 2], [0, 2], [0, 1]],
+        p: [
+          [0, 0],
+          [10, 0],
+          [5, 10],
+        ],
+        c: [
+          [0, 1],
+          [0, 1],
+          [0, 1],
+        ],
+        v: [
+          [1, 2],
+          [0, 2],
+          [0, 1],
+        ],
       };
 
       globalThis.pack = { zones, cells: mockCells, vertices: mockVertices };
@@ -167,8 +209,22 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
     it("should generate empty FeatureCollection when all zones have no cells", () => {
       // Setup: All zones have empty cells arrays
       const zones = [
-        { i: 0, name: "Zone 1", type: "Territory", color: "#ff0000", cells: [], hidden: false },
-        { i: 1, name: "Zone 2", type: "Climate", color: "#00ff00", cells: [], hidden: false },
+        {
+          i: 0,
+          name: "Zone 1",
+          type: "Territory",
+          color: "#ff0000",
+          cells: [],
+          hidden: false,
+        },
+        {
+          i: 1,
+          name: "Zone 2",
+          type: "Climate",
+          color: "#00ff00",
+          cells: [],
+          hidden: false,
+        },
       ];
 
       const mockCells = {
@@ -177,9 +233,17 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
       };
 
       const mockVertices = {
-        p: [[0, 0], [10, 0], [5, 10]],
+        p: [
+          [0, 0],
+          [10, 0],
+          [5, 10],
+        ],
         c: [[0], [0], [0]],
-        v: [[1, 2], [0, 2], [0, 1]],
+        v: [
+          [1, 2],
+          [0, 2],
+          [0, 1],
+        ],
       };
 
       globalThis.pack = { zones, cells: mockCells, vertices: mockVertices };
@@ -301,18 +365,43 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
     it("should export single visible zone with correct GeoJSON structure and properties", () => {
       // Setup: One visible zone with cells that have boundaries
       const zones = [
-        { i: 0, name: "Test Zone", type: "Territory", color: "#ff0000", cells: [0, 1], hidden: false },
+        {
+          i: 0,
+          name: "Test Zone",
+          type: "Territory",
+          color: "#ff0000",
+          cells: [0, 1],
+          hidden: false,
+        },
       ];
 
       const mockCells = {
-        v: [[0, 1, 2], [0, 1, 2]],
-        c: [[1, 2, 3], [0, 2, 3]], // Cell 0 has neighbors 1,2,3 where 2,3 are outside the zone
+        v: [
+          [0, 1, 2],
+          [0, 1, 2],
+        ],
+        c: [
+          [1, 2, 3],
+          [0, 2, 3],
+        ], // Cell 0 has neighbors 1,2,3 where 2,3 are outside the zone
       };
 
       const mockVertices = {
-        p: [[0, 0], [10, 0], [5, 10]],
-        c: [[0, 1, 2], [0, 1, 3], [0, 1, 2]], // Vertices connected to cells including outside cells
-        v: [[1, 2], [0, 2], [0, 1]],
+        p: [
+          [0, 0],
+          [10, 0],
+          [5, 10],
+        ],
+        c: [
+          [0, 1, 2],
+          [0, 1, 3],
+          [0, 1, 2],
+        ], // Vertices connected to cells including outside cells
+        v: [
+          [1, 2],
+          [0, 2],
+          [0, 1],
+        ],
       };
 
       globalThis.pack = { zones, cells: mockCells, vertices: mockVertices };
@@ -450,20 +539,67 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
     it("should export multiple visible zones with correct feature count", () => {
       // Setup: Multiple visible zones with one hidden
       const zones = [
-        { i: 0, name: "Zone 1", type: "Territory", color: "#ff0000", cells: [0, 1], hidden: false },
-        { i: 1, name: "Zone 2", type: "Climate", color: "#00ff00", cells: [2, 3], hidden: true },
-        { i: 2, name: "Zone 3", type: "Unknown", color: "#0000ff", cells: [4, 5], hidden: false },
+        {
+          i: 0,
+          name: "Zone 1",
+          type: "Territory",
+          color: "#ff0000",
+          cells: [0, 1],
+          hidden: false,
+        },
+        {
+          i: 1,
+          name: "Zone 2",
+          type: "Climate",
+          color: "#00ff00",
+          cells: [2, 3],
+          hidden: true,
+        },
+        {
+          i: 2,
+          name: "Zone 3",
+          type: "Unknown",
+          color: "#0000ff",
+          cells: [4, 5],
+          hidden: false,
+        },
       ];
 
       const mockCells = {
-        v: [[0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2]],
-        c: [[1, 2, 3], [0, 2, 3], [0, 1, 3], [0, 1, 2], [5, 2, 3], [4, 2, 3]],
+        v: [
+          [0, 1, 2],
+          [0, 1, 2],
+          [0, 1, 2],
+          [0, 1, 2],
+          [0, 1, 2],
+          [0, 1, 2],
+        ],
+        c: [
+          [1, 2, 3],
+          [0, 2, 3],
+          [0, 1, 3],
+          [0, 1, 2],
+          [5, 2, 3],
+          [4, 2, 3],
+        ],
       };
 
       const mockVertices = {
-        p: [[0, 0], [10, 0], [5, 10]],
-        c: [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]],
-        v: [[1, 2], [0, 2], [0, 1]],
+        p: [
+          [0, 0],
+          [10, 0],
+          [5, 10],
+        ],
+        c: [
+          [0, 1, 2, 3, 4, 5],
+          [0, 1, 2, 3, 4, 5],
+          [0, 1, 2, 3, 4, 5],
+        ],
+        v: [
+          [1, 2],
+          [0, 2],
+          [0, 1],
+        ],
       };
 
       globalThis.pack = { zones, cells: mockCells, vertices: mockVertices };
@@ -590,7 +726,9 @@ describe("zones GeoJSON export - Edge Case Unit Tests", () => {
       expect(feature2?.properties.cells).toEqual([4, 5]);
 
       // Verify hidden zone is not exported
-      const hiddenFeature = result.features.find((f: any) => f.properties.id === 1);
+      const hiddenFeature = result.features.find(
+        (f: any) => f.properties.id === 1,
+      );
       expect(hiddenFeature).toBeUndefined();
     });
   });
