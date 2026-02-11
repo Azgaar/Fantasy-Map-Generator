@@ -24,25 +24,54 @@ test.describe("Zone Export", () => {
   });
 
   // Helper function to create a test zone programmatically
+  // Uses BFS to select a contiguous set of land cells for stable, representative testing
   async function createTestZone(page: any): Promise<number> {
     return await page.evaluate(() => {
       const { cells, zones } = (window as any).pack;
 
-      // Find 10-20 land cells (height >= 20)
-      const landCells: number[] = [];
-      for (let i = 1; i < cells.i.length && landCells.length < 20; i++) {
-        const isLand = cells.h[i] >= 20;
-        if (isLand) {
-          landCells.push(i);
+      // Find a starting land cell (height >= 20)
+      const totalCells = cells.i.length;
+      let startCell = -1;
+      for (let i = 1; i < totalCells; i++) {
+        if (cells.h[i] >= 20) {
+          startCell = i;
+          break;
         }
       }
 
-      if (landCells.length < 10) {
-        throw new Error(`Not enough land cells found: ${landCells.length}`);
+      if (startCell === -1) {
+        throw new Error("No land cells found to create a test zone");
       }
 
-      // Take exactly 10-20 cells
-      const zoneCells = landCells.slice(0, Math.min(20, landCells.length));
+      // Use BFS to select a contiguous set of 10-20 land cells
+      const zoneCells: number[] = [];
+      const visited = new Set<number>();
+      const queue: number[] = [];
+      
+      visited.add(startCell);
+      queue.push(startCell);
+
+      while (queue.length > 0 && zoneCells.length < 20) {
+        const current = queue.shift() as number;
+        
+        // Only include land cells in the zone
+        if (cells.h[current] >= 20) {
+          zoneCells.push(current);
+        }
+
+        // Explore neighbors
+        const neighbors: number[] = cells.c[current] || [];
+        for (const neighbor of neighbors) {
+          if (neighbor && !visited.has(neighbor)) {
+            visited.add(neighbor);
+            queue.push(neighbor);
+          }
+        }
+      }
+
+      if (zoneCells.length < 10) {
+        throw new Error(`Not enough contiguous land cells found: ${zoneCells.length}`);
+      }
 
       // Generate unique zone ID
       const zoneId = zones.length;
@@ -64,119 +93,24 @@ test.describe("Zone Export", () => {
   }
 
   // Helper function to export zones to GeoJSON without file download
+  // This calls the production code from public/modules/io/export.js
   async function exportZonesToGeoJson(page: any): Promise<any> {
     return await page.evaluate(() => {
-      const { zones, cells, vertices } = (window as any).pack;
-      const json = { type: "FeatureCollection", features: [] as any[] };
+      // Mock downloadFile to capture the JSON instead of downloading
+      const originalDownloadFile = (window as any).downloadFile;
+      let capturedJson: any = null;
 
-      // Use the global getCoordinates function from window
-      const getCoordinates = (window as any).getCoordinates;
+      (window as any).downloadFile = (data: string) => {
+        capturedJson = JSON.parse(data);
+      };
 
-      // Helper function to convert zone cells to polygon coordinates
-      function getZonePolygonCoordinates(zoneCells: number[]) {
-        const cellsInZone = new Set(zoneCells);
-        const ofSameType = (cellId: number) => cellsInZone.has(cellId);
-        const ofDifferentType = (cellId: number) => !cellsInZone.has(cellId);
+      // Call the production code
+      (window as any).saveGeoJsonZones();
 
-        const checkedCells = new Set<number>();
-        const coordinates: [number, number][] = [];
+      // Restore original downloadFile
+      (window as any).downloadFile = originalDownloadFile;
 
-        // Find boundary vertices by tracing the zone boundary
-        for (const cellId of zoneCells) {
-          if (checkedCells.has(cellId)) continue;
-
-          // Check if this cell is on the boundary
-          const neighbors = cells.c[cellId];
-          const onBorder = neighbors.some(ofDifferentType);
-          if (!onBorder) continue;
-
-          // Find a starting vertex that's on the boundary
-          const cellVertices = cells.v[cellId];
-          let startingVertex: number | null = null;
-
-          for (const vertexId of cellVertices) {
-            const vertexCells = vertices.c[vertexId];
-            if (vertexCells.some(ofDifferentType)) {
-              startingVertex = vertexId;
-              break;
-            }
-          }
-
-          if (startingVertex === null) continue;
-
-          // Trace the boundary by connecting vertices
-          const vertexChain: number[] = [];
-          let current = startingVertex;
-          let previous: number | null = null;
-          const maxIterations = vertices.c.length;
-
-          for (let i = 0; i < maxIterations; i++) {
-            vertexChain.push(current);
-
-            // Mark cells adjacent to this vertex as checked
-            const adjacentCells = vertices.c[current];
-            adjacentCells.filter(ofSameType).forEach((c: number) => checkedCells.add(c));
-
-            // Find the next vertex along the boundary
-            const [c1, c2, c3] = adjacentCells.map(ofSameType);
-            const [v1, v2, v3] = vertices.v[current];
-
-            let next: number | null = null;
-            if (v1 !== previous && c1 !== c2) next = v1;
-            else if (v2 !== previous && c2 !== c3) next = v2;
-            else if (v3 !== previous && c1 !== c3) next = v3;
-
-            if (next === null || next === current) break;
-            if (next === startingVertex) break; // Completed the ring
-
-            previous = current;
-            current = next;
-          }
-
-          // Convert vertex chain to coordinates
-          for (const vertexId of vertexChain) {
-            const [x, y] = vertices.p[vertexId];
-            coordinates.push(getCoordinates(x, y, 4));
-          }
-        }
-
-        // Close the polygon ring (first coordinate = last coordinate)
-        if (coordinates.length > 0) {
-          coordinates.push(coordinates[0]);
-        }
-
-        return [coordinates];
-      }
-
-      // Filter and process zones
-      zones.forEach((zone: any) => {
-        // Exclude hidden zones and zones with no cells
-        if (zone.hidden || !zone.cells || zone.cells.length === 0) return;
-
-        const coordinates = getZonePolygonCoordinates(zone.cells);
-
-        // Only add feature if we have valid coordinates
-        // GeoJSON LinearRing requires at least 4 positions (with first == last)
-        if (coordinates[0].length >= 4) {
-          const properties = {
-            id: zone.i,
-            name: zone.name,
-            type: zone.type,
-            color: zone.color,
-            cells: zone.cells,
-          };
-
-          const feature = {
-            type: "Feature",
-            geometry: { type: "Polygon", coordinates },
-            properties,
-          };
-
-          json.features.push(feature);
-        }
-      });
-
-      return json;
+      return capturedJson;
     });
   }
 
@@ -242,40 +176,41 @@ test.describe("Zone Export", () => {
     // Assert geometry.coordinates is an array
     expect(Array.isArray(coordinates)).toBe(true);
     
-    // Assert outer array has length 1 (single LinearRing)
-    expect(coordinates.length).toBe(1);
+    // Assert coordinates array is not empty
+    expect(coordinates.length).toBeGreaterThan(0);
     
-    // Assert LinearRing is an array
-    const linearRing = coordinates[0];
-    expect(Array.isArray(linearRing)).toBe(true);
-    
-    // Assert each position in LinearRing is an array of 2 numbers
-    for (const position of linearRing) {
-      expect(Array.isArray(position)).toBe(true);
-      expect(position.length).toBe(2);
-      expect(typeof position[0]).toBe("number");
-      expect(typeof position[1]).toBe("number");
-    }
-
-    // Task 7.2: Validate LinearRing validity
-    // Assert LinearRing has at least 4 positions
-    expect(linearRing.length).toBeGreaterThanOrEqual(4);
-    
-    // Assert first position equals last position (closed ring)
-    const firstPosition = linearRing[0];
-    const lastPosition = linearRing[linearRing.length - 1];
-    expect(firstPosition[0]).toBe(lastPosition[0]);
-    expect(firstPosition[1]).toBe(lastPosition[1]);
-    
-    // Assert all positions are valid [longitude, latitude] pairs
-    for (const position of linearRing) {
-      // Longitude should be between -180 and 180
-      expect(position[0]).toBeGreaterThanOrEqual(-180);
-      expect(position[0]).toBeLessThanOrEqual(180);
+    // Validate each LinearRing in the coordinates array
+    // Note: Zones can have multiple rings (holes) or be MultiPolygon (disconnected components)
+    for (const linearRing of coordinates) {
+      // Assert LinearRing is an array
+      expect(Array.isArray(linearRing)).toBe(true);
       
-      // Latitude should be between -90 and 90
-      expect(position[1]).toBeGreaterThanOrEqual(-90);
-      expect(position[1]).toBeLessThanOrEqual(90);
+      // Task 7.2: Validate LinearRing validity
+      // Assert LinearRing has at least 4 positions
+      expect(linearRing.length).toBeGreaterThanOrEqual(4);
+      
+      // Assert first position equals last position (closed ring)
+      const firstPosition = linearRing[0];
+      const lastPosition = linearRing[linearRing.length - 1];
+      expect(firstPosition[0]).toBe(lastPosition[0]);
+      expect(firstPosition[1]).toBe(lastPosition[1]);
+      
+      // Assert each position in LinearRing is an array of 2 numbers
+      for (const position of linearRing) {
+        expect(Array.isArray(position)).toBe(true);
+        expect(position.length).toBe(2);
+        expect(typeof position[0]).toBe("number");
+        expect(typeof position[1]).toBe("number");
+        
+        // Assert all positions are valid [longitude, latitude] pairs
+        // Longitude should be between -180 and 180
+        expect(position[0]).toBeGreaterThanOrEqual(-180);
+        expect(position[0]).toBeLessThanOrEqual(180);
+        
+        // Latitude should be between -90 and 90
+        expect(position[1]).toBeGreaterThanOrEqual(-90);
+        expect(position[1]).toBeLessThanOrEqual(90);
+      }
     }
   });
 
@@ -288,21 +223,53 @@ test.describe("Zone Export", () => {
   const hiddenZoneId = await page.evaluate(() => {
     const { cells, zones } = (window as any).pack;
 
-    // Find 10-20 land cells (height >= 20)
-    const landCells: number[] = [];
-    for (let i = 1; i < cells.i.length && landCells.length < 20; i++) {
+    // Find a starting land cell that's not already in a zone
+    const totalCells = cells.i.length;
+    let startCell = -1;
+    for (let i = 1; i < totalCells; i++) {
       const isLand = cells.h[i] >= 20;
-      if (isLand && !zones.some((z: any) => z.cells && z.cells.includes(i))) {
-        landCells.push(i);
+      const notInZone = !zones.some((z: any) => z.cells && z.cells.includes(i));
+      if (isLand && notInZone) {
+        startCell = i;
+        break;
       }
     }
 
-    if (landCells.length < 10) {
-      throw new Error(`Not enough land cells found: ${landCells.length}`);
+    if (startCell === -1) {
+      throw new Error("No available land cells found for hidden zone");
     }
 
-    // Take exactly 10-20 cells
-    const zoneCells = landCells.slice(0, Math.min(20, landCells.length));
+    // Use BFS to select a contiguous set of 10-20 land cells
+    const zoneCells: number[] = [];
+    const visited = new Set<number>();
+    const queue: number[] = [];
+    
+    visited.add(startCell);
+    queue.push(startCell);
+
+    while (queue.length > 0 && zoneCells.length < 20) {
+      const current = queue.shift() as number;
+      
+      // Only include land cells not already in a zone
+      const isLand = cells.h[current] >= 20;
+      const notInZone = !zones.some((z: any) => z.cells && z.cells.includes(current));
+      if (isLand && notInZone) {
+        zoneCells.push(current);
+      }
+
+      // Explore neighbors
+      const neighbors: number[] = cells.c[current] || [];
+      for (const neighbor of neighbors) {
+        if (neighbor && !visited.has(neighbor)) {
+          visited.add(neighbor);
+          queue.push(neighbor);
+        }
+      }
+    }
+
+    if (zoneCells.length < 10) {
+      throw new Error(`Not enough contiguous land cells found: ${zoneCells.length}`);
+    }
 
     // Generate unique zone ID
     const zoneId = zones.length;
