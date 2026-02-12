@@ -145,6 +145,8 @@ test.describe("Zone Export", () => {
     expect(typeof testZoneFeature.geometry).toBe("object");
 
     expect(testZoneFeature.geometry).toHaveProperty("type");
+    // Note: Geometry type can be "Polygon" (single component) or "MultiPolygon" (multiple disconnected components)
+    // For this test with contiguous BFS-selected cells, we expect "Polygon"
     expect(testZoneFeature.geometry.type).toBe("Polygon");
 
     expect(testZoneFeature.geometry).toHaveProperty("coordinates");

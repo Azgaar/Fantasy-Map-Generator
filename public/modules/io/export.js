@@ -580,16 +580,16 @@ function saveGeoJsonZones() {
   const json = {type: "FeatureCollection", features: []};
 
   // Helper function to convert zone cells to polygon coordinates
+  // Handles multiple disconnected components and holes properly
   function getZonePolygonCoordinates(zoneCells) {
-    // Create a set of cells in this zone for quick lookup
     const cellsInZone = new Set(zoneCells);
     const ofSameType = (cellId) => cellsInZone.has(cellId);
     const ofDifferentType = (cellId) => !cellsInZone.has(cellId);
     
     const checkedCells = new Set();
-    const coordinates = [];
+    const rings = []; // Array of LinearRings (each ring is an array of coordinates)
     
-    // Find boundary vertices by tracing the zone boundary
+    // Find all boundary components by tracing each connected region
     for (const cellId of zoneCells) {
       if (checkedCells.has(cellId)) continue;
       
@@ -597,6 +597,12 @@ function saveGeoJsonZones() {
       const neighbors = cells.c[cellId];
       const onBorder = neighbors.some(ofDifferentType);
       if (!onBorder) continue;
+      
+      // Check if this is an inner lake (hole) - skip if so
+      const feature = pack.features[cells.f[cellId]];
+      if (feature.type === "lake" && feature.shoreline) {
+        if (feature.shoreline.every(ofSameType)) continue;
+      }
       
       // Find a starting vertex that's on the boundary
       const cellVertices = cells.v[cellId];
@@ -612,48 +618,36 @@ function saveGeoJsonZones() {
       
       if (startingVertex === null) continue;
       
-      // Trace the boundary by connecting vertices
-      const vertexChain = [];
-      let current = startingVertex;
-      let previous = null;
-      const maxIterations = vertices.c.length;
+      // Use connectVertices to trace the boundary (reusing existing logic)
+      const vertexChain = connectVertices({
+        vertices,
+        startingVertex,
+        ofSameType,
+        addToChecked: (cellId) => checkedCells.add(cellId),
+        closeRing: false, // We'll close it manually after converting to coordinates
+      });
       
-      for (let i = 0; i < maxIterations; i++) {
-        vertexChain.push(current);
-        
-        // Mark cells adjacent to this vertex as checked
-        const adjacentCells = vertices.c[current];
-        adjacentCells.filter(ofSameType).forEach(c => checkedCells.add(c));
-        
-        // Find the next vertex along the boundary
-        const [c1, c2, c3] = adjacentCells.map(ofSameType);
-        const [v1, v2, v3] = vertices.v[current];
-        
-        let next = null;
-        if (v1 !== previous && c1 !== c2) next = v1;
-        else if (v2 !== previous && c2 !== c3) next = v2;
-        else if (v3 !== previous && c1 !== c3) next = v3;
-        
-        if (next === null || next === current) break;
-        if (next === startingVertex) break; // Completed the ring
-        
-        previous = current;
-        current = next;
-      }
+      if (vertexChain.length < 3) continue;
       
       // Convert vertex chain to coordinates
+      const coordinates = [];
       for (const vertexId of vertexChain) {
         const [x, y] = vertices.p[vertexId];
         coordinates.push(getCoordinates(x, y, 4));
       }
+      
+      // Close the ring (first coordinate = last coordinate)
+      if (coordinates.length > 0) {
+        coordinates.push(coordinates[0]);
+      }
+      
+      // Only add ring if it has at least 4 positions (minimum for valid LinearRing)
+      if (coordinates.length >= 4) {
+        rings.push(coordinates);
+      }
     }
     
-    // Close the polygon ring (first coordinate = last coordinate)
-    if (coordinates.length > 0) {
-      coordinates.push(coordinates[0]);
-    }
-    
-    return [coordinates];
+    return rings;
   }
 
   // Filter and process zones
@@ -661,25 +655,36 @@ function saveGeoJsonZones() {
     // Exclude hidden zones and zones with no cells
     if (zone.hidden || !zone.cells || zone.cells.length === 0) return;
 
-    const coordinates = getZonePolygonCoordinates(zone.cells);
+    const rings = getZonePolygonCoordinates(zone.cells);
     
-    // Only add feature if we have valid coordinates
-    // GeoJSON LinearRing requires at least 4 positions (with first == last)
-    if (coordinates[0].length >= 4) {
-      const properties = {
-        id: zone.i,
-        name: zone.name,
-        type: zone.type,
-        color: zone.color,
-        cells: zone.cells
-      };
-      
+    // Skip if no valid rings were generated
+    if (rings.length === 0) return;
+    
+    const properties = {
+      id: zone.i,
+      name: zone.name,
+      type: zone.type,
+      color: zone.color,
+      cells: zone.cells
+    };
+    
+    // If there's only one ring, use Polygon geometry
+    if (rings.length === 1) {
       const feature = {
         type: "Feature",
-        geometry: {type: "Polygon", coordinates},
+        geometry: {type: "Polygon", coordinates: rings},
         properties
       };
-      
+      json.features.push(feature);
+    } else {
+      // Multiple disconnected components: use MultiPolygon
+      // Each component is wrapped in its own array
+      const multiPolygonCoordinates = rings.map(ring => [ring]);
+      const feature = {
+        type: "Feature",
+        geometry: {type: "MultiPolygon", coordinates: multiPolygonCoordinates},
+        properties
+      };
       json.features.push(feature);
     }
   });
