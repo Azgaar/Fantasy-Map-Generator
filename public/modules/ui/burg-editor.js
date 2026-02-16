@@ -118,6 +118,9 @@ function editBurg(id) {
     const id = +elSelected.attr("data-id");
     pack.burgs[id].name = burgName.value;
     elSelected.text(burgName.value);
+    // Sync to Labels data model
+    const labelData = Labels.getBurgLabel(id);
+    if (labelData) Labels.updateLabel(labelData.i, {text: burgName.value});
   }
 
   function generateNameRandom() {
@@ -381,6 +384,10 @@ function editBurg(id) {
     burg.x = x;
     burg.y = y;
     if (burg.capital) pack.states[newState].center = burg.cell;
+
+    // Sync position to Labels data model
+    const labelData = Labels.getBurgLabel(id);
+    if (labelData) Labels.updateLabel(labelData.i, {x, y});
 
     if (d3.event.shiftKey === false) toggleRelocateBurg();
   }
