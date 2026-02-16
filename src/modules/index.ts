@@ -15,4 +15,3 @@ import "./religions-generator";
 import "./provinces-generator";
 import "./emblem";
 import "./ice";
-import "./fonts";
