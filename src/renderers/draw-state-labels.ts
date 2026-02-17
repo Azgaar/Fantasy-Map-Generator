@@ -79,7 +79,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
     for (const labelData of labelDataList) {
       const state = states[labelData.stateId];
       if (!state.i || state.removed)
-        throw new Error("State must not be neutral or removed");
+        continue;
 
       // Calculate pathPoints using raycast algorithm (recalculated on each draw)
       const offset = getOffsetWidth(state.cells!);
