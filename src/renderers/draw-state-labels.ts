@@ -11,7 +11,7 @@ import {
   raycast,
   findBestRayPair,
   ANGLES,
-} from "../utils/label-raycast";
+} from "./label-raycast";
 
 declare global {
   var drawStateLabels: (list?: number[]) => void;
@@ -57,8 +57,8 @@ const stateLabelsRenderer = (list?: number[]): void => {
   // Get labels to render
   const labelsToRender = list
     ? Labels.getAll()
-        .filter((l) => l.type === "state" && list.includes((l as StateLabelData).stateId))
-        .map((l) => l as StateLabelData)
+      .filter((l) => l.type === "state" && list.includes((l as StateLabelData).stateId))
+      .map((l) => l as StateLabelData)
     : Labels.getByType("state").map((l) => l as StateLabelData);
 
   const letterLength = checkExampleLetterLength();

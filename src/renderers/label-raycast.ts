@@ -1,4 +1,4 @@
-import { findClosestCell } from "./graphUtils";
+import { findClosestCell } from "../utils/graphUtils";
 
 export interface Ray {
   angle: number;
