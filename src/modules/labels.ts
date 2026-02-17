@@ -50,8 +50,8 @@ class LabelsModule {
 
   generate(): void {
     this.clear();
-    generateStateLabels();
-    generateBurgLabels();
+    this.generateStateLabels();
+    this.generateBurgLabels();
   }
 
   getAll(): LabelData[] {
@@ -145,78 +145,75 @@ class LabelsModule {
   clear(): void {
     pack.labels = [];
   }
-}
-
-/**
- * Generate state labels data entries for each state.
- * Only stores essential label data; raycast path calculation happens during rendering.
- * @param list - Optional array of stateIds to regenerate only those
- */
-export function generateStateLabels(list?: number[]): void {
-  if (TIME) console.time("generateStateLabels");
-
-  const { states } = pack;
-  const labelsModule = window.Labels;
-
-  // Remove existing state labels that need regeneration
-  if (list) {
-    list.forEach((stateId) => labelsModule.removeStateLabel(stateId));
-  } else {
-    labelsModule.removeByType("state");
+  
+  /**
+   * Generate state labels data entries for each state.
+   * Only stores essential label data; raycast path calculation happens during rendering.
+   * @param list - Optional array of stateIds to regenerate only those
+   */
+  generateStateLabels(list?: number[]): void {
+    if (TIME) console.time("generateStateLabels");
+  
+    const { states } = pack;
+  
+    // Remove existing state labels that need regeneration
+    if (list) {
+      list.forEach((stateId) => this.removeStateLabel(stateId));
+    } else {
+      this.removeByType("state");
+    }
+  
+    // Generate new label entries
+    for (const state of states) {
+      if (!state.i || state.removed || state.lock) continue;
+      if (list && !list.includes(state.i)) continue;
+  
+      this.addStateLabel({
+        stateId: state.i,
+        text: state.name!,
+        fontSize: 100,
+      });
+    }
+  
+    if (TIME) console.timeEnd("generateStateLabels");
+  }
+  
+  /**
+   * Generate burg labels data from burgs.
+   * Populates pack.labels with BurgLabelData for each burg.
+   */
+  generateBurgLabels(): void {
+    if (TIME) console.time("generateBurgLabels");
+  
+    // Remove existing burg labels
+    this.removeByType("burg");
+  
+    // Generate new labels for all active burgs
+    for (const burg of pack.burgs) {
+      if (!burg.i || burg.removed) continue;
+  
+      const group = burg.group || "unmarked";
+  
+      // Get label group offset attributes if they exist (will be set during rendering)
+      // For now, use defaults - these will be updated during rendering phase
+      const dx = 0;
+      const dy = 0;
+  
+      this.addBurgLabel({
+        burgId: burg.i,
+        group,
+        text: burg.name!,
+        x: burg.x,
+        y: burg.y,
+        dx,
+        dy,
+      });
+    }
+  
+    if (TIME) console.timeEnd("generateBurgLabels");
   }
 
-  // Generate new label entries
-  for (const state of states) {
-    if (!state.i || state.removed || state.lock) continue;
-    if (list && !list.includes(state.i)) continue;
-
-    labelsModule.addStateLabel({
-      stateId: state.i,
-      text: state.name!,
-      fontSize: 100,
-    });
-  }
-
-  if (TIME) console.timeEnd("generateStateLabels");
 }
 
-/**
- * Generate burg labels data from burgs.
- * Populates pack.labels with BurgLabelData for each burg.
- */
-export function generateBurgLabels(): void {
-  if (!TIME) console.time("generateBurgLabels");
-  else TIME && console.time("generateBurgLabels");
-
-  const labelsModule = window.Labels;
-
-  // Remove existing burg labels
-  labelsModule.removeByType("burg");
-
-  // Generate new labels for all active burgs
-  for (const burg of pack.burgs) {
-    if (!burg.i || burg.removed) continue;
-
-    const group = burg.group || "unmarked";
-
-    // Get label group offset attributes if they exist (will be set during rendering)
-    // For now, use defaults - these will be updated during rendering phase
-    const dx = 0;
-    const dy = 0;
-
-    labelsModule.addBurgLabel({
-      burgId: burg.i,
-      group,
-      text: burg.name!,
-      x: burg.x,
-      y: burg.y,
-      dx,
-      dy,
-    });
-  }
-
-  if (!TIME) console.timeEnd("generateBurgLabels");
-  else TIME && console.timeEnd("generateBurgLabels");
-}
 
 window.Labels = new LabelsModule();
