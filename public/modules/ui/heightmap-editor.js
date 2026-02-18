@@ -330,10 +330,8 @@ function editHeightmap(options) {
       c.y = p[1];
     }
 
-    // recalculate zones to grid - store grid cell IDs in pack.zones
     for (const zone of pack.zones) {
       if (!zone.cells || !zone.cells.length) continue;
-      // Convert pack cell IDs to grid cell IDs
       zone.gridCells = zone.cells.map(i => pack.cells.g[i]);
     }
 
@@ -445,12 +443,9 @@ function editHeightmap(options) {
       Lakes.defineNames();
     }
 
-    // restore zones from grid - convert grid cell IDs back to pack cell IDs
     for (const zone of pack.zones) {
       if (!zone.gridCells || !zone.gridCells.length) continue;
-      // Find pack cells that correspond to the stored grid cells
       zone.cells = pack.cells.i.filter(i => zone.gridCells.includes(pack.cells.g[i]));
-      // Clean up temporary storage
       delete zone.gridCells;
     }
 
