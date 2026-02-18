@@ -330,9 +330,10 @@ function editHeightmap(options) {
       c.y = p[1];
     }
 
+    const zoneGridCellsMap = new Map();
     for (const zone of pack.zones) {
       if (!zone.cells || !zone.cells.length) continue;
-      zone.gridCells = zone.cells.map(i => pack.cells.g[i]);
+      zoneGridCellsMap.set(zone.i, zone.cells.map(i => pack.cells.g[i]));
     }
 
     Features.markupGrid();
@@ -451,9 +452,9 @@ function editHeightmap(options) {
     }
 
     for (const zone of pack.zones) {
-      if (!zone.gridCells || !zone.gridCells.length) continue;
-      zone.cells = zone.gridCells.flatMap(g => gridToPackMap.get(g) || []);
-      delete zone.gridCells;
+      const gridCells = zoneGridCellsMap.get(zone.i);
+      if (!gridCells || !gridCells.length) continue;
+      zone.cells = gridCells.flatMap(g => gridToPackMap.get(g) || []);
     }
 
     // recalculate ice
