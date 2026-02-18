@@ -330,15 +330,12 @@ function editHeightmap(options) {
       c.y = p[1];
     }
 
-    // recalculate zones to grid
-    zones.selectAll("g").each(function () {
-      const zone = d3.select(this);
-      const dataCells = zone.attr("data-cells");
-      const cells = dataCells ? dataCells.split(",").map(i => +i) : [];
-      const g = cells.map(i => pack.cells.g[i]);
-      zone.attr("data-cells", g);
-      zone.selectAll("*").remove();
-    });
+    // recalculate zones to grid - store grid cell IDs in pack.zones
+    for (const zone of pack.zones) {
+      if (!zone.cells || !zone.cells.length) continue;
+      // Convert pack cell IDs to grid cell IDs
+      zone.gridCells = zone.cells.map(i => pack.cells.g[i]);
+    }
 
     Features.markupGrid();
     if (erosionAllowed) addLakesInDeepDepressions();
@@ -448,24 +445,14 @@ function editHeightmap(options) {
       Lakes.defineNames();
     }
 
-    // restore zones from grid
-    zones.selectAll("g").each(function () {
-      const zone = d3.select(this);
-      const g = zone.attr("data-cells");
-      const gCells = g ? g.split(",").map(i => +i) : [];
-      const cells = pack.cells.i.filter(i => gCells.includes(pack.cells.g[i]));
-
-      zone.attr("data-cells", cells);
-      zone.selectAll("*").remove();
-      const base = zone.attr("id") + "_"; // id generic part
-      zone
-        .selectAll("*")
-        .data(cells)
-        .enter()
-        .append("polygon")
-        .attr("points", d => getPackPolygon(d))
-        .attr("id", d => base + d);
-    });
+    // restore zones from grid - convert grid cell IDs back to pack cell IDs
+    for (const zone of pack.zones) {
+      if (!zone.gridCells || !zone.gridCells.length) continue;
+      // Find pack cells that correspond to the stored grid cells
+      zone.cells = pack.cells.i.filter(i => zone.gridCells.includes(pack.cells.g[i]));
+      // Clean up temporary storage
+      delete zone.gridCells;
+    }
 
     // recalculate ice
     Ice.generate();
