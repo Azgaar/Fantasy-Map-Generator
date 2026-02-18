@@ -443,9 +443,16 @@ function editHeightmap(options) {
       Lakes.defineNames();
     }
 
+    const gridToPackMap = new Map();
+    for (const i of pack.cells.i) {
+      const g = pack.cells.g[i];
+      if (!gridToPackMap.has(g)) gridToPackMap.set(g, []);
+      gridToPackMap.get(g).push(i);
+    }
+
     for (const zone of pack.zones) {
       if (!zone.gridCells || !zone.gridCells.length) continue;
-      zone.cells = pack.cells.i.filter(i => zone.gridCells.includes(pack.cells.g[i]));
+      zone.cells = zone.gridCells.flatMap(g => gridToPackMap.get(g) || []);
       delete zone.gridCells;
     }
 
