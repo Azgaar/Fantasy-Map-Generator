@@ -248,6 +248,10 @@ window.Military = (function () {
 
     // get regiments for each state
     valid.forEach(s => {
+      // remove outdated regiment notes before regenerating
+      for (let i = notes.length - 1; i >= 0; i--) {
+        if (notes[i].id.startsWith(`regiment${s.i}-`)) notes.splice(i, 1);
+      }
       s.military = createRegiments(s.temp.platoons, s);
       delete s.temp; // do not store temp data
     });
@@ -380,7 +384,10 @@ window.Military = (function () {
       : gauss(options.year - 100, 150, 1, options.year - 6);
     const conflict = campaign ? ` during the ${campaign.name}` : "";
     const legend = `Regiment was formed in ${year} ${options.era}${conflict}. ${station}${troops}`;
-    notes.push({id: `regiment${s.i}-${r.i}`, name: r.name, legend});
+    const id = `regiment${s.i}-${r.i}`;
+    const existingIndex = notes.findIndex(n => n.id === id);
+    if (existingIndex !== -1) notes.splice(existingIndex, 1);
+    notes.push({id, name: r.name, legend});
   };
 
   return {
