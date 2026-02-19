@@ -1,5 +1,4 @@
 "use strict";
-let currentLabelData = null;
 
 // Helper: extract control points from an SVG path element
 function extractPathPoints(pathElement) {
@@ -60,9 +59,6 @@ function editLabel() {
   const text = textPath.parentNode;
   elSelected = d3.select(text).call(d3.drag().on("start", dragLabel)).classed("draggable", true);
   viewbox.on("touchmove mousemove", showEditorTips);
-
-  // Resolve label data from the data model
-  currentLabelData = getLabelData(text);
 
   $("#labelEditor").dialog({
     title: "Edit Label",
@@ -136,17 +132,18 @@ function editLabel() {
   }
 
   function updateValues(textPath) {
-    if (currentLabelData && currentLabelData.type === "custom") {
+    const labelData = getLabelData(elSelected.node());
+    if (labelData && labelData.type === "custom") {
       // Custom labels: read all values from data model
-      byId("labelText").value = currentLabelData.text || "";
-      byId("labelStartOffset").value = currentLabelData.startOffset || 50;
-      byId("labelRelativeSize").value = currentLabelData.fontSize || 100;
-      byId("labelLetterSpacingSize").value = currentLabelData.letterSpacing || 0;
+      byId("labelText").value = labelData.text || "";
+      byId("labelStartOffset").value = labelData.startOffset || 50;
+      byId("labelRelativeSize").value = labelData.fontSize || 100;
+      byId("labelLetterSpacingSize").value = labelData.letterSpacing || 0;
     } else {
       // State labels and fallback: read from SVG, use data model fontSize if available
       byId("labelText").value = [...textPath.querySelectorAll("tspan")].map(tspan => tspan.textContent).join("|");
       byId("labelStartOffset").value = parseFloat(textPath.getAttribute("startOffset")) || 50;
-      byId("labelRelativeSize").value = (currentLabelData && currentLabelData.fontSize) || parseFloat(textPath.getAttribute("font-size")) || 100;
+      byId("labelRelativeSize").value = (labelData && labelData.fontSize) || parseFloat(textPath.getAttribute("font-size")) || 100;
       let letterSpacingSize = textPath.getAttribute("letter-spacing") ? textPath.getAttribute("letter-spacing") : 0;
       byId("labelLetterSpacingSize").value = parseFloat(letterSpacingSize);
     }
@@ -197,7 +194,8 @@ function editLabel() {
     path.setAttribute("d", d);
     debug.select("#controlPoints > path").attr("d", d);
     // Sync path control points back to data model
-    if (currentLabelData) Labels.updateLabel(currentLabelData.i, { pathPoints: points });
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) Labels.updateLabel(labelData.i, { pathPoints: points });
   }
 
   function clickControlPoint() {
@@ -252,7 +250,8 @@ function editLabel() {
       const transform = `translate(${dx + x},${dy + y})`;
       elSelected.attr("transform", transform);
       debug.select("#controlPoints").attr("transform", transform);
-      if (currentLabelData) Labels.updateLabel(currentLabelData.i, { transform });
+      const labelData = getLabelData(elSelected.node());
+      if (labelData) Labels.updateLabel(labelData.i, { transform });
     });
   }
 
@@ -271,8 +270,9 @@ function editLabel() {
 
   function changeGroup() {
     byId(this.value).appendChild(elSelected.node());
-    if (currentLabelData && currentLabelData.type === "custom") {
-      Labels.updateLabel(currentLabelData.i, { group: this.value });
+    const labelData = getLabelData(elSelected.node());
+    if (labelData && labelData.type === "custom") {
+      Labels.updateLabel(labelData.i, { group: this.value });
     }
   }
 
@@ -327,8 +327,9 @@ function editLabel() {
     byId("labelGroupSelect").options.add(new Option(group, group, false, true));
     byId(group).appendChild(elSelected.node());
     // Update data model group for the moved label
-    if (currentLabelData && currentLabelData.type === "custom") {
-      Labels.updateLabel(currentLabelData.i, { group });
+    const labelData = getLabelData(elSelected.node());
+    if (labelData && labelData.type === "custom") {
+      Labels.updateLabel(labelData.i, { group });
     }
 
     toggleNewGroupInput();
@@ -393,7 +394,8 @@ function editLabel() {
     } else el.innerHTML = `<tspan x="0">${lines}</tspan>`;
 
     // Update data model
-    if (currentLabelData) Labels.updateLabel(currentLabelData.i, { text: input });
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) Labels.updateLabel(labelData.i, { text: input });
 
     if (elSelected.attr("id").slice(0, 10) === "stateLabel")
       tip("Use States Editor to change an actual state name, not just a label", false, "warning");
@@ -401,8 +403,9 @@ function editLabel() {
 
   function generateRandomName() {
     let name = "";
-    if (currentLabelData && currentLabelData.type === "state") {
-      const culture = pack.states[currentLabelData.stateId].culture;
+    const labelData = getLabelData(elSelected.node());
+    if (labelData && labelData.type === "state") {
+      const culture = pack.states[labelData.stateId].culture;
       name = Names.getState(Names.getCulture(culture, 4, 7, ""), culture);
     } else {
       const box = elSelected.node().getBBox();
@@ -441,20 +444,23 @@ function editLabel() {
 
   function changeStartOffset() {
     elSelected.select("textPath").attr("startOffset", this.value + "%");
-    if (currentLabelData) Labels.updateLabel(currentLabelData.i, { startOffset: +this.value });
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) Labels.updateLabel(labelData.i, { startOffset: +this.value });
     tip("Label offset: " + this.value + "%");
   }
 
   function changeRelativeSize() {
     elSelected.select("textPath").attr("font-size", this.value + "%");
-    if (currentLabelData) Labels.updateLabel(currentLabelData.i, { fontSize: +this.value });
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) Labels.updateLabel(labelData.i, { fontSize: +this.value });
     tip("Label relative size: " + this.value + "%");
     changeText();
   }
 
   function changeLetterSpacingSize() {
     elSelected.select("textPath").attr("letter-spacing", this.value + "px");
-    if (currentLabelData) Labels.updateLabel(currentLabelData.i, { letterSpacing: +this.value });
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) Labels.updateLabel(labelData.i, { letterSpacing: +this.value });
     tip("Label letter-spacing size: " + this.value + "px");
     changeText();
   }
@@ -466,9 +472,10 @@ function editLabel() {
     path.attr("d", `M${c[0] - bbox.width},${c[1]}h${bbox.width * 2}`);
     drawControlPointsAndLine();
     // Sync aligned path to data model
-    if (currentLabelData) {
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) {
       const pathEl = byId("textPath_" + elSelected.attr("id"));
-      Labels.updateLabel(currentLabelData.i, { pathPoints: extractPathPoints(pathEl) });
+      Labels.updateLabel(labelData.i, { pathPoints: extractPathPoints(pathEl) });
     }
   }
 
@@ -486,7 +493,8 @@ function editLabel() {
       buttons: {
         Remove: function () {
           $(this).dialog("close");
-          if (currentLabelData) Labels.removeLabel(currentLabelData.i);
+          const labelData = getLabelData(elSelected.node());
+          if (labelData) Labels.removeLabel(labelData.i);
           defs.select("#textPath_" + elSelected.attr("id")).remove();
           elSelected.remove();
           $("#labelEditor").dialog("close");
