@@ -49,11 +49,7 @@ export function raycast({
   const stateIds = cells.state;
   let ray = { length: 0, x: x0, y: y0 };
 
-  for (
-    let length = LENGTH_START;
-    length < LENGTH_MAX;
-    length += LENGTH_STEP
-  ) {
+  for (let length = LENGTH_START; length < LENGTH_MAX; length += LENGTH_STEP) {
     const [x, y] = [x0 + length * dx, y0 + length * dy];
     // offset points are perpendicular to the ray
     const offset1: [number, number] = [x + -dy * offset, y + dx * offset];

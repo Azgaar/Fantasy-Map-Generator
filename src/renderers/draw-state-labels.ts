@@ -1,17 +1,7 @@
 import { curveNatural, line, max, select } from "d3";
-import {
-  findClosestCell,
-  minmax,
-  rn,
-  round,
-  splitInTwo,
-} from "../utils";
 import type { StateLabelData } from "../modules/labels";
-import {
-  raycast,
-  findBestRayPair,
-  ANGLES,
-} from "./label-raycast";
+import { findClosestCell, minmax, rn, round, splitInTwo } from "../utils";
+import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 
 declare global {
   var drawStateLabels: (list?: number[]) => void;
@@ -57,8 +47,11 @@ const stateLabelsRenderer = (list?: number[]): void => {
   // Get labels to render
   const labelsToRender = list
     ? Labels.getAll()
-      .filter((l) => l.type === "state" && list.includes((l as StateLabelData).stateId))
-      .map((l) => l as StateLabelData)
+        .filter(
+          (l) =>
+            l.type === "state" && list.includes((l as StateLabelData).stateId),
+        )
+        .map((l) => l as StateLabelData)
     : Labels.getByType("state").map((l) => l as StateLabelData);
 
   const letterLength = checkExampleLetterLength();
@@ -67,7 +60,10 @@ const stateLabelsRenderer = (list?: number[]): void => {
   // restore labels visibility
   labels.style("display", layerDisplay);
 
-  function drawLabelPath(letterLength: number, labelDataList: StateLabelData[]): void {
+  function drawLabelPath(
+    letterLength: number,
+    labelDataList: StateLabelData[],
+  ): void {
     const mode = options.stateLabelsMode || "auto";
     const lineGen = line<[number, number]>().curve(curveNatural);
 
@@ -78,8 +74,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
 
     for (const labelData of labelDataList) {
       const state = states[labelData.stateId];
-      if (!state.i || state.removed)
-        continue;
+      if (!state.i || state.removed) continue;
 
       // Calculate pathPoints using raycast algorithm (recalculated on each draw)
       const offset = getOffsetWidth(state.cells!);
@@ -161,16 +156,16 @@ const stateLabelsRenderer = (list?: number[]): void => {
       textElement.insertAdjacentHTML("afterbegin", spans.join(""));
 
       const { width, height } = textElement.getBBox();
-      textElement.setAttribute("href", `#textPath_stateLabel${labelData.stateId}`);
+      textElement.setAttribute(
+        "href",
+        `#textPath_stateLabel${labelData.stateId}`,
+      );
 
       const stateIds = pack.cells.state;
       if (mode === "full" || lines.length === 1) continue;
 
       // check if label fits state boundaries. If no, replace it with short name
-      const [[x1, y1], [x2, y2]] = [
-        pathPoints.at(0)!,
-        pathPoints.at(-1)!,
-      ];
+      const [[x1, y1], [x2, y2]] = [pathPoints.at(0)!, pathPoints.at(-1)!];
       const angleRad = Math.atan2(y2 - y1, x2 - x1);
 
       const isInsideState = checkIfInsideState(
