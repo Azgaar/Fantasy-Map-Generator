@@ -23,7 +23,7 @@ interface RaycastParams {
   offset: number;
 }
 
-// increase step to 15 or 30 to make it faster and more horyzontal
+// increase step to 15 or 30 to make it faster and more horizontal
 // decrease step to 5 to improve accuracy
 const ANGLE_STEP = 9;
 export const ANGLES = precalculateAngles(ANGLE_STEP);
