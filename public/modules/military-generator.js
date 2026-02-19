@@ -246,12 +246,13 @@ window.Military = (function () {
     const expected = 3 * populationRate; // expected regiment size
     const mergeable = (n0, n1) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
 
+    // remove all existing regiment notes before regenerating
+    for (let i = notes.length - 1; i >= 0; i--) {
+      if (notes[i].id.startsWith("regiment")) notes.splice(i, 1);
+    }
+
     // get regiments for each state
     valid.forEach(s => {
-      // remove outdated regiment notes before regenerating
-      for (let i = notes.length - 1; i >= 0; i--) {
-        if (notes[i].id.startsWith(`regiment${s.i}-`)) notes.splice(i, 1);
-      }
       s.military = createRegiments(s.temp.platoons, s);
       delete s.temp; // do not store temp data
     });
@@ -385,9 +386,13 @@ window.Military = (function () {
     const conflict = campaign ? ` during the ${campaign.name}` : "";
     const legend = `Regiment was formed in ${year} ${options.era}${conflict}. ${station}${troops}`;
     const id = `regiment${s.i}-${r.i}`;
-    const existingIndex = notes.findIndex(n => n.id === id);
-    if (existingIndex !== -1) notes.splice(existingIndex, 1);
-    notes.push({id, name: r.name, legend});
+    const existing = notes.find(n => n.id === id);
+    if (existing) {
+      existing.name = r.name;
+      existing.legend = legend;
+    } else {
+      notes.push({id, name: r.name, legend});
+    }
   };
 
   return {
