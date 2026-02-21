@@ -35,22 +35,23 @@ const burgLabelsRenderer = (): void => {
     const dx = dxAttr ? parseFloat(dxAttr) : 0;
     const dy = dyAttr ? parseFloat(dyAttr) : 0;
 
+    // Build HTML string for all labels in this group
+    const labelsHTML: string[] = [];
     for (const labelData of labels) {
       // Update label data with SVG group offsets
       if (labelData.dx !== dx || labelData.dy !== dy) {
         Labels.updateLabel(labelData.i, { dx, dy });
       }
 
-      labelGroup
-        .append("text")
-        .attr("text-rendering", "optimizeSpeed")
-        .attr("id", `burgLabel${labelData.burgId}`)
-        .attr("data-id", labelData.burgId)
-        .attr("x", labelData.x)
-        .attr("y", labelData.y)
-        .attr("dx", `${dx}em`)
-        .attr("dy", `${dy}em`)
-        .text(labelData.text);
+      labelsHTML.push(
+        `<text text-rendering="optimizeSpeed" id="burgLabel${labelData.burgId}" data-id="${labelData.burgId}" x="${labelData.x}" y="${labelData.y}" dx="${dx}em" dy="${dy}em">${labelData.text}</text>`
+      );
+    }
+
+    // Set all labels at once
+    const groupNode = labelGroup.node();
+    if (groupNode) {
+      groupNode.innerHTML = labelsHTML.join("");
     }
   }
 
