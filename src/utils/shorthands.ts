@@ -1,4 +1,5 @@
-export const byId = document.getElementById.bind(document);
+export const byId = <T extends HTMLElement>(id: string): T | undefined =>
+  document.getElementById(id) as T;
 
 declare global {
   interface Window {

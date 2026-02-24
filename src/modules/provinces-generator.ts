@@ -330,7 +330,7 @@ class ProvinceModule {
             : P(0.3);
         const kinship = dominion ? 0 : 0.4;
         const type = Burgs.getType(center, burgs[burg]?.port);
-        const coa = COA.generate(s.coa, kinship, dominion, type);
+        const coa = COA.generate(s.coa, kinship, dominion ? 1 : 0, type);
         coa.shield = COA.getShield(c, s.i);
 
         provinces.push({

@@ -289,7 +289,7 @@ class BurgModule {
           ? "City"
           : burg.type;
     burg.coa = COA.generate(stateCOA, kinship, null, type);
-    burg.coa.shield = COA.getShield(burg.culture, burg.state);
+    burg.coa.shield = COA.getShield(burg.culture!, burg.state!);
   }
 
   private defineFeatures(burg: Burg) {
