@@ -44,7 +44,7 @@ const burgLabelsRenderer = (): void => {
       }
 
       labelsHTML.push(
-        `<text text-rendering="optimizeSpeed" id="burgLabel${labelData.burgId}" data-id="${labelData.burgId}" x="${labelData.x}" y="${labelData.y}" dx="${dx}em" dy="${dy}em">${labelData.text}</text>`
+        `<text text-rendering="optimizeSpeed" id="burgLabel${labelData.burgId}" data-id="${labelData.burgId}" x="${labelData.x}" y="${labelData.y}" dx="${dx}em" dy="${dy}em">${labelData.text}</text>`,
       );
     }
 
