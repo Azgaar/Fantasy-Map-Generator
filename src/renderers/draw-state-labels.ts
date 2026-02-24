@@ -1,34 +1,40 @@
 import { curveNatural, line, max, select } from "d3";
-import {
-  drawPath,
-  drawPoint,
-  findClosestCell,
-  minmax,
-  rn,
-  round,
-  splitInTwo,
-} from "../utils";
+import type { StateLabelData } from "../modules/labels";
+import { findClosestCell, minmax, rn, round, splitInTwo } from "../utils";
+import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 
 declare global {
   var drawStateLabels: (list?: number[]) => void;
 }
 
-interface Ray {
-  angle: number;
-  length: number;
-  x: number;
-  y: number;
+/**
+ * Helper function to calculate offset width for raycast based on state size
+ */
+function getOffsetWidth(cellsNumber: number): number {
+  if (cellsNumber < 40) return 0;
+  if (cellsNumber < 200) return 5;
+  return 10;
 }
 
-interface AngleData {
-  angle: number;
-  dx: number;
-  dy: number;
+function checkExampleLetterLength(): number {
+  const textGroup = select<SVGGElement, unknown>("g#labels > g#states");
+  const testLabel = textGroup
+    .append("text")
+    .attr("x", 0)
+    .attr("y", 0)
+    .text("Example");
+  const letterLength =
+    (testLabel.node() as SVGTextElement).getComputedTextLength() / 7; // approximate length of 1 letter
+  testLabel.remove();
+
+  return letterLength;
 }
 
-type PathPoints = [number, number][];
-
-// list - an optional array of stateIds to regenerate
+/**
+ * Render state labels from pack.labels data to SVG.
+ * Adjusts and fits labels based on layout constraints.
+ * list - optional array of stateIds to re-render
+ */
 const stateLabelsRenderer = (list?: number[]): void => {
   TIME && console.time("drawStateLabels");
 
@@ -36,37 +42,46 @@ const stateLabelsRenderer = (list?: number[]): void => {
   const layerDisplay = labels.style("display");
   labels.style("display", null);
 
-  const { cells, states, features } = pack;
-  const stateIds = cells.state;
+  const { states } = pack;
 
-  // increase step to 15 or 30 to make it faster and more horyzontal
-  // decrease step to 5 to improve accuracy
-  const ANGLE_STEP = 9;
-  const angles = precalculateAngles(ANGLE_STEP);
+  // Get labels to render
+  const labelsToRender = list
+    ? Labels.getAll()
+        .filter(
+          (l) =>
+            l.type === "state" && list.includes((l as StateLabelData).stateId),
+        )
+        .map((l) => l as StateLabelData)
+    : Labels.getByType("state").map((l) => l as StateLabelData);
 
-  const LENGTH_START = 5;
-  const LENGTH_STEP = 5;
-  const LENGTH_MAX = 300;
-
-  const labelPaths = getLabelPaths();
   const letterLength = checkExampleLetterLength();
-  drawLabelPath(letterLength);
+  drawLabelPath(letterLength, labelsToRender);
 
   // restore labels visibility
   labels.style("display", layerDisplay);
 
-  function getLabelPaths(): [number, PathPoints][] {
-    const labelPaths: [number, PathPoints][] = [];
+  function drawLabelPath(
+    letterLength: number,
+    labelDataList: StateLabelData[],
+  ): void {
+    const mode = options.stateLabelsMode || "auto";
+    const lineGen = line<[number, number]>().curve(curveNatural);
 
-    for (const state of states) {
-      if (!state.i || state.removed || state.lock) continue;
-      if (list && !list.includes(state.i)) continue;
+    const textGroup = select<SVGGElement, unknown>("g#labels > g#states");
+    const pathGroup = select<SVGGElement, unknown>(
+      "defs > g#deftemp > g#textPaths",
+    );
 
+    for (const labelData of labelDataList) {
+      const state = states[labelData.stateId];
+      if (!state.i || state.removed) continue;
+
+      // Calculate pathPoints using raycast algorithm (recalculated on each draw)
       const offset = getOffsetWidth(state.cells!);
       const maxLakeSize = state.cells! / 20;
       const [x0, y0] = state.pole!;
 
-      const rays: Ray[] = angles.map(({ angle, dx, dy }) => {
+      const rays = ANGLES.map(({ angle, dx, dy }) => {
         const { length, x, y } = raycast({
           stateId: state.i,
           x0,
@@ -80,61 +95,20 @@ const stateLabelsRenderer = (list?: number[]): void => {
       });
       const [ray1, ray2] = findBestRayPair(rays);
 
-      const pathPoints: PathPoints = [
+      const pathPoints: [number, number][] = [
         [ray1.x, ray1.y],
         state.pole!,
         [ray2.x, ray2.y],
       ];
       if (ray1.x > ray2.x) pathPoints.reverse();
 
-      if (DEBUG.stateLabels) {
-        drawPoint(state.pole!, { color: "black", radius: 1 });
-        drawPath(pathPoints, { color: "black", width: 0.2 });
-      }
-
-      labelPaths.push([state.i, pathPoints]);
-    }
-
-    return labelPaths;
-  }
-
-  function checkExampleLetterLength(): number {
-    const textGroup = select<SVGGElement, unknown>("g#labels > g#states");
-    const testLabel = textGroup
-      .append("text")
-      .attr("x", 0)
-      .attr("y", 0)
-      .text("Example");
-    const letterLength =
-      (testLabel.node() as SVGTextElement).getComputedTextLength() / 7; // approximate length of 1 letter
-    testLabel.remove();
-
-    return letterLength;
-  }
-
-  function drawLabelPath(letterLength: number): void {
-    const mode = options.stateLabelsMode || "auto";
-    const lineGen = line<[number, number]>().curve(curveNatural);
-
-    const textGroup = select<SVGGElement, unknown>("g#labels > g#states");
-    const pathGroup = select<SVGGElement, unknown>(
-      "defs > g#deftemp > g#textPaths",
-    );
-
-    for (const [stateId, pathPoints] of labelPaths) {
-      const state = states[stateId];
-      if (!state.i || state.removed)
-        throw new Error("State must not be neutral or removed");
-      if (pathPoints.length < 2)
-        throw new Error("Label path must have at least 2 points");
-
-      textGroup.select(`#stateLabel${stateId}`).remove();
-      pathGroup.select(`#textPath_stateLabel${stateId}`).remove();
+      textGroup.select(`#stateLabel${labelData.stateId}`).remove();
+      pathGroup.select(`#textPath_stateLabel${labelData.stateId}`).remove();
 
       const textPath = pathGroup
         .append("path")
         .attr("d", round(lineGen(pathPoints) || ""))
-        .attr("id", `textPath_stateLabel${stateId}`);
+        .attr("id", `textPath_stateLabel${labelData.stateId}`);
 
       const pathLength =
         (textPath.node() as SVGPathElement).getTotalLength() / letterLength; // path length in letters
@@ -144,6 +118,9 @@ const stateLabelsRenderer = (list?: number[]): void => {
         state.fullName!,
         pathLength,
       );
+
+      // Update label data with font size
+      Labels.updateLabel(labelData.i, { fontSize: ratio });
 
       // prolongate path if it's too short
       const longestLineLength = max(lines.map((line) => line.length)) || 0;
@@ -165,7 +142,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
       const textElement = textGroup
         .append("text")
         .attr("text-rendering", "optimizeSpeed")
-        .attr("id", `stateLabel${stateId}`)
+        .attr("id", `stateLabel${labelData.stateId}`)
         .append("textPath")
         .attr("startOffset", "50%")
         .attr("font-size", `${ratio}%`)
@@ -179,8 +156,12 @@ const stateLabelsRenderer = (list?: number[]): void => {
       textElement.insertAdjacentHTML("afterbegin", spans.join(""));
 
       const { width, height } = textElement.getBBox();
-      textElement.setAttribute("href", `#textPath_stateLabel${stateId}`);
+      textElement.setAttribute(
+        "href",
+        `#textPath_stateLabel${labelData.stateId}`,
+      );
 
+      const stateIds = pack.cells.state;
       if (mode === "full" || lines.length === 1) continue;
 
       // check if label fits state boundaries. If no, replace it with short name
@@ -193,7 +174,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
         width / 2,
         height / 2,
         stateIds,
-        stateId,
+        labelData.stateId,
       );
       if (isInsideState) continue;
 
@@ -203,6 +184,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
           ? state.fullName!
           : state.name!;
       textElement.innerHTML = `<tspan x="0">${text}</tspan>`;
+      Labels.updateLabel(labelData.i, { text });
 
       const correctedRatio = minmax(
         rn((pathLength / text.length) * 50),
@@ -210,160 +192,8 @@ const stateLabelsRenderer = (list?: number[]): void => {
         130,
       );
       textElement.setAttribute("font-size", `${correctedRatio}%`);
+      Labels.updateLabel(labelData.i, { fontSize: correctedRatio });
     }
-  }
-
-  function getOffsetWidth(cellsNumber: number): number {
-    if (cellsNumber < 40) return 0;
-    if (cellsNumber < 200) return 5;
-    return 10;
-  }
-
-  function precalculateAngles(step: number): AngleData[] {
-    const angles: AngleData[] = [];
-    const RAD = Math.PI / 180;
-
-    for (let angle = 0; angle < 360; angle += step) {
-      const dx = Math.cos(angle * RAD);
-      const dy = Math.sin(angle * RAD);
-      angles.push({ angle, dx, dy });
-    }
-
-    return angles;
-  }
-
-  function raycast({
-    stateId,
-    x0,
-    y0,
-    dx,
-    dy,
-    maxLakeSize,
-    offset,
-  }: {
-    stateId: number;
-    x0: number;
-    y0: number;
-    dx: number;
-    dy: number;
-    maxLakeSize: number;
-    offset: number;
-  }): { length: number; x: number; y: number } {
-    let ray = { length: 0, x: x0, y: y0 };
-
-    for (
-      let length = LENGTH_START;
-      length < LENGTH_MAX;
-      length += LENGTH_STEP
-    ) {
-      const [x, y] = [x0 + length * dx, y0 + length * dy];
-      // offset points are perpendicular to the ray
-      const offset1: [number, number] = [x + -dy * offset, y + dx * offset];
-      const offset2: [number, number] = [x + dy * offset, y + -dx * offset];
-
-      if (DEBUG.stateLabels) {
-        drawPoint([x, y], {
-          color: isInsideState(x, y) ? "blue" : "red",
-          radius: 0.8,
-        });
-        drawPoint(offset1, {
-          color: isInsideState(...offset1) ? "blue" : "red",
-          radius: 0.4,
-        });
-        drawPoint(offset2, {
-          color: isInsideState(...offset2) ? "blue" : "red",
-          radius: 0.4,
-        });
-      }
-
-      const inState =
-        isInsideState(x, y) &&
-        isInsideState(...offset1) &&
-        isInsideState(...offset2);
-      if (!inState) break;
-      ray = { length, x, y };
-    }
-
-    return ray;
-
-    function isInsideState(x: number, y: number): boolean {
-      if (x < 0 || x > graphWidth || y < 0 || y > graphHeight) return false;
-      const cellId = findClosestCell(x, y, undefined, pack) as number;
-
-      const feature = features[cells.f[cellId]];
-      if (feature.type === "lake")
-        return isInnerLake(feature) || isSmallLake(feature);
-
-      return stateIds[cellId] === stateId;
-    }
-
-    function isInnerLake(feature: { shoreline: number[] }): boolean {
-      return feature.shoreline.every((cellId) => stateIds[cellId] === stateId);
-    }
-
-    function isSmallLake(feature: { cells: number }): boolean {
-      return feature.cells <= maxLakeSize;
-    }
-  }
-
-  function findBestRayPair(rays: Ray[]): [Ray, Ray] {
-    let bestPair: [Ray, Ray] | null = null;
-    let bestScore = -Infinity;
-
-    for (let i = 0; i < rays.length; i++) {
-      const score1 = rays[i].length * scoreRayAngle(rays[i].angle);
-
-      for (let j = i + 1; j < rays.length; j++) {
-        const score2 = rays[j].length * scoreRayAngle(rays[j].angle);
-        const pairScore =
-          (score1 + score2) * scoreCurvature(rays[i].angle, rays[j].angle);
-
-        if (pairScore > bestScore) {
-          bestScore = pairScore;
-          bestPair = [rays[i], rays[j]];
-        }
-      }
-    }
-
-    return bestPair!;
-  }
-
-  function scoreRayAngle(angle: number): number {
-    const normalizedAngle = Math.abs(angle % 180); // [0, 180]
-    const horizontality = Math.abs(normalizedAngle - 90) / 90; // [0, 1]
-
-    if (horizontality === 1) return 1; // Best: horizontal
-    if (horizontality >= 0.75) return 0.9; // Very good: slightly slanted
-    if (horizontality >= 0.5) return 0.6; // Good: moderate slant
-    if (horizontality >= 0.25) return 0.5; // Acceptable: more slanted
-    if (horizontality >= 0.15) return 0.2; // Poor: almost vertical
-    return 0.1; // Very poor: almost vertical
-  }
-
-  function scoreCurvature(angle1: number, angle2: number): number {
-    const delta = getAngleDelta(angle1, angle2);
-    const similarity = evaluateArc(angle1, angle2);
-
-    if (delta === 180) return 1; // straight line: best
-    if (delta < 90) return 0; // acute: not allowed
-    if (delta < 120) return 0.6 * similarity;
-    if (delta < 140) return 0.7 * similarity;
-    if (delta < 160) return 0.8 * similarity;
-
-    return similarity;
-  }
-
-  function getAngleDelta(angle1: number, angle2: number): number {
-    let delta = Math.abs(angle1 - angle2) % 360;
-    if (delta > 180) delta = 360 - delta; // [0, 180]
-    return delta;
-  }
-
-  // compute arc similarity towards x-axis
-  function evaluateArc(angle1: number, angle2: number): number {
-    const proximity1 = Math.abs((angle1 % 180) - 90);
-    const proximity2 = Math.abs((angle2 % 180) - 90);
-    return 1 - Math.abs(proximity1 - proximity2) / 90;
   }
 
   function getLinesAndRatio(

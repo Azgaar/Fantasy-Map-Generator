@@ -407,6 +407,7 @@ async function parseLoadedData(data, mapVersion) {
       // data[28] had deprecated cells.crossroad
       pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
       pack.ice = data[39] ? JSON.parse(data[39]) : [];
+      pack.labels = data[40] ? JSON.parse(data[40]) : [];
 
       if (data[31]) {
         const namesDL = data[31].split("/");
@@ -473,7 +474,7 @@ async function parseLoadedData(data, mapVersion) {
 
     {
       // dynamically import and run auto-update script
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.109.4");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.113.0");
       resolveVersionConflicts(mapVersion);
     }
 
