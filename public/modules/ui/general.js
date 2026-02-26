@@ -247,7 +247,7 @@ function showMapTooltip(point, e, i, g) {
 }
 
 function highlightEditorLine(editor, id, timeout = 10000) {
-  Array.from(editor.getElementsByClassName("states hovered")).forEach(el => el.classList.remove("hovered")); // clear all hovered
+  Array.from(editor.getElementsByClassName("hovered")).forEach(el => el.classList.remove("hovered")); // clear all hovered
   const hovered = Array.from(editor.querySelectorAll("div")).find(el => el.dataset.id == id);
   if (hovered) hovered.classList.add("hovered"); // add hovered class
   if (timeout)
