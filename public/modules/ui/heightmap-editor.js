@@ -3,6 +3,7 @@
 function editHeightmap(options) {
   const {mode, tool} = options || {};
   restartHistory();
+  viewbox.selectAll("#heights").remove();
   viewbox.insert("g", "#terrs").attr("id", "heights");
 
   if (!mode) showModeDialog();
@@ -188,7 +189,7 @@ function editHeightmap(options) {
 
     // restore initial layers
     drawFeatures();
-    byId("heights").remove();
+    viewbox.selectAll("#heights").remove();
     turnButtonOff("toggleHeight");
     document
       .getElementById("mapLayers")
