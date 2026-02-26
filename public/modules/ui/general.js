@@ -238,6 +238,7 @@ function showMapTooltip(point, e, i, g) {
     if (document.getElementById("diplomacyEditor")?.offsetParent) highlightEditorLine(diplomacyEditor, state);
     if (document.getElementById("militaryOverview")?.offsetParent) highlightEditorLine(militaryOverview, state);
     if (document.getElementById("provincesEditor")?.offsetParent) highlightEditorLine(provincesEditor, province);
+    if (document.getElementById("mergeStatesForm")?.offsetParent) highlightEditorLine(byId("mergeStatesForm"), state);
   } else if (layerIsOn("toggleCultures") && pack.cells.culture[i]) {
     const culture = pack.cells.culture[i];
     tip("Culture: " + pack.cultures[culture].name);

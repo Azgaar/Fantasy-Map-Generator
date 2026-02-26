@@ -1301,7 +1301,6 @@ function openStateMergeDialog() {
 
   alertMessage.innerHTML = /* html */ `
     <form id='mergeStatesForm' style="overflow: hidden; display: flex; flex-direction: column; gap: 1em;">
-      <header style='font-weight:bold;'>Merge states</header>
       <p style="margin:0">
         Check the <b>checkbox</b> next to each state you want to merge.
         Use the <b>radio button</b> to pick the <em>ruling state</em> that will absorb all others (its name, color, and capital will be kept).
@@ -1349,7 +1348,7 @@ function openStateMergeDialog() {
   }
 
   $("#alert").dialog({
-    width: fitContent(),
+    width: 600,
     title: `Merge states`,
     close: stateHighlightOff,
     buttons: {
