@@ -1290,10 +1290,10 @@ function openStateMergeDialog() {
   const statesSelector = validStates
     .map(
       s => /* html */ `
-      <div data-id="${s.i}" data-tip="${s.fullName}" style="cursor:default">
+      <div class="states" data-id="${s.i}" data-tip="${s.fullName}" style="cursor:default">
         <input type="radio" name="rulingState" value="${s.i}" />
         <input id="selectState${s.i}" class="checkbox" type="checkbox" name="statesToMerge" value="${s.i}" />
-        <label for="selectState${s.i}" class="checkbox-label">${emblem(s.i)}${s.fullName}</label>
+        <label for="selectState${s.i}" class="checkbox-label"><fill-box fill="${s.color}" disabled></fill-box>${emblem(s.i)}${s.fullName}</label>
       </div>
     `
     )
