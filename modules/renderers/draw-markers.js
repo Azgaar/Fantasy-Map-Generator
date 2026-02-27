@@ -6,7 +6,7 @@ function drawMarkers() {
   const rescale = +markers.attr("rescale");
   const pinned = +markers.attr("pinned");
 
-  const markersData = pinned ? pack.markers.filter(({pinned}) => pinned) : pack.markers;
+  const markersData = pinned ? pack.markers.filter(({ pinned }) => pinned) : pack.markers;
   const html = markersData.map(marker => drawMarker(marker, rescale));
   markers.html(html.join(""));
 
@@ -36,13 +36,13 @@ const getPin = (shape = "bubble", fill = "#fff", stroke = "#000") => {
 };
 
 function drawMarker(marker, rescale = 1) {
-  const {i, icon, x, y, dx = 50, dy = 50, px = 12, size = 30, pin, fill, stroke} = marker;
+  const { i, icon, x, y, dx = 50, dy = 50, px = 12, size = 30, pin, fill, stroke } = marker;
   const id = `marker${i}`;
   const zoomSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
   const viewX = rn(x - zoomSize / 2, 1);
   const viewY = rn(y - zoomSize, 1);
 
-  const isExternal = icon.startsWith("http") || icon.startsWith("data:image");
+  const isExternal = icon.startsWith("http") || icon.startsWith("data:image") || icon.includes(".svg") || icon.includes("/");
 
   return /* html */ `
     <svg id="${id}" viewbox="0 0 30 30" width="${zoomSize}" height="${zoomSize}" x="${viewX}" y="${viewY}">

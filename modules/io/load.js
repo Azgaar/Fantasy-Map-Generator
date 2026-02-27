@@ -74,7 +74,7 @@ function loadMapPrompt(blob) {
 function loadMapFromURL(maplink, random) {
   const URL = decodeURIComponent(maplink);
 
-  fetch(URL, {method: "GET", mode: "cors"})
+  fetch(URL, { method: "GET", mode: "cors" })
     .then(response => {
       if (response.ok) return response.blob();
       throw new Error("Cannot load map from URL");
@@ -88,9 +88,8 @@ function loadMapFromURL(maplink, random) {
 
 function showUploadErrorMessage(error, URL, random) {
   ERROR && console.error(error);
-  alertMessage.innerHTML = /* html */ `Cannot load map from the ${link(URL, "link provided")}. ${
-    random ? `A new random map is generated. ` : ""
-  } Please ensure the
+  alertMessage.innerHTML = /* html */ `Cannot load map from the ${link(URL, "link provided")}. ${random ? `A new random map is generated. ` : ""
+    } Please ensure the
   linked file is reachable and CORS is allowed on server side`;
   $("#alert").dialog({
     title: "Loading error",
@@ -113,7 +112,7 @@ function uploadMap(file, callback) {
     byId("coas").innerHTML = ""; // remove auto-generated emblems
 
     const result = fileLoadedEvent.target.result;
-    const {mapData, mapVersion} = await parseLoadedResult(result);
+    const { mapData, mapVersion } = await parseLoadedResult(result);
 
     const isInvalid = !mapData || !isValidVersion(mapVersion) || mapData.length < 10 || !mapData[5];
     if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
@@ -170,13 +169,13 @@ async function parseLoadedResult(result) {
     const mapData = content.split("\r\n"); // split by CRLF
     const mapVersion = parseMapVersion(mapData[0].split("|")[0] || mapData[0] || "");
 
-    return {mapData, mapVersion};
+    return { mapData, mapVersion };
   } catch (error) {
     const uncompressedData = await uncompress(result); // file can be gzip compressed
     if (uncompressedData) return parseLoadedResult(uncompressedData);
 
     ERROR && console.error(error);
-    return {mapData: null, mapVersion: null};
+    return { mapData: null, mapVersion: null };
   }
 }
 
@@ -194,8 +193,9 @@ function showUploadMessage(type, mapData, mapVersion) {
     message = `The map version you are trying to load (${mapVersion}) is too old and cannot be updated to the current version.<br>Please keep using an ${archive}`;
     title = "Ancient file";
   } else if (type === "newer") {
-    message = `The map version you are trying to load (${mapVersion}) is newer than the current version.<br>Please load the file in the appropriate version`;
-    title = "Newer file";
+    INFO && console.info(`Loading map. Auto-downgrading from ${mapVersion} to ${VERSION}`);
+    parseLoadedData(mapData, mapVersion);
+    return;
   } else if (type === "outdated") {
     INFO && console.info(`Loading map. Auto-updating from ${mapVersion} to ${VERSION}`);
     parseLoadedData(mapData, mapVersion);
@@ -274,9 +274,9 @@ async function parseLoadedData(data, mapVersion) {
       if (data[34]) {
         const usedFonts = JSON.parse(data[34]);
         usedFonts.forEach(usedFont => {
-          const {family: usedFamily, unicodeRange: usedRange, variant: usedVariant} = usedFont;
+          const { family: usedFamily, unicodeRange: usedRange, variant: usedVariant } = usedFont;
           const defaultFont = fonts.find(
-            ({family, unicodeRange, variant}) =>
+            ({ family, unicodeRange, variant }) =>
               family === usedFamily && unicodeRange === usedRange && variant === usedVariant
           );
           if (!defaultFont) fonts.push(usedFont);
@@ -369,7 +369,7 @@ async function parseLoadedData(data, mapVersion) {
 
     {
       grid = JSON.parse(data[6]);
-      const {cells, vertices} = calculateVoronoi(grid.points, grid.boundary);
+      const { cells, vertices } = calculateVoronoi(grid.points, grid.boundary);
       grid.cells = cells;
       grid.vertices = vertices;
       grid.cells.h = Uint8Array.from(data[7].split(","));
@@ -386,7 +386,7 @@ async function parseLoadedData(data, mapVersion) {
       pack.cultures = JSON.parse(data[13]);
       pack.states = JSON.parse(data[14]);
       pack.burgs = JSON.parse(data[15]);
-      pack.religions = data[29] ? JSON.parse(data[29]) : [{i: 0, name: "No religion"}];
+      pack.religions = data[29] ? JSON.parse(data[29]) : [{ i: 0, name: "No religion" }];
       pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
       pack.rivers = data[32] ? JSON.parse(data[32]) : [];
       pack.markers = data[35] ? JSON.parse(data[35]) : [];
@@ -413,7 +413,7 @@ async function parseLoadedData(data, mapVersion) {
           const e = d.split("|");
           if (!e.length) return;
           const b = e[5].split(",").length > 2 || !nameBases[i] ? e[5] : nameBases[i].b;
-          nameBases[i] = {name: e[0], min: e[1], max: e[2], d: e[3], m: e[4], b};
+          nameBases[i] = { name: e[0], min: e[1], max: e[2], d: e[3], m: e[4], b };
         });
       }
     }
@@ -472,7 +472,7 @@ async function parseLoadedData(data, mapVersion) {
 
     {
       // dynamically import and run auto-update script
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.108.0");
+      const { resolveVersionConflicts } = await import("../dynamic/auto-update.js?v=1.108.0");
       resolveVersionConflicts(mapVersion);
     }
 
@@ -492,7 +492,7 @@ async function parseLoadedData(data, mapVersion) {
 
     // data integrity checks
     {
-      const {cells, vertices} = pack;
+      const { cells, vertices } = pack;
 
       const cellsMismatch = cells.i.length !== cells.state.length;
       const featureVerticesMismatch = pack.features.some(f => f?.vertices?.some(vertex => !vertices.p[vertex]));
@@ -727,6 +727,22 @@ async function parseLoadedData(data, mapVersion) {
       // draw data layers (not kept in svg)
       if (rulers && layerIsOn("toggleRulers")) rulers.draw();
       if (layerIsOn("toggleGrid")) drawGrid();
+
+      // Fix for auto-downgraded maps (e.g. 1.109.x to 1.108.x): 
+      // V1.109 changed how use tags scale, causing massive icons if not redrawn.
+      if (compareVersions(mapVersion, VERSION).isNewer) {
+        // Prevent huge sizes from newer unsupported SVGs
+        const forceDefault = (el, attr, def) => { if (!el.attr(attr) || isNaN(el.attr(attr)) || +el.attr(attr) > 10) el.attr(attr, def); };
+        forceDefault(armies, "box-size", 3);
+        forceDefault(icons.select("#burgIcons > #cities"), "size", 1);
+        forceDefault(icons.select("#burgIcons > #towns"), "size", 0.5);
+        forceDefault(anchors.select("#cities"), "size", 2);
+        forceDefault(anchors.select("#towns"), "size", 1);
+
+        if (typeof drawBurgIcons === "function") drawBurgIcons();
+        if (typeof drawMarkers === "function") drawMarkers();
+        if (typeof drawMilitary === "function") drawMilitary();
+      }
     }
 
     {
@@ -765,7 +781,7 @@ async function parseLoadedData(data, mapVersion) {
           $(this).dialog("close");
         }
       },
-      position: {my: "center", at: "center", of: "svg"}
+      position: { my: "center", at: "center", of: "svg" }
     });
   }
 }
