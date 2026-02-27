@@ -1786,6 +1786,15 @@
           <button id="editZonesButton" data-tip="Click to open Zones Editor" data-shortcut="Shift + Z">Zones</button>
         </div>
 
+        <div class="separator">Search</div>
+        <div class="grid">
+          <input id="gridSearchInput" type="text" placeholder="Grid # (e.g. 0374)"
+            style="width: 100%; box-sizing: border-box; padding: 2px;"
+            data-tip="Enter grid number to find elements inside it" />
+          <button id="gridSearchButton" data-tip="Click to search for elements in the specified grid">Search
+            Grid</button>
+        </div>
+
         <div class="separator">Regenerate</div>
         <div id="regenerateFeature" class="grid">
           <button id="regenerateBurgs"
@@ -6217,6 +6226,12 @@
   <script defer src="modules/renderers/draw-burg-labels.js?v=1.108.1"></script>
   <script defer src="modules/renderers/draw-burg-icons.js?v=1.104.0"></script>
   <script defer src="modules/renderers/draw-relief-icons.js?v=1.108.4"></script>
+
+  <div id="gridSearchDialog" class="dialog stable"
+    style="display: none; padding: 10px; max-height: 400px; overflow-y: auto;">
+    <div id="gridSearchResults"></div>
+  </div>
+  <script defer src="modules/custom_scripts/grid-search.js?v=1.0"></script>
 </body>
 
 </html>

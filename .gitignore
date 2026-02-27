@@ -1,6 +1,46 @@
-.vscode
-.idea
-/node_modules
-/dist
-/coverage
-CONTRIBUTING-UPSTREAM.md
+# IDE / editor config
+.vscode/
+.idea/
+
+# Node
+/node_modules/
+/dist/
+/coverage/
+
+# --- PNG source art for icons ---
+# SVG icons are committed; PNGs are large AI-generated source files.
+# They will be released separately if there is demand.
+images/fantasy-icons/*.png
+
+# --- Local map saves ---
+# Personal campaign maps — not for public distribution
+MapSaves/
+
+# --- POI / source data ---
+POI_Source/
+
+# --- Local custom scripts (root-level, not modules/custom_scripts) ---
+custom_scripts/
+
+# --- Python helper scripts (local tooling only) ---
+diagnose_map.py
+inspect_marker.py
+list_markers.py
+update_markers.py
+update_markers_binary.py
+scripts/
+
+# --- Extra libs (bundled locally, not needed in repo) ---
+libs/mapControls.min.js
+
+# --- Extra module files not yet merged upstream ---
+modules/burgs-generator.js
+modules/states-generator.js
+modules/ui/burg-group-editor.js
+
+# --- Docker / server config (local deployment) ---
+.docker/default.conf
+
+# --- Secrets ---
+.env
+.env.*

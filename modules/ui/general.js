@@ -121,7 +121,12 @@ function showMapTooltip(point, e, i, g) {
   const land = pack.cells.h[i] >= 20;
 
   // specific elements
-  if (group === "armies") return tip(e.target.parentNode.dataset.name + ". Click to edit");
+  let gridSuffix = "";
+  if (layerIsOn("toggleGrid") && gridOverlay.attr("data-show-numbers") === "1" && typeof getGridNumberFromMapCoords === 'function') {
+    gridSuffix = ` (Grid: ${getGridNumberFromMapCoords(point[0], point[1])})`;
+  }
+
+  if (group === "armies") return tip(e.target.parentNode.dataset.name + gridSuffix + ". Click to edit");
 
   if (group === "emblems" && e.target.tagName === "use") {
     const parent = e.target.parentNode;
@@ -129,8 +134,8 @@ function showMapTooltip(point, e, i, g) {
       parent.id === "burgEmblems"
         ? [pack.burgs, "burg"]
         : parent.id === "provinceEmblems"
-        ? [pack.provinces, "province"]
-        : [pack.states, "state"];
+          ? [pack.provinces, "province"]
+          : [pack.states, "state"];
     const i = +e.target.dataset.i;
     if (event.shiftKey) highlightEmblemElement(type, g[i]);
 
@@ -167,7 +172,7 @@ function showMapTooltip(point, e, i, g) {
     if (burgId) {
       const burg = pack.burgs[burgId];
       const population = si(burg.population * populationRate * urbanization);
-      tip(`${burg.name}. Population: ${population}. Click to edit`);
+      tip(`${burg.name}. Population: ${population}${gridSuffix}. Click to edit`);
       if (burgsOverview?.offsetParent) highlightEditorLine(burgsOverview, burgId, 5000);
       return;
     }
@@ -175,7 +180,7 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "labels") return tip("Click to edit the Label");
 
-  if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note");
+  if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note" + gridSuffix);
 
   if (group === "ruler") {
     const tag = e.target.tagName;
@@ -394,7 +399,7 @@ function highlightEmblemElement(type, el) {
   const animation = d3.transition().duration(1000).ease(d3.easeSinIn);
 
   if (type === "burg") {
-    const {x, y} = el;
+    const { x, y } = el;
     debug
       .append("circle")
       .attr("cx", x)
@@ -573,6 +578,6 @@ function showInfo() {
         $(this).dialog("close");
       }
     },
-    position: {my: "center", at: "center", of: "svg"}
+    position: { my: "center", at: "center", of: "svg" }
   });
 }
