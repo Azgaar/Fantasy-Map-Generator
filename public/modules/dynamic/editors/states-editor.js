@@ -1290,10 +1290,10 @@ function openStateMergeDialog() {
   const statesSelector = validStates
     .map(
       s => /* html */ `
-      <div data-tip="${s.fullName}">
+      <div data-id="${s.i}" data-tip="${s.fullName}" style="cursor:default">
         <input type="radio" name="rulingState" value="${s.i}" />
-        <input id="selectState${s.i}" class="checkbox" type="checkbox" name="statesToMerge" value="${s.i}"} />
-        <label for="selectState${s.i}" class="checkbox-label">${emblem(s.i)}${s.fullName}</label>
+        <input id="selectState${s.i}" class="checkbox" type="checkbox" name="statesToMerge" value="${s.i}" />
+        <label for="selectState${s.i}" class="checkbox-label"><fill-box fill="${s.color}" disabled></fill-box>${emblem(s.i)}${s.fullName}</label>
       </div>
     `
     )
@@ -1301,16 +1301,56 @@ function openStateMergeDialog() {
 
   alertMessage.innerHTML = /* html */ `
     <form id='mergeStatesForm' style="overflow: hidden; display: flex; flex-direction: column; gap: 1em;">
-      <header style='font-weight:bold;'>Select multiple states to merge and the ruling state to merge into</header>
+      <p style="margin:0">
+        Check the <b>checkbox</b> next to each state you want to merge.
+        Use the <b>radio button</b> to pick the <em>ruling state</em> that will absorb all others (its name, color, and capital will be kept).
+        Hover over a row to highlight the state on the map.
+      </p>
       <main style='display: grid; grid-template-columns: 1fr 1fr; gap: .3em;'>
         ${statesSelector}
       </main>
     </form>
   `;
 
+  byId("mergeStatesForm")
+    .querySelectorAll("div[data-id]")
+    .forEach(el => {
+      el.addEventListener("mouseenter", highlightStateOnMergeHover);
+      el.addEventListener("mouseleave", stateHighlightOff);
+    });
+
+  function highlightStateOnMergeHover(event) {
+    if (!layerIsOn("toggleStates")) return;
+    const state = +event.currentTarget.dataset.id;
+    if (!state) return;
+    const d = regions.select("#state" + state).attr("d");
+    if (!d) return;
+
+    stateHighlightOff();
+
+    const path = debug
+      .append("path")
+      .attr("class", "highlight")
+      .attr("d", d)
+      .attr("fill", "none")
+      .attr("stroke", "red")
+      .attr("stroke-width", 1)
+      .attr("opacity", 1)
+      .attr("filter", "url(#blur1)");
+
+    const totalLength = path.node().getTotalLength();
+    const duration = (totalLength + 5000) / 2;
+    const interpolate = d3.interpolateString(`0, ${totalLength}`, `${totalLength}, ${totalLength}`);
+    path
+      .transition()
+      .duration(duration)
+      .attrTween("stroke-dasharray", () => interpolate);
+  }
+
   $("#alert").dialog({
-    width: fitContent(),
+    width: 600,
     title: `Merge states`,
+    close: stateHighlightOff,
     buttons: {
       Merge: function () {
         const formData = new FormData(byId("mergeStatesForm"));

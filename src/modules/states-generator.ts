@@ -71,7 +71,7 @@ class StatesModule {
       const name = Names.getState(basename, burg.culture!);
       const type = pack.cultures[burg.culture!].type;
       const coa = COA.generate(null, null, null, type);
-      coa.shield = COA.getShield(burg.culture, null);
+      coa.shield = COA.getShield(burg.culture!);
       states.push({
         i: burg.i,
         name,

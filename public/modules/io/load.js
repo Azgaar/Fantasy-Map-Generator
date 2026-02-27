@@ -473,7 +473,7 @@ async function parseLoadedData(data, mapVersion) {
 
     {
       // dynamically import and run auto-update script
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.109.4");
+      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.113.0");
       resolveVersionConflicts(mapVersion);
     }
 

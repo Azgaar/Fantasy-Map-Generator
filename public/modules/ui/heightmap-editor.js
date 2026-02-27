@@ -3,6 +3,7 @@
 function editHeightmap(options) {
   const {mode, tool} = options || {};
   restartHistory();
+  viewbox.selectAll("#heights").remove();
   viewbox.insert("g", "#terrs").attr("id", "heights");
 
   if (!mode) showModeDialog();
@@ -188,7 +189,8 @@ function editHeightmap(options) {
 
     // restore initial layers
     drawFeatures();
-    byId("heights").remove();
+    viewbox.selectAll("#heights").remove();
+
     turnButtonOff("toggleHeight");
     document
       .getElementById("mapLayers")
@@ -330,15 +332,13 @@ function editHeightmap(options) {
       c.y = p[1];
     }
 
-    // recalculate zones to grid
-    zones.selectAll("g").each(function () {
-      const zone = d3.select(this);
-      const dataCells = zone.attr("data-cells");
-      const cells = dataCells ? dataCells.split(",").map(i => +i) : [];
-      const g = cells.map(i => pack.cells.g[i]);
-      zone.attr("data-cells", g);
-      zone.selectAll("*").remove();
-    });
+    // save zone grid cells to restore them later
+    const zoneGridCellsMap = new Map();
+    for (const zone of pack.zones) {
+      if (!zone.cells?.length) continue;
+      const zoneGridCells = zone.cells.map(i => pack.cells.g[i]);
+      zoneGridCellsMap.set(zone.i, unique(zoneGridCells));
+    }
 
     Features.markupGrid();
     if (erosionAllowed) addLakesInDeepDepressions();
@@ -448,24 +448,23 @@ function editHeightmap(options) {
       Lakes.defineNames();
     }
 
-    // restore zones from grid
-    zones.selectAll("g").each(function () {
-      const zone = d3.select(this);
-      const g = zone.attr("data-cells");
-      const gCells = g ? g.split(",").map(i => +i) : [];
-      const cells = pack.cells.i.filter(i => gCells.includes(pack.cells.g[i]));
+    const gridToPackMap = new Map();
+    for (const i of pack.cells.i) {
+      const g = pack.cells.g[i];
+      if (!gridToPackMap.has(g)) gridToPackMap.set(g, []);
+      gridToPackMap.get(g).push(i);
+    }
 
-      zone.attr("data-cells", cells);
-      zone.selectAll("*").remove();
-      const base = zone.attr("id") + "_"; // id generic part
-      zone
-        .selectAll("*")
-        .data(cells)
-        .enter()
-        .append("polygon")
-        .attr("points", d => getPackPolygon(d))
-        .attr("id", d => base + d);
-    });
+    // restore zone cells
+    for (const zone of pack.zones) {
+      const gridCells = zoneGridCellsMap.get(zone.i);
+      if (gridCells?.length) {
+        const packCells = gridCells.flatMap(g => gridToPackMap.get(g) || []);
+        zone.cells = unique(packCells);
+      } else {
+        zone.cells = [];
+      }
+    }
 
     // recalculate ice
     Ice.generate();
@@ -675,7 +674,10 @@ function editHeightmap(options) {
       if (power === 0) return tip("Power should not be zero", false, "error");
 
       const heights = grid.cells.h;
-      const operation = power > 0 ? HeightmapGenerator.addRange.bind(HeightmapGenerator) : HeightmapGenerator.addTrough.bind(HeightmapGenerator);
+      const operation =
+        power > 0
+          ? HeightmapGenerator.addRange.bind(HeightmapGenerator)
+          : HeightmapGenerator.addTrough.bind(HeightmapGenerator);
       HeightmapGenerator.setGraph(grid);
       operation("1", String(Math.abs(power)), null, null, fromCell, toCell);
       const changedHeights = HeightmapGenerator.getHeights();

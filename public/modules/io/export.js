@@ -574,3 +574,121 @@ function saveGeoJsonMarkers() {
   const fileName = getFileName("Markers") + ".geojson";
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
+
+function saveGeoJsonZones() {
+  const {zones, cells, vertices} = pack;
+  const json = {type: "FeatureCollection", features: []};
+
+  // Helper function to convert zone cells to polygon coordinates
+  // Handles multiple disconnected components and holes properly
+  function getZonePolygonCoordinates(zoneCells) {
+    const cellsInZone = new Set(zoneCells);
+    const ofSameType = (cellId) => cellsInZone.has(cellId);
+    const ofDifferentType = (cellId) => !cellsInZone.has(cellId);
+    
+    const checkedCells = new Set();
+    const rings = []; // Array of LinearRings (each ring is an array of coordinates)
+    
+    // Find all boundary components by tracing each connected region
+    for (const cellId of zoneCells) {
+      if (checkedCells.has(cellId)) continue;
+      
+      // Check if this cell is on the boundary (has a neighbor outside the zone)
+      const neighbors = cells.c[cellId];
+      const onBorder = neighbors.some(ofDifferentType);
+      if (!onBorder) continue;
+      
+      // Check if this is an inner lake (hole) - skip if so
+      const feature = pack.features[cells.f[cellId]];
+      if (feature.type === "lake" && feature.shoreline) {
+        if (feature.shoreline.every(ofSameType)) continue;
+      }
+      
+      // Find a starting vertex that's on the boundary
+      const cellVertices = cells.v[cellId];
+      let startingVertex = null;
+      
+      for (const vertexId of cellVertices) {
+        const vertexCells = vertices.c[vertexId];
+        if (vertexCells.some(ofDifferentType)) {
+          startingVertex = vertexId;
+          break;
+        }
+      }
+      
+      if (startingVertex === null) continue;
+      
+      // Use connectVertices to trace the boundary (reusing existing logic)
+      const vertexChain = connectVertices({
+        vertices,
+        startingVertex,
+        ofSameType,
+        addToChecked: (cellId) => checkedCells.add(cellId),
+        closeRing: false, // We'll close it manually after converting to coordinates
+      });
+      
+      if (vertexChain.length < 3) continue;
+      
+      // Convert vertex chain to coordinates
+      const coordinates = [];
+      for (const vertexId of vertexChain) {
+        const [x, y] = vertices.p[vertexId];
+        coordinates.push(getCoordinates(x, y, 4));
+      }
+      
+      // Close the ring (first coordinate = last coordinate)
+      if (coordinates.length > 0) {
+        coordinates.push(coordinates[0]);
+      }
+      
+      // Only add ring if it has at least 4 positions (minimum for valid LinearRing)
+      if (coordinates.length >= 4) {
+        rings.push(coordinates);
+      }
+    }
+    
+    return rings;
+  }
+
+  // Filter and process zones
+  zones.forEach(zone => {
+    // Exclude hidden zones and zones with no cells
+    if (zone.hidden || !zone.cells || zone.cells.length === 0) return;
+
+    const rings = getZonePolygonCoordinates(zone.cells);
+    
+    // Skip if no valid rings were generated
+    if (rings.length === 0) return;
+    
+    const properties = {
+      id: zone.i,
+      name: zone.name,
+      type: zone.type,
+      color: zone.color,
+      cells: zone.cells
+    };
+    
+    // If there's only one ring, use Polygon geometry
+    if (rings.length === 1) {
+      const feature = {
+        type: "Feature",
+        geometry: {type: "Polygon", coordinates: rings},
+        properties
+      };
+      json.features.push(feature);
+    } else {
+      // Multiple disconnected components: use MultiPolygon
+      // Each component is wrapped in its own array
+      const multiPolygonCoordinates = rings.map(ring => [ring]);
+      const feature = {
+        type: "Feature",
+        geometry: {type: "MultiPolygon", coordinates: multiPolygonCoordinates},
+        properties
+      };
+      json.features.push(feature);
+    }
+  });
+
+  const fileName = getFileName("Zones") + ".geojson";
+  downloadFile(JSON.stringify(json), fileName, "application/json");
+}

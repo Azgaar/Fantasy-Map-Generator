@@ -1437,6 +1437,10 @@ div.states.hovered {
   background-image: linear-gradient(to right, #dedede 100%, #f2f2f2 50%, #fcfcfc 0%);
 }
 
+#mergeStatesForm div[data-id].hovered {
+  background-image: linear-gradient(to right, #dedede 100%, #f2f2f2 50%, #fcfcfc 0%);
+}
+
 div.states > *,
 div.states sup,
 div.totalLine > div {

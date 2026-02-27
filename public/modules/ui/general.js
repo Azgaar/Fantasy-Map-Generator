@@ -238,6 +238,7 @@ function showMapTooltip(point, e, i, g) {
     if (document.getElementById("diplomacyEditor")?.offsetParent) highlightEditorLine(diplomacyEditor, state);
     if (document.getElementById("militaryOverview")?.offsetParent) highlightEditorLine(militaryOverview, state);
     if (document.getElementById("provincesEditor")?.offsetParent) highlightEditorLine(provincesEditor, province);
+    if (document.getElementById("mergeStatesForm")?.offsetParent) highlightEditorLine(byId("mergeStatesForm"), state);
   } else if (layerIsOn("toggleCultures") && pack.cells.culture[i]) {
     const culture = pack.cells.culture[i];
     tip("Culture: " + pack.cultures[culture].name);
@@ -246,7 +247,7 @@ function showMapTooltip(point, e, i, g) {
 }
 
 function highlightEditorLine(editor, id, timeout = 10000) {
-  Array.from(editor.getElementsByClassName("states hovered")).forEach(el => el.classList.remove("hovered")); // clear all hovered
+  Array.from(editor.getElementsByClassName("hovered")).forEach(el => el.classList.remove("hovered")); // clear all hovered
   const hovered = Array.from(editor.querySelectorAll("div")).find(el => el.dataset.id == id);
   if (hovered) hovered.classList.add("hovered"); // add hovered class
   if (timeout)
