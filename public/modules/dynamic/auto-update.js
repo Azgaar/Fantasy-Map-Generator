@@ -1107,8 +1107,8 @@ export function resolveVersionConflicts(mapVersion) {
 
   }
 
-  if (isOlderThan("1.113.0")) {
-    // v1.113.0 moved labels data from SVG to data model
+  if (isOlderThan("1.114.0")) {
+    // v1.114.0 moved labels data from SVG to data model
     // Migrate old SVG labels to pack.labels structure
     if (!pack.labels || !pack.labels.length) {
       pack.labels = [];
@@ -1206,7 +1206,7 @@ export function resolveVersionConflicts(mapVersion) {
           const transform = textPath.getAttribute("transform");
           
           // Get path points from the referenced path
-          const href = textPath.getAttribute("href");
+          const href = textPath.getAttribute("xlink:href") || textPath.getAttribute("href");
           if (!href) return;
           
           const pathId = href.replace("#", "");
@@ -1216,9 +1216,9 @@ export function resolveVersionConflicts(mapVersion) {
           const d = pathElement.getAttribute("d");
           if (!d) return;
           
-          // Parse path data to extract points (simplified - assumes M and L commands)
+          // Parse path data to extract points(M, L and C commands)
           const pathPoints = [];
-          const commands = d.match(/[MLZ][^MLZ]*/g);
+          const commands = d.match(/[MLC][^MLC]*/g);
           if (commands) {
             commands.forEach(cmd => {
               const type = cmd[0];
@@ -1226,6 +1226,11 @@ export function resolveVersionConflicts(mapVersion) {
                 const coords = cmd.slice(1).trim().split(/[\s,]+/).map(Number);
                 if (coords.length >= 2) {
                   pathPoints.push([coords[0], coords[1]]);
+                }
+              } else if (type === "C") {
+                const coords = cmd.slice(1).trim().split(/[\s,]+/).map(Number);
+                if (coords.length >= 6) {
+                  pathPoints.push([coords[4], coords[5]]);
                 }
               }
             });
