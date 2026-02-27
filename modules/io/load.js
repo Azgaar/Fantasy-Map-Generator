@@ -732,10 +732,14 @@ async function parseLoadedData(data, mapVersion) {
       // V1.109 changed how use tags scale, causing massive icons if not redrawn.
       if (compareVersions(mapVersion, VERSION).isNewer) {
         // Prevent huge sizes from newer unsupported SVGs
-        const forceDefault = (el, attr, def) => { if (!el.attr(attr) || isNaN(el.attr(attr)) || +el.attr(attr) > 10) el.attr(attr, def); };
+        const forceDefault = (el, attr, def) => {
+          if (el && el.node() && (!el.attr(attr) || isNaN(el.attr(attr)) || +el.attr(attr) > 10)) {
+            el.attr(attr, def);
+          }
+        };
         forceDefault(armies, "box-size", 3);
-        forceDefault(icons.select("#burgIcons > #cities"), "size", 1);
-        forceDefault(icons.select("#burgIcons > #towns"), "size", 0.5);
+        forceDefault(burgIcons.select("#cities"), "size", 1);
+        forceDefault(burgIcons.select("#towns"), "size", 0.5);
         forceDefault(anchors.select("#cities"), "size", 2);
         forceDefault(anchors.select("#towns"), "size", 1);
 

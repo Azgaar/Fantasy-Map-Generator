@@ -1,6 +1,6 @@
 "use strict";
 
-const isExternalIcon = (icon) => icon && (icon.startsWith("http") || icon.startsWith("data:image") || icon.includes(".svg") || icon.includes("/"));
+window.isExternalIcon = (icon) => typeof icon === "string" && (icon.startsWith("http") || icon.startsWith("data:image") || icon.includes(".svg") || icon.includes("/"));
 
 function drawMilitary() {
   TIME && console.time("drawMilitary");
@@ -58,14 +58,14 @@ const drawRegiments = function (regiments, s) {
     .attr("text-rendering", "optimizeSpeed")
     .attr("x", d => x(d) - size)
     .attr("y", d => d.y)
-    .text(d => (isExternalIcon(d.icon) ? "" : d.icon));
+    .text(d => (window.isExternalIcon(d.icon) ? "" : d.icon));
   g.append("image")
     .attr("class", "regimentImage")
     .attr("x", d => x(d) - h)
     .attr("y", d => y(d))
     .attr("height", h)
     .attr("width", h)
-    .attr("href", d => (isExternalIcon(d.icon) ? d.icon : ""));
+    .attr("href", d => (window.isExternalIcon(d.icon) ? d.icon : ""));
 };
 
 const drawRegiment = function (reg, stateId) {
@@ -111,14 +111,14 @@ const drawRegiment = function (reg, stateId) {
     .attr("text-rendering", "optimizeSpeed")
     .attr("x", x1 - size)
     .attr("y", reg.y)
-    .text(isExternalIcon(reg.icon) ? "" : reg.icon);
+    .text(window.isExternalIcon(reg.icon) ? "" : reg.icon);
   g.append("image")
     .attr("class", "regimentImage")
     .attr("x", x1 - h)
     .attr("y", y1)
     .attr("height", h)
     .attr("width", h)
-    .attr("href", isExternalIcon(reg.icon) ? reg.icon : "");
+    .attr("href", window.isExternalIcon(reg.icon) ? reg.icon : "");
 };
 
 // move one regiment to another
