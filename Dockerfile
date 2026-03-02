@@ -12,9 +12,11 @@ RUN npm ci
 # Copy source code
 COPY ./src ./src
 COPY ./public ./public
-COPY vite.config.js .
+COPY tsconfig.json .
+COPY vite.config.ts .
 
 # Build the application
+ENV NETLIFY=true
 RUN npm run build
 
 # Production stage
