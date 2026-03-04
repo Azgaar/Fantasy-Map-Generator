@@ -52,6 +52,8 @@ export interface State {
   form?: string;
   military?: any[];
   provinces?: number[];
+  temp?: any;
+  alert?: number;
 }
 
 class StatesModule {
