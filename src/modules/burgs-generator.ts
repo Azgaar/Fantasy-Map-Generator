@@ -1,5 +1,6 @@
 import { quadtree } from "d3-quadtree";
 import { byId, each, gauss, minmax, normalize, P, rn } from "../utils";
+import { drawBurgLabel } from "../renderers/draw-burg-labels";
 
 declare global {
   var Burgs: BurgModule;
@@ -728,7 +729,7 @@ class BurgModule {
     }
 
     removeBurgIcon(burg.i!);
-    removeBurgLabel(burg.i!);
+    Labels.removeBurgLabel(burg.i!);
   }
 }
 window.Burgs = new BurgModule();

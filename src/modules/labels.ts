@@ -1,3 +1,4 @@
+
 declare global {
   var Labels: LabelsModule;
 }
@@ -18,8 +19,6 @@ export interface BurgLabelData {
   text: string;
   x: number;
   y: number;
-  dx: number;
-  dy: number;
 }
 
 export interface CustomLabelData {
@@ -197,19 +196,12 @@ class LabelsModule {
 
       const group = burg.group || "unmarked";
 
-      // Get label group offset attributes if they exist (will be set during rendering)
-      // For now, use defaults - these will be updated during rendering phase
-      const dx = 0;
-      const dy = 0;
-
       this.addBurgLabel({
         burgId: burg.i,
         group,
         text: burg.name!,
         x: burg.x,
-        y: burg.y,
-        dx,
-        dy,
+        y: burg.y
       });
     }
 
