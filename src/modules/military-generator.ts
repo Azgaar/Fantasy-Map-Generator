@@ -406,7 +406,6 @@ class MilitaryModule {
     ): MilitaryRegiment[] => {
       if (!nodes.length) return [];
       nodes.sort((a, b) => a.a - b.a); // form regiments starting from cells with fewest troops
-      nodes.sort((a, b) => a.a - b.a); // form regiments in cells with most troops
       const tree = quadtree(
         nodes,
         (d) => d.x,
