@@ -77,6 +77,7 @@ toolsContent.addEventListener("click", function (event) {
 function processFeatureRegeneration(event, button) {
   if (button === "regenerateStateLabels") {
     $("#labels").fadeIn();
+    Labels.generateStateLabels();
     drawStateLabels();
   } else if (button === "regenerateReliefIcons") {
     drawReliefIcons();
