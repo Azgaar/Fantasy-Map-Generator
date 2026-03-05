@@ -101,14 +101,17 @@ function processFeatureRegeneration(event, button) {
 async function openEmblemEditor() {
   let type, id, el;
 
-  if (pack.states[1]?.coa) {
+  const firstState = pack.states.find(s => s.i && !s.removed && s.coa);
+  const firstBurg = pack.burgs.find(b => b.i && !b.removed && b.coa);
+
+  if (firstState) {
     type = "state";
-    id = "stateCOA1";
-    el = pack.states[1];
-  } else if (pack.burgs[1]?.coa) {
+    id = `stateCOA${firstState.i}`;
+    el = firstState;
+  } else if (firstBurg) {
     type = "burg";
-    id = "burgCOA1";
-    el = pack.burgs[1];
+    id = `burgCOA${firstBurg.i}`;
+    el = firstBurg;
   } else {
     tip("No emblems to edit, please generate states and burgs first", false, "error");
     return;
