@@ -676,6 +676,7 @@ class BurgModule {
     };
     this.definePopulation(burg);
     this.defineEmblem(burg);
+    COArenderer.add("burg", burgId, burg.coa, x, y);
     this.defineFeatures(burg);
 
     const populations = pack.burgs
