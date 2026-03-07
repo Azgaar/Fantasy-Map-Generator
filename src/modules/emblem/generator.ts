@@ -1,5 +1,13 @@
+import {
+  charges,
+  divisions,
+  lines,
+  ordinaries,
+  positions,
+  shields,
+  tinctures,
+} from "armoria";
 import { P, rw } from "../../utils";
-import { charges, divisions, lines, ordinaries, positions, shields, tinctures } from "armoria";
 import { typeMapping } from "./typeMapping";
 
 declare global {
@@ -171,13 +179,9 @@ class EmblemGeneratorModule {
           !usedPattern && P(0.3)
             ? tOrdinary!
             : this.getTincture("charge", usedTinctures, coa.t1);
-      } else if (
-        divisions.data[division]?.positions
-      ) {
+      } else if (divisions.data[division]?.positions) {
         // place charge in fields made by division
-        p = rw(
-          divisions.data[division].positions,
-        );
+        p = rw(divisions.data[division].positions);
         t = this.getTincture(
           "charge",
           tOrdinary ? usedTinctures.concat(tOrdinary) : usedTinctures,
@@ -247,11 +251,7 @@ class EmblemGeneratorModule {
             const p2 =
               p === "e" || P(0.5)
                 ? "e"
-                : rw(
-                    divisions.data[
-                      division
-                    ].positions,
-                  );
+                : rw(divisions.data[division].positions);
             const chargeNew = this.selectCharge(charges.single);
             const tNew = this.getTincture(
               "charge",
@@ -444,7 +444,7 @@ class EmblemGeneratorModule {
 
     // Size selection - must use sequential P() calls to match original behavior
     if (P(0.1)) size = "-small";
-    // biome-ignore lint/suspicious/noDuplicateElseIf: <explanation>
+    // biome-ignore lint/suspicious/noDuplicateElseIf: false positive
     else if (P(0.1)) size = "-smaller";
     else if (P(0.01)) size = "-big";
     else if (P(0.005)) size = "-smallest";
@@ -460,11 +460,11 @@ class EmblemGeneratorModule {
       if (P(0.2)) {
         t1 = "gules";
         t2 = "or";
-        // biome-ignore lint/suspicious/noDuplicateElseIf: <explanation>
+        // biome-ignore lint/suspicious/noDuplicateElseIf: false positive
       } else if (P(0.2)) {
         t1 = "argent";
         t2 = "sable";
-        // biome-ignore lint/suspicious/noDuplicateElseIf: <explanation>
+        // biome-ignore lint/suspicious/noDuplicateElseIf: false positive
       } else if (P(0.2)) {
         t1 = "azure";
         t2 = "argent";
@@ -473,7 +473,7 @@ class EmblemGeneratorModule {
       if (P(0.3)) {
         t1 = "gules";
         t2 = "argent";
-        // biome-ignore lint/suspicious/noDuplicateElseIf: <explanation>
+        // biome-ignore lint/suspicious/noDuplicateElseIf: false positive
       } else if (P(0.3)) {
         t1 = "argent";
         t2 = "sable";
@@ -515,9 +515,7 @@ class EmblemGeneratorModule {
     const type = this.getType(t);
     let n: string | null = null;
     while (!n || n === t) {
-      n = rw(
-        tinctures[type] as Record<string, number>,
-      );
+      n = rw(tinctures[type] as Record<string, number>);
     }
     return n;
   }

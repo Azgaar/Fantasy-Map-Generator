@@ -42,7 +42,7 @@ interface Emblem {
 class EmblemRenderModule {
   private async draw(id: string, coa: Emblem) {
     // insert coa svg to defs
-    const svg = await renderCOA({...coa, seed: id}, 200);
+    const svg = await renderCOA({ ...coa, seed: id }, 200);
     document.getElementById("coas")!.insertAdjacentHTML("beforeend", svg);
     return true;
   }
