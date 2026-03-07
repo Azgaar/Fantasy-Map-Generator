@@ -18,6 +18,7 @@ interface Marker {
 declare global {
   var drawMarkers: () => void;
   var drawMarker: (marker: Marker, rescale?: number) => string;
+  var getPin: (shape?: string, fill?: string, stroke?: string) => string;
 }
 
 type PinShapeFunction = (fill: string, stroke: string) => string;
@@ -103,3 +104,4 @@ const markersRenderer = (): void => {
 
 window.drawMarkers = markersRenderer;
 window.drawMarker = markerRenderer;
+window.getPin = getPin;
