@@ -231,9 +231,14 @@ function updatePublicJsDynamicImportHashes(changedFiles, newVersion, dry) {
   if (changedFiles.length === 0) {
     console.log("  public/**/*.js        (no changed public/*.js files detected)");
     return;
-  }
-
-  const changedSet = new Set(changedFiles);
+        const replacement = `${quote}${relImportPath}?v=${newVersion}${quote}`;
+        // Only record and apply an update if the version actually changes
+        if (match === replacement) {
+          return match;
+        }
+        if (!updatedMap[relJsFile]) updatedMap[relJsFile] = [];
+        updatedMap[relJsFile].push(relImportPath);
+        return replacement;
   const publicJsFiles = getAllPublicJsFiles();
   const updatedMap = {};
 
