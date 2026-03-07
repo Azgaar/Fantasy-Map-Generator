@@ -19,6 +19,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
+          # Check out the base branch (master) so we are on a real branch, not
+          # a detached PR merge ref, which makes git push work without arguments.
+          ref: ${{ github.event.pull_request.base.ref }}
           # fetch-depth 2 so HEAD~1 resolves to the pre-merge master commit
           fetch-depth: 2
           # Use a PAT so the pushed bump commit can trigger deploy.yml
@@ -66,7 +69,10 @@ jobs:
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Stage versioning files + any public/**/*.js whose dynamic import
+          # hashes may have been refreshed by updatePublicJsDynamicImportHashes
           git add public/versioning.js package.json package-lock.json src/index.html
+          git add public/ 2>/dev/null || true
 
           if ! git diff --cached --quiet; then
             git commit -m "chore: bump version to $NEW_VERSION"
