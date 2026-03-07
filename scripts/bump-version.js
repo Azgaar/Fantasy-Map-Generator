@@ -8,6 +8,7 @@
  *   - public/versioning.js   — VERSION constant
  *   - package.json           — "version" field
  *   - src/index.html         — ?v= cache-busting hashes for changed public/*.js files
+ *   - public/**\/*.js        — ?v= cache-busting hashes in dynamic import() calls
  *
  * Usage:
  *   node scripts/bump-version.js             # interactive prompt
@@ -138,9 +139,7 @@ function updatePackageJson(newVersion, dry) {
   console.log(`  package.json          ${oldVersion}  →  ${newVersion}`);
 }
 
-function updateIndexHtmlHashes(newVersion, dry) {
-  const changedFiles = getChangedPublicJsFiles();
-
+function updateIndexHtmlHashes(changedFiles, newVersion, dry) {
   if (changedFiles.length === 0) {
     console.log("  src/index.html        (no changed public/*.js files detected)");
     return;
@@ -165,6 +164,72 @@ function updateIndexHtmlHashes(newVersion, dry) {
     console.log(
       `  src/index.html        (changed files not referenced: ${changedFiles.map(f => f.replace("public/", "")).join(", ")})`
     );
+  }
+}
+
+/** Returns all .js file paths (relative to repo root, with forward slashes) under public/. */
+function getAllPublicJsFiles() {
+  const results = [];
+  function walk(dir) {
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.isFile() && entry.name.endsWith(".js")) {
+        results.push(path.relative(repoRoot, full).replace(/\\/g, "/"));
+      }
+    }
+  }
+  walk(path.join(repoRoot, "public"));
+  return results;
+}
+
+/**
+ * Scans all public/**\/*.js files for relative dynamic-import ?v= references
+ * (e.g. import("../dynamic/supporters.js?v=1.97.14")) and updates any that
+ * point to one of the changed files.
+ */
+function updatePublicJsDynamicImportHashes(changedFiles, newVersion, dry) {
+  if (changedFiles.length === 0) {
+    console.log("  public/**/*.js        (no changed public/*.js files detected)");
+    return;
+  }
+
+  const changedSet = new Set(changedFiles);
+  const publicJsFiles = getAllPublicJsFiles();
+  const updatedMap = {};
+
+  for (const relJsFile of publicJsFiles) {
+    const absJsFile = path.join(repoRoot, relJsFile);
+    const content = readFile(absJsFile);
+    const dir = path.dirname(absJsFile);
+
+    const pattern = /(['"])(\.\.?\/[^'"]*)\?v=[0-9.]+\1/g;
+    const newContent = content.replace(pattern, (match, quote, relImportPath) => {
+      // Strip any query string defensively before resolving the path
+      const cleanImportPath = relImportPath.split("?")[0];
+      const absImport = path.resolve(dir, cleanImportPath);
+      const repoRelImport = path.relative(repoRoot, absImport).replace(/\\/g, "/");
+      if (changedSet.has(repoRelImport)) {
+        if (!updatedMap[relJsFile]) updatedMap[relJsFile] = [];
+        updatedMap[relJsFile].push(relImportPath);
+        return `${quote}${relImportPath}?v=${newVersion}${quote}`;
+      }
+      return match;
+    });
+
+    if (updatedMap[relJsFile] && !dry) {
+      writeFile(absJsFile, newContent);
+    }
+  }
+
+  if (Object.keys(updatedMap).length > 0) {
+    const lines = Object.entries(updatedMap)
+      .map(([file, refs]) => `    ${file}:\n      - ${refs.join("\n      - ")}`)
+      .join("\n");
+    console.log(`  public/**/*.js        hashes updated:\n${lines}`);
+  } else {
+    console.log("  public/**/*.js        (no dynamic import ?v= hashes needed updating)");
   }
 }
 
@@ -212,7 +277,9 @@ async function main() {
       `\n[bump-version] Version already updated manually: ${baseVersion} → ${currentVersion} (base was ${baseVersion})\n`
     );
     console.log("  Skipping version increment — updating ?v= hashes only.\n");
-    updateIndexHtmlHashes(currentVersion, dry);
+    const changedFiles = getChangedPublicJsFiles();
+    updateIndexHtmlHashes(changedFiles, currentVersion, dry);
+    updatePublicJsDynamicImportHashes(changedFiles, currentVersion, dry);
     console.log(`\n[bump-version] ${dry ? "(dry run) " : ""}done.\n`);
     return;
   }
@@ -229,9 +296,11 @@ async function main() {
 
   console.log(`\n[bump-version] ${bumpType}: ${currentVersion}  →  ${newVersion}\n`);
 
+  const changedFiles = getChangedPublicJsFiles();
   updateVersioningJs(newVersion, dry);
   updatePackageJson(newVersion, dry);
-  updateIndexHtmlHashes(newVersion, dry);
+  updateIndexHtmlHashes(changedFiles, newVersion, dry);
+  updatePublicJsDynamicImportHashes(changedFiles, newVersion, dry);
 
   console.log(`\n[bump-version] ${dry ? "(dry run) " : ""}done.\n`);
 }
