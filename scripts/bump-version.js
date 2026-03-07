@@ -180,7 +180,27 @@ function updateIndexHtmlHashes(changedFiles, newVersion, dry) {
     console.log(`  src/index.html        hashes updated for:\n    - ${updated.join("\n    - ")}`);
   } else {
     console.log(
-      `  src/index.html        (changed files not referenced: ${changedFiles.map(f => f.replace("public/", "")).join(", ")})`
+  const publicRoot = path.join(repoRoot, "public");
+
+  function walk(dir) {
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        // Skip third-party vendor bundles under public/libs/**
+        const relFromPublic = path
+          .relative(publicRoot, full)
+          .replace(/\\/g, "/");
+        if (relFromPublic === "libs" || relFromPublic.startsWith("libs/")) {
+          continue;
+        }
+        walk(full);
+      } else if (entry.isFile() && entry.name.endsWith(".js")) {
+        results.push(path.relative(repoRoot, full).replace(/\\/g, "/"));
+      }
+    }
+  }
+
+  walk(publicRoot);
     );
   }
 }
