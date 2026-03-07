@@ -1,0 +1,83 @@
+name: Bump version on PR merge
+
+on:
+  pull_request:
+    branches: [master]
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    # Only run when the PR was actually merged (not just closed)
+    if: github.event.pull_request.merged == true
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          # Check out the base branch (master) so we are on a real branch, not
+          # a detached PR merge ref, which makes git push work without arguments.
+          ref: ${{ github.event.pull_request.base.ref }}
+          # fetch-depth 2 so HEAD~1 resolves to the pre-merge master commit
+          fetch-depth: 2
+          # Use a PAT so the pushed bump commit can trigger deploy.yml
+          token: ${{ secrets.RELEASE_BOT_TOKEN }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: npm
+
+      - name: Get PR diff
+        run: git diff HEAD~1 HEAD > /tmp/pr.diff
+
+      - name: AI-detect bump type from diff
+        id: bump
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TYPE=$(node scripts/detect-bump-type.js --diff-file /tmp/pr.diff)
+          echo "type=$TYPE" >> "$GITHUB_OUTPUT"
+          echo "AI-determined bump type: $TYPE"
+
+      - name: Extract base version (master before this PR merged)
+        id: base
+        run: |
+          BASE=$(git show HEAD~1:public/versioning.js \
+            | grep -oP 'const VERSION = "\K[\d.]+')
+          echo "version=$BASE" >> "$GITHUB_OUTPUT"
+          echo "Base version: $BASE"
+
+      - name: Run version bump script
+        run: |
+          node scripts/bump-version.js ${{ steps.bump.outputs.type }} \
+            --base-version ${{ steps.base.outputs.version }}
+
+      - name: Commit and push bump
+        run: |
+          NEW_VERSION=$(node -e "
+            const m = require('fs')
+              .readFileSync('public/versioning.js', 'utf8')
+              .match(/const VERSION = \"([\d.]+)\"/);
+            console.log(m[1]);
+          ")
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Stage versioning files + any public/**/*.js whose dynamic import
+          # hashes may have been refreshed by updatePublicJsDynamicImportHashes
+          git add public/versioning.js package.json package-lock.json src/index.html
+          git add public/ 2>/dev/null || true
+
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: bump version to $NEW_VERSION"
+            git push
+            echo "Pushed version bump → $NEW_VERSION"
+          else
+            echo "Nothing changed, skipping commit."
+          fi
