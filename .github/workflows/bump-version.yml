@@ -19,28 +19,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          # fetch-depth 2 so git diff HEAD~1 HEAD works for detecting changed files
+          # fetch-depth 2 so HEAD~1 resolves to the pre-merge master commit
           fetch-depth: 2
-          # Use a PAT/GitHub App token so the pushed commit can trigger deploy.yml and other workflows
+          # Use a PAT so the pushed bump commit can trigger deploy.yml
           token: ${{ secrets.RELEASE_BOT_TOKEN }}
 
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '24.x'
+          node-version: "24.x"
           cache: npm
 
-      - name: Determine bump type from PR labels
+      - name: Get PR diff
+        run: git diff HEAD~1 HEAD > /tmp/pr.diff
+
+      - name: AI-detect bump type from diff
         id: bump
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
-          if echo "$LABELS" | grep -q '"major"'; then
-            echo "type=major" >> "$GITHUB_OUTPUT"
-          elif echo "$LABELS" | grep -q '"minor"'; then
-            echo "type=minor" >> "$GITHUB_OUTPUT"
-          else
-            echo "type=patch" >> "$GITHUB_OUTPUT"
-          fi
+          TYPE=$(node scripts/detect-bump-type.js --diff-file /tmp/pr.diff)
+          echo "type=$TYPE" >> "$GITHUB_OUTPUT"
+          echo "AI-determined bump type: $TYPE"
 
       - name: Extract base version (master before this PR merged)
         id: base
@@ -48,7 +48,7 @@ jobs:
           BASE=$(git show HEAD~1:public/versioning.js \
             | grep -oP 'const VERSION = "\K[\d.]+')
           echo "version=$BASE" >> "$GITHUB_OUTPUT"
-          echo "Base version on master before merge: $BASE"
+          echo "Base version: $BASE"
 
       - name: Run version bump script
         run: |
@@ -66,9 +66,8 @@ jobs:
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
+          git add public/versioning.js package.json package-lock.json src/index.html
 
-          # Only commit if something actually changed
           if ! git diff --cached --quiet; then
             git commit -m "chore: bump version to $NEW_VERSION"
             git push
