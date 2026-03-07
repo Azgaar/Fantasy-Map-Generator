@@ -21,8 +21,8 @@ jobs:
         with:
           # fetch-depth 2 so git diff HEAD~1 HEAD works for detecting changed files
           fetch-depth: 2
-          # Use a token so the pushed commit triggers deploy.yml
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Use a PAT/GitHub App token so the pushed commit can trigger deploy.yml and other workflows
+          token: ${{ secrets.RELEASE_BOT_TOKEN }}
 
       - name: Set up Node
         uses: actions/setup-node@v6
