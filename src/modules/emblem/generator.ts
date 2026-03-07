@@ -1,11 +1,5 @@
 import { P, rw } from "../../utils";
-import { charges } from "./charges";
-import { divisions } from "./divisions";
-import { lineWeights } from "./lineWeights";
-import { ordinaries } from "./ordinaries";
-import { positions } from "./positions";
-import { shields } from "./shields";
-import { createTinctures } from "./tinctures";
+import { charges, divisions, lines, ordinaries, positions, shields, tinctures } from "armoria";
 import { typeMapping } from "./typeMapping";
 
 declare global {
@@ -116,11 +110,11 @@ class EmblemGeneratorModule {
         P(0.98) ? coa.t1 : null,
       );
       coa.division = { division, t };
-      if (divisions[division as keyof typeof divisions])
+      if (divisions[division])
         coa.division.line =
           usedPattern || (ordinary && P(0.7))
             ? "straight"
-            : rw(divisions[division as keyof typeof divisions]);
+            : rw(divisions.data[division].line);
     }
 
     if (ordinary) {
@@ -129,7 +123,7 @@ class EmblemGeneratorModule {
       ];
       if (linedOrdinary)
         coa.ordinaries[0].line =
-          usedPattern || (division && P(0.7)) ? "straight" : rw(lineWeights);
+          usedPattern || (division && P(0.7)) ? "straight" : rw(lines.variants);
       if (
         division &&
         !addCharge &&
@@ -178,11 +172,11 @@ class EmblemGeneratorModule {
             ? tOrdinary!
             : this.getTincture("charge", usedTinctures, coa.t1);
       } else if (
-        positions.divisions[division as keyof typeof positions.divisions]
+        divisions.data[division]?.positions
       ) {
         // place charge in fields made by division
         p = rw(
-          positions.divisions[division as keyof typeof positions.divisions],
+          divisions.data[division].positions,
         );
         t = this.getTincture(
           "charge",
@@ -197,7 +191,7 @@ class EmblemGeneratorModule {
         // place in standard position (use new tincture)
         p = usedPattern
           ? "e"
-          : charges.conventional[charge as keyof typeof charges.conventional]
+          : charges.conventional[charge]
             ? rw(positions.conventional)
             : rw(positions.complex);
         t = this.getTincture(
@@ -254,9 +248,9 @@ class EmblemGeneratorModule {
               p === "e" || P(0.5)
                 ? "e"
                 : rw(
-                    positions.divisions[
-                      division as keyof typeof positions.divisions
-                    ],
+                    divisions.data[
+                      division
+                    ].positions,
                   );
             const chargeNew = this.selectCharge(charges.single);
             const tNew = this.getTincture(
@@ -379,7 +373,6 @@ class EmblemGeneratorModule {
     RoT: string | null,
   ): string {
     const base = RoT ? (RoT.includes("-") ? RoT.split("-")[1] : RoT) : null;
-    const tinctures = createTinctures();
 
     let type = rw(tinctures[element]); // metals, colours, stains, patterns
     if (RoT && type !== "patterns")
@@ -423,7 +416,6 @@ class EmblemGeneratorModule {
 
   private getType(t: string): string | undefined {
     const tinc = t.includes("-") ? t.split("-")[1] : t;
-    const tinctures = createTinctures();
     if (Object.keys(tinctures.metals).includes(tinc)) return "metals";
     if (Object.keys(tinctures.colours).includes(tinc)) return "colours";
     if (Object.keys(tinctures.stains).includes(tinc)) return "stains";
@@ -435,7 +427,6 @@ class EmblemGeneratorModule {
   }
 
   private typeOf(tinc: string): string {
-    const tinctures = createTinctures();
     if (Object.keys(tinctures.metals).includes(tinc)) return "metals";
     if (Object.keys(tinctures.colours).includes(tinc)) return "colours";
     if (Object.keys(tinctures.stains).includes(tinc)) return "stains";
@@ -505,7 +496,6 @@ class EmblemGeneratorModule {
       pattern = `${pattern}_of_${this.selectCharge(charges.semy)}`;
 
     if (!t1 || !t2) {
-      const tinctures = createTinctures();
       const startWithMetal = P(0.7);
       t1 = startWithMetal ? rw(tinctures.metals) : rw(tinctures.colours);
       t2 = startWithMetal ? rw(tinctures.colours) : rw(tinctures.metals);
@@ -524,10 +514,9 @@ class EmblemGeneratorModule {
   private replaceTincture(t: string): string {
     const type = this.getType(t);
     let n: string | null = null;
-    const tinctures = createTinctures();
     while (!n || n === t) {
       n = rw(
-        tinctures[type as keyof typeof tinctures] as Record<string, number>,
+        tinctures[type] as Record<string, number>,
       );
     }
     return n;
