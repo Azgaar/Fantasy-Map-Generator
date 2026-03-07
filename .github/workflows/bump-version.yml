@@ -42,8 +42,18 @@ jobs:
             echo "type=patch" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Extract base version (master before this PR merged)
+        id: base
+        run: |
+          BASE=$(git show HEAD~1:public/versioning.js \
+            | grep -oP 'const VERSION = "\K[\d.]+')
+          echo "version=$BASE" >> "$GITHUB_OUTPUT"
+          echo "Base version on master before merge: $BASE"
+
       - name: Run version bump script
-        run: node scripts/bump-version.js ${{ steps.bump.outputs.type }}
+        run: |
+          node scripts/bump-version.js ${{ steps.bump.outputs.type }} \
+            --base-version ${{ steps.base.outputs.version }}
 
       - name: Commit and push bump
         run: |

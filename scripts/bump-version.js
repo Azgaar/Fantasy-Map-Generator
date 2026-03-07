@@ -61,6 +61,17 @@ function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** Returns true if versionA is strictly greater than versionB (semver). */
+function isVersionGreater(versionA, versionB) {
+  const a = versionA.split(".").map(Number);
+  const b = versionB.split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    if (a[i] > b[i]) return true;
+    if (a[i] < b[i]) return false;
+  }
+  return false; // equal
+}
+
 /**
  * Returns public/*.js paths (relative to repo root) that have changed.
  * Checks (in order, deduplicating):
@@ -180,12 +191,31 @@ function promptBumpType(currentVersion) {
 // ---------------------------------------------------------------------------
 
 async function main() {
-  const args = process.argv.slice(2).map(a => a.toLowerCase());
+  const argv = process.argv.slice(2);
+  const args = argv.map(a => a.toLowerCase());
   const dry = args.includes("--dry-run");
+
+  // --base-version X.Y.Z  — version on master before this PR was merged.
+  // When provided, the script checks whether the developer already bumped
+  // the version manually in their branch. If so, the increment is skipped
+  // and only the ?v= hashes in index.html are refreshed.
+  const baseVersionFlagIdx = argv.findIndex(a => a === "--base-version");
+  const baseVersion = baseVersionFlagIdx !== -1 ? argv[baseVersionFlagIdx + 1] : null;
 
   if (dry) console.log("\n[bump-version] DRY RUN — no files will be changed\n");
 
   const currentVersion = parseCurrentVersion();
+
+  if (baseVersion && isVersionGreater(currentVersion, baseVersion)) {
+    // Developer already bumped the version manually in their branch.
+    console.log(
+      `\n[bump-version] Version already updated manually: ${baseVersion} → ${currentVersion} (base was ${baseVersion})\n`
+    );
+    console.log("  Skipping version increment — updating ?v= hashes only.\n");
+    updateIndexHtmlHashes(currentVersion, dry);
+    console.log(`\n[bump-version] ${dry ? "(dry run) " : ""}done.\n`);
+    return;
+  }
 
   // Determine bump type: CLI arg → stdin prompt → default patch
   let bumpType;
