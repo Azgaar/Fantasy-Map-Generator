@@ -7,6 +7,7 @@
  * Updates:
  *   - public/versioning.js   — VERSION constant
  *   - package.json           — "version" field
+ *   - package-lock.json      — top-level "version" and packages[""].version fields
  *   - src/index.html         — ?v= cache-busting hashes for changed public/*.js files
  *
  * Usage:
@@ -28,6 +29,7 @@ const {execSync} = require("child_process");
 
 const repoRoot = path.resolve(__dirname, "..");
 const packageJsonPath = path.join(repoRoot, "package.json");
+const packageLockJsonPath = path.join(repoRoot, "package-lock.json");
 const versioningPath = path.join(repoRoot, "public", "versioning.js");
 const indexHtmlPath = path.join(repoRoot, "src", "index.html");
 
@@ -138,6 +140,22 @@ function updatePackageJson(newVersion, dry) {
   console.log(`  package.json          ${oldVersion}  →  ${newVersion}`);
 }
 
+function updatePackageLockJson(newVersion, dry) {
+  if (!fs.existsSync(packageLockJsonPath)) {
+    console.log("  package-lock.json     (not found, skipping)");
+    return;
+  }
+  const original = readFile(packageLockJsonPath);
+  const lock = JSON.parse(original);
+  const oldVersion = lock.version;
+  lock.version = newVersion;
+  if (lock.packages && lock.packages[""]) {
+    lock.packages[""].version = newVersion;
+  }
+  if (!dry) writeFile(packageLockJsonPath, `${JSON.stringify(lock, null, 2)}\n`);
+  console.log(`  package-lock.json     ${oldVersion}  →  ${newVersion}`);
+}
+
 function updateIndexHtmlHashes(newVersion, dry) {
   const changedFiles = getChangedPublicJsFiles();
 
@@ -231,6 +249,7 @@ async function main() {
 
   updateVersioningJs(newVersion, dry);
   updatePackageJson(newVersion, dry);
+  updatePackageLockJson(newVersion, dry);
   updateIndexHtmlHashes(newVersion, dry);
 
   console.log(`\n[bump-version] ${dry ? "(dry run) " : ""}done.\n`);
