@@ -5,15 +5,18 @@
  * We use Semantic Versioning: major.minor.patch. Refer to https://semver.org
  * Our .map file format is considered the public API.
  *
- * Update the version MANUALLY on each merge to main:
+ * Update the version on each merge to main:
  * 1. MAJOR version: Incompatible changes that break existing maps
  * 2. MINOR version: Additions or changes that are backward-compatible but may require old .map files to be updated
- * 3. PATCH version: Backward-compatible bug fixes and small features that do not affect the .map file format
+ * 3. PATCH version: Backward-compatible bug fixes and small features that don't affect the .map file format
  *
  * Example: 1.102.2 -> Major version 1, Minor version 102, Patch version 2
+ * Version bumping is automated via GitHub Actions on PR merge.
+ *
+ * For the changes that may be interesting to end users, update the `latestPublicChanges` array below (new changes on top).
  */
 
-const VERSION = "1.113.10";
+const VERSION = "1.113.3";
 if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format or parsing function");
 
 {
@@ -26,6 +29,22 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
     setTimeout(showUpdateWindow, 6000);
   }
 
+  const latestPublicChanges = [
+    "Search input in Overview dialogs",
+    "Custom burg grouping and icon selection",
+    "Ability to set custom image as Marker or Regiment icon",
+    "Submap and Transform tools rework",
+    "Azgaar Bot to answer questions and provide help",
+    "Labels: ability to set letter spacing",
+    "Zones performance improvement",
+    "Notes Editor: on-demand AI text generation",
+    "New style preset: Dark Seas",
+    "New routes generation algorithm",
+    "Routes overview tool",
+    "Configurable longitude",
+    "Export zones to GeoJSON"
+  ];
+
   function showUpdateWindow() {
     const changelog = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog";
     const reddit = "https://www.reddit.com/r/FantasyMapGenerator";
@@ -37,19 +56,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
 
       <ul>
         <strong>Latest changes:</strong>
-        <li>Search input in Overview dialogs</li>
-        <li>Custom burg grouping and icon selection</li>
-        <li>Ability to set custom image as Marker or Regiment icon</li>
-        <li>Submap and Transform tools rework</li>
-        <li>Azgaar Bot to answer questions and provide help</li>
-        <li>Labels: ability to set letter spacing</li>
-        <li>Zones performance improvement</li>
-        <li>Notes Editor: on-demand AI text generation</li>
-        <li>New style preset: Dark Seas</li>
-        <li>New routes generation algorithm</li>
-        <li>Routes overview tool</li>
-        <li>Configurable longitude</li>
-        <li>Export zones to GeoJSON</li>
+        ${latestPublicChanges.map(change => `<li>${change}</li>`).join("")}
       </ul>
 
       <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>

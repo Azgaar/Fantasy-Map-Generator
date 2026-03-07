@@ -12,8 +12,8 @@
  * Usage:
  *   node scripts/bump-version.js             # interactive prompt
  *   node scripts/bump-version.js patch       # non-interactive
- *   node scripts/bump-version.js minor
- *   node scripts/bump-version.js major
+ *   node scripts/bump-version.js minor       # non-interactive
+ *   node scripts/bump-version.js major       # non-interactive
  *   node scripts/bump-version.js --dry-run   # preview only, no writes
  */
 

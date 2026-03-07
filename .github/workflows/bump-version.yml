@@ -1,0 +1,68 @@
+name: Bump version on PR merge
+
+on:
+  pull_request:
+    branches: [master]
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    # Only run when the PR was actually merged (not just closed)
+    if: github.event.pull_request.merged == true
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          # fetch-depth 2 so git diff HEAD~1 HEAD works for detecting changed files
+          fetch-depth: 2
+          # Use a token so the pushed commit triggers deploy.yml
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Determine bump type from PR labels
+        id: bump
+        run: |
+          LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
+          if echo "$LABELS" | grep -q '"major"'; then
+            echo "type=major" >> "$GITHUB_OUTPUT"
+          elif echo "$LABELS" | grep -q '"minor"'; then
+            echo "type=minor" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run version bump script
+        run: node scripts/bump-version.js ${{ steps.bump.outputs.type }}
+
+      - name: Commit and push bump
+        run: |
+          NEW_VERSION=$(node -e "
+            const m = require('fs')
+              .readFileSync('public/versioning.js', 'utf8')
+              .match(/const VERSION = \"([\d.]+)\"/);
+            console.log(m[1]);
+          ")
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+
+          # Only commit if something actually changed
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: bump version to $NEW_VERSION"
+            git push
+            echo "Pushed version bump → $NEW_VERSION"
+          else
+            echo "Nothing changed, skipping commit."
+          fi
