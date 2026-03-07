@@ -1,11 +1,13 @@
+import {
+  charges,
+  divisions,
+  lines,
+  ordinaries,
+  positions,
+  shields,
+  tinctures,
+} from "armoria";
 import { P, rw } from "../../utils";
-import { charges } from "./charges";
-import { divisions } from "./divisions";
-import { lineWeights } from "./lineWeights";
-import { ordinaries } from "./ordinaries";
-import { positions } from "./positions";
-import { shields } from "./shields";
-import { createTinctures } from "./tinctures";
 import { typeMapping } from "./typeMapping";
 
 declare global {
@@ -116,11 +118,11 @@ class EmblemGeneratorModule {
         P(0.98) ? coa.t1 : null,
       );
       coa.division = { division, t };
-      if (divisions[division as keyof typeof divisions])
+      if (divisions[division])
         coa.division.line =
           usedPattern || (ordinary && P(0.7))
             ? "straight"
-            : rw(divisions[division as keyof typeof divisions]);
+            : rw(divisions.data[division].line);
     }
 
     if (ordinary) {
@@ -129,7 +131,7 @@ class EmblemGeneratorModule {
       ];
       if (linedOrdinary)
         coa.ordinaries[0].line =
-          usedPattern || (division && P(0.7)) ? "straight" : rw(lineWeights);
+          usedPattern || (division && P(0.7)) ? "straight" : rw(lines.variants);
       if (
         division &&
         !addCharge &&
@@ -177,13 +179,9 @@ class EmblemGeneratorModule {
           !usedPattern && P(0.3)
             ? tOrdinary!
             : this.getTincture("charge", usedTinctures, coa.t1);
-      } else if (
-        positions.divisions[division as keyof typeof positions.divisions]
-      ) {
+      } else if (divisions.data[division]?.positions) {
         // place charge in fields made by division
-        p = rw(
-          positions.divisions[division as keyof typeof positions.divisions],
-        );
+        p = rw(divisions.data[division].positions);
         t = this.getTincture(
           "charge",
           tOrdinary ? usedTinctures.concat(tOrdinary) : usedTinctures,
@@ -197,7 +195,7 @@ class EmblemGeneratorModule {
         // place in standard position (use new tincture)
         p = usedPattern
           ? "e"
-          : charges.conventional[charge as keyof typeof charges.conventional]
+          : charges.conventional[charge]
             ? rw(positions.conventional)
             : rw(positions.complex);
         t = this.getTincture(
@@ -253,11 +251,7 @@ class EmblemGeneratorModule {
             const p2 =
               p === "e" || P(0.5)
                 ? "e"
-                : rw(
-                    positions.divisions[
-                      division as keyof typeof positions.divisions
-                    ],
-                  );
+                : rw(divisions.data[division].positions);
             const chargeNew = this.selectCharge(charges.single);
             const tNew = this.getTincture(
               "charge",
@@ -379,7 +373,6 @@ class EmblemGeneratorModule {
     RoT: string | null,
   ): string {
     const base = RoT ? (RoT.includes("-") ? RoT.split("-")[1] : RoT) : null;
-    const tinctures = createTinctures();
 
     let type = rw(tinctures[element]); // metals, colours, stains, patterns
     if (RoT && type !== "patterns")
@@ -423,7 +416,6 @@ class EmblemGeneratorModule {
 
   private getType(t: string): string | undefined {
     const tinc = t.includes("-") ? t.split("-")[1] : t;
-    const tinctures = createTinctures();
     if (Object.keys(tinctures.metals).includes(tinc)) return "metals";
     if (Object.keys(tinctures.colours).includes(tinc)) return "colours";
     if (Object.keys(tinctures.stains).includes(tinc)) return "stains";
@@ -435,7 +427,6 @@ class EmblemGeneratorModule {
   }
 
   private typeOf(tinc: string): string {
-    const tinctures = createTinctures();
     if (Object.keys(tinctures.metals).includes(tinc)) return "metals";
     if (Object.keys(tinctures.colours).includes(tinc)) return "colours";
     if (Object.keys(tinctures.stains).includes(tinc)) return "stains";
@@ -453,7 +444,7 @@ class EmblemGeneratorModule {
 
     // Size selection - must use sequential P() calls to match original behavior
     if (P(0.1)) size = "-small";
-    // biome-ignore lint/suspicious/noDuplicateElseIf: <explanation>
+    // biome-ignore lint/suspicious/noDuplicateElseIf: false positive
     else if (P(0.1)) size = "-smaller";
     else if (P(0.01)) size = "-big";
     else if (P(0.005)) size = "-smallest";
@@ -469,11 +460,11 @@ class EmblemGeneratorModule {
       if (P(0.2)) {
         t1 = "gules";
         t2 = "or";
-        // biome-ignore lint/suspicious/noDuplicateElseIf: <explanation>
+        // biome-ignore lint/suspicious/noDuplicateElseIf: false positive
       } else if (P(0.2)) {
         t1 = "argent";
         t2 = "sable";
-        // biome-ignore lint/suspicious/noDuplicateElseIf: <explanation>
+        // biome-ignore lint/suspicious/noDuplicateElseIf: false positive
       } else if (P(0.2)) {
         t1 = "azure";
         t2 = "argent";
@@ -482,7 +473,7 @@ class EmblemGeneratorModule {
       if (P(0.3)) {
         t1 = "gules";
         t2 = "argent";
-        // biome-ignore lint/suspicious/noDuplicateElseIf: <explanation>
+        // biome-ignore lint/suspicious/noDuplicateElseIf: false positive
       } else if (P(0.3)) {
         t1 = "argent";
         t2 = "sable";
@@ -505,7 +496,6 @@ class EmblemGeneratorModule {
       pattern = `${pattern}_of_${this.selectCharge(charges.semy)}`;
 
     if (!t1 || !t2) {
-      const tinctures = createTinctures();
       const startWithMetal = P(0.7);
       t1 = startWithMetal ? rw(tinctures.metals) : rw(tinctures.colours);
       t2 = startWithMetal ? rw(tinctures.colours) : rw(tinctures.metals);
@@ -524,11 +514,8 @@ class EmblemGeneratorModule {
   private replaceTincture(t: string): string {
     const type = this.getType(t);
     let n: string | null = null;
-    const tinctures = createTinctures();
     while (!n || n === t) {
-      n = rw(
-        tinctures[type as keyof typeof tinctures] as Record<string, number>,
-      );
+      n = rw(tinctures[type] as Record<string, number>);
     }
     return n;
   }
