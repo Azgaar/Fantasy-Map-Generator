@@ -27,7 +27,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: lts/*
+          node-version: '24.x'
           cache: npm
 
       - name: Determine bump type from PR labels
