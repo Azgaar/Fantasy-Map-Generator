@@ -5,7 +5,7 @@
  * We use Semantic Versioning: major.minor.patch. Refer to https://semver.org
  * Our .map file format is considered the public API.
  *
- * Update the version on each merge to main:
+ * Update the version on each merge to master:
  * 1. MAJOR version: Incompatible changes that break existing maps
  * 2. MINOR version: Additions or changes that are backward-compatible but may require old .map files to be updated
  * 3. PATCH version: Backward-compatible bug fixes and small features that don't affect the .map file format
