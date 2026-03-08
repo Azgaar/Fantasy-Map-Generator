@@ -1136,7 +1136,7 @@ export function resolveVersionConflicts(mapVersion) {
           const fontSize = fontSizeAttr ? parseFloat(fontSizeAttr) : 100;
           
           pack.labels.push({
-            i: labelId++,
+            i: pack.labels.length,
             type: "state",
             stateId: stateId,
             text: text,
@@ -1238,7 +1238,7 @@ export function resolveVersionConflicts(mapVersion) {
           
           if (pathPoints.length > 0) {
             pack.labels.push({
-              i: labelId++,
+              i: pack.labels.length,
               type: "custom",
               group: group,
               text: text,
