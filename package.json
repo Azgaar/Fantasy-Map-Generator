@@ -38,10 +38,12 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "@types/three": "^0.183.1",
     "alea": "^1.0.1",
     "d3": "^7.9.0",
     "delaunator": "^5.0.1",
-    "polylabel": "^2.0.1"
+    "polylabel": "^2.0.1",
+    "three": "^0.183.2"
   },
   "engines": {
     "node": ">=24.0.0"

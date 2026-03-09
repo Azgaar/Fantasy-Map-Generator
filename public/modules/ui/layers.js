@@ -699,7 +699,16 @@ function toggleCompass(event) {
 function toggleRelief(event) {
   if (!layerIsOn("toggleRelief")) {
     turnButtonOn("toggleRelief");
-    if (!terrain.selectAll("*").size()) drawReliefIcons();
+    if (!terrain.selectAll("*").size()) {
+      drawReliefIcons();
+    } else if (
+      terrain.selectAll("use").size() &&
+      !terrain.select("#terrainCanvasImage").size() &&
+      !terrain.select("#terrainGlFo").size()
+    ) {
+      // Legacy SVG use elements present but no canvas/GL render yet – migrate now
+      if (typeof migrateReliefFromSvg === "function") migrateReliefFromSvg();
+    }
     $("#terrain").fadeIn();
     if (event && isCtrlClick(event)) editStyle("terrain");
   } else {

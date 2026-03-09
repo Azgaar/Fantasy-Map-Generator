@@ -27,7 +27,6 @@ function clicked() {
   else if (grand.id === "burgLabels") editBurg();
   else if (grand.id === "burgIcons") editBurg();
   else if (parent.id === "ice") editIce(el);
-  else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
   else if (grand.id === "coastline") editCoastline();
   else if (grand.id === "lakes") editLake();
@@ -544,8 +543,8 @@ function changePickerSpace() {
     space === "hex"
       ? d3.rgb(this.value)
       : space === "rgb"
-      ? d3.rgb(i[0], i[1], i[2])
-      : d3.hsl(i[0], i[1] / 100, i[2] / 100);
+        ? d3.rgb(i[0], i[1], i[2])
+        : d3.hsl(i[0], i[1] / 100, i[2] / 100);
 
   const hsl = d3.hsl(fill);
   if (isNaN(hsl.l)) {

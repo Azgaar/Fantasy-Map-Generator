@@ -459,6 +459,8 @@ function handleZoom(isScaleChanged, isPositionChanged) {
     fitScaleBar(scaleBar, svgWidth, svgHeight);
   }
 
+  if (layerIsOn("toggleRelief")) renderReliefIcons();
+
   // zoom image converter overlay
   if (customization === 1) {
     const canvas = byId("canvas");
@@ -1234,7 +1236,7 @@ function showStatistics() {
   INFO && console.info(stats);
 
   // Dispatch event for test automation and external integrations
-  window.dispatchEvent(new CustomEvent('map:generated', { detail: { seed, mapId } }));
+  window.dispatchEvent(new CustomEvent("map:generated", {detail: {seed, mapId}}));
 }
 
 const regenerateMap = debounce(async function (options) {

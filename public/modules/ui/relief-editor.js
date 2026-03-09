@@ -4,8 +4,16 @@ function editReliefIcon() {
   closeDialogs(".stable");
   if (!layerIsOn("toggleRelief")) toggleRelief();
 
+  // Switch from canvas image to editable SVG <use> elements
+  if (typeof enterReliefSvgEditMode === "function") enterReliefSvgEditMode();
+
   terrain.selectAll("use").call(d3.drag().on("drag", dragReliefIcon)).classed("draggable", true);
-  elSelected = d3.select(d3.event.target);
+
+  // When called from the Tools button there is no d3 click event; fall back to the first <use>.
+  // When called from a map click, prefer the actual clicked element if it is a <use>.
+  const clickTarget = d3.event && d3.event.target;
+  const useTarget = clickTarget && clickTarget.tagName === "use" ? clickTarget : terrain.select("use").node();
+  elSelected = d3.select(useTarget);
 
   restoreEditMode();
   updateReliefIconSelected();
@@ -59,6 +67,7 @@ function editReliefIcon() {
   function updateReliefIconSelected() {
     const type = elSelected.attr("href") || elSelected.attr("data-type");
     const button = reliefIconsDiv.querySelector("svg[data-type='" + type + "']");
+    if (!button) return;
 
     reliefIconsDiv.querySelectorAll("svg.pressed").forEach(b => b.classList.remove("pressed"));
     button.classList.add("pressed");
@@ -260,7 +269,9 @@ function editReliefIcon() {
       const type = reliefIconsDiv.querySelector("svg.pressed")?.dataset.type;
       selection = type ? terrain.selectAll("use[href='" + type + "']") : terrain.selectAll("use");
       const size = selection.size();
-      alertMessage.innerHTML = type ? `Are you sure you want to remove all ${type} icons (${size})?` : `Are you sure you want to remove all icons (${size})?`;
+      alertMessage.innerHTML = type
+        ? `Are you sure you want to remove all ${type} icons (${size})?`
+        : `Are you sure you want to remove all icons (${size})?`;
     }
 
     $("#alert").dialog({
@@ -284,5 +295,7 @@ function editReliefIcon() {
     removeCircle();
     unselect();
     clearMainTip();
+    // Read back edits and switch terrain to canvas rendering
+    if (typeof exitReliefSvgEditMode === "function") exitReliefSvgEditMode();
   }
 }
