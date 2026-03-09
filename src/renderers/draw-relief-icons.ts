@@ -139,6 +139,7 @@ function loadTexture(set: string): Promise<any> {
       `images/relief/${set}.png`,
       texture => {
         texture.flipY = false;
+        texture.colorSpace = THREE.SRGBColorSpace;
         texture.needsUpdate = true;
         texture.minFilter = THREE.LinearMipmapLinearFilter;
         texture.magFilter = THREE.LinearFilter;
