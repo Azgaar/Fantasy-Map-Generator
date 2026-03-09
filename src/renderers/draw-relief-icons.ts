@@ -156,12 +156,6 @@ function loadTexture(set: string): Promise<any> {
   });
 }
 
-async function preloadTextures(): Promise<void> {
-  const sets = new Set<string>();
-  for (const r of reliefIconData) sets.add(resolveSprite(r.i).set);
-  await Promise.all([...sets].map(loadTexture));
-}
-
 function ensureRenderer(): boolean {
   if (renderer) {
     // Recover from WebGL context loss (can happen when canvas is detached from DOM)
@@ -381,7 +375,7 @@ function exitSvgEditMode(): void {
   });
   terrain.selectAll("use").remove();
   svgEditMode = false;
-  preloadTextures().then(() => {
+  loadTexture(terrain.attr("set")).then(() => {
     buildScene();
     renderFrame();
   });
@@ -466,7 +460,7 @@ const reliefIconsRenderer = (): void => {
 
   if (reliefIconData.length) {
     if (ensureRenderer()) {
-      preloadTextures().then(() => {
+      loadTexture(terrain.attr("set")).then(() => {
         buildScene();
         renderFrame();
       });
