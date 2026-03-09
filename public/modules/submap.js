@@ -57,7 +57,8 @@ window.Submap = (function () {
     const oldGrid = parentMap.grid;
     // build cache old -> [newcelllist]
     const forwardGridMap = parentMap.grid.points.map(_ => []);
-    resampler(grid.points, parentMap.pack.cells.q, (id, oldid) => {
+    const parentPackQ = d3.quadtree(parentMap.pack.cells.p.map(([x, y], i) => [x, y, i]));
+    resampler(grid.points, parentPackQ, (id, oldid) => {
       const cid = parentMap.pack.cells.g[oldid];
       grid.cells.h[id] = oldGrid.cells.h[cid];
       grid.cells.temp[id] = oldGrid.cells.temp[cid];
@@ -154,7 +155,7 @@ window.Submap = (function () {
         // find replacement: closest water cell
         const [ox, oy] = cells.p[id];
         const [tx, ty] = inverse(x, y);
-        oldid = oldCells.q.find(tx, ty, Infinity)[2];
+        oldid = d3.quadtree(oldCells.p.map(([px, py], i) => [px, py, i])).find(tx, ty, Infinity)[2];
         if (!oldid) {
           console.warn("Warning, no id found in quad", id, "parent", gridCellId);
           continue;

@@ -1,5 +1,5 @@
 import Alea from "alea";
-import { color } from "d3";
+import { color, quadtree } from "d3";
 import Delaunator from "delaunator";
 import {
   type Cells,
@@ -266,6 +266,11 @@ export const findGridAll = (
   return found;
 };
 
+const quadtreeCache = new WeakMap<
+  object,
+  ReturnType<typeof quadtree<[number, number, number]>>
+>();
+
 /**
  * Returns the index of the packed cell containing the given x and y coordinates
  * @param {number} x - The x coordinate
@@ -277,10 +282,16 @@ export const findClosestCell = (
   x: number,
   y: number,
   radius = Infinity,
-  packedGraph: any,
+  pack: { cells: { p: [number, number][] } },
 ): number | undefined => {
-  if (!packedGraph.cells?.q) return;
-  const found = packedGraph.cells.q.find(x, y, radius);
+  if (!pack.cells?.p) throw new Error("Pack cells not found");
+  let qTree = quadtreeCache.get(pack.cells.p);
+  if (!qTree) {
+    qTree = quadtree(pack.cells.p.map(([px, py], i) => [px, py, i]));
+    if (!qTree) throw new Error("Failed to create quadtree");
+    quadtreeCache.set(pack.cells.p, qTree);
+  }
+  const found = qTree.find(x, y, radius);
   return found ? found[2] : undefined;
 };
 
@@ -414,8 +425,13 @@ export const findAllCellsInRadius = (
   radius: number,
   packedGraph: any,
 ): number[] => {
-  // Use findAllInQuadtree directly instead of relying on prototype extension
-  const found = findAllInQuadtree(x, y, radius, packedGraph.cells.q);
+  const q = quadtree<[number, number, number]>(
+    packedGraph.cells.p.map(
+      ([px, py]: [number, number], i: number) =>
+        [px, py, i] as [number, number, number],
+    ),
+  );
+  const found = findAllInQuadtree(x, y, radius, q);
   return found.map((r: any) => r[2]);
 };
 

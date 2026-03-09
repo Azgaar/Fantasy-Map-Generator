@@ -9,7 +9,7 @@ window.Resample = (function () {
     scale: Number
   */
   function process({projection, inverse, scale}) {
-    const parentMap = {grid: deepCopy(grid), pack: deepCopy(pack), notes: deepCopy(notes)};
+    const parentMap = {grid: structuredClone(grid), pack: structuredClone(pack), notes: structuredClone(notes)};
     const riversData = saveRiversData(pack.rivers);
 
     grid = generateGrid();
@@ -28,7 +28,7 @@ window.Resample = (function () {
 
     reGraph();
     Features.markupPack();
-    Ice.generate()
+    Ice.generate();
     createDefaultRuler();
 
     restoreCellData(parentMap, inverse, scale);
@@ -51,9 +51,10 @@ window.Resample = (function () {
     grid.cells.temp = new Int8Array(grid.points.length);
     grid.cells.prec = new Uint8Array(grid.points.length);
 
+    const parentPackQ = d3.quadtree(parentMap.pack.cells.p.map(([x, y], i) => [x, y, i]));
     grid.points.forEach(([x, y], newGridCell) => {
       const [parentX, parentY] = inverse(x, y);
-      const parentPackCell = parentMap.pack.cells.q.find(parentX, parentY, Infinity)[2];
+      const parentPackCell = parentPackQ.find(parentX, parentY, Infinity)[2];
       const parentGridCell = parentMap.pack.cells.g[parentPackCell];
 
       grid.cells.h[newGridCell] = parentMap.grid.cells.h[parentGridCell];
@@ -347,11 +348,12 @@ window.Resample = (function () {
   }
 
   function restoreFeatureDetails(parentMap, inverse) {
+    const parentPackQ = d3.quadtree(parentMap.pack.cells.p.map(([x, y], i) => [x, y, i]));
     pack.features.forEach(feature => {
       if (!feature) return;
       const [x, y] = pack.cells.p[feature.firstCell];
       const [parentX, parentY] = inverse(x, y);
-      const parentCell = parentMap.pack.cells.q.find(parentX, parentY, Infinity)[2];
+      const parentCell = parentPackQ.find(parentX, parentY, Infinity)[2];
       if (parentCell === undefined) return;
       const parentFeature = parentMap.pack.features[parentMap.pack.cells.f[parentCell]];
 
