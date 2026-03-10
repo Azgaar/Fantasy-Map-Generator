@@ -5,18 +5,19 @@ import { generateRelief } from "../modules/relief-generator";
 import { byId } from "../utils";
 
 let fo: SVGForeignObjectElement | null = null;
-let renderer: any = null; // THREE.WebGLRenderer
-let camera: any = null; // THREE.OrthographicCamera
-let scene: any = null; // THREE.Scene
+let renderer: THREE.WebGLRenderer | null = null;
+let camera: THREE.OrthographicCamera | null = null;
+let scene: THREE.Scene | null = null;
 
-const textureCache = new Map<string, any>(); // set name → THREE.Texture
+const textureCache = new Map<string, THREE.Texture>(); // set name → THREE.Texture
 
 function preloadTextures(): void {
   for (const set of Object.keys(RELIEF_SYMBOLS)) loadTexture(set);
 }
 
-function loadTexture(set: string): Promise<any> {
-  if (textureCache.has(set)) return Promise.resolve(textureCache.get(set));
+function loadTexture(set: string): Promise<THREE.Texture | null> {
+  if (textureCache.has(set))
+    return Promise.resolve(textureCache.get(set) || null);
   return new Promise((resolve) => {
     const loader = new THREE.TextureLoader();
     loader.load(
@@ -179,10 +180,13 @@ function disposeTextureCache(): void {
 function disposeScene(): void {
   if (!scene) return;
   while (scene.children.length) {
-    const mesh = scene.children[0];
+    const mesh = scene.children[0] as THREE.Mesh<
+      THREE.BufferGeometry,
+      THREE.Material
+    >;
     scene.remove(mesh);
     mesh.geometry?.dispose();
-    if (mesh.material) {
+    if (mesh.material && "map" in mesh.material) {
       mesh.material.map = null;
       mesh.material.dispose();
     }

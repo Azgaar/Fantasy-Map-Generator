@@ -80,7 +80,7 @@ function processFeatureRegeneration(event, button) {
     drawStateLabels();
   } else if (button === "regenerateReliefIcons") {
     generateReliefIcons();
-    if (!layerIsOn("toggleRelief")) toggleRelief();
+    layerIsOn("toggleRelief") ? drawRelief() : toggleRelief();
   } else if (button === "regenerateRoutes") {
     regenerateRoutes();
     if (!layerIsOn("toggleRoutes")) toggleRoutes();

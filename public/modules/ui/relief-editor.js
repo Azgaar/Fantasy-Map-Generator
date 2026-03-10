@@ -4,10 +4,12 @@ function editReliefIcon() {
   closeDialogs(".stable");
 
   // Switch from WebGL to editable SVG <use> elements
-  undrawRelief();
-  drawRelief("svg");
+  if (!layerIsOn("toggleRelief")) {
+    undrawRelief();
+    turnButtonOn("toggleRelief");
+    drawRelief("svg");
+  }
 
-  if (!layerIsOn("toggleRelief")) toggleRelief();
   terrain.selectAll("use").call(d3.drag().on("drag", dragReliefIcon)).classed("draggable", true);
 
   // Click-to-select: delegation on the terrain group covers existing and newly added <use> elements.
