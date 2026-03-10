@@ -233,8 +233,6 @@ function renderFrame(): void {
 }
 
 function drawWebGl(icons: ReliefIcon[], parentEl: HTMLElement): void {
-  parentEl.innerHTML = "";
-  parentEl.dataset.mode = "webGL";
   const set = parentEl.getAttribute("set") || "simple";
 
   if (ensureRenderer()) {
@@ -248,12 +246,12 @@ function drawWebGl(icons: ReliefIcon[], parentEl: HTMLElement): void {
 }
 
 function drawSvg(icons: ReliefIcon[], parentEl: HTMLElement): void {
-  const html = icons.map(
-    (r) =>
-      `<use href="${r.href}" data-id="${r.i}" x="${r.x}" y="${r.y}" width="${r.s}" height="${r.s}"/>`,
-  );
-  parentEl.innerHTML = html.join("");
-  parentEl.dataset.mode = "svg";
+  parentEl.innerHTML = icons
+    .map(
+      (r) =>
+        `<use href="${r.href}" data-id="${r.i}" x="${r.x}" y="${r.y}" width="${r.s}" height="${r.s}"/>`,
+    )
+    .join("");
 }
 
 window.drawRelief = (
@@ -261,6 +259,9 @@ window.drawRelief = (
   parentEl: HTMLElement | undefined = byId("terrain"),
 ) => {
   if (!parentEl) throw new Error("Relief: parent element not found");
+
+  parentEl.innerHTML = "";
+  parentEl.dataset.mode = "webGL";
 
   const icons = pack.relief?.length ? pack.relief : generateRelief();
   if (!icons.length) return;
