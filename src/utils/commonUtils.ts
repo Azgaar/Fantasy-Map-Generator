@@ -67,7 +67,7 @@ export const getSegmentId = (
 };
 
 /**
- * Creates a debounced function that delays invoking func until after ms milliseconds have elapsed
+ * Creates a debounced function that delays next func call until after ms milliseconds
  * @param func - The function to debounce
  * @param ms - The number of milliseconds to delay
  * @returns The debounced function
@@ -212,11 +212,14 @@ export const isCtrlClick = (event: MouseEvent | KeyboardEvent): boolean => {
  * @returns Formatted date string
  */
 export const generateDate = (from: number = 100, to: number = 1000): string => {
-  return new Date(rand(from, to), rand(12), rand(31)).toLocaleDateString("en", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  return new Date(rand(from, to), rand(11), rand(1, 28)).toLocaleDateString(
+    "en",
+    {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    },
+  );
 };
 
 /**

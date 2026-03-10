@@ -2,7 +2,6 @@ import { mean, quadtree } from "d3";
 import { clipPolyline } from "lineclip";
 import type { PackedGraph } from "../types/PackedGraph";
 import {
-  deepCopy,
   findAllCellsInRadius,
   findClosestCell,
   generateGrid,
@@ -60,9 +59,10 @@ class Resampler {
     grid.cells.temp = new Int8Array(grid.points.length);
     grid.cells.prec = new Uint8Array(grid.points.length);
 
+    const parentPackQ = quadtree(parentMap.pack.cells.p.map(([x, y], i) => [x, y, i]));
     grid.points.forEach(([x, y]: [number, number], newGridCell: number) => {
       const [parentX, parentY] = inverse(x, y);
-      const parentPackCell = parentMap.pack.cells.q.find(
+      const parentPackCell = parentPackQ.find(
         parentX,
         parentY,
         Infinity,
@@ -441,11 +441,12 @@ class Resampler {
     parentMap: ParentMapDefinition,
     inverse: (x: number, y: number) => [number, number],
   ) {
+    const parentPackQ = quadtree(parentMap.pack.cells.p.map(([x, y], i) => [x, y, i]));
     pack.features.forEach((feature) => {
       if (!feature) return;
       const [x, y] = pack.cells.p[feature.firstCell];
       const [parentX, parentY] = inverse(x, y);
-      const parentCell = parentMap.pack.cells.q.find(
+      const parentCell = parentPackQ.find(
         parentX,
         parentY,
         Infinity,
@@ -498,9 +499,9 @@ class Resampler {
   process(options: ResamplerProcessOptions): void {
     const { projection, inverse, scale } = options;
     const parentMap = {
-      grid: deepCopy(grid),
-      pack: deepCopy(pack),
-      notes: deepCopy(notes),
+      grid: structuredClone(grid),
+      pack: structuredClone(pack),
+      notes: structuredClone(notes),
     };
     const riversData = this.saveRiversData(pack.rivers);
 
