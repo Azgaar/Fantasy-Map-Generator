@@ -79,7 +79,7 @@ function processFeatureRegeneration(event, button) {
     $("#labels").fadeIn();
     drawStateLabels();
   } else if (button === "regenerateReliefIcons") {
-    drawReliefIcons();
+    generateReliefIcons();
     if (!layerIsOn("toggleRelief")) toggleRelief();
   } else if (button === "regenerateRoutes") {
     regenerateRoutes();
@@ -327,8 +327,8 @@ function recreateStates() {
     const type = nomadic
       ? "Nomadic"
       : pack.cultures[culture].type === "Nomadic"
-      ? "Generic"
-      : pack.cultures[culture].type;
+        ? "Generic"
+        : pack.cultures[culture].type;
     const expansionism = rn(Math.random() * byId("sizeVariety").value + 1, 1);
 
     const cultureType = pack.cultures[culture].type;
@@ -898,8 +898,8 @@ function configMarkersGeneration() {
         <td><input class="type" value="${type}" /></td>
         <td style="position: relative">
           <img class="image" src="${isExternal ? icon : ""}" ${
-        isExternal ? "" : "hidden"
-      } style="width:1.2em; height:1.2em; vertical-align: middle;">
+            isExternal ? "" : "hidden"
+          } style="width:1.2em; height:1.2em; vertical-align: middle;">
           <span class="emoji" style="font-size:1.2em">${isExternal ? "" : icon}</span>
           <button class="changeIcon icon-pencil"></button>
         </td>

@@ -2,11 +2,12 @@
 function editReliefIcon() {
   if (customization) return;
   closeDialogs(".stable");
+
+  // Switch from WebGL to editable SVG <use> elements
+  undrawRelief();
+  drawRelief("svg");
+
   if (!layerIsOn("toggleRelief")) toggleRelief();
-
-  // Switch from canvas image to editable SVG <use> elements
-  if (typeof enterReliefSvgEditMode === "function") enterReliefSvgEditMode();
-
   terrain.selectAll("use").call(d3.drag().on("drag", dragReliefIcon)).classed("draggable", true);
 
   // When called from the Tools button there is no d3 click event; fall back to the first <use>.
@@ -31,30 +32,42 @@ function editReliefIcon() {
   modules.editReliefIcon = true;
 
   // add listeners
-  document.getElementById("reliefIndividual").addEventListener("click", enterIndividualMode);
-  document.getElementById("reliefBulkAdd").addEventListener("click", enterBulkAddMode);
-  document.getElementById("reliefBulkRemove").addEventListener("click", enterBulkRemoveMode);
+  byId("reliefIndividual").on("click", enterIndividualMode);
+  byId("reliefBulkAdd").on("click", enterBulkAddMode);
+  byId("reliefBulkRemove").on("click", enterBulkRemoveMode);
 
-  document.getElementById("reliefSize").addEventListener("input", changeIconSize);
-  document.getElementById("reliefSizeNumber").addEventListener("input", changeIconSize);
-  document.getElementById("reliefEditorSet").addEventListener("change", changeIconsSet);
-  reliefIconsDiv.querySelectorAll("svg").forEach(el => el.addEventListener("click", changeIcon));
+  byId("reliefSize").on("input", changeIconSize);
+  byId("reliefSizeNumber").on("input", changeIconSize);
+  byId("reliefEditorSet").on("change", changeIconsSet);
+  reliefIconsDiv.querySelectorAll("svg").forEach(el => el.on("click", changeIcon));
 
-  document.getElementById("reliefEditStyle").addEventListener("click", () => editStyle("terrain"));
-  document.getElementById("reliefCopy").addEventListener("click", copyIcon);
-  document.getElementById("reliefMoveFront").addEventListener("click", () => elSelected.raise());
-  document.getElementById("reliefMoveBack").addEventListener("click", () => elSelected.lower());
-  document.getElementById("reliefRemove").addEventListener("click", removeIcon);
+  byId("reliefEditStyle").on("click", () => editStyle("terrain"));
+  byId("reliefCopy").on("click", copyIcon);
+  byId("reliefMoveFront").on("click", () => elSelected.raise());
+  byId("reliefMoveBack").on("click", () => elSelected.lower());
+  byId("reliefRemove").on("click", removeIcon);
 
   function dragReliefIcon() {
     const dx = +this.getAttribute("x") - d3.event.x;
     const dy = +this.getAttribute("y") - d3.event.y;
 
+    let newX;
+    let newY;
+
     d3.event.on("drag", function () {
-      const x = d3.event.x,
-        y = d3.event.y;
-      this.setAttribute("x", dx + x);
-      this.setAttribute("y", dy + y);
+      newX = dx + d3.event.x;
+      newY = dy + d3.event.y;
+      this.setAttribute("x", newX);
+      this.setAttribute("y", newY);
+    });
+
+    d3.event.on("end", function () {
+      const id = this.dataset.id;
+      const icon = pack.relief.find(icon => icon.i === +id);
+      if (icon) {
+        icon.x = newX;
+        icon.y = newY;
+      }
     });
   }
 
@@ -295,7 +308,23 @@ function editReliefIcon() {
     removeCircle();
     unselect();
     clearMainTip();
-    // Read back edits and switch terrain to canvas rendering
-    if (typeof exitReliefSvgEditMode === "function") exitReliefSvgEditMode();
+
+    // Sync pack.relief from the current SVG DOM (captures all edits)
+    pack.relief = [];
+    terrain.selectAll("use").each(function () {
+      const href = this.getAttribute("href") || this.getAttribute("xlink:href") || "";
+      if (!href) return;
+      pack.relief.push({
+        i: pack.relief.length,
+        href,
+        x: +this.getAttribute("x"),
+        y: +this.getAttribute("y"),
+        s: +this.getAttribute("width")
+      });
+    });
+
+    // Switch from SVG edit mode back to WebGL rendering
+    undrawRelief();
+    drawRelief();
   }
 }

@@ -424,7 +424,10 @@ export const findAllCellsInRadius = (
  * @param {number} i - The index of the packed cell
  * @returns {Array} - An array of polygon points for the specified cell
  */
-export const getPackPolygon = (cellIndex: number, packedGraph: any) => {
+export const getPackPolygon = (
+  cellIndex: number,
+  packedGraph: any,
+): [number, number][] => {
   return packedGraph.cells.v[cellIndex].map(
     (v: number) => packedGraph.vertices.p[v],
   );

@@ -192,7 +192,7 @@ function drawLayers() {
   if (layerIsOn("toggleCoordinates")) drawCoordinates();
   if (layerIsOn("toggleCompass")) compass.style("display", "block");
   if (layerIsOn("toggleRivers")) drawRivers();
-  if (layerIsOn("toggleRelief")) drawReliefIcons();
+  if (layerIsOn("toggleRelief")) drawRelief();
   if (layerIsOn("toggleReligions")) drawReligions();
   if (layerIsOn("toggleCultures")) drawCultures();
   if (layerIsOn("toggleStates")) drawStates();
@@ -699,22 +699,12 @@ function toggleCompass(event) {
 function toggleRelief(event) {
   if (!layerIsOn("toggleRelief")) {
     turnButtonOn("toggleRelief");
-    if (!terrain.selectAll("*").size()) {
-      drawReliefIcons();
-    } else if (
-      terrain.selectAll("use").size() &&
-      !terrain.select("#terrainCanvasImage").size() &&
-      !terrain.select("#terrainGlFo").size()
-    ) {
-      // Legacy SVG use elements present but no canvas/GL render yet – migrate now
-      if (typeof migrateReliefFromSvg === "function") migrateReliefFromSvg();
-    }
-    $("#terrain").fadeIn();
+    drawRelief();
     if (event && isCtrlClick(event)) editStyle("terrain");
   } else {
     if (event && isCtrlClick(event)) return editStyle("terrain");
-    $("#terrain").fadeOut();
     turnButtonOff("toggleRelief");
+    undrawRelief();
   }
 }
 

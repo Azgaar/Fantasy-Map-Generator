@@ -459,7 +459,7 @@ function handleZoom(isScaleChanged, isPositionChanged) {
     fitScaleBar(scaleBar, svgWidth, svgHeight);
   }
 
-  if (layerIsOn("toggleRelief")) renderReliefIcons();
+  if (layerIsOn("toggleRelief")) rerenderReliefIcons();
 
   // zoom image converter overlay
   if (customization === 1) {
