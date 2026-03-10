@@ -38,9 +38,11 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "@types/lineclip": "^2.0.0",
     "alea": "^1.0.1",
     "d3": "^7.9.0",
     "delaunator": "^5.0.1",
+    "lineclip": "^2.0.0",
     "polylabel": "^2.0.1"
   },
   "engines": {
