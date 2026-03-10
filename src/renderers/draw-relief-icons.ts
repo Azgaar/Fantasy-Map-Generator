@@ -1,13 +1,9 @@
 import * as THREE from "three";
+import { RELIEF_SYMBOLS } from "../config/relief-config";
 import type { ReliefIcon } from "../modules/relief-generator";
-import {
-  generateRelief,
-  RELIEF_SYMBOLS,
-  resolveSprite,
-} from "../modules/relief-generator";
+import { generateRelief } from "../modules/relief-generator";
 import { byId } from "../utils";
 
-// ── Module state ───────────────────────────────────────────────────────────────
 let fo: SVGForeignObjectElement | null = null;
 let renderer: any = null; // THREE.WebGLRenderer
 let camera: any = null; // THREE.OrthographicCamera
@@ -15,7 +11,9 @@ let scene: any = null; // THREE.Scene
 
 const textureCache = new Map<string, any>(); // set name → THREE.Texture
 
-// ── Texture ────────────────────────────────────────────────────────────────────
+function preloadTextures(): void {
+  for (const set of Object.keys(RELIEF_SYMBOLS)) loadTexture(set);
+}
 
 function loadTexture(set: string): Promise<any> {
   if (textureCache.has(set)) return Promise.resolve(textureCache.get(set));
@@ -30,7 +28,8 @@ function loadTexture(set: string): Promise<any> {
         texture.minFilter = THREE.LinearMipmapLinearFilter;
         texture.magFilter = THREE.LinearFilter;
         texture.generateMipmaps = true;
-        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        if (renderer)
+          texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
         textureCache.set(set, texture);
         resolve(texture);
       },
@@ -42,8 +41,6 @@ function loadTexture(set: string): Promise<any> {
     );
   });
 }
-
-// ── WebGL bootstrap ────────────────────────────────────────────────────────────
 
 function ensureRenderer(): boolean {
   const terrainEl = byId("terrain");
@@ -58,7 +55,6 @@ function ensureRenderer(): boolean {
       camera = null;
       scene = null;
       disposeTextureCache();
-      // fall through to recreate
     } else {
       if (fo && !fo.isConnected) terrainEl.appendChild(fo);
       return true;
@@ -66,10 +62,7 @@ function ensureRenderer(): boolean {
   }
 
   // foreignObject hosts the WebGL canvas inside the SVG.
-  fo = document.createElementNS(
-    "http://www.w3.org/2000/svg",
-    "foreignObject",
-  ) as unknown as SVGForeignObjectElement;
+  fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
   fo.id = "terrainFo";
   fo.setAttribute("x", "0");
   fo.setAttribute("y", "0");
@@ -102,19 +95,25 @@ function ensureRenderer(): boolean {
   // Camera in SVG coordinate space: top=0, bottom=H puts map y=0 at screen-top.
   camera = new THREE.OrthographicCamera(0, graphWidth, 0, graphHeight, -1, 1);
   scene = new THREE.Scene();
+
+  preloadTextures();
   return true;
 }
 
-// ── Scene / geometry ───────────────────────────────────────────────────────────
+// map a symbol href to its atlas set and tile index
+function resolveSprite(symbolHref: string): {
+  set: string;
+  tileIndex: number;
+} {
+  const id = symbolHref.startsWith("#") ? symbolHref.slice(1) : symbolHref;
+  for (const [set, ids] of Object.entries(RELIEF_SYMBOLS)) {
+    const idx = ids.indexOf(id);
+    if (idx !== -1) return { set, tileIndex: idx };
+  }
+  throw new Error(`Relief: unknown symbol href "${symbolHref}"`);
+}
 
-/**
- * Build a BufferGeometry with all icon quads for one atlas set.
- * Geometry is painter's-order sorted so depth is correct without depth testing.
- *
- * UV layout (texture.flipY = false — v=0 is top of image):
- *   u = col/cols … (col+1)/cols
- *   v = row/rows … (row+1)/rows
- */
+// Build a BufferGeometry with all icon quads for one atlas set.
 function buildSetMesh(icons: ReliefIcon[], set: string, texture: any): any {
   const ids = RELIEF_SYMBOLS[set] ?? [];
   const n = ids.length || 1;
@@ -232,8 +231,6 @@ function renderFrame(): void {
   camera.updateProjectionMatrix();
   renderer.render(scene, camera);
 }
-
-// ── Private draw / clear ───────────────────────────────────────────────────────
 
 function drawWebGl(icons: ReliefIcon[]): void {
   const terrainEl = byId("terrain");
