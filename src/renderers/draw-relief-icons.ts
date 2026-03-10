@@ -232,14 +232,10 @@ function renderFrame(): void {
   renderer.render(scene, camera);
 }
 
-function drawWebGl(icons: ReliefIcon[]): void {
-  const terrainEl = byId("terrain");
-  if (!terrainEl) return;
-  if (!icons.length) return;
-
-  terrainEl.innerHTML = "";
-  terrainEl.dataset.mode = "webGL";
-  const set = terrainEl.getAttribute("set") || "simple";
+function drawWebGl(icons: ReliefIcon[], parentEl: HTMLElement): void {
+  parentEl.innerHTML = "";
+  parentEl.dataset.mode = "webGL";
+  const set = parentEl.getAttribute("set") || "simple";
 
   if (ensureRenderer()) {
     loadTexture(set).then(() => {
@@ -251,23 +247,26 @@ function drawWebGl(icons: ReliefIcon[]): void {
   }
 }
 
-function drawSvg(icons: ReliefIcon[]): void {
-  const terrainEl = byId("terrain");
-  if (!terrainEl) return;
-  terrainEl.innerHTML = "";
-
+function drawSvg(icons: ReliefIcon[], parentEl: HTMLElement): void {
   const html = icons.map(
     (r) =>
       `<use href="${r.href}" data-id="${r.i}" x="${r.x}" y="${r.y}" width="${r.s}" height="${r.s}"/>`,
   );
-  terrainEl.innerHTML = html.join("");
-  terrainEl.dataset.mode = "svg";
+  parentEl.innerHTML = html.join("");
+  parentEl.dataset.mode = "svg";
 }
 
-window.drawRelief = (type: "svg" | "webGL" = "webGL") => {
+window.drawRelief = (
+  type: "svg" | "webGL" = "webGL",
+  parentEl: HTMLElement | undefined = byId("terrain"),
+) => {
+  if (!parentEl) throw new Error("Relief: parent element not found");
+
   const icons = pack.relief?.length ? pack.relief : generateRelief();
-  if (type === "svg") drawSvg(icons);
-  else drawWebGl(icons);
+  if (!icons.length) return;
+
+  if (type === "svg") drawSvg(icons, parentEl);
+  else drawWebGl(icons, parentEl);
 };
 
 window.undrawRelief = () => {
@@ -294,68 +293,8 @@ window.undrawRelief = () => {
 // re-render the current WebGL frame (called on pan/zoom)
 window.rerenderReliefIcons = renderFrame;
 
-// Migrate legacy saves: read <use> elements from the terrain SVG into pack.relief, remove them from the DOM, then render via WebGL.
-window.migrateReliefFromSvg = () => {
-  const terrainEl = byId("terrain");
-  if (!terrainEl) return;
-  const relief: ReliefIcon[] = [];
-
-  terrainEl.querySelectorAll<SVGUseElement>("use").forEach((u) => {
-    const href = u.getAttribute("href") || u.getAttribute("xlink:href") || "";
-    if (!href) return;
-    relief.push({
-      i: relief.length,
-      href,
-      x: +u.getAttribute("x")!,
-      y: +u.getAttribute("y")!,
-      s: +u.getAttribute("width")!,
-    });
-  });
-  terrainEl.innerHTML = "";
-  pack.relief = relief;
-  drawWebGl(relief);
-};
-
-let _reliefSvgInjectedForSave = false;
-
-/**
- * Before SVG serialization: ensure <use> elements are in the terrain group.
- * In WebGL mode, temporarily injects them from pack.relief.
- * In SVG edit mode, elements are already live in the DOM.
- */
-window.prepareReliefForSave = () => {
-  const terrainEl = byId("terrain");
-  if (!terrainEl) return;
-  if (terrainEl.querySelectorAll("use").length > 0) {
-    _reliefSvgInjectedForSave = false;
-  } else {
-    terrainEl.insertAdjacentHTML(
-      "afterbegin",
-      (pack.relief || [])
-        .map(
-          (r) =>
-            `<use href="${r.href}" x="${r.x}" y="${r.y}" width="${r.s}" height="${r.s}"/>`,
-        )
-        .join(""),
-    );
-    _reliefSvgInjectedForSave = true;
-  }
-};
-
-/** Remove temporarily injected <use> elements after serialization. */
-window.restoreReliefAfterSave = () => {
-  if (_reliefSvgInjectedForSave) {
-    for (const el of byId("terrain")?.querySelectorAll("use") ?? [])
-      el.remove();
-    _reliefSvgInjectedForSave = false;
-  }
-};
-
 declare global {
   var drawRelief: (type?: "svg" | "webGL") => void;
   var undrawRelief: () => void;
   var rerenderReliefIcons: () => void;
-  var migrateReliefFromSvg: () => void;
-  var prepareReliefForSave: () => void;
-  var restoreReliefAfterSave: () => void;
 }

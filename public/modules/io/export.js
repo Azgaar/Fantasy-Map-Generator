@@ -180,10 +180,7 @@ async function getMapURL(
     fullMap = false
   } = {}
 ) {
-  // Temporarily inject <use> elements so the clone includes relief icon data
-  if (typeof prepareReliefForSave === "function") prepareReliefForSave();
   const cloneEl = byId("map").cloneNode(true); // clone svg
-  if (typeof restoreReliefAfterSave === "function") restoreReliefAfterSave();
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone = d3.select(cloneEl);
@@ -262,6 +259,19 @@ async function getMapURL(
   }
 
   {
+    // render relief icons in svg and add used icons to defs
+    const terrainEl = cloneEl.getElementById("terrain");
+    if (terrainEl) drawRelief("svg", terrainEl);
+
+    const uniqueElements = new Set(pack.relief?.map(r => r.href) || []);
+    const defsRelief = svgDefs.getElementById("defs-relief");
+    for (const terrain of uniqueElements) {
+      const element = defsRelief.querySelector(terrain);
+      if (element) cloneDefs.appendChild(element.cloneNode(true));
+    }
+  }
+
+  {
     // replace ocean pattern href to base64
     const image = cloneEl.getElementById("oceanicPattern");
     const href = image?.getAttribute("href");
@@ -286,22 +296,6 @@ async function getMapURL(
           resolve();
         });
       });
-    }
-  }
-
-  // add relief icons (from <use> elements – canvas <image> is excluded)
-  if (cloneEl.getElementById("terrain")) {
-    const uniqueElements = new Set();
-    const terrainUses = cloneEl.getElementById("terrain").querySelectorAll("use");
-    for (let i = 0; i < terrainUses.length; i++) {
-      const href = terrainUses[i].getAttribute("href") || terrainUses[i].getAttribute("xlink:href");
-      if (href && href.startsWith("#")) uniqueElements.add(href);
-    }
-
-    const defsRelief = svgDefs.getElementById("defs-relief");
-    for (const terrain of [...uniqueElements]) {
-      const element = defsRelief.querySelector(terrain);
-      if (element) cloneDefs.appendChild(element.cloneNode(true));
     }
   }
 

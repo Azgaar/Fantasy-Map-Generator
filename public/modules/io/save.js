@@ -77,11 +77,7 @@ function prepareMapData() {
   const rulersString = rulers.toString();
   const fonts = JSON.stringify(getUsedFonts(svg.node()));
 
-  // save svg
-  // Temporarily inject <use> elements so the SVG snapshot includes relief icon data
-  if (typeof prepareReliefForSave === "function") prepareReliefForSave();
   const cloneEl = document.getElementById("map").cloneNode(true);
-  if (typeof restoreReliefAfterSave === "function") restoreReliefAfterSave();
 
   // reset transform values to default
   cloneEl.setAttribute("width", graphWidth);
