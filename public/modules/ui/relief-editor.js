@@ -10,6 +10,15 @@ function editReliefIcon() {
   if (!layerIsOn("toggleRelief")) toggleRelief();
   terrain.selectAll("use").call(d3.drag().on("drag", dragReliefIcon)).classed("draggable", true);
 
+  // Click-to-select: delegation on the terrain group covers existing and newly added <use> elements.
+  terrain.on("click.reliefSelect", function () {
+    if (d3.event.target.tagName !== "use") return;
+    if (!reliefIndividual.classList.contains("pressed")) return;
+    elSelected = d3.select(d3.event.target);
+    updateReliefIconSelected();
+    updateReliefSizeInput();
+  });
+
   // When called from the Tools button there is no d3 click event; fall back to the first <use>.
   // When called from a map click, prefer the actual clicked element if it is a <use>.
   const clickTarget = d3.event && d3.event.target;
@@ -32,27 +41,28 @@ function editReliefIcon() {
   modules.editReliefIcon = true;
 
   // add listeners
-  byId("reliefIndividual").on("click", enterIndividualMode);
-  byId("reliefBulkAdd").on("click", enterBulkAddMode);
-  byId("reliefBulkRemove").on("click", enterBulkRemoveMode);
+  byId("reliefIndividual").addEventListener("click", enterIndividualMode);
+  byId("reliefBulkAdd").addEventListener("click", enterBulkAddMode);
+  byId("reliefBulkRemove").addEventListener("click", enterBulkRemoveMode);
 
-  byId("reliefSize").on("input", changeIconSize);
-  byId("reliefSizeNumber").on("input", changeIconSize);
-  byId("reliefEditorSet").on("change", changeIconsSet);
-  reliefIconsDiv.querySelectorAll("svg").forEach(el => el.on("click", changeIcon));
+  byId("reliefSize").addEventListener("input", changeIconSize);
+  byId("reliefSizeNumber").addEventListener("input", changeIconSize);
+  byId("reliefEditorSet").addEventListener("change", changeIconsSet);
+  reliefIconsDiv.querySelectorAll("svg").forEach(el => el.addEventListener("click", changeIcon));
 
-  byId("reliefEditStyle").on("click", () => editStyle("terrain"));
-  byId("reliefCopy").on("click", copyIcon);
-  byId("reliefMoveFront").on("click", () => elSelected.raise());
-  byId("reliefMoveBack").on("click", () => elSelected.lower());
-  byId("reliefRemove").on("click", removeIcon);
+  byId("reliefEditStyle").addEventListener("click", () => editStyle("terrain"));
+  byId("reliefCopy").addEventListener("click", copyIcon);
+  byId("reliefMoveFront").addEventListener("click", () => elSelected.raise());
+  byId("reliefMoveBack").addEventListener("click", () => elSelected.lower());
+  byId("reliefRemove").addEventListener("click", removeIcon);
 
   function dragReliefIcon() {
     const dx = +this.getAttribute("x") - d3.event.x;
     const dy = +this.getAttribute("y") - d3.event.y;
 
-    let newX;
-    let newY;
+    // initialise from current attrs so "end" has valid values even if drag never fires
+    let newX = +this.getAttribute("x");
+    let newY = +this.getAttribute("y");
 
     d3.event.on("drag", function () {
       newX = dx + d3.event.x;
@@ -78,7 +88,9 @@ function editReliefIcon() {
   }
 
   function updateReliefIconSelected() {
-    const type = elSelected.attr("href") || elSelected.attr("data-type");
+    if (!elSelected.node()) return;
+    const type = elSelected.attr("href");
+    if (!type) return;
     const button = reliefIconsDiv.querySelector("svg[data-type='" + type + "']");
     if (!button) return;
 
@@ -90,7 +102,9 @@ function editReliefIcon() {
   }
 
   function updateReliefSizeInput() {
+    if (!elSelected.node()) return;
     const size = +elSelected.attr("width");
+    if (!size) return;
     reliefSize.value = reliefSizeNumber.value = rn(size);
   }
 
@@ -119,10 +133,10 @@ function editReliefIcon() {
     reliefIconsSeletionAny.style.display = "none";
 
     const pressedType = reliefIconsDiv.querySelector("svg.pressed");
-    if (pressedType.id === "reliefIconsSeletionAny") {
-      // in "any" is pressed, select first type
-      reliefIconsSeletionAny.classList.remove("pressed");
-      reliefIconsDiv.querySelector("svg").classList.add("pressed");
+    if (!pressedType || pressedType.id === "reliefIconsSeletionAny") {
+      // nothing or "any" pressed — select first specific type
+      if (pressedType) reliefIconsSeletionAny.classList.remove("pressed");
+      reliefIconsDiv.querySelector("svg:not(#reliefIconsSeletionAny)")?.classList.add("pressed");
     }
 
     viewbox.style("cursor", "crosshair").call(d3.drag().on("start", dragToAdd)).on("touchmove mousemove", moveBrush);
@@ -145,16 +159,17 @@ function editReliefIcon() {
     const spacing = +reliefSpacingNumber.value;
     const size = +reliefSizeNumber.value;
 
-    // build a quadtree
+    // quadtree for spacing checks; positions (sorted by bottom-y) for painter's z-order
     const tree = d3.quadtree();
     const positions = [];
     terrain.selectAll("use").each(function () {
-      const x = +this.getAttribute("x") + this.getAttribute("width") / 2;
-      const y = +this.getAttribute("y") + this.getAttribute("height") / 2;
-      tree.add([x, y, x]);
+      const cx = +this.getAttribute("x") + this.getAttribute("width") / 2;
+      const cy = +this.getAttribute("y") + this.getAttribute("height") / 2;
+      tree.add([cx, cy]);
       const box = this.getBBox();
       positions.push(box.y + box.height);
     });
+    positions.sort((a, b) => a - b);
 
     d3.event.on("drag", function () {
       const p = d3.mouse(this);
@@ -175,20 +190,25 @@ function editReliefIcon() {
         const z = y + h * 2;
         const s = rn(h * 2, 2);
 
-        let nth = 1;
-        while (positions[nth] && z > positions[nth]) {
-          nth++;
-        }
+        // binary insertion: find first sorted position whose bottom-y exceeds z
+        let insertIdx = 0;
+        while (insertIdx < positions.length && positions[insertIdx] <= z) insertIdx++;
+        positions.splice(insertIdx, 0, z);
 
+        const newIcon = {i: pack.relief.length, href: type, x, y, s};
+        pack.relief.push(newIcon);
         tree.add([cx, cy]);
-        positions.push(z);
+
         terrain
-          .insert("use", ":nth-child(" + nth + ")")
+          .insert("use", ":nth-child(" + (insertIdx + 1) + ")")
+          .attr("data-id", newIcon.i)
           .attr("href", type)
           .attr("x", x)
           .attr("y", y)
           .attr("width", s)
-          .attr("height", s);
+          .attr("height", s)
+          .call(d3.drag().on("drag", dragReliefIcon))
+          .classed("draggable", true);
       });
     });
   }
@@ -223,19 +243,32 @@ function editReliefIcon() {
     d3.event.on("drag", function () {
       const p = d3.mouse(this);
       moveCircle(p[0], p[1], r);
-      findAllInQuadtree(p[0], p[1], r, tree).forEach(f => f[2].remove());
+      const found = findAllInQuadtree(p[0], p[1], r, tree);
+      if (!found.length) return;
+      const removedIds = new Set(found.map(f => +f[2].dataset.id));
+      found.forEach(f => f[2].remove());
+      pack.relief = pack.relief.filter(ic => !removedIds.has(ic.i));
     });
   }
 
-  function changeIconSize() {
-    const size = +reliefSizeNumber.value;
-    if (!reliefIndividual.classList.contains("pressed")) return;
+  function changeIconSize(event) {
+    if (!reliefIndividual.classList.contains("pressed") || !elSelected.node()) return;
+
+    const size = +event.target.value;
+    reliefSize.value = reliefSizeNumber.value = rn(size);
 
     const shift = (size - +elSelected.attr("width")) / 2;
-    elSelected.attr("width", size).attr("height", size);
-    const x = +elSelected.attr("x"),
-      y = +elSelected.attr("y");
-    elSelected.attr("x", x - shift).attr("y", y - shift);
+    const x = rn(+elSelected.attr("x") - shift, 2);
+    const y = rn(+elSelected.attr("y") - shift, 2);
+    elSelected.attr("width", size).attr("height", size).attr("x", x).attr("y", y);
+
+    const id = +elSelected.node().dataset.id;
+    const icon = pack.relief.find(ic => ic.i === id);
+    if (icon) {
+      icon.s = size;
+      icon.x = x;
+      icon.y = y;
+    }
   }
 
   function changeIconsSet() {
@@ -250,32 +283,43 @@ function editReliefIcon() {
     reliefIconsDiv.querySelectorAll("svg.pressed").forEach(b => b.classList.remove("pressed"));
     this.classList.add("pressed");
 
-    if (reliefIndividual.classList.contains("pressed")) {
+    if (reliefIndividual.classList.contains("pressed") && elSelected.node()) {
       const type = this.dataset.type;
       elSelected.attr("href", type);
+      const id = +elSelected.node().dataset.id;
+      const icon = pack.relief.find(ic => ic.i === id);
+      if (icon) icon.href = type;
     }
   }
 
   function copyIcon() {
+    if (!elSelected.node()) return;
     const parent = elSelected.node().parentNode;
     const copy = elSelected.node().cloneNode(true);
 
     let x = +elSelected.attr("x") - 3,
       y = +elSelected.attr("y") - 3;
-    while (parent.querySelector("[x='" + x + "']", "[x='" + y + "']")) {
+    while (parent.querySelector("[x='" + x + "'][y='" + y + "']")) {
       x -= 3;
       y -= 3;
     }
 
+    const newId = pack.relief.length;
+    const href = elSelected.attr("href");
+    const s = +elSelected.attr("width");
     copy.setAttribute("x", x);
     copy.setAttribute("y", y);
+    copy.dataset.id = String(newId);
+    pack.relief.push({i: newId, href, x, y, s});
     parent.insertBefore(copy, null);
+    d3.select(copy).call(d3.drag().on("drag", dragReliefIcon)).classed("draggable", true);
   }
 
   function removeIcon() {
+    if (!elSelected.node() && !reliefBulkRemove.classList.contains("pressed")) return;
     let selection = null;
     const pressed = reliefTools.querySelector("button.pressed");
-    if (pressed.id === "reliefIndividual") {
+    if (!pressed || pressed.id === "reliefIndividual") {
       alertMessage.innerHTML = "Are you sure you want to remove the icon?";
       selection = elSelected;
     } else {
@@ -292,7 +336,14 @@ function editReliefIcon() {
       title: "Remove relief icons",
       buttons: {
         Remove: function () {
-          if (selection) selection.remove();
+          if (selection) {
+            const idsToRemove = new Set();
+            selection.each(function () {
+              idsToRemove.add(+this.dataset.id);
+            });
+            pack.relief = pack.relief.filter(ic => !idsToRemove.has(ic.i));
+            selection.remove();
+          }
           $(this).dialog("close");
           $("#reliefEditor").dialog("close");
         },
@@ -304,26 +355,11 @@ function editReliefIcon() {
   }
 
   function closeReliefEditor() {
+    terrain.on("click.reliefSelect", null);
     terrain.selectAll("use").call(d3.drag().on("drag", null)).classed("draggable", false);
     removeCircle();
     unselect();
     clearMainTip();
-
-    // Sync pack.relief from the current SVG DOM (captures all edits)
-    pack.relief = [];
-    terrain.selectAll("use").each(function () {
-      const href = this.getAttribute("href") || this.getAttribute("xlink:href") || "";
-      if (!href) return;
-      pack.relief.push({
-        i: pack.relief.length,
-        href,
-        x: +this.getAttribute("x"),
-        y: +this.getAttribute("y"),
-        s: +this.getAttribute("width")
-      });
-    });
-
-    // Switch from SVG edit mode back to WebGL rendering
     undrawRelief();
     drawRelief();
   }

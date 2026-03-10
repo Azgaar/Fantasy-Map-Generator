@@ -176,7 +176,7 @@
   },
   "#terrain": {
     "opacity": null,
-    "set": "colored",
+    "set": "simple",
     "size": 1,
     "density": 0.4,
     "filter": null,

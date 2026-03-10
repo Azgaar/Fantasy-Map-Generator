@@ -2089,13 +2089,12 @@ svg.button {
   background-color: #e7e6e4;
   border: 1px solid #a9a9a9;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
 #reliefIconsDiv svg:hover {
   border-color: #5c5c5c;
   background-color: #eef6fb;
-  transition: all 0.3s ease-out 3s;
-  transform: scale(2);
 }
 
 #reliefIconsDiv svg.pressed {
