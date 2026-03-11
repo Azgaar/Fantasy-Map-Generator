@@ -4,12 +4,15 @@ import type { ReliefIcon } from "../modules/relief-generator";
 import { generateRelief } from "../modules/relief-generator";
 import { byId } from "../utils";
 
-let fo: SVGForeignObjectElement | null = null;
+let glCanvas: HTMLCanvasElement | null = null;
 let renderer: THREE.WebGLRenderer | null = null;
 let camera: THREE.OrthographicCamera | null = null;
 let scene: THREE.Scene | null = null;
 
 const textureCache = new Map<string, THREE.Texture>(); // set name → THREE.Texture
+
+let lastBuiltIcons: ReliefIcon[] | null = null;
+let lastBuiltSet: string | null = null;
 
 function preloadTextures(): void {
   for (const set of Object.keys(RELIEF_SYMBOLS)) loadTexture(set);
@@ -18,6 +21,7 @@ function preloadTextures(): void {
 function loadTexture(set: string): Promise<THREE.Texture | null> {
   if (textureCache.has(set))
     return Promise.resolve(textureCache.get(set) || null);
+
   return new Promise((resolve) => {
     const loader = new THREE.TextureLoader();
     loader.load(
@@ -44,8 +48,7 @@ function loadTexture(set: string): Promise<THREE.Texture | null> {
 }
 
 function ensureRenderer(): boolean {
-  const terrainEl = byId("terrain");
-  if (!terrainEl) return false;
+  if (!byId("terrain")) return false;
 
   if (renderer) {
     if (renderer.getContext().isContextLost()) {
@@ -55,41 +58,42 @@ function ensureRenderer(): boolean {
       renderer = null;
       camera = null;
       scene = null;
+      glCanvas = null;
       disposeTextureCache();
+      lastBuiltIcons = null;
+      lastBuiltSet = null;
     } else {
-      if (fo && !fo.isConnected) terrainEl.appendChild(fo);
+      // Re-attach if the canvas was removed from the DOM externally.
+      if (glCanvas && !glCanvas.isConnected) {
+        const terrainSvg = byId("map-layer-terrain");
+        if (terrainSvg)
+          terrainSvg.parentElement!.insertBefore(glCanvas, terrainSvg);
+        else document.body.appendChild(glCanvas);
+      }
       return true;
     }
   }
 
-  // foreignObject hosts the WebGL canvas inside the SVG.
-  fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-  fo.id = "terrainFo";
-  fo.setAttribute("x", "0");
-  fo.setAttribute("y", "0");
-  fo.setAttribute("width", String(graphWidth));
-  fo.setAttribute("height", String(graphHeight));
-
-  // IMPORTANT: use document.createElement, not createElementNS.
-  const canvas = document.createElement("canvas");
-  canvas.id = "terrainGlCanvas";
-  fo.appendChild(canvas);
-  terrainEl.appendChild(fo);
+  glCanvas = document.createElement("canvas");
+  glCanvas.id = "terrainCanvas";
+  glCanvas.style.cssText =
+    "display:block;pointer-events:none;position:absolute;top:0;left:0";
+  const map = byId("map");
+  if (map) document.body.insertAdjacentElement("afterend", glCanvas);
 
   try {
     renderer = new THREE.WebGLRenderer({
-      canvas,
+      canvas: glCanvas,
       alpha: true,
       antialias: false,
-      preserveDrawingBuffer: true,
     });
     renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(window.devicePixelRatio || 1);
     renderer.setSize(graphWidth, graphHeight);
-    canvas.style.cssText =
-      "display:block;pointer-events:none;position:absolute;top:0;left:0;width:100%;height:100%;";
   } catch (e) {
     console.error("Relief: WebGL init failed", e);
+    glCanvas.remove();
+    glCanvas = null;
     return false;
   }
 
@@ -115,20 +119,23 @@ function resolveSprite(symbolHref: string): {
 }
 
 // Build a BufferGeometry with all icon quads for one atlas set.
-function buildSetMesh(icons: ReliefIcon[], set: string, texture: any): any {
+function buildSetMesh(
+  entries: Array<{ icon: ReliefIcon; tileIndex: number }>,
+  set: string,
+  texture: any,
+): any {
   const ids = RELIEF_SYMBOLS[set] ?? [];
   const n = ids.length || 1;
   const cols = Math.ceil(Math.sqrt(n));
   const rows = Math.ceil(n / cols);
 
-  const positions = new Float32Array(icons.length * 4 * 3);
-  const uvs = new Float32Array(icons.length * 4 * 2);
-  const indices = new Uint32Array(icons.length * 6);
+  const positions = new Float32Array(entries.length * 4 * 3);
+  const uvs = new Float32Array(entries.length * 4 * 2);
+  const indices = new Uint32Array(entries.length * 6);
 
   let vi = 0,
     ii = 0;
-  for (const r of icons) {
-    const { tileIndex } = resolveSprite(r.href);
+  for (const { icon: r, tileIndex } of entries) {
     const col = tileIndex % cols;
     const row = Math.floor(tileIndex / cols);
     const u0 = col / cols,
@@ -197,36 +204,34 @@ function buildScene(icons: ReliefIcon[]): void {
   if (!scene) return;
   disposeScene();
 
-  const bySet = new Map<string, ReliefIcon[]>();
+  const bySet = new Map<
+    string,
+    Array<{ icon: ReliefIcon; tileIndex: number }>
+  >();
   for (const r of icons) {
-    const { set } = resolveSprite(r.href);
+    const { set, tileIndex } = resolveSprite(r.href);
     let arr = bySet.get(set);
     if (!arr) {
       arr = [];
       bySet.set(set, arr);
     }
-    arr.push(r);
+    arr.push({ icon: r, tileIndex });
   }
 
-  for (const [set, setIcons] of bySet) {
+  for (const [set, setEntries] of bySet) {
     const texture = textureCache.get(set);
     if (!texture) continue;
-    scene.add(buildSetMesh(setIcons, set, texture));
+    scene.add(buildSetMesh(setEntries, set, texture));
   }
 }
 
 function renderFrame(): void {
-  if (!renderer || !camera || !scene || !fo) return;
+  if (!renderer || !camera || !scene) return;
 
   const x = -viewX / scale;
   const y = -viewY / scale;
   const w = graphWidth / scale;
   const h = graphHeight / scale;
-
-  fo.setAttribute("x", String(x));
-  fo.setAttribute("y", String(y));
-  fo.setAttribute("width", String(w));
-  fo.setAttribute("height", String(h));
 
   camera.left = x;
   camera.right = x + w;
@@ -241,7 +246,11 @@ function drawWebGl(icons: ReliefIcon[], parentEl: HTMLElement): void {
 
   if (ensureRenderer()) {
     loadTexture(set).then(() => {
-      buildScene(icons);
+      if (icons !== lastBuiltIcons || set !== lastBuiltSet) {
+        buildScene(icons);
+        lastBuiltIcons = icons;
+        lastBuiltSet = set;
+      }
       renderFrame();
     });
   } else {
@@ -284,19 +293,28 @@ window.undrawRelief = () => {
       renderer.dispose();
       renderer = null;
     }
-    if (fo) {
-      if (fo.isConnected) fo.remove();
-      fo = null;
+    if (glCanvas) {
+      if (glCanvas.isConnected) glCanvas.remove();
+      glCanvas = null;
     }
     camera = null;
     scene = null;
+    lastBuiltIcons = null;
+    lastBuiltSet = null;
   }
 
   if (terrainEl) terrainEl.innerHTML = "";
 };
 
-// re-render the current WebGL frame (called on pan/zoom)
-window.rerenderReliefIcons = renderFrame;
+// re-render the current WebGL frame (called on pan/zoom); coalesced to one GPU draw per animation frame
+let rafId: number | null = null;
+window.rerenderReliefIcons = () => {
+  if (rafId !== null) cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(() => {
+    rafId = null;
+    renderFrame();
+  });
+};
 
 declare global {
   var drawRelief: (type?: "svg" | "webGL") => void;
