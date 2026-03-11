@@ -318,7 +318,7 @@ class ProvinceModule {
           if (singleIsle) return "Island";
           if (isleGroup) return "Islands";
           if (colony) return "Colony";
-          return rw(this.forms["Wild"]);
+          return rw(this.forms.Wild);
         })();
 
         const fullName = `${name} ${formName}`;

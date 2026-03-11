@@ -1,6 +1,6 @@
-import type {Selection} from "d3";
-import type {NameBase} from "../modules/names-generator";
-import type {PackedGraph} from "./PackedGraph";
+import type { Selection } from "d3";
+import type { NameBase } from "../modules/names-generator";
+import type { PackedGraph } from "./PackedGraph";
 
 declare global {
   var seed: string;
@@ -11,7 +11,7 @@ declare global {
   var TIME: boolean;
   var WARN: boolean;
   var ERROR: boolean;
-  var DEBUG: {stateLabels?: boolean; [key: string]: boolean | undefined};
+  var DEBUG: { stateLabels?: boolean; [key: string]: boolean | undefined };
   var options: any;
 
   var heightmapTemplates: any;
@@ -66,9 +66,9 @@ declare global {
   };
   var notes: any[];
   var style: {
-    burgLabels: {[key: string]: {[key: string]: string}};
-    burgIcons: {[key: string]: {[key: string]: string}};
-    anchors: {[key: string]: {[key: string]: string}};
+    burgLabels: { [key: string]: { [key: string]: string } };
+    burgIcons: { [key: string]: { [key: string]: string } };
+    anchors: { [key: string]: { [key: string]: string } };
     [key: string]: any;
   };
 
@@ -81,7 +81,7 @@ declare global {
     message: string,
     autoHide?: boolean,
     type?: "info" | "warn" | "error" | "success",
-    timeout?: number
+    timeout?: number,
   ) => void;
   var locked: (settingId: string) => boolean;
   var unlock: (settingId: string) => void;

@@ -53,6 +53,7 @@ const pinShapes: PinShapes = {
   no: () => "",
 };
 
+// biome-ignore lint/suspicious/noRedeclare: const implementation satisfies the global var declaration above
 const getPin = (shape = "bubble", fill = "#fff", stroke = "#000"): string => {
   const shapeFunction = pinShapes[shape] || pinShapes.bubble;
   return shapeFunction(fill, stroke);

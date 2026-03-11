@@ -1,6 +1,12 @@
 import type { CurveFactory } from "d3";
-import * as d3 from "d3";
-import { color, line, range } from "d3";
+import {
+  color,
+  curveBasisClosed,
+  curveLinear,
+  curveStep,
+  line,
+  range,
+} from "d3";
 import { round } from "../utils";
 
 declare global {
@@ -28,10 +34,13 @@ const heightmapRenderer = (): void => {
   if (renderOceanCells) {
     const skip = +ocean.attr("skip") + 1 || 1;
     const relax = +ocean.attr("relax") || 0;
-    // TODO: Improve for treeshaking
-    const curveType: keyof typeof d3 = (ocean.attr("curve") ||
-      "curveBasisClosed") as keyof typeof d3;
-    const lineGen = line().curve(d3[curveType] as CurveFactory);
+    const curveFactories: Record<string, CurveFactory> = {
+      curveBasisClosed,
+      curveLinear,
+      curveStep,
+    };
+    const curveType = ocean.attr("curve") || "curveBasisClosed";
+    const lineGen = line().curve(curveFactories[curveType] ?? curveBasisClosed);
 
     let currentLayer = 0;
     for (const i of heights) {
@@ -59,9 +68,13 @@ const heightmapRenderer = (): void => {
   {
     const skip = +land.attr("skip") + 1 || 1;
     const relax = +land.attr("relax") || 0;
-    const curveType: keyof typeof d3 = (land.attr("curve") ||
-      "curveBasisClosed") as keyof typeof d3;
-    const lineGen = line().curve(d3[curveType] as CurveFactory);
+    const curveFactories: Record<string, CurveFactory> = {
+      curveBasisClosed,
+      curveLinear,
+      curveStep,
+    };
+    const curveType = land.attr("curve") || "curveBasisClosed";
+    const lineGen = line().curve(curveFactories[curveType] ?? curveBasisClosed);
 
     let currentLayer = 20;
     for (const i of heights) {
