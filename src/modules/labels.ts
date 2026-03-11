@@ -130,13 +130,6 @@ class LabelsModule {
     );
   }
 
-  removeStateLabel(stateId: number): void {
-    const index = pack.labels.findIndex(
-      (l) => l.type === "state" && l.stateId === stateId,
-    );
-    if (index !== -1) pack.labels.splice(index, 1);
-  }
-
   removeBurgLabel(burgId: number): void {
     const index = pack.labels.findIndex(
       (l) => l.type === "burg" && l.burgId === burgId,
@@ -153,22 +146,17 @@ class LabelsModule {
    * Only stores essential label data; raycast path calculation happens during rendering.
    * @param list - Optional array of stateIds to regenerate only those
    */
-  generateStateLabels(list?: number[]): void {
+  generateStateLabels(): void {
     if (TIME) console.time("generateStateLabels");
 
     const { states } = pack;
 
     // Remove existing state labels that need regeneration
-    if (list) {
-      list.forEach((stateId) => this.removeStateLabel(stateId));
-    } else {
-      this.removeByType("state");
-    }
+    this.removeByType("state");
 
     // Generate new label entries
     for (const state of states) {
       if (!state.i || state.removed || state.lock) continue;
-      if (list && !list.includes(state.i)) continue;
 
       this.addStateLabel({
         stateId: state.i,
