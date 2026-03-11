@@ -1143,7 +1143,6 @@ function reGraph() {
   pack.cells = packCells;
   pack.cells.p = newCells.p;
   pack.cells.g = createTypedArray({maxValue: grid.points.length, from: newCells.g});
-  pack.cells.q = d3.quadtree(newCells.p.map(([x, y], i) => [x, y, i]));
   pack.cells.h = createTypedArray({maxValue: 100, from: newCells.h});
   pack.cells.area = createTypedArray({maxValue: UINT16_MAX, length: packCells.i.length}).map((_, cellId) => {
     const area = Math.abs(d3.polygonArea(getPackPolygon(cellId)));

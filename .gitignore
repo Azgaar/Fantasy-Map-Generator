@@ -9,5 +9,5 @@
 /_bmad
 /_bmad-output
 /.DS_Store
-/.github/agents
-/.github/prompts
+.github/agents/bmad-*
+.github/prompts/bmad-*
