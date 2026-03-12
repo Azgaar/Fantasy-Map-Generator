@@ -133,32 +133,38 @@ import {
 
 ### Decision 2: Layer Registration API
 
-**Decision:** The framework exposes a `register(config: WebGLLayerConfig)` method. Callers provide an `id`, `anchorLayerId` (SVG element ID for z-position reference), `renderOrder` (Three.js scene draw order), `setup(scene)` callback, and `dispose()` callback. The framework manages canvas lifecycle; layer-specific GPU resource creation happens in `setup`.
+**Decision:** The framework exposes a `register(config: WebGLLayerConfig)` method. Callers provide an `id`, `anchorLayerId` (SVG element ID for z-position reference), `renderOrder`, a `setup(group)` callback (called once on init), a per-frame `render(group)` callback (called every frame before `renderer.render()`), and a `dispose(group)` cleanup callback. All three callbacks receive the layer's framework-managed `THREE.Group` — **never the raw scene, renderer, or camera** — establishing a clean abstraction boundary.
+
+**Abstraction boundary:** `THREE.Group` is the sole interface point between framework internals and layer logic. If the underlying renderer backend changes, only the framework changes — layer code is unaffected. Layer authors never import or depend on `THREE.Scene`, `THREE.WebGLRenderer`, or camera types.
 
 ```typescript
-interface WebGLLayerConfig {
+export interface WebGLLayerConfig {
   id: string;
-  anchorLayerId: string; // e.g. "terrain" — SVG <g> whose DOM position sets z-index
-  renderOrder: number; // Three.js renderOrder for objects in this layer
-  setup: (scene: THREE.Scene) => void; // called once after WebGL2 context confirmed
-  dispose: (scene: THREE.Scene) => void; // called on framework.unregister(id)
+  anchorLayerId: string; // SVG <g> id; canvas element id derived as `${id}Canvas`
+  renderOrder: number; // Three.js renderOrder for this layer's Group in the scene
+  setup: (group: THREE.Group) => void; // called once after WebGL2 confirmed; add meshes to group
+  render: (group: THREE.Group) => void; // called each frame before renderer.render(); update uniforms/geometry
+  dispose: (group: THREE.Group) => void; // called on unregister(id); dispose all GPU objects in group
 }
 ```
 
 **What the framework manages:**
 
-- Canvas element creation, sizing, positioning
-- `THREE.WebGLRenderer` + `THREE.Scene` initialization
+- Canvas element creation, sizing, positioning; canvas `id` = `${config.id}Canvas`
+- `THREE.WebGLRenderer` + `THREE.Scene` + `THREE.OrthographicCamera` initialization
+- One `THREE.Group` per registered layer (owns all layer GPU objects)
 - Z-index derivation from anchor SVG layer DOM position
-- Visibility toggle (`visible = false/true` on registered `THREE.Object3D` groups)
+- Visibility toggle (`group.visible = false/true`) — no GPU teardown
 - Canvas resize via `ResizeObserver`
-- D3 zoom/pan → orthographic camera sync
+- D3 zoom subscription in `init()` → `requestRender()` on every zoom/pan event
+- Per-frame dispatch: calls each visible layer's `render(group)` before `renderer.render(scene, camera)`
 
 **What each layer module manages:**
 
-- Creating `THREE.Mesh` / `BufferGeometry` / textures in `setup(scene)`
-- Clearing and rebuilding geometry when data changes (called by `drawRelief` equivalent)
-- Cleaning up GPU objects in `dispose(scene)`
+- In `setup(group)`: create `THREE.Mesh` / `BufferGeometry` / textures, add them to `group`
+- In `render(group)`: update geometry or material uniforms if data changed since last frame
+- In `dispose(group)`: call `.geometry.dispose()`, `.material.dispose()`, `.map?.dispose()` on all children
+- **Never** access `scene`, `renderer`, `camera`, or `canvas` directly — those are framework internals
 
 ### Decision 3: Canvas Z-Index Positioning — MVP vs. Phase 2
 
@@ -183,16 +189,22 @@ interface WebGLLayerConfig {
 
 This requires moving layer `<g>` elements between two SVG elements and syncing D3 transforms to both — deferred to Phase 2.
 
-**Z-index computation formula (MVP):**
+**Z-index in MVP — Critical Limitation:**
+
+In MVP, `#map` (z-index: 1) and the canvas (z-index: 2) are siblings inside `#map-container`. CSS z-index between DOM siblings **cannot** interleave with the SVG's internal `<g>` layer groups — all 32 groups live inside the single `#map` SVG element. The canvas renders **above the entire SVG** regardless of its numeric z-index, as long as that value exceeds `#map`'s value of 1.
+
+`getLayerZIndex()` is included for **Phase 2 forward-compatibility only**. When the DOM-split lands and each layer `<g>` becomes a direct sibling inside `#map-container`, the DOM position index will map directly to a meaningful CSS z-index for true interleaving. In MVP, the function is used merely to confirm the canvas sits above `#map`:
 
 ```typescript
+// MVP: canvas simply needs z-index > 1 (the #map SVG value).
+// Phase 2 (DOM-split): this index will represent true visual stacking position.
 function getLayerZIndex(anchorLayerId: string): number {
   const anchor = document.getElementById(anchorLayerId);
-  if (!anchor) return 100;
-  // Use the element's index in its parent's children as the z-index base
+  if (!anchor) return 2;
   const siblings = Array.from(anchor.parentElement?.children ?? []);
   const idx = siblings.indexOf(anchor);
-  return idx > 0 ? idx : 100;
+  // Return idx + 1 so Phase 2 callers get a correct interleaving value automatically.
+  return idx > 0 ? idx + 1 : 2;
 }
 ```
 
@@ -213,9 +225,13 @@ Orthographic camera bounds (what map rectangle is visible on screen):
   top    = -viewY / scale          ← top edge
   bottom = (graphHeight - viewY) / scale ← bottom edge
 
-Camera is configured with Y-down convention (top < bottom) to match SVG:
+Three.js OrthographicCamera(left, right, top, bottom, near, far):
+  `top`    = upper visible edge in camera space (numerically smaller — closer to y=0 in SVG)
+  `bottom` = lower visible edge in camera space (numerically larger)
+  So top < bottom, which means the camera's Y-axis points downward — matching SVG.
   new OrthographicCamera(left, right, top, bottom, -1, 1)
-  where top < bottom (Y increases downward, SVG convention)
+  // top < bottom: Y-down matches SVG; origin at top-left of map.
+  // Do NOT swap top/bottom or negate — this is the correct Three.js Y-down configuration.
 ```
 
 **Why this is testable:** `buildCameraBounds` takes only numbers and returns numbers. Tests inject mock `viewX/viewY/scale` values and assert exact output — no DOM or WebGL required.
@@ -240,12 +256,28 @@ setVisible(id: string, visible: boolean): void {
 
 ### Decision 6: WebGL2 Detection and SVG Fallback
 
-**Decision:** Framework initialization calls `detectWebGL2()` which attempts `canvas.getContext('webgl2')`. On failure, the framework sets a `hasFallback = true` flag and the relief renderer falls back to `drawSvg()`. All framework methods become no-ops when in fallback mode.
+**Decision:** `init()` calls `detectWebGL2()` which attempts `canvas.getContext('webgl2')`. On failure, the framework sets a private `_fallback` backing field to `true` (exposed via a public getter `get hasFallback()`). The relief renderer reads `hasFallback` and falls back to `drawSvg()`. All framework methods silently return when `_fallback` is true.
+
+**Critical TypeScript pattern — `hasFallback` MUST use a backing field, not `readonly`:** TypeScript `readonly` fields can only be assigned in the constructor. Because `detectWebGL2()` runs inside `init()` (called post-construction), `hasFallback` must be implemented as:
 
 ```typescript
-function detectWebGL2(): boolean {
-  const probe = document.createElement("canvas");
-  const ctx = probe.getContext("webgl2");
+private _fallback = false;
+get hasFallback(): boolean { return this._fallback; }
+
+init(): boolean {
+  this._fallback = !detectWebGL2();
+  if (this._fallback) return false;
+  // ... rest of init
+}
+```
+
+Do **not** declare `readonly hasFallback: boolean = false` — that pattern compiles but the assignment in `init()` produces a type error.
+
+```typescript
+// Exported for testability — accepts an injectable probe canvas
+export function detectWebGL2(probe?: HTMLCanvasElement): boolean {
+  const canvas = probe ?? document.createElement("canvas");
+  const ctx = canvas.getContext("webgl2");
   if (!ctx) return false;
   const ext = ctx.getExtension("WEBGL_lose_context");
   ext?.loseContext();
@@ -253,7 +285,7 @@ function detectWebGL2(): boolean {
 }
 ```
 
-**Testable:** The detection function is exported and can be called with a mock canvas in Vitest.
+**Testable:** `detectWebGL2` accepts an optional injectable probe canvas so tests pass a mock without DOM access.
 
 ### Decision 7: Frame Rendering — On-Demand, RAF-Coalesced
 
@@ -272,6 +304,14 @@ requestRender(): void {
 
 private render(): void {
   this.syncTransform();
+  // Dispatch per-frame callback to each visible layer before submitting draw call.
+  // This is the mechanism through which layers update uniforms, instance matrices,
+  // or geometry data on a frame-by-frame basis.
+  for (const [, layer] of this.layers) {
+    if (layer.group.visible) {
+      layer.config.render(layer.group);
+    }
+  }
   this.renderer.render(this.scene, this.camera);
 }
 ```
@@ -352,7 +392,7 @@ declare global {
 
 ### 4.5 Error Handling Philosophy
 
-- Framework init failures (WebGL2 unavailable): set `hasFallback = true`, log with `WARN` global, no throw
+- Framework `init()` failures (WebGL2 unavailable): sets `_fallback = true` via backing field, logs with `WARN` global, returns `false` — no throw
 - Missing DOM elements (e.g., `#map` not found on init): early return + `WARN` log
 - WebGL context loss mid-session: `renderer.forceContextRestore()` then `renderer.dispose()` + re-init on next draw call (preserves existing pattern from `draw-relief-icons.ts`)
 - Unit tests: pure functions throw `Error`s; framework class methods log and return for resilience
@@ -363,12 +403,12 @@ Unit tests co-located with source in `src/modules/`:
 
 ```typescript
 // src/modules/webgl-layer-framework.test.ts
-import {describe, it, expect, vi} from "vitest";
-import {buildCameraBounds, detectWebGL2, getLayerZIndex} from "./webgl-layer-framework";
+import {describe, it, expect, vi, beforeEach} from "vitest";
+import {buildCameraBounds, detectWebGL2, getLayerZIndex, WebGL2LayerFrameworkClass} from "./webgl-layer-framework";
 
+// ─── Pure function tests (no DOM, no WebGL) ───────────────────────────────────
 describe("buildCameraBounds", () => {
   it("returns correct bounds for identity transform", () => {
-    // viewX=0, viewY=0, scale=1, 960x540
     const b = buildCameraBounds(0, 0, 1, 960, 540);
     expect(b.left).toBe(0);
     expect(b.right).toBe(960);
@@ -376,18 +416,30 @@ describe("buildCameraBounds", () => {
     expect(b.bottom).toBe(540);
   });
 
-  it("returns correct bounds at 2× zoom centered on origin", () => {
+  it("returns correct bounds at 2× zoom", () => {
     const b = buildCameraBounds(0, 0, 2, 960, 540);
-    expect(b.left).toBe(0);
     expect(b.right).toBe(480);
-    expect(b.top).toBe(0);
     expect(b.bottom).toBe(270);
   });
 
-  it("returns correct bounds with pan offset", () => {
+  it("returns correct bounds with pan offset (viewX negative = panned right)", () => {
+    // viewX=-100 means D3 translated +100px right; map origin is at x=100 on screen
     const b = buildCameraBounds(-100, -50, 1, 960, 540);
-    expect(b.left).toBe(100);
-    expect(b.right).toBe(1060);
+    expect(b.left).toBe(100); // -(-100)/1
+    expect(b.right).toBe(1060); // (960-(-100))/1
+    expect(b.top).toBe(50);
+  });
+
+  it("top < bottom (Y-down camera convention)", () => {
+    const b = buildCameraBounds(0, 0, 1, 960, 540);
+    expect(b.top).toBeLessThan(b.bottom);
+  });
+
+  it("handles extreme zoom values without NaN", () => {
+    const lo = buildCameraBounds(0, 0, 0.1, 960, 540);
+    const hi = buildCameraBounds(0, 0, 50, 960, 540);
+    expect(Number.isFinite(lo.right)).toBe(true);
+    expect(Number.isFinite(hi.right)).toBe(true);
   });
 });
 
@@ -396,10 +448,94 @@ describe("detectWebGL2", () => {
     const canvas = {getContext: () => null} as unknown as HTMLCanvasElement;
     expect(detectWebGL2(canvas)).toBe(false);
   });
+
+  it("returns true when getContext returns a context object", () => {
+    const mockCtx = {getExtension: () => null};
+    const canvas = {getContext: () => mockCtx} as unknown as HTMLCanvasElement;
+    expect(detectWebGL2(canvas)).toBe(true);
+  });
+});
+
+// ─── Class-level tests (stub WebGL2LayerFrameworkClass) ───────────────────────
+describe("WebGL2LayerFrameworkClass", () => {
+  let framework: WebGL2LayerFrameworkClass;
+
+  // Stubs: framework.init() requires DOM; short-circuit by stubbing _fallback
+  beforeEach(() => {
+    framework = new WebGL2LayerFrameworkClass();
+    // Force fallback=false path without real WebGL:
+    (framework as any)._fallback = false;
+    // Inject a minimal scene + renderer stub so register() doesn't throw
+    (framework as any).scene = {add: vi.fn()};
+    (framework as any).layers = new Map();
+  });
+
+  it("register() queues config when called before init()", () => {
+    const fresh = new WebGL2LayerFrameworkClass();
+    const config = {
+      id: "test",
+      anchorLayerId: "terrain",
+      renderOrder: 1,
+      setup: vi.fn(),
+      render: vi.fn(),
+      dispose: vi.fn()
+    };
+    // Before init(), scene is null — register() must queue, not throw
+    expect(() => fresh.register(config)).not.toThrow();
+  });
+
+  it("setVisible(false) does not call dispose() on GPU objects", () => {
+    const mockGroup = {visible: true};
+    const config = {
+      id: "terrain",
+      anchorLayerId: "terrain",
+      renderOrder: 1,
+      setup: vi.fn(),
+      render: vi.fn(),
+      dispose: vi.fn()
+    };
+    (framework as any).layers.set("terrain", {config, group: mockGroup});
+    (framework as any).canvas = {style: {display: "block"}};
+    framework.setVisible("terrain", false);
+    expect(mockGroup.visible).toBe(false);
+    expect(config.dispose).not.toHaveBeenCalled();
+  });
+
+  it("requestRender() coalesces multiple calls into a single RAF", () => {
+    const rafSpy = vi.spyOn(globalThis, "requestAnimationFrame").mockReturnValue(1 as any);
+    (framework as any).renderer = {render: vi.fn()};
+    (framework as any).camera = {};
+    framework.requestRender();
+    framework.requestRender();
+    framework.requestRender();
+    expect(rafSpy).toHaveBeenCalledTimes(1);
+    rafSpy.mockRestore();
+  });
+
+  it("clearLayer() removes group children without disposing the renderer", () => {
+    const clearFn = vi.fn();
+    const mockGroup = {visible: true, clear: clearFn};
+    const config = {
+      id: "terrain",
+      anchorLayerId: "terrain",
+      renderOrder: 1,
+      setup: vi.fn(),
+      render: vi.fn(),
+      dispose: vi.fn()
+    };
+    (framework as any).layers.set("terrain", {config, group: mockGroup});
+    framework.clearLayer("terrain");
+    expect(clearFn).toHaveBeenCalled();
+    expect((framework as any).layers.has("terrain")).toBe(true); // still registered
+  });
+
+  it("hasFallback is false by default (backing field pattern)", () => {
+    expect(framework.hasFallback).toBe(false);
+  });
 });
 ```
 
-**Key testability rule:** Pure functions (`buildCameraBounds`, `detectWebGL2`, `getLayerZIndex`) are exported as named exports and tested without DOM/WebGL. The class itself is tested with stub canvases where needed.
+**Key testability rule:** Pure functions (`buildCameraBounds`, `detectWebGL2`, `getLayerZIndex`) are exported as named exports and are fully testable without DOM or WebGL. The class is tested via stubs injected onto private fields — no real renderer required.
 
 ---
 
@@ -443,15 +579,16 @@ export function getLayerZIndex(anchorLayerId: string): number;
 // ─── Types ───────────────────────────────────────────────────────────────────
 export interface WebGLLayerConfig {
   id: string;
-  anchorLayerId: string;
-  renderOrder: number;
-  setup: (scene: THREE.Scene) => void;
-  dispose: (scene: THREE.Scene) => void;
+  anchorLayerId: string; // SVG <g> id; canvas id derived as `${id}Canvas`
+  renderOrder: number; // Three.js renderOrder for this layer's Group
+  setup: (group: THREE.Group) => void; // called once on init(); add meshes to group
+  render: (group: THREE.Group) => void; // called each frame before renderer.render()
+  dispose: (group: THREE.Group) => void; // called on unregister(); dispose GPU objects
 }
 
 interface RegisteredLayer {
   config: WebGLLayerConfig;
-  group: THREE.Group;
+  group: THREE.Group; // framework-owned; passed to all callbacks — abstraction boundary
 }
 
 // ─── Class ───────────────────────────────────────────────────────────────────
@@ -461,23 +598,28 @@ export class WebGL2LayerFrameworkClass {
   private camera: THREE.OrthographicCamera | null = null;
   private scene: THREE.Scene | null = null;
   private layers: Map<string, RegisteredLayer> = new Map();
+  private pendingConfigs: WebGLLayerConfig[] = []; // queue for register() before init()
   private resizeObserver: ResizeObserver | null = null;
   private rafId: number | null = null;
   private container: HTMLElement | null = null;
-  readonly hasFallback: boolean = false;
+  private _fallback = false; // backing field — NOT readonly, set in init()
+  get hasFallback(): boolean {
+    return this._fallback;
+  }
 
   // Public API
-  init(containerId?: string): boolean;
-  register(config: WebGLLayerConfig): boolean;
+  init(): boolean; // call from app bootstrap; processes pendingConfigs queue
+  register(config: WebGLLayerConfig): boolean; // safe to call before init() — queues if needed
   unregister(id: string): void;
   setVisible(id: string, visible: boolean): void;
+  clearLayer(id: string): void; // wipe group geometry without removing registration
   requestRender(): void;
   syncTransform(): void;
 
   // Private
   private render(): void;
   private observeResize(): void;
-  private ensureContainer(): HTMLElement | null;
+  private subscribeD3Zoom(): void; // called in init(); attaches viewbox.on("zoom.webgl", ...)
 }
 
 // ─── Global Registration (MUST be last line) ─────────────────────────────────
@@ -492,14 +634,35 @@ window.WebGL2LayerFramework = new WebGL2LayerFrameworkClass();
 The module registers itself with the framework on load. Existing window globals (`drawRelief`, `undrawRelief`, `rerenderReliefIcons`) are preserved for backward compatibility with legacy `public/modules/` code that calls them.
 
 ```typescript
-// Internal: called by framework's setup callback
-function setupReliefLayer(scene: THREE.Scene): void;
-// Internal: rebuild geometry from pack.relief data
-function buildReliefScene(icons: ReliefIcon[]): void;
-// Internal: SVG fallback renderer
+// Registration call (runs at module load time, before init()) ─────────────────
+WebGL2LayerFramework.register({
+  id: "terrain",
+  anchorLayerId: "terrain",
+  renderOrder: getLayerZIndex("terrain"),
+  setup(group) {
+    // Called once by framework after init(); nothing to do here —
+    // geometry is built lazily when drawRelief() is called.
+  },
+  render(group) {
+    // Called each frame. Relief geometry is static between drawRelief() calls;
+    // no per-frame CPU updates required — this is intentionally a no-op.
+  },
+  dispose(group) {
+    group.traverse(obj => {
+      if (obj instanceof Mesh) {
+        obj.geometry.dispose();
+        (obj.material as MeshBasicMaterial).map?.dispose();
+        (obj.material as MeshBasicMaterial).dispose();
+      }
+    });
+  }
+});
+
+// Internal: rebuild geometry from pack.relief data ────────────────────────────
+function buildReliefScene(icons: ReliefIcon[]): void; // adds Meshes to the layer's group
 function drawSvgRelief(icons: ReliefIcon[], parentEl: HTMLElement): void;
 
-// Public window globals (backward-compatible)
+// Public window globals (backward-compatible) ─────────────────────────────────
 window.drawRelief = (type = "webGL", parentEl = byId("terrain")) => {
   if (WebGL2LayerFramework.hasFallback || type === "svg") {
     drawSvgRelief(icons, parentEl);
@@ -509,9 +672,10 @@ window.drawRelief = (type = "webGL", parentEl = byId("terrain")) => {
   }
 };
 window.undrawRelief = () => {
-  // Clears geometry but does NOT dispose GPU resources
-  disposeScene(); // removes meshes from scene, keeps renderer alive
-  if (terrainEl) terrainEl.innerHTML = "";
+  // Clear geometry from the framework-owned group — do NOT touch renderer or scene.
+  // clearLayer() removes all Meshes from the group without disposing the renderer.
+  WebGL2LayerFramework.clearLayer("terrain");
+  if (terrainEl) terrainEl.innerHTML = ""; // also clear SVG fallback content
 };
 window.rerenderReliefIcons = () => {
   WebGL2LayerFramework.requestRender();
@@ -524,24 +688,59 @@ window.rerenderReliefIcons = () => {
 body
   div#map-container  (NEW; position: relative; width: svgWidth; height: svgHeight)
     svg#map  (MOVED inside container; position: absolute; inset: 0; z-index: 1)
-    canvas#terrainCanvas  (NEW; position: absolute; inset: 0; z-index: getLayerZIndex("terrain")+1; pointer-events: none; aria-hidden: true)
+    canvas#terrainCanvas  (NEW; id = "${config.id}Canvas" = "terrainCanvas";
+                           position: absolute; inset: 0;
+                           z-index: getLayerZIndex("terrain") → 2 in MVP (above #map);
+                           pointer-events: none; aria-hidden: true)
 ```
+
+**Canvas `id` convention:** The framework derives the canvas element id as `${config.id}Canvas`. For `id: "terrain"` → `canvas#terrainCanvas`. For `id: "biomes"` → `canvas#biomesCanvas`. This must be consistent; implementing agents must not hardcode canvas ids.
+
+**MVP z-index note:** In MVP both `#map` (z-index: 1) and `canvas#terrainCanvas` (z-index: 2) are stacked as siblings within `#map-container`. The canvas is visually above the entire `#map` SVG. This is a known, accepted limitation. See Decision 3.
 
 ### 5.6 Framework Initialization Sequence
 
 ```
 1. Framework module loaded (via src/modules/index.ts import)
-2. window.WebGL2LayerFramework = new WebGL2LayerFrameworkClass()
-   → sets hasFallback = !detectWebGL2()
-3. draw-relief-icons.ts loaded (via src/renderers/index.ts import)
-   → calls WebGL2LayerFramework.register({ id: "terrain", anchorLayerId: "terrain", ... })
-   → if hasFallback: register is a no-op, drawRelief uses SVG path
+   → window.WebGL2LayerFramework = new WebGL2LayerFrameworkClass()
+   → constructor does NOTHING: renderer=null, _fallback unset, pendingConfigs=[]
+
+2. draw-relief-icons.ts loaded (via src/renderers/index.ts import)
+   → WebGL2LayerFramework.register({ id: "terrain", ... })
+   → init() has NOT been called yet — register() pushes to pendingConfigs[]
+   → This is safe by design: register() before init() is explicitly supported
+
+3. App bootstrap calls WebGL2LayerFramework.init()  ← EXPLICIT CALL REQUIRED
+   → _fallback = !detectWebGL2()  (uses backing field, not readonly)
+   → if _fallback: init() returns false; all subsequent API calls are no-ops
+   → creates div#map-container wrapper, moves svg#map inside (z-index:1)
+   → creates THREE.WebGLRenderer(canvas), THREE.Scene, THREE.OrthographicCamera
+   → sets canvas id, position:absolute, inset:0, pointer-events:none, z-index:2
+   → calls subscribeD3Zoom(): viewbox.on("zoom.webgl", () => this.requestRender())
+   → processes pendingConfigs[]: for each config:
+       creates THREE.Group with config.renderOrder
+       calls config.setup(group)
+       adds group to scene
+       stores RegisteredLayer in layers Map
+   → attaches ResizeObserver to #map-container
+
 4. Main map generation completes → window.drawRelief() called by legacy JS
-   → if WebGL: builds scene, requestRender() → next RAF → syncTransform + renderer.render
-   → if SVG fallback: drawSvgRelief()
-5. D3 zoom/pan events → window.rerenderReliefIcons() → framework.requestRender()
-6. Layer visibility toggle (legacy JS) → window.undrawRelief() or window.drawRelief()
-   → framework.setVisible("terrain", false/true) — NO GPU teardown
+   → if WebGL: buildReliefScene(icons) builds Meshes in layer's group
+   → calls requestRender() → next RAF:
+       render(): syncTransform() → each visible layer's render(group) → renderer.render(scene,camera)
+   → if fallback: drawSvgRelief(icons, parentEl)
+
+5. D3 zoom/pan → framework's own "zoom.webgl" listener fires → requestRender()
+   rerenderReliefIcons() also calls requestRender() as belt-and-suspenders
+
+6. Layer hide: window.undrawRelief()
+   → WebGL2LayerFramework.clearLayer("terrain"): group.clear() wipes Meshes; renderer untouched
+   → framework.setVisible("terrain", false): group.visible = false
+
+7. Layer show: window.drawRelief()
+   → buildReliefScene(icons) rebuilds Meshes in group
+   → framework.setVisible("terrain", true): group.visible = true
+   → requestRender()
 ```
 
 ---
@@ -550,35 +749,35 @@ body
 
 ### 6.1 FR Coverage Matrix
 
-| Requirement                                    | Addressed By                                                            | Status                                              |
-| ---------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------- |
-| FR1: Single WebGL2 context                     | `WebGL2LayerFrameworkClass` owns one `THREE.WebGLRenderer`              | ✅                                                  |
-| FR2: Canvas at correct z-index                 | `getLayerZIndex(anchorLayerId)` → canvas z-index                        | ✅ (MVP: above SVG)                                 |
-| FR3: Register layer by anchor + callback       | `framework.register(config)`                                            | ✅                                                  |
-| FR4: Layer registry                            | `layers: Map<string, RegisteredLayer>`                                  | ✅                                                  |
-| FR5: Sync to D3 zoom transform                 | `syncTransform()` reads `viewX, viewY, scale` globals                   | ✅                                                  |
-| FR6: Update on D3 change                       | `requestRender()` called from `rerenderReliefIcons`                     | ✅                                                  |
-| FR7: Map-space → WebGL clip coordinates        | `buildCameraBounds()` formula                                           | ✅                                                  |
-| FR8: Toggle without GPU teardown               | `setVisible()` → `group.visible` only                                   | ✅                                                  |
-| FR9: Resize canvas on viewport change          | `ResizeObserver` on container                                           | ✅                                                  |
-| FR10: Recalculate z-index on layer reorder     | `getLayerZIndex()` reads live DOM position                              | ✅                                                  |
-| FR11: Dispose layer + GPU resources            | `unregister(id)` → disposes GeometryBuffers, removes from scene         | ✅                                                  |
-| FR12: All relief icons in one draw call        | Per-set `Mesh` with merged `BufferGeometry` (existing batched approach) | ✅                                                  |
-| FR13: Icons at SVG-space coordinates           | Camera in SVG pixel-space; icon positions in `pack.relief` unchanged    | ✅                                                  |
-| FR14: Scale with zoom and user setting         | Camera bounds change with zoom; icon size uses `r.s` from relief data   | ✅                                                  |
-| FR15: Per-icon rotation                        | Rotation encoded in quad vertex positions during `buildSetMesh`         | ⚠️ Verify rotation support in existing buildSetMesh |
-| FR16: Configurable opacity                     | `MeshBasicMaterial.opacity` + `transparent: true`                       | ✅                                                  |
-| FR17: Re-render on terrain data change         | `drawRelief()` calls `buildReliefScene()` + `requestRender()`           | ✅                                                  |
-| FR18: WebGL2 detection + fallback              | `detectWebGL2()` → `hasFallback` flag                                   | ✅                                                  |
-| FR19: SVG fallback visually identical          | Existing `drawSvg()` preserved unchanged                                | ✅                                                  |
-| FR20: No pointer-event capture                 | `canvas.style.pointerEvents = "none"`                                   | ✅                                                  |
-| FR21: Existing Layers panel unchanged          | `drawRelief`/`undrawRelief` window globals preserved                    | ✅                                                  |
-| FR22: Register without z-index knowledge       | `framework.register` derives z-index internally                         | ✅                                                  |
-| FR23: Render callback receives D3 transform    | `syncTransform()` reads globals; transforms available in RAF            | ✅                                                  |
-| FR24: Same visibility API for all layers       | `framework.setVisible(id, bool)` uniform for all registered layers      | ✅                                                  |
-| FR25: Coordinate sync testable in isolation    | `buildCameraBounds` is a pure exported function                         | ✅                                                  |
-| FR26: Fallback detection testable              | `detectWebGL2(probeCanvas)` accepts injectable canvas                   | ✅                                                  |
-| FR27: Registration testable without real WebGL | `hasFallback = true` path is a no-op; stub renderers in tests           | ✅                                                  |
+| Requirement                                    | Addressed By                                                                                          | Status                                              |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| FR1: Single WebGL2 context                     | `WebGL2LayerFrameworkClass` owns one `THREE.WebGLRenderer`                                            | ✅                                                  |
+| FR2: Canvas at correct z-index                 | `getLayerZIndex(anchorLayerId)` → canvas z-index                                                      | ✅ (MVP: above SVG)                                 |
+| FR3: Register layer by anchor + callback       | `framework.register(config)`                                                                          | ✅                                                  |
+| FR4: Layer registry                            | `layers: Map<string, RegisteredLayer>`                                                                | ✅                                                  |
+| FR5: Sync to D3 zoom transform                 | `syncTransform()` reads `viewX, viewY, scale` globals                                                 | ✅                                                  |
+| FR6: Update on D3 change                       | `requestRender()` called from `rerenderReliefIcons`                                                   | ✅                                                  |
+| FR7: Map-space → WebGL clip coordinates        | `buildCameraBounds()` formula                                                                         | ✅                                                  |
+| FR8: Toggle without GPU teardown               | `setVisible()` → `group.visible` only                                                                 | ✅                                                  |
+| FR9: Resize canvas on viewport change          | `ResizeObserver` on container                                                                         | ✅                                                  |
+| FR10: Recalculate z-index on layer reorder     | `getLayerZIndex()` reads live DOM position                                                            | ✅                                                  |
+| FR11: Dispose layer + GPU resources            | `unregister(id)` → disposes GeometryBuffers, removes from scene                                       | ✅                                                  |
+| FR12: All relief icons in one draw call        | Per-set `Mesh` with merged `BufferGeometry` (existing batched approach)                               | ✅                                                  |
+| FR13: Icons at SVG-space coordinates           | Camera in SVG pixel-space; icon positions in `pack.relief` unchanged                                  | ✅                                                  |
+| FR14: Scale with zoom and user setting         | Camera bounds change with zoom; icon size uses `r.s` from relief data                                 | ✅                                                  |
+| FR15: Per-icon rotation                        | Rotation encoded in quad vertex positions during `buildSetMesh`                                       | ⚠️ Verify rotation support in existing buildSetMesh |
+| FR16: Configurable opacity                     | `MeshBasicMaterial.opacity` + `transparent: true`                                                     | ✅                                                  |
+| FR17: Re-render on terrain data change         | `drawRelief()` calls `buildReliefScene()` + `requestRender()`                                         | ✅                                                  |
+| FR18: WebGL2 detection + fallback              | `detectWebGL2()` → `hasFallback` flag                                                                 | ✅                                                  |
+| FR19: SVG fallback visually identical          | Existing `drawSvg()` preserved unchanged                                                              | ✅                                                  |
+| FR20: No pointer-event capture                 | `canvas.style.pointerEvents = "none"`                                                                 | ✅                                                  |
+| FR21: Existing Layers panel unchanged          | `drawRelief`/`undrawRelief` window globals preserved                                                  | ✅                                                  |
+| FR22: Register without z-index knowledge       | `framework.register` derives z-index internally                                                       | ✅                                                  |
+| FR23: Render callback receives D3 transform    | `render(group)` invoked each frame after `syncTransform()`; camera already synced when callback fires | ✅                                                  |
+| FR24: Same visibility API for all layers       | `framework.setVisible(id, bool)` uniform for all registered layers                                    | ✅                                                  |
+| FR25: Coordinate sync testable in isolation    | `buildCameraBounds` is a pure exported function                                                       | ✅                                                  |
+| FR26: Fallback detection testable              | `detectWebGL2(probeCanvas)` accepts injectable canvas                                                 | ✅                                                  |
+| FR27: Registration testable without real WebGL | `hasFallback = true` path is a no-op; stub renderers in tests                                         | ✅                                                  |
 
 **FR15 Note:** The existing `buildSetMesh` in `draw-relief-icons.ts` constructs static quads; rotation may not be applied. This must be verified and implemented (per-icon rotation via vertex transformation in `buildSetMesh`) before MVP ships.
 
@@ -606,24 +805,29 @@ body
 
 ### 6.3 Architecture Risks and Mitigations
 
-| Risk                                          | Likelihood | Impact | Architecture Mitigation                                                               |
-| --------------------------------------------- | ---------- | ------ | ------------------------------------------------------------------------------------- |
-| D3 + WebGL coordinate offset at extreme zoom  | Medium     | High   | `buildCameraBounds` is unit-tested at zoom 0.1–50; exact formula documented           |
-| FR15: Rotation not in existing `buildSetMesh` | High       | Medium | Flag as pre-MVP verification item; add rotation attribute if missing                  |
-| MVP z-ordering: canvas above SVG              | High       | Medium | Accepted tradeoff; documented; Phase 2 DOM-split design provided                      |
-| `undrawRelief` callers expect full cleanup    | Low        | Low    | Preserve `undrawRelief` signature; change internals only (no GPU teardown)            |
-| Context loss mid-session                      | Low        | High   | Framework inherits existing `forceContextRestore` pattern from `draw-relief-icons.ts` |
-| `will-change: transform` memory overhead      | Low        | Low    | Apply only during active zoom/pan; remove after with timing debounce                  |
+| Risk                                          | Likelihood | Impact | Architecture Mitigation                                                                    |
+| --------------------------------------------- | ---------- | ------ | ------------------------------------------------------------------------------------------ |
+| D3 + WebGL coordinate offset at extreme zoom  | Medium     | High   | `buildCameraBounds` is unit-tested at zoom 0.1–50; exact formula documented                |
+| FR15: Rotation not in existing `buildSetMesh` | High       | Medium | Flag as pre-MVP verification item; add rotation attribute if missing                       |
+| MVP z-ordering: canvas above SVG              | High       | Medium | Accepted tradeoff; documented; Phase 2 DOM-split design provided                           |
+| `register()` called before `init()`           | High       | High   | `register()` pushes to `pendingConfigs[]`; `init()` processes queue — order-safe by design |
+| `undrawRelief` bypasses framework clearLayer  | Medium     | Medium | `undrawRelief` explicitly calls `framework.clearLayer()` per section 5.4                   |
+| Context loss mid-session                      | Low        | High   | Framework inherits existing `forceContextRestore` pattern from `draw-relief-icons.ts`      |
+| Three.js API bleeds into layer code           | Low        | High   | All callbacks receive `THREE.Group` only — `scene`, `renderer`, `camera` are private       |
 
 ### 6.4 Decision Coherence Check
 
-| Decision Pair                                                       | Compatible? | Note                                                                           |
-| ------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------ |
-| Single context (D1) + Layer registry (D2)                           | ✅          | `renderOrder` on `THREE.Group` within shared scene                             |
-| MVP z-index above SVG (D3) + pointer-events:none (D3)               | ✅          | Interaction preserved regardless of z-stack                                    |
-| Camera sync using globals (D4) + testability (FR25)                 | ✅          | `buildCameraBounds` is pure; globals are injected in tests                     |
-| No GPU teardown (D5) + `undrawRelief` backward compat (section 5.4) | ✅          | `undrawRelief` calls `disposeScene()` (geometry only) not `renderer.dispose()` |
-| On-demand RAF render (D7) + ResizeObserver (D8)                     | ✅          | Both call `requestRender()` which coalesces to one RAF                         |
+| Decision Pair                                                        | Compatible? | Note                                                                                      |
+| -------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------- |
+| Single context (D1) + Layer registry (D2)                            | ✅          | `renderOrder` on `THREE.Group` within shared scene; one renderer, multiple groups         |
+| Group abstraction (D2) + framework owns scene (D1)                   | ✅          | Callbacks receive `Three.Group` only; `scene`/`renderer`/`camera` stay private            |
+| render(group) callback (D2) + RAF coalescing (D7)                    | ✅          | `render(group)` dispatched inside RAF callback before `renderer.render()` — correct order |
+| MVP z-index above SVG (D3) + pointer-events:none (D3)                | ✅          | Interaction preserved regardless of z-stack position                                      |
+| Camera sync using globals (D4) + testability (FR25)                  | ✅          | `buildCameraBounds` is pure; globals are injected in tests                                |
+| No GPU teardown (D5) + `undrawRelief` backward compat (section 5.4)  | ✅          | `undrawRelief` calls `framework.clearLayer()` (geometry only); renderer untouched         |
+| register() before init() (section 5.6) + pendingConfigs queue (D2)   | ✅          | Queue pattern decouples module load order from DOM/WebGL readiness                        |
+| D3 zoom subscription in init() (D6) + per-layer render callback (D2) | ✅          | Framework owns the zoom listener; layer's `render(group)` called inside the resulting RAF |
+| On-demand RAF render (D7) + ResizeObserver (D8)                      | ✅          | Both call `requestRender()` which coalesces to one RAF                                    |
 
 ---
 
@@ -636,20 +840,29 @@ When implementing this architecture, follow these rules precisely:
 1. **Framework module registers first** — `src/modules/index.ts` import must appear before renderer imports
 2. **`window.WebGL2LayerFramework = new WebGL2LayerFrameworkClass()` is the last line** of the framework module
 3. **Export `buildCameraBounds`, `detectWebGL2`, `getLayerZIndex`** as named exports — tests depend on them
-4. **`setVisible(id, false)` NEVER calls `renderer.dispose()`** — only sets `group.visible = false`
-5. **Canvas element gets**: `pointer-events: none; aria-hidden: true; position: absolute; inset: 0`
-6. **Fallback path**: when `hasFallback === true`, all framework methods return silently; `drawRelief` calls `drawSvgRelief`
-7. **`window.drawRelief`, `window.undrawRelief`, `window.rerenderReliefIcons`** must remain as window globals (legacy JS calls them)
-8. **Verify FR15** (per-icon rotation) in `buildSetMesh` before MVP — add rotation support if missing
+4. **`setVisible(id, false)` NEVER calls `renderer.dispose()`** — sets `group.visible = false` only
+5. **Implement `clearLayer(id)`** — `undrawRelief` calls this to wipe group geometry; layer stays registered
+6. **Use `private _fallback = false` + `get hasFallback()`** — NOT `readonly hasFallback = false` (TypeScript compile error)
+7. **Call `init()` before any `drawRelief()` invocation** — app bootstrap must call `WebGL2LayerFramework.init()`
+8. **All layer callbacks receive `THREE.Group`** — `setup(group)`, `render(group)`, `dispose(group)`; never pass `scene`
+9. **Subscribe D3 zoom in `init()`**: `viewbox.on("zoom.webgl", () => this.requestRender())`
+10. **Canvas `id` = `${config.id}Canvas`** — derived by framework; never hardcoded in layer code
+11. **Canvas element gets**: `pointer-events: none; aria-hidden: true; position: absolute; inset: 0; z-index: 2`
+12. **Fallback path**: when `hasFallback === true`, all framework methods return silently; `drawRelief` calls `drawSvgRelief`
+13. **`window.drawRelief`, `window.undrawRelief`, `window.rerenderReliefIcons`** must remain as window globals (legacy JS calls them)
+14. **Verify FR15** (per-icon rotation) in `buildSetMesh` before MVP — add rotation support if missing
 
 ### MUST NOT DO
 
-1. **Do NOT** create a second `THREE.WebGLRenderer` — framework owns the only map renderer
-2. **Do NOT** move layer `<g>` elements between SVG elements — DOM-split is Phase 2
-3. **Do NOT** add any new entries to `public/modules/` — all new code is in `src/`
-4. **Do NOT** break the `window.drawRelief(type, parentEl)` signature — legacy callers
-5. **Do NOT** use `isNaN()` — use `Number.isNaN()`; or `parseInt()` without radix
-6. **Do NOT** import Three.js as `import * as THREE from "three"` — use named imports only
+1. **Do NOT** declare `readonly hasFallback: boolean = false` — this causes a TypeScript error when `init()` sets it
+2. **Do NOT** pass `scene`, `renderer`, or `camera` to any layer callback — `THREE.Group` is the sole abstraction boundary
+3. **Do NOT** call `renderer.dispose()` from `undrawRelief` or any visibility toggle — only from full framework teardown
+4. **Do NOT** create a second `THREE.WebGLRenderer` — framework owns the only map renderer
+5. **Do NOT** move layer `<g>` elements between SVG elements — DOM-split is Phase 2
+6. **Do NOT** add any new entries to `public/modules/` — all new code is in `src/`
+7. **Do NOT** break the `window.drawRelief(type, parentEl)` signature — legacy callers
+8. **Do NOT** use `isNaN()` — use `Number.isNaN()`; or `parseInt()` without radix
+9. **Do NOT** import Three.js as `import * as THREE from "three"` — use named imports only
 
 ### Verification Checklist
 
@@ -671,9 +884,9 @@ With this architecture complete, the recommended implementation sequence is:
 
 **Story 1:** Create `webgl-layer-framework.ts` with exported pure functions and stub class methods; write all unit tests first (TDD).
 
-**Story 2:** Implement `WebGL2LayerFrameworkClass` core: `init()`, `detectWebGL2()`, canvas creation, `#map-container` wrapper, `ResizeObserver`.
+**Story 2:** Implement `WebGL2LayerFrameworkClass` core: `init()` with `_fallback` backing field, `detectWebGL2()`, canvas creation (`id = ${config.id}Canvas`), `#map-container` wrapper, `ResizeObserver`, D3 zoom subscription (`viewbox.on("zoom.webgl", ...)`), `pendingConfigs[]` queue processing.
 
-**Story 3:** Implement `register()`, `unregister()`, `setVisible()`, `requestRender()`, `syncTransform()`.
+**Story 3:** Implement `register()` (with pre-init queue support), `unregister()`, `setVisible()`, `clearLayer()`, `requestRender()` (RAF coalescing), `syncTransform()`, per-frame `render(group)` dispatch in `render()`.
 
 **Story 4:** Refactor `draw-relief-icons.ts` to use `WebGL2LayerFramework.register()` and remove the module-level renderer state. Verify FR15 rotation support.
 
