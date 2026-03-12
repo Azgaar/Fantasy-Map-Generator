@@ -19,26 +19,20 @@ export class WebGL2LayerClass {
   private scene: Scene | null = null;
   private layers: Map<string, RegisteredLayer> = new Map();
   private pendingConfigs: WebGLLayerConfig[] = []; // queue for register() before init()
-  private resizeObserver: ResizeObserver | null = null;
   private rafId: number | null = null;
 
   init(): boolean {
     this.renderer = new WebGLRenderer({
       canvas: this.canvas,
-      antialias: true,
+      antialias: false,
       alpha: true,
     });
-    this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.renderer.setSize(window.innerWidth, window.innerHeight, false);
+    this.renderer.setPixelRatio(window.devicePixelRatio || 1);
+    this.canvas.style.width = `${graphWidth}px`;
+    this.canvas.style.height = `${graphHeight}px`;
+    this.renderer.setSize(graphWidth, graphHeight, false);
     this.scene = new Scene();
-    this.camera = new OrthographicCamera(
-      0,
-      window.innerWidth,
-      0,
-      window.innerHeight,
-      -1,
-      1,
-    );
+    this.camera = new OrthographicCamera(0, graphWidth, 0, graphHeight, -1, 1);
 
     console.log("WebGL2Layer: initialized");
 
@@ -52,7 +46,6 @@ export class WebGL2LayerClass {
       this.layers.set(config.id, { config, group });
     }
     this.pendingConfigs = [];
-    // this.observeResize();
 
     return true;
   }
@@ -108,27 +101,24 @@ export class WebGL2LayerClass {
   }
 
   syncTransform(): void {
-    if (!this.camera) return;
-    const width = window.innerWidth || 960;
-    const height = window.innerHeight || 540;
-    console.log("WebGL2Layer: syncTransform", { width, height });
-    this.camera.left = (0 - viewX) / scale;
-    this.camera.right = (width - viewX) / scale;
-    this.camera.top = (0 - viewY) / scale;
-    this.camera.bottom = (height - viewY) / scale;
-    this.camera.updateProjectionMatrix();
-  }
-
-  private observeResize(): void {
-    if (!this.renderer) return;
-    this.resizeObserver = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      if (this.renderer && width > 0 && height > 0) {
-        this.renderer.setSize(width, height, false);
-        this.requestRender();
-      }
+    console.log("WebGL2Layer: syncing transform", {
+      viewX,
+      viewY,
+      scale,
+      graphWidth,
+      graphHeight,
     });
-    this.resizeObserver.observe(this.canvas);
+    if (!this.camera) return;
+    const x = -viewX / scale;
+    const y = -viewY / scale;
+    const w = graphWidth / scale;
+    const h = graphHeight / scale;
+
+    this.camera.left = x;
+    this.camera.right = x + w;
+    this.camera.top = y;
+    this.camera.bottom = y + h;
+    this.camera.updateProjectionMatrix();
   }
 
   private render(): void {
