@@ -1,7 +1,5 @@
 import { Group, OrthographicCamera, Scene, WebGLRenderer } from "three";
 
-// ─── Pure exports (testable without DOM or WebGL) ────────────────────────────
-
 /**
  * Converts a D3 zoom transform into orthographic camera bounds.
  *
@@ -83,8 +81,6 @@ interface RegisteredLayer {
   group: Group; // framework-owned; passed to all callbacks — abstraction boundary
 }
 
-// ─── Class ───────────────────────────────────────────────────────────────────
-
 export class WebGL2LayerFrameworkClass {
   private canvas: HTMLCanvasElement | null = null;
   private renderer: WebGLRenderer | null = null;
@@ -95,17 +91,11 @@ export class WebGL2LayerFrameworkClass {
   private resizeObserver: ResizeObserver | null = null;
   private rafId: number | null = null;
   private container: HTMLElement | null = null;
-
-  // Backing field — MUST NOT be declared readonly.
-  // readonly fields can only be assigned in the constructor; init() sets _fallback
-  // post-construction, which would cause a TypeScript type error with readonly.
   private _fallback = false;
 
   get hasFallback(): boolean {
     return this._fallback;
   }
-
-  // ─── Public API ────────────────────────────────────────────────────────────
 
   init(): boolean {
     this._fallback = !detectWebGL2();
@@ -168,7 +158,6 @@ export class WebGL2LayerFrameworkClass {
       this.layers.set(config.id, { config, group });
     }
     this.pendingConfigs = [];
-
     this.observeResize();
 
     return true;
@@ -248,8 +237,6 @@ export class WebGL2LayerFrameworkClass {
     camera.updateProjectionMatrix();
   }
 
-  // ─── Private helpers ───────────────────────────────────────────────────────
-
   private subscribeD3Zoom(): void {
     // viewbox is a D3 selection global available in the browser; guard for Node test env
     if (typeof (globalThis as any).viewbox === "undefined") return;
@@ -283,9 +270,6 @@ export class WebGL2LayerFrameworkClass {
   }
 }
 
-// ─── Global registration (MUST be last line) ─────────────────────────────────
-// Uses globalThis (≡ window in browsers) to support both browser runtime and
-// Node.js test environments without a ReferenceError.
 declare global {
   var WebGL2LayerFramework: WebGL2LayerFrameworkClass;
 }
