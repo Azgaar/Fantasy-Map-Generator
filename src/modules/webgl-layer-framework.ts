@@ -191,7 +191,7 @@ export class WebGL2LayerFrameworkClass {
   }
 
   syncTransform(): void {
-    const camera = this.camera;
+    if (!this.camera) return;
     const bounds = buildCameraBounds(
       viewX,
       viewY,
@@ -199,17 +199,14 @@ export class WebGL2LayerFrameworkClass {
       graphWidth,
       graphHeight,
     );
-    camera.left = bounds.left;
-    camera.right = bounds.right;
-    camera.top = bounds.top;
-    camera.bottom = bounds.bottom;
-    camera.updateProjectionMatrix();
+    this.camera.left = bounds.left;
+    this.camera.right = bounds.right;
+    this.camera.top = bounds.top;
+    this.camera.bottom = bounds.bottom;
+    this.camera.updateProjectionMatrix();
   }
 
   private subscribeD3Zoom(): void {
-    // viewbox is declared as a global in src/types/global.ts (exposed by main.js).
-    // Guard for Node test env where it doesn't exist.
-    if (typeof viewbox === "undefined") return;
     viewbox.on("zoom.webgl", () => this.requestRender());
   }
 
