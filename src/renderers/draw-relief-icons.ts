@@ -16,7 +16,6 @@ const atlases = Object.fromEntries(
 );
 
 const terrainLayer = new TextureAtlasLayer("terrain", atlases);
-let lastDrawnIcons: ReliefIcon[] | null = null;
 
 function resolveQuads(icons: ReliefIcon[]) {
   return icons.map((r) => {
@@ -54,16 +53,12 @@ window.drawRelief = (
   if (type === "svg") {
     drawSvg(icons, parentEl);
   } else {
-    if (icons !== lastDrawnIcons) {
-      terrainLayer.draw(resolveQuads(icons));
-      lastDrawnIcons = icons;
-    }
+    terrainLayer.draw(resolveQuads(icons));
   }
 };
 
 window.undrawRelief = () => {
   terrainLayer.clear();
-  lastDrawnIcons = null;
   const terrainEl = byId("terrain");
   if (terrainEl) terrainEl.innerHTML = "";
 };
