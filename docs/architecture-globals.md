@@ -41,25 +41,6 @@ viewbox.on("zoom.webgl", handler);
 (window as any).scale(globalThis as any).viewX;
 ```
 
-The only exception is a Node/test-env guard where the global may genuinely not exist:
-
-```ts
-if (typeof viewbox === "undefined") return; // guard for Node test env
-viewbox.on("zoom.webgl", handler); // then use directly
-```
-
-In `webgl-layer-framework.ts` the `syncTransform()` method correctly reads:
-
-```ts
-buildCameraBounds(viewX, viewY, scale, graphWidth, graphHeight);
-```
-
-### Why this matters for new WebGL/canvas overlays
-
-Any canvas or WebGL overlay that must stay pixel-aligned with the SVG viewbox **must**
-read `scale`, `viewX`, `viewY` at render time — these are live globals updated on every
-D3 zoom event. Do not cache them at module load time.
-
 ### Other public/modules globals of note
 
 `toggleRelief`, `drawRelief`, `undrawRelief`, `rerenderReliefIcons`, `layerIsOn`,
@@ -72,8 +53,3 @@ functions defined in public JS files and available globally.
 2. `src/utils/index.ts`, `src/modules/index.ts`, `src/renderers/index.ts` — ES modules
    (bundled by Vite); these run **before** the deferred legacy scripts
 3. `public/main.js` and `public/modules/**/*.js` — deferred plain scripts
-
-**Implication:** ES modules in `src/` that call `WebGL2LayerFramework.register()` at
-module load time are safe because the framework class is instantiated at the bottom of
-`webgl-layer-framework.ts` (an ES module), which runs before the deferred `main.js`.
-`main.js` then calls `WebGL2LayerFramework.init()` inside `generateMapOnLoad()`.

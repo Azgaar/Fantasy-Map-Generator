@@ -14,7 +14,6 @@ import {
 import { RELIEF_SYMBOLS } from "../config/relief-config";
 import type { ReliefIcon } from "../modules/relief-generator";
 import { generateRelief } from "../modules/relief-generator";
-import { getLayerZIndex } from "../modules/webgl-layer-framework";
 import { byId } from "../utils";
 
 const textureCache = new Map<string, Texture>(); // set name → Texture
@@ -22,10 +21,8 @@ let terrainGroup: Group | null = null;
 let lastBuiltIcons: ReliefIcon[] | null = null;
 let lastBuiltSet: string | null = null;
 
-WebGL2LayerFramework.register({
+WebGLLayer.register({
   id: "terrain",
-  anchorLayerId: "terrain",
-  renderOrder: getLayerZIndex("terrain"),
   setup(group: Group): void {
     terrainGroup = group;
     preloadTextures();
@@ -64,8 +61,6 @@ function loadTexture(set: string): Promise<Texture | null> {
         texture.minFilter = LinearMipmapLinearFilter;
         texture.magFilter = LinearFilter;
         texture.generateMipmaps = true;
-        // renderer.capabilities.getMaxAnisotropy() removed: renderer is now owned by
-        // WebGL2LayerFramework. LinearMipmapLinearFilter provides sufficient quality.
         textureCache.set(set, texture);
         resolve(texture);
       },
@@ -115,12 +110,6 @@ function buildSetMesh(
       u1 = (col + 1) / cols;
     const v0 = row / rows,
       v1 = (row + 1) / rows;
-    // FR15 rotation verification (Story 2.1): r.i is a sequential icon index (0-based),
-    // NOT a rotation angle. pack.relief entries contain no rotation field.
-    // Both the WebGL path (this function) and the SVG fallback (drawSvg) produce
-    // unrotated icons — visual parity maintained per FR19.
-    // If per-icon rotation is required in a future story, add `rotation: number` (radians)
-    // to ReliefIcon and apply quad rotation around center (r.x + r.s/2, r.y + r.s/2).
     const x0 = r.x,
       x1 = r.x + r.s;
     const y0 = r.y,
@@ -215,7 +204,7 @@ window.drawRelief = (
   const icons = pack.relief?.length ? pack.relief : generateRelief();
   if (!icons.length) return;
 
-  if (type === "svg" || WebGL2LayerFramework.hasFallback) {
+  if (type === "svg") {
     drawSvg(icons, parentEl);
   } else {
     const set = parentEl.getAttribute("set") || "simple";
@@ -225,13 +214,13 @@ window.drawRelief = (
         lastBuiltIcons = icons;
         lastBuiltSet = set;
       }
-      WebGL2LayerFramework.requestRender();
+      WebGLLayer.requestRender();
     });
   }
 };
 
 window.undrawRelief = () => {
-  WebGL2LayerFramework.clearLayer("terrain");
+  WebGLLayer.clearLayer("terrain");
   lastBuiltIcons = null;
   lastBuiltSet = null;
   const terrainEl = byId("terrain");
@@ -239,7 +228,7 @@ window.undrawRelief = () => {
 };
 
 window.rerenderReliefIcons = () => {
-  WebGL2LayerFramework.requestRender();
+  WebGLLayer.requestRender();
 };
 
 declare global {

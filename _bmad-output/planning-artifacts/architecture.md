@@ -178,36 +178,6 @@ export interface WebGLLayerConfig {
 - The current codebase ALREADY exhibits this same behavior (`draw-relief-icons.ts` places canvas after `#map` in DOM order with no z-index)
 - `pointer-events: none` preserves all interaction; the UX regression is purely visual
 
-**Phase 2 fix — DOM-Split Architecture:**
-
-```
-#map-container (position: relative)
-  ├── svg#map-back  (layers 1–11, z-index: 1)
-  ├── canvas#terrainCanvas  (z-index: 2, pointer-events: none)
-  └── svg#map-front  (layers 13–32 + interaction, z-index: 3)
-```
-
-This requires moving layer `<g>` elements between two SVG elements and syncing D3 transforms to both — deferred to Phase 2.
-
-**Z-index in MVP — Critical Limitation:**
-
-In MVP, `#map` (z-index: 1) and the canvas (z-index: 2) are siblings inside `#map-container`. CSS z-index between DOM siblings **cannot** interleave with the SVG's internal `<g>` layer groups — all 32 groups live inside the single `#map` SVG element. The canvas renders **above the entire SVG** regardless of its numeric z-index, as long as that value exceeds `#map`'s value of 1.
-
-`getLayerZIndex()` is included for **Phase 2 forward-compatibility only**. When the DOM-split lands and each layer `<g>` becomes a direct sibling inside `#map-container`, the DOM position index will map directly to a meaningful CSS z-index for true interleaving. In MVP, the function is used merely to confirm the canvas sits above `#map`:
-
-```typescript
-// MVP: canvas simply needs z-index > 1 (the #map SVG value).
-// Phase 2 (DOM-split): this index will represent true visual stacking position.
-function getLayerZIndex(anchorLayerId: string): number {
-  const anchor = document.getElementById(anchorLayerId);
-  if (!anchor) return 2;
-  const siblings = Array.from(anchor.parentElement?.children ?? []);
-  const idx = siblings.indexOf(anchor);
-  // Return idx + 1 so Phase 2 callers get a correct interleaving value automatically.
-  return idx > 0 ? idx + 1 : 2;
-}
-```
-
 ### Decision 4: D3 Zoom → WebGL Orthographic Camera Sync
 
 **Decision:** The sync formula from the existing `draw-relief-icons.ts` is extracted into a pure, testable function `buildCameraBounds(viewX, viewY, scale, graphWidth, graphHeight)` that returns `{left, right, top, bottom}` for the orthographic camera.

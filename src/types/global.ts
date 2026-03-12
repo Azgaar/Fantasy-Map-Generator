@@ -92,7 +92,7 @@ declare global {
   var changeFont: () => void;
   var getFriendlyHeight: (coords: [number, number]) => string;
 
-  var WebGL2LayerFramework: import("../modules/webgl-layer-framework").WebGL2LayerFrameworkClass;
+  var WebGLLayer: import("../modules/webgl-layer").WebGL2LayerClass;
   var drawRelief: (type?: "svg" | "webGL", parentEl?: HTMLElement) => void;
   var undrawRelief: () => void;
   var rerenderReliefIcons: () => void;

@@ -18,5 +18,5 @@ import "./river-generator";
 import "./routes-generator";
 import "./states-generator";
 import "./voronoi";
-import "./webgl-layer-framework";
+import "./webgl-layer";
 import "./zones-generator";
