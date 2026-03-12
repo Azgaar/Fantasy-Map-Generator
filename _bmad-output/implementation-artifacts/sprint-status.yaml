@@ -45,7 +45,7 @@ development_status:
   1-1-pure-functions-types-and-tdd-scaffold: done
   1-2-framework-core-init-canvas-and-dom-setup: done
   1-3-layer-lifecycle-register-visibility-render-loop: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   # Epic 2: Relief Icons Layer Migration
   epic-2: done
@@ -58,4 +58,4 @@ development_status:
   epic-3: done
   3-1-performance-benchmarking: done
   3-2-bundle-size-audit: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
