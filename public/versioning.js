@@ -16,7 +16,7 @@
  * For the changes that may be interesting to end users, update the `latestPublicChanges` array below (new changes on top).
  */
 
-const VERSION = "1.113.6";
+const VERSION = "1.114.0";
 if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format or parsing function");
 
 {
@@ -30,6 +30,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
   }
 
   const latestPublicChanges = [
+    "Relief icons: improved performance on huge maps",
     "Search input in Overview dialogs",
     "Custom burg grouping and icon selection",
     "Ability to set custom image as Marker or Regiment icon",
@@ -41,8 +42,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
     "New style preset: Dark Seas",
     "New routes generation algorithm",
     "Routes overview tool",
-    "Configurable longitude",
-    "Export zones to GeoJSON"
+    "Configurable longitude"
   ];
 
   function showUpdateWindow() {

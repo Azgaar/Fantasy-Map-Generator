@@ -259,6 +259,19 @@ async function getMapURL(
   }
 
   {
+    // render relief icons in svg and add used icons to defs
+    const terrainEl = cloneEl.getElementById("terrain");
+    if (terrainEl) drawRelief("svg", terrainEl);
+
+    const uniqueElements = new Set(pack.relief?.map(r => r.href) || []);
+    const defsRelief = svgDefs.getElementById("defs-relief");
+    for (const terrain of uniqueElements) {
+      const element = defsRelief.querySelector(terrain);
+      if (element) cloneDefs.appendChild(element.cloneNode(true));
+    }
+  }
+
+  {
     // replace ocean pattern href to base64
     const image = cloneEl.getElementById("oceanicPattern");
     const href = image?.getAttribute("href");
@@ -283,22 +296,6 @@ async function getMapURL(
           resolve();
         });
       });
-    }
-  }
-
-  // add relief icons
-  if (cloneEl.getElementById("terrain")) {
-    const uniqueElements = new Set();
-    const terrainNodes = cloneEl.getElementById("terrain").childNodes;
-    for (let i = 0; i < terrainNodes.length; i++) {
-      const href = terrainNodes[i].getAttribute("href") || terrainNodes[i].getAttribute("xlink:href");
-      uniqueElements.add(href);
-    }
-
-    const defsRelief = svgDefs.getElementById("defs-relief");
-    for (const terrain of [...uniqueElements]) {
-      const element = defsRelief.querySelector(terrain);
-      if (element) cloneDefs.appendChild(element.cloneNode(true));
     }
   }
 
@@ -424,7 +421,8 @@ async function getMapURL(
 
 // remove hidden g elements and g elements without children to make downloaded svg smaller in size
 function removeUnusedElements(clone) {
-  if (!terrain.selectAll("use").size()) clone.select("#defs-relief")?.remove();
+  // Check the clone (not the live terrain) so canvas-mode maps export correctly
+  if (!clone.select("#terrain use").size()) clone.select("#defs-relief")?.remove();
 
   for (let empty = 1; empty; ) {
     empty = 0;
@@ -583,31 +581,31 @@ function saveGeoJsonZones() {
   // Handles multiple disconnected components and holes properly
   function getZonePolygonCoordinates(zoneCells) {
     const cellsInZone = new Set(zoneCells);
-    const ofSameType = (cellId) => cellsInZone.has(cellId);
-    const ofDifferentType = (cellId) => !cellsInZone.has(cellId);
-    
+    const ofSameType = cellId => cellsInZone.has(cellId);
+    const ofDifferentType = cellId => !cellsInZone.has(cellId);
+
     const checkedCells = new Set();
     const rings = []; // Array of LinearRings (each ring is an array of coordinates)
-    
+
     // Find all boundary components by tracing each connected region
     for (const cellId of zoneCells) {
       if (checkedCells.has(cellId)) continue;
-      
+
       // Check if this cell is on the boundary (has a neighbor outside the zone)
       const neighbors = cells.c[cellId];
       const onBorder = neighbors.some(ofDifferentType);
       if (!onBorder) continue;
-      
+
       // Check if this is an inner lake (hole) - skip if so
       const feature = pack.features[cells.f[cellId]];
       if (feature.type === "lake" && feature.shoreline) {
         if (feature.shoreline.every(ofSameType)) continue;
       }
-      
+
       // Find a starting vertex that's on the boundary
       const cellVertices = cells.v[cellId];
       let startingVertex = null;
-      
+
       for (const vertexId of cellVertices) {
         const vertexCells = vertices.c[vertexId];
         if (vertexCells.some(ofDifferentType)) {
@@ -615,38 +613,38 @@ function saveGeoJsonZones() {
           break;
         }
       }
-      
+
       if (startingVertex === null) continue;
-      
+
       // Use connectVertices to trace the boundary (reusing existing logic)
       const vertexChain = connectVertices({
         vertices,
         startingVertex,
         ofSameType,
-        addToChecked: (cellId) => checkedCells.add(cellId),
-        closeRing: false, // We'll close it manually after converting to coordinates
+        addToChecked: cellId => checkedCells.add(cellId),
+        closeRing: false // We'll close it manually after converting to coordinates
       });
-      
+
       if (vertexChain.length < 3) continue;
-      
+
       // Convert vertex chain to coordinates
       const coordinates = [];
       for (const vertexId of vertexChain) {
         const [x, y] = vertices.p[vertexId];
         coordinates.push(getCoordinates(x, y, 4));
       }
-      
+
       // Close the ring (first coordinate = last coordinate)
       if (coordinates.length > 0) {
         coordinates.push(coordinates[0]);
       }
-      
+
       // Only add ring if it has at least 4 positions (minimum for valid LinearRing)
       if (coordinates.length >= 4) {
         rings.push(coordinates);
       }
     }
-    
+
     return rings;
   }
 
@@ -656,10 +654,10 @@ function saveGeoJsonZones() {
     if (zone.hidden || !zone.cells || zone.cells.length === 0) return;
 
     const rings = getZonePolygonCoordinates(zone.cells);
-    
+
     // Skip if no valid rings were generated
     if (rings.length === 0) return;
-    
+
     const properties = {
       id: zone.i,
       name: zone.name,
@@ -667,7 +665,7 @@ function saveGeoJsonZones() {
       color: zone.color,
       cells: zone.cells
     };
-    
+
     // If there's only one ring, use Polygon geometry
     if (rings.length === 1) {
       const feature = {

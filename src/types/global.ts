@@ -87,6 +87,8 @@ declare global {
   var unlock: (settingId: string) => void;
   var $: (selector: any) => any;
   var scale: number;
+  var viewX: number;
+  var viewY: number;
   var changeFont: () => void;
   var getFriendlyHeight: (coords: [number, number]) => string;
 }

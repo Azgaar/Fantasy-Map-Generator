@@ -303,6 +303,7 @@ async function checkLoadParameters() {
 async function generateMapOnLoad() {
   await applyStyleOnLoad(); // apply previously selected default or custom style
   await generate(); // generate map
+  WebGLLayer.init();
   applyLayersPreset(); // apply saved layers preset and reder layers
   drawLayers();
   fitMapToScreen();
@@ -458,6 +459,8 @@ function handleZoom(isScaleChanged, isPositionChanged) {
     drawScaleBar(scaleBar, scale);
     fitScaleBar(scaleBar, svgWidth, svgHeight);
   }
+
+  WebGLLayer.rerender(); // rerender WebGL layers on zoom
 
   // zoom image converter overlay
   if (customization === 1) {

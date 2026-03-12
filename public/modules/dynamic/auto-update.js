@@ -1112,4 +1112,24 @@ export function resolveVersionConflicts(mapVersion) {
       zone.cells = unique(zone.cells);
     });
   }
+
+  if (isOlderThan("1.114.0")) {
+    // v1.114.0 add reliefIcon to pack data and changed rendering method to WebGL
+    const terrainEl = byId("terrain");
+    if (!terrainEl) return;
+    const relief = [];
+
+    terrainEl.querySelectorAll("use").forEach(u => {
+      const href = u.getAttribute("href") || u.getAttribute("xlink:href") || "";
+      if (!href) return;
+      const icon = href.replace("#", "");
+      const x = +u.getAttribute("x");
+      const y = +u.getAttribute("y");
+      const s = +u.getAttribute("width");
+      relief.push({i: relief.length, icon, x, y, s});
+    });
+    terrainEl.innerHTML = "";
+    pack.relief = relief;
+    if (layerIsOn("toggleRelief")) drawRelief();
+  }
 }

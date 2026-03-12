@@ -323,7 +323,8 @@ function editBiomes() {
   }
 
   function regenerateIcons() {
-    drawReliefIcons();
+    pack.relief = [];
+    drawRelief();
     if (!layerIsOn("toggleRelief")) toggleRelief();
   }
 

@@ -2,6 +2,7 @@ import type { Burg } from "../modules/burgs-generator";
 import type { Culture } from "../modules/cultures-generator";
 import type { PackedGraphFeature } from "../modules/features";
 import type { Province } from "../modules/provinces-generator";
+import type { ReliefIcon } from "../modules/relief-generator";
 import type { River } from "../modules/river-generator";
 import type { Route } from "../modules/routes-generator";
 import type { State } from "../modules/states-generator";
@@ -53,6 +54,7 @@ export interface PackedGraph {
     p: [number, number][]; // vertex points
   };
   rivers: River[];
+  relief: ReliefIcon[];
   features: PackedGraphFeature[];
   burgs: Burg[];
   states: State[];

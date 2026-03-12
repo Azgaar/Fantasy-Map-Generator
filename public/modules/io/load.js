@@ -440,7 +440,7 @@ async function parseLoadedData(data, mapVersion) {
       if (hasChildren(coordinates)) turnOn("toggleCoordinates");
       if (isVisible(compass) && hasChild(compass, "use")) turnOn("toggleCompass");
       if (hasChildren(rivers)) turnOn("toggleRivers");
-      if (isVisible(terrain) && hasChildren(terrain)) turnOn("toggleRelief");
+      if (hasChildren(terrain)) turnOn("toggleRelief");
       if (hasChildren(relig)) turnOn("toggleReligions");
       if (hasChildren(cults)) turnOn("toggleCultures");
       if (hasChildren(statesBody)) turnOn("toggleStates");

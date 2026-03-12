@@ -129,8 +129,8 @@ function showMapTooltip(point, e, i, g) {
       parent.id === "burgEmblems"
         ? [pack.burgs, "burg"]
         : parent.id === "provinceEmblems"
-        ? [pack.provinces, "province"]
-        : [pack.states, "state"];
+          ? [pack.provinces, "province"]
+          : [pack.states, "state"];
     const i = +e.target.dataset.i;
     if (event.shiftKey) highlightEmblemElement(type, g[i]);
 
@@ -159,8 +159,6 @@ function showMapTooltip(point, e, i, g) {
       return tip("Click to edit the Route");
     }
   }
-
-  if (group === "terrain") return tip("Click to edit the Relief Icon");
 
   if (subgroup === "burgLabels" || subgroup === "burgIcons") {
     const burgId = +path[path.length - 10].dataset.id;
@@ -346,7 +344,8 @@ function getFriendlyHeight([x, y]) {
 function getHeight(h, abs) {
   const unit = heightUnit.value;
   let unitRatio = 3.281; // default calculations are in feet
-  if (unit === "m") unitRatio = 1; // if meter
+  if (unit === "m")
+    unitRatio = 1; // if meter
   else if (unit === "f") unitRatio = 0.5468; // if fathom
 
   let height = -990;

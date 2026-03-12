@@ -1,65 +1,88 @@
-# Fantasy Map Generator
+<!-- BMAD:START -->
 
-Azgaar's Fantasy Map Generator is a client-only web application for creating fantasy maps. It generates detailed fantasy worlds with countries, cities, rivers, biomes, and cultural elements.
+# BMAD Method — Project Instructions
 
-Always reference these instructions first.
+## Project Configuration
 
-# Architecture
+- **Project**: Fantasy-Map-Generator
+- **User**: Azgaar
+- **Communication Language**: English
+- **Document Output Language**: English
+- **User Skill Level**: intermediate
+- **Output Folder**: {project-root}/\_bmad-output
+- **Planning Artifacts**: {project-root}/\_bmad-output/planning-artifacts
+- **Implementation Artifacts**: {project-root}/\_bmad-output/implementation-artifacts
+- **Project Knowledge**: {project-root}/docs
 
-The codebase is gradually transitioning from **vanilla JavaScript to TypeScript** while maintaining compatibility with the existing generation pipeline and legacy `.map` user files.
+## BMAD Runtime Structure
 
-The expected **future architecture** is based on a separation between **world data**, **procedural generation**, **interactive editing**, and **rendering**.
+- **Agent definitions**: `_bmad/bmm/agents/` (BMM module) and `_bmad/core/agents/` (core)
+- **Workflow definitions**: `_bmad/bmm/workflows/` (organized by phase)
+- **Core tasks**: `_bmad/core/tasks/` (help, editorial review, indexing, sharding, adversarial review)
+- **Core workflows**: `_bmad/core/workflows/` (brainstorming, party-mode, advanced-elicitation)
+- **Workflow engine**: `_bmad/core/tasks/workflow.xml` (executes YAML-based workflows)
+- **Module configuration**: `_bmad/bmm/config.yaml`
+- **Core configuration**: `_bmad/core/config.yaml`
+- **Agent manifest**: `_bmad/_config/agent-manifest.csv`
+- **Workflow manifest**: `_bmad/_config/workflow-manifest.csv`
+- **Help manifest**: `_bmad/_config/bmad-help.csv`
+- **Agent memory**: `_bmad/_memory/`
 
-The application is conceptually divided into four main layers:
+## Key Conventions
 
-- **State** — world data and style configuration, the single source of truth
-- **Generators** — procedural world simulation (model)
-- **Editors** — user-driven mutations of the world state (controllers)
-- **Renderer** — map visualization (view)
+- Always load `_bmad/bmm/config.yaml` before any agent activation or workflow execution
+- Store all config fields as session variables: `{user_name}`, `{communication_language}`, `{output_folder}`, `{planning_artifacts}`, `{implementation_artifacts}`, `{project_knowledge}`
+- MD-based workflows execute directly — load and follow the `.md` file
+- YAML-based workflows require the workflow engine — load `workflow.xml` first, then pass the `.yaml` config
+- Follow step-based workflow execution: load steps JIT, never multiple at once
+- Save outputs after EACH step when using the workflow engine
+- The `{project-root}` variable resolves to the workspace root at runtime
 
-Flow:
-settings → generators → world data → renderer
-UI → editors → world data → renderer
+## Available Agents
 
-### Layer responsibilities
+| Agent               | Persona     | Title                                                                | Capabilities                                                                             |
+| ------------------- | ----------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| bmad-master         | BMad Master | BMad Master Executor, Knowledge Custodian, and Workflow Orchestrator | runtime resource management, workflow orchestration, task execution, knowledge custodian |
+| analyst             | Mary        | Business Analyst                                                     | market research, competitive analysis, requirements elicitation, domain expertise        |
+| architect           | Winston     | Architect                                                            | distributed systems, cloud infrastructure, API design, scalable patterns                 |
+| dev                 | Amelia      | Developer Agent                                                      | story execution, test-driven development, code implementation                            |
+| pm                  | John        | Product Manager                                                      | PRD creation, requirements discovery, stakeholder alignment, user interviews             |
+| qa                  | Quinn       | QA Engineer                                                          | test automation, API testing, E2E testing, coverage analysis                             |
+| quick-flow-solo-dev | Barry       | Quick Flow Solo Dev                                                  | rapid spec creation, lean implementation, minimum ceremony                               |
+| sm                  | Bob         | Scrum Master                                                         | sprint planning, story preparation, agile ceremonies, backlog management                 |
+| tech-writer         | Paige       | Technical Writer                                                     | documentation, Mermaid diagrams, standards compliance, concept explanation               |
+| ux-designer         | Sally       | UX Designer                                                          | user research, interaction design, UI patterns, experience strategy                      |
 
-**State (world data)**  
-Stores all map data and style configuration.  
-The data layer must contain **no logic and no rendering code**.
+## Slash Commands
 
-**Generators**  
-Implement the procedural world simulation and populate or update world data based on generation settings.
+Type `/bmad-` in Copilot Chat to see all available BMAD workflows and agent activators. Agents are also available in the agents dropdown.
 
-**Editors**  
-Implement interactive editing tools used by the user.  
-Editors perform controlled mutations of the world state and can be viewed as **interactive generators**.
+## Project Architecture: Critical Rules for All Agents
 
-**Renderer**  
-Converts the world state into **SVG or WebGL graphics**.  
-Rendering must be a **pure visualization step** and must **not modify world data**.
+### main.js globals — NEVER use globalThis
 
-# Working Effectively
+`public/main.js` and all `public/modules/**/*.js` files are **plain `<script defer>` tags — NOT ES modules**. Every top-level declaration is a `window` property automatically.
 
-The project uses **NPM**, **Vite**, and **TypeScript** for development and building.
+Key globals always available on `window` at runtime: `scale`, `viewX`, `viewY`, `graphWidth`, `graphHeight`, `svgWidth`, `svgHeight`, `pack`, `grid`, `viewbox`, `svg`, `zoom`, `seed`, `options`, `byId`, `rn`, `tip`, `layerIsOn` and many more.
 
-## Setup
+**Rule: In `src/**/\*.ts`(ES modules), just use the globals directly — they are declared as ambient globals in`src/types/global.ts`:\*\*
 
-Install dependencies: `npm install`
+```ts
+// ✅ CORRECT — declared in src/types/global.ts, use as bare identifiers
+buildCameraBounds(viewX, viewY, scale, graphWidth, graphHeight);
+viewbox.on("zoom.webgl", handler);
 
-Requirements: Node.js **>= 24.0.0**
+// ❌ WRONG — never do these
+(window as any).scale(globalThis as any).scale;
+```
 
-## Development
+Full reference: see `docs/architecture-globals.md`.
 
-Start the development server: `npm run dev`
+### Code Style — Non-Negotiable Rules for All Agents
 
-Access the application at: http://localhost:5173
+- **No unnecessary comments.** Code is self-documenting. Add a comment only when the _why_ is non-obvious from reading the code itself. Never describe what the code does.
+- **Clean abstractions that don't leak.** Each abstraction fully owns its concern. Callers must not need to know implementation details. If a caller must pass a flag to alter internal behavior, the abstraction is wrong — split it.
+- **No academic over-engineering.** No design patterns, extra layers, or wrapper objects unless the problem concretely requires them. Solve the current requirement; do not design for hypothetical future variants.
+- **Minimal artifacts.** Only create files mandated by acceptance criteria. No speculative utils stubs, barrel re-exports, or helper files without multiple concrete callers.
 
-## Build
-
-Create a production build: `npm run build`
-
-Build steps:
-
-1. TypeScript compilation (`tsc`)
-2. Vite build
-3. Output written to `dist/`
+<!-- BMAD:END -->
