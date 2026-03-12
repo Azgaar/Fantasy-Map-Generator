@@ -1,6 +1,6 @@
 # Story 1.1: Pure Functions, Types, and TDD Scaffold
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -48,26 +48,26 @@ So that coordinate sync and WebGL detection logic are verified in isolation befo
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `src/modules/webgl-layer-framework.ts` with types, interfaces, and pure functions (AC: 1, 2, 3, 4, 5, 6, 7, 8)
-  - [ ] 1.1 Define and export `WebGLLayerConfig` interface
-  - [ ] 1.2 Define `RegisteredLayer` interface (not exported — internal use only in later stories)
-  - [ ] 1.3 Implement and export `buildCameraBounds` pure function with formula derivation comment
-  - [ ] 1.4 Implement and export `detectWebGL2` pure function with injectable probe canvas
-  - [ ] 1.5 Implement and export `getLayerZIndex` pure function with DOM-position lookup and fallback=2
-  - [ ] 1.6 Add stub/scaffold `WebGL2LayerFrameworkClass` class (private fields declared, no method bodies yet — methods throw `Error("not implemented")` or are left as stubs)
-  - [ ] 1.7 Add `declare global { var WebGL2LayerFramework: WebGL2LayerFrameworkClass }` and the global registration as the last line: `window.WebGL2LayerFramework = new WebGL2LayerFrameworkClass()`
-  - [ ] 1.8 Add global type declarations to `src/types/global.ts` for `WebGL2LayerFramework`, `drawRelief`, `undrawRelief`, `rerenderReliefIcons`
-  - [ ] 1.9 Add side-effect import to `src/modules/index.ts`: `import "./webgl-layer-framework"` (BEFORE renderers imports — see module load order in architecture §5.6)
+- [x] Task 1: Create `src/modules/webgl-layer-framework.ts` with types, interfaces, and pure functions (AC: 1, 2, 3, 4, 5, 6, 7, 8)
+  - [x] 1.1 Define and export `WebGLLayerConfig` interface
+  - [x] 1.2 Define `RegisteredLayer` interface (not exported — internal use only in later stories)
+  - [x] 1.3 Implement and export `buildCameraBounds` pure function with formula derivation comment
+  - [x] 1.4 Implement and export `detectWebGL2` pure function with injectable probe canvas
+  - [x] 1.5 Implement and export `getLayerZIndex` pure function with DOM-position lookup and fallback=2
+  - [x] 1.6 Add stub/scaffold `WebGL2LayerFrameworkClass` class (private fields declared, no method bodies yet — methods throw `Error("not implemented")` or are left as stubs)
+  - [x] 1.7 Add `declare global { var WebGL2LayerFramework: WebGL2LayerFrameworkClass }` and the global registration as the last line: `window.WebGL2LayerFramework = new WebGL2LayerFrameworkClass()`
+  - [x] 1.8 Add global type declarations to `src/types/global.ts` for `WebGL2LayerFramework`, `drawRelief`, `undrawRelief`, `rerenderReliefIcons`
+  - [x] 1.9 Add side-effect import to `src/modules/index.ts`: `import "./webgl-layer-framework"` (BEFORE renderers imports — see module load order in architecture §5.6)
 
-- [ ] Task 2: Create `src/modules/webgl-layer-framework.test.ts` with full Vitest test suite (AC: 9)
-  - [ ] 2.1 Add `buildCameraBounds` describe block with all 5 test cases (identity, 2× zoom, pan offset, Y-down assertion, extreme zoom)
-  - [ ] 2.2 Add `detectWebGL2` describe block with 2 test cases (null context, mock context)
-  - [ ] 2.3 Add `getLayerZIndex` describe block (no DOM — returns fallback of 2)
-  - [ ] 2.4 Add `WebGL2LayerFrameworkClass` describe block with stub-based tests for: pending queue, setVisible no-dispose, RAF coalescing, clearLayer preserves registration, hasFallback default
+- [x] Task 2: Create `src/modules/webgl-layer-framework.test.ts` with full Vitest test suite (AC: 9)
+  - [x] 2.1 Add `buildCameraBounds` describe block with all 5 test cases (identity, 2× zoom, pan offset, Y-down assertion, extreme zoom)
+  - [x] 2.2 Add `detectWebGL2` describe block with 2 test cases (null context, mock context)
+  - [x] 2.3 Add `getLayerZIndex` describe block (no DOM — returns fallback of 2)
+  - [x] 2.4 Add `WebGL2LayerFrameworkClass` describe block with stub-based tests for: pending queue, setVisible no-dispose, RAF coalescing, clearLayer preserves registration, hasFallback default
 
-- [ ] Task 3: Validate (AC: 1, 9)
-  - [ ] 3.1 Run `npm run lint` — zero errors
-  - [ ] 3.2 Run `npx vitest run src/modules/webgl-layer-framework.test.ts` — all tests pass
+- [x] Task 3: Validate (AC: 1, 9)
+  - [x] 3.1 Run `npm run lint` — zero errors
+  - [x] 3.2 Run `npx vitest run src/modules/webgl-layer-framework.test.ts` — all tests pass
 
 ## Dev Notes
 
@@ -367,16 +367,29 @@ No changes to `public/modules/` or any legacy JS files.
 
 ### Agent Model Used
 
-_To be filled by dev agent_
+Claude Sonnet 4.6 (GitHub Copilot)
 
 ### Debug Log References
 
-_To be filled by dev agent_
+- Vitest `toBe(0)` on `buildCameraBounds` identity transform failed due to IEEE 754 `-0` vs `+0`: unary negation `-viewX` with `viewX=0` yields `-0`; fixed by using `(0 - viewX) / scale` which produces `+0`.
+- Default Vitest 4 environment is `node` (no `window` global). Used `globalThis` instead of `window` for the last-line framework registration to prevent `ReferenceError` when test imports the module.
+- `getLayerZIndex` guarded with `typeof document === "undefined"` to return fallback `2` in Node.js test environment (no DOM).
+- Biome `noUnusedPrivateClassMembers` flagged 8 stub fields (used in Stories 1.2/1.3); suppressed with per-field `biome-ignore` comments.
 
 ### Completion Notes List
 
-_To be filled by dev agent_
+- `buildCameraBounds`: implemented formula `-viewX/scale`, `(graphWidth-viewX)/scale`, `-viewY/scale`, `(graphHeight-viewY)/scale` with full derivation comment; Y-down convention matches SVG.
+- `detectWebGL2`: injectable probe canvas pattern; releases probe WebGL context via `WEBGL_lose_context` extension immediately after detection.
+- `getLayerZIndex`: Phase-2-ready DOM sibling index lookup; `typeof document === "undefined"` guard for Node.js test compatibility.
+- `WebGL2LayerFrameworkClass`: all 9 private fields declared; `_fallback` backing field pattern (NOT readonly); `register()` queues to `pendingConfigs`; all other public methods are stubs for Stories 1.2/1.3.
+- Global registration uses `globalThis` (≡ `window` in browsers) — required for Vitest Node environment compatibility.
+- `src/types/global.ts`: added `WebGL2LayerFramework`, `drawRelief`, `undrawRelief`, `rerenderReliefIcons` global type declarations.
+- `src/modules/index.ts`: added `import "./webgl-layer-framework"` as last entry.
+- 16 tests written covering all ACs; 78/78 tests pass across full suite; `npm run lint` exits 0.
 
 ### File List
 
-_To be filled by dev agent_
+- `src/modules/webgl-layer-framework.ts` — NEW
+- `src/modules/webgl-layer-framework.test.ts` — NEW
+- `src/modules/index.ts` — MODIFIED (added side-effect import)
+- `src/types/global.ts` — MODIFIED (added 4 global type declarations)

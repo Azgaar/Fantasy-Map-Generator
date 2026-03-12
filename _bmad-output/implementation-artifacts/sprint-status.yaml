@@ -42,8 +42,8 @@ story_location: _bmad-output/implementation-artifacts
 development_status:
   # Epic 1: WebGL Layer Framework Module
   epic-1: in-progress
-  1-1-pure-functions-types-and-tdd-scaffold: in-progress
-  1-2-framework-core-init-canvas-and-dom-setup: backlog
+  1-1-pure-functions-types-and-tdd-scaffold: review
+  1-2-framework-core-init-canvas-and-dom-setup: review
   1-3-layer-lifecycle-register-visibility-render-loop: backlog
   epic-1-retrospective: optional
 

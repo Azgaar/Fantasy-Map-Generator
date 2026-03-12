@@ -91,4 +91,9 @@ declare global {
   var viewY: number;
   var changeFont: () => void;
   var getFriendlyHeight: (coords: [number, number]) => string;
+
+  var WebGL2LayerFramework: import("../modules/webgl-layer-framework").WebGL2LayerFrameworkClass;
+  var drawRelief: (type?: "svg" | "webGL", parentEl?: HTMLElement) => void;
+  var undrawRelief: () => void;
+  var rerenderReliefIcons: () => void;
 }
