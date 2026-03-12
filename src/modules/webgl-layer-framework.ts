@@ -91,25 +91,11 @@ export class WebGL2LayerFrameworkClass {
   private resizeObserver: ResizeObserver | null = null;
   private rafId: number | null = null;
   private container: HTMLElement | null = null;
-  private _fallback = false;
-
-  get hasFallback(): boolean {
-    return this._fallback;
-  }
 
   init(): boolean {
-    this._fallback = !detectWebGL2();
-    if (this._fallback) return false;
-
     const mapEl = document.getElementById("map");
-    if (!mapEl) {
-      console.warn(
-        "WebGL2LayerFramework: #map element not found — init() aborted",
-      );
-      return false;
-    }
+    if (!mapEl) throw new Error("Map element not found");
 
-    // Wrap #map in a positioned container so the canvas can be a sibling with z-index
     const container = document.createElement("div");
     container.id = "map-container";
     container.style.position = "relative";
@@ -117,7 +103,6 @@ export class WebGL2LayerFrameworkClass {
     container.appendChild(mapEl);
     this.container = container;
 
-    // Canvas: sibling to #map, pointerless, z-index above SVG (AC1)
     const canvas = document.createElement("canvas");
     canvas.id = "terrainCanvas";
     canvas.style.position = "absolute";
@@ -125,27 +110,20 @@ export class WebGL2LayerFrameworkClass {
     canvas.style.pointerEvents = "none";
     canvas.setAttribute("aria-hidden", "true");
     canvas.style.zIndex = String(getLayerZIndex("terrain"));
-    canvas.width = container.clientWidth || 960;
-    canvas.height = container.clientHeight || 540;
+    canvas.width = mapEl.clientWidth || 960;
+    canvas.height = mapEl.clientHeight || 540;
     container.appendChild(canvas);
     this.canvas = canvas;
 
-    // Three.js core objects (AC4)
     this.renderer = new WebGLRenderer({
       canvas,
-      antialias: false,
+      antialias: true,
       alpha: true,
     });
-    this.renderer.setSize(canvas.width, canvas.height);
+    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setSize(canvas.width, canvas.height, false);
     this.scene = new Scene();
-    this.camera = new OrthographicCamera(
-      0,
-      canvas.width,
-      0,
-      canvas.height,
-      -1,
-      1,
-    );
+    this.camera = new OrthographicCamera(0, graphWidth, 0, graphHeight, -1, 1);
 
     this.subscribeD3Zoom();
 
@@ -178,7 +156,6 @@ export class WebGL2LayerFrameworkClass {
   }
 
   unregister(id: string): void {
-    if (this._fallback) return;
     const layer = this.layers.get(id);
     if (!layer || !this.scene) return;
     const scene = this.scene;
@@ -190,7 +167,6 @@ export class WebGL2LayerFrameworkClass {
   }
 
   setVisible(id: string, visible: boolean): void {
-    if (this._fallback) return;
     const layer = this.layers.get(id);
     if (!layer) return;
     layer.group.visible = visible;
@@ -200,14 +176,13 @@ export class WebGL2LayerFrameworkClass {
   }
 
   clearLayer(id: string): void {
-    if (this._fallback) return;
     const layer = this.layers.get(id);
     if (!layer) return;
     layer.group.clear();
+    this.requestRender();
   }
 
   requestRender(): void {
-    if (this._fallback) return;
     if (this.rafId !== null) return;
     this.rafId = requestAnimationFrame(() => {
       this.rafId = null;
@@ -216,13 +191,7 @@ export class WebGL2LayerFrameworkClass {
   }
 
   syncTransform(): void {
-    if (this._fallback || !this.camera) return;
     const camera = this.camera;
-    const viewX = (globalThis as any).viewX ?? 0;
-    const viewY = (globalThis as any).viewY ?? 0;
-    const scale = (globalThis as any).scale ?? 1;
-    const graphWidth = (globalThis as any).graphWidth ?? 960;
-    const graphHeight = (globalThis as any).graphHeight ?? 540;
     const bounds = buildCameraBounds(
       viewX,
       viewY,
@@ -238,39 +207,38 @@ export class WebGL2LayerFrameworkClass {
   }
 
   private subscribeD3Zoom(): void {
-    // viewbox is a D3 selection global available in the browser; guard for Node test env
-    if (typeof (globalThis as any).viewbox === "undefined") return;
-    (globalThis as any).viewbox.on("zoom.webgl", () => this.requestRender());
+    // viewbox is declared as a global in src/types/global.ts (exposed by main.js).
+    // Guard for Node test env where it doesn't exist.
+    if (typeof viewbox === "undefined") return;
+    viewbox.on("zoom.webgl", () => this.requestRender());
   }
 
   private observeResize(): void {
     if (!this.container || !this.renderer) return;
+    const mapEl = this.container.querySelector("#map") ?? this.container;
     this.resizeObserver = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
-      if (this.renderer && this.canvas) {
-        this.renderer.setSize(width, height);
+      if (this.renderer && this.canvas && width > 0 && height > 0) {
+        // updateStyle=false — CSS inset:0 handles canvas positioning.
+        this.renderer.setSize(width, height, false);
         this.requestRender();
       }
     });
-    this.resizeObserver.observe(this.container);
+    this.resizeObserver.observe(mapEl);
   }
 
   private render(): void {
-    if (this._fallback || !this.renderer || !this.scene || !this.camera) return;
-    const renderer = this.renderer;
-    const scene = this.scene;
-    const camera = this.camera;
+    if (!this.renderer || !this.scene || !this.camera) return;
     this.syncTransform();
     for (const layer of this.layers.values()) {
-      if (layer.group.visible) {
-        layer.config.render(layer.group);
-      }
+      if (layer.group.visible) layer.config.render(layer.group);
     }
-    renderer.render(scene, camera);
+    this.renderer.render(this.scene, this.camera);
   }
 }
 
 declare global {
   var WebGL2LayerFramework: WebGL2LayerFrameworkClass;
 }
-globalThis.WebGL2LayerFramework = new WebGL2LayerFrameworkClass();
+
+window.WebGL2LayerFramework = new WebGL2LayerFrameworkClass();

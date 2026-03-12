@@ -102,12 +102,7 @@ Reads window globals (`viewX`, `viewY`, `scale`, `graphWidth`, `graphHeight`) an
 
 ```typescript
 syncTransform(): void {
-  if (this._fallback || !this.camera) return;
-  const viewX = (globalThis as any).viewX ?? 0;
-  const viewY = (globalThis as any).viewY ?? 0;
-  const scale = (globalThis as any).scale ?? 1;
-  const graphWidth = (globalThis as any).graphWidth ?? 960;
-  const graphHeight = (globalThis as any).graphHeight ?? 540;
+  if (this._fallback || !this.camera) return
   const bounds = buildCameraBounds(viewX, viewY, scale, graphWidth, graphHeight);
   this.camera.left = bounds.left;
   this.camera.right = bounds.right;

@@ -303,6 +303,7 @@ async function checkLoadParameters() {
 async function generateMapOnLoad() {
   await applyStyleOnLoad(); // apply previously selected default or custom style
   await generate(); // generate map
+  WebGL2LayerFramework.init();
   applyLayersPreset(); // apply saved layers preset and reder layers
   drawLayers();
   fitMapToScreen();
