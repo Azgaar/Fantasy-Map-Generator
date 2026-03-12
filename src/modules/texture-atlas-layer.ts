@@ -14,16 +14,16 @@ import {
 
 export interface AtlasConfig {
   url: string;
+  ids: string[];
   cols: number;
   rows: number;
 }
 
-export interface AtlasQuad {
-  atlasId: string;
+export interface AtlasItem {
+  icon: string;
   x: number;
   y: number;
   s: number;
-  tileIndex: number;
 }
 
 export class TextureAtlasLayer {
@@ -47,25 +47,30 @@ export class TextureAtlasLayer {
     });
   }
 
-  draw(quads: AtlasQuad[]) {
+  draw(items: AtlasItem[]) {
     if (!this.group) return;
     this.disposeGroup();
 
-    const byAtlas = new Map<string, AtlasQuad[]>();
-    for (const q of quads) {
-      let arr = byAtlas.get(q.atlasId);
-      if (!arr) {
-        arr = [];
-        byAtlas.set(q.atlasId, arr);
+    const byAtlas = new Map<string, { item: AtlasItem; tileIndex: number }[]>();
+    for (const item of items) {
+      for (const [atlasId, config] of Object.entries(this.atlases)) {
+        const tileIndex = config.ids.indexOf(item.icon);
+        if (tileIndex === -1) continue;
+        let arr = byAtlas.get(atlasId);
+        if (!arr) {
+          arr = [];
+          byAtlas.set(atlasId, arr);
+        }
+        arr.push({ item, tileIndex });
+        break;
       }
-      arr.push(q);
     }
 
-    for (const [atlasId, atlasQuads] of byAtlas) {
+    for (const [atlasId, entries] of byAtlas) {
       const texture = this.textureCache.get(atlasId);
       const config = this.atlases[atlasId];
       if (!texture || !config) continue;
-      this.group.add(buildMesh(atlasQuads, config, texture));
+      this.group.add(buildMesh(entries, config, texture));
     }
     WebGLLayer.rerender();
   }
@@ -113,20 +118,20 @@ export class TextureAtlasLayer {
 }
 
 function buildMesh(
-  quads: AtlasQuad[],
+  entries: Array<{ item: AtlasItem; tileIndex: number }>,
   atlas: AtlasConfig,
   texture: Texture,
 ): Mesh {
   const { cols, rows } = atlas;
-  const positions = new Float32Array(quads.length * 4 * 3);
-  const uvs = new Float32Array(quads.length * 4 * 2);
-  const indices = new Uint32Array(quads.length * 6);
+  const positions = new Float32Array(entries.length * 4 * 3);
+  const uvs = new Float32Array(entries.length * 4 * 2);
+  const indices = new Uint32Array(entries.length * 6);
 
   let vi = 0,
     ii = 0;
-  for (const q of quads) {
-    const col = q.tileIndex % cols;
-    const row = Math.floor(q.tileIndex / cols);
+  for (const { item: q, tileIndex } of entries) {
+    const col = tileIndex % cols;
+    const row = Math.floor(tileIndex / cols);
     const u0 = col / cols,
       u1 = (col + 1) / cols;
     const v0 = row / rows,

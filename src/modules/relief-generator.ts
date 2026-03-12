@@ -11,7 +11,7 @@ import {
 
 export interface ReliefIcon {
   i: number;
-  href: string; // e.g. "#relief-mount-1"
+  icon: string; // e.g. "relief-mount-1"
   x: number;
   y: number;
   s: number; // size (width = height in map units)
@@ -63,10 +63,10 @@ export function generateRelief(): ReliefIcon[] {
         if (!polygonContains(polygon, [cx, cy])) continue;
         let h = (4 + Math.random()) * size;
         const icon = getBiomeIcon(i, biome);
-        if (icon === "#relief-grass-1") h *= 1.2;
+        if (icon === "relief-grass-1") h *= 1.2;
         reliefIcons.push({
           i: reliefIcons.length,
-          href: icon,
+          icon,
           x: rn(cx - h, 2),
           y: rn(cy - h, 2),
           s: rn(h * 2, 2),
@@ -85,7 +85,7 @@ export function generateRelief(): ReliefIcon[] {
         if (!polygonContains(polygon, [cx, cy])) continue;
         reliefIcons.push({
           i: reliefIcons.length,
-          href: icon,
+          icon,
           x: rn(cx - h, 2),
           y: rn(cy - h, 2),
           s: rn(h * 2, 2),
@@ -125,9 +125,9 @@ function getVariant(type: string): number {
 }
 
 function getHref(type: string, set: string): string {
-  if (set === "colored") return `#relief-${type}-${getVariant(type)}`;
-  if (set === "gray") return `#relief-${type}-${getVariant(type)}-bw`;
-  return `#relief-${COLORED_TO_SIMPLE_MAP[type] ?? type}-1`;
+  if (set === "colored") return `relief-${type}-${getVariant(type)}`;
+  if (set === "gray") return `relief-${type}-${getVariant(type)}-bw`;
+  return `relief-${COLORED_TO_SIMPLE_MAP[type] ?? type}-1`;
 }
 
 window.generateReliefIcons = generateRelief;

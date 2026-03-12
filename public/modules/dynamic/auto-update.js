@@ -1122,10 +1122,11 @@ export function resolveVersionConflicts(mapVersion) {
     terrainEl.querySelectorAll("use").forEach(u => {
       const href = u.getAttribute("href") || u.getAttribute("xlink:href") || "";
       if (!href) return;
+      const icon = href.replace("#", "");
       const x = +u.getAttribute("x");
       const y = +u.getAttribute("y");
       const s = +u.getAttribute("width");
-      relief.push({i: relief.length, href, x, y, s});
+      relief.push({i: relief.length, icon, x, y, s});
     });
     terrainEl.innerHTML = "";
     pack.relief = relief;

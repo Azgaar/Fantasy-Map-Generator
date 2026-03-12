@@ -1,16 +1,16 @@
-import { RELIEF_ATLASES, RELIEF_SYMBOLS } from "../config/relief-config";
+import { RELIEF_ATLASES } from "../config/relief-config";
 import type { ReliefIcon } from "../modules/relief-generator";
 import { generateRelief } from "../modules/relief-generator";
 import { TextureAtlasLayer } from "../modules/texture-atlas-layer";
 import { byId } from "../utils";
 
-const terrainLayer = new TextureAtlasLayer("terrain", RELIEF_ATLASES);
+const layer = new TextureAtlasLayer("terrain", RELIEF_ATLASES);
 
 function drawSvg(icons: ReliefIcon[], parentEl: HTMLElement): void {
   parentEl.innerHTML = icons
     .map(
       (r) =>
-        `<use href="${r.href}" data-id="${r.i}" x="${r.x}" y="${r.y}" width="${r.s}" height="${r.s}"/>`,
+        `<use href="#${r.icon}" data-id="${r.i}" x="${r.x}" y="${r.y}" width="${r.s}" height="${r.s}"/>`,
     )
     .join("");
 }
@@ -29,24 +29,12 @@ window.drawRelief = (
   if (type === "svg") {
     drawSvg(icons, parentEl);
   } else {
-    terrainLayer.draw(resolveQuads(icons));
+    layer.draw(icons);
   }
 };
 
-function resolveQuads(icons: ReliefIcon[]) {
-  return icons.map((r) => {
-    const id = r.href.startsWith("#") ? r.href.slice(1) : r.href;
-    for (const [set, { ids }] of Object.entries(RELIEF_SYMBOLS)) {
-      const tileIndex = ids.indexOf(id);
-      if (tileIndex !== -1)
-        return { atlasId: set, x: r.x, y: r.y, s: r.s, tileIndex };
-    }
-    throw new Error(`Relief: unknown symbol href "${r.href}"`);
-  });
-}
-
 window.undrawRelief = () => {
-  terrainLayer.clear();
+  layer.clear();
   const terrainEl = byId("terrain");
   if (terrainEl) terrainEl.innerHTML = "";
 };
