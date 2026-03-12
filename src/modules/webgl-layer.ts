@@ -34,8 +34,6 @@ export class WebGL2LayerClass {
     this.scene = new Scene();
     this.camera = new OrthographicCamera(0, graphWidth, 0, graphHeight, -1, 1);
 
-    console.log("WebGL2Layer: initialized");
-
     svg.on("zoom.webgl", () => this.requestRender());
 
     // Process pre-init registrations (register() before init() is explicitly safe)
@@ -101,13 +99,6 @@ export class WebGL2LayerClass {
   }
 
   syncTransform(): void {
-    console.log("WebGL2Layer: syncing transform", {
-      viewX,
-      viewY,
-      scale,
-      graphWidth,
-      graphHeight,
-    });
     if (!this.camera) return;
     const x = -viewX / scale;
     const y = -viewY / scale;
