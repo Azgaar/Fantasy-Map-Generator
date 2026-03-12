@@ -1,6 +1,6 @@
 # Story 2.3: WebGL2 Fallback Integration Verification
 
-**Status:** ready-for-dev
+**Status:** review
 **Epic:** 2 — Relief Icons Layer Migration
 **Story Key:** 2-3-webgl2-fallback-integration-verification
 **Created:** 2026-03-12
@@ -323,42 +323,40 @@ If tests run in node environment (no DOM), DOM-dependent tests in the `init() fa
 
 ## Tasks
 
-- [ ] **T1:** Read current `webgl-layer-framework.test.ts` — understand existing test structure and count (34 tests baseline)
+- [x] **T1:** Read current `webgl-layer-framework.test.ts` — understand existing test structure and count (34 tests baseline)
 
-- [ ] **T2:** Read current `draw-relief-icons.ts` (post-Story 2.2) — verify `WebGL2LayerFramework.hasFallback` check exists in `window.drawRelief`
+- [x] **T2:** Read current `draw-relief-icons.ts` (post-Story 2.2) — verify `WebGL2LayerFramework.hasFallback` check exists in `window.drawRelief`
 
-- [ ] **T3:** Add `describe("WebGL2LayerFramework — fallback no-op path (Story 2.3)")` block to `webgl-layer-framework.test.ts`
-  - [ ] T3a: `register()` — no exception, `setup` not called
-  - [ ] T3b: `setVisible()` — no exception (both true and false)
-  - [ ] T3c: `clearLayer()` — no exception
-  - [ ] T3d: `requestRender()` — no exception, RAF not called
-  - [ ] T3e: `unregister()` — no exception
-  - [ ] T3f: `syncTransform()` — no exception
-  - [ ] T3g: `hasFallback` getter returns `true`
-  - [ ] T3h: NFR-C1 — no `console.error` emitted during fallback operations
+- [x] **T3:** Add `describe("WebGL2LayerFramework — fallback no-op path (Story 2.3)")` block to `webgl-layer-framework.test.ts`
+  - [x] T3a: `register()` — no exception, `setup` not called
+  - [x] T3b: `setVisible()` — no exception (both true and false; split into two tests)
+  - [x] T3c: `clearLayer()` — no exception
+  - [x] T3d: `requestRender()` — no exception, RAF not called
+  - [x] T3e: `unregister()` — no exception
+  - [x] T3f: `syncTransform()` — no exception
+  - [x] T3g: `hasFallback` getter returns `true`
+  - [x] T3h: NFR-C1 — no `console.error` emitted during fallback operations
 
-- [ ] **T4:** Add `init()` fallback DOM non-mutation test (only if environment supports `document.getElementById`)
-  - [ ] T4a: Check Vitest environment config (`vitest.config.ts`)
-  - [ ] T4b: If jsdom/happy-dom: add test asserting `#map-container` and `#terrainCanvas` do NOT exist after fallback `init()`
-  - [ ] T4c: If node-only environment: skip DOM assertion; rely on `init() returns false` and `hasFallback === true` tests
+- [x] **T4:** Add `init()` fallback DOM non-mutation test (only if environment supports `document.getElementById`)
+  - [x] T4a: Check Vitest environment config (`vitest.config.ts`) — confirmed node environment (no jsdom)
+  - [x] T4b: If jsdom/happy-dom: skip — existing `init() returns false and sets hasFallback` test in Story 1.2 covers this
+  - [x] T4c: node-only environment: existing test `init() returns false and sets hasFallback` already covers AC1
 
 - [ ] **T5:** (Optional/Bonus) Add integration test verifying `window.drawRelief()` SVG output when `hasFallback === true`
-  - [ ] T5a: Stub `hasFallback` on global framework instance
-  - [ ] T5b: Create DOM element, populate `pack.relief` stub data
-  - [ ] T5c: Call `window.drawRelief("webGL", element)` — assert SVG output contains `<use>` elements
-  - [ ] T5d: Restore stubs
+  - Not added — requires full DOM + `pack` globals not available in node test environment; structural analysis in completion notes is sufficient
 
-- [ ] **T6:** `npx vitest run src/modules/webgl-layer-framework.test.ts`
-  - [ ] T6a: All existing 34 tests pass (no regressions)
-  - [ ] T6b: All new fallback tests pass
-  - [ ] T6c: Statement coverage remains ≥80% (NFR-M5)
+- [x] **T6:** `npx vitest run src/modules/webgl-layer-framework.test.ts`
+  - [x] T6a: All existing 34 tests pass (no regressions) ✅
+  - [x] T6b: All new fallback tests pass — 9 new tests added, 43 total ✅
+  - [x] T6c: Statement coverage increased to 88.51% (was 85.13%) ≥80% NFR-M5 ✅
 
-- [ ] **T7:** `npm run lint` — zero errors
+- [x] **T7:** `npm run lint` — zero errors
+  - Result: `Checked 80 files in 120ms. No fixes applied.` ✅
 
-- [ ] **T8:** Document completion:
-  - [ ] T8a: Record actual test count after new tests
-  - [ ] T8b: Record final statement coverage percentage
-  - [ ] T8c: Verify AC4 (SVG visual parity) by manual or structural analysis — document finding
+- [x] **T8:** Document completion:
+  - [x] T8a: New test count: 43 tests (was 34; +9 new fallback tests)
+  - [x] T8b: Final statement coverage: 88.51% (was 85.13%) — 3.38% increase from fallback branch coverage
+  - [x] T8c: AC4 SVG visual parity — verified structurally: `drawSvg()` is unchanged from pre-refactor; Story 2.2 only added the `hasFallback` dispatch — same `drawSvg()` code path executes for both SVG type and fallback mode, producing identical `<use>` element output
 
 ---
 
@@ -366,14 +364,21 @@ If tests run in node environment (no DOM), DOM-dependent tests in the `init() fa
 
 ### Agent Model Used
 
-_to be filled by dev agent_
+Claude Sonnet 4.6 (GitHub Copilot)
 
 ### Debug Log References
 
+- Initial `requestRender()` test used `vi.spyOn(globalThis, "requestAnimationFrame")` which fails in node env because the property doesn't exist. Fixed by using `vi.stubGlobal("requestAnimationFrame", vi.fn())` + `vi.unstubAllGlobals()` — consistent with the pattern used in Story 1.3 tests at lines 339, 359.
+
 ### Completion Notes List
+
+- T3 ✅ 9 new tests added in `describe("WebGL2LayerFramework — fallback no-op path (Story 2.3)")`. `setVisible()` split into two tests (false + true) for clearer failure isolation.
+- T4 ✅ Vitest runs in node env (no jsdom/happy-dom). Existing Story 1.2 test `returns false and sets hasFallback when WebGL2 is unavailable` already covers AC1 DOM non-mutation.
+- T5 ⏭️ Skipped — integration test requires full DOM + `pack` globals not available in node; structural analysis sufficient.
+- T6 ✅ 43 tests passing; statement coverage 88.51% (up from 85.13%).
+- T7 ✅ `npm run lint` → `No fixes applied.`
+- AC4 ✅ Visual parity verified structurally: `drawSvg()` function is unchanged from pre-refactor; same code path executes for `type === "svg"` and `hasFallback === true`. Identical `<use>` element output guaranteed by shared code.
 
 ### File List
 
-_Files modified (to be filled by dev agent):_
-
-- `src/modules/webgl-layer-framework.test.ts` — new describe block with 8+ fallback tests
+- `src/modules/webgl-layer-framework.test.ts` — new `describe` block with 9 fallback no-op tests (lines 564–631)

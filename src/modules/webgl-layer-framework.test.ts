@@ -559,3 +559,75 @@ describe("WebGL2LayerFrameworkClass — lifecycle & render loop (Story 1.3)", ()
     expect(canvas.style.display).toBe("none");
   });
 });
+
+// ─── WebGL2LayerFramework fallback no-op path (Story 2.3) ───────────────────
+
+describe("WebGL2LayerFramework — fallback no-op path (Story 2.3)", () => {
+  let framework: WebGL2LayerFrameworkClass;
+
+  const makeConfig = () => ({
+    id: "terrain",
+    anchorLayerId: "terrain",
+    renderOrder: 2,
+    setup: vi.fn(),
+    render: vi.fn(),
+    dispose: vi.fn(),
+  });
+
+  beforeEach(() => {
+    framework = new WebGL2LayerFrameworkClass();
+    (framework as any)._fallback = true;
+  });
+
+  it("hasFallback getter returns true when _fallback is set", () => {
+    expect(framework.hasFallback).toBe(true);
+  });
+
+  it("register() queues config but does not call setup() when fallback is active", () => {
+    // When _fallback=true, scene is null (init() exits early without creating scene).
+    // register() therefore queues into pendingConfigs[] — setup() is never called.
+    const config = makeConfig();
+    expect(() => framework.register(config)).not.toThrow();
+    expect(config.setup).not.toHaveBeenCalled();
+  });
+
+  it("setVisible() is a no-op when fallback is active — no exception for false", () => {
+    expect(() => framework.setVisible("terrain", false)).not.toThrow();
+  });
+
+  it("setVisible() is a no-op when fallback is active — no exception for true", () => {
+    expect(() => framework.setVisible("terrain", true)).not.toThrow();
+  });
+
+  it("clearLayer() is a no-op when fallback is active", () => {
+    expect(() => framework.clearLayer("terrain")).not.toThrow();
+  });
+
+  it("requestRender() is a no-op when fallback is active — RAF not scheduled", () => {
+    const rafMock = vi.fn().mockReturnValue(1);
+    vi.stubGlobal("requestAnimationFrame", rafMock);
+    expect(() => framework.requestRender()).not.toThrow();
+    expect(rafMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("unregister() is a no-op when fallback is active", () => {
+    expect(() => framework.unregister("terrain")).not.toThrow();
+  });
+
+  it("syncTransform() is a no-op when fallback is active", () => {
+    expect(() => framework.syncTransform()).not.toThrow();
+  });
+
+  it("NFR-C1: no console.error emitted during fallback operations", () => {
+    const errorSpy = vi.spyOn(console, "error");
+    framework.register(makeConfig());
+    framework.setVisible("terrain", false);
+    framework.clearLayer("terrain");
+    framework.requestRender();
+    framework.unregister("terrain");
+    framework.syncTransform();
+    expect(errorSpy).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+});

@@ -1,6 +1,6 @@
 # Story 2.1: Verify and Implement Per-Icon Rotation in buildSetMesh
 
-**Status:** ready-for-dev
+**Status:** done
 **Epic:** 2 — Relief Icons Layer Migration
 **Story Key:** 2-1-verify-and-implement-per-icon-rotation-in-buildsetmesh
 **Created:** 2026-03-12
@@ -237,25 +237,25 @@ for (const {icon: r, tileIndex} of entries) {
 
 ## Tasks
 
-- [ ] **T1:** Read and understand `src/modules/relief-generator.ts`
-  - [ ] T1a: Read `ReliefIcon` interface — document what `i` field contains
-  - [ ] T1b: Read `generateRelief()` function — confirm `i: reliefIcons.length` (sequential index, not rotation)
+- [x] **T1:** Read and understand `src/modules/relief-generator.ts`
+  - [x] T1a: Read `ReliefIcon` interface — document what `i` field contains
+  - [x] T1b: Read `generateRelief()` function — confirm `i: reliefIcons.length` (sequential index, not rotation)
 
-- [ ] **T2:** Read and understand `buildSetMesh` in `src/renderers/draw-relief-icons.ts`
-  - [ ] T2a: Confirm `r.i` is NOT read in vertex construction code
-  - [ ] T2b: Confirm rotation is absent from both positions and UV arrays
+- [x] **T2:** Read and understand `buildSetMesh` in `src/renderers/draw-relief-icons.ts`
+  - [x] T2a: Confirm `r.i` is NOT read in vertex construction code
+  - [x] T2b: Confirm rotation is absent from both positions and UV arrays
 
-- [ ] **T3:** Read `drawSvg` — confirm SVG renderer also applies zero rotation (no `transform` attribute on `<use>`)
+- [x] **T3:** Read `drawSvg` — confirm SVG renderer also applies zero rotation (no `transform` attribute on `<use>`)
 
-- [ ] **T4:** Decision branch
-  - [ ] T4a: If NO rotation field in dataset → proceed to T5 (documentation only, no code change)
-  - [ ] T4b: If rotation field EXISTS in live browser `pack.relief` data → implement rotation per Dev Notes Step 4 (update both `buildSetMesh` AND `drawSvg` for parity)
+- [x] **T4:** Decision branch
+  - [x] T4a: If NO rotation field in dataset → proceed to T5 (documentation only, no code change)
+  - [ ] T4b: If rotation field EXISTS in live browser `pack.relief` data → implement rotation per Dev Notes Step 4 (N/A — no rotation field found)
 
-- [ ] **T5:** Add verification comment in `buildSetMesh` documenting the FR15 investigation finding (see Dev Notes Step 3 for exact comment text)
+- [x] **T5:** Add verification comment in `buildSetMesh` documenting the FR15 investigation finding (see Dev Notes Step 3 for exact comment text)
 
-- [ ] **T6:** `npm run lint` — zero errors
+- [x] **T6:** `npm run lint` — zero errors
 
-- [ ] **T7:** Update this story status to `done` (no code review needed for a verification/comment story; this is developer's call per team process)
+- [x] **T7:** Update this story status to `done`
 
 ---
 
@@ -263,15 +263,23 @@ for (const {icon: r, tileIndex} of entries) {
 
 ### Agent Model Used
 
-_to be filled by dev agent_
+Claude Sonnet 4.5 (GitHub Copilot)
 
 ### Debug Log References
 
+_None — no implementation errors encountered._
+
 ### Completion Notes List
+
+- **T1–T3 (Investigation):** `ReliefIcon.i` is a sequential 0-based index (`reliefIcons.length` at push time). Never read in `buildSetMesh` vertex construction. `drawSvg` uses `r.i` only as `data-id` — no rotation transform applied.
+- **T4 Decision (T4a):** No rotation field in terrain dataset. Path T4b is N/A. Visual parity (FR19) maintained — both renderers produce identical unrotated icons.
+- **T5:** Added 5-line FR15 verification comment in `buildSetMesh` immediately before vertex position declarations.
+- **T6:** `npm run lint` → `Checked 80 files in 98ms. No fixes applied.` ✅
+- **AC1 ✅** — documented that `r.i` is sequential index, not rotation angle
+- **AC2 N/A** — rotation field absent; no code change needed
+- **AC3 ✅** — documented in comment: no rotation in code, no rotation in data
+- **AC4 ✅** — visual parity confirmed: both paths produce identical unrotated icons
 
 ### File List
 
-_Files modified (to be filled by dev agent):_
-
-- `src/renderers/draw-relief-icons.ts` — verification comment added to `buildSetMesh`
-- `src/modules/relief-generator.ts` — only if rotation field implementation path (T4b) triggered
+- `src/renderers/draw-relief-icons.ts` — FR15 verification comment added to `buildSetMesh` vertex loop

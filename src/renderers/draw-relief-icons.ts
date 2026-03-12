@@ -1,40 +1,71 @@
-import * as THREE from "three";
+import {
+  BufferAttribute,
+  BufferGeometry,
+  DoubleSide,
+  type Group,
+  LinearFilter,
+  LinearMipmapLinearFilter,
+  Mesh,
+  MeshBasicMaterial,
+  SRGBColorSpace,
+  type Texture,
+  TextureLoader,
+} from "three";
 import { RELIEF_SYMBOLS } from "../config/relief-config";
 import type { ReliefIcon } from "../modules/relief-generator";
 import { generateRelief } from "../modules/relief-generator";
+import { getLayerZIndex } from "../modules/webgl-layer-framework";
 import { byId } from "../utils";
 
-let glCanvas: HTMLCanvasElement | null = null;
-let renderer: THREE.WebGLRenderer | null = null;
-let camera: THREE.OrthographicCamera | null = null;
-let scene: THREE.Scene | null = null;
-
-const textureCache = new Map<string, THREE.Texture>(); // set name → THREE.Texture
-
+const textureCache = new Map<string, Texture>(); // set name → Texture
+let terrainGroup: Group | null = null;
 let lastBuiltIcons: ReliefIcon[] | null = null;
 let lastBuiltSet: string | null = null;
+
+WebGL2LayerFramework.register({
+  id: "terrain",
+  anchorLayerId: "terrain",
+  renderOrder: getLayerZIndex("terrain"),
+  setup(group: Group): void {
+    terrainGroup = group;
+    preloadTextures();
+  },
+  render(_group: Group): void {
+    // no-op: relief geometry is static between drawRelief() calls
+  },
+  dispose(group: Group): void {
+    group.traverse((obj) => {
+      if (obj instanceof Mesh) {
+        obj.geometry.dispose();
+        (obj.material as MeshBasicMaterial).map?.dispose();
+        (obj.material as MeshBasicMaterial).dispose();
+      }
+    });
+    disposeTextureCache();
+  },
+});
 
 function preloadTextures(): void {
   for (const set of Object.keys(RELIEF_SYMBOLS)) loadTexture(set);
 }
 
-function loadTexture(set: string): Promise<THREE.Texture | null> {
+function loadTexture(set: string): Promise<Texture | null> {
   if (textureCache.has(set))
-    return Promise.resolve(textureCache.get(set) || null);
+    return Promise.resolve(textureCache.get(set) ?? null);
 
   return new Promise((resolve) => {
-    const loader = new THREE.TextureLoader();
+    const loader = new TextureLoader();
     loader.load(
       `images/relief/${set}.png`,
       (texture) => {
         texture.flipY = false;
-        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.colorSpace = SRGBColorSpace;
         texture.needsUpdate = true;
-        texture.minFilter = THREE.LinearMipmapLinearFilter;
-        texture.magFilter = THREE.LinearFilter;
+        texture.minFilter = LinearMipmapLinearFilter;
+        texture.magFilter = LinearFilter;
         texture.generateMipmaps = true;
-        if (renderer)
-          texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        // renderer.capabilities.getMaxAnisotropy() removed: renderer is now owned by
+        // WebGL2LayerFramework. LinearMipmapLinearFilter provides sufficient quality.
         textureCache.set(set, texture);
         resolve(texture);
       },
@@ -45,64 +76,6 @@ function loadTexture(set: string): Promise<THREE.Texture | null> {
       },
     );
   });
-}
-
-function ensureRenderer(): boolean {
-  if (!byId("terrain")) return false;
-
-  if (renderer) {
-    if (renderer.getContext().isContextLost()) {
-      // Recover from WebGL context loss
-      renderer.forceContextRestore();
-      renderer.dispose();
-      renderer = null;
-      camera = null;
-      scene = null;
-      glCanvas = null;
-      disposeTextureCache();
-      lastBuiltIcons = null;
-      lastBuiltSet = null;
-    } else {
-      // Re-attach if the canvas was removed from the DOM externally.
-      if (glCanvas && !glCanvas.isConnected) {
-        const terrainSvg = byId("map-layer-terrain");
-        if (terrainSvg)
-          terrainSvg.parentElement!.insertBefore(glCanvas, terrainSvg);
-        else document.body.appendChild(glCanvas);
-      }
-      return true;
-    }
-  }
-
-  glCanvas = document.createElement("canvas");
-  glCanvas.id = "terrainCanvas";
-  glCanvas.style.cssText =
-    "display:block;pointer-events:none;position:absolute;top:0;left:0";
-  const map = byId("map");
-  if (map) document.body.insertAdjacentElement("afterend", glCanvas);
-
-  try {
-    renderer = new THREE.WebGLRenderer({
-      canvas: glCanvas,
-      alpha: true,
-      antialias: false,
-    });
-    renderer.setClearColor(0x000000, 0);
-    renderer.setPixelRatio(window.devicePixelRatio || 1);
-    renderer.setSize(graphWidth, graphHeight);
-  } catch (e) {
-    console.error("Relief: WebGL init failed", e);
-    glCanvas.remove();
-    glCanvas = null;
-    return false;
-  }
-
-  // Camera in SVG coordinate space: top=0, bottom=H puts map y=0 at screen-top.
-  camera = new THREE.OrthographicCamera(0, graphWidth, 0, graphHeight, -1, 1);
-  scene = new THREE.Scene();
-
-  preloadTextures();
-  return true;
 }
 
 // map a symbol href to its atlas set and tile index
@@ -118,12 +91,12 @@ function resolveSprite(symbolHref: string): {
   throw new Error(`Relief: unknown symbol href "${symbolHref}"`);
 }
 
-// Build a BufferGeometry with all icon quads for one atlas set.
+// Build a Mesh with all icon quads for one atlas set.
 function buildSetMesh(
   entries: Array<{ icon: ReliefIcon; tileIndex: number }>,
   set: string,
-  texture: any,
-): any {
+  texture: Texture,
+): Mesh {
   const ids = RELIEF_SYMBOLS[set] ?? [];
   const n = ids.length || 1;
   const cols = Math.ceil(Math.sqrt(n));
@@ -142,6 +115,12 @@ function buildSetMesh(
       u1 = (col + 1) / cols;
     const v0 = row / rows,
       v1 = (row + 1) / rows;
+    // FR15 rotation verification (Story 2.1): r.i is a sequential icon index (0-based),
+    // NOT a rotation angle. pack.relief entries contain no rotation field.
+    // Both the WebGL path (this function) and the SVG fallback (drawSvg) produce
+    // unrotated icons — visual parity maintained per FR19.
+    // If per-icon rotation is required in a future story, add `rotation: number` (radians)
+    // to ReliefIcon and apply quad rotation around center (r.x + r.s/2, r.y + r.s/2).
     const x0 = r.x,
       x1 = r.x + r.s;
     const y0 = r.y,
@@ -163,20 +142,20 @@ function buildSetMesh(
     ii += 6;
   }
 
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
-  geo.setIndex(new THREE.BufferAttribute(indices, 1));
+  const geo = new BufferGeometry();
+  geo.setAttribute("position", new BufferAttribute(positions, 3));
+  geo.setAttribute("uv", new BufferAttribute(uvs, 2));
+  geo.setIndex(new BufferAttribute(indices, 1));
 
-  const mat = new THREE.MeshBasicMaterial({
+  const mat = new MeshBasicMaterial({
     map: texture,
     transparent: true,
-    side: THREE.DoubleSide,
+    side: DoubleSide,
     depthTest: false,
     depthWrite: false,
   });
 
-  return new THREE.Mesh(geo, mat);
+  return new Mesh(geo, mat);
 }
 
 function disposeTextureCache(): void {
@@ -184,25 +163,15 @@ function disposeTextureCache(): void {
   textureCache.clear();
 }
 
-function disposeScene(): void {
-  if (!scene) return;
-  while (scene.children.length) {
-    const mesh = scene.children[0] as THREE.Mesh<
-      THREE.BufferGeometry,
-      THREE.Material
-    >;
-    scene.remove(mesh);
-    mesh.geometry?.dispose();
-    if (mesh.material && "map" in mesh.material) {
-      mesh.material.map = null;
-      mesh.material.dispose();
+function buildReliefScene(icons: ReliefIcon[]): void {
+  if (!terrainGroup) return;
+  terrainGroup.traverse((obj) => {
+    if (obj instanceof Mesh) {
+      obj.geometry.dispose();
+      (obj.material as MeshBasicMaterial).dispose();
     }
-  }
-}
-
-function buildScene(icons: ReliefIcon[]): void {
-  if (!scene) return;
-  disposeScene();
+  });
+  terrainGroup.clear();
 
   const bySet = new Map<
     string,
@@ -221,40 +190,7 @@ function buildScene(icons: ReliefIcon[]): void {
   for (const [set, setEntries] of bySet) {
     const texture = textureCache.get(set);
     if (!texture) continue;
-    scene.add(buildSetMesh(setEntries, set, texture));
-  }
-}
-
-function renderFrame(): void {
-  if (!renderer || !camera || !scene) return;
-
-  const x = -viewX / scale;
-  const y = -viewY / scale;
-  const w = graphWidth / scale;
-  const h = graphHeight / scale;
-
-  camera.left = x;
-  camera.right = x + w;
-  camera.top = y;
-  camera.bottom = y + h;
-  camera.updateProjectionMatrix();
-  renderer.render(scene, camera);
-}
-
-function drawWebGl(icons: ReliefIcon[], parentEl: HTMLElement): void {
-  const set = parentEl.getAttribute("set") || "simple";
-
-  if (ensureRenderer()) {
-    loadTexture(set).then(() => {
-      if (icons !== lastBuiltIcons || set !== lastBuiltSet) {
-        buildScene(icons);
-        lastBuiltIcons = icons;
-        lastBuiltSet = set;
-      }
-      renderFrame();
-    });
-  } else {
-    WARN && console.warn("Relief: WebGL renderer failed");
+    terrainGroup.add(buildSetMesh(setEntries, set, texture));
   }
 }
 
@@ -274,46 +210,36 @@ window.drawRelief = (
   if (!parentEl) throw new Error("Relief: parent element not found");
 
   parentEl.innerHTML = "";
-  parentEl.dataset.mode = "webGL";
+  parentEl.dataset.mode = type;
 
   const icons = pack.relief?.length ? pack.relief : generateRelief();
   if (!icons.length) return;
 
-  if (type === "svg") drawSvg(icons, parentEl);
-  else drawWebGl(icons, parentEl);
+  if (type === "svg" || WebGL2LayerFramework.hasFallback) {
+    drawSvg(icons, parentEl);
+  } else {
+    const set = parentEl.getAttribute("set") || "simple";
+    loadTexture(set).then(() => {
+      if (icons !== lastBuiltIcons || set !== lastBuiltSet) {
+        buildReliefScene(icons);
+        lastBuiltIcons = icons;
+        lastBuiltSet = set;
+      }
+      WebGL2LayerFramework.requestRender();
+    });
+  }
 };
 
 window.undrawRelief = () => {
+  WebGL2LayerFramework.clearLayer("terrain");
+  lastBuiltIcons = null;
+  lastBuiltSet = null;
   const terrainEl = byId("terrain");
-  const mode = terrainEl?.dataset.mode || "webGL";
-  if (mode === "webGL") {
-    disposeScene();
-    disposeTextureCache();
-    if (renderer) {
-      renderer.dispose();
-      renderer = null;
-    }
-    if (glCanvas) {
-      if (glCanvas.isConnected) glCanvas.remove();
-      glCanvas = null;
-    }
-    camera = null;
-    scene = null;
-    lastBuiltIcons = null;
-    lastBuiltSet = null;
-  }
-
   if (terrainEl) terrainEl.innerHTML = "";
 };
 
-// re-render the current WebGL frame (called on pan/zoom); coalesced to one GPU draw per animation frame
-let rafId: number | null = null;
 window.rerenderReliefIcons = () => {
-  if (rafId !== null) cancelAnimationFrame(rafId);
-  rafId = requestAnimationFrame(() => {
-    rafId = null;
-    renderFrame();
-  });
+  WebGL2LayerFramework.requestRender();
 };
 
 declare global {

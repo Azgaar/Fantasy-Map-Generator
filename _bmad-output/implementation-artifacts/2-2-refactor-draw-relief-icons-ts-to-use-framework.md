@@ -1,6 +1,6 @@
 # Story 2.2: Refactor draw-relief-icons.ts to Use Framework
 
-**Status:** ready-for-dev
+**Status:** review
 **Epic:** 2 — Relief Icons Layer Migration
 **Story Key:** 2-2-refactor-draw-relief-icons-ts-to-use-framework
 **Created:** 2026-03-12
@@ -425,49 +425,52 @@ declare global {
 
 ## Tasks
 
-- [ ] **T1:** Update Three.js imports — replace `import * as THREE from "three"` with named imports
-  - [ ] T1a: List all `THREE.X` usages in the current file
-  - [ ] T1b: Add each as a named import from `"three"`
-  - [ ] T1c: Import `getLayerZIndex` from `"../modules/webgl-layer-framework"`
-  - [ ] T1d: Replace all `THREE.X` references with bare `X` names
+- [x] **T1:** Update Three.js imports — replace `import * as THREE from "three"` with named imports
+  - [x] T1a: List all `THREE.X` usages in the current file
+  - [x] T1b: Add each as a named import from `"three"`
+  - [x] T1c: Import `getLayerZIndex` from `"../modules/webgl-layer-framework"`
+  - [x] T1d: Replace all `THREE.X` references with bare `X` names
 
-- [ ] **T2:** Remove module-level renderer state
-  - [ ] T2a: Remove `glCanvas`, `renderer`, `camera`, `scene` variable declarations
-  - [ ] T2b: Remove `ensureRenderer()` function entirely
-  - [ ] T2c: Remove `disposeScene()` function entirely
-  - [ ] T2d: Remove `renderFrame()` function entirely
-  - [ ] T2e: Remove module-level `rafId` variable (used by old `rerenderReliefIcons`)
+- [x] **T2:** Remove module-level renderer state
+  - [x] T2a: Remove `glCanvas`, `renderer`, `camera`, `scene` variable declarations
+  - [x] T2b: Remove `ensureRenderer()` function entirely
+  - [x] T2c: Remove `disposeScene()` function entirely
+  - [x] T2d: Remove `renderFrame()` function entirely
+  - [x] T2e: Remove module-level `rafId` variable (used by old `rerenderReliefIcons`)
 
-- [ ] **T3:** Add `terrainGroup` module-level variable and `register()` call
-  - [ ] T3a: Add `let terrainGroup: Group | null = null;`
-  - [ ] T3b: Add `WebGL2LayerFramework.register({...})` with `setup` callback that sets `terrainGroup = group`
-  - [ ] T3c: Implement `render` callback (no-op with comment)
-  - [ ] T3d: Implement `dispose` callback (traverse group, call `.geometry.dispose()`, `.material.dispose()`, `.map?.dispose()`, then `disposeTextureCache()`)
+- [x] **T3:** Add `terrainGroup` module-level variable and `register()` call
+  - [x] T3a: Add `let terrainGroup: Group | null = null;`
+  - [x] T3b: Add `WebGL2LayerFramework.register({...})` with `setup` callback that sets `terrainGroup = group`
+  - [x] T3c: Implement `render` callback (no-op with comment)
+  - [x] T3d: Implement `dispose` callback (traverse group, call `.geometry.dispose()`, `.material.dispose()`, `.map?.dispose()`, then `disposeTextureCache()`)
 
-- [ ] **T4:** Refactor `buildScene()` → `buildReliefScene(icons)`
-  - [ ] T4a: Rename function to `buildReliefScene`
-  - [ ] T4b: Replace `if (!scene) return` guard with `if (!terrainGroup) return`
-  - [ ] T4c: Replace `disposeScene()` call with `terrainGroup.clear()`
-  - [ ] T4d: Replace `scene.add(buildSetMesh(...))` with `terrainGroup.add(buildSetMesh(...))`
+- [x] **T4:** Refactor `buildScene()` → `buildReliefScene(icons)`
+  - [x] T4a: Rename function to `buildReliefScene`
+  - [x] T4b: Replace `if (!scene) return` guard with `if (!terrainGroup) return`
+  - [x] T4c: Replace `disposeScene()` call with `terrainGroup.traverse(dispose)+terrainGroup.clear()`
+  - [x] T4d: Replace `scene.add(buildSetMesh(...))` with `terrainGroup.add(buildSetMesh(...))`
 
-- [ ] **T5:** Remove anisotropy line from `loadTexture()` (renderer no longer accessible)
-  - [ ] Add comment explaining removal
+- [x] **T5:** Remove anisotropy line from `loadTexture()` (renderer no longer accessible)
+  - [x] Add comment explaining removal
 
-- [ ] **T6:** Refactor `window.drawRelief`
-  - [ ] T6a: Keep `type: "svg" | "webGL"` signature unchanged
-  - [ ] T6b: Add `if (type === "svg" || WebGL2LayerFramework.hasFallback)` check for SVG path
-  - [ ] T6c: WebGL path: call `buildReliefScene(icons)` then `WebGL2LayerFramework.requestRender()`
+- [x] **T6:** Refactor `window.drawRelief`
+  - [x] T6a: Keep `type: "svg" | "webGL"` signature unchanged
+  - [x] T6b: Add `if (type === "svg" || WebGL2LayerFramework.hasFallback)` check for SVG path
+  - [x] T6c: WebGL path: call `buildReliefScene(icons)` then `WebGL2LayerFramework.requestRender()`
 
-- [ ] **T7:** Refactor `window.undrawRelief`
-  - [ ] T7a: Replace `disposeScene()` + `renderer.dispose()` + `glCanvas.remove()` sequence with `WebGL2LayerFramework.clearLayer("terrain")`
-  - [ ] T7b: Keep `terrainEl.innerHTML = ""` for SVG fallback cleanup
+- [x] **T7:** Refactor `window.undrawRelief`
+  - [x] T7a: Replace `disposeScene()` + `renderer.dispose()` + `glCanvas.remove()` sequence with `WebGL2LayerFramework.clearLayer("terrain")`
+  - [x] T7b: Keep `terrainEl.innerHTML = ""` for SVG fallback cleanup
+  - [x] T7c: Reset `lastBuiltIcons` and `lastBuiltSet` to null so next `drawRelief` rebuilds the scene
 
-- [ ] **T8:** Refactor `window.rerenderReliefIcons`
-  - [ ] T8a: Replace entire RAF + `renderFrame()` body with single line: `WebGL2LayerFramework.requestRender()`
+- [x] **T8:** Refactor `window.rerenderReliefIcons`
+  - [x] T8a: Replace entire RAF + `renderFrame()` body with single line: `WebGL2LayerFramework.requestRender()`
 
-- [ ] **T9:** `npm run lint` — zero errors; fix any `import * as THREE` or unused variable warnings
+- [x] **T9:** `npm run lint` — zero errors; fix any `import * as THREE` or unused variable warnings
+  - Result: `Checked 80 files in 102ms. No fixes applied.` ✅
 
-- [ ] **T10:** `npx vitest run src/modules/webgl-layer-framework.test.ts` — all 34 tests pass (existing framework tests should be unaffected by this renderer refactor)
+- [x] **T10:** `npx vitest run src/modules/webgl-layer-framework.test.ts` — all 34 tests pass
+  - Result: `34 passed (34)` ✅
 
 - [ ] **T11:** Manual smoke test (optional but recommended)
   - [ ] T11a: Load the app in browser; generate a map; confirm relief icons render
@@ -481,14 +484,26 @@ declare global {
 
 ### Agent Model Used
 
-_to be filled by dev agent_
+Claude Sonnet 4.6 (GitHub Copilot)
 
 ### Debug Log References
 
+- Biome auto-fixed import ordering (sorted named imports alphabetically within `from "three"` block, moved `getLayerZIndex` after RELIEF_SYMBOLS in import order) — functionally identical.
+- `buildReliefScene` traverses and disposes geometry/material before `terrainGroup.clear()` to prevent GPU memory leaks on repeated `drawRelief()` calls. Texture.map is NOT disposed here (textures stay in `textureCache`); map disposal happens only in the `dispose` framework callback.
+
 ### Completion Notes List
+
+- T1 ✅ Named imports: `BufferAttribute, BufferGeometry, DoubleSide, type Group, LinearFilter, LinearMipmapLinearFilter, Mesh, MeshBasicMaterial, SRGBColorSpace, type Texture, TextureLoader`. `Group` and `Texture` imported as type-only since no `new Group()` or `new Texture()` in this file.
+- T2 ✅ All 5 module-level state variables removed; `ensureRenderer`, `disposeScene`, `renderFrame` functions removed; `rafId` and old RAF loop removed.
+- T3 ✅ `WebGL2LayerFramework.register({...})` at module load (safe via `pendingConfigs[]`). `preloadTextures()` called in `setup()` callback after framework assigns the group.
+- T4 ✅ `buildReliefScene(icons)` uses `terrainGroup`; disposes existing meshes before `clear()` to prevent leaks.
+- T5 ✅ Anisotropy line removed; comment added explaining renderer ownership moved to framework.
+- T6 ✅ `window.drawRelief` checks `WebGL2LayerFramework.hasFallback`; WebGL path calls `buildReliefScene` + `requestRender`.
+- T7 ✅ `window.undrawRelief` uses `clearLayer("terrain")`; resets `lastBuiltIcons/lastBuiltSet` to null (prevents stale memoization after group.clear).
+- T8 ✅ `window.rerenderReliefIcons` = single `WebGL2LayerFramework.requestRender()` call.
+- T9 ✅ `npm run lint` → `Checked 80 files in 102ms. No fixes applied.`
+- T10 ✅ `npx vitest run` → `34 passed (34)` — all existing framework tests unaffected.
 
 ### File List
 
-_Files modified (to be filled by dev agent):_
-
-- `src/renderers/draw-relief-icons.ts` — major refactor: named imports, removed module-level state, registered with framework, refactored window globals
+- `src/renderers/draw-relief-icons.ts` — major refactor: named imports, removed module-level renderer/camera/scene/canvas state, registered with WebGL2LayerFramework, refactored all three window globals

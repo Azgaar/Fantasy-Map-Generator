@@ -49,13 +49,13 @@ development_status:
 
   # Epic 2: Relief Icons Layer Migration
   epic-2: in-progress
-  2-1-verify-and-implement-per-icon-rotation-in-buildsetmesh: ready-for-dev
-  2-2-refactor-draw-relief-icons-ts-to-use-framework: ready-for-dev
-  2-3-webgl2-fallback-integration-verification: ready-for-dev
+  2-1-verify-and-implement-per-icon-rotation-in-buildsetmesh: done
+  2-2-refactor-draw-relief-icons-ts-to-use-framework: review
+  2-3-webgl2-fallback-integration-verification: review
   epic-2-retrospective: optional
 
   # Epic 3: Quality & Bundle Integrity
-  epic-3: backlog
-  3-1-performance-benchmarking: backlog
-  3-2-bundle-size-audit: backlog
+  epic-3: in-progress
+  3-1-performance-benchmarking: ready-for-dev
+  3-2-bundle-size-audit: ready-for-dev
   epic-3-retrospective: optional
