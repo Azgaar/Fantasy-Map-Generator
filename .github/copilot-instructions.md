@@ -1,65 +1,58 @@
-# Fantasy Map Generator
+<!-- BMAD:START -->
+# BMAD Method — Project Instructions
 
-Azgaar's Fantasy Map Generator is a client-only web application for creating fantasy maps. It generates detailed fantasy worlds with countries, cities, rivers, biomes, and cultural elements.
+## Project Configuration
 
-Always reference these instructions first.
+- **Project**: Fantasy-Map-Generator
+- **User**: Azgaar
+- **Communication Language**: English
+- **Document Output Language**: English
+- **User Skill Level**: intermediate
+- **Output Folder**: {project-root}/_bmad-output
+- **Planning Artifacts**: {project-root}/_bmad-output/planning-artifacts
+- **Implementation Artifacts**: {project-root}/_bmad-output/implementation-artifacts
+- **Project Knowledge**: {project-root}/docs
 
-# Architecture
+## BMAD Runtime Structure
 
-The codebase is gradually transitioning from **vanilla JavaScript to TypeScript** while maintaining compatibility with the existing generation pipeline and legacy `.map` user files.
+- **Agent definitions**: `_bmad/bmm/agents/` (BMM module) and `_bmad/core/agents/` (core)
+- **Workflow definitions**: `_bmad/bmm/workflows/` (organized by phase)
+- **Core tasks**: `_bmad/core/tasks/` (help, editorial review, indexing, sharding, adversarial review)
+- **Core workflows**: `_bmad/core/workflows/` (brainstorming, party-mode, advanced-elicitation)
+- **Workflow engine**: `_bmad/core/tasks/workflow.xml` (executes YAML-based workflows)
+- **Module configuration**: `_bmad/bmm/config.yaml`
+- **Core configuration**: `_bmad/core/config.yaml`
+- **Agent manifest**: `_bmad/_config/agent-manifest.csv`
+- **Workflow manifest**: `_bmad/_config/workflow-manifest.csv`
+- **Help manifest**: `_bmad/_config/bmad-help.csv`
+- **Agent memory**: `_bmad/_memory/`
 
-The expected **future architecture** is based on a separation between **world data**, **procedural generation**, **interactive editing**, and **rendering**.
+## Key Conventions
 
-The application is conceptually divided into four main layers:
+- Always load `_bmad/bmm/config.yaml` before any agent activation or workflow execution
+- Store all config fields as session variables: `{user_name}`, `{communication_language}`, `{output_folder}`, `{planning_artifacts}`, `{implementation_artifacts}`, `{project_knowledge}`
+- MD-based workflows execute directly — load and follow the `.md` file
+- YAML-based workflows require the workflow engine — load `workflow.xml` first, then pass the `.yaml` config
+- Follow step-based workflow execution: load steps JIT, never multiple at once
+- Save outputs after EACH step when using the workflow engine
+- The `{project-root}` variable resolves to the workspace root at runtime
 
-- **State** — world data and style configuration, the single source of truth
-- **Generators** — procedural world simulation (model)
-- **Editors** — user-driven mutations of the world state (controllers)
-- **Renderer** — map visualization (view)
+## Available Agents
 
-Flow:
-settings → generators → world data → renderer
-UI → editors → world data → renderer
+| Agent | Persona | Title | Capabilities |
+|---|---|---|---|
+| bmad-master | BMad Master | BMad Master Executor, Knowledge Custodian, and Workflow Orchestrator | runtime resource management, workflow orchestration, task execution, knowledge custodian |
+| analyst | Mary | Business Analyst | market research, competitive analysis, requirements elicitation, domain expertise |
+| architect | Winston | Architect | distributed systems, cloud infrastructure, API design, scalable patterns |
+| dev | Amelia | Developer Agent | story execution, test-driven development, code implementation |
+| pm | John | Product Manager | PRD creation, requirements discovery, stakeholder alignment, user interviews |
+| qa | Quinn | QA Engineer | test automation, API testing, E2E testing, coverage analysis |
+| quick-flow-solo-dev | Barry | Quick Flow Solo Dev | rapid spec creation, lean implementation, minimum ceremony |
+| sm | Bob | Scrum Master | sprint planning, story preparation, agile ceremonies, backlog management |
+| tech-writer | Paige | Technical Writer | documentation, Mermaid diagrams, standards compliance, concept explanation |
+| ux-designer | Sally | UX Designer | user research, interaction design, UI patterns, experience strategy |
 
-### Layer responsibilities
+## Slash Commands
 
-**State (world data)**  
-Stores all map data and style configuration.  
-The data layer must contain **no logic and no rendering code**.
-
-**Generators**  
-Implement the procedural world simulation and populate or update world data based on generation settings.
-
-**Editors**  
-Implement interactive editing tools used by the user.  
-Editors perform controlled mutations of the world state and can be viewed as **interactive generators**.
-
-**Renderer**  
-Converts the world state into **SVG or WebGL graphics**.  
-Rendering must be a **pure visualization step** and must **not modify world data**.
-
-# Working Effectively
-
-The project uses **NPM**, **Vite**, and **TypeScript** for development and building.
-
-## Setup
-
-Install dependencies: `npm install`
-
-Requirements: Node.js **>= 24.0.0**
-
-## Development
-
-Start the development server: `npm run dev`
-
-Access the application at: http://localhost:5173
-
-## Build
-
-Create a production build: `npm run build`
-
-Build steps:
-
-1. TypeScript compilation (`tsc`)
-2. Vite build
-3. Output written to `dist/`
+Type `/bmad-` in Copilot Chat to see all available BMAD workflows and agent activators. Agents are also available in the agents dropdown.
+<!-- BMAD:END -->
