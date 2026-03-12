@@ -1,0 +1,72 @@
+# generated: 2026-03-13
+# project: Fantasy-Map-Generator
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: /Users/azgaar/Fantasy-Map-Generator/_bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created (via create-story)
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-03-13
+project: Fantasy-Map-Generator
+project_key: NOKEY
+tracking_system: file-system
+story_location: /Users/azgaar/Fantasy-Map-Generator/_bmad-output/implementation-artifacts
+
+development_status:
+  epic-1: in-progress
+  1-1-bootstrap-scene-container-and-defs-host: in-progress
+  1-2-add-scene-module-for-shared-camera-state: ready-for-dev
+  1-3-add-layers-registry-as-the-ordering-source-of-truth: ready-for-dev
+  1-4-add-layer-surface-lifecycle-ownership: ready-for-dev
+  1-5-add-compatibility-lookups-for-legacy-single-svg-callers: ready-for-dev
+  1-6-move-shared-defs-resources-to-the-dedicated-host: ready-for-dev
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-create-reusable-standalone-svg-shell-mounting: backlog
+  2-2-migrate-a-representative-low-risk-svg-layer-to-a-dedicated-shell: backlog
+  2-3-migrate-remaining-approved-low-risk-svg-layers: backlog
+  2-4-drive-reorder-and-visibility-for-split-svg-layers-from-the-registry: backlog
+  2-5-preserve-pointer-and-editing-workflows-for-split-svg-layers: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-register-webgl-surfaces-in-the-shared-layer-model: backlog
+  3-2-unify-mixed-layer-ordering-and-visibility-controls: backlog
+  3-3-keep-scene-transforms-and-interaction-correct-in-mixed-rendering: backlog
+  3-4-preserve-atomic-updates-and-no-regressions-guardrails-in-mixed-mode: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-add-export-participation-metadata-to-the-layer-registry: backlog
+  4-2-assemble-unified-svg-export-from-registry-order: backlog
+  4-3-clone-only-required-defs-resources-into-export: backlog
+  4-4-preserve-text-paths-masks-and-filtered-layers-in-export: backlog
+  epic-4-retrospective: optional
