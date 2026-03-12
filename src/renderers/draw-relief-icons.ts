@@ -25,10 +25,7 @@ WebGLLayer.register({
   id: "terrain",
   setup(group: Group): void {
     terrainGroup = group;
-    preloadTextures();
-  },
-  render(_group: Group): void {
-    // no-op: relief geometry is static between drawRelief() calls
+    for (const set of Object.keys(RELIEF_SYMBOLS)) loadTexture(set);
   },
   dispose(group: Group): void {
     group.traverse((obj) => {
@@ -38,13 +35,10 @@ WebGLLayer.register({
         (obj.material as MeshBasicMaterial).dispose();
       }
     });
-    disposeTextureCache();
+    for (const tex of textureCache.values()) tex?.dispose();
+    textureCache.clear();
   },
 });
-
-function preloadTextures(): void {
-  for (const set of Object.keys(RELIEF_SYMBOLS)) loadTexture(set);
-}
 
 function loadTexture(set: string): Promise<Texture | null> {
   if (textureCache.has(set))
@@ -147,11 +141,6 @@ function buildSetMesh(
   return new Mesh(geo, mat);
 }
 
-function disposeTextureCache(): void {
-  for (const tex of textureCache.values()) tex?.dispose();
-  textureCache.clear();
-}
-
 function buildReliefScene(icons: ReliefIcon[]): void {
   if (!terrainGroup) return;
   terrainGroup.traverse((obj) => {
@@ -208,14 +197,12 @@ window.drawRelief = (
     drawSvg(icons, parentEl);
   } else {
     const set = parentEl.getAttribute("set") || "simple";
-    loadTexture(set).then(() => {
-      if (icons !== lastBuiltIcons || set !== lastBuiltSet) {
-        buildReliefScene(icons);
-        lastBuiltIcons = icons;
-        lastBuiltSet = set;
-      }
-      WebGLLayer.requestRender();
-    });
+    if (icons !== lastBuiltIcons || set !== lastBuiltSet) {
+      buildReliefScene(icons);
+      lastBuiltIcons = icons;
+      lastBuiltSet = set;
+    }
+    WebGLLayer.requestRender();
   }
 };
 

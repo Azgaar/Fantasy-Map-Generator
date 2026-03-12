@@ -4,7 +4,7 @@ import { byId } from "../utils";
 export interface WebGLLayerConfig {
   id: string;
   setup: (group: Group) => void; // called once after WebGL2 confirmed; add meshes to group
-  render: (group: Group) => void; // called each frame before renderer.render(); update uniforms/geometry
+  render?: (group: Group) => void; // called each frame before renderer.render(); update uniforms/geometry
   dispose: (group: Group) => void; // called on unregister(); dispose all GPU objects in group
 }
 interface RegisteredLayer {
@@ -48,7 +48,7 @@ export class WebGL2LayerClass {
     return true;
   }
 
-  register(config: WebGLLayerConfig): void {
+  register(config: WebGLLayerConfig) {
     if (!this.scene) {
       // init() has not been called yet — queue for processing in init()
       this.pendingConfigs.push(config);
@@ -63,7 +63,7 @@ export class WebGL2LayerClass {
     this.layers.set(config.id, { config, group });
   }
 
-  unregister(id: string): void {
+  unregister(id: string) {
     const layer = this.layers.get(id);
     if (!layer || !this.scene) return;
     const scene = this.scene;
@@ -74,7 +74,7 @@ export class WebGL2LayerClass {
     if (this.canvas && !anyVisible) this.canvas.style.display = "none";
   }
 
-  setVisible(id: string, visible: boolean): void {
+  setVisible(id: string, visible: boolean) {
     const layer = this.layers.get(id);
     if (!layer) return;
     layer.group.visible = visible;
@@ -83,14 +83,14 @@ export class WebGL2LayerClass {
     if (visible) this.requestRender();
   }
 
-  clearLayer(id: string): void {
+  clearLayer(id: string) {
     const layer = this.layers.get(id);
     if (!layer) return;
     layer.group.clear();
     this.requestRender();
   }
 
-  requestRender(): void {
+  requestRender() {
     if (this.rafId !== null) return;
     this.rafId = requestAnimationFrame(() => {
       this.rafId = null;
@@ -98,7 +98,7 @@ export class WebGL2LayerClass {
     });
   }
 
-  syncTransform(): void {
+  private syncTransform() {
     if (!this.camera) return;
     const x = -viewX / scale;
     const y = -viewY / scale;
@@ -112,11 +112,12 @@ export class WebGL2LayerClass {
     this.camera.updateProjectionMatrix();
   }
 
-  private render(): void {
+  private render() {
     if (!this.renderer || !this.scene || !this.camera) return;
     this.syncTransform();
     for (const layer of this.layers.values()) {
-      if (layer.group.visible) layer.config.render(layer.group);
+      if (layer.group.visible && layer.config.render)
+        layer.config.render(layer.group);
     }
     this.renderer.render(this.scene, this.camera);
   }
