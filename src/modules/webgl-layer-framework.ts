@@ -88,13 +88,11 @@ interface RegisteredLayer {
 export class WebGL2LayerFrameworkClass {
   private canvas: HTMLCanvasElement | null = null;
   private renderer: WebGLRenderer | null = null;
-  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: assigned in init(); read in Story 1.3 render() + syncTransform()
   private camera: OrthographicCamera | null = null;
   private scene: Scene | null = null;
   private layers: Map<string, RegisteredLayer> = new Map();
   private pendingConfigs: WebGLLayerConfig[] = []; // queue for register() before init()
   private resizeObserver: ResizeObserver | null = null;
-  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: read/written in Story 1.3 requestRender()
   private rafId: number | null = null;
   private container: HTMLElement | null = null;
 
@@ -190,25 +188,64 @@ export class WebGL2LayerFrameworkClass {
     this.layers.set(config.id, { config, group });
   }
 
-  unregister(_id: string): void {
-    // Story 1.3: call config.dispose(group); remove from layers Map; cleanup canvas if empty.
+  unregister(id: string): void {
+    if (this._fallback) return;
+    const layer = this.layers.get(id);
+    if (!layer || !this.scene) return;
+    const scene = this.scene;
+    layer.config.dispose(layer.group);
+    scene.remove(layer.group);
+    this.layers.delete(id);
+    const anyVisible = [...this.layers.values()].some((l) => l.group.visible);
+    if (this.canvas && !anyVisible) this.canvas.style.display = "none";
   }
 
-  setVisible(_id: string, _visible: boolean): void {
-    // Story 1.3: toggle group.visible; hide canvas only when ALL layers invisible (NFR-P6).
+  setVisible(id: string, visible: boolean): void {
+    if (this._fallback) return;
+    const layer = this.layers.get(id);
+    if (!layer) return;
+    layer.group.visible = visible;
+    const anyVisible = [...this.layers.values()].some((l) => l.group.visible);
+    if (this.canvas) this.canvas.style.display = anyVisible ? "block" : "none";
+    if (visible) this.requestRender();
   }
 
-  clearLayer(_id: string): void {
-    // Story 1.3: group.clear() — wipes Mesh children without disposing renderer (NFR-P6).
+  clearLayer(id: string): void {
+    if (this._fallback) return;
+    const layer = this.layers.get(id);
+    if (!layer) return;
+    layer.group.clear();
   }
 
   requestRender(): void {
-    // Story 1.3: RAF-coalesced render request; schedules this.render() via requestAnimationFrame.
-    this.render();
+    if (this._fallback) return;
+    if (this.rafId !== null) return;
+    this.rafId = requestAnimationFrame(() => {
+      this.rafId = null;
+      this.render();
+    });
   }
 
   syncTransform(): void {
-    // Story 1.3: read window globals viewX/viewY/scale; apply buildCameraBounds to camera.
+    if (this._fallback || !this.camera) return;
+    const camera = this.camera;
+    const viewX = (globalThis as any).viewX ?? 0;
+    const viewY = (globalThis as any).viewY ?? 0;
+    const scale = (globalThis as any).scale ?? 1;
+    const graphWidth = (globalThis as any).graphWidth ?? 960;
+    const graphHeight = (globalThis as any).graphHeight ?? 540;
+    const bounds = buildCameraBounds(
+      viewX,
+      viewY,
+      scale,
+      graphWidth,
+      graphHeight,
+    );
+    camera.left = bounds.left;
+    camera.right = bounds.right;
+    camera.top = bounds.top;
+    camera.bottom = bounds.bottom;
+    camera.updateProjectionMatrix();
   }
 
   // ─── Private helpers ───────────────────────────────────────────────────────
@@ -232,7 +269,17 @@ export class WebGL2LayerFrameworkClass {
   }
 
   private render(): void {
-    // Story 1.3: syncTransform → per-layer render(group) callbacks → renderer.render(scene, camera).
+    if (this._fallback || !this.renderer || !this.scene || !this.camera) return;
+    const renderer = this.renderer;
+    const scene = this.scene;
+    const camera = this.camera;
+    this.syncTransform();
+    for (const layer of this.layers.values()) {
+      if (layer.group.visible) {
+        layer.config.render(layer.group);
+      }
+    }
+    renderer.render(scene, camera);
   }
 }
 

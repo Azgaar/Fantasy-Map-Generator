@@ -33,6 +33,7 @@
     "@types/three": "^0.183.1",
     "@vitest/browser": "^4.0.18",
     "@vitest/browser-playwright": "^4.0.18",
+    "@vitest/coverage-v8": "^4.0.18",
     "playwright": "^1.57.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",

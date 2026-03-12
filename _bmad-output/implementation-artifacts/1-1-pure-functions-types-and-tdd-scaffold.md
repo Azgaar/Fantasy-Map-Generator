@@ -1,6 +1,6 @@
 # Story 1.1: Pure Functions, Types, and TDD Scaffold
 
-Status: review
+Status: done
 
 ## Story
 

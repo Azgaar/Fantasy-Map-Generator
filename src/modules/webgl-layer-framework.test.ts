@@ -175,11 +175,13 @@ describe("WebGL2LayerFrameworkClass", () => {
   });
 
   it("requestRender() does not throw when called multiple times", () => {
+    vi.stubGlobal("requestAnimationFrame", vi.fn().mockReturnValue(0));
     expect(() => {
       framework.requestRender();
       framework.requestRender();
       framework.requestRender();
     }).not.toThrow();
+    vi.unstubAllGlobals();
   });
 
   it("clearLayer() does not throw and preserves layer registration in the Map", () => {
@@ -315,5 +317,245 @@ describe("WebGL2LayerFrameworkClass — init()", () => {
     vi.stubGlobal("document", buildDocumentMock({ webgl2: true }));
     framework.init();
     expect((framework as any).resizeObserver).not.toBeNull();
+  });
+});
+
+// ─── WebGL2LayerFrameworkClass — lifecycle & render loop (Story 1.3) ───────────
+
+describe("WebGL2LayerFrameworkClass — lifecycle & render loop (Story 1.3)", () => {
+  let framework: WebGL2LayerFrameworkClass;
+
+  const makeConfig = (id = "terrain") => ({
+    id,
+    anchorLayerId: id,
+    renderOrder: 1,
+    setup: vi.fn(),
+    render: vi.fn(),
+    dispose: vi.fn(),
+  });
+
+  beforeEach(() => {
+    framework = new WebGL2LayerFrameworkClass();
+    vi.stubGlobal("requestAnimationFrame", vi.fn().mockReturnValue(42));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  // ── requestRender() / RAF coalescing ──────────────────────────────────────
+
+  it("requestRender() schedules exactly one RAF for three rapid calls (AC6)", () => {
+    framework.requestRender();
+    framework.requestRender();
+    framework.requestRender();
+    expect((globalThis as any).requestAnimationFrame).toHaveBeenCalledTimes(1);
+  });
+
+  it("requestRender() resets rafId to null after the frame callback executes (AC6)", () => {
+    let storedCallback: (() => void) | null = null;
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      vi.fn().mockImplementation((cb: () => void) => {
+        storedCallback = cb;
+        return 42;
+      }),
+    );
+    framework.requestRender();
+    expect((framework as any).rafId).not.toBeNull();
+    storedCallback!();
+    expect((framework as any).rafId).toBeNull();
+  });
+
+  // ── syncTransform() ───────────────────────────────────────────────────────
+
+  it("syncTransform() applies buildCameraBounds(0,0,1,960,540) to camera (AC8)", () => {
+    const mockCamera = {
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      updateProjectionMatrix: vi.fn(),
+    };
+    (framework as any).camera = mockCamera;
+    vi.stubGlobal("viewX", 0);
+    vi.stubGlobal("viewY", 0);
+    vi.stubGlobal("scale", 1);
+    vi.stubGlobal("graphWidth", 960);
+    vi.stubGlobal("graphHeight", 540);
+    framework.syncTransform();
+    const expected = buildCameraBounds(0, 0, 1, 960, 540);
+    expect(mockCamera.left).toBe(expected.left);
+    expect(mockCamera.right).toBe(expected.right);
+    expect(mockCamera.top).toBe(expected.top);
+    expect(mockCamera.bottom).toBe(expected.bottom);
+    expect(mockCamera.updateProjectionMatrix).toHaveBeenCalledOnce();
+  });
+
+  it("syncTransform() uses ?? defaults when globals are absent (AC8)", () => {
+    const mockCamera = {
+      left: 99,
+      right: 99,
+      top: 99,
+      bottom: 99,
+      updateProjectionMatrix: vi.fn(),
+    };
+    (framework as any).camera = mockCamera;
+    // No globals stubbed — ?? fallbacks (0, 0, 1, 960, 540) take effect
+    framework.syncTransform();
+    const expected = buildCameraBounds(0, 0, 1, 960, 540);
+    expect(mockCamera.left).toBe(expected.left);
+    expect(mockCamera.right).toBe(expected.right);
+  });
+
+  // ── render() — dispatch order ─────────────────────────────────────────────
+
+  it("render() calls syncTransform, then per-layer render, then renderer.render in order (AC7)", () => {
+    const order: string[] = [];
+    const layerRenderFn = vi.fn(() => order.push("layer.render"));
+    const mockRenderer = { render: vi.fn(() => order.push("renderer.render")) };
+    const mockCamera = {
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      updateProjectionMatrix: vi.fn(),
+    };
+    (framework as any).renderer = mockRenderer;
+    (framework as any).scene = {};
+    (framework as any).camera = mockCamera;
+    (framework as any).layers.set("terrain", {
+      config: { ...makeConfig(), render: layerRenderFn },
+      group: { visible: true },
+    });
+    const syncSpy = vi
+      .spyOn(framework as any, "syncTransform")
+      .mockImplementation(() => order.push("syncTransform"));
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      vi.fn().mockImplementation((cb: () => void) => {
+        cb();
+        return 1;
+      }),
+    );
+    framework.requestRender();
+    expect(order).toEqual(["syncTransform", "layer.render", "renderer.render"]);
+    syncSpy.mockRestore();
+  });
+
+  it("render() skips invisible layers — config.render not called (AC7)", () => {
+    const invisibleRenderFn = vi.fn();
+    const mockRenderer = { render: vi.fn() };
+    (framework as any).renderer = mockRenderer;
+    (framework as any).scene = {};
+    (framework as any).camera = {
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      updateProjectionMatrix: vi.fn(),
+    };
+    (framework as any).layers.set("terrain", {
+      config: { ...makeConfig(), render: invisibleRenderFn },
+      group: { visible: false },
+    });
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      vi.fn().mockImplementation((cb: () => void) => {
+        cb();
+        return 1;
+      }),
+    );
+    framework.requestRender();
+    expect(invisibleRenderFn).not.toHaveBeenCalled();
+  });
+
+  // ── setVisible() ──────────────────────────────────────────────────────────
+
+  it("setVisible(false) sets group.visible=false without calling dispose (AC3, NFR-P6)", () => {
+    const config = makeConfig();
+    const group = { visible: true };
+    (framework as any).layers.set("terrain", { config, group });
+    (framework as any).canvas = { style: { display: "block" } };
+    framework.setVisible("terrain", false);
+    expect(group.visible).toBe(false);
+    expect(config.dispose).not.toHaveBeenCalled();
+  });
+
+  it("setVisible(false) hides canvas when all layers become invisible (AC3)", () => {
+    const canvas = { style: { display: "block" } };
+    (framework as any).canvas = canvas;
+    (framework as any).layers.set("terrain", {
+      config: makeConfig(),
+      group: { visible: true },
+    });
+    (framework as any).layers.set("rivers", {
+      config: makeConfig("rivers"),
+      group: { visible: false },
+    });
+    framework.setVisible("terrain", false);
+    expect(canvas.style.display).toBe("none");
+  });
+
+  it("setVisible(true) calls requestRender() (AC4)", () => {
+    const group = { visible: false };
+    (framework as any).layers.set("terrain", { config: makeConfig(), group });
+    (framework as any).canvas = { style: { display: "none" } };
+    const renderSpy = vi.spyOn(framework, "requestRender");
+    framework.setVisible("terrain", true);
+    expect(group.visible).toBe(true);
+    expect(renderSpy).toHaveBeenCalledOnce();
+  });
+
+  // ── clearLayer() ──────────────────────────────────────────────────────────
+
+  it("clearLayer() calls group.clear() and preserves layer in the Map (AC5)", () => {
+    const clearFn = vi.fn();
+    (framework as any).layers.set("terrain", {
+      config: makeConfig(),
+      group: { visible: true, clear: clearFn },
+    });
+    framework.clearLayer("terrain");
+    expect(clearFn).toHaveBeenCalledOnce();
+    expect((framework as any).layers.has("terrain")).toBe(true);
+  });
+
+  it("clearLayer() does not call renderer.dispose (AC5, NFR-P6)", () => {
+    const mockRenderer = { render: vi.fn(), dispose: vi.fn() };
+    (framework as any).renderer = mockRenderer;
+    (framework as any).layers.set("terrain", {
+      config: makeConfig(),
+      group: { visible: true, clear: vi.fn() },
+    });
+    framework.clearLayer("terrain");
+    expect(mockRenderer.dispose).not.toHaveBeenCalled();
+  });
+
+  // ── unregister() ──────────────────────────────────────────────────────────
+
+  it("unregister() calls dispose, removes from scene and Map (AC9)", () => {
+    const config = makeConfig();
+    const group = { visible: true };
+    const mockScene = { remove: vi.fn() };
+    (framework as any).scene = mockScene;
+    (framework as any).canvas = { style: { display: "block" } };
+    (framework as any).layers.set("terrain", { config, group });
+    framework.unregister("terrain");
+    expect(config.dispose).toHaveBeenCalledWith(group);
+    expect(mockScene.remove).toHaveBeenCalledWith(group);
+    expect((framework as any).layers.has("terrain")).toBe(false);
+  });
+
+  it("unregister() hides canvas when it was the last registered layer (AC9)", () => {
+    const canvas = { style: { display: "block" } };
+    (framework as any).canvas = canvas;
+    (framework as any).scene = { remove: vi.fn() };
+    (framework as any).layers.set("terrain", {
+      config: makeConfig(),
+      group: { visible: true },
+    });
+    framework.unregister("terrain");
+    expect(canvas.style.display).toBe("none");
   });
 });
