@@ -243,7 +243,7 @@ window.rerenderReliefIcons = () => {
 };
 
 declare global {
-  var drawRelief: (type?: "svg" | "webGL") => void;
+  var drawRelief: (type?: "svg" | "webGL", parentEl?: HTMLElement) => void;
   var undrawRelief: () => void;
   var rerenderReliefIcons: () => void;
 }
