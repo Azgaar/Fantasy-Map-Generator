@@ -1,33 +1,10 @@
-import { RELIEF_SYMBOLS } from "../config/relief-config";
+import { RELIEF_ATLASES, RELIEF_SYMBOLS } from "../config/relief-config";
 import type { ReliefIcon } from "../modules/relief-generator";
 import { generateRelief } from "../modules/relief-generator";
 import { TextureAtlasLayer } from "../modules/texture-atlas-layer";
 import { byId } from "../utils";
 
-const atlases = Object.fromEntries(
-  Object.entries(RELIEF_SYMBOLS).map(([set, ids]) => {
-    const n = ids.length || 1;
-    const cols = Math.ceil(Math.sqrt(n));
-    return [
-      set,
-      { url: `images/relief/${set}.png`, cols, rows: Math.ceil(n / cols) },
-    ];
-  }),
-);
-
-const terrainLayer = new TextureAtlasLayer("terrain", atlases);
-
-function resolveQuads(icons: ReliefIcon[]) {
-  return icons.map((r) => {
-    const id = r.href.startsWith("#") ? r.href.slice(1) : r.href;
-    for (const [set, ids] of Object.entries(RELIEF_SYMBOLS)) {
-      const tileIndex = ids.indexOf(id);
-      if (tileIndex !== -1)
-        return { atlasId: set, x: r.x, y: r.y, s: r.s, tileIndex };
-    }
-    throw new Error(`Relief: unknown symbol href "${r.href}"`);
-  });
-}
+const terrainLayer = new TextureAtlasLayer("terrain", RELIEF_ATLASES);
 
 function drawSvg(icons: ReliefIcon[], parentEl: HTMLElement): void {
   parentEl.innerHTML = icons
@@ -43,7 +20,6 @@ window.drawRelief = (
   parentEl: HTMLElement | undefined = byId("terrain"),
 ) => {
   if (!parentEl) throw new Error("Relief: parent element not found");
-
   parentEl.innerHTML = "";
   parentEl.dataset.mode = type;
 
@@ -56,6 +32,18 @@ window.drawRelief = (
     terrainLayer.draw(resolveQuads(icons));
   }
 };
+
+function resolveQuads(icons: ReliefIcon[]) {
+  return icons.map((r) => {
+    const id = r.href.startsWith("#") ? r.href.slice(1) : r.href;
+    for (const [set, { ids }] of Object.entries(RELIEF_SYMBOLS)) {
+      const tileIndex = ids.indexOf(id);
+      if (tileIndex !== -1)
+        return { atlasId: set, x: r.x, y: r.y, s: r.s, tileIndex };
+    }
+    throw new Error(`Relief: unknown symbol href "${r.href}"`);
+  });
+}
 
 window.undrawRelief = () => {
   terrainLayer.clear();

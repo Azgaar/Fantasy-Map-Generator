@@ -57,10 +57,8 @@ fs.mkdirSync(OUTPUT_DIR, {recursive: true});
   const browser = await chromium.launch();
   const page = await browser.newPage();
 
-  for (const [set, ids] of Object.entries(RELIEF_SYMBOLS)) {
+  for (const [set, {ids, cols, rows}] of Object.entries(RELIEF_SYMBOLS)) {
     const n = ids.length;
-    const cols = Math.ceil(Math.sqrt(n));
-    const rows = Math.ceil(n / cols);
     const W = cols * SPRITE_SIZE;
     const H = rows * SPRITE_SIZE;
 

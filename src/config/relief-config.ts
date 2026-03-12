@@ -1,5 +1,11 @@
-export const RELIEF_SYMBOLS: Record<string, string[]> = {
-  simple: [
+function createAtlas(ids: string[]) {
+  const n = ids.length || 1;
+  const cols = Math.ceil(Math.sqrt(n));
+  return { ids, cols, rows: Math.ceil(n / cols) };
+}
+
+export const RELIEF_SYMBOLS = {
+  simple: createAtlas([
     "relief-mount-1",
     "relief-hill-1",
     "relief-conifer-1",
@@ -9,8 +15,8 @@ export const RELIEF_SYMBOLS: Record<string, string[]> = {
     "relief-grass-1",
     "relief-swamp-1",
     "relief-dune-1",
-  ],
-  gray: [
+  ]),
+  gray: createAtlas([
     "relief-mount-2-bw",
     "relief-mount-3-bw",
     "relief-mount-4-bw",
@@ -45,8 +51,8 @@ export const RELIEF_SYMBOLS: Record<string, string[]> = {
     "relief-palm-2-bw",
     "relief-deciduous-2-bw",
     "relief-deciduous-3-bw",
-  ],
-  colored: [
+  ]),
+  colored: createAtlas([
     "relief-mount-2",
     "relief-mount-3",
     "relief-mount-4",
@@ -81,8 +87,15 @@ export const RELIEF_SYMBOLS: Record<string, string[]> = {
     "relief-palm-2",
     "relief-deciduous-2",
     "relief-deciduous-3",
-  ],
+  ]),
 };
+
+export const RELIEF_ATLASES = Object.fromEntries(
+  Object.entries(RELIEF_SYMBOLS).map(([set, { cols, rows }]) => [
+    set,
+    { url: `images/relief/${set}.png`, cols, rows },
+  ]),
+);
 
 export const VARIANT_RANGES: Record<string, [number, number]> = {
   mount: [2, 7],
