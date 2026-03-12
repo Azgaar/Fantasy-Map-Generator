@@ -460,7 +460,7 @@ function handleZoom(isScaleChanged, isPositionChanged) {
     fitScaleBar(scaleBar, svgWidth, svgHeight);
   }
 
-  if (layerIsOn("toggleRelief")) rerenderReliefIcons();
+  WebGLLayer.rerender(); // rerender WebGL layers on zoom
 
   // zoom image converter overlay
   if (customization === 1) {

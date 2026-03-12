@@ -34,8 +34,6 @@ export class WebGL2LayerClass {
     this.scene = new Scene();
     this.camera = new OrthographicCamera(0, graphWidth, 0, graphHeight, -1, 1);
 
-    svg.on("zoom.webgl", () => this.requestRender());
-
     // Process pre-init registrations (register() before init() is explicitly safe)
     for (const config of this.pendingConfigs) {
       const group = new Group();
@@ -46,56 +44,6 @@ export class WebGL2LayerClass {
     this.pendingConfigs = [];
 
     return true;
-  }
-
-  register(config: WebGLLayerConfig) {
-    if (!this.scene) {
-      // init() has not been called yet — queue for processing in init()
-      this.pendingConfigs.push(config);
-      return;
-    }
-
-    // Post-init registration: create group immediately
-    const group = new Group();
-    // group.renderOrder = config.renderOrder;
-    config.setup(group);
-    this.scene.add(group);
-    this.layers.set(config.id, { config, group });
-  }
-
-  unregister(id: string) {
-    const layer = this.layers.get(id);
-    if (!layer || !this.scene) return;
-    const scene = this.scene;
-    layer.config.dispose(layer.group);
-    scene.remove(layer.group);
-    this.layers.delete(id);
-    const anyVisible = [...this.layers.values()].some((l) => l.group.visible);
-    if (this.canvas && !anyVisible) this.canvas.style.display = "none";
-  }
-
-  setVisible(id: string, visible: boolean) {
-    const layer = this.layers.get(id);
-    if (!layer) return;
-    layer.group.visible = visible;
-    const anyVisible = [...this.layers.values()].some((l) => l.group.visible);
-    if (this.canvas) this.canvas.style.display = anyVisible ? "block" : "none";
-    if (visible) this.requestRender();
-  }
-
-  clearLayer(id: string) {
-    const layer = this.layers.get(id);
-    if (!layer) return;
-    layer.group.clear();
-    this.requestRender();
-  }
-
-  requestRender() {
-    if (this.rafId !== null) return;
-    this.rafId = requestAnimationFrame(() => {
-      this.rafId = null;
-      this.render();
-    });
   }
 
   private syncTransform() {
@@ -120,6 +68,28 @@ export class WebGL2LayerClass {
         layer.config.render(layer.group);
     }
     this.renderer.render(this.scene, this.camera);
+  }
+
+  register(config: WebGLLayerConfig) {
+    if (!this.scene) {
+      // init() has not been called yet — queue for processing in init()
+      this.pendingConfigs.push(config);
+      return;
+    }
+
+    // Post-init registration: create group immediately
+    const group = new Group();
+    config.setup(group);
+    this.scene.add(group);
+    this.layers.set(config.id, { config, group });
+  }
+
+  rerender() {
+    if (this.rafId !== null) return;
+    this.rafId = requestAnimationFrame(() => {
+      this.rafId = null;
+      this.render();
+    });
   }
 }
 

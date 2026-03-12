@@ -63,7 +63,7 @@ Type `/bmad-` in Copilot Chat to see all available BMAD workflows and agent acti
 
 `public/main.js` and all `public/modules/**/*.js` files are **plain `<script defer>` tags — NOT ES modules**. Every top-level declaration is a `window` property automatically.
 
-Key globals always available on `window` at runtime: `scale`, `viewX`, `viewY`, `graphWidth`, `graphHeight`, `svgWidth`, `svgHeight`, `pack`, `grid`, `viewbox`, `svg`, `zoom`, `seed`, `options`, `byId`, `rn`, `tip`, `layerIsOn`, `drawRelief`, `undrawRelief`, `rerenderReliefIcons`, and many more.
+Key globals always available on `window` at runtime: `scale`, `viewX`, `viewY`, `graphWidth`, `graphHeight`, `svgWidth`, `svgHeight`, `pack`, `grid`, `viewbox`, `svg`, `zoom`, `seed`, `options`, `byId`, `rn`, `tip`, `layerIsOn` and many more.
 
 **Rule: In `src/**/\*.ts`(ES modules), just use the globals directly — they are declared as ambient globals in`src/types/global.ts`:\*\*
 
@@ -77,5 +77,12 @@ viewbox.on("zoom.webgl", handler);
 ```
 
 Full reference: see `docs/architecture-globals.md`.
+
+### Code Style — Non-Negotiable Rules for All Agents
+
+- **No unnecessary comments.** Code is self-documenting. Add a comment only when the _why_ is non-obvious from reading the code itself. Never describe what the code does.
+- **Clean abstractions that don't leak.** Each abstraction fully owns its concern. Callers must not need to know implementation details. If a caller must pass a flag to alter internal behavior, the abstraction is wrong — split it.
+- **No academic over-engineering.** No design patterns, extra layers, or wrapper objects unless the problem concretely requires them. Solve the current requirement; do not design for hypothetical future variants.
+- **Minimal artifacts.** Only create files mandated by acceptance criteria. No speculative utils stubs, barrel re-exports, or helper files without multiple concrete callers.
 
 <!-- BMAD:END -->

@@ -190,6 +190,32 @@ Use exactly `>= 20` — no magic numbers, no alternative thresholds.
   - Template literals over concatenation
   - No unused variables or imports (error level)
 
+### Code Style Principles (enforced on all generated code)
+
+**Concise — no noise:**
+
+- No comments unless the _why_ is genuinely non-obvious from reading the code. Never narrate what the code does.
+- No JSDoc/TSDoc on internal functions. Exported public API only if callers are outside `src/`.
+- Good names eliminate comments. If you feel a comment is needed, improve the name first.
+
+**Clean abstractions — no leaks:**
+
+- Each abstraction fully owns its concern. Callers must not need internal implementation details to use it correctly.
+- No thin wrapper classes that just re-expose another class's internals.
+- Keep call depth shallow: if tracing a feature requires more than two levels of indirection, refactor toward directness.
+
+**No academic over-engineering:**
+
+- No design patterns (Factory, Strategy, Observer, etc.) unless the problem concretely requires the flexibility they provide.
+- No wrapper objects or extra indirection layers that add zero behavior.
+- Functions take ≤ 3 positional parameters. Use a plain options object only when fields are genuinely optional and vary by caller.
+
+**Minimal artifacts:**
+
+- Only create files directly required by the story's acceptance criteria.
+- No per-domain helper/utils files unless there are ≥ 3 reusable functions with multiple callers.
+- No barrel re-export files unless there is an actual cross-module consumer today.
+
 ---
 
 ## Development Workflow
