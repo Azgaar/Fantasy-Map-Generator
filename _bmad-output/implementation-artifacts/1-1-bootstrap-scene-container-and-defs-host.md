@@ -50,12 +50,15 @@ so that split layer surfaces can share resources without depending on one map SV
 - Keep the runtime compatible with the current global-variable model. New TypeScript code must use ambient globals directly, not `window` or `globalThis` wrappers.
 - New TypeScript modules must follow the project Global Module Pattern: declare global, implement a class, then assign `window.ModuleName = new ModuleClass()`.
 - Avoid grouped SVG buckets or speculative abstractions here. The goal is bootstrap ownership only.
+- Keep the implementation lean. Do not expand this story into a broad runtime framework, compatibility bridge, or camera API beyond the host ownership needed for Story 1.1.
+- Prefer direct code over wrappers. Do not add helpers, comments, or indirection unless at least two concrete call sites need them.
 
 ### Architecture Compliance
 
 - This story is the Phase 1 foundation from the layered-map architecture: create one scene container, one defs host, and stable references before any layer split begins.
 - `svg` and `viewbox` remain compatibility-era globals after this story. They must stop being the architectural source of truth, but they are not removed yet.
 - The runtime defs host must live outside individual layer surfaces so later split SVG shells can reference shared resources by stable ID.
+- Keep ownership narrow: this story covers bootstrap ownership only. Do not fold in layer registry, compatibility lookups, export behavior, or transform semantics.
 
 ### Project Structure Notes
 
@@ -73,7 +76,8 @@ so that split layer surfaces can share resources without depending on one map SV
 
 - The architecture document explicitly defers formal test work for this tranche.
 - Do manual verification for fresh load, saved-map load, and relief visibility.
-- If a pure helper is extracted while implementing bootstrap ownership, keep it testable, but do not expand scope into a new test suite in this story.
+- Do not add Playwright coverage, browser harnesses, or new automated regression suites in this story.
+- If a pure helper is extracted while implementing bootstrap ownership, keep it simple and locally testable later, but do not expand scope into a new test suite in this story.
 
 ### References
 

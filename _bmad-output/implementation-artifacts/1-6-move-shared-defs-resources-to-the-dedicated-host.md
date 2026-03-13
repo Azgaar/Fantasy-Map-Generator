@@ -52,6 +52,7 @@ so that split surfaces can keep using stable IDs for filters, masks, symbols, ma
 - The dedicated defs host must be reachable by all layer surfaces after the map DOM is split.
 - Prefer one focused defs owner module over scattered DOM writes.
 - Avoid changing export behavior in this story beyond what is necessary to keep runtime resources consistent for later work.
+- Keep defs ownership isolated. Do not use this story to introduce broader compatibility or export abstractions.
 
 ### Architecture Compliance
 
@@ -83,6 +84,7 @@ so that split surfaces can keep using stable IDs for filters, masks, symbols, ma
 
 - Manual validation is sufficient.
 - Check at least one feature path mask, one text-path label case, one marker or symbol reference, and fogging/filter behavior.
+- Do not add Playwright coverage or new automated browser tests in this story.
 
 ### Dependencies
 

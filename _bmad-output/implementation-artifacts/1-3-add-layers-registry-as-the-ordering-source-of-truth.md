@@ -48,6 +48,7 @@ so that visibility, order, and surface ownership are managed consistently instea
 - Keep the public contract minimal. Do not add export metadata yet; that belongs to Epic 4.
 - Store actual surface handles, not just selectors, so later stories can mount independent SVG shells and WebGL surfaces under one contract.
 - Ensure reorder application is atomic from the user perspective. Avoid partial states where one surface has moved and another has not.
+- Keep the registry boring. No factory layers, schema systems, or speculative metadata beyond `id`, `kind`, `order`, `visible`, and `surface`.
 
 ### Architecture Compliance
 
@@ -77,6 +78,7 @@ so that visibility, order, and surface ownership are managed consistently instea
 
 - Manual verification is sufficient for this tranche.
 - Verify the existing sortable Layers UI still works and that no layer disappears from the visible stack after a reorder.
+- Do not add Playwright coverage or new automated test infrastructure in this story.
 
 ### Dependencies
 

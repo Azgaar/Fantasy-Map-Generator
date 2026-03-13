@@ -26,6 +26,7 @@ export class WebGL2LayerClass {
 
   init(): boolean {
     const canvas = Scene.getCanvas();
+    const { graphWidth, graphHeight } = Scene.getViewport();
 
     this.renderer = new WebGLRenderer({
       canvas,
@@ -53,15 +54,12 @@ export class WebGL2LayerClass {
 
   private syncTransform() {
     if (!this.camera) return;
-    const x = -viewX / scale;
-    const y = -viewY / scale;
-    const w = graphWidth / scale;
-    const h = graphHeight / scale;
+    const { bottom, left, right, top } = Scene.getCameraBounds();
 
-    this.camera.left = x;
-    this.camera.right = x + w;
-    this.camera.top = y;
-    this.camera.bottom = y + h;
+    this.camera.left = left;
+    this.camera.right = right;
+    this.camera.top = top;
+    this.camera.bottom = bottom;
     this.camera.updateProjectionMatrix();
   }
 

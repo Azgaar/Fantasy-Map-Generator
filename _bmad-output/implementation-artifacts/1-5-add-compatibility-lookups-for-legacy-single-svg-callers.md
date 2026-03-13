@@ -48,6 +48,7 @@ so that existing workflows keep working while code migrates to the new scene and
 - Return real layer surfaces or layer-local SVG roots where available. Do not fake a new canonical SVG document.
 - `queryMap(selector)` should be controlled and predictable. It must not silently reintroduce global DOM coupling as a hidden permanent pattern.
 - Preserve current IDs and selectors where possible so callers can migrate incrementally.
+- Keep the bridge thin and temporary. Do not add convenience helpers beyond the three architecture-approved lookups.
 
 ### Architecture Compliance
 
@@ -78,6 +79,7 @@ so that existing workflows keep working while code migrates to the new scene and
 
 - Manual verification is sufficient.
 - Validate save/export, labels/text paths, and at least one legacy selector-heavy workflow after the helpers are introduced.
+- Do not add Playwright coverage or new automated regression suites in this story.
 
 ### Dependencies
 

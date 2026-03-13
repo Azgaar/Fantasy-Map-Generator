@@ -47,6 +47,7 @@ so that individual layers can be created, mounted, updated, and disposed without
 - Avoid generic factories or strategy trees. One lifecycle owner with SVG and WebGL-capable implementations is enough for this phase.
 - Do not force feature modules to pass renderer flags around. If two surface kinds need separate logic, isolate that inside the lifecycle owner.
 - Preserve the current `WebGLLayer` canvas and shared context budget.
+- Keep the API compact. Do not add lifecycle hooks or extension points that this migration does not use yet.
 
 ### Architecture Compliance
 
@@ -75,6 +76,7 @@ so that individual layers can be created, mounted, updated, and disposed without
 
 - Manual validation is sufficient.
 - Focus on mount, redraw, hide/show, and cleanup behavior for relief because that is the current live mixed-render surface.
+- Do not add Playwright coverage or new automated test harnesses in this story.
 
 ### Dependencies
 

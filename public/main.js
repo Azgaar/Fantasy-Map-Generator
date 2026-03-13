@@ -450,7 +450,7 @@ function findBurgForMFCG(params) {
 }
 
 function handleZoom(isScaleChanged, isPositionChanged) {
-  viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
+  Scene.applyViewboxTransform();
 
   if (isPositionChanged) {
     if (layerIsOn("toggleCoordinates")) drawCoordinates();

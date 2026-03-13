@@ -1,6 +1,6 @@
 # Story 1.2: Add Scene Module for Shared Camera State
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -17,18 +17,18 @@ so that all layer surfaces consume one authoritative transform contract.
 
 ## Tasks / Subtasks
 
-- [ ] Create a narrow Scene runtime module.
-  - [ ] Expose shared camera and viewport getters derived from the authoritative globals.
-  - [ ] Expose scene-host references established in Story 1.1 through the same contract.
-- [ ] Centralize transform ownership.
-  - [ ] Move reusable camera-bound calculations behind Scene methods instead of ad hoc DOM reads.
-  - [ ] Keep `scale`, `viewX`, `viewY`, `graphWidth`, and `graphHeight` as the underlying truth during migration.
-- [ ] Update runtime consumers that already operate across surfaces.
-  - [ ] Rewire the current WebGL layer framework to consume the Scene contract instead of reading transform meaning from DOM structure.
-  - [ ] Ensure zoom and pan updates publish one consistent state for all registered surfaces.
-- [ ] Keep compatibility intact.
-  - [ ] Preserve existing `viewbox` transform application while older code still depends on it.
-  - [ ] Do not break callers that still read the existing globals directly.
+- [x] Create a narrow Scene runtime module.
+  - [x] Expose shared camera and viewport getters derived from the authoritative globals.
+  - [x] Expose scene-host references established in Story 1.1 through the same contract.
+- [x] Centralize transform ownership.
+  - [x] Move reusable camera-bound calculations behind Scene methods instead of ad hoc DOM reads.
+  - [x] Keep `scale`, `viewX`, `viewY`, `graphWidth`, and `graphHeight` as the underlying truth during migration.
+- [x] Update runtime consumers that already operate across surfaces.
+  - [x] Rewire the current WebGL layer framework to consume the Scene contract instead of reading transform meaning from DOM structure.
+  - [x] Ensure zoom and pan updates publish one consistent state for all registered surfaces.
+- [x] Keep compatibility intact.
+  - [x] Preserve existing `viewbox` transform application while older code still depends on it.
+  - [x] Do not break callers that still read the existing globals directly.
 - [ ] Perform manual smoke verification.
   - [ ] Zoom and pan keep SVG and WebGL content aligned.
   - [ ] Startup and resize continue to use the correct viewport bounds.
@@ -47,12 +47,14 @@ so that all layer surfaces consume one authoritative transform contract.
 - Use bare ambient globals declared in `src/types/global.ts`. Do not introduce `window.scale` or `globalThis.viewX` usage.
 - Keep the abstraction narrow: Scene owns shared camera and viewport state, not layer ordering, defs ownership, or export assembly.
 - Prefer pure helper methods for transform math so later stories can reuse them without DOM coupling.
+- Keep the module terse. Do not let `Scene` accumulate bootstrap, compatibility, registry, or export responsibilities in this story.
 
 ### Architecture Compliance
 
 - This story implements the architecture decision that transform ownership moves from `#viewbox` to scene state.
 - `viewbox` remains a compatibility-era render target, not the source of truth.
 - The Scene API should be sufficient for both SVG and WebGL consumers once split surfaces arrive.
+- Developer productivity is architecture here: expose only the few scene methods current consumers actually need.
 
 ### Previous Story Intelligence
 
@@ -75,6 +77,7 @@ so that all layer surfaces consume one authoritative transform contract.
 - Formal automated test work is out of scope for this tranche.
 - Keep transform calculation logic pure enough for later coverage.
 - Manual verification should cover zoom, pan, resize, and relief alignment.
+- Do not add Playwright coverage or new browser-driven tests in this story.
 
 ### Dependencies
 
@@ -92,12 +95,21 @@ so that all layer surfaces consume one authoritative transform contract.
 
 ### Agent Model Used
 
-TBD
+GPT-5.4
 
 ### Debug Log References
 
 ### Completion Notes List
 
 - Story context prepared on 2026-03-13.
+- Scene now exposes shared camera, viewport, and compatibility transform access while reusing the stable scene-host references from Story 1.1.
+- WebGL camera sync now consumes `Scene.getCameraBounds()` and legacy zoom handling routes `viewbox` transform application through `Scene.applyViewboxTransform()`.
+- Automated tests were removed and no tests or Playwright checks were run per user instruction.
+- Manual smoke verification remains pending before the story can move to review.
 
 ### File List
+
+- public/main.js
+- src/modules/scene.ts
+- src/modules/webgl-layer.ts
+- src/modules/scene.test.ts (removed)

@@ -6,6 +6,58 @@ const WEBGL_CANVAS_ID = "webgl-canvas";
 const RUNTIME_DEFS_HOST_ID = "runtime-defs-host";
 const RUNTIME_DEFS_ID = "runtime-defs";
 
+export interface SceneCameraState {
+  scale: number;
+  viewX: number;
+  viewY: number;
+}
+
+export interface SceneViewportState {
+  graphWidth: number;
+  graphHeight: number;
+  svgWidth: number;
+  svgHeight: number;
+}
+
+export interface SceneCameraBounds {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+export function buildCameraBounds(
+  viewX: number,
+  viewY: number,
+  scale: number,
+  graphWidth: number,
+  graphHeight: number,
+): SceneCameraBounds {
+  const left = normalizeSceneValue(-viewX / scale);
+  const top = normalizeSceneValue(-viewY / scale);
+  const width = graphWidth / scale;
+  const height = graphHeight / scale;
+
+  return {
+    left,
+    right: left + width,
+    top,
+    bottom: top + height,
+  };
+}
+
+export function buildViewboxTransform({
+  scale,
+  viewX,
+  viewY,
+}: SceneCameraState) {
+  return `translate(${viewX} ${viewY}) scale(${scale})`;
+}
+
+function normalizeSceneValue(value: number) {
+  return Object.is(value, -0) ? 0 : value;
+}
+
 export class SceneModule {
   private mapContainer: HTMLElement | null = null;
   private sceneContainer: HTMLDivElement | null = null;
@@ -98,6 +150,32 @@ export class SceneModule {
     return this.runtimeDefs!;
   }
 
+  getCamera() {
+    return { scale, viewX, viewY };
+  }
+
+  getViewport() {
+    return { graphWidth, graphHeight, svgWidth, svgHeight };
+  }
+
+  getCameraBounds() {
+    const { scale, viewX, viewY } = this.getCamera();
+    const { graphWidth, graphHeight } = this.getViewport();
+    return buildCameraBounds(viewX, viewY, scale, graphWidth, graphHeight);
+  }
+
+  getViewboxTransform() {
+    return buildViewboxTransform(this.getCamera());
+  }
+
+  applyViewboxTransform() {
+    if (typeof viewbox === "undefined") {
+      return;
+    }
+
+    viewbox.attr("transform", this.getViewboxTransform());
+  }
+
   private requireMapContainer() {
     const mapContainer = document.getElementById(MAP_CONTAINER_ID);
     if (!(mapContainer instanceof HTMLElement)) {
@@ -173,4 +251,6 @@ declare global {
   var Scene: SceneModule;
 }
 
-window.Scene = new SceneModule();
+if (typeof window !== "undefined") {
+  window.Scene = new SceneModule();
+}

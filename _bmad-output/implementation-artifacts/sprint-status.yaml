@@ -42,7 +42,7 @@ story_location: /Users/azgaar/Fantasy-Map-Generator/_bmad-output/implementation-
 development_status:
   epic-1: in-progress
   1-1-bootstrap-scene-container-and-defs-host: in-progress
-  1-2-add-scene-module-for-shared-camera-state: ready-for-dev
+  1-2-add-scene-module-for-shared-camera-state: in-progress
   1-3-add-layers-registry-as-the-ordering-source-of-truth: ready-for-dev
   1-4-add-layer-surface-lifecycle-ownership: ready-for-dev
   1-5-add-compatibility-lookups-for-legacy-single-svg-callers: ready-for-dev
