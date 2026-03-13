@@ -426,6 +426,7 @@
         </button>
         <button
           id="regenerate"
+          data-text="New Map!"
           data-tip="Click to generate a new map"
           data-shortcut="F2"
           onclick="regeneratePrompt()"
@@ -449,33 +450,33 @@
           >
             ◄
           </button>
-          <button id="layersTab" data-tip="Click to change map layers" class="options active">Layers</button>
-          <button id="styleTab" data-tip="Click to open style editor" class="options">Style</button>
-          <button id="optionsTab" data-tip="Click to change generation and UI options" class="options">Options</button>
-          <button id="toolsTab" data-tip="Click to open tools menu" class="options">Tools</button>
-          <button id="aboutTab" data-tip="Click to see Generator info" class="options">About</button>
+          <button id="layersTab" data-text="Layers" data-tip="Click to change map layers" class="options active">Layers</button>
+          <button id="styleTab" data-text="Style" data-tip="Click to open style editor" class="options">Style</button>
+          <button id="optionsTab" data-text="Options" data-tip="Click to change generation and UI options" class="options">Options</button>
+          <button id="toolsTab" data-text="Tools" data-tip="Click to open tools menu" class="options">Tools</button>
+          <button id="aboutTab" data-text="About" data-tip="Click to see Generator info" class="options">About</button>
         </div>
 
         <div id="layersContent" class="tabcontent" style="display: block">
-          <p data-tip="Select a map layers preset" style="display: inline-block">Layers preset:</p>
+          <p data-text="Layers preset:" data-tip="Select a map layers preset" style="display: inline-block">Layers preset:</p>
           <select
             data-tip="Select a map layers preset"
             id="layersPreset"
             onchange="handleLayersPresetChange(this.value)"
             style="width: 45%"
           >
-            <option value="political" selected>Political map</option>
-            <option value="cultural">Cultural map</option>
-            <option value="religions">Religions map</option>
-            <option value="provinces">Provinces map</option>
-            <option value="biomes">Biomes map</option>
-            <option value="heightmap">Heightmap</option>
-            <option value="physical">Physical map</option>
-            <option value="poi">Places of interest</option>
-            <option value="military">Military map</option>
-            <option value="emblems">Emblems</option>
-            <option value="landmass">Pure landmass</option>
-            <option hidden value="custom">Custom (not saved)</option>
+            <option value="political" data-text="Political map" selected>Political map</option>
+            <option value="cultural" data-text="Cultural map">Cultural map</option>
+            <option value="religions" data-text="Religions map">Religions map</option>
+            <option value="provinces" data-text="Provinces map">Provinces map</option>
+            <option value="biomes" data-text="Biomes map">Biomes map</option>
+            <option value="heightmap" data-text="Heightmap">Heightmap</option>
+            <option value="physical" data-text="Physical map">Physical map</option>
+            <option value="poi" data-text="Places of interest">Places of interest</option>
+            <option value="military" data-text="Military map">Military map</option>
+            <option value="emblems" data-text="Emblems">Emblems</option>
+            <option value="landmass" data-text="Pure landmass">Pure landmass</option>
+            <option hidden value="custom" data-text="Custom (not saved)">Custom (not saved)</option>
           </select>
           <button
             id="savePresetButton"
@@ -492,13 +493,14 @@
             onclick="removePreset()"
           ></button>
 
-          <p>Displayed layers and layers order:</p>
+          <p data-text="Displayed layers and layers order:">Displayed layers and layers order:</p>
           <ul
             data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style"
             id="mapLayers"
           >
             <li
               id="toggleTexture"
+              data-text="Texture"
               data-tip="Texture overlay: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="X"
               onclick="toggleTexture(event)"
@@ -507,6 +509,7 @@
             </li>
             <li
               id="toggleHeight"
+              data-text="Heightmap"
               data-tip="Heightmap: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="H"
               onclick="toggleHeight(event)"
@@ -515,6 +518,7 @@
             </li>
             <li
               id="toggleBiomes"
+              data-text="Biomes"
               data-tip="Biomes: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="B"
               onclick="toggleBiomes(event)"
@@ -523,6 +527,7 @@
             </li>
             <li
               id="toggleCells"
+              data-text="Cells"
               data-tip="Cells structure: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="E"
               onclick="toggleCells(event)"
@@ -531,6 +536,7 @@
             </li>
             <li
               id="toggleGrid"
+              data-text="Grid"
               data-tip="Grid: click to toggle, drag to raise or lower. Ctrl + click to edit layer style and select type"
               data-shortcut="G"
               onclick="toggleGrid(event)"
@@ -539,6 +545,7 @@
             </li>
             <li
               id="toggleCoordinates"
+              data-text="Coordinates"
               data-tip="Coordinate grid: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="O"
               onclick="toggleCoordinates(event)"
@@ -547,6 +554,7 @@
             </li>
             <li
               id="toggleCompass"
+              data-text="Wind Rose"
               data-tip="Wind (Compass) Rose: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="W"
               onclick="toggleCompass(event)"
@@ -555,6 +563,7 @@
             </li>
             <li
               id="toggleRivers"
+              data-text="Rivers"
               data-tip="Rivers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="V"
               onclick="toggleRivers(event)"
@@ -563,6 +572,7 @@
             </li>
             <li
               id="toggleRelief"
+              data-text="Relief"
               data-tip="Relief and biome icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="F"
               onclick="toggleRelief(event)"
@@ -571,6 +581,7 @@
             </li>
             <li
               id="toggleReligions"
+              data-text="Religions"
               data-tip="Religions: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="R"
               onclick="toggleReligions(event)"
@@ -579,6 +590,7 @@
             </li>
             <li
               id="toggleCultures"
+              data-text="Cultures"
               data-tip="Cultures: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="C"
               onclick="toggleCultures(event)"
@@ -587,6 +599,7 @@
             </li>
             <li
               id="toggleStates"
+              data-text="States"
               data-tip="States: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="S"
               onclick="toggleStates(event)"
@@ -595,6 +608,7 @@
             </li>
             <li
               id="toggleProvinces"
+              data-text="Provinces"
               data-tip="Provinces: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="P"
               onclick="toggleProvinces(event)"
@@ -603,6 +617,7 @@
             </li>
             <li
               id="toggleZones"
+              data-text="Zones"
               data-tip="Zones: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="Z"
               onclick="toggleZones(event)"
@@ -611,6 +626,7 @@
             </li>
             <li
               id="toggleBorders"
+              data-text="Borders"
               data-tip="State borders: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="D"
               onclick="toggleBorders(event)"
@@ -619,6 +635,7 @@
             </li>
             <li
               id="toggleRoutes"
+              data-text="Routes"
               data-tip="Trade routes: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="U"
               onclick="toggleRoutes(event)"
@@ -627,6 +644,7 @@
             </li>
             <li
               id="toggleTemperature"
+              data-text="Temperature"
               data-tip="Temperature map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="T"
               onclick="toggleTemperature(event)"
@@ -635,6 +653,7 @@
             </li>
             <li
               id="togglePopulation"
+              data-text="Population"
               data-tip="Population map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="N"
               onclick="togglePopulation(event)"
@@ -643,6 +662,7 @@
             </li>
             <li
               id="toggleIce"
+              data-text="Ice"
               data-tip="Icebergs and glaciers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="J"
               onclick="toggleIce(event)"
@@ -651,6 +671,7 @@
             </li>
             <li
               id="togglePrecipitation"
+              data-text="Precipitation"
               data-tip="Precipitation map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="A"
               onclick="togglePrecipitation(event)"
@@ -659,6 +680,7 @@
             </li>
             <li
               id="toggleEmblems"
+              data-text="Emblems"
               data-tip="Emblems: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="Y"
               onclick="toggleEmblems(event)"
@@ -667,6 +689,7 @@
             </li>
             <li
               id="toggleBurgIcons"
+              data-text="Icons"
               data-tip="Burg icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="I"
               onclick="toggleBurgIcons(event)"
@@ -675,6 +698,7 @@
             </li>
             <li
               id="toggleLabels"
+              data-text="Labels"
               data-tip="Labels: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="L"
               onclick="toggleLabels(event)"
@@ -683,6 +707,7 @@
             </li>
             <li
               id="toggleMilitary"
+              data-text="Military"
               data-tip="Military forces: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="M"
               onclick="toggleMilitary(event)"
@@ -691,6 +716,7 @@
             </li>
             <li
               id="toggleMarkers"
+              data-text="Markers"
               data-tip="Markers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="K"
               onclick="toggleMarkers(event)"
@@ -699,6 +725,7 @@
             </li>
             <li
               id="toggleRulers"
+              data-text="Rulers"
               data-tip="Rulers: click to toggle, drag to move, click on label to delete. Ctrl + click to edit layer style"
               data-shortcut="= (equal sign)"
               onclick="toggleRulers(event)"
@@ -707,6 +734,7 @@
             </li>
             <li
               id="toggleScaleBar"
+              data-text="Scale Bar"
               data-tip="Scale Bar: click to toggle. Ctrl + click to edit style"
               data-shortcut="/ (slash sign)"
               onclick="toggleScaleBar(event)"
@@ -716,6 +744,7 @@
             </li>
             <li
               id="toggleVignette"
+              data-text="Vignette"
               data-tip="Vignette (border fading): click to toggle. Ctrl + click to edit style"
               data-shortcut="[ (left square bracket)"
               onclick="toggleVignette(event)"
@@ -776,41 +805,41 @@
             id="styleElementSelect"
             style="width: 42%"
           >
-            <option value="anchors">Anchor Icons</option>
-            <option value="biomes">Biomes</option>
-            <option value="borders">Borders</option>
-            <option value="burgIcons">Burg Icons</option>
-            <option value="cells">Cells</option>
-            <option value="coastline">Coastline</option>
-            <option value="coordinates">Coordinates</option>
-            <option value="cults">Cultures</option>
-            <option value="emblems">Emblems</option>
-            <option value="fogging">Fogging</option>
-            <option value="gridOverlay">Grid</option>
-            <option value="terrs">Heightmap</option>
-            <option value="ice">Ice</option>
-            <option value="labels">Labels</option>
-            <option value="lakes">Lakes</option>
-            <option value="landmass">Landmass</option>
-            <option value="legend">Legend</option>
-            <option value="markers">Markers</option>
-            <option value="armies">Military</option>
-            <option value="ocean">Ocean</option>
-            <option value="population">Population</option>
-            <option value="prec">Precipitation</option>
-            <option value="provs">Provinces</option>
-            <option value="terrain">Relief Icons</option>
-            <option value="relig">Religions</option>
-            <option value="rivers">Rivers</option>
-            <option value="routes">Routes</option>
-            <option value="ruler">Rulers</option>
-            <option value="scaleBar">Scale Bar</option>
-            <option value="regions" selected>States</option>
-            <option value="temperature">Temperature</option>
-            <option value="texture">Texture</option>
-            <option value="vignette">Vignette</option>
-            <option value="compass">Wind Rose</option>
-            <option value="zones">Zones</option>
+            <option value="anchors" data-text="Anchor Icons">Anchor Icons</option>
+            <option value="biomes" data-text="Biomes">Biomes</option>
+            <option value="borders" data-text="Borders">Borders</option>
+            <option value="burgIcons" data-text="Burg Icons">Burg Icons</option>
+            <option value="cells" data-text="Cells">Cells</option>
+            <option value="coastline" data-text="Coastline">Coastline</option>
+            <option value="coordinates" data-text="Coordinates">Coordinates</option>
+            <option value="cults" data-text="Cultures">Cultures</option>
+            <option value="emblems" data-text="Emblems">Emblems</option>
+            <option value="fogging" data-text="Fogging">Fogging</option>
+            <option value="gridOverlay" data-text="Grid">Grid</option>
+            <option value="terrs" data-text="Heightmap">Heightmap</option>
+            <option value="ice" data-text="Ice">Ice</option>
+            <option value="labels" data-text="Labels">Labels</option>
+            <option value="lakes" data-text="Lakes">Lakes</option>
+            <option value="landmass" data-text="Landmass">Landmass</option>
+            <option value="legend" data-text="Legend">Legend</option>
+            <option value="markers" data-text="Markers">Markers</option>
+            <option value="armies" data-text="Military">Military</option>
+            <option value="ocean" data-text="Ocean">Ocean</option>
+            <option value="population" data-text="Population">Population</option>
+            <option value="prec" data-text="Precipitation">Precipitation</option>
+            <option value="provs" data-text="Provinces">Provinces</option>
+            <option value="terrain" data-text="Relief Icons">Relief Icons</option>
+            <option value="relig" data-text="Religions">Religions</option>
+            <option value="rivers" data-text="Rivers">Rivers</option>
+            <option value="routes" data-text="Routes">Routes</option>
+            <option value="ruler" data-text="Rulers">Rulers</option>
+            <option value="scaleBar" data-text="Scale Bar">Scale Bar</option>
+            <option value="regions" data-text="States" selected>States</option>
+            <option value="temperature" data-text="Temperature">Temperature</option>
+            <option value="texture" data-text="Texture">Texture</option>
+            <option value="vignette" data-text="Vignette">Vignette</option>
+            <option value="compass" data-text="Wind Rose">Wind Rose</option>
+            <option value="zones" data-text="Zones">Zones</option>
           </select>
 
           <table id="styleElements">
@@ -863,9 +892,9 @@
                 <td>Line style</td>
                 <td>
                   <select id="styleHeightmapCurve">
-                    <option value="curveBasisClosed" selected>Curved</option>
-                    <option value="curveLinear">Linear</option>
-                    <option value="curveStep">Rectangular</option>
+                    <option value="curveBasisClosed" data-text="Curved" selected>Curved</option>
+                    <option value="curveLinear" data-text="Linear">Linear</option>
+                    <option value="curveStep" data-text="Rectangular">Rectangular</option>
                   </select>
                 </td>
               </tr>
@@ -941,31 +970,31 @@
                 <td>
                   <select id="styleTextureInput" style="width: 86%">
                     <option value="">No texture</option>
-                    <option value="./images/textures/folded-paper-big.jpg">Folded paper big</option>
-                    <option value="./images/textures/folded-paper-small.jpg">Folded paper small</option>
-                    <option value="./images/textures/gray-paper.jpg">Gray paper</option>
-                    <option value="./images/textures/soiled-paper.jpg">Soiled paper horizontal</option>
-                    <option value="./images/textures/soiled-paper-vertical.jpg">Soided paper vertical</option>
-                    <option value="./images/textures/plaster.jpg">Plaster</option>
-                    <option value="./images/textures/ocean.jpg">Ocean</option>
-                    <option value="./images/textures/antique-small.jpg">Antique small</option>
-                    <option value="./images/textures/antique-big.jpg">Antique big</option>
-                    <option value="./images/textures/pergamena-small.jpg">Pergamena small</option>
-                    <option value="./images/textures/marble-big.jpg" selected>Marble big</option>
-                    <option value="./images/textures/marble-small.jpg">Marble small</option>
-                    <option value="./images/textures/marble-blue-small.jpg">Marble Blue</option>
-                    <option value="./images/textures/marble-blue-big.jpg">Marble Blue big</option>
-                    <option value="./images/textures/stone-small.jpg">Stone small</option>
-                    <option value="./images/textures/stone-big.jpg">Stone big</option>
-                    <option value="./images/textures/timbercut-small.jpg">Timber Cut small</option>
-                    <option value="./images/textures/timbercut-big.jpg">Timber Cut big</option>
-                    <option value="./images/textures/mars-small.jpg">Mars small</option>
-                    <option value="./images/textures/mars-big.jpg">Mars big</option>
-                    <option value="./images/textures/mercury-small.jpg">Mercury small</option>
-                    <option value="./images/textures/mercury-big.jpg">Mercury big</option>
-                    <option value="./images/textures/mauritania-small.jpg">Mauritania small</option>
-                    <option value="./images/textures/iran-small.jpg">Iran small</option>
-                    <option value="./images/textures/spain-small.jpg">Spain small</option>
+                    <option value="./images/textures/folded-paper-big.jpg" data-text="Folded paper big">Folded paper big</option>
+                    <option value="./images/textures/folded-paper-small.jpg" data-text="Folded paper small">Folded paper small</option>
+                    <option value="./images/textures/gray-paper.jpg" data-text="Gray paper">Gray paper</option>
+                    <option value="./images/textures/soiled-paper.jpg" data-text="Soiled paper horizontal">Soiled paper horizontal</option>
+                    <option value="./images/textures/soiled-paper-vertical.jpg" data-text="Soided paper vertical">Soided paper vertical</option>
+                    <option value="./images/textures/plaster.jpg" data-text="Plaster">Plaster</option>
+                    <option value="./images/textures/ocean.jpg" data-text="Ocean">Ocean</option>
+                    <option value="./images/textures/antique-small.jpg" data-text="Antique small">Antique small</option>
+                    <option value="./images/textures/antique-big.jpg" data-text="Antique big">Antique big</option>
+                    <option value="./images/textures/pergamena-small.jpg" data-text="Pergamena small">Pergamena small</option>
+                    <option value="./images/textures/marble-big.jpg" data-text="Marble big" selected>Marble big</option>
+                    <option value="./images/textures/marble-small.jpg" data-text="Marble small">Marble small</option>
+                    <option value="./images/textures/marble-blue-small.jpg" data-text="Marble Blue">Marble Blue</option>
+                    <option value="./images/textures/marble-blue-big.jpg" data-text="Marble Blue big">Marble Blue big</option>
+                    <option value="./images/textures/stone-small.jpg" data-text="Stone small">Stone small</option>
+                    <option value="./images/textures/stone-big.jpg" data-text="Stone big">Stone big</option>
+                    <option value="./images/textures/timbercut-small.jpg" data-text="Timber Cut small">Timber Cut small</option>
+                    <option value="./images/textures/timbercut-big.jpg" data-text="Timber Cut big">Timber Cut big</option>
+                    <option value="./images/textures/mars-small.jpg" data-text="Mars small">Mars small</option>
+                    <option value="./images/textures/mars-big.jpg" data-text="Mars big">Mars big</option>
+                    <option value="./images/textures/mercury-small.jpg" data-text="Mercury small">Mercury small</option>
+                    <option value="./images/textures/mercury-big.jpg" data-text="Mercury big">Mercury big</option>
+                    <option value="./images/textures/mauritania-small.jpg" data-text="Mauritania small">Mauritania small</option>
+                    <option value="./images/textures/iran-small.jpg" data-text="Iran small">Iran small</option>
+                    <option value="./images/textures/spain-small.jpg" data-text="Spain small">Spain small</option>
                   </select>
                   <button
                     data-tip="Click and provide a URL to image to be set as a texture"
@@ -1034,13 +1063,13 @@
                 <td>
                   <select id="styleOceanPattern">
                     <option value="">No pattern</option>
-                    <option value="./images/pattern1.png">Pattern 1</option>
-                    <option value="./images/pattern2.png">Pattern 2</option>
-                    <option value="./images/pattern3.png">Pattern 3</option>
-                    <option value="./images/pattern4.png">Pattern 4</option>
-                    <option value="./images/pattern5.png">Pattern 5</option>
-                    <option value="./images/pattern6.png">Pattern 6</option>
-                    <option value="./images/kiwiroo.png">Kiwiroo</option>
+                    <option value="./images/pattern1.png" data-text="Pattern 1">Pattern 1</option>
+                    <option value="./images/pattern2.png" data-text="Pattern 2">Pattern 2</option>
+                    <option value="./images/pattern3.png" data-text="Pattern 3">Pattern 3</option>
+                    <option value="./images/pattern4.png" data-text="Pattern 4">Pattern 4</option>
+                    <option value="./images/pattern5.png" data-text="Pattern 5">Pattern 5</option>
+                    <option value="./images/pattern6.png" data-text="Pattern 6">Pattern 6</option>
+                    <option value="./images/kiwiroo.png" data-text="Kiwiroo">Kiwiroo</option>
                   </select>
                 </td>
               </tr>
@@ -1056,13 +1085,13 @@
                 <td>Ocean layers</td>
                 <td>
                   <select id="outlineLayers">
-                    <option value="none">No outline</option>
-                    <option value="random">Random</option>
-                    <option value="-6,-3,-1" selected>Standard 3</option>
-                    <option value="-6,-4,-2">Indented 3</option>
-                    <option value="-9,-6,-3,-1">Standard 4</option>
-                    <option value="-6,-5,-4,-3,-2,-1">Smooth 6</option>
-                    <option value="-9,-8,-7,-6,-5,-4,-3,-2,-1">Smooth 9</option>
+                    <option value="none" data-text="No outline">No outline</option>
+                    <option value="random" data-text="Random">Random</option>
+                    <option value="-6,-3,-1" data-text="Standard 3" selected>Standard 3</option>
+                    <option value="-6,-4,-2" data-text="Indented 3">Indented 3</option>
+                    <option value="-9,-6,-3,-1" data-text="Standard 4">Standard 4</option>
+                    <option value="-6,-5,-4,-3,-2,-1" data-text="Smooth 6">Smooth 6</option>
+                    <option value="-9,-8,-7,-6,-5,-4,-3,-2,-1" data-text="Smooth 9">Smooth 9</option>
                   </select>
                 </td>
               </tr>
@@ -1081,25 +1110,25 @@
                 <td>Icon</td>
                 <td>
                   <select id="styleBurgIconsIcon">
-                    <option value="#icon-circle">Circle</option>
-                    <option value="#icon-square">Square</option>
-                    <option value="#icon-triangle">Triangle</option>
-                    <option value="#icon-cross">Cross</option>
-                    <option value="#icon-star">Star</option>
-                    <option value="#icon-circled">Circled</option>
-                    <option value="#icon-squared">Squared</option>
-                    <option value="#icon-star-circled">Star circled</option>
-                    <option value="#icon-star-circled-empty">Star circled empty</option>
-                    <option value="#icon-star-squared">Star squared</option>
-                    <option value="#icon-watabou-capital">Watabou capital</option>
-                    <option value="#icon-watabou-city">Watabou city</option>
-                    <option value="#icon-watabou-town">Watabou town</option>
-                    <option value="#icon-watabou-village">Watabou village</option>
-                    <option value="#icon-watabou-hamlet">Watabou hamlet</option>
-                    <option value="#icon-watabou-fort">Watabou fort</option>
-                    <option value="#icon-watabou-monastery">Watabou monastery</option>
-                    <option value="#icon-watabou-caravanserai">Watabou caravanserai</option>
-                    <option value="#icon-watabou-post">Watabou trade post</option>
+                    <option value="#icon-circle" data-text="Circle">Circle</option>
+                    <option value="#icon-square" data-text="Square">Square</option>
+                    <option value="#icon-triangle" data-text="Triangle">Triangle</option>
+                    <option value="#icon-cross" data-text="Cross">Cross</option>
+                    <option value="#icon-star" data-text="Star">Star</option>
+                    <option value="#icon-circled" data-text="Circled">Circled</option>
+                    <option value="#icon-squared" data-text="Squared">Squared</option>
+                    <option value="#icon-star-circled" data-text="Star circled">Star circled</option>
+                    <option value="#icon-star-circled-empty" data-text="Star circled empty">Star circled empty</option>
+                    <option value="#icon-star-squared" data-text="Star squared">Star squared</option>
+                    <option value="#icon-watabou-capital" data-text="Watabou capital">Watabou capital</option>
+                    <option value="#icon-watabou-city" data-text="Watabou city">Watabou city</option>
+                    <option value="#icon-watabou-town" data-text="Watabou town">Watabou town</option>
+                    <option value="#icon-watabou-village" data-text="Watabou village">Watabou village</option>
+                    <option value="#icon-watabou-hamlet" data-text="Watabou hamlet">Watabou hamlet</option>
+                    <option value="#icon-watabou-fort" data-text="Watabou fort">Watabou fort</option>
+                    <option value="#icon-watabou-monastery" data-text="Watabou monastery">Watabou monastery</option>
+                    <option value="#icon-watabou-caravanserai" data-text="Watabou caravanserai">Watabou caravanserai</option>
+                    <option value="#icon-watabou-post" data-text="Watabou trade post">Watabou trade post</option>
                   </select>
                 </td>
               </tr>
@@ -1115,10 +1144,10 @@
                 <td>Stroke linejoin</td>
                 <td>
                   <select id="styleBurgIconsStrokeLinejoin">
-                    <option value="inherit" selected>Inherit</option>
-                    <option value="butt">Butt</option>
-                    <option value="round">Round</option>
-                    <option value="square">Square</option>
+                    <option value="inherit" data-text="Inherit" selected>Inherit</option>
+                    <option value="butt" data-text="Butt">Butt</option>
+                    <option value="round" data-text="Round">Round</option>
+                    <option value="square" data-text="Square">Square</option>
                   </select>
                 </td>
               </tr>
@@ -1136,16 +1165,16 @@
                 <td>Type</td>
                 <td>
                   <select id="styleGridType">
-                    <option value="pointyHex">Hex grid (pointy)</option>
-                    <option value="flatHex">Hex grid (flat)</option>
-                    <option value="square">Square grid</option>
-                    <option value="square45deg">Square 45 degrees grid</option>
-                    <option value="squareTruncated">Truncated square grid</option>
-                    <option value="squareTetrakis">Tetrakis square grid</option>
-                    <option value="triangleHorizontal">Triangle grid (horizontal)</option>
-                    <option value="triangleVertical">Triangle grid (vertical)</option>
-                    <option value="trihexagonal">Trihexagonal grid</option>
-                    <option value="rhombille">Rhombille grid</option>
+                    <option value="pointyHex" data-text="Hex grid (pointy)">Hex grid (pointy)</option>
+                    <option value="flatHex" data-text="Hex grid (flat)">Hex grid (flat)</option>
+                    <option value="square" data-text="Square grid">Square grid</option>
+                    <option value="square45deg" data-text="Square 45 degrees grid">Square 45 degrees grid</option>
+                    <option value="squareTruncated" data-text="Truncated square grid">Truncated square grid</option>
+                    <option value="squareTetrakis" data-text="Tetrakis square grid">Tetrakis square grid</option>
+                    <option value="triangleHorizontal" data-text="Triangle grid (horizontal)">Triangle grid (horizontal)</option>
+                    <option value="triangleVertical" data-text="Triangle grid (vertical)">Triangle grid (vertical)</option>
+                    <option value="trihexagonal" data-text="Trihexagonal grid">Trihexagonal grid</option>
+                    <option value="rhombille" data-text="Rhombille grid">Rhombille grid</option>
                   </select>
                 </td>
               </tr>
@@ -1201,9 +1230,9 @@
                 <td>Style</td>
                 <td>
                   <select id="styleReliefSet">
-                    <option value="simple" selected>Simple</option>
-                    <option value="gray">Gray</option>
-                    <option value="colored">Colored</option>
+                    <option value="simple" data-text="Simple" selected>Simple</option>
+                    <option value="gray" data-text="Gray">Gray</option>
+                    <option value="colored" data-text="Colored">Colored</option>
                   </select>
                 </td>
               </tr>
@@ -1269,10 +1298,10 @@
                 <td>
                   <input id="styleStrokeDasharrayInput" type="text" value="1 2" style="width: 26%" />
                   <select id="styleStrokeLinecapInput" style="width: 32%">
-                    <option value="inherit" selected>Inherit</option>
-                    <option value="butt">Butt</option>
-                    <option value="round">Round</option>
-                    <option value="square">Square</option>
+                    <option value="inherit" data-text="Inherit" selected>Inherit</option>
+                    <option value="butt" data-text="Butt">Butt</option>
+                    <option value="round" data-text="Round">Round</option>
+                    <option value="square" data-text="Square">Square</option>
                   </select>
                 </td>
               </tr>
@@ -1463,9 +1492,9 @@
                 <td>Clipping</td>
                 <td>
                   <select id="styleClippingInput">
-                    <option value="" selected>No clipping</option>
-                    <option value="url(#land)">Clip water</option>
-                    <option value="url(#water)">Clip land</option>
+                    <option value="" data-text="No clipping" selected>No clipping</option>
+                    <option value="url(#land)" data-text="Clip water">Clip water</option>
+                    <option value="url(#water)" data-text="Clip land">Clip land</option>
                   </select>
                 </td>
               </tr>
@@ -1730,7 +1759,7 @@
               <td>Cultures set</td>
               <td>
                 <select id="culturesSet" data-stored="culturesSet">
-                  <option value="world" data-max="32" selected>All-world</option>
+                  <option value="world" data-max="32" data-text="All-world" selected>All-world</option>
                   <option value="european" data-max="15">European</option>
                   <option value="oriental" data-max="13">Oriental</option>
                   <option value="english" data-max="10">English</option>
@@ -1821,9 +1850,9 @@
               <td>State labels</td>
               <td>
                 <select id="stateLabelsModeInput" data-stored="stateLabelsMode">
-                  <option value="auto">Auto</option>
-                  <option value="short">Short names</option>
-                  <option value="full">Full names</option>
+                  <option value="auto" data-text="Auto">Auto</option>
+                  <option value="short" data-text="Short names">Short names</option>
+                  <option value="full" data-text="Full names">Full names</option>
                 </select>
               </td>
               <td></td>
@@ -1905,8 +1934,8 @@
               <td>Onload behavior</td>
               <td>
                 <select id="onloadBehavior" data-stored="onloadBehavior">
-                  <option value="random" selected>Generate random map</option>
-                  <option value="lastSaved">Open last saved map</option>
+                  <option value="random" data-text="Generate random map" selected>Generate random map</option>
+                  <option value="lastSaved" data-text="Open last saved map">Open last saved map</option>
                 </select>
               </td>
               <td></td>
@@ -1917,8 +1946,8 @@
               <td>Azgaar assistant</td>
               <td>
                 <select id="azgaarAssistant" data-stored="azgaarAssistant">
-                  <option value="show" selected>Show</option>
-                  <option value="hide">Hide</option>
+                  <option value="show" data-text="Show" selected>Show</option>
+                  <option value="hide" data-text="Hide">Hide</option>
                 </select>
               </td>
             </tr>
@@ -1942,67 +1971,67 @@
               <td>
                 <select id="emblemShape" data-stored="emblemShape">
                   <optgroup label="Diversiform">
-                    <option value="culture" selected>Culture-specific</option>
-                    <option value="random">Culture-random</option>
-                    <option value="state">State-specific</option>
+                    <option value="culture" data-text="Culture-specific" selected>Culture-specific</option>
+                    <option value="random" data-text="Culture-random">Culture-random</option>
+                    <option value="state" data-text="State-specific">State-specific</option>
                   </optgroup>
                   <optgroup label="Basic">
-                    <option value="heater">Heater</option>
-                    <option value="spanish">Spanish</option>
-                    <option value="french">French</option>
+                    <option value="heater" data-text="Heater">Heater</option>
+                    <option value="spanish" data-text="Spanish">Spanish</option>
+                    <option value="french" data-text="French">French</option>
                   </optgroup>
                   <optgroup label="Regional">
-                    <option value="horsehead">Horsehead</option>
-                    <option value="horsehead2">Horsehead Edgy</option>
-                    <option value="polish">Polish</option>
-                    <option value="hessen">Hessen</option>
-                    <option value="swiss">Swiss</option>
+                    <option value="horsehead" data-text="Horsehead">Horsehead</option>
+                    <option value="horsehead2" data-text="Horsehead Edgy">Horsehead Edgy</option>
+                    <option value="polish" data-text="Polish">Polish</option>
+                    <option value="hessen" data-text="Hessen">Hessen</option>
+                    <option value="swiss" data-text="Swiss">Swiss</option>
                   </optgroup>
                   <optgroup label="Historical">
-                    <option value="boeotian">Boeotian</option>
-                    <option value="roman">Roman</option>
-                    <option value="kite">Kite</option>
-                    <option value="oldFrench">Old French</option>
-                    <option value="renaissance">Renaissance</option>
-                    <option value="baroque">Baroque</option>
+                    <option value="boeotian" data-text="Boeotian">Boeotian</option>
+                    <option value="roman" data-text="Roman">Roman</option>
+                    <option value="kite" data-text="Kite">Kite</option>
+                    <option value="oldFrench" data-text="Old French">Old French</option>
+                    <option value="renaissance" data-text="Renaissance">Renaissance</option>
+                    <option value="baroque" data-text="Baroque">Baroque</option>
                   </optgroup>
                   <optgroup label="Specific">
-                    <option value="targe">Targe</option>
-                    <option value="targe2">Targe2</option>
-                    <option value="pavise">Pavise</option>
-                    <option value="wedged">Wedged</option>
+                    <option value="targe" data-text="Targe">Targe</option>
+                    <option value="targe2" data-text="Targe2">Targe2</option>
+                    <option value="pavise" data-text="Pavise">Pavise</option>
+                    <option value="wedged" data-text="Wedged">Wedged</option>
                   </optgroup>
                   <optgroup label="Banner">
-                    <option value="flag">Flag</option>
-                    <option value="pennon">Pennon</option>
-                    <option value="guidon">Guidon</option>
-                    <option value="banner">Banner</option>
-                    <option value="dovetail">Dovetail</option>
-                    <option value="gonfalon">Gonfalon</option>
-                    <option value="pennant">Pennant</option>
+                    <option value="flag" data-text="Flag">Flag</option>
+                    <option value="pennon" data-text="Pennon">Pennon</option>
+                    <option value="guidon" data-text="Guidon">Guidon</option>
+                    <option value="banner" data-text="Banner">Banner</option>
+                    <option value="dovetail" data-text="Dovetail">Dovetail</option>
+                    <option value="gonfalon" data-text="Gonfalon">Gonfalon</option>
+                    <option value="pennant" data-text="Pennant">Pennant</option>
                   </optgroup>
                   <optgroup label="Simple">
-                    <option value="round">Round</option>
-                    <option value="oval">Oval</option>
-                    <option value="vesicaPiscis">Vesica Piscis</option>
-                    <option value="square">Square</option>
-                    <option value="diamond">Diamond</option>
+                    <option value="round" data-text="Round">Round</option>
+                    <option value="oval" data-text="Oval">Oval</option>
+                    <option value="vesicaPiscis" data-text="Vesica Piscis">Vesica Piscis</option>
+                    <option value="square" data-text="Square">Square</option>
+                    <option value="diamond" data-text="Diamond">Diamond</option>
                   </optgroup>
                   <optgroup label="Fantasy">
-                    <option value="fantasy1">Fantasy1</option>
-                    <option value="fantasy2">Fantasy2</option>
-                    <option value="fantasy3">Fantasy3</option>
-                    <option value="fantasy4">Fantasy4</option>
-                    <option value="fantasy5">Fantasy5</option>
+                    <option value="fantasy1" data-text="Fantasy1">Fantasy1</option>
+                    <option value="fantasy2" data-text="Fantasy2">Fantasy2</option>
+                    <option value="fantasy3" data-text="Fantasy3">Fantasy3</option>
+                    <option value="fantasy4" data-text="Fantasy4">Fantasy4</option>
+                    <option value="fantasy5" data-text="Fantasy5">Fantasy5</option>
                   </optgroup>
                   <optgroup label="Middle Earth">
-                    <option value="noldor">Noldor</option>
-                    <option value="gondor">Gondor</option>
-                    <option value="easterling">Easterling</option>
-                    <option value="erebor">Erebor</option>
-                    <option value="ironHills">Iron Hills</option>
-                    <option value="urukHai">UrukHai</option>
-                    <option value="moriaOrc">Moria Orc</option>
+                    <option value="noldor" data-text="Noldor">Noldor</option>
+                    <option value="gondor" data-text="Gondor">Gondor</option>
+                    <option value="easterling" data-text="Easterling">Easterling</option>
+                    <option value="erebor" data-text="Erebor">Erebor</option>
+                    <option value="ironHills" data-text="Iron Hills">Iron Hills</option>
+                    <option value="urukHai" data-text="UrukHai">UrukHai</option>
+                    <option value="moriaOrc" data-text="Moria Orc">Moria Orc</option>
                   </optgroup>
                 </select>
               </td>
@@ -2054,8 +2083,8 @@
               <td>Rendering</td>
               <td>
                 <select id="shapeRendering" data-stored="shapeRendering">
-                  <option value="geometricPrecision">Best quality</option>
-                  <option value="optimizeSpeed" selected>Best performance</option>
+                  <option value="geometricPrecision" data-text="Best quality">Best quality</option>
+                  <option value="optimizeSpeed" data-text="Best performance" selected>Best performance</option>
                 </select>
               </td>
               <td></td>
@@ -3128,9 +3157,9 @@
 
           <div style="margin-left: 4.6em">Set:</div>
           <select id="reliefEditorSet">
-            <option value="simple">Simple</option>
-            <option value="colored">Colored</option>
-            <option value="gray">Gray</option>
+            <option value="simple" data-text="Simple">Simple</option>
+            <option value="colored" data-text="Colored">Colored</option>
+            <option value="gray" data-text="Gray">Gray</option>
           </select>
         </div>
 
@@ -3466,13 +3495,13 @@
               <div data-tip="Select burg type. Type slightly affects emblem generation">
                 <div class="label">Type:</div>
                 <select id="burgType" style="width: 9em">
-                  <option value="Generic">Generic</option>
-                  <option value="River">River</option>
-                  <option value="Lake">Lake</option>
-                  <option value="Naval">Naval</option>
-                  <option value="Nomadic">Nomadic</option>
-                  <option value="Hunting">Hunting</option>
-                  <option value="Highland">Highland</option>
+                  <option value="Generic" data-text="Generic">Generic</option>
+                  <option value="River" data-text="River">River</option>
+                  <option value="Lake" data-text="Lake">Lake</option>
+                  <option value="Naval" data-text="Naval">Naval</option>
+                  <option value="Nomadic" data-text="Nomadic">Nomadic</option>
+                  <option value="Hunting" data-text="Hunting">Hunting</option>
+                  <option value="Highland" data-text="Highland">Highland</option>
                 </select>
               </div>
 
@@ -3659,19 +3688,19 @@
           <div data-tip="Marker pin shape">
             <div class="label">Pin shape:</div>
             <select id="markerPin" style="width: 10.3em">
-              <option value="bubble">Bubble</option>
-              <option value="pin">Pin</option>
-              <option value="square">Square</option>
-              <option value="squarish">Squarish</option>
-              <option value="diamond">Diamond</option>
-              <option value="hex">Hex</option>
-              <option value="hexy">Hexy</option>
-              <option value="shieldy">Shieldy</option>
-              <option value="shield">Shield</option>
-              <option value="pentagon">Pentagon</option>
-              <option value="heptagon">Heptagon</option>
-              <option value="circle">Circle</option>
-              <option value="no">No</option>
+              <option value="bubble" data-text="Bubble">Bubble</option>
+              <option value="pin" data-text="Pin">Pin</option>
+              <option value="square" data-text="Square">Square</option>
+              <option value="squarish" data-text="Squarish">Squarish</option>
+              <option value="diamond" data-text="Diamond">Diamond</option>
+              <option value="hex" data-text="Hex">Hex</option>
+              <option value="hexy" data-text="Hexy">Hexy</option>
+              <option value="shieldy" data-text="Shieldy">Shieldy</option>
+              <option value="shield" data-text="Shield">Shield</option>
+              <option value="pentagon" data-text="Pentagon">Pentagon</option>
+              <option value="heptagon" data-text="Heptagon">Heptagon</option>
+              <option value="circle" data-text="Circle">Circle</option>
+              <option value="no" data-text="No">No</option>
             </select>
           </div>
 
@@ -4253,21 +4282,21 @@
         <div id="templateTop">
           <i>Select template: </i>
           <select id="templateSelect" style="width: 16em" data-prev="templateCustom" data-tip="Select base template">
-            <option value="custom" selected>Custom</option>
-            <option value="volcano">Volcano</option>
-            <option value="highIsland">High Island</option>
-            <option value="lowIsland">Low Island</option>
-            <option value="continents">Continents</option>
-            <option value="archipelago">Archipelago</option>
-            <option value="atoll">Atoll</option>
-            <option value="mediterranean">Mediterranean</option>
-            <option value="peninsula">Peninsula</option>
-            <option value="pangea">Pangea</option>
-            <option value="isthmus">Isthmus</option>
-            <option value="shattered">Shattered</option>
-            <option value="taklamakan">Taklamakan</option>
-            <option value="oldWorld">Old World</option>
-            <option value="fractious">Fractious</option>
+            <option value="custom" data-text="Custom" selected>Custom</option>
+            <option value="volcano" data-text="Volcano">Volcano</option>
+            <option value="highIsland" data-text="High Island">High Island</option>
+            <option value="lowIsland" data-text="Low Island">Low Island</option>
+            <option value="continents" data-text="Continents">Continents</option>
+            <option value="archipelago" data-text="Archipelago">Archipelago</option>
+            <option value="atoll" data-text="Atoll">Atoll</option>
+            <option value="mediterranean" data-text="Mediterranean">Mediterranean</option>
+            <option value="peninsula" data-text="Peninsula">Peninsula</option>
+            <option value="pangea" data-text="Pangea">Pangea</option>
+            <option value="isthmus" data-text="Isthmus">Isthmus</option>
+            <option value="shattered" data-text="Shattered">Shattered</option>
+            <option value="taklamakan" data-text="Taklamakan">Taklamakan</option>
+            <option value="oldWorld" data-text="Old World">Old World</option>
+            <option value="fractious" data-text="Fractious">Fractious</option>
           </select>
         </div>
         <div id="templateTools">
@@ -4505,78 +4534,78 @@
           <select id="stateNameEditorSelectForm" style="width: 11em">
             <option value="">blank</option>
             <optgroup label="Monarchy">
-              <option value="Beylik">Beylik</option>
-              <option value="Despotate">Despotate</option>
-              <option value="Dominion">Dominion</option>
-              <option value="Duchy">Duchy</option>
-              <option value="Emirate">Emirate</option>
-              <option value="Empire">Empire</option>
-              <option value="Horde">Horde</option>
-              <option value="Grand Duchy">Grand Duchy</option>
-              <option value="Heptarchy">Heptarchy</option>
-              <option value="Khaganate">Khaganate</option>
-              <option value="Khanate">Khanate</option>
-              <option value="Kingdom">Kingdom</option>
-              <option value="Marches">Marches</option>
-              <option value="Principality">Principality</option>
-              <option value="Satrapy">Satrapy</option>
-              <option value="Shogunate">Shogunate</option>
-              <option value="Sultanate">Sultanate</option>
-              <option value="Tsardom">Tsardom</option>
-              <option value="Ulus">Ulus</option>
-              <option value="Viceroyalty">Viceroyalty</option>
+              <option value="Beylik" data-text="Beylik">Beylik</option>
+              <option value="Despotate" data-text="Despotate">Despotate</option>
+              <option value="Dominion" data-text="Dominion">Dominion</option>
+              <option value="Duchy" data-text="Duchy">Duchy</option>
+              <option value="Emirate" data-text="Emirate">Emirate</option>
+              <option value="Empire" data-text="Empire">Empire</option>
+              <option value="Horde" data-text="Horde">Horde</option>
+              <option value="Grand Duchy" data-text="Grand Duchy">Grand Duchy</option>
+              <option value="Heptarchy" data-text="Heptarchy">Heptarchy</option>
+              <option value="Khaganate" data-text="Khaganate">Khaganate</option>
+              <option value="Khanate" data-text="Khanate">Khanate</option>
+              <option value="Kingdom" data-text="Kingdom">Kingdom</option>
+              <option value="Marches" data-text="Marches">Marches</option>
+              <option value="Principality" data-text="Principality">Principality</option>
+              <option value="Satrapy" data-text="Satrapy">Satrapy</option>
+              <option value="Shogunate" data-text="Shogunat">Shogunate</option>
+              <option value="Sultanate" data-text="Sultanat">Sultanate</option>
+              <option value="Tsardom" data-text="Tsardom">Tsardom</option>
+              <option value="Ulus" data-text="Ulus">Ulus</option>
+              <option value="Viceroyalty" data-text="Viceroyalty">Viceroyalty</option>
             </optgroup>
             <optgroup label="Republic">
-              <option value="Chancellery">Chancellery</option>
-              <option value="City-state">City-state</option>
-              <option value="Diarchy">Diarchy</option>
-              <option value="Federation">Federation</option>
-              <option value="Free City">Free City</option>
-              <option value="Most Serene Republic">Most Serene Republic</option>
-              <option value="Oligarchy">Oligarchy</option>
-              <option value="Protectorate">Protectorate</option>
-              <option value="Republic">Republic</option>
-              <option value="Tetrarchy">Tetrarchy</option>
-              <option value="Trade Company">Trade Company</option>
-              <option value="Triumvirate">Triumvirate</option>
+              <option value="Chancellery" data-text="Chancellery">Chancellery</option>
+              <option value="City-state" data-text="City-state">City-state</option>
+              <option value="Diarchy" data-text="Diarchy">Diarchy</option>
+              <option value="Federation" data-text="Federation">Federation</option>
+              <option value="Free City" data-text="Free City">Free City</option>
+              <option value="Most Serene Republic" data-text="Most Serene Republic">Most Serene Republic</option>
+              <option value="Oligarchy" data-text="Oligarchy">Oligarchy</option>
+              <option value="Protectorate" data-text="Protectorate">Protectorate</option>
+              <option value="Republic" data-text="Republic">Republic</option>
+              <option value="Tetrarchy" data-text="Tetrarchy">Tetrarchy</option>
+              <option value="Trade Company" data-text="Trade Company">Trade Company</option>
+              <option value="Triumvirate" data-text="Triumvirate">Triumvirate</option>
             </optgroup>
             <optgroup label="Union">
-              <option value="Confederacy">Confederacy</option>
-              <option value="Confederation">Confederation</option>
-              <option value="Conglomerate">Conglomerate</option>
-              <option value="Commonwealth">Commonwealth</option>
-              <option value="League">League</option>
-              <option value="Union">Union</option>
-              <option value="United Hordes">United Hordes</option>
-              <option value="United Kingdom">United Kingdom</option>
-              <option value="United Provinces">United Provinces</option>
-              <option value="United Republic">United Republic</option>
-              <option value="United States">United States</option>
-              <option value="United Tribes">United Tribes</option>
+              <option value="Confederacy" data-text="Confederacy">Confederacy</option>
+              <option value="Confederation" data-text="Confederation">Confederation</option>
+              <option value="Conglomerate" data-text="Conglomerate">Conglomerate</option>
+              <option value="Commonwealth" data-text="Commonwealth">Commonwealth</option>
+              <option value="League" data-text="League">League</option>
+              <option value="Union" data-text="Union">Union</option>
+              <option value="United Hordes" data-text="United Hordes">United Hordes</option>
+              <option value="United Kingdom" data-text="United Kingdom">United Kingdom</option>
+              <option value="United Provinces" data-text="United Provinces">United Provinces</option>
+              <option value="United Republic" data-text="United Republic">United Republic</option>
+              <option value="United States" data-text="United States">United States</option>
+              <option value="United Tribes" data-text="United Tribes">United Tribes</option>
             </optgroup>
             <optgroup label="Theocracy">
-              <option value="Bishopric">Bishopric</option>
-              <option value="Brotherhood">Brotherhood</option>
-              <option value="Caliphate">Caliphate</option>
-              <option value="Diocese">Diocese</option>
-              <option value="Divine Duchy">Divine Duchy</option>
-              <option value="Divine Grand Duchy">Divine Grand Duchy</option>
-              <option value="Divine Principality">Divine Principality</option>
-              <option value="Divine Kingdom">Divine Kingdom</option>
-              <option value="Divine Empire">Divine Empire</option>
-              <option value="Eparchy">Eparchy</option>
-              <option value="Exarchate">Exarchate</option>
-              <option value="Holy State">Holy State</option>
-              <option value="Imamah">Imamah</option>
-              <option value="Patriarchate">Patriarchate</option>
-              <option value="Theocracy">Theocracy</option>
+              <option value="Bishopric" data-text="Bishopric">Bishopric</option>
+              <option value="Brotherhood" data-text="Brotherhood">Brotherhood</option>
+              <option value="Caliphate" data-text="Caliphate">Caliphate</option>
+              <option value="Diocese" data-text="Diocese">Diocese</option>
+              <option value="Divine Duchy" data-text="Divine Duchy">Divine Duchy</option>
+              <option value="Divine Grand Duchy" data-text="Divine Grand Duchy">Divine Grand Duchy</option>
+              <option value="Divine Principality" data-text="Divine Principality">Divine Principality</option>
+              <option value="Divine Kingdom" data-text="Divine Kingdom">Divine Kingdom</option>
+              <option value="Divine Empire" data-text="Divine Empire">Divine Empire</option>
+              <option value="Eparchy" data-text="Eparchy">Eparchy</option>
+              <option value="Exarchate" data-text="Exarchate">Exarchate</option>
+              <option value="Holy State" data-text="Holy State">Holy State</option>
+              <option value="Imamah" data-text="Imamah">Imamah</option>
+              <option value="Patriarchate" data-text="Patriarchate">Patriarchate</option>
+              <option value="Theocracy" data-text="Theocracy">Theocracy</option>
             </optgroup>
             <optgroup label="Anarchy">
-              <option value="Commune">Commune</option>
-              <option value="Community">Community</option>
-              <option value="Council">Council</option>
-              <option value="Free Territory">Free Territory</option>
-              <option value="Tribes">Tribes</option>
+              <option value="Commune" data-text="Commune">Commune</option>
+              <option value="Community" data-text="Community">Community</option>
+              <option value="Council" data-text="Council">Council</option>
+              <option value="Free Territory" data-text="Free Territory">Free Territory</option>
+              <option value="Tribes" data-text="Tribes">Tribes</option>
             </optgroup>
           </select>
           <input
@@ -4779,42 +4808,42 @@
           <div data-tip="Province form name" class="label">Form name:</div>
           <select id="provinceNameEditorSelectForm" style="display: inline-block; width: 11em; height: 1.645em">
             <option value="">blank</option>
-            <option value="Area">Area</option>
-            <option value="Autonomy">Autonomy</option>
-            <option value="Barony">Barony</option>
-            <option value="Canton">Canton</option>
-            <option value="Captaincy">Captaincy</option>
-            <option value="Chiefdom">Chiefdom</option>
-            <option value="Clan">Clan</option>
-            <option value="Colony">Colony</option>
-            <option value="Council">Council</option>
-            <option value="County">County</option>
-            <option value="Deanery">Deanery</option>
-            <option value="Department">Department</option>
-            <option value="Dependency">Dependency</option>
-            <option value="Diaconate">Diaconate</option>
-            <option value="District">District</option>
-            <option value="Earldom">Earldom</option>
-            <option value="Governorate">Governorate</option>
-            <option value="Island">Island</option>
-            <option value="Islands">Islands</option>
-            <option value="Land">Land</option>
-            <option value="Landgrave">Landgrave</option>
-            <option value="Mandate">Mandate</option>
-            <option value="Margrave">Margrave</option>
-            <option value="Municipality">Municipality</option>
-            <option value="Occupation zone">Occupation zone</option>
-            <option value="Parish">Parish</option>
-            <option value="Prefecture">Prefecture</option>
-            <option value="Province">Province</option>
-            <option value="Region">Region</option>
-            <option value="Republic">Republic</option>
-            <option value="Reservation">Reservation</option>
-            <option value="Seneschalty">Seneschalty</option>
-            <option value="Shire">Shire</option>
-            <option value="State">State</option>
-            <option value="Territory">Territory</option>
-            <option value="Tribe">Tribe</option>
+            <option value="Area" data-text="Area">Area</option>
+            <option value="Autonomy" data-text="Autonomy">Autonomy</option>
+            <option value="Barony" data-text="Barony">Barony</option>
+            <option value="Canton" data-text="Canton">Canton</option>
+            <option value="Captaincy" data-text="Captaincy">Captaincy</option>
+            <option value="Chiefdom" data-text="Chiefdom">Chiefdom</option>
+            <option value="Clan" data-text="Clan">Clan</option>
+            <option value="Colony" data-text="Colony">Colony</option>
+            <option value="Council" data-text="Council">Council</option>
+            <option value="County" data-text="County">County</option>
+            <option value="Deanery" data-text="Deanery">Deanery</option>
+            <option value="Department" data-text="Department">Department</option>
+            <option value="Dependency" data-text="Dependency">Dependency</option>
+            <option value="Diaconate" data-text="Diaconate">Diaconate</option>
+            <option value="District" data-text="District">District</option>
+            <option value="Earldom" data-text="Earldom">Earldom</option>
+            <option value="Governorate" data-text="Governorate">Governorate</option>
+            <option value="Island" data-text="Island">Island</option>
+            <option value="Islands" data-text="Islands">Islands</option>
+            <option value="Land" data-text="Land">Land</option>
+            <option value="Landgrave" data-text="Landgrave">Landgrave</option>
+            <option value="Mandate" data-text="Mandate">Mandate</option>
+            <option value="Margrave" data-text="Margrave">Margrave</option>
+            <option value="Municipality" data-text="Municipality">Municipality</option>
+            <option value="Occupation zone" data-text="Occupation zone">Occupation zone</option>
+            <option value="Parish" data-text="Parish">Parish</option>
+            <option value="Prefecture" data-text="Prefecture">Prefecture</option>
+            <option value="Province" data-text="Province">Province</option>
+            <option value="Region" data-text="Region">Region</option>
+            <option value="Republic" data-text="Republic">Republic</option>
+            <option value="Reservation" data-text="Reservation">Reservation</option>
+            <option value="Seneschalty" data-text="Seneschalty">Seneschalty</option>
+            <option value="Shire" data-text="Shire">Shire</option>
+            <option value="State" data-text="State">State</option>
+            <option value="Territory" data-text="Territory">Territory</option>
+            <option value="Tribe" data-text="Tribe">Tribe</option>
           </select>
           <input
             id="provinceNameEditorCustomForm"
@@ -5092,62 +5121,62 @@
             <div class="label">Shape:</div>
             <select id="emblemShapeSelector">
               <optgroup label="Basic">
-                <option value="heater">Heater</option>
-                <option value="spanish">Spanish</option>
-                <option value="french">French</option>
+                <option value="heater" data-text="Heater">Heater</option>
+                <option value="spanish" data-text="Spanish">Spanish</option>
+                <option value="french" data-text="French">French</option>
               </optgroup>
               <optgroup label="Regional">
-                <option value="horsehead">Horsehead</option>
-                <option value="horsehead2">Horsehead Edgy</option>
-                <option value="polish">Polish</option>
-                <option value="hessen">Hessen</option>
-                <option value="swiss">Swiss</option>
+                <option value="horsehead" data-text="Horsehead">Horsehead</option>
+                <option value="horsehead2" data-text="Horsehead Edgy">Horsehead Edgy</option>
+                <option value="polish" data-text="Polish">Polish</option>
+                <option value="hessen" data-text="Hessen">Hessen</option>
+                <option value="swiss" data-text="Swiss">Swiss</option>
               </optgroup>
               <optgroup label="Historical">
-                <option value="boeotian">Boeotian</option>
-                <option value="roman">Roman</option>
-                <option value="kite">Kite</option>
-                <option value="oldFrench">Old French</option>
-                <option value="renaissance">Renaissance</option>
-                <option value="baroque">Baroque</option>
+                <option value="boeotian" data-text="Boeotian">Boeotian</option>
+                <option value="roman" data-text="Roman">Roman</option>
+                <option value="kite" data-text="Kite">Kite</option>
+                <option value="oldFrench" data-text="Old French">Old French</option>
+                <option value="renaissance" data-text="Renaissance">Renaissance</option>
+                <option value="baroque" data-text="Baroque">Baroque</option>
               </optgroup>
               <optgroup label="Specific">
-                <option value="targe">Targe</option>
-                <option value="targe2">Targe2</option>
-                <option value="pavise">Pavise</option>
-                <option value="wedged">Wedged</option>
+                <option value="targe" data-text="Targe">Targe</option>
+                <option value="targe2" data-text="Targe2">Targe2</option>
+                <option value="pavise" data-text="Pavise">Pavise</option>
+                <option value="wedged" data-text="Wedged">Wedged</option>
               </optgroup>
               <optgroup label="Banner">
-                <option value="flag">Flag</option>
-                <option value="pennon">Pennon</option>
-                <option value="guidon">Guidon</option>
-                <option value="banner">Banner</option>
-                <option value="dovetail">Dovetail</option>
-                <option value="gonfalon">Gonfalon</option>
-                <option value="pennant">Pennant</option>
+                <option value="flag" data-text="Flag">Flag</option>
+                <option value="pennon" data-text="Pennon">Pennon</option>
+                <option value="guidon" data-text="Guidon">Guidon</option>
+                <option value="banner" data-text="Banner">Banner</option>
+                <option value="dovetail" data-text="Dovetail">Dovetail</option>
+                <option value="gonfalon" data-text="Gonfalon">Gonfalon</option>
+                <option value="pennant" data-text="Pennant">Pennant</option>
               </optgroup>
               <optgroup label="Simple">
-                <option value="round">Round</option>
-                <option value="oval">Oval</option>
-                <option value="vesicaPiscis">Vesica Piscis</option>
-                <option value="square">Square</option>
-                <option value="diamond">Diamond</option>
+                <option value="round" data-text="Round">Round</option>
+                <option value="oval" data-text="Oval">Oval</option>
+                <option value="vesicaPiscis" data-text="Vesica Piscis">Vesica Piscis</option>
+                <option value="square" data-text="Square">Square</option>
+                <option value="diamond" data-text="Diamond">Diamond</option>
               </optgroup>
               <optgroup label="Fantasy">
-                <option value="fantasy1">Fantasy1</option>
-                <option value="fantasy2">Fantasy2</option>
-                <option value="fantasy3">Fantasy3</option>
-                <option value="fantasy4">Fantasy4</option>
-                <option value="fantasy5">Fantasy5</option>
+                <option value="fantasy1" data-text="Fantasy1">Fantasy1</option>
+                <option value="fantasy2" data-text="Fantasy2">Fantasy2</option>
+                <option value="fantasy3" data-text="Fantasy3">Fantasy3</option>
+                <option value="fantasy4" data-text="Fantasy4">Fantasy4</option>
+                <option value="fantasy5" data-text="Fantasy5">Fantasy5</option>
               </optgroup>
               <optgroup label="Middle Earth">
-                <option value="noldor">Noldor</option>
-                <option value="gondor">Gondor</option>
-                <option value="easterling">Easterling</option>
-                <option value="erebor">Erebor</option>
-                <option value="ironHills">Iron Hills</option>
-                <option value="urukHai">UrukHai</option>
-                <option value="moriaOrc">Moria Orc</option>
+                <option value="noldor" data-text="Noldor">Noldor</option>
+                <option value="gondor" data-text="Gondor">Gondor</option>
+                <option value="easterling" data-text="Easterling">Easterling</option>
+                <option value="erebor" data-text="Erebor">Erebor</option>
+                <option value="ironHills" data-text="Iron Hills">Iron Hills</option>
+                <option value="urukHai" data-text="UrukHai">UrukHai</option>
+                <option value="moriaOrc" data-text="Moria Orc">Moria Orc</option>
               </optgroup>
             </select>
           </div>
@@ -5249,13 +5278,13 @@
           <div data-tip="Select a distance unit or provide a custom name">
             <label>Distance unit:</label>
             <select id="distanceUnitInput" data-stored="distanceUnit">
-              <option value="mi" selected>Mile (mi)</option>
-              <option value="km">Kilometer (km)</option>
-              <option value="lg">League (lg)</option>
-              <option value="vr">Versta (vr)</option>
-              <option value="nmi">Nautical mile (nmi)</option>
-              <option value="nlg">Nautical league (nlg)</option>
-              <option value="custom_name">Custom name</option>
+              <option value="mi" data-text="Mile (mi)" selected>Mile (mi)</option>
+              <option value="km" data-text="Kilometer (km)">Kilometer (km)</option>
+              <option value="lg" data-text="League (lg)">League (lg)</option>
+              <option value="vr" data-text="Versta (vr)">Versta (vr)</option>
+              <option value="nmi" data-text="Nautical mile (nmi)">Nautical mile (nmi)</option>
+              <option value="nlg" data-text="Nautical league (nlg)">Nautical league (nlg)</option>
+              <option value="custom_name" data-text="Custom name">Custom name</option>
             </select>
           </div>
 
@@ -5279,10 +5308,10 @@
           <div data-tip="Select an altitude unit or provide a custom name">
             <label>Height unit:</label>
             <select id="heightUnit" data-stored="heightUnit">
-              <option value="ft" selected>Feet (ft)</option>
-              <option value="m">Meters (m)</option>
-              <option value="f">Fathoms (f)</option>
-              <option value="custom_name">Custom name</option>
+              <option value="ft" data-text="Feet (ft)" selected>Feet (ft)</option>
+              <option value="m" data-text="Meters (m)">Meters (m)</option>
+              <option value="f" data-text="Fathoms (f)">Fathoms (f)</option>
+              <option value="custom_name" data-text="Custom name">Custom name</option>
             </select>
           </div>
 
@@ -5309,14 +5338,14 @@
           <div>
             <label>Temperature scale:</label>
             <select id="temperatureScale" data-stored="temperatureScale">
-              <option value="°C" selected>degree Celsius (°C)</option>
-              <option value="°F">degree Fahrenheit (°F)</option>
-              <option value="K">Kelvin (K)</option>
-              <option value="°R">degree Rankine (°R)</option>
-              <option value="°De">degree Delisle (°De)</option>
-              <option value="°N">degree Newton (°N)</option>
-              <option value="°Ré">degree Réaumur (°Ré)</option>
-              <option value="°Rø">degree Rømer (°Rø)</option>
+              <option value="°C" date-text="degree Celsius (°C)" selected>degree Celsius (°C)</option>
+              <option value="°F" data-text="degree Fahrenheit (°F)">degree Fahrenheit (°F)</option>
+              <option value="K" data-text="Kelvin (K)">Kelvin (K)</option>
+              <option value="°R" data-text="degree Rankine (°R)">degree Rankine (°R)</option>
+              <option value="°De" data-text="degree Delisle (°De)">degree Delisle (°De)</option>
+              <option value="°N" data-text="degree Newton (°N)">degree Newton (°N)</option>
+              <option value="°Ré" data-text="degree Réaumur (°Ré)">degree Réaumur (°Ré)</option>
+              <option value="°Rø" data-text="degree Rømer (°Rø)">degree Rømer (°Rø)</option>
             </select>
           </div>
 
@@ -5858,9 +5887,9 @@
         </p>
         <div style="margin-top: 0.3em" data-tip="Select font adding method">
           <select id="addFontMethod">
-            <option value="googleFont" selected>Google font</option>
-            <option value="localFont">Local font</option>
-            <option value="fontURL">Font URL</option>
+            <option value="googleFont" data-text="Google font" selected>Google font</option>
+            <option value="localFont" data-text="Local font">Local font</option>
+            <option value="fontURL" data-text="Font URL">Font URL</option>
           </select>
           <input id="addFontNameInput" placeholder="font family" style="width: 15em" />
           <div>
@@ -6029,11 +6058,11 @@
           <div data-tip="Quick preset lighting for different times of day" style="margin-top: 0.4em">
             <label>Time of day:</label>
             <select id="options3dTimeOfDay" style="width: 10em; margin-bottom: 0.3em">
-              <option value="custom">Custom</option>
-              <option value="dawn">Dawn</option>
-              <option value="noon" selected>Noon</option>
-              <option value="evening">Evening</option>
-              <option value="night">Night</option>
+              <option value="custom" data-text="Custom">Custom</option>
+              <option value="dawn" data-text="Dawn">Dawn</option>
+              <option value="noon" data-text="Noon" selected>Noon</option>
+              <option value="evening" data-text="Evening">Evening</option>
+              <option value="night" data-text="Night">Night</option>
             </select>
           </div>
 

@@ -1,8 +1,10 @@
 import { mean, median, sum } from "d3";
+import i18next from "i18next";
 import {
   byId,
   each,
   gauss,
+  gender,
   getAdjective,
   getMixedColor,
   getPolesOfInaccessibility,
@@ -55,6 +57,19 @@ export interface State {
   temp?: any;
   alert?: number;
 }
+
+gender.fr = {
+  ...gender.fr,
+  Confederation: "feminine",
+  Diarchy: "feminine",
+  Horde: "feminine",
+  League: "feminine",
+  Oligarchy: "feminine",
+  Tetrarchy: "feminine",
+  Theocracy: "feminine",
+  "Trade Company": "feminine",
+  Union: "feminine",
+};
 
 class StatesModule {
   private createStates() {
@@ -816,12 +831,25 @@ class StatesModule {
       "Marches",
     ];
     if (!state.formName) return state.name;
-    if (!state.name && state.formName) return `The ${state.formName}`;
+    const stateGender = gender[window.locale]?.[state.formName];
+    if (!state.name && state.formName)
+      return i18next.t("The {{noun}}", {
+        noun: i18next.t(state.formName),
+        gender: stateGender,
+      });
     const adjName =
       adjForms.includes(state.formName) && !/-| /.test(state.name);
     return adjName
-      ? `${getAdjective(state.name)} ${state.formName}`
-      : `${state.formName} of ${state.name}`;
+      ? i18next.t("{{adjective}} {{noun}}", {
+          adjective: getAdjective(state.name),
+          noun: i18next.t(state.formName),
+          gender: stateGender,
+        })
+      : i18next.t("{{noun}} of {{complement}}", {
+          noun: i18next.t(state.formName),
+          complement: state.name,
+          gender: stateGender,
+        });
   }
 }
 
