@@ -1,6 +1,7 @@
 import "./biomes";
 import "./burgs-generator";
 import "./cultures-generator";
+import "./defs";
 import "./emblem";
 import "./features";
 import "./fonts";

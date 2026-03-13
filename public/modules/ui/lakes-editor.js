@@ -106,7 +106,7 @@ function editLake() {
     const feature = getLake();
 
     // update lake path
-    defs.select("#featurePaths > path#feature_" + feature.i).attr("d", getFeaturePath(feature));
+    d3.select("#featurePaths > path#feature_" + feature.i).attr("d", getFeaturePath(feature));
 
     // update area
     const points = feature.vertices.map(vertex => pack.vertices.p[vertex]);

@@ -649,8 +649,7 @@ function addLabelOnClick() {
     .attr("x", 0)
     .text(name);
 
-  defs
-    .select("#textPaths")
+  RuntimeDefs.getTextPaths()
     .append("path")
     .attr("id", "textPath_" + id)
     .attr("d", `M${point[0] - width},${point[1]} h${width * 2}`);

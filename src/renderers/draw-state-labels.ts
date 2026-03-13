@@ -117,9 +117,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
     const lineGen = line<[number, number]>().curve(curveNatural);
 
     const textGroup = select<SVGGElement, unknown>("g#labels > g#states");
-    const pathGroup = select<SVGGElement, unknown>(
-      queryMap("defs > g#deftemp > g#textPaths") as SVGGElement | null,
-    );
+    const pathGroup = RuntimeDefs.getTextPaths();
 
     for (const [stateId, pathPoints] of labelPaths) {
       const state = states[stateId];

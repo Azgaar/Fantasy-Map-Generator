@@ -197,8 +197,8 @@ export function resolveVersionConflicts(mapVersion) {
     }
 
     // v1.1 features stores more data
-    defs.select("#land").selectAll("path").remove();
-    defs.select("#water").selectAll("path").remove();
+    RuntimeDefs.getLandMask().selectAll("path").remove();
+    RuntimeDefs.getWaterMask().selectAll("path").remove();
     coastline.selectAll("path").remove();
     lakes.selectAll("path").remove();
 
@@ -936,10 +936,9 @@ export function resolveVersionConflicts(mapVersion) {
 
   if (isOlderThan("1.106.0")) {
     // v1.104.0 introduced bugs with coastlines. Redraw features
-    defs.select("#featurePaths").remove();
-    defs.append("g").attr("id", "featurePaths");
-    defs.select("#land").selectAll("path, use").remove();
-    defs.select("#water").selectAll("path, use").remove();
+    RuntimeDefs.getFeaturePaths().html("");
+    RuntimeDefs.getLandMask().selectAll("path, use").remove();
+    RuntimeDefs.getWaterMask().selectAll("path, use").remove();
     viewbox.select("#coastline").selectAll("path, use").remove();
 
     // v1.104.0 introduced bugs with state borders

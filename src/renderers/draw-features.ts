@@ -65,9 +65,9 @@ const featuresRenderer = (): void => {
     }
   }
 
-  defs.select("#featurePaths").html(html.paths.join(""));
-  defs.select("#land").html(html.landMask.join(""));
-  defs.select("#water").html(html.waterMask.join(""));
+  RuntimeDefs.getFeaturePaths().html(html.paths.join(""));
+  RuntimeDefs.getLandMask().html(html.landMask.join(""));
+  RuntimeDefs.getWaterMask().html(html.waterMask.join(""));
 
   coastline.selectAll<SVGGElement, unknown>("g").each(function () {
     const paths = html.coastline[this.id] || [];

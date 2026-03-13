@@ -79,7 +79,7 @@ function editCoastline() {
     const feature = features[featureId];
 
     // change coastline path
-    defs.select("#featurePaths > path#feature_" + featureId).attr("d", getFeaturePath(feature));
+    d3.select("#featurePaths > path#feature_" + featureId).attr("d", getFeaturePath(feature));
 
     // update area
     const points = feature.vertices.map(vertex => vertices.p[vertex]);

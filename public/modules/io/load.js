@@ -367,6 +367,8 @@ async function parseLoadedData(data, mapVersion) {
       }
     }
 
+    RuntimeDefs.purgeMapDefStubs();
+
     {
       grid = JSON.parse(data[6]);
       const {cells, vertices} = calculateVoronoi(grid.points, grid.boundary);

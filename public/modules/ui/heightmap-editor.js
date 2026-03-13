@@ -75,8 +75,9 @@ function editHeightmap(options) {
       viewbox.selectAll("#landmass, #lakes").style("display", "none");
       changeOnlyLand.checked = true;
     } else if (mode === "risk") {
-      defs.selectAll("#land, #water").selectAll("path").remove();
-      defs.select("#featurePaths").selectAll("path").remove();
+      RuntimeDefs.getLandMask().selectAll("path").remove();
+      RuntimeDefs.getWaterMask().selectAll("path").remove();
+      RuntimeDefs.getFeaturePaths().selectAll("path").remove();
       viewbox.selectAll("#coastline use, #lakes path, #oceanLayers path").remove();
       changeOnlyLand.checked = false;
     }

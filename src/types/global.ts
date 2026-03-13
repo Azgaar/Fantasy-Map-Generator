@@ -1,4 +1,5 @@
 import type { Selection } from "d3";
+import type { RuntimeDefsModule } from "../modules/defs";
 import type { LayersModule } from "../modules/layers";
 import type { NameBase } from "../modules/names-generator";
 import type { SceneModule } from "../modules/scene";
@@ -94,5 +95,6 @@ declare global {
   var changeFont: () => void;
   var getFriendlyHeight: (coords: [number, number]) => string;
   var Layers: LayersModule;
+  var RuntimeDefs: RuntimeDefsModule;
   var Scene: SceneModule;
 }
