@@ -1,5 +1,9 @@
-import { Group, OrthographicCamera, Scene, WebGLRenderer } from "three";
-import { byId } from "../utils";
+import {
+  Group,
+  OrthographicCamera,
+  Scene as ThreeScene,
+  WebGLRenderer,
+} from "three";
 
 export interface WebGLLayerConfig {
   id: string;
@@ -13,25 +17,26 @@ interface RegisteredLayer {
 }
 
 export class WebGL2LayerClass {
-  private canvas = byId("webgl-canvas")!;
   private renderer: WebGLRenderer | null = null;
   private camera: OrthographicCamera | null = null;
-  private scene: Scene | null = null;
+  private scene: ThreeScene | null = null;
   private layers: Map<string, RegisteredLayer> = new Map();
   private pendingConfigs: WebGLLayerConfig[] = []; // queue for register() before init()
   private rafId: number | null = null;
 
   init(): boolean {
+    const canvas = Scene.getCanvas();
+
     this.renderer = new WebGLRenderer({
-      canvas: this.canvas,
+      canvas,
       antialias: false,
       alpha: true,
     });
     this.renderer.setPixelRatio(window.devicePixelRatio || 1);
-    this.canvas.style.width = `${graphWidth}px`;
-    this.canvas.style.height = `${graphHeight}px`;
+    canvas.style.width = `${graphWidth}px`;
+    canvas.style.height = `${graphHeight}px`;
     this.renderer.setSize(graphWidth, graphHeight, false);
-    this.scene = new Scene();
+    this.scene = new ThreeScene();
     this.camera = new OrthographicCamera(0, graphWidth, 0, graphHeight, -1, 1);
 
     // Process pre-init registrations (register() before init() is explicitly safe)

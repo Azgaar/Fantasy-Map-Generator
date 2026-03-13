@@ -16,6 +16,7 @@ import "./relief-generator";
 import "./religions-generator";
 import "./river-generator";
 import "./routes-generator";
+import "./scene";
 import "./states-generator";
 import "./voronoi";
 import "./webgl-layer";

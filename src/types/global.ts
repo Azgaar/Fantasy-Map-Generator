@@ -1,5 +1,6 @@
 import type { Selection } from "d3";
 import type { NameBase } from "../modules/names-generator";
+import type { SceneModule } from "../modules/scene";
 import type { PackedGraph } from "./PackedGraph";
 
 declare global {
@@ -91,4 +92,5 @@ declare global {
   var viewY: number;
   var changeFont: () => void;
   var getFriendlyHeight: (coords: [number, number]) => string;
+  var Scene: SceneModule;
 }

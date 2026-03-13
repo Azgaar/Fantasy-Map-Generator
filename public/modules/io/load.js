@@ -302,11 +302,11 @@ async function parseLoadedData(data, mapVersion) {
 
     {
       svg.remove();
-      document.body.insertAdjacentHTML("afterbegin", data[5]);
+      const mapSvg = Scene.replaceMapSvg(data[5]);
+      svg = d3.select(mapSvg);
     }
 
     {
-      svg = d3.select("#map");
       defs = svg.select("#deftemp");
       viewbox = svg.select("#viewbox");
       scaleBar = svg.select("#scaleBar");

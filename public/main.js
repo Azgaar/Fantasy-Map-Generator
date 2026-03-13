@@ -13,6 +13,8 @@ const ERROR = true;
 // detect device
 const MOBILE = window.innerWidth < 600 || navigator.userAgentData?.mobile;
 
+Scene.bootstrap();
+
 if (PRODUCTION && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(err => {
@@ -32,7 +34,7 @@ if (PRODUCTION && "serviceWorker" in navigator) {
 }
 
 // append svg layers (in default order)
-let svg = d3.select("#map");
+let svg = d3.select(Scene.getMapSvg());
 let defs = svg.select("#deftemp");
 let viewbox = svg.select("#viewbox");
 let scaleBar = svg.select("#scaleBar");
