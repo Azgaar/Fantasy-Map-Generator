@@ -108,6 +108,8 @@ function applyLayersPreset() {
     const shouldBeOn = layers.includes(el.id);
     if (shouldBeOn) el.classList.remove("buttonoff");
     else el.classList.add("buttonoff");
+    const layerId = Layers.layerIdForToggle(el.id);
+    if (layerId) Layers.setVisible(layerId, shouldBeOn);
   });
 }
 
@@ -957,49 +959,28 @@ function layerIsOn(el) {
 
 function turnButtonOff(el) {
   byId(el).classList.add("buttonoff");
+  const layerId = Layers.layerIdForToggle(el);
+  if (layerId) Layers.setVisible(layerId, false);
   getCurrentPreset();
 }
 
 function turnButtonOn(el) {
   byId(el).classList.remove("buttonoff");
+  const layerId = Layers.layerIdForToggle(el);
+  if (layerId) Layers.setVisible(layerId, true);
   getCurrentPreset();
+}
+
+// define connection between option layer buttons and actual svg groups to move the element
+function getLayer(id) {
+  const layerId = Layers.layerIdForToggle(id);
+  return layerId ? $(`#${layerId}`) : null;
 }
 
 // move layers on mapLayers dragging (jquery sortable)
 $("#mapLayers").sortable({items: "li:not(.solid)", containment: "parent", cancel: ".solid", update: moveLayer});
 function moveLayer(event, ui) {
-  const el = getLayer(ui.item.attr("id"));
-  if (!el) return;
-  const prev = getLayer(ui.item.prev().attr("id"));
-  const next = getLayer(ui.item.next().attr("id"));
-  if (prev) el.insertAfter(prev);
-  else if (next) el.insertBefore(next);
-}
-
-// define connection between option layer buttons and actual svg groups to move the element
-function getLayer(id) {
-  if (id === "toggleHeight") return $("#terrs");
-  if (id === "toggleBiomes") return $("#biomes");
-  if (id === "toggleCells") return $("#cells");
-  if (id === "toggleGrid") return $("#gridOverlay");
-  if (id === "toggleCoordinates") return $("#coordinates");
-  if (id === "toggleCompass") return $("#compass");
-  if (id === "toggleRivers") return $("#rivers");
-  if (id === "toggleRelief") return $("#terrain");
-  if (id === "toggleReligions") return $("#relig");
-  if (id === "toggleCultures") return $("#cults");
-  if (id === "toggleStates") return $("#regions");
-  if (id === "toggleProvinces") return $("#provs");
-  if (id === "toggleBorders") return $("#borders");
-  if (id === "toggleRoutes") return $("#routes");
-  if (id === "toggleTemperature") return $("#temperature");
-  if (id === "togglePrecipitation") return $("#prec");
-  if (id === "togglePopulation") return $("#population");
-  if (id === "toggleIce") return $("#ice");
-  if (id === "toggleTexture") return $("#texture");
-  if (id === "toggleEmblems") return $("#emblems");
-  if (id === "toggleLabels") return $("#labels");
-  if (id === "toggleBurgIcons") return $("#icons");
-  if (id === "toggleMarkers") return $("#markers");
-  if (id === "toggleRulers") return $("#ruler");
+  const layerId = Layers.layerIdForToggle(ui.item.attr("id"));
+  if (!layerId) return;
+  Layers.reorder(layerId, Layers.layerIdForToggle(ui.item.prev().attr("id")));
 }

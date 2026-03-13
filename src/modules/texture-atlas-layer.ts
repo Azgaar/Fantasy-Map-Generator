@@ -11,6 +11,7 @@ import {
   type Texture,
   TextureLoader,
 } from "three";
+import { WebGLSurfaceLayer } from "./layer.ts";
 
 export interface AtlasConfig {
   url: string;
@@ -30,13 +31,14 @@ export class TextureAtlasLayer {
   private group: Group | null = null;
   private readonly textureCache = new Map<string, Texture>();
   private readonly atlases: Record<string, AtlasConfig>;
+  private readonly owner: WebGLSurfaceLayer;
 
   constructor(id: string, atlases: Record<string, AtlasConfig>) {
     this.atlases = atlases;
     for (const [atlasId, config] of Object.entries(atlases)) {
       this.preloadTexture(atlasId, config.url);
     }
-    WebGLLayer.register({
+    this.owner = new WebGLSurfaceLayer(id, {
       id,
       setup: (group) => {
         this.group = group;
@@ -45,6 +47,7 @@ export class TextureAtlasLayer {
         this.disposeAll();
       },
     });
+    this.owner.mount();
   }
 
   draw(items: AtlasItem[]) {

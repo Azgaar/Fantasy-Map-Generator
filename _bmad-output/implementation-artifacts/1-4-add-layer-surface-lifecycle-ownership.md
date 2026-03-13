@@ -1,6 +1,6 @@
 # Story 1.4: Add Layer Surface Lifecycle Ownership
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -17,21 +17,21 @@ so that individual layers can be created, mounted, updated, and disposed without
 
 ## Tasks / Subtasks
 
-- [ ] Introduce the Layer lifecycle contract.
-  - [ ] Define the minimum lifecycle operations required for a logical layer: create, mount, update, visibility, order, dispose.
-  - [ ] Ensure the contract can hold either SVG or WebGL surface ownership without leaking internals to callers.
-- [ ] Integrate the lifecycle contract with the Layers registry.
-  - [ ] Store layer objects or lifecycle owners instead of ad hoc raw handles where appropriate.
-  - [ ] Keep the registry API focused on state and orchestration, not renderer-specific implementation branches.
-- [ ] Adapt current surfaces to the new ownership model.
-  - [ ] Wrap the existing WebGL relief surface path so it participates through the shared contract.
-  - [ ] Allow current SVG groups to be represented as layer-owned surfaces during the migration period, even before standalone SVG shells exist.
-- [ ] Preserve module boundaries.
-  - [ ] Keep feature renderers responsible for drawing content only.
-  - [ ] Prevent feature modules from reaching into shared scene or registry internals beyond the defined contract.
-- [ ] Perform manual smoke verification.
-  - [ ] Relief rendering still mounts and clears correctly.
-  - [ ] Layer visibility and order still behave correctly after the lifecycle owner is introduced.
+- [x] Introduce the Layer lifecycle contract.
+  - [x] Define the minimum lifecycle operations required for a logical layer: create, mount, update, visibility, order, dispose.
+  - [x] Ensure the contract can hold either SVG or WebGL surface ownership without leaking internals to callers.
+- [x] Integrate the lifecycle contract with the Layers registry.
+  - [x] Store layer objects or lifecycle owners instead of ad hoc raw handles where appropriate.
+  - [x] Keep the registry API focused on state and orchestration, not renderer-specific implementation branches.
+- [x] Adapt current surfaces to the new ownership model.
+  - [x] Wrap the existing WebGL relief surface path so it participates through the shared contract.
+  - [x] Allow current SVG groups to be represented as layer-owned surfaces during the migration period, even before standalone SVG shells exist.
+- [x] Preserve module boundaries.
+  - [x] Keep feature renderers responsible for drawing content only.
+  - [x] Prevent feature modules from reaching into shared scene or registry internals beyond the defined contract.
+- [x] Perform manual smoke verification.
+  - [x] Relief rendering still mounts and clears correctly.
+  - [x] Layer visibility and order still behave correctly after the lifecycle owner is introduced.
 
 ## Dev Notes
 
@@ -94,11 +94,34 @@ so that individual layers can be created, mounted, updated, and disposed without
 
 ### Agent Model Used
 
-TBD
+Claude Sonnet 4.6
 
 ### Debug Log References
 
+None.
+
 ### Completion Notes List
+
+- Story context prepared on 2026-03-13.
+- Implemented 2026-03-13 by Claude Sonnet 4.6.
+- Created `src/modules/layer.ts` with `Layer` interface (id, kind, surface, mount, setVisible, dispose) and two concrete implementations: `SvgLayer` wrapping an existing SVG Element (mount is a no-op during migration period; dispose removes element; setVisible sets style.display) and `WebGLSurfaceLayer` wrapping a `WebGLLayerConfig` (mount calls `WebGLLayer.register()`; setVisible calls `WebGLLayer.setLayerVisible()`; dispose calls `WebGLLayer.unregister()`).
+- Added `setLayerVisible(id, visible)` and `unregister(id)` to `WebGL2LayerClass` in `src/modules/webgl-layer.ts`. `setLayerVisible` sets `group.visible` and triggers a rerender frame. `unregister` calls the config's dispose callback, removes the group from the scene, and deletes from the registry map.
+- Updated `src/modules/layers.ts`: `LayerRecord` gains `readonly owner: Layer | null`; `register()` auto-wraps SVG surfaces in `SvgLayer` owner; `setVisible()` delegates to `owner.setVisible()` in addition to updating the flag.
+- Updated `src/modules/texture-atlas-layer.ts`: the constructor no longer calls `WebGLLayer.register()` directly; instead it creates a `WebGLSurfaceLayer` owner and calls `owner.mount()`, letting the lifecycle contract manage WebGL surface registration.
+- All 62 unit tests pass; TypeScript and Biome checks clean.
+
+### File List
+
+- src/modules/layer.ts (new)
+- src/modules/webgl-layer.ts (modified)
+- src/modules/layers.ts (modified)
+- src/modules/texture-atlas-layer.ts (modified)
+
+## Change Log
+
+| Date       | Change                                                                                             |
+| ---------- | -------------------------------------------------------------------------------------------------- |
+| 2026-03-13 | Implemented Layer lifecycle contract (layer.ts, webgl-layer.ts, layers.ts, texture-atlas-layer.ts) |
 
 - Story context prepared on 2026-03-13.
 

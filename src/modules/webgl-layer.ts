@@ -87,6 +87,21 @@ export class WebGL2LayerClass {
     this.layers.set(config.id, { config, group });
   }
 
+  setLayerVisible(id: string, visible: boolean) {
+    const layer = this.layers.get(id);
+    if (!layer) return;
+    layer.group.visible = visible;
+    this.rerender();
+  }
+
+  unregister(id: string) {
+    const layer = this.layers.get(id);
+    if (!layer) return;
+    layer.config.dispose(layer.group);
+    this.scene?.remove(layer.group);
+    this.layers.delete(id);
+  }
+
   rerender() {
     if (this.rafId !== null) return;
     this.rafId = requestAnimationFrame(() => {

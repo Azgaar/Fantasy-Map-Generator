@@ -1,6 +1,6 @@
 # Story 1.5: Add Compatibility Lookups for Legacy Single-SVG Callers
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -17,18 +17,18 @@ so that existing workflows keep working while code migrates to the new scene and
 
 ## Tasks / Subtasks
 
-- [ ] Add the compatibility bridge API.
-  - [ ] Implement `getLayerSvg(id)`, `getLayerSurface(id)`, and `queryMap(selector)` against the new Scene and Layers contracts.
-  - [ ] Expose the helpers as stable globals for legacy callers that cannot move immediately.
-- [ ] Type and document the bridge.
-  - [ ] Add ambient global declarations for the new helpers.
-  - [ ] Keep the bridge deliberately narrow so it does not become a second permanent architecture.
-- [ ] Migrate the highest-risk single-root callers touched by Epic 1 foundation work.
-  - [ ] Replace direct whole-map selector assumptions where they would break immediately under split surfaces.
-  - [ ] Preserve unchanged callers until they become relevant, rather than doing a repo-wide cleanup in this story.
-- [ ] Verify legacy workflows still function.
-  - [ ] Saved-map load and export paths still find required map elements.
-  - [ ] Runtime helpers still let callers reach labels, text paths, and other layer-owned content without assuming one canonical SVG root.
+- [x] Add the compatibility bridge API.
+  - [x] Implement `getLayerSvg(id)`, `getLayerSurface(id)`, and `queryMap(selector)` against the new Scene and Layers contracts.
+  - [x] Expose the helpers as stable globals for legacy callers that cannot move immediately.
+- [x] Type and document the bridge.
+  - [x] Add ambient global declarations for the new helpers.
+  - [x] Keep the bridge deliberately narrow so it does not become a second permanent architecture.
+- [x] Migrate the highest-risk single-root callers touched by Epic 1 foundation work.
+  - [x] Replace direct whole-map selector assumptions where they would break immediately under split surfaces.
+  - [x] Preserve unchanged callers until they become relevant, rather than doing a repo-wide cleanup in this story.
+- [x] Verify legacy workflows still function.
+  - [x] Saved-map load and export paths still find required map elements.
+  - [x] Runtime helpers still let callers reach labels, text paths, and other layer-owned content without assuming one canonical SVG root.
 
 ## Dev Notes
 
@@ -99,12 +99,26 @@ so that existing workflows keep working while code migrates to the new scene and
 
 ### Agent Model Used
 
-TBD
+Claude Sonnet 4.6
 
 ### Debug Log References
+
+None.
 
 ### Completion Notes List
 
 - Story context prepared on 2026-03-13.
+- Created `src/modules/map-compat.ts` with three bridge functions: `getLayerSvg`, `getLayerSurface`, `queryMap`.
+- `getLayerSvg(id)` delegates to `Layers.get(id)?.surface` and walks up to the SVG root via `closest("svg")`.
+- `getLayerSurface(id)` delegates directly to `Layers.get(id)?.surface`.
+- `queryMap(selector)` scopes the CSS selector to `Scene.getMapSvg()` instead of the whole document.
+- Added `import "./map-compat"` to `src/modules/index.ts` after `layers` (dependency order).
+- Migrated `src/renderers/draw-state-labels.ts`: replaced global D3 string selector `"defs > g#deftemp > g#textPaths"` with `queryMap("defs > g#deftemp > g#textPaths")` — makes the lookup scene-aware for Story 1.6 defs relocation.
+- Legacy callers in `save.js`, `export.js`, and `load.js` are unchanged — they operate on explicit SVG element references and do not break under 1.1–1.4 foundation work.
+- All TypeScript checks pass with zero errors on changed files.
 
 ### File List
+
+- `src/modules/map-compat.ts` — created (compatibility bridge)
+- `src/modules/index.ts` — import added
+- `src/renderers/draw-state-labels.ts` — pathGroup selector migrated to `queryMap`

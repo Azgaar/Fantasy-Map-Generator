@@ -118,7 +118,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
 
     const textGroup = select<SVGGElement, unknown>("g#labels > g#states");
     const pathGroup = select<SVGGElement, unknown>(
-      "defs > g#deftemp > g#textPaths",
+      queryMap("defs > g#deftemp > g#textPaths") as SVGGElement | null,
     );
 
     for (const [stateId, pathPoints] of labelPaths) {

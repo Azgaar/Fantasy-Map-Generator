@@ -7,6 +7,8 @@ import "./fonts";
 import "./heightmap-generator";
 import "./ice";
 import "./lakes";
+import "./layers";
+import "./map-compat";
 import "./markers-generator";
 import "./military-generator";
 import "./names-generator";

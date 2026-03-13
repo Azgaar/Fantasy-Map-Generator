@@ -120,6 +120,45 @@ compass.append("use").attr("xlink:href", "#defs-compass-rose");
 
 // fogging
 fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
+
+// bootstrap layers registry
+{
+  const regSvg = (id, el, visible = true) => Layers.register(id, "svg", visible, el.node());
+  regSvg("ocean", ocean);
+  regSvg("lakes", lakes);
+  regSvg("landmass", landmass);
+  regSvg("texture", texture);
+  regSvg("terrs", terrs);
+  regSvg("biomes", biomes);
+  regSvg("cells", cells);
+  regSvg("gridOverlay", gridOverlay);
+  regSvg("coordinates", coordinates);
+  regSvg("compass", compass, false);
+  regSvg("rivers", rivers);
+  regSvg("terrain", terrain);
+  regSvg("relig", relig);
+  regSvg("cults", cults);
+  regSvg("regions", regions);
+  regSvg("provs", provs);
+  regSvg("zones", zones);
+  regSvg("borders", borders);
+  regSvg("routes", routes);
+  regSvg("temperature", temperature);
+  regSvg("coastline", coastline);
+  regSvg("ice", ice);
+  regSvg("prec", prec, false);
+  regSvg("population", population);
+  regSvg("emblems", emblems, false);
+  regSvg("icons", icons);
+  regSvg("labels", labels);
+  regSvg("armies", armies);
+  regSvg("markers", markers);
+  regSvg("ruler", ruler, false);
+  Layers.register("fogging-cont", "svg", true, document.getElementById("fogging-cont"));
+  regSvg("debug", debug);
+  Layers.register("webgl-canvas", "webgl", true, Scene.getCanvas());
+}
+
 fogging
   .append("rect")
   .attr("x", 0)

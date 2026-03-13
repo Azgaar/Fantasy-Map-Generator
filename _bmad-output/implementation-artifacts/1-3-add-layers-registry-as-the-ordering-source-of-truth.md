@@ -1,6 +1,6 @@
 # Story 1.3: Add Layers Registry as the Ordering Source of Truth
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -17,19 +17,19 @@ so that visibility, order, and surface ownership are managed consistently instea
 
 ## Tasks / Subtasks
 
-- [ ] Create the Layers registry module.
-  - [ ] Define the minimum record shape: `id`, `kind`, `order`, `visible`, `surface`.
-  - [ ] Expose lookup and mutation APIs that are narrow enough to become the single ordering contract.
-- [ ] Bootstrap the current layer stack into the registry.
-  - [ ] Register the existing logical SVG layers in their current order.
-  - [ ] Register the current WebGL surface path so mixed rendering already has a place in the model.
-- [ ] Move order and visibility mutations behind the registry.
-  - [ ] Replace direct DOM-order assumptions in the layer UI reorder path with registry updates.
-  - [ ] Apply visibility changes through the registry without changing user-facing controls.
-  - [ ] Ensure one coordinated apply step updates all affected surfaces together.
-- [ ] Preserve compatibility for migration-era callers.
-  - [ ] Keep existing layer IDs and toggle IDs stable.
-  - [ ] Avoid forcing feature modules to understand renderer-specific ordering logic.
+- [x] Create the Layers registry module.
+  - [x] Define the minimum record shape: `id`, `kind`, `order`, `visible`, `surface`.
+  - [x] Expose lookup and mutation APIs that are narrow enough to become the single ordering contract.
+- [x] Bootstrap the current layer stack into the registry.
+  - [x] Register the existing logical SVG layers in their current order.
+  - [x] Register the current WebGL surface path so mixed rendering already has a place in the model.
+- [x] Move order and visibility mutations behind the registry.
+  - [x] Replace direct DOM-order assumptions in the layer UI reorder path with registry updates.
+  - [x] Apply visibility changes through the registry without changing user-facing controls.
+  - [x] Ensure one coordinated apply step updates all affected surfaces together.
+- [x] Preserve compatibility for migration-era callers.
+  - [x] Keep existing layer IDs and toggle IDs stable.
+  - [x] Avoid forcing feature modules to understand renderer-specific ordering logic.
 - [ ] Perform manual smoke verification.
   - [ ] Reordering through the existing Layers UI still changes the visible stack correctly.
   - [ ] Visibility toggles still map to the correct runtime surface.
@@ -97,12 +97,25 @@ so that visibility, order, and surface ownership are managed consistently instea
 
 ### Agent Model Used
 
-TBD
+GitHub Copilot (Claude Sonnet 4.6)
 
 ### Debug Log References
 
 ### Completion Notes List
 
 - Story context prepared on 2026-03-13.
+- Implementation completed 2026-03-13.
+- Created `src/modules/layers.ts`: `LayersModule` global class with `LayerRecord` interface (`id`, `kind`, `order`, `visible`, `surface`). Exports `register()`, `get()`, `getAll()`, `moveAfter()`, `moveBefore()`, `setVisible()`. DOM sync is atomic — one element move per call. Registered on `window.Layers`.
+- Added `import "./layers"` to `src/modules/index.ts`; added `LayersModule` type import and `var Layers: LayersModule` global declaration to `src/types/global.ts`.
+- In `public/main.js`: added registry bootstrap block after layer variables are defined, registering 32 SVG layers in append order plus `webgl-canvas` (kind "webgl"). Layers starting hidden (`compass`, `prec`, `emblems`, `ruler`) bootstrapped with `visible=false`.
+- In `public/modules/ui/layers.js`: extracted `TOGGLE_TO_LAYER_ID` constant map; added `getLayerId()` helper; refactored `getLayer()` to use the map (24 if-else chains removed); replaced `moveLayer` to call `Layers.moveAfter()`/`Layers.moveBefore()` instead of jQuery DOM manipulation; updated `turnButtonOn`/`turnButtonOff` to call `Layers.setVisible()`; updated `applyLayersPreset` to call `Layers.setVisible()` per layer.
+- `auto-update.js` not touched — legacy compatibility inserts still work via DOM; they run before registry is meaningful for inter-session reloads.
+- Automated tests skipped per project instruction. Manual smoke verification pending.
 
 ### File List
+
+- src/modules/layers.ts (new)
+- src/modules/index.ts (modified)
+- src/types/global.ts (modified)
+- public/main.js (modified)
+- public/modules/ui/layers.js (modified)
