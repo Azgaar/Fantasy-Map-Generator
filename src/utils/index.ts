@@ -1,6 +1,5 @@
-import "./polyfills";
-
 import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
+import "./polyfills";
 
 window.rn = rn;
 window.lim = lim;
