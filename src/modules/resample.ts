@@ -59,14 +59,12 @@ class Resampler {
     grid.cells.temp = new Int8Array(grid.points.length);
     grid.cells.prec = new Uint8Array(grid.points.length);
 
-    const parentPackQ = quadtree(parentMap.pack.cells.p.map(([x, y], i) => [x, y, i]));
+    const parentPackQ = quadtree(
+      parentMap.pack.cells.p.map(([x, y], i) => [x, y, i]),
+    );
     grid.points.forEach(([x, y]: [number, number], newGridCell: number) => {
       const [parentX, parentY] = inverse(x, y);
-      const parentPackCell = parentPackQ.find(
-        parentX,
-        parentY,
-        Infinity,
-      )?.[2];
+      const parentPackCell = parentPackQ.find(parentX, parentY, Infinity)?.[2];
       if (parentPackCell === undefined) return;
       const parentGridCell = parentMap.pack.cells.g[parentPackCell];
 
@@ -441,16 +439,14 @@ class Resampler {
     parentMap: ParentMapDefinition,
     inverse: (x: number, y: number) => [number, number],
   ) {
-    const parentPackQ = quadtree(parentMap.pack.cells.p.map(([x, y], i) => [x, y, i]));
+    const parentPackQ = quadtree(
+      parentMap.pack.cells.p.map(([x, y], i) => [x, y, i]),
+    );
     pack.features.forEach((feature) => {
       if (!feature) return;
       const [x, y] = pack.cells.p[feature.firstCell];
       const [parentX, parentY] = inverse(x, y);
-      const parentCell = parentPackQ.find(
-        parentX,
-        parentY,
-        Infinity,
-      )?.[2];
+      const parentCell = parentPackQ.find(parentX, parentY, Infinity)?.[2];
       if (parentCell === undefined) return;
       const parentFeature =
         parentMap.pack.features[parentMap.pack.cells.f[parentCell]];

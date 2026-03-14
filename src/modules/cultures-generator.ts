@@ -1304,7 +1304,7 @@ class CulturesModule {
         cells.culture[cellId] = 0;
       }
     } else {
-      cells.culture = new Uint16Array(cells.i.length) as unknown as number[];
+      cells.culture = new Uint16Array(cells.i.length);
     }
 
     for (const culture of cultures) {

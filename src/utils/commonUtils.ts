@@ -9,7 +9,6 @@ import { rand } from "./probabilityUtils";
  * @param points - Array of points [[x1, y1], [x2, y2], ...]
  * @param graphWidth - Width of the graph
  * @param graphHeight - Height of the graph
- * @param secure - Secure clipping to avoid edge artifacts
  * @returns Clipped polygon points
  */
 export const clipPoly = (

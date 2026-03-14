@@ -8,7 +8,7 @@ import type { Route } from "../modules/routes-generator";
 import type { State } from "../modules/states-generator";
 import type { Zone } from "../modules/zones-generator";
 
-type TypedArray =
+export type TypedArray =
   | Uint8Array
   | Uint16Array
   | Uint32Array

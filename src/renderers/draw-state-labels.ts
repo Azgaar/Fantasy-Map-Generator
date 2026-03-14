@@ -1,4 +1,5 @@
 import { curveNatural, line, max, select } from "d3";
+import type { TypedArray } from "../types/PackedGraph";
 import {
   drawPath,
   drawPoint,
@@ -400,7 +401,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
     angleRad: number,
     halfwidth: number,
     halfheight: number,
-    stateIds: number[],
+    stateIds: TypedArray,
     stateId: number,
   ): boolean {
     const bbox = textElement.getBBox();
