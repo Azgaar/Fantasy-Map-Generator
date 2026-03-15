@@ -18,3 +18,5 @@ import "./ice";
 import "./military-generator";
 import "./markers-generator";
 import "./fonts";
+import "./ai-providers";
+import "./ai-name-generator";

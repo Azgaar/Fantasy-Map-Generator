@@ -26,6 +26,7 @@ function editLake() {
   byId("lakeName").on("input", changeName);
   byId("lakeNameCulture").on("click", generateNameCulture);
   byId("lakeNameRandom").on("click", generateNameRandom);
+  byId("lakeNameAi").on("click", generateNameAi);
   byId("lakeGroup").on("change", changeLakeGroup);
   byId("lakeGroupAdd").on("click", toggleNewGroupInput);
   byId("lakeGroupName").on("change", createNewGroup);
@@ -138,6 +139,17 @@ function editLake() {
   function generateNameRandom() {
     const lake = getLake();
     lake.name = lakeName.value = Names.getBase(rand(nameBases.length - 1));
+  }
+
+  async function generateNameAi() {
+    const lake = getLake();
+    const cells = Array.from(pack.cells.i.filter(i => pack.cells.f[i] === lake.i));
+    const culture = cells.length ? pack.cells.culture[cells[0]] : 0;
+    try {
+      lake.name = lakeName.value = await AiNames.generateName("lake", culture);
+    } catch (error) {
+      tip(error.message, true, "error", 4000);
+    }
   }
 
   function selectLakeGroup() {

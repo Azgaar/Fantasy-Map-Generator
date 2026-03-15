@@ -23,6 +23,7 @@ function overviewRoutes() {
   byId("routesOverviewRefresh").on("click", routesOverviewAddLines);
   byId("routesCreateNew").on("click", createRoute);
   byId("routesExport").on("click", downloadRoutesData);
+  byId("routesRegenerateNamesAi").on("click", regenerateRouteNamesAi);
   byId("routesLockAll").on("click", toggleLockAll);
   byId("routesRemoveAll").on("click", triggerAllRoutesRemove);
   byId("routesSearch").on("input", routesOverviewAddLines);
@@ -189,5 +190,37 @@ function overviewRoutes() {
         }
       }
     });
+  }
+
+  async function regenerateRouteNamesAi() {
+    const elements = Array.from(body.querySelectorAll(":scope > div"));
+    if (!elements.length) return;
+
+    const byCulture = new Map();
+    for (const el of elements) {
+      const routeId = +el.dataset.id;
+      const route = pack.routes.find(r => r.i === routeId);
+      if (!route || route.lock) continue;
+      const culture = route.points?.[0] ? pack.cells.culture[route.points[0][2]] : 0;
+      if (!byCulture.has(culture)) byCulture.set(culture, []);
+      byCulture.get(culture).push({el, route});
+    }
+
+    tip("Generating AI names...", false, "info");
+
+    try {
+      for (const [culture, items] of byCulture) {
+        const names = await AiNames.generateNames("route", culture, items.length);
+        for (let i = 0; i < items.length; i++) {
+          const name = names[i] || Routes.generateName(items[i].route);
+          const {el, route} = items[i];
+          route.name = el.dataset.name = name;
+          el.querySelector("div[data-tip='Route name']").textContent = name;
+        }
+      }
+      tip("AI names generated successfully", true, "success", 3000);
+    } catch (error) {
+      tip(error.message, true, "error", 4000);
+    }
   }
 }

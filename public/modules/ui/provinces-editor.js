@@ -542,6 +542,8 @@ function editProvinces() {
     byId("provinceNameEditorShortRandom").on("click", regenerateShortNameRandom);
     byId("provinceNameEditorAddForm").on("click", addCustomForm);
     byId("provinceNameEditorFullRegenerate").on("click", regenerateFullName);
+    byId("provinceNameEditorShortAi").on("click", regenerateShortNameAi);
+    byId("provinceNameEditorFullAi").on("click", regenerateFullNameAi);
 
     function regenerateShortNameCulture() {
       const province = +provinceNameEditor.dataset.province;
@@ -573,6 +575,31 @@ function editProvinces() {
         if (!form) return short;
         if (!short && form) return "The " + form;
         return short + " " + form;
+      }
+    }
+
+    async function regenerateShortNameAi() {
+      const province = +provinceNameEditor.dataset.province;
+      const culture = pack.cells.culture[pack.provinces[province].center];
+      try {
+        const name = await AiNames.generateName("province", culture, {form: pack.provinces[province].formName});
+        byId("provinceNameEditorShort").value = name;
+      } catch (err) {
+        tip("AI generation failed: " + err.message, true, "error", 4000);
+      }
+    }
+
+    async function regenerateFullNameAi() {
+      const short = byId("provinceNameEditorShort").value;
+      const form = byId("provinceNameEditorSelectForm").value;
+      if (!form || !short) { regenerateFullName(); return; }
+      try {
+        const province = +provinceNameEditor.dataset.province;
+        const culture = pack.cells.culture[pack.provinces[province].center];
+        const fullName = await AiNames.generateName("provinceFullName", culture, {form, stateName: short});
+        byId("provinceNameEditorFull").value = fullName;
+      } catch (err) {
+        tip("AI generation failed: " + err.message, true, "error", 4000);
       }
     }
 

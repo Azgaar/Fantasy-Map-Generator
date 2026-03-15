@@ -25,6 +25,7 @@ function overviewRivers() {
   byId("riverCreateNew").on("click", createRiver);
   byId("riversBasinHighlight").on("click", toggleBasinsHightlight);
   byId("riversExport").on("click", downloadRiversData);
+  byId("riversRegenerateNamesAi").on("click", regenerateRiverNamesAi);
   byId("riversRemoveAll").on("click", triggerAllRiversRemove);
   byId("riversSearch").on("input", riversOverviewAddLines);
 
@@ -214,5 +215,38 @@ function overviewRivers() {
     pack.cells.r = new Uint16Array(pack.cells.i.length);
     rivers.selectAll("*").remove();
     riversOverviewAddLines();
+  }
+
+  async function regenerateRiverNamesAi() {
+    const elements = Array.from(body.querySelectorAll(":scope > div"));
+    if (!elements.length) return;
+
+    const byCulture = new Map();
+    for (const el of elements) {
+      const riverId = +el.dataset.id;
+      const river = pack.rivers.find(r => r.i === riverId);
+      if (!river || river.lock) continue;
+      const mouth = river.mouth;
+      const culture = mouth != null ? pack.cells.culture[mouth] : 0;
+      if (!byCulture.has(culture)) byCulture.set(culture, []);
+      byCulture.get(culture).push({el, river});
+    }
+
+    tip("Generating AI names...", false, "info");
+
+    try {
+      for (const [culture, items] of byCulture) {
+        const names = await AiNames.generateNames("river", culture, items.length);
+        for (let i = 0; i < items.length; i++) {
+          const name = names[i] || Rivers.getName(items[i].river.mouth);
+          const {el, river} = items[i];
+          river.name = el.dataset.name = name;
+          el.querySelector(".riverName").textContent = name;
+        }
+      }
+      tip("AI names generated successfully", true, "success", 3000);
+    } catch (error) {
+      tip(error.message, true, "error", 4000);
+    }
   }
 }

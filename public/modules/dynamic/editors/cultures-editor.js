@@ -59,6 +59,7 @@ function insertEditorHtml() {
       </div>
       <button id="culturesEditNamesBase" data-tip="Edit a database used for names generation" class="icon-font"></button>
       <button id="culturesAdd" data-tip="Add a new culture. Hold Shift to add multiple" class="icon-plus"></button>
+      <button id="culturesRegenerateNamesAi" data-tip="Regenerate culture names using AI" class="icon-robot"></button>
       <button id="culturesExport" data-tip="Download cultures-related data" class="icon-download"></button>
       <button id="culturesImport" data-tip="Upload cultures-related data" class="icon-upload"></button>
       <button id="culturesRecalculate" data-tip="Recalculate cultures based on current values of growth-related attributes" class="icon-retweet"></button>
@@ -87,6 +88,7 @@ function addListeners() {
   byId("culturesManuallyCancel").on("click", () => exitCulturesManualAssignment());
   byId("culturesEditNamesBase").on("click", editNamesbase);
   byId("culturesAdd").on("click", enterAddCulturesMode);
+  byId("culturesRegenerateNamesAi").on("click", regenerateCultureNamesAi);
   byId("culturesExport").on("click", downloadCulturesCsv);
   byId("culturesImport").on("click", () => byId("culturesCSVToLoad").click());
   byId("culturesCSVToLoad").on("change", uploadCulturesData);
@@ -190,6 +192,7 @@ function culturesEditorAddLines() {
         <input data-tip="Culture name. Click and type to change" class="cultureName" style="width: 7em"
           value="${c.name}" autocorrect="off" spellcheck="false" />
         <span data-tip="Regenerate culture name" class="icon-cw hiddenIcon" style="visibility: hidden"></span>
+        <span data-tip="Generate culture name with AI" class="icon-robot hiddenIcon" style="visibility: hidden"></span>
         <select data-tip="Culture type. Defines growth model. Click to change"
           class="cultureType">${getTypeOptions(c.type)}</select>
         <span data-tip="Click to re-generate names for burgs with this culture assigned" class="icon-arrows-cw hide"></span>
@@ -236,6 +239,7 @@ function culturesEditorAddLines() {
   $body.querySelectorAll("fill-box").forEach($el => $el.on("click", cultureChangeColor));
   $body.querySelectorAll("div > input.cultureName").forEach($el => $el.on("input", cultureChangeName));
   $body.querySelectorAll("div > span.icon-cw").forEach($el => $el.on("click", cultureRegenerateName));
+  $body.querySelectorAll("div > span.icon-robot").forEach($el => $el.on("click", cultureRegenerateNameAi));
   $body.querySelectorAll("div > input.cultureExpan").forEach($el => $el.on("change", cultureChangeExpansionism));
   $body.querySelectorAll("div > select.cultureType").forEach($el => $el.on("change", cultureChangeType));
   $body.querySelectorAll("div > select.cultureBase").forEach($el => $el.on("change", cultureChangeBase));
@@ -352,6 +356,20 @@ function cultureRegenerateName() {
   const name = Names.getCultureShort(cultureId);
   this.parentNode.querySelector("input.cultureName").value = name;
   pack.cultures[cultureId].name = name;
+}
+
+async function cultureRegenerateNameAi() {
+  const cultureId = +this.parentNode.dataset.id;
+  const $line = this.parentNode;
+  try {
+    const name = await AiNames.generateName("culture", cultureId);
+    $line.querySelector("input.cultureName").value = name;
+    $line.dataset.name = name;
+    pack.cultures[cultureId].name = name;
+    pack.cultures[cultureId].code = abbreviate(name, pack.cultures.map(c => c.code));
+  } catch (err) {
+    if (err.message !== "No API key configured") tip("AI name generation failed: " + err.message, false, "error", 4000);
+  }
 }
 
 function cultureChangeExpansionism() {
@@ -848,6 +866,32 @@ function closeCulturesEditor() {
   debug.select("#cultureCenters").remove();
   exitCulturesManualAssignment("close");
   exitAddCultureMode();
+}
+
+async function regenerateCultureNamesAi() {
+  const elements = Array.from($body.querySelectorAll(":scope > div"));
+  const unlocked = elements.filter(el => {
+    const id = +el.dataset.id;
+    return id > 0 && !pack.cultures[id].lock;
+  });
+  if (!unlocked.length) return;
+
+  tip("Generating AI names...", false, "info");
+
+  try {
+    for (const el of unlocked) {
+      const cultureId = +el.dataset.id;
+      const names = await AiNames.generateNames("culture", cultureId, 1);
+      const name = names[0] || Names.getCulture(cultureId);
+      el.querySelector("input.cultureName").value = name;
+      el.dataset.name = name;
+      pack.cultures[cultureId].name = name;
+      pack.cultures[cultureId].code = abbreviate(name, pack.cultures.map(c => c.code));
+    }
+    tip("AI names generated successfully", true, "success", 3000);
+  } catch (error) {
+    tip(error.message, true, "error", 4000);
+  }
 }
 
 async function uploadCulturesData() {

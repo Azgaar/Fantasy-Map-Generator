@@ -29,6 +29,7 @@ function editZones() {
   byId("zonesManuallyApply").on("click", applyZonesManualAssignent);
   byId("zonesManuallyCancel").on("click", cancelZonesManualAssignent);
   byId("zonesAdd").on("click", addZonesLayer);
+  byId("zonesRegenerateNamesAi").on("click", regenerateZoneNamesAi);
   byId("zonesExport").on("click", downloadZonesData);
   byId("zonesRemove").on("click", e => e.target.classList.toggle("pressed"));
 
@@ -45,6 +46,7 @@ function editZones() {
     }
 
     if (ev.target.closest("fill-box")) changeFill(ev.target.closest("fill-box").getAttribute("fill"), zone);
+    else if (ev.target.classList.contains("icon-robot")) generateZoneNameAi(zone, line);
     else if (ev.target.classList.contains("zonePopulation")) changePopulation(zone);
     else if (ev.target.classList.contains("zoneRemove")) zoneRemove(zone);
     else if (ev.target.classList.contains("zoneHide")) toggleVisibility(zone);
@@ -94,6 +96,7 @@ function editZones() {
       }">
         <fill-box fill="${color}"></fill-box>
         <input data-tip="Zone description. Click and type to change" style="width: 11em" class="zoneName" value="${name}" autocorrect="off" spellcheck="false">
+        <span data-tip="Generate zone name with AI" class="icon-robot hiddenIcon" style="visibility: hidden"></span>
         <input data-tip="Zone type. Click and type to change" class="zoneType" value="${type}">
         <span data-tip="Cells count" class="icon-check-empty hide"></span>
         <div data-tip="Cells count" class="stateCells hide">${cells.length}</div>
@@ -402,6 +405,17 @@ function editZones() {
     zones.select("#zone" + zone.i).attr("data-description", value);
   }
 
+  async function generateZoneNameAi(zone, line) {
+    try {
+      const name = await AiNames.generateName("zone", 0, {zoneType: zone.type});
+      zone.name = name;
+      zones.select("#zone" + zone.i).attr("data-description", name);
+      line.querySelector("input.zoneName").value = name;
+    } catch (err) {
+      if (err.message !== "No API key configured") tip("AI name generation failed: " + err.message, false, "error", 4000);
+    }
+  }
+
   function changeType(zone, value) {
     zone.type = value;
     zones.select("#zone" + zone.i).attr("data-type", value);
@@ -491,5 +505,28 @@ function editZones() {
         zonesEditorAddLines();
       }
     });
+  }
+
+  async function regenerateZoneNamesAi() {
+    const elements = Array.from(body.querySelectorAll(":scope > div.states"));
+    if (!elements.length) return;
+
+    tip("Generating AI names...", false, "info");
+
+    try {
+      const names = await AiNames.generateNames("zone", 0, elements.length);
+      for (let i = 0; i < elements.length; i++) {
+        const el = elements[i];
+        const zone = pack.zones.find(z => z.i === +el.dataset.id);
+        if (!zone) continue;
+        const name = names[i] || zone.name;
+        zone.name = name;
+        zones.select("#zone" + zone.i).attr("data-description", name);
+        el.querySelector("input.zoneName").value = name;
+      }
+      tip("AI names generated successfully", true, "success", 3000);
+    } catch (error) {
+      tip(error.message, true, "error", 4000);
+    }
   }
 }

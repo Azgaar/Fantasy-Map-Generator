@@ -45,6 +45,7 @@ function editRiver(id) {
   byId("riverType").on("input", changeType);
   byId("riverNameCulture").on("click", generateNameCulture);
   byId("riverNameRandom").on("click", generateNameRandom);
+  byId("riverNameAi").on("click", generateNameAi);
   byId("riverMainstem").on("change", changeParent);
   byId("riverSourceWidth").on("input", changeSourceWidth);
   byId("riverWidthFactor").on("input", changeWidthFactor);
@@ -210,6 +211,17 @@ function editRiver(id) {
   function generateNameRandom() {
     const r = getRiver();
     if (r) r.name = riverName.value = Names.getBase(rand(nameBases.length - 1));
+  }
+
+  async function generateNameAi() {
+    const r = getRiver();
+    if (!r) return;
+    const culture = pack.cells.culture[r.mouth];
+    try {
+      r.name = riverName.value = await AiNames.generateName("river", culture);
+    } catch (error) {
+      tip(error.message, true, "error", 4000);
+    }
   }
 
   function changeParent() {
