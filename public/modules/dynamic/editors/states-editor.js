@@ -78,6 +78,7 @@ function insertEditorHtml() {
         <button id="statesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
       </div>
 
+      <button id="statesRegenerateNamesAi" data-tip="Regenerate state names using AI" class="icon-robot"></button>
       <button id="statesAdd" data-tip="Add a new state. Hold Shift to add multiple" class="icon-plus"></button>
       <button id="statesMerge" data-tip="Merge several states into one" class="icon-layer-group"></button>
       <button id="statesExport" data-tip="Save state-related data as a text file (.csv)" class="icon-download"></button>
@@ -106,6 +107,7 @@ function addListeners() {
   byId("statesManuallyCancel").on("click", () => exitStatesManualAssignment(false));
   byId("statesAdd").on("click", enterAddStateMode);
   byId("statesMerge").on("click", openStateMergeDialog);
+  byId("statesRegenerateNamesAi").on("click", regenerateStateNamesAi);
   byId("statesExport").on("click", downloadStatesCsv);
 
   $body.on("click", event => {
@@ -400,9 +402,11 @@ function editStateName(state) {
   // add listeners
   byId("stateNameEditorShortCulture").on("click", regenerateShortNameCulture);
   byId("stateNameEditorShortRandom").on("click", regenerateShortNameRandom);
+  byId("stateNameEditorShortAi").on("click", regenerateShortNameAi);
   byId("stateNameEditorAddForm").on("click", addCustomForm);
   byId("stateNameEditorCustomForm").on("change", addCustomForm);
   byId("stateNameEditorFullRegenerate").on("click", regenerateFullName);
+  byId("stateNameEditorFullAi").on("click", regenerateFullNameAi);
 
   function regenerateShortNameCulture() {
     const state = +stateNameEditor.dataset.state;
@@ -415,6 +419,16 @@ function editStateName(state) {
     const base = rand(nameBases.length - 1);
     const name = Names.getState(Names.getBase(base), undefined, base);
     byId("stateNameEditorShort").value = name;
+  }
+
+  async function regenerateShortNameAi() {
+    const state = +stateNameEditor.dataset.state;
+    const culture = pack.states[state].culture;
+    try {
+      byId("stateNameEditorShort").value = await AiNames.generateName("state", culture);
+    } catch (error) {
+      tip(error.message, true, "error", 4000);
+    }
   }
 
   function addCustomForm() {
@@ -437,6 +451,19 @@ function editStateName(state) {
       const tick = +stateNameEditorFullRegenerate.dataset.tick;
       stateNameEditorFullRegenerate.dataset.tick = tick + 1;
       return tick % 2 ? getAdjective(short) + " " + form : form + " of " + short;
+    }
+  }
+
+  async function regenerateFullNameAi() {
+    const state = +stateNameEditor.dataset.state;
+    const culture = pack.states[state].culture;
+    const short = byId("stateNameEditorShort").value;
+    const form = byId("stateNameEditorSelectForm").value;
+    try {
+      const name = await AiNames.generateName("stateFullName", culture, {form: form || "State", stateName: short});
+      byId("stateNameEditorFull").value = name;
+    } catch (error) {
+      tip(error.message, true, "error", 4000);
     }
   }
 
@@ -1490,6 +1517,43 @@ function downloadStatesCsv() {
 
   const name = getFileName("States") + ".csv";
   downloadFile(csvData, name);
+}
+
+async function regenerateStateNamesAi() {
+  const elements = Array.from($body.querySelectorAll(":scope > div"));
+  const unlocked = elements.filter(el => {
+    const id = +el.dataset.id;
+    return id > 0 && !pack.states[id].lock;
+  });
+  if (!unlocked.length) return;
+
+  const byCulture = new Map();
+  for (const el of unlocked) {
+    const stateId = +el.dataset.id;
+    const culture = pack.states[stateId].culture;
+    if (!byCulture.has(culture)) byCulture.set(culture, []);
+    byCulture.get(culture).push({el, stateId});
+  }
+
+  tip("Generating AI names...", false, "info");
+
+  try {
+    for (const [culture, states] of byCulture) {
+      const names = await AiNames.generateNames("state", culture, states.length);
+      for (let i = 0; i < states.length; i++) {
+        const name = names[i] || Names.getState(Names.getCultureShort(culture), culture);
+        const {el, stateId} = states[i];
+        const s = pack.states[stateId];
+        s.name = el.dataset.name = name;
+        el.querySelector("input.stateName").value = name;
+        s.fullName = s.formName ? `${s.formName} of ${name}` : name;
+        labels.select("[data-id='" + stateId + "']").text(s.fullName);
+      }
+    }
+    tip("AI names generated successfully", true, "success", 3000);
+  } catch (error) {
+    tip(error.message, true, "error", 4000);
+  }
 }
 
 function closeStatesEditor() {

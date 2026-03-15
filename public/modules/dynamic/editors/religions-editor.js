@@ -74,6 +74,7 @@ function insertEditorHtml() {
       </div>
       <button id="religionsAdd" data-tip="Add a new religion. Hold Shift to add multiple" class="icon-plus"></button>
       <button id="religionsExport" data-tip="Download religions-related data" class="icon-download"></button>
+      <button id="religionsRegenerateNamesAi" data-tip="Regenerate religion names using AI" class="icon-robot"></button>
       <button id="religionsRecalculate" data-tip="Recalculate religions based on current values of growth-related attributes" class="icon-retweet"></button>
       <span data-tip="Allow religion center, extent, and expansionism changes to take an immediate effect">
         <input id="religionsAutoChange" class="checkbox" type="checkbox" />
@@ -100,6 +101,7 @@ function addListeners() {
   byId("religionsManuallyCancel").on("click", () => exitReligionsManualAssignment());
   byId("religionsAdd").on("click", enterAddReligionMode);
   byId("religionsExport").on("click", downloadReligionsCsv);
+  byId("religionsRegenerateNamesAi").on("click", regenerateReligionNamesAi);
   byId("religionsRecalculate").on("click", () => recalculateReligions(true));
 }
 
@@ -196,12 +198,14 @@ function religionsEditorAddLines() {
       <fill-box fill="${r.color}"></fill-box>
       <input data-tip="Religion name. Click and type to change" class="religionName" style="width: 11em"
         value="${r.name}" autocorrect="off" spellcheck="false" />
+      <span data-tip="Generate religion name with AI" class="icon-robot hiddenIcon" style="visibility: hidden"></span>
       <select data-tip="Religion type" class="religionType" style="width: 5em">
         ${getTypeOptions(r.type)}
       </select>
       <input data-tip="Religion form" class="religionForm" style="width: 6em"
         value="${r.form}" autocorrect="off" spellcheck="false" />
       <span data-tip="Click to re-generate supreme deity" class="icon-arrows-cw hide"></span>
+      <span data-tip="Generate deity name with AI" class="icon-robot-deity hiddenIcon hide" style="visibility: hidden"></span>
       <input data-tip="Religion supreme deity" class="religionDeity hide" style="width: 17em"
         value="${r.deity || ""}" autocorrect="off" spellcheck="false" />
       <span data-tip="Religion area" style="padding-right: 4px" class="icon-map-o hide"></span>
@@ -236,10 +240,12 @@ function religionsEditorAddLines() {
   });
   $body.querySelectorAll("fill-box").forEach(el => el.on("click", religionChangeColor));
   $body.querySelectorAll("div > input.religionName").forEach(el => el.on("input", religionChangeName));
+  $body.querySelectorAll("div > span.icon-robot").forEach(el => el.on("click", religionRegenerateNameAi));
   $body.querySelectorAll("div > select.religionType").forEach(el => el.on("change", religionChangeType));
   $body.querySelectorAll("div > input.religionForm").forEach(el => el.on("input", religionChangeForm));
   $body.querySelectorAll("div > input.religionDeity").forEach(el => el.on("input", religionChangeDeity));
   $body.querySelectorAll("div > span.icon-arrows-cw").forEach(el => el.on("click", regenerateDeity));
+  $body.querySelectorAll("div > span.icon-robot-deity").forEach(el => el.on("click", regenerateDeityAi));
   $body.querySelectorAll("div > div.religionPopulation").forEach(el => el.on("click", changePopulation));
   $body.querySelectorAll("div > select.religionExtent").forEach(el => el.on("change", religionChangeExtent));
   $body.querySelectorAll("div > input.religionExpantion").forEach(el => el.on("change", religionChangeExpansionism));
@@ -363,6 +369,21 @@ function religionChangeName() {
   );
 }
 
+async function religionRegenerateNameAi() {
+  const religionId = +this.parentNode.dataset.id;
+  const $line = this.parentNode;
+  const cultureId = pack.religions[religionId].culture;
+  try {
+    const name = await AiNames.generateName("religion", cultureId);
+    $line.querySelector("input.religionName").value = name;
+    $line.dataset.name = name;
+    pack.religions[religionId].name = name;
+    pack.religions[religionId].code = abbreviate(name, pack.religions.map(r => r.code));
+  } catch (err) {
+    if (err.message !== "No API key configured") tip("AI name generation failed: " + err.message, false, "error", 4000);
+  }
+}
+
 function religionChangeType() {
   const religionId = +this.parentNode.dataset.id;
   this.parentNode.dataset.type = this.value;
@@ -388,6 +409,23 @@ function regenerateDeity() {
   this.parentNode.dataset.deity = deity;
   pack.religions[religionId].deity = deity;
   this.nextElementSibling.value = deity;
+}
+
+async function regenerateDeityAi() {
+  const religionId = +this.parentNode.dataset.id;
+  const religion = pack.religions[religionId];
+  const cultureId = religion.culture;
+  try {
+    const deity = await AiNames.generateName("deity", cultureId, {
+      religionType: religion.type,
+      religionForm: religion.form
+    });
+    this.parentNode.dataset.deity = deity;
+    pack.religions[religionId].deity = deity;
+    this.nextElementSibling.value = deity;
+  } catch (err) {
+    if (err.message !== "No API key configured") tip("AI deity generation failed: " + err.message, false, "error", 4000);
+  }
 }
 
 function changePopulation() {
@@ -819,6 +857,42 @@ function closeReligionsEditor() {
   debug.select("#religionCenters").remove();
   exitReligionsManualAssignment("close");
   exitAddReligionMode();
+}
+
+async function regenerateReligionNamesAi() {
+  const elements = Array.from($body.querySelectorAll(":scope > div"));
+  const unlocked = elements.filter(el => {
+    const id = +el.dataset.id;
+    return id > 0 && !pack.religions[id].lock;
+  });
+  if (!unlocked.length) return;
+
+  const byCulture = new Map();
+  for (const el of unlocked) {
+    const religionId = +el.dataset.id;
+    const culture = pack.religions[religionId].culture;
+    if (!byCulture.has(culture)) byCulture.set(culture, []);
+    byCulture.get(culture).push({el, religionId});
+  }
+
+  tip("Generating AI names...", false, "info");
+
+  try {
+    for (const [culture, religions] of byCulture) {
+      const names = await AiNames.generateNames("religion", culture, religions.length);
+      for (let i = 0; i < religions.length; i++) {
+        const name = names[i] || Religions.getRandomName(culture);
+        const {el, religionId} = religions[i];
+        el.querySelector("input.religionName").value = name;
+        el.dataset.name = name;
+        pack.religions[religionId].name = name;
+        pack.religions[religionId].code = abbreviate(name, pack.religions.map(r => r.code));
+      }
+    }
+    tip("AI names generated successfully", true, "success", 3000);
+  } catch (error) {
+    tip(error.message, true, "error", 4000);
+  }
 }
 
 function updateLockStatus() {

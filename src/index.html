@@ -1667,6 +1667,7 @@
               </td>
               <td>
                 <i data-tip="Regenerate map name" onclick="Names.getMapName(true)" class="icon-arrows-cw"></i>
+                <i id="mapNameAi" data-tip="Generate map name with AI" class="icon-robot pointer" style="cursor:pointer" onclick="AiNames.generateName('map', 0).then(n => { mapName.value = n; }).catch(e => tip(e.message, true, 'error', 4000))"></i>
               </td>
             </tr>
 
@@ -2076,6 +2077,59 @@
             </tr>
           </table>
 
+          <p data-tip="AI name generation settings. Applied immediately to all AI name generation">AI Name Generation:</p>
+          <table>
+            <tr data-tip="Select AI model for name generation">
+              <td></td>
+              <td>AI Model</td>
+              <td>
+                <select id="aiNamesModel"></select>
+              </td>
+              <td></td>
+            </tr>
+            <tr data-tip="Enter API key for selected AI provider. For Ollama enter the model name (e.g. llama3.2:3b)">
+              <td></td>
+              <td>API Key</td>
+              <td>
+                <input id="aiNamesKey" placeholder="Enter API key" class="long" type="text" />
+              </td>
+              <td>
+                <i id="aiNamesKeyHelp" data-tip="Click to see usage instructions" class="icon-help-circled pointer"></i>
+              </td>
+            </tr>
+            <tr data-tip="Ollama server address. Change if running on a different host or port">
+              <td></td>
+              <td>Ollama Host</td>
+              <td>
+                <input id="aiNamesOllamaHost" placeholder="http://localhost:11434" class="long" type="text" />
+              </td>
+              <td></td>
+            </tr>
+            <tr data-tip="Temperature controls randomness. Higher = more creative, lower = more predictable">
+              <td></td>
+              <td>Temperature</td>
+              <td>
+                <input id="aiNamesTemperature" type="number" min="0" max="2" step="0.1" value="1" style="width: 4em" />
+              </td>
+              <td></td>
+            </tr>
+            <tr data-tip="Override the language for all AI-generated names. Leave empty to use culture-based language automatically">
+              <td></td>
+              <td>Language override</td>
+              <td>
+                <input id="aiNamesLanguageOverride" placeholder="e.g. German, Japanese" class="long" type="text" />
+              </td>
+              <td></td>
+            </tr>
+            <tr data-tip="Additional instructions appended to every AI name generation prompt">
+              <td></td>
+              <td>Custom prompt</td>
+              <td colspan="2">
+                <textarea id="aiNamesCustomPrompt" placeholder="e.g. Names should sound soft and melodic" rows="2" style="width: 100%"></textarea>
+              </td>
+            </tr>
+          </table>
+
           <div>
             <button
               id="configureWorld"
@@ -2202,6 +2256,12 @@
               Rivers
             </button>
             <button id="regenerateRoutes" data-tip="Click to regenerate all unlocked routes">Routes</button>
+            <button
+              id="regenerateAiNames"
+              data-tip="Regenerate ALL unlocked entity names using AI. Uses culture-based prompts for each entity type"
+            >
+              AI Names
+            </button>
             <button
               id="regenerateStates"
               data-tip="Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different"
@@ -2821,6 +2881,7 @@
               class="icon-book pointer"
             ></span>
             <span id="riverNameRandom" data-tip="Generate random name for the river" class="icon-globe pointer"></span>
+            <span id="riverNameAi" data-tip="Generate name with AI" class="icon-robot pointer"></span>
             <input id="riverName" data-tip="Type to rename the river" autocorrect="off" spellcheck="false" />
             <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
           </div>
@@ -2906,6 +2967,7 @@
               class="icon-book pointer"
             ></span>
             <span id="lakeNameRandom" data-tip="Generate random name for the lake" class="icon-globe pointer"></span>
+            <span id="lakeNameAi" data-tip="Generate name with AI" class="icon-robot pointer"></span>
             <input id="lakeName" data-tip="Type to rename the lake" autocorrect="off" spellcheck="false" />
             <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
           </div>
@@ -3011,6 +3073,7 @@
             <input id="routeName" data-tip="Type to rename the route" autocorrect="off" spellcheck="false" />
             <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
             <span id="routeGenerateName" data-tip="Generate route name" class="icon-globe pointer"></span>
+            <span id="routeGenerateNameAi" data-tip="Generate route name with AI" class="icon-robot pointer"></span>
           </div>
 
           <div data-tip="Select route group">
@@ -3454,6 +3517,11 @@
                   id="burgNameReRandom"
                   data-tip="Generate random name for the burg"
                   class="icon-globe pointer"
+                ></span>
+                <span
+                  id="burgNameAi"
+                  data-tip="Generate name with AI"
+                  class="icon-robot pointer"
                 ></span>
               </div>
 
@@ -4498,6 +4566,7 @@
             class="icon-book pointer"
           ></span>
           <span id="stateNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
+          <span id="stateNameEditorShortAi" data-tip="Generate name with AI" class="icon-robot pointer"></span>
         </div>
 
         <div data-tip="Select form name">
@@ -4608,6 +4677,7 @@
             data-tick="0"
             class="icon-arrows-cw pointer"
           ></span>
+          <span id="stateNameEditorFullAi" data-tip="Generate full name with AI" class="icon-robot pointer"></span>
         </div>
 
         <div data-tip="Uncheck to not update state label on name change" style="padding-block: 0.2em">
@@ -4773,6 +4843,7 @@
             class="icon-book pointer"
           ></span>
           <span id="provinceNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
+          <span id="provinceNameEditorShortAi" data-tip="Generate name using AI" class="icon-fleur-de-lis pointer hiddenIcon"></span>
         </div>
 
         <div data-tip="Select form name">
@@ -4844,6 +4915,7 @@
             data-tip="Click to re-generate full name"
             class="icon-arrows-cw pointer"
           ></span>
+          <span id="provinceNameEditorFullAi" data-tip="Generate full name using AI" class="icon-fleur-de-lis pointer hiddenIcon"></span>
         </div>
 
         <div
@@ -5001,6 +5073,7 @@
             </div>
           </div>
 
+          <button id="zonesRegenerateNamesAi" data-tip="Regenerate zone names using AI" class="icon-robot"></button>
           <button id="zonesAdd" data-tip="Add new zone layer" class="icon-plus"></button>
           <button id="zonesExport" data-tip="Download zones-related data" class="icon-download"></button>
 
@@ -5444,6 +5517,11 @@
             data-tip="Regenerate burg names based on assigned culture"
             class="icon-retweet"
           ></button>
+          <button
+            id="regenerateBurgNamesAi"
+            data-tip="Regenerate burg names using AI based on assigned culture"
+            class="icon-robot"
+          ></button>
           <button id="addNewBurg" data-tip="Add a new burg. Hold Shift to add multiple" class="icon-plus"></button>
           <button
             id="burgsExport"
@@ -5522,6 +5600,7 @@
             data-tip="Save routes-related data as a text file (.csv)"
             class="icon-download"
           ></button>
+          <button id="routesRegenerateNamesAi" data-tip="Regenerate route names using AI" class="icon-robot"></button>
           <button id="routesLockAll" data-tip="Lock or unlock all routes" class="icon-lock"></button>
           <button id="routesRemoveAll" data-tip="Remove all routes" class="icon-trash"></button>
           <label for="routesSearch" data-tip="Filter by name or group" style="margin-left: 0.2em"
@@ -5583,6 +5662,7 @@
             data-tip="Save rivers-related data as a text file (.csv)"
             class="icon-download"
           ></button>
+          <button id="riversRegenerateNamesAi" data-tip="Regenerate river names using AI" class="icon-robot"></button>
           <button id="riversRemoveAll" data-tip="Remove all rivers" class="icon-trash"></button>
           <label for="riversSearch" data-tip="Filter by name, type or basin" style="margin-left: 0.2em"
             >Search: <input id="riversSearch" type="search"

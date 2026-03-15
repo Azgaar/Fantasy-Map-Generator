@@ -137,6 +137,11 @@ optionsContent.addEventListener("input", event => {
   else if (id === "themeHueInput") changeThemeHue(value);
   else if (id === "themeColorInput") changeDialogsTheme(themeColorInput.value, transparencyInput.value);
   else if (id === "transparencyInput") changeDialogsTheme(themeColorInput.value, value);
+  else if (id === "aiNamesCustomPrompt") localStorage.setItem("fmg-ai-custom-prompt", value);
+  else if (id === "aiNamesLanguageOverride") localStorage.setItem("fmg-ai-language-override", value);
+  else if (id === "aiNamesOllamaHost") localStorage.setItem("fmg-ai-ollama-host", value);
+  else if (id === "aiNamesTemperature") localStorage.setItem("fmg-ai-temperature", value);
+  else if (id === "aiNamesKey") saveAiKey();
 });
 
 optionsContent.addEventListener("change", event => {
@@ -149,6 +154,7 @@ optionsContent.addEventListener("change", event => {
   else if (id === "eraInput") changeEra();
   else if (id === "stateLabelsModeInput") options.stateLabelsMode = value;
   else if (id === "azgaarAssistant") toggleAssistant();
+  else if (id === "aiNamesModel") changeAiModel(value);
 });
 
 optionsContent.addEventListener("click", event => {
@@ -164,6 +170,7 @@ optionsContent.addEventListener("click", event => {
   else if (id === "themeColorRestore") restoreDefaultThemeColor();
   else if (id === "loadGoogleTranslateButton") loadGoogleTranslate();
   else if (id === "resetLanguage") resetLanguage();
+  else if (id === "aiNamesKeyHelp") openAiKeyHelp();
 });
 
 function mapSizeInputChange() {
@@ -189,6 +196,86 @@ function restoreDefaultCanvasSize() {
   localStorage.removeItem("mapHeight");
   localStorage.removeItem("mapWidth");
   fitMapToScreen();
+}
+
+// AI Name Generation settings
+const AI_MODELS = {
+  "gpt-4o-mini": "openai",
+  "chatgpt-4o-latest": "openai",
+  "gpt-4o": "openai",
+  "gpt-4-turbo": "openai",
+  o3: "openai",
+  "o3-mini": "openai",
+  "o3-pro": "openai",
+  "o4-mini": "openai",
+  "claude-opus-4-20250514": "anthropic",
+  "claude-sonnet-4-20250514": "anthropic",
+  "claude-3-5-haiku-latest": "anthropic",
+  "claude-3-5-sonnet-latest": "anthropic",
+  "claude-3-opus-latest": "anthropic",
+  "ollama (local models)": "ollama"
+};
+
+function initAiSettings() {
+  const modelSelect = byId("aiNamesModel");
+  if (!modelSelect) return;
+
+  modelSelect.options.length = 0;
+  Object.keys(AI_MODELS).forEach(m => modelSelect.options.add(new Option(m, m)));
+  modelSelect.value = localStorage.getItem("fmg-ai-model") || "gpt-4o-mini";
+  if (!modelSelect.value || !AI_MODELS[modelSelect.value]) modelSelect.value = "gpt-4o-mini";
+
+  const provider = AI_MODELS[modelSelect.value];
+  byId("aiNamesKey").value = localStorage.getItem(`fmg-ai-kl-${provider}`) || "";
+  byId("aiNamesOllamaHost").value = localStorage.getItem("fmg-ai-ollama-host") || "http://localhost:11434";
+  byId("aiNamesTemperature").value = localStorage.getItem("fmg-ai-temperature") || "1";
+  byId("aiNamesLanguageOverride").value = localStorage.getItem("fmg-ai-language-override") || "";
+  byId("aiNamesCustomPrompt").value = localStorage.getItem("fmg-ai-custom-prompt") || "";
+
+  // show/hide ollama host based on selected model
+  const ollamaRow = byId("aiNamesOllamaHost").closest("tr");
+  ollamaRow.style.display = provider === "ollama" ? "" : "none";
+}
+
+function changeAiModel(value) {
+  localStorage.setItem("fmg-ai-model", value);
+  const provider = AI_MODELS[value];
+
+  // load key for the selected provider
+  byId("aiNamesKey").value = localStorage.getItem(`fmg-ai-kl-${provider}`) || "";
+
+  // show/hide ollama host row
+  const ollamaRow = byId("aiNamesOllamaHost").closest("tr");
+  ollamaRow.style.display = provider === "ollama" ? "" : "none";
+}
+
+function saveAiKey() {
+  const model = byId("aiNamesModel").value;
+  const provider = AI_MODELS[model];
+  const key = byId("aiNamesKey").value;
+  localStorage.setItem(`fmg-ai-kl-${provider}`, key);
+}
+
+function openAiKeyHelp() {
+  const model = byId("aiNamesModel").value;
+  const provider = AI_MODELS[model];
+  const links = {
+    openai: "https://platform.openai.com/account/api-keys",
+    anthropic: "https://console.anthropic.com/account/keys",
+    ollama: "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Ollama-text-generation"
+  };
+  openURL(links[provider] || links.openai);
+}
+
+// Initialize AI settings when Options tab is first shown
+{
+  const optionsTab = byId("optionsTab");
+  if (optionsTab) {
+    const origClick = optionsTab.onclick;
+    optionsTab.addEventListener("click", function () {
+      initAiSettings();
+    });
+  }
 }
 
 // on map creation

@@ -29,6 +29,7 @@ function editBurg(id) {
   byId("burgType").on("change", changeType);
   byId("burgCulture").on("change", changeCulture);
   byId("burgNameReCulture").on("click", generateNameCulture);
+  byId("burgNameAi").on("click", generateNameAi);
   byId("burgPopulation").on("change", changePopulation);
   burgBody.querySelectorAll(".burgFeature").forEach(el => el.on("click", toggleFeature));
   byId("burgLinkOpen").on("click", openBurgLink);
@@ -147,6 +148,17 @@ function editBurg(id) {
     const culture = pack.burgs[id].culture;
     burgName.value = Names.getCulture(culture);
     changeName();
+  }
+
+  async function generateNameAi() {
+    const id = +elSelected.attr("data-id");
+    const culture = pack.burgs[id].culture;
+    try {
+      burgName.value = await AiNames.generateName("burg", culture);
+      changeName();
+    } catch (error) {
+      tip(error.message, true, "error", 4000);
+    }
   }
 
   function changePopulation() {

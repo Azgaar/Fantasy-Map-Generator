@@ -49,6 +49,7 @@ function editRoute(id) {
   byId("routeGroupEdit").on("click", editRouteGroups);
   byId("routeEditStyle").on("click", editRouteGroupStyle);
   byId("routeGenerateName").on("click", generateName);
+  byId("routeGenerateNameAi").on("click", generateNameAi);
 
   function getRoute() {
     const routeId = +elSelected.attr("id").slice(5);
@@ -349,6 +350,25 @@ function editRoute(id) {
   function generateName() {
     const route = getRoute();
     route.name = routeName.value = Routes.generateName(route);
+  }
+
+  async function generateNameAi() {
+    const route = getRoute();
+    const connectedBurgs = [];
+    for (const [_x, _y, cellId] of route.points) {
+      const burgId = pack.cells.burg[cellId];
+      if (burgId && pack.burgs[burgId]) connectedBurgs.push(pack.burgs[burgId].name);
+    }
+    const culture = pack.cells.culture[route.points[0][2]] || 0;
+    try {
+      const name = await AiNames.generateName("route", culture, {
+        routeGroup: route.group,
+        connectedBurgs: connectedBurgs.slice(0, 3)
+      });
+      route.name = routeName.value = name;
+    } catch (err) {
+      if (err.message !== "No API key configured") tip("AI name generation failed: " + err.message, false, "error", 4000);
+    }
   }
 
   function showRouteElevationProfile() {

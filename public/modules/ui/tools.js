@@ -96,6 +96,7 @@ function processFeatureRegeneration(event, button) {
   else if (button === "regenerateIce") regenerateIce();
   else if (button === "regenerateMarkers") regenerateMarkers();
   else if (button === "regenerateZones") regenerateZones(event);
+  else if (button === "regenerateAiNames") regenerateAllAiNames();
 }
 
 async function openEmblemEditor() {
@@ -580,6 +581,189 @@ function regenerateZones(event) {
     Zones.generate(number);
     if (byId("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
     if (layerIsOn("toggleZones")) drawZones();
+  }
+}
+
+async function regenerateAllAiNames() {
+  const {states, cultures, burgs, rivers, religions, routes, zones} = pack;
+
+  tip("Regenerating all names with AI...", false, "info");
+
+  try {
+    // Cultures
+    for (const c of cultures) {
+      if (!c.i || c.removed || c.lock) continue;
+      const names = await AiNames.generateNames("culture", c.i, 1);
+      if (names[0]) c.name = names[0];
+    }
+
+    // States
+    const byCulture = new Map();
+    for (const s of states) {
+      if (!s.i || s.removed || s.lock) continue;
+      if (!byCulture.has(s.culture)) byCulture.set(s.culture, []);
+      byCulture.get(s.culture).push(s);
+    }
+    for (const [culture, items] of byCulture) {
+      const names = await AiNames.generateNames("state", culture, items.length);
+      for (let i = 0; i < items.length; i++) {
+        const s = items[i];
+        s.name = names[i] || s.name;
+      }
+    }
+
+    // State full names (batched - 1 API call per culture)
+    for (const [culture, items] of byCulture) {
+      const withForm = items.filter(s => s.formName);
+      const withoutForm = items.filter(s => !s.formName);
+      for (const s of withoutForm) s.fullName = s.name;
+      if (withForm.length) {
+        const inputs = withForm.map(s => ({shortName: s.name, form: s.formName}));
+        const fullNames = await AiNames.generateFullNamesBatch(inputs, culture);
+        for (let i = 0; i < withForm.length; i++) {
+          withForm[i].fullName = fullNames[i] || `${withForm[i].formName} of ${withForm[i].name}`;
+        }
+      }
+    }
+
+    // Burgs
+    const burgsByCulture = new Map();
+    for (const b of burgs) {
+      if (!b.i || b.removed || b.lock) continue;
+      if (!burgsByCulture.has(b.culture)) burgsByCulture.set(b.culture, []);
+      burgsByCulture.get(b.culture).push(b);
+    }
+    for (const [culture, items] of burgsByCulture) {
+      const names = await AiNames.generateNames("burg", culture, items.length);
+      for (let i = 0; i < items.length; i++) {
+        items[i].name = names[i] || items[i].name;
+      }
+    }
+
+    // Rivers
+    const riversByCulture = new Map();
+    for (const r of rivers) {
+      if (!r.i || r.lock) continue;
+      const culture = r.mouth != null ? pack.cells.culture[r.mouth] : 0;
+      if (!riversByCulture.has(culture)) riversByCulture.set(culture, []);
+      riversByCulture.get(culture).push(r);
+    }
+    for (const [culture, items] of riversByCulture) {
+      const names = await AiNames.generateNames("river", culture, items.length);
+      for (let i = 0; i < items.length; i++) {
+        items[i].name = names[i] || items[i].name;
+      }
+    }
+
+    // Religions (names + deities in one batch per culture)
+    const relByCulture = new Map();
+    for (const r of religions) {
+      if (!r.i || r.removed || r.lock) continue;
+      if (!relByCulture.has(r.culture)) relByCulture.set(r.culture, []);
+      relByCulture.get(r.culture).push(r);
+    }
+    for (const [culture, items] of relByCulture) {
+      const inputs = items.map(r => ({type: r.type, form: r.form}));
+      const results = await AiNames.generateReligionsBatch(inputs, culture);
+      for (let i = 0; i < items.length; i++) {
+        if (results[i]) {
+          if (results[i].name) items[i].name = results[i].name;
+          items[i].deity = results[i].deity;
+        }
+      }
+    }
+
+    // Routes (batched by culture, chunked for large maps)
+    const CHUNK_SIZE = 50;
+    const routesByCulture = new Map();
+    for (const route of routes) {
+      if (!route.points || route.lock) continue;
+      const culture = route.points[0] ? pack.cells.culture[route.points[0][2]] : 0;
+      if (!routesByCulture.has(culture)) routesByCulture.set(culture, []);
+      routesByCulture.get(culture).push(route);
+    }
+    for (const [culture, items] of routesByCulture) {
+      for (let start = 0; start < items.length; start += CHUNK_SIZE) {
+        const chunk = items.slice(start, start + CHUNK_SIZE);
+        const names = await AiNames.generateNames("route", culture, chunk.length);
+        for (let i = 0; i < chunk.length; i++) {
+          chunk[i].name = names[i] || chunk[i].name;
+        }
+      }
+    }
+
+    // Zones (translate types + generate context-aware descriptions)
+    if (zones.length) {
+      const uniqueTypes = [...new Set(zones.map(z => z.type))];
+      const translatedTypes = await AiNames.translateTerms(uniqueTypes, 0);
+      const typeMap = Object.fromEntries(uniqueTypes.map((t, i) => [t, translatedTypes[i]]));
+
+      for (const z of zones) {
+        z.type = typeMap[z.type] || z.type;
+      }
+
+      // Build context for each zone (biome + nearest burg)
+      const zoneInputs = zones.map(z => {
+        const cells = z.cells || [];
+        const centerCell = cells[Math.floor(cells.length / 2)] || cells[0];
+
+        let biome = "unknown";
+        if (centerCell != null && pack.cells.biome[centerCell] != null) {
+          biome = biomesData.name[pack.cells.biome[centerCell]] || "unknown";
+        }
+
+        let nearBurg = "";
+        for (const cellId of cells) {
+          const burgId = pack.cells.burg[cellId];
+          if (burgId && pack.burgs[burgId]) { nearBurg = pack.burgs[burgId].name; break; }
+        }
+
+        return {type: z.type, biome, nearBurg};
+      });
+
+      const descriptions = await AiNames.generateZoneDescriptionsBatch(zoneInputs, 0);
+      for (let i = 0; i < zones.length; i++) {
+        if (descriptions[i]) zones[i].name = descriptions[i];
+      }
+    }
+
+    // Provinces
+    const provinces = pack.provinces;
+    const provsByCulture = new Map();
+    for (const p of provinces) {
+      if (!p.i || p.removed || p.lock) continue;
+      const culture = pack.cells.culture[p.center];
+      if (!provsByCulture.has(culture)) provsByCulture.set(culture, []);
+      provsByCulture.get(culture).push(p);
+    }
+    for (const [culture, items] of provsByCulture) {
+      const names = await AiNames.generateNames("province", culture, items.length);
+      for (let i = 0; i < items.length; i++) {
+        items[i].name = names[i] || items[i].name;
+      }
+    }
+
+    // Province full names (batched - 1 API call per culture)
+    for (const [culture, items] of provsByCulture) {
+      const withForm = items.filter(p => p.formName);
+      const withoutForm = items.filter(p => !p.formName);
+      for (const p of withoutForm) p.fullName = p.name;
+      if (withForm.length) {
+        const inputs = withForm.map(p => ({shortName: p.name, form: p.formName}));
+        const fullNames = await AiNames.generateFullNamesBatch(inputs, culture);
+        for (let i = 0; i < withForm.length; i++) {
+          withForm[i].fullName = fullNames[i] || `${withForm[i].formName} of ${withForm[i].name}`;
+        }
+      }
+    }
+
+    // Redraw labels
+    drawStateLabels();
+    drawBurgLabels();
+
+    tip("All AI names regenerated successfully", true, "success", 4000);
+  } catch (error) {
+    tip("AI name regeneration failed: " + error.message, true, "error", 5000);
   }
 }
 

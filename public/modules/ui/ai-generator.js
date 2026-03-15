@@ -87,8 +87,9 @@ async function generateWithAnthropic({key, model, prompt, temperature, onContent
 
 async function generateWithOllama({key, model, prompt, temperature, onContent}) {
   const ollamaModelName = key; // for Ollama, 'key' is the actual model name entered by the user
+  const ollamaHost = localStorage.getItem("fmg-ai-ollama-host") || "http://localhost:11434";
 
-  const response = await fetch("http://localhost:11434/api/generate", {
+  const response = await fetch(`${ollamaHost}/api/generate`, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({

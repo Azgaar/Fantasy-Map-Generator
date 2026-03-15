@@ -30,6 +30,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   byId("burgsFilterCulture").addEventListener("change", burgsOverviewAddLines);
   byId("burgsSearch").addEventListener("input", burgsOverviewAddLines);
   byId("regenerateBurgNames").addEventListener("click", regenerateNames);
+  byId("regenerateBurgNamesAi").addEventListener("click", regenerateNamesAi);
   byId("addNewBurg").addEventListener("click", enterAddBurgMode);
   byId("burgsExport").addEventListener("click", downloadBurgsData);
   byId("burgNamesImport").addEventListener("click", renameBurgsInBulk);
@@ -231,6 +232,39 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
       pack.burgs[burg].name = el.dataset.name = name;
       burgLabels.select("[data-id='" + burg + "']").text(name);
     });
+  }
+
+  async function regenerateNamesAi() {
+    const elements = Array.from(body.querySelectorAll(":scope > div"));
+    const unlocked = elements.filter(el => !pack.burgs[+el.dataset.id].lock);
+    if (!unlocked.length) return;
+
+    // Group burgs by culture for batch generation
+    const byCulture = new Map();
+    for (const el of unlocked) {
+      const burgId = +el.dataset.id;
+      const culture = pack.burgs[burgId].culture;
+      if (!byCulture.has(culture)) byCulture.set(culture, []);
+      byCulture.get(culture).push({el, burgId});
+    }
+
+    tip("Generating AI names...", false, "info");
+
+    try {
+      for (const [culture, burgs] of byCulture) {
+        const names = await AiNames.generateNames("burg", culture, burgs.length);
+        for (let i = 0; i < burgs.length; i++) {
+          const name = names[i] || Names.getCulture(culture);
+          const {el, burgId} = burgs[i];
+          el.querySelector(".burgName").value = name;
+          pack.burgs[burgId].name = el.dataset.name = name;
+          burgLabels.select("[data-id='" + burgId + "']").text(name);
+        }
+      }
+      tip("AI names generated successfully", true, "success", 3000);
+    } catch (error) {
+      tip(error.message, true, "error", 4000);
+    }
   }
 
   function enterAddBurgMode() {
