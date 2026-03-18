@@ -89,4 +89,11 @@ declare global {
   var scale: number;
   var changeFont: () => void;
   var getFriendlyHeight: (coords: [number, number]) => string;
+  var addLakesInDeepDepressions: () => void;
+  var openNearSeaLakes: () => void;
+  var calculateMapCoordinates: () => void;
+  var calculateTemperatures: () => void;
+  var reGraph: () => void;
+  var createDefaultRuler: () => void;
+  var showStatistics: () => void;
 }

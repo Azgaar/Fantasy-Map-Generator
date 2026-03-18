@@ -1,6 +1,5 @@
-import "./polyfills";
-
 import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
+import "./polyfills";
 
 window.rn = rn;
 window.lim = lim;
@@ -228,8 +227,8 @@ import {
   wiki,
 } from "./commonUtils";
 
-window.clipPoly = (points: [number, number][], secure?: number) =>
-  clipPoly(points, graphWidth, graphHeight, secure);
+window.clipPoly = (points: [number, number][]) =>
+  clipPoly(points, graphWidth, graphHeight);
 window.getSegmentId = getSegmentId;
 window.debounce = debounce;
 window.throttle = throttle;
@@ -336,9 +335,9 @@ export {
   nth,
   openURL,
   P,
+  Pint,
   parseError,
   parseTransform,
-  Pint,
   poissonDiscSampler,
   ra,
   rand,
@@ -351,10 +350,10 @@ export {
   shouldRegenerateGrid,
   si,
   splitInTwo,
+  TYPED_ARRAY_MAX_VALUES,
   throttle,
   toHEX,
   trimVowels,
-  TYPED_ARRAY_MAX_VALUES,
   unique,
   wiki,
 };

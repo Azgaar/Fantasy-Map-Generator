@@ -1,3 +1,4 @@
+import { clipPolygon } from "lineclip";
 import { last } from "./arrayUtils";
 import { distanceSquared } from "./functionUtils";
 import { rn } from "./numberUtils";
@@ -8,14 +9,12 @@ import { rand } from "./probabilityUtils";
  * @param points - Array of points [[x1, y1], [x2, y2], ...]
  * @param graphWidth - Width of the graph
  * @param graphHeight - Height of the graph
- * @param secure - Secure clipping to avoid edge artifacts
  * @returns Clipped polygon points
  */
 export const clipPoly = (
   points: [number, number][],
-  graphWidth?: number,
-  graphHeight?: number,
-  secure: number = 0,
+  graphWidth: number,
+  graphHeight: number,
 ) => {
   if (points.length < 2) return points;
   if (points.some((point) => point === undefined)) {
@@ -23,7 +22,7 @@ export const clipPoly = (
     return points;
   }
 
-  return window.polygonclip(points, [0, 0, graphWidth, graphHeight], secure);
+  return clipPolygon(points, [0, 0, graphWidth, graphHeight]);
 };
 
 /**
@@ -375,7 +374,6 @@ export const initializePrompt = (): void => {
 declare global {
   interface Window {
     ERROR: boolean;
-    polygonclip: any;
 
     clipPoly: typeof clipPoly;
     getSegmentId: typeof getSegmentId;

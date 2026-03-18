@@ -1,6 +1,7 @@
 import Alea from "alea";
 import { curveBasis, curveCatmullRom, line, mean, min, sum } from "d3";
 import { each, rn, round, rw } from "../utils";
+import type { Point } from "./voronoi";
 
 declare global {
   var Rivers: RiverModule;
@@ -20,6 +21,7 @@ export interface River {
   name: string; // river name
   type: string; // river type
   cells: number[]; // cells forming the river path
+  points?: Point[]; // river points (for meandering)
 }
 
 class RiverModule {
@@ -237,7 +239,9 @@ class RiverModule {
             : defaultWidthFactor;
         const meanderedPoints = this.addMeandering(riverCells);
         const discharge = cells.fl[mouth]; // m3 in second
-        const length = this.getApproximateLength(meanderedPoints);
+        const length = this.getApproximateLength(
+          meanderedPoints.map(([x, y]) => [x, y]),
+        );
         const sourceWidth = this.getSourceWidth(cells.fl[source]);
         const width = this.getWidth(
           this.getOffset({
@@ -411,7 +415,7 @@ class RiverModule {
 
   addMeandering(
     riverCells: number[],
-    riverPoints = null,
+    riverPoints: Point[] | null = null,
     meandering = 0.5,
   ): [number, number, number][] {
     const { fl, h } = pack.cells;
@@ -579,7 +583,7 @@ class RiverModule {
     );
   }
 
-  getApproximateLength(points: [number, number, number][]) {
+  getApproximateLength(points: Point[] = []) {
     const length = points.reduce(
       (s, v, i, p) =>
         s + (i ? Math.hypot(v[0] - p[i - 1][0], v[1] - p[i - 1][1]) : 0),

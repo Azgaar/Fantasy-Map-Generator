@@ -7,6 +7,7 @@ import {
   type Vertices,
   Voronoi,
 } from "../modules/voronoi";
+import type { PackedGraph } from "../types/PackedGraph";
 import { createTypedArray } from "./arrayUtils";
 import { rn } from "./numberUtils";
 import { byId } from "./shorthands";
@@ -541,7 +542,7 @@ export function* poissonDiscSampler(
  * @param {number} i - The index of the packed cell
  * @returns {boolean} - True if the cell is land, false otherwise
  */
-export const isLand = (i: number, packedGraph: any) => {
+export const isLand = (i: number, packedGraph: PackedGraph) => {
   return packedGraph.cells.h[i] >= 20;
 };
 
@@ -550,7 +551,7 @@ export const isLand = (i: number, packedGraph: any) => {
  * @param {number} i - The index of the packed cell
  * @returns {boolean} - True if the cell is water, false otherwise
  */
-export const isWater = (i: number, packedGraph: any) => {
+export const isWater = (i: number, packedGraph: PackedGraph) => {
   return packedGraph.cells.h[i] < 20;
 };
 
