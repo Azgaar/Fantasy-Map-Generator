@@ -9,6 +9,7 @@ toolsContent.addEventListener("click", function (event) {
 
   // click on open Editor buttons
   if (button === "editHeightmapButton") editHeightmap();
+  else if (button === "editTectonicsButton") editTectonics();
   else if (button === "editBiomesButton") editBiomes();
   else if (button === "editStatesButton") editStates();
   else if (button === "editProvincesButton") editProvinces();

@@ -194,11 +194,19 @@ function insertHtml() {
 
   const sections = document.getElementsByClassName("heightmap-selection_container");
 
-  sections[0].innerHTML = Object.keys(heightmapTemplates)
+  const allTemplateKeys = Object.keys(heightmapTemplates);
+  if (typeof tectonicTemplates !== "undefined") {
+    allTemplateKeys.push(...Object.keys(tectonicTemplates));
+  }
+
+  sections[0].innerHTML = allTemplateKeys
     .map(key => {
-      const name = heightmapTemplates[key].name;
+      const isTectonic = typeof tectonicTemplates !== "undefined" && key in tectonicTemplates;
+      const name = isTectonic ? tectonicTemplates[key].name : heightmapTemplates[key].name;
       Math.random = aleaPRNG(initialSeed);
-      const heights = HeightmapGenerator.fromTemplate(graph, key);
+      const heights = isTectonic
+        ? HeightmapGenerator.fromTectonic(graph, tectonicTemplates[key].config)
+        : HeightmapGenerator.fromTemplate(graph, key);
 
       return /* html */ `<article data-id="${key}" data-seed="${initialSeed}">
         <img src="${getHeightmapPreview(heights)}" alt="${name}" />
@@ -255,6 +263,8 @@ function getSeed() {
 }
 
 function getName(id) {
+  const isTectonic = typeof tectonicTemplates !== "undefined" && id in tectonicTemplates;
+  if (isTectonic) return tectonicTemplates[id].name;
   const isTemplate = id in heightmapTemplates;
   return isTemplate ? heightmapTemplates[id].name : precreatedHeightmaps[id].name;
 }
@@ -266,7 +276,10 @@ function getGraph(currentGraph) {
 }
 
 function drawTemplatePreview(id) {
-  const heights = HeightmapGenerator.fromTemplate(graph, id);
+  const isTectonic = typeof tectonicTemplates !== "undefined" && id in tectonicTemplates;
+  const heights = isTectonic
+    ? HeightmapGenerator.fromTectonic(graph, tectonicTemplates[id].config)
+    : HeightmapGenerator.fromTemplate(graph, id);
   const dataUrl = getHeightmapPreview(heights);
   const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article.querySelector("img").src = dataUrl;
@@ -294,8 +307,9 @@ function redrawAll() {
     const {id, seed} = article.dataset;
     Math.random = aleaPRNG(seed);
 
+    const isTectonic = typeof tectonicTemplates !== "undefined" && id in tectonicTemplates;
     const isTemplate = id in heightmapTemplates;
-    if (isTemplate) drawTemplatePreview(id);
+    if (isTectonic || isTemplate) drawTemplatePreview(id);
     else drawPrecreatedHeightmap(id);
   }
 }
