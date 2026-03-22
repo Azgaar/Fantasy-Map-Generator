@@ -2,10 +2,13 @@
 
 // Tectonic Plate Editor
 // Click plates to select & edit, drag arrows to set velocity/direction
+// Paint mode: brush to reassign cells between plates
 
 let tectonicViewMode = "plates"; // "plates" or "heights"
 let tectonicPlateColors = [];
 let tectonicSelectedPlate = -1;
+let tectonicPaintMode = false;
+let tectonicBrushRadius = 10;
 
 function editTectonics() {
   if (customization) return tip("Please exit the customization mode first", false, "error");
@@ -17,12 +20,14 @@ function editTectonics() {
   closeDialogs(".stable");
   tectonicViewMode = "plates";
   tectonicSelectedPlate = -1;
+  tectonicPaintMode = false;
 
   const plates = window.tectonicGenerator.getPlates();
   tectonicPlateColors = generatePlateColors(plates.length);
 
   drawPlateOverlay();
   closePlatePopup();
+  updatePaintButtonState();
 
   $("#tectonicEditor").dialog({
     title: "Tectonic Plate Editor",
@@ -38,8 +43,15 @@ function editTectonics() {
   byId("tectonicRegenerate").addEventListener("click", regenerateFromEditor);
   byId("tectonicToggleOverlay").addEventListener("click", togglePlateOverlay);
   byId("tectonicApplyMap").addEventListener("click", applyToMap);
+  byId("tectonicPaintToggle").addEventListener("click", togglePaintMode);
+  byId("tectonicBrushSize").addEventListener("input", function () {
+    tectonicBrushRadius = +this.value;
+    byId("tectonicBrushSizeLabel").textContent = this.value;
+  });
   byId("tectonicClose").addEventListener("click", () => $("#tectonicEditor").dialog("close"));
 }
+
+// ---- Color Utilities ----
 
 function generatePlateColors(count) {
   const colors = [];
@@ -80,7 +92,6 @@ function drawPlateOverlay() {
   viewbox.select("#tectonicOverlay").remove();
   const overlay = viewbox.insert("g", "#terrs").attr("id", "tectonicOverlay");
 
-  // Cell polygons
   const cellGroup = overlay.append("g").attr("id", "plateCells");
   for (let i = 0; i < plateIds.length; i++) {
     const pid = plateIds[i];
@@ -97,10 +108,12 @@ function drawPlateOverlay() {
       .attr("stroke-opacity", 0.4)
       .attr("stroke-width", 0.2)
       .attr("data-plate", pid)
-      .on("click", function () { selectPlate(pid); });
+      .attr("data-cell", i)
+      .on("click", function () {
+        if (!tectonicPaintMode) selectPlate(pid);
+      });
   }
 
-  // Velocity arrows (draggable)
   drawVelocityArrows(overlay, plates, plateIds, colors);
 }
 
@@ -136,11 +149,9 @@ function drawVelocityArrows(overlay, plates, plateIds, colors) {
     const dx = vel[0] * arrowScale;
     const dy = -vel[1] * arrowScale;
     const mag = Math.sqrt(dx * dx + dy * dy);
-
     const tipX = cx + dx;
     const tipY = cy + dy;
 
-    // Arrow line
     arrowGroup.append("line")
       .attr("class", "velocityLine")
       .attr("data-plate", plate.id)
@@ -152,7 +163,6 @@ function drawVelocityArrows(overlay, plates, plateIds, colors) {
       .attr("stroke-dasharray", mag < 2 ? "2,2" : "none")
       .attr("marker-end", "url(#tectonicArrowhead)");
 
-    // Draggable handle at arrow tip
     arrowGroup.append("circle")
       .attr("class", "velocityHandle")
       .attr("data-plate", plate.id)
@@ -169,7 +179,6 @@ function drawVelocityArrows(overlay, plates, plateIds, colors) {
         .on("end", function () { d3.select(this).attr("cursor", "grab"); })
       );
 
-    // Plate label
     arrowGroup.append("text")
       .attr("x", cx).attr("y", cy - 6)
       .attr("text-anchor", "middle")
@@ -186,25 +195,15 @@ function drawVelocityArrows(overlay, plates, plateIds, colors) {
 
 function dragVelocityHandle(handle, plate, cx, cy, arrowScale) {
   const [mx, my] = d3.mouse(viewbox.node());
-
-  // Update handle position
   d3.select(handle).attr("cx", mx).attr("cy", my);
-
-  // Update arrow line
   viewbox.select(`.velocityLine[data-plate="${plate.id}"]`)
     .attr("x2", mx).attr("y2", my);
 
-  // Compute new velocity from drag position
-  const dx = mx - cx;
-  const dy = my - cy;
-  plate.velocity[0] = dx / arrowScale;
-  plate.velocity[1] = -dy / arrowScale; // flip Y
+  plate.velocity[0] = (mx - cx) / arrowScale;
+  plate.velocity[1] = -(my - cy) / arrowScale;
   plate.velocity[2] = 0;
 
-  // Update popup if this plate is selected
-  if (tectonicSelectedPlate === plate.id) {
-    updatePopupValues(plate);
-  }
+  if (tectonicSelectedPlate === plate.id) updatePopupValues(plate);
 }
 
 function ensureArrowheadMarker() {
@@ -242,7 +241,6 @@ function selectPlate(plateId) {
 
   tectonicSelectedPlate = plateId;
 
-  // Update overlay opacity to highlight selected plate
   viewbox.select("#plateCells").selectAll("polygon")
     .attr("fill-opacity", function () {
       return +this.getAttribute("data-plate") === plateId ? 0.55 : 0.15;
@@ -258,7 +256,6 @@ function showPlatePopup(plate) {
   const centroid = computeGridPlateCentroid(plate.id, plateIds);
   if (!centroid) return;
 
-  // Count cells
   let cellCount = 0;
   for (let i = 0; i < plateIds.length; i++) {
     if (plateIds[i] === plate.id) cellCount++;
@@ -306,23 +303,19 @@ function showPlatePopup(plate) {
       <span id="popupDirLabel" style="font-size:10px">${dirDeg}&deg;</span>
     </div>
     <div style="font-size:10px;color:#888;text-align:center">
-      Drag the arrow on the map to set velocity
+      Drag arrow or use sliders &bull; Enable Paint to reshape
     </div>
   `;
 
   document.body.appendChild(popup);
 
-  // Position popup near the plate centroid but in screen coords
-  const svgRect = document.querySelector("svg").getBoundingClientRect();
   const svgEl = document.querySelector("svg");
   const ctm = svgEl.getScreenCTM();
   const screenX = centroid[0] * ctm.a + ctm.e;
   const screenY = centroid[1] * ctm.d + ctm.f;
-
   popup.style.left = Math.min(screenX + 20, window.innerWidth - 220) + "px";
   popup.style.top = Math.max(screenY - 60, 10) + "px";
 
-  // Listeners
   byId("popupPlateType").addEventListener("change", function () {
     plate.isOceanic = this.value === "oceanic";
   });
@@ -378,10 +371,8 @@ function redrawArrowForPlate(plate) {
 
   const arrowScale = 30;
   const [cx, cy] = centroid;
-  const dx = plate.velocity[0] * arrowScale;
-  const dy = -plate.velocity[1] * arrowScale;
-  const tipX = cx + dx;
-  const tipY = cy + dy;
+  const tipX = cx + plate.velocity[0] * arrowScale;
+  const tipY = cy + -plate.velocity[1] * arrowScale;
 
   viewbox.select(`.velocityLine[data-plate="${plate.id}"]`)
     .attr("x2", tipX).attr("y2", tipY);
@@ -394,14 +385,140 @@ function closePlatePopup() {
   if (popup) popup.remove();
 }
 
+// ---- Paint Mode ----
+
+function togglePaintMode() {
+  tectonicPaintMode = !tectonicPaintMode;
+  updatePaintButtonState();
+
+  if (tectonicPaintMode) {
+    if (tectonicSelectedPlate === -1) {
+      tip("Select a plate first (click on a plate), then paint to expand it", true, "warn");
+      tectonicPaintMode = false;
+      updatePaintButtonState();
+      return;
+    }
+    enterPaintMode();
+  } else {
+    exitPaintMode();
+  }
+}
+
+function updatePaintButtonState() {
+  const btn = byId("tectonicPaintToggle");
+  if (!btn) return;
+  btn.classList.toggle("pressed", tectonicPaintMode);
+  btn.textContent = tectonicPaintMode ? "Paint: ON" : "Paint";
+
+  const brushControls = byId("tectonicBrushControls");
+  if (brushControls) brushControls.style.display = tectonicPaintMode ? "block" : "none";
+}
+
+function enterPaintMode() {
+  tip(`Paint mode: drag on map to assign cells to Plate ${tectonicSelectedPlate}`, true, "warn");
+  viewbox.style("cursor", "crosshair");
+
+  // Add drag handler for painting
+  viewbox.call(
+    d3.drag()
+      .on("start", paintStart)
+      .on("drag", paintDrag)
+      .on("end", paintEnd)
+  );
+}
+
+function exitPaintMode() {
+  viewbox.style("cursor", "default");
+  // Restore default zoom behavior
+  viewbox.on(".drag", null);
+  svg.call(zoom);
+  removeBrushCircle();
+  clearMainTip();
+}
+
+function paintStart() {
+  if (!tectonicPaintMode || tectonicSelectedPlate === -1) return;
+  const [x, y] = d3.mouse(this);
+  paintCellsAt(x, y);
+}
+
+function paintDrag() {
+  if (!tectonicPaintMode || tectonicSelectedPlate === -1) return;
+  const [x, y] = d3.mouse(this);
+  moveBrushCircle(x, y);
+  paintCellsAt(x, y);
+}
+
+function paintEnd() {
+  if (!tectonicPaintMode) return;
+  removeBrushCircle();
+  // Redraw overlay to reflect changes
+  drawPlateOverlay();
+}
+
+function paintCellsAt(x, y) {
+  const r = tectonicBrushRadius;
+  const cellsInRadius = findGridAll(x, y, r);
+  if (!cellsInRadius || cellsInRadius.length === 0) return;
+
+  const generator = window.tectonicGenerator;
+  const plateIds = window.tectonicMetadata.plateIds;
+
+  // Reassign cells on the sphere
+  generator.reassignCells(cellsInRadius, tectonicSelectedPlate);
+
+  // Update grid-level metadata to match
+  for (const gc of cellsInRadius) {
+    plateIds[gc] = tectonicSelectedPlate;
+  }
+
+  // Update visual overlay for painted cells
+  const colors = tectonicPlateColors;
+  const cellGroup = viewbox.select("#plateCells");
+  for (const gc of cellsInRadius) {
+    const poly = cellGroup.select(`polygon[data-cell="${gc}"]`);
+    if (!poly.empty()) {
+      poly.attr("fill", colors[tectonicSelectedPlate])
+        .attr("stroke", colors[tectonicSelectedPlate])
+        .attr("data-plate", tectonicSelectedPlate)
+        .attr("fill-opacity", 0.55);
+    }
+  }
+}
+
+function moveBrushCircle(x, y) {
+  let circle = byId("tectonicBrushCircle");
+  if (!circle) {
+    const svg = viewbox.node().ownerSVGElement;
+    const ns = "http://www.w3.org/2000/svg";
+    circle = document.createElementNS(ns, "circle");
+    circle.id = "tectonicBrushCircle";
+    circle.setAttribute("fill", "none");
+    circle.setAttribute("stroke", tectonicPlateColors[tectonicSelectedPlate] || "#fff");
+    circle.setAttribute("stroke-width", "1.5");
+    circle.setAttribute("stroke-dasharray", "4,3");
+    circle.setAttribute("pointer-events", "none");
+    viewbox.node().appendChild(circle);
+  }
+  circle.setAttribute("cx", x);
+  circle.setAttribute("cy", y);
+  circle.setAttribute("r", tectonicBrushRadius);
+}
+
+function removeBrushCircle() {
+  const circle = byId("tectonicBrushCircle");
+  if (circle) circle.remove();
+}
+
 // ---- Actions ----
 
 function regenerateFromEditor() {
   const generator = window.tectonicGenerator;
   if (!generator) return tip("No tectonic generator available", false, "error");
 
-  tip("Regenerating terrain preview...", true, "warn");
+  if (tectonicPaintMode) { exitPaintMode(); tectonicPaintMode = false; updatePaintButtonState(); }
   closePlatePopup();
+  tip("Regenerating terrain preview...", true, "warn");
 
   setTimeout(() => {
     try {
@@ -432,6 +549,7 @@ function regenerateFromEditor() {
 function applyToMap() {
   if (!window.tectonicGenerator) return tip("No tectonic generator available", false, "error");
 
+  if (tectonicPaintMode) { exitPaintMode(); tectonicPaintMode = false; updatePaintButtonState(); }
   closePlatePopup();
   closeTectonicEditor();
   $("#tectonicEditor").dialog("close");
@@ -520,6 +638,7 @@ function togglePlateOverlay() {
 }
 
 function closeTectonicEditor() {
+  if (tectonicPaintMode) { exitPaintMode(); tectonicPaintMode = false; }
   closePlatePopup();
   viewbox.select("#tectonicOverlay").remove();
   d3.select("#tectonicArrowhead").remove();
