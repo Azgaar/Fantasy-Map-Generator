@@ -1,10 +1,11 @@
 "use strict";
 
 // Tectonic Plate Editor
-// Visualizes tectonic plates and allows editing plate properties (type, velocity)
-// then regenerates terrain from the modified plate configuration
+// Click plates to select & edit, drag arrows to set velocity/direction
 
 let tectonicViewMode = "plates"; // "plates" or "heights"
+let tectonicPlateColors = [];
+let tectonicSelectedPlate = -1;
 
 function editTectonics() {
   if (customization) return tip("Please exit the customization mode first", false, "error");
@@ -15,18 +16,18 @@ function editTectonics() {
 
   closeDialogs(".stable");
   tectonicViewMode = "plates";
+  tectonicSelectedPlate = -1;
 
   const plates = window.tectonicGenerator.getPlates();
-  const plateIds = window.tectonicMetadata.plateIds;
-  const plateColors = generatePlateColors(plates.length);
+  tectonicPlateColors = generatePlateColors(plates.length);
 
-  drawPlateOverlay(plateIds, plateColors, plates);
-  buildPlateList(plates, plateColors);
+  drawPlateOverlay();
+  closePlatePopup();
 
   $("#tectonicEditor").dialog({
     title: "Tectonic Plate Editor",
     resizable: false,
-    width: "22em",
+    width: "20em",
     position: {my: "right top", at: "right-10 top+10", of: "svg"},
     close: closeTectonicEditor
   });
@@ -51,80 +52,80 @@ function generatePlateColors(count) {
   return colors;
 }
 
-// Height-to-color function matching FMG's heightmap editor
 function tectonicHeightColor(h) {
   if (h < 20) {
-    // Ocean: deep blue to light blue
     const t = h / 20;
-    const r = Math.round(30 + t * 40);
-    const g = Math.round(60 + t * 80);
-    const b = Math.round(120 + t * 100);
-    return `rgb(${r},${g},${b})`;
-  } else {
-    // Land: green to brown to white
-    const t = (h - 20) / 80;
-    if (t < 0.3) {
-      const s = t / 0.3;
-      return `rgb(${Math.round(80 + s * 60)},${Math.round(160 + s * 40)},${Math.round(60 + s * 20)})`;
-    } else if (t < 0.7) {
-      const s = (t - 0.3) / 0.4;
-      return `rgb(${Math.round(140 + s * 60)},${Math.round(200 - s * 80)},${Math.round(80 - s * 40)})`;
-    } else {
-      const s = (t - 0.7) / 0.3;
-      return `rgb(${Math.round(200 + s * 55)},${Math.round(120 + s * 135)},${Math.round(40 + s * 215)})`;
-    }
+    return `rgb(${Math.round(30 + t * 40)},${Math.round(60 + t * 80)},${Math.round(120 + t * 100)})`;
   }
+  const t = (h - 20) / 80;
+  if (t < 0.3) {
+    const s = t / 0.3;
+    return `rgb(${Math.round(80 + s * 60)},${Math.round(160 + s * 40)},${Math.round(60 + s * 20)})`;
+  }
+  if (t < 0.7) {
+    const s = (t - 0.3) / 0.4;
+    return `rgb(${Math.round(140 + s * 60)},${Math.round(200 - s * 80)},${Math.round(80 - s * 40)})`;
+  }
+  const s = (t - 0.7) / 0.3;
+  return `rgb(${Math.round(200 + s * 55)},${Math.round(120 + s * 135)},${Math.round(40 + s * 215)})`;
 }
 
-function drawPlateOverlay(plateIds, plateColors, plates) {
+// ---- Overlay Drawing ----
+
+function drawPlateOverlay() {
+  const plates = window.tectonicGenerator.getPlates();
+  const plateIds = window.tectonicMetadata.plateIds;
+  const colors = tectonicPlateColors;
+
   viewbox.select("#tectonicOverlay").remove();
   const overlay = viewbox.insert("g", "#terrs").attr("id", "tectonicOverlay");
-  const numCells = plateIds.length;
 
-  for (let i = 0; i < numCells; i++) {
+  // Cell polygons
+  const cellGroup = overlay.append("g").attr("id", "plateCells");
+  for (let i = 0; i < plateIds.length; i++) {
     const pid = plateIds[i];
     if (pid < 0 || pid >= plates.length) continue;
-
     const points = getGridPolygon(i);
     if (!points) continue;
 
-    overlay.append("polygon")
+    const selected = pid === tectonicSelectedPlate;
+    cellGroup.append("polygon")
       .attr("points", points)
-      .attr("fill", plateColors[pid])
-      .attr("fill-opacity", 0.35)
-      .attr("stroke", plateColors[pid])
-      .attr("stroke-opacity", 0.5)
+      .attr("fill", colors[pid])
+      .attr("fill-opacity", tectonicSelectedPlate === -1 ? 0.35 : (selected ? 0.55 : 0.15))
+      .attr("stroke", colors[pid])
+      .attr("stroke-opacity", 0.4)
       .attr("stroke-width", 0.2)
       .attr("data-plate", pid)
-      .on("click", function () {
-        highlightPlate(pid, plateColors);
-      });
+      .on("click", function () { selectPlate(pid); });
   }
 
-  drawVelocityArrows(overlay, plates, plateIds, plateColors);
+  // Velocity arrows (draggable)
+  drawVelocityArrows(overlay, plates, plateIds, colors);
 }
 
 function drawHeightOverlay(heights) {
   viewbox.select("#tectonicOverlay").remove();
   const overlay = viewbox.insert("g", "#terrs").attr("id", "tectonicOverlay");
-  const numCells = heights.length;
 
-  for (let i = 0; i < numCells; i++) {
+  for (let i = 0; i < heights.length; i++) {
     const points = getGridPolygon(i);
     if (!points) continue;
-
+    const c = tectonicHeightColor(heights[i]);
     overlay.append("polygon")
       .attr("points", points)
-      .attr("fill", tectonicHeightColor(heights[i]))
+      .attr("fill", c)
       .attr("fill-opacity", 0.85)
-      .attr("stroke", tectonicHeightColor(heights[i]))
+      .attr("stroke", c)
       .attr("stroke-opacity", 0.5)
       .attr("stroke-width", 0.1);
   }
 }
 
-function drawVelocityArrows(overlay, plates, plateIds, plateColors) {
+function drawVelocityArrows(overlay, plates, plateIds, colors) {
+  ensureArrowheadMarker();
   const arrowGroup = overlay.append("g").attr("id", "velocityArrows");
+  const arrowScale = 30;
 
   for (const plate of plates) {
     const centroid = computeGridPlateCentroid(plate.id, plateIds);
@@ -132,196 +133,285 @@ function drawVelocityArrows(overlay, plates, plateIds, plateColors) {
 
     const [cx, cy] = centroid;
     const vel = plate.velocity;
-    const arrowScale = 30;
     const dx = vel[0] * arrowScale;
     const dy = -vel[1] * arrowScale;
     const mag = Math.sqrt(dx * dx + dy * dy);
-    if (mag < 2) continue;
 
+    const tipX = cx + dx;
+    const tipY = cy + dy;
+
+    // Arrow line
     arrowGroup.append("line")
+      .attr("class", "velocityLine")
+      .attr("data-plate", plate.id)
       .attr("x1", cx).attr("y1", cy)
-      .attr("x2", cx + dx).attr("y2", cy + dy)
-      .attr("stroke", plateColors[plate.id])
-      .attr("stroke-width", 2)
+      .attr("x2", tipX).attr("y2", tipY)
+      .attr("stroke", colors[plate.id])
+      .attr("stroke-width", mag < 2 ? 1 : 2)
       .attr("stroke-opacity", 0.9)
+      .attr("stroke-dasharray", mag < 2 ? "2,2" : "none")
       .attr("marker-end", "url(#tectonicArrowhead)");
 
+    // Draggable handle at arrow tip
+    arrowGroup.append("circle")
+      .attr("class", "velocityHandle")
+      .attr("data-plate", plate.id)
+      .attr("cx", tipX).attr("cy", tipY)
+      .attr("r", 5)
+      .attr("fill", colors[plate.id])
+      .attr("fill-opacity", 0.7)
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 1)
+      .attr("cursor", "grab")
+      .call(d3.drag()
+        .on("start", function () { d3.select(this).attr("cursor", "grabbing"); })
+        .on("drag", function () { dragVelocityHandle(this, plate, cx, cy, arrowScale); })
+        .on("end", function () { d3.select(this).attr("cursor", "grab"); })
+      );
+
+    // Plate label
     arrowGroup.append("text")
-      .attr("x", cx).attr("y", cy - 5)
+      .attr("x", cx).attr("y", cy - 6)
       .attr("text-anchor", "middle")
       .attr("font-size", "8px")
-      .attr("fill", plateColors[plate.id])
+      .attr("fill", colors[plate.id])
       .attr("stroke", "#000")
       .attr("stroke-width", 0.3)
       .attr("paint-order", "stroke")
-      .text(`P${plate.id}`);
+      .attr("cursor", "pointer")
+      .text(`P${plate.id}`)
+      .on("click", function () { selectPlate(plate.id); });
   }
+}
 
-  if (!document.getElementById("tectonicArrowhead")) {
-    const defs = d3.select("svg").select("defs");
-    defs.append("marker")
-      .attr("id", "tectonicArrowhead")
-      .attr("viewBox", "0 0 10 10")
-      .attr("refX", 8).attr("refY", 5)
-      .attr("markerWidth", 6).attr("markerHeight", 6)
-      .attr("orient", "auto-start-reverse")
-      .append("path")
-      .attr("d", "M 0 0 L 10 5 L 0 10 z")
-      .attr("fill", "#fff")
-      .attr("stroke", "#333")
-      .attr("stroke-width", 0.5);
+function dragVelocityHandle(handle, plate, cx, cy, arrowScale) {
+  const [mx, my] = d3.mouse(viewbox.node());
+
+  // Update handle position
+  d3.select(handle).attr("cx", mx).attr("cy", my);
+
+  // Update arrow line
+  viewbox.select(`.velocityLine[data-plate="${plate.id}"]`)
+    .attr("x2", mx).attr("y2", my);
+
+  // Compute new velocity from drag position
+  const dx = mx - cx;
+  const dy = my - cy;
+  plate.velocity[0] = dx / arrowScale;
+  plate.velocity[1] = -dy / arrowScale; // flip Y
+  plate.velocity[2] = 0;
+
+  // Update popup if this plate is selected
+  if (tectonicSelectedPlate === plate.id) {
+    updatePopupValues(plate);
   }
+}
+
+function ensureArrowheadMarker() {
+  if (document.getElementById("tectonicArrowhead")) return;
+  d3.select("svg").select("defs").append("marker")
+    .attr("id", "tectonicArrowhead")
+    .attr("viewBox", "0 0 10 10")
+    .attr("refX", 8).attr("refY", 5)
+    .attr("markerWidth", 6).attr("markerHeight", 6)
+    .attr("orient", "auto-start-reverse")
+    .append("path")
+    .attr("d", "M 0 0 L 10 5 L 0 10 z")
+    .attr("fill", "#fff")
+    .attr("stroke", "#333")
+    .attr("stroke-width", 0.5);
 }
 
 function computeGridPlateCentroid(plateId, plateIds) {
   let sumX = 0, sumY = 0, count = 0;
   for (let i = 0; i < plateIds.length; i++) {
     if (plateIds[i] !== plateId) continue;
-    const [x, y] = grid.points[i];
-    sumX += x;
-    sumY += y;
+    sumX += grid.points[i][0];
+    sumY += grid.points[i][1];
     count++;
   }
   if (count === 0) return null;
   return [sumX / count, sumY / count];
 }
 
-function highlightPlate(plateId, plateColors) {
-  viewbox.select("#tectonicOverlay").selectAll("polygon")
+// ---- Plate Selection & Popup ----
+
+function selectPlate(plateId) {
+  const plates = window.tectonicGenerator.getPlates();
+  if (plateId < 0 || plateId >= plates.length) return;
+
+  tectonicSelectedPlate = plateId;
+
+  // Update overlay opacity to highlight selected plate
+  viewbox.select("#plateCells").selectAll("polygon")
     .attr("fill-opacity", function () {
-      return +this.getAttribute("data-plate") === plateId ? 0.6 : 0.15;
+      return +this.getAttribute("data-plate") === plateId ? 0.55 : 0.15;
     });
 
-  const row = byId(`tectonicPlate_${plateId}`);
-  if (row) {
-    row.scrollIntoView({behavior: "smooth", block: "nearest"});
-    row.style.outline = "2px solid " + plateColors[plateId];
-    setTimeout(() => row.style.outline = "", 1500);
-  }
+  showPlatePopup(plates[plateId]);
 }
 
-function buildPlateList(plates, plateColors) {
-  const container = byId("tectonicPlateList");
-  container.innerHTML = "";
+function showPlatePopup(plate) {
+  closePlatePopup();
 
-  const table = document.createElement("table");
-  table.style.width = "100%";
-  table.style.borderCollapse = "collapse";
-  table.style.fontSize = "11px";
+  const plateIds = window.tectonicMetadata.plateIds;
+  const centroid = computeGridPlateCentroid(plate.id, plateIds);
+  if (!centroid) return;
 
-  const header = document.createElement("tr");
-  header.innerHTML = `
-    <th style="width:30px">ID</th>
-    <th style="width:60px">Type</th>
-    <th>Velocity</th>
-    <th style="width:50px">Dir</th>
+  // Count cells
+  let cellCount = 0;
+  for (let i = 0; i < plateIds.length; i++) {
+    if (plateIds[i] === plate.id) cellCount++;
+  }
+  const pct = (cellCount / plateIds.length * 100).toFixed(1);
+
+  const vel = plate.velocity;
+  const speed = Math.sqrt(vel[0] ** 2 + vel[1] ** 2 + vel[2] ** 2);
+  const dirDeg = Math.round(Math.atan2(-vel[1], vel[0]) * 180 / Math.PI);
+  const color = tectonicPlateColors[plate.id];
+
+  const popup = document.createElement("div");
+  popup.id = "tectonicPlatePopup";
+  popup.style.cssText = `
+    position: absolute; z-index: 1000;
+    background: rgba(30,30,30,0.95); color: #eee;
+    border: 2px solid ${color}; border-radius: 6px;
+    padding: 10px 14px; font-size: 12px;
+    min-width: 180px; pointer-events: auto;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
   `;
-  table.appendChild(header);
 
-  for (const plate of plates) {
-    const row = document.createElement("tr");
-    row.id = `tectonicPlate_${plate.id}`;
-    row.style.borderBottom = "1px solid #444";
-    row.style.cursor = "pointer";
+  popup.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <strong style="color:${color}">Plate ${plate.id}</strong>
+      <span style="font-size:10px;color:#999">${cellCount} cells (${pct}%)</span>
+    </div>
+    <div style="margin-bottom:6px">
+      <label style="font-size:11px">Type: </label>
+      <select id="popupPlateType" style="font-size:11px;margin-left:4px">
+        <option value="continental" ${!plate.isOceanic ? "selected" : ""}>Continental</option>
+        <option value="oceanic" ${plate.isOceanic ? "selected" : ""}>Oceanic</option>
+      </select>
+    </div>
+    <div style="margin-bottom:6px">
+      <label style="font-size:11px">Speed: </label>
+      <input id="popupPlateSpeed" type="range" min="0" max="1.5" step="0.05" value="${speed.toFixed(2)}"
+        style="width:80px;vertical-align:middle">
+      <span id="popupSpeedLabel" style="font-size:10px">${speed.toFixed(2)}</span>
+    </div>
+    <div style="margin-bottom:8px">
+      <label style="font-size:11px">Direction: </label>
+      <input id="popupPlateDir" type="range" min="-180" max="180" step="5" value="${dirDeg}"
+        style="width:80px;vertical-align:middle">
+      <span id="popupDirLabel" style="font-size:10px">${dirDeg}&deg;</span>
+    </div>
+    <div style="font-size:10px;color:#888;text-align:center">
+      Drag the arrow on the map to set velocity
+    </div>
+  `;
 
-    const vel = plate.velocity;
-    const speed = Math.sqrt(vel[0] * vel[0] + vel[1] * vel[1] + vel[2] * vel[2]).toFixed(2);
-    const dirDeg = Math.round(Math.atan2(-vel[1], vel[0]) * 180 / Math.PI);
+  document.body.appendChild(popup);
 
-    row.innerHTML = `
-      <td style="text-align:center">
-        <span style="display:inline-block;width:12px;height:12px;background:${plateColors[plate.id]};border-radius:2px;vertical-align:middle"></span>
-        ${plate.id}
-      </td>
-      <td>
-        <select data-plate="${plate.id}" class="plateTypeSelect" style="font-size:10px;width:100%">
-          <option value="continental" ${!plate.isOceanic ? "selected" : ""}>Land</option>
-          <option value="oceanic" ${plate.isOceanic ? "selected" : ""}>Ocean</option>
-        </select>
-      </td>
-      <td style="text-align:center">
-        <input type="range" data-plate="${plate.id}" class="plateSpeedRange"
-          min="0" max="1.5" step="0.05" value="${speed}"
-          style="width:60px;vertical-align:middle">
-        <span class="plateSpeedLabel" style="font-size:9px">${speed}</span>
-      </td>
-      <td style="text-align:center">
-        <input type="number" data-plate="${plate.id}" class="plateDirInput"
-          min="-180" max="180" step="15" value="${dirDeg}"
-          style="width:45px;font-size:10px">
-      </td>
-    `;
+  // Position popup near the plate centroid but in screen coords
+  const svgRect = document.querySelector("svg").getBoundingClientRect();
+  const svgEl = document.querySelector("svg");
+  const ctm = svgEl.getScreenCTM();
+  const screenX = centroid[0] * ctm.a + ctm.e;
+  const screenY = centroid[1] * ctm.d + ctm.f;
 
-    row.addEventListener("click", (e) => {
-      if (e.target.tagName === "SELECT" || e.target.tagName === "INPUT") return;
-      highlightPlate(plate.id, plateColors);
-    });
+  popup.style.left = Math.min(screenX + 20, window.innerWidth - 220) + "px";
+  popup.style.top = Math.max(screenY - 60, 10) + "px";
 
-    table.appendChild(row);
-  }
-
-  container.appendChild(table);
-
-  container.querySelectorAll(".plateTypeSelect").forEach(select => {
-    select.addEventListener("change", function () {
-      const pid = +this.getAttribute("data-plate");
-      plates[pid].isOceanic = this.value === "oceanic";
-    });
+  // Listeners
+  byId("popupPlateType").addEventListener("change", function () {
+    plate.isOceanic = this.value === "oceanic";
   });
 
-  container.querySelectorAll(".plateSpeedRange").forEach(slider => {
-    slider.addEventListener("input", function () {
-      const pid = +this.getAttribute("data-plate");
-      const plate = plates[pid];
-      const newSpeed = +this.value;
-      this.parentElement.querySelector(".plateSpeedLabel").textContent = newSpeed.toFixed(2);
-
-      const oldSpeed = Math.sqrt(plate.velocity[0] ** 2 + plate.velocity[1] ** 2 + plate.velocity[2] ** 2);
-      if (oldSpeed > 0.001) {
-        const scale = newSpeed / oldSpeed;
-        plate.velocity[0] *= scale;
-        plate.velocity[1] *= scale;
-        plate.velocity[2] *= scale;
-      } else {
-        plate.velocity[0] = newSpeed;
-        plate.velocity[1] = 0;
-        plate.velocity[2] = 0;
-      }
-    });
-  });
-
-  container.querySelectorAll(".plateDirInput").forEach(input => {
-    input.addEventListener("change", function () {
-      const pid = +this.getAttribute("data-plate");
-      const plate = plates[pid];
-      const dirRad = (+this.value) * Math.PI / 180;
-      const speed = Math.sqrt(plate.velocity[0] ** 2 + plate.velocity[1] ** 2 + plate.velocity[2] ** 2);
-      plate.velocity[0] = Math.cos(dirRad) * speed;
-      plate.velocity[1] = -Math.sin(dirRad) * speed;
+  byId("popupPlateSpeed").addEventListener("input", function () {
+    const newSpeed = +this.value;
+    byId("popupSpeedLabel").textContent = newSpeed.toFixed(2);
+    const oldSpeed = Math.sqrt(plate.velocity[0] ** 2 + plate.velocity[1] ** 2 + plate.velocity[2] ** 2);
+    if (oldSpeed > 0.001) {
+      const s = newSpeed / oldSpeed;
+      plate.velocity[0] *= s;
+      plate.velocity[1] *= s;
+      plate.velocity[2] *= s;
+    } else {
+      plate.velocity[0] = newSpeed;
+      plate.velocity[1] = 0;
       plate.velocity[2] = 0;
-    });
+    }
+    redrawArrowForPlate(plate);
+  });
+
+  byId("popupPlateDir").addEventListener("input", function () {
+    const deg = +this.value;
+    byId("popupDirLabel").textContent = deg + "\u00B0";
+    const speed = Math.sqrt(plate.velocity[0] ** 2 + plate.velocity[1] ** 2 + plate.velocity[2] ** 2);
+    const rad = deg * Math.PI / 180;
+    plate.velocity[0] = Math.cos(rad) * speed;
+    plate.velocity[1] = -Math.sin(rad) * speed;
+    plate.velocity[2] = 0;
+    redrawArrowForPlate(plate);
   });
 }
+
+function updatePopupValues(plate) {
+  const speedEl = byId("popupPlateSpeed");
+  const dirEl = byId("popupPlateDir");
+  if (!speedEl || !dirEl) return;
+
+  const vel = plate.velocity;
+  const speed = Math.sqrt(vel[0] ** 2 + vel[1] ** 2 + vel[2] ** 2);
+  const dirDeg = Math.round(Math.atan2(-vel[1], vel[0]) * 180 / Math.PI);
+
+  speedEl.value = speed.toFixed(2);
+  byId("popupSpeedLabel").textContent = speed.toFixed(2);
+  dirEl.value = dirDeg;
+  byId("popupDirLabel").textContent = dirDeg + "\u00B0";
+}
+
+function redrawArrowForPlate(plate) {
+  const plateIds = window.tectonicMetadata.plateIds;
+  const centroid = computeGridPlateCentroid(plate.id, plateIds);
+  if (!centroid) return;
+
+  const arrowScale = 30;
+  const [cx, cy] = centroid;
+  const dx = plate.velocity[0] * arrowScale;
+  const dy = -plate.velocity[1] * arrowScale;
+  const tipX = cx + dx;
+  const tipY = cy + dy;
+
+  viewbox.select(`.velocityLine[data-plate="${plate.id}"]`)
+    .attr("x2", tipX).attr("y2", tipY);
+  viewbox.select(`.velocityHandle[data-plate="${plate.id}"]`)
+    .attr("cx", tipX).attr("cy", tipY);
+}
+
+function closePlatePopup() {
+  const popup = byId("tectonicPlatePopup");
+  if (popup) popup.remove();
+}
+
+// ---- Actions ----
 
 function regenerateFromEditor() {
   const generator = window.tectonicGenerator;
   if (!generator) return tip("No tectonic generator available", false, "error");
 
-  tip("Regenerating terrain from edited plates...", true, "warn");
+  tip("Regenerating terrain preview...", true, "warn");
+  closePlatePopup();
 
   setTimeout(() => {
     try {
       const result = generator.regenerate();
-
-      // Update grid heights
       grid.cells.h = result.heights;
       window.tectonicMetadata = result.metadata;
 
-      // Show the regenerated heightmap as a visual overlay
       tectonicViewMode = "heights";
       drawHeightOverlay(result.heights);
 
-      // Log changes for debugging
       let water = 0, land = 0, minH = 100, maxH = 0;
       for (let i = 0; i < result.heights.length; i++) {
         const h = result.heights[i];
@@ -329,9 +419,9 @@ function regenerateFromEditor() {
         if (h < minH) minH = h;
         if (h > maxH) maxH = h;
       }
-      console.log(`Tectonic regeneration: ${land} land (${(land / result.heights.length * 100).toFixed(1)}%), heights ${minH}-${maxH}`);
+      console.log(`Tectonic regen: ${land} land (${(land / result.heights.length * 100).toFixed(1)}%), heights ${minH}-${maxH}`);
 
-      tip("Terrain regenerated. Click 'Apply to Map' to regenerate the full map.", true, "success");
+      tip("Preview ready. Click 'Apply to Map' to rebuild.", true, "success");
     } catch (e) {
       console.error("Tectonic regeneration failed:", e);
       tip("Regeneration failed: " + e.message, false, "error");
@@ -342,7 +432,7 @@ function regenerateFromEditor() {
 function applyToMap() {
   if (!window.tectonicGenerator) return tip("No tectonic generator available", false, "error");
 
-  // Close the editor overlay
+  closePlatePopup();
   closeTectonicEditor();
   $("#tectonicEditor").dialog("close");
 
@@ -350,8 +440,6 @@ function applyToMap() {
 
   setTimeout(() => {
     try {
-      // grid.cells.h is already set by regenerateFromEditor
-      // Run the full downstream pipeline WITHOUT regenerating the heightmap
       undraw();
       pack = {};
 
@@ -415,21 +503,16 @@ function applyToMap() {
 }
 
 function togglePlateOverlay() {
-  const overlay = viewbox.select("#tectonicOverlay");
-
   if (tectonicViewMode === "heights") {
-    // Switch back to plate view
     tectonicViewMode = "plates";
-    const plates = window.tectonicGenerator.getPlates();
-    const plateColors = generatePlateColors(plates.length);
-    drawPlateOverlay(window.tectonicMetadata.plateIds, plateColors, plates);
+    tectonicSelectedPlate = -1;
+    drawPlateOverlay();
     return;
   }
 
+  const overlay = viewbox.select("#tectonicOverlay");
   if (overlay.empty()) {
-    const plates = window.tectonicGenerator.getPlates();
-    const plateColors = generatePlateColors(plates.length);
-    drawPlateOverlay(window.tectonicMetadata.plateIds, plateColors, plates);
+    drawPlateOverlay();
   } else {
     const visible = overlay.style("display") !== "none";
     overlay.style("display", visible ? "none" : null);
@@ -437,7 +520,9 @@ function togglePlateOverlay() {
 }
 
 function closeTectonicEditor() {
+  closePlatePopup();
   viewbox.select("#tectonicOverlay").remove();
   d3.select("#tectonicArrowhead").remove();
   tectonicViewMode = "plates";
+  tectonicSelectedPlate = -1;
 }
