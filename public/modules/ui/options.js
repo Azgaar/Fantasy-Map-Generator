@@ -624,8 +624,14 @@ function randomizeHeightmapTemplate() {
   for (const key in heightmapTemplates) {
     templates[key] = heightmapTemplates[key].probability || 0;
   }
+  if (typeof tectonicTemplates !== "undefined") {
+    for (const key in tectonicTemplates) {
+      templates[key] = tectonicTemplates[key].probability || 0;
+    }
+  }
   const template = rw(templates);
-  const name = heightmapTemplates[template].name;
+  const isTectonic = typeof tectonicTemplates !== "undefined" && template in tectonicTemplates;
+  const name = isTectonic ? tectonicTemplates[template].name : heightmapTemplates[template].name;
   applyOption(byId("templateInput"), template, name);
 }
 

@@ -10,6 +10,8 @@ import {
   P,
   rand,
 } from "../utils";
+import { TectonicPlateGenerator } from "./tectonic-generator";
+import type { TectonicConfig } from "../types/TectonicMetadata";
 
 declare global {
   var HeightmapGenerator: HeightmapModule;
@@ -596,15 +598,34 @@ class HeightmapModule {
     TIME && console.time("defineHeightmap");
     const id = (byId("templateInput")! as HTMLInputElement).value;
     Math.random = Alea(seed);
+
+    const isTectonic =
+      typeof tectonicTemplates !== "undefined" && id in tectonicTemplates;
     const isTemplate = id in heightmapTemplates;
 
-    const heights = isTemplate
-      ? this.fromTemplate(graph, id)
-      : await this.fromPrecreated(graph, id);
+    let heights: Uint8Array | null;
+    if (isTectonic) {
+      heights = this.fromTectonic(graph, tectonicTemplates[id].config);
+    } else if (isTemplate) {
+      heights = this.fromTemplate(graph, id);
+    } else {
+      heights = await this.fromPrecreated(graph, id);
+    }
+
     TIME && console.timeEnd("defineHeightmap");
 
     this.clearData();
     return heights as Uint8Array;
+  }
+
+  fromTectonic(graph: any, config: TectonicConfig): Uint8Array {
+    this.setGraph(graph);
+    const generator = new TectonicPlateGenerator(this.grid!, config);
+    const result = generator.generate();
+    this.heights = result.heights;
+    window.tectonicMetadata = result.metadata;
+    window.tectonicGenerator = generator;
+    return this.heights;
   }
 
   fromTemplate(graph: any, id: string): Uint8Array | null {
