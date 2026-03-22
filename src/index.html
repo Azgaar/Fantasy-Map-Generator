@@ -4108,10 +4108,17 @@
       <div id="tectonicEditor" class="dialog stable" style="display: none">
         <p style="font-size:11px;margin:0 0 6px">Click a plate to edit. Drag arrows to set velocity.</p>
         <div style="margin-top: 4px">
+          <button id="tectonicPaintToggle" data-tip="Toggle paint mode to reshape plates with a brush">Paint</button>
           <button id="tectonicRegenerate" data-tip="Regenerate terrain preview from edited plates">Regenerate Preview</button>
-          <button id="tectonicApplyMap" data-tip="Apply changes and regenerate the full map">Apply to Map</button>
+        </div>
+        <div id="tectonicBrushControls" style="display:none;margin-top:4px;font-size:11px">
+          <label>Brush size: </label>
+          <input id="tectonicBrushSize" type="range" min="3" max="40" step="1" value="10"
+            style="width:80px;vertical-align:middle">
+          <span id="tectonicBrushSizeLabel">10</span>
         </div>
         <div style="margin-top: 4px">
+          <button id="tectonicApplyMap" data-tip="Apply changes and regenerate the full map">Apply to Map</button>
           <button id="tectonicToggleOverlay" data-tip="Switch between plate view and height view">Toggle View</button>
           <button id="tectonicClose" data-tip="Close editor and remove overlay">Close</button>
         </div>

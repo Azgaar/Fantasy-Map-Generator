@@ -221,6 +221,9 @@ export class TectonicPlateGenerator {
   private plates: TectonicPlate[] = [];
   private boundaries: PlateBoundary[] = [];
 
+  // Grid→sphere mapping for editor cell reassignment
+  private gridToSphere!: Int32Array;
+
   // Seeded PRNG for deterministic elevation pipeline
   private elevationSeed: number = 0;
   private rng: () => number = Math.random;
@@ -289,6 +292,27 @@ export class TectonicPlateGenerator {
     this.runElevationPipeline();
 
     return this.projectAndFinalize();
+  }
+
+  // Reassign grid cells to a different plate, propagating to sphere faces
+  reassignCells(gridCells: number[], newPlateId: number): void {
+    if (newPlateId < 0 || newPlateId >= this.plates.length) return;
+
+    for (const gc of gridCells) {
+      if (gc < 0 || gc >= this.numGridCells) continue;
+
+      // Find current plate and remove from it
+      const sphereFace = this.gridToSphere[gc];
+      if (sphereFace >= 0) {
+        const oldPlateId = this.plateAssignment[sphereFace];
+        if (oldPlateId >= 0 && oldPlateId < this.plates.length) {
+          this.plates[oldPlateId].cells.delete(sphereFace);
+        }
+        // Assign to new plate on sphere
+        this.plateAssignment[sphereFace] = newPlateId;
+        this.plates[newPlateId].cells.add(sphereFace);
+      }
+    }
   }
 
   // Get current plates for editor access
@@ -1053,6 +1077,7 @@ export class TectonicPlateGenerator {
     // y: 0..gridHeight → lat: π/2..-π/2 (top = north pole, bottom = south pole)
     const gridElevations = new Float32Array(this.numGridCells);
     const gridPlateIds = new Int8Array(this.numGridCells).fill(-1);
+    this.gridToSphere = new Int32Array(this.numGridCells).fill(-1);
 
     // Build a bucketed spatial index for fast nearest-face lookup
     const lonBuckets = 72; // 5° per bucket
@@ -1122,6 +1147,7 @@ export class TectonicPlateGenerator {
 
       gridElevations[gi] = this.elevations[bestFace];
       gridPlateIds[gi] = this.plateAssignment[bestFace];
+      this.gridToSphere[gi] = bestFace;
     }
 
     // Light smoothing to remove pixelation from sphere→grid sampling
