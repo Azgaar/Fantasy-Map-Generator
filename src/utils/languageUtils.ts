@@ -1,7 +1,7 @@
 import { last } from "./arrayUtils";
 import { P } from "./probabilityUtils";
 
-export const gender = {
+export const gender: Record<string, Record<string, string>> = {
   fr: {},
 };
 
@@ -34,7 +34,7 @@ export const trimVowels = (string: string, minLength: number = 3) => {
  * @returns The adjective form of the noun.
  */
 export const getAdjective = (nounToBeAdjective: string) => {
-  const adjectivizationRules = {
+  const adjectivizationRules: Record<string, any> = {
     en: [
       {
         name: "guo",
@@ -329,7 +329,7 @@ export const getAdjective = (nounToBeAdjective: string) => {
       },
     ],
   };
-  for (const rule of adjectivizationRules[window.locale]) {
+  for (const rule of adjectivizationRules[options.language]) {
     if (P(rule.probability) && rule.condition.test(nounToBeAdjective)) {
       return rule.action(nounToBeAdjective);
     }

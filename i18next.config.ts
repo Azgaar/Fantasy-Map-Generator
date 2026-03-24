@@ -6,7 +6,7 @@ const HTMLPlugin: Plugin = {
   name: "html-plugin",
   async onEnd(keys: Map<string, ExtractedKey>) {
     const content = await readFile("src/index.html", "utf-8");
-    const matches = content.matchAll(/data-(?:text|tip)="([^"]+)"/g);
+    const matches = content.matchAll(/data-(?:html|text|tip)="([^"]+)"/g);
     for (const match of matches) {
       const key = match[1];
       keys.set(key, {key, defaultValue: key});

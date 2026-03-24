@@ -831,7 +831,7 @@ class StatesModule {
       "Marches",
     ];
     if (!state.formName) return state.name;
-    const stateGender = gender[window.locale]?.[state.formName];
+    const stateGender = gender[options.language as string]?.[state.formName];
     if (!state.name && state.formName)
       return i18next.t("The {{noun}}", {
         noun: i18next.t(state.formName),

@@ -220,7 +220,7 @@ oceanLayers
   .attr("height", graphHeight);
 
 document.addEventListener("DOMContentLoaded", async () => {
-  if (window.locale !== "en") await i18n;
+  await initLocale();
   if (!location.hostname) {
     const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
     alertMessage.innerHTML = /* html */ `Fantasy Map Generator cannot run serverless. Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`;
