@@ -34,7 +34,6 @@
     "@vitest/browser": "^4.0.18",
     "@vitest/browser-playwright": "^4.0.18",
     "playwright": "^1.57.0",
-    "symlink-dir": "^9.0.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"
@@ -44,7 +43,8 @@
     "armoria": "file:../armoria/dist",
     "d3": "^7.9.0",
     "delaunator": "^5.0.1",
-    "polylabel": "^2.0.1"
+    "polylabel": "^2.0.1",
+    "symlink-dir": "^9.0.0"
   },
   "engines": {
     "node": ">=24.0.0"
