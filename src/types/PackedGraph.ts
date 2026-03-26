@@ -25,7 +25,7 @@ export interface PackedGraph {
     p: [number, number][]; // cell polygon points
     b: boolean[]; // cell is on border
     h: TypedArray; // cell heights
-    q: Quadtree<[number, number, number]>; // cell quadtree index
+    q?: Quadtree<[number, number, number]>; // cell quadtree index (optional, not cloned)
     /** Terrain type */
     t: TypedArray; // cell terrain types
     r: TypedArray; // river id passing through cell
