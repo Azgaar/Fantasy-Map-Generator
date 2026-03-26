@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8" />
@@ -17,7 +17,7 @@
       const error = params.get("error");
 
       if (code) getToken();
-      else if (error) window.opener.Cloud.providers.dropbox.returnError(params.get("error_description"));
+      else if (error) returnError(params.get("error_description"));
       else startAuth();
 
       function startAuth() {
@@ -31,13 +31,23 @@
           .catch(error => console.error(error));
       }
 
+      function returnError(description) {
+        const channel = new BroadcastChannel("dropbox-auth");
+        channel.postMessage({type: "error", description});
+        channel.close();
+        window.close();
+      }
+
       function getToken() {
         auth.setCodeVerifier(window.sessionStorage.getItem("codeVerifier"));
         auth
           .getAccessTokenFromCode(REDIRECT_URI, code)
           .then(resp => {
             const token = resp.result.access_token;
-            window.opener.Cloud.providers.dropbox.setDropBoxToken(token);
+            const channel = new BroadcastChannel("dropbox-auth");
+            channel.postMessage({type: "token", token});
+            channel.close();
+            window.close();
           })
           .catch(error => {
             console.error(error);
