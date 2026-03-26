@@ -1,6 +1,6 @@
 "use strict";
 
-// functions to save the project to a file
+// functions to save the whole .map project
 async function saveMap(method) {
   if (customization) return tip("Map cannot be saved in EDIT mode, please complete the edit and retry", false, "error");
   closeDialogs("#alert");
@@ -9,7 +9,7 @@ async function saveMap(method) {
     const mapData = prepareMapData();
     const filename = getFileName() + ".map";
 
-    saveToStorage(mapData, method === "storage"); // any method saves to indexedDB
+    if (method === "storage") saveToStorage(mapData, true);
     if (method === "machine") saveToMachine(mapData, filename);
     if (method === "dropbox") saveToDropbox(mapData, filename);
   } catch (error) {
@@ -32,13 +32,12 @@ async function saveMap(method) {
           $(this).dialog("close");
         }
       },
-      position: { my: "center", at: "center", of: "svg" }
+      position: {my: "center", at: "center", of: "svg"}
     });
   }
 }
 
 function prepareMapData() {
-
   const date = new Date();
   const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
@@ -90,8 +89,8 @@ function prepareMapData() {
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
-  const { spacing, cellsX, cellsY, boundary, points, features, cellsDesired } = grid;
-  const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, boundary, points, features, cellsDesired });
+  const {spacing, cellsX, cellsY, boundary, points, features, cellsDesired} = grid;
+  const gridGeneral = JSON.stringify({spacing, cellsX, cellsY, boundary, points, features, cellsDesired});
   const packFeatures = JSON.stringify(pack.features);
   const cultures = JSON.stringify(pack.cultures);
   const states = JSON.stringify(pack.states);
@@ -165,14 +164,14 @@ function prepareMapData() {
 
 // save map file to indexedDB
 async function saveToStorage(mapData, showTip = false) {
-  const blob = new Blob([mapData], { type: "text/plain" });
+  const blob = new Blob([mapData], {type: "text/plain"});
   await ldb.set("lastMap", blob);
   showTip && tip("Map is saved to the browser storage", false, "success");
 }
 
 // download map file
 function saveToMachine(mapData, filename) {
-  const blob = new Blob([mapData], { type: "text/plain" });
+  const blob = new Blob([mapData], {type: "text/plain"});
   const URL = window.URL.createObjectURL(blob);
 
   const link = document.createElement("a");
