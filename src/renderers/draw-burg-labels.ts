@@ -20,7 +20,8 @@ export function drawBurgLabels(): void {
 
   // Get all burg labels grouped by group name
   const burgLabelsByGroup = new Map<string, BurgLabelData[]>();
-  for (const label of Labels.getByType("burg").map((l) => l as BurgLabelData)) {
+  for (const label of Labels.getAll()) {
+    if (label.type !== "burg") continue;
     if (!burgLabelsByGroup.has(label.group)) {
       burgLabelsByGroup.set(label.group, []);
     }
@@ -52,7 +53,7 @@ export function drawBurgLabels(): void {
   }
 
   TIME && console.timeEnd("drawBurgLabels");
-};
+}
 
 export function drawBurgLabel(burg: Burg): void {
   // TODO: remove label group dependency - for now, if group is missing, redraw all labels to recreate the group
@@ -81,12 +82,12 @@ export function drawBurgLabel(burg: Burg): void {
     .attr("dx", `${dx}em`)
     .attr("dy", `${dy}em`)
     .text(burg.name!);
-};
+}
 
 export function removeBurgLabel(burgId: number): void {
   const existingLabel = document.getElementById(`burgLabel${burgId}`);
   if (existingLabel) existingLabel.remove();
-};
+}
 
 function createLabelGroups(): void {
   // save existing styles and remove all groups

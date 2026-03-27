@@ -1,4 +1,3 @@
-
 declare global {
   var Labels: LabelsModule;
 }
@@ -59,10 +58,6 @@ class LabelsModule {
 
   get(id: number): LabelData | undefined {
     return pack.labels.find((l) => l.i === id);
-  }
-
-  getByType(type: LabelData["type"]): LabelData[] {
-    return pack.labels.filter((l) => l.type === type);
   }
 
   getByGroup(group: string): LabelData[] {
@@ -189,7 +184,7 @@ class LabelsModule {
         group,
         text: burg.name!,
         x: burg.x,
-        y: burg.y
+        y: burg.y,
       });
     }
 
