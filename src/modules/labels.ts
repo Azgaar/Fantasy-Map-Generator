@@ -66,12 +66,6 @@ class LabelsModule {
     );
   }
 
-  getBurgLabel(burgId: number): BurgLabelData | undefined {
-    return pack.labels.find((l) => l.type === "burg" && l.burgId === burgId) as
-      | BurgLabelData
-      | undefined;
-  }
-
   addStateLabel(data: Omit<StateLabelData, "i" | "type">): StateLabelData {
     const label: StateLabelData = {
       i: this.getNextId(),
