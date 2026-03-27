@@ -66,12 +66,6 @@ class LabelsModule {
     );
   }
 
-  getStateLabel(stateId: number): StateLabelData | undefined {
-    return pack.labels.find(
-      (l) => l.type === "state" && l.stateId === stateId,
-    ) as StateLabelData | undefined;
-  }
-
   getBurgLabel(burgId: number): BurgLabelData | undefined {
     return pack.labels.find((l) => l.type === "burg" && l.burgId === burgId) as
       | BurgLabelData

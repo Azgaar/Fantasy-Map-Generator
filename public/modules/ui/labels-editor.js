@@ -18,7 +18,7 @@ function extractPathPoints(pathElement) {
 function getLabelData(textElement) {
   const id = textElement.id || "";
   if (id.startsWith("stateLabel")) {
-    return Labels.getStateLabel(+id.slice(10));
+    return Labels.get(+id.slice(10));
   }
   // Custom labels: check for existing data-label-id attribute
   const dataLabelId = textElement.getAttribute("data-label-id");
