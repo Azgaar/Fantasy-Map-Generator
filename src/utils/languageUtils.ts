@@ -329,7 +329,9 @@ export const getAdjective = (nounToBeAdjective: string) => {
       },
     ],
   };
-  for (const rule of adjectivizationRules[options.language]) {
+  const rules =
+    adjectivizationRules[options.language] ?? adjectivizationRules.en;
+  for (const rule of rules) {
     if (P(rule.probability) && rule.condition.test(nounToBeAdjective)) {
       return rule.action(nounToBeAdjective);
     }

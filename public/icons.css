@@ -234,10 +234,10 @@
 .icon-temperature-low:before {content:'\f76b';} /* '' */
 
 /* Amended FA icons */
-.icon-sort-name-up:after {font-size:.9em;content:'\f15d';}
-.icon-sort-name-down:after {font-size:.9em;content:'\f15e';}
-.icon-sort-number-up:after {font-size:.9em;content:'\f162';}
-.icon-sort-number-down:after {font-size:.9em;content:'\f163';}
+.icon-sort-name-up:after {font-size:.9em;content:'\00a0\f15d';}
+.icon-sort-name-down:after {font-size:.9em;content:'\00a0\f15e';}
+.icon-sort-number-up:after {font-size:.9em;content:'\00a0\f162';}
+.icon-sort-number-down:after {font-size:.9em;content:'\00a0\f163';}
 
 /* Custom icons */
 .icon-w:before {font-style:italic;content:'w:';}

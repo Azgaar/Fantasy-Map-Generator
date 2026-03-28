@@ -64,6 +64,7 @@ gender.fr = {
   Diarchy: "feminine",
   Horde: "feminine",
   League: "feminine",
+  Marches: "feminine",
   Oligarchy: "feminine",
   Tetrarchy: "feminine",
   Theocracy: "feminine",
@@ -834,7 +835,7 @@ class StatesModule {
     const stateGender = gender[options.language as string]?.[state.formName];
     if (!state.name && state.formName)
       return i18next.t("The {{noun}}", {
-        noun: i18next.t(state.formName),
+        noun: i18next.t(`stateForm::${state.formName}`),
         gender: stateGender,
       });
     const adjName =
@@ -842,13 +843,14 @@ class StatesModule {
     return adjName
       ? i18next.t("{{adjective}} {{noun}}", {
           adjective: getAdjective(state.name),
-          noun: i18next.t(state.formName),
+          noun: i18next.t(`stateForm::${state.formName}`),
           gender: stateGender,
         })
       : i18next.t("{{noun}} of {{complement}}", {
-          noun: i18next.t(state.formName),
+          noun: i18next.t(`stateForm::${state.formName}`),
           complement: state.name,
           gender: stateGender,
+          interpolation: { escapeValue: false },
         });
   }
 }

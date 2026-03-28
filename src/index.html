@@ -409,7 +409,7 @@
         <div id="titleName">Azgaar's</div>
         <div id="title">Fantasy Map Generator</div>
         <div id="versionText">‎ ‎</div>
-        <p id="loading-text">LOADING<span>.</span><span>.</span><span>.</span></p>
+        <p id="loading-text" data-text="LOADING">LOADING<span>.</span><span>.</span><span>.</span></p>
       </div>
     </div>
 
@@ -753,8 +753,8 @@
               Vignette
             </li>
           </ul>
-          <div class="tip">Click to toggle, drag to raise or lower the layer</div>
-          <div class="tip">Ctrl + click to edit layer style</div>
+          <div class="tip" data-text="Click to toggle, drag to raise or lower the layer">Click to toggle, drag to raise or lower the layer</div>
+          <div class="tip" data-text="Ctrl + click to edit layer style">Ctrl + click to edit layer style</div>
 
           <div id="viewMode" data-tip="Set view node">
             <p data-text="View mode:">View mode:</p>
@@ -847,6 +847,7 @@
           <table id="styleElements">
             <caption
               id="styleIsOff"
+              data-text="Ensure the element visibility is toggled on!"
               data-tip="The selected layer is not visible. Toggle it on to see style changes effect"
             >
               Ensure the element visibility is toggled on!
@@ -854,7 +855,7 @@
 
             <tbody id="styleGroup">
               <tr data-tip="Select element group">
-                <td><b>Group</b></td>
+                <td><b data-text="Group">Group</b></td>
                 <td>
                   <select id="styleGroupSelect"></select>
                 </td>
@@ -865,33 +866,33 @@
               <tr id="styleHeightmapRenderOceanOption" data-tip="Check to render ocean heights">
                 <td colspan="2">
                   <input id="styleHeightmapRenderOcean" class="checkbox" type="checkbox" />
-                  <label for="styleHeightmapRenderOcean" class="checkbox-label">Render ocean heights</label>
+                  <label for="styleHeightmapRenderOcean" class="checkbox-label" data-text="Render ocean heights">Render ocean heights</label>
                 </td>
               </tr>
 
               <tr data-tip="Terracing power. Set to 0 to toggle off">
-                <td>Terracing</td>
+                <td data-text="Terracing">Terracing</td>
                 <td>
                   <slider-input id="styleHeightmapTerracing" min="0" max="20" step="1"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Layers reduction rate. Increase to improve performance">
-                <td>Reduce layers</td>
+                <td data-text="Reduce layers">Reduce layers</td>
                 <td>
                   <slider-input id="styleHeightmapSkip" min="0" max="10" step="1"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Line simplification rate. Increase to slightly improve performance">
-                <td>Simplify line</td>
+                <td data-text="Simplify line">Simplify line</td>
                 <td>
                   <slider-input id="styleHeightmapSimplification" min="0" max="10" step="1"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Select line interpolation type">
-                <td>Line style</td>
+                <td data-text="Line style">Line style</td>
                 <td>
                   <select id="styleHeightmapCurve">
                     <option value="curveBasisClosed" data-text="Curved" selected>Curved</option>
@@ -902,7 +903,7 @@
               </tr>
 
               <tr data-tip="Select color scheme for the element">
-                <td>Color scheme</td>
+                <td data-text="Color scheme">Color scheme</td>
                 <td>
                   <select id="styleHeightmapScheme" style="width: 86%"></select>
                   <button
@@ -917,7 +918,7 @@
 
             <tbody id="styleOpacity" style="display: none">
               <tr data-tip="Set opacity. 0: transparent, 1: solid">
-                <td>Opacity</td>
+                <td data-text="Opacity">Opacity</td>
                 <td>
                   <slider-input id="styleOpacityInput" min="0" max="1" step="0.01"></slider-input>
                 </td>
@@ -926,14 +927,14 @@
 
             <tbody id="styleLegend">
               <tr data-tip="Set maximum number of items in one column">
-                <td>Column items</td>
+                <td data-text="Column items">Column items</td>
                 <td>
                   <slider-input id="styleLegendColItems" min="1" max="30" step="1"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Set background color">
-                <td>Background</td>
+                <td data-text="Background">Background</td>
                 <td>
                   <input id="styleLegendBack" type="color" value="#ffffff" />
                   <output id="styleLegendBackOutput">#ffffff</output>
@@ -941,7 +942,7 @@
               </tr>
 
               <tr data-tip="Set background opacity">
-                <td>Opacity</td>
+                <td data-text="Opacity">Opacity</td>
                 <td>
                   <slider-input id="styleLegendOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
@@ -950,7 +951,7 @@
 
             <tbody id="stylePopulation">
               <tr data-tip="Set bar color for rural population">
-                <td>Rural color</td>
+                <td data-text="Rural color">Rural color</td>
                 <td>
                   <input id="stylePopulationRuralStrokeInput" type="color" value="#0000ff" />
                   <output id="stylePopulationRuralStrokeOutput">#0000ff</output>
@@ -958,7 +959,7 @@
               </tr>
 
               <tr data-tip="Set bar color for urban population">
-                <td>Urban color</td>
+                <td data-text="Urban color">Urban color</td>
                 <td>
                   <input id="stylePopulationUrbanStrokeInput" type="color" value="#ff0000" />
                   <output id="stylePopulationUrbanStrokeOutput">#ff0000</output>
@@ -968,10 +969,10 @@
 
             <tbody id="styleTexture">
               <tr data-tip="Select texture image. Big textures can highly affect performance">
-                <td>Image</td>
+                <td data-text="Image">Image</td>
                 <td>
                   <select id="styleTextureInput" style="width: 86%">
-                    <option value="">No texture</option>
+                    <option value="" data-text="No texture">No texture</option>
                     <option value="./images/textures/folded-paper-big.jpg" data-text="Folded paper big">Folded paper big</option>
                     <option value="./images/textures/folded-paper-small.jpg" data-text="Folded paper small">Folded paper small</option>
                     <option value="./images/textures/gray-paper.jpg" data-text="Gray paper">Gray paper</option>
@@ -1007,7 +1008,7 @@
               </tr>
 
               <tr data-tip="Shift the texture by axes">
-                <td>Shift by axes</td>
+                <td data-text="Shift by axes">Shift by axes</td>
                 <td>
                   <input id="styleTextureShiftX" type="number" value="0" data-tip="Shift texture by x axis in pixels" />
                   <input id="styleTextureShiftY" type="number" value="0" data-tip="Shift texture by y axis in pixels" />
@@ -1017,32 +1018,32 @@
 
             <tbody id="styleVignette">
               <tr data-tip="Select precreated vignette">
-                <td>Preset</td>
+                <td data-text="Preset">Preset</td>
                 <td>
                   <select id="styleVignettePreset"></select>
                 </td>
               </tr>
 
               <tr data-tip="Vignette rectangle position (in percents)">
-                <td>Position</td>
+                <td data-text="Position">Position</td>
                 <td style="display: flex; flex-direction: column; gap: 2px">
                   <div>
                     <span>x </span>
                     <input id="styleVignetteX" type="number" min="0" max="100" step="0.1" style="width: 5em" />
-                    <span>width&nbsp; </span>
+                    <span data-text="width">width</span>&nbsp;
                     <input id="styleVignetteWidth" type="number" min="0" max="100" step="0.1" style="width: 5em" />
                   </div>
                   <div>
                     <span>y </span>
                     <input id="styleVignetteY" type="number" min="0" max="100" step="0.1" style="width: 5em" />
-                    <span>height </span>
+                    <span data-text="height">height</span>
                     <input id="styleVignetteHeight" type="number" min="0" max="100" step="0.1" style="width: 5em" />
                   </div>
                 </td>
               </tr>
 
               <tr data-tip="Set vignette X and Y radius (in percents)">
-                <td>Radius</td>
+                <td data-text="Radius">Radius</td>
                 <td>
                   <span>x </span>
                   <input id="styleVignetteRx" type="number" min="0" max="50" style="width: 5em" />
@@ -1052,7 +1053,7 @@
               </tr>
 
               <tr data-tip="Set vignette blue propagation (in pixels)">
-                <td>Blur</td>
+                <td data-text="Blur">Blur</td>
                 <td>
                   <slider-input id="styleVignetteBlur" min="0" max="400" step="1"></slider-input>
                 </td>
@@ -1061,10 +1062,10 @@
 
             <tbody id="styleOcean">
               <tr data-tip="Select ocean pattern">
-                <td>Pattern</td>
+                <td data-text="Pattern">Pattern</td>
                 <td>
                   <select id="styleOceanPattern">
-                    <option value="">No pattern</option>
+                    <option value="" data-text="No pattern">No pattern</option>
                     <option value="./images/pattern1.png" data-text="Pattern 1">Pattern 1</option>
                     <option value="./images/pattern2.png" data-text="Pattern 2">Pattern 2</option>
                     <option value="./images/pattern3.png" data-text="Pattern 3">Pattern 3</option>
@@ -1077,14 +1078,14 @@
               </tr>
 
               <tr data-tip="Set ocean pattern opacity">
-                <td>Pattern opacity</td>
+                <td data-text="Pattern opacity">Pattern opacity</td>
                 <td>
                   <slider-input id="styleOceanPatternOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Define the coast outline contours scheme">
-                <td>Ocean layers</td>
+                <td data-text="Ocean layers">Ocean layers</td>
                 <td>
                   <select id="outlineLayers">
                     <option value="none" data-text="No outline">No outline</option>
@@ -1099,7 +1100,7 @@
               </tr>
 
               <tr data-tip="Set ocean color">
-                <td>Color</td>
+                <td data-text="Color">Color</td>
                 <td>
                   <input id="styleOceanFill" type="color" value="#466eab" />
                   <output id="styleOceanFillOutput">#466eab</output>
@@ -1109,7 +1110,7 @@
 
             <tbody id="styleBurgIcons">
               <tr data-tip="Select group icon">
-                <td>Icon</td>
+                <td data-text="Icon">Icon</td>
                 <td>
                   <select id="styleBurgIconsIcon">
                     <option value="#icon-circle" data-text="Circle">Circle</option>
@@ -1136,14 +1137,14 @@
               </tr>
 
               <tr data-tip="Set icon size">
-                <td>Icon size</td>
+                <td data-text="Icon size">Icon size</td>
                 <td>
                   <slider-input id="styleBurgIconsIconSize" min="0.01" max="20" step=".01"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Set icon stroke linejoin">
-                <td>Stroke linejoin</td>
+                <td data-text="Stroke linejoin">Stroke linejoin</td>
                 <td>
                   <select id="styleBurgIconsStrokeLinejoin">
                     <option value="inherit" data-text="Inherit" selected>Inherit</option>
@@ -1155,7 +1156,7 @@
               </tr>
 
               <tr data-tip="Define transparency of fill color">
-                <td>Fill opacity</td>
+                <td data-text="Fill opacity">Fill opacity</td>
                 <td>
                   <slider-input id="styleBurgIconsFillOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
@@ -1164,7 +1165,7 @@
 
             <tbody id="styleGrid">
               <tr data-tip="Select grid overlay type">
-                <td>Type</td>
+                <td data-text="Type">Type</td>
                 <td>
                   <select id="styleGridType">
                     <option value="pointyHex" data-text="Hex grid (pointy)">Hex grid (pointy)</option>
@@ -1182,7 +1183,7 @@
               </tr>
 
               <tr data-tip="Set grid cells scale multiplier">
-                <td>Scale</td>
+                <td data-text="Scale">Scale</td>
                 <td>
                   <input id="styleGridScale" type="number" min=".1" max="10" step=".01" />
                   <output
@@ -1202,7 +1203,7 @@
               </tr>
 
               <tr data-tip="Shift the element by axes">
-                <td>Shift by axes</td>
+                <td data-text="Shift by axes">Shift by axes</td>
                 <td>
                   <input id="styleGridShiftX" type="number" data-tip="Shift by x axis in pixels" />
                   <input id="styleGridShiftY" type="number" data-tip="Shift by y axis in pixels" />
@@ -1212,14 +1213,14 @@
 
             <tbody id="styleCompass">
               <tr data-tip="Set wind (compass) rose size">
-                <td>Size</td>
+                <td data-text="Size">Size</td>
                 <td>
                   <slider-input id="styleCompassSizeInput" min=".02" max="1" step=".01"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Shift wind (compass) rose by axes">
-                <td>Shift by axes</td>
+                <td data-text="Shift by axes">Shift by axes</td>
                 <td>
                   <input id="styleCompassShiftX" type="number" value="80" data-tip="Shift by x axis in pixels" />
                   <input id="styleCompassShiftY" type="number" value="80" data-tip="Shift by y axis in pixels" />
@@ -1229,7 +1230,7 @@
 
             <tbody id="styleRelief">
               <tr data-tip="Select set of relief icons. All relief icons will be regenerated">
-                <td>Style</td>
+                <td data-text="Style">Style</td>
                 <td>
                   <select id="styleReliefSet">
                     <option value="simple" data-text="Simple" selected>Simple</option>
@@ -1240,7 +1241,7 @@
               </tr>
 
               <tr data-tip="Define the size of relief icons. All relief icons will be regenerated">
-                <td>Size</td>
+                <td data-text="Size">Size</td>
                 <td>
                   <slider-input id="styleReliefSize" min=".2" max="4" step=".01"></slider-input>
                 </td>
@@ -1249,7 +1250,7 @@
               <tr
                 data-tip="Define the density of relief icons. All relief icons will be regenerated. Highly affects performance!"
               >
-                <td>Density</td>
+                <td data-text="Density">Density</td>
                 <td>
                   <slider-input id="styleReliefDensity" min=".3" max=".8" step=".01"></slider-input>
                 </td>
@@ -1258,7 +1259,7 @@
 
             <tbody id="styleFill">
               <tr data-tip="Set fill color">
-                <td>Fill color</td>
+                <td data-text="Fill color">Fill color</td>
                 <td>
                   <input id="styleFillInput" type="color" value="#5E4FA2" />
                   <output id="styleFillOutput">#5E4FA2</output>
@@ -1268,7 +1269,7 @@
 
             <tbody id="styleStroke">
               <tr data-tip="Set stroke color">
-                <td>Stroke color</td>
+                <td data-text="Stroke color">Stroke color</td>
                 <td>
                   <input id="styleStrokeInput" type="color" value="#5E4FA2" />
                   <output id="styleStrokeOutput">#5E4FA2</output>
@@ -1278,7 +1279,7 @@
 
             <tbody id="styleStrokeWidth">
               <tr data-tip="Set stroke width">
-                <td>Stroke width</td>
+                <td data-text="Stroke width">Stroke width</td>
                 <td>
                   <slider-input id="styleStrokeWidthInput" min="0" max="10" step=".01"></slider-input>
                 </td>
@@ -1287,7 +1288,7 @@
 
             <tbody id="styleLetterSpacing">
               <tr data-tip="Set letter spacing">
-                <td>Letter spacing</td>
+                <td data-text="Letter spacing">Letter spacing</td>
                 <td>
                   <slider-input id="styleLetterSpacingInput" min="-1" max="10" step=".01"></slider-input>
                 </td>
@@ -1296,7 +1297,7 @@
 
             <tbody id="styleStrokeDash">
               <tr data-tip="Set stroke dash array (e.g. 5 2) and linecap">
-                <td>Stroke dash</td>
+                <td data-text="Stroke dash">Stroke dash</td>
                 <td>
                   <input id="styleStrokeDasharrayInput" type="text" value="1 2" style="width: 26%" />
                   <select id="styleStrokeLinecapInput" style="width: 32%">
@@ -1311,7 +1312,7 @@
 
             <tbody id="styleShadow">
               <tr data-tip="Set text shadow">
-                <td>Text shadow</td>
+                <td data-text="Text shadow">Text shadow</td>
                 <td>
                   <input id="styleShadowInput" type="text" />
                 </td>
@@ -1320,7 +1321,7 @@
 
             <tbody id="styleFont">
               <tr data-tip="Select font">
-                <td>Font</td>
+                <td data-text="Font">Font</td>
                 <td>
                   <select id="styleSelectFont" style="width: 85%"></select>
                   <button id="styleFontAdd" data-tip="Add a font" class="icon-plus sideButton"></button>
@@ -1330,10 +1331,10 @@
 
             <tbody id="styleSize">
               <tr data-tip="Set font size">
-                <td>Font size</td>
+                <td data-text="Font size">Font size</td>
                 <td>
                   <button id="styleFontPlus" data-tip="Increase font" class="whiteButton">+</button>
-                  <button id="styleFontMinus" data-tip="Descrease font" class="whiteButton">-</button>
+                  <button id="styleFontMinus" data-tip="Decrease font" class="whiteButton">-</button>
                   <input id="styleFontSize" type="number" min=".5" max="100" step=".1" />
                 </td>
               </tr>
@@ -1341,7 +1342,7 @@
 
             <tbody id="styleFontShift">
               <tr data-tip="Set label shift along X and Y axes">
-                <td>Label shift</td>
+                <td data-text="Label shift">Label shift</td>
                 <td>
                   <input
                     id="styleFontShiftX"
@@ -1367,28 +1368,28 @@
               <tr data-tip="Allow system to apply filter automatically based on zoom level">
                 <td colspan="2">
                   <input id="styleCoastlineAuto" class="checkbox" type="checkbox" />
-                  <label for="styleCoastlineAuto" class="checkbox-label">Automatically change filter on zoom</label>
+                  <label for="styleCoastlineAuto" class="checkbox-label" data-text="Automatically change filter on zoom">Automatically change filter on zoom</label>
                 </td>
               </tr>
             </tbody>
 
             <tbody id="styleTemperature">
-              <tr data-tip="Define transparency of temperature leyer. Set to 0 to make it fully transparent">
-                <td>Fill opacity</td>
+              <tr data-tip="Define transparency of temperature layer. Set to 0 to make it fully transparent">
+                <td data-text="Fill opacity">Fill opacity</td>
                 <td>
                   <slider-input id="styleTemperatureFillOpacityInput" min="0" max="1" step=".01"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Set labels size">
-                <td>Labels size</td>
+                <td data-text="Labels size">Labels size</td>
                 <td>
                   <slider-input id="styleTemperatureFontSizeInput" min="0" max="30" step="1"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Set labels color">
-                <td>Labels color</td>
+                <td data-text="Labels color">Labels color</td>
                 <td>
                   <input id="styleTemperatureFillInput" type="color" />
                   <output id="styleTemperatureFillOutput">#000</output>
@@ -1410,7 +1411,7 @@
               </tr>
 
               <tr style="margin-top: 0.8em">
-                <td style="font-style: italic">
+                <td style="font-style: italic" data-text="Halo is only rendered if &quot;Rendering&quot; option is set to &quot;Best quality&quot;!">
                   Halo is only rendered if "Rendering" option is set to "Best quality"!
                 </td>
               </tr>
@@ -1439,13 +1440,13 @@
 
             <tbody id="styleArmies">
               <tr data-tip="Set fill transparency. Set to 0 to make it fully transparent">
-                <td>Fill opacity</td>
+                <td data-text="Fill opacity">Fill opacity</td>
                 <td>
                   <slider-input id="styleArmiesFillOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
               </tr>
               <tr data-tip="Set regiment box size. All regiments will be redrawn on change (position will defaulted)">
-                <td>Box Size</td>
+                <td data-text="Box size">Box size</td>
                 <td>
                   <slider-input id="styleArmiesSize" min="0" max="10" step=".1"></slider-input>
                 </td>
@@ -1454,21 +1455,21 @@
 
             <tbody id="styleEmblems">
               <tr data-tip="Set state emblems size multiplier">
-                <td>State size</td>
+                <td data-text="State size">State size</td>
                 <td>
                   <slider-input id="emblemsStateSizeInput" min="0" max="5" step=".01"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Set province emblems size multiplier">
-                <td>Province size</td>
+                <td data-text="Province size">Province size</td>
                 <td>
                   <slider-input id="emblemsProvinceSizeInput" min="0" max="5" step=".01"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Set burg emblems size multiplier">
-                <td>Burg size</td>
+                <td data-text="Burg size">Burg size</td>
                 <td>
                   <slider-input id="emblemsBurgSizeInput" min="0" max="5" step=".01"></slider-input>
                 </td>
@@ -1477,21 +1478,21 @@
               <tr data-tip="Allow system to hide emblem groups if their size in too small or too big on that scale">
                 <td colspan="2">
                   <input id="hideEmblems" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked />
-                  <label for="hideEmblems" class="checkbox-label">Toggle visibility automatically</label>
+                  <label for="hideEmblems" class="checkbox-label" data-text="Toggle visibility automatically">Toggle visibility automatically</label>
                 </td>
               </tr>
             </tbody>
 
             <tbody id="styleFilter" style="display: block">
               <tr data-tip="Select filter for element. Please note filters may cause performance issues!">
-                <td>Filter</td>
+                <td data-text="Filter">Filter</td>
                 <td><select id="styleFilterInput" /></td>
               </tr>
             </tbody>
 
             <tbody id="styleClipping">
               <tr data-tip="Set clipping. Only non-clipped part will be visible">
-                <td>Clipping</td>
+                <td data-text="Clipping">Clipping</td>
                 <td>
                   <select id="styleClippingInput">
                     <option value="" data-text="No clipping" selected>No clipping</option>
@@ -1506,7 +1507,7 @@
               <tr data-tip="Try to keep the same size on any map scale, turn off to get size change depending on scale">
                 <td colspan="2">
                   <input id="styleRescaleMarkers" class="checkbox" type="checkbox" />
-                  <label for="styleRescaleMarkers" class="checkbox-label">Keep initial size on zoom change</label>
+                  <label for="styleRescaleMarkers" class="checkbox-label" data-text="Keep initial size on zoom change">Keep initial size on zoom change</label>
                 </td>
               </tr>
             </tbody>
@@ -1515,31 +1516,31 @@
               <tr data-tip="Allow system to hide labels if their size in too small or too big on that scale">
                 <td colspan="2">
                   <input id="hideLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked />
-                  <label for="hideLabels" class="checkbox-label">Toggle visibility automatically</label>
+                  <label for="hideLabels" class="checkbox-label" data-text="Toggle visibility automatically">Toggle visibility automatically</label>
                 </td>
               </tr>
 
               <tr data-tip="Allow system to rescale labels on zoom">
                 <td colspan="2">
                   <input id="rescaleLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked />
-                  <label for="rescaleLabels" class="checkbox-label">Rescale on zoom</label>
+                  <label for="rescaleLabels" class="checkbox-label" data-text="Rescale on zoom">Rescale on zoom</label>
                 </td>
               </tr>
             </tbody>
 
             <tbody id="styleScaleBar">
               <tr data-tip="Set bar and font size">
-                <td>Size</td>
+                <td data-text="Size">Size</td>
                 <td>
-                  <span>Bar </span>
+                  <span data-text="Bar">Bar</span>
                   <input id="styleScaleBarSize" type="number" min=".5" max="5" step=".1" />
-                  <span>Font </span>
+                  <span data-text="Font">Font</span>
                   <input id="styleScaleBarFontSize" type="number" min="1" max="100" step=".1" />
                 </td>
               </tr>
 
               <tr data-tip="Set position of the Scale bar bottom right corner (in percents)">
-                <td>Position</td>
+                <td data-text="Position">Position</td>
                 <td>
                   <span>x </span>
                   <input id="styleScaleBarPositionX" type="number" min="0" max="100" step="0.1" style="width: 5em" />
@@ -1549,21 +1550,21 @@
               </tr>
 
               <tr data-tip="Type scale bar label, leave blank to hide label">
-                <td>Label</td>
+                <td data-text="Label">Label</td>
                 <td>
                   <input id="styleScaleBarLabel" type="text" />
                 </td>
               </tr>
 
               <tr data-tip="Set background opacity. 0: transparent, 1: solid">
-                <td>Back opacity</td>
+                <td data-text="Back opacity">Back opacity</td>
                 <td>
                   <slider-input id="styleScaleBarBackgroundOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
               </tr>
 
               <tr data-tip="Set background fill color">
-                <td>Back fill</td>
+                <td data-text="Back fill">Back fill</td>
                 <td>
                   <input id="styleScaleBarBackgroundFill" type="color" />
                   <output id="styleScaleBarBackgroundFillOutput"></output>
@@ -1571,12 +1572,12 @@
               </tr>
 
               <tr data-tip="Set background stroke color and width">
-                <td>Back stroke</td>
+                <td data-text="Back stroke">Back stroke</td>
                 <td>
                   <input id="styleScaleBarBackgroundStroke" type="color" />
                   <output id="styleScaleBarBackgroundStrokeOutput"></output>
 
-                  <span>Width </span>
+                  <span data-text="Width">Width</span>
                   <input
                     id="styleScaleBarBackgroundStrokeWidth"
                     type="number"
@@ -1589,7 +1590,7 @@
               </tr>
 
               <tr data-tip="Set background element padding: top, right, bottom, left (in pixels)">
-                <td>Back padding</td>
+                <td data-text="Back padding">Back padding</td>
                 <td style="display: flex; gap: 4px">
                   <input id="styleScaleBarBackgroundPaddingTop" type="number" min="0" max="100" style="width: 5em" />
                   <input id="styleScaleBarBackgroundPaddingRight" type="number" min="0" max="100" style="width: 5em" />
@@ -1599,18 +1600,18 @@
               </tr>
 
               <tr data-tip="Select background filter">
-                <td>Back filter</td>
+                <td data-text="Back filter">Back filter</td>
                 <td><select id="styleScaleBarBackgroundFilter" /></td>
               </tr>
             </tbody>
           </table>
 
           <div id="mapFilters" data-tip="Set a filter to be applied to the map in general">
-            <p>Toggle global filters:</p>
-            <button id="grayscale" class="radio">Grayscale</button>
-            <button id="sepia" class="radio">Sepia</button>
-            <button id="dingy" class="radio">Dingy</button>
-            <button id="tint" class="radio">Tint</button>
+            <p data-text="Toggle global filters:">Toggle global filters:</p>
+            <button id="grayscale" class="radio" data-text="Grayscale">Grayscale</button>
+            <button id="sepia" class="radio" data-text="Sepia">Sepia</button>
+            <button id="dingy" class="radio" data-text="Dingy">Dingy</button>
+            <button id="tint" class="radio" data-text="Tint">Tint</button>
           </div>
         </div>
 
@@ -1978,62 +1979,62 @@
                     <option value="state" data-text="State-specific">State-specific</option>
                   </optgroup>
                   <optgroup label="Basic">
-                    <option value="heater" data-text="Heater">Heater</option>
-                    <option value="spanish" data-text="Spanish">Spanish</option>
-                    <option value="french" data-text="French">French</option>
+                    <option value="heater" data-text="emblemForm::Heater">Heater</option>
+                    <option value="spanish" data-text="emblemForm::Spanish">Spanish</option>
+                    <option value="french" data-text="emblemForm::French">French</option>
                   </optgroup>
                   <optgroup label="Regional">
-                    <option value="horsehead" data-text="Horsehead">Horsehead</option>
-                    <option value="horsehead2" data-text="Horsehead Edgy">Horsehead Edgy</option>
-                    <option value="polish" data-text="Polish">Polish</option>
-                    <option value="hessen" data-text="Hessen">Hessen</option>
-                    <option value="swiss" data-text="Swiss">Swiss</option>
+                    <option value="horsehead" data-text="emblemForm::Horsehead">Horsehead</option>
+                    <option value="horsehead2" data-text="emblemForm::Horsehead Edgy">Horsehead Edgy</option>
+                    <option value="polish" data-text="emblemForm::Polish">Polish</option>
+                    <option value="hessen" data-text="emblemForm::Hessen">Hessen</option>
+                    <option value="swiss" data-text="emblemForm::Swiss">Swiss</option>
                   </optgroup>
                   <optgroup label="Historical">
-                    <option value="boeotian" data-text="Boeotian">Boeotian</option>
-                    <option value="roman" data-text="Roman">Roman</option>
-                    <option value="kite" data-text="Kite">Kite</option>
-                    <option value="oldFrench" data-text="Old French">Old French</option>
-                    <option value="renaissance" data-text="Renaissance">Renaissance</option>
-                    <option value="baroque" data-text="Baroque">Baroque</option>
+                    <option value="boeotian" data-text="emblemForm::Boeotian">Boeotian</option>
+                    <option value="roman" data-text="emblemForm::Roman">Roman</option>
+                    <option value="kite" data-text="emblemForm::Kite">Kite</option>
+                    <option value="oldFrench" data-text="emblemForm::Old French">Old French</option>
+                    <option value="renaissance" data-text="emblemForm::Renaissance">Renaissance</option>
+                    <option value="baroque" data-text="emblemForm::Baroque">Baroque</option>
                   </optgroup>
                   <optgroup label="Specific">
-                    <option value="targe" data-text="Targe">Targe</option>
-                    <option value="targe2" data-text="Targe2">Targe2</option>
-                    <option value="pavise" data-text="Pavise">Pavise</option>
-                    <option value="wedged" data-text="Wedged">Wedged</option>
+                    <option value="targe" data-text="emblemForm::Targe">Targe</option>
+                    <option value="targe2" data-text="emblemForm::Targe2">Targe2</option>
+                    <option value="pavise" data-text="emblemForm::Pavise">Pavise</option>
+                    <option value="wedged" data-text="emblemForm::Wedged">Wedged</option>
                   </optgroup>
                   <optgroup label="Banner">
-                    <option value="flag" data-text="Flag">Flag</option>
-                    <option value="pennon" data-text="Pennon">Pennon</option>
-                    <option value="guidon" data-text="Guidon">Guidon</option>
-                    <option value="banner" data-text="Banner">Banner</option>
-                    <option value="dovetail" data-text="Dovetail">Dovetail</option>
-                    <option value="gonfalon" data-text="Gonfalon">Gonfalon</option>
-                    <option value="pennant" data-text="Pennant">Pennant</option>
+                    <option value="flag" data-text="emblemForm::Flag">Flag</option>
+                    <option value="pennon" data-text="emblemForm::Pennon">Pennon</option>
+                    <option value="guidon" data-text="emblemForm::Guidon">Guidon</option>
+                    <option value="banner" data-text="emblemForm::Banner">Banner</option>
+                    <option value="dovetail" data-text="emblemForm::Dovetail">Dovetail</option>
+                    <option value="gonfalon" data-text="emblemForm::Gonfalon">Gonfalon</option>
+                    <option value="pennant" data-text="emblemForm::Pennant">Pennant</option>
                   </optgroup>
                   <optgroup label="Simple">
-                    <option value="round" data-text="Round">Round</option>
-                    <option value="oval" data-text="Oval">Oval</option>
-                    <option value="vesicaPiscis" data-text="Vesica Piscis">Vesica Piscis</option>
-                    <option value="square" data-text="Square">Square</option>
-                    <option value="diamond" data-text="Diamond">Diamond</option>
+                    <option value="round" data-text="emblemForm::Round">Round</option>
+                    <option value="oval" data-text="emblemForm::Oval">Oval</option>
+                    <option value="vesicaPiscis" data-text="emblemForm::Vesica Piscis">Vesica Piscis</option>
+                    <option value="square" data-text="emblemForm::Square">Square</option>
+                    <option value="diamond" data-text="emblemForm::Diamond">Diamond</option>
                   </optgroup>
                   <optgroup label="Fantasy">
-                    <option value="fantasy1" data-text="Fantasy1">Fantasy1</option>
-                    <option value="fantasy2" data-text="Fantasy2">Fantasy2</option>
-                    <option value="fantasy3" data-text="Fantasy3">Fantasy3</option>
-                    <option value="fantasy4" data-text="Fantasy4">Fantasy4</option>
-                    <option value="fantasy5" data-text="Fantasy5">Fantasy5</option>
+                    <option value="fantasy1" data-text="emblemForm::Fantasy1">Fantasy1</option>
+                    <option value="fantasy2" data-text="emblemForm::Fantasy2">Fantasy2</option>
+                    <option value="fantasy3" data-text="emblemForm::Fantasy3">Fantasy3</option>
+                    <option value="fantasy4" data-text="emblemForm::Fantasy4">Fantasy4</option>
+                    <option value="fantasy5" data-text="emblemForm::Fantasy5">Fantasy5</option>
                   </optgroup>
                   <optgroup label="Middle Earth">
-                    <option value="noldor" data-text="Noldor">Noldor</option>
-                    <option value="gondor" data-text="Gondor">Gondor</option>
-                    <option value="easterling" data-text="Easterling">Easterling</option>
-                    <option value="erebor" data-text="Erebor">Erebor</option>
-                    <option value="ironHills" data-text="Iron Hills">Iron Hills</option>
-                    <option value="urukHai" data-text="UrukHai">UrukHai</option>
-                    <option value="moriaOrc" data-text="Moria Orc">Moria Orc</option>
+                    <option value="noldor" data-text="emblemForm::Noldor">Noldor</option>
+                    <option value="gondor" data-text="emblemForm::Gondor">Gondor</option>
+                    <option value="easterling" data-text="emblemForm::Easterling">Easterling</option>
+                    <option value="erebor" data-text="emblemForm::Erebor">Erebor</option>
+                    <option value="ironHills" data-text="emblemForm::Iron Hills">Iron Hills</option>
+                    <option value="urukHai" data-text="emblemForm::UrukHai">UrukHai</option>
+                    <option value="moriaOrc" data-text="emblemForm::Moria Orc">Moria Orc</option>
                   </optgroup>
                 </select>
               </td>
@@ -2048,7 +2049,7 @@
               </td>
               <td data-text="Zoom extent">Zoom extent</td>
               <td>
-                <span data-tip="Mimimal possible zoom level (should be > 0)">min</span>
+                <span data-text="min" data-tip="Mimimal possible zoom level (should be > 0)">min</span>
                 <input
                   data-tip="Mimimal possible zoom level (should be > 0)"
                   id="zoomExtentMin"
@@ -2059,7 +2060,7 @@
                   max="20"
                   value="1"
                 />
-                <span data-tip="Maximal possible zoom level (should be > 1)">max</span>
+                <span data-text="max" data-tip="Maximal possible zoom level (should be > 1)">max</span>
                 <input
                   data-tip="Maximal possible zoom level (should be > 1)"
                   id="zoomExtentMax"
@@ -2101,6 +2102,7 @@
                 <select id="language" data-stored="language">
                   <option value="en" selected>English</option>
                   <option value="fr">Français</option>
+                  <option value="zh">中文</option>
                 </select>
               </td>
               <td></td>
@@ -2216,6 +2218,7 @@
             </button>
             <button
               id="regenerateMilitary"
+              data-text="Military"
               data-tip="Click to recalculate military forces based on current military options"
             >
               Military
@@ -2292,7 +2295,7 @@
             >
               River
             </button>
-            <button id="addRoute" data-tip="Open route creation dialog" data-shortcut="Shift + 4">Route</button>
+            <button id="addRoute" data-text="Route" data-tip="Open route creation dialog" data-shortcut="Shift + 4">Route</button>
           </div>
 
           <div class="separator" data-text="Show">Show</div>
@@ -2318,33 +2321,33 @@
         </div>
 
         <div id="customizationMenu" class="tabcontent">
-          <p>Heightmap customization tools:</p>
+          <p data-text="Heightmap customization tools:">Heightmap customization tools:</p>
           <div id="customizeTools">
-            <button data-tip="Display brushes panel" id="paintBrushes">Paint Brushes</button>
-            <button data-tip="Open template editor" id="applyTemplate" style="display: none">Template Editor</button>
-            <button data-tip="Open Image Converter" id="convertImage" style="display: none">Image Converter</button>
-            <button data-tip="Render heightmap data as a small monochrome image" id="heightmapPreview">Preview</button>
+            <button data-text="Paint Brushes" data-tip="Display brushes panel" id="paintBrushes">Paint Brushes</button>
+            <button data-text="Template Editor" data-tip="Open template editor" id="applyTemplate" style="display: none">Template Editor</button>
+            <button data-text="Image Converter" data-tip="Open Image Converter" id="convertImage" style="display: none">Image Converter</button>
+            <button data-text="Preview" data-tip="Render heightmap data as a small monochrome image" id="heightmapPreview">Preview</button>
             <button data-tip="Preview heightmap in 3D scene" id="heightmap3DView">3D scene</button>
           </div>
 
-          <p>Options:</p>
+          <p data-text="Options:">Options:</p>
           <div id="customizeOptions">
-            <div data-tip="Heightmap edit mode">Edit mode: <span id="heightmapEditMode"></span></div>
+            <div data-tip="Heightmap edit mode"><span data-text="Edit mode:">Edit mode:</span> <span id="heightmapEditMode"></span></div>
             <div data-tip="Render cells below the sea level (with height less than 20)">
               <input id="renderOcean" class="checkbox" type="checkbox" />
-              <label for="renderOcean" class="checkbox-label">Render ocean cells</label>
+              <label for="renderOcean" class="checkbox-label" data-text="Render ocean cells">Render ocean cells</label>
             </div>
             <div
               id="allowErosionBox"
               data-tip="Regenerate rivers and allow water flow to change heights and form new lakes. Better to keep checked"
             >
               <input id="allowErosion" class="checkbox" type="checkbox" checked />
-              <label for="allowErosion" class="checkbox-label">Allow water erosion</label>
+              <label for="allowErosion" class="checkbox-label" data-text="Allow water erosion">Allow water erosion</label>
             </div>
             <div
               data-tip="Maximum number of iterations taken to resolve depressions. Increase if you have rivers ending nowhere"
             >
-              <div>Depressions filling max iterations:</div>
+              <div data-text="Depressions filling max iterations:">Depressions filling max iterations:</div>
               <input
                 id="resolveDepressionsStepsInput"
                 data-stored="resolveDepressionsSteps"
@@ -2364,7 +2367,7 @@
             </div>
 
             <div data-tip="Depression depth to form a new lake. Increase to reduce number of lakes added by system">
-              <div>Depression depth threshold:</div>
+              <div data-text="Depression depth threshold:">Depression depth threshold:</div>
               <input
                 id="lakeElevationLimitInput"
                 data-stored="lakeElevationLimit"
@@ -2384,22 +2387,22 @@
             </div>
           </div>
 
-          <p>Statistics:</p>
+          <p data-text="Statistics:">Statistics:</p>
           <div>
-            <span>Land cells: </span><span id="landmassCounter">0</span>
-            <span style="margin-left: 0.9em">Mean height: </span><span id="landmassAverage">0</span>
+            <span data-text="Land cells:">Land cells:</span> <span id="landmassCounter">0</span>
+            <span data-text="Mean height:" style="margin-left: 0.9em">Mean height:</span> <span id="landmassAverage">0</span>
           </div>
 
-          <p>Cell info:</p>
+          <p data-text="Cell info:">Cell info:</p>
           <div>
-            <span>Coord: </span><span id="heightmapInfoX"></span>/<span id="heightmapInfoY"></span><br />
-            <span>Cell: </span><span id="heightmapInfoCell"></span><br />
-            <span>Height: </span><span id="heightmapInfoHeight"></span>
+            <span data-text="Coord:">Coord:</span> <span id="heightmapInfoX"></span>/<span id="heightmapInfoY"></span><br />
+            <span data-text="Cell:">Cell:</span> <span id="heightmapInfoCell"></span><br />
+            <span data-text="Height:">Height:</span> <span id="heightmapInfoHeight"></span>
           </div>
         </div>
 
         <div id="aboutContent" class="tabcontent">
-          <p>
+          <p data-html="{{github, link(text: Fantasy Map Generator)}} is an {{license, link(text: open source)}} tool by Azgaar. You may use auto-generated maps as they are, edit them or even create a new map from scratch. Check out the {{tutorial, link(text: Quick start)}}, {{qanda, link(text: Q&A)}}, {{youtube, link(text: Video tutorial)}}, and {{hotkeys, link(text: hotkeys)}} for guidance." data-var-github="https://github.com/Azgaar/Fantasy-Map-Generator" data-var-license="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" data-var-tutorial="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial" data-var-qanda="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A" data-var-youtube="https://youtube.com/playlist?list=PLtgiuDC8iVR2gIG8zMTRn7T_L0arl9h1C" data-var-hotkeys="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys">
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank"
               >open source</a
@@ -2416,13 +2419,13 @@
             guidance.
           </p>
 
-          <p>
+          <p data-html="Join our {{discord, link(text: Discord server)}} and {{reddit, link(text: Reddit community)}} to ask questions, get help and share maps. The created maps can be used for free, even for commercial purposes." data-var-discord="https://discordapp.com/invite/X7E84HU" data-var-reddit="https://www.reddit.com/r/FantasyMapGenerator/">
             Join our <a href="https://discordapp.com/invite/X7E84HU" target="_blank">Discord server</a> and
             <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit community</a> to ask
             questions, get help and share maps. The created maps can be used for free, even for commercial purposes.
           </p>
 
-          <p>
+          <p data-html="The project is under active development. Creator and main maintainer: Azgaar. To track the development progress see the {{devboard, link(text: devboard)}}. For older versions see the {{changelog, link(text: changelog)}}. Please report bugs {{issues, link(text: here)}}. You can also contact me directly via {{email, link(text: email)}}." data-var-devboard="https://trello.com/b/7x832DG4/fantasy-map-generator" data-var-changelog="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" data-var-issues="https://github.com/Azgaar/Fantasy-Map-Generator/issues" data-var-email="mailto:azgaar.fmg@yandex.by">
             The project is under active development. Creator and main maintainer: Azgaar. To track the development
             progress see the
             <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>. For older
@@ -2454,11 +2457,12 @@
                     <rect data-fill="2" height="545.799988" id="Rectangle" width="100" x="0" y="0" />
                   </svg>
                 </div>
-                SUPPORT ON PATREON
+                <span data-text="SUPPORT ON PATREON">SUPPORT ON PATREON</span>
               </div>
             </a>
           </div>
 
+          <!-- TODO i18n -->
           <p>
             Special thanks to
             <a data-tip="Click to see list of supporters" onclick="showSupporters()">all supporters</a> on Patreon!
@@ -2476,14 +2480,12 @@
           </div>
 
           <div style="text-align: left">
-            <p>Check out our other projects:</p>
+            <p data-text="Check out our other projects:">Check out our other projects:</p>
             <div>
-              • <a href="https://azgaar.github.io/Armoria" target="_blank">Armoria</a>: a tool for creating heraldic
-              coats of arms
+              • <span data-html="{{armoria, link(text: Armoria)}}: a tool for creating heraldic coats of arms" data-var-armoria="https://azgaar.github.io/Armoria"><a href="https://azgaar.github.io/Armoria" target="_blank">Armoria</a>: a tool for creating heraldic coats of arms</span>
             </div>
             <div>
-              • <a href="https://deorum.vercel.app" target="_blank">Deorum</a>: a vast gallery of customizable fantasy
-              characters
+              • <span data-html="{{deorum, link(text: Deorum)}}: a vast gallery of customizable fantasy characters" data-var-deorum="https://deorum.vercel.app"><a href="https://deorum.vercel.app" target="_blank">Deorum</a>: a vast gallery of customizable fantasy characters</span>
             </div>
           </div>
 
@@ -2544,7 +2546,7 @@
 
     <div id="exitCustomization">
       <div data-tip="Drag to move the pane">
-        <button data-tip="Finalize the heightmap and exit the edit mode" id="finalizeHeightmap">
+        <button data-text="Exit Customization" data-tip="Finalize the heightmap and exit the edit mode" id="finalizeHeightmap">
           Exit Customization
         </button>
       </div>
@@ -2557,7 +2559,7 @@
             <div>
               <i data-locked="0" id="lock_temperatureEquator" class="icon-lock-open"></i>
               <label data-tip="Set temperature at equator">
-                <i>Equator:</i>
+                <i data-text="Equator:">Equator:</i>
                 <input id="temperatureEquatorInput" data-stored="temperatureEquator" type="number" min="-50" max="50" />
                 <span>°C = <span id="temperatureEquatorF"></span></span>
                 <input id="temperatureEquatorOutput" data-stored="temperatureEquator" type="range" min="-50" max="50" />
@@ -2566,7 +2568,7 @@
             <div>
               <label data-tip="Set the North Pole average yearly temperature">
                 <i data-locked="0" id="lock_temperatureNorthPole" class="icon-lock-open"></i>
-                <i>North Pole:</i>
+                <i data-text="North Pole:">North Pole:</i>
                 <input
                   id="temperatureNorthPoleInput"
                   data-stored="temperatureNorthPole"
@@ -2588,7 +2590,7 @@
             <div>
               <label data-tip="Set the South Pole average yearly temperature">
                 <i data-locked="0" id="lock_temperatureSouthPole" class="icon-lock-open"></i>
-                <i>South Pole:</i>
+                <i data-text="South Pole:">South Pole:</i>
                 <input
                   id="temperatureSouthPoleInput"
                   data-stored="temperatureSouthPole"
@@ -2609,7 +2611,7 @@
             <div>
               <i data-locked="0" id="lock_mapSize" class="icon-lock-open"></i>
               <label data-tip="Set map size relative to the world size">
-                <i>Map size:</i>
+                <i data-text="Map size:">Map size:</i>
                 <input id="mapSizeInput" data-stored="mapSize" type="number" min="1" max="100" step="0.1" />%
                 <input id="mapSizeOutput" data-stored="mapSize" type="range" min="1" max="100" step="0.1" />
               </label>
@@ -2617,7 +2619,7 @@
             <div>
               <i data-locked="0" id="lock_latitude" class="icon-lock-open"></i>
               <label data-tip="Set a North-South map shift, set to 50 to make map center lie on Equator">
-                <i>Latitudes:</i>
+                <i data-text="Latitudes:">Latitudes:</i>
                 <input id="latitudeInput" data-stored="latitude" type="number" min="0" max="100" step="0.1" />
                 <br /><i>N</i
                 ><input
@@ -2635,7 +2637,7 @@
             <div>
               <i data-locked="0" id="lock_longitude" class="icon-lock-open"></i>
               <label data-tip="Set a West-East map shift, set to 50 to make map center lie on Prime meridian">
-                <i>Longitudes:</i>
+                <i data-text="Longitudes:">Longitudes:</i>
                 <input
                   id="longitudeInput"
                   data-stored="longitude"
@@ -2663,17 +2665,17 @@
                 data-tip="Set precipitation - water amount clouds can bring. Defines rivers and biomes generation. Keep around 100% for default generation"
               >
                 <i data-locked="0" id="lock_prec" class="icon-lock-open"></i>
-                <i>Precipitation:</i>
+                <i data-text="Precipitation:">Precipitation:</i>
                 <input id="precInput" data-stored="prec" type="number" />%
                 <input id="precOutput" data-stored="prec" type="range" min="0" max="500" value="50" />
               </label>
             </div>
             <div data-tip="Canvas size. Can be changed in general options on new map generation">
-              <i>Canvas size:</i><br />
+              <i data-text="Canvas size:">Canvas size:</i><br />
               <span id="mapSize"></span> px = <span id="mapSizeFriendly"></span>
             </div>
             <div>
-              <i data-tip="Length of Meridian. Almost half of the equator length">Meridian length:</i><br />
+              <i data-text="Meridian length:" data-tip="Length of Meridian. Almost half of the equator length">Meridian length:</i><br />
               <span id="meridianLength" data-tip="Length of Meridian in pixels"></span> px =
               <span
                 id="meridianLengthFriendly"
@@ -2684,7 +2686,7 @@
                 data-tip="Fantasy world Meridian length relative to real-world Earth (20k km)"
               ></span>
             </div>
-            <div data-tip="Map coordinates on globe"><i>Coords:</i> <span id="mapCoordinates"></span></div>
+            <div data-tip="Map coordinates on globe"><i data-text="Coords:">Coords:</i> <span id="mapCoordinates"></span></div>
           </div>
 
           <div style="display: flex; flex-direction: column; align-items: flex-end">
@@ -2724,8 +2726,8 @@
                 <path data-tier="5" d="M210,199 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 194)" />
               </g>
               <g id="globaAxisLabels">
-                <text x="82%" y="-4%">wind</text>
-                <text x="-8%" y="-4%">latitude</text>
+                <text x="82%" y="-4%" data-text="wind">wind</text>
+                <text x="-8%" y="-4%" data-text="latitude">latitude</text>
               </g>
               <g id="globeLatLabels">
                 <text x="-15" y="5">90°</text>
@@ -2744,18 +2746,18 @@
               <path id="globeArea" />
             </svg>
 
-            <button id="restoreWinds" data-tip="Click to restore default (Earth-based) wind directions">
+            <button id="restoreWinds" data-text="Restore winds" data-tip="Click to restore default (Earth-based) wind directions">
               Restore winds
             </button>
           </div>
         </div>
 
         <div style="margin-top: 0.3em">
-          <i>Presets:</i>
-          <button id="wcWholeWorld" data-tip="Click to set map size to cover the whole world">Whole world</button>
-          <button id="wcNorthern" data-tip="Click to set map size to cover the Northern latitudes">Northern</button>
-          <button id="wcTropical" data-tip="Click to set map size to cover the Tropical latitudes">Tropical</button>
-          <button id="wcSouthern" data-tip="Click to set map size to cover the Southern latitudes">Southern</button>
+          <i data-text="Presets:">Presets:</i>
+          <button id="wcWholeWorld" data-text="Whole world" data-tip="Click to set map size to cover the whole world">Whole world</button>
+          <button id="wcNorthern" data-text="Northern" data-tip="Click to set map size to cover the Northern latitudes">Northern</button>
+          <button id="wcTropical" data-text="Tropical" data-tip="Click to set map size to cover the Tropical latitudes">Tropical</button>
+          <button id="wcSouthern" data-text="Southern" data-tip="Click to set map size to cover the Southern latitudes">Southern</button>
         </div>
       </div>
 
@@ -2783,7 +2785,7 @@
           <button id="labelTextHide" data-tip="Hide the edit label text section" class="icon-pencil"></button>
           <input
             id="labelText"
-            data-tip='Type to change the label. Enter "|" to move to a new line'
+            data-tip="Type to change the label. Enter &quot;|&quot; to move to a new line"
             style="width: 12em"
           />
           <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
@@ -2795,7 +2797,7 @@
         <button id="labelSizeShow" data-tip="Show the font size section" class="icon-text-height"></button>
         <div id="labelSizeSection" style="display: none">
           <button id="labelSizeHide" data-tip="Hide the font size section" class="icon-text-height"></button>
-          <span data-tip="Set relative size for the particular label">Size:</span>
+          <span data-text="Size:" data-tip="Set relative size for the particular label">Size:</span>
           <input
             id="labelRelativeSize"
             data-tip="Set relative size for the particular label (% of group default)"
@@ -2810,7 +2812,7 @@
         <button id="labelOffsetShow" data-tip="Show the label offset section" class="icon-sliders"></button>
         <div id="labelOffsetSection" style="display: none">
           <button id="labelOffsetHide" data-tip="Hide the label offset section" class="icon-sliders"></button>
-          <span data-tip="Set starting offset for the particular label">Offset:</span>
+          <span data-text="Offset:" data-tip="Set starting offset for the particular label">Offset:</span>
           <input
             id="labelStartOffset"
             data-tip="Set starting offset for the particular label (% along the path)"
@@ -2861,7 +2863,7 @@
       <div id="riverEditor" class="dialog" style="display: none">
         <div id="riverBody" style="padding-bottom: 0.3em">
           <div>
-            <div class="label" style="width: 4.8em">Name:</div>
+            <div data-text="Name:" class="label" style="width: 4.8em">Name:</div>
             <span
               id="riverNameCulture"
               data-tip="Generate culture-specific name for the river"
@@ -2873,42 +2875,42 @@
           </div>
 
           <div data-tip="Type to change river type (e.g. fork, creek, river, brook, stream)">
-            <div class="label">Type:</div>
+            <div data-text="Type:" class="label">Type:</div>
             <input id="riverType" autocorrect="off" spellcheck="false" />
           </div>
 
           <div data-tip="Select parent river">
-            <div class="label">Mainstem:</div>
+            <div data-text="Mainstem:" class="label">Mainstem:</div>
             <select id="riverMainstem"></select>
           </div>
 
           <div data-tip="River drainage basin (watershed)">
-            <div class="label">Basin:</div>
+            <div data-text="Basin:" class="label">Basin:</div>
             <input id="riverBasin" disabled />
           </div>
 
           <div data-tip="River discharge (flux power)">
-            <div class="label">Discharge:</div>
+            <div data-text="Discharge:" class="label">Discharge:</div>
             <input id="riverDischarge" disabled />
           </div>
 
           <div data-tip="River length in selected units">
-            <div class="label">Length:</div>
+            <div data-text="Length:" class="label">Length:</div>
             <input id="riverLength" disabled />
           </div>
 
           <div data-tip="River mouth width in selected units">
-            <div class="label">Mouth width:</div>
+            <div data-text="Mouth width:" class="label">Mouth width:</div>
             <input id="riverWidth" disabled />
           </div>
 
           <div data-tip="River source additional width. Default value is 0">
-            <div class="label">Source width:</div>
+            <div data-text="Source width:" class="label">Source width:</div>
             <input id="riverSourceWidth" type="number" min="0" max="3" step=".01" />
           </div>
 
           <div data-tip="River width multiplier. Default value is 1">
-            <div class="label">Width modifier:</div>
+            <div data-text="Width modifier:" class="label">Width modifier:</div>
             <input id="riverWidthFactor" type="number" min=".1" max="4" step=".1" />
           </div>
         </div>
@@ -2946,7 +2948,7 @@
       <div id="lakeEditor" class="dialog" style="display: none">
         <div id="lakeBody" style="padding-bottom: 0.3em">
           <div>
-            <div class="label" style="width: 4.8em">Name:</div>
+            <div data-text="Name:" class="label" style="width: 4.8em">Name:</div>
             <span
               id="lakeNameCulture"
               data-tip="Generate culture-specific name for the lake"
@@ -2958,7 +2960,7 @@
           </div>
 
           <div data-tip="Type to change lake type (group)">
-            <div class="label" style="width: 4.8em">Type:</div>
+            <div data-text="Type:" class="label" style="width: 4.8em">Type:</div>
             <span id="lakeGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
             <span id="lakeGroupAdd" data-tip="Create a new type (group) for the lake" class="icon-plus pointer"></span>
             <select id="lakeGroup" data-tip="Select lake type (group)"></select>
@@ -2972,51 +2974,51 @@
           </div>
 
           <div data-tip="Lake area in selected units">
-            <div class="label">Area:</div>
+            <div data-text="Area:" class="label">Area:</div>
             <input id="lakeArea" disabled />
           </div>
 
           <div data-tip="Lake shore length in selected units">
-            <div class="label">Shore length:</div>
+            <div data-text="Shore length:" class="label">Shore length:</div>
             <input id="lakeShoreLength" disabled />
           </div>
 
           <div data-tip="Lake elevation in selected units">
-            <div class="label">Elevation:</div>
+            <div data-text="Elevation:" class="label">Elevation:</div>
             <input id="lakeElevation" disabled />
           </div>
 
           <div data-tip="Lake average depth in selected units">
-            <div class="label">Average depth:</div>
+            <div data-text="Average depth:" class="label">Average depth:</div>
             <input id="lakeAverageDepth" disabled />
           </div>
 
           <div data-tip="Lake maximum depth in selected units">
-            <div class="label">Max depth:</div>
+            <div data-text="Max depth:" class="label">Max depth:</div>
             <input id="lakeMaxDepth" disabled />
           </div>
 
           <div
             data-tip="Lake water supply. If supply > evaporation and there is an outlet, the lake water is fresh. If supply is very low, the lake becomes dry"
           >
-            <div class="label">Supply:</div>
+            <div data-text="Supply:" class="label">Supply:</div>
             <input id="lakeFlux" disabled />
           </div>
 
           <div
             data-tip="Evaporation from lake surface. If evaporation > supply, the lake water is saline. If difference is high, the lake becomes dry"
           >
-            <div class="label">Evaporation:</div>
+            <div data-text="Evaporation:" class="label">Evaporation:</div>
             <input id="lakeEvaporation" disabled />
           </div>
 
           <div data-tip="Number of lake inlet rivers">
-            <div class="label">Inlets:</div>
+            <div data-text="Inlets:" class="label">Inlets:</div>
             <input id="lakeInlets" disabled />
           </div>
 
           <div data-tip="Lake outlet river">
-            <div class="label">Outlet:</div>
+            <div data-text="Outlet:" class="label">Outlet:</div>
             <input id="lakeOutlet" disabled />
           </div>
         </div>
@@ -3030,10 +3032,10 @@
         <div id="elevationGraph" data-tip="Elevation profile"></div>
         <div style="text-align: center">
           <div id="epControls">
-            <span data-tip="Set height scale"
+            <span data-text="Height scale:" data-tip="Set height scale"
               >Height scale: <input id="epScaleRange" type="range" min="1" max="100" value="50"
             /></span>
-            <span data-tip="Set curve profile"
+            <span data-text="Curve:" data-tip="Set curve profile"
               >Curve:
               <select id="epCurve">
                 <option>Linear</option>
@@ -3054,21 +3056,21 @@
       <div id="routeEditor" class="dialog" style="display: none">
         <div id="routeBody" style="padding-bottom: 0.3em">
           <div>
-            <div class="label">Name:</div>
+            <div data-text="Name:" class="label">Name:</div>
             <input id="routeName" data-tip="Type to rename the route" autocorrect="off" spellcheck="false" />
             <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
             <span id="routeGenerateName" data-tip="Generate route name" class="icon-globe pointer"></span>
           </div>
 
           <div data-tip="Select route group">
-            <div class="label">Group:</div>
+            <div data-text="Group:" class="label">Group:</div>
             <select id="routeGroup"></select>
             <span id="routeGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
             <span id="routeEditStyle" data-tip="Edit style for the route group" class="icon-brush pointer"></span>
           </div>
 
           <div data-tip="Route length in selected units">
-            <div class="label">Length:</div>
+            <div data-text="Length:" class="label">Length:</div>
             <input id="routeLength" disabled />
           </div>
         </div>
@@ -3106,13 +3108,13 @@
       </div>
 
       <div id="routeCreator" class="dialog" style="display: none">
-        <div>Click on map to add/remove route points</div>
+        <div data-text="Click on map to add/remove route points">Click on map to add/remove route points</div>
         <div id="routeCreatorBody" class="table" style="margin: 0.3em 0"></div>
         <div id="routeCreatorBottom">
           <button id="routeCreatorComplete" data-tip="Complete route creation" class="icon-check"></button>
           <button id="routeCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
           <div style="display: inline-block">
-            Group:
+            <span data-text="Group:">Group:</span>
             <select id="routeCreatorGroupSelect"></select>
             <span id="routeCreatorGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
           </div>
@@ -3168,12 +3170,12 @@
 
       <div id="reliefEditor" class="dialog" style="display: none">
         <div id="reliefTools" data-tip="Select mode of operation">
-          <div class="reliefEditorLabel">Mode:</div>
+          <div data-text="Mode:" class="reliefEditorLabel">Mode:</div>
           <button id="reliefIndividual" data-tip="Edit individual selected icon" class="icon-info pressed"></button>
           <button id="reliefBulkAdd" data-tip="Place icons in a bulk" class="icon-brush"></button>
           <button id="reliefBulkRemove" data-tip="Remove icons in a bulk" class="icon-eraser"></button>
 
-          <div style="margin-left: 4.6em">Set:</div>
+          <div data-text="Set:" style="margin-left: 4.6em">Set:</div>
           <select id="reliefEditorSet">
             <option value="simple" data-text="Simple">Simple</option>
             <option value="colored" data-text="Colored">Colored</option>
@@ -3182,7 +3184,7 @@
         </div>
 
         <div id="reliefSizeDiv" data-tip="Set icon size for individual icon or for bulk placement">
-          <div class="reliefEditorLabel">Size:</div>
+          <div data-text="Size:" class="reliefEditorLabel">Size:</div>
           <input
             id="reliefSize"
             oninput="reliefSizeNumber.value = this.value"
@@ -3195,7 +3197,7 @@
         </div>
 
         <div id="reliefRadiusDiv" data-tip="Set brush radius for icons placement on deletion" style="display: none">
-          <div class="reliefEditorLabel">Radius:</div>
+          <div data-text="Radius:" class="reliefEditorLabel">Radius:</div>
           <input
             id="reliefRadius"
             oninput="reliefRadiusNumber.value = this.value"
@@ -3208,7 +3210,7 @@
         </div>
 
         <div id="reliefSpacingDiv" data-tip="Set spacing between relief icons" style="display: none">
-          <div class="reliefEditorLabel">Spacing:</div>
+          <div data-text="Spacing:" class="reliefEditorLabel">Spacing:</div>
           <input
             id="reliefSpacing"
             oninput="reliefSpacingNumber.value = this.value"
@@ -3488,7 +3490,7 @@
               <div id="burgProvinceAndState" style="font-weight: bold; max-width: 16em"></div>
 
               <div>
-                <div class="label">Name:</div>
+                <div data-text="Name:" class="label">Name:</div>
                 <input
                   id="burgName"
                   data-tip="Type to rename the burg"
@@ -3505,13 +3507,13 @@
               </div>
 
               <div data-tip="Select burg group. Groups defines burg icon, label size and style">
-                <div class="label">Group:</div>
+                <div data-text="Group:" class="label">Group:</div>
                 <select id="burgGroup" style="width: 9em"></select>
                 <span id="burgGroupConfigure" data-tip="Configure burg groups" class="icon-cog pointer"></span>
               </div>
 
               <div data-tip="Select burg type. Type slightly affects emblem generation">
-                <div class="label">Type:</div>
+                <div data-text="Type:" class="label">Type:</div>
                 <select id="burgType" style="width: 9em">
                   <option value="Generic" data-text="Generic">Generic</option>
                   <option value="River" data-text="River">River</option>
@@ -3524,7 +3526,7 @@
               </div>
 
               <div data-tip="Select dominant culture">
-                <div class="label">Culture:</div>
+                <div data-text="Culture:" class="label">Culture:</div>
                 <select id="burgCulture" style="width: 9em"></select>
                 <span
                   id="burgNameReCulture"
@@ -3534,13 +3536,13 @@
               </div>
 
               <div data-tip="Set burg population">
-                <div class="label">Population:</div>
+                <div data-text="Population:" class="label">Population:</div>
                 <input id="burgPopulation" type="number" min="0" step="1" style="width: 9em" />
               </div>
 
               <div data-tip="Burg average yearly temperature" style="display: flex; justify-content: space-between">
                 <div>
-                  <div class="label">Temperature:</div>
+                  <div data-text="Temperature:" class="label">Temperature:</div>
                   <span id="burgTemperature"></span>
                 </div>
                 <div style="display: flex; gap: 0.5em">
@@ -3554,12 +3556,12 @@
               </div>
 
               <div data-tip="Burg height above mean sea level">
-                <div class="label">Elevation:</div>
-                <span id="burgElevation"></span> above sea level
+                <div data-text="Elevation:" class="label">Elevation:</div>
+                <span id="burgElevation"></span> <span data-text="above sea level">above sea level</span>
               </div>
 
               <div>
-                <div class="label">Features:</div>
+                <div data-text="Features:" class="label">Features:</div>
                 <span
                   id="burgCapital"
                   data-tip="Shows whether the burg is a state capital. Click to toggle"
@@ -3612,7 +3614,7 @@
 
           <div id="burgPreviewSection" data-tip="Burg map preview" style="display: flex; flex-direction: column">
             <div style="display: flex; justify-content: space-between">
-              <span>Burg preview:</span>
+              <span data-text="Burg preview:">Burg preview:</span>
               <div style="display: flex; gap: 0.5em">
                 <i id="burgLinkOpen" data-tip="Open burg map in a new tab" class="icon-link-ext pointer"></i>
               </div>
@@ -3666,18 +3668,18 @@
           <div
             data-tip="Marker type. Style changes will apply to all markers of the same type. Leave blank if the marker is unique"
           >
-            <div class="label">Type:</div>
+            <div data-text="Type:" class="label">Type:</div>
             <input id="markerType" style="width: 10.3em" />
           </div>
 
           <div data-tip="Marker icon" style="display: flex; align-items: center">
-            <div class="label">Icon:</div>
+            <div data-text="Icon:" class="label">Icon:</div>
             <div id="markerIcon" style="font-size: 1.5em; width: 3.7em">👑</div>
-            <button id="markerIconSelect" style="width: 5em">select</button>
+            <button data-text="select" id="markerIconSelect" style="width: 5em">select</button>
           </div>
 
           <div data-tip="Marker marker element and icon sizes in pixels">
-            <div class="label">Size:</div>
+            <div data-text="Size:" class="label">Size:</div>
             <input
               data-tip="Marker element size in pixels"
               id="markerSize"
@@ -3698,13 +3700,13 @@
           </div>
 
           <div data-tip="Marker icon shift (by X and by Y axis), percent. Set to 50 to position icon in center">
-            <div class="label">Icon shift:</div>
+            <div data-text="Icon shift:" class="label">Icon shift:</div>
             <input id="markerIconShiftX" type="number" min="0" max="100" step="1" style="width: 5em" />
             <input id="markerIconShiftY" type="number" min="0" max="100" step="1" style="width: 5em" />
           </div>
 
           <div data-tip="Marker pin shape">
-            <div class="label">Pin shape:</div>
+            <div data-text="Pin shape:" class="label">Pin shape:</div>
             <select id="markerPin" style="width: 10.3em">
               <option value="bubble" data-text="Bubble">Bubble</option>
               <option value="pin" data-text="Pin">Pin</option>
@@ -3723,7 +3725,7 @@
           </div>
 
           <div data-tip="Pin fill and stroke colors">
-            <div class="label">Pin colors:</div>
+            <div data-text="Pin colors:" class="label">Pin colors:</div>
             <input id="markerFill" type="color" style="width: 5em; height: 1.6em" />
             <input id="markerStroke" type="color" style="width: 5em; height: 1.6em" />
           </div>
@@ -3762,7 +3764,7 @@
           </div>
 
           <div data-tip="Regiment emblem" style="display: flex; align-items: center">
-            <div class="label">Emblem:</div>
+            <div data-text="Emblem:" class="label">Emblem:</div>
             <div id="regimentEmblem" style="font-size: 1.5em; width: 3.7em"></div>
             <button id="regimentEmblemChange" style="padding: 0; width: 4.5em">change</button>
           </div>
@@ -4009,7 +4011,7 @@
           </template>
 
           <div style="font-size: 1.2em; font-weight: bold; width: unset">
-            <span>Attackers</span>
+            <span data-text="Attackers">Attackers</span>
             <div style="float: right; font-size: 0.7em">
               <meter
                 id="battleMorale_attackers"
@@ -4040,7 +4042,7 @@
           </div>
           <table id="battleAttackers"></table>
           <div style="font-size: 1.2em; font-weight: bold; width: unset">
-            <span>Defenders</span>
+            <span data-text="Defenders">Defenders</span>
             <div style="float: right; font-size: 0.7em">
               <meter
                 id="battleMorale_defenders"
@@ -4127,19 +4129,20 @@
 
       <div id="regimentSelectorScreen" class="dialog" style="display: none">
         <div id="regimentSelectorHeader" class="header" style="grid-template-columns: 9em 13em 4em 6em">
-          <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">
-            State&nbsp;
+          <div data-text="State" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">
+            State
           </div>
-          <div data-tip="Click to sort by regiment name" class="sortable alphabetically" data-sortby="regiment">
-            Regiment&nbsp;
+          <div data-text="Regiment" data-tip="Click to sort by regiment name" class="sortable alphabetically" data-sortby="regiment">
+            Regiment
           </div>
-          <div data-tip="Click to sort by total military forces" class="sortable" data-sortby="total">Total&nbsp;</div>
+          <div data-text="Total" data-tip="Click to sort by total military forces" class="sortable" data-sortby="total">Total</div>
           <div
+            data-text="Distance"
             data-tip="Click to sort by distance to the battlefield"
             class="sortable icon-sort-number-up"
             data-sortby="distance"
           >
-            Distance&nbsp;
+            Distance
           </div>
         </div>
         <div id="regimentSelectorBody" class="table"></div>
@@ -4219,13 +4222,13 @@
         <div id="brushesSliders" style="display: none">
           <div data-tip="Change brush size. Shortcut: + to increase; – to decrease">
             <slider-input id="heightmapBrushRadius" min="1" max="100" value="25">
-              <div style="width: 3.5em">Radius:</div>
+              <div data-text="Radius:" style="width: 3.5em">Radius:</div>
             </slider-input>
           </div>
 
           <div data-tip="Change brush power">
             <slider-input id="heightmapBrushPower" min="1" max="10" value="5">
-              <div style="width: 3.5em">Power:</div>
+              <div data-text="Power:" style="width: 3.5em">Power:</div>
             </slider-input>
           </div>
         </div>
@@ -4233,7 +4236,7 @@
         <div id="lineSlider" style="display: none">
           <div data-tip="Change tool power. Shortcut: + to increase; – to decrease">
             <slider-input id="heightmapLinePower" min="-100" max="100" value="30">
-              <div style="width: 3.5em">Power:</div>
+              <div data-text="Power:" style="width: 3.5em">Power:</div>
             </slider-input>
           </div>
         </div>
@@ -4243,7 +4246,7 @@
           style="margin-bottom: 0.6em"
         >
           <input id="changeOnlyLand" class="checkbox" type="checkbox" />
-          <label for="changeOnlyLand" class="checkbox-label"><i>change only land cells</i></label>
+          <label for="changeOnlyLand" class="checkbox-label"><i data-text="change only land cells">change only land cells</i></label>
         </div>
 
         <div id="modifyButtons">
@@ -4298,7 +4301,7 @@
 
       <div id="templateEditor" class="dialog stable" style="display: none">
         <div id="templateTop">
-          <i>Select template: </i>
+          <i data-text="Select template:">Select template:</i>
           <select id="templateSelect" style="width: 16em" data-prev="templateCustom" data-tip="Select base template">
             <option value="custom" data-text="Custom" selected>Custom</option>
             <option value="volcano" data-text="Volcano">Volcano</option>
@@ -4337,7 +4340,7 @@
         <div id="templateBody" data-changed="0" class="table" style="padding: 2px 0">
           <div data-type="Hill">
             <div class="icon-check" data-tip="Click to skip the step"></div>
-            <div style="width: 4em">Hill</div>
+            <div data-text="Hill" style="width: 4em">Hill</div>
             <i class="icon-trash-empty pointer" data-tip="Remove the step"></i>
             <i class="icon-resize-vertical" data-tip="Drag to reorder"></i>
             <span
@@ -4383,7 +4386,7 @@
           <label
             data-tip="Lock seed (click on lock icon) if you want template to generate the same heightmap each time"
           >
-            Seed: <input id="templateSeed" value="" type="number" min="1" max="999999999" step="1" style="width: 8em" />
+            <span data-text="Seed:">Seed:</span> <input id="templateSeed" value="" type="number" min="1" max="999999999" step="1" style="width: 8em" />
             <i data-locked="0" id="lock_templateSeed" class="icon-lock-open"></i>
           </label>
         </div>
@@ -4417,30 +4420,31 @@
         </div>
 
         <div data-tip="Set opacity of the loaded image" style="padding-top: 0.4em">
-          <i>Overlay opacity:</i><br />
+          <i data-text="Overlay opacity:">Overlay opacity:</i><br />
           <input id="convertOverlay" type="range" min="0" max="1" step=".01" value="0" style="width: 12.6em" />
           <input id="convertOverlayNumber" type="number" min="0" max="1" step=".01" value="0" style="width: 4.2em" />
         </div>
 
         <div data-tip="Select a color below and assign a height value for it" id="colorsSelect" style="display: none">
-          <i>Set height: </i>
+          <i data-text="Set height:">Set height:</i>
           <span id="colorsSelectValue"></span>
           <span>(<span id="colorsSelectFriendly">0</span>)</span><br />
           <div id="imageConverterPalette"></div>
         </div>
 
         <div data-tip="Select a color to re-assign the height value" id="colorsAssigned" style="display: none">
-          <i>Assigned colors (<span id="colorsAssignedNumber"></span>):</i>
+          <i><span data-text="Assigned colors">Assigned colors</span> (<span id="colorsAssignedNumber"></span>):</i>
           <div id="colorsAssignedContainer" class="colorsContainer"></div>
         </div>
 
         <div data-tip="Select a color to assign a height value" id="colorsUnassigned" style="display: none">
-          <i>Unassigned colors (<span id="colorsUnassignedNumber"></span>):</i>
+          <i><span data-text="Unassigned colors">Unassigned colors</span> (<span id="colorsUnassignedNumber"></span>):</i>
           <div id="colorsUnassignedContainer" class="colorsContainer"></div>
         </div>
 
         <button
           id="convertComplete"
+          data-text="Complete the conversion"
           data-tip="Complete the conversion. All unassigned colors will be considered as ocean"
           style="margin: 0.4em 0"
           class="glow"
@@ -4451,22 +4455,23 @@
 
       <div id="biomesEditor" class="dialog stable" style="display: none">
         <div id="biomesHeader" class="header" style="grid-template-columns: 13em 7em 5em 5em 7em">
-          <div data-tip="Click to sort by biome name" class="sortable alphabetically" data-sortby="name">
-            Biome&nbsp;
+          <div data-text="Biome" data-tip="Click to sort by biome name" class="sortable alphabetically" data-sortby="name">
+            Biome
           </div>
-          <div data-tip="Click to sort by biome habitability" class="sortable hide" data-sortby="habitability">
-            Habitability&nbsp;
+          <div data-text="Habitability" data-tip="Click to sort by biome habitability" class="sortable hide" data-sortby="habitability">
+            Habitability
           </div>
           <div
+            data-text="Cells"
             data-tip="Click to sort by biome cells number"
             class="sortable hide icon-sort-number-down"
             data-sortby="cells"
           >
-            Cells&nbsp;
+            Cells
           </div>
-          <div data-tip="Click to sort by biome area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-          <div data-tip="Click to sort by biome population" class="sortable hide" data-sortby="population">
-            Population&nbsp;
+          <div data-text="Area" data-tip="Click to sort by biome area" class="sortable hide" data-sortby="area">Area</div>
+          <div data-text="Population" data-tip="Click to sort by biome population" class="sortable hide" data-sortby="population">
+            Population
           </div>
         </div>
 
@@ -4474,16 +4479,16 @@
 
         <div id="biomesFooter" class="totalLine">
           <div data-tip="Number of land biomes" style="margin-left: 12px">
-            Biomes:&nbsp;<span id="biomesFooterBiomes">0</span>
+            <span data-text="Biomes:">Biomes:</span>&nbsp;<span id="biomesFooterBiomes">0</span>
           </div>
           <div data-tip="Total land cells number" style="margin-left: 12px">
-            Cells:&nbsp;<span id="biomesFooterCells">0</span>
+            <span data-text="Cells:">Cells:</span>&nbsp;<span id="biomesFooterCells">0</span>
           </div>
           <div data-tip="Total land area" style="margin-left: 12px">
-            Land Area:&nbsp;<span id="biomesFooterArea">0</span>
+            <span data-text="Land Area:">Land Area:</span>&nbsp;<span id="biomesFooterArea">0</span>
           </div>
           <div data-tip="Total population" style="margin-left: 12px">
-            Population:&nbsp;<span id="biomesFooterPopulation">0</span>
+            <span data-text="Population:">Population:</span>&nbsp;<span id="biomesFooterPopulation">0</span>
           </div>
         </div>
 
@@ -4503,7 +4508,7 @@
           ></button>
           <div id="biomesManuallyButtons" style="display: none">
             <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em">
-              Brush size:
+              <span data-text="Brush size:">Brush size:</span>
               <slider-input id="biomesBrush" min="1" max="100" value="15"></slider-input>
             </div>
             <button id="biomesManuallyApply" data-tip="Apply current assignment" class="icon-check"></button>
@@ -4530,7 +4535,7 @@
 
       <div id="stateNameEditor" class="dialog" data-state="0" style="display: none">
         <div>
-          <div data-tip="State short name" class="label">Short name:</div>
+          <div data-text="Short name:" data-tip="State short name" class="label">Short name:</div>
           <input
             id="stateNameEditorShort"
             data-tip="Type to change the short name"
@@ -4548,82 +4553,82 @@
         </div>
 
         <div data-tip="Select form name">
-          <div data-tip="State form name" class="label">Form name:</div>
+          <div data-text="Form name:" data-tip="State form name" class="label">Form name:</div>
           <select id="stateNameEditorSelectForm" style="width: 11em">
-            <option value="">blank</option>
+            <option data-text="blank" value="">blank</option>
             <optgroup label="Monarchy">
-              <option value="Beylik" data-text="Beylik">Beylik</option>
-              <option value="Despotate" data-text="Despotate">Despotate</option>
-              <option value="Dominion" data-text="Dominion">Dominion</option>
-              <option value="Duchy" data-text="Duchy">Duchy</option>
-              <option value="Emirate" data-text="Emirate">Emirate</option>
-              <option value="Empire" data-text="Empire">Empire</option>
-              <option value="Horde" data-text="Horde">Horde</option>
-              <option value="Grand Duchy" data-text="Grand Duchy">Grand Duchy</option>
-              <option value="Heptarchy" data-text="Heptarchy">Heptarchy</option>
-              <option value="Khaganate" data-text="Khaganate">Khaganate</option>
-              <option value="Khanate" data-text="Khanate">Khanate</option>
-              <option value="Kingdom" data-text="Kingdom">Kingdom</option>
-              <option value="Marches" data-text="Marches">Marches</option>
-              <option value="Principality" data-text="Principality">Principality</option>
-              <option value="Satrapy" data-text="Satrapy">Satrapy</option>
-              <option value="Shogunate" data-text="Shogunat">Shogunate</option>
-              <option value="Sultanate" data-text="Sultanat">Sultanate</option>
-              <option value="Tsardom" data-text="Tsardom">Tsardom</option>
-              <option value="Ulus" data-text="Ulus">Ulus</option>
-              <option value="Viceroyalty" data-text="Viceroyalty">Viceroyalty</option>
+              <option value="Beylik" data-text="stateForm::Beylik">Beylik</option>
+              <option value="Despotate" data-text="stateForm::Despotate">Despotate</option>
+              <option value="Dominion" data-text="stateForm::Dominion">Dominion</option>
+              <option value="Duchy" data-text="stateForm::Duchy">Duchy</option>
+              <option value="Emirate" data-text="stateForm::Emirate">Emirate</option>
+              <option value="Empire" data-text="stateForm::Empire">Empire</option>
+              <option value="Horde" data-text="stateForm::Horde">Horde</option>
+              <option value="Grand Duchy" data-text="stateForm::Grand Duchy">Grand Duchy</option>
+              <option value="Heptarchy" data-text="stateForm::Heptarchy">Heptarchy</option>
+              <option value="Khaganate" data-text="stateForm::Khaganate">Khaganate</option>
+              <option value="Khanate" data-text="stateForm::Khanate">Khanate</option>
+              <option value="Kingdom" data-text="stateForm::Kingdom">Kingdom</option>
+              <option value="Marches" data-text="stateForm::Marches">Marches</option>
+              <option value="Principality" data-text="stateForm::Principality">Principality</option>
+              <option value="Satrapy" data-text="stateForm::Satrapy">Satrapy</option>
+              <option value="Shogunate" data-text="stateForm::Shogunate">Shogunate</option>
+              <option value="Sultanate" data-text="stateForm::Sultanate">Sultanate</option>
+              <option value="Tsardom" data-text="stateForm::Tsardom">Tsardom</option>
+              <option value="Ulus" data-text="stateForm::Ulus">Ulus</option>
+              <option value="Viceroyalty" data-text="stateForm::Viceroyalty">Viceroyalty</option>
             </optgroup>
             <optgroup label="Republic">
-              <option value="Chancellery" data-text="Chancellery">Chancellery</option>
-              <option value="City-state" data-text="City-state">City-state</option>
-              <option value="Diarchy" data-text="Diarchy">Diarchy</option>
-              <option value="Federation" data-text="Federation">Federation</option>
-              <option value="Free City" data-text="Free City">Free City</option>
-              <option value="Most Serene Republic" data-text="Most Serene Republic">Most Serene Republic</option>
-              <option value="Oligarchy" data-text="Oligarchy">Oligarchy</option>
-              <option value="Protectorate" data-text="Protectorate">Protectorate</option>
-              <option value="Republic" data-text="Republic">Republic</option>
-              <option value="Tetrarchy" data-text="Tetrarchy">Tetrarchy</option>
-              <option value="Trade Company" data-text="Trade Company">Trade Company</option>
-              <option value="Triumvirate" data-text="Triumvirate">Triumvirate</option>
+              <option value="Chancellery" data-text="stateForm::Chancellery">Chancellery</option>
+              <option value="City-state" data-text="stateForm::City-state">City-state</option>
+              <option value="Diarchy" data-text="stateForm::Diarchy">Diarchy</option>
+              <option value="Federation" data-text="stateForm::Federation">Federation</option>
+              <option value="Free City" data-text="stateForm::Free City">Free City</option>
+              <option value="Most Serene Republic" data-text="stateForm::Most Serene Republic">Most Serene Republic</option>
+              <option value="Oligarchy" data-text="stateForm::Oligarchy">Oligarchy</option>
+              <option value="Protectorate" data-text="stateForm::Protectorate">Protectorate</option>
+              <option value="Republic" data-text="stateForm::Republic">Republic</option>
+              <option value="Tetrarchy" data-text="stateForm::Tetrarchy">Tetrarchy</option>
+              <option value="Trade Company" data-text="stateForm::Trade Company">Trade Company</option>
+              <option value="Triumvirate" data-text="stateForm::Triumvirate">Triumvirate</option>
             </optgroup>
             <optgroup label="Union">
-              <option value="Confederacy" data-text="Confederacy">Confederacy</option>
-              <option value="Confederation" data-text="Confederation">Confederation</option>
-              <option value="Conglomerate" data-text="Conglomerate">Conglomerate</option>
-              <option value="Commonwealth" data-text="Commonwealth">Commonwealth</option>
-              <option value="League" data-text="League">League</option>
-              <option value="Union" data-text="Union">Union</option>
-              <option value="United Hordes" data-text="United Hordes">United Hordes</option>
-              <option value="United Kingdom" data-text="United Kingdom">United Kingdom</option>
-              <option value="United Provinces" data-text="United Provinces">United Provinces</option>
-              <option value="United Republic" data-text="United Republic">United Republic</option>
-              <option value="United States" data-text="United States">United States</option>
-              <option value="United Tribes" data-text="United Tribes">United Tribes</option>
+              <option value="Confederacy" data-text="stateForm::Confederacy">Confederacy</option>
+              <option value="Confederation" data-text="stateForm::Confederation">Confederation</option>
+              <option value="Conglomerate" data-text="stateForm::Conglomerate">Conglomerate</option>
+              <option value="Commonwealth" data-text="stateForm::Commonwealth">Commonwealth</option>
+              <option value="League" data-text="stateForm::League">League</option>
+              <option value="Union" data-text="stateForm::Union">Union</option>
+              <option value="United Hordes" data-text="stateForm::United Hordes">United Hordes</option>
+              <option value="United Kingdom" data-text="stateForm::United Kingdom">United Kingdom</option>
+              <option value="United Provinces" data-text="stateForm::United Provinces">United Provinces</option>
+              <option value="United Republic" data-text="stateForm::United Republic">United Republic</option>
+              <option value="United States" data-text="stateForm::United States">United States</option>
+              <option value="United Tribes" data-text="stateForm::United Tribes">United Tribes</option>
             </optgroup>
             <optgroup label="Theocracy">
-              <option value="Bishopric" data-text="Bishopric">Bishopric</option>
-              <option value="Brotherhood" data-text="Brotherhood">Brotherhood</option>
-              <option value="Caliphate" data-text="Caliphate">Caliphate</option>
-              <option value="Diocese" data-text="Diocese">Diocese</option>
-              <option value="Divine Duchy" data-text="Divine Duchy">Divine Duchy</option>
-              <option value="Divine Grand Duchy" data-text="Divine Grand Duchy">Divine Grand Duchy</option>
-              <option value="Divine Principality" data-text="Divine Principality">Divine Principality</option>
-              <option value="Divine Kingdom" data-text="Divine Kingdom">Divine Kingdom</option>
-              <option value="Divine Empire" data-text="Divine Empire">Divine Empire</option>
-              <option value="Eparchy" data-text="Eparchy">Eparchy</option>
-              <option value="Exarchate" data-text="Exarchate">Exarchate</option>
-              <option value="Holy State" data-text="Holy State">Holy State</option>
-              <option value="Imamah" data-text="Imamah">Imamah</option>
-              <option value="Patriarchate" data-text="Patriarchate">Patriarchate</option>
-              <option value="Theocracy" data-text="Theocracy">Theocracy</option>
+              <option value="Bishopric" data-text="stateForm::Bishopric">Bishopric</option>
+              <option value="Brotherhood" data-text="stateForm::Brotherhood">Brotherhood</option>
+              <option value="Caliphate" data-text="stateForm::Caliphate">Caliphate</option>
+              <option value="Diocese" data-text="stateForm::Diocese">Diocese</option>
+              <option value="Divine Duchy" data-text="stateForm::Divine Duchy">Divine Duchy</option>
+              <option value="Divine Grand Duchy" data-text="stateForm::Divine Grand Duchy">Divine Grand Duchy</option>
+              <option value="Divine Principality" data-text="stateForm::Divine Principality">Divine Principality</option>
+              <option value="Divine Kingdom" data-text="stateForm::Divine Kingdom">Divine Kingdom</option>
+              <option value="Divine Empire" data-text="stateForm::Divine Empire">Divine Empire</option>
+              <option value="Eparchy" data-text="stateForm::Eparchy">Eparchy</option>
+              <option value="Exarchate" data-text="stateForm::Exarchate">Exarchate</option>
+              <option value="Holy State" data-text="stateForm::Holy State">Holy State</option>
+              <option value="Imamah" data-text="stateForm::Imamah">Imamah</option>
+              <option value="Patriarchate" data-text="stateForm::Patriarchate">Patriarchate</option>
+              <option value="Theocracy" data-text="stateForm::Theocracy">Theocracy</option>
             </optgroup>
             <optgroup label="Anarchy">
-              <option value="Commune" data-text="Commune">Commune</option>
-              <option value="Community" data-text="Community">Community</option>
-              <option value="Council" data-text="Council">Council</option>
-              <option value="Free Territory" data-text="Free Territory">Free Territory</option>
-              <option value="Tribes" data-text="Tribes">Tribes</option>
+              <option value="Commune" data-text="stateForm::Commune">Commune</option>
+              <option value="Community" data-text="stateForm::Community">Community</option>
+              <option value="Council" data-text="stateForm::Council">Council</option>
+              <option value="Free Territory" data-text="stateForm::Free Territory">Free Territory</option>
+              <option value="Tribes" data-text="stateForm::Tribes">Tribes</option>
             </optgroup>
           </select>
           <input
@@ -4640,7 +4645,7 @@
         </div>
 
         <div>
-          <div data-tip="State full name" class="label">Full name:</div>
+          <div data-text="Full name:" data-tip="State full name" class="label">Full name:</div>
           <input
             id="stateNameEditorFull"
             data-tip="Type to change the full name"
@@ -4659,30 +4664,30 @@
 
         <div data-tip="Uncheck to not update state label on name change" style="padding-block: 0.2em">
           <input id="stateNameEditorUpdateLabel" class="checkbox" type="checkbox" checked />
-          <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i>Update label on Apply</i></label>
+          <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i data-text="Update label on Apply">Update label on Apply</i></label>
         </div>
       </div>
 
       <div id="provincesEditor" class="dialog stable" style="display: none">
         <div id="provincesHeader" class="header" style="grid-template-columns: 11em 8em 8em 6em 6em 6em 8em">
-          <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">
-            Province&nbsp;
+          <div data-text="Province" data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">
+            Province
           </div>
-          <div data-tip="Click to sort by province form name" class="sortable alphabetically hide" data-sortby="form">
-            Form&nbsp;
+          <div data-text="Form" data-tip="Click to sort by province form name" class="sortable alphabetically hide" data-sortby="form">
+            Form
           </div>
-          <div data-tip="Click to sort by province capital" class="sortable alphabetically hide" data-sortby="capital">
-            Capital&nbsp;
+          <div data-text="Capital" data-tip="Click to sort by province capital" class="sortable alphabetically hide" data-sortby="capital">
+            Capital
           </div>
-          <div data-tip="Click to sort by province owner" class="sortable alphabetically" data-sortby="state">
-            State&nbsp;
+          <div data-text="State" data-tip="Click to sort by province owner" class="sortable alphabetically" data-sortby="state">
+            State
           </div>
-          <div data-tip="Click to sort by province burgs count" class="sortable hide" data-sortby="burgs">
-            Burgs&nbsp;
+          <div data-text="Burgs" data-tip="Click to sort by province burgs count" class="sortable hide" data-sortby="burgs">
+            Burgs
           </div>
-          <div data-tip="Click to sort by province area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-          <div data-tip="Click to sort by province population" class="sortable hide" data-sortby="population">
-            Population&nbsp;
+          <div data-text="Area" data-tip="Click to sort by province area" class="sortable hide" data-sortby="area">Area</div>
+          <div data-text="Population" data-tip="Click to sort by province population" class="sortable hide" data-sortby="population">
+            Population
           </div>
         </div>
 
@@ -4690,16 +4695,16 @@
 
         <div id="provincesFooter" class="totalLine">
           <div data-tip="Provinces displayed" style="margin-left: 4px">
-            Provinces:&nbsp;<span id="provincesFooterNumber">0</span>
+            <span data-text="Provinces:">Provinces:</span>&nbsp;<span id="provincesFooterNumber">0</span>
           </div>
           <div data-tip="Total burgs number" style="margin-left: 12px">
-            Burgs:&nbsp;<span id="provincesFooterBurgs">0</span>
+            <span data-text="Burgs:">Burgs:</span>&nbsp;<span id="provincesFooterBurgs">0</span>
           </div>
           <div data-tip="Average area" style="margin-left: 14px">
-            Mean area:&nbsp;<span id="provincesFooterArea">0</span>
+            <span data-text="Mean area:">Mean area:</span>&nbsp;<span id="provincesFooterArea">0</span>
           </div>
           <div data-tip="Average population" style="margin-left: 14px">
-            Mean population:&nbsp;<span id="provincesFooterPopulation">0</span>
+            <span data-text="Mean population:">Mean population:</span>&nbsp;<span id="provincesFooterPopulation">0</span>
           </div>
         </div>
 
@@ -4731,7 +4736,7 @@
           <button id="provincesManually" data-tip="Manually re-assign provinces" class="icon-brush"></button>
           <div id="provincesManuallyButtons" style="display: none">
             <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em">
-              Brush size:
+              <span data-text="Brush size:">Brush size:</span>
               <slider-input id="provincesBrush" min="1" max="100" value="8"></slider-input>
             </div>
             <button id="provincesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
@@ -4754,27 +4759,28 @@
             class="icon-trash"
           ></button>
 
-          <span>State: </span>
+          <span data-text="State:">State:</span>
           <select id="provincesFilterState"></select>
         </div>
       </div>
 
       <div id="diplomacyEditor" class="dialog stable" style="display: none">
         <div id="diplomacyHeader" class="header" style="grid-template-columns: 15em 6em">
-          <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">
-            State&nbsp;
+          <div data-text="State" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">
+            State
           </div>
           <div
+            data-text="Relations"
             data-tip="Click to sort by diplomatical relations"
             class="sortable alphabetically"
             data-sortby="relations"
           >
-            Relations&nbsp;
+            Relations
           </div>
         </div>
 
         <div id="diplomacyBodySection" class="table"></div>
-        <div class="info-line">Click on state name to see relations.<br />Click on relations name to change it</div>
+        <div class="info-line"><span data-text="Click on state name to see relations.">Click on state name to see relations.</span><br /><span data-text="Click on relations name to change it">Click on relations name to change it</span></div>
 
         <div id="diplomacyBottom" style="margin-top: 0.1em">
           <button id="diplomacyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
@@ -4805,7 +4811,7 @@
 
       <div id="provinceNameEditor" class="dialog" data-province="0" style="display: none">
         <div>
-          <div data-tip="Province short name" class="label">Short name:</div>
+          <div data-text="Short name:" data-tip="Province short name" class="label">Short name:</div>
           <input
             id="provinceNameEditorShort"
             data-tip="Type to change the short name"
@@ -4823,45 +4829,45 @@
         </div>
 
         <div data-tip="Select form name">
-          <div data-tip="Province form name" class="label">Form name:</div>
+          <div data-text="Form name:" data-tip="Province form name" class="label">Form name:</div>
           <select id="provinceNameEditorSelectForm" style="display: inline-block; width: 11em; height: 1.645em">
-            <option value="">blank</option>
-            <option value="Area" data-text="Area">Area</option>
-            <option value="Autonomy" data-text="Autonomy">Autonomy</option>
-            <option value="Barony" data-text="Barony">Barony</option>
-            <option value="Canton" data-text="Canton">Canton</option>
-            <option value="Captaincy" data-text="Captaincy">Captaincy</option>
-            <option value="Chiefdom" data-text="Chiefdom">Chiefdom</option>
-            <option value="Clan" data-text="Clan">Clan</option>
-            <option value="Colony" data-text="Colony">Colony</option>
-            <option value="Council" data-text="Council">Council</option>
-            <option value="County" data-text="County">County</option>
-            <option value="Deanery" data-text="Deanery">Deanery</option>
-            <option value="Department" data-text="Department">Department</option>
-            <option value="Dependency" data-text="Dependency">Dependency</option>
-            <option value="Diaconate" data-text="Diaconate">Diaconate</option>
-            <option value="District" data-text="District">District</option>
-            <option value="Earldom" data-text="Earldom">Earldom</option>
-            <option value="Governorate" data-text="Governorate">Governorate</option>
-            <option value="Island" data-text="Island">Island</option>
-            <option value="Islands" data-text="Islands">Islands</option>
-            <option value="Land" data-text="Land">Land</option>
-            <option value="Landgrave" data-text="Landgrave">Landgrave</option>
-            <option value="Mandate" data-text="Mandate">Mandate</option>
-            <option value="Margrave" data-text="Margrave">Margrave</option>
-            <option value="Municipality" data-text="Municipality">Municipality</option>
-            <option value="Occupation zone" data-text="Occupation zone">Occupation zone</option>
-            <option value="Parish" data-text="Parish">Parish</option>
-            <option value="Prefecture" data-text="Prefecture">Prefecture</option>
-            <option value="Province" data-text="Province">Province</option>
-            <option value="Region" data-text="Region">Region</option>
-            <option value="Republic" data-text="Republic">Republic</option>
-            <option value="Reservation" data-text="Reservation">Reservation</option>
-            <option value="Seneschalty" data-text="Seneschalty">Seneschalty</option>
-            <option value="Shire" data-text="Shire">Shire</option>
-            <option value="State" data-text="State">State</option>
-            <option value="Territory" data-text="Territory">Territory</option>
-            <option value="Tribe" data-text="Tribe">Tribe</option>
+            <option value="" data-text="blank">blank</option>
+            <option value="Area" data-text="provinceForm::Area">Area</option>
+            <option value="Autonomy" data-text="provinceForm::Autonomy">Autonomy</option>
+            <option value="Barony" data-text="provinceForm::Barony">Barony</option>
+            <option value="Canton" data-text="provinceForm::Canton">Canton</option>
+            <option value="Captaincy" data-text="provinceForm::Captaincy">Captaincy</option>
+            <option value="Chiefdom" data-text="provinceForm::Chiefdom">Chiefdom</option>
+            <option value="Clan" data-text="provinceForm::Clan">Clan</option>
+            <option value="Colony" data-text="provinceForm::Colony">Colony</option>
+            <option value="Council" data-text="provinceForm::Council">Council</option>
+            <option value="County" data-text="provinceForm::County">County</option>
+            <option value="Deanery" data-text="provinceForm::Deanery">Deanery</option>
+            <option value="Department" data-text="provinceForm::Department">Department</option>
+            <option value="Dependency" data-text="provinceForm::Dependency">Dependency</option>
+            <option value="Diaconate" data-text="provinceForm::Diaconate">Diaconate</option>
+            <option value="District" data-text="provinceForm::District">District</option>
+            <option value="Earldom" data-text="provinceForm::Earldom">Earldom</option>
+            <option value="Governorate" data-text="provinceForm::Governorate">Governorate</option>
+            <option value="Island" data-text="provinceForm::Island">Island</option>
+            <option value="Islands" data-text="provinceForm::Islands">Islands</option>
+            <option value="Land" data-text="provinceForm::Land">Land</option>
+            <option value="Landgrave" data-text="provinceForm::Landgrave">Landgrave</option>
+            <option value="Mandate" data-text="provinceForm::Mandate">Mandate</option>
+            <option value="Margrave" data-text="provinceForm::Margrave">Margrave</option>
+            <option value="Municipality" data-text="provinceForm::Municipality">Municipality</option>
+            <option value="Occupation zone" data-text="provinceForm::Occupation zone">Occupation zone</option>
+            <option value="Parish" data-text="provinceForm::Parish">Parish</option>
+            <option value="Prefecture" data-text="provinceForm::Prefecture">Prefecture</option>
+            <option value="Province" data-text="provinceForm::Province">Province</option>
+            <option value="Region" data-text="provinceForm::Region">Region</option>
+            <option value="Republic" data-text="provinceForm::Republic">Republic</option>
+            <option value="Reservation" data-text="provinceForm::Reservation">Reservation</option>
+            <option value="Seneschalty" data-text="provinceForm::Seneschalty">Seneschalty</option>
+            <option value="Shire" data-text="provinceForm::Shire">Shire</option>
+            <option value="State" data-text="provinceForm::State">State</option>
+            <option value="Territory" data-text="provinceForm::Territory">Territory</option>
+            <option value="Tribe" data-text="provinceForm::Tribe">Tribe</option>
           </select>
           <input
             id="provinceNameEditorCustomForm"
@@ -4877,7 +4883,7 @@
         </div>
 
         <div>
-          <div data-tip="Province full name" class="label">Full name:</div>
+          <div data-text="Full name:" data-tip="Province full name" class="label">Full name:</div>
           <input
             id="provinceNameEditorFull"
             data-tip="Type to change the full name"
@@ -4898,15 +4904,15 @@
           data-tip="Dominant culture in the province. This defines culture-based naming. Can be changed via the Cultures Editor"
           style="margin-top: 0.2em"
         >
-          Dominant culture:&nbsp;<span id="provinceCultureDisplay"></span>
+          <span data-text="Dominant culture:">Dominant culture:</span>&nbsp;<span id="provinceCultureDisplay"></span>
         </div>
       </div>
 
       <div id="namesbaseEditor" class="dialog stable textual" style="display: none">
         <div id="namesbaseBasesTop">
-          <span>Select base: </span>
+          <span data-text="Select base:">Select base:</span>
           <select id="namesbaseSelect" data-tip="Select base to edit" style="width: 12em" value="0"></select>
-          <span style="margin-left: 2px">Names data: </span>
+          <span data-text="Names data:" style="margin-left: 2px">Names data:</span>
         </div>
 
         <div id="namesbaseBody" style="margin-block: 2px; width: auto">
@@ -4922,7 +4928,7 @@
           ></textarea>
 
           <div>
-            <span>Name: </span>
+            <span data-text="Name:">Name:</span>
             <input
               id="namesbaseName"
               data-tip="Type to change a base name"
@@ -4931,10 +4937,10 @@
               spellcheck="false"
               style="width: 12em"
             />
-            <span>Length: </span>
+            <span data-text="Length:">Length:</span>
             <input id="namesbaseMin" data-tip="Recommended minimum name length" type="number" min="2" max="100" />
             <input id="namesbaseMax" data-tip="Recommended maximum name length" type="number" min="2" value="10" />
-            <span>Doubled: </span>
+            <span data-text="Doubled:">Doubled:</span>
             <input
               id="namesbaseDouble"
               data-tip="Populate with letters that can be used twice in a row (geminates)"
@@ -4945,7 +4951,7 @@
           </div>
 
           <fieldset>
-            <legend>Generated examples:</legend>
+            <legend data-text="Generated examples:">Generated examples:</legend>
             <div id="namesbaseExamples" data-tip="Examples. Click to re-generate"></div>
           </fieldset>
         </div>
@@ -4989,25 +4995,27 @@
 
       <div id="zonesEditor" class="dialog stable" style="display: none">
         <div id="customHeader" class="header" style="grid-template-columns: 13em 7em 6em 5em 9em">
-          <div data-tip="Zone description">Description&nbsp;</div>
-          <div data-tip="Zone type">Type&nbsp;</div>
-          <div data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
-          <div data-tip="Zone area" class="hide">Area&nbsp;</div>
-          <div data-tip="Zone population" class="hide">Population&nbsp;</div>
+          <div data-text="Description" data-tip="Zone description">Description</div>
+          <div data-text="Type" data-tip="Zone type">Type</div>
+          <div data-text="Cells" data-tip="Zone cells count" class="hide">Cells</div>
+          <div data-text="Area" data-tip="Zone area" class="hide">Area</div>
+          <div data-text="Population" data-tip="Zone population" class="hide">Population</div>
         </div>
 
         <div id="zonesBodySection" class="table" data-type="absolute"></div>
 
         <div id="zonesFooter" class="totalLine">
           <div data-tip="Number of zones" style="margin-left: 5px">
-            Zones:&nbsp;<span id="zonesFooterNumber">0</span>
+            <span data-text="Zones:">Zones:</span>&nbsp;<span id="zonesFooterNumber">0</span>
           </div>
           <div data-tip="Total cells number" style="margin-left: 12px">
-            Cells:&nbsp;<span id="zonesFooterCells">0</span>
+            <span data-text="Cells:">Cells:</span>&nbsp;<span id="zonesFooterCells">0</span>
           </div>
-          <div data-tip="Total map area" style="margin-left: 12px">Area:&nbsp;<span id="zonesFooterArea">0</span></div>
+          <div data-tip="Total map area" style="margin-left: 12px">
+            <span data-text="Area:">Area:</span>&nbsp;<span id="zonesFooterArea">0</span>
+          </div>
           <div data-tip="Total map population" style="margin-left: 12px">
-            Population:&nbsp;<span id="zonesFooterPopulation">0</span>
+            <span data-text="Population:">Population:</span>&nbsp;<span id="zonesFooterPopulation">0</span>
           </div>
         </div>
 
@@ -5028,12 +5036,12 @@
           <button id="zonesManually" data-tip="Re-assign zones" class="icon-brush"></button>
           <div id="zonesManuallyButtons" style="display: none">
             <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em">
-              Brush size:
+              <span data-text="Brush size:">Brush size:</span>
               <slider-input id="zonesBrush" min="1" max="100" value="8"></slider-input>
             </div>
             <div>
               <input id="zonesBrushLandOnly" class="checkbox" type="checkbox" checked />
-              <label for="zonesBrushLandOnly" class="checkbox-label"><i>Change land only</i></label>
+              <label for="zonesBrushLandOnly" class="checkbox-label"><i data-text="Change land only">Change land only</i></label>
             </div>
 
             <div style="margin-top: 0.3em">
@@ -5052,7 +5060,7 @@
           <button id="zonesExport" data-tip="Download zones-related data" class="icon-download"></button>
 
           <div id="zonesFilters" data-tip="Show only zones of selected type" style="display: inline-block">
-            Type:
+            <span data-text="Type:">Type:</span>
             <select id="zonesFilterType"></select>
           </div>
         </div>
@@ -5060,9 +5068,9 @@
 
       <div id="notesEditor" class="dialog stable" style="display: none">
         <div style="margin-bottom: 0.3em">
-          <strong>Element: </strong>
+          <strong data-text="Element:">Element:</strong>
           <select id="notesSelect" data-tip="Select element id" style="width: 12em"></select>
-          <strong>Element name: </strong>
+          <strong data-text="Element name:">Element name:</strong>
           <input id="notesName" data-tip="Set element name" autocorrect="off" spellcheck="false" style="width: 16em" />
           <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         </div>
@@ -5086,19 +5094,19 @@
           <textarea id="aiGeneratorResult" placeholder="Generated text will appear here" cols="30" rows="10"></textarea>
           <textarea id="aiGeneratorPrompt" placeholder="Type a prompt here" cols="30" rows="5"></textarea>
           <div style="display: flex; align-items: center; gap: 1em">
-            <label for="aiGeneratorModel"
-              >Model:
+            <label for="aiGeneratorModel">
+              <span data-text="Model:">Model:</span>
               <select id="aiGeneratorModel"></select>
             </label>
             <label
               for="aiGeneratorTemperature"
               data-tip="Temperature controls response randomness; higher values mean more creativity, lower values mean more predictability"
             >
-              Temperature:
+              <span data-text="Temperature:">Temperature:</span>
               <input id="aiGeneratorTemperature" type="number" min="-1" max="2" step=".1" class="icon-key" />
             </label>
-            <label for="aiGeneratorKey"
-              >Key:
+            <label for="aiGeneratorKey">
+              <span data-text="Key:">Key:</span>
               <input
                 id="aiGeneratorKey"
                 placeholder="Enter API key"
@@ -5123,78 +5131,78 @@
           </div>
           <hr />
           <div data-tip="Select state">
-            <div class="label">State:</div>
+            <div data-text="State:" class="label">State:</div>
             <select id="emblemStates"></select>
           </div>
           <div data-tip="Select province in state">
-            <div class="label">Province:</div>
+            <div data-text="Province:" class="label">Province:</div>
             <select id="emblemProvinces"></select>
           </div>
           <div data-tip="Select burg in province or state">
-            <div class="label">Burg:</div>
+            <div data-text="Burg:" class="label">Burg:</div>
             <select id="emblemBurgs"></select>
           </div>
           <hr />
           <div data-tip="Select shape of the emblem">
-            <div class="label">Shape:</div>
+            <div data-text="Shape:" class="label">Shape:</div>
             <select id="emblemShapeSelector">
               <optgroup label="Basic">
-                <option value="heater" data-text="Heater">Heater</option>
-                <option value="spanish" data-text="Spanish">Spanish</option>
-                <option value="french" data-text="French">French</option>
+                <option value="heater" data-text="emblemForm::Heater">Heater</option>
+                <option value="spanish" data-text="emblemForm::Spanish">Spanish</option>
+                <option value="french" data-text="emblemForm::French">French</option>
               </optgroup>
               <optgroup label="Regional">
-                <option value="horsehead" data-text="Horsehead">Horsehead</option>
-                <option value="horsehead2" data-text="Horsehead Edgy">Horsehead Edgy</option>
-                <option value="polish" data-text="Polish">Polish</option>
-                <option value="hessen" data-text="Hessen">Hessen</option>
-                <option value="swiss" data-text="Swiss">Swiss</option>
+                <option value="horsehead" data-text="emblemForm::Horsehead">Horsehead</option>
+                <option value="horsehead2" data-text="emblemForm::Horsehead Edgy">Horsehead Edgy</option>
+                <option value="polish" data-text="emblemForm::Polish">Polish</option>
+                <option value="hessen" data-text="emblemForm::Hessen">Hessen</option>
+                <option value="swiss" data-text="emblemForm::Swiss">Swiss</option>
               </optgroup>
               <optgroup label="Historical">
-                <option value="boeotian" data-text="Boeotian">Boeotian</option>
-                <option value="roman" data-text="Roman">Roman</option>
-                <option value="kite" data-text="Kite">Kite</option>
-                <option value="oldFrench" data-text="Old French">Old French</option>
-                <option value="renaissance" data-text="Renaissance">Renaissance</option>
-                <option value="baroque" data-text="Baroque">Baroque</option>
+                <option value="boeotian" data-text="emblemForm::Boeotian">Boeotian</option>
+                <option value="roman" data-text="emblemForm::Roman">Roman</option>
+                <option value="kite" data-text="emblemForm::Kite">Kite</option>
+                <option value="oldFrench" data-text="emblemForm::Old French">Old French</option>
+                <option value="renaissance" data-text="emblemForm::Renaissance">Renaissance</option>
+                <option value="baroque" data-text="emblemForm::Baroque">Baroque</option>
               </optgroup>
               <optgroup label="Specific">
-                <option value="targe" data-text="Targe">Targe</option>
-                <option value="targe2" data-text="Targe2">Targe2</option>
-                <option value="pavise" data-text="Pavise">Pavise</option>
-                <option value="wedged" data-text="Wedged">Wedged</option>
+                <option value="targe" data-text="emblemForm::Targe">Targe</option>
+                <option value="targe2" data-text="emblemForm::Targe2">Targe2</option>
+                <option value="pavise" data-text="emblemForm::Pavise">Pavise</option>
+                <option value="wedged" data-text="emblemForm::Wedged">Wedged</option>
               </optgroup>
               <optgroup label="Banner">
-                <option value="flag" data-text="Flag">Flag</option>
-                <option value="pennon" data-text="Pennon">Pennon</option>
-                <option value="guidon" data-text="Guidon">Guidon</option>
-                <option value="banner" data-text="Banner">Banner</option>
-                <option value="dovetail" data-text="Dovetail">Dovetail</option>
-                <option value="gonfalon" data-text="Gonfalon">Gonfalon</option>
-                <option value="pennant" data-text="Pennant">Pennant</option>
+                <option value="flag" data-text="emblemForm::Flag">Flag</option>
+                <option value="pennon" data-text="emblemForm::Pennon">Pennon</option>
+                <option value="guidon" data-text="emblemForm::Guidon">Guidon</option>
+                <option value="banner" data-text="emblemForm::Banner">Banner</option>
+                <option value="dovetail" data-text="emblemForm::Dovetail">Dovetail</option>
+                <option value="gonfalon" data-text="emblemForm::Gonfalon">Gonfalon</option>
+                <option value="pennant" data-text="emblemForm::Pennant">Pennant</option>
               </optgroup>
               <optgroup label="Simple">
-                <option value="round" data-text="Round">Round</option>
-                <option value="oval" data-text="Oval">Oval</option>
-                <option value="vesicaPiscis" data-text="Vesica Piscis">Vesica Piscis</option>
-                <option value="square" data-text="Square">Square</option>
-                <option value="diamond" data-text="Diamond">Diamond</option>
+                <option value="round" data-text="emblemForm::Round">Round</option>
+                <option value="oval" data-text="emblemForm::Oval">Oval</option>
+                <option value="vesicaPiscis" data-text="emblemForm::Vesica Piscis">Vesica Piscis</option>
+                <option value="square" data-text="emblemForm::Square">Square</option>
+                <option value="diamond" data-text="emblemForm::Diamond">Diamond</option>
               </optgroup>
               <optgroup label="Fantasy">
-                <option value="fantasy1" data-text="Fantasy1">Fantasy1</option>
-                <option value="fantasy2" data-text="Fantasy2">Fantasy2</option>
-                <option value="fantasy3" data-text="Fantasy3">Fantasy3</option>
-                <option value="fantasy4" data-text="Fantasy4">Fantasy4</option>
-                <option value="fantasy5" data-text="Fantasy5">Fantasy5</option>
+                <option value="fantasy1" data-text="emblemForm::Fantasy1">Fantasy1</option>
+                <option value="fantasy2" data-text="emblemForm::Fantasy2">Fantasy2</option>
+                <option value="fantasy3" data-text="emblemForm::Fantasy3">Fantasy3</option>
+                <option value="fantasy4" data-text="emblemForm::Fantasy4">Fantasy4</option>
+                <option value="fantasy5" data-text="emblemForm::Fantasy5">Fantasy5</option>
               </optgroup>
               <optgroup label="Middle Earth">
-                <option value="noldor" data-text="Noldor">Noldor</option>
-                <option value="gondor" data-text="Gondor">Gondor</option>
-                <option value="easterling" data-text="Easterling">Easterling</option>
-                <option value="erebor" data-text="Erebor">Erebor</option>
-                <option value="ironHills" data-text="Iron Hills">Iron Hills</option>
-                <option value="urukHai" data-text="UrukHai">UrukHai</option>
-                <option value="moriaOrc" data-text="Moria Orc">Moria Orc</option>
+                <option value="noldor" data-text="emblemForm::Noldor">Noldor</option>
+                <option value="gondor" data-text="emblemForm::Gondor">Gondor</option>
+                <option value="easterling" data-text="emblemForm::Easterling">Easterling</option>
+                <option value="erebor" data-text="emblemForm::Erebor">Erebor</option>
+                <option value="ironHills" data-text="emblemForm::Iron Hills">Iron Hills</option>
+                <option value="urukHai" data-text="emblemForm::UrukHai">UrukHai</option>
+                <option value="moriaOrc" data-text="emblemForm::Moria Orc">Moria Orc</option>
               </optgroup>
             </select>
           </div>
@@ -5202,7 +5210,7 @@
           <div
             data-tip="Set size of particular Emblem. To hide set to 0. To change the entire category go to Menu ⭢ Style ⭢ Emblems"
           >
-            <div class="label" style="width: 2.8em">Size:</div>
+            <div data-text="Size:" class="label" style="width: 2.8em">Size:</div>
             <input id="emblemSizeSlider" type="range" min="0" max="5" step=".1" style="width: 7em" />
             <input id="emblemSizeNumber" type="number" min="0" max="5" step=".1" />
           </div>
@@ -5234,12 +5242,14 @@
         <div id="emblemUploadControl" class="hidden">
           <button
             id="emblemsUploadImage"
+            data-text="Any image"
             data-tip="Upload SVG or PNG image from any source. Make sure background is transparent"
           >
             Any image
           </button>
           <button
             id="emblemsUploadSVG"
+            data-text="Prepared SVG"
             data-tip="Upload prepared SVG image (SVG from Armoria or SVG processed with 'Optimize vector' tool)"
           >
             Prepared SVG
@@ -5247,13 +5257,15 @@
           <a
             href="https://www.iloveimg.com/compress-image"
             target="_blank"
+            data-text="Compress raster"
             data-tip="Use external tool to compress/resize raster images before upload"
-            >Comperess raster</a
+            >Compress raster</a
           >
           <span> | </span>
           <a
             href="https://jakearchibald.github.io/svgomg"
             target="_blank"
+            data-text="Optimize vector"
             data-tip="Use external tool to optimize vector images before upload"
             >Optimize vector</a
           >
@@ -5290,11 +5302,11 @@
         <div id="unitsBody" style="margin-left: 1.1em">
           <div class="unitsHeader" style="margin-top: 0.4em">
             <span class="icon-map-signs"></span>
-            <label>Distance:</label>
+            <label data-text="Distance:">Distance:</label>
           </div>
 
           <div data-tip="Select a distance unit or provide a custom name">
-            <label>Distance unit:</label>
+            <label data-text="Distance unit:">Distance unit:</label>
             <select id="distanceUnitInput" data-stored="distanceUnit">
               <option value="mi" data-text="Mile (mi)" selected>Mile (mi)</option>
               <option value="km" data-text="Kilometer (km)">Kilometer (km)</option>
@@ -5309,22 +5321,22 @@
           <div data-tip="Select how many distance units are in one pixel">
             <i data-locked="0" id="lock_distanceScale" class="icon-lock-open"></i>
             <slider-input id="distanceScaleInput" data-stored="distanceScale" min=".01" max="20" step=".1" value="3">
-              <label>1 map pixel:</label>
+              <label data-text="1 map pixel:">1 map pixel:</label>
             </slider-input>
           </div>
 
-          <div data-tip='Area unit name, type "square" to add ² to the distance unit'>
-            <label>Area unit:</label>
+          <div data-tip="Area unit name, type &quot;square&quot; to add ² to the distance unit">
+            <label data-text="Area unit:">Area unit:</label>
             <input id="areaUnit" data-stored="areaUnit" type="text" value="square" />
           </div>
 
           <div class="unitsHeader">
             <span class="icon-signal"></span>
-            <label>Altitude:</label>
+            <label data-text="Altitude:">Altitude:</label>
           </div>
 
           <div data-tip="Select an altitude unit or provide a custom name">
-            <label>Height unit:</label>
+            <label data-text="Height unit:">Height unit:</label>
             <select id="heightUnit" data-stored="heightUnit">
               <option value="ft" data-text="Feet (ft)" selected>Feet (ft)</option>
               <option value="m" data-text="Meters (m)">Meters (m)</option>
@@ -5344,17 +5356,17 @@
               step=".01"
               value="2"
             >
-              <label>Exponent:</label>
+              <label data-text="Exponent:">Exponent:</label>
             </slider-input>
           </div>
 
           <div class="unitsHeader" data-tip="Select Temperature scale">
             <span class="icon-temperature-high"></span>
-            <label>Temperature:</label>
+            <label data-text="Temperature:">Temperature:</label>
           </div>
 
           <div>
-            <label>Temperature scale:</label>
+            <label data-text="Temperature scale:">Temperature scale:</label>
             <select id="temperatureScale" data-stored="temperatureScale">
               <option value="°C" data-text="degree Celsius (°C)" selected>degree Celsius (°C)</option>
               <option value="°F" data-text="degree Fahrenheit (°F)">degree Fahrenheit (°F)</option>
@@ -5369,7 +5381,7 @@
 
           <div class="unitsHeader">
             <span class="icon-male"></span>
-            <label>Population:</label>
+            <label data-text="Population:">Population:</label>
           </div>
 
           <div data-tip="Set how many people are in one population point">
@@ -5381,19 +5393,19 @@
               step="10"
               value="1000"
             >
-              <label>1 population point:</label>
+              <label data-text="1 population point:">1 population point:</label>
             </slider-input>
           </div>
 
-          <div data-tip="Set urban population modifier. Change to increase or descrese burgs population">
+          <div data-tip="Set urban population modifier. Change to increase or decrease burgs population">
             <slider-input id="urbanizationInput" data-stored="urbanization" min=".01" max="5" step=".01" value="1">
-              <label>Urbanization rate:</label>
+              <label data-text="Urbanization rate:">Urbanization rate:</label>
             </slider-input>
           </div>
 
           <div data-tip="Set urban density: average population per building in Medieval Fantasy City Generator">
             <slider-input id="urbanDensityInput" data-stored="urbanDensity" min="1" max="200" step="1" value="10">
-              <label>Urban density:</label>
+              <label data-text="Urban density:">Urban density:</label>
             </slider-input>
           </div>
         </div>
@@ -5429,24 +5441,25 @@
 
       <div id="burgsOverview" class="dialog stable" style="display: none">
         <div id="burgsHeader" class="header" style="grid-template-columns: 9em 7em 7.5em 7.2em 6.5em 7em 6em">
-          <div data-tip="Click to sort by burg name" class="sortable alphabetically" data-sortby="name">Burg</div>
-          <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">
+          <div data-text="Burg" data-tip="Click to sort by burg name" class="sortable alphabetically" data-sortby="name">Burg</div>
+          <div data-text="Province" data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">
             Province
           </div>
-          <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State</div>
-          <div data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">
+          <div data-text="State" data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State</div>
+          <div data-text="Culture" data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">
             Culture
           </div>
-          <div data-tip="Click to sort by culture group" class="sortable alphabetically" data-sortby="group">Group</div>
+          <div data-text="Group" data-tip="Click to sort by culture group" class="sortable alphabetically" data-sortby="group">Group</div>
           <div
+            data-text="Population"
             data-tip="Click to sort by burg population"
             class="sortable icon-sort-number-down"
             data-sortby="population"
           >
             Population
           </div>
-          <div data-tip="Click to sort by burg features" class="sortable alphabetically" data-sortby="features">
-            Features&nbsp;
+          <div data-text="Features" data-tip="Click to sort by burg features" class="sortable alphabetically" data-sortby="features">
+            Features
           </div>
         </div>
 
@@ -5457,28 +5470,29 @@
           data-tip="Apply a filter"
           style="padding-block: 0.1em; display: flex; gap: 0.5em; width: 100%"
         >
-          <label for="burgsSearch" data-tip="Filter by name, province, state, culture, or group"
-            >Search: <input id="burgsSearch" type="search"
-          /></label>
+          <label for="burgsSearch" data-tip="Filter by name, province, state, culture, or group">
+            <span data-text="Search:">Search:</span>
+            <input id="burgsSearch" type="search"/>
+          </label>
 
-          <label for="burgsFilterState"
-            >State:
-            <select id="burgsFilterState"></select
-          ></label>
+          <label for="burgsFilterState">
+            <span data-text="State:">State:</span>
+            <select id="burgsFilterState"></select>
+          </label>
 
-          <label for="burgsFilterCulture"
-            >Culture:
-            <select id="burgsFilterCulture"></select
-          ></label>
+          <label for="burgsFilterCulture">
+            <span data-text="Culture:">Culture:</span>
+            <select id="burgsFilterCulture"></select>
+          </label>
         </div>
 
         <div id="burgsFooter" class="totalLine">
           <div data-tip="Burgs displayed" style="margin-left: 4px">
-            Burgs:&nbsp;<span id="burgsFooterBurgs">0 of 0</span>
+            <span data-text="Burgs:">Burgs:</span>&nbsp;<span id="burgsFooterBurgs">0 of 0</span>
           </div>
 
           <div data-tip="Average population" style="margin-left: 14px">
-            Average population:&nbsp;<span id="burgsFooterPopulation">0</span>
+            <span data-text="Average population:">Average population:</span>&nbsp;<span id="burgsFooterPopulation">0</span>
           </div>
         </div>
 
@@ -5512,18 +5526,18 @@
           <table class="table">
             <thead>
               <tr>
-                <th data-tip="Rendering order: higher values are rendered on top">Order</th>
-                <th data-tip="Type group name">Name</th>
-                <th data-tip="Burg preview generator">Preview generator</th>
-                <th data-tip="Set min population constraint" colspan="3">Population</th>
-                <th data-tip="Select allowed biomes">Biomes</th>
-                <th data-tip="Select allowed states">States</th>
-                <th data-tip="Select allowed cultures">Cultures</th>
-                <th data-tip="Select allowed religions">Religions</th>
-                <th data-tip="Select allowed features">Features</th>
-                <th data-tip="Number of burgs in group">Count</th>
-                <th data-tip="Activate/deactivate group">Active</th>
-                <th data-tip="Select group to be assigned if burg doesn't pass the criteria for other groups">
+                <th data-text="Order" data-tip="Rendering order: higher values are rendered on top">Order</th>
+                <th data-text="Name" data-tip="Type group name">Name</th>
+                <th data-text="Preview generator" data-tip="Burg preview generator">Preview generator</th>
+                <th data-text="Population" data-tip="Set min population constraint" colspan="3">Population</th>
+                <th data-text="Biomes" data-tip="Select allowed biomes">Biomes</th>
+                <th data-text="States" data-tip="Select allowed states">States</th>
+                <th data-text="Cultures" data-tip="Select allowed cultures">Cultures</th>
+                <th data-text="Religions" data-tip="Select allowed religions">Religions</th>
+                <th data-text="Features" data-tip="Select allowed features">Features</th>
+                <th data-text="Count" data-tip="Number of burgs in group">Count</th>
+                <th data-text="Active" data-tip="Activate/deactivate group">Active</th>
+                <th data-text="Default" data-tip="Select group to be assigned if burg doesn't pass the criteria for other groups">
                   Default
                 </th>
               </tr>
@@ -5535,14 +5549,14 @@
 
       <div id="routesOverview" class="dialog stable" style="display: none">
         <div id="routesHeader" class="header" style="grid-template-columns: 17em 8em 8em">
-          <div data-tip="Click to sort by route name" class="sortable alphabetically" data-sortby="name">
-            Route&nbsp;
+          <div data-text="Route" data-tip="Click to sort by route name" class="sortable alphabetically" data-sortby="name">
+            Route
           </div>
-          <div data-tip="Click to sort by route group" class="sortable alphabetically" data-sortby="group">
-            Group&nbsp;
+          <div data-text="Group" data-tip="Click to sort by route group" class="sortable alphabetically" data-sortby="group">
+            Group
           </div>
-          <div data-tip="Click to sort by route length" class="sortable icon-sort-number-down" data-sortby="length">
-            Length&nbsp;
+          <div data-text="Length" data-tip="Click to sort by route length" class="sortable icon-sort-number-down" data-sortby="length">
+            Length
           </div>
         </div>
 
@@ -5550,10 +5564,10 @@
 
         <div id="routesFooter" class="totalLine">
           <div data-tip="Routes number" style="margin-left: 4px">
-            Routes:&nbsp;<span id="routesFooterNumber">0</span>
+            <span data-text="Routes:">Routes:</span>&nbsp;<span id="routesFooterNumber">0</span>
           </div>
           <div data-tip="Average length" style="margin-left: 12px">
-            Average length:&nbsp;<span id="routesFooterLength">0</span>
+            <span data-text="Average length:">Average length:</span>&nbsp;<span id="routesFooterLength">0</span>
           </div>
         </div>
 
@@ -5571,31 +5585,33 @@
           ></button>
           <button id="routesLockAll" data-tip="Lock or unlock all routes" class="icon-lock"></button>
           <button id="routesRemoveAll" data-tip="Remove all routes" class="icon-trash"></button>
-          <label for="routesSearch" data-tip="Filter by name or group" style="margin-left: 0.2em"
-            >Search: <input id="routesSearch" type="search"
-          /></label>
+          <label for="routesSearch" data-tip="Filter by name or group" style="margin-left: 0.2em">
+            <span data-text="Search:">Search:</span>
+            <input id="routesSearch" type="search"/>
+          </label>
         </div>
       </div>
 
       <div id="riversOverview" class="dialog stable" style="display: none">
         <div id="riversHeader" class="header" style="grid-template-columns: 9em 4em 7em 5em 5em 9em">
-          <div data-tip="Click to sort by river name" class="sortable alphabetically" data-sortby="name">
-            River&nbsp;
+          <div data-text="River" data-tip="Click to sort by river name" class="sortable alphabetically" data-sortby="name">
+            River
           </div>
-          <div data-tip="Click to sort by river type name" class="sortable alphabetically" data-sortby="type">
-            Type&nbsp;
+          <div data-text="Type" data-tip="Click to sort by river type name" class="sortable alphabetically" data-sortby="type">
+            Type
           </div>
           <div
+            data-text="Discharge"
             data-tip="Click to sort by discharge (flux in m3/s)"
             class="sortable icon-sort-number-down"
             data-sortby="discharge"
           >
-            Discharge&nbsp;
+            Discharge
           </div>
-          <div data-tip="Click to sort by river length" class="sortable" data-sortby="length">Length&nbsp;</div>
-          <div data-tip="Click to sort by river mouth width" class="sortable" data-sortby="width">Width&nbsp;</div>
-          <div data-tip="Click to sort by river basin" class="sortable alphabetically" data-sortby="basin">
-            Basin&nbsp;
+          <div data-text="Length" data-tip="Click to sort by river length" class="sortable" data-sortby="length">Length</div>
+          <div data-text="Width" data-tip="Click to sort by river mouth width" class="sortable" data-sortby="width">Width</div>
+          <div data-text="Basin" data-tip="Click to sort by river basin" class="sortable alphabetically" data-sortby="basin">
+            Basin
           </div>
         </div>
 
@@ -5603,16 +5619,16 @@
 
         <div id="riversFooter" class="totalLine">
           <div data-tip="Rivers number" style="margin-left: 4px">
-            Rivers:&nbsp;<span id="riversFooterNumber">0</span>
+            <span data-text="Rivers:">Rivers:</span>&nbsp;<span id="riversFooterNumber">0</span>
           </div>
           <div data-tip="Average discharge" style="margin-left: 12px">
-            Average discharge:&nbsp;<span id="riversFooterDischarge">0</span>
+            <span data-text="Average discharge:">Average discharge:</span>&nbsp;<span id="riversFooterDischarge">0</span>
           </div>
           <div data-tip="Average length" style="margin-left: 12px">
-            Length:&nbsp;<span id="riversFooterLength">0</span>
+            <span data-text="Length:">Length:</span>&nbsp;<span id="riversFooterLength">0</span>
           </div>
           <div data-tip="Average mouth width" style="margin-left: 12px">
-            Width:&nbsp;<span id="riversFooterWidth">0</span>
+            <span data-text="Width:">Width:</span>&nbsp;<span id="riversFooterWidth">0</span>
           </div>
         </div>
 
@@ -5639,33 +5655,36 @@
 
       <div id="militaryOverview" class="dialog stable" style="display: none">
         <div id="militaryHeader" class="header">
-          <div data-tip="State name. Click to sort" class="sortable alphabetically" data-sortby="state">
-            State&nbsp;
+          <div data-text="State" data-tip="State name. Click to sort" class="sortable alphabetically" data-sortby="state">
+            State
           </div>
           <div
+            data-text="Total"
             data-tip="Total military personnel (considering crew). Click to sort"
             id="militaryTotal"
             class="sortable icon-sort-number-down"
             data-sortby="total"
           >
-            Total&nbsp;
+            Total
           </div>
-          <div data-tip="State population. Click to sort" class="sortable" data-sortby="population">
-            Population&nbsp;
+          <div data-text="Population" data-tip="State population. Click to sort" class="sortable" data-sortby="population">
+            Population
           </div>
           <div
+            data-text="Rate"
             data-tip="Military personnel rate (% of state population). Depends on war alert. Click to sort"
             class="sortable"
             data-sortby="rate"
           >
-            Rate&nbsp;
+            Rate
           </div>
           <div
+            data-text="War Alert"
             data-tip="War Alert. Modifier to military forces number, depends of political situation. Click to sort"
             class="sortable"
             data-sortby="alert"
           >
-            War Alert&nbsp;
+            War Alert
           </div>
         </div>
 
@@ -5673,19 +5692,19 @@
 
         <div id="militaryFooter" class="totalLine">
           <div data-tip="States number" style="margin-left: 4px">
-            States:&nbsp;<span id="militaryFooterStates">0</span>
+            <span data-text="States:">States:</span>&nbsp;<span id="militaryFooterStates">0</span>
           </div>
           <div data-tip="Total military forces" style="margin-left: 14px">
-            Total forces:&nbsp;<span id="militaryFooterForcesTotal">0</span>
+            <span data-text="Total forces:">Total forces:</span>&nbsp;<span id="militaryFooterForcesTotal">0</span>
           </div>
           <div data-tip="Average military forces per state" style="margin-left: 14px">
-            Average forces:&nbsp;<span id="militaryFooterForces">0</span>
+            <span data-text="Average forces:">Average forces:</span>&nbsp;<span id="militaryFooterForces">0</span>
           </div>
           <div data-tip="Average forces rate per state" style="margin-left: 14px">
-            Average rate:&nbsp;<span id="militaryFooterRate">0%</span>
+            <span data-text="Average rate:">Average rate:</span>&nbsp;<span id="militaryFooterRate">0%</span>
           </div>
           <div data-tip="Average War Alert" style="margin-left: 14px">
-            Average alert:&nbsp;<span id="militaryFooterAlert">0</span>
+            <span data-text="Average alert:">Average alert:</span>&nbsp;<span id="militaryFooterAlert">0</span>
           </div>
         </div>
 
@@ -5714,23 +5733,25 @@
 
       <div id="regimentsOverview" class="dialog stable" style="display: none">
         <div id="regimentsHeader" class="header">
-          <div data-tip="State name. Click to sort" class="sortable alphabetically" data-sortby="state">
-            State&nbsp;
+          <div data-text="State" data-tip="State name. Click to sort" class="sortable alphabetically" data-sortby="state">
+            State
           </div>
           <div
+            data-text="Name"
             data-tip="Regiment emblem and name. Click to sort by name"
             class="sortable alphabetically"
             data-sortby="name"
           >
-            Name&nbsp;
+            Name
           </div>
           <div
+            data-text="Total"
             data-tip="Total military personnel (not considering crew). Click to sort"
             id="regimentsTotal"
             class="sortable icon-sort-number-down"
             data-sortby="total"
           >
-            Total&nbsp;
+            Total
           </div>
         </div>
 
@@ -5745,8 +5766,8 @@
           ></button>
           <button id="regimentsAddNew" data-tip="Add new Regiment" class="icon-user-plus"></button>
           <div data-tip="Select state" style="display: inline-block">
-            <span>State: </span
-            ><select id="regimentsFilter"></select>
+            <span data-text="State:">State:</span>
+            <select id="regimentsFilter"></select>
           </div>
           <button
             id="regimentsExport"
@@ -5761,18 +5782,18 @@
           <table id="militaryOptionsTable">
             <thead>
               <tr>
-                <th data-tip="Unit icon">Icon</th>
-                <th data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Unit name</th>
-                <th style="width: 5em" data-tip="Select allowed biomes">Biomes</th>
-                <th style="width: 5em" data-tip="Select allowed states">States</th>
-                <th style="width: 5em" data-tip="Select allowed cultures">Cultures</th>
-                <th style="width: 5em" data-tip="Select allowed religions">Religions</th>
-                <th data-tip="Conscription percentage for rural population">Rural</th>
-                <th data-tip="Conscription percentage for urban population">Urban</th>
-                <th data-tip="Average number of people in crew (used for total personnel calculation)">Crew</th>
-                <th data-tip="Unit military power (used for battle simulation)">Power</th>
-                <th data-tip="Unit type to apply special rules on forces recalculation">Type</th>
-                <th data-tip="Check if unit is separate and can be stacked only with units of the same type">
+                <th data-text="Icon" data-tip="Unit icon">Icon</th>
+                <th data-text="Unit name" data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Unit name</th>
+                <th style="width: 5em" data-text="Biomes" data-tip="Select allowed biomes">Biomes</th>
+                <th style="width: 5em" data-text="States" data-tip="Select allowed states">States</th>
+                <th style="width: 5em" data-text="Cultures" data-tip="Select allowed cultures">Cultures</th>
+                <th style="width: 5em" data-text="Religions" data-tip="Select allowed religions">Religions</th>
+                <th data-text="Rural" data-tip="Conscription percentage for rural population">Rural</th>
+                <th data-text="Urban" data-tip="Conscription percentage for urban population">Urban</th>
+                <th data-text="Crew" data-tip="Average number of people in crew (used for total personnel calculation)">Crew</th>
+                <th data-text="Power" data-tip="Unit military power (used for battle simulation)">Power</th>
+                <th data-text="Type" data-tip="Unit type to apply special rules on forces recalculation">Type</th>
+                <th data-text="Separate" data-tip="Check if unit is separate and can be stacked only with units of the same type">
                   Separate
                 </th>
               </tr>
@@ -5784,8 +5805,8 @@
 
       <div id="markersOverview" class="dialog stable" style="display: none">
         <div id="markersHeader" class="header" style="grid-template-columns: 15em 1em 3em">
-          <div data-tip="Click to sort by marker type" class="sortable alphabetically" data-sortby="type">
-            Type&nbsp;
+          <div data-text="Type" data-tip="Click to sort by marker type" class="sortable alphabetically" data-sortby="type">
+            Type
           </div>
           <div
             id="markersInverPin"
@@ -5804,13 +5825,15 @@
         <div id="markersBody" class="table"></div>
 
         <div>
-          <label for="markersSearch" data-tip="Filter by type"
-            >Search: <input id="markersSearch" type="search"
-          /></label>
+          <label for="markersSearch" data-tip="Filter by type">
+            <span data-text="Search:">Search:</span>
+            <input id="markersSearch" type="search"/>
+          </label>
         </div>
 
         <div id="markersFooter" class="totalLine">
           <div data-tip="Markers number">
+            <!-- TODO i18n -->
             Markers: <span id="markersFooterNumber">0</span> of <span id="markersFooterTotal">0</span>
           </div>
         </div>
@@ -5835,7 +5858,7 @@
 
       <div id="styleSaver" class="dialog stable textual" style="display: none">
         <div id="styleSaverHeader" style="padding: 2px 0">
-          <span>Preset name:</span>
+          <span data-text="Preset name:">Preset name:</span>
           <input
             id="styleSaverName"
             data-tip="Enter style preset name"
@@ -5851,7 +5874,7 @@
         </div>
 
         <div id="styleSaverBody" style="padding: 2px 0; width: 100%">
-          <span>Style JSON:</span>
+          <span data-text="Style JSON:">Style JSON:</span>
           <textarea
             id="styleSaverJSON"
             rows="18"
@@ -5880,12 +5903,12 @@
       </div>
 
       <div id="addFontDialog" style="display: none" class="dialog">
-        <span>There are 3 ways to add a custom font:</span>
-        <p>
+        <span data-text="There are 3 ways to add a custom font:">There are 3 ways to add a custom font:</span>
+        <p data-html="<strong>Google font</strong>. Open {{googlefonts, link(text: Google Fonts)}}, find a font you like and enter its name to the field below." data-var-googlefonts="https://fonts.google.com/">
           <strong>Google font</strong>. Open <a href="https://fonts.google.com/" target="_blank">Google Fonts</a>, find
           a font you like and enter its name to the field below.
         </p>
-        <p>
+        <p data-html="<strong>Local font</strong>. If you have a font {{localfont, link(text: installed on your computer)}}, just provide the font name. Make sure the browser is reloaded after the installation. The font won't work on machines not having it installed. Good source of fonts are {{fontesk, link(text: Fontesk)}} and {{dafont, link(text: DaFont)}}." data-var-localfont="https://faqs.skillcrush.com/article/275-downloading-installing-a-font-on-your-computer" data-var-fontesk="https://fontesk.com" data-var-dafont="https://www.dafont.com">
           <strong>Local font</strong>. If you have a font
           <a
             href="https://faqs.skillcrush.com/article/275-downloading-installing-a-font-on-your-computer"
@@ -5893,10 +5916,10 @@
             >installed on your computer</a
           >, just provide the font name. Make sure the browser is reloaded after the installation. The font won't work
           on machines not having it installed. Good source of fonts are
-          <a href="https://fontesk.com" target="_blank">Fontdesk</a> and
+          <a href="https://fontesk.com" target="_blank">Fontesk</a> and
           <a href="https://www.dafont.com" target="_blank">DaFont</a>.
         </p>
-        <p>
+        <p data-html="<strong>Font URL</strong>. Provide font name and link to the font file hosted online. The best free font hostings are {{googlefonts, link(text: Google Fonts)}} and {{cdnfonts, link(text: CDN Fonts)}}. To get font file open the link to css provided by these services and manually copy the link to <code>woff2</code> of desired variant. To add another variant (e.g. Cyrillic), add the font one more time under the same name, but with another URL" data-var-googlefonts="https://fonts.google.com/" data-var-cdnfonts="https://www.cdnfonts.com">
           <strong>Font URL</strong>. Provide font name and link to the font file hosted online. The best free font
           hostings are <a href="https://fonts.google.com/" target="_blank">Google Fonts</a> and
           <a target="_blank" href="https://www.cdnfonts.com">CDN Fonts</a>. To get font file open the link to css
@@ -5922,58 +5945,58 @@
 
       <div id="cellInfo" style="display: none" class="dialog stable">
         <p>
-          <b>Cell:</b> <span id="infoCell"></span> <b>X:</b> <span id="infoX"></span> <b>Y:</b> <span id="infoY"></span>
+          <b data-text="Cell:">Cell:</b> <span id="infoCell"></span> <b>X:</b> <span id="infoX"></span> <b>Y:</b> <span id="infoY"></span>
         </p>
-        <p><b>Latitude:</b> <span id="infoLat"></span></p>
-        <p><b>Longitude:</b> <span id="infoLon"></span></p>
-        <p><b>Geozone:</b> <span id="infoGeozone"></span></p>
-        <p><b>Area:</b> <span id="infoArea">0</span></p>
-        <p><b>Type:</b> <span id="infoFeature">n/a</span></p>
-        <p><b>Precipitation:</b> <span id="infoPrec">0</span></p>
-        <p><b>River:</b> <span id="infoRiver">no</span></p>
-        <p><b>Population:</b> <span id="infoPopulation">0</span></p>
-        <p><b>Elevation:</b> <span id="infoElevation">0</span></p>
-        <p><b>Depth:</b> <span id="infoDepth">0</span></p>
-        <p><b>Temperature:</b> <span id="infoTemp">0</span></p>
-        <p><b>Biome:</b> <span id="infoBiome">n/a</span></p>
-        <p><b>State:</b> <span id="infoState">n/a</span></p>
-        <p><b>Province:</b> <span id="infoProvince">n/a</span></p>
-        <p><b>Culture:</b> <span id="infoCulture">n/a</span></p>
-        <p><b>Religion:</b> <span id="infoReligion">n/a</span></p>
-        <p><b>Burg:</b> <span id="infoBurg">n/a</span></p>
+        <p><b data-text="Latitude:">Latitude:</b> <span id="infoLat"></span></p>
+        <p><b data-text="Longitude:">Longitude:</b> <span id="infoLon"></span></p>
+        <p><b data-text="Geozone:">Geozone:</b> <span id="infoGeozone"></span></p>
+        <p><b data-text="Area:">Area:</b> <span id="infoArea">0</span></p>
+        <p><b data-text="Type:">Type:</b> <span id="infoFeature">n/a</span></p>
+        <p><b data-text="Precipitation:">Precipitation:</b> <span id="infoPrec">0</span></p>
+        <p><b data-text="River:">River:</b> <span id="infoRiver">no</span></p>
+        <p><b data-text="Population:">Population:</b> <span id="infoPopulation">0</span></p>
+        <p><b data-text="Elevation:">Elevation:</b> <span id="infoElevation">0</span></p>
+        <p><b data-text="Depth:">Depth:</b> <span id="infoDepth">0</span></p>
+        <p><b data-text="Temperature:">Temperature:</b> <span id="infoTemp">0</span></p>
+        <p><b data-text="Biome:">Biome:</b> <span id="infoBiome">n/a</span></p>
+        <p><b data-text="State:">State:</b> <span id="infoState">n/a</span></p>
+        <p><b data-text="Province:">Province:</b> <span id="infoProvince">n/a</span></p>
+        <p><b data-text="Culture:">Culture:</b> <span id="infoCulture">n/a</span></p>
+        <p><b data-text="Religion:">Religion:</b> <span id="infoReligion">n/a</span></p>
+        <p><b data-text="Burg:">Burg:</b> <span id="infoBurg">n/a</span></p>
       </div>
 
       <div id="iconSelector" style="display: none" class="dialog">
         <div>
-          <b>Unicode emojis</b>
+          <b data-text="Unicode emojis">Unicode emojis</b>
           <div style="font-style: italic">
-            <span>Select from the list or paste a Unicode character here: </span>
-            <input id="iconInput" style="width: 2.5em" />
-            <span>. See <a href="https://emojidb.org" target="_blank">EmojiDB</a> to search for emojis</span>
+            <span data-text="Select from the list or paste a Unicode character here:">Select from the list or paste a Unicode character here:</span>
+            <input id="iconInput" style="width: 2.5em" />.&nbsp;
+            <span data-text="See {{emojidb, link(text: EmojiDB)}} to search for emojis" data-var-emojidb="https://emojidb.org">. See <a href="https://emojidb.org" target="_blank">EmojiDB</a> to search for emojis</span>
           </div>
           <table id="iconTable" class="table pointer" style="font-size: 2em; text-align: center; width: 100%"></table>
         </div>
 
         <div style="margin-top: 0.5em">
-          <b>External images</b>
+          <b data-text="External images">External images</b>
           <div style="font-style: italic">
-            <span>Paste link to the image here: </span>
+            <span data-text="Paste link to the image here:">Paste link to the image here: </span>
             <input id="imageInput" style="width: 20em" />
-            <button id="addImage" type="button">Add</button>
+            <button data-text="Add" id="addImage" type="button">Add</button>
           </div>
           <div id="addedIcons" class="pointer" style="display: flex; flex-wrap: wrap; max-width: 420px"></div>
         </div>
       </div>
 
       <div id="submapTool" style="display: none" class="dialog">
-        <p style="font-weight: bold">
+        <p data-text="This operation is destructive and irreversible. It will create a completely new map based on the current one. Don't forget to save the .map file to your machine first!" style="font-weight: bold">
           This operation is destructive and irreversible. It will create a completely new map based on the current one.
           Don't forget to save the .map file to your machine first!
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 0.5em">
           <div data-tip="Set points (cells) number of the submap" style="display: flex; gap: 1em">
-            <div>Points number</div>
+            <div data-text="Points number">Points number</div>
             <div>
               <input id="submapPointsInput" type="range" min="1" max="13" value="4" />
               <output id="submapPointsFormatted" style="color: #053305">10K</output>
@@ -5982,13 +6005,13 @@
 
           <div data-tip="Check to fit burg styles (icon and label size) to the submap scale">
             <input type="checkbox" class="checkbox" id="submapRescaleBurgStyles" checked />
-            <label for="submapRescaleBurgStyles" class="checkbox-label">Rescale burg styles</label>
+            <label for="submapRescaleBurgStyles" class="checkbox-label" data-text="Rescale burg styles">Rescale burg styles</label>
           </div>
         </div>
       </div>
 
       <div id="transformTool" style="display: none" class="dialog">
-        <div style="padding-top: 0.5em; width: 40em; font-weight: bold">
+        <div data-text="This operation is destructive and irreversible. It will create a completely new map based on the current one. Don't forget to save the .map file to your machine first!" style="padding-top: 0.5em; width: 40em; font-weight: bold">
           This operation is destructive and irreversible. It will create a completely new map based on the current one.
           Don't forget to save the .map file to your machine first!
         </div>
@@ -6004,36 +6027,36 @@
             align-items: center;
           "
         >
-          <div>Points number</div>
+          <div data-text="Points number">Points number</div>
           <div>
             <input id="transformPointsInput" type="range" min="1" max="13" value="4" />
             <output id="transformPointsFormatted" style="color: #053305">10K</output>
           </div>
 
-          <div>Shift</div>
+          <div data-text="Shift">Shift</div>
           <div>
             <label>X: <input id="transformShiftX" type="number" size="4" value="0" /></label>
             <label>Y: <input id="transformShiftY" type="number" size="4" value="0" /></label>
           </div>
 
-          <div>Rotate</div>
+          <div data-text="Rotate">Rotate</div>
           <div>
             <input id="transformAngleInput" type="range" min="0" max="359" value="0" />
             <output id="transformAngleOutput">0</output>°
           </div>
 
-          <div>Scale</div>
+          <div data-text="Scale">Scale</div>
           <div>
             <input id="transformScaleInput" type="range" min="-25" max="25" value="0" />
             <output id="transformScaleResult">1</output>x
           </div>
 
-          <div>Mirror</div>
+          <div data-text="Mirror">Mirror</div>
           <div style="display: flex; gap: 0.5em">
             <input type="checkbox" class="checkbox" id="transformMirrorH" />
-            <label for="transformMirrorH" class="checkbox-label">horizontally</label>
+            <label data-text="horizontally" for="transformMirrorH" class="checkbox-label">horizontally</label>
             <input type="checkbox" class="checkbox" id="transformMirrorV" />
-            <label for="transformMirrorV" class="checkbox-label">vertically</label>
+            <label data-text="vertically" for="transformMirrorV" class="checkbox-label">vertically</label>
           </div>
         </div>
 
@@ -6045,25 +6068,25 @@
       <div id="options3d" class="dialog stable" style="display: none">
         <div id="options3dMesh" style="display: none">
           <div data-tip="Set map rotation speed. Set to 0 is you want to toggle off the rotation">
-            <div>Rotation:</div>
+            <div data-text="Rotation:">Rotation:</div>
             <input id="options3dMeshRotationRange" type="range" min="0" max="10" step=".1" />
             <input id="options3dMeshRotationNumber" type="number" min="0" max="10" step=".1" style="width: 4em" />
           </div>
 
           <div data-tip="Set height scale">
-            <div>Height scale:</div>
+            <div data-text="Height scale:">Height scale:</div>
             <input id="options3dScaleRange" type="range" min="0" max="100" />
             <input id="options3dScaleNumber" type="number" min="0" max="1000" style="width: 4em" />
           </div>
 
           <div data-tip="Set scene lightness">
-            <div>Lightness:</div>
+            <div data-text="Lightness:">Lightness:</div>
             <input id="options3dLightnessRange" type="range" min="0" max="100" />
             <input id="options3dLightnessNumber" type="number" min="0" max="500" style="width: 4em" />
           </div>
 
           <div data-tip="Set mesh texture resolution">
-            <div>Texture resolution:</div>
+            <div data-text="Texture resolution:">Texture resolution:</div>
             <select id="options3dMeshSkinResolution" style="width: 10em">
               <option value="512">512x512px</option>
               <option value="1024">1024x1024px</option>
@@ -6074,7 +6097,7 @@
           </div>
 
           <div data-tip="Quick preset lighting for different times of day" style="margin-top: 0.4em">
-            <label>Time of day:</label>
+            <label data-text="Time of day:">Time of day:</label>
             <select id="options3dTimeOfDay" style="width: 10em; margin-bottom: 0.3em">
               <option value="custom" data-text="Custom">Custom</option>
               <option value="dawn" data-text="Dawn">Dawn</option>
@@ -6085,7 +6108,7 @@
           </div>
 
           <div data-tip="Set sun position (x, y) and color" style="margin-top: 0.4em">
-            <label>Sun position and color:</label>
+            <label data-text="Sun position and color:">Sun position and color:</label>
             <div style="display: flex; gap: 0.2em">
               <input id="options3dSunX" type="number" min="-2500" max="2500" step="100" style="width: 4.7em" />
               <input id="options3dSunY" type="number" min="0" max="5000" step="100" style="width: 4.7em" />
@@ -6095,12 +6118,12 @@
 
           <div data-tip="Toggle 3d labels" style="margin: 0.6em 0 0.3em -0.2em">
             <input id="options3dMeshLabels3d" class="checkbox" type="checkbox" />
-            <label for="options3dMeshLabels3d" class="checkbox-label"><i>Show 3D labels</i></label>
+            <label for="options3dMeshLabels3d" class="checkbox-label"><i data-text="Show 3D labels">Show 3D labels</i></label>
           </div>
 
           <div data-tip="Toggle sky mode" style="margin: 0.6em 0 0.3em -0.2em">
             <input id="options3dMeshSkyMode" class="checkbox" type="checkbox" />
-            <label for="options3dMeshSkyMode" class="checkbox-label"><i>Show sky and extend water</i></label>
+            <label for="options3dMeshSkyMode" class="checkbox-label"><i data-text="Show sky and extend water">Show sky and extend water</i></label>
           </div>
 
           <div
@@ -6108,24 +6131,24 @@
             style="margin: 0.6em 0 0.3em -0.2em"
           >
             <input id="options3dSubdivide" class="checkbox" type="checkbox" />
-            <label for="options3dSubdivide" class="checkbox-label"
-              ><i>Smooth geometry <small style="color: darkred">[slow]</small></i></label
-            >
+            <label for="options3dSubdivide" class="checkbox-label">
+              <i><span data-text="Smooth geometry">Smooth geometry</span>&nbsp;<small data-text="[slow]" style="color: darkred">[slow]</small></i>
+            </label>
           </div>
 
           <div data-tip="Toggle wireframe mode" style="margin: 0.6em 0 0.3em -0.2em">
             <input id="options3dMeshWireframeMode" class="checkbox" type="checkbox" />
-            <label for="options3dMeshWireframeMode" class="checkbox-label"><i>Show wireframe</i></label>
+            <label for="options3dMeshWireframeMode" class="checkbox-label"><i data-text="Show wireframe">Show wireframe</i></label>
           </div>
 
           <div data-tip="Set sky and water color" id="options3dColorSection" style="display: none">
-            <span>Sky:</span
+            <span data-text="Sky:">Sky:</span
             ><input
               id="options3dMeshSky"
               type="color"
               style="width: 4.4em; height: 1em; border: 0; padding: 0; margin: 0 0.2em"
             />
-            <span>Water:</span
+            <span data-text="Water:">Water:</span
             ><input
               id="options3dMeshWater"
               type="color"
@@ -6136,13 +6159,13 @@
 
         <div id="options3dGlobe" style="display: none">
           <div data-tip="Set globe rotation speed. Set to 0 is you want to toggle off the rotation">
-            <div>Rotation:</div>
+            <div data-text="Rotation:">Rotation:</div>
             <input id="options3dGlobeRotationRange" type="range" min="0" max="10" step=".1" />
             <input id="options3dGlobeRotationNumber" type="number" min="0" max="10" step=".1" style="width: 4em" />
           </div>
 
           <div data-tip="Set globe texture resolution">
-            <div>Texture resolution:</div>
+            <div data-text="Texture resolution:">Texture resolution:</div>
             <select id="options3dGlobeResolution" style="width: 5em">
               <option value="0.5">0.5x</option>
               <option value="1">1x</option>
@@ -6153,6 +6176,7 @@
           </div>
 
           <div
+            data-text="Equirectangular projection is used"
             data-tip="Equirectangular projection is used: distortion is maximum on poles. Use map with aspect ratio 2:1 for best result"
             style="font-style: italic; margin: 0.2em 0"
           >
@@ -6175,7 +6199,7 @@
       <div id="preview3d" class="dialog stable" style="display: none; padding: 0px"></div>
 
       <div id="exportMapData" style="display: none" class="dialog">
-        <div style="margin-bottom: 0.3em; font-weight: bold">Download image</div>
+        <div data-text="Download image" style="margin-bottom: 0.3em; font-weight: bold">Download image</div>
         <div>
           <button
             onclick="exportToSvg()"
@@ -6209,11 +6233,12 @@
               "
               checked=""
             />
-            <label for="showLabels" class="checkbox-label">Show all labels</label>
+            <label data-text="Show all labels" for="showLabels" class="checkbox-label">Show all labels</label>
           </span>
         </div>
 
         <div
+          data-text="PNG / JPEG scale:"
           data-tip="Define scale of a saved png/jpeg image (e.g. 5x). Saving big images is slow and may cause a browser crash!"
           style="margin-bottom: 0.3em"
         >
@@ -6230,36 +6255,36 @@
           <input id="pngResolutionOutput" data-stored="pngResolution" type="number" min="1" max="8" value="1" />
         </div>
 
-        <p>Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
+        <p data-text="Generator uses pop-up window to download files. Please ensure your browser does not block popups.">Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
 
-        <div style="margin: 1em 0 0.3em; font-weight: bold">Export to GeoJSON</div>
+        <div data-text="Export to GeoJSON" style="margin: 1em 0 0.3em; font-weight: bold">Export to GeoJSON</div>
         <div>
-          <button onclick="saveGeoJsonCells()" data-tip="Download cells data in GeoJSON format">cells</button>
-          <button onclick="saveGeoJsonRoutes()" data-tip="Download routes data in GeoJSON format">routes</button>
-          <button onclick="saveGeoJsonRivers()" data-tip="Download rivers data in GeoJSON format">rivers</button>
-          <button onclick="saveGeoJsonMarkers()" data-tip="Download markers data in GeoJSON format">markers</button>
-          <button onclick="saveGeoJsonZones()" data-tip="Download zones data in GeoJSON format">zones</button>
+          <button onclick="saveGeoJsonCells()" data-text="Cells" data-tip="Download cells data in GeoJSON format" style="text-transform: lowercase">cells</button>
+          <button onclick="saveGeoJsonRoutes()" data-text="Routes" data-tip="Download routes data in GeoJSON format" style="text-transform: lowercase">routes</button>
+          <button onclick="saveGeoJsonRivers()" data-text="Rivers" data-tip="Download rivers data in GeoJSON format" style="text-transform: lowercase">rivers</button>
+          <button onclick="saveGeoJsonMarkers()" data-text="Markers" data-tip="Download markers data in GeoJSON format" style="text-transform: lowercase">markers</button>
+          <button onclick="saveGeoJsonZones()" data-text="Zones" data-tip="Download zones data in GeoJSON format" style="text-transform: lowercase">zones</button>
         </div>
-        <p>
+        <p data-html="GeoJSON format is used in GIS tools such as QGIS. Check out {{wiki, link(text: wiki-page)}} for guidance." data-var-wiki="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export">
           GeoJSON format is used in GIS tools such as QGIS. Check out
           <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a>
           for guidance.
         </p>
 
-        <div style="margin: 1em 0 0.3em; font-weight: bold">Export To JSON</div>
+        <div data-text="Export to JSON" style="margin: 1em 0 0.3em; font-weight: bold">Export to JSON</div>
         <div>
-          <button onclick="exportToJson('Full')" data-tip="Download full data in JSON">full</button>
-          <button onclick="exportToJson('Minimal')" data-tip="Download minimal data in JSON">minimal</button>
-          <button onclick="exportToJson('PackCells')" data-tip="Download map metadata and pack cells data in JSON">
+          <button onclick="exportToJson('Full')" data-text="full" data-tip="Download full data in JSON">full</button>
+          <button onclick="exportToJson('Minimal')" data-text="minimal" data-tip="Download minimal data in JSON">minimal</button>
+          <button onclick="exportToJson('PackCells')" data-text="pack cells" data-tip="Download map metadata and pack cells data in JSON">
             pack cells
           </button>
-          <button onclick="exportToJson('GridCells')" data-tip="Download map metadata and grid cells data in JSON">
+          <button onclick="exportToJson('GridCells')" data-text="grid cells" data-tip="Download map metadata and grid cells data in JSON">
             grid cells
           </button>
         </div>
-        <p>Export in JSON format can be used as an API replacement.</p>
+        <p data-text="Export in JSON format can be used as an API replacement.">Export in JSON format can be used as an API replacement.</p>
 
-        <p>
+        <p data-html="It's also possible to export map to <i>Foundry VTT</i>, see {{module, link(text: the module)}}." data-var-module="https://github.com/Ethck/azgaar-foundry">
           It's also possible to export map to <i>Foundry VTT</i>, see
           <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a>
         </p>
@@ -6267,23 +6292,24 @@
 
       <div id="saveMapData" style="display: none" class="dialog">
         <div style="margin-top: 0.3em">
-          <strong>Save map to</strong>
+          <strong data-text="Save map to">Save map to</strong>
           <button
             onclick="saveMap('machine')"
+            data-text="machine"
             data-tip="Download map file to your local disk"
             data-shortcut="Ctrl + S"
             style="font-weight: 600"
           >
             machine
           </button>
-          <button onclick="saveMap('dropbox')" data-tip="Save map file to your Dropbox" data-shortcut="Ctrl + C">
+          <button onclick="saveMap('dropbox')" data-text="dropbox" data-tip="Save map file to your Dropbox" data-shortcut="Ctrl + C">
             dropbox
           </button>
-          <button onclick="saveMap('storage')" data-tip="Save the project to browser storage only" data-shortcut="F6">
+          <button onclick="saveMap('storage')" data-text="browser" data-tip="Save the project to browser storage only" data-shortcut="F6">
             browser
           </button>
         </div>
-        <p>
+        <p data-html="Maps are saved in <i>.map</i> format, that can be loaded back via the <i>Load</i> in menu. There is no way to restore the progress if file is lost. Please keep old save files on your machine or cloud storage as backups.">
           Maps are saved in <i>.map</i> format, that can be loaded back via the <i>Load</i> in menu. There is no way to
           restore the progress if file is lost. Please keep old save files on your machine or cloud storage as backups.
         </p>
@@ -6291,8 +6317,8 @@
 
       <div id="loadMapData" style="display: none" class="dialog">
         <div>
-          <strong>Load map from</strong>
-          <button onclick="mapToLoad.click()" data-tip="Load map file (.map or .gz) from your local disk">
+          <strong data-text="Load map from">Load map from</strong>
+          <button onclick="mapToLoad.click()" data-text="machine" data-tip="Load map file (.map or .gz) from your local disk">
             machine
           </button>
           <button
@@ -6301,17 +6327,18 @@
           >
             URL
           </button>
-          <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
+          <button onclick="quickLoad()" data-text="storage" data-tip="Load map from browser storage (if saved before)">storage</button>
         </div>
 
-        <p>Click on <i>storage</i> to open the last saved map.</p>
+        <p data-html="Click on <i>storage</i> to open the last saved map.">Click on <i>storage</i> to open the last saved map.</p>
 
         <div id="loadFromDropbox">
           <p style="margin-bottom: 0.3em">
-            Or load from your Dropbox account
+            <span data-text="Or load from your Dropbox account">Or load from your Dropbox account</span>
             <button
               id="dropboxConnectButton"
               onclick="connectToDropbox()"
+              data-text="Connect"
               data-tip="Connect your Dropbox account to be able to load maps from it"
             >
               Connect
@@ -6320,9 +6347,10 @@
 
           <select id="loadFromDropboxSelect" style="width: 22em"></select>
           <div id="loadFromDropboxButtons" style="margin-bottom: 0.6em">
-            <button onclick="loadFromDropbox()" data-tip="Load map file (.map or .gz) from your Dropbox">Load</button>
+            <button onclick="loadFromDropbox()" data-text="Load" data-tip="Load map file (.map or .gz) from your Dropbox">Load</button>
             <button
               onclick="createSharableDropboxLink()"
+              data-text="Share"
               data-tip="Select file and create a link to share with your friends"
             >
               Share
@@ -6339,9 +6367,9 @@
       </div>
 
       <div id="exportToPngTilesScreen" style="display: none" class="dialog">
-        <p>Map will be split into tiles and downloaded as a single zip file. Avoid saving too large images</p>
+        <p data-text="Map will be split into tiles and downloaded as a single zip file. Avoid saving too large images">Map will be split into tiles and downloaded as a single zip file. Avoid saving too large images</p>
         <div data-tip="Number of columns" style="margin-bottom: 0.3em">
-          <div class="label">Columns:</div>
+          <div data-text="Columns:" class="label">Columns:</div>
           <input
             id="tileColsInput"
             data-stored="tileCols"
@@ -6354,7 +6382,7 @@
           <input id="tileColsOutput" data-stored="tileCols" type="number" min="2" value="8" />
         </div>
         <div data-tip="Number of rows" style="margin-bottom: 0.3em">
-          <div class="label">Rows:</div>
+          <div data-text="Rows:" class="label">Rows:</div>
           <input
             id="tileRowsInput"
             data-stored="tileRows"
@@ -6367,7 +6395,7 @@
           <input id="tileRowsOutput" data-stored="tileRows" type="number" min="2" value="8" />
         </div>
         <div data-tip="Image scale relative to image size (e.g. 5x)" style="margin-bottom: 0.3em">
-          <div class="label">Scale:</div>
+          <div data-text="Scale:" class="label">Scale:</div>
           <input
             id="tileScaleInput"
             data-stored="tileScale"
@@ -6380,22 +6408,22 @@
           <input id="tileScaleOutput" data-stored="tileScale" type="number" min="1" value="1" />
         </div>
         <div data-tip="Calculated size of image if combined" style="margin-bottom: 0.3em">
-          <div class="label">Total size:</div>
+          <div data-text="Total size:" class="label">Total size:</div>
           <div id="tileSize" style="display: inline-block">1000 x 1000 px</div>
         </div>
         <div id="tileStatus" style="font-style: italic"></div>
       </div>
 
       <div id="alert" style="display: none" class="dialog">
-        <p id="alertMessage">Warning!</p>
+        <p data-text="Warning!" id="alertMessage">Warning!</p>
       </div>
 
       <div id="prompt" style="display: none" class="dialog">
         <form id="promptForm">
           <div id="promptText"></div>
           <input id="promptInput" type="number" step=".01" placeholder="type value" autocomplete="off" />
-          <button type="submit">Confirm</button>
-          <button type="button" id="promptCancel" formnovalidate>Cancel</button>
+          <button data-text="Confirm" type="submit">Confirm</button>
+          <button data-text="Cancel" type="button" id="promptCancel" formnovalidate>Cancel</button>
         </form>
       </div>
     </div>
@@ -6411,7 +6439,7 @@
       data-main="Сlick the arrow button for options. Zoom in to see the map in details"
     ></div>
 
-    <div id="mapOverlay" style="display: none">Drop a map file to open</div>
+    <div data-text="Drop a map file to open" id="mapOverlay" style="display: none">Drop a map file to open</div>
 
     <div id="fileInputs" style="display: none">
       <input type="file" accept=".map,.gz" id="mapToLoad" />

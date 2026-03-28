@@ -90,4 +90,5 @@ declare global {
   var changeFont: () => void;
   var getFriendlyHeight: (coords: [number, number]) => string;
   var initLocale: () => void;
+  var changeLocale: () => void;
 }

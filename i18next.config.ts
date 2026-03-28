@@ -8,7 +8,7 @@ const HTMLPlugin: Plugin = {
     const content = await readFile("src/index.html", "utf-8");
     const matches = content.matchAll(/data-(?:html|text|tip)="([^"]+)"/g);
     for (const match of matches) {
-      const key = match[1];
+      const key = match[1].replace(/&quot;/g, '"');
       keys.set(key, {key, defaultValue: key});
     }
   }
@@ -17,13 +17,15 @@ const HTMLPlugin: Plugin = {
 export default defineConfig({
   locales: [
     "en",
-    "fr"
+    "fr",
+    "zh"
   ],
   extract: {
     input: "src/**/*.{js,ts}",
     output: "public/locales/{{language}}/{{namespace}}.json",
     defaultNS: "lang",
-    keySeparator: false
+    keySeparator: "::",
+    nsSeparator: false,
   },
   plugins: [
     HTMLPlugin

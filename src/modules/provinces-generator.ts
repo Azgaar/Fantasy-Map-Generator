@@ -144,7 +144,7 @@ class ProvinceModule {
         form[formName] += 10;
         const fullName = i18next.t("{{provinceName}} {{provinceForm}}", {
           provinceName: name,
-          provinceForm: i18next.t(formName),
+          provinceForm: i18next.t(`provinceForm::${formName}`),
         });
         const color = getMixedColor(s.color!);
         const kinship = nameByBurg ? 0.8 : 0.4;
@@ -327,7 +327,7 @@ class ProvinceModule {
 
         const fullName = i18next.t("{{provinceName}} {{provinceForm}}", {
           provinceName: name,
-          provinceForm: i18next.t(formName),
+          provinceForm: i18next.t(`provinceForm::${formName}`),
         });
 
         const dominion = colony

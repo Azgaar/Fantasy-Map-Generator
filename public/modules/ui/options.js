@@ -523,8 +523,8 @@ function applyStoredOptions() {
 
   if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize"));
   if (stored("regions")) changeStatesNumber(stored("regions"));
-  if (stored("language")) changeLanguage(stored("language"));
-  else changeLanguage("en");
+  if (stored("language")) setLanguage(stored("language"));
+  else setLanguage("en");
 
   uiSize.max = uiSize.max = getUImaxSize();
   if (stored("uiSize")) changeUiSize(+stored("uiSize"));
@@ -659,8 +659,13 @@ function changeEra() {
   options.era = eraInput.value;
 }
 
-function changeLanguage(value) {
+function setLanguage(value) {
   options.language = value;
+}
+
+function changeLanguage(value) {
+  setLanguage(value);
+  changeLocale();
 }
 
 async function openTemplateSelectionDialog() {
