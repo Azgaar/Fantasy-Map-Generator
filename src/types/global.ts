@@ -91,4 +91,11 @@ declare global {
   var getFriendlyHeight: (coords: [number, number]) => string;
   var initLocale: () => void;
   var changeLocale: () => void;
+  var addLakesInDeepDepressions: () => void;
+  var openNearSeaLakes: () => void;
+  var calculateMapCoordinates: () => void;
+  var calculateTemperatures: () => void;
+  var reGraph: () => void;
+  var createDefaultRuler: () => void;
+  var showStatistics: () => void;
 }

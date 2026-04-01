@@ -1,3 +1,4 @@
+import type { Quadtree } from "d3";
 import type { Burg } from "../modules/burgs-generator";
 import type { Culture } from "../modules/cultures-generator";
 import type { PackedGraphFeature } from "../modules/features";
@@ -7,7 +8,7 @@ import type { Route } from "../modules/routes-generator";
 import type { State } from "../modules/states-generator";
 import type { Zone } from "../modules/zones-generator";
 
-type TypedArray =
+export type TypedArray =
   | Uint8Array
   | Uint16Array
   | Uint32Array
@@ -24,6 +25,7 @@ export interface PackedGraph {
     p: [number, number][]; // cell polygon points
     b: boolean[]; // cell is on border
     h: TypedArray; // cell heights
+    q: Quadtree<[number, number, number]>; // cell quadtree index
     /** Terrain type */
     t: TypedArray; // cell terrain types
     r: TypedArray; // river id passing through cell
@@ -34,12 +36,12 @@ export interface PackedGraph {
     conf: TypedArray; // cell water confidence
     haven: TypedArray; // cell is a haven
     g: number[]; // cell ground type
-    culture: number[]; // cell culture id
+    culture: TypedArray; // cell culture id
     biome: TypedArray; // cell biome id
     harbor: TypedArray; // cell harbour presence
     burg: TypedArray; // cell burg id
     religion: TypedArray; // cell religion id
-    state: number[]; // cell state id
+    state: TypedArray; // cell state id
     area: TypedArray; // cell area
     province: TypedArray; // cell province id
     routes: Record<number, Record<number, number>>;

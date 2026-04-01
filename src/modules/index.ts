@@ -19,3 +19,4 @@ import "./ice";
 import "./military-generator";
 import "./markers-generator";
 import "./fonts";
+import "./resample";
