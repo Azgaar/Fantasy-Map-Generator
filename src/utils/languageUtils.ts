@@ -232,7 +232,7 @@ export const getAdjective = (nounToBeAdjective: string) => {
       {
         name: "ie",
         probability: 1,
-        condition: /e$/,
+        condition: /ie$/,
         action: (noun: string) => `${noun}n`,
       },
       {

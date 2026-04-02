@@ -1,7 +1,6 @@
-import i18next from "i18next";
+import i18next, { type TOptions } from "i18next";
 import i18nextHTTPBackend from "i18next-http-backend";
 import { isVowel } from "../utils";
-import { TOptions } from "i18next";
 
 function initTooltips() {
   for (const tip of document.querySelectorAll("[data-tip]")) {
@@ -14,7 +13,7 @@ function initTooltips() {
 
 function updateLabels() {
   for (const label of document.querySelectorAll("[data-html]")) {
-    let vars: TOptions = {
+    const vars: TOptions = {
       interpolation: { escapeValue: false },
     };
     for (const attr of label.attributes) {
@@ -42,7 +41,7 @@ function updateLabels() {
 
 function addFormatters() {
   i18next.services.formatter?.add("link", (value, _lng, options) => {
-    return `<a href="${value}" target="blank">${options.text}</a>`;
+    return `<a href="${value}" target="_blank">${options.text}</a>`;
   });
   i18next.services.formatter?.add("gender", (value, lng, options) => {
     if (lng !== "fr") return value;
