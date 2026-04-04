@@ -16,6 +16,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:ja-tips": "node scripts/build-ja-tip-map.mjs",
     "preview": "vite preview",
     "test": "vitest",
     "test:browser": "vitest --config=vitest.browser.config.ts",

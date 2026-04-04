@@ -1,32 +1,32 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>Azgaar's Fantasy Map Generator</title>
-    <meta name="application-name" content="Azgaar's Fantasy Map Generator" />
+    <title>Azgaar 空想マップジェネレータ</title>
+    <meta name="application-name" content="Azgaar 空想マップジェネレータ" />
     <meta name="author" content="Azgaar" />
     <meta
       name="description"
-      content="Free web app that helps fantasy writers, game masters, and cartographers create and edit fantasy maps"
+      content="ファンタジー作家、ゲームマスター、地図制作者向けの無料Webアプリ。空想地図の作成と編集ができます。"
     />
     <meta property="og:url" content="https://azgaar.github.io/Fantasy-Map-Generator" />
 
-    <meta property="og:title" content="Azgaar's Fantasy Map Generator" />
+    <meta property="og:title" content="Azgaar 空想マップジェネレータ" />
     <meta
       property="og:description"
-      content="Free web app that helps fantasy writers, game masters, and cartographers create and edit fantasy maps"
+      content="ファンタジー作家、ゲームマスター、地図制作者向けの無料Webアプリ。空想地図の作成と編集ができます。"
     />
     <meta property="og:image" content="images/preview.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta property="twitter:domain" content="azgaar.github.io" />
     <meta property="twitter:url" content="https://azgaar.github.io/Fantasy-Map-Generator/" />
-    <meta name="twitter:title" content="Azgaar's Fantasy Map Generator" />
+    <meta name="twitter:title" content="Azgaar 空想マップジェネレータ" />
     <meta
       name="twitter:description"
-      content="Free web app that helps fantasy writers, game masters, and cartographers create and edit fantasy maps"
+      content="ファンタジー作家、ゲームマスター、地図制作者向けの無料Webアプリ。空想地図の作成と編集ができます。"
     />
     <meta name="twitter:image" content="images/preview.png" />
 
@@ -413,17 +413,20 @@
       </div>
     </div>
 
+    <!-- Side panel trigger button (visible when panel is closed) -->
+    <button
+      id="optionsTrigger"
+      data-tip="Open panel (Tab)"
+      data-shortcut="Tab"
+      class="options glow"
+      onclick="showOptions(event)"
+    >
+      ☰
+    </button>
+
     <div id="optionsContainer" style="opacity: 0">
-      <div id="collapsible">
-        <button
-          id="optionsTrigger"
-          data-tip="Click to show the Menu"
-          data-shortcut="Tab"
-          class="options glow"
-          onclick="showOptions(event)"
-        >
-          ►
-        </button>
+      <!-- Legacy collapsible kept for JS compat but hidden when panel is open -->
+      <div id="collapsible" style="display:none">
         <button
           id="regenerate"
           data-tip="Click to generate a new map"
@@ -436,27 +439,34 @@
         </button>
       </div>
 
-      <div id="options" style="display: none">
-        <div class="drag-trigger" data-tip="Drag to move the Menu"></div>
-
-        <div class="tab">
-          <button
-            id="optionsHide"
-            data-tip="Click to hide the Menu"
-            data-shortcut="Tab or Esc"
-            class="options"
-            onclick="hideOptions(event)"
-          >
-            ◄
-          </button>
-          <button id="layersTab" data-tip="Click to change map layers" class="options active">Layers</button>
-          <button id="styleTab" data-tip="Click to open style editor" class="options">Style</button>
-          <button id="optionsTab" data-tip="Click to change generation and UI options" class="options">Options</button>
-          <button id="toolsTab" data-tip="Click to open tools menu" class="options">Tools</button>
-          <button id="aboutTab" data-tip="Click to see Generator info" class="options">About</button>
+      <!-- Side panel header -->
+      <div id="sidePanelHeader">
+        <span class="panel-title">Fantasy Map</span>
+        <div style="display:flex; gap:var(--space-2); align-items:center">
+          <button data-tip="Generate new map (F2)" onclick="regeneratePrompt()">⟳</button>
+          <button id="optionsHide" data-tip="Close panel (Tab)" onclick="hideOptions(event)">✕</button>
         </div>
+      </div>
 
-        <div id="layersContent" class="tabcontent" style="display: block">
+      <div id="options" style="display:none">
+        <div class="tab" style="display:none">
+          <button id="layersTab" class="options active">Layers</button>
+          <button id="styleTab" class="options">Style</button>
+          <button id="optionsTab" class="options">Options</button>
+          <button id="toolsTab" class="options">Tools</button>
+          <button id="aboutTab" class="options">About</button>
+        </div>
+      </div>
+
+      <nav class="accordion-nav" id="accordionNav">
+        <div class="accordion-section open" data-tab="layersTab">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span class="acc-icon">◉</span>
+            <span class="acc-label">Layers</span>
+            <span class="acc-chevron">▶</span>
+          </button>
+          <div class="accordion-body">
+            <div id="layersContent" class="tabcontent" style="display: block">
           <p data-tip="Select a map layers preset" style="display: inline-block">Layers preset:</p>
           <select
             data-tip="Select a map layers preset"
@@ -740,9 +750,18 @@
             </button>
             <button data-tip="Project map on globe. Cannot be used for editing" id="viewGlobe">Globe</button>
           </div>
+            </div>
+          </div>
         </div>
 
-        <div id="styleContent" class="tabcontent">
+        <div class="accordion-section" data-tab="styleTab">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span class="acc-icon">◑</span>
+            <span class="acc-label">Style</span>
+            <span class="acc-chevron">▶</span>
+          </button>
+          <div class="accordion-body">
+            <div id="styleContent" class="tabcontent">
           <p
             data-tip="Select a style preset. State labels may required regeneration if font is changed"
             style="display: inline-block"
@@ -1581,9 +1600,18 @@
             <button id="dingy" class="radio">Dingy</button>
             <button id="tint" class="radio">Tint</button>
           </div>
+            </div>
+          </div>
         </div>
 
-        <div id="optionsContent" class="tabcontent">
+        <div class="accordion-section" data-tab="optionsTab">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span class="acc-icon">⚙</span>
+            <span class="acc-label">Options</span>
+            <span class="acc-chevron">▶</span>
+          </button>
+          <div class="accordion-body">
+            <div id="optionsContent" class="tabcontent">
           <p data-tip="Map generation settings. Generate a new map to apply the settings">
             Map settings (new map to apply):
           </p>
@@ -1852,9 +1880,21 @@
               </td>
             </tr>
 
+            <tr data-tip="Switch between light, dark, and system theme">
+              <td></td>
+              <td>Theme mode</td>
+              <td colspan="2">
+                <div class="theme-toggle" id="themeToggle">
+                  <button data-theme-value="light" data-tip="Light mode" class="active">☀</button>
+                  <button data-theme-value="dark" data-tip="Dark mode">☾</button>
+                  <button data-theme-value="auto" data-tip="Match system">⚙</button>
+                </div>
+              </td>
+            </tr>
+
             <tr data-tip="Set theme hue for dialogs and tool windows">
               <td>
-                <i data-tip="Restore default theme color: pale magenta" id="themeColorRestore" class="icon-ccw"></i>
+                <i data-tip="Restore default theme color" id="themeColorRestore" class="icon-ccw"></i>
               </td>
               <td>Theme color</td>
               <td>
@@ -2092,9 +2132,18 @@
               Reset to defaults
             </button>
           </div>
+            </div>
+          </div>
         </div>
 
-        <div id="toolsContent" class="tabcontent">
+        <div class="accordion-section" data-tab="toolsTab">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span class="acc-icon">✦</span>
+            <span class="acc-label">Tools</span>
+            <span class="acc-chevron">▶</span>
+          </button>
+          <div class="accordion-body">
+            <div id="toolsContent" class="tabcontent">
           <div class="separator">Edit</div>
           <div class="grid">
             <button id="editBiomesButton" data-tip="Click to open Biomes Editor" data-shortcut="Shift + B">
@@ -2349,9 +2398,18 @@
             <span>Cell: </span><span id="heightmapInfoCell"></span><br />
             <span>Height: </span><span id="heightmapInfoHeight"></span>
           </div>
+            </div>
+          </div>
         </div>
 
-        <div id="aboutContent" class="tabcontent">
+        <div class="accordion-section" data-tab="aboutTab">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span class="acc-icon">ℹ</span>
+            <span class="acc-label">About</span>
+            <span class="acc-chevron">▶</span>
+          </button>
+          <div class="accordion-body">
+            <div id="aboutContent" class="tabcontent">
           <p>
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank"
@@ -2483,15 +2541,17 @@
               /></a>
             </li>
           </ul>
+            </div>
+          </div>
         </div>
+      </nav>
 
-        <div id="sticked">
-          <button id="newMapButton" data-tip="Generate a new map based on options" data-shortcut="F2">New Map</button>
-          <button id="exportButton" data-tip="Select format to download image or export map data">Export</button>
-          <button id="saveButton" data-tip="Save fully-functional map file">Save</button>
-          <button id="loadButton" data-tip="Load fully-functional map (.map or .gz formats)">Load</button>
-          <button id="zoomReset" data-tip="Reset map zoom" data-shortcut="0 (zero)">Reset Zoom</button>
-        </div>
+      <div id="sticked">
+        <button id="newMapButton" data-tip="Generate a new map based on options" data-shortcut="F2">New Map</button>
+        <button id="exportButton" data-tip="Select format to download image or export map data">Export</button>
+        <button id="saveButton" data-tip="Save fully-functional map file">Save</button>
+        <button id="loadButton" data-tip="Load fully-functional map (.map or .gz formats)">Load</button>
+        <button id="zoomReset" data-tip="Reset map zoom" data-shortcut="0 (zero)">Reset Zoom</button>
       </div>
     </div>
 
@@ -2501,6 +2561,37 @@
           Exit Customization
         </button>
       </div>
+    </div>
+
+    <!-- Floating Toolbar -->
+    <div id="floatingToolbar">
+      <button id="ftAddLabel" data-tip="Add label" onclick="toggleAddLabel()">A</button>
+      <button id="ftAddBurg" data-tip="Add burg" onclick="toggleAddBurg()">⌂</button>
+      <button id="ftAddRiver" data-tip="Add river" onclick="toggleAddRiver()">〜</button>
+      <button id="ftAddRoute" data-tip="Create route" onclick="createRoute()">⟿</button>
+      <button id="ftAddMarker" data-tip="Add marker" onclick="toggleAddMarker()">⚑</button>
+      <div class="toolbar-sep"></div>
+      <button id="ftEditHeightmap" data-tip="Edit heightmap" onclick="editHeightmap()">▲</button>
+    </div>
+
+    <!-- Command Palette -->
+    <div id="commandPalette">
+      <div id="commandPaletteBackdrop"></div>
+      <div id="commandPaletteBox">
+        <input id="commandPaletteInput" type="text" placeholder="Search tools, layers, and actions..." autocomplete="off" />
+        <div id="commandPaletteResults"></div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div id="statusBar" style="display: none">
+      <span class="status-item" id="statusZoom">Zoom: 1.0×</span>
+      <span class="status-separator"></span>
+      <span class="status-item" id="statusCoords"></span>
+      <span class="status-separator"></span>
+      <span class="status-item" id="statusMode">View</span>
+      <span style="flex:1"></span>
+      <span class="status-item" id="statusSeed"></span>
     </div>
 
     <div id="dialogs">
@@ -8545,6 +8636,8 @@
     <script defer src="modules/ui/layers.js?v=1.111.0"></script>
     <script defer src="modules/ui/measurers.js?v=1.99.00"></script>
     <script defer src="modules/ui/style-presets.js?v=1.100.00"></script>
+    <script defer src="lang/ja-tip-map.js"></script>
+    <script defer src="lang/ja-ui.js"></script>
     <script defer src="modules/ui/general.js?v=1.113.1"></script>
     <script defer src="modules/ui/options.js?v=1.113.5"></script>
     <script defer src="main.js?v=1.111.0"></script>
@@ -8552,6 +8645,7 @@
     <script defer src="modules/ui/style.js?v=1.108.4"></script>
     <script defer src="modules/ui/editors.js?v=1.112.1"></script>
     <script defer src="modules/ui/tools.js?v=1.113.3"></script>
+    <script defer src="modules/ui/command-palette.js?v=1.0.0"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.105.4"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=1.113.0"></script>
     <script defer src="modules/ui/provinces-editor.js?v=1.108.1"></script>
@@ -8596,5 +8690,6 @@
     <script defer src="modules/io/load.js?v=1.113.0"></script>
     <script defer src="modules/io/cloud.js?v=1.114.0"></script>
     <script defer src="modules/io/export.js?v=1.112.2"></script>
+    <script defer src="lang/ja-ui-trigger.js"></script>
   </body>
 </html>

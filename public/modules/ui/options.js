@@ -1,7 +1,8 @@
 // UI module to control the options (preferences)
 "use strict";
 
-$("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
+// Side panel — no longer draggable (fixed left panel)
+// $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#exitCustomization").draggable({handle: "div"});
 $("#mapLayers").disableSelection();
 
@@ -11,7 +12,7 @@ if (stored("disable_click_arrow_tooltip")) {
   optionsTrigger.classList.remove("glow");
 }
 
-// Show options pane on trigger click
+// Show options as side panel
 function showOptions(event) {
   if (!stored("disable_click_arrow_tooltip")) {
     clearMainTip();
@@ -19,66 +20,70 @@ function showOptions(event) {
     optionsTrigger.classList.remove("glow");
   }
 
-  regenerate.style.display = "none";
-  byId("options").style.display = "block";
+  const container = byId("optionsContainer");
+  container.classList.add("open");
   optionsTrigger.style.display = "none";
 
   if (event) event.stopPropagation();
 }
 
-// Hide options pane on trigger click
+// Hide options side panel
 function hideOptions(event) {
-  byId("options").style.display = "none";
+  const container = byId("optionsContainer");
+  container.classList.remove("open");
   optionsTrigger.style.display = "block";
   if (event) event.stopPropagation();
 }
 
-// To toggle options on hotkey press
+// Toggle options on hotkey press
 function toggleOptions(event) {
-  if (byId("options").style.display === "none") showOptions(event);
+  const container = byId("optionsContainer");
+  if (!container.classList.contains("open")) showOptions(event);
   else hideOptions(event);
 }
 
-// Toggle "New Map!" pane on hover
-optionsTrigger.addEventListener("mouseenter", function () {
-  if (optionsTrigger.classList.contains("glow")) return;
-  if (byId("options").style.display === "none") regenerate.style.display = "block";
-});
+// "New Map!" button is now in the side panel header (⟳ button)
 
-collapsible.addEventListener("mouseleave", function () {
-  regenerate.style.display = "none";
-});
+// Accordion navigation — toggle sections
+function toggleAccordion(trigger) {
+  const section = trigger.closest(".accordion-section");
+  if (!section) return;
 
-// Activate options tab on click
-document
-  .getElementById("options")
-  .querySelector("div.tab")
-  .addEventListener("click", function (event) {
+  const wasOpen = section.classList.contains("open");
+
+  // If it's already open, close it
+  if (wasOpen) {
+    section.classList.remove("open");
+    return;
+  }
+
+  // Open this section
+  section.classList.add("open");
+
+  // Trigger legacy tab activation for JS compatibility
+  const tabId = section.dataset.tab;
+  if (tabId === "styleTab") selectStyleElement();
+
+  // Scroll to the opened section
+  requestAnimationFrame(() => {
+    section.scrollIntoView({behavior: "smooth", block: "nearest"});
+  });
+}
+
+// Legacy tab click handler — kept for programmatic tab switching
+const tabEl = document.getElementById("options")?.querySelector("div.tab");
+if (tabEl) {
+  tabEl.addEventListener("click", function (event) {
     if (event.target.tagName !== "BUTTON") return;
     const id = event.target.id;
-    const active = byId("options").querySelector(".tab > button.active");
-    if (active && id === active.id) return; // already active tab is clicked
 
-    if (active) active.classList.remove("active");
-    byId(id).classList.add("active");
-    document
-      .getElementById("options")
-      .querySelectorAll(".tabcontent")
-      .forEach(e => (e.style.display = "none"));
-
-    if (id === "layersTab") {
-      layersContent.style.display = "block";
-    } else if (id === "styleTab") {
-      styleContent.style.display = "block";
-      selectStyleElement();
-    } else if (id === "optionsTab") {
-      optionsContent.style.display = "block";
-    } else if (id === "toolsTab") {
-      customization === 1 ? (customizationMenu.style.display = "block") : (toolsContent.style.display = "block");
-    } else if (id === "aboutTab") {
-      aboutContent.style.display = "block";
+    // Also open corresponding accordion section
+    const section = document.querySelector(`.accordion-section[data-tab="${id}"]`);
+    if (section && !section.classList.contains("open")) {
+      section.classList.add("open");
     }
   });
+}
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
@@ -415,7 +420,8 @@ function changeTooltipSize(value) {
   tooltip.style.fontSize = `calc(${value}px + 0.5vw)`;
 }
 
-const THEME_COLOR = "#997787";
+/** Default accent (slate) — shadcn-adjacent neutral; user theme in localStorage overrides */
+const THEME_COLOR = "#64748b";
 function restoreDefaultThemeColor() {
   localStorage.removeItem("themeColor");
   changeDialogsTheme(THEME_COLOR, transparencyInput.value);
@@ -442,6 +448,9 @@ function changeDialogsTheme(themeColor, transparency) {
     return color.toString();
   };
 
+  const borderS = Math.min(Math.max(s * 0.12, 0.04), 0.14);
+  const borderL = Math.min(Math.max(l + 0.22, 0.86), 0.94);
+
   const theme = [
     {name: "--bg-opacity", value: alpha},
     {name: "--bg-main", h, s, l, alpha},
@@ -452,7 +461,8 @@ function changeDialogsTheme(themeColor, transparency) {
     {name: "--header", h, s: s, l: l - 0.03, alpha: alphaReduced},
     {name: "--header-active", h, s: s, l: l - 0.09, alpha: alphaReduced},
     {name: "--bg-disabled", h, s: s - 0.04, l: l + 0.09, alphaReduced},
-    {name: "--bg-dialogs", h: 0, s: 0, l: 0.98, alpha}
+    {name: "--bg-dialogs", h: 0, s: 0, l: 0.98, alpha},
+    {name: "--border-ui", h, s: borderS, l: borderL, alpha: 1}
   ];
 
   const sx = document.documentElement.style;
@@ -460,6 +470,43 @@ function changeDialogsTheme(themeColor, transparency) {
     if (value !== undefined) sx.setProperty(name, value);
     else sx.setProperty(name, getRGBA(h, s, l, alpha));
   });
+}
+
+// Theme mode (light/dark/auto) management
+function setThemeMode(mode) {
+  const html = document.documentElement;
+  if (mode === "auto") {
+    html.removeAttribute("data-theme");
+  } else {
+    html.setAttribute("data-theme", mode);
+  }
+  localStorage.setItem("themeMode", mode);
+  updateThemeToggleUI(mode);
+  showFloatingToolbar();
+  showStatusBar();
+}
+
+function restoreThemeMode() {
+  const saved = localStorage.getItem("themeMode") || "light";
+  setThemeMode(saved);
+}
+
+function updateThemeToggleUI(mode) {
+  const toggle = byId("themeToggle");
+  if (!toggle) return;
+  toggle.querySelectorAll("button").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.themeValue === mode);
+  });
+}
+
+function showFloatingToolbar() {
+  const toolbar = byId("floatingToolbar");
+  if (toolbar) toolbar.classList.add("visible");
+}
+
+function showStatusBar() {
+  const bar = byId("statusBar");
+  if (bar) bar.style.display = "flex";
 }
 
 function loadGoogleTranslate() {
@@ -482,8 +529,9 @@ function loadGoogleTranslate() {
 }
 
 function initGoogleTranslate() {
+  const pageLanguage = window.FMG_LANG === "ja" ? "ja" : "en";
   new google.translate.TranslateElement(
-    {pageLanguage: "en", layout: google.translate.TranslateElement.InlineLayout.VERTICAL},
+    {pageLanguage, layout: google.translate.TranslateElement.InlineLayout.VERTICAL},
     "google_translate_element"
   );
 }
@@ -577,6 +625,18 @@ function applyStoredOptions() {
   const transparency = stored("transparency") || 5;
   const themeColor = stored("themeColor");
   changeDialogsTheme(themeColor, transparency);
+
+  // Restore theme mode (light/dark/auto)
+  restoreThemeMode();
+
+  // Theme toggle event delegation
+  const themeToggle = byId("themeToggle");
+  if (themeToggle) {
+    themeToggle.addEventListener("click", e => {
+      const btn = e.target.closest("button[data-theme-value]");
+      if (btn) setThemeMode(btn.dataset.themeValue);
+    });
+  }
 
   setRendering(shapeRendering.value);
   options.stateLabelsMode = stateLabelsModeInput.value;
