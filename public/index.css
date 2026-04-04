@@ -1,7 +1,14 @@
 :root {
-  --monospace: Consolas, monospace;
-  --serif: Georgia, serif;
-  --sans-serif: Helvetica, Arial, sans-serif;
+  /* shadcn-adjacent tokens (vanilla CSS; theme hues come from options.js) */
+  --radius: 0.5rem;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --muted-foreground: hsl(240 3.8% 40%);
+  --border-ui: hsl(240 5.9% 90%);
+  --monospace: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --serif: Georgia, "Times New Roman", serif;
+  --sans-serif: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 }
 
 /* hide Google translate header */
@@ -33,9 +40,10 @@ button {
 input,
 select,
 textarea {
-  border: 0.5px solid #dbdfe6;
-  border-radius: 0.5px;
+  border: 1px solid var(--border-ui);
+  border-radius: calc(var(--radius) - 2px);
   box-sizing: border-box;
+  background-color: #fff;
 }
 
 select {
@@ -103,6 +111,11 @@ select,
 a,
 textarea {
   outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--header, #64748b);
+  outline-offset: 2px;
 }
 
 button,
@@ -338,6 +351,7 @@ text.drag {
 
 #dialogs {
   background-color: var(--bg-dialogs);
+  color: hsl(240 10% 4%);
 }
 
 .draggable {
@@ -345,10 +359,11 @@ text.drag {
 }
 
 .ui-widget-header {
-  border-bottom: 1px solid var(--dark-solid);
+  border-bottom: 1px solid color-mix(in srgb, var(--header) 70%, black);
   background: var(--header);
-  color: #ffffff;
-  font-weight: bold;
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 button.ui-button:disabled {
@@ -365,7 +380,9 @@ button.ui-button:disabled:hover {
 }
 
 #optionsTrigger {
-  padding: 0.6em 0.45em;
+  padding: 0.55em 0.5em;
+  border-radius: calc(var(--radius) - 2px);
+  box-shadow: var(--shadow-sm);
 }
 
 @media (max-width: 600px) {
@@ -374,23 +391,26 @@ button.ui-button:disabled:hover {
     padding: 0;
     width: 1.3em;
     height: 1.6em;
-    border: solid 1px #5e4fa2;
+    border: solid 1px var(--border-ui);
   }
 }
 
 #options {
   position: absolute;
-  font-family: var(--monospace);
-  border: solid 1px #5e4fa2;
+  font-family: var(--sans-serif);
+  border: 1px solid var(--border-ui);
+  border-radius: var(--radius);
   margin: 10px;
-  padding-bottom: 0.3em;
+  padding-bottom: 0.4em;
   background: var(--bg-light);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
 }
 
 #options input,
 #options select,
 #options button {
-  font-family: var(--monospace);
+  font-family: var(--sans-serif);
 }
 
 #collapsible {
@@ -415,22 +435,44 @@ div.tab > button#optionsHide {
   padding: 0.6em 0.45em;
 }
 
-button.options {
-  width: 100%;
-  background-color: var(--bg-main);
-  font-weight: bold;
-  border: none;
-  transition: 0.2s;
+#collapsible button.options {
+  width: auto;
+  min-width: 2.4em;
+  background-color: var(--bg-light);
+  color: hsl(240 10% 8%);
+  font-weight: 600;
+  border: 1px solid var(--border-ui);
+  border-radius: calc(var(--radius) - 2px);
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: var(--shadow-sm);
 }
 
-button.active {
-  background-color: var(--header);
-  color: white;
-}
-
-button.options:hover {
+#collapsible button.options:hover {
   background-color: var(--header-active);
-  color: white;
+  color: #fff;
+  border-color: color-mix(in srgb, var(--header) 60%, var(--border-ui));
+}
+
+#options .tab button.options {
+  width: 100%;
+  background-color: transparent;
+  color: var(--muted-foreground);
+  font-weight: 600;
+  border: none;
+  border-radius: calc(var(--radius) - 4px) calc(var(--radius) - 4px) 0 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  box-shadow: none;
+}
+
+#options .tab button.active {
+  background-color: var(--header);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+#options .tab button.options:hover {
+  background-color: var(--header-active);
+  color: #fff;
 }
 
 #options p {
@@ -440,9 +482,9 @@ button.options:hover {
 }
 
 #options .tip {
-  color: #444;
+  color: var(--muted-foreground);
   font-size: 0.9em;
-  font-family: sans-serif;
+  font-family: var(--sans-serif);
   font-style: italic;
   margin-left: 0.5em;
 }
@@ -585,36 +627,38 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 
 #options input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  border-radius: 15%;
-  width: 0.91em;
-  height: 0.91em;
-  background: var(--light-solid);
-  border: 1px solid var(--dark-solid);
+  border-radius: 9999px;
+  width: 1em;
+  height: 1em;
+  background: #fff;
+  border: 2px solid var(--header);
   cursor: pointer;
-  margin-top: -0.4em;
-  box-shadow: 0.5px 0.5px 0px var(--dark-solid);
+  margin-top: -0.35em;
+  box-shadow: var(--shadow-sm);
 }
 
 #options input[type="range"]::-moz-range-thumb {
   -moz-appearance: none;
-  border-radius: 15%;
-  width: 0.73em;
-  height: 0.73em;
-  background: var(--light-solid);
-  border: 1px solid var(--dark-solid);
+  border-radius: 9999px;
+  width: 1em;
+  height: 1em;
+  background: #fff;
+  border: 2px solid var(--header);
   cursor: pointer;
-  box-shadow: 0.5px 0.5px 0px var(--dark-solid);
+  box-shadow: var(--shadow-sm);
 }
 
 #options input[type="range"]::-webkit-slider-runnable-track {
-  height: 2px;
-  background: #ffffff;
+  height: 6px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--border-ui) 85%, var(--bg-main));
 }
 
 #options input[type="range"]::-moz-range-track {
   -moz-appearance: none;
-  background-color: #ffffff;
-  height: 2px;
+  background-color: color-mix(in srgb, var(--border-ui) 85%, var(--bg-main));
+  height: 6px;
+  border-radius: 9999px;
 }
 
 #options select {
@@ -703,28 +747,35 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 
 .tabcontent {
   display: none;
-  padding: 0 12px 2px 12px;
-  opacity: 0.9;
+  padding: 0.65rem 12px 0.5rem 12px;
+  opacity: 1;
 }
 
 .tabcontent button {
   background-color: var(--bg-lighter);
-  border: none;
+  border: 1px solid var(--border-ui);
+  border-radius: calc(var(--radius) - 2px);
   padding: 0.45em 0.75em;
   margin: 0.35em 0;
-  transition: 0.1s;
+  transition: background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
 }
 
 .tabcontent button.pressed {
   background-color: var(--header);
+  color: #fff;
+  border-color: color-mix(in srgb, var(--header) 80%, black);
   font-style: italic;
 }
 
 .tabcontent button:hover {
   background-color: var(--header-active);
+  color: #fff;
+  border-color: color-mix(in srgb, var(--header-active) 75%, var(--border-ui));
 }
 
 #toolsContent > .grid {
@@ -782,11 +833,8 @@ fieldset {
 }
 
 .tabcontent li:hover {
-  box-shadow: 0 0 2px 2px var(--dark-solid) 17;
-}
-
-.tabcontent button:hover {
-  background-color: var(--header);
+  box-shadow: var(--shadow-sm);
+  border-radius: calc(var(--radius) - 4px);
 }
 
 #optionsContainer span {
@@ -800,16 +848,24 @@ fieldset {
 #tooltip {
   position: fixed;
   text-align: center;
-  bottom: 0.5vw;
-  width: 70%;
-  left: 15%;
+  bottom: 0.75rem;
+  width: min(42rem, 92vw);
+  left: 50%;
+  transform: translateX(-50%);
   cursor: default;
-  text-shadow: 1px 1px 2px #1d0e0f;
-  color: #ffffff;
-  font-size: calc(12px + 0.5vw);
+  text-shadow: none;
+  color: hsl(0 0% 98%);
+  font-size: calc(11px + 0.35vw);
+  font-weight: 500;
   white-space: pre-line;
   z-index: 99999;
-  background: linear-gradient(0.1turn, #ffffff00, #c71d1d66, #ffffff00);
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid hsl(240 4% 26% / 0.5);
+  background: hsl(240 10% 6% / 0.92);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 #optionsContent table {
@@ -1252,8 +1308,9 @@ i.resetButton:active {
 
 .ui-dialog input[type="range"] {
   padding: 0;
-  height: 2px;
-  background: #d4d4d4;
+  height: 6px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--border-ui, #e4e4e7) 88%, #fafafa);
   position: relative;
   appearance: none;
   -webkit-appearance: none;
@@ -1261,22 +1318,24 @@ i.resetButton:active {
 
 .ui-dialog input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  border-radius: 15%;
+  border-radius: 9999px;
   width: 1em;
   height: 1em;
-  background: #e9e9e9;
-  border: 1px solid #9b9b9b;
+  background: #fff;
+  border: 2px solid var(--header, #64748b);
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 
 .ui-dialog input[type="range"]::-moz-range-thumb {
   appearance: none;
-  border-radius: 15%;
+  border-radius: 9999px;
   width: 1em;
   height: 1em;
-  background: #e9e9e9;
-  border: 1px solid #9b9b9b;
+  background: #fff;
+  border: 2px solid var(--header, #64748b);
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 
 .ui-dialog input[type="number"] {
@@ -1310,9 +1369,12 @@ div.slider .ui-slider-handle {
   position: absolute;
   left: 29%;
   top: 100%;
-  border: 1px solid #5e4fa2;
-  background-color: #a4879b;
+  border: 1px solid var(--border-ui);
+  background-color: var(--bg-light);
   width: 5em;
+  border-radius: calc(var(--radius) - 2px);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
 }
 
 #loadDropdown {
@@ -1320,20 +1382,25 @@ div.slider .ui-slider-handle {
   position: absolute;
   left: 53%;
   top: 100%;
-  border: 1px solid #5e4fa2;
-  background-color: #a4879b;
+  border: 1px solid var(--border-ui);
+  background-color: var(--bg-light);
   width: 9em;
+  border-radius: calc(var(--radius) - 2px);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
 }
 
 #loadDropdown > div,
 #saveDropdown > div {
-  padding: 2px 4px;
+  padding: 0.35em 0.5em;
   cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
 }
 
 #loadDropdown > div:hover,
 #saveDropdown > div:hover {
-  color: white;
+  background-color: var(--header);
+  color: #fff;
 }
 
 #rescaleHigher,
@@ -2014,9 +2081,11 @@ div.textual span,
   right: 1vw;
   top: 1vw;
   font-size: 1.2em;
-  border: 1px solid #5e4fa2;
-  background: rgba(255, 250, 228, 0.7);
-  box-shadow: 2px 2px 5px -3px #3a2804;
+  border: 1px solid var(--border-ui);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-dialogs) 92%, white);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
 }
 
 @media screen and (max-width: 600px) {
@@ -2026,10 +2095,11 @@ div.textual span,
 }
 
 #notesHeader {
-  font-weight: bold;
+  font-weight: 600;
   font-size: 1.3em;
   padding: 16px 0 4px 12px;
-  border-bottom: 1px solid #5e4fa2;
+  border-bottom: 1px solid var(--border-ui);
+  background: color-mix(in srgb, var(--bg-main) 40%, transparent);
 }
 
 #notesBody {
@@ -2424,6 +2494,18 @@ svg.button {
   .drag-trigger {
     display: none;
   }
+}
+
+/* jQuery UI dialogs — card-style chrome (shadcn-like) */
+.ui-dialog {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  font-family: var(--sans-serif);
+}
+
+.ui-dialog .ui-dialog-titlebar {
+  padding: 0.6em 0.9em;
 }
 
 @media (prefers-color-scheme: dark) {

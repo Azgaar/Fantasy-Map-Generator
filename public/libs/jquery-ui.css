@@ -438,8 +438,8 @@ body .ui-dialog {
   padding: 1px 6px;
 }
 .ui-widget.ui-widget-content {
-  border: 1px solid #5e4fa2;
-  color: #333333;
+  border: 1px solid var(--border-ui, #e4e4e7);
+  color: #18181b;
 }
 .ui-widget-content {
   border: 1px solid #dddddd;
@@ -496,7 +496,7 @@ a.ui-button:focus {
 }
 
 .ui-visual-focus {
-  box-shadow: 0 0 3px 1px rgb(94, 158, 214);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--header, #64748b) 40%, transparent);
 }
 
 /* Interaction Cues

@@ -415,7 +415,8 @@ function changeTooltipSize(value) {
   tooltip.style.fontSize = `calc(${value}px + 0.5vw)`;
 }
 
-const THEME_COLOR = "#997787";
+/** Default accent (slate) — shadcn-adjacent neutral; user theme in localStorage overrides */
+const THEME_COLOR = "#64748b";
 function restoreDefaultThemeColor() {
   localStorage.removeItem("themeColor");
   changeDialogsTheme(THEME_COLOR, transparencyInput.value);
@@ -442,6 +443,9 @@ function changeDialogsTheme(themeColor, transparency) {
     return color.toString();
   };
 
+  const borderS = Math.min(Math.max(s * 0.12, 0.04), 0.14);
+  const borderL = Math.min(Math.max(l + 0.22, 0.86), 0.94);
+
   const theme = [
     {name: "--bg-opacity", value: alpha},
     {name: "--bg-main", h, s, l, alpha},
@@ -452,7 +456,8 @@ function changeDialogsTheme(themeColor, transparency) {
     {name: "--header", h, s: s, l: l - 0.03, alpha: alphaReduced},
     {name: "--header-active", h, s: s, l: l - 0.09, alpha: alphaReduced},
     {name: "--bg-disabled", h, s: s - 0.04, l: l + 0.09, alphaReduced},
-    {name: "--bg-dialogs", h: 0, s: 0, l: 0.98, alpha}
+    {name: "--bg-dialogs", h: 0, s: 0, l: 0.98, alpha},
+    {name: "--border-ui", h, s: borderS, l: borderL, alpha: 1}
   ];
 
   const sx = document.documentElement.style;
