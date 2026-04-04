@@ -43,38 +43,47 @@ function toggleOptions(event) {
 }
 
 // "New Map!" button is now in the side panel header (⟳ button)
-// Legacy hover behavior removed — collapsible is hidden
 
-// Activate options tab on click
-document
-  .getElementById("options")
-  .querySelector("div.tab")
-  .addEventListener("click", function (event) {
+// Accordion navigation — toggle sections
+function toggleAccordion(trigger) {
+  const section = trigger.closest(".accordion-section");
+  if (!section) return;
+
+  const wasOpen = section.classList.contains("open");
+
+  // If it's already open, close it
+  if (wasOpen) {
+    section.classList.remove("open");
+    return;
+  }
+
+  // Open this section
+  section.classList.add("open");
+
+  // Trigger legacy tab activation for JS compatibility
+  const tabId = section.dataset.tab;
+  if (tabId === "styleTab") selectStyleElement();
+
+  // Scroll to the opened section
+  requestAnimationFrame(() => {
+    section.scrollIntoView({behavior: "smooth", block: "nearest"});
+  });
+}
+
+// Legacy tab click handler — kept for programmatic tab switching
+const tabEl = document.getElementById("options")?.querySelector("div.tab");
+if (tabEl) {
+  tabEl.addEventListener("click", function (event) {
     if (event.target.tagName !== "BUTTON") return;
     const id = event.target.id;
-    const active = byId("options").querySelector(".tab > button.active");
-    if (active && id === active.id) return; // already active tab is clicked
 
-    if (active) active.classList.remove("active");
-    byId(id).classList.add("active");
-    document
-      .getElementById("options")
-      .querySelectorAll(".tabcontent")
-      .forEach(e => (e.style.display = "none"));
-
-    if (id === "layersTab") {
-      layersContent.style.display = "block";
-    } else if (id === "styleTab") {
-      styleContent.style.display = "block";
-      selectStyleElement();
-    } else if (id === "optionsTab") {
-      optionsContent.style.display = "block";
-    } else if (id === "toolsTab") {
-      customization === 1 ? (customizationMenu.style.display = "block") : (toolsContent.style.display = "block");
-    } else if (id === "aboutTab") {
-      aboutContent.style.display = "block";
+    // Also open corresponding accordion section
+    const section = document.querySelector(`.accordion-section[data-tab="${id}"]`);
+    if (section && !section.classList.contains("open")) {
+      section.classList.add("open");
     }
   });
+}
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
