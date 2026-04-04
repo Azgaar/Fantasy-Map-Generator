@@ -8,7 +8,7 @@ function handleKeydown(event) {
 
   const {code, ctrlKey, altKey} = event;
   if (altKey && !ctrlKey) event.preventDefault(); // disallow alt key combinations
-  if (ctrlKey && ["KeyS", "KeyC"].includes(code)) event.preventDefault(); // disallow CTRL + S and CTRL + C
+  if (ctrlKey && ["KeyS", "KeyC", "KeyK"].includes(code)) event.preventDefault(); // disallow CTRL + S, CTRL + C, CTRL + K
   if (["F1", "F2", "F6", "F9", "Tab"].includes(code)) event.preventDefault(); // disallow default Fn and Tab
 }
 
@@ -31,6 +31,7 @@ function handleKeyup(event) {
   else if (code === "Delete") removeElementOnKey();
   else if (code === "KeyO" && byId("canvas3d")) toggle3dOptions();
   else if (ctrl && code === "KeyQ") toggleSaveReminder();
+  else if (ctrl && code === "KeyK") toggleCommandPalette();
   else if (ctrl && code === "KeyS") saveMap("machine");
   else if (ctrl && code === "KeyC") saveMap("dropbox");
   else if (ctrl && code === "KeyZ" && undo?.offsetParent) undo.click();

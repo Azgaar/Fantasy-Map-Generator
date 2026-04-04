@@ -467,6 +467,43 @@ function changeDialogsTheme(themeColor, transparency) {
   });
 }
 
+// Theme mode (light/dark/auto) management
+function setThemeMode(mode) {
+  const html = document.documentElement;
+  if (mode === "auto") {
+    html.removeAttribute("data-theme");
+  } else {
+    html.setAttribute("data-theme", mode);
+  }
+  localStorage.setItem("themeMode", mode);
+  updateThemeToggleUI(mode);
+  showFloatingToolbar();
+  showStatusBar();
+}
+
+function restoreThemeMode() {
+  const saved = localStorage.getItem("themeMode") || "light";
+  setThemeMode(saved);
+}
+
+function updateThemeToggleUI(mode) {
+  const toggle = byId("themeToggle");
+  if (!toggle) return;
+  toggle.querySelectorAll("button").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.themeValue === mode);
+  });
+}
+
+function showFloatingToolbar() {
+  const toolbar = byId("floatingToolbar");
+  if (toolbar) toolbar.classList.add("visible");
+}
+
+function showStatusBar() {
+  const bar = byId("statusBar");
+  if (bar) bar.style.display = "flex";
+}
+
 function loadGoogleTranslate() {
   const script = document.createElement("script");
   script.src = "https://translate.google.com/translate_a/element.js?cb=initGoogleTranslate";
@@ -583,6 +620,18 @@ function applyStoredOptions() {
   const transparency = stored("transparency") || 5;
   const themeColor = stored("themeColor");
   changeDialogsTheme(themeColor, transparency);
+
+  // Restore theme mode (light/dark/auto)
+  restoreThemeMode();
+
+  // Theme toggle event delegation
+  const themeToggle = byId("themeToggle");
+  if (themeToggle) {
+    themeToggle.addEventListener("click", e => {
+      const btn = e.target.closest("button[data-theme-value]");
+      if (btn) setThemeMode(btn.dataset.themeValue);
+    });
+  }
 
   setRendering(shapeRendering.value);
   options.stateLabelsMode = stateLabelsModeInput.value;

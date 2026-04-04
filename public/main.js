@@ -247,6 +247,14 @@ function hideLoading() {
   d3.select("#loading").transition().duration(3000).style("opacity", 0);
   d3.select("#optionsContainer").transition().duration(2000).style("opacity", 1);
   d3.select("#tooltip").transition().duration(3000).style("opacity", 1);
+
+  // show floating toolbar and status bar
+  const ft = byId("floatingToolbar");
+  if (ft) ft.classList.add("visible");
+  const sb = byId("statusBar");
+  if (sb) sb.style.display = "flex";
+  const seedEl = byId("statusSeed");
+  if (seedEl && typeof seed !== "undefined") seedEl.textContent = `Seed: ${seed}`;
 }
 
 function showLoading() {
@@ -458,6 +466,10 @@ function handleZoom(isScaleChanged, isPositionChanged) {
     drawScaleBar(scaleBar, scale);
     fitScaleBar(scaleBar, svgWidth, svgHeight);
   }
+
+  // update status bar zoom
+  const zoomEl = byId("statusZoom");
+  if (zoomEl) zoomEl.textContent = `Zoom: ${rn(scale, 1)}×`;
 
   // zoom image converter overlay
   if (customization === 1) {

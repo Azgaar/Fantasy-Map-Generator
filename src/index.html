@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -1852,9 +1852,21 @@
               </td>
             </tr>
 
+            <tr data-tip="Switch between light, dark, and system theme">
+              <td></td>
+              <td>Theme mode</td>
+              <td colspan="2">
+                <div class="theme-toggle" id="themeToggle">
+                  <button data-theme-value="light" data-tip="Light mode" class="active">☀</button>
+                  <button data-theme-value="dark" data-tip="Dark mode">☾</button>
+                  <button data-theme-value="auto" data-tip="Match system">⚙</button>
+                </div>
+              </td>
+            </tr>
+
             <tr data-tip="Set theme hue for dialogs and tool windows">
               <td>
-                <i data-tip="Restore default theme color: pale magenta" id="themeColorRestore" class="icon-ccw"></i>
+                <i data-tip="Restore default theme color" id="themeColorRestore" class="icon-ccw"></i>
               </td>
               <td>Theme color</td>
               <td>
@@ -2501,6 +2513,37 @@
           Exit Customization
         </button>
       </div>
+    </div>
+
+    <!-- Floating Toolbar -->
+    <div id="floatingToolbar">
+      <button id="ftAddLabel" data-tip="Add label" onclick="toggleAddLabel()">A</button>
+      <button id="ftAddBurg" data-tip="Add burg" onclick="toggleAddBurg()">⌂</button>
+      <button id="ftAddRiver" data-tip="Add river" onclick="toggleAddRiver()">〜</button>
+      <button id="ftAddRoute" data-tip="Create route" onclick="createRoute()">⟿</button>
+      <button id="ftAddMarker" data-tip="Add marker" onclick="toggleAddMarker()">⚑</button>
+      <div class="toolbar-sep"></div>
+      <button id="ftEditHeightmap" data-tip="Edit heightmap" onclick="editHeightmap()">▲</button>
+    </div>
+
+    <!-- Command Palette -->
+    <div id="commandPalette">
+      <div id="commandPaletteBackdrop"></div>
+      <div id="commandPaletteBox">
+        <input id="commandPaletteInput" type="text" placeholder="Search tools, layers, and actions..." autocomplete="off" />
+        <div id="commandPaletteResults"></div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div id="statusBar" style="display: none">
+      <span class="status-item" id="statusZoom">Zoom: 1.0×</span>
+      <span class="status-separator"></span>
+      <span class="status-item" id="statusCoords"></span>
+      <span class="status-separator"></span>
+      <span class="status-item" id="statusMode">View</span>
+      <span style="flex:1"></span>
+      <span class="status-item" id="statusSeed"></span>
     </div>
 
     <div id="dialogs">
@@ -8554,6 +8597,7 @@
     <script defer src="modules/ui/style.js?v=1.108.4"></script>
     <script defer src="modules/ui/editors.js?v=1.112.1"></script>
     <script defer src="modules/ui/tools.js?v=1.113.3"></script>
+    <script defer src="modules/ui/command-palette.js?v=1.0.0"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.105.4"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=1.113.0"></script>
     <script defer src="modules/ui/provinces-editor.js?v=1.108.1"></script>
