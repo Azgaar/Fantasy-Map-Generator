@@ -487,8 +487,9 @@ function loadGoogleTranslate() {
 }
 
 function initGoogleTranslate() {
+  const pageLanguage = window.FMG_LANG === "ja" ? "ja" : "en";
   new google.translate.TranslateElement(
-    {pageLanguage: "en", layout: google.translate.TranslateElement.InlineLayout.VERTICAL},
+    {pageLanguage, layout: google.translate.TranslateElement.InlineLayout.VERTICAL},
     "google_translate_element"
   );
 }

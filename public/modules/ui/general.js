@@ -9,7 +9,8 @@ window.addEventListener("resize", function (e) {
 });
 
 if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
-  window.onbeforeunload = () => "Are you sure you want to navigate away?";
+  window.onbeforeunload = () =>
+    window.FMG_LANG === "ja" ? "このページを離れますか？未保存の変更は失われることがあります。" : "Are you sure you want to navigate away?";
 }
 
 // Tooltips
@@ -58,7 +59,10 @@ function showDataTip(event) {
   if (!dataTip) return;
 
   const shortcut = event.target.dataset.shortcut;
-  if (shortcut && !MOBILE) dataTip += `. Shortcut: ${shortcut}`;
+  if (shortcut && !MOBILE) {
+    const lab = window.FMG_LANG === "ja" ? "ショートカット" : "Shortcut";
+    dataTip += `. ${lab}: ${shortcut}`;
+  }
 
   //const tooltip = lang === "en" ? dataTip : translate(e.target.dataset.t || e.target.parentNode.dataset.t, dataTip);
   tip(dataTip);
@@ -66,6 +70,14 @@ function showDataTip(event) {
 
 function showElementLockTip(event) {
   const locked = event?.target?.classList?.contains("icon-lock");
+  if (window.FMG_LANG === "ja") {
+    if (locked) {
+      tip("ロック中。クリックで解除し、再生成ツールで変更できるようにします");
+    } else {
+      tip("解除中。クリックでロックし、再生成での変更を防ぎます");
+    }
+    return;
+  }
   if (locked) {
     tip("Locked. Click to unlock the element and allow it to be changed by regeneration tools");
   } else {
