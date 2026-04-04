@@ -1,7 +1,8 @@
 // UI module to control the options (preferences)
 "use strict";
 
-$("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
+// Side panel — no longer draggable (fixed left panel)
+// $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
 $("#exitCustomization").draggable({handle: "div"});
 $("#mapLayers").disableSelection();
 
@@ -11,7 +12,7 @@ if (stored("disable_click_arrow_tooltip")) {
   optionsTrigger.classList.remove("glow");
 }
 
-// Show options pane on trigger click
+// Show options as side panel
 function showOptions(event) {
   if (!stored("disable_click_arrow_tooltip")) {
     clearMainTip();
@@ -19,35 +20,30 @@ function showOptions(event) {
     optionsTrigger.classList.remove("glow");
   }
 
-  regenerate.style.display = "none";
-  byId("options").style.display = "block";
+  const container = byId("optionsContainer");
+  container.classList.add("open");
   optionsTrigger.style.display = "none";
 
   if (event) event.stopPropagation();
 }
 
-// Hide options pane on trigger click
+// Hide options side panel
 function hideOptions(event) {
-  byId("options").style.display = "none";
+  const container = byId("optionsContainer");
+  container.classList.remove("open");
   optionsTrigger.style.display = "block";
   if (event) event.stopPropagation();
 }
 
-// To toggle options on hotkey press
+// Toggle options on hotkey press
 function toggleOptions(event) {
-  if (byId("options").style.display === "none") showOptions(event);
+  const container = byId("optionsContainer");
+  if (!container.classList.contains("open")) showOptions(event);
   else hideOptions(event);
 }
 
-// Toggle "New Map!" pane on hover
-optionsTrigger.addEventListener("mouseenter", function () {
-  if (optionsTrigger.classList.contains("glow")) return;
-  if (byId("options").style.display === "none") regenerate.style.display = "block";
-});
-
-collapsible.addEventListener("mouseleave", function () {
-  regenerate.style.display = "none";
-});
+// "New Map!" button is now in the side panel header (⟳ button)
+// Legacy hover behavior removed — collapsible is hidden
 
 // Activate options tab on click
 document

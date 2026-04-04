@@ -558,47 +558,114 @@ button.ui-button:disabled:hover {
   user-select: none;
 }
 
+/* ── Side panel layout ── */
+#optionsContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 310px;
+  z-index: 20;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-right: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform var(--transition-slow);
+  overflow: hidden;
+}
+
+#optionsContainer.open {
+  transform: translateX(0);
+}
+
 #optionsTrigger {
-  padding: 0.55em 0.5em;
+  position: fixed;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: 19;
+  padding: 0.5em 0.6em;
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   color: var(--color-text-primary);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  font-size: var(--text-lg);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast),
+    opacity var(--transition-fast);
 }
 
 #optionsTrigger:hover {
-  transform: scale(1.04);
-  box-shadow: var(--shadow-md);
+  transform: scale(1.06);
+  box-shadow: var(--shadow-lg);
+}
+
+#optionsContainer.open ~ #collapsible #optionsTrigger,
+#optionsContainer.open + #optionsTrigger {
+  opacity: 0;
+  pointer-events: none;
 }
 
 @media (max-width: 600px) {
+  #optionsContainer {
+    width: 100%;
+  }
   #optionsTrigger {
-    font-size: 2em;
-    padding: 0;
-    width: 1.3em;
-    height: 1.6em;
-    border: solid 1px var(--border-ui);
+    font-size: 1.6em;
+    padding: 0.3em 0.4em;
   }
 }
 
+/* Side panel header */
+#sidePanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+  flex-shrink: 0;
+}
+
+#sidePanelHeader .panel-title {
+  font-weight: 700;
+  font-size: var(--text-lg);
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+#sidePanelHeader button {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-lg);
+  transition: all var(--transition-fast);
+  line-height: 1;
+}
+
+#sidePanelHeader button:hover {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+}
+
 #options {
-  position: absolute;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
   font-family: var(--sans-serif);
   font-size: var(--text-base);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  margin: 10px;
   padding-bottom: 0.4em;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
   color: var(--color-text-primary);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
 }
 
 #options input,
@@ -614,6 +681,11 @@ button.ui-button:disabled:hover {
   z-index: 2;
   display: grid;
   grid-template-columns: 2fr 7fr;
+}
+
+/* Hide #collapsible when side panel is used — it's replaced by #sidePanelHeader */
+#optionsContainer.open #collapsible {
+  display: none;
 }
 
 .tab {
@@ -2821,26 +2893,27 @@ svg.button {
   transform: scale(0.97);
 }
 
-/* ── Floating toolbar ── */
+/* ── Floating toolbar — top center, horizontal ── */
 #floatingToolbar {
   position: fixed;
-  left: var(--space-3);
-  top: 50%;
-  transform: translateY(-50%);
+  top: var(--space-3);
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 10;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: var(--space-1);
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-2) var(--space-1);
+  border-radius: var(--radius-full);
+  padding: var(--space-1) var(--space-3);
   box-shadow: var(--shadow-lg);
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--transition-normal);
+  transition: opacity var(--transition-normal), transform var(--transition-normal);
 }
 
 #floatingToolbar.visible {
@@ -2849,13 +2922,13 @@ svg.button {
 }
 
 #floatingToolbar button {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -2874,10 +2947,10 @@ svg.button {
 }
 
 #floatingToolbar .toolbar-sep {
-  width: 24px;
-  height: 1px;
+  width: 1px;
+  height: 20px;
   background: var(--color-border-subtle);
-  margin: var(--space-1) auto;
+  margin: 0 var(--space-1);
 }
 
 /* ── Command palette ── */

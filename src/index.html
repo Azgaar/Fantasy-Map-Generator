@@ -413,17 +413,20 @@
       </div>
     </div>
 
+    <!-- Side panel trigger button (visible when panel is closed) -->
+    <button
+      id="optionsTrigger"
+      data-tip="Open panel (Tab)"
+      data-shortcut="Tab"
+      class="options glow"
+      onclick="showOptions(event)"
+    >
+      ☰
+    </button>
+
     <div id="optionsContainer" style="opacity: 0">
-      <div id="collapsible">
-        <button
-          id="optionsTrigger"
-          data-tip="Click to show the Menu"
-          data-shortcut="Tab"
-          class="options glow"
-          onclick="showOptions(event)"
-        >
-          ►
-        </button>
+      <!-- Legacy collapsible kept for JS compat but hidden when panel is open -->
+      <div id="collapsible" style="display:none">
         <button
           id="regenerate"
           data-tip="Click to generate a new map"
@@ -436,19 +439,17 @@
         </button>
       </div>
 
-      <div id="options" style="display: none">
-        <div class="drag-trigger" data-tip="Drag to move the Menu"></div>
+      <!-- Side panel header -->
+      <div id="sidePanelHeader">
+        <span class="panel-title">Fantasy Map</span>
+        <div style="display:flex; gap:var(--space-2); align-items:center">
+          <button data-tip="Generate new map (F2)" onclick="regeneratePrompt()">⟳</button>
+          <button id="optionsHide" data-tip="Close panel (Tab)" onclick="hideOptions(event)">✕</button>
+        </div>
+      </div>
 
+      <div id="options">
         <div class="tab">
-          <button
-            id="optionsHide"
-            data-tip="Click to hide the Menu"
-            data-shortcut="Tab or Esc"
-            class="options"
-            onclick="hideOptions(event)"
-          >
-            ◄
-          </button>
           <button id="layersTab" data-tip="Click to change map layers" class="options active">Layers</button>
           <button id="styleTab" data-tip="Click to open style editor" class="options">Style</button>
           <button id="optionsTab" data-tip="Click to change generation and UI options" class="options">Options</button>
