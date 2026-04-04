@@ -13,48 +13,6 @@ import {
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
-/**
- * Deeply clones an object, omitting properties that cannot be cloned with structuredClone.
- * D3 quadtrees store accessor functions that fail structuredClone, so they're excluded.
- */
-const safeDeepClone = <T>(obj: T): T => {
-  if (obj === null || typeof obj !== "object") {
-    return obj;
-  }
-
-  // Handle typed arrays - slice() creates a copy with a new underlying buffer
-  if (ArrayBuffer.isView(obj) && !(obj instanceof DataView)) {
-    return (obj as any).slice() as T;
-  }
-
-  // Handle arrays
-  if (Array.isArray(obj)) {
-    return obj.map((item) => safeDeepClone(item)) as T;
-  }
-
-  // Handle objects - skip quadtree (has functions) and other non-clonable properties
-  const cloned: Record<string, unknown> = {};
-  for (const key in obj) {
-    if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
-
-    const value = (obj as Record<string, unknown>)[key];
-
-    // Skip quadtree properties (D3 quadtrees have _x and _y functions)
-    if (value && typeof value === "object" && "_x" in (value as object)) {
-      continue;
-    }
-
-    // Skip functions
-    if (typeof value === "function") {
-      continue;
-    }
-
-    cloned[key] = safeDeepClone(value);
-  }
-
-  return cloned as T;
-};
-
 declare global {
   var Resample: Resampler;
 }
@@ -537,9 +495,9 @@ class Resampler {
   process(options: ResamplerProcessOptions): void {
     const { projection, inverse, scale } = options;
     const parentMap = {
-      grid: safeDeepClone(grid),
-      pack: safeDeepClone(pack),
-      notes: safeDeepClone(notes),
+      grid: structuredClone(grid),
+      pack: structuredClone(pack),
+      notes: structuredClone(notes),
     };
     const riversData = this.saveRiversData(pack.rivers);
 
