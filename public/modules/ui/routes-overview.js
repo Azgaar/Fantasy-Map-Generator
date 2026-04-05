@@ -171,16 +171,30 @@ function overviewRoutes() {
   }
 
   function triggerAllRoutesRemove() {
-    alertMessage.innerHTML = /* html */ `Are you sure you want to remove all routes? This action can't be undone`;
+    const toRemove = pack.routes.filter(route => !route.lock);
+    if (!toRemove.length) {
+      if (!pack.routes.length) {
+        tip("There are no routes to remove", false, "error");
+      } else {
+        tip("All routes are locked. Unlock routes to remove them, or use Lock all to unlock first.", false, "error");
+      }
+      return;
+    }
+
+    const lockedCount = pack.routes.length - toRemove.length;
+    alertMessage.innerHTML =
+      lockedCount > 0
+        ? /* html */ `Remove all <b>unlocked</b> routes (${toRemove.length})? <b>${lockedCount}</b> locked route(s) will be kept. This cannot be undone.`
+        : /* html */ `Are you sure you want to remove all routes? This action can't be undone`;
+
     $("#alert").dialog({
       resizable: false,
-      title: "Remove all routes",
+      title: lockedCount > 0 ? "Remove unlocked routes" : "Remove all routes",
       buttons: {
         Remove: function () {
-          pack.cells.routes = {};
-          pack.routes = [];
-          routes.selectAll("path").remove();
-
+          for (const route of [...toRemove]) {
+            Routes.remove(route);
+          }
           routesOverviewAddLines();
           $(this).dialog("close");
         },
