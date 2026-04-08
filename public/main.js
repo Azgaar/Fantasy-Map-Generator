@@ -186,9 +186,9 @@ function zoomRaf() {
   viewX = x;
   viewY = y;
 
-  // Avoids possible state mixup where a more recent call of
-  // zoomRaf() could update these flags before earlier RAF
-  // calls had time to run.
+  // Coalesce multiple zoom events into one paint.
+  // While a RAF is pending, keep updating latest transform state and OR-change flags.
+  // The scheduled RAF consumes these accumulated flags and then resets them.
   pendingScaleChange = pendingScaleChange || isScaleChanged;
   pendingPositionChange = pendingPositionChange || isPositionChanged;
 
@@ -494,34 +494,6 @@ function findBurgForMFCG(params) {
   zoomTo(b.x, b.y, 8, 1600);
   invokeActiveZooming();
   tip("Here stands the glorious city of " + b.name, true, "success", 15000);
-}
-
-function handleZoom(isScaleChanged, isPositionChanged) {
-  viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
-
-  if (isPositionChanged) {
-    if (layerIsOn("toggleCoordinates")) drawCoordinates();
-  }
-
-  if (isScaleChanged) {
-    invokeActiveZooming();
-    drawScaleBar(scaleBar, scale);
-    fitScaleBar(scaleBar, svgWidth, svgHeight);
-  }
-
-  // zoom image converter overlay
-  if (customization === 1) {
-    const canvas = byId("canvas");
-    if (!canvas || canvas.style.opacity === "0") return;
-
-    const img = byId("imageToConvert");
-    if (!img) return;
-
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  }
 }
 
 // Zoom to a specific point
