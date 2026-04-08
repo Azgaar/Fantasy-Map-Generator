@@ -1,3 +1,4 @@
+import i18next from "i18next";
 import { capitalize, isVowel, last, P, ra, rand } from "../utils";
 
 declare global {
@@ -263,7 +264,7 @@ class NamesGenerator {
     } else if (P(0.4)) return name; // 60% for cc and vc
 
     // define suffix
-    let suffix = "ia"; // standard suffix
+    let suffix = i18next.t("ia"); // standard suffix
 
     const rnd = Math.random(),
       l = name.length;

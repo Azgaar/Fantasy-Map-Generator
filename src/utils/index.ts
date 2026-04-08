@@ -9,6 +9,7 @@ window.lerp = lerp as typeof window.lerp;
 
 import {
   abbreviate,
+  gender,
   getAdjective,
   isVowel,
   list,
@@ -297,6 +298,7 @@ export {
   findGridCell,
   findPath,
   gauss,
+  gender,
   generateDate,
   generateGrid,
   generateSeed,

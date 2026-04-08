@@ -1,5 +1,6 @@
 import Alea from "alea";
 import { max } from "d3";
+import i18next from "i18next";
 import {
   byId,
   gauss,
@@ -141,7 +142,10 @@ class ProvinceModule {
           : Names.getState(Names.getCultureShort(c), c);
         const formName = rw(form);
         form[formName] += 10;
-        const fullName = `${name} ${formName}`;
+        const fullName = i18next.t("{{provinceName}} {{provinceForm}}", {
+          provinceName: name,
+          provinceForm: i18next.t(`provinceForm::${formName}`),
+        });
         const color = getMixedColor(s.color!);
         const kinship = nameByBurg ? 0.8 : 0.4;
         const type = Burgs.getType(center, burg.port);
@@ -321,7 +325,10 @@ class ProvinceModule {
           return rw(this.forms["Wild"]);
         })();
 
-        const fullName = `${name} ${formName}`;
+        const fullName = i18next.t("{{provinceName}} {{provinceForm}}", {
+          provinceName: name,
+          provinceForm: i18next.t(`provinceForm::${formName}`),
+        });
 
         const dominion = colony
           ? P(0.95)

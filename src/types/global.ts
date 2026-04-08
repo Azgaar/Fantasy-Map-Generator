@@ -89,6 +89,8 @@ declare global {
   var scale: number;
   var changeFont: () => void;
   var getFriendlyHeight: (coords: [number, number]) => string;
+  var initLocale: () => void;
+  var changeLocale: () => void;
   var addLakesInDeepDepressions: () => void;
   var openNearSeaLakes: () => void;
   var calculateMapCoordinates: () => void;
