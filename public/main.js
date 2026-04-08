@@ -172,7 +172,10 @@ let scale = 1;
 let viewX = 0;
 let viewY = 0;
 
-const onZoom = debounce(function () {
+let rafId = null;
+let pendingScaleChange = false;
+let pendingPositionChange = false;
+function zoomRaf() {
   const {k, x, y} = d3.event.transform;
 
   const isScaleChanged = Boolean(scale - k);
@@ -183,9 +186,56 @@ const onZoom = debounce(function () {
   viewX = x;
   viewY = y;
 
-  handleZoom(isScaleChanged, isPositionChanged);
+  // Avoids possible state mixup where a more recent call of
+  // zoomRaf() could update these flags before earlier RAF
+  // calls had time to run.
+  pendingScaleChange = pendingScaleChange || isScaleChanged;
+  pendingPositionChange = pendingPositionChange || isPositionChanged;
+
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = null;
+
+    // Safely clears these flags for future renders
+    const didScaleChange = pendingScaleChange;
+    const didPositionChange = pendingPositionChange;
+    pendingScaleChange = false;
+    pendingPositionChange = false;
+
+    // Uses global values, so each frame always draws using the latest positioning values
+    viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
+
+    if (didPositionChange) {
+      if (layerIsOn("toggleCoordinates")) drawCoordinates();
+    }
+
+    if (customization === 1) {
+      const canvas = byId("canvas");
+      if (canvas && canvas.style.opacity !== "0") {
+        const img = byId("imageToConvert");
+        if (img) {
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+      }
+    }
+
+    if (didScaleChange) {
+      postZoom();
+    }
+  })
+}
+
+const postZoom = debounce(() => {
+  invokeActiveZooming();
+  drawScaleBar(scaleBar, scale);
+  fitScaleBar(scaleBar, svgWidth, svgHeight);
 }, 50);
-const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoom);
+
+
+const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomRaf);
 
 var mapCoordinates = {}; // map coordinates on globe
 let populationRate = +byId("populationRateInput").value;
