@@ -172,7 +172,10 @@ let scale = 1;
 let viewX = 0;
 let viewY = 0;
 
-const onZoom = debounce(function () {
+let rafId = null;
+let pendingScaleChange = false;
+let pendingPositionChange = false;
+function zoomRaf() {
   const {k, x, y} = d3.event.transform;
 
   const isScaleChanged = Boolean(scale - k);
@@ -183,9 +186,55 @@ const onZoom = debounce(function () {
   viewX = x;
   viewY = y;
 
-  handleZoom(isScaleChanged, isPositionChanged);
-}, 50);
-const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoom);
+  // Coalesce multiple zoom events into one paint.
+  // While a RAF is pending, keep updating latest transform state and OR-change flags.
+  // The scheduled RAF consumes these accumulated flags and then resets them.
+  pendingScaleChange = pendingScaleChange || isScaleChanged;
+  pendingPositionChange = pendingPositionChange || isPositionChanged;
+
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = null;
+
+    // Safely clears these flags for future renders
+    const didScaleChange = pendingScaleChange;
+    const didPositionChange = pendingPositionChange;
+    pendingScaleChange = false;
+    pendingPositionChange = false;
+
+    // Uses global values, so each frame always draws using the latest positioning values
+    viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
+
+    if (didPositionChange) {
+      if (layerIsOn("toggleCoordinates")) drawCoordinates();
+    }
+
+    if (customization === 1) {
+      const canvas = byId("canvas");
+      if (canvas && canvas.style.opacity !== "0") {
+        const img = byId("imageToConvert");
+        if (img) {
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+      }
+    }
+
+    if (didScaleChange) {
+      postZoom();
+    }
+  })
+}
+
+const postZoom = () => {
+  invokeActiveZooming();
+  drawScaleBar(scaleBar, scale);
+  fitScaleBar(scaleBar, svgWidth, svgHeight);
+}
+
+const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomRaf);
 
 var mapCoordinates = {}; // map coordinates on globe
 let populationRate = +byId("populationRateInput").value;
@@ -444,34 +493,6 @@ function findBurgForMFCG(params) {
   zoomTo(b.x, b.y, 8, 1600);
   invokeActiveZooming();
   tip("Here stands the glorious city of " + b.name, true, "success", 15000);
-}
-
-function handleZoom(isScaleChanged, isPositionChanged) {
-  viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
-
-  if (isPositionChanged) {
-    if (layerIsOn("toggleCoordinates")) drawCoordinates();
-  }
-
-  if (isScaleChanged) {
-    invokeActiveZooming();
-    drawScaleBar(scaleBar, scale);
-    fitScaleBar(scaleBar, svgWidth, svgHeight);
-  }
-
-  // zoom image converter overlay
-  if (customization === 1) {
-    const canvas = byId("canvas");
-    if (!canvas || canvas.style.opacity === "0") return;
-
-    const img = byId("imageToConvert");
-    if (!img) return;
-
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  }
 }
 
 // Zoom to a specific point
