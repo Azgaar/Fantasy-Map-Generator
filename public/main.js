@@ -228,12 +228,11 @@ function zoomRaf() {
   })
 }
 
-const postZoom = debounce(() => {
+const postZoom = () => {
   invokeActiveZooming();
   drawScaleBar(scaleBar, scale);
   fitScaleBar(scaleBar, svgWidth, svgHeight);
-}, 50);
-
+}
 
 const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomRaf);
 
