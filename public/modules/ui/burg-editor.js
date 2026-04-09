@@ -282,6 +282,8 @@ function editBurg(id) {
     container.innerHTML = "";
     const object = document.createElement("object");
     object.style.width = "100%";
+    object.style.maxWidth = "60vw";
+    object.style.maxHeight = "60vh";
     object.data = preview;
     container.insertBefore(object, null);
   }
