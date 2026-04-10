@@ -192,9 +192,20 @@ function overviewRoutes() {
       title: lockedCount > 0 ? "Remove unlocked routes" : "Remove all routes",
       buttons: {
         Remove: function () {
-          for (const route of [...toRemove]) {
+          const routesToRemove = pack.routes.filter(route => !route.lock);
+          if (!routesToRemove.length) {
+            if (!pack.routes.length) {
+              tip("There are no routes to remove", false, "error");
+            } else {
+              tip("All routes are now locked; nothing was removed.", false, "error");
+            }
+            $(this).dialog("close");
+            return;
+          }
+          for (const route of routesToRemove) {
             Routes.remove(route);
           }
+          pack.cells.routes = Routes.buildLinks(pack.routes);
           routesOverviewAddLines();
           $(this).dialog("close");
         },
