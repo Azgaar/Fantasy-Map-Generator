@@ -420,8 +420,8 @@ class RiverModule {
   ): [number, number, number][] {
     const { fl, h } = pack.cells;
     const meandered = [];
-    const lastStep = riverCells.length - 1;
     const points = this.getRiverPoints(riverCells, riverPoints);
+    const lastStep = points.length - 1;
     let step = h[riverCells[0]] < 20 ? 1 : 10;
 
     for (let i = 0; i <= lastStep; i++, step++) {
