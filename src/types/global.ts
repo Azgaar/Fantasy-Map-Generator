@@ -15,6 +15,7 @@ declare global {
   var options: any;
 
   var heightmapTemplates: any;
+  var tectonicTemplates: any;
   var Routes: any;
   var populationRate: number;
   var urbanDensity: number;

@@ -10,3 +10,4 @@
 /_bmad-output
 .github/agents/bmad-*
 .github/prompts/bmad-*
+/.claude

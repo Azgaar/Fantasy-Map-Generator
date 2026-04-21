@@ -2123,6 +2123,13 @@
             >
               Heightmap
             </button>
+            <button
+              id="editTectonicsButton"
+              data-tip="Click to open Tectonic Plates Editor (requires tectonic template)"
+              data-shortcut="Shift + T"
+            >
+              Tectonics
+            </button>
             <button id="overviewMarkersButton" data-tip="Click to open Markers Overview" data-shortcut="Shift + K">
               Markers
             </button>
@@ -4096,6 +4103,25 @@
           </div>
         </div>
         <div id="regimentSelectorBody" class="table"></div>
+      </div>
+
+      <div id="tectonicEditor" class="dialog stable" style="display: none">
+        <p style="font-size:11px;margin:0 0 6px">Click a plate to edit. Drag arrows to set velocity.</p>
+        <div style="margin-top: 4px">
+          <button id="tectonicPaintToggle" data-tip="Toggle paint mode to reshape plates with a brush">Paint</button>
+          <button id="tectonicRegenerate" data-tip="Regenerate terrain preview from edited plates">Regenerate Preview</button>
+        </div>
+        <div id="tectonicBrushControls" style="display:none;margin-top:4px;font-size:11px">
+          <label>Brush size: </label>
+          <input id="tectonicBrushSize" type="range" min="3" max="40" step="1" value="10"
+            style="width:80px;vertical-align:middle">
+          <span id="tectonicBrushSizeLabel">10</span>
+        </div>
+        <div style="margin-top: 4px">
+          <button id="tectonicApplyMap" data-tip="Apply changes and regenerate the full map">Apply to Map</button>
+          <button id="tectonicToggleOverlay" data-tip="Switch between plate view and height view">Toggle View</button>
+          <button id="tectonicClose" data-tip="Close editor and remove overlay">Close</button>
+        </div>
       </div>
 
       <div id="brushesPanel" class="dialog stable" style="display: none">
@@ -8538,6 +8564,7 @@
     <script type="module" src="renderers/index.ts"></script>
 
     <script defer src="config/heightmap-templates.js"></script>
+    <script defer src="config/tectonic-templates.js"></script>
     <script defer src="config/precreated-heightmaps.js"></script>
     <script defer src="libs/alea.min.js?v1.105.0"></script>
     <script defer src="libs/polylabel.min.js?v1.105.0"></script>
@@ -8554,6 +8581,7 @@
     <script defer src="modules/ui/tools.js?v=1.113.3"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.105.4"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=1.113.0"></script>
+    <script defer src="modules/ui/tectonic-editor.js?v=1.0.0"></script>
     <script defer src="modules/ui/provinces-editor.js?v=1.108.1"></script>
     <script defer src="modules/ui/biomes-editor.js?v=1.112.0"></script>
     <script defer src="modules/ui/namesbase-editor.js?v=1.105.11"></script>
