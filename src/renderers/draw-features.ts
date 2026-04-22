@@ -42,6 +42,9 @@ const featuresRenderer = (): void => {
       html.landMask.push(
         `<use href="#feature_${feature.i}" data-f="${feature.i}" fill="black"></use>`,
       );
+      html.waterMask.push(
+        `<use href="#feature_${feature.i}" data-f="${feature.i}" fill="white"></use>`,
+      );
 
       const lakeGroup = feature.group || "freshwater";
       if (!html.lakes[lakeGroup]) html.lakes[lakeGroup] = [];
