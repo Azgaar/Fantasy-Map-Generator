@@ -70,18 +70,15 @@ function editHeightmap(options) {
 
     if (mode === "erase") {
       undraw();
-      changeOnlyLand.checked = false;
-      changeOnlyOcean.checked = false;
+      cellTypeFilter.value = "all";
     } else if (mode === "keep") {
       viewbox.selectAll("#landmass, #lakes").style("display", "none");
-      changeOnlyLand.checked = true;
-      changeOnlyOcean.checked = false;
+      cellTypeFilter.value = "land";
     } else if (mode === "risk") {
       defs.selectAll("#land, #water").selectAll("path").remove();
       defs.select("#featurePaths").selectAll("path").remove();
       viewbox.selectAll("#coastline use, #lakes path, #oceanLayers path").remove();
-      changeOnlyLand.checked = false;
-      changeOnlyOcean.checked = false;
+      cellTypeFilter.value = "all";
     }
 
     // show convert and template buttons for Erase mode only
@@ -484,15 +481,15 @@ function editHeightmap(options) {
     tip("Cells changed: " + changed);
     if (!changed) return;
 
-    // check ocean cells are not checged if olny land edit is allowed
-    if (changeOnlyLand.checked) {
+    // check ocean cells are not changed if only land edit is allowed
+    if (cellTypeFilter.value === "land") {
       for (const i of grid.cells.i) {
         if (prev[i] < 20 || grid.cells.h[i] < 20) grid.cells.h[i] = prev[i];
       }
     }
 
-    // check land cells are not changed if only ocean edit is allowed
-    if (changeOnlyOcean.checked) {
+    // check land cells are not changed if only water edit is allowed
+    if (cellTypeFilter.value === "water") {
       for (const i of grid.cells.i) {
         if (prev[i] >= 20 || grid.cells.h[i] >= 20) grid.cells.h[i] = prev[i];
       }
@@ -597,8 +594,7 @@ function editHeightmap(options) {
 
     // add listeners
     byId("brushesButtons").on("click", e => toggleBrushMode(e));
-    byId("changeOnlyLand").on("click", e => changeOnlyLandClick(e));
-    byId("changeOnlyOcean").on("click", e => changeOnlyOceanClick(e));
+    byId("cellTypeFilter").on("change", cellTypeFilterChange);
     byId("undo").on("click", () => restoreHistory(edits.n - 1));
     byId("redo").on("click", () => restoreHistory(edits.n + 1));
     byId("rescaleShow").on("click", () => {
@@ -696,8 +692,8 @@ function editHeightmap(options) {
       let selection = [];
       for (let i = 0; i < heights.length; i++) {
         if (changedHeights[i] === heights[i]) continue;
-        if (changeOnlyLand.checked && heights[i] < 20) continue;
-        if (changeOnlyOcean.checked && heights[i] >= 20) continue;
+        if (cellTypeFilter.value === "land" && heights[i] < 20) continue;
+        if (cellTypeFilter.value === "water" && heights[i] >= 20) continue;
         heights[i] = changedHeights[i];
         selection.push(i);
       }
@@ -718,8 +714,8 @@ function editHeightmap(options) {
 
         const inRadius = findGridAll(p[0], p[1], r);
         let selection = inRadius;
-        if (changeOnlyLand.checked) selection = inRadius.filter(i => grid.cells.h[i] >= 20);
-        else if (changeOnlyOcean.checked) selection = inRadius.filter(i => grid.cells.h[i] < 20);
+        if (cellTypeFilter.value === "land") selection = inRadius.filter(i => grid.cells.h[i] >= 20);
+        else if (cellTypeFilter.value === "water") selection = inRadius.filter(i => grid.cells.h[i] < 20);
         if (selection && selection.length) changeHeightForSelection(selection, start);
       });
 
@@ -730,8 +726,8 @@ function editHeightmap(options) {
       const power = heightmapBrushPower.valueAsNumber;
 
       const interpolate = d3.interpolateRound(power, 1);
-      const land = changeOnlyLand.checked;
-      const ocean = changeOnlyOcean.checked;
+      const land = cellTypeFilter.value === "land";
+      const ocean = cellTypeFilter.value === "water";
       const lim = v => minmax(v, land ? 20 : 0, ocean ? 19 : 100);
       const heights = grid.cells.h;
 
@@ -767,27 +763,16 @@ function editHeightmap(options) {
       // updateHistory(); uncomment to update history on every step
     }
 
-    function changeOnlyLandClick(e) {
-      if (heightmapEditMode.innerHTML === "keep") {
-        e.preventDefault();
+    function cellTypeFilterChange() {
+      if (cellTypeFilter.value === "land" && heightmapEditMode.innerHTML === "keep") {
         tip("You cannot change the coastline in 'Keep' edit mode", false, "error");
-        return;
+        cellTypeFilter.value = "all";
       }
-      if (changeOnlyLand.checked) changeOnlyOcean.checked = false;
-    }
-
-    function changeOnlyOceanClick(e) {
-      if (heightmapEditMode.innerHTML === "keep") {
-        e.preventDefault();
-        tip("You cannot change the coastline in 'Keep' edit mode", false, "error");
-        return;
-      }
-      if (changeOnlyOcean.checked) changeOnlyLand.checked = false;
     }
 
     function rescale(v) {
-      const land = changeOnlyLand.checked;
-      const ocean = changeOnlyOcean.checked;
+      const land = cellTypeFilter.value === "land";
+      const ocean = cellTypeFilter.value === "water";
       grid.cells.h = grid.cells.h.map(h => {
         if (land && (h < 20 || h + v < 20)) return h;
         if (ocean && h >= 20) return h;
@@ -831,8 +816,8 @@ function editHeightmap(options) {
     }
 
     function startFromScratch() {
-      if (changeOnlyLand.checked) return tip("Not allowed when 'Change only land cells' mode is set", false, "error");
-      if (changeOnlyOcean.checked) return tip("Not allowed when 'Change only ocean cells' mode is set", false, "error");
+      if (cellTypeFilter.value === "land") return tip("Not allowed when 'only land cells' filter is set", false, "error");
+      if (cellTypeFilter.value === "water") return tip("Not allowed when 'only water cells' filter is set", false, "error");
       const someHeights = grid.cells.h.some(h => h);
       if (!someHeights)
         return tip("Heightmap is already cleared, please do not click twice if not required", false, "error");
