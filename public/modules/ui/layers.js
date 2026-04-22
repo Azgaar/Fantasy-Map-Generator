@@ -829,7 +829,7 @@ function toggleMarkers(event) {
     if (event && isCtrlClick(event)) editStyle("markers");
   } else {
     if (event && isCtrlClick(event)) return editStyle("markers");
-    markers.selectAll("*").remove();
+    markers.html("");
     turnButtonOff("toggleMarkers");
   }
 }

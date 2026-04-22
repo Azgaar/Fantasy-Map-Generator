@@ -456,7 +456,7 @@ async function parseLoadedData(data, mapVersion) {
       if (isVisible(labels)) turnOn("toggleLabels");
       if (isVisible(icons)) turnOn("toggleBurgIcons");
       if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
-      if (hasChildren(markers)) turnOn("toggleMarkers");
+      if (hasChild(markers, "svg")) turnOn("toggleMarkers");
       if (isVisible(ruler)) turnOn("toggleRulers");
       if (isVisible(scaleBar)) turnOn("toggleScaleBar");
       if (isVisibleNode(byId("vignette"))) turnOn("toggleVignette");
