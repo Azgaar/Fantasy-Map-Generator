@@ -72,10 +72,10 @@ test.describe("Lakes layer", () => {
     expect(lakesIndex).toBe(heightmapIndex + 1);
   });
 
-  test("dragging Lakes below Heightmap in panel moves #lakes after #terrs in SVG", async ({
+  test("dragging Lakes above Heightmap in panel moves #lakes before #terrs in SVG", async ({
     page,
   }) => {
-    // Confirm initial SVG order: #lakes is before #terrs (rendered behind heightmap by default)
+    // Confirm initial SVG order: #lakes is after #terrs (rendered above heightmap by default)
     const initialOrder = await page.evaluate(() => {
       const viewbox = document.getElementById("viewbox")!;
       const ids = Array.from(viewbox.children).map((el) => el.id);
@@ -83,21 +83,21 @@ test.describe("Lakes layer", () => {
     });
     expect(initialOrder.lakes).toBeGreaterThanOrEqual(0);
     expect(initialOrder.terrs).toBeGreaterThanOrEqual(0);
-    expect(initialOrder.lakes).toBeLessThan(initialOrder.terrs);
+    expect(initialOrder.lakes).toBeGreaterThan(initialOrder.terrs);
 
-    // Simulate what moveLayer does when the user drags Lakes below Heightmap:
-    // panel item "toggleLakes" is now after "toggleHeight" → el.insertAfter(#terrs)
+    // Simulate what moveLayer does when the user drags Lakes above Heightmap:
+    // panel item "toggleLakes" is now before "toggleHeight" → el.insertBefore(#terrs)
     await page.evaluate(() => {
       const $ = (window as any).$;
-      $("#lakes").insertAfter($("#terrs"));
+      $("#lakes").insertBefore($("#terrs"));
     });
 
-    // After move: #lakes should be after #terrs in SVG → renders on top of heightmap
+    // After move: #lakes should be before #terrs in SVG → renders behind heightmap
     const newOrder = await page.evaluate(() => {
       const viewbox = document.getElementById("viewbox")!;
       const ids = Array.from(viewbox.children).map((el) => el.id);
       return { lakes: ids.indexOf("lakes"), terrs: ids.indexOf("terrs") };
     });
-    expect(newOrder.lakes).toBeGreaterThan(newOrder.terrs);
+    expect(newOrder.lakes).toBeLessThan(newOrder.terrs);
   });
 });
