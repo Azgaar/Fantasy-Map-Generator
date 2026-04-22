@@ -4191,12 +4191,13 @@
           </div>
         </div>
 
-        <div
-          data-tip="Allow brush to change only land cells and hence restrict the coastline modification"
-          style="margin-bottom: 0.6em"
-        >
-          <input id="changeOnlyLand" class="checkbox" type="checkbox" />
-          <label for="changeOnlyLand" class="checkbox-label"><i>change only land cells</i></label>
+        <div data-tip="Restrict brush to specific cell types" style="margin-bottom: 0.6em">
+          <label for="cellTypeFilter"><i>Cells to change:</i></label>
+          <select id="cellTypeFilter">
+            <option value="all" selected>all cells</option>
+            <option value="land">only land cells</option>
+            <option value="water">only water cells</option>
+          </select>
         </div>
 
         <div id="modifyButtons">
