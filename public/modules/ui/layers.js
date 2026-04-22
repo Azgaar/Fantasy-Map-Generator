@@ -88,7 +88,7 @@ function getDefaultPresets() {
       "toggleStates",
       "toggleVignette"
     ],
-    landmass: ["toggleLakes", "toggleScaleBar"]
+    landmass: ["toggleScaleBar"]
   };
 }
 
