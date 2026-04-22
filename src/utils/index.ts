@@ -227,8 +227,8 @@ import {
   wiki,
 } from "./commonUtils";
 
-window.clipPoly = (points: [number, number][]) =>
-  clipPoly(points, graphWidth, graphHeight);
+window.clipPoly = (points: [number, number][], secure?: number) =>
+  clipPoly(points, graphWidth, graphHeight, secure);
 window.getSegmentId = getSegmentId;
 window.debounce = debounce;
 window.throttle = throttle;

@@ -95,7 +95,7 @@ function featurePathRenderer(feature: PackedGraphFeature): string {
   }
 
   const simplifiedPoints = simplify(points, 0.3);
-  const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight);
+  const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight, 1);
 
   const lineGen = line().curve(curveBasisClosed);
   const path = `${round(lineGen(clippedPoints) || "")}Z`;
