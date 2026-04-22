@@ -11,6 +11,7 @@ function getDefaultPresets() {
       "toggleBurgIcons",
       "toggleIce",
       "toggleLabels",
+      "toggleLakes",
       "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
@@ -22,6 +23,7 @@ function getDefaultPresets() {
       "toggleBurgIcons",
       "toggleCultures",
       "toggleLabels",
+      "toggleLakes",
       "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
@@ -31,6 +33,7 @@ function getDefaultPresets() {
       "toggleBorders",
       "toggleBurgIcons",
       "toggleLabels",
+      "toggleLakes",
       "toggleReligions",
       "toggleRivers",
       "toggleRoutes",
@@ -40,19 +43,21 @@ function getDefaultPresets() {
     provinces: [
       "toggleBorders",
       "toggleBurgIcons",
+      "toggleLakes",
       "toggleProvinces",
       "toggleRivers",
       "toggleScaleBar",
       "toggleVignette"
     ],
-    biomes: ["toggleBiomes", "toggleIce", "toggleRivers", "toggleScaleBar", "toggleVignette"],
-    heightmap: ["toggleHeight", "toggleRivers", "toggleVignette"],
-    physical: ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleRivers", "toggleScaleBar", "toggleVignette"],
+    biomes: ["toggleBiomes", "toggleIce", "toggleLakes", "toggleRivers", "toggleScaleBar", "toggleVignette"],
+    heightmap: ["toggleHeight", "toggleLakes", "toggleRivers", "toggleVignette"],
+    physical: ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleLakes", "toggleRivers", "toggleScaleBar", "toggleVignette"],
     poi: [
       "toggleBorders",
       "toggleBurgIcons",
       "toggleHeight",
       "toggleIce",
+      "toggleLakes",
       "toggleMarkers",
       "toggleRivers",
       "toggleRoutes",
@@ -63,6 +68,7 @@ function getDefaultPresets() {
       "toggleBorders",
       "toggleBurgIcons",
       "toggleLabels",
+      "toggleLakes",
       "toggleMilitary",
       "toggleRivers",
       "toggleRoutes",
@@ -75,13 +81,14 @@ function getDefaultPresets() {
       "toggleBurgIcons",
       "toggleIce",
       "toggleEmblems",
+      "toggleLakes",
       "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
       "toggleStates",
       "toggleVignette"
     ],
-    landmass: ["toggleScaleBar"]
+    landmass: ["toggleLakes", "toggleScaleBar"]
   };
 }
 
@@ -709,6 +716,18 @@ function toggleRelief(event) {
   }
 }
 
+function toggleLakes(event) {
+  if (!layerIsOn("toggleLakes")) {
+    turnButtonOn("toggleLakes");
+    $("#lakes").fadeIn();
+    if (event && isCtrlClick(event)) editStyle("lakes");
+  } else {
+    if (event && isCtrlClick(event)) return editStyle("lakes");
+    $("#lakes").fadeOut();
+    turnButtonOff("toggleLakes");
+  }
+}
+
 function toggleTexture(event) {
   if (!layerIsOn("toggleTexture")) {
     turnButtonOn("toggleTexture");
@@ -979,6 +998,7 @@ function moveLayer(event, ui) {
 
 // define connection between option layer buttons and actual svg groups to move the element
 function getLayer(id) {
+  if (id === "toggleLakes") return $("#lakes");
   if (id === "toggleHeight") return $("#terrs");
   if (id === "toggleBiomes") return $("#biomes");
   if (id === "toggleCells") return $("#cells");
