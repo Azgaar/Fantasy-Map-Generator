@@ -1112,9 +1112,4 @@ export function resolveVersionConflicts(mapVersion) {
       zone.cells = unique(zone.cells);
     });
   }
-
-  // ensure lakes group has water mask so inner islands are not hidden by lake fill
-  if (!lakes.attr("mask")) {
-    lakes.attr("mask", "url(#water)");
-  }
 }

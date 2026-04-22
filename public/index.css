@@ -133,6 +133,10 @@ a {
   fill-rule: evenodd;
 }
 
+#lakes {
+  mask: url(#water);
+}
+
 #lakes,
 #coastline,
 #armies,
