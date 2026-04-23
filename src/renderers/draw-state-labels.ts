@@ -48,8 +48,8 @@ const stateLabelsRenderer = (list?: number[]): void => {
   const labelsToRender: StateLabelData[] =
     list && list.length > 0
       ? list
-          .map((idx) => Labels.get(idx))
-          .filter((label) => label?.type === "state")
+        .map((idx) => Labels.get(idx))
+        .filter((label) => label?.type === "state")
       : Labels.getAll().filter((label) => label.type === "state");
 
   const letterLength = checkExampleLetterLength();
@@ -118,7 +118,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
       );
 
       // Update label data with font size
-      Labels.updateLabel(labelData.i, { fontSize: ratio });
+      Labels.update(labelData.i, { fontSize: ratio });
 
       // prolongate path if it's too short
       const longestLineLength = max(lines.map((line) => line.length)) || 0;
@@ -182,7 +182,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
           ? state.fullName!
           : state.name!;
       textElement.innerHTML = `<tspan x="0">${text}</tspan>`;
-      Labels.updateLabel(labelData.i, { text });
+      Labels.update(labelData.i, { text });
 
       const correctedRatio = minmax(
         rn((pathLength / text.length) * 50),
@@ -190,7 +190,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
         130,
       );
       textElement.setAttribute("font-size", `${correctedRatio}%`);
-      Labels.updateLabel(labelData.i, { fontSize: correctedRatio });
+      Labels.update(labelData.i, { fontSize: correctedRatio });
     }
   }
 

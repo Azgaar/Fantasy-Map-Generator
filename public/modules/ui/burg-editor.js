@@ -120,7 +120,7 @@ function editBurg(id) {
     elSelected.text(burgName.value);
     // Sync to Labels data model
     const labelData = Labels.get(id);
-    if (labelData) Labels.updateLabel(labelData.i, { text: burgName.value });
+    if (labelData) Labels.update(labelData.i, { text: burgName.value });
   }
 
   function generateNameRandom() {
@@ -387,7 +387,7 @@ function editBurg(id) {
 
     // Sync position to Labels data model
     const labelData = Labels.get(id);
-    if (labelData) Labels.updateLabel(labelData.i, { x, y });
+    if (labelData) Labels.update(labelData.i, { x, y });
 
     if (d3.event.shiftKey === false) toggleRelocateBurg();
   }

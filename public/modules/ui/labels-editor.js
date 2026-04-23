@@ -195,7 +195,7 @@ function editLabel() {
     debug.select("#controlPoints > path").attr("d", d);
     // Sync path control points back to data model
     const labelData = getLabelData(elSelected.node());
-    if (labelData) Labels.updateLabel(labelData.i, { pathPoints: points });
+    if (labelData) Labels.update(labelData.i, { pathPoints: points });
   }
 
   function clickControlPoint() {
@@ -251,7 +251,7 @@ function editLabel() {
       elSelected.attr("transform", transform);
       debug.select("#controlPoints").attr("transform", transform);
       const labelData = getLabelData(elSelected.node());
-      if (labelData) Labels.updateLabel(labelData.i, { transform });
+      if (labelData) Labels.update(labelData.i, { transform });
     });
   }
 
@@ -272,7 +272,7 @@ function editLabel() {
     byId(this.value).appendChild(elSelected.node());
     const labelData = getLabelData(elSelected.node());
     if (labelData && labelData.type === "custom") {
-      Labels.updateLabel(labelData.i, { group: this.value });
+      Labels.update(labelData.i, { group: this.value });
     }
   }
 
@@ -314,7 +314,7 @@ function editLabel() {
       byId("labelGroupSelect").options.add(new Option(group, group, false, true));
       // Update data model for labels in the old group
       const oldGroupName = oldGroup.id;
-      Labels.getByGroup(oldGroupName).forEach(l => Labels.updateLabel(l.i, { group }));
+      Labels.getByGroup(oldGroupName).forEach(l => Labels.update(l.i, { group }));
       oldGroup.id = group;
       toggleNewGroupInput();
       byId("labelGroupInput").value = "";
@@ -329,7 +329,7 @@ function editLabel() {
     // Update data model group for the moved label
     const labelData = getLabelData(elSelected.node());
     if (labelData && labelData.type === "custom") {
-      Labels.updateLabel(labelData.i, { group });
+      Labels.update(labelData.i, { group });
     }
 
     toggleNewGroupInput();
@@ -395,7 +395,7 @@ function editLabel() {
 
     // Update data model
     const labelData = getLabelData(elSelected.node());
-    if (labelData) Labels.updateLabel(labelData.i, { text: input });
+    if (labelData) Labels.update(labelData.i, { text: input });
 
     if (elSelected.attr("id").slice(0, 10) === "stateLabel")
       tip("Use States Editor to change an actual state name, not just a label", false, "warning");
@@ -445,14 +445,14 @@ function editLabel() {
   function changeStartOffset() {
     elSelected.select("textPath").attr("startOffset", this.value + "%");
     const labelData = getLabelData(elSelected.node());
-    if (labelData) Labels.updateLabel(labelData.i, { startOffset: +this.value });
+    if (labelData) Labels.update(labelData.i, { startOffset: +this.value });
     tip("Label offset: " + this.value + "%");
   }
 
   function changeRelativeSize() {
     elSelected.select("textPath").attr("font-size", this.value + "%");
     const labelData = getLabelData(elSelected.node());
-    if (labelData) Labels.updateLabel(labelData.i, { fontSize: +this.value });
+    if (labelData) Labels.update(labelData.i, { fontSize: +this.value });
     tip("Label relative size: " + this.value + "%");
     changeText();
   }
@@ -460,7 +460,7 @@ function editLabel() {
   function changeLetterSpacingSize() {
     elSelected.select("textPath").attr("letter-spacing", this.value + "px");
     const labelData = getLabelData(elSelected.node());
-    if (labelData) Labels.updateLabel(labelData.i, { letterSpacing: +this.value });
+    if (labelData) Labels.update(labelData.i, { letterSpacing: +this.value });
     tip("Label letter-spacing size: " + this.value + "px");
     changeText();
   }
@@ -475,7 +475,7 @@ function editLabel() {
     const labelData = getLabelData(elSelected.node());
     if (labelData) {
       const pathEl = byId("textPath_" + elSelected.attr("id"));
-      Labels.updateLabel(labelData.i, { pathPoints: extractPathPoints(pathEl) });
+      Labels.update(labelData.i, { pathPoints: extractPathPoints(pathEl) });
     }
   }
 

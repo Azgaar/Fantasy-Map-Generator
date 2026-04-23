@@ -92,7 +92,7 @@ class LabelsModule {
     return label;
   }
 
-  updateLabel(id: number, updates: Partial<LabelData>): void {
+  update(id: number, updates: Partial<LabelData>): void {
     const label = pack.labels.find((l) => l.i === id);
     if (!label) return;
     Object.assign(label, updates, { i: label.i, type: label.type });
