@@ -113,13 +113,6 @@ class LabelsModule {
     );
   }
 
-  removeBurgLabel(burgId: number): void {
-    const index = pack.labels.findIndex(
-      (l) => l.type === "burg" && l.burgId === burgId,
-    );
-    if (index !== -1) pack.labels.splice(index, 1);
-  }
-
   clear(): void {
     pack.labels = [];
   }

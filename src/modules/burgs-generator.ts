@@ -729,7 +729,8 @@ class BurgModule {
     }
 
     removeBurgIcon(burg.i!);
-    Labels.removeBurgLabel(burg.i!);
+    const labelId = pack.labels.findIndex((l) => l.type === "burg" && l.burgId === burgId);
+    Labels.remove(labelId);
   }
 }
 window.Burgs = new BurgModule();
