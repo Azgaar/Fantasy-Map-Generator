@@ -66,27 +66,27 @@ class LabelsModule {
     );
   }
 
-  addStateLabel(data: Omit<StateLabelData, "i" | "type">): StateLabelData {
+  private addStateLabel(data: Omit<StateLabelData, "i" | "type">): StateLabelData {
     const label: StateLabelData = {
+      ...data,
       i: this.getNextId(),
       type: "state",
-      ...data,
     };
     pack.labels.push(label);
     return label;
   }
 
-  addBurgLabel(data: Omit<BurgLabelData, "i" | "type">): BurgLabelData {
-    const label: BurgLabelData = { i: this.getNextId(), type: "burg", ...data };
+  private addBurgLabel(data: Omit<BurgLabelData, "i" | "type">): BurgLabelData {
+    const label: BurgLabelData = { ...data, i: this.getNextId(), type: "burg", };
     pack.labels.push(label);
     return label;
   }
 
   addCustomLabel(data: Omit<CustomLabelData, "i" | "type">): CustomLabelData {
     const label: CustomLabelData = {
+      ...data,
       i: this.getNextId(),
       type: "custom",
-      ...data,
     };
     pack.labels.push(label);
     return label;
