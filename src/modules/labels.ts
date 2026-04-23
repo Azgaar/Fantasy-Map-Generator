@@ -98,7 +98,7 @@ class LabelsModule {
     Object.assign(label, updates, { i: label.i, type: label.type });
   }
 
-  removeLabel(id: number): void {
+  remove(id: number): void {
     const index = pack.labels.findIndex((l) => l.i === id);
     if (index !== -1) pack.labels.splice(index, 1);
   }

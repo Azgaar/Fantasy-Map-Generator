@@ -494,7 +494,7 @@ function editLabel() {
         Remove: function () {
           $(this).dialog("close");
           const labelData = getLabelData(elSelected.node());
-          if (labelData) Labels.removeLabel(labelData.i);
+          if (labelData) Labels.remove(labelData.i);
           defs.select("#textPath_" + elSelected.attr("id")).remove();
           elSelected.remove();
           $("#labelEditor").dialog("close");
