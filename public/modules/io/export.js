@@ -140,7 +140,7 @@ async function exportToPngTiles() {
     link.click();
     link.remove();
 
-    status.innerHTML = 'Done. Check .zip file in "Downloads" (crtl + J)';
+    status.innerHTML = 'Done. Check .zip file in "Downloads" (CTRL + J)';
     setTimeout(() => URL.revokeObjectURL(link.href), 5000);
   });
 
@@ -583,31 +583,31 @@ function saveGeoJsonZones() {
   // Handles multiple disconnected components and holes properly
   function getZonePolygonCoordinates(zoneCells) {
     const cellsInZone = new Set(zoneCells);
-    const ofSameType = (cellId) => cellsInZone.has(cellId);
-    const ofDifferentType = (cellId) => !cellsInZone.has(cellId);
-    
+    const ofSameType = cellId => cellsInZone.has(cellId);
+    const ofDifferentType = cellId => !cellsInZone.has(cellId);
+
     const checkedCells = new Set();
     const rings = []; // Array of LinearRings (each ring is an array of coordinates)
-    
+
     // Find all boundary components by tracing each connected region
     for (const cellId of zoneCells) {
       if (checkedCells.has(cellId)) continue;
-      
+
       // Check if this cell is on the boundary (has a neighbor outside the zone)
       const neighbors = cells.c[cellId];
       const onBorder = neighbors.some(ofDifferentType);
       if (!onBorder) continue;
-      
+
       // Check if this is an inner lake (hole) - skip if so
       const feature = pack.features[cells.f[cellId]];
       if (feature.type === "lake" && feature.shoreline) {
         if (feature.shoreline.every(ofSameType)) continue;
       }
-      
+
       // Find a starting vertex that's on the boundary
       const cellVertices = cells.v[cellId];
       let startingVertex = null;
-      
+
       for (const vertexId of cellVertices) {
         const vertexCells = vertices.c[vertexId];
         if (vertexCells.some(ofDifferentType)) {
@@ -615,38 +615,38 @@ function saveGeoJsonZones() {
           break;
         }
       }
-      
+
       if (startingVertex === null) continue;
-      
+
       // Use connectVertices to trace the boundary (reusing existing logic)
       const vertexChain = connectVertices({
         vertices,
         startingVertex,
         ofSameType,
-        addToChecked: (cellId) => checkedCells.add(cellId),
-        closeRing: false, // We'll close it manually after converting to coordinates
+        addToChecked: cellId => checkedCells.add(cellId),
+        closeRing: false // We'll close it manually after converting to coordinates
       });
-      
+
       if (vertexChain.length < 3) continue;
-      
+
       // Convert vertex chain to coordinates
       const coordinates = [];
       for (const vertexId of vertexChain) {
         const [x, y] = vertices.p[vertexId];
         coordinates.push(getCoordinates(x, y, 4));
       }
-      
+
       // Close the ring (first coordinate = last coordinate)
       if (coordinates.length > 0) {
         coordinates.push(coordinates[0]);
       }
-      
+
       // Only add ring if it has at least 4 positions (minimum for valid LinearRing)
       if (coordinates.length >= 4) {
         rings.push(coordinates);
       }
     }
-    
+
     return rings;
   }
 
@@ -656,10 +656,10 @@ function saveGeoJsonZones() {
     if (zone.hidden || !zone.cells || zone.cells.length === 0) return;
 
     const rings = getZonePolygonCoordinates(zone.cells);
-    
+
     // Skip if no valid rings were generated
     if (rings.length === 0) return;
-    
+
     const properties = {
       id: zone.i,
       name: zone.name,
@@ -667,7 +667,7 @@ function saveGeoJsonZones() {
       color: zone.color,
       cells: zone.cells
     };
-    
+
     // If there's only one ring, use Polygon geometry
     if (rings.length === 1) {
       const feature = {

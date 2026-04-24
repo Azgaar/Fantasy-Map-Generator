@@ -9,12 +9,12 @@ async function saveMap(method) {
     const mapData = prepareMapData();
     const filename = getFileName() + ".map";
 
-    if (method === "storage") saveToStorage(mapData, true);
+    if (method === "storage") await saveToStorage(mapData, true);
     if (method === "machine") saveToMachine(mapData, filename);
-    if (method === "dropbox") saveToDropbox(mapData, filename);
+    if (method === "dropbox") await saveToDropbox(mapData, filename);
   } catch (error) {
     ERROR && console.error(error);
-    alertMessage.innerHTML = /* html */ `An error is occured on map saving. If the issue persists, please copy the message below and report it on ${link(
+    alertMessage.innerHTML = /* html */ `An error occurred while saving the map. If the issue persists, please copy the message below and report it on ${link(
       "https://github.com/Azgaar/Fantasy-Map-Generator/issues",
       "GitHub"
     )}. <p id="errorBox">${parseError(error)}</p>`;
@@ -180,7 +180,7 @@ function saveToMachine(mapData, filename) {
   link.click();
 
   tip('Map is saved to the "Downloads" folder (CTRL + J to open)', true, "success", 8000);
-  window.URL.revokeObjectURL(URL);
+  setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 }
 
 async function saveToDropbox(mapData, filename) {
@@ -189,7 +189,7 @@ async function saveToDropbox(mapData, filename) {
 }
 
 async function initiateAutosave() {
-  const MINUTE = 60000; // munite in milliseconds
+  const MINUTE = 60000; // minute in milliseconds
   let lastSavedAt = Date.now();
 
   async function autosave() {

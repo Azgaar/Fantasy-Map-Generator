@@ -744,7 +744,7 @@ async function parseLoadedData(data, mapVersion) {
     ERROR && console.error(error);
     clearMainTip();
 
-    alertMessage.innerHTML = /* html */ `An error is occured on map loading. Select a different file to load, <br>generate a new random map or cancel the loading.<br>Map version: ${mapVersion}. Generator version: ${VERSION}.
+    alertMessage.innerHTML = /* html */ `An error occurred while loading the map. Select a different file to load, <br>generate a new random map or cancel the loading.<br>Map version: ${mapVersion}. Generator version: ${VERSION}.
       <p id="errorBox">${parseError(error)}</p>`;
 
     $("#alert").dialog({
