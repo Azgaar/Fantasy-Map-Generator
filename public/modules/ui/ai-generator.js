@@ -113,7 +113,9 @@ async function handleStream(response, getContent) {
     try {
       const json = await response.json();
       errorMessage = json.error?.message || json.error || errorMessage;
-    } catch {}
+    } catch (error) {
+      ERROR && console.error("Failed to parse AI provider error response", error);
+    }
     throw new Error(errorMessage);
   }
 

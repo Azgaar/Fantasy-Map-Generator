@@ -1,19 +1,19 @@
 import { mean, median, sum } from "d3";
 import {
-  byId,
-  each,
-  gauss,
-  getAdjective,
-  getMixedColor,
-  getPolesOfInaccessibility,
-  getRandomColor,
-  minmax,
-  P,
-  ra,
-  rand,
-  rn,
-  rw,
-  trimVowels,
+    byId,
+    each,
+    gauss,
+    getAdjective,
+    getMixedColor,
+    getPolesOfInaccessibility,
+    getRandomColor,
+    minmax,
+    P,
+    ra,
+    rand,
+    rn,
+    rw,
+    trimVowels,
 } from "../utils";
 
 declare global {
@@ -612,7 +612,6 @@ class StatesModule {
           .filter((d) => d)
           .forEach((v) => {
             attackers.push(v);
-            // TODO: I think here is a bug, it should be ap instead of dp
             ap += states[v].area! * states[v].expansionism;
             war.push(
               `${states[d].name}'s vassal ${states[v].name} joined the war on attackers side`,
