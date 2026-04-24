@@ -990,6 +990,6 @@ async function overviewCharts() {
 }
 
 async function openMinimap() {
-  const Minimap = await import("./minimap.js?v=1.99.00");
+  const Minimap = await import("./minimap.js?v=1.117.0");
   Minimap.openMinimapDialog();
 }
