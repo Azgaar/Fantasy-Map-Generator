@@ -724,10 +724,10 @@ function editHeightmap(options) {
       const isWaterFill = startHeight < 20;
       const MIN_FILL_CELLS = 3;
 
+      if (cellTypeFilter.value === "water")
+        return tip("Fill brush is not available with 'only water cells' filter", false, "error");
       if (cellTypeFilter.value === "land" && isWaterFill)
         return tip("Land filter is active, water areas cannot be filled", false, "error");
-      if (cellTypeFilter.value === "water" && !isWaterFill)
-        return tip("Water filter is active, land areas cannot be filled", false, "error");
 
       const {selection, reachedBorder} = collectFillSelection(start, isWaterFill, startHeight);
       if (selection.length < MIN_FILL_CELLS) return tip("No enclosed area found to fill", false, "error");

@@ -121,6 +121,7 @@ function handleSizeChange(key) {
   let brush = null;
 
   if (byId("heightmapBrushRadius")?.offsetParent) brush = byId("heightmapBrushRadius");
+  else if (byId("heightmapBrushPower")?.offsetParent) brush = byId("heightmapBrushPower");
   else if (byId("heightmapLinePower")?.offsetParent) brush = byId("heightmapLinePower");
   else if (byId("biomesBrush")?.offsetParent) brush = byId("biomesBrush");
   else if (byId("culturesBrush")?.offsetParent) brush = byId("culturesBrush");
@@ -143,8 +144,11 @@ function handleSizeChange(key) {
 }
 
 function handleBracketSizeChange(code) {
+  const isHeightmapBrushPressed = Boolean(byId("brushesButtons")?.querySelector("button.pressed"));
   const hasActiveBrush =
+    isHeightmapBrushPressed ||
     byId("heightmapBrushRadius")?.offsetParent ||
+    byId("heightmapBrushPower")?.offsetParent ||
     byId("heightmapLinePower")?.offsetParent ||
     byId("biomesBrush")?.offsetParent ||
     byId("culturesBrush")?.offsetParent ||
