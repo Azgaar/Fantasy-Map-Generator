@@ -397,6 +397,9 @@ export function resolveVersionConflicts(mapVersion) {
       const height = (f.height - 18) ** heightExponentInput.value;
       const evaporation = ((700 * (f.temp + 0.006 * height)) / 50 + 75) / (80 - f.temp);
       f.evaporation = rn(evaporation * f.cells);
+      if (!f.shoreline) {
+        f.shoreline = unique(f.vertices.flatMap(v => pack.vertices.c[v].filter(c => pack.cells.h[c] >= 20)));
+      }
       f.name = f.name || Lakes.getName(f);
       delete f.river;
     }
