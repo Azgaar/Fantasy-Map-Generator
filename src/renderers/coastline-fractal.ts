@@ -11,9 +11,9 @@ export interface CoastlineSettings {
 
 export const coastSettings: CoastlineSettings = {
   maxDepth: 4,
-  baseAmplitude: 2,
-  amplitudeDecay: 0.55,
-  minEdge: 1.2,
+  baseAmplitude: 1,
+  amplitudeDecay: 0.9,
+  minEdge: 1,
   smoothThreshold: 0.25,
   roughnessContrast: 1.5
 };
@@ -102,8 +102,7 @@ export interface FractalizedShape {
   origIndices: number[]; // index in points[] where original vertex i lives
 }
 
-// Shared by the renderer and the dialog preview — accepts an explicit PRNG.
-export function fractalizeWithRand(
+export function fractalize(
   points: [number, number][],
   rand: () => number,
   settings: CoastlineSettings
@@ -162,6 +161,72 @@ export function fractalizeCoastline(
 ): FractalizedShape {
   if (points.length < 3) return {points, origIndices: points.map((_, i) => i)};
   const rand = Alea(`${seed}_c${featureIndex}`);
-  return fractalizeWithRand(points, rand, settings);
+  return fractalize(points, rand, settings);
+}
+
+/**
+ * Build a closed SVG path string applying the correct curve algorithm per span:
+ * Smooth span: Q midpoint B-spline — identical to curveBasisClosed. Produces flowing arcs that hide Voronoi angularity.
+ * Jagged span: centripetal Catmull-Rom (α=0.5) through every fractal sub-point. Rounds sharp kinks into gentle curves.
+ */
+export function buildCoastlinePath(shape: FractalizedShape) {
+  const {points: pts, origIndices} = shape;
+  const N = pts.length;
+  const M = origIndices.length;
+  if (M < 3) return "";
+
+  const smooth: boolean[] = new Array(M);
+  for (let i = 0; i < M; i++) {
+    const a = origIndices[i];
+    const b = origIndices[(i + 1) % M];
+    smooth[i] = (b > a ? b - a : b + N - a) === 1;
+  }
+
+  // Start at the B-spline midpoint of the last→first span when that span is
+  // smooth so the closed loop is fully seamless; otherwise start at vertex 0.
+  const p0 = pts[origIndices[0]];
+  const pL = pts[origIndices[M - 1]];
+  let atMid = smooth[M - 1];
+  const sx = atMid ? (pL[0] + p0[0]) / 2 : p0[0];
+  const sy = atMid ? (pL[1] + p0[1]) / 2 : p0[1];
+  const d: string[] = [`M${sx},${sy}`];
+
+  for (let i = 0; i < M; i++) {
+    const ci = origIndices[i];
+    const ni = origIndices[(i + 1) % M];
+    const [cpx, cpy] = pts[ci];
+    const [npx, npy] = pts[ni];
+
+    if (smooth[i]) {
+      // Q midpoint B-spline ≡ curveBasisClosed.
+      // When arriving from a jagged span the cursor is already at cpx,cpy
+      // so just line to the midpoint instead of emitting a degenerate Q.
+      const mx = (cpx + npx) / 2;
+      const my = (cpy + npy) / 2;
+      d.push(atMid ? `Q${cpx},${cpy} ${mx},${my}` : `L${mx},${my}`);
+      atMid = true;
+    } else {
+      // Step from the B-spline midpoint to the original vertex when needed.
+      if (atMid) d.push(`L${cpx},${cpy}`);
+
+      // Centripetal Catmull-Rom through every fractal sub-segment.
+      const end = ni > ci ? ni : ni + N;
+      for (let j = ci; j < end; j++) {
+        const a = pts[j % N];
+        const b = pts[(j + 1) % N];
+        const prev = pts[(j - 1 + N) % N];
+        const nnext = pts[(j + 2) % N];
+        // Catmull-Rom tangents → Hermite control points
+        const cp1x = a[0] + (b[0] - prev[0]) / 6;
+        const cp1y = a[1] + (b[1] - prev[1]) / 6;
+        const cp2x = b[0] - (nnext[0] - a[0]) / 6;
+        const cp2y = b[1] - (nnext[1] - a[1]) / 6;
+        d.push(`C${cp1x},${cp1y} ${cp2x},${cp2y} ${b[0]},${b[1]}`);
+      }
+      atMid = false;
+    }
+  }
+
+  return d.join("");
 }
 

@@ -1,10 +1,11 @@
 import Alea from "alea";
 import {
-    type CoastlineSettings,
-    coastSettings,
-    fractalizeWithRand,
-    makeRoughnessProfile,
-    PROFILE_SIZE,
+  buildCoastlinePath,
+  type CoastlineSettings,
+  coastSettings,
+  fractalize,
+  makeRoughnessProfile,
+  PROFILE_SIZE,
 } from "../renderers/coastline-fractal";
 
 declare global {
@@ -56,7 +57,7 @@ const SLIDER_DEFS: SliderDef[] = [
     label: "Minimum edge",
     tip: "Edges shorter than this (map units) are never subdivided regardless of roughness.",
     min: 0.1,
-    max: 5,
+    max: 10,
     step: 0.1,
     key: "minEdge",
   },
@@ -73,9 +74,9 @@ const SLIDER_DEFS: SliderDef[] = [
     id: "coastRoughnessContrast",
     label: "Roughness contrast",
     tip: "Power applied to the roughness profile. Higher = sharper calm/rough transition.",
-    min: 1,
+    min: 0.5,
     max: 10,
-    step: 0.5,
+    step: 0.1,
     key: "roughnessContrast",
   },
 ];
@@ -137,17 +138,15 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
     return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
   });
 
-  const {points: frac} = fractalizeWithRand(pts, Alea(PREVIEW_SEED), coastSettings);
+  const shape = fractalize(pts, Alea(PREVIEW_SEED), coastSettings);
 
   ctx.beginPath();
-  ctx.moveTo(frac[0][0], frac[0][1]);
-  for (let i = 1; i < frac.length; i++) ctx.lineTo(frac[i][0], frac[i][1]);
-  ctx.closePath();
+  const path = new Path2D(`${buildCoastlinePath(shape)}Z`);
   ctx.fillStyle = "rgba(70,130,190,0.22)";
-  ctx.fill();
+  ctx.fill(path);
   ctx.strokeStyle = "#2e6fa0";
   ctx.lineWidth = 1.5;
-  ctx.stroke();
+  ctx.stroke(path);
 }
 
 function updatePreviews(): void {

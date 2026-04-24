@@ -1,7 +1,7 @@
-import { curveBasisClosed, line, select } from "d3";
+import { select } from "d3";
 import type { PackedGraphFeature } from "../modules/features";
 import { clipPoly, round } from "../utils";
-import { fractalizeCoastline } from "./coastline-fractal";
+import { buildCoastlinePath, fractalizeCoastline } from "./coastline-fractal";
 
 declare global {
   var drawFeatures: () => void;
@@ -86,8 +86,6 @@ const featuresRenderer = (): void => {
   TIME && console.timeEnd("drawFeatures");
 };
 
-const lineGen = line().curve(curveBasisClosed);
-
 function featurePathRenderer(feature: PackedGraphFeature): string {
   const points = feature.vertices.map((vertex) => pack.vertices.p[vertex]);
   if (points.some((point) => point === undefined)) {
@@ -97,8 +95,8 @@ function featurePathRenderer(feature: PackedGraphFeature): string {
 
   const simplifiedPoints = simplify(points, 0.3);
   const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight, 1);
-  const {points: fracPts} = fractalizeCoastline(clippedPoints, feature.i);
-  return `${round(lineGen(fracPts) || "")}Z`;
+  const shape = fractalizeCoastline(clippedPoints, feature.i);
+  return `${round(buildCoastlinePath(shape))}Z`;
 }
 
 window.drawFeatures = featuresRenderer;
