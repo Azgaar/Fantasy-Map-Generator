@@ -223,15 +223,15 @@ function zoomRaf() {
     }
 
     if (didScaleChange) {
-      postZoom();
+      invokeActiveZooming();
+      drawScaleBar(scaleBar, scale);
+      fitScaleBar(scaleBar, svgWidth, svgHeight);
     }
-  })
-}
 
-const postZoom = () => {
-  invokeActiveZooming();
-  drawScaleBar(scaleBar, scale);
-  fitScaleBar(scaleBar, svgWidth, svgHeight);
+    if (didPositionChange || didScaleChange) {
+      window.updateMinimap && updateMinimap();
+    }
+  });
 }
 
 const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomRaf);

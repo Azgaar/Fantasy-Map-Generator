@@ -2269,6 +2269,9 @@
             >
               Charts
             </button>
+            <button id="openMinimapButton" data-tip="Click to open minimap overview. Click minimap to center view">
+              Minimap
+            </button>
           </div>
 
           <div class="separator">Create</div>
@@ -6002,6 +6005,10 @@
         <div id="transformPreview" style="position: relative; overflow: hidden; outline: 1px solid #666">
           <canvas id="transformPreviewCanvas" style="position: absolute; transform-origin: center"></canvas>
         </div>
+      </div>
+
+      <div id="minimap" style="display: none" class="dialog stable">
+        <div id="minimapContent"></div>
       </div>
 
       <div id="options3d" class="dialog stable" style="display: none">
