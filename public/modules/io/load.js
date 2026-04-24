@@ -71,19 +71,24 @@ function loadMapPrompt(blob) {
   }
 }
 
-function loadMapFromURL(maplink, random) {
+async function loadMapFromURL(maplink, random) {
   const URL = decodeURIComponent(maplink);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-  fetch(URL, {method: "GET", mode: "cors"})
-    .then(response => {
-      if (response.ok) return response.blob();
-      throw new Error("Cannot load map from URL");
-    })
-    .then(blob => uploadMap(blob))
-    .catch(error => {
-      showUploadErrorMessage(error.message, URL, random);
-      if (random) generateMapOnLoad();
-    });
+  try {
+    const response = await fetch(URL, {method: "GET", mode: "cors", signal: controller.signal});
+    if (!response.ok) throw new Error("Cannot load map from URL");
+
+    const blob = await response.blob();
+    uploadMap(blob);
+  } catch (error) {
+    const message = error?.name === "AbortError" ? "Cannot load map from URL: request timed out" : error.message;
+    showUploadErrorMessage(message, URL, random);
+    if (random) generateMapOnLoad();
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 function showUploadErrorMessage(error, URL, random) {

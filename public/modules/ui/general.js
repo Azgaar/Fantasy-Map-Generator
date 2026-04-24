@@ -14,11 +14,12 @@ if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
 
 // Tooltips
 const tooltip = document.getElementById("tooltip");
+const onDataTipMove = debounce(showDataTip, 50);
 
 // show tip for non-svg elemets with data-tip
-document.getElementById("dialogs").addEventListener("mousemove", showDataTip);
-document.getElementById("optionsContainer").addEventListener("mousemove", showDataTip);
-document.getElementById("exitCustomization").addEventListener("mousemove", showDataTip);
+document.getElementById("dialogs").addEventListener("mousemove", onDataTipMove);
+document.getElementById("optionsContainer").addEventListener("mousemove", onDataTipMove);
+document.getElementById("exitCustomization").addEventListener("mousemove", onDataTipMove);
 
 const tipBackgroundMap = {
   info: "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)",
@@ -129,8 +130,8 @@ function showMapTooltip(point, e, i, g) {
       parent.id === "burgEmblems"
         ? [pack.burgs, "burg"]
         : parent.id === "provinceEmblems"
-        ? [pack.provinces, "province"]
-        : [pack.states, "state"];
+          ? [pack.provinces, "province"]
+          : [pack.states, "state"];
     const i = +e.target.dataset.i;
     if (event.shiftKey) highlightEmblemElement(type, g[i]);
 
@@ -346,7 +347,8 @@ function getFriendlyHeight([x, y]) {
 function getHeight(h, abs) {
   const unit = heightUnit.value;
   let unitRatio = 3.281; // default calculations are in feet
-  if (unit === "m") unitRatio = 1; // if meter
+  if (unit === "m")
+    unitRatio = 1; // if meter
   else if (unit === "f") unitRatio = 0.5468; // if fathom
 
   let height = -990;

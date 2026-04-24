@@ -3,71 +3,103 @@
 
 async function exportToSvg() {
   TIME && console.time("exportToSvg");
-  const url = await getMapURL("svg", {fullMap: true});
-  const link = document.createElement("a");
-  link.download = getFileName() + ".svg";
-  link.href = url;
-  link.click();
+  try {
+    const url = await getMapURL("svg", {fullMap: true});
+    const link = document.createElement("a");
+    link.download = getFileName() + ".svg";
+    link.href = url;
+    link.click();
 
-  const message = `${link.download} is saved. Open 'Downloads' screen (ctrl + J) to check`;
-  tip(message, true, "success", 5000);
-  TIME && console.timeEnd("exportToSvg");
+    const message = `${link.download} is saved. Open 'Downloads' screen (CTRL + J) to check`;
+    tip(message, true, "success", 5000);
+  } catch (error) {
+    ERROR && console.error(error);
+    tip(`SVG export failed: ${error?.message || "Unknown error"}`, true, "error", 5000);
+  } finally {
+    TIME && console.timeEnd("exportToSvg");
+  }
 }
 
 async function exportToPng() {
   TIME && console.time("exportToPng");
-  const url = await getMapURL("png");
+  try {
+    const url = await getMapURL("png");
+    const link = document.createElement("a");
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = svgWidth * pngResolutionInput.value;
+    canvas.height = svgHeight * pngResolutionInput.value;
 
-  const link = document.createElement("a");
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  canvas.width = svgWidth * pngResolutionInput.value;
-  canvas.height = svgHeight * pngResolutionInput.value;
-  const img = new Image();
-  img.src = url;
-
-  img.onload = function () {
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    link.download = getFileName() + ".png";
-    canvas.toBlob(function (blob) {
-      link.href = window.URL.createObjectURL(blob);
-      link.click();
-      window.setTimeout(function () {
-        canvas.remove();
-        window.URL.revokeObjectURL(link.href);
-
-        const message = `${link.download} is saved. Open 'Downloads' screen (ctrl + J) to check. You can set image scale in options`;
-        tip(message, true, "success", 5000);
-      }, 1000);
+    const blob = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = function () {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => {
+          if (!blob) return reject(new Error("Cannot render PNG image"));
+          resolve(blob);
+        }, "image/png");
+      };
+      img.onerror = () => reject(new Error("Cannot load map image for PNG export"));
+      img.src = url;
     });
-  };
 
-  TIME && console.timeEnd("exportToPng");
+    link.download = getFileName() + ".png";
+    link.href = window.URL.createObjectURL(blob);
+    link.click();
+    window.setTimeout(function () {
+      canvas.remove();
+      window.URL.revokeObjectURL(link.href);
+    }, 1000);
+
+    const message = `${link.download} is saved. Open 'Downloads' screen (CTRL + J) to check. You can set image scale in options`;
+    tip(message, true, "success", 5000);
+  } catch (error) {
+    ERROR && console.error(error);
+    tip(`PNG export failed: ${error?.message || "Unknown error"}`, true, "error", 5000);
+  } finally {
+    TIME && console.timeEnd("exportToPng");
+  }
 }
 
 async function exportToJpeg() {
   TIME && console.time("exportToJpeg");
-  const url = await getMapURL("png");
+  try {
+    const url = await getMapURL("png");
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = svgWidth * pngResolutionInput.value;
+    canvas.height = svgHeight * pngResolutionInput.value;
 
-  const canvas = document.createElement("canvas");
-  canvas.width = svgWidth * pngResolutionInput.value;
-  canvas.height = svgHeight * pngResolutionInput.value;
-  const img = new Image();
-  img.src = url;
-
-  img.onload = async function () {
-    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
     const quality = Math.min(rn(1 - pngResolutionInput.value / 20, 2), 0.92);
-    const URL = await canvas.toDataURL("image/jpeg", quality);
+    const blob = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = function () {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          blob => {
+            if (!blob) return reject(new Error("Cannot render JPEG image"));
+            resolve(blob);
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+      img.onerror = () => reject(new Error("Cannot load map image for JPEG export"));
+      img.src = url;
+    });
+
     const link = document.createElement("a");
     link.download = getFileName() + ".jpeg";
-    link.href = URL;
+    link.href = window.URL.createObjectURL(blob);
     link.click();
     tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
-    window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
-  };
-
-  TIME && console.timeEnd("exportToJpeg");
+    window.setTimeout(() => window.URL.revokeObjectURL(link.href), 5000);
+  } catch (error) {
+    ERROR && console.error(error);
+    tip(`JPEG export failed: ${error?.message || "Unknown error"}`, true, "error", 5000);
+  } finally {
+    TIME && console.timeEnd("exportToJpeg");
+  }
 }
 
 async function exportToPngTiles() {
@@ -132,17 +164,24 @@ async function exportToPngTiles() {
   }
 
   status.innerHTML = "Zipping files...";
-  zip.generateAsync({type: "blob"}).then(blob => {
-    status.innerHTML = "Downloading the archive...";
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = getFileName() + ".zip";
-    link.click();
-    link.remove();
+  zip
+    .generateAsync({type: "blob"})
+    .then(blob => {
+      status.innerHTML = "Downloading the archive...";
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = getFileName() + ".zip";
+      link.click();
+      link.remove();
 
-    status.innerHTML = 'Done. Check .zip file in "Downloads" (CTRL + J)';
-    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
-  });
+      status.innerHTML = 'Done. Check .zip file in "Downloads" (CTRL + J)';
+      setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+    })
+    .catch(error => {
+      ERROR && console.error(error);
+      status.innerHTML = "Tiles export failed";
+      tip(`PNG tiles export failed: ${error?.message || "Unknown error"}`, true, "error", 5000);
+    });
 
   // promisified img.onload
   function loadImage(img) {
