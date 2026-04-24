@@ -89,9 +89,7 @@ const featuresRenderer = (): void => {
 const lineGen = line().curve(curveBasisClosed);
 
 function featurePathRenderer(feature: PackedGraphFeature): string {
-  const points: [number, number][] = feature.vertices.map(
-    (vertex: number) => pack.vertices.p[vertex],
-  );
+  const points = feature.vertices.map((vertex) => pack.vertices.p[vertex]);
   if (points.some((point) => point === undefined)) {
     ERROR && console.error("Undefined point in getFeaturePath");
     return "";
@@ -99,8 +97,8 @@ function featurePathRenderer(feature: PackedGraphFeature): string {
 
   const simplifiedPoints = simplify(points, 0.3);
   const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight, 1);
-  const fractalized = fractalizeCoastline(clippedPoints, feature.i);
-  return `${round(lineGen(fractalized) || "")}Z`;
+  const {points: fracPts} = fractalizeCoastline(clippedPoints, feature.i);
+  return `${round(lineGen(fracPts) || "")}Z`;
 }
 
 window.drawFeatures = featuresRenderer;

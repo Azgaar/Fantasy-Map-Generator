@@ -1,41 +1,28 @@
 import Alea from "alea";
 
+export interface CoastlineSettings {
+  maxDepth: number; // max recursion depth per edge
+  baseAmplitude: number; // peak displacement (scales with √edgeLength)
+  amplitudeDecay: number; // amplitude multiplier per recursion level
+  minEdge: number; // edges shorter than this are never subdivided
+  smoothThreshold: number; // profile values below this → zero displacement
+  roughnessContrast: number; // power applied to normalised roughness profile
+}
+
 export const coastSettings: CoastlineSettings = {
   maxDepth: 4,
-  baseAmplitude: 3,
-  amplitudeDecay: 0.5,
-  minEdge: 1.5,
+  baseAmplitude: 2,
+  amplitudeDecay: 0.55,
+  minEdge: 1.2,
   smoothThreshold: 0.25,
   roughnessContrast: 1.5
 };
 
-export interface CoastlineSettings {
-  /** Maximum recursion depth. Rough edges get up to 2^maxDepth − 1 points. */
-  maxDepth: number;
-  /** Base perpendicular displacement amplitude (scales with √edgeLength). */
-  baseAmplitude: number;
-  /** Amplitude multiplier per recursion level (Hurst exponent ≈ log2(decay)). */
-  amplitudeDecay: number;
-  /** Edges shorter than this (map units) are never subdivided. */
-  minEdge: number;
-  /** Profile values below this threshold receive zero displacement. */
-  smoothThreshold: number;
-  /** Power applied to the normalised roughness profile. Higher = more contrast. */
-  roughnessContrast: number;
-}
-
-// Resolution of the roughness envelope (points around the full perimeter)
+// Number of sample points around the full perimeter for the roughness envelope.
 const PROFILE_SIZE = 256;
 
-/**
- * Build a smooth, perfectly closed roughness envelope using a sum of
- * low-frequency cosine harmonics evaluated around [0, 1).
- *
- * A sum of k·cos(2π k t + φ) is intrinsically periodic with period 1,
- * so the result is seam-free. Only 3–5 harmonics are used to keep the
- * variation long-range; raising the normalised result to a high power
- * creates stark contrast — glassy bays vs. wild rocky headlands.
- */
+// Build a smooth closed roughness envelope via sum-of-cosine harmonics.
+// Intrinsically seam-free; result raised to `contrast` power for calm/rough contrast.
 function makeRoughnessProfile(rand: () => number, contrast: number): Float32Array {
   const profile = new Float32Array(PROFILE_SIZE);
   const numHarmonics = 3 + Math.floor(rand() * 3); // 3, 4 or 5
@@ -59,7 +46,7 @@ function makeRoughnessProfile(rand: () => number, contrast: number): Float32Arra
   return profile;
 }
 
-/** Linear interpolation into the envelope at t ∈ [0, 1). */
+/** Linear interpolation into the envelope at normalised perimeter position t ∈ [0, 1). */
 function sampleProfile(profile: Float32Array, t: number): number {
   const pos = (((t % 1) + 1) % 1) * PROFILE_SIZE;
   const i = Math.floor(pos) % PROFILE_SIZE;
@@ -67,9 +54,7 @@ function sampleProfile(profile: Float32Array, t: number): number {
   return profile[i] * (1 - f) + profile[(i + 1) % PROFILE_SIZE] * f;
 }
 
-/**
- * Circular average of two t-values in [0, 1). Handles the wraparound at the seam (e.g. t0=0.95, t1=0.05 → 0.0).
- */
+/** Circular midpoint of two normalised perimeter positions, handling the 0/1 seam. */
 function midT(t0: number, t1: number): number {
   const diff = t1 - t0;
   if (Math.abs(diff) <= 0.5) return t0 + diff / 2;
@@ -77,11 +62,7 @@ function midT(t0: number, t1: number): number {
   return ((t % 1) + 1) % 1;
 }
 
-/**
- * Recursively subdivide one edge of the coastline polygon.
- * In smooth zones the roughness check fires immediately — zero intermediate points.
- * In rough zones all `maxDepth` levels fire, inserting up to 2^maxDepth−1 intermediate points on a single original edge.
- */
+/** Recursively subdivide an edge, inserting displaced midpoints in rough zones. */
 function subdivideEdge(
   x0: number,
   y0: number,
@@ -117,12 +98,17 @@ function subdivideEdge(
   subdivideEdge(mx, my, x1, y1, tm, t1, depth - 1, nextAmp, profile, rand, resultPts, settings);
 }
 
-/** Core algorithm with an explicit PRNG — shared by the renderer and the dialog preview. */
+export interface FractalizedShape {
+  points: [number, number][];
+  origIndices: number[]; // index in points[] where original vertex i lives
+}
+
+// Shared by the renderer and the dialog preview — accepts an explicit PRNG.
 function fractalizeWithRand(
   points: [number, number][],
   rand: () => number,
   settings: CoastlineSettings
-): [number, number][] {
+): FractalizedShape {
   const profile = makeRoughnessProfile(rand, settings.roughnessContrast);
 
   const n = points.length;
@@ -144,8 +130,10 @@ function fractalizeWithRand(
   }
 
   const resultPts: [number, number][] = [];
+  const origIndices: number[] = [];
 
   for (let i = 0; i < n; i++) {
+    origIndices.push(resultPts.length);
     resultPts.push(points[i]);
     const [x0, y0] = points[i];
     const [x1, y1] = points[(i + 1) % n];
@@ -165,21 +153,21 @@ function fractalizeWithRand(
     );
   }
 
-  return resultPts;
+  return {points: resultPts, origIndices};
 }
 
 export function fractalizeCoastline(
   points: [number, number][],
   featureIndex: number,
   settings: CoastlineSettings = coastSettings
-): [number, number][] {
-  if (points.length < 3) return points;
+): FractalizedShape {
+  if (points.length < 3) return {points, origIndices: points.map((_, i) => i)};
   const rand = Alea(`${seed}_c${featureIndex}`);
   return fractalizeWithRand(points, rand, settings);
 }
 
 // ---------------------------------------------------------------------------
-// Advanced Settings dialog
+// Dialog
 // ---------------------------------------------------------------------------
 
 declare global {
@@ -219,8 +207,8 @@ const SLIDER_DEFS: SliderDef[] = [
     id: "coastAmplitudeDecay",
     label: "Amplitude decay",
     tip: "Amplitude multiplier per recursion level (Hurst exponent). Lower = more jagged finer detail.",
-    min: 0.3,
-    max: 0.9,
+    min: 0.01,
+    max: 0.99,
     step: 0.01,
     key: "amplitudeDecay"
   },
@@ -253,19 +241,8 @@ const SLIDER_DEFS: SliderDef[] = [
   }
 ];
 
-// ---------------------------------------------------------------------------
-// Dialog preview canvases
-// ---------------------------------------------------------------------------
-
-// Fixed seed so the previews are stable and don't change when the map regenerates.
 const PREVIEW_SEED = "preview_coastline_42";
 
-/**
- * Draw the roughness envelope as a line graph.
- * The green-tinted region below the dashed threshold line shows areas that
- * receive zero displacement (glassy arcs). The orange curve shows the full
- * envelope produced by the sum-of-cosines profile generator.
- */
 function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
   const W = canvas.width;
   const H = canvas.height;
@@ -283,7 +260,6 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
   const gH = H - pt - pb;
   const threshY = pt + gH * (1 - Math.min(coastSettings.smoothThreshold, 1));
 
-  // Smooth zone fill (below threshold)
   ctx.fillStyle = "rgba(80,175,80,0.15)";
   ctx.fillRect(pl, threshY, gW, H - pb - threshY);
 
@@ -298,7 +274,6 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Threshold dashed line
   ctx.beginPath();
   ctx.setLineDash([3, 3]);
   ctx.moveTo(pl, threshY);
@@ -308,18 +283,11 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Axis labels
   ctx.fillStyle = "#999";
   ctx.font = "9px sans-serif";
   ctx.fillText("rough", pl + 1, pt + 8);
   ctx.fillText("smooth threshold", pl + 1, H - pb + 10);
 }
-
-/**
- * Draw a fractalized circle as a mini coastline preview.
- * Uses the same algorithm and PREVIEW_SEED so the graph and the shape
- * always show the same roughness profile.
- */
 function drawShapePreview(canvas: HTMLCanvasElement): void {
   const W = canvas.width;
   const H = canvas.height;
@@ -335,7 +303,7 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
     return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
   });
 
-  const frac = fractalizeWithRand(pts, Alea(PREVIEW_SEED), coastSettings);
+  const {points: frac} = fractalizeWithRand(pts, Alea(PREVIEW_SEED), coastSettings);
 
   ctx.beginPath();
   ctx.moveTo(frac[0][0], frac[0][1]);
@@ -348,14 +316,14 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
   ctx.stroke();
 }
 
-function updatePreviews(): void {
-  const rg = document.getElementById("coastRoughnessGraph") as HTMLCanvasElement | null;
-  const sp = document.getElementById("coastShapePreview") as HTMLCanvasElement | null;
-  if (rg) drawRoughnessGraph(rg);
-  if (sp) drawShapePreview(sp);
+function updatePreviews() {
+  const coastRoughnessGraph = document.getElementById("coastRoughnessGraph");
+  const coastShapePreview = document.getElementById("coastShapePreview");
+  if (coastRoughnessGraph) drawRoughnessGraph(coastRoughnessGraph as HTMLCanvasElement);
+  if (coastShapePreview) drawShapePreview(coastShapePreview as HTMLCanvasElement);
 }
 
-function buildDialogHTML(): string {
+function buildDialogHTML() {
   const rows = SLIDER_DEFS.map(({id, label, tip, min, max, step, key}) => {
     const val = coastSettings[key] as number;
     return /* html */ `
@@ -392,20 +360,15 @@ function buildDialogHTML(): string {
             style="border:1px solid #ccc;border-radius:2px;display:block"></canvas>
         </div>
       </div>
-      <div style="margin-top:6px;font-size:.8em;color:#888;line-height:1.4">
-        Changes apply immediately. Open a new map or click <em>Regenerate</em> to see
-        the effect on large continent coastlines.
-      </div>
+
     </div>`;
 }
 
 function setupCoastlineSettingsDialog(): void {
-  // Inject HTML once
   if (!document.getElementById("coastlineSettingsDialog")) {
     document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
   }
 
-  // Wire up each slider
   for (const {id, key} of SLIDER_DEFS) {
     const slider = document.getElementById(id) as HTMLInputElement | null;
     const output = document.getElementById(`${id}Out`) as HTMLElement | null;
