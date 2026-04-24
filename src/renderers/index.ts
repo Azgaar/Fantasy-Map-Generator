@@ -1,8 +1,9 @@
+import "../controllers/coastline-editor";
+import "./coastline-fractal";
 import "./draw-borders";
 import "./draw-burg-icons";
 import "./draw-burg-labels";
 import "./draw-emblems";
-import "./coastline-fractal";
 import "./draw-features";
 import "./draw-heightmap";
 import "./draw-ice";
@@ -12,3 +13,4 @@ import "./draw-relief-icons";
 import "./draw-scalebar";
 import "./draw-state-labels";
 import "./draw-temperature";
+
