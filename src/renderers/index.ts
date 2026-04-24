@@ -2,6 +2,7 @@ import "./draw-borders";
 import "./draw-burg-icons";
 import "./draw-burg-labels";
 import "./draw-emblems";
+import "./coastline-fractal";
 import "./draw-features";
 import "./draw-heightmap";
 import "./draw-ice";
