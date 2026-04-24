@@ -21,6 +21,7 @@ import {
   line,
   range,
 } from "d3";
+import { round } from "../utils";
 
 const CURVE_MAP: Record<string, CurveFactory> = {
   curveBasis,
@@ -41,8 +42,6 @@ const CURVE_MAP: Record<string, CurveFactory> = {
   curveStepAfter,
   curveStepBefore,
 };
-
-import { round } from "../utils";
 
 declare global {
   var drawHeightmap: () => void;

@@ -72,28 +72,29 @@ function loadMapPrompt(blob) {
 }
 
 async function loadMapFromURL(maplink, random) {
-  const URL = decodeURIComponent(maplink);
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20000);
+  const TIMEOUT = 120000; // 120 seconds
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
 
   try {
-    const response = await fetch(URL, {method: "GET", mode: "cors", signal: controller.signal});
+    const url = decodeURIComponent(maplink);
+    const response = await fetch(url, {method: "GET", mode: "cors", signal: controller.signal});
     if (!response.ok) throw new Error("Cannot load map from URL");
 
     const blob = await response.blob();
     uploadMap(blob);
   } catch (error) {
     const message = error?.name === "AbortError" ? "Cannot load map from URL: request timed out" : error.message;
-    showUploadErrorMessage(message, URL, random);
+    showUploadErrorMessage(message, maplink, random);
     if (random) generateMapOnLoad();
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
-function showUploadErrorMessage(error, URL, random) {
+function showUploadErrorMessage(error, maplink, random) {
   ERROR && console.error(error);
-  alertMessage.innerHTML = /* html */ `Cannot load map from the ${link(URL, "link provided")}. ${
+  alertMessage.innerHTML = /* html */ `Cannot load map from the ${link(maplink, "link provided")}. ${
     random ? `A new random map is generated. ` : ""
   } Please ensure the
   linked file is reachable and CORS is allowed on server side`;
