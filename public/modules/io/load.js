@@ -71,24 +71,30 @@ function loadMapPrompt(blob) {
   }
 }
 
-function loadMapFromURL(maplink, random) {
-  const URL = decodeURIComponent(maplink);
+async function loadMapFromURL(maplink, random) {
+  const controller = new AbortController();
+  const TIMEOUT = 120000; // 120 seconds
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
 
-  fetch(URL, {method: "GET", mode: "cors"})
-    .then(response => {
-      if (response.ok) return response.blob();
-      throw new Error("Cannot load map from URL");
-    })
-    .then(blob => uploadMap(blob))
-    .catch(error => {
-      showUploadErrorMessage(error.message, URL, random);
-      if (random) generateMapOnLoad();
-    });
+  try {
+    const url = decodeURIComponent(maplink);
+    const response = await fetch(url, {method: "GET", mode: "cors", signal: controller.signal});
+    if (!response.ok) throw new Error("Cannot load map from URL");
+
+    const blob = await response.blob();
+    uploadMap(blob);
+  } catch (error) {
+    const message = error?.name === "AbortError" ? "Cannot load map from URL: request timed out" : error.message;
+    showUploadErrorMessage(message, maplink, random);
+    if (random) generateMapOnLoad();
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
-function showUploadErrorMessage(error, URL, random) {
+function showUploadErrorMessage(error, maplink, random) {
   ERROR && console.error(error);
-  alertMessage.innerHTML = /* html */ `Cannot load map from the ${link(URL, "link provided")}. ${
+  alertMessage.innerHTML = /* html */ `Cannot load map from the ${link(maplink, "link provided")}. ${
     random ? `A new random map is generated. ` : ""
   } Please ensure the
   linked file is reachable and CORS is allowed on server side`;
@@ -744,7 +750,7 @@ async function parseLoadedData(data, mapVersion) {
     ERROR && console.error(error);
     clearMainTip();
 
-    alertMessage.innerHTML = /* html */ `An error is occured on map loading. Select a different file to load, <br>generate a new random map or cancel the loading.<br>Map version: ${mapVersion}. Generator version: ${VERSION}.
+    alertMessage.innerHTML = /* html */ `An error occurred while loading the map. Select a different file to load, <br>generate a new random map or cancel the loading.<br>Map version: ${mapVersion}. Generator version: ${VERSION}.
       <p id="errorBox">${parseError(error)}</p>`;
 
     $("#alert").dialog({

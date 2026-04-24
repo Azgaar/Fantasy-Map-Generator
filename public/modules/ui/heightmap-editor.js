@@ -732,7 +732,8 @@ function editHeightmap(options) {
       const heights = grid.cells.h;
 
       const brush = document.querySelector("#brushesButtons > button.pressed").id;
-      if (brush === "brushRaise") selection.forEach(i => (heights[i] = !ocean && heights[i] < 20 ? 20 : lim(heights[i] + power)));
+      if (brush === "brushRaise")
+        selection.forEach(i => (heights[i] = !ocean && heights[i] < 20 ? 20 : lim(heights[i] + power)));
       else if (brush === "brushElevate")
         selection.forEach(
           (i, d) => (heights[i] = lim(heights[i] + interpolate(d / Math.max(selection.length - 1, 1))))
@@ -747,7 +748,11 @@ function editHeightmap(options) {
         selection.forEach(
           i =>
             (heights[i] = rn(
-              (d3.mean(grid.cells.c[i].filter(c => (land ? heights[c] >= 20 : ocean ? heights[c] < 20 : 1)).map(c => heights[c])) +
+              (d3.mean(
+                grid.cells.c[i]
+                  .filter(c => (land ? heights[c] >= 20 : ocean ? heights[c] < 20 : 1))
+                  .map(c => heights[c])
+              ) +
                 heights[i] * (10 - power) +
                 0.6) /
                 (11 - power),
@@ -816,8 +821,10 @@ function editHeightmap(options) {
     }
 
     function startFromScratch() {
-      if (cellTypeFilter.value === "land") return tip("Not allowed when 'only land cells' filter is set", false, "error");
-      if (cellTypeFilter.value === "water") return tip("Not allowed when 'only water cells' filter is set", false, "error");
+      if (cellTypeFilter.value === "land")
+        return tip("Not allowed when 'only land cells' filter is set", false, "error");
+      if (cellTypeFilter.value === "water")
+        return tip("Not allowed when 'only water cells' filter is set", false, "error");
       const someHeights = grid.cells.h.some(h => h);
       if (!someHeights)
         return tip("Heightmap is already cleared, please do not click twice if not required", false, "error");
@@ -1479,8 +1486,8 @@ function editHeightmap(options) {
     function closeImageConverter(event) {
       event.preventDefault();
       event.stopPropagation();
-      alertMessage.innerHTML = /* html */ ` Are you sure you want to close the Image Converter? Click "Cancel" to geck back to convertion. Click "Complete" to apply
-      the conversion. Click "Close" to exit conversion mode and restore previous heightmap`;
+      alertMessage.innerHTML = /* html */ `Are you sure you want to close the Image Converter? Click "Cancel" to keep editing. Click "Complete" to apply
+      the conversion and close the tool. Click "Close" to discard the conversion and restore the previous heightmap.`;
 
       $("#alert").dialog({
         resizable: false,

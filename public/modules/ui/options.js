@@ -241,10 +241,22 @@ function toggleTranslateExtent(el) {
 }
 
 // add voice options
+let voiceAttempts = 0;
 const voiceInterval = setInterval(function () {
+  voiceAttempts++;
   const voices = speechSynthesis.getVoices();
-  if (voices.length) clearInterval(voiceInterval);
-  else return;
+  if (!voices.length) {
+    if (voiceAttempts < 10) return;
+
+    clearInterval(voiceInterval);
+    const select = byId("speakerVoice");
+    if (select && !select.options.length) {
+      select.options.add(new Option("No voices available", "", false));
+    }
+    return;
+  }
+
+  clearInterval(voiceInterval);
 
   const select = byId("speakerVoice");
   voices.forEach((voice, i) => {

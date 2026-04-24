@@ -430,7 +430,7 @@ class MilitaryModule {
       nodes.forEach((node) => {
         tree.remove(node);
         const overlap = tree.find(node.x, node.y, 20);
-        if (overlap && overlap.t && mergeable(node, overlap)) {
+        if (overlap?.t && mergeable(node, overlap)) {
           merge(node, overlap);
           return;
         }

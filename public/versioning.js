@@ -59,7 +59,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
         ${latestPublicChanges.map(change => `<li>${change}</li>`).join("")}
       </ul>
 
-      <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worlbuilding, report bugs and propose new features.</p>
+      <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worldbuilding, report bugs and propose new features.</p>
       <span><i>Thanks for all supporters on <a href="${patreon}" target="_blank">Patreon</a>!</i></span>`;
 
     $("#alert").dialog({
@@ -96,8 +96,9 @@ function parseMapVersion(version) {
 
   if (patch === undefined) {
     // e.g. 1.732
-    minor = minor.slice(0, 2);
-    patch = minor.slice(2);
+    const compactVersion = minor;
+    minor = compactVersion.slice(0, 2);
+    patch = compactVersion.slice(2);
   }
 
   // e.g. 0.7b
