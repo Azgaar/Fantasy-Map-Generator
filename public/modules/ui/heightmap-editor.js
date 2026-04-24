@@ -631,8 +631,6 @@ function editHeightmap(options) {
       byId("lineSlider").style.display = "none";
     }
 
-    const dragBrushThrottled = throttle(dragBrush, 100);
-
     function toggleBrushMode(event) {
       if (event.target.classList.contains("pressed")) {
         exitBrushMode();
@@ -647,7 +645,7 @@ function editHeightmap(options) {
         viewbox.style("cursor", "crosshair").on("click", placeLinearFeature);
       } else {
         byId("brushesSliders").style.display = "block";
-        viewbox.style("cursor", "crosshair").call(d3.drag().on("start", dragBrushThrottled));
+        viewbox.style("cursor", "crosshair").call(d3.drag().on("start", dragBrush));
       }
     }
 
