@@ -396,7 +396,10 @@ declare global {
   interface Window {
     ERROR: boolean;
 
-    clipPoly: (points: [number, number][], secure?: number) => [number, number][];
+    clipPoly: (
+      points: [number, number][],
+      secure?: number,
+    ) => [number, number][];
     getSegmentId: typeof getSegmentId;
     debounce: typeof debounce;
     throttle: typeof throttle;

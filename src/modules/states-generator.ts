@@ -1,19 +1,19 @@
 import { mean, median, sum } from "d3";
 import {
-    byId,
-    each,
-    gauss,
-    getAdjective,
-    getMixedColor,
-    getPolesOfInaccessibility,
-    getRandomColor,
-    minmax,
-    P,
-    ra,
-    rand,
-    rn,
-    rw,
-    trimVowels,
+  byId,
+  each,
+  gauss,
+  getAdjective,
+  getMixedColor,
+  getPolesOfInaccessibility,
+  getRandomColor,
+  minmax,
+  P,
+  ra,
+  rand,
+  rn,
+  rw,
+  trimVowels,
 } from "../utils";
 
 declare global {
