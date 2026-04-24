@@ -88,7 +88,8 @@ function handleKeyup(event) {
   else if (code === "KeyK") toggleMarkers();
   else if (code === "Equal" && !customization) toggleRulers();
   else if (code === "Slash") toggleScaleBar();
-  else if (code === "BracketLeft") toggleVignette();
+  else if (code === "BracketLeft" && !handleBracketSizeChange(code)) toggleVignette();
+  else if (code === "BracketRight") handleBracketSizeChange(code);
   else if (code === "ArrowLeft") zoom.translateBy(svg, 10, 0);
   else if (code === "ArrowRight") zoom.translateBy(svg, -10, 0);
   else if (code === "ArrowUp") zoom.translateBy(svg, 0, 10);
@@ -139,6 +140,23 @@ function handleSizeChange(key) {
 
   const scaleBy = key === "+" ? 1.2 : 0.8;
   zoom.scaleBy(svg, scaleBy); // if no brush elements displayed, zoom map
+}
+
+function handleBracketSizeChange(code) {
+  const hasActiveBrush =
+    byId("heightmapBrushRadius")?.offsetParent ||
+    byId("heightmapLinePower")?.offsetParent ||
+    byId("biomesBrush")?.offsetParent ||
+    byId("culturesBrush")?.offsetParent ||
+    byId("statesBrush")?.offsetParent ||
+    byId("provincesBrush")?.offsetParent ||
+    byId("religionsBrush")?.offsetParent ||
+    byId("zonesBrush")?.offsetParent;
+
+  if (!hasActiveBrush) return false;
+
+  handleSizeChange(code === "BracketLeft" ? "-" : "+");
+  return true;
 }
 
 function toggleMode() {
