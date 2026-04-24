@@ -1,5 +1,6 @@
 const $body = insertEditorHtml();
 addListeners();
+let statesManualHistory = [];
 
 export function open() {
   closeDialogs("#statesEditor, .stable");
@@ -71,11 +72,16 @@ function insertEditorHtml() {
 
       <button id="statesManually" data-tip="Manually re-assign states" class="icon-brush"></button>
       <div id="statesManuallyButtons" style="display: none">
-        <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em;">
+        <div data-tip="Change brush size. Shortcuts: + / ] to increase; - / [ to decrease" style="margin-block: 0.3em;">
           <slider-input id="statesBrush" min="1" max="100" value="15">Brush size:</slider-input>
         </div>
+        <button id="statesManuallyUndo" data-tip="Undo last brush stroke" class="icon-ccw"></button>
         <button id="statesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
         <button id="statesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
+        <div data-tip="When enabled, only neutral cells can be painted" style="display: inline-block">
+          <input id="statesManuallyProtect" class="checkbox" type="checkbox" />
+          <label for="statesManuallyProtect" class="checkbox-label"><i>do not overwrite existing</i></label>
+        </div>
       </div>
 
       <button id="statesAdd" data-tip="Add a new state. Hold Shift to add multiple" class="icon-plus"></button>
@@ -102,6 +108,7 @@ function addListeners() {
   byId("statesRandomize").on("click", randomizeStatesExpansion);
   byId("statesGrowthRate").on("input", () => recalculateStates(false));
   byId("statesManually").on("click", enterStatesManualAssignent);
+  byId("statesManuallyUndo").on("click", undoStatesManualAssignment);
   byId("statesManuallyApply").on("click", applyStatesManualAssignent);
   byId("statesManuallyCancel").on("click", () => exitStatesManualAssignment(false));
   byId("statesAdd").on("click", enterAddStateMode);
@@ -249,8 +256,8 @@ function statesEditorAddLines() {
       <span data-tip="${populationTip}" class="icon-male hide"></span>
       <div data-tip="${populationTip}" class="statePopulation pointer hide" style="width: 5em">${si(population)}</div>
       <select data-tip="State type. Defines growth model. Click to change" class="cultureType ${hidden} show hide">${getTypeOptions(
-      s.type
-    )}</select>
+        s.type
+      )}</select>
       <span data-tip="State expansionism" class="icon-resize-full ${hidden} show hide"></span>
       <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
         class="statePower ${hidden} show hide" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
@@ -771,12 +778,12 @@ function showStatesChart() {
       option === "area"
         ? "Area: " + area
         : option === "rural"
-        ? "Rural population: " + si(rural)
-        : option === "urban"
-        ? "Urban population: " + si(urban)
-        : option === "burgs"
-        ? "Burgs number: " + d.data.burgs
-        : "Population: " + si(rural + urban);
+          ? "Rural population: " + si(rural)
+          : option === "urban"
+            ? "Urban population: " + si(urban)
+            : option === "burgs"
+              ? "Burgs number: " + d.data.burgs
+              : "Population: " + si(rural + urban);
 
     statesInfo.innerHTML = /* html */ `${state}. ${value}`;
     stateHighlightOn(ev);
@@ -794,12 +801,12 @@ function showStatesChart() {
       this.value === "area"
         ? d => d.area
         : this.value === "rural"
-        ? d => d.rural
-        : this.value === "urban"
-        ? d => d.urban
-        : this.value === "burgs"
-        ? d => d.burgs
-        : d => d.rural + d.urban;
+          ? d => d.rural
+          : this.value === "urban"
+            ? d => d.urban
+            : this.value === "burgs"
+              ? d => d.burgs
+              : d => d.rural + d.urban;
 
     root.sum(value);
     node.data(treeLayout(root).leaves());
@@ -903,6 +910,7 @@ function enterStatesManualAssignent() {
     .on("touchmove mousemove", moveStateBrush);
 
   $body.querySelector("div").classList.add("selected");
+  statesManualHistory = [];
 }
 
 function selectStateOnLineClick() {
@@ -926,6 +934,7 @@ function selectStateOnMapClick() {
 
 function dragStateBrush() {
   const r = +statesBrush.value;
+  saveStatesManualSnapshot();
 
   d3.event.on("drag", () => {
     if (!d3.event.dx && !d3.event.dy) return;
@@ -945,11 +954,13 @@ function changeStateForSelection(selection) {
   const $selected = $body.querySelector("div.selected");
   const stateNew = +$selected.dataset.id;
   const color = pack.states[stateNew].color || "#ffffff";
+  const preventOverwrite = byId("statesManuallyProtect")?.checked;
 
   selection.forEach(function (i) {
     const exists = temp.select("polygon[data-cell='" + i + "']");
     const stateOld = exists.size() ? +exists.attr("data-state") : pack.cells.state[i];
     if (stateNew === stateOld) return;
+    if (preventOverwrite && stateOld) return;
     if (i === pack.states[stateOld].center) return;
 
     // change of append new element
@@ -1148,6 +1159,7 @@ function adjustProvinces(affectedProvinces) {
 
 function exitStatesManualAssignment(close) {
   customization = 0;
+  statesManualHistory = [];
   statesBody.select("#temp").remove();
   removeCircle();
   document.querySelectorAll("#statesBottom > button").forEach(el => (el.style.display = "inline-block"));
@@ -1166,6 +1178,21 @@ function exitStatesManualAssignment(close) {
   clearMainTip();
   const selected = $body.querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
+}
+
+function saveStatesManualSnapshot() {
+  const temp = statesBody.select("#temp").node();
+  if (!temp) return;
+
+  statesManualHistory.push(temp.innerHTML);
+  if (statesManualHistory.length > 100) statesManualHistory.shift();
+}
+
+function undoStatesManualAssignment() {
+  const temp = statesBody.select("#temp").node();
+  if (!temp || !statesManualHistory.length) return;
+
+  temp.innerHTML = statesManualHistory.pop();
 }
 
 function enterAddStateMode() {

@@ -1,5 +1,6 @@
 const $body = insertEditorHtml();
 addListeners();
+let culturesManualHistory = [];
 
 const cultureTypes = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
 
@@ -51,9 +52,10 @@ function insertEditorHtml() {
       <button id="culturesHeirarchy" data-tip="Show cultures hierarchy tree" class="icon-sitemap"></button>
       <button id="culturesManually" data-tip="Manually re-assign cultures" class="icon-brush"></button>
       <div id="culturesManuallyButtons" style="display: none">
-        <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em;">
+        <div data-tip="Change brush size. Shortcuts: + / ] to increase; - / [ to decrease" style="margin-block: 0.3em;">
           <slider-input id="culturesBrush" min="1" max="100" value="15">Brush size:</slider-input>
         </div>
+        <button id="culturesManuallyUndo" data-tip="Undo last brush stroke" class="icon-ccw"></button>
         <button id="culturesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
         <button id="culturesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
       </div>
@@ -83,6 +85,7 @@ function addListeners() {
   byId("culturesHeirarchy").on("click", showHierarchy);
   byId("culturesRecalculate").on("click", () => recalculateCultures(true));
   byId("culturesManually").on("click", enterCultureManualAssignent);
+  byId("culturesManuallyUndo").on("click", undoCulturesManualAssignment);
   byId("culturesManuallyApply").on("click", applyCultureManualAssignent);
   byId("culturesManuallyCancel").on("click", () => exitCulturesManualAssignment());
   byId("culturesEditNamesBase").on("click", editNamesbase);
@@ -690,6 +693,7 @@ function enterCultureManualAssignent() {
     .on("touchmove mousemove", moveCultureBrush);
 
   $body.querySelector("div").classList.add("selected");
+  culturesManualHistory = [];
 }
 
 function selectCultureOnLineClick(i) {
@@ -712,6 +716,7 @@ function selectCultureOnMapClick() {
 
 function dragCultureBrush() {
   const radius = +culturesBrush.value;
+  saveCulturesManualSnapshot();
 
   d3.event.on("drag", () => {
     if (!d3.event.dx && !d3.event.dy) return;
@@ -774,6 +779,7 @@ function applyCultureManualAssignent() {
 
 function exitCulturesManualAssignment(close) {
   customization = 0;
+  culturesManualHistory = [];
   cults.select("#temp").remove();
   removeCircle();
   document.querySelectorAll("#culturesBottom > *").forEach(el => (el.style.display = "inline-block"));
@@ -789,6 +795,21 @@ function exitCulturesManualAssignment(close) {
   clearMainTip();
   const selected = $body.querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
+}
+
+function saveCulturesManualSnapshot() {
+  const temp = cults.select("#temp").node();
+  if (!temp) return;
+
+  culturesManualHistory.push(temp.innerHTML);
+  if (culturesManualHistory.length > 100) culturesManualHistory.shift();
+}
+
+function undoCulturesManualAssignment() {
+  const temp = cults.select("#temp").node();
+  if (!temp || !culturesManualHistory.length) return;
+
+  temp.innerHTML = culturesManualHistory.pop();
 }
 
 function enterAddCulturesMode() {

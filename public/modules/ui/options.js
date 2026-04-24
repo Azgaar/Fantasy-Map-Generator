@@ -727,7 +727,7 @@ function regeneratePrompt(options) {
   if (customization)
     return tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
-  if (workingTime < 5) return regenerateMap(options);
+  if (workingTime < 1) return regenerateMap(options);
 
   alertMessage.innerHTML = /* html */ `Are you sure you want to generate a new map?<br />
     All unsaved changes made to the current map will be lost`;

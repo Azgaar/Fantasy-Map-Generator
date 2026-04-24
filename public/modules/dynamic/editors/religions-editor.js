@@ -66,11 +66,15 @@ function insertEditorHtml() {
 
       <button id="religionsManually" data-tip="Manually re-assign religions" class="icon-brush"></button>
       <div id="religionsManuallyButtons" style="display: none">
-        <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em;">
+        <div data-tip="Change brush size. Shortcuts: + or ] to increase; - or [ to decrease" style="margin-block: 0.3em;">
           <slider-input id="religionsBrush" min="1" max="100" value="15">Brush size:</slider-input>
         </div>
         <button id="religionsManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
         <button id="religionsManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
+        <div data-tip="When enabled, only cells without religion can be painted" style="display: inline-block">
+          <input id="religionsManuallyProtect" class="checkbox" type="checkbox" />
+          <label for="religionsManuallyProtect" class="checkbox-label"><i>do not overwrite existing</i></label>
+        </div>
       </div>
       <button id="religionsAdd" data-tip="Add a new religion. Hold Shift to add multiple" class="icon-plus"></button>
       <button id="religionsExport" data-tip="Download religions-related data" class="icon-download"></button>
@@ -174,8 +178,8 @@ function religionsEditorAddLines() {
         <div data-tip="Religion area" class="religionArea hide" style="width: 6em">${si(area) + unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="religionPopulation hide pointer" style="width: 5em">${si(
-        population
-      )}</div>
+          population
+        )}</div>
       </div>`;
       continue;
     }
@@ -208,8 +212,8 @@ function religionsEditorAddLines() {
       <div data-tip="Religion area" class="religionArea hide" style="width: 6em">${si(area) + unit}</div>
       <span data-tip="${populationTip}" class="icon-male hide"></span>
       <div data-tip="${populationTip}" class="religionPopulation hide pointer" style="width: 5em">${si(
-      population
-    )}</div>
+        population
+      )}</div>
       ${getExpansionColumns(r)}
       <span data-tip="Lock this religion" class="icon-lock${r.lock ? "" : "-open"} hide"></span>
       <span data-tip="Remove religion" class="icon-trash-empty hide"></span>
@@ -700,11 +704,13 @@ function changeReligionForSelection(selection) {
   const selected = $body.querySelector("div.selected");
   const religionNew = +selected.dataset.id;
   const color = pack.religions[religionNew].color || "#ffffff";
+  const preventOverwrite = byId("religionsManuallyProtect")?.checked;
 
   selection.forEach(function (i) {
     const exists = temp.select("polygon[data-cell='" + i + "']");
     const religionOld = exists.size() ? +exists.attr("data-religion") : pack.cells.religion[i];
     if (religionNew === religionOld) return;
+    if (preventOverwrite && religionOld) return;
 
     // change of append new element
     if (exists.size()) exists.attr("data-religion", religionNew).attr("fill", color);
