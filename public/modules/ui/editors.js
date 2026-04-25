@@ -544,8 +544,8 @@ function changePickerSpace() {
     space === "hex"
       ? d3.rgb(this.value)
       : space === "rgb"
-      ? d3.rgb(i[0], i[1], i[2])
-      : d3.hsl(i[0], i[1] / 100, i[2] / 100);
+        ? d3.rgb(i[0], i[1], i[2])
+        : d3.hsl(i[0], i[1] / 100, i[2] / 100);
 
   const hsl = d3.hsl(fill);
   if (isNaN(hsl.l)) {
@@ -1004,5 +1004,11 @@ async function editCultures() {
 async function editReligions() {
   if (customization) return;
   const Editor = await import("../dynamic/editors/religions-editor.js?v=1.118.0");
+  Editor.open();
+}
+
+async function editCoastlineSettings() {
+  if (customization) return;
+  const Editor = await import("../dynamic/editors/coastline-editor.js?v=1.118.0");
   Editor.open();
 }

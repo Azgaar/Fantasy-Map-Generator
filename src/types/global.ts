@@ -96,4 +96,5 @@ declare global {
   var reGraph: () => void;
   var createDefaultRuler: () => void;
   var showStatistics: () => void;
+  var closeDialogs: (except?: string) => void;
 }

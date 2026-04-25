@@ -5,14 +5,9 @@ import {
   coastSettings,
   fractalize,
   makeRoughnessProfile,
-  PROFILE_SIZE,
+  PROFILE_SIZE
 } from "../renderers/coastline-fractal";
-
-declare global {
-  var showCoastlineSettings: () => void;
-}
-
-const PREVIEW_SEED = "preview_coastline_42";
+import { byId } from "../utils";
 
 interface SliderDef {
   id: string;
@@ -32,7 +27,7 @@ const SLIDER_DEFS: SliderDef[] = [
     min: 1,
     max: 5,
     step: 1,
-    key: "maxDepth",
+    key: "maxDepth"
   },
   {
     id: "coastBaseAmplitude",
@@ -41,7 +36,7 @@ const SLIDER_DEFS: SliderDef[] = [
     min: 0.2,
     max: 4,
     step: 0.1,
-    key: "baseAmplitude",
+    key: "baseAmplitude"
   },
   {
     id: "coastAmplitudeDecay",
@@ -50,7 +45,7 @@ const SLIDER_DEFS: SliderDef[] = [
     min: 0.01,
     max: 0.99,
     step: 0.01,
-    key: "amplitudeDecay",
+    key: "amplitudeDecay"
   },
   {
     id: "coastMinEdge",
@@ -59,7 +54,7 @@ const SLIDER_DEFS: SliderDef[] = [
     min: 0.1,
     max: 10,
     step: 0.1,
-    key: "minEdge",
+    key: "minEdge"
   },
   {
     id: "coastSmoothThreshold",
@@ -68,7 +63,7 @@ const SLIDER_DEFS: SliderDef[] = [
     min: 0.01,
     max: 0.5,
     step: 0.01,
-    key: "smoothThreshold",
+    key: "smoothThreshold"
   },
   {
     id: "coastRoughnessContrast",
@@ -77,9 +72,100 @@ const SLIDER_DEFS: SliderDef[] = [
     min: 0.5,
     max: 10,
     step: 0.1,
-    key: "roughnessContrast",
-  },
+    key: "roughnessContrast"
+  }
 ];
+
+const PREVIEW_SEED = "preview_coastline_42";
+
+export function open(): void {
+  if (!byId("coastlineSettingsDialog")) {
+    document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
+  }
+
+  for (const {id, key} of SLIDER_DEFS) {
+    const slider = byId(id) as HTMLInputElement | null;
+    const output = byId(`${id}Out`) as HTMLElement | null;
+    const resetBtn = byId(`${id}Reset`) as HTMLElement | null;
+
+    if (!slider || !output || !resetBtn) continue;
+
+    const defaultVal = coastSettings[key] as number;
+
+    slider.on("input", () => {
+      const value = slider.valueAsNumber;
+      coastSettings[key] = value;
+      output.textContent = String(value);
+      updatePreviews();
+      drawFeatures();
+    });
+
+    resetBtn.on("click", () => {
+      (coastSettings[key] as number) = defaultVal;
+      slider.value = String(defaultVal);
+      output.textContent = String(defaultVal);
+      updatePreviews();
+      drawFeatures();
+    });
+  }
+
+  updatePreviews();
+  closeDialogs("#culturesEditor, .stable");
+
+  $("#coastlineSettingsDialog").dialog({
+    title: "Coastline Advanced Settings",
+    resizable: false,
+    width: "auto",
+    position: {my: "center", at: "center", of: "svg"}
+  });
+}
+
+function buildDialogHTML(): string {
+  const rows = SLIDER_DEFS.map(({id, label, tip, min, max, step, key}) => {
+    const value = coastSettings[key];
+    return /* html */ `
+      <tr data-tip="${tip}">
+        <td style="padding:4px 8px;white-space:nowrap">${label}</td>
+        <td style="padding:4px 4px">
+          <input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${value}"
+            style="width:160px;vertical-align:middle"/>
+        </td>
+        <td style="padding:4px 6px;min-width:2.8em;text-align:right">
+          <span id="${id}Out" style="font-family:monospace;font-size:.85em">${value}</span>
+        </td>
+        <td style="padding:4px 4px">
+          <button id="${id}Reset" title="Reset to default"
+            style="font-size:.75em;padding:1px 5px;cursor:pointer">↺</button>
+        </td>
+      </tr>`;
+  }).join("");
+
+  return /* html */ `
+    <div id="coastlineSettingsDialog" style="display:none">
+      <table style="border-collapse:collapse;width:100%">
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="display:flex;gap:6px;margin-top:10px;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.72em;color:#999;margin-bottom:3px">Roughness profile</div>
+          <canvas id="coastRoughnessGraph" width="266" height="100"
+            style="border:1px solid #ccc;border-radius:2px;display:block"></canvas>
+        </div>
+        <div>
+          <div style="font-size:.72em;color:#999;margin-bottom:3px">Shape preview</div>
+          <canvas id="coastShapePreview" width="100" height="100"
+            style="border:1px solid #ccc;border-radius:2px;display:block"></canvas>
+        </div>
+      </div>
+    </div>`;
+}
+
+function updatePreviews(): void {
+  const graph = byId("coastRoughnessGraph");
+  const shape = byId("coastShapePreview");
+  if (graph) drawRoughnessGraph(graph as HTMLCanvasElement);
+  if (shape) drawShapePreview(shape as HTMLCanvasElement);
+}
 
 function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
   const W = canvas.width;
@@ -128,11 +214,7 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
   };
 
   // Helper: stroke curve clipped to a horizontal band
-  const strokeBand = (
-    clipTop: number,
-    clipBot: number,
-    color: string,
-  ): void => {
+  const strokeBand = (clipTop: number, clipBot: number, color: string): void => {
     const h = clipBot - clipTop;
     if (h <= 0) return;
     ctx.save();
@@ -196,35 +278,21 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
     [cx, cy - r], // top
     [cx + r, cy], // right
     [cx, cy + r], // bottom
-    [cx - r, cy], // left
+    [cx - r, cy] // left
   ];
 
   const shape = fractalize(basePts, Alea(PREVIEW_SEED), coastSettings);
   const path = new Path2D(`${buildCoastlinePath(shape)}Z`);
 
   // Ocean background — radial gradient, lighter at centre
-  const bgGrad = ctx.createRadialGradient(
-    cx,
-    cy,
-    0,
-    cx,
-    cy,
-    Math.max(W, H) * 0.85,
-  );
+  const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.85);
   bgGrad.addColorStop(0, "#cce5f5");
   bgGrad.addColorStop(1, "#6aa4cb");
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
   // Land fill with drop shadow
-  const landGrad = ctx.createRadialGradient(
-    cx - r * 0.1,
-    cy - r * 0.1,
-    r * 0.05,
-    cx,
-    cy,
-    r * 1.1,
-  );
+  const landGrad = ctx.createRadialGradient(cx - r * 0.1, cy - r * 0.1, r * 0.05, cx, cy, r * 1.1);
   landGrad.addColorStop(0, "#d8c87a");
   landGrad.addColorStop(0.5, "#9cbc60");
   landGrad.addColorStop(1, "#5c8e40");
@@ -244,7 +312,7 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
   ctx.stroke(path);
 
   // Original polygon skeleton — shows the raw 4-vertex input before fractalization
-  const origPts = shape.origIndices.map((i) => shape.points[i]);
+  const origPts = shape.origIndices.map(i => shape.points[i]);
   ctx.beginPath();
   for (let j = 0; j < origPts.length; j++) {
     const [x, y] = origPts[j];
@@ -269,96 +337,4 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
   }
 }
 
-function updatePreviews(): void {
-  const graph = document.getElementById("coastRoughnessGraph");
-  const shape = document.getElementById("coastShapePreview");
-  if (graph) drawRoughnessGraph(graph as HTMLCanvasElement);
-  if (shape) drawShapePreview(shape as HTMLCanvasElement);
-}
 
-function buildDialogHTML(): string {
-  const rows = SLIDER_DEFS.map(({ id, label, tip, min, max, step, key }) => {
-    const val = coastSettings[key] as number;
-    return /* html */ `
-      <tr data-tip="${tip}">
-        <td style="padding:4px 8px;white-space:nowrap">${label}</td>
-        <td style="padding:4px 4px">
-          <input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${val}"
-            style="width:160px;vertical-align:middle"/>
-        </td>
-        <td style="padding:4px 6px;min-width:2.8em;text-align:right">
-          <span id="${id}Out" style="font-family:monospace;font-size:.85em">${val}</span>
-        </td>
-        <td style="padding:4px 4px">
-          <button id="${id}Reset" title="Reset to default"
-            style="font-size:.75em;padding:1px 5px;cursor:pointer">↺</button>
-        </td>
-      </tr>`;
-  }).join("");
-
-  return /* html */ `
-    <div id="coastlineSettingsDialog" style="display:none">
-      <table style="border-collapse:collapse;width:100%">
-        <tbody>${rows}</tbody>
-      </table>
-      <div style="display:flex;gap:6px;margin-top:10px;align-items:flex-start">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:.72em;color:#999;margin-bottom:3px">Roughness profile</div>
-          <canvas id="coastRoughnessGraph" width="266" height="100"
-            style="border:1px solid #ccc;border-radius:2px;display:block"></canvas>
-        </div>
-        <div>
-          <div style="font-size:.72em;color:#999;margin-bottom:3px">Shape preview</div>
-          <canvas id="coastShapePreview" width="100" height="100"
-            style="border:1px solid #ccc;border-radius:2px;display:block"></canvas>
-        </div>
-      </div>
-    </div>`;
-}
-
-function setupCoastlineEditor(): void {
-  if (!document.getElementById("coastlineSettingsDialog")) {
-    document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
-  }
-
-  for (const { id, key } of SLIDER_DEFS) {
-    const slider = document.getElementById(id) as HTMLInputElement | null;
-    const output = document.getElementById(`${id}Out`) as HTMLElement | null;
-    const resetBtn = document.getElementById(
-      `${id}Reset`,
-    ) as HTMLElement | null;
-
-    if (!slider || !output || !resetBtn) continue;
-
-    const defaultVal = coastSettings[key] as number;
-
-    slider.addEventListener("input", () => {
-      const val = parseFloat(slider.value);
-      (coastSettings[key] as number) = val;
-      output.textContent = String(val);
-      updatePreviews();
-      if (typeof drawFeatures === "function") drawFeatures();
-    });
-
-    resetBtn.addEventListener("click", () => {
-      (coastSettings[key] as number) = defaultVal;
-      slider.value = String(defaultVal);
-      output.textContent = String(defaultVal);
-      updatePreviews();
-      if (typeof drawFeatures === "function") drawFeatures();
-    });
-  }
-
-  updatePreviews();
-
-  window.showCoastlineSettings = () => {
-    $("#coastlineSettingsDialog").dialog({
-      title: "Coastline Advanced Settings",
-      resizable: false,
-      width: "auto",
-      position: { my: "center", at: "center", of: "svg" },
-    });
-  };
-}
-
-setupCoastlineEditor();

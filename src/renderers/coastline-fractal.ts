@@ -175,7 +175,7 @@ export function fractalize(
   for (let i = 0; i < n; i++) {
     origIndices.push(resultPts.length);
     resultPts.push(points[i]);
-    if (isOnBorder(points[i])) continue; // Skip fractal displacement for points on map border
+    if (isOnBorder(points[i]) && isOnBorder(points[(i + 1) % n])) continue; // Skip edges running along the map border
 
     const [x0, y0] = points[i];
     const [x1, y1] = points[(i + 1) % n];
