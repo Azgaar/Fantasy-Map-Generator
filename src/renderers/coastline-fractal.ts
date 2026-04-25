@@ -132,10 +132,19 @@ export interface FractalizedShape {
   origIndices: number[]; // index in points[] where original vertex i lives
 }
 
+export function fractalizeCoastline(
+  points: [number, number][],
+  featureIndex: number
+): FractalizedShape {
+  if (points.length < 3) return { points, origIndices: points.map((_, i) => i) };
+  const rand = Alea(`${seed}_c${featureIndex}`);
+  return fractalize(points, rand, coastSettings);
+}
+
 export function fractalize(
   points: [number, number][],
   rand: () => number,
-  settings: CoastlineSettings,
+  settings: CoastlineSettings
 ): FractalizedShape {
   const profile = makeRoughnessProfile(rand, settings.roughnessContrast);
 
@@ -145,17 +154,13 @@ export function fractalize(
   for (let i = 0; i < n; i++) {
     const [x0, y0] = points[i];
     const [x1, y1] = points[(i + 1) % n];
-    const dx = x1 - x0,
-      dy = y1 - y0;
+    const dx = x1 - x0;
+    const dy = y1 - y0;
     segLens[i] = Math.sqrt(dx * dx + dy * dy);
     total += segLens[i];
   }
 
-  // Degenerate polygon: all vertices are coincident after simplify/clip.
-  // Avoid Infinity/NaN in tParams by returning the input unchanged.
-  if (total < 1e-9) {
-    return { points, origIndices: points.map((_, i) => i) };
-  }
+  if (total < 1e-9) return { points, origIndices: points.map((_, i) => i) }; // exclude degenerate polygon
 
   let cum = 0;
   const tParams = new Array<number>(n);
@@ -170,6 +175,8 @@ export function fractalize(
   for (let i = 0; i < n; i++) {
     origIndices.push(resultPts.length);
     resultPts.push(points[i]);
+    if (isOnBorder(points[i])) continue; // Skip fractal displacement for points on map border
+
     const [x0, y0] = points[i];
     const [x1, y1] = points[(i + 1) % n];
     subdivideEdge(
@@ -191,15 +198,8 @@ export function fractalize(
   return { points: resultPts, origIndices };
 }
 
-export function fractalizeCoastline(
-  points: [number, number][],
-  featureIndex: number,
-  settings: CoastlineSettings = coastSettings,
-): FractalizedShape {
-  if (points.length < 3)
-    return { points, origIndices: points.map((_, i) => i) };
-  const rand = Alea(`${seed}_c${featureIndex}`);
-  return fractalize(points, rand, settings);
+function isOnBorder([x, y]: [number, number]) {
+  return x === 0 || x === graphWidth || y === 0 || y === graphHeight;
 }
 
 /**
@@ -207,11 +207,10 @@ export function fractalizeCoastline(
  * Smooth span: Q midpoint B-spline — identical to curveBasisClosed. Produces flowing arcs that hide Voronoi angularity.
  * Jagged span: centripetal Catmull-Rom (α=0.5) through every fractal sub-point. Rounds sharp kinks into gentle curves.
  */
-export function buildCoastlinePath(shape: FractalizedShape): string {
-  const { points: pts, origIndices } = shape;
-  const N = pts.length;
+export function buildCoastlinePath({ points, origIndices }: FractalizedShape): string {
+  const N = points.length;
   const M = origIndices.length;
-  if (M < 3) return "";
+  if (N < 3 || M < 3) return "";
 
   const smooth: boolean[] = new Array(M);
   for (let i = 0; i < M; i++) {
@@ -222,8 +221,8 @@ export function buildCoastlinePath(shape: FractalizedShape): string {
 
   // Start at the B-spline midpoint of the last→first span when that span is
   // smooth so the closed loop is fully seamless; otherwise start at vertex 0.
-  const p0 = pts[origIndices[0]];
-  const pL = pts[origIndices[M - 1]];
+  const p0 = points[origIndices[0]];
+  const pL = points[origIndices[M - 1]];
   let atMid = smooth[M - 1];
   const sx = atMid ? (pL[0] + p0[0]) / 2 : p0[0];
   const sy = atMid ? (pL[1] + p0[1]) / 2 : p0[1];
@@ -232,13 +231,13 @@ export function buildCoastlinePath(shape: FractalizedShape): string {
   for (let i = 0; i < M; i++) {
     const ci = origIndices[i];
     const ni = origIndices[(i + 1) % M];
-    const [cpx, cpy] = pts[ci];
+    const [cpx, cpy] = points[ci];
 
     if (smooth[i]) {
       // Q midpoint B-spline ≡ curveBasisClosed.
       // When arriving from a jagged span the cursor is already at cpx,cpy
       // so just line to the midpoint instead of emitting a degenerate Q.
-      const [npx, npy] = pts[ni];
+      const [npx, npy] = points[ni];
       const mx = (cpx + npx) / 2;
       const my = (cpy + npy) / 2;
       d.push(atMid ? `Q${cpx},${cpy} ${mx},${my}` : `L${mx},${my}`);
@@ -250,10 +249,10 @@ export function buildCoastlinePath(shape: FractalizedShape): string {
       // Centripetal Catmull-Rom through every fractal sub-segment.
       const end = ni > ci ? ni : ni + N;
       for (let j = ci; j < end; j++) {
-        const a = pts[j % N];
-        const b = pts[(j + 1) % N];
-        const prev = pts[(j - 1 + N) % N];
-        const nnext = pts[(j + 2) % N];
+        const a = points[j % N];
+        const b = points[(j + 1) % N];
+        const prev = points[(j - 1 + N) % N];
+        const nnext = points[(j + 2) % N];
         // Catmull-Rom tangents → Hermite control points (tension ≈ 0.25 for less radical curvature)
         const cp1x = a[0] + (b[0] - prev[0]) / 8;
         const cp1y = a[1] + (b[1] - prev[1]) / 8;
