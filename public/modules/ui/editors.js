@@ -1007,8 +1007,8 @@ async function editReligions() {
   Editor.open();
 }
 
-async function editCoastlineSettings() {
+// TS-migrated editors. TODO: import from module when editors.js is migrated to TS
+function editCoastlineSettings() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/coastline-editor.js?v=1.118.0");
-  Editor.open();
+  window.CoastlineEditor.open();
 }

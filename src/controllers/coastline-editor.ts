@@ -113,10 +113,10 @@ export function open(): void {
   closeDialogs("#culturesEditor, .stable");
 
   $("#coastlineSettingsDialog").dialog({
-    title: "Coastline Advanced Settings",
+    title: "Coastline Settings Editor",
     resizable: false,
     width: "auto",
-    position: {my: "center", at: "center", of: "svg"}
+    position: {my: "right top", at: "right-10 top+10", of: "svg"}
   });
 }
 
@@ -337,4 +337,10 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
   }
 }
 
+declare global {
+  interface Window {
+    CoastlineEditor: {open: () => void};
+  }
+}
 
+window.CoastlineEditor = {open};
