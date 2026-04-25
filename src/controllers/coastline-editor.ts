@@ -90,7 +90,10 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
   const rand = Alea(PREVIEW_SEED);
   const profile = makeRoughnessProfile(rand, coastSettings.roughnessContrast);
 
-  const pl = 2, pr = 2, pt = 6, pb = 6;
+  const pl = 2,
+    pr = 2,
+    pt = 6,
+    pb = 6;
   const gW = W - pl - pr;
   const gH = H - pt - pb;
   const thresh = Math.min(Math.max(coastSettings.smoothThreshold, 0), 1);
@@ -125,7 +128,11 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
   };
 
   // Helper: stroke curve clipped to a horizontal band
-  const strokeBand = (clipTop: number, clipBot: number, color: string): void => {
+  const strokeBand = (
+    clipTop: number,
+    clipBot: number,
+    color: string,
+  ): void => {
     const h = clipBot - clipTop;
     if (h <= 0) return;
     ctx.save();
@@ -186,27 +193,41 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
 
   // Generate at canvas scale so all setting changes are immediately visible.
   const basePts: [number, number][] = [
-    [cx,     cy - r],  // top
-    [cx + r, cy    ],  // right
-    [cx,     cy + r],  // bottom
-    [cx - r, cy    ],  // left
+    [cx, cy - r], // top
+    [cx + r, cy], // right
+    [cx, cy + r], // bottom
+    [cx - r, cy], // left
   ];
 
   const shape = fractalize(basePts, Alea(PREVIEW_SEED), coastSettings);
   const path = new Path2D(`${buildCoastlinePath(shape)}Z`);
 
   // Ocean background — radial gradient, lighter at centre
-  const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.85);
+  const bgGrad = ctx.createRadialGradient(
+    cx,
+    cy,
+    0,
+    cx,
+    cy,
+    Math.max(W, H) * 0.85,
+  );
   bgGrad.addColorStop(0, "#cce5f5");
   bgGrad.addColorStop(1, "#6aa4cb");
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
   // Land fill with drop shadow
-  const landGrad = ctx.createRadialGradient(cx - r * 0.1, cy - r * 0.1, r * 0.05, cx, cy, r * 1.1);
-  landGrad.addColorStop(0,   "#d8c87a");
+  const landGrad = ctx.createRadialGradient(
+    cx - r * 0.1,
+    cy - r * 0.1,
+    r * 0.05,
+    cx,
+    cy,
+    r * 1.1,
+  );
+  landGrad.addColorStop(0, "#d8c87a");
   landGrad.addColorStop(0.5, "#9cbc60");
-  landGrad.addColorStop(1,   "#5c8e40");
+  landGrad.addColorStop(1, "#5c8e40");
 
   ctx.save();
   ctx.shadowColor = "rgba(0,20,60,0.35)";
@@ -223,7 +244,7 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
   ctx.stroke(path);
 
   // Original polygon skeleton — shows the raw 4-vertex input before fractalization
-  const origPts = shape.origIndices.map(i => shape.points[i]);
+  const origPts = shape.origIndices.map((i) => shape.points[i]);
   ctx.beginPath();
   for (let j = 0; j < origPts.length; j++) {
     const [x, y] = origPts[j];
@@ -256,7 +277,7 @@ function updatePreviews(): void {
 }
 
 function buildDialogHTML(): string {
-  const rows = SLIDER_DEFS.map(({id, label, tip, min, max, step, key}) => {
+  const rows = SLIDER_DEFS.map(({ id, label, tip, min, max, step, key }) => {
     const val = coastSettings[key] as number;
     return /* html */ `
       <tr data-tip="${tip}">
@@ -300,10 +321,12 @@ function setupCoastlineEditor(): void {
     document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
   }
 
-  for (const {id, key} of SLIDER_DEFS) {
+  for (const { id, key } of SLIDER_DEFS) {
     const slider = document.getElementById(id) as HTMLInputElement | null;
     const output = document.getElementById(`${id}Out`) as HTMLElement | null;
-    const resetBtn = document.getElementById(`${id}Reset`) as HTMLElement | null;
+    const resetBtn = document.getElementById(
+      `${id}Reset`,
+    ) as HTMLElement | null;
 
     if (!slider || !output || !resetBtn) continue;
 
@@ -333,7 +356,7 @@ function setupCoastlineEditor(): void {
       title: "Coastline Advanced Settings",
       resizable: false,
       width: "auto",
-      position: {my: "center", at: "center", of: "svg"},
+      position: { my: "center", at: "center", of: "svg" },
     });
   };
 }

@@ -15,21 +15,25 @@ export const coastSettings: CoastlineSettings = {
   amplitudeDecay: 0.9,
   minEdge: 1,
   smoothThreshold: 0.25,
-  roughnessContrast: 1.5
+  roughnessContrast: 1.5,
 };
 
 export const PROFILE_SIZE = 256;
 
 // Build a smooth closed roughness envelope via sum-of-cosine harmonics.
 // Intrinsically seam-free; result raised to `contrast` power for calm/rough contrast.
-export function makeRoughnessProfile(rand: () => number, contrast: number): Float32Array {
+export function makeRoughnessProfile(
+  rand: () => number,
+  contrast: number,
+): Float32Array {
   const profile = new Float32Array(PROFILE_SIZE);
   const numHarmonics = 3 + Math.floor(rand() * 3); // 3, 4 or 5
   for (let k = 1; k <= numHarmonics; k++) {
     const amp = rand();
     const phase = rand() * Math.PI * 2;
     for (let i = 0; i < PROFILE_SIZE; i++) {
-      profile[i] += amp * Math.cos((2 * Math.PI * k * i) / PROFILE_SIZE + phase);
+      profile[i] +=
+        amp * Math.cos((2 * Math.PI * k * i) / PROFILE_SIZE + phase);
     }
   }
   let min = Infinity,
@@ -74,7 +78,7 @@ function subdivideEdge(
   profile: Float32Array,
   rand: () => number,
   resultPts: [number, number][],
-  settings: CoastlineSettings
+  settings: CoastlineSettings,
 ): void {
   const dx = x1 - x0;
   const dy = y1 - y0;
@@ -92,9 +96,35 @@ function subdivideEdge(
   const my = (y0 + y1) / 2 + py * disp;
 
   const nextAmp = amplitude * settings.amplitudeDecay;
-  subdivideEdge(x0, y0, mx, my, t0, tm, depth - 1, nextAmp, profile, rand, resultPts, settings);
+  subdivideEdge(
+    x0,
+    y0,
+    mx,
+    my,
+    t0,
+    tm,
+    depth - 1,
+    nextAmp,
+    profile,
+    rand,
+    resultPts,
+    settings,
+  );
   resultPts.push([mx, my]);
-  subdivideEdge(mx, my, x1, y1, tm, t1, depth - 1, nextAmp, profile, rand, resultPts, settings);
+  subdivideEdge(
+    mx,
+    my,
+    x1,
+    y1,
+    tm,
+    t1,
+    depth - 1,
+    nextAmp,
+    profile,
+    rand,
+    resultPts,
+    settings,
+  );
 }
 
 export interface FractalizedShape {
@@ -105,7 +135,7 @@ export interface FractalizedShape {
 export function fractalize(
   points: [number, number][],
   rand: () => number,
-  settings: CoastlineSettings
+  settings: CoastlineSettings,
 ): FractalizedShape {
   const profile = makeRoughnessProfile(rand, settings.roughnessContrast);
 
@@ -147,19 +177,20 @@ export function fractalize(
       profile,
       rand,
       resultPts,
-      settings
+      settings,
     );
   }
 
-  return {points: resultPts, origIndices};
+  return { points: resultPts, origIndices };
 }
 
 export function fractalizeCoastline(
   points: [number, number][],
   featureIndex: number,
-  settings: CoastlineSettings = coastSettings
+  settings: CoastlineSettings = coastSettings,
 ): FractalizedShape {
-  if (points.length < 3) return {points, origIndices: points.map((_, i) => i)};
+  if (points.length < 3)
+    return { points, origIndices: points.map((_, i) => i) };
   const rand = Alea(`${seed}_c${featureIndex}`);
   return fractalize(points, rand, settings);
 }
@@ -170,7 +201,7 @@ export function fractalizeCoastline(
  * Jagged span: centripetal Catmull-Rom (α=0.5) through every fractal sub-point. Rounds sharp kinks into gentle curves.
  */
 export function buildCoastlinePath(shape: FractalizedShape) {
-  const {points: pts, origIndices} = shape;
+  const { points: pts, origIndices } = shape;
   const N = pts.length;
   const M = origIndices.length;
   if (M < 3) return "";
@@ -229,4 +260,3 @@ export function buildCoastlinePath(shape: FractalizedShape) {
 
   return d.join("");
 }
-
