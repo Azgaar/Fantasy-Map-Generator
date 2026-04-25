@@ -1,21 +1,27 @@
 import Alea from "alea";
 
 export interface CoastlineSettings {
+  enabled: boolean; // master toggle — false bypasses all fractalization
   maxDepth: number; // max recursion depth per edge
   baseAmplitude: number; // peak displacement (scales with √edgeLength)
   amplitudeDecay: number; // amplitude multiplier per recursion level
   minEdge: number; // edges shorter than this are never subdivided
   smoothThreshold: number; // profile values below this → zero displacement
   roughnessContrast: number; // power applied to normalised roughness profile
+  profileHarmonics: number; // cosine harmonics → rough-zone count (1 = one big zone, 8 = many small)
+  lakeSmoothThreshMult: number; // smooth-threshold multiplier for lake shores (1 = same as ocean, higher = calmer)
 }
 
-export const coastSettings: CoastlineSettings = {
+export const defaultCoastSettings: CoastlineSettings = {
+  enabled: true,
   maxDepth: 4,
   baseAmplitude: 1.5,
   amplitudeDecay: 0.9,
   minEdge: 1,
   smoothThreshold: 0.25,
   roughnessContrast: 1.5,
+  profileHarmonics: 4,
+  lakeSmoothThreshMult: 2.0,
 };
 
 export const PROFILE_SIZE = 256;
@@ -25,9 +31,9 @@ export const PROFILE_SIZE = 256;
 export function makeRoughnessProfile(
   rand: () => number,
   contrast: number,
+  numHarmonics = 4,
 ): Float32Array {
   const profile = new Float32Array(PROFILE_SIZE);
-  const numHarmonics = 3 + Math.floor(rand() * 3); // 3, 4 or 5
   for (let k = 1; k <= numHarmonics; k++) {
     const amp = rand();
     const phase = rand() * Math.PI * 2;
@@ -134,19 +140,37 @@ export interface FractalizedShape {
 
 export function fractalizeCoastline(
   points: [number, number][],
-  featureIndex: number
+  featureIndex: number,
+  featureType: "ocean" | "lake" | "island" = "island",
 ): FractalizedShape {
-  if (points.length < 3) return { points, origIndices: points.map((_, i) => i) };
+  if (points.length < 3)
+    return { points, origIndices: points.map((_, i) => i) };
+  if (!defaultCoastSettings.enabled)
+    return { points, origIndices: points.map((_, i) => i) };
   const rand = Alea(`${seed}_c${featureIndex}`);
-  return fractalize(points, rand, coastSettings);
+  const settings =
+    featureType === "lake" && defaultCoastSettings.lakeSmoothThreshMult !== 1
+      ? {
+          ...defaultCoastSettings,
+          smoothThreshold: Math.min(
+            1,
+            defaultCoastSettings.smoothThreshold * defaultCoastSettings.lakeSmoothThreshMult,
+          ),
+        }
+      : defaultCoastSettings;
+  return fractalize(points, rand, settings);
 }
 
 export function fractalize(
   points: [number, number][],
   rand: () => number,
-  settings: CoastlineSettings
+  settings: CoastlineSettings,
 ): FractalizedShape {
-  const profile = makeRoughnessProfile(rand, settings.roughnessContrast);
+  const profile = makeRoughnessProfile(
+    rand,
+    settings.roughnessContrast,
+    settings.profileHarmonics,
+  );
 
   const n = points.length;
   let total = 0;
@@ -207,7 +231,10 @@ function isOnBorder([x, y]: [number, number]) {
  * Smooth span: Q midpoint B-spline — identical to curveBasisClosed. Produces flowing arcs that hide Voronoi angularity.
  * Jagged span: centripetal Catmull-Rom (α=0.5) through every fractal sub-point. Rounds sharp kinks into gentle curves.
  */
-export function buildCoastlinePath({ points, origIndices }: FractalizedShape): string {
+export function buildCoastlinePath({
+  points,
+  origIndices,
+}: FractalizedShape): string {
   const N = points.length;
   const M = origIndices.length;
   if (N < 3 || M < 3) return "";
@@ -253,7 +280,7 @@ export function buildCoastlinePath({ points, origIndices }: FractalizedShape): s
         const b = points[(j + 1) % N];
         const prev = points[(j - 1 + N) % N];
         const nnext = points[(j + 2) % N];
-        // Catmull-Rom tangents → Hermite control points (tension ≈ 0.25 for less radical curvature)
+        // Catmull-Rom tangents → Hermite control points (tension ≈ 0.25 for less radical curvature).
         const cp1x = a[0] + (b[0] - prev[0]) / 8;
         const cp1y = a[1] + (b[1] - prev[1]) / 8;
         const cp2x = b[0] - (nnext[0] - a[0]) / 8;

@@ -95,7 +95,7 @@ function featurePathRenderer(feature: PackedGraphFeature): string {
 
   const simplifiedPoints = simplify(points, 0.3);
   const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight, 1);
-  const shape = fractalizeCoastline(clippedPoints, feature.i);
+  const shape = fractalizeCoastline(clippedPoints, feature.i, feature.type);
   return `${round(buildCoastlinePath(shape))}Z`;
 }
 
