@@ -11,7 +11,7 @@ export interface CoastlineSettings {
 
 export const coastSettings: CoastlineSettings = {
   maxDepth: 4,
-  baseAmplitude: 1,
+  baseAmplitude: 1.5,
   amplitudeDecay: 0.9,
   minEdge: 1,
   smoothThreshold: 0.25,
@@ -216,11 +216,11 @@ export function buildCoastlinePath(shape: FractalizedShape) {
         const b = pts[(j + 1) % N];
         const prev = pts[(j - 1 + N) % N];
         const nnext = pts[(j + 2) % N];
-        // Catmull-Rom tangents → Hermite control points
-        const cp1x = a[0] + (b[0] - prev[0]) / 6;
-        const cp1y = a[1] + (b[1] - prev[1]) / 6;
-        const cp2x = b[0] - (nnext[0] - a[0]) / 6;
-        const cp2y = b[1] - (nnext[1] - a[1]) / 6;
+        // Catmull-Rom tangents → Hermite control points (tension ≈ 0.25 for less radical curvature)
+        const cp1x = a[0] + (b[0] - prev[0]) / 8;
+        const cp1y = a[1] + (b[1] - prev[1]) / 8;
+        const cp2x = b[0] - (nnext[0] - a[0]) / 8;
+        const cp2y = b[1] - (nnext[1] - a[1]) / 8;
         d.push(`C${cp1x},${cp1y} ${cp2x},${cp2y} ${b[0]},${b[1]}`);
       }
       atMid = false;
