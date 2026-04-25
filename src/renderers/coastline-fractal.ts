@@ -150,6 +150,13 @@ export function fractalize(
     segLens[i] = Math.sqrt(dx * dx + dy * dy);
     total += segLens[i];
   }
+
+  // Degenerate polygon: all vertices are coincident after simplify/clip.
+  // Avoid Infinity/NaN in tParams by returning the input unchanged.
+  if (total < 1e-9) {
+    return { points, origIndices: points.map((_, i) => i) };
+  }
+
   let cum = 0;
   const tParams = new Array<number>(n);
   for (let i = 0; i < n; i++) {
