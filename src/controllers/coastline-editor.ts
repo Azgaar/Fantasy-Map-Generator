@@ -90,37 +90,88 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
   const rand = Alea(PREVIEW_SEED);
   const profile = makeRoughnessProfile(rand, coastSettings.roughnessContrast);
 
-  const pl = 2, pr = 2, pt = 4, pb = 14;
+  const pl = 2, pr = 2, pt = 6, pb = 6;
   const gW = W - pl - pr;
   const gH = H - pt - pb;
-  const threshY = pt + gH * (1 - Math.min(coastSettings.smoothThreshold, 1));
+  const thresh = Math.min(Math.max(coastSettings.smoothThreshold, 0), 1);
+  const threshY = pt + gH * (1 - thresh);
+  const baseY = pt + gH;
 
-  ctx.fillStyle = "rgba(80,175,80,0.15)";
-  ctx.fillRect(pl, threshY, gW, H - pb - threshY);
-
-  ctx.beginPath();
+  // Pre-compute curve points
+  const xs: number[] = [];
+  const ys: number[] = [];
   for (let i = 0; i <= PROFILE_SIZE; i++) {
-    const x = pl + (i / PROFILE_SIZE) * gW;
-    const y = pt + gH * (1 - profile[i % PROFILE_SIZE]);
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    xs.push(pl + (i / PROFILE_SIZE) * gW);
+    ys.push(pt + gH * (1 - profile[i % PROFILE_SIZE]));
   }
-  ctx.strokeStyle = "#c05820";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
 
+  // Helper: fill area under curve clipped to a horizontal band
+  const fillBand = (clipTop: number, clipBot: number, color: string): void => {
+    const h = clipBot - clipTop;
+    if (h <= 0) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(pl, clipTop, gW, h);
+    ctx.clip();
+    ctx.beginPath();
+    ctx.moveTo(xs[0], ys[0]);
+    for (let i = 1; i < xs.length; i++) ctx.lineTo(xs[i], ys[i]);
+    ctx.lineTo(xs[xs.length - 1], baseY);
+    ctx.lineTo(xs[0], baseY);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
+  };
+
+  // Helper: stroke curve clipped to a horizontal band
+  const strokeBand = (clipTop: number, clipBot: number, color: string): void => {
+    const h = clipBot - clipTop;
+    if (h <= 0) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(pl, clipTop, gW, h);
+    ctx.clip();
+    ctx.beginPath();
+    ctx.moveTo(xs[0], ys[0]);
+    for (let i = 1; i < xs.length; i++) ctx.lineTo(xs[i], ys[i]);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  // Rough zone (above threshold): warm orange
+  fillBand(pt, threshY, "rgba(210,90,30,0.20)");
+  strokeBand(pt, threshY, "#c85520");
+
+  // Smooth zone (below threshold): cool teal
+  fillBand(threshY, baseY, "rgba(30,165,135,0.20)");
+  strokeBand(threshY, baseY, "#18a888");
+
+  // Threshold dashed line
+  ctx.save();
   ctx.beginPath();
-  ctx.setLineDash([3, 3]);
+  ctx.setLineDash([4, 3]);
   ctx.moveTo(pl, threshY);
   ctx.lineTo(W - pr, threshY);
-  ctx.strokeStyle = "rgba(40,140,40,0.85)";
+  ctx.strokeStyle = "rgba(30,140,100,0.75)";
   ctx.lineWidth = 1;
   ctx.stroke();
   ctx.setLineDash([]);
+  ctx.restore();
 
-  ctx.fillStyle = "#999";
-  ctx.font = "9px sans-serif";
-  ctx.fillText("rough", pl + 1, pt + 8);
-  ctx.fillText("smooth threshold", pl + 1, H - pb + 10);
+  // Zone labels
+  ctx.font = "bold 8px sans-serif";
+  ctx.textAlign = "left";
+  if (threshY > pt + 12) {
+    ctx.fillStyle = "#c85520";
+    ctx.fillText("ROUGH", pl + 3, pt + 9);
+  }
+  if (baseY - threshY > 10) {
+    ctx.fillStyle = "#18a888";
+    ctx.fillText("CALM", pl + 3, baseY - 2);
+  }
 }
 
 function drawShapePreview(canvas: HTMLCanvasElement): void {
@@ -131,22 +182,70 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
 
   const cx = W / 2;
   const cy = H / 2;
-  const r = Math.min(W, H) * 0.33;
-  const n = 18;
-  const pts: [number, number][] = Array.from({length: n}, (_, i) => {
-    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
-    return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
-  });
+  const r = Math.min(W, H) * 0.34;
 
-  const shape = fractalize(pts, Alea(PREVIEW_SEED), coastSettings);
+  // Generate at canvas scale so all setting changes are immediately visible.
+  const basePts: [number, number][] = [
+    [cx,     cy - r],  // top
+    [cx + r, cy    ],  // right
+    [cx,     cy + r],  // bottom
+    [cx - r, cy    ],  // left
+  ];
 
-  ctx.beginPath();
+  const shape = fractalize(basePts, Alea(PREVIEW_SEED), coastSettings);
   const path = new Path2D(`${buildCoastlinePath(shape)}Z`);
-  ctx.fillStyle = "rgba(70,130,190,0.22)";
+
+  // Ocean background — radial gradient, lighter at centre
+  const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.85);
+  bgGrad.addColorStop(0, "#cce5f5");
+  bgGrad.addColorStop(1, "#6aa4cb");
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Land fill with drop shadow
+  const landGrad = ctx.createRadialGradient(cx - r * 0.1, cy - r * 0.1, r * 0.05, cx, cy, r * 1.1);
+  landGrad.addColorStop(0,   "#d8c87a");
+  landGrad.addColorStop(0.5, "#9cbc60");
+  landGrad.addColorStop(1,   "#5c8e40");
+
+  ctx.save();
+  ctx.shadowColor = "rgba(0,20,60,0.35)";
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetX = 3;
+  ctx.shadowOffsetY = 3;
+  ctx.fillStyle = landGrad;
   ctx.fill(path);
-  ctx.strokeStyle = "#2e6fa0";
+  ctx.restore();
+
+  // Coastline stroke
+  ctx.strokeStyle = "#5c4526";
   ctx.lineWidth = 1.5;
   ctx.stroke(path);
+
+  // Original polygon skeleton — shows the raw 4-vertex input before fractalization
+  const origPts = shape.origIndices.map(i => shape.points[i]);
+  ctx.beginPath();
+  for (let j = 0; j < origPts.length; j++) {
+    const [x, y] = origPts[j];
+    j === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.strokeStyle = "rgba(255,255,255,0.45)";
+  ctx.lineWidth = 0.8;
+  ctx.setLineDash([3, 3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Original vertex dots
+  for (const [x, y] of origPts) {
+    ctx.beginPath();
+    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(60,40,10,0.55)";
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
 }
 
 function updatePreviews(): void {
@@ -184,7 +283,7 @@ function buildDialogHTML(): string {
       <div style="display:flex;gap:6px;margin-top:10px;align-items:flex-start">
         <div style="flex:1;min-width:0">
           <div style="font-size:.72em;color:#999;margin-bottom:3px">Roughness profile</div>
-          <canvas id="coastRoughnessGraph" width="204" height="72"
+          <canvas id="coastRoughnessGraph" width="266" height="100"
             style="border:1px solid #ccc;border-radius:2px;display:block"></canvas>
         </div>
         <div>
