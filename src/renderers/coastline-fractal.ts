@@ -207,7 +207,7 @@ export function fractalizeCoastline(
  * Smooth span: Q midpoint B-spline — identical to curveBasisClosed. Produces flowing arcs that hide Voronoi angularity.
  * Jagged span: centripetal Catmull-Rom (α=0.5) through every fractal sub-point. Rounds sharp kinks into gentle curves.
  */
-export function buildCoastlinePath(shape: FractalizedShape) {
+export function buildCoastlinePath(shape: FractalizedShape): string {
   const { points: pts, origIndices } = shape;
   const N = pts.length;
   const M = origIndices.length;
@@ -233,12 +233,12 @@ export function buildCoastlinePath(shape: FractalizedShape) {
     const ci = origIndices[i];
     const ni = origIndices[(i + 1) % M];
     const [cpx, cpy] = pts[ci];
-    const [npx, npy] = pts[ni];
 
     if (smooth[i]) {
       // Q midpoint B-spline ≡ curveBasisClosed.
       // When arriving from a jagged span the cursor is already at cpx,cpy
       // so just line to the midpoint instead of emitting a degenerate Q.
+      const [npx, npy] = pts[ni];
       const mx = (cpx + npx) / 2;
       const my = (cpy + npy) / 2;
       d.push(atMid ? `Q${cpx},${cpy} ${mx},${my}` : `L${mx},${my}`);
