@@ -516,7 +516,10 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
 
   function importBurgNames(dataLoaded) {
     if (!dataLoaded) return tip("Cannot load the file, please check the format", false, "error");
-    const data = dataLoaded.split("\r\n");
+    const data = dataLoaded
+      .replace(/\r\n|\r/g, "\n")
+      .split("\n")
+      .filter(Boolean);
     if (!data.length) return tip("Cannot parse the list, please check the file format", false, "error");
 
     let change = [];

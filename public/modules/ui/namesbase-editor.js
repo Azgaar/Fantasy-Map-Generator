@@ -239,7 +239,10 @@ function editNamesbase() {
   }
 
   function namesbaseUpload(dataLoaded, override = true) {
-    const data = dataLoaded.split("\r\n");
+    const data = dataLoaded
+      .replace(/\r\n|\r/g, "\n")
+      .split("\n")
+      .filter(Boolean);
     if (!data || !data[0]) return tip("Cannot load a namesbase. Please check the data format", false, "error");
 
     Names.clearChains();
