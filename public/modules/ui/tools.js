@@ -13,6 +13,7 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "editStatesButton") editStates();
   else if (button === "editProvincesButton") editProvinces();
   else if (button === "editDiplomacyButton") editDiplomacy();
+  else if (button === "editCoastlineSettings") editCoastlineSettings();
   else if (button === "editCulturesButton") editCultures();
   else if (button === "editReligions") editReligions();
   else if (button === "editEmblemButton") openEmblemEditor();

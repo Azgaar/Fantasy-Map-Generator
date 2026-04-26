@@ -41,6 +41,7 @@ function handleKeyup(event) {
   else if ((shift || altShift) && code === "KeyS") editStates();
   else if ((shift || altShift) && code === "KeyP") editProvinces();
   else if ((shift || altShift) && code === "KeyD") editDiplomacy();
+  else if ((shift || altShift) && code === "KeyL") editCoastlineSettings();
   else if ((shift || altShift) && code === "KeyC") editCultures();
   else if ((shift || altShift) && code === "KeyN") editNamesbase();
   else if ((shift || altShift) && code === "KeyZ") editZones();
