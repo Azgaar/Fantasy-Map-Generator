@@ -30,6 +30,10 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
   }
 
   const latestPublicChanges = [
+    "Jagged coastlines",
+    "Heightmap Editor: Fill brush",
+    "Editors: undo button",
+    "Minimap",
     "Search input in Overview dialogs",
     "Custom burg grouping and icon selection",
     "Ability to set custom image as Marker or Regiment icon",
@@ -40,9 +44,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
     "Notes Editor: on-demand AI text generation",
     "New style preset: Dark Seas",
     "New routes generation algorithm",
-    "Routes overview tool",
-    "Configurable longitude",
-    "Export zones to GeoJSON"
+    "Routes overview tool"
   ];
 
   function showUpdateWindow() {
