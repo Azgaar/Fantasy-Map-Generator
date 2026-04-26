@@ -1,9 +1,10 @@
 # Azgaar Fantasy Map Generator — Enhanced Fork
 
+> **⚠️ Maintenance Status**: Due to life engagements, I am unable to actively maintain this repository. The code is provided as-is for others to enjoy, learn from, and build upon. Feel free to fork and continue development!
+
 This is a personal fork of [Azgaar's Fantasy Map Generator](https://github.com/Azgaar/Fantasy-Map-Generator) with custom enhancements for D&D campaign management.
 
 ## Original Project
-
 **Original Repository**: [Azgaar/Fantasy-Map-Generator](https://github.com/Azgaar/Fantasy-Map-Generator)  
 **Original Author**: Max Haniyeu (Azgaar)  
 **License**: MIT License
@@ -15,7 +16,6 @@ Full credit to Azgaar for creating this incredible fantasy map generation tool. 
 ## Custom Enhancements in This Fork
 
 ### ✨ Grid Auto-Numbering
-
 Added sequential numbering to grid cells for easy location referencing in tabletop RPG campaigns.
 
 **Features:**
@@ -30,12 +30,11 @@ Added sequential numbering to grid cells for easy location referencing in tablet
 3. Check **Show grid numbers**
 4. Adjust size and color as desired
 
-**Documentation:** See [`GRID-NUMBERING-README.md`](./GRID-NUMBERING-README.md) for full implementation details.
+**Documentation:** See [GRID-NUMBERING-README.md](./GRID-NUMBERING-README.md) for full implementation details.
 
 ---
 
 ### 🔍 Grid Search
-
 Search for map elements (Markers, Burgs, Units, Notes) by their grid cell number.
 
 **Features:**
@@ -53,7 +52,6 @@ Search for map elements (Markers, Burgs, Units, Notes) by their grid cell number
 ---
 
 ### 🗺️ Custom Fantasy Icons
-
 A collection of D&D-themed SVG marker icons is included in `images/fantasy-icons/`. These can be used directly as custom markers in the map editor.
 
 **Available icons include:** alchemist, ambush, battlefield, blacksmith, boss, bridge, burial, camp, castle, cave, circus, city, coffin, crystal, dragon, dungeon, encounter, fair, forest, fort, gate, gold bar, graveyard, lighthouse, magic, milestone quest, monster, necropolis, nest, outpost, portal, quest, ruins, sacred tree, scorpion, ship, shop, skeleton, snake, spider, stable, tavern, town, trap, treasure, undead, village, wagon, wasp, web, wrecked wagon, zombie, and more.
@@ -63,7 +61,6 @@ A collection of D&D-themed SVG marker icons is included in `images/fantasy-icons
 ---
 
 ## Running Locally
-
 ```bash
 # Clone this fork
 git clone https://github.com/rstandow/Fantasy-Map-Generator
@@ -78,16 +75,17 @@ docker compose up -d
 
 ---
 
-## Contributing Back
+## Contributing
 
-If you find any of these features useful, please consider:
-- ⭐ Starring the [original Azgaar repository](https://github.com/Azgaar/Fantasy-Map-Generator)
-- Opening a PR upstream if the feature might benefit the wider community
+This repository is no longer actively maintained, but contributions are still welcome! If you'd like to:
+
+- **Improve these features**: Feel free to fork this repository and continue development
+- **Contribute to the original project**: Consider opening a PR to [Azgaar's original repository](https://github.com/Azgaar/Fantasy-Map-Generator) if your enhancement would benefit the wider community
+- **Show support**: ⭐ Star the [original Azgaar repository](https://github.com/Azgaar/Fantasy-Map-Generator)
 
 ---
 
 ## License
-
 This fork maintains the original MIT License. See [LICENSE](./LICENSE) for full details.
 
 **Copyright 2017–2024 Max Haniyeu (Azgaar)**  
@@ -96,7 +94,6 @@ Fork enhancements © 2024–2025
 ---
 
 ## Acknowledgments
-
 - **Azgaar** — For creating and maintaining this fantastic map generator
 - **Original Contributors** — Everyone who has contributed to the main project
 - **D&D Community** — For inspiration and use cases
@@ -107,4 +104,4 @@ Fork enhancements © 2024–2025
 >
 > Link: [azgaar.github.io/Fantasy-Map-Generator](https://azgaar.github.io/Fantasy-Map-Generator)
 >
-> Refer to the [project wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki) for guidance. Pull requests are highly welcomed!
+> Refer to the [project wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki) for guidance.
