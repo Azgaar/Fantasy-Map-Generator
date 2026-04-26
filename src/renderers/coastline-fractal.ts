@@ -154,7 +154,8 @@ export function fractalizeCoastline(
           ...defaultCoastSettings,
           smoothThreshold: Math.min(
             1,
-            defaultCoastSettings.smoothThreshold * defaultCoastSettings.lakeSmoothThreshMult,
+            defaultCoastSettings.smoothThreshold *
+              defaultCoastSettings.lakeSmoothThreshMult,
           ),
         }
       : defaultCoastSettings;
