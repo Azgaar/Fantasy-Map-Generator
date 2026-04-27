@@ -1,6 +1,6 @@
 "use strict";
 
-// data is an array of cell indexes, routeLen is the distance (in actual metres/feet), isRiver should be true for rivers, false otherwise
+// data is an array of cell indexes, routeLen is the distance in map units, isRiver flags river profiles
 function showElevationProfile(data, routeLen, isRiver) {
   byId("epCurve").on("change", draw);
   byId("epSave").on("click", downloadCSV);
@@ -14,16 +14,13 @@ function showElevationProfile(data, routeLen, isRiver) {
     position: {my: "left top", at: "left+20 bottom-500", of: window, collision: "fit"}
   });
 
-  // prevent river graphs from showing rivers as flowing uphill - remember the general slope
+  // For rivers, remember the general slope direction to prevent rendering uphill flow
   let slope = 0;
   if (isRiver) {
-    const firstCellHeight = pack.cells.h[data.at(0)];
-    const lastCellHeight = pack.cells.h[data.at(-1)];
-    if (firstCellHeight < lastCellHeight) {
-      slope = 1; // up-hill
-    } else if (firstCellHeight > lastCellHeight) {
-      slope = -1; // down-hill
-    }
+    const firstH = pack.cells.h[data.at(0)];
+    const lastH = pack.cells.h[data.at(-1)];
+    if (firstH < lastH) slope = 1;
+    else if (firstH > lastH) slope = -1;
   }
 
   const chartWidth = window.innerWidth - 400;
@@ -32,36 +29,33 @@ function showElevationProfile(data, routeLen, isRiver) {
   const yOffset = 2;
   const biomesHeight = 10;
 
-  let lastBurgIndex = 0;
-  let lastBurgCell = 0;
-  let burgCount = 0;
-  let chartData = {biome: [], burg: [], cell: [], height: [], mi: 1000000, ma: 0, mih: 100, mah: 0, points: []};
+  // Pre-process all cell data into chartData arrays
+  const chartData = {biome: [], burg: [], cell: [], height: [], mi: 1e6, ma: 0, mih: 100, mah: 0, points: []};
   let totalAscent = 0;
   let totalDescent = 0;
+  let lastBurgIndex = 0;
+  let lastBurgCell = 0;
+
   for (let i = 0, prevB = 0, prevH = -1; i < data.length; i++) {
-    let cell = data[i];
+    const cell = data[i];
     let h = pack.cells.h[cell];
+
     if (h < 20) {
       const f = pack.features[pack.cells.f[cell]];
-      if (f.type === "lake") h = f.height;
-      else h = 20;
+      h = f.type === "lake" ? f.height : 20;
     }
 
-    // check for river up-hill
-    if (prevH != -1) {
-      if (isRiver) {
-        if (slope == 1 && h < prevH) h = prevH;
-        else if (slope == 0 && h != prevH) h = prevH;
-        else if (slope == -1 && h > prevH) h = prevH;
-      }
+    if (prevH !== -1 && isRiver) {
+      if (slope === 1 && h < prevH) h = prevH;
+      else if (slope === 0 && h !== prevH) h = prevH;
+      else if (slope === -1 && h > prevH) h = prevH;
     }
     prevH = h;
 
     let b = pack.cells.burg[cell];
-    if (b == prevB) b = 0;
+    if (b === prevB) b = 0;
     else prevB = b;
     if (b) {
-      burgCount++;
       lastBurgIndex = i;
       lastBurgCell = cell;
     }
@@ -69,8 +63,8 @@ function showElevationProfile(data, routeLen, isRiver) {
     chartData.biome[i] = pack.cells.biome[cell];
     chartData.burg[i] = b;
     chartData.cell[i] = cell;
-    let sh = getHeight(h);
-    chartData.height[i] = parseInt(sh.substr(0, sh.indexOf(" ")));
+    const sh = getHeight(h);
+    chartData.height[i] = parseInt(sh);
     chartData.mih = Math.min(chartData.mih, h);
     chartData.mah = Math.max(chartData.mah, h);
     chartData.mi = Math.min(chartData.mi, chartData.height[i]);
@@ -80,10 +74,11 @@ function showElevationProfile(data, routeLen, isRiver) {
   for (let i = 1; i < data.length; i++) {
     const diff = chartData.height[i] - chartData.height[i - 1];
     if (diff > 0) totalAscent += diff;
-    else totalDescent += -diff;
+    else totalDescent -= diff;
   }
 
-  if (lastBurgIndex != 0 && lastBurgCell == chartData.cell[data.length - 1] && lastBurgIndex < data.length - 1) {
+  // Move last burg label to the final point if it falls right at the end
+  if (lastBurgIndex !== 0 && lastBurgCell === chartData.cell[data.length - 1] && lastBurgIndex < data.length - 1) {
     chartData.burg[data.length - 1] = chartData.burg[lastBurgIndex];
     chartData.burg[lastBurgIndex] = 0;
   }
@@ -91,58 +86,44 @@ function showElevationProfile(data, routeLen, isRiver) {
   draw();
 
   function downloadCSV() {
-    let csv =
-      "Id,x,y,lat,lon,Cell,Height,Height value,Population,Burg,Burg population,Biome,Biome color,Culture,Culture color,Religion,Religion color,Province,Province color,State,State color\n"; // headers
-
-    for (let k = 0; k < chartData.points.length; k++) {
-      let cell = chartData.cell[k];
-      let burg = pack.cells.burg[cell];
-      let biome = pack.cells.biome[cell];
-      let culture = pack.cells.culture[cell];
-      let religion = pack.cells.religion[cell];
-      let province = pack.cells.province[cell];
-      let state = pack.cells.state[cell];
-      let pop = pack.cells.pop[cell];
-      let h = pack.cells.h[cell];
-
-      csv += k + 1 + ",";
+    const headers =
+      "Id,x,y,lat,lon,Cell,Height,Height value,Population,Burg,Burg population,Biome,Biome color,Culture,Culture color,Religion,Religion color,Province,Province color,State,State color\n";
+    const rows = chartData.points.map((_, k) => {
+      const cell = chartData.cell[k];
       const [x, y] = pack.cells.p[data[k]];
-      csv += x + ",";
-      csv += y + ",";
-      const lat = getLatitude(y, 2);
-      const lon = getLongitude(x, 2);
-      csv += lat + ",";
-      csv += lon + ",";
-      csv += cell + ",";
-      csv += getHeight(h) + ",";
-      csv += h + ",";
-      csv += rn(pop * populationRate) + ",";
-      if (burg) {
-        csv += pack.burgs[burg].name + ",";
-        csv += pack.burgs[burg].population * populationRate * urbanization + ",";
-      } else {
-        csv += ",0,";
-      }
-      csv += biomesData.name[biome] + ",";
-      csv += biomesData.color[biome] + ",";
-      csv += pack.cultures[culture].name + ",";
-      csv += pack.cultures[culture].color + ",";
-      csv += pack.religions[religion].name + ",";
-      csv += pack.religions[religion].color + ",";
-      csv += pack.provinces[province].name + ",";
-      csv += pack.provinces[province].color + ",";
-      csv += pack.states[state].name + ",";
-      csv += pack.states[state].color + ",";
-      csv += "\n";
-    }
-
-    const name = getFileName("elevation profile") + ".csv";
-    downloadFile(csv, name);
+      const h = pack.cells.h[cell];
+      const burg = pack.cells.burg[cell];
+      const pop = pack.cells.pop[cell];
+      const burgPop = burg ? pack.burgs[burg].population * populationRate * urbanization : 0;
+      return [
+        k + 1,
+        x,
+        y,
+        getLatitude(y, 2),
+        getLongitude(x, 2),
+        cell,
+        getHeight(h),
+        h,
+        rn(pop * populationRate),
+        burg ? pack.burgs[burg].name : "",
+        burgPop,
+        biomesData.name[pack.cells.biome[cell]],
+        biomesData.color[pack.cells.biome[cell]],
+        pack.cultures[pack.cells.culture[cell]].name,
+        pack.cultures[pack.cells.culture[cell]].color,
+        pack.religions[pack.cells.religion[cell]].name,
+        pack.religions[pack.cells.religion[cell]].color,
+        pack.provinces[pack.cells.province[cell]].name,
+        pack.provinces[pack.cells.province[cell]].color,
+        pack.states[pack.cells.state[cell]].name,
+        pack.states[pack.cells.state[cell]].color
+      ].join(",");
+    });
+    downloadFile(headers + rows.join("\n"), getFileName("elevation profile") + ".csv");
   }
 
   function draw() {
     chartData.points = [];
-    const heightScale = 1.1; // auto-fit: peaks fill ~90% of chart height
 
     const xscale = d3
       .scaleLinear()
@@ -150,7 +131,7 @@ function showElevationProfile(data, routeLen, isRiver) {
       .range([0, chartWidth]);
     const yscale = d3
       .scaleLinear()
-      .domain([0, chartData.ma * heightScale])
+      .domain([0, chartData.ma * 1.1])
       .range([chartHeight, 0]);
 
     for (let i = 0; i < data.length; i++) {
@@ -166,9 +147,11 @@ function showElevationProfile(data, routeLen, isRiver) {
       .attr("height", chartHeight + yOffset + biomesHeight)
       .attr("id", "elevationSVG")
       .attr("class", "epbackground");
-    // arrow-head definition
-    chart
-      .append("defs")
+
+    const defs = chart.append("defs");
+
+    // Arrowhead marker for burg label lines
+    defs
       .append("marker")
       .attr("id", "arrowhead")
       .attr("orient", "auto")
@@ -180,9 +163,9 @@ function showElevationProfile(data, routeLen, isRiver) {
       .attr("d", "M0,0 V4 L2,2 Z")
       .attr("fill", "darkgray");
 
+    // Terrain elevation gradient (top = peak colour, bottom = valley colour)
     const colors = getColorScheme("natural");
-    const landdef = chart
-      .select("defs")
+    const landGrad = defs
       .append("linearGradient")
       .attr("id", "landdef")
       .attr("x1", "0%")
@@ -190,78 +173,23 @@ function showElevationProfile(data, routeLen, isRiver) {
       .attr("x2", "0%")
       .attr("y2", "100%");
 
-    if (chartData.mah == chartData.mih) {
-      landdef
-        .append("stop")
-        .attr("offset", "0%")
-        .attr("style", "stop-color:" + getColor(chartData.mih, colors) + ";stop-opacity:1");
-      landdef
-        .append("stop")
-        .attr("offset", "100%")
-        .attr("style", "stop-color:" + getColor(chartData.mah, colors) + ";stop-opacity:1");
+    if (chartData.mah === chartData.mih) {
+      const c = getColor(chartData.mih, colors);
+      landGrad.append("stop").attr("offset", "0%").attr("style", `stop-color:${c};stop-opacity:1`);
+      landGrad.append("stop").attr("offset", "100%").attr("style", `stop-color:${c};stop-opacity:1`);
     } else {
-      const gradSteps = Math.min(20, chartData.mah - chartData.mih);
-      for (let s = 0; s <= gradSteps; s++) {
-        const k = Math.round(chartData.mah - (s / gradSteps) * (chartData.mah - chartData.mih));
-        const perc = s / gradSteps;
-        landdef
+      const steps = Math.min(20, chartData.mah - chartData.mih);
+      for (let s = 0; s <= steps; s++) {
+        const h = Math.round(chartData.mah - (s / steps) * (chartData.mah - chartData.mih));
+        landGrad
           .append("stop")
-          .attr("offset", perc * 100 + "%")
-          .attr("style", "stop-color:" + getColor(k, colors) + ";stop-opacity:1");
+          .attr("offset", `${(s / steps) * 100}%`)
+          .attr("style", `stop-color:${getColor(h, colors)};stop-opacity:1`);
       }
     }
 
-    // land
-    let curve = d3.line().curve(d3.curveNatural); // see https://github.com/d3/d3-shape#curves
-    let epCurveIndex = parseInt(epCurve.selectedIndex);
-    switch (epCurveIndex) {
-      case 0:
-        curve = d3.line().curve(d3.curveLinear);
-        break;
-      case 1:
-        curve = d3.line().curve(d3.curveBundle.beta(1));
-        break;
-      case 2:
-        curve = d3.line().curve(d3.curveCatmullRom.alpha(0.5));
-        break;
-      case 3:
-        curve = d3.line().curve(d3.curveMonotoneX);
-        break;
-      case 4:
-      default:
-        curve = d3.line().curve(d3.curveNatural);
-        break;
-    }
-
-    // copy the points so that we can add extra straight pieces, else we get curves at the ends of the chart
-    let extra = chartData.points.slice();
-    let path = curve(extra);
-    // this completes the right-hand side and bottom of our land "polygon"
-    const lastX = extra[extra.length - 1][0];
-    path += " L" + lastX + "," + parseInt(extra[extra.length - 1][1]);
-    path += " L" + lastX + "," + parseInt(yscale(0) + +yOffset);
-    path += " L" + parseInt(xscale(0) + +xOffset) + "," + parseInt(yscale(0) + +yOffset);
-    path += "Z";
-    chart
-      .append("g")
-      .attr("id", "epland")
-      .append("path")
-      .attr("d", path)
-      .attr("stroke", "none")
-      .attr("fill", "url(#landdef)");
-
-    // profile stroke line (outline of elevation silhouette)
-    chart
-      .append("g")
-      .attr("id", "epline")
-      .append("path")
-      .attr("d", curve(chartData.points.slice()))
-      .attr("stroke", "#5a3e28")
-      .attr("stroke-width", 1.5)
-      .attr("fill", "none");
-
-    chart
-      .select("defs")
+    // Clip biome bar to chart bounds
+    defs
       .append("clipPath")
       .attr("id", "epBiomesClip")
       .append("rect")
@@ -270,76 +198,91 @@ function showElevationProfile(data, routeLen, isRiver) {
       .attr("width", chartWidth)
       .attr("height", biomesHeight);
 
-    // biome / heights
-    let g = chart.append("g").attr("id", "epbiomes").attr("clip-path", "url(#epBiomesClip)");
+    // Build the elevation curve using the selected interpolation
+    const curveTypes = [
+      d3.curveLinear,
+      d3.curveBundle.beta(1),
+      d3.curveCatmullRom.alpha(0.5),
+      d3.curveMonotoneX,
+      d3.curveNatural
+    ];
+    const curveIndex = Math.min(parseInt(epCurve.selectedIndex), curveTypes.length - 1);
+    const line = d3.line().curve(curveTypes[curveIndex]);
+
+    // Land fill: curve + straight close along the bottom edge
+    const pts = chartData.points;
+    const lastX = pts[pts.length - 1][0];
+    const baseY = yscale(0) + yOffset;
+    const landPath =
+      line(pts) + ` L${lastX},${pts[pts.length - 1][1]}` + ` L${lastX},${baseY}` + ` L${xscale(0) + xOffset},${baseY}Z`;
+
+    chart
+      .append("g")
+      .attr("id", "epland")
+      .append("path")
+      .attr("d", landPath)
+      .attr("stroke", "none")
+      .attr("fill", "url(#landdef)");
+
+    // Profile outline stroke
+    chart
+      .append("g")
+      .attr("id", "epline")
+      .append("path")
+      .attr("d", line(pts.slice()))
+      .attr("stroke", "#5a3e28")
+      .attr("stroke-width", 1.5)
+      .attr("fill", "none");
+
+    // Biome colour bar
     const hu = heightUnit.value;
-    for (let k = 0; k < chartData.points.length; k++) {
-      const x = chartData.points[k][0];
-      const y = yOffset + chartHeight;
-      const c = biomesData.color[chartData.biome[k]];
+    const biomesG = chart.append("g").attr("id", "epbiomes").attr("clip-path", "url(#epBiomesClip)");
+    const tileWidth = xscale(1);
 
+    for (let k = 0; k < pts.length; k++) {
       const cell = chartData.cell[k];
-      const culture = pack.cells.culture[cell];
-      const religion = pack.cells.religion[cell];
+      const biome = chartData.biome[k];
       const province = pack.cells.province[cell];
-      const state = pack.cells.state[cell];
-      let pop = pack.cells.pop[cell];
-      if (chartData.burg[k]) {
-        pop += pack.burgs[chartData.burg[k]].population * urbanization;
-      }
+      const pop =
+        pack.cells.pop[cell] + (chartData.burg[k] ? pack.burgs[chartData.burg[k]].population * urbanization : 0);
+      const dataTip = [
+        biomesData.name[biome],
+        province ? pack.provinces[province].name : null,
+        pack.states[pack.cells.state[cell]].name,
+        pack.religions[pack.cells.religion[cell]].name,
+        pack.cultures[pack.cells.culture[cell]].name,
+        `height: ${chartData.height[k]} ${hu}`,
+        `population ${rn(pop * populationRate)}`,
+        `cell ${cell}`
+      ]
+        .filter(Boolean)
+        .join(", ");
 
-      const populationDesc = rn(pop * populationRate);
-
-      const provinceDesc = province ? ", " + pack.provinces[province].name : "";
-      const dataTip =
-        biomesData.name[chartData.biome[k]] +
-        provinceDesc +
-        ", " +
-        pack.states[state].name +
-        ", " +
-        pack.religions[religion].name +
-        ", " +
-        pack.cultures[culture].name +
-        " (height: " +
-        chartData.height[k] +
-        " " +
-        hu +
-        ", population " +
-        populationDesc +
-        ", cell " +
-        chartData.cell[k] +
-        ")";
-
-      g.append("rect")
-        .attr("stroke", c)
-        .attr("fill", c)
-        .attr("x", x)
-        .attr("y", y)
-        .attr("width", xscale(1))
+      biomesG
+        .append("rect")
+        .attr("x", pts[k][0])
+        .attr("y", yOffset + chartHeight)
+        .attr("width", tileWidth)
         .attr("height", biomesHeight)
+        .attr("fill", biomesData.color[biome])
+        .attr("stroke", biomesData.color[biome])
         .attr("data-tip", dataTip);
     }
 
+    // Axes
     const xAxis = d3
       .axisBottom(xscale)
       .ticks(10)
-      .tickFormat(function (d) {
-        return rn((d / (chartData.points.length - 1)) * routeLen) + " " + distanceUnitInput.value;
-      });
+      .tickFormat(d => `${rn((d / (pts.length - 1)) * routeLen)} ${distanceUnitInput.value}`);
     const yAxis = d3
       .axisLeft(yscale)
       .ticks(5)
-      .tickFormat(function (d) {
-        return d + " " + hu;
-      });
-
-    const xGrid = d3.axisBottom(xscale).ticks(10).tickSize(-chartHeight).tickFormat("");
-    const yGrid = d3.axisLeft(yscale).ticks(5).tickSize(-chartWidth).tickFormat("");
+      .tickFormat(d => `${d} ${hu}`);
 
     chart
       .append("g")
       .attr("id", "epxaxis")
-      .attr("transform", "translate(" + xOffset + "," + parseInt(chartHeight + +yOffset + 20) + ")")
+      .attr("transform", `translate(${xOffset},${chartHeight + yOffset + 20})`)
       .call(xAxis)
       .selectAll("text")
       .style("text-anchor", "center");
@@ -347,123 +290,97 @@ function showElevationProfile(data, routeLen, isRiver) {
     chart
       .append("g")
       .attr("id", "epyaxis")
-      .attr("transform", "translate(" + parseInt(+xOffset - 10) + "," + parseInt(+yOffset) + ")")
+      .attr("transform", `translate(${xOffset - 10},${yOffset})`)
       .call(yAxis);
 
-    // add the X gridlines
+    // Grid lines
     chart
       .append("g")
       .attr("id", "epxgrid")
       .attr("class", "epgrid")
       .attr("stroke-dasharray", "4 1")
-      .attr("transform", "translate(" + xOffset + "," + parseInt(chartHeight + +yOffset) + ")")
-      .call(xGrid);
+      .attr("transform", `translate(${xOffset},${chartHeight + yOffset})`)
+      .call(d3.axisBottom(xscale).ticks(10).tickSize(-chartHeight).tickFormat(""));
 
-    // add the Y gridlines
     chart
       .append("g")
       .attr("id", "epygrid")
       .attr("class", "epgrid")
       .attr("stroke-dasharray", "4 1")
-      .attr("transform", "translate(" + xOffset + "," + yOffset + ")")
-      .call(yGrid);
+      .attr("transform", `translate(${xOffset},${yOffset})`)
+      .call(d3.axisLeft(yscale).ticks(5).tickSize(-chartWidth).tickFormat(""));
 
-    // draw city labels anchored near the actual curve height
-    g = chart.append("g").attr("id", "epburglabels");
-    const labelGap = 18; // pixels above the curve point for the label baseline
-    const minLabelY = 12; // use the full top margin (yOffset=80) so labels can stack without cascading
-    const lineHeight = 14; // vertical spacing between stacked labels
-    const xProximity = 70; // horizontal range within which labels may stack
+    // Burg labels anchored above their curve point with all-pairs overlap avoidance
+    const labelsG = chart.append("g").attr("id", "epburglabels");
+    const LABEL_GAP = 18; // px above the dot for the label baseline
+    const MIN_LABEL_Y = 12; // topmost allowed y
+    const LINE_HEIGHT = 14; // stacking increment
+    const X_PROXIMITY = 70; // horizontal proximity threshold for stacking
+    const placed = [];
 
-    const burgLabelPositions = []; // track placed labels for all-pairs overlap detection
+    for (let k = 0; k < pts.length; k++) {
+      if (!chartData.burg[k]) continue;
+      const b = chartData.burg[k];
+      const lx = pts[k][0];
+      const ptY = pts[k][1];
+      let ly = ptY - LABEL_GAP;
 
-    for (let k = 0; k < chartData.points.length; k++) {
-      if (chartData.burg[k] > 0) {
-        const b = chartData.burg[k];
-        const ptX = chartData.points[k][0];
-        const ptY = chartData.points[k][1];
-
-        const lx = ptX;
-
-        // Natural position: just above the curve point
-        let ly = ptY - labelGap;
-
-        // Push up to avoid overlapping with any already-placed nearby label.
-        // All-pairs comparison prevents cascading: each label only moves when
-        // it TRULY conflicts with an existing one, not because a previous label
-        // was already pushed up.
-        let adjusting = true;
-        while (adjusting) {
-          adjusting = false;
-          for (const p of burgLabelPositions) {
-            if (Math.abs(lx - p.lx) < xProximity && Math.abs(ly - p.ly) < lineHeight) {
-              const newLy = p.ly - lineHeight;
-              if (newLy < minLabelY) break; // can't push higher — accept overlap at top
-              ly = newLy;
-              adjusting = true;
-              break; // restart scan with updated ly
-            }
+      // Push up until no vertical overlap with any nearby placed label
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const p of placed) {
+          if (Math.abs(lx - p.lx) < X_PROXIMITY && Math.abs(ly - p.ly) < LINE_HEIGHT) {
+            const candidate = p.ly - LINE_HEIGHT;
+            if (candidate < MIN_LABEL_Y) break;
+            ly = candidate;
+            changed = true;
+            break;
           }
         }
-        ly = Math.max(minLabelY, ly);
-        burgLabelPositions.push({lx, ly});
+      }
+      ly = Math.max(MIN_LABEL_Y, ly);
+      placed.push({lx, ly});
 
-        // burg name
-        g.append("text")
-          .attr("id", "ep" + b)
-          .attr("class", "epburglabel")
-          .attr("x", lx)
-          .attr("y", ly)
-          .attr("text-anchor", "middle");
-        byId("ep" + b).innerHTML = pack.burgs[b].name;
+      labelsG
+        .append("text")
+        .attr("id", `ep${b}`)
+        .attr("class", "epburglabel")
+        .attr("x", lx)
+        .attr("y", ly)
+        .attr("text-anchor", "middle")
+        .text(pack.burgs[b].name);
 
-        // arrow from label to curve (only when there is meaningful distance)
-        if (ly + 4 < ptY - 4) {
-          g.append("path")
-            .attr("id", "eparrow" + b)
-            .attr(
-              "d",
-              "M" + lx.toString() + "," + (ly + 3).toString() + "L" + lx.toString() + "," + parseInt(ptY - 3).toString()
-            )
-            .attr("stroke", "darkgray")
-            .attr("fill", "lightgray")
-            .attr("stroke-width", "1")
-            .attr("marker-end", "url(#arrowhead)");
-        }
+      if (ly + 4 < ptY - 4) {
+        labelsG
+          .append("path")
+          .attr("d", `M${lx},${ly + 3}L${lx},${ptY - 3}`)
+          .attr("stroke", "darkgray")
+          .attr("stroke-width", "1")
+          .attr("fill", "none")
+          .attr("marker-end", "url(#arrowhead)");
       }
     }
 
-    // burg dots on the profile line
-    const burgDotsG = chart.append("g").attr("id", "epburgdots");
-    for (let k = 0; k < chartData.points.length; k++) {
-      if (chartData.burg[k] > 0) {
-        burgDotsG
-          .append("circle")
-          .attr("cx", chartData.points[k][0])
-          .attr("cy", chartData.points[k][1])
-          .attr("r", 4)
-          .attr("fill", "white")
-          .attr("stroke", "#333")
-          .attr("stroke-width", 1.5);
-      }
+    // Burg dots on the curve
+    const dotsG = chart.append("g").attr("id", "epburgdots");
+    for (let k = 0; k < pts.length; k++) {
+      if (!chartData.burg[k]) continue;
+      dotsG
+        .append("circle")
+        .attr("cx", pts[k][0])
+        .attr("cy", pts[k][1])
+        .attr("r", 4)
+        .attr("fill", "white")
+        .attr("stroke", "#333")
+        .attr("stroke-width", 1.5);
     }
 
-    // stats summary in the controls bar (single line)
+    // Stats line in the controls bar
     byId("epstats").textContent =
-      "Elev: " +
-      chartData.mi +
-      "\u2013" +
-      chartData.ma +
-      " " +
-      heightUnit.value +
-      "\u2002\u2191\u202f" +
-      totalAscent +
-      "\u2002\u2193\u202f" +
-      totalDescent +
-      " " +
-      heightUnit.value;
+      `Elev: ${chartData.mi}\u2013${chartData.ma} ${heightUnit.value}\u2002\u2191\u202f${totalAscent}\u2002\u2193\u202f${totalDescent} ${heightUnit.value}`;
 
-    // interactive crosshair
+    // Crosshair + FMG tooltip on hover
     const crosshairG = chart.append("g").attr("id", "epcrosshair").style("pointer-events", "none");
     const vLine = crosshairG
       .append("line")
@@ -482,6 +399,7 @@ function showElevationProfile(data, routeLen, isRiver) {
       .attr("fill", "white")
       .attr("stroke", "#333")
       .attr("stroke-width", 1.5);
+
     chart
       .append("rect")
       .attr("id", "epoverlay")
@@ -497,26 +415,22 @@ function showElevationProfile(data, routeLen, isRiver) {
           0,
           Math.min(data.length - 1, Math.round(((mx - xOffset) / chartWidth) * (data.length - 1)))
         );
-        const pt = chartData.points[idx];
+        const pt = pts[idx];
         if (!pt) return;
         vLine.attr("x1", pt[0]).attr("x2", pt[0]);
         hDot.attr("cx", pt[0]).attr("cy", pt[1]);
         const dist = rn((idx / Math.max(1, data.length - 1)) * routeLen);
-        const biomeName = biomesData.name[chartData.biome[idx]];
         const burgId = chartData.burg[idx];
-        const burgName = burgId ? pack.burgs[burgId].name : null;
-        const tipText =
-          dist +
-          " " +
-          distanceUnitInput.value +
-          " from start. Elevation: " +
-          chartData.height[idx] +
-          " " +
-          heightUnit.value +
-          ". " +
-          biomeName +
-          (burgName ? ". " + burgName : "");
-        tip(tipText);
+        tip(
+          [
+            `${dist} ${distanceUnitInput.value} from start`,
+            `Elevation: ${chartData.height[idx]} ${heightUnit.value}`,
+            biomesData.name[chartData.biome[idx]],
+            burgId ? pack.burgs[burgId].name : null
+          ]
+            .filter(Boolean)
+            .join(". ")
+        );
       })
       .on("mouseleave", function () {
         vLine.attr("x1", -200).attr("x2", -200);
@@ -527,7 +441,7 @@ function showElevationProfile(data, routeLen, isRiver) {
 
   function downloadSVG() {
     const svgEl = byId("elevationSVG");
-    const svgStr = '<?xml version="1.0" encoding="utf-8"?>\n' + new XMLSerializer().serializeToString(svgEl);
+    const svgStr = `<?xml version="1.0" encoding="utf-8"?>\n${new XMLSerializer().serializeToString(svgEl)}`;
     downloadFile(svgStr, getFileName("elevation profile") + ".svg");
   }
 
@@ -535,27 +449,24 @@ function showElevationProfile(data, routeLen, isRiver) {
     const svgEl = byId("elevationSVG");
     const w = +svgEl.getAttribute("width");
     const h = +svgEl.getAttribute("height");
-    const svgBlob = new Blob([new XMLSerializer().serializeToString(svgEl)], {type: "image/svg+xml;charset=utf-8"});
-    const svgUrl = URL.createObjectURL(svgBlob);
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
+    const svgUrl = URL.createObjectURL(
+      new Blob([new XMLSerializer().serializeToString(svgEl)], {type: "image/svg+xml;charset=utf-8"})
+    );
+    const canvas = Object.assign(document.createElement("canvas"), {width: w, height: h});
     const ctx = canvas.getContext("2d");
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, w, h);
     const img = new Image();
-    img.onload = function () {
+    img.onload = () => {
       ctx.drawImage(img, 0, 0);
       URL.revokeObjectURL(svgUrl);
-      canvas.toBlob(function (pngBlob) {
-        const pngUrl = URL.createObjectURL(pngBlob);
-        const a = document.createElement("a");
-        a.href = pngUrl;
-        a.download = getFileName("elevation profile") + ".png";
-        document.body.appendChild(a);
+      canvas.toBlob(pngBlob => {
+        const a = Object.assign(document.createElement("a"), {
+          href: URL.createObjectURL(pngBlob),
+          download: getFileName("elevation profile") + ".png"
+        });
         a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(pngUrl);
+        URL.revokeObjectURL(a.href);
       });
     };
     img.src = svgUrl;
