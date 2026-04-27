@@ -3003,23 +3003,22 @@
         <div id="elevationGraph" data-tip="Elevation profile"></div>
         <div style="text-align: center">
           <div id="epControls">
-            <span data-tip="Set height scale"
-              >Height scale: <input id="epScaleRange" type="range" min="1" max="100" value="50"
-            /></span>
             <span data-tip="Set curve profile"
               >Curve:
               <select id="epCurve">
                 <option>Linear</option>
-                <option selected>Basis spline</option>
                 <option>Bundle</option>
                 <option>Cubic Catmull-Rom</option>
                 <option>Monotone X</option>
-                <option>Natural</option>
+                <option selected>Natural</option>
               </select>
             </span>
             <span
               ><button id="epSave" data-tip="Download the chart data as a CSV file" class="icon-download"></button
             ></span>
+            <span><button id="epSaveSVG" data-tip="Download the chart as an SVG image">SVG</button></span>
+            <span><button id="epSavePNG" data-tip="Download the chart as a PNG image">PNG</button></span>
+            <span id="epstats" style="margin-left: 1em; color: #555; font-size: 0.85em"></span>
           </div>
         </div>
       </div>
