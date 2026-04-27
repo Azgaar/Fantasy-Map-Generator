@@ -2,17 +2,11 @@
 
 // data is an array of cell indexes, routeLen is the distance in map units, isRiver flags river profiles
 function showElevationProfile(data, routeLen, isRiver) {
+  closeDialogs("#elevationProfile, .stable");
   byId("epCurve").on("change", draw);
   byId("epSave").on("click", downloadCSV);
   byId("epSaveSVG").on("click", downloadSVG);
   byId("epSavePNG").on("click", downloadPNG);
-
-  $("#elevationProfile").dialog({
-    title: "Elevation profile",
-    resizable: false,
-    close: closeElevationProfile,
-    position: {my: "left top", at: "left+20 bottom-500", of: window, collision: "fit"}
-  });
 
   // For rivers, remember the general slope direction to prevent rendering uphill flow
   let slope = 0;
@@ -85,42 +79,12 @@ function showElevationProfile(data, routeLen, isRiver) {
 
   draw();
 
-  function downloadCSV() {
-    const headers =
-      "Id,x,y,lat,lon,Cell,Height,Height value,Population,Burg,Burg population,Biome,Biome color,Culture,Culture color,Religion,Religion color,Province,Province color,State,State color\n";
-    const rows = chartData.points.map((_, k) => {
-      const cell = chartData.cell[k];
-      const [x, y] = pack.cells.p[data[k]];
-      const h = pack.cells.h[cell];
-      const burg = pack.cells.burg[cell];
-      const pop = pack.cells.pop[cell];
-      const burgPop = burg ? pack.burgs[burg].population * populationRate * urbanization : 0;
-      return [
-        k + 1,
-        x,
-        y,
-        getLatitude(y, 2),
-        getLongitude(x, 2),
-        cell,
-        getHeight(h),
-        h,
-        rn(pop * populationRate),
-        burg ? pack.burgs[burg].name : "",
-        burgPop,
-        biomesData.name[pack.cells.biome[cell]],
-        biomesData.color[pack.cells.biome[cell]],
-        pack.cultures[pack.cells.culture[cell]].name,
-        pack.cultures[pack.cells.culture[cell]].color,
-        pack.religions[pack.cells.religion[cell]].name,
-        pack.religions[pack.cells.religion[cell]].color,
-        pack.provinces[pack.cells.province[cell]].name,
-        pack.provinces[pack.cells.province[cell]].color,
-        pack.states[pack.cells.state[cell]].name,
-        pack.states[pack.cells.state[cell]].color
-      ].join(",");
-    });
-    downloadFile(headers + rows.join("\n"), getFileName("elevation profile") + ".csv");
-  }
+  $("#elevationProfile").dialog({
+    title: "Elevation profile",
+    resizable: false,
+    close: closeElevationProfile,
+    position: {my: "center bottom", at: "center bottom-40px", of: "svg", collision: "fit"}
+  });
 
   function draw() {
     chartData.points = [];
@@ -294,13 +258,22 @@ function showElevationProfile(data, routeLen, isRiver) {
       .call(yAxis);
 
     // Grid lines
+    const gridStyle = g =>
+      g
+        .attr("stroke", "lightgrey")
+        .attr("stroke-opacity", "0.2")
+        .attr("stroke-width", "0.5")
+        .selectAll("path")
+        .attr("stroke-width", "0");
+
     chart
       .append("g")
       .attr("id", "epxgrid")
       .attr("class", "epgrid")
       .attr("stroke-dasharray", "4 1")
       .attr("transform", `translate(${xOffset},${chartHeight + yOffset})`)
-      .call(d3.axisBottom(xscale).ticks(10).tickSize(-chartHeight).tickFormat(""));
+      .call(d3.axisBottom(xscale).ticks(10).tickSize(-chartHeight).tickFormat(""))
+      .call(gridStyle);
 
     chart
       .append("g")
@@ -308,7 +281,8 @@ function showElevationProfile(data, routeLen, isRiver) {
       .attr("class", "epgrid")
       .attr("stroke-dasharray", "4 1")
       .attr("transform", `translate(${xOffset},${yOffset})`)
-      .call(d3.axisLeft(yscale).ticks(5).tickSize(-chartWidth).tickFormat(""));
+      .call(d3.axisLeft(yscale).ticks(5).tickSize(-chartWidth).tickFormat(""))
+      .call(gridStyle);
 
     // Burg labels anchored above their curve point with all-pairs overlap avoidance
     const labelsG = chart.append("g").attr("id", "epburglabels");
@@ -437,6 +411,43 @@ function showElevationProfile(data, routeLen, isRiver) {
         hDot.attr("cx", -200).attr("cy", -200);
         tip("");
       });
+  }
+
+  function downloadCSV() {
+    const headers =
+      "Id,x,y,lat,lon,Cell,Height,Height value,Population,Burg,Burg population,Biome,Biome color,Culture,Culture color,Religion,Religion color,Province,Province color,State,State color\n";
+    const rows = chartData.points.map((_, k) => {
+      const cell = chartData.cell[k];
+      const [x, y] = pack.cells.p[data[k]];
+      const h = pack.cells.h[cell];
+      const burg = pack.cells.burg[cell];
+      const pop = pack.cells.pop[cell];
+      const burgPop = burg ? pack.burgs[burg].population * populationRate * urbanization : 0;
+      return [
+        k + 1,
+        x,
+        y,
+        getLatitude(y, 2),
+        getLongitude(x, 2),
+        cell,
+        getHeight(h),
+        h,
+        rn(pop * populationRate),
+        burg ? pack.burgs[burg].name : "",
+        burgPop,
+        biomesData.name[pack.cells.biome[cell]],
+        biomesData.color[pack.cells.biome[cell]],
+        pack.cultures[pack.cells.culture[cell]].name,
+        pack.cultures[pack.cells.culture[cell]].color,
+        pack.religions[pack.cells.religion[cell]].name,
+        pack.religions[pack.cells.religion[cell]].color,
+        pack.provinces[pack.cells.province[cell]].name,
+        pack.provinces[pack.cells.province[cell]].color,
+        pack.states[pack.cells.state[cell]].name,
+        pack.states[pack.cells.state[cell]].color
+      ].join(",");
+    });
+    downloadFile(headers + rows.join("\n"), getFileName("elevation profile") + ".csv");
   }
 
   function downloadSVG() {
