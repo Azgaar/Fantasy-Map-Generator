@@ -260,7 +260,14 @@ function getName(id) {
 }
 
 function getGraph(currentGraph) {
-  const newGraph = shouldRegenerateGrid(currentGraph, seed) ? generateGrid() : structuredClone(currentGraph);
+  if (shouldRegenerateGrid(currentGraph, seed)) return generateGrid();
+
+  // Deep clone avoiding non-cloneable properties (like D3 quadtrees with functions)
+  const newGraph = JSON.parse(JSON.stringify(currentGraph));
+  // Recreate voronoi cells since JSON doesn't preserve typed arrays or circular refs
+  const {cells, vertices} = calculateVoronoi(newGraph.points, newGraph.boundary);
+  newGraph.cells = cells;
+  newGraph.vertices = vertices;
   delete newGraph.cells.h;
   return newGraph;
 }
