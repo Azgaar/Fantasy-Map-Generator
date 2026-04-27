@@ -97,4 +97,11 @@ declare global {
   var createDefaultRuler: () => void;
   var showStatistics: () => void;
   var closeDialogs: (except?: string) => void;
+  var getHeight: (h: number) => string;
+  var getLatitude: (y: number, precision?: number) => number;
+  var getLongitude: (x: number, precision?: number) => number;
+  var getFileName: (name: string) => string;
+  var downloadFile: (content: string | Blob, name: string) => void;
+  var zoomTo: (x: number, y: number, zoom: number, duration: number) => void;
+  var modules: Record<string, boolean>;
 }

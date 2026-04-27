@@ -354,7 +354,7 @@ function editRoute(id) {
   function showRouteElevationProfile() {
     const route = getRoute();
     const length = rn(route.length * distanceScale);
-    showElevationProfile(
+    ElevationProfile.open(
       route.points.map(p => p[2]),
       length,
       false
