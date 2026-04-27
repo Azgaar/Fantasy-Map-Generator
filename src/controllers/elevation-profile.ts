@@ -276,8 +276,7 @@ export function open(cells: number[], routeLen: number, isRiver: boolean): void 
         religionName,
         cultureName,
         `height: ${chartData.height[k]} ${hu}`,
-        `population ${rn(pop * populationRate)}`,
-        `cell ${cell}`
+        `population ${rn(pop * populationRate)}`
       ]
         .filter(Boolean)
         .join(", ");
