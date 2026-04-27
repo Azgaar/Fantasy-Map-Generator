@@ -367,7 +367,6 @@ export function open(
       .attr("class", "epgrid")
       .attr("stroke-dasharray", "4 1")
       .attr("transform", `translate(${xOffset},${chartHeight + yOffset})`)
-      .call(axisBottom(xscale).ticks(10).tickSize(-chartHeight))
       .call(gridStyle as any);
 
     chart
@@ -376,7 +375,6 @@ export function open(
       .attr("class", "epgrid")
       .attr("stroke-dasharray", "4 1")
       .attr("transform", `translate(${xOffset},${yOffset})`)
-      .call(axisLeft(yscale).ticks(5).tickSize(-chartWidth))
       .call(gridStyle as any);
 
     // Burg labels anchored above their curve point with all-pairs overlap avoidance
