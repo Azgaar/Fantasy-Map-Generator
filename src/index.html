@@ -3003,23 +3003,22 @@
         <div id="elevationGraph" data-tip="Elevation profile"></div>
         <div style="text-align: center">
           <div id="epControls">
-            <span data-tip="Set height scale"
-              >Height scale: <input id="epScaleRange" type="range" min="1" max="100" value="50"
-            /></span>
             <span data-tip="Set curve profile"
               >Curve:
               <select id="epCurve">
                 <option>Linear</option>
-                <option selected>Basis spline</option>
                 <option>Bundle</option>
                 <option>Cubic Catmull-Rom</option>
-                <option>Monotone X</option>
+                <option selected>Monotone X</option>
                 <option>Natural</option>
               </select>
             </span>
             <span
               ><button id="epSave" data-tip="Download the chart data as a CSV file" class="icon-download"></button
             ></span>
+            <span><button id="epSaveSVG" data-tip="Download the chart as an SVG image">SVG</button></span>
+            <span><button id="epSavePNG" data-tip="Download the chart as a PNG image">PNG</button></span>
+            <span id="epstats" style="margin-left: 1em; color: #555; font-size: 0.85em"></span>
           </div>
         </div>
       </div>
@@ -8585,7 +8584,7 @@
     <script defer src="modules/ui/provinces-editor.js?v=1.108.1"></script>
     <script defer src="modules/ui/biomes-editor.js?v=1.112.0"></script>
     <script defer src="modules/ui/namesbase-editor.js?v=1.105.11"></script>
-    <script defer src="modules/ui/elevation-profile.js?v=1.99.00"></script>
+    <!-- elevation-profile migrated to src/controllers/elevation-profile.ts -->
     <script defer src="modules/ui/temperature-graph.js?v=1.106.6"></script>
     <script defer src="modules/ui/routes-editor.js?v=1.104.3"></script>
     <script defer src="modules/ui/routes-creator.js?v=1.104.3"></script>
