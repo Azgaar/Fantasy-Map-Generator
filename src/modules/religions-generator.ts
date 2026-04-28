@@ -578,24 +578,24 @@ const namingMethods: Record<string, Record<string, number>> = {
 };
 
 const types: Record<string, Record<string, number>> = {
-  Shamanism: { Beliefs: 3, Shamanism: 2, Druidism: 1, Spirits: 1 },
+  Shamanism: { Beliefs: 3, Shamanism: 1, Druidism: 1, Spirits: 1 },
   Animism: { Spirits: 3, Beliefs: 1 },
-  Polytheism: { Deities: 3, Faith: 1, Gods: 1, Pantheon: 1 },
+  Polytheism: { Pantheon: 3, Deities: 2, Gods: 1 },
   "Ancestor Worship": { Beliefs: 1, Forefathers: 2, Ancestors: 2 },
-  "Nature Worship": { Beliefs: 3, Druids: 1 },
+  "Nature Worship": { Beliefs: 3, Druids: 1, Spirits: 1 },
   Totemism: { Beliefs: 2, Totems: 2, Idols: 1 },
 
-  Monotheism: { Religion: 2, Church: 3, Faith: 1 },
-  Dualism: { Religion: 3, Faith: 1, Cult: 1 },
-  Syncretism: { Faith: 2, Religion: 2, Creed: 1, Beliefs: 1 },
+  Monotheism: { Religion: 2, Church: 3, Faith: 1, Creed: 1, Commandments: 1 },
+  Dualism: { Religion: 3, Faith: 1 },
+  Syncretism: { Faith: 2, Religion: 2, Beliefs: 1 },
   Pantheism: { Religion: 1, Faith: 1 },
   "Non-theism": { Beliefs: 3, Spirits: 1 },
   Philosophical: { Philosophy: 3, Doctrine: 2, School: 1, Way: 1 },
-  Ethical: { Doctrine: 2, Path: 2, Way: 2, Precepts: 1 },
+  Ethical: { Ethics: 2, Doctrine: 2, Path: 2, Way: 2, Precepts: 1 },
   Deism: { Faith: 2, Religion: 1, Church: 1, Creed: 1 },
   Henotheism: { Faith: 2, Religion: 1, Gods: 1, Pantheon: 1 },
 
-  Cult: { Cult: 4, Sect: 2, Arcanum: 1, Order: 1, Worship: 1 },
+  Cult: { Cult: 4, Sect: 2, Arcanum: 1, Order: 1, Worship: 1, Mysticism: 1 },
   "Dark Cult": {
     Cult: 2,
     Blasphemy: 1,
@@ -604,7 +604,7 @@ const types: Record<string, Record<string, number>> = {
     Idols: 1,
     Occultism: 1,
   },
-  Sect: { Sect: 3, Society: 1 },
+  Sect: { Sect: 4, Society: 1, Brotherhood: 1, Circle: 1, Way: 1},
 
   Heresy: {
     Heresy: 3,
