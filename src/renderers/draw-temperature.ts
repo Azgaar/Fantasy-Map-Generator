@@ -92,6 +92,8 @@ const temperatureRenderer = (): void => {
       .attr("stroke", stroke.toString());
   }
 
+  const scale = (byId("temperatureScale") as HTMLSelectElement).value as Parameters<typeof convertTemperature>[1];
+
   const tempLabels = temperature
     .append("g")
     .attr("id", "tempLabels")
@@ -103,7 +105,7 @@ const temperatureRenderer = (): void => {
     .append("text")
     .attr("x", (d) => d[0])
     .attr("y", (d) => d[1])
-    .text((d) => convertTemperature(d[2]));
+    .text((d) => convertTemperature(d[2], scale));
 
   // find cell with temp < isotherm and find vertex to start path detection
   function findStart(i: number, t: number): number | undefined {
