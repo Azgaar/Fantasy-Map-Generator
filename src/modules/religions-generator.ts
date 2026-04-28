@@ -428,8 +428,13 @@ const forms: Record<string, Record<string, number>> = {
     Polytheism: 7,
     Monotheism: 7,
     Dualism: 3,
+    Syncretism: 2,
     Pantheism: 2,
     "Non-theism": 2,
+    Philosophical: 1,
+    Ethical: 1,
+    Deism: 1,
+    Henotheism: 1,
   },
   Cult: {
     Cult: 5,
