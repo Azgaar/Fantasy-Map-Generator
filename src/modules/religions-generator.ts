@@ -447,19 +447,111 @@ const forms: Record<string, Record<string, number>> = {
 };
 
 const namingMethods: Record<string, Record<string, number>> = {
-  Folk: {
+  Shamanism: {
     "Culture + type": 1,
   },
-
-  Organized: {
-    "Random + type": 3,
+  Animism: {
+    "Culture + type": 1,
+  },
+  Polytheism: {
+    "Random + type": 4,
     "Random + ism": 1,
-    "Supreme + ism": 5,
-    "Faith of + Supreme": 5,
     "Place + ism": 1,
     "Culture + ism": 2,
     "Place + ian + type": 6,
     "Culture + type": 4,
+    "Type + of the + meaning": 2,
+  },
+  "Ancestor Worship": {
+    "Culture + type": 1,
+  },
+  "Nature Worship": {
+    "Culture + type": 1,
+  },
+  Totemism: {
+    "Culture + type": 1,
+  },
+  Monotheism: {
+    "Random + type": 2,
+    "Random + ism": 1,
+    "Supreme + ism": 6,
+    "Faith of + Supreme": 6,
+    "Place + ism": 1,
+    "Culture + ism": 1,
+    "Place + ian + type": 4,
+    "Culture + type": 3,
+  },
+  Dualism: {
+    "Random + type": 3,
+    "Random + ism": 1,
+    "Place + ism": 1,
+    "Culture + ism": 2,
+    "Place + ian + type": 5,
+    "Culture + type": 4,
+    "Type + of the + meaning": 3,
+  },
+  Syncretism: {
+    "Random + type": 3,
+    "Random + ism": 2,
+    "Place + ism": 1,
+    "Culture + ism": 2,
+    "Place + ian + type": 5,
+    "Culture + type": 4,
+    "Type + of the + meaning": 2,
+  },
+  Pantheism: {
+    "Random + type": 3,
+    "Random + ism": 1,
+    "Place + ism": 1,
+    "Culture + ism": 2,
+    "Place + ian + type": 5,
+    "Culture + type": 4,
+    "Type + of the + meaning": 2,
+  },
+  "Non-theism": {
+    "Random + type": 3,
+    "Random + ism": 2,
+    "Place + ism": 1,
+    "Culture + ism": 3,
+    "Place + ian + type": 4,
+    "Culture + type": 5,
+  },
+  Philosophical: {
+    "Random + type": 3,
+    "Random + ism": 2,
+    "Place + ism": 1,
+    "Culture + ism": 3,
+    "Place + ian + type": 4,
+    "Culture + type": 5,
+  },
+  Ethical: {
+    "Random + type": 3,
+    "Random + ism": 2,
+    "Place + ism": 1,
+    "Culture + ism": 3,
+    "Place + ian + type": 4,
+    "Culture + type": 5,
+  },
+  Deism: {
+    "Random + type": 2,
+    "Random + ism": 1,
+    "Supreme + ism": 3,
+    "Faith of + Supreme": 3,
+    "Place + ism": 1,
+    "Culture + ism": 2,
+    "Place + ian + type": 5,
+    "Culture + type": 4,
+  },
+  Henotheism: {
+    "Random + type": 2,
+    "Random + ism": 1,
+    "Supreme + ism": 2,
+    "Faith of + Supreme": 2,
+    "Place + ism": 1,
+    "Culture + ism": 2,
+    "Place + ian + type": 6,
+    "Culture + type": 4,
+    "Type + of the + meaning": 2,
   },
 
   Cult: {
@@ -467,7 +559,16 @@ const namingMethods: Record<string, Record<string, number>> = {
     "Random + ian + type": 1,
     "Type + of the + meaning": 2,
   },
-
+  "Dark Cult": {
+    "Burg + ian + type": 2,
+    "Random + ian + type": 1,
+    "Type + of the + meaning": 3,
+  },
+  Sect: {
+    "Burg + ian + type": 2,
+    "Random + ian + type": 1,
+    "Type + of the + meaning": 2,
+  },
   Heresy: {
     "Burg + ian + type": 3,
     "Random + ism": 3,
@@ -486,8 +587,13 @@ const types: Record<string, Record<string, number>> = {
 
   Monotheism: { Religion: 2, Church: 3, Faith: 1 },
   Dualism: { Religion: 3, Faith: 1, Cult: 1 },
+  Syncretism: { Faith: 2, Religion: 2, Creed: 1, Beliefs: 1 },
   Pantheism: { Religion: 1, Faith: 1 },
   "Non-theism": { Beliefs: 3, Spirits: 1 },
+  Philosophical: { Philosophy: 3, Doctrine: 2, School: 1, Way: 1 },
+  Ethical: { Doctrine: 2, Path: 2, Way: 2, Precepts: 1 },
+  Deism: { Faith: 2, Religion: 1, Church: 1, Creed: 1 },
+  Henotheism: { Faith: 2, Religion: 1, Gods: 1, Pantheon: 1 },
 
   Cult: { Cult: 4, Sect: 2, Arcanum: 1, Order: 1, Worship: 1 },
   "Dark Cult": {
@@ -1117,7 +1223,7 @@ class ReligionsModule {
       return adj ? getAdjective(name) : name;
     };
 
-    const m = rw(namingMethods[variety]);
+    const m = rw(namingMethods[form] || namingMethods[variety]);
     if (m === "Random + type") return [`${random()} ${type}`, "global"];
     if (m === "Random + ism") return [`${trimVowels(random())}ism`, "global"];
     if (m === "Supreme + ism" && deity)
