@@ -354,7 +354,7 @@ function addChart(event) {
   const {stackable} = quantizationMap[plotBy];
 
   if (!stackable && groupBy !== entity) {
-    tip(`Grouping is not supported for ${plotByLabel}`, false, "warn", 4000);
+    tip(`Grouping is not supported for ${plotBy}`, false, "warn", 4000);
     groupBy = entity;
   }
 
