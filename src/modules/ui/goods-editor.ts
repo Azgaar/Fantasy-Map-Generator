@@ -1,9 +1,12 @@
-"use strict";
+declare global {
+  function editGoods(): void;
+}
+
 function editGoods() {
   if (customization) return;
   closeDialogs("#goodsEditor, .stable");
   if (!layerIsOn("toggleGoods")) toggleGoods();
-  const body = document.getElementById("goodsBody");
+  const body = document.getElementById("goodsBody") as HTMLElement;
 
   goodsEditorAddLines();
 
@@ -19,21 +22,22 @@ function editGoods() {
   });
 
   // add listeners
-  document.getElementById("goodsEditorRefresh").addEventListener("click", goodsEditorAddLines);
-  document.getElementById("goodsRegenerate").addEventListener("click", regenerateCurrentGoods);
-  document.getElementById("goodsLegend").addEventListener("click", toggleLegend);
-  document.getElementById("goodsPercentage").addEventListener("click", togglePercentageMode);
-  document.getElementById("goodsAssign").addEventListener("click", enterResourceAssignMode);
-  document.getElementById("goodsAdd").addEventListener("click", goodAdd);
-  document.getElementById("goodsRestore").addEventListener("click", goodsRestoreDefaults);
-  document.getElementById("goodsExport").addEventListener("click", downloadGoodsData);
-  document.getElementById("goodsUnpinAll").addEventListener("click", unpinAllGoods);
+  document.getElementById("goodsEditorRefresh")!.addEventListener("click", goodsEditorAddLines);
+  document.getElementById("goodsRegenerate")!.addEventListener("click", regenerateCurrentGoods);
+  document.getElementById("goodsLegend")!.addEventListener("click", toggleLegend);
+  document.getElementById("goodsPercentage")!.addEventListener("click", togglePercentageMode);
+  document.getElementById("goodsAssign")!.addEventListener("click", enterResourceAssignMode);
+  document.getElementById("goodsAdd")!.addEventListener("click", goodAdd);
+  document.getElementById("goodsRestore")!.addEventListener("click", goodsRestoreDefaults);
+  document.getElementById("goodsExport")!.addEventListener("click", downloadGoodsData);
+  document.getElementById("goodsUnpinAll")!.addEventListener("click", unpinAllGoods);
 
-  body.addEventListener("click", function (ev) {
-    const el = ev.target,
-      cl = el.classList,
-      line = el.parentNode;
-    const resource = Goods.get(+line.dataset.id);
+  body.addEventListener("click", ev => {
+    const el = ev.target as HTMLElement;
+    const cl = el.classList;
+    const line = el.parentNode as HTMLElement;
+    const resource = Goods.get(+line.dataset.id!);
+    if (!resource) return;
     if (cl.contains("goodIcon")) return changeIcon(resource, line, el);
     if (cl.contains("goodCategory")) return changeCategory(resource, line, el);
     if (cl.contains("goodModel")) return changeModel(resource, line, el);
@@ -42,17 +46,18 @@ function editGoods() {
     if (cl.contains("icon-trash-empty")) return removeResource(resource, line);
   });
 
-  body.addEventListener("change", function (ev) {
-    const el = ev.target,
-      cl = el.classList,
-      line = el.parentNode;
-    const resource = Goods.get(+line.dataset.id);
+  body.addEventListener("change", ev => {
+    const el = ev.target as HTMLInputElement;
+    const cl = el.classList;
+    const line = el.parentNode as HTMLElement;
+    const resource = Goods.get(+line.dataset.id!);
+    if (!resource) return;
     if (cl.contains("goodName")) return changeName(resource, el.value, line);
     if (cl.contains("goodValue")) return changeValue(resource, el.value, line);
     if (cl.contains("goodChance")) return changeChance(resource, el.value, line);
   });
 
-  function getBonusIcon(bonus) {
+  function getBonusIcon(bonus: string): string {
     if (bonus === "fleet") return `<span data-tip="Fleet bonus" class="icon-anchor"></span>`;
     if (bonus === "defence") return `<span data-tip="Defence bonus" class="icon-chess-rook"></span>`;
     if (bonus === "prestige") return `<span data-tip="Prestige bonus" class="icon-star"></span>`;
@@ -64,20 +69,17 @@ function editGoods() {
     return "";
   }
 
-  // add line for each resource
   function goodsEditorAddLines() {
-    const addTitle = (string, max) => (string.length < max ? "" : `title="${string}"`);
+    const addTitle = (string: string, max: number) => (string.length < max ? "" : `title="${string}"`);
     let lines = "";
 
     for (const r of pack.goods) {
       const stroke = Goods.getStroke(r.color);
       const model = r.model.replaceAll("_", " ");
-      const bonusArray = Object.entries(r.bonus)
-        .map(e => Array(e[1]).fill(e[0]))
-        .flat();
-      const bonusHTML = bonusArray.map(bonus => getBonusIcon(bonus)).join("");
+      const bonusArray = Object.entries(r.bonus).flatMap(([k, v]) => Array(v as number).fill(k)) as unknown as string[];
+      const bonusHTML = bonusArray.map((bonus: string) => getBonusIcon(bonus)).join("");
       const bonusString = Object.entries(r.bonus)
-        .map(e => e.join(": "))
+        .map(([k, v]) => `${k}: ${v}`)
         .join("; ");
 
       lines += `<div class="states goods"
@@ -103,29 +105,29 @@ function editGoods() {
     }
     body.innerHTML = lines;
 
-    // update footer
-    document.getElementById("goodsNumber").innerHTML = pack.goods.length;
+    document.getElementById("goodsNumber")!.innerHTML = String(pack.goods.length);
 
-    // add listeners
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("click", selectResourceOnLineClick));
 
-    if (body.dataset.type === "percentage") {
-      body.dataset.type = "absolute";
+    if ((body as any).dataset.type === "percentage") {
+      (body as any).dataset.type = "absolute";
       togglePercentageMode();
     }
-    applySorting(goodsHeader);
+    applySorting(document.getElementById("goodsHeader")!);
     $("#goodsEditor").dialog({width: fitContent()});
   }
 
-  function changeCategory(resource, line, el) {
-    const categories = [...new Set(pack.goods.map(r => r.category))].sort();
-    const categoryOptions = category =>
-      categories.map(c => `<option ${c === category ? "selected" : ""} value="${c}">${c}</option>`).join("");
+  function changeCategory(resource: any, line: HTMLElement, el: HTMLElement) {
+    const categories = [...new Set(pack.goods.map((r: any) => r.category))].sort();
+    const categoryOptions = (category: string) =>
+      (categories as string[])
+        .map(c => `<option ${c === category ? "selected" : ""} value="${c}">${c}</option>`)
+        .join("");
 
     alertMessage.innerHTML = `
       <div style="margin-bottom:.2em" data-tip="Select category from the list">
         <div style="display: inline-block; width: 9em">Select category:</div>
-        <select style="width: 9em" id="resouceCategorySelect">${categoryOptions(line.dataset.category)}</select>
+        <select style="width: 9em" id="resouceCategorySelect">${categoryOptions(line.dataset.category!)}</select>
       </div>
 
       <div style="margin-bottom:.2em" data-tip="Type new category name">
@@ -149,15 +151,15 @@ function editGoods() {
     });
 
     function applyChanges() {
-      const custom = document.getElementById("resouceCategoryAdd").value;
-      const select = document.getElementById("resouceCategorySelect").value;
+      const custom = (document.getElementById("resouceCategoryAdd") as HTMLInputElement).value;
+      const select = (document.getElementById("resouceCategorySelect") as HTMLSelectElement).value;
       const category = custom ? capitalize(custom) : select;
       resource.category = line.dataset.category = el.innerHTML = category;
     }
   }
 
-  function changeModel(resource, line, el) {
-    const model = line.dataset.model;
+  function changeModel(resource: any, line: HTMLElement, el: HTMLElement) {
+    const model = line.dataset.model!;
     const modelOptions = Object.keys(Goods.models)
       .sort()
       .map(m => `<option ${m === model ? "selected" : ""} value="${m}">${m.replaceAll("_", " ")}</option>`)
@@ -180,7 +182,7 @@ function editGoods() {
         <div style="margin-bottom:.2em">
           <div style="display: inline-block; width: 6em">Function:</div>
           <div id="resouceModelFunction" style="display: inline-block; width: 18em; font-family: monospace; border: 1px solid #ccc; padding: 3px; font-size: .95em;vertical-align: middle">
-            ${Goods.models[model] || " "}
+            ${Goods.models[model as keyof typeof Goods.models] || " "}
           </div>
         </div>
       </fieldset>
@@ -215,22 +217,22 @@ function editGoods() {
       }
     });
 
-    function applyChanges(dialog) {
-      const customName = document.getElementById("resouceModelCustomName").value;
-      const customFn = document.getElementById("resouceModelCustomFunction").value;
+    function applyChanges(dialog: any) {
+      const customName = (document.getElementById("resouceModelCustomName") as HTMLInputElement).value;
+      const customFn = (document.getElementById("resouceModelCustomFunction") as HTMLInputElement).value;
 
-      const message = document.getElementById("goodModelMessage");
-      if (customName && !customFn) return (message.innerHTML = "Error. Custom model function is required");
-      if (!customName && customFn) return (message.innerHTML = "Error. Custom model name is required");
+      const message = document.getElementById("goodModelMessage")!;
+      if (customName && !customFn) return void (message.innerHTML = "Error. Custom model function is required");
+      if (!customName && customFn) return void (message.innerHTML = "Error. Custom model name is required");
       message.innerHTML = "";
 
       if (customName && customFn) {
         try {
-          const allMethods = "{" + Object.keys(Goods.methods).join(", ") + "}";
-          const fn = new Function(allMethods, "return " + customFn);
+          const allMethods = `{${Object.keys(Goods.methods).join(", ")}}`;
+          const fn = new Function(allMethods, `return ${customFn}`);
           fn({...Goods.methods});
-        } catch (err) {
-          message.innerHTML = "Error. " + err.message || err;
+        } catch (err: any) {
+          message.innerHTML = `Error. ${err.message || err}`;
           return;
         }
 
@@ -241,17 +243,19 @@ function editGoods() {
         return;
       }
 
-      const model = document.getElementById("resouceModelSelect").value;
-      if (!model) return (message.innerHTML = "Error. Model is not set");
+      const selectedModel = (document.getElementById("resouceModelSelect") as HTMLSelectElement).value;
+      if (!selectedModel) return void (message.innerHTML = "Error. Model is not set");
 
-      resource.model = line.dataset.model = el.innerHTML = model;
-      el.setAttribute("title", model.length > 7 ? model : "");
+      resource.model = line.dataset.model = el.innerHTML = selectedModel;
+      el.setAttribute("title", selectedModel.length > 7 ? selectedModel : "");
       $(dialog).dialog("close");
     }
   }
 
-  function changeBonus(resource, line, el) {
-    const bonuses = [...new Set(pack.goods.map(r => Object.keys(r.bonus)).flat())].sort();
+  function changeBonus(resource: any, line: HTMLElement, el: HTMLElement) {
+    const bonuses = (
+      [...new Set(pack.goods.flatMap((r: any) => Object.keys(r.bonus)) as unknown as string[])] as string[]
+    ).sort();
     const inputs = bonuses.map(
       bonus => `<div style="margin-bottom:.2em">
         ${getBonusIcon(bonus)}
@@ -276,17 +280,19 @@ function editGoods() {
     });
 
     function applyChanges() {
-      const bonusObj = {};
+      const bonusObj: Record<string, number> = {};
       bonuses.forEach(bonus => {
-        const el = document.getElementById("goodBonus_" + bonus);
-        const value = parseInt(el.value);
-        if (isNaN(value) || !value) return;
+        const bonusEl = document.getElementById(`goodBonus_${bonus}`) as HTMLInputElement;
+        const value = parseInt(bonusEl.value, 10);
+        if (Number.isNaN(value) || !value) return;
         bonusObj[bonus] = value;
       });
 
-      const bonusArray = Object.entries(bonusObj).map(e => Array(e[1]).fill(e[0])).flat(); //prettier-ignore
-      const bonusHTML = bonusArray.map(bonus => getBonusIcon(bonus)).join("");
-      const bonusString = Object.entries(bonusObj).map((e) => e.join(': ')).join('; '); //prettier-ignore
+      const bonusArray = Object.entries(bonusObj).flatMap(([k, v]) => Array(v).fill(k)) as unknown as string[];
+      const bonusHTML = bonusArray.map((bonus: string) => getBonusIcon(bonus)).join("");
+      const bonusString = Object.entries(bonusObj)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join("; ");
 
       resource.bonus = bonusObj;
       el.innerHTML = bonusHTML || "<span style='opacity:0'>place</span>";
@@ -295,36 +301,38 @@ function editGoods() {
     }
   }
 
-  function changeName(resource, name, line) {
+  function changeName(resource: any, name: string, line: HTMLElement) {
     resource.name = line.dataset.name = name;
   }
 
-  function changeValue(resource, value, line) {
-    resource.value = line.dataset.value = +value;
+  function changeValue(resource: any, value: string, line: HTMLElement) {
+    resource.value = +value;
+    line.dataset.value = value;
   }
 
-  function changeChance(resource, chance, line) {
-    resource.chance = line.dataset.chance = +chance;
+  function changeChance(resource: any, chance: string, line: HTMLElement) {
+    resource.chance = +chance;
+    line.dataset.chance = chance;
   }
 
-  function changeIcon(resource, line, el) {
-    const standardIcons = Array.from(document.getElementById("good-icons").querySelectorAll("symbol")).map(el => el.id);
+  function changeIcon(resource: any, line: HTMLElement, _el: HTMLElement) {
+    const standardIcons = Array.from(document.getElementById("good-icons")!.querySelectorAll("symbol")).map(
+      el => el.id
+    );
     const standardIconsOptions = standardIcons.map(icon => `<option value=${icon}>${icon}</option>`);
 
     const customIconsEl = document.getElementById("defs-icons");
-    const customIcons = customIconsEl
-      ? Array.from(document.getElementById("defs-icons").querySelectorAll("svg")).map(el => el.id)
-      : [];
+    const customIcons = customIconsEl ? Array.from(customIconsEl.querySelectorAll("svg")).map(el => el.id) : [];
     const customIconsOptions = customIcons.map(icon => `<option value=${icon}>${icon}</option>`);
 
-    const select = document.getElementById("goodSelectIcon");
-    select.innerHTML = standardIconsOptions + customIconsOptions;
+    const select = document.getElementById("goodSelectIcon") as HTMLSelectElement;
+    select.innerHTML = standardIconsOptions.join("") + customIconsOptions.join("");
     select.value = resource.icon;
 
-    const preview = document.getElementById("goodIconPreview");
-    preview.setAttribute("href", "#" + resource.icon);
+    const preview = document.getElementById("goodIconPreview") as unknown as SVGUseElement;
+    preview.setAttribute("href", `#${resource.icon}`);
 
-    const viewBoxSection = document.getElementById("goodIconEditorViewboxFields");
+    const viewBoxSection = document.getElementById("goodIconEditorViewboxFields") as HTMLElement;
     viewBoxSection.style.display = "none";
 
     $("#goodIconEditor").dialog({
@@ -334,59 +342,61 @@ function editGoods() {
         Cancel: function () {
           $(this).dialog("close");
         },
-        "Change color": () => changeColor(resource, line, el),
+        "Change color": () => changeColor(resource, line, _el),
         Apply: function () {
           $(this).dialog("close");
 
           resource.icon = select.value;
-          line.querySelector("svg.goodIcon > use").setAttribute("href", "#" + select.value);
+          line.querySelector("svg.goodIcon > use")!.setAttribute("href", `#${select.value}`);
           drawGoods();
         }
       },
       position: {my: "center bottom", at: "center", of: "svg"}
     });
 
-    const uploadTo = document.getElementById("defs-icons");
-    const onUpload = (type, id) => {
-      preview.setAttribute("href", "#" + id);
+    const uploadTo = document.getElementById("defs-icons")!;
+    const onUpload = (type: string, id: string) => {
+      preview.setAttribute("href", `#${id}`);
       select.innerHTML += `<option value=${id}>${id}</option>`;
       select.value = id;
 
       if (type === "image") return;
 
-      // let user set viewBox for svg image
-      const el = document.getElementById(id);
+      const iconEl = document.getElementById(id)!;
       viewBoxSection.style.display = "block";
-      const viewBoxAttr = el.getAttribute("viewBox");
+      const viewBoxAttr = iconEl.getAttribute("viewBox");
       const initialViewBox = viewBoxAttr ? viewBoxAttr.split(" ") : [0, 0, 200, 200];
       const inputs = viewBoxSection.querySelectorAll("input");
       const changeInput = () => {
         const viewBox = Array.from(inputs)
-          .map(input => input.value)
+          .map(input => (input as HTMLInputElement).value)
           .join(" ");
-        el.setAttribute("viewBox", viewBox);
+        iconEl.setAttribute("viewBox", viewBox);
       };
       inputs.forEach((input, i) => {
-        input.value = initialViewBox[i];
-        input.onchange = changeInput;
+        (input as HTMLInputElement).value = String(initialViewBox[i]);
+        (input as HTMLInputElement).onchange = changeInput;
       });
     };
 
-    // add listeners
-    select.onchange = () => preview.setAttribute("href", "#" + select.value);
-    document.getElementById("goodUploadIconRaster").onclick = () => imageToLoad.click();
-    document.getElementById("goodUploadIconVector").onclick = () => svgToLoad.click();
-    document.getElementById("imageToLoad").onchange = () => uploadImage("image", uploadTo, onUpload);
-    document.getElementById("svgToLoad").onchange = () => uploadImage("svg", uploadTo, onUpload);
+    select.onchange = () => preview.setAttribute("href", `#${select.value}`);
+    document.getElementById("goodUploadIconRaster")!.onclick = () =>
+      (document.getElementById("imageToLoad") as HTMLInputElement).click();
+    document.getElementById("goodUploadIconVector")!.onclick = () =>
+      (document.getElementById("svgToLoad") as HTMLInputElement).click();
+    document.getElementById("imageToLoad")!.onchange = () => uploadImage("image", uploadTo, onUpload);
+    document.getElementById("svgToLoad")!.onchange = () => uploadImage("svg", uploadTo, onUpload);
   }
 
-  function uploadImage(type, uploadTo, callback) {
-    const input = type === "image" ? document.getElementById("imageToLoad") : document.getElementById("svgToLoad");
-    const file = input.files[0];
+  function uploadImage(type: string, uploadTo: HTMLElement, callback: (type: string, id: string) => void) {
+    const input = (
+      type === "image" ? document.getElementById("imageToLoad") : document.getElementById("svgToLoad")
+    ) as HTMLInputElement;
+    const file = input.files![0];
     input.value = "";
 
     if (file.size > 200000)
-      return tip(
+      return void tip(
         `File is too big, please optimize file size up to 200kB and re-upload. Recommended size is 48x48 px and up to 10kB`,
         true,
         "error",
@@ -394,9 +404,9 @@ function editGoods() {
       );
 
     const reader = new FileReader();
-    reader.onload = function (readerEvent) {
-      const result = readerEvent.target.result;
-      const id = "good-custom-" + Math.random().toString(36).slice(-6);
+    reader.onload = readerEvent => {
+      const result = readerEvent.target!.result as string;
+      const id = `good-custom-${Math.random().toString(36).slice(-6)}`;
 
       if (type === "image") {
         const svg = `<svg id="${id}" xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><image x="0" y="0" width="200" height="200" href="${result}"/></svg>`;
@@ -405,7 +415,6 @@ function editGoods() {
         const el = document.createElement("html");
         el.innerHTML = result;
 
-        // remove sodipodi and inkscape attributes
         el.querySelectorAll("*").forEach(el => {
           const attributes = el.getAttributeNames();
           attributes.forEach(attr => {
@@ -413,21 +422,20 @@ function editGoods() {
           });
         });
 
-        // remove all text if source is Noun project (to make it usable)
         if (result.includes("from the Noun Project")) el.querySelectorAll("text").forEach(textEl => textEl.remove());
 
         const svg = el.querySelector("svg");
         if (!svg)
-          return tip(
-            "The file should be prepated for load to FMG. If you don't know why it's happening, try to upload the raster image",
+          return void tip(
+            "The file should be prepared for load to FMG. If you don't know why it's happening, try to upload the raster image",
             false,
             "error"
           );
 
         const icon = uploadTo.appendChild(svg);
         icon.id = id;
-        icon.setAttribute("width", 200);
-        icon.setAttribute("height", 200);
+        icon.setAttribute("width", "200");
+        icon.setAttribute("height", "200");
       }
 
       callback(type, id);
@@ -437,10 +445,10 @@ function editGoods() {
     else reader.readAsText(file);
   }
 
-  function changeColor(resource, line, el) {
-    const circle = el.querySelector("circle");
+  function changeColor(resource: any, line: HTMLElement, _el: HTMLElement) {
+    const circle = line.querySelector("circle")!;
 
-    const callback = fill => {
+    const callback = (fill: string) => {
       const stroke = Goods.getStroke(fill);
       circle.setAttribute("fill", fill);
       circle.setAttribute("stroke", stroke);
@@ -455,16 +463,26 @@ function editGoods() {
 
   function regenerateCurrentGoods() {
     const message = "Are you sure you want to regenerate goods? <br>This action cannot be reverted";
-    confirmationDialog({title: "Regenerate goods", message, confirm: "Regenerate", onConfirm: regenerateGoods});
+    confirmationDialog({
+      title: "Regenerate goods",
+      message,
+      confirm: "Regenerate",
+      onConfirm: regenerateGoods
+    });
   }
 
   function goodsRestoreDefaults() {
     const message = "Are you sure you want to restore default goods? <br>This action cannot be reverted";
     const onConfirm = () => {
-      delete pack.goods;
+      delete (pack as any).goods;
       regenerateGoods();
     };
-    confirmationDialog({title: "Restore default goods", message, confirm: "Restore", onConfirm});
+    confirmationDialog({
+      title: "Restore default goods",
+      message,
+      confirm: "Restore",
+      onConfirm
+    });
   }
 
   function toggleLegend() {
@@ -474,82 +492,93 @@ function editGoods() {
     }
 
     const data = pack.goods
-      .filter(r => r.i && r.cells)
-      .sort((a, b) => b.cells - a.cells)
-      .map(r => [r.i, r.color, r.name]);
+      .filter((r: any) => r.i && r.cells)
+      .sort((a: any, b: any) => b.cells - a.cells)
+      .map((r: any) => [r.i, r.color, r.name]);
     drawLegend("Goods", data);
   }
 
   function togglePercentageMode() {
-    if (body.dataset.type === "absolute") {
-      body.dataset.type = "percentage";
-      const totalCells = pack.cells.good.filter(r => r !== 0).length;
+    if ((body as any).dataset.type === "absolute") {
+      (body as any).dataset.type = "percentage";
+      const totalCells = Array.from(pack.cells.good as Uint8Array).filter(r => r !== 0).length;
 
-      body.querySelectorAll(":scope > div").forEach(function (el) {
-        el.querySelector(".goodCells").innerHTML = rn((+el.dataset.cells / totalCells) * 100) + "%";
+      body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
+        el.querySelector(".goodCells")!.innerHTML = `${rn((+el.dataset.cells! / totalCells) * 100)}%`;
       });
     } else {
-      body.dataset.type = "absolute";
+      (body as any).dataset.type = "absolute";
       goodsEditorAddLines();
     }
   }
 
-  function enterResourceAssignMode() {
+  function enterResourceAssignMode(this: HTMLElement) {
     if (this.classList.contains("pressed")) return exitResourceAssignMode();
     customization = 14;
     this.classList.add("pressed");
     if (!layerIsOn("toggleGoods")) toggleGoods();
     if (!layerIsOn("toggleCells")) {
-      const toggler = document.getElementById("toggleCells");
-      toggler.dataset.forced = true;
+      const toggler = document.getElementById("toggleCells")!;
+      (toggler as any).dataset.forced = true;
       toggleCells();
     }
 
     document
-      .getElementById("goodsEditor")
+      .getElementById("goodsEditor")!
       .querySelectorAll(".hide")
       .forEach(el => el.classList.add("hidden"));
-    document.getElementById("goodsFooter").style.display = "none";
+    document.getElementById("goodsFooter")!.style.display = "none";
     body
-      .querySelectorAll(".goodName, .goodCategory, .goodChance, .goodCells, svg")
+      .querySelectorAll<HTMLElement>(".goodName, .goodCategory, .goodChance, .goodCells, svg")
       .forEach(e => (e.style.pointerEvents = "none"));
-    $("#goodsEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
+    $("#goodsEditor").dialog({
+      position: {
+        my: "right top",
+        at: "right-10 top+10",
+        of: "svg",
+        collision: "fit"
+      }
+    });
 
     tip("Select good line in editor, click on cells to remove or add a good", true);
     viewbox.on("click", changeResourceOnCellClick);
 
-    body.querySelector("div")?.classList.add("selected");
+    body.querySelector<HTMLElement>("div")?.classList.add("selected");
 
-    const someArePinned = pack.goods.some(resource => resource.pinned);
+    const someArePinned = pack.goods.some((resource: any) => resource.pinned);
     if (someArePinned) unpinAllGoods();
   }
 
-  function selectResourceOnLineClick() {
+  function selectResourceOnLineClick(this: HTMLElement) {
     if (customization !== 14) return;
-    //if (this.parentNode.id !== "statesBodySection") return;
-    body.querySelector("div.selected").classList.remove("selected");
+    body.querySelector<HTMLElement>("div.selected")!.classList.remove("selected");
     this.classList.add("selected");
   }
 
-  function changeResourceOnCellClick() {
-    const point = d3.mouse(this);
+  function changeResourceOnCellClick(this: SVGElement) {
+    const point = (window as any).d3.mouse(this) as [number, number];
     const i = findCell(point[0], point[1]);
-    const selected = body.querySelector("div.selected");
+    if (i === undefined) return;
+    const selected = body.querySelector<HTMLElement>("div.selected");
     if (!selected) return;
 
     if (pack.cells.good[i]) {
       const resourceToRemove = Goods.get(pack.cells.good[i]);
       if (resourceToRemove) {
-        resourceToRemove.cells -= 1;
-        body.querySelector("div.states[data-id='" + resourceToRemove.i + "'] > .goodCells").innerHTML =
-          resourceToRemove.cells;
+        resourceToRemove.cells! -= 1;
+        body.querySelector<HTMLElement>(`div.states[data-id='${resourceToRemove.i}'] > .goodCells`)!.innerHTML = String(
+          resourceToRemove.cells
+        );
       }
       pack.cells.good[i] = 0;
     } else {
-      const resourceId = +selected.dataset.id;
+      const resourceId = +selected.dataset.id!;
       const resource = Goods.get(resourceId);
-      resource.cells += 1;
-      body.querySelector("div.states[data-id='" + resourceId + "'] > .goodCells").innerHTML = resource.cells;
+      if (!resource) return;
+      resource.cells! += 1;
+      body.querySelector<HTMLElement>(`div.states[data-id='${resourceId}'] > .goodCells`)!.innerHTML = String(
+        resource.cells
+      );
       pack.cells.good[i] = resourceId;
     }
 
@@ -557,77 +586,87 @@ function editGoods() {
     drawGoods();
   }
 
-  function exitResourceAssignMode(close) {
+  function exitResourceAssignMode(close?: string) {
     customization = 0;
-    document.getElementById("goodsAssign").classList.remove("pressed");
+    document.getElementById("goodsAssign")!.classList.remove("pressed");
 
     if (layerIsOn("toggleCells")) {
-      const toggler = document.getElementById("toggleCells");
+      const toggler = document.getElementById("toggleCells")! as any;
       if (toggler.dataset.forced) toggleCells();
       delete toggler.dataset.forced;
     }
 
     document
-      .getElementById("goodsEditor")
+      .getElementById("goodsEditor")!
       .querySelectorAll(".hide")
       .forEach(el => el.classList.remove("hidden"));
-    document.getElementById("goodsFooter").style.display = "block";
+    document.getElementById("goodsFooter")!.style.display = "block";
     body
-      .querySelectorAll(".goodName, .goodCategory, .goodChance, .goodCells, svg")
-      .forEach(e => delete e.style.pointerEvents);
-    !close &&
-      $("#goodsEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
+      .querySelectorAll<HTMLElement>(".goodName, .goodCategory, .goodChance, .goodCells, svg")
+      .forEach(e => (e.style.pointerEvents = ""));
+    if (!close) {
+      $("#goodsEditor").dialog({
+        position: {
+          my: "right top",
+          at: "right-10 top+10",
+          of: "svg",
+          collision: "fit"
+        }
+      });
+    }
 
     restoreDefaultEvents();
     clearMainTip();
-    const selected = body.querySelector("div.selected");
+    const selected = body.querySelector<HTMLElement>("div.selected");
     if (selected) selected.classList.remove("selected");
   }
 
   function goodAdd() {
     if (pack.goods.length >= 256) return tip("Maximum number of goods is reached", false, "error");
 
-    let i = last(pack.goods).i;
+    let i = (pack.goods[pack.goods.length - 1] as any).i;
     while (Goods.get(i)) {
       i++;
     }
     const resource = {
       i,
-      name: "Good" + i,
+      name: `Good${i}`,
       category: "Unknown",
       icon: "good-unknown",
       color: "#ff5959",
       value: 1,
       chance: 10,
       model: "habitability",
-      bonus: {population: 1},
+      unit: "",
+      bonus: {population: 1} as Record<string, number>,
+      culture: {} as Record<string, number>,
       cells: 0
-    };
+    } as any;
     pack.goods.push(resource);
     tip("Good is added", false, "success", 3000);
     goodsEditorAddLines();
   }
 
   function downloadGoodsData() {
-    let data = "Id,Good,Color,Category,Value,Bonus,Chance,Model,Cells\n"; // headers
+    let data = "Id,Good,Color,Category,Value,Bonus,Chance,Model,Cells\n";
 
-    body.querySelectorAll(":scope > div").forEach(function (el) {
-      data += el.dataset.id + ",";
-      data += el.dataset.name + ",";
-      data += el.dataset.color + ",";
-      data += el.dataset.category + ",";
-      data += el.dataset.value + ",";
-      data += el.dataset.bonus + ",";
-      data += el.dataset.chance + ",";
-      data += el.dataset.model + ",";
-      data += el.dataset.cells + "\n";
+    body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
+      data += `${el.dataset.id},`;
+      data += `${el.dataset.name},`;
+      data += `${el.dataset.color},`;
+      data += `${el.dataset.category},`;
+      data += `${el.dataset.value},`;
+      data += `${el.dataset.bonus},`;
+      data += `${el.dataset.chance},`;
+      data += `${el.dataset.model},`;
+      data += `${el.dataset.cells}\n`;
     });
 
-    const name = getFileName("Goods") + ".csv";
+    const name = `${getFileName("Goods")}.csv`;
     downloadFile(data, name);
   }
 
-  function pinResource(resource, el) {
+  function pinResource(resource: any, el: HTMLElement) {
     const pin = el.classList.contains("inactive");
     el.classList.toggle("inactive");
 
@@ -637,22 +676,21 @@ function editGoods() {
     goods.selectAll("*").remove();
     drawGoods();
 
-    // manage top unpin all button state
-    const someArePinned = pack.goods.some(resource => resource.pinned);
-    const unpinAll = document.getElementById("goodsUnpinAll");
+    const someArePinned = pack.goods.some((r: any) => r.pinned);
+    const unpinAll = document.getElementById("goodsUnpinAll")!;
     someArePinned ? unpinAll.classList.remove("hidden") : unpinAll.classList.add("hidden");
   }
 
   function unpinAllGoods() {
-    pack.goods.forEach(resource => delete resource.pinned);
+    pack.goods.forEach((resource: any) => delete resource.pinned);
     goods.selectAll("*").remove();
     drawGoods();
 
-    document.getElementById("goodsUnpinAll").classList.add("hidden");
+    document.getElementById("goodsUnpinAll")!.classList.add("hidden");
     body.querySelectorAll(":scope > div > span.icon-pin").forEach(el => el.classList.add("inactive"));
   }
 
-  function removeResource(res, line) {
+  function removeResource(res: any, line: HTMLElement) {
     if (customization) return;
 
     const message = "Are you sure you want to remove the resource? <br>This action cannot be reverted";
@@ -663,14 +701,19 @@ function editGoods() {
         }
       }
 
-      pack.goods = pack.goods.filter(resource => resource.i !== res.i);
+      pack.goods = pack.goods.filter((resource: any) => resource.i !== res.i);
       line.remove();
-      document.getElementById("goodsNumber").innerHTML = pack.goods.length;
+      document.getElementById("goodsNumber")!.innerHTML = String(pack.goods.length);
 
       goods.selectAll("*").remove();
       drawGoods();
     };
-    confirmationDialog({title: "Remove resource", message, confirm: "Remove", onConfirm});
+    confirmationDialog({
+      title: "Remove resource",
+      message,
+      confirm: "Remove",
+      onConfirm
+    });
   }
 
   function closeGoodsEditor() {
@@ -679,3 +722,5 @@ function editGoods() {
     body.innerHTML = "";
   }
 }
+
+window.editGoods = editGoods;

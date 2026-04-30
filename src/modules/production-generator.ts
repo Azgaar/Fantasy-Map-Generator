@@ -1,8 +1,10 @@
-"use strict";
+declare global {
+  var Production: ProductionModule;
+}
 
-window.Production = (function () {
-  const BONUS_PRODUCTION = 4;
-  const BIOME_PRODUCTION = [
+export class ProductionModule {
+  private readonly BONUS_PRODUCTION = 4;
+  private readonly BIOME_PRODUCTION = [
     [{resource: 11, production: 0.75}], // marine: fish
     [{resource: 2, production: 0.5}], // hot desert: stone
     [{resource: 2, production: 0.5}], // cold desert: stone
@@ -35,20 +37,23 @@ window.Production = (function () {
       {resource: 12, production: 0.4}
     ] // wetland: iron, game
   ];
-  const RIVER_PRODUCTION = [{resource: 11, production: 0.5}]; // fish
-  const HILLS_PRODUCTION = [{resource: 34, production: 0.5}]; // coal
-  const FOOD_MULTIPLIER = 3;
 
-  const collectGoods = () => {
+  private readonly RIVER_PRODUCTION = [{resource: 11, production: 0.5}]; // fish
+  private readonly HILLS_PRODUCTION = [{resource: 34, production: 0.5}]; // coal
+  private readonly FOOD_MULTIPLIER = 3;
+
+  collectGoods() {
     const {cells, burgs} = pack;
 
     for (const burg of burgs) {
       if (!burg.i || burg.removed) continue;
 
-      const {cell, type, population} = burg;
+      const cell = burg.cell;
+      const type = burg.type || "Generic";
+      const population = burg.population || 0;
 
-      const goodsPull = {};
-      const addResource = (resourceId, production) => {
+      const goodsPull: Record<number, number> = {};
+      const addResource = (resourceId: number, production: number) => {
         const currentProd = goodsPull[resourceId] || 0;
         if (!currentProd) {
           goodsPull[resourceId] = production;
@@ -59,46 +64,62 @@ window.Production = (function () {
       };
 
       const cellsInArea = cells.c[cell].concat([cell]);
-      for (const cell of cellsInArea) {
-        cells.good[cell] && addResource(cells.good[cell], BONUS_PRODUCTION);
-        BIOME_PRODUCTION[cells.biome[cell]].forEach(({resource, production}) => addResource(resource, production));
-        cells.r[cell] && RIVER_PRODUCTION.forEach(({resource, production}) => addResource(resource, production));
-        cells.h[cell] >= 50 && HILLS_PRODUCTION.forEach(({resource, production}) => addResource(resource, production));
+      for (const cellId of cellsInArea) {
+        const good = cells.good[cellId];
+        if (good) addResource(good, this.BONUS_PRODUCTION);
+        this.BIOME_PRODUCTION[cells.biome[cellId]].forEach(({resource, production}) =>
+          addResource(resource, production)
+        );
+        if (cells.r[cellId]) {
+          this.RIVER_PRODUCTION.forEach(({resource, production}) => addResource(resource, production));
+        }
+        if (cells.h[cellId] >= 50) {
+          this.HILLS_PRODUCTION.forEach(({resource, production}) => addResource(resource, production));
+        }
       }
 
-      const items = [];
+      interface Item {
+        resourceId: number;
+        basePriority: number;
+        priority: number;
+        production: number;
+        isFood: boolean;
+      }
+
+      const items: Item[] = [];
       const queue = new FlatQueue();
       for (const resourceId in goodsPull) {
         const baseProduction = goodsPull[resourceId];
         const resource = Goods.get(+resourceId);
 
-        const cultureModifier = resource.culture[type] || 1;
+        const cultureModifier = resource?.culture[type] || 1;
         const production = baseProduction * cultureModifier;
 
-        const {value, category} = resource;
+        const {value, category} = resource!;
         const isFood = category === "Food";
 
         const basePriority = production * value;
-        const priority = basePriority * (isFood ? FOOD_MULTIPLIER : 1);
+        const priority = basePriority * (isFood ? this.FOOD_MULTIPLIER : 1);
         items.push({resourceId: +resourceId, basePriority, priority, production, isFood});
         queue.push(items.length - 1, -priority); // negate: FlatQueue is min-heap, we want max
       }
 
       let foodProduced = 0;
-      const productionPull = {};
-      const addProduction = (resourceId, production) => {
+      const productionPull: Record<number, number> = {};
+      const addProduction = (resourceId: number, production: number) => {
         if (!productionPull[resourceId]) productionPull[resourceId] = production;
         else productionPull[resourceId] += production;
       };
 
       for (let i = 0; i < population; i++) {
         const idx = queue.pop();
+        if (idx === undefined) break;
         const occupation = items[idx];
         const {resourceId, production, basePriority, isFood} = occupation;
         addProduction(resourceId, production);
         if (isFood) foodProduced += production;
 
-        const foodModifier = isFood && foodProduced < population ? FOOD_MULTIPLIER : 1;
+        const foodModifier = isFood && foodProduced < population ? this.FOOD_MULTIPLIER : 1;
         const newBasePriority = basePriority / 2;
         const newPriority = newBasePriority * foodModifier;
 
@@ -112,7 +133,7 @@ window.Production = (function () {
         burg.produced[resourceId] = Math.ceil(production);
       }
     }
-  };
+  }
+}
 
-  return {collectGoods};
-})();
+window.Production = new ProductionModule();

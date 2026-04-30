@@ -1,9 +1,32 @@
-"use strict";
+import * as d3 from "d3";
 
-window.Goods = (function () {
-  let cells, cellId;
+declare global {
+  var Goods: GoodsModule;
+}
 
-  const defaultGoods = [
+export interface Good {
+  i: number;
+  name: string;
+  category: string;
+  icon: string;
+  color: string;
+  value: number;
+  chance: number;
+  model: string;
+  unit: string;
+  bonus: Record<string, number>;
+  culture: Record<string, number>;
+  cells?: number;
+  custom?: string;
+  fn?: (methods: any) => boolean;
+  pinned?: boolean;
+}
+
+export class GoodsModule {
+  private cells: any;
+  private cellId: number = 0;
+
+  private defaultGoods: Good[] = [
     {
       i: 1,
       name: "Wood",
@@ -526,7 +549,7 @@ window.Goods = (function () {
     }
   ];
 
-  const models = {
+  models = {
     Deciduous_forests: "biome(6, 7, 8)",
     Any_forest: "biome(5, 6, 7, 8, 9)",
     Temperate_and_boreal_forests: "biome(6, 8, 9)",
@@ -557,61 +580,66 @@ window.Goods = (function () {
     Arctic_waters: "shore(-1) && biome(0) && maxTemp(7)"
   };
 
-  const methods = {
-    random: number => number >= 100 || (number > 0 && number / 100 > Math.random()),
-    nth: number => !(cellId % number),
-    minHabitability: min => biomesData.habitability[pack.cells.biome[cellId]] >= min,
-    habitability: () => biomesData.habitability[cells.biome[cellId]] > Math.random() * 100,
-    elevation: () => pack.cells.h[cellId] / 100 > Math.random(),
-    biome: (...biomes) => biomes.includes(pack.cells.biome[cellId]),
-    minHeight: heigh => pack.cells.h[cellId] >= heigh,
-    maxHeight: heigh => pack.cells.h[cellId] <= heigh,
-    minTemp: temp => grid.cells.temp[pack.cells.g[cellId]] >= temp,
-    maxTemp: temp => grid.cells.temp[pack.cells.g[cellId]] <= temp,
-    shore: (...rings) => rings.includes(pack.cells.t[cellId]),
-    type: (...types) => types.includes(pack.features[cells.f[cellId]].group),
-    river: () => pack.cells.r[cellId]
+  methods = {
+    random: (number: number) => number >= 100 || (number > 0 && number / 100 > Math.random()),
+    nth: (number: number) => !(this.cellId % number),
+    minHabitability: (min: number) => biomesData.habitability[pack.cells.biome[this.cellId]] >= min,
+    habitability: () => biomesData.habitability[this.cells.biome[this.cellId]] > Math.random() * 100,
+    elevation: () => pack.cells.h[this.cellId] / 100 > Math.random(),
+    biome: (...biomes: number[]) => biomes.includes(pack.cells.biome[this.cellId]),
+    minHeight: (heigh: number) => pack.cells.h[this.cellId] >= heigh,
+    maxHeight: (heigh: number) => pack.cells.h[this.cellId] <= heigh,
+    minTemp: (temp: number) => grid.cells.temp[pack.cells.g[this.cellId]] >= temp,
+    maxTemp: (temp: number) => grid.cells.temp[pack.cells.g[this.cellId]] <= temp,
+    shore: (...rings: number[]) => rings.includes(pack.cells.t[this.cellId]),
+    type: (...types: string[]) => types.includes(pack.features[this.cells.f[this.cellId]].group),
+    river: () => pack.cells.r[this.cellId]
   };
-  const allMethods = "{" + Object.keys(methods).join(", ") + "}";
 
-  const generate = function () {
+  generate() {
     TIME && console.time("generateGoods");
-    cells = pack.cells;
-    cells.good = new Uint8Array(cells.i.length); // goods array [0, 255]
-    const resourceMaxCells = Math.ceil((200 * cells.i.length) / 5000);
-    if (!pack.goods) pack.goods = defaultGoods;
-    pack.goods.forEach(r => {
+    this.cells = pack.cells;
+    this.cells.good = new Uint8Array(this.cells.i.length); // goods array [0, 255]
+    const resourceMaxCells = Math.ceil((200 * this.cells.i.length) / 5000);
+    if (!pack.goods) pack.goods = this.defaultGoods;
+    pack.goods.forEach((r: Good) => {
       r.cells = 0;
-      const model = r.custom || models[r.model];
-      r.fn = new Function(allMethods, "return " + model);
+      const model = r.custom || this.models[r.model as keyof typeof this.models];
+      const allMethods = `{${Object.keys(this.methods).join(", ")}}`;
+      r.fn = new Function(allMethods, `return ${model}`) as (methods: any) => boolean;
     });
 
     const skipGlaciers = biomesData.habitability[11] === 0;
-    const shuffledCells = d3.shuffle(cells.i.slice());
+    const shuffledCells = d3.shuffle((this.cells.i as number[]).slice());
 
-    for (const i of shuffledCells) {
-      if (!(i % 10)) d3.shuffle(pack.goods);
-      if (skipGlaciers && cells.biome[i] === 11) continue;
+    for (const cellId of shuffledCells) {
+      if (!(cellId % 10)) d3.shuffle(pack.goods);
+      if (skipGlaciers && this.cells.biome[cellId] === 11) continue;
       const rnd = Math.random() * 100;
-      cellId = i;
+      this.cellId = cellId;
 
       for (const resource of pack.goods) {
-        if (resource.cells >= resourceMaxCells) continue;
+        if (resource.cells! >= resourceMaxCells) continue;
         if (resource.cells ? rnd > resource.chance : Math.random() * 100 > resource.chance) continue;
-        if (!resource.fn({...methods})) continue;
+        if (!resource.fn!({...this.methods})) continue;
 
-        cells.good[i] = resource.i;
-        resource.cells++;
+        this.cells.good[cellId] = resource.i;
+        resource.cells!++;
         break;
       }
     }
-    pack.goods.sort((a, b) => (a.i > b.i ? 1 : -1)).forEach(r => delete r.fn);
+    pack.goods.sort((a: Good, b: Good) => (a.i > b.i ? 1 : -1)).forEach((r: Good) => delete r.fn);
 
     TIME && console.timeEnd("generateGoods");
-  };
+  }
 
-  const getStroke = color => d3.color(color).darker(2).hex();
-  const get = i => pack.goods.find(resource => resource.i === i);
+  getStroke(color: string): string {
+    return (d3.color(color) as any).darker(2).hex();
+  }
 
-  return {generate, methods, models, getStroke, get};
-})();
+  get(i: number): Good | undefined {
+    return pack.goods.find((resource: Good) => resource.i === i);
+  }
+}
+
+window.Goods = new GoodsModule();

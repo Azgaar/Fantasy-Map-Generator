@@ -18,4 +18,8 @@ import "./ice";
 import "./military-generator";
 import "./markers-generator";
 import "./fonts";
+import "./goods-generator";
+import "./production-generator";
+import "./ui/goods-renderer";
+import "./ui/goods-editor";
 import "./resample";
