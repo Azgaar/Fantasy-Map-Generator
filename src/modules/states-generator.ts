@@ -1,19 +1,19 @@
 import { mean, median, sum } from "d3";
 import {
-    ensureEl,
-    each,
-    gauss,
-    getAdjective,
-    getMixedColor,
-    getPolesOfInaccessibility,
-    getRandomColor,
-    minmax,
-    P,
-    ra,
-    rand,
-    rn,
-    rw,
-    trimVowels,
+  each,
+  ensureEl,
+  gauss,
+  getAdjective,
+  getMixedColor,
+  getPolesOfInaccessibility,
+  getRandomColor,
+  minmax,
+  P,
+  ra,
+  rand,
+  rn,
+  rw,
+  trimVowels,
 } from "../utils";
 
 declare global {
@@ -60,7 +60,8 @@ class StatesModule {
   private createStates() {
     const states: State[] = [{ i: 0, name: "Neutrals" } as State];
     const each5th = each(5);
-    const sizeVariety = (ensureEl("sizeVariety") as HTMLInputElement).valueAsNumber;
+    const sizeVariety = (ensureEl("sizeVariety") as HTMLInputElement)
+      .valueAsNumber;
 
     pack.burgs.forEach((burg) => {
       if (!burg.i || !burg.capital) return;
@@ -151,9 +152,11 @@ class StatesModule {
     const cost: number[] = [];
 
     const globalGrowthRate =
-      (document.getElementById("growthRate") as HTMLInputElement | null)?.valueAsNumber || 1;
+      (document.getElementById("growthRate") as HTMLInputElement | null)
+        ?.valueAsNumber || 1;
     const statesGrowthRate =
-      (document.getElementById("statesGrowthRate") as HTMLInputElement | null)?.valueAsNumber || 1;
+      (document.getElementById("statesGrowthRate") as HTMLInputElement | null)
+        ?.valueAsNumber || 1;
     const growthRate =
       (cells.i.length / 2) * globalGrowthRate * statesGrowthRate; // limit cost for state growth
 

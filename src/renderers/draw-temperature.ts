@@ -9,7 +9,7 @@ import {
   range,
   scaleSequential,
 } from "d3";
-import { ensureEl, connectVertices, convertTemperature, round } from "../utils";
+import { connectVertices, convertTemperature, ensureEl, round } from "../utils";
 
 declare global {
   var drawTemperature: () => void;
@@ -92,7 +92,8 @@ const temperatureRenderer = (): void => {
       .attr("stroke", stroke.toString());
   }
 
-  const scale = (ensureEl("temperatureScale") as HTMLSelectElement).value as Parameters<typeof convertTemperature>[1];
+  const scale = (ensureEl("temperatureScale") as HTMLSelectElement)
+    .value as Parameters<typeof convertTemperature>[1];
 
   const tempLabels = temperature
     .append("g")

@@ -271,7 +271,7 @@ window.drawPath = drawPath;
 export {
   abbreviate,
   biased,
-  ensureEl as ensureEl,
+  ensureEl,
   C_12,
   calculateVoronoi,
   capitalize,
@@ -332,8 +332,11 @@ export {
   normalize,
   nth,
   openURL,
-  P, parseError,
-  parseTransform, Pint, poissonDiscSampler,
+  P,
+  parseError,
+  parseTransform,
+  Pint,
+  poissonDiscSampler,
   ra,
   rand,
   rn,
@@ -344,9 +347,11 @@ export {
   sanitizeId,
   shouldRegenerateGrid,
   si,
-  splitInTwo, throttle,
+  splitInTwo,
+  throttle,
   toHEX,
-  trimVowels, TYPED_ARRAY_MAX_VALUES, unique,
-  wiki
+  trimVowels,
+  TYPED_ARRAY_MAX_VALUES,
+  unique,
+  wiki,
 };
-

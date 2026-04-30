@@ -1292,7 +1292,8 @@ class CulturesModule {
     const cost: number[] = [];
 
     const neutralRate =
-      (document.getElementById("neutralRate") as HTMLInputElement | null)?.valueAsNumber || 1;
+      (document.getElementById("neutralRate") as HTMLInputElement | null)
+        ?.valueAsNumber || 1;
     const maxExpansionCost = cells.i.length * 0.6 * neutralRate; // limit cost for culture growth
 
     // remove culture from all cells except of locked

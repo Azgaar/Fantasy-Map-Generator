@@ -1,8 +1,8 @@
 import Alea from "alea";
 import { range as d3Range, leastIndex, mean } from "d3";
 import {
-  ensureEl,
   createTypedArray,
+  ensureEl,
   findGridCell,
   getNumberInRange,
   lim,

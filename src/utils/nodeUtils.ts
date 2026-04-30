@@ -45,4 +45,3 @@ declare global {
     ensureEl: typeof ensureEl;
   }
 }
-

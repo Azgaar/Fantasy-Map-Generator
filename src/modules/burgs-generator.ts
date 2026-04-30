@@ -1,5 +1,5 @@
 import { quadtree } from "d3-quadtree";
-import { ensureEl, each, gauss, minmax, normalize, P, rn } from "../utils";
+import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
 
 declare global {
   var Burgs: BurgModule;
