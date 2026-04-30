@@ -219,7 +219,7 @@ function drawLayers() {
   if (layerIsOn("togglePopulation")) drawPopulation();
   if (layerIsOn("toggleIce")) drawIce();
   if (layerIsOn("togglePrecipitation")) drawPrecipitation();
-  if (layerIsOn("toggleResources")) drawResources();
+  if (layerIsOn("toggleGoods")) drawGoods();
   if (layerIsOn("toggleEmblems")) drawEmblems();
   if (layerIsOn("toggleLabels")) drawLabels();
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
@@ -960,46 +960,46 @@ function toggleEmblems(event) {
   }
 }
 
-function toggleResources(event) {
-  if (!layerIsOn("toggleResources")) {
-    turnButtonOn("toggleResources");
-    drawResources();
+function toggleGoods(event) {
+  if (!layerIsOn("toggleGoods")) {
+    turnButtonOn("toggleGoods");
+    drawGoods();
     if (event && isCtrlClick(event)) editStyle("goods");
   } else {
     if (event && isCtrlClick(event)) return editStyle("goods");
     goods.selectAll("*").remove();
-    turnButtonOff("toggleResources");
+    turnButtonOff("toggleGoods");
   }
 }
 
-function drawResources() {
-  TIME && console.time("drawResources");
-  const someArePinned = pack.resources.some(resource => resource.pinned);
+function drawGoods() {
+  TIME && console.time("drawGoods");
+  const someArePinned = pack.goods.some(good => good.pinned);
   const drawCircle = +goods.attr("data-circle");
 
-  if (!pack.cells.resource) return;
+  if (!pack.cells.good) return;
 
-  let resourcesHTML = "";
+  let goodsHTML = "";
   for (const i of pack.cells.i) {
-    if (!pack.cells.resource[i]) continue;
-    const resource = Resources.get(pack.cells.resource[i]);
-    if (someArePinned && !resource.pinned) continue;
+    if (!pack.cells.good[i]) continue;
+    const good = Goods.get(pack.cells.good[i]);
+    if (someArePinned && !good.pinned) continue;
     const [x, y] = pack.cells.p[i];
-    const stroke = Resources.getStroke(resource.color);
+    const stroke = Goods.getStroke(good.color);
 
     if (!drawCircle) {
-      resourcesHTML += `<use data-i="${resource.i}" href="#${resource.icon}" x="${x - 3}" y="${y - 3}" width="6" height="6"/>`;
+      goodsHTML += `<use data-i="${good.i}" href="#${good.icon}" x="${x - 3}" y="${y - 3}" width="6" height="6"/>`;
       continue;
     }
 
-    resourcesHTML += `<g>
-      <circle data-i="${resource.i}" cx=${x} cy=${y} r="3" fill="${resource.color}" stroke="${stroke}" />
-      <use href="#${resource.icon}" x="${x - 3}" y="${y - 3}" width="6" height="6"/>
+    goodsHTML += `<g>
+      <circle data-i="${good.i}" cx=${x} cy=${y} r="3" fill="${good.color}" stroke="${stroke}" />
+      <use href="#${good.icon}" x="${x - 3}" y="${y - 3}" width="6" height="6"/>
     </g>`;
   }
 
-  goods.style("display", null).html(resourcesHTML);
-  TIME && console.timeEnd("drawResources");
+  goods.style("display", null).html(goodsHTML);
+  TIME && console.timeEnd("drawGoods");
 }
 
 function toggleVignette(event) {
@@ -1069,7 +1069,7 @@ function getLayer(id) {
   if (id === "togglePopulation") return $("#population");
   if (id === "toggleIce") return $("#ice");
   if (id === "toggleTexture") return $("#texture");
-  if (id === "toggleResources") return $("#goods");
+  if (id === "toggleGoods") return $("#goods");
   if (id === "toggleEmblems") return $("#emblems");
   if (id === "toggleLabels") return $("#labels");
   if (id === "toggleBurgIcons") return $("#icons");

@@ -103,7 +103,7 @@ function prepareMapData() {
   const routes = JSON.stringify(pack.routes);
   const zones = JSON.stringify(pack.zones);
   const ice = JSON.stringify(pack.ice);
-  const resources = JSON.stringify(pack.resources);
+  const goods = JSON.stringify(pack.goods);
 
   // store name array only if not the same as default
   const defaultNB = Names.getNameBases();
@@ -159,8 +159,8 @@ function prepareMapData() {
     routes,
     zones,
     ice,
-    pack.cells.resource,
-    resources
+    pack.cells.good,
+    goods
   ].join("\r\n");
   return mapData;
 }

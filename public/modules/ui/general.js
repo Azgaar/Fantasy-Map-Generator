@@ -217,8 +217,8 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "goods") {
     const resourceId = +(e.target.dataset.i ?? e.target.closest("[data-i]")?.dataset.i);
-    const resource = resourceId && Resources.get(resourceId);
-    if (resource) tip(`${resource.name}. Click to open the Resources Editor`);
+    const resource = resourceId && Goods.get(resourceId);
+    if (resource) tip(`${resource.name}. Click to open the Goods Editor`);
     return;
   }
 

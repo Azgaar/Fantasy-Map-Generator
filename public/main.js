@@ -663,7 +663,7 @@ async function generate(options) {
 
     Ice.generate();
 
-    Resources.generate();
+    Goods.generate();
 
     rankCells();
     Cultures.generate();
@@ -678,7 +678,7 @@ async function generate(options) {
     States.collectStatistics();
     States.defineStateForms();
 
-    Production.collectResources();
+    Production.collectGoods();
 
     Provinces.generate();
     Provinces.getPoles();
@@ -1199,7 +1199,7 @@ function rankCells() {
   const meanFlux = d3.median(cells.fl.filter(f => f)) || 0;
   const maxFlux = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
   const meanArea = d3.mean(cells.area); // to adjust population by cell area
-  const getResValue = i => (cells.resource && cells.resource[i] ? Resources.get(cells.resource[i])?.value : 0);
+  const getResValue = i => (cells.good && cells.good[i] ? Goods.get(cells.good[i])?.value : 0);
 
   const scoreMap = {
     estuary: 15,
@@ -1233,8 +1233,8 @@ function rankCells() {
     }
 
     cells.s[i] = score / 5; // general population rate
-    // add bonus for resources around
-    if (cells.resource && (cells.resource[i] || cells.c[i].some(c => cells.resource[c]))) {
+    // add bonus for goods around
+    if (cells.good && (cells.good[i] || cells.c[i].some(c => cells.good[c]))) {
       const cellRes = getResValue(i);
       const neibRes = d3.mean(cells.c[i].map(c => getResValue(c)));
       const resBonus = (cellRes ? cellRes + 10 : 0) + neibRes;

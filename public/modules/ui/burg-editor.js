@@ -479,7 +479,7 @@ function getProduction(pool) {
   if (!pool) return "";
   let html = "";
   for (const resourceId in pool) {
-    const resource = Resources.get(+resourceId);
+    const resource = Goods.get(+resourceId);
     if (!resource) continue;
     const {name, unit, icon} = resource;
     const production = pool[resourceId];

@@ -1117,17 +1117,14 @@ export function resolveVersionConflicts(mapVersion) {
   }
 
   if (isOlderThan("1.121.0")) {
-    // v1.121.0 added resources layer
-    if (!pack.resources || !pack.resources.length) {
-      pack.resources = [];
-      pack.cells.resource = new Uint8Array(pack.cells.i.length);
-      Resources.generate();
+    // v1.121.0 added goods layer
+    if (!pack.goods || !pack.goods.length) pack.goods = [];
+    if (!pack.cells.good) {
+      pack.cells.good = new Uint8Array(pack.cells.i.length);
+      Goods.generate();
     }
     if (!viewbox.select("#goods").size()) {
       goods = viewbox.append("g").attr("id", "goods");
-    }
-    if (!defs.select("#defs-icons").size()) {
-      defs.append("g").attr("id", "defs-icons");
     }
   }
 }

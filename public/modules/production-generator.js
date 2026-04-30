@@ -39,7 +39,7 @@ window.Production = (function () {
   const HILLS_PRODUCTION = [{resource: 34, production: 0.5}]; // coal
   const FOOD_MULTIPLIER = 3;
 
-  const collectResources = () => {
+  const collectGoods = () => {
     const {cells, burgs} = pack;
 
     for (const burg of burgs) {
@@ -47,20 +47,20 @@ window.Production = (function () {
 
       const {cell, type, population} = burg;
 
-      const resourcesPull = {};
+      const goodsPull = {};
       const addResource = (resourceId, production) => {
-        const currentProd = resourcesPull[resourceId] || 0;
+        const currentProd = goodsPull[resourceId] || 0;
         if (!currentProd) {
-          resourcesPull[resourceId] = production;
+          goodsPull[resourceId] = production;
         } else {
-          if (production > currentProd) resourcesPull[resourceId] = production + currentProd / 3;
-          else resourcesPull[resourceId] = currentProd + production / 3;
+          if (production > currentProd) goodsPull[resourceId] = production + currentProd / 3;
+          else goodsPull[resourceId] = currentProd + production / 3;
         }
       };
 
       const cellsInArea = cells.c[cell].concat([cell]);
       for (const cell of cellsInArea) {
-        cells.resource[cell] && addResource(cells.resource[cell], BONUS_PRODUCTION);
+        cells.good[cell] && addResource(cells.good[cell], BONUS_PRODUCTION);
         BIOME_PRODUCTION[cells.biome[cell]].forEach(({resource, production}) => addResource(resource, production));
         cells.r[cell] && RIVER_PRODUCTION.forEach(({resource, production}) => addResource(resource, production));
         cells.h[cell] >= 50 && HILLS_PRODUCTION.forEach(({resource, production}) => addResource(resource, production));
@@ -68,9 +68,9 @@ window.Production = (function () {
 
       const items = [];
       const queue = new FlatQueue();
-      for (const resourceId in resourcesPull) {
-        const baseProduction = resourcesPull[resourceId];
-        const resource = Resources.get(+resourceId);
+      for (const resourceId in goodsPull) {
+        const baseProduction = goodsPull[resourceId];
+        const resource = Goods.get(+resourceId);
 
         const cultureModifier = resource.culture[type] || 1;
         const production = baseProduction * cultureModifier;
@@ -114,5 +114,5 @@ window.Production = (function () {
     }
   };
 
-  return {collectResources};
+  return {collectGoods};
 })();
