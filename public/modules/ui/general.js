@@ -215,6 +215,13 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "ice") return tip("Click to edit the Ice");
 
+  if (group === "goods") {
+    const resourceId = +(e.target.dataset.i ?? e.target.closest("[data-i]")?.dataset.i);
+    const resource = resourceId && Resources.get(resourceId);
+    if (resource) tip(`${resource.name}. Click to open the Resources Editor`);
+    return;
+  }
+
   // covering elements
   if (layerIsOn("togglePrecipitation") && land) tip("Annual Precipitation: " + getFriendlyPrecipitation(i));
   else if (layerIsOn("togglePopulation")) tip(getPopulationTip(i));
@@ -239,7 +246,8 @@ function showMapTooltip(point, e, i, g) {
     if (document.getElementById("diplomacyEditor")?.offsetParent) highlightEditorLine(diplomacyEditor, state);
     if (document.getElementById("militaryOverview")?.offsetParent) highlightEditorLine(militaryOverview, state);
     if (document.getElementById("provincesEditor")?.offsetParent) highlightEditorLine(provincesEditor, province);
-    if (document.getElementById("mergeStatesForm")?.offsetParent) highlightEditorLine(ensureEl("mergeStatesForm"), state);
+    if (document.getElementById("mergeStatesForm")?.offsetParent)
+      highlightEditorLine(ensureEl("mergeStatesForm"), state);
   } else if (layerIsOn("toggleCultures") && pack.cells.culture[i]) {
     const culture = pack.cells.culture[i];
     tip("Culture: " + pack.cultures[culture].name);

@@ -1115,4 +1115,19 @@ export function resolveVersionConflicts(mapVersion) {
       zone.cells = unique(zone.cells);
     });
   }
+
+  if (isOlderThan("1.121.0")) {
+    // v1.121.0 added resources layer
+    if (!pack.resources || !pack.resources.length) {
+      pack.resources = [];
+      pack.cells.resource = new Uint8Array(pack.cells.i.length);
+      Resources.generate();
+    }
+    if (!viewbox.select("#goods").size()) {
+      goods = viewbox.append("g").attr("id", "goods");
+    }
+    if (!defs.select("#defs-icons").size()) {
+      defs.append("g").attr("id", "defs-icons");
+    }
+  }
 }

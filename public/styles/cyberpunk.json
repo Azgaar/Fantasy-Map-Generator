@@ -649,5 +649,11 @@
     "data-right": 18,
     "data-bottom": 18,
     "data-left": 12
+  },
+  "#goods": {
+    "opacity": 1,
+    "stroke-width": 0.32,
+    "data-circle": 1,
+    "filter": "url(#dropShadow01)"
   }
 }

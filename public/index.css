@@ -141,7 +141,8 @@ a {
 #coastline,
 #armies,
 #ice,
-#emblems {
+#emblems,
+#goods {
   cursor: pointer;
 }
 
@@ -2441,37 +2442,37 @@ div.states > .goodIcon {
   cursor: pointer;
   vertical-align: middle;
 }
-div.states > .goodIcon > * {
+div.states > .resourceIcon > * {
   pointer-events: none;
 }
-div.states > .goodCategory,
-div.states > .goodModel {
+div.states > .resourceCategory,
+div.states > .resourceModel {
   cursor: pointer;
   width: 7em;
   overflow: hidden;
   vertical-align: middle;
   white-space: nowrap;
 }
-div.states > .goodBonus {
+div.states > .resourceBonus {
   color: #666;
   width: 5em;
   cursor: pointer;
 }
-div.states > div.goodBonus > span {
+div.states > div.resourceBonus > span {
   pointer-events: none;
   margin: 0 0.15em;
 }
-div.states > div.goodBonus > span.icon-anchor {
+div.states > div.resourceBonus > span.icon-anchor {
   font-size: 0.85em;
   margin: 0 0.25em;
 }
-div.states > div.goodBonus > span.icon-male {
+div.states > div.resourceBonus > span.icon-male {
   margin: 0 0.1em;
 }
 #goods > g > use {
   pointer-events: none;
 }
-#goodIconEditor div.label {
+#resourceIconEditor div.label {
   display: inline-block;
   width: 5.5em;
 }

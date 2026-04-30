@@ -622,5 +622,11 @@
     "data-right": 15,
     "data-bottom": 15,
     "data-left": 10
+  },
+  "#goods": {
+    "opacity": 1,
+    "stroke-width": 0.32,
+    "data-circle": 1,
+    "filter": "url(#dropShadow01)"
   }
 }

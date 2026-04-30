@@ -70,6 +70,14 @@ let coastline = viewbox.append("g").attr("id", "coastline");
 let ice = viewbox.append("g").attr("id", "ice");
 let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
+let goods = viewbox
+  .append("g")
+  .attr("id", "goods")
+  .style("display", "none")
+  .attr("opacity", 1)
+  .attr("data-circle", 1)
+  .attr("stroke-width", 0.32)
+  .attr("filter", "url(#dropShadow01)");
 let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
 let icons = viewbox.append("g").attr("id", "icons");
 let labels = viewbox.append("g").attr("id", "labels");
@@ -655,6 +663,8 @@ async function generate(options) {
 
     Ice.generate();
 
+    Resources.generate();
+
     rankCells();
     Cultures.generate();
     Cultures.expand();
@@ -667,6 +677,8 @@ async function generate(options) {
     Burgs.specify();
     States.collectStatistics();
     States.defineStateForms();
+
+    Production.collectResources();
 
     Provinces.generate();
     Provinces.getPoles();
@@ -1187,6 +1199,7 @@ function rankCells() {
   const meanFlux = d3.median(cells.fl.filter(f => f)) || 0;
   const maxFlux = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
   const meanArea = d3.mean(cells.area); // to adjust population by cell area
+  const getResValue = i => (cells.resource && cells.resource[i] ? Resources.get(cells.resource[i])?.value : 0);
 
   const scoreMap = {
     estuary: 15,
@@ -1220,6 +1233,13 @@ function rankCells() {
     }
 
     cells.s[i] = score / 5; // general population rate
+    // add bonus for resources around
+    if (cells.resource && (cells.resource[i] || cells.c[i].some(c => cells.resource[c]))) {
+      const cellRes = getResValue(i);
+      const neibRes = d3.mean(cells.c[i].map(c => getResValue(c)));
+      const resBonus = (cellRes ? cellRes + 10 : 0) + neibRes;
+      cells.s[i] += resBonus;
+    }
     // cell rural population is suitability adjusted by cell area
     cells.pop[i] = cells.s[i] > 0 ? (cells.s[i] * cells.area[i]) / meanArea : 0;
   }

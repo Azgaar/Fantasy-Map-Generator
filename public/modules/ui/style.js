@@ -319,7 +319,7 @@ function selectStyleElement() {
     styleSize.style.display = "block";
 
     styleLegend.style.display = "block";
-    styleLegendColItems.value = el.attr("data-columns");
+    styleLegendColItems.value = el.attr("data-columns") || 8;
     const legendBox = el.select("#legendBox");
     styleLegendBack.value = styleLegendBackOutput.value = legendBox.size() ? legendBox.attr("fill") : "#ffffff";
     styleLegendOpacity.value = legendBox.size() ? legendBox.attr("fill-opacity") : 1;
@@ -367,6 +367,13 @@ function selectStyleElement() {
     emblemsStateSizeInput.value = emblems.select("#stateEmblems").attr("data-size") || 1;
     emblemsProvinceSizeInput.value = emblems.select("#provinceEmblems").attr("data-size") || 1;
     emblemsBurgSizeInput.value = emblems.select("#burgEmblems").attr("data-size") || 1;
+  }
+
+  if (styleElement === "goods") {
+    styleStrokeWidth.style.display = "block";
+    styleStrokeWidthInput.value = el.attr("stroke-width") || "";
+    styleResources.style.display = "block";
+    styleResourcesCircle.checked = +el.attr("data-circle");
   }
 
   // update group options
@@ -957,6 +964,12 @@ emblemsProvinceSizeInput.on("change", e => {
 emblemsBurgSizeInput.on("change", e => {
   emblems.select("#burgEmblems").attr("data-size", e.target.value);
   drawEmblems();
+});
+
+styleResourcesCircle.addEventListener("change", function () {
+  goods.attr("data-circle", +this.checked);
+  goods.selectAll("*").remove();
+  drawResources();
 });
 
 // request a URL to image to be used as a texture
