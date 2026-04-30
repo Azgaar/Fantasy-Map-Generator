@@ -51,7 +51,7 @@ function editRouteGroups() {
 
       if (!group) return tip("Invalid group name", false, "error");
       if (!group.startsWith("route-")) group = "route-" + group;
-      if (ensureEl(group)) return tip("Element with this name already exists. Provide a unique name", false, "error");
+      if (document.getElementById(group)) return tip("Element with this name already exists. Provide a unique name", false, "error");
       if (Number.isFinite(+group.charAt(0))) return tip("Group name should start with a letter", false, "error");
 
       routes

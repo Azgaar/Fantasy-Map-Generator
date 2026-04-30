@@ -24,7 +24,7 @@ export function openMinimapDialog() {
 }
 
 function ensureMinimapStyles() {
-  if (ensureEl("minimapStyles")) return;
+  if (document.getElementById("minimapStyles")) return;
 
   const style = document.createElement("style");
   style.id = "minimapStyles";
