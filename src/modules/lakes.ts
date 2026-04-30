@@ -41,7 +41,7 @@ export class LakesModule {
       const inlets = feature.inlets?.filter((r) =>
         pack.rivers.find((river) => river.i === r),
       );
-      if (!inlets || !inlets.length) delete feature.inlets;
+      if (!inlets?.length) delete feature.inlets;
       else feature.inlets = inlets;
 
       const outlet =
