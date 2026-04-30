@@ -1,7 +1,8 @@
-// biome-ignore assist/source/organizeImports: sorting is wring
 import {
   axisBottom,
   axisLeft,
+  type CurveFactory,
+  type CurveFactoryLineOnly,
   curveBundle,
   curveCatmullRom,
   curveLinear,
@@ -9,11 +10,9 @@ import {
   curveNatural,
   line,
   pointer,
+  type Selection,
   scaleLinear,
   select,
-  type CurveFactory,
-  type CurveFactoryLineOnly,
-  type Selection,
 } from "d3";
 import type { Burg } from "../modules/burgs-generator";
 import type { PackedGraphFeature } from "../modules/features";

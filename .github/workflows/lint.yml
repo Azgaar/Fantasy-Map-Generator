@@ -1,4 +1,4 @@
-name: Code quality
+name: Lint
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  quality:
+  lint:
     runs-on: ubuntu-latest
     permissions:
       contents: read
