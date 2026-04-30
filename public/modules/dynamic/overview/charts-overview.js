@@ -329,27 +329,27 @@ function insertHtml() {
     <section id="chartsOverview__charts"></section>
   </div>`;
 
-  byId("dialogs").insertAdjacentHTML("beforeend", html);
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // set defaults
-  byId("chartsOverview__entitiesSelect").value = "states";
-  byId("chartsOverview__plotBySelect").value = "total_population";
-  byId("chartsOverview__groupBySelect").value = "cultures";
+  ensureEl("chartsOverview__entitiesSelect").value = "states";
+  ensureEl("chartsOverview__plotBySelect").value = "total_population";
+  ensureEl("chartsOverview__groupBySelect").value = "cultures";
 }
 
 function addListeners() {
-  byId("chartsOverview__form").on("submit", addChart);
-  byId("chartsOverview__viewColumns").on("change", changeViewColumns);
+  ensureEl("chartsOverview__form").on("submit", addChart);
+  ensureEl("chartsOverview__viewColumns").on("change", changeViewColumns);
 }
 
 function addChart(event) {
   if (event) event.preventDefault();
 
-  const entity = byId("chartsOverview__entitiesSelect").value;
-  const plotBy = byId("chartsOverview__plotBySelect").value;
-  let groupBy = byId("chartsOverview__groupBySelect").value;
-  const sorting = byId("chartsOverview__sortingSelect").value;
-  const type = byId("chartsOverview__chartType").value;
+  const entity = ensureEl("chartsOverview__entitiesSelect").value;
+  const plotBy = ensureEl("chartsOverview__plotBySelect").value;
+  let groupBy = ensureEl("chartsOverview__groupBySelect").value;
+  const sorting = ensureEl("chartsOverview__sortingSelect").value;
+  const type = ensureEl("chartsOverview__chartType").value;
 
   const {stackable} = quantizationMap[plotBy];
 
@@ -431,7 +431,7 @@ function renderChart({id, entity, plotBy, groupBy, sorting, type}) {
   const $chart = createStackedBarChart(sortedData, {colors, tooltip, offset, formatX});
   insertChart(id, sortedData, $chart, title);
 
-  byId("chartsOverview__charts").lastChild.scrollIntoView();
+  ensureEl("chartsOverview__charts").lastChild.scrollIntoView();
 }
 
 // based on observablehq.com/@d3/stacked-horizontal-bar-chart
@@ -566,7 +566,7 @@ function createStackedBarChart(sortedData, {colors, tooltip, offset, formatX}) {
 }
 
 function insertChart(id, sortedData, $chart, title) {
-  const $chartContainer = byId("chartsOverview__charts");
+  const $chartContainer = ensureEl("chartsOverview__charts");
 
   const $figure = document.createElement("figure");
   const $caption = document.createElement("figcaption");
@@ -611,8 +611,8 @@ function insertChart(id, sortedData, $chart, title) {
 }
 
 function changeViewColumns() {
-  const columns = byId("chartsOverview__viewColumns").value;
-  const $charts = byId("chartsOverview__charts");
+  const columns = ensureEl("chartsOverview__viewColumns").value;
+  const $charts = ensureEl("chartsOverview__charts");
   $charts.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
   updateDialogPosition();
 }
@@ -622,7 +622,7 @@ function updateDialogPosition() {
 }
 
 function handleClose() {
-  const $chartContainer = byId("chartsOverview__charts");
+  const $chartContainer = ensureEl("chartsOverview__charts");
   $chartContainer.innerHTML = "";
   $("#chartsOverview").dialog("destroy");
 }

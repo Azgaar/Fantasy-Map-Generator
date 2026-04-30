@@ -23,15 +23,15 @@ function editLake() {
   modules.editLake = true;
 
   // add listeners
-  byId("lakeName").on("input", changeName);
-  byId("lakeNameCulture").on("click", generateNameCulture);
-  byId("lakeNameRandom").on("click", generateNameRandom);
-  byId("lakeGroup").on("change", changeLakeGroup);
-  byId("lakeGroupAdd").on("click", toggleNewGroupInput);
-  byId("lakeGroupName").on("change", createNewGroup);
-  byId("lakeGroupRemove").on("click", removeLakeGroup);
-  byId("lakeEditStyle").on("click", editGroupStyle);
-  byId("lakeLegend").on("click", editLakeLegend);
+  ensureEl("lakeName").on("input", changeName);
+  ensureEl("lakeNameCulture").on("click", generateNameCulture);
+  ensureEl("lakeNameRandom").on("click", generateNameRandom);
+  ensureEl("lakeGroup").on("change", changeLakeGroup);
+  ensureEl("lakeGroupAdd").on("click", toggleNewGroupInput);
+  ensureEl("lakeGroupName").on("change", createNewGroup);
+  ensureEl("lakeGroupRemove").on("click", removeLakeGroup);
+  ensureEl("lakeEditStyle").on("click", editGroupStyle);
+  ensureEl("lakeLegend").on("click", editLakeLegend);
 
   function getLake() {
     const lakeId = +elSelected.attr("data-f");
@@ -42,27 +42,27 @@ function editLake() {
     const {cells, vertices, rivers} = pack;
 
     const l = getLake();
-    byId("lakeName").value = l.name;
-    byId("lakeArea").value = si(getArea(l.area)) + " " + getAreaUnit();
+    ensureEl("lakeName").value = l.name;
+    ensureEl("lakeArea").value = si(getArea(l.area)) + " " + getAreaUnit();
 
     const length = d3.polygonLength(l.vertices.map(v => vertices.p[v]));
-    byId("lakeShoreLength").value = si(length * distanceScale) + " " + distanceUnitInput.value;
+    ensureEl("lakeShoreLength").value = si(length * distanceScale) + " " + distanceUnitInput.value;
 
     const lakeCells = Array.from(cells.i.filter(i => cells.f[i] === l.i));
     const heights = lakeCells.map(i => cells.h[i]);
 
-    byId("lakeElevation").value = getHeight(l.height);
-    byId("lakeAverageDepth").value = getHeight(d3.mean(heights), "abs");
-    byId("lakeMaxDepth").value = getHeight(d3.min(heights), "abs");
+    ensureEl("lakeElevation").value = getHeight(l.height);
+    ensureEl("lakeAverageDepth").value = getHeight(d3.mean(heights), "abs");
+    ensureEl("lakeMaxDepth").value = getHeight(d3.min(heights), "abs");
 
-    byId("lakeFlux").value = l.flux;
-    byId("lakeEvaporation").value = l.evaporation;
+    ensureEl("lakeFlux").value = l.flux;
+    ensureEl("lakeEvaporation").value = l.evaporation;
 
     const inlets = l.inlets && l.inlets.map(inlet => rivers.find(river => river.i === inlet)?.name);
     const outlet = l.outlet ? rivers.find(river => river.i === l.outlet)?.name : "no";
-    byId("lakeInlets").value = inlets ? inlets.length : "no";
-    byId("lakeInlets").title = inlets ? inlets.join(", ") : "";
-    byId("lakeOutlet").value = outlet;
+    ensureEl("lakeInlets").value = inlets ? inlets.length : "no";
+    ensureEl("lakeInlets").title = inlets ? inlets.join(", ") : "";
+    ensureEl("lakeOutlet").value = outlet;
   }
 
   function drawLakeVertices() {
@@ -111,7 +111,7 @@ function editLake() {
     // update area
     const points = feature.vertices.map(vertex => pack.vertices.p[vertex]);
     feature.area = Math.abs(d3.polygonArea(points));
-    byId("lakeArea").value = si(getArea(feature.area)) + " " + getAreaUnit();
+    ensureEl("lakeArea").value = si(getArea(feature.area)) + " " + getAreaUnit();
 
     // update cell
     debug.select("#vertices").selectAll("polygon").attr("points", getPackPolygon);
@@ -143,7 +143,7 @@ function editLake() {
   function selectLakeGroup() {
     const lake = getLake();
 
-    const select = byId("lakeGroup");
+    const select = ensureEl("lakeGroup");
     select.options.length = 0; // remove all options
     lakes.selectAll("g").each(function () {
       select.options.add(new Option(this.id, this.id, false, this.id === lake.group));
@@ -151,7 +151,7 @@ function editLake() {
   }
 
   function changeLakeGroup() {
-    byId(this.value).appendChild(elSelected.node());
+    ensureEl(this.value).appendChild(elSelected.node());
     getLake().group = this.value;
   }
 
@@ -176,7 +176,7 @@ function editLake() {
       .replace(/ /g, "_")
       .replace(/[^\w\s]/gi, "");
 
-    if (byId(group)) {
+    if (ensureEl(group)) {
       tip("Element with this id already exists. Please provide a unique name", false, "error");
       return;
     }
@@ -190,23 +190,23 @@ function editLake() {
     const oldGroup = elSelected.node().parentNode;
     const basic = ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(oldGroup.id);
     if (!basic && oldGroup.childElementCount === 1) {
-      byId("lakeGroup").selectedOptions[0].remove();
-      byId("lakeGroup").options.add(new Option(group, group, false, true));
+      ensureEl("lakeGroup").selectedOptions[0].remove();
+      ensureEl("lakeGroup").options.add(new Option(group, group, false, true));
       oldGroup.id = group;
       toggleNewGroupInput();
-      byId("lakeGroupName").value = "";
+      ensureEl("lakeGroupName").value = "";
       return;
     }
 
     // create a new group
     const newGroup = elSelected.node().parentNode.cloneNode(false);
-    byId("lakes").appendChild(newGroup);
+    ensureEl("lakes").appendChild(newGroup);
     newGroup.id = group;
-    byId("lakeGroup").options.add(new Option(group, group, false, true));
-    byId(group).appendChild(elSelected.node());
+    ensureEl("lakeGroup").options.add(new Option(group, group, false, true));
+    ensureEl(group).appendChild(elSelected.node());
 
     toggleNewGroupInput();
-    byId("lakeGroupName").value = "";
+    ensureEl("lakeGroupName").value = "";
   }
 
   function removeLakeGroup() {
@@ -225,14 +225,14 @@ function editLake() {
       buttons: {
         Remove: function () {
           $(this).dialog("close");
-          const freshwater = byId("freshwater");
-          const groupEl = byId(group);
+          const freshwater = ensureEl("freshwater");
+          const groupEl = ensureEl(group);
           while (groupEl.childNodes.length) {
             freshwater.appendChild(groupEl.childNodes[0]);
           }
           groupEl.remove();
-          byId("lakeGroup").selectedOptions[0].remove();
-          byId("lakeGroup").value = "freshwater";
+          ensureEl("lakeGroup").selectedOptions[0].remove();
+          ensureEl("lakeGroup").value = "freshwater";
         },
         Cancel: function () {
           $(this).dialog("close");

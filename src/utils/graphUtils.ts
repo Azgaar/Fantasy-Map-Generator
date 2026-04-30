@@ -9,8 +9,8 @@ import {
 } from "../modules/voronoi";
 import type { PackedGraph } from "../types/PackedGraph";
 import { createTypedArray } from "./arrayUtils";
+import { ensureEl } from "./nodeUtils";
 import { rn } from "./numberUtils";
-import { byId } from "./shorthands";
 
 /**
  * Get boundary points on a regular square grid
@@ -91,7 +91,7 @@ const placePoints = (
   cellsY: number;
 } => {
   TIME && console.time("placePoints");
-  const cellsDesired = +(byId("pointsInput")?.dataset.cells || 0);
+  const cellsDesired = +(ensureEl("pointsInput").dataset.cells || 0);
   const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jittering
 
   const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
@@ -128,7 +128,7 @@ export const shouldRegenerateGrid = (
 ) => {
   if (expectedSeed && expectedSeed !== grid.seed) return true;
 
-  const cellsDesired = +(byId("pointsInput")?.dataset?.cells || 0);
+  const cellsDesired = +(ensureEl("pointsInput").dataset?.cells || 0);
   if (cellsDesired !== grid.cellsDesired) return true;
 
   const newSpacing = rn(

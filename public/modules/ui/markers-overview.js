@@ -4,19 +4,19 @@ function overviewMarkers() {
   closeDialogs("#markersOverview, .stable");
   if (!layerIsOn("toggleMarkers")) toggleMarkers();
 
-  const markerGroup = byId("markers");
-  const body = byId("markersBody");
-  const markersInverPin = byId("markersInverPin");
-  const markersInverLock = byId("markersInverLock");
-  const markersFooterNumber = byId("markersFooterNumber");
-  const markersOverviewRefresh = byId("markersOverviewRefresh");
-  const markersAddFromOverview = byId("markersAddFromOverview");
-  const markersGenerationConfig = byId("markersGenerationConfig");
-  const markersRemoveAll = byId("markersRemoveAll");
-  const markersExport = byId("markersExport");
-  const markerTypeInput = byId("addedMarkerType");
-  const markerTypeSelector = byId("markerTypeSelector");
-  const markersSearch = byId("markersSearch");
+  const markerGroup = ensureEl("markers");
+  const body = ensureEl("markersBody");
+  const markersInverPin = ensureEl("markersInverPin");
+  const markersInverLock = ensureEl("markersInverLock");
+  const markersFooterNumber = ensureEl("markersFooterNumber");
+  const markersOverviewRefresh = ensureEl("markersOverviewRefresh");
+  const markersAddFromOverview = ensureEl("markersAddFromOverview");
+  const markersGenerationConfig = ensureEl("markersGenerationConfig");
+  const markersRemoveAll = ensureEl("markersRemoveAll");
+  const markersExport = ensureEl("markersExport");
+  const markerTypeInput = ensureEl("addedMarkerType");
+  const markerTypeSelector = ensureEl("markerTypeSelector");
+  const markersSearch = ensureEl("markersSearch");
 
   addLines();
 
@@ -71,7 +71,7 @@ function overviewMarkers() {
   function addLines() {
     let markers = pack.markers;
 
-    const searchText = byId("markersSearch").value.toLowerCase().trim();
+    const searchText = ensureEl("markersSearch").value.toLowerCase().trim();
     if (searchText) {
       markers = markers.filter(marker => {
         const type = (marker.type || "").toLowerCase();
@@ -140,7 +140,9 @@ function overviewMarkers() {
   }
 
   function focusOnMarker(i) {
-    highlightElement(byId(`marker${i}`), 2);
+    const marker = document.getElementById(`marker${i}`);
+    if (!marker) return;
+    highlightElement(marker, 2);
   }
 
   function pinMarker(el, i) {
@@ -178,7 +180,7 @@ function overviewMarkers() {
   }
 
   function toggleMarkerTypeMenu() {
-    byId("markerTypeSelectMenu").classList.toggle("visible");
+    ensureEl("markerTypeSelectMenu").classList.toggle("visible");
   }
 
   function toggleAddMarker() {
@@ -195,7 +197,7 @@ function overviewMarkers() {
   function removeMarker(i) {
     notes = notes.filter(note => note.id !== `marker${i}`);
     pack.markers = pack.markers.filter(marker => marker.i !== i);
-    byId(`marker${i}`)?.remove();
+    document.getElementById(`marker${i}`)?.remove();
     addLines();
   }
 
@@ -213,7 +215,7 @@ function overviewMarkers() {
       if (lock) return true;
 
       const id = `marker${i}`;
-      byId(id)?.remove();
+      document.getElementById(id)?.remove();
       notes = notes.filter(note => note.id !== id);
       return false;
     });

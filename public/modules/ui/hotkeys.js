@@ -30,7 +30,7 @@ function handleKeyup(event) {
   else if (code === "Tab") toggleOptions(event);
   else if (code === "Escape") closeAllDialogs();
   else if (code === "Delete") removeElementOnKey();
-  else if (code === "KeyO" && byId("canvas3d")) toggle3dOptions();
+  else if (code === "KeyO" && ensureEl("canvas3d")) toggle3dOptions();
   else if (ctrl && code === "KeyQ") toggleSaveReminder();
   else if (ctrl && code === "KeyS") saveMap("machine");
   else if (ctrl && code === "KeyC") saveMap("dropbox");
@@ -121,15 +121,15 @@ function allowHotkeys() {
 function handleSizeChange(key) {
   let brush = null;
 
-  if (byId("heightmapBrushRadius")?.offsetParent) brush = byId("heightmapBrushRadius");
-  else if (byId("heightmapBrushPower")?.offsetParent) brush = byId("heightmapBrushPower");
-  else if (byId("heightmapLinePower")?.offsetParent) brush = byId("heightmapLinePower");
-  else if (byId("biomesBrush")?.offsetParent) brush = byId("biomesBrush");
-  else if (byId("culturesBrush")?.offsetParent) brush = byId("culturesBrush");
-  else if (byId("statesBrush")?.offsetParent) brush = byId("statesBrush");
-  else if (byId("provincesBrush")?.offsetParent) brush = byId("provincesBrush");
-  else if (byId("religionsBrush")?.offsetParent) brush = byId("religionsBrush");
-  else if (byId("zonesBrush")?.offsetParent) brush = byId("zonesBrush");
+  if (ensureEl("heightmapBrushRadius").offsetParent) brush = ensureEl("heightmapBrushRadius");
+  else if (ensureEl("heightmapBrushPower").offsetParent) brush = ensureEl("heightmapBrushPower");
+  else if (ensureEl("heightmapLinePower").offsetParent) brush = ensureEl("heightmapLinePower");
+  else if (ensureEl("biomesBrush").offsetParent) brush = ensureEl("biomesBrush");
+  else if (document.getElementById("culturesBrush")?.offsetParent) brush = document.getElementById("culturesBrush");
+  else if (document.getElementById("statesBrush")?.offsetParent) brush = document.getElementById("statesBrush");
+  else if (ensureEl("provincesBrush").offsetParent) brush = ensureEl("provincesBrush");
+  else if (document.getElementById("religionsBrush")?.offsetParent) brush = document.getElementById("religionsBrush");
+  else if (ensureEl("zonesBrush").offsetParent) brush = ensureEl("zonesBrush");
 
   if (brush) {
     const change = key === "-" ? -5 : 5;
@@ -145,18 +145,18 @@ function handleSizeChange(key) {
 }
 
 function handleBracketSizeChange(code) {
-  const isHeightmapBrushPressed = Boolean(byId("brushesButtons")?.querySelector("button.pressed"));
+  const isHeightmapBrushPressed = Boolean(ensureEl("brushesButtons").querySelector("button.pressed"));
   const hasActiveBrush =
     isHeightmapBrushPressed ||
-    byId("heightmapBrushRadius")?.offsetParent ||
-    byId("heightmapBrushPower")?.offsetParent ||
-    byId("heightmapLinePower")?.offsetParent ||
-    byId("biomesBrush")?.offsetParent ||
-    byId("culturesBrush")?.offsetParent ||
-    byId("statesBrush")?.offsetParent ||
-    byId("provincesBrush")?.offsetParent ||
-    byId("religionsBrush")?.offsetParent ||
-    byId("zonesBrush")?.offsetParent;
+    ensureEl("heightmapBrushRadius").offsetParent ||
+    ensureEl("heightmapBrushPower").offsetParent ||
+    ensureEl("heightmapLinePower").offsetParent ||
+    ensureEl("biomesBrush").offsetParent ||
+    document.getElementById("culturesBrush")?.offsetParent ||
+    document.getElementById("statesBrush")?.offsetParent ||
+    ensureEl("provincesBrush").offsetParent ||
+    document.getElementById("religionsBrush")?.offsetParent ||
+    ensureEl("zonesBrush").offsetParent;
 
   if (!hasActiveBrush) return false;
 

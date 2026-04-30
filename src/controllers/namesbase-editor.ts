@@ -1,5 +1,5 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
-import { byId, openURL, rn, unique } from "../utils";
+import { ensureEl, openURL, rn, unique } from "../utils";
 
 addListeners();
 
@@ -18,37 +18,36 @@ export function open(): void {
 }
 
 function addListeners(): void {
-  const uploader = byId<HTMLInputElement>("namesbaseToLoad")!;
+  const uploader = ensureEl<HTMLInputElement>("namesbaseToLoad");
 
-  byId("namesbaseSelect")?.addEventListener("change", updateInputs);
-  byId("namesbaseTextarea")?.addEventListener("change", updateNamesData);
-  byId("namesbaseUpdateExamples")?.addEventListener("click", updateExamples);
-  byId("namesbaseExamples")?.addEventListener("click", updateExamples);
-  byId("namesbaseName")?.addEventListener("input", e => updateBaseName((e.target as HTMLInputElement).value));
-  byId("namesbaseMin")?.addEventListener("input", e => updateBaseMin((e.target as HTMLInputElement).value));
-  byId("namesbaseMax")?.addEventListener("input", e => updateBaseMax((e.target as HTMLInputElement).value));
-  byId("namesbaseDouble")?.addEventListener("input", e => updateBaseDuplication((e.target as HTMLInputElement).value));
-  byId("namesbaseAdd")?.addEventListener("click", namesbaseAdd);
-  byId("namesbaseAnalyze")?.addEventListener("click", analyzeNamesbase);
-  byId("namesbaseDefault")?.addEventListener("click", namesbaseRestoreDefault);
-  byId("namesbaseDownload")?.addEventListener("click", namesbaseDownload);
-  byId("namesbaseUpload")?.addEventListener("click", () => {
-    uploader.addEventListener("change", e => uploadFile(e.target as HTMLInputElement, d => namesbaseUpload(d, true)), {once: true});
+  ensureEl("namesbaseSelect").on("change", updateInputs);
+  ensureEl("namesbaseTextarea").on("change", updateNamesData);
+  ensureEl("namesbaseUpdateExamples").on("click", updateExamples);
+  ensureEl("namesbaseExamples").on("click", updateExamples);
+  ensureEl("namesbaseName").on("input", e => updateBaseName((e.target as HTMLInputElement).value));
+  ensureEl("namesbaseMin").on("input", e => updateBaseMin((e.target as HTMLInputElement).value));
+  ensureEl("namesbaseMax").on("input", e => updateBaseMax((e.target as HTMLInputElement).value));
+  ensureEl("namesbaseDouble").on("input", e => updateBaseDuplication((e.target as HTMLInputElement).value));
+  ensureEl("namesbaseAdd").on("click", namesbaseAdd);
+  ensureEl("namesbaseAnalyze").on("click", analyzeNamesbase);
+  ensureEl("namesbaseDefault").on("click", namesbaseRestoreDefault);
+  ensureEl("namesbaseDownload").on("click", namesbaseDownload);
+  ensureEl("namesbaseUpload").on("click", () => {
+    uploader.on("change", e => uploadFile(e.target as HTMLInputElement, d => namesbaseUpload(d, true)), {once: true});
     uploader.click();
   });
-  byId("namesbaseUploadExtend")?.addEventListener("click", () => {
-    uploader.addEventListener("change", e => uploadFile(e.target as HTMLInputElement, d => namesbaseUpload(d, false)), {once: true});
+  ensureEl("namesbaseUploadExtend").on("click", () => {
+    uploader.on("change", e => uploadFile(e.target as HTMLInputElement, d => namesbaseUpload(d, false)), {once: true});
     uploader.click();
   });
-  byId("namesbaseCA")?.addEventListener("click", () =>
+  ensureEl("namesbaseCA").on("click", () =>
     openURL("https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/namebases/")
   );
-  byId("namesbaseSpeak")?.addEventListener("click", () => speak(byId("namesbaseExamples")?.textContent ?? ""));
+  ensureEl("namesbaseSpeak").on("click", () => speak(ensureEl("namesbaseExamples").textContent ?? ""));
 }
 
 function createBasesList(): void {
-  const select = byId<HTMLSelectElement>("namesbaseSelect");
-  if (!select) return;
+  const select = ensureEl<HTMLSelectElement>("namesbaseSelect");
   select.innerHTML = "";
   nameBases.forEach((b, i) => {
     select.options.add(new Option(b.name, String(i)));
@@ -56,21 +55,21 @@ function createBasesList(): void {
 }
 
 function updateInputs(): void {
-  const base = +byId<HTMLSelectElement>("namesbaseSelect")!.value;
+  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
   if (!nameBases[base]) {
     tip(`Namesbase ${base} is not defined`, false, "error");
     return;
   }
-  (byId("namesbaseTextarea") as HTMLTextAreaElement).value = nameBases[base].b;
-  (byId("namesbaseName") as HTMLInputElement).value = nameBases[base].name;
-  (byId("namesbaseMin") as HTMLInputElement).value = String(nameBases[base].min);
-  (byId("namesbaseMax") as HTMLInputElement).value = String(nameBases[base].max);
-  (byId("namesbaseDouble") as HTMLInputElement).value = nameBases[base].d;
+  (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value = nameBases[base].b;
+  (ensureEl("namesbaseName") as HTMLInputElement).value = nameBases[base].name;
+  (ensureEl("namesbaseMin") as HTMLInputElement).value = String(nameBases[base].min);
+  (ensureEl("namesbaseMax") as HTMLInputElement).value = String(nameBases[base].max);
+  (ensureEl("namesbaseDouble") as HTMLInputElement).value = nameBases[base].d;
   updateExamples();
 }
 
 function updateExamples(): void {
-  const base = +byId<HTMLSelectElement>("namesbaseSelect")!.value;
+  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
   let examples = "";
   for (let i = 0; i < 7; i++) {
     const example = Names.getBase(base);
@@ -81,13 +80,12 @@ function updateExamples(): void {
     if (i) examples += ", ";
     examples += example;
   }
-  const examplesEl = byId("namesbaseExamples");
-  if (examplesEl) examplesEl.innerHTML = examples;
+  ensureEl("namesbaseExamples").innerHTML = examples;
 }
 
 function updateNamesData(): void {
-  const base = +byId<HTMLSelectElement>("namesbaseSelect")!.value;
-  const input = byId<HTMLTextAreaElement>("namesbaseTextarea")!;
+  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
+  const input = ensureEl<HTMLTextAreaElement>("namesbaseTextarea");
   if (input.value.split(",").length < 3) {
     tip("The names data provided is too short or incorrect", false, "error");
     return;
@@ -99,15 +97,15 @@ function updateNamesData(): void {
 }
 
 function updateBaseName(rawName: string): void {
-  const base = +byId<HTMLSelectElement>("namesbaseSelect")!.value;
-  const select = byId<HTMLSelectElement>("namesbaseSelect")!;
+  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
+  const select = ensureEl<HTMLSelectElement>("namesbaseSelect");
   const name = rawName.replace(/[/|]/g, "");
   select.options[select.selectedIndex].innerHTML = name;
   nameBases[base].name = name;
 }
 
 function updateBaseMin(value: string): void {
-  const base = +byId<HTMLSelectElement>("namesbaseSelect")!.value;
+  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
   if (+value > nameBases[base].max) {
     tip("Minimal length cannot be greater than maximal", false, "error");
     return;
@@ -116,7 +114,7 @@ function updateBaseMin(value: string): void {
 }
 
 function updateBaseMax(value: string): void {
-  const base = +byId<HTMLSelectElement>("namesbaseSelect")!.value;
+  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
   if (+value < nameBases[base].min) {
     tip("Maximal length should be greater than minimal", false, "error");
     return;
@@ -125,12 +123,12 @@ function updateBaseMax(value: string): void {
 }
 
 function updateBaseDuplication(value: string): void {
-  const base = +byId<HTMLSelectElement>("namesbaseSelect")!.value;
+  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
   nameBases[base].d = value;
 }
 
 function analyzeNamesbase(): void {
-  const namesSourceString = (byId("namesbaseTextarea") as HTMLTextAreaElement).value;
+  const namesSourceString = (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value;
   const namesArray = namesSourceString.toLowerCase().split(",");
   const length = namesArray.length;
   if (!namesSourceString || !length) {
@@ -213,15 +211,14 @@ function namesbaseAdd(): void {
   const b =
     "This,is,an,example,of,name,base,showing,correct,format,It,should,have,at,least,one,hundred,names,separated,with,comma";
   nameBases.push({name: `Base${baseId}`, i: baseId, min: 5, max: 12, d: "", m: 0, b});
-  byId<HTMLSelectElement>("namesbaseSelect")?.add(new Option(`Base${baseId}`, String(baseId)));
-  (byId("namesbaseSelect") as HTMLSelectElement).value = String(baseId);
-  (byId("namesbaseTextarea") as HTMLTextAreaElement).value = b;
-  (byId("namesbaseName") as HTMLInputElement).value = `Base${baseId}`;
-  (byId("namesbaseMin") as HTMLInputElement).value = "5";
-  (byId("namesbaseMax") as HTMLInputElement).value = "12";
-  (byId("namesbaseDouble") as HTMLInputElement).value = "";
-  const examplesEl = byId("namesbaseExamples");
-  if (examplesEl) examplesEl.innerHTML = "Please provide names data";
+  ensureEl<HTMLSelectElement>("namesbaseSelect").add(new Option(`Base${baseId}`, String(baseId)));
+  (ensureEl("namesbaseSelect") as HTMLSelectElement).value = String(baseId);
+  (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value = b;
+  (ensureEl("namesbaseName") as HTMLInputElement).value = `Base${baseId}`;
+  (ensureEl("namesbaseMin") as HTMLInputElement).value = "5";
+  (ensureEl("namesbaseMax") as HTMLInputElement).value = "12";
+  (ensureEl("namesbaseDouble") as HTMLInputElement).value = "";
+  ensureEl("namesbaseExamples").innerHTML = "Please provide names data";
 }
 
 function namesbaseRestoreDefault(): void {

@@ -11,7 +11,7 @@ async function quickLoad() {
 }
 
 async function loadFromDropbox() {
-  const mapPath = byId("loadFromDropboxSelect")?.value;
+  const mapPath = ensureEl("loadFromDropboxSelect").value;
 
   console.info("Loading map from Dropbox:", mapPath);
   const blob = await Cloud.providers.dropbox.load(mapPath);
@@ -20,8 +20,8 @@ async function loadFromDropbox() {
 
 async function createSharableDropboxLink() {
   const mapFile = document.querySelector("#loadFromDropbox select").value;
-  const sharableLink = byId("sharableLink");
-  const sharableLinkContainer = byId("sharableLinkContainer");
+  const sharableLink = ensureEl("sharableLink");
+  const sharableLinkContainer = ensureEl("sharableLinkContainer");
 
   try {
     const previewLink = await Cloud.providers.dropbox.getLink(mapFile);
@@ -116,7 +116,7 @@ function uploadMap(file, callback) {
   const fileReader = new FileReader();
   fileReader.onloadend = async function (fileLoadedEvent) {
     if (callback) callback();
-    byId("coas").innerHTML = ""; // remove auto-generated emblems
+    ensureEl("coas").innerHTML = ""; // remove auto-generated emblems
 
     const result = fileLoadedEvent.target.result;
     const {mapData, mapVersion} = await parseLoadedResult(result);
@@ -430,10 +430,10 @@ async function parseLoadedData(data, mapVersion) {
       const isVisibleNode = node => node && node.style.display !== "none";
       const hasChildren = selection => selection.node()?.hasChildNodes();
       const hasChild = (selection, selector) => selection.node()?.querySelector(selector);
-      const turnOn = el => byId(el).classList.remove("buttonoff");
+      const turnOn = el => ensureEl(el).classList.remove("buttonoff");
 
       // turn all layers off
-      byId("mapLayers")
+      ensureEl("mapLayers")
         .querySelectorAll("li")
         .forEach(el => el.classList.add("buttonoff"));
 
@@ -466,7 +466,7 @@ async function parseLoadedData(data, mapVersion) {
       if (hasChild(markers, "svg")) turnOn("toggleMarkers");
       if (isVisible(ruler)) turnOn("toggleRulers");
       if (isVisible(scaleBar)) turnOn("toggleScaleBar");
-      if (isVisibleNode(byId("vignette"))) turnOn("toggleVignette");
+      if (isVisibleNode(ensureEl("vignette"))) turnOn("toggleVignette");
 
       getCurrentPreset();
     }
@@ -486,9 +486,11 @@ async function parseLoadedData(data, mapVersion) {
 
     // add custom heightmap color scheme if any
     if (heightmapColorSchemes) {
-      const oceanScheme = byId("oceanHeights")?.getAttribute("scheme");
+      const oceanHeights = document.getElementById("oceanHeights");
+      const oceanScheme = oceanHeights?.getAttribute("scheme");
       if (oceanScheme && !(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
-      const landScheme = byId("#landHeights")?.getAttribute("scheme");
+      const landHeights = document.getElementById("landHeights");
+      const landScheme = landHeights?.getAttribute("scheme");
       if (landScheme && !(landScheme in heightmapColorSchemes)) addCustomColorScheme(landScheme);
     }
 

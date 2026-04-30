@@ -1,4 +1,4 @@
-import { byId } from "../utils";
+import { ensureEl } from "../utils";
 
 declare global {
   var declareFont: (font: FontDefinition) => void;
@@ -388,7 +388,7 @@ window.addGoogleFont = async (family: string) => {
       fonts.push(...fontRanges);
       tip(`Google font ${family} is added to the list`, true, "success", 4000);
       addFontOption(family);
-      const select = byId<HTMLSelectElement>("styleSelectFont");
+      const select = ensureEl<HTMLSelectElement>("styleSelectFont");
       if (select) select.value = family;
       changeFont();
     })
@@ -407,7 +407,7 @@ window.addLocalFont = (family: string) => {
   document.fonts.add(fontFace);
   tip(`Local font ${family} is added to the fonts list`, true, "success", 4000);
   addFontOption(family);
-  const select = byId<HTMLSelectElement>("styleSelectFont");
+  const select = ensureEl<HTMLSelectElement>("styleSelectFont");
   if (select) select.value = family;
   changeFont();
 };
@@ -420,7 +420,7 @@ window.addWebFont = (family: string, url: string) => {
   document.fonts.add(fontFace);
   tip(`Font ${family} is added to the list`, true, "success", 4000);
   addFontOption(family);
-  const select = byId<HTMLSelectElement>("styleSelectFont");
+  const select = ensureEl<HTMLSelectElement>("styleSelectFont");
   if (select) select.value = family;
   changeFont();
 };

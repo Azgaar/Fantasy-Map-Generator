@@ -6,7 +6,7 @@ function editRoute(id) {
   closeDialogs(".stable");
 
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
-  byId("toggleCells").dataset.forced = +!layerIsOn("toggleCells");
+  ensureEl("toggleCells").dataset.forced = +!layerIsOn("toggleCells");
   if (!layerIsOn("toggleCells")) toggleCells();
 
   elSelected = d3.select("#" + id).on("click", addControlPoint);
@@ -37,18 +37,18 @@ function editRoute(id) {
   modules.editRoute = true;
 
   // add listeners
-  byId("routeCreateSelectingCells").on("click", showCreationDialog);
-  byId("routeSplit").on("click", togglePressed);
-  byId("routeJoin").on("click", openJoinRoutesDialog);
-  byId("routeElevationProfile").on("click", showRouteElevationProfile);
-  byId("routeLegend").on("click", editRouteLegend);
-  byId("routeLock").on("click", toggleLockButton);
-  byId("routeRemove").on("click", removeRoute);
-  byId("routeName").on("input", changeName);
-  byId("routeGroup").on("input", changeGroup);
-  byId("routeGroupEdit").on("click", editRouteGroups);
-  byId("routeEditStyle").on("click", editRouteGroupStyle);
-  byId("routeGenerateName").on("click", generateName);
+  ensureEl("routeCreateSelectingCells").on("click", showCreationDialog);
+  ensureEl("routeSplit").on("click", togglePressed);
+  ensureEl("routeJoin").on("click", openJoinRoutesDialog);
+  ensureEl("routeElevationProfile").on("click", showRouteElevationProfile);
+  ensureEl("routeLegend").on("click", editRouteLegend);
+  ensureEl("routeLock").on("click", toggleLockButton);
+  ensureEl("routeRemove").on("click", removeRoute);
+  ensureEl("routeName").on("input", changeName);
+  ensureEl("routeGroup").on("input", changeGroup);
+  ensureEl("routeGroupEdit").on("click", editRouteGroups);
+  ensureEl("routeEditStyle").on("click", editRouteGroupStyle);
+  ensureEl("routeGenerateName").on("click", generateName);
 
   function getRoute() {
     const routeId = +elSelected.attr("id").slice(5);
@@ -57,9 +57,9 @@ function editRoute(id) {
 
   function updateRouteData(route) {
     route.name = route.name || Routes.generateName(route);
-    byId("routeName").value = route.name;
+    ensureEl("routeName").value = route.name;
 
-    const routeGroup = byId("routeGroup");
+    const routeGroup = ensureEl("routeGroup");
     routeGroup.options.length = 0;
     routes.selectAll("g").each(function () {
       routeGroup.options.add(new Option(this.id, this.id, false, this.id === route.group));
@@ -68,12 +68,12 @@ function editRoute(id) {
     updateRouteLength(route);
 
     const isWater = route.points.some(([x, y, cellId]) => pack.cells.h[cellId] < 20);
-    byId("routeElevationProfile").style.display = isWater ? "none" : "inline-block";
+    ensureEl("routeElevationProfile").style.display = isWater ? "none" : "inline-block";
   }
 
   function updateRouteLength(route) {
     route.length = Routes.getLength(route.i);
-    byId("routeLength").value = rn(route.length * distanceScale) + " " + distanceUnitInput.value;
+    ensureEl("routeLength").value = rn(route.length * distanceScale) + " " + distanceUnitInput.value;
   }
 
   function drawControlPoints(points) {
@@ -138,7 +138,7 @@ function editRoute(id) {
   function redrawRoute(route) {
     elSelected.attr("d", Routes.getPath(route));
     updateRouteLength(route);
-    if (byId("elevationProfile").offsetParent) showRouteElevationProfile();
+    if (ensureEl("elevationProfile").offsetParent) showRouteElevationProfile();
   }
 
   function addControlPoint() {
@@ -180,7 +180,7 @@ function editRoute(id) {
 
     const index = route.points.indexOf(point);
 
-    const isSplitMode = byId("routeSplit").classList.contains("pressed");
+    const isSplitMode = ensureEl("routeSplit").classList.contains("pressed");
     return isSplitMode ? splitRoute() : removeControlPoint(controlPoint);
 
     function splitRoute() {
@@ -215,7 +215,7 @@ function editRoute(id) {
         .attr("d", Routes.getPath(newRoute))
         .attr("id", "route" + newRoute.i);
 
-      byId("routeSplit").classList.remove("pressed");
+      ensureEl("routeSplit").classList.remove("pressed");
     }
 
     function removeControlPoint(controlPoint) {
@@ -342,7 +342,7 @@ function editRoute(id) {
 
   function changeGroup() {
     const group = this.value;
-    byId(group).appendChild(elSelected.node());
+    ensureEl(group).appendChild(elSelected.node());
     getRoute().group = group;
   }
 
@@ -381,11 +381,11 @@ function editRoute(id) {
   function updateLockIcon() {
     const route = getRoute();
     if (route.lock) {
-      byId("routeLock").classList.remove("icon-lock-open");
-      byId("routeLock").classList.add("icon-lock");
+      ensureEl("routeLock").classList.remove("icon-lock-open");
+      ensureEl("routeLock").classList.add("icon-lock");
     } else {
-      byId("routeLock").classList.remove("icon-lock");
-      byId("routeLock").classList.add("icon-lock-open");
+      ensureEl("routeLock").classList.remove("icon-lock");
+      ensureEl("routeLock").classList.add("icon-lock-open");
     }
   }
 
@@ -409,8 +409,8 @@ function editRoute(id) {
     unselect();
     clearMainTip();
 
-    const forced = +byId("toggleCells").dataset.forced;
-    byId("toggleCells").dataset.forced = 0;
+    const forced = +ensureEl("toggleCells").dataset.forced;
+    ensureEl("toggleCells").dataset.forced = 0;
     if (forced && layerIsOn("toggleCells")) toggleCells();
   }
 }

@@ -1,25 +1,25 @@
 // biome-ignore assist/source/organizeImports: sorting is wring
 import {
-  axisBottom,
-  axisLeft,
-  curveBundle,
-  curveCatmullRom,
-  curveLinear,
-  curveMonotoneX,
-  curveNatural,
-  line,
-  pointer,
-  scaleLinear,
-  select,
-  type CurveFactory,
-  type CurveFactoryLineOnly,
-  type Selection,
+    axisBottom,
+    axisLeft,
+    curveBundle,
+    curveCatmullRom,
+    curveLinear,
+    curveMonotoneX,
+    curveNatural,
+    line,
+    pointer,
+    scaleLinear,
+    select,
+    type CurveFactory,
+    type CurveFactoryLineOnly,
+    type Selection,
 } from "d3";
 import type { Burg } from "../modules/burgs-generator";
 import type { PackedGraphFeature } from "../modules/features";
 import type { Province } from "../modules/provinces-generator";
 import type { State } from "../modules/states-generator";
-import { byId, rn } from "../utils";
+import { ensureEl, rn } from "../utils";
 
 export function open(
   cells: number[],
@@ -27,10 +27,10 @@ export function open(
   isRiver: boolean,
 ): void {
   closeDialogs("#elevationProfile, .stable");
-  byId("epCurve")!.on("change", draw);
-  byId("epSave")!.on("click", downloadCSV);
-  byId("epSaveSVG")!.on("click", downloadSVG);
-  byId("epSavePNG")!.on("click", downloadPNG);
+  ensureEl("epCurve").on("change", draw);
+  ensureEl("epSave").on("click", downloadCSV);
+  ensureEl("epSaveSVG").on("click", downloadSVG);
+  ensureEl("epSavePNG").on("click", downloadPNG);
 
   const firstCell = cells[0];
   const lastCell = cells.at(-1);
@@ -166,7 +166,7 @@ export function open(
       ]);
     }
 
-    byId("elevationGraph")!.innerHTML = "";
+    ensureEl("elevationGraph").innerHTML = "";
 
     const chart = select("#elevationGraph")
       .append("svg")
@@ -241,7 +241,7 @@ export function open(
       curveMonotoneX,
       curveNatural,
     ];
-    const epCurve = byId("epCurve") as HTMLSelectElement;
+    const epCurve = ensureEl<HTMLSelectElement>("epCurve");
     const curveIndex = Math.min(epCurve.selectedIndex, curveTypes.length - 1);
     const lineFn = line<[number, number]>().curve(
       curveTypes[curveIndex] as CurveFactory,
@@ -451,7 +451,7 @@ export function open(
     }
 
     // Stats line in the controls bar
-    byId("epstats")!.textContent =
+    ensureEl("epstats").textContent =
       `Elev: ${chartData.mi}\u2013${chartData.ma} ${heightUnit.value}\u2002\u2191\u202f${totalAscent}\u2002\u2193\u202f${totalDescent} ${heightUnit.value}`;
 
     // Crosshair + FMG tooltip on hover
@@ -575,13 +575,13 @@ export function open(
   }
 
   function downloadSVG(): void {
-    const svgEl = byId("elevationSVG")!;
+    const svgEl = ensureEl("elevationSVG");
     const svgStr = `<?xml version="1.0" encoding="utf-8"?>\n${new XMLSerializer().serializeToString(svgEl)}`;
     downloadFile(svgStr, `${getFileName("elevation profile")}.svg`);
   }
 
   function downloadPNG(): void {
-    const svgEl = byId("elevationSVG")!;
+    const svgEl = ensureEl("elevationSVG");
     const w = +svgEl.getAttribute("width")!;
     const h = +svgEl.getAttribute("height")!;
     const svgUrl = URL.createObjectURL(
@@ -613,11 +613,11 @@ export function open(
   }
 
   function closeElevationProfile(): void {
-    byId("epCurve")!.off("change", draw);
-    byId("epSave")!.off("click", downloadCSV);
-    byId("epSaveSVG")!.off("click", downloadSVG);
-    byId("epSavePNG")!.off("click", downloadPNG);
-    byId("elevationGraph")!.innerHTML = "";
+    ensureEl("epCurve").off("change", draw);
+    ensureEl("epSave").off("click", downloadCSV);
+    ensureEl("epSaveSVG").off("click", downloadSVG);
+    ensureEl("epSavePNG").off("click", downloadPNG);
+    ensureEl("elevationGraph").innerHTML = "";
     modules.elevation = false;
   }
 }

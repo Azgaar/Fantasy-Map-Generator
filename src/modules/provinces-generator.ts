@@ -1,7 +1,7 @@
 import Alea from "alea";
 import { max } from "d3";
 import {
-  byId,
+  ensureEl,
   gauss,
   generateSeed,
   getMixedColor,
@@ -101,7 +101,7 @@ class ProvinceModule {
       });
     }
 
-    const provincesRatio = (byId("provincesRatio") as HTMLInputElement)
+    const provincesRatio = (ensureEl("provincesRatio") as HTMLInputElement)
       .valueAsNumber;
     const maxGrowth =
       provincesRatio === 100

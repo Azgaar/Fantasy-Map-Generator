@@ -38,45 +38,45 @@ function editWorld() {
   globe.select("#globeGraticule").attr("d", round(path(graticule()))); // globe graticule
   updateWindDirections();
 
-  byId("worldControls").on("input", handleControlsChange);
-  byId("restoreWinds").on("click", restoreDefaultWinds);
-  byId("wcWholeWorld").on("click", () => applyWorldPreset(100, 50));
-  byId("wcNorthern").on("click", () => applyWorldPreset(33, 25));
-  byId("wcTropical").on("click", () => applyWorldPreset(33, 50));
-  byId("wcSouthern").on("click", () => applyWorldPreset(33, 75));
+  ensureEl("worldControls").on("input", handleControlsChange);
+  ensureEl("restoreWinds").on("click", restoreDefaultWinds);
+  ensureEl("wcWholeWorld").on("click", () => applyWorldPreset(100, 50));
+  ensureEl("wcNorthern").on("click", () => applyWorldPreset(33, 25));
+  ensureEl("wcTropical").on("click", () => applyWorldPreset(33, 50));
+  ensureEl("wcSouthern").on("click", () => applyWorldPreset(33, 75));
 
   function updateInputValues() {
-    byId("temperatureEquatorInput").value = options.temperatureEquator;
-    byId("temperatureEquatorOutput").value = options.temperatureEquator;
-    byId("temperatureEquatorF").innerText = convertTemperature(options.temperatureEquator, "°F");
+    ensureEl("temperatureEquatorInput").value = options.temperatureEquator;
+    ensureEl("temperatureEquatorOutput").value = options.temperatureEquator;
+    ensureEl("temperatureEquatorF").innerText = convertTemperature(options.temperatureEquator, "°F");
 
-    byId("temperatureNorthPoleInput").value = options.temperatureNorthPole;
-    byId("temperatureNorthPoleOutput").value = options.temperatureNorthPole;
-    byId("temperatureNorthPoleF").innerText = convertTemperature(options.temperatureNorthPole, "°F");
+    ensureEl("temperatureNorthPoleInput").value = options.temperatureNorthPole;
+    ensureEl("temperatureNorthPoleOutput").value = options.temperatureNorthPole;
+    ensureEl("temperatureNorthPoleF").innerText = convertTemperature(options.temperatureNorthPole, "°F");
 
-    byId("temperatureSouthPoleInput").value = options.temperatureSouthPole;
-    byId("temperatureSouthPoleOutput").value = options.temperatureSouthPole;
-    byId("temperatureSouthPoleF").innerText = convertTemperature(options.temperatureSouthPole, "°F");
+    ensureEl("temperatureSouthPoleInput").value = options.temperatureSouthPole;
+    ensureEl("temperatureSouthPoleOutput").value = options.temperatureSouthPole;
+    ensureEl("temperatureSouthPoleF").innerText = convertTemperature(options.temperatureSouthPole, "°F");
   }
 
   function handleControlsChange({target}) {
     const stored = target.dataset.stored;
-    byId(stored + "Input").value = target.value;
-    byId(stored + "Output").value = target.value;
+    ensureEl(stored + "Input").value = target.value;
+    ensureEl(stored + "Output").value = target.value;
     lock(stored);
 
     if (stored === "temperatureEquator") {
       options.temperatureEquator = Number(target.value);
-      byId("temperatureEquatorF").innerText = convertTemperature(options.temperatureEquator, "°F");
+      ensureEl("temperatureEquatorF").innerText = convertTemperature(options.temperatureEquator, "°F");
     } else if (stored === "temperatureNorthPole") {
       options.temperatureNorthPole = Number(target.value);
-      byId("temperatureNorthPoleF").innerText = convertTemperature(options.temperatureNorthPole, "°F");
+      ensureEl("temperatureNorthPoleF").innerText = convertTemperature(options.temperatureNorthPole, "°F");
     } else if (stored === "temperatureSouthPole") {
       options.temperatureSouthPole = Number(target.value);
-      byId("temperatureSouthPoleF").innerText = convertTemperature(options.temperatureSouthPole, "°F");
+      ensureEl("temperatureSouthPoleF").innerText = convertTemperature(options.temperatureSouthPole, "°F");
     }
 
-    if (byId("wcAutoChange").checked) updateWorld();
+    if (ensureEl("wcAutoChange").checked) updateWorld();
   }
 
   function updateWorld() {
@@ -97,23 +97,23 @@ function editWorld() {
     if (layerIsOn("toggleBiomes")) drawBiomes();
     if (layerIsOn("toggleCoordinates")) drawCoordinates();
     if (layerIsOn("toggleRivers")) drawRivers();
-    if (byId("canvas3d")) setTimeout(() => ThreeD.update(), 500);
+    if (ensureEl("canvas3d")) setTimeout(() => ThreeD.update(), 500);
   }
 
   function updateGlobePosition() {
-    const size = +byId("mapSizeOutput").value;
+    const size = +ensureEl("mapSizeOutput").value;
     const eqD = ((graphHeight / 2) * 100) / size;
 
     calculateMapCoordinates();
     const mc = mapCoordinates;
     const unit = distanceUnitInput.value;
     const meridian = toKilometer(eqD * 2 * distanceScale);
-    byId("mapSize").innerHTML = `${graphWidth}x${graphHeight}`;
-    byId("mapSizeFriendly").innerHTML = `${rn(graphWidth * distanceScale)}x${rn(graphHeight * distanceScale)} ${unit}`;
-    byId("meridianLength").innerHTML = rn(eqD * 2);
-    byId("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * distanceScale)} ${unit}`;
-    byId("meridianLengthEarth").innerHTML = meridian ? " = " + rn(meridian / 200) + "%🌏" : "";
-    byId("mapCoordinates").innerHTML = `${lat(mc.latN)} ${Math.abs(rn(mc.lonW))}°W; ${lat(mc.latS)} ${rn(mc.lonE)}°E`;
+    ensureEl("mapSize").innerHTML = `${graphWidth}x${graphHeight}`;
+    ensureEl("mapSizeFriendly").innerHTML = `${rn(graphWidth * distanceScale)}x${rn(graphHeight * distanceScale)} ${unit}`;
+    ensureEl("meridianLength").innerHTML = rn(eqD * 2);
+    ensureEl("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * distanceScale)} ${unit}`;
+    ensureEl("meridianLengthEarth").innerHTML = meridian ? " = " + rn(meridian / 200) + "%🌏" : "";
+    ensureEl("mapCoordinates").innerHTML = `${lat(mc.latN)} ${Math.abs(rn(mc.lonW))}°W; ${lat(mc.latS)} ${rn(mc.lonE)}°E`;
 
     function toKilometer(v) {
       if (unit === "km") return v;
@@ -177,23 +177,23 @@ function editWorld() {
     localStorage.setItem("winds", options.winds);
 
     const mapTiers = d3.range(mapCoordinates.latN, mapCoordinates.latS, -30).map(c => ((90 - c) / 30) | 0);
-    if (byId("wcAutoChange").checked && mapTiers.includes(tier)) updateWorld();
+    if (ensureEl("wcAutoChange").checked && mapTiers.includes(tier)) updateWorld();
   }
 
   function restoreDefaultWinds() {
     const defaultWinds = [225, 45, 225, 315, 135, 315];
     const mapTiers = d3.range(mapCoordinates.latN, mapCoordinates.latS, -30).map(c => ((90 - c) / 30) | 0);
-    const update = byId("wcAutoChange").checked && mapTiers.some(t => options.winds[t] != defaultWinds[t]);
+    const update = ensureEl("wcAutoChange").checked && mapTiers.some(t => options.winds[t] != defaultWinds[t]);
     options.winds = defaultWinds;
     updateWindDirections();
     if (update) updateWorld();
   }
 
   function applyWorldPreset(size, lat) {
-    byId("mapSizeInput").value = byId("mapSizeOutput").value = size;
-    byId("latitudeInput").value = byId("latitudeOutput").value = lat;
+    ensureEl("mapSizeInput").value = ensureEl("mapSizeOutput").value = size;
+    ensureEl("latitudeInput").value = ensureEl("latitudeOutput").value = lat;
     lock("mapSize");
     lock("latitude");
-    if (byId("wcAutoChange").checked) updateWorld();
+    if (ensureEl("wcAutoChange").checked) updateWorld();
   }
 }

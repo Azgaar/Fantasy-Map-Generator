@@ -87,8 +87,9 @@ window.getRandomColor = getRandomColor;
 window.getMixedColor = getMixedColor;
 window.C_12 = C_12;
 
-import { getComposedPath, getNextId } from "./nodeUtils";
+import { ensureEl, getComposedPath, getNextId } from "./nodeUtils";
 
+window.ensureEl = ensureEl;
 window.getComposedPath = getComposedPath;
 window.getNextId = getNextId;
 
@@ -132,9 +133,6 @@ window.sanitizeId = sanitizeId;
 JSON.isValid = isValidJSON;
 JSON.safeParse = safeParseJSON;
 
-import { byId } from "./shorthands";
-
-window.byId = byId;
 Node.prototype.on = function (name, fn, options) {
   this.addEventListener(name, fn, options);
   return this;
@@ -273,7 +271,7 @@ window.drawPath = drawPath;
 export {
   abbreviate,
   biased,
-  byId,
+  ensureEl as ensureEl,
   C_12,
   calculateVoronoi,
   capitalize,
@@ -334,11 +332,8 @@ export {
   normalize,
   nth,
   openURL,
-  P,
-  Pint,
-  parseError,
-  parseTransform,
-  poissonDiscSampler,
+  P, parseError,
+  parseTransform, Pint, poissonDiscSampler,
   ra,
   rand,
   rn,
@@ -349,11 +344,9 @@ export {
   sanitizeId,
   shouldRegenerateGrid,
   si,
-  splitInTwo,
-  TYPED_ARRAY_MAX_VALUES,
-  throttle,
+  splitInTwo, throttle,
   toHEX,
-  trimVowels,
-  unique,
-  wiki,
+  trimVowels, TYPED_ARRAY_MAX_VALUES, unique,
+  wiki
 };
+

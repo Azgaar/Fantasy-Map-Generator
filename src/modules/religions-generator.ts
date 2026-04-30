@@ -1,7 +1,7 @@
 import { quadtree } from "d3";
 import {
   abbreviate,
-  byId,
+  ensureEl,
   each,
   gauss,
   getAdjective,
@@ -1010,7 +1010,7 @@ class ReligionsModule {
     // limit cost for organized religions growth
     const maxExpansionCost =
       (cells.i.length / 20) *
-      (byId("growthRate") as HTMLInputElement).valueAsNumber;
+      (ensureEl("growthRate") as HTMLInputElement).valueAsNumber;
 
     religions
       .filter((r) => r.i && !r.lock && r.type !== "Folk" && !r.removed)

@@ -86,25 +86,25 @@ function insertEditorHtml() {
     </div>
   </div>`;
 
-  byId("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-  return byId("religionsBody");
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  return ensureEl("religionsBody");
 }
 
 function addListeners() {
   applySortingByHeader("religionsHeader");
 
-  byId("religionsEditorRefresh").on("click", refreshReligionsEditor);
-  byId("religionsEditStyle").on("click", () => editStyle("relig"));
-  byId("religionsLegend").on("click", toggleLegend);
-  byId("religionsPercentage").on("click", togglePercentageMode);
-  byId("religionsHeirarchy").on("click", showHierarchy);
-  byId("religionsExtinct").on("click", toggleExtinct);
-  byId("religionsManually").on("click", enterReligionsManualAssignent);
-  byId("religionsManuallyApply").on("click", applyReligionsManualAssignent);
-  byId("religionsManuallyCancel").on("click", () => exitReligionsManualAssignment());
-  byId("religionsAdd").on("click", enterAddReligionMode);
-  byId("religionsExport").on("click", downloadReligionsCsv);
-  byId("religionsRecalculate").on("click", () => recalculateReligions(true));
+  ensureEl("religionsEditorRefresh").on("click", refreshReligionsEditor);
+  ensureEl("religionsEditStyle").on("click", () => editStyle("relig"));
+  ensureEl("religionsLegend").on("click", toggleLegend);
+  ensureEl("religionsPercentage").on("click", togglePercentageMode);
+  ensureEl("religionsHeirarchy").on("click", showHierarchy);
+  ensureEl("religionsExtinct").on("click", toggleExtinct);
+  ensureEl("religionsManually").on("click", enterReligionsManualAssignent);
+  ensureEl("religionsManuallyApply").on("click", applyReligionsManualAssignent);
+  ensureEl("religionsManuallyCancel").on("click", () => exitReligionsManualAssignment());
+  ensureEl("religionsAdd").on("click", enterAddReligionMode);
+  ensureEl("religionsExport").on("click", downloadReligionsCsv);
+  ensureEl("religionsRecalculate").on("click", () => recalculateReligions(true));
 }
 
 function refreshReligionsEditor() {
@@ -223,14 +223,14 @@ function religionsEditorAddLines() {
 
   // update footer
   const validReligions = pack.religions.filter(r => r.i && !r.removed);
-  byId("religionsOrganized").innerHTML = validReligions.filter(r => r.type === "Organized").length;
-  byId("religionsHeresies").innerHTML = validReligions.filter(r => r.type === "Heresy").length;
-  byId("religionsCults").innerHTML = validReligions.filter(r => r.type === "Cult").length;
-  byId("religionsFolk").innerHTML = validReligions.filter(r => r.type === "Folk").length;
-  byId("religionsFooterArea").innerHTML = si(totalArea) + unit;
-  byId("religionsFooterPopulation").innerHTML = si(totalPopulation);
-  byId("religionsFooterArea").dataset.area = totalArea;
-  byId("religionsFooterPopulation").dataset.population = totalPopulation;
+  ensureEl("religionsOrganized").innerHTML = validReligions.filter(r => r.type === "Organized").length;
+  ensureEl("religionsHeresies").innerHTML = validReligions.filter(r => r.type === "Heresy").length;
+  ensureEl("religionsCults").innerHTML = validReligions.filter(r => r.type === "Cult").length;
+  ensureEl("religionsFolk").innerHTML = validReligions.filter(r => r.type === "Folk").length;
+  ensureEl("religionsFooterArea").innerHTML = si(totalArea) + unit;
+  ensureEl("religionsFooterPopulation").innerHTML = si(totalPopulation);
+  ensureEl("religionsFooterArea").dataset.area = totalArea;
+  ensureEl("religionsFooterPopulation").dataset.population = totalPopulation;
 
   // add listeners
   $body.querySelectorAll(":scope > div").forEach($line => {
@@ -585,8 +585,8 @@ function toggleLegend() {
 function togglePercentageMode() {
   if ($body.dataset.type === "absolute") {
     $body.dataset.type = "percentage";
-    const totalArea = +byId("religionsFooterArea").dataset.area;
-    const totalPopulation = +byId("religionsFooterPopulation").dataset.population;
+    const totalArea = +ensureEl("religionsFooterArea").dataset.area;
+    const totalPopulation = +ensureEl("religionsFooterPopulation").dataset.population;
 
     $body.querySelectorAll(":scope > div").forEach($el => {
       const {area, population} = $el.dataset;
@@ -648,7 +648,7 @@ function enterReligionsManualAssignent() {
   customization = 7;
   relig.append("g").attr("id", "temp");
   document.querySelectorAll("#religionsBottom > *").forEach(el => (el.style.display = "none"));
-  byId("religionsManuallyButtons").style.display = "inline-block";
+  ensureEl("religionsManuallyButtons").style.display = "inline-block";
   debug.select("#religionCenters").style("display", "none");
 
   religionsEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
@@ -685,7 +685,7 @@ function selectReligionOnMapClick() {
 }
 
 function dragReligionBrush() {
-  const radius = +byId("religionsBrush").value;
+  const radius = +ensureEl("religionsBrush").value;
 
   d3.event.on("drag", () => {
     if (!d3.event.dx && !d3.event.dy) return;
@@ -704,7 +704,7 @@ function changeReligionForSelection(selection) {
   const selected = $body.querySelector("div.selected");
   const religionNew = +selected.dataset.id;
   const color = pack.religions[religionNew].color || "#ffffff";
-  const preventOverwrite = byId("religionsManuallyProtect")?.checked;
+  const preventOverwrite = document.getElementById("religionsManuallyProtect")?.checked;
 
   selection.forEach(function (i) {
     const exists = temp.select("polygon[data-cell='" + i + "']");
@@ -727,7 +727,7 @@ function changeReligionForSelection(selection) {
 function moveReligionBrush() {
   showMainTip();
   const [x, y] = d3.mouse(this);
-  const radius = +byId("religionsBrush").value;
+  const radius = +ensureEl("religionsBrush").value;
   moveCircle(x, y, radius);
 }
 
@@ -752,12 +752,12 @@ function exitReligionsManualAssignment(close) {
   relig.select("#temp").remove();
   removeCircle();
   document.querySelectorAll("#religionsBottom > *").forEach(el => (el.style.display = "inline-block"));
-  byId("religionsManuallyButtons").style.display = "none";
+  ensureEl("religionsManuallyButtons").style.display = "none";
 
-  byId("religionsEditor")
+  ensureEl("religionsEditor")
     .querySelectorAll(".hide")
     .forEach(el => el.classList.remove("hidden"));
-  byId("religionsFooter").style.display = "block";
+  ensureEl("religionsFooter").style.display = "block";
   $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
   if (!close) $("#religionsEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
 

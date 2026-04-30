@@ -57,10 +57,10 @@ function closeDialogs(except = "#except") {
 
 // move brush radius circle
 function moveCircle(x, y, r = 20) {
-  let circle = byId("brushCircle");
+  let circle = document.getElementById("brushCircle");
   if (!circle) {
     const html = /* html */ `<circle id="brushCircle" cx=${x} cy=${y} r=${r}></circle>`;
-    byId("debug").insertAdjacentHTML("afterBegin", html);
+    ensureEl("debug").insertAdjacentHTML("afterBegin", html);
   } else {
     circle.setAttribute("cx", x);
     circle.setAttribute("cy", y);
@@ -69,7 +69,8 @@ function moveCircle(x, y, r = 20) {
 }
 
 function removeCircle() {
-  if (byId("brushCircle")) byId("brushCircle").remove();
+  const circle = document.getElementById("brushCircle");
+  if (circle) circle.remove();
 }
 
 // get browser-defined fit-content
@@ -406,7 +407,7 @@ function createPicker() {
 }
 
 function updateSelectedRect(fill) {
-  byId("picker").querySelector("rect.selected").classList.remove("selected");
+  ensureEl("picker").querySelector("rect.selected").classList.remove("selected");
   document
     .getElementById("picker")
     .querySelector("rect[fill='" + fill.toLowerCase() + "']")
@@ -464,7 +465,7 @@ function openPicker(fill, callback) {
   updateSelectedRect(fill);
 
   openPicker.updateFill = function () {
-    const selected = byId("picker").querySelector("rect.selected");
+    const selected = ensureEl("picker").querySelector("rect.selected");
     if (!selected) return;
     callback(selected.getAttribute("fill"));
   };
@@ -665,8 +666,8 @@ function selectIcon(initial, callback) {
   if (!callback) return;
   $("#iconSelector").dialog();
 
-  const table = byId("iconTable");
-  const input = byId("iconInput");
+  const table = ensureEl("iconTable");
+  const input = ensureEl("iconInput");
   input.value = initial;
 
   if (!table.innerHTML) {
@@ -898,14 +899,14 @@ function selectIcon(initial, callback) {
   };
 
   function addExternalImage(url) {
-    const addedIcons = byId("addedIcons");
+    const addedIcons = ensureEl("addedIcons");
     const image = document.createElement("div");
     image.style.cssText = `width: 2.2em; height: 2.2em; background-size: cover; background-image: url(${url})`;
     addedIcons.appendChild(image);
     image.onclick = () => callback(url);
   }
 
-  byId("addImage").onclick = function () {
+  ensureEl("addImage").onclick = function () {
     const input = this.previousElementSibling;
     const ulr = input.value;
     if (!ulr) return tip("Enter image URL to add", false, "error", 4000);
@@ -915,7 +916,7 @@ function selectIcon(initial, callback) {
     input.value = "";
   };
 
-  byId("addedIcons")
+  ensureEl("addedIcons")
     .querySelectorAll("div")
     .forEach(div => {
       div.onclick = () => callback(div.style.backgroundImage.slice(5, -2));
@@ -937,7 +938,7 @@ function selectIcon(initial, callback) {
 }
 
 function getAreaUnit(squareMark = "²") {
-  return byId("areaUnit").value === "square" ? byId("distanceUnitInput").value + squareMark : byId("areaUnit").value;
+  return ensureEl("areaUnit").value === "square" ? ensureEl("distanceUnitInput").value + squareMark : ensureEl("areaUnit").value;
 }
 
 function getArea(rawArea) {
@@ -965,7 +966,7 @@ function confirmationDialog(options) {
     }
   };
 
-  byId("alertMessage").innerHTML = message;
+  ensureEl("alertMessage").innerHTML = message;
   $("#alert").dialog({resizable: false, title, buttons});
 }
 
@@ -978,13 +979,13 @@ function listen(element, event, handler) {
 // Calls the refresh functionality on all editors currently open.
 function refreshAllEditors() {
   TIME && console.time("refreshAllEditors");
-  if (byId("culturesEditorRefresh")?.offsetParent) culturesEditorRefresh.click();
-  if (byId("biomesEditorRefresh")?.offsetParent) biomesEditorRefresh.click();
-  if (byId("diplomacyEditorRefresh")?.offsetParent) diplomacyEditorRefresh.click();
-  if (byId("provincesEditorRefresh")?.offsetParent) provincesEditorRefresh.click();
-  if (byId("religionsEditorRefresh")?.offsetParent) religionsEditorRefresh.click();
-  if (byId("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
-  if (byId("zonesEditorRefresh")?.offsetParent) zonesEditorRefresh.click();
+  if (document.getElementById("culturesEditorRefresh")?.offsetParent) culturesEditorRefresh.click();
+  if (ensureEl("biomesEditorRefresh").offsetParent) biomesEditorRefresh.click();
+  if (ensureEl("diplomacyEditorRefresh").offsetParent) diplomacyEditorRefresh.click();
+  if (ensureEl("provincesEditorRefresh").offsetParent) provincesEditorRefresh.click();
+  if (document.getElementById("religionsEditorRefresh")?.offsetParent) religionsEditorRefresh.click();
+  if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
+  if (ensureEl("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
   TIME && console.timeEnd("refreshAllEditors");
 }
 

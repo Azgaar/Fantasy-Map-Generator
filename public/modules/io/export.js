@@ -103,7 +103,7 @@ async function exportToJpeg() {
 }
 
 async function exportToPngTiles() {
-  const status = byId("tileStatus");
+  const status = ensureEl("tileStatus");
   status.innerHTML = "Preparing files...";
 
   const urlSchema = await getMapURL("tiles", {debug: true, fullMap: true});
@@ -127,9 +127,9 @@ async function exportToPngTiles() {
 
   // download tiles
   const url = await getMapURL("tiles", {fullMap: true});
-  const tilesX = +byId("tileColsOutput").value || 2;
-  const tilesY = +byId("tileRowsOutput").value || 2;
-  const scale = +byId("tileScaleOutput").value || 1;
+  const tilesX = +ensureEl("tileColsOutput").value || 2;
+  const tilesY = +ensureEl("tileRowsOutput").value || 2;
+  const scale = +ensureEl("tileScaleOutput").value || 1;
   const tolesTotal = tilesX * tilesY;
 
   const tileW = (graphWidth / tilesX) | 0;
@@ -219,14 +219,14 @@ async function getMapURL(
     fullMap = false
   } = {}
 ) {
-  const cloneEl = byId("map").cloneNode(true); // clone svg
+  const cloneEl = ensureEl("map").cloneNode(true); // clone svg
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone = d3.select(cloneEl);
   if (!debug) clone.select("#debug")?.remove();
 
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
-  const svgDefs = byId("defElements");
+  const svgDefs = ensureEl("defElements");
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern")?.remove();
@@ -290,7 +290,7 @@ async function getMapURL(
       .forEach(el => {
         const href = el.getAttribute("href") || el.getAttribute("xlink:href");
         if (!href) return;
-        const emblem = byId(href.slice(1));
+        const emblem = ensureEl(href.slice(1));
         if (emblem) cloneDefs.append(emblem.cloneNode(true));
       });
   } else {

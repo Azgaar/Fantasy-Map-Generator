@@ -24,17 +24,17 @@ function editRegiment(selector) {
   modules.editRegiment = true;
 
   // add listeners
-  byId("regimentNameRestore").addEventListener("click", restoreName);
-  byId("regimentType").addEventListener("click", changeType);
-  byId("regimentName").addEventListener("change", changeName);
-  byId("regimentEmblemChange").addEventListener("click", changeEmblem);
-  byId("regimentAttack").addEventListener("click", toggleAttack);
-  byId("regimentRegenerateLegend").addEventListener("click", regenerateLegend);
-  byId("regimentLegend").addEventListener("click", editLegend);
-  byId("regimentSplit").addEventListener("click", splitRegiment);
-  byId("regimentAdd").addEventListener("click", toggleAdd);
-  byId("regimentAttach").addEventListener("click", toggleAttach);
-  byId("regimentRemove").addEventListener("click", removeRegiment);
+  ensureEl("regimentNameRestore").addEventListener("click", restoreName);
+  ensureEl("regimentType").addEventListener("click", changeType);
+  ensureEl("regimentName").addEventListener("change", changeName);
+  ensureEl("regimentEmblemChange").addEventListener("click", changeEmblem);
+  ensureEl("regimentAttack").addEventListener("click", toggleAttack);
+  ensureEl("regimentRegenerateLegend").addEventListener("click", regenerateLegend);
+  ensureEl("regimentLegend").addEventListener("click", editLegend);
+  ensureEl("regimentSplit").addEventListener("click", splitRegiment);
+  ensureEl("regimentAdd").addEventListener("click", toggleAdd);
+  ensureEl("regimentAttach").addEventListener("click", toggleAttach);
+  ensureEl("regimentRemove").addEventListener("click", removeRegiment);
 
   // get regiment data element
   function getRegiment() {
@@ -42,13 +42,13 @@ function editRegiment(selector) {
   }
 
   function updateRegimentData(regiment) {
-    byId("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
-    byId("regimentName").value = regiment.name;
-    byId("regimentEmblem").innerHTML = regiment.icon.startsWith("http") || regiment.icon.startsWith("data:image")
+    ensureEl("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
+    ensureEl("regimentName").value = regiment.name;
+    ensureEl("regimentEmblem").innerHTML = regiment.icon.startsWith("http") || regiment.icon.startsWith("data:image")
       ? `<img src="${regiment.icon}" style="width: 1em; height: 1em;">`
       : regiment.icon;
 
-    const composition = byId("regimentComposition");
+    const composition = ensureEl("regimentComposition");
     composition.innerHTML = options.military
       .map(u => {
         return `<div data-tip="${capitalize(u.name)} number. Input to change">
@@ -127,7 +127,7 @@ function editRegiment(selector) {
   function changeType() {
     const reg = getRegiment();
     reg.n = +!reg.n;
-    byId("regimentType").className = reg.n ? "icon-anchor" : "icon-users";
+    ensureEl("regimentType").className = reg.n ? "icon-anchor" : "icon-users";
 
     const size = +armies.attr("box-size");
     const baseRect = elSelected.querySelectorAll("rect")[0];
@@ -150,7 +150,7 @@ function editRegiment(selector) {
     const reg = getRegiment(),
       regs = pack.states[elSelected.dataset.state].military;
     const name = Military.getName(reg, regs);
-    elSelected.dataset.name = reg.name = byId("regimentName").value = name;
+    elSelected.dataset.name = reg.name = ensureEl("regimentName").value = name;
   }
 
   function changeEmblem() {
@@ -159,7 +159,7 @@ function editRegiment(selector) {
     selectIcon(regiment.icon, value => {
       regiment.icon = value;
       const isExternal = value.startsWith("http") || value.startsWith("data:image");
-      byId("regimentEmblem").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
+      ensureEl("regimentEmblem").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
       elSelected.querySelector(".regimentIcon").innerHTML = isExternal ? "" : value;
       elSelected.querySelector(".regimentImage").setAttribute("href", isExternal ? value : "");
     });
@@ -226,8 +226,8 @@ function editRegiment(selector) {
   }
 
   function toggleAdd() {
-    byId("regimentAdd").classList.toggle("pressed");
-    if (byId("regimentAdd").classList.contains("pressed")) {
+    ensureEl("regimentAdd").classList.toggle("pressed");
+    if (ensureEl("regimentAdd").classList.contains("pressed")) {
       viewbox.style("cursor", "crosshair").on("click", addRegimentOnClick);
       tip("Click on map to create new regiment or fleet", true);
     } else {
@@ -254,8 +254,8 @@ function editRegiment(selector) {
   }
 
   function toggleAttack() {
-    byId("regimentAttack").classList.toggle("pressed");
-    if (byId("regimentAttack").classList.contains("pressed")) {
+    ensureEl("regimentAttack").classList.toggle("pressed");
+    if (ensureEl("regimentAttack").classList.contains("pressed")) {
       viewbox.style("cursor", "crosshair").on("click", attackRegimentOnClick);
       tip("Click on another regiment to initiate battle", true);
       armies.selectAll(":scope > g").classed("draggable", false);
@@ -327,8 +327,8 @@ function editRegiment(selector) {
   }
 
   function toggleAttach() {
-    byId("regimentAttach").classList.toggle("pressed");
-    if (byId("regimentAttach").classList.contains("pressed")) {
+    ensureEl("regimentAttach").classList.toggle("pressed");
+    if (ensureEl("regimentAttach").classList.contains("pressed")) {
       viewbox.style("cursor", "crosshair").on("click", attachRegimentOnClick);
       tip("Click on another regiment to unite both regiments. The current regiment will be removed", true);
       armies.selectAll(":scope > g").classed("draggable", false);
@@ -485,9 +485,9 @@ function editRegiment(selector) {
     viewbox.selectAll("g#regimentBase").remove();
     armies.selectAll(":scope > g").classed("draggable", false);
     armies.selectAll("g>g").call(d3.drag().on("drag", null));
-    byId("regimentAdd").classList.remove("pressed");
-    byId("regimentAttack").classList.remove("pressed");
-    byId("regimentAttach").classList.remove("pressed");
+    ensureEl("regimentAdd").classList.remove("pressed");
+    ensureEl("regimentAttack").classList.remove("pressed");
+    ensureEl("regimentAttach").classList.remove("pressed");
     restoreDefaultEvents();
     elSelected = null;
   }

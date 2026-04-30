@@ -1,5 +1,5 @@
 import { mean, min } from "d3";
-import { byId, rn } from "../utils";
+import { ensureEl, rn } from "../utils";
 import type { PackedGraphFeature } from "./features";
 
 declare global {
@@ -99,7 +99,7 @@ export class LakesModule {
   detectCloseLakes(h: number[] | Uint8Array) {
     const { cells } = pack;
     const ELEVATION_LIMIT = +(
-      byId("lakeElevationLimitOutput") as HTMLInputElement
+      ensureEl("lakeElevationLimitOutput") as HTMLInputElement
     )?.value;
 
     pack.features.forEach((feature) => {

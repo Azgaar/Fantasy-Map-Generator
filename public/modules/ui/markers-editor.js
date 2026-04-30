@@ -8,24 +8,24 @@ function editMarker(markerI) {
 
   elSelected = d3.select(element).raise().call(d3.drag().on("start", dragMarker)).classed("draggable", true);
 
-  if (byId("notesEditor").offsetParent) editNotes(element.id, element.id);
+  if (ensureEl("notesEditor").offsetParent) editNotes(element.id, element.id);
 
   // dom elements
-  const markerType = byId("markerType");
-  const markerIconSelect = byId("markerIconSelect");
-  const markerIconSize = byId("markerIconSize");
-  const markerIconShiftX = byId("markerIconShiftX");
-  const markerIconShiftY = byId("markerIconShiftY");
-  const markerSize = byId("markerSize");
-  const markerPin = byId("markerPin");
-  const markerFill = byId("markerFill");
-  const markerStroke = byId("markerStroke");
+  const markerType = ensureEl("markerType");
+  const markerIconSelect = ensureEl("markerIconSelect");
+  const markerIconSize = ensureEl("markerIconSize");
+  const markerIconShiftX = ensureEl("markerIconShiftX");
+  const markerIconShiftY = ensureEl("markerIconShiftY");
+  const markerSize = ensureEl("markerSize");
+  const markerPin = ensureEl("markerPin");
+  const markerFill = ensureEl("markerFill");
+  const markerStroke = ensureEl("markerStroke");
 
-  const markerNotes = byId("markerNotes");
-  const markerLock = byId("markerLock");
-  const addMarker = byId("addMarker");
-  const markerAdd = byId("markerAdd");
-  const markerRemove = byId("markerRemove");
+  const markerNotes = ensureEl("markerNotes");
+  const markerLock = ensureEl("markerLock");
+  const addMarker = ensureEl("addMarker");
+  const markerAdd = ensureEl("markerAdd");
+  const markerRemove = ensureEl("markerRemove");
 
   updateInputs();
 
@@ -59,7 +59,7 @@ function editMarker(markerI) {
       return [element, marker];
     }
 
-    const element = byId(`marker${markerI}`);
+    const element = ensureEl(`marker${markerI}`);
     const marker = pack.markers.find(({i}) => i === markerI);
     return [element, marker];
   }
@@ -95,9 +95,10 @@ function editMarker(markerI) {
   }
 
   function updateInputs() {
-    byId("markerIcon").innerHTML = marker.icon.startsWith("http") || marker.icon.startsWith("data:image")
-      ? `<img src="${marker.icon}" style="width: 1em; height: 1em;">`
-      : marker.icon;
+    ensureEl("markerIcon").innerHTML =
+      marker.icon.startsWith("http") || marker.icon.startsWith("data:image")
+        ? `<img src="${marker.icon}" style="width: 1em; height: 1em;">`
+        : marker.icon;
 
     markerType.value = marker.type || "";
     markerIconSize.value = marker.px || 12;
@@ -118,7 +119,7 @@ function editMarker(markerI) {
   function changeMarkerIcon() {
     selectIcon(marker.icon, value => {
       const isExternal = value.startsWith("http") || value.startsWith("data:image");
-      byId("markerIcon").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
+      ensureEl("markerIcon").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
 
       getSameTypeMarkers().forEach(marker => {
         marker.icon = value;
@@ -158,7 +159,7 @@ function editMarker(markerI) {
     getSameTypeMarkers().forEach(marker => {
       marker.size = size;
       const {i, x, y, hidden} = marker;
-      const el = !hidden && byId(`marker${i}`);
+      const el = !hidden && document.getElementById(`marker${i}`);
       if (!el) return;
 
       const zoomedSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
@@ -248,7 +249,7 @@ function editMarker(markerI) {
     Markers.deleteMarker(marker.i);
     element.remove();
     $("#markerEditor").dialog("close");
-    if (byId("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
+    if (ensureEl("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
   }
 
   function closeMarkerEditor() {

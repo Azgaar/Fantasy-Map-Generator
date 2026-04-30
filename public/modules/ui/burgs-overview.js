@@ -5,7 +5,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
-  const body = byId("burgsBody");
+  const body = ensureEl("burgsBody");
   updateFilter();
   updateLockAllIcon();
   burgsOverviewAddLines();
@@ -23,21 +23,21 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   });
 
   // add listeners
-  byId("burgsOverviewRefresh").addEventListener("click", refreshBurgsEditor);
-  byId("burgsGroupsEditorButton").addEventListener("click", editBurgGroups);
-  byId("burgsChart").addEventListener("click", showBurgsChart);
-  byId("burgsFilterState").addEventListener("change", burgsOverviewAddLines);
-  byId("burgsFilterCulture").addEventListener("change", burgsOverviewAddLines);
-  byId("burgsSearch").addEventListener("input", burgsOverviewAddLines);
-  byId("regenerateBurgNames").addEventListener("click", regenerateNames);
-  byId("addNewBurg").addEventListener("click", enterAddBurgMode);
-  byId("burgsExport").addEventListener("click", downloadBurgsData);
-  byId("burgNamesImport").addEventListener("click", renameBurgsInBulk);
-  byId("burgsListToLoad").addEventListener("change", function () {
+  ensureEl("burgsOverviewRefresh").addEventListener("click", refreshBurgsEditor);
+  ensureEl("burgsGroupsEditorButton").addEventListener("click", editBurgGroups);
+  ensureEl("burgsChart").addEventListener("click", showBurgsChart);
+  ensureEl("burgsFilterState").addEventListener("change", burgsOverviewAddLines);
+  ensureEl("burgsFilterCulture").addEventListener("change", burgsOverviewAddLines);
+  ensureEl("burgsSearch").addEventListener("input", burgsOverviewAddLines);
+  ensureEl("regenerateBurgNames").addEventListener("click", regenerateNames);
+  ensureEl("addNewBurg").addEventListener("click", enterAddBurgMode);
+  ensureEl("burgsExport").addEventListener("click", downloadBurgsData);
+  ensureEl("burgNamesImport").addEventListener("click", renameBurgsInBulk);
+  ensureEl("burgsListToLoad").addEventListener("change", function () {
     uploadFile(this, importBurgNames);
   });
-  byId("burgsLockAll").addEventListener("click", toggleLockAll);
-  byId("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
+  ensureEl("burgsLockAll").addEventListener("click", toggleLockAll);
+  ensureEl("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
 
   function refreshBurgsEditor() {
     updateFilter();
@@ -45,7 +45,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   }
 
   function updateFilter() {
-    const stateFilter = byId("burgsFilterState");
+    const stateFilter = ensureEl("burgsFilterState");
     const selectedState = settings.stateId !== null ? settings.stateId : stateFilter.value || -1;
     stateFilter.options.length = 0; // remove all options
     stateFilter.options.add(new Option("all", -1, false, selectedState === -1));
@@ -53,7 +53,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     const statesSorted = pack.states.filter(s => s.i && !s.removed).sort((a, b) => (a.name > b.name ? 1 : -1));
     statesSorted.forEach(s => stateFilter.options.add(new Option(s.name, s.i, false, s.i == selectedState)));
 
-    const cultureFilter = byId("burgsFilterCulture");
+    const cultureFilter = ensureEl("burgsFilterCulture");
     const selectedCulture = settings.cultureId !== null ? settings.cultureId : cultureFilter.value || -1;
     cultureFilter.options.length = 0; // remove all options
     cultureFilter.options.add(new Option(`all`, -1, false, selectedCulture === -1));
@@ -64,9 +64,9 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
 
   // add line for each burg
   function burgsOverviewAddLines() {
-    const searchText = byId("burgsSearch").value.toLowerCase().trim();
-    const selectedStateId = +byId("burgsFilterState").value;
-    const selectedCultureId = +byId("burgsFilterCulture").value;
+    const searchText = ensureEl("burgsSearch").value.toLowerCase().trim();
+    const selectedStateId = +ensureEl("burgsFilterState").value;
+    const selectedCultureId = +ensureEl("burgsFilterCulture").value;
 
     const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
     let filtered = validBurgs;
@@ -328,7 +328,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
       .attr("height", height - 10)
       .attr("stroke-width", 2);
     const graph = svg.append("g").attr("transform", `translate(-50, -10)`);
-    byId("burgsTreeType").addEventListener("change", updateChart);
+    ensureEl("burgsTreeType").addEventListener("change", updateChart);
 
     treeLayout(root);
 
@@ -358,7 +358,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
 
     function hideInfo(ev) {
       burgHighlightOff(ev);
-      if (!byId("burgsInfo")) return;
+      if (!ensureEl("burgsInfo")) return;
       burgsInfo.innerHTML = "&#8205;";
       d3.select(ev.target).transition().attr("stroke", null);
       tip("");
@@ -579,11 +579,11 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     });
 
     burgsOverviewAddLines();
-    byId("burgsLockAll").className = allLocked ? "icon-lock" : "icon-lock-open";
+    ensureEl("burgsLockAll").className = allLocked ? "icon-lock" : "icon-lock-open";
   }
 
   function updateLockAllIcon() {
     const allLocked = pack.burgs.every(({lock, i, removed}) => lock || !i || removed);
-    byId("burgsLockAll").className = allLocked ? "icon-lock-open" : "icon-lock";
+    ensureEl("burgsLockAll").className = allLocked ? "icon-lock-open" : "icon-lock";
   }
 }
