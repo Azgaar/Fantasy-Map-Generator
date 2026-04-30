@@ -1,6 +1,6 @@
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
-import { byId } from "../utils";
+const byId = (id: string) => document.getElementById(id);
 
 function clickTab(tabId: string) {
   byId(tabId)?.click();
