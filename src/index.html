@@ -165,16 +165,6 @@
         this.rel = 'stylesheet';
       "
     />
-    <script>
-      window.addEventListener("load", () => {
-        if (document.querySelector('link[href="styles/ui-tour.css"]')) return;
-
-        const uiTourStylesheet = document.createElement("link");
-        uiTourStylesheet.rel = "stylesheet";
-        uiTourStylesheet.href = "styles/ui-tour.css";
-        document.head.appendChild(uiTourStylesheet);
-      });
-    </script>
   </head>
   <body>
     <svg
@@ -2382,6 +2372,11 @@
         </div>
 
         <div id="aboutContent" class="tabcontent">
+          <p style="text-align: center; margin-top: 1em">
+            <button id="startTourButton" onclick="UITour.start()" data-tip="Take an interactive tour of the map generator">
+              &#9654; Take an Interactive Tour
+            </button>
+          </p>
           <p>
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank"
@@ -2513,12 +2508,6 @@
               /></a>
             </li>
           </ul>
-
-          <p style="text-align: center; margin-top: 1em">
-            <button id="startTourButton" onclick="UITour.start()" data-tip="Take an interactive tour of the map generator">
-              &#9654; Take an Interactive Tour
-            </button>
-          </p>
         </div>
 
         <div id="sticked">
