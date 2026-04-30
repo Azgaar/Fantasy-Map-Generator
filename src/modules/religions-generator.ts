@@ -1,8 +1,8 @@
 import { quadtree } from "d3";
 import {
   abbreviate,
-  byId,
   each,
+  ensureEl,
   gauss,
   getAdjective,
   getMixedColor,
@@ -428,8 +428,13 @@ const forms: Record<string, Record<string, number>> = {
     Polytheism: 7,
     Monotheism: 7,
     Dualism: 3,
+    Syncretism: 2,
     Pantheism: 2,
     "Non-theism": 2,
+    Philosophical: 1,
+    Ethical: 1,
+    Deism: 1,
+    Henotheism: 1,
   },
   Cult: {
     Cult: 5,
@@ -442,19 +447,111 @@ const forms: Record<string, Record<string, number>> = {
 };
 
 const namingMethods: Record<string, Record<string, number>> = {
-  Folk: {
+  Shamanism: {
     "Culture + type": 1,
   },
-
-  Organized: {
-    "Random + type": 3,
+  Animism: {
+    "Culture + type": 1,
+  },
+  Polytheism: {
+    "Random + type": 4,
     "Random + ism": 1,
-    "Supreme + ism": 5,
-    "Faith of + Supreme": 5,
     "Place + ism": 1,
     "Culture + ism": 2,
     "Place + ian + type": 6,
     "Culture + type": 4,
+    "Type + of the + meaning": 2,
+  },
+  "Ancestor Worship": {
+    "Culture + type": 1,
+  },
+  "Nature Worship": {
+    "Culture + type": 1,
+  },
+  Totemism: {
+    "Culture + type": 1,
+  },
+  Monotheism: {
+    "Random + type": 2,
+    "Random + ism": 1,
+    "Supreme + ism": 6,
+    "Faith of + Supreme": 6,
+    "Place + ism": 1,
+    "Culture + ism": 1,
+    "Place + ian + type": 4,
+    "Culture + type": 3,
+  },
+  Dualism: {
+    "Random + type": 3,
+    "Random + ism": 1,
+    "Place + ism": 1,
+    "Culture + ism": 2,
+    "Place + ian + type": 5,
+    "Culture + type": 4,
+    "Type + of the + meaning": 3,
+  },
+  Syncretism: {
+    "Random + type": 3,
+    "Random + ism": 2,
+    "Place + ism": 1,
+    "Culture + ism": 2,
+    "Place + ian + type": 5,
+    "Culture + type": 4,
+    "Type + of the + meaning": 2,
+  },
+  Pantheism: {
+    "Random + type": 3,
+    "Random + ism": 1,
+    "Place + ism": 1,
+    "Culture + ism": 2,
+    "Place + ian + type": 5,
+    "Culture + type": 4,
+    "Type + of the + meaning": 2,
+  },
+  "Non-theism": {
+    "Random + type": 3,
+    "Random + ism": 2,
+    "Place + ism": 1,
+    "Culture + ism": 3,
+    "Place + ian + type": 4,
+    "Culture + type": 5,
+  },
+  Philosophical: {
+    "Random + type": 3,
+    "Random + ism": 2,
+    "Place + ism": 1,
+    "Culture + ism": 3,
+    "Place + ian + type": 4,
+    "Culture + type": 5,
+  },
+  Ethical: {
+    "Random + type": 3,
+    "Random + ism": 2,
+    "Place + ism": 1,
+    "Culture + ism": 3,
+    "Place + ian + type": 4,
+    "Culture + type": 5,
+  },
+  Deism: {
+    "Random + type": 2,
+    "Random + ism": 1,
+    "Supreme + ism": 3,
+    "Faith of + Supreme": 3,
+    "Place + ism": 1,
+    "Culture + ism": 2,
+    "Place + ian + type": 5,
+    "Culture + type": 4,
+  },
+  Henotheism: {
+    "Random + type": 2,
+    "Random + ism": 1,
+    "Supreme + ism": 2,
+    "Faith of + Supreme": 2,
+    "Place + ism": 1,
+    "Culture + ism": 2,
+    "Place + ian + type": 6,
+    "Culture + type": 4,
+    "Type + of the + meaning": 2,
   },
 
   Cult: {
@@ -462,7 +559,16 @@ const namingMethods: Record<string, Record<string, number>> = {
     "Random + ian + type": 1,
     "Type + of the + meaning": 2,
   },
-
+  "Dark Cult": {
+    "Burg + ian + type": 2,
+    "Random + ian + type": 1,
+    "Type + of the + meaning": 3,
+  },
+  Sect: {
+    "Burg + ian + type": 2,
+    "Random + ian + type": 1,
+    "Type + of the + meaning": 2,
+  },
   Heresy: {
     "Burg + ian + type": 3,
     "Random + ism": 3,
@@ -472,19 +578,24 @@ const namingMethods: Record<string, Record<string, number>> = {
 };
 
 const types: Record<string, Record<string, number>> = {
-  Shamanism: { Beliefs: 3, Shamanism: 2, Druidism: 1, Spirits: 1 },
+  Shamanism: { Beliefs: 3, Shamanism: 1, Druidism: 1, Spirits: 1 },
   Animism: { Spirits: 3, Beliefs: 1 },
-  Polytheism: { Deities: 3, Faith: 1, Gods: 1, Pantheon: 1 },
+  Polytheism: { Pantheon: 3, Deities: 2, Gods: 1 },
   "Ancestor Worship": { Beliefs: 1, Forefathers: 2, Ancestors: 2 },
-  "Nature Worship": { Beliefs: 3, Druids: 1 },
+  "Nature Worship": { Beliefs: 3, Druids: 1, Spirits: 1 },
   Totemism: { Beliefs: 2, Totems: 2, Idols: 1 },
 
-  Monotheism: { Religion: 2, Church: 3, Faith: 1 },
-  Dualism: { Religion: 3, Faith: 1, Cult: 1 },
+  Monotheism: { Religion: 2, Church: 3, Faith: 1, Creed: 1, Commandments: 1 },
+  Dualism: { Religion: 3, Faith: 1 },
+  Syncretism: { Faith: 2, Religion: 2, Beliefs: 1 },
   Pantheism: { Religion: 1, Faith: 1 },
   "Non-theism": { Beliefs: 3, Spirits: 1 },
+  Philosophical: { Philosophy: 3, Doctrine: 2, School: 1, Way: 1 },
+  Ethical: { Ethics: 2, Doctrine: 2, Path: 2, Way: 2, Precepts: 1 },
+  Deism: { Faith: 2, Religion: 1, Church: 1, Creed: 1 },
+  Henotheism: { Faith: 2, Religion: 1, Gods: 1, Pantheon: 1 },
 
-  Cult: { Cult: 4, Sect: 2, Arcanum: 1, Order: 1, Worship: 1 },
+  Cult: { Cult: 4, Sect: 2, Arcanum: 1, Order: 1, Worship: 1, Mysticism: 1 },
   "Dark Cult": {
     Cult: 2,
     Blasphemy: 1,
@@ -493,7 +604,7 @@ const types: Record<string, Record<string, number>> = {
     Idols: 1,
     Occultism: 1,
   },
-  Sect: { Sect: 3, Society: 1 },
+  Sect: { Sect: 4, Society: 1, Brotherhood: 1, Circle: 1, Way: 1 },
 
   Heresy: {
     Heresy: 3,
@@ -899,7 +1010,7 @@ class ReligionsModule {
     // limit cost for organized religions growth
     const maxExpansionCost =
       (cells.i.length / 20) *
-      (byId("growthRate") as HTMLInputElement).valueAsNumber;
+      (ensureEl("growthRate") as HTMLInputElement).valueAsNumber;
 
     religions
       .filter((r) => r.i && !r.lock && r.type !== "Folk" && !r.removed)
@@ -1112,7 +1223,7 @@ class ReligionsModule {
       return adj ? getAdjective(name) : name;
     };
 
-    const m = rw(namingMethods[variety]);
+    const m = rw(namingMethods[form] || namingMethods[variety]);
     if (m === "Random + type") return [`${random()} ${type}`, "global"];
     if (m === "Random + ism") return [`${trimVowels(random())}ism`, "global"];
     if (m === "Supreme + ism" && deity)

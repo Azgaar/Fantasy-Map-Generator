@@ -1,5 +1,5 @@
 import { quadtree } from "d3-quadtree";
-import { byId, each, gauss, minmax, normalize, P, rn } from "../utils";
+import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
 
 declare global {
   var Burgs: BurgModule;
@@ -212,7 +212,7 @@ class BurgModule {
     TIME && console.timeEnd("generateBurgs");
 
     function getCapitalsNumber() {
-      let number = (byId("statesNumber") as HTMLInputElement).valueAsNumber;
+      let number = (ensureEl("statesNumber") as HTMLInputElement).valueAsNumber;
 
       if (populatedCells.length < number * 10) {
         number = Math.floor(populatedCells.length / 10);
@@ -226,7 +226,7 @@ class BurgModule {
     }
 
     function getTownsNumber() {
-      const manorsInput = byId("manorsInput") as HTMLInputElement;
+      const manorsInput = ensureEl("manorsInput") as HTMLInputElement;
       const isAuto = manorsInput.value === "1000"; // '1000' is considered as auto
       if (isAuto)
         return rn(
@@ -723,7 +723,7 @@ class BurgModule {
     if (noteId !== -1) notes.splice(noteId, 1);
 
     if (burg.coa) {
-      byId(`burgCOA${burgId}`)?.remove();
+      document.getElementById(`burgCOA${burgId}`)?.remove();
       emblems.select(`#burgEmblems > use[data-i='${burgId}']`).remove();
       delete burg.coa;
     }

@@ -100,4 +100,17 @@ declare global {
   var editWorld: () => void;
   var showExportPane: () => void;
   var UITour: { start: () => void };
+  var getHeight: (h: number) => string;
+  var getLatitude: (y: number, precision?: number) => number;
+  var getLongitude: (x: number, precision?: number) => number;
+  var getFileName: (name: string) => string;
+  var customization: number;
+  var speak: (text: string) => void;
+  var uploadFile: (
+    el: HTMLInputElement,
+    callback: (data: string) => void,
+  ) => void;
+  var downloadFile: (content: string | Blob, name: string) => void;
+  var zoomTo: (x: number, y: number, zoom: number, duration: number) => void;
+  var modules: Record<string, boolean>;
 }

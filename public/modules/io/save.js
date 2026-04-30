@@ -193,7 +193,7 @@ async function initiateAutosave() {
   let lastSavedAt = Date.now();
 
   async function autosave() {
-    const timeoutMinutes = byId("autosaveIntervalOutput").valueAsNumber;
+    const timeoutMinutes = ensureEl("autosaveIntervalOutput").valueAsNumber;
     if (!timeoutMinutes) return;
 
     const diffInMinutes = (Date.now() - lastSavedAt) / MINUTE;

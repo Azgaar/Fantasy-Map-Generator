@@ -2,7 +2,7 @@ import { max, quadtree, range } from "d3";
 import {
   abbreviate,
   biased,
-  byId,
+  ensureEl,
   getColors,
   getRandomColor,
   minmax,
@@ -1027,10 +1027,10 @@ class CulturesModule {
     this.cells = pack.cells;
     const cultureIds = new Uint16Array(this.cells.i.length); // cell cultures
 
-    const culturesInputNumber = +(byId("culturesInput") as HTMLInputElement)
+    const culturesInputNumber = +(ensureEl("culturesInput") as HTMLInputElement)
       .value;
     const culturesInSetNumber = +(
-      (byId("culturesSet") as HTMLSelectElement).selectedOptions[0].dataset
+      (ensureEl("culturesSet") as HTMLSelectElement).selectedOptions[0].dataset
         .max ?? "0"
     );
     let count = Math.min(culturesInputNumber, culturesInSetNumber);
@@ -1114,7 +1114,7 @@ class CulturesModule {
     pack.cultures = cultures;
     const centers = quadtree<number>();
     const colors = getColors(count);
-    const emblemShape = (byId("emblemShape") as HTMLInputElement).value;
+    const emblemShape = (ensureEl("emblemShape") as HTMLInputElement).value;
 
     const codes: string[] = [];
 
@@ -1175,7 +1175,7 @@ class CulturesModule {
       else if (type === "Highland") base = 1.2;
       return rn(
         ((Math.random() *
-          (byId("sizeVariety") as HTMLInputElement).valueAsNumber) /
+          (ensureEl("sizeVariety") as HTMLInputElement).valueAsNumber) /
           2 +
           1) *
           base,
@@ -1292,7 +1292,8 @@ class CulturesModule {
     const cost: number[] = [];
 
     const neutralRate =
-      (byId("neutralRate") as HTMLInputElement)?.valueAsNumber || 1;
+      (document.getElementById("neutralRate") as HTMLInputElement | null)
+        ?.valueAsNumber || 1;
     const maxExpansionCost = cells.i.length * 0.6 * neutralRate; // limit cost for culture growth
 
     // remove culture from all cells except of locked

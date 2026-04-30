@@ -23,13 +23,13 @@ function editCoastline() {
   modules.editCoastline = true;
 
   // add listeners
-  byId("coastlineGroupsShow").on("click", showGroupSection);
-  byId("coastlineGroup").on("change", changeCoastlineGroup);
-  byId("coastlineGroupAdd").on("click", toggleNewGroupInput);
-  byId("coastlineGroupName").on("change", createNewGroup);
-  byId("coastlineGroupRemove").on("click", removeCoastlineGroup);
-  byId("coastlineGroupsHide").on("click", hideGroupSection);
-  byId("coastlineEditStyle").on("click", editGroupStyle);
+  ensureEl("coastlineGroupsShow").on("click", showGroupSection);
+  ensureEl("coastlineGroup").on("change", changeCoastlineGroup);
+  ensureEl("coastlineGroupAdd").on("click", toggleNewGroupInput);
+  ensureEl("coastlineGroupName").on("change", createNewGroup);
+  ensureEl("coastlineGroupRemove").on("click", removeCoastlineGroup);
+  ensureEl("coastlineGroupsHide").on("click", hideGroupSection);
+  ensureEl("coastlineEditStyle").on("click", editGroupStyle);
 
   function drawCoastlineVertices() {
     const featureId = +elSelected.attr("data-f");
@@ -101,20 +101,20 @@ function editCoastline() {
 
   function showGroupSection() {
     document.querySelectorAll("#coastlineEditor > button").forEach(el => (el.style.display = "none"));
-    byId("coastlineGroupsSelection").style.display = "inline-block";
+    ensureEl("coastlineGroupsSelection").style.display = "inline-block";
   }
 
   function hideGroupSection() {
     document.querySelectorAll("#coastlineEditor > button").forEach(el => (el.style.display = "inline-block"));
-    byId("coastlineGroupsSelection").style.display = "none";
-    byId("coastlineGroupName").style.display = "none";
-    byId("coastlineGroupName").value = "";
-    byId("coastlineGroup").style.display = "inline-block";
+    ensureEl("coastlineGroupsSelection").style.display = "none";
+    ensureEl("coastlineGroupName").style.display = "none";
+    ensureEl("coastlineGroupName").value = "";
+    ensureEl("coastlineGroup").style.display = "inline-block";
   }
 
   function selectCoastlineGroup(node) {
     const group = node.parentNode.id;
-    const select = byId("coastlineGroup");
+    const select = ensureEl("coastlineGroup");
     select.options.length = 0; // remove all options
 
     coastline.selectAll("g").each(function () {
@@ -123,7 +123,7 @@ function editCoastline() {
   }
 
   function changeCoastlineGroup() {
-    byId(this.value).appendChild(elSelected.node());
+    ensureEl(this.value).appendChild(elSelected.node());
   }
 
   function toggleNewGroupInput() {
@@ -145,7 +145,7 @@ function editCoastline() {
       .replace(/ /g, "_")
       .replace(/[^\w\s]/gi, "");
 
-    if (byId(group)) return tip("Element with this id already exists. Please provide a unique name", false, "error");
+    if (ensureEl(group)) return tip("Element with this id already exists. Please provide a unique name", false, "error");
 
     if (Number.isFinite(+group.charAt(0))) return tip("Group name should start with a letter", false, "error");
 
@@ -153,23 +153,23 @@ function editCoastline() {
     const oldGroup = elSelected.node().parentNode;
     const basic = ["sea_island", "lake_island"].includes(oldGroup.id);
     if (!basic && oldGroup.childElementCount === 1) {
-      byId("coastlineGroup").selectedOptions[0].remove();
-      byId("coastlineGroup").options.add(new Option(group, group, false, true));
+      ensureEl("coastlineGroup").selectedOptions[0].remove();
+      ensureEl("coastlineGroup").options.add(new Option(group, group, false, true));
       oldGroup.id = group;
       toggleNewGroupInput();
-      byId("coastlineGroupName").value = "";
+      ensureEl("coastlineGroupName").value = "";
       return;
     }
 
     // create a new group
     const newGroup = elSelected.node().parentNode.cloneNode(false);
-    byId("coastline").appendChild(newGroup);
+    ensureEl("coastline").appendChild(newGroup);
     newGroup.id = group;
-    byId("coastlineGroup").options.add(new Option(group, group, false, true));
-    byId(group).appendChild(elSelected.node());
+    ensureEl("coastlineGroup").options.add(new Option(group, group, false, true));
+    ensureEl(group).appendChild(elSelected.node());
 
     toggleNewGroupInput();
-    byId("coastlineGroupName").value = "";
+    ensureEl("coastlineGroupName").value = "";
   }
 
   function removeCoastlineGroup() {
@@ -187,14 +187,14 @@ function editCoastline() {
       buttons: {
         Remove: function () {
           $(this).dialog("close");
-          const sea = byId("sea_island");
-          const groupEl = byId(group);
+          const sea = ensureEl("sea_island");
+          const groupEl = ensureEl(group);
           while (groupEl.childNodes.length) {
             sea.appendChild(groupEl.childNodes[0]);
           }
           groupEl.remove();
-          byId("coastlineGroup").selectedOptions[0].remove();
-          byId("coastlineGroup").value = "sea_island";
+          ensureEl("coastlineGroup").selectedOptions[0].remove();
+          ensureEl("coastlineGroup").value = "sea_island";
         },
         Cancel: function () {
           $(this).dialog("close");

@@ -228,7 +228,7 @@ function showMapTooltip(point, e, i, g) {
     const r = pack.religions[religion];
     const type = r.type === "Cult" || r.type == "Heresy" ? r.type : r.type + " religion";
     tip(type + ": " + r.name);
-    if (byId("religionsEditor")?.offsetParent) highlightEditorLine(religionsEditor, religion);
+    if (document.getElementById("religionsEditor")?.offsetParent) highlightEditorLine(religionsEditor, religion);
   } else if (pack.cells.state[i] && (layerIsOn("toggleProvinces") || layerIsOn("toggleStates"))) {
     const state = pack.cells.state[i];
     const stateName = pack.states[state].fullName;
@@ -239,7 +239,7 @@ function showMapTooltip(point, e, i, g) {
     if (document.getElementById("diplomacyEditor")?.offsetParent) highlightEditorLine(diplomacyEditor, state);
     if (document.getElementById("militaryOverview")?.offsetParent) highlightEditorLine(militaryOverview, state);
     if (document.getElementById("provincesEditor")?.offsetParent) highlightEditorLine(provincesEditor, province);
-    if (document.getElementById("mergeStatesForm")?.offsetParent) highlightEditorLine(byId("mergeStatesForm"), state);
+    if (document.getElementById("mergeStatesForm")?.offsetParent) highlightEditorLine(ensureEl("mergeStatesForm"), state);
   } else if (layerIsOn("toggleCultures") && pack.cells.culture[i]) {
     const culture = pack.cells.culture[i];
     tip("Culture: " + pack.cultures[culture].name);

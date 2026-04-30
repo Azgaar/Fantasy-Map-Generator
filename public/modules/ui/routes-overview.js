@@ -5,7 +5,7 @@ function overviewRoutes() {
   closeDialogs("#routesOverview, .stable");
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
 
-  const body = byId("routesBody");
+  const body = ensureEl("routesBody");
   routesOverviewAddLines();
   $("#routesOverview").dialog();
 
@@ -20,12 +20,12 @@ function overviewRoutes() {
   });
 
   // add listeners
-  byId("routesOverviewRefresh").on("click", routesOverviewAddLines);
-  byId("routesCreateNew").on("click", createRoute);
-  byId("routesExport").on("click", downloadRoutesData);
-  byId("routesLockAll").on("click", toggleLockAll);
-  byId("routesRemoveAll").on("click", triggerAllRoutesRemove);
-  byId("routesSearch").on("input", routesOverviewAddLines);
+  ensureEl("routesOverviewRefresh").on("click", routesOverviewAddLines);
+  ensureEl("routesCreateNew").on("click", createRoute);
+  ensureEl("routesExport").on("click", downloadRoutesData);
+  ensureEl("routesLockAll").on("click", toggleLockAll);
+  ensureEl("routesRemoveAll").on("click", triggerAllRoutesRemove);
+  ensureEl("routesSearch").on("input", routesOverviewAddLines);
 
   // add line for each route
   function routesOverviewAddLines() {
@@ -34,7 +34,7 @@ function overviewRoutes() {
 
     let filteredRoutes = pack.routes;
 
-    const searchText = byId("routesSearch").value.toLowerCase().trim();
+    const searchText = ensureEl("routesSearch").value.toLowerCase().trim();
     if (searchText) {
       filteredRoutes = filteredRoutes.filter(route => {
         const name = (route.name || "").toLowerCase();
@@ -153,7 +153,7 @@ function overviewRoutes() {
     });
 
     routesOverviewAddLines();
-    byId("routesLockAll").className = allLocked ? "icon-lock" : "icon-lock-open";
+    ensureEl("routesLockAll").className = allLocked ? "icon-lock" : "icon-lock-open";
   }
 
   function triggerRouteRemove() {

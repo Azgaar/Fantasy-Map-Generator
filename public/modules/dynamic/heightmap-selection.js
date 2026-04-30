@@ -8,7 +8,7 @@ addListeners();
 export function open() {
   closeDialogs(".stable");
 
-  const $templateInput = byId("templateInput");
+  const $templateInput = ensureEl("templateInput");
   setSelected($templateInput.value);
   graph = getGraph(graph);
 
@@ -190,7 +190,7 @@ function insertHtml() {
     </div>
   </div>`;
 
-  byId("dialogs").insertAdjacentHTML("beforeend", heightmapSelectionHtml);
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", heightmapSelectionHtml);
 
   const sections = document.getElementsByClassName("heightmap-selection_container");
 
@@ -224,7 +224,7 @@ function insertHtml() {
 }
 
 function addListeners() {
-  byId("heightmapSelection").on("click", event => {
+  ensureEl("heightmapSelection").on("click", event => {
     const article = event.target.closest("#heightmapSelection article");
     if (!article) return;
 
@@ -233,25 +233,25 @@ function addListeners() {
     setSelected(id);
   });
 
-  byId("heightmapSelectionRenderOcean").on("change", redrawAll);
-  byId("heightmapSelectionColorScheme").on("change", redrawAll);
-  byId("heightmapSelectionRedrawPreview").on("click", redrawAll);
-  byId("heightmapSelectionEditTemplates").on("click", confirmHeightmapEdit);
-  byId("heightmapSelectionImportHeightmap").on("click", confirmHeightmapEdit);
+  ensureEl("heightmapSelectionRenderOcean").on("change", redrawAll);
+  ensureEl("heightmapSelectionColorScheme").on("change", redrawAll);
+  ensureEl("heightmapSelectionRedrawPreview").on("click", redrawAll);
+  ensureEl("heightmapSelectionEditTemplates").on("click", confirmHeightmapEdit);
+  ensureEl("heightmapSelectionImportHeightmap").on("click", confirmHeightmapEdit);
 }
 
 function getSelected() {
-  return byId("heightmapSelection").querySelector(".selected")?.dataset?.id;
+  return ensureEl("heightmapSelection").querySelector(".selected")?.dataset?.id;
 }
 
 function setSelected(id) {
-  const $heightmapSelection = byId("heightmapSelection");
+  const $heightmapSelection = ensureEl("heightmapSelection");
   $heightmapSelection.querySelector(".selected")?.classList?.remove("selected");
   $heightmapSelection.querySelector(`[data-id="${id}"]`)?.classList?.add("selected");
 }
 
 function getSeed() {
-  return byId("heightmapSelection").querySelector(".selected")?.dataset?.seed;
+  return ensureEl("heightmapSelection").querySelector(".selected")?.dataset?.seed;
 }
 
 function getName(id) {
@@ -268,14 +268,14 @@ function getGraph(currentGraph) {
 function drawTemplatePreview(id) {
   const heights = HeightmapGenerator.fromTemplate(graph, id);
   const dataUrl = getHeightmapPreview(heights);
-  const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
+  const article = ensureEl("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article.querySelector("img").src = dataUrl;
 }
 
 async function drawPrecreatedHeightmap(id) {
   const heights = await HeightmapGenerator.fromPrecreated(graph, id);
   const dataUrl = getHeightmapPreview(heights);
-  const article = byId("heightmapSelection").querySelector(`[data-id="${id}"]`);
+  const article = ensureEl("heightmapSelection").querySelector(`[data-id="${id}"]`);
   article.querySelector("img").src = dataUrl;
 }
 
@@ -289,7 +289,7 @@ function regeneratePreview(article, id) {
 
 function redrawAll() {
   graph = getGraph(graph);
-  const articles = byId("heightmapSelection").querySelectorAll(`article`);
+  const articles = ensureEl("heightmapSelection").querySelectorAll(`article`);
   for (const article of articles) {
     const {id, seed} = article.dataset;
     Math.random = aleaPRNG(seed);
@@ -312,8 +312,8 @@ function confirmHeightmapEdit() {
 }
 
 function getHeightmapPreview(heights) {
-  const scheme = getColorScheme(byId("heightmapSelectionColorScheme").value);
-  const renderOcean = byId("heightmapSelectionRenderOcean").checked;
+  const scheme = getColorScheme(ensureEl("heightmapSelectionColorScheme").value);
+  const renderOcean = ensureEl("heightmapSelectionRenderOcean").checked;
   const dataUrl = drawHeights({heights, width: graph.cellsX, height: graph.cellsY, scheme, renderOcean});
   return dataUrl;
 }

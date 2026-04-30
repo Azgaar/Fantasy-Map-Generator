@@ -12,10 +12,10 @@ function editBurgGroups() {
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Apply: () => {
-        byId("burgGroupsForm").requestSubmit();
+        ensureEl("burgGroupsForm").requestSubmit();
       },
       Add: () => {
-        byId("burgGroupsBody").insertAdjacentHTML("beforeend", createLine({name: "", active: true, preview: null}));
+        ensureEl("burgGroupsBody").insertAdjacentHTML("beforeend", createLine({name: "", active: true, preview: null}));
       },
       Restore: () => {
         options.burgs.groups = Burgs.getDefaultGroups();
@@ -31,8 +31,8 @@ function editBurgGroups() {
   modules.editBurgGroups = true;
 
   // add listeners
-  byId("burgGroupsForm").on("change", validateForm).on("submit", submitForm);
-  byId("burgGroupsBody").on("click", ev => {
+  ensureEl("burgGroupsForm").on("change", validateForm).on("submit", submitForm);
+  ensureEl("burgGroupsBody").on("click", ev => {
     const el = ev.target;
     const line = el.closest("tr");
     if (!line) return;
@@ -54,7 +54,7 @@ function editBurgGroups() {
 
   function addLines() {
     const lines = options.burgs.groups.map(createLine);
-    byId("burgGroupsBody").innerHTML = lines.join("");
+    ensureEl("burgGroupsBody").innerHTML = lines.join("");
   }
 
   function createLine(group) {
@@ -212,7 +212,7 @@ function editBurgGroups() {
       title: "Limit group by features",
       buttons: {
         Apply: function () {
-          const form = byId("featuresLimitationForm");
+          const form = ensureEl("featuresLimitationForm");
           const values = features.reduce((acc, {name}) => {
             const value = form[name].value;
             if (value !== "undefined") acc[name] = value === "true";
@@ -232,7 +232,7 @@ function editBurgGroups() {
   }
 
   function removeLine(line) {
-    const lines = byId("burgGroupsBody").children;
+    const lines = ensureEl("burgGroupsBody").children;
     if (lines.length < 2) return tip("At least one group should be defined", false, "error");
 
     confirmationDialog({
@@ -248,7 +248,7 @@ function editBurgGroups() {
   }
 
   function validateForm() {
-    const form = byId("burgGroupsForm");
+    const form = ensureEl("burgGroupsForm");
 
     if (form.name.length) {
       const names = Array.from(form.name).map(input => input.value);
@@ -297,7 +297,7 @@ function editBurgGroups() {
     event.preventDefault();
     if (!validateForm()) return;
 
-    const lines = Array.from(byId("burgGroupsBody").children);
+    const lines = Array.from(ensureEl("burgGroupsBody").children);
     if (!lines.length) return tip("At least one group should be defined", false, "error");
 
     function parseInput(input) {
@@ -337,7 +337,7 @@ function editBurgGroups() {
 
     if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
     if (layerIsOn("toggleLabels")) drawBurgLabels();
-    if (byId("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
+    if (ensureEl("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
 
     $("#burgGroupsEditor").dialog("close");
   }

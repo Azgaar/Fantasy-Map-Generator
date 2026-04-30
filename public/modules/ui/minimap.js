@@ -24,7 +24,7 @@ export function openMinimapDialog() {
 }
 
 function ensureMinimapStyles() {
-  if (byId("minimapStyles")) return;
+  if (document.getElementById("minimapStyles")) return;
 
   const style = document.createElement("style");
   style.id = "minimapStyles";
@@ -72,7 +72,7 @@ function ensureMinimapStyles() {
 function ensureMinimapMarkup() {
   if (minimapInitialized) return;
 
-  const container = byId("minimapContent");
+  const container = ensureEl("minimapContent");
   if (!container) return;
 
   minimapInitialized = true;
@@ -85,12 +85,12 @@ function ensureMinimapMarkup() {
     </div>
   `;
 
-  byId("minimapSurface")?.addEventListener("click", minimapClickToPan);
+  ensureEl("minimapSurface").addEventListener("click", minimapClickToPan);
   window.updateMinimap = updateMinimap;
 }
 
 function minimapClickToPan(event) {
-  const minimap = byId("minimapSurface");
+  const minimap = ensureEl("minimapSurface");
   if (!minimap) return;
 
   const point = minimap.createSVGPoint();
@@ -107,9 +107,9 @@ function minimapClickToPan(event) {
 }
 
 function updateMinimap() {
-  const minimap = byId("minimapSurface");
-  const viewport = byId("minimapViewport");
-  const mapUse = byId("minimapMapUse");
+  const minimap = ensureEl("minimapSurface");
+  const viewport = ensureEl("minimapViewport");
+  const mapUse = ensureEl("minimapMapUse");
   if (!minimap || !viewport || !mapUse) return;
 
   minimap.setAttribute("viewBox", `0 0 ${graphWidth} ${graphHeight}`);

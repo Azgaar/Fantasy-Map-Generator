@@ -7,7 +7,7 @@ import {
   makeRoughnessProfile,
   PROFILE_SIZE,
 } from "../renderers/coastline-fractal";
-import { byId } from "../utils";
+import { ensureEl } from "../utils";
 
 interface SliderDef {
   id: string;
@@ -143,16 +143,14 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled">> = {
 const PREVIEW_SEED = "preview_coastline";
 
 export function open(): void {
-  if (!byId("coastlineSettingsDialog")) {
+  if (!document.getElementById("coastlineSettingsDialog")) {
     document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
   }
 
   for (const { id, key } of SLIDER_DEFS) {
-    const slider = byId(id) as HTMLInputElement | null;
-    const output = byId(`${id}Out`) as HTMLElement | null;
-    const resetBtn = byId(`${id}Reset`) as HTMLElement | null;
-
-    if (!slider || !output || !resetBtn) continue;
+    const slider = ensureEl<HTMLInputElement>(id);
+    const output = ensureEl(`${id}Out`);
+    const resetBtn = ensureEl(`${id}Reset`);
 
     const defaultVal = defaultCoastSettings[key] as number;
 
@@ -173,11 +171,10 @@ export function open(): void {
     });
   }
 
-  const enabledCb = byId("coastEnabled") as HTMLInputElement | null;
-  const slidersDiv = byId("coastSliders") as HTMLElement | null;
-  const track = byId("coastEnabledTrack") as HTMLElement | null;
-  const thumb = byId("coastEnabledThumb") as HTMLElement | null;
-  if (!enabledCb || !slidersDiv || !track || !thumb) return;
+  const enabledCb = ensureEl<HTMLInputElement>("coastEnabled");
+  const slidersDiv = ensureEl("coastSliders");
+  const track = ensureEl("coastEnabledTrack");
+  const thumb = ensureEl("coastEnabledThumb");
 
   enabledCb.checked = defaultCoastSettings.enabled;
   const syncToggle = () => {
@@ -186,8 +183,8 @@ export function open(): void {
     slidersDiv.style.opacity = defaultCoastSettings.enabled ? "" : "0.4";
     slidersDiv.style.pointerEvents = defaultCoastSettings.enabled ? "" : "none";
     Object.keys(COAST_PRESETS).forEach((name) => {
-      const btn = byId(`coastPreset_${name}`) as HTMLButtonElement | null;
-      if (btn) btn.disabled = !defaultCoastSettings.enabled;
+      const btn = ensureEl<HTMLButtonElement>(`coastPreset_${name}`);
+      btn.disabled = !defaultCoastSettings.enabled;
     });
   };
 
@@ -201,18 +198,17 @@ export function open(): void {
 
   // Preset buttons
   for (const name of Object.keys(COAST_PRESETS)) {
-    const btn = byId(`coastPreset_${name}`) as HTMLButtonElement | null;
-    if (!btn) continue;
+    const btn = ensureEl<HTMLButtonElement>(`coastPreset_${name}`);
     btn.on("click", () => {
       const preset = COAST_PRESETS[name];
       for (const { id, key } of SLIDER_DEFS) {
         if (!(key in preset)) continue;
         const val = preset[key as keyof typeof preset];
         defaultCoastSettings[key] = val;
-        const slider = byId(id) as HTMLInputElement | null;
-        const output = byId(`${id}Out`) as HTMLElement | null;
-        if (slider) slider.value = String(val);
-        if (output) output.textContent = String(val);
+        const slider = ensureEl<HTMLInputElement>(id);
+        const output = ensureEl(`${id}Out`);
+        slider.value = String(val);
+        output.textContent = String(val);
       }
       updatePreviews();
       drawFeatures();
@@ -291,10 +287,8 @@ function buildDialogHTML(): string {
 }
 
 function updatePreviews(): void {
-  const graph = byId("coastRoughnessGraph");
-  const shape = byId("coastShapePreview");
-  if (graph) drawRoughnessGraph(graph as HTMLCanvasElement);
-  if (shape) drawShapePreview(shape as HTMLCanvasElement);
+  drawRoughnessGraph(ensureEl<HTMLCanvasElement>("coastRoughnessGraph"));
+  drawShapePreview(ensureEl<HTMLCanvasElement>("coastShapePreview"));
 }
 
 function drawRoughnessGraph(canvas: HTMLCanvasElement): void {

@@ -1,7 +1,7 @@
 import { mean, median, sum } from "d3";
 import {
-  byId,
   each,
+  ensureEl,
   gauss,
   getAdjective,
   getMixedColor,
@@ -60,7 +60,8 @@ class StatesModule {
   private createStates() {
     const states: State[] = [{ i: 0, name: "Neutrals" } as State];
     const each5th = each(5);
-    const sizeVariety = (byId("sizeVariety") as HTMLInputElement).valueAsNumber;
+    const sizeVariety = (ensureEl("sizeVariety") as HTMLInputElement)
+      .valueAsNumber;
 
     pack.burgs.forEach((burg) => {
       if (!burg.i || !burg.capital) return;
@@ -151,9 +152,11 @@ class StatesModule {
     const cost: number[] = [];
 
     const globalGrowthRate =
-      (byId("growthRate") as HTMLInputElement)?.valueAsNumber || 1;
+      (document.getElementById("growthRate") as HTMLInputElement | null)
+        ?.valueAsNumber || 1;
     const statesGrowthRate =
-      (byId("statesGrowthRate") as HTMLInputElement)?.valueAsNumber || 1;
+      (document.getElementById("statesGrowthRate") as HTMLInputElement | null)
+        ?.valueAsNumber || 1;
     const growthRate =
       (cells.i.length / 2) * globalGrowthRate * statesGrowthRate; // limit cost for state growth
 

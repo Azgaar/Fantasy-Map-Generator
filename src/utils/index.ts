@@ -1,12 +1,10 @@
-import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
-import "./polyfills";
-
-window.rn = rn;
-window.lim = lim;
-window.minmax = minmax;
-window.normalize = normalize;
-window.lerp = lerp as typeof window.lerp;
-
+import {
+  createTypedArray,
+  getTypedArray,
+  last,
+  TYPED_ARRAY_MAX_VALUES,
+  unique,
+} from "./arrayUtils";
 import {
   abbreviate,
   getAdjective,
@@ -15,31 +13,64 @@ import {
   nth,
   trimVowels,
 } from "./languageUtils";
-
-window.vowel = isVowel;
-window.trimVowels = trimVowels;
-window.getAdjective = getAdjective;
-window.nth = nth;
-window.abbreviate = abbreviate;
-window.list = list;
-
+import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
+import "./polyfills";
 import {
-  createTypedArray,
-  getTypedArray,
-  last,
-  TYPED_ARRAY_MAX_VALUES,
-  unique,
-} from "./arrayUtils";
-
-window.last = last;
-window.unique = unique;
-window.getTypedArray = getTypedArray;
-window.createTypedArray = createTypedArray;
-window.INT8_MAX = TYPED_ARRAY_MAX_VALUES.INT8_MAX;
-window.UINT8_MAX = TYPED_ARRAY_MAX_VALUES.UINT8_MAX;
-window.UINT16_MAX = TYPED_ARRAY_MAX_VALUES.UINT16_MAX;
-window.UINT32_MAX = TYPED_ARRAY_MAX_VALUES.UINT32_MAX;
-
+  C_12,
+  getColors,
+  getMixedColor,
+  getRandomColor,
+  toHEX,
+} from "./colorUtils";
+import {
+  clipPoly,
+  debounce,
+  generateDate,
+  getBase64,
+  getCoordinates,
+  getLatitude,
+  getLongitude,
+  getSegmentId,
+  initializePrompt,
+  isCtrlClick,
+  link,
+  openURL,
+  parseError,
+  throttle,
+  wiki,
+} from "./commonUtils";
+import {
+  drawCellsValue,
+  drawPath,
+  drawPoint,
+  drawPolygons,
+  drawRouteConnections,
+} from "./debugUtils";
+import { distanceSquared, rollups } from "./functionUtils";
+import {
+  calculateVoronoi,
+  drawHeights,
+  findAllCellsInRadius,
+  findAllInQuadtree,
+  findClosestCell,
+  findGridAll,
+  findGridCell,
+  generateGrid,
+  getGridPolygon,
+  getPackPolygon,
+  isLand,
+  isWater,
+  poissonDiscSampler,
+  shouldRegenerateGrid,
+} from "./graphUtils";
+import { ensureEl, getComposedPath, getNextId } from "./nodeUtils";
+import {
+  connectVertices,
+  findPath,
+  getIsolines,
+  getPolesOfInaccessibility,
+  getVertexPath,
+} from "./pathUtils";
 import {
   biased,
   each,
@@ -52,6 +83,38 @@ import {
   rand,
   rw,
 } from "./probabilityUtils";
+import {
+  capitalize,
+  isValidJSON,
+  parseTransform,
+  round,
+  safeParseJSON,
+  sanitizeId,
+  splitInTwo,
+} from "./stringUtils";
+import { convertTemperature, getIntegerFromSI, si } from "./unitUtils";
+
+window.rn = rn;
+window.lim = lim;
+window.minmax = minmax;
+window.normalize = normalize;
+window.lerp = lerp as typeof window.lerp;
+
+window.vowel = isVowel;
+window.trimVowels = trimVowels;
+window.getAdjective = getAdjective;
+window.nth = nth;
+window.abbreviate = abbreviate;
+window.list = list;
+
+window.last = last;
+window.unique = unique;
+window.getTypedArray = getTypedArray;
+window.createTypedArray = createTypedArray;
+window.INT8_MAX = TYPED_ARRAY_MAX_VALUES.INT8_MAX;
+window.UINT8_MAX = TYPED_ARRAY_MAX_VALUES.UINT8_MAX;
+window.UINT16_MAX = TYPED_ARRAY_MAX_VALUES.UINT16_MAX;
+window.UINT32_MAX = TYPED_ARRAY_MAX_VALUES.UINT32_MAX;
 
 window.rand = rand;
 window.P = P;
@@ -64,46 +127,24 @@ window.biased = biased;
 window.getNumberInRange = getNumberInRange;
 window.generateSeed = generateSeed;
 
-import { convertTemperature, getIntegerFromSI, si } from "./unitUtils";
-
 window.convertTemperature = (
   temp: number,
   scale: any = (window as any).temperatureScale.value || "°C",
 ) => convertTemperature(temp, scale);
 window.si = si;
 window.getInteger = getIntegerFromSI;
-
-import {
-  C_12,
-  getColors,
-  getMixedColor,
-  getRandomColor,
-  toHEX,
-} from "./colorUtils";
-
 window.toHEX = toHEX;
 window.getColors = getColors;
 window.getRandomColor = getRandomColor;
 window.getMixedColor = getMixedColor;
 window.C_12 = C_12;
 
-import { getComposedPath, getNextId } from "./nodeUtils";
-
+window.ensureEl = ensureEl;
 window.getComposedPath = getComposedPath;
 window.getNextId = getNextId;
 
-import { distanceSquared, rollups } from "./functionUtils";
-
 window.rollups = rollups;
 window.dist2 = distanceSquared;
-
-import {
-  connectVertices,
-  findPath,
-  getIsolines,
-  getPolesOfInaccessibility,
-  getVertexPath,
-} from "./pathUtils";
 
 window.getIsolines = getIsolines;
 window.getPolesOfInaccessibility = getPolesOfInaccessibility;
@@ -112,16 +153,6 @@ window.findPath = (start, end, getCost) =>
   findPath(start, end, getCost, (window as any).pack);
 window.getVertexPath = (cellsArray) =>
   getVertexPath(cellsArray, (window as any).pack);
-
-import {
-  capitalize,
-  isValidJSON,
-  parseTransform,
-  round,
-  safeParseJSON,
-  sanitizeId,
-  splitInTwo,
-} from "./stringUtils";
 
 window.round = round;
 window.capitalize = capitalize;
@@ -132,9 +163,6 @@ window.sanitizeId = sanitizeId;
 JSON.isValid = isValidJSON;
 JSON.safeParse = safeParseJSON;
 
-import { byId } from "./shorthands";
-
-window.byId = byId;
 Node.prototype.on = function (name, fn, options) {
   this.addEventListener(name, fn, options);
   return this;
@@ -159,23 +187,6 @@ declare global {
     off: (name: string, fn: EventListenerOrEventListenerObject) => Node;
   }
 }
-
-import {
-  calculateVoronoi,
-  drawHeights,
-  findAllCellsInRadius,
-  findAllInQuadtree,
-  findClosestCell,
-  findGridAll,
-  findGridCell,
-  generateGrid,
-  getGridPolygon,
-  getPackPolygon,
-  isLand,
-  isWater,
-  poissonDiscSampler,
-  shouldRegenerateGrid,
-} from "./graphUtils";
 
 window.shouldRegenerateGrid = (grid: any, expectedSeed: number) =>
   shouldRegenerateGrid(
@@ -209,24 +220,6 @@ window.drawHeights = drawHeights;
 window.isLand = (i: number) => isLand(i, (window as any).pack);
 window.isWater = (i: number) => isWater(i, (window as any).pack);
 
-import {
-  clipPoly,
-  debounce,
-  generateDate,
-  getBase64,
-  getCoordinates,
-  getLatitude,
-  getLongitude,
-  getSegmentId,
-  initializePrompt,
-  isCtrlClick,
-  link,
-  openURL,
-  parseError,
-  throttle,
-  wiki,
-} from "./commonUtils";
-
 window.clipPoly = (points: [number, number][], secure?: number) =>
   clipPoly(points, graphWidth, graphHeight, secure);
 window.getSegmentId = getSegmentId;
@@ -253,14 +246,6 @@ if (document.readyState === "loading") {
   initializePrompt();
 }
 
-import {
-  drawCellsValue,
-  drawPath,
-  drawPoint,
-  drawPolygons,
-  drawRouteConnections,
-} from "./debugUtils";
-
 window.drawCellsValue = (data: any[]) =>
   drawCellsValue(data, (window as any).pack);
 window.drawPolygons = (data: any[]) =>
@@ -273,7 +258,7 @@ window.drawPath = drawPath;
 export {
   abbreviate,
   biased,
-  byId,
+  ensureEl,
   C_12,
   calculateVoronoi,
   capitalize,
@@ -335,9 +320,9 @@ export {
   nth,
   openURL,
   P,
-  Pint,
   parseError,
   parseTransform,
+  Pint,
   poissonDiscSampler,
   ra,
   rand,
@@ -350,10 +335,10 @@ export {
   shouldRegenerateGrid,
   si,
   splitInTwo,
-  TYPED_ARRAY_MAX_VALUES,
   throttle,
   toHEX,
   trimVowels,
+  TYPED_ARRAY_MAX_VALUES,
   unique,
   wiki,
 };

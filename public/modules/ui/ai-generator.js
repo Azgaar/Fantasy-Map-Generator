@@ -159,7 +159,7 @@ function generateWithAi(defaultPrompt, onApply) {
         generate(e.target);
       },
       Apply: function () {
-        const result = byId("aiGeneratorResult").value;
+        const result = ensureEl("aiGeneratorResult").value;
         if (!result) return tip("No result to apply", true, "error", 4000);
         onApply(result);
         $(this).dialog("close");
@@ -173,48 +173,48 @@ function generateWithAi(defaultPrompt, onApply) {
   if (modules.generateWithAi) return;
   modules.generateWithAi = true;
 
-  byId("aiGeneratorKeyHelp").on("click", function (e) {
-    const model = byId("aiGeneratorModel").value;
+  ensureEl("aiGeneratorKeyHelp").on("click", function (e) {
+    const model = ensureEl("aiGeneratorModel").value;
     const provider = MODELS[model];
     openURL(PROVIDERS[provider].keyLink);
   });
 
   function updateValues() {
-    byId("aiGeneratorResult").value = "";
-    byId("aiGeneratorPrompt").value = defaultPrompt;
-    byId("aiGeneratorTemperature").value = localStorage.getItem("fmg-ai-temperature") || "1";
+    ensureEl("aiGeneratorResult").value = "";
+    ensureEl("aiGeneratorPrompt").value = defaultPrompt;
+    ensureEl("aiGeneratorTemperature").value = localStorage.getItem("fmg-ai-temperature") || "1";
 
-    const select = byId("aiGeneratorModel");
+    const select = ensureEl("aiGeneratorModel");
     select.options.length = 0;
     Object.keys(MODELS).forEach(model => select.options.add(new Option(model, model)));
     select.value = localStorage.getItem("fmg-ai-model");
     if (!select.value || !MODELS[select.value]) select.value = DEFAULT_MODEL;
 
     const provider = MODELS[select.value];
-    byId("aiGeneratorKey").value = localStorage.getItem(`fmg-ai-kl-${provider}`) || "";
+    ensureEl("aiGeneratorKey").value = localStorage.getItem(`fmg-ai-kl-${provider}`) || "";
   }
 
   async function generate(button) {
-    const key = byId("aiGeneratorKey").value;
+    const key = ensureEl("aiGeneratorKey").value;
     if (!key) return tip("Please enter an API key", true, "error", 4000);
 
-    const model = byId("aiGeneratorModel").value;
+    const model = ensureEl("aiGeneratorModel").value;
     if (!model) return tip("Please select a model", true, "error", 4000);
     localStorage.setItem("fmg-ai-model", model);
 
     const provider = MODELS[model];
     localStorage.setItem(`fmg-ai-kl-${provider}`, key);
 
-    const prompt = byId("aiGeneratorPrompt").value;
+    const prompt = ensureEl("aiGeneratorPrompt").value;
     if (!prompt) return tip("Please enter a prompt", true, "error", 4000);
 
-    const temperature = byId("aiGeneratorTemperature").valueAsNumber;
+    const temperature = ensureEl("aiGeneratorTemperature").valueAsNumber;
     if (isNaN(temperature)) return tip("Temperature must be a number", true, "error", 4000);
     localStorage.setItem("fmg-ai-temperature", temperature);
 
     try {
       button.disabled = true;
-      const resultArea = byId("aiGeneratorResult");
+      const resultArea = ensureEl("aiGeneratorResult");
       resultArea.disabled = true;
       resultArea.value = "";
       const onContent = content => (resultArea.value += content);
@@ -225,7 +225,7 @@ function generateWithAi(defaultPrompt, onApply) {
       return tip(message, true, "error", 4000);
     } finally {
       button.disabled = false;
-      byId("aiGeneratorResult").disabled = false;
+      ensureEl("aiGeneratorResult").disabled = false;
     }
   }
 }

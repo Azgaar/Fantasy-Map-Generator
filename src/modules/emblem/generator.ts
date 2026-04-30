@@ -1,4 +1,4 @@
-import { P, rw } from "../../utils";
+import { ensureEl, P, rw } from "../../utils";
 import { charges } from "./charges";
 import { divisions } from "./divisions";
 import { lineWeights } from "./lineWeights";
@@ -554,15 +554,13 @@ class EmblemGeneratorModule {
   }
 
   getShield(culture: number, state?: number): string {
-    const emblemShape = document.getElementById(
-      "emblemShape",
-    ) as HTMLSelectElement | null;
+    const emblemShape = ensureEl<HTMLSelectElement>("emblemShape");
     const shapeGroup =
-      emblemShape?.selectedOptions[0]?.parentElement?.getAttribute("label") ||
+      emblemShape.selectedOptions[0]?.parentElement?.getAttribute("label") ||
       "Diversiform";
-    if (shapeGroup !== "Diversiform") return emblemShape!.value;
+    if (shapeGroup !== "Diversiform") return emblemShape.value;
 
-    if (emblemShape?.value === "state" && state && pack.states[state].coa)
+    if (emblemShape.value === "state" && state && pack.states[state].coa)
       return pack.states[state].coa!.shield!;
     if (pack.cultures[culture].shield) return pack.cultures[culture].shield!;
     ERROR &&

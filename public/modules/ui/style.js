@@ -3,7 +3,7 @@
 
 // add available filters to lists
 {
-  const filters = Array.from(byId("filters").querySelectorAll("filter"));
+  const filters = Array.from(ensureEl("filters").querySelectorAll("filter"));
   const emptyOption = '<option value="" selected>None</option>';
   const options = filters.map(filter => {
     const id = filter.getAttribute("id");
@@ -12,9 +12,9 @@
   });
   const allOptions = emptyOption + options.join("");
 
-  byId("styleFilterInput").innerHTML = allOptions;
-  byId("styleStatesBodyFilter").innerHTML = allOptions;
-  byId("styleScaleBarBackgroundFilter").innerHTML = allOptions;
+  ensureEl("styleFilterInput").innerHTML = allOptions;
+  ensureEl("styleStatesBodyFilter").innerHTML = allOptions;
+  ensureEl("styleScaleBarBackgroundFilter").innerHTML = allOptions;
 }
 
 // store some style inputs as options
@@ -51,14 +51,14 @@ const heightmapColorSchemes = {
 };
 
 // add default color schemes to the list of options
-byId("styleHeightmapScheme").innerHTML = Object.keys(heightmapColorSchemes)
+ensureEl("styleHeightmapScheme").innerHTML = Object.keys(heightmapColorSchemes)
   .map(scheme => `<option value="${scheme}">${scheme}</option>`)
   .join("");
 
 function addCustomColorScheme(scheme) {
   const stops = scheme.split(",");
   heightmapColorSchemes[scheme] = d3.scaleSequential(d3.interpolateRgbBasis(stops));
-  byId("styleHeightmapScheme").options.add(new Option(scheme, scheme, false, true));
+  ensureEl("styleHeightmapScheme").options.add(new Option(scheme, scheme, false, true));
 }
 
 function getColorScheme(scheme = "bright") {
@@ -335,8 +335,8 @@ function selectStyleElement() {
   if (styleElement === "ocean") {
     styleOcean.style.display = "block";
     styleOceanFill.value = styleOceanFillOutput.value = oceanLayers.select("#oceanBase").attr("fill");
-    styleOceanPattern.value = byId("oceanicPattern")?.getAttribute("href");
-    styleOceanPatternOpacity.value = byId("oceanicPattern").getAttribute("opacity") || 1;
+    styleOceanPattern.value = ensureEl("oceanicPattern").getAttribute("href");
+    styleOceanPatternOpacity.value = ensureEl("oceanicPattern").getAttribute("opacity") || 1;
     outlineLayers.value = oceanLayers.attr("layers");
   }
 
@@ -372,7 +372,7 @@ function selectStyleElement() {
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
   if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders", "terrs"].includes(styleElement)) {
-    const groups = byId(styleElement).querySelectorAll("g");
+    const groups = ensureEl(styleElement).querySelectorAll("g");
     groups.forEach(el => {
       if (el.id === "burgLabels") return;
       const option = new Option(`${el.id} (${el.childElementCount})`, el.id, false, false);
@@ -417,7 +417,7 @@ function selectStyleElement() {
   if (styleElement === "vignette") {
     styleVignette.style.display = "block";
 
-    const maskRect = byId("vignette-rect");
+    const maskRect = ensureEl("vignette-rect");
     if (maskRect) {
       const digit = str => str.replace(/[^\d.]/g, "");
       styleVignetteX.value = digit(maskRect.getAttribute("x"));
@@ -564,11 +564,11 @@ styleOceanFill.on("input", function () {
 });
 
 styleOceanPattern.on("change", function () {
-  byId("oceanicPattern")?.setAttribute("href", this.value);
+  ensureEl("oceanicPattern").setAttribute("href", this.value);
 });
 
 styleOceanPatternOpacity.on("input", e => {
-  byId("oceanicPattern").setAttribute("opacity", e.target.value);
+  ensureEl("oceanicPattern").setAttribute("opacity", e.target.value);
 });
 
 outlineLayers.on("change", function () {
@@ -613,7 +613,7 @@ openCreateHeightmapSchemeButton.on("click", function () {
       renderOcean: false
     });
 
-    byId("heightmapSchemePreview").src = preview;
+    ensureEl("heightmapSchemePreview").src = preview;
   }
 
   function renderStops() {
@@ -626,7 +626,7 @@ openCreateHeightmapSchemeButton.on("click", function () {
     const addStopButton = () =>
       `<button class="add" data-tip="Add color stop in between" style="margin-top: 0.3em; height: max-content;">+</button>`;
 
-    const container = byId("heightmapSchemeStops");
+    const container = ensureEl("heightmapSchemeStops");
     container.innerHTML = stops
       .map(
         (stop, index) => `${colorInput(stop)}
@@ -671,7 +671,7 @@ openCreateHeightmapSchemeButton.on("click", function () {
 
   function renderGradient() {
     const stops = openCreateHeightmapSchemeButton.dataset.stops;
-    byId("heightmapSchemeGradient").style.background = `linear-gradient(to right, ${stops})`;
+    ensureEl("heightmapSchemeGradient").style.background = `linear-gradient(to right, ${stops})`;
   }
 
   function handleCreate() {
@@ -987,7 +987,7 @@ function fetchTextureURL(url) {
   INFO && console.info("Provided URL is", url);
   const img = new Image();
   img.onload = function () {
-    const canvas = byId("texturePreview");
+    const canvas = ensureEl("texturePreview");
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -1021,14 +1021,14 @@ styleVignettePreset.on("change", function () {
     }
   }
 
-  const vignette = byId("vignette");
+  const vignette = ensureEl("vignette");
   if (vignette) {
     styleOpacityInput.value = vignette.getAttribute("opacity");
     styleFillInput.value = styleFillOutput.value = vignette.getAttribute("fill");
     styleFilterInput.value = vignette.getAttribute("filter");
   }
 
-  const maskRect = byId("vignette-rect");
+  const maskRect = ensureEl("vignette-rect");
   if (maskRect) {
     const digit = str => str.replace(/[^\d.]/g, "");
     styleVignetteX.value = digit(maskRect.getAttribute("x"));
@@ -1042,31 +1042,31 @@ styleVignettePreset.on("change", function () {
 });
 
 styleVignetteX.on("input", e => {
-  byId("vignette-rect")?.setAttribute("x", `${e.target.value}%`);
+  ensureEl("vignette-rect").setAttribute("x", `${e.target.value}%`);
 });
 
 styleVignetteWidth.on("input", e => {
-  byId("vignette-rect")?.setAttribute("width", `${e.target.value}%`);
+  ensureEl("vignette-rect").setAttribute("width", `${e.target.value}%`);
 });
 
 styleVignetteY.on("input", e => {
-  byId("vignette-rect")?.setAttribute("y", `${e.target.value}%`);
+  ensureEl("vignette-rect").setAttribute("y", `${e.target.value}%`);
 });
 
 styleVignetteHeight.on("input", e => {
-  byId("vignette-rect")?.setAttribute("height", `${e.target.value}%`);
+  ensureEl("vignette-rect").setAttribute("height", `${e.target.value}%`);
 });
 
 styleVignetteRx.on("input", e => {
-  byId("vignette-rect")?.setAttribute("rx", `${e.target.value}%`);
+  ensureEl("vignette-rect").setAttribute("rx", `${e.target.value}%`);
 });
 
 styleVignetteRy.on("input", e => {
-  byId("vignette-rect")?.setAttribute("ry", `${e.target.value}%`);
+  ensureEl("vignette-rect").setAttribute("ry", `${e.target.value}%`);
 });
 
 styleVignetteBlur.on("input", e => {
-  byId("vignette-rect")?.setAttribute("filter", `blur(${e.target.value}px)`);
+  ensureEl("vignette-rect").setAttribute("filter", `blur(${e.target.value}px)`);
 });
 
 styleScaleBar.on("input", function (event) {

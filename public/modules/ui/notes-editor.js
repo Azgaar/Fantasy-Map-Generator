@@ -2,10 +2,10 @@
 
 function editNotes(id, name) {
   // elements
-  const notesLegend = byId("notesLegend");
-  const notesName = byId("notesName");
-  const notesSelect = byId("notesSelect");
-  const notesPin = byId("notesPin");
+  const notesLegend = ensureEl("notesLegend");
+  const notesName = ensureEl("notesName");
+  const notesSelect = ensureEl("notesSelect");
+  const notesPin = ensureEl("notesPin");
 
   // update list of objects
   notesSelect.options.length = 0;
@@ -50,18 +50,18 @@ function editNotes(id, name) {
   modules.editNotes = true;
 
   // add listeners
-  byId("notesSelect").addEventListener("change", changeElement);
-  byId("notesName").addEventListener("input", changeName);
-  byId("notesLegend").addEventListener("blur", updateLegend);
-  byId("notesPin").addEventListener("click", toggleNotesPin);
-  byId("notesFocus").addEventListener("click", validateHighlightElement);
-  byId("notesGenerateWithAi").addEventListener("click", openAiGenerator);
-  byId("notesDownload").addEventListener("click", downloadLegends);
-  byId("notesUpload").addEventListener("click", () => legendsToLoad.click());
-  byId("legendsToLoad").addEventListener("change", function () {
+  ensureEl("notesSelect").addEventListener("change", changeElement);
+  ensureEl("notesName").addEventListener("input", changeName);
+  ensureEl("notesLegend").addEventListener("blur", updateLegend);
+  ensureEl("notesPin").addEventListener("click", toggleNotesPin);
+  ensureEl("notesFocus").addEventListener("click", validateHighlightElement);
+  ensureEl("notesGenerateWithAi").addEventListener("click", openAiGenerator);
+  ensureEl("notesDownload").addEventListener("click", downloadLegends);
+  ensureEl("notesUpload").addEventListener("click", () => legendsToLoad.click());
+  ensureEl("legendsToLoad").addEventListener("change", function () {
     uploadFile(this, uploadLegends);
   });
-  byId("notesRemove").addEventListener("click", triggerNotesRemove);
+  ensureEl("notesRemove").addEventListener("click", triggerNotesRemove);
 
   async function initEditor() {
     if (!window.tinymce) {
@@ -109,8 +109,8 @@ function editNotes(id, name) {
   }
 
   function updateNotesBox(note) {
-    byId("notesHeader").innerHTML = note.name;
-    byId("notesBody").innerHTML = note.legend;
+    ensureEl("notesHeader").innerHTML = note.name;
+    ensureEl("notesBody").innerHTML = note.legend;
   }
 
   function changeElement() {
@@ -132,7 +132,7 @@ function editNotes(id, name) {
   }
 
   function validateHighlightElement() {
-    const element = byId(notesSelect.value);
+    const element = ensureEl(notesSelect.value);
     if (element) return highlightElement(element, 3);
 
     confirmationDialog({
