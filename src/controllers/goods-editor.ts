@@ -174,7 +174,7 @@ function changeModel(good: Good, line: HTMLElement, el: HTMLElement) {
     .sort()
     .map(m => `<option ${m === model ? "selected" : ""} value="${m}">${m.replaceAll("_", " ")}</option>`)
     .join("");
-  const wikiURL = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Resources:-spread-functions";
+  const wikiURL = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods:-spread-functions";
   const onSelect =
     "resouceModelFunction.innerHTML = Goods.models[this.value] || ' '; resouceModelCustomName.value = ''; resouceModelCustomFunction.value = ''";
 
@@ -192,7 +192,7 @@ function changeModel(good: Good, line: HTMLElement, el: HTMLElement) {
         <div style="margin-bottom:.2em">
           <div style="display: inline-block; width: 6em">Function:</div>
           <div id="resouceModelFunction" style="display: inline-block; width: 18em; font-family: monospace; border: 1px solid #ccc; padding: 3px; font-size: .95em;vertical-align: middle">
-            ${Goods.models[model as keyof typeof Goods.models] || " "}
+            ${Goods.models[model as keyof typeof Goods.models] || "custom"}
           </div>
         </div>
       </fieldset>
