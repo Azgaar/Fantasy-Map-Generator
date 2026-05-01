@@ -384,7 +384,6 @@ function editBurg(id) {
     burg.y = y;
     if (burg.capital) pack.states[newState].center = burg.cell;
 
-    // Sync position to Labels data model
     Labels.update(id, { x, y });
 
     if (d3.event.shiftKey === false) toggleRelocateBurg();

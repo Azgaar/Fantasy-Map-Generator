@@ -134,7 +134,6 @@ class LabelsModule {
     // Remove existing state labels that need regeneration
     this.removeByType("state");
 
-    // Generate new label entries
     for (const state of states) {
       if (!state.i || state.removed || state.lock) continue;
 
@@ -155,10 +154,8 @@ class LabelsModule {
   generateBurgLabels(): void {
     if (TIME) console.time("generateBurgLabels");
 
-    // Remove existing burg labels
     this.removeByType("burg");
 
-    // Generate new labels for all active burgs
     for (const burg of pack.burgs) {
       if (!burg.i || burg.removed) continue;
 
