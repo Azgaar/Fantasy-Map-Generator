@@ -12,7 +12,7 @@ export function open() {
   goodsEditorAddLines();
 
   $("#goodsEditor").dialog({
-    title: "Goods Editor",
+    title: "Trade Goods Editor",
     resizable: false,
     width: "auto",
     close: closeGoodsEditor,

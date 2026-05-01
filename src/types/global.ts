@@ -113,7 +113,7 @@ declare global {
   var zoomTo: (x: number, y: number, zoom: number, duration: number) => void;
   var modules: Record<string, boolean>;
 
-  // Legacy UI globals used by goods editor/renderer
+  // Legacy UI globals
   var turnButtonOn: (buttonId: string) => void;
   var turnButtonOff: (buttonId: string) => void;
   var isCtrlClick: (event: MouseEvent) => boolean;

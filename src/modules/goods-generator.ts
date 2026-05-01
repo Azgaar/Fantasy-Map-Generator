@@ -36,7 +36,7 @@ export class GoodsModule {
       color: "#966F33",
       value: 2,
       chance: 4,
-      model: "Any_forest",
+      model: "Forest",
       unit: "pile",
       bonus: {fleet: 2, defence: 1},
       culture: {Hunting: 2}
@@ -179,7 +179,7 @@ export class GoodsModule {
       color: "#c38a8a",
       value: 2,
       chance: 3,
-      model: "Any_forest",
+      model: "Forest",
       unit: "wain",
       bonus: {archers: 2, population: 1},
       culture: {Naval: 0.6, Nomadic: 2, Hunting: 3}
@@ -192,7 +192,7 @@ export class GoodsModule {
       color: "#963e48",
       value: 2,
       chance: 3,
-      model: "Tropical_forests",
+      model: "Temperate_and_wet_steppe",
       unit: "barrel",
       bonus: {population: 1, prestige: 1},
       culture: {Highland: 1.2, Nomadic: 0.5}
@@ -205,7 +205,7 @@ export class GoodsModule {
       color: "#BDBD7D",
       value: 2,
       chance: 3,
-      model: "Tropical_forests",
+      model: "Temperate_and_wet_steppe",
       unit: "barrel",
       bonus: {population: 1},
       culture: {Generic: 0.8, Nomadic: 0.5}
@@ -387,7 +387,7 @@ export class GoodsModule {
       color: "#e68200",
       value: 7,
       chance: 2,
-      model: "Foresty_seashore",
+      model: "Forest_seashore",
       unit: "stone",
       bonus: {prestige: 1},
       culture: {Generic: 2}
@@ -439,7 +439,7 @@ export class GoodsModule {
       color: "#727272",
       value: 2,
       chance: 3,
-      model: "Any_forest",
+      model: "Forest",
       unit: "barrel",
       bonus: {fleet: 1},
       culture: {Hunting: 3}
@@ -491,7 +491,7 @@ export class GoodsModule {
       color: "#a45a52",
       value: 10,
       chance: 2,
-      model: "Tropical_rainforest",
+      model: "Tropical_forest",
       unit: "pile",
       bonus: {prestige: 1},
       culture: {Generic: 2}
@@ -504,7 +504,7 @@ export class GoodsModule {
       color: "#cccccc",
       value: 2,
       chance: 3,
-      model: "Arctic_waters",
+      model: "Arctic_ocean",
       unit: "barrel",
       bonus: {population: 1},
       culture: {Naval: 2}
@@ -552,16 +552,16 @@ export class GoodsModule {
 
   models = {
     Deciduous_forests: "biome(6, 7, 8)",
-    Any_forest: "biome(5, 6, 7, 8, 9)",
+    Forest: "biome(5, 6, 7, 8, 9)",
     Temperate_and_boreal_forests: "biome(6, 8, 9)",
-    Hills: "minHeight(40) || (minHeight(30) && nth(10))",
-    Mountains: "minHeight(60) || (minHeight(20) && nth(10))",
+    Hills: "minHeight(40) || (minHeight(20) && elevation())",
+    Mountains: "minHeight(60) || (minHeight(30) && elevation())",
     Mountains_and_wetlands: "minHeight(60) || (biome(12) && nth(7)) || (minHeight(20) && nth(10))",
     Headwaters: "river() && minHeight(40)",
     More_habitable: "minHabitability(20) && habitability()",
     Marine_and_rivers: 'shore(-1) && (type("ocean", "freshwater", "salt") || (river() && shore(1, 2)))',
     Pastures_and_temperate_forest: "(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))",
-    Tropical_forests: "biome(5, 7)",
+    Temperate_and_wet_steppe: "biome(6) || (biome(4) && random(50) && river())",
     Arid_land_and_salt_lakes:
       'shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))',
     Hot_desert: "biome(1)",
@@ -569,16 +569,17 @@ export class GoodsModule {
     Grassland_and_cold_desert: "biome(3) || (biome(2) && nth(4))",
     Hot_biomes: "biome(1, 3, 5, 7)",
     Hot_desert_and_tropical_forest: "biome(1, 7)",
+    Tropical_forest: "biome(5, 7)",
     Tropical_rainforest: "biome(7)",
     Tropical_waters: "shore(-1) && minTemp(18)",
     Hilly_tropical_rainforest: "minHeight(40) && biome(7)",
     Subtropical_waters: "shore(-1) && minTemp(14)",
     Habitable_biome_or_marine: "shore(-1) || minHabitability(1)",
-    Foresty_seashore: "shore(1) && biome(6, 7, 8, 9)",
+    Forest_seashore: "shore(1) && biome(6, 7, 8, 9)",
     Boreal_forests: "biome(9) || (biome(10) && nth(2)) || (biome(6, 8) && nth(5)) || (biome(12) && nth(10))",
     Less_habitable_seashore: "shore(1) && minHabitability(1) && !habitability()",
     Less_habitable_biomes: "minHabitability(1) && !habitability()",
-    Arctic_waters: "shore(-1) && biome(0) && maxTemp(7)"
+    Arctic_ocean: "biome(0) && type('ocean') && maxTemp(7)"
   };
 
   methods = {
@@ -593,7 +594,10 @@ export class GoodsModule {
     minTemp: (temp: number) => grid.cells.temp[pack.cells.g[this.cellId]] >= temp,
     maxTemp: (temp: number) => grid.cells.temp[pack.cells.g[this.cellId]] <= temp,
     shore: (...rings: number[]) => rings.includes(pack.cells.t[this.cellId]),
-    type: (...types: string[]) => types.includes(pack.features[this.cells.f[this.cellId]].group),
+    type: (...types: string[]) => {
+      const feature = pack.features[this.cells.f[this.cellId]];
+      return types.includes(feature.group || feature.type);
+    },
     river: () => pack.cells.r[this.cellId]
   };
 
