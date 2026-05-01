@@ -96,7 +96,7 @@ export class ProductionModule {
         const production = baseProduction * cultureModifier;
 
         const {value, tags} = resource!;
-        const isFood = tags.includes("Food");
+        const isFood = tags.some(tag => tag.toLocaleLowerCase() === "food");
 
         const basePriority = production * value;
         const priority = basePriority * (isFood ? this.FOOD_MULTIPLIER : 1);

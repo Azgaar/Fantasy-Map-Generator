@@ -5,6 +5,55 @@ import {ensureEl} from "../utils";
 let isInitialized = false;
 let visibleTags = new Set<string>();
 
+function normalizeTag(tag: string): string {
+  return tag.trim().replace(/\s+/g, " ");
+}
+
+function getTagKey(tag: string): string {
+  return normalizeTag(tag).toLocaleLowerCase();
+}
+
+function toUniqueTags(tags: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const rawTag of tags) {
+    const tag = normalizeTag(rawTag);
+    const key = getTagKey(tag);
+    if (!tag || seen.has(key)) continue;
+    seen.add(key);
+    result.push(tag);
+  }
+  return result;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function serializeTags(tags: string[]): string {
+  return tags.map(tag => encodeURIComponent(tag)).join("|");
+}
+
+function deserializeTags(serialized: string): string[] {
+  if (!serialized) return [];
+  return serialized
+    .split("|")
+    .map(tag => {
+      try {
+        return decodeURIComponent(tag);
+      } catch {
+        return tag;
+      }
+    })
+    .map(normalizeTag)
+    .filter(Boolean);
+}
+
 function normalizeGoodTags(good: Good): string[] {
   const normalized = Array.isArray(good.tags)
     ? good.tags
@@ -12,7 +61,7 @@ function normalizeGoodTags(good: Good): string[] {
       ? [(good as {category?: string}).category || ""]
       : [];
 
-  good.tags = normalized.map(tag => tag.trim()).filter((tag, index, arr) => !!tag && arr.indexOf(tag) === index);
+  good.tags = toUniqueTags(normalized.map(String));
 
   delete (good as {category?: string}).category;
   return good.tags;
@@ -27,14 +76,13 @@ function getTagsLabel(tags: string[]) {
 }
 
 function getAllTags(): string[] {
-  return [...new Set(pack.goods.flatMap((good: Good) => getGoodTags(good)))].sort();
+  return [...new Set(pack.goods.flatMap((good: Good) => getGoodTags(good)))].sort((a, b) =>
+    a.localeCompare(b, undefined, {sensitivity: "base"})
+  );
 }
 
 function getLineTags(line: HTMLElement): string[] {
-  return (line.dataset.tags || "")
-    .split("|")
-    .map(tag => tag.trim())
-    .filter(Boolean);
+  return deserializeTags(line.dataset.tags || "");
 }
 
 function applyTagVisibilityFilter() {
@@ -43,7 +91,7 @@ function applyTagVisibilityFilter() {
 
   body.querySelectorAll<HTMLElement>(":scope > div.states").forEach(line => {
     const lineTags = getLineTags(line);
-    const matches = !hasFilter || lineTags.some(tag => visibleTags.has(tag));
+    const matches = !hasFilter || lineTags.some(tag => visibleTags.has(getTagKey(tag)));
     line.classList.toggle("hiddenByTag", !matches);
   });
 
@@ -59,7 +107,7 @@ function openTagsVisibilityDialog() {
     ? allTags
         .map(
           tag =>
-            `<label style="display:block; margin:.2em 0"><input type="checkbox" class="goodTagFilterCheck" value="${tag}" ${selected.has(tag) ? "checked" : ""} /> ${tag}</label>`
+            `<label style="display:block; margin:.2em 0"><input type="checkbox" class="goodTagFilterCheck native" value="${escapeHtml(tag)}" ${selected.has(getTagKey(tag)) ? "checked" : ""} /> ${escapeHtml(tag)}</label>`
         )
         .join("")
     : '<div style="color:#666">No tags available</div>';
@@ -84,8 +132,8 @@ function openTagsVisibilityDialog() {
         $(this).dialog("close");
       },
       Apply: function () {
-        const checks = Array.from(document.querySelectorAll<HTMLInputElement>(".goodTagFilterCheck:checked"));
-        visibleTags = new Set(checks.map(check => check.value));
+        const checks = Array.from(alertMessage.querySelectorAll<HTMLInputElement>(".goodTagFilterCheck:checked"));
+        visibleTags = new Set(checks.map(check => getTagKey(check.value)));
         applyTagVisibilityFilter();
         $(this).dialog("close");
       }
@@ -180,14 +228,14 @@ function goodsEditorAddLines() {
 
     lines += `<div class="states goods"
           data-id=${r.i} data-name="${r.name}" data-color="${r.color}"
-          data-tags="${tags.join("|")}" data-chance="${r.chance}" data-bonus="${bonusString}"
+          data-tags="${serializeTags(tags)}" data-chance="${r.chance}" data-bonus="${bonusString}"
           data-value="${r.value}" data-model="${r.model}" data-cells="${r.cells}">
         <svg data-tip="Good icon. Click to change" width="2em" height="2em" class="goodIcon">
           <circle cx="50%" cy="50%" r="42%" fill="${r.color}" stroke="${stroke}"/>
           <use href="#${r.icon}" x="10%" y="10%" width="80%" height="80%"/>
         </svg>
         <input data-tip="Good name. Click and tags to change" class="goodName" value="${r.name}" autocorrect="off" spellcheck="false">
-        <div data-tip="Good tags. Click to add or remove tags" class="goodTags" title="${tagsLabel}">${tagsLabel}</div>
+        <div data-tip="Good tags. Click to add or remove tags" class="goodTags" title="${escapeHtml(tagsLabel)}">${escapeHtml(tagsLabel)}</div>
         <div data-tip="Number of cells with good" class="goodCells">${r.cells}</div>
 
         <span data-tip="Good basic value" class="hide" style="margin-right: -0.3em">🟡</span>
@@ -230,8 +278,8 @@ function changeTags(good: Good, line: HTMLElement, el: HTMLElement) {
       ? selectedTags
           .map(
             tag => `<span style="display:inline-flex; align-items:center; margin:.1em .2em .1em 0; padding:.1em .35em; border:1px solid #bbb; border-radius: .35em;">
-                <span>${tag}</span>
-                <button type="button" class="goodTagRemove" data-tag="${tag}" style="margin-left:.35em; line-height:1; border:none; background:transparent; cursor:pointer">x</button>
+              <span>${escapeHtml(tag)}</span>
+              <button type="button" class="goodTagRemove" data-tag="${escapeHtml(tag)}" style="margin-left:.35em; line-height:1; border:none; background:transparent; cursor:pointer">x</button>
               </span>`
           )
           .join("")
@@ -241,7 +289,7 @@ function changeTags(good: Good, line: HTMLElement, el: HTMLElement) {
       ? allTags
           .map(
             tag =>
-              `<label style="display:block; margin:.15em 0"><input type="checkbox" class="goodKnownTagCheck" value="${tag}" ${selectedTags.includes(tag) ? "checked" : ""} /> ${tag}</label>`
+              `<label style="display:block; margin:.15em 0"><input type="checkbox" class="goodKnownTagCheck native" value="${escapeHtml(tag)}" ${selectedTags.some(value => getTagKey(value) === getTagKey(tag)) ? "checked" : ""} /> ${escapeHtml(tag)}</label>`
           )
           .join("")
       : '<span style="color:#666">No tags in goods list yet</span>';
@@ -275,9 +323,9 @@ function changeTags(good: Good, line: HTMLElement, el: HTMLElement) {
       check.onchange = () => {
         const tag = check.value.trim();
         if (!tag) return;
-        if (check.checked && !selectedTags.includes(tag)) selectedTags.push(tag);
-        if (!check.checked) selectedTags = selectedTags.filter(value => value !== tag);
-        selectedTags = [...new Set(selectedTags)];
+        if (check.checked && !selectedTags.some(value => getTagKey(value) === getTagKey(tag))) selectedTags.push(tag);
+        if (!check.checked) selectedTags = selectedTags.filter(value => getTagKey(value) !== getTagKey(tag));
+        selectedTags = toUniqueTags(selectedTags);
         render();
       };
     });
@@ -286,8 +334,8 @@ function changeTags(good: Good, line: HTMLElement, el: HTMLElement) {
     ensureEl("goodTagAddButton").onclick = () => {
       const tag = addInput.value.trim();
       if (!tag) return;
-      if (!selectedTags.includes(tag)) selectedTags.push(tag);
-      selectedTags = [...new Set(selectedTags)];
+      if (!selectedTags.some(value => getTagKey(value) === getTagKey(tag))) selectedTags.push(tag);
+      selectedTags = toUniqueTags(selectedTags);
       render();
     };
   };
@@ -301,11 +349,10 @@ function changeTags(good: Good, line: HTMLElement, el: HTMLElement) {
         $(this).dialog("close");
       },
       Apply: function () {
-        const tags = selectedTags.map(tag => tag.trim()).filter(Boolean);
-        good.tags = [...new Set(tags)];
+        good.tags = toUniqueTags(selectedTags);
 
         const tagsLabel = getTagsLabel(good.tags);
-        line.dataset.tags = good.tags.join("|");
+        line.dataset.tags = serializeTags(good.tags);
         el.innerHTML = tagsLabel;
         el.setAttribute("title", tagsLabel);
         applyTagVisibilityFilter();
@@ -800,7 +847,7 @@ function goodAdd() {
     i,
     name: `Good${i}`,
     type: "raw",
-    tags: ["Unknown"],
+    tags: ["unknown"],
     icon: "good-unknown",
     color: "#ff5959",
     value: 1,
@@ -824,7 +871,7 @@ function downloadGoodsData() {
     data += `${el.dataset.id},`;
     data += `${el.dataset.name},`;
     data += `${el.dataset.color},`;
-    data += `${(el.dataset.tags || "").replaceAll("|", "; ")},`;
+    data += `${getLineTags(el).join("; ")},`;
     data += `${el.dataset.value},`;
     data += `${el.dataset.bonus},`;
     data += `${el.dataset.chance},`;
