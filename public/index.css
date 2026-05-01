@@ -2435,3 +2435,43 @@ svg.button {
     background: #25252a;
   }
 }
+
+div.states > .goodIcon {
+  margin: 0;
+  cursor: pointer;
+  vertical-align: middle;
+}
+div.states > .goodIcon > * {
+  pointer-events: none;
+}
+div.states > .goodCategory,
+div.states > .goodModel {
+  cursor: pointer;
+  width: 7em;
+  overflow: hidden;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+div.states > .goodBonus {
+  color: #666;
+  width: 5em;
+  cursor: pointer;
+}
+div.states > div.goodBonus > span {
+  pointer-events: none;
+  margin: 0 0.15em;
+}
+div.states > div.goodBonus > span.icon-anchor {
+  font-size: 0.85em;
+  margin: 0 0.25em;
+}
+div.states > div.goodBonus > span.icon-male {
+  margin: 0 0.1em;
+}
+#goods > g > use {
+  pointer-events: none;
+}
+#goodIconEditor div.label {
+  display: inline-block;
+  width: 5.5em;
+}
