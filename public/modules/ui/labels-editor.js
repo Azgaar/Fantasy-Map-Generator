@@ -121,19 +121,12 @@ function editLabel() {
 
   function updateValues(textPath) {
     const labelData = getLabelData(elSelected.node());
-    if (labelData && labelData.type === "custom") {
+    if (labelData) {
       // Custom labels: read all values from data model
       byId("labelText").value = labelData.text || "";
       byId("labelStartOffset").value = labelData.startOffset || 50;
       byId("labelRelativeSize").value = labelData.fontSize || 100;
       byId("labelLetterSpacingSize").value = labelData.letterSpacing || 0;
-    } else {
-      // State labels and fallback: read from SVG, use data model fontSize if available
-      byId("labelText").value = [...textPath.querySelectorAll("tspan")].map(tspan => tspan.textContent).join("|");
-      byId("labelStartOffset").value = parseFloat(textPath.getAttribute("startOffset")) || 50;
-      byId("labelRelativeSize").value = (labelData && labelData.fontSize) || parseFloat(textPath.getAttribute("font-size")) || 100;
-      let letterSpacingSize = textPath.getAttribute("letter-spacing") ? textPath.getAttribute("letter-spacing") : 0;
-      byId("labelLetterSpacingSize").value = parseFloat(letterSpacingSize);
     }
   }
 
