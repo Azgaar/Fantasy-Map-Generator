@@ -82,7 +82,6 @@ function editBurg(id) {
       "Average yearly temperature is like in " + getTemperatureLikeness(temperature);
     ensureEl("burgElevation").innerHTML = getHeight(pack.cells.h[b.cell]);
 
-    // toggle features
     ensureEl("burgCapital").classList.toggle("inactive", !b.capital);
     ensureEl("burgPort").classList.toggle("inactive", !b.port);
     ensureEl("burgCitadel").classList.toggle("inactive", !b.citadel);
@@ -90,7 +89,6 @@ function editBurg(id) {
     ensureEl("burgPlaza").classList.toggle("inactive", !b.plaza);
     ensureEl("burgTemple").classList.toggle("inactive", !b.temple);
     ensureEl("burgShanty").classList.toggle("inactive", !b.shanty);
-
     ensureEl("burgProduction").innerHTML = getProduction(b.produced);
 
     updateBurgLockIcon();

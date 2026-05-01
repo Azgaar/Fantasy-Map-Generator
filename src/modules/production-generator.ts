@@ -67,14 +67,14 @@ export class ProductionModule {
       for (const cellId of cellsInArea) {
         const good = cells.good[cellId];
         if (good) addResource(good, this.BONUS_PRODUCTION);
-        this.BIOME_PRODUCTION[cells.biome[cellId]].forEach(({resource, production}) =>
-          addResource(resource, production)
+        this.BIOME_PRODUCTION[cells.biome[cellId]].forEach(
+          ({resource, production}) => void addResource(resource, production)
         );
         if (cells.r[cellId]) {
-          this.RIVER_PRODUCTION.forEach(({resource, production}) => addResource(resource, production));
+          this.RIVER_PRODUCTION.forEach(({resource, production}) => void addResource(resource, production));
         }
         if (cells.h[cellId] >= 50) {
-          this.HILLS_PRODUCTION.forEach(({resource, production}) => addResource(resource, production));
+          this.HILLS_PRODUCTION.forEach(({resource, production}) => void addResource(resource, production));
         }
       }
 
