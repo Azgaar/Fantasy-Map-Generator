@@ -2446,13 +2446,16 @@ div.states > .goodIcon {
 div.states > .goodIcon > * {
   pointer-events: none;
 }
-div.states > .goodCategory,
+div.states > .goodTags,
 div.states > .goodModel {
   cursor: pointer;
-  width: 7em;
+  width: 9em;
   overflow: hidden;
   vertical-align: middle;
   white-space: nowrap;
+}
+div.states.hiddenByTag {
+  display: none;
 }
 div.states > .goodBonus {
   color: #666;

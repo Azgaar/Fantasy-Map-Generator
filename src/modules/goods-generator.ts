@@ -1,4 +1,5 @@
 import {color, shuffle} from "d3";
+import {createTypedArray, TYPED_ARRAY_MAX} from "../utils";
 
 declare global {
   var Goods: GoodsModule;
@@ -7,7 +8,8 @@ declare global {
 export interface Good {
   i: number;
   name: string;
-  category: string;
+  type: "raw" | "manufactured";
+  tags: string[];
   icon: string;
   color: string;
   value: number;
@@ -27,11 +29,27 @@ export class GoodsModule {
   private cells: any;
   private cellId: number = 0;
 
+  private normalizeTags(goods: Good[] | any[]) {
+    for (const good of goods) {
+      if (Array.isArray(good.tags)) {
+        good.tags = good.tags
+          .map((tag: unknown) => String(tag).trim())
+          .filter((tag: string, index: number, arr: string[]) => !!tag && arr.indexOf(tag) === index);
+        continue;
+      }
+
+      const legacyCategory = typeof good.category === "string" ? good.category.trim() : "";
+      good.tags = legacyCategory ? [legacyCategory] : [];
+      delete good.category;
+    }
+  }
+
   private defaultGoods: Good[] = [
     {
       i: 1,
       name: "Wood",
-      category: "Construction",
+      type: "raw",
+      tags: ["Construction"],
       icon: "good-wood",
       color: "#966F33",
       value: 1,
@@ -44,7 +62,8 @@ export class GoodsModule {
     {
       i: 2,
       name: "Stone",
-      category: "Construction",
+      type: "raw",
+      tags: ["Construction"],
       icon: "good-stone",
       color: "#979EA2",
       value: 2,
@@ -57,7 +76,8 @@ export class GoodsModule {
     {
       i: 3,
       name: "Marble",
-      category: "Construction",
+      type: "raw",
+      tags: ["Construction"],
       icon: "good-marble",
       color: "#d6d0bf",
       value: 6,
@@ -70,7 +90,8 @@ export class GoodsModule {
     {
       i: 4,
       name: "Iron",
-      category: "Ore",
+      type: "raw",
+      tags: ["Ore"],
       icon: "good-iron",
       color: "#5D686E",
       value: 3,
@@ -83,7 +104,8 @@ export class GoodsModule {
     {
       i: 5,
       name: "Copper",
-      category: "Ore",
+      type: "raw",
+      tags: ["Ore"],
       icon: "good-copper",
       color: "#b87333",
       value: 5,
@@ -96,7 +118,8 @@ export class GoodsModule {
     {
       i: 6,
       name: "Lead",
-      category: "Ore",
+      type: "raw",
+      tags: ["Ore"],
       icon: "good-lead",
       color: "#454343",
       value: 4,
@@ -109,7 +132,8 @@ export class GoodsModule {
     {
       i: 7,
       name: "Silver",
-      category: "Ore",
+      type: "raw",
+      tags: ["Ore"],
       icon: "good-silver",
       color: "#C0C0C0",
       value: 8,
@@ -122,7 +146,8 @@ export class GoodsModule {
     {
       i: 8,
       name: "Gold",
-      category: "Ore",
+      type: "raw",
+      tags: ["Ore"],
       icon: "good-gold",
       color: "#d4af37",
       value: 15,
@@ -135,7 +160,8 @@ export class GoodsModule {
     {
       i: 9,
       name: "Grain",
-      category: "Food",
+      type: "raw",
+      tags: ["Food"],
       icon: "good-grain",
       color: "#F5DEB3",
       value: 1,
@@ -148,7 +174,8 @@ export class GoodsModule {
     {
       i: 10,
       name: "Cattle",
-      category: "Food",
+      type: "raw",
+      tags: ["Food"],
       icon: "good-cattle",
       color: "#56b000",
       value: 2,
@@ -161,7 +188,8 @@ export class GoodsModule {
     {
       i: 11,
       name: "Fish",
-      category: "Food",
+      type: "raw",
+      tags: ["Food"],
       icon: "good-fish",
       color: "#7fcdff",
       value: 1,
@@ -174,7 +202,8 @@ export class GoodsModule {
     {
       i: 12,
       name: "Game",
-      category: "Food",
+      type: "raw",
+      tags: ["Food"],
       icon: "good-game",
       color: "#c38a8a",
       value: 2,
@@ -187,7 +216,8 @@ export class GoodsModule {
     {
       i: 13,
       name: "Wine",
-      category: "Food",
+      type: "raw",
+      tags: ["Food"],
       icon: "good-wine",
       color: "#963e48",
       value: 2,
@@ -200,7 +230,8 @@ export class GoodsModule {
     {
       i: 14,
       name: "Olives",
-      category: "Food",
+      type: "raw",
+      tags: ["Food"],
       icon: "good-olives",
       color: "#BDBD7D",
       value: 2,
@@ -213,7 +244,8 @@ export class GoodsModule {
     {
       i: 15,
       name: "Honey and wax",
-      category: "Preservative",
+      type: "raw",
+      tags: ["Preservative"],
       icon: "good-honey",
       color: "#DCBC66",
       value: 3,
@@ -226,7 +258,8 @@ export class GoodsModule {
     {
       i: 16,
       name: "Salt",
-      category: "Preservative",
+      type: "raw",
+      tags: ["Preservative"],
       icon: "good-salt",
       color: "#E5E4E5",
       value: 3,
@@ -239,7 +272,8 @@ export class GoodsModule {
     {
       i: 17,
       name: "Dates",
-      category: "Food",
+      type: "raw",
+      tags: ["Food"],
       icon: "good-dates",
       color: "#dbb2a3",
       value: 2,
@@ -252,7 +286,8 @@ export class GoodsModule {
     {
       i: 18,
       name: "Horses",
-      category: "Supply",
+      type: "raw",
+      tags: ["Supply"],
       icon: "good-horses",
       color: "#ba7447",
       value: 5,
@@ -265,7 +300,8 @@ export class GoodsModule {
     {
       i: 19,
       name: "Elephants",
-      category: "Supply",
+      type: "raw",
+      tags: ["Supply"],
       icon: "good-elephants",
       color: "#C5CACD",
       value: 7,
@@ -278,7 +314,8 @@ export class GoodsModule {
     {
       i: 20,
       name: "Camels",
-      category: "Supply",
+      type: "raw",
+      tags: ["Supply"],
       icon: "good-camels",
       color: "#C19A6B",
       value: 5,
@@ -291,7 +328,8 @@ export class GoodsModule {
     {
       i: 21,
       name: "Hemp",
-      category: "Material",
+      type: "raw",
+      tags: ["Material"],
       icon: "good-hemp",
       color: "#069a06",
       value: 2,
@@ -304,7 +342,8 @@ export class GoodsModule {
     {
       i: 22,
       name: "Pearls",
-      category: "Luxury",
+      type: "raw",
+      tags: ["Luxury"],
       icon: "good-pearls",
       color: "#EAE0C8",
       value: 13,
@@ -317,7 +356,8 @@ export class GoodsModule {
     {
       i: 23,
       name: "Gemstones",
-      category: "Luxury",
+      type: "raw",
+      tags: ["Luxury"],
       icon: "good-gemstones",
       color: "#e463e4",
       value: 18,
@@ -330,7 +370,8 @@ export class GoodsModule {
     {
       i: 24,
       name: "Dyes",
-      category: "Luxury",
+      type: "raw",
+      tags: ["Luxury"],
       icon: "good-dyes",
       color: "#fecdea",
       value: 7,
@@ -343,7 +384,8 @@ export class GoodsModule {
     {
       i: 25,
       name: "Incense",
-      category: "Luxury",
+      type: "raw",
+      tags: ["Luxury"],
       icon: "good-incense",
       color: "#ebe5a7",
       value: 12,
@@ -356,7 +398,8 @@ export class GoodsModule {
     {
       i: 26,
       name: "Silk",
-      category: "Luxury",
+      type: "raw",
+      tags: ["Luxury"],
       icon: "good-silk",
       color: "#e0f0f8",
       value: 14,
@@ -369,7 +412,8 @@ export class GoodsModule {
     {
       i: 27,
       name: "Spices",
-      category: "Luxury",
+      type: "raw",
+      tags: ["Luxury"],
       icon: "good-spices",
       color: "#e99c75",
       value: 14,
@@ -382,7 +426,8 @@ export class GoodsModule {
     {
       i: 28,
       name: "Amber",
-      category: "Luxury",
+      type: "raw",
+      tags: ["Luxury"],
       icon: "good-amber",
       color: "#e68200",
       value: 7,
@@ -395,7 +440,8 @@ export class GoodsModule {
     {
       i: 29,
       name: "Furs",
-      category: "Material",
+      type: "raw",
+      tags: ["Material"],
       icon: "good-furs",
       color: "#8a5e51",
       value: 6,
@@ -408,7 +454,8 @@ export class GoodsModule {
     {
       i: 30,
       name: "Sheep",
-      category: "Material",
+      type: "raw",
+      tags: ["Material"],
       icon: "good-sheeps",
       color: "#53b574",
       value: 2,
@@ -421,7 +468,8 @@ export class GoodsModule {
     {
       i: 31,
       name: "Slaves",
-      category: "Supply",
+      type: "raw",
+      tags: ["Supply"],
       icon: "good-slaves",
       color: "#757575",
       value: 5,
@@ -434,7 +482,8 @@ export class GoodsModule {
     {
       i: 32,
       name: "Tar",
-      category: "Material",
+      type: "raw",
+      tags: ["Material"],
       icon: "good-tar",
       color: "#727272",
       value: 2,
@@ -447,7 +496,8 @@ export class GoodsModule {
     {
       i: 33,
       name: "Saltpeter",
-      category: "Material",
+      type: "raw",
+      tags: ["Material"],
       icon: "good-saltpeter",
       color: "#e6e3e3",
       value: 4,
@@ -460,7 +510,8 @@ export class GoodsModule {
     {
       i: 34,
       name: "Coal",
-      category: "Material",
+      type: "raw",
+      tags: ["Material"],
       icon: "good-coal",
       color: "#36454f",
       value: 2,
@@ -473,7 +524,8 @@ export class GoodsModule {
     {
       i: 35,
       name: "Oil",
-      category: "Material",
+      type: "raw",
+      tags: ["Material"],
       icon: "good-oil",
       color: "#565656",
       value: 3,
@@ -486,7 +538,8 @@ export class GoodsModule {
     {
       i: 36,
       name: "Tropical timber",
-      category: "Luxury",
+      type: "raw",
+      tags: ["Luxury"],
       icon: "good-tropicalTimber",
       color: "#a45a52",
       value: 8,
@@ -499,7 +552,8 @@ export class GoodsModule {
     {
       i: 37,
       name: "Whales",
-      category: "Food",
+      type: "raw",
+      tags: ["Food"],
       icon: "good-whales",
       color: "#cccccc",
       value: 2,
@@ -512,7 +566,8 @@ export class GoodsModule {
     {
       i: 38,
       name: "Sugar",
-      category: "Preservative",
+      type: "raw",
+      tags: ["Preservative"],
       icon: "good-sugar",
       color: "#7abf87",
       value: 4,
@@ -525,7 +580,8 @@ export class GoodsModule {
     {
       i: 39,
       name: "Tea",
-      category: "Luxury",
+      type: "raw",
+      tags: ["Luxury"],
       icon: "good-tea",
       color: "#d0f0c0",
       value: 5,
@@ -538,7 +594,8 @@ export class GoodsModule {
     {
       i: 40,
       name: "Tobacco",
-      category: "Luxury",
+      type: "raw",
+      tags: ["Luxury"],
       icon: "good-tobacco",
       color: "#6D5843",
       value: 5,
@@ -605,9 +662,10 @@ export class GoodsModule {
   generate(regenerate: boolean = false) {
     TIME && console.time("generateGoods");
     this.cells = pack.cells;
-    this.cells.good = new Uint8Array(this.cells.i.length); // goods array [0, 255]
+    this.cells.good = createTypedArray({maxValue: TYPED_ARRAY_MAX.UINT16, length: this.cells.i.length});
     const resourceMaxCells = Math.ceil((200 * this.cells.i.length) / 5000);
     if (!pack.goods || regenerate) pack.goods = this.defaultGoods;
+    this.normalizeTags(pack.goods);
     pack.goods.forEach((r: Good) => {
       r.cells = 0;
       const model = r.custom || this.models[r.model as keyof typeof this.models];

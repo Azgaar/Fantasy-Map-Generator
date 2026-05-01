@@ -1175,10 +1175,12 @@ function reGraph() {
   pack.cells.p = newCells.p;
   pack.cells.g = createTypedArray({maxValue: grid.points.length, from: newCells.g});
   pack.cells.h = createTypedArray({maxValue: 100, from: newCells.h});
-  pack.cells.area = createTypedArray({maxValue: UINT16_MAX, length: packCells.i.length}).map((_, cellId) => {
-    const area = Math.abs(d3.polygonArea(getPackPolygon(cellId)));
-    return Math.min(area, UINT16_MAX);
-  });
+  pack.cells.area = createTypedArray({maxValue: TYPED_ARRAY_MAX.UINT16, length: packCells.i.length}).map(
+    (_, cellId) => {
+      const area = Math.abs(d3.polygonArea(getPackPolygon(cellId)));
+      return Math.min(area, TYPED_ARRAY_MAX.UINT16);
+    }
+  );
 
   TIME && console.timeEnd("reGraph");
 }

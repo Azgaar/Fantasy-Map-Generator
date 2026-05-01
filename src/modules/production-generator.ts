@@ -95,8 +95,8 @@ export class ProductionModule {
         const cultureModifier = resource?.culture[type] || 1;
         const production = baseProduction * cultureModifier;
 
-        const {value, category} = resource!;
-        const isFood = category === "Food";
+        const {value, tags} = resource!;
+        const isFood = tags.includes("Food");
 
         const basePriority = production * value;
         const priority = basePriority * (isFood ? this.FOOD_MULTIPLIER : 1);
