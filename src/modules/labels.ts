@@ -39,6 +39,7 @@ export interface CustomLabel {
 export type LabelData = StateLabel | BurgLabel | CustomLabel;
 
 class LabelsModule {
+  // Gets the next possible Label ID in O(n log n) time. Allows for non-sequential IDs
   private getNextId(): number {
     const labels = pack.labels;
     if (labels.length === 0) return 0;
@@ -131,7 +132,6 @@ class LabelsModule {
 
     const { states } = pack;
 
-    // Remove existing state labels that need regeneration
     this.removeByType("state");
 
     for (const state of states) {
