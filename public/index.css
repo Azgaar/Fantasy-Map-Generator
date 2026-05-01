@@ -2409,6 +2409,36 @@ svg.button {
   }
 }
 
+#tourPromptButton {
+  position: fixed;
+  bottom: 87px;
+  right: 26px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  animation: fadeIn 1s ease-in;
+  transform: scale(0.65);
+  opacity: var(--bg-opacity);
+  z-index: 9999;
+  overflow: hidden;
+}
+
+#tourPromptButton img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#tourPromptButton:hover {
+  transform: scale(0.7);
+  opacity: 1;
+}
+
 @media print {
   div,
   canvas {
