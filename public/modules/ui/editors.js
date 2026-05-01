@@ -32,7 +32,7 @@ function clicked() {
   else if (grand.id === "coastline") editCoastline();
   else if (grand.id === "lakes") editLake();
   else if (great.id === "armies") editRegiment();
-  else if (grand.id === "goods" || parent.id === "goods") editGoods();
+  else if (grand.id === "goods" || parent.id === "goods") GoodsEditor.open();
 }
 
 // clear elSelected variable

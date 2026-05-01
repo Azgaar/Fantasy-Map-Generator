@@ -56,7 +56,7 @@ function handleKeyup(event) {
   else if ((shift || altShift) && code === "KeyM") overviewMilitary();
   else if ((shift || altShift) && code === "KeyK") overviewMarkers();
   else if ((shift || altShift) && code === "KeyE") viewCellDetails();
-  else if ((shift || altShift) && code === "KeyG") editGoods();
+  else if ((shift || altShift) && code === "KeyG") GoodsEditor.open();
   else if (key === "!") toggleAddBurg();
   else if (key === "@") toggleAddLabel();
   else if (key === "#") toggleAddRiver();
