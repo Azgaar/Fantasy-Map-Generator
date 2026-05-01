@@ -1223,7 +1223,6 @@ export function resolveVersionConflicts(mapVersion) {
           const startOffset = startOffsetAttr ? parseFloat(startOffsetAttr) : 50;
           const transform = textPath.getAttribute("transform");
 
-          // Get path points from the referenced path
           const href = textPath.getAttribute("xlink:href") || textPath.getAttribute("href");
           if (!href) return;
 
