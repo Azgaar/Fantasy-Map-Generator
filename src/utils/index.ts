@@ -106,6 +106,7 @@ import {
   getIsolines,
   getPolesOfInaccessibility,
   getVertexPath,
+  extractPathPoints,
 } from "./pathUtils";
 
 window.getIsolines = getIsolines;
@@ -115,6 +116,7 @@ window.findPath = (start, end, getCost) =>
   findPath(start, end, getCost, (window as any).pack);
 window.getVertexPath = (cellsArray) =>
   getVertexPath(cellsArray, (window as any).pack);
+window.extractPathPoints = extractPathPoints;
 
 import {
   capitalize,

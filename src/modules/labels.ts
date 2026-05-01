@@ -7,7 +7,11 @@ export interface StateLabelData {
   type: "state";
   stateId: number;
   text: string;
+  pathPoints?: [number, number][];
+  startOffset?: number;
   fontSize?: number;
+  letterSpacing?: number;
+  transform?: string;
 }
 
 export interface BurgLabelData {

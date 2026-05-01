@@ -1120,27 +1120,45 @@ export function resolveVersionConflicts(mapVersion) {
         stateLabelsGroup.querySelectorAll("text").forEach(textElement => {
           const id = textElement.getAttribute("id");
           if (!id || !id.startsWith("stateLabel")) return;
-          
+
           const stateIdMatch = id.match(/stateLabel(\d+)/);
           if (!stateIdMatch) return;
-          
+
           const stateId = +stateIdMatch[1];
           const state = pack.states[stateId];
           if (!state || state.removed) return;
-          
+
           const textPath = textElement.querySelector("textPath");
           if (!textPath) return;
-          
+
           const text = textPath.textContent.trim();
           const fontSizeAttr = textPath.getAttribute("font-size");
           const fontSize = fontSizeAttr ? parseFloat(fontSizeAttr) : 100;
-          
+          const letterSpacingAttr = textPath.getAttribute("letter-spacing");
+          const letterSpacing = letterSpacingAttr ? parseFloat(letterSpacingAttr) : 0;
+          const startOffsetAttr = textPath.getAttribute("startOffset");
+          const startOffset = startOffsetAttr ? parseFloat(startOffsetAttr) : 50;
+          const transform = textPath.getAttribute("transform");
+
+          // Get path points from the referenced path
+          const href = textPath.getAttribute("xlink:href") || textPath.getAttribute("href");
+          if (!href) return;
+
+          const pathId = href.replace("#", "");
+          const pathElement = document.getElementById(pathId);
+
+
           pack.labels.push({
             i: pack.labels.length,
             type: "state",
             stateId: stateId,
             text: text,
-            fontSize: fontSize
+            pathPoints: extractPathPoints(pathElement),
+            startOffset: startOffset,
+            fontSize: fontSize,
+            letterSpacing: letterSpacing,
+            transform: transform || undefined
+
           });
         });
       }
@@ -1151,25 +1169,25 @@ export function resolveVersionConflicts(mapVersion) {
         burgLabelsGroup.querySelectorAll("g").forEach(groupElement => {
           const group = groupElement.getAttribute("id");
           if (!group) return;
-          
+
           const dxAttr = groupElement.getAttribute("data-dx");
           const dyAttr = groupElement.getAttribute("data-dy");
           const dx = dxAttr ? parseFloat(dxAttr) : 0;
           const dy = dyAttr ? parseFloat(dyAttr) : 0;
-          
+
           groupElement.querySelectorAll("text").forEach(textElement => {
             const burgId = +textElement.getAttribute("data-id");
             if (!burgId) return;
-            
+
             const burg = pack.burgs[burgId];
             if (!burg || burg.removed) return;
-            
+
             const text = textElement.textContent.trim();
             // Use burg coordinates, not SVG text coordinates
             // SVG coordinates may be affected by viewbox transforms
             const x = burg.x;
             const y = burg.y;
-            
+
             pack.labels.push({
               i: labelId++,
               type: "burg",
@@ -1191,11 +1209,11 @@ export function resolveVersionConflicts(mapVersion) {
         customLabelsGroup.querySelectorAll("text").forEach(textElement => {
           const id = textElement.getAttribute("id");
           if (!id) return;
-          
+
           const group = "custom";
           const textPath = textElement.querySelector("textPath");
           if (!textPath) return;
-          
+
           const text = textPath.textContent.trim();
           const fontSizeAttr = textPath.getAttribute("font-size");
           const fontSize = fontSizeAttr ? parseFloat(fontSizeAttr) : 100;
@@ -1204,51 +1222,26 @@ export function resolveVersionConflicts(mapVersion) {
           const startOffsetAttr = textPath.getAttribute("startOffset");
           const startOffset = startOffsetAttr ? parseFloat(startOffsetAttr) : 50;
           const transform = textPath.getAttribute("transform");
-          
+
           // Get path points from the referenced path
           const href = textPath.getAttribute("xlink:href") || textPath.getAttribute("href");
           if (!href) return;
-          
+
           const pathId = href.replace("#", "");
           const pathElement = document.getElementById(pathId);
           if (!pathElement) return;
-          
-          const d = pathElement.getAttribute("d");
-          if (!d) return;
-          
-          // Parse path data to extract points(M, L and C commands)
-          const pathPoints = [];
-          const commands = d.match(/[MLC][^MLC]*/g);
-          if (commands) {
-            commands.forEach(cmd => {
-              const type = cmd[0];
-              if (type === "M" || type === "L") {
-                const coords = cmd.slice(1).trim().split(/[\s,]+/).map(Number);
-                if (coords.length >= 2) {
-                  pathPoints.push([coords[0], coords[1]]);
-                }
-              } else if (type === "C") {
-                const coords = cmd.slice(1).trim().split(/[\s,]+/).map(Number);
-                if (coords.length >= 6) {
-                  pathPoints.push([coords[4], coords[5]]);
-                }
-              }
-            });
-          }
-          
-          if (pathPoints.length > 0) {
-            pack.labels.push({
-              i: pack.labels.length,
-              type: "custom",
-              group: group,
-              text: text,
-              pathPoints: pathPoints,
-              startOffset: startOffset,
-              fontSize: fontSize,
-              letterSpacing: letterSpacing,
-              transform: transform || undefined
-            });
-          }
+
+          pack.labels.push({
+            i: pack.labels.length,
+            type: "custom",
+            group: group,
+            text: text,
+            pathPoints: extractPathPoints(pathElement),
+            startOffset: startOffset,
+            fontSize: fontSize,
+            letterSpacing: letterSpacing,
+            transform: transform || undefined
+          });
         });
       }
 

@@ -1,18 +1,6 @@
 "use strict";
 
-// Helper: extract control points from an SVG path element
-function extractPathPoints(pathElement) {
-  if (!pathElement) return [];
-  const l = pathElement.getTotalLength();
-  if (!l) return [];
-  const points = [];
-  const increment = l / Math.max(Math.ceil(l / 200), 2);
-  for (let i = 0; i <= l; i += increment) {
-    const point = pathElement.getPointAtLength(i);
-    points.push([point.x, point.y]);
-  }
-  return points;
-}
+
 
 // Helper: find label data from the Labels data model for an SVG text element
 function getLabelData(textElement) {
@@ -26,10 +14,10 @@ function getLabelData(textElement) {
     const existing = Labels.get(+dataLabelId);
     if (existing) return existing;
     // Data was cleared (e.g., map regenerated) — recreate
-    textElement.removeAttribute("data-label-id");
+    // textElement.removeAttribute("data-label-id");
   }
   // No data entry found — create one from SVG state (migration path)
-  return createCustomLabelDataFromSvg(textElement);
+  return undefined;
 }
 
 // Helper: create a CustomLabelData entry from existing SVG elements
