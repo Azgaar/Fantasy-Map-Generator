@@ -122,7 +122,6 @@ function editLabel() {
   function updateValues(textPath) {
     const labelData = getLabelData(elSelected.node());
     if (labelData) {
-      // Custom labels: read all values from data model
       byId("labelText").value = labelData.text || "";
       byId("labelStartOffset").value = labelData.startOffset || 50;
       byId("labelRelativeSize").value = labelData.fontSize || 100;
