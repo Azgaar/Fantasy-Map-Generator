@@ -2,7 +2,7 @@ declare global {
   var Labels: LabelsModule;
 }
 
-export interface StateLabelData {
+export interface StateLabel {
   i: number;
   type: "state";
   stateId: number;
@@ -14,7 +14,7 @@ export interface StateLabelData {
   transform?: string;
 }
 
-export interface BurgLabelData {
+export interface BurgLabel {
   i: number;
   type: "burg";
   burgId: number;
@@ -24,7 +24,7 @@ export interface BurgLabelData {
   y: number;
 }
 
-export interface CustomLabelData {
+export interface CustomLabel {
   i: number;
   type: "custom";
   group: string;
@@ -36,7 +36,7 @@ export interface CustomLabelData {
   transform?: string;
 }
 
-export type LabelData = StateLabelData | BurgLabelData | CustomLabelData;
+export type LabelData = StateLabel | BurgLabel | CustomLabel;
 
 class LabelsModule {
   private getNextId(): number {
@@ -70,8 +70,8 @@ class LabelsModule {
     );
   }
 
-  private addStateLabel(data: Omit<StateLabelData, "i" | "type">): StateLabelData {
-    const label: StateLabelData = {
+  private addStateLabel(data: Omit<StateLabel, "i" | "type">): StateLabel {
+    const label: StateLabel = {
       ...data,
       i: this.getNextId(),
       type: "state",
@@ -80,14 +80,14 @@ class LabelsModule {
     return label;
   }
 
-  private addBurgLabel(data: Omit<BurgLabelData, "i" | "type">): BurgLabelData {
-    const label: BurgLabelData = { ...data, i: this.getNextId(), type: "burg", };
+  private addBurgLabel(data: Omit<BurgLabel, "i" | "type">): BurgLabel {
+    const label: BurgLabel = { ...data, i: this.getNextId(), type: "burg", };
     pack.labels.push(label);
     return label;
   }
 
-  addCustomLabel(data: Omit<CustomLabelData, "i" | "type">): CustomLabelData {
-    const label: CustomLabelData = {
+  addCustomLabel(data: Omit<CustomLabel, "i" | "type">): CustomLabel {
+    const label: CustomLabel = {
       ...data,
       i: this.getNextId(),
       type: "custom",

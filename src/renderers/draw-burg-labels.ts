@@ -1,5 +1,5 @@
 import type { Burg } from "../modules/burgs-generator";
-import type { BurgLabelData } from "../modules/labels";
+import type { BurgLabel } from "../modules/labels";
 
 interface BurgGroup {
   name: string;
@@ -19,7 +19,7 @@ export function drawBurgLabels(): void {
   createLabelGroups();
 
   // Get all burg labels grouped by group name
-  const burgLabelsByGroup = new Map<string, BurgLabelData[]>();
+  const burgLabelsByGroup = new Map<string, BurgLabel[]>();
   for (const label of Labels.getAll()) {
     if (label.type !== "burg") continue;
     if (!burgLabelsByGroup.has(label.group)) {

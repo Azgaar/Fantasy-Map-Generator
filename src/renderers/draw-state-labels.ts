@@ -1,5 +1,5 @@
 import { curveNatural, line, max, select } from "d3";
-import type { StateLabelData } from "../modules/labels";
+import type { StateLabel } from "../modules/labels";
 import { findClosestCell, minmax, rn, round, splitInTwo } from "../utils";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 
@@ -45,7 +45,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
   const { states } = pack;
 
   // Get labels to render
-  const labelsToRender: StateLabelData[] =
+  const labelsToRender: StateLabel[] =
     list && list.length > 0
       ? list
         .map((idx) => Labels.get(idx))
@@ -60,7 +60,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
 
   function drawLabelPath(
     letterLength: number,
-    labelDataList: StateLabelData[],
+    labelDataList: StateLabel[],
   ): void {
     const mode = options.stateLabelsMode || "auto";
     const lineGen = line<[number, number]>().curve(curveNatural);
