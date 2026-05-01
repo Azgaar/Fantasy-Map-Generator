@@ -1,4 +1,4 @@
-import * as d3 from "d3";
+import {color, shuffle} from "d3";
 
 declare global {
   var Goods: GoodsModule;
@@ -611,10 +611,10 @@ export class GoodsModule {
     });
 
     const skipGlaciers = biomesData.habitability[11] === 0;
-    const shuffledCells = d3.shuffle((this.cells.i as number[]).slice());
+    const shuffledCells = shuffle((this.cells.i as number[]).slice());
 
     for (const cellId of shuffledCells) {
-      if (!(cellId % 10)) d3.shuffle(pack.goods);
+      if (!(cellId % 10)) shuffle(pack.goods);
       if (skipGlaciers && this.cells.biome[cellId] === 11) continue;
       const rnd = Math.random() * 100;
       this.cellId = cellId;
@@ -629,13 +629,17 @@ export class GoodsModule {
         break;
       }
     }
-    pack.goods.sort((a: Good, b: Good) => (a.i > b.i ? 1 : -1)).forEach((r: Good) => delete r.fn);
+    pack.goods
+      .sort((a: Good, b: Good) => (a.i > b.i ? 1 : -1))
+      .forEach((r: Good) => {
+        delete r.fn;
+      });
 
     TIME && console.timeEnd("generateGoods");
   }
 
-  getStroke(color: string): string {
-    return (d3.color(color) as any).darker(2).hex();
+  getStroke(colorHex: string): string {
+    return (color(colorHex) as any).darker(2).hex();
   }
 
   get(i: number): Good | undefined {

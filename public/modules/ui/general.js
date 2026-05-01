@@ -297,8 +297,9 @@ function updateCellInfo(point, i, g) {
     : "no";
   infoPopulation.innerHTML = getFriendlyPopulation(i);
   infoBurg.innerHTML = cells.burg[i] ? pack.burgs[cells.burg[i]].name + " (" + cells.burg[i] + ")" : "no";
-  infoFeature.innerHTML = f ? pack.features[f].group + " (" + f + ")" : "n/a";
+  infoFeature.innerHTML = f ? (pack.features[f].group || pack.features[f].type) + " (" + f + ")" : "n/a";
   infoBiome.innerHTML = biomesData.name[cells.biome[i]];
+  infoGood.innerHTML = cells.good[i] ? Goods.get(cells.good[i]).name + " (" + cells.good[i] + ")" : "no";
 }
 
 function getGeozone(latitude) {
