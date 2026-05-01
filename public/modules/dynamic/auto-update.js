@@ -1119,7 +1119,7 @@ export function resolveVersionConflicts(mapVersion) {
       if (stateLabelsGroup) {
         stateLabelsGroup.querySelectorAll("text").forEach(textElement => {
           const id = textElement.getAttribute("id");
-          if (!id || !id.startsWith("stateLabel")) return;
+          if (!id) return;
 
           const stateIdMatch = id.match(/stateLabel(\d+)/);
           if (!stateIdMatch) return;
