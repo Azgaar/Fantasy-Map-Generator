@@ -1116,8 +1116,8 @@ export function resolveVersionConflicts(mapVersion) {
     });
   }
 
-  if (isOlderThan("1.121.0")) {
-    // v1.121.0 added goods layer
+  if (isOlderThan("1.122.0")) {
+    // v1.122.0 added goods layer
     if (!pack.goods || !pack.goods.length) pack.goods = [];
     if (!pack.cells.good) {
       pack.cells.good = new Uint8Array(pack.cells.i.length);
