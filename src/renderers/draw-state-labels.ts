@@ -2,13 +2,7 @@ import { curveNatural, line, max, select } from "d3";
 import type { StateLabel } from "../modules/labels";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 import type { TypedArray } from "../types/PackedGraph";
-import {
-  findClosestCell,
-  minmax,
-  rn,
-  round,
-  splitInTwo,
-} from "../utils";
+import { findClosestCell, minmax, rn, round, splitInTwo } from "../utils";
 
 declare global {
   var drawStateLabels: (list?: number[]) => void;
@@ -55,8 +49,8 @@ const stateLabelsRenderer = (list?: number[]): void => {
   const labelsToRender: StateLabel[] =
     list && list.length > 0
       ? list
-        .map((idx) => Labels.get(idx))
-        .filter((label) => label?.type === "state")
+          .map((idx) => Labels.get(idx))
+          .filter((label) => label?.type === "state")
       : Labels.getAll().filter((label) => label.type === "state");
 
   const letterLength = checkExampleLetterLength();
@@ -148,7 +142,10 @@ const stateLabelsRenderer = (list?: number[]): void => {
         .append("text")
         .attr("text-rendering", "optimizeSpeed")
         .attr("id", `stateLabel${labelData.i}`)
-        .attr("transform", `translate(${labelData.dx || 0}, ${labelData.dy || 0})`)
+        .attr(
+          "transform",
+          `translate(${labelData.dx || 0}, ${labelData.dy || 0})`,
+        )
         .append("textPath")
         .attr("startOffset", "50%")
         .attr("font-size", `${ratio}%`)
@@ -162,10 +159,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
       textElement.insertAdjacentHTML("afterbegin", spans.join(""));
 
       const { width, height } = textElement.getBBox();
-      textElement.setAttribute(
-        "href",
-        `#textPath_stateLabel${labelData.i}`,
-      );
+      textElement.setAttribute("href", `#textPath_stateLabel${labelData.i}`);
 
       const stateIds = pack.cells.state;
       if (mode === "full" || lines.length === 1) continue;

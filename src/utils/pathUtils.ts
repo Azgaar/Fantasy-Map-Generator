@@ -382,7 +382,7 @@ export const extractPathPoints = (pathElement: SVGPathElement) => {
     points.push([point.x, point.y]);
   }
   return points;
-}
+};
 
 declare global {
   interface Window {

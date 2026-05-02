@@ -730,7 +730,9 @@ class BurgModule {
     }
 
     removeBurgIcon(burg.i!);
-    const labelId = pack.labels.findIndex((l) => l.type === "burg" && l.burgId === burgId);
+    const labelId = pack.labels.findIndex(
+      (l) => l.type === "burg" && l.burgId === burgId,
+    );
     Labels.remove(labelId);
   }
 }

@@ -84,7 +84,7 @@ class LabelsModule {
   }
 
   private addBurgLabel(data: Omit<BurgLabel, "i" | "type">): BurgLabel {
-    const label: BurgLabel = { ...data, i: this.getNextId(), type: "burg", };
+    const label: BurgLabel = { ...data, i: this.getNextId(), type: "burg" };
     pack.labels.push(label);
     return label;
   }
