@@ -9,7 +9,7 @@ import {
   range,
   scaleSequential,
 } from "d3";
-import { byId, connectVertices, convertTemperature, round } from "../utils";
+import { connectVertices, convertTemperature, ensureEl, round } from "../utils";
 
 declare global {
   var drawTemperature: () => void;
@@ -22,8 +22,8 @@ const temperatureRenderer = (): void => {
   const lineGen = line<[number, number]>().curve(curveBasisClosed);
   const scheme = scaleSequential(interpolateSpectral);
 
-  const tMax = +(byId("temperatureEquatorOutput") as HTMLInputElement).max;
-  const tMin = +(byId("temperatureEquatorOutput") as HTMLInputElement).min;
+  const tMax = +(ensureEl("temperatureEquatorOutput") as HTMLInputElement).max;
+  const tMin = +(ensureEl("temperatureEquatorOutput") as HTMLInputElement).min;
   const delta = tMax - tMin;
 
   const { cells, vertices } = grid;
@@ -92,6 +92,9 @@ const temperatureRenderer = (): void => {
       .attr("stroke", stroke.toString());
   }
 
+  const scale = (ensureEl("temperatureScale") as HTMLSelectElement)
+    .value as Parameters<typeof convertTemperature>[1];
+
   const tempLabels = temperature
     .append("g")
     .attr("id", "tempLabels")
@@ -103,7 +106,7 @@ const temperatureRenderer = (): void => {
     .append("text")
     .attr("x", (d) => d[0])
     .attr("y", (d) => d[1])
-    .text((d) => convertTemperature(d[2]));
+    .text((d) => convertTemperature(d[2], scale));
 
   // find cell with temp < isotherm and find vertex to start path detection
   function findStart(i: number, t: number): number | undefined {

@@ -133,6 +133,10 @@ a {
   fill-rule: evenodd;
 }
 
+#lakes {
+  mask: url(#water);
+}
+
 #lakes,
 #coastline,
 #armies,
@@ -1434,6 +1438,10 @@ div.states {
 div.states:hover,
 div.states.hovered {
   border: 1px solid #c4c4c4;
+  background-image: linear-gradient(to right, #dedede 100%, #f2f2f2 50%, #fcfcfc 0%);
+}
+
+#mergeStatesForm div[data-id].hovered {
   background-image: linear-gradient(to right, #dedede 100%, #f2f2f2 50%, #fcfcfc 0%);
 }
 

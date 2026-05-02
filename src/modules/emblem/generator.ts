@@ -1,4 +1,4 @@
-import { P, rw } from "../../utils";
+import { ensureEl, P, rw } from "../../utils";
 import { charges } from "./charges";
 import { divisions } from "./divisions";
 import { lineWeights } from "./lineWeights";
@@ -453,7 +453,7 @@ class EmblemGeneratorModule {
 
     // Size selection - must use sequential P() calls to match original behavior
     if (P(0.1)) size = "-small";
-    // biome-ignore lint/suspicious/noDuplicateElseIf: <explanation>
+    // biome-ignore lint/suspicious/noDuplicateElseIf: sequential P() calls advance random state, conditions are not truly duplicate
     else if (P(0.1)) size = "-smaller";
     else if (P(0.01)) size = "-big";
     else if (P(0.005)) size = "-smallest";
@@ -469,11 +469,11 @@ class EmblemGeneratorModule {
       if (P(0.2)) {
         t1 = "gules";
         t2 = "or";
-        // biome-ignore lint/suspicious/noDuplicateElseIf: <explanation>
+        // biome-ignore lint/suspicious/noDuplicateElseIf: sequential P() calls advance random state, conditions are not truly duplicate
       } else if (P(0.2)) {
         t1 = "argent";
         t2 = "sable";
-        // biome-ignore lint/suspicious/noDuplicateElseIf: <explanation>
+        // biome-ignore lint/suspicious/noDuplicateElseIf: sequential P() calls advance random state, conditions are not truly duplicate
       } else if (P(0.2)) {
         t1 = "azure";
         t2 = "argent";
@@ -482,7 +482,7 @@ class EmblemGeneratorModule {
       if (P(0.3)) {
         t1 = "gules";
         t2 = "argent";
-        // biome-ignore lint/suspicious/noDuplicateElseIf: <explanation>
+        // biome-ignore lint/suspicious/noDuplicateElseIf: sequential P() calls advance random state, conditions are not truly duplicate
       } else if (P(0.3)) {
         t1 = "argent";
         t2 = "sable";
@@ -554,15 +554,13 @@ class EmblemGeneratorModule {
   }
 
   getShield(culture: number, state?: number): string {
-    const emblemShape = document.getElementById(
-      "emblemShape",
-    ) as HTMLSelectElement | null;
+    const emblemShape = ensureEl<HTMLSelectElement>("emblemShape");
     const shapeGroup =
-      emblemShape?.selectedOptions[0]?.parentElement?.getAttribute("label") ||
+      emblemShape.selectedOptions[0]?.parentElement?.getAttribute("label") ||
       "Diversiform";
-    if (shapeGroup !== "Diversiform") return emblemShape!.value;
+    if (shapeGroup !== "Diversiform") return emblemShape.value;
 
-    if (emblemShape?.value === "state" && state && pack.states[state].coa)
+    if (emblemShape.value === "state" && state && pack.states[state].coa)
       return pack.states[state].coa!.shield!;
     if (pack.cultures[culture].shield) return pack.cultures[culture].shield!;
     ERROR &&

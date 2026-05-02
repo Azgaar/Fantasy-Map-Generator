@@ -95,26 +95,30 @@ window.Cloud = (function () {
           reject(new Error("Timeout. No auth for Dropbox"));
         }, 120 * 1000);
 
-        window.addEventListener("dropboxauth", e => {
+        const channel = new BroadcastChannel("dropbox-auth");
+        channel.onmessage = async ({data}) => {
+          channel.close();
           clearTimeout(watchDog);
-          resolve();
-        });
+          if (data.type === "token") {
+            await this.setDropBoxToken(data.token);
+            resolve();
+          } else {
+            this.returnError(data.description);
+            reject(new Error(data.description));
+          }
+        };
       });
     },
 
-    // Callback function for auth window
     async setDropBoxToken(token) {
       DEBUG.cloud && console.info("Access token:", token);
       setToken(this.name, token);
       await this.connect(token);
-      this.authWindow.close();
-      window.dispatchEvent(new Event("dropboxauth"));
     },
 
     returnError(errorDescription) {
       console.error(errorDescription);
       tip(errorDescription.replaceAll("+", " "), true, "error", 4000);
-      this.authWindow.close();
     },
 
     async getLink(path) {

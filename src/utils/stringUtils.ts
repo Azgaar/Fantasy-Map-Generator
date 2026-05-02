@@ -96,20 +96,20 @@ export const safeParseJSON = (str: string) => {
 
 /**
  * Sanitize a string to be used as an ID
- * @param {string} string - The input string
+ * @param {string} inputString - The input string
  * @returns {string} - The sanitized ID string
  */
 export const sanitizeId = (inputString: string) => {
   if (!inputString) throw new Error("No string provided");
 
   let sanitized = inputString
-    .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9-_]/g, "") // no invalid characters
-    .replace(/\s+/g, "-"); // replace spaces with hyphens
+    .toLocaleLowerCase()
+    .replace(/\s+/gu, "-") // ids cannot contain spaces
+    .replace(/[^\p{L}\p{M}\p{N}_-]/gu, ""); // allow unicode letters, marks and numbers
 
   // remove leading numbers
-  if (sanitized.match(/^\d/)) sanitized = `_${sanitized}`;
+  if (/^\p{N}/u.test(sanitized)) sanitized = `_${sanitized}`;
 
   return sanitized;
 };

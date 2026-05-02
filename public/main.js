@@ -40,10 +40,10 @@ let legend = svg.append("g").attr("id", "legend");
 let ocean = viewbox.append("g").attr("id", "ocean");
 let oceanLayers = ocean.append("g").attr("id", "oceanLayers");
 let oceanPattern = ocean.append("g").attr("id", "oceanPattern");
-let lakes = viewbox.append("g").attr("id", "lakes");
 let landmass = viewbox.append("g").attr("id", "landmass");
 let texture = viewbox.append("g").attr("id", "texture");
 let terrs = viewbox.append("g").attr("id", "terrs");
+let lakes = viewbox.append("g").attr("id", "lakes");
 let biomes = viewbox.append("g").attr("id", "biomes");
 let cells = viewbox.append("g").attr("id", "cells");
 let gridOverlay = viewbox.append("g").attr("id", "gridOverlay");
@@ -172,7 +172,10 @@ let scale = 1;
 let viewX = 0;
 let viewY = 0;
 
-const onZoom = debounce(function () {
+let rafId = null;
+let pendingScaleChange = false;
+let pendingPositionChange = false;
+function zoomRaf() {
   const {k, x, y} = d3.event.transform;
 
   const isScaleChanged = Boolean(scale - k);
@@ -183,15 +186,61 @@ const onZoom = debounce(function () {
   viewX = x;
   viewY = y;
 
-  handleZoom(isScaleChanged, isPositionChanged);
-}, 50);
-const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", onZoom);
+  // Coalesce multiple zoom events into one paint.
+  // While a RAF is pending, keep updating latest transform state and OR-change flags.
+  // The scheduled RAF consumes these accumulated flags and then resets them.
+  pendingScaleChange = pendingScaleChange || isScaleChanged;
+  pendingPositionChange = pendingPositionChange || isPositionChanged;
+
+  if (rafId) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = null;
+
+    // Safely clears these flags for future renders
+    const didScaleChange = pendingScaleChange;
+    const didPositionChange = pendingPositionChange;
+    pendingScaleChange = false;
+    pendingPositionChange = false;
+
+    // Uses global values, so each frame always draws using the latest positioning values
+    viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
+
+    if (didPositionChange) {
+      if (layerIsOn("toggleCoordinates")) drawCoordinates();
+    }
+
+    if (customization === 1) {
+      const canvas = ensureEl("canvas");
+      if (canvas && canvas.style.opacity !== "0") {
+        const img = ensureEl("imageToConvert");
+        if (img) {
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+      }
+    }
+
+    if (didScaleChange) {
+      invokeActiveZooming();
+      drawScaleBar(scaleBar, scale);
+      fitScaleBar(scaleBar, svgWidth, svgHeight);
+    }
+
+    if (didPositionChange || didScaleChange) {
+      window.updateMinimap && updateMinimap();
+    }
+  });
+}
+
+const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomRaf);
 
 var mapCoordinates = {}; // map coordinates on globe
-let populationRate = +byId("populationRateInput").value;
-let distanceScale = +byId("distanceScaleInput").value;
-let urbanization = +byId("urbanizationInput").value;
-let urbanDensity = +byId("urbanDensityInput").value;
+let populationRate = +ensureEl("populationRateInput").value;
+let distanceScale = +ensureEl("distanceScaleInput").value;
+let urbanization = +ensureEl("urbanizationInput").value;
+let urbanDensity = +ensureEl("urbanDensityInput").value;
 
 applyStoredOptions();
 
@@ -282,7 +331,7 @@ async function checkLoadParameters() {
   }
 
   // check if there is a map saved to indexedDB
-  if (byId("onloadBehavior").value === "lastSaved") {
+  if (ensureEl("onloadBehavior").value === "lastSaved") {
     try {
       const blob = await ldb.get("lastMap");
       if (blob) {
@@ -359,17 +408,16 @@ function focusOn() {
 
 let isAssistantLoaded = false;
 function toggleAssistant() {
-  const assistantContainer = byId("chat-widget-container");
-  const showAssistant = byId("azgaarAssistant").value === "show";
-
+  const showAssistant = document.getElementById("azgaarAssistant")?.value === "show";
   if (showAssistant) {
     if (isAssistantLoaded) {
-      assistantContainer.style.display = "block";
+      const assistantContainer = document.getElementById("chat-widget-container");
+      if (assistantContainer) assistantContainer.style.display = "block";
     } else {
       import("./libs/openwidget.min.js").then(() => {
         isAssistantLoaded = true;
         setTimeout(() => {
-          const bubble = byId("chat-widget-minimized");
+          const bubble = document.getElementById("chat-widget-minimized");
           if (bubble) {
             bubble.dataset.tip = "Click to open the Assistant";
             bubble.on("mouseover", showDataTip);
@@ -378,7 +426,8 @@ function toggleAssistant() {
       });
     }
   } else if (isAssistantLoaded) {
-    assistantContainer.style.display = "none";
+    const assistantContainer = document.getElementById("chat-widget-container");
+    if (assistantContainer) assistantContainer.style.display = "none";
   }
 }
 
@@ -446,34 +495,6 @@ function findBurgForMFCG(params) {
   tip("Here stands the glorious city of " + b.name, true, "success", 15000);
 }
 
-function handleZoom(isScaleChanged, isPositionChanged) {
-  viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
-
-  if (isPositionChanged) {
-    if (layerIsOn("toggleCoordinates")) drawCoordinates();
-  }
-
-  if (isScaleChanged) {
-    invokeActiveZooming();
-    drawScaleBar(scaleBar, scale);
-    fitScaleBar(scaleBar, svgWidth, svgHeight);
-  }
-
-  // zoom image converter overlay
-  if (customization === 1) {
-    const canvas = byId("canvas");
-    if (!canvas || canvas.style.opacity === "0") return;
-
-    const img = byId("imageToConvert");
-    if (!img) return;
-
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  }
-}
-
 // Zoom to a specific point
 function zoomTo(x, y, z = 8, d = 2000) {
   const transform = d3.zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
@@ -532,7 +553,7 @@ function invokeActiveZooming() {
   +markers.attr("rescale") &&
     pack.markers?.forEach(marker => {
       const {i, x, y, size = 30, hidden} = marker;
-      const el = !hidden && byId(`marker${i}`);
+      const el = !hidden && document.getElementById(`marker${i}`);
       if (!el) return;
 
       const zoomedSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
@@ -554,18 +575,18 @@ void (function addDragToUpload() {
   document.addEventListener("dragover", function (e) {
     e.stopPropagation();
     e.preventDefault();
-    byId("mapOverlay").style.display = null;
+    ensureEl("mapOverlay").style.display = null;
   });
 
   document.addEventListener("dragleave", function (e) {
-    byId("mapOverlay").style.display = "none";
+    ensureEl("mapOverlay").style.display = "none";
   });
 
   document.addEventListener("drop", function (e) {
     e.stopPropagation();
     e.preventDefault();
 
-    const overlay = byId("mapOverlay");
+    const overlay = ensureEl("mapOverlay");
     overlay.style.display = "none";
     if (e.dataTransfer.items == null || e.dataTransfer.items.length !== 1) return; // no files or more than one
     const file = e.dataTransfer.items[0].getAsFile();
@@ -704,13 +725,13 @@ function setSeed(precreatedSeed) {
     seed = precreatedSeed;
   }
 
-  byId("optionsSeed").value = seed;
+  ensureEl("optionsSeed").value = seed;
   Math.random = aleaPRNG(seed);
 }
 
 function addLakesInDeepDepressions() {
   TIME && console.time("addLakesInDeepDepressions");
-  const elevationLimit = +byId("lakeElevationLimitOutput").value;
+  const elevationLimit = +ensureEl("lakeElevationLimitOutput").value;
   if (elevationLimit === 80) return;
 
   const {cells, features} = grid;
@@ -770,7 +791,7 @@ function addLakesInDeepDepressions() {
 
 // near sea lakes usually get a lot of water inflow, most of them should break threshold and flow out to sea (see Ancylus Lake)
 function openNearSeaLakes() {
-  if (byId("templateInput").value === "Atoll") return; // no need for Atolls
+  if (ensureEl("templateInput").value === "Atoll") return; // no need for Atolls
 
   const cells = grid.cells;
   const features = grid.features;
@@ -820,7 +841,7 @@ function defineMapSize() {
   if (randomize || !locked("longitude")) longitudeOutput.value = longitudeInput.value = longitude;
 
   function getSizeAndLatitude() {
-    const template = byId("templateInput").value; // heightmap template
+    const template = ensureEl("templateInput").value; // heightmap template
 
     if (template === "africa-centric") return [45, 53, 38];
     if (template === "arabia") return [20, 35, 35];
@@ -872,9 +893,9 @@ function defineMapSize() {
 
 // calculate map position on globe
 function calculateMapCoordinates() {
-  const sizeFraction = +byId("mapSizeOutput").value / 100;
-  const latShift = +byId("latitudeOutput").value / 100;
-  const lonShift = +byId("longitudeOutput").value / 100;
+  const sizeFraction = +ensureEl("mapSizeOutput").value / 100;
+  const latShift = +ensureEl("latitudeOutput").value / 100;
+  const lonShift = +ensureEl("longitudeOutput").value / 100;
 
   const latT = rn(sizeFraction * 180, 1);
   const latN = rn(90 - (180 - latT) * latShift, 1);
@@ -1143,7 +1164,6 @@ function reGraph() {
   pack.cells = packCells;
   pack.cells.p = newCells.p;
   pack.cells.g = createTypedArray({maxValue: grid.points.length, from: newCells.g});
-  pack.cells.q = d3.quadtree(newCells.p.map(([x, y], i) => [x, y, i]));
   pack.cells.h = createTypedArray({maxValue: 100, from: newCells.h});
   pack.cells.area = createTypedArray({maxValue: UINT16_MAX, length: packCells.i.length}).map((_, cellId) => {
     const area = Math.abs(d3.polygonArea(getPackPolygon(cellId)));
@@ -1211,7 +1231,7 @@ function rankCells() {
 
 // show map stats on generation complete
 function showStatistics() {
-  const heightmap = byId("templateInput").value;
+  const heightmap = ensureEl("templateInput").value;
   const isTemplate = heightmap in heightmapTemplates;
   const heightmapType = isTemplate ? "template" : "precreated";
   const isRandomTemplate = isTemplate && !locked("template") ? "random " : "";
@@ -1236,13 +1256,13 @@ function showStatistics() {
   INFO && console.info(stats);
 
   // Dispatch event for test automation and external integrations
-  window.dispatchEvent(new CustomEvent('map:generated', { detail: { seed, mapId } }));
+  window.dispatchEvent(new CustomEvent("map:generated", {detail: {seed, mapId}}));
 }
 
 const regenerateMap = debounce(async function (options) {
   WARN && console.warn("Generate new random map");
 
-  const cellsDesired = +byId("pointsInput").dataset.cells;
+  const cellsDesired = +ensureEl("pointsInput").dataset.cells;
   const shouldShowLoading = cellsDesired > 10000;
   shouldShowLoading && showLoading();
 
@@ -1265,10 +1285,10 @@ function undraw() {
   viewbox
     .selectAll("path, circle, polygon, line, text, use, #texture > image, #zones > g, #armies > g, #ruler > g")
     .remove();
-  byId("deftemp")
+  ensureEl("deftemp")
     .querySelectorAll("path, clipPath, svg")
     .forEach(el => el.remove());
-  byId("coas").innerHTML = ""; // remove auto-generated emblems
+  ensureEl("coas").innerHTML = ""; // remove auto-generated emblems
   notes = [];
   unfog();
 }

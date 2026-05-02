@@ -1,8 +1,8 @@
 import Alea from "alea";
 import { range as d3Range, leastIndex, mean } from "d3";
 import {
-  byId,
   createTypedArray,
+  ensureEl,
   findGridCell,
   getNumberInRange,
   lim,
@@ -594,7 +594,7 @@ class HeightmapModule {
 
   async generate(graph: any): Promise<Uint8Array> {
     TIME && console.time("defineHeightmap");
-    const id = (byId("templateInput")! as HTMLInputElement).value;
+    const id = (ensureEl("templateInput")! as HTMLInputElement).value;
     Math.random = Alea(seed);
     const isTemplate = id in heightmapTemplates;
 

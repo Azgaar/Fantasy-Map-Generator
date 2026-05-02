@@ -23,14 +23,14 @@ function openSubmapTool() {
   modules.openSubmapTool = true;
 
   function resetInputs() {
-    updateCellsNumber(byId("pointsInput").value);
-    byId("submapPointsInput").oninput = e => updateCellsNumber(e.target.value);
+    updateCellsNumber(ensureEl("pointsInput").value);
+    ensureEl("submapPointsInput").oninput = e => updateCellsNumber(e.target.value);
 
     function updateCellsNumber(value) {
-      byId("submapPointsInput").value = value;
+      ensureEl("submapPointsInput").value = value;
       const cells = cellsDensityMap[value];
-      byId("submapPointsInput").dataset.cells = cells;
-      const output = byId("submapPointsFormatted");
+      ensureEl("submapPointsInput").dataset.cells = cells;
+      const output = ensureEl("submapPointsFormatted");
       output.value = cells / 1000 + "K";
       output.style.color = getCellsDensityColor(cells);
     }
@@ -42,8 +42,8 @@ function openSubmapTool() {
     const [x0, y0] = [Math.abs(viewX / scale), Math.abs(viewY / scale)]; // top-left corner
     recalculateMapSize(x0, y0);
 
-    const submapPointsValue = byId("submapPointsInput").value;
-    const globalPointsValue = byId("pointsInput").value;
+    const submapPointsValue = ensureEl("submapPointsInput").value;
+    const globalPointsValue = ensureEl("pointsInput").value;
     if (submapPointsValue !== globalPointsValue) changeCellsDensity(submapPointsValue);
 
     const projection = (x, y) => [(x - x0) * scale, (y - y0) * scale];
@@ -55,32 +55,32 @@ function openSubmapTool() {
     undraw();
     Resample.process({projection, inverse, scale});
 
-    if (byId("submapRescaleBurgStyles").checked) rescaleBurgStyles(scale);
+    if (ensureEl("submapRescaleBurgStyles").checked) rescaleBurgStyles(scale);
     drawLayers();
 
     INFO && console.groupEnd("generateSubmap");
   }
 
   function recalculateMapSize(x0, y0) {
-    const mapSize = +byId("mapSizeOutput").value;
-    byId("mapSizeOutput").value = byId("mapSizeInput").value = rn(mapSize / scale, 2);
+    const mapSize = +ensureEl("mapSizeOutput").value;
+    ensureEl("mapSizeOutput").value = ensureEl("mapSizeInput").value = rn(mapSize / scale, 2);
 
     const latT = mapCoordinates.latT / scale;
     const latN = getLatitude(y0);
     const latShift = (90 - latN) / (180 - latT);
-    byId("latitudeOutput").value = byId("latitudeInput").value = rn(latShift * 100, 2);
+    ensureEl("latitudeOutput").value = ensureEl("latitudeInput").value = rn(latShift * 100, 2);
 
     const lotT = mapCoordinates.lonT / scale;
     const lonE = getLongitude(x0 + graphWidth / scale);
     const lonShift = (180 - lonE) / (360 - lotT);
-    byId("longitudeOutput").value = byId("longitudeInput").value = rn(lonShift * 100, 2);
+    ensureEl("longitudeOutput").value = ensureEl("longitudeInput").value = rn(lonShift * 100, 2);
 
     distanceScale = distanceScaleInput.value = rn(distanceScale / scale, 2);
     populationRate = populationRateInput.value = rn(populationRate / scale, 2);
   }
 
   function rescaleBurgStyles(scale) {
-    const burgIcons = [...byId("burgIcons").querySelectorAll("g")];
+    const burgIcons = [...ensureEl("burgIcons").querySelectorAll("g")];
     for (const group of burgIcons) {
       const newSize = rn(minmax(group.getAttribute("size") * scale, 0.2, 10), 2);
       group.setAttribute("font-size", newSize);
@@ -89,7 +89,7 @@ function openSubmapTool() {
       group.setAttribute("stroke-width", newStroke);
     }
 
-    const burgLabels = [...byId("burgLabels").querySelectorAll("g")];
+    const burgLabels = [...ensureEl("burgLabels").querySelectorAll("g")];
     for (const group of burgLabels) {
       const size = +group.dataset.size;
       group.dataset.size = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;

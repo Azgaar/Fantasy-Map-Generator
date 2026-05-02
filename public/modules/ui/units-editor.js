@@ -17,22 +17,22 @@ function editUnits() {
   };
 
   // add listeners
-  byId("distanceUnitInput").on("change", changeDistanceUnit);
-  byId("distanceScaleInput").on("change", changeDistanceScale);
-  byId("heightUnit").on("change", changeHeightUnit);
-  byId("heightExponentInput").on("input", changeHeightExponent);
-  byId("temperatureScale").on("change", changeTemperatureScale);
+  ensureEl("distanceUnitInput").on("change", changeDistanceUnit);
+  ensureEl("distanceScaleInput").on("change", changeDistanceScale);
+  ensureEl("heightUnit").on("change", changeHeightUnit);
+  ensureEl("heightExponentInput").on("input", changeHeightExponent);
+  ensureEl("temperatureScale").on("change", changeTemperatureScale);
 
-  byId("populationRateInput").on("change", changePopulationRate);
-  byId("urbanizationInput").on("change", changeUrbanizationRate);
-  byId("urbanDensityInput").on("change", changeUrbanDensity);
+  ensureEl("populationRateInput").on("change", changePopulationRate);
+  ensureEl("urbanizationInput").on("change", changeUrbanizationRate);
+  ensureEl("urbanDensityInput").on("change", changeUrbanDensity);
 
-  byId("addLinearRuler").on("click", addRuler);
-  byId("addOpisometer").on("click", toggleOpisometerMode);
-  byId("addRouteOpisometer").on("click", toggleRouteOpisometerMode);
-  byId("addPlanimeter").on("click", togglePlanimeterMode);
-  byId("removeRulers").on("click", removeAllRulers);
-  byId("unitsRestore").on("click", restoreDefaultUnits);
+  ensureEl("addLinearRuler").on("click", addRuler);
+  ensureEl("addOpisometer").on("click", toggleOpisometerMode);
+  ensureEl("addRouteOpisometer").on("click", toggleRouteOpisometerMode);
+  ensureEl("addPlanimeter").on("click", togglePlanimeterMode);
+  ensureEl("removeRulers").on("click", removeAllRulers);
+  ensureEl("unitsRestore").on("click", restoreDefaultUnits);
 
   function changeDistanceUnit() {
     if (this.value === "custom_name") {
@@ -87,7 +87,7 @@ function editUnits() {
 
   function restoreDefaultUnits() {
     distanceScale = 3;
-    byId("distanceScaleInput").value = distanceScale;
+    ensureEl("distanceScaleInput").value = distanceScale;
     unlock("distanceScale");
 
     // units
@@ -124,7 +124,7 @@ function editUnits() {
 
     const width = Math.min(graphWidth, svgWidth);
     const height = Math.min(graphHeight, svgHeight);
-    const pt = byId("map").createSVGPoint();
+    const pt = ensureEl("map").createSVGPoint();
     pt.x = width / 2;
     pt.y = height / 4;
     const p = pt.matrixTransform(viewbox.node().getScreenCTM().inverse());

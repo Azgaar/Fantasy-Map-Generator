@@ -13,10 +13,11 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "editStatesButton") editStates();
   else if (button === "editProvincesButton") editProvinces();
   else if (button === "editDiplomacyButton") editDiplomacy();
+  else if (button === "editCoastlineSettings") editCoastlineSettings();
   else if (button === "editCulturesButton") editCultures();
   else if (button === "editReligions") editReligions();
   else if (button === "editEmblemButton") openEmblemEditor();
-  else if (button === "editNamesBaseButton") editNamesbase();
+  else if (button === "editNamesBaseButton") NamesbaseEditor.open();
   else if (button === "editUnitsButton") editUnits();
   else if (button === "editNotesButton") editNotes();
   else if (button === "editZonesButton") editZones();
@@ -27,6 +28,7 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "overviewMilitaryButton") overviewMilitary();
   else if (button === "overviewMarkersButton") overviewMarkers();
   else if (button === "overviewCellsButton") viewCellDetails();
+  else if (button === "openMinimapButton") openMinimap();
 
   // click on Regenerate buttons
   if (event.target.parentNode.id === "regenerateFeature") {
@@ -102,14 +104,17 @@ function processFeatureRegeneration(event, button) {
 async function openEmblemEditor() {
   let type, id, el;
 
-  if (pack.states[1]?.coa) {
+  const firstState = pack.states.find(s => s.i && !s.removed && s.coa);
+  const firstBurg = pack.burgs.find(b => b.i && !b.removed && b.coa);
+
+  if (firstState) {
     type = "state";
-    id = "stateCOA1";
-    el = pack.states[1];
-  } else if (pack.burgs[1]?.coa) {
+    id = `stateCOA${firstState.i}`;
+    el = firstState;
+  } else if (firstBurg) {
     type = "burg";
-    id = "burgCOA1";
-    el = pack.burgs[1];
+    id = `burgCOA${firstBurg.i}`;
+    el = firstBurg;
   } else {
     tip("No emblems to edit, please generate states and burgs first", false, "error");
     return;
@@ -177,16 +182,16 @@ function regenerateStates() {
   Military.generate();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
-  if (byId("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
-  if (byId("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
-  if (byId("militaryOverviewRefresh")?.offsetParent) militaryOverviewRefresh.click();
+  if (ensureEl("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
+  if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
+  if (ensureEl("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
 }
 
 function recreateStates() {
   const localSeed = generateSeed();
   Math.random = aleaPRNG(localSeed);
 
-  const statesCount = +byId("statesNumber").value;
+  const statesCount = +ensureEl("statesNumber").value;
   if (!statesCount) {
     tip(`<i>States Number</i> option value is zero. No counties are generated`, false, "error");
     return null;
@@ -227,16 +232,16 @@ function recreateStates() {
     if (!state.i || state.removed || state.lock) continue;
 
     // remove state labels
-    byId(`stateLabel${state.i}`)?.remove();
-    byId(`textPath_stateLabel${state.i}`)?.remove();
+    document.getElementById(`stateLabel${state.i}`)?.remove();
+    document.getElementById(`textPath_stateLabel${state.i}`)?.remove();
 
     // remove state emblems
-    byId(`stateCOA${state.i}`)?.remove();
+    document.getElementById(`stateCOA${state.i}`)?.remove();
     document.querySelector(`#stateEmblems > use[data-i="${state.i}"]`)?.remove();
 
     // remove province data and emblems
     for (const provinceId of state.provinces) {
-      byId(`provinceCOA${provinceId}`)?.remove();
+      document.getElementById(`provinceCOA${provinceId}`)?.remove();
       document.querySelector(`#provinceEmblems > use[data-i="${provinceId}"]`)?.remove();
       pack.provinces[provinceId].removed = true;
     }
@@ -266,8 +271,8 @@ function recreateStates() {
     capitalsTree.add([x, y]);
 
     // update label id reference
-    byId(`textPath_stateLabel${state.i}`)?.setAttribute("id", `textPath_stateLabel${newId}`);
-    const $label = byId(`stateLabel${state.i}`);
+    document.getElementById(`textPath_stateLabel${state.i}`)?.setAttribute("id", `textPath_stateLabel${newId}`);
+    const $label = document.getElementById(`stateLabel${state.i}`);
     if ($label) {
       $label.setAttribute("id", `stateLabel${newId}`);
       const $textPath = $label.querySelector("textPath");
@@ -278,7 +283,7 @@ function recreateStates() {
     }
 
     // update emblem id reference
-    byId(`stateCOA${state.i}`)?.setAttribute("id", `stateCOA${newId}`);
+    document.getElementById(`stateCOA${state.i}`)?.setAttribute("id", `stateCOA${newId}`);
     document.querySelector(`#stateEmblems > use[data-i="${state.i}"]`)?.setAttribute("data-i", newId);
 
     state.provinces.forEach(provinceId => {
@@ -325,9 +330,9 @@ function recreateStates() {
     const type = nomadic
       ? "Nomadic"
       : pack.cultures[culture].type === "Nomadic"
-      ? "Generic"
-      : pack.cultures[culture].type;
-    const expansionism = rn(Math.random() * byId("sizeVariety").value + 1, 1);
+        ? "Generic"
+        : pack.cultures[culture].type;
+    const expansionism = rn(Math.random() * ensureEl("sizeVariety").value + 1, 1);
 
     const cultureType = pack.cultures[culture].type;
     const coa = COA.generate(capital.coa, 0.3, null, cultureType);
@@ -457,8 +462,8 @@ function regenerateBurgs() {
   emblems.selectAll("use").remove();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
-  if (byId("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
-  if (byId("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
+  if (ensureEl("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
+  if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
 }
 
 function regenerateEmblems() {
@@ -551,7 +556,7 @@ function regenerateMilitary() {
   if (layerIsOn("toggleMilitary")) drawMilitary();
   else toggleMilitary();
 
-  if (byId("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
+  if (ensureEl("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
 }
 
 function regenerateIce() {
@@ -564,7 +569,7 @@ function regenerateMarkers() {
   Markers.regenerate();
   turnButtonOn("toggleMarkers");
   drawMarkers();
-  if (byId("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
+  if (ensureEl("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
 }
 
 function regenerateZones(event) {
@@ -576,7 +581,7 @@ function regenerateZones(event) {
 
   function addNumberOfZones(number) {
     Zones.generate(number);
-    if (byId("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
+    if (ensureEl("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
     if (layerIsOn("toggleZones")) drawZones();
   }
 }
@@ -588,7 +593,7 @@ function unpressClickToAddButton() {
 }
 
 function toggleAddLabel() {
-  const pressed = byId("addLabel").classList.contains("pressed");
+  const pressed = ensureEl("addLabel").classList.contains("pressed");
   if (pressed) {
     unpressClickToAddButton();
     return;
@@ -658,22 +663,22 @@ function addLabelOnClick() {
 
 function toggleAddBurg() {
   unpressClickToAddButton();
-  byId("addBurgTool").classList.add("pressed");
+  ensureEl("addBurgTool").classList.add("pressed");
   overviewBurgs();
-  byId("addNewBurg").click();
+  ensureEl("addNewBurg").click();
 }
 
 function toggleAddRiver() {
-  const pressed = byId("addRiver").classList.contains("pressed");
+  const pressed = ensureEl("addRiver").classList.contains("pressed");
   if (pressed) {
     unpressClickToAddButton();
-    byId("addNewRiver").classList.remove("pressed");
+    ensureEl("addNewRiver").classList.remove("pressed");
     return;
   }
 
   addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
   addRiver.classList.add("pressed");
-  byId("addNewRiver").classList.add("pressed");
+  ensureEl("addNewRiver").classList.add("pressed");
   closeDialogs(".stable");
   viewbox.style("cursor", "crosshair").on("click", addRiverOnClick);
   tip("Click on map to place new river or extend an existing one. Hold Shift to place multiple rivers", true, "warn");
@@ -746,7 +751,7 @@ function addRiverOnClick() {
     }
 
     // continue old river
-    byId("river" + oldRiverId)?.remove();
+    document.getElementById("river" + oldRiverId)?.remove();
     riverCells.forEach(i => (cells.r[i] = oldRiverId));
     oldRiverCells.forEach(cell => {
       if (h[cell] > h[min]) {
@@ -821,13 +826,13 @@ function addRiverOnClick() {
   if (d3.event.shiftKey === false) {
     Lakes.cleanupLakeData();
     unpressClickToAddButton();
-    byId("addNewRiver").classList.remove("pressed");
+    ensureEl("addNewRiver").classList.remove("pressed");
     if (addNewRiver.offsetParent) riversOverviewRefresh.click();
   }
 }
 
 function toggleAddMarker() {
-  const pressed = byId("addMarker")?.classList.contains("pressed");
+  const pressed = ensureEl("addMarker").classList.contains("pressed");
   if (pressed) {
     unpressClickToAddButton();
     return;
@@ -855,7 +860,7 @@ function addMarkerOnClick() {
   const isMarkerSelected = markers.length && elSelected?.node()?.parentElement?.id === "markers";
   const selectedMarker = isMarkerSelected ? markers.find(marker => marker.i === +elSelected.attr("id").slice(6)) : null;
 
-  const selectedType = byId("addedMarkerType").value;
+  const selectedType = ensureEl("addedMarkerType").value;
   const selectedConfig = Markers.getConfig().find(({type}) => type === selectedType);
 
   const baseMarker = selectedMarker || selectedConfig || {icon: "❓"};
@@ -865,13 +870,13 @@ function addMarkerOnClick() {
     selectedConfig.add("marker" + marker.i, cell);
   }
 
-  const markersElement = byId("markers");
+  const markersElement = ensureEl("markers");
   const rescale = +markersElement.getAttribute("rescale");
   markersElement.insertAdjacentHTML("beforeend", drawMarker(marker, rescale));
 
   if (d3.event.shiftKey === false) {
-    byId("markerAdd").classList.remove("pressed");
-    byId("markersAddFromOverview").classList.remove("pressed");
+    ensureEl("markerAdd").classList.remove("pressed");
+    ensureEl("markersAddFromOverview").classList.remove("pressed");
     unpressClickToAddButton();
   }
 }
@@ -896,8 +901,8 @@ function configMarkersGeneration() {
         <td><input class="type" value="${type}" /></td>
         <td style="position: relative">
           <img class="image" src="${isExternal ? icon : ""}" ${
-        isExternal ? "" : "hidden"
-      } style="width:1.2em; height:1.2em; vertical-align: middle;">
+            isExternal ? "" : "hidden"
+          } style="width:1.2em; height:1.2em; vertical-align: middle;">
           <span class="emoji" style="font-size:1.2em">${isExternal ? "" : icon}</span>
           <button class="changeIcon icon-pencil"></button>
         </td>
@@ -982,6 +987,11 @@ function viewCellDetails() {
 }
 
 async function overviewCharts() {
-  const Overview = await import("../dynamic/overview/charts-overview.js?v=1.99.00");
+  const Overview = await import("../dynamic/overview/charts-overview.js?v=1.120.5");
   Overview.open();
+}
+
+async function openMinimap() {
+  const Minimap = await import("./minimap.js?v=1.120.5");
+  Minimap.openMinimapDialog();
 }

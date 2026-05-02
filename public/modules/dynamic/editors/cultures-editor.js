@@ -1,5 +1,6 @@
 const $body = insertEditorHtml();
 addListeners();
+let culturesManualHistory = [];
 
 const cultureTypes = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
 
@@ -51,9 +52,10 @@ function insertEditorHtml() {
       <button id="culturesHeirarchy" data-tip="Show cultures hierarchy tree" class="icon-sitemap"></button>
       <button id="culturesManually" data-tip="Manually re-assign cultures" class="icon-brush"></button>
       <div id="culturesManuallyButtons" style="display: none">
-        <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em;">
+        <div data-tip="Change brush size. Shortcuts: + / ] to increase; - / [ to decrease" style="margin-block: 0.3em;">
           <slider-input id="culturesBrush" min="1" max="100" value="15">Brush size:</slider-input>
         </div>
+        <button id="culturesManuallyUndo" data-tip="Undo last brush stroke" class="icon-ccw"></button>
         <button id="culturesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
         <button id="culturesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
       </div>
@@ -69,27 +71,28 @@ function insertEditorHtml() {
     </div>
   </div>`;
 
-  byId("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-  return byId("culturesBody");
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  return ensureEl("culturesBody");
 }
 
 function addListeners() {
   applySortingByHeader("culturesHeader");
 
-  byId("culturesEditorRefresh").on("click", refreshCulturesEditor);
-  byId("culturesEditStyle").on("click", () => editStyle("cults"));
-  byId("culturesLegend").on("click", toggleLegend);
-  byId("culturesPercentage").on("click", togglePercentageMode);
-  byId("culturesHeirarchy").on("click", showHierarchy);
-  byId("culturesRecalculate").on("click", () => recalculateCultures(true));
-  byId("culturesManually").on("click", enterCultureManualAssignent);
-  byId("culturesManuallyApply").on("click", applyCultureManualAssignent);
-  byId("culturesManuallyCancel").on("click", () => exitCulturesManualAssignment());
-  byId("culturesEditNamesBase").on("click", editNamesbase);
-  byId("culturesAdd").on("click", enterAddCulturesMode);
-  byId("culturesExport").on("click", downloadCulturesCsv);
-  byId("culturesImport").on("click", () => byId("culturesCSVToLoad").click());
-  byId("culturesCSVToLoad").on("change", uploadCulturesData);
+  ensureEl("culturesEditorRefresh").on("click", refreshCulturesEditor);
+  ensureEl("culturesEditStyle").on("click", () => editStyle("cults"));
+  ensureEl("culturesLegend").on("click", toggleLegend);
+  ensureEl("culturesPercentage").on("click", togglePercentageMode);
+  ensureEl("culturesHeirarchy").on("click", showHierarchy);
+  ensureEl("culturesRecalculate").on("click", () => recalculateCultures(true));
+  ensureEl("culturesManually").on("click", enterCultureManualAssignent);
+  ensureEl("culturesManuallyUndo").on("click", undoCulturesManualAssignment);
+  ensureEl("culturesManuallyApply").on("click", applyCultureManualAssignent);
+  ensureEl("culturesManuallyCancel").on("click", () => exitCulturesManualAssignment());
+  ensureEl("culturesEditNamesBase").on("click", NamesbaseEditor.open);
+  ensureEl("culturesAdd").on("click", enterAddCulturesMode);
+  ensureEl("culturesExport").on("click", downloadCulturesCsv);
+  ensureEl("culturesImport").on("click", () => ensureEl("culturesCSVToLoad").click());
+  ensureEl("culturesCSVToLoad").on("change", uploadCulturesData);
 }
 
 function refreshCulturesEditor() {
@@ -121,7 +124,7 @@ function culturesEditorAddLines() {
   let totalArea = 0;
   let totalPopulation = 0;
 
-  const emblemShapeGroup = byId("emblemShape")?.selectedOptions[0]?.parentNode?.label;
+  const emblemShapeGroup = ensureEl("emblemShape").selectedOptions[0]?.parentNode?.label;
   const selectShape = emblemShapeGroup === "Diversiform";
 
   for (const c of pack.cultures) {
@@ -220,12 +223,12 @@ function culturesEditorAddLines() {
   $body.innerHTML = lines;
 
   // update footer
-  byId("culturesFooterCultures").innerHTML = pack.cultures.filter(c => c.i && !c.removed).length;
-  byId("culturesFooterCells").innerHTML = pack.cells.h.filter(h => h >= 20).length;
-  byId("culturesFooterArea").innerHTML = `${si(totalArea)} ${unit}`;
-  byId("culturesFooterPopulation").innerHTML = si(totalPopulation);
-  byId("culturesFooterArea").dataset.area = totalArea;
-  byId("culturesFooterPopulation").dataset.population = totalPopulation;
+  ensureEl("culturesFooterCultures").innerHTML = pack.cultures.filter(c => c.i && !c.removed).length;
+  ensureEl("culturesFooterCells").innerHTML = pack.cells.h.filter(h => h >= 20).length;
+  ensureEl("culturesFooterArea").innerHTML = `${si(totalArea)} ${unit}`;
+  ensureEl("culturesFooterPopulation").innerHTML = si(totalPopulation);
+  ensureEl("culturesFooterArea").dataset.area = totalArea;
+  ensureEl("culturesFooterPopulation").dataset.population = totalPopulation;
 
   // add listeners
   $body.querySelectorAll(":scope > div").forEach($line => {
@@ -246,7 +249,7 @@ function culturesEditorAddLines() {
   $body.querySelectorAll("div > span.icon-lock").forEach($el => $el.on("click", updateLockStatus));
   $body.querySelectorAll("div > span.icon-lock-open").forEach($el => $el.on("click", updateLockStatus));
 
-  const $culturesHeader = byId("culturesHeader");
+  const $culturesHeader = ensureEl("culturesHeader");
   $culturesHeader.querySelector("div[data-sortby='emblems']").style.display = selectShape ? "inline-block" : "none";
 
   if ($body.dataset.type === "percentage") {
@@ -380,7 +383,7 @@ function cultureChangeEmblemsShape() {
   this.parentNode.dataset.emblems = pack.cultures[culture].shield = shape;
 
   const rerenderCOA = (id, coa) => {
-    const $coa = byId(id);
+    const $coa = ensureEl(id);
     if (!$coa) return; // not rendered
     $coa.remove();
     COArenderer.trigger(id, coa);
@@ -612,9 +615,9 @@ function toggleLegend() {
 function togglePercentageMode() {
   if ($body.dataset.type === "absolute") {
     $body.dataset.type = "percentage";
-    const totalCells = +byId("culturesFooterCells").innerText;
-    const totalArea = +byId("culturesFooterArea").dataset.area;
-    const totalPopulation = +byId("culturesFooterPopulation").dataset.population;
+    const totalCells = +ensureEl("culturesFooterCells").innerText;
+    const totalArea = +ensureEl("culturesFooterArea").dataset.area;
+    const totalPopulation = +ensureEl("culturesFooterPopulation").dataset.population;
 
     $body.querySelectorAll(":scope > div").forEach(function (el) {
       const {cells, area, population} = el.dataset;
@@ -630,7 +633,7 @@ function togglePercentageMode() {
 
 async function showHierarchy() {
   if (customization) return;
-  const HeirarchyTree = await import("../hierarchy-tree.js?v=1.88.06");
+  const HeirarchyTree = await import("../hierarchy-tree.js?v=1.120.5");
 
   const getDescription = culture => {
     const {name, type, rural, urban} = culture;
@@ -674,7 +677,7 @@ function enterCultureManualAssignent() {
   customization = 4;
   cults.append("g").attr("id", "temp");
   document.querySelectorAll("#culturesBottom > *").forEach(el => (el.style.display = "none"));
-  byId("culturesManuallyButtons").style.display = "inline-block";
+  ensureEl("culturesManuallyButtons").style.display = "inline-block";
   debug.select("#cultureCenters").style("display", "none");
 
   culturesEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
@@ -690,6 +693,7 @@ function enterCultureManualAssignent() {
     .on("touchmove mousemove", moveCultureBrush);
 
   $body.querySelector("div").classList.add("selected");
+  culturesManualHistory = [];
 }
 
 function selectCultureOnLineClick(i) {
@@ -712,6 +716,7 @@ function selectCultureOnMapClick() {
 
 function dragCultureBrush() {
   const radius = +culturesBrush.value;
+  saveCulturesManualSnapshot();
 
   d3.event.on("drag", () => {
     if (!d3.event.dx && !d3.event.dy) return;
@@ -774,10 +779,11 @@ function applyCultureManualAssignent() {
 
 function exitCulturesManualAssignment(close) {
   customization = 0;
+  culturesManualHistory = [];
   cults.select("#temp").remove();
   removeCircle();
   document.querySelectorAll("#culturesBottom > *").forEach(el => (el.style.display = "inline-block"));
-  byId("culturesManuallyButtons").style.display = "none";
+  ensureEl("culturesManuallyButtons").style.display = "none";
 
   culturesEditor.querySelectorAll(".hide").forEach(el => el.classList.remove("hidden"));
   culturesFooter.style.display = "block";
@@ -789,6 +795,21 @@ function exitCulturesManualAssignment(close) {
   clearMainTip();
   const selected = $body.querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
+}
+
+function saveCulturesManualSnapshot() {
+  const temp = cults.select("#temp").node();
+  if (!temp) return;
+
+  culturesManualHistory.push(temp.innerHTML);
+  if (culturesManualHistory.length > 100) culturesManualHistory.shift();
+}
+
+function undoCulturesManualAssignment() {
+  const temp = cults.select("#temp").node();
+  if (!temp || !culturesManualHistory.length) return;
+
+  temp.innerHTML = culturesManualHistory.pop();
 }
 
 function enterAddCulturesMode() {

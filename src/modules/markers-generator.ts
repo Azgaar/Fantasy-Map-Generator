@@ -1,7 +1,6 @@
 import { mean } from "d3";
 import type { PackedGraph } from "../types/PackedGraph";
 import {
-  byId,
   capitalize,
   convertTemperature,
   gauss,
@@ -104,7 +103,9 @@ class MarkersModule {
   }
 
   private getDefaultConfig(): MarkerConfig[] {
-    const culturesSet = (byId("culturesSet") as HTMLSelectElement)?.value || "";
+    const culturesSet =
+      (document.getElementById("culturesSet") as HTMLSelectElement | null)
+        ?.value || "";
     const isFantasy = culturesSet.includes("Fantasy");
 
     /*

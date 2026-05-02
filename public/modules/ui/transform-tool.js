@@ -31,16 +31,16 @@ async function openTransformTool() {
   modules.openTransformTool = true;
 
   // add listeners
-  byId("transformToolBody").on("input", handleInput);
-  byId("transformPreview")
+  ensureEl("transformToolBody").on("input", handleInput);
+  ensureEl("transformPreview")
     .on("mousedown", handleMousedown)
     .on("mouseup", _ => (mouseIsDown = false))
     .on("mousemove", handleMousemove)
     .on("wheel", handleWheel);
 
   async function loadPreview() {
-    byId("transformPreview").style.width = width + "px";
-    byId("transformPreview").style.height = height + "px";
+    ensureEl("transformPreview").style.width = width + "px";
+    ensureEl("transformPreview").style.height = height + "px";
 
     const options = {noWater: true, fullMap: true, noLabels: true, noScaleBar: true, noVignette: true, noIce: true};
     const url = await getMapURL("png", options);
@@ -49,7 +49,7 @@ async function openTransformTool() {
     const img = new Image();
     img.src = url;
     img.onload = function () {
-      const $canvas = byId("transformPreviewCanvas");
+      const $canvas = ensureEl("transformPreviewCanvas");
       $canvas.style.width = width + "px";
       $canvas.style.height = height + "px";
       $canvas.width = width * SCALE;
@@ -59,41 +59,41 @@ async function openTransformTool() {
   }
 
   function resetInputs() {
-    byId("transformAngleInput").value = 0;
-    byId("transformAngleOutput").value = "0";
-    byId("transformMirrorH").checked = false;
-    byId("transformMirrorV").checked = false;
-    byId("transformScaleInput").value = 0;
-    byId("transformScaleResult").value = 1;
-    byId("transformShiftX").value = 0;
-    byId("transformShiftY").value = 0;
+    ensureEl("transformAngleInput").value = 0;
+    ensureEl("transformAngleOutput").value = "0";
+    ensureEl("transformMirrorH").checked = false;
+    ensureEl("transformMirrorV").checked = false;
+    ensureEl("transformScaleInput").value = 0;
+    ensureEl("transformScaleResult").value = 1;
+    ensureEl("transformShiftX").value = 0;
+    ensureEl("transformShiftY").value = 0;
     handleInput();
 
-    updateCellsNumber(byId("pointsInput").value);
-    byId("transformPointsInput").oninput = e => updateCellsNumber(e.target.value);
+    updateCellsNumber(ensureEl("pointsInput").value);
+    ensureEl("transformPointsInput").oninput = e => updateCellsNumber(e.target.value);
 
     function updateCellsNumber(value) {
-      byId("transformPointsInput").value = value;
+      ensureEl("transformPointsInput").value = value;
       const cells = cellsDensityMap[value];
-      byId("transformPointsInput").dataset.cells = cells;
-      const output = byId("transformPointsFormatted");
+      ensureEl("transformPointsInput").dataset.cells = cells;
+      const output = ensureEl("transformPointsFormatted");
       output.value = cells / 1000 + "K";
       output.style.color = getCellsDensityColor(cells);
     }
   }
 
   function handleInput() {
-    const angle = (+byId("transformAngleInput").value / 180) * Math.PI;
-    const shiftX = +byId("transformShiftX").value;
-    const shiftY = +byId("transformShiftY").value;
-    const mirrorH = byId("transformMirrorH").checked;
-    const mirrorV = byId("transformMirrorV").checked;
+    const angle = (+ensureEl("transformAngleInput").value / 180) * Math.PI;
+    const shiftX = +ensureEl("transformShiftX").value;
+    const shiftY = +ensureEl("transformShiftY").value;
+    const mirrorH = ensureEl("transformMirrorH").checked;
+    const mirrorV = ensureEl("transformMirrorV").checked;
 
     const EXP = 1.0965;
-    const scale = rn(EXP ** +byId("transformScaleInput").value, 2); // [0.1, 10]x
-    byId("transformScaleResult").value = scale;
+    const scale = rn(EXP ** +ensureEl("transformScaleInput").value, 2); // [0.1, 10]x
+    ensureEl("transformScaleResult").value = scale;
 
-    byId("transformPreviewCanvas").style.transform = `
+    ensureEl("transformPreviewCanvas").style.transform = `
       translate(${shiftX * previewScale}px, ${shiftY * previewScale}px)
       scale(${mirrorH ? -scale : scale}, ${mirrorV ? -scale : scale})
       rotate(${angle}rad)
@@ -102,8 +102,8 @@ async function openTransformTool() {
 
   function handleMousedown(e) {
     mouseIsDown = true;
-    const shiftX = +byId("transformShiftX").value;
-    const shiftY = +byId("transformShiftY").value;
+    const shiftX = +ensureEl("transformShiftX").value;
+    const shiftY = +ensureEl("transformShiftY").value;
     mouseX = shiftX - e.clientX / previewScale;
     mouseY = shiftY - e.clientY / previewScale;
   }
@@ -112,13 +112,13 @@ async function openTransformTool() {
     if (!mouseIsDown) return;
     e.preventDefault();
 
-    byId("transformShiftX").value = Math.round(mouseX + e.clientX / previewScale);
-    byId("transformShiftY").value = Math.round(mouseY + e.clientY / previewScale);
+    ensureEl("transformShiftX").value = Math.round(mouseX + e.clientX / previewScale);
+    ensureEl("transformShiftY").value = Math.round(mouseY + e.clientY / previewScale);
     handleInput();
   }
 
   function handleWheel(e) {
-    const $scaleInput = byId("transformScaleInput");
+    const $scaleInput = ensureEl("transformScaleInput");
     $scaleInput.value = $scaleInput.valueAsNumber - Math.sign(e.deltaY);
     handleInput();
   }
@@ -126,8 +126,8 @@ async function openTransformTool() {
   function transformMap() {
     INFO && console.group("transformMap");
 
-    const transformPointsValue = byId("transformPointsInput").value;
-    const globalPointsValue = byId("pointsInput").value;
+    const transformPointsValue = ensureEl("transformPointsInput").value;
+    const globalPointsValue = ensureEl("pointsInput").value;
     if (transformPointsValue !== globalPointsValue) changeCellsDensity(transformPointsValue);
 
     const [projection, inverse] = getProjection();
@@ -146,14 +146,14 @@ async function openTransformTool() {
   function getProjection() {
     const centerX = graphWidth / 2;
     const centerY = graphHeight / 2;
-    const shiftX = +byId("transformShiftX").value;
-    const shiftY = +byId("transformShiftY").value;
-    const angle = (+byId("transformAngleInput").value / 180) * Math.PI;
+    const shiftX = +ensureEl("transformShiftX").value;
+    const shiftY = +ensureEl("transformShiftY").value;
+    const angle = (+ensureEl("transformAngleInput").value / 180) * Math.PI;
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
-    const scale = +byId("transformScaleResult").value;
-    const mirrorH = byId("transformMirrorH").checked;
-    const mirrorV = byId("transformMirrorV").checked;
+    const scale = +ensureEl("transformScaleResult").value;
+    const mirrorH = ensureEl("transformMirrorH").checked;
+    const mirrorV = ensureEl("transformMirrorV").checked;
 
     function project(x, y) {
       // center the point

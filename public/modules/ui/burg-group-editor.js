@@ -1,5 +1,7 @@
 "use strict";
 
+const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
+
 function editBurgGroups() {
   if (customization) return;
   addLines();
@@ -10,10 +12,10 @@ function editBurgGroups() {
     position: {my: "center", at: "center", of: "svg"},
     buttons: {
       Apply: () => {
-        byId("burgGroupsForm").requestSubmit();
+        ensureEl("burgGroupsForm").requestSubmit();
       },
       Add: () => {
-        byId("burgGroupsBody").insertAdjacentHTML("beforeend", createLine({name: "", active: true, preview: null}));
+        ensureEl("burgGroupsBody").insertAdjacentHTML("beforeend", createLine({name: "", active: true, preview: null}));
       },
       Restore: () => {
         options.burgs.groups = Burgs.getDefaultGroups();
@@ -29,8 +31,8 @@ function editBurgGroups() {
   modules.editBurgGroups = true;
 
   // add listeners
-  byId("burgGroupsForm").on("change", validateForm).on("submit", submitForm);
-  byId("burgGroupsBody").on("click", ev => {
+  ensureEl("burgGroupsForm").on("change", validateForm).on("submit", submitForm);
+  ensureEl("burgGroupsBody").on("click", ev => {
     const el = ev.target;
     const line = el.closest("tr");
     if (!line) return;
@@ -52,7 +54,7 @@ function editBurgGroups() {
 
   function addLines() {
     const lines = options.burgs.groups.map(createLine);
-    byId("burgGroupsBody").innerHTML = lines.join("");
+    ensureEl("burgGroupsBody").innerHTML = lines.join("");
   }
 
   function createLine(group) {
@@ -60,7 +62,7 @@ function editBurgGroups() {
     // prettier-ignore
     return /* html */ `<tr name="${group.name}">
       <td data-tip="Rendering order: higher values are rendered on top"><input type="number" name="order" min="1" max="999" step="1" required value="${group.order || ''}" /></td>
-      <td data-tip="Type group name. It can contain only text, digits and underscore"><input type="text" name="name" value="${group.name}" required pattern="\\w+" /></td>
+      <td data-tip="Type group name. Must start with a letter or underscore, followed by letters, digits, underscores, or dashes. Spaces are not allowed"><input type="text" name="name" value="${group.name}" required /></td>
       <td data-tip="Burg preview generator">
         <select name="preview">
           <option value="" ${!group.preview ? "selected" : ""}>no</option>
@@ -114,8 +116,8 @@ function editBurgGroups() {
           </td>
           <td>
             <input data-i="${i}" id="el${i}" type="checkbox" class="checkbox" ${
-        !initial.length || initial.includes(i) ? "checked" : ""
-      } >
+              !initial.length || initial.includes(i) ? "checked" : ""
+            } >
             <label for="el${i}" class="checkbox-label">${fullName || name}</label>
           </td>
         </tr>`
@@ -210,7 +212,7 @@ function editBurgGroups() {
       title: "Limit group by features",
       buttons: {
         Apply: function () {
-          const form = byId("featuresLimitationForm");
+          const form = ensureEl("featuresLimitationForm");
           const values = features.reduce((acc, {name}) => {
             const value = form[name].value;
             if (value !== "undefined") acc[name] = value === "true";
@@ -230,7 +232,7 @@ function editBurgGroups() {
   }
 
   function removeLine(line) {
-    const lines = byId("burgGroupsBody").children;
+    const lines = ensureEl("burgGroupsBody").children;
     if (lines.length < 2) return tip("At least one group should be defined", false, "error");
 
     confirmationDialog({
@@ -246,47 +248,60 @@ function editBurgGroups() {
   }
 
   function validateForm() {
-    const form = byId("burgGroupsForm");
+    const form = ensureEl("burgGroupsForm");
 
     if (form.name.length) {
       const names = Array.from(form.name).map(input => input.value);
       form.name.forEach(nameInput => {
         const value = nameInput.value;
+        const isFormatValid = GROUP_NAME_REGEXP.test(value);
         const isUnique = names.filter(n => n === value).length === 1;
-        nameInput.setCustomValidity(isUnique ? "" : "Group name should be unique");
-        nameInput.reportValidity();
+        const message = !isFormatValid
+          ? "Group name must start with a letter or underscore and then contain only letters, digits, underscores, or dashes"
+          : !isUnique
+            ? "Group name should be unique"
+            : "";
+        nameInput.setCustomValidity(message);
       });
+    } else {
+      const value = form.name.value;
+      const isFormatValid = GROUP_NAME_REGEXP.test(value);
+      const message = isFormatValid
+        ? ""
+        : "Group name must start with a letter or underscore and then contain only letters, digits, underscores, or dashes";
+      form.name.setCustomValidity(message);
     }
 
     if (form.active.length) {
       const active = Array.from(form.active).map(input => input.checked);
       form.active[0].setCustomValidity(active.includes(true) ? "" : "At least one group should be active");
-      form.active[0].reportValidity();
     } else {
       const active = form.active.checked;
       form.active.setCustomValidity(active ? "" : "At least one group should be active");
-      form.active.reportValidity();
     }
 
     if (form.isDefault.length) {
       const checked = Array.from(form.isDefault).map(input => input.checked);
       form.isDefault[0].setCustomValidity(checked.includes(true) ? "" : "At least one group should be default");
-      form.isDefault[0].reportValidity();
     } else {
       const checked = form.isDefault.checked;
       form.isDefault.setCustomValidity(checked ? "" : "At least one group should be default");
-      form.isDefault.reportValidity();
     }
+
+    const isValid = form.checkValidity();
+    if (!isValid) form.reportValidity();
+    return isValid;
   }
 
   function submitForm(event) {
     event.preventDefault();
+    if (!validateForm()) return;
 
-    const lines = Array.from(byId("burgGroupsBody").children);
+    const lines = Array.from(ensureEl("burgGroupsBody").children);
     if (!lines.length) return tip("At least one group should be defined", false, "error");
 
     function parseInput(input) {
-      if (input.name === "name") return sanitizeId(input.value);
+      if (input.name === "name") return input.value;
       if (input.name === "features") {
         const isValid = JSON.isValid(input.value);
         const parsed = isValid ? JSON.parse(input.value) : {};
@@ -322,7 +337,7 @@ function editBurgGroups() {
 
     if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
     if (layerIsOn("toggleLabels")) drawBurgLabels();
-    if (byId("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
+    if (ensureEl("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
 
     $("#burgGroupsEditor").dialog("close");
   }

@@ -164,7 +164,7 @@
   "#sea_island": {
     "opacity": 0.5,
     "stroke": "#1f3846",
-    "stroke-width": 0.7,
+    "stroke-width": 0.5,
     "filter": "url(#dropShadow)",
     "auto-filter": 1
   },

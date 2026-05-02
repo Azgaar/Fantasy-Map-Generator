@@ -1,3 +1,4 @@
+import { clipPolygon } from "lineclip";
 import { last } from "./arrayUtils";
 import { distanceSquared } from "./functionUtils";
 import { rn } from "./numberUtils";
@@ -8,14 +9,15 @@ import { rand } from "./probabilityUtils";
  * @param points - Array of points [[x1, y1], [x2, y2], ...]
  * @param graphWidth - Width of the graph
  * @param graphHeight - Height of the graph
- * @param secure - Secure clipping to avoid edge artifacts
+ * @param secure - When truthy, duplicate boundary-crossing points to prevent B-spline
+ *   curves from arcing away from map edges (restores original "secure clipping" behavior)
  * @returns Clipped polygon points
  */
 export const clipPoly = (
   points: [number, number][],
-  graphWidth?: number,
-  graphHeight?: number,
-  secure: number = 0,
+  graphWidth: number,
+  graphHeight: number,
+  secure?: number,
 ) => {
   if (points.length < 2) return points;
   if (points.some((point) => point === undefined)) {
@@ -23,7 +25,25 @@ export const clipPoly = (
     return points;
   }
 
-  return window.polygonclip(points, [0, 0, graphWidth, graphHeight], secure);
+  const clipped = clipPolygon(points, [0, 0, graphWidth, graphHeight]);
+
+  if (!secure || !clipped.length) return clipped;
+
+  // Duplicate each boundary point twice so the B-spline passes through it
+  // rather than arcing away from the map edge (replicates polygonclip secure=1)
+  const secured: [number, number][] = [];
+  for (const point of clipped) {
+    secured.push(point);
+    if (
+      point[0] === 0 ||
+      point[0] === graphWidth ||
+      point[1] === 0 ||
+      point[1] === graphHeight
+    ) {
+      secured.push(point, point);
+    }
+  }
+  return secured;
 };
 
 /**
@@ -67,7 +87,7 @@ export const getSegmentId = (
 };
 
 /**
- * Creates a debounced function that delays invoking func until after ms milliseconds have elapsed
+ * Creates a debounced function that delays next func call until after ms milliseconds
  * @param func - The function to debounce
  * @param ms - The number of milliseconds to delay
  * @returns The debounced function
@@ -212,11 +232,14 @@ export const isCtrlClick = (event: MouseEvent | KeyboardEvent): boolean => {
  * @returns Formatted date string
  */
 export const generateDate = (from: number = 100, to: number = 1000): string => {
-  return new Date(rand(from, to), rand(12), rand(31)).toLocaleDateString("en", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  return new Date(rand(from, to), rand(11), rand(1, 28)).toLocaleDateString(
+    "en",
+    {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    },
+  );
 };
 
 /**
@@ -372,9 +395,11 @@ export const initializePrompt = (): void => {
 declare global {
   interface Window {
     ERROR: boolean;
-    polygonclip: any;
 
-    clipPoly: typeof clipPoly;
+    clipPoly: (
+      points: [number, number][],
+      secure?: number,
+    ) => [number, number][];
     getSegmentId: typeof getSegmentId;
     debounce: typeof debounce;
     throttle: typeof throttle;

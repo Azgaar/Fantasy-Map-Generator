@@ -16,15 +16,15 @@ function editRouteGroups() {
   modules.editRouteGroups = true;
 
   // add listeners
-  byId("routeGroupsEditorAdd").addEventListener("click", addGroup);
-  byId("routeGroupsEditorBody").on("click", ev => {
+  ensureEl("routeGroupsEditorAdd").addEventListener("click", addGroup);
+  ensureEl("routeGroupsEditorBody").on("click", ev => {
     const group = ev.target.closest(".states")?.dataset.id;
     if (ev.target.classList.contains("editStyle")) editStyle("routes", group);
     else if (ev.target.classList.contains("removeGroup")) removeGroup(group);
   });
 
   function addLines() {
-    byId("routeGroupsEditorBody").innerHTML = "";
+    ensureEl("routeGroupsEditorBody").innerHTML = "";
 
     const lines = Array.from(routes.selectAll("g")._groups[0]).map(el => {
       const count = el.children.length;
@@ -37,7 +37,7 @@ function editRouteGroups() {
         </div>`;
     });
 
-    byId("routeGroupsEditorBody").innerHTML = lines.join("");
+    ensureEl("routeGroupsEditorBody").innerHTML = lines.join("");
   }
 
   const DEFAULT_GROUPS = ["roads", "trails", "searoutes"];
@@ -51,7 +51,7 @@ function editRouteGroups() {
 
       if (!group) return tip("Invalid group name", false, "error");
       if (!group.startsWith("route-")) group = "route-" + group;
-      if (byId(group)) return tip("Element with this name already exists. Provide a unique name", false, "error");
+      if (document.getElementById(group)) return tip("Element with this name already exists. Provide a unique name", false, "error");
       if (Number.isFinite(+group.charAt(0))) return tip("Group name should start with a letter", false, "error");
 
       routes
@@ -61,10 +61,10 @@ function editRouteGroups() {
         .attr("stroke-width", 0.5)
         .attr("stroke-dasharray", "1 0.5")
         .attr("stroke-linecap", "butt");
-      byId("routeGroup")?.options.add(new Option(group, group));
+      ensureEl("routeGroup").options.add(new Option(group, group));
       addLines();
 
-      byId("routeCreatorGroupSelect").options.add(new Option(group, group));
+      ensureEl("routeCreatorGroupSelect").options.add(new Option(group, group));
     });
   }
 

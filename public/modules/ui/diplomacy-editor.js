@@ -269,7 +269,7 @@ function editDiplomacy() {
       title: `Change relations`,
       buttons: {
         Apply: function () {
-          const formData = new FormData(byId("relationsForm"));
+          const formData = new FormData(ensureEl("relationsForm"));
           const newRelation = formData.get("relationSelect");
           const objectIds = [...formData.getAll("objectSelect")].map(Number);
 

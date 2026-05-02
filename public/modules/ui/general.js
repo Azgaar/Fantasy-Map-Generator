@@ -14,11 +14,12 @@ if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
 
 // Tooltips
 const tooltip = document.getElementById("tooltip");
+const onDataTipMove = debounce(showDataTip, 50);
 
 // show tip for non-svg elemets with data-tip
-document.getElementById("dialogs").addEventListener("mousemove", showDataTip);
-document.getElementById("optionsContainer").addEventListener("mousemove", showDataTip);
-document.getElementById("exitCustomization").addEventListener("mousemove", showDataTip);
+document.getElementById("dialogs").addEventListener("mousemove", onDataTipMove);
+document.getElementById("optionsContainer").addEventListener("mousemove", onDataTipMove);
+document.getElementById("exitCustomization").addEventListener("mousemove", onDataTipMove);
 
 const tipBackgroundMap = {
   info: "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)",
@@ -129,8 +130,8 @@ function showMapTooltip(point, e, i, g) {
       parent.id === "burgEmblems"
         ? [pack.burgs, "burg"]
         : parent.id === "provinceEmblems"
-        ? [pack.provinces, "province"]
-        : [pack.states, "state"];
+          ? [pack.provinces, "province"]
+          : [pack.states, "state"];
     const i = +e.target.dataset.i;
     if (event.shiftKey) highlightEmblemElement(type, g[i]);
 
@@ -227,7 +228,7 @@ function showMapTooltip(point, e, i, g) {
     const r = pack.religions[religion];
     const type = r.type === "Cult" || r.type == "Heresy" ? r.type : r.type + " religion";
     tip(type + ": " + r.name);
-    if (byId("religionsEditor")?.offsetParent) highlightEditorLine(religionsEditor, religion);
+    if (document.getElementById("religionsEditor")?.offsetParent) highlightEditorLine(religionsEditor, religion);
   } else if (pack.cells.state[i] && (layerIsOn("toggleProvinces") || layerIsOn("toggleStates"))) {
     const state = pack.cells.state[i];
     const stateName = pack.states[state].fullName;
@@ -238,6 +239,7 @@ function showMapTooltip(point, e, i, g) {
     if (document.getElementById("diplomacyEditor")?.offsetParent) highlightEditorLine(diplomacyEditor, state);
     if (document.getElementById("militaryOverview")?.offsetParent) highlightEditorLine(militaryOverview, state);
     if (document.getElementById("provincesEditor")?.offsetParent) highlightEditorLine(provincesEditor, province);
+    if (document.getElementById("mergeStatesForm")?.offsetParent) highlightEditorLine(ensureEl("mergeStatesForm"), state);
   } else if (layerIsOn("toggleCultures") && pack.cells.culture[i]) {
     const culture = pack.cells.culture[i];
     tip("Culture: " + pack.cultures[culture].name);
@@ -246,7 +248,7 @@ function showMapTooltip(point, e, i, g) {
 }
 
 function highlightEditorLine(editor, id, timeout = 10000) {
-  Array.from(editor.getElementsByClassName("states hovered")).forEach(el => el.classList.remove("hovered")); // clear all hovered
+  Array.from(editor.getElementsByClassName("hovered")).forEach(el => el.classList.remove("hovered")); // clear all hovered
   const hovered = Array.from(editor.querySelectorAll("div")).find(el => el.dataset.id == id);
   if (hovered) hovered.classList.add("hovered"); // add hovered class
   if (timeout)
@@ -345,7 +347,8 @@ function getFriendlyHeight([x, y]) {
 function getHeight(h, abs) {
   const unit = heightUnit.value;
   let unitRatio = 3.281; // default calculations are in feet
-  if (unit === "m") unitRatio = 1; // if meter
+  if (unit === "m")
+    unitRatio = 1; // if meter
   else if (unit === "f") unitRatio = 0.5468; // if fathom
 
   let height = -990;

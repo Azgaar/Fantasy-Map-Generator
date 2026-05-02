@@ -1,5 +1,5 @@
 import Alea from "alea";
-import { color } from "d3";
+import { color, quadtree } from "d3";
 import Delaunator from "delaunator";
 import {
   type Cells,
@@ -7,9 +7,10 @@ import {
   type Vertices,
   Voronoi,
 } from "../modules/voronoi";
+import type { PackedGraph } from "../types/PackedGraph";
 import { createTypedArray } from "./arrayUtils";
+import { ensureEl } from "./nodeUtils";
 import { rn } from "./numberUtils";
-import { byId } from "./shorthands";
 
 /**
  * Get boundary points on a regular square grid
@@ -90,7 +91,7 @@ const placePoints = (
   cellsY: number;
 } => {
   TIME && console.time("placePoints");
-  const cellsDesired = +(byId("pointsInput")?.dataset.cells || 0);
+  const cellsDesired = +(ensureEl("pointsInput").dataset.cells || 0);
   const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jittering
 
   const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
@@ -127,7 +128,7 @@ export const shouldRegenerateGrid = (
 ) => {
   if (expectedSeed && expectedSeed !== grid.seed) return true;
 
-  const cellsDesired = +(byId("pointsInput")?.dataset?.cells || 0);
+  const cellsDesired = +(ensureEl("pointsInput").dataset?.cells || 0);
   if (cellsDesired !== grid.cellsDesired) return true;
 
   const newSpacing = rn(
@@ -266,6 +267,11 @@ export const findGridAll = (
   return found;
 };
 
+const quadtreeCache = new WeakMap<
+  object,
+  ReturnType<typeof quadtree<[number, number, number]>>
+>();
+
 /**
  * Returns the index of the packed cell containing the given x and y coordinates
  * @param {number} x - The x coordinate
@@ -277,10 +283,16 @@ export const findClosestCell = (
   x: number,
   y: number,
   radius = Infinity,
-  packedGraph: any,
+  pack: { cells: { p: [number, number][] } },
 ): number | undefined => {
-  if (!packedGraph.cells?.q) return;
-  const found = packedGraph.cells.q.find(x, y, radius);
+  if (!pack.cells?.p) throw new Error("Pack cells not found");
+  let qTree = quadtreeCache.get(pack.cells.p);
+  if (!qTree) {
+    qTree = quadtree(pack.cells.p.map(([px, py], i) => [px, py, i]));
+    if (!qTree) throw new Error("Failed to create quadtree");
+    quadtreeCache.set(pack.cells.p, qTree);
+  }
+  const found = qTree.find(x, y, radius);
   return found ? found[2] : undefined;
 };
 
@@ -414,8 +426,13 @@ export const findAllCellsInRadius = (
   radius: number,
   packedGraph: any,
 ): number[] => {
-  // Use findAllInQuadtree directly instead of relying on prototype extension
-  const found = findAllInQuadtree(x, y, radius, packedGraph.cells.q);
+  const q = quadtree<[number, number, number]>(
+    packedGraph.cells.p.map(
+      ([px, py]: [number, number], i: number) =>
+        [px, py, i] as [number, number, number],
+    ),
+  );
+  const found = findAllInQuadtree(x, y, radius, q);
   return found.map((r: any) => r[2]);
 };
 
@@ -525,7 +542,7 @@ export function* poissonDiscSampler(
  * @param {number} i - The index of the packed cell
  * @returns {boolean} - True if the cell is land, false otherwise
  */
-export const isLand = (i: number, packedGraph: any) => {
+export const isLand = (i: number, packedGraph: PackedGraph) => {
   return packedGraph.cells.h[i] >= 20;
 };
 
@@ -534,7 +551,7 @@ export const isLand = (i: number, packedGraph: any) => {
  * @param {number} i - The index of the packed cell
  * @returns {boolean} - True if the cell is water, false otherwise
  */
-export const isWater = (i: number, packedGraph: any) => {
+export const isWater = (i: number, packedGraph: PackedGraph) => {
   return packedGraph.cells.h[i] < 20;
 };
 

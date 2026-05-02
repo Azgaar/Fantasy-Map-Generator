@@ -50,32 +50,35 @@ function editLabel() {
   modules.editLabel = true;
 
   // add listeners
-  byId("labelGroupShow").on("click", showGroupSection);
-  byId("labelGroupHide").on("click", hideGroupSection);
-  byId("labelGroupSelect").on("click", changeGroup);
-  byId("labelGroupInput").on("change", createNewGroup);
-  byId("labelGroupNew").on("click", toggleNewGroupInput);
-  byId("labelGroupRemove").on("click", removeLabelsGroup);
+  ensureEl("labelGroupShow").on("click", showGroupSection);
+  ensureEl("labelGroupHide").on("click", hideGroupSection);
+  ensureEl("labelGroupSelect").on("click", changeGroup);
+  ensureEl("labelGroupInput").on("change", createNewGroup);
+  ensureEl("labelGroupNew").on("click", toggleNewGroupInput);
+  ensureEl("labelGroupRemove").on("click", removeLabelsGroup);
 
-  byId("labelTextShow").on("click", showTextSection);
-  byId("labelTextHide").on("click", hideTextSection);
-  byId("labelText").on("input", changeText);
-  byId("labelTextRandom").on("click", generateRandomName);
+  ensureEl("labelTextShow").on("click", showTextSection);
+  ensureEl("labelTextHide").on("click", hideTextSection);
+  ensureEl("labelText").on("input", changeText);
+  ensureEl("labelTextRandom").on("click", generateRandomName);
 
-  byId("labelEditStyle").on("click", editGroupStyle);
+  ensureEl("labelEditStyle").on("click", editGroupStyle);
 
-  byId("labelSizeShow").on("click", showSizeSection);
-  byId("labelSizeHide").on("click", hideSizeSection);
-  byId("labelStartOffset").on("input", changeStartOffset);
-  byId("labelRelativeSize").on("input", changeRelativeSize);
+  ensureEl("labelSizeShow").on("click", showSizeSection);
+  ensureEl("labelSizeHide").on("click", hideSizeSection);
+  ensureEl("labelOffsetShow").on("click", showOffsetSection);
+  ensureEl("labelOffsetHide").on("click", hideOffsetSection);
+  ensureEl("labelStartOffset").on("input", changeStartOffset);
+  ensureEl("labelStartOffsetValue").on("input", changeStartOffsetFromValue);
+  ensureEl("labelRelativeSize").on("input", changeRelativeSize);
 
-  byId("labelLetterSpacingShow").on("click", showLetterSpacingSection);
-  byId("labelLetterSpacingHide").on("click", hideLetterSpacingSection);
-  byId("labelLetterSpacingSize").on("input", changeLetterSpacingSize);
+  ensureEl("labelLetterSpacingShow").on("click", showLetterSpacingSection);
+  ensureEl("labelLetterSpacingHide").on("click", hideLetterSpacingSection);
+  ensureEl("labelLetterSpacingSize").on("input", changeLetterSpacingSize);
 
-  byId("labelAlign").on("click", editLabelAlign);
-  byId("labelLegend").on("click", editLabelLegend);
-  byId("labelRemoveSingle").on("click", removeLabel);
+  ensureEl("labelAlign").on("click", editLabelAlign);
+  ensureEl("labelLegend").on("click", editLabelLegend);
+  ensureEl("labelRemoveSingle").on("click", removeLabel);
 
   function showEditorTips() {
     showMainTip();
@@ -90,12 +93,12 @@ function editLabel() {
     const group = text.parentNode.id;
 
     if (group === "states" || group === "burgLabels") {
-      byId("labelGroupShow").style.display = "none";
+      ensureEl("labelGroupShow").style.display = "none";
       return;
     }
 
     hideGroupSection();
-    const select = byId("labelGroupSelect");
+    const select = ensureEl("labelGroupSelect");
     select.options.length = 0; // remove all options
 
     labels.selectAll(":scope > g").each(function () {
@@ -108,17 +111,17 @@ function editLabel() {
   function updateValues(textPath) {
     const labelData = getLabelData(elSelected.node());
     if (labelData) {
-      byId("labelText").value = labelData.text || "";
-      byId("labelStartOffset").value = labelData.startOffset || 50;
-      byId("labelRelativeSize").value = labelData.fontSize || 100;
-      byId("labelLetterSpacingSize").value = labelData.letterSpacing || 0;
+      ensureEl("labelText").value = labelData.text || "";
+      ensureEl("labelStartOffset").value = labelData.startOffset || 50;
+      ensureEl("labelRelativeSize").value = labelData.fontSize || 100;
+      ensureEl("labelLetterSpacingSize").value = labelData.letterSpacing || 0;
     }
   }
 
   function drawControlPointsAndLine() {
     debug.select("#controlPoints").remove();
     debug.append("g").attr("id", "controlPoints").attr("transform", elSelected.attr("transform"));
-    const path = byId("textPath_" + elSelected.attr("id"));
+    const path = ensureEl("textPath_" + elSelected.attr("id"));
     debug.select("#controlPoints").append("path").attr("d", path.getAttribute("d")).on("click", addInterimControlPoint);
     const l = path.getTotalLength();
     if (!l) return;
@@ -147,7 +150,7 @@ function editLabel() {
   }
 
   function redrawLabelPath() {
-    const path = byId("textPath_" + elSelected.attr("id"));
+    const path = ensureEl("textPath_" + elSelected.attr("id"));
     lineGen.curve(d3.curveNatural);
     const points = [];
     debug
@@ -225,19 +228,19 @@ function editLabel() {
 
   function showGroupSection() {
     document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "none"));
-    byId("labelGroupSection").style.display = "inline-block";
+    ensureEl("labelGroupSection").style.display = "inline-block";
   }
 
   function hideGroupSection() {
     document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "inline-block"));
-    byId("labelGroupSection").style.display = "none";
-    byId("labelGroupInput").style.display = "none";
-    byId("labelGroupInput").value = "";
-    byId("labelGroupSelect").style.display = "inline-block";
+    ensureEl("labelGroupSection").style.display = "none";
+    ensureEl("labelGroupInput").style.display = "none";
+    ensureEl("labelGroupInput").value = "";
+    ensureEl("labelGroupSelect").style.display = "inline-block";
   }
 
   function changeGroup() {
-    byId(this.value).appendChild(elSelected.node());
+    ensureEl(this.value).appendChild(elSelected.node());
     const labelData = getLabelData(elSelected.node());
     if (labelData && labelData.type === "custom") {
       Labels.update(labelData.i, { group: this.value });
@@ -265,7 +268,7 @@ function editLabel() {
       .replace(/ /g, "_")
       .replace(/[^\w\s]/gi, "");
 
-    if (byId(group)) {
+    if (ensureEl(group)) {
       tip("Element with this id already exists. Please provide a unique name", false, "error");
       return;
     }
@@ -278,22 +281,22 @@ function editLabel() {
     // just rename if only 1 element left
     const oldGroup = elSelected.node().parentNode;
     if (oldGroup !== "states" && oldGroup !== "addedLabels" && oldGroup.childElementCount === 1) {
-      byId("labelGroupSelect").selectedOptions[0].remove();
-      byId("labelGroupSelect").options.add(new Option(group, group, false, true));
+      ensureEl("labelGroupSelect").selectedOptions[0].remove();
+      ensureEl("labelGroupSelect").options.add(new Option(group, group, false, true));
       // Update data model for labels in the old group
       const oldGroupName = oldGroup.id;
       Labels.getByGroup(oldGroupName).forEach(l => Labels.update(l.i, { group }));
       oldGroup.id = group;
       toggleNewGroupInput();
-      byId("labelGroupInput").value = "";
+      ensureEl("labelGroupInput").value = "";
       return;
     }
 
     const newGroup = elSelected.node().parentNode.cloneNode(false);
-    byId("labels").appendChild(newGroup);
+    ensureEl("labels").appendChild(newGroup);
     newGroup.id = group;
-    byId("labelGroupSelect").options.add(new Option(group, group, false, true));
-    byId(group).appendChild(elSelected.node());
+    ensureEl("labelGroupSelect").options.add(new Option(group, group, false, true));
+    ensureEl(group).appendChild(elSelected.node());
     // Update data model group for the moved label
     const labelData = getLabelData(elSelected.node());
     if (labelData && labelData.type === "custom") {
@@ -301,7 +304,7 @@ function editLabel() {
     }
 
     toggleNewGroupInput();
-    byId("labelGroupInput").value = "";
+    ensureEl("labelGroupInput").value = "";
   }
 
   function removeLabelsGroup() {
@@ -329,7 +332,7 @@ function editLabel() {
             .select("#" + group)
             .selectAll("text")
             .each(function () {
-              byId("textPath_" + this.id).remove();
+              ensureEl("textPath_" + this.id).remove();
               this.remove();
             });
           if (!basic) labels.select("#" + group).remove();
@@ -343,16 +346,16 @@ function editLabel() {
 
   function showTextSection() {
     document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "none"));
-    byId("labelTextSection").style.display = "inline-block";
+    ensureEl("labelTextSection").style.display = "inline-block";
   }
 
   function hideTextSection() {
     document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "inline-block"));
-    byId("labelTextSection").style.display = "none";
+    ensureEl("labelTextSection").style.display = "none";
   }
 
   function changeText() {
-    const input = byId("labelText").value;
+    const input = ensureEl("labelText").value;
     const el = elSelected.select("textPath").node();
 
     const lines = input.split("|");
@@ -381,7 +384,7 @@ function editLabel() {
       const culture = pack.cells.culture[cell];
       name = Names.getCulture(culture);
     }
-    byId("labelText").value = name;
+    ensureEl("labelText").value = name;
     changeText();
   }
 
@@ -392,29 +395,51 @@ function editLabel() {
 
   function showSizeSection() {
     document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "none"));
-    byId("labelSizeSection").style.display = "inline-block";
+    ensureEl("labelSizeSection").style.display = "inline-block";
   }
 
   function hideSizeSection() {
     document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "inline-block"));
-    byId("labelSizeSection").style.display = "none";
+    ensureEl("labelSizeSection").style.display = "none";
+  }
+
+  function showOffsetSection() {
+    document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "none"));
+    ensureEl("labelOffsetSection").style.display = "inline-block";
+  }
+
+  function hideOffsetSection() {
+    document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "inline-block"));
+    ensureEl("labelOffsetSection").style.display = "none";
   }
 
   function showLetterSpacingSection() {
     document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "none"));
-    byId("labelLetterSpacingSection").style.display = "inline-block";
+    ensureEl("labelLetterSpacingSection").style.display = "inline-block";
   }
 
   function hideLetterSpacingSection() {
     document.querySelectorAll("#labelEditor > button").forEach(el => (el.style.display = "inline-block"));
-    byId("labelLetterSpacingSection").style.display = "none";
+    ensureEl("labelLetterSpacingSection").style.display = "none";
   }
 
   function changeStartOffset() {
-    elSelected.select("textPath").attr("startOffset", this.value + "%");
+    const value = this.value;
+    ensureEl("labelStartOffsetValue").value = value;
+    elSelected.select("textPath").attr("startOffset", value + "%");
     const labelData = getLabelData(elSelected.node());
-    if (labelData) Labels.update(labelData.i, { startOffset: +this.value });
-    tip("Label offset: " + this.value + "%");
+    if (labelData) Labels.update(labelData.i, { startOffset: +value });
+    tip("Label offset: " + value + "%");
+  }
+
+  function changeStartOffsetFromValue() {
+    const value = Math.min(80, Math.max(20, this.value));
+    ensureEl("labelStartOffset").value = value;
+    this.value = value;
+    elSelected.select("textPath").attr("startOffset", value + "%");
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) Labels.update(labelData.i, { startOffset: +value });
+    tip("Label offset: " + value + "%");
   }
 
   function changeRelativeSize() {

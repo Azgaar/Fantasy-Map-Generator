@@ -3,7 +3,7 @@
 function editZones() {
   closeDialogs("#zonesEditor, .stable");
   if (!layerIsOn("toggleZones")) toggleZones();
-  const body = byId("zonesBodySection");
+  const body = ensureEl("zonesBodySection");
 
   updateFilters();
   zonesEditorAddLines();
@@ -19,18 +19,18 @@ function editZones() {
   });
 
   // add listeners
-  byId("zonesFilterType").on("click", updateFilters);
-  byId("zonesFilterType").on("change", filterZonesByType);
-  byId("zonesEditorRefresh").on("click", zonesEditorAddLines);
-  byId("zonesEditStyle").on("click", () => editStyle("zones"));
-  byId("zonesLegend").on("click", toggleLegend);
-  byId("zonesPercentage").on("click", togglePercentageMode);
-  byId("zonesManually").on("click", enterZonesManualAssignent);
-  byId("zonesManuallyApply").on("click", applyZonesManualAssignent);
-  byId("zonesManuallyCancel").on("click", cancelZonesManualAssignent);
-  byId("zonesAdd").on("click", addZonesLayer);
-  byId("zonesExport").on("click", downloadZonesData);
-  byId("zonesRemove").on("click", e => e.target.classList.toggle("pressed"));
+  ensureEl("zonesFilterType").on("click", updateFilters);
+  ensureEl("zonesFilterType").on("change", filterZonesByType);
+  ensureEl("zonesEditorRefresh").on("click", zonesEditorAddLines);
+  ensureEl("zonesEditStyle").on("click", () => editStyle("zones"));
+  ensureEl("zonesLegend").on("click", toggleLegend);
+  ensureEl("zonesPercentage").on("click", togglePercentageMode);
+  ensureEl("zonesManually").on("click", enterZonesManualAssignent);
+  ensureEl("zonesManuallyApply").on("click", applyZonesManualAssignent);
+  ensureEl("zonesManuallyCancel").on("click", cancelZonesManualAssignent);
+  ensureEl("zonesAdd").on("click", addZonesLayer);
+  ensureEl("zonesExport").on("click", downloadZonesData);
+  ensureEl("zonesRemove").on("click", e => e.target.classList.toggle("pressed"));
 
   body.on("click", function (ev) {
     const line = ev.target.closest("div.states");
@@ -62,7 +62,7 @@ function editZones() {
 
   // update type filter with a list of used types
   function updateFilters() {
-    const filterSelect = byId("zonesFilterType");
+    const filterSelect = ensureEl("zonesFilterType");
     const types = unique(pack.zones.map(zone => zone.type));
     const typeToFilterBy = types.includes(zonesFilterType.value) ? zonesFilterType.value : "all";
 
@@ -73,7 +73,7 @@ function editZones() {
 
   // add line for each zone
   function zonesEditorAddLines() {
-    const typeToFilterBy = byId("zonesFilterType").value;
+    const typeToFilterBy = ensureEl("zonesFilterType").value;
     const filteredZones =
       typeToFilterBy === "all" ? pack.zones : pack.zones.filter(zone => zone.type === typeToFilterBy);
 
@@ -175,7 +175,7 @@ function editZones() {
     customization = 10;
 
     document.querySelectorAll("#zonesBottom > *").forEach(el => (el.style.display = "none"));
-    byId("zonesManuallyButtons").style.display = "inline-block";
+    ensureEl("zonesManuallyButtons").style.display = "inline-block";
     zonesEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
     zonesFooter.style.display = "none";
     body.querySelectorAll("div > input, select, svg").forEach(e => (e.style.pointerEvents = "none"));
@@ -193,7 +193,7 @@ function editZones() {
     // draw zones as individual cells
     zones.selectAll("*").remove();
 
-    const filterBy = byId("zonesFilterType").value;
+    const filterBy = ensureEl("zonesFilterType").value;
     const isFiltered = filterBy && filterBy !== "all";
     const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
     const data = visibleZones.map(({i, cells, color}) => cells.map(cell => ({cell, zoneId: i, fill: color}))).flat();
@@ -218,9 +218,9 @@ function editZones() {
   }
 
   function dragZoneBrush() {
-    const radius = +byId("zonesBrush").value;
-    const eraseMode = byId("zonesRemove").classList.contains("pressed");
-    const landOnly = byId("zonesBrushLandOnly").checked;
+    const radius = +ensureEl("zonesBrush").value;
+    const eraseMode = ensureEl("zonesRemove").classList.contains("pressed");
+    const landOnly = ensureEl("zonesBrushLandOnly").checked;
 
     d3.event.on("drag", () => {
       if (!d3.event.dx && !d3.event.dy) return;
@@ -275,7 +275,7 @@ function editZones() {
       return acc;
     }, {});
 
-    const filterBy = byId("zonesFilterType").value;
+    const filterBy = ensureEl("zonesFilterType").value;
     const isFiltered = filterBy && filterBy !== "all";
     const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
     visibleZones.forEach(zone => (zone.cells = zoneCells[zone.i] || []));
@@ -294,7 +294,7 @@ function editZones() {
     customization = 0;
     removeCircle();
     document.querySelectorAll("#zonesBottom > *").forEach(el => (el.style.display = "inline-block"));
-    byId("zonesManuallyButtons").style.display = "none";
+    ensureEl("zonesManuallyButtons").style.display = "none";
 
     zonesEditor.querySelectorAll(".hide:not(.show)").forEach(el => el.classList.remove("hidden"));
     zonesFooter.style.display = "block";
@@ -343,7 +343,7 @@ function editZones() {
   function toggleLegend() {
     if (legend.selectAll("*").size()) return clearLegend(); // hide legend
 
-    const filterBy = byId("zonesFilterType").value;
+    const filterBy = ensureEl("zonesFilterType").value;
     const isFiltered = filterBy && filterBy !== "all";
     const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
     const data = visibleZones.map(({i, name, color}) => ["zone" + i, color, name]);

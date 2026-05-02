@@ -1,3 +1,4 @@
+import "./coastline-fractal";
 import "./draw-borders";
 import "./draw-burg-icons";
 import "./draw-burg-labels";

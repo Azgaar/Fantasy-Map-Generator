@@ -173,7 +173,7 @@ function insertHtml() {
     <div id="hierarchyTree_originSelector"></div>
   </div>`;
 
-  byId("dialogs").insertAdjacentHTML("beforeend", html);
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 }
 
 function cleanupOrigins(elements) {
@@ -367,13 +367,13 @@ function selectElement(d) {
   nodes.selectAll("g").style("outline", "none");
   node.style("outline", "1px solid #c13119");
 
-  byId("hierarchyTree_selected").style.display = "block";
-  byId("hierarchyTree_infoLine").style.display = "none";
+  ensureEl("hierarchyTree_selected").style.display = "block";
+  ensureEl("hierarchyTree_infoLine").style.display = "none";
 
-  byId("hierarchyTree_selectedName").innerText = dataElement.name;
-  byId("hierarchyTree_selectedCode").value = dataElement.code;
+  ensureEl("hierarchyTree_selectedName").innerText = dataElement.name;
+  ensureEl("hierarchyTree_selectedCode").value = dataElement.code;
 
-  byId("hierarchyTree_selectedCode").onchange = function () {
+  ensureEl("hierarchyTree_selectedCode").onchange = function () {
     if (this.value.length > 3) return tip("Abbreviation must be 3 characters or less", false, "error", 3000);
     if (!this.value.length) return tip("Abbreviation cannot be empty", false, "error", 3000);
 
@@ -382,7 +382,7 @@ function selectElement(d) {
   };
 
   const createOriginButtons = () => {
-    byId("hierarchyTree_selectedOrigins").innerHTML = dataElement.origins
+    ensureEl("hierarchyTree_selectedOrigins").innerHTML = dataElement.origins
       .filter(origin => origin)
       .map((origin, index) => {
         const {name, code} = validElements.find(r => r.i === origin) || {};
@@ -392,7 +392,7 @@ function selectElement(d) {
       })
       .join("");
 
-    byId("hierarchyTree_selectedOrigins").onclick = event => {
+    ensureEl("hierarchyTree_selectedOrigins").onclick = event => {
       const target = event.target;
       if (target.tagName !== "BUTTON") return;
       const origin = Number(target.dataset.id);
@@ -405,7 +405,7 @@ function selectElement(d) {
 
   createOriginButtons();
 
-  byId("hierarchyTree_selectedSelectButton").onclick = () => {
+  ensureEl("hierarchyTree_selectedSelectButton").onclick = () => {
     const origins = dataElement.origins;
 
     const descendants = d.descendants().map(d => d.data.i);
@@ -436,7 +436,7 @@ function selectElement(d) {
       `;
     });
 
-    byId("hierarchyTree_originSelector").innerHTML = /*html*/ `
+    ensureEl("hierarchyTree_originSelector").innerHTML = /*html*/ `
       <form style="max-height: 35vh">
         ${selectableElementsHtml.join("")}
       </form>
@@ -448,7 +448,7 @@ function selectElement(d) {
       buttons: {
         Select: () => {
           $("#hierarchyTree_originSelector").dialog("close");
-          const $selector = byId("hierarchyTree_originSelector");
+          const $selector = ensureEl("hierarchyTree_originSelector");
           const selectedRadio = $selector.querySelector("input[type='radio']:checked");
           const selectedCheckboxes = $selector.querySelectorAll("input[type='checkbox']:checked");
 
@@ -469,10 +469,10 @@ function selectElement(d) {
     });
   };
 
-  byId("hierarchyTree_selectedCloseButton").onclick = () => {
+  ensureEl("hierarchyTree_selectedCloseButton").onclick = () => {
     node.style("outline", "none");
-    byId("hierarchyTree_selected").style.display = "none";
-    byId("hierarchyTree_infoLine").style.display = "block";
+    ensureEl("hierarchyTree_selected").style.display = "none";
+    ensureEl("hierarchyTree_infoLine").style.display = "block";
   };
 }
 
@@ -482,7 +482,7 @@ function handleNoteEnter(d) {
   this.classList.add("selected");
   onNodeEnter(d);
 
-  byId("hierarchyTree_infoLine").innerText = getDescription(d.data);
+  ensureEl("hierarchyTree_infoLine").innerText = getDescription(d.data);
   tip("Drag to other node to add parent, click to edit");
 }
 
@@ -490,7 +490,7 @@ function handleNodeExit(d) {
   this.classList.remove("selected");
   onNodeLeave(d);
 
-  byId("hierarchyTree_infoLine").innerHTML = "&#8205;";
+  ensureEl("hierarchyTree_infoLine").innerHTML = "&#8205;";
   tip("");
 }
 

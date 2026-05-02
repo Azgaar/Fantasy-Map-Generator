@@ -1,6 +1,7 @@
-import { curveBasisClosed, line, select } from "d3";
+import { select } from "d3";
 import type { PackedGraphFeature } from "../modules/features";
 import { clipPoly, round } from "../utils";
+import { buildCoastlinePath, fractalizeCoastline } from "./coastline-fractal";
 
 declare global {
   var drawFeatures: () => void;
@@ -41,6 +42,9 @@ const featuresRenderer = (): void => {
     if (feature.type === "lake") {
       html.landMask.push(
         `<use href="#feature_${feature.i}" data-f="${feature.i}" fill="black"></use>`,
+      );
+      html.waterMask.push(
+        `<use href="#feature_${feature.i}" data-f="${feature.i}" fill="white"></use>`,
       );
 
       const lakeGroup = feature.group || "freshwater";
@@ -83,9 +87,7 @@ const featuresRenderer = (): void => {
 };
 
 function featurePathRenderer(feature: PackedGraphFeature): string {
-  const points: [number, number][] = feature.vertices.map(
-    (vertex: number) => pack.vertices.p[vertex],
-  );
+  const points = feature.vertices.map((vertex) => pack.vertices.p[vertex]);
   if (points.some((point) => point === undefined)) {
     ERROR && console.error("Undefined point in getFeaturePath");
     return "";
@@ -93,11 +95,8 @@ function featurePathRenderer(feature: PackedGraphFeature): string {
 
   const simplifiedPoints = simplify(points, 0.3);
   const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight, 1);
-
-  const lineGen = line().curve(curveBasisClosed);
-  const path = `${round(lineGen(clippedPoints) || "")}Z`;
-
-  return path;
+  const shape = fractalizeCoastline(clippedPoints, feature.i, feature.type);
+  return `${round(buildCoastlinePath(shape))}Z`;
 }
 
 window.drawFeatures = featuresRenderer;

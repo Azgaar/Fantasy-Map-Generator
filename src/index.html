@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -138,13 +138,32 @@
       }
     </style>
 
-    <link rel="preload" href="index.css?v=1.109.1" as="style" onload="this.onload=null; this.rel='stylesheet'" />
-    <link rel="preload" href="icons.css" as="style" onload="this.onload=null; this.rel='stylesheet'" />
+    <link
+      rel="preload"
+      href="index.css?v=1.113.1"
+      as="style"
+      onload="
+        this.onload = null;
+        this.rel = 'stylesheet';
+      "
+    />
+    <link
+      rel="preload"
+      href="icons.css"
+      as="style"
+      onload="
+        this.onload = null;
+        this.rel = 'stylesheet';
+      "
+    />
     <link
       rel="preload"
       href="libs/jquery-ui.css?v=1.106.5"
       as="style"
-      onload="this.onload=null; this.rel='stylesheet'"
+      onload="
+        this.onload = null;
+        this.rel = 'stylesheet';
+      "
     />
   </head>
   <body>
@@ -493,6 +512,14 @@
               onclick="toggleHeight(event)"
             >
               <u>H</u>eightmap
+            </li>
+            <li
+              id="toggleLakes"
+              data-tip="Lakes: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
+              data-shortcut="Q"
+              onclick="toggleLakes(event)"
+            >
+              Lakes
             </li>
             <li
               id="toggleBiomes"
@@ -1734,7 +1761,9 @@
               </td>
             </tr>
 
-            <tr data-tip="Define burgs percentage to form a separate province">
+            <tr
+              data-tip="Set what share of eligible burgs in each state will become province centers. Higher values create more provinces"
+            >
               <td>
                 <i data-locked="0" id="lock_provincesRatio" class="icon-lock-open"></i>
               </td>
@@ -2084,6 +2113,13 @@
             <button id="overviewBurgsButton" data-tip="Click to open Burgs Overview" data-shortcut="Shift + T">
               Burgs
             </button>
+            <button
+              id="editCoastlineSettings"
+              data-tip="Click to open Coastline Settings Editor"
+              data-shortcut="Shift + L"
+            >
+              Coastlines
+            </button>
             <button id="editCulturesButton" data-tip="Click to open Cultures Editor" data-shortcut="Shift + C">
               Cultures
             </button>
@@ -2241,6 +2277,9 @@
               data-shortcut="Shift + A"
             >
               Charts
+            </button>
+            <button id="openMinimapButton" data-tip="Click to open minimap overview. Click minimap to center view">
+              Minimap
             </button>
           </div>
 
@@ -2729,23 +2768,38 @@
         <button id="labelSizeShow" data-tip="Show the font size section" class="icon-text-height"></button>
         <div id="labelSizeSection" style="display: none">
           <button id="labelSizeHide" data-tip="Hide the font size section" class="icon-text-height"></button>
-          <input
-            id="labelStartOffset"
-            data-tip="Set starting offset for the particular label"
-            type="range"
-            min="20"
-            max="80"
-            style="width: 8em"
-          />
-          <i class="icon-text-height"></i>
+          <span data-tip="Set relative size for the particular label">Size:</span>
           <input
             id="labelRelativeSize"
-            data-tip="Set relative size for the particular label"
+            data-tip="Set relative size for the particular label (% of group default)"
             type="number"
             min="30"
             max="300"
             step="1"
             style="width: 4.5em"
+          />
+        </div>
+
+        <button id="labelOffsetShow" data-tip="Show the label offset section" class="icon-sliders"></button>
+        <div id="labelOffsetSection" style="display: none">
+          <button id="labelOffsetHide" data-tip="Hide the label offset section" class="icon-sliders"></button>
+          <span data-tip="Set starting offset for the particular label">Offset:</span>
+          <input
+            id="labelStartOffset"
+            data-tip="Set starting offset for the particular label (% along the path)"
+            type="range"
+            min="20"
+            max="80"
+            style="width: 8em"
+          />
+          <input
+            id="labelStartOffsetValue"
+            type="number"
+            min="20"
+            max="80"
+            step="1"
+            style="width: 3.5em"
+            data-tip="Set starting offset numerically"
           />
         </div>
 
@@ -2949,23 +3003,22 @@
         <div id="elevationGraph" data-tip="Elevation profile"></div>
         <div style="text-align: center">
           <div id="epControls">
-            <span data-tip="Set height scale"
-              >Height scale: <input id="epScaleRange" type="range" min="1" max="100" value="50"
-            /></span>
             <span data-tip="Set curve profile"
               >Curve:
               <select id="epCurve">
                 <option>Linear</option>
-                <option selected>Basis spline</option>
                 <option>Bundle</option>
                 <option>Cubic Catmull-Rom</option>
-                <option>Monotone X</option>
+                <option selected>Monotone X</option>
                 <option>Natural</option>
               </select>
             </span>
             <span
               ><button id="epSave" data-tip="Download the chart data as a CSV file" class="icon-download"></button
             ></span>
+            <span><button id="epSaveSVG" data-tip="Download the chart as an SVG image">SVG</button></span>
+            <span><button id="epSavePNG" data-tip="Download the chart as a PNG image">PNG</button></span>
+            <span id="epstats" style="margin-left: 1em; color: #555; font-size: 0.85em"></span>
           </div>
         </div>
       </div>
@@ -4128,6 +4181,13 @@
             </svg>
           </button>
 
+          <button id="brushFill" data-tip="Fill: click enclosed water or same-height land area to create a cone blob">
+            <svg viewBox="20 10 60 60" height="1em" width="1.6em">
+              <path d="M30,70 h40 M30,70 q0,-20 20,-20 q20,0 20,20" fill="none" stroke="#000" stroke-width="5" />
+              <path d="M50,20 v25 M50,20 l-10,8 M50,20 l10,8" fill="none" stroke="#000" stroke-width="5" />
+            </svg>
+          </button>
+
           <button id="brushLine" data-tip="Line: select two points to change heights along the line">
             <svg viewBox="0 -5 100 100" height="1em" width="1.6em">
               <path d="M0 90 L100 10" fill="none" stroke="#000" stroke-width="7"></path>
@@ -4157,12 +4217,13 @@
           </div>
         </div>
 
-        <div
-          data-tip="Allow brush to change only land cells and hence restrict the coastline modification"
-          style="margin-bottom: 0.6em"
-        >
-          <input id="changeOnlyLand" class="checkbox" type="checkbox" />
-          <label for="changeOnlyLand" class="checkbox-label"><i>change only land cells</i></label>
+        <div data-tip="Restrict brush to specific cell types" style="margin-bottom: 0.6em">
+          <label for="cellTypeFilter"><i>Cells to change:</i></label>
+          <select id="cellTypeFilter">
+            <option value="all" selected>all cells</option>
+            <option value="land">only land cells</option>
+            <option value="water">only water cells</option>
+          </select>
         </div>
 
         <div id="modifyButtons">
@@ -4289,7 +4350,9 @@
             id="templateCA"
             data-tip="Find or share custom template on Cartography Assets portal"
             class="icon-drafting-compass"
-            onclick="openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/templates')"
+            onclick="
+              openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/templates')
+            "
           ></button>
           <button
             id="templateTutorial"
@@ -5959,6 +6022,10 @@
         </div>
       </div>
 
+      <div id="minimap" style="display: none" class="dialog stable">
+        <div id="minimapContent"></div>
+      </div>
+
       <div id="options3d" class="dialog stable" style="display: none">
         <div id="options3dMesh" style="display: none">
           <div data-tip="Set map rotation speed. Set to 0 is you want to toggle off the rotation">
@@ -6120,7 +6187,10 @@
               id="showLabels"
               class="checkbox"
               type="checkbox"
-              onchange="hideLabels.checked = !this.checked; invokeActiveZooming()"
+              onchange="
+                hideLabels.checked = !this.checked;
+                invokeActiveZooming();
+              "
               checked=""
             />
             <label for="showLabels" class="checkbox-label">Show all labels</label>
@@ -6172,17 +6242,17 @@
           </button>
         </div>
         <p>Export in JSON format can be used as an API replacement.</p>
-
-        <p>
-          It's also possible to export map to <i>Foundry VTT</i>, see
-          <a href="https://github.com/Ethck/azgaar-foundry" target="_blank">the module.</a>
-        </p>
       </div>
 
       <div id="saveMapData" style="display: none" class="dialog">
         <div style="margin-top: 0.3em">
           <strong>Save map to</strong>
-          <button onclick="saveMap('machine')" data-tip="Download map file to your local disk" data-shortcut="Ctrl + S">
+          <button
+            onclick="saveMap('machine')"
+            data-tip="Download map file to your local disk"
+            data-shortcut="Ctrl + S"
+            style="font-weight: 600"
+          >
             machine
           </button>
           <button onclick="saveMap('dropbox')" data-tip="Save map file to your Dropbox" data-shortcut="Ctrl + C">
@@ -8492,68 +8562,66 @@
     <script type="module" src="utils/index.ts"></script>
     <script type="module" src="modules/index.ts"></script>
     <script type="module" src="renderers/index.ts"></script>
+    <script type="module" src="controllers/index.ts"></script>
 
     <script defer src="config/heightmap-templates.js"></script>
     <script defer src="config/precreated-heightmaps.js"></script>
-    <script defer src="modules/military-generator.js?v=1.112.3"></script>
-    <script defer src="modules/resample.js?v=1.112.1"></script>
     <script defer src="libs/alea.min.js?v1.105.0"></script>
     <script defer src="libs/polylabel.min.js?v1.105.0"></script>
-    <script defer src="libs/lineclip.min.js?v1.105.0"></script>
     <script defer src="libs/simplify.js?v1.105.6"></script>
-    <script defer src="modules/ui/layers.js?v=1.111.0"></script>
+    <script defer src="modules/ui/layers.js?v=1.120.5"></script>
     <script defer src="modules/ui/measurers.js?v=1.99.00"></script>
     <script defer src="modules/ui/style-presets.js?v=1.100.00"></script>
-    <script defer src="modules/ui/general.js?v=1.100.00"></script>
-    <script defer src="modules/ui/options.js?v=1.106.2"></script>
-    <script defer src="main.js?v=1.114.0"></script>
+    <script defer src="modules/ui/general.js?v=1.120.5"></script>
+    <script defer src="modules/ui/options.js?v=1.120.5"></script>
+    <script defer src="main.js?v=1.120.5"></script>
 
-    <script defer src="modules/ui/style.js?v=1.108.4"></script>
-    <script defer src="modules/ui/editors.js?v=1.112.1"></script>
-    <script defer src="modules/ui/tools.js?v=1.111.0"></script>
-    <script defer src="modules/ui/world-configurator.js?v=1.105.4"></script>
-    <script defer src="modules/ui/heightmap-editor.js?v=1.112.2"></script>
-    <script defer src="modules/ui/provinces-editor.js?v=1.108.1"></script>
+    <script defer src="modules/ui/style.js?v=1.120.5"></script>
+    <script defer src="modules/ui/editors.js?v=1.120.5"></script>
+    <script defer src="modules/ui/tools.js?v=1.120.5"></script>
+    <script defer src="modules/ui/world-configurator.js?v=1.120.5"></script>
+    <script defer src="modules/ui/heightmap-editor.js?v=1.120.5"></script>
+    <script defer src="modules/ui/provinces-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/biomes-editor.js?v=1.112.0"></script>
-    <script defer src="modules/ui/namesbase-editor.js?v=1.105.11"></script>
-    <script defer src="modules/ui/elevation-profile.js?v=1.99.00"></script>
+    <!-- namesbase-editor migrated to src/controllers/namesbase-editor.ts -->
+    <!-- elevation-profile migrated to src/controllers/elevation-profile.ts -->
     <script defer src="modules/ui/temperature-graph.js?v=1.106.6"></script>
-    <script defer src="modules/ui/routes-editor.js?v=1.104.3"></script>
-    <script defer src="modules/ui/routes-creator.js?v=1.104.3"></script>
-    <script defer src="modules/ui/route-group-editor.js?v=1.103.8"></script>
+    <script defer src="modules/ui/routes-editor.js?v=1.120.5"></script>
+    <script defer src="modules/ui/routes-creator.js?v=1.120.5"></script>
+    <script defer src="modules/ui/route-group-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/ice-editor.js?v=1.111.0"></script>
-    <script defer src="modules/ui/lakes-editor.js?v=1.106.0"></script>
-    <script defer src="modules/ui/coastline-editor.js?v=1.99.00"></script>
-    <script defer src="modules/ui/labels-editor.js?v=1.114.0"></script>
-    <script defer src="modules/ui/rivers-editor.js?v=1.106.0"></script>
+    <script defer src="modules/ui/lakes-editor.js?v=1.120.5"></script>
+    <script defer src="modules/ui/coastline-editor.js?v=1.120.5"></script>
+    <script defer src="modules/ui/labels-editor.js?v=1.120.5"></script>
+    <script defer src="modules/ui/rivers-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/rivers-creator.js?v=1.106.0"></script>
     <script defer src="modules/ui/relief-editor.js?v=1.99.00"></script>
-    <script defer src="modules/ui/burg-group-editor.js?v=1.109.5"></script>
-    <script defer src="modules/ui/burg-editor.js?v=1.114.0"></script>
-    <script defer src="modules/ui/units-editor.js?v=1.108.12"></script>
-    <script defer src="modules/ui/notes-editor.js?v=1.107.3"></script>
-    <script defer src="modules/ui/ai-generator.js?v=1.108.8"></script>
-    <script defer src="modules/ui/diplomacy-editor.js?v=1.99.00"></script>
-    <script defer src="modules/ui/zones-editor.js?v=1.105.20"></script>
-    <script defer src="modules/ui/burgs-overview.js?v=1.111.0"></script>
-    <script defer src="modules/ui/routes-overview.js?v=1.111.0"></script>
-    <script defer src="modules/ui/rivers-overview.js?v=1.111.0"></script>
+    <script defer src="modules/ui/burg-group-editor.js?v=1.120.5"></script>
+    <script defer src="modules/ui/burg-editor.js?v=1.120.5"></script>
+    <script defer src="modules/ui/units-editor.js?v=1.120.5"></script>
+    <script defer src="modules/ui/notes-editor.js?v=1.120.5"></script>
+    <script defer src="modules/ui/ai-generator.js?v=1.120.5"></script>
+    <script defer src="modules/ui/diplomacy-editor.js?v=1.120.5"></script>
+    <script defer src="modules/ui/zones-editor.js?v=1.120.5"></script>
+    <script defer src="modules/ui/burgs-overview.js?v=1.120.5"></script>
+    <script defer src="modules/ui/routes-overview.js?v=1.120.5"></script>
+    <script defer src="modules/ui/rivers-overview.js?v=1.120.5"></script>
     <script defer src="modules/ui/military-overview.js?v=1.108.5"></script>
     <script defer src="modules/ui/regiments-overview.js?v=1.108.5"></script>
-    <script defer src="modules/ui/markers-overview.js?v=1.111.0"></script>
-    <script defer src="modules/ui/regiment-editor.js?v=1.108.5"></script>
-    <script defer src="modules/ui/battle-screen.js?v=1.108.5"></script>
+    <script defer src="modules/ui/markers-overview.js?v=1.120.5"></script>
+    <script defer src="modules/ui/regiment-editor.js?v=1.120.5"></script>
+    <script defer src="modules/ui/battle-screen.js?v=1.120.5"></script>
     <script defer src="modules/ui/emblems-editor.js?v=1.99.00"></script>
-    <script defer src="modules/ui/markers-editor.js?v=1.108.5"></script>
+    <script defer src="modules/ui/markers-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/3d.js?v=1.99.00"></script>
-    <script defer src="modules/ui/submap-tool.js?v=1.106.2"></script>
-    <script defer src="modules/ui/transform-tool.js?v=1.106.2"></script>
-    <script defer src="modules/ui/hotkeys.js?v=1.104.0"></script>
+    <script defer src="modules/ui/submap-tool.js?v=1.120.5"></script>
+    <script defer src="modules/ui/transform-tool.js?v=1.120.5"></script>
+    <script defer src="modules/ui/hotkeys.js?v=1.120.5"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-    <script defer src="modules/io/save.js?v=1.114.0"></script>
-    <script defer src="modules/io/load.js?v=1.114.0"></script>
-    <script defer src="modules/io/cloud.js?v=1.106.0"></script>
-    <script defer src="modules/io/export.js?v=1.112.2"></script>
+    <script defer src="modules/io/save.js?v=1.120.5"></script>
+    <script defer src="modules/io/load.js?v=1.120.5"></script>
+    <script defer src="modules/io/cloud.js?v=1.114.0"></script>
+    <script defer src="modules/io/export.js?v=1.120.5"></script>
   </body>
 </html>

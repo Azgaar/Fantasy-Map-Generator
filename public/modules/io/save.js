@@ -1,6 +1,6 @@
 "use strict";
 
-// functions to save the project to a file
+// functions to save the whole .map project
 async function saveMap(method) {
   if (customization) return tip("Map cannot be saved in EDIT mode, please complete the edit and retry", false, "error");
   closeDialogs("#alert");
@@ -9,12 +9,12 @@ async function saveMap(method) {
     const mapData = prepareMapData();
     const filename = getFileName() + ".map";
 
-    saveToStorage(mapData, method === "storage"); // any method saves to indexedDB
+    if (method === "storage") await saveToStorage(mapData, true);
     if (method === "machine") saveToMachine(mapData, filename);
-    if (method === "dropbox") saveToDropbox(mapData, filename);
+    if (method === "dropbox") await saveToDropbox(mapData, filename);
   } catch (error) {
     ERROR && console.error(error);
-    alertMessage.innerHTML = /* html */ `An error is occured on map saving. If the issue persists, please copy the message below and report it on ${link(
+    alertMessage.innerHTML = /* html */ `An error occurred while saving the map. If the issue persists, please copy the message below and report it on ${link(
       "https://github.com/Azgaar/Fantasy-Map-Generator/issues",
       "GitHub"
     )}. <p id="errorBox">${parseError(error)}</p>`;
@@ -32,13 +32,12 @@ async function saveMap(method) {
           $(this).dialog("close");
         }
       },
-      position: { my: "center", at: "center", of: "svg" }
+      position: {my: "center", at: "center", of: "svg"}
     });
   }
 }
 
 function prepareMapData() {
-
   const date = new Date();
   const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
@@ -90,8 +89,8 @@ function prepareMapData() {
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
-  const { spacing, cellsX, cellsY, boundary, points, features, cellsDesired } = grid;
-  const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, boundary, points, features, cellsDesired });
+  const {spacing, cellsX, cellsY, boundary, points, features, cellsDesired} = grid;
+  const gridGeneral = JSON.stringify({spacing, cellsX, cellsY, boundary, points, features, cellsDesired});
   const packFeatures = JSON.stringify(pack.features);
   const cultures = JSON.stringify(pack.cultures);
   const states = JSON.stringify(pack.states);
@@ -167,14 +166,14 @@ function prepareMapData() {
 
 // save map file to indexedDB
 async function saveToStorage(mapData, showTip = false) {
-  const blob = new Blob([mapData], { type: "text/plain" });
+  const blob = new Blob([mapData], {type: "text/plain"});
   await ldb.set("lastMap", blob);
   showTip && tip("Map is saved to the browser storage", false, "success");
 }
 
 // download map file
 function saveToMachine(mapData, filename) {
-  const blob = new Blob([mapData], { type: "text/plain" });
+  const blob = new Blob([mapData], {type: "text/plain"});
   const URL = window.URL.createObjectURL(blob);
 
   const link = document.createElement("a");
@@ -183,7 +182,7 @@ function saveToMachine(mapData, filename) {
   link.click();
 
   tip('Map is saved to the "Downloads" folder (CTRL + J to open)', true, "success", 8000);
-  window.URL.revokeObjectURL(URL);
+  setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 }
 
 async function saveToDropbox(mapData, filename) {
@@ -192,11 +191,11 @@ async function saveToDropbox(mapData, filename) {
 }
 
 async function initiateAutosave() {
-  const MINUTE = 60000; // munite in milliseconds
+  const MINUTE = 60000; // minute in milliseconds
   let lastSavedAt = Date.now();
 
   async function autosave() {
-    const timeoutMinutes = byId("autosaveIntervalOutput").valueAsNumber;
+    const timeoutMinutes = ensureEl("autosaveIntervalOutput").valueAsNumber;
     if (!timeoutMinutes) return;
 
     const diffInMinutes = (Date.now() - lastSavedAt) / MINUTE;
@@ -212,22 +211,11 @@ async function initiateAutosave() {
       lastSavedAt = Date.now();
     } catch (error) {
       ERROR && console.error(error);
+      tip(`Autosave failed: ${error?.message || "Unknown error"}`, true, "error", 4000);
     }
   }
 
   setInterval(autosave, MINUTE / 2);
-}
-
-// TODO: unused code
-async function compressData(uncompressedData) {
-  const compressedStream = new Blob([uncompressedData]).stream().pipeThrough(new CompressionStream("gzip"));
-
-  let compressedData = [];
-  for await (const chunk of compressedStream) {
-    compressedData = compressedData.concat(Array.from(chunk));
-  }
-
-  return new Uint8Array(compressedData);
 }
 
 const saveReminder = function () {

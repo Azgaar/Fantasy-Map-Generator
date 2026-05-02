@@ -17,46 +17,6 @@ export const unique = <T>(array: T[]): T[] => {
 };
 
 /**
- * Deep copy an object or array
- * @param {Object|Array} obj - The object or array to deep copy
- * @returns A deep copy of the object or array
- */
-export const deepCopy = <T>(obj: T): T => {
-  const id = (x: T): T => x;
-  const dcTArray = (a: T[]): T[] => a.map(id);
-  const dcObject = (x: object): object =>
-    Object.fromEntries(Object.entries(x).map(([k, d]) => [k, dcAny(d)]));
-  const dcAny = (x: any): any =>
-    x instanceof Object ? (cf.get(x.constructor) || id)(x) : x;
-  // don't map keys, probably this is what we would expect
-  const dcMapCore = (m: Map<any, any>): [any, any][] =>
-    [...m.entries()].map(([k, v]) => [k, dcAny(v)]);
-
-  const cf: Map<any, (x: any) => any> = new Map<any, (x: any) => any>([
-    [Int8Array, dcTArray],
-    [Uint8Array, dcTArray],
-    [Uint8ClampedArray, dcTArray],
-    [Int16Array, dcTArray],
-    [Uint16Array, dcTArray],
-    [Int32Array, dcTArray],
-    [Uint32Array, dcTArray],
-    [Float32Array, dcTArray],
-    [Float64Array, dcTArray],
-    [BigInt64Array, dcTArray],
-    [BigUint64Array, dcTArray],
-    [Map, (m) => new Map(dcMapCore(m))],
-    [WeakMap, (m) => new WeakMap(dcMapCore(m))],
-    [Array, (a) => a.map(dcAny)],
-    [Set, (s) => [...s.values()].map(dcAny)],
-    [Date, (d) => new Date(d.getTime())],
-    [Object, dcObject],
-    // ... extend here to implement their custom deep copy
-  ]);
-
-  return dcAny(obj);
-};
-
-/**
  * Get the appropriate typed array constructor based on the maximum value
  * @param {number} maxValue - The maximum value that will be stored in the array
  * @returns The typed array constructor
@@ -109,7 +69,6 @@ declare global {
   interface Window {
     last: typeof last;
     unique: typeof unique;
-    deepCopy: typeof deepCopy;
     getTypedArray: typeof getTypedArray;
     createTypedArray: typeof createTypedArray;
     INT8_MAX: number;

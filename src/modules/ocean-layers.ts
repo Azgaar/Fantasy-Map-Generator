@@ -111,7 +111,6 @@ class OceanModule {
         relaxed.map((v) => this.vertices.p[v]),
         graphWidth,
         graphHeight,
-        1,
       );
       chains.push([t, points]);
     }

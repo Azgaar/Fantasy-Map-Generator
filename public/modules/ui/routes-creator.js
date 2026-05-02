@@ -5,7 +5,7 @@ function createRoute(defaultGroup) {
   closeDialogs();
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
 
-  byId("toggleCells").dataset.forced = +!layerIsOn("toggleCells");
+  ensureEl("toggleCells").dataset.forced = +!layerIsOn("toggleCells");
   if (!layerIsOn("toggleCells")) toggleCells();
 
   tip("Click to add route point, click again to remove", true);
@@ -14,10 +14,10 @@ function createRoute(defaultGroup) {
   viewbox.style("cursor", "crosshair").on("click", onClick);
 
   createRoute.points = [];
-  const body = byId("routeCreatorBody");
+  const body = ensureEl("routeCreatorBody");
 
   // update route groups
-  byId("routeCreatorGroupSelect").innerHTML = Array.from(routes.selectAll("g")._groups[0]).map(el => {
+  ensureEl("routeCreatorGroupSelect").innerHTML = Array.from(routes.selectAll("g")._groups[0]).map(el => {
     const selected = defaultGroup || "roads";
     return `<option value="${el.id}" ${el.id === selected ? "selected" : ""}>${el.id}</option>`;
   });
@@ -33,10 +33,10 @@ function createRoute(defaultGroup) {
   modules.createRoute = true;
 
   // add listeners
-  byId("routeCreatorGroupSelect").on("change", () => drawRoute(createRoute.points));
-  byId("routeCreatorGroupEdit").on("click", editRouteGroups);
-  byId("routeCreatorComplete").on("click", completeCreation);
-  byId("routeCreatorCancel").on("click", () => $("#routeCreator").dialog("close"));
+  ensureEl("routeCreatorGroupSelect").on("change", () => drawRoute(createRoute.points));
+  ensureEl("routeCreatorGroupEdit").on("click", editRouteGroups);
+  ensureEl("routeCreatorComplete").on("click", completeCreation);
+  ensureEl("routeCreatorCancel").on("click", () => $("#routeCreator").dialog("close"));
   body.on("click", ev => {
     if (ev.target.classList.contains("icon-trash-empty")) removePoint(ev.target.parentNode.dataset.point);
   });
@@ -83,7 +83,7 @@ function createRoute(defaultGroup) {
       .attr("cy", d => d[1])
       .attr("r", 0.6);
 
-    const group = byId("routeCreatorGroupSelect").value;
+    const group = ensureEl("routeCreatorGroupSelect").value;
 
     routes.select("#routeTemp").remove();
     routes
@@ -98,7 +98,7 @@ function createRoute(defaultGroup) {
     if (points.length < 2) return tip("Add at least 2 points", false, "error");
 
     const routeId = Routes.getNextId();
-    const group = byId("routeCreatorGroupSelect").value;
+    const group = ensureEl("routeCreatorGroupSelect").value;
     const feature = pack.cells.f[points[0][2]];
     const route = {points, group, feature, i: routeId};
     pack.routes.push(route);
@@ -133,8 +133,8 @@ function createRoute(defaultGroup) {
     restoreDefaultEvents();
     clearMainTip();
 
-    const forced = +byId("toggleCells").dataset.forced;
-    byId("toggleCells").dataset.forced = 0;
+    const forced = +ensureEl("toggleCells").dataset.forced;
+    ensureEl("toggleCells").dataset.forced = 0;
     if (forced && layerIsOn("toggleCells")) toggleCells();
   }
 }
