@@ -66,11 +66,11 @@ import {
 import { ensureEl, getComposedPath, getNextId } from "./nodeUtils";
 import {
   connectVertices,
+  extractPathPoints,
   findPath,
   getIsolines,
   getPolesOfInaccessibility,
   getVertexPath,
-  extractPathPoints,
 } from "./pathUtils";
 import {
   biased,

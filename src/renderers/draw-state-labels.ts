@@ -1,8 +1,8 @@
 import { curveNatural, line, max, select } from "d3";
 import type { StateLabel } from "../modules/labels";
-import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 import type { TypedArray } from "../types/PackedGraph";
 import { findClosestCell, minmax, rn, round, splitInTwo } from "../utils";
+import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 
 declare global {
   var drawStateLabels: (list?: number[]) => void;
