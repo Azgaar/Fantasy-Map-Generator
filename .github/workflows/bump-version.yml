@@ -26,8 +26,7 @@ jobs:
           # fetch-depth 2 so HEAD~1 resolves to the pre-merge master commit
           fetch-depth: 2
           # Use a PAT so the pushed bump commit can trigger deploy.yml.
-          # Falls back to github.token if RELEASE_BOT_TOKEN is not configured
-          # (note: pushes with github.token won't re-trigger deploy.yml).
+          # Falls back to github.token if RELEASE_BOT_TOKEN is not configured.
           token: ${{ secrets.RELEASE_BOT_TOKEN || github.token }}
 
       - name: Set up Node
@@ -79,7 +78,7 @@ jobs:
 
           if ! git diff --cached --quiet; then
             git commit -m "chore: bump version to $NEW_VERSION"
-            git push
+            git push origin HEAD:${{ github.event.pull_request.base.ref }}
             echo "Pushed version bump → $NEW_VERSION"
           else
             echo "Nothing changed, skipping commit."

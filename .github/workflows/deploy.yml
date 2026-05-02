@@ -5,6 +5,14 @@ on:
   push:
     branches: [ "master" ]
 
+  # Also run after the version bump workflow completes successfully.
+  # This is a fallback in case the bump commit was created by automation
+  # that does not emit a normal push trigger.
+  workflow_run:
+    workflows: ["Bump version on PR merge"]
+    types: [completed]
+    branches: ["master"]
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -22,6 +30,7 @@ concurrency:
 jobs:
   # Single deploy job since we're just deploying
   deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
