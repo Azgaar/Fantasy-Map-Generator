@@ -1,6 +1,6 @@
 import {pointer} from "d3";
 import type {Good, RawGood} from "../modules/goods-generator";
-import {ensureEl} from "../utils";
+import {ensureEl, getNextId, unique} from "../utils";
 
 let isInitialized = false;
 let visibleTags = new Set<string>();
@@ -294,7 +294,7 @@ function changeModel(good: RawGood, line: HTMLElement, el: HTMLElement) {
   const onSelect =
     "resouceModelFunction.innerHTML = Goods.models[this.value] || ' '; resouceModelCustomName.value = ''; resouceModelCustomFunction.value = ''";
 
-  alertMessage.innerHTML = `
+  alertMessage.innerHTML = /*html*/ `
       <fieldset data-tip="Select one of the predefined spread models from the list" style="border: 1px solid #999; margin-bottom: 1em">
         <legend>Predefined models</legend>
         <div style="margin-bottom:.2em">
@@ -757,31 +757,251 @@ function exitResourceAssignMode(close?: string) {
 }
 
 function goodAdd() {
-  if (pack.goods.length >= 256) return tip("Maximum number of goods is reached", false, "error");
+  const modelOptions = Object.keys(Goods.models)
+    .map(
+      model =>
+        `<option value="${model}" ${model === "More_habitable" ? "selected" : ""}>${model.replaceAll("_", " ")}</option>`
+    )
+    .join("");
 
-  let i = pack.goods[pack.goods.length - 1].i;
-  while (Goods.get(i)) {
-    i++;
-  }
+  const standardIcons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
+  const customIconsEl = ensureEl("defs-icons");
+  const customIcons = customIconsEl ? Array.from(customIconsEl.querySelectorAll("svg")).map(el => el.id) : [];
+  const iconOptions = [...standardIcons, ...customIcons]
+    .map(icon => `<option value="${icon}" ${icon === "good-unknown" ? "selected" : ""}>${icon}</option>`)
+    .join("");
 
-  const good: Good = {
-    i,
-    name: `Good${i}`,
-    type: "raw",
-    tags: ["unknown"],
-    icon: "good-unknown",
-    color: "#ff5959",
-    value: 1,
-    chance: 10,
-    model: "habitability",
-    unit: "",
-    bonus: {population: 1} as Record<string, number>,
-    culture: {} as Record<string, number>,
-    cells: 0
+  alertMessage.innerHTML = /*html*/ `
+    <div style="display:grid; grid-template-columns: 8em 1fr; align-items:center;">
+      <label for="newGoodType">Type*</label>
+      <select id="newGoodType">
+        <option value="raw" selected>raw</option>
+        <option value="manufactured">manufactured</option>
+      </select>
+
+      <label for="newGoodName">Name*</label>
+      <input id="newGoodName" value="" />
+
+      <label for="newGoodTags">Tags</label>
+      <input id="newGoodTags" value="" placeholder="comma separated" />
+
+      <label for="newGoodValue">Value*</label>
+      <input id="newGoodValue" type="number" min="0" step="1" value="1" />
+
+      <label for="newGoodChance">Chance*</label>
+      <input id="newGoodChance" type="number" min="0" max="100" step="0.1" value="3" />
+
+      <label for="newGoodUnit">Unit</label>
+      <input id="newGoodUnit" placeholder="e.g. wagon, barrel" />
+
+      <label for="newGoodIcon">Icon</label>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <select id="newGoodIcon">${iconOptions}</select>
+        <label for="newGoodColor">color</label>
+        <input id="newGoodColor" type="color" style="width: 3em; height: 14px; padding: 0; border: none;" value="#ff5959" />
+      </div>
+    </div>
+
+    <div id="newGoodRawFields">
+      <div style="display:grid; grid-template-columns: 8em 1fr; align-items:center;">
+        <label for="newGoodModel">Model*</label>
+        <div style=" display: flex; align-items: center; justify-content: space-between;">
+          <select id="newGoodModel" style="width: 12em;">${modelOptions}</select>
+          <label for="newGoodUseCustomModel">custom</label>
+          <input id="newGoodUseCustomModel" type="checkbox" class="native" />
+        </div>
+
+        <label for="newGoodCustomName">Custom name</label>
+        <input id="newGoodCustomName" placeholder="e.g. Coast_and_river" disabled />
+
+        <label for="newGoodCustomFunction">Custom function</label>
+        <input id="newGoodCustomFunction" placeholder="e.g. shore(1) && river()" spellcheck="false" disabled />
+      </div>
+    </div>
+
+    <div id="newGoodManufacturedFields" style="display:none;">
+      <div style="display:grid; grid-template-columns: 8em 1fr; align-items:center;">
+        <label for="newGoodRecipe">Recipe*</label>
+        <input id="newGoodRecipe" placeholder="goodId:amount, goodId:amount" spellcheck="false" />
+        <div></div>
+        <div style="color:#666; font-size:.95em">Example: 4:1, 34:2</div>
+      </div>
+    </div>
+
+    <div id="newGoodError" style="color:#b20000; min-height:1.2em"></div>
+  `;
+
+  const typeSelect = ensureEl("newGoodType") as HTMLSelectElement;
+  const rawFields = ensureEl("newGoodRawFields");
+  const manufacturedFields = ensureEl("newGoodManufacturedFields");
+  const customCheckbox = ensureEl("newGoodUseCustomModel") as HTMLInputElement;
+  const customName = ensureEl("newGoodCustomName") as HTMLInputElement;
+  const customFunction = ensureEl("newGoodCustomFunction") as HTMLInputElement;
+  const modelSelect = ensureEl("newGoodModel") as HTMLSelectElement;
+
+  const syncTypeFields = () => {
+    const isRaw = typeSelect.value === "raw";
+    rawFields.style.display = isRaw ? "block" : "none";
+    manufacturedFields.style.display = isRaw ? "none" : "block";
   };
-  pack.goods.push(good);
-  tip("Good is added", false, "success", 3000);
-  goodsEditorAddLines();
+
+  const syncCustomFields = () => {
+    const enabled = customCheckbox.checked;
+    customName.disabled = !enabled;
+    customFunction.disabled = !enabled;
+    modelSelect.disabled = enabled;
+  };
+
+  typeSelect.onchange = syncTypeFields;
+  customCheckbox.onchange = syncCustomFields;
+  syncTypeFields();
+  syncCustomFields();
+
+  $("#alert").dialog({
+    width: "30em",
+    resizable: false,
+    title: "Add new good",
+    buttons: {
+      Cancel: function () {
+        $(this).dialog("close");
+      },
+      Add: function () {
+        const error = ensureEl("newGoodError");
+        error.textContent = "";
+
+        const type = ensureEl<HTMLSelectElement>("newGoodType").value as Good["type"];
+        const name = ensureEl<HTMLInputElement>("newGoodName").value.trim();
+        const tagsInput = ensureEl<HTMLInputElement>("newGoodTags").value.trim();
+        const value = +ensureEl<HTMLInputElement>("newGoodValue").value;
+        const chance = +ensureEl<HTMLInputElement>("newGoodChance").value;
+        const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
+        const icon = ensureEl<HTMLSelectElement>("newGoodIcon").value;
+        const color = ensureEl<HTMLInputElement>("newGoodColor").value;
+        const useCustomModel = ensureEl<HTMLInputElement>("newGoodUseCustomModel").checked;
+        const model = ensureEl<HTMLSelectElement>("newGoodModel").value;
+        const customModelName = ensureEl<HTMLInputElement>("newGoodCustomName").value.trim();
+        const customModelFunction = ensureEl<HTMLInputElement>("newGoodCustomFunction").value.trim();
+        const recipeInput = ensureEl<HTMLInputElement>("newGoodRecipe").value.trim();
+
+        const tags = unique(tagsInput.split(",").map(tag => tag.trim().toLocaleLowerCase()));
+
+        if (!name) {
+          error.textContent = "Name is required";
+          return;
+        }
+        if (!Number.isFinite(value) || value < 0) {
+          error.textContent = "Value must be a valid non-negative number";
+          return;
+        }
+        if (!Number.isFinite(chance) || chance < 0 || chance > 100) {
+          error.textContent = "Chance must be between 0 and 100";
+          return;
+        }
+
+        const getNextId = () => {
+          let nextId = pack.goods?.at(-1)?.i ?? 1;
+          while (Goods.get(nextId)) nextId++;
+          return nextId;
+        };
+
+        if (type === "raw") {
+          if (useCustomModel) {
+            if (!customModelName) {
+              error.textContent = "Custom model name is required";
+              return;
+            }
+            if (!customModelFunction) {
+              error.textContent = "Custom model function is required";
+              return;
+            }
+
+            try {
+              const allMethods = `{${Object.keys(Goods.methods).join(", ")}}`;
+              const fn = new Function(allMethods, `return ${customModelFunction}`);
+              fn({...Goods.methods});
+            } catch (err) {
+              error.textContent = `Custom model error: ${(err as Error).message || err}`;
+              return;
+            }
+          } else {
+            if (!model) {
+              error.textContent = "Model is required";
+              return;
+            }
+          }
+
+          pack.goods.push({
+            i: getNextId(),
+            name,
+            type: "raw",
+            tags,
+            icon,
+            color,
+            value,
+            chance,
+            model: useCustomModel ? customModelName : model,
+            custom: useCustomModel ? customModelFunction : undefined,
+            unit,
+            bonus: {population: 1},
+            culture: {},
+            cells: 0
+          });
+        } else {
+          if (!recipeInput) {
+            error.textContent = "Recipe is required for manufactured goods";
+            return;
+          }
+
+          const recipe: Record<number, number> = {};
+          const chunks = recipeInput
+            .split(",")
+            .map(chunk => chunk.trim())
+            .filter(Boolean);
+
+          for (const chunk of chunks) {
+            const [idRaw, amountRaw] = chunk.split(":").map(part => part.trim());
+            const id = Number(idRaw);
+            const amount = Number(amountRaw);
+
+            if (!Number.isInteger(id) || !Number.isFinite(amount) || amount <= 0) {
+              error.textContent = `Invalid recipe entry: ${chunk}. Use goodId:amount`;
+              return;
+            }
+            if (!Goods.get(id)) {
+              error.textContent = `Recipe references unknown good id: ${id}`;
+              return;
+            }
+            recipe[id] = amount;
+          }
+
+          if (!Object.keys(recipe).length) {
+            error.textContent = "Recipe must contain at least one ingredient";
+            return;
+          }
+
+          pack.goods.push({
+            i: getNextId(),
+            name,
+            type: "manufactured",
+            tags,
+            icon,
+            color,
+            value,
+            chance,
+            recipe,
+            unit,
+            bonus: {population: 1},
+            culture: {},
+            cells: 0
+          });
+        }
+
+        tip("Good is added", false, "success", 5000);
+        goodsEditorAddLines();
+        $(this).dialog("close");
+      }
+    }
+  });
 }
 
 function downloadGoodsData() {
