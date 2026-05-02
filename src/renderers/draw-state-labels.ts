@@ -140,7 +140,8 @@ const stateLabelsRenderer = (list?: number[]): void => {
       const textElement = textGroup
         .append("text")
         .attr("text-rendering", "optimizeSpeed")
-        .attr("id", `stateLabel${labelData.stateId}`)
+        .attr("id", `stateLabel${labelData.i}`)
+        .attr("transform", `translate(${labelData.dx || 0}, ${labelData.dy || 0})`)
         .append("textPath")
         .attr("startOffset", "50%")
         .attr("font-size", `${ratio}%`)
@@ -156,7 +157,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
       const { width, height } = textElement.getBBox();
       textElement.setAttribute(
         "href",
-        `#textPath_stateLabel${labelData.stateId}`,
+        `#textPath_stateLabel${labelData.i}`,
       );
 
       const stateIds = pack.cells.state;

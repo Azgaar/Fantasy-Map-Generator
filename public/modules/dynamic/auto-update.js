@@ -1139,6 +1139,7 @@ export function resolveVersionConflicts(mapVersion) {
           const startOffsetAttr = textPath.getAttribute("startOffset");
           const startOffset = startOffsetAttr ? parseFloat(startOffsetAttr) : 50;
           const transform = textPath.getAttribute("transform");
+          const [dx, dy] = transform ? parseTransform(transform) : [0, 0];
 
           // Get path points from the referenced path
           const href = textPath.getAttribute("xlink:href") || textPath.getAttribute("href");
@@ -1151,14 +1152,14 @@ export function resolveVersionConflicts(mapVersion) {
           pack.labels.push({
             i: pack.labels.length,
             type: "state",
-            stateId: stateId,
-            text: text,
+            stateId,
+            text,
             pathPoints: extractPathPoints(pathElement),
-            startOffset: startOffset,
-            fontSize: fontSize,
-            letterSpacing: letterSpacing,
-            transform: transform || undefined
-
+            startOffset,
+            fontSize,
+            letterSpacing,
+            dx,
+            dy
           });
         });
       }
@@ -1191,13 +1192,13 @@ export function resolveVersionConflicts(mapVersion) {
             pack.labels.push({
               i: labelId++,
               type: "burg",
-              burgId: burgId,
-              group: group,
-              text: text,
-              x: x,
-              y: y,
-              dx: dx,
-              dy: dy
+              burgId,
+              group,
+              text,
+              x,
+              y,
+              dx,
+              dy
             });
           });
         });
@@ -1222,6 +1223,7 @@ export function resolveVersionConflicts(mapVersion) {
           const startOffsetAttr = textPath.getAttribute("startOffset");
           const startOffset = startOffsetAttr ? parseFloat(startOffsetAttr) : 50;
           const transform = textPath.getAttribute("transform");
+          const [dx, dy] = transform ? parseTransform(transform) : [0, 0];
 
           const href = textPath.getAttribute("xlink:href") || textPath.getAttribute("href");
           if (!href) return;
@@ -1233,13 +1235,14 @@ export function resolveVersionConflicts(mapVersion) {
           pack.labels.push({
             i: pack.labels.length,
             type: "custom",
-            group: group,
-            text: text,
+            group,
+            text,
             pathPoints: extractPathPoints(pathElement),
-            startOffset: startOffset,
-            fontSize: fontSize,
-            letterSpacing: letterSpacing,
-            transform: transform || undefined
+            startOffset,
+            fontSize,
+            letterSpacing,
+            dx,
+            dy
           });
         });
       }
@@ -1247,11 +1250,13 @@ export function resolveVersionConflicts(mapVersion) {
       // Clear old SVG labels and redraw from data
       if (stateLabelsGroup) stateLabelsGroup.querySelectorAll("*").forEach(el => el.remove());
       if (burgLabelsGroup) burgLabelsGroup.querySelectorAll("text").forEach(el => el.remove());
-      
+      if (customLabelsGroup) customLabelsGroup.querySelectorAll("text").forEach(el => el.remove());
+
       // Regenerate labels from data
       if (layerIsOn("toggleLabels")) {
         drawStateLabels();
         drawBurgLabels();
+        drawCustomLabels();
       }
     }
   }

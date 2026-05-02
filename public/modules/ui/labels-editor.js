@@ -8,6 +8,9 @@ function getLabelData(textElement) {
   if (id.startsWith("stateLabel")) {
     return Labels.get(+id.slice(10));
   }
+  if (id.startsWith("customLabel")) {
+    return Labels.get(+id.slice(11));
+  }
   // Custom labels: check for existing data-label-id attribute
   const dataLabelId = textElement.getAttribute("data-label-id");
   if (dataLabelId != null) {
@@ -18,23 +21,6 @@ function getLabelData(textElement) {
   }
   // No data entry found — create one from SVG state (migration path)
   return undefined;
-}
-
-// Helper: create a CustomLabelData entry from existing SVG elements
-function createCustomLabelDataFromSvg(textElement) {
-  const textPathEl = textElement.querySelector("textPath");
-  if (!textPathEl) return null;
-  const group = textElement.parentNode.id;
-  const text = [...textPathEl.querySelectorAll("tspan")].map(t => t.textContent).join("|");
-  const pathEl = byId("textPath_" + textElement.id);
-  const pathPoints = extractPathPoints(pathEl);
-  const startOffset = parseFloat(textPathEl.getAttribute("startOffset")) || 50;
-  const fontSize = parseFloat(textPathEl.getAttribute("font-size")) || 100;
-  const letterSpacing = parseFloat(textPathEl.getAttribute("letter-spacing") || "0");
-  const transform = textElement.getAttribute("transform") || undefined;
-  const label = Labels.addCustomLabel({ group, text, pathPoints, startOffset, fontSize, letterSpacing, transform });
-  textElement.setAttribute("data-label-id", String(label.i));
-  return label;
 }
 
 function editLabel() {
@@ -227,11 +213,13 @@ function editLabel() {
     d3.event.on("drag", function () {
       const x = d3.event.x,
         y = d3.event.y;
-      const transform = `translate(${dx + x},${dy + y})`;
+      const effectiveDx = dx + x;
+      const effectiveDy = dy + y;
+      const transform = `translate(${effectiveDx},${effectiveDy})`;
       elSelected.attr("transform", transform);
       debug.select("#controlPoints").attr("transform", transform);
       const labelData = getLabelData(elSelected.node());
-      if (labelData) Labels.update(labelData.i, { transform });
+      if (labelData) Labels.update(labelData.i, { dx: effectiveDx, dy: effectiveDy });
     });
   }
 

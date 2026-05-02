@@ -851,6 +851,7 @@ function toggleLabels(event) {
 function drawLabels() {
   drawStateLabels();
   drawBurgLabels();
+  drawCustomLabels();
   invokeActiveZooming();
 }
 

@@ -11,7 +11,8 @@ export interface StateLabel {
   startOffset?: number;
   fontSize?: number;
   letterSpacing?: number;
-  transform?: string;
+  dx?: number;
+  dy?: number;
 }
 
 export interface BurgLabel {
@@ -33,7 +34,8 @@ export interface CustomLabel {
   startOffset?: number;
   fontSize?: number;
   letterSpacing?: number;
-  transform?: string;
+  dx?: number;
+  dy?: number;
 }
 
 export type LabelData = StateLabel | BurgLabel | CustomLabel;
