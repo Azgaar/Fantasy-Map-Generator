@@ -1116,8 +1116,8 @@ export function resolveVersionConflicts(mapVersion) {
     });
   }
 
-  if (isOlderThan("1.114.0")) {
-    // v1.114.0 moved labels data from SVG to data model
+  if (isOlderThan("1.122.0")) {
+    // v1.122.0 moved labels data from SVG to data model
     // Migrate old SVG labels to pack.labels structure
     if (!pack.labels || !pack.labels.length) {
       pack.labels = [];
