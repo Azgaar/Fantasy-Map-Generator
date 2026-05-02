@@ -2446,6 +2446,9 @@ div.states > .goodIcon {
 div.states > .goodIcon > * {
   pointer-events: none;
 }
+div.states > .goodType {
+  width: 7em;
+}
 div.states > .goodTags,
 div.states > .goodModel {
   cursor: pointer;

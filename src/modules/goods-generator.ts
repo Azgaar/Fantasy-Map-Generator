@@ -1,48 +1,45 @@
 import {color, shuffle} from "d3";
+import type {PackedGraph} from "../types/PackedGraph";
 import {createTypedArray, TYPED_ARRAY_MAX} from "../utils";
 
 declare global {
   var Goods: GoodsModule;
 }
 
-export interface Good {
+interface GenericGood {
   i: number;
   name: string;
-  type: "raw" | "manufactured";
   tags: string[];
   icon: string;
   color: string;
-  value: number;
-  chance: number;
-  model: string;
-  unit: string;
-  bonus: Record<string, number>;
-  culture: Record<string, number>;
-  cells?: number;
-  custom?: string;
-  fn?: (methods: any) => boolean;
+  value: number; // price per unit
+  unit: string; // e.g. "wagon", "barrel", "head"
+  bonus: Record<string, number>; // e.g. {population: 2} means that this good gives population +2 if is produced in a cell
+  culture: Record<string, number>; // modifier to production based on culture, e.g. {Nomadic: 2} means that nomadic cultures produce twice as much of this good
   pinned?: boolean;
   stroke?: string;
+  cells?: number;
 }
 
+export interface RawGood extends GenericGood {
+  type: "raw";
+  chance: number; // generation chance
+  model: string;
+  custom?: string;
+  fn?: (methods: any) => boolean;
+}
+
+interface ManufacturedGood extends GenericGood {
+  type: "manufactured";
+  chance: number; // production chance
+  recipe: Record<number, number>; // good id and required amount to produce 1 unit of this good
+}
+
+export type Good = RawGood | ManufacturedGood;
+
 export class GoodsModule {
-  private cells: any;
+  private cells!: PackedGraph["cells"];
   private cellId: number = 0;
-
-  private normalizeTags(goods: Good[] | any[]) {
-    for (const good of goods) {
-      if (Array.isArray(good.tags)) {
-        good.tags = good.tags
-          .map((tag: unknown) => String(tag).trim())
-          .filter((tag: string, index: number, arr: string[]) => !!tag && arr.indexOf(tag) === index);
-        continue;
-      }
-
-      const legacyCategory = typeof good.category === "string" ? good.category.trim().toLocaleLowerCase() : "";
-      good.tags = legacyCategory ? [legacyCategory] : [];
-      delete good.category;
-    }
-  }
 
   private defaultGoods: Good[] = [
     {
@@ -533,7 +530,7 @@ export class GoodsModule {
       model: "Desert_tundra_and_tropical_shore",
       unit: "barrel",
       bonus: {artillery: 1},
-      culture: {Generic: 2, Nomadic: 2}
+      culture: {Generic: 2}
     },
     {
       i: 36,
@@ -604,6 +601,21 @@ export class GoodsModule {
       unit: "bag",
       bonus: {prestige: 1},
       culture: {Lake: 2, River: 2}
+    },
+    {
+      i: 41,
+      name: "Glass",
+      type: "manufactured",
+      requires: [4, 34], // iron and coal
+      tags: ["luxury"],
+      icon: "good-glass",
+      color: "#e6e3e3",
+      value: 6,
+      chance: 2,
+      model: "Habitable_biome_or_marine",
+      unit: "bottle",
+      bonus: {prestige: 1},
+      culture: {Generic: 2}
     }
   ];
 
@@ -662,15 +674,19 @@ export class GoodsModule {
   generate(regenerate: boolean = false) {
     TIME && console.time("generateGoods");
     this.cells = pack.cells;
-    this.cells.good = createTypedArray({maxValue: TYPED_ARRAY_MAX.UINT16, length: this.cells.i.length});
+    this.cells.good = createTypedArray({
+      maxValue: TYPED_ARRAY_MAX.UINT16,
+      length: this.cells.i.length
+    });
     const resourceMaxCells = Math.ceil((200 * this.cells.i.length) / 5000);
     if (!pack.goods || regenerate) pack.goods = this.defaultGoods;
-    this.normalizeTags(pack.goods);
-    pack.goods.forEach((r: Good) => {
-      r.cells = 0;
-      const model = r.custom || this.models[r.model as keyof typeof this.models];
+
+    pack.goods.forEach((good: Good) => {
+      good.cells = 0;
+      if (good.type !== "raw") return;
+      const model = good.custom || this.models[good.model as keyof typeof this.models];
       const allMethods = `{${Object.keys(this.methods).join(", ")}}`;
-      r.fn = new Function(allMethods, `return ${model}`) as (methods: any) => boolean;
+      good.fn = new Function(allMethods, `return ${model}`) as (methods: any) => boolean;
     });
 
     const skipGlaciers = biomesData.habitability[11] === 0;
@@ -683,6 +699,7 @@ export class GoodsModule {
       this.cellId = cellId;
 
       for (const resource of pack.goods) {
+        if (resource.type !== "raw") continue;
         if (resource.cells! >= resourceMaxCells) continue;
         if (resource.cells ? rnd > resource.chance : Math.random() * 100 > resource.chance) continue;
         if (!resource.fn!({...this.methods})) continue;
@@ -692,10 +709,12 @@ export class GoodsModule {
         break;
       }
     }
+
     pack.goods
-      .sort((a: Good, b: Good) => (a.i > b.i ? 1 : -1))
-      .forEach((r: Good) => {
-        delete r.fn;
+      .sort((a, b) => (a.i > b.i ? 1 : -1))
+      .forEach(good => {
+        if (good.type !== "raw") return;
+        delete good.fn;
       });
 
     TIME && console.timeEnd("generateGoods");
