@@ -99,7 +99,10 @@ class LabelsModule {
 
   update(id: number, updates: Partial<LabelData>): void {
     const label = pack.labels.find((l) => l.i === id);
-    if (!label) return;
+    if (!label) {
+      ERROR && console.error(`Label with id ${id} was not found for update.`);
+      return;
+    }
     Object.assign(label, updates, { i: label.i, type: label.type });
   }
 
