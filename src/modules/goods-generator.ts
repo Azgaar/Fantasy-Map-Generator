@@ -56,7 +56,7 @@ const GOODS_DATA = [
     chance: 4,
     distribution: "minHeight(40) || (minHeight(20) && elevation())",
     unit: "pallet",
-    bonus: {prestige: 1, defence: 2},
+    bonus: {defence: 2},
     culture: {Hunting: 0.6, Nomadic: 0.6}
   },
   {

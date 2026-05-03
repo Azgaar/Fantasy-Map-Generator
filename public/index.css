@@ -2440,18 +2440,12 @@ svg.button {
 /* Goods */
 div.states > .goodIcon {
   margin: 0;
-  cursor: pointer;
   vertical-align: middle;
 }
-div.states > .goodIcon > * {
-  pointer-events: none;
-}
-div.states > .goodType {
+div.states > .goodName {
   width: 7em;
 }
-div.states > .goodTags,
-div.states > .goodModel {
-  cursor: pointer;
+div.states > .goodTags {
   width: 9em;
   overflow: hidden;
   vertical-align: middle;

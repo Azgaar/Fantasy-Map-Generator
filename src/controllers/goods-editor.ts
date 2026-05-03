@@ -23,7 +23,6 @@ export function open() {
 
   if (!isInitialized) {
     // add listeners once per session, dialog is re-opened on each open
-    ensureEl("goodsMoreData").on("click", toggleMoreData);
     ensureEl("goodsEditorRefresh").on("click", goodsEditorAddLines);
     ensureEl("goodsLegend").on("click", toggleLegend);
     ensureEl("goodsPercentage").on("click", togglePercentageMode);
@@ -40,23 +39,9 @@ export function open() {
       const line = el.parentNode as HTMLElement;
       const good = Goods.get(+line.dataset.id!);
       if (!good) return;
-      if (cl.contains("goodIcon")) return changeIcon(good, line, el);
-      if (cl.contains("goodTags")) return changeTags(good, line, el);
-      if (cl.contains("goodModel") && !good.recipe) return changeDistribution(good, line, el);
-      if (cl.contains("goodBonus")) return changeBonus(good, line, el);
+      if (cl.contains("goodEdit")) return editGood(good);
       if (cl.contains("icon-pin")) return pinResource(good, el);
       if (cl.contains("icon-trash-empty")) return removeResource(good, line);
-    });
-
-    ensureEl("goodsBody").on("change", ev => {
-      const el = ev.target as HTMLInputElement;
-      const cl = el.classList;
-      const line = el.parentNode as HTMLElement;
-      const good = Goods.get(+line.dataset.id!);
-      if (!good) return;
-      if (cl.contains("goodName")) return changeName(good, el.value, line);
-      if (cl.contains("goodValue")) return changeValue(good, el.value, line);
-      if (cl.contains("goodChance")) return changeChance(good, el.value, line);
     });
 
     isInitialized = true;
@@ -80,40 +65,25 @@ function goodsEditorAddLines() {
   let lines = "";
 
   for (const good of pack.goods) {
-    const stroke = Goods.getStroke(good.color);
-    const isRaw = !good.recipe;
-    const goodType = isRaw ? "raw" : "manufactured";
     const distribution = good.distribution || "";
-    const readable = distribution ? interpretDistribution(distribution) : "";
-    const bonusArray = Object.entries(good.bonus).flatMap(([k, v]) =>
-      Array(v as number).fill(k)
-    ) as unknown as string[];
-    const bonusHTML = bonusArray.map((bonus: string) => getBonusIcon(bonus)).join("");
     const bonusString = Object.entries(good.bonus)
       .map(([k, v]) => `${k}: ${v}`)
       .join("; ");
     const tags = good.tags.join(", ");
+    const stroke = Goods.getStroke(good.color);
 
     lines += `<div class="states goods"
-          data-id=${good.i} data-name="${good.name}" data-color="${good.color}" data-type="${goodType}"
+          data-id=${good.i} data-name="${good.name}" data-color="${good.color}"
           data-tags="${tags}" data-chance="${good.chance}" data-bonus="${bonusString}"
           data-value="${good.value}" data-model="${distribution}" data-cells="${good.cells}">
-        <svg data-tip="Good icon. Click to change" width="2em" height="2em" class="goodIcon">
+        <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
           <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
           <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
         </svg>
-        <input data-tip="Good name. Click and tags to change" class="goodName" value="${good.name}" autocorrect="off" spellcheck="false">
-        <div data-tip="Good type" class="goodType">${goodType}</div>
-        <div data-tip="Good tags. Click to add or remove tags" class="goodTags" title="${tags}">${tags}</div>
+        <div data-tip="Good name" class="goodName">${good.name}</div>
+        <div data-tip="Good tags" class="goodTags" title="${tags}">${tags}</div>
         <div data-tip="Number of cells with good" class="goodCells">${good.cells}</div>
-
-        <span data-tip="Good basic value" class="hide" style="margin-right: -0.3em">🟡</span>
-        <input data-tip="Good basic value. Click and type to change" class="goodValue hide" value="${good.value}" type="number" min=0 max=100 step=1 />
-        <div data-tip="Good bonus. Click to change" class="goodBonus hide" title="${bonusString}">${bonusHTML || "<span style='opacity:0'>place</span>"}</div>
-
-        <input data-tip="Good generation chance in eligible cell. Click and type to change" class="goodChance hidden show" value="${good.chance}" type="number" min=0 max=100 step=.1 />
-        <div data-tip="Good distribution condition. Click to edit" class="goodModel hidden show" title="${distribution}">${readable}</div>
-
+        <span data-tip="Edit good" class="icon-pencil goodEdit"></span>
         <span data-tip="Toggle good exclusive visibility (pin)" class="icon-pin inactive hide"></span>
         <span data-tip="Remove good" class="icon-trash-empty hide"></span>
       </div>`;
@@ -129,11 +99,6 @@ function goodsEditorAddLines() {
     togglePercentageMode();
   }
   applySorting(ensureEl("goodsHeader")!);
-
-  const moreDataBtn = ensureEl("goodsMoreData");
-  if (moreDataBtn?.classList.contains("active")) {
-    body.querySelectorAll<HTMLElement>(".show").forEach(el => void el.classList.remove("hidden"));
-  }
   applyTagVisibilityFilter();
   $("#goodsEditor").dialog({width: fitContent()});
 }
@@ -194,99 +159,6 @@ function applyTagVisibilityFilter() {
   if (filterBtn) filterBtn.classList.toggle("active", hasFilter);
 }
 
-function changeTags(good: Good, line: HTMLElement, el: HTMLElement) {
-  let selectedTags = [...good.tags];
-
-  const render = () => {
-    const allTags = new Set(pack.goods.flatMap(good => good.tags));
-    const assignedTags = selectedTags.length
-      ? selectedTags
-          .map(
-            tag => `<span style="display:inline-flex; align-items:center; margin:.1em .2em .1em 0; padding:.1em .35em; border:1px solid #bbb; border-radius: .35em;">
-              <span>${tag}</span>
-              <button type="button" class="goodTagRemove" data-tag="${tag}" style="margin-left:.35em; line-height:1; border:none; background:transparent; cursor:pointer">x</button>
-              </span>`
-          )
-          .join("")
-      : '<span style="color:#666">No tags assigned</span>';
-
-    const knownTags = allTags.size
-      ? Array.from(allTags)
-          .map(
-            tag =>
-              `<label style="display:block; margin:.15em 0"><input type="checkbox" class="goodKnownTagCheck native" value="${tag}" ${selectedTags.some(value => value === tag) ? "checked" : ""} /> ${tag}</label>`
-          )
-          .join("")
-      : '<span style="color:#666">No tags in goods list yet</span>';
-
-    alertMessage.innerHTML = `
-      <div style="margin-bottom:.5em" data-tip="Tags are free text labels used only for data organization">
-        Assigned tags:
-      </div>
-      <div id="goodAssignedTags" style="margin-bottom:.6em">${assignedTags}</div>
-
-      <div style="margin-bottom:.35em">
-        <input id="goodTagToAdd" placeholder="New tag" style="width: 14em" />
-        <button id="goodTagAddButton" type="button">Add</button>
-      </div>
-
-      <div data-tip="Toggle existing tags on or off">
-        Known tags:
-      </div>
-      <div style="max-height: 12em; overflow: auto; border: 1px solid #ccc; padding: .4em;">${knownTags}</div>
-    `;
-
-    alertMessage.querySelectorAll<HTMLButtonElement>(".goodTagRemove").forEach(btn => {
-      btn.onclick = () => {
-        const tag = btn.dataset.tag || "";
-        selectedTags = selectedTags.filter(value => value !== tag);
-        render();
-      };
-    });
-
-    alertMessage.querySelectorAll<HTMLInputElement>(".goodKnownTagCheck").forEach(check => {
-      check.onchange = () => {
-        const tag = check.value.trim();
-        if (!tag) return;
-        if (check.checked && !selectedTags.some(value => value === tag)) selectedTags.push(tag);
-        if (!check.checked) selectedTags = selectedTags.filter(value => value !== tag);
-        selectedTags = [...new Set(selectedTags)];
-        render();
-      };
-    });
-
-    const addInput = ensureEl("goodTagToAdd") as HTMLInputElement;
-    ensureEl("goodTagAddButton").onclick = () => {
-      let tag = addInput.value.trim();
-      tag = tag.replace(/[<>"'%,;&]/g, "");
-
-      if (!tag) return;
-      if (!selectedTags.some(value => value === tag)) selectedTags.push(tag);
-      selectedTags = [...new Set(selectedTags)];
-      render();
-    };
-  };
-
-  render();
-  $("#alert").dialog({
-    width: "20em",
-    title: "Edit tags",
-    buttons: {
-      Cancel: function () {
-        $(this).dialog("close");
-      },
-      Apply: function () {
-        good.tags = [...new Set(selectedTags)];
-        line.dataset.tags = good.tags.join(",");
-        el.innerHTML = good.tags.join(", ") || "<span style='opacity:0'>place</span>";
-        applyTagVisibilityFilter();
-
-        $(this).dialog("close");
-      }
-    }
-  });
-}
-
 function interpretDistribution(dist: string): string {
   const biomeLabel = (id: number): string =>
     (typeof biomesData !== "undefined" && biomesData.name?.[id]) || `biome ${id}`;
@@ -327,10 +199,10 @@ function interpretDistribution(dist: string): string {
         .map((a: string) => a.trim());
       return `type: ${types.join("/")}`;
     })
-    .replace(/river\(\)/g, "near river")
+    .replace(/river\(\)/g, "river presence")
     .replace(/minHabitability\((\d+)\)/g, (_, n) => `habitability ≥ ${n}%`)
-    .replace(/habitability\(\)/g, "random by habitability")
-    .replace(/elevation\(\)/g, "random by elevation")
+    .replace(/habitability\(\)/g, "more habitable areas")
+    .replace(/elevation\(\)/g, "more elevated areas")
     .replace(/nth\((\d+)\)/g, (_, n) => `1 in ${n} cells`)
     .replace(/random\((\d+)\)/g, (_, n) => `${n}% chance`)
     .replace(/\s*&&\s*/g, " AND ")
@@ -338,196 +210,6 @@ function interpretDistribution(dist: string): string {
     .replace(/!\s*/g, "NOT ")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function changeDistribution(good: Good, line: HTMLElement, el: HTMLElement) {
-  const current = good.distribution || "";
-  const wikiURL = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods:-spread-functions";
-
-  alertMessage.innerHTML = /*html*/ `
-    <div style="margin-bottom:.4em">Distribution function (spread condition):</div>
-    <textarea id="goodDistributionInput" style="width:100%; height:5em; font-family:monospace; font-size:.9em; box-sizing:border-box" spellcheck="false">${current}</textarea>
-    <div style="margin:.3em 0; color:#555; font-size:.9em; min-height:1.2em" id="goodDistributionPreview">${current ? interpretDistribution(current) : ""}</div>
-    <div id="goodDistributionError" style="color:#b20000; min-height:1em"></div>
-  `;
-
-  const input = ensureEl("goodDistributionInput") as HTMLTextAreaElement;
-  const previewEl = ensureEl("goodDistributionPreview");
-  input.oninput = () => {
-    try {
-      previewEl.textContent = input.value.trim() ? interpretDistribution(input.value.trim()) : "";
-    } catch {
-      previewEl.textContent = "";
-    }
-  };
-
-  $("#alert").dialog({
-    width: "30em",
-    resizable: false,
-    title: "Change distribution",
-    buttons: {
-      Help: () => openURL(wikiURL),
-      Cancel: function () {
-        $(this).dialog("close");
-      },
-      Apply: function () {
-        const fn = input.value.trim();
-        const errorEl = ensureEl("goodDistributionError");
-        errorEl.textContent = "";
-        if (!fn) {
-          good.distribution = undefined;
-          el.innerHTML = "";
-          el.setAttribute("title", "");
-          line.dataset.model = "";
-          $(this).dialog("close");
-          return;
-        }
-        try {
-          const allMethods = `{${Object.keys(Goods.methods).join(", ")}}`;
-          new Function(allMethods, `return ${fn}`)({...Goods.methods});
-        } catch (err) {
-          errorEl.textContent = `Error: ${(err as Error).message || err}`;
-          return;
-        }
-        good.distribution = fn;
-        const readable = interpretDistribution(fn);
-        el.innerHTML = readable;
-        el.setAttribute("title", fn);
-        line.dataset.model = fn;
-        $(this).dialog("close");
-      }
-    }
-  });
-}
-
-function changeBonus(good: Good, line: HTMLElement, el: HTMLElement) {
-  const bonuses = [...new Set(pack.goods.flatMap(good => Object.keys(good.bonus)))].sort();
-  const inputs = bonuses.map(
-    bonus => `<div style="margin-bottom:.2em">
-        ${getBonusIcon(bonus)}
-        <div style="display: inline-block; width: 8em">${capitalize(bonus)}</div>
-        <input id="goodBonus_${bonus}" style="width: 4.1em" type="number" step="1" min="0" max="9" value="${good.bonus[bonus as keyof Good["bonus"]] || 0}" />
-      </div>`
-  );
-
-  alertMessage.innerHTML = inputs.join("");
-  $("#alert").dialog({
-    resizable: false,
-    title: "Change bonus",
-    buttons: {
-      Cancel: function () {
-        $(this).dialog("close");
-      },
-      Apply: function () {
-        applyChanges();
-        $(this).dialog("close");
-      }
-    }
-  });
-
-  function applyChanges() {
-    const bonusObj: Record<string, number> = {};
-    bonuses.forEach(bonus => {
-      const bonusEl = ensureEl(`goodBonus_${bonus}`) as HTMLInputElement;
-      const value = parseInt(bonusEl.value, 10);
-      if (Number.isNaN(value) || !value) return;
-      bonusObj[bonus] = value;
-    });
-
-    const bonusArray = Object.entries(bonusObj).flatMap(([k, v]) => Array(v).fill(k)) as unknown as string[];
-    const bonusHTML = bonusArray.map((bonus: string) => getBonusIcon(bonus)).join("");
-    const bonusString = Object.entries(bonusObj)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join("; ");
-
-    good.bonus = bonusObj;
-    el.innerHTML = bonusHTML || "<span style='opacity:0'>place</span>";
-    line.dataset.bonus = bonusString;
-    el.setAttribute("title", bonusString);
-  }
-}
-
-function changeName(good: Good, name: string, line: HTMLElement) {
-  good.name = line.dataset.name = name;
-}
-
-function changeValue(good: Good, value: string, line: HTMLElement) {
-  good.value = +value;
-  line.dataset.value = value;
-}
-
-function changeChance(good: Good, chance: string, line: HTMLElement) {
-  good.chance = +chance;
-  line.dataset.chance = chance;
-}
-
-function changeIcon(good: Good, line: HTMLElement, _el: HTMLElement) {
-  const standardIcons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
-  const standardIconsOptions = standardIcons.map(icon => `<option value=${icon}>${icon}</option>`);
-
-  const customIconsEl = ensureEl("defs-icons");
-  const customIcons = customIconsEl ? Array.from(customIconsEl.querySelectorAll("svg")).map(el => el.id) : [];
-  const customIconsOptions = customIcons.map(icon => `<option value=${icon}>${icon}</option>`);
-
-  const select = ensureEl("goodSelectIcon") as HTMLSelectElement;
-  select.innerHTML = standardIconsOptions.join("") + customIconsOptions.join("");
-  select.value = good.icon;
-
-  const preview = ensureEl("goodIconPreview") as unknown as SVGUseElement;
-  preview.setAttribute("href", `#${good.icon}`);
-
-  const viewBoxSection = ensureEl("goodIconEditorViewboxFields") as HTMLElement;
-  viewBoxSection.style.display = "none";
-
-  $("#goodIconEditor").dialog({
-    resizable: false,
-    title: "Change Icon",
-    buttons: {
-      Cancel: function () {
-        $(this).dialog("close");
-      },
-      "Change color": () => changeColor(good, line, _el),
-      Apply: function () {
-        $(this).dialog("close");
-
-        good.icon = select.value;
-        line.querySelector("svg.goodIcon > use")!.setAttribute("href", `#${select.value}`);
-        drawGoods();
-      }
-    },
-    position: {my: "center bottom", at: "center", of: "svg"}
-  });
-
-  const uploadTo = ensureEl("defs-icons")!;
-  const onUpload = (type: string, id: string) => {
-    preview.setAttribute("href", `#${id}`);
-    select.innerHTML += `<option value=${id}>${id}</option>`;
-    select.value = id;
-
-    if (type === "image") return;
-
-    const iconEl = ensureEl(id)!;
-    viewBoxSection.style.display = "block";
-    const viewBoxAttr = iconEl.getAttribute("viewBox");
-    const initialViewBox = viewBoxAttr ? viewBoxAttr.split(" ") : [0, 0, 200, 200];
-    const inputs = viewBoxSection.querySelectorAll("input");
-    const changeInput = () => {
-      const viewBox = Array.from(inputs)
-        .map(input => (input as HTMLInputElement).value)
-        .join(" ");
-      iconEl.setAttribute("viewBox", viewBox);
-    };
-    inputs.forEach((input, i) => {
-      (input as HTMLInputElement).value = String(initialViewBox[i]);
-      (input as HTMLInputElement).onchange = changeInput;
-    });
-  };
-
-  select.onchange = () => preview.setAttribute("href", `#${select.value}`);
-  ensureEl("goodUploadIconRaster").onclick = () => (ensureEl("imageToLoad") as HTMLInputElement).click();
-  ensureEl("goodUploadIconVector").onclick = () => (ensureEl("svgToLoad") as HTMLInputElement).click();
-  ensureEl("imageToLoad").onchange = () => uploadImage("image", uploadTo, onUpload);
-  ensureEl("svgToLoad").onchange = () => uploadImage("svg", uploadTo, onUpload);
 }
 
 function uploadImage(type: string, uploadTo: HTMLElement, callback: (type: string, id: string) => void) {
@@ -587,22 +269,6 @@ function uploadImage(type: string, uploadTo: HTMLElement, callback: (type: strin
   else reader.readAsText(file);
 }
 
-function changeColor(good: Good, line: HTMLElement, _el: HTMLElement) {
-  const circle = line.querySelector("circle")!;
-
-  const callback = (fill: string) => {
-    const stroke = Goods.getStroke(fill);
-    circle.setAttribute("fill", fill);
-    circle.setAttribute("stroke", stroke);
-    good.color = fill;
-    good.stroke = stroke;
-    goods.selectAll(`circle[data-i='${good.i}']`).attr("fill", fill).attr("stroke", stroke);
-    line.dataset.color = fill;
-  };
-
-  openPicker(good.color, callback, {allowHatching: false});
-}
-
 function goodsRestoreDefaults() {
   confirmationDialog({
     title: "Restore default goods",
@@ -640,22 +306,6 @@ function togglePercentageMode() {
   }
 }
 
-function toggleMoreData() {
-  const body = ensureEl("goodsBody");
-  const btn = ensureEl("goodsMoreData")!;
-  const header = ensureEl("goodsHeader")!;
-  const isActive = btn.classList.toggle("active");
-
-  if (isActive) {
-    body.querySelectorAll<HTMLElement>(".show").forEach(el => void el.classList.remove("hidden"));
-    header.querySelectorAll<HTMLElement>(".show").forEach(el => void el.classList.remove("hidden"));
-  } else {
-    body.querySelectorAll<HTMLElement>(".show").forEach(el => void el.classList.add("hidden"));
-    header.querySelectorAll<HTMLElement>(".show").forEach(el => void el.classList.add("hidden"));
-  }
-  $("#goodsEditor").dialog({width: fitContent()});
-}
-
 function enterResourceAssignMode(this: HTMLElement) {
   const body = ensureEl("goodsBody");
   if (this.classList.contains("pressed")) return exitResourceAssignMode();
@@ -667,14 +317,13 @@ function enterResourceAssignMode(this: HTMLElement) {
     toggleCells();
   }
 
-  document
-    .getElementById("goodsEditor")!
+  ensureEl("goodsEditor")!
     .querySelectorAll(".hide")
     .forEach(el => {
       el.classList.add("hidden");
     });
   ensureEl("goodsFooter").style.display = "none";
-  body.querySelectorAll<HTMLElement>(".goodName, .goodTags, .goodChance, .goodCells, svg").forEach(e => {
+  body.querySelectorAll<HTMLElement>(".goodEdit, .icon-trash-empty").forEach(e => {
     e.style.pointerEvents = "none";
   });
   $("#goodsEditor").dialog({
@@ -749,9 +398,11 @@ function exitResourceAssignMode(close?: string) {
     .querySelectorAll(".hide")
     .forEach(el => void el.classList.remove("hidden"));
   ensureEl("goodsFooter").style.display = "block";
-  body.querySelectorAll<HTMLElement>(".goodName, .goodTags, .goodChance, .goodCells, svg").forEach(e => {
-    e.style.pointerEvents = "";
-  });
+  body
+    .querySelectorAll<HTMLElement>(".goodName, .goodType, .goodTags, .goodCells, .goodEdit, svg, .icon-trash-empty")
+    .forEach(e => {
+      e.style.pointerEvents = "";
+    });
   if (!close) {
     $("#goodsEditor").dialog({
       position: {
@@ -769,55 +420,81 @@ function exitResourceAssignMode(close?: string) {
   if (selected) selected.classList.remove("selected");
 }
 
+function editGood(good: Good) {
+  openGoodDialog(good);
+}
+
 function goodAdd() {
+  openGoodDialog();
+}
+
+function openGoodDialog(goodToEdit?: Good) {
+  const isEdit = Boolean(goodToEdit);
+  const editedGood = goodToEdit;
+  const editedType = editedGood?.recipes ? "manufactured" : "raw";
+
   const standardIcons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
   const customIconsEl = ensureEl("defs-icons");
   const customIcons = customIconsEl ? Array.from(customIconsEl.querySelectorAll("svg")).map(el => el.id) : [];
   const iconOptions = [...standardIcons, ...customIcons]
-    .map(icon => `<option value="${icon}" ${icon === "good-unknown" ? "selected" : ""}>${icon}</option>`)
+    .map(icon => {
+      const selected = editedGood ? editedGood.icon === icon : icon === "good-unknown";
+      return `<option value="${icon}" ${selected ? "selected" : ""}>${icon}</option>`;
+    })
     .join("");
 
-  const allBonuses = unique(pack.goods.flatMap(good => Object.keys(good.bonus)));
+  const allBonuses = unique([
+    ...pack.goods.flatMap(good => Object.keys(good.bonus)),
+    ...Object.keys(editedGood?.bonus || {})
+  ]);
   const bonusInputsHtml = allBonuses
     .map(
       bonus => `<span>
         ${getBonusIcon(bonus)}
         <div style="display: inline-block; width: 5em;">${capitalize(bonus)}</div>
-        <input id="newGoodBonus_${bonus}" type="number" style="width: 3em;" step="1" min="0" max="9" value="0" />
+        <input id="newGoodBonus_${bonus}" type="number" style="width: 3em;" step="1" min="0" max="9" value="${(editedGood?.bonus as Record<string, number> | undefined)?.[bonus] || 0}" />
       </span>`
     )
     .join("");
 
+  const recipeToText = (recipes?: Good["recipes"]): string => {
+    if (!recipes?.length) return "";
+    const recipe = recipes[0];
+    return Object.entries(recipe)
+      .map(([id, amount]) => `${id}:${amount}`)
+      .join(", ");
+  };
+
   alertMessage.innerHTML = /*html*/ `
     <div style="display:grid; grid-template-columns: 8em 1fr; align-items:center;">
       <label for="newGoodName">Name*</label>
-      <input id="newGoodName" value="" />
+      <input id="newGoodName" value="${editedGood?.name || ""}" />
 
       <label for="newGoodType">Type*</label>
       <select id="newGoodType">
-        <option value="raw" selected>raw</option>
-        <option value="manufactured">manufactured</option>
+        <option value="raw" ${editedType !== "manufactured" ? "selected" : ""}>raw</option>
+        <option value="manufactured" ${editedType === "manufactured" ? "selected" : ""}>manufactured</option>
       </select>
 
       <label for="newGoodTags">Tags</label>
-      <input id="newGoodTags" value="" placeholder="comma separated" />
+      <input id="newGoodTags" value="${editedGood?.tags.join(", ") || ""}" placeholder="comma separated" />
 
       <label for="newGoodValue">Value*</label>
-      <input id="newGoodValue" type="number" min="0" step="1" value="1" />
+      <input id="newGoodValue" type="number" min="0" step="1" value="${editedGood?.value ?? 1}" />
 
       <label for="newGoodChance">Chance*</label>
-      <input id="newGoodChance" type="number" min="0" max="100" step="0.1" value="3" />
+      <input id="newGoodChance" type="number" min="0" max="100" step="0.1" value="${editedGood?.chance ?? 3}" />
 
       <label for="newGoodUnit">Unit</label>
-      <input id="newGoodUnit" placeholder="e.g. wagon, barrel" />
+      <input id="newGoodUnit" placeholder="e.g. wagon, barrel" value="${editedGood?.unit || ""}" />
 
       <label for="newGoodIcon">Icon</label>
       <div style="display:flex; align-items:center; gap:.4em;">
         <select id="newGoodIcon" style="width: 8em;">${iconOptions}</select>
-        <svg width="20" height="20" viewBox="0 0 200 200" style="flex-shrink:0"><use id="newGoodIconPreview" href="#good-unknown"/></svg>
+        <svg width="20" height="20" viewBox="0 0 200 200" style="flex-shrink:0"><use id="newGoodIconPreview" href="#${editedGood?.icon || "good-unknown"}"/></svg>
         <button id="newGoodUploadIconRaster" class="icon-upload" data-tip="Upload raster icon"></button>
         <button id="newGoodUploadIconVector" class="icon-upload-cloud" data-tip="Upload vector (SVG) icon"></button>
-        <input id="newGoodColor" type="color" data-tip="Set a stroke color" style="width:3em; height:14px; padding:0; border:none;" value="#ff5959" />
+        <input id="newGoodColor" type="color" data-tip="Set a stroke color" style="width:3em; height:14px; padding:0; border:none;" value="${editedGood?.color || "#ff5959"}" />
       </div>
 
       <label for="newGoodBonuses" style="align-self: start;">Bonuses</label>
@@ -826,14 +503,14 @@ function goodAdd() {
 
     <div id="newGoodRawFields">
       <label style="display:block; margin-bottom:.2em">Distribution function:</label>
-      <textarea id="newGoodDistribution" style="width:100%; height:4em; font-family:monospace; font-size:.9em; box-sizing:border-box" spellcheck="false" placeholder="e.g. biome(5, 6, 7, 8, 9)"></textarea>
-      <div id="newGoodDistributionPreview" style="color:#555; font-size:.9em; min-height:1.2em; margin-top:.2em"></div>
+      <textarea id="newGoodDistribution" style="width:100%; height:4em; font-family:monospace; font-size:.9em; box-sizing:border-box" spellcheck="false" placeholder="e.g. biome(5, 6, 7, 8, 9)">${editedGood?.distribution || ""}</textarea>
+      <div id="newGoodDistributionPreview" style="color:#555; font-size:.9em; min-height:1.2em; margin-top:.2em">${editedGood?.distribution ? interpretDistribution(editedGood.distribution) : ""}</div>
     </div>
 
     <div id="newGoodManufacturedFields" style="display:none;">
       <div style="display:grid; grid-template-columns: 8em 1fr; align-items:center;">
         <label for="newGoodRecipe">Recipe*</label>
-        <input id="newGoodRecipe" placeholder="goodId:amount, goodId:amount" spellcheck="false" />
+        <input id="newGoodRecipe" placeholder="goodId:amount, goodId:amount" spellcheck="false" value="${recipeToText(editedGood?.recipes)}" />
         <div></div>
         <div style="color:#666; font-size:.95em">Example: 4:1, 34:2</div>
       </div>
@@ -886,12 +563,12 @@ function goodAdd() {
   $("#alert").dialog({
     width: "30em",
     resizable: false,
-    title: "Add new good",
+    title: isEdit ? "Edit good" : "Add new good",
     buttons: {
       Cancel: function () {
         $(this).dialog("close");
       },
-      Add: function () {
+      [isEdit ? "Apply" : "Add"]: function () {
         const error = ensureEl("newGoodError");
         error.textContent = "";
 
@@ -935,31 +612,64 @@ function goodAdd() {
           return nextId;
         };
 
+        const applyBase = (target: Good) => {
+          target.name = name;
+          target.tags = tags;
+          target.icon = icon;
+          target.color = color;
+          target.value = value;
+          target.chance = chance;
+          target.unit = unit;
+          target.bonus = bonusObj;
+        };
+
+        const distributionMethods = {
+          random: (..._args: any[]) => true,
+          nth: (..._args: any[]) => true,
+          minHabitability: (..._args: any[]) => true,
+          habitability: (..._args: any[]) => true,
+          elevation: (..._args: any[]) => true,
+          biome: (..._args: any[]) => true,
+          minHeight: (..._args: any[]) => true,
+          maxHeight: (..._args: any[]) => true,
+          minTemp: (..._args: any[]) => true,
+          maxTemp: (..._args: any[]) => true,
+          shore: (..._args: any[]) => true,
+          type: (..._args: any[]) => true,
+          river: (..._args: any[]) => true
+        };
+
         if (type === "raw") {
           if (distribution) {
             try {
-              const allMethods = `{${Object.keys(Goods.methods).join(", ")}}`;
-              new Function(allMethods, `return ${distribution}`)({...Goods.methods});
+              const allMethods = `{${Object.keys(distributionMethods).join(", ")}}`;
+              new Function(allMethods, `return ${distribution}`)(distributionMethods);
             } catch (err) {
               error.textContent = `Distribution error: ${(err as Error).message || err}`;
               return;
             }
           }
 
-          pack.goods.push({
-            i: getNextId(),
-            name,
-            tags,
-            icon,
-            color,
-            value,
-            chance,
-            distribution: distribution || undefined,
-            unit,
-            bonus: bonusObj,
-            culture: {},
-            cells: 0
-          });
+          if (editedGood) {
+            applyBase(editedGood);
+            editedGood.distribution = distribution || undefined;
+            delete editedGood.recipes;
+          } else {
+            pack.goods.push({
+              i: getNextId(),
+              name,
+              tags,
+              icon,
+              color,
+              value,
+              chance,
+              distribution: distribution || undefined,
+              unit,
+              bonus: bonusObj,
+              culture: {},
+              cells: 0
+            });
+          }
         } else {
           if (!recipeInput) {
             error.textContent = "Recipe is required for manufactured goods";
@@ -993,24 +703,32 @@ function goodAdd() {
             return;
           }
 
-          pack.goods.push({
-            i: getNextId(),
-            name,
-            tags,
-            icon,
-            color,
-            value,
-            chance,
-            recipe,
-            unit,
-            bonus: bonusObj,
-            culture: {},
-            cells: 0
-          });
+          if (editedGood) {
+            applyBase(editedGood);
+            editedGood.recipes = [recipe];
+            delete editedGood.distribution;
+          } else {
+            pack.goods.push({
+              i: getNextId(),
+              name,
+              tags,
+              icon,
+              color,
+              value,
+              chance,
+              recipes: [recipe],
+              unit,
+              bonus: bonusObj,
+              culture: {},
+              cells: 0
+            });
+          }
         }
 
-        tip("Good is added", false, "success", 5000);
+        tip(isEdit ? "Good is updated" : "Good is added", false, "success", 5000);
         goodsEditorAddLines();
+        goods.selectAll("*").remove();
+        drawGoods();
         $(this).dialog("close");
       }
     }
@@ -1022,10 +740,15 @@ function downloadGoodsData() {
   let data = "Id,Good,Color,Type,Tags,Value,Bonus,Chance,Model,Cells\n";
 
   body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
+    const goodId = +el.dataset.id!;
+    const good = Goods.get(goodId);
+    if (!good) return;
+    const type = good.recipes ? "manufactured" : "raw";
+
     data += `${el.dataset.id},`;
     data += `${el.dataset.name},`;
     data += `${el.dataset.color},`;
-    data += `"${el.dataset.type}",`;
+    data += `"${type}",`;
     data += `${el.dataset.tags},`;
     data += `${el.dataset.value},`;
     data += `${el.dataset.bonus},`;

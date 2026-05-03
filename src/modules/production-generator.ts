@@ -92,7 +92,7 @@ export class ProductionModule {
         const baseProduction = goodsPull[resourceId];
         const resource = Goods.get(+resourceId);
 
-        const cultureModifier = resource?.culture[type] || 1;
+        const cultureModifier = resource?.culture[type as keyof typeof resource.culture] || 1;
         const production = baseProduction * cultureModifier;
 
         const {value, tags} = resource!;

@@ -5293,13 +5293,10 @@
       </div>
 
       <div id="goodsEditor" class="dialog stable" style="display: none">
-        <div id="goodsHeader" class="header" style="grid-template-columns: 2.9em 7em 7em 8em 4.4em 6.4em 5em 5.5em 9.3em 2em;">
+        <div id="goodsHeader" class="header" style="grid-template-columns: 2.9em 7em 9em 4.8em 2em;">
           <div></div>
           <div data-tip="Click to sort by good name" class="sortable alphabetically" data-sortby="name">
-            Resource&nbsp;
-          </div>
-          <div data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">
-            Type&nbsp;
+            Name&nbsp;
           </div>
           <div data-tip="Click to sort by tags" class="sortable alphabetically" data-sortby="tags">
             Tags&nbsp;
@@ -5307,22 +5304,9 @@
           <div data-tip="Click to sort by number of cells" class="sortable icon-sort-number-down" data-sortby="cells">
             Cells&nbsp;
           </div>
-          <div data-tip="Click to sort by good basic value" class="sortable hide" data-sortby="value">
-            Value&nbsp;
-          </div>
-          <div data-tip="Click to sort by bonus" class="sortable alphabetically hide" data-sortby="bonus">
-            Bonus&nbsp;
-          </div>
-          <div data-tip="Click to sort by generation chance" class="sortable hidden show" data-sortby="chance">
-            Chance&nbsp;
-          </div>
-          <div data-tip="Click to sort by spread model" class="sortable alphabetically hidden show" data-sortby="model">
-            Model&nbsp;
-          </div>
           <div
-            style="cursor: pointer"
             data-tip="Click to unpin (show) all goods"
-            class="icon-pin hidden"
+            class="icon-pin hidden pointer"
             id="goodsUnpinAll"
           ></div>
         </div>
@@ -5343,7 +5327,6 @@
             class="icon-percent"
           ></button>
           <button id="goodsTagsFilter" data-tip="Filter visible goods by tags" class="icon-tags"></button>
-          <button id="goodsMoreData" data-tip="Toggle more data columns" class="icon-cog-alt"></button>
           <button id="goodsAssign" data-tip="Manually assign goods to cells" class="icon-brush"></button>
           <button id="goodsAdd" data-tip="Add a new good" class="icon-plus"></button>
           <button
@@ -5352,54 +5335,6 @@
             class="icon-history"
           ></button>
           <button id="goodsExport" data-tip="Download goods-related data" class="icon-download"></button>
-        </div>
-      </div>
-
-      <div id="goodIconEditor" class="dialog" style="display: none">
-        <div style="padding: 0.1em">
-          <div class="label">Select:</div>
-          <select id="goodSelectIcon"></select>
-        </div>
-        <div style="padding: 0.1em">
-          <div class="label">Upload:</div>
-          <button id="goodUploadIconRaster" data-tip="Upload custom icon as raster image">raster</button>
-          <button
-            id="goodUploadIconVector"
-            data-tip="Upload custom vector (.svg) icon image. You can use Inkscape to fix the viewBox"
-          >
-            vector
-          </button>
-        </div>
-        <div style="padding: 0.1em">
-          <a
-            href="https://www.iloveimg.com/compress-image"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-tip="Use external tool to compress/resize raster images before upload"
-            >Compress raster</a
-          >
-          <span> | </span>
-          <a
-            href="https://jakearchibald.github.io/svgomg"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-tip="Use external tool to optimize vector images before upload"
-            >Optimize vector</a
-          >
-        </div>
-        <div style="padding: 0.1em">
-          <svg viewBox="0 0 200 200"><use id="goodIconPreview"></use></svg>
-        </div>
-        <div
-          id="goodIconEditorViewboxFields"
-          data-tip="Adjust the viewBox to fit image into center"
-          style="padding: 0.1em"
-        >
-          <div class="label">ViewBox:</div>
-          <input type="number" />
-          <input type="number" />
-          <input type="number" />
-          <input type="number" />
         </div>
       </div>
 
