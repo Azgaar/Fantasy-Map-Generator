@@ -353,21 +353,6 @@ function getFriendlyHeight([x, y]) {
   return getHeight(h);
 }
 
-function getHeight(h, abs) {
-  const unit = heightUnit.value;
-  let unitRatio = 3.281; // default calculations are in feet
-  if (unit === "m")
-    unitRatio = 1; // if meter
-  else if (unit === "f") unitRatio = 0.5468; // if fathom
-
-  let height = -990;
-  if (h >= 20) height = Math.pow(h - 18, +heightExponentInput.value);
-  else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
-
-  if (abs) height = Math.abs(height);
-  return rn(height * unitRatio) + " " + unit;
-}
-
 function getPrecipitation(prec) {
   return prec * 100 + " mm";
 }
