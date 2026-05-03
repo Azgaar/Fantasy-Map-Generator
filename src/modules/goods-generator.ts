@@ -600,7 +600,7 @@ export class GoodsModule {
       });
     }
 
-    return {...good, i: index, cells: 0, ...recipes};
+    return {...good, i: index, cells: 0, ...(recipes && {recipes})};
   });
 
   generate(regenerate: boolean = false) {

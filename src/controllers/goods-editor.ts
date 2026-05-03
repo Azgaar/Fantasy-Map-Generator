@@ -509,10 +509,10 @@ function openGoodDialog(goodToEdit?: Good) {
       <div id="newGoodDistributionPreview" style="color:#555; font-size:.9em; min-height:1.2em; margin-top:.2em">${editedGood?.distribution ? interpretDistribution(editedGood.distribution) : ""}</div>
     </div>
 
-    <div id="newGoodManufacturedFields" style="display:none; grid-template-columns: 8em 1fr; gap:.3em; align-items:start;">
-      <div style="display:flex; align-items:center; justify-content:space-between;">
+    <div id="newGoodManufacturedFields" style="display:none;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:.4em;">
         <label>Recipes*</label>
-        <button id="newGoodAddRecipe" class="icon-plus"></button>
+        <button id="newGoodAddRecipe">+ Add recipe</button>
       </div>
       <div id="newGoodRecipeList" style="display:flex; flex-direction:column; gap:.45em;"></div>
     </div>
@@ -535,6 +535,7 @@ function openGoodDialog(goodToEdit?: Good) {
       .join("");
 
   const renderRecipes = () => {
+    if (!recipeDrafts.length) recipeDrafts.push([{id: defaultGoodId, amount: 1}]);
     recipeList.innerHTML = recipeDrafts
       .map(
         (recipe, recipeIndex) => /*html*/ `
@@ -595,8 +596,10 @@ function openGoodDialog(goodToEdit?: Good) {
         event.preventDefault();
         const recipeIndex = +button.dataset.recipeIndex!;
         const ingredientIndex = +button.dataset.ingredientIndex!;
-        recipeDrafts[recipeIndex].splice(ingredientIndex, 1);
-        renderRecipes();
+        if (recipeDrafts[recipeIndex].length > 1) {
+          recipeDrafts[recipeIndex].splice(ingredientIndex, 1);
+          renderRecipes();
+        }
       };
     });
 
@@ -619,8 +622,8 @@ function openGoodDialog(goodToEdit?: Good) {
 
   const syncTypeFields = () => {
     const isRaw = typeSelect.value === "raw";
-    rawFields.style.display = isRaw ? "block" : "none";
-    manufacturedFields.style.display = isRaw ? "none" : "block";
+    rawFields.style.display = isRaw ? "" : "none";
+    manufacturedFields.style.display = isRaw ? "none" : "";
   };
 
   distributionInput.oninput = () => {
