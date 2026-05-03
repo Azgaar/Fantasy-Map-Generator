@@ -457,13 +457,15 @@ function openGoodDialog(goodToEdit?: Good) {
     )
     .join("");
 
-  const recipeToText = (recipes?: Good["recipes"]): string => {
-    if (!recipes?.length) return "";
-    const recipe = recipes[0];
-    return Object.entries(recipe)
-      .map(([id, amount]) => `${id}:${amount}`)
-      .join(", ");
-  };
+  type RecipeIngredientDraft = {id: number; amount: number};
+  type RecipeDraft = RecipeIngredientDraft[];
+  const recipeDrafts: RecipeDraft[] = (editedGood?.recipes || [])
+    .map(recipe =>
+      Object.entries(recipe)
+        .map(([id, amount]) => ({id: +id, amount: +amount}))
+        .filter(ingredient => Number.isInteger(ingredient.id) && ingredient.amount > 0)
+    )
+    .filter(recipe => recipe.length > 0);
 
   alertMessage.innerHTML = /*html*/ `
     <div style="display:grid; grid-template-columns: 8em 1fr; align-items:center;">
@@ -507,13 +509,12 @@ function openGoodDialog(goodToEdit?: Good) {
       <div id="newGoodDistributionPreview" style="color:#555; font-size:.9em; min-height:1.2em; margin-top:.2em">${editedGood?.distribution ? interpretDistribution(editedGood.distribution) : ""}</div>
     </div>
 
-    <div id="newGoodManufacturedFields" style="display:none;">
-      <div style="display:grid; grid-template-columns: 8em 1fr; align-items:center;">
-        <label for="newGoodRecipe">Recipe*</label>
-        <input id="newGoodRecipe" placeholder="goodId:amount, goodId:amount" spellcheck="false" value="${recipeToText(editedGood?.recipes)}" />
-        <div></div>
-        <div style="color:#666; font-size:.95em">Example: 4:1, 34:2</div>
+    <div id="newGoodManufacturedFields" style="display:none; grid-template-columns: 8em 1fr; gap:.3em; align-items:start;">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <label>Recipes*</label>
+        <button id="newGoodAddRecipe" class="icon-plus"></button>
       </div>
+      <div id="newGoodRecipeList" style="display:flex; flex-direction:column; gap:.45em;"></div>
     </div>
 
     <div id="newGoodError" style="color:#b20000; min-height:1.2em"></div>
@@ -524,6 +525,97 @@ function openGoodDialog(goodToEdit?: Good) {
   const manufacturedFields = ensureEl("newGoodManufacturedFields");
   const distributionInput = ensureEl("newGoodDistribution") as HTMLTextAreaElement;
   const distributionPreview = ensureEl("newGoodDistributionPreview");
+
+  const recipeList = ensureEl("newGoodRecipeList");
+  const defaultGoodId = pack.goods[0]?.i ?? 0;
+
+  const getGoodOptions = (selectedId: number) =>
+    pack.goods
+      .map(good => `<option value="${good.i}" ${good.i === selectedId ? "selected" : ""}>${good.name}</option>`)
+      .join("");
+
+  const renderRecipes = () => {
+    recipeList.innerHTML = recipeDrafts
+      .map(
+        (recipe, recipeIndex) => /*html*/ `
+          <div class="recipeOption" style="border: 1px solid #ccc;" data-recipe-index="${recipeIndex}" >
+            <div style="display:flex; align-items:center; justify-content:space-between; padding: 0.3em 0.7em 0 0;">
+              <span>Recipe ${recipeIndex + 1}</span>
+              <div style="display:flex; gap:.3em;">
+                <span class="recipeAddIngredient icon-plus" data-recipe-index="${recipeIndex}"></span>
+                <span class="recipeRemoveOption icon-trash-empty" data-recipe-index="${recipeIndex}"></span>
+              </div>
+            </div>
+            <div class="recipeIngredients" style="display:flex; flex-direction:column; gap:.2em;">
+              ${recipe
+                .map(
+                  (ingredient, ingredientIndex) => /*html*/ `
+                    <div style="display:grid; grid-template-columns: 1fr 5em 1.5em; gap:.25em; align-items: center;" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}">
+                      <select class="recipeGoodSelect" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}">${getGoodOptions(ingredient.id)}</select>
+                      <input class="recipeAmountInput" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}" type="number" min="1" step="1" value="${ingredient.amount}" />
+                      <span class="recipeRemoveIngredient icon-trash-empty" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}" />
+                    </div>`
+                )
+                .join("")}
+            </div>
+          </div>
+        `
+      )
+      .join("");
+
+    recipeList.querySelectorAll<HTMLSelectElement>(".recipeGoodSelect").forEach(select => {
+      select.onchange = () => {
+        const recipeIndex = +select.dataset.recipeIndex!;
+        const ingredientIndex = +select.dataset.ingredientIndex!;
+        recipeDrafts[recipeIndex][ingredientIndex].id = +select.value;
+      };
+    });
+
+    recipeList.querySelectorAll<HTMLInputElement>(".recipeAmountInput").forEach(input => {
+      input.onchange = () => {
+        const recipeIndex = +input.dataset.recipeIndex!;
+        const ingredientIndex = +input.dataset.ingredientIndex!;
+        const amount = +input.value;
+        recipeDrafts[recipeIndex][ingredientIndex].amount = Number.isFinite(amount) && amount > 0 ? amount : 1;
+        input.value = String(recipeDrafts[recipeIndex][ingredientIndex].amount);
+      };
+    });
+
+    recipeList.querySelectorAll<HTMLButtonElement>(".recipeAddIngredient").forEach(button => {
+      button.onclick = event => {
+        event.preventDefault();
+        const recipeIndex = +button.dataset.recipeIndex!;
+        recipeDrafts[recipeIndex].push({id: defaultGoodId, amount: 1});
+        renderRecipes();
+      };
+    });
+
+    recipeList.querySelectorAll<HTMLButtonElement>(".recipeRemoveIngredient").forEach(button => {
+      button.onclick = event => {
+        event.preventDefault();
+        const recipeIndex = +button.dataset.recipeIndex!;
+        const ingredientIndex = +button.dataset.ingredientIndex!;
+        recipeDrafts[recipeIndex].splice(ingredientIndex, 1);
+        renderRecipes();
+      };
+    });
+
+    recipeList.querySelectorAll<HTMLButtonElement>(".recipeRemoveOption").forEach(button => {
+      button.onclick = event => {
+        event.preventDefault();
+        const recipeIndex = +button.dataset.recipeIndex!;
+        recipeDrafts.splice(recipeIndex, 1);
+        renderRecipes();
+      };
+    });
+  };
+
+  ensureEl("newGoodAddRecipe").on("click", event => {
+    event.preventDefault();
+    recipeDrafts.push([{id: defaultGoodId, amount: 1}]);
+    renderRecipes();
+  });
+  renderRecipes();
 
   const syncTypeFields = () => {
     const isRaw = typeSelect.value === "raw";
@@ -581,7 +673,6 @@ function openGoodDialog(goodToEdit?: Good) {
         const icon = ensureEl<HTMLSelectElement>("newGoodIcon").value;
         const color = ensureEl<HTMLInputElement>("newGoodColor").value;
         const distribution = distributionInput.value.trim();
-        const recipeInput = ensureEl<HTMLInputElement>("newGoodRecipe").value.trim();
 
         const tags = unique(tagsInput.split(",").map(tag => tag.trim().toLocaleLowerCase()));
 
@@ -671,41 +762,40 @@ function openGoodDialog(goodToEdit?: Good) {
             });
           }
         } else {
-          if (!recipeInput) {
-            error.textContent = "Recipe is required for manufactured goods";
-            return;
-          }
+          const recipes: Record<number, number>[] = [];
 
-          const recipe: Record<number, number> = {};
-          const chunks = recipeInput
-            .split(",")
-            .map(chunk => chunk.trim())
-            .filter(Boolean);
+          for (const recipe of recipeDrafts) {
+            const recipeData: Record<number, number> = {};
 
-          for (const chunk of chunks) {
-            const [idRaw, amountRaw] = chunk.split(":").map(part => part.trim());
-            const id = Number(idRaw);
-            const amount = Number(amountRaw);
+            for (const ingredient of recipe) {
+              if (!Number.isInteger(ingredient.id) || !Goods.get(ingredient.id)) {
+                error.textContent = `Recipe references unknown good id: ${ingredient.id}`;
+                return;
+              }
+              if (!Number.isFinite(ingredient.amount) || ingredient.amount <= 0) {
+                error.textContent = `Invalid recipe amount for good id: ${ingredient.id}`;
+                return;
+              }
 
-            if (!Number.isInteger(id) || !Number.isFinite(amount) || amount <= 0) {
-              error.textContent = `Invalid recipe entry: ${chunk}. Use goodId:amount`;
+              recipeData[ingredient.id] = (recipeData[ingredient.id] || 0) + ingredient.amount;
+            }
+
+            if (!Object.keys(recipeData).length) {
+              error.textContent = "Each recipe must contain at least one ingredient";
               return;
             }
-            if (!Goods.get(id)) {
-              error.textContent = `Recipe references unknown good id: ${id}`;
-              return;
-            }
-            recipe[id] = amount;
+
+            recipes.push(recipeData);
           }
 
-          if (!Object.keys(recipe).length) {
-            error.textContent = "Recipe must contain at least one ingredient";
+          if (!recipes.length) {
+            error.textContent = "At least one recipe is required for manufactured goods";
             return;
           }
 
           if (editedGood) {
             applyBase(editedGood);
-            editedGood.recipes = [recipe];
+            editedGood.recipes = recipes;
             delete editedGood.distribution;
           } else {
             pack.goods.push({
@@ -716,7 +806,7 @@ function openGoodDialog(goodToEdit?: Good) {
               color,
               value,
               chance,
-              recipes: [recipe],
+              recipes,
               unit,
               bonus: bonusObj,
               culture: {},
