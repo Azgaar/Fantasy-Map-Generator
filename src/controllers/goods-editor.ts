@@ -83,7 +83,7 @@ function goodsEditorAddLines() {
         <div data-tip="Good name" class="goodName">${good.name}</div>
         <div data-tip="Good tags" class="goodTags" title="${tags}">${tags}</div>
         <div data-tip="Number of cells with good" class="goodCells">${good.cells}</div>
-        <span data-tip="Edit good" class="icon-pencil goodEdit"></span>
+        <span data-tip="Edit good" class="icon-pencil goodEdit hide"></span>
         <span data-tip="Toggle good exclusive visibility (pin)" class="icon-pin inactive hide"></span>
         <span data-tip="Remove good" class="icon-trash-empty hide"></span>
       </div>`;
