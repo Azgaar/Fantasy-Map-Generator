@@ -467,7 +467,7 @@ function openGoodDialog(goodToEdit?: Good) {
     )
     .filter(recipe => recipe.length > 0);
 
-  const biomeProductionToText = (biomeProduction?: Record<number, number>): string => {
+  const biomeProductionToText = (biomeProduction?: Partial<Record<number, number>>): string => {
     if (!biomeProduction) return "";
     return Object.entries(biomeProduction)
       .sort(([a], [b]) => +a - +b)
