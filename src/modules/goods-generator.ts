@@ -116,7 +116,7 @@ const GOODS_DATA = [
     chance: 2,
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "bullion",
-    bonus: {prestige: 2},
+    bonus: {prestige: 1},
     culture: {Hunting: 0.5, Highland: 2, Nomadic: 0.5}
   },
   {
@@ -304,7 +304,7 @@ const GOODS_DATA = [
     tags: ["luxury", "mineral"],
     icon: "good-gemstones",
     color: "#e463e4",
-    value: 18,
+    value: 15,
     chance: 2,
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "gem",
@@ -316,8 +316,8 @@ const GOODS_DATA = [
     tags: ["luxury"],
     icon: "good-dyes",
     color: "#fecdea",
-    value: 7,
-    chance: 0.5,
+    value: 5,
+    chance: 1,
     distribution: "shore(-1) || minHabitability(1)",
     unit: "bag",
     bonus: {prestige: 1},
@@ -332,7 +332,7 @@ const GOODS_DATA = [
     chance: 2,
     distribution: "biome(1, 7)",
     unit: "chest",
-    bonus: {prestige: 2},
+    bonus: {prestige: 1},
     culture: {Generic: 2}
   },
   {
@@ -344,7 +344,7 @@ const GOODS_DATA = [
     chance: 1,
     distribution: "biome(7)",
     unit: "bolt",
-    bonus: {prestige: 2},
+    bonus: {prestige: 1},
     culture: {River: 1.2, Lake: 1.2}
   },
   {
@@ -356,7 +356,7 @@ const GOODS_DATA = [
     chance: 2,
     distribution: "biome(7)",
     unit: "chest",
-    bonus: {prestige: 2},
+    bonus: {prestige: 1},
     culture: {Generic: 2}
   },
   {
@@ -441,7 +441,8 @@ const GOODS_DATA = [
     distribution: "minHeight(40) || (minHeight(20) && elevation())",
     unit: "wain",
     bonus: {artillery: 2},
-    culture: {Generic: 2}
+    culture: {Generic: 2},
+    recipes: [{Wood: 2}]
   },
   {
     name: "Oil",
@@ -516,7 +517,7 @@ const GOODS_DATA = [
     culture: {Lake: 2, River: 2}
   },
   {
-    name: "Fine clay",
+    name: "Clay",
     tags: ["mineral", "construction"],
     icon: "good-clay",
     color: "#b07c60",
@@ -544,12 +545,12 @@ const GOODS_DATA = [
     tags: ["clothing", "military"],
     icon: "good-leather",
     color: "#8b5a2b",
-    value: 4,
+    value: 3,
     chance: 0,
-    recipes: [{Cattle: 1}, {Game: 2}],
+    recipes: [{Cattle: 1}, {Game: 1}],
     unit: "roll",
     bonus: {infantry: 1, cavalry: 1},
-    culture: {Nomadic: 2, Hunting: 2}
+    culture: {Naval: 0.6, Hunting: 2}
   },
   {
     name: "Cloth",
@@ -558,10 +559,339 @@ const GOODS_DATA = [
     color: "#b55239",
     value: 5,
     chance: 0,
-    recipes: [{Wool: 1}, {Hemp: 1}, {Silk: 1}],
+    recipes: [{Wool: 1}, {Hemp: 1}, {Silk: 0.5}],
     unit: "bolt",
     bonus: {population: 2, fleet: 1},
-    culture: {Generic: 1.5}
+    culture: {Generic: 2}
+  },
+  {
+    name: "Garnments",
+    tags: ["clothing"],
+    icon: "good-garnments",
+    color: "#bd21ec",
+    value: 10,
+    chance: 0,
+    recipes: [{Wool: 1, Dyes: 1}, {Hemp: 1, Dyes: 1}, {Silk: 0.5, Dyes: 1}, {Furs: 1}],
+    unit: "set",
+    bonus: {prestige: 2},
+    culture: {Generic: 2}
+  },
+  {
+    name: "Ceramics",
+    tags: ["storage", "construction"],
+    icon: "good-pottery",
+    color: "#c1440e",
+    value: 5,
+    chance: 0,
+    recipes: [
+      {Clay: 1, Coal: 1},
+      {Clay: 1, Wood: 1}
+    ],
+    unit: "wain",
+    bonus: {population: 1},
+    culture: {River: 2, Lake: 2}
+  },
+  {
+    name: "Glass",
+    tags: ["storage", "construction"],
+    icon: "good-glass",
+    color: "#a0c8e8",
+    value: 6,
+    chance: 0,
+    recipes: [
+      {"White sand": 1, Coal: 1},
+      {"White sand": 1, Wood: 1}
+    ],
+    unit: "wain",
+    bonus: {prestige: 1},
+    culture: {River: 2, Lake: 2, Nomadic: 0.1}
+  },
+  {
+    name: "Ropes",
+    tags: ["naval", "construction"],
+    icon: "good-ropes",
+    color: "#654321",
+    value: 4,
+    chance: 0,
+    recipes: [{Hemp: 1}],
+    unit: "coil",
+    bonus: {fleet: 2},
+    culture: {Naval: 2}
+  },
+  {
+    name: "Paper",
+    tags: ["ritual", "educational"],
+    icon: "good-paper",
+    color: "#f5f5dc",
+    value: 6,
+    chance: 0,
+    recipes: [{Hemp: 1}],
+    unit: "ream",
+    bonus: {prestige: 2},
+    culture: {River: 2, Nomadic: 0.1, Hunting: 0.5}
+  },
+  {
+    name: "Ink",
+    tags: ["ritual", "educational"],
+    icon: "good-ink",
+    color: "#000000",
+    value: 6,
+    chance: 0,
+    recipes: [{Oil: 1}, {Dyes: 1}],
+    unit: "bottle",
+    bonus: {prestige: 1},
+    culture: {River: 2, Nomadic: 0.1, Hunting: 0.5}
+  },
+  {
+    name: "Books",
+    tags: ["ritual", "educational"],
+    icon: "good-books",
+    color: "#deb887",
+    value: 20,
+    chance: 0,
+    recipes: [
+      {Paper: 1, Ink: 1},
+      {Leather: 1, Ink: 1}
+    ],
+    unit: "volume",
+    bonus: {prestige: 3},
+    culture: {Nomadic: 0.1, Hunting: 0.5}
+  },
+  {
+    name: "Sails",
+    tags: ["naval"],
+    icon: "good-sails",
+    color: "#ffffff",
+    value: 10,
+    chance: 0,
+    recipes: [{Cloth: 1}],
+    unit: "set",
+    bonus: {fleet: 2},
+    culture: {Naval: 2}
+  },
+  {
+    name: "Ships",
+    tags: ["naval"],
+    icon: "good-ships",
+    color: "#654321",
+    value: 50,
+    chance: 0,
+    recipes: [{Wood: 2, Sails: 1, Ropes: 1, Tar: 1}],
+    unit: "ship",
+    bonus: {fleet: 4},
+    culture: {Naval: 2}
+  },
+  {
+    name: "Boots",
+    tags: ["clothing", "military"],
+    icon: "good-boots",
+    color: "#654321",
+    value: 7,
+    chance: 0,
+    recipes: [{Leather: 1}, {Furs: 1}],
+    unit: "pair",
+    bonus: {infantry: 1, cavalry: 1},
+    culture: {Naval: 0.6, Hunting: 2}
+  },
+  {
+    name: "Harnesses",
+    tags: ["military"],
+    icon: "good-harnesses",
+    color: "#654321",
+    value: 7,
+    chance: 0,
+    recipes: [{Leather: 1}],
+    unit: "set",
+    bonus: {cavalry: 2},
+    culture: {Nomadic: 3}
+  },
+  {
+    name: "Barrels",
+    tags: ["naval", "storage"],
+    icon: "good-barrels",
+    color: "#6b3d1b",
+    value: 4,
+    chance: 0,
+    recipes: [{Wood: 1}],
+    unit: "barrel",
+    bonus: {fleet: 1, population: 1},
+    culture: {Naval: 1.5}
+  },
+  {
+    name: "Bronze",
+    tags: ["military"],
+    icon: "good-bronze",
+    color: "#e46f21",
+    value: 7,
+    chance: 0,
+    recipes: [
+      {Copper: 1, Coal: 1},
+      {Lead: 1, Coal: 1}
+    ],
+    unit: "wagon",
+    bonus: {infantry: 1, cavalry: 1, defence: 1, artillery: 1},
+    culture: {Highland: 2}
+  },
+  {
+    name: "Tools",
+    tags: ["construction", "military"],
+    icon: "good-tools",
+    color: "#808080",
+    value: 8,
+    chance: 0,
+    recipes: [
+      {Iron: 1, Coal: 1},
+      {Bronze: 1, Coal: 1}
+    ],
+    unit: "set",
+    bonus: {defence: 1, infantry: 1, cavalry: 1, artillery: 1},
+    culture: {Highland: 2, Nomadic: 0.5, Naval: 0.5}
+  },
+  {
+    name: "Arms",
+    tags: ["military"],
+    icon: "good-weapons",
+    color: "#333333",
+    value: 10,
+    chance: 0,
+    recipes: [
+      {Iron: 1, Coal: 1},
+      {Bronze: 2, Coal: 1}
+    ],
+    unit: "set",
+    bonus: {infantry: 2, cavalry: 2, artillery: 2, defence: 2},
+    culture: {Highland: 2, Nomadic: 0.5, Naval: 0.5}
+  },
+  {
+    name: "Gunpowder",
+    tags: ["military"],
+    icon: "good-gunpowder",
+    color: "#4b5320",
+    value: 6,
+    chance: 0,
+    recipes: [{Saltpeter: 1, Coal: 1}],
+    unit: "barrel",
+    bonus: {artillery: 3},
+    culture: {Highland: 2, Nomadic: 0.2}
+  },
+  {
+    name: "Artillery",
+    tags: ["military"],
+    icon: "good-artillery",
+    color: "#2f4f4f",
+    value: 20,
+    chance: 0,
+    recipes: [
+      {Iron: 2, Coal: 1},
+      {Bronze: 1, Coal: 1}
+    ],
+    unit: "cannon",
+    bonus: {artillery: 5},
+    culture: {Highland: 2, Nomadic: 0.2}
+  },
+  {
+    name: "Coins",
+    tags: ["currency"],
+    icon: "good-coins",
+    color: "#ffd700",
+    value: 20,
+    chance: 0,
+    recipes: [
+      {Gold: 1, Coal: 1},
+      {Silver: 2, Coal: 1}
+    ],
+    unit: "coin",
+    bonus: {prestige: 2},
+    culture: {Generic: 2}
+  },
+  {
+    name: "Jewelry",
+    tags: ["luxury"],
+    icon: "good-jewelry",
+    color: "#e0115f",
+    value: 30,
+    chance: 0,
+    recipes: [
+      {Gemstones: 1, Gold: 1},
+      {Pearls: 1, Gold: 1},
+      {Amber: 2, Gold: 1},
+      {Gemstones: 1, Silver: 2},
+      {Pearls: 1, Silver: 2},
+      {Amber: 2, Silver: 2}
+    ],
+    unit: "piece",
+    bonus: {prestige: 2},
+    culture: {Generic: 2}
+  },
+  {
+    name: "Salted provisions",
+    tags: ["food"],
+    icon: "good-salted-fish",
+    color: "#c2b280",
+    value: 5,
+    chance: 0,
+    recipes: [
+      {Fish: 1, Salt: 1},
+      {Cattle: 1, Salt: 1},
+      {Game: 1, Salt: 1}
+    ],
+    unit: "wain",
+    bonus: {population: 1, fleet: 1},
+    culture: {River: 2, Lake: 2, Naval: 2}
+  },
+  {
+    name: "Cheese",
+    tags: ["food"],
+    icon: "good-cheese",
+    color: "#f5e1a4",
+    value: 3,
+    chance: 0,
+    recipes: [{Cattle: 1}],
+    unit: "wain",
+    bonus: {population: 1},
+    culture: {Generic: 2}
+  },
+  {
+    name: "Beer",
+    tags: ["food"],
+    icon: "good-beer",
+    color: "#fbb117",
+    value: 4,
+    chance: 0,
+    recipes: [{Grain: 1}, {"Honey and wax": 1}],
+    unit: "barrel",
+    bonus: {population: 1},
+    culture: {Generic: 2}
+  },
+  {
+    name: "Liquor",
+    tags: ["food", "luxury"],
+    icon: "good-liquor",
+    color: "#8a0303",
+    value: 7,
+    chance: 0,
+    recipes: [
+      {Grain: 1, Wood: 1},
+      {Wine: 1, Wood: 1}
+    ],
+    unit: "barrel",
+    bonus: {prestige: 2},
+    culture: {Generic: 2}
+  },
+  {
+    name: "Soap",
+    tags: ["luxury", "ritual"],
+    icon: "good-soap",
+    color: "#e0e4cc",
+    value: 4,
+    chance: 0,
+    recipes: [
+      {Olives: 1, Wood: 1},
+      {Cattle: 1, Wood: 1}
+    ],
+    unit: "barrel",
+    bonus: {prestige: 1},
+    culture: {Generic: 2}
   }
 ] satisfies (Omit<Good, "i" | "cells"> & {recipes?: Record<string, number>[]})[];
 
