@@ -583,7 +583,7 @@ const GOODS_DATA = [
     color: "#b55239",
     value: 6,
     chance: 0,
-    recipes: [{Sheep: 1}, {Hemp: 1}, {Silk: 0.25}],
+    recipes: [{Sheep: 1}, {Hemp: 1}, {Silk: 0.5}],
     unit: "bolt",
     bonus: {population: 2, fleet: 1},
     culture: {Generic: 2}
