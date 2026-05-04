@@ -1,4 +1,4 @@
-import {CultureType, DEFAULT_CULTURE_TYPE} from "./cultures-generator";
+import {DEFAULT_CULTURE_TYPE} from "./cultures-generator";
 import type {Good} from "./goods-generator";
 
 declare global {
@@ -97,23 +97,22 @@ export class ProductionModule {
       }
 
       // craft manufactured goods
-      const inventory: Record<number, number> = {...productionPull};
+      const inventory: Record<string, number> = {...productionPull};
       for (const good of pack.goods) {
         if (!good.recipes?.length) continue;
 
-        let bestRecipe: Record<number, number> | null = null;
+        let bestRecipe: (typeof good.recipes)[number] | null = null;
         let bestYield = 0;
 
         for (const recipe of good.recipes) {
           const entries = Object.entries(recipe) as [string, number][];
           if (!entries.length) continue;
 
-          const maxYieldByIngredient = entries.map(([ingredientId, amount]) => {
-            const id = +ingredientId;
-            const available = inventory[id] || 0;
-            return amount > 0 ? available / amount : 0;
+          const recipeYieldByIngredient = entries.map(([ingredientId, ingredientAmount]) => {
+            const available = inventory[ingredientId] || 0;
+            return available / ingredientAmount;
           });
-          const recipeYield = Math.min(...maxYieldByIngredient);
+          const recipeYield = Math.min(...recipeYieldByIngredient);
 
           if (Number.isFinite(recipeYield) && recipeYield > bestYield) {
             bestYield = recipeYield;
@@ -123,22 +122,31 @@ export class ProductionModule {
 
         if (!bestRecipe || bestYield <= 0) continue;
 
-        const cultureModifier = good.culture[type as keyof typeof good.culture] || 1;
+        const cultureModifier = good.culture[type] || 1;
         const producedAmount = bestYield * cultureModifier;
         if (producedAmount <= 0) continue;
 
-        for (const [ingredientId, amount] of Object.entries(bestRecipe)) {
+        for (const [ingredientId, ingredientAmount] of Object.entries(bestRecipe)) {
           const id = +ingredientId;
-          inventory[id] = Math.max(0, (inventory[id] || 0) - bestYield * amount);
+          inventory[id] = Math.max(0, (inventory[id] || 0) - bestYield * ingredientAmount);
         }
 
         inventory[good.i] = (inventory[good.i] || 0) + producedAmount;
       }
 
       burg.produced = {};
-      for (const resourceId in inventory) {
-        const production = inventory[resourceId];
-        burg.produced[resourceId] = Math.ceil(production);
+      for (const goodId in inventory) {
+        const production = Math.floor(inventory[goodId]);
+        if (production > 0) burg.produced[+goodId] = production;
+      }
+
+      // debug
+      console.log(`Burg ${burg.i}: ${burg.name} produced:`);
+      for (const goodId in burg.produced) {
+        const good = Goods.get(+goodId);
+        if (!good) continue;
+        const production = burg.produced[+goodId];
+        console.log(`${good.name}: ${production}`);
       }
     }
   }

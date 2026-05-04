@@ -846,7 +846,7 @@ const GOODS_DATA = [
       {Cattle: 1, Vinegar: 0.5},
       {Game: 1, Vinegar: 0.5},
       {Sheep: 1, Vinegar: 0.5},
-      {Fish: 1, Wood: 1}
+      {Fish: 1, Wood: 2}
     ],
     unit: "wain",
     bonus: {population: 1, fleet: 1},
