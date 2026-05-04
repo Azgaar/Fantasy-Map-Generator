@@ -51,13 +51,10 @@ export function open(burgId: number): void {
         g.chainValue > baseVal + 0.01
           ? ` <span style="color:#4a4;font-size:.78em">(+${r2(g.chainValue - baseVal)})</span>`
           : "";
-      const foodBadge = g.isFood
-        ? `<span style="background:#fff3cd;color:#856404;font-size:.75em;padding:0 3px;border-radius:2px;margin-left:3px">food</span>`
-        : "";
       const buyP = r2(data.pricesAtStart.buy[g.goodId] ?? baseVal);
       const buyColor = buyP > baseVal ? "color:#c84" : buyP < baseVal ? "color:#4a4" : "";
       return /*html*/ `<tr>
-        <td style="padding:.2em .4em">${goodDot(g.goodId)}${goodName(g.goodId)}${foodBadge}</td>
+        <td style="padding:.2em .4em">${goodDot(g.goodId)}${goodName(g.goodId)}</td>
         <td style="text-align:right;padding:.2em .4em">${r2(g.pull)}</td>
         <td style="text-align:right;padding:.2em .4em">${r2(g.chainValue)}${cvExtra}</td>
         <td style="text-align:right;padding:.2em .4em;font-weight:bold">${r2(g.priority)}</td>
@@ -69,7 +66,7 @@ export function open(burgId: number): void {
   const poolHtml = /*html*/ `
     <div style="margin-bottom:.8em">
       <div style="font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.2em;margin-bottom:.4em;font-size:.9em">
-        Goods Pool — ${data.goodsPull.length} goods available (sorted by priority)
+        Goods Pool
       </div>
       ${
         poolRows
@@ -89,11 +86,8 @@ export function open(burgId: number): void {
 
   // ── Section 3: Population Jobs ──────────────────────────────────────────
   const jobRows = data.jobs
-    .map((job, idx) => {
-      const isFirst = idx === 0 || Math.floor(data.jobs[idx - 1].tick) !== Math.floor(job.tick);
-      const workerLabel = isFirst
-        ? `<td style="padding:.2em .4em;color:#888;font-size:.8em">${Math.ceil(job.tick)}</td>`
-        : `<td></td>`;
+    .map(job => {
+      const workerLabel = `<td style="padding:.2em .4em;color:#888;font-size:.8em">${Math.ceil(job.tick)}</td>`;
       const typeBadge = job.isRaw
         ? `<span style="background:#f0e8e8;color:#a44;font-size:.72em;padding:0 3px;border-radius:2px">RAW</span>`
         : `<span style="background:#e8f0e8;color:#4a4;font-size:.72em;padding:0 3px;border-radius:2px">MFG</span>`;
@@ -110,7 +104,7 @@ export function open(burgId: number): void {
         job.profit !== undefined
           ? `<span style="color:${job.profit > 0 ? "#4a4" : "#c44"};font-size:.78em" title="profit per unit"> +${r2(job.profit)}</span>`
           : "";
-      return `<tr style="${isFirst ? "border-top:1px solid #eee" : ""}">
+      return `<tr>
         ${workerLabel}
         <td style="padding:.2em .4em">${typeBadge}</td>
         <td style="padding:.2em .4em">${goodDot(job.goodId)}${goodName(job.goodId)}${cultureMod}</td>
@@ -123,7 +117,7 @@ export function open(burgId: number): void {
   const jobsHtml = /*html*/ `
     <div style="margin-bottom:.8em">
       <div style="font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.2em;margin-bottom:.4em;font-size:.9em">
-        Population Spending — ${data.jobs.length} production actions
+        Production Distribution
       </div>
       ${
         jobRows
@@ -156,7 +150,7 @@ export function open(burgId: number): void {
       const g = goodById.get(id);
       const sp = g?.sellPrice ?? g?.value ?? 0;
       const bv = g?.value ?? 0;
-      const isManufactured = !!g?.recipes?.length;
+      const isManufactured = Boolean(g?.recipes?.length);
       const typeBadge = isManufactured
         ? `<span style="background:#e8f0e8;color:#4a4;font-size:.75em;padding:0 3px;border-radius:2px;margin-left:3px">MFG</span>`
         : `<span style="background:#f0e8e8;color:#a44;font-size:.75em;padding:0 3px;border-radius:2px;margin-left:3px">RAW</span>`;
@@ -173,7 +167,7 @@ export function open(burgId: number): void {
   const finalHtml = /*html*/ `
     <div>
       <div style="font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.2em;margin-bottom:.4em;font-size:.9em">
-        Final Output — total market value: <b>${r2(finalTotalValue)}</b>
+        Final Output
       </div>
       ${
         finalRows

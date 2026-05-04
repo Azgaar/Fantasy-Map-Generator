@@ -4,8 +4,7 @@ import {DEFAULT_CULTURE_TYPE} from "./cultures-generator";
 import type {Good} from "./goods-generator";
 
 export class ProductionModule {
-  private readonly BONUS_PRODUCTION = 4;
-  private readonly FOOD_MULTIPLIER = 3;
+  private readonly BONUS_PRODUCTION = 5;
   private readonly COLLECTION_DIVISOR = 3;
 
   // flood-fill traversal penalties
@@ -81,8 +80,6 @@ export class ProductionModule {
         goodId: number;
         basePriority: number;
         priority: number;
-        production: number;
-        isFood: boolean;
       }
 
       const items: Item[] = [];
@@ -95,71 +92,84 @@ export class ProductionModule {
         if (!good) continue;
 
         const rawPull = goodsPull[goodId];
-        const isFood = good.tags.some(tag => tag.toLowerCase() === "food");
-
-        // Priority uses raw pull — culture modifier is applied at output time, not here
         const basePriority = rawPull * (chainValue[goodId] ?? good.value);
         const jitter = 1 - this.PRIORITY_JITTER / 2 + burgRng() * this.PRIORITY_JITTER;
-        const priority = basePriority * (isFood ? this.FOOD_MULTIPLIER : 1) * jitter;
+        const priority = basePriority * jitter;
 
-        items.push({goodId, basePriority, priority, production: rawPull, isFood});
+        items.push({goodId, basePriority, priority});
         rawQueue.push(items.length - 1, -priority); // negate: FlatQueue is min-heap
         goodsPullData.push({
           goodId,
           pull: rawPull,
           chainValue: chainValue[goodId] ?? good.value,
-          priority,
-          isFood
+          priority
         });
       }
       goodsPullData.sort((a, b) => b.priority - a.priority);
 
-      let foodProduced = 0;
+      // Track how much of each good is still available for this burg to extract
+      const remainingPool: Record<number, number> = {...goodsPull};
+
       const inventory: Record<number, number> = {};
       const jobsData: BurgProductionData["jobs"] = [];
+      let rawWorkersUsed = 0;
 
+      // Pass 1: raw goods — each worker extracts exactly 1 unit (or remaining pool if < 1).
+      // Workers and pool are shared: a burg with population 3 and a pool of 2 horses can only
+      // produce 2 horses, leaving 1 worker free for manufacturing.
       for (let i = 0; i < population; i++) {
-        const idx = rawQueue.pop();
-        if (idx === undefined) break;
-
-        // Partial last tick: a worker that's only e.g. 0.158 of a person produces proportionally less
         const fraction = Math.min(1, population - i);
 
-        const occupation = items[idx];
-        const {goodId, production, isFood} = occupation;
+        // Find the highest-priority item that still has pool available.
+        // Items with exhausted pools are discarded permanently (not re-queued).
+        let occupation: Item | undefined;
+        while (rawQueue.length) {
+          const idx = rawQueue.pop();
+          if (idx === undefined) break;
+          const candidate = items[idx];
+          if ((remainingPool[candidate.goodId] ?? 0) > 0) {
+            occupation = candidate;
+            break;
+          }
+        }
+        if (!occupation) break; // all raw pools exhausted — end Pass 1 early
+
+        const {goodId} = occupation;
+        // Extract exactly 1 unit (or whatever is left if pool < 1)
+        const extract = Math.min(fraction, remainingPool[goodId]);
+        remainingPool[goodId] -= extract;
 
         // Culture modifier applied at output — affects actual units produced, not priority
         const good = goodById.get(goodId)!;
         const cultureModifier = good.culture[type] || 1;
-        const scaledProduction = production * fraction * cultureModifier;
+        const produced = extract * cultureModifier;
 
-        inventory[goodId] = (inventory[goodId] || 0) + scaledProduction;
-        if (isFood) foodProduced += scaledProduction;
+        inventory[goodId] = (inventory[goodId] || 0) + produced;
 
-        jobsData.push({tick: i + fraction, goodId, units: scaledProduction, cultureModifier, isRaw: true});
+        jobsData.push({tick: i + fraction, goodId, units: produced, cultureModifier, isRaw: true});
 
         // Raise buy price incrementally; later burgs see this good as more expensive
         currentBuyPrice[goodId] = Math.max(
           priceFloor[goodId],
-          Math.min(currentBuyPrice[goodId] + scaledProduction * buyPressure[goodId], priceCeiling[goodId])
+          Math.min(currentBuyPrice[goodId] + produced * buyPressure[goodId], priceCeiling[goodId])
         );
 
-        const foodBoost = isFood && foodProduced < population ? this.FOOD_MULTIPLIER : 1;
-        const basePriority = occupation.basePriority / 2;
-        const jitter = 1 - this.PRIORITY_JITTER / 2 + burgRng() * this.PRIORITY_JITTER;
-        const priority = basePriority * foodBoost * jitter;
+        // Re-queue only if this good's pool is not yet exhausted
+        if (remainingPool[goodId] > 0) {
+          const basePriority = occupation.basePriority / 2;
+          const jitter = 1 - this.PRIORITY_JITTER / 2 + burgRng() * this.PRIORITY_JITTER;
+          const priority = basePriority * jitter;
+          items.push({...occupation, basePriority, priority});
+          rawQueue.push(items.length - 1, -priority);
+        }
 
-        items.push({...occupation, basePriority, priority});
-        rawQueue.push(items.length - 1, -priority);
+        rawWorkersUsed += fraction;
       }
 
-      // Snapshot raw inventory after pass 1 (before manufacturing consumes ingredients)
-
-      // Phase C, Pass 2: manufacturing ordered by profit
-      // Each manufactured good costs 1 worker. Manufacturing budget = floor(population),
-      // so sub-1-pop burgs can't manufacture anything.
-      // The outer loop repeats to unlock multi-step chains (e.g. Cattle→Harnesses→Sails).
-      const manufacturingBudget = Math.floor(population);
+      // Phase C, Pass 2: manufacturing with the workers not spent on raw extraction.
+      // Each manufactured good costs 1 worker (or the remaining fraction for the last one).
+      // The outer loop repeats to unlock multi-step chains (e.g. Cattle→Leather→Boots).
+      const manufacturingBudget = population - rawWorkersUsed;
       let manufacturingWorkersUsed = 0;
       let mfgProgress = true;
       let mfgIter = 0;
@@ -212,19 +222,23 @@ export class ProductionModule {
         candidates.sort((a, b) => b.profit - a.profit);
 
         for (const {good, recipe, profit} of candidates) {
-          if (manufacturingWorkersUsed >= manufacturingBudget) break; // no more workers for industry
-
-          // Recompute yield against current inventory — earlier candidates may have consumed ingredients
+          // Recompute yield — earlier candidates in this pass may have consumed ingredients
           const entries = Object.entries(recipe) as [string, number][];
-          const actualYield = Math.min(...entries.map(([ingId, amount]) => (inventory[+ingId] || 0) / amount));
-          if (!Number.isFinite(actualYield) || actualYield <= 0) continue;
+          const availableYield = Math.min(...entries.map(([ingId, amount]) => (inventory[+ingId] || 0) / amount));
+          if (!Number.isFinite(availableYield) || availableYield <= 0) continue;
+
+          // Each worker produces at most 1 unit; last worker may produce a fraction
+          const mfgFraction = Math.min(1, manufacturingBudget - manufacturingWorkersUsed);
+          if (mfgFraction <= 0) break; // budget exhausted
+
+          const actualYield = Math.min(mfgFraction, availableYield);
 
           const cultureModifier = good.culture[type] || 1;
           const producedAmount = actualYield * cultureModifier;
           if (producedAmount <= 0) continue;
 
           jobsData.push({
-            tick: population + manufacturingWorkersUsed + 1,
+            tick: rawWorkersUsed + manufacturingWorkersUsed + mfgFraction,
             goodId: good.i,
             units: producedAmount,
             cultureModifier,
@@ -246,7 +260,7 @@ export class ProductionModule {
             currentSellPrice[good.i] - producedAmount * sellPressure[good.i]
           );
 
-          manufacturingWorkersUsed++;
+          manufacturingWorkersUsed += mfgFraction;
           mfgProgress = true;
         }
       }
@@ -475,7 +489,6 @@ export interface BurgProductionData {
     pull: number; // raw units from flood-fill
     chainValue: number; // value elevated by downstream chains
     priority: number; // initial queue key
-    isFood: boolean;
   }>;
   // One entry per population point spent, in order
   jobs: Array<{

@@ -51,7 +51,7 @@ const GOODS_DATA = [
     unit: "pile",
     bonus: {fleet: 2, defence: 1},
     culture: {Hunting: 2},
-    biome: {6: 0.5, 7: 0.5, 8: 0.5, 9: 0.5}
+    biome: {3: 0.5, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 12: 1}
   },
   {
     name: "Stone",
@@ -64,7 +64,7 @@ const GOODS_DATA = [
     unit: "pallet",
     bonus: {defence: 2},
     culture: {Hunting: 0.6, Nomadic: 0.6},
-    biome: {1: 0.5, 2: 0.5}
+    biome: {1: 1, 2: 1}
   },
   {
     name: "Marble",
@@ -89,7 +89,7 @@ const GOODS_DATA = [
     unit: "wagon",
     bonus: {artillery: 1, infantry: 1, defence: 1},
     culture: {Highland: 2},
-    biome: {12: 0.4}
+    biome: {12: 1}
   },
   {
     name: "Copper",
@@ -136,7 +136,7 @@ const GOODS_DATA = [
     chance: 2,
     distribution: "river() && minHeight(40)",
     unit: "bullion",
-    bonus: {prestige: 3},
+    bonus: {prestige: 2},
     culture: {Highland: 2, Nomadic: 0.5}
   },
   {
@@ -149,8 +149,8 @@ const GOODS_DATA = [
     distribution: "minHabitability(20) && habitability()",
     unit: "wain",
     bonus: {population: 4},
-    culture: {River: 3, Lake: 2, Nomadic: 0.5},
-    biome: {5: 0.5, 6: 0.5, 7: 0.5, 8: 0.5}
+    culture: {River: 2, Lake: 2, Nomadic: 0.5},
+    biome: {5: 1, 6: 1, 7: 1, 8: 1}
   },
   {
     name: "Cattle",
@@ -163,7 +163,7 @@ const GOODS_DATA = [
     unit: "head",
     bonus: {population: 2},
     culture: {Nomadic: 3},
-    biome: {3: 0.4, 4: 0.5}
+    biome: {3: 1, 4: 1}
   },
   {
     name: "Fish",
@@ -175,8 +175,8 @@ const GOODS_DATA = [
     distribution: 'shore(-1) && (type("ocean", "freshwater", "salt") || (river() && shore(1, 2)))',
     unit: "wain",
     bonus: {population: 2},
-    culture: {River: 2, Lake: 3, Naval: 3, Nomadic: 0.5},
-    biome: {0: 0.75}
+    culture: {River: 2, Lake: 2, Naval: 2, Nomadic: 0.2},
+    biome: {0: 1}
   },
   {
     name: "Game",
@@ -189,7 +189,7 @@ const GOODS_DATA = [
     unit: "wain",
     bonus: {archers: 2, population: 1},
     culture: {Naval: 0.6, Nomadic: 2, Hunting: 3},
-    biome: {3: 0.4, 9: 0.4, 12: 0.4}
+    biome: {3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1}
   },
   {
     name: "Wine",
@@ -201,7 +201,8 @@ const GOODS_DATA = [
     distribution: "biome(6) || (biome(4) && random(50) && river())",
     unit: "barrel",
     bonus: {population: 1, prestige: 1},
-    culture: {Highland: 1.2, Nomadic: 0.5}
+    culture: {Highland: 1.2, Nomadic: 0.5},
+    biome: {6: 1}
   },
   {
     name: "Olives",
@@ -213,7 +214,8 @@ const GOODS_DATA = [
     distribution: "biome(6) || (biome(4) && random(50) && river())",
     unit: "barrel",
     bonus: {population: 1},
-    culture: {Generic: 0.8, Nomadic: 0.5}
+    culture: {Generic: 0.8, Nomadic: 0.5},
+    biome: {6: 1}
   },
   {
     name: "Honey",
@@ -225,7 +227,8 @@ const GOODS_DATA = [
     distribution: "biome(6, 8, 9)",
     unit: "barrel",
     bonus: {population: 1},
-    culture: {Hunting: 2, Highland: 2}
+    culture: {Hunting: 2, Highland: 2},
+    biome: {6: 1, 8: 1, 9: 1}
   },
   {
     name: "Salt",
@@ -237,7 +240,8 @@ const GOODS_DATA = [
     distribution: 'shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))',
     unit: "bag",
     bonus: {population: 1, defence: 1},
-    culture: {Naval: 1.2, Nomadic: 1.4}
+    culture: {Naval: 1.2, Nomadic: 1.4},
+    biome: {1: 1, 2: 1}
   },
   {
     name: "Dates",
@@ -249,7 +253,8 @@ const GOODS_DATA = [
     distribution: "biome(1)",
     unit: "wain",
     bonus: {population: 1},
-    culture: {Hunting: 0.8, Highland: 0.8}
+    culture: {Hunting: 0.8, Highland: 0.8},
+    biome: {1: 1}
   },
   {
     name: "Horses",
@@ -261,7 +266,8 @@ const GOODS_DATA = [
     distribution: "biome(3) || (biome(2) && nth(4))",
     unit: "head",
     bonus: {cavalry: 2},
-    culture: {Nomadic: 3}
+    culture: {Nomadic: 3},
+    biome: {4: 1}
   },
   {
     name: "Elephants",
@@ -273,7 +279,8 @@ const GOODS_DATA = [
     distribution: "biome(1, 3, 5, 7)",
     unit: "head",
     bonus: {cavalry: 1},
-    culture: {Nomadic: 1.2, Highland: 0.5}
+    culture: {Nomadic: 1.2, Highland: 0.5},
+    biome: {3: 0.5, 5: 0.5, 7: 0.5}
   },
   {
     name: "Camels",
@@ -285,7 +292,8 @@ const GOODS_DATA = [
     distribution: "biome(1, 2)",
     unit: "head",
     bonus: {cavalry: 1},
-    culture: {Nomadic: 3}
+    culture: {Nomadic: 3},
+    biome: {1: 1, 2: 1}
   },
   {
     name: "Hemp",
@@ -297,7 +305,8 @@ const GOODS_DATA = [
     distribution: "biome(6, 7, 8)",
     unit: "wain",
     bonus: {fleet: 2},
-    culture: {River: 2, Lake: 2, Naval: 2}
+    culture: {River: 2, Lake: 2, Naval: 2},
+    biome: {6: 1, 7: 1, 8: 1}
   },
   {
     name: "Pearls",
@@ -309,7 +318,7 @@ const GOODS_DATA = [
     distribution: "shore(-1) && minTemp(18)",
     unit: "pearl",
     bonus: {prestige: 1},
-    culture: {Naval: 3}
+    culture: {Naval: 2}
   },
   {
     name: "Gemstones",
@@ -394,7 +403,7 @@ const GOODS_DATA = [
     unit: "pelt",
     bonus: {prestige: 1},
     culture: {Hunting: 3},
-    biome: {10: 0.5}
+    biome: {9: 1, 10: 1, 6: 0.5, 8: 0.5, 12: 0.5}
   },
   {
     name: "Sheep",
@@ -406,7 +415,8 @@ const GOODS_DATA = [
     distribution: "(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))",
     unit: "head",
     bonus: {infantry: 1},
-    culture: {Naval: 2, Highland: 2}
+    culture: {Naval: 2, Highland: 2},
+    biome: {4: 1}
   },
   {
     name: "Slaves",
@@ -429,7 +439,7 @@ const GOODS_DATA = [
     chance: 0,
     unit: "barrel",
     bonus: {fleet: 1},
-    culture: {Hunting: 3},
+    culture: {Hunting: 1.5},
     recipes: [{Wood: 1}]
   },
   {
@@ -442,7 +452,7 @@ const GOODS_DATA = [
     distribution: "biome(1, 2) || (minHeight(50) && random(10))",
     unit: "barrel",
     bonus: {artillery: 3},
-    culture: {Generic: 2}
+    culture: {Generic: 1.5}
   },
   {
     name: "Coal",
@@ -455,7 +465,7 @@ const GOODS_DATA = [
     unit: "wain",
     bonus: {artillery: 2},
     culture: {Generic: 2},
-    recipes: [{Wood: 2}]
+    recipes: [{Wood: 2}, {"Tropical timber": 1}]
   },
   {
     name: "Oil",
@@ -480,7 +490,8 @@ const GOODS_DATA = [
     distribution: "biome(5, 7)",
     unit: "pile",
     bonus: {prestige: 1},
-    culture: {Generic: 2}
+    culture: {Generic: 2},
+    biome: {5: 1, 7: 1}
   },
   {
     name: "Whales",
@@ -718,7 +729,7 @@ const GOODS_DATA = [
     ],
     unit: "set",
     bonus: {cavalry: 2},
-    culture: {Nomadic: 3}
+    culture: {Nomadic: 2}
   },
   {
     name: "Barrels",
