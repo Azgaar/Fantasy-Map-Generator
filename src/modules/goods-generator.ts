@@ -267,7 +267,7 @@ const GOODS_DATA = [
     unit: "head",
     bonus: {cavalry: 2},
     culture: {Nomadic: 3},
-    biome: {4: 1}
+    biome: {4: 0.5}
   },
   {
     name: "Elephants",
@@ -279,8 +279,7 @@ const GOODS_DATA = [
     distribution: "biome(1, 3, 5, 7)",
     unit: "head",
     bonus: {cavalry: 1},
-    culture: {Nomadic: 1.2, Highland: 0.5},
-    biome: {3: 0.5, 5: 0.5, 7: 0.5}
+    culture: {Nomadic: 1.2, Highland: 0.5}
   },
   {
     name: "Camels",

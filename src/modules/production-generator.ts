@@ -12,10 +12,10 @@ export class ProductionModule {
   private readonly STATE_PENALTY = 15;
 
   // dynamic pricing — raise buy price when raw good is extracted, lower sell price when manufactured
-  private readonly BUY_PRESSURE_FACTOR = 0.01;
-  private readonly SELL_PRESSURE_FACTOR = 0.006;
-  private readonly PRICE_FLOOR_FACTOR = 0.3;
-  private readonly PRICE_CEILING_FACTOR = 5.0;
+  private readonly BUY_PRESSURE_FACTOR = 0.002;
+  private readonly SELL_PRESSURE_FACTOR = 0.001;
+  private readonly PRICE_FLOOR_FACTOR = 0.5;
+  private readonly PRICE_CEILING_FACTOR = 3.0;
 
   // iterative chain-value propagation
   private readonly CHAIN_MAX_ITERATIONS = 10;
@@ -231,6 +231,16 @@ export class ProductionModule {
       for (const goodId in inventory) {
         const amount = Math.floor(inventory[+goodId]);
         if (amount > 0) burg.produced[+goodId] = amount;
+      }
+
+      // Phase D: market output — place manufactured goods back into the cell pool at the
+      // burg's cell so that subsequent (larger) burgs can flood-fill them as ingredients.
+      // Raw goods are not re-added: they were consumed from specific cells already.
+      for (const goodIdStr in inventory) {
+        const goodId = +goodIdStr;
+        if (!goodById.get(goodId)?.recipes?.length) continue;
+        const amount = inventory[goodId];
+        if (amount > 0) cellPool[burg.cell][goodId] = (cellPool[burg.cell][goodId] || 0) + amount;
       }
 
       this._lastProductionData.set(burg.i!, {

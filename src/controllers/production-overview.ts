@@ -136,15 +136,41 @@ export function open(burgId: number): void {
     </div>`;
 
   // ── Section 4: Final Output ─────────────────────────────────────────────
+  // Accumulate ingredient cost per manufactured good from job log
+  const mfgCostByGood: Record<number, number> = {};
+  for (const job of data.jobs) {
+    if (!job.isRaw && job.recipe) {
+      const cost = job.recipe.reduce((s, r) => s + r.consumed * (data.pricesAtStart.buy[r.goodId] ?? 0), 0);
+      mfgCostByGood[job.goodId] = (mfgCostByGood[job.goodId] || 0) + cost;
+    }
+  }
+
   const finalEntries = Object.entries(data.finalInventory).filter(([, v]) => v > 0);
-  const finalTotalValue = finalEntries.reduce((s, [gid, amt]) => {
+
+  // Totals first pass
+  let totalRawRevenue = 0;
+  let totalMfgRevenue = 0;
+  let totalMfgCost = 0;
+  for (const [gid, amount] of finalEntries) {
     const g = goodById.get(+gid);
     const sp = g?.sellPrice ?? g?.value ?? 0;
-    return s + amt * sp;
-  }, 0);
+    if (g?.recipes?.length) {
+      totalMfgRevenue += amount * sp;
+      totalMfgCost += mfgCostByGood[+gid] || 0;
+    } else {
+      totalRawRevenue += amount * sp;
+    }
+  }
+  const mfgProfit = totalMfgRevenue - totalMfgCost;
+  const netWealth = totalRawRevenue + mfgProfit;
 
   const finalRows = finalEntries
-    .sort(([, a], [, b]) => b - a)
+    .sort(([aid, a], [bid, b]) => {
+      const aM = Boolean(goodById.get(+aid)?.recipes?.length);
+      const bM = Boolean(goodById.get(+bid)?.recipes?.length);
+      if (aM !== bM) return aM ? -1 : 1;
+      return (b as number) - (a as number);
+    })
     .map(([gid, amount]) => {
       const id = +gid;
       const g = goodById.get(id);
@@ -154,20 +180,51 @@ export function open(burgId: number): void {
       const typeBadge = isManufactured
         ? `<span style="background:#e8f0e8;color:#4a4;font-size:.75em;padding:0 3px;border-radius:2px;margin-left:3px">MFG</span>`
         : `<span style="background:#f0e8e8;color:#a44;font-size:.75em;padding:0 3px;border-radius:2px;margin-left:3px">RAW</span>`;
-      const spColor = sp < bv * 0.99 ? "color:#c84" : sp > bv * 1.01 ? "color:#4a4" : "";
-      return `<tr>
-        <td style="padding:.2em .4em">${goodDot(id)}${goodName(id)}${typeBadge}</td>
-        <td style="text-align:right;padding:.2em .4em">${amount}</td>
-        <td style="text-align:right;padding:.2em .4em;${spColor}">${r2(sp)}</td>
-        <td style="text-align:right;padding:.2em .4em">${r2(amount * sp)}</td>
-      </tr>`;
+      const sellValue = amount * sp;
+
+      if (isManufactured) {
+        const ingrCost = mfgCostByGood[id] || 0;
+        const profit = sellValue - ingrCost;
+        const margin = sellValue > 0 ? Math.round((profit / sellValue) * 100) : 0;
+        const costPerUnit = amount > 0 ? r2(ingrCost / amount) : "—";
+        const profitColor = profit >= 0 ? "color:#2a6" : "color:#c44";
+        const spColor = sp < bv * 0.99 ? "color:#c84" : sp > bv * 1.01 ? "color:#4a4" : "";
+        return `<tr>
+          <td style="padding:.2em .4em">${goodDot(id)}${goodName(id)}${typeBadge}</td>
+          <td style="text-align:right;padding:.2em .4em">${r2(amount)}</td>
+          <td style="text-align:right;padding:.2em .4em;color:#888">${costPerUnit}</td>
+          <td style="text-align:right;padding:.2em .4em;${spColor}">${r2(sp)}</td>
+          <td style="text-align:right;padding:.2em .4em">${r2(sellValue)}</td>
+          <td style="text-align:right;padding:.2em .4em;${profitColor}">${r2(profit)} <span style="font-size:.78em;color:#888">(${margin}%)</span></td>
+        </tr>`;
+      } else {
+        const spColor = sp < bv * 0.99 ? "color:#c84" : sp > bv * 1.01 ? "color:#4a4" : "";
+        return `<tr>
+          <td style="padding:.2em .4em">${goodDot(id)}${goodName(id)}${typeBadge}</td>
+          <td style="text-align:right;padding:.2em .4em">${r2(amount)}</td>
+          <td style="text-align:right;padding:.2em .4em;color:#aaa">—</td>
+          <td style="text-align:right;padding:.2em .4em;${spColor}">${r2(sp)}</td>
+          <td style="text-align:right;padding:.2em .4em">${r2(sellValue)}</td>
+          <td style="text-align:right;padding:.2em .4em;color:#aaa">—</td>
+        </tr>`;
+      }
     })
     .join("");
+
+  const wealthColor = netWealth > 0 ? "color:#2a6;font-weight:bold" : "color:#c44;font-weight:bold";
+  const summaryHtml = /*html*/ `
+    <div style="display:flex;gap:1.2em;flex-wrap:wrap;background:#f0f5f0;border-radius:4px;padding:.4em .8em;margin-top:.5em;font-size:.83em">
+      <span title="Revenue from raw goods"><b>Raw:</b> ${r2(totalRawRevenue)}</span>
+      <span title="Revenue from manufactured goods before subtracting ingredient costs"><b>MFG revenue:</b> ${r2(totalMfgRevenue)}</span>
+      <span title="Total ingredient cost consumed in manufacturing"><b>MFG cost:</b> ${r2(totalMfgCost)}</span>
+      <span title="MFG revenue minus ingredient cost"><b>MFG profit:</b> <span style="${mfgProfit >= 0 ? "color:#2a6" : "color:#c44"}">${r2(mfgProfit)}</span></span>
+      <span title="Raw revenue + MFG profit — total value created after subtracting all input costs"><b>Net wealth:</b> <span style="${wealthColor}">${r2(netWealth)}</span></span>
+    </div>`;
 
   const finalHtml = /*html*/ `
     <div>
       <div style="font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.2em;margin-bottom:.4em;font-size:.9em">
-        Final Output — total market value: <b>${r2(finalTotalValue)}</b>
+        Final Output
       </div>
       ${
         finalRows
@@ -175,15 +232,14 @@ export function open(burgId: number): void {
         <thead><tr style="background:#eee">
           <th style="text-align:left;padding:.2em .4em">Good</th>
           <th style="text-align:right;padding:.2em .4em">Units</th>
-          <th style="text-align:right;padding:.2em .4em">Sell Price</th>
-          <th style="text-align:right;padding:.2em .4em">Value</th>
+          <th style="text-align:right;padding:.2em .4em" title="Average ingredient cost per unit (MFG only)">Cost/unit</th>
+          <th style="text-align:right;padding:.2em .4em">Sell price</th>
+          <th style="text-align:right;padding:.2em .4em">Revenue</th>
+          <th style="text-align:right;padding:.2em .4em" title="Revenue minus ingredient cost (MFG only)">Profit</th>
         </tr></thead>
         <tbody>${finalRows}</tbody>
-        <tfoot><tr style="background:#f5f5f5;font-weight:bold">
-          <td colspan="3" style="text-align:right;padding:.2em .4em">Total:</td>
-          <td style="text-align:right;padding:.2em .4em">${r2(finalTotalValue)}</td>
-        </tfoot>
-      </table>`
+      </table>
+      ${summaryHtml}`
           : `<i style="color:#888">No output produced</i>`
       }
     </div>`;
