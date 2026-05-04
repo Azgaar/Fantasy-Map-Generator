@@ -23,9 +23,6 @@ export class ProductionModule {
   // per-burg priority jitter amplitude (±PRIORITY_JITTER/2)
   private readonly PRIORITY_JITTER = 0.2;
 
-  // safety cap on manufacturing while-loop depth
-  private readonly MAX_MFG_ITERATIONS = 20;
-
   private _lastProductionData = new Map<number, BurgProductionData>();
   produce() {
     const {burgs} = pack;
@@ -73,9 +70,12 @@ export class ProductionModule {
       const pricesAtStart = {buy: currentBuyPrice.slice(), sell: currentSellPrice.slice()};
       const cellsReached = this.floodFillCells(burg, budget, cellPool, addGood);
 
-      // Phase C, Pass 1: raw goods priority queue
-      // Priorities use chainValue so raw goods feeding profitable chains rank higher
-      // than their face value alone; ±jitter ensures burgs with identical geography diverge
+      // Phase C: unified production loop
+      // Every worker tick picks the highest-value available action:
+      //   Raw extraction  → value per worker = chainValue[id] × cultureModifier
+      //   Manufacturing   → value per worker = sellPrice × cultureModifier − recipeCost
+      // chainValue already encodes downstream chain profit, so the burg naturally
+      // gathers ingredients first and switches to manufacturing once it pays off.
       interface Item {
         goodId: number;
         basePriority: number;
@@ -107,162 +107,124 @@ export class ProductionModule {
       }
       goodsPullData.sort((a, b) => b.priority - a.priority);
 
-      // Track how much of each good is still available for this burg to extract
       const remainingPool: Record<number, number> = {...goodsPull};
-
       const inventory: Record<number, number> = {};
       const jobsData: BurgProductionData["jobs"] = [];
-      let rawWorkersUsed = 0;
+      let workersUsed = 0;
 
-      // Pass 1: raw goods — each worker extracts exactly 1 unit (or remaining pool if < 1).
-      // Workers and pool are shared: a burg with population 3 and a pool of 2 horses can only
-      // produce 2 horses, leaving 1 worker free for manufacturing.
-      for (let i = 0; i < population; i++) {
+      for (let i = 0; i < Math.ceil(population); i++) {
         const fraction = Math.min(1, population - i);
+        if (fraction <= 0) break;
 
-        // Find the highest-priority item that still has pool available.
-        // Items with exhausted pools are discarded permanently (not re-queued).
-        let occupation: Item | undefined;
+        // --- Best raw option: peek at queue top, discard exhausted entries ---
+        let bestRawItem: Item | undefined;
         while (rawQueue.length) {
-          const idx = rawQueue.pop();
-          if (idx === undefined) break;
+          const idx = rawQueue.peek();
           const candidate = items[idx];
           if ((remainingPool[candidate.goodId] ?? 0) > 0) {
-            occupation = candidate;
+            bestRawItem = candidate;
             break;
           }
-        }
-        if (!occupation) break; // all raw pools exhausted — end Pass 1 early
-
-        const {goodId} = occupation;
-        // Extract exactly 1 unit (or whatever is left if pool < 1)
-        const extract = Math.min(fraction, remainingPool[goodId]);
-        remainingPool[goodId] -= extract;
-
-        // Culture modifier applied at output — affects actual units produced, not priority
-        const good = goodById.get(goodId)!;
-        const cultureModifier = good.culture[type] || 1;
-        const produced = extract * cultureModifier;
-
-        inventory[goodId] = (inventory[goodId] || 0) + produced;
-
-        jobsData.push({tick: i + fraction, goodId, units: produced, cultureModifier, isRaw: true});
-
-        // Raise buy price incrementally; later burgs see this good as more expensive
-        currentBuyPrice[goodId] = Math.max(
-          priceFloor[goodId],
-          Math.min(currentBuyPrice[goodId] + produced * buyPressure[goodId], priceCeiling[goodId])
-        );
-
-        // Re-queue only if this good's pool is not yet exhausted
-        if (remainingPool[goodId] > 0) {
-          const basePriority = occupation.basePriority / 2;
-          const jitter = 1 - this.PRIORITY_JITTER / 2 + burgRng() * this.PRIORITY_JITTER;
-          const priority = basePriority * jitter;
-          items.push({...occupation, basePriority, priority});
-          rawQueue.push(items.length - 1, -priority);
+          rawQueue.pop(); // permanently discard exhausted good
         }
 
-        rawWorkersUsed += fraction;
-      }
-
-      // Phase C, Pass 2: manufacturing with the workers not spent on raw extraction.
-      // Each manufactured good costs 1 worker (or the remaining fraction for the last one).
-      // The outer loop repeats to unlock multi-step chains (e.g. Cattle→Leather→Boots).
-      const manufacturingBudget = population - rawWorkersUsed;
-      let manufacturingWorkersUsed = 0;
-      let mfgProgress = true;
-      let mfgIter = 0;
-
-      while (mfgProgress && mfgIter < this.MAX_MFG_ITERATIONS && manufacturingWorkersUsed < manufacturingBudget) {
-        mfgProgress = false;
-        mfgIter++;
-
-        const candidates: {
+        // --- Best manufactured option: most profitable feasible recipe ---
+        let bestMfg: {
           good: Good;
-          recipe: Record<number, number>;
+          entries: [string, number][];
           profit: number;
-          recipeYield: number;
-        }[] = [];
+          availableYield: number;
+        } | null = null;
 
         for (const good of goods) {
           if (!good.recipes?.length) continue;
-
-          let bestRecipe: Record<number, number> | null = null;
-          let bestProfit = 0;
-          let bestYield = 0;
-
           for (const recipe of good.recipes) {
             const entries = Object.entries(recipe) as [string, number][];
             if (!entries.length) continue;
 
-            const recipeYield = Math.min(...entries.map(([ingId, amount]) => (inventory[+ingId] || 0) / amount));
-            if (!Number.isFinite(recipeYield) || recipeYield <= 0) continue;
+            const availableYield = Math.min(...entries.map(([id, amt]) => (inventory[+id] || 0) / amt));
+            if (!Number.isFinite(availableYield) || availableYield <= 0) continue;
 
-            // Select recipe by profit, not by yield
-            const recipeCost = entries.reduce((sum, [ingId, amount]) => sum + currentBuyPrice[+ingId] * amount, 0);
-            const profit = currentSellPrice[good.i] - recipeCost;
+            const cost = entries.reduce((sum, [id, amt]) => sum + currentBuyPrice[+id] * amt, 0);
+            const cultureModifier = good.culture[type] || 1;
+            const profit = currentSellPrice[good.i] * cultureModifier - cost;
+            if (profit <= 0) continue;
 
-            if (profit > bestProfit) {
-              bestProfit = profit;
-              bestRecipe = recipe;
-              bestYield = recipeYield;
+            if (!bestMfg || profit > bestMfg.profit) {
+              bestMfg = {good, entries, profit, availableYield};
             }
           }
-
-          if (!bestRecipe || bestYield <= 0) continue;
-          candidates.push({
-            good,
-            recipe: bestRecipe,
-            profit: bestProfit,
-            recipeYield: bestYield
-          });
         }
 
-        candidates.sort((a, b) => b.profit - a.profit);
+        if (!bestRawItem && !bestMfg) break; // nothing productive to do
 
-        for (const {good, recipe, profit} of candidates) {
-          // Recompute yield — earlier candidates in this pass may have consumed ingredients
-          const entries = Object.entries(recipe) as [string, number][];
-          const availableYield = Math.min(...entries.map(([ingId, amount]) => (inventory[+ingId] || 0) / amount));
-          if (!Number.isFinite(availableYield) || availableYield <= 0) continue;
+        // Compare value produced per worker:
+        //   raw: base good.value × cultureModifier
+        //       (chainValue is used only to order the raw queue, so ingredients for
+        //        profitable chains are gathered first; using it here would double-count
+        //        the chain profit and always block manufacturing)
+        //   mfg: sellPrice × cultureModifier − recipeCost  (already stored in bestMfg.profit)
+        const rawValuePerWorker = bestRawItem
+          ? goodById.get(bestRawItem.goodId)!.value * (goodById.get(bestRawItem.goodId)!.culture[type] || 1)
+          : -Infinity;
 
-          // Each worker produces at most 1 unit; last worker may produce a fraction
-          const mfgFraction = Math.min(1, manufacturingBudget - manufacturingWorkersUsed);
-          if (mfgFraction <= 0) break; // budget exhausted
-
-          const actualYield = Math.min(mfgFraction, availableYield);
-
+        if (bestMfg && bestMfg.profit >= rawValuePerWorker) {
+          // --- Manufacture ---
+          const {good, entries, profit, availableYield} = bestMfg;
+          const actualYield = Math.min(fraction, availableYield);
           const cultureModifier = good.culture[type] || 1;
-          const producedAmount = actualYield * cultureModifier;
-          if (producedAmount <= 0) continue;
+          const produced = actualYield * cultureModifier;
+
+          for (const [id, amt] of entries) {
+            inventory[+id] = Math.max(0, (inventory[+id] || 0) - actualYield * amt);
+          }
+          inventory[good.i] = (inventory[good.i] || 0) + produced;
 
           jobsData.push({
-            tick: rawWorkersUsed + manufacturingWorkersUsed + mfgFraction,
+            tick: workersUsed + fraction,
             goodId: good.i,
-            units: producedAmount,
+            units: produced,
             cultureModifier,
             isRaw: false,
-            recipe: entries.map(([ingId, amt]) => ({goodId: +ingId, consumed: actualYield * +amt})),
+            recipe: entries.map(([id, amt]) => ({goodId: +id, consumed: actualYield * amt})),
             profit
           });
 
-          for (const [ingIdStr, amount] of entries) {
-            const ingId = +ingIdStr;
-            inventory[ingId] = Math.max(0, (inventory[ingId] || 0) - actualYield * amount);
-          }
-
-          inventory[good.i] = (inventory[good.i] || 0) + producedAmount;
-
-          // Lower sell price as market is supplied; later burgs find this good less profitable
           currentSellPrice[good.i] = Math.max(
             priceFloor[good.i],
-            currentSellPrice[good.i] - producedAmount * sellPressure[good.i]
+            currentSellPrice[good.i] - produced * sellPressure[good.i]
+          );
+        } else {
+          // --- Extract raw ---
+          rawQueue.pop(); // consume the peeked item
+          const {goodId} = bestRawItem!;
+          const extract = Math.min(fraction, remainingPool[goodId]);
+          remainingPool[goodId] -= extract;
+
+          const good = goodById.get(goodId)!;
+          const cultureModifier = good.culture[type] || 1;
+          const produced = extract * cultureModifier;
+
+          inventory[goodId] = (inventory[goodId] || 0) + produced;
+
+          jobsData.push({tick: workersUsed + fraction, goodId, units: produced, cultureModifier, isRaw: true});
+
+          currentBuyPrice[goodId] = Math.max(
+            priceFloor[goodId],
+            Math.min(currentBuyPrice[goodId] + produced * buyPressure[goodId], priceCeiling[goodId])
           );
 
-          manufacturingWorkersUsed += mfgFraction;
-          mfgProgress = true;
+          // Re-queue with halved priority if the pool isn't exhausted yet
+          if (remainingPool[goodId] > 0) {
+            const basePriority = bestRawItem!.basePriority / 2;
+            const jitter = 1 - this.PRIORITY_JITTER / 2 + burgRng() * this.PRIORITY_JITTER;
+            const priority = basePriority * jitter;
+            items.push({...bestRawItem!, basePriority, priority});
+            rawQueue.push(items.length - 1, -priority);
+          }
         }
+
+        workersUsed += fraction;
       }
 
       burg.produced = {};

@@ -167,7 +167,7 @@ export function open(burgId: number): void {
   const finalHtml = /*html*/ `
     <div>
       <div style="font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.2em;margin-bottom:.4em;font-size:.9em">
-        Final Output
+        Final Output — total market value: <b>${r2(finalTotalValue)}</b>
       </div>
       ${
         finalRows
