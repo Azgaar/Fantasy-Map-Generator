@@ -48,6 +48,7 @@ function editBurg(id) {
   ensureEl("burgLock").on("click", toggleBurgLockButton);
   ensureEl("burgRemove").on("click", removeSelectedBurg);
   ensureEl("burgTemperatureGraph").on("click", showTemperatureGraph);
+  ensureEl("burgProductionOverview").on("click", showProductionOverview);
 
   function updateGroupsList() {
     ensureEl("burgGroup").options.length = 0; // remove all options
@@ -396,6 +397,11 @@ function editBurg(id) {
   function showTemperatureGraph() {
     const id = elSelected.attr("data-id");
     showBurgTemperatureGraph(id);
+  }
+
+  function showProductionOverview() {
+    const id = +elSelected.attr("data-id");
+    openProductionOverview(id);
   }
 
   function removeSelectedBurg() {

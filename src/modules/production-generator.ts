@@ -27,7 +27,7 @@ export class ProductionModule {
   // safety cap on manufacturing while-loop depth
   private readonly MAX_MFG_ITERATIONS = 20;
 
-  private _lastDebugData = new Map<number, BurgProductionDebug>();
+  private _lastProductionData = new Map<number, BurgProductionData>();
   produce() {
     const {burgs} = pack;
     const goods = pack.goods;
@@ -44,7 +44,7 @@ export class ProductionModule {
     const validBurgs = burgs.filter(b => (b as Burg).i && !(b as Burg).removed) as Burg[];
     validBurgs.sort((a, b) => (a.population || 0) - (b.population || 0));
 
-    this._lastDebugData.clear();
+    this._lastProductionData.clear();
     let burgRank = 0;
 
     for (const burg of validBurgs) {
@@ -71,7 +71,7 @@ export class ProductionModule {
       const budget = Math.max(1, Math.floor(population));
 
       // Snapshot market prices before this burg's production shifts them
-      const debugPricesAtStart = {buy: currentBuyPrice.slice(), sell: currentSellPrice.slice()};
+      const pricesAtStart = {buy: currentBuyPrice.slice(), sell: currentSellPrice.slice()};
       const cellsReached = this.floodFillCells(burg, budget, cellPool, addGood);
 
       // Phase C, Pass 1: raw goods priority queue
@@ -87,36 +87,36 @@ export class ProductionModule {
 
       const items: Item[] = [];
       const rawQueue = new FlatQueue();
-      const debugGoodsPull: BurgProductionDebug["goodsPull"] = [];
+      const goodsPullData: BurgProductionData["goodsPull"] = [];
 
       for (const goodIdStr in goodsPull) {
         const goodId = +goodIdStr;
         const good = goodById.get(goodId);
         if (!good) continue;
 
-        const cultureModifier = good.culture[type] || 1;
-        const production = goodsPull[goodId] * cultureModifier;
+        const rawPull = goodsPull[goodId];
         const isFood = good.tags.some(tag => tag.toLowerCase() === "food");
 
-        const basePriority = production * (chainValue[goodId] ?? good.value);
+        // Priority uses raw pull — culture modifier is applied at output time, not here
+        const basePriority = rawPull * (chainValue[goodId] ?? good.value);
         const jitter = 1 - this.PRIORITY_JITTER / 2 + burgRng() * this.PRIORITY_JITTER;
         const priority = basePriority * (isFood ? this.FOOD_MULTIPLIER : 1) * jitter;
 
-        items.push({goodId, basePriority, priority, production, isFood});
+        items.push({goodId, basePriority, priority, production: rawPull, isFood});
         rawQueue.push(items.length - 1, -priority); // negate: FlatQueue is min-heap
-        debugGoodsPull.push({
+        goodsPullData.push({
           goodId,
-          pull: goodsPull[goodId],
+          pull: rawPull,
           chainValue: chainValue[goodId] ?? good.value,
           priority,
-          isFood,
-          cultureModifier
+          isFood
         });
       }
-      debugGoodsPull.sort((a, b) => b.priority - a.priority);
+      goodsPullData.sort((a, b) => b.priority - a.priority);
 
       let foodProduced = 0;
       const inventory: Record<number, number> = {};
+      const jobsData: BurgProductionData["jobs"] = [];
 
       for (let i = 0; i < population; i++) {
         const idx = rawQueue.pop();
@@ -127,10 +127,16 @@ export class ProductionModule {
 
         const occupation = items[idx];
         const {goodId, production, isFood} = occupation;
-        const scaledProduction = production * fraction;
+
+        // Culture modifier applied at output — affects actual units produced, not priority
+        const good = goodById.get(goodId)!;
+        const cultureModifier = good.culture[type] || 1;
+        const scaledProduction = production * fraction * cultureModifier;
 
         inventory[goodId] = (inventory[goodId] || 0) + scaledProduction;
         if (isFood) foodProduced += scaledProduction;
+
+        jobsData.push({tick: i + fraction, goodId, units: scaledProduction, cultureModifier, isRaw: true});
 
         // Raise buy price incrementally; later burgs see this good as more expensive
         currentBuyPrice[goodId] = Math.max(
@@ -148,7 +154,6 @@ export class ProductionModule {
       }
 
       // Snapshot raw inventory after pass 1 (before manufacturing consumes ingredients)
-      const debugRawInventoryAfterPass1 = {...inventory};
 
       // Phase C, Pass 2: manufacturing ordered by profit
       // Each manufactured good costs 1 worker. Manufacturing budget = floor(population),
@@ -158,7 +163,6 @@ export class ProductionModule {
       let manufacturingWorkersUsed = 0;
       let mfgProgress = true;
       let mfgIter = 0;
-      const debugManufactured: BurgProductionDebug["manufactured"] = [];
 
       while (mfgProgress && mfgIter < this.MAX_MFG_ITERATIONS && manufacturingWorkersUsed < manufacturingBudget) {
         mfgProgress = false;
@@ -219,13 +223,13 @@ export class ProductionModule {
           const producedAmount = actualYield * cultureModifier;
           if (producedAmount <= 0) continue;
 
-          debugManufactured.push({
+          jobsData.push({
+            tick: population + manufacturingWorkersUsed + 1,
             goodId: good.i,
-            recipeIngredients: entries.map(([ingId, amt]) => ({
-              goodId: +ingId,
-              consumed: actualYield * +amt
-            })),
-            producedAmount,
+            units: producedAmount,
+            cultureModifier,
+            isRaw: false,
+            recipe: entries.map(([ingId, amt]) => ({goodId: +ingId, consumed: actualYield * +amt})),
             profit
           });
 
@@ -253,18 +257,17 @@ export class ProductionModule {
         if (amount > 0) burg.produced[+goodId] = amount;
       }
 
-      this._lastDebugData.set(burg.i!, {
+      this._lastProductionData.set(burg.i!, {
         population,
         processRank: burgRank,
         totalBurgs: validBurgs.length,
         cellsBudget: budget,
         cellsReached,
         cultureType: type,
-        goodsPull: debugGoodsPull,
-        rawInventoryAfterPass1: debugRawInventoryAfterPass1,
-        manufactured: debugManufactured,
+        goodsPull: goodsPullData,
+        jobs: jobsData,
         finalInventory: {...burg.produced},
-        pricesAtStart: debugPricesAtStart
+        pricesAtStart
       });
     }
 
@@ -455,12 +458,12 @@ export class ProductionModule {
     return biomeProduction;
   }
 
-  getDebugData(burgId: number): BurgProductionDebug | undefined {
-    return this._lastDebugData.get(burgId);
+  getProductionData(burgId: number): BurgProductionData | undefined {
+    return this._lastProductionData.get(burgId);
   }
 }
 
-export interface BurgProductionDebug {
+export interface BurgProductionData {
   population: number;
   processRank: number;
   totalBurgs: number;
@@ -469,18 +472,20 @@ export interface BurgProductionDebug {
   cultureType: string;
   goodsPull: Array<{
     goodId: number;
-    pull: number;
-    chainValue: number;
-    priority: number;
+    pull: number; // raw units from flood-fill
+    chainValue: number; // value elevated by downstream chains
+    priority: number; // initial queue key
     isFood: boolean;
-    cultureModifier: number;
   }>;
-  rawInventoryAfterPass1: Record<number, number>;
-  manufactured: Array<{
+  // One entry per population point spent, in order
+  jobs: Array<{
+    tick: number; // worker index (fractional for last tick)
     goodId: number;
-    recipeIngredients: Array<{goodId: number; consumed: number}>;
-    producedAmount: number;
-    profit: number;
+    units: number; // output after culture modifier
+    cultureModifier: number;
+    isRaw: boolean; // true = gathered from cells; false = manufactured
+    recipe?: Array<{goodId: number; consumed: number}>; // only for manufactured jobs
+    profit?: number; // only for manufactured jobs
   }>;
   finalInventory: Record<number, number>;
   pricesAtStart: {buy: number[]; sell: number[]};
