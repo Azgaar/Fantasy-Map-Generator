@@ -7,6 +7,32 @@ declare global {
   var Production: ProductionModule;
 }
 
+export interface BurgProductionDebug {
+  population: number;
+  processRank: number;
+  totalBurgs: number;
+  cellsBudget: number;
+  cellsReached: number;
+  cultureType: string;
+  goodsPull: Array<{
+    goodId: number;
+    pull: number;
+    chainValue: number;
+    priority: number;
+    isFood: boolean;
+    cultureModifier: number;
+  }>;
+  rawInventoryAfterPass1: Record<number, number>;
+  manufactured: Array<{
+    goodId: number;
+    recipeIngredients: Array<{goodId: number; consumed: number}>;
+    producedAmount: number;
+    profit: number;
+  }>;
+  finalInventory: Record<number, number>;
+  pricesAtStart: {buy: number[]; sell: number[]};
+}
+
 export class ProductionModule {
   // existing
   private readonly BONUS_PRODUCTION = 4;
@@ -32,6 +58,12 @@ export class ProductionModule {
   // safety cap on manufacturing while-loop depth
   private readonly MAX_MFG_ITERATIONS = 20;
 
+  private _lastDebugData = new Map<number, BurgProductionDebug>();
+
+  getDebugData(burgId: number): BurgProductionDebug | undefined {
+    return this._lastDebugData.get(burgId);
+  }
+
   produce() {
     const {burgs} = pack;
     const goods = pack.goods;
@@ -46,7 +78,11 @@ export class ProductionModule {
     const validBurgs = burgs.filter(b => (b as Burg).i && !(b as Burg).removed) as Burg[];
     validBurgs.sort((a, b) => (b.population || 0) - (a.population || 0));
 
+    this._lastDebugData.clear();
+    let burgRank = 0;
+
     for (const burg of validBurgs) {
+      burgRank++;
       const type = burg.type || DEFAULT_CULTURE_TYPE;
       const population = burg.population || 0;
 
@@ -67,7 +103,11 @@ export class ProductionModule {
       };
 
       const budget = Math.max(1, Math.floor(population));
-      this.floodFillCells(burg, budget, cellPool, addGood);
+
+      // Snapshot market prices before this burg's production shifts them
+      const debugPricesAtStart = {buy: currentBuyPrice.slice() as number[], sell: currentSellPrice.slice() as number[]};
+
+      const cellsReached = this.floodFillCells(burg, budget, cellPool, addGood);
 
       // Phase C, Pass 1: raw goods priority queue
       // Priorities use chainValue so raw goods feeding profitable chains rank higher
@@ -82,6 +122,7 @@ export class ProductionModule {
 
       const items: Item[] = [];
       const rawQueue = new FlatQueue();
+      const debugGoodsPull: BurgProductionDebug["goodsPull"] = [];
 
       for (const goodIdStr in goodsPull) {
         const goodId = +goodIdStr;
@@ -98,7 +139,16 @@ export class ProductionModule {
 
         items.push({goodId, basePriority, priority, production, isFood});
         rawQueue.push(items.length - 1, -priority); // negate: FlatQueue is min-heap
+        debugGoodsPull.push({
+          goodId,
+          pull: goodsPull[goodId],
+          chainValue: chainValue[goodId],
+          priority,
+          isFood,
+          cultureModifier
+        });
       }
+      debugGoodsPull.sort((a, b) => b.priority - a.priority);
 
       let foodProduced = 0;
       const inventory: Record<number, number> = {};
@@ -128,11 +178,15 @@ export class ProductionModule {
         rawQueue.push(items.length - 1, -priority);
       }
 
+      // Snapshot raw inventory after pass 1 (before manufacturing consumes ingredients)
+      const debugRawInventoryAfterPass1 = {...inventory};
+
       // Phase C, Pass 2: manufacturing ordered by profit
       // Outer loop repeats until no more manufacturing is possible, which lets each
       // iteration unlock the next step of a multi-step chain (Sheep→Cloth→Garments).
       let mfgProgress = true;
       let mfgIter = 0;
+      const debugManufactured: BurgProductionDebug["manufactured"] = [];
 
       while (mfgProgress && mfgIter < this.MAX_MFG_ITERATIONS) {
         mfgProgress = false;
@@ -181,10 +235,20 @@ export class ProductionModule {
 
         candidates.sort((a, b) => b.profit - a.profit);
 
-        for (const {good, recipe, recipeYield} of candidates) {
+        for (const {good, recipe, recipeYield, profit} of candidates) {
           const cultureModifier = good.culture[type] || 1;
           const producedAmount = recipeYield * cultureModifier;
           if (producedAmount <= 0) continue;
+
+          debugManufactured.push({
+            goodId: good.i,
+            recipeIngredients: Object.entries(recipe).map(([ingId, amt]) => ({
+              goodId: +ingId,
+              consumed: recipeYield * +amt
+            })),
+            producedAmount,
+            profit
+          });
 
           for (const [ingIdStr, amount] of Object.entries(recipe)) {
             const ingId = +ingIdStr;
@@ -209,13 +273,19 @@ export class ProductionModule {
         if (amount > 0) burg.produced[+goodId] = amount;
       }
 
-      // debug
-      console.log(`Burg ${burg.i}: ${burg.name} produced:`);
-      for (const goodId in burg.produced) {
-        const good = goods[+goodId];
-        if (!good) continue;
-        console.log(`  ${good.name}: ${burg.produced[+goodId]}`);
-      }
+      this._lastDebugData.set(burg.i!, {
+        population,
+        processRank: burgRank,
+        totalBurgs: validBurgs.length,
+        cellsBudget: budget,
+        cellsReached,
+        cultureType: type,
+        goodsPull: debugGoodsPull,
+        rawInventoryAfterPass1: debugRawInventoryAfterPass1,
+        manufactured: debugManufactured,
+        finalInventory: {...burg.produced},
+        pricesAtStart: debugPricesAtStart
+      });
     }
 
     // Persist final market prices on goods so the UI can display them
@@ -335,7 +405,7 @@ export class ProductionModule {
     budget: number,
     cellPool: Record<number, number>[],
     addGood: (goodId: number, amount: number) => void
-  ) {
+  ): number {
     const {cells} = pack;
     const burgCell = burg.cell;
     const burgState = burg.state ?? 0;
@@ -382,6 +452,7 @@ export class ProductionModule {
         }
       }
     }
+    return visited.size;
   }
 
   // ─── Shared utility ──────────────────────────────────────────────────────────

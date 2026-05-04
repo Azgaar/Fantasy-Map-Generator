@@ -32,6 +32,7 @@ export function open() {
     ensureEl("goodsRestore").on("click", goodsRestoreDefaults);
     ensureEl("goodsExport").on("click", downloadGoodsData);
     ensureEl("goodsUnpinAll").on("click", unpinAllGoods);
+    ensureEl("goodsProductionDebug").on("click", openProductionDebug);
 
     ensureEl("goodsBody").on("click", ev => {
       const el = ev.target as HTMLElement;
@@ -881,6 +882,255 @@ function openGoodDialog(goodToEdit?: Good) {
         goodsEditorAddLines();
         goods.selectAll("*").remove();
         drawGoods();
+        $(this).dialog("close");
+      }
+    }
+  });
+}
+
+function openProductionDebug() {
+  const validBurgs = (pack.burgs as any[]).filter((b: any) => b.i && !b.removed);
+  if (!validBurgs.length) {
+    tip("No burgs available. Generate a world first.", true, "error");
+    return;
+  }
+
+  validBurgs.sort((a: any, b: any) => (b.population || 0) - (a.population || 0));
+
+  const burgOptions = validBurgs
+    .map((b: any) => `<option value="${b.i}">${b.name} (pop: ${b.population ?? 0})</option>`)
+    .join("");
+
+  const renderDebug = (burgId: number): string => {
+    const debug = Production.getDebugData(burgId);
+    if (!debug) {
+      return `<div style="color:#888;padding:1em;text-align:center">No production data for this burg.<br>Run map generation or regenerate production first.</div>`;
+    }
+
+    const goods = pack.goods;
+    const goodName = (id: number) => goods[id]?.name ?? `#${id}`;
+    const goodColor = (id: number) => goods[id]?.color ?? "#888";
+    const r2 = (n: number) => Math.round(n * 100) / 100;
+
+    const goodDot = (id: number) => {
+      const c = goodColor(id);
+      return `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c};border:1px solid rgba(0,0,0,0.2);margin-right:3px;vertical-align:middle;flex-shrink:0"></span>`;
+    };
+
+    // ── Section 1: Stats bar ────────────────────────────────────────────────
+    const cellPct = debug.cellsBudget > 0 ? Math.round((debug.cellsReached / debug.cellsBudget) * 100) : 0;
+    const statsHtml = `
+      <div style="background:#f5f5f5;border-radius:4px;padding:.4em .8em;margin-bottom:.8em;display:flex;flex-wrap:wrap;gap:.8em;font-size:.85em">
+        <span><b>Population:</b> ${debug.population}</span>
+        <span><b>Cells:</b> ${debug.cellsReached} / ${debug.cellsBudget} (${cellPct}%)</span>
+        <span><b>Culture type:</b> ${debug.cultureType}</span>
+        <span><b>Process rank:</b> #${debug.processRank} of ${debug.totalBurgs}</span>
+      </div>`;
+
+    // ── Section 2: Goods Pool ───────────────────────────────────────────────
+    const poolRows = debug.goodsPull
+      .map(g => {
+        const baseVal = goods[g.goodId]?.value ?? 0;
+        const cvExtra =
+          g.chainValue > baseVal + 0.01
+            ? ` <span style="color:#4a4;font-size:.78em">(+${r2(g.chainValue - baseVal)})</span>`
+            : "";
+        const foodBadge = g.isFood
+          ? `<span style="background:#fff3cd;color:#856404;font-size:.75em;padding:0 3px;border-radius:2px;margin-left:3px">food</span>`
+          : "";
+        const cultureMod =
+          g.cultureModifier !== 1 ? `<span style="color:#888;font-size:.8em"> ×${r2(g.cultureModifier)}</span>` : "";
+        const buyP = r2(debug.pricesAtStart.buy[g.goodId] ?? baseVal);
+        const buyColor = buyP > baseVal ? "color:#c84" : buyP < baseVal ? "color:#4a4" : "";
+        return `<tr>
+        <td style="padding:.2em .4em">${goodDot(g.goodId)}${goodName(g.goodId)}${foodBadge}</td>
+        <td style="text-align:right;padding:.2em .4em">${r2(g.pull)}</td>
+        <td style="text-align:right;padding:.2em .4em">${r2(g.pull * g.cultureModifier)}${cultureMod}</td>
+        <td style="text-align:right;padding:.2em .4em">${r2(g.chainValue)}${cvExtra}</td>
+        <td style="text-align:right;padding:.2em .4em;font-weight:bold">${r2(g.priority)}</td>
+        <td style="text-align:right;padding:.2em .4em;${buyColor}">${buyP}</td>
+      </tr>`;
+      })
+      .join("");
+
+    const poolHtml = `
+      <div style="margin-bottom:.8em">
+        <div style="font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.2em;margin-bottom:.4em;font-size:.9em">
+          📦 Goods Pool — ${debug.goodsPull.length} goods available (sorted by priority)
+        </div>
+        ${
+          poolRows
+            ? `<table style="width:100%;border-collapse:collapse;font-size:.82em">
+          <thead><tr style="background:#eee">
+            <th style="text-align:left;padding:.2em .4em">Good</th>
+            <th style="text-align:right;padding:.2em .4em" title="Raw pull from flood-fill cells">Pull</th>
+            <th style="text-align:right;padding:.2em .4em" title="Pull × culture modifier">Effective</th>
+            <th style="text-align:right;padding:.2em .4em" title="Elevated by downstream profitable chains">Chain Value</th>
+            <th style="text-align:right;padding:.2em .4em" title="Effective × chain value × food bonus (initial queue key)">Priority</th>
+            <th style="text-align:right;padding:.2em .4em" title="Buy price when this burg was processed">Buy Price</th>
+          </tr></thead>
+          <tbody>${poolRows}</tbody>
+        </table>`
+            : `<i style="color:#888">No goods reached this burg</i>`
+        }
+      </div>`;
+
+    // ── Section 3: Raw Production (Pass 1) ─────────────────────────────────
+    const rawEntries = Object.entries(debug.rawInventoryAfterPass1).filter(([, v]) => v > 0);
+    const totalRaw = rawEntries.reduce((s, [, v]) => s + v, 0);
+    const rawRows = rawEntries
+      .sort(([, a], [, b]) => b - a)
+      .map(([gid, amount]) => {
+        const id = +gid;
+        const pct = totalRaw > 0 ? (amount / totalRaw) * 100 : 0;
+        const c = goodColor(id);
+        return `<tr>
+          <td style="padding:.2em .4em">${goodDot(id)}${goodName(id)}</td>
+          <td style="text-align:right;padding:.2em .4em">${r2(amount)}</td>
+          <td style="padding:0 .4em;width:7em">
+            <div style="background:#eee;border-radius:2px;height:.8em;overflow:hidden">
+              <div style="background:${c};width:${Math.min(pct, 100).toFixed(1)}%;height:100%"></div>
+            </div>
+          </td>
+          <td style="text-align:right;color:#888;font-size:.8em;padding:.2em .4em">${pct.toFixed(0)}%</td>
+        </tr>`;
+      })
+      .join("");
+
+    const rawHtml = `
+      <div style="margin-bottom:.8em">
+        <div style="font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.2em;margin-bottom:.4em;font-size:.9em">
+          ⚒ Raw Production — Pass 1 (${debug.population} workers)
+        </div>
+        ${
+          rawRows
+            ? `<table style="width:100%;border-collapse:collapse;font-size:.82em">
+          <thead><tr style="background:#eee">
+            <th style="text-align:left;padding:.2em .4em">Good</th>
+            <th style="text-align:right;padding:.2em .4em">Units</th>
+            <th colspan="2" style="padding:.2em .4em">Share</th>
+          </tr></thead>
+          <tbody>${rawRows}</tbody>
+        </table>`
+            : `<i style="color:#888">No raw goods produced</i>`
+        }
+      </div>`;
+
+    // ── Section 4: Manufacturing (Pass 2) ──────────────────────────────────
+    const mfgRows = debug.manufactured
+      .map(m => {
+        const ingText = m.recipeIngredients
+          .map(ing => `${goodDot(ing.goodId)}${goodName(ing.goodId)}&nbsp;×${r2(ing.consumed)}`)
+          .join(`<span style="color:#888;margin:0 .3em">+</span>`);
+        const profColor = m.profit > 0 ? "color:#4a4" : "color:#c44";
+        const sellAtTime = r2(debug.pricesAtStart.sell[m.goodId] ?? 0);
+        return `<tr>
+        <td style="padding:.2em .4em">${goodDot(m.goodId)}<b>${goodName(m.goodId)}</b></td>
+        <td style="text-align:right;padding:.2em .4em">${r2(m.producedAmount)}</td>
+        <td style="text-align:right;padding:.2em .4em;${profColor}" title="Sell price − ingredient cost">${r2(m.profit)}</td>
+        <td style="text-align:right;padding:.2em .4em;color:#888">${sellAtTime}</td>
+        <td style="padding:.2em .4em;font-size:.82em;color:#555">${ingText}</td>
+      </tr>`;
+      })
+      .join("");
+
+    const mfgHtml = `
+      <div style="margin-bottom:.8em">
+        <div style="font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.2em;margin-bottom:.4em;font-size:.9em">
+          🔨 Manufacturing — Pass 2 (${debug.manufactured.length} goods crafted)
+        </div>
+        ${
+          mfgRows
+            ? `<table style="width:100%;border-collapse:collapse;font-size:.82em">
+          <thead><tr style="background:#eee">
+            <th style="text-align:left;padding:.2em .4em">Output</th>
+            <th style="text-align:right;padding:.2em .4em">Units</th>
+            <th style="text-align:right;padding:.2em .4em" title="Sell price − ingredient buy cost">Profit/u</th>
+            <th style="text-align:right;padding:.2em .4em" title="Sell price at time of processing">Sell Price</th>
+            <th style="text-align:left;padding:.2em .4em">Ingredients consumed</th>
+          </tr></thead>
+          <tbody>${mfgRows}</tbody>
+        </table>`
+            : `<i style="color:#888">No manufacturing performed</i>`
+        }
+      </div>`;
+
+    // ── Section 5: Final Output ─────────────────────────────────────────────
+    const finalEntries = Object.entries(debug.finalInventory).filter(([, v]) => v > 0);
+    const finalTotalValue = finalEntries.reduce((s, [gid, amt]) => {
+      const sp = goods[+gid]?.sellPrice ?? goods[+gid]?.value ?? 0;
+      return s + amt * sp;
+    }, 0);
+
+    const finalRows = finalEntries
+      .sort(([, a], [, b]) => b - a)
+      .map(([gid, amount]) => {
+        const id = +gid;
+        const sp = goods[id]?.sellPrice ?? goods[id]?.value ?? 0;
+        const bv = goods[id]?.value ?? 0;
+        const isManufactured = !!goods[id]?.recipes?.length;
+        const typeBadge = isManufactured
+          ? `<span style="background:#e8f0e8;color:#4a4;font-size:.75em;padding:0 3px;border-radius:2px;margin-left:3px">MFG</span>`
+          : `<span style="background:#f0e8e8;color:#a44;font-size:.75em;padding:0 3px;border-radius:2px;margin-left:3px">RAW</span>`;
+        const spColor = sp < bv * 0.99 ? "color:#c84" : sp > bv * 1.01 ? "color:#4a4" : "";
+        return `<tr>
+          <td style="padding:.2em .4em">${goodDot(id)}${goodName(id)}${typeBadge}</td>
+          <td style="text-align:right;padding:.2em .4em">${amount}</td>
+          <td style="text-align:right;padding:.2em .4em;${spColor}">${r2(sp)}</td>
+          <td style="text-align:right;padding:.2em .4em">${r2(amount * sp)}</td>
+        </tr>`;
+      })
+      .join("");
+
+    const finalHtml = `
+      <div>
+        <div style="font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.2em;margin-bottom:.4em;font-size:.9em">
+          📊 Final Output — total market value: <b>${r2(finalTotalValue)}</b>
+        </div>
+        ${
+          finalRows
+            ? `<table style="width:100%;border-collapse:collapse;font-size:.82em">
+          <thead><tr style="background:#eee">
+            <th style="text-align:left;padding:.2em .4em">Good</th>
+            <th style="text-align:right;padding:.2em .4em">Units</th>
+            <th style="text-align:right;padding:.2em .4em">Sell Price</th>
+            <th style="text-align:right;padding:.2em .4em">Value</th>
+          </tr></thead>
+          <tbody>${finalRows}</tbody>
+          <tfoot><tr style="background:#f5f5f5;font-weight:bold">
+            <td colspan="3" style="text-align:right;padding:.2em .4em">Total:</td>
+            <td style="text-align:right;padding:.2em .4em">${r2(finalTotalValue)}</td>
+          </tfoot>
+        </table>`
+            : `<i style="color:#888">No output produced</i>`
+        }
+      </div>`;
+
+    return statsHtml + poolHtml + rawHtml + mfgHtml + finalHtml;
+  };
+
+  const firstBurgId = validBurgs[0].i;
+
+  alertMessage.innerHTML = /*html*/ `
+    <div style="display:flex;align-items:center;gap:.5em;margin-bottom:.8em">
+      <label for="prodDebugBurgSelect" style="white-space:nowrap;font-weight:bold">Burg:</label>
+      <select id="prodDebugBurgSelect" style="flex:1">${burgOptions}</select>
+    </div>
+    <div id="prodDebugContent" style="max-height:65vh;overflow-y:auto">
+      ${renderDebug(firstBurgId)}
+    </div>
+  `;
+
+  (ensureEl("prodDebugBurgSelect") as HTMLSelectElement).onchange = function () {
+    ensureEl("prodDebugContent").innerHTML = renderDebug(+(this as HTMLSelectElement).value);
+  };
+
+  $("#alert").dialog({
+    width: "48em",
+    resizable: true,
+    title: "Production Debug",
+    buttons: {
+      Close: function () {
         $(this).dialog("close");
       }
     }
