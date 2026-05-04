@@ -170,7 +170,7 @@ export function open(burgId: number): void {
     })
     .join("");
 
-  const finalHtml = `
+  const finalHtml = /*html*/ `
     <div>
       <div style="font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.2em;margin-bottom:.4em;font-size:.9em">
         Final Output — total market value: <b>${r2(finalTotalValue)}</b>
@@ -213,7 +213,9 @@ export function open(burgId: number): void {
 }
 
 declare global {
-  function openProductionOverview(burgId: number): void;
+  interface Window {
+    ProductionOverview: {open: typeof open};
+  }
 }
 
-window.openProductionOverview = open;
+window.ProductionOverview = {open};

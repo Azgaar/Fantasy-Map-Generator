@@ -401,7 +401,7 @@ function editBurg(id) {
 
   function showProductionOverview() {
     const id = +elSelected.attr("data-id");
-    openProductionOverview(id);
+    ProductionOverview.open(id);
   }
 
   function removeSelectedBurg() {
