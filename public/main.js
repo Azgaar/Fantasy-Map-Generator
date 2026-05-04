@@ -678,13 +678,13 @@ async function generate(options) {
     States.collectStatistics();
     States.defineStateForms();
 
-    Production.produce();
-
     Provinces.generate();
     Provinces.getPoles();
 
     Rivers.specify();
     Lakes.defineNames();
+
+    Production.produce();
 
     Military.generate();
     Markers.generate();

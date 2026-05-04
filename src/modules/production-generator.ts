@@ -217,6 +217,12 @@ export class ProductionModule {
         console.log(`  ${good.name}: ${burg.produced[+goodId]}`);
       }
     }
+
+    // Persist final market prices on goods so the UI can display them
+    for (const good of goods) {
+      good.buyPrice = +currentBuyPrice[good.i].toFixed(2);
+      good.sellPrice = +currentSellPrice[good.i].toFixed(2);
+    }
   }
 
   // ─── Phase A helpers ─────────────────────────────────────────────────────────

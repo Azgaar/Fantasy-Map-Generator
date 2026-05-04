@@ -72,10 +72,18 @@ function goodsEditorAddLines() {
     const tags = good.tags.join(", ");
     const stroke = Goods.getStroke(good.color);
 
+    const buyPrice = good.buyPrice ?? good.value;
+    const sellPrice = good.sellPrice ?? good.value;
+    const buyColor =
+      good.buyPrice == null ? "" : buyPrice > good.value ? "color:#c84" : buyPrice < good.value ? "color:#4a4" : "";
+    const sellColor =
+      good.sellPrice == null ? "" : sellPrice < good.value ? "color:#c84" : sellPrice > good.value ? "color:#4a4" : "";
+
     lines += `<div class="states goods"
           data-id=${good.i} data-name="${good.name}" data-color="${good.color}"
           data-tags="${tags}" data-chance="${good.chance}" data-bonus="${bonusString}"
-          data-value="${good.value}" data-model="${distribution}" data-cells="${good.cells}">
+          data-value="${good.value}" data-model="${distribution}" data-cells="${good.cells}"
+          data-buyprice="${buyPrice}" data-sellprice="${sellPrice}">
         <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
           <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
           <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
@@ -83,6 +91,8 @@ function goodsEditorAddLines() {
         <div data-tip="Good name" class="goodName">${good.name}</div>
         <div data-tip="Good tags" class="goodTags" title="${tags}">${tags}</div>
         <div data-tip="Number of cells with good" class="goodCells">${good.cells}</div>
+        <div data-tip="Buy price (base: ${good.value}). Rises as more is extracted." class="goodBuyPrice" style="${buyColor}">${buyPrice}</div>
+        <div data-tip="Sell price (base: ${good.value}). Falls as more is manufactured." class="goodSellPrice" style="${sellColor}">${sellPrice}</div>
         <span data-tip="Edit good" class="icon-pencil goodEdit hide"></span>
         <span data-tip="Toggle good exclusive visibility (pin)" class="icon-pin inactive hide"></span>
         <span data-tip="Remove good" class="icon-trash-empty hide"></span>
