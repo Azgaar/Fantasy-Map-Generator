@@ -711,7 +711,11 @@ const GOODS_DATA = [
     color: "#654321",
     value: 5,
     chance: 0,
-    recipes: [{Leather: 1}],
+    recipes: [
+      {Leather: 1, Iron: 0.25},
+      {Leather: 1, Bronze: 0.25},
+      {Leather: 1, Copper: 0.25}
+    ],
     unit: "set",
     bonus: {cavalry: 2},
     culture: {Nomadic: 3}

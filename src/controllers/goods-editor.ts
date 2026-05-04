@@ -28,7 +28,7 @@ export function open() {
     ensureEl("goodsPercentage").on("click", togglePercentageMode);
     ensureEl("goodsTagsFilter").on("click", openTagsVisibilityDialog);
     ensureEl("goodsAssign").on("click", enterResourceAssignMode);
-    ensureEl("goodsAdd").on("click", goodAdd);
+    ensureEl("goodsAdd").on("click", () => openGoodDialog());
     ensureEl("goodsRestore").on("click", goodsRestoreDefaults);
     ensureEl("goodsExport").on("click", downloadGoodsData);
     ensureEl("goodsUnpinAll").on("click", unpinAllGoods);
@@ -40,7 +40,7 @@ export function open() {
       const line = el.parentNode as HTMLElement;
       const good = Goods.get(+line.dataset.id!);
       if (!good) return;
-      if (cl.contains("goodEdit")) return editGood(good);
+      if (cl.contains("goodEdit")) return openGoodDialog(good);
       if (cl.contains("icon-pin")) return pinResource(good, el);
       if (cl.contains("icon-trash-empty")) return removeResource(good, line);
     });
@@ -429,14 +429,6 @@ function exitResourceAssignMode(close?: string) {
   clearMainTip();
   const selected = body.querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
-}
-
-function editGood(good: Good) {
-  openGoodDialog(good);
-}
-
-function goodAdd() {
-  openGoodDialog();
 }
 
 function openGoodDialog(goodToEdit?: Good) {
@@ -903,13 +895,13 @@ function openProductionDebug() {
 
   const renderDebug = (burgId: number): string => {
     const debug = Production.getDebugData(burgId);
-    if (!debug) {
-      return `<div style="color:#888;padding:1em;text-align:center">No production data for this burg.<br>Run map generation or regenerate production first.</div>`;
-    }
+    if (!debug)
+      return `<div>No production data for this burg.<br>Run map generation or regenerate production first.</div>`;
 
-    const goods = pack.goods;
-    const goodName = (id: number) => goods[id]?.name ?? `#${id}`;
-    const goodColor = (id: number) => goods[id]?.color ?? "#888";
+    // pack.goods is shuffled during generation; must look up by good.i, not array position
+    const goodById = new Map(pack.goods.map((g: Good) => [g.i, g]));
+    const goodName = (id: number) => goodById.get(id)?.name ?? `#${id}`;
+    const goodColor = (id: number) => goodById.get(id)?.color ?? "#888";
     const r2 = (n: number) => Math.round(n * 100) / 100;
 
     const goodDot = (id: number) => {
@@ -919,7 +911,7 @@ function openProductionDebug() {
 
     // ── Section 1: Stats bar ────────────────────────────────────────────────
     const cellPct = debug.cellsBudget > 0 ? Math.round((debug.cellsReached / debug.cellsBudget) * 100) : 0;
-    const statsHtml = `
+    const statsHtml = /*html*/ `
       <div style="background:#f5f5f5;border-radius:4px;padding:.4em .8em;margin-bottom:.8em;display:flex;flex-wrap:wrap;gap:.8em;font-size:.85em">
         <span><b>Population:</b> ${debug.population}</span>
         <span><b>Cells:</b> ${debug.cellsReached} / ${debug.cellsBudget} (${cellPct}%)</span>
@@ -930,7 +922,7 @@ function openProductionDebug() {
     // ── Section 2: Goods Pool ───────────────────────────────────────────────
     const poolRows = debug.goodsPull
       .map(g => {
-        const baseVal = goods[g.goodId]?.value ?? 0;
+        const baseVal = goodById.get(g.goodId)?.value ?? 0;
         const cvExtra =
           g.chainValue > baseVal + 0.01
             ? ` <span style="color:#4a4;font-size:.78em">(+${r2(g.chainValue - baseVal)})</span>`
@@ -942,7 +934,7 @@ function openProductionDebug() {
           g.cultureModifier !== 1 ? `<span style="color:#888;font-size:.8em"> ×${r2(g.cultureModifier)}</span>` : "";
         const buyP = r2(debug.pricesAtStart.buy[g.goodId] ?? baseVal);
         const buyColor = buyP > baseVal ? "color:#c84" : buyP < baseVal ? "color:#4a4" : "";
-        return `<tr>
+        return /*html*/ `<tr>
         <td style="padding:.2em .4em">${goodDot(g.goodId)}${goodName(g.goodId)}${foodBadge}</td>
         <td style="text-align:right;padding:.2em .4em">${r2(g.pull)}</td>
         <td style="text-align:right;padding:.2em .4em">${r2(g.pull * g.cultureModifier)}${cultureMod}</td>
@@ -953,17 +945,17 @@ function openProductionDebug() {
       })
       .join("");
 
-    const poolHtml = `
+    const poolHtml = /*html*/ `
       <div style="margin-bottom:.8em">
         <div style="font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.2em;margin-bottom:.4em;font-size:.9em">
           📦 Goods Pool — ${debug.goodsPull.length} goods available (sorted by priority)
         </div>
         ${
           poolRows
-            ? `<table style="width:100%;border-collapse:collapse;font-size:.82em">
+            ? /*html*/ `<table style="width:100%;border-collapse:collapse;font-size:.82em">
           <thead><tr style="background:#eee">
             <th style="text-align:left;padding:.2em .4em">Good</th>
-            <th style="text-align:right;padding:.2em .4em" title="Raw pull from flood-fill cells">Pull</th>
+            <th style="text-align:right;padding:.2em .4em" title="Raw pool from flood-fill cells">Pool</th>
             <th style="text-align:right;padding:.2em .4em" title="Pull × culture modifier">Effective</th>
             <th style="text-align:right;padding:.2em .4em" title="Elevated by downstream profitable chains">Chain Value</th>
             <th style="text-align:right;padding:.2em .4em" title="Effective × chain value × food bonus (initial queue key)">Priority</th>
@@ -971,7 +963,7 @@ function openProductionDebug() {
           </tr></thead>
           <tbody>${poolRows}</tbody>
         </table>`
-            : `<i style="color:#888">No goods reached this burg</i>`
+            : /*html*/ `<i style="color:#888">No goods reached this burg</i>`
         }
       </div>`;
 
@@ -1058,7 +1050,8 @@ function openProductionDebug() {
     // ── Section 5: Final Output ─────────────────────────────────────────────
     const finalEntries = Object.entries(debug.finalInventory).filter(([, v]) => v > 0);
     const finalTotalValue = finalEntries.reduce((s, [gid, amt]) => {
-      const sp = goods[+gid]?.sellPrice ?? goods[+gid]?.value ?? 0;
+      const g = goodById.get(+gid);
+      const sp = g?.sellPrice ?? g?.value ?? 0;
       return s + amt * sp;
     }, 0);
 
@@ -1066,9 +1059,10 @@ function openProductionDebug() {
       .sort(([, a], [, b]) => b - a)
       .map(([gid, amount]) => {
         const id = +gid;
-        const sp = goods[id]?.sellPrice ?? goods[id]?.value ?? 0;
-        const bv = goods[id]?.value ?? 0;
-        const isManufactured = !!goods[id]?.recipes?.length;
+        const g = goodById.get(id);
+        const sp = g?.sellPrice ?? g?.value ?? 0;
+        const bv = g?.value ?? 0;
+        const isManufactured = !!g?.recipes?.length;
         const typeBadge = isManufactured
           ? `<span style="background:#e8f0e8;color:#4a4;font-size:.75em;padding:0 3px;border-radius:2px;margin-left:3px">MFG</span>`
           : `<span style="background:#f0e8e8;color:#a44;font-size:.75em;padding:0 3px;border-radius:2px;margin-left:3px">RAW</span>`;
