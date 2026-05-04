@@ -1,9 +1,7 @@
 import {quadtree} from "d3-quadtree";
 import {each, ensureEl, gauss, minmax, normalize, P, rn} from "../utils";
+import {type CultureType, DEFAULT_CULTURE_TYPE} from "./cultures-generator";
 
-declare global {
-  var Burgs: BurgModule;
-}
 export interface Burg {
   cell: number;
   x: number;
@@ -18,7 +16,7 @@ export interface Burg {
   port?: number;
   removed?: boolean;
   population?: number;
-  type?: string;
+  type?: CultureType;
   coa?: any;
   citadel?: number;
   plaza?: number;
@@ -32,71 +30,6 @@ export interface Burg {
 }
 
 class BurgModule {
-  shift() {
-    const {cells, features, burgs} = pack;
-    const temp = grid.cells.temp;
-
-    // port is a capital with any harbor OR any burg with a safe harbor
-    // safe harbor is a cell having just one adjacent water cell
-    const featurePortCandidates: Record<number, Burg[]> = {};
-    for (const burg of burgs) {
-      if (!burg.i || burg.lock) continue;
-      delete burg.port; // reset port status
-      const cellId = burg.cell;
-
-      const haven = cells.haven[cellId];
-      const harbor = cells.harbor[cellId];
-      const featureId = cells.f[haven];
-      if (!featureId) continue; // no adjacent water body
-
-      const isMulticell = features[featureId].cells > 1;
-      const isHarbor = (harbor && burg.capital) || harbor === 1;
-      const isFrozen = temp[cells.g[cellId]] <= 0;
-
-      if (isMulticell && isHarbor && !isFrozen) {
-        if (!featurePortCandidates[featureId]) featurePortCandidates[featureId] = [];
-        featurePortCandidates[featureId].push(burg);
-      }
-    }
-
-    const getCloseToEdgePoint = (cell1: number, cell2: number) => {
-      const {cells, vertices} = pack;
-
-      const [x0, y0] = cells.p[cell1];
-      const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
-      const [x1, y1] = vertices.p[commonVertices[0]];
-      const [x2, y2] = vertices.p[commonVertices[1]];
-      const xEdge = (x1 + x2) / 2;
-      const yEdge = (y1 + y2) / 2;
-
-      const x = rn(x0 + 0.95 * (xEdge - x0), 2);
-      const y = rn(y0 + 0.95 * (yEdge - y0), 2);
-
-      return [x, y];
-    };
-
-    // shift ports to the edge of the water body
-    Object.entries(featurePortCandidates).forEach(([featureId, burgs]) => {
-      if (burgs.length < 2) return; // only one port on water body - skip
-      burgs.forEach(burg => {
-        burg.port = Number(featureId);
-        const haven = cells.haven[burg.cell];
-        const [x, y] = getCloseToEdgePoint(burg.cell, haven);
-        burg.x = x;
-        burg.y = y;
-      });
-    });
-
-    // shift non-port river burgs a bit
-    for (const burg of burgs) {
-      if (!burg.i || burg.lock || burg.port || !cells.r[burg.cell]) continue;
-      const cellId = burg.cell;
-      const shift = Math.min(cells.fl[cellId] / 150, 1);
-      burg.x = cellId % 2 ? rn(burg.x + shift, 2) : rn(burg.x - shift, 2);
-      burg.y = cells.r[cellId] % 2 ? rn(burg.y + shift, 2) : rn(burg.y - shift, 2);
-    }
-  }
-
   generate() {
     TIME && console.time("generateBurgs");
     const {cells} = pack;
@@ -219,7 +152,7 @@ class BurgModule {
     }
   }
 
-  getType(cellId: number, port?: number) {
+  getType(cellId: number, port?: number): CultureType {
     const {cells, features} = pack;
 
     if (port) return "Naval";
@@ -238,7 +171,72 @@ class BurgModule {
       if (biome > 4 && biome < 10) return "Hunting";
     }
 
-    return "Generic";
+    return DEFAULT_CULTURE_TYPE;
+  }
+
+  shift() {
+    const {cells, features, burgs} = pack;
+    const temp = grid.cells.temp;
+
+    // port is a capital with any harbor OR any burg with a safe harbor
+    // safe harbor is a cell having just one adjacent water cell
+    const featurePortCandidates: Record<number, Burg[]> = {};
+    for (const burg of burgs) {
+      if (!burg.i || burg.lock) continue;
+      delete burg.port; // reset port status
+      const cellId = burg.cell;
+
+      const haven = cells.haven[cellId];
+      const harbor = cells.harbor[cellId];
+      const featureId = cells.f[haven];
+      if (!featureId) continue; // no adjacent water body
+
+      const isMulticell = features[featureId].cells > 1;
+      const isHarbor = (harbor && burg.capital) || harbor === 1;
+      const isFrozen = temp[cells.g[cellId]] <= 0;
+
+      if (isMulticell && isHarbor && !isFrozen) {
+        if (!featurePortCandidates[featureId]) featurePortCandidates[featureId] = [];
+        featurePortCandidates[featureId].push(burg);
+      }
+    }
+
+    const getCloseToEdgePoint = (cell1: number, cell2: number) => {
+      const {cells, vertices} = pack;
+
+      const [x0, y0] = cells.p[cell1];
+      const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
+      const [x1, y1] = vertices.p[commonVertices[0]];
+      const [x2, y2] = vertices.p[commonVertices[1]];
+      const xEdge = (x1 + x2) / 2;
+      const yEdge = (y1 + y2) / 2;
+
+      const x = rn(x0 + 0.95 * (xEdge - x0), 2);
+      const y = rn(y0 + 0.95 * (yEdge - y0), 2);
+
+      return [x, y];
+    };
+
+    // shift ports to the edge of the water body
+    Object.entries(featurePortCandidates).forEach(([featureId, burgs]) => {
+      if (burgs.length < 2) return; // only one port on water body - skip
+      burgs.forEach(burg => {
+        burg.port = Number(featureId);
+        const haven = cells.haven[burg.cell];
+        const [x, y] = getCloseToEdgePoint(burg.cell, haven);
+        burg.x = x;
+        burg.y = y;
+      });
+    });
+
+    // shift non-port river burgs a bit
+    for (const burg of burgs) {
+      if (!burg.i || burg.lock || burg.port || !cells.r[burg.cell]) continue;
+      const cellId = burg.cell;
+      const shift = Math.min(cells.fl[cellId] / 150, 1);
+      burg.x = cellId % 2 ? rn(burg.x + shift, 2) : rn(burg.x - shift, 2);
+      burg.y = cells.r[cellId] % 2 ? rn(burg.y + shift, 2) : rn(burg.y - shift, 2);
+    }
   }
 
   private definePopulation(burg: Burg) {
@@ -670,4 +668,9 @@ class BurgModule {
     removeBurgLabel(burg.i!);
   }
 }
+
+declare global {
+  var Burgs: BurgModule;
+}
+
 window.Burgs = new BurgModule();

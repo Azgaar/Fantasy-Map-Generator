@@ -2,6 +2,7 @@ import Alea from "alea";
 import {color, shuffler} from "d3";
 import type {PackedGraph} from "../types/PackedGraph";
 import {createTypedArray, TYPED_ARRAY_MAX} from "../utils";
+import type {CultureType} from "./cultures-generator";
 
 export interface Good {
   i: number;
@@ -9,6 +10,7 @@ export interface Good {
   // generation
   chance: number; // generation chance
   distribution?: string; // spread function string for raw goods, e.g. "biome(5, 6, 7, 8, 9)"
+  biome?: Partial<Record<number, number>>; // baseline production per biome id (units per biome cell), e.g. {6: 0.5, 7: 0.5}
   recipes?: Record<number, number>[]; // good id and required amount to produce 1 unit of this good; presence marks a manufactured good
   culture: Partial<Record<CultureType, number>>; // modifier to production based on culture, e.g. {Nomadic: 2} means that nomadic cultures produce twice as much of this good
 
@@ -32,7 +34,6 @@ export interface Good {
 }
 
 type BonusType = "population" | "prestige" | "defence" | "fleet" | "infantry" | "archers" | "cavalry" | "artillery";
-type CultureType = "Generic" | "Hunting" | "Highland" | "River" | "Lake" | "Naval" | "Nomadic";
 
 const GOODS_DATA = [
   {
@@ -45,7 +46,8 @@ const GOODS_DATA = [
     distribution: "biome(5, 6, 7, 8, 9)",
     unit: "pile",
     bonus: {fleet: 2, defence: 1},
-    culture: {Hunting: 2}
+    culture: {Hunting: 2},
+    biome: {6: 0.5, 7: 0.5, 8: 0.5, 9: 0.5}
   },
   {
     name: "Stone",
@@ -57,7 +59,8 @@ const GOODS_DATA = [
     distribution: "minHeight(40) || (minHeight(20) && elevation())",
     unit: "pallet",
     bonus: {defence: 2},
-    culture: {Hunting: 0.6, Nomadic: 0.6}
+    culture: {Hunting: 0.6, Nomadic: 0.6},
+    biome: {1: 0.5, 2: 0.5}
   },
   {
     name: "Marble",
@@ -81,14 +84,15 @@ const GOODS_DATA = [
     distribution: "minHeight(60) || (biome(12) && nth(7)) || (minHeight(20) && nth(10))",
     unit: "wagon",
     bonus: {artillery: 1, infantry: 1, defence: 1},
-    culture: {Highland: 2}
+    culture: {Highland: 2},
+    biome: {12: 0.4}
   },
   {
     name: "Copper",
     tags: ["ore"],
     icon: "good-copper",
     color: "#b87333",
-    value: 5,
+    value: 4,
     chance: 2,
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "wagon",
@@ -96,9 +100,9 @@ const GOODS_DATA = [
     culture: {Highland: 2}
   },
   {
-    name: "Lead",
+    name: "Tin",
     tags: ["ore"],
-    icon: "good-lead",
+    icon: "good-tin",
     color: "#454343",
     value: 4,
     chance: 2,
@@ -141,7 +145,8 @@ const GOODS_DATA = [
     distribution: "minHabitability(20) && habitability()",
     unit: "wain",
     bonus: {population: 4},
-    culture: {River: 3, Lake: 2, Nomadic: 0.5}
+    culture: {River: 3, Lake: 2, Nomadic: 0.5},
+    biome: {5: 0.5, 6: 0.5, 7: 0.5, 8: 0.5}
   },
   {
     name: "Cattle",
@@ -153,7 +158,8 @@ const GOODS_DATA = [
     distribution: "(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))",
     unit: "head",
     bonus: {population: 2},
-    culture: {Nomadic: 3}
+    culture: {Nomadic: 3},
+    biome: {3: 0.4, 4: 0.5}
   },
   {
     name: "Fish",
@@ -165,7 +171,8 @@ const GOODS_DATA = [
     distribution: 'shore(-1) && (type("ocean", "freshwater", "salt") || (river() && shore(1, 2)))',
     unit: "wain",
     bonus: {population: 2},
-    culture: {River: 2, Lake: 3, Naval: 3, Nomadic: 0.5}
+    culture: {River: 2, Lake: 3, Naval: 3, Nomadic: 0.5},
+    biome: {0: 0.75}
   },
   {
     name: "Game",
@@ -177,7 +184,8 @@ const GOODS_DATA = [
     distribution: "biome(5, 6, 7, 8, 9)",
     unit: "wain",
     bonus: {archers: 2, population: 1},
-    culture: {Naval: 0.6, Nomadic: 2, Hunting: 3}
+    culture: {Naval: 0.6, Nomadic: 2, Hunting: 3},
+    biome: {3: 0.4, 9: 0.4, 12: 0.4}
   },
   {
     name: "Wine",
@@ -204,11 +212,11 @@ const GOODS_DATA = [
     culture: {Generic: 0.8, Nomadic: 0.5}
   },
   {
-    name: "Honey and wax",
-    tags: ["food", "fuel", "ritual"],
+    name: "Honey",
+    tags: ["food", "preservative"],
     icon: "good-honey",
     color: "#DCBC66",
-    value: 3,
+    value: 2,
     chance: 3,
     distribution: "biome(6, 8, 9)",
     unit: "barrel",
@@ -220,7 +228,7 @@ const GOODS_DATA = [
     tags: ["preservative", "mineral"],
     icon: "good-salt",
     color: "#E5E4E5",
-    value: 3,
+    value: 2,
     chance: 3,
     distribution: 'shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))',
     unit: "bag",
@@ -280,8 +288,8 @@ const GOODS_DATA = [
     tags: ["clothing", "naval"],
     icon: "good-hemp",
     color: "#069a06",
-    value: 2,
-    chance: 3,
+    value: 1,
+    chance: 4,
     distribution: "biome(6, 7, 8)",
     unit: "wain",
     bonus: {fleet: 2},
@@ -328,7 +336,7 @@ const GOODS_DATA = [
     tags: ["luxury", "ritual"],
     icon: "good-incense",
     color: "#ebe5a7",
-    value: 12,
+    value: 10,
     chance: 2,
     distribution: "biome(1, 7)",
     unit: "chest",
@@ -340,7 +348,7 @@ const GOODS_DATA = [
     tags: ["luxury", "clothing"],
     icon: "good-silk",
     color: "#e0f0f8",
-    value: 14,
+    value: 9,
     chance: 1,
     distribution: "biome(7)",
     unit: "bolt",
@@ -376,17 +384,18 @@ const GOODS_DATA = [
     tags: ["clothing", "luxury"],
     icon: "good-furs",
     color: "#8a5e51",
-    value: 6,
+    value: 5,
     chance: 2,
     distribution: "biome(9) || (biome(10) && nth(2)) || (biome(6, 8) && nth(5)) || (biome(12) && nth(10))",
     unit: "pelt",
     bonus: {prestige: 1},
-    culture: {Hunting: 3}
+    culture: {Hunting: 3},
+    biome: {10: 0.5}
   },
   {
-    name: "Wool",
+    name: "Sheep",
     tags: ["clothing"],
-    icon: "good-sheeps",
+    icon: "good-sheep",
     color: "#53b574",
     value: 2,
     chance: 3,
@@ -413,18 +422,18 @@ const GOODS_DATA = [
     icon: "good-tar",
     color: "#727272",
     value: 2,
-    chance: 3,
-    distribution: "biome(5, 6, 7, 8, 9)",
+    chance: 0,
     unit: "barrel",
     bonus: {fleet: 1},
-    culture: {Hunting: 3}
+    culture: {Hunting: 3},
+    recipes: [{Wood: 1}]
   },
   {
     name: "Saltpeter",
     tags: ["military", "mineral"],
     icon: "good-saltpeter",
     color: "#e6e3e3",
-    value: 4,
+    value: 2,
     chance: 2,
     distribution: "biome(1, 2) || (minHeight(50) && random(10))",
     unit: "barrel",
@@ -454,7 +463,8 @@ const GOODS_DATA = [
     distribution: "biome(1, 2, 10) || (shore(-1) && minTemp(18) && random(15))",
     unit: "barrel",
     bonus: {artillery: 1},
-    culture: {Generic: 2}
+    culture: {Generic: 2},
+    recipes: [{Olives: 1}, {Hemp: 1}, {Whales: 1}]
   },
   {
     name: "Tropical timber",
@@ -547,7 +557,7 @@ const GOODS_DATA = [
     color: "#8b5a2b",
     value: 3,
     chance: 0,
-    recipes: [{Cattle: 1}, {Game: 1}],
+    recipes: [{Cattle: 1}, {Game: 1}, {Horses: 1}, {Camels: 1}],
     unit: "roll",
     bonus: {infantry: 1, cavalry: 1},
     culture: {Naval: 0.6, Hunting: 2}
@@ -557,21 +567,21 @@ const GOODS_DATA = [
     tags: ["clothing"],
     icon: "good-cloth",
     color: "#b55239",
-    value: 5,
+    value: 4,
     chance: 0,
-    recipes: [{Wool: 1}, {Hemp: 1}, {Silk: 0.5}],
+    recipes: [{Sheep: 1}, {Hemp: 1}, {Silk: 0.25}],
     unit: "bolt",
     bonus: {population: 2, fleet: 1},
     culture: {Generic: 2}
   },
   {
-    name: "Garnments",
+    name: "Garments",
     tags: ["clothing"],
-    icon: "good-garnments",
+    icon: "good-garments",
     color: "#bd21ec",
-    value: 10,
+    value: 9,
     chance: 0,
-    recipes: [{Wool: 1, Dyes: 1}, {Hemp: 1, Dyes: 1}, {Silk: 0.5, Dyes: 1}, {Furs: 1}],
+    recipes: [{Cloth: 1, Dyes: 0.5}, {Furs: 1}],
     unit: "set",
     bonus: {prestige: 2},
     culture: {Generic: 2}
@@ -581,10 +591,10 @@ const GOODS_DATA = [
     tags: ["storage", "construction"],
     icon: "good-pottery",
     color: "#c1440e",
-    value: 5,
+    value: 3,
     chance: 0,
     recipes: [
-      {Clay: 1, Coal: 1},
+      {Clay: 1, Coal: 0.5},
       {Clay: 1, Wood: 1}
     ],
     unit: "wain",
@@ -596,12 +606,9 @@ const GOODS_DATA = [
     tags: ["storage", "construction"],
     icon: "good-glass",
     color: "#a0c8e8",
-    value: 6,
+    value: 3,
     chance: 0,
-    recipes: [
-      {"White sand": 1, Coal: 1},
-      {"White sand": 1, Wood: 1}
-    ],
+    recipes: [{"White sand": 1, Coal: 0.5}],
     unit: "wain",
     bonus: {prestige: 1},
     culture: {River: 2, Lake: 2, Nomadic: 0.1}
@@ -611,7 +618,7 @@ const GOODS_DATA = [
     tags: ["naval", "construction"],
     icon: "good-ropes",
     color: "#654321",
-    value: 4,
+    value: 3,
     chance: 0,
     recipes: [{Hemp: 1}],
     unit: "coil",
@@ -623,7 +630,7 @@ const GOODS_DATA = [
     tags: ["ritual", "educational"],
     icon: "good-paper",
     color: "#f5f5dc",
-    value: 6,
+    value: 3,
     chance: 0,
     recipes: [{Hemp: 1}],
     unit: "ream",
@@ -635,9 +642,9 @@ const GOODS_DATA = [
     tags: ["ritual", "educational"],
     icon: "good-ink",
     color: "#000000",
-    value: 6,
+    value: 5,
     chance: 0,
-    recipes: [{Oil: 1}, {Dyes: 1}],
+    recipes: [{Oil: 1}, {Dyes: 0.5}],
     unit: "bottle",
     bonus: {prestige: 1},
     culture: {River: 2, Nomadic: 0.1, Hunting: 0.5}
@@ -647,7 +654,7 @@ const GOODS_DATA = [
     tags: ["ritual", "educational"],
     icon: "good-books",
     color: "#deb887",
-    value: 20,
+    value: 14,
     chance: 0,
     recipes: [
       {Paper: 1, Ink: 1},
@@ -662,7 +669,7 @@ const GOODS_DATA = [
     tags: ["naval"],
     icon: "good-sails",
     color: "#ffffff",
-    value: 10,
+    value: 8,
     chance: 0,
     recipes: [{Cloth: 1}],
     unit: "set",
@@ -674,7 +681,7 @@ const GOODS_DATA = [
     tags: ["naval"],
     icon: "good-ships",
     color: "#654321",
-    value: 50,
+    value: 30,
     chance: 0,
     recipes: [{Wood: 2, Sails: 1, Ropes: 1, Tar: 1}],
     unit: "ship",
@@ -686,9 +693,9 @@ const GOODS_DATA = [
     tags: ["clothing", "military"],
     icon: "good-boots",
     color: "#654321",
-    value: 7,
+    value: 5,
     chance: 0,
-    recipes: [{Leather: 1}, {Furs: 1}],
+    recipes: [{Leather: 1}, {Furs: 0.5}],
     unit: "pair",
     bonus: {infantry: 1, cavalry: 1},
     culture: {Naval: 0.6, Hunting: 2}
@@ -698,7 +705,7 @@ const GOODS_DATA = [
     tags: ["military"],
     icon: "good-harnesses",
     color: "#654321",
-    value: 7,
+    value: 5,
     chance: 0,
     recipes: [{Leather: 1}],
     unit: "set",
@@ -710,7 +717,7 @@ const GOODS_DATA = [
     tags: ["naval", "storage"],
     icon: "good-barrels",
     color: "#6b3d1b",
-    value: 4,
+    value: 2,
     chance: 0,
     recipes: [{Wood: 1}],
     unit: "barrel",
@@ -722,11 +729,11 @@ const GOODS_DATA = [
     tags: ["military"],
     icon: "good-bronze",
     color: "#e46f21",
-    value: 7,
+    value: 6,
     chance: 0,
     recipes: [
-      {Copper: 1, Coal: 1},
-      {Lead: 1, Coal: 1}
+      {Copper: 0.5, Coal: 1},
+      {Tin: 0.5, Coal: 1}
     ],
     unit: "wagon",
     bonus: {infantry: 1, cavalry: 1, defence: 1, artillery: 1},
@@ -737,30 +744,30 @@ const GOODS_DATA = [
     tags: ["construction", "military"],
     icon: "good-tools",
     color: "#808080",
-    value: 8,
+    value: 11,
     chance: 0,
     recipes: [
-      {Iron: 1, Coal: 1},
+      {Iron: 1, Coal: 2},
       {Bronze: 1, Coal: 1}
     ],
     unit: "set",
     bonus: {defence: 1, infantry: 1, cavalry: 1, artillery: 1},
-    culture: {Highland: 2, Nomadic: 0.5, Naval: 0.5}
+    culture: {Highland: 2, Nomadic: 0.5}
   },
   {
     name: "Arms",
     tags: ["military"],
     icon: "good-weapons",
     color: "#333333",
-    value: 10,
+    value: 15,
     chance: 0,
     recipes: [
-      {Iron: 1, Coal: 1},
-      {Bronze: 2, Coal: 1}
+      {Iron: 1, Coal: 2, Leather: 1},
+      {Bronze: 1, Coal: 1, Leather: 1}
     ],
     unit: "set",
     bonus: {infantry: 2, cavalry: 2, artillery: 2, defence: 2},
-    culture: {Highland: 2, Nomadic: 0.5, Naval: 0.5}
+    culture: {Nomadic: 0.5, Naval: 0.5}
   },
   {
     name: "Gunpowder",
@@ -779,7 +786,7 @@ const GOODS_DATA = [
     tags: ["military"],
     icon: "good-artillery",
     color: "#2f4f4f",
-    value: 20,
+    value: 15,
     chance: 0,
     recipes: [
       {Iron: 2, Coal: 1},
@@ -794,11 +801,11 @@ const GOODS_DATA = [
     tags: ["currency"],
     icon: "good-coins",
     color: "#ffd700",
-    value: 20,
+    value: 16,
     chance: 0,
     recipes: [
-      {Gold: 1, Coal: 1},
-      {Silver: 2, Coal: 1}
+      {Gold: 0.5, Coal: 1},
+      {Silver: 1, Coal: 1}
     ],
     unit: "coin",
     bonus: {prestige: 2},
@@ -809,35 +816,53 @@ const GOODS_DATA = [
     tags: ["luxury"],
     icon: "good-jewelry",
     color: "#e0115f",
-    value: 30,
+    value: 35,
     chance: 0,
     recipes: [
-      {Gemstones: 1, Gold: 1},
-      {Pearls: 1, Gold: 1},
-      {Amber: 2, Gold: 1},
-      {Gemstones: 1, Silver: 2},
-      {Pearls: 1, Silver: 2},
-      {Amber: 2, Silver: 2}
+      {Gemstones: 1, Gold: 0.5},
+      {Pearls: 1, Gold: 0.5},
+      {Amber: 2, Gold: 0.5},
+      {Gemstones: 1, Silver: 1},
+      {Pearls: 1, Silver: 1},
+      {Amber: 2, Silver: 1}
     ],
     unit: "piece",
     bonus: {prestige: 2},
     culture: {Generic: 2}
   },
   {
-    name: "Salted provisions",
+    name: "Preserved food",
     tags: ["food"],
     icon: "good-salted-fish",
     color: "#c2b280",
-    value: 5,
+    value: 4,
     chance: 0,
     recipes: [
       {Fish: 1, Salt: 1},
       {Cattle: 1, Salt: 1},
-      {Game: 1, Salt: 1}
+      {Game: 1, Salt: 1},
+      {Sheep: 1, Salt: 1},
+      {Fish: 1, Vinegar: 0.5},
+      {Cattle: 1, Vinegar: 0.5},
+      {Game: 1, Vinegar: 0.5},
+      {Sheep: 1, Vinegar: 0.5},
+      {Fish: 1, Wood: 1}
     ],
     unit: "wain",
     bonus: {population: 1, fleet: 1},
     culture: {River: 2, Lake: 2, Naval: 2}
+  },
+  {
+    name: "Vinegar",
+    tags: ["food", "preservative"],
+    icon: "good-vinegar",
+    color: "#9b111e",
+    value: 3,
+    chance: 0,
+    recipes: [{Wine: 1}, {Honey: 1}],
+    unit: "barrel",
+    bonus: {population: 1},
+    culture: {Generic: 2}
   },
   {
     name: "Cheese",
@@ -846,7 +871,12 @@ const GOODS_DATA = [
     color: "#f5e1a4",
     value: 3,
     chance: 0,
-    recipes: [{Cattle: 1}],
+    recipes: [
+      {Cattle: 1, Salt: 0.25},
+      {Sheep: 1, Salt: 0.25},
+      {Sheep: 1, Vinegar: 0.25},
+      {Cattle: 1, Vinegar: 0.25}
+    ],
     unit: "wain",
     bonus: {population: 1},
     culture: {Generic: 2}
@@ -856,9 +886,12 @@ const GOODS_DATA = [
     tags: ["food"],
     icon: "good-beer",
     color: "#fbb117",
-    value: 4,
+    value: 5,
     chance: 0,
-    recipes: [{Grain: 1}, {"Honey and wax": 1}],
+    recipes: [
+      {Grain: 2, Barrels: 1},
+      {Honey: 1, Barrels: 1}
+    ],
     unit: "barrel",
     bonus: {population: 1},
     culture: {Generic: 2}
@@ -871,11 +904,30 @@ const GOODS_DATA = [
     value: 7,
     chance: 0,
     recipes: [
-      {Grain: 1, Wood: 1},
-      {Wine: 1, Wood: 1}
+      {Grain: 2, Wood: 1, Barrels: 1},
+      {Wine: 1, Wood: 1, Barrels: 1},
+      {Grain: 2, Wood: 1, Ceramics: 1},
+      {Wine: 1, Wood: 1, Ceramics: 1},
+      {Grain: 2, Wood: 1, Glass: 1},
+      {Wine: 1, Wood: 1, Glass: 1}
     ],
-    unit: "barrel",
+    unit: "vessel",
     bonus: {prestige: 2},
+    culture: {Generic: 2}
+  },
+  {
+    name: "Candles",
+    tags: ["luxury", "ritual"],
+    icon: "good-candles",
+    color: "#fffacd",
+    value: 5,
+    chance: 0,
+    recipes: [
+      {Honey: 1, Hemp: 1},
+      {Oil: 1, Hemp: 1}
+    ],
+    unit: "block",
+    bonus: {prestige: 1},
     culture: {Generic: 2}
   },
   {
@@ -883,7 +935,7 @@ const GOODS_DATA = [
     tags: ["luxury", "ritual"],
     icon: "good-soap",
     color: "#e0e4cc",
-    value: 4,
+    value: 5,
     chance: 0,
     recipes: [
       {Olives: 1, Wood: 1},
@@ -892,12 +944,51 @@ const GOODS_DATA = [
     unit: "barrel",
     bonus: {prestige: 1},
     culture: {Generic: 2}
+  },
+  {
+    name: "Perfume",
+    tags: ["luxury", "ritual"],
+    icon: "good-perfume",
+    color: "#ff69b4",
+    value: 10,
+    chance: 0,
+    recipes: [
+      {Olives: 1, Incense: 0.25, Glass: 1},
+      {Olives: 1, Game: 1, Glass: 1},
+      {Liquor: 0.25, Incense: 0.25, Whales: 0.5, Ceramics: 1}
+    ],
+    unit: "bottle",
+    bonus: {prestige: 2},
+    culture: {Generic: 2}
   }
-] satisfies (Omit<Good, "i" | "cells"> & {recipes?: Record<string, number>[]})[];
+] satisfies (Omit<Good, "i" | "cells"> & {
+  recipes?: Record<string, number>[];
+})[];
 
 export class GoodsModule {
   private cells!: PackedGraph["cells"];
   private cellId: number = 0;
+
+  private readonly defaultGoods = GOODS_DATA.map((good, index): Good => {
+    let recipes: Good["recipes"];
+    if ("recipes" in good && good.recipes) {
+      recipes = good.recipes.map(recipe => {
+        const entries = Object.entries(recipe).map(([key, value]) => {
+          const i = GOODS_DATA.findIndex(g => g.name === key);
+          if (i === -1) throw new Error(`Unknown ingredient ${key} in good ${good.name}`);
+          return [i, value];
+        });
+        return Object.fromEntries(entries);
+      });
+    }
+
+    return {
+      i: index,
+      ...good,
+      ...(recipes && {recipes}),
+      cells: 0
+    };
+  });
 
   private methods = {
     random: (number: number) => number >= 100 || (number > 0 && number / 100 > Math.random()),
@@ -917,21 +1008,6 @@ export class GoodsModule {
     },
     river: () => pack.cells.r[this.cellId]
   };
-
-  private readonly defaultGoods = GOODS_DATA.map((good, index): Good => {
-    let recipes: Good["recipes"];
-    if ("recipes" in good && good.recipes) {
-      recipes = good.recipes.map(recipe => {
-        const entries = Object.entries(recipe).map(([key, value]) => {
-          const i = GOODS_DATA.findIndex(g => g.name === key);
-          return [i, value];
-        });
-        return Object.fromEntries(entries);
-      });
-    }
-
-    return {...good, i: index, cells: 0, ...(recipes && {recipes})};
-  });
 
   generate(regenerate: boolean = false) {
     TIME && console.time("generateGoods");

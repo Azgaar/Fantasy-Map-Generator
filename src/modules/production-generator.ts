@@ -1,85 +1,47 @@
+import {CultureType, DEFAULT_CULTURE_TYPE} from "./cultures-generator";
+import type {Good} from "./goods-generator";
+
 declare global {
   var Production: ProductionModule;
 }
 
 export class ProductionModule {
   private readonly BONUS_PRODUCTION = 4;
-  private readonly BIOME_PRODUCTION = [
-    [{resource: 11, production: 0.75}], // marine: fish
-    [{resource: 2, production: 0.5}], // hot desert: stone
-    [{resource: 2, production: 0.5}], // cold desert: stone
-    [
-      {resource: 12, production: 0.4},
-      {resource: 10, production: 0.4}
-    ], // savanna: game 0.75, cattle 0.75
-    [{resource: 10, production: 0.5}], // grassland: cattle
-    [{resource: 9, production: 0.5}], // tropical seasonal forest: grain
-    [
-      {resource: 9, production: 0.5},
-      {resource: 1, production: 0.5}
-    ], // temperate deciduous forest: grain, wood
-    [
-      {resource: 9, production: 0.5},
-      {resource: 1, production: 0.5}
-    ], // tropical rainforest: grain, wood
-    [
-      {resource: 9, production: 0.5},
-      {resource: 1, production: 0.5}
-    ], // temperate rainforest: grain, wood
-    [
-      {resource: 1, production: 0.5},
-      {resource: 12, production: 0.4}
-    ], // taiga: wood, game
-    [{resource: 29, production: 0.5}], // tundra: furs
-    [], // glacier: nothing
-    [
-      {resource: 4, production: 0.4},
-      {resource: 12, production: 0.4}
-    ] // wetland: iron, game
-  ];
-
-  private readonly RIVER_PRODUCTION = [{resource: 11, production: 0.5}]; // fish
-  private readonly HILLS_PRODUCTION = [{resource: 34, production: 0.5}]; // coal
   private readonly FOOD_MULTIPLIER = 3;
+  private readonly COLLECTION_DIVISOR = 3;
 
-  collectGoods() {
+  produce() {
     const {cells, burgs} = pack;
+    const biomeProduction = this.getBiomesProduction(pack.goods);
 
     for (const burg of burgs) {
       if (!burg.i || burg.removed) continue;
 
       const cell = burg.cell;
-      const type = burg.type || "Generic";
+      const type = burg.type || DEFAULT_CULTURE_TYPE;
       const population = burg.population || 0;
 
       const goodsPull: Record<number, number> = {};
-      const addResource = (resourceId: number, production: number) => {
-        const currentProd = goodsPull[resourceId] || 0;
+      const addGood = (goodId: number, production: number) => {
+        const currentProd = goodsPull[goodId] || 0;
         if (!currentProd) {
-          goodsPull[resourceId] = production;
+          goodsPull[goodId] = production;
         } else {
-          if (production > currentProd) goodsPull[resourceId] = production + currentProd / 3;
-          else goodsPull[resourceId] = currentProd + production / 3;
+          if (production > currentProd) goodsPull[goodId] = production + currentProd / this.COLLECTION_DIVISOR;
+          else goodsPull[goodId] = currentProd + production / this.COLLECTION_DIVISOR;
         }
       };
 
       const cellsInArea = cells.c[cell].concat([cell]);
       for (const cellId of cellsInArea) {
         const good = cells.good[cellId];
-        if (good) addResource(good, this.BONUS_PRODUCTION);
-        this.BIOME_PRODUCTION[cells.biome[cellId]].forEach(
-          ({resource, production}) => void addResource(resource, production)
-        );
-        if (cells.r[cellId]) {
-          this.RIVER_PRODUCTION.forEach(({resource, production}) => void addResource(resource, production));
-        }
-        if (cells.h[cellId] >= 50) {
-          this.HILLS_PRODUCTION.forEach(({resource, production}) => void addResource(resource, production));
-        }
+        if (good) addGood(good, this.BONUS_PRODUCTION);
+        const biomeId = cells.biome[cellId];
+        biomeProduction[biomeId].forEach(({good, production}) => void addGood(good, production));
       }
 
       interface Item {
-        resourceId: number;
+        goodId: number;
         basePriority: number;
         priority: number;
         production: number;
@@ -88,51 +50,113 @@ export class ProductionModule {
 
       const items: Item[] = [];
       const queue = new FlatQueue();
-      for (const resourceId in goodsPull) {
-        const baseProduction = goodsPull[resourceId];
-        const resource = Goods.get(+resourceId);
+      for (const goodId in goodsPull) {
+        const good = Goods.get(+goodId);
+        if (!good) continue;
 
-        const cultureModifier = resource?.culture[type as keyof typeof resource.culture] || 1;
-        const production = baseProduction * cultureModifier;
+        const cultureModifier = good.culture[type] || 1;
+        const production = goodsPull[good.i] * cultureModifier;
 
-        const {value, tags} = resource!;
-        const isFood = tags.some(tag => tag.toLocaleLowerCase() === "food");
+        const isFood = good.tags.some(tag => tag.toLocaleLowerCase() === "food");
 
-        const basePriority = production * value;
+        const basePriority = production * good.value;
         const priority = basePriority * (isFood ? this.FOOD_MULTIPLIER : 1);
-        items.push({resourceId: +resourceId, basePriority, priority, production, isFood});
-        queue.push(items.length - 1, -priority); // negate: FlatQueue is min-heap, we want max
+        items.push({
+          goodId: good.i,
+          basePriority,
+          priority,
+          production,
+          isFood
+        });
+        queue.push(items.length - 1, -priority); // FlatQueue is min-heap, we want max
       }
 
       let foodProduced = 0;
       const productionPull: Record<number, number> = {};
-      const addProduction = (resourceId: number, production: number) => {
-        if (!productionPull[resourceId]) productionPull[resourceId] = production;
-        else productionPull[resourceId] += production;
+      const addProduction = (goodId: number, production: number) => {
+        if (!productionPull[goodId]) productionPull[goodId] = production;
+        else productionPull[goodId] += production;
       };
 
+      // produce 1 unit of raw good per population point
       for (let i = 0; i < population; i++) {
         const idx = queue.pop();
         if (idx === undefined) break;
+
         const occupation = items[idx];
-        const {resourceId, production, basePriority, isFood} = occupation;
-        addProduction(resourceId, production);
+        const {goodId, production, isFood} = occupation;
+        addProduction(goodId, production);
         if (isFood) foodProduced += production;
 
         const foodModifier = isFood && foodProduced < population ? this.FOOD_MULTIPLIER : 1;
-        const newBasePriority = basePriority / 2;
-        const newPriority = newBasePriority * foodModifier;
+        const basePriority = occupation.basePriority / 2;
+        const priority = basePriority * foodModifier;
 
-        items.push({...occupation, basePriority: newBasePriority, priority: newPriority});
-        queue.push(items.length - 1, -newPriority);
+        items.push({...occupation, basePriority, priority});
+        queue.push(items.length - 1, -priority);
+      }
+
+      // craft manufactured goods
+      const inventory: Record<number, number> = {...productionPull};
+      for (const good of pack.goods) {
+        if (!good.recipes?.length) continue;
+
+        let bestRecipe: Record<number, number> | null = null;
+        let bestYield = 0;
+
+        for (const recipe of good.recipes) {
+          const entries = Object.entries(recipe) as [string, number][];
+          if (!entries.length) continue;
+
+          const maxYieldByIngredient = entries.map(([ingredientId, amount]) => {
+            const id = +ingredientId;
+            const available = inventory[id] || 0;
+            return amount > 0 ? available / amount : 0;
+          });
+          const recipeYield = Math.min(...maxYieldByIngredient);
+
+          if (Number.isFinite(recipeYield) && recipeYield > bestYield) {
+            bestYield = recipeYield;
+            bestRecipe = recipe;
+          }
+        }
+
+        if (!bestRecipe || bestYield <= 0) continue;
+
+        const cultureModifier = good.culture[type as keyof typeof good.culture] || 1;
+        const producedAmount = bestYield * cultureModifier;
+        if (producedAmount <= 0) continue;
+
+        for (const [ingredientId, amount] of Object.entries(bestRecipe)) {
+          const id = +ingredientId;
+          inventory[id] = Math.max(0, (inventory[id] || 0) - bestYield * amount);
+        }
+
+        inventory[good.i] = (inventory[good.i] || 0) + producedAmount;
       }
 
       burg.produced = {};
-      for (const resourceId in productionPull) {
-        const production = productionPull[resourceId];
+      for (const resourceId in inventory) {
+        const production = inventory[resourceId];
         burg.produced[resourceId] = Math.ceil(production);
       }
     }
+  }
+
+  private getBiomesProduction(goods: Good[]) {
+    const biomeProduction: {good: number; production: number}[][] = Array.from({length: biomesData.i.length}, () => []);
+
+    for (const good of goods) {
+      if (!good.biome) continue;
+
+      for (const [biomeIdRaw, production] of Object.entries(good.biome)) {
+        const biomeId = +biomeIdRaw;
+        if (!production || production <= 0) continue;
+        biomeProduction[biomeId].push({good: good.i, production});
+      }
+    }
+
+    return biomeProduction;
   }
 }
 

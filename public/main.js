@@ -678,7 +678,7 @@ async function generate(options) {
     States.collectStatistics();
     States.defineStateForms();
 
-    Production.collectGoods();
+    Production.produce();
 
     Provinces.generate();
     Provinces.getPoles();

@@ -467,6 +467,16 @@ function openGoodDialog(goodToEdit?: Good) {
     )
     .filter(recipe => recipe.length > 0);
 
+  const biomeProductionToText = (biomeProduction?: Record<number, number>): string => {
+    if (!biomeProduction) return "";
+    return Object.entries(biomeProduction)
+      .sort(([a], [b]) => +a - +b)
+      .map(([biomeId, amount]) => `${biomeId}:${amount}`)
+      .join(", ");
+  };
+
+  const biomeReference = biomesData.i.map((biomeId: number) => `${biomeId}:${biomesData.name[biomeId]}`).join(" | ");
+
   alertMessage.innerHTML = /*html*/ `
     <div style="display:grid; grid-template-columns: 8em 1fr; align-items:center;">
       <label for="newGoodName">Name*</label>
@@ -507,6 +517,9 @@ function openGoodDialog(goodToEdit?: Good) {
       <label style="display:block; margin-bottom:.2em">Distribution function:</label>
       <textarea id="newGoodDistribution" style="width:100%; height:4em; font-family:monospace; font-size:.9em; box-sizing:border-box" spellcheck="false" placeholder="e.g. biome(5, 6, 7, 8, 9)">${editedGood?.distribution || ""}</textarea>
       <div id="newGoodDistributionPreview" style="color:#555; font-size:.9em; min-height:1.2em; margin-top:.2em">${editedGood?.distribution ? interpretDistribution(editedGood.distribution) : ""}</div>
+      <label style="display:block; margin:.5em 0 .2em">Biome baseline production (biomeId:amount):</label>
+      <input id="newGoodBiomeProduction" style="width:100%; box-sizing:border-box" spellcheck="false" placeholder="e.g. 6:0.5, 7:0.5, 8:0.5" value="${biomeProductionToText(editedGood?.biome)}" />
+      <div style="color:#666; font-size:.85em; margin-top:.2em">${biomeReference}</div>
     </div>
 
     <div id="newGoodManufacturedFields" style="display:none;">
@@ -676,6 +689,7 @@ function openGoodDialog(goodToEdit?: Good) {
         const icon = ensureEl<HTMLSelectElement>("newGoodIcon").value;
         const color = ensureEl<HTMLInputElement>("newGoodColor").value;
         const distribution = distributionInput.value.trim();
+        const biomeProductionInput = ensureEl<HTMLInputElement>("newGoodBiomeProduction").value.trim();
 
         const tags = unique(tagsInput.split(",").map(tag => tag.trim().toLocaleLowerCase()));
 
@@ -733,7 +747,39 @@ function openGoodDialog(goodToEdit?: Good) {
           river: (..._args: any[]) => true
         };
 
+        const parseBiomeProduction = (): Record<number, number> | null => {
+          if (!biomeProductionInput) return {};
+
+          const result: Record<number, number> = {};
+          const chunks = biomeProductionInput
+            .split(",")
+            .map(chunk => chunk.trim())
+            .filter(Boolean);
+
+          for (const chunk of chunks) {
+            const [biomeRaw, amountRaw] = chunk.split(":").map(part => part.trim());
+            const biomeId = Number(biomeRaw);
+            const amount = Number(amountRaw);
+
+            if (!Number.isInteger(biomeId) || !biomesData.i.includes(biomeId)) {
+              error.textContent = `Invalid biome id in biome production: ${chunk}`;
+              return null;
+            }
+            if (!Number.isFinite(amount) || amount <= 0) {
+              error.textContent = `Invalid biome amount in biome production: ${chunk}`;
+              return null;
+            }
+
+            result[biomeId] = amount;
+          }
+
+          return result;
+        };
+
         if (type === "raw") {
+          const biomeProduction = parseBiomeProduction();
+          if (biomeProduction === null) return;
+
           if (distribution) {
             try {
               const allMethods = `{${Object.keys(distributionMethods).join(", ")}}`;
@@ -747,6 +793,7 @@ function openGoodDialog(goodToEdit?: Good) {
           if (editedGood) {
             applyBase(editedGood);
             editedGood.distribution = distribution || undefined;
+            editedGood.biome = Object.keys(biomeProduction).length ? biomeProduction : undefined;
             delete editedGood.recipes;
           } else {
             pack.goods.push({
@@ -758,6 +805,7 @@ function openGoodDialog(goodToEdit?: Good) {
               value,
               chance,
               distribution: distribution || undefined,
+              biome: Object.keys(biomeProduction).length ? biomeProduction : undefined,
               unit,
               bonus: bonusObj,
               culture: {},
@@ -800,6 +848,7 @@ function openGoodDialog(goodToEdit?: Good) {
             applyBase(editedGood);
             editedGood.recipes = recipes;
             delete editedGood.distribution;
+            delete editedGood.biome;
           } else {
             pack.goods.push({
               i: getNextId(),
