@@ -88,28 +88,37 @@ export function open(burgId: number): void {
   const jobRows = data.jobs
     .map(job => {
       const workerLabel = `<td style="padding:.2em .4em;color:#888;font-size:.8em">${Math.ceil(job.tick)}</td>`;
-      const typeBadge = job.isRaw
+      const isExtract = job.kind === "extract";
+      const typeBadge = isExtract
         ? `<span style="background:#f0e8e8;color:#a44;font-size:.72em;padding:0 3px;border-radius:2px">RAW</span>`
         : `<span style="background:#e8f0e8;color:#4a4;font-size:.72em;padding:0 3px;border-radius:2px">MFG</span>`;
       const cultureMod =
         job.cultureModifier !== 1
           ? `<span style="color:#888;font-size:.78em" title="Culture bonus"> ×${r2(job.cultureModifier)}</span>`
           : "";
-      const recipeText = job.recipe?.length
-        ? `<span style="color:#888;font-size:.8em">&nbsp;(${job.recipe
-            .map(r => `${goodDot(r.goodId)}${r2(r.consumed)}`)
-            .join(" + ")})</span>`
-        : "";
-      const profitText =
-        job.profit !== undefined
-          ? `<span style="color:${job.profit > 0 ? "#4a4" : "#c44"};font-size:.78em" title="profit per unit"> +${r2(job.profit)}</span>`
+      const recipeText =
+        !isExtract && job.kind === "manufacture" && job.recipe?.length
+          ? `<span style="color:#888;font-size:.8em">&nbsp;(${job.recipe
+              .map(r => {
+                const total = r.fromInventory + r.fromMarket;
+                const mktTag =
+                  r.fromMarket > 0
+                    ? `<span title="bought from market" style="color:#c84">🛒${r2(r.fromMarket)}</span>`
+                    : "";
+                return `${goodDot(r.goodId)}${r2(total)}${mktTag}`;
+              })
+              .join(" + ")})</span>`
+          : "";
+      const scoreText =
+        !isExtract && job.kind === "manufacture" && job.score !== undefined
+          ? `<span style="color:${job.score > 0 ? "#4a4" : "#c44"};font-size:.78em" title="score per worker"> +${r2(job.score)}</span>`
           : "";
       return `<tr>
         ${workerLabel}
         <td style="padding:.2em .4em">${typeBadge}</td>
         <td style="padding:.2em .4em">${goodDot(job.goodId)}${goodName(job.goodId)}${cultureMod}</td>
         <td style="text-align:right;padding:.2em .4em">${r2(job.units)}</td>
-        <td style="padding:.2em .4em;font-size:.82em;color:#555">${recipeText}${profitText}</td>
+        <td style="padding:.2em .4em;font-size:.82em;color:#555">${recipeText}${scoreText}</td>
       </tr>`;
     })
     .join("");
@@ -139,9 +148,10 @@ export function open(burgId: number): void {
   // Accumulate ingredient cost per manufactured good from job log
   const mfgCostByGood: Record<number, number> = {};
   for (const job of data.jobs) {
-    if (!job.isRaw && job.recipe) {
-      const cost = job.recipe.reduce((s, r) => s + r.consumed * (data.pricesAtStart.buy[r.goodId] ?? 0), 0);
-      mfgCostByGood[job.goodId] = (mfgCostByGood[job.goodId] || 0) + cost;
+    if (job.kind === "manufacture" && job.recipe) {
+      // marketCost is the actual wealth spent; fromInventory items are opportunity-cost only
+      const marketSpend = job.recipe.reduce((s, r) => s + r.marketCost, 0);
+      mfgCostByGood[job.goodId] = (mfgCostByGood[job.goodId] || 0) + marketSpend;
     }
   }
 
