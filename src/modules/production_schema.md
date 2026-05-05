@@ -10,6 +10,11 @@ complete with its remaining workers.
 Market access is universal — every burg can buy from the global market. Small burgs are limited
 by population and current state, not by arbitrary rules.
 
+The current implementation also applies a lightweight demand layer: each category has a stable
+population-based demand target, and goods get a score multiplier based on how much unmet category
+demand they can satisfy. This changes production scoring without introducing a separate
+consumer-spending simulation yet.
+
 ---
 
 ## Data Structures
@@ -57,8 +62,9 @@ by population and current state, not by arbitrary rules.
 - later: chain complexity, total profit by base values, profit per worker
 
 4. Build price arrays: `currentBuyPrice[i] = currentSellPrice[i] = good.value`
-5. `globalMarket = {}` (empty)
-6. Sort burgs by population ascending (smallest first)
+5. Build demand profiles from good tags / bonuses and stable per-population demand targets
+6. `globalMarket = {}` (empty)
+7. Sort burgs by population ascending (smallest first)
 
 ### Phase B (per burg)
 
@@ -133,6 +139,11 @@ function plan(state, workersLeft, depth):
     return baseline
 
   candidates = top feasible extract actions + top feasible manufacture actions
+  calculate unmet category demand from current inventory
+  apply demand multiplier based on produced good category fit:
+    multiplier = 1 + Σ(max(0, categoryDemand - categoryCoverage) × goodCategoryWeight)
+  compare candidates by projected gain for this tick:
+    projectedGain = decisionScore × actualUnits
   for each candidate:
     simulate one worker tick
     recurse on the resulting state
@@ -151,6 +162,46 @@ Key implication:
 - Partial chains are valid because the search can start from inventory or market-bought mid-goods.
 - A raw good like Wood is not globally "good" anymore; it is only good if this burg can still turn
   it into something more valuable within the reachable plan tree.
+- A good can also rise in priority when it directly satisfies a burg's unmet local demand,
+  even if it is not the highest market-price item available.
+
+### Stable Demand Targets
+
+Demand depends only on burg population in the current implementation:
+
+- `food = population × 0.2`
+- `utilities = population × 0.05`
+- `construction = population × 0.1`
+- `military = population × 0.05`
+- `luxury = population × 0.05`
+
+Demand coverage is explicit authored data on goods, not inferred from tags or bonuses:
+
+```ts
+good.supply = {
+  food?: number,
+  utilities?: number,
+  construction?: number,
+  military?: number,
+  luxury?: number
+}
+```
+
+Meaning: `1 unit` of this good covers the listed amount of each category. Example:
+
+```ts
+Grain.supply = {food: 1};
+Wood.supply = {construction: 1, utilities: 0.25};
+```
+
+Demand scoring formula per candidate:
+
+```ts
+categoryBoost = categoryShortage × goodSupply[category]
+demandMultiplier = 1 + Σ(categoryBoost)
+```
+
+Oversupply does not penalize score yet.
 
 ### Phase D (per burg, after loop)
 

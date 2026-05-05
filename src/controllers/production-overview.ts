@@ -1,5 +1,5 @@
 import type {Good} from "../modules/goods-generator";
-import type {DecisionCandidate, Log} from "../modules/production-generator";
+import type {DecisionCandidate, DemandContribution, Log} from "../modules/production-generator";
 import {rn} from "../utils";
 
 export function open(burgId: number): void {
@@ -79,10 +79,22 @@ export function open(burgId: number): void {
   const formatScore = (decisionScore: number, projectedGain: number) =>
     sameNumber(decisionScore, projectedGain) ? "" : `, score ${rn(decisionScore, 2)}`;
   const formatPrice = (value: number | string) => `🟡 ${typeof value === "number" ? rn(value, 2) : value}`;
+  const renderDemandEffect = (multiplier: number, demand: DemandContribution[]) => {
+    if (multiplier <= 1.001 || !demand.length) return "";
+    const sumFormula = demand.map(item => `${item.category}Boost ${rn(item.boost, 2)}`).join(" + ");
+    const details = demand
+      .map(
+        item =>
+          `${item.category}Boost = ${item.category}Shortage ${rn(item.shortage, 2)} × ${item.category}Supply ${rn(item.supply, 2)} = ${rn(item.boost, 2)}`
+      )
+      .join("<br>");
+    return `<div style="margin-top:.1em;${styles.muted}">demandMultiplier = 1 + ${sumFormula} = ${rn(multiplier, 2)}</div><div style="margin-top:.1em;${styles.muted}">${details}</div>`;
+  };
   const renderDecisionCandidate = (candidate: DecisionCandidate) => {
     if (candidate.kind === "extract") {
       return /*html*/ `<div>
-        ${typeBadge("RAW")} <b>${goodName(candidate.goodId)}</b>: chain ${rn(candidate.chainValue, 2)}${formatCulture(candidate.cultureModifier)}${formatUnits(candidate.units)}, available ${rn(candidate.available, 2)}, projected ${rn(candidate.projectedGain, 2)}${formatScore(candidate.decisionScore, candidate.projectedGain)}
+        <div>${typeBadge("RAW")} <b>${goodName(candidate.goodId)}</b>: chain ${rn(candidate.chainValue, 2)}${formatCulture(candidate.cultureModifier)}${formatUnits(candidate.units)}, available ${rn(candidate.available, 2)}, projected ${rn(candidate.projectedGain, 2)}${formatScore(candidate.decisionScore, candidate.projectedGain)}</div>
+        ${renderDemandEffect(candidate.demandMultiplier, candidate.demand)}
       </div>`;
     }
 
@@ -94,6 +106,7 @@ export function open(burgId: number): void {
       .join(", ");
     return /*html*/ `<div>
       <div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>: sell ${formatPrice(candidate.sellPrice)}${formatCulture(candidate.cultureModifier)}${formatUnits(candidate.units)}, projected ${rn(candidate.projectedGain, 2)}${formatScore(candidate.decisionScore, candidate.projectedGain)}</div>
+      ${renderDemandEffect(candidate.demandMultiplier, candidate.demand)}
       <div style="margin-top:.15em;${styles.muted}">Inputs: ${ingredients}</div>
       <div style="margin-top:.1em;${styles.muted}">Revenue ${rn(candidate.revenue, 2)}, ingredient cost ${rn(candidate.ingredientCost, 2)}</div>
     </div>`;
@@ -287,7 +300,7 @@ export function open(burgId: number): void {
 
   const summaryHtml = /*html*/ `
     <div style="${styles.summaryBar}">
-      <span title="Raw revenue + MFG profit"><b>Net wealth:</b> <span style="${netWealth >= 0 ? `${styles.positive};font-weight:600` : `${styles.negative};font-weight:600`}">${rn(netWealth, 2)}</span></span>
+      <span title="Total revenue"><b>Net wealth:</b> <span style="font-weight:600; ${netWealth >= 0 ? styles.positive : styles.negative}">${formatPrice(netWealth)}</span></span>
     </div>`;
 
   const finalTable = finalRows

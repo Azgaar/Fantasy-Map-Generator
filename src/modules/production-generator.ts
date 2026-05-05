@@ -2,7 +2,14 @@ import Alea from "alea";
 import type {Burg} from "./burgs-generator";
 import type {CultureType} from "./cultures-generator";
 import {DEFAULT_CULTURE_TYPE} from "./cultures-generator";
-import type {Good} from "./goods-generator";
+import type {DemandCategory, Good} from "./goods-generator";
+import {DEMAND_CATEGORIES} from "./goods-generator";
+
+const DEMAND_FOOD = 0.2;
+const DEMAND_UTILITIES = 0.05;
+const DEMAND_CONSTRUCTION = 0.1;
+const DEMAND_MILITARY = 0.05;
+const DEMAND_LUXURY = 0.05;
 
 export class ProductionModule {
   private readonly BONUS_PRODUCTION = 5;
@@ -30,6 +37,7 @@ export class ProductionModule {
     const goodById = new Map<number, Good>(goods.map(g => [g.i, g]));
     const cellPool = this.buildCellPool(goods);
     const chainValueByWorkers = this.buildChainValues(goods, this.CHAIN_VALUE_MAX_WORKERS);
+    const demandProfiles = this.buildDemandProfiles(goods);
     const {currentBuyPrice, currentSellPrice, buyPressure, sellPressure, priceFloor, priceCeiling} =
       this.buildPriceArrays(goods);
 
@@ -46,6 +54,7 @@ export class ProductionModule {
       const type = burg.type || DEFAULT_CULTURE_TYPE;
       const population = burg.population || 0;
       const burgRng = Alea(seed + String(burg.i));
+      const demandTargets = this.buildDemandTargets(burg);
 
       const goodsPull: Record<number, number> = {};
       const addGood = (goodId: number, amount: number) => {
@@ -102,6 +111,8 @@ export class ProductionModule {
           recipeOptions,
           goodById,
           chainValueByWorkers,
+          demandProfiles,
+          demandTargets,
           cultureType: type,
           inventory,
           remainingPool,
@@ -307,6 +318,95 @@ export class ProductionModule {
     return chainValueByWorkers;
   }
 
+  private buildDemandProfiles(goods: Good[]): number[][] {
+    const demandProfiles: number[][] = Array.from({length: goods.length}, () =>
+      Array(DEMAND_CATEGORIES.length).fill(0)
+    );
+
+    for (const good of goods) {
+      const profile = demandProfiles[good.i];
+      for (let category = 0; category < DEMAND_CATEGORIES.length; category++) {
+        const demandCategory = DEMAND_CATEGORIES[category] as DemandCategory;
+        profile[category] = good.supply?.[demandCategory] || 0;
+      }
+    }
+
+    return demandProfiles;
+  }
+
+  private buildDemandTargets(burg: Burg): number[] {
+    const population = burg.population || 0;
+
+    return [
+      population * DEMAND_FOOD,
+      population * DEMAND_UTILITIES,
+      population * DEMAND_CONSTRUCTION,
+      population * DEMAND_MILITARY,
+      population * DEMAND_LUXURY
+    ];
+  }
+
+  private calculateDemandCoverage(inventory: Record<number, number>, demandProfiles: number[][]): number[] {
+    const demandCoverage = Array(DEMAND_CATEGORIES.length).fill(0);
+
+    for (const goodIdStr in inventory) {
+      const goodId = +goodIdStr;
+      const amount = inventory[goodId] || 0;
+      if (amount <= 0) continue;
+
+      const profile = demandProfiles[goodId];
+      if (!profile) continue;
+      for (let category = 0; category < DEMAND_CATEGORIES.length; category++) {
+        if (!profile[category]) continue;
+        demandCoverage[category] += amount * profile[category];
+      }
+    }
+
+    return demandCoverage;
+  }
+
+  private getDemandBoost(
+    demandTargets: number[],
+    demandCoverage: number[],
+    demandProfiles: number[][],
+    deltas: Array<{goodId: number; units: number}>
+  ): DemandEffect {
+    const remainingDemand = demandTargets.map((target, category) => Math.max(0, target - demandCoverage[category]));
+    let demandBoost = 0;
+    const contributions = new Map<number, DemandContribution>();
+
+    for (const {goodId, units} of deltas) {
+      if (units <= 0) continue;
+      const profile = demandProfiles[goodId];
+      if (!profile) continue;
+
+      for (let category = 0; category < DEMAND_CATEGORIES.length; category++) {
+        const profileWeight = profile[category] || 0;
+        if (!profileWeight) continue;
+
+        const boost = remainingDemand[category] * profileWeight;
+        if (boost <= 0) continue;
+
+        demandBoost += boost;
+        const current = contributions.get(category);
+        if (current) current.boost += boost;
+        else {
+          contributions.set(category, {
+            category: DEMAND_CATEGORIES[category],
+            shortage: remainingDemand[category],
+            supply: profileWeight,
+            boost
+          });
+        }
+      }
+    }
+
+    return {
+      multiplier: 1 + demandBoost,
+      contributions: [...contributions.values()].sort((a, b) => b.boost - a.boost)
+    };
+  }
+
   private getChainValueForWorkers(chainValueByWorkers: number[][], workers: number, goodId: number, fallback: number) {
     const maxWorkers = chainValueByWorkers.length - 1;
     const workerBucket = Math.max(0, Math.min(maxWorkers, Math.ceil(workers)));
@@ -425,6 +525,8 @@ export class ProductionModule {
     recipeOptions: RecipeOption[];
     goodById: Map<number, Good>;
     chainValueByWorkers: number[][];
+    demandProfiles: number[][];
+    demandTargets: number[];
     cultureType: string;
     inventory: Record<number, number>;
     remainingPool: Record<number, number>;
@@ -437,6 +539,7 @@ export class ProductionModule {
     let bestScore = -Infinity;
     let bestAction: PlannedAction | null = null;
     const candidates: DecisionCandidate[] = [];
+    const demandCoverage = this.calculateDemandCoverage(params.inventory, params.demandProfiles);
 
     // Score every extractable good via worker-aware chain value.
     for (const goodIdStr in params.remainingPool) {
@@ -445,26 +548,32 @@ export class ProductionModule {
       const goodId = +goodIdStr;
       const good = params.goodById.get(goodId)!;
       const cultureModifier = this.getCultureModifier(good, params.cultureType);
+      const actualUnits = Math.min(params.fraction, available);
       const chainValue = this.getChainValueForWorkers(
         params.chainValueByWorkers,
         Math.max(0, params.workersLeft - params.fraction),
         goodId,
         good.value
       );
-      const perWorkerScore = chainValue * cultureModifier;
-      const projectedGain = perWorkerScore * params.fraction;
+      const demandEffect = this.getDemandBoost(params.demandTargets, demandCoverage, params.demandProfiles, [
+        {goodId, units: cultureModifier}
+      ]);
+      const perWorkerScore = chainValue * cultureModifier * demandEffect.multiplier;
+      const projectedGain = perWorkerScore * actualUnits;
       candidates.push({
         kind: "extract",
         goodId,
         decisionScore: perWorkerScore,
         projectedGain,
         chainValue,
+        demandMultiplier: demandEffect.multiplier,
+        demand: demandEffect.contributions,
         cultureModifier,
-        units: params.fraction,
+        units: actualUnits,
         available
       });
-      if (perWorkerScore > bestScore) {
-        bestScore = perWorkerScore;
+      if (projectedGain > bestScore) {
+        bestScore = projectedGain;
         bestAction = {
           kind: "extract",
           goodId,
@@ -481,6 +590,7 @@ export class ProductionModule {
       let maxYield = Infinity;
       let feasible = true;
       const ingredients: DecisionIngredient[] = [];
+      const demandDeltas: Array<{goodId: number; units: number}> = [];
 
       for (const entry of option.entries) {
         const totalAvailable = (params.inventory[entry.goodId] || 0) + (params.globalMarket[entry.goodId] || 0);
@@ -499,7 +609,14 @@ export class ProductionModule {
       }
 
       if (!feasible || !Number.isFinite(maxYield) || maxYield <= 0) continue;
-      const perWorkerScore = revenue - ingredientCost;
+      demandDeltas.push({goodId: option.good.i, units: cultureModifier});
+      const demandEffect = this.getDemandBoost(
+        params.demandTargets,
+        demandCoverage,
+        params.demandProfiles,
+        demandDeltas
+      );
+      const perWorkerScore = (revenue - ingredientCost) * demandEffect.multiplier;
       const actualUnits = Math.min(params.fraction, maxYield);
       const projectedGain = perWorkerScore * actualUnits;
       candidates.push({
@@ -508,14 +625,16 @@ export class ProductionModule {
         decisionScore: perWorkerScore,
         projectedGain,
         sellPrice: params.currentSellPrice[option.good.i],
+        demandMultiplier: demandEffect.multiplier,
+        demand: demandEffect.contributions,
         cultureModifier,
         revenue,
         ingredientCost,
         units: actualUnits,
         ingredients
       });
-      if (perWorkerScore > bestScore) {
-        bestScore = perWorkerScore;
+      if (projectedGain > bestScore) {
+        bestScore = projectedGain;
         bestAction = {
           kind: "manufacture",
           good: option.good,
@@ -588,7 +707,19 @@ type PlannedAction =
 
 type RecipeEntry = {goodId: number; amount: number};
 type RecipeOption = {good: Good; entries: RecipeEntry[]};
-export type DecisionIngredient = {goodId: number; amount: number; buyPrice: number; available: number};
+export type DecisionIngredient = {
+  goodId: number;
+  amount: number;
+  buyPrice: number;
+  available: number;
+};
+export type DemandContribution = {
+  category: DemandCategory;
+  shortage: number;
+  supply: number;
+  boost: number;
+};
+type DemandEffect = {multiplier: number; contributions: DemandContribution[]};
 export type DecisionCandidate =
   | {
       kind: "extract";
@@ -596,6 +727,8 @@ export type DecisionCandidate =
       decisionScore: number;
       projectedGain: number;
       chainValue: number;
+      demandMultiplier: number;
+      demand: DemandContribution[];
       cultureModifier: number;
       units: number;
       available: number;
@@ -606,13 +739,19 @@ export type DecisionCandidate =
       decisionScore: number;
       projectedGain: number;
       sellPrice: number;
+      demandMultiplier: number;
+      demand: DemandContribution[];
       cultureModifier: number;
       revenue: number;
       ingredientCost: number;
       units: number;
       ingredients: DecisionIngredient[];
     };
-export type Log = {selected: DecisionCandidate | null; alternatives: DecisionCandidate[]; candidateCount: number};
+export type Log = {
+  selected: DecisionCandidate | null;
+  alternatives: DecisionCandidate[];
+  candidateCount: number;
+};
 
 export interface BurgProductionData {
   population: number;
