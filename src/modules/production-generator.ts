@@ -92,7 +92,7 @@ export class ProductionModule {
         const fraction = Math.min(1, workersLeft);
         if (fraction <= 0) break;
 
-        const action = this.greedyBestAction({
+        const decision = this.greedyBestAction({
           recipeOptions,
           goodById,
           chainValue,
@@ -104,6 +104,7 @@ export class ProductionModule {
           currentSellPrice,
           fraction
         });
+        const action = decision?.action;
 
         if (!action) break;
 
@@ -156,7 +157,8 @@ export class ProductionModule {
             units: produced,
             cultureModifier,
             recipe: recipeLog,
-            score: projectedGain
+            score: projectedGain,
+            decisionDebug: decision.debug
           });
         } else {
           const {goodId, projectedGain} = action;
@@ -179,7 +181,8 @@ export class ProductionModule {
             goodId,
             units: produced,
             cultureModifier,
-            projectedGain
+            projectedGain,
+            decisionDebug: decision.debug
           });
         }
 
@@ -401,9 +404,11 @@ export class ProductionModule {
     currentBuyPrice: number[];
     currentSellPrice: number[];
     fraction: number;
-  }): PlannedAction | null {
+  }): {action: PlannedAction | null; debug: DecisionDebug | null} | null {
     let bestScore = -Infinity;
     let bestAction: PlannedAction | null = null;
+    let bestSummary = "";
+    const candidates: DecisionCandidate[] = [];
 
     // Score every extractable good via chainValue (includes downstream manufacturing bonus)
     for (const goodIdStr in params.remainingPool) {
@@ -411,13 +416,18 @@ export class ProductionModule {
       if (available <= 0) continue;
       const goodId = +goodIdStr;
       const good = params.goodById.get(goodId)!;
-      const score = (params.chainValue[goodId] ?? good.value) * this.getCultureModifier(good, params.cultureType);
-      if (score > bestScore) {
-        bestScore = score;
+      const cultureModifier = this.getCultureModifier(good, params.cultureType);
+      const perWorkerScore = (params.chainValue[goodId] ?? good.value) * cultureModifier;
+      const projectedGain = perWorkerScore * params.fraction;
+      const summary = `RAW ${good.name}: chain ${this.round2(params.chainValue[goodId] ?? good.value)} x culture ${this.round2(cultureModifier)} x units ${this.round2(params.fraction)} = ${this.round2(projectedGain)} (available ${this.round2(available)})`;
+      candidates.push({kind: "extract", goodId, score: projectedGain, summary});
+      if (perWorkerScore > bestScore) {
+        bestScore = perWorkerScore;
+        bestSummary = summary;
         bestAction = {
           kind: "extract",
           goodId,
-          projectedGain: score * params.fraction
+          projectedGain
         };
       }
     }
@@ -429,6 +439,7 @@ export class ProductionModule {
       let ingredientCost = 0;
       let maxYield = Infinity;
       let feasible = true;
+      const parts: string[] = [];
 
       for (const entry of option.entries) {
         const totalAvailable = (params.inventory[entry.goodId] || 0) + (params.globalMarket[entry.goodId] || 0);
@@ -438,13 +449,21 @@ export class ProductionModule {
         }
         ingredientCost += entry.amount * params.currentBuyPrice[entry.goodId];
         maxYield = Math.min(maxYield, totalAvailable / entry.amount);
+        const ingredient = params.goodById.get(entry.goodId);
+        parts.push(
+          `${ingredient?.name ?? `#${entry.goodId}`} ${this.round2(entry.amount)} x buy ${this.round2(params.currentBuyPrice[entry.goodId])}`
+        );
       }
 
       if (!feasible || !Number.isFinite(maxYield) || maxYield <= 0) continue;
-      const score = revenue - ingredientCost;
-      const projectedGain = score * Math.min(params.fraction, maxYield);
-      if (score > bestScore) {
-        bestScore = score;
+      const perWorkerScore = revenue - ingredientCost;
+      const actualUnits = Math.min(params.fraction, maxYield);
+      const projectedGain = perWorkerScore * actualUnits;
+      const summary = `MFG ${option.good.name}: sell ${this.round2(params.currentSellPrice[option.good.i])} x culture ${this.round2(cultureModifier)} = ${this.round2(revenue)}; ingredients ${parts.join(", ")} => cost ${this.round2(ingredientCost)}; units ${this.round2(actualUnits)}; projected ${this.round2(projectedGain)}`;
+      candidates.push({kind: "manufacture", goodId: option.good.i, score: projectedGain, summary});
+      if (perWorkerScore > bestScore) {
+        bestScore = perWorkerScore;
+        bestSummary = summary;
         bestAction = {
           kind: "manufacture",
           good: option.good,
@@ -455,7 +474,27 @@ export class ProductionModule {
       }
     }
 
-    return bestAction;
+    if (!bestAction) return null;
+
+    const chosenKind = bestAction.kind;
+    const chosenGoodId = chosenKind === "extract" ? bestAction.goodId : bestAction.good.i;
+    const alternatives = candidates
+      .filter(candidate => !(candidate.kind === chosenKind && candidate.goodId === chosenGoodId))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4);
+
+    return {
+      action: bestAction,
+      debug: {
+        summary: bestSummary,
+        alternatives,
+        candidateCount: candidates.length
+      }
+    };
+  }
+
+  private round2(value: number) {
+    return Math.round(value * 100) / 100;
   }
 
   private getCultureModifier(good: Good, cultureType: string) {
@@ -499,6 +538,8 @@ type PlannedAction =
 
 type RecipeEntry = {goodId: number; amount: number};
 type RecipeOption = {good: Good; entries: RecipeEntry[]};
+type DecisionCandidate = {kind: "extract" | "manufacture"; goodId: number; score: number; summary: string};
+type DecisionDebug = {summary: string; alternatives: DecisionCandidate[]; candidateCount: number};
 
 export interface BurgProductionData {
   population: number;
@@ -521,6 +562,7 @@ export interface BurgProductionData {
         units: number;
         cultureModifier: number;
         projectedGain?: number;
+        decisionDebug?: DecisionDebug | null;
       }
     | {
         kind: "manufacture";
@@ -535,6 +577,7 @@ export interface BurgProductionData {
           marketCost: number;
         }>;
         score: number;
+        decisionDebug?: DecisionDebug | null;
       }
   >;
   finalInventory: Record<number, number>;

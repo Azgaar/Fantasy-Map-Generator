@@ -42,6 +42,8 @@ export function open(burgId: number): void {
     buyRow: "background:#fffaf2;border-bottom:1px solid #f3e4c7",
     cell: "padding:.38em .55em;vertical-align:top",
     cellRight: "padding:.38em .55em;vertical-align:top;text-align:right",
+    debugRow: "display:none;background:#fafafa;border-bottom:1px solid #ececec",
+    debugCell: "padding:0 .5em;",
     empty: "color:#888;font-style:italic",
     summaryBar:
       "display:flex;gap:1.2em;flex-wrap:wrap;background:#f0f5f0;border-radius:4px;padding:.55em .8em;margin-top:.6em;font-size:.9em;line-height:1.4"
@@ -71,6 +73,24 @@ export function open(burgId: number): void {
     `<div style="margin-bottom:.9em"><div style="${styles.sectionTitle}">${title}</div>${content}</div>`;
   const renderValueCell = (label: string, value: number, positive = true) =>
     renderDataCell(`${label}: ${r2(value)}`, "right", `${positive ? styles.positive : styles.warning}`);
+  const renderDecisionDetails = (
+    decisionDebug?: {
+      summary: string;
+      candidateCount: number;
+      alternatives: Array<{kind: "extract" | "manufacture"; goodId: number; score: number; summary: string}>;
+    } | null
+  ) => {
+    if (!decisionDebug) return "";
+    const alternatives = decisionDebug.alternatives.length
+      ? decisionDebug.alternatives.map(option => `<div style="margin-top:.2em">• ${option.summary}</div>`).join("")
+      : `<div style="margin-top:.2em;${styles.subtle}">No other feasible alternatives</div>`;
+
+    return /*html*/ `<div>
+      <div><b>Decision basis:</b> highest score among ${decisionDebug.candidateCount} feasible options.</div>
+      <div style="margin-top:.2em"><b>Selected:</b> ${decisionDebug.summary}</div>
+      <div style="margin-top:.35em"><b>Alternatives:</b>${alternatives}</div>
+    </div>`;
+  };
 
   const statsHtml = /*html*/ `
     <div style="${styles.statsBar}">
@@ -113,25 +133,38 @@ export function open(burgId: number): void {
       </table>`
     : `<i style="${styles.empty}">No goods reached this burg</i>`;
 
+  let stepIndex = 0;
   const stepRows = data.jobs.flatMap(job => {
+    const debugId = `productionStepDebug${stepIndex++}`;
+    const debugHtml = renderDecisionDetails(job.decisionDebug);
+    const rowAttrs = debugHtml
+      ? ` data-debug-target="${debugId}" style="${styles.bodyRow};cursor:pointer" title="Click to expand decision details"`
+      : ` style="${styles.bodyRow}"`;
+
     if (job.kind === "extract") {
       const cultureSuffix =
         job.cultureModifier !== 1
           ? ` <span style="${styles.muted};font-size:.9em" title="Culture bonus">x${r2(job.cultureModifier)}</span>`
           : "";
 
+      const details = "Local resource production";
       return [
-        /*html*/ `<tr style="${styles.bodyRow}">
+        /*html*/ `<tr${rowAttrs}>
         ${renderDataCell(typeBadge("RAW"))}
         ${renderDataCell(renderGoodLabel(job.goodId, cultureSuffix))}
         ${renderDataCell(String(r2(job.units)), "right")}
-        <td style="${styles.cell}">Local resource production</td>
+        <td style="${styles.cell}">${details}</td>
         ${
           job.projectedGain !== undefined
             ? renderValueCell("Gain", job.projectedGain, job.projectedGain >= 0)
             : renderDataCell("—", "right", styles.subtle)
         }
+      </tr>`,
+        debugHtml
+          ? /*html*/ `<tr id="${debugId}" style="${styles.debugRow}">
+        <td colspan="5" style="${styles.debugCell}">${debugHtml}</td>
       </tr>`
+          : ""
       ];
     }
 
@@ -163,13 +196,19 @@ export function open(burgId: number): void {
       .join(` <span style="${styles.divider}">+</span> `);
     const details = allInputs ? `Manufacturing from ${allInputs}` : "Manufacturing";
 
-    rows.push(/*html*/ `<tr style="${styles.bodyRow}">
+    rows.push(/*html*/ `<tr${rowAttrs}>
       ${renderDataCell(typeBadge("MFG"))}
       ${renderDataCell(renderGoodLabel(job.goodId, cultureSuffix))}
       ${renderDataCell(String(r2(job.units)), "right")}
-      <td style="${styles.detailsCell}">${details}</td>
+      <td style="${styles.cell}">${details}</td>
       ${job.score !== undefined ? renderValueCell("Gain", job.score, job.score >= 0) : renderDataCell("—", "right", styles.subtle)}
     </tr>`);
+
+    if (debugHtml) {
+      rows.push(/*html*/ `<tr id="${debugId}" style="${styles.debugRow}">
+      <td colspan="5" style="${styles.debugCell}">${debugHtml}</td>
+    </tr>`);
+    }
 
     return rows;
   });
@@ -291,6 +330,23 @@ export function open(burgId: number): void {
       ${renderSection("Final Output", finalTable)}
     </div>
   `;
+
+  const overviewContent = alertMessage.querySelector<HTMLElement>("#productionOverviewContent");
+  if (overviewContent) {
+    overviewContent.onclick = event => {
+      const target = event.target as HTMLElement;
+      const row = target.closest<HTMLTableRowElement>("tr[data-debug-target]");
+      if (!row) return;
+
+      const debugId = row.dataset.debugTarget;
+      if (!debugId) return;
+      const detailsRow = overviewContent.querySelector<HTMLTableRowElement>(`#${debugId}`);
+      if (!detailsRow) return;
+
+      const isOpen = detailsRow.style.display !== "none";
+      detailsRow.style.display = isOpen ? "none" : "table-row";
+    };
+  }
 
   $("#alert").dialog({
     width: "48em",
