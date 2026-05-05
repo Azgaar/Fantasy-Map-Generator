@@ -484,7 +484,7 @@ const GOODS_DATA = [
     tags: ["luxury"],
     icon: "good-tropicalTimber",
     color: "#a45a52",
-    value: 8,
+    value: 7,
     chance: 2,
     distribution: "biome(5, 7)",
     unit: "pile",
