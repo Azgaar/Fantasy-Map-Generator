@@ -55,7 +55,7 @@ export function open(burgId: number): void {
   };
 
   const renderGoodLabel = (id: number, suffix = "") => `${goodDot(id)}${goodName(id)}${suffix}`;
-  const renderDataCell = (content: string, align: "left" | "right" = "left", extra = "") =>
+  const renderDataCell = (content: string | number, align: "left" | "right" = "left", extra = "") =>
     `<td style="${align === "right" ? styles.cellRight : styles.cell}${extra ? `;${extra}` : ""}">${content}</td>`;
   const renderHeaderCell = (content: string, align: "left" | "right" = "left", title = "") =>
     `<th style="${align === "right" ? styles.cellRight : styles.cell}"${title ? ` title="${title}"` : ""}>${content}</th>`;
@@ -69,6 +69,7 @@ export function open(burgId: number): void {
   const formatUnits = (units: number) => (units !== 1 ? `, units ${rn(units, 2)}` : "");
   const formatScore = (decisionScore: number, projectedGain: number) =>
     sameNumber(decisionScore, projectedGain) ? "" : `, score ${rn(decisionScore, 2)}`;
+  const formatPrice = (value: number | string) => `🟡 ${rn(Number(value), 2)}`;
   const renderDecisionCandidate = (candidate: DecisionCandidate) => {
     if (candidate.kind === "extract") {
       return /*html*/ `<div>
@@ -79,11 +80,11 @@ export function open(burgId: number): void {
     const ingredients = candidate.ingredients
       .map(
         (item: {goodId: number; amount: number; buyPrice: number; available: number}) =>
-          `${goodName(item.goodId)} ${rn(item.amount, 2)} @ ${rn(item.buyPrice, 2)} (avail ${rn(item.available, 2)})`
+          `${goodName(item.goodId)} ${rn(item.amount, 2)} @ ${formatPrice(item.buyPrice)} (avail ${rn(item.available, 2)})`
       )
       .join(", ");
     return /*html*/ `<div>
-      <div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>: sell ${rn(candidate.sellPrice, 2)}${formatCulture(candidate.cultureModifier)}${formatUnits(candidate.units)}, projected ${rn(candidate.projectedGain, 2)}${formatScore(candidate.decisionScore, candidate.projectedGain)}</div>
+      <div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>: sell ${formatPrice(candidate.sellPrice)}${formatCulture(candidate.cultureModifier)}${formatUnits(candidate.units)}, projected ${rn(candidate.projectedGain, 2)}${formatScore(candidate.decisionScore, candidate.projectedGain)}</div>
       <div style="margin-top:.15em;${styles.muted}">Inputs: ${ingredients}</div>
       <div style="margin-top:.1em;${styles.muted}">Revenue ${rn(candidate.revenue, 2)}, ingredient cost ${rn(candidate.ingredientCost, 2)}</div>
     </div>`;
@@ -123,10 +124,10 @@ export function open(burgId: number): void {
 
       return /*html*/ `<tr style="${styles.bodyRow}">
         ${renderDataCell(renderGoodLabel(goodPull.goodId))}
-        ${renderDataCell(String(rn(goodPull.pull, 2)), "right")}
+        ${renderDataCell(rn(goodPull.pull, 2), "right")}
         ${renderDataCell(`${rn(goodPull.chainValue, 2)}${chainExtra}`, "right")}
-        ${renderDataCell(String(rn(goodPull.priority, 2)), "right")}
-        ${renderDataCell(String(buyPrice), "right", buyColor)}
+        ${renderDataCell(rn(goodPull.priority, 2), "right")}
+        ${renderDataCell(formatPrice(buyPrice), "right", buyColor)}
       </tr>`;
     })
     .join("");
@@ -283,37 +284,32 @@ export function open(burgId: number): void {
       if (isManufactured) {
         const ingredientCost = mfgCostByGood[id] || 0;
         const profit = sellValue - ingredientCost;
-        const margin = sellValue > 0 ? Math.round((profit / sellValue) * 100) : 0;
         const costPerUnit = amount > 0 ? rn(ingredientCost / amount, 2) : "—";
         const profitColor = profit >= 0 ? styles.positive : styles.negative;
 
         return /*html*/ `<tr style="${styles.bodyRow}">
           ${renderDataCell(`${renderGoodLabel(id)}${badge ? ` <span style="margin-left:4px">${badge}</span>` : ""}`)}
-          ${renderDataCell(String(rn(amount, 2)), "right")}
-          ${renderDataCell(String(costPerUnit), "right", styles.muted)}
-          ${renderDataCell(String(rn(sellPrice, 2)), "right", sellColor)}
-          ${renderDataCell(String(rn(sellValue, 2)), "right")}
-          ${renderDataCell(`${rn(profit, 2)} <span style="${styles.muted}">(${margin}%)</span>`, "right", profitColor)}
+          ${renderDataCell(rn(amount, 2), "right")}
+          ${renderDataCell(formatPrice(costPerUnit), "right")}
+          ${renderDataCell(formatPrice(sellPrice), "right", sellColor)}
+          ${renderDataCell(formatPrice(sellValue), "right")}
+          ${renderDataCell(formatPrice(profit), "right", profitColor)}
         </tr>`;
       }
 
       return /*html*/ `<tr style="${styles.bodyRow}">
         ${renderDataCell(`${renderGoodLabel(id)} <span style="margin-left:4px">${badge}</span>`)}
-        ${renderDataCell(String(rn(amount, 2)), "right")}
-        ${renderDataCell("—", "right", styles.subtle)}
-        ${renderDataCell(String(rn(sellPrice, 2)), "right", sellColor)}
-        ${renderDataCell(String(rn(sellValue, 2)), "right")}
-        ${renderDataCell("—", "right", styles.subtle)}
+        ${renderDataCell(rn(amount, 2), "right")}
+        ${renderDataCell(formatPrice(0), "right", styles.muted)}
+        ${renderDataCell(formatPrice(sellPrice), "right", sellColor)}
+        ${renderDataCell(formatPrice(sellValue), "right")}
+        ${renderDataCell(formatPrice(sellValue), "right", styles.positive)}
       </tr>`;
     })
     .join("");
 
   const summaryHtml = /*html*/ `
     <div style="${styles.summaryBar}">
-      <span title="Revenue from raw goods"><b>Raw:</b> ${rn(totalRawRevenue, 2)}</span>
-      <span title="Revenue from manufactured goods before subtracting ingredient costs"><b>MFG revenue:</b> ${rn(totalMfgRevenue, 2)}</span>
-      <span title="Total ingredient cost spent on market purchases"><b>MFG cost:</b> ${rn(totalMfgCost, 2)}</span>
-      <span title="MFG revenue minus ingredient cost"><b>MFG profit:</b> <span style="${mfgProfit >= 0 ? styles.positive : styles.negative}">${rn(mfgProfit, 2)}</span></span>
       <span title="Raw revenue + MFG profit"><b>Net wealth:</b> <span style="${netWealth >= 0 ? `${styles.positive};font-weight:600` : `${styles.negative};font-weight:600`}">${rn(netWealth, 2)}</span></span>
     </div>`;
 
