@@ -158,7 +158,7 @@ export class ProductionModule {
             cultureModifier,
             recipe: recipeLog,
             score: projectedGain,
-            decisionDebug: decision.debug
+            log: decision.log
           });
         } else {
           const {goodId, projectedGain} = action;
@@ -182,7 +182,7 @@ export class ProductionModule {
             units: produced,
             cultureModifier,
             projectedGain,
-            decisionDebug: decision.debug
+            log: decision.log
           });
         }
 
@@ -404,7 +404,7 @@ export class ProductionModule {
     currentBuyPrice: number[];
     currentSellPrice: number[];
     fraction: number;
-  }): {action: PlannedAction | null; debug: DecisionDebug | null} | null {
+  }): {action: PlannedAction | null; log: Log | null} | null {
     let bestScore = -Infinity;
     let bestAction: PlannedAction | null = null;
     let bestSummary = "";
@@ -485,7 +485,7 @@ export class ProductionModule {
 
     return {
       action: bestAction,
-      debug: {
+      log: {
         summary: bestSummary,
         alternatives,
         candidateCount: candidates.length
@@ -539,7 +539,7 @@ type PlannedAction =
 type RecipeEntry = {goodId: number; amount: number};
 type RecipeOption = {good: Good; entries: RecipeEntry[]};
 type DecisionCandidate = {kind: "extract" | "manufacture"; goodId: number; score: number; summary: string};
-type DecisionDebug = {summary: string; alternatives: DecisionCandidate[]; candidateCount: number};
+type Log = {summary: string; alternatives: DecisionCandidate[]; candidateCount: number};
 
 export interface BurgProductionData {
   population: number;
@@ -562,7 +562,7 @@ export interface BurgProductionData {
         units: number;
         cultureModifier: number;
         projectedGain?: number;
-        decisionDebug?: DecisionDebug | null;
+        log?: Log | null;
       }
     | {
         kind: "manufacture";
@@ -577,7 +577,7 @@ export interface BurgProductionData {
           marketCost: number;
         }>;
         score: number;
-        decisionDebug?: DecisionDebug | null;
+        log?: Log | null;
       }
   >;
   finalInventory: Record<number, number>;

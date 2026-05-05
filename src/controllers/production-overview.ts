@@ -34,19 +34,19 @@ export function open(burgId: number): void {
     positive: "color:#2a6",
     negative: "color:#c44",
     warning: "color:#c84",
-    sectionTitle: "font-weight:600;border-bottom:1px solid #ccc;padding-bottom:.3em;margin-bottom:.45em;font-size:1em",
-    statsBar: "margin-bottom:.85em;display:flex;flex-wrap:wrap;gap:.85em;font-size:.92em;",
-    table: "width:100%;border-collapse:collapse;font-size:.92em;line-height:1.35",
+    sectionTitle: "font-weight:600;border-bottom:1px solid #ccc;padding-bottom:.3em;margin-bottom:.45em",
+    statsBar: "margin-bottom:.85em;display:flex;flex-wrap:wrap;gap:.85em;",
+    table: "width:100%;border-collapse:collapse;line-height:1.35",
     headRow: "background:#eee",
     bodyRow: "border-bottom:1px solid #f0f0f0",
     buyRow: "background:#fffaf2;border-bottom:1px solid #f3e4c7",
     cell: "padding:.38em .55em;vertical-align:top",
     cellRight: "padding:.38em .55em;vertical-align:top;text-align:right",
-    debugRow: "display:none;background:#fafafa;border-bottom:1px solid #ececec",
-    debugCell: "padding:0 .5em;",
+    logRow: "display:none;background:#fafafa;border-bottom:1px solid #ececec",
+    logCell: "padding:0 .5em;",
     empty: "color:#888;font-style:italic",
     summaryBar:
-      "display:flex;gap:1.2em;flex-wrap:wrap;background:#f0f5f0;border-radius:4px;padding:.55em .8em;margin-top:.6em;font-size:.9em;line-height:1.4"
+      "display:flex;gap:1.2em;flex-wrap:wrap;background:#f0f5f0;border-radius:4px;padding:.55em .8em;margin-top:.6em;line-height:1.4"
   };
 
   const goodDot = (id: number) => {
@@ -55,13 +55,10 @@ export function open(burgId: number): void {
   };
 
   const typeBadge = (kind: "RAW" | "MFG" | "BUY") => {
-    if (kind === "RAW") {
-      return `<span style="display:inline-block;background:#f0e8e8;color:#a44;border-radius:3px;padding:.08em .38em;font-size:.78em;font-weight:600">RAW</span>`;
-    }
-    if (kind === "BUY") {
-      return `<span style="display:inline-block;background:#f6ead8;color:#b06a00;border-radius:3px;padding:.08em .38em;font-size:.78em;font-weight:600">BUY</span>`;
-    }
-    return `<span style="display:inline-block;background:#e8f0e8;color:#4a4;border-radius:3px;padding:.08em .38em;font-size:.78em;font-weight:600">MFG</span>`;
+    const commonStyles = "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold";
+    if (kind === "RAW") return `<span style="${commonStyles};background:#f0e8e8;color:#a44">RAW</span>`;
+    if (kind === "BUY") return `<span style="${commonStyles};background:#f6ead8;color:#b06a00">BUY</span>`;
+    return `<span style="${commonStyles};background:#e8f0e8;color:#4a4">MFG</span>`;
   };
 
   const renderGoodLabel = (id: number, suffix = "") => `${goodDot(id)}${goodName(id)}${suffix}`;
@@ -74,20 +71,20 @@ export function open(burgId: number): void {
   const renderValueCell = (label: string, value: number, positive = true) =>
     renderDataCell(`${label}: ${r2(value)}`, "right", `${positive ? styles.positive : styles.warning}`);
   const renderDecisionDetails = (
-    decisionDebug?: {
+    log?: {
       summary: string;
       candidateCount: number;
       alternatives: Array<{kind: "extract" | "manufacture"; goodId: number; score: number; summary: string}>;
     } | null
   ) => {
-    if (!decisionDebug) return "";
-    const alternatives = decisionDebug.alternatives.length
-      ? decisionDebug.alternatives.map(option => `<div style="margin-top:.2em">• ${option.summary}</div>`).join("")
+    if (!log) return "";
+    const alternatives = log.alternatives.length
+      ? log.alternatives.map(option => `<div style="margin-top:.2em">• ${option.summary}</div>`).join("")
       : `<div style="margin-top:.2em;${styles.subtle}">No other feasible alternatives</div>`;
 
     return /*html*/ `<div>
-      <div><b>Decision basis:</b> highest score among ${decisionDebug.candidateCount} feasible options.</div>
-      <div style="margin-top:.2em"><b>Selected:</b> ${decisionDebug.summary}</div>
+      <div><b>Decision basis:</b> highest score among ${log.candidateCount} feasible options.</div>
+      <div style="margin-top:.2em"><b>Selected:</b> ${log.summary}</div>
       <div style="margin-top:.35em"><b>Alternatives:</b>${alternatives}</div>
     </div>`;
   };
@@ -105,7 +102,7 @@ export function open(burgId: number): void {
       const baseValue = goodById.get(goodPull.goodId)?.value ?? 0;
       const chainExtra =
         goodPull.chainValue > baseValue + 0.01
-          ? ` <span style="${styles.positive};font-size:.9em">(+${r2(goodPull.chainValue - baseValue)})</span>`
+          ? ` <span style="${styles.positive}">(+${r2(goodPull.chainValue - baseValue)})</span>`
           : "";
       const buyPrice = r2(data.pricesAtStart.buy[goodPull.goodId] ?? baseValue);
       const buyColor = buyPrice > baseValue ? styles.warning : buyPrice < baseValue ? styles.positive : "";
@@ -135,23 +132,22 @@ export function open(burgId: number): void {
 
   let stepIndex = 0;
   const stepRows = data.jobs.flatMap(job => {
-    const debugId = `productionStepDebug${stepIndex++}`;
-    const debugHtml = renderDecisionDetails(job.decisionDebug);
-    const rowAttrs = debugHtml
-      ? ` data-debug-target="${debugId}" style="${styles.bodyRow};cursor:pointer" title="Click to expand decision details"`
+    const logId = `productionSteplog${stepIndex++}`;
+    const logHtml = renderDecisionDetails(job.log);
+    const rowAttrs = logHtml
+      ? ` data-log-target="${logId}" style="${styles.bodyRow};cursor:pointer" title="Click to expand decision details"`
       : ` style="${styles.bodyRow}"`;
 
     if (job.kind === "extract") {
       const cultureSuffix =
         job.cultureModifier !== 1
-          ? ` <span style="${styles.muted};font-size:.9em" title="Culture bonus">x${r2(job.cultureModifier)}</span>`
+          ? ` <span style="${styles.muted}" title="Culture bonus">x${r2(job.cultureModifier)}</span>`
           : "";
 
       const details = "Local resource production";
       return [
         /*html*/ `<tr${rowAttrs}>
-        ${renderDataCell(typeBadge("RAW"))}
-        ${renderDataCell(renderGoodLabel(job.goodId, cultureSuffix))}
+        ${renderDataCell(`${renderGoodLabel(job.goodId, cultureSuffix)} <span style="margin-left:4px">${typeBadge("RAW")}</span>`)}
         ${renderDataCell(String(r2(job.units)), "right")}
         <td style="${styles.cell}">${details}</td>
         ${
@@ -160,10 +156,10 @@ export function open(burgId: number): void {
             : renderDataCell("—", "right", styles.subtle)
         }
       </tr>`,
-        debugHtml
-          ? /*html*/ `<tr id="${debugId}" style="${styles.debugRow}">
-        <td colspan="5" style="${styles.debugCell}">${debugHtml}</td>
-      </tr>`
+        logHtml
+          ? /*html*/ `<tr id="${logId}" style="${styles.logRow}">
+            <td colspan="5" style="${styles.logCell}">${logHtml}</td>
+          </tr>`
           : ""
       ];
     }
@@ -175,7 +171,7 @@ export function open(burgId: number): void {
       for (const item of buyItems) {
         rows.push(/*html*/ `<tr style="${styles.buyRow}">
           ${renderDataCell(typeBadge("BUY"))}
-          ${renderDataCell(renderGoodLabel(item.goodId))}
+          ${renderDataCell(`${renderGoodLabel(item.goodId)} <span style="margin-left:4px">${typeBadge("BUY")}</span>`)}
           ${renderDataCell(String(r2(item.fromMarket)), "right")}
           <td style="${styles.cell}">Market purchase for ${goodDot(job.goodId)}${goodName(job.goodId)}</td>
           ${renderValueCell("Spent", item.marketCost, false)}
@@ -185,7 +181,7 @@ export function open(burgId: number): void {
 
     const cultureSuffix =
       job.cultureModifier !== 1
-        ? ` <span style="${styles.muted};font-size:.9em" title="Culture bonus">x${r2(job.cultureModifier)}</span>`
+        ? ` <span style="${styles.muted}" title="Culture bonus">x${r2(job.cultureModifier)}</span>`
         : "";
     const allInputs = job.recipe
       .map(item => {
@@ -198,15 +194,15 @@ export function open(burgId: number): void {
 
     rows.push(/*html*/ `<tr${rowAttrs}>
       ${renderDataCell(typeBadge("MFG"))}
-      ${renderDataCell(renderGoodLabel(job.goodId, cultureSuffix))}
+      ${renderDataCell(`${renderGoodLabel(job.goodId, cultureSuffix)} <span style="margin-left:4px">${typeBadge("MFG")}</span>`)}
       ${renderDataCell(String(r2(job.units)), "right")}
       <td style="${styles.cell}">${details}</td>
       ${job.score !== undefined ? renderValueCell("Gain", job.score, job.score >= 0) : renderDataCell("—", "right", styles.subtle)}
     </tr>`);
 
-    if (debugHtml) {
-      rows.push(/*html*/ `<tr id="${debugId}" style="${styles.debugRow}">
-      <td colspan="5" style="${styles.debugCell}">${debugHtml}</td>
+    if (logHtml) {
+      rows.push(/*html*/ `<tr id="${logId}" style="${styles.logRow}">
+      <td colspan="5" style="${styles.logCell}">${logHtml}</td>
     </tr>`);
     }
 
@@ -216,7 +212,6 @@ export function open(burgId: number): void {
   const jobsTable = stepRows.length
     ? /*html*/ `<table style="${styles.table}">
         <thead><tr style="${styles.headRow}">
-          ${renderHeaderCell("Type")}
           ${renderHeaderCell("Good")}
           ${renderHeaderCell("Units", "right")}
           ${renderHeaderCell("Details")}
@@ -284,7 +279,7 @@ export function open(burgId: number): void {
           ${renderDataCell(String(costPerUnit), "right", styles.muted)}
           ${renderDataCell(String(r2(sellPrice)), "right", sellColor)}
           ${renderDataCell(String(r2(sellValue)), "right")}
-          ${renderDataCell(`${r2(profit)} <span style="font-size:.9em;${styles.muted}">(${margin}%)</span>`, "right", profitColor)}
+          ${renderDataCell(`${r2(profit)} <span style="${styles.muted}">(${margin}%)</span>`, "right", profitColor)}
         </tr>`;
       }
 
@@ -323,7 +318,7 @@ export function open(burgId: number): void {
     : `<i style="${styles.empty}">No output produced</i>`;
 
   alertMessage.innerHTML = /*html*/ `
-    <div id="productionOverviewContent" style="max-height:65vh;overflow-y:auto;font-size:1em">
+    <div id="productionOverviewContent" style="max-height:65vh;overflow-y:auto">
       ${statsHtml}
       ${renderSection("Goods Pool", poolTable)}
       ${renderSection("Production Steps", jobsTable)}
@@ -335,12 +330,12 @@ export function open(burgId: number): void {
   if (overviewContent) {
     overviewContent.onclick = event => {
       const target = event.target as HTMLElement;
-      const row = target.closest<HTMLTableRowElement>("tr[data-debug-target]");
+      const row = target.closest<HTMLTableRowElement>("tr[data-log-target]");
       if (!row) return;
 
-      const debugId = row.dataset.debugTarget;
-      if (!debugId) return;
-      const detailsRow = overviewContent.querySelector<HTMLTableRowElement>(`#${debugId}`);
+      const logId = row.dataset.logTarget;
+      if (!logId) return;
+      const detailsRow = overviewContent.querySelector<HTMLTableRowElement>(`#${logId}`);
       if (!detailsRow) return;
 
       const isOpen = detailsRow.style.display !== "none";
