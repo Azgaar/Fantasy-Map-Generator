@@ -51,7 +51,7 @@ export class ProductionModule {
 
     for (const burg of validBurgs) {
       burgRank++;
-      const type = burg.type || DEFAULT_CULTURE_TYPE;
+      const cultureType = burg.type || DEFAULT_CULTURE_TYPE;
       const population = burg.population || 0;
       const burgRng = Alea(seed + String(burg.i));
       const demandTargets = this.buildDemandTargets(burg);
@@ -65,11 +65,7 @@ export class ProductionModule {
       };
 
       const budget = Math.max(1, Math.floor(population));
-      const pricesAtStart = {
-        buy: currentBuyPrice.slice(),
-        sell: currentSellPrice.slice()
-      };
-
+      const pricesAtStart = {buy: currentBuyPrice.slice(), sell: currentSellPrice.slice()};
       const cellsReached = this.floodFillCells(burg, budget, cellPool, addGood);
 
       const goodsPullData: BurgProductionData["goodsPull"] = [];
@@ -78,7 +74,7 @@ export class ProductionModule {
         const good = goodById.get(goodId);
         if (!good) continue;
         const rawPull = goodsPull[goodId];
-        const cultureModifier = this.getCultureModifier(good, type);
+        const cultureModifier = this.getCultureModifier(good, cultureType);
         const chainValue = this.getChainValueForWorkers(
           chainValueByWorkers,
           Math.max(0, population - 1),
@@ -113,7 +109,7 @@ export class ProductionModule {
           chainValueByWorkers,
           demandProfiles,
           demandTargets,
-          cultureType: type,
+          cultureType,
           inventory,
           remainingPool,
           globalMarket,
@@ -123,13 +119,12 @@ export class ProductionModule {
           fraction
         });
         const action = decision?.action;
-
         if (!action) break;
 
         if (action.kind === "manufacture") {
           const {good, entries, maxYield, projectedGain} = action;
           const actualYield = Math.min(fraction, maxYield);
-          const cultureModifier = this.getCultureModifier(good, type);
+          const cultureModifier = this.getCultureModifier(good, cultureType);
           const produced = actualYield * cultureModifier;
           const recipeLog: Array<{
             goodId: number;
@@ -184,7 +179,7 @@ export class ProductionModule {
           remainingPool[goodId] = Math.max(0, (remainingPool[goodId] || 0) - extract);
 
           const good = goodById.get(goodId)!;
-          const cultureModifier = this.getCultureModifier(good, type);
+          const cultureModifier = this.getCultureModifier(good, cultureType);
           const produced = extract * cultureModifier;
           inventory[goodId] = (inventory[goodId] || 0) + produced;
 
@@ -232,7 +227,7 @@ export class ProductionModule {
         totalBurgs: validBurgs.length,
         cellsBudget: budget,
         cellsReached,
-        cultureType: type,
+        cultureType: cultureType,
         goodsPull: goodsPullData,
         jobs: jobsData,
         finalInventory: {...inventory},
