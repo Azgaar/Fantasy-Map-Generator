@@ -213,7 +213,6 @@ export function open(burgId: number): void {
     const details = allInputs ? `Manufacturing from ${allInputs}` : "Manufacturing";
 
     rows.push(/*html*/ `<tr${rowAttrs}>
-      ${renderDataCell(typeBadge("MFG"))}
       ${renderDataCell(renderTaggedGood(job.goodId, "MFG", cultureSuffix))}
       ${renderDataCell(String(rn(job.units, 2)), "right")}
       <td style="${styles.cell}">${details}</td>

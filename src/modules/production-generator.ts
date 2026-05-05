@@ -16,7 +16,7 @@ export class ProductionModule {
   private readonly PRICE_FLOOR_FACTOR = 0.5;
   private readonly PRICE_CEILING_FACTOR = 3.0;
 
-  private readonly CHAIN_MAX_ITERATIONS = 10;
+  private readonly CHAIN_VALUE_MAX_WORKERS = 5;
   private readonly PRIORITY_JITTER = 0.2;
 
   private productionData = new Map<number, BurgProductionData>();
@@ -25,17 +25,17 @@ export class ProductionModule {
     TIME && console.time("generateProduction");
     const {burgs} = pack;
     const goods = pack.goods;
+    const validBurgs = burgs.filter(b => (b as Burg).i && !(b as Burg).removed);
 
     const goodById = new Map<number, Good>(goods.map(g => [g.i, g]));
     const cellPool = this.buildCellPool(goods);
-    const chainValue = this.buildChainValues(goods);
+    const chainValueByWorkers = this.buildChainValues(goods, this.CHAIN_VALUE_MAX_WORKERS);
     const {currentBuyPrice, currentSellPrice, buyPressure, sellPressure, priceFloor, priceCeiling} =
       this.buildPriceArrays(goods);
 
     const recipeOptions = this.buildRecipeOptions(goods);
     const globalMarket: Record<number, number> = {};
 
-    const validBurgs = burgs.filter(b => (b as Burg).i && !(b as Burg).removed);
     validBurgs.sort((a, b) => (a.population || 0) - (b.population || 0));
 
     this.productionData.clear();
@@ -70,13 +70,19 @@ export class ProductionModule {
         if (!good) continue;
         const rawPull = goodsPull[goodId];
         const cultureModifier = this.getCultureModifier(good, type);
-        const basePriority = rawPull * good.value * cultureModifier;
+        const chainValue = this.getChainValueForWorkers(
+          chainValueByWorkers,
+          Math.max(0, population - 1),
+          goodId,
+          good.value
+        );
+        const basePriority = rawPull * chainValue * cultureModifier;
         const jitter = 1 - this.PRIORITY_JITTER / 2 + burgRng() * this.PRIORITY_JITTER;
         const priority = basePriority * jitter;
         goodsPullData.push({
           goodId,
           pull: rawPull,
-          chainValue: chainValue[goodId] ?? good.value,
+          chainValue,
           priority
         });
       }
@@ -95,13 +101,14 @@ export class ProductionModule {
         const decision = this.greedyBestAction({
           recipeOptions,
           goodById,
-          chainValue,
+          chainValueByWorkers,
           cultureType: type,
           inventory,
           remainingPool,
           globalMarket,
           currentBuyPrice,
           currentSellPrice,
+          workersLeft,
           fraction
         });
         const action = decision?.action;
@@ -250,11 +257,17 @@ export class ProductionModule {
     return cellPool;
   }
 
-  private buildChainValues(goods: Good[]): number[] {
-    const chainValue: number[] = [];
-    for (const good of goods) chainValue[good.i] = good.value;
+  private buildChainValues(goods: Good[], maxWorkers: number): number[][] {
+    const baseValues: number[] = [];
+    for (const good of goods) baseValues[good.i] = good.value;
 
-    for (let iter = 0; iter < this.CHAIN_MAX_ITERATIONS; iter++) {
+    const chainValueByWorkers: number[][] = Array.from({length: maxWorkers + 1}, () => []);
+    chainValueByWorkers[0] = baseValues.slice();
+    chainValueByWorkers[1] = baseValues.slice();
+
+    for (let workers = 2; workers <= maxWorkers; workers++) {
+      const previous = chainValueByWorkers[workers - 1];
+      const current = previous.slice();
       let changed = false;
 
       for (const good of goods) {
@@ -264,25 +277,40 @@ export class ProductionModule {
           const entries = Object.entries(recipe) as [string, number][];
           if (!entries.length) continue;
 
-          const recipeCost = entries.reduce((sum, [ingId, amount]) => sum + (chainValue[+ingId] ?? 0) * amount, 0);
+          const recipeCost = entries.reduce((sum, [ingId, amount]) => sum + (previous[+ingId] ?? 0) * amount, 0);
           const profit = good.value - recipeCost;
           if (profit <= 0) continue;
 
           const totalAmount = entries.reduce((sum, [, amount]) => sum + amount, 0);
           for (const [ingIdStr, amount] of entries) {
             const contribution = profit * (amount / totalAmount);
-            if (contribution > 0.001) {
-              chainValue[+ingIdStr] = (chainValue[+ingIdStr] ?? 0) + contribution;
+            if (contribution <= 0.001) continue;
+            const ingredientId = +ingIdStr;
+            const candidateValue = (previous[ingredientId] ?? baseValues[ingredientId] ?? 0) + contribution;
+            if (candidateValue > (current[ingredientId] ?? 0) + 0.001) {
+              current[ingredientId] = candidateValue;
               changed = true;
             }
           }
         }
       }
 
-      if (!changed) break;
+      chainValueByWorkers[workers] = current;
+      if (!changed) {
+        for (let extraWorkers = workers + 1; extraWorkers <= maxWorkers; extraWorkers++) {
+          chainValueByWorkers[extraWorkers] = current.slice();
+        }
+        break;
+      }
     }
 
-    return chainValue;
+    return chainValueByWorkers;
+  }
+
+  private getChainValueForWorkers(chainValueByWorkers: number[][], workers: number, goodId: number, fallback: number) {
+    const maxWorkers = chainValueByWorkers.length - 1;
+    const workerBucket = Math.max(0, Math.min(maxWorkers, Math.ceil(workers)));
+    return chainValueByWorkers[workerBucket]?.[goodId] ?? fallback;
   }
 
   private buildPriceArrays(goods: Good[]) {
@@ -390,40 +418,47 @@ export class ProductionModule {
   /**
    * O(G + R) greedy action selection per worker tick.
    * Replaces the former O((G+R)^depth) DFS lookahead.
-   * Chain awareness is preserved through chainValue[], which already encodes
-   * the expected downstream manufacturing bonus for every raw good.
+   * Chain awareness is preserved through worker-bucketed chain values, which
+   * encode how much downstream bonus is actually reachable for the remaining workers.
    */
   private greedyBestAction(params: {
     recipeOptions: RecipeOption[];
     goodById: Map<number, Good>;
-    chainValue: number[];
+    chainValueByWorkers: number[][];
     cultureType: string;
     inventory: Record<number, number>;
     remainingPool: Record<number, number>;
     globalMarket: Record<number, number>;
     currentBuyPrice: number[];
     currentSellPrice: number[];
+    workersLeft: number;
     fraction: number;
   }): {action: PlannedAction | null; log: Log | null} | null {
     let bestScore = -Infinity;
     let bestAction: PlannedAction | null = null;
     const candidates: DecisionCandidate[] = [];
 
-    // Score every extractable good via chainValue (includes downstream manufacturing bonus)
+    // Score every extractable good via worker-aware chain value.
     for (const goodIdStr in params.remainingPool) {
       const available = params.remainingPool[+goodIdStr];
       if (available <= 0) continue;
       const goodId = +goodIdStr;
       const good = params.goodById.get(goodId)!;
       const cultureModifier = this.getCultureModifier(good, params.cultureType);
-      const perWorkerScore = (params.chainValue[goodId] ?? good.value) * cultureModifier;
+      const chainValue = this.getChainValueForWorkers(
+        params.chainValueByWorkers,
+        Math.max(0, params.workersLeft - params.fraction),
+        goodId,
+        good.value
+      );
+      const perWorkerScore = chainValue * cultureModifier;
       const projectedGain = perWorkerScore * params.fraction;
       candidates.push({
         kind: "extract",
         goodId,
         decisionScore: perWorkerScore,
         projectedGain,
-        chainValue: params.chainValue[goodId] ?? good.value,
+        chainValue,
         cultureModifier,
         units: params.fraction,
         available

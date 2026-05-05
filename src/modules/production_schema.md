@@ -53,7 +53,7 @@ by population and current state, not by arbitrary rules.
 2. Build `cellPool` from cells.good + biome production
 3. Pre-calculate stable chain metadata for heuristics / UI:
 
-- `chainValue[]` — broad downstream desirability for display only
+- `chainValueByWorkers[workers][goodId]` — downstream desirability bucketed by remaining workers
 - later: chain complexity, total profit by base values, profit per worker
 
 4. Build price arrays: `currentBuyPrice[i] = currentSellPrice[i] = good.value`
@@ -184,7 +184,7 @@ Key implication:
 
 Static chain metrics are still useful, but only as heuristics / UI data.
 
-- `chainValue`: broad downstream desirability, not a decision score
+- `chainValueByWorkers`: broad downstream desirability bucketed by worker count, not a decision score
 - `chainComplexity`: minimum worker steps to finish a chain from raw ingredients
 - `chainProfitBase`: total profit using `good.value` instead of live market prices
 - `chainProfitPerWorker`: `chainProfitBase / chainComplexity`
