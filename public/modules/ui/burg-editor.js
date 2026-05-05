@@ -125,8 +125,8 @@ function editBurg(id) {
     const id = +elSelected.attr("data-id");
     pack.burgs[id].name = burgName.value;
     elSelected.text(burgName.value);
-    // Sync to Labels data model
-    Labels.update(id, { text: burgName.value });
+    const labelId = Labels.getAll().findIndex(label => label.type === "burg" && label.burgId === id);
+    Labels.update(labelId, { text: burgName.value });
   }
 
   function generateNameRandom() {
