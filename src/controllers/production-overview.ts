@@ -172,7 +172,7 @@ export function open(burgId: number): void {
       return [
         /*html*/ `<tr${rowAttrs}>
         ${renderDataCell(renderTaggedGood(job.goodId, "RAW", cultureSuffix))}
-        ${renderDataCell(String(rn(job.units, 2)), "right")}
+        ${renderDataCell(rn(job.units, 2), "right")}
         <td style="${styles.cell}">${details}</td>
         ${
           job.projectedGain !== undefined
@@ -190,9 +190,8 @@ export function open(burgId: number): void {
     if (buyItems.length) {
       for (const item of buyItems) {
         rows.push(/*html*/ `<tr style="${styles.buyRow}">
-          ${renderDataCell(typeBadge("BUY"))}
           ${renderDataCell(renderTaggedGood(item.goodId, "BUY"))}
-          ${renderDataCell(String(rn(item.fromMarket, 2)), "right")}
+          ${renderDataCell(rn(item.fromMarket, 2), "right")}
           <td style="${styles.cell}">Market purchase for ${goodDot(job.goodId)}${goodName(job.goodId)}</td>
           ${renderValueCell("Spent", item.marketCost, false)}
         </tr>`);
@@ -214,7 +213,7 @@ export function open(burgId: number): void {
 
     rows.push(/*html*/ `<tr${rowAttrs}>
       ${renderDataCell(renderTaggedGood(job.goodId, "MFG", cultureSuffix))}
-      ${renderDataCell(String(rn(job.units, 2)), "right")}
+      ${renderDataCell(rn(job.units, 2), "right")}
       <td style="${styles.cell}">${details}</td>
       ${job.score !== undefined ? renderValueCell("Gain", job.score, job.score >= 0) : renderDataCell("—", "right", styles.subtle)}
     </tr>`);
