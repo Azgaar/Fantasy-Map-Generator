@@ -1,5 +1,5 @@
 import { quadtree } from "d3-quadtree";
-import { drawBurgLabel } from "../renderers/draw-burg-labels";
+import { drawBurgLabel, removeBurgLabel } from "../renderers/draw-burg-labels";
 import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
 import type { BurgLabel } from "./labels";
 
@@ -746,6 +746,7 @@ class BurgModule {
       (l) => l.type === "burg" && l.burgId === burgId,
     );
     Labels.remove(labelId);
+    removeBurgLabel(burgId);
   }
 }
 window.Burgs = new BurgModule();

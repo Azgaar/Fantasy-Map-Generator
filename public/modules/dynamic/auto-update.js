@@ -1147,7 +1147,7 @@ export function resolveVersionConflicts(mapVersion) {
           const letterSpacing = letterSpacingAttr ? parseFloat(letterSpacingAttr) : 0;
           const startOffsetAttr = textPath.getAttribute("startOffset");
           const startOffset = startOffsetAttr ? parseFloat(startOffsetAttr) : 50;
-          const transform = textPath.getAttribute("transform");
+          const transform = textElement.getAttribute("transform");
           const [dx, dy] = transform ? parseTransform(transform) : [0, 0];
 
           // Get path points from the referenced path

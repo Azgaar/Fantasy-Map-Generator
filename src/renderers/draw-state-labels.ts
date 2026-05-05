@@ -101,13 +101,13 @@ const stateLabelsRenderer = (list?: number[]): void => {
       ];
       if (ray1.x > ray2.x) pathPoints.reverse();
 
-      textGroup.select(`#stateLabel${labelData.stateId}`).remove();
-      pathGroup.select(`#textPath_stateLabel${labelData.stateId}`).remove();
+      textGroup.select(`#stateLabel${labelData.i}`).remove();
+      pathGroup.select(`#textPath_stateLabel${labelData.i}`).remove();
 
       const textPath = pathGroup
         .append("path")
         .attr("d", round(lineGen(pathPoints) || ""))
-        .attr("id", `textPath_stateLabel${labelData.stateId}`);
+        .attr("id", `textPath_stateLabel${labelData.i}`);
 
       const pathLength =
         (textPath.node() as SVGPathElement).getTotalLength() / letterLength; // path length in letters
@@ -158,8 +158,8 @@ const stateLabelsRenderer = (list?: number[]): void => {
       );
       textElement.insertAdjacentHTML("afterbegin", spans.join(""));
 
-      const { width, height } = textElement.getBBox();
       textElement.setAttribute("href", `#textPath_stateLabel${labelData.i}`);
+      const { width, height } = textElement.getBBox();
 
       const stateIds = pack.cells.state;
       if (mode === "full" || lines.length === 1) continue;

@@ -59,12 +59,15 @@ function constructLabelHTML(
   textPath.setAttribute("href", `#${pathId}`);
   textPath.setAttribute(
     "startOffset",
-    label.startOffset ? `${label.startOffset}%` : "50%",
+    label.startOffset != null ? `${label.startOffset}%` : "50%",
   );
   textPath.setAttribute(
     "font-size",
-    label.fontSize ? `${label.fontSize}%` : "100%",
+    label.fontSize != null ? `${label.fontSize}%` : "100%",
   );
+  if (label.letterSpacing !== undefined) {
+    textPath.setAttribute("letter-spacing", `${label.letterSpacing}`);
+  }
   textPath.append(...tspans);
 
   const textDom = document.createElementNS(
