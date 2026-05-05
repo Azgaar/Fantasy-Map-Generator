@@ -87,13 +87,15 @@ function addPathForLabel(label: CustomLabel, pathGroup: SVGGElement): string {
   const pathData = line<[number, number]>().curve(curveNatural)(
     label.pathPoints || [],
   );
-  const domPath = document.createElementNS(
-    "http://www.w3.org/2000/svg",
-    "path",
-  );
+  let domPath = pathGroup.querySelector<SVGPathElement>(`#${pathId}`);
+
+  if (!domPath) {
+    domPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    pathGroup.appendChild(domPath);
+  }
+
   domPath.setAttribute("id", pathId);
   domPath.setAttribute("d", pathData || "");
-  pathGroup.appendChild(domPath);
 
   return pathId;
 }
