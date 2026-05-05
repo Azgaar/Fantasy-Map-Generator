@@ -51,7 +51,7 @@ const GOODS_DATA = [
     unit: "pile",
     bonus: {fleet: 2, defence: 1},
     culture: {Hunting: 2},
-    biome: {3: 0.5, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 12: 1}
+    biome: {5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 12: 0.5}
   },
   {
     name: "Stone",
@@ -402,7 +402,7 @@ const GOODS_DATA = [
     unit: "pelt",
     bonus: {prestige: 1},
     culture: {Hunting: 3},
-    biome: {9: 1, 10: 1, 6: 0.5, 8: 0.5, 12: 0.5}
+    biome: {9: 0.5, 10: 0.5, 6: 0.5, 8: 0.25, 12: 0.25}
   },
   {
     name: "Sheep",
@@ -593,9 +593,12 @@ const GOODS_DATA = [
     tags: ["clothing"],
     icon: "good-garments",
     color: "#bd21ec",
-    value: 13,
+    value: 12,
     chance: 0,
-    recipes: [{Cloth: 1, Dyes: 0.5}, {Furs: 1}],
+    recipes: [
+      {Cloth: 1, Dyes: 0.5},
+      {Cloth: 0.5, Furs: 1}
+    ],
     unit: "set",
     bonus: {prestige: 2},
     culture: {Generic: 2}
@@ -683,7 +686,7 @@ const GOODS_DATA = [
     tags: ["naval"],
     icon: "good-sails",
     color: "#ffffff",
-    value: 12,
+    value: 11,
     chance: 0,
     recipes: [{Cloth: 1}],
     unit: "set",
