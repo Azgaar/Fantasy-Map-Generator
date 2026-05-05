@@ -69,6 +69,7 @@ function editBurg(id) {
     ensureEl("burgGroup").value = b.group;
     ensureEl("burgType").value = b.type || "Generic";
     ensureEl("burgPopulation").value = rn(b.population * populationRate * urbanization);
+    ensureEl("burgWealth").innerHTML = "🟡 " + rn(b.wealth || 0, 2);
     ensureEl("burgEditAnchorStyle").style.display = +b.port ? "inline-block" : "none";
 
     // update list and select culture

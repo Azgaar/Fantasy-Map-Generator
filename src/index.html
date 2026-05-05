@@ -3605,6 +3605,11 @@
                 <div class="label">Production:</div>
                 <span id="burgProduction"></span>
               </div>
+
+              <div data-tip="Burg cumulative net wealth from production and trade">
+                <div class="label">Wealth</div>
+                <span id="burgWealth"></span>
+              </div>
             </div>
           </div>
 
@@ -5497,7 +5502,7 @@
       </div>
 
       <div id="burgsOverview" class="dialog stable" style="display: none">
-        <div id="burgsHeader" class="header" style="grid-template-columns: 9em 7em 7.5em 7.2em 6.5em 7em 6em">
+        <div id="burgsHeader" class="header" style="grid-template-columns: 9em 7em 7.5em 7.2em 6.5em 7em 7em 6em">
           <div data-tip="Click to sort by burg name" class="sortable alphabetically" data-sortby="name">Burg</div>
           <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">
             Province
@@ -5513,6 +5518,9 @@
             data-sortby="population"
           >
             Population
+          </div>
+          <div data-tip="Click to sort by burg wealth" class="sortable icon-sort-number-down" data-sortby="wealth">
+            Wealth&nbsp;
           </div>
           <div data-tip="Click to sort by burg features" class="sortable alphabetically" data-sortby="features">
             Features&nbsp;
@@ -5548,6 +5556,10 @@
 
           <div data-tip="Average population" style="margin-left: 14px">
             Average population:&nbsp;<span id="burgsFooterPopulation">0</span>
+          </div>
+
+          <div data-tip="Average wealth" style="margin-left: 14px">
+            Average wealth:&nbsp;<span id="burgsFooterWealth">0</span> 🟡
           </div>
         </div>
 

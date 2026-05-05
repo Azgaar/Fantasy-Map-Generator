@@ -94,10 +94,13 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     body.innerHTML = "";
     let lines = "";
     let totalPopulation = 0;
+    let totalWealth = 0;
 
     for (const b of filtered) {
       const population = b.population * populationRate * urbanization;
+      const wealth = rn(b.wealth || 0, 2);
       totalPopulation += population;
+      totalWealth += wealth;
       const features = b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg";
       const state = pack.states[b.state].name;
       const prov = pack.cells.province[b.cell];
@@ -113,6 +116,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
         data-culture="${culture}"
         data-group="${b.group}"
         data-population=${population}
+        data-wealth=${wealth}
         data-features="${features}"
       >
         <span data-tip="Click to zoom into view" class="icon-dot-circled pointer"></span>
@@ -123,6 +127,8 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
         <input data-tip="Burg group" value="${b.group}" disabled />
         <span data-tip="Burg population" class="icon-male"></span>
         <input data-tip="Burg population" value=${si(population)} style="width: 5em" disabled />
+        <span data-tip="Burg wealth">🟡</span>
+        <input data-tip="Burg wealth" value=${wealth} style="width: 5em" disabled />
         <div style="width: 3em">
           <span
             data-tip="${b.capital ? " This burg is a state capital" : "This burg is a NOT state capital"}"
@@ -143,6 +149,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     // update footer
     burgsFooterBurgs.innerHTML = `${filtered.length} of ${validBurgs.length}`;
     burgsFooterPopulation.innerHTML = filtered.length ? si(totalPopulation / filtered.length) : 0;
+    burgsFooterWealth.innerHTML = filtered.length ? si(totalWealth / filtered.length) : 0;
 
     // add listeners
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => burgHighlightOn(ev)));
