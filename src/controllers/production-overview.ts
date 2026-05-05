@@ -73,7 +73,7 @@ export function open(burgId: number): void {
           ? /*html*/ `<table style="width:100%;border-collapse:collapse;font-size:.82em">
         <thead><tr style="background:#eee">
           <th style="text-align:left;padding:.2em .4em">Good</th>
-          <th style="text-align:right;padding:.2em .4em" title="Raw units from flood-fill cells">Pool</th>
+          <th style="text-align:right;padding:.2em .4em" title="Raw units from flood-fill cells">Units</th>
           <th style="text-align:right;padding:.2em .4em" title="Elevated by downstream profitable chains">Chain Value</th>
           <th style="text-align:right;padding:.2em .4em" title="Pool × chain value × food bonus (initial queue key)">Priority</th>
           <th style="text-align:right;padding:.2em .4em" title="Buy price when this burg was processed">Buy Price</th>
@@ -84,49 +84,93 @@ export function open(burgId: number): void {
       }
     </div>`;
 
-  // ── Section 3: Population Jobs ──────────────────────────────────────────
-  const jobRows = data.jobs
-    .map(job => {
-      const workerLabel = `<td style="padding:.2em .4em;color:#888;font-size:.8em">${Math.ceil(job.tick)}</td>`;
-      const isExtract = job.kind === "extract";
-      const typeBadge = isExtract
-        ? `<span style="background:#f0e8e8;color:#a44;font-size:.72em;padding:0 3px;border-radius:2px">RAW</span>`
-        : `<span style="background:#e8f0e8;color:#4a4;font-size:.72em;padding:0 3px;border-radius:2px">MFG</span>`;
+  // ── Section 3: Production Steps ────────────────────────────────────────
+  // Manufacture jobs may include a market-buy phase that spends money but not a worker.
+  // Show these as separate rows so the decision sequence is readable step-by-step.
+  const stepRows = data.jobs.flatMap(job => {
+    const workerNo = Math.ceil(job.tick);
+
+    if (job.kind === "extract") {
       const cultureMod =
         job.cultureModifier !== 1
-          ? `<span style="color:#888;font-size:.78em" title="Culture bonus"> ×${r2(job.cultureModifier)}</span>`
+          ? ` <span style="color:#888;font-size:.78em" title="Culture bonus">x${r2(job.cultureModifier)}</span>`
           : "";
-      const recipeText =
-        !isExtract && job.kind === "manufacture" && job.recipe?.length
-          ? `<span style="color:#888;font-size:.8em">&nbsp;(${job.recipe
-              .map(r => {
-                const total = r.fromInventory + r.fromMarket;
-                const mktTag =
-                  r.fromMarket > 0
-                    ? `<span title="bought from market" style="color:#c84">🛒${r2(r.fromMarket)}</span>`
-                    : "";
-                return `${goodDot(r.goodId)}${r2(total)}${mktTag}`;
-              })
-              .join(" + ")})</span>`
-          : "";
-      const scoreText =
-        !isExtract && job.kind === "manufacture" && job.score !== undefined
-          ? `<span style="color:${job.score > 0 ? "#4a4" : "#c44"};font-size:.78em" title="score per worker"> +${r2(job.score)}</span>`
-          : "";
-      return `<tr>
-        ${workerLabel}
-        <td style="padding:.2em .4em">${typeBadge}</td>
+      const details = [
+        `Extract from local pool`,
+        job.projectedGain !== undefined
+          ? `<span style="color:${job.projectedGain >= 0 ? "#2a6" : "#c44"}">Plan gain: ${r2(job.projectedGain)}</span>`
+          : ""
+      ]
+        .filter(Boolean)
+        .join(` <span style="color:#bbb">|</span> `);
+
+      return [
+        /*html*/ `<tr>
+        <td style="padding:.2em .4em;color:#888;font-size:.8em">${workerNo}</td>
+        <td style="padding:.2em .4em"><span style="background:#f0e8e8;color:#a44;font-size:.72em;padding:0 3px;border-radius:2px">RAW</span></td>
         <td style="padding:.2em .4em">${goodDot(job.goodId)}${goodName(job.goodId)}${cultureMod}</td>
         <td style="text-align:right;padding:.2em .4em">${r2(job.units)}</td>
-        <td style="padding:.2em .4em;font-size:.82em;color:#555">${recipeText}${scoreText}</td>
-      </tr>`;
-    })
-    .join("");
+        <td style="padding:.2em .4em;color:#555">${details}</td>
+      </tr>`
+      ];
+    }
+
+    const buyItems = job.recipe.filter(r => r.fromMarket > 0);
+    const useItems = job.recipe.filter(r => r.fromInventory > 0);
+    const rows: string[] = [];
+
+    if (buyItems.length) {
+      const boughtText = buyItems
+        .map(r => `${goodDot(r.goodId)}${goodName(r.goodId)} ${r2(r.fromMarket)} for ${r2(r.marketCost)}`)
+        .join(` <span style="color:#bbb">+</span> `);
+      const totalSpent = buyItems.reduce((sum, r) => sum + r.marketCost, 0);
+
+      rows.push(/*html*/ `<tr style="background:#fffaf2">
+        <td style="padding:.2em .4em;color:#aaa;font-size:.8em">-</td>
+        <td style="padding:.2em .4em"><span style="background:#f6ead8;color:#b06a00;font-size:.72em;padding:0 3px;border-radius:2px">BUY</span></td>
+        <td style="padding:.2em .4em">Market purchase</td>
+        <td style="text-align:right;padding:.2em .4em;color:#aaa">—</td>
+        <td style="padding:.2em .4em;font-size:.82em;color:#555">${boughtText} <span style="color:#bbb">|</span> <span style="color:#b06a00">Spent ${r2(totalSpent)}</span></td>
+      </tr>`);
+    }
+
+    const usedText = useItems.length
+      ? `Used stock: ${useItems.map(r => `${goodDot(r.goodId)}${goodName(r.goodId)} ${r2(r.fromInventory)}`).join(` <span style="color:#bbb">+</span> `)}`
+      : "Used stock: none";
+    const boughtInputsText = buyItems.length
+      ? `Bought: ${buyItems.map(r => `${goodDot(r.goodId)}${goodName(r.goodId)} ${r2(r.fromMarket)}`).join(` <span style="color:#bbb">+</span> `)}`
+      : "Bought: none";
+    const cultureMod =
+      job.cultureModifier !== 1
+        ? ` <span style="color:#888;font-size:.78em" title="Culture bonus">x${r2(job.cultureModifier)}</span>`
+        : "";
+    const details = [
+      usedText,
+      boughtInputsText,
+      job.score !== undefined
+        ? `<span style="color:${job.score >= 0 ? "#2a6" : "#c44"}">Plan gain: ${r2(job.score)}</span>`
+        : ""
+    ]
+      .filter(Boolean)
+      .join(` <span style="color:#bbb">|</span> `);
+
+    rows.push(/*html*/ `<tr>
+      <td style="padding:.2em .4em;color:#888;font-size:.8em">${workerNo}</td>
+      <td style="padding:.2em .4em"><span style="background:#e8f0e8;color:#4a4;font-size:.72em;padding:0 3px;border-radius:2px">MFG</span></td>
+      <td style="padding:.2em .4em">${goodDot(job.goodId)}${goodName(job.goodId)}${cultureMod}</td>
+      <td style="text-align:right;padding:.2em .4em">${r2(job.units)}</td>
+      <td style="padding:.2em .4em;color:#555">${details}</td>
+    </tr>`);
+
+    return rows;
+  });
+
+  const jobRows = stepRows.join("");
 
   const jobsHtml = /*html*/ `
     <div style="margin-bottom:.8em">
       <div style="font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.2em;margin-bottom:.4em;font-size:.9em">
-        Production Distribution
+        Production Steps
       </div>
       ${
         jobRows

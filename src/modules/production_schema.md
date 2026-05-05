@@ -1,11 +1,14 @@
-# Production Schema v3 — Single Priority Loop
+# Production Schema v4 — Bounded Lookahead Planner
 
 ## Core Principle
 
-Every worker tick, the burg evaluates **all available actions** simultaneously, scores each by
-profit-per-worker, and executes the best one. Market access is universal — every burg can buy
-from the global market. Small burgs are limited by population (few workers, little wealth), not
-by arbitrary rules.
+Every worker tick, the burg evaluates the **best reachable plan** from its current state.
+The decision is no longer driven by a precomputed global chain value. Instead, the burg does a
+short bounded search over feasible actions and picks the first move of the best plan it can still
+complete with its remaining workers.
+
+Market access is universal — every burg can buy from the global market. Small burgs are limited
+by population and current state, not by arbitrary rules.
 
 ---
 
@@ -48,7 +51,11 @@ by arbitrary rules.
 
 1. Build `goodById` map (pack.goods is shuffled — never use array indices)
 2. Build `cellPool` from cells.good + biome production
-3. Build `chainValue[]` — propagates downstream manufacturing profit to raw ingredients
+3. Pre-calculate stable chain metadata for heuristics / UI:
+
+- `chainValue[]` — broad downstream desirability for display only
+- later: chain complexity, total profit by base values, profit per worker
+
 4. Build price arrays: `currentBuyPrice[i] = currentSellPrice[i] = good.value`
 5. `globalMarket = {}` (empty)
 6. Sort burgs by population ascending (smallest first)
@@ -61,7 +68,7 @@ by arbitrary rules.
 - `cellPool` entries zeroed as consumed — permanent scarcity
 - `remainingPool = {...goodsPull}` — local extraction budget
 
-### Phase C (per burg) — `ceil(population)` worker ticks
+### Phase C (per burg) — `ceil(population)` worker ticks with lookahead
 
 Each tick = 1 worker (fractional for the last tick `fraction = min(1, population - i)`).
 
@@ -71,8 +78,7 @@ Each tick = 1 worker (fractional for the last tick `fraction = min(1, population
 
 ```
 Available if: remainingPool[X] > 0
-Score:        good.value × cultureMod
-  (base sell value only — what the burg actually earns from extracting and selling this good)
+Immediate value: `currentSellPrice[X] × cultureMod`
 Execute:
   extract = min(fraction, remainingPool[X])
   inventory[X] += extract × cultureMod
@@ -80,20 +86,15 @@ Execute:
   buyPrice[X] rises (local scarcity signal)
 ```
 
-> **Why not chainValue?**
-> chainValue is the speculative future profit if the burg completes a full manufacturing chain
-> (e.g. Wood → Ships is worth 9.83). A 1-worker burg will never build Ships, so using chainValue
-> would make it extract Wood (value 1) instead of Cattle (value 2) — the wrong choice.
-> Chain profit is already accounted for in the **manufacture candidate score**, which evaluates
-> actual feasibility given current inventory + market. chainValue is retained as a display metric
-> (shown in Goods Pool section) and as initial queue seed order for equal-value tiebreaking only.
+This raw action may still win because the planner sees its downstream consequences: after
+extracting raw now, later search plies can manufacture from it if enough workers remain.
+So the chain logic is still present, but only when it is feasible **for this burg right now**.
 
 **2. Manufacture from inventory** (costs 1 worker, no money)
 
 ```
 Available if: all ingredients in inventory in sufficient qty
-Score:        sellPrice[out] × cultureMod − Σ(needed[ing] × buyPrice[ing])
-  (opportunity cost: ingredients valued at current buy price even if already owned)
+Immediate value: `currentSellPrice[out] × cultureMod − Σ(needed[ing] × currentBuyPrice[ing])`
 Execute:
   yield = min(fraction, min_over_ings(inventory[ing] / needed[ing]))
   inventory[ings] -= yield × needed[ing]
@@ -107,8 +108,7 @@ Execute:
 Available if:
   - For each ingredient: inventory[ing] is enough, OR globalMarket[ing] has the shortfall
   - At least one ingredient must come from globalMarket (else it's action 2)
-Score:        sellPrice[out] × cultureMod − Σ(needed[ing] × buyPrice[ing])
-  (identical formula to action 2 — fair comparison regardless of ingredient source)
+Immediate value: `currentSellPrice[out] × cultureMod − Σ(needed[ing] × currentBuyPrice[ing])`
 Execute (buy step first, no worker cost):
   actualYield = min(fraction, min_over_ings((inventory[ing] + globalMarket[ing]) / needed[ing]))
   for each ingredient ing:
@@ -127,20 +127,30 @@ Execute (manufacture step, 1 worker):
 #### Decision algorithm
 
 ```
-candidates = []
-  + all feasible Extract actions (remainingPool[X] > 0)
-  + all feasible Manufacture actions (inventory sufficient)
-  + all feasible Buy-then-Manufacture actions (inventory + market sufficient)
+function plan(state, workersLeft, depth):
+  baseline = liquidation value of current inventory at current sell prices
+  if depth == 0 or workersLeft <= 0:
+    return baseline
 
-if candidates is empty → break (idle workers)
-best = max(candidates, by score)
-execute(best)
-workersUsed += fraction
+  candidates = top feasible extract actions + top feasible manufacture actions
+  for each candidate:
+    simulate one worker tick
+    recurse on the resulting state
+
+  return max(baseline, candidate.cashDelta + recurse(...))
+
+At the real game tick:
+  bestPlan = plan(currentBurgState, workersLeft, LOOKAHEAD_DEPTH)
+  execute only the first action of bestPlan
+  workersUsed += fraction
 ```
 
-There are no hard constraints beyond availability. A burg CAN buy from the market even when
-the same ingredient is available locally — if buying enables a higher-scoring manufacture
-action than extracting raw, that is the correct economic choice.
+Key implication:
+
+- A long chain is only chosen if it fits within the remaining search horizon and current workers.
+- Partial chains are valid because the search can start from inventory or market-bought mid-goods.
+- A raw good like Wood is not globally "good" anymore; it is only good if this burg can still turn
+  it into something more valuable within the reachable plan tree.
 
 ### Phase D (per burg, after loop)
 
@@ -170,14 +180,28 @@ action than extracting raw, that is the correct economic choice.
 
 ---
 
+## Chain Metrics
+
+Static chain metrics are still useful, but only as heuristics / UI data.
+
+- `chainValue`: broad downstream desirability, not a decision score
+- `chainComplexity`: minimum worker steps to finish a chain from raw ingredients
+- `chainProfitBase`: total profit using `good.value` instead of live market prices
+- `chainProfitPerWorker`: `chainProfitBase / chainComplexity`
+
+These metrics can help sort and prune planner branches, but the actual move choice must come from
+the bounded lookahead on the burg's current `inventory + remainingPool + globalMarket + workersLeft`.
+
+---
+
 ## Expected Emergent Behaviour
 
-| Burg type      | Expected pattern                                                                                                                            |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Village (3–8)  | Extracts 2–3 raw goods; rarely enough wealth or workers to run complex chains; may occasionally buy a cheap ingredient if wildly profitable |
-| Town (15–40)   | Extracts raw + light manufacturing from own inventory; buys ingredients when local pool exhausted and margins are good                      |
-| City (60–150)  | Local pool exhausted quickly; buys ingredients from globalMarket at scale; focuses on high-margin chains                                    |
-| Capital (200+) | Buys at scale; runs full multi-step chains; wealth accumulates; drives buyPrice up for all                                                  |
+| Burg type      | Expected pattern                                                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Village (3–8)  | Usually takes short plans only; long chains are pruned because they cannot be completed in the remaining search horizon |
+| Town (15–40)   | Can execute short 2–3 step chains when locally or globally feasible                                                     |
+| City (60–150)  | Often prefers market-assisted chains because it can still complete them within multiple remaining worker ticks          |
+| Capital (200+) | Can sustain longer profitable plan sequences and convert more mid-goods into high-value outputs                         |
 
 ---
 
@@ -199,3 +223,4 @@ type Job =
 
 `fromInventory + fromMarket = totalConsumed` per ingredient.
 `marketCost = fromMarket × buyPrice` at time of purchase.
+`score` now means the projected bounded-lookahead gain of choosing this action from the current state.

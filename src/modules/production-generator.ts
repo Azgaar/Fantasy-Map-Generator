@@ -1,5 +1,6 @@
 import Alea from "alea";
 import type {Burg} from "./burgs-generator";
+import type {CultureType} from "./cultures-generator";
 import {DEFAULT_CULTURE_TYPE} from "./cultures-generator";
 import type {Good} from "./goods-generator";
 
@@ -19,6 +20,11 @@ export class ProductionModule {
 
   // iterative chain-value propagation
   private readonly CHAIN_MAX_ITERATIONS = 10;
+
+  // bounded lookahead for per-tick planning
+  private readonly PLAN_LOOKAHEAD_DEPTH = 3;
+  private readonly PLAN_MAX_EXTRACT_CANDIDATES = 6;
+  private readonly PLAN_MAX_MANUFACTURE_CANDIDATES = 10;
 
   // per-burg priority jitter amplitude (±PRIORITY_JITTER/2)
   private readonly PRIORITY_JITTER = 0.2;
@@ -71,28 +77,16 @@ export class ProductionModule {
       const budget = Math.max(1, Math.floor(population));
 
       // Snapshot market prices before this burg's production shifts them
-      const pricesAtStart = {buy: currentBuyPrice.slice(), sell: currentSellPrice.slice()};
+      const pricesAtStart = {
+        buy: currentBuyPrice.slice(),
+        sell: currentSellPrice.slice()
+      };
       const cellsReached = this.floodFillCells(burg, budget, cellPool, addGood);
 
-      // ── Phase C: single-priority production loop (see production_schema.md) ────────
-      // Every worker tick builds a candidate list of all feasible actions and executes
-      // the one with the highest score. Three action kinds compete on equal footing:
-      //
-      //   Extract raw          score = chainValue[X] × cultureMod
-      //   Manufacture (inv)    score = sellPrice[out] × cultureMod − Σ(needed × buyPrice)
-      //   Buy-then-Manufacture score = same formula (buying sourced from globalMarket)
-      //
-      // No hard constraints other than availability. A burg buys from the market whenever
-      // doing so enables a higher score than any raw extraction available.
-
-      // Seed the raw-queue (used only for ordering, not hard-gating)
-      interface RawItem {
-        goodId: number;
-        basePriority: number;
-        priority: number;
-      }
-      const rawItems: RawItem[] = [];
-      const rawQueue = new FlatQueue();
+      // ── Phase C: bounded lookahead planner (see production_schema.md) ─────────────
+      // Each worker tick asks: what can this burg still finish with its remaining workers?
+      // The planner explores a short action tree and picks the first move of the best
+      // reachable plan, instead of following a global speculative chain heuristic.
       const goodsPullData: BurgProductionData["goodsPull"] = [];
 
       for (const goodIdStr in goodsPull) {
@@ -108,9 +102,12 @@ export class ProductionModule {
         const basePriority = rawPull * good.value * cultureModifier;
         const jitter = 1 - this.PRIORITY_JITTER / 2 + burgRng() * this.PRIORITY_JITTER;
         const priority = basePriority * jitter;
-        rawItems.push({goodId, basePriority, priority});
-        rawQueue.push(rawItems.length - 1, -priority);
-        goodsPullData.push({goodId, pull: rawPull, chainValue: chainValue[goodId] ?? good.value, priority});
+        goodsPullData.push({
+          goodId,
+          pull: rawPull,
+          chainValue: chainValue[goodId] ?? good.value,
+          priority
+        });
       }
       goodsPullData.sort((a, b) => b.priority - a.priority);
 
@@ -120,113 +117,49 @@ export class ProductionModule {
       let workersUsed = 0;
 
       for (let i = 0; i < Math.ceil(population); i++) {
-        const fraction = Math.min(1, population - i);
+        const workersLeft = population - workersUsed;
+        const fraction = Math.min(1, workersLeft);
         if (fraction <= 0) break;
 
-        // ── Candidate 1: best extract action ──────────────────────────────────
-        // Advance the queue past exhausted goods
-        while (rawQueue.length) {
-          const idx = rawQueue.peek();
-          if ((remainingPool[rawItems[idx].goodId] ?? 0) > 0) break;
-          rawQueue.pop();
-        }
+        const plan = this.planBestAction({
+          goods,
+          goodById,
+          cultureType: type,
+          inventory,
+          remainingPool,
+          globalMarket,
+          currentBuyPrice,
+          currentSellPrice,
+          workersLeft,
+          depth: Math.min(this.PLAN_LOOKAHEAD_DEPTH, Math.ceil(workersLeft))
+        });
 
-        let bestExtractScore = -Infinity;
-        let bestExtractId = -1;
-        let bestExtractItem: RawItem | undefined;
-        if (rawQueue.length) {
-          const item = rawItems[rawQueue.peek()];
-          const good = goodById.get(item.goodId)!;
-          // Score = base sell value × culture modifier — what the burg actually earns
-          // from extracting and selling this raw good. No chain speculation here;
-          // chain profit is accounted for in the manufacture candidate score.
-          bestExtractScore = good.value * (good.culture[type] || 1);
-          bestExtractId = item.goodId;
-          bestExtractItem = item;
-        }
+        if (!plan.action) break;
 
-        // ── Candidates 2 & 3: manufacture (from inventory or market) ─────────
-        // score = sellPrice[out] × cultureMod − Σ(needed[ing] × buyPrice[ing])
-        // Ingredients already in inventory have the same opportunity cost as buying,
-        // so the formula is identical regardless of source.
-        interface MfgCandidate {
-          good: Good;
-          entries: [string, number][];
-          score: number;
-          maxYield: number; // limited by (inventory + market) availability
-          needsBuy: boolean; // true if any ingredient comes from globalMarket
-        }
-
-        let bestMfg: MfgCandidate | null = null;
-
-        for (const good of goods) {
-          if (!good.recipes?.length) continue;
-          const cultureModifier = good.culture[type] || 1;
-          const revenue = currentSellPrice[good.i] * cultureModifier;
-
-          for (const recipe of good.recipes) {
-            const entries = Object.entries(recipe) as [string, number][];
-            if (!entries.length) continue;
-
-            let ingredientCost = 0;
-            let maxYield = Infinity;
-            let needsBuy = false;
-            let feasible = true;
-
-            for (const [ingIdStr, neededPerUnit] of entries) {
-              const ingId = +ingIdStr;
-              const bp = currentBuyPrice[ingId];
-              ingredientCost += neededPerUnit * bp;
-
-              const inInv = inventory[ingId] || 0;
-              const inMkt = globalMarket[ingId] || 0;
-              const totalAvail = inInv + inMkt;
-
-              if (totalAvail <= 0) {
-                feasible = false;
-                break;
-              }
-              maxYield = Math.min(maxYield, totalAvail / neededPerUnit);
-              if (inInv < neededPerUnit * fraction) needsBuy = true;
-            }
-
-            if (!feasible || !Number.isFinite(maxYield) || maxYield <= 0) continue;
-
-            const score = revenue - ingredientCost;
-            if (score <= 0) continue;
-
-            if (!bestMfg || score > bestMfg.score) {
-              bestMfg = {good, entries, score, maxYield, needsBuy};
-            }
-          }
-        }
-
-        // ── Decision: highest score wins ─────────────────────────────────────
-        const mfgScore = bestMfg?.score ?? -Infinity;
-
-        if (bestExtractScore <= -Infinity && mfgScore <= -Infinity) break; // nothing to do
-
-        if (bestMfg && mfgScore >= bestExtractScore) {
-          // ── Execute: (buy-then-)manufacture ──────────────────────────────
-          const {good, entries, score, maxYield} = bestMfg;
+        if (plan.action.kind === "manufacture") {
+          const {good, entries, maxYield, projectedGain} = plan.action;
           const actualYield = Math.min(fraction, maxYield);
           const cultureModifier = good.culture[type] || 1;
           const produced = actualYield * cultureModifier;
-
-          const recipeLog: Array<{goodId: number; fromInventory: number; fromMarket: number; marketCost: number}> = [];
+          const recipeLog: Array<{
+            goodId: number;
+            fromInventory: number;
+            fromMarket: number;
+            marketCost: number;
+          }> = [];
 
           for (const [ingIdStr, neededPerUnit] of entries) {
             const ingId = +ingIdStr;
-            const amtNeeded = actualYield * neededPerUnit;
-            const fromInv = Math.min(inventory[ingId] || 0, amtNeeded);
-            const fromMkt = amtNeeded - fromInv;
+            const amountNeeded = actualYield * neededPerUnit;
+            const fromInventory = Math.min(inventory[ingId] || 0, amountNeeded);
+            const fromMarket = Math.max(0, amountNeeded - fromInventory);
 
-            inventory[ingId] = Math.max(0, (inventory[ingId] || 0) - fromInv);
+            inventory[ingId] = Math.max(0, (inventory[ingId] || 0) - fromInventory);
 
             let marketCost = 0;
-            if (fromMkt > 0) {
-              const actualBuy = Math.min(fromMkt, globalMarket[ingId] || 0);
-              globalMarket[ingId] = (globalMarket[ingId] || 0) - actualBuy;
+            if (fromMarket > 0) {
+              const actualBuy = Math.min(fromMarket, globalMarket[ingId] || 0);
+              globalMarket[ingId] = Math.max(0, (globalMarket[ingId] || 0) - actualBuy);
               marketCost = actualBuy * currentBuyPrice[ingId];
               burg.wealth = (burg.wealth || 0) - marketCost;
               currentBuyPrice[ingId] = Math.min(
@@ -235,7 +168,12 @@ export class ProductionModule {
               );
             }
 
-            recipeLog.push({goodId: ingId, fromInventory: fromInv, fromMarket: fromMkt, marketCost});
+            recipeLog.push({
+              goodId: ingId,
+              fromInventory,
+              fromMarket,
+              marketCost
+            });
           }
 
           inventory[good.i] = (inventory[good.i] || 0) + produced;
@@ -247,14 +185,12 @@ export class ProductionModule {
             units: produced,
             cultureModifier,
             recipe: recipeLog,
-            score
+            score: projectedGain
           });
         } else {
-          // ── Execute: extract raw ──────────────────────────────────────────
-          rawQueue.pop();
-          const goodId = bestExtractId;
-          const extract = Math.min(fraction, remainingPool[goodId]);
-          remainingPool[goodId] -= extract;
+          const {goodId, projectedGain} = plan.action;
+          const extract = Math.min(fraction, remainingPool[goodId] || 0);
+          remainingPool[goodId] = Math.max(0, (remainingPool[goodId] || 0) - extract);
 
           const good = goodById.get(goodId)!;
           const cultureModifier = good.culture[type] || 1;
@@ -266,16 +202,14 @@ export class ProductionModule {
             currentBuyPrice[goodId] + produced * buyPressure[goodId]
           );
 
-          jobsData.push({kind: "extract", tick: workersUsed + fraction, goodId, units: produced, cultureModifier});
-
-          // Re-queue with halved priority if pool still has supply
-          if (remainingPool[goodId] > 0) {
-            const basePriority = bestExtractItem!.basePriority / 2;
-            const jitter = 1 - this.PRIORITY_JITTER / 2 + burgRng() * this.PRIORITY_JITTER;
-            const priority = basePriority * jitter;
-            rawItems.push({...bestExtractItem!, basePriority, priority});
-            rawQueue.push(rawItems.length - 1, -priority);
-          }
+          jobsData.push({
+            kind: "extract",
+            tick: workersUsed + fraction,
+            goodId,
+            units: produced,
+            cultureModifier,
+            projectedGain
+          });
         }
 
         workersUsed += fraction;
@@ -506,10 +440,174 @@ export class ProductionModule {
     return biomeProduction;
   }
 
+  private planBestAction(params: {
+    goods: Good[];
+    goodById: Map<number, Good>;
+    cultureType: string;
+    inventory: Record<number, number>;
+    remainingPool: Record<number, number>;
+    globalMarket: Record<number, number>;
+    currentBuyPrice: number[];
+    currentSellPrice: number[];
+    workersLeft: number;
+    depth: number;
+  }): {value: number; action: PlannedAction | null} {
+    const baselineValue = this.getInventoryLiquidationValue(params.inventory, params.currentSellPrice);
+    if (params.depth <= 0 || params.workersLeft <= 0) return {value: baselineValue, action: null};
+
+    const fraction = Math.min(1, params.workersLeft);
+    const candidates = this.getPlannedCandidates({...params, fraction});
+    let bestValue = baselineValue;
+    let bestAction: PlannedAction | null = null;
+
+    for (const candidate of candidates) {
+      const nextInventory = {...params.inventory};
+      const nextPool = {...params.remainingPool};
+      const nextMarket = {...params.globalMarket};
+      let cashDelta = 0;
+
+      if (candidate.kind === "extract") {
+        const good = params.goodById.get(candidate.goodId)!;
+        const cultureModifier = this.getCultureModifier(good, params.cultureType);
+        const extract = Math.min(fraction, nextPool[candidate.goodId] || 0);
+        nextPool[candidate.goodId] = Math.max(0, (nextPool[candidate.goodId] || 0) - extract);
+        nextInventory[candidate.goodId] = (nextInventory[candidate.goodId] || 0) + extract * cultureModifier;
+      } else {
+        const cultureModifier = this.getCultureModifier(candidate.good, params.cultureType);
+        const actualYield = Math.min(fraction, candidate.maxYield);
+        for (const [ingIdStr, neededPerUnit] of candidate.entries) {
+          const ingId = +ingIdStr;
+          const amountNeeded = actualYield * neededPerUnit;
+          const fromInventory = Math.min(nextInventory[ingId] || 0, amountNeeded);
+          const fromMarket = Math.max(0, amountNeeded - fromInventory);
+          nextInventory[ingId] = Math.max(0, (nextInventory[ingId] || 0) - fromInventory);
+          if (fromMarket > 0) {
+            const actualBuy = Math.min(fromMarket, nextMarket[ingId] || 0);
+            nextMarket[ingId] = Math.max(0, (nextMarket[ingId] || 0) - actualBuy);
+            cashDelta -= actualBuy * params.currentBuyPrice[ingId];
+          }
+        }
+        nextInventory[candidate.good.i] = (nextInventory[candidate.good.i] || 0) + actualYield * cultureModifier;
+      }
+
+      const continuation = this.planBestAction({
+        ...params,
+        inventory: nextInventory,
+        remainingPool: nextPool,
+        globalMarket: nextMarket,
+        workersLeft: Math.max(0, params.workersLeft - fraction),
+        depth: params.depth - 1
+      });
+      const totalValue = cashDelta + continuation.value;
+
+      if (totalValue > bestValue + 0.001) {
+        bestValue = totalValue;
+        bestAction = {
+          ...candidate,
+          projectedGain: totalValue - baselineValue
+        };
+      }
+    }
+
+    return {value: bestValue, action: bestAction};
+  }
+
+  private getPlannedCandidates(params: {
+    goods: Good[];
+    goodById: Map<number, Good>;
+    cultureType: string;
+    inventory: Record<number, number>;
+    remainingPool: Record<number, number>;
+    globalMarket: Record<number, number>;
+    currentBuyPrice: number[];
+    currentSellPrice: number[];
+    fraction: number;
+  }): PlannedAction[] {
+    const extractCandidates: PlannedAction[] = Object.entries(params.remainingPool)
+      .filter(([, amount]) => amount > 0)
+      .map(([goodIdStr]) => {
+        const goodId = +goodIdStr;
+        const good = params.goodById.get(goodId)!;
+        return {
+          kind: "extract" as const,
+          goodId,
+          projectedGain: good.value * this.getCultureModifier(good, params.cultureType)
+        };
+      })
+      .sort((a, b) => b.projectedGain - a.projectedGain)
+      .slice(0, this.PLAN_MAX_EXTRACT_CANDIDATES);
+
+    const manufactureCandidates: PlannedAction[] = [];
+    for (const good of params.goods) {
+      if (!good.recipes?.length) continue;
+      const cultureModifier = this.getCultureModifier(good, params.cultureType);
+      const revenue = params.currentSellPrice[good.i] * cultureModifier;
+
+      for (const recipe of good.recipes) {
+        const entries = Object.entries(recipe) as [string, number][];
+        if (!entries.length) continue;
+
+        let ingredientCost = 0;
+        let maxYield = Infinity;
+        let feasible = true;
+
+        for (const [ingIdStr, neededPerUnit] of entries) {
+          const ingId = +ingIdStr;
+          ingredientCost += neededPerUnit * params.currentBuyPrice[ingId];
+          const totalAvailable = (params.inventory[ingId] || 0) + (params.globalMarket[ingId] || 0);
+          if (totalAvailable < neededPerUnit * params.fraction) {
+            feasible = false;
+            break;
+          }
+          maxYield = Math.min(maxYield, totalAvailable / neededPerUnit);
+        }
+
+        if (!feasible || !Number.isFinite(maxYield) || maxYield <= 0) continue;
+        manufactureCandidates.push({
+          kind: "manufacture",
+          good,
+          entries,
+          maxYield,
+          projectedGain: revenue - ingredientCost
+        });
+      }
+    }
+
+    manufactureCandidates.sort((a, b) => b.projectedGain - a.projectedGain);
+    return extractCandidates.concat(manufactureCandidates.slice(0, this.PLAN_MAX_MANUFACTURE_CANDIDATES));
+  }
+
+  private getInventoryLiquidationValue(inventory: Record<number, number>, currentSellPrice: number[]) {
+    let total = 0;
+    for (const goodIdStr in inventory) {
+      const goodId = +goodIdStr;
+      total += (inventory[goodId] || 0) * currentSellPrice[goodId];
+    }
+    return total;
+  }
+
+  private getCultureModifier(good: Good, cultureType: string) {
+    return good.culture[cultureType as CultureType] || 1;
+  }
+
   getProductionData(burgId: number): BurgProductionData | undefined {
     return this._lastProductionData.get(burgId);
   }
 }
+
+type PlannedAction =
+  | {
+      kind: "extract";
+      goodId: number;
+      projectedGain: number;
+    }
+  | {
+      kind: "manufacture";
+      good: Good;
+      entries: [string, number][];
+      maxYield: number;
+      projectedGain: number;
+    };
 
 export interface BurgProductionData {
   population: number;
@@ -532,6 +630,7 @@ export interface BurgProductionData {
         goodId: number;
         units: number; // output after culture modifier
         cultureModifier: number;
+        projectedGain?: number; // bounded-lookahead gain over current state
       }
     | {
         kind: "manufacture";
@@ -545,7 +644,7 @@ export interface BurgProductionData {
           fromMarket: number; // units bought from globalMarket
           marketCost: number; // wealth spent on market purchase
         }>;
-        score: number; // sellPrice×cultureMod − Σ(needed×buyPrice)
+        score: number; // bounded-lookahead gain over current state
       }
   >;
   finalInventory: Record<number, number>; // raw (un-rounded) values
