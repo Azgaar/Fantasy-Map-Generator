@@ -31,16 +31,25 @@ export class ProductionModule {
 
   private _lastProductionData = new Map<number, BurgProductionData>();
   produce() {
+    TIME && console.time("generateProduction");
     const {burgs} = pack;
     const goods = pack.goods;
 
     // Phase A: pre-computation (runs once, shared across all burgs)
     // Build id→Good map; pack.goods is shuffled during generation so array-position access is wrong
     const goodById = new Map<number, Good>(goods.map(g => [g.i, g]));
+    TIME && console.time("generateProduction:buildCellPool");
     const cellPool = this.buildCellPool(goods);
+    TIME && console.timeEnd("generateProduction:buildCellPool");
+
+    TIME && console.time("generateProduction:buildChainValues");
     const chainValue = this.buildChainValues(goods);
+    TIME && console.timeEnd("generateProduction:buildChainValues");
+
+    TIME && console.time("generateProduction:buildPriceArrays");
     const {currentBuyPrice, currentSellPrice, buyPressure, sellPressure, priceFloor, priceCeiling} =
       this.buildPriceArrays(goods);
+    TIME && console.timeEnd("generateProduction:buildPriceArrays");
 
     // globalMarket: goods produced/sold by burgs accumulate here so later burgs can buy them.
     // Starts empty; filled in Phase D of each burg (smallest first = poorest first).
@@ -49,6 +58,10 @@ export class ProductionModule {
     // start from smallest burgs
     const validBurgs = burgs.filter(b => (b as Burg).i && !(b as Burg).removed) as Burg[];
     validBurgs.sort((a, b) => (a.population || 0) - (b.population || 0));
+
+    let floodFillMs = 0;
+    let planningMs = 0;
+    let marketMs = 0;
 
     this._lastProductionData.clear();
     let burgRank = 0;
@@ -81,7 +94,9 @@ export class ProductionModule {
         buy: currentBuyPrice.slice(),
         sell: currentSellPrice.slice()
       };
+      const floodFillStart = TIME ? performance.now() : 0;
       const cellsReached = this.floodFillCells(burg, budget, cellPool, addGood);
+      if (TIME) floodFillMs += performance.now() - floodFillStart;
 
       // ── Phase C: bounded lookahead planner (see production_schema.md) ─────────────
       // Each worker tick asks: what can this burg still finish with its remaining workers?
@@ -121,6 +136,7 @@ export class ProductionModule {
         const fraction = Math.min(1, workersLeft);
         if (fraction <= 0) break;
 
+        const planningStart = TIME ? performance.now() : 0;
         const plan = this.planBestAction({
           goods,
           goodById,
@@ -133,6 +149,7 @@ export class ProductionModule {
           workersLeft,
           depth: Math.min(this.PLAN_LOOKAHEAD_DEPTH, Math.ceil(workersLeft))
         });
+        if (TIME) planningMs += performance.now() - planningStart;
 
         if (!plan.action) break;
 
@@ -218,6 +235,7 @@ export class ProductionModule {
       // ── Phase D: revenue + global market fill ─────────────────────────────
       // All goods in inventory go to globalMarket. sellPrice falls on supply.
       // burg.wealth accumulates net revenue. burg.produced stores 2dp amounts.
+      const marketStart = TIME ? performance.now() : 0;
       burg.produced = {};
       let phaseRevenue = 0;
       for (const goodIdStr in inventory) {
@@ -236,6 +254,7 @@ export class ProductionModule {
         burg.produced[goodId] = Math.round(amount * 100) / 100;
       }
       burg.wealth = (burg.wealth || 0) + phaseRevenue;
+      if (TIME) marketMs += performance.now() - marketStart;
 
       this._lastProductionData.set(burg.i!, {
         population,
@@ -257,6 +276,13 @@ export class ProductionModule {
     for (const good of goods) {
       good.buyPrice = +currentBuyPrice[good.i].toFixed(2);
       good.sellPrice = +currentSellPrice[good.i].toFixed(2);
+    }
+
+    if (TIME) {
+      console.info(
+        `generateProduction: floodFill=${floodFillMs.toFixed(1)}ms, planning=${planningMs.toFixed(1)}ms, market=${marketMs.toFixed(1)}ms`
+      );
+      console.timeEnd("generateProduction");
     }
   }
 
