@@ -35,15 +35,13 @@ export function open(burgId: number): void {
     negative: "color:#c44",
     warning: "color:#c84",
     sectionTitle: "font-weight:600;border-bottom:1px solid #ccc;padding-bottom:.3em;margin-bottom:.45em;font-size:1em",
-    statsBar:
-      "background:#f5f5f5;border-radius:4px;padding:.55em .8em;margin-bottom:.85em;display:flex;flex-wrap:wrap;gap:.85em;font-size:.92em;line-height:1.4",
+    statsBar: "margin-bottom:.85em;display:flex;flex-wrap:wrap;gap:.85em;font-size:.92em;",
     table: "width:100%;border-collapse:collapse;font-size:.92em;line-height:1.35",
     headRow: "background:#eee",
     bodyRow: "border-bottom:1px solid #f0f0f0",
     buyRow: "background:#fffaf2;border-bottom:1px solid #f3e4c7",
     cell: "padding:.38em .55em;vertical-align:top",
     cellRight: "padding:.38em .55em;vertical-align:top;text-align:right",
-    detailsCell: "padding:.38em .55em;vertical-align:top;color:#555;line-height:1.45",
     empty: "color:#888;font-style:italic",
     summaryBar:
       "display:flex;gap:1.2em;flex-wrap:wrap;background:#f0f5f0;border-radius:4px;padding:.55em .8em;margin-top:.6em;font-size:.9em;line-height:1.4"
@@ -78,13 +76,12 @@ export function open(burgId: number): void {
       `${positive ? styles.positive : styles.warning};font-weight:600;white-space:nowrap`
     );
 
-  const cellPct = data.cellsBudget > 0 ? Math.round((data.cellsReached / data.cellsBudget) * 100) : 0;
   const statsHtml = /*html*/ `
     <div style="${styles.statsBar}">
       <span><b>Population:</b> ${data.population}</span>
-      <span><b>Cells:</b> ${data.cellsReached} / ${data.cellsBudget} (${cellPct}%)</span>
+      <span><b>Cells:</b> ${data.cellsReached}/${data.cellsBudget}</span>
       <span><b>Culture type:</b> ${data.cultureType}</span>
-      <span><b>Process rank:</b> #${data.processRank} of ${data.totalBurgs}</span>
+      <span><b>Order:</b> ${data.processRank} of ${data.totalBurgs}</span>
     </div>`;
 
   const poolRows = data.goodsPull
@@ -126,14 +123,13 @@ export function open(burgId: number): void {
         job.cultureModifier !== 1
           ? ` <span style="${styles.muted};font-size:.9em" title="Culture bonus">x${r2(job.cultureModifier)}</span>`
           : "";
-      const details = "Local resource production";
 
       return [
         /*html*/ `<tr style="${styles.bodyRow}">
         ${renderDataCell(typeBadge("RAW"))}
         ${renderDataCell(renderGoodLabel(job.goodId, cultureSuffix))}
         ${renderDataCell(String(r2(job.units)), "right")}
-        <td style="${styles.detailsCell}">${details}</td>
+        <td style="${styles.cell}">Local resource production</td>
         ${
           job.projectedGain !== undefined
             ? renderValueCell("Gain", job.projectedGain, job.projectedGain >= 0)

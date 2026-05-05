@@ -19,7 +19,7 @@ export class ProductionModule {
   private readonly CHAIN_MAX_ITERATIONS = 10;
   private readonly PRIORITY_JITTER = 0.2;
 
-  private _lastProductionData = new Map<number, BurgProductionData>();
+  private productionData = new Map<number, BurgProductionData>();
 
   produce() {
     TIME && console.time("generateProduction");
@@ -27,31 +27,18 @@ export class ProductionModule {
     const goods = pack.goods;
 
     const goodById = new Map<number, Good>(goods.map(g => [g.i, g]));
-
-    TIME && console.time("generateProduction:buildCellPool");
     const cellPool = this.buildCellPool(goods);
-    TIME && console.timeEnd("generateProduction:buildCellPool");
-
-    TIME && console.time("generateProduction:buildChainValues");
     const chainValue = this.buildChainValues(goods);
-    TIME && console.timeEnd("generateProduction:buildChainValues");
-
-    TIME && console.time("generateProduction:buildPriceArrays");
     const {currentBuyPrice, currentSellPrice, buyPressure, sellPressure, priceFloor, priceCeiling} =
       this.buildPriceArrays(goods);
-    TIME && console.timeEnd("generateProduction:buildPriceArrays");
 
     const recipeOptions = this.buildRecipeOptions(goods);
     const globalMarket: Record<number, number> = {};
 
-    const validBurgs = burgs.filter(b => (b as Burg).i && !(b as Burg).removed) as Burg[];
+    const validBurgs = burgs.filter(b => (b as Burg).i && !(b as Burg).removed);
     validBurgs.sort((a, b) => (a.population || 0) - (b.population || 0));
 
-    let floodFillMs = 0;
-    let planningMs = 0;
-    let marketMs = 0;
-
-    this._lastProductionData.clear();
+    this.productionData.clear();
     let burgRank = 0;
 
     for (const burg of validBurgs) {
@@ -69,11 +56,12 @@ export class ProductionModule {
       };
 
       const budget = Math.max(1, Math.floor(population));
-      const pricesAtStart = {buy: currentBuyPrice.slice(), sell: currentSellPrice.slice()};
+      const pricesAtStart = {
+        buy: currentBuyPrice.slice(),
+        sell: currentSellPrice.slice()
+      };
 
-      const floodFillStart = TIME ? performance.now() : 0;
       const cellsReached = this.floodFillCells(burg, budget, cellPool, addGood);
-      if (TIME) floodFillMs += performance.now() - floodFillStart;
 
       const goodsPullData: BurgProductionData["goodsPull"] = [];
       for (const goodIdStr in goodsPull) {
@@ -85,7 +73,12 @@ export class ProductionModule {
         const basePriority = rawPull * good.value * cultureModifier;
         const jitter = 1 - this.PRIORITY_JITTER / 2 + burgRng() * this.PRIORITY_JITTER;
         const priority = basePriority * jitter;
-        goodsPullData.push({goodId, pull: rawPull, chainValue: chainValue[goodId] ?? good.value, priority});
+        goodsPullData.push({
+          goodId,
+          pull: rawPull,
+          chainValue: chainValue[goodId] ?? good.value,
+          priority
+        });
       }
       goodsPullData.sort((a, b) => b.priority - a.priority);
 
@@ -99,7 +92,6 @@ export class ProductionModule {
         const fraction = Math.min(1, workersLeft);
         if (fraction <= 0) break;
 
-        const planningStart = TIME ? performance.now() : 0;
         const action = this.greedyBestAction({
           recipeOptions,
           goodById,
@@ -112,7 +104,6 @@ export class ProductionModule {
           currentSellPrice,
           fraction
         });
-        if (TIME) planningMs += performance.now() - planningStart;
 
         if (!action) break;
 
@@ -121,7 +112,12 @@ export class ProductionModule {
           const actualYield = Math.min(fraction, maxYield);
           const cultureModifier = this.getCultureModifier(good, type);
           const produced = actualYield * cultureModifier;
-          const recipeLog: Array<{goodId: number; fromInventory: number; fromMarket: number; marketCost: number}> = [];
+          const recipeLog: Array<{
+            goodId: number;
+            fromInventory: number;
+            fromMarket: number;
+            marketCost: number;
+          }> = [];
 
           for (const entry of entries) {
             const ingId = entry.goodId;
@@ -143,7 +139,12 @@ export class ProductionModule {
               );
             }
 
-            recipeLog.push({goodId: ingId, fromInventory, fromMarket, marketCost});
+            recipeLog.push({
+              goodId: ingId,
+              fromInventory,
+              fromMarket,
+              marketCost
+            });
           }
 
           inventory[good.i] = (inventory[good.i] || 0) + produced;
@@ -185,7 +186,6 @@ export class ProductionModule {
         workersUsed += fraction;
       }
 
-      const marketStart = TIME ? performance.now() : 0;
       burg.produced = {};
       let phaseRevenue = 0;
       for (const goodIdStr in inventory) {
@@ -204,9 +204,8 @@ export class ProductionModule {
         burg.produced[goodId] = Math.round(amount * 100) / 100;
       }
       burg.wealth = (burg.wealth || 0) + phaseRevenue;
-      if (TIME) marketMs += performance.now() - marketStart;
 
-      this._lastProductionData.set(burg.i!, {
+      this.productionData.set(burg.i!, {
         population,
         processRank: burgRank,
         totalBurgs: validBurgs.length,
@@ -227,12 +226,7 @@ export class ProductionModule {
       good.sellPrice = +currentSellPrice[good.i].toFixed(2);
     }
 
-    if (TIME) {
-      console.info(
-        `generateProduction: floodFill=${floodFillMs.toFixed(1)}ms, planning=${planningMs.toFixed(1)}ms, market=${marketMs.toFixed(1)}ms`
-      );
-      console.timeEnd("generateProduction");
-    }
+    TIME && console.timeEnd("generateProduction");
   }
 
   private buildCellPool(goods: Good[]): Record<number, number>[] {
@@ -307,7 +301,14 @@ export class ProductionModule {
       priceCeiling[i] = good.value * this.PRICE_CEILING_FACTOR;
     }
 
-    return {currentBuyPrice, currentSellPrice, buyPressure, sellPressure, priceFloor, priceCeiling};
+    return {
+      currentBuyPrice,
+      currentSellPrice,
+      buyPressure,
+      sellPressure,
+      priceFloor,
+      priceCeiling
+    };
   }
 
   private floodFillCells(
@@ -413,7 +414,11 @@ export class ProductionModule {
       const score = (params.chainValue[goodId] ?? good.value) * this.getCultureModifier(good, params.cultureType);
       if (score > bestScore) {
         bestScore = score;
-        bestAction = {kind: "extract", goodId, projectedGain: score * params.fraction};
+        bestAction = {
+          kind: "extract",
+          goodId,
+          projectedGain: score * params.fraction
+        };
       }
     }
 
@@ -437,9 +442,16 @@ export class ProductionModule {
 
       if (!feasible || !Number.isFinite(maxYield) || maxYield <= 0) continue;
       const score = revenue - ingredientCost;
+      const projectedGain = score * Math.min(params.fraction, maxYield);
       if (score > bestScore) {
         bestScore = score;
-        bestAction = {kind: "manufacture", good: option.good, entries: option.entries, maxYield, projectedGain: score};
+        bestAction = {
+          kind: "manufacture",
+          good: option.good,
+          entries: option.entries,
+          maxYield,
+          projectedGain
+        };
       }
     }
 
@@ -455,7 +467,10 @@ export class ProductionModule {
     for (const good of goods) {
       if (!good.recipes?.length) continue;
       for (const recipe of good.recipes) {
-        const entries = Object.entries(recipe).map(([goodId, amount]) => ({goodId: +goodId, amount}));
+        const entries = Object.entries(recipe).map(([goodId, amount]) => ({
+          goodId: +goodId,
+          amount
+        }));
         if (!entries.length) continue;
         options.push({good, entries});
       }
@@ -464,7 +479,7 @@ export class ProductionModule {
   }
 
   getProductionData(burgId: number): BurgProductionData | undefined {
-    return this._lastProductionData.get(burgId);
+    return this.productionData.get(burgId);
   }
 }
 
