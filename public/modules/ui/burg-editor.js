@@ -112,8 +112,8 @@ function editBurg(id) {
       const effectiveDx = dx + x;
       const effectiveDy = dy + y;
       this.setAttribute("transform", `translate(${effectiveDx},${effectiveDy})`);
-      const labelId = Labels.getAll().findIndex(label => label.type === "burg" && label.burgId === id);
-      Labels.update(labelId, {
+      const label = Labels.getAll().find(label => label.type === "burg" && label.burgId === id);
+      Labels.update(label.i, {
         dx: effectiveDx,
         dy: effectiveDy
       })
@@ -125,8 +125,9 @@ function editBurg(id) {
     const id = +elSelected.attr("data-id");
     pack.burgs[id].name = burgName.value;
     elSelected.text(burgName.value);
-    const labelId = Labels.getAll().findIndex(label => label.type === "burg" && label.burgId === id);
-    Labels.update(labelId, { text: burgName.value });
+    
+    const label = Labels.getAll().find(label => label.type === "burg" && label.burgId === id);
+    Labels.update(label.i, { text: burgName.value });
   }
 
   function generateNameRandom() {
@@ -393,8 +394,8 @@ function editBurg(id) {
     burg.y = y;
     if (burg.capital) pack.states[newState].center = burg.cell;
 
-    const labelId = Labels.getAll().findIndex(label => label.type === "burg" && label.burgId === id);
-    Labels.update(labelId, { x, y, dx: 0, dy: 0 });
+    const label = Labels.getAll().find(label => label.type === "burg" && label.burgId === id);
+    Labels.update(label.i, { x, y, dx: 0, dy: 0 });
 
     if (d3.event.shiftKey === false) toggleRelocateBurg();
   }
