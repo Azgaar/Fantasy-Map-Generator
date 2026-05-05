@@ -189,7 +189,7 @@ const GOODS_DATA = [
     unit: "wain",
     bonus: {archers: 2, population: 1},
     culture: {Naval: 0.6, Nomadic: 2, Hunting: 3},
-    biome: {3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1}
+    biome: {3: 0.25, 4: 0.25, 5: 0.5, 6: 0.5, 7: 0.5, 8: 0.5, 9: 1}
   },
   {
     name: "Wine",
@@ -292,7 +292,7 @@ const GOODS_DATA = [
     unit: "head",
     bonus: {cavalry: 1},
     culture: {Nomadic: 3},
-    biome: {1: 1, 2: 1}
+    biome: {1: 0.5, 2: 0.5}
   },
   {
     name: "Hemp",
@@ -422,7 +422,7 @@ const GOODS_DATA = [
     tags: ["supply"],
     icon: "good-slaves",
     color: "#757575",
-    value: 5,
+    value: 7,
     chance: 2,
     distribution: "shore(1) && minHabitability(1) && !habitability()",
     unit: "slave",
@@ -581,7 +581,7 @@ const GOODS_DATA = [
     tags: ["clothing"],
     icon: "good-cloth",
     color: "#b55239",
-    value: 6,
+    value: 5,
     chance: 0,
     recipes: [{Sheep: 1}, {Hemp: 1}, {Silk: 0.5}],
     unit: "bolt",
@@ -593,7 +593,7 @@ const GOODS_DATA = [
     tags: ["clothing"],
     icon: "good-garments",
     color: "#bd21ec",
-    value: 12,
+    value: 10,
     chance: 0,
     recipes: [
       {Cloth: 1, Dyes: 0.5},
@@ -686,7 +686,7 @@ const GOODS_DATA = [
     tags: ["naval"],
     icon: "good-sails",
     color: "#ffffff",
-    value: 11,
+    value: 10,
     chance: 0,
     recipes: [{Cloth: 1}],
     unit: "set",

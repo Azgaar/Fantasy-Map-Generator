@@ -6,6 +6,8 @@ import {getHeight} from "../utils/unitUtils";
 let isInitialized = false;
 let visibleTags = new Set<string>();
 
+const BONUS_PRODUCTION = 5;
+
 export function open() {
   if (customization) return;
   closeDialogs("#goodsEditor, .stable");
@@ -62,6 +64,7 @@ function getBonusIcon(bonus: string): string {
 
 function goodsEditorAddLines() {
   const body = ensureEl("goodsBody");
+  const {availabilityByGood, producedByGood} = calculateGoodsEditorStats();
   let lines = "";
 
   for (const good of pack.goods) {
@@ -72,30 +75,31 @@ function goodsEditorAddLines() {
     const tags = good.tags.join(", ");
     const stroke = Goods.getStroke(good.color);
 
+    const basePrice = good.value;
     const buyPrice = good.buyPrice ?? good.value;
     const sellPrice = good.sellPrice ?? good.value;
-    const buyColor =
-      good.buyPrice == null ? "" : buyPrice > good.value ? "color:#c84" : buyPrice < good.value ? "color:#4a4" : "";
-    const sellColor =
-      good.sellPrice == null ? "" : sellPrice < good.value ? "color:#c84" : sellPrice > good.value ? "color:#4a4" : "";
+    const totalAvailability = availabilityByGood[good.i] || 0;
+    const totalProduced = producedByGood[good.i] || 0;
 
     lines += `<div class="states goods"
           data-id=${good.i} data-name="${good.name}" data-color="${good.color}"
           data-tags="${tags}" data-chance="${good.chance}" data-bonus="${bonusString}"
-          data-value="${good.value}" data-model="${distribution}" data-cells="${good.cells}"
-          data-buyprice="${buyPrice}" data-sellprice="${sellPrice}">
+          data-value="${good.value}" data-model="${distribution}" data-availability="${totalAvailability}"
+          data-produced="${totalProduced}" data-baseprice="${basePrice}" data-buyprice="${buyPrice}" data-sellprice="${sellPrice}">
         <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
           <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
           <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
         </svg>
         <div data-tip="Good name" class="goodName">${good.name}</div>
         <div data-tip="Good tags" class="goodTags" title="${tags}">${tags}</div>
-        <div data-tip="Number of cells with good" class="goodCells">${good.cells}</div>
-        <div data-tip="Buy price (base: ${good.value}). Rises as more is extracted." class="goodBuyPrice" style="${buyColor}">${buyPrice}</div>
-        <div data-tip="Sell price (base: ${good.value}). Falls as more is manufactured." class="goodSellPrice" style="${sellColor}">${sellPrice}</div>
+        <div data-tip="Total map-wide availability from biomes and bonus goods, in units" class="goodAvailability">${rn(totalAvailability, 2)}</div>
+        <div data-tip="Total actual produced units aggregated from all burgs" class="goodProduced">${rn(totalProduced, 2)}</div>
+        <div data-tip="Base price" class="goodBasePrice">🟡 ${rn(basePrice, 2)}</div>
+        <div data-tip="Current buy price after production simulation" class="goodBuyPrice">🟡 ${rn(buyPrice, 2)}</div>
+        <div data-tip="Current sell price after production simulation" class="goodSellPrice">🟡 ${rn(sellPrice, 2)}</div>
         <span data-tip="Edit good" class="icon-pencil goodEdit hide"></span>
-        <span data-tip="Toggle good exclusive visibility (pin)" class="icon-pin inactive hide"></span>
-        <span data-tip="Remove good" class="icon-trash-empty hide"></span>
+        <span data-tip="Toggle good exclusive visibility (pin)" class="icon-pin inactive hide goodPin"></span>
+        <span data-tip="Remove good" class="icon-trash-empty hide goodRemove"></span>
       </div>`;
   }
   body.innerHTML = lines;
@@ -301,14 +305,63 @@ function toggleLegend() {
   drawLegend("Goods", data);
 }
 
+function calculateGoodsEditorStats() {
+  const availabilityByGood: number[] = [];
+  const producedByGood: number[] = [];
+  const biomeProduction: {goodId: number; production: number}[][] = Array.from({length: biomesData.i.length}, () => []);
+
+  for (const good of pack.goods) {
+    if (!good.biome) continue;
+    for (const [biomeId, production] of Object.entries(good.biome)) {
+      if (!production || production <= 0) continue;
+      biomeProduction[+biomeId].push({goodId: good.i, production});
+    }
+  }
+
+  for (const cellId of pack.cells.i) {
+    const explicitGoodId = pack.cells.good[cellId];
+    if (explicitGoodId)
+      availabilityByGood[explicitGoodId] = (availabilityByGood[explicitGoodId] || 0) + BONUS_PRODUCTION;
+
+    const biomeId = pack.cells.biome[cellId];
+    for (const entry of biomeProduction[biomeId] || []) {
+      availabilityByGood[entry.goodId] = (availabilityByGood[entry.goodId] || 0) + entry.production;
+    }
+  }
+
+  for (const burg of pack.burgs as any[]) {
+    if (!burg || burg.removed || !burg.produced) continue;
+    for (const goodId in burg.produced) {
+      producedByGood[+goodId] = (producedByGood[+goodId] || 0) + (burg.produced[goodId] || 0);
+    }
+  }
+
+  return {availabilityByGood, producedByGood};
+}
+
 function togglePercentageMode() {
   const body = ensureEl("goodsBody");
   if (body.dataset.type === "absolute") {
     body.dataset.type = "percentage";
-    const totalCells = Array.from(pack.cells.good as Uint8Array).filter(r => r !== 0).length;
+    let totalAvailability = 0;
+    let totalProduced = 0;
 
     body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
-      el.querySelector(".goodCells")!.innerHTML = `${rn((+el.dataset.cells! / totalCells) * 100)}%`;
+      totalAvailability += +el.dataset.availability! || 0;
+      totalProduced += +el.dataset.produced! || 0;
+    });
+
+    body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
+      const availabilityEl = el.querySelector<HTMLElement>(".goodAvailability");
+      const producedEl = el.querySelector<HTMLElement>(".goodProduced");
+      if (availabilityEl) {
+        const availability = +el.dataset.availability! || 0;
+        availabilityEl.innerHTML = `${rn(totalAvailability ? (availability / totalAvailability) * 100 : 0, 2)}%`;
+      }
+      if (producedEl) {
+        const produced = +el.dataset.produced! || 0;
+        producedEl.innerHTML = `${rn(totalProduced ? (produced / totalProduced) * 100 : 0, 2)}%`;
+      }
     });
   } else {
     body.dataset.type = "absolute";
@@ -409,7 +462,9 @@ function exitResourceAssignMode(close?: string) {
     .forEach(el => void el.classList.remove("hidden"));
   ensureEl("goodsFooter").style.display = "block";
   body
-    .querySelectorAll<HTMLElement>(".goodName, .goodType, .goodTags, .goodCells, .goodEdit, svg, .icon-trash-empty")
+    .querySelectorAll<HTMLElement>(
+      ".goodName, .goodTags, .goodAvailability, .goodProduced, .goodBasePrice, .goodBuyPrice, .goodSellPrice, .goodEdit, svg, .icon-trash-empty"
+    )
     .forEach(e => {
       e.style.pointerEvents = "";
     });

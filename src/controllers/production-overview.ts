@@ -70,11 +70,7 @@ export function open(burgId: number): void {
   const renderSection = (title: string, content: string) =>
     `<div style="margin-bottom:.9em"><div style="${styles.sectionTitle}">${title}</div>${content}</div>`;
   const renderValueCell = (label: string, value: number, positive = true) =>
-    renderDataCell(
-      `${label}: ${r2(value)}`,
-      "right",
-      `${positive ? styles.positive : styles.warning};font-weight:600;white-space:nowrap`
-    );
+    renderDataCell(`${label}: ${r2(value)}`, "right", `${positive ? styles.positive : styles.warning}`);
 
   const statsHtml = /*html*/ `
     <div style="${styles.statsBar}">
@@ -148,7 +144,7 @@ export function open(burgId: number): void {
           ${renderDataCell(typeBadge("BUY"))}
           ${renderDataCell(renderGoodLabel(item.goodId))}
           ${renderDataCell(String(r2(item.fromMarket)), "right")}
-          <td style="${styles.detailsCell}">Market purchase for ${goodDot(job.goodId)}${goodName(job.goodId)}</td>
+          <td style="${styles.cell}">Market purchase for ${goodDot(job.goodId)}${goodName(job.goodId)}</td>
           ${renderValueCell("Spent", item.marketCost, false)}
         </tr>`);
       }

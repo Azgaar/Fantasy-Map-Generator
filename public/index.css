@@ -2451,29 +2451,20 @@ div.states > .goodTags {
   vertical-align: middle;
   white-space: nowrap;
 }
+
+div.states > .goodAvailability,
+div.states > .goodProduced,
+div.states > .goodBasePrice,
+div.states > .goodBuyPrice,
+div.states > .goodSellPrice {
+  width: 5em;
+  text-align: right;
+}
+
+div.states > .goodEdit {
+  padding-left: 1em;
+}
+
 div.states.hiddenByTag {
   display: none;
-}
-div.states > .goodBonus {
-  color: #666;
-  width: 5em;
-  cursor: pointer;
-}
-div.states > div.goodBonus > span {
-  pointer-events: none;
-  margin: 0 0.15em;
-}
-div.states > div.goodBonus > span.icon-anchor {
-  font-size: 0.85em;
-  margin: 0 0.25em;
-}
-div.states > div.goodBonus > span.icon-male {
-  margin: 0 0.1em;
-}
-#goods > g > use {
-  pointer-events: none;
-}
-#goodIconEditor div.label {
-  display: inline-block;
-  width: 5.5em;
 }
