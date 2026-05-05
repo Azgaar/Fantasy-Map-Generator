@@ -1121,7 +1121,6 @@ export function resolveVersionConflicts(mapVersion) {
     // Migrate old SVG labels to pack.labels structure
     if (!pack.labels || !pack.labels.length) {
       pack.labels = [];
-      let labelId = 0;
 
       // Migrate state labels
       const stateLabelsGroup = document.querySelector("#labels > #states");
@@ -1199,7 +1198,7 @@ export function resolveVersionConflicts(mapVersion) {
             const y = burg.y;
 
             pack.labels.push({
-              i: labelId++,
+              i: pack.labels.length,
               type: "burg",
               burgId,
               group,
