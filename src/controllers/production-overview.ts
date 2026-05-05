@@ -1,4 +1,6 @@
 import type {Good} from "../modules/goods-generator";
+import type {DecisionCandidate, Log} from "../modules/production-generator";
+import {rn} from "../utils";
 
 export function open(burgId: number): void {
   const burg = (pack.burgs as any[])[burgId];
@@ -10,22 +12,13 @@ export function open(burgId: number): void {
   const data = Production.getProductionData(burgId);
   if (!data) {
     alertMessage.innerHTML = `<div>No production data for this burg.<br>Run map generation or regenerate production first.</div>`;
-    $("#alert").dialog({
-      resizable: false,
-      title: `Production Overview — ${burg.name}`,
-      buttons: {
-        Close: function () {
-          $(this).dialog("close");
-        }
-      }
-    });
+    $("#alert").dialog({resizable: false, title: `Production Overview: ${burg.name}`});
     return;
   }
 
   const goodById = new Map(pack.goods.map((g: Good) => [g.i, g]));
   const goodName = (id: number) => goodById.get(id)?.name ?? `#${id}`;
   const goodColor = (id: number) => goodById.get(id)?.color ?? "#888";
-  const r2 = (n: number) => Math.round(n * 100) / 100;
 
   const styles = {
     muted: "color:#777",
@@ -34,7 +27,7 @@ export function open(burgId: number): void {
     positive: "color:#2a6",
     negative: "color:#c44",
     warning: "color:#c84",
-    sectionTitle: "font-weight:600;border-bottom:1px solid #ccc;padding-bottom:.3em;margin-bottom:.45em",
+    sectionTitle: "font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.3em;margin-bottom:.45em",
     statsBar: "margin-bottom:.85em;display:flex;flex-wrap:wrap;gap:.85em;",
     table: "width:100%;border-collapse:collapse;line-height:1.35",
     headRow: "background:#eee",
@@ -69,23 +62,44 @@ export function open(burgId: number): void {
   const renderSection = (title: string, content: string) =>
     `<div style="margin-bottom:.9em"><div style="${styles.sectionTitle}">${title}</div>${content}</div>`;
   const renderValueCell = (label: string, value: number, positive = true) =>
-    renderDataCell(`${label}: ${r2(value)}`, "right", `${positive ? styles.positive : styles.warning}`);
-  const renderDecisionDetails = (
-    log?: {
-      summary: string;
-      candidateCount: number;
-      alternatives: Array<{kind: "extract" | "manufacture"; goodId: number; score: number; summary: string}>;
-    } | null
-  ) => {
-    if (!log) return "";
+    renderDataCell(`${label}: ${rn(value, 2)}`, "right", `${positive ? styles.positive : styles.warning}`);
+  const sameNumber = (a: number, b: number) => Math.abs(a - b) < 0.01;
+  const formatCulture = (cultureModifier: number) =>
+    cultureModifier !== 1 ? `, culture x${rn(cultureModifier, 2)}` : "";
+  const formatUnits = (units: number) => (units !== 1 ? `, units ${rn(units, 2)}` : "");
+  const formatScore = (decisionScore: number, projectedGain: number) =>
+    sameNumber(decisionScore, projectedGain) ? "" : `, score ${rn(decisionScore, 2)}`;
+  const renderDecisionCandidate = (candidate: DecisionCandidate) => {
+    if (candidate.kind === "extract") {
+      return /*html*/ `<div>
+        ${typeBadge("RAW")} <b>${goodName(candidate.goodId)}</b>: chain ${rn(candidate.chainValue, 2)}${formatCulture(candidate.cultureModifier)}${formatUnits(candidate.units)}, available ${rn(candidate.available, 2)}, projected ${rn(candidate.projectedGain, 2)}${formatScore(candidate.decisionScore, candidate.projectedGain)}
+      </div>`;
+    }
+
+    const ingredients = candidate.ingredients
+      .map(
+        (item: {goodId: number; amount: number; buyPrice: number; available: number}) =>
+          `${goodName(item.goodId)} ${rn(item.amount, 2)} @ ${rn(item.buyPrice, 2)} (avail ${rn(item.available, 2)})`
+      )
+      .join(", ");
+    return /*html*/ `<div>
+      <div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>: sell ${rn(candidate.sellPrice, 2)}${formatCulture(candidate.cultureModifier)}${formatUnits(candidate.units)}, projected ${rn(candidate.projectedGain, 2)}${formatScore(candidate.decisionScore, candidate.projectedGain)}</div>
+      <div style="margin-top:.15em;${styles.muted}">Inputs: ${ingredients}</div>
+      <div style="margin-top:.1em;${styles.muted}">Revenue ${rn(candidate.revenue, 2)}, ingredient cost ${rn(candidate.ingredientCost, 2)}</div>
+    </div>`;
+  };
+  const renderDecisionDetails = (log?: Log | null) => {
+    if (!log?.selected) return "";
     const alternatives = log.alternatives.length
-      ? log.alternatives.map(option => `<div style="margin-top:.2em">• ${option.summary}</div>`).join("")
+      ? `<ul style="margin:.15em 0 0 1.1em;padding:0">${log.alternatives.map((option: DecisionCandidate) => `<li style="margin-top:.25em">${renderDecisionCandidate(option)}</li>`).join("")}</ul>`
       : `<div style="margin-top:.2em;${styles.subtle}">No other feasible alternatives</div>`;
 
     return /*html*/ `<div>
       <div><b>Decision basis:</b> highest score among ${log.candidateCount} feasible options.</div>
-      <div style="margin-top:.2em"><b>Selected:</b> ${log.summary}</div>
-      <div style="margin-top:.35em"><b>Alternatives:</b>${alternatives}</div>
+      <div style="margin-top:.35em"><b>Selected</b></div>
+      <div style="margin-top:.15em">${renderDecisionCandidate(log.selected)}</div>
+      <div style="margin-top:.5em"><b>Alternatives</b></div>
+      ${alternatives}
     </div>`;
   };
 
@@ -102,16 +116,16 @@ export function open(burgId: number): void {
       const baseValue = goodById.get(goodPull.goodId)?.value ?? 0;
       const chainExtra =
         goodPull.chainValue > baseValue + 0.01
-          ? ` <span style="${styles.positive}">(+${r2(goodPull.chainValue - baseValue)})</span>`
+          ? ` <span style="${styles.positive}">(+${rn(goodPull.chainValue - baseValue, 2)})</span>`
           : "";
-      const buyPrice = r2(data.pricesAtStart.buy[goodPull.goodId] ?? baseValue);
+      const buyPrice = rn(data.pricesAtStart.buy[goodPull.goodId] ?? baseValue, 2);
       const buyColor = buyPrice > baseValue ? styles.warning : buyPrice < baseValue ? styles.positive : "";
 
       return /*html*/ `<tr style="${styles.bodyRow}">
         ${renderDataCell(renderGoodLabel(goodPull.goodId))}
-        ${renderDataCell(String(r2(goodPull.pull)), "right")}
-        ${renderDataCell(`${r2(goodPull.chainValue)}${chainExtra}`, "right")}
-        ${renderDataCell(String(r2(goodPull.priority)), "right", "font-weight:600")}
+        ${renderDataCell(String(rn(goodPull.pull, 2)), "right")}
+        ${renderDataCell(`${rn(goodPull.chainValue, 2)}${chainExtra}`, "right")}
+        ${renderDataCell(String(rn(goodPull.priority, 2)), "right")}
         ${renderDataCell(String(buyPrice), "right", buyColor)}
       </tr>`;
     })
@@ -141,14 +155,14 @@ export function open(burgId: number): void {
     if (job.kind === "extract") {
       const cultureSuffix =
         job.cultureModifier !== 1
-          ? ` <span style="${styles.muted}" title="Culture bonus">x${r2(job.cultureModifier)}</span>`
+          ? ` <span style="${styles.muted}" title="Culture bonus">x${rn(job.cultureModifier, 2)}</span>`
           : "";
 
       const details = "Local resource production";
       return [
         /*html*/ `<tr${rowAttrs}>
         ${renderDataCell(`${renderGoodLabel(job.goodId, cultureSuffix)} <span style="margin-left:4px">${typeBadge("RAW")}</span>`)}
-        ${renderDataCell(String(r2(job.units)), "right")}
+        ${renderDataCell(String(rn(job.units, 2)), "right")}
         <td style="${styles.cell}">${details}</td>
         ${
           job.projectedGain !== undefined
@@ -172,7 +186,7 @@ export function open(burgId: number): void {
         rows.push(/*html*/ `<tr style="${styles.buyRow}">
           ${renderDataCell(typeBadge("BUY"))}
           ${renderDataCell(`${renderGoodLabel(item.goodId)} <span style="margin-left:4px">${typeBadge("BUY")}</span>`)}
-          ${renderDataCell(String(r2(item.fromMarket)), "right")}
+          ${renderDataCell(String(rn(item.fromMarket, 2)), "right")}
           <td style="${styles.cell}">Market purchase for ${goodDot(job.goodId)}${goodName(job.goodId)}</td>
           ${renderValueCell("Spent", item.marketCost, false)}
         </tr>`);
@@ -181,12 +195,12 @@ export function open(burgId: number): void {
 
     const cultureSuffix =
       job.cultureModifier !== 1
-        ? ` <span style="${styles.muted}" title="Culture bonus">x${r2(job.cultureModifier)}</span>`
+        ? ` <span style="${styles.muted}" title="Culture bonus">x${rn(job.cultureModifier, 2)}</span>`
         : "";
     const allInputs = job.recipe
       .map(item => {
         const total = item.fromInventory + item.fromMarket;
-        return total > 0 ? `${renderGoodLabel(item.goodId)} ${r2(total)}` : "";
+        return total > 0 ? `${renderGoodLabel(item.goodId)} ${rn(total, 2)}` : "";
       })
       .filter(Boolean)
       .join(` <span style="${styles.divider}">+</span> `);
@@ -195,7 +209,7 @@ export function open(burgId: number): void {
     rows.push(/*html*/ `<tr${rowAttrs}>
       ${renderDataCell(typeBadge("MFG"))}
       ${renderDataCell(`${renderGoodLabel(job.goodId, cultureSuffix)} <span style="margin-left:4px">${typeBadge("MFG")}</span>`)}
-      ${renderDataCell(String(r2(job.units)), "right")}
+      ${renderDataCell(String(rn(job.units, 2)), "right")}
       <td style="${styles.cell}">${details}</td>
       ${job.score !== undefined ? renderValueCell("Gain", job.score, job.score >= 0) : renderDataCell("—", "right", styles.subtle)}
     </tr>`);
@@ -270,25 +284,25 @@ export function open(burgId: number): void {
         const ingredientCost = mfgCostByGood[id] || 0;
         const profit = sellValue - ingredientCost;
         const margin = sellValue > 0 ? Math.round((profit / sellValue) * 100) : 0;
-        const costPerUnit = amount > 0 ? r2(ingredientCost / amount) : "—";
+        const costPerUnit = amount > 0 ? rn(ingredientCost / amount, 2) : "—";
         const profitColor = profit >= 0 ? styles.positive : styles.negative;
 
         return /*html*/ `<tr style="${styles.bodyRow}">
           ${renderDataCell(`${renderGoodLabel(id)}${badge ? ` <span style="margin-left:4px">${badge}</span>` : ""}`)}
-          ${renderDataCell(String(r2(amount)), "right")}
+          ${renderDataCell(String(rn(amount, 2)), "right")}
           ${renderDataCell(String(costPerUnit), "right", styles.muted)}
-          ${renderDataCell(String(r2(sellPrice)), "right", sellColor)}
-          ${renderDataCell(String(r2(sellValue)), "right")}
-          ${renderDataCell(`${r2(profit)} <span style="${styles.muted}">(${margin}%)</span>`, "right", profitColor)}
+          ${renderDataCell(String(rn(sellPrice, 2)), "right", sellColor)}
+          ${renderDataCell(String(rn(sellValue, 2)), "right")}
+          ${renderDataCell(`${rn(profit, 2)} <span style="${styles.muted}">(${margin}%)</span>`, "right", profitColor)}
         </tr>`;
       }
 
       return /*html*/ `<tr style="${styles.bodyRow}">
         ${renderDataCell(`${renderGoodLabel(id)} <span style="margin-left:4px">${badge}</span>`)}
-        ${renderDataCell(String(r2(amount)), "right")}
+        ${renderDataCell(String(rn(amount, 2)), "right")}
         ${renderDataCell("—", "right", styles.subtle)}
-        ${renderDataCell(String(r2(sellPrice)), "right", sellColor)}
-        ${renderDataCell(String(r2(sellValue)), "right")}
+        ${renderDataCell(String(rn(sellPrice, 2)), "right", sellColor)}
+        ${renderDataCell(String(rn(sellValue, 2)), "right")}
         ${renderDataCell("—", "right", styles.subtle)}
       </tr>`;
     })
@@ -296,11 +310,11 @@ export function open(burgId: number): void {
 
   const summaryHtml = /*html*/ `
     <div style="${styles.summaryBar}">
-      <span title="Revenue from raw goods"><b>Raw:</b> ${r2(totalRawRevenue)}</span>
-      <span title="Revenue from manufactured goods before subtracting ingredient costs"><b>MFG revenue:</b> ${r2(totalMfgRevenue)}</span>
-      <span title="Total ingredient cost spent on market purchases"><b>MFG cost:</b> ${r2(totalMfgCost)}</span>
-      <span title="MFG revenue minus ingredient cost"><b>MFG profit:</b> <span style="${mfgProfit >= 0 ? styles.positive : styles.negative}">${r2(mfgProfit)}</span></span>
-      <span title="Raw revenue + MFG profit"><b>Net wealth:</b> <span style="${netWealth >= 0 ? `${styles.positive};font-weight:600` : `${styles.negative};font-weight:600`}">${r2(netWealth)}</span></span>
+      <span title="Revenue from raw goods"><b>Raw:</b> ${rn(totalRawRevenue, 2)}</span>
+      <span title="Revenue from manufactured goods before subtracting ingredient costs"><b>MFG revenue:</b> ${rn(totalMfgRevenue, 2)}</span>
+      <span title="Total ingredient cost spent on market purchases"><b>MFG cost:</b> ${rn(totalMfgCost, 2)}</span>
+      <span title="MFG revenue minus ingredient cost"><b>MFG profit:</b> <span style="${mfgProfit >= 0 ? styles.positive : styles.negative}">${rn(mfgProfit, 2)}</span></span>
+      <span title="Raw revenue + MFG profit"><b>Net wealth:</b> <span style="${netWealth >= 0 ? `${styles.positive};font-weight:600` : `${styles.negative};font-weight:600`}">${rn(netWealth, 2)}</span></span>
     </div>`;
 
   const finalTable = finalRows
@@ -343,16 +357,7 @@ export function open(burgId: number): void {
     };
   }
 
-  $("#alert").dialog({
-    width: "48em",
-    resizable: true,
-    title: `Production Overview — ${burg.name}`,
-    buttons: {
-      Close: function () {
-        $(this).dialog("close");
-      }
-    }
-  });
+  $("#alert").dialog({width: "48em", resizable: true, title: `Production Overview: ${burg.name}`});
 }
 
 declare global {
