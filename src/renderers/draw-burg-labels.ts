@@ -1,4 +1,3 @@
-import type { Burg } from "../modules/burgs-generator";
 import type { BurgLabel } from "../modules/labels";
 
 interface BurgGroup {
@@ -41,7 +40,7 @@ export function drawBurgLabels(): void {
     const labelsHTML: string[] = [];
     for (const labelData of labels) {
       labelsHTML.push(
-        `<text text-rendering="optimizeSpeed" id="burgLabel${labelData.burgId}" data-id="${labelData.burgId}" x="${labelData.x}" y="${labelData.y}" dx="${dx}em" dy="${dy}em">${labelData.text}</text>`,
+        `<text text-rendering="optimizeSpeed" id="burgLabel${labelData.i}" data-id="${labelData.burgId}" x="${labelData.x}" y="${labelData.y}" dx="${dx}em" dy="${dy}em">${labelData.text}</text>`,
       );
     }
 
@@ -55,9 +54,9 @@ export function drawBurgLabels(): void {
   TIME && console.timeEnd("drawBurgLabels");
 }
 
-export function drawBurgLabel(burg: Burg): void {
+export function drawBurgLabel(burgLabel: BurgLabel): void {
   // TODO: remove label group dependency - for now, if group is missing, redraw all labels to recreate the group
-  const labelGroup = burgLabels.select<SVGGElement>(`#${burg.group}`);
+  const labelGroup = burgLabels.select<SVGGElement>(`#${burgLabel.group}`);
   if (labelGroup.empty()) {
     drawBurgLabels();
     return; // redraw all labels if group is missing
@@ -68,20 +67,20 @@ export function drawBurgLabel(burg: Burg): void {
   const dx = dxAttr ? parseFloat(dxAttr) : 0;
   const dy = dyAttr ? parseFloat(dyAttr) : 0;
 
-  const existingLabel = document.getElementById(`burgLabel${burg.i}`);
+  const existingLabel = document.getElementById(`burgLabel${burgLabel.burgId}`);
   if (existingLabel) existingLabel.remove();
 
   // Render to SVG
   labelGroup
     .append("text")
     .attr("text-rendering", "optimizeSpeed")
-    .attr("id", `burgLabel${burg.i}`)
-    .attr("data-id", burg.i!)
-    .attr("x", burg.x)
-    .attr("y", burg.y)
+    .attr("id", `burgLabel${burgLabel.i}`)
+    .attr("data-id", burgLabel.burgId)
+    .attr("x", burgLabel.x)
+    .attr("y", burgLabel.y)
     .attr("dx", `${dx}em`)
     .attr("dy", `${dy}em`)
-    .text(burg.name!);
+    .text(burgLabel.text);
 }
 
 export function removeBurgLabel(burgId: number): void {

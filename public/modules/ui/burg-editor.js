@@ -109,7 +109,14 @@ function editBurg(id) {
     d3.event.on("drag", function () {
       const x = d3.event.x,
         y = d3.event.y;
-      this.setAttribute("transform", `translate(${dx + x},${dy + y})`);
+      const effectiveDx = dx + x;
+      const effectiveDy = dy + y;
+      this.setAttribute("transform", `translate(${effectiveDx},${effectiveDy})`);
+      const id = +elSelected.attr("id").slice(9); // remove "burgLabel" from id to get burg id
+      Labels.update(id, {
+        dx: effectiveDx,
+        dy: effectiveDy
+      })
       tip('Use dragging for fine-tuning only, to actually move burg use "Relocate" button', false, "warning");
     });
   }

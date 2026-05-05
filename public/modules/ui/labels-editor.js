@@ -11,15 +11,6 @@ function getLabelData(textElement) {
   if (id.startsWith("customLabel")) {
     return Labels.get(+id.slice(11));
   }
-  // Custom labels: check for existing data-label-id attribute
-  const dataLabelId = textElement.getAttribute("data-label-id");
-  if (dataLabelId != null) {
-    const existing = Labels.get(+dataLabelId);
-    if (existing) return existing;
-    // Data was cleared (e.g., map regenerated) — recreate
-    // textElement.removeAttribute("data-label-id");
-  }
-  // No data entry found — create one from SVG state (migration path)
   return undefined;
 }
 

@@ -1,3 +1,5 @@
+import { drawBurgLabel } from "../renderers/draw-burg-labels";
+
 declare global {
   var Labels: LabelsModule;
 }
@@ -83,9 +85,10 @@ class LabelsModule {
     return label;
   }
 
-  private addBurgLabel(data: Omit<BurgLabel, "i" | "type">): BurgLabel {
+  addBurgLabel(data: Omit<BurgLabel, "i" | "type">): BurgLabel {
     const label: BurgLabel = { ...data, i: this.getNextId(), type: "burg" };
     pack.labels.push(label);
+    drawBurgLabel(label);
     return label;
   }
 
