@@ -142,8 +142,8 @@ function plan(state, workersLeft, depth):
   calculate unmet category demand from current inventory
   apply demand multiplier based on produced good category fit:
     multiplier = 1 + Σ(max(0, categoryDemand - categoryCoverage) × goodCategoryWeight)
-  compare candidates by projected gain for this tick:
-    projectedGain = decisionScore × actualUnits
+  compare candidates by score for this tick:
+    score = perUnitValue × actualUnits
   for each candidate:
     simulate one worker tick
     recurse on the resulting state
@@ -274,4 +274,4 @@ type Job =
 
 `fromInventory + fromMarket = totalConsumed` per ingredient.
 `marketCost = fromMarket × buyPrice` at time of purchase.
-`score` now means the projected bounded-lookahead gain of choosing this action from the current state.
+`score` means the value used to compare candidate actions for the current worker tick.

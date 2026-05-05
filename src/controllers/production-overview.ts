@@ -72,12 +72,9 @@ export function open(burgId: number): void {
           <td colspan="5" style="${styles.logCell}">${logHtml}</td>
         </tr>`
       : "";
-  const sameNumber = (a: number, b: number) => Math.abs(a - b) < 0.01;
   const formatCulture = (cultureModifier: number) =>
     cultureModifier !== 1 ? `, culture x${rn(cultureModifier, 2)}` : "";
   const formatUnits = (units: number) => (units !== 1 ? `, units ${rn(units, 2)}` : "");
-  const formatScore = (decisionScore: number, projectedGain: number) =>
-    sameNumber(decisionScore, projectedGain) ? "" : `, score ${rn(decisionScore, 2)}`;
   const formatPrice = (value: number | string) => `🟡 ${typeof value === "number" ? rn(value, 2) : value}`;
   const renderDemandEffect = (multiplier: number, demand: DemandContribution[]) => {
     if (multiplier <= 1.001 || !demand.length) return "";
@@ -93,7 +90,7 @@ export function open(burgId: number): void {
   const renderDecisionCandidate = (candidate: DecisionCandidate) => {
     if (candidate.kind === "extract") {
       return /*html*/ `<div>
-        <div>${typeBadge("RAW")} <b>${goodName(candidate.goodId)}</b>: chain ${rn(candidate.chainValue, 2)}${formatCulture(candidate.cultureModifier)}${formatUnits(candidate.units)}, available ${rn(candidate.available, 2)}, projected ${rn(candidate.projectedGain, 2)}${formatScore(candidate.decisionScore, candidate.projectedGain)}</div>
+        <div>${typeBadge("RAW")} <b>${goodName(candidate.goodId)}</b>: chain ${rn(candidate.chainValue, 2)}${formatCulture(candidate.cultureModifier)}${formatUnits(candidate.units)}, available ${rn(candidate.available, 2)}, score ${rn(candidate.score, 2)}</div>
         ${renderDemandEffect(candidate.demandMultiplier, candidate.demand)}
       </div>`;
     }
@@ -105,7 +102,7 @@ export function open(burgId: number): void {
       )
       .join(", ");
     return /*html*/ `<div>
-      <div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>: sell ${formatPrice(candidate.sellPrice)}${formatCulture(candidate.cultureModifier)}${formatUnits(candidate.units)}, projected ${rn(candidate.projectedGain, 2)}${formatScore(candidate.decisionScore, candidate.projectedGain)}</div>
+      <div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>: sell ${formatPrice(candidate.sellPrice)}${formatCulture(candidate.cultureModifier)}${formatUnits(candidate.units)}, score ${rn(candidate.score, 2)}</div>
       ${renderDemandEffect(candidate.demandMultiplier, candidate.demand)}
       <div style="margin-top:.15em;${styles.muted}">Inputs: ${ingredients}</div>
       <div style="margin-top:.1em;${styles.muted}">Revenue ${rn(candidate.revenue, 2)}, ingredient cost ${rn(candidate.ingredientCost, 2)}</div>
@@ -188,8 +185,8 @@ export function open(burgId: number): void {
         ${renderDataCell(rn(job.units, 2), "right")}
         <td style="${styles.cell}">${details}</td>
         ${
-          job.projectedGain !== undefined
-            ? renderValueCell("Gain", job.projectedGain, job.projectedGain >= 0)
+          job.score !== undefined
+            ? renderValueCell("Score", job.score, job.score >= 0)
             : renderDataCell("—", "right", styles.subtle)
         }
       </tr>`,
@@ -228,7 +225,7 @@ export function open(burgId: number): void {
       ${renderDataCell(renderTaggedGood(job.goodId, "MFG", cultureSuffix))}
       ${renderDataCell(rn(job.units, 2), "right")}
       <td style="${styles.cell}">${details}</td>
-      ${job.score !== undefined ? renderValueCell("Gain", job.score, job.score >= 0) : renderDataCell("—", "right", styles.subtle)}
+      ${job.score !== undefined ? renderValueCell("Score", job.score, job.score >= 0) : renderDataCell("—", "right", styles.subtle)}
     </tr>`);
 
     rows.push(renderLogRow(logId, logHtml));
