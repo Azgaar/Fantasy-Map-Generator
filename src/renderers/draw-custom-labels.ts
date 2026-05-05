@@ -17,12 +17,6 @@ export function customLabelRenderer() {
   const pathGroup = defs.select<SVGGElement>("g#deftemp > g#textPaths");
   for (const labelData of customLabels) {
     const pathId = addPathForLabel(labelData, pathGroup.node()!);
-    console.log(
-      "Constructing label HTML for label",
-      labelData,
-      "with pathId",
-      pathId,
-    );
     customLabelsHTML.push(constructLabelHTML(labelData, pathId).outerHTML);
   }
 
