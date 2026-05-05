@@ -112,8 +112,8 @@ function editBurg(id) {
       const effectiveDx = dx + x;
       const effectiveDy = dy + y;
       this.setAttribute("transform", `translate(${effectiveDx},${effectiveDy})`);
-      const id = +elSelected.attr("id").slice(9); // remove "burgLabel" from id to get burg id
-      Labels.update(id, {
+      const labelId = Labels.getAll().findIndex(label => label.type === "burg" && label.burgId === id);
+      Labels.update(labelId, {
         dx: effectiveDx,
         dy: effectiveDy
       })
@@ -393,7 +393,8 @@ function editBurg(id) {
     burg.y = y;
     if (burg.capital) pack.states[newState].center = burg.cell;
 
-    Labels.update(id, { x, y });
+    const labelId = Labels.getAll().findIndex(label => label.type === "burg" && label.burgId === id);
+    Labels.update(labelId, { x, y, dx: 0, dy: 0 });
 
     if (d3.event.shiftKey === false) toggleRelocateBurg();
   }
