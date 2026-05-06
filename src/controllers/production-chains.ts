@@ -13,9 +13,9 @@ const PORT_BAND = 0.55;
 const LANE_SPREAD = 12;
 const HEADER_HEIGHT = 20;
 const SVG_PADDING = 18;
-const ZOOM_MIN = 0.35;
-const ZOOM_MAX = 3;
-const DEFAULT_EDGE_OPACITY = 0.045;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 2;
+const DEFAULT_EDGE_OPACITY = 0.5;
 const DEFAULT_LABEL_OPACITY = 0;
 
 const EDGE_COLORS = ["#3d85c8", "#cc7722", "#2a9050", "#7048a8", "#a83030", "#147a6c", "#b05000", "#1f6fa8"];
@@ -84,6 +84,8 @@ interface DisplayEdge {
   representative: RoutedEdge;
   labels: EdgeLabel[];
 }
+
+const FLOW_DOT_GAP = 22;
 
 function getChainGoods(goods: Good[]): Good[] {
   const chainIds = new Set<number>();
@@ -444,6 +446,25 @@ function renderMarkers(): string {
   ).join("");
 }
 
+function renderFlowAnimationStyle(): string {
+  return `<style>
+    @keyframes chains-edge-flow {
+      from { stroke-dashoffset: 0; }
+      to { stroke-dashoffset: -${FLOW_DOT_GAP}; }
+    }
+  </style>`;
+}
+
+function getFlowDuration(amount: number): number {
+  const speedMultiplier = Math.max(amount, 0.35);
+  return 2.2 / Math.max(speedMultiplier, 0.35);
+}
+
+function truncateGoodName(name: string, maxLength = 12): string {
+  if (name.length <= maxLength) return name;
+  return `${name.slice(0, Math.max(1, maxLength - 1)).trimEnd()}…`;
+}
+
 function renderHeaders(stages: Set<number>, offsetX: number): string {
   return [...stages]
     .sort((a, b) => a - b)
@@ -502,6 +523,7 @@ function getDisplayEdges(edges: RoutedEdge[]): DisplayEdge[] {
 
 function renderEdge(displayEdge: DisplayEdge, positions: Map<number, Position>): string {
   const geometry = getEdgeGeometry(displayEdge.representative, positions);
+  const flowColor = Goods.getStroke(displayEdge.representative.from.good.color);
   const labels = displayEdge.labels
     .map((label, index) => {
       const color = EDGE_COLORS[label.recipeIndex % EDGE_COLORS.length];
@@ -509,13 +531,28 @@ function renderEdge(displayEdge: DisplayEdge, positions: Map<number, Position>):
 
       return `<text x="${geometry.labelX}" y="${y}" text-anchor="middle"
         font-size="8" font-family="sans-serif" fill="${color}"
-        paint-order="stroke" stroke="#f9f9f9" stroke-width="2.5"
+        paint-order="stroke" stroke="#f9f9f9" stroke-width="1"
         style="opacity:${DEFAULT_LABEL_OPACITY};transition:opacity 0.15s">x${label.amount}</text>`;
     })
     .join("");
 
+  const flows = displayEdge.labels
+    .map((label, index) => {
+      const duration = getFlowDuration(label.amount);
+      const width = 6.2 + Math.min(label.amount, 3) * 0.7;
+      const opacity = Math.min(0.65 + label.amount * 0.08, 0.92);
+
+      return `<path data-edge-flow="1" d="${geometry.d}" fill="none" stroke="${flowColor}" opacity="0" stroke-width="${width}"
+        stroke-dasharray="0.01 ${FLOW_DOT_GAP}" stroke-linecap="round"
+        style="transition:opacity 0.15s;animation:chains-edge-flow ${duration}s linear infinite;animation-play-state:paused"
+        data-flow-index="${index}" data-flow-amount="${label.amount}" data-flow-opacity="${opacity}"/>`;
+    })
+    .join("");
+
   return `<g data-ef="${displayEdge.fromId}" data-et="${displayEdge.toId}" style="opacity:${DEFAULT_EDGE_OPACITY};transition:opacity 0.15s">
-    <path d="${geometry.d}" fill="none" stroke="#7b7b7b" stroke-opacity="0.8" stroke-width="1.4"
+    <path d="${geometry.d}" fill="none" stroke="#d7d7d7" stroke-opacity="0.9" stroke-width="1"/>
+    ${flows}
+    <path d="${geometry.d}" fill="none" stroke="#7b7b7b" stroke-opacity="0.14" stroke-width="1"
       marker-end="url(#ca${displayEdge.representative.recipeIndex % EDGE_COLORS.length})"/>
     ${labels}
   </g>`;
@@ -526,6 +563,8 @@ function renderNode(node: GraphNode, positions: Map<number, Position>): string {
   const iconX = 15;
   const iconY = CARD_HEIGHT / 2;
   const textX = iconX + ICON_RADIUS + 5;
+  const displayName = truncateGoodName(node.good.name);
+  const stroke = Goods.getStroke(node.good.color);
   const tooltip = [
     `${node.good.name} — base price: ${node.good.value}`,
     ...(node.good.recipes ?? []).map(
@@ -537,18 +576,18 @@ function renderNode(node: GraphNode, positions: Map<number, Position>): string {
     )
   ].join("\n");
 
-  return `<g data-nid="${node.id}" style="cursor:pointer;transition:opacity 0.12s" transform="translate(${position.x},${position.y})">
+  return /*html*/ `<g data-nid="${node.id}" style="transition:opacity 0.12s" transform="translate(${position.x},${position.y})">
     <title>${tooltip}</title>
     <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" rx="${CARD_RADIUS}" fill="#fff"/>
     <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" rx="${CARD_RADIUS}"
       fill="${node.good.color}" fill-opacity="0.13"
-      stroke="${node.good.color}" stroke-opacity="0.6" stroke-width="1.3"/>
+      stroke="${stroke}" stroke-opacity="0.6" stroke-width="1.3"/>
     <circle cx="${iconX}" cy="${iconY}" r="${ICON_RADIUS + 2}" fill="${node.good.color}" fill-opacity="0.17"/>
     <circle cx="${iconX}" cy="${iconY}" r="${ICON_RADIUS}" fill="${node.good.color}" fill-opacity="0.68"/>
     <use href="#${node.good.icon}" x="${iconX - ICON_RADIUS}" y="${iconY - ICON_RADIUS}"
       width="${ICON_RADIUS * 2}" height="${ICON_RADIUS * 2}"/>
     <text x="${textX}" y="${iconY - 2}" font-size="10" font-family="sans-serif"
-      fill="#111" font-weight="600">${node.good.name}</text>
+      fill="#111" font-weight="600">${displayName}</text>
     <text x="${textX}" y="${iconY + 8}" font-size="8.5" font-family="sans-serif" fill="#888">🟡 ${node.good.value}</text>
   </g>`;
 }
@@ -577,8 +616,15 @@ function attachGraphInteractions(svgEl: SVGSVGElement, layout: LayoutData) {
       const visible = chainIds ? chainIds.has(fromId) && chainIds.has(toId) : false;
       group.style.opacity = chainIds ? (visible ? "1" : "0") : String(DEFAULT_EDGE_OPACITY);
 
-      const label = group.querySelector<SVGTextElement>("text");
-      if (label) label.style.opacity = chainIds ? (visible ? "1" : "0") : String(DEFAULT_LABEL_OPACITY);
+      group.querySelectorAll<SVGPathElement>("[data-edge-flow]").forEach(flow => {
+        const flowOpacity = flow.dataset.flowOpacity || "0.85";
+        flow.style.opacity = chainIds && visible ? flowOpacity : "0";
+        flow.style.animationPlayState = chainIds && visible ? "running" : "paused";
+      });
+
+      group.querySelectorAll<SVGTextElement>("text").forEach(label => {
+        label.style.opacity = chainIds ? (visible ? "1" : "0") : String(DEFAULT_LABEL_OPACITY);
+      });
     });
 
     nodeSelection.each(function () {
@@ -620,6 +666,7 @@ function renderGraph(layout: LayoutData): string {
 
   return /*html*/ `<svg id="chains-svg" xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" style="display:block;cursor:grab">
     <defs>${renderMarkers()}</defs>
+    ${renderFlowAnimationStyle()}
     <g id="viewport" transform="translate(16,0)">
       ${headers}
       ${separators}
