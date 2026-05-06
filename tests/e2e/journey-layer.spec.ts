@@ -11,6 +11,28 @@ const BACKTRACK_JOURNEY_POINTS: [number, number][] = [
   [560, 190],
 ];
 
+/** Catalog + `stopIds` from an ordered coord list (reused coords share one waypoint). */
+function packJourneyFromCoords(pts: [number, number][]) {
+  const waypoints: { id: string; name: string; x: number; y: number }[] = [];
+  const keyToId = new Map<string, string>();
+  let n = 0;
+  const stopIds: string[] = [];
+  for (const [x, y] of pts) {
+    const key = `${x},${y}`;
+    let id = keyToId.get(key);
+    if (!id) {
+      n += 1;
+      id = `t_wp_${n}`;
+      keyToId.set(key, id);
+      waypoints.push({ id, name: `Stop ${n}`, x, y });
+    }
+    stopIds.push(id);
+  }
+  return { stopIds, waypoints };
+}
+
+const BACKTRACK_PACK_JOURNEY = packJourneyFromCoords(BACKTRACK_JOURNEY_POINTS);
+
 test.describe("Journey layer", () => {
   test.beforeEach(async ({ context, page }) => {
     await context.clearCookies();
@@ -47,20 +69,44 @@ test.describe("Journey layer", () => {
     expect(disp).toBe("none");
   });
 
+  test("drawJourney strips stray points key and leaves empty journey", async ({ page }) => {
+    const snap = await page.evaluate((pts) => {
+      const w = window as unknown as {
+        layerIsOn: (id: string) => boolean;
+        toggleJourney: () => void;
+        pack: { journey: Record<string, unknown> };
+        drawJourney: () => void;
+      };
+      if (!w.layerIsOn("toggleJourney")) w.toggleJourney();
+      w.pack.journey = { points: pts };
+      w.drawJourney();
+      const j = w.pack.journey;
+      return {
+        pointsPresent: Object.prototype.hasOwnProperty.call(j, "points"),
+        stopCount: Array.isArray(j.stopIds) ? j.stopIds.length : -1,
+        waypointCount: Array.isArray(j.waypoints) ? j.waypoints.length : -1,
+      };
+    }, BACKTRACK_JOURNEY_POINTS);
+
+    expect(snap.pointsPresent).toBe(false);
+    expect(snap.stopCount).toBe(0);
+    expect(snap.waypointCount).toBe(0);
+  });
+
   test("drawJourney renders paths and vertices for journey data", async ({ page }) => {
     await page.evaluate(
-      ({ pts }) => {
+      ({ journey }) => {
         const w = window as unknown as {
           layerIsOn: (id: string) => boolean;
           toggleJourney: () => void;
-          pack: { journey: { points: [number, number][] } };
+          pack: { journey: typeof journey };
           drawJourney: () => void;
         };
         if (!w.layerIsOn("toggleJourney")) w.toggleJourney();
-        w.pack.journey = { points: pts };
+        w.pack.journey = journey;
         w.drawJourney();
       },
-      { pts: BACKTRACK_JOURNEY_POINTS },
+      { journey: BACKTRACK_PACK_JOURNEY },
     );
 
     const segmentCount = BACKTRACK_JOURNEY_POINTS.length - 1;
@@ -75,17 +121,17 @@ test.describe("Journey layer", () => {
   test("journey stroke-width shrinks in map units when zoom scale increases (screen-constant sizing)", async ({
     page,
   }) => {
-    const snap = await page.evaluate((pts: [number, number][]) => {
+    const snap = await page.evaluate((journey: typeof BACKTRACK_PACK_JOURNEY) => {
       const w = window as unknown as {
         layerIsOn: (id: string) => boolean;
         toggleJourney: () => void;
-        pack: { journey: { points: [number, number][] } };
+        pack: { journey: typeof journey };
         drawJourney: () => void;
         scale: number;
         syncJourneyZoom: (zoomScale: number) => void;
       };
       if (!w.layerIsOn("toggleJourney")) w.toggleJourney();
-      w.pack.journey = { points: pts };
+      w.pack.journey = journey;
       w.drawJourney();
       const readStrokes = () =>
         [...document.querySelectorAll(".journey-segment-stroke")].map((el) =>
@@ -103,7 +149,7 @@ test.describe("Journey layer", () => {
       const strokeAfter = readStrokes();
       const rAfter = readWaypointR();
       return { strokeBefore, strokeAfter, rBefore, rAfter };
-    }, BACKTRACK_JOURNEY_POINTS);
+    }, BACKTRACK_PACK_JOURNEY);
 
     const segN = BACKTRACK_JOURNEY_POINTS.length - 1;
     expect(snap.strokeBefore.length).toBe(segN);

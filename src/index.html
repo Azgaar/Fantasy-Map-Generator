@@ -3106,14 +3106,24 @@
       </div>
 
       <div id="journeyEditor" class="dialog stable" style="display: none">
-        <div id="journeyEditorBody" class="table" style="margin: 0.3em 0"></div>
+        <div id="journeyEditorRoot" style="margin: 0.3em 0">
+          <div><b>Waypoints</b></div>
+          <div id="journeyEditorWaypointsBody" class="table"></div>
+          <div style="display: flex; align-items: center; gap: 0.6em; margin-top: 0.65em; flex-wrap: wrap">
+            <b>Journey</b>
+            <button type="button" id="journeyEditorAddLeg" data-tip="Append another leg (defaults to last stop)" class="options">
+              Add leg
+            </button>
+          </div>
+          <div id="journeyEditorStopsBody" class="table"></div>
+        </div>
         <div id="journeyEditorBottom">
           <button
             id="journeyEditorUndo"
-            data-tip="Remove the last waypoint"
+            data-tip="Remove the last journey leg"
             class="icon-level-down"
           ></button>
-          <button id="journeyEditorClear" data-tip="Clear entire journey" class="icon-trash-empty"></button>
+          <button id="journeyEditorClear" data-tip="Clear journey legs only (waypoints stay)" class="icon-trash-empty"></button>
           <button id="journeyEditorDone" data-tip="Finish editing" class="icon-check"></button>
         </div>
       </div>
@@ -8615,7 +8625,7 @@
     <script defer src="modules/ui/temperature-graph.js?v=1.106.6"></script>
     <script defer src="modules/ui/routes-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/routes-creator.js?v=1.120.5"></script>
-    <script defer src="modules/ui/journey-editor.js?v=1.122.1"></script>
+    <script defer src="modules/ui/journey-editor.js?v=1.122.2"></script>
     <script defer src="modules/ui/route-group-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/ice-editor.js?v=1.111.0"></script>
     <script defer src="modules/ui/lakes-editor.js?v=1.120.5"></script>

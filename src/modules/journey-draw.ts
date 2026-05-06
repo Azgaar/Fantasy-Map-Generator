@@ -1,5 +1,14 @@
 import type { Selection } from "d3";
 import { interpolateRgbBasis } from "d3";
+import type { PackJourney } from "./journey-model";
+import {
+  journeyResolvedCoordinates,
+  normalizePackJourney,
+  referencedWaypointIds,
+  emptyPackJourney,
+  newWaypointId,
+  nextDefaultWaypointName,
+} from "./journey-model";
 import { rn } from "../utils/numberUtils";
 
 /** Rainbow ramp endpoints used as one continuous gradient sliced per segment. */
@@ -54,17 +63,17 @@ export function chordGradientT(
   return Math.max(0, Math.min(1, t));
 }
 
-/** Arrowhead path (local coords before translate/rotate); 1.5× earlier triangle. */
-const ARROW_PATH_D = "M0,-4.2 L11.25,0 L0,4.2 Z";
+/** Arrowhead path (local coords before translate/rotate); 2× prior triangle size. */
+const ARROW_PATH_D = "M0,-8.4 L22.5,0 L0,8.4 Z";
 
 const MIN_SEG_LEN = 0.05;
 const LANE_WIDTH = 3.5;
 
 /** Target screen px under `#viewbox` scale (stroke-width × scale ≈ px). */
-const JOURNEY_STROKE_SCREEN_PX = 3.2;
-const JOURNEY_WAYPOINT_R_SCREEN_PX = 5;
-const JOURNEY_WAYPOINT_STROKE_SCREEN_PX = 1.5;
-const JOURNEY_HALO_DILATE_SCREEN_PX = 3;
+const JOURNEY_STROKE_SCREEN_PX = 6;
+const JOURNEY_WAYPOINT_R_SCREEN_PX = 9;
+const JOURNEY_WAYPOINT_STROKE_SCREEN_PX = 4.5;
+const JOURNEY_HALO_DILATE_SCREEN_PX = 2;
 /** Baseline arrow spacing at scale 1 (screen-ish); multiplied by tier below. */
 const JOURNEY_ARROW_SPACING_BASE_PX = 38;
 
@@ -352,7 +361,13 @@ export class JourneyDrawModule {
     defs.selectAll("linearGradient.journey-def").remove();
     defs.select(`filter#${JOURNEY_OUTLINE_FILTER_ID}`).remove();
 
-    const points = (pack.journey?.points ?? []) as [number, number][];
+    if (!pack.journey) {
+      this.lastLodTier = null;
+      return;
+    }
+    normalizePackJourney(pack.journey);
+    const journeyData = pack.journey as PackJourney;
+    const points = journeyResolvedCoordinates(journeyData);
     if (!points.length) {
       this.lastLodTier = null;
       return;
@@ -376,12 +391,23 @@ export class JourneyDrawModule {
       24,
     );
 
+    const refIds = referencedWaypointIds(journeyData);
+    const idsAtCoord = new Map<string, string[]>();
+    for (const wp of journeyData.waypoints) {
+      if (!refIds.has(wp.id)) continue;
+      const ck = `${rn(wp.x, 2)},${rn(wp.y, 2)}`;
+      const arr = idsAtCoord.get(ck) ?? [];
+      arr.push(wp.id);
+      idsAtCoord.set(ck, arr);
+    }
+
     const seen = new Set<string>();
     for (const [x, y] of points) {
       const k = `${rn(x, 2)},${rn(y, 2)}`;
       if (seen.has(k)) continue;
       seen.add(k);
-      verts
+      const jidList = idsAtCoord.get(k);
+      const circle = verts
         .append("circle")
         .attr("class", "journey-waypoint")
         .attr("data-jx", rn(x, 2))
@@ -393,6 +419,9 @@ export class JourneyDrawModule {
         .attr("stroke", "#000000")
         .attr("stroke-width", rn(waypointSw, 3))
         .style("cursor", "pointer");
+      if (jidList?.length === 1) {
+        circle.attr("data-journey-waypoint-id", jidList[0]);
+      }
     }
 
     const S = Math.max(0, points.length - 1);
@@ -509,7 +538,9 @@ export class JourneyDrawModule {
     zoomScale = 1,
     zoomMinForLod = 0.05,
   ): void {
-    const points = (pack.journey?.points ?? []) as [number, number][];
+    if (!pack.journey) return;
+    normalizePackJourney(pack.journey);
+    const points = journeyResolvedCoordinates(pack.journey as PackJourney);
     if (!points.length) return;
 
     const zs = Number.isFinite(zoomScale) ? zoomScale : 1;
@@ -565,10 +596,7 @@ export class JourneyDrawModule {
       const y = el.getAttribute("data-ar-y");
       const ang = el.getAttribute("data-ar-ang");
       if (x == null || y == null || ang == null) return;
-      el.setAttribute(
-        "transform",
-        arrowTransform(+x, +y, +ang, zoomScale),
-      );
+      el.setAttribute("transform", arrowTransform(+x, +y, +ang, zoomScale));
     });
 
     const morphR = mapMetricScreenToWorld(
@@ -586,11 +614,25 @@ export class JourneyDrawModule {
 
 if (typeof window !== "undefined") {
   window.JourneyDraw = new JourneyDrawModule();
+  window.JourneyPack = {
+    normalizePackJourney,
+    journeyResolvedCoordinates,
+    emptyPackJourney,
+    newWaypointId,
+    nextDefaultWaypointName,
+  };
 }
 
 declare global {
   var pack: import("../types/PackedGraph").PackedGraph;
   interface Window {
     JourneyDraw?: JourneyDrawModule;
+    JourneyPack?: {
+      normalizePackJourney: typeof normalizePackJourney;
+      journeyResolvedCoordinates: typeof journeyResolvedCoordinates;
+      emptyPackJourney: typeof emptyPackJourney;
+      newWaypointId: typeof newWaypointId;
+      nextDefaultWaypointName: typeof nextDefaultWaypointName;
+    };
   }
 }

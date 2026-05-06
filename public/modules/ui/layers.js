@@ -869,7 +869,8 @@ function journeyZoomExtentMin() {
 
 function drawJourney() {
   TIME && console.time("drawJourney");
-  if (!pack.journey) pack.journey = {points: []};
+  if (!pack.journey) pack.journey = {stopIds: [], waypoints: []};
+  if (window.JourneyPack) window.JourneyPack.normalizePackJourney(pack.journey);
   const zs = typeof scale === "number" && Number.isFinite(scale) ? scale : 1;
   JourneyDraw.redraw(defs, journeys, zs, journeyZoomExtentMin());
   TIME && console.timeEnd("drawJourney");

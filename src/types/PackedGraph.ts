@@ -6,6 +6,7 @@ import type { Province } from "../modules/provinces-generator";
 import type { River } from "../modules/river-generator";
 import type { Route } from "../modules/routes-generator";
 import type { State } from "../modules/states-generator";
+import type { PackJourney } from "../modules/journey-model";
 import type { Zone } from "../modules/zones-generator";
 
 export type TypedArray =
@@ -65,6 +66,6 @@ export interface PackedGraph {
   markers: any[];
   ice: any[];
   provinces: Province[];
-  /** User-drawn journey path in map coordinates (ordered vertices). */
-  journey?: { points: [number, number][] };
+  /** User journey: waypoint catalog + ordered `stopIds`. */
+  journey?: PackJourney;
 }
