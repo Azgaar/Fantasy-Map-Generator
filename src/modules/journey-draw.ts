@@ -1,13 +1,19 @@
 import type { Selection } from "d3";
 import { interpolateRgbBasis } from "d3";
-import type { PackJourney } from "./journey-model";
+import type {
+  JourneyNormalizePackContext,
+  JourneyResolutionContext,
+  PackJourney,
+} from "./journey-model";
 import {
-  journeyResolvedCoordinates,
-  normalizePackJourney,
-  referencedWaypointIds,
+  burgJourneyStopRef,
   emptyPackJourney,
+  journeyResolvedCoordinates,
+  markerJourneyStopRef,
+  normalizePackJourney,
   newWaypointId,
   nextDefaultWaypointName,
+  resolveJourneyStopPosition,
 } from "./journey-model";
 import { rn } from "../utils/numberUtils";
 
@@ -23,6 +29,20 @@ export const JOURNEY_RAINBOW_STOPS = [
 ];
 
 const rampInterpolator = interpolateRgbBasis(JOURNEY_RAINBOW_STOPS);
+
+function journeyResolutionCtx(): JourneyResolutionContext {
+  return {
+    burgs: pack.burgs ?? [],
+    markers: pack.markers ?? [],
+  };
+}
+
+function journeyNormalizeCtx(): JourneyNormalizePackContext {
+  return {
+    burgs: pack.burgs ?? [],
+    markers: pack.markers ?? [],
+  };
+}
 
 /** Parameter `u` in [0, 1] along the whole journey ramp. */
 export function journeyRampColor(u: number): string {
@@ -365,9 +385,10 @@ export class JourneyDrawModule {
       this.lastLodTier = null;
       return;
     }
-    normalizePackJourney(pack.journey);
+    normalizePackJourney(pack.journey, journeyNormalizeCtx());
     const journeyData = pack.journey as PackJourney;
-    const points = journeyResolvedCoordinates(journeyData);
+    const resCtx = journeyResolutionCtx();
+    const points = journeyResolvedCoordinates(journeyData, resCtx);
     if (!points.length) {
       this.lastLodTier = null;
       return;
@@ -391,13 +412,13 @@ export class JourneyDrawModule {
       24,
     );
 
-    const refIds = referencedWaypointIds(journeyData);
     const idsAtCoord = new Map<string, string[]>();
-    for (const wp of journeyData.waypoints) {
-      if (!refIds.has(wp.id)) continue;
-      const ck = `${rn(wp.x, 2)},${rn(wp.y, 2)}`;
+    for (const sid of journeyData.stopIds) {
+      const xy = resolveJourneyStopPosition(sid, journeyData, resCtx);
+      if (!xy) continue;
+      const ck = `${rn(xy[0], 2)},${rn(xy[1], 2)}`;
       const arr = idsAtCoord.get(ck) ?? [];
-      arr.push(wp.id);
+      if (!arr.includes(sid)) arr.push(sid);
       idsAtCoord.set(ck, arr);
     }
 
@@ -420,7 +441,7 @@ export class JourneyDrawModule {
         .attr("stroke-width", rn(waypointSw, 3))
         .style("cursor", "pointer");
       if (jidList?.length === 1) {
-        circle.attr("data-journey-waypoint-id", jidList[0]);
+        circle.attr("data-journey-stop-ref", jidList[0]);
       }
     }
 
@@ -539,8 +560,11 @@ export class JourneyDrawModule {
     zoomMinForLod = 0.05,
   ): void {
     if (!pack.journey) return;
-    normalizePackJourney(pack.journey);
-    const points = journeyResolvedCoordinates(pack.journey as PackJourney);
+    normalizePackJourney(pack.journey, journeyNormalizeCtx());
+    const points = journeyResolvedCoordinates(
+      pack.journey as PackJourney,
+      journeyResolutionCtx(),
+    );
     if (!points.length) return;
 
     const zs = Number.isFinite(zoomScale) ? zoomScale : 1;
@@ -617,9 +641,12 @@ if (typeof window !== "undefined") {
   window.JourneyPack = {
     normalizePackJourney,
     journeyResolvedCoordinates,
+    resolveJourneyStopPosition,
     emptyPackJourney,
     newWaypointId,
     nextDefaultWaypointName,
+    burgJourneyStopRef,
+    markerJourneyStopRef,
   };
 }
 
@@ -630,9 +657,12 @@ declare global {
     JourneyPack?: {
       normalizePackJourney: typeof normalizePackJourney;
       journeyResolvedCoordinates: typeof journeyResolvedCoordinates;
+      resolveJourneyStopPosition: typeof resolveJourneyStopPosition;
       emptyPackJourney: typeof emptyPackJourney;
       newWaypointId: typeof newWaypointId;
       nextDefaultWaypointName: typeof nextDefaultWaypointName;
+      burgJourneyStopRef: typeof burgJourneyStopRef;
+      markerJourneyStopRef: typeof markerJourneyStopRef;
     };
   }
 }

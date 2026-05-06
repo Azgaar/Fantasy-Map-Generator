@@ -93,6 +93,36 @@ test.describe("Journey layer", () => {
     expect(snap.waypointCount).toBe(0);
   });
 
+  test("drawJourney resolves a burg stop ref using pack.burgs positions", async ({ page }) => {
+    await page.evaluate(() => {
+      const w = window as unknown as {
+        layerIsOn: (id: string) => boolean;
+        toggleJourney: () => void;
+        pack: {
+          burgs: Array<{ i: number; x: number; y: number; name?: string; removed?: boolean }>;
+          journey: { stopIds: string[]; waypoints: { id: string; name: string; x: number; y: number }[] };
+        };
+        JourneyPack: { burgJourneyStopRef: (i: number) => string };
+        drawJourney: () => void;
+      };
+      if (!w.layerIsOn("toggleJourney")) w.toggleJourney();
+      const testI = 999001;
+      const ref = w.JourneyPack.burgJourneyStopRef(testI);
+      w.pack.burgs.push({
+        i: testI,
+        x: 400,
+        y: 300,
+        name: "E2E journey burg",
+        removed: false,
+      });
+      w.pack.journey = { stopIds: [ref], waypoints: [] };
+      w.drawJourney();
+    });
+
+    await expect(page.locator("#journeys .journey-vertices circle")).toHaveCount(1);
+    await expect(page.locator("#journeys .journey-segments .journey-segment")).toHaveCount(0);
+  });
+
   test("drawJourney renders paths and vertices for journey data", async ({ page }) => {
     await page.evaluate(
       ({ journey }) => {

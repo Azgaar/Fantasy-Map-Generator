@@ -15,7 +15,7 @@ function journeyEscapeText(s) {
 
 function ensurePackJourney() {
   if (!pack.journey) pack.journey = { stopIds: [], waypoints: [] };
-  if (window.JourneyPack) window.JourneyPack.normalizePackJourney(pack.journey);
+  if (window.JourneyPack) window.JourneyPack.normalizePackJourney(pack.journey, pack);
 }
 
 function journeyGetWaypoint(id) {
@@ -25,27 +25,68 @@ function journeyGetWaypoint(id) {
 
 function journeyStopSelectOptions(currentId) {
   ensurePackJourney();
+  const JP = window.JourneyPack;
   let html = "";
-  const ids = new Set(pack.journey.waypoints.map(w => w.id));
+  const known = new Set();
+
+  if (!currentId) {
+    html +=
+      '<option value="" disabled selected>Choose point, marker, or burg…</option>';
+  }
+
+  html += '<optgroup label="Points">';
   for (const w of pack.journey.waypoints) {
+    known.add(w.id);
     const sel = w.id === currentId ? " selected" : "";
     html += `<option value="${journeyEscapeAttr(w.id)}"${sel}>${journeyEscapeText(w.name)} (${rn(w.x, 2)}, ${rn(w.y, 2)})</option>`;
   }
-  if (currentId && !ids.has(currentId)) {
-    html += `<option value="${journeyEscapeAttr(currentId)}" selected>${journeyEscapeText("[missing waypoint]")}</option>`;
+  html += "</optgroup>";
+
+  if (JP) {
+    html += '<optgroup label="Markers">';
+    for (const m of pack.markers || []) {
+      if (m.i == null || !Number.isFinite(m.x) || !Number.isFinite(m.y)) continue;
+      const ref = JP.markerJourneyStopRef(m.i);
+      known.add(ref);
+      const sel = ref === currentId ? " selected" : "";
+      const typeLabel = m.type ? String(m.type) : "Marker";
+      const label = `${typeLabel} #${m.i} (${rn(m.x, 2)}, ${rn(m.y, 2)})`;
+      html += `<option value="${journeyEscapeAttr(ref)}"${sel}>${journeyEscapeText(label)}</option>`;
+    }
+    html += "</optgroup>";
+
+    html += '<optgroup label="Burgs">';
+    for (const b of pack.burgs || []) {
+      if (b.removed || b.i == null || !Number.isFinite(b.x) || !Number.isFinite(b.y)) continue;
+      const ref = JP.burgJourneyStopRef(b.i);
+      known.add(ref);
+      const sel = ref === currentId ? " selected" : "";
+      const nm = b.name && String(b.name).trim() !== "" ? b.name : `Burg ${b.i}`;
+      const label = `${nm} (${rn(b.x, 2)}, ${rn(b.y, 2)})`;
+      html += `<option value="${journeyEscapeAttr(ref)}"${sel}>${journeyEscapeText(label)}</option>`;
+    }
+    html += "</optgroup>";
+  }
+
+  if (currentId && !known.has(currentId)) {
+    html += `<option value="${journeyEscapeAttr(currentId)}" selected>${journeyEscapeText("[missing stop]")}</option>`;
   }
   return html;
 }
 
 function journeyRenderStopRows(container) {
   ensurePackJourney();
-  pack.journey.stopIds.forEach((sid, i) => {
+  const ids = pack.journey.stopIds;
+  const rows = ids.length === 0 ? [""] : ids;
+  rows.forEach((sid, i) => {
+    const showRemove = ids.length > 0;
+    const removeStyle = showRemove ? "" : "visibility:hidden;pointer-events:none";
     container.insertAdjacentHTML(
       "beforeend",
       /* html */ `<div class="editorLine journey-stop-row" data-stop-index="${i}" style="display:grid;grid-template-columns:auto 1fr auto;gap:0.5em 1em;align-items:center">
         <span><b>#</b>${i + 1}</span>
-        <select class="journey-stop-select" data-tip="Waypoint for this leg" data-stop-index="${i}">${journeyStopSelectOptions(sid)}</select>
-        <span data-tip="Remove this leg from the journey" class="icon-trash-empty pointer journey-stop-remove" data-stop-index="${i}"></span>
+        <select class="journey-stop-select" data-tip="Stop for this leg: Points, Markers, then Burgs" data-stop-index="${i}">${journeyStopSelectOptions(sid)}</select>
+        <span data-tip="Remove this leg from the journey" class="icon-trash-empty pointer journey-stop-remove" data-stop-index="${i}" style="${removeStyle}"></span>
       </div>`,
     );
   });
@@ -95,7 +136,7 @@ function journeyEditorRootChange(ev) {
     if (!Number.isFinite(idx)) return;
     const newId = t.value;
     ensurePackJourney();
-    if (!newId || !journeyGetWaypoint(newId)) return;
+    if (!newId) return;
     pack.journey.stopIds[idx] = newId;
     journeyEditorRefreshBody();
     drawJourney();
@@ -154,10 +195,13 @@ function journeyEditorRootClick(ev) {
   }
 }
 
-function journeyAppendStop(waypointId) {
+function journeyAppendStop(stopRef) {
   ensurePackJourney();
-  if (!journeyGetWaypoint(waypointId)) return;
-  pack.journey.stopIds.push(waypointId);
+  const JP = window.JourneyPack;
+  if (!JP || !JP.resolveJourneyStopPosition) return;
+  const ctx = { burgs: pack.burgs ?? [], markers: pack.markers ?? [] };
+  if (!JP.resolveJourneyStopPosition(stopRef, pack.journey, ctx)) return;
+  pack.journey.stopIds.push(stopRef);
   journeyEditorRefreshBody();
   drawJourney();
 }
@@ -190,13 +234,13 @@ function journeyAppendNewWaypoint(xy) {
 
 function journeyEditorAddLegClick() {
   ensurePackJourney();
-  if (!pack.journey.waypoints.length) {
-    tip("Click the map to add the first waypoint.", false, "warn");
+  const stops = pack.journey.stopIds;
+  if (!stops.length) {
+    tip("Choose the first stop in the Journey row (point, marker, or burg), then use Add leg for more.", false, "warn");
     return;
   }
-  const last = pack.journey.stopIds[pack.journey.stopIds.length - 1];
-  const pick = last || pack.journey.waypoints[0].id;
-  pack.journey.stopIds.push(pick);
+  const pick = stops[stops.length - 1];
+  stops.push(pick);
   journeyEditorRefreshBody();
   drawJourney();
 }
@@ -210,9 +254,11 @@ function journeyEditorOnClick() {
   else if (target?.closest?.(".journey-waypoint")) circleEl = target.closest(".journey-waypoint");
 
   if (circleEl) {
-    const jid = circleEl.getAttribute("data-journey-waypoint-id");
-    if (jid) {
-      journeyAppendStop(jid);
+    const stopRef =
+      circleEl.getAttribute("data-journey-stop-ref") ||
+      circleEl.getAttribute("data-journey-waypoint-id");
+    if (stopRef) {
+      journeyAppendStop(stopRef);
       return;
     }
     const x = +circleEl.getAttribute("data-jx");
@@ -243,7 +289,7 @@ function editJourney() {
   if (!layerIsOn("toggleJourney")) toggleJourney();
 
   tip(
-    "Click the map to add the next stop (creates a waypoint). Click an existing circle to revisit it (same waypoint again). Edit waypoint names and coordinates above; each journey row picks a waypoint. Undo removes the last leg only; Clear removes all legs but keeps waypoints. Shift can still help when placing several stops quickly.",
+    "Use the Journey dropdown to start at a point, marker, or burg—no map click required. Click the map to add a new point stop. Click a journey circle to repeat that stop. Add leg copies the last stop. Edit free points in the Waypoints section. Undo removes the last leg; Clear clears legs only.",
     true,
   );
   viewbox.style("cursor", "crosshair").on("click.journey", journeyEditorOnClick);
