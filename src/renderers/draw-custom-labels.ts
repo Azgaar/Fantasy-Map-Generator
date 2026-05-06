@@ -10,6 +10,7 @@ window.drawCustomLabels = customLabelRenderer;
 // -------------------------------------------------------------------------------
 
 export function customLabelRenderer() {
+  TIME && console.time("drawCustomLabels");
   const allCustomLabels = Labels.getAll().filter(
     (labels) => labels.type === "custom",
   );
@@ -36,6 +37,7 @@ export function customLabelRenderer() {
       groupNode.replaceChildren(...customLabelsHTML);
     }
   }
+  TIME && console.timeEnd("drawCustomLabels");
 }
 
 function constructLabelHTML(
