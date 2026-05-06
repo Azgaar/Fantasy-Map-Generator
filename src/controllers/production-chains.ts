@@ -11,7 +11,6 @@ const COLUMN_STEP = CARD_WIDTH + COLUMN_GAP;
 const ICON_RADIUS = 11;
 const PORT_BAND = 0.55;
 const LANE_SPREAD = 12;
-const FOCUS_ANIMATION_MS = 350;
 const HEADER_HEIGHT = 20;
 const SVG_PADDING = 18;
 const ZOOM_MIN = 0.35;
@@ -74,9 +73,16 @@ interface EdgeGeometry {
   labelY: number;
 }
 
-interface FocusLayout {
-  positions: Map<number, Position>;
-  chainIds: Set<number>;
+interface EdgeLabel {
+  amount: number;
+  recipeIndex: number;
+}
+
+interface DisplayEdge {
+  fromId: number;
+  toId: number;
+  representative: RoutedEdge;
+  labels: EdgeLabel[];
 }
 
 function getChainGoods(goods: Good[]): Good[] {
@@ -389,41 +395,6 @@ function getDirectedChainIds(startId: number, edges: RoutedEdge[]): Set<number> 
   return result;
 }
 
-function buildFocusLayout(nodes: GraphNode[], edges: RoutedEdge[], selectedId: number): FocusLayout {
-  const chainIds = getDirectedChainIds(selectedId, edges);
-  const sortedStages = [...new Set(nodes.map(node => node.stage))].sort((a, b) => a - b);
-  const positions = new Map<number, Position>();
-  const nodesByStage = new Map<number, GraphNode[]>();
-
-  for (const stage of sortedStages) nodesByStage.set(stage, []);
-  for (const node of nodes) nodesByStage.get(node.stage)!.push(node);
-  for (const stageNodes of nodesByStage.values())
-    stageNodes.sort((left, right) => left.y - right.y || left.id - right.id);
-
-  for (const stage of sortedStages) {
-    const stageNodes = nodesByStage.get(stage) ?? [];
-    const focused = stageNodes.filter(node => chainIds.has(node.id));
-    const rest = stageNodes.filter(node => !chainIds.has(node.id));
-    const ordered = [...focused, ...rest];
-
-    for (let index = 0; index < ordered.length; index++) {
-      const node = ordered[index];
-      positions.set(node.id, {x: node.x, y: index * (CARD_HEIGHT + ROW_GAP)});
-    }
-  }
-
-  const yValues = [...positions.values()].map(position => position.y);
-  const focusMidY = (Math.min(...yValues) + Math.max(...yValues)) / 2;
-  const baseMidY = (Math.min(...nodes.map(node => node.y)) + Math.max(...nodes.map(node => node.y))) / 2;
-  const shiftY = baseMidY - focusMidY;
-
-  for (const [id, position] of positions) {
-    positions.set(id, {x: position.x, y: position.y + shiftY});
-  }
-
-  return {positions, chainIds};
-}
-
 function getPortY(nodeY: number, portIndex: number, portCount: number): number {
   if (portCount === 1) return nodeY + CARD_HEIGHT / 2;
   const top = nodeY + (CARD_HEIGHT * (1 - PORT_BAND)) / 2;
@@ -501,17 +472,52 @@ function renderComponentSeparators(componentBands: ComponentBand[], offsetY: num
     .join("");
 }
 
-function renderEdge(edge: RoutedEdge, positions: Map<number, Position>): string {
-  const geometry = getEdgeGeometry(edge, positions);
-  const color = EDGE_COLORS[edge.recipeIndex % EDGE_COLORS.length];
+function getDisplayEdges(edges: RoutedEdge[]): DisplayEdge[] {
+  const grouped = new Map<string, DisplayEdge>();
 
-  return `<g data-ef="${edge.from.id}" data-et="${edge.to.id}" data-ri="${edge.recipeIndex}" data-amount="${edge.amount}" style="opacity:${DEFAULT_EDGE_OPACITY};transition:opacity 0.15s">
-    <path d="${geometry.d}" fill="none" stroke="${color}" stroke-opacity="0.85" stroke-width="1.4"
-      marker-end="url(#ca${edge.recipeIndex % EDGE_COLORS.length})"/>
-    <text x="${geometry.labelX}" y="${geometry.labelY}" text-anchor="middle"
-      font-size="8" font-family="sans-serif" fill="${color}"
-      paint-order="stroke" stroke="#f9f9f9" stroke-width="2.5"
-      style="opacity:${DEFAULT_LABEL_OPACITY};transition:opacity 0.15s">x${edge.amount}</text>
+  for (const edge of edges) {
+    const key = `${edge.from.id}-${edge.to.id}`;
+    const existing = grouped.get(key);
+
+    if (!existing) {
+      grouped.set(key, {
+        fromId: edge.from.id,
+        toId: edge.to.id,
+        representative: edge,
+        labels: [{amount: edge.amount, recipeIndex: edge.recipeIndex}]
+      });
+      continue;
+    }
+
+    existing.labels.push({amount: edge.amount, recipeIndex: edge.recipeIndex});
+    if (edge.recipeIndex < existing.representative.recipeIndex) existing.representative = edge;
+  }
+
+  for (const displayEdge of grouped.values()) {
+    displayEdge.labels.sort((left, right) => left.recipeIndex - right.recipeIndex || left.amount - right.amount);
+  }
+
+  return [...grouped.values()];
+}
+
+function renderEdge(displayEdge: DisplayEdge, positions: Map<number, Position>): string {
+  const geometry = getEdgeGeometry(displayEdge.representative, positions);
+  const labels = displayEdge.labels
+    .map((label, index) => {
+      const color = EDGE_COLORS[label.recipeIndex % EDGE_COLORS.length];
+      const y = geometry.labelY - (displayEdge.labels.length - 1 - index) * 10;
+
+      return `<text x="${geometry.labelX}" y="${y}" text-anchor="middle"
+        font-size="8" font-family="sans-serif" fill="${color}"
+        paint-order="stroke" stroke="#f9f9f9" stroke-width="2.5"
+        style="opacity:${DEFAULT_LABEL_OPACITY};transition:opacity 0.15s">x${label.amount}</text>`;
+    })
+    .join("");
+
+  return `<g data-ef="${displayEdge.fromId}" data-et="${displayEdge.toId}" style="opacity:${DEFAULT_EDGE_OPACITY};transition:opacity 0.15s">
+    <path d="${geometry.d}" fill="none" stroke="#7b7b7b" stroke-opacity="0.8" stroke-width="1.4"
+      marker-end="url(#ca${displayEdge.representative.recipeIndex % EDGE_COLORS.length})"/>
+    ${labels}
   </g>`;
 }
 
@@ -547,10 +553,6 @@ function renderNode(node: GraphNode, positions: Map<number, Position>): string {
   </g>`;
 }
 
-function getEdgeKey(fromId: number, toId: number, recipeIndex: number, amount: number): string {
-  return `${fromId}-${toId}-${recipeIndex}-${amount}`;
-}
-
 function attachGraphInteractions(svgEl: SVGSVGElement, layout: LayoutData) {
   const viewportEl = svgEl.querySelector<SVGGElement>("#viewport");
   if (!viewportEl) return;
@@ -559,12 +561,6 @@ function attachGraphInteractions(svgEl: SVGSVGElement, layout: LayoutData) {
   const viewport = select(viewportEl);
   const nodeSelection = svg.selectAll<SVGGElement, unknown>("[data-nid]");
   const edgeSelection = svg.selectAll<SVGGElement, unknown>("[data-ef]");
-  const basePositions = getBasePositions(layout.nodes);
-  const edgesByKey = new Map(
-    layout.edges.map(edge => [getEdgeKey(edge.from.id, edge.to.id, edge.recipeIndex, edge.amount), edge])
-  );
-
-  let activeNodeId: number | null = null;
 
   const zoomBehavior = zoom<SVGSVGElement, unknown>()
     .scaleExtent([ZOOM_MIN, ZOOM_MAX])
@@ -592,81 +588,23 @@ function attachGraphInteractions(svgEl: SVGSVGElement, layout: LayoutData) {
     });
   }
 
-  function animateLayout(positions: Map<number, Position>) {
-    nodeSelection
-      .transition()
-      .duration(FOCUS_ANIMATION_MS)
-      .attr("transform", function () {
-        const group = this as SVGGElement;
-        const nodeId = +(group.dataset.nid || -1);
-        const position = positions.get(nodeId) ?? basePositions.get(nodeId);
-        return position ? `translate(${position.x},${position.y})` : group.getAttribute("transform") || "";
-      });
-
-    edgeSelection.each(function () {
-      const group = this as SVGGElement;
-      const edge = edgesByKey.get(
-        getEdgeKey(
-          +(group.dataset.ef || -1),
-          +(group.dataset.et || -1),
-          +(group.dataset.ri || -1),
-          +(group.dataset.amount || -1)
-        )
-      );
-      if (!edge) return;
-
-      const geometry = getEdgeGeometry(edge, positions);
-      const path = group.querySelector<SVGPathElement>("path");
-      const label = group.querySelector<SVGTextElement>("text");
-      if (path) select(path).transition().duration(FOCUS_ANIMATION_MS).attr("d", geometry.d);
-      if (label)
-        select(label).transition().duration(FOCUS_ANIMATION_MS).attr("x", geometry.labelX).attr("y", geometry.labelY);
-    });
-  }
-
-  function setFocus(nodeId: number | null) {
-    if (nodeId === null) {
-      activeNodeId = null;
-      animateLayout(basePositions);
-      applyVisibility(null);
-      return;
-    }
-
-    const focusLayout = buildFocusLayout(layout.nodes, layout.edges, nodeId);
-    activeNodeId = nodeId;
-    animateLayout(focusLayout.positions);
-    applyVisibility(focusLayout.chainIds);
-  }
-
   nodeSelection.each(function () {
     const group = this as SVGGElement;
     const nodeId = +(group.dataset.nid || -1);
 
     group.addEventListener("mouseenter", () => {
-      if (activeNodeId !== null) return;
       applyVisibility(getDirectedChainIds(nodeId, layout.edges));
     });
 
     group.addEventListener("mouseleave", () => {
-      if (activeNodeId !== null) return;
       applyVisibility(null);
     });
-
-    group.addEventListener("click", event => {
-      event.stopPropagation();
-      setFocus(activeNodeId === nodeId ? null : nodeId);
-    });
-  });
-
-  svgEl.addEventListener("click", event => {
-    const target = event.target as Element;
-    if (target.closest("[data-nid]")) return;
-    if (activeNodeId !== null) setFocus(null);
   });
 }
 
 function renderGraph(layout: LayoutData): string {
   const positions = getBasePositions(layout.nodes);
+  const displayEdges = getDisplayEdges(layout.edges);
   const minX = Math.min(...layout.nodes.map(node => node.x));
   const maxX = Math.max(...layout.nodes.map(node => node.x)) + CARD_WIDTH;
   const minY = Math.min(...layout.nodes.map(node => node.y));
@@ -686,7 +624,7 @@ function renderGraph(layout: LayoutData): string {
       ${headers}
       ${separators}
       <g transform="translate(${offsetX},${offsetY})">
-        <g id="cedges">${layout.edges.map(edge => renderEdge(edge, positions)).join("")}</g>
+        <g id="cedges">${displayEdges.map(edge => renderEdge(edge, positions)).join("")}</g>
         <g id="cnodes">${layout.nodes.map(node => renderNode(node, positions)).join("")}</g>
       </g>
     </g>
