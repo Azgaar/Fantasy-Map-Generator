@@ -36,8 +36,135 @@ export function chordKey(a: [number, number], b: [number, number]): string {
   return `${rn(a[0], 2)},${rn(a[1], 2)}->${rn(b[0], 2)},${rn(b[1], 2)}`;
 }
 
+/**
+ * Fraction along chord A→B for point P (clamped to [0, 1]), matching `linearGradient`
+ * `userSpaceOnUse` with axis from A to B (constant perpendicular to that axis).
+ */
+export function chordGradientT(
+  a: [number, number],
+  b: [number, number],
+  px: number,
+  py: number,
+): number {
+  const vx = b[0] - a[0];
+  const vy = b[1] - a[1];
+  const len2 = vx * vx + vy * vy;
+  if (len2 < 1e-18) return 0;
+  const t = ((px - a[0]) * vx + (py - a[1]) * vy) / len2;
+  return Math.max(0, Math.min(1, t));
+}
+
+/** Arrowhead path (local coords before translate/rotate); 1.5× earlier triangle. */
+const ARROW_PATH_D = "M0,-4.2 L11.25,0 L0,4.2 Z";
+
 const MIN_SEG_LEN = 0.05;
 const LANE_WIDTH = 3.5;
+
+/** Target screen px under `#viewbox` scale (stroke-width × scale ≈ px). */
+const JOURNEY_STROKE_SCREEN_PX = 3.2;
+const JOURNEY_WAYPOINT_R_SCREEN_PX = 5;
+const JOURNEY_WAYPOINT_STROKE_SCREEN_PX = 1.5;
+const JOURNEY_HALO_DILATE_SCREEN_PX = 3;
+/** Baseline arrow spacing at scale 1 (screen-ish); multiplied by tier below. */
+const JOURNEY_ARROW_SPACING_BASE_PX = 38;
+
+const LOD_TIER_MAX = 6;
+
+const LOD_ARROW_SPACING_MUL: readonly number[] = [
+  2.25, 1.9, 1.6, 1.35, 1.2, 1.08, 1,
+];
+
+/**
+ * Discrete LOD tier from zoom `scale` vs minimum zoom extent (both > 0).
+ * Tier rises as the user zooms in relative to `zoomMin`.
+ */
+export function journeyLodTier(scale: number, zoomMin: number): number {
+  const s = Math.max(scale, 1e-9);
+  const zmin = Math.max(zoomMin, 1e-9);
+  const raw = Math.floor(Math.log2(s)) - Math.floor(Math.log2(zmin));
+  return Math.max(0, Math.min(LOD_TIER_MAX, raw));
+}
+
+/** Polyline subdivisions for quadratic sampling; higher tier ⇒ smoother curve. */
+export function journeyPolylineSamplesForTier(tier: number): number {
+  const t = Math.max(0, Math.min(LOD_TIER_MAX, tier));
+  return Math.min(44, Math.max(12, 14 + t * 5));
+}
+
+/** Fewer arrows when tier is low (zoomed out). */
+export function journeyArrowSpacingMulForTier(tier: number): number {
+  const t = Math.max(0, Math.min(LOD_TIER_MAX, tier));
+  return LOD_ARROW_SPACING_MUL[t] ?? 1;
+}
+
+/** Arrow spacing in map units (~constant screen spacing × LOD density). */
+export function journeyArrowSpacingMapUnits(
+  scale: number,
+  tier: number,
+  spacingPx = JOURNEY_ARROW_SPACING_BASE_PX,
+): number {
+  const k = Math.max(scale, 1e-9);
+  return (spacingPx * journeyArrowSpacingMulForTier(tier)) / k;
+}
+
+function mapMetricScreenToWorld(
+  screenPx: number,
+  zoomScale: number,
+  lo: number,
+  hi: number,
+): number {
+  const k = Math.max(zoomScale, 1e-9);
+  return Math.min(hi, Math.max(lo, screenPx / k));
+}
+
+function arrowTransform(
+  x: number,
+  y: number,
+  angleDeg: number,
+  zoomScale: number,
+): string {
+  const inv = rn(1 / Math.max(zoomScale, 1e-9), 6);
+  return `translate(${rn(x, 2)},${rn(y, 2)}) rotate(${rn(angleDeg, 2)}) scale(${inv})`;
+}
+
+/** Single defs filter id: dilated silhouette behind segment stroke + arrows (unified halo). */
+const JOURNEY_OUTLINE_FILTER_ID = "journeyUnifiedOutline";
+
+function ensureJourneyOutlineFilter(
+  defs: Selection<SVGDefsElement, unknown, null, undefined>,
+  morphologyRadiusMap: number,
+): void {
+  defs.select(`filter#${JOURNEY_OUTLINE_FILTER_ID}`).remove();
+  const f = defs
+    .append("filter")
+    .attr("id", JOURNEY_OUTLINE_FILTER_ID)
+    .attr("class", "journey-outline-filter")
+    .attr("color-interpolation-filters", "sRGB")
+    .attr("x", "-50%")
+    .attr("y", "-50%")
+    .attr("width", "200%")
+    .attr("height", "200%");
+
+  f.append("feMorphology")
+    .attr("in", "SourceAlpha")
+    .attr("operator", "dilate")
+    .attr("radius", rn(morphologyRadiusMap, 3))
+    .attr("result", "dilatedAlpha");
+
+  f.append("feFlood")
+    .attr("flood-color", "#000000")
+    .attr("result", "outlineFlood");
+
+  f.append("feComposite")
+    .attr("in", "outlineFlood")
+    .attr("in2", "dilatedAlpha")
+    .attr("operator", "in")
+    .attr("result", "outlineShape");
+
+  const merge = f.append("feMerge");
+  merge.append("feMergeNode").attr("in", "outlineShape");
+  merge.append("feMergeNode").attr("in", "SourceGraphic");
+}
 
 /** Max perpendicular lift at chord midpoint (fraction of chord length), scale ~ repeat index below. */
 const BEND_BASE = 0.14;
@@ -211,21 +338,43 @@ function polylineLength(pts: [number, number][]): number {
   return len;
 }
 
-class JourneyDrawModule {
+export class JourneyDrawModule {
+  private lastLodTier: number | null = null;
+
+  /** Full rebuild (data / LOD tier geometry). Pass current viewbox `scale` and zoom extent min for LOD. */
   redraw(
     defs: Selection<SVGDefsElement, unknown, null, undefined>,
     journeys: Selection<SVGGElement, unknown, null, undefined>,
+    zoomScale = 1,
+    zoomMinForLod = 0.05,
   ): void {
     journeys.selectAll("*").remove();
     defs.selectAll("linearGradient.journey-def").remove();
+    defs.select(`filter#${JOURNEY_OUTLINE_FILTER_ID}`).remove();
 
     const points = (pack.journey?.points ?? []) as [number, number][];
-    if (!points.length) return;
+    if (!points.length) {
+      this.lastLodTier = null;
+      return;
+    }
+
+    const zs = Number.isFinite(zoomScale) ? zoomScale : 1;
+    const zm = Number.isFinite(zoomMinForLod) ? zoomMinForLod : 0.05;
 
     const verts = journeys.append("g").attr("class", "journey-vertices");
-    const halo = journeys.append("g").attr("class", "journey-halo");
-    const strokes = journeys.append("g").attr("class", "journey-strokes");
-    const arrows = journeys.append("g").attr("class", "journey-arrows");
+
+    const waypointR = mapMetricScreenToWorld(
+      JOURNEY_WAYPOINT_R_SCREEN_PX,
+      zs,
+      0.15,
+      80,
+    );
+    const waypointSw = mapMetricScreenToWorld(
+      JOURNEY_WAYPOINT_STROKE_SCREEN_PX,
+      zs,
+      0.03,
+      24,
+    );
 
     const seen = new Set<string>();
     for (const [x, y] of points) {
@@ -239,18 +388,41 @@ class JourneyDrawModule {
         .attr("data-jy", rn(y, 2))
         .attr("cx", rn(x, 2))
         .attr("cy", rn(y, 2))
-        .attr("r", 5)
+        .attr("r", rn(waypointR, 3))
         .attr("fill", "#ffffff")
         .attr("stroke", "#000000")
-        .attr("stroke-width", 1.5)
+        .attr("stroke-width", rn(waypointSw, 3))
         .style("cursor", "pointer");
     }
 
     const S = Math.max(0, points.length - 1);
-    if (S < 1) return;
+    if (S < 1) {
+      this.lastLodTier = journeyLodTier(zs, zm);
+      return;
+    }
+
+    const tier = journeyLodTier(zs, zm);
+    const samples = journeyPolylineSamplesForTier(tier);
+    const arrowSpacing = journeyArrowSpacingMapUnits(zs, tier);
+    const morphR = mapMetricScreenToWorld(
+      JOURNEY_HALO_DILATE_SCREEN_PX,
+      zs,
+      0.35,
+      40,
+    );
+
+    ensureJourneyOutlineFilter(defs, morphR);
+    const segmentsRoot = journeys.append("g").attr("class", "journey-segments");
 
     const lanes = laneMultipliersForSegments(points);
     const repeats = directedChordOccurrenceIndex(points);
+
+    const strokeW = mapMetricScreenToWorld(
+      JOURNEY_STROKE_SCREEN_PX,
+      zs,
+      0.06,
+      24,
+    );
 
     for (let i = 0; i < S; i++) {
       const a = points[i];
@@ -262,7 +434,7 @@ class JourneyDrawModule {
       const k = repeats[i] ?? 0;
       const bendAmount = bendSegmentChord(segLen, k);
 
-      const samp = quadraticSamples(a, b, bendAmount, lane, 28);
+      const samp = quadraticSamples(a, b, bendAmount, lane, samples);
       const d = polylinePath(samp);
       if (!d) continue;
 
@@ -284,25 +456,22 @@ class JourneyDrawModule {
       grad.append("stop").attr("offset", "0%").attr("stop-color", c0);
       grad.append("stop").attr("offset", "100%").attr("stop-color", c1);
 
-      halo
-        .append("path")
-        .attr("d", d)
-        .attr("fill", "none")
-        .attr("stroke", "#000000")
-        .attr("stroke-width", 6)
-        .attr("stroke-linecap", "round")
-        .attr("stroke-linejoin", "round");
+      const seg = segmentsRoot
+        .append("g")
+        .attr("class", "journey-segment")
+        .attr("filter", `url(#${JOURNEY_OUTLINE_FILTER_ID})`);
 
-      strokes
+      seg
         .append("path")
+        .attr("class", "journey-segment-stroke")
         .attr("d", d)
         .attr("fill", "none")
         .attr("stroke", `url(#${gid})`)
-        .attr("stroke-width", 3.2)
+        .attr("stroke-width", rn(strokeW, 3))
         .attr("stroke-linecap", "round")
         .attr("stroke-linejoin", "round");
 
-      let arrPts = arrowPositionsAlongPolyline(samp, 38);
+      let arrPts = arrowPositionsAlongPolyline(samp, arrowSpacing);
       if (!arrPts.length && polylineLength(samp) > MIN_SEG_LEN) {
         const mid = Math.max(1, Math.floor(samp.length / 2));
         const prev = mid - 1;
@@ -316,18 +485,102 @@ class JourneyDrawModule {
         arrPts = [{ x: samp[mid][0], y: samp[mid][1], angleDeg }];
       }
       for (const ar of arrPts) {
-        arrows
+        const gt = chordGradientT(a, b, ar.x, ar.y);
+        const arrowColor = journeyRampColor(u0 + gt * (u1 - u0));
+        seg
           .append("path")
-          .attr("d", "M0,-2.8 L7.5,0 L0,2.8 Z")
-          .attr("fill", "#222222")
-          .attr("stroke", "#000000")
-          .attr("stroke-width", 0.9)
-          .attr(
-            "transform",
-            `translate(${rn(ar.x, 2)},${rn(ar.y, 2)}) rotate(${rn(ar.angleDeg, 2)})`,
-          );
+          .attr("class", "journey-arrow")
+          .attr("d", ARROW_PATH_D)
+          .attr("fill", arrowColor)
+          .attr("data-ar-x", rn(ar.x, 2))
+          .attr("data-ar-y", rn(ar.y, 2))
+          .attr("data-ar-ang", rn(ar.angleDeg, 2))
+          .attr("transform", arrowTransform(ar.x, ar.y, ar.angleDeg, zs));
       }
     }
+
+    this.lastLodTier = tier;
+  }
+
+  /** Zoom-only updates: cheap attr patch if LOD tier unchanged; else full `redraw`. */
+  syncZoom(
+    defs: Selection<SVGDefsElement, unknown, null, undefined>,
+    journeys: Selection<SVGGElement, unknown, null, undefined>,
+    zoomScale = 1,
+    zoomMinForLod = 0.05,
+  ): void {
+    const points = (pack.journey?.points ?? []) as [number, number][];
+    if (!points.length) return;
+
+    const zs = Number.isFinite(zoomScale) ? zoomScale : 1;
+    const zm = Number.isFinite(zoomMinForLod) ? zoomMinForLod : 0.05;
+    const tier = journeyLodTier(zs, zm);
+
+    const S = Math.max(0, points.length - 1);
+    if (S >= 1 && this.lastLodTier !== tier) {
+      this.redraw(defs, journeys, zs, zm);
+      return;
+    }
+
+    this.applyZoomSizing(defs, journeys, zs);
+  }
+
+  private applyZoomSizing(
+    defs: Selection<SVGDefsElement, unknown, null, undefined>,
+    journeys: Selection<SVGGElement, unknown, null, undefined>,
+    zoomScale: number,
+  ): void {
+    const zs = Math.max(zoomScale, 1e-9);
+
+    const strokeW = mapMetricScreenToWorld(
+      JOURNEY_STROKE_SCREEN_PX,
+      zs,
+      0.06,
+      24,
+    );
+    journeys
+      .selectAll(".journey-segment-stroke")
+      .attr("stroke-width", rn(strokeW, 3));
+
+    const waypointR = mapMetricScreenToWorld(
+      JOURNEY_WAYPOINT_R_SCREEN_PX,
+      zs,
+      0.15,
+      80,
+    );
+    const waypointSw = mapMetricScreenToWorld(
+      JOURNEY_WAYPOINT_STROKE_SCREEN_PX,
+      zs,
+      0.03,
+      24,
+    );
+    journeys
+      .selectAll(".journey-waypoint")
+      .attr("r", rn(waypointR, 3))
+      .attr("stroke-width", rn(waypointSw, 3));
+
+    journeys.selectAll(".journey-arrow").each(function () {
+      const el = this as SVGPathElement;
+      const x = el.getAttribute("data-ar-x");
+      const y = el.getAttribute("data-ar-y");
+      const ang = el.getAttribute("data-ar-ang");
+      if (x == null || y == null || ang == null) return;
+      el.setAttribute(
+        "transform",
+        arrowTransform(+x, +y, +ang, zoomScale),
+      );
+    });
+
+    const morphR = mapMetricScreenToWorld(
+      JOURNEY_HALO_DILATE_SCREEN_PX,
+      zs,
+      0.35,
+      40,
+    );
+    defs
+      .select(`filter#${JOURNEY_OUTLINE_FILTER_ID}`)
+      .select("feMorphology")
+      .attr("radius", rn(morphR, 3));
   }
 }
 

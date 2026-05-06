@@ -76,6 +76,7 @@ declare global {
   var layerIsOn: (layerId: string) => boolean;
   var drawRoute: (route: any) => void;
   var invokeActiveZooming: () => void;
+  var syncJourneyZoom: (zoomScale: number) => void;
   var FlatQueue: any;
 
   var tip: (

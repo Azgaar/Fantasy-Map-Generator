@@ -855,11 +855,25 @@ function toggleMarkers(event) {
   }
 }
 
+function journeyZoomExtentMin() {
+  return Math.max(+ensureEl("zoomExtentMin").value, 0.01);
+}
+
 function drawJourney() {
   TIME && console.time("drawJourney");
   if (!pack.journey) pack.journey = {points: []};
-  JourneyDraw.redraw(defs, journeys);
+  const zs = typeof scale === "number" && Number.isFinite(scale) ? scale : 1;
+  JourneyDraw.redraw(defs, journeys, zs, journeyZoomExtentMin());
   TIME && console.timeEnd("drawJourney");
+}
+
+function syncJourneyZoom(zoomScale) {
+  if (!layerIsOn("toggleJourney")) return;
+  const jn = journeys.node();
+  if (!jn || getComputedStyle(jn).display === "none") return;
+  const zs =
+    typeof zoomScale === "number" && Number.isFinite(zoomScale) ? zoomScale : 1;
+  JourneyDraw.syncZoom(defs, journeys, zs, journeyZoomExtentMin());
 }
 
 function toggleJourney(event) {

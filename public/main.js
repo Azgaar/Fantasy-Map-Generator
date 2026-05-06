@@ -569,6 +569,9 @@ function invokeActiveZooming() {
     const size = rn((10 / scale ** 0.3) * 2, 2);
     ruler.selectAll("text").attr("font-size", size);
   }
+
+  // journey layer: screen-constant sizing + LOD on tier change
+  if (layerIsOn("toggleJourney")) syncJourneyZoom(scale);
 }
 
 // add drag to upload logic, pull request from @evyatron

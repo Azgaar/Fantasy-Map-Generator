@@ -2,12 +2,75 @@ import { describe, expect, it } from "vitest";
 import {
   arrowPositionsAlongPolyline,
   bendSegmentChord,
+  chordGradientT,
   chordKey,
   directedChordOccurrenceIndex,
+  journeyArrowSpacingMapUnits,
+  journeyArrowSpacingMulForTier,
+  journeyLodTier,
+  journeyPolylineSamplesForTier,
   journeyRampColor,
   laneMultipliersForSegments,
   segmentUInterval,
 } from "./journey-draw";
+
+describe("journeyLodTier", () => {
+  it("is 0 at zoomMin and increases when scale doubles relative to zoomMin", () => {
+    expect(journeyLodTier(0.05, 0.05)).toBe(0);
+    expect(journeyLodTier(0.1, 0.05)).toBe(1);
+    expect(journeyLodTier(0.2, 0.05)).toBe(2);
+  });
+
+  it("clamps to max tier", () => {
+    expect(journeyLodTier(1e9, 0.05)).toBe(6);
+  });
+});
+
+describe("journeyPolylineSamplesForTier", () => {
+  it("rises with tier then caps", () => {
+    expect(journeyPolylineSamplesForTier(0)).toBeLessThan(
+      journeyPolylineSamplesForTier(4),
+    );
+    expect(journeyPolylineSamplesForTier(6)).toBe(journeyPolylineSamplesForTier(10));
+  });
+});
+
+describe("journeyArrowSpacingMulForTier", () => {
+  it("is higher when zoomed out (low tier)", () => {
+    expect(journeyArrowSpacingMulForTier(0)).toBeGreaterThan(
+      journeyArrowSpacingMulForTier(6),
+    );
+  });
+});
+
+describe("journeyArrowSpacingMapUnits", () => {
+  it("shrinks map spacing when scale increases (same tier)", () => {
+    const tier = 3;
+    const a = journeyArrowSpacingMapUnits(1, tier);
+    const b = journeyArrowSpacingMapUnits(4, tier);
+    expect(b).toBeLessThan(a);
+  });
+});
+
+describe("chordGradientT", () => {
+  const a: [number, number] = [0, 0];
+  const b: [number, number] = [100, 0];
+
+  it("is 0 at A, 1 at B, ~0.5 at the midpoint", () => {
+    expect(chordGradientT(a, b, 0, 0)).toBe(0);
+    expect(chordGradientT(a, b, 100, 0)).toBe(1);
+    expect(chordGradientT(a, b, 50, 0)).toBeCloseTo(0.5);
+  });
+
+  it("matches gradient axis (offset perpendicular does not change t)", () => {
+    expect(chordGradientT(a, b, 40, 99)).toBeCloseTo(0.4);
+  });
+
+  it("clamps outside the segment", () => {
+    expect(chordGradientT(a, b, -50, 0)).toBe(0);
+    expect(chordGradientT(a, b, 200, 0)).toBe(1);
+  });
+});
 
 describe("segmentUInterval", () => {
   it("slices the unified ramp into equal spans", () => {
