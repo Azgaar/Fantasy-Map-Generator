@@ -164,11 +164,10 @@ async function parseLoadedResult(result) {
     const isDelimited = resultAsString.substring(0, 10).includes("|");
     let content = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
 
-    // fix if svg part has CRLF line endings instead of LF
-    const svgMatch = content.match(/<svg[^>]*id="map"[\s\S]*?<\/svg>/);
-    const svgContent = svgMatch[0];
-    const hasCrlfEndings = svgContent.includes("\r\n");
-    if (hasCrlfEndings) {
+    // fix if svg part has CRLF line endings instead of LF (some exports / old saves differ)
+    const svgMatch = content.match(/<svg[^>]*id="map"[\s\S]*?<\/svg>/i);
+    const svgContent = svgMatch?.[0];
+    if (svgContent?.includes("\r\n")) {
       const correctedSvgContent = svgContent.replace(/\r\n/g, "\n");
       content = content.replace(svgContent, correctedSvgContent);
     }
@@ -417,8 +416,25 @@ async function parseLoadedData(data, mapVersion) {
       // data[28] had deprecated cells.crossroad
       pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
       pack.ice = data[39] ? JSON.parse(data[39]) : [];
-      pack.journey = data[40] ? JSON.parse(data[40]) : {points: []};
-      if (!pack.journey.points) pack.journey.points = [];
+      {
+        let parsedJourney = null;
+        if (data[40]) {
+          try {
+            parsedJourney = JSON.parse(data[40]);
+          } catch {
+            parsedJourney = null;
+          }
+        }
+        const j =
+          parsedJourney &&
+          typeof parsedJourney === "object" &&
+          parsedJourney !== null &&
+          !Array.isArray(parsedJourney)
+            ? parsedJourney
+            : {points: []};
+        pack.journey = j;
+        if (!Array.isArray(pack.journey.points)) pack.journey.points = [];
+      }
 
       if (data[31]) {
         const namesDL = data[31].split("/");

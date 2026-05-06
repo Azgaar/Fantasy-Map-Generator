@@ -111,7 +111,10 @@ function applyLayersPreset() {
   const preset = localStorage.getItem("preset") || ensureEl("layersPreset").value;
   setLayersPreset(preset);
 
-  const layers = presets[preset]; // layers to be turned on
+  const raw = presets[preset];
+  const layers = Array.isArray(raw)
+    ? raw
+    : getDefaultPresets()[preset] || getDefaultPresets().political;
   document.querySelectorAll("#mapLayers > li").forEach(el => {
     const shouldBeOn = layers.includes(el.id);
     if (shouldBeOn) el.classList.remove("buttonoff");
@@ -132,7 +135,10 @@ function setLayersPreset(preset) {
 function handleLayersPresetChange(preset) {
   setLayersPreset(preset);
 
-  const layers = presets[preset]; // layers to be turned on
+  const raw = presets[preset];
+  const layers = Array.isArray(raw)
+    ? raw
+    : getDefaultPresets()[preset] || getDefaultPresets().political;
   document.querySelectorAll("#mapLayers > li").forEach(el => {
     const isOn = layerIsOn(el.id);
     const shouldBeOn = layers.includes(el.id);
@@ -175,7 +181,9 @@ function getCurrentPreset() {
     .sort();
 
   for (const preset in presets) {
-    if (JSON.stringify(presets[preset].sort()) === JSON.stringify(layers)) {
+    const def = presets[preset];
+    if (!Array.isArray(def)) continue;
+    if (JSON.stringify([...def].sort()) === JSON.stringify(layers)) {
       layersPreset.value = preset;
       const isDefault = getDefaultPresets()[preset];
       removePresetButton.style.display = isDefault ? "none" : "inline-block";
