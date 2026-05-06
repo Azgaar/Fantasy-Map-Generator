@@ -4,18 +4,20 @@ import type {Good} from "../modules/goods-generator";
 const CARD_WIDTH = 98;
 const CARD_HEIGHT = 34;
 const CARD_RADIUS = 4;
-const COLUMN_GAP = 96;
+const COLUMN_GAP = 148;
 const ROW_GAP = 6;
 const COMPONENT_GAP = 32;
 const COLUMN_STEP = CARD_WIDTH + COLUMN_GAP;
 const ICON_RADIUS = 11;
 const PORT_BAND = 0.55;
-const LANE_SPREAD = 7;
+const LANE_SPREAD = 12;
 const FOCUS_ANIMATION_MS = 350;
 const HEADER_HEIGHT = 20;
 const SVG_PADDING = 18;
 const ZOOM_MIN = 0.35;
 const ZOOM_MAX = 3;
+const DEFAULT_EDGE_OPACITY = 0.045;
+const DEFAULT_LABEL_OPACITY = 0;
 
 const EDGE_COLORS = ["#3d85c8", "#cc7722", "#2a9050", "#7048a8", "#a83030", "#147a6c", "#b05000", "#1f6fa8"];
 
@@ -47,6 +49,7 @@ interface RoutedEdge extends GraphEdge {
   targetPortIndex: number;
   targetPortCount: number;
   lane: number;
+  targetBoundary: number;
 }
 
 interface ComponentBand {
@@ -237,23 +240,22 @@ function assignPortsAndLanes(nodes: GraphNode[], edges: GraphEdge[]): RoutedEdge
   for (const edgeList of outgoingByNode.values()) edgeList.sort((a, b) => a.to.y - b.to.y || a.to.id - b.to.id);
   for (const edgeList of incomingByNode.values()) edgeList.sort((a, b) => a.from.y - b.from.y || a.from.id - b.from.id);
 
-  const tierPairs = new Map<string, GraphEdge[]>();
+  const boundaryPairs = new Map<string, GraphEdge[]>();
   for (const edge of edges) {
-    const key = `${edge.from.stage}-${edge.to.stage}`;
-    if (!tierPairs.has(key)) tierPairs.set(key, []);
-    tierPairs.get(key)!.push(edge);
+    const key = `${edge.to.stage - 1}-${edge.to.stage}`;
+    if (!boundaryPairs.has(key)) boundaryPairs.set(key, []);
+    boundaryPairs.get(key)!.push(edge);
   }
 
-  for (const edgeList of tierPairs.values()) {
+  for (const edgeList of boundaryPairs.values()) {
     edgeList.sort((a, b) => {
-      const aMid = (a.from.y + a.to.y) / 2;
-      const bMid = (b.from.y + b.to.y) / 2;
-      return aMid - bMid || a.from.id - b.from.id || a.to.id - b.to.id;
+      return a.to.y - b.to.y || a.from.y - b.from.y || a.from.id - b.from.id || a.to.id - b.to.id;
     });
   }
 
   return edges.map(edge => {
-    const pair = tierPairs.get(`${edge.from.stage}-${edge.to.stage}`) ?? [];
+    const targetBoundary = edge.to.stage - 1;
+    const pair = boundaryPairs.get(`${targetBoundary}-${edge.to.stage}`) ?? [];
     const pairIndex = pair.indexOf(edge);
     return {
       ...edge,
@@ -261,7 +263,8 @@ function assignPortsAndLanes(nodes: GraphNode[], edges: GraphEdge[]): RoutedEdge
       sourcePortCount: outgoingByNode.get(edge.from.id)!.length,
       targetPortIndex: incomingByNode.get(edge.to.id)!.indexOf(edge),
       targetPortCount: incomingByNode.get(edge.to.id)!.length,
-      lane: pair.length > 1 ? pairIndex - (pair.length - 1) / 2 : 0
+      lane: pair.length > 1 ? pairIndex - (pair.length - 1) / 2 : 0,
+      targetBoundary
     };
   });
 }
@@ -428,8 +431,8 @@ function getPortY(nodeY: number, portIndex: number, portCount: number): number {
 }
 
 function getLaneOffset(edge: RoutedEdge): number {
-  const sourceSpread = (edge.sourcePortIndex - (edge.sourcePortCount - 1) / 2) * 4;
-  const targetSpread = (edge.targetPortIndex - (edge.targetPortCount - 1) / 2) * 4;
+  const sourceSpread = (edge.sourcePortIndex - (edge.sourcePortCount - 1) / 2) * 5;
+  const targetSpread = (edge.targetPortIndex - (edge.targetPortCount - 1) / 2) * 5;
   const recipeSpread = ((edge.recipeIndex % EDGE_COLORS.length) - (EDGE_COLORS.length - 1) / 2) * 0.5;
   return edge.lane * LANE_SPREAD + sourceSpread + targetSpread + recipeSpread;
 }
@@ -443,17 +446,17 @@ function getEdgeGeometry(edge: RoutedEdge, positions: Map<number, Position>): Ed
   const x2 = to.x;
   const y2 = getPortY(to.y, edge.targetPortIndex, edge.targetPortCount);
 
-  const corridorWidth = Math.max(12, x2 - x1);
-  const minElbowX = x1 + Math.min(14, corridorWidth / 3);
-  const maxElbowX = x2 - Math.min(14, corridorWidth / 3);
-  const rawElbowX = (x1 + x2) / 2 + getLaneOffset(edge);
+  const boundaryBaseX = edge.targetBoundary * COLUMN_STEP + CARD_WIDTH + COLUMN_GAP * 0.62;
+  const minElbowX = x1 + 14;
+  const maxElbowX = x2 - 14;
+  const rawElbowX = boundaryBaseX + getLaneOffset(edge);
   const elbowX = Math.max(minElbowX, Math.min(maxElbowX, rawElbowX));
 
   let d: string;
   if (Math.abs(y2 - y1) < 1) {
     d = `M${x1},${y1} H${x2}`;
   } else {
-    const cornerRadius = Math.min(7, Math.abs(y2 - y1) / 2, Math.max(6, (x2 - x1) / 5));
+    const cornerRadius = Math.min(8, Math.abs(y2 - y1) / 2, Math.max(6, (x2 - x1) / 6));
     const dy = y2 > y1 ? 1 : -1;
     d = `M${x1},${y1} H${elbowX - cornerRadius} Q${elbowX},${y1} ${elbowX},${y1 + dy * cornerRadius} V${y2 - dy * cornerRadius} Q${elbowX},${y2} ${elbowX + cornerRadius},${y2} H${x2}`;
   }
@@ -502,13 +505,13 @@ function renderEdge(edge: RoutedEdge, positions: Map<number, Position>): string 
   const geometry = getEdgeGeometry(edge, positions);
   const color = EDGE_COLORS[edge.recipeIndex % EDGE_COLORS.length];
 
-  return `<g data-ef="${edge.from.id}" data-et="${edge.to.id}" data-ri="${edge.recipeIndex}" data-amount="${edge.amount}" style="opacity:0.1;transition:opacity 0.15s">
-    <path d="${geometry.d}" fill="none" stroke="${color}" stroke-width="1.5"
+  return `<g data-ef="${edge.from.id}" data-et="${edge.to.id}" data-ri="${edge.recipeIndex}" data-amount="${edge.amount}" style="opacity:${DEFAULT_EDGE_OPACITY};transition:opacity 0.15s">
+    <path d="${geometry.d}" fill="none" stroke="${color}" stroke-opacity="0.85" stroke-width="1.4"
       marker-end="url(#ca${edge.recipeIndex % EDGE_COLORS.length})"/>
     <text x="${geometry.labelX}" y="${geometry.labelY}" text-anchor="middle"
       font-size="8" font-family="sans-serif" fill="${color}"
       paint-order="stroke" stroke="#f9f9f9" stroke-width="2.5"
-      style="opacity:0;transition:opacity 0.15s">x${edge.amount}</text>
+      style="opacity:${DEFAULT_LABEL_OPACITY};transition:opacity 0.15s">x${edge.amount}</text>
   </g>`;
 }
 
@@ -576,16 +579,16 @@ function attachGraphInteractions(svgEl: SVGSVGElement, layout: LayoutData) {
       const fromId = +(group.dataset.ef || -1);
       const toId = +(group.dataset.et || -1);
       const visible = chainIds ? chainIds.has(fromId) && chainIds.has(toId) : false;
-      group.style.opacity = chainIds ? (visible ? "1" : "0") : "";
+      group.style.opacity = chainIds ? (visible ? "1" : "0") : String(DEFAULT_EDGE_OPACITY);
 
       const label = group.querySelector<SVGTextElement>("text");
-      if (label) label.style.opacity = chainIds ? (visible ? "1" : "0") : "";
+      if (label) label.style.opacity = chainIds ? (visible ? "1" : "0") : String(DEFAULT_LABEL_OPACITY);
     });
 
     nodeSelection.each(function () {
       const group = this as SVGGElement;
       const nodeId = +(group.dataset.nid || -1);
-      group.style.opacity = chainIds ? (chainIds.has(nodeId) ? "1" : "0") : "";
+      group.style.opacity = chainIds ? (chainIds.has(nodeId) ? "1" : "0") : "1";
     });
   }
 
