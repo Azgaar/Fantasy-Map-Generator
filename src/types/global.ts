@@ -54,6 +54,7 @@ declare global {
   var svgHeight: number;
   var viewbox: Selection<SVGElement, unknown, null, undefined>;
   var routes: Selection<SVGElement, unknown, null, undefined>;
+  var journeys: Selection<SVGGElement, unknown, null, undefined>;
   var biomesData: {
     i: number[];
     name: string[];

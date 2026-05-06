@@ -65,4 +65,6 @@ export interface PackedGraph {
   markers: any[];
   ice: any[];
   provinces: Province[];
+  /** User-drawn journey path in map coordinates (ordered vertices). */
+  journey?: { points: [number, number][] };
 }

@@ -9,6 +9,7 @@ import "./burgs-generator";
 import "./biomes";
 import "./cultures-generator";
 import "./routes-generator";
+import "./journey-draw";
 import "./states-generator";
 import "./zones-generator";
 import "./religions-generator";

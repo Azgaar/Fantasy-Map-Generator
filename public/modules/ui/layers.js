@@ -59,6 +59,7 @@ function getDefaultPresets() {
       "toggleIce",
       "toggleLakes",
       "toggleMarkers",
+      "toggleJourney",
       "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
@@ -216,6 +217,7 @@ function drawLayers() {
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleMilitary")) drawMilitary();
   if (layerIsOn("toggleMarkers")) drawMarkers();
+  if (layerIsOn("toggleJourney")) drawJourney();
   if (layerIsOn("toggleRulers")) rulers.draw();
   // scale bar
   // vignette
@@ -853,6 +855,26 @@ function toggleMarkers(event) {
   }
 }
 
+function drawJourney() {
+  TIME && console.time("drawJourney");
+  if (!pack.journey) pack.journey = {points: []};
+  JourneyDraw.redraw(defs, journeys);
+  TIME && console.timeEnd("drawJourney");
+}
+
+function toggleJourney(event) {
+  if (!layerIsOn("toggleJourney")) {
+    turnButtonOn("toggleJourney");
+    drawJourney();
+    $("#journeys").fadeIn();
+    if (event && isCtrlClick(event)) editJourney();
+  } else {
+    if (event && isCtrlClick(event)) return editJourney();
+    $("#journeys").fadeOut();
+    turnButtonOff("toggleJourney");
+  }
+}
+
 function toggleLabels(event) {
   if (!layerIsOn("toggleLabels")) {
     turnButtonOn("toggleLabels");
@@ -1022,5 +1044,6 @@ function getLayer(id) {
   if (id === "toggleLabels") return $("#labels");
   if (id === "toggleBurgIcons") return $("#icons");
   if (id === "toggleMarkers") return $("#markers");
+  if (id === "toggleJourney") return $("#journeys");
   if (id === "toggleRulers") return $("#ruler");
 }

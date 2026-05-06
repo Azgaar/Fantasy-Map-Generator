@@ -77,6 +77,7 @@ let burgIcons = icons.append("g").attr("id", "burgIcons");
 let anchors = icons.append("g").attr("id", "anchors");
 let armies = viewbox.append("g").attr("id", "armies");
 let markers = viewbox.append("g").attr("id", "markers");
+let journeys = viewbox.append("g").attr("id", "journeys").style("display", "none");
 let fogging = viewbox
   .append("g")
   .attr("id", "fogging-cont")
@@ -634,6 +635,7 @@ async function generate(options) {
     else delete grid.cells.h;
     grid.cells.h = await HeightmapGenerator.generate(grid);
     pack = {}; // reset pack
+    pack.journey = {points: []};
 
     Features.markupGrid();
     addLakesInDeepDepressions();

@@ -55,6 +55,7 @@ function handleKeyup(event) {
   else if ((shift || altShift) && code === "KeyV") overviewRivers();
   else if ((shift || altShift) && code === "KeyM") overviewMilitary();
   else if ((shift || altShift) && code === "KeyK") overviewMarkers();
+  else if ((shift || altShift) && code === "KeyJ") editJourney();
   else if ((shift || altShift) && code === "KeyE") viewCellDetails();
   else if (key === "!") toggleAddBurg();
   else if (key === "@") toggleAddLabel();

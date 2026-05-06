@@ -357,6 +357,7 @@ async function parseLoadedData(data, mapVersion) {
       anchors = icons.select("#anchors");
       armies = viewbox.select("#armies");
       markers = viewbox.select("#markers");
+      journeys = viewbox.select("#journeys");
       ruler = viewbox.select("#ruler");
       fogging = viewbox.select("#fogging");
       debug = viewbox.select("#debug");
@@ -370,6 +371,9 @@ async function parseLoadedData(data, mapVersion) {
       }
       if (!emblems.size()) {
         emblems = viewbox.insert("g", "#labels").attr("id", "emblems").style("display", "none");
+      }
+      if (!journeys.size()) {
+        journeys = viewbox.insert("g", "#ruler").attr("id", "journeys").style("display", "none");
       }
     }
 
@@ -413,6 +417,8 @@ async function parseLoadedData(data, mapVersion) {
       // data[28] had deprecated cells.crossroad
       pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
       pack.ice = data[39] ? JSON.parse(data[39]) : [];
+      pack.journey = data[40] ? JSON.parse(data[40]) : {points: []};
+      if (!pack.journey.points) pack.journey.points = [];
 
       if (data[31]) {
         const namesDL = data[31].split("/");
@@ -464,6 +470,8 @@ async function parseLoadedData(data, mapVersion) {
       if (isVisible(icons)) turnOn("toggleBurgIcons");
       if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
       if (hasChild(markers, "svg")) turnOn("toggleMarkers");
+      if (isVisible(journeys) && (hasChild(journeys, "path") || hasChild(journeys, "circle")))
+        turnOn("toggleJourney");
       if (isVisible(ruler)) turnOn("toggleRulers");
       if (isVisible(scaleBar)) turnOn("toggleScaleBar");
       if (isVisibleNode(ensureEl("vignette"))) turnOn("toggleVignette");
@@ -735,6 +743,7 @@ async function parseLoadedData(data, mapVersion) {
       // draw data layers (not kept in svg)
       if (rulers && layerIsOn("toggleRulers")) rulers.draw();
       if (layerIsOn("toggleGrid")) drawGrid();
+      if (layerIsOn("toggleJourney")) drawJourney();
     }
 
     {
