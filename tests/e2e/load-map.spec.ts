@@ -1,11 +1,11 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import path from "path";
 
 test.describe("Map loading", () => {
   test.beforeEach(async ({ context, page }) => {
     await context.clearCookies();
 
-    await page.goto("/");
+    await page.goto("");
     await page.evaluate(() => {
       localStorage.clear();
       sessionStorage.clear();

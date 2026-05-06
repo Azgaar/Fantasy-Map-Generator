@@ -1,4 +1,5 @@
-import { Browser, BrowserContext, expect, Page, test } from '@playwright/test'
+import type { Browser, BrowserContext, Page } from '@playwright/test'
+import { endFrameSnapshotName, expect, test, waitForLoadingOverlayGone } from './fixtures'
 
 // All tests in this describe block only READ the DOM — they never modify state.
 // Load the map once for the entire suite instead of before every test.
@@ -6,12 +7,14 @@ let sharedContext: BrowserContext
 let sharedPage: Page
 
 test.describe('map layers', () => {
+  test.describe.configure({ mode: 'serial' })
+
   test.beforeAll(async ({ browser }: { browser: Browser }) => {
     sharedContext = await browser.newContext()
     sharedPage = await sharedContext.newPage()
 
     await sharedContext.clearCookies()
-    await sharedPage.goto('/')
+    await sharedPage.goto('')
     await sharedPage.evaluate(() => {
       localStorage.clear()
       sessionStorage.clear()
@@ -21,7 +24,7 @@ test.describe('map layers', () => {
     // NOTE:
     // - We use a fixed seed ("test-seed") to make map generation deterministic for snapshot tests.
     // - Snapshots are OS-independent (configured in playwright.config.ts).
-    await sharedPage.goto('/?seed=test-seed&&width=1280&height=720')
+    await sharedPage.goto('?seed=test-seed&width=1280&height=720')
 
     // Wait for map generation to complete by checking window.mapId
     // mapId is exposed on window at the very end of showStatistics()
@@ -29,6 +32,16 @@ test.describe('map layers', () => {
 
     // Additional wait for any rendering/animations to settle
     await sharedPage.waitForTimeout(500)
+  })
+
+  test.afterEach(async ({}, testInfo) => {
+    if (process.env.CI) return;
+    if (testInfo.status !== 'passed') return;
+    await waitForLoadingOverlayGone(sharedPage);
+    await sharedPage.waitForTimeout(100);
+    await expect(sharedPage.locator('#map')).toHaveScreenshot(endFrameSnapshotName(testInfo), {
+      timeout: 30_000,
+    });
   })
 
   test.afterAll(async () => {

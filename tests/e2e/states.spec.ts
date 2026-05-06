@@ -1,17 +1,17 @@
-import {test, expect} from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 test.describe("States", () => {
   test.beforeEach(async ({context, page}) => {
     await context.clearCookies();
 
-    await page.goto("/");
+    await page.goto("");
     await page.evaluate(() => {
       localStorage.clear();
       sessionStorage.clear();
     });
 
     // Navigate with seed parameter and wait for full load
-    await page.goto("/?seed=test-states&width=1280&height=720");
+    await page.goto("?seed=test-states&width=1280&height=720");
 
     // Wait for map generation to complete
     await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 60000});
