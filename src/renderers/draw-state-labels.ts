@@ -46,12 +46,17 @@ const stateLabelsRenderer = (list?: number[]): void => {
   const { states } = pack;
 
   // Get labels to render
-  const labelsToRender: StateLabel[] =
-    list && list.length > 0
-      ? list
-          .map((idx) => Labels.get(idx))
-          .filter((label) => label?.type === "state")
-      : Labels.getAll().filter((label) => label.type === "state");
+  let labelsToRender: StateLabel[];
+  if (list && list.length > 0) {
+    labelsToRender = list.flatMap(
+      (id) =>
+        Labels.getAll().filter(
+          (label) => label.type === "state" && label.stateId === id,
+        ) as StateLabel[],
+    );
+  } else {
+    labelsToRender = Labels.getAll().filter((label) => label.type === "state");
+  }
 
   const letterLength = checkExampleLetterLength();
   drawLabelPath(letterLength, labelsToRender);
