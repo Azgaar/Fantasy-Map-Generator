@@ -214,6 +214,13 @@ export class ProductionModule {
 
         burg.produced[goodId] = Math.round(amount * 100) / 100;
       }
+      const grossProduct =
+        phaseRevenue -
+        jobsData.reduce((sum, job) => {
+          if (job.kind !== "manufacture") return sum;
+          return sum + job.recipe.reduce((recipeSum, item) => recipeSum + item.marketCost, 0);
+        }, 0);
+      const productPerCapita = population > 0 ? grossProduct / population : 0;
       burg.wealth = (burg.wealth || 0) + phaseRevenue;
 
       this.productionData.set(burg.i!, {
@@ -227,6 +234,8 @@ export class ProductionModule {
         jobs: jobsData,
         finalInventory: {...inventory},
         phaseRevenue,
+        grossProduct,
+        productPerCapita,
         wealthAfter: burg.wealth || 0
       });
     }
@@ -752,6 +761,8 @@ export interface BurgProductionData {
   >;
   finalInventory: Record<number, number>;
   phaseRevenue: number;
+  grossProduct: number;
+  productPerCapita: number;
   wealthAfter: number;
 }
 

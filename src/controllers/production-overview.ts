@@ -38,7 +38,7 @@ export function open(burgId: number): void {
     warning: "color:#c84",
     sectionTitle: "font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.3em;margin-bottom:.45em",
     topBar: "margin-bottom:.85em;display:flex;flex-wrap:wrap;column-gap:.85em;align-items: center",
-    table: "width:100%;border-collapse:collapse;line-height:1.35",
+    table: "width:100%;table-layout:fixed;border-collapse:collapse;line-height:1.35",
     headRow: "background:#eee",
     bodyRow: "border-bottom:1px solid #f0f0f0",
     buyRow: "background:#fffaf2;border-bottom:1px solid #f3e4c7",
@@ -85,16 +85,14 @@ export function open(burgId: number): void {
   const formatUnits = (units: number) => (units !== 1 ? `, units ${rn(units, 2)}` : "");
   const formatPrice = (value: number | string) => `🟡 ${typeof value === "number" ? rn(value, 2) : value}`;
   const formatDemandCategory = (category: DemandCategory) => `${DEMAND_CATEGORY_ICONS[category]} ${category}`;
-  const renderDemandTotals = (values: number[], onlyPositive = false) => {
+  const renderDemand = (values: number[], onlyPositive = false) => {
     const entries = DEMAND_CATEGORIES.flatMap((category, index) => {
       const value = values[index] || 0;
       if (onlyPositive && value <= 0.001) return [];
       return `<span title="${category}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
     });
 
-    return entries.length
-      ? entries.join(` <span style="${styles.divider}">•</span> `)
-      : `<span style="${styles.subtle}">none</span>`;
+    return entries.join(` <span style="${styles.divider}">•</span> `);
   };
   const calculateDemandCoverageTotals = (inventory: Record<number, number>) => {
     const totals = Array(DEMAND_CATEGORIES.length).fill(0);
@@ -165,17 +163,6 @@ export function open(burgId: number): void {
       ${alternatives}
     </div>`;
   };
-  const renderDemandCoverage = (good: Good | undefined, units: number) => {
-    if (!good) return `<span style="${styles.subtle}">-</span>`;
-
-    const coveredCategories = DEMAND_CATEGORIES.flatMap(category => {
-      const coveredAmount = good.demandCoverage[category as DemandCategory] || 0;
-      if (!coveredAmount) return [];
-      return `${DEMAND_CATEGORY_ICONS[category]} ${rn(units * coveredAmount, 2)}`;
-    });
-
-    return coveredCategories.length ? coveredCategories.join(", ") : `<span style="${styles.subtle}">-</span>`;
-  };
   const accessibleResourcesTitle = "Accessible Resources";
   const initialDemand = getDemandTargetsForPopulation(data.population);
   const finalDemandCoverage = calculateDemandCoverageTotals(data.finalInventory);
@@ -187,27 +174,35 @@ export function open(burgId: number): void {
       <span><b>Cells:</b> ${data.cellsReached}/${data.cellsBudget}</span>
       <span><b>Culture type:</b> ${data.cultureType}</span>
       <span><b>Order:</b> ${data.processRank} of ${data.totalBurgs}</span>
-      <div><b>Initial Demand:</b> ${renderDemandTotals(initialDemand)}</div>
+      <div><b>Initial Demand:</b> ${renderDemand(initialDemand)}</div>
     </div>`;
 
   const accessibleResourceRows = data.goodsPull
     .map(resource => {
       const good = goodById.get(resource.goodId);
-      const baseValue = good?.value ?? 0;
-      const projectedGain = Math.max(0, resource.chainValue - baseValue);
+      if (!good) return "";
+      const projectedGain = Math.max(0, resource.chainValue - good.value);
+      const demandCoverage = Object.values(good.demandCoverage);
 
       return /*html*/ `<tr style="${styles.bodyRow}">
         ${renderDataCell(renderGoodLabel(resource.goodId))}
         ${renderDataCell(rn(resource.pull, 2), "right")}
-        ${renderPriceCell(baseValue)}
+        ${renderPriceCell(good.value)}
         ${renderPriceCell(projectedGain, projectedGain > 0.001 ? styles.positive : styles.subtle)}
-        ${renderDataCell(renderDemandCoverage(good, resource.pull), "right")}
+        ${renderDataCell(renderDemand(demandCoverage, true), "right")}
       </tr>`;
     })
     .join("");
 
   const accessibleResourcesTable = accessibleResourceRows
     ? /*html*/ `<table style="${styles.table}">
+        <colgroup>
+          <col style="width: 30%;">
+          <col style="width: 10%;">
+          <col style="width: 15%;">
+          <col style="width: 20%;">
+          <col style="width: 25%;">
+        </colgroup>
         <thead><tr style="${styles.headRow}">
           ${renderHeaderCell("Resource")}
           ${renderHeaderCell("Units", "right", "Raw units from flood-fill cells")}
@@ -290,6 +285,12 @@ export function open(burgId: number): void {
 
   const jobsTable = stepRows.length
     ? /*html*/ `<table style="${styles.table}">
+        <colgroup>
+          <col style="width: 30%;">
+          <col style="width: 10%;">
+          <col style="width: 40%;">
+          <col style="width: 20%;">
+        </colgroup>
         <thead><tr style="${styles.headRow}">
           ${renderHeaderCell("Good")}
           ${renderHeaderCell("Units", "right")}
@@ -344,17 +345,26 @@ export function open(burgId: number): void {
 
   const summaryHtml = /*html*/ `
     <div style="${styles.summaryBar}">
-      <span title="Initial demand minus final covered demand"><b>Uncovered demand:</b> ${renderDemandTotals(uncoveredDemand, true)}</span>
-       <span title="Total revenue"><b>Total revenue:</b> <span style="font-weight:600; ${data.phaseRevenue >= 0 ? styles.positive : styles.negative}">${formatPrice(data.phaseRevenue)}</span></span>
+      <span title="Initial demand minus final covered demand"><b>Uncovered demand:</b> ${renderDemand(uncoveredDemand, true)}</span>
+      <span title="Gross product per population point. This is the burg's gross product divided by population, a per-capita productivity measure for the current production run."><b>Wealth:</b> <span style="font-weight:600; ${data.productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(data.productPerCapita)}</span></span>
+      <span title="Gross Product is the total profit of this burg's final output for the current production run. It is revenue after subtracting purchased ingredient costs, effectively a local GDP-like figure."><b>Gross Product:</b> <span style="font-weight:600; ${data.grossProduct >= 0 ? styles.positive : styles.negative}">${formatPrice(data.grossProduct)}</span></span>
     </div>`;
 
   const finalTableContent = finalRows
     ? /*html*/ `<table style="${styles.table}">
+        <colgroup>
+          <col style="width: 30%;">
+          <col style="width: 10%;">
+          <col style="width: 15%;">
+          <col style="width: 15%;">
+          <col style="width: 15%;">
+          <col style="width: 15%;">
+        </colgroup>
         <thead><tr style="${styles.headRow}">
           ${renderHeaderCell("Good")}
           ${renderHeaderCell("Units", "right")}
-          ${renderHeaderCell("Cost/unit", "right", "Average ingredient cost per unit (MFG only)")}
-          ${renderHeaderCell("Sell price", "right")}
+          ${renderHeaderCell("Cost", "right", "Average ingredient cost per unit. Manufactured goods show purchased-input cost per output unit; raw goods stay at 0 because they do not buy inputs.")}
+          ${renderHeaderCell("Sell Price", "right", "Current sell price per unit after market pressure. Revenue in this table is Units × Sell Price.")}
           ${renderHeaderCell("Revenue", "right")}
           ${renderHeaderCell("Profit", "right", "Revenue minus ingredient cost (MFG only)")}
         </tr></thead>

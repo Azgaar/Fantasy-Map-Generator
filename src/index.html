@@ -3606,7 +3606,7 @@
                 <span id="burgProduction"></span>
               </div>
 
-              <div data-tip="Burg cumulative net wealth from production and trade">
+              <div data-tip="Wealth is gross product per population point for the current production run. It is a per-capita productivity measure, not the burg's cumulative treasury.">
                 <div class="label">Wealth</div>
                 <span id="burgWealth"></span>
               </div>
@@ -5502,7 +5502,7 @@
       </div>
 
       <div id="burgsOverview" class="dialog stable" style="display: none">
-        <div id="burgsHeader" class="header" style="grid-template-columns: 9em 7em 7.5em 7.2em 6.5em 7em 7em 6em">
+        <div id="burgsHeader" class="header" style="grid-template-columns: 9em 7em 7.5em 7.2em 6.5em 7em 7em 7em 6em">
           <div data-tip="Click to sort by burg name" class="sortable alphabetically" data-sortby="name">Burg</div>
           <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">
             Province
@@ -5519,8 +5519,11 @@
           >
             Population
           </div>
-          <div data-tip="Click to sort by burg wealth" class="sortable icon-sort-number-down" data-sortby="wealth">
-            Wealth&nbsp;
+          <div data-tip="Click to sort by burg gross product" class="sortable icon-sort-number-down" data-sortby="grossproduct">
+            Gross Product&nbsp;
+          </div>
+          <div data-tip="Click to sort by burg product per capita" class="sortable icon-sort-number-down" data-sortby="productpercapita">
+            Product Per Capita&nbsp;
           </div>
           <div data-tip="Click to sort by burg features" class="sortable alphabetically" data-sortby="features">
             Features&nbsp;
@@ -5558,8 +5561,12 @@
             Average population:&nbsp;<span id="burgsFooterPopulation">0</span>
           </div>
 
-          <div data-tip="Average wealth" style="margin-left: 14px">
-            Average wealth:&nbsp;<span id="burgsFooterWealth">0</span> 🟡
+          <div data-tip="Average gross product" style="margin-left: 14px">
+            Average gross product:&nbsp;<span id="burgsFooterGrossProduct">0</span> 🟡
+          </div>
+
+          <div data-tip="Average product per capita" style="margin-left: 14px">
+            Average product per capita:&nbsp;<span id="burgsFooterProductPerCapita">0</span> 🟡
           </div>
         </div>
 
