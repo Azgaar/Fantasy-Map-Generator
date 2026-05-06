@@ -98,6 +98,11 @@ interface LayoutBounds {
   offsetY: number;
 }
 
+interface DialogSize {
+  width: number;
+  height: number;
+}
+
 const FLOW_DOT_GAP = 22;
 const FLOW_STROKE_WIDTH = 5;
 const BASE_EDGE_STROKE_WIDTH = 1;
@@ -301,13 +306,7 @@ function assignPortsAndLanes(nodes: GraphNode[], edges: GraphEdge[]): RoutedEdge
   });
 }
 
-function createNodesForComponent(
-  componentGoods: Good[],
-  goodsById: Map<number, Good>,
-  stageById: Map<number, number>,
-  currentYOffset: number,
-  stages: Set<number>
-) {
+function buildStageEntries(componentGoods: Good[], goodsById: Map<number, Good>, stageById: Map<number, number>) {
   const stageEntries = new Map<number, number[]>();
 
   for (const good of componentGoods) {
@@ -318,6 +317,15 @@ function createNodesForComponent(
 
   for (const ids of stageEntries.values()) sortStageEntryIds(ids, goodsById);
 
+  return stageEntries;
+}
+
+function createNodesForComponent(
+  stageEntries: Map<number, number[]>,
+  goodsById: Map<number, Good>,
+  currentYOffset: number,
+  stages: Set<number>
+) {
   const rowHeight = CARD_HEIGHT + ROW_GAP;
   const maxRows = Math.max(...[...stageEntries.values()].map(ids => ids.length));
   const componentHeight = maxRows * rowHeight - ROW_GAP;
@@ -389,14 +397,15 @@ function buildLayout(goods: Good[]): LayoutData {
     const componentGoods = chainGoods.filter(good => component.has(good.i));
     const componentEdges = rawEdges.filter(edge => component.has(edge.from) && component.has(edge.to));
     const stageById = computeStages(componentGoods);
+    const stageEntries = buildStageEntries(componentGoods, goodsById, stageById);
+
+    minimizeCrossings(stageEntries, componentEdges);
+
     const {
-      stageEntries,
       nodes: componentNodes,
       componentNodesById,
       componentHeight
-    } = createNodesForComponent(componentGoods, goodsById, stageById, currentYOffset, stages);
-
-    minimizeCrossings(stageEntries, componentEdges);
+    } = createNodesForComponent(stageEntries, goodsById, currentYOffset, stages);
 
     nodes.push(...componentNodes);
     graphEdges.push(...createComponentEdges(componentEdges, componentNodesById));
@@ -668,14 +677,8 @@ function renderEdge(displayEdge: DisplayEdge, positions: Map<number, Position>):
   </g>`;
 }
 
-function renderNode(node: GraphNode, positions: Map<number, Position>): string {
-  const position = positions.get(node.id) ?? {x: node.x, y: node.y};
-  const iconX = 15;
-  const iconY = CARD_HEIGHT / 2;
-  const textX = iconX + ICON_RADIUS + 5;
-  const displayName = truncateGoodName(node.good.name);
-  const stroke = Goods.getStroke(node.good.color);
-  const tooltip = [
+function renderNodeTooltip(node: GraphNode): string {
+  return [
     `${node.good.name} — base price: ${node.good.value}`,
     ...(node.good.recipes ?? []).map(
       (recipe, index) =>
@@ -685,20 +688,39 @@ function renderNode(node: GraphNode, positions: Map<number, Position>): string {
           .join(" + ")
     )
   ].join("\n");
+}
 
-  return /*html*/ `<g data-nid="${node.id}" style="transition:opacity 0.12s" transform="translate(${position.x},${position.y})">
-    <title>${tooltip}</title>
-    <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" rx="${CARD_RADIUS}" fill="#fff"/>
+function renderNodeFrame(node: GraphNode, stroke: string): string {
+  return `<rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" rx="${CARD_RADIUS}" fill="#fff"/>
     <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" rx="${CARD_RADIUS}"
       fill="${node.good.color}" fill-opacity="0.13"
       stroke="${stroke}" stroke-opacity="0.6" stroke-width="1.3"/>
-    <circle cx="${iconX}" cy="${iconY}" r="${ICON_RADIUS + 2}" fill="${node.good.color}" fill-opacity="0.17"/>
-    <circle cx="${iconX}" cy="${iconY}" r="${ICON_RADIUS}" fill="${node.good.color}" fill-opacity="0.68"/>
-    <use href="#${node.good.icon}" x="${iconX - ICON_RADIUS}" y="${iconY - ICON_RADIUS}"
+    <circle cx="15" cy="${CARD_HEIGHT / 2}" r="${ICON_RADIUS + 2}" fill="${node.good.color}" fill-opacity="0.17"/>
+    <circle cx="15" cy="${CARD_HEIGHT / 2}" r="${ICON_RADIUS}" fill="${node.good.color}" fill-opacity="0.68"/>`;
+}
+
+function renderNodeContent(node: GraphNode, displayName: string): string {
+  const iconX = 15;
+  const iconY = CARD_HEIGHT / 2;
+  const textX = iconX + ICON_RADIUS + 5;
+
+  return `<use href="#${node.good.icon}" x="${iconX - ICON_RADIUS}" y="${iconY - ICON_RADIUS}"
       width="${ICON_RADIUS * 2}" height="${ICON_RADIUS * 2}"/>
     <text x="${textX}" y="${iconY - 2}" font-size="10" font-family="sans-serif"
       fill="#111" font-weight="600">${displayName}</text>
-    <text x="${textX}" y="${iconY + 8}" font-size="8.5" font-family="sans-serif" fill="#888">🟡 ${node.good.value}</text>
+    <text x="${textX}" y="${iconY + 8}" font-size="8.5" font-family="sans-serif" fill="#888">🟡 ${node.good.value}</text>`;
+}
+
+function renderNode(node: GraphNode, positions: Map<number, Position>): string {
+  const position = positions.get(node.id) ?? {x: node.x, y: node.y};
+  const displayName = truncateGoodName(node.good.name);
+  const stroke = Goods.getStroke(node.good.color);
+  const tooltip = renderNodeTooltip(node);
+
+  return /*html*/ `<g data-nid="${node.id}" style="transition:opacity 0.12s" transform="translate(${position.x},${position.y})">
+    <title>${tooltip}</title>
+    ${renderNodeFrame(node, stroke)}
+    ${renderNodeContent(node, displayName)}
   </g>`;
 }
 
@@ -792,9 +814,17 @@ function renderGraph(layout: LayoutData): string {
   </svg>`;
 }
 
+function getDialogSize(bounds: LayoutBounds): DialogSize {
+  return {
+    width: Math.min(bounds.svgWidth + 32, window.innerWidth - 40),
+    height: Math.min(bounds.svgHeight + 80, window.innerHeight - 60)
+  };
+}
+
 function openDialog(layout: LayoutData) {
   const contentEl = document.getElementById("productionChainsContent") as HTMLElement;
   const bounds = getLayoutBounds(layout);
+  const dialogSize = getDialogSize(bounds);
   const graphMarkup = renderGraph(layout);
 
   contentEl.style.maxHeight = `${window.innerHeight - 160}px`;
@@ -806,8 +836,8 @@ function openDialog(layout: LayoutData) {
   ($ as any)("#productionChainsDialog").dialog({
     title: "Production Chains",
     resizable: true,
-    width: Math.min(bounds.svgWidth + 32, window.innerWidth - 40),
-    height: Math.min(bounds.svgHeight + 80, window.innerHeight - 60),
+    width: dialogSize.width,
+    height: dialogSize.height,
     position: {my: "center", at: "center", of: window},
     close() {
       contentEl.innerHTML = "";

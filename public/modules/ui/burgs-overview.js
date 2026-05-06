@@ -132,10 +132,10 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
         <input data-tip="Burg group" value="${b.group}" disabled />
         <span data-tip="Burg population" class="icon-male"></span>
         <input data-tip="Burg population" value=${si(population)} style="width: 5em" disabled />
-        <span data-tip="Gross product: total profit of final output for the current production run">GP</span>
+        <span data-tip="Gross product: total profit of final output for the current production run">🟡</span>
         <input data-tip="Gross product: total profit of final output for the current production run" value=${grossProduct} style="width: 5em" disabled />
-        <span data-tip="Product per capita: gross product divided by population">P/C</span>
-        <input data-tip="Product per capita: gross product divided by population" value=${productPerCapita} style="width: 5em" disabled />
+        <span data-tip="Product per capita (wealth): gross product divided by population">🟡</span>
+        <input data-tip="Product per capita (wealth): gross product divided by population" value=${productPerCapita} style="width: 5em" disabled />
         <div style="width: 3em">
           <span
             data-tip="${b.capital ? " This burg is a state capital" : "This burg is a NOT state capital"}"
@@ -156,8 +156,8 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     // update footer
     burgsFooterBurgs.innerHTML = `${filtered.length} of ${validBurgs.length}`;
     burgsFooterPopulation.innerHTML = filtered.length ? si(totalPopulation / filtered.length) : 0;
-    burgsFooterGrossProduct.innerHTML = filtered.length ? si(totalGrossProduct / filtered.length) : 0;
-    burgsFooterProductPerCapita.innerHTML = filtered.length ? si(totalProductPerCapita / filtered.length) : 0;
+    burgsFooterGrossProduct.innerHTML = filtered.length ? rn(totalGrossProduct / filtered.length, 2) : 0;
+    burgsFooterProductPerCapita.innerHTML = filtered.length ? rn(totalProductPerCapita / filtered.length, 2) : 0;
 
     // add listeners
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => burgHighlightOn(ev)));

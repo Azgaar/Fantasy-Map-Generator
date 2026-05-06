@@ -40,6 +40,13 @@ export interface Good {
 
 export const DEMAND_CATEGORIES = ["food", "utilities", "construction", "military", "luxury"] as const;
 export type DemandCategory = (typeof DEMAND_CATEGORIES)[number];
+export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {
+  food: 0.4,
+  utilities: 0.2,
+  construction: 0.2,
+  military: 0.05,
+  luxury: 0.05
+};
 export const DEMAND_CATEGORY_ICONS: Record<DemandCategory, string> = {
   food: "🍖",
   utilities: "🛠️",

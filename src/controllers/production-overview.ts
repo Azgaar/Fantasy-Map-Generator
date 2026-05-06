@@ -1,11 +1,6 @@
 import type {DemandCategory} from "../modules/goods-generator";
-import {DEMAND_CATEGORIES, DEMAND_CATEGORY_ICONS} from "../modules/goods-generator";
-import {
-  type DecisionCandidate,
-  type DemandContribution,
-  getDemandTargetsForPopulation,
-  type Log
-} from "../modules/production-generator";
+import {DEMAND_CATEGORIES, DEMAND_CATEGORY_ICONS, DEMAND_TARGET_FACTORS} from "../modules/goods-generator";
+import type {DecisionCandidate, DemandContribution, Log} from "../modules/production-generator";
 import {rn} from "../utils";
 
 export function open(burgId: number): void {
@@ -165,14 +160,13 @@ export function open(burgId: number): void {
 
     return /*html*/ `<div>
       <div><b>Decision basis:</b> highest score among ${log.candidateCount} feasible options.</div>
-      <div style="margin-top:.35em"><b>Selected</b></div>
       <div style="margin-top:.15em">${renderDecisionCandidate(log.selected)}</div>
       <div style="margin-top:.5em"><b>Alternatives</b></div>
       ${alternatives}
     </div>`;
   };
   const accessibleResourcesTitle = "Accessible Resources";
-  const initialDemand = getDemandTargetsForPopulation(data.population);
+  const initialDemand = DEMAND_CATEGORIES.map(category => data.population * DEMAND_TARGET_FACTORS[category]);
   const finalDemandCoverage = calculateDemandCoverageTotals(data.finalInventory);
   const uncoveredDemand = initialDemand.map((target, index) => Math.max(0, target - finalDemandCoverage[index]));
 
@@ -300,7 +294,7 @@ export function open(burgId: number): void {
           ${renderHeaderCell("Good")}
           ${renderHeaderCell("Units", "right")}
           ${renderHeaderCell("Details")}
-          ${renderHeaderCell("Value", "right")}
+          ${renderHeaderCell("Score", "right")}
         </tr></thead>
         <tbody>${stepRows.join("")}</tbody>
       </table>`

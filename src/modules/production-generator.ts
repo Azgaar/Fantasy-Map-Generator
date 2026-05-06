@@ -2,19 +2,7 @@ import type {Burg} from "./burgs-generator";
 import type {CultureType} from "./cultures-generator";
 import {DEFAULT_CULTURE_TYPE} from "./cultures-generator";
 import type {DemandCategory, Good} from "./goods-generator";
-import {DEMAND_CATEGORIES} from "./goods-generator";
-
-export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {
-  food: 0.2,
-  utilities: 0.05,
-  construction: 0.1,
-  military: 0.05,
-  luxury: 0.05
-};
-
-export function getDemandTargetsForPopulation(population: number): number[] {
-  return DEMAND_CATEGORIES.map(category => population * DEMAND_TARGET_FACTORS[category]);
-}
+import {DEMAND_CATEGORIES, DEMAND_TARGET_FACTORS} from "./goods-generator";
 
 export class ProductionModule {
   private readonly BONUS_PRODUCTION = 5;
@@ -318,7 +306,7 @@ export class ProductionModule {
 
   private buildDemandTargets(burg: Burg): number[] {
     const population = burg.population || 0;
-    return getDemandTargetsForPopulation(population);
+    return DEMAND_CATEGORIES.map(category => population * DEMAND_TARGET_FACTORS[category]);
   }
 
   private calculateDemandCoverage(inventory: Record<number, number>, goodById: Map<number, Good>): number[] {
