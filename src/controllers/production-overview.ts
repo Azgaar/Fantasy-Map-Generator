@@ -1,4 +1,4 @@
-import type {DemandCategory, Good} from "../modules/goods-generator";
+import type {DemandCategory} from "../modules/goods-generator";
 import {DEMAND_CATEGORIES, DEMAND_CATEGORY_ICONS} from "../modules/goods-generator";
 import {
   type DecisionCandidate,
@@ -44,7 +44,7 @@ export function open(burgId: number): void {
     logRow: "display:none;background:#fafafa;border-bottom:1px solid #ececec",
     logCell: "padding:0 .5em;",
     empty: "color:#888;font-style:italic",
-    summaryBar: "display:flex;margin-top:.6em;justify-content: space-between"
+    summaryBar: "display:flex;margin-top:.6em;justify-content: space-between;padding: 0 .5em;"
   };
 
   const goodDot = (id: number) => {
@@ -88,12 +88,17 @@ export function open(burgId: number): void {
   const formatUnits = (units: number) => (units !== 1 ? `, units ${rn(units, 2)}` : "");
   const formatPrice = (value: number | string) => `🟡 ${typeof value === "number" ? rn(value, 2) : value}`;
   const formatDemandCategory = (category: DemandCategory) => `${DEMAND_CATEGORY_ICONS[category]} ${category}`;
-  const renderDemand = (values: number[], onlyPositive = false) => {
-    const entries = DEMAND_CATEGORIES.flatMap((category, index) => {
-      const value = values[index] || 0;
-      if (onlyPositive && value <= 0.001) return [];
-      return `<span title="${category}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
-    });
+  const renderDemand = (values: number[] | Partial<Record<DemandCategory, number>>, onlyPositive = false) => {
+    const entries = Array.isArray(values)
+      ? DEMAND_CATEGORIES.flatMap((category, index) => {
+          const value = values[index] || 0;
+          if (onlyPositive && value <= 0.001) return [];
+          return `<span title="${category}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
+        })
+      : (Object.entries(values) as [DemandCategory, number][]).flatMap(([category, value]) => {
+          if (onlyPositive && value <= 0.001) return [];
+          return `<span title="${category}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
+        });
 
     return entries.join(` <span style="${styles.divider}">•</span> `);
   };
@@ -185,7 +190,9 @@ export function open(burgId: number): void {
       const good = Goods.get(resource.goodId);
       if (!good) return "";
       const projectedGain = Math.max(0, resource.chainValue - good.value);
-      const demandCoverage = Object.values(good.demandCoverage);
+      const demandCoverage = Object.fromEntries(
+        Object.entries(good.demandCoverage).map(([category, value]) => [category, value * resource.pull])
+      ) as Partial<Record<DemandCategory, number>>;
 
       return /*html*/ `<tr style="${styles.bodyRow}">
         ${renderDataCell(renderGoodLabel(resource.goodId))}
