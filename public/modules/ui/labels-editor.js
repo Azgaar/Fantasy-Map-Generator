@@ -102,10 +102,10 @@ function editLabel() {
   function updateValues(textPath) {
     const labelData = getLabelData(elSelected.node());
     if (labelData) {
-      ensureEl("labelText").value = labelData.text || "";
-      ensureEl("labelStartOffset").value = labelData.startOffset || 50;
-      ensureEl("labelRelativeSize").value = labelData.fontSize || 100;
-      ensureEl("labelLetterSpacingSize").value = labelData.letterSpacing || 0;
+      ensureEl("labelText").value = labelData.text ?? "";
+      ensureEl("labelStartOffset").value = labelData.startOffset ?? 50;
+      ensureEl("labelRelativeSize").value = labelData.fontSize ?? 100;
+      ensureEl("labelLetterSpacingSize").value = labelData.letterSpacing ?? 0;
     }
   }
 
