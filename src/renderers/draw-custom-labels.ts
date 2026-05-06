@@ -10,20 +10,31 @@ window.drawCustomLabels = customLabelRenderer;
 // -------------------------------------------------------------------------------
 
 export function customLabelRenderer() {
-  const customLabels = Labels.getAll().filter(
+  const allCustomLabels = Labels.getAll().filter(
     (labels) => labels.type === "custom",
   );
-  const customLabelsHTML: string[] = [];
-  const pathGroup = defs.select<SVGGElement>("g#deftemp > g#textPaths");
-  for (const labelData of customLabels) {
-    const pathId = addPathForLabel(labelData, pathGroup.node()!);
-    customLabelsHTML.push(constructLabelHTML(labelData, pathId).outerHTML);
+  const customLabelsByGroup = new Map<string, CustomLabel[]>();
+  for (const label of allCustomLabels) {
+    if (!customLabelsByGroup.has(label.group)) {
+      customLabelsByGroup.set(label.group, []);
+    }
+    customLabelsByGroup.get(label.group)!.push(label);
   }
 
-  const customLabelsGroup = labels.select<SVGGElement>(`#addedLabels`);
-  const groupNode = customLabelsGroup.node();
-  if (groupNode) {
-    groupNode.innerHTML = customLabelsHTML.join("");
+  const customLabelsHTML: SVGTextElement[] = [];
+  const pathGroup = defs.select<SVGGElement>("g#deftemp > g#textPaths");
+
+  for (const [groupName, customLabels] of customLabelsByGroup) {
+    for (const labelData of customLabels) {
+      const pathId = addPathForLabel(labelData, pathGroup.node()!);
+      customLabelsHTML.push(constructLabelHTML(labelData, pathId));
+    }
+
+    const customLabelsGroup = labels.select<SVGGElement>(`#${groupName}`);
+    const groupNode = customLabelsGroup.node();
+    if (groupNode) {
+      groupNode.replaceChildren(...customLabelsHTML);
+    }
   }
 }
 

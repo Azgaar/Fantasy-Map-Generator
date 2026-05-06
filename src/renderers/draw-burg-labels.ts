@@ -56,7 +56,7 @@ export function drawBurgLabels(): void {
     // Set all labels at once
     const groupNode = labelGroup.node();
     if (groupNode) {
-      groupNode.append(...labelsHTML);
+      groupNode.replaceChildren(...labelsHTML);
     }
   }
 
