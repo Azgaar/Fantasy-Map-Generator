@@ -1,27 +1,12 @@
 # Production Schema
 
-This document describes the production system that currently exists in code.
-
-It is written to be readable first and exhaustive second. When in doubt, this file should help
-answer three questions quickly:
-
-1. Where do goods come from?
-2. How does a burg choose what to do?
-3. What do the stored production metrics actually mean?
-
-## Overview
-
-Production runs once for all valid burgs.
-
-Each burg goes through the same loop:
+Production runs once for all valid burgs. Each burg goes through the same loop:
 
 1. Gather nearby raw resources from the map.
 2. Spend workers one tick at a time.
 3. On each tick, greedily choose the best feasible action.
 4. Put all final inventory onto the global market.
 5. Store a snapshot for the Production Overview UI.
-
-The current system is fast and greedy. It does not use recursive planning anymore.
 
 ## The four layers of the simulation
 
@@ -72,9 +57,7 @@ Price behavior:
 
 ## Burg processing order
 
-Burgs are processed in ascending population order.
-
-So smaller burgs act first.
+Burgs are processed in ascending population order, so smaller burgs act first.
 
 That matters because:
 

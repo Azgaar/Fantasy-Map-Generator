@@ -1,4 +1,7 @@
 import {pointer} from "d3";
+
+declare const ProductionChains: {open: () => void};
+
 import type {DemandCategory, Good} from "../modules/goods-generator";
 import {DEMAND_CATEGORIES, DEMAND_CATEGORY_ICONS} from "../modules/goods-generator";
 import {ensureEl, unique} from "../utils";
@@ -35,6 +38,7 @@ export function open() {
     ensureEl("goodsRestore").on("click", goodsRestoreDefaults);
     ensureEl("goodsExport").on("click", downloadGoodsData);
     ensureEl("goodsUnpinAll").on("click", unpinAllGoods);
+    ensureEl("goodsChains").on("click", () => ProductionChains.open());
 
     ensureEl("goodsBody").on("click", ev => {
       const el = ev.target as HTMLElement;
