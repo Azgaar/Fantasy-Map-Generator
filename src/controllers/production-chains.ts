@@ -1,5 +1,6 @@
 import {select, zoom, zoomIdentity} from "d3";
 import type {Good} from "../modules/goods-generator";
+import {C_12} from "../utils/colorUtils";
 
 const CARD_WIDTH = 98;
 const CARD_HEIGHT = 34;
@@ -17,8 +18,7 @@ const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2;
 const DEFAULT_EDGE_OPACITY = 0.3;
 const DEFAULT_LABEL_OPACITY = 0;
-
-const EDGE_COLORS = ["#3d85c8", "#cc7722", "#2a9050", "#7048a8", "#a83030", "#147a6c", "#b05000", "#1f6fa8"];
+const FLOW_PIXELS_PER_SECOND = 40;
 
 interface GraphNode {
   id: number;
@@ -406,7 +406,7 @@ function getPortY(nodeY: number, portIndex: number, portCount: number): number {
 function getLaneOffset(edge: RoutedEdge): number {
   const sourceSpread = (edge.sourcePortIndex - (edge.sourcePortCount - 1) / 2) * 5;
   const targetSpread = (edge.targetPortIndex - (edge.targetPortCount - 1) / 2) * 5;
-  const recipeSpread = ((edge.recipeIndex % EDGE_COLORS.length) - (EDGE_COLORS.length - 1) / 2) * 0.5;
+  const recipeSpread = ((edge.recipeIndex % C_12.length) - (C_12.length - 1) / 2) * 0.5;
   return edge.lane * LANE_SPREAD + sourceSpread + targetSpread + recipeSpread;
 }
 
@@ -438,7 +438,7 @@ function getEdgeGeometry(edge: RoutedEdge, positions: Map<number, Position>): Ed
 }
 
 function renderMarkers(): string {
-  return EDGE_COLORS.map(
+  return C_12.map(
     (color, index) =>
       `<marker id="ca${index}" viewBox="0 -4 8 8" refX="7" refY="0" markerWidth="5" markerHeight="5" orient="auto">
         <path d="M0,-4L8,0L0,4" fill="${color}"/>
@@ -455,14 +455,22 @@ function renderFlowAnimationStyle(): string {
   </style>`;
 }
 
-function getFlowDuration(amount: number): number {
-  const speedMultiplier = Math.max(amount, 0.35);
-  return 2.2 / Math.max(speedMultiplier, 0.35);
+function updateFlowDurations(svgEl: SVGSVGElement) {
+  svgEl.querySelectorAll<SVGPathElement>("[data-edge-flow]").forEach(flow => {
+    const amount = Number(flow.dataset.flowAmount || 1);
+    const speed = FLOW_PIXELS_PER_SECOND * Math.max(amount, 0.35);
+    const duration = Math.max(FLOW_DOT_GAP / speed, 0.12);
+    flow.style.animationDuration = `${duration}s`;
+  });
 }
 
 function truncateGoodName(name: string, maxLength = 12): string {
   if (name.length <= maxLength) return name;
   return `${name.slice(0, Math.max(1, maxLength - 1)).trimEnd()}…`;
+}
+
+function getEdgeStrokeColor(index: number): string {
+  return Goods.getStroke(C_12[index % C_12.length]);
 }
 
 function renderHeaders(stages: Set<number>, offsetX: number): string {
@@ -523,10 +531,11 @@ function getDisplayEdges(edges: RoutedEdge[]): DisplayEdge[] {
 
 function renderEdge(displayEdge: DisplayEdge, positions: Map<number, Position>): string {
   const geometry = getEdgeGeometry(displayEdge.representative, positions);
-  const flowColor = Goods.getStroke(displayEdge.representative.from.good.color);
+  const edgeColorIndex = (displayEdge.fromId * 7 + displayEdge.toId * 11) % C_12.length;
+  const flowColor = getEdgeStrokeColor(edgeColorIndex);
   const labels = displayEdge.labels
     .map((label, index) => {
-      const color = EDGE_COLORS[label.recipeIndex % EDGE_COLORS.length];
+      const color = getEdgeStrokeColor(label.recipeIndex);
       const y = geometry.labelY - (displayEdge.labels.length - 1 - index) * 10;
 
       return `<text x="${geometry.labelX}" y="${y}" text-anchor="middle"
@@ -538,12 +547,11 @@ function renderEdge(displayEdge: DisplayEdge, positions: Map<number, Position>):
 
   const flows = displayEdge.labels
     .map((label, index) => {
-      const duration = getFlowDuration(label.amount);
       const opacity = Math.min(0.65 + label.amount * 0.08, 0.92);
 
       return `<path data-edge-flow="1" d="${geometry.d}" fill="none" stroke="${flowColor}" opacity="0" stroke-width="5"
         stroke-dasharray="0.01 ${FLOW_DOT_GAP}" stroke-linecap="round"
-        style="transition:opacity 0.15s;animation:chains-edge-flow ${duration}s linear infinite;animation-play-state:paused"
+        style="transition:opacity 0.15s;animation:chains-edge-flow 1s linear infinite;animation-play-state:paused"
         data-flow-index="${index}" data-flow-amount="${label.amount}" data-flow-opacity="${opacity}"/>`;
     })
     .join("");
@@ -552,7 +560,7 @@ function renderEdge(displayEdge: DisplayEdge, positions: Map<number, Position>):
     <path d="${geometry.d}" fill="none" stroke="${flowColor}" stroke-width="1"/>
     ${flows}
     <path d="${geometry.d}" fill="none" stroke="${flowColor}" stroke-width="1"
-      marker-end="url(#ca${displayEdge.representative.recipeIndex % EDGE_COLORS.length})"/>
+      marker-end="url(#ca${edgeColorIndex})"/>
     ${labels}
   </g>`;
 }
@@ -606,6 +614,7 @@ function attachGraphInteractions(svgEl: SVGSVGElement, layout: LayoutData) {
 
   svg.call(zoomBehavior);
   svg.call(zoomBehavior.transform, zoomIdentity.translate(16, 0).scale(1));
+  updateFlowDurations(svgEl);
 
   function applyVisibility(chainIds: Set<number> | null) {
     edgeSelection.each(function () {
