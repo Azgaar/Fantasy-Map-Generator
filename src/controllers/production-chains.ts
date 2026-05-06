@@ -1,4 +1,4 @@
-import {select, zoom, zoomIdentity} from "d3";
+import {type Selection, select, zoom, zoomIdentity} from "d3";
 import type {Good} from "../modules/goods-generator";
 import {C_12} from "../utils/colorUtils";
 
@@ -85,7 +85,27 @@ interface DisplayEdge {
   labels: EdgeLabel[];
 }
 
+type GraphGroupSelection = Selection<SVGGElement, unknown, SVGSVGElement, unknown>;
+
+interface LayoutBounds {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+  svgWidth: number;
+  svgHeight: number;
+  offsetX: number;
+  offsetY: number;
+}
+
 const FLOW_DOT_GAP = 22;
+const FLOW_STROKE_WIDTH = 5;
+const BASE_EDGE_STROKE_WIDTH = 1;
+const MIN_FLOW_SPEED_MULTIPLIER = 0.35;
+const MIN_FLOW_DURATION_SECONDS = 0.12;
+const FLOW_OPACITY_BASE = 0.65;
+const FLOW_OPACITY_PER_AMOUNT = 0.08;
+const FLOW_OPACITY_MAX = 0.92;
 
 function getChainGoods(goods: Good[]): Good[] {
   const chainIds = new Set<number>();
@@ -114,6 +134,10 @@ function getRawEdges(goods: Good[]): RawGraphEdge[] {
   }
 
   return rawEdges;
+}
+
+function sortStageEntryIds(ids: number[], goodsById: Map<number, Good>) {
+  ids.sort((left, right) => (goodsById.get(left)?.name ?? "").localeCompare(goodsById.get(right)?.name ?? ""));
 }
 
 function computeStages(goods: Good[]): Map<number, number> {
@@ -277,6 +301,73 @@ function assignPortsAndLanes(nodes: GraphNode[], edges: GraphEdge[]): RoutedEdge
   });
 }
 
+function createNodesForComponent(
+  componentGoods: Good[],
+  goodsById: Map<number, Good>,
+  stageById: Map<number, number>,
+  currentYOffset: number,
+  stages: Set<number>
+) {
+  const stageEntries = new Map<number, number[]>();
+
+  for (const good of componentGoods) {
+    const stage = stageById.get(good.i) ?? 0;
+    if (!stageEntries.has(stage)) stageEntries.set(stage, []);
+    stageEntries.get(stage)!.push(good.i);
+  }
+
+  for (const ids of stageEntries.values()) sortStageEntryIds(ids, goodsById);
+
+  const rowHeight = CARD_HEIGHT + ROW_GAP;
+  const maxRows = Math.max(...[...stageEntries.values()].map(ids => ids.length));
+  const componentHeight = maxRows * rowHeight - ROW_GAP;
+  const componentNodesById = new Map<number, GraphNode>();
+  const nodes: GraphNode[] = [];
+
+  for (const [stage, ids] of stageEntries) {
+    stages.add(stage);
+    const columnHeight = ids.length * rowHeight - ROW_GAP;
+    const startY = (componentHeight - columnHeight) / 2 + currentYOffset;
+
+    for (let row = 0; row < ids.length; row++) {
+      const id = ids[row];
+      const good = goodsById.get(id);
+      if (!good) continue;
+
+      const node: GraphNode = {
+        id,
+        good,
+        stage,
+        x: stage * COLUMN_STEP,
+        y: startY + row * rowHeight
+      };
+
+      nodes.push(node);
+      componentNodesById.set(id, node);
+    }
+  }
+
+  return {stageEntries, nodes, componentNodesById, componentHeight};
+}
+
+function createComponentEdges(componentEdges: RawGraphEdge[], componentNodesById: Map<number, GraphNode>): GraphEdge[] {
+  const graphEdges: GraphEdge[] = [];
+
+  for (const edge of componentEdges) {
+    const from = componentNodesById.get(edge.from);
+    const to = componentNodesById.get(edge.to);
+    if (!from || !to) continue;
+    graphEdges.push({
+      from,
+      to,
+      recipeIndex: edge.recipeIndex,
+      amount: edge.amount
+    });
+  }
+
+  return graphEdges;
+}
+
 function buildLayout(goods: Good[]): LayoutData {
   const chainGoods = getChainGoods(goods);
   if (!chainGoods.length) return {nodes: [], edges: [], stages: new Set(), componentBands: []};
@@ -298,60 +389,28 @@ function buildLayout(goods: Good[]): LayoutData {
     const componentGoods = chainGoods.filter(good => component.has(good.i));
     const componentEdges = rawEdges.filter(edge => component.has(edge.from) && component.has(edge.to));
     const stageById = computeStages(componentGoods);
-    const stageEntries = new Map<number, number[]>();
-
-    for (const good of componentGoods) {
-      const stage = stageById.get(good.i) ?? 0;
-      if (!stageEntries.has(stage)) stageEntries.set(stage, []);
-      stageEntries.get(stage)!.push(good.i);
-    }
-
-    for (const ids of stageEntries.values()) {
-      ids.sort((left, right) => (goodsById.get(left)?.name ?? "").localeCompare(goodsById.get(right)?.name ?? ""));
-    }
+    const {
+      stageEntries,
+      nodes: componentNodes,
+      componentNodesById,
+      componentHeight
+    } = createNodesForComponent(componentGoods, goodsById, stageById, currentYOffset, stages);
 
     minimizeCrossings(stageEntries, componentEdges);
 
-    const rowHeight = CARD_HEIGHT + ROW_GAP;
-    const maxRows = Math.max(...[...stageEntries.values()].map(ids => ids.length));
-    const componentHeight = maxRows * rowHeight - ROW_GAP;
-    const componentNodesById = new Map<number, GraphNode>();
-
-    for (const [stage, ids] of stageEntries) {
-      stages.add(stage);
-      const columnHeight = ids.length * rowHeight - ROW_GAP;
-      const startY = (componentHeight - columnHeight) / 2 + currentYOffset;
-
-      for (let row = 0; row < ids.length; row++) {
-        const id = ids[row];
-        const good = goodsById.get(id);
-        if (!good) continue;
-
-        const node: GraphNode = {
-          id,
-          good,
-          stage,
-          x: stage * COLUMN_STEP,
-          y: startY + row * rowHeight
-        };
-
-        nodes.push(node);
-        componentNodesById.set(id, node);
-      }
-    }
-
-    for (const edge of componentEdges) {
-      const from = componentNodesById.get(edge.from);
-      const to = componentNodesById.get(edge.to);
-      if (!from || !to) continue;
-      graphEdges.push({from, to, recipeIndex: edge.recipeIndex, amount: edge.amount});
-    }
+    nodes.push(...componentNodes);
+    graphEdges.push(...createComponentEdges(componentEdges, componentNodesById));
 
     componentBands.push({y: currentYOffset});
     currentYOffset += componentHeight + COMPONENT_GAP;
   }
 
-  return {nodes, edges: assignPortsAndLanes(nodes, graphEdges), stages, componentBands};
+  return {
+    nodes,
+    edges: assignPortsAndLanes(nodes, graphEdges),
+    stages,
+    componentBands
+  };
 }
 
 function getBasePositions(nodes: GraphNode[]): Map<number, Position> {
@@ -411,7 +470,10 @@ function getLaneOffset(edge: RoutedEdge): number {
 }
 
 function getEdgeGeometry(edge: RoutedEdge, positions: Map<number, Position>): EdgeGeometry {
-  const from = positions.get(edge.from.id) ?? {x: edge.from.x, y: edge.from.y};
+  const from = positions.get(edge.from.id) ?? {
+    x: edge.from.x,
+    y: edge.from.y
+  };
   const to = positions.get(edge.to.id) ?? {x: edge.to.x, y: edge.to.y};
 
   const x1 = from.x + CARD_WIDTH;
@@ -458,8 +520,8 @@ function renderFlowAnimationStyle(): string {
 function updateFlowDurations(svgEl: SVGSVGElement) {
   svgEl.querySelectorAll<SVGPathElement>("[data-edge-flow]").forEach(flow => {
     const amount = Number(flow.dataset.flowAmount || 1);
-    const speed = FLOW_PIXELS_PER_SECOND * Math.max(amount, 0.35);
-    const duration = Math.max(FLOW_DOT_GAP / speed, 0.12);
+    const speed = FLOW_PIXELS_PER_SECOND * Math.max(amount, MIN_FLOW_SPEED_MULTIPLIER);
+    const duration = Math.max(FLOW_DOT_GAP / speed, MIN_FLOW_DURATION_SECONDS);
     flow.style.animationDuration = `${duration}s`;
   });
 }
@@ -471,6 +533,65 @@ function truncateGoodName(name: string, maxLength = 12): string {
 
 function getEdgeStrokeColor(index: number): string {
   return Goods.getStroke(C_12[index % C_12.length]);
+}
+
+function getEdgeColorIndex(displayEdge: DisplayEdge): number {
+  return (displayEdge.fromId * 7 + displayEdge.toId * 11) % C_12.length;
+}
+
+function getLayoutBounds(layout: LayoutData): LayoutBounds {
+  const minX = Math.min(...layout.nodes.map(node => node.x));
+  const maxX = Math.max(...layout.nodes.map(node => node.x)) + CARD_WIDTH;
+  const minY = Math.min(...layout.nodes.map(node => node.y));
+  const maxY = Math.max(...layout.nodes.map(node => node.y)) + CARD_HEIGHT;
+
+  return {
+    minX,
+    maxX,
+    minY,
+    maxY,
+    svgWidth: maxX - minX + SVG_PADDING * 2,
+    svgHeight: maxY - minY + SVG_PADDING * 2 + HEADER_HEIGHT,
+    offsetX: -minX + SVG_PADDING,
+    offsetY: -minY + SVG_PADDING + HEADER_HEIGHT
+  };
+}
+
+function getFlowOpacity(amount: number): number {
+  return Math.min(FLOW_OPACITY_BASE + amount * FLOW_OPACITY_PER_AMOUNT, FLOW_OPACITY_MAX);
+}
+
+function renderEdgeLabels(displayEdge: DisplayEdge, geometry: EdgeGeometry): string {
+  return displayEdge.labels
+    .map((label, index) => {
+      const color = getEdgeStrokeColor(label.recipeIndex);
+      const y = geometry.labelY - (displayEdge.labels.length - 1 - index) * 10;
+
+      return `<text x="${geometry.labelX}" y="${y}" text-anchor="middle"
+        font-size="8" font-family="sans-serif" fill="${color}"
+        paint-order="stroke" stroke="#f9f9f9" stroke-width="1"
+        style="opacity:${DEFAULT_LABEL_OPACITY};transition:opacity 0.15s">x${label.amount}</text>`;
+    })
+    .join("");
+}
+
+function renderEdgeFlows(displayEdge: DisplayEdge, geometry: EdgeGeometry, flowColor: string): string {
+  return displayEdge.labels
+    .map((label, index) => {
+      const opacity = getFlowOpacity(label.amount);
+
+      return `<path data-edge-flow="1" d="${geometry.d}" fill="none" stroke="${flowColor}" opacity="0" stroke-width="${FLOW_STROKE_WIDTH}"
+        stroke-dasharray="0.01 ${FLOW_DOT_GAP}" stroke-linecap="round"
+        style="transition:opacity 0.15s;animation:chains-edge-flow 1s linear infinite;animation-play-state:paused"
+        data-flow-index="${index}" data-flow-amount="${label.amount}" data-flow-opacity="${opacity}"/>`;
+    })
+    .join("");
+}
+
+function renderEdgePath(geometry: EdgeGeometry, color: string, markerId?: string): string {
+  return `<path d="${geometry.d}" fill="none" stroke="${color}" stroke-width="${BASE_EDGE_STROKE_WIDTH}"${
+    markerId ? ` marker-end="url(#${markerId})"` : ""
+  }/>`;
 }
 
 function renderHeaders(stages: Set<number>, offsetX: number): string {
@@ -518,7 +639,10 @@ function getDisplayEdges(edges: RoutedEdge[]): DisplayEdge[] {
       continue;
     }
 
-    existing.labels.push({amount: edge.amount, recipeIndex: edge.recipeIndex});
+    existing.labels.push({
+      amount: edge.amount,
+      recipeIndex: edge.recipeIndex
+    });
     if (edge.recipeIndex < existing.representative.recipeIndex) existing.representative = edge;
   }
 
@@ -531,36 +655,15 @@ function getDisplayEdges(edges: RoutedEdge[]): DisplayEdge[] {
 
 function renderEdge(displayEdge: DisplayEdge, positions: Map<number, Position>): string {
   const geometry = getEdgeGeometry(displayEdge.representative, positions);
-  const edgeColorIndex = (displayEdge.fromId * 7 + displayEdge.toId * 11) % C_12.length;
+  const edgeColorIndex = getEdgeColorIndex(displayEdge);
   const flowColor = getEdgeStrokeColor(edgeColorIndex);
-  const labels = displayEdge.labels
-    .map((label, index) => {
-      const color = getEdgeStrokeColor(label.recipeIndex);
-      const y = geometry.labelY - (displayEdge.labels.length - 1 - index) * 10;
-
-      return `<text x="${geometry.labelX}" y="${y}" text-anchor="middle"
-        font-size="8" font-family="sans-serif" fill="${color}"
-        paint-order="stroke" stroke="#f9f9f9" stroke-width="1"
-        style="opacity:${DEFAULT_LABEL_OPACITY};transition:opacity 0.15s">x${label.amount}</text>`;
-    })
-    .join("");
-
-  const flows = displayEdge.labels
-    .map((label, index) => {
-      const opacity = Math.min(0.65 + label.amount * 0.08, 0.92);
-
-      return `<path data-edge-flow="1" d="${geometry.d}" fill="none" stroke="${flowColor}" opacity="0" stroke-width="5"
-        stroke-dasharray="0.01 ${FLOW_DOT_GAP}" stroke-linecap="round"
-        style="transition:opacity 0.15s;animation:chains-edge-flow 1s linear infinite;animation-play-state:paused"
-        data-flow-index="${index}" data-flow-amount="${label.amount}" data-flow-opacity="${opacity}"/>`;
-    })
-    .join("");
+  const labels = renderEdgeLabels(displayEdge, geometry);
+  const flows = renderEdgeFlows(displayEdge, geometry, flowColor);
 
   return `<g data-ef="${displayEdge.fromId}" data-et="${displayEdge.toId}" style="opacity:${DEFAULT_EDGE_OPACITY};transition:opacity 0.15s">
-    <path d="${geometry.d}" fill="none" stroke="${flowColor}" stroke-width="1"/>
+    ${renderEdgePath(geometry, flowColor)}
     ${flows}
-    <path d="${geometry.d}" fill="none" stroke="${flowColor}" stroke-width="1"
-      marker-end="url(#ca${edgeColorIndex})"/>
+    ${renderEdgePath(geometry, flowColor, `ca${edgeColorIndex}`)}
     ${labels}
   </g>`;
 }
@@ -599,6 +702,55 @@ function renderNode(node: GraphNode, positions: Map<number, Position>): string {
   </g>`;
 }
 
+function applyChainVisibility(
+  edgeSelection: GraphGroupSelection,
+  nodeSelection: GraphGroupSelection,
+  chainIds: Set<number> | null
+) {
+  edgeSelection.each(function () {
+    const group = this as SVGGElement;
+    const fromId = +(group.dataset.ef || -1);
+    const toId = +(group.dataset.et || -1);
+    const visible = chainIds ? chainIds.has(fromId) && chainIds.has(toId) : false;
+    group.style.opacity = chainIds ? (visible ? "1" : "0") : String(DEFAULT_EDGE_OPACITY);
+
+    group.querySelectorAll<SVGPathElement>("[data-edge-flow]").forEach(flow => {
+      const flowOpacity = flow.dataset.flowOpacity || "0.85";
+      flow.style.opacity = chainIds && visible ? flowOpacity : "0";
+      flow.style.animationPlayState = chainIds && visible ? "running" : "paused";
+    });
+
+    group.querySelectorAll<SVGTextElement>("text").forEach(label => {
+      label.style.opacity = chainIds ? (visible ? "1" : "0") : String(DEFAULT_LABEL_OPACITY);
+    });
+  });
+
+  nodeSelection.each(function () {
+    const group = this as SVGGElement;
+    const nodeId = +(group.dataset.nid || -1);
+    group.style.opacity = chainIds ? (chainIds.has(nodeId) ? "1" : "0") : "1";
+  });
+}
+
+function attachHoverInteractions(
+  nodeSelection: GraphGroupSelection,
+  edgeSelection: GraphGroupSelection,
+  layout: LayoutData
+) {
+  nodeSelection.each(function () {
+    const group = this as SVGGElement;
+    const nodeId = +(group.dataset.nid || -1);
+
+    group.addEventListener("mouseenter", () => {
+      applyChainVisibility(edgeSelection, nodeSelection, getDirectedChainIds(nodeId, layout.edges));
+    });
+
+    group.addEventListener("mouseleave", () => {
+      applyChainVisibility(edgeSelection, nodeSelection, null);
+    });
+  });
+}
+
 function attachGraphInteractions(svgEl: SVGSVGElement, layout: LayoutData) {
   const viewportEl = svgEl.querySelector<SVGGElement>("#viewport");
   if (!viewportEl) return;
@@ -615,70 +767,24 @@ function attachGraphInteractions(svgEl: SVGSVGElement, layout: LayoutData) {
   svg.call(zoomBehavior);
   svg.call(zoomBehavior.transform, zoomIdentity.translate(16, 0).scale(1));
   updateFlowDurations(svgEl);
-
-  function applyVisibility(chainIds: Set<number> | null) {
-    edgeSelection.each(function () {
-      const group = this as SVGGElement;
-      const fromId = +(group.dataset.ef || -1);
-      const toId = +(group.dataset.et || -1);
-      const visible = chainIds ? chainIds.has(fromId) && chainIds.has(toId) : false;
-      group.style.opacity = chainIds ? (visible ? "1" : "0") : String(DEFAULT_EDGE_OPACITY);
-
-      group.querySelectorAll<SVGPathElement>("[data-edge-flow]").forEach(flow => {
-        const flowOpacity = flow.dataset.flowOpacity || "0.85";
-        flow.style.opacity = chainIds && visible ? flowOpacity : "0";
-        flow.style.animationPlayState = chainIds && visible ? "running" : "paused";
-      });
-
-      group.querySelectorAll<SVGTextElement>("text").forEach(label => {
-        label.style.opacity = chainIds ? (visible ? "1" : "0") : String(DEFAULT_LABEL_OPACITY);
-      });
-    });
-
-    nodeSelection.each(function () {
-      const group = this as SVGGElement;
-      const nodeId = +(group.dataset.nid || -1);
-      group.style.opacity = chainIds ? (chainIds.has(nodeId) ? "1" : "0") : "1";
-    });
-  }
-
-  nodeSelection.each(function () {
-    const group = this as SVGGElement;
-    const nodeId = +(group.dataset.nid || -1);
-
-    group.addEventListener("mouseenter", () => {
-      applyVisibility(getDirectedChainIds(nodeId, layout.edges));
-    });
-
-    group.addEventListener("mouseleave", () => {
-      applyVisibility(null);
-    });
-  });
+  attachHoverInteractions(nodeSelection, edgeSelection, layout);
 }
 
 function renderGraph(layout: LayoutData): string {
   const positions = getBasePositions(layout.nodes);
   const displayEdges = getDisplayEdges(layout.edges);
-  const minX = Math.min(...layout.nodes.map(node => node.x));
-  const maxX = Math.max(...layout.nodes.map(node => node.x)) + CARD_WIDTH;
-  const minY = Math.min(...layout.nodes.map(node => node.y));
-  const maxY = Math.max(...layout.nodes.map(node => node.y)) + CARD_HEIGHT;
+  const bounds = getLayoutBounds(layout);
 
-  const svgWidth = maxX - minX + SVG_PADDING * 2;
-  const svgHeight = maxY - minY + SVG_PADDING * 2 + HEADER_HEIGHT;
-  const offsetX = -minX + SVG_PADDING;
-  const offsetY = -minY + SVG_PADDING + HEADER_HEIGHT;
+  const headers = renderHeaders(layout.stages, bounds.offsetX);
+  const separators = renderComponentSeparators(layout.componentBands, bounds.offsetY, bounds.svgWidth);
 
-  const headers = renderHeaders(layout.stages, offsetX);
-  const separators = renderComponentSeparators(layout.componentBands, offsetY, svgWidth);
-
-  return /*html*/ `<svg id="chains-svg" xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" style="display:block;cursor:grab">
+  return /*html*/ `<svg id="chains-svg" xmlns="http://www.w3.org/2000/svg" width="${bounds.svgWidth}" height="${bounds.svgHeight}" style="display:block;cursor:grab">
     <defs>${renderMarkers()}</defs>
     ${renderFlowAnimationStyle()}
     <g id="viewport" transform="translate(16,0)">
       ${headers}
       ${separators}
-      <g transform="translate(${offsetX},${offsetY})">
+      <g transform="translate(${bounds.offsetX},${bounds.offsetY})">
         <g id="cedges">${displayEdges.map(edge => renderEdge(edge, positions)).join("")}</g>
         <g id="cnodes">${layout.nodes.map(node => renderNode(node, positions)).join("")}</g>
       </g>
@@ -688,14 +794,8 @@ function renderGraph(layout: LayoutData): string {
 
 function openDialog(layout: LayoutData) {
   const contentEl = document.getElementById("productionChainsContent") as HTMLElement;
+  const bounds = getLayoutBounds(layout);
   const graphMarkup = renderGraph(layout);
-
-  const minX = Math.min(...layout.nodes.map(node => node.x));
-  const maxX = Math.max(...layout.nodes.map(node => node.x)) + CARD_WIDTH;
-  const minY = Math.min(...layout.nodes.map(node => node.y));
-  const maxY = Math.max(...layout.nodes.map(node => node.y)) + CARD_HEIGHT;
-  const svgWidth = maxX - minX + SVG_PADDING * 2;
-  const svgHeight = maxY - minY + SVG_PADDING * 2 + HEADER_HEIGHT;
 
   contentEl.style.maxHeight = `${window.innerHeight - 160}px`;
   contentEl.innerHTML = graphMarkup;
@@ -706,8 +806,8 @@ function openDialog(layout: LayoutData) {
   ($ as any)("#productionChainsDialog").dialog({
     title: "Production Chains",
     resizable: true,
-    width: Math.min(svgWidth + 32, window.innerWidth - 40),
-    height: Math.min(svgHeight + 80, window.innerHeight - 60),
+    width: Math.min(bounds.svgWidth + 32, window.innerWidth - 40),
+    height: Math.min(bounds.svgHeight + 80, window.innerHeight - 60),
     position: {my: "center", at: "center", of: window},
     close() {
       contentEl.innerHTML = "";

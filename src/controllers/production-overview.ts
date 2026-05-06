@@ -350,7 +350,7 @@ export function open(burgId: number): void {
 
   const summaryHtml = /*html*/ `
     <div style="${styles.summaryBar}">
-      <span title="Initial demand minus final covered demand"><b>Uncovered demand:</b> ${renderDemand(uncoveredDemand, true)}</span>
+      <span title="Initial demand minus final covered demand"><b>Uncovered Demand:</b> ${renderDemand(uncoveredDemand, true)}</span>
       <span title="Gross product per population point. This is the burg's gross product divided by population, a per-capita productivity measure for the current production run."><b>Wealth:</b> <span style="font-weight:600; ${data.productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(data.productPerCapita)}</span></span>
       <span title="Gross Product is the total profit of this burg's final output for the current production run. It is revenue after subtracting purchased ingredient costs, effectively a local GDP-like figure."><b>Gross Product:</b> <span style="font-weight:600; ${data.grossProduct >= 0 ? styles.positive : styles.negative}">${formatPrice(data.grossProduct)}</span></span>
     </div>`;
