@@ -742,7 +742,9 @@ class BurgModule {
     }
 
     removeBurgIcon(burg.i!);
-    const label = Labels.getAll().find((l) => l.type === "burg" && l.burgId === burgId);
+    const label = Labels.getAll().find(
+      (l) => l.type === "burg" && l.burgId === burgId,
+    );
     if (label) Labels.remove(label.i);
     removeBurgLabel(burgId);
   }
