@@ -77,6 +77,73 @@ function getColor(value, scheme = getColorScheme("bright")) {
 // Toggle style sections on element select
 styleElementSelect.on("change", selectStyleElement);
 
+function journeyStyleHexForPicker(raw, fallback) {
+  const fb = fallback || "#000000";
+  const s = (raw != null && String(raw).trim() !== "" ? String(raw).trim() : fb);
+  if (/^#[\da-fA-F]{6}$/.test(s)) return s;
+  if (/^#[\da-fA-F]{3}$/.test(s)) {
+    const r = s[1],
+      g = s[2],
+      b = s[3];
+    return `#${r}${r}${g}${g}${b}${b}`;
+  }
+  return fb;
+}
+
+/** Match built-in rainbow ramp endpoints in journey-draw (when data-rainbow-stops unset). */
+const JOURNEY_UI_GRADIENT_DEFAULT_FROM = "#e81416";
+const JOURNEY_UI_GRADIENT_DEFAULT_TO = "#70389d";
+
+function journeyParseStopsList(raw) {
+  if (raw == null || !String(raw).trim()) return null;
+  const parts = String(raw)
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+  return parts.length >= 2 ? parts : null;
+}
+
+function journeyPopulateRainbowUi(j) {
+  const raw = j.attr("data-rainbow-stops") || "";
+  ensureEl("styleJourneyRainbowStops").value = raw.trim() === "" ? "" : raw;
+
+  const parsed = journeyParseStopsList(raw);
+  let fromHex;
+  let toHex;
+  if (parsed && parsed.length >= 2) {
+    fromHex = journeyStyleHexForPicker(parsed[0], JOURNEY_UI_GRADIENT_DEFAULT_FROM);
+    toHex = journeyStyleHexForPicker(parsed[parsed.length - 1], JOURNEY_UI_GRADIENT_DEFAULT_TO);
+  } else {
+    fromHex = JOURNEY_UI_GRADIENT_DEFAULT_FROM;
+    toHex = JOURNEY_UI_GRADIENT_DEFAULT_TO;
+  }
+  ensureEl("styleJourneyGradientFrom").value = fromHex;
+  ensureEl("styleJourneyGradientFromOutput").value = fromHex;
+  ensureEl("styleJourneyGradientTo").value = toHex;
+  ensureEl("styleJourneyGradientToOutput").value = toHex;
+}
+
+function journeyStyleSyncRowVisibility() {
+  const solid = ensureEl("styleJourneyColorMode").value === "solid";
+  ensureEl("styleJourneySolidStroke").closest("tr").style.display = solid ? "" : "none";
+  const showGrad = !solid;
+  ensureEl("styleJourneyGradientFrom").closest("tr").style.display = showGrad ? "" : "none";
+  ensureEl("styleJourneyGradientTo").closest("tr").style.display = showGrad ? "" : "none";
+  ensureEl("styleJourneyRainbowStops").closest("tr").style.display = showGrad ? "" : "none";
+}
+
+function journeyWriteRainbowFromPickers() {
+  ensureEl("styleJourneyRainbowStops").value = "";
+  const from = ensureEl("styleJourneyGradientFrom").value;
+  const to = ensureEl("styleJourneyGradientTo").value;
+  svg.select("#journeys").attr("data-rainbow-stops", `${from},${to}`);
+  redrawJourneyIfVisible();
+}
+
+function redrawJourneyIfVisible() {
+  if (typeof drawJourney === "function" && layerIsOn("toggleJourney")) drawJourney();
+}
+
 function selectStyleElement() {
   const styleElement = styleElementSelect.value;
   let el = d3.select("#" + styleElement);
@@ -84,7 +151,10 @@ function selectStyleElement() {
   styleElements.querySelectorAll("tbody").forEach(e => (e.style.display = "none")); // hide all sections
 
   // show alert line if layer is not visible
-  const isLayerOff = styleElement !== "ocean" && (el.style("display") === "none" || !el.selectAll("*").size());
+  const isLayerOff =
+    styleElement !== "ocean" &&
+    styleElement !== "journeys" &&
+    (el.style("display") === "none" || !el.selectAll("*").size());
   styleIsOff.style.display = isLayerOff ? "block" : "none";
 
   // active group element
@@ -201,6 +271,31 @@ function selectStyleElement() {
   if (styleElement === "markers") {
     styleMarkers.style.display = "block";
     styleRescaleMarkers.checked = +markers.attr("rescale");
+  }
+
+  if (styleElement === "journeys") {
+    ensureEl("styleJourney").style.display = "table-row-group";
+    const j = el;
+    const modeRaw = (j.attr("data-color-mode") || "rainbow").toLowerCase();
+    ensureEl("styleJourneyColorMode").value = modeRaw === "solid" ? "solid" : "rainbow";
+    const solidHex = journeyStyleHexForPicker(j.attr("data-solid-stroke"), "#5c5c70");
+    ensureEl("styleJourneySolidStroke").value = solidHex;
+    ensureEl("styleJourneySolidStrokeOutput").value = solidHex;
+    journeyPopulateRainbowUi(j);
+    ensureEl("styleJourneyLineScreenPx").value = j.attr("data-line-screen-px") || 6;
+    const wpf = journeyStyleHexForPicker(j.attr("data-waypoint-fill"), "#ffffff");
+    ensureEl("styleJourneyWaypointFill").value = wpf;
+    ensureEl("styleJourneyWaypointFillOutput").value = wpf;
+    const wps = journeyStyleHexForPicker(j.attr("data-waypoint-stroke"), "#000000");
+    ensureEl("styleJourneyWaypointStroke").value = wps;
+    ensureEl("styleJourneyWaypointStrokeOutput").value = wps;
+    ensureEl("styleJourneyWaypointRScreenPx").value = j.attr("data-waypoint-r-screen-px") || 9;
+    ensureEl("styleJourneyWaypointRingScreenPx").value = j.attr("data-waypoint-ring-screen-px") || 4.5;
+    const oc = journeyStyleHexForPicker(j.attr("data-outline-color"), "#000000");
+    ensureEl("styleJourneyOutlineColor").value = oc;
+    ensureEl("styleJourneyOutlineColorOutput").value = oc;
+    ensureEl("styleJourneyOutlineScreenPx").value = j.attr("data-outline-screen-px") || 2;
+    journeyStyleSyncRowVisibility();
   }
 
   if (styleElement === "gridOverlay") {
@@ -550,6 +645,76 @@ styleGridShiftY.on("input", function () {
 styleRescaleMarkers.on("change", function () {
   markers.attr("rescale", +this.checked);
   invokeActiveZooming();
+});
+
+d3.select("#styleJourneyColorMode").on("change", function () {
+  svg.select("#journeys").attr("data-color-mode", this.value);
+  journeyStyleSyncRowVisibility();
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneySolidStroke").on("input", function () {
+  ensureEl("styleJourneySolidStrokeOutput").value = this.value;
+  svg.select("#journeys").attr("data-solid-stroke", this.value);
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneyGradientFrom").on("input", function () {
+  ensureEl("styleJourneyGradientFromOutput").value = this.value;
+  journeyWriteRainbowFromPickers();
+});
+
+d3.select("#styleJourneyGradientTo").on("input", function () {
+  ensureEl("styleJourneyGradientToOutput").value = this.value;
+  journeyWriteRainbowFromPickers();
+});
+
+d3.select("#styleJourneyRainbowStops").on("input", function () {
+  const v = this.value.trim();
+  const jn = svg.select("#journeys");
+  if (v === "") jn.attr("data-rainbow-stops", null);
+  else jn.attr("data-rainbow-stops", v);
+  journeyPopulateRainbowUi(jn);
+  journeyStyleSyncRowVisibility();
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneyLineScreenPx").on("input", function () {
+  svg.select("#journeys").attr("data-line-screen-px", this.value);
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneyWaypointFill").on("input", function () {
+  ensureEl("styleJourneyWaypointFillOutput").value = this.value;
+  svg.select("#journeys").attr("data-waypoint-fill", this.value);
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneyWaypointStroke").on("input", function () {
+  ensureEl("styleJourneyWaypointStrokeOutput").value = this.value;
+  svg.select("#journeys").attr("data-waypoint-stroke", this.value);
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneyWaypointRScreenPx").on("input", function () {
+  svg.select("#journeys").attr("data-waypoint-r-screen-px", this.value);
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneyWaypointRingScreenPx").on("input", function () {
+  svg.select("#journeys").attr("data-waypoint-ring-screen-px", this.value);
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneyOutlineColor").on("input", function () {
+  ensureEl("styleJourneyOutlineColorOutput").value = this.value;
+  svg.select("#journeys").attr("data-outline-color", this.value);
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneyOutlineScreenPx").on("input", function () {
+  svg.select("#journeys").attr("data-outline-screen-px", this.value);
+  redrawJourneyIfVisible();
 });
 
 styleCoastlineAuto.on("change", function () {

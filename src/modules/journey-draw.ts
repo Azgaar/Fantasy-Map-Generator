@@ -31,6 +31,114 @@ export const JOURNEY_RAINBOW_STOPS = [
 
 const rampInterpolator = interpolateRgbBasis(JOURNEY_RAINBOW_STOPS);
 
+/** Default path/arrows color when `data-color-mode` is solid and no `data-solid-stroke`. */
+export const JOURNEY_DEFAULT_SOLID_STROKE = "#5c5c70";
+
+export type JourneyColorMode = "rainbow" | "solid";
+
+/** Resolved presentation for `#journeys` (from `data-*` + defaults). */
+export interface JourneyStyleConfig {
+  colorMode: JourneyColorMode;
+  solidStroke: string;
+  rainbowStops: readonly string[];
+  lineScreenPx: number;
+  waypointFill: string;
+  waypointStroke: string;
+  waypointRScreenPx: number;
+  waypointRingScreenPx: number;
+  outlineColor: string;
+  outlineScreenPx: number;
+}
+
+function clamp(n: number, lo: number, hi: number): number {
+  return Math.min(hi, Math.max(lo, n));
+}
+
+/** Parse comma-separated hex/color tokens; returns null if fewer than two usable stops. */
+export function parseJourneyRainbowStops(raw: string | null | undefined): string[] | null {
+  if (raw == null || !String(raw).trim()) return null;
+  const parts = String(raw)
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+  return parts.length >= 2 ? parts : null;
+}
+
+/**
+ * Read journey style from `#journeys` SVG attributes (`data-*`).
+ * Safe with `null` / missing element (uses built-in defaults matching former hardcoded constants).
+ */
+export function readJourneyStyleConfig(el: Element | null): JourneyStyleConfig {
+  const get = (name: string): string | null =>
+    el && typeof el.getAttribute === "function" ? el.getAttribute(name) : null;
+
+  const modeRaw = (get("data-color-mode") || "rainbow").toLowerCase().trim();
+  const colorMode: JourneyColorMode = modeRaw === "solid" ? "solid" : "rainbow";
+
+  const parsedStops = parseJourneyRainbowStops(get("data-rainbow-stops"));
+  const rainbowStops =
+    parsedStops && parsedStops.length >= 2 ? parsedStops : [...JOURNEY_RAINBOW_STOPS];
+
+  const solidStroke =
+    get("data-solid-stroke")?.trim() || JOURNEY_DEFAULT_SOLID_STROKE;
+
+  const lineScreenPx = clamp(
+    Number.parseFloat(get("data-line-screen-px") || "") || JOURNEY_STROKE_SCREEN_PX,
+    0.5,
+    96,
+  );
+
+  const waypointFill = get("data-waypoint-fill")?.trim() || "#ffffff";
+  const waypointStroke = get("data-waypoint-stroke")?.trim() || "#000000";
+
+  const waypointRScreenPx = clamp(
+    Number.parseFloat(get("data-waypoint-r-screen-px") || "") ||
+      JOURNEY_WAYPOINT_R_SCREEN_PX,
+    2,
+    120,
+  );
+
+  const waypointRingScreenPx = clamp(
+    Number.parseFloat(get("data-waypoint-ring-screen-px") || "") ||
+      JOURNEY_WAYPOINT_STROKE_SCREEN_PX,
+    0,
+    48,
+  );
+
+  const outlineColor = get("data-outline-color")?.trim() || "#000000";
+
+  const outlineScreenPx = clamp(
+    Number.parseFloat(get("data-outline-screen-px") || "") ||
+      JOURNEY_HALO_DILATE_SCREEN_PX,
+    0,
+    32,
+  );
+
+  return {
+    colorMode,
+    solidStroke,
+    rainbowStops,
+    lineScreenPx,
+    waypointFill,
+    waypointStroke,
+    waypointRScreenPx,
+    waypointRingScreenPx,
+    outlineColor,
+    outlineScreenPx,
+  };
+}
+
+/** Uniform ramp sampler along one logical journey (same contract as `journeyRampColor`). */
+export function journeyRampSamplerForConfig(cfg: JourneyStyleConfig): (u: number) => string {
+  if (cfg.colorMode === "solid") {
+    const c = cfg.solidStroke;
+    return (_u: number) => c;
+  }
+  const stops = cfg.rainbowStops.length >= 2 ? cfg.rainbowStops : JOURNEY_RAINBOW_STOPS;
+  const interp = interpolateRgbBasis([...stops]);
+  return (u: number) => interp(Math.max(0, Math.min(1, u)));
+}
+
 function journeyResolutionCtx(): JourneyResolutionContext {
   return {
     burgs: pack.burgs ?? [],
@@ -163,6 +271,7 @@ const JOURNEY_OUTLINE_FILTER_ID = "journeyUnifiedOutline";
 function ensureJourneyOutlineFilter(
   defs: Selection<SVGDefsElement, unknown, null, undefined>,
   morphologyRadiusMap: number,
+  floodColor: string,
 ): void {
   defs.select(`filter#${JOURNEY_OUTLINE_FILTER_ID}`).remove();
   const f = defs
@@ -182,7 +291,7 @@ function ensureJourneyOutlineFilter(
     .attr("result", "dilatedAlpha");
 
   f.append("feFlood")
-    .attr("flood-color", "#000000")
+    .attr("flood-color", floodColor)
     .attr("result", "outlineFlood");
 
   f.append("feComposite")
@@ -398,16 +507,19 @@ export class JourneyDrawModule {
     const zs = Number.isFinite(zoomScale) ? zoomScale : 1;
     const zm = Number.isFinite(zoomMinForLod) ? zoomMinForLod : 0.05;
 
+    const styleCfg = readJourneyStyleConfig(journeys.node());
+    const rampAt = journeyRampSamplerForConfig(styleCfg);
+
     const verts = journeys.append("g").attr("class", "journey-vertices");
 
     const waypointR = mapMetricScreenToWorld(
-      JOURNEY_WAYPOINT_R_SCREEN_PX,
+      styleCfg.waypointRScreenPx,
       zs,
       0.15,
       80,
     );
     const waypointSw = mapMetricScreenToWorld(
-      JOURNEY_WAYPOINT_STROKE_SCREEN_PX,
+      styleCfg.waypointRingScreenPx,
       zs,
       0.03,
       24,
@@ -438,8 +550,8 @@ export class JourneyDrawModule {
         .attr("cx", rn(x, 2))
         .attr("cy", rn(y, 2))
         .attr("r", rn(waypointR, 3))
-        .attr("fill", "#ffffff")
-        .attr("stroke", "#000000")
+        .attr("fill", styleCfg.waypointFill)
+        .attr("stroke", styleCfg.waypointStroke)
         .attr("stroke-width", rn(waypointSw, 3))
         .style("cursor", "pointer");
       if (jidList?.length === 1) {
@@ -457,20 +569,20 @@ export class JourneyDrawModule {
     const samples = journeyPolylineSamplesForTier(tier);
     const arrowSpacing = journeyArrowSpacingMapUnits(zs, tier);
     const morphR = mapMetricScreenToWorld(
-      JOURNEY_HALO_DILATE_SCREEN_PX,
+      styleCfg.outlineScreenPx,
       zs,
       0.35,
       40,
     );
 
-    ensureJourneyOutlineFilter(defs, morphR);
+    ensureJourneyOutlineFilter(defs, morphR, styleCfg.outlineColor);
     const segmentsRoot = journeys.append("g").attr("class", "journey-segments");
 
     const lanes = laneMultipliersForSegments(points);
     const repeats = directedChordOccurrenceIndex(points);
 
     const strokeW = mapMetricScreenToWorld(
-      JOURNEY_STROKE_SCREEN_PX,
+      styleCfg.lineScreenPx,
       zs,
       0.06,
       24,
@@ -491,34 +603,40 @@ export class JourneyDrawModule {
       if (!d) continue;
 
       const [u0, u1] = segmentUInterval(S, i);
-      const c0 = journeyRampColor(u0);
-      const c1 = journeyRampColor(u1);
-
-      const gid = `journeyGrad_${i}`;
-      const grad = defs
-        .append("linearGradient")
-        .attr("id", gid)
-        .attr("class", "journey-def")
-        .attr("gradientUnits", "userSpaceOnUse")
-        .attr("x1", a[0])
-        .attr("y1", a[1])
-        .attr("x2", b[0])
-        .attr("y2", b[1]);
-
-      grad.append("stop").attr("offset", "0%").attr("stop-color", c0);
-      grad.append("stop").attr("offset", "100%").attr("stop-color", c1);
+      const c0 = rampAt(u0);
+      const c1 = rampAt(u1);
 
       const seg = segmentsRoot
         .append("g")
         .attr("class", "journey-segment")
         .attr("filter", `url(#${JOURNEY_OUTLINE_FILTER_ID})`);
 
+      let strokeAttr: string;
+      if (styleCfg.colorMode === "solid") {
+        strokeAttr = styleCfg.solidStroke;
+      } else {
+        const gid = `journeyGrad_${i}`;
+        const grad = defs
+          .append("linearGradient")
+          .attr("id", gid)
+          .attr("class", "journey-def")
+          .attr("gradientUnits", "userSpaceOnUse")
+          .attr("x1", a[0])
+          .attr("y1", a[1])
+          .attr("x2", b[0])
+          .attr("y2", b[1]);
+
+        grad.append("stop").attr("offset", "0%").attr("stop-color", c0);
+        grad.append("stop").attr("offset", "100%").attr("stop-color", c1);
+        strokeAttr = `url(#${gid})`;
+      }
+
       seg
         .append("path")
         .attr("class", "journey-segment-stroke")
         .attr("d", d)
         .attr("fill", "none")
-        .attr("stroke", `url(#${gid})`)
+        .attr("stroke", strokeAttr)
         .attr("stroke-width", rn(strokeW, 3))
         .attr("stroke-linecap", "round")
         .attr("stroke-linejoin", "round");
@@ -538,7 +656,7 @@ export class JourneyDrawModule {
       }
       for (const ar of arrPts) {
         const gt = chordGradientT(a, b, ar.x, ar.y);
-        const arrowColor = journeyRampColor(u0 + gt * (u1 - u0));
+        const arrowColor = rampAt(u0 + gt * (u1 - u0));
         seg
           .append("path")
           .attr("class", "journey-arrow")
@@ -588,9 +706,10 @@ export class JourneyDrawModule {
     zoomScale: number,
   ): void {
     const zs = Math.max(zoomScale, 1e-9);
+    const styleCfg = readJourneyStyleConfig(journeys.node());
 
     const strokeW = mapMetricScreenToWorld(
-      JOURNEY_STROKE_SCREEN_PX,
+      styleCfg.lineScreenPx,
       zs,
       0.06,
       24,
@@ -600,13 +719,13 @@ export class JourneyDrawModule {
       .attr("stroke-width", rn(strokeW, 3));
 
     const waypointR = mapMetricScreenToWorld(
-      JOURNEY_WAYPOINT_R_SCREEN_PX,
+      styleCfg.waypointRScreenPx,
       zs,
       0.15,
       80,
     );
     const waypointSw = mapMetricScreenToWorld(
-      JOURNEY_WAYPOINT_STROKE_SCREEN_PX,
+      styleCfg.waypointRingScreenPx,
       zs,
       0.03,
       24,
@@ -626,15 +745,14 @@ export class JourneyDrawModule {
     });
 
     const morphR = mapMetricScreenToWorld(
-      JOURNEY_HALO_DILATE_SCREEN_PX,
+      styleCfg.outlineScreenPx,
       zs,
       0.35,
       40,
     );
-    defs
-      .select(`filter#${JOURNEY_OUTLINE_FILTER_ID}`)
-      .select("feMorphology")
-      .attr("radius", rn(morphR, 3));
+    const filt = defs.select(`filter#${JOURNEY_OUTLINE_FILTER_ID}`);
+    filt.select("feMorphology").attr("radius", rn(morphR, 3));
+    filt.select("feFlood").attr("flood-color", styleCfg.outlineColor);
   }
 }
 

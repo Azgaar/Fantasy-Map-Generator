@@ -10,7 +10,11 @@ import {
   journeyLodTier,
   journeyPolylineSamplesForTier,
   journeyRampColor,
+  journeyRampSamplerForConfig,
+  JOURNEY_DEFAULT_SOLID_STROKE,
   laneMultipliersForSegments,
+  parseJourneyRainbowStops,
+  readJourneyStyleConfig,
   segmentUInterval,
 } from "./journey-draw";
 
@@ -140,6 +144,65 @@ describe("laneMultipliersForSegments", () => {
     expect(lanes[0]).not.toBe(0);
     expect(lanes[3]).not.toBe(0);
     expect(lanes[0]).not.toBe(lanes[3]);
+  });
+});
+
+describe("parseJourneyRainbowStops", () => {
+  it("returns null for empty or single token", () => {
+    expect(parseJourneyRainbowStops(null)).toBeNull();
+    expect(parseJourneyRainbowStops("")).toBeNull();
+    expect(parseJourneyRainbowStops("#ff0000")).toBeNull();
+  });
+
+  it("parses comma-separated colors", () => {
+    expect(parseJourneyRainbowStops("#ff0000, #00ff00")).toEqual([
+      "#ff0000",
+      "#00ff00",
+    ]);
+  });
+});
+
+describe("readJourneyStyleConfig", () => {
+  it("uses defaults when element is null", () => {
+    const c = readJourneyStyleConfig(null);
+    expect(c.colorMode).toBe("rainbow");
+    expect(c.solidStroke).toBe(JOURNEY_DEFAULT_SOLID_STROKE);
+    expect(c.lineScreenPx).toBe(6);
+    expect(c.waypointFill).toBe("#ffffff");
+    expect(c.outlineColor).toBe("#000000");
+  });
+
+  it("reads data-color-mode solid and custom attrs", () => {
+    const attrs: Record<string, string> = {
+      "data-color-mode": "solid",
+      "data-solid-stroke": "#abc",
+      "data-line-screen-px": "12",
+    };
+    const el = {
+      getAttribute(name: string) {
+        return attrs[name] ?? null;
+      },
+    } as unknown as Element;
+    const c = readJourneyStyleConfig(el);
+    expect(c.colorMode).toBe("solid");
+    expect(c.solidStroke).toBe("#abc");
+    expect(c.lineScreenPx).toBe(12);
+  });
+});
+
+describe("journeyRampSamplerForConfig", () => {
+  it("returns constant color in solid mode", () => {
+    const cfg = readJourneyStyleConfig(null);
+    const solidCfg = { ...cfg, colorMode: "solid" as const, solidStroke: "#112233" };
+    const f = journeyRampSamplerForConfig(solidCfg);
+    expect(f(0)).toBe("#112233");
+    expect(f(1)).toBe("#112233");
+  });
+
+  it("varies along u in rainbow mode", () => {
+    const cfg = readJourneyStyleConfig(null);
+    const f = journeyRampSamplerForConfig(cfg);
+    expect(f(0)).not.toBe(f(1));
   });
 });
 

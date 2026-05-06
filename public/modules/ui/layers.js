@@ -904,9 +904,9 @@ function toggleJourney(event) {
     turnButtonOn("toggleJourney");
     drawJourney();
     $("#journeys").fadeIn();
-    if (event && isCtrlClick(event)) editJourney();
+    if (event && isCtrlClick(event)) editStyle("journeys");
   } else {
-    if (event && isCtrlClick(event)) return editJourney();
+    if (event && isCtrlClick(event)) return editStyle("journeys");
     $("#journeys").fadeOut();
     turnButtonOff("toggleJourney");
   }
