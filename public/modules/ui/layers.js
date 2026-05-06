@@ -887,6 +887,8 @@ function drawJourney() {
   if (window.JourneyPack) window.JourneyPack.normalizePackJourney(pack.journey, pack);
   const zs = typeof scale === "number" && Number.isFinite(scale) ? scale : 1;
   JourneyDraw.redraw(defs, journeys, zs, journeyZoomExtentMin());
+  // Presets only flip layer buttons; they never call toggleJourney/fadeIn. Match visible state to layerIsOn.
+  if (layerIsOn("toggleJourney")) journeys.style("display", null);
   TIME && console.timeEnd("drawJourney");
 }
 
