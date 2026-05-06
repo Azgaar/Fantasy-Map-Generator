@@ -10,10 +10,10 @@ declare global {
   var drawBurgLabels: () => void;
 }
 
-window.drawBurgLabels = drawBurgLabels;
+window.drawBurgLabels = drawBurgLabelsRenderer;
 // section end -------------------------------------------------------------------
 
-export function drawBurgLabels(): void {
+export function drawBurgLabelsRenderer(): void {
   TIME && console.time("drawBurgLabels");
   createLabelGroups();
 
@@ -68,7 +68,7 @@ export function drawBurgLabel(burgLabel: BurgLabel): void {
   // TODO: remove label group dependency - for now, if group is missing, redraw all labels to recreate the group
   const labelGroup = burgLabels.select<SVGGElement>(`#${burgLabel.group}`);
   if (labelGroup.empty()) {
-    drawBurgLabels();
+    drawBurgLabelsRenderer();
     return; // redraw all labels if group is missing
   }
 
