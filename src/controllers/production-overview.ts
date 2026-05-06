@@ -25,9 +25,7 @@ export function open(burgId: number): void {
     return;
   }
 
-  const goodById = new Map(pack.goods.map((g: Good) => [g.i, g]));
-  const goodName = (id: number) => goodById.get(id)?.name ?? `#${id}`;
-  const goodColor = (id: number) => goodById.get(id)?.color ?? "#888";
+  const goodName = (id: number) => Goods.get(id)?.name ?? `#${id}`;
 
   const styles = {
     muted: "color:#777",
@@ -38,10 +36,9 @@ export function open(burgId: number): void {
     warning: "color:#c84",
     sectionTitle: "font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.3em;margin-bottom:.45em",
     topBar: "margin-bottom:.85em;display:flex;flex-wrap:wrap;column-gap:.85em;align-items: center",
-    table: "width:100%;table-layout:fixed;border-collapse:collapse;line-height:1.35",
+    table: "width:100%;table-layout:fixed;border-collapse:collapse;line-height:1",
     headRow: "background:#eee",
     bodyRow: "border-bottom:1px solid #f0f0f0",
-    buyRow: "background:#fffaf2;border-bottom:1px solid #f3e4c7",
     cell: "padding:.4em .5em;vertical-align:top",
     cellRight: "padding:.4em .5em;vertical-align:top;text-align:right",
     logRow: "display:none;background:#fafafa;border-bottom:1px solid #ececec",
@@ -51,12 +48,18 @@ export function open(burgId: number): void {
   };
 
   const goodDot = (id: number) => {
-    const color = goodColor(id);
-    return `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};border:1px solid rgba(0,0,0,0.2);margin-right:6px;vertical-align:middle;flex-shrink:0"></span>`;
+    const good = Goods.get(id);
+    if (!good) return "";
+
+    return `<svg width="14" height="14" style="margin: -6px 2px -4px 0;">
+              <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
+              <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
+            </svg>`;
   };
 
   const typeBadge = (kind: "RAW" | "MFG" | "BUY") => {
-    const commonStyles = "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold";
+    const commonStyles =
+      "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
     if (kind === "RAW") return `<span style="${commonStyles};background:#f0e8e8;color:#a44">RAW</span>`;
     if (kind === "BUY") return `<span style="${commonStyles};background:#f6ead8;color:#b06a00">BUY</span>`;
     return `<span style="${commonStyles};background:#e8f0e8;color:#4a4">MFG</span>`;
@@ -102,7 +105,7 @@ export function open(burgId: number): void {
       const amount = inventory[goodId] || 0;
       if (amount <= 0) continue;
 
-      const good = goodById.get(goodId);
+      const good = Goods.get(goodId);
       if (!good) continue;
 
       for (let categoryIndex = 0; categoryIndex < DEMAND_CATEGORIES.length; categoryIndex++) {
@@ -179,7 +182,7 @@ export function open(burgId: number): void {
 
   const accessibleResourceRows = data.goodsPull
     .map(resource => {
-      const good = goodById.get(resource.goodId);
+      const good = Goods.get(resource.goodId);
       if (!good) return "";
       const projectedGain = Math.max(0, resource.chainValue - good.value);
       const demandCoverage = Object.values(good.demandCoverage);
@@ -249,7 +252,7 @@ export function open(burgId: number): void {
 
     if (buyItems.length) {
       for (const item of buyItems) {
-        rows.push(/*html*/ `<tr style="${styles.buyRow}">
+        rows.push(/*html*/ `<tr>
           ${renderDataCell(renderTaggedGood(item.goodId, "BUY"))}
           ${renderDataCell(rn(item.fromMarket, 2), "right")}
           <td style="${styles.cell}">Market purchase for ${goodDot(job.goodId)}${goodName(job.goodId)}</td>
@@ -263,18 +266,13 @@ export function open(burgId: number): void {
         ? ` <span style="${styles.muted}" title="Culture bonus">x${rn(job.cultureModifier, 2)}</span>`
         : "";
     const allInputs = job.recipe
-      .map(item => {
-        const total = item.fromInventory + item.fromMarket;
-        return total > 0 ? `${renderGoodLabel(item.goodId)} ${rn(total, 2)}` : "";
-      })
-      .filter(Boolean)
-      .join(` <span style="${styles.divider}">+</span> `);
-    const details = allInputs ? `Manufacturing from ${allInputs}` : "Manufacturing";
+      .map(item => `${rn(item.fromInventory + item.fromMarket, 2)} ${goodDot(item.goodId)}`)
+      .join(` and `);
 
     rows.push(/*html*/ `<tr${rowAttrs}>
       ${renderDataCell(renderTaggedGood(job.goodId, "MFG", cultureSuffix))}
       ${renderDataCell(rn(job.units, 2), "right")}
-      <td style="${styles.cell}">${details}</td>
+      <td style="${styles.cell}">${`Producing from ${allInputs}`}</td>
       ${job.score !== undefined ? renderValueCell("Score", job.score, job.score >= 0) : renderDataCell("—", "right", styles.subtle)}
     </tr>`);
 
@@ -312,14 +310,14 @@ export function open(burgId: number): void {
   const finalEntries = Object.entries(data.finalInventory).filter(([, value]) => value > 0);
   const finalRows = finalEntries
     .sort(([aId, aAmount], [bId, bAmount]) => {
-      const aManufactured = Boolean(goodById.get(+aId)?.recipes?.length);
-      const bManufactured = Boolean(goodById.get(+bId)?.recipes?.length);
+      const aManufactured = Boolean(Goods.get(+aId)?.recipes?.length);
+      const bManufactured = Boolean(Goods.get(+bId)?.recipes?.length);
       if (aManufactured !== bManufactured) return aManufactured ? -1 : 1;
       return (bAmount as number) - (aAmount as number);
     })
     .map(([goodId, amount]) => {
       const id = +goodId;
-      const good = goodById.get(id);
+      const good = Goods.get(id);
       const sellPrice = good?.sellPrice ?? good?.value ?? 0;
       const baseValue = good?.value ?? 0;
       const isManufactured = Boolean(good?.recipes?.length);
