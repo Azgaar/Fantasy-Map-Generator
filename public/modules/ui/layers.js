@@ -65,6 +65,20 @@ function getDefaultPresets() {
       "toggleScaleBar",
       "toggleVignette"
     ],
+    campaign: [
+      "toggleHeight",
+      "toggleLakes",
+      "toggleCells",
+      "toggleGrid",
+      "toggleStates",
+      "toggleZones",
+      "toggleBorders",
+      "toggleJourney",
+      "toggleRoutes",
+      "toggleBurgIcons",
+      "toggleLabels",
+      "toggleMarkers"
+    ],
     military: [
       "toggleBorders",
       "toggleBurgIcons",
@@ -215,6 +229,7 @@ function drawLayers() {
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (layerIsOn("toggleZones")) drawZones();
   if (layerIsOn("toggleBorders")) drawBorders();
+  if (layerIsOn("toggleJourney")) drawJourney();
   if (layerIsOn("toggleRoutes")) drawRoutes();
   if (layerIsOn("toggleTemperature")) drawTemperature();
   if (layerIsOn("togglePopulation")) drawPopulation();
@@ -225,7 +240,6 @@ function drawLayers() {
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleMilitary")) drawMilitary();
   if (layerIsOn("toggleMarkers")) drawMarkers();
-  if (layerIsOn("toggleJourney")) drawJourney();
   if (layerIsOn("toggleRulers")) rulers.draw();
   // scale bar
   // vignette

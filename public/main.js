@@ -61,6 +61,7 @@ let zones = viewbox.append("g").attr("id", "zones");
 let borders = viewbox.append("g").attr("id", "borders");
 let stateBorders = borders.append("g").attr("id", "stateBorders");
 let provinceBorders = borders.append("g").attr("id", "provinceBorders");
+let journeys = viewbox.append("g").attr("id", "journeys").style("display", "none");
 let routes = viewbox.append("g").attr("id", "routes");
 let roads = routes.append("g").attr("id", "roads");
 let trails = routes.append("g").attr("id", "trails");
@@ -77,7 +78,6 @@ let burgIcons = icons.append("g").attr("id", "burgIcons");
 let anchors = icons.append("g").attr("id", "anchors");
 let armies = viewbox.append("g").attr("id", "armies");
 let markers = viewbox.append("g").attr("id", "markers");
-let journeys = viewbox.append("g").attr("id", "journeys").style("display", "none");
 let fogging = viewbox
   .append("g")
   .attr("id", "fogging-cont")

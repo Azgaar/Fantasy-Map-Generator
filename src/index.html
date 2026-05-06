@@ -472,6 +472,7 @@
             <option value="heightmap">Heightmap</option>
             <option value="physical">Physical map</option>
             <option value="poi">Places of interest</option>
+            <option value="campaign">Campaign</option>
             <option value="military">Military map</option>
             <option value="emblems">Emblems</option>
             <option value="landmass">Pure landmass</option>
@@ -626,19 +627,19 @@
               Bor<u>d</u>ers
             </li>
             <li
+              id="toggleJourney"
+              data-tip="Journey path: click to toggle, drag to raise or lower the layer. Ctrl + click to open the journey editor"
+              onclick="toggleJourney(event)"
+            >
+              Journey
+            </li>
+            <li
               id="toggleRoutes"
               data-tip="Trade routes: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="U"
               onclick="toggleRoutes(event)"
             >
               Ro<u>u</u>tes
-            </li>
-            <li
-              id="toggleJourney"
-              data-tip="Journey path: click to toggle, drag to raise or lower the layer. Ctrl + click to open the journey editor"
-              onclick="toggleJourney(event)"
-            >
-              Journey
             </li>
             <li
               id="toggleTemperature"
@@ -8608,12 +8609,12 @@
     <script defer src="libs/alea.min.js?v1.105.0"></script>
     <script defer src="libs/polylabel.min.js?v1.105.0"></script>
     <script defer src="libs/simplify.js?v1.105.6"></script>
-    <script defer src="modules/ui/layers.js?v=1.122.2"></script>
+    <script defer src="modules/ui/layers.js?v=1.122.4"></script>
     <script defer src="modules/ui/measurers.js?v=1.99.00"></script>
     <script defer src="modules/ui/style-presets.js?v=1.100.00"></script>
     <script defer src="modules/ui/general.js?v=1.120.6"></script>
     <script defer src="modules/ui/options.js?v=1.120.5"></script>
-    <script defer src="main.js?v=1.122.1"></script>
+    <script defer src="main.js?v=1.122.2"></script>
 
     <script defer src="modules/ui/style.js?v=1.120.5"></script>
     <script defer src="modules/ui/editors.js?v=1.120.5"></script>
