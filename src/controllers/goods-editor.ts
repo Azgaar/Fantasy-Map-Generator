@@ -90,7 +90,7 @@ function goodsEditorAddLines() {
           data-tags="${tags}" data-chance="${good.chance}" data-bonus="${bonusString}" data-demandcoverage="${demandCoverageString}"
           data-value="${good.value}" data-model="${distribution}" data-availability="${totalAvailability}"
           data-produced="${totalProduced}" data-baseprice="${basePrice}" data-buyprice="${buyPrice}" data-sellprice="${sellPrice}">
-        <svg data-tip="Good icon" width="8em" height="8em" class="goodIcon">
+        <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
           <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
           <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
         </svg>
