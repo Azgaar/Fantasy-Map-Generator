@@ -1,15 +1,20 @@
-import Alea from "alea";
 import type {Burg} from "./burgs-generator";
 import type {CultureType} from "./cultures-generator";
 import {DEFAULT_CULTURE_TYPE} from "./cultures-generator";
 import type {DemandCategory, Good} from "./goods-generator";
 import {DEMAND_CATEGORIES} from "./goods-generator";
 
-const DEMAND_FOOD = 0.2;
-const DEMAND_UTILITIES = 0.05;
-const DEMAND_CONSTRUCTION = 0.1;
-const DEMAND_MILITARY = 0.05;
-const DEMAND_LUXURY = 0.05;
+export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {
+  food: 0.2,
+  utilities: 0.05,
+  construction: 0.1,
+  military: 0.05,
+  luxury: 0.05
+};
+
+export function getDemandTargetsForPopulation(population: number): number[] {
+  return DEMAND_CATEGORIES.map(category => population * DEMAND_TARGET_FACTORS[category]);
+}
 
 export class ProductionModule {
   private readonly BONUS_PRODUCTION = 5;
@@ -24,7 +29,6 @@ export class ProductionModule {
   private readonly PRICE_CEILING_FACTOR = 3.0;
 
   private readonly CHAIN_VALUE_MAX_WORKERS = 5;
-  private readonly PRIORITY_JITTER = 0.2;
 
   private productionData = new Map<number, BurgProductionData>();
 
@@ -52,7 +56,6 @@ export class ProductionModule {
       burgRank++;
       const cultureType = burg.type || DEFAULT_CULTURE_TYPE;
       const population = burg.population || 0;
-      const burgRng = Alea(seed + String(burg.i));
       const demandTargets = this.buildDemandTargets(burg);
 
       const goodsPull: Record<number, number> = {};
@@ -64,7 +67,6 @@ export class ProductionModule {
       };
 
       const budget = Math.max(1, Math.floor(population));
-      const pricesAtStart = {buy: currentBuyPrice.slice(), sell: currentSellPrice.slice()};
       const cellsReached = this.floodFillCells(burg, budget, cellPool, addGood);
 
       const goodsPullData: BurgProductionData["goodsPull"] = [];
@@ -73,24 +75,19 @@ export class ProductionModule {
         const good = goodById.get(goodId);
         if (!good) continue;
         const rawPull = goodsPull[goodId];
-        const cultureModifier = this.getCultureModifier(good, cultureType);
         const chainValue = this.getChainValueForWorkers(
           chainValueByWorkers,
           Math.max(0, population - 1),
           goodId,
           good.value
         );
-        const basePriority = rawPull * chainValue * cultureModifier;
-        const jitter = 1 - this.PRIORITY_JITTER / 2 + burgRng() * this.PRIORITY_JITTER;
-        const priority = basePriority * jitter;
         goodsPullData.push({
           goodId,
           pull: rawPull,
-          chainValue,
-          priority
+          chainValue
         });
       }
-      goodsPullData.sort((a, b) => b.priority - a.priority);
+      goodsPullData.sort((a, b) => b.pull - a.pull || b.chainValue - a.chainValue || a.goodId - b.goodId);
 
       const remainingPool: Record<number, number> = {...goodsPull};
       const inventory: Record<number, number> = {};
@@ -229,7 +226,6 @@ export class ProductionModule {
         goodsPull: goodsPullData,
         jobs: jobsData,
         finalInventory: {...inventory},
-        pricesAtStart,
         phaseRevenue,
         wealthAfter: burg.wealth || 0
       });
@@ -313,14 +309,7 @@ export class ProductionModule {
 
   private buildDemandTargets(burg: Burg): number[] {
     const population = burg.population || 0;
-
-    return [
-      population * DEMAND_FOOD,
-      population * DEMAND_UTILITIES,
-      population * DEMAND_CONSTRUCTION,
-      population * DEMAND_MILITARY,
-      population * DEMAND_LUXURY
-    ];
+    return getDemandTargetsForPopulation(population);
   }
 
   private calculateDemandCoverage(inventory: Record<number, number>, goodById: Map<number, Good>): number[] {
@@ -335,9 +324,9 @@ export class ProductionModule {
       if (!good) continue;
       for (let category = 0; category < DEMAND_CATEGORIES.length; category++) {
         const demandCategory = DEMAND_CATEGORIES[category] as DemandCategory;
-        const suppliedAmount = good.supply[demandCategory] || 0;
-        if (!suppliedAmount) continue;
-        demandCoverage[category] += amount * suppliedAmount;
+        const coveredAmount = good.demandCoverage[demandCategory] || 0;
+        if (!coveredAmount) continue;
+        demandCoverage[category] += amount * coveredAmount;
       }
     }
 
@@ -361,10 +350,10 @@ export class ProductionModule {
 
       for (let category = 0; category < DEMAND_CATEGORIES.length; category++) {
         const demandCategory = DEMAND_CATEGORIES[category] as DemandCategory;
-        const profileWeight = good.supply[demandCategory] || 0;
-        if (!profileWeight) continue;
+        const coverageWeight = good.demandCoverage[demandCategory] || 0;
+        if (!coverageWeight) continue;
 
-        const boost = remainingDemand[category] * profileWeight;
+        const boost = remainingDemand[category] * coverageWeight;
         if (boost <= 0) continue;
 
         demandBoost += boost;
@@ -374,7 +363,7 @@ export class ProductionModule {
           contributions.set(category, {
             category: DEMAND_CATEGORIES[category],
             shortage: remainingDemand[category],
-            supply: profileWeight,
+            demandCoverage: coverageWeight,
             boost
           });
         }
@@ -688,7 +677,7 @@ export type DecisionIngredient = {
 export type DemandContribution = {
   category: DemandCategory;
   shortage: number;
-  supply: number;
+  demandCoverage: number;
   boost: number;
 };
 type DemandEffect = {multiplier: number; contributions: DemandContribution[]};
@@ -734,7 +723,6 @@ export interface BurgProductionData {
     goodId: number;
     pull: number;
     chainValue: number;
-    priority: number;
   }>;
   jobs: Array<
     | {
@@ -763,7 +751,6 @@ export interface BurgProductionData {
       }
   >;
   finalInventory: Record<number, number>;
-  pricesAtStart: {buy: number[]; sell: number[]};
   phaseRevenue: number;
   wealthAfter: number;
 }

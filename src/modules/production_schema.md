@@ -1,9 +1,9 @@
-# Production Schema v4 — Bounded Lookahead Planner
+# Production Schema v4
 
 ## Core Principle
 
 Every worker tick, the burg evaluates the **best reachable plan** from its current state.
-The decision is no longer driven by a precomputed global chain value. Instead, the burg does a
+The decision is not solely driven by a precomputed global chain value. Instead, the burg does a
 short bounded search over feasible actions and picks the first move of the best plan it can still
 complete with its remaining workers.
 
@@ -62,7 +62,7 @@ consumer-spending simulation yet.
 - later: chain complexity, total profit by base values, profit per worker
 
 4. Build price arrays: `currentBuyPrice[i] = currentSellPrice[i] = good.value`
-5. Build demand profiles from good tags / bonuses and stable per-population demand targets
+5. Build stable per-population demand targets and use authored `good.demandCoverage` values for coverage
 6. `globalMarket = {}` (empty)
 7. Sort burgs by population ascending (smallest first)
 
@@ -162,7 +162,7 @@ Key implication:
 - Partial chains are valid because the search can start from inventory or market-bought mid-goods.
 - A raw good like Wood is not globally "good" anymore; it is only good if this burg can still turn
   it into something more valuable within the reachable plan tree.
-- A good can also rise in priority when it directly satisfies a burg's unmet local demand,
+- A good can also win on score when it directly satisfies a burg's unmet local demand,
   even if it is not the highest market-price item available.
 
 ### Stable Demand Targets
@@ -178,7 +178,7 @@ Demand depends only on burg population in the current implementation:
 Demand coverage is explicit authored data on goods, not inferred from tags or bonuses:
 
 ```ts
-good.supply = {
+good.demandCoverage = {
   food?: number,
   utilities?: number,
   construction?: number,
@@ -190,8 +190,8 @@ good.supply = {
 Meaning: `1 unit` of this good covers the listed amount of each category. Example:
 
 ```ts
-Grain.supply = {food: 1};
-Wood.supply = {construction: 1, utilities: 0.25};
+Grain.demandCoverage = {food: 1};
+Wood.demandCoverage = {construction: 1, utilities: 0.25};
 ```
 
 Demand scoring formula per candidate:
@@ -242,19 +242,6 @@ Static chain metrics are still useful, but only as heuristics / UI data.
 
 These metrics can help sort and prune planner branches, but the actual move choice must come from
 the bounded lookahead on the burg's current `inventory + remainingPool + globalMarket + workersLeft`.
-
----
-
-## Expected Emergent Behaviour
-
-| Burg type      | Expected pattern                                                                                                        |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Village (3–8)  | Usually takes short plans only; long chains are pruned because they cannot be completed in the remaining search horizon |
-| Town (15–40)   | Can execute short 2–3 step chains when locally or globally feasible                                                     |
-| City (60–150)  | Often prefers market-assisted chains because it can still complete them within multiple remaining worker ticks          |
-| Capital (200+) | Can sustain longer profitable plan sequences and convert more mid-goods into high-value outputs                         |
-
----
 
 ## Job Log Entry (BurgProductionData.jobs)
 

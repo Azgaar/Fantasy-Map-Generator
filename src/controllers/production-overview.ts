@@ -1,5 +1,11 @@
-import type {Good} from "../modules/goods-generator";
-import type {DecisionCandidate, DemandContribution, Log} from "../modules/production-generator";
+import type {DemandCategory, Good} from "../modules/goods-generator";
+import {DEMAND_CATEGORIES, DEMAND_CATEGORY_ICONS} from "../modules/goods-generator";
+import {
+  type DecisionCandidate,
+  type DemandContribution,
+  getDemandTargetsForPopulation,
+  type Log
+} from "../modules/production-generator";
 import {rn} from "../utils";
 
 export function open(burgId: number): void {
@@ -12,7 +18,10 @@ export function open(burgId: number): void {
   const data = Production.getProductionData(burgId);
   if (!data) {
     alertMessage.innerHTML = `<div>No production data for this burg.<br>Run map generation or regenerate production first.</div>`;
-    $("#alert").dialog({resizable: false, title: `Production Overview: ${burg.name}`});
+    $("#alert").dialog({
+      resizable: false,
+      title: `Production Overview: ${burg.name}`
+    });
     return;
   }
 
@@ -28,18 +37,17 @@ export function open(burgId: number): void {
     negative: "color:#c44",
     warning: "color:#c84",
     sectionTitle: "font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.3em;margin-bottom:.45em",
-    statsBar: "margin-bottom:.85em;display:flex;flex-wrap:wrap;gap:.85em;",
+    topBar: "margin-bottom:.85em;display:flex;flex-wrap:wrap;column-gap:.85em;align-items: center",
     table: "width:100%;border-collapse:collapse;line-height:1.35",
     headRow: "background:#eee",
     bodyRow: "border-bottom:1px solid #f0f0f0",
     buyRow: "background:#fffaf2;border-bottom:1px solid #f3e4c7",
-    cell: "padding:.38em .55em;vertical-align:top",
-    cellRight: "padding:.38em .55em;vertical-align:top;text-align:right",
+    cell: "padding:.4em .5em;vertical-align:top",
+    cellRight: "padding:.4em .5em;vertical-align:top;text-align:right",
     logRow: "display:none;background:#fafafa;border-bottom:1px solid #ececec",
     logCell: "padding:0 .5em;",
     empty: "color:#888;font-style:italic",
-    summaryBar:
-      "display:flex;gap:1.2em;flex-wrap:wrap;background:#f0f5f0;border-radius:4px;padding:.55em .8em;margin-top:.6em;line-height:1.4"
+    summaryBar: "display:flex;margin-top:.6em;justify-content: space-between"
   };
 
   const goodDot = (id: number) => {
@@ -76,13 +84,48 @@ export function open(burgId: number): void {
     cultureModifier !== 1 ? `, culture x${rn(cultureModifier, 2)}` : "";
   const formatUnits = (units: number) => (units !== 1 ? `, units ${rn(units, 2)}` : "");
   const formatPrice = (value: number | string) => `🟡 ${typeof value === "number" ? rn(value, 2) : value}`;
+  const formatDemandCategory = (category: DemandCategory) => `${DEMAND_CATEGORY_ICONS[category]} ${category}`;
+  const renderDemandTotals = (values: number[], onlyPositive = false) => {
+    const entries = DEMAND_CATEGORIES.flatMap((category, index) => {
+      const value = values[index] || 0;
+      if (onlyPositive && value <= 0.001) return [];
+      return `<span title="${category}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
+    });
+
+    return entries.length
+      ? entries.join(` <span style="${styles.divider}">•</span> `)
+      : `<span style="${styles.subtle}">none</span>`;
+  };
+  const calculateDemandCoverageTotals = (inventory: Record<number, number>) => {
+    const totals = Array(DEMAND_CATEGORIES.length).fill(0);
+
+    for (const goodIdStr in inventory) {
+      const goodId = +goodIdStr;
+      const amount = inventory[goodId] || 0;
+      if (amount <= 0) continue;
+
+      const good = goodById.get(goodId);
+      if (!good) continue;
+
+      for (let categoryIndex = 0; categoryIndex < DEMAND_CATEGORIES.length; categoryIndex++) {
+        const category = DEMAND_CATEGORIES[categoryIndex] as DemandCategory;
+        const coveredAmount = good.demandCoverage[category] || 0;
+        if (!coveredAmount) continue;
+        totals[categoryIndex] += amount * coveredAmount;
+      }
+    }
+
+    return totals;
+  };
   const renderDemandEffect = (multiplier: number, demand: DemandContribution[]) => {
     if (multiplier <= 1.001 || !demand.length) return "";
-    const sumFormula = demand.map(item => `${item.category}Boost ${rn(item.boost, 2)}`).join(" + ");
+    const sumFormula = demand
+      .map(item => `${formatDemandCategory(item.category)} boost ${rn(item.boost, 2)}`)
+      .join(" + ");
     const details = demand
       .map(
         item =>
-          `${item.category}Boost = ${item.category}Shortage ${rn(item.shortage, 2)} × ${item.category}Supply ${rn(item.supply, 2)} = ${rn(item.boost, 2)}`
+          `${formatDemandCategory(item.category)} boost = shortage ${rn(item.shortage, 2)} × coverage ${rn(item.demandCoverage, 2)} = ${rn(item.boost, 2)}`
       )
       .join("<br>");
     return `<div style="margin-top:.1em;${styles.muted}">demandMultiplier = 1 + ${sumFormula} = ${rn(multiplier, 2)}</div><div style="margin-top:.1em;${styles.muted}">${details}</div>`;
@@ -122,45 +165,57 @@ export function open(burgId: number): void {
       ${alternatives}
     </div>`;
   };
+  const renderDemandCoverage = (good: Good | undefined, units: number) => {
+    if (!good) return `<span style="${styles.subtle}">-</span>`;
+
+    const coveredCategories = DEMAND_CATEGORIES.flatMap(category => {
+      const coveredAmount = good.demandCoverage[category as DemandCategory] || 0;
+      if (!coveredAmount) return [];
+      return `${DEMAND_CATEGORY_ICONS[category]} ${rn(units * coveredAmount, 2)}`;
+    });
+
+    return coveredCategories.length ? coveredCategories.join(", ") : `<span style="${styles.subtle}">-</span>`;
+  };
+  const accessibleResourcesTitle = "Accessible Resources";
+  const initialDemand = getDemandTargetsForPopulation(data.population);
+  const finalDemandCoverage = calculateDemandCoverageTotals(data.finalInventory);
+  const uncoveredDemand = initialDemand.map((target, index) => Math.max(0, target - finalDemandCoverage[index]));
 
   const statsHtml = /*html*/ `
-    <div style="${styles.statsBar}">
+    <div style="${styles.topBar}">
       <span><b>Population:</b> ${data.population}</span>
       <span><b>Cells:</b> ${data.cellsReached}/${data.cellsBudget}</span>
       <span><b>Culture type:</b> ${data.cultureType}</span>
       <span><b>Order:</b> ${data.processRank} of ${data.totalBurgs}</span>
+      <div><b>Initial Demand:</b> ${renderDemandTotals(initialDemand)}</div>
     </div>`;
 
-  const poolRows = data.goodsPull
-    .map(goodPull => {
-      const baseValue = goodById.get(goodPull.goodId)?.value ?? 0;
-      const chainExtra =
-        goodPull.chainValue > baseValue + 0.01
-          ? ` <span style="${styles.positive}">(+${rn(goodPull.chainValue - baseValue, 2)})</span>`
-          : "";
-      const buyPrice = rn(data.pricesAtStart.buy[goodPull.goodId] ?? baseValue, 2);
-      const buyColor = buyPrice > baseValue ? styles.warning : buyPrice < baseValue ? styles.positive : "";
+  const accessibleResourceRows = data.goodsPull
+    .map(resource => {
+      const good = goodById.get(resource.goodId);
+      const baseValue = good?.value ?? 0;
+      const projectedGain = Math.max(0, resource.chainValue - baseValue);
 
       return /*html*/ `<tr style="${styles.bodyRow}">
-        ${renderDataCell(renderGoodLabel(goodPull.goodId))}
-        ${renderDataCell(rn(goodPull.pull, 2), "right")}
-        ${renderDataCell(`${rn(goodPull.chainValue, 2)}${chainExtra}`, "right")}
-        ${renderDataCell(rn(goodPull.priority, 2), "right")}
-        ${renderPriceCell(buyPrice, buyColor)}
+        ${renderDataCell(renderGoodLabel(resource.goodId))}
+        ${renderDataCell(rn(resource.pull, 2), "right")}
+        ${renderPriceCell(baseValue)}
+        ${renderPriceCell(projectedGain, projectedGain > 0.001 ? styles.positive : styles.subtle)}
+        ${renderDataCell(renderDemandCoverage(good, resource.pull), "right")}
       </tr>`;
     })
     .join("");
 
-  const poolTable = poolRows
+  const accessibleResourcesTable = accessibleResourceRows
     ? /*html*/ `<table style="${styles.table}">
         <thead><tr style="${styles.headRow}">
-          ${renderHeaderCell("Good")}
+          ${renderHeaderCell("Resource")}
           ${renderHeaderCell("Units", "right", "Raw units from flood-fill cells")}
-          ${renderHeaderCell("Chain Value", "right", "Elevated by downstream profitable chains")}
-          ${renderHeaderCell("Priority", "right", "Initial heuristic ordering")}
-          ${renderHeaderCell("Buy Price", "right", "Buy price when this burg was processed")}
+          ${renderHeaderCell("Base Price", "right", "Authored reference price for this resource")}
+          ${renderHeaderCell("Projected Gain", "right", "Estimated extra per-unit value from reachable downstream chains")}
+          ${renderHeaderCell("Demand Coverage", "right", "Demand categories this accessible resource can help cover at current pulled units")}
         </tr></thead>
-        <tbody>${poolRows}</tbody>
+        <tbody>${accessibleResourceRows}</tbody>
       </table>`
     : `<i style="${styles.empty}">No goods reached this burg</i>`;
 
@@ -254,14 +309,6 @@ export function open(burgId: number): void {
   }
 
   const finalEntries = Object.entries(data.finalInventory).filter(([, value]) => value > 0);
-  const netWealth = finalEntries.reduce((total, [goodId, amount]) => {
-    const good = goodById.get(+goodId);
-    const sellPrice = good?.sellPrice ?? good?.value ?? 0;
-    const sellValue = amount * sellPrice;
-    const ingredientCost = good?.recipes?.length ? mfgCostByGood[+goodId] || 0 : 0;
-    return total + sellValue - ingredientCost;
-  }, 0);
-
   const finalRows = finalEntries
     .sort(([aId, aAmount], [bId, bAmount]) => {
       const aManufactured = Boolean(goodById.get(+aId)?.recipes?.length);
@@ -297,10 +344,11 @@ export function open(burgId: number): void {
 
   const summaryHtml = /*html*/ `
     <div style="${styles.summaryBar}">
-      <span title="Total revenue"><b>Net wealth:</b> <span style="font-weight:600; ${netWealth >= 0 ? styles.positive : styles.negative}">${formatPrice(netWealth)}</span></span>
+      <span title="Initial demand minus final covered demand"><b>Uncovered demand:</b> ${renderDemandTotals(uncoveredDemand, true)}</span>
+       <span title="Total revenue"><b>Total revenue:</b> <span style="font-weight:600; ${data.phaseRevenue >= 0 ? styles.positive : styles.negative}">${formatPrice(data.phaseRevenue)}</span></span>
     </div>`;
 
-  const finalTable = finalRows
+  const finalTableContent = finalRows
     ? /*html*/ `<table style="${styles.table}">
         <thead><tr style="${styles.headRow}">
           ${renderHeaderCell("Good")}
@@ -311,13 +359,14 @@ export function open(burgId: number): void {
           ${renderHeaderCell("Profit", "right", "Revenue minus ingredient cost (MFG only)")}
         </tr></thead>
         <tbody>${finalRows}</tbody>
-      </table>${summaryHtml}`
+      </table>`
     : `<i style="${styles.empty}">No output produced</i>`;
+  const finalTable = `${finalTableContent}${summaryHtml}`;
 
   alertMessage.innerHTML = /*html*/ `
     <div id="productionOverviewContent" style="max-height:65vh;overflow-y:auto">
       ${statsHtml}
-      ${renderSection("Goods Pool", poolTable)}
+      ${renderSection(accessibleResourcesTitle, accessibleResourcesTable)}
       ${renderSection("Production Steps", jobsTable)}
       ${renderSection("Final Output", finalTable)}
     </div>
@@ -340,7 +389,11 @@ export function open(burgId: number): void {
     };
   }
 
-  $("#alert").dialog({width: "48em", resizable: true, title: `Production Overview: ${burg.name}`});
+  $("#alert").dialog({
+    width: "48em",
+    resizable: true,
+    title: `Production Overview: ${burg.name}`
+  });
 }
 
 declare global {

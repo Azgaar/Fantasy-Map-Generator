@@ -1,6 +1,6 @@
 import {pointer} from "d3";
 import type {DemandCategory, Good} from "../modules/goods-generator";
-import {DEMAND_CATEGORIES} from "../modules/goods-generator";
+import {DEMAND_CATEGORIES, DEMAND_CATEGORY_ICONS} from "../modules/goods-generator";
 import {ensureEl, unique} from "../utils";
 import {getHeight} from "../utils/unitUtils";
 
@@ -73,7 +73,7 @@ function goodsEditorAddLines() {
     const bonusString = Object.entries(good.bonus)
       .map(([k, v]) => `${k}: ${v}`)
       .join("; ");
-    const supplyString = Object.entries(good.supply || {})
+    const demandCoverageString = Object.entries(good.demandCoverage || {})
       .map(([k, v]) => `${k}: ${v}`)
       .join("; ");
     const tags = good.tags.join(", ");
@@ -87,7 +87,7 @@ function goodsEditorAddLines() {
 
     lines += `<div class="states goods"
           data-id=${good.i} data-name="${good.name}" data-color="${good.color}"
-          data-tags="${tags}" data-chance="${good.chance}" data-bonus="${bonusString}" data-supply="${supplyString}"
+          data-tags="${tags}" data-chance="${good.chance}" data-bonus="${bonusString}" data-demandcoverage="${demandCoverageString}"
           data-value="${good.value}" data-model="${distribution}" data-availability="${totalAvailability}"
           data-produced="${totalProduced}" data-baseprice="${basePrice}" data-buyprice="${buyPrice}" data-sellprice="${sellPrice}">
         <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
@@ -522,10 +522,10 @@ function openGoodDialog(goodToEdit?: Good) {
       </span>`
     )
     .join("");
-  const supplyInputsHtml = DEMAND_CATEGORIES.map(
+  const demandCoverageInputsHtml = DEMAND_CATEGORIES.map(
     category => `<span>
-        <div style="display: inline-block; width: 6.5em;">${capitalize(category)}</div>
-        <input id="newGoodSupply_${category}" type="number" style="width: 4.5em;" step="0.05" min="0" value="${(editedGood?.supply as Partial<Record<DemandCategory, number>> | undefined)?.[category] || 0}" />
+        <div style="display: inline-block; width: 6.5em;">${DEMAND_CATEGORY_ICONS[category]} ${capitalize(category)}</div>
+        <input id="newGoodDemandCoverage_${category}" type="number" style="width: 4.5em;" step="0.05" min="0" value="${(editedGood?.demandCoverage as Partial<Record<DemandCategory, number>> | undefined)?.[category] || 0}" />
       </span>`
   ).join("");
 
@@ -584,8 +584,8 @@ function openGoodDialog(goodToEdit?: Good) {
       <label for="newGoodBonuses" style="align-self: start;">Bonuses</label>
       <div id="newGoodBonuses" style="display: grid; grid-template-columns: 1fr 1fr;">${bonusInputsHtml}</div>
 
-      <label for="newGoodSupply" style="align-self: start;">Demand supply</label>
-      <div id="newGoodSupply" style="display: grid; grid-template-columns: 1fr 1fr; gap: .2em .5em;">${supplyInputsHtml}</div>
+      <label for="newGoodDemandCoverage" style="align-self: start;">Demand Coverage</label>
+      <div id="newGoodDemandCoverage" style="display: grid; grid-template-columns: 1fr 1fr; gap: .2em .5em;">${demandCoverageInputsHtml}</div>
     </div>
 
     <div id="newGoodRawFields">
@@ -775,12 +775,14 @@ function openGoodDialog(goodToEdit?: Good) {
           const v = parseInt(bonusInput.value, 10);
           if (!Number.isNaN(v) && v > 0) bonusObj[bonus] = v;
         });
-        const supplyObj: Partial<Record<DemandCategory, number>> = {};
+        const demandCoverage: Partial<Record<DemandCategory, number>> = {};
         DEMAND_CATEGORIES.forEach(category => {
-          const supplyInput = document.getElementById(`newGoodSupply_${category}`) as HTMLInputElement | null;
-          if (!supplyInput) return;
-          const v = Number(supplyInput.value);
-          if (Number.isFinite(v) && v > 0) supplyObj[category] = v;
+          const demandCoverageInput = document.getElementById(
+            `newGoodDemandCoverage_${category}`
+          ) as HTMLInputElement | null;
+          if (!demandCoverageInput) return;
+          const v = Number(demandCoverageInput.value);
+          if (Number.isFinite(v) && v > 0) demandCoverage[category] = v;
         });
 
         if (!name) {
@@ -811,7 +813,7 @@ function openGoodDialog(goodToEdit?: Good) {
           target.chance = chance;
           target.unit = unit;
           target.bonus = bonusObj;
-          target.supply = supplyObj;
+          target.demandCoverage = demandCoverage;
         };
 
         const distributionMethods = {
@@ -891,7 +893,7 @@ function openGoodDialog(goodToEdit?: Good) {
               biome: Object.keys(biomeProduction).length ? biomeProduction : undefined,
               unit,
               bonus: bonusObj,
-              supply: supplyObj,
+              demandCoverage,
               culture: {},
               cells: 0
             });
@@ -945,7 +947,7 @@ function openGoodDialog(goodToEdit?: Good) {
               recipes,
               unit,
               bonus: bonusObj,
-              supply: supplyObj,
+              demandCoverage,
               culture: {},
               cells: 0
             });
@@ -964,7 +966,7 @@ function openGoodDialog(goodToEdit?: Good) {
 
 function downloadGoodsData() {
   const body = ensureEl("goodsBody");
-  let data = "Id,Good,Color,Type,Tags,Value,Bonus,Supply,Chance,Model,Cells\n";
+  let data = "Id,Good,Color,Type,Tags,Value,Bonus,Demand Coverage,Chance,Model,Cells\n";
 
   body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
     const goodId = +el.dataset.id!;
@@ -979,7 +981,7 @@ function downloadGoodsData() {
     data += `${el.dataset.tags},`;
     data += `${el.dataset.value},`;
     data += `${el.dataset.bonus},`;
-    data += `${el.dataset.supply},`;
+    data += `${el.dataset.demandcoverage},`;
     data += `${el.dataset.chance},`;
     data += `${el.dataset.model},`;
     data += `${el.dataset.cells}\n`;
