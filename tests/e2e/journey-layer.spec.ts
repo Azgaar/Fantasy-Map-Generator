@@ -11,27 +11,26 @@ const BACKTRACK_JOURNEY_POINTS: [number, number][] = [
   [560, 190],
 ];
 
-/** Catalog + `stopIds` from an ordered coord list (reused coords share one waypoint). */
-function packJourneyFromCoords(pts: [number, number][]) {
-  const waypoints: { id: string; name: string; x: number; y: number }[] = [];
-  const keyToId = new Map<string, string>();
-  let n = 0;
-  const stopIds: string[] = [];
+/** Synthetic burgs at unique coords + `stops` legs (reused coords share one burg id). */
+function backtrackBurgJourneyFixture(pts: [number, number][]) {
+  const keyToBurgI = new Map<string, number>();
+  let nextI = 910001;
+  const burgs: { i: number; x: number; y: number; name: string; removed: boolean }[] = [];
+  const stops: { kind: "burg"; id: number }[] = [];
   for (const [x, y] of pts) {
     const key = `${x},${y}`;
-    let id = keyToId.get(key);
-    if (!id) {
-      n += 1;
-      id = `t_wp_${n}`;
-      keyToId.set(key, id);
-      waypoints.push({ id, name: `Stop ${n}`, x, y });
+    let bi = keyToBurgI.get(key);
+    if (bi == null) {
+      bi = nextI++;
+      keyToBurgI.set(key, bi);
+      burgs.push({ i: bi, x, y, name: `BT ${bi}`, removed: false });
     }
-    stopIds.push(id);
+    stops.push({ kind: "burg" as const, id: bi });
   }
-  return { stopIds, waypoints };
+  return { journey: { stops }, burgsToPush: burgs };
 }
 
-const BACKTRACK_PACK_JOURNEY = packJourneyFromCoords(BACKTRACK_JOURNEY_POINTS);
+const BACKTRACK_FIXTURE = backtrackBurgJourneyFixture(BACKTRACK_JOURNEY_POINTS);
 
 test.describe("Journey layer", () => {
   test.beforeEach(async ({ context, page }) => {
@@ -83,14 +82,14 @@ test.describe("Journey layer", () => {
       const j = w.pack.journey;
       return {
         pointsPresent: Object.prototype.hasOwnProperty.call(j, "points"),
-        stopCount: Array.isArray(j.stopIds) ? j.stopIds.length : -1,
-        waypointCount: Array.isArray(j.waypoints) ? j.waypoints.length : -1,
+        stopsLen: Array.isArray(j.stops) ? j.stops.length : -1,
+        legacyStopIds: Object.prototype.hasOwnProperty.call(j, "stopIds"),
       };
     }, BACKTRACK_JOURNEY_POINTS);
 
     expect(snap.pointsPresent).toBe(false);
-    expect(snap.stopCount).toBe(0);
-    expect(snap.waypointCount).toBe(0);
+    expect(snap.stopsLen).toBe(0);
+    expect(snap.legacyStopIds).toBe(false);
   });
 
   test("drawJourney resolves a burg stop ref using pack.burgs positions", async ({ page }) => {
@@ -100,14 +99,12 @@ test.describe("Journey layer", () => {
         toggleJourney: () => void;
         pack: {
           burgs: Array<{ i: number; x: number; y: number; name?: string; removed?: boolean }>;
-          journey: { stopIds: string[]; waypoints: { id: string; name: string; x: number; y: number }[] };
+          journey: { stops: { kind: string; id: number }[] };
         };
-        JourneyPack: { burgJourneyStopRef: (i: number) => string };
         drawJourney: () => void;
       };
       if (!w.layerIsOn("toggleJourney")) w.toggleJourney();
       const testI = 999001;
-      const ref = w.JourneyPack.burgJourneyStopRef(testI);
       w.pack.burgs.push({
         i: testI,
         x: 400,
@@ -115,7 +112,7 @@ test.describe("Journey layer", () => {
         name: "E2E journey burg",
         removed: false,
       });
-      w.pack.journey = { stopIds: [ref], waypoints: [] };
+      w.pack.journey = { stops: [{ kind: "burg", id: testI }] };
       w.drawJourney();
     });
 
@@ -125,24 +122,28 @@ test.describe("Journey layer", () => {
 
   test("drawJourney renders paths and vertices for journey data", async ({ page }) => {
     await page.evaluate(
-      ({ journey }) => {
+      ({ journey, burgsToPush }) => {
         const w = window as unknown as {
           layerIsOn: (id: string) => boolean;
           toggleJourney: () => void;
-          pack: { journey: typeof journey };
+          pack: {
+            journey: typeof journey;
+            burgs: Array<{ i: number; x: number; y: number; name: string; removed: boolean }>;
+          };
           drawJourney: () => void;
         };
         if (!w.layerIsOn("toggleJourney")) w.toggleJourney();
+        for (const b of burgsToPush) w.pack.burgs.push(b);
         w.pack.journey = journey;
         w.drawJourney();
       },
-      { journey: BACKTRACK_PACK_JOURNEY },
+      { journey: BACKTRACK_FIXTURE.journey, burgsToPush: BACKTRACK_FIXTURE.burgsToPush },
     );
 
     const segmentCount = BACKTRACK_JOURNEY_POINTS.length - 1;
     await expect(page.locator("#journeys .journey-segments .journey-segment")).toHaveCount(segmentCount);
     await expect(page.locator("#journeys .journey-segment-stroke")).toHaveCount(segmentCount);
-    // Deduped waypoints: only (400,300), (720,460), (560,190)
+    // Deduped vertices: three distinct burg positions
     await expect(page.locator("#journeys .journey-vertices circle")).toHaveCount(3);
     const arrowN = await page.locator("#journeys .journey-arrow").count();
     expect(arrowN).toBeGreaterThan(segmentCount);
@@ -151,16 +152,27 @@ test.describe("Journey layer", () => {
   test("journey stroke-width shrinks in map units when zoom scale increases (screen-constant sizing)", async ({
     page,
   }) => {
-    const snap = await page.evaluate((journey: typeof BACKTRACK_PACK_JOURNEY) => {
+    const snap = await page.evaluate(
+      ({
+        journey,
+        burgsToPush,
+      }: {
+        journey: typeof BACKTRACK_FIXTURE.journey;
+        burgsToPush: typeof BACKTRACK_FIXTURE.burgsToPush;
+      }) => {
       const w = window as unknown as {
         layerIsOn: (id: string) => boolean;
         toggleJourney: () => void;
-        pack: { journey: typeof journey };
+        pack: {
+          journey: typeof journey;
+          burgs: Array<{ i: number; x: number; y: number; name: string; removed: boolean }>;
+        };
         drawJourney: () => void;
         scale: number;
         syncJourneyZoom: (zoomScale: number) => void;
       };
       if (!w.layerIsOn("toggleJourney")) w.toggleJourney();
+      for (const b of burgsToPush) w.pack.burgs.push(b);
       w.pack.journey = journey;
       w.drawJourney();
       const readStrokes = () =>
@@ -179,7 +191,9 @@ test.describe("Journey layer", () => {
       const strokeAfter = readStrokes();
       const rAfter = readWaypointR();
       return { strokeBefore, strokeAfter, rBefore, rAfter };
-    }, BACKTRACK_PACK_JOURNEY);
+    },
+    { journey: BACKTRACK_FIXTURE.journey, burgsToPush: BACKTRACK_FIXTURE.burgsToPush },
+    );
 
     const segN = BACKTRACK_JOURNEY_POINTS.length - 1;
     expect(snap.strokeBefore.length).toBe(segN);

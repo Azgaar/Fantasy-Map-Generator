@@ -431,7 +431,7 @@ async function parseLoadedData(data, mapVersion) {
           parsedJourney !== null &&
           !Array.isArray(parsedJourney)
             ? parsedJourney
-            : {stopIds: [], waypoints: []};
+            : {stops: []};
         pack.journey = j;
         if (window.JourneyPack) window.JourneyPack.normalizePackJourney(pack.journey, pack);
       }

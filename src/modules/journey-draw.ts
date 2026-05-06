@@ -8,11 +8,12 @@ import type {
 import {
   burgJourneyStopRef,
   emptyPackJourney,
+  journeyLegToRefString,
+  journeyRefStringToLeg,
   journeyResolvedCoordinates,
   markerJourneyStopRef,
   normalizePackJourney,
-  newWaypointId,
-  nextDefaultWaypointName,
+  resolveJourneyLeg,
   resolveJourneyStopPosition,
 } from "./journey-model";
 import { rn } from "../utils/numberUtils";
@@ -413,9 +414,10 @@ export class JourneyDrawModule {
     );
 
     const idsAtCoord = new Map<string, string[]>();
-    for (const sid of journeyData.stopIds) {
-      const xy = resolveJourneyStopPosition(sid, journeyData, resCtx);
+    for (const leg of journeyData.stops) {
+      const xy = resolveJourneyLeg(leg, resCtx);
       if (!xy) continue;
+      const sid = journeyLegToRefString(leg);
       const ck = `${rn(xy[0], 2)},${rn(xy[1], 2)}`;
       const arr = idsAtCoord.get(ck) ?? [];
       if (!arr.includes(sid)) arr.push(sid);
@@ -642,11 +644,12 @@ if (typeof window !== "undefined") {
     normalizePackJourney,
     journeyResolvedCoordinates,
     resolveJourneyStopPosition,
+    resolveJourneyLeg,
+    journeyRefStringToLeg,
     emptyPackJourney,
-    newWaypointId,
-    nextDefaultWaypointName,
     burgJourneyStopRef,
     markerJourneyStopRef,
+    journeyLegToRefString,
   };
 }
 
@@ -658,11 +661,12 @@ declare global {
       normalizePackJourney: typeof normalizePackJourney;
       journeyResolvedCoordinates: typeof journeyResolvedCoordinates;
       resolveJourneyStopPosition: typeof resolveJourneyStopPosition;
+      resolveJourneyLeg: typeof resolveJourneyLeg;
+      journeyRefStringToLeg: typeof journeyRefStringToLeg;
       emptyPackJourney: typeof emptyPackJourney;
-      newWaypointId: typeof newWaypointId;
-      nextDefaultWaypointName: typeof nextDefaultWaypointName;
       burgJourneyStopRef: typeof burgJourneyStopRef;
       markerJourneyStopRef: typeof markerJourneyStopRef;
+      journeyLegToRefString: typeof journeyLegToRefString;
     };
   }
 }

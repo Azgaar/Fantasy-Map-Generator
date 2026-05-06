@@ -1,16 +1,23 @@
-import { rn } from "../utils/numberUtils";
+/**
+ * Journey path: ordered burg / marker references only (positions live on pack).
+ * Legacy `{ stopIds, waypoints }` is migrated on normalize (waypoint legs dropped).
+ */
 
-export interface JourneyWaypoint {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
+/** One leg in the journey sequence (linked-list style via array order). */
+export interface JourneyBurgLeg {
+  kind: "burg";
+  id: number;
 }
 
-/** Catalog + ordered path (`stopIds`: waypoint ids and/or `burg:n` / `marker:n`). */
+export interface JourneyMarkerLeg {
+  kind: "marker";
+  id: number;
+}
+
+export type JourneyStopLeg = JourneyBurgLeg | JourneyMarkerLeg;
+
 export interface PackJourney {
-  stopIds: string[];
-  waypoints: JourneyWaypoint[];
+  stops: JourneyStopLeg[];
 }
 
 /** Minimal pack slice for resolving burg/marker positions (avoids importing PackedGraph). */
@@ -37,17 +44,30 @@ export function markerJourneyStopRef(i: number): string {
 }
 
 export type ParsedJourneyStopRef =
-  | { kind: "waypoint"; id: string }
-  | { kind: "burg"; i: number }
-  | { kind: "marker"; i: number };
+  | { kind: "burg"; id: number }
+  | { kind: "marker"; id: number };
+
+export function journeyLegToRefString(leg: JourneyStopLeg): string {
+  return leg.kind === "burg"
+    ? burgJourneyStopRef(leg.id)
+    : markerJourneyStopRef(leg.id);
+}
 
 export function parseJourneyStopRef(stopId: string): ParsedJourneyStopRef | null {
   const bm = BURG_REF_RE.exec(stopId);
-  if (bm) return { kind: "burg", i: +bm[1] };
+  if (bm) return { kind: "burg", id: +bm[1] };
   const mm = MARKER_REF_RE.exec(stopId);
-  if (mm) return { kind: "marker", i: +mm[1] };
-  if (stopId.length > 0) return { kind: "waypoint", id: stopId };
+  if (mm) return { kind: "marker", id: +mm[1] };
   return null;
+}
+
+/** UI / DOM string → stored leg (burg or marker only). */
+export function journeyRefStringToLeg(ref: string): JourneyStopLeg | null {
+  const p = parseJourneyStopRef(ref);
+  if (!p) return null;
+  return p.kind === "burg"
+    ? { kind: "burg", id: p.id }
+    : { kind: "marker", id: p.id };
 }
 
 export function isWellFormedBurgStopRef(id: string): boolean {
@@ -58,86 +78,68 @@ export function isWellFormedMarkerStopRef(id: string): boolean {
   return MARKER_REF_RE.test(id);
 }
 
-export function newWaypointId(): string {
-  const uuid =
-    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
-      : "";
-  if (uuid) return `wp_${uuid}`;
-  return `wp_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-}
-
 export function emptyPackJourney(): PackJourney {
-  return { stopIds: [], waypoints: [] };
+  return { stops: [] };
 }
 
-/** Next auto name `Stop n` based on existing waypoint names / count. */
-export function nextDefaultWaypointName(waypoints: JourneyWaypoint[]): string {
-  let maxN = 0;
-  const re = /^Stop\s+(\d+)$/i;
-  for (const w of waypoints) {
-    const m = re.exec(w.name.trim());
-    if (m) maxN = Math.max(maxN, +m[1]);
-  }
-  return `Stop ${maxN + 1}`;
-}
-
-function sanitizeWaypoints(raw: unknown[]): JourneyWaypoint[] {
-  const out: JourneyWaypoint[] = [];
-  const seen = new Set<string>();
+function sanitizeStopsArray(raw: unknown[]): JourneyStopLeg[] {
+  const out: JourneyStopLeg[] = [];
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;
     const o = item as Record<string, unknown>;
-    const id = typeof o.id === "string" ? o.id : "";
-    const name =
-      typeof o.name === "string" && o.name.trim() !== "" ? o.name : "Stop";
-    const x = Number(o.x);
-    const y = Number(o.y);
-    if (!id || !Number.isFinite(x) || !Number.isFinite(y)) continue;
-    if (seen.has(id)) continue;
-    seen.add(id);
-    out.push({ id, name, x: rn(x, 6), y: rn(y, 6) });
+    const kind = o.kind;
+    const id = Number(o.id);
+    if (!Number.isInteger(id) || id < 0) continue;
+    if (kind === "burg") out.push({ kind: "burg", id });
+    else if (kind === "marker") out.push({ kind: "marker", id });
+  }
+  return out;
+}
+
+function legacyStopIdsToLegs(stopIds: string[]): JourneyStopLeg[] {
+  const out: JourneyStopLeg[] = [];
+  for (const sid of stopIds) {
+    const p = parseJourneyStopRef(sid);
+    if (!p) continue;
+    out.push(
+      p.kind === "burg"
+        ? { kind: "burg", id: p.id }
+        : { kind: "marker", id: p.id },
+    );
   }
   return out;
 }
 
 function burgExistsInPack(
   pack: JourneyNormalizePackContext,
-  i: number,
+  id: number,
 ): boolean {
   const burgs = pack.burgs;
   if (!Array.isArray(burgs)) return false;
-  return burgs.some((b) => b.i === i && !b.removed);
+  return burgs.some((b) => b.i === id && !b.removed);
 }
 
-function markerExistsInPack(pack: JourneyNormalizePackContext, i: number): boolean {
+function markerExistsInPack(pack: JourneyNormalizePackContext, id: number): boolean {
   const markers = pack.markers;
   if (!Array.isArray(markers)) return false;
-  return markers.some((m) => m.i === i);
+  return markers.some((m) => m.i === id);
 }
 
-function stopIdIsAllowed(
-  id: string,
-  waypointIds: Set<string>,
+function legIsAllowed(
+  leg: JourneyStopLeg,
   pack?: JourneyNormalizePackContext,
 ): boolean {
-  if (waypointIds.has(id)) return true;
-  const parsed = parseJourneyStopRef(id);
-  if (!parsed || parsed.kind === "waypoint") return false;
-  if (parsed.kind === "burg") {
-    if (!isWellFormedBurgStopRef(id)) return false;
+  if (leg.kind === "burg") {
     if (!pack) return true;
-    return burgExistsInPack(pack, parsed.i);
+    return burgExistsInPack(pack, leg.id);
   }
-  if (!isWellFormedMarkerStopRef(id)) return false;
   if (!pack) return true;
-  return markerExistsInPack(pack, parsed.i);
+  return markerExistsInPack(pack, leg.id);
 }
 
 /**
- * Mutates `j` into canonical `{ stopIds, waypoints }`; drops invalid `stopIds`;
- * removes stray `points`. When `pack` is passed, drops burg/marker refs whose
- * entity no longer exists.
+ * Mutates `j` into canonical `{ stops }`. Migrates legacy `stopIds` (burg/marker
+ * strings only; waypoint ids dropped). Removes `stopIds`, `waypoints`, `points`.
  */
 export function normalizePackJourney(
   j: unknown,
@@ -147,20 +149,23 @@ export function normalizePackJourney(
 
   const obj = j as Record<string, unknown>;
 
-  const waypoints: JourneyWaypoint[] = Array.isArray(obj.waypoints)
-    ? sanitizeWaypoints(obj.waypoints as unknown[])
-    : [];
+  let stops = sanitizeStopsArray(
+    Array.isArray(obj.stops) ? (obj.stops as unknown[]) : [],
+  );
 
-  let stopIds: string[] = Array.isArray(obj.stopIds)
-    ? (obj.stopIds as unknown[]).filter((id): id is string => typeof id === "string")
-    : [];
+  if (!stops.length && Array.isArray(obj.stopIds)) {
+    const ids = (obj.stopIds as unknown[]).filter(
+      (id): id is string => typeof id === "string",
+    );
+    stops = legacyStopIdsToLegs(ids);
+  }
 
-  const idSet = new Set(waypoints.map((w) => w.id));
-  stopIds = stopIds.filter((id) => stopIdIsAllowed(id, idSet, pack));
+  stops = stops.filter((leg) => legIsAllowed(leg, pack));
 
   delete obj.points;
-  obj.stopIds = stopIds;
-  obj.waypoints = waypoints;
+  delete obj.stopIds;
+  delete obj.waypoints;
+  obj.stops = stops;
 }
 
 function finiteCoord(x: unknown, y: unknown): [number, number] | null {
@@ -168,40 +173,6 @@ function finiteCoord(x: unknown, y: unknown): [number, number] | null {
   const ny = Number(y);
   if (!Number.isFinite(nx) || !Number.isFinite(ny)) return null;
   return [nx, ny];
-}
-
-/** Resolve one stop to map coordinates, or null if missing. */
-export function resolveJourneyStopPosition(
-  stopId: string,
-  j: PackJourney,
-  ctx: JourneyResolutionContext,
-): [number, number] | null {
-  const wpMap = new Map(j.waypoints.map((w) => [w.id, [w.x, w.y]] as const));
-  const direct = wpMap.get(stopId);
-  if (direct) return [direct[0], direct[1]];
-
-  const parsed = parseJourneyStopRef(stopId);
-  if (!parsed || parsed.kind === "waypoint") return null;
-
-  if (parsed.kind === "burg") {
-    const burg = ctx.burgs.find((b) => b.i === parsed.i && !b.removed);
-    if (!burg) {
-      tryWarnMissing(`journey: missing burg ref ${stopId}`);
-      return null;
-    }
-    const p = finiteCoord(burg.x, burg.y);
-    if (!p) tryWarnMissing(`journey: burg ${parsed.i} has invalid x/y`);
-    return p;
-  }
-
-  const marker = ctx.markers.find((m) => m.i === parsed.i);
-  if (!marker) {
-    tryWarnMissing(`journey: missing marker ref ${stopId}`);
-    return null;
-  }
-  const p = finiteCoord(marker.x, marker.y);
-  if (!p) tryWarnMissing(`journey: marker ${parsed.i} has invalid x/y`);
-  return p;
 }
 
 function tryWarnMissing(msg: string): void {
@@ -213,21 +184,57 @@ function tryWarnMissing(msg: string): void {
   }
 }
 
+/** Resolve one leg to map coordinates, or null if missing. */
+export function resolveJourneyLeg(
+  leg: JourneyStopLeg,
+  ctx: JourneyResolutionContext,
+): [number, number] | null {
+  if (leg.kind === "burg") {
+    const burg = ctx.burgs.find((b) => b.i === leg.id && !b.removed);
+    if (!burg) {
+      tryWarnMissing(`journey: missing burg ${leg.id}`);
+      return null;
+    }
+    const p = finiteCoord(burg.x, burg.y);
+    if (!p) tryWarnMissing(`journey: burg ${leg.id} has invalid x/y`);
+    return p;
+  }
+
+  const marker = ctx.markers.find((m) => m.i === leg.id);
+  if (!marker) {
+    tryWarnMissing(`journey: missing marker ${leg.id}`);
+    return null;
+  }
+  const p = finiteCoord(marker.x, marker.y);
+  if (!p) tryWarnMissing(`journey: marker ${leg.id} has invalid x/y`);
+  return p;
+}
+
+/** Resolve `burg:n` / `marker:n` string (editor / DOM). */
+export function resolveJourneyStopPosition(
+  stopRef: string,
+  ctx: JourneyResolutionContext,
+): [number, number] | null {
+  const leg = journeyRefStringToLeg(stopRef);
+  if (!leg) return null;
+  return resolveJourneyLeg(leg, ctx);
+}
+
 export function journeyResolvedCoordinates(
   j: PackJourney,
   ctx: JourneyResolutionContext = { burgs: [], markers: [] },
 ): [number, number][] {
   const out: [number, number][] = [];
-  for (const id of j.stopIds) {
-    const p = resolveJourneyStopPosition(id, j, ctx);
+  for (const leg of j.stops) {
+    const p = resolveJourneyLeg(leg, ctx);
     if (p) out.push([p[0], p[1]]);
   }
   return out;
 }
 
-/** All stop ids in the journey sequence (waypoints, burgs, markers). */
+/** Ref strings for legs in the journey (for vertex hints). */
 export function referencedStopIds(j: PackJourney): Set<string> {
-  return new Set(j.stopIds);
+  return new Set(j.stops.map(journeyLegToRefString));
 }
 
 /** @deprecated Use referencedStopIds */

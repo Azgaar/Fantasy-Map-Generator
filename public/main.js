@@ -638,7 +638,7 @@ async function generate(options) {
     else delete grid.cells.h;
     grid.cells.h = await HeightmapGenerator.generate(grid);
     pack = {}; // reset pack
-    pack.journey = {stopIds: [], waypoints: []};
+    pack.journey = {stops: []};
 
     Features.markupGrid();
     addLakesInDeepDepressions();
