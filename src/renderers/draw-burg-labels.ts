@@ -37,17 +37,26 @@ export function drawBurgLabels(): void {
     const dx = dxAttr ? parseFloat(dxAttr) : 0;
     const dy = dyAttr ? parseFloat(dyAttr) : 0;
 
-    const labelsHTML: string[] = [];
+    const labelsHTML: SVGTextElement[] = [];
     for (const labelData of labels) {
+      const textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      textElement.setAttribute("text-rendering", "optimizeSpeed");
+      textElement.setAttribute("id", `burgLabel${labelData.i}`);
+      textElement.setAttribute("data-id", labelData.burgId.toString());
+      textElement.setAttribute("x", labelData.x.toString());
+      textElement.setAttribute("y", labelData.y.toString());
+      textElement.setAttribute("dx", `${dx}em`);
+      textElement.setAttribute("dy", `${dy}em`);
+      textElement.textContent = labelData.text;
       labelsHTML.push(
-        `<text text-rendering="optimizeSpeed" id="burgLabel${labelData.i}" data-id="${labelData.burgId}" x="${labelData.x}" y="${labelData.y}" dx="${dx}em" dy="${dy}em">${labelData.text}</text>`,
+        textElement
       );
     }
 
     // Set all labels at once
     const groupNode = labelGroup.node();
     if (groupNode) {
-      groupNode.innerHTML = labelsHTML.join("");
+      groupNode.append(...labelsHTML);
     }
   }
 

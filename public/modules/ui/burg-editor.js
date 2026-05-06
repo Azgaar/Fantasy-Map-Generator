@@ -112,11 +112,11 @@ function editBurg(id) {
       const effectiveDx = dx + x;
       const effectiveDy = dy + y;
       this.setAttribute("transform", `translate(${effectiveDx},${effectiveDy})`);
-      const label = Labels.getAll().find(label => label.type === "burg" && label.burgId === id);
+      const label = Labels.getAll().find((l) => l.type === "burg" && l.burgId === +burg);
       Labels.update(label.i, {
         dx: effectiveDx,
         dy: effectiveDy
-      })
+      });
       tip('Use dragging for fine-tuning only, to actually move burg use "Relocate" button', false, "warning");
     });
   }
@@ -126,7 +126,7 @@ function editBurg(id) {
     pack.burgs[id].name = burgName.value;
     elSelected.text(burgName.value);
     
-    const label = Labels.getAll().find(label => label.type === "burg" && label.burgId === id);
+    const label = Labels.getAll().find((l) => l.type === "burg" && l.burgId === +burg);
     Labels.update(label.i, { text: burgName.value });
   }
 
@@ -374,8 +374,10 @@ function editBurg(id) {
     const x = rn(point[0], 2);
     const y = rn(point[1], 2);
 
+    const label = Labels.getAll().find(l=> l.type === "burg" && l.burgId === id);
+
     burgIcons.select(`#burg${id}`).attr("x", x).attr("y", y);
-    burgLabels.select(`#burgLabel${id}`).attr("transform", null).attr("x", x).attr("y", y);
+    burgLabels.select(`#burgLabel${label.i}`).attr("transform", null).attr("x", x).attr("y", y);
 
     const anchor = anchors.select("use[data-id='" + id + "']");
     if (anchor.size()) {
@@ -394,7 +396,6 @@ function editBurg(id) {
     burg.y = y;
     if (burg.capital) pack.states[newState].center = burg.cell;
 
-    const label = Labels.getAll().find(label => label.type === "burg" && label.burgId === id);
     Labels.update(label.i, { x, y, dx: 0, dy: 0 });
 
     if (d3.event.shiftKey === false) toggleRelocateBurg();
