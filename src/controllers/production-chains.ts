@@ -15,7 +15,7 @@ const HEADER_HEIGHT = 20;
 const SVG_PADDING = 18;
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2;
-const DEFAULT_EDGE_OPACITY = 0.5;
+const DEFAULT_EDGE_OPACITY = 0.3;
 const DEFAULT_LABEL_OPACITY = 0;
 
 const EDGE_COLORS = ["#3d85c8", "#cc7722", "#2a9050", "#7048a8", "#a83030", "#147a6c", "#b05000", "#1f6fa8"];
@@ -539,10 +539,9 @@ function renderEdge(displayEdge: DisplayEdge, positions: Map<number, Position>):
   const flows = displayEdge.labels
     .map((label, index) => {
       const duration = getFlowDuration(label.amount);
-      const width = 6.2 + Math.min(label.amount, 3) * 0.7;
       const opacity = Math.min(0.65 + label.amount * 0.08, 0.92);
 
-      return `<path data-edge-flow="1" d="${geometry.d}" fill="none" stroke="${flowColor}" opacity="0" stroke-width="${width}"
+      return `<path data-edge-flow="1" d="${geometry.d}" fill="none" stroke="${flowColor}" opacity="0" stroke-width="5"
         stroke-dasharray="0.01 ${FLOW_DOT_GAP}" stroke-linecap="round"
         style="transition:opacity 0.15s;animation:chains-edge-flow ${duration}s linear infinite;animation-play-state:paused"
         data-flow-index="${index}" data-flow-amount="${label.amount}" data-flow-opacity="${opacity}"/>`;
@@ -550,9 +549,9 @@ function renderEdge(displayEdge: DisplayEdge, positions: Map<number, Position>):
     .join("");
 
   return `<g data-ef="${displayEdge.fromId}" data-et="${displayEdge.toId}" style="opacity:${DEFAULT_EDGE_OPACITY};transition:opacity 0.15s">
-    <path d="${geometry.d}" fill="none" stroke="#d7d7d7" stroke-opacity="0.9" stroke-width="1"/>
+    <path d="${geometry.d}" fill="none" stroke="${flowColor}" stroke-width="1"/>
     ${flows}
-    <path d="${geometry.d}" fill="none" stroke="#7b7b7b" stroke-opacity="0.14" stroke-width="1"
+    <path d="${geometry.d}" fill="none" stroke="${flowColor}" stroke-width="1"
       marker-end="url(#ca${displayEdge.representative.recipeIndex % EDGE_COLORS.length})"/>
     ${labels}
   </g>`;
