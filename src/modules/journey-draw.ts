@@ -7,6 +7,7 @@ import type {
   PackJourney,
 } from "./journey-model";
 import {
+  buildJourneyResolutionContext,
   burgJourneyStopRef,
   emptyPackJourney,
   journeyLegToRefString,
@@ -145,10 +146,7 @@ export function journeyRampSamplerForConfig(cfg: JourneyStyleConfig): (u: number
 }
 
 function journeyResolutionCtx(): JourneyResolutionContext {
-  return {
-    burgs: pack.burgs ?? [],
-    markers: pack.markers ?? [],
-  };
+  return buildJourneyResolutionContext(pack.burgs ?? [], pack.markers ?? []);
 }
 
 function journeyNormalizeCtx(): JourneyNormalizePackContext {

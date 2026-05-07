@@ -24,6 +24,48 @@ export interface PackJourney {
 export interface JourneyResolutionContext {
   burgs: Array<{ i?: number; x?: number; y?: number; removed?: boolean }>;
   markers: Array<{ i?: number; x?: number; y?: number }>;
+  /** First matching non-removed burg per id (same semantics as linear find). When set, `resolveJourneyLeg` uses O(1) lookup. */
+  burgById?: Map<number, JourneyResolutionContext["burgs"][number]>;
+  /** First marker per id (same semantics as linear find). */
+  markerById?: Map<number, JourneyResolutionContext["markers"][number]>;
+}
+
+function indexBurgsById(
+  burgs: JourneyResolutionContext["burgs"],
+): Map<number, JourneyResolutionContext["burgs"][number]> {
+  const m = new Map<number, JourneyResolutionContext["burgs"][number]>();
+  for (const b of burgs) {
+    if (b.removed) continue;
+    const id = b.i;
+    if (id === undefined || typeof id !== "number") continue;
+    if (!m.has(id)) m.set(id, b);
+  }
+  return m;
+}
+
+function indexMarkersById(
+  markers: JourneyResolutionContext["markers"],
+): Map<number, JourneyResolutionContext["markers"][number]> {
+  const m = new Map<number, JourneyResolutionContext["markers"][number]>();
+  for (const mk of markers) {
+    const id = mk.i;
+    if (id === undefined || typeof id !== "number") continue;
+    if (!m.has(id)) m.set(id, mk);
+  }
+  return m;
+}
+
+/** Build resolution context with id indexes (preferred for redraw / many stops). */
+export function buildJourneyResolutionContext(
+  burgs: JourneyResolutionContext["burgs"],
+  markers: JourneyResolutionContext["markers"],
+): JourneyResolutionContext {
+  return {
+    burgs,
+    markers,
+    burgById: indexBurgsById(burgs),
+    markerById: indexMarkersById(markers),
+  };
 }
 
 /** Optional pack slice for pruning dead burg/marker refs during normalize. */
@@ -190,7 +232,9 @@ export function resolveJourneyLeg(
   ctx: JourneyResolutionContext,
 ): [number, number] | null {
   if (leg.kind === "burg") {
-    const burg = ctx.burgs.find((b) => b.i === leg.id && !b.removed);
+    const burg =
+      ctx.burgById?.get(leg.id) ??
+      ctx.burgs.find((b) => b.i === leg.id && !b.removed);
     if (!burg) {
       tryWarnMissing(`journey: missing burg ${leg.id}`);
       return null;
@@ -200,7 +244,8 @@ export function resolveJourneyLeg(
     return p;
   }
 
-  const marker = ctx.markers.find((m) => m.i === leg.id);
+  const marker =
+    ctx.markerById?.get(leg.id) ?? ctx.markers.find((m) => m.i === leg.id);
   if (!marker) {
     tryWarnMissing(`journey: missing marker ${leg.id}`);
     return null;

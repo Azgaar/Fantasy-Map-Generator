@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildJourneyResolutionContext,
   burgJourneyStopRef,
   journeyLegToRefString,
   journeyRefStringToLeg,
@@ -116,6 +117,34 @@ describe("journeyResolvedCoordinates", () => {
 
   it("skips missing burg", () => {
     expect(journeyResolvedCoordinates({ stops: [{ kind: "burg", id: 999 }] }, ctx)).toEqual([]);
+  });
+});
+
+describe("buildJourneyResolutionContext", () => {
+  it("matches linear resolve for burgs and markers", () => {
+    const burgs = [
+      { i: 1, x: 10, y: 20, removed: true },
+      { i: 1, x: 11, y: 21, removed: false },
+      { i: 2, x: 30, y: 40, removed: false },
+    ];
+    const markers = [
+      { i: 0, x: 0, y: 1 },
+      { i: 3, x: 50, y: 60 },
+    ];
+    const plain: JourneyResolutionContext = { burgs, markers };
+    const indexed = buildJourneyResolutionContext(burgs, markers);
+    expect(resolveJourneyLeg({ kind: "burg", id: 1 }, indexed)).toEqual(
+      resolveJourneyLeg({ kind: "burg", id: 1 }, plain),
+    );
+    expect(resolveJourneyLeg({ kind: "burg", id: 2 }, indexed)).toEqual(
+      resolveJourneyLeg({ kind: "burg", id: 2 }, plain),
+    );
+    expect(resolveJourneyLeg({ kind: "marker", id: 3 }, indexed)).toEqual(
+      resolveJourneyLeg({ kind: "marker", id: 3 }, plain),
+    );
+    expect(resolveJourneyLeg({ kind: "marker", id: 999 }, indexed)).toEqual(
+      resolveJourneyLeg({ kind: "marker", id: 999 }, plain),
+    );
   });
 });
 
