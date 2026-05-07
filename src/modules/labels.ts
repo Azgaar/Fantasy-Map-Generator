@@ -43,16 +43,36 @@ export interface CustomLabel {
 export type LabelData = StateLabel | BurgLabel | CustomLabel;
 
 class LabelsModule {
-  // Gets the next possible Label ID in O(n log n) time. Allows for non-sequential IDs
-  private getNextId(): number {
-    const labels = pack.labels;
-    if (labels.length === 0) return 0;
+  private freeIds: Set<number> = new Set();
+  private maxId: number = 0;
+  // initialization flag as the constructor version doesn't blocks other modules from beeing initialized.
+  private initialized: boolean = false;
 
-    const existingIds = labels.map((l) => l.i).sort((a, b) => a - b);
-    for (let id = 0; id < existingIds[existingIds.length - 1]; id++) {
-      if (!existingIds.includes(id)) return id;
+
+  private getNextId(): number {
+    if (!this.initialized) {
+      this.initialized = true;
+      this.freeIds.clear();
+      const existingIds = pack.labels.map((l) => l.i).sort((a, b) => a - b);
+
+      for (let id = 0; id < existingIds[existingIds.length - 1]; id++) {
+        if (!existingIds.includes(id)) this.freeIds.add(id);
+      }
+
+      this.maxId = existingIds.length > 0 ? existingIds[existingIds.length - 1] + 1 : 0;
     }
-    return existingIds[existingIds.length - 1] + 1;
+
+    if (this.freeIds.size > 0) {
+      // Get and remove the next available ID from the freeIds set
+      const id = this.freeIds.values().next().value!;
+      this.freeIds.delete(id);
+      return id;
+    }
+
+    // maxId is always 1 greater than the current highest ID, so we can return it and then increment for the next call
+    const nextId = this.maxId;
+    this.maxId++;
+    return nextId; 
   }
 
   generate(): void {
@@ -113,14 +133,17 @@ class LabelsModule {
 
   remove(id: number): void {
     const index = pack.labels.findIndex((l) => l.i === id);
+    this.freeIds.add(id);
     if (index !== -1) pack.labels.splice(index, 1);
   }
 
   removeByType(type: LabelData["type"]): void {
+    this.initialized = false;
     pack.labels = pack.labels.filter((l) => l.type !== type);
   }
 
   removeByGroup(group: string): void {
+    this.initialized = false;
     pack.labels = pack.labels.filter(
       (l) => !((l.type === "burg" || l.type === "custom") && l.group === group),
     );
@@ -128,6 +151,7 @@ class LabelsModule {
 
   clear(): void {
     pack.labels = [];
+    this.initialized = false;
   }
 
   /**
