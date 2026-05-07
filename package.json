@@ -20,7 +20,6 @@
     "test": "vitest",
     "test:browser": "vitest --config=vitest.browser.config.ts",
     "test:e2e": "playwright test",
-    "test:e2e:update": "playwright test --update-snapshots",
     "lint": "biome check --write",
     "format": "biome format --write"
   },
