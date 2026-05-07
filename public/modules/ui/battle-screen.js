@@ -522,6 +522,13 @@ class Battle {
     this[side].die = +el.innerHTML;
   }
 
+  recordPhases(d, a) {
+    if (this.prevPhasePerIteration.d != d || this.prevPhasePerIteration.a != a) {
+      this.phasePerIteration += `Defender: ${d}, Attacker: ${a}<br>`;
+      this.prevPhasePerIteration = {d: d, a: a}
+    }
+  }
+
   selectPhase() {
     const i = this.iteration;
     const morale = [this.attackers.morale, this.defenders.morale];
@@ -669,6 +676,8 @@ class Battle {
     const buttonD = ensureEl("battlePhase_defenders");
     buttonD.className = "icon-button-" + this.defenders.phase;
     buttonD.dataset.tip = buttonD.nextElementSibling.querySelector("[data-phase='" + phase[1] + "']").dataset.tip;
+    
+    this.recordPhases(this.defenders.phase, this.attackers.phase);
   }
 
   run() {
@@ -725,12 +734,6 @@ class Battle {
     // change morale
     this.attackers.morale = Math.max(this.attackers.morale - casualtiesA * 100 - 1, 0);
     this.defenders.morale = Math.max(this.defenders.morale - casualtiesD * 100 - 1, 0);
-
-    // record Phases
-    if (this.prevPhasePerIteration.d != this.defenders.phase || this.prevPhasePerIteration.a != this.attackers.phase) {
-      this.phasePerIteration += `Defender: ${this.defenders.phase}, Attacker: ${this.attackers.phase}<br>`;
-      this.prevPhasePerIteration = { d: this.defenders.phase, a: this.attackers.phase }
-    }
 
     // update table values
     this.updateTable("attackers");
@@ -811,6 +814,8 @@ class Battle {
     button.className = "icon-button-" + phase;
     button.dataset.tip = ev.target.dataset.tip;
     this.calculateStrength(side);
+
+    this.recordPhases(this.defenders.phase, this.attackers.phase);
   }
 
   applyResults() {
