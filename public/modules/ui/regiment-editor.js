@@ -293,7 +293,7 @@ function editRegiment(selector) {
       return;
     }
     if (pack.burgs[burgId].walls != 1 && pack.burgs[burgId].citadel != 1) {
-      tip("Please click on a castled burg or a burg that has castle to attack", false, "error");
+      tip("Please click on a burg with walls or a citadel to attack", false, "error");
       return;
     }
     if (pack.burgs[burgId].type != "Naval" && getRegiment().n) {
