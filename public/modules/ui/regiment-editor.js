@@ -288,8 +288,16 @@ function editRegiment(selector) {
       burg = burgSelected.parentElement;
     const burgId = target.dataset.id;
 
+    if (pack.states[pack.burgs[burgId].state].military.length == 0) {
+      tip("Burg's state has no military", false, "error");
+      return;
+    }
     if (String(burg.id) != "burgIcons") {
       tip("Please click on a burg to attack", false, "error");
+      return;
+    }
+    if (getRegiment().state == pack.burgs[burgId].state) {
+      tip("Cannot attack fraternal burg", false, "error");
       return;
     }
     if (pack.burgs[burgId].walls != 1 && pack.burgs[burgId].citadel != 1) {
@@ -300,15 +308,7 @@ function editRegiment(selector) {
       tip("Burg is too far from sea, regiment cannot engage. Please choose a burg near the shoreline.", false, "error");
       return;
     }
-
-    if (getRegiment().state == pack.burgs[burgId].state) {
-      tip("Cannot attack fraternal burg", false, "error");
-      return;
-    }
-    if (pack.states[pack.burgs[burgId].state].military.length == 0) {
-      tip("Burg's state has no military", false, "error");
-      return;
-    }
+    
 
     const attacker = getRegiment();
     const burgStateId = Number(pack.burgs[burgId].state);
