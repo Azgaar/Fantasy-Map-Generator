@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import path from "path";
 
 test.describe("Map loading", () => {
