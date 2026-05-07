@@ -73,7 +73,7 @@ class Battle {
       if (attacker.n && defender.n) return "naval"; // attacker and defender are navals
       if (typesA.every(t => t === "aviation") && typesD.every(t => t === "aviation")) return "air"; // if attackers and defender have only aviation units
       if (attacker.n && !defender.n && typesA.some(t => t !== "naval")) return "landing"; // if attacked is naval with non-naval units and defender is not naval
-      if (!defender.n && pack.burgs[pack.cells.burg[this.cell]].walls || pack.burgs[pack.cells.burg[this.cell]].citadel) return "siege"; // defender is in walled town
+      if (!defender.n && (pack.burgs[pack.cells.burg[this.cell]].walls || pack.burgs[pack.cells.burg[this.cell]].citadel)) return "siege"; // defender is in walled town
       if (P(0.1) && [5, 6, 7, 8, 9, 12].includes(pack.cells.biome[this.cell])) return "ambush"; // 20% if defenders are in forest or marshes
       return "field";
     };
