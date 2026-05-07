@@ -66,6 +66,6 @@ export interface PackedGraph {
   markers: any[];
   ice: any[];
   provinces: Province[];
-  /** User journey: ordered burg / marker legs (`stops`). */
+  /** Single journey path: ordered burg/marker stops (`stops`); positions resolved from `burgs` / `markers`. */
   journey?: PackJourney;
 }

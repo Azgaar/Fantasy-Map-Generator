@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildJourneyResolutionContext,
   burgJourneyStopRef,
+  ensurePackJourneyNormalized,
   journeyLegToRefString,
   journeyRefStringToLeg,
   journeyResolvedCoordinates,
@@ -14,7 +15,16 @@ import {
   type JourneyResolutionContext,
   type JourneyStopLeg,
   type PackJourney,
+  type PackWithOptionalJourney,
 } from "./journey-model";
+
+describe("ensurePackJourneyNormalized", () => {
+  it("creates pack.journey when absent and normalizes", () => {
+    const pack: PackWithOptionalJourney = { burgs: [], markers: [] };
+    ensurePackJourneyNormalized(pack);
+    expect(pack.journey).toEqual({ stops: [] });
+  });
+});
 
 describe("normalizePackJourney", () => {
   it("strips stray points/stopIds/waypoints and yields empty stops", () => {

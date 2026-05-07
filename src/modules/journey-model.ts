@@ -179,9 +179,30 @@ function legIsAllowed(
   return markerExistsInPack(pack, leg.id);
 }
 
+/** Pack slice used when ensuring `pack.journey` exists and is sanitized. */
+export type PackWithOptionalJourney = JourneyNormalizePackContext & {
+  journey?: unknown;
+};
+
 /**
- * Mutates `j` into canonical `{ stops }`. Migrates legacy `stopIds` (burg/marker
- * strings only; waypoint ids dropped). Removes `stopIds`, `waypoints`, `points`.
+ * Ensures `pack.journey` exists and mutates it to canonical `{ stops }` via
+ * {@link normalizePackJourney}. Single entry point for layers / editor / load.
+ */
+export function ensurePackJourneyNormalized(pack: PackWithOptionalJourney): void {
+  if (
+    !pack.journey ||
+    typeof pack.journey !== "object" ||
+    Array.isArray(pack.journey)
+  ) {
+    pack.journey = { stops: [] };
+  }
+  normalizePackJourney(pack.journey, pack);
+}
+
+/**
+ * Mutates journey object into canonical `{ stops }`.
+ * Also strips stray keys (`points`, old `stopIds` / `waypoints`) from edited or
+ * hand-merged JSON so draw/load never sees invalid shapes.
  */
 export function normalizePackJourney(
   j: unknown,

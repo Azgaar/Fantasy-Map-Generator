@@ -4,6 +4,14 @@
 let presets = {}; // global object
 restoreCustomPresets(); // run on-load
 
+/** Layer id list for a preset key (built-in default vs stored custom array). */
+function layersArrayForPresetKey(presetKey) {
+  const raw = presets[presetKey];
+  return Array.isArray(raw)
+    ? raw
+    : getDefaultPresets()[presetKey] || getDefaultPresets().political;
+}
+
 function getDefaultPresets() {
   return {
     political: [
@@ -65,7 +73,7 @@ function getDefaultPresets() {
       "toggleScaleBar",
       "toggleVignette"
     ],
-    campaign: [
+    journeyPath: [
       "toggleHeight",
       "toggleLakes",
       "toggleCells",
@@ -125,10 +133,7 @@ function applyLayersPreset() {
   const preset = localStorage.getItem("preset") || ensureEl("layersPreset").value;
   setLayersPreset(preset);
 
-  const raw = presets[preset];
-  const layers = Array.isArray(raw)
-    ? raw
-    : getDefaultPresets()[preset] || getDefaultPresets().political;
+  const layers = layersArrayForPresetKey(preset);
   document.querySelectorAll("#mapLayers > li").forEach(el => {
     const shouldBeOn = layers.includes(el.id);
     if (shouldBeOn) el.classList.remove("buttonoff");
@@ -149,10 +154,7 @@ function setLayersPreset(preset) {
 function handleLayersPresetChange(preset) {
   setLayersPreset(preset);
 
-  const raw = presets[preset];
-  const layers = Array.isArray(raw)
-    ? raw
-    : getDefaultPresets()[preset] || getDefaultPresets().political;
+  const layers = layersArrayForPresetKey(preset);
   document.querySelectorAll("#mapLayers > li").forEach(el => {
     const isOn = layerIsOn(el.id);
     const shouldBeOn = layers.includes(el.id);
@@ -877,16 +879,11 @@ function toggleMarkers(event) {
   }
 }
 
-function journeyZoomExtentMin() {
-  return Math.max(+ensureEl("zoomExtentMin").value, 0.01);
-}
-
 function drawJourney() {
   TIME && console.time("drawJourney");
-  if (!pack.journey) pack.journey = {stops: []};
-  if (window.JourneyPack) window.JourneyPack.normalizePackJourney(pack.journey, pack);
-  const zs = typeof scale === "number" && Number.isFinite(scale) ? scale : 1;
-  JourneyDraw.redraw(defs, journeys, zs, journeyZoomExtentMin());
+  if (window.Journey) window.Journey.ensurePackJourneyNormalized(pack);
+  const zm = Math.max(+ensureEl("zoomExtentMin").value, 0.01);
+  JourneyDraw.redraw(defs, journeys, scale, zm);
   // Presets only flip layer buttons; they never call toggleJourney/fadeIn. Match visible state to layerIsOn.
   if (layerIsOn("toggleJourney")) journeys.style("display", null);
   TIME && console.timeEnd("drawJourney");
@@ -896,9 +893,8 @@ function syncJourneyZoom(zoomScale) {
   if (!layerIsOn("toggleJourney")) return;
   const jn = journeys.node();
   if (!jn || getComputedStyle(jn).display === "none") return;
-  const zs =
-    typeof zoomScale === "number" && Number.isFinite(zoomScale) ? zoomScale : 1;
-  JourneyDraw.syncZoom(defs, journeys, zs, journeyZoomExtentMin());
+  const zm = Math.max(+ensureEl("zoomExtentMin").value, 0.01);
+  JourneyDraw.syncZoom(defs, journeys, zoomScale, zm);
 }
 
 function toggleJourney(event) {

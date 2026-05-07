@@ -1,7 +1,9 @@
+/**
+ * Journey SVG rendering (#journeys): delegates geometry/style to sibling modules;
+ * exposes Routes-like `window.Journey` API for legacy scripts.
+ */
 import type { Selection } from "d3";
-import { interpolateRgbBasis } from "d3";
 import type {
-  JourneyNormalizePackContext,
   JourneyResolutionContext,
   JourneyResolvedStopEntry,
   PackJourney,
@@ -10,6 +12,7 @@ import {
   buildJourneyResolutionContext,
   burgJourneyStopRef,
   emptyPackJourney,
+  ensurePackJourneyNormalized,
   journeyLegToRefString,
   journeyRefStringToLeg,
   journeyResolvedCoordinates,
@@ -19,234 +22,59 @@ import {
   resolveJourneyLeg,
   resolveJourneyStopPosition,
 } from "./journey-model";
+import {
+  arrowPositionsAlongPolyline,
+  bendSegmentChord,
+  chordGradientT,
+  directedChordOccurrenceIndex,
+  journeyArrowSpacingMapUnits,
+  journeyLodTier,
+  journeyPolylineSamplesForTier,
+  laneMultipliersForSegments,
+  MIN_SEG_LEN,
+  polylineLength,
+  polylinePath,
+  quadraticSamples,
+  segmentUInterval,
+} from "./journey-path-geometry";
+import {
+  journeyRampSamplerForConfig,
+  JOURNEY_STYLE_DEFAULTS,
+  readJourneyStyleConfig,
+} from "./journey-style-config";
 import { rn } from "../utils/numberUtils";
 
-/** Rainbow ramp endpoints used as one continuous gradient sliced per segment. */
-export const JOURNEY_RAINBOW_STOPS = [
-  "#e81416",
-  "#ff7518",
-  "#ffdc00",
-  "#32cd32",
-  "#00bfff",
-  "#4e529a",
-  "#70389d",
-];
+export {
+  JOURNEY_DEFAULT_SOLID_STROKE,
+  JOURNEY_RAINBOW_STOPS,
+  JOURNEY_STYLE_DEFAULTS,
+  journeyRampColor,
+  parseJourneyRainbowStops,
+  readJourneyStyleConfig,
+  journeyRampSamplerForConfig,
+  type JourneyColorMode,
+  type JourneyStyleConfig,
+} from "./journey-style-config";
 
-const rampInterpolator = interpolateRgbBasis(JOURNEY_RAINBOW_STOPS);
-
-/** Default path/arrows color when `data-color-mode` is solid and no `data-solid-stroke`. */
-export const JOURNEY_DEFAULT_SOLID_STROKE = "#5c5c70";
-
-export type JourneyColorMode = "rainbow" | "solid";
-
-/** Resolved presentation for `#journeys` (from `data-*` + defaults). */
-export interface JourneyStyleConfig {
-  colorMode: JourneyColorMode;
-  solidStroke: string;
-  rainbowStops: readonly string[];
-  lineScreenPx: number;
-  waypointFill: string;
-  waypointStroke: string;
-  waypointRScreenPx: number;
-  waypointRingScreenPx: number;
-  outlineColor: string;
-  outlineScreenPx: number;
-}
-
-function clamp(n: number, lo: number, hi: number): number {
-  return Math.min(hi, Math.max(lo, n));
-}
-
-/** Parse comma-separated hex/color tokens; returns null if fewer than two usable stops. */
-export function parseJourneyRainbowStops(raw: string | null | undefined): string[] | null {
-  if (raw == null || !String(raw).trim()) return null;
-  const parts = String(raw)
-    .split(",")
-    .map(s => s.trim())
-    .filter(Boolean);
-  return parts.length >= 2 ? parts : null;
-}
-
-/**
- * Read journey style from `#journeys` SVG attributes (`data-*`).
- * Safe with `null` / missing element (uses built-in defaults matching former hardcoded constants).
- */
-export function readJourneyStyleConfig(el: Element | null): JourneyStyleConfig {
-  const get = (name: string): string | null =>
-    el && typeof el.getAttribute === "function" ? el.getAttribute(name) : null;
-
-  /** Parse numeric data-*; keeps `0` (unlike `parseFloat(x) || fallback`). */
-  const attrPx = (name: string, fallback: number): number => {
-    const v = Number.parseFloat(get(name) ?? "");
-    return Number.isFinite(v) ? v : fallback;
-  };
-
-  const modeRaw = (get("data-color-mode") || "rainbow").toLowerCase().trim();
-  const colorMode: JourneyColorMode = modeRaw === "solid" ? "solid" : "rainbow";
-
-  const parsedStops = parseJourneyRainbowStops(get("data-rainbow-stops"));
-  const rainbowStops =
-    parsedStops && parsedStops.length >= 2 ? parsedStops : [...JOURNEY_RAINBOW_STOPS];
-
-  const solidStroke =
-    get("data-solid-stroke")?.trim() || JOURNEY_DEFAULT_SOLID_STROKE;
-
-  const lineScreenPx = clamp(
-    attrPx("data-line-screen-px", JOURNEY_STROKE_SCREEN_PX),
-    0.5,
-    96,
-  );
-
-  const waypointFill = get("data-waypoint-fill")?.trim() || "#ffffff";
-  const waypointStroke = get("data-waypoint-stroke")?.trim() || "#000000";
-
-  const waypointRScreenPx = clamp(
-    attrPx("data-waypoint-r-screen-px", JOURNEY_WAYPOINT_R_SCREEN_PX),
-    2,
-    120,
-  );
-
-  const waypointRingScreenPx = clamp(
-    attrPx("data-waypoint-ring-screen-px", JOURNEY_WAYPOINT_STROKE_SCREEN_PX),
-    0,
-    48,
-  );
-
-  const outlineColor = get("data-outline-color")?.trim() || "#000000";
-
-  const outlineScreenPx = clamp(
-    attrPx("data-outline-screen-px", JOURNEY_HALO_DILATE_SCREEN_PX),
-    0,
-    32,
-  );
-
-  return {
-    colorMode,
-    solidStroke,
-    rainbowStops,
-    lineScreenPx,
-    waypointFill,
-    waypointStroke,
-    waypointRScreenPx,
-    waypointRingScreenPx,
-    outlineColor,
-    outlineScreenPx,
-  };
-}
-
-/** Uniform ramp sampler along one logical journey (same contract as `journeyRampColor`). */
-export function journeyRampSamplerForConfig(cfg: JourneyStyleConfig): (u: number) => string {
-  if (cfg.colorMode === "solid") {
-    const c = cfg.solidStroke;
-    return (_u: number) => c;
-  }
-  const stops = cfg.rainbowStops.length >= 2 ? cfg.rainbowStops : JOURNEY_RAINBOW_STOPS;
-  const interp = interpolateRgbBasis([...stops]);
-  return (u: number) => interp(Math.max(0, Math.min(1, u)));
-}
-
-function journeyResolutionCtx(): JourneyResolutionContext {
-  return buildJourneyResolutionContext(pack.burgs ?? [], pack.markers ?? []);
-}
-
-function journeyNormalizeCtx(): JourneyNormalizePackContext {
-  return {
-    burgs: pack.burgs ?? [],
-    markers: pack.markers ?? [],
-  };
-}
-
-/** Parameter `u` in [0, 1] along the whole journey ramp. */
-export function journeyRampColor(u: number): string {
-  return rampInterpolator(Math.max(0, Math.min(1, u)));
-}
-
-/** Inclusive interval along the ramp for segment `segmentIndex` of `segmentCount` edges. */
-export function segmentUInterval(
-  segmentCount: number,
-  segmentIndex: number,
-): [number, number] {
-  if (segmentCount <= 0) return [0, 0];
-  const u0 = segmentIndex / segmentCount;
-  const u1 = (segmentIndex + 1) / segmentCount;
-  return [u0, u1];
-}
-
-/** Quantized directed chord id for lane stacking (A→B ≠ B→A). */
-export function chordKey(a: [number, number], b: [number, number]): string {
-  return `${rn(a[0], 2)},${rn(a[1], 2)}->${rn(b[0], 2)},${rn(b[1], 2)}`;
-}
-
-/**
- * Fraction along chord A→B for point P (clamped to [0, 1]), matching `linearGradient`
- * `userSpaceOnUse` with axis from A to B (constant perpendicular to that axis).
- */
-export function chordGradientT(
-  a: [number, number],
-  b: [number, number],
-  px: number,
-  py: number,
-): number {
-  const vx = b[0] - a[0];
-  const vy = b[1] - a[1];
-  const len2 = vx * vx + vy * vy;
-  if (len2 < 1e-18) return 0;
-  const t = ((px - a[0]) * vx + (py - a[1]) * vy) / len2;
-  return Math.max(0, Math.min(1, t));
-}
+export {
+  arrowPositionsAlongPolyline,
+  bendSegmentChord,
+  chordGradientT,
+  chordKey,
+  directedChordOccurrenceIndex,
+  journeyArrowSpacingMapUnits,
+  journeyArrowSpacingMulForTier,
+  journeyLodTier,
+  journeyPolylineSamplesForTier,
+  laneMultipliersForSegments,
+  segmentUInterval,
+  type ArrowSample,
+} from "./journey-path-geometry";
 
 /** Arrowhead path (local coords before translate/rotate); 2× prior triangle size. */
 const ARROW_PATH_D = "M0,-8.4 L22.5,0 L0,8.4 Z";
 
-const MIN_SEG_LEN = 0.05;
-const LANE_WIDTH = 3.5;
-
-/** Target screen px under `#viewbox` scale (stroke-width × scale ≈ px). */
-const JOURNEY_STROKE_SCREEN_PX = 6;
-const JOURNEY_WAYPOINT_R_SCREEN_PX = 9;
-const JOURNEY_WAYPOINT_STROKE_SCREEN_PX = 4.5;
-const JOURNEY_HALO_DILATE_SCREEN_PX = 2;
-/** Baseline arrow spacing at scale 1 (screen-ish); multiplied by tier below. */
-const JOURNEY_ARROW_SPACING_BASE_PX = 38;
-
-const LOD_TIER_MAX = 6;
-
-const LOD_ARROW_SPACING_MUL: readonly number[] = [
-  2.25, 1.9, 1.6, 1.35, 1.2, 1.08, 1,
-];
-
-/**
- * Discrete LOD tier from zoom `scale` vs minimum zoom extent (both > 0).
- * Tier rises as the user zooms in relative to `zoomMin`.
- */
-export function journeyLodTier(scale: number, zoomMin: number): number {
-  const s = Math.max(scale, 1e-9);
-  const zmin = Math.max(zoomMin, 1e-9);
-  const raw = Math.floor(Math.log2(s)) - Math.floor(Math.log2(zmin));
-  return Math.max(0, Math.min(LOD_TIER_MAX, raw));
-}
-
-/** Polyline subdivisions for quadratic sampling; higher tier ⇒ smoother curve. */
-export function journeyPolylineSamplesForTier(tier: number): number {
-  const t = Math.max(0, Math.min(LOD_TIER_MAX, tier));
-  return Math.min(44, Math.max(12, 14 + t * 5));
-}
-
-/** Fewer arrows when tier is low (zoomed out). */
-export function journeyArrowSpacingMulForTier(tier: number): number {
-  const t = Math.max(0, Math.min(LOD_TIER_MAX, tier));
-  return LOD_ARROW_SPACING_MUL[t] ?? 1;
-}
-
-/** Arrow spacing in map units (~constant screen spacing × LOD density). */
-export function journeyArrowSpacingMapUnits(
-  scale: number,
-  tier: number,
-  spacingPx = JOURNEY_ARROW_SPACING_BASE_PX,
-): number {
-  const k = Math.max(scale, 1e-9);
-  return (spacingPx * journeyArrowSpacingMulForTier(tier)) / k;
-}
+const JOURNEY_OUTLINE_FILTER_ID = "journeyUnifiedOutline";
 
 function mapMetricScreenToWorld(
   screenPx: number,
@@ -267,9 +95,6 @@ function arrowTransform(
   const inv = rn(1 / Math.max(zoomScale, 1e-9), 6);
   return `translate(${rn(x, 2)},${rn(y, 2)}) rotate(${rn(angleDeg, 2)}) scale(${inv})`;
 }
-
-/** Single defs filter id: dilated silhouette behind segment stroke + arrows (unified halo). */
-const JOURNEY_OUTLINE_FILTER_ID = "journeyUnifiedOutline";
 
 function ensureJourneyOutlineFilter(
   defs: Selection<SVGDefsElement, unknown, null, undefined>,
@@ -308,182 +133,13 @@ function ensureJourneyOutlineFilter(
   merge.append("feMergeNode").attr("in", "SourceGraphic");
 }
 
-/** Max perpendicular lift at chord midpoint (fraction of chord length), scale ~ repeat index below. */
-const BEND_BASE = 0.14;
-/** Extra curvature per reuse count `k` of the same directed chord: bend *= (1 + k * CURVATURE_REPEAT_GAIN). */
-const CURVATURE_REPEAT_GAIN = 0.45;
-
-/**
- * SVG maps use Y-down; negate CCW left normal so traveler‑relative “left” matches screen intuition.
- */
-const LEFT_NORMAL_SCREEN_SIGN = -1;
-
-/** 0-based reuse index per directed chord (first traversal → 0, second identical chord → 1, …). */
-export function directedChordOccurrenceIndex(
-  points: [number, number][],
-): number[] {
-  const indices: number[] = [];
-  const counters = new Map<string, number>();
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i];
-    const p1 = points[i + 1];
-    if (Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) < MIN_SEG_LEN) {
-      indices.push(0);
-      continue;
-    }
-    const key = chordKey(p0, p1);
-    const k = counters.get(key) ?? 0;
-    indices.push(k);
-    counters.set(key, k + 1);
-  }
-  return indices;
-}
-
-/** Chord midpoint perpendicular bend magnitude after applying repeat scaling. */
-export function bendSegmentChord(len: number, repeatIndex: number): number {
-  return (
-    BEND_BASE * len * (1 + Math.max(0, repeatIndex) * CURVATURE_REPEAT_GAIN)
-  );
-}
-
-/** Lane multiplier per segment (centered around 0) for duplicate directed chords. */
-export function laneMultipliersForSegments(
-  points: [number, number][],
-): number[] {
-  const keys: string[] = [];
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i];
-    const p1 = points[i + 1];
-    if (Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) < MIN_SEG_LEN) {
-      keys.push("");
-      continue;
-    }
-    keys.push(chordKey(p0, p1));
-  }
-
-  const counts = new Map<string, number>();
-  for (const k of keys) {
-    if (!k) continue;
-    counts.set(k, (counts.get(k) ?? 0) + 1);
-  }
-
-  const idx = new Map<string, number>();
-  const lanes: number[] = [];
-  for (const k of keys) {
-    if (!k || (counts.get(k) ?? 0) <= 1) {
-      lanes.push(0);
-      continue;
-    }
-    const c = counts.get(k)!;
-    const slot = idx.get(k) ?? 0;
-    idx.set(k, slot + 1);
-    lanes.push(slot - (c - 1) / 2);
-  }
-  return lanes;
-}
-
-function quadraticSamples(
-  a: [number, number],
-  b: [number, number],
-  bendAmount: number,
-  lane: number,
-  samples: number,
-): [number, number][] {
-  const dx = b[0] - a[0];
-  const dy = b[1] - a[1];
-  const len = Math.hypot(dx, dy) || 1;
-  /** Left of travel direction (−v rotated CCW). Reverse traversal swaps normal ⇒ opposite bulge on chord. */
-  const nx = -dy / len;
-  const ny = dx / len;
-  const mx = (a[0] + b[0]) / 2;
-  const my = (a[1] + b[1]) / 2;
-  const cx = mx + nx * bendAmount * LEFT_NORMAL_SCREEN_SIGN;
-  const cy = my + ny * bendAmount * LEFT_NORMAL_SCREEN_SIGN;
-
-  const pts: [number, number][] = [];
-  for (let i = 0; i <= samples; i++) {
-    const t = i / samples;
-    const omt = 1 - t;
-    let x = omt * omt * a[0] + 2 * omt * t * cx + t * t * b[0];
-    let y = omt * omt * a[1] + 2 * omt * t * cy + t * t * b[1];
-    const tx = 2 * omt * (cx - a[0]) + 2 * t * (b[0] - cx);
-    const ty = 2 * omt * (cy - a[1]) + 2 * t * (b[1] - cy);
-    const tlen = Math.hypot(tx, ty) || 1;
-    const px = -ty / tlen;
-    const py = tx / tlen;
-    const fade = Math.sin(Math.PI * t);
-    const off = lane * LANE_WIDTH * fade;
-    x += px * off;
-    y += py * off;
-    pts.push([x, y]);
-  }
-  return pts;
-}
-
-function polylinePath(pts: [number, number][]): string {
-  if (pts.length === 0) return "";
-  let d = `M${rn(pts[0][0], 2)},${rn(pts[0][1], 2)}`;
-  for (let i = 1; i < pts.length; i++) {
-    d += `L${rn(pts[i][0], 2)},${rn(pts[i][1], 2)}`;
-  }
-  return d;
-}
-
-export interface ArrowSample {
-  x: number;
-  y: number;
-  angleDeg: number;
-}
-
-/** Arrow markers spaced along a polyline (map coords). */
-export function arrowPositionsAlongPolyline(
-  pts: [number, number][],
-  spacing: number,
-): ArrowSample[] {
-  const result: ArrowSample[] = [];
-  if (pts.length < 2 || spacing <= 0) return result;
-
-  let cumulative = 0;
-  let nextAt = spacing;
-
-  for (let i = 0; i < pts.length - 1; i++) {
-    const x0 = pts[i][0];
-    const y0 = pts[i][1];
-    const x1 = pts[i + 1][0];
-    const y1 = pts[i + 1][1];
-    const segLen = Math.hypot(x1 - x0, y1 - y0);
-    if (segLen < 1e-9) continue;
-    const angleDeg = (Math.atan2(y1 - y0, x1 - x0) * 180) / Math.PI;
-
-    const segEnd = cumulative + segLen;
-    while (nextAt <= segEnd + 1e-9) {
-      const alongSeg = nextAt - cumulative;
-      const t = alongSeg / segLen;
-      result.push({
-        x: x0 + t * (x1 - x0),
-        y: y0 + t * (y1 - y0),
-        angleDeg,
-      });
-      nextAt += spacing;
-    }
-    cumulative = segEnd;
-  }
-
-  return result;
-}
-
-function polylineLength(pts: [number, number][]): number {
-  let len = 0;
-  for (let i = 0; i < pts.length - 1; i++) {
-    len += Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
-  }
-  return len;
+function journeyResolutionCtx(): JourneyResolutionContext {
+  return buildJourneyResolutionContext(pack.burgs ?? [], pack.markers ?? []);
 }
 
 export class JourneyDrawModule {
   private lastLodTier: number | null = null;
 
-  /** Full rebuild (data / LOD tier geometry). Pass current viewbox `scale` and zoom extent min for LOD. */
   redraw(
     defs: Selection<SVGDefsElement, unknown, null, undefined>,
     journeys: Selection<SVGGElement, unknown, null, undefined>,
@@ -498,7 +154,7 @@ export class JourneyDrawModule {
       this.lastLodTier = null;
       return;
     }
-    normalizePackJourney(pack.journey, journeyNormalizeCtx());
+    ensurePackJourneyNormalized(pack);
     const journeyData = pack.journey as PackJourney;
     const resCtx = journeyResolutionCtx();
     const resolvedStops = journeyResolvedStopEntries(journeyData, resCtx);
@@ -508,8 +164,8 @@ export class JourneyDrawModule {
     }
     const points = resolvedStops.map((r: JourneyResolvedStopEntry) => r.coord);
 
-    const zs = Number.isFinite(zoomScale) ? zoomScale : 1;
-    const zm = Number.isFinite(zoomMinForLod) ? zoomMinForLod : 0.05;
+    const zs = zoomScale;
+    const zm = zoomMinForLod;
 
     const styleCfg = readJourneyStyleConfig(journeys.node());
     const rampAt = journeyRampSamplerForConfig(styleCfg);
@@ -674,7 +330,6 @@ export class JourneyDrawModule {
     this.lastLodTier = tier;
   }
 
-  /** Zoom-only updates: cheap attr patch if LOD tier unchanged; else full `redraw`. */
   syncZoom(
     defs: Selection<SVGDefsElement, unknown, null, undefined>,
     journeys: Selection<SVGGElement, unknown, null, undefined>,
@@ -682,15 +337,15 @@ export class JourneyDrawModule {
     zoomMinForLod = 0.05,
   ): void {
     if (!pack.journey) return;
-    normalizePackJourney(pack.journey, journeyNormalizeCtx());
+    ensurePackJourneyNormalized(pack);
     const points = journeyResolvedCoordinates(
       pack.journey as PackJourney,
       journeyResolutionCtx(),
     );
     if (!points.length) return;
 
-    const zs = Number.isFinite(zoomScale) ? zoomScale : 1;
-    const zm = Number.isFinite(zoomMinForLod) ? zoomMinForLod : 0.05;
+    const zs = zoomScale;
+    const zm = zoomMinForLod;
     const tier = journeyLodTier(zs, zm);
 
     const S = Math.max(0, points.length - 1);
@@ -758,9 +413,25 @@ export class JourneyDrawModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.JourneyDraw = new JourneyDrawModule();
-  window.JourneyPack = {
+/** Routes-like facade: pack helpers + style defaults for legacy UI scripts. */
+export type JourneyGlobalApi = {
+  STYLE_DEFAULTS: typeof JOURNEY_STYLE_DEFAULTS;
+  ensurePackJourneyNormalized: typeof ensurePackJourneyNormalized;
+  normalizePackJourney: typeof normalizePackJourney;
+  journeyResolvedCoordinates: typeof journeyResolvedCoordinates;
+  resolveJourneyStopPosition: typeof resolveJourneyStopPosition;
+  resolveJourneyLeg: typeof resolveJourneyLeg;
+  journeyRefStringToLeg: typeof journeyRefStringToLeg;
+  emptyPackJourney: typeof emptyPackJourney;
+  burgJourneyStopRef: typeof burgJourneyStopRef;
+  markerJourneyStopRef: typeof markerJourneyStopRef;
+  journeyLegToRefString: typeof journeyLegToRefString;
+};
+
+function createJourneyGlobalApi(): JourneyGlobalApi {
+  return {
+    STYLE_DEFAULTS: JOURNEY_STYLE_DEFAULTS,
+    ensurePackJourneyNormalized,
     normalizePackJourney,
     journeyResolvedCoordinates,
     resolveJourneyStopPosition,
@@ -773,20 +444,20 @@ if (typeof window !== "undefined") {
   };
 }
 
+if (typeof window !== "undefined") {
+  window.JourneyDraw = new JourneyDrawModule();
+  const journeyApi = createJourneyGlobalApi();
+  window.Journey = journeyApi;
+  window.JourneyPack = journeyApi;
+}
+
 declare global {
   var pack: import("../types/PackedGraph").PackedGraph;
   interface Window {
     JourneyDraw?: JourneyDrawModule;
-    JourneyPack?: {
-      normalizePackJourney: typeof normalizePackJourney;
-      journeyResolvedCoordinates: typeof journeyResolvedCoordinates;
-      resolveJourneyStopPosition: typeof resolveJourneyStopPosition;
-      resolveJourneyLeg: typeof resolveJourneyLeg;
-      journeyRefStringToLeg: typeof journeyRefStringToLeg;
-      emptyPackJourney: typeof emptyPackJourney;
-      burgJourneyStopRef: typeof burgJourneyStopRef;
-      markerJourneyStopRef: typeof markerJourneyStopRef;
-      journeyLegToRefString: typeof journeyLegToRefString;
-    };
+    /** Journey pack helpers + defaults (Routes-style); prefer over `JourneyPack`. */
+    Journey?: JourneyGlobalApi;
+    /** @deprecated Use `Journey` */
+    JourneyPack?: JourneyGlobalApi;
   }
 }

@@ -434,7 +434,7 @@ async function parseLoadedData(data, mapVersion) {
             ? parsedJourney
             : {stops: []};
         pack.journey = j;
-        if (window.JourneyPack) window.JourneyPack.normalizePackJourney(pack.journey, pack);
+        if (window.Journey) window.Journey.ensurePackJourneyNormalized(pack);
       }
 
       if (data[31]) {

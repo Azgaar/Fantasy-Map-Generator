@@ -99,11 +99,19 @@ declare global {
   var createDefaultRuler: () => void;
   var showStatistics: () => void;
   var closeDialogs: (except?: string) => void;
+  var ensureEl: (id: string) => HTMLElement;
+  /** Journey layer redraw (public/modules/ui/layers.js). */
+  var drawJourney: () => void;
+  var toggleJourney: (event?: Event) => void;
+  var clearMainTip: () => void;
+  var restoreDefaultEvents: () => void;
+  /** Tools / hotkeys entry for journey editor (src/modules/journey-editor.ts). */
+  var editJourney: () => void;
+  var customization: number;
   var getHeight: (h: number) => string;
   var getLatitude: (y: number, precision?: number) => number;
   var getLongitude: (x: number, precision?: number) => number;
   var getFileName: (name: string) => string;
-  var customization: number;
   var speak: (text: string) => void;
   var uploadFile: (
     el: HTMLInputElement,

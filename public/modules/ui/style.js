@@ -90,9 +90,22 @@ function journeyStyleHexForPicker(raw, fallback) {
   return fb;
 }
 
-/** Match built-in rainbow ramp endpoints in journey-draw (when data-rainbow-stops unset). */
-const JOURNEY_UI_GRADIENT_DEFAULT_FROM = "#e81416";
-const JOURNEY_UI_GRADIENT_DEFAULT_TO = "#70389d";
+/** Fallbacks if TS bundle not loaded yet; normally mirror `window.Journey.STYLE_DEFAULTS`. */
+function journeyUiDefaults() {
+  const d = window.Journey && window.Journey.STYLE_DEFAULTS;
+  return {
+    gradientFromHex: (d && d.gradientFromHex) || "#e81416",
+    gradientToHex: (d && d.gradientToHex) || "#70389d",
+    lineScreenPx: (d && d.lineScreenPx) || 6,
+    waypointRScreenPx: (d && d.waypointRScreenPx) || 9,
+    waypointRingScreenPx: (d && d.waypointRingScreenPx) || 4.5,
+    outlineScreenPx: (d && d.outlineScreenPx) || 2,
+    solidStroke: (d && d.solidStroke) || "#5c5c70",
+    waypointFill: (d && d.waypointFill) || "#ffffff",
+    waypointStroke: (d && d.waypointStroke) || "#000000",
+    outlineColor: (d && d.outlineColor) || "#000000",
+  };
+}
 
 function journeyParseStopsList(raw) {
   if (raw == null || !String(raw).trim()) return null;
@@ -110,12 +123,13 @@ function journeyPopulateRainbowUi(j) {
   const parsed = journeyParseStopsList(raw);
   let fromHex;
   let toHex;
+  const def = journeyUiDefaults();
   if (parsed && parsed.length >= 2) {
-    fromHex = journeyStyleHexForPicker(parsed[0], JOURNEY_UI_GRADIENT_DEFAULT_FROM);
-    toHex = journeyStyleHexForPicker(parsed[parsed.length - 1], JOURNEY_UI_GRADIENT_DEFAULT_TO);
+    fromHex = journeyStyleHexForPicker(parsed[0], def.gradientFromHex);
+    toHex = journeyStyleHexForPicker(parsed[parsed.length - 1], def.gradientToHex);
   } else {
-    fromHex = JOURNEY_UI_GRADIENT_DEFAULT_FROM;
-    toHex = JOURNEY_UI_GRADIENT_DEFAULT_TO;
+    fromHex = def.gradientFromHex;
+    toHex = def.gradientToHex;
   }
   ensureEl("styleJourneyGradientFrom").value = fromHex;
   ensureEl("styleJourneyGradientFromOutput").value = fromHex;
@@ -276,25 +290,33 @@ function selectStyleElement() {
   if (styleElement === "journeys") {
     ensureEl("styleJourney").style.display = "table-row-group";
     const j = el;
+    const jd = journeyUiDefaults();
+    const numAttr = (name, fb) => {
+      const v = parseFloat(j.attr(name));
+      return Number.isFinite(v) ? v : fb;
+    };
     const modeRaw = (j.attr("data-color-mode") || "rainbow").toLowerCase();
     ensureEl("styleJourneyColorMode").value = modeRaw === "solid" ? "solid" : "rainbow";
-    const solidHex = journeyStyleHexForPicker(j.attr("data-solid-stroke"), "#5c5c70");
+    const solidHex = journeyStyleHexForPicker(j.attr("data-solid-stroke"), jd.solidStroke);
     ensureEl("styleJourneySolidStroke").value = solidHex;
     ensureEl("styleJourneySolidStrokeOutput").value = solidHex;
     journeyPopulateRainbowUi(j);
-    ensureEl("styleJourneyLineScreenPx").value = j.attr("data-line-screen-px") || 6;
-    const wpf = journeyStyleHexForPicker(j.attr("data-waypoint-fill"), "#ffffff");
+    ensureEl("styleJourneyLineScreenPx").value = numAttr("data-line-screen-px", jd.lineScreenPx);
+    const wpf = journeyStyleHexForPicker(j.attr("data-waypoint-fill"), jd.waypointFill);
     ensureEl("styleJourneyWaypointFill").value = wpf;
     ensureEl("styleJourneyWaypointFillOutput").value = wpf;
-    const wps = journeyStyleHexForPicker(j.attr("data-waypoint-stroke"), "#000000");
+    const wps = journeyStyleHexForPicker(j.attr("data-waypoint-stroke"), jd.waypointStroke);
     ensureEl("styleJourneyWaypointStroke").value = wps;
     ensureEl("styleJourneyWaypointStrokeOutput").value = wps;
-    ensureEl("styleJourneyWaypointRScreenPx").value = j.attr("data-waypoint-r-screen-px") || 9;
-    ensureEl("styleJourneyWaypointRingScreenPx").value = j.attr("data-waypoint-ring-screen-px") || 4.5;
-    const oc = journeyStyleHexForPicker(j.attr("data-outline-color"), "#000000");
+    ensureEl("styleJourneyWaypointRScreenPx").value = numAttr("data-waypoint-r-screen-px", jd.waypointRScreenPx);
+    ensureEl("styleJourneyWaypointRingScreenPx").value = numAttr(
+      "data-waypoint-ring-screen-px",
+      jd.waypointRingScreenPx,
+    );
+    const oc = journeyStyleHexForPicker(j.attr("data-outline-color"), jd.outlineColor);
     ensureEl("styleJourneyOutlineColor").value = oc;
     ensureEl("styleJourneyOutlineColorOutput").value = oc;
-    ensureEl("styleJourneyOutlineScreenPx").value = j.attr("data-outline-screen-px") || 2;
+    ensureEl("styleJourneyOutlineScreenPx").value = numAttr("data-outline-screen-px", jd.outlineScreenPx);
     journeyStyleSyncRowVisibility();
   }
 
