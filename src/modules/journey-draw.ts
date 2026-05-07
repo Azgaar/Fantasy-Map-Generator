@@ -72,6 +72,12 @@ export function readJourneyStyleConfig(el: Element | null): JourneyStyleConfig {
   const get = (name: string): string | null =>
     el && typeof el.getAttribute === "function" ? el.getAttribute(name) : null;
 
+  /** Parse numeric data-*; keeps `0` (unlike `parseFloat(x) || fallback`). */
+  const attrPx = (name: string, fallback: number): number => {
+    const v = Number.parseFloat(get(name) ?? "");
+    return Number.isFinite(v) ? v : fallback;
+  };
+
   const modeRaw = (get("data-color-mode") || "rainbow").toLowerCase().trim();
   const colorMode: JourneyColorMode = modeRaw === "solid" ? "solid" : "rainbow";
 
@@ -83,7 +89,7 @@ export function readJourneyStyleConfig(el: Element | null): JourneyStyleConfig {
     get("data-solid-stroke")?.trim() || JOURNEY_DEFAULT_SOLID_STROKE;
 
   const lineScreenPx = clamp(
-    Number.parseFloat(get("data-line-screen-px") || "") || JOURNEY_STROKE_SCREEN_PX,
+    attrPx("data-line-screen-px", JOURNEY_STROKE_SCREEN_PX),
     0.5,
     96,
   );
@@ -92,15 +98,13 @@ export function readJourneyStyleConfig(el: Element | null): JourneyStyleConfig {
   const waypointStroke = get("data-waypoint-stroke")?.trim() || "#000000";
 
   const waypointRScreenPx = clamp(
-    Number.parseFloat(get("data-waypoint-r-screen-px") || "") ||
-      JOURNEY_WAYPOINT_R_SCREEN_PX,
+    attrPx("data-waypoint-r-screen-px", JOURNEY_WAYPOINT_R_SCREEN_PX),
     2,
     120,
   );
 
   const waypointRingScreenPx = clamp(
-    Number.parseFloat(get("data-waypoint-ring-screen-px") || "") ||
-      JOURNEY_WAYPOINT_STROKE_SCREEN_PX,
+    attrPx("data-waypoint-ring-screen-px", JOURNEY_WAYPOINT_STROKE_SCREEN_PX),
     0,
     48,
   );
@@ -108,8 +112,7 @@ export function readJourneyStyleConfig(el: Element | null): JourneyStyleConfig {
   const outlineColor = get("data-outline-color")?.trim() || "#000000";
 
   const outlineScreenPx = clamp(
-    Number.parseFloat(get("data-outline-screen-px") || "") ||
-      JOURNEY_HALO_DILATE_SCREEN_PX,
+    attrPx("data-outline-screen-px", JOURNEY_HALO_DILATE_SCREEN_PX),
     0,
     32,
   );

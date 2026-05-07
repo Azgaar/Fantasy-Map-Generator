@@ -188,6 +188,16 @@ describe("readJourneyStyleConfig", () => {
     expect(c.solidStroke).toBe("#abc");
     expect(c.lineScreenPx).toBe(12);
   });
+
+  it("keeps data-outline-screen-px 0 (does not fall back to default)", () => {
+    const el = {
+      getAttribute(name: string) {
+        return name === "data-outline-screen-px" ? "0" : null;
+      },
+    } as unknown as Element;
+    const c = readJourneyStyleConfig(el);
+    expect(c.outlineScreenPx).toBe(0);
+  });
 });
 
 describe("journeyRampSamplerForConfig", () => {
