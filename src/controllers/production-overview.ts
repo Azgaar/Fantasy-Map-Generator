@@ -140,8 +140,14 @@ export function open(burgId: number): void {
     const ingredients = candidate.ingredients
       .map(ingredient => {
         const sources = [
-          ingredient.fromInventory > 0 ? `${rn(ingredient.fromInventory, 2)} from inventory` : "",
-          ingredient.fromMarket > 0 ? `${rn(ingredient.fromMarket, 2)} bought from market` : ""
+          ingredient.amount === ingredient.fromInventory ? "from inventory" : null,
+          ingredient.fromInventory > 0 && ingredient.amount !== ingredient.fromInventory
+            ? `${rn(ingredient.fromInventory, 2)} from inventory`
+            : null,
+          ingredient.amount === ingredient.fromMarket ? "from market" : null,
+          ingredient.fromMarket > 0 && ingredient.amount !== ingredient.fromMarket
+            ? `${rn(ingredient.fromMarket, 2)} from market`
+            : null
         ];
         return `${rn(ingredient.amount, 2)} ${goodDot(ingredient.goodId)} (${sources.filter(Boolean).join(", ")})`;
       })

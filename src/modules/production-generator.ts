@@ -584,7 +584,7 @@ export class ProductionModule {
 
         ingredients.push({
           goodId: entry.goodId,
-          amount: entry.amount,
+          amount: amountNeeded,
           buyPrice: params.currentBuyPrice[entry.goodId],
           available: totalAvailable,
           availableInventory: inventoryAvailable,
