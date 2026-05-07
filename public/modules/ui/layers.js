@@ -905,7 +905,6 @@ function toggleJourney(event) {
   if (!layerIsOn("toggleJourney")) {
     turnButtonOn("toggleJourney");
     drawJourney();
-    $("#journeys").fadeIn();
     if (event && isCtrlClick(event)) editStyle("journeys");
   } else {
     if (event && isCtrlClick(event)) return editStyle("journeys");

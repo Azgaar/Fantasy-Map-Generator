@@ -236,8 +236,3 @@ export function journeyResolvedCoordinates(
 export function referencedStopIds(j: PackJourney): Set<string> {
   return new Set(j.stops.map(journeyLegToRefString));
 }
-
-/** @deprecated Use referencedStopIds */
-export function referencedWaypointIds(j: PackJourney): Set<string> {
-  return referencedStopIds(j);
-}

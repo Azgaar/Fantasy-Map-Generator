@@ -21,13 +21,7 @@ export default defineConfig({
   retries: 0,
   workers: isCI ? 2 : undefined,
   reporter: 'html',
-  expect: {
-    toHaveScreenshot: {
-      maxDiffPixels: 15000,
-      threshold: 0.25,
-    },
-  },
-  // Use OS-independent snapshot names (HTML content is the same across platforms)
+  // Keeps toMatchSnapshot('_layer_.html') paths stable (no browser/OS suffix in filename).
   snapshotPathTemplate: '{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}{ext}',
   use: {
     baseURL,

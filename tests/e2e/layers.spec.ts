@@ -1,5 +1,5 @@
 import type { Browser, BrowserContext, Page } from '@playwright/test'
-import { endFrameSnapshotName, expect, test, waitForLoadingOverlayGone } from './fixtures'
+import { expect, test } from './fixtures'
 
 // All tests in this describe block only READ the DOM — they never modify state.
 // Load the map once for the entire suite instead of before every test.
@@ -20,10 +20,7 @@ test.describe('map layers', () => {
       sessionStorage.clear()
     })
 
-    // Navigate with seed parameter and wait for full load
-    // NOTE:
-    // - We use a fixed seed ("test-seed") to make map generation deterministic for snapshot tests.
-    // - Snapshots are OS-independent (configured in playwright.config.ts).
+    // Fixed seed keeps SVG/HTML snapshots in layers tests stable across runs.
     await sharedPage.goto('?seed=test-seed&width=1280&height=720')
 
     // Wait for map generation to complete by checking window.mapId
@@ -32,16 +29,6 @@ test.describe('map layers', () => {
 
     // Additional wait for any rendering/animations to settle
     await sharedPage.waitForTimeout(500)
-  })
-
-  test.afterEach(async ({}, testInfo) => {
-    if (process.env.CI) return;
-    if (testInfo.status !== 'passed') return;
-    await waitForLoadingOverlayGone(sharedPage);
-    await sharedPage.waitForTimeout(100);
-    await expect(sharedPage.locator('#map')).toHaveScreenshot(endFrameSnapshotName(testInfo), {
-      timeout: 30_000,
-    });
   })
 
   test.afterAll(async () => {

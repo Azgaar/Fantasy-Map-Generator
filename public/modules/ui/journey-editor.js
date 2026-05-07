@@ -173,10 +173,8 @@ function journeyEditorOnClick() {
   if (target?.classList?.contains("journey-waypoint")) circleEl = target;
   else if (target?.closest?.(".journey-waypoint")) circleEl = target.closest(".journey-waypoint");
 
-  if (circleEl) {
-    const stopRef =
-      circleEl.getAttribute("data-journey-stop-ref") ||
-      circleEl.getAttribute("data-journey-waypoint-id");
+    if (circleEl) {
+      const stopRef = circleEl.getAttribute("data-journey-stop-ref");
     if (stopRef) {
       journeyAppendStopRef(stopRef);
       return;
