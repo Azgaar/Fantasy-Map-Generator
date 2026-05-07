@@ -442,4 +442,72 @@ test.describe("UI Tour", () => {
     await expect(page.locator("#customizationMenu")).toBeHidden();
     await expect(page.locator("#options")).toBeHidden();
   });
+
+  // ── Regression: toolsContent must not leak when closing early (bug #1421) ──
+
+  test("closing tour on Layers tab step does not show toolsContent when menu is reopened", async ({
+    page,
+  }) => {
+    await page.evaluate(() => (window as any).UITour.start());
+    await page.waitForSelector(".driver-popover", { state: "visible" });
+
+    // Advance to Layers Tab step — options panel is open, Layers tab is active.
+    await advanceSteps(page, 4);
+    expect(await popoverTitle(page)).toBe(STEP_TITLES[4]);
+
+    await page.locator(".driver-popover-close-btn").click();
+    await page.waitForSelector(".driver-popover", { state: "hidden" });
+
+    // Reopen the options panel.
+    await page.locator("#optionsTrigger").click();
+    await expect(page.locator("#options")).toBeVisible();
+
+    // Only the Layers tab content should be visible — not toolsContent.
+    await expect(page.locator("#layersContent")).toBeVisible();
+    await expect(page.locator("#toolsContent")).toBeHidden();
+  });
+
+  test("closing tour on Style tab step does not show toolsContent when menu is reopened", async ({
+    page,
+  }) => {
+    await page.evaluate(() => (window as any).UITour.start());
+    await page.waitForSelector(".driver-popover", { state: "visible" });
+
+    // Advance to Style Tab step — options panel is open, Style tab is active.
+    await advanceSteps(page, 7);
+    expect(await popoverTitle(page)).toBe(STEP_TITLES[7]);
+
+    await page.locator(".driver-popover-close-btn").click();
+    await page.waitForSelector(".driver-popover", { state: "hidden" });
+
+    // Reopen the options panel.
+    await page.locator("#optionsTrigger").click();
+    await expect(page.locator("#options")).toBeVisible();
+
+    // Only the Style tab content should be visible — not toolsContent.
+    await expect(page.locator("#styleContent")).toBeVisible();
+    await expect(page.locator("#toolsContent")).toBeHidden();
+  });
+
+  test("closing tour on Options tab step does not show toolsContent when menu is reopened", async ({
+    page,
+  }) => {
+    await page.evaluate(() => (window as any).UITour.start());
+    await page.waitForSelector(".driver-popover", { state: "visible" });
+
+    // Advance to Options Tab step — options panel is open, Options tab is active.
+    await advanceSteps(page, 10);
+    expect(await popoverTitle(page)).toBe(STEP_TITLES[10]);
+
+    await page.locator(".driver-popover-close-btn").click();
+    await page.waitForSelector(".driver-popover", { state: "hidden" });
+
+    // Reopen the options panel.
+    await page.locator("#optionsTrigger").click();
+    await expect(page.locator("#options")).toBeVisible();
+
+    // Only the Options tab content should be visible — not toolsContent.
+    await expect(page.locator("#optionsContent")).toBeVisible();
+    await expect(page.locator("#toolsContent")).toBeHidden();
+  });
 });
