@@ -220,15 +220,36 @@ export function resolveJourneyStopPosition(
   return resolveJourneyLeg(leg, ctx);
 }
 
+/** One resolved leg and its map coordinate (same order as `journeyResolvedCoordinates` points). */
+export interface JourneyResolvedStopEntry {
+  leg: JourneyStopLeg;
+  coord: [number, number];
+}
+
+/**
+ * Resolve each leg once: coordinates for polyline + waypoint attribution.
+ * Omits legs that fail to resolve (same sequence as `journeyResolvedCoordinates`).
+ */
+export function journeyResolvedStopEntries(
+  j: PackJourney,
+  ctx: JourneyResolutionContext = { burgs: [], markers: [] },
+): JourneyResolvedStopEntry[] {
+  const out: JourneyResolvedStopEntry[] = [];
+  for (const leg of j.stops) {
+    const p = resolveJourneyLeg(leg, ctx);
+    if (!p) continue;
+    out.push({ leg, coord: [p[0], p[1]] });
+  }
+  return out;
+}
+
 export function journeyResolvedCoordinates(
   j: PackJourney,
   ctx: JourneyResolutionContext = { burgs: [], markers: [] },
 ): [number, number][] {
-  const out: [number, number][] = [];
-  for (const leg of j.stops) {
-    const p = resolveJourneyLeg(leg, ctx);
-    if (p) out.push([p[0], p[1]]);
-  }
+  const rows = journeyResolvedStopEntries(j, ctx);
+  const out: [number, number][] = new Array(rows.length);
+  for (let i = 0; i < rows.length; i++) out[i] = rows[i].coord;
   return out;
 }
 

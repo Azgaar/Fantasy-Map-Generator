@@ -3,6 +3,7 @@ import { interpolateRgbBasis } from "d3";
 import type {
   JourneyNormalizePackContext,
   JourneyResolutionContext,
+  JourneyResolvedStopEntry,
   PackJourney,
 } from "./journey-model";
 import {
@@ -11,6 +12,7 @@ import {
   journeyLegToRefString,
   journeyRefStringToLeg,
   journeyResolvedCoordinates,
+  journeyResolvedStopEntries,
   markerJourneyStopRef,
   normalizePackJourney,
   resolveJourneyLeg,
@@ -501,11 +503,12 @@ export class JourneyDrawModule {
     normalizePackJourney(pack.journey, journeyNormalizeCtx());
     const journeyData = pack.journey as PackJourney;
     const resCtx = journeyResolutionCtx();
-    const points = journeyResolvedCoordinates(journeyData, resCtx);
-    if (!points.length) {
+    const resolvedStops = journeyResolvedStopEntries(journeyData, resCtx);
+    if (!resolvedStops.length) {
       this.lastLodTier = null;
       return;
     }
+    const points = resolvedStops.map((r: JourneyResolvedStopEntry) => r.coord);
 
     const zs = Number.isFinite(zoomScale) ? zoomScale : 1;
     const zm = Number.isFinite(zoomMinForLod) ? zoomMinForLod : 0.05;
@@ -529,11 +532,9 @@ export class JourneyDrawModule {
     );
 
     const idsAtCoord = new Map<string, string[]>();
-    for (const leg of journeyData.stops) {
-      const xy = resolveJourneyLeg(leg, resCtx);
-      if (!xy) continue;
+    for (const { leg, coord } of resolvedStops) {
       const sid = journeyLegToRefString(leg);
-      const ck = `${rn(xy[0], 2)},${rn(xy[1], 2)}`;
+      const ck = `${rn(coord[0], 2)},${rn(coord[1], 2)}`;
       const arr = idsAtCoord.get(ck) ?? [];
       if (!arr.includes(sid)) arr.push(sid);
       idsAtCoord.set(ck, arr);

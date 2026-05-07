@@ -4,6 +4,7 @@ import {
   journeyLegToRefString,
   journeyRefStringToLeg,
   journeyResolvedCoordinates,
+  journeyResolvedStopEntries,
   markerJourneyStopRef,
   normalizePackJourney,
   parseJourneyStopRef,
@@ -115,6 +116,25 @@ describe("journeyResolvedCoordinates", () => {
 
   it("skips missing burg", () => {
     expect(journeyResolvedCoordinates({ stops: [{ kind: "burg", id: 999 }] }, ctx)).toEqual([]);
+  });
+});
+
+describe("journeyResolvedStopEntries", () => {
+  const j: PackJourney = {
+    stops: [
+      { kind: "burg", id: 10 },
+      { kind: "marker", id: 2 },
+    ],
+  };
+  const ctx: JourneyResolutionContext = {
+    burgs: [{ i: 10, x: 10, y: 20, removed: false }],
+    markers: [{ i: 2, x: 30, y: 40 }],
+  };
+
+  it("matches journeyResolvedCoordinates coords and carries legs", () => {
+    const rows = journeyResolvedStopEntries(j, ctx);
+    expect(rows.map((r) => r.coord)).toEqual(journeyResolvedCoordinates(j, ctx));
+    expect(rows.map((r) => journeyLegToRefString(r.leg))).toEqual(["burg:10", "marker:2"]);
   });
 });
 
