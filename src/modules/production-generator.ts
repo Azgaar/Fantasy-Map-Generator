@@ -42,7 +42,7 @@ export class ProductionModule {
 
     for (const burg of validBurgs) {
       burgRank++;
-      const marketCenter = Trade.getCenterForBurg(burg as Burg);
+      const marketCenter = Trade.getMarketForBurg(burg as Burg);
       if (!marketCenter) continue;
       const cultureType = burg.type || DEFAULT_CULTURE_TYPE;
       const population = burg.population || 0;
@@ -131,7 +131,7 @@ export class ProductionModule {
             if (fromMarket > 0) {
               const good = goodById.get(ingId)!;
               const actualBuy = Math.min(fromMarket, marketCenter.inventory[ingId] || 0);
-              const purchase = Trade.buyFromCenter({
+              const purchase = Trade.buyFromMarket({
                 burg,
                 good,
                 units: actualBuy,
@@ -207,7 +207,7 @@ export class ProductionModule {
         if (amount <= 0) continue;
         const good = goodById.get(goodId)!;
 
-        const {revenue} = Trade.sellToCenter({
+        const {revenue} = Trade.sellToMarket({
           burg,
           good,
           units: amount,
@@ -246,11 +246,11 @@ export class ProductionModule {
       });
     }
 
-    Trade.redistributeBetweenCenters(goods, this.productionData);
+    Trade.redistributeAcrossMarkets(goods, this.productionData);
 
     for (const burg of validBurgs) {
       const data = this.productionData.get(burg.i!);
-      const marketCenter = Trade.getCenterForBurg(burg as Burg);
+      const marketCenter = Trade.getMarketForBurg(burg as Burg);
       if (!data || !marketCenter) continue;
 
       this.fillBurgDemandFromCenter({
@@ -265,7 +265,7 @@ export class ProductionModule {
       });
     }
 
-    Trade.updateCenterDemand(goods, this.productionData);
+    Trade.updateMarketDemand(goods, this.productionData);
 
     TIME && console.timeEnd("generateProduction");
   }
@@ -454,7 +454,7 @@ export class ProductionModule {
         if (shortage <= 0.001) break;
 
         const unitsNeeded = shortage / candidate.coverageWeight;
-        const purchase = Trade.buyFromCenter({
+        const purchase = Trade.buyFromMarket({
           burg,
           good: candidate.good,
           units: Math.min(candidate.available, unitsNeeded),

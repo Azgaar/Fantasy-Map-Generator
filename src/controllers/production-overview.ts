@@ -12,7 +12,7 @@ export function open(burgId: number): void {
     return;
   }
 
-  const tradeCenter = Trade.getCenterForBurg(burg);
+  const market = Trade.getMarketForBurg(burg);
   const deals = pack.deals || [];
   const burgDeals = deals.filter(deal => {
     return (deal.buyerType === "burg" && deal.buyerId === burgId) || (deal.sellerType === "burg" && deal.sellerId === burgId);
@@ -20,16 +20,16 @@ export function open(burgId: number): void {
   const burgBuyDeals = burgDeals.filter(deal => deal.buyerType === "burg");
   const burgSaleDeals = burgDeals.filter(deal => deal.sellerType === "burg");
   const demandFillDeals = burgBuyDeals.filter(deal => deal.phase === "local-demand-fill");
-  const centerDeals = tradeCenter
+  const centerDeals = market
     ? deals.filter(deal => {
         return (
-          (deal.buyerType === "trade-center" && deal.buyerId === tradeCenter.i) ||
-          (deal.sellerType === "trade-center" && deal.sellerId === tradeCenter.i)
+          (deal.buyerType === "market" && deal.buyerId === market.i) ||
+          (deal.sellerType === "market" && deal.sellerId === market.i)
         );
       })
     : [];
-  const centerImportDeals = centerDeals.filter(deal => deal.phase === "global-redistribution" && deal.buyerId === tradeCenter?.i);
-  const centerExportDeals = centerDeals.filter(deal => deal.phase === "global-redistribution" && deal.sellerId === tradeCenter?.i);
+  const centerImportDeals = centerDeals.filter(deal => deal.phase === "global-redistribution" && deal.buyerId === market?.i);
+  const centerExportDeals = centerDeals.filter(deal => deal.phase === "global-redistribution" && deal.sellerId === market?.i);
 
   const data = Production.getProductionData(burgId);
   if (!data) {
@@ -203,7 +203,7 @@ export function open(burgId: number): void {
       <span><b>Cells:</b> ${data.cellsReached}/${data.cellsBudget}</span>
       <span><b>Culture type:</b> ${data.cultureType}</span>
       <span><b>Order:</b> ${data.processRank} of ${data.totalBurgs}</span>
-      <span><b>Trade center:</b> ${tradeCenter ? `${tradeCenter.name} (#${tradeCenter.i})` : "—"}</span>
+      <span><b>Market:</b> ${market ? `${market.name} (#${market.i})` : "—"}</span>
       <div><b>Initial Demand:</b> ${renderDemand(initialDemand)}</div>
     </div>`;
 

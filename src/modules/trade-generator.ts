@@ -12,7 +12,7 @@ const PRICE_CEILING_FACTOR = 3.0;
 
 export type TradeScope = "local" | "global";
 export type TradePhase = "local-production-buy" | "local-sale" | "global-redistribution" | "local-demand-fill";
-export type TradeActorType = "burg" | "trade-center";
+export type TradeActorType = "burg" | "market";
 
 export type TradePriceSnapshot = {
   base: number;
@@ -42,23 +42,12 @@ export type TradeDeal = {
   sellerProceeds: number;
 };
 
-export type TradeCenter = {
+export type Market = {
   i: number;
   name: string;
-  type: string;
-  icon: string;
   cell: number;
   x: number;
   y: number;
-  dx?: number;
-  dy?: number;
-  px?: number;
-  size?: number;
-  pin?: string;
-  fill?: string;
-  stroke?: string;
-  pinned?: boolean;
-  lock?: boolean;
   burgs: number[];
   inventory: Record<number, number>;
   demandTargets: number[];
@@ -70,17 +59,17 @@ export type TradeCenter = {
 };
 
 export type TradeRunData = {
-  centers: TradeCenter[];
+  markets: Market[];
   deals: TradeDeal[];
   stateTaxes: Record<number, number>;
 };
 
 export class TradeModule {
-  private data: TradeRunData = {centers: [], deals: [], stateTaxes: {}};
+  private data: TradeRunData = {markets: [], deals: [], stateTaxes: {}};
 
   reset(): TradeRunData {
     this.data = {
-      centers: [],
+      markets: [],
       deals: [],
       stateTaxes: {}
     };
@@ -90,28 +79,19 @@ export class TradeModule {
 
   initialize(goods: Good[], burgs: Burg[]): TradeRunData {
     this.reset();
-    const centers = this.buildCenters(goods, burgs);
-    this.setCenters(centers);
+    const markets = this.buildMarkets(goods, burgs);
+    this.setMarkets(markets);
     return this.data;
   }
 
-  createCenter(id: number, name: string, goods: Good[], burgIds: number[] = [], anchor?: Burg): TradeCenter {
+  createMarket(id: number, name: string, goods: Good[], burgIds: number[] = [], anchor?: Burg): Market {
     const {buyPrice, sellPrice} = this.createPriceTemplate(goods);
     return {
       i: id,
       name,
-      type: "trade-center",
-      icon: "⚖️",
       cell: anchor?.cell ?? 0,
       x: anchor?.x ?? 0,
       y: anchor?.y ?? 0,
-      dx: 50,
-      dy: 50,
-      px: 13,
-      size: 34,
-      pin: "hex",
-      fill: "#f5df9b",
-      stroke: "#7a5c00",
       burgs: burgIds.slice(),
       inventory: {},
       demandTargets: [],
@@ -123,26 +103,26 @@ export class TradeModule {
     };
   }
 
-  setCenters(centers: TradeCenter[]): void {
-    this.data.centers = centers;
+  setMarkets(markets: Market[]): void {
+    this.data.markets = markets;
     this.syncPackData();
   }
 
-  getCenters(): TradeCenter[] {
-    return this.data.centers;
+  getMarkets(): Market[] {
+    return this.data.markets;
   }
 
   getRunData(): TradeRunData {
     return this.data;
   }
 
-  getCenter(centerId: number | undefined): TradeCenter | undefined {
-    if (!centerId) return undefined;
-    return this.data.centers.find(center => center.i === centerId);
+  getMarket(marketId: number | undefined): Market | undefined {
+    if (!marketId) return undefined;
+    return this.data.markets.find(market => market.i === marketId);
   }
 
-  getCenterForBurg(burg: Burg): TradeCenter | undefined {
-    return this.getCenter(burg.tradeCenterId);
+  getMarketForBurg(burg: Burg): Market | undefined {
+    return this.getMarket(burg.marketId);
   }
 
   recordDeal(deal: Omit<TradeDeal, "id">): TradeDeal {
@@ -179,13 +159,13 @@ export class TradeModule {
     return Array(categories.length).fill(0);
   }
 
-  updateCenterDemand(goods: Good[], productionData: Map<number, BurgProductionData>): void {
+  updateMarketDemand(goods: Good[], productionData: Map<number, BurgProductionData>): void {
     const goodById = new Map<number, Good>(goods.map(good => [good.i, good]));
 
-    for (const center of this.data.centers) {
+    for (const market of this.data.markets) {
       const aggregatedUncoveredDemand = this.createDemandVector(DEMAND_PRIORITY);
 
-      for (const burgId of center.burgs) {
+      for (const burgId of market.burgs) {
         const burg = pack.burgs[burgId] as Burg | undefined;
         const data = productionData.get(burgId);
         if (!burg || !data) continue;
@@ -203,33 +183,33 @@ export class TradeModule {
         }
       }
 
-      center.demandTargets = aggregatedUncoveredDemand.map(value => value * (1 + center.reserveFactor));
-      center.demandCoverage = this.calculateDemandCoverage(center.inventory, goodById);
-      center.uncoveredDemand = center.demandTargets.map((target, index) =>
-        Math.max(0, target - center.demandCoverage[index])
+      market.demandTargets = aggregatedUncoveredDemand.map(value => value * (1 + market.reserveFactor));
+      market.demandCoverage = this.calculateDemandCoverage(market.inventory, goodById);
+      market.uncoveredDemand = market.demandTargets.map((target, index) =>
+        Math.max(0, target - market.demandCoverage[index])
       );
     }
   }
 
-  redistributeBetweenCenters(goods: Good[], productionData: Map<number, BurgProductionData>): void {
-    this.updateCenterDemand(goods, productionData);
+  redistributeAcrossMarkets(goods: Good[], productionData: Map<number, BurgProductionData>): void {
+    this.updateMarketDemand(goods, productionData);
     const goodById = new Map<number, Good>(goods.map(good => [good.i, good]));
     const exportPools = new Map<number, Record<number, number>>();
 
-    for (const center of this.data.centers) {
+    for (const market of this.data.markets) {
       exportPools.set(
-        center.i,
-        this.splitInventoryByDemand(center.inventory, center.demandTargets, goodById).excessInventory
+        market.i,
+        this.splitInventoryByDemand(market.inventory, market.demandTargets, goodById).excessInventory
       );
     }
 
-    for (const importer of this.data.centers) {
+    for (const importer of this.data.markets) {
       for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
         const demandCategory = DEMAND_PRIORITY[categoryIndex] as DemandCategory;
         let shortage = importer.uncoveredDemand[categoryIndex] || 0;
         if (shortage <= 0.001) continue;
 
-        const candidates = this.data.centers
+        const candidates = this.data.markets
           .filter(exporter => exporter.i !== importer.i)
           .flatMap(exporter => {
             const exportPool = exportPools.get(exporter.i) || {};
@@ -268,9 +248,9 @@ export class TradeModule {
             scope: "global",
             goodId: candidate.goodId,
             units,
-            buyerType: "trade-center",
+            buyerType: "market",
             buyerId: importer.i,
-            sellerType: "trade-center",
+            sellerType: "market",
             sellerId: candidate.exporter.i,
             centerId: null,
             fromCenterId: candidate.exporter.i,
@@ -301,18 +281,18 @@ export class TradeModule {
       }
     }
 
-    this.updateCenterDemand(goods, productionData);
+    this.updateMarketDemand(goods, productionData);
   }
 
-  buyFromCenter(params: {burg: Burg; good: Good; units: number; marketPrice: number; phase?: TradePhase}) {
+  buyFromMarket(params: {burg: Burg; good: Good; units: number; marketPrice: number; phase?: TradePhase}) {
     const {burg, good, marketPrice} = params;
-    const center = this.getCenterForBurg(burg);
-    if (!center || params.units <= 0) return {units: 0, totalCost: 0, taxAmount: 0};
+    const market = this.getMarketForBurg(burg);
+    if (!market || params.units <= 0) return {units: 0, totalCost: 0, taxAmount: 0};
 
-    const actualUnits = Math.min(params.units, center.inventory[good.i] || 0);
+    const actualUnits = Math.min(params.units, market.inventory[good.i] || 0);
     if (actualUnits <= 0) return {units: 0, totalCost: 0, taxAmount: 0};
 
-    center.inventory[good.i] = Math.max(0, (center.inventory[good.i] || 0) - actualUnits);
+    market.inventory[good.i] = Math.max(0, (market.inventory[good.i] || 0) - actualUnits);
 
     const taxRate = this.getSalesTaxRate(burg);
     const consumerPrice = this.getConsumerPrice(burg, marketPrice);
@@ -326,11 +306,11 @@ export class TradeModule {
       units: actualUnits,
       buyerType: "burg",
       buyerId: burg.i!,
-      sellerType: "trade-center",
-      sellerId: center.i,
-      centerId: center.i,
-      fromCenterId: center.i,
-      toCenterId: center.i,
+      sellerType: "market",
+      sellerId: market.i,
+      centerId: market.i,
+      fromCenterId: market.i,
+      toCenterId: market.i,
       stateId: burg.state || 0,
       prices: this.getPriceSnapshot(good, marketPrice, marketPrice, burg),
       grossValue,
@@ -342,12 +322,12 @@ export class TradeModule {
     return {units: actualUnits, totalCost: grossValue, taxAmount};
   }
 
-  sellToCenter(params: {burg: Burg; good: Good; units: number; marketPrice: number; phase?: TradePhase}) {
+  sellToMarket(params: {burg: Burg; good: Good; units: number; marketPrice: number; phase?: TradePhase}) {
     const {burg, good, marketPrice} = params;
-    const center = this.getCenterForBurg(burg);
-    if (!center || params.units <= 0) return {units: 0, revenue: 0};
+    const market = this.getMarketForBurg(burg);
+    if (!market || params.units <= 0) return {units: 0, revenue: 0};
 
-    center.inventory[good.i] = (center.inventory[good.i] || 0) + params.units;
+    market.inventory[good.i] = (market.inventory[good.i] || 0) + params.units;
     const revenue = params.units * marketPrice;
 
     this.recordDeal({
@@ -355,13 +335,13 @@ export class TradeModule {
       scope: "local",
       goodId: good.i,
       units: params.units,
-      buyerType: "trade-center",
-      buyerId: center.i,
+      buyerType: "market",
+      buyerId: market.i,
       sellerType: "burg",
       sellerId: burg.i!,
-      centerId: center.i,
-      fromCenterId: center.i,
-      toCenterId: center.i,
+      centerId: market.i,
+      fromCenterId: market.i,
+      toCenterId: market.i,
       stateId: burg.state || 0,
       prices: this.getPriceSnapshot(good, marketPrice, marketPrice, burg),
       grossValue: revenue,
@@ -373,28 +353,28 @@ export class TradeModule {
     return {units: params.units, revenue};
   }
 
-  private buildCenters(goods: Good[], burgs: Burg[]): TradeCenter[] {
+  private buildMarkets(goods: Good[], burgs: Burg[]): Market[] {
     const activeBurgs = burgs.filter(burg => burg.i && !burg.removed);
     if (!activeBurgs.length) return [];
 
-    const centerCandidates = this.getCenterCandidates(activeBurgs);
-    const centers = centerCandidates.map((burg, index) =>
-      this.createCenter(index + 1, `${burg.name || `Burg ${burg.i}`} Market`, goods, [burg.i!], burg)
+    const candidates = this.getMarketCandidates(activeBurgs);
+    const markets = candidates.map((burg, index) =>
+      this.createMarket(index + 1, `${burg.name || `Burg ${burg.i}`} Market`, goods, [burg.i!], burg)
     );
-    const centersById = new Map(centers.map(center => [center.i, center]));
-    const candidateByCenterId = new Map<number, Burg>(centerCandidates.map((burg, index) => [index + 1, burg]));
+    const marketsById = new Map(markets.map(market => [market.i, market]));
+    const candidateByMarketId = new Map<number, Burg>(candidates.map((burg, index) => [index + 1, burg]));
 
     for (const burg of activeBurgs) {
-      const centerId = this.assignBurgToCenter(burg, centers, candidateByCenterId);
-      burg.tradeCenterId = centerId;
+      const marketId = this.assignBurgToMarket(burg, markets, candidateByMarketId);
+      burg.marketId = marketId;
 
-      const center = centersById.get(centerId);
-      if (center && !center.burgs.includes(burg.i!)) {
-        center.burgs.push(burg.i!);
+      const market = marketsById.get(marketId);
+      if (market && !market.burgs.includes(burg.i!)) {
+        market.burgs.push(burg.i!);
       }
     }
 
-    return centers;
+    return markets;
   }
 
   private calculateDemandCoverage(inventory: Record<number, number>, goodById: Map<number, Good>): number[] {
@@ -474,7 +454,7 @@ export class TradeModule {
     return {retainedInventory, excessInventory};
   }
 
-  private getCenterCandidates(burgs: Burg[]): Burg[] {
+  private getMarketCandidates(burgs: Burg[]): Burg[] {
     const candidates = burgs.filter(
       burg => burg.capital || burg.port || burg.group === "trading_post" || burg.group === "caravanserai"
     );
@@ -486,28 +466,28 @@ export class TradeModule {
     return [burgs[0]];
   }
 
-  private assignBurgToCenter(burg: Burg, centers: TradeCenter[], candidateByCenterId: Map<number, Burg>): number {
-    let selectedCenter = centers[0];
+  private assignBurgToMarket(burg: Burg, markets: Market[], candidateByMarketId: Map<number, Burg>): number {
+    let selectedMarket = markets[0];
     let bestDistance = Infinity;
-    const sameStateCenters = centers.filter(center => {
-      const candidate = candidateByCenterId.get(center.i);
+    const sameStateMarkets = markets.filter(market => {
+      const candidate = candidateByMarketId.get(market.i);
       return candidate?.state === burg.state;
     });
-    const eligibleCenters = sameStateCenters.length ? sameStateCenters : centers;
+    const eligibleMarkets = sameStateMarkets.length ? sameStateMarkets : markets;
 
-    for (const center of eligibleCenters) {
-      const candidate = candidateByCenterId.get(center.i);
+    for (const market of eligibleMarkets) {
+      const candidate = candidateByMarketId.get(market.i);
       if (!candidate) continue;
       const dx = candidate.x - burg.x;
       const dy = candidate.y - burg.y;
       const distance = dx * dx + dy * dy;
       if (distance < bestDistance) {
         bestDistance = distance;
-        selectedCenter = center;
+        selectedMarket = market;
       }
     }
 
-    return selectedCenter.i;
+    return selectedMarket.i;
   }
 
   private createPriceTemplate(goods: Good[]) {
@@ -520,29 +500,6 @@ export class TradeModule {
     }
 
     return {buyPrice, sellPrice};
-  }
-
-  private ensureRenderableCenter(center: TradeCenter): TradeCenter {
-    return {
-      ...center,
-      type: center.type || "trade-center",
-      icon: center.icon || "⚖️",
-      dx: center.dx ?? 50,
-      dy: center.dy ?? 50,
-      px: center.px ?? 13,
-      size: center.size ?? 34,
-      pin: center.pin || "hex",
-      fill: center.fill || "#f5df9b",
-      stroke: center.stroke || "#7a5c00",
-      burgs: center.burgs || [],
-      inventory: center.inventory || {},
-      demandTargets: center.demandTargets || [],
-      demandCoverage: center.demandCoverage || [],
-      uncoveredDemand: center.uncoveredDemand || [],
-      reserveFactor: center.reserveFactor ?? DEFAULT_TRADE_RESERVE_FACTOR,
-      buyPrice: center.buyPrice || [],
-      sellPrice: center.sellPrice || []
-    };
   }
 
   private applyBuyPressure(good: Good, currentPrice: number | undefined, unitsDelta: number): number {
@@ -561,7 +518,7 @@ export class TradeModule {
 
   private syncPackData(): void {
     if (typeof pack === "undefined") return;
-    pack.markets = this.data.centers;
+    pack.markets = this.data.markets;
     pack.deals = this.data.deals;
   }
 }
