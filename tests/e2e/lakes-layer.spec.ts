@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 test.describe("Lakes layer", () => {
   test.beforeEach(async ({ context, page }) => {
