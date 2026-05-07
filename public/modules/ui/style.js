@@ -272,7 +272,7 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
     styleLetterSpacingInput.value = el.attr("letter-spacing") || 0;
     styleShadowInput.value = el.style("text-shadow") || "";
-    styleLabelsHideGroup.checked = el.style("display") === "none";
+    styleLabelsHideGroup.checked = el.node().style.display === "none";
 
     styleFont.style.display = "block";
     styleSelectFont.value = el.attr("font-family");
