@@ -1,5 +1,4 @@
-import type { Browser, BrowserContext, Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { Browser, BrowserContext, expect, Page, test } from '@playwright/test'
 
 // All tests in this describe block only READ the DOM — they never modify state.
 // Load the map once for the entire suite instead of before every test.
@@ -7,8 +6,6 @@ let sharedContext: BrowserContext
 let sharedPage: Page
 
 test.describe('map layers', () => {
-  test.describe.configure({ mode: 'serial' })
-
   test.beforeAll(async ({ browser }: { browser: Browser }) => {
     sharedContext = await browser.newContext()
     sharedPage = await sharedContext.newPage()
@@ -20,8 +17,11 @@ test.describe('map layers', () => {
       sessionStorage.clear()
     })
 
-    // Fixed seed keeps SVG/HTML snapshots in layers tests stable across runs.
-    await sharedPage.goto('/?seed=test-seed&width=1280&height=720')
+    // Navigate with seed parameter and wait for full load
+    // NOTE:
+    // - We use a fixed seed ("test-seed") to make map generation deterministic for snapshot tests.
+    // - Snapshots are OS-independent (configured in playwright.config.ts).
+    await sharedPage.goto('/?seed=test-seed&&width=1280&height=720')
 
     // Wait for map generation to complete by checking window.mapId
     // mapId is exposed on window at the very end of showStatistics()
