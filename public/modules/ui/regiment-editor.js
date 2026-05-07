@@ -317,8 +317,10 @@ function editRegiment(selector) {
     const burgStateId = Number(pack.burgs[burgId].state);
     const burgStateRegiments = pack.states[burgStateId].military;
     const defendingBurg = target;
-    const bx = +defendingBurg.getAttribute("x");
-    const by = +defendingBurg.getAttribute("y");
+    const dx = +defendingBurg.getAttribute("x");
+    const dy = +defendingBurg.getAttribute("y");
+    const ax = +attacker.getAttribute("x");
+    const ay = +attacker.getAttribute("y");
 
     let closestIndex = -1;
     let closestDistance = Infinity;
@@ -326,9 +328,9 @@ function editRegiment(selector) {
     burgStateRegiments.forEach((el, i) => {
       if (el.t === 0 || !el.a) return;
 
-      const dx = el.x - bx;
-      const dy = el.y - by;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      const distX = el.x - dx;
+      const distY = el.y - dy;
+      const dist = Math.sqrt(distX * distX + distY * distY);
 
       if (dist < closestDistance) {
         closestDistance = dist;
@@ -351,9 +353,9 @@ function editRegiment(selector) {
     (defendingRegiment.px = defendingRegiment.x), (defendingRegiment.py = defendingRegiment.y);
 
     // move attacker to burg
-    moveRegiment(attacker, defendingBurg.getAttribute("x"), defendingBurg.getAttribute("y") - 8);
+    moveRegiment(attacker, dx, dy - 8);
     // Move defender to burg
-    moveRegiment(defendingRegiment, defendingBurg.getAttribute("x"), defendingBurg.getAttribute("y"));
+    moveRegiment(defendingRegiment, ax, ay);
     // draw battle icon
     const attack = d3
       .transition()
