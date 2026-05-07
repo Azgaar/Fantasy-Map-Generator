@@ -247,7 +247,8 @@ export function open(burgId: number): void {
             ? renderValueCell("Score", job.score, job.score >= 0)
             : renderDataCell("—", "right", styles.subtle)
         }
-      </tr>`
+      </tr>`,
+        renderLogRow(logId, logHtml)
       ];
     }
 
