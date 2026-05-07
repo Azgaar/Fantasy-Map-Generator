@@ -300,10 +300,7 @@ function editRegiment(selector) {
       tip("Burg is too far from sea, regiment cannot engage. Please choose a burg near the shoreline.", false, "error");
       return;
     }
-    if (burgSelected === elSelected) {
-      tip("Regiment cannot attack itself", false, "error");
-      return;
-    }
+
     if (getRegiment().state == pack.burgs[burgId].state) {
       tip("Cannot attack fraternal burg", false, "error");
       return;
