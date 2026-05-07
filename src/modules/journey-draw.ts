@@ -3,11 +3,7 @@
  * exposes Routes-like `window.Journey` API for legacy scripts.
  */
 import type { Selection } from "d3";
-import type {
-  JourneyResolutionContext,
-  JourneyResolvedStopEntry,
-  PackJourney,
-} from "./journey-model";
+import type { JourneyResolvedStopEntry, PackJourney } from "./journey-model";
 import {
   buildJourneyResolutionContext,
   burgJourneyStopRef,
@@ -133,10 +129,6 @@ function ensureJourneyOutlineFilter(
   merge.append("feMergeNode").attr("in", "SourceGraphic");
 }
 
-function journeyResolutionCtx(): JourneyResolutionContext {
-  return buildJourneyResolutionContext(pack.burgs ?? [], pack.markers ?? []);
-}
-
 export class JourneyDrawModule {
   private lastLodTier: number | null = null;
 
@@ -156,7 +148,7 @@ export class JourneyDrawModule {
     }
     ensurePackJourneyNormalized(pack);
     const journeyData = pack.journey as PackJourney;
-    const resCtx = journeyResolutionCtx();
+    const resCtx = buildJourneyResolutionContext(pack.burgs ?? [], pack.markers ?? []);
     const resolvedStops = journeyResolvedStopEntries(journeyData, resCtx);
     if (!resolvedStops.length) {
       this.lastLodTier = null;
@@ -340,7 +332,7 @@ export class JourneyDrawModule {
     ensurePackJourneyNormalized(pack);
     const points = journeyResolvedCoordinates(
       pack.journey as PackJourney,
-      journeyResolutionCtx(),
+      buildJourneyResolutionContext(pack.burgs ?? [], pack.markers ?? []),
     );
     if (!points.length) return;
 
@@ -428,8 +420,9 @@ export type JourneyGlobalApi = {
   journeyLegToRefString: typeof journeyLegToRefString;
 };
 
-function createJourneyGlobalApi(): JourneyGlobalApi {
-  return {
+if (typeof window !== "undefined") {
+  window.JourneyDraw = new JourneyDrawModule();
+  const journeyApi: JourneyGlobalApi = {
     STYLE_DEFAULTS: JOURNEY_STYLE_DEFAULTS,
     ensurePackJourneyNormalized,
     normalizePackJourney,
@@ -442,11 +435,6 @@ function createJourneyGlobalApi(): JourneyGlobalApi {
     markerJourneyStopRef,
     journeyLegToRefString,
   };
-}
-
-if (typeof window !== "undefined") {
-  window.JourneyDraw = new JourneyDrawModule();
-  const journeyApi = createJourneyGlobalApi();
   window.Journey = journeyApi;
   window.JourneyPack = journeyApi;
 }

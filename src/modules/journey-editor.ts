@@ -2,7 +2,6 @@
  * Journey editor dialog — bundled TS mirroring routes/markers editor patterns.
  */
 import { rn } from "../utils/numberUtils";
-import type { JourneyResolutionContext } from "./journey-model";
 import {
   buildJourneyResolutionContext,
   burgJourneyStopRef,
@@ -22,10 +21,6 @@ function escapeText(s: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
-}
-
-function resolutionCtx(): JourneyResolutionContext {
-  return buildJourneyResolutionContext(pack.burgs ?? [], pack.markers ?? []);
 }
 
 function journeyStopSelectOptions(currentRef: string): string {
@@ -70,19 +65,12 @@ function journeyStopSelectOptions(currentRef: string): string {
   return html;
 }
 
-function journeyLegToSelectValue(
-  leg: import("./journey-model").JourneyStopLeg | null,
-): string {
-  if (!leg) return "";
-  return journeyLegToRefString(leg);
-}
-
 function journeyRenderStopRows(container: HTMLElement): void {
   ensurePackJourneyNormalized(pack);
   const stops = pack.journey!.stops;
   const rows = stops.length === 0 ? [null] : stops;
   rows.forEach((leg, i) => {
-    const currentRef = leg ? journeyLegToSelectValue(leg) : "";
+    const currentRef = leg ? journeyLegToRefString(leg) : "";
     const showRemove = stops.length > 0;
     const removeStyle = showRemove
       ? ""
@@ -147,7 +135,7 @@ function journeyEditorRootClick(ev: Event): void {
 
 function journeyAppendStopRef(stopRef: string): void {
   ensurePackJourneyNormalized(pack);
-  const ctx = resolutionCtx();
+  const ctx = buildJourneyResolutionContext(pack.burgs ?? [], pack.markers ?? []);
   if (!resolveJourneyStopPosition(stopRef, ctx)) return;
   const leg = journeyRefStringToLeg(stopRef);
   if (!leg) return;
