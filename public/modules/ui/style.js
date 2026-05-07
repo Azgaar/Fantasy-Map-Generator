@@ -272,6 +272,7 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
     styleLetterSpacingInput.value = el.attr("letter-spacing") || 0;
     styleShadowInput.value = el.style("text-shadow") || "";
+    styleLabelsHideGroup.checked = el.node().style.display === "none";
 
     styleFont.style.display = "block";
     styleSelectFont.value = el.attr("font-family");
@@ -473,6 +474,10 @@ styleStrokeLinecapInput.on("change", function () {
 
 styleOpacityInput.on("input", e => {
   getEl().attr("opacity", e.target.value);
+});
+
+styleLabelsHideGroup.on("change", function () {
+  getEl().style("display", this.checked ? "none" : null);
 });
 
 styleFilterInput.on("change", function () {

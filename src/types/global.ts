@@ -97,6 +97,9 @@ declare global {
   var createDefaultRuler: () => void;
   var showStatistics: () => void;
   var closeDialogs: (except?: string) => void;
+  var editWorld: () => void;
+  var showExportPane: () => void;
+  var UITour: { start: () => void };
   var getHeight: (h: number) => string;
   var getLatitude: (y: number, precision?: number) => number;
   var getLongitude: (x: number, precision?: number) => number;
