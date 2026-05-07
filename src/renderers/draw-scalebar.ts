@@ -14,7 +14,7 @@ declare global {
   ) => void;
 }
 
-type ScaleBarSelection = Selection<
+type ScaleBarSelection = d3.Selection<
   SVGGElement,
   unknown,
   HTMLElement,

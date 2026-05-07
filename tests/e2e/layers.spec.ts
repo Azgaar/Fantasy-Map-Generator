@@ -1,5 +1,5 @@
 import type { Browser, BrowserContext, Page } from '@playwright/test'
-import { expect, test } from './fixtures'
+import { expect, test } from '@playwright/test'
 
 // All tests in this describe block only READ the DOM — they never modify state.
 // Load the map once for the entire suite instead of before every test.
@@ -14,14 +14,14 @@ test.describe('map layers', () => {
     sharedPage = await sharedContext.newPage()
 
     await sharedContext.clearCookies()
-    await sharedPage.goto('')
+    await sharedPage.goto('/')
     await sharedPage.evaluate(() => {
       localStorage.clear()
       sessionStorage.clear()
     })
 
     // Fixed seed keeps SVG/HTML snapshots in layers tests stable across runs.
-    await sharedPage.goto('?seed=test-seed&width=1280&height=720')
+    await sharedPage.goto('/?seed=test-seed&width=1280&height=720')
 
     // Wait for map generation to complete by checking window.mapId
     // mapId is exposed on window at the very end of showStatistics()

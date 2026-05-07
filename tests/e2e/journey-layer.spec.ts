@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, test } from "@playwright/test";
 
 /** Rich path: multiple stops, triple A↔B repetition (directed chord reuse + lanes), then a branch. */
 const BACKTRACK_JOURNEY_POINTS: [number, number][] = [
@@ -36,13 +36,13 @@ test.describe("Journey layer", () => {
   test.beforeEach(async ({ context, page }) => {
     await context.clearCookies();
 
-    await page.goto("");
+    await page.goto("/");
     await page.evaluate(() => {
       localStorage.clear();
       sessionStorage.clear();
     });
 
-    await page.goto("?seed=test-seed&width=1280&height=720");
+    await page.goto("/?seed=test-seed&width=1280&height=720");
 
     await page.waitForFunction(() => (window as unknown as { mapId?: unknown }).mapId !== undefined, {
       timeout: 60000,

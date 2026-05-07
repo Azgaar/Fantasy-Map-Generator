@@ -55,8 +55,7 @@ function showDataTip(event) {
   if (!event.target) return;
 
   let dataTip = event.target.dataset.tip;
-  if (!dataTip && event.target.parentNode?.dataset?.tip)
-    dataTip = event.target.parentNode.dataset.tip;
+  if (!dataTip && event.target.parentNode.dataset.tip) dataTip = event.target.parentNode.dataset.tip;
   if (!dataTip) return;
 
   const shortcut = event.target.dataset.shortcut;

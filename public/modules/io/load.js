@@ -164,10 +164,11 @@ async function parseLoadedResult(result) {
     const isDelimited = resultAsString.substring(0, 10).includes("|");
     let content = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
 
-    // fix if svg part has CRLF line endings instead of LF (some exports / old saves differ)
-    const svgMatch = content.match(/<svg[^>]*id="map"[\s\S]*?<\/svg>/i);
-    const svgContent = svgMatch?.[0];
-    if (svgContent?.includes("\r\n")) {
+    // fix if svg part has CRLF line endings instead of LF
+    const svgMatch = content.match(/<svg[^>]*id="map"[\s\S]*?<\/svg>/);
+    const svgContent = svgMatch[0];
+    const hasCrlfEndings = svgContent.includes("\r\n");
+    if (hasCrlfEndings) {
       const correctedSvgContent = svgContent.replace(/\r\n/g, "\n");
       content = content.replace(svgContent, correctedSvgContent);
     }
