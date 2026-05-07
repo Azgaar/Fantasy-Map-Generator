@@ -30,7 +30,8 @@ function showHeightmapCustomizationPanel() {
 function hideHeightmapCustomizationPanel() {
   const toolsContent = byId("toolsContent");
   const customizationMenu = byId("customizationMenu");
-  if (customizationMenu) customizationMenu.style.display = "none";
+  if (!customizationMenu || customizationMenu.style.display !== "block") return;
+  customizationMenu.style.display = "none";
   if (toolsContent) toolsContent.style.display = "block";
 }
 
