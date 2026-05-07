@@ -3,6 +3,8 @@ import {DEMAND_CATEGORIES, DEMAND_CATEGORY_ICONS, DEMAND_TARGET_FACTORS} from ".
 import type {DecisionCandidate, DemandContribution, Log} from "../modules/production-generator";
 import {rn} from "../utils";
 
+type Type = "RAW" | "MFG" | "BUY";
+
 export function open(burgId: number): void {
   const burg = (pack.burgs as any[])[burgId];
   if (!burg || burg.removed) {
@@ -36,8 +38,7 @@ export function open(burgId: number): void {
     bodyRow: "border-bottom:1px solid #f0f0f0",
     cell: "padding:.4em .5em;vertical-align:top",
     cellRight: "padding:.4em .5em;vertical-align:top;text-align:right",
-    logRow: "display:none;background:#fafafa;border-bottom:1px solid #ececec",
-    logCell: "padding:0 .5em;",
+    logCell: "padding:0.5em 0.5em 1em;",
     empty: "color:#888;font-style:italic",
     summaryBar: "display:flex;margin-top:.6em;justify-content: space-between;padding: 0 .5em;"
   };
@@ -52,11 +53,11 @@ export function open(burgId: number): void {
             </svg>`;
   };
 
-  const typeBadge = (kind: "RAW" | "MFG" | "BUY") => {
+  const typeBadge = (type: Type) => {
     const commonStyles =
       "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
-    if (kind === "RAW") return `<span style="${commonStyles};background:#f0e8e8;color:#a44">RAW</span>`;
-    if (kind === "BUY") return `<span style="${commonStyles};background:#f6ead8;color:#b06a00">BUY</span>`;
+    if (type === "RAW") return `<span style="${commonStyles};background:#f0e8e8;color:#a44">RAW</span>`;
+    if (type === "BUY") return `<span style="${commonStyles};background:#f6ead8;color:#b06a00">BUY</span>`;
     return `<span style="${commonStyles};background:#e8f0e8;color:#4a4">MFG</span>`;
   };
 
@@ -70,19 +71,15 @@ export function open(burgId: number): void {
   const renderValueCell = (label: string, value: number, positive = true) =>
     renderDataCell(`${label}: ${rn(value, 2)}`, "right", `${positive ? styles.positive : styles.warning}`);
   const renderPriceCell = (value: number | string, extra = "") => renderDataCell(formatPrice(value), "right", extra);
-  const renderTaggedGood = (id: number, kind: "RAW" | "MFG" | "BUY", suffix = "") =>
-    `${renderGoodLabel(id, suffix)} <span style="margin-left:4px">${typeBadge(kind)}</span>`;
+  const renderTaggedGood = (id: number, type: Type, suffix = "") =>
+    `${renderGoodLabel(id, suffix)} <span style="margin-left:4px">${typeBadge(type)}</span>`;
   const renderLogRow = (logId: string, logHtml: string) =>
     logHtml
-      ? /*html*/ `<tr id="${logId}" style="${styles.logRow}">
+      ? /*html*/ `<tr id="${logId}" style="display:none">
           <td colspan="5" style="${styles.logCell}">${logHtml}</td>
         </tr>`
       : "";
-  const formatCulture = (cultureModifier: number) =>
-    cultureModifier !== 1 ? `, culture x${rn(cultureModifier, 2)}` : "";
-  const formatUnits = (units: number) => (units !== 1 ? `, units ${rn(units, 2)}` : "");
   const formatPrice = (value: number | string) => `🟡 ${typeof value === "number" ? rn(value, 2) : value}`;
-  const formatDemandCategory = (category: DemandCategory) => `${DEMAND_CATEGORY_ICONS[category]} ${category}`;
   const renderDemand = (values: number[] | Partial<Record<DemandCategory, number>>, onlyPositive = false) => {
     const entries = Array.isArray(values)
       ? DEMAND_CATEGORIES.flatMap((category, index) => {
@@ -118,52 +115,53 @@ export function open(burgId: number): void {
 
     return totals;
   };
-  const renderDemandEffect = (multiplier: number, demand: DemandContribution[]) => {
-    if (multiplier <= 1.001 || !demand.length) return "";
-    const sumFormula = demand
-      .map(item => `${formatDemandCategory(item.category)} boost ${rn(item.boost, 2)}`)
-      .join(" + ");
-    const details = demand
-      .map(
-        item =>
-          `${formatDemandCategory(item.category)} boost = shortage ${rn(item.shortage, 2)} × coverage ${rn(item.demandCoverage, 2)} = ${rn(item.boost, 2)}`
-      )
-      .join("<br>");
-    return `<div style="margin-top:.1em;${styles.muted}">demandMultiplier = 1 + ${sumFormula} = ${rn(multiplier, 2)}</div><div style="margin-top:.1em;${styles.muted}">${details}</div>`;
+  const formatDemandMultiplier = (multiplier: number, demand: DemandContribution[]) => {
+    if (multiplier <= 1.001 || !demand.length) return "1";
+    return `1 + ${demand.map(item => `${DEMAND_CATEGORY_ICONS[item.category]} ${rn(item.boost, 2)}`).join(" + ")}`;
   };
+  const formatAvailable = (available: number) => {
+    if (available < 1) return "available <1";
+    return `available ${rn(available, 2)}`;
+  };
+  const renderCandidateScore = (score: number) => `<b style="${styles.positive}">score ${rn(score, 2)}</b>`;
   const renderDecisionCandidate = (candidate: DecisionCandidate) => {
     if (candidate.kind === "extract") {
-      return /*html*/ `<div>
-        <div>${typeBadge("RAW")} <b>${goodName(candidate.goodId)}</b>: chain ${rn(candidate.chainValue, 2)}${formatCulture(candidate.cultureModifier)}${formatUnits(candidate.units)}, available ${rn(candidate.available, 2)}, score ${rn(candidate.score, 2)}</div>
-        ${renderDemandEffect(candidate.demandMultiplier, candidate.demand)}
-      </div>`;
+      const factors = [
+        `projected gain ${formatPrice(candidate.chainValue)}`,
+        candidate.cultureModifier !== 1 ? `culture x${rn(candidate.cultureModifier, 2)}` : "",
+        `unit ${rn(candidate.units, 2)} (${formatAvailable(candidate.available)})`,
+        `demand ${rn(candidate.demandMultiplier, 2)} (${formatDemandMultiplier(candidate.demandMultiplier, candidate.demand)})`
+      ].filter(Boolean);
+
+      return `${typeBadge("RAW")} <b>${goodName(candidate.goodId)}</b>: ${factors.join(" * ")} = ${renderCandidateScore(candidate.score)}`;
     }
 
+    const margin = Math.max(0, candidate.revenue - candidate.ingredientCost);
     const ingredients = candidate.ingredients
-      .map(
-        (item: {goodId: number; amount: number; buyPrice: number; available: number}) =>
-          `${goodName(item.goodId)} ${rn(item.amount, 2)} @ ${formatPrice(item.buyPrice)} (avail ${rn(item.available, 2)})`
-      )
+      .map(ingredient => {
+        const sources = [
+          ingredient.fromInventory > 0 ? `${rn(ingredient.fromInventory, 2)} from inventory` : "",
+          ingredient.fromMarket > 0 ? `${rn(ingredient.fromMarket, 2)} bought from market` : ""
+        ];
+        return `${rn(ingredient.amount, 2)} ${goodDot(ingredient.goodId)} (${sources.filter(Boolean).join(", ")})`;
+      })
       .join(", ");
-    return /*html*/ `<div>
-      <div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>: sell ${formatPrice(candidate.sellPrice)}${formatCulture(candidate.cultureModifier)}${formatUnits(candidate.units)}, score ${rn(candidate.score, 2)}</div>
-      ${renderDemandEffect(candidate.demandMultiplier, candidate.demand)}
-      <div style="margin-top:.15em;${styles.muted}">Inputs: ${ingredients}</div>
-      <div style="margin-top:.1em;${styles.muted}">Revenue ${rn(candidate.revenue, 2)}, ingredient cost ${rn(candidate.ingredientCost, 2)}</div>
-    </div>`;
+
+    const factors = [
+      `projected gain ${formatPrice(margin)}`,
+      candidate.cultureModifier !== 1 ? `culture x${rn(candidate.cultureModifier, 2)}` : "",
+      `unit ${rn(candidate.units, 2)}`,
+      `demand ${rn(candidate.demandMultiplier, 2)} (${formatDemandMultiplier(candidate.demandMultiplier, candidate.demand)})`
+    ].filter(Boolean);
+
+    return `<div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>: ${factors.join(" * ")} = ${renderCandidateScore(candidate.score)}</div>
+      <div style="margin-top:.1em;${styles.muted}">Ingredients: ${ingredients}</div>`;
   };
   const renderDecisionDetails = (log?: Log | null) => {
     if (!log?.selected) return "";
-    const alternatives = log.alternatives.length
-      ? `<ul style="margin:.15em 0 0 1.1em;padding:0">${log.alternatives.map((option: DecisionCandidate) => `<li style="margin-top:.25em">${renderDecisionCandidate(option)}</li>`).join("")}</ul>`
-      : `<div style="margin-top:.2em;${styles.subtle}">No other feasible alternatives</div>`;
-
-    return /*html*/ `<div>
-      <div><b>Decision basis:</b> highest score among ${log.candidateCount} feasible options.</div>
-      <div style="margin-top:.15em">${renderDecisionCandidate(log.selected)}</div>
-      <div style="margin-top:.5em"><b>Alternatives</b></div>
-      ${alternatives}
-    </div>`;
+    const candidates = [log.selected, ...log.alternatives];
+    const candidatesHtml = `<ul style="margin:.2em 0 0 1.1em;padding:0">${candidates.map((option: DecisionCandidate) => `<li style="margin-top:.25em">${renderDecisionCandidate(option)}</li>`).join("")}</ul>`;
+    return /*html*/ `<div><b>Decision basis:</b> highest score among ${log.candidateCount} feasible options:</div>${candidatesHtml}`;
   };
   const accessibleResourcesTitle = "Accessible Resources";
   const initialDemand = DEMAND_CATEGORIES.map(category => data.population * DEMAND_TARGET_FACTORS[category]);
@@ -220,7 +218,7 @@ export function open(burgId: number): void {
 
   let stepIndex = 0;
   const stepRows = data.jobs.flatMap(job => {
-    const logId = `productionSteplog${stepIndex++}`;
+    const logId = `productionLog${stepIndex++}`;
     const logHtml = renderDecisionDetails(job.log);
     const rowAttrs = logHtml
       ? ` data-log-target="${logId}" style="${styles.bodyRow};cursor:pointer" title="Click to expand decision details"`
@@ -243,8 +241,7 @@ export function open(burgId: number): void {
             ? renderValueCell("Score", job.score, job.score >= 0)
             : renderDataCell("—", "right", styles.subtle)
         }
-      </tr>`,
-        renderLogRow(logId, logHtml)
+      </tr>`
       ];
     }
 
@@ -322,7 +319,7 @@ export function open(burgId: number): void {
       const sellPrice = good?.sellPrice ?? good?.value ?? 0;
       const baseValue = good?.value ?? 0;
       const isManufactured = Boolean(good?.recipes?.length);
-      const kind = isManufactured ? "MFG" : "RAW";
+      const type: Type = isManufactured ? "MFG" : "RAW";
       const sellValue = amount * sellPrice;
       const ingredientCost = isManufactured ? mfgCostByGood[id] || 0 : 0;
       const costPerUnit = isManufactured && amount > 0 ? rn(ingredientCost / amount, 2) : 0;
@@ -332,7 +329,7 @@ export function open(burgId: number): void {
         sellPrice < baseValue * 0.99 ? styles.warning : sellPrice > baseValue * 1.01 ? styles.positive : "";
 
       return /*html*/ `<tr style="${styles.bodyRow}">
-        ${renderDataCell(renderTaggedGood(id, kind))}
+        ${renderDataCell(renderTaggedGood(id, type))}
         ${renderDataCell(rn(amount, 2), "right")}
         ${renderPriceCell(costPerUnit)}
         ${renderPriceCell(sellPrice, sellColor)}
@@ -373,7 +370,7 @@ export function open(burgId: number): void {
   const finalTable = `${finalTableContent}${summaryHtml}`;
 
   alertMessage.innerHTML = /*html*/ `
-    <div id="productionOverviewContent" style="max-height:65vh;overflow-y:auto">
+    <div id="productionOverviewContent">
       ${statsHtml}
       ${renderSection(accessibleResourcesTitle, accessibleResourcesTable)}
       ${renderSection("Production Steps", jobsTable)}

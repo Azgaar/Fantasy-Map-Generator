@@ -550,33 +550,53 @@ export class ProductionModule {
     for (const option of params.recipeOptions) {
       const cultureModifier = this.getCultureModifier(option.good, params.cultureType);
       const revenue = params.currentSellPrice[option.good.i] * cultureModifier;
-      let ingredientCost = 0;
       let maxYield = Infinity;
       let feasible = true;
-      const ingredients: DecisionIngredient[] = [];
       const demandDeltas: Array<{goodId: number; units: number}> = [];
 
       for (const entry of option.entries) {
-        const totalAvailable = (params.inventory[entry.goodId] || 0) + (params.globalMarket[entry.goodId] || 0);
+        const inventoryAvailable = params.inventory[entry.goodId] || 0;
+        const marketAvailable = params.globalMarket[entry.goodId] || 0;
+        const totalAvailable = inventoryAvailable + marketAvailable;
         if (totalAvailable < entry.amount * params.fraction) {
           feasible = false;
           break;
         }
-        ingredientCost += entry.amount * params.currentBuyPrice[entry.goodId];
         maxYield = Math.min(maxYield, totalAvailable / entry.amount);
-        ingredients.push({
-          goodId: entry.goodId,
-          amount: entry.amount,
-          buyPrice: params.currentBuyPrice[entry.goodId],
-          available: totalAvailable
-        });
       }
 
       if (!feasible || !Number.isFinite(maxYield) || maxYield <= 0) continue;
       demandDeltas.push({goodId: option.good.i, units: cultureModifier});
       const demandEffect = this.getDemandBoost(params.demandTargets, demandCoverage, params.goodById, demandDeltas);
-      const perWorkerScore = (revenue - ingredientCost) * demandEffect.multiplier;
       const actualUnits = Math.min(params.fraction, maxYield);
+      const ingredients: DecisionIngredient[] = [];
+      let marketCostTotal = 0;
+
+      for (const entry of option.entries) {
+        const inventoryAvailable = params.inventory[entry.goodId] || 0;
+        const marketAvailable = params.globalMarket[entry.goodId] || 0;
+        const totalAvailable = inventoryAvailable + marketAvailable;
+        const amountNeeded = actualUnits * entry.amount;
+        const fromInventory = Math.min(inventoryAvailable, amountNeeded);
+        const fromMarket = Math.max(0, amountNeeded - fromInventory);
+        const marketCost = fromMarket * params.currentBuyPrice[entry.goodId];
+        marketCostTotal += marketCost;
+
+        ingredients.push({
+          goodId: entry.goodId,
+          amount: entry.amount,
+          buyPrice: params.currentBuyPrice[entry.goodId],
+          available: totalAvailable,
+          availableInventory: inventoryAvailable,
+          availableMarket: marketAvailable,
+          fromInventory,
+          fromMarket,
+          marketCost
+        });
+      }
+
+      const ingredientCost = actualUnits > 0 ? marketCostTotal / actualUnits : 0;
+      const perWorkerScore = (revenue - ingredientCost) * demandEffect.multiplier;
       const score = perWorkerScore * actualUnits;
       candidates.push({
         kind: "manufacture",
@@ -670,6 +690,11 @@ export type DecisionIngredient = {
   amount: number;
   buyPrice: number;
   available: number;
+  availableInventory: number;
+  availableMarket: number;
+  fromInventory: number;
+  fromMarket: number;
+  marketCost: number;
 };
 export type DemandContribution = {
   category: DemandCategory;
