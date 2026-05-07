@@ -38,10 +38,10 @@ export interface Good {
   sellPrice?: number; // current sell price of manufactured output (falls with supply)
 }
 
-export const DEMAND_CATEGORIES = ["food", "utilities", "construction", "military", "luxury"] as const;
-export type DemandCategory = (typeof DEMAND_CATEGORIES)[number];
+export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;
+export type DemandCategory = (typeof DEMAND_PRIORITY)[number];
 export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {
-  food: 0.4,
+  food: 0.2,
   utilities: 0.1,
   construction: 0.1,
   military: 0.05,

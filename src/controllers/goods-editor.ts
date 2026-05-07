@@ -3,7 +3,7 @@ import {pointer} from "d3";
 declare const ProductionChains: {open: () => void};
 
 import type {DemandCategory, Good} from "../modules/goods-generator";
-import {DEMAND_CATEGORIES, DEMAND_CATEGORY_ICONS} from "../modules/goods-generator";
+import {DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY} from "../modules/goods-generator";
 import {ensureEl, unique} from "../utils";
 import {getHeight} from "../utils/unitUtils";
 
@@ -526,7 +526,7 @@ function openGoodDialog(goodToEdit?: Good) {
       </span>`
     )
     .join("");
-  const demandCoverageInputsHtml = DEMAND_CATEGORIES.map(
+  const demandCoverageInputsHtml = DEMAND_PRIORITY.map(
     category => `<span>
         <div style="display: inline-block; width: 6.5em;">${DEMAND_CATEGORY_ICONS[category]} ${capitalize(category)}</div>
         <input id="newGoodDemandCoverage_${category}" type="number" style="width: 4.5em;" step="0.05" min="0" value="${(editedGood?.demandCoverage as Partial<Record<DemandCategory, number>> | undefined)?.[category] || 0}" />
@@ -780,7 +780,7 @@ function openGoodDialog(goodToEdit?: Good) {
           if (!Number.isNaN(v) && v > 0) bonusObj[bonus] = v;
         });
         const demandCoverage: Partial<Record<DemandCategory, number>> = {};
-        DEMAND_CATEGORIES.forEach(category => {
+        DEMAND_PRIORITY.forEach(category => {
           const demandCoverageInput = document.getElementById(
             `newGoodDemandCoverage_${category}`
           ) as HTMLInputElement | null;

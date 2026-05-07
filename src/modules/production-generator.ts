@@ -2,7 +2,7 @@ import type {Burg} from "./burgs-generator";
 import type {CultureType} from "./cultures-generator";
 import {DEFAULT_CULTURE_TYPE} from "./cultures-generator";
 import type {DemandCategory, Good} from "./goods-generator";
-import {DEMAND_CATEGORIES, DEMAND_TARGET_FACTORS} from "./goods-generator";
+import {DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "./goods-generator";
 
 export class ProductionModule {
   private readonly BONUS_PRODUCTION = 5;
@@ -15,6 +15,7 @@ export class ProductionModule {
   private readonly SELL_PRESSURE_FACTOR = 0.001;
   private readonly PRICE_FLOOR_FACTOR = 0.5;
   private readonly PRICE_CEILING_FACTOR = 3.0;
+  private readonly DEMAND_SHORTAGE_MULTIPLIER = 2.0;
 
   private readonly CHAIN_VALUE_MAX_WORKERS = 5;
 
@@ -306,11 +307,11 @@ export class ProductionModule {
 
   private buildDemandTargets(burg: Burg): number[] {
     const population = burg.population || 0;
-    return DEMAND_CATEGORIES.map(category => population * DEMAND_TARGET_FACTORS[category]);
+    return DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
   }
 
   private calculateDemandCoverage(inventory: Record<number, number>, goodById: Map<number, Good>): number[] {
-    const demandCoverage = Array(DEMAND_CATEGORIES.length).fill(0);
+    const demandCoverage = Array(DEMAND_PRIORITY.length).fill(0);
 
     for (const goodIdStr in inventory) {
       const goodId = +goodIdStr;
@@ -319,8 +320,8 @@ export class ProductionModule {
 
       const good = goodById.get(goodId);
       if (!good) continue;
-      for (let category = 0; category < DEMAND_CATEGORIES.length; category++) {
-        const demandCategory = DEMAND_CATEGORIES[category] as DemandCategory;
+      for (let category = 0; category < DEMAND_PRIORITY.length; category++) {
+        const demandCategory = DEMAND_PRIORITY[category] as DemandCategory;
         const coveredAmount = good.demandCoverage[demandCategory] || 0;
         if (!coveredAmount) continue;
         demandCoverage[category] += amount * coveredAmount;
@@ -330,46 +331,29 @@ export class ProductionModule {
     return demandCoverage;
   }
 
-  private getDemandBoost(
-    demandTargets: number[],
-    demandCoverage: number[],
-    goodById: Map<number, Good>,
-    deltas: Array<{goodId: number; units: number}>
-  ): DemandEffect {
+  private getDemandFocus(demandTargets: number[], demandCoverage: number[]): DemandFocus | null {
     const remainingDemand = demandTargets.map((target, category) => Math.max(0, target - demandCoverage[category]));
-    let demandBoost = 0;
-    const contributions = new Map<number, DemandContribution>();
-
-    for (const {goodId, units} of deltas) {
-      if (units <= 0) continue;
-      const good = goodById.get(goodId);
-      if (!good) continue;
-
-      for (let category = 0; category < DEMAND_CATEGORIES.length; category++) {
-        const demandCategory = DEMAND_CATEGORIES[category] as DemandCategory;
-        const coverageWeight = good.demandCoverage[demandCategory] || 0;
-        if (!coverageWeight) continue;
-
-        const boost = remainingDemand[category] * coverageWeight;
-        if (boost <= 0) continue;
-
-        demandBoost += boost;
-        const current = contributions.get(category);
-        if (current) current.boost += boost;
-        else {
-          contributions.set(category, {
-            category: DEMAND_CATEGORIES[category],
-            shortage: remainingDemand[category],
-            demandCoverage: coverageWeight,
-            boost
-          });
-        }
-      }
-    }
+    const priorityCategory = remainingDemand.findIndex(shortage => shortage > 0.001);
+    if (priorityCategory === -1) return null;
 
     return {
-      multiplier: 1 + demandBoost,
-      contributions: [...contributions.values()].sort((a, b) => b.boost - a.boost)
+      category: DEMAND_PRIORITY[priorityCategory] as DemandCategory,
+      shortage: remainingDemand[priorityCategory]
+    };
+  }
+
+  private getDemandEffect(good: Good, demandFocus: DemandFocus | null): DemandEffect {
+    if (!demandFocus) return {multiplier: 1, category: null, shortage: 0};
+
+    const coverageWeight = good.demandCoverage[demandFocus.category] || 0;
+    if (!coverageWeight) return {multiplier: 1, category: null, shortage: 0};
+
+    const multiplier = 1 + coverageWeight * (this.DEMAND_SHORTAGE_MULTIPLIER + demandFocus.shortage);
+
+    return {
+      multiplier,
+      category: demandFocus.category,
+      shortage: demandFocus.shortage
     };
   }
 
@@ -505,6 +489,7 @@ export class ProductionModule {
     let bestAction: PlannedAction | null = null;
     const candidates: DecisionCandidate[] = [];
     const demandCoverage = this.calculateDemandCoverage(params.inventory, params.goodById);
+    const demandFocus = this.getDemandFocus(params.demandTargets, demandCoverage);
 
     // Score every extractable good via worker-aware chain value.
     for (const goodIdStr in params.remainingPool) {
@@ -520,9 +505,7 @@ export class ProductionModule {
         goodId,
         good.value
       );
-      const demandEffect = this.getDemandBoost(params.demandTargets, demandCoverage, params.goodById, [
-        {goodId, units: cultureModifier}
-      ]);
+      const demandEffect = this.getDemandEffect(good, demandFocus);
       const perWorkerScore = chainValue * cultureModifier * demandEffect.multiplier;
       const score = perWorkerScore * actualUnits;
       candidates.push({
@@ -530,8 +513,7 @@ export class ProductionModule {
         goodId,
         score,
         chainValue,
-        demandMultiplier: demandEffect.multiplier,
-        demand: demandEffect.contributions,
+        demandEffect,
         cultureModifier,
         units: actualUnits,
         available
@@ -552,7 +534,6 @@ export class ProductionModule {
       const revenue = params.currentSellPrice[option.good.i] * cultureModifier;
       let maxYield = Infinity;
       let feasible = true;
-      const demandDeltas: Array<{goodId: number; units: number}> = [];
 
       for (const entry of option.entries) {
         const inventoryAvailable = params.inventory[entry.goodId] || 0;
@@ -566,8 +547,7 @@ export class ProductionModule {
       }
 
       if (!feasible || !Number.isFinite(maxYield) || maxYield <= 0) continue;
-      demandDeltas.push({goodId: option.good.i, units: cultureModifier});
-      const demandEffect = this.getDemandBoost(params.demandTargets, demandCoverage, params.goodById, demandDeltas);
+      const demandEffect = this.getDemandEffect(option.good, demandFocus);
       const actualUnits = Math.min(params.fraction, maxYield);
       const ingredients: DecisionIngredient[] = [];
       let marketCostTotal = 0;
@@ -603,8 +583,7 @@ export class ProductionModule {
         goodId: option.good.i,
         score,
         sellPrice: params.currentSellPrice[option.good.i],
-        demandMultiplier: demandEffect.multiplier,
-        demand: demandEffect.contributions,
+        demandEffect,
         cultureModifier,
         revenue,
         ingredientCost,
@@ -696,21 +675,19 @@ export type DecisionIngredient = {
   fromMarket: number;
   marketCost: number;
 };
-export type DemandContribution = {
-  category: DemandCategory;
+export type DemandEffect = {
+  multiplier: number;
+  category: DemandCategory | null;
   shortage: number;
-  demandCoverage: number;
-  boost: number;
 };
-type DemandEffect = {multiplier: number; contributions: DemandContribution[]};
+type DemandFocus = {category: DemandCategory; shortage: number};
 export type DecisionCandidate =
   | {
       kind: "extract";
       goodId: number;
       score: number;
       chainValue: number;
-      demandMultiplier: number;
-      demand: DemandContribution[];
+      demandEffect: DemandEffect;
       cultureModifier: number;
       units: number;
       available: number;
@@ -720,8 +697,7 @@ export type DecisionCandidate =
       goodId: number;
       score: number;
       sellPrice: number;
-      demandMultiplier: number;
-      demand: DemandContribution[];
+      demandEffect: DemandEffect;
       cultureModifier: number;
       revenue: number;
       ingredientCost: number;

@@ -1,6 +1,6 @@
 import type {DemandCategory} from "../modules/goods-generator";
-import {DEMAND_CATEGORIES, DEMAND_CATEGORY_ICONS, DEMAND_TARGET_FACTORS} from "../modules/goods-generator";
-import type {DecisionCandidate, DemandContribution, Log} from "../modules/production-generator";
+import {DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "../modules/goods-generator";
+import type {DecisionCandidate, DemandEffect, Log} from "../modules/production-generator";
 import {rn} from "../utils";
 
 type Type = "RAW" | "MFG" | "BUY";
@@ -82,7 +82,7 @@ export function open(burgId: number): void {
   const formatPrice = (value: number | string) => `🟡 ${typeof value === "number" ? rn(value, 2) : value}`;
   const renderDemand = (values: number[] | Partial<Record<DemandCategory, number>>, onlyPositive = false) => {
     const entries = Array.isArray(values)
-      ? DEMAND_CATEGORIES.flatMap((category, index) => {
+      ? DEMAND_PRIORITY.flatMap((category, index) => {
           const value = values[index] || 0;
           if (onlyPositive && value <= 0.001) return [];
           return `<span title="${category}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
@@ -95,7 +95,7 @@ export function open(burgId: number): void {
     return entries.join(` <span style="${styles.divider}">•</span> `);
   };
   const calculateDemandCoverageTotals = (inventory: Record<number, number>) => {
-    const totals = Array(DEMAND_CATEGORIES.length).fill(0);
+    const totals = Array(DEMAND_PRIORITY.length).fill(0);
 
     for (const goodIdStr in inventory) {
       const goodId = +goodIdStr;
@@ -105,8 +105,8 @@ export function open(burgId: number): void {
       const good = Goods.get(goodId);
       if (!good) continue;
 
-      for (let categoryIndex = 0; categoryIndex < DEMAND_CATEGORIES.length; categoryIndex++) {
-        const category = DEMAND_CATEGORIES[categoryIndex] as DemandCategory;
+      for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
+        const category = DEMAND_PRIORITY[categoryIndex] as DemandCategory;
         const coveredAmount = good.demandCoverage[category] || 0;
         if (!coveredAmount) continue;
         totals[categoryIndex] += amount * coveredAmount;
@@ -115,9 +115,11 @@ export function open(burgId: number): void {
 
     return totals;
   };
-  const formatDemandMultiplier = (multiplier: number, demand: DemandContribution[]) => {
-    if (multiplier <= 1.001 || !demand.length) return "1";
-    return `1 + ${demand.map(item => `${DEMAND_CATEGORY_ICONS[item.category]} ${rn(item.boost, 2)}`).join(" + ")}`;
+  const formatDemandMultiplier = (demandEffect: DemandEffect) => {
+    return (
+      demandEffect.category &&
+      `demand ${rn(demandEffect.multiplier, 2)} (shortage ${rn(demandEffect.shortage, 2)} ${DEMAND_CATEGORY_ICONS[demandEffect.category]})`
+    );
   };
   const formatAvailable = (available: number) => {
     if (available < 1) return "available <1";
@@ -130,7 +132,7 @@ export function open(burgId: number): void {
         `projected gain ${formatPrice(candidate.chainValue)}`,
         candidate.cultureModifier !== 1 ? `culture x${rn(candidate.cultureModifier, 2)}` : "",
         `unit ${rn(candidate.units, 2)} (${formatAvailable(candidate.available)})`,
-        `demand ${rn(candidate.demandMultiplier, 2)} (${formatDemandMultiplier(candidate.demandMultiplier, candidate.demand)})`
+        candidate.demandEffect.multiplier > 1 ? formatDemandMultiplier(candidate.demandEffect) : ""
       ].filter(Boolean);
 
       return `${typeBadge("RAW")} <b>${goodName(candidate.goodId)}</b>: ${factors.join(" * ")} = ${renderCandidateScore(candidate.score)}`;
@@ -157,7 +159,7 @@ export function open(burgId: number): void {
       `projected gain ${formatPrice(margin)}`,
       candidate.cultureModifier !== 1 ? `culture x${rn(candidate.cultureModifier, 2)}` : "",
       `unit ${rn(candidate.units, 2)}`,
-      `demand ${rn(candidate.demandMultiplier, 2)} (${formatDemandMultiplier(candidate.demandMultiplier, candidate.demand)})`
+      candidate.demandEffect.multiplier > 1 ? formatDemandMultiplier(candidate.demandEffect) : ""
     ].filter(Boolean);
 
     return `<div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>: ${factors.join(" * ")} = ${renderCandidateScore(candidate.score)}</div>
@@ -170,7 +172,7 @@ export function open(burgId: number): void {
     return /*html*/ `<div><b>Decision basis:</b> highest score among ${log.candidateCount} feasible options:</div>${candidatesHtml}`;
   };
   const accessibleResourcesTitle = "Accessible Resources";
-  const initialDemand = DEMAND_CATEGORIES.map(category => data.population * DEMAND_TARGET_FACTORS[category]);
+  const initialDemand = DEMAND_PRIORITY.map(category => data.population * DEMAND_TARGET_FACTORS[category]);
   const finalDemandCoverage = calculateDemandCoverageTotals(data.finalInventory);
   const uncoveredDemand = initialDemand.map((target, index) => Math.max(0, target - finalDemandCoverage[index]));
 
