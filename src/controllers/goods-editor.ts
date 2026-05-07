@@ -70,6 +70,7 @@ function getBonusIcon(bonus: string): string {
 function goodsEditorAddLines() {
   const body = ensureEl("goodsBody");
   const {availabilityByGood, producedByGood} = calculateGoodsEditorStats();
+  const marketPriceStats = getMarketPriceStats();
   let lines = "";
 
   for (const good of pack.goods) {
@@ -84,8 +85,12 @@ function goodsEditorAddLines() {
     const stroke = Goods.getStroke(good.color);
 
     const basePrice = good.value;
-    const buyPrice = good.buyPrice ?? good.value;
-    const sellPrice = good.sellPrice ?? good.value;
+    const priceStats = marketPriceStats[good.i] || {
+      buyLabel: rn(good.value, 2).toString(),
+      sellLabel: rn(good.value, 2).toString(),
+      buySort: good.value,
+      sellSort: good.value
+    };
     const totalAvailability = availabilityByGood[good.i] || 0;
     const totalProduced = producedByGood[good.i] || 0;
 
@@ -93,7 +98,7 @@ function goodsEditorAddLines() {
           data-id=${good.i} data-name="${good.name}" data-color="${good.color}"
           data-tags="${tags}" data-chance="${good.chance}" data-bonus="${bonusString}" data-demandcoverage="${demandCoverageString}"
           data-value="${good.value}" data-model="${distribution}" data-availability="${totalAvailability}"
-          data-produced="${totalProduced}" data-baseprice="${basePrice}" data-buyprice="${buyPrice}" data-sellprice="${sellPrice}">
+          data-produced="${totalProduced}" data-baseprice="${basePrice}" data-buyprice="${priceStats.buySort}" data-sellprice="${priceStats.sellSort}">
         <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
           <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
           <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
@@ -103,8 +108,8 @@ function goodsEditorAddLines() {
         <div data-tip="Total map-wide availability from biomes and bonus goods, in units" class="goodAvailability">${rn(totalAvailability, 2)}</div>
         <div data-tip="Total actual produced units aggregated from all burgs" class="goodProduced">${rn(totalProduced, 2)}</div>
         <div data-tip="Base price" class="goodBasePrice">🟡 ${rn(basePrice, 2)}</div>
-        <div data-tip="Current buy price after production simulation" class="goodBuyPrice">🟡 ${rn(buyPrice, 2)}</div>
-        <div data-tip="Current sell price after production simulation" class="goodSellPrice">🟡 ${rn(sellPrice, 2)}</div>
+        <div data-tip="Current buy-price range across trade centers" class="goodBuyPrice">🟡 ${priceStats.buyLabel}</div>
+        <div data-tip="Current sell-price range across trade centers" class="goodSellPrice">🟡 ${priceStats.sellLabel}</div>
         <span data-tip="Edit good" class="icon-pencil goodEdit hide"></span>
         <span data-tip="Toggle good exclusive visibility (pin)" class="icon-pin inactive hide goodPin"></span>
         <span data-tip="Remove good" class="icon-trash-empty hide goodRemove"></span>
@@ -123,6 +128,41 @@ function goodsEditorAddLines() {
   applySorting(ensureEl("goodsHeader")!);
   applyTagVisibilityFilter();
   $("#goodsEditor").dialog({width: fitContent()});
+}
+
+function getMarketPriceStats() {
+  const markets = pack.markets || [];
+  const stats: Record<number, {buyLabel: string; sellLabel: string; buySort: number; sellSort: number}> = {};
+
+  for (const good of pack.goods) {
+    const buyPrices = markets.map(market => market.buyPrice[good.i]).filter(price => Number.isFinite(price));
+    const sellPrices = markets.map(market => market.sellPrice[good.i]).filter(price => Number.isFinite(price));
+    const buyRange = formatMarketPriceRange(buyPrices, good.value);
+    const sellRange = formatMarketPriceRange(sellPrices, good.value);
+
+    stats[good.i] = {
+      buyLabel: buyRange.label,
+      sellLabel: sellRange.label,
+      buySort: buyRange.sortValue,
+      sellSort: sellRange.sortValue
+    };
+  }
+
+  return stats;
+}
+
+function formatMarketPriceRange(prices: number[], fallback: number): {label: string; sortValue: number} {
+  if (!prices.length) {
+    return {label: rn(fallback, 2).toString(), sortValue: fallback};
+  }
+
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const averagePrice = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+  const label =
+    Math.abs(maxPrice - minPrice) <= 0.01 ? rn(averagePrice, 2).toString() : `${rn(minPrice, 2)}-${rn(maxPrice, 2)}`;
+
+  return {label, sortValue: averagePrice};
 }
 
 function openTagsVisibilityDialog() {

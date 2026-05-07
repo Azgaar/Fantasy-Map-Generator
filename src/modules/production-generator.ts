@@ -26,15 +26,14 @@ export class ProductionModule {
     const {burgs} = pack;
     const goods = pack.goods;
     const validBurgs = burgs.filter(b => (b as Burg).i && !(b as Burg).removed);
+    Trade.initialize(goods, validBurgs as Burg[]);
 
     const goodById = new Map<number, Good>(goods.map(g => [g.i, g]));
     const cellPool = this.buildCellPool(goods);
     const chainValueByWorkers = this.buildChainValues(goods, this.CHAIN_VALUE_MAX_WORKERS);
-    const {currentBuyPrice, currentSellPrice, buyPressure, sellPressure, priceFloor, priceCeiling} =
-      this.buildPriceArrays(goods);
+    const {buyPressure, sellPressure, priceFloor, priceCeiling} = this.buildPriceArrays(goods);
 
     const recipeOptions = this.buildRecipeOptions(goods);
-    const globalMarket: Record<number, number> = {};
 
     validBurgs.sort((a, b) => (a.population || 0) - (b.population || 0));
 
@@ -43,6 +42,8 @@ export class ProductionModule {
 
     for (const burg of validBurgs) {
       burgRank++;
+      const marketCenter = Trade.getCenterForBurg(burg as Burg);
+      if (!marketCenter) continue;
       const cultureType = burg.type || DEFAULT_CULTURE_TYPE;
       const population = burg.population || 0;
       const demandTargets = this.buildDemandTargets(burg);
@@ -89,6 +90,7 @@ export class ProductionModule {
         if (fraction <= 0) break;
 
         const decision = this.greedyBestAction({
+          burg,
           recipeOptions,
           goodById,
           chainValueByWorkers,
@@ -96,9 +98,9 @@ export class ProductionModule {
           cultureType,
           inventory,
           remainingPool,
-          globalMarket,
-          currentBuyPrice,
-          currentSellPrice,
+          marketInventory: marketCenter.inventory,
+          currentBuyPrice: marketCenter.buyPrice,
+          currentSellPrice: marketCenter.sellPrice,
           workersLeft,
           fraction
         });
@@ -127,13 +129,20 @@ export class ProductionModule {
 
             let marketCost = 0;
             if (fromMarket > 0) {
-              const actualBuy = Math.min(fromMarket, globalMarket[ingId] || 0);
-              globalMarket[ingId] = Math.max(0, (globalMarket[ingId] || 0) - actualBuy);
-              marketCost = actualBuy * currentBuyPrice[ingId];
+              const good = goodById.get(ingId)!;
+              const actualBuy = Math.min(fromMarket, marketCenter.inventory[ingId] || 0);
+              const purchase = Trade.buyFromCenter({
+                burg,
+                good,
+                units: actualBuy,
+                marketPrice: marketCenter.buyPrice[ingId],
+                phase: "local-production-buy"
+              });
+              marketCost = purchase.totalCost;
               burg.wealth = (burg.wealth || 0) - marketCost;
-              currentBuyPrice[ingId] = Math.min(
+              marketCenter.buyPrice[ingId] = Math.min(
                 priceCeiling[ingId],
-                currentBuyPrice[ingId] + actualBuy * buyPressure[ingId]
+                marketCenter.buyPrice[ingId] + actualBuy * buyPressure[ingId]
               );
             }
 
@@ -167,11 +176,6 @@ export class ProductionModule {
           const produced = extract * cultureModifier;
           inventory[goodId] = (inventory[goodId] || 0) + produced;
 
-          currentBuyPrice[goodId] = Math.min(
-            priceCeiling[goodId],
-            currentBuyPrice[goodId] + produced * buyPressure[goodId]
-          );
-
           jobsData.push({
             kind: "extract",
             tick: workersUsed + fraction,
@@ -186,22 +190,35 @@ export class ProductionModule {
         workersUsed += fraction;
       }
 
+      const {retainedInventory, excessInventory} = this.splitInventoryByDemand(inventory, demandTargets, goodById);
+
       burg.produced = {};
       let phaseRevenue = 0;
       for (const goodIdStr in inventory) {
         const goodId = +goodIdStr;
         const amount = inventory[goodId];
         if (amount <= 0) continue;
-
-        const revenue = amount * currentSellPrice[goodId];
-        phaseRevenue += revenue;
-        globalMarket[goodId] = (globalMarket[goodId] || 0) + amount;
-        currentSellPrice[goodId] = Math.max(
-          priceFloor[goodId],
-          currentSellPrice[goodId] - amount * sellPressure[goodId]
-        );
-
         burg.produced[goodId] = Math.round(amount * 100) / 100;
+      }
+
+      for (const goodIdStr in excessInventory) {
+        const goodId = +goodIdStr;
+        const amount = excessInventory[goodId];
+        if (amount <= 0) continue;
+        const good = goodById.get(goodId)!;
+
+        const {revenue} = Trade.sellToCenter({
+          burg,
+          good,
+          units: amount,
+          marketPrice: marketCenter.sellPrice[goodId],
+          phase: "local-sale"
+        });
+        phaseRevenue += revenue;
+        marketCenter.sellPrice[goodId] = Math.max(
+          priceFloor[goodId],
+          marketCenter.sellPrice[goodId] - amount * sellPressure[goodId]
+        );
       }
       const grossProduct =
         phaseRevenue -
@@ -221,7 +238,7 @@ export class ProductionModule {
         cultureType: cultureType,
         goodsPull: goodsPullData,
         jobs: jobsData,
-        finalInventory: {...inventory},
+        finalInventory: retainedInventory,
         phaseRevenue,
         grossProduct,
         productPerCapita,
@@ -229,10 +246,26 @@ export class ProductionModule {
       });
     }
 
-    for (const good of goods) {
-      good.buyPrice = +currentBuyPrice[good.i].toFixed(2);
-      good.sellPrice = +currentSellPrice[good.i].toFixed(2);
+    Trade.redistributeBetweenCenters(goods, this.productionData);
+
+    for (const burg of validBurgs) {
+      const data = this.productionData.get(burg.i!);
+      const marketCenter = Trade.getCenterForBurg(burg as Burg);
+      if (!data || !marketCenter) continue;
+
+      this.fillBurgDemandFromCenter({
+        burg: burg as Burg,
+        data,
+        goods,
+        goodById,
+        demandTargets: this.buildDemandTargets(burg as Burg),
+        marketCenter,
+        buyPressure,
+        priceCeiling
+      });
     }
+
+    Trade.updateCenterDemand(goods, this.productionData);
 
     TIME && console.timeEnd("generateProduction");
   }
@@ -331,6 +364,125 @@ export class ProductionModule {
     return demandCoverage;
   }
 
+  private splitInventoryByDemand(
+    inventory: Record<number, number>,
+    demandTargets: number[],
+    goodById: Map<number, Good>
+  ): {retainedInventory: Record<number, number>; excessInventory: Record<number, number>} {
+    const retainedInventory: Record<number, number> = {};
+    const excessInventory: Record<number, number> = {...inventory};
+    const retainedDemandCoverage = Array(DEMAND_PRIORITY.length).fill(0);
+
+    for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
+      const demandCategory = DEMAND_PRIORITY[categoryIndex] as DemandCategory;
+      const candidates = Object.keys(excessInventory)
+        .map(Number)
+        .filter(goodId => {
+          const amount = excessInventory[goodId] || 0;
+          const good = goodById.get(goodId);
+          return amount > 0 && Boolean(good?.demandCoverage[demandCategory]);
+        })
+        .sort((a, b) => {
+          const goodA = goodById.get(a)!;
+          const goodB = goodById.get(b)!;
+          const coverageA = goodA.demandCoverage[demandCategory] || 0;
+          const coverageB = goodB.demandCoverage[demandCategory] || 0;
+          return coverageB - coverageA || a - b;
+        });
+
+      for (const goodId of candidates) {
+        const shortage = Math.max(0, demandTargets[categoryIndex] - retainedDemandCoverage[categoryIndex]);
+        if (shortage <= 0.001) break;
+
+        const available = excessInventory[goodId] || 0;
+        if (available <= 0) continue;
+        const good = goodById.get(goodId)!;
+        const coverageWeight = good.demandCoverage[demandCategory] || 0;
+        if (!coverageWeight) continue;
+
+        const keepAmount = Math.min(available, shortage / coverageWeight);
+        if (keepAmount <= 0.001) continue;
+
+        retainedInventory[goodId] = (retainedInventory[goodId] || 0) + keepAmount;
+        excessInventory[goodId] = Math.max(0, available - keepAmount);
+
+        for (let coverageCategoryIndex = 0; coverageCategoryIndex < DEMAND_PRIORITY.length; coverageCategoryIndex++) {
+          const coverageCategory = DEMAND_PRIORITY[coverageCategoryIndex] as DemandCategory;
+          const retainedCoverage = good.demandCoverage[coverageCategory] || 0;
+          if (!retainedCoverage) continue;
+          retainedDemandCoverage[coverageCategoryIndex] += keepAmount * retainedCoverage;
+        }
+      }
+    }
+
+    return {retainedInventory, excessInventory};
+  }
+
+  private fillBurgDemandFromCenter(params: {
+    burg: Burg;
+    data: BurgProductionData;
+    goods: Good[];
+    goodById: Map<number, Good>;
+    demandTargets: number[];
+    marketCenter: {
+      inventory: Record<number, number>;
+      buyPrice: number[];
+    };
+    buyPressure: number[];
+    priceCeiling: number[];
+  }): void {
+    const {burg, data, goodById, demandTargets, marketCenter, buyPressure, priceCeiling} = params;
+    const demandCoverage = this.calculateDemandCoverage(data.finalInventory, goodById);
+
+    for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
+      const demandCategory = DEMAND_PRIORITY[categoryIndex] as DemandCategory;
+      let shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
+      if (shortage <= 0.001) continue;
+
+      const candidates = Object.keys(marketCenter.inventory)
+        .map(Number)
+        .flatMap(goodId => {
+          const available = marketCenter.inventory[goodId] || 0;
+          const good = goodById.get(goodId);
+          const coverageWeight = good?.demandCoverage[demandCategory] || 0;
+          if (!good || available <= 0.001 || coverageWeight <= 0) return [];
+          return [{good, goodId, available, coverageWeight}];
+        })
+        .sort((a, b) => b.coverageWeight - a.coverageWeight || a.good.value - b.good.value || a.goodId - b.goodId);
+
+      for (const candidate of candidates) {
+        if (shortage <= 0.001) break;
+
+        const unitsNeeded = shortage / candidate.coverageWeight;
+        const purchase = Trade.buyFromCenter({
+          burg,
+          good: candidate.good,
+          units: Math.min(candidate.available, unitsNeeded),
+          marketPrice: marketCenter.buyPrice[candidate.goodId],
+          phase: "local-demand-fill"
+        });
+        if (purchase.units <= 0.001) continue;
+
+        data.finalInventory[candidate.goodId] = (data.finalInventory[candidate.goodId] || 0) + purchase.units;
+        burg.wealth = (burg.wealth || 0) - purchase.totalCost;
+        data.wealthAfter = burg.wealth || 0;
+
+        for (let coverageCategoryIndex = 0; coverageCategoryIndex < DEMAND_PRIORITY.length; coverageCategoryIndex++) {
+          const coverageCategory = DEMAND_PRIORITY[coverageCategoryIndex] as DemandCategory;
+          const retainedCoverage = candidate.good.demandCoverage[coverageCategory] || 0;
+          if (!retainedCoverage) continue;
+          demandCoverage[coverageCategoryIndex] += purchase.units * retainedCoverage;
+        }
+
+        shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
+        marketCenter.buyPrice[candidate.goodId] = Math.min(
+          priceCeiling[candidate.goodId],
+          marketCenter.buyPrice[candidate.goodId] + purchase.units * buyPressure[candidate.goodId]
+        );
+      }
+    }
+  }
+
   private getDemandFocus(demandTargets: number[], demandCoverage: number[]): DemandFocus | null {
     const remainingDemand = demandTargets.map((target, category) => Math.max(0, target - demandCoverage[category]));
     const priorityCategory = remainingDemand.findIndex(shortage => shortage > 0.001);
@@ -365,8 +517,6 @@ export class ProductionModule {
 
   private buildPriceArrays(goods: Good[]) {
     const n = goods.length;
-    const currentBuyPrice = new Array<number>(n);
-    const currentSellPrice = new Array<number>(n);
     const buyPressure = new Array<number>(n);
     const sellPressure = new Array<number>(n);
     const priceFloor = new Array<number>(n);
@@ -374,8 +524,6 @@ export class ProductionModule {
 
     for (const good of goods) {
       const i = good.i;
-      currentBuyPrice[i] = good.value;
-      currentSellPrice[i] = good.value;
       buyPressure[i] = good.value * this.BUY_PRESSURE_FACTOR;
       sellPressure[i] = good.value * this.SELL_PRESSURE_FACTOR;
       priceFloor[i] = good.value * this.PRICE_FLOOR_FACTOR;
@@ -383,8 +531,6 @@ export class ProductionModule {
     }
 
     return {
-      currentBuyPrice,
-      currentSellPrice,
       buyPressure,
       sellPressure,
       priceFloor,
@@ -472,6 +618,7 @@ export class ProductionModule {
    * encode how much downstream bonus is actually reachable for the remaining workers.
    */
   private greedyBestAction(params: {
+    burg: Burg;
     recipeOptions: RecipeOption[];
     goodById: Map<number, Good>;
     chainValueByWorkers: number[][];
@@ -479,7 +626,7 @@ export class ProductionModule {
     cultureType: string;
     inventory: Record<number, number>;
     remainingPool: Record<number, number>;
-    globalMarket: Record<number, number>;
+    marketInventory: Record<number, number>;
     currentBuyPrice: number[];
     currentSellPrice: number[];
     workersLeft: number;
@@ -537,7 +684,7 @@ export class ProductionModule {
 
       for (const entry of option.entries) {
         const inventoryAvailable = params.inventory[entry.goodId] || 0;
-        const marketAvailable = params.globalMarket[entry.goodId] || 0;
+        const marketAvailable = params.marketInventory[entry.goodId] || 0;
         const totalAvailable = inventoryAvailable + marketAvailable;
         if (totalAvailable < entry.amount * params.fraction) {
           feasible = false;
@@ -554,12 +701,12 @@ export class ProductionModule {
 
       for (const entry of option.entries) {
         const inventoryAvailable = params.inventory[entry.goodId] || 0;
-        const marketAvailable = params.globalMarket[entry.goodId] || 0;
+        const marketAvailable = params.marketInventory[entry.goodId] || 0;
         const totalAvailable = inventoryAvailable + marketAvailable;
         const amountNeeded = actualUnits * entry.amount;
         const fromInventory = Math.min(inventoryAvailable, amountNeeded);
         const fromMarket = Math.max(0, amountNeeded - fromInventory);
-        const marketCost = fromMarket * params.currentBuyPrice[entry.goodId];
+        const marketCost = fromMarket * Trade.getConsumerPrice(params.burg, params.currentBuyPrice[entry.goodId]);
         marketCostTotal += marketCost;
 
         ingredients.push({

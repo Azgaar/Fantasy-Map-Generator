@@ -32,10 +32,6 @@ export interface Good {
   // editor state
   cells?: number;
   pinned?: boolean;
-
-  // post-simulation market prices (set by ProductionModule.produce())
-  buyPrice?: number; // current buy price of raw ingredients (rises with extraction)
-  sellPrice?: number; // current sell price of manufactured output (falls with supply)
 }
 
 export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;

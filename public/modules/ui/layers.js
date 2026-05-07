@@ -862,6 +862,19 @@ function toggleMarkers(event) {
   }
 }
 
+function toggleTrade(event) {
+  if (!layerIsOn("toggleTrade")) {
+    turnButtonOn("toggleTrade");
+    $("#trade").fadeIn();
+    if (!trade.selectAll("g").size()) drawTrade();
+    if (event && isCtrlClick(event)) editStyle("trade");
+  } else {
+    if (event && isCtrlClick(event)) return editStyle("trade");
+    $("#trade").fadeOut();
+    turnButtonOff("toggleTrade");
+  }
+}
+
 function toggleLabels(event) {
   if (!layerIsOn("toggleLabels")) {
     turnButtonOn("toggleLabels");
@@ -1032,5 +1045,6 @@ function getLayer(id) {
   if (id === "toggleLabels") return $("#labels");
   if (id === "toggleBurgIcons") return $("#icons");
   if (id === "toggleMarkers") return $("#markers");
+  if (id === "toggleTrade") return $("#trade");
   if (id === "toggleRulers") return $("#ruler");
 }

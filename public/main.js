@@ -70,14 +70,8 @@ let coastline = viewbox.append("g").attr("id", "coastline");
 let ice = viewbox.append("g").attr("id", "ice");
 let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
-let goods = viewbox
-  .append("g")
-  .attr("id", "goods")
-  .style("display", "none")
-  .attr("opacity", 1)
-  .attr("data-circle", 1)
-  .attr("stroke-width", 0.32)
-  .attr("filter", "url(#dropShadow01)");
+let goods = viewbox.append("g").attr("id", "goods").style("display", "none");
+let trade = viewbox.append("g").attr("id", "trade").style("display", "none");
 let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
 let icons = viewbox.append("g").attr("id", "icons");
 let labels = viewbox.append("g").attr("id", "labels");

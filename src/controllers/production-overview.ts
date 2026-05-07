@@ -12,6 +12,25 @@ export function open(burgId: number): void {
     return;
   }
 
+  const tradeCenter = Trade.getCenterForBurg(burg);
+  const deals = pack.deals || [];
+  const burgDeals = deals.filter(deal => {
+    return (deal.buyerType === "burg" && deal.buyerId === burgId) || (deal.sellerType === "burg" && deal.sellerId === burgId);
+  });
+  const burgBuyDeals = burgDeals.filter(deal => deal.buyerType === "burg");
+  const burgSaleDeals = burgDeals.filter(deal => deal.sellerType === "burg");
+  const demandFillDeals = burgBuyDeals.filter(deal => deal.phase === "local-demand-fill");
+  const centerDeals = tradeCenter
+    ? deals.filter(deal => {
+        return (
+          (deal.buyerType === "trade-center" && deal.buyerId === tradeCenter.i) ||
+          (deal.sellerType === "trade-center" && deal.sellerId === tradeCenter.i)
+        );
+      })
+    : [];
+  const centerImportDeals = centerDeals.filter(deal => deal.phase === "global-redistribution" && deal.buyerId === tradeCenter?.i);
+  const centerExportDeals = centerDeals.filter(deal => deal.phase === "global-redistribution" && deal.sellerId === tradeCenter?.i);
+
   const data = Production.getProductionData(burgId);
   if (!data) {
     alertMessage.innerHTML = `<div>No production data for this burg.<br>Run map generation or regenerate production first.</div>`;
@@ -146,9 +165,9 @@ export function open(burgId: number): void {
           ingredient.fromInventory > 0 && ingredient.amount !== ingredient.fromInventory
             ? `${rn(ingredient.fromInventory, 2)} from inventory`
             : null,
-          ingredient.amount === ingredient.fromMarket ? "from market" : null,
+          ingredient.amount === ingredient.fromMarket ? "from local market" : null,
           ingredient.fromMarket > 0 && ingredient.amount !== ingredient.fromMarket
-            ? `${rn(ingredient.fromMarket, 2)} from market`
+            ? `${rn(ingredient.fromMarket, 2)} from local market`
             : null
         ];
         return `${rn(ingredient.amount, 2)} ${goodDot(ingredient.goodId)} (${sources.filter(Boolean).join(", ")})`;
@@ -175,6 +194,8 @@ export function open(burgId: number): void {
   const initialDemand = DEMAND_PRIORITY.map(category => data.population * DEMAND_TARGET_FACTORS[category]);
   const finalDemandCoverage = calculateDemandCoverageTotals(data.finalInventory);
   const uncoveredDemand = initialDemand.map((target, index) => Math.max(0, target - finalDemandCoverage[index]));
+  const producedByGood: Record<number, number> = {};
+  const demandFillUnitsByGood: Record<number, number> = {};
 
   const statsHtml = /*html*/ `
     <div style="${styles.topBar}">
@@ -182,6 +203,7 @@ export function open(burgId: number): void {
       <span><b>Cells:</b> ${data.cellsReached}/${data.cellsBudget}</span>
       <span><b>Culture type:</b> ${data.cultureType}</span>
       <span><b>Order:</b> ${data.processRank} of ${data.totalBurgs}</span>
+      <span><b>Trade center:</b> ${tradeCenter ? `${tradeCenter.name} (#${tradeCenter.i})` : "—"}</span>
       <div><b>Initial Demand:</b> ${renderDemand(initialDemand)}</div>
     </div>`;
 
@@ -226,6 +248,7 @@ export function open(burgId: number): void {
 
   let stepIndex = 0;
   const stepRows = data.jobs.flatMap(job => {
+    producedByGood[job.goodId] = (producedByGood[job.goodId] || 0) + job.units;
     const logId = `productionLog${stepIndex++}`;
     const logHtml = renderDecisionDetails(job.log);
     const rowAttrs = logHtml
@@ -262,7 +285,7 @@ export function open(burgId: number): void {
         rows.push(/*html*/ `<tr>
           ${renderDataCell(renderTaggedGood(item.goodId, "BUY"))}
           ${renderDataCell(rn(item.fromMarket, 2), "right")}
-          <td style="${styles.cell}">Market purchase for ${goodDot(job.goodId)}${goodName(job.goodId)}</td>
+          <td style="${styles.cell}">Local market purchase for ${goodDot(job.goodId)}${goodName(job.goodId)}</td>
           ${renderValueCell("Spent", item.marketCost, false)}
         </tr>`);
       }
@@ -288,7 +311,19 @@ export function open(burgId: number): void {
     return rows;
   });
 
-  const jobsTable = stepRows.length
+  const demandFillRows = demandFillDeals.map(deal => {
+    demandFillUnitsByGood[deal.goodId] = (demandFillUnitsByGood[deal.goodId] || 0) + deal.units;
+
+    return /*html*/ `<tr style="${styles.bodyRow}">
+      ${renderDataCell(renderTaggedGood(deal.goodId, "BUY"))}
+      ${renderDataCell(rn(deal.units, 2), "right")}
+      <td style="${styles.cell}">Demand fill from local market after center redistribution</td>
+      ${renderValueCell("Spent", deal.grossValue, false)}
+    </tr>`;
+  });
+
+  const jobsTableRows = [...stepRows, ...demandFillRows];
+  const jobsTable = jobsTableRows.length
     ? /*html*/ `<table style="${styles.table}">
         <colgroup>
           <col style="width: 30%;">
@@ -302,7 +337,7 @@ export function open(burgId: number): void {
           ${renderHeaderCell("Details")}
           ${renderHeaderCell("Score", "right")}
         </tr></thead>
-        <tbody>${stepRows.join("")}</tbody>
+        <tbody>${jobsTableRows.join("")}</tbody>
       </table>`
     : `<i style="${styles.empty}">No production actions recorded</i>`;
 
@@ -325,25 +360,29 @@ export function open(burgId: number): void {
     .map(([goodId, amount]) => {
       const id = +goodId;
       const good = Goods.get(id);
-      const sellPrice = good?.sellPrice ?? good?.value ?? 0;
-      const baseValue = good?.value ?? 0;
-      const isManufactured = Boolean(good?.recipes?.length);
-      const type: Type = isManufactured ? "MFG" : "RAW";
-      const sellValue = amount * sellPrice;
+      if (!good) return "";
+
+      const producedUnits = producedByGood[id] || 0;
+      const boughtUnits = demandFillUnitsByGood[id] || 0;
+      const isManufactured = Boolean(good.recipes?.length);
+      const type: Type = producedUnits <= 0 && boughtUnits > 0 ? "BUY" : isManufactured ? "MFG" : "RAW";
       const ingredientCost = isManufactured ? mfgCostByGood[id] || 0 : 0;
-      const costPerUnit = isManufactured && amount > 0 ? rn(ingredientCost / amount, 2) : 0;
-      const profit = sellValue - ingredientCost;
-      const profitColor = profit >= 0 ? styles.positive : styles.negative;
-      const sellColor =
-        sellPrice < baseValue * 0.99 ? styles.warning : sellPrice > baseValue * 1.01 ? styles.positive : "";
+      const allocatedCost = producedUnits > 0 ? ingredientCost * Math.min(1, amount / producedUnits) : 0;
+      const costPerUnit = isManufactured && producedUnits > 0 ? rn(ingredientCost / producedUnits, 2) : 0;
+      const demandCoverage = Object.fromEntries(
+        Object.entries(good.demandCoverage).map(([category, value]) => [category, value * amount])
+      ) as Partial<Record<DemandCategory, number>>;
 
       return /*html*/ `<tr style="${styles.bodyRow}">
         ${renderDataCell(renderTaggedGood(id, type))}
         ${renderDataCell(rn(amount, 2), "right")}
         ${renderPriceCell(costPerUnit)}
-        ${renderPriceCell(sellPrice, sellColor)}
-        ${renderPriceCell(sellValue)}
-        ${renderPriceCell(profit, profitColor)}
+        ${renderPriceCell(allocatedCost, allocatedCost > 0 ? styles.warning : styles.subtle)}
+        ${renderDataCell(renderDemand(demandCoverage, true) || "—", "right")}
+        ${renderDataCell(
+          producedUnits <= 0 && boughtUnits > 0 ? "Bought to fill demand" : isManufactured ? "Locally manufactured" : "Locally extracted",
+          "right"
+        )}
       </tr>`;
     })
     .join("");
@@ -351,9 +390,53 @@ export function open(burgId: number): void {
   const summaryHtml = /*html*/ `
     <div style="${styles.summaryBar}">
       <span title="Initial demand minus final covered demand"><b>Uncovered Demand:</b> ${renderDemand(uncoveredDemand, true)}</span>
-      <span title="Gross product per population point. This is the burg's gross product divided by population, a per-capita productivity measure for the current production run."><b>Wealth:</b> <span style="font-weight:600; ${data.productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(data.productPerCapita)}</span></span>
-      <span title="Gross Product is the total profit of this burg's final output for the current production run. It is revenue after subtracting purchased ingredient costs, effectively a local GDP-like figure."><b>Gross Product:</b> <span style="font-weight:600; ${data.grossProduct >= 0 ? styles.positive : styles.negative}">${formatPrice(data.grossProduct)}</span></span>
+      <span title="Net burg treasury after local buying, local sales, and final local demand fill."><b>Treasury:</b> <span style="font-weight:600; ${data.wealthAfter >= 0 ? styles.positive : styles.negative}">${formatPrice(data.wealthAfter)}</span></span>
+      <span title="Gross product per population point. This is the burg's gross product divided by population, a per-capita productivity measure for the current production run."><b>Product / Capita:</b> <span style="font-weight:600; ${data.productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(data.productPerCapita)}</span></span>
+      <span title="Gross Product is local sale revenue minus purchased ingredient costs during this production run. It excludes retained inventory and later demand-fill purchases."><b>Gross Product:</b> <span style="font-weight:600; ${data.grossProduct >= 0 ? styles.positive : styles.negative}">${formatPrice(data.grossProduct)}</span></span>
     </div>`;
+
+  const tradeSummaryRows = [
+    `<tr style="${styles.bodyRow}">
+      ${renderDataCell("Local market buys")}
+      ${renderDataCell(String(burgBuyDeals.length), "right")}
+      ${renderValueCell("Spent", burgBuyDeals.reduce((sum, deal) => sum + deal.grossValue, 0), false)}
+      ${renderValueCell("Tax", burgBuyDeals.reduce((sum, deal) => sum + deal.taxAmount, 0), false)}
+    </tr>`,
+    `<tr style="${styles.bodyRow}">
+      ${renderDataCell("Local market sales")}
+      ${renderDataCell(String(burgSaleDeals.length), "right")}
+      ${renderValueCell("Revenue", burgSaleDeals.reduce((sum, deal) => sum + deal.sellerProceeds, 0), true)}
+      ${renderDataCell("—", "right", styles.subtle)}
+    </tr>`,
+    `<tr style="${styles.bodyRow}">
+      ${renderDataCell("Center imports")}
+      ${renderDataCell(String(centerImportDeals.length), "right")}
+      ${renderValueCell("Value", centerImportDeals.reduce((sum, deal) => sum + deal.grossValue, 0), true)}
+      ${renderDataCell("—", "right", styles.subtle)}
+    </tr>`,
+    `<tr style="${styles.bodyRow}">
+      ${renderDataCell("Center exports")}
+      ${renderDataCell(String(centerExportDeals.length), "right")}
+      ${renderValueCell("Value", centerExportDeals.reduce((sum, deal) => sum + deal.sellerProceeds, 0), true)}
+      ${renderDataCell("—", "right", styles.subtle)}
+    </tr>`
+  ].join("");
+
+  const tradeSummaryTable = /*html*/ `<table style="${styles.table}">
+    <colgroup>
+      <col style="width: 40%;">
+      <col style="width: 15%;">
+      <col style="width: 25%;">
+      <col style="width: 20%;">
+    </colgroup>
+    <thead><tr style="${styles.headRow}">
+      ${renderHeaderCell("Trade Flow")}
+      ${renderHeaderCell("Deals", "right")}
+      ${renderHeaderCell("Value", "right")}
+      ${renderHeaderCell("Tax", "right")}
+    </tr></thead>
+    <tbody>${tradeSummaryRows}</tbody>
+  </table>`;
 
   const finalTableContent = finalRows
     ? /*html*/ `<table style="${styles.table}">
@@ -368,10 +451,10 @@ export function open(burgId: number): void {
         <thead><tr style="${styles.headRow}">
           ${renderHeaderCell("Good")}
           ${renderHeaderCell("Units", "right")}
-          ${renderHeaderCell("Cost", "right", "Average ingredient cost per unit. Manufactured goods show purchased-input cost per output unit; raw goods stay at 0 because they do not buy inputs.")}
-          ${renderHeaderCell("Sell Price", "right", "Current sell price per unit after market pressure. Revenue in this table is Units × Sell Price.")}
-          ${renderHeaderCell("Revenue", "right")}
-          ${renderHeaderCell("Profit", "right", "Revenue minus ingredient cost (MFG only)")}
+          ${renderHeaderCell("Unit Cost", "right", "Average purchased-input cost per locally produced unit. Raw and bought goods stay at 0.")}
+          ${renderHeaderCell("Allocated Cost", "right", "Purchased-input cost allocated to retained locally produced units.")}
+          ${renderHeaderCell("Demand Coverage", "right", "Demand categories covered by the retained units in this row.")}
+          ${renderHeaderCell("Source", "right")}
         </tr></thead>
         <tbody>${finalRows}</tbody>
       </table>`
@@ -383,7 +466,8 @@ export function open(burgId: number): void {
       ${statsHtml}
       ${renderSection(accessibleResourcesTitle, accessibleResourcesTable)}
       ${renderSection("Production Steps", jobsTable)}
-      ${renderSection("Final Output", finalTable)}
+      ${renderSection("Retained Inventory", finalTable)}
+      ${renderSection("Trade Summary", tradeSummaryTable)}
     </div>
   `;
 

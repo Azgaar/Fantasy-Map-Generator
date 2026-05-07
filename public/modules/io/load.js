@@ -414,6 +414,8 @@ async function parseLoadedData(data, mapVersion) {
       pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
       pack.ice = data[39] ? JSON.parse(data[39]) : [];
       pack.goods = data[41] ? JSON.parse(data[41]) : [];
+      pack.markets = data[42] ? JSON.parse(data[42]) : [];
+      pack.deals = data[43] ? JSON.parse(data[43]) : [];
       pack.cells.good = data[40] ? Uint8Array.from(data[40].split(",")) : new Uint8Array(pack.cells.i.length);
 
       if (data[31]) {
