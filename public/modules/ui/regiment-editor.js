@@ -93,7 +93,7 @@ function editRegiment(selector) {
 
   function drawRotationControl() {
     const reg = getRegiment();
-    const { x, width, y, height } = elSelected.getBBox();
+    const {x, width, y, height} = elSelected.getBBox();
 
     debug
       .append("circle")
@@ -245,7 +245,7 @@ function editRegiment(selector) {
       military = pack.states[state].military;
     const i = military.length ? last(military).i + 1 : 0;
     const n = +(pack.cells.h[cell] < 20); // naval or land
-    const reg = { a: 0, cell, i, n, u: {}, x, y, bx: x, by: y, state, icon: "🛡️" };
+    const reg = {a: 0, cell, i, n, u: {}, x, y, bx: x, by: y, state, icon: "🛡️"};
     reg.name = Military.getName(reg, military);
     military.push(reg);
     Military.generateNote(reg, pack.states[state]); // add legend
@@ -553,7 +553,7 @@ function editRegiment(selector) {
     const rotationControl = debug.select("#rotationControl");
 
     d3.event.on("drag", function () {
-      const { x, y } = d3.event;
+      const {x, y} = d3.event;
       reg.x = x;
       reg.y = y;
       const x1 = rn(x - w / 2, 2);
