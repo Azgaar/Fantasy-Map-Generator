@@ -190,7 +190,7 @@ test.describe('map layers', () => {
     expect(html).toMatchSnapshot('labels.html')
   })
 
-  test('labels group can be hidden with display none', async () => {
+  test('labels group can be hidden with display:none', async () => {
     await sharedPage.evaluate(() => {
       const styleElementSelect = document.getElementById('styleElementSelect') as HTMLSelectElement
       const styleGroupSelect = document.getElementById('styleGroupSelect') as HTMLSelectElement

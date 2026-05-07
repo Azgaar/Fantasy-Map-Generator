@@ -477,7 +477,6 @@ styleOpacityInput.on("input", e => {
 });
 
 styleLabelsHideGroup.on("change", function () {
-  if (styleElementSelect.value !== "labels") return;
   getEl().style("display", this.checked ? "none" : null);
 });
 
