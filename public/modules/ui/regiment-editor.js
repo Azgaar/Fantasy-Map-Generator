@@ -338,7 +338,8 @@ function editRegiment(selector) {
 
     if (closestIndex == -1 && pack.states[pack.burgs[burgId].state].military.length == 1)
       closestIndex = 0;
-
+    if (closestIndex == -1)
+      return;
     const defendingRegiment = pack.states[pack.burgs[burgId].state].military[closestIndex];
     if (!attacker.a || !defendingRegiment.a) {
       tip("Regiment has no troops to battle", false, "error");
