@@ -78,6 +78,7 @@ class OceanModule {
     const outline = this.oceanLayers.attr("layers");
     if (outline === "none") return;
     TIME && console.time("drawOceanLayers");
+    this.oceanLayers.selectAll("path").remove();
     this.cells = grid.cells;
     this.pointsN = grid.cells.i.length;
     this.vertices = grid.vertices;
