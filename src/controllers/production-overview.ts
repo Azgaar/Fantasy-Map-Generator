@@ -89,6 +89,8 @@ export function open(burgId: number): void {
       return `<span style="${commonStyles};background:#dff0e2;color:#2f8a46" title="Sale to local market">SELL</span>`;
     return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" title="Manufacturing step">MFG</span>`;
   };
+  const modifierBadge = (modifier: number) =>
+    `<span style="display:inline-block;margin-left:4px;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35;background:#edf1f4;color:#5f6f7a" title="Culture type production modifier. Produced units are multiplied by this value.">x${rn(modifier, 2)}</span>`;
 
   const renderGoodLabel = (id: number, suffix = "") => `${goodDot(id)}${goodName(id)}${suffix}`;
   const renderDataCell = (content: string | number, align: "left" | "right" = "left", extra = "") =>
@@ -302,10 +304,7 @@ export function open(burgId: number): void {
       : ` style="${styles.bodyRow}"`;
 
     if (job.kind === "extract") {
-      const cultureSuffix =
-        job.cultureModifier !== 1
-          ? ` <span style="${styles.muted}" title="Culture bonus">x${rn(job.cultureModifier, 2)}</span>`
-          : "";
+      const cultureSuffix = job.cultureModifier !== 1 ? ` ${modifierBadge(job.cultureModifier)}` : "";
 
       const details = "Local resource production";
       return [
@@ -321,10 +320,7 @@ export function open(burgId: number): void {
 
     const rows: string[] = [];
 
-    const cultureSuffix =
-      job.cultureModifier !== 1
-        ? ` <span style="${styles.muted}" title="Culture bonus">x${rn(job.cultureModifier, 2)}</span>`
-        : "";
+    const cultureSuffix = job.cultureModifier !== 1 ? ` ${modifierBadge(job.cultureModifier)}` : "";
     const allInputs = job.recipe
       .map(item => `${rn(item.fromInventory + item.fromMarket, 2)} ${goodDot(item.goodId)}`)
       .join(` and `);
