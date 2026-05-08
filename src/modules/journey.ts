@@ -415,6 +415,8 @@ export function chordKey(a: [number, number], b: [number, number]): string {
 
 const MIN_SEG_LEN = 0.05;
 const LANE_WIDTH = 3.5;
+/** Extra screen px beyond the waypoint radius so arrow shapes clear stop discs and never hug leg endpoints. */
+const JOURNEY_ARROW_EDGE_PADDING_PX = 26;
 const JOURNEY_ARROW_SPACING_BASE_PX = 38;
 const LOD_TIER_MAX = 6;
 const LOD_ARROW_SPACING_MUL: readonly number[] = [
@@ -564,13 +566,18 @@ interface ArrowSample {
 export function arrowPositionsAlongPolyline(
   pts: [number, number][],
   spacing: number,
+  edgeInset = 0,
 ): ArrowSample[] {
   const result: ArrowSample[] = [];
   if (pts.length < 2 || spacing <= 0) return result;
   const polyLen = polylineLength(pts);
   if (polyLen < 1e-9) return result;
+  const inset = Math.max(0, edgeInset);
+  const lo = inset;
+  const hi = polyLen - inset;
+  if (hi <= lo + 1e-9) return result;
   let cumulative = 0;
-  let nextAt = spacing;
+  let nextAt = Math.max(spacing, Math.ceil(lo / spacing) * spacing);
   for (let i = 0; i < pts.length - 1; i++) {
     const x0 = pts[i][0];
     const y0 = pts[i][1];
@@ -580,7 +587,8 @@ export function arrowPositionsAlongPolyline(
     if (segLen < 1e-9) continue;
     const angleDeg = (Math.atan2(y1 - y0, x1 - x0) * 180) / Math.PI;
     const segEnd = cumulative + segLen;
-    while (nextAt <= segEnd + 1e-9) {
+    const segHi = Math.min(segEnd, hi);
+    while (nextAt <= segHi + 1e-9) {
       const alongSeg = nextAt - cumulative;
       const t = alongSeg / segLen;
       const distAlongTotal = cumulative + alongSeg;
@@ -605,18 +613,46 @@ function polylineLength(pts: [number, number][]): number {
   return len;
 }
 
-function arcLengthFractionToVertex(
+/** Position and tangent along `pts` at arc length `distAlong` from the start (clamped to the polyline). */
+function samplePolylineAtArcLength(
   pts: [number, number][],
-  vertexIdx: number,
-): number {
-  const L = polylineLength(pts);
-  if (L < 1e-12) return 0;
-  const vi = minmax(vertexIdx, 0, pts.length - 1);
-  let cum = 0;
-  for (let i = 0; i < vi; i++) {
-    cum += Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
+  distAlong: number,
+): ArrowSample | null {
+  const polyLen = polylineLength(pts);
+  if (pts.length < 2 || polyLen < 1e-9) return null;
+  const d = minmax(distAlong, 0, polyLen);
+  let cumulative = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const x0 = pts[i][0];
+    const y0 = pts[i][1];
+    const x1 = pts[i + 1][0];
+    const y1 = pts[i + 1][1];
+    const segLen = Math.hypot(x1 - x0, y1 - y0);
+    if (segLen < 1e-9) continue;
+    const segEnd = cumulative + segLen;
+    if (d <= segEnd + 1e-9) {
+      const alongSeg = Math.max(0, d - cumulative);
+      const t = segLen > 1e-9 ? alongSeg / segLen : 0;
+      const angleDeg = (Math.atan2(y1 - y0, x1 - x0) * 180) / Math.PI;
+      return {
+        x: x0 + t * (x1 - x0),
+        y: y0 + t * (y1 - y0),
+        angleDeg,
+        arcFrac: d / polyLen,
+      };
+    }
+    cumulative = segEnd;
   }
-  return minmax(cum / L, 0, 1);
+  const last = pts[pts.length - 1]!;
+  const prev = pts[pts.length - 2]!;
+  const angleDeg =
+    (Math.atan2(last[1] - prev[1], last[0] - prev[0]) * 180) / Math.PI;
+  return {
+    x: last[0],
+    y: last[1],
+    angleDeg,
+    arcFrac: 1,
+  };
 }
 
 export function segmentUInterval(
@@ -810,6 +846,12 @@ class JourneyDrawModule {
 
       const samples = journeyPolylineSamplesForTier(tier);
       const arrowSpacing = journeyArrowSpacingMapUnits(zs, tier);
+      const arrowEdgeInset = mapMetricScreenToWorld(
+        mergedStyle.waypointRScreenPx + JOURNEY_ARROW_EDGE_PADDING_PX,
+        zs,
+        0.06,
+        120,
+      );
       const segmentsRoot = sub.append("g").attr("class", "journey-segments");
       const lanes = laneMultipliersForSegments(points);
       const repeats = directedChordOccurrenceIndex(points);
@@ -869,25 +911,18 @@ class JourneyDrawModule {
               .attr("stroke-linejoin", "round");
           }
         }
-        let arrPts = arrowPositionsAlongPolyline(samp, arrowSpacing);
-        if (!arrPts.length && polylineLength(samp) > MIN_SEG_LEN) {
-          const mid = Math.max(1, Math.floor(samp.length / 2));
-          const prev = mid - 1;
-          const angleDeg =
-            (Math.atan2(
-              samp[mid][1] - samp[prev][1],
-              samp[mid][0] - samp[prev][0],
-            ) *
-              180) /
-            Math.PI;
-          arrPts = [
-            {
-              x: samp[mid][0],
-              y: samp[mid][1],
-              angleDeg,
-              arcFrac: arcLengthFractionToVertex(samp, mid),
-            },
-          ];
+        let arrPts = arrowPositionsAlongPolyline(
+          samp,
+          arrowSpacing,
+          arrowEdgeInset,
+        );
+        if (!arrPts.length && polyLen > MIN_SEG_LEN) {
+          const lo = arrowEdgeInset;
+          const hi = polyLen - arrowEdgeInset;
+          if (hi > lo + 1e-9) {
+            const midSample = samplePolylineAtArcLength(samp, (lo + hi) * 0.5);
+            if (midSample) arrPts = [midSample];
+          }
         }
         for (const ar of arrPts) {
           const arrowColor = rampAt(u0 + ar.arcFrac * (u1 - u0));
