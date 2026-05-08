@@ -48,7 +48,6 @@ class LabelsModule {
   // initialization flag as the constructor version doesn't blocks other modules from beeing initialized.
   private initialized: boolean = false;
 
-
   private getNextId(): number {
     if (!this.initialized) {
       this.initialized = true;
@@ -59,7 +58,8 @@ class LabelsModule {
         if (!existingIds.includes(id)) this.freeIds.add(id);
       }
 
-      this.maxId = existingIds.length > 0 ? existingIds[existingIds.length - 1] + 1 : 0;
+      this.maxId =
+        existingIds.length > 0 ? existingIds[existingIds.length - 1] + 1 : 0;
     }
 
     if (this.freeIds.size > 0) {
@@ -72,7 +72,7 @@ class LabelsModule {
     // maxId is always 1 greater than the current highest ID, so we can return it and then increment for the next call
     const nextId = this.maxId;
     this.maxId++;
-    return nextId; 
+    return nextId;
   }
 
   generate(): void {
