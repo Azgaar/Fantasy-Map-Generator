@@ -3196,7 +3196,7 @@
           </div>
           <table style="width: 100%; margin: 0.4em 0; border-collapse: collapse">
             <tbody id="journeyEditorColorBody">
-              <tr data-tip="Built-in rainbow uses the classic multi-stop ramp; custom gradient uses From/To or the stops list">
+              <tr data-tip="Built-in rainbow uses the classic multi-stop ramp; custom gradient uses the color list below">
                 <td style="white-space: nowrap">Color mode</td>
                 <td>
                   <select id="journeyEditorColorMode">
@@ -3213,29 +3213,20 @@
                   <output id="journeyEditorSolidStrokeOutput"></output>
                 </td>
               </tr>
-              <tr data-tip="Gradient start along the path (Custom gradient mode). Blank stops uses From and To only.">
-                <td>Gradient from</td>
+              <tr
+                id="journeyEditorGradientStopsRow"
+                style="display: none"
+                data-tip="At least two colors; order follows the journey path. Use + to add another stop."
+              >
+                <td style="vertical-align: top; white-space: nowrap">Gradient colors</td>
                 <td>
-                  <input id="journeyEditorGradientFrom" type="color" />
-                  <output id="journeyEditorGradientFromOutput"></output>
-                </td>
-              </tr>
-              <tr data-tip="Gradient end along the path (Custom gradient mode)">
-                <td>Gradient to</td>
-                <td>
-                  <input id="journeyEditorGradientTo" type="color" />
-                  <output id="journeyEditorGradientToOutput"></output>
-                </td>
-              </tr>
-              <tr data-tip="Optional: comma-separated colors (two or more). Overrides Gradient from/to when set.">
-                <td>Gradient stops</td>
-                <td>
-                  <input
-                    id="journeyEditorRainbowStops"
-                    type="text"
-                    style="width: 100%"
-                    placeholder="Blank = From/To only, or e.g. #f00, #0f0, #00f"
-                  />
+                  <div id="journeyEditorGradientStopsBody"></div>
+                  <button
+                    type="button"
+                    id="journeyEditorGradientAddStop"
+                    data-tip="Add gradient color stop"
+                    class="icon-plus"
+                  ></button>
                 </td>
               </tr>
             </tbody>
