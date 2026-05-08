@@ -108,37 +108,51 @@ export function open(burgId: number): void {
     `<td style="${align === "right" ? styles.cellRight : styles.cell}${extra ? `;${extra}` : ""}">${content}</td>`;
   const renderHeaderCell = (content: string, align: "left" | "right" = "left", title = "") =>
     `<th style="${align === "right" ? styles.cellRight : styles.cell}"${title ? ` title="${title}"` : ""}>${content}</th>`;
-  const renderSection = (title: string, content: string) =>
-    `<div style="margin-bottom:.9em"><div style="${styles.sectionTitle}">${title}</div>${content}</div>`;
+  const renderSection = (title: string, content: string, titleTooltip = "") =>
+    `<div style="margin-bottom:.9em"><div style="${styles.sectionTitle}"${titleTooltip ? ` title="${titleTooltip}"` : ""}>${title}</div>${content}</div>`;
   const renderPriceCell = (value: number | string, extra = "") => renderDataCell(formatPrice(value), "right", extra);
   const renderIncomeCell = (value: number) => {
     const extraStyle = value >= 0 ? styles.positive : styles.warning;
     return `<td style="${styles.cellRight};${extraStyle}">${formatPrice(value)}</td>`;
   };
-  const _renderDealDetails = (deal: Deal, kind: "buy" | "sell") => {
-    const units = deal.units;
-    const marketPrice = kind === "buy" ? deal.prices.marketBuy : deal.prices.marketSell;
-    const salesTaxPerUnit = kind === "sell" ? deal.prices.marketSell * getSellerTaxRate(deal) : 0;
-    const signedTotal = kind === "buy" ? -getDealSpent(deal) : getDealNetRevenue(deal);
-    const expression =
-      kind === "buy"
-        ? `unit ${rn(units, 2)} × (sell price ${rn(marketPrice, 2)} + 1 × sales tax ${rn(salesTaxPerUnit, 2)})`
-        : `unit ${rn(units, 2)} × (buy price ${rn(marketPrice, 2)} - 1 × sales tax ${rn(salesTaxPerUnit, 2)})`;
+  const renderTable = (params: {
+    colWidths: string[];
+    headers: Array<{label: string; align?: "left" | "right"; title?: string}>;
+    rows: string[];
+    empty: string;
+  }) => {
+    const {colWidths, headers, rows, empty} = params;
+    if (!rows.length) return `<i style="${styles.empty}">${empty}</i>`;
 
-    //  const renderProductionBuyDetails = (fromMarket: number, marketCost: number) => {
-    //   const unitBuy = fromMarket > 0 ? marketCost / fromMarket : 0;
-    //   return /*html*/ `<div><b>Deal calculation:</b> unit ${rn(fromMarket, 2)} × buy price ${rn(unitBuy, 2)} = <b>${formatPrice(-marketCost)}</b> spent</div>`;
-    // };
-
-    return /*html*/ `<div><b>Deal calculation:</b> ${expression} = <b>${formatPrice(signedTotal)}</b></div>`;
+    return /*html*/ `<table style="${styles.table}">
+      <colgroup>${colWidths.map(width => `<col style="width: ${width};">`).join("")}</colgroup>
+      <thead><tr style="${styles.headRow}">${headers
+        .map(header => renderHeaderCell(header.label, header.align || "left", header.title || ""))
+        .join("")}</tr></thead>
+      <tbody>${rows.join("")}</tbody>
+    </table>`;
   };
+  const renderSummaryBar = (
+    items: Array<{
+      label: string;
+      value: string;
+      title: string;
+      valueStyle?: string;
+    }>
+  ) =>
+    /*html*/ `<div style="${styles.summaryBar}">${items
+      .map(
+        item =>
+          `<span title="${item.title}"><b>${item.label}:</b> <span style="font-weight:600; ${item.valueStyle || ""}">${item.value}</span></span>`
+      )
+      .join("")}</div>`;
 
   const renderTaggedGood = (id: number, type: Type, suffix = "") =>
     `${renderGoodLabel(id, suffix)} <span style="margin-left:4px">${typeBadge(type)}</span>`;
-  const renderLogRow = (candidatesId: string, candidatesHtml: string) =>
-    candidatesHtml
-      ? /*html*/ `<tr id="${candidatesId}" style="display:none">
-          <td colspan="4" style="${styles.detailsCell}">${candidatesHtml}</td>
+  const renderLogRow = (targetId: string, detailsHtml: string) =>
+    detailsHtml
+      ? /*html*/ `<tr id="${targetId}" style="display:none">
+          <td colspan="4" style="${styles.detailsCell}">${detailsHtml}</td>
         </tr>`
       : "";
   const formatPrice = (value: number | string) => `🟡 ${typeof value === "number" ? rn(value, 2) : value}`;
@@ -235,9 +249,35 @@ export function open(burgId: number): void {
       .join("")}</ul>`;
     return /*html*/ `<div><b>Decision basis:</b> highest score among ${candidates.length} feasible options:</div>${candidatesHtml}`;
   };
-  const renderProductionBuyDetails = (fromMarket: number, marketCost: number) => {
-    const unitBuy = fromMarket > 0 ? marketCost / fromMarket : 0;
-    return /*html*/ `<div><b>Deal calculation:</b> unit ${rn(fromMarket, 2)} × buy price ${rn(unitBuy, 2)} = <b>${formatPrice(-marketCost)}</b> spent</div>`;
+  const renderCalculationDetails = (expression: string, value: number, label: string) =>
+    /*html*/ `<div><b>Deal calculation:</b> ${expression} = <b>${formatPrice(value)}</b> ${label}</div>`;
+  const renderBuyDetails = (units: number, unitPrice: number, totalCost: number) =>
+    renderCalculationDetails(`unit ${rn(units, 2)} × buy price ${rn(unitPrice, 2)}`, -totalCost, "spent");
+  const renderSaleDetails = (deal: Deal) =>
+    renderCalculationDetails(
+      `unit ${rn(deal.units, 2)} × sell price ${rn(deal.prices.marketSell, 2)} - sales tax ${rn(getDealTax(deal), 2)}`,
+      getDealNetRevenue(deal),
+      "income"
+    );
+  const renderExpandableDealRow = (params: {
+    targetId: string;
+    goodId: number;
+    type: Type;
+    units: number;
+    details: string;
+    income: number;
+    detailsHtml: string;
+  }) => {
+    const {targetId, goodId, type, units, details, income, detailsHtml} = params;
+    return [
+      /*html*/ `<tr data-target="${targetId}" style="${styles.bodyRow};cursor:pointer" title="Click to expand deal details">
+        ${renderDataCell(renderTaggedGood(goodId, type))}
+        ${renderDataCell(rn(units, 2), "right")}
+        <td style="${styles.cell}">${details}</td>
+        ${renderIncomeCell(income)}
+      </tr>`,
+      renderLogRow(targetId, detailsHtml)
+    ];
   };
   const population = burg.population || 0;
   const wealthAfter = burg.wealth || 0;
@@ -295,21 +335,29 @@ export function open(burgId: number): void {
     .join("");
 
   const accessibleResourcesTable = accessibleResourceRows
-    ? /*html*/ `<table style="${styles.table}">
-        <colgroup>
-          <col style="width: 30%;">
-          <col style="width: 10%;">
-          <col style="width: 20%;">
-          <col style="width: 40%;">
-        </colgroup>
-        <thead><tr style="${styles.headRow}">
-          ${renderHeaderCell("Resource")}
-          ${renderHeaderCell("Units", "right", "Raw units from flood-fill cells")}
-          ${renderHeaderCell("Base Price", "right", "Authored reference price for this resource")}
-          ${renderHeaderCell("Demand Coverage", "right", "Demand categories this accessible resource can help cover at current pulled units")}
-        </tr></thead>
-        <tbody>${accessibleResourceRows}</tbody>
-      </table>`
+    ? renderTable({
+        colWidths: ["30%", "10%", "20%", "40%"],
+        headers: [
+          {label: "Resource"},
+          {
+            label: "Units",
+            align: "right",
+            title: "Raw units from flood-fill cells"
+          },
+          {
+            label: "Base Price",
+            align: "right",
+            title: "Authored reference price for this resource"
+          },
+          {
+            label: "Demand Coverage",
+            align: "right",
+            title: "Demand categories this accessible resource can help cover at current pulled units"
+          }
+        ],
+        rows: accessibleResourceRows ? [accessibleResourceRows] : [],
+        empty: "No goods reached this burg"
+      })
     : `<i style="${styles.empty}">No goods reached this burg</i>`;
 
   let stepIndex = 0;
@@ -320,18 +368,17 @@ export function open(burgId: number): void {
     const rowAttrs = candidatesHtml
       ? ` data-target="${candidatesId}" style="${styles.bodyRow};cursor:pointer" title="Click to expand decision details"`
       : ` style="${styles.bodyRow}"`;
-
     if (job.kind === "extract") {
       const cultureSuffix = job.cultureModifier !== 1 ? ` ${modifierBadge(job.cultureModifier)}` : "";
 
       const details = "Local resource production";
       return [
         /*html*/ `<tr${rowAttrs}>
-        ${renderDataCell(renderTaggedGood(job.goodId, "RAW", cultureSuffix))}
-        ${renderDataCell(rn(job.units, 2), "right")}
-        <td style="${styles.cell}">${details}</td>
-        ${renderDataCell("", "right", styles.subtle)}
-      </tr>`,
+         ${renderDataCell(renderTaggedGood(job.goodId, "RAW", cultureSuffix))}
+         ${renderDataCell(rn(job.units, 2), "right")}
+         <td style="${styles.cell}">${details}</td>
+         ${renderDataCell("", "right", styles.subtle)}
+       </tr>`,
         renderLogRow(candidatesId, candidatesHtml)
       ];
     }
@@ -346,23 +393,25 @@ export function open(burgId: number): void {
     const buyItems = job.recipe.filter(item => item.fromMarket > 0.001);
     for (const item of buyItems) {
       const detailsId = `deal-details-${stepIndex++}`;
-      const buyRowAttrs = ` data-target="${detailsId}" style="${styles.bodyRow};cursor:pointer" title="Click to expand deal details"`;
-      rows.push(/*html*/ `<tr${buyRowAttrs}>
-        ${renderDataCell(renderTaggedGood(item.goodId, "BUY"))}
-        ${renderDataCell(rn(item.fromMarket, 2), "right")}
-        <td style="${styles.cell}">Market purchase for ${goodDot(job.goodId)} production</td>
-        ${renderIncomeCell(-item.marketCost)}
-      </tr>`);
-      rows.push(renderLogRow(detailsId, renderProductionBuyDetails(item.fromMarket, item.marketCost)));
+      rows.push(
+        ...renderExpandableDealRow({
+          targetId: detailsId,
+          goodId: item.goodId,
+          type: "BUY",
+          units: item.fromMarket,
+          details: `Market purchase for ${goodDot(job.goodId)} production`,
+          income: -item.marketCost,
+          detailsHtml: renderBuyDetails(item.fromMarket, item.marketCost / item.fromMarket, item.marketCost)
+        })
+      );
     }
 
     rows.push(/*html*/ `<tr${rowAttrs}>
-      ${renderDataCell(renderTaggedGood(job.goodId, "MFG", cultureSuffix))}
-      ${renderDataCell(rn(job.units, 2), "right")}
-      ${renderDataCell(`Manufacturing from ${allInputs}`, "left", styles.cell)}
-      ${renderDataCell("", "right", styles.subtle)}
-    </tr>`);
-
+       ${renderDataCell(renderTaggedGood(job.goodId, "MFG", cultureSuffix))}
+       ${renderDataCell(rn(job.units, 2), "right")}
+       <td style="${styles.cell}">${`Manufacturing from ${allInputs}`}</td>
+       ${renderDataCell("", "right", styles.subtle)}
+     </tr>`);
     rows.push(renderLogRow(candidatesId, candidatesHtml));
 
     return rows;
@@ -371,57 +420,46 @@ export function open(burgId: number): void {
   const demandFillRows = demandFillDeals.flatMap(deal => {
     demandFillUnitsByGood[deal.goodId] = (demandFillUnitsByGood[deal.goodId] || 0) + deal.units;
     const detailsId = `deal-details-${stepIndex++}`;
-    const rowAttrs = ` data-target="${detailsId}" style="${styles.bodyRow};cursor:pointer" title="Click to expand deal details"`;
-
-    return [
-      /*html*/ `<tr${rowAttrs}>
-      ${renderDataCell(renderTaggedGood(deal.goodId, "BUY"))}
-      ${renderDataCell(rn(deal.units, 2), "right")}
-      <td style="${styles.cell}">Demand fill from local market</td>
-      ${renderIncomeCell(-getDealSpent(deal))}
-    </tr>`,
-      renderLogRow(
-        detailsId,
-        /*html*/ `<div><b>Deal calculation:</b> unit ${rn(deal.units, 2)} × buy price ${rn(deal.prices.marketBuy, 2)} = <b>${formatPrice(-getDealSpent(deal))}</b></div>`
-      )
-    ];
+    return renderExpandableDealRow({
+      targetId: detailsId,
+      goodId: deal.goodId,
+      type: "BUY",
+      units: deal.units,
+      details: "Demand fill from local market",
+      income: -getDealSpent(deal),
+      detailsHtml: renderBuyDetails(deal.units, deal.prices.marketBuy, getDealSpent(deal))
+    });
   });
 
   const saleRows = burgSaleDeals.flatMap(deal => {
     const detailsId = `deal-details-${stepIndex++}`;
-    const salesTax = getDealTax(deal);
-    return [
-      /*html*/ `<tr data-target="${detailsId}" style="${styles.bodyRow};cursor:pointer" title="Click to expand deal details">
-      ${renderDataCell(renderTaggedGood(deal.goodId, "SELL"))}
-      ${renderDataCell(rn(deal.units, 2), "right")}
-      <td style="${styles.cell}">Sale to local market</td>
-      ${renderIncomeCell(getDealNetRevenue(deal))}
-    </tr>`,
-      renderLogRow(
-        detailsId,
-        /*html*/ `<div><b>Deal calculation:</b> unit ${rn(deal.units, 2)} × sell price ${rn(deal.prices.marketSell, 2)} - sales tax ${rn(salesTax, 2)} = <b>${formatPrice(getDealNetRevenue(deal))}</b></div>`
-      )
-    ];
+    return renderExpandableDealRow({
+      targetId: detailsId,
+      goodId: deal.goodId,
+      type: "SELL",
+      units: deal.units,
+      details: "Sale to local market",
+      income: getDealNetRevenue(deal),
+      detailsHtml: renderSaleDetails(deal)
+    });
   });
 
   const jobsTableRows = [...stepRows, ...saleRows, ...demandFillRows];
-  const jobsTable = jobsTableRows.length
-    ? /*html*/ `<table style="${styles.table}">
-        <colgroup>
-          <col style="width: 30%;">
-          <col style="width: 10%;">
-          <col style="width: 40%;">
-          <col style="width: 20%;">
-        </colgroup>
-        <thead><tr style="${styles.headRow}">
-          ${renderHeaderCell("Good")}
-          ${renderHeaderCell("Units", "right")}
-          ${renderHeaderCell("Details")}
-          ${renderHeaderCell("Income", "right", "Money flow for deal rows: negative for BUY, positive for SELL. Pure production rows are blank.")}
-        </tr></thead>
-        <tbody>${jobsTableRows.join("")}</tbody>
-      </table>`
-    : `<i style="${styles.empty}">No production actions recorded</i>`;
+  const jobsTable = renderTable({
+    colWidths: ["30%", "10%", "40%", "20%"],
+    headers: [
+      {label: "Good"},
+      {label: "Units", align: "right"},
+      {label: "Details"},
+      {
+        label: "Income",
+        align: "right",
+        title: "Money flow for deal rows: negative for BUY, positive for SELL. Pure production rows are blank."
+      }
+    ],
+    rows: jobsTableRows,
+    empty: "No production actions recorded"
+  });
 
   const mfgCostByGood: Record<number, number> = {};
   for (const job of data.jobs) {
@@ -465,49 +503,79 @@ export function open(burgId: number): void {
     })
     .join("");
 
-  const demandSummaryHtml = /*html*/ `
-    <div style="${styles.summaryBar}">
-      <span title="Initial demand minus final covered demand"><b>Uncovered Demand:</b> ${renderDemand(uncoveredDemand, true) || "none"}</span>
-    </div>`;
+  const demandSummaryHtml = renderSummaryBar([
+    {
+      label: "Uncovered Demand",
+      value: renderDemand(uncoveredDemand, true) || "none",
+      title: "Initial demand minus final covered demand"
+    }
+  ]);
 
-  const historySummaryHtml = /*html*/ `
-    <div style="${styles.summaryBar}">
-      <span title="Gross Product is local sale revenue minus purchased ingredient costs during this production run. It excludes retained inventory and later demand-fill purchases."><b>Gross Product:</b> <span style="font-weight:600; ${grossProduct >= 0 ? styles.positive : styles.negative}">${formatPrice(grossProduct)}</span></span>
-      <span title="Gross product per population point. This is the burg's gross product divided by population, a per-capita productivity measure for the current production run."><b>Weath:</b> <span style="font-weight:600; ${productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(productPerCapita)}</span></span>
-      <span title="Sales tax is paid by the seller on local sale deals. It is deducted from gross sale value and transferred to the state treasury."><b>Total Tax:</b> <span style="font-weight:600; ${totalTax >= 0 ? styles.warning : styles.subtle}">${formatPrice(totalTax)}</span></span>
-      <span title="Net burg treasury after local buying, local sales, and final local demand fill."><b>Treasury:</b> <span style="font-weight:600; ${wealthAfter >= 0 ? styles.positive : styles.negative}">${formatPrice(wealthAfter)}</span></span>
-    </div>`;
+  const historySummaryHtml = renderSummaryBar([
+    {
+      label: "Gross Product",
+      value: formatPrice(grossProduct),
+      title:
+        "Gross Product is local sale revenue minus purchased ingredient costs during this production run. It excludes retained inventory and later demand-fill purchases.",
+      valueStyle: grossProduct >= 0 ? styles.positive : styles.negative
+    },
+    {
+      label: "Weath",
+      value: formatPrice(productPerCapita),
+      title:
+        "Gross product per population point. This is the burg's gross product divided by population, a per-capita productivity measure for the current production run.",
+      valueStyle: productPerCapita >= 0 ? styles.positive : styles.negative
+    },
+    {
+      label: "Total Tax",
+      value: formatPrice(totalTax),
+      title:
+        "Sales tax is paid by the seller on local sale deals. It is deducted from gross sale value and transferred to the state treasury.",
+      valueStyle: totalTax >= 0 ? styles.warning : styles.subtle
+    },
+    {
+      label: "Treasury",
+      value: formatPrice(wealthAfter),
+      title: "Net burg treasury after local buying, local sales, and final local demand fill.",
+      valueStyle: wealthAfter >= 0 ? styles.positive : styles.negative
+    }
+  ]);
 
   const historySection = `${jobsTable}${historySummaryHtml}`;
 
-  const finalTableContent = finalRows
-    ? /*html*/ `<table style="${styles.table}">
-        <colgroup>
-          <col style="width: 30%;">
-          <col style="width: 10%;">
-          <col style="width: 15%;">
-          <col style="width: 15%;">
-          <col style="width: 30%;">
-        </colgroup>
-        <thead><tr style="${styles.headRow}">
-          ${renderHeaderCell("Good")}
-          ${renderHeaderCell("Units", "right")}
-          ${renderHeaderCell("Unit Cost", "right", "Average purchased-input cost per locally produced unit. Raw and bought goods stay at 0.")}
-          ${renderHeaderCell("Allocated Cost", "right", "Purchased-input cost allocated to retained locally produced units.")}
-          ${renderHeaderCell("Demand Coverage", "right", "Demand categories covered by the retained units in this row.")}
-        </tr></thead>
-        <tbody>${finalRows}</tbody>
-      </table>`
-    : `<i style="${styles.empty}">No output produced</i>`;
+  const finalTableContent = renderTable({
+    colWidths: ["30%", "10%", "15%", "15%", "30%"],
+    headers: [
+      {label: "Good"},
+      {label: "Units", align: "right"},
+      {
+        label: "Unit Cost",
+        align: "right",
+        title: "Average purchased-input cost per locally produced unit. Raw and bought goods stay at 0."
+      },
+      {
+        label: "Allocated Cost",
+        align: "right",
+        title: "Purchased-input cost allocated to retained locally produced units."
+      },
+      {
+        label: "Demand Coverage",
+        align: "right",
+        title: "Demand categories covered by the retained units in this row."
+      }
+    ],
+    rows: finalRows ? [finalRows] : [],
+    empty: "No output produced"
+  });
 
   const finalTable = `${finalTableContent}${demandSummaryHtml}`;
 
   alertMessage.innerHTML = /*html*/ `
     <div id="productionOverviewContent">
       ${statsHtml}
-      ${renderSection("Accessible Resources", accessibleResourcesTable)}
-      ${renderSection("Production and Trade history", historySection)}
-      ${renderSection("Retained Inventory", finalTable)}
+      ${renderSection("Accessible Resources", accessibleResourcesTable, "Raw resources reachable by this burg before production choices are made.")}
+      ${renderSection("Production and Trade history", historySection, "Chronological local production, market purchases, sales, and demand-fill operations for this burg.")}
+      ${renderSection("Retained Inventory", finalTable, "Goods kept after production and market interaction to cover this burg's own demand.")}
     </div>
   `;
 
@@ -518,9 +586,9 @@ export function open(burgId: number): void {
       const row = target.closest<HTMLTableRowElement>("tr[data-target]");
       if (!row) return;
 
-      const candidatesId = row.dataset.target;
-      if (!candidatesId) return;
-      const detailsRow = overviewContent.querySelector<HTMLTableRowElement>(`#${candidatesId}`);
+      const targetId = row.dataset.target;
+      if (!targetId) return;
+      const detailsRow = overviewContent.querySelector<HTMLTableRowElement>(`#${targetId}`);
       if (!detailsRow) return;
 
       const isOpen = detailsRow.style.display !== "none";
