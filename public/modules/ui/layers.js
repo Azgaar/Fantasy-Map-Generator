@@ -225,6 +225,7 @@ function drawLayers() {
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleMilitary")) drawMilitary();
   if (layerIsOn("toggleMarkers")) drawMarkers();
+  if (layerIsOn("toggleTrade")) drawTrade();
   if (layerIsOn("toggleRulers")) rulers.draw();
   // scale bar
   // vignette

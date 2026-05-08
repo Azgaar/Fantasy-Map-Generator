@@ -74,10 +74,10 @@ function marketRenderer(market: Market): string {
 const tradeRenderer = (): void => {
   TIME && console.time("drawTrade");
 
-  const markets: Market[] = pack.markets || [];
-  const links = markets.map(market => tradeLinkRenderer(market)).join("");
-  const marketElements = markets.map(market => marketRenderer(market)).join("");
+  trade.style("display", "block");
 
+  const links = pack.markets.map(tradeLinkRenderer).join("");
+  const marketElements = pack.markets.map(marketRenderer).join("");
   trade.html(links + marketElements);
 
   TIME && console.timeEnd("drawTrade");
