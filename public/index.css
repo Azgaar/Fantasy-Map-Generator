@@ -142,7 +142,8 @@ a {
 #armies,
 #ice,
 #emblems,
-#goods {
+#goods,
+#trade {
   cursor: pointer;
 }
 
@@ -178,7 +179,8 @@ t,
 #landmass,
 #vignette,
 #gridOverlay,
-#fogging {
+#fogging,
+#trade .trade-links {
   pointer-events: none;
 }
 

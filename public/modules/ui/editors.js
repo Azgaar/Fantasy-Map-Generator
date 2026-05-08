@@ -29,6 +29,7 @@ function clicked() {
   else if (parent.id === "ice") editIce(el);
   else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
+  else if (grand.id === "trade") MarkerOverview.open(Number(parent.dataset.id));
   else if (grand.id === "coastline") editCoastline();
   else if (grand.id === "lakes") editLake();
   else if (great.id === "armies") editRegiment();

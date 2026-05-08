@@ -178,6 +178,8 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note");
 
+  if (group === "markets") return tip("Click to view the Market");
+
   if (group === "ruler") {
     const tag = e.target.tagName;
     const className = e.target.getAttribute("class");

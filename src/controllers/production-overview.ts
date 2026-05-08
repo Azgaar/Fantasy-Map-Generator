@@ -516,7 +516,7 @@ export function open(burgId: number): void {
       label: "Gross Product",
       value: formatPrice(grossProduct),
       title:
-        "Gross Product is local sale revenue minus purchased ingredient costs during this production run. It excludes retained inventory and later demand-fill purchases.",
+        "Gross Product is local sale revenue minus purchased ingredient costs during the production. It excludes retained inventory and later demand-fill purchases.",
       valueStyle: grossProduct >= 0 ? styles.positive : styles.negative
     },
     {
