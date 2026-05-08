@@ -5,7 +5,8 @@
  */
 import type { Selection } from "d3";
 import { interpolateRgbBasis } from "d3";
-import { rn } from "../utils/numberUtils";
+import { minmax, rn } from "../utils/numberUtils";
+import { escapeHtml } from "../utils/stringUtils";
 
 /** One leg in the journey sequence (linked-list style via array order). */
 interface JourneyBurgLeg {
@@ -294,10 +295,6 @@ interface JourneyStyleConfig {
   outlineScreenPx: number;
 }
 
-function clamp(n: number, lo: number, hi: number): number {
-  return Math.min(hi, Math.max(lo, n));
-}
-
 const builtinRampInterpolator = interpolateRgbBasis(JOURNEY_RAINBOW_STOPS);
 
 /** Parse comma-separated hex/color tokens; returns null if fewer than two usable stops. */
@@ -337,7 +334,7 @@ export function readJourneyStyleConfig(el: Element | null): JourneyStyleConfig {
   const solidStroke =
     get("data-solid-stroke")?.trim() || JOURNEY_STYLE_DEFAULTS.solidStroke;
 
-  const lineScreenPx = clamp(
+  const lineScreenPx = minmax(
     attrPx("data-line-screen-px", JOURNEY_STYLE_DEFAULTS.lineScreenPx),
     0.5,
     96,
@@ -349,7 +346,7 @@ export function readJourneyStyleConfig(el: Element | null): JourneyStyleConfig {
     get("data-waypoint-stroke")?.trim() ||
     JOURNEY_STYLE_DEFAULTS.waypointStroke;
 
-  const waypointRScreenPx = clamp(
+  const waypointRScreenPx = minmax(
     attrPx(
       "data-waypoint-r-screen-px",
       JOURNEY_STYLE_DEFAULTS.waypointRScreenPx,
@@ -358,7 +355,7 @@ export function readJourneyStyleConfig(el: Element | null): JourneyStyleConfig {
     120,
   );
 
-  const waypointRingScreenPx = clamp(
+  const waypointRingScreenPx = minmax(
     attrPx(
       "data-waypoint-ring-screen-px",
       JOURNEY_STYLE_DEFAULTS.waypointRingScreenPx,
@@ -370,7 +367,7 @@ export function readJourneyStyleConfig(el: Element | null): JourneyStyleConfig {
   const outlineColor =
     get("data-outline-color")?.trim() || JOURNEY_STYLE_DEFAULTS.outlineColor;
 
-  const outlineScreenPx = clamp(
+  const outlineScreenPx = minmax(
     attrPx("data-outline-screen-px", JOURNEY_STYLE_DEFAULTS.outlineScreenPx),
     0,
     32,
@@ -401,12 +398,12 @@ export function journeyRampSamplerForConfig(
   const stops =
     cfg.rainbowStops.length >= 2 ? cfg.rainbowStops : JOURNEY_RAINBOW_STOPS;
   const interp = interpolateRgbBasis([...stops]);
-  return (u: number) => interp(Math.max(0, Math.min(1, u)));
+  return (u: number) => interp(minmax(u, 0, 1));
 }
 
 /** Parameter `u` in [0, 1] along the whole journey ramp (built-in rainbow). */
 export function journeyRampColor(u: number): string {
-  return builtinRampInterpolator(Math.max(0, Math.min(1, u)));
+  return builtinRampInterpolator(minmax(u, 0, 1));
 }
 
 /** Quantized directed chord id for lane stacking (A→B ≠ B→A). */
@@ -429,7 +426,7 @@ export function chordGradientT(
   const len2 = vx * vx + vy * vy;
   if (len2 < 1e-18) return 0;
   const t = ((px - a[0]) * vx + (py - a[1]) * vy) / len2;
-  return Math.max(0, Math.min(1, t));
+  return minmax(t, 0, 1);
 }
 
 const MIN_SEG_LEN = 0.05;
@@ -444,16 +441,16 @@ export function journeyLodTier(scale: number, zoomMin: number): number {
   const s = Math.max(scale, 1e-9);
   const zmin = Math.max(zoomMin, 1e-9);
   const raw = Math.floor(Math.log2(s)) - Math.floor(Math.log2(zmin));
-  return Math.max(0, Math.min(LOD_TIER_MAX, raw));
+  return minmax(raw, 0, LOD_TIER_MAX);
 }
 
 export function journeyPolylineSamplesForTier(tier: number): number {
-  const t = Math.max(0, Math.min(LOD_TIER_MAX, tier));
-  return Math.min(44, Math.max(12, 14 + t * 5));
+  const t = minmax(tier, 0, LOD_TIER_MAX);
+  return minmax(14 + t * 5, 12, 44);
 }
 
 export function journeyArrowSpacingMulForTier(tier: number): number {
-  const t = Math.max(0, Math.min(LOD_TIER_MAX, tier));
+  const t = minmax(tier, 0, LOD_TIER_MAX);
   return LOD_ARROW_SPACING_MUL[t] ?? 1;
 }
 
@@ -639,7 +636,7 @@ function mapMetricScreenToWorld(
   hi: number,
 ): number {
   const k = Math.max(zoomScale, 1e-9);
-  return Math.min(hi, Math.max(lo, screenPx / k));
+  return minmax(screenPx / k, lo, hi);
 }
 
 function arrowTransform(
@@ -929,17 +926,6 @@ type JourneyGlobalApi = {
   ensurePackJourneyNormalized: typeof ensurePackJourneyNormalized;
 };
 
-function escapeAttr(s: string): string {
-  return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
-}
-
-function escapeText(s: string): string {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
 function journeyStopSelectOptions(currentRef: string): string {
   ensurePackJourneyNormalized(pack);
   let html = "";
@@ -955,7 +941,7 @@ function journeyStopSelectOptions(currentRef: string): string {
     const sel = ref === currentRef ? " selected" : "";
     const typeLabel = m.type ? String(m.type) : "Marker";
     const label = `${typeLabel} #${m.i} (${rn(m.x, 2)}, ${rn(m.y, 2)})`;
-    html += `<option value="${escapeAttr(ref)}"${sel}>${escapeText(label)}</option>`;
+    html += `<option value="${escapeHtml(ref)}"${sel}>${escapeHtml(label)}</option>`;
   }
   html += '</optgroup><optgroup label="Burgs">';
   for (const b of pack.burgs || []) {
@@ -972,11 +958,11 @@ function journeyStopSelectOptions(currentRef: string): string {
     const nm =
       b.name && String(b.name).trim() !== "" ? String(b.name) : `Burg ${b.i}`;
     const label = `${nm} (${rn(b.x, 2)}, ${rn(b.y, 2)})`;
-    html += `<option value="${escapeAttr(ref)}"${sel}>${escapeText(label)}</option>`;
+    html += `<option value="${escapeHtml(ref)}"${sel}>${escapeHtml(label)}</option>`;
   }
   html += "</optgroup>";
   if (currentRef && !known.has(currentRef)) {
-    html += `<option value="${escapeAttr(currentRef)}" selected>${escapeText("[missing stop]")}</option>`;
+    html += `<option value="${escapeHtml(currentRef)}" selected>${escapeHtml("[missing stop]")}</option>`;
   }
   return html;
 }
