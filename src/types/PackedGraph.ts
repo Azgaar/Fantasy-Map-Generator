@@ -2,11 +2,11 @@ import type { Quadtree } from "d3";
 import type { Burg } from "../modules/burgs-generator";
 import type { Culture } from "../modules/cultures-generator";
 import type { PackedGraphFeature } from "../modules/features";
+import type { StoredJourney } from "../modules/journey";
 import type { Province } from "../modules/provinces-generator";
 import type { River } from "../modules/river-generator";
 import type { Route } from "../modules/routes-generator";
 import type { State } from "../modules/states-generator";
-import type { StoredJourney } from "../modules/journey";
 import type { Zone } from "../modules/zones-generator";
 
 export type TypedArray =

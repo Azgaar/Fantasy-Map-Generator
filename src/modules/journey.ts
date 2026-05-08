@@ -158,7 +158,9 @@ type PackWithJourneys = {
   journeys?: unknown;
 };
 
-function parseJourneyColorDataFromUnknown(raw: unknown): JourneyColorData | null {
+function parseJourneyColorDataFromUnknown(
+  raw: unknown,
+): JourneyColorData | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const r = raw as Record<string, unknown>;
   const t = r.type;
@@ -183,7 +185,9 @@ function parseJourneyColorDataFromUnknown(raw: unknown): JourneyColorData | null
 }
 
 /** Migrate flat `{ colorMode, solidStroke, rainbowStops }` from older saves. */
-function legacyFlatFieldsToJourneyColor(o: Record<string, unknown>): JourneyColorData {
+function legacyFlatFieldsToJourneyColor(
+  o: Record<string, unknown>,
+): JourneyColorData {
   const cm =
     typeof o.colorMode === "string" ? o.colorMode.toLowerCase().trim() : "";
   if (cm === "solid") {
@@ -202,7 +206,9 @@ function legacyFlatFieldsToJourneyColor(o: Record<string, unknown>): JourneyColo
   return { type: "rainbow" };
 }
 
-export function sanitizeJourneyColorData(cd: JourneyColorData): JourneyColorData {
+export function sanitizeJourneyColorData(
+  cd: JourneyColorData,
+): JourneyColorData {
   if (cd.type === "solid") {
     const c = cd.color?.trim() || JOURNEY_DEFAULT_SOLID_STROKE;
     return { type: "solid", color: c };
@@ -229,7 +235,9 @@ function createDefaultStoredJourney(id: number): StoredJourney {
   };
 }
 
-function migrateLegacySingleJourney(obj: Record<string, unknown>): StoredJourney {
+function migrateLegacySingleJourney(
+  obj: Record<string, unknown>,
+): StoredJourney {
   const stops = sanitizeStopsArray(
     Array.isArray(obj.stops) ? (obj.stops as unknown[]) : [],
   );
@@ -245,7 +253,10 @@ function migrateLegacySingleJourney(obj: Record<string, unknown>): StoredJourney
   };
 }
 
-function coerceStoredJourneyRow(raw: unknown, fallbackId: number): StoredJourney {
+function coerceStoredJourneyRow(
+  raw: unknown,
+  fallbackId: number,
+): StoredJourney {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return createDefaultStoredJourney(fallbackId);
   }
@@ -261,7 +272,8 @@ function coerceStoredJourneyRow(raw: unknown, fallbackId: number): StoredJourney
   const hasLegacyFlat =
     o.colorMode != null || o.solidStroke != null || o.rainbowStops != null;
   const color = sanitizeJourneyColorData(
-    parsed ?? (hasLegacyFlat ? legacyFlatFieldsToJourneyColor(o) : { type: "rainbow" }),
+    parsed ??
+      (hasLegacyFlat ? legacyFlatFieldsToJourneyColor(o) : { type: "rainbow" }),
   );
   return {
     id,
@@ -480,7 +492,9 @@ export interface JourneyColorStyleConfig {
 }
 
 /** Resolved presentation for drawing one journey instance. */
-interface JourneyStyleConfig extends JourneyGlobalStyleConfig, JourneyColorStyleConfig {}
+interface JourneyStyleConfig
+  extends JourneyGlobalStyleConfig,
+    JourneyColorStyleConfig {}
 
 const builtinRampInterpolator = interpolateRgbBasis(JOURNEY_RAINBOW_STOPS);
 
@@ -500,7 +514,9 @@ export function parseJourneyRainbowStops(
  * Read global journey geometry style from `#journeys` (`data-*`).
  * Path colors live per {@link StoredJourney}, not here.
  */
-export function readJourneyGlobalStyle(el: Element | null): JourneyGlobalStyleConfig {
+export function readJourneyGlobalStyle(
+  el: Element | null,
+): JourneyGlobalStyleConfig {
   const get = (name: string): string | null =>
     el && typeof el.getAttribute === "function" ? el.getAttribute(name) : null;
 
@@ -560,7 +576,9 @@ export function readJourneyGlobalStyle(el: Element | null): JourneyGlobalStyleCo
 }
 
 /** Map serializable {@link JourneyColorData} to internal ramp/stroke config for drawing. */
-export function journeyColorStyleFromData(data: JourneyColorData): JourneyColorStyleConfig {
+export function journeyColorStyleFromData(
+  data: JourneyColorData,
+): JourneyColorStyleConfig {
   const cd = sanitizeJourneyColorData(data);
   if (cd.type === "solid") {
     return {
@@ -584,7 +602,9 @@ export function journeyColorStyleFromData(data: JourneyColorData): JourneyColorS
 }
 
 /** Resolve path/arrow colors from a stored journey row. */
-export function journeyColorStyleFromRecord(row: StoredJourney): JourneyColorStyleConfig {
+export function journeyColorStyleFromRecord(
+  row: StoredJourney,
+): JourneyColorStyleConfig {
   return journeyColorStyleFromData(row.color ?? { type: "rainbow" });
 }
 
@@ -1039,7 +1059,8 @@ class JourneyDrawModule {
           .attr("class", "journey-segment")
           .attr("filter", `url(#${JOURNEY_OUTLINE_FILTER_ID})`);
         let strokeAttr: string;
-        if (mergedStyle.colorMode === "solid") strokeAttr = mergedStyle.solidStroke;
+        if (mergedStyle.colorMode === "solid")
+          strokeAttr = mergedStyle.solidStroke;
         else {
           const gid = `${gradPrefix}_seg_${i}`;
           const grad = defs
@@ -1211,10 +1232,12 @@ function nextJourneyId(): number {
   return rows.reduce((m, r) => Math.max(m, r.id), 0) + 1;
 }
 
-function journeyHexForPicker(raw: string | undefined, fallback: string): string {
+function journeyHexForPicker(
+  raw: string | undefined,
+  fallback: string,
+): string {
   const fb = fallback || "#000000";
-  const s =
-    raw != null && String(raw).trim() !== "" ? String(raw).trim() : fb;
+  const s = raw != null && String(raw).trim() !== "" ? String(raw).trim() : fb;
   if (/^#[\da-fA-F]{6}$/.test(s)) return s;
   if (/^#[\da-fA-F]{3}$/.test(s)) {
     const r = s[1],
@@ -1237,9 +1260,7 @@ function journeyEditorSyncColorUi(row: StoredJourney): void {
     (ensureEl("journeyEditorSolidStroke") as HTMLInputElement).value = solidHex;
     (ensureEl("journeyEditorSolidStrokeOutput") as HTMLOutputElement).value =
       solidHex;
-    (
-      ensureEl("journeyEditorRainbowStops") as HTMLInputElement
-    ).value = "";
+    (ensureEl("journeyEditorRainbowStops") as HTMLInputElement).value = "";
     (ensureEl("journeyEditorGradientFrom") as HTMLInputElement).value =
       jd.gradientFromHex;
     (ensureEl("journeyEditorGradientFromOutput") as HTMLOutputElement).value =
@@ -1254,9 +1275,7 @@ function journeyEditorSyncColorUi(row: StoredJourney): void {
     (ensureEl("journeyEditorSolidStroke") as HTMLInputElement).value = solidHex;
     (ensureEl("journeyEditorSolidStrokeOutput") as HTMLOutputElement).value =
       solidHex;
-    (
-      ensureEl("journeyEditorRainbowStops") as HTMLInputElement
-    ).value = "";
+    (ensureEl("journeyEditorRainbowStops") as HTMLInputElement).value = "";
     (ensureEl("journeyEditorGradientFrom") as HTMLInputElement).value =
       jd.gradientFromHex;
     (ensureEl("journeyEditorGradientFromOutput") as HTMLOutputElement).value =
@@ -1271,9 +1290,8 @@ function journeyEditorSyncColorUi(row: StoredJourney): void {
     (ensureEl("journeyEditorSolidStroke") as HTMLInputElement).value = solidHex;
     (ensureEl("journeyEditorSolidStrokeOutput") as HTMLOutputElement).value =
       solidHex;
-    (
-      ensureEl("journeyEditorRainbowStops") as HTMLInputElement
-    ).value = cd.colors.join(", ");
+    (ensureEl("journeyEditorRainbowStops") as HTMLInputElement).value =
+      cd.colors.join(", ");
     const fromHex = journeyHexForPicker(cd.colors[0], jd.gradientFromHex);
     const toHex = journeyHexForPicker(
       cd.colors[cd.colors.length - 1],
@@ -1283,7 +1301,8 @@ function journeyEditorSyncColorUi(row: StoredJourney): void {
     (ensureEl("journeyEditorGradientFromOutput") as HTMLOutputElement).value =
       fromHex;
     (ensureEl("journeyEditorGradientTo") as HTMLInputElement).value = toHex;
-    (ensureEl("journeyEditorGradientToOutput") as HTMLOutputElement).value = toHex;
+    (ensureEl("journeyEditorGradientToOutput") as HTMLOutputElement).value =
+      toHex;
   }
 
   journeyEditorSyncColorRowVisibility();
@@ -1297,13 +1316,15 @@ function journeyEditorSyncColorRowVisibility(): void {
     ? ""
     : "none";
   const showGrad = gradient;
-  ensureEl("journeyEditorGradientFrom").closest("tr")!.style.display =
-    showGrad ? "" : "none";
+  ensureEl("journeyEditorGradientFrom").closest("tr")!.style.display = showGrad
+    ? ""
+    : "none";
   ensureEl("journeyEditorGradientTo").closest("tr")!.style.display = showGrad
     ? ""
     : "none";
-  ensureEl("journeyEditorRainbowStops").closest("tr")!.style.display =
-    showGrad ? "" : "none";
+  ensureEl("journeyEditorRainbowStops").closest("tr")!.style.display = showGrad
+    ? ""
+    : "none";
 }
 
 function journeyEditorApplyGradientFromPickers(row: StoredJourney): void {
@@ -1371,8 +1392,7 @@ function journeyStopSelectOptions(currentRef: string): string {
 function journeyRenderStopRows(container: HTMLElement): void {
   ensurePackJourneysNormalized(pack);
   const stops = syncEditorActiveId().stops;
-  const rows: (JourneyStopLeg | null)[] =
-    stops.length === 0 ? [null] : stops;
+  const rows: (JourneyStopLeg | null)[] = stops.length === 0 ? [null] : stops;
   rows.forEach((leg, i) => {
     const currentRef = leg ? journeyLegToRefString(leg) : "";
     const showRemove = stops.length > 0;
@@ -1566,7 +1586,10 @@ function editJourney(): void {
     "change.journeyEd",
     journeyEditorJourneySelectChange,
   );
-  $("#journeyEditorAddJourney").on("click.journeyEd", journeyEditorAddJourneyClick);
+  $("#journeyEditorAddJourney").on(
+    "click.journeyEd",
+    journeyEditorAddJourneyClick,
+  );
   $("#journeyEditorRemoveJourney").on(
     "click.journeyEd",
     journeyEditorRemoveJourneyClick,
@@ -1588,59 +1611,69 @@ function editJourney(): void {
     $("#journeyEditor").dialog("close"),
   );
 
-  $("#journeyEditorColorMode").on("change.journeyEd", function (this: HTMLSelectElement) {
-    const row = syncEditorActiveId();
-    const jd = JOURNEY_STYLE_DEFAULTS;
-    const v = this.value;
-    if (v === "solid") {
-      const prev =
-        row.color?.type === "solid"
-          ? row.color.color
-          : jd.solidStroke;
-      row.color = { type: "solid", color: prev };
-    } else if (v === "rainbow") {
-      row.color = { type: "rainbow" };
-    } else {
-      row.color = {
-        type: "gradient",
-        colors: [jd.gradientFromHex, jd.gradientToHex],
-      };
-    }
-    journeyEditorSyncColorUi(row);
-    journeyEditorSyncColorRowVisibility();
-    drawJourney();
-  });
-  $("#journeyEditorSolidStroke").on("input.journeyEd", function (this: HTMLInputElement) {
-    const row = syncEditorActiveId();
-    row.color = { type: "solid", color: this.value };
-    (ensureEl("journeyEditorSolidStrokeOutput") as HTMLOutputElement).value =
-      this.value;
-    drawJourney();
-  });
-  $("#journeyEditorGradientFrom").on("input.journeyEd", function (this: HTMLInputElement) {
-    if (
-      (ensureEl("journeyEditorColorMode") as HTMLSelectElement).value !==
-      "gradient"
-    )
-      return;
-    (ensureEl("journeyEditorGradientFromOutput") as HTMLOutputElement).value =
-      this.value;
-    const row = syncEditorActiveId();
-    journeyEditorApplyGradientFromPickers(row);
-    drawJourney();
-  });
-  $("#journeyEditorGradientTo").on("input.journeyEd", function (this: HTMLInputElement) {
-    if (
-      (ensureEl("journeyEditorColorMode") as HTMLSelectElement).value !==
-      "gradient"
-    )
-      return;
-    (ensureEl("journeyEditorGradientToOutput") as HTMLOutputElement).value =
-      this.value;
-    const row = syncEditorActiveId();
-    journeyEditorApplyGradientFromPickers(row);
-    drawJourney();
-  });
+  $("#journeyEditorColorMode").on(
+    "change.journeyEd",
+    function (this: HTMLSelectElement) {
+      const row = syncEditorActiveId();
+      const jd = JOURNEY_STYLE_DEFAULTS;
+      const v = this.value;
+      if (v === "solid") {
+        const prev =
+          row.color?.type === "solid" ? row.color.color : jd.solidStroke;
+        row.color = { type: "solid", color: prev };
+      } else if (v === "rainbow") {
+        row.color = { type: "rainbow" };
+      } else {
+        row.color = {
+          type: "gradient",
+          colors: [jd.gradientFromHex, jd.gradientToHex],
+        };
+      }
+      journeyEditorSyncColorUi(row);
+      journeyEditorSyncColorRowVisibility();
+      drawJourney();
+    },
+  );
+  $("#journeyEditorSolidStroke").on(
+    "input.journeyEd",
+    function (this: HTMLInputElement) {
+      const row = syncEditorActiveId();
+      row.color = { type: "solid", color: this.value };
+      (ensureEl("journeyEditorSolidStrokeOutput") as HTMLOutputElement).value =
+        this.value;
+      drawJourney();
+    },
+  );
+  $("#journeyEditorGradientFrom").on(
+    "input.journeyEd",
+    function (this: HTMLInputElement) {
+      if (
+        (ensureEl("journeyEditorColorMode") as HTMLSelectElement).value !==
+        "gradient"
+      )
+        return;
+      (ensureEl("journeyEditorGradientFromOutput") as HTMLOutputElement).value =
+        this.value;
+      const row = syncEditorActiveId();
+      journeyEditorApplyGradientFromPickers(row);
+      drawJourney();
+    },
+  );
+  $("#journeyEditorGradientTo").on(
+    "input.journeyEd",
+    function (this: HTMLInputElement) {
+      if (
+        (ensureEl("journeyEditorColorMode") as HTMLSelectElement).value !==
+        "gradient"
+      )
+        return;
+      (ensureEl("journeyEditorGradientToOutput") as HTMLOutputElement).value =
+        this.value;
+      const row = syncEditorActiveId();
+      journeyEditorApplyGradientFromPickers(row);
+      drawJourney();
+    },
+  );
   $("#journeyEditorRainbowStops").on(
     "input.journeyEd",
     function (this: HTMLInputElement) {
@@ -1667,8 +1700,9 @@ function editJourney(): void {
         );
         (ensureEl("journeyEditorGradientFrom") as HTMLInputElement).value =
           fromHex;
-        (ensureEl("journeyEditorGradientFromOutput") as HTMLOutputElement).value =
-          fromHex;
+        (
+          ensureEl("journeyEditorGradientFromOutput") as HTMLOutputElement
+        ).value = fromHex;
         (ensureEl("journeyEditorGradientTo") as HTMLInputElement).value = toHex;
         (ensureEl("journeyEditorGradientToOutput") as HTMLOutputElement).value =
           toHex;
