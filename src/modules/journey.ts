@@ -971,7 +971,8 @@ function journeyStopSelectOptions(currentRef: string): string {
 function journeyRenderStopRows(container: HTMLElement): void {
   ensurePackJourneyNormalized(pack);
   const stops = pack.journey!.stops;
-  const rows = stops.length === 0 ? [null] : stops;
+  const rows: (JourneyStopLeg | null)[] =
+    stops.length === 0 ? [null] : stops;
   rows.forEach((leg, i) => {
     const currentRef = leg ? journeyLegToRefString(leg) : "";
     const showRemove = stops.length > 0;
