@@ -117,8 +117,12 @@ test.describe("Journey layer", () => {
     );
 
     const segmentCount = BACKTRACK_JOURNEY_POINTS.length - 1;
-    await expect(page.locator("#journeys .journey-segments .journey-segment")).toHaveCount(segmentCount);
-    await expect(page.locator("#journeys .journey-segment-stroke")).toHaveCount(segmentCount);
+    const segments = page.locator("#journeys .journey-segments .journey-segment");
+    await expect(segments).toHaveCount(segmentCount);
+    // Ramp strokes are drawn as many short paths per logical segment (arc-length coloring).
+    for (let i = 0; i < segmentCount; i++) {
+      await expect(segments.nth(i).locator(".journey-segment-stroke")).not.toHaveCount(0);
+    }
     // Deduped vertices: three distinct burg positions
     await expect(page.locator("#journeys .journey-vertices circle")).toHaveCount(3);
     const arrowN = await page.locator("#journeys .journey-arrow").count();
@@ -172,8 +176,8 @@ test.describe("Journey layer", () => {
     );
 
     const segN = BACKTRACK_JOURNEY_POINTS.length - 1;
-    expect(snap.strokeBefore.length).toBe(segN);
-    expect(snap.strokeAfter.length).toBe(segN);
+    expect(snap.strokeBefore.length).toBeGreaterThanOrEqual(segN);
+    expect(snap.strokeAfter.length).toBeGreaterThanOrEqual(segN);
     for (const x of snap.strokeBefore) expect(Number.isFinite(x)).toBe(true);
     expect([...new Set(snap.strokeBefore)].length).toBe(1);
     expect([...new Set(snap.strokeAfter)].length).toBe(1);

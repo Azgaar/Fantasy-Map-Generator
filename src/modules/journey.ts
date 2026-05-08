@@ -450,8 +450,8 @@ export function chordKey(a: [number, number], b: [number, number]): string {
 }
 
 /**
- * Fraction along chord A→B for point P (clamped to [0, 1]), matching `linearGradient`
- * `userSpaceOnUse` with axis from A to B (constant perpendicular to that axis).
+ * Fraction along chord A→B for point P (clamped to [0, 1]). Journey strokes used to
+ * use SVG chord-aligned gradients; ramp sampling now follows polyline arc length instead.
  */
 export function chordGradientT(
   a: [number, number],
@@ -612,6 +612,8 @@ interface ArrowSample {
   x: number;
   y: number;
   angleDeg: number;
+  /** Position along the polyline as arc-length fraction [0, 1] within this polyline. */
+  arcFrac: number;
 }
 
 export function arrowPositionsAlongPolyline(
@@ -620,6 +622,8 @@ export function arrowPositionsAlongPolyline(
 ): ArrowSample[] {
   const result: ArrowSample[] = [];
   if (pts.length < 2 || spacing <= 0) return result;
+  const polyLen = polylineLength(pts);
+  if (polyLen < 1e-9) return result;
   let cumulative = 0;
   let nextAt = spacing;
   for (let i = 0; i < pts.length - 1; i++) {
@@ -634,10 +638,12 @@ export function arrowPositionsAlongPolyline(
     while (nextAt <= segEnd + 1e-9) {
       const alongSeg = nextAt - cumulative;
       const t = alongSeg / segLen;
+      const distAlongTotal = cumulative + alongSeg;
       result.push({
         x: x0 + t * (x1 - x0),
         y: y0 + t * (y1 - y0),
         angleDeg,
+        arcFrac: distAlongTotal / polyLen,
       });
       nextAt += spacing;
     }
@@ -652,6 +658,21 @@ function polylineLength(pts: [number, number][]): number {
     len += Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
   }
   return len;
+}
+
+/** Fraction [0, 1] along polyline arc length from `pts[0]` to vertex `pts[vertexIdx]`. */
+function arcLengthFractionToVertex(
+  pts: [number, number][],
+  vertexIdx: number,
+): number {
+  const L = polylineLength(pts);
+  if (L < 1e-12) return 0;
+  const vi = minmax(vertexIdx, 0, pts.length - 1);
+  let cum = 0;
+  for (let i = 0; i < vi; i++) {
+    cum += Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
+  }
+  return minmax(cum / L, 0, 1);
 }
 
 export function segmentUInterval(
@@ -730,7 +751,6 @@ class JourneyDrawModule {
     zoomMinForLod = 0.05,
   ): void {
     journeys.selectAll("*").remove();
-    defs.selectAll("linearGradient.journey-def").remove();
     defs.select(`filter#${JOURNEY_OUTLINE_FILTER_ID}`).remove();
 
     const rows = packJourneyRows();
@@ -854,7 +874,6 @@ class JourneyDrawModule {
         0.06,
         24,
       );
-      const gradPrefix = `jj${ji}`;
       for (let i = 0; i < S; i++) {
         const a = points[i];
         const b = points[i + 1];
@@ -867,39 +886,43 @@ class JourneyDrawModule {
         const d = polylinePath(samp);
         if (!d) continue;
         const [u0, u1] = segmentUInterval(S, i);
-        const c0 = rampAt(u0);
-        const c1 = rampAt(u1);
         const seg = segmentsRoot
           .append("g")
           .attr("class", "journey-segment")
           .attr("filter", `url(#${JOURNEY_OUTLINE_FILTER_ID})`);
-        let strokeAttr: string;
-        if (mergedStyle.colorMode === "solid")
-          strokeAttr = mergedStyle.solidStroke;
-        else {
-          const gid = `${gradPrefix}_seg_${i}`;
-          const grad = defs
-            .append("linearGradient")
-            .attr("id", gid)
-            .attr("class", "journey-def")
-            .attr("gradientUnits", "userSpaceOnUse")
-            .attr("x1", a[0])
-            .attr("y1", a[1])
-            .attr("x2", b[0])
-            .attr("y2", b[1]);
-          grad.append("stop").attr("offset", "0%").attr("stop-color", c0);
-          grad.append("stop").attr("offset", "100%").attr("stop-color", c1);
-          strokeAttr = `url(#${gid})`;
+        const polyLen = polylineLength(samp);
+        if (mergedStyle.colorMode === "solid") {
+          seg
+            .append("path")
+            .attr("class", "journey-segment-stroke")
+            .attr("d", d)
+            .attr("fill", "none")
+            .attr("stroke", mergedStyle.solidStroke)
+            .attr("stroke-width", rn(strokeW, 3))
+            .attr("stroke-linecap", "round")
+            .attr("stroke-linejoin", "round");
+        } else if (polyLen >= 1e-9) {
+          let cumAlong = 0;
+          for (let ei = 0; ei < samp.length - 1; ei++) {
+            const p0 = samp[ei]!;
+            const p1 = samp[ei + 1]!;
+            const el = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+            if (el < 1e-9) continue;
+            const uMid =
+              u0 + ((cumAlong + el * 0.5) / polyLen) * (u1 - u0);
+            cumAlong += el;
+            const subd = polylinePath([p0, p1]);
+            seg
+              .append("path")
+              .attr("class", "journey-segment-stroke")
+              .attr("d", subd)
+              .attr("fill", "none")
+              .attr("stroke", rampAt(uMid))
+              .attr("stroke-width", rn(strokeW, 3))
+              .attr("stroke-linecap", "round")
+              .attr("stroke-linejoin", "round");
+          }
         }
-        seg
-          .append("path")
-          .attr("class", "journey-segment-stroke")
-          .attr("d", d)
-          .attr("fill", "none")
-          .attr("stroke", strokeAttr)
-          .attr("stroke-width", rn(strokeW, 3))
-          .attr("stroke-linecap", "round")
-          .attr("stroke-linejoin", "round");
         let arrPts = arrowPositionsAlongPolyline(samp, arrowSpacing);
         if (!arrPts.length && polylineLength(samp) > MIN_SEG_LEN) {
           const mid = Math.max(1, Math.floor(samp.length / 2));
@@ -911,11 +934,17 @@ class JourneyDrawModule {
             ) *
               180) /
             Math.PI;
-          arrPts = [{ x: samp[mid][0], y: samp[mid][1], angleDeg }];
+          arrPts = [
+            {
+              x: samp[mid][0],
+              y: samp[mid][1],
+              angleDeg,
+              arcFrac: arcLengthFractionToVertex(samp, mid),
+            },
+          ];
         }
         for (const ar of arrPts) {
-          const gt = chordGradientT(a, b, ar.x, ar.y);
-          const arrowColor = rampAt(u0 + gt * (u1 - u0));
+          const arrowColor = rampAt(u0 + ar.arcFrac * (u1 - u0));
           seg
             .append("path")
             .attr("class", "journey-arrow")
