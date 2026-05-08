@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   buildJourneyResolutionContext,
-  burgJourneyStopRef,
   ensurePackJourneyNormalized,
   journeyLegToRefString,
   journeyRefStringToLeg,
@@ -9,7 +8,6 @@ import {
   journeyResolvedStopEntries,
   markerJourneyStopRef,
   normalizePackJourney,
-  parseJourneyStopRef,
   resolveJourneyLeg,
   resolveJourneyStopPosition,
   type JourneyResolutionContext,
@@ -20,82 +18,81 @@ import {
 
 describe("ensurePackJourneyNormalized", () => {
   it("creates pack.journey when absent and normalizes", () => {
-    const pack: PackWithOptionalJourney = { burgs: [], markers: [] };
+    const pack: PackWithOptionalJourney = {};
     ensurePackJourneyNormalized(pack);
     expect(pack.journey).toEqual({ stops: [] });
   });
 });
 
 describe("normalizePackJourney", () => {
-  it("strips stray points/stopIds/waypoints and yields empty stops", () => {
+  it("keeps unknown keys and yields empty stops when stops[] is absent", () => {
     const j: Record<string, unknown> = {
       points: [[10, 20], [30, 40]],
       stopIds: [],
       waypoints: [],
     };
     normalizePackJourney(j);
-    expect(j.points).toBeUndefined();
-    expect(j.stopIds).toBeUndefined();
-    expect(j.waypoints).toBeUndefined();
+    expect(j.points).toEqual([[10, 20], [30, 40]]);
+    expect(j.stopIds).toEqual([]);
+    expect(j.waypoints).toEqual([]);
     const normalized = j as unknown as PackJourney;
     expect(normalized.stops).toEqual([]);
     expect(journeyResolvedCoordinates(normalized)).toEqual([]);
   });
 
-  it("keeps stops array and strips legacy keys", () => {
+  it("uses only stops[] as source of truth", () => {
     const j = {
       stops: [{ kind: "burg" as const, id: 1 }],
       stopIds: ["burg:99"],
       waypoints: [{ id: "x" }],
     };
     normalizePackJourney(j);
-    expect(j.stopIds).toBeUndefined();
-    expect(j.waypoints).toBeUndefined();
     expect(j.stops.length).toBe(1);
     expect(j.stops[0]).toEqual({ kind: "burg", id: 1 });
+    expect(j.stopIds).toEqual(["burg:99"]);
+    expect(j.waypoints).toEqual([{ id: "x" }]);
   });
 
-  it("does not infer stops from legacy stopIds (only stops[] is authoritative)", () => {
+  it("does not infer stops from stopIds / waypoints", () => {
     const j: Record<string, unknown> = {
-      stopIds: ["wp_skip", burgJourneyStopRef(3), markerJourneyStopRef(7)],
+      stopIds: ["wp_skip", "burg:3", "marker:7"],
       waypoints: [{ id: "wp_skip", name: "A", x: 1, y: 2 }],
     };
     normalizePackJourney(j);
     expect((j as unknown as PackJourney).stops).toEqual([]);
-    expect(j.stopIds).toBeUndefined();
-    expect(j.waypoints).toBeUndefined();
+    expect(j.stopIds).toEqual(["wp_skip", "burg:3", "marker:7"]);
+    expect(j.waypoints).toEqual([{ id: "wp_skip", name: "A", x: 1, y: 2 }]);
   });
 
-  it("drops legs when pack says missing burg/marker", () => {
-    const j: PackJourney = {
+  it("filters malformed stops entries only", () => {
+    const j: Record<string, unknown> = {
+      stops: [
+        { kind: "burg", id: 5 },
+        { kind: "marker", id: 2 },
+        { kind: "burg", id: -1 },
+        { kind: "wp", id: 9 },
+        { kind: "marker", id: "x" },
+      ],
+    };
+    normalizePackJourney(j);
+    expect((j as unknown as PackJourney).stops).toEqual([
+      { kind: "burg", id: 5 },
+      { kind: "marker", id: 2 },
+    ]);
+  });
+
+  it("does not prune missing legs from pack context", () => {
+    const j: Record<string, unknown> = {
       stops: [
         { kind: "burg", id: 5 },
         { kind: "marker", id: 2 },
       ],
     };
-    normalizePackJourney(j, {
-      burgs: [{ i: 5, removed: false }],
-      markers: [],
-    });
-    expect(j.stops).toEqual([{ kind: "burg", id: 5 }]);
-  });
-
-  it("keeps stops[] when stray stopIds also present", () => {
-    const j: Record<string, unknown> = {
-      stops: [{ kind: "marker" as const, id: 1 }],
-      stopIds: [burgJourneyStopRef(9)],
-    };
     normalizePackJourney(j);
-    expect((j as unknown as PackJourney).stops).toEqual([{ kind: "marker", id: 1 }]);
-    expect(j.stopIds).toBeUndefined();
-  });
-});
-
-describe("parseJourneyStopRef", () => {
-  it("parses burg and marker prefixes", () => {
-    expect(parseJourneyStopRef("burg:12")).toEqual({ kind: "burg", id: 12 });
-    expect(parseJourneyStopRef("marker:3")).toEqual({ kind: "marker", id: 3 });
-    expect(parseJourneyStopRef("wp_x")).toBeNull();
+    expect((j as unknown as PackJourney).stops).toEqual([
+      { kind: "burg", id: 5 },
+      { kind: "marker", id: 2 },
+    ]);
   });
 });
 

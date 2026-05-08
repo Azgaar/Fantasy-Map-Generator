@@ -67,12 +67,6 @@ export function buildJourneyResolutionContext(
   };
 }
 
-/** Optional pack slice for pruning dead burg/marker refs during normalize. */
-export interface JourneyNormalizePackContext {
-  burgs?: Array<{ i?: number; removed?: boolean }>;
-  markers?: Array<{ i?: number }>;
-}
-
 const BURG_REF_RE = /^burg:(\d+)$/;
 const MARKER_REF_RE = /^marker:(\d+)$/;
 
@@ -84,7 +78,7 @@ export function markerJourneyStopRef(i: number): string {
   return `marker:${i}`;
 }
 
-export type ParsedJourneyStopRef =
+type ParsedJourneyStopRef =
   | { kind: "burg"; id: number }
   | { kind: "marker"; id: number };
 
@@ -94,7 +88,7 @@ export function journeyLegToRefString(leg: JourneyStopLeg): string {
     : markerJourneyStopRef(leg.id);
 }
 
-export function parseJourneyStopRef(stopId: string): ParsedJourneyStopRef | null {
+function parseJourneyStopRef(stopId: string): ParsedJourneyStopRef | null {
   const bm = BURG_REF_RE.exec(stopId);
   if (bm) return { kind: "burg", id: +bm[1] };
   const mm = MARKER_REF_RE.exec(stopId);
@@ -109,18 +103,6 @@ export function journeyRefStringToLeg(ref: string): JourneyStopLeg | null {
   return p.kind === "burg"
     ? { kind: "burg", id: p.id }
     : { kind: "marker", id: p.id };
-}
-
-export function isWellFormedBurgStopRef(id: string): boolean {
-  return BURG_REF_RE.test(id);
-}
-
-export function isWellFormedMarkerStopRef(id: string): boolean {
-  return MARKER_REF_RE.test(id);
-}
-
-export function emptyPackJourney(): PackJourney {
-  return { stops: [] };
 }
 
 function sanitizeStopsArray(raw: unknown[]): JourneyStopLeg[] {
@@ -138,7 +120,7 @@ function sanitizeStopsArray(raw: unknown[]): JourneyStopLeg[] {
 }
 
 /** Pack slice used when ensuring `pack.journey` exists and is sanitized. */
-export type PackWithOptionalJourney = JourneyNormalizePackContext & {
+export type PackWithOptionalJourney = {
   journey?: unknown;
 };
 
@@ -154,40 +136,22 @@ export function ensurePackJourneyNormalized(pack: PackWithOptionalJourney): void
   ) {
     pack.journey = { stops: [] };
   }
-  normalizePackJourney(pack.journey, pack);
+  normalizePackJourney(pack.journey);
 }
 
 /**
  * Mutates journey object into canonical `{ stops }` only.
- * Drops unknown keys (`points`, `stopIds`, `waypoints`, …) from edited or merged JSON.
  */
 export function normalizePackJourney(
   j: unknown,
-  pack?: JourneyNormalizePackContext,
 ): void {
   if (!j || typeof j !== "object" || Array.isArray(j)) return;
 
   const obj = j as Record<string, unknown>;
 
-  let stops = sanitizeStopsArray(
+  const stops = sanitizeStopsArray(
     Array.isArray(obj.stops) ? (obj.stops as unknown[]) : [],
   );
-
-  stops = stops.filter((leg) => {
-    if (!pack) return true;
-    if (leg.kind === "burg") {
-      const burgs = pack.burgs;
-      if (!Array.isArray(burgs)) return false;
-      return burgs.some((b) => b.i === leg.id && !b.removed);
-    }
-    const markers = pack.markers;
-    if (!Array.isArray(markers)) return false;
-    return markers.some((m) => m.i === leg.id);
-  });
-
-  delete obj.points;
-  delete obj.stopIds;
-  delete obj.waypoints;
   obj.stops = stops;
 }
 
@@ -279,7 +243,3 @@ export function journeyResolvedCoordinates(
   return out;
 }
 
-/** `burg:n` / `marker:n` ref strings for current legs (e.g. vertex attribution). */
-export function referencedJourneyStopRefs(j: PackJourney): Set<string> {
-  return new Set(j.stops.map(journeyLegToRefString));
-}

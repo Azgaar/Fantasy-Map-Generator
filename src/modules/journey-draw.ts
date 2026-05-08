@@ -1,22 +1,14 @@
 /**
- * Journey SVG rendering (#journeys): delegates geometry/style to sibling modules;
- * exposes Routes-like `window.Journey` API for legacy scripts.
+ * Journey SVG rendering (#journeys): delegates geometry/style to sibling modules.
  */
 import type { Selection } from "d3";
 import type { JourneyResolvedStopEntry, PackJourney } from "./journey-model";
 import {
   buildJourneyResolutionContext,
-  burgJourneyStopRef,
-  emptyPackJourney,
   ensurePackJourneyNormalized,
   journeyLegToRefString,
-  journeyRefStringToLeg,
   journeyResolvedCoordinates,
   journeyResolvedStopEntries,
-  markerJourneyStopRef,
-  normalizePackJourney,
-  resolveJourneyLeg,
-  resolveJourneyStopPosition,
 } from "./journey-model";
 import {
   arrowPositionsAlongPolyline,
@@ -405,19 +397,10 @@ export class JourneyDrawModule {
   }
 }
 
-/** Routes-like facade: pack helpers + style defaults for legacy UI scripts. */
+/** Minimal facade consumed by legacy JS modules. */
 export type JourneyGlobalApi = {
   STYLE_DEFAULTS: typeof JOURNEY_STYLE_DEFAULTS;
   ensurePackJourneyNormalized: typeof ensurePackJourneyNormalized;
-  normalizePackJourney: typeof normalizePackJourney;
-  journeyResolvedCoordinates: typeof journeyResolvedCoordinates;
-  resolveJourneyStopPosition: typeof resolveJourneyStopPosition;
-  resolveJourneyLeg: typeof resolveJourneyLeg;
-  journeyRefStringToLeg: typeof journeyRefStringToLeg;
-  emptyPackJourney: typeof emptyPackJourney;
-  burgJourneyStopRef: typeof burgJourneyStopRef;
-  markerJourneyStopRef: typeof markerJourneyStopRef;
-  journeyLegToRefString: typeof journeyLegToRefString;
 };
 
 if (typeof window !== "undefined") {
@@ -425,15 +408,6 @@ if (typeof window !== "undefined") {
   const journeyApi: JourneyGlobalApi = {
     STYLE_DEFAULTS: JOURNEY_STYLE_DEFAULTS,
     ensurePackJourneyNormalized,
-    normalizePackJourney,
-    journeyResolvedCoordinates,
-    resolveJourneyStopPosition,
-    resolveJourneyLeg,
-    journeyRefStringToLeg,
-    emptyPackJourney,
-    burgJourneyStopRef,
-    markerJourneyStopRef,
-    journeyLegToRefString,
   };
   window.Journey = journeyApi;
   window.JourneyPack = journeyApi;

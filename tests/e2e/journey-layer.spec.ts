@@ -68,7 +68,7 @@ test.describe("Journey layer", () => {
     expect(disp).toBe("none");
   });
 
-  test("drawJourney strips stray points key and leaves empty journey", async ({ page }) => {
+  test("drawJourney ignores stray points key and leaves empty stops", async ({ page }) => {
     const snap = await page.evaluate((pts) => {
       const w = window as unknown as {
         layerIsOn: (id: string) => boolean;
@@ -83,13 +83,11 @@ test.describe("Journey layer", () => {
       return {
         pointsPresent: Object.prototype.hasOwnProperty.call(j, "points"),
         stopsLen: Array.isArray(j.stops) ? j.stops.length : -1,
-        legacyStopIds: Object.prototype.hasOwnProperty.call(j, "stopIds"),
       };
     }, BACKTRACK_JOURNEY_POINTS);
 
-    expect(snap.pointsPresent).toBe(false);
+    expect(snap.pointsPresent).toBe(true);
     expect(snap.stopsLen).toBe(0);
-    expect(snap.legacyStopIds).toBe(false);
   });
 
   test("drawJourney resolves a burg stop ref using pack.burgs positions", async ({ page }) => {
