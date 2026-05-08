@@ -317,18 +317,6 @@ interface JourneyStyleConfig
 
 const builtinRampInterpolator = interpolateRgbBasis(JOURNEY_RAINBOW_STOPS);
 
-/** Parse comma-separated hex/color tokens; returns null if fewer than two usable stops. */
-export function parseJourneyRainbowStops(
-  raw: string | null | undefined,
-): string[] | null {
-  if (raw == null || !String(raw).trim()) return null;
-  const parts = String(raw)
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return parts.length >= 2 ? parts : null;
-}
-
 /**
  * Read global journey geometry style from `#journeys` (`data-*`).
  * Path colors live per {@link StoredJourney}, not here.
@@ -1067,6 +1055,40 @@ function journeyHexForPicker(
   return fb;
 }
 
+function journeyEditorClearGradientStopsUi(): void {
+  ensureEl("journeyEditorGradientStopsBody").innerHTML = "";
+}
+
+function journeyEditorRenderGradientStops(colorsIn: string[]): void {
+  const container = ensureEl("journeyEditorGradientStopsBody");
+  const jd = JOURNEY_STYLE_DEFAULTS;
+  const cols =
+    colorsIn.length >= 2
+      ? colorsIn.map((c, i) =>
+          journeyHexForPicker(
+            c,
+            i === 0 ? jd.gradientFromHex : jd.gradientToHex,
+          ),
+        )
+      : [jd.gradientFromHex, jd.gradientToHex];
+  container.innerHTML = "";
+  cols.forEach((hex, i) => {
+    const showRemove = cols.length > 2;
+    const removeStyle = showRemove
+      ? ""
+      : "visibility:hidden;pointer-events:none";
+    container.insertAdjacentHTML(
+      "beforeend",
+      `<div class="editorLine journey-gradient-stop-row" data-gradient-stop-index="${i}" style="display:flex;align-items:center;gap:0.5em;margin:0.2em 0;flex-wrap:wrap">
+        <span style="opacity:0.85;min-width:1.25em">${i + 1}</span>
+        <input type="color" class="journey-gradient-stop-color" data-gradient-stop-index="${i}" value="${escapeHtml(hex)}" />
+        <output class="journey-gradient-stop-output" data-gradient-stop-index="${i}">${escapeHtml(hex)}</output>
+        <span data-tip="Remove this color stop" class="icon-trash-empty pointer journey-gradient-stop-remove" data-gradient-stop-index="${i}" style="${removeStyle}"></span>
+      </div>`,
+    );
+  });
+}
+
 function journeyEditorSyncColorUi(row: StoredJourney): void {
   const jd = JOURNEY_STYLE_DEFAULTS;
   const cd = sanitizeJourneyColorData(row.color);
@@ -1079,49 +1101,21 @@ function journeyEditorSyncColorUi(row: StoredJourney): void {
     (ensureEl("journeyEditorSolidStroke") as HTMLInputElement).value = solidHex;
     (ensureEl("journeyEditorSolidStrokeOutput") as HTMLOutputElement).value =
       solidHex;
-    (ensureEl("journeyEditorRainbowStops") as HTMLInputElement).value = "";
-    (ensureEl("journeyEditorGradientFrom") as HTMLInputElement).value =
-      jd.gradientFromHex;
-    (ensureEl("journeyEditorGradientFromOutput") as HTMLOutputElement).value =
-      jd.gradientFromHex;
-    (ensureEl("journeyEditorGradientTo") as HTMLInputElement).value =
-      jd.gradientToHex;
-    (ensureEl("journeyEditorGradientToOutput") as HTMLOutputElement).value =
-      jd.gradientToHex;
+    journeyEditorClearGradientStopsUi();
   } else if (cd.type === "rainbow") {
     sel.value = "rainbow";
     const solidHex = journeyHexForPicker(undefined, jd.solidStroke);
     (ensureEl("journeyEditorSolidStroke") as HTMLInputElement).value = solidHex;
     (ensureEl("journeyEditorSolidStrokeOutput") as HTMLOutputElement).value =
       solidHex;
-    (ensureEl("journeyEditorRainbowStops") as HTMLInputElement).value = "";
-    (ensureEl("journeyEditorGradientFrom") as HTMLInputElement).value =
-      jd.gradientFromHex;
-    (ensureEl("journeyEditorGradientFromOutput") as HTMLOutputElement).value =
-      jd.gradientFromHex;
-    (ensureEl("journeyEditorGradientTo") as HTMLInputElement).value =
-      jd.gradientToHex;
-    (ensureEl("journeyEditorGradientToOutput") as HTMLOutputElement).value =
-      jd.gradientToHex;
+    journeyEditorClearGradientStopsUi();
   } else {
     sel.value = "gradient";
     const solidHex = journeyHexForPicker(undefined, jd.solidStroke);
     (ensureEl("journeyEditorSolidStroke") as HTMLInputElement).value = solidHex;
     (ensureEl("journeyEditorSolidStrokeOutput") as HTMLOutputElement).value =
       solidHex;
-    (ensureEl("journeyEditorRainbowStops") as HTMLInputElement).value =
-      cd.colors.join(", ");
-    const fromHex = journeyHexForPicker(cd.colors[0], jd.gradientFromHex);
-    const toHex = journeyHexForPicker(
-      cd.colors[cd.colors.length - 1],
-      jd.gradientToHex,
-    );
-    (ensureEl("journeyEditorGradientFrom") as HTMLInputElement).value = fromHex;
-    (ensureEl("journeyEditorGradientFromOutput") as HTMLOutputElement).value =
-      fromHex;
-    (ensureEl("journeyEditorGradientTo") as HTMLInputElement).value = toHex;
-    (ensureEl("journeyEditorGradientToOutput") as HTMLOutputElement).value =
-      toHex;
+    journeyEditorRenderGradientStops(cd.colors);
   }
 
   journeyEditorSyncColorRowVisibility();
@@ -1134,24 +1128,9 @@ function journeyEditorSyncColorRowVisibility(): void {
   ensureEl("journeyEditorSolidStroke").closest("tr")!.style.display = solid
     ? ""
     : "none";
-  const showGrad = gradient;
-  ensureEl("journeyEditorGradientFrom").closest("tr")!.style.display = showGrad
+  ensureEl("journeyEditorGradientStopsRow").style.display = gradient
     ? ""
     : "none";
-  ensureEl("journeyEditorGradientTo").closest("tr")!.style.display = showGrad
-    ? ""
-    : "none";
-  ensureEl("journeyEditorRainbowStops").closest("tr")!.style.display = showGrad
-    ? ""
-    : "none";
-}
-
-function journeyEditorApplyGradientFromPickers(row: StoredJourney): void {
-  const from = (ensureEl("journeyEditorGradientFrom") as HTMLInputElement)
-    .value;
-  const to = (ensureEl("journeyEditorGradientTo") as HTMLInputElement).value;
-  row.color = { type: "gradient", colors: [from, to] };
-  (ensureEl("journeyEditorRainbowStops") as HTMLInputElement).value = "";
 }
 
 function journeyEditorSyncEmptyState(): void {
@@ -1278,6 +1257,26 @@ function journeyEditorRootChange(ev: Event): void {
 
 function journeyEditorRootClick(ev: Event): void {
   const t = ev.target as HTMLElement;
+  if (t.classList.contains("journey-gradient-stop-remove")) {
+    const rowEl = t.closest("[data-gradient-stop-index]");
+    if (!rowEl) return;
+    const idx = +(rowEl as HTMLElement).dataset.gradientStopIndex!;
+    if (!Number.isFinite(idx)) return;
+    if (
+      (ensureEl("journeyEditorColorMode") as HTMLSelectElement).value !==
+      "gradient"
+    )
+      return;
+    const cur = syncEditorActiveRow();
+    if (!cur || cur.color?.type !== "gradient") return;
+    const colors = [...cur.color.colors];
+    if (colors.length <= 2) return;
+    colors.splice(idx, 1);
+    cur.color = { type: "gradient", colors };
+    journeyEditorSyncColorUi(cur);
+    drawJourney();
+    return;
+  }
   if (t.classList.contains("journey-stop-remove")) {
     const row = t.closest("[data-stop-index]");
     if (!row) return;
@@ -1416,7 +1415,35 @@ function editJourney(): void {
   modules.editJourney = true;
   $("#journeyEditorRoot")
     .on("change.journeyEd", journeyEditorRootChange)
-    .on("click.journeyEd", journeyEditorRootClick);
+    .on("click.journeyEd", journeyEditorRootClick)
+    .on(
+      "input.journeyEd",
+      ".journey-gradient-stop-color",
+      function (this: HTMLInputElement) {
+        if (
+          (ensureEl("journeyEditorColorMode") as HTMLSelectElement).value !==
+          "gradient"
+        )
+          return;
+        const row = syncEditorActiveRow();
+        if (!row) return;
+        const container = ensureEl("journeyEditorGradientStopsBody");
+        const inputs = container.querySelectorAll<HTMLInputElement>(
+          ".journey-gradient-stop-color",
+        );
+        const colors = [...inputs].map((inp) => inp.value);
+        if (colors.length < 2) return;
+        row.color = { type: "gradient", colors };
+        const idx = this.dataset.gradientStopIndex;
+        if (idx != null) {
+          const out = container.querySelector<HTMLOutputElement>(
+            `output.journey-gradient-stop-output[data-gradient-stop-index="${idx}"]`,
+          );
+          if (out) out.value = this.value;
+        }
+        drawJourney();
+      },
+    );
   $("#journeyEditorJourneySelect").on(
     "change.journeyEd",
     journeyEditorJourneySelectChange,
@@ -1481,75 +1508,26 @@ function editJourney(): void {
       drawJourney();
     },
   );
-  $("#journeyEditorGradientFrom").on(
-    "input.journeyEd",
-    function (this: HTMLInputElement) {
-      if (
-        (ensureEl("journeyEditorColorMode") as HTMLSelectElement).value !==
-        "gradient"
-      )
-        return;
-      (ensureEl("journeyEditorGradientFromOutput") as HTMLOutputElement).value =
-        this.value;
-      const row = syncEditorActiveRow();
-      if (!row) return;
-      journeyEditorApplyGradientFromPickers(row);
-      drawJourney();
-    },
-  );
-  $("#journeyEditorGradientTo").on(
-    "input.journeyEd",
-    function (this: HTMLInputElement) {
-      if (
-        (ensureEl("journeyEditorColorMode") as HTMLSelectElement).value !==
-        "gradient"
-      )
-        return;
-      (ensureEl("journeyEditorGradientToOutput") as HTMLOutputElement).value =
-        this.value;
-      const row = syncEditorActiveRow();
-      if (!row) return;
-      journeyEditorApplyGradientFromPickers(row);
-      drawJourney();
-    },
-  );
-  $("#journeyEditorRainbowStops").on(
-    "input.journeyEd",
-    function (this: HTMLInputElement) {
-      if (
-        (ensureEl("journeyEditorColorMode") as HTMLSelectElement).value !==
-        "gradient"
-      )
-        return;
-      const row = syncEditorActiveRow();
-      if (!row) return;
-      const v = this.value.trim();
-      if (v === "") {
-        journeyEditorApplyGradientFromPickers(row);
-        drawJourney();
-        return;
-      }
-      const parsed = parseJourneyRainbowStops(v);
-      if (parsed && parsed.length >= 2) {
-        row.color = { type: "gradient", colors: parsed };
-        const jd = JOURNEY_STYLE_DEFAULTS;
-        const fromHex = journeyHexForPicker(parsed[0], jd.gradientFromHex);
-        const toHex = journeyHexForPicker(
-          parsed[parsed.length - 1],
-          jd.gradientToHex,
-        );
-        (ensureEl("journeyEditorGradientFrom") as HTMLInputElement).value =
-          fromHex;
-        (
-          ensureEl("journeyEditorGradientFromOutput") as HTMLOutputElement
-        ).value = fromHex;
-        (ensureEl("journeyEditorGradientTo") as HTMLInputElement).value = toHex;
-        (ensureEl("journeyEditorGradientToOutput") as HTMLOutputElement).value =
-          toHex;
-        drawJourney();
-      }
-    },
-  );
+  $("#journeyEditorGradientAddStop").on("click.journeyEd", () => {
+    if (
+      (ensureEl("journeyEditorColorMode") as HTMLSelectElement).value !==
+      "gradient"
+    )
+      return;
+    const row = syncEditorActiveRow();
+    if (!row) return;
+    const jd = JOURNEY_STYLE_DEFAULTS;
+    let colors: string[];
+    if (row.color?.type === "gradient" && row.color.colors.length >= 2) {
+      colors = [...row.color.colors];
+      colors.push(colors[colors.length - 1]!);
+    } else {
+      colors = [jd.gradientFromHex, jd.gradientToHex];
+    }
+    row.color = { type: "gradient", colors };
+    journeyEditorSyncColorUi(row);
+    drawJourney();
+  });
 
   journeyEditorRefreshBody();
 }
