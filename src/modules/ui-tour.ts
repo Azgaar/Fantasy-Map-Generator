@@ -72,6 +72,9 @@ function start() {
       },
       {
         element: "#tooltip",
+        onHighlightStarted: () => {
+          document.body.classList.add("tour-free-roam");
+        },
         popover: {
           title: "Hover Tooltips",
           description:
@@ -84,6 +87,7 @@ function start() {
         element: "#optionsTrigger",
         onHighlightStarted: () => {
           document.body.classList.remove("tour-free-roam");
+          closeOptionsPanel();
         },
         popover: {
           title: "Open the Options Menu",
@@ -201,6 +205,7 @@ function start() {
       {
         element: "#configureWorld",
         onHighlightStarted: () => {
+          closeDialogs();
           clickTab("optionsTab");
         },
         popover: {
@@ -209,7 +214,6 @@ function start() {
             "This button opens the World Configurator where you can set the map's position on the globe, adjust equatorial and polar temperatures, and configure precipitation to shape the world's climate.",
           side: "right",
           onNextClick: () => {
-            editWorld();
             tour.moveNext();
           },
         },
@@ -217,6 +221,9 @@ function start() {
       {
         element: "#worldConfigurator",
         disableActiveInteraction: false,
+        onHighlightStarted: () => {
+          editWorld();
+        },
         popover: {
           title: "World Configurator",
           description:
@@ -254,7 +261,6 @@ function start() {
             "Open the Heightmap editor to manually sculpt terrain by raising or lowering elevation. Changes here reshape coastlines, rivers, and biomes.",
           side: "right",
           onNextClick: () => {
-            showHeightmapCustomizationPanel();
             tour.moveNext();
           },
         },
@@ -262,6 +268,9 @@ function start() {
       {
         element: "#customizationMenu",
         disableActiveInteraction: false,
+        onHighlightStarted: () => {
+          showHeightmapCustomizationPanel();
+        },
         onDeselected: () => {
           hideHeightmapCustomizationPanel();
         },
@@ -302,13 +311,15 @@ function start() {
       // ── Export / Save / Load ─────────────────────────────────────────────────
       {
         element: "#exportButton",
+        onHighlightStarted: () => {
+          closeDialogs();
+        },
         popover: {
           title: "Export",
           description:
             "Click Export to open the export dialog where you can download the map as an SVG, PNG, or JPEG image, split it into tiles, or export the world data as JSON.",
           side: "top",
           onNextClick: () => {
-            showExportPane();
             tour.moveNext();
           },
         },
@@ -316,6 +327,9 @@ function start() {
       {
         element: "#exportMapData",
         disableActiveInteraction: false,
+        onHighlightStarted: () => {
+          showExportPane();
+        },
         popover: {
           title: "Export Options",
           description:
