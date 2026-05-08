@@ -1,3 +1,4 @@
+import type {Burg} from "../modules/burgs-generator";
 import type {DemandCategory} from "../modules/goods-generator";
 import {DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "../modules/goods-generator";
 import type {DecisionCandidate, DemandEffect} from "../modules/production-generator";
@@ -203,7 +204,25 @@ export function open(burgId: number): void {
     return /*html*/ `<div><b>Decision basis:</b> highest score among ${candidates.length} feasible options:</div>${candidatesHtml}`;
   };
   const accessibleResourcesTitle = "Accessible Resources";
-  const initialDemand = DEMAND_PRIORITY.map(category => data.population * DEMAND_TARGET_FACTORS[category]);
+  const population = burg.population || 0;
+  const wealthAfter = burg.wealth || 0;
+
+  // Derive process rank from sorted burg order (same order as production run)
+  const sortedBurgIds = (pack.burgs as Burg[])
+    .filter(b => b.i && !b.removed)
+    .sort((a, b) => (a.population || 0) - (b.population || 0))
+    .map(b => b.i!);
+  const totalBurgs = sortedBurgIds.length;
+  const processRank = sortedBurgIds.indexOf(burgId) + 1;
+
+  // Derive financials from deal log
+  const productionBuyDeals = burgDeals.filter(d => d.phase === "local-production-buy");
+  const phaseRevenue = burgSaleDeals.reduce((sum, deal) => sum + getDealRevenue(deal), 0);
+  const ingredientCosts = productionBuyDeals.reduce((sum, deal) => sum + getDealSpent(deal), 0);
+  const grossProduct = phaseRevenue - ingredientCosts;
+  const productPerCapita = population > 0 ? grossProduct / population : 0;
+
+  const initialDemand = DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
   const finalDemandCoverage = calculateDemandCoverageTotals(data.finalInventory);
   const uncoveredDemand = initialDemand.map((target, index) => Math.max(0, target - finalDemandCoverage[index]));
   const producedByGood: Record<number, number> = {};
@@ -212,30 +231,30 @@ export function open(burgId: number): void {
 
   const statsHtml = /*html*/ `
     <div style="${styles.topBar}">
-      <span><b>Population:</b> ${data.population}</span>
-      <span><b>Order:</b> ${data.processRank} of ${data.totalBurgs}</span>
+      <span><b>Population:</b> ${population}</span>
+      <span><b>Order:</b> ${processRank} of ${totalBurgs}</span>
       <span><b>Market:</b> ${market ? `#${market.i} (center: ${centerBurg?.name || "unknown"} #${market.centerBurgId})` : "—"}</span>
       <div><b>Initial Demand:</b> ${renderDemand(initialDemand)}</div>
     </div>`;
 
-  const burgResources = ""; // TODO: derive cells from burg data and pack.goods to calculate accessible resources, instead of storing it in production data.
-  // data.map(resource => {
-  //     const good = Goods.get(resource.goodId);
-  //     if (!good) return "";
-  //     const demandCoverage = Object.fromEntries(
-  //       Object.entries(good.demandCoverage).map(([category, value]) => [category, value * resource.amount])
-  //     ) as Partial<Record<DemandCategory, number>>;
+  const accessibleResourceRows = Production.getAccessibleResources(burgId)
+    .map(({goodId, amount}) => {
+      const good = Goods.get(goodId);
+      if (!good) return "";
+      const demandCoverage = Object.fromEntries(
+        Object.entries(good.demandCoverage).map(([category, value]) => [category, value * amount])
+      ) as Partial<Record<DemandCategory, number>>;
 
-  //     return /*html*/ `<tr style="${styles.bodyRow}">
-  //       ${renderDataCell(renderGoodLabel(resource.goodId))}
-  //       ${renderDataCell(rn(resource.amount, 2), "right")}
-  //       ${renderPriceCell(good.value)}
-  //       ${renderDataCell(renderDemand(demandCoverage, true), "right")}
-  //     </tr>`;
-  //   })
-  //   .join("");
+      return /*html*/ `<tr style="${styles.bodyRow}">
+        ${renderDataCell(renderGoodLabel(goodId))}
+        ${renderDataCell(rn(amount, 2), "right")}
+        ${renderPriceCell(good.value)}
+        ${renderDataCell(renderDemand(demandCoverage, true), "right")}
+      </tr>`;
+    })
+    .join("");
 
-  const accessibleResourcesTable = burgResources
+  const accessibleResourcesTable = accessibleResourceRows
     ? /*html*/ `<table style="${styles.table}">
         <colgroup>
           <col style="width: 30%;">
@@ -249,7 +268,7 @@ export function open(burgId: number): void {
           ${renderHeaderCell("Base Price", "right", "Authored reference price for this resource")}
           ${renderHeaderCell("Demand Coverage", "right", "Demand categories this accessible resource can help cover at current pulled units")}
         </tr></thead>
-        <tbody>${burgResources}</tbody>
+        <tbody>${accessibleResourceRows}</tbody>
       </table>`
     : `<i style="${styles.empty}">No goods reached this burg</i>`;
 
@@ -401,9 +420,9 @@ export function open(burgId: number): void {
   const summaryHtml = /*html*/ `
     <div style="${styles.summaryBar}">
       <span title="Initial demand minus final covered demand"><b>Uncovered Demand:</b> ${renderDemand(uncoveredDemand, true)}</span>
-      <span title="Net burg treasury after local buying, local sales, and final local demand fill."><b>Treasury:</b> <span style="font-weight:600; ${data.wealthAfter >= 0 ? styles.positive : styles.negative}">${formatPrice(data.wealthAfter)}</span></span>
-      <span title="Gross product per population point. This is the burg's gross product divided by population, a per-capita productivity measure for the current production run."><b>Product / Capita:</b> <span style="font-weight:600; ${data.productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(data.productPerCapita)}</span></span>
-      <span title="Gross Product is local sale revenue minus purchased ingredient costs during this production run. It excludes retained inventory and later demand-fill purchases."><b>Gross Product:</b> <span style="font-weight:600; ${data.grossProduct >= 0 ? styles.positive : styles.negative}">${formatPrice(data.grossProduct)}</span></span>
+      <span title="Net burg treasury after local buying, local sales, and final local demand fill."><b>Treasury:</b> <span style="font-weight:600; ${wealthAfter >= 0 ? styles.positive : styles.negative}">${formatPrice(wealthAfter)}</span></span>
+      <span title="Gross product per population point. This is the burg's gross product divided by population, a per-capita productivity measure for the current production run."><b>Product / Capita:</b> <span style="font-weight:600; ${productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(productPerCapita)}</span></span>
+      <span title="Gross Product is local sale revenue minus purchased ingredient costs during this production run. It excludes retained inventory and later demand-fill purchases."><b>Gross Product:</b> <span style="font-weight:600; ${grossProduct >= 0 ? styles.positive : styles.negative}">${formatPrice(grossProduct)}</span></span>
     </div>`;
 
   const tradeSummaryRows = [

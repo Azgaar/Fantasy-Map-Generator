@@ -678,6 +678,10 @@ async function generate(options) {
     Rivers.specify();
     Lakes.defineNames();
 
+    Trade.initialize(
+      pack.goods,
+      pack.burgs.filter(b => b.i && !b.removed)
+    );
     Production.produce();
 
     Military.generate();
