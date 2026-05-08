@@ -55,16 +55,15 @@ describe("normalizePackJourney", () => {
     expect(j.stops[0]).toEqual({ kind: "burg", id: 1 });
   });
 
-  it("migrates legacy stopIds burg/marker strings only", () => {
+  it("does not infer stops from legacy stopIds (only stops[] is authoritative)", () => {
     const j: Record<string, unknown> = {
       stopIds: ["wp_skip", burgJourneyStopRef(3), markerJourneyStopRef(7)],
       waypoints: [{ id: "wp_skip", name: "A", x: 1, y: 2 }],
     };
     normalizePackJourney(j);
-    expect((j as unknown as PackJourney).stops).toEqual([
-      { kind: "burg", id: 3 },
-      { kind: "marker", id: 7 },
-    ]);
+    expect((j as unknown as PackJourney).stops).toEqual([]);
+    expect(j.stopIds).toBeUndefined();
+    expect(j.waypoints).toBeUndefined();
   });
 
   it("drops legs when pack says missing burg/marker", () => {
@@ -81,13 +80,14 @@ describe("normalizePackJourney", () => {
     expect(j.stops).toEqual([{ kind: "burg", id: 5 }]);
   });
 
-  it("prefers stops[] over legacy stopIds when both present", () => {
+  it("keeps stops[] when stray stopIds also present", () => {
     const j: Record<string, unknown> = {
       stops: [{ kind: "marker" as const, id: 1 }],
       stopIds: [burgJourneyStopRef(9)],
     };
     normalizePackJourney(j);
     expect((j as unknown as PackJourney).stops).toEqual([{ kind: "marker", id: 1 }]);
+    expect(j.stopIds).toBeUndefined();
   });
 });
 
