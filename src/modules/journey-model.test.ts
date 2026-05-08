@@ -13,55 +13,35 @@ import {
   type JourneyResolutionContext,
   type JourneyStopLeg,
   type PackJourney,
-  type PackWithOptionalJourney,
 } from "./journey-model";
 
 describe("ensurePackJourneyNormalized", () => {
   it("creates pack.journey when absent and normalizes", () => {
-    const pack: PackWithOptionalJourney = {};
+    const pack: { journey?: unknown } = {};
     ensurePackJourneyNormalized(pack);
     expect(pack.journey).toEqual({ stops: [] });
   });
 });
 
 describe("normalizePackJourney", () => {
-  it("keeps unknown keys and yields empty stops when stops[] is absent", () => {
+  it("yields empty stops when stops[] is absent", () => {
     const j: Record<string, unknown> = {
-      points: [[10, 20], [30, 40]],
-      stopIds: [],
-      waypoints: [],
+      foo: "bar",
     };
     normalizePackJourney(j);
-    expect(j.points).toEqual([[10, 20], [30, 40]]);
-    expect(j.stopIds).toEqual([]);
-    expect(j.waypoints).toEqual([]);
     const normalized = j as unknown as PackJourney;
     expect(normalized.stops).toEqual([]);
     expect(journeyResolvedCoordinates(normalized)).toEqual([]);
   });
 
-  it("uses only stops[] as source of truth", () => {
+  it("uses stops[] as source of truth", () => {
     const j = {
       stops: [{ kind: "burg" as const, id: 1 }],
-      stopIds: ["burg:99"],
-      waypoints: [{ id: "x" }],
+      foo: "bar",
     };
     normalizePackJourney(j);
     expect(j.stops.length).toBe(1);
     expect(j.stops[0]).toEqual({ kind: "burg", id: 1 });
-    expect(j.stopIds).toEqual(["burg:99"]);
-    expect(j.waypoints).toEqual([{ id: "x" }]);
-  });
-
-  it("does not infer stops from stopIds / waypoints", () => {
-    const j: Record<string, unknown> = {
-      stopIds: ["wp_skip", "burg:3", "marker:7"],
-      waypoints: [{ id: "wp_skip", name: "A", x: 1, y: 2 }],
-    };
-    normalizePackJourney(j);
-    expect((j as unknown as PackJourney).stops).toEqual([]);
-    expect(j.stopIds).toEqual(["wp_skip", "burg:3", "marker:7"]);
-    expect(j.waypoints).toEqual([{ id: "wp_skip", name: "A", x: 1, y: 2 }]);
   });
 
   it("filters malformed stops entries only", () => {

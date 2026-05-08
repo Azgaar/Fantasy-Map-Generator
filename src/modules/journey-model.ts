@@ -119,8 +119,7 @@ function sanitizeStopsArray(raw: unknown[]): JourneyStopLeg[] {
   return out;
 }
 
-/** Pack slice used when ensuring `pack.journey` exists and is sanitized. */
-export type PackWithOptionalJourney = {
+type PackWithOptionalJourney = {
   journey?: unknown;
 };
 
