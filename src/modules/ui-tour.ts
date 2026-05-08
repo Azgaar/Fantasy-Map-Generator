@@ -1,6 +1,17 @@
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
+
 const byId = (id: string) => document.getElementById(id);
+
+let stylesInjected = false;
+function injectTourStyles(): void {
+  if (stylesInjected) return;
+  stylesInjected = true;
+  const style = document.createElement("style");
+  style.textContent =
+    ".driver-popover-title,.driver-popover-description,.driver-popover-progress-text{color:#000!important}";
+  document.head.appendChild(style);
+}
 
 function clickTab(tabId: string) {
   byId(tabId)?.click();
@@ -36,12 +47,15 @@ function hideHeightmapCustomizationPanel() {
 }
 
 function start() {
+  injectTourStyles();
   closeOptionsPanel();
 
   const tour = driver({
     showProgress: true,
     allowClose: true,
+    allowKeyboardControl: false,
     onDestroyStarted: () => {
+      document.removeEventListener("keydown", handleKeydown);
       hideHeightmapCustomizationPanel();
       closeDialogs();
       tour.destroy();
@@ -357,6 +371,26 @@ function start() {
     ],
   });
 
+  function handleKeydown(e: KeyboardEvent): void {
+    if (!tour.isActive()) return;
+    switch (e.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        document.querySelector<HTMLElement>(".driver-popover-next-btn")?.click();
+        e.preventDefault();
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        document.querySelector<HTMLElement>(".driver-popover-prev-btn")?.click();
+        e.preventDefault();
+        break;
+      case "Escape":
+        tour.destroy();
+        break;
+    }
+  }
+
+  document.addEventListener("keydown", handleKeydown);
   tour.drive();
 }
 
