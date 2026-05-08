@@ -3,12 +3,12 @@
  */
 
 /** One leg in the journey sequence (linked-list style via array order). */
-export interface JourneyBurgLeg {
+interface JourneyBurgLeg {
   kind: "burg";
   id: number;
 }
 
-export interface JourneyMarkerLeg {
+interface JourneyMarkerLeg {
   kind: "marker";
   id: number;
 }
@@ -210,7 +210,7 @@ export function resolveJourneyStopPosition(
 }
 
 /** One resolved leg and its map coordinate (same order as `journeyResolvedCoordinates` points). */
-export interface JourneyResolvedStopEntry {
+interface JourneyResolvedStopEntry {
   leg: JourneyStopLeg;
   coord: [number, number];
 }

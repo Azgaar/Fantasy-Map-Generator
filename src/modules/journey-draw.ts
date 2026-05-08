@@ -2,7 +2,7 @@
  * Journey SVG rendering (#journeys): delegates geometry/style to sibling modules.
  */
 import type { Selection } from "d3";
-import type { JourneyResolvedStopEntry, PackJourney } from "./journey-model";
+import type { PackJourney } from "./journey-model";
 import {
   buildJourneyResolutionContext,
   ensurePackJourneyNormalized,
@@ -146,7 +146,7 @@ export class JourneyDrawModule {
       this.lastLodTier = null;
       return;
     }
-    const points = resolvedStops.map((r: JourneyResolvedStopEntry) => r.coord);
+    const points = resolvedStops.map((r) => r.coord);
 
     const zs = zoomScale;
     const zm = zoomMinForLod;
