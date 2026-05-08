@@ -1,6 +1,6 @@
 import type {DemandCategory} from "../modules/goods-generator";
 import {DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "../modules/goods-generator";
-import type {DecisionCandidate, DemandEffect, Log} from "../modules/production-generator";
+import type {DecisionCandidate, DemandEffect} from "../modules/production-generator";
 import {rn} from "../utils";
 
 type Type = "RAW" | "MFG" | "BUY";
@@ -30,10 +30,16 @@ export function open(burgId: number): void {
   const burgSaleDeals = burgDeals.filter(deal => isLocalSaleDeal(deal));
   const demandFillDeals = burgBuyDeals.filter(deal => deal.phase === "local-demand-fill");
   const centerDeals = market
-    ? deals.filter(deal => deal.phase === "global-redistribution" && (deal.buyerId === market.i || deal.sellerId === market.i))
+    ? deals.filter(
+        deal => deal.phase === "global-redistribution" && (deal.buyerId === market.i || deal.sellerId === market.i)
+      )
     : [];
-  const centerImportDeals = centerDeals.filter(deal => deal.phase === "global-redistribution" && deal.buyerId === market?.i);
-  const centerExportDeals = centerDeals.filter(deal => deal.phase === "global-redistribution" && deal.sellerId === market?.i);
+  const centerImportDeals = centerDeals.filter(
+    deal => deal.phase === "global-redistribution" && deal.buyerId === market?.i
+  );
+  const centerExportDeals = centerDeals.filter(
+    deal => deal.phase === "global-redistribution" && deal.sellerId === market?.i
+  );
 
   const data = Production.getProductionData(burgId);
   if (!data) {
@@ -61,7 +67,7 @@ export function open(burgId: number): void {
     bodyRow: "border-bottom:1px solid #f0f0f0",
     cell: "padding:.4em .5em;vertical-align:top",
     cellRight: "padding:.4em .5em;vertical-align:top;text-align:right",
-    logCell: "padding:0.5em 0.5em 1em;",
+    detailsCell: "padding:0.5em 0.5em 1em;",
     empty: "color:#888;font-style:italic",
     summaryBar: "display:flex;margin-top:.6em;justify-content: space-between;padding: 0 .5em;"
   };
@@ -96,10 +102,10 @@ export function open(burgId: number): void {
   const renderPriceCell = (value: number | string, extra = "") => renderDataCell(formatPrice(value), "right", extra);
   const renderTaggedGood = (id: number, type: Type, suffix = "") =>
     `${renderGoodLabel(id, suffix)} <span style="margin-left:4px">${typeBadge(type)}</span>`;
-  const renderLogRow = (logId: string, logHtml: string) =>
-    logHtml
-      ? /*html*/ `<tr id="${logId}" style="display:none">
-          <td colspan="5" style="${styles.logCell}">${logHtml}</td>
+  const renderLogRow = (candidatesId: string, candidatesHtml: string) =>
+    candidatesHtml
+      ? /*html*/ `<tr id="${candidatesId}" style="display:none">
+          <td colspan="5" style="${styles.detailsCell}">${candidatesHtml}</td>
         </tr>`
       : "";
   const formatPrice = (value: number | string) => `🟡 ${typeof value === "number" ? rn(value, 2) : value}`;
@@ -188,11 +194,13 @@ export function open(burgId: number): void {
     return `<div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>: ${factors.join(" * ")} = ${renderCandidateScore(candidate.score)}</div>
       <div style="margin-top:.1em;${styles.muted}">Ingredients: ${ingredients}</div>`;
   };
-  const renderDecisionDetails = (log?: Log | null) => {
-    if (!log?.selected) return "";
-    const candidates = [log.selected, ...log.alternatives];
-    const candidatesHtml = `<ul style="margin:.2em 0 0 1.1em;padding:0">${candidates.map((option: DecisionCandidate) => `<li style="margin-top:.25em">${renderDecisionCandidate(option)}</li>`).join("")}</ul>`;
-    return /*html*/ `<div><b>Decision basis:</b> highest score among ${log.candidateCount} feasible options:</div>${candidatesHtml}`;
+  const renderDecisionDetails = (candidates?: DecisionCandidate[]) => {
+    if (!candidates || candidates.length === 0) return "";
+    const candidatesHtml = `<ul style="margin:.2em 0 0 1.1em;padding:0">${candidates
+      .sort((a, b) => b.score - a.score)
+      .map((candidate: DecisionCandidate) => `<li style="margin-top:.25em">${renderDecisionCandidate(candidate)}</li>`)
+      .join("")}</ul>`;
+    return /*html*/ `<div><b>Decision basis:</b> highest score among ${candidates.length} feasible options:</div>${candidatesHtml}`;
   };
   const accessibleResourcesTitle = "Accessible Resources";
   const initialDemand = DEMAND_PRIORITY.map(category => data.population * DEMAND_TARGET_FACTORS[category]);
@@ -205,59 +213,53 @@ export function open(burgId: number): void {
   const statsHtml = /*html*/ `
     <div style="${styles.topBar}">
       <span><b>Population:</b> ${data.population}</span>
-      <span><b>Cells:</b> ${data.cellsReached}/${data.cellsBudget}</span>
-      <span><b>Culture type:</b> ${data.cultureType}</span>
       <span><b>Order:</b> ${data.processRank} of ${data.totalBurgs}</span>
       <span><b>Market:</b> ${market ? `#${market.i} (center: ${centerBurg?.name || "unknown"} #${market.centerBurgId})` : "—"}</span>
       <div><b>Initial Demand:</b> ${renderDemand(initialDemand)}</div>
     </div>`;
 
-  const accessibleResourceRows = data.goodsPull
-    .map(resource => {
-      const good = Goods.get(resource.goodId);
-      if (!good) return "";
-      const projectedGain = Math.max(0, resource.chainValue - good.value);
-      const demandCoverage = Object.fromEntries(
-        Object.entries(good.demandCoverage).map(([category, value]) => [category, value * resource.pull])
-      ) as Partial<Record<DemandCategory, number>>;
+  const burgResources = ""; // TODO: derive cells from burg data and pack.goods to calculate accessible resources, instead of storing it in production data.
+  // data.map(resource => {
+  //     const good = Goods.get(resource.goodId);
+  //     if (!good) return "";
+  //     const demandCoverage = Object.fromEntries(
+  //       Object.entries(good.demandCoverage).map(([category, value]) => [category, value * resource.amount])
+  //     ) as Partial<Record<DemandCategory, number>>;
 
-      return /*html*/ `<tr style="${styles.bodyRow}">
-        ${renderDataCell(renderGoodLabel(resource.goodId))}
-        ${renderDataCell(rn(resource.pull, 2), "right")}
-        ${renderPriceCell(good.value)}
-        ${renderPriceCell(projectedGain, projectedGain > 0.001 ? styles.positive : styles.subtle)}
-        ${renderDataCell(renderDemand(demandCoverage, true), "right")}
-      </tr>`;
-    })
-    .join("");
+  //     return /*html*/ `<tr style="${styles.bodyRow}">
+  //       ${renderDataCell(renderGoodLabel(resource.goodId))}
+  //       ${renderDataCell(rn(resource.amount, 2), "right")}
+  //       ${renderPriceCell(good.value)}
+  //       ${renderDataCell(renderDemand(demandCoverage, true), "right")}
+  //     </tr>`;
+  //   })
+  //   .join("");
 
-  const accessibleResourcesTable = accessibleResourceRows
+  const accessibleResourcesTable = burgResources
     ? /*html*/ `<table style="${styles.table}">
         <colgroup>
           <col style="width: 30%;">
           <col style="width: 10%;">
-          <col style="width: 15%;">
           <col style="width: 20%;">
-          <col style="width: 25%;">
+          <col style="width: 40%;">
         </colgroup>
         <thead><tr style="${styles.headRow}">
           ${renderHeaderCell("Resource")}
           ${renderHeaderCell("Units", "right", "Raw units from flood-fill cells")}
           ${renderHeaderCell("Base Price", "right", "Authored reference price for this resource")}
-          ${renderHeaderCell("Projected Gain", "right", "Estimated extra per-unit value from reachable downstream chains")}
           ${renderHeaderCell("Demand Coverage", "right", "Demand categories this accessible resource can help cover at current pulled units")}
         </tr></thead>
-        <tbody>${accessibleResourceRows}</tbody>
+        <tbody>${burgResources}</tbody>
       </table>`
     : `<i style="${styles.empty}">No goods reached this burg</i>`;
 
   let stepIndex = 0;
   const stepRows = data.jobs.flatMap(job => {
     producedByGood[job.goodId] = (producedByGood[job.goodId] || 0) + job.units;
-    const logId = `productionLog${stepIndex++}`;
-    const logHtml = renderDecisionDetails(job.log);
-    const rowAttrs = logHtml
-      ? ` data-log-target="${logId}" style="${styles.bodyRow};cursor:pointer" title="Click to expand decision details"`
+    const candidatesId = `candidates${stepIndex++}`;
+    const candidatesHtml = renderDecisionDetails(job.candidates);
+    const rowAttrs = candidatesHtml
+      ? ` data-target="${candidatesId}" style="${styles.bodyRow};cursor:pointer" title="Click to expand decision details"`
       : ` style="${styles.bodyRow}"`;
 
     if (job.kind === "extract") {
@@ -278,7 +280,7 @@ export function open(burgId: number): void {
             : renderDataCell("—", "right", styles.subtle)
         }
       </tr>`,
-        renderLogRow(logId, logHtml)
+        renderLogRow(candidatesId, candidatesHtml)
       ];
     }
 
@@ -311,7 +313,7 @@ export function open(burgId: number): void {
       ${job.score !== undefined ? renderValueCell("Score", job.score, job.score >= 0) : renderDataCell("—", "right", styles.subtle)}
     </tr>`);
 
-    rows.push(renderLogRow(logId, logHtml));
+    rows.push(renderLogRow(candidatesId, candidatesHtml));
 
     return rows;
   });
@@ -385,7 +387,11 @@ export function open(burgId: number): void {
         ${renderPriceCell(allocatedCost, allocatedCost > 0 ? styles.warning : styles.subtle)}
         ${renderDataCell(renderDemand(demandCoverage, true) || "—", "right")}
         ${renderDataCell(
-          producedUnits <= 0 && boughtUnits > 0 ? "Bought to fill demand" : isManufactured ? "Locally manufactured" : "Locally extracted",
+          producedUnits <= 0 && boughtUnits > 0
+            ? "Bought to fill demand"
+            : isManufactured
+              ? "Locally manufactured"
+              : "Locally extracted",
           "right"
         )}
       </tr>`;
@@ -404,25 +410,45 @@ export function open(burgId: number): void {
     `<tr style="${styles.bodyRow}">
       ${renderDataCell("Local market buys")}
       ${renderDataCell(String(burgBuyDeals.length), "right")}
-      ${renderValueCell("Spent", burgBuyDeals.reduce((sum, deal) => sum + getDealSpent(deal), 0), false)}
-      ${renderValueCell("Tax", burgBuyDeals.reduce((sum, deal) => sum + getDealTax(deal), 0), false)}
+      ${renderValueCell(
+        "Spent",
+        burgBuyDeals.reduce((sum, deal) => sum + getDealSpent(deal), 0),
+        false
+      )}
+      ${renderValueCell(
+        "Tax",
+        burgBuyDeals.reduce((sum, deal) => sum + getDealTax(deal), 0),
+        false
+      )}
     </tr>`,
     `<tr style="${styles.bodyRow}">
       ${renderDataCell("Local market sales")}
       ${renderDataCell(String(burgSaleDeals.length), "right")}
-      ${renderValueCell("Revenue", burgSaleDeals.reduce((sum, deal) => sum + getDealRevenue(deal), 0), true)}
+      ${renderValueCell(
+        "Revenue",
+        burgSaleDeals.reduce((sum, deal) => sum + getDealRevenue(deal), 0),
+        true
+      )}
       ${renderDataCell("—", "right", styles.subtle)}
     </tr>`,
     `<tr style="${styles.bodyRow}">
       ${renderDataCell("Center imports")}
       ${renderDataCell(String(centerImportDeals.length), "right")}
-      ${renderValueCell("Value", centerImportDeals.reduce((sum, deal) => sum + getDealRevenue(deal), 0), true)}
+      ${renderValueCell(
+        "Value",
+        centerImportDeals.reduce((sum, deal) => sum + getDealRevenue(deal), 0),
+        true
+      )}
       ${renderDataCell("—", "right", styles.subtle)}
     </tr>`,
     `<tr style="${styles.bodyRow}">
       ${renderDataCell("Center exports")}
       ${renderDataCell(String(centerExportDeals.length), "right")}
-      ${renderValueCell("Value", centerExportDeals.reduce((sum, deal) => sum + getDealRevenue(deal), 0), true)}
+      ${renderValueCell(
+        "Value",
+        centerExportDeals.reduce((sum, deal) => sum + getDealRevenue(deal), 0),
+        true
+      )}
       ${renderDataCell("—", "right", styles.subtle)}
     </tr>`
   ].join("");
@@ -480,12 +506,12 @@ export function open(burgId: number): void {
   if (overviewContent) {
     overviewContent.onclick = event => {
       const target = event.target as HTMLElement;
-      const row = target.closest<HTMLTableRowElement>("tr[data-log-target]");
+      const row = target.closest<HTMLTableRowElement>("tr[data-target]");
       if (!row) return;
 
-      const logId = row.dataset.logTarget;
-      if (!logId) return;
-      const detailsRow = overviewContent.querySelector<HTMLTableRowElement>(`#${logId}`);
+      const candidatesId = row.dataset.target;
+      if (!candidatesId) return;
+      const detailsRow = overviewContent.querySelector<HTMLTableRowElement>(`#${candidatesId}`);
       if (!detailsRow) return;
 
       const isOpen = detailsRow.style.display !== "none";

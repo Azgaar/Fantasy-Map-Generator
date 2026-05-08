@@ -2,201 +2,203 @@
 
 Trade is split into two scopes:
 
-- local trade: burg <-> assigned trade center
-- global trade: trade center <-> trade center
+- **local trade**: burg ↔ assigned market
+- **global trade**: market ↔ market (redistribution)
 
-The current production generator still owns burg-level extraction and manufacture.
-The new trade generator owns trade-center state, deal logging, price helpers, and the later
-global redistribution phase.
+The production generator owns burg-level extraction and manufacture.
+The trade generator owns market state, deal logging, price mechanics, and global redistribution.
 
 ## Main concepts
 
-### Trade centers
+### Markets
 
-- Every active burg belongs to exactly one trade center.
+- Every active burg belongs to exactly one market (`burg.marketId`).
 - Burgs never trade directly with other burgs.
-- Burgs never buy from or sell to a world-global inventory pool.
-- Trade centers are the only bridge between local burg economies and external trade.
+- Markets are the only bridge between local burg economies and inter-regional trade.
+- Market membership is derived at runtime by filtering `pack.burgs` where `burg.marketId === market.i`. There is no stored burgs list on the market.
+- Market position (for rendering) is derived from `pack.burgs[market.centerBurgId].x/y`.
+
+### Market placement
+
+Markets are placed once during `Trade.initialize`:
+
+1. All valid burgs are scored: `population × (×2 if capital) × (×2 if port)`, sorted descending.
+2. Initial spacing: `minSpacing = floor((graphWidth + graphHeight) × 4 / burgCount^0.7)`.
+3. A d3-quadtree is walked in score order. If the nearest existing market is within `minSpacing`, the burg is assigned to it. Otherwise a new market is created anchored at this burg, and `minSpacing` is incremented by 1 for the next burg.
+
+This produces 8–15 markets per typical world, each anchored at the highest-scoring burg in its region.
 
 ### Three price levels
 
-Every good has three price concepts:
+Every good has three price concepts at runtime:
 
-1. base price
+#### 1. Base price
 
-- Source: `good.value` from `GOODS_DATA`
-- Stable authored reference value
+- Source: `good.value` (authored, fixed)
+- Never modified at runtime
+- Used as: initial market price, pressure magnitude reference, floor/ceiling anchor
 
-2. market price
+#### 2. Market price (two sides)
 
-- Current trade-center buy / sell price
-- Untaxed
-- Used for center inventory valuation and center-to-center trade
+Each market stores two independent prices per good:
 
-3. consumer price
+- `market.goods[goodId].buyPrice` — price the market charges buyers (burgs buying from market)
+- `market.goods[goodId].sellPrice` — price the market pays sellers (burgs selling to market)
 
-- Price paid by a burg when buying from its own local trade center
-- `consumerPrice = marketPrice * (1 + salesTaxRate)`
-- Only applies to local buy deals
+Both start at `good.value` and are clamped to `[good.value × 0.5, good.value × 3.0]`.
+
+The buy–sell spread emerges naturally: buy pressure pushes `buyPrice` up, sell pressure pushes `sellPrice` down.
+
+#### 3. Consumer price
+
+- Price actually paid by a burg when buying from its market
+- `consumerPrice = marketBuyPrice × (1 + salesTaxRate)`
+- Only applies to local burg-buy deals (phases `local-production-buy` and `local-demand-fill`)
+
+### Price pressure
+
+Pressure magnitudes are proportional to `good.value`:
+
+- `buyPressure[i]  = good.value × 0.002` per unit bought
+- `sellPressure[i] = good.value × 0.001` per unit sold
+
+| Event                                         | Price changed        | Direction |
+| --------------------------------------------- | -------------------- | --------- |
+| Burg buys ingredient from market (production) | market `buyPrice`    | ↑         |
+| Burg sells excess to market                   | market `sellPrice`   | ↓         |
+| Market exports stock to another market        | exporter `sellPrice` | ↑         |
+| Market receives stock from another market     | importer `buyPrice`  | ↓         |
+| Burg fills demand from market                 | market `buyPrice`    | ↑         |
+
+Both prices are clamped to `[good.value × 0.5, good.value × 3.0]` after every change.
+
+Note: in the redistribution phase, pressure is applied with a **negative** unit delta, which inverts the direction — this correctly raises the exporter's `sellPrice` (scarcity) and lowers the importer's `buyPrice` (surplus).
 
 ### Sales tax
 
-- `SALES_TAX` is defined on the state level
-- Default rate is `0.2`
-- Buyer pays the tax on local burg purchases
-- Seller does not pay tax
-- Tax applies to local deals only
-- Tax does not apply to extraction, manufacture, or global trade-center deals
-- Burgs in neutral lands use `0`
+- Defined per state as `state.salesTax`
+- Default rate: `0.2`
+- Only applies when a burg buys from its market (local-buy deals)
+- The taxed portion is accumulated in `stateTaxes[stateId]`
+- Center-to-center redistribution deals carry no tax
 
 ## Simulation order
 
-### Phase 1: initialize trade state
+### Phase 1: Initialize trade state (`Trade.initialize`)
 
-- Build trade centers
-- Assign burgs to centers
-- Initialize center inventories
-- Initialize center market prices from base prices
-- Reset the global `deals` array
-- Reset the per-state tax ledger
+1. Build markets via quadtree placement
+2. Assign `burg.marketId` for all burgs
+3. Initialize `market.goods[goodId]` for all goods with `{stock: 0, buyPrice: good.value, sellPrice: good.value}`
+4. Reset `deals` array
+5. Reset `stateTaxes` ledger
 
-### Phase 2: burg production
+### Phase 2: Per-burg production (owned by `Production.produce`)
 
-For each burg, in burg-processing order:
+Burgs processed in ascending population order (smallest first, so they seed prices for larger burgs).
 
-1. gather local resources from map cells
-2. spend workers on extract or manufacture actions
-3. if manufacturing needs ingredients, the burg may buy only from its own local trade center
-4. local ingredient scoring must use consumer price, not untaxed market price
+For each burg:
 
-Result:
+1. Flood-fill nearby cells → build `goodsPull` (raw resource availability)
+2. Greedy worker loop: score and execute extract or manufacture actions each tick
+3. Manufacture may buy missing ingredients from the burg's market at **current `marketBuyPrice`**; burg pays **consumer price** (with tax); `buyPrice` rises after each purchase
+4. At end of loop: split inventory into **retained** (covers burg's own demand) and **excess**
+5. Sell excess to market at **current `marketSellPrice`**; `sellPrice` falls after each sale
 
-- the burg ends with a local inventory snapshot
-- the burg treasury may increase or decrease during the phase
+### Phase 3: Global redistribution (`Trade.redistributeAcrossMarkets`)
 
-### Phase 3: local sale to trade center
+After all burgs have produced and sold locally:
 
-After a burg finishes production:
+1. Per market, sum uncovered demand across all assigned burgs (from their `finalInventory`)
+2. Build export pool per market: market stock beyond its aggregated demand (+ 20% reserve)
+3. For each importer market with shortage per demand category, find exporter markets with export-pool surplus, sorted by coverage weight then cheapest good
+4. Transfer stock; record deal (`phase: "global-redistribution"`, `buyerId = importer.i`, `sellerId = exporter.i`)
+5. Apply pressure: exporter `sellPrice` rises (negative unit delta), importer `buyPrice` falls (negative unit delta)
 
-1. compute burg demand targets
-2. compute current demand coverage from burg inventory
-3. keep goods needed to satisfy burg demand
-4. sell excess goods to the assigned trade center
+No sales tax applies to redistribution deals.
 
-Excess goods are:
+### Phase 4: Final burg demand fill (`fillBurgDemandFromCenter`)
 
-- goods that do not help the burg's current uncovered demand
-- goods above the amount needed to cover the burg's own demand targets
+After redistribution:
 
-Effects:
-
-- local center inventory increases
-- burg treasury receives local sell value
-- one or more local `TradeDeal` records are written
-
-### Phase 4: global trade-center redistribution
-
-After all burgs finish local production and local selling:
-
-1. each trade center computes center-level uncovered demand
-2. center demand is the sum of uncovered demand of all assigned burgs plus reserve stock
-3. reserve stock is `20%` of uncovered demand target
-4. centers export excess goods and import missing goods
-
-Effects:
-
-- only trade center inventories change
-- deals are logged as global deals
-- no local sales tax applies
-
-### Phase 5: final burg demand fill
-
-After the global redistribution pass:
-
-1. each burg recalculates uncovered demand
-2. the burg buys needed goods from its own local trade center
-3. the goal is to reduce uncovered demand as much as local availability allows
-
-Effects:
-
-- burg treasury decreases by consumer price
-- state tax ledger increases by the tax part of the consumer price
-- local center inventory decreases
-- one or more local `TradeDeal` records are written
+1. Each burg re-checks demand coverage against its `finalInventory`
+2. For each uncovered demand category, buy goods from its market (best coverage-weight-per-good first)
+3. Uses `phase: "local-demand-fill"`
+4. Burg pays **consumer price**; state tax is recorded; market `buyPrice` rises
 
 ## Demand model
 
-The trade simulation reuses the existing demand model from goods and production:
+The same model is used throughout:
 
-- `DEMAND_PRIORITY`
-- `DEMAND_TARGET_FACTORS`
-- `good.demandCoverage`
+- `DEMAND_PRIORITY` — ordered list of categories
+- `DEMAND_TARGET_FACTORS` — per-category multiplier on population (e.g. food: 0.2)
+- `good.demandCoverage` — authored per-good per-category coverage weights
 
-This same model should drive:
+Used to drive:
 
-- burg keep-versus-sell decisions
-- trade-center shortage calculations
-- final burg demand-fill decisions
+- burg retain-vs-sell split (Phase 2)
+- market export-pool calculation (Phase 3)
+- final demand-fill buying (Phase 4)
 
 ## Deal log
 
-Every trade transaction is stored in a single `deals` array.
+Every trade transaction is stored in the `deals` array on `pack`.
 
-Each `TradeDeal` should contain enough data for:
+```ts
+type Deal = {
+  id: number;
+  market: number; // market where the deal was brokered
+  phase: TradePhase; // "local-production-buy" | "local-sale" | "global-redistribution" | "local-demand-fill"
+  goodId: number;
+  units: number; // rounded to 2 decimal places on record
+  buyerId: number; // burg id for local deals; market id for redistribution
+  sellerId: number; // market id for local buys; burg id for local sales; market id for redistribution
+  prices: DealPrice;
+};
 
-- state tax calculation
-- debugging
-- overview dialogs
-- future trade visualization
+type DealPrice = {
+  base: number; // good.value at time of deal (static reference)
+  marketBuy: number; // market buyPrice used in this deal
+  marketSell: number; // market sellPrice used in this deal
+  consumerBuy: number; // what the buyer actually paid (includes tax for local buys)
+};
+```
 
-Minimum fields:
+Tax collected per deal: `units × (consumerBuy - marketBuy)`, accumulated in `stateTaxes[stateId]` for local-buy phases.
 
-- `id`
-- `phase`
-- `scope`
-- `goodId`
-- `units`
-- `buyerType`
-- `buyerId`
-- `sellerType`
-- `sellerId`
-- `centerId`
-- `fromCenterId`
-- `toCenterId`
-- `stateId`
-- `basePrice`
-- `marketPrice`
-- `consumerPrice`
-- `grossValue`
-- `taxRate`
-- `taxAmount`
-- `sellerProceeds`
-
-## Initial data model
+## Data model
 
 ### Burg
 
-Trade-related fields that may exist on a burg:
+Trade-related fields:
 
-- `tradeCenterId?: number`
-- `wealth?: number`
+- `marketId?: number` — which market this burg belongs to
+- `wealth?: number` — current burg treasury
 
 ### State
 
-Trade-related fields that may exist on a state:
+Trade-related fields:
 
-- `salesTax?: number`
+- `salesTax?: number` — local sales tax rate (default `0.2` if absent)
 
-### Trade center
+### Market
 
-Each center should hold:
+```ts
+type Market = {
+  i: number;
+  centerBurgId: number; // burg that anchors this market (used for position)
+  goods: Record<
+    number,
+    {
+      // keyed by good.i
+      stock: number;
+      buyPrice: number;
+      sellPrice: number;
+    }
+  >;
+};
+```
 
-- `i`
-- `inventory`
-
-## Placeholder extensions
-
-These are intentionally out of scope for the first implementation, but the schema keeps space for them.
+Member burgs are not stored. Derived at read-time as `pack.burgs.filter(b => b.marketId === market.i)`.
 
 ### Transport cost
 

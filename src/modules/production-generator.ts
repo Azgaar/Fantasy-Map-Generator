@@ -7,8 +7,6 @@ import type {Market} from "./trade-generator";
 
 export class ProductionModule {
   private readonly BONUS_PRODUCTION = 5;
-  private readonly COLLECTION_DIVISOR = 3;
-
   private readonly PROVINCE_PENALTY = 3;
   private readonly STATE_PENALTY = 15;
 
@@ -24,65 +22,34 @@ export class ProductionModule {
 
   produce() {
     TIME && console.time("generateProduction");
-    const {burgs} = pack;
-    const goods = pack.goods;
-    const validBurgs = burgs.filter(b => (b as Burg).i && !(b as Burg).removed);
-    Trade.initialize(goods, validBurgs as Burg[]);
+    const {burgs, goods} = pack;
 
-    const goodById = new Map<number, Good>(goods.map(g => [g.i, g]));
-    const cellPool = this.buildCellPool(goods);
-    const chainValueByWorkers = this.buildChainValues(goods, this.CHAIN_VALUE_MAX_WORKERS);
-    const {buyPressure, sellPressure, priceFloor, priceCeiling} = this.buildPriceArrays(goods);
-
-    const recipeOptions = this.buildRecipeOptions(goods);
-
+    const validBurgs = burgs.filter(b => b.i && !b.removed);
     validBurgs.sort((a, b) => (a.population || 0) - (b.population || 0));
 
+    Trade.initialize(goods, validBurgs); // TODO: call from main.js, not here
+
+    const goodById = new Map<number, Good>(goods.map(g => [g.i, g]));
+    const globalResources = this.collectGlobalResources(goods);
+    const chainValueByWorkers = this.buildChainValues(goods, this.CHAIN_VALUE_MAX_WORKERS);
+    const {buyPressure, sellPressure, priceFloor, priceCeiling} = this.buildPriceArrays(goods);
+    const recipes = this.buildRecipesArray(goods);
+
     this.productionData.clear();
-    let burgRank = 0;
+    let index = 0;
 
     for (const burg of validBurgs) {
-      burgRank++;
-      const marketCenter = Trade.getMarketForBurg(burg as Burg);
-      if (!marketCenter) continue;
+      index++;
+      const market = Trade.getMarketForBurg(burg);
+      if (!market) continue;
       const cultureType = burg.type || DEFAULT_CULTURE_TYPE;
       const population = burg.population || 0;
       const demandTargets = this.buildDemandTargets(burg);
+      const workers = Math.max(1, Math.ceil(population));
+      const burgResources = this.getBurgResourses(burg, workers, globalResources);
 
-      const goodsPull: Record<number, number> = {};
-      const addGood = (goodId: number, amount: number) => {
-        const current = goodsPull[goodId] || 0;
-        if (!current) goodsPull[goodId] = amount;
-        else if (amount > current) goodsPull[goodId] = amount + current / this.COLLECTION_DIVISOR;
-        else goodsPull[goodId] = current + amount / this.COLLECTION_DIVISOR;
-      };
-
-      const budget = Math.max(1, Math.floor(population));
-      const cellsReached = this.floodFillCells(burg, budget, cellPool, addGood);
-
-      const goodsPullData: BurgProductionData["goodsPull"] = [];
-      for (const goodIdStr in goodsPull) {
-        const goodId = +goodIdStr;
-        const good = goodById.get(goodId);
-        if (!good) continue;
-        const rawPull = goodsPull[goodId];
-        const chainValue = this.getChainValueForWorkers(
-          chainValueByWorkers,
-          Math.max(0, population - 1),
-          goodId,
-          good.value
-        );
-        goodsPullData.push({
-          goodId,
-          pull: rawPull,
-          chainValue
-        });
-      }
-      goodsPullData.sort((a, b) => b.pull - a.pull || b.chainValue - a.chainValue || a.goodId - b.goodId);
-
-      const remainingPool: Record<number, number> = {...goodsPull};
       const inventory: Record<number, number> = {};
-      const jobsData: BurgProductionData["jobs"] = [];
+      const jobs: BurgProductionData["jobs"] = [];
       let workersUsed = 0;
 
       for (let i = 0; i < Math.ceil(population); i++) {
@@ -90,41 +57,39 @@ export class ProductionModule {
         const fraction = Math.min(1, workersLeft);
         if (fraction <= 0) break;
 
-        const marketView = this.getMarketView(marketCenter);
-
-        const decision = this.greedyBestAction({
+        const marketView = this.getMarketView(market);
+        const decision = this.makeProductionDecision({
           burg,
-          recipeOptions,
+          recipes,
           goodById,
           chainValueByWorkers,
           demandTargets,
           cultureType,
           inventory,
-          remainingPool,
-          marketInventory: marketView.marketInventory,
-          currentBuyPrice: marketView.currentBuyPrice,
-          currentSellPrice: marketView.currentSellPrice,
+          burgResources,
+          marketInventory: marketView.inventory,
+          buyPrice: marketView.buyPrice,
+          sellPrice: marketView.sellPrice,
           workersLeft,
           fraction
         });
-        const action = decision?.action;
-        if (!action) break;
+        if (!decision?.action) break;
 
-        if (action.kind === "manufacture") {
-          const {good, entries, maxYield, score} = action;
+        if (decision.action.kind === "manufacture") {
+          const {good, ingredients, maxYield, score} = decision.action;
           const actualYield = Math.min(fraction, maxYield);
           const cultureModifier = this.getCultureModifier(good, cultureType);
           const produced = actualYield * cultureModifier;
-          const recipeLog: Array<{
+          const recipeLog: {
             goodId: number;
             fromInventory: number;
             fromMarket: number;
             marketCost: number;
-          }> = [];
+          }[] = [];
 
-          for (const entry of entries) {
-            const ingId = entry.goodId;
-            const amountNeeded = actualYield * entry.amount;
+          for (const ingredient of ingredients) {
+            const ingId = ingredient.goodId;
+            const amountNeeded = actualYield * ingredient.amount;
             const fromInventory = Math.min(inventory[ingId] || 0, amountNeeded);
             const fromMarket = Math.max(0, amountNeeded - fromInventory);
 
@@ -133,7 +98,7 @@ export class ProductionModule {
             let marketCost = 0;
             if (fromMarket > 0) {
               const good = goodById.get(ingId)!;
-              const marketGood = this.getMarketGoodData(marketCenter, ingId, good.value);
+              const marketGood = this.getMarketGoodData(market, ingId, good.value);
               const actualBuy = Math.min(fromMarket, marketGood.stock || 0);
               const purchase = Trade.buyFromMarket({
                 burg,
@@ -157,7 +122,7 @@ export class ProductionModule {
 
           inventory[good.i] = (inventory[good.i] || 0) + produced;
 
-          jobsData.push({
+          jobs.push({
             kind: "manufacture",
             tick: workersUsed + fraction,
             goodId: good.i,
@@ -165,26 +130,31 @@ export class ProductionModule {
             cultureModifier,
             recipe: recipeLog,
             score,
-            log: decision.log
+            candidates: decision.candidates
           });
         } else {
-          const {goodId, score} = action;
-          const extract = Math.min(fraction, remainingPool[goodId] || 0);
-          remainingPool[goodId] = Math.max(0, (remainingPool[goodId] || 0) - extract);
+          // extraction
+          const {goodId, score} = decision.action;
+          const extract = Math.min(fraction, burgResources[goodId] || 0);
+          burgResources[goodId] = burgResources[goodId] - extract;
+
+          // globalResources[goodId] = burgResources[goodId] - extract;
+          // FIXME: when burg depletes a resource, it should be dedecuted from globalResources as well
+          // need to find a way to know the cell the resource is coming from
 
           const good = goodById.get(goodId)!;
           const cultureModifier = this.getCultureModifier(good, cultureType);
           const produced = extract * cultureModifier;
           inventory[goodId] = (inventory[goodId] || 0) + produced;
 
-          jobsData.push({
+          jobs.push({
             kind: "extract",
             tick: workersUsed + fraction,
             goodId,
             units: produced,
             cultureModifier,
             score,
-            log: decision.log
+            candidates: decision.candidates
           });
         }
 
@@ -212,31 +182,29 @@ export class ProductionModule {
           burg,
           good,
           units: amount,
-          marketPrice: this.getMarketGoodData(marketCenter, goodId, good.value).sellPrice,
+          marketPrice: this.getMarketGoodData(market, goodId, good.value).sellPrice,
           phase: "local-sale"
         });
         phaseRevenue += revenue;
-        const marketGood = this.getMarketGoodData(marketCenter, goodId, good.value);
+        const marketGood = this.getMarketGoodData(market, goodId, good.value);
         marketGood.sellPrice = Math.max(priceFloor[goodId], marketGood.sellPrice - amount * sellPressure[goodId]);
       }
       const grossProduct =
         phaseRevenue -
-        jobsData.reduce((sum, job) => {
+        jobs.reduce((sum, job) => {
           if (job.kind !== "manufacture") return sum;
           return sum + job.recipe.reduce((recipeSum, item) => recipeSum + item.marketCost, 0);
         }, 0);
       const productPerCapita = population > 0 ? grossProduct / population : 0;
       burg.wealth = (burg.wealth || 0) + phaseRevenue;
 
+      // TODO: we can calculate most of this data from existing data, we don't need to store it all, except 'jobs' which is needed for production overview.
       this.productionData.set(burg.i!, {
         population,
-        processRank: burgRank,
+        processRank: index,
         totalBurgs: validBurgs.length,
-        cellsBudget: budget,
-        cellsReached,
-        cultureType: cultureType,
-        goodsPull: goodsPullData,
-        jobs: jobsData,
+        cellsBudget: workers,
+        jobs: jobs,
         finalInventory: retainedInventory,
         phaseRevenue,
         grossProduct,
@@ -249,15 +217,15 @@ export class ProductionModule {
 
     for (const burg of validBurgs) {
       const data = this.productionData.get(burg.i!);
-      const marketCenter = Trade.getMarketForBurg(burg as Burg);
+      const marketCenter = Trade.getMarketForBurg(burg);
       if (!data || !marketCenter) continue;
 
       this.fillBurgDemandFromCenter({
-        burg: burg as Burg,
+        burg,
         data,
         goods,
         goodById,
-        demandTargets: this.buildDemandTargets(burg as Burg),
+        demandTargets: this.buildDemandTargets(burg),
         marketCenter,
         buyPressure,
         priceCeiling
@@ -269,22 +237,53 @@ export class ProductionModule {
     TIME && console.timeEnd("generateProduction");
   }
 
-  private buildCellPool(goods: Good[]): Record<number, number>[] {
+  private collectGlobalResources(goods: Good[]): Record<number, number>[] {
     const {cells} = pack;
-    const biomeGoods = this.getBiomesProduction(goods);
-    const cellPool: Record<number, number>[] = Array.from({length: cells.i.length}, () => ({}));
+    const biomeResources = this.getBiomesResources(goods);
+    const cellsResources: Record<number, number>[] = Array.from({length: cells.i.length}, () => ({}));
 
     for (const cellId of cells.i) {
       const goodId = cells.good[cellId];
-      if (goodId) cellPool[cellId][goodId] = (cellPool[cellId][goodId] || 0) + this.BONUS_PRODUCTION;
+      if (goodId) cellsResources[cellId][goodId] = (cellsResources[cellId][goodId] || 0) + this.BONUS_PRODUCTION;
 
       const biomeId = cells.biome[cellId];
-      for (const {goodId: biomeGoodId, production} of biomeGoods[biomeId] ?? []) {
-        cellPool[cellId][biomeGoodId] = (cellPool[cellId][biomeGoodId] || 0) + production;
+      for (const {goodId, production} of biomeResources[biomeId] ?? []) {
+        cellsResources[cellId][goodId] = (cellsResources[cellId][goodId] || 0) + production;
       }
     }
 
-    return cellPool;
+    return cellsResources;
+  }
+
+  private getBiomesResources(goods: Good[]) {
+    const biomeResources: {goodId: number; production: number}[][] = Array.from(
+      {length: biomesData.i.length},
+      () => []
+    );
+
+    for (const good of goods) {
+      if (!good.biome) continue;
+      for (const [biomeId, production] of Object.entries(good.biome)) {
+        if (!production || production <= 0) continue;
+        biomeResources[+biomeId].push({goodId: good.i, production});
+      }
+    }
+
+    return biomeResources;
+  }
+
+  private getBurgResourses(
+    burg: Burg,
+    cellsBudget: number,
+    globalResources: Record<number, number>[]
+  ): Record<number, number> {
+    const burgResources: Record<number, number> = {};
+    const addGood = (goodId: number, amount: number) => {
+      burgResources[goodId] = (burgResources[goodId] || 0) + amount;
+    };
+
+    this.floodFillCells(burg, cellsBudget, globalResources, addGood);
+    return burgResources;
   }
 
   private buildChainValues(goods: Good[], maxWorkers: number): number[][] {
@@ -367,7 +366,10 @@ export class ProductionModule {
     inventory: Record<number, number>,
     demandTargets: number[],
     goodById: Map<number, Good>
-  ): {retainedInventory: Record<number, number>; excessInventory: Record<number, number>} {
+  ): {
+    retainedInventory: Record<number, number>;
+    excessInventory: Record<number, number>;
+  } {
     const retainedInventory: Record<number, number> = {};
     const excessInventory: Record<number, number> = {...inventory};
     const retainedDemandCoverage = Array(DEMAND_PRIORITY.length).fill(0);
@@ -484,29 +486,33 @@ export class ProductionModule {
     const existing = market.goods[goodId];
     if (existing) return existing;
 
-    const created = {stock: 0, buyPrice: fallbackPrice, sellPrice: fallbackPrice};
+    const created = {
+      stock: 0,
+      buyPrice: fallbackPrice,
+      sellPrice: fallbackPrice
+    };
     market.goods[goodId] = created;
     return created;
   }
 
   private getMarketView(market: Market): {
-    marketInventory: Record<number, number>;
-    currentBuyPrice: number[];
-    currentSellPrice: number[];
+    inventory: Record<number, number>;
+    buyPrice: number[];
+    sellPrice: number[];
   } {
-    const marketInventory: Record<number, number> = {};
-    const currentBuyPrice: number[] = [];
-    const currentSellPrice: number[] = [];
+    const inventory: Record<number, number> = {};
+    const buyPrice: number[] = [];
+    const sellPrice: number[] = [];
 
     for (const goodIdStr in market.goods) {
       const goodId = +goodIdStr;
       const goodData = market.goods[goodId];
-      marketInventory[goodId] = goodData.stock;
-      currentBuyPrice[goodId] = goodData.buyPrice;
-      currentSellPrice[goodId] = goodData.sellPrice;
+      inventory[goodId] = goodData.stock;
+      buyPrice[goodId] = goodData.buyPrice;
+      sellPrice[goodId] = goodData.sellPrice;
     }
 
-    return {marketInventory, currentBuyPrice, currentSellPrice};
+    return {inventory, buyPrice, sellPrice};
   }
 
   private getDemandFocus(demandTargets: number[], demandCoverage: number[]): DemandFocus | null {
@@ -620,58 +626,37 @@ export class ProductionModule {
     return visited.size;
   }
 
-  private getBiomesProduction(goods: Good[]) {
-    const biomeProduction: {goodId: number; production: number}[][] = Array.from(
-      {length: biomesData.i.length},
-      () => []
-    );
-
-    for (const good of goods) {
-      if (!good.biome) continue;
-      for (const [biomeId, production] of Object.entries(good.biome)) {
-        if (!production || production <= 0) continue;
-        biomeProduction[+biomeId].push({goodId: good.i, production});
-      }
-    }
-
-    return biomeProduction;
-  }
-
-  /**
-   * O(G + R) greedy action selection per worker tick.
-   * Replaces the former O((G+R)^depth) DFS lookahead.
-   * Chain awareness is preserved through worker-bucketed chain values, which
-   * encode how much downstream bonus is actually reachable for the remaining workers.
-   */
-  private greedyBestAction(params: {
+  private makeProductionDecision(params: {
     burg: Burg;
-    recipeOptions: RecipeOption[];
+    recipes: Recipes[];
     goodById: Map<number, Good>;
     chainValueByWorkers: number[][];
     demandTargets: number[];
     cultureType: string;
     inventory: Record<number, number>;
-    remainingPool: Record<number, number>;
+    burgResources: Record<number, number>;
     marketInventory: Record<number, number>;
-    currentBuyPrice: number[];
-    currentSellPrice: number[];
+    buyPrice: number[];
+    sellPrice: number[];
     workersLeft: number;
     fraction: number;
-  }): {action: PlannedAction | null; log: Log | null} | null {
+  }): {action: PlannedAction; candidates: DecisionCandidate[]} | null {
     let bestScore = -Infinity;
     let bestAction: PlannedAction | null = null;
     const candidates: DecisionCandidate[] = [];
     const demandCoverage = this.calculateDemandCoverage(params.inventory, params.goodById);
     const demandFocus = this.getDemandFocus(params.demandTargets, demandCoverage);
 
-    // Score every extractable good via worker-aware chain value.
-    for (const goodIdStr in params.remainingPool) {
-      const available = params.remainingPool[+goodIdStr];
-      if (available <= 0) continue;
+    // Score every extractable good via worker-aware chainValue
+    for (const goodIdStr in params.burgResources) {
       const goodId = +goodIdStr;
-      const good = params.goodById.get(goodId)!;
+      const available = params.burgResources[goodId];
+      if (available <= 0) continue;
+      const good = params.goodById.get(goodId);
+      if (!good) continue;
+
       const cultureModifier = this.getCultureModifier(good, params.cultureType);
-      const actualUnits = Math.min(params.fraction, available);
+      const units = Math.min(params.fraction, available);
       const chainValue = this.getChainValueForWorkers(
         params.chainValueByWorkers,
         Math.max(0, params.workersLeft - params.fraction),
@@ -679,8 +664,7 @@ export class ProductionModule {
         good.value
       );
       const demandEffect = this.getDemandEffect(good, demandFocus);
-      const perWorkerScore = chainValue * cultureModifier * demandEffect.multiplier;
-      const score = perWorkerScore * actualUnits;
+      const score = units * chainValue * cultureModifier * demandEffect.multiplier;
       candidates.push({
         kind: "extract",
         goodId,
@@ -688,57 +672,54 @@ export class ProductionModule {
         chainValue,
         demandEffect,
         cultureModifier,
-        units: actualUnits,
+        units,
         available
       });
       if (score > bestScore) {
         bestScore = score;
-        bestAction = {
-          kind: "extract",
-          goodId,
-          score
-        };
+        bestAction = {kind: "extract", goodId, score};
       }
     }
 
     // Score every feasible manufacture option by explicit profit margin
-    for (const option of params.recipeOptions) {
-      const cultureModifier = this.getCultureModifier(option.good, params.cultureType);
-      const revenue = params.currentSellPrice[option.good.i] * cultureModifier;
+    for (const recipe of params.recipes) {
+      const cultureModifier = this.getCultureModifier(recipe.good, params.cultureType);
+      const revenue = params.sellPrice[recipe.good.i] * cultureModifier;
       let maxYield = Infinity;
       let feasible = true;
 
-      for (const entry of option.entries) {
-        const inventoryAvailable = params.inventory[entry.goodId] || 0;
-        const marketAvailable = params.marketInventory[entry.goodId] || 0;
+      for (const ingredient of recipe.ingredients) {
+        const inventoryAvailable = params.inventory[ingredient.goodId] || 0;
+        const marketAvailable = params.marketInventory[ingredient.goodId] || 0;
         const totalAvailable = inventoryAvailable + marketAvailable;
-        if (totalAvailable < entry.amount * params.fraction) {
+        if (totalAvailable < ingredient.amount * params.fraction) {
           feasible = false;
           break;
         }
-        maxYield = Math.min(maxYield, totalAvailable / entry.amount);
+        maxYield = Math.min(maxYield, totalAvailable / ingredient.amount);
       }
 
       if (!feasible || !Number.isFinite(maxYield) || maxYield <= 0) continue;
-      const demandEffect = this.getDemandEffect(option.good, demandFocus);
-      const actualUnits = Math.min(params.fraction, maxYield);
+
+      const demandEffect = this.getDemandEffect(recipe.good, demandFocus);
+      const units = Math.min(params.fraction, maxYield);
       const ingredients: DecisionIngredient[] = [];
       let marketCostTotal = 0;
 
-      for (const entry of option.entries) {
-        const inventoryAvailable = params.inventory[entry.goodId] || 0;
-        const marketAvailable = params.marketInventory[entry.goodId] || 0;
+      for (const ingredient of recipe.ingredients) {
+        const inventoryAvailable = params.inventory[ingredient.goodId] || 0;
+        const marketAvailable = params.marketInventory[ingredient.goodId] || 0;
         const totalAvailable = inventoryAvailable + marketAvailable;
-        const amountNeeded = actualUnits * entry.amount;
+        const amountNeeded = units * ingredient.amount;
         const fromInventory = Math.min(inventoryAvailable, amountNeeded);
         const fromMarket = Math.max(0, amountNeeded - fromInventory);
-        const marketCost = fromMarket * Trade.getConsumerPrice(params.burg, params.currentBuyPrice[entry.goodId]);
+        const marketCost = fromMarket * Trade.getConsumerPrice(params.burg, params.buyPrice[ingredient.goodId]);
         marketCostTotal += marketCost;
 
         ingredients.push({
-          goodId: entry.goodId,
+          goodId: ingredient.goodId,
           amount: amountNeeded,
-          buyPrice: params.currentBuyPrice[entry.goodId],
+          buyPrice: params.buyPrice[ingredient.goodId],
           available: totalAvailable,
           availableInventory: inventoryAvailable,
           availableMarket: marketAvailable,
@@ -748,27 +729,27 @@ export class ProductionModule {
         });
       }
 
-      const ingredientCost = actualUnits > 0 ? marketCostTotal / actualUnits : 0;
-      const perWorkerScore = (revenue - ingredientCost) * demandEffect.multiplier;
-      const score = perWorkerScore * actualUnits;
+      const ingredientsCost = marketCostTotal / units;
+      const perWorkerScore = (revenue - ingredientsCost) * demandEffect.multiplier;
+      const score = perWorkerScore * units;
       candidates.push({
         kind: "manufacture",
-        goodId: option.good.i,
+        goodId: recipe.good.i,
         score,
-        sellPrice: params.currentSellPrice[option.good.i],
+        sellPrice: params.sellPrice[recipe.good.i],
         demandEffect,
         cultureModifier,
         revenue,
-        ingredientCost,
-        units: actualUnits,
+        ingredientCost: ingredientsCost,
+        units,
         ingredients
       });
       if (score > bestScore) {
         bestScore = score;
         bestAction = {
           kind: "manufacture",
-          good: option.good,
-          entries: option.entries,
+          good: recipe.good,
+          ingredients: recipe.ingredients,
           maxYield,
           score
         };
@@ -777,31 +758,15 @@ export class ProductionModule {
 
     if (!bestAction) return null;
 
-    const chosenKind = bestAction.kind;
-    const chosenGoodId = chosenKind === "extract" ? bestAction.goodId : bestAction.good.i;
-    const selected =
-      candidates.find(candidate => candidate.kind === chosenKind && candidate.goodId === chosenGoodId) || null;
-    const alternatives = candidates
-      .filter(candidate => !(candidate.kind === chosenKind && candidate.goodId === chosenGoodId))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 4);
-
-    return {
-      action: bestAction,
-      log: {
-        selected,
-        alternatives,
-        candidateCount: candidates.length
-      }
-    };
+    return {action: bestAction, candidates};
   }
 
   private getCultureModifier(good: Good, cultureType: string) {
     return good.culture[cultureType as CultureType] || 1;
   }
 
-  private buildRecipeOptions(goods: Good[]): RecipeOption[] {
-    const options: RecipeOption[] = [];
+  private buildRecipesArray(goods: Good[]): Recipes[] {
+    const recipes: Recipes[] = [];
     for (const good of goods) {
       if (!good.recipes?.length) continue;
       for (const recipe of good.recipes) {
@@ -810,10 +775,10 @@ export class ProductionModule {
           amount
         }));
         if (!entries.length) continue;
-        options.push({good, entries});
+        recipes.push({good, ingredients: entries});
       }
     }
-    return options;
+    return recipes;
   }
 
   getProductionData(burgId: number): BurgProductionData | undefined {
@@ -830,13 +795,13 @@ type PlannedAction =
   | {
       kind: "manufacture";
       good: Good;
-      entries: RecipeEntry[];
+      ingredients: Ingredient[];
       maxYield: number;
       score: number;
     };
 
-type RecipeEntry = {goodId: number; amount: number};
-type RecipeOption = {good: Good; entries: RecipeEntry[]};
+type Ingredient = {goodId: number; amount: number};
+type Recipes = {good: Good; ingredients: Ingredient[]};
 export type DecisionIngredient = {
   goodId: number;
   amount: number;
@@ -854,6 +819,7 @@ export type DemandEffect = {
   shortage: number;
 };
 type DemandFocus = {category: DemandCategory; shortage: number};
+
 export type DecisionCandidate =
   | {
       kind: "extract";
@@ -877,55 +843,44 @@ export type DecisionCandidate =
       units: number;
       ingredients: DecisionIngredient[];
     };
-export type Log = {
-  selected: DecisionCandidate | null;
-  alternatives: DecisionCandidate[];
-  candidateCount: number;
-};
 
+// TODO: out of all this data, we only need 'jobs' for the production-overview.
+// The rest can be derived from existing data.
 export interface BurgProductionData {
   population: number;
   processRank: number;
   totalBurgs: number;
   cellsBudget: number;
-  cellsReached: number;
-  cultureType: string;
-  goodsPull: Array<{
-    goodId: number;
-    pull: number;
-    chainValue: number;
-  }>;
-  jobs: Array<
-    | {
-        kind: "extract";
-        tick: number;
-        goodId: number;
-        units: number;
-        cultureModifier: number;
-        score?: number;
-        log?: Log | null;
-      }
-    | {
-        kind: "manufacture";
-        tick: number;
-        goodId: number;
-        units: number;
-        cultureModifier: number;
-        score: number;
-        recipe: Array<{
-          goodId: number;
-          fromInventory: number;
-          fromMarket: number;
-          marketCost: number;
-        }>;
-        log?: Log | null;
-      }
-  >;
+  jobs: (Extraction | Manufacturing)[];
   finalInventory: Record<number, number>;
   phaseRevenue: number;
   grossProduct: number;
   productPerCapita: number;
   wealthAfter: number;
+}
+
+interface Job {
+  kind: "extract" | "manufacture";
+  tick: number;
+  goodId: number;
+  units: number;
+  cultureModifier: number;
+  score: number;
+  candidates: DecisionCandidate[];
+}
+
+interface Extraction extends Job {
+  kind: "extract";
+}
+
+interface Manufacturing extends Job {
+  kind: "manufacture";
+  recipe: {
+    goodId: number;
+    fromInventory: number;
+    fromMarket: number;
+    marketCost: number;
+  }[];
 }
 
 declare global {

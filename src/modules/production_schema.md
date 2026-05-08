@@ -2,93 +2,104 @@
 
 Production runs once for all valid burgs. Each burg goes through the same loop:
 
-1. Gather nearby raw resources from the map.
-2. Spend workers one tick at a time.
-3. On each tick, greedily choose the best feasible action.
-4. Put all final inventory onto the global market.
-5. Store a snapshot for the Production Overview UI.
+1. Flood-fill nearby cells to gather accessible raw resources.
+2. Spend workers one tick at a time, greedily choosing the best action each tick.
+3. Split the final inventory into retained (covers own demand) and excess (sold to market).
+4. Sell excess to the burg's assigned market.
+
+After all burgs finish, the trade layer runs global redistribution and final demand-fill.
 
 ## The four layers of the simulation
 
-### 1. Local resources
+### 1. Local resources (cell pool)
 
 Raw materials come from `cellPool[cellId][goodId]`.
 
-- It is built once from `cells.good` and biome production.
-- It is shared by all burgs during the run.
-- Once a burg collects a resource from a cell, that resource is removed from the pool.
+- Built once from `cells.good` and biome production.
+- Shared by all burgs during the run.
+- Once a burg collects resources from a cell, that cell's amount is zeroed out in the pool.
 
-This is the main local-scarcity mechanic.
+This is the primary local-scarcity mechanic.
 
 ### 2. Burg inventory
 
 Each burg has a temporary `inventory[goodId]` during its turn.
 
 - Extraction adds goods to inventory.
-- Manufacturing consumes ingredients from inventory.
-- Manufacturing output also goes into inventory.
-- At the end of the burg turn, all remaining inventory is sold into the global market.
+- Manufacturing consumes ingredients from inventory and from the market.
+- At the end of the worker loop, inventory is split into retained and excess.
+- Retained inventory stays with the burg (`finalInventory`).
+- Excess is sold to the burg's market.
 
-### 3. Global market
+### 3. Market per region
 
-There is one shared `globalMarket[goodId]` for the whole run.
+There is no single global market. Each burg belongs to one market (`burg.marketId`).
 
-- It starts empty.
-- Burgs add their final inventory into it when they finish.
-- Later burgs can buy ingredients from it while manufacturing.
+Each market has per-good state: `{stock, buyPrice, sellPrice}`.
 
-There is no separate buy-only action. Market buying only happens inside manufacture actions.
+- Burgs buy ingredients from their market during manufacture (at `marketBuyPrice`).
+- Burgs sell excess to their market after production (at `marketSellPrice`).
+- After all local production, markets trade with each other (global redistribution).
+- After redistribution, burgs buy to fill remaining demand from their market.
+
+See `trade_schema.md` for the full market and pricing model.
 
 ### 4. Live prices
 
-Every good has two live prices during the run:
+Each market tracks two live prices per good:
 
-- `currentBuyPrice[goodId]`
-- `currentSellPrice[goodId]`
+- `buyPrice` — what buyers pay (rises when goods are bought)
+- `sellPrice` — what sellers receive (falls when goods are sold)
 
-Both start at `good.value`.
+Both start at `good.value` and are clamped to `[good.value × 0.5, good.value × 3.0]`.
 
-Price behavior:
+Price pressure in the production phase:
 
-- extracting a good raises its buy price,
-- buying a good from market raises its buy price,
-- selling final inventory to market lowers its sell price,
-- prices are clamped between configured floor and ceiling values.
+- buying ingredients from market → **raises** `buyPrice`
+- selling excess to market → **lowers** `sellPrice`
+- extraction itself does **not** change prices
 
 ## Burg processing order
 
-Burgs are processed in ascending population order, so smaller burgs act first.
+Burgs are processed in ascending population order (smallest first).
 
 That matters because:
 
-- they claim nearby map resources earlier,
-- they seed the global market earlier,
-- they influence prices for later burgs.
+- smaller burgs claim nearby map resources earlier,
+- they sell into the market earlier and lower sell prices before large burgs act,
+- large burgs see live prices shaped by earlier burgs.
 
 ## Phase A: one-time setup
 
 Before iterating burgs, the generator builds:
 
-1. `goodById`
-2. `cellPool`
-3. `chainValueByWorkers`
-4. live buy/sell price arrays
-5. recipe options for manufactured goods
-6. an empty `globalMarket`
+1. `goodById` map
+2. `cellPool` (cell → good → amount)
+3. `chainValueByWorkers` (static chain-value heuristic, up to 5 workers)
+4. `buyPressure`, `sellPressure`, `priceFloor`, `priceCeiling` arrays (all indexed by `good.i`)
+5. `recipeOptions` for manufactured goods
+6. `Trade.initialize(goods, validBurgs)` — places markets, initializes all `market.goods` at base price
+
+### Price pressure arrays
+
+```ts
+buyPressure[i]  = good.value × 0.002
+sellPressure[i] = good.value × 0.001
+priceFloor[i]   = good.value × 0.5
+priceCeiling[i] = good.value × 3.0
+```
 
 ### Demand constants
 
 Demand targets depend only on population:
 
-- food: `population × 0.2`
-- utilities: `population × 0.05`
-- construction: `population × 0.1`
-- military: `population × 0.05`
-- luxury: `population × 0.05`
+```ts
+demandTargets[category] = population × DEMAND_TARGET_FACTORS[category]
+```
+
+Default factors (from `goods-generator.ts`): food `0.2`, utilities `0.05`, construction `0.1`, military `0.05`, luxury `0.05`.
 
 ### Good demand coverage
-
-Goods do not infer demand behavior from tags.
 
 Each good has explicit authored data:
 
@@ -104,263 +115,178 @@ good.demandCoverage = {
 
 Meaning: 1 unit of the good contributes the listed amount toward those demand categories.
 
-Examples:
-
-```ts
-Grain.demandCoverage = {food: 1};
-Wood.demandCoverage = {construction: 0.75, utilities: 0.25};
-```
-
-## Phase B: resource access
+## Phase B: resource access (flood-fill)
 
 Each burg gathers nearby resources using a Dijkstra-style flood fill.
 
 ### Reach budget
 
-- `budget = max(1, floor(population))`
+```ts
+budget = max(1, floor(population));
+```
 
 ### Travel costs
 
-- base cost: 1 per step
-- crossing province border on land: `+3`
-- crossing state border on land: `+15`
-- water cells still cost 1 and ignore province/state penalties
+- base: 1 per step
+- crossing a province border on land: +3
+- crossing a state border on land: +15
+- water cells: 1, no border penalties
 
 ### Collection behavior
 
-When a visited cell contains resources, they are added into `goodsPull`.
+When a visited cell contains a good, it is added into `goodsPull[goodId]`.
 
-If the same good is collected from multiple cells, diminishing returns apply:
+Diminishing returns when the same good appears in multiple cells:
 
-- first source adds full amount,
-- later sources are reduced by `COLLECTION_DIVISOR = 3`.
+```ts
+if first source: goodsPull[goodId] = amount
+else if amount > current: goodsPull[goodId] = amount + current / COLLECTION_DIVISOR
+else: goodsPull[goodId] = current + amount / COLLECTION_DIVISOR
+```
 
-After collection, that cell's stored amount is zeroed out in `cellPool`.
+`COLLECTION_DIVISOR = 3`
 
-The burg then copies `goodsPull` into `remainingPool`, which is the resource budget used by actual
-worker actions.
+After collection, the cell's amount is zeroed in `cellPool`.
+
+The burg then copies `goodsPull` into `remainingPool` for actual worker consumption.
 
 ## Phase C: worker loop
 
-Each burg gets up to `ceil(population)` worker ticks.
-
-The last tick may be fractional:
+Each burg gets up to `ceil(population)` worker ticks. The last tick may be fractional:
 
 ```ts
 fraction = min(1, population - workersUsed);
 ```
 
-If no feasible action remains, the loop ends early.
+The loop ends early if no feasible action remains.
 
 ## The two action kinds
 
 ### Extract
 
-Feasible when:
-
-- `remainingPool[goodId] > 0`
+Feasible when `remainingPool[goodId] > 0`.
 
 Execution:
 
-- take `min(fraction, remainingPool[goodId])`
-- apply culture modifier to output
-- add result to inventory
-- reduce `remainingPool`
-- raise current buy price for that good
+1. Take `min(fraction, remainingPool[goodId])` units.
+2. Apply culture modifier to output.
+3. Add result to `inventory[goodId]`.
+4. Reduce `remainingPool[goodId]`.
+
+No price change occurs on extraction.
 
 ### Manufacture
 
-Feasible when one recipe can be satisfied from:
+Feasible when one recipe can be satisfied from local inventory and/or current market stock.
 
-- local inventory, and/or
-- current global market stock
-
-Execution order:
+Execution:
 
 1. Consume ingredients from inventory first.
-2. Buy any shortfall from global market.
+2. For any shortfall, call `Trade.buyFromMarket({phase: "local-production-buy"})`:
+   - Market stock decreases (capped at available stock).
+   - Burg pays consumer price: `marketBuyPrice × (1 + salesTax)`.
+   - `marketGood.buyPrice` is raised: `buyPrice += actualBuy × buyPressure[ingId]` (capped at ceiling).
 3. Subtract purchase cost from `burg.wealth`.
-4. Raise buy prices for purchased ingredient quantities.
-5. Add manufactured output to inventory, with culture modifier.
+4. Add manufactured output to `inventory[goodId]` with culture modifier.
 
-Manufacturing itself does not change sell prices. Sell-price pressure happens later when final
-inventory is sold to market.
+Sell-price pressure happens later when final inventory is sold.
 
 ## How the burg chooses actions
 
-The current implementation is greedy.
+Greedy: every tick scores all feasible extract and manufacture actions, picks the single best score.
 
-At each worker tick, it scores every feasible extract action and every feasible manufacture action,
-then picks the single best one.
-
-There is no recursive search in the current code.
-
-## Extract scoring
-
-For every extractable raw good:
+### Extract scoring
 
 ```ts
-actualUnits = min(fraction, available)
-chainValue = chainValueByWorkers[workerBucket][goodId]
-score = chainValue × cultureModifier × demandMultiplier × actualUnits
+actualUnits = min(fraction, remainingPool[goodId])
+chainValue  = chainValueByWorkers[workerBucket][goodId]   // static chain heuristic
+score       = chainValue × cultureModifier × demandEffect.multiplier × actualUnits
 ```
 
-Where `workerBucket` is based on remaining workers after the current fractional tick.
+`workerBucket` = `min(maxWorkers, ceil(workersLeft))`.
 
-## Manufacture scoring
-
-For every feasible recipe option:
+### Manufacture scoring
 
 ```ts
-revenue = currentSellPrice[out] × cultureModifier
-ingredientCost = sum(recipeAmount × currentBuyPrice[ingredient])
-score = (revenue - ingredientCost) × demandMultiplier × actualUnits
+revenue        = currentSellPrice[outputGood] × units × cultureModifier
+ingredientCost = sum(recipeAmount × consumerPrice[ingredient])   // consumerPrice = marketBuyPrice × (1 + tax)
+score          = (revenue - ingredientCost) × demandEffect.multiplier × units
 ```
 
-`actualUnits` is capped by both the fractional worker tick and the limiting ingredient quantity.
+Both actions use **current live market prices**, not base prices.
 
-## Demand multiplier
+### Demand multiplier (`demandEffect`)
 
-Demand scoring is based on unmet demand from the burg's current inventory.
+Driven by the most-urgently-needed demand category:
 
-### Step 1: current coverage
+1. Find the first category where `demandTargets[c] - currentCoverage[c] > 0.001`.
+2. If the candidate good covers that category:
+   ```ts
+   demandEffect.multiplier = 1 + coverageWeight × (2.0 + shortage)
+   ```
+3. Otherwise `multiplier = 1`.
 
-The generator sums demand coverage from inventory across all categories.
+### Chain value heuristic
 
-### Step 2: remaining demand
+`chainValueByWorkers[w][goodId]` is a static table built once, independent of live prices.
 
-For each category:
+It starts at `good.value` and iteratively back-propagates downstream recipe profit into ingredient values for up to 5 worker buckets. It estimates how valuable a raw good is when there are still enough workers to convert it downstream.
 
-```ts
-remainingDemand = max(0, target - currentCoverage);
-```
+## Phase D: split and sell
 
-### Step 3: candidate boost
+After the worker loop, inventory is split into retained and excess:
 
-For a candidate good:
+### Split: `splitInventoryByDemand`
 
-```ts
-boost += remainingDemand[category] × good.demandCoverage[category]
-demandMultiplier = 1 + totalBoost
-```
+For each demand category in priority order:
 
-Important detail from the current implementation:
+1. Find all goods in inventory that cover this category, sorted by coverage weight descending.
+2. Retain just enough of each to satisfy remaining demand shortage.
+3. Everything else stays in the excess pool.
 
-- the multiplier depends on category fit,
-- it does not multiply the boost by produced unit count directly,
-- produced units are applied later through the final `score × actualUnits` term.
+Retained goods are set aside as `finalInventory`. Excess is sold.
 
-So demand influences ranking strongly, but not as a full demand-quantity simulation.
+### Sell excess to market
 
-## Chain heuristics
+For each good in `excessInventory`:
 
-Raw extraction uses a precomputed heuristic called `chainValueByWorkers`.
-
-This is not the same thing as profit and not the same thing as final action score.
-
-It is built up to 5 workers as follows:
-
-1. Start each good at base `good.value`.
-2. For each worker bucket from 2 to 5:
-3. For each manufactured good and each recipe:
-4. Compute recipe cost from the previous bucket.
-5. If recipe profit is positive, distribute that profit back into ingredient values proportionally.
-
-The result is a cheap estimate of how useful a raw good is as a chain input when some workers still
-remain.
-
-## Phase D: selling final inventory
-
-After the worker loop, the burg liquidates all remaining inventory into the market.
-
-For each good in inventory:
-
-1. Compute revenue using `currentSellPrice[goodId]`.
-2. Add that quantity to `globalMarket`.
-3. Lower `currentSellPrice[goodId]` by sell pressure.
-4. Store rounded output in `burg.produced` for UI display.
-
-After that, the generator computes summary metrics for the burg.
+1. Call `Trade.sellToMarket({phase: "local-sale"})` at **current `marketSellPrice`**.
+2. `market.goods[goodId].stock` increases.
+3. Burg receives `units × marketSellPrice` as revenue, added to `burg.wealth`.
+4. After the sale: `marketGood.sellPrice -= amount × sellPressure[goodId]` (floored at floor).
 
 ## Stored production metrics
 
-Each burg snapshot stores these key output values:
+Each burg snapshot (`BurgProductionData`) stores:
 
-### `phaseRevenue`
+| Field              | Meaning                                               |
+| ------------------ | ----------------------------------------------------- |
+| `population`       | burg population at time of run                        |
+| `processRank`      | burg's processing order index                         |
+| `totalBurgs`       | total valid burgs processed                           |
+| `cellsBudget`      | flood-fill reach budget                               |
+| `cellsReached`     | cells actually visited                                |
+| `cultureType`      | burg's culture type                                   |
+| `goodsPull`        | sorted list of `{goodId, pull, chainValue}`           |
+| `jobs`             | executed worker actions with logs                     |
+| `finalInventory`   | retained inventory after split (demand-covered goods) |
+| `phaseRevenue`     | total sale value of excess inventory                  |
+| `grossProduct`     | `phaseRevenue - purchasedIngredientCosts`             |
+| `productPerCapita` | `grossProduct / population`                           |
+| `wealthAfter`      | `burg.wealth` after local sales and purchases         |
 
-Total sale value of final inventory at the moment the burg finishes.
+`finalInventory` does **not** include excess goods. It is the burg's retained stock: enough to cover its own demand. The Production Overview's "Retained Inventory" section reflects this.
 
-### `grossProduct`
-
-```ts
-grossProduct = phaseRevenue - purchasedIngredientCosts;
-```
-
-This is the cleanest profit-like metric for the run.
-
-### `productPerCapita`
-
-```ts
-productPerCapita = grossProduct / population;
-```
-
-Used in the UI as the current meaning of “Wealth”.
-
-### `wealthAfter`
-
-The burg's cumulative cash-like value after:
-
-- subtracting ingredient purchases during manufacturing,
-- adding final sales revenue at the end.
-
-This is still stored, but it is not the best summary metric for production quality.
-
-## What the Production Overview snapshot contains
-
-`BurgProductionData` includes:
-
-- metadata: population, process rank, reachable cells, culture type
-- `goodsPull`: accessible raw resources, with pull amount and chain heuristic
-- `jobs`: executed actions with logs
-- `finalInventory`: end-of-loop inventory before market sale
-- `phaseRevenue`
-- `grossProduct`
-- `productPerCapita`
-- `wealthAfter`
-
-## What the job log means
-
-Each logged tick stores:
-
-- the chosen candidate,
-- up to four alternatives,
-- the total number of feasible candidates,
-- for manufacture jobs, the per-ingredient split between inventory use and market purchases.
-
-This is purely diagnostic data for the Production Overview dialog.
+After `fillBurgDemandFromCenter` (Phase 4), demand-fill purchases are added to `finalInventory` and `wealthAfter` is updated in the snapshot.
 
 ## Price pressure summary
 
-| Event                          | Effect                    |
-| ------------------------------ | ------------------------- |
-| Extract raw locally            | raises `currentBuyPrice`  |
-| Buy ingredients from market    | raises `currentBuyPrice`  |
-| Sell final inventory to market | lowers `currentSellPrice` |
-| Manufacture itself             | no direct price change    |
-
-## What the system does not currently do
-
-To avoid confusion, the current production system does not include:
-
-- recursive planning or bounded lookahead,
-- regional markets,
-- consumer purchase simulation,
-- transport or route-based shipping,
-- a standalone buy-only action,
-- an oversupply penalty in demand scoring.
-
-## Practical one-sentence summary
-
-The current production model is a fast greedy worker-by-worker simulator where each burg gathers
-nearby raw materials, scores extract and manufacture actions using chain heuristics, explicit demand
-coverage, and live prices, then sells all final output into a shared global market.
+| Event                                                | Price changed        | Direction |
+| ---------------------------------------------------- | -------------------- | --------- |
+| Buy ingredients from market (production)             | market `buyPrice`    | ↑         |
+| Sell excess to market                                | market `sellPrice`   | ↓         |
+| Market exports to another market (redistribution)    | exporter `sellPrice` | ↑         |
+| Market receives from another market (redistribution) | importer `buyPrice`  | ↓         |
+| Burg fills demand from market (Phase 4)              | market `buyPrice`    | ↑         |
+| Extract raw locally                                  | no price change      | —         |
+| Manufacture itself                                   | no price change      | —         |
