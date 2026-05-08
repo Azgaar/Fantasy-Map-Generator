@@ -5,6 +5,7 @@
  */
 import type { Selection } from "d3";
 import { interpolateRgbBasis } from "d3";
+import { ensureEl } from "../utils";
 import { minmax, rn } from "../utils/numberUtils";
 import { escapeHtml } from "../utils/stringUtils";
 
@@ -1149,5 +1150,6 @@ declare global {
   interface Window {
     JourneyDraw?: JourneyDrawModule;
     Journey?: JourneyGlobalApi;
+    editJourney?: () => void;
   }
 }
