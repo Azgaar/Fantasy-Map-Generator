@@ -1489,6 +1489,13 @@
             </tbody>
 
             <tbody id="styleVisibility">
+              <tr data-tip="Completely hide the selected labels group using display:none">
+                <td colspan="2">
+                  <input id="styleLabelsHideGroup" class="checkbox" type="checkbox" />
+                  <label for="styleLabelsHideGroup" class="checkbox-label">Hide selected group</label>
+                </td>
+              </tr>
+
               <tr data-tip="Allow system to hide labels if their size in too small or too big on that scale">
                 <td colspan="2">
                   <input id="hideLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked />
@@ -2372,6 +2379,11 @@
         </div>
 
         <div id="aboutContent" class="tabcontent">
+          <p style="text-align: center; margin-top: 1em">
+            <button id="startTourButton" onclick="UITour.start()" data-tip="Take an interactive tour of the map generator">
+              &#9654; Take an Interactive Tour
+            </button>
+          </p>
           <p>
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank"
@@ -8576,7 +8588,7 @@
     <script defer src="modules/ui/options.js?v=1.120.5"></script>
     <script defer src="main.js?v=1.120.5"></script>
 
-    <script defer src="modules/ui/style.js?v=1.120.5"></script>
+    <script defer src="modules/ui/style.js?v=1.122.0"></script>
     <script defer src="modules/ui/editors.js?v=1.120.5"></script>
     <script defer src="modules/ui/tools.js?v=1.120.5"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.120.5"></script>
@@ -8623,5 +8635,8 @@
     <script defer src="modules/io/load.js?v=1.120.5"></script>
     <script defer src="modules/io/cloud.js?v=1.114.0"></script>
     <script defer src="modules/io/export.js?v=1.120.5"></script>
+  <div id="tourPromptButton" style="display:none" data-tip="Take an interactive tour of the map generator">
+    <img src="images/tour-button-icon.png" alt="Take a tour" />
+  </div>
   </body>
 </html>

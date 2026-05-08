@@ -19,3 +19,4 @@ import "./military-generator";
 import "./markers-generator";
 import "./fonts";
 import "./resample";
+import "./ui-tour";
