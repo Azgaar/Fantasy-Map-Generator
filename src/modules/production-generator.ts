@@ -15,11 +15,9 @@ export class ProductionModule {
   private readonly PRICE_FLOOR_FACTOR = 0.5;
   private readonly PRICE_CEILING_FACTOR = 3.0;
   private readonly DEMAND_SHORTAGE_MULTIPLIER = 2.0;
-
   private readonly CHAIN_VALUE_MAX_WORKERS = 5;
 
   private productionData = new Map<number, BurgProductionData>();
-  private claimedCells = new Set<number>();
 
   produce() {
     TIME && console.time("generateProduction");
@@ -29,7 +27,6 @@ export class ProductionModule {
     validBurgs.sort((a, b) => (a.population || 0) - (b.population || 0));
 
     const goodById = new Map<number, Good>(goods.map(g => [g.i, g]));
-    this.claimedCells.clear();
     const globalResources = this.collectGlobalResources(goods);
     const chainValueByWorkers = this.buildChainValues(goods, this.CHAIN_VALUE_MAX_WORKERS);
     const {buyPressure, sellPressure, priceFloor, priceCeiling} = this.buildPriceArrays(goods);
@@ -43,12 +40,7 @@ export class ProductionModule {
       const cultureType = burg.type || DEFAULT_CULTURE_TYPE;
       const population = burg.population || 0;
       const demandTargets = this.buildDemandTargets(burg);
-      const workers = Math.max(1, Math.ceil(population));
-      const {resources: burgResources, cellEntries: burgCellEntries} = this.getBurgResourses(
-        burg,
-        workers,
-        globalResources
-      );
+      const burgResources = this.collectBurgResources(burg, globalResources);
 
       const inventory: Record<number, number> = {};
       const jobs: BurgProductionData["jobs"] = [];
@@ -140,16 +132,6 @@ export class ProductionModule {
           const extract = Math.min(fraction, burgResources[goodId] || 0);
           burgResources[goodId] -= extract;
 
-          // Deduct extracted amount from the source cells in globalResources
-          let remaining = extract;
-          for (const entry of burgCellEntries) {
-            if (entry.goodId !== goodId || remaining <= 0.001) continue;
-            const take = Math.min(entry.amount, remaining);
-            entry.amount -= take;
-            remaining -= take;
-            globalResources[entry.cellId][entry.goodId] = entry.amount;
-          }
-
           const good = goodById.get(goodId)!;
           const cultureModifier = this.getCultureModifier(good, cultureType);
           const produced = extract * cultureModifier;
@@ -170,13 +152,6 @@ export class ProductionModule {
       }
 
       const {retainedInventory, excessInventory} = this.splitInventoryByDemand(inventory, demandTargets, goodById);
-
-      // Zero any remaining claimed cells that were not fully extracted
-      for (const entry of burgCellEntries) {
-        if (entry.amount > 0.001) {
-          globalResources[entry.cellId][entry.goodId] = 0;
-        }
-      }
 
       burg.produced = {};
       let phaseRevenue = 0;
@@ -236,24 +211,6 @@ export class ProductionModule {
     TIME && console.timeEnd("generateProduction");
   }
 
-  private collectGlobalResources(goods: Good[]): Record<number, number>[] {
-    const {cells} = pack;
-    const biomeResources = this.getBiomesResources(goods);
-    const cellsResources: Record<number, number>[] = Array.from({length: cells.i.length}, () => ({}));
-
-    for (const cellId of cells.i) {
-      const goodId = cells.good[cellId];
-      if (goodId) cellsResources[cellId][goodId] = (cellsResources[cellId][goodId] || 0) + this.BONUS_PRODUCTION;
-
-      const biomeId = cells.biome[cellId];
-      for (const {goodId, production} of biomeResources[biomeId] ?? []) {
-        cellsResources[cellId][goodId] = (cellsResources[cellId][goodId] || 0) + production;
-      }
-    }
-
-    return cellsResources;
-  }
-
   private getBiomesResources(goods: Good[]) {
     const biomeResources: {goodId: number; production: number}[][] = Array.from(
       {length: biomesData.i.length},
@@ -269,22 +226,6 @@ export class ProductionModule {
     }
 
     return biomeResources;
-  }
-
-  private getBurgResourses(
-    burg: Burg,
-    cellsBudget: number,
-    globalResources: Record<number, number>[]
-  ): {resources: Record<number, number>; cellEntries: CellEntry[]} {
-    const resources: Record<number, number> = {};
-    const cellEntries: CellEntry[] = [];
-    const addGood = (cellId: number, goodId: number, amount: number) => {
-      resources[goodId] = (resources[goodId] || 0) + amount;
-      cellEntries.push({cellId, goodId, amount});
-    };
-
-    this.floodFillCells(burg, cellsBudget, globalResources, this.claimedCells, addGood);
-    return {resources, cellEntries};
   }
 
   private buildChainValues(goods: Good[], maxWorkers: number): number[][] {
@@ -570,64 +511,6 @@ export class ProductionModule {
     };
   }
 
-  private floodFillCells(
-    burg: Burg,
-    budget: number,
-    cellPool: Record<number, number>[],
-    claimedCells: Set<number>,
-    addGood: (cellId: number, goodId: number, amount: number) => void
-  ): number {
-    const {cells} = pack;
-    const burgCell = burg.cell;
-    const burgState = burg.state ?? 0;
-    const burgProvince = cells.province[burgCell];
-
-    const visited = new Set<number>();
-    const cost: Record<number, number> = {};
-    cost[burgCell] = 0;
-
-    const queue = new FlatQueue();
-    queue.push(burgCell, 0);
-
-    while (queue.length && visited.size < budget) {
-      const cellId = queue.pop() as number;
-      if (visited.has(cellId) || claimedCells.has(cellId)) continue;
-      visited.add(cellId);
-      claimedCells.add(cellId);
-
-      const pool = cellPool[cellId];
-      for (const goodIdStr in pool) {
-        const goodId = +goodIdStr;
-        if (pool[goodId] > 0) {
-          addGood(cellId, goodId, pool[goodId]);
-          // pool[goodId] is NOT zeroed here; it is zeroed during extraction or after the worker loop
-        }
-      }
-
-      if (visited.size >= budget) break;
-
-      const baseCost = cost[cellId] ?? 0;
-      for (const neighbor of cells.c[cellId]) {
-        if (visited.has(neighbor) || claimedCells.has(neighbor)) continue;
-
-        const isWater = cells.h[neighbor] < 20;
-        let hopCost = 1;
-        if (!isWater) {
-          if (cells.province[neighbor] !== burgProvince) hopCost += this.PROVINCE_PENALTY;
-          if (cells.state[neighbor] !== burgState) hopCost += this.STATE_PENALTY;
-        }
-
-        const totalCost = baseCost + hopCost;
-        if (cost[neighbor] === undefined || totalCost < cost[neighbor]) {
-          cost[neighbor] = totalCost;
-          queue.push(neighbor, totalCost);
-        }
-      }
-    }
-
-    return visited.size;
-  }
-
   private makeProductionDecision(params: {
     burg: Burg;
     recipes: Recipes[];
@@ -659,22 +542,21 @@ export class ProductionModule {
 
       const cultureModifier = this.getCultureModifier(good, params.cultureType);
       const units = Math.min(params.fraction, available);
-      const chainValue = this.getChainValueForWorkers(
+      const baseChainValue = this.getChainValueForWorkers(
         params.chainValueByWorkers,
         Math.max(0, params.workersLeft - params.fraction),
         goodId,
         good.value
       );
       const demandEffect = this.getDemandEffect(good, demandFocus);
-      const currentSellPrice = params.sellPrice[goodId] ?? good.value;
-      const priceRatio = good.value > 0 ? currentSellPrice / good.value : 1;
-      const adjustedChainValue = chainValue * priceRatio;
-      const score = units * adjustedChainValue * cultureModifier * demandEffect.multiplier;
+      const sellPrice = params.sellPrice[goodId] ?? good.value;
+      const chainValue = baseChainValue * (sellPrice / good.value);
+      const score = units * chainValue * cultureModifier * demandEffect.multiplier;
       candidates.push({
         kind: "extract",
         goodId,
         score,
-        chainValue: adjustedChainValue,
+        chainValue,
         demandEffect,
         cultureModifier,
         units,
@@ -688,17 +570,6 @@ export class ProductionModule {
 
     // Score every feasible manufacture option by explicit profit margin
     for (const recipe of params.recipes) {
-      const cultureModifier = this.getCultureModifier(recipe.good, params.cultureType);
-      const baseChainValue = this.getChainValueForWorkers(
-        params.chainValueByWorkers,
-        Math.max(0, params.workersLeft - params.fraction),
-        recipe.good.i,
-        recipe.good.value
-      );
-      const currentSellPrice = params.sellPrice[recipe.good.i] ?? recipe.good.value;
-      const priceRatio = recipe.good.value > 0 ? currentSellPrice / recipe.good.value : 1;
-      const chainValue = baseChainValue * priceRatio;
-      const revenue = chainValue * cultureModifier;
       let maxYield = Infinity;
       let feasible = true;
 
@@ -743,9 +614,18 @@ export class ProductionModule {
         });
       }
 
+      const cultureModifier = this.getCultureModifier(recipe.good, params.cultureType);
+      const baseChainValue = this.getChainValueForWorkers(
+        params.chainValueByWorkers,
+        Math.max(0, params.workersLeft - params.fraction),
+        recipe.good.i,
+        recipe.good.value
+      );
+      const sellPrice = params.sellPrice[recipe.good.i] ?? recipe.good.value;
+      const chainValue = baseChainValue * (sellPrice / recipe.good.value);
+      const revenue = chainValue * cultureModifier;
       const ingredientsCost = marketCostTotal / units;
-      const perWorkerScore = (revenue - ingredientsCost) * demandEffect.multiplier;
-      const score = perWorkerScore * units;
+      const score = units * (revenue - ingredientsCost) * demandEffect.multiplier;
       candidates.push({
         kind: "manufacture",
         goodId: recipe.good.i,
@@ -771,7 +651,6 @@ export class ProductionModule {
     }
 
     if (!bestAction) return null;
-
     return {action: bestAction, candidates};
   }
 
@@ -795,27 +674,78 @@ export class ProductionModule {
     return recipes;
   }
 
-  getProductionData(burgId: number): BurgProductionData | undefined {
-    return this.productionData.get(burgId);
+  collectGlobalResources(goods: Good[]): Record<number, number>[] {
+    const {cells} = pack;
+    const biomeResources = this.getBiomesResources(goods);
+    const cellsResources: Record<number, number>[] = Array.from({length: cells.i.length}, () => ({}));
+
+    for (const cellId of cells.i) {
+      const goodId = cells.good[cellId];
+      if (goodId) cellsResources[cellId][goodId] = (cellsResources[cellId][goodId] || 0) + this.BONUS_PRODUCTION;
+
+      const biomeId = cells.biome[cellId];
+      for (const {goodId, production} of biomeResources[biomeId] ?? []) {
+        cellsResources[cellId][goodId] = (cellsResources[cellId][goodId] || 0) + production;
+      }
+    }
+
+    return cellsResources;
   }
 
-  getAccessibleResources(burgId: number): Array<{goodId: number; amount: number}> {
-    const burg = (pack.burgs as Burg[])[burgId];
-    if (!burg || burg.removed) return [];
-
-    const goods = pack.goods;
-    const freshResources = this.collectGlobalResources(goods);
-    const workers = Math.max(1, Math.ceil(burg.population || 0));
-    const localClaimed = new Set<number>();
+  collectBurgResources(burg: Burg, globalResources: Record<number, number>[]): Record<number, number> {
     const resources: Record<number, number> = {};
 
-    this.floodFillCells(burg, workers, freshResources, localClaimed, (_cellId, goodId, amount) => {
-      resources[goodId] = (resources[goodId] || 0) + amount;
-    });
+    const {cells} = pack;
+    const burgCell = burg.cell;
+    const burgState = burg.state ?? 0;
+    const burgProvince = cells.province[burgCell];
+    const workers = Math.max(1, Math.ceil(burg.population || 0));
 
-    return Object.entries(resources)
-      .map(([goodIdStr, amount]) => ({goodId: +goodIdStr, amount}))
-      .sort((a, b) => b.amount - a.amount);
+    const visited = new Set<number>();
+    const cost: Record<number, number> = {};
+    cost[burgCell] = 0;
+
+    const queue = new FlatQueue();
+    queue.push(burgCell, 0);
+
+    while (queue.length && visited.size < workers) {
+      const cellId = queue.pop() as number;
+      if (visited.has(cellId)) continue;
+      visited.add(cellId);
+
+      const pool = globalResources[cellId];
+      for (const goodIdStr in pool) {
+        const goodId = +goodIdStr;
+        const amount = pool[goodId] || 0;
+        if (amount > 0) resources[goodId] = (resources[goodId] || 0) + amount;
+      }
+
+      if (visited.size >= workers) break;
+
+      const baseCost = cost[cellId] ?? 0;
+      for (const neighbor of cells.c[cellId]) {
+        if (visited.has(neighbor)) continue;
+
+        const isWater = cells.h[neighbor] < 20;
+        let hopCost = 1;
+        if (!isWater) {
+          if (cells.province[neighbor] !== burgProvince) hopCost += this.PROVINCE_PENALTY;
+          if (cells.state[neighbor] !== burgState) hopCost += this.STATE_PENALTY;
+        }
+
+        const totalCost = baseCost + hopCost;
+        if (cost[neighbor] === undefined || totalCost < cost[neighbor]) {
+          cost[neighbor] = totalCost;
+          queue.push(neighbor, totalCost);
+        }
+      }
+    }
+
+    return resources;
+  }
+
+  getProductionData(burgId: number): BurgProductionData | undefined {
+    return this.productionData.get(burgId);
   }
 }
 

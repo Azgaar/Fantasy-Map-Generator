@@ -7,11 +7,8 @@ import {rn} from "../utils";
 type Type = "RAW" | "MFG" | "BUY";
 
 export function open(burgId: number): void {
-  const burg = (pack.burgs as any[])[burgId];
-  if (!burg || burg.removed) {
-    tip("No production data available for this burg.", true, "error");
-    return;
-  }
+  const burg = pack.burgs[burgId];
+  if (!burg || burg.removed) return;
 
   const market = Trade.getMarketForBurg(burg);
   const deals = pack.deals || [];
@@ -227,7 +224,7 @@ export function open(burgId: number): void {
   const uncoveredDemand = initialDemand.map((target, index) => Math.max(0, target - finalDemandCoverage[index]));
   const producedByGood: Record<number, number> = {};
   const demandFillUnitsByGood: Record<number, number> = {};
-  const centerBurg = market ? (pack.burgs as any[])[market.centerBurgId] : null;
+  const centerBurg = market ? pack.burgs[market.centerBurgId] : null;
 
   const statsHtml = /*html*/ `
     <div style="${styles.topBar}">
@@ -237,10 +234,15 @@ export function open(burgId: number): void {
       <div><b>Initial Demand:</b> ${renderDemand(initialDemand)}</div>
     </div>`;
 
-  const accessibleResourceRows = Production.getAccessibleResources(burgId)
-    .map(({goodId, amount}) => {
+  const globalResources = Production.collectGlobalResources(pack.goods);
+  const burgResources = Production.collectBurgResources(burg, globalResources);
+
+  const accessibleResourceRows = Object.entries(burgResources)
+    .map(([goodIdStr, amount]) => {
+      const goodId = +goodIdStr;
       const good = Goods.get(goodId);
       if (!good) return "";
+
       const demandCoverage = Object.fromEntries(
         Object.entries(good.demandCoverage).map(([category, value]) => [category, value * amount])
       ) as Partial<Record<DemandCategory, number>>;
@@ -343,7 +345,7 @@ export function open(burgId: number): void {
     return /*html*/ `<tr style="${styles.bodyRow}">
       ${renderDataCell(renderTaggedGood(deal.goodId, "BUY"))}
       ${renderDataCell(rn(deal.units, 2), "right")}
-      <td style="${styles.cell}">Demand fill from local market after center redistribution</td>
+      <td style="${styles.cell}">Demand fill from local market</td>
       ${renderValueCell("Spent", getDealSpent(deal), false)}
     </tr>`;
   });
@@ -405,14 +407,6 @@ export function open(burgId: number): void {
         ${renderPriceCell(costPerUnit)}
         ${renderPriceCell(allocatedCost, allocatedCost > 0 ? styles.warning : styles.subtle)}
         ${renderDataCell(renderDemand(demandCoverage, true) || "—", "right")}
-        ${renderDataCell(
-          producedUnits <= 0 && boughtUnits > 0
-            ? "Bought to fill demand"
-            : isManufactured
-              ? "Locally manufactured"
-              : "Locally extracted",
-          "right"
-        )}
       </tr>`;
     })
     .join("");
@@ -495,8 +489,7 @@ export function open(burgId: number): void {
           <col style="width: 10%;">
           <col style="width: 15%;">
           <col style="width: 15%;">
-          <col style="width: 15%;">
-          <col style="width: 15%;">
+          <col style="width: 30%;">
         </colgroup>
         <thead><tr style="${styles.headRow}">
           ${renderHeaderCell("Good")}
@@ -504,7 +497,6 @@ export function open(burgId: number): void {
           ${renderHeaderCell("Unit Cost", "right", "Average purchased-input cost per locally produced unit. Raw and bought goods stay at 0.")}
           ${renderHeaderCell("Allocated Cost", "right", "Purchased-input cost allocated to retained locally produced units.")}
           ${renderHeaderCell("Demand Coverage", "right", "Demand categories covered by the retained units in this row.")}
-          ${renderHeaderCell("Source", "right")}
         </tr></thead>
         <tbody>${finalRows}</tbody>
       </table>`
@@ -515,8 +507,8 @@ export function open(burgId: number): void {
     <div id="productionOverviewContent">
       ${statsHtml}
       ${renderSection(accessibleResourcesTitle, accessibleResourcesTable)}
-      ${renderSection("Production Steps", jobsTable)}
-      ${renderSection("Retained Inventory", finalTable)}
+      ${renderSection("Production and Trade history", jobsTable)}
+      ${renderSection("Demand Coverage", finalTable)}
       ${renderSection("Trade Summary", tradeSummaryTable)}
     </div>
   `;
