@@ -427,21 +427,7 @@ async function parseLoadedData(data, mapVersion) {
             parsedJourney = null;
           }
         }
-        if (Array.isArray(parsedJourney)) {
-          pack.journeys = parsedJourney;
-          delete pack.journey;
-        } else if (
-          parsedJourney &&
-          typeof parsedJourney === "object" &&
-          parsedJourney !== null &&
-          !Array.isArray(parsedJourney)
-        ) {
-          pack.journey = parsedJourney;
-        }
-        if (window.Journey)
-          window.Journey.ensurePackJourneysNormalized
-            ? window.Journey.ensurePackJourneysNormalized(pack)
-            : window.Journey.ensurePackJourneyNormalized(pack);
+        pack.journeys = Array.isArray(parsedJourney) ? parsedJourney : [];
       }
 
       if (data[31]) {

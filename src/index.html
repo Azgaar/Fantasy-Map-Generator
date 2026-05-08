@@ -3169,6 +3169,13 @@
       </div>
 
       <div id="journeyEditor" class="dialog stable" style="display: none">
+        <div id="journeyEditorEmptyState" style="display: none; margin: 0.5em 0 1em">
+          <p style="margin: 0 0 0.75em; opacity: 0.9">
+            No journeys yet. Create one to add stops (markers and burgs only).
+          </p>
+          <button type="button" id="journeyEditorCreateJourney">Create journey</button>
+        </div>
+        <div id="journeyEditorMain">
         <div id="journeyEditorRoot" style="margin: 0.3em 0">
           <div style="display: flex; align-items: center; gap: 0.6em; flex-wrap: wrap; margin-bottom: 0.5em">
             <label for="journeyEditorJourneySelect"><b>Journey</b></label>
@@ -3234,6 +3241,7 @@
             </tbody>
           </table>
           <div id="journeyEditorStopsBody" class="table"></div>
+        </div>
         </div>
         <div id="journeyEditorBottom" style="display: flex; align-items: center; gap: 0.5em; flex-wrap: wrap">
           <button

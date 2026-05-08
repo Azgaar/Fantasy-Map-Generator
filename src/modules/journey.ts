@@ -136,94 +136,28 @@ export function journeyRefStringToLeg(ref: string): JourneyStopLeg | null {
     : { kind: "marker", id: p.id };
 }
 
-function sanitizeStopsArray(raw: unknown[]): JourneyStopLeg[] {
-  const out: JourneyStopLeg[] = [];
-  for (const item of raw) {
-    if (!item || typeof item !== "object") continue;
-    const o = item as Record<string, unknown>;
-    const kind = o.kind;
-    const id = Number(o.id);
-    if (!Number.isInteger(id) || id < 0) continue;
-    if (kind === "burg") out.push({ kind: "burg", id });
-    else if (kind === "marker") out.push({ kind: "marker", id });
-  }
-  return out;
-}
-
 /** Default path/arrows color when solid mode has no stored stroke. */
 export const JOURNEY_DEFAULT_SOLID_STROKE = "#5c5c70";
 
-type PackWithJourneys = {
-  journey?: unknown;
-  journeys?: unknown;
-};
-
-function parseJourneyColorDataFromUnknown(
-  raw: unknown,
-): JourneyColorData | null {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+/** Like other pack arrays: trust load/save; guard only coerces obviously broken color payloads for drawing. */
+export function sanitizeJourneyColorData(raw: unknown): JourneyColorData {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw))
+    return { type: "rainbow" };
   const r = raw as Record<string, unknown>;
   const t = r.type;
   if (t === "solid") {
     const col = typeof r.color === "string" ? r.color.trim() : "";
-    return {
-      type: "solid",
-      color: col || JOURNEY_DEFAULT_SOLID_STROKE,
-    };
+    return { type: "solid", color: col || JOURNEY_DEFAULT_SOLID_STROKE };
   }
   if (t === "rainbow") return { type: "rainbow" };
-  if (t === "gradient") {
-    if (!Array.isArray(r.colors)) return null;
+  if (t === "gradient" && Array.isArray(r.colors)) {
     const colors = r.colors
       .filter((x): x is string => typeof x === "string")
       .map((s) => s.trim())
       .filter(Boolean);
     if (colors.length >= 2) return { type: "gradient", colors };
-    return null;
   }
-  return null;
-}
-
-/** Migrate flat `{ colorMode, solidStroke, rainbowStops }` from older saves. */
-function legacyFlatFieldsToJourneyColor(
-  o: Record<string, unknown>,
-): JourneyColorData {
-  const cm =
-    typeof o.colorMode === "string" ? o.colorMode.toLowerCase().trim() : "";
-  if (cm === "solid") {
-    const c =
-      typeof o.solidStroke === "string" && o.solidStroke.trim()
-        ? o.solidStroke.trim()
-        : JOURNEY_DEFAULT_SOLID_STROKE;
-    return { type: "solid", color: c };
-  }
-  const rs = typeof o.rainbowStops === "string" ? o.rainbowStops.trim() : "";
-  const parts = rs
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (parts.length >= 2) return { type: "gradient", colors: parts };
   return { type: "rainbow" };
-}
-
-export function sanitizeJourneyColorData(
-  cd: JourneyColorData,
-): JourneyColorData {
-  if (cd.type === "solid") {
-    const c = cd.color?.trim() || JOURNEY_DEFAULT_SOLID_STROKE;
-    return { type: "solid", color: c };
-  }
-  if (cd.type === "rainbow") return { type: "rainbow" };
-  const colors = cd.colors.map((c) => c.trim()).filter(Boolean);
-  if (colors.length >= 2) return { type: "gradient", colors };
-  return { type: "rainbow" };
-}
-
-function stripLegacyJourneyColorKeys(row: StoredJourney): void {
-  const ext = row as unknown as Record<string, unknown>;
-  delete ext.colorMode;
-  delete ext.solidStroke;
-  delete ext.rainbowStops;
 }
 
 function createDefaultStoredJourney(id: number): StoredJourney {
@@ -235,124 +169,9 @@ function createDefaultStoredJourney(id: number): StoredJourney {
   };
 }
 
-function migrateLegacySingleJourney(
-  obj: Record<string, unknown>,
-): StoredJourney {
-  const stops = sanitizeStopsArray(
-    Array.isArray(obj.stops) ? (obj.stops as unknown[]) : [],
-  );
-  const parsed = parseJourneyColorDataFromUnknown(obj.color);
-  const color = sanitizeJourneyColorData(
-    parsed ?? legacyFlatFieldsToJourneyColor(obj),
-  );
-  return {
-    id: 1,
-    name: "Journey 1",
-    stops,
-    color,
-  };
-}
-
-function coerceStoredJourneyRow(
-  raw: unknown,
-  fallbackId: number,
-): StoredJourney {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return createDefaultStoredJourney(fallbackId);
-  }
-  const o = raw as Record<string, unknown>;
-  const idRaw = Number(o.id);
-  const id = Number.isInteger(idRaw) && idRaw > 0 ? idRaw : fallbackId;
-  const stops = sanitizeStopsArray(
-    Array.isArray(o.stops) ? (o.stops as unknown[]) : [],
-  );
-  const name =
-    typeof o.name === "string" && o.name.trim() ? o.name.trim() : undefined;
-  const parsed = parseJourneyColorDataFromUnknown(o.color);
-  const hasLegacyFlat =
-    o.colorMode != null || o.solidStroke != null || o.rainbowStops != null;
-  const color = sanitizeJourneyColorData(
-    parsed ??
-      (hasLegacyFlat ? legacyFlatFieldsToJourneyColor(o) : { type: "rainbow" }),
-  );
-  return {
-    id,
-    name,
-    stops,
-    color,
-  };
-}
-
-function reassignSequentialIds(rows: StoredJourney[]): void {
-  rows.sort((a, b) => a.id - b.id);
-  const seen = new Set<number>();
-  for (let i = 0; i < rows.length; i++) {
-    let id = rows[i].id;
-    if (!Number.isInteger(id) || id < 1 || seen.has(id)) {
-      id = 1;
-      while (seen.has(id)) id++;
-      rows[i].id = id;
-    }
-    seen.add(rows[i].id);
-  }
-}
-
-/**
- * Ensures `pack.journeys` exists, migrates legacy `pack.journey`, normalizes rows.
- * Entry point for layers / editor / load.
- */
-export function ensurePackJourneysNormalized(pack: PackWithJourneys): void {
-  const hasLegacy =
-    pack.journey &&
-    typeof pack.journey === "object" &&
-    !Array.isArray(pack.journey);
-  const rawArr = pack.journeys;
-
-  if (hasLegacy && (!Array.isArray(rawArr) || rawArr.length === 0)) {
-    pack.journeys = [
-      migrateLegacySingleJourney(pack.journey as Record<string, unknown>),
-    ];
-    delete pack.journey;
-  } else if (!Array.isArray(rawArr) || rawArr.length === 0) {
-    pack.journeys = [createDefaultStoredJourney(1)];
-    delete pack.journey;
-  } else {
-    delete pack.journey;
-    const rowsIn = rawArr as unknown[];
-    const out: StoredJourney[] = [];
-    for (let i = 0; i < rowsIn.length; i++) {
-      out.push(coerceStoredJourneyRow(rowsIn[i], i + 1));
-    }
-    pack.journeys = out;
-    reassignSequentialIds(out);
-  }
-
-  const finalRows = pack.journeys as StoredJourney[];
-  for (const row of finalRows) {
-    if (!row.name) row.name = `Journey ${row.id}`;
-    stripLegacyJourneyColorKeys(row);
-    row.color = sanitizeJourneyColorData(row.color ?? { type: "rainbow" });
-    normalizePackJourney(row);
-  }
-}
-
-/** @deprecated Prefer {@link ensurePackJourneysNormalized}; kept for callers on `window.Journey`. */
-export function ensurePackJourneyNormalized(pack: PackWithJourneys): void {
-  ensurePackJourneysNormalized(pack);
-}
-
-/**
- * Mutates journey-like object into canonical `{ stops }` only (also accepts StoredJourney).
- */
-export function normalizePackJourney(j: unknown): void {
-  if (!j || typeof j !== "object" || Array.isArray(j)) return;
-
-  const obj = j as Record<string, unknown>;
-
-  const stops = sanitizeStopsArray(
-    Array.isArray(obj.stops) ? (obj.stops as unknown[]) : [],
-  );
-  obj.stops = stops;
+function packJourneyRows(): StoredJourney[] {
+  const j = pack.journeys;
+  return Array.isArray(j) ? j : [];
 }
 
 function finiteCoord(x: unknown, y: unknown): [number, number] | null {
@@ -575,10 +394,8 @@ export function readJourneyGlobalStyle(
   };
 }
 
-/** Map serializable {@link JourneyColorData} to internal ramp/stroke config for drawing. */
-export function journeyColorStyleFromData(
-  data: JourneyColorData,
-): JourneyColorStyleConfig {
+/** Map stored/cooked color payload to internal ramp/stroke config for drawing. */
+export function journeyColorStyleFromData(data: unknown): JourneyColorStyleConfig {
   const cd = sanitizeJourneyColorData(data);
   if (cd.type === "solid") {
     return {
@@ -605,7 +422,7 @@ export function journeyColorStyleFromData(
 export function journeyColorStyleFromRecord(
   row: StoredJourney,
 ): JourneyColorStyleConfig {
-  return journeyColorStyleFromData(row.color ?? { type: "rainbow" });
+  return journeyColorStyleFromData(row.color);
 }
 
 export function mergeJourneyDrawStyle(
@@ -926,8 +743,7 @@ class JourneyDrawModule {
     defs.selectAll("linearGradient.journey-def").remove();
     defs.select(`filter#${JOURNEY_OUTLINE_FILTER_ID}`).remove();
 
-    ensurePackJourneysNormalized(pack);
-    const rows = pack.journeys as StoredJourney[];
+    const rows = packJourneyRows();
     const resCtx = buildJourneyResolutionContext(
       pack.burgs ?? [],
       pack.markers ?? [],
@@ -941,8 +757,11 @@ class JourneyDrawModule {
 
     const globalStyle = readJourneyGlobalStyle(journeys.node());
 
-    for (const sj of rows) {
-      const pj: PackJourney = { stops: sj.stops };
+    for (let ji = 0; ji < rows.length; ji++) {
+      const sj = rows[ji];
+      if (!sj || typeof sj !== "object") continue;
+      const stops = Array.isArray(sj.stops) ? sj.stops : [];
+      const pj: PackJourney = { stops };
       const resolvedStops = journeyResolvedStopEntries(pj, resCtx);
       if (resolvedStops.length) hadResolvedStop = true;
       const pts = resolvedStops.map((r) => r.coord);
@@ -964,8 +783,11 @@ class JourneyDrawModule {
       ensureJourneyOutlineFilter(defs, morphR, globalStyle.outlineColor);
     }
 
-    for (const sj of rows) {
-      const pj: PackJourney = { stops: sj.stops };
+    for (let ji = 0; ji < rows.length; ji++) {
+      const sj = rows[ji];
+      if (!sj || typeof sj !== "object") continue;
+      const stops = Array.isArray(sj.stops) ? sj.stops : [];
+      const pj: PackJourney = { stops };
       const resolvedStops = journeyResolvedStopEntries(pj, resCtx);
       if (!resolvedStops.length) continue;
 
@@ -976,10 +798,12 @@ class JourneyDrawModule {
       const rampAt = journeyRampSamplerForConfig(mergedStyle);
       const points = resolvedStops.map((r) => r.coord);
 
+      const domId = Number.isFinite(Number(sj.id)) ? Number(sj.id) : ji;
       const sub = journeys
         .append("g")
         .attr("class", "journey-instance")
-        .attr("data-journey-id", sj.id);
+        .attr("data-journey-index", ji)
+        .attr("data-journey-id", domId);
 
       const verts = sub.append("g").attr("class", "journey-vertices");
       const waypointR = mapMetricScreenToWorld(
@@ -1011,7 +835,8 @@ class JourneyDrawModule {
         const circle = verts
           .append("circle")
           .attr("class", "journey-waypoint")
-          .attr("data-journey-id", sj.id)
+          .attr("data-journey-index", ji)
+          .attr("data-journey-id", domId)
           .attr("data-jx", rn(x, 2))
           .attr("data-jy", rn(y, 2))
           .attr("cx", rn(x, 2))
@@ -1039,7 +864,7 @@ class JourneyDrawModule {
         0.06,
         24,
       );
-      const gradPrefix = `jj${sj.id}`;
+      const gradPrefix = `jj${ji}`;
       for (let i = 0; i < S; i++) {
         const a = points[i];
         const b = points[i + 1];
@@ -1123,15 +948,16 @@ class JourneyDrawModule {
     zoomScale = 1,
     zoomMinForLod = 0.05,
   ): void {
-    ensurePackJourneysNormalized(pack);
     const resCtx = buildJourneyResolutionContext(
       pack.burgs ?? [],
       pack.markers ?? [],
     );
     let hasResolved = false;
     let anySegments = false;
-    for (const sj of pack.journeys as StoredJourney[]) {
-      const pj: PackJourney = { stops: sj.stops };
+    for (const sj of packJourneyRows()) {
+      if (!sj || typeof sj !== "object") continue;
+      const stops = Array.isArray(sj.stops) ? sj.stops : [];
+      const pj: PackJourney = { stops };
       const pts = journeyResolvedCoordinates(pj, resCtx);
       if (pts.length) hasResolved = true;
       if (pts.length >= 2) anySegments = true;
@@ -1200,36 +1026,30 @@ class JourneyDrawModule {
 /** Minimal facade consumed by legacy JS modules. */
 type JourneyGlobalApi = {
   STYLE_DEFAULTS: typeof JOURNEY_STYLE_DEFAULTS;
-  ensurePackJourneyNormalized: typeof ensurePackJourneyNormalized;
-  ensurePackJourneysNormalized: typeof ensurePackJourneysNormalized;
 };
 
-/** Selected journey in modal (`null` → first row on next refresh). */
-let journeyEditorActiveId: number | null = null;
+/** Selected journey row index in the editor (`pack.journeys` order). */
+let journeyEditorActiveIndex = 0;
 
-function journeyRows(): StoredJourney[] {
-  ensurePackJourneysNormalized(pack);
-  return pack.journeys as StoredJourney[];
-}
-
-function syncEditorActiveId(): StoredJourney {
-  const rows = journeyRows();
-  if (!rows.length) {
-    ensurePackJourneysNormalized(pack);
-    return (pack.journeys as StoredJourney[])[0];
-  }
+function syncEditorActiveRow(): StoredJourney | undefined {
+  const rows = packJourneyRows();
+  if (!rows.length) return undefined;
   if (
-    journeyEditorActiveId == null ||
-    !rows.some((r) => r.id === journeyEditorActiveId)
+    journeyEditorActiveIndex < 0 ||
+    journeyEditorActiveIndex >= rows.length
   ) {
-    journeyEditorActiveId = rows[0].id;
+    journeyEditorActiveIndex = 0;
   }
-  return rows.find((r) => r.id === journeyEditorActiveId)!;
+  return rows[journeyEditorActiveIndex];
 }
 
 function nextJourneyId(): number {
-  const rows = journeyRows();
-  return rows.reduce((m, r) => Math.max(m, r.id), 0) + 1;
+  return (
+    packJourneyRows().reduce((m, r) => {
+      const id = Number(r?.id);
+      return Number.isFinite(id) ? Math.max(m, id) : m;
+    }, 0) + 1
+  );
 }
 
 function journeyHexForPicker(
@@ -1250,7 +1070,7 @@ function journeyHexForPicker(
 
 function journeyEditorSyncColorUi(row: StoredJourney): void {
   const jd = JOURNEY_STYLE_DEFAULTS;
-  const cd = sanitizeJourneyColorData(row.color ?? { type: "rainbow" });
+  const cd = sanitizeJourneyColorData(row.color);
   row.color = cd;
 
   const sel = ensureEl("journeyEditorColorMode") as HTMLSelectElement;
@@ -1335,21 +1155,37 @@ function journeyEditorApplyGradientFromPickers(row: StoredJourney): void {
   (ensureEl("journeyEditorRainbowStops") as HTMLInputElement).value = "";
 }
 
+function journeyEditorSyncEmptyState(): void {
+  const rows = packJourneyRows();
+  const empty = ensureEl("journeyEditorEmptyState");
+  const main = ensureEl("journeyEditorMain");
+  if (!rows.length) {
+    empty.style.display = "block";
+    main.style.display = "none";
+  } else {
+    empty.style.display = "none";
+    main.style.display = "";
+  }
+}
+
 function journeyEditorRefreshJourneySelect(): void {
   const sel = ensureEl("journeyEditorJourneySelect") as HTMLSelectElement;
-  const rows = journeyRows();
+  const rows = packJourneyRows();
   sel.innerHTML = rows
-    .map((r) => {
-      const label = r.name?.trim() || `Journey ${r.id}`;
-      return `<option value="${r.id}">${escapeHtml(label)}</option>`;
+    .map((r, i) => {
+      const label = r.name?.trim() || `Journey ${r.id ?? i + 1}`;
+      return `<option value="${i}">${escapeHtml(label)}</option>`;
     })
     .join("");
-  const active = syncEditorActiveId();
-  sel.value = String(active.id);
+  if (!rows.length) return;
+  journeyEditorActiveIndex = Math.min(
+    journeyEditorActiveIndex,
+    rows.length - 1,
+  );
+  sel.value = String(journeyEditorActiveIndex);
 }
 
 function journeyStopSelectOptions(currentRef: string): string {
-  ensurePackJourneysNormalized(pack);
   let html = "";
   const known = new Set<string>();
   if (!currentRef)
@@ -1390,8 +1226,9 @@ function journeyStopSelectOptions(currentRef: string): string {
 }
 
 function journeyRenderStopRows(container: HTMLElement): void {
-  ensurePackJourneysNormalized(pack);
-  const stops = syncEditorActiveId().stops;
+  const active = syncEditorActiveRow();
+  const stops =
+    active && Array.isArray(active.stops) ? active.stops : [];
   const rows: (JourneyStopLeg | null)[] = stops.length === 0 ? [null] : stops;
   rows.forEach((leg, i) => {
     const currentRef = leg ? journeyLegToRefString(leg) : "";
@@ -1413,10 +1250,11 @@ function journeyRenderStopRows(container: HTMLElement): void {
 function journeyEditorRefreshBody(): void {
   const stBody = ensureEl("journeyEditorStopsBody");
   stBody.innerHTML = "";
-  ensurePackJourneysNormalized(pack);
   journeyEditorRefreshJourneySelect();
-  journeyEditorSyncColorUi(syncEditorActiveId());
-  journeyRenderStopRows(stBody);
+  const active = syncEditorActiveRow();
+  if (active) journeyEditorSyncColorUi(active);
+  if (packJourneyRows().length) journeyRenderStopRows(stBody);
+  journeyEditorSyncEmptyState();
 }
 
 function journeyEditorRootChange(ev: Event): void {
@@ -1427,11 +1265,12 @@ function journeyEditorRootChange(ev: Event): void {
     const idx = +(row as HTMLElement).dataset.stopIndex!;
     if (!Number.isFinite(idx)) return;
     const val = (t as HTMLSelectElement).value;
-    ensurePackJourneysNormalized(pack);
     if (!val) return;
     const leg = journeyRefStringToLeg(val);
     if (!leg) return;
-    const stops = syncEditorActiveId().stops;
+    const cur = syncEditorActiveRow();
+    if (!cur || !Array.isArray(cur.stops)) return;
+    const stops = cur.stops;
     if (stops.length === 0) stops.push(leg);
     else stops[idx] = leg;
     journeyEditorRefreshBody();
@@ -1446,15 +1285,14 @@ function journeyEditorRootClick(ev: Event): void {
     if (!row) return;
     const idx = +(row as HTMLElement).dataset.stopIndex!;
     if (!Number.isFinite(idx)) return;
-    ensurePackJourneysNormalized(pack);
-    syncEditorActiveId().stops.splice(idx, 1);
+    const cur = syncEditorActiveRow();
+    if (cur && Array.isArray(cur.stops)) cur.stops.splice(idx, 1);
     journeyEditorRefreshBody();
     drawJourney();
   }
 }
 
-function journeyAppendStopRef(stopRef: string, targetJourneyId?: number): void {
-  ensurePackJourneysNormalized(pack);
+function journeyAppendStopRef(stopRef: string, targetIndex?: number): void {
   const ctx = buildJourneyResolutionContext(
     pack.burgs ?? [],
     pack.markers ?? [],
@@ -1462,21 +1300,27 @@ function journeyAppendStopRef(stopRef: string, targetJourneyId?: number): void {
   if (!resolveJourneyStopPosition(stopRef, ctx)) return;
   const leg = journeyRefStringToLeg(stopRef);
   if (!leg) return;
-  const rows = journeyRows();
-  const tid =
-    targetJourneyId != null && rows.some((r) => r.id === targetJourneyId)
-      ? targetJourneyId
-      : syncEditorActiveId().id;
-  journeyEditorActiveId = tid;
-  rows.find((r) => r.id === tid)!.stops.push(leg);
+  const rows = packJourneyRows();
+  const idx =
+    targetIndex != null &&
+    targetIndex >= 0 &&
+    targetIndex < rows.length
+      ? targetIndex
+      : journeyEditorActiveIndex;
+  const row = rows[idx];
+  if (!row) return;
+  if (!Array.isArray(row.stops)) row.stops = [];
+  journeyEditorActiveIndex = idx;
+  row.stops.push(leg);
   journeyEditorRefreshBody();
   drawJourney();
 }
 
 function journeyEditorAddLegClick(): void {
-  ensurePackJourneysNormalized(pack);
-  const stops = syncEditorActiveId().stops;
-  if (!stops.length) {
+  const cur = syncEditorActiveRow();
+  const stops =
+    cur && Array.isArray(cur.stops) ? cur.stops : null;
+  if (!stops?.length) {
     tip(
       "Choose the first stop in the Journey row (marker or burg), then use + to add legs.",
       false,
@@ -1501,11 +1345,11 @@ function journeyEditorOnClick(): void {
     circleEl = target.closest(".journey-waypoint");
   if (circleEl) {
     const stopRef = circleEl.getAttribute("data-journey-stop-ref");
-    const jidStr = circleEl.getAttribute("data-journey-id");
-    const jid =
-      jidStr != null && jidStr !== "" ? Number.parseInt(jidStr, 10) : NaN;
-    if (stopRef && Number.isFinite(jid)) {
-      journeyAppendStopRef(stopRef, jid);
+    const jiStr = circleEl.getAttribute("data-journey-index");
+    const ji =
+      jiStr != null && jiStr !== "" ? Number.parseInt(jiStr, 10) : NaN;
+    if (stopRef && Number.isFinite(ji)) {
+      journeyAppendStopRef(stopRef, ji);
       return;
     }
     return;
@@ -1518,7 +1362,7 @@ function journeyEditorOnClick(): void {
 }
 
 function closeJourneyEditor(): void {
-  journeyEditorActiveId = null;
+  journeyEditorActiveIndex = 0;
   ensureEl("journeyEditorStopsBody").innerHTML = "";
   viewbox.on("click.journey", null).style("cursor", null);
   clearMainTip();
@@ -1530,30 +1374,28 @@ function journeyEditorJourneySelectChange(): void {
     (ensureEl("journeyEditorJourneySelect") as HTMLSelectElement).value,
     10,
   );
-  if (Number.isFinite(v)) journeyEditorActiveId = v;
+  if (Number.isFinite(v)) journeyEditorActiveIndex = v;
   journeyEditorRefreshBody();
   drawJourney();
 }
 
 function journeyEditorAddJourneyClick(): void {
-  ensurePackJourneysNormalized(pack);
+  if (!Array.isArray(pack.journeys)) pack.journeys = [];
   const id = nextJourneyId();
-  (pack.journeys as StoredJourney[]).push(createDefaultStoredJourney(id));
-  journeyEditorActiveId = id;
+  pack.journeys.push(createDefaultStoredJourney(id));
+  journeyEditorActiveIndex = pack.journeys.length - 1;
   journeyEditorRefreshBody();
   drawJourney();
 }
 
 function journeyEditorRemoveJourneyClick(): void {
-  const rows = journeyRows();
-  if (rows.length <= 1) {
-    tip("Keep at least one journey.", false, "warn");
-    return;
-  }
-  const cur = syncEditorActiveId();
-  const idx = rows.findIndex((r) => r.id === cur.id);
+  if (!Array.isArray(pack.journeys)) return;
+  const rows = pack.journeys;
+  const idx = journeyEditorActiveIndex;
+  if (idx < 0 || idx >= rows.length) return;
   rows.splice(idx, 1);
-  journeyEditorActiveId = rows[Math.max(0, idx - 1)]!.id;
+  journeyEditorActiveIndex =
+    rows.length === 0 ? 0 : Math.min(idx, rows.length - 1);
   journeyEditorRefreshBody();
   drawJourney();
 }
@@ -1561,7 +1403,6 @@ function journeyEditorRemoveJourneyClick(): void {
 function editJourney(): void {
   if (customization) return;
   closeDialogs("#journeyEditor, .stable");
-  ensurePackJourneysNormalized(pack);
   if (!layerIsOn("toggleJourney")) toggleJourney();
   tip(
     "Each journey has its own path and colors (below). Line thickness and waypoints are in the Style Editor. Build stops from markers and burgs; use + to repeat the last stop. Click a waypoint to append that stop to that journey.",
@@ -1586,7 +1427,7 @@ function editJourney(): void {
     "change.journeyEd",
     journeyEditorJourneySelectChange,
   );
-  $("#journeyEditorAddJourney").on(
+  $("#journeyEditorAddJourney, #journeyEditorCreateJourney").on(
     "click.journeyEd",
     journeyEditorAddJourneyClick,
   );
@@ -1596,14 +1437,14 @@ function editJourney(): void {
   );
   $("#journeyEditorAddLeg").on("click.journeyEd", journeyEditorAddLegClick);
   $("#journeyEditorUndo").on("click.journeyEd", () => {
-    ensurePackJourneysNormalized(pack);
-    syncEditorActiveId().stops.pop();
+    const cur = syncEditorActiveRow();
+    if (cur && Array.isArray(cur.stops)) cur.stops.pop();
     journeyEditorRefreshBody();
     drawJourney();
   });
   $("#journeyEditorClear").on("click.journeyEd", () => {
-    ensurePackJourneysNormalized(pack);
-    syncEditorActiveId().stops = [];
+    const cur = syncEditorActiveRow();
+    if (cur && Array.isArray(cur.stops)) cur.stops = [];
     journeyEditorRefreshBody();
     drawJourney();
   });
@@ -1614,7 +1455,8 @@ function editJourney(): void {
   $("#journeyEditorColorMode").on(
     "change.journeyEd",
     function (this: HTMLSelectElement) {
-      const row = syncEditorActiveId();
+      const row = syncEditorActiveRow();
+      if (!row) return;
       const jd = JOURNEY_STYLE_DEFAULTS;
       const v = this.value;
       if (v === "solid") {
@@ -1637,7 +1479,8 @@ function editJourney(): void {
   $("#journeyEditorSolidStroke").on(
     "input.journeyEd",
     function (this: HTMLInputElement) {
-      const row = syncEditorActiveId();
+      const row = syncEditorActiveRow();
+      if (!row) return;
       row.color = { type: "solid", color: this.value };
       (ensureEl("journeyEditorSolidStrokeOutput") as HTMLOutputElement).value =
         this.value;
@@ -1654,7 +1497,8 @@ function editJourney(): void {
         return;
       (ensureEl("journeyEditorGradientFromOutput") as HTMLOutputElement).value =
         this.value;
-      const row = syncEditorActiveId();
+      const row = syncEditorActiveRow();
+      if (!row) return;
       journeyEditorApplyGradientFromPickers(row);
       drawJourney();
     },
@@ -1669,7 +1513,8 @@ function editJourney(): void {
         return;
       (ensureEl("journeyEditorGradientToOutput") as HTMLOutputElement).value =
         this.value;
-      const row = syncEditorActiveId();
+      const row = syncEditorActiveRow();
+      if (!row) return;
       journeyEditorApplyGradientFromPickers(row);
       drawJourney();
     },
@@ -1682,7 +1527,8 @@ function editJourney(): void {
         "gradient"
       )
         return;
-      const row = syncEditorActiveId();
+      const row = syncEditorActiveRow();
+      if (!row) return;
       const v = this.value.trim();
       if (v === "") {
         journeyEditorApplyGradientFromPickers(row);
@@ -1718,8 +1564,6 @@ if (typeof window !== "undefined") {
   window.JourneyDraw = new JourneyDrawModule();
   const journeyApi: JourneyGlobalApi = {
     STYLE_DEFAULTS: JOURNEY_STYLE_DEFAULTS,
-    ensurePackJourneyNormalized,
-    ensurePackJourneysNormalized,
   };
   window.Journey = journeyApi;
   window.editJourney = editJourney;

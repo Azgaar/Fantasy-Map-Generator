@@ -871,7 +871,6 @@ function toggleMarkers(event) {
 
 function drawJourney() {
   TIME && console.time("drawJourney");
-  if (window.Journey) window.Journey.ensurePackJourneyNormalized(pack);
   const zm = Math.max(+ensureEl("zoomExtentMin").value, 0.01);
   JourneyDraw.redraw(defs, journeys, scale, zm);
   // Presets only flip layer buttons; they never call toggleJourney/fadeIn. Match visible state to layerIsOn.
