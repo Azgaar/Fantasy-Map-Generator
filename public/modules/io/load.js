@@ -373,7 +373,6 @@ async function parseLoadedData(data, mapVersion) {
         emblems = viewbox.insert("g", "#labels").attr("id", "emblems").style("display", "none");
       }
       if (!journeys.size()) {
-        // Match main.js: journeys sit below routes / fogging / ruler (insert before #routes, not #ruler).
         journeys = viewbox.insert("g", "#routes").attr("id", "journeys").style("display", "none");
       }
     }

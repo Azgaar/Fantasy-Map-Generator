@@ -99,7 +99,6 @@ declare global {
   var createDefaultRuler: () => void;
   var showStatistics: () => void;
   var closeDialogs: (except?: string) => void;
-  /** Journey layer redraw (public/modules/ui/layers.js). */
   var drawJourney: () => void;
   var toggleJourney: (event?: Event) => void;
   var clearMainTip: () => void;
