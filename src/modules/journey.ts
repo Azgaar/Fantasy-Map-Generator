@@ -395,7 +395,9 @@ export function readJourneyGlobalStyle(
 }
 
 /** Map stored/cooked color payload to internal ramp/stroke config for drawing. */
-export function journeyColorStyleFromData(data: unknown): JourneyColorStyleConfig {
+export function journeyColorStyleFromData(
+  data: unknown,
+): JourneyColorStyleConfig {
   const cd = sanitizeJourneyColorData(data);
   if (cd.type === "solid") {
     return {
@@ -1034,10 +1036,7 @@ let journeyEditorActiveIndex = 0;
 function syncEditorActiveRow(): StoredJourney | undefined {
   const rows = packJourneyRows();
   if (!rows.length) return undefined;
-  if (
-    journeyEditorActiveIndex < 0 ||
-    journeyEditorActiveIndex >= rows.length
-  ) {
+  if (journeyEditorActiveIndex < 0 || journeyEditorActiveIndex >= rows.length) {
     journeyEditorActiveIndex = 0;
   }
   return rows[journeyEditorActiveIndex];
@@ -1227,8 +1226,7 @@ function journeyStopSelectOptions(currentRef: string): string {
 
 function journeyRenderStopRows(container: HTMLElement): void {
   const active = syncEditorActiveRow();
-  const stops =
-    active && Array.isArray(active.stops) ? active.stops : [];
+  const stops = active && Array.isArray(active.stops) ? active.stops : [];
   const rows: (JourneyStopLeg | null)[] = stops.length === 0 ? [null] : stops;
   rows.forEach((leg, i) => {
     const currentRef = leg ? journeyLegToRefString(leg) : "";
@@ -1302,9 +1300,7 @@ function journeyAppendStopRef(stopRef: string, targetIndex?: number): void {
   if (!leg) return;
   const rows = packJourneyRows();
   const idx =
-    targetIndex != null &&
-    targetIndex >= 0 &&
-    targetIndex < rows.length
+    targetIndex != null && targetIndex >= 0 && targetIndex < rows.length
       ? targetIndex
       : journeyEditorActiveIndex;
   const row = rows[idx];
@@ -1318,8 +1314,7 @@ function journeyAppendStopRef(stopRef: string, targetIndex?: number): void {
 
 function journeyEditorAddLegClick(): void {
   const cur = syncEditorActiveRow();
-  const stops =
-    cur && Array.isArray(cur.stops) ? cur.stops : null;
+  const stops = cur && Array.isArray(cur.stops) ? cur.stops : null;
   if (!stops?.length) {
     tip(
       "Choose the first stop in the Journey row (marker or burg), then use + to add legs.",
@@ -1346,8 +1341,7 @@ function journeyEditorOnClick(): void {
   if (circleEl) {
     const stopRef = circleEl.getAttribute("data-journey-stop-ref");
     const jiStr = circleEl.getAttribute("data-journey-index");
-    const ji =
-      jiStr != null && jiStr !== "" ? Number.parseInt(jiStr, 10) : NaN;
+    const ji = jiStr != null && jiStr !== "" ? Number.parseInt(jiStr, 10) : NaN;
     if (stopRef && Number.isFinite(ji)) {
       journeyAppendStopRef(stopRef, ji);
       return;
