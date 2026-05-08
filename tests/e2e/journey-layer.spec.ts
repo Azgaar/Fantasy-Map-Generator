@@ -119,7 +119,7 @@ test.describe("Journey layer", () => {
     const segmentCount = BACKTRACK_JOURNEY_POINTS.length - 1;
     const segments = page.locator("#journeys .journey-segments .journey-segment");
     await expect(segments).toHaveCount(segmentCount);
-    // Ramp strokes are drawn as many short paths per logical segment (arc-length coloring).
+    // Non-solid ramp uses multiple stroke paths per logical segment.
     for (let i = 0; i < segmentCount; i++) {
       await expect(segments.nth(i).locator(".journey-segment-stroke")).not.toHaveCount(0);
     }

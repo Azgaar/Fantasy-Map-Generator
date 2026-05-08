@@ -1,15 +1,9 @@
-/**
- * Journey feature module (merged).
- *
- * Contains model, style config, geometry, draw, and editor logic.
- */
 import type { Selection } from "d3";
 import { interpolateRgbBasis } from "d3";
 import { ensureEl } from "../utils";
 import { minmax, rn } from "../utils/numberUtils";
 import { escapeHtml } from "../utils/stringUtils";
 
-/** One leg in the journey sequence (linked-list style via array order). */
 interface JourneyBurgLeg {
   kind: "burg";
   id: number;
@@ -26,7 +20,6 @@ export interface PackJourney {
   stops: JourneyStopLeg[];
 }
 
-/** Path/arrow coloration for one stored journey (serializable discriminated union). */
 export type JourneyColorData =
   | {
       type: "solid";
@@ -40,23 +33,17 @@ export type JourneyColorData =
       colors: string[];
     };
 
-/** One journey path in pack data (stops + per-journey path/arrow colors). */
 export interface StoredJourney {
   id: number;
-  /** Display label in editor */
   name?: string;
   stops: JourneyStopLeg[];
-  /** Path and arrow coloring */
   color?: JourneyColorData;
 }
 
-/** Minimal pack slice for resolving burg/marker positions (avoids importing PackedGraph). */
 export interface JourneyResolutionContext {
   burgs: Array<{ i?: number; x?: number; y?: number; removed?: boolean }>;
   markers: Array<{ i?: number; x?: number; y?: number }>;
-  /** First matching non-removed burg per id (same semantics as linear find). When set, `resolveJourneyLeg` uses O(1) lookup. */
   burgById?: Map<number, JourneyResolutionContext["burgs"][number]>;
-  /** First marker per id (same semantics as linear find). */
   markerById?: Map<number, JourneyResolutionContext["markers"][number]>;
 }
 
@@ -85,7 +72,6 @@ function indexMarkersById(
   return m;
 }
 
-/** Build resolution context with id indexes (preferred for redraw / many stops). */
 export function buildJourneyResolutionContext(
   burgs: JourneyResolutionContext["burgs"],
   markers: JourneyResolutionContext["markers"],
@@ -127,7 +113,6 @@ function parseJourneyStopRef(stopId: string): ParsedJourneyStopRef | null {
   return null;
 }
 
-/** UI / DOM string → stored leg (burg or marker only). */
 export function journeyRefStringToLeg(ref: string): JourneyStopLeg | null {
   const p = parseJourneyStopRef(ref);
   if (!p) return null;
@@ -136,10 +121,9 @@ export function journeyRefStringToLeg(ref: string): JourneyStopLeg | null {
     : { kind: "marker", id: p.id };
 }
 
-/** Default path/arrows color when solid mode has no stored stroke. */
 export const JOURNEY_DEFAULT_SOLID_STROKE = "#5c5c70";
 
-/** Like other pack arrays: trust load/save; guard only coerces obviously broken color payloads for drawing. */
+// Malformed `color` payloads fall back to rainbow so drawing never breaks on bad saves.
 export function sanitizeJourneyColorData(raw: unknown): JourneyColorData {
   if (!raw || typeof raw !== "object" || Array.isArray(raw))
     return { type: "rainbow" };
@@ -188,11 +172,10 @@ function tryWarnMissing(msg: string): void {
       (globalThis as { WARN?: boolean }).WARN;
     if (w) console.warn(msg);
   } catch {
-    /* noop */
+    // ignore
   }
 }
 
-/** Resolve one leg to map coordinates, or null if missing. */
 export function resolveJourneyLeg(
   leg: JourneyStopLeg,
   ctx: JourneyResolutionContext,
@@ -221,7 +204,6 @@ export function resolveJourneyLeg(
   return p;
 }
 
-/** Resolve `burg:n` / `marker:n` string (editor / DOM). */
 export function resolveJourneyStopPosition(
   stopRef: string,
   ctx: JourneyResolutionContext,
@@ -231,16 +213,12 @@ export function resolveJourneyStopPosition(
   return resolveJourneyLeg(leg, ctx);
 }
 
-/** One resolved leg and its map coordinate (same order as `journeyResolvedCoordinates` points). */
 interface JourneyResolvedStopEntry {
   leg: JourneyStopLeg;
   coord: [number, number];
 }
 
-/**
- * Resolve each leg once: coordinates for polyline + waypoint attribution.
- * Omits legs that fail to resolve (same sequence as `journeyResolvedCoordinates`).
- */
+// Drops stops whose burg/marker cannot be resolved (partial paths allowed).
 export function journeyResolvedStopEntries(
   j: PackJourney,
   ctx: JourneyResolutionContext = { burgs: [], markers: [] },
@@ -264,7 +242,6 @@ export function journeyResolvedCoordinates(
   return out;
 }
 
-/** Rainbow ramp endpoints used as one continuous gradient sliced per segment. */
 const JOURNEY_RAINBOW_STOPS = [
   "#e81416",
   "#ff7518",
@@ -275,7 +252,6 @@ const JOURNEY_RAINBOW_STOPS = [
   "#70389d",
 ];
 
-/** Single source for Style tab + editor defaults (also on `window.Journey.STYLE_DEFAULTS`). */
 const JOURNEY_STYLE_DEFAULTS = {
   lineScreenPx: 6,
   waypointRScreenPx: 9,
@@ -285,14 +261,12 @@ const JOURNEY_STYLE_DEFAULTS = {
   waypointFill: "#ffffff",
   waypointStroke: "#000000",
   outlineColor: "#000000",
-  /** Gradient picker defaults when `data-rainbow-stops` is unset (match ramp ends). */
   gradientFromHex: "#e81416",
   gradientToHex: "#70389d",
 } as const;
 
 type JourneyColorMode = "rainbow" | "solid";
 
-/** Global presentation from `#journeys` (`data-*`): geometry & waypoint chrome only. */
 export interface JourneyGlobalStyleConfig {
   lineScreenPx: number;
   waypointFill: string;
@@ -303,24 +277,18 @@ export interface JourneyGlobalStyleConfig {
   outlineScreenPx: number;
 }
 
-/** Per-journey path/arrow colors (from {@link StoredJourney}). */
 export interface JourneyColorStyleConfig {
   colorMode: JourneyColorMode;
   solidStroke: string;
   rainbowStops: readonly string[];
 }
 
-/** Resolved presentation for drawing one journey instance. */
 interface JourneyStyleConfig
   extends JourneyGlobalStyleConfig,
     JourneyColorStyleConfig {}
 
 const builtinRampInterpolator = interpolateRgbBasis(JOURNEY_RAINBOW_STOPS);
 
-/**
- * Read global journey geometry style from `#journeys` (`data-*`).
- * Path colors live per {@link StoredJourney}, not here.
- */
 export function readJourneyGlobalStyle(
   el: Element | null,
 ): JourneyGlobalStyleConfig {
@@ -382,7 +350,6 @@ export function readJourneyGlobalStyle(
   };
 }
 
-/** Map stored/cooked color payload to internal ramp/stroke config for drawing. */
 export function journeyColorStyleFromData(
   data: unknown,
 ): JourneyColorStyleConfig {
@@ -404,11 +371,11 @@ export function journeyColorStyleFromData(
   return {
     colorMode: "rainbow",
     solidStroke: JOURNEY_STYLE_DEFAULTS.solidStroke,
+    // Stored as gradient colors[] but drawn via rgbBasis(rainbowStops), same path as built-in ramp.
     rainbowStops: cd.colors,
   };
 }
 
-/** Resolve path/arrow colors from a stored journey row. */
 export function journeyColorStyleFromRecord(
   row: StoredJourney,
 ): JourneyColorStyleConfig {
@@ -425,7 +392,6 @@ export function mergeJourneyDrawStyle(
   };
 }
 
-/** Uniform ramp sampler along one logical journey (same contract as `journeyRampColor`). */
 export function journeyRampSamplerForConfig(
   cfg: JourneyStyleConfig,
 ): (u: number) => string {
@@ -439,32 +405,12 @@ export function journeyRampSamplerForConfig(
   return (u: number) => interp(minmax(u, 0, 1));
 }
 
-/** Parameter `u` in [0, 1] along the whole journey ramp (built-in rainbow). */
 export function journeyRampColor(u: number): string {
   return builtinRampInterpolator(minmax(u, 0, 1));
 }
 
-/** Quantized directed chord id for lane stacking (A→B ≠ B→A). */
 export function chordKey(a: [number, number], b: [number, number]): string {
   return `${rn(a[0], 2)},${rn(a[1], 2)}->${rn(b[0], 2)},${rn(b[1], 2)}`;
-}
-
-/**
- * Fraction along chord A→B for point P (clamped to [0, 1]). Journey strokes used to
- * use SVG chord-aligned gradients; ramp sampling now follows polyline arc length instead.
- */
-export function chordGradientT(
-  a: [number, number],
-  b: [number, number],
-  px: number,
-  py: number,
-): number {
-  const vx = b[0] - a[0];
-  const vy = b[1] - a[1];
-  const len2 = vx * vx + vy * vy;
-  if (len2 < 1e-18) return 0;
-  const t = ((px - a[0]) * vx + (py - a[1]) * vy) / len2;
-  return minmax(t, 0, 1);
 }
 
 const MIN_SEG_LEN = 0.05;
@@ -612,7 +558,6 @@ interface ArrowSample {
   x: number;
   y: number;
   angleDeg: number;
-  /** Position along the polyline as arc-length fraction [0, 1] within this polyline. */
   arcFrac: number;
 }
 
@@ -660,7 +605,6 @@ function polylineLength(pts: [number, number][]): number {
   return len;
 }
 
-/** Fraction [0, 1] along polyline arc length from `pts[0]` to vertex `pts[vertexIdx]`. */
 function arcLengthFractionToVertex(
   pts: [number, number][],
   vertexIdx: number,
@@ -856,6 +800,7 @@ class JourneyDrawModule {
           .attr("stroke", mergedStyle.waypointStroke)
           .attr("stroke-width", rn(waypointSw, 3))
           .style("cursor", "pointer");
+        // Same coord can host multiple stops; editor append needs an unambiguous ref.
         if (jidList?.length === 1)
           circle.attr("data-journey-stop-ref", jidList[0]);
       }
@@ -902,6 +847,7 @@ class JourneyDrawModule {
             .attr("stroke-linecap", "round")
             .attr("stroke-linejoin", "round");
         } else if (polyLen >= 1e-9) {
+          // Piecewise strokes so ramp follows arc length (chord-aligned SVG gradients skew on bends).
           let cumAlong = 0;
           for (let ei = 0; ei < samp.length - 1; ei++) {
             const p0 = samp[ei]!;
@@ -1042,12 +988,10 @@ class JourneyDrawModule {
   }
 }
 
-/** Minimal facade consumed by legacy JS modules. */
 type JourneyGlobalApi = {
   STYLE_DEFAULTS: typeof JOURNEY_STYLE_DEFAULTS;
 };
 
-/** Selected journey row index in the editor (`pack.journeys` order). */
 let journeyEditorActiveIndex = 0;
 
 function syncEditorActiveRow(): StoredJourney | undefined {
