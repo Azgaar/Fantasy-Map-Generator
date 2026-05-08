@@ -93,7 +93,7 @@ test.describe("Journey layer", () => {
     });
 
     await expect(page.locator("#journeys .journey-vertices circle")).toHaveCount(1);
-    await expect(page.locator("#journeys .journey-segments .journey-segment")).toHaveCount(0);
+    await expect(page.locator("#journeys .journey-legs .journey-leg")).toHaveCount(0);
   });
 
   test("drawJourney renders paths and vertices for journey data", async ({ page }) => {
@@ -117,11 +117,11 @@ test.describe("Journey layer", () => {
     );
 
     const segmentCount = BACKTRACK_JOURNEY_POINTS.length - 1;
-    const segments = page.locator("#journeys .journey-segments .journey-segment");
+    const segments = page.locator("#journeys .journey-legs .journey-leg");
     await expect(segments).toHaveCount(segmentCount);
     // Non-solid ramp uses multiple stroke paths per logical segment.
     for (let i = 0; i < segmentCount; i++) {
-      await expect(segments.nth(i).locator(".journey-segment-stroke")).not.toHaveCount(0);
+      await expect(segments.nth(i).locator(".journey-leg-stroke")).not.toHaveCount(0);
     }
     // Deduped vertices: three distinct burg positions
     await expect(page.locator("#journeys .journey-vertices circle")).toHaveCount(3);
@@ -156,7 +156,7 @@ test.describe("Journey layer", () => {
       w.pack.journeys = [{ id: 1, stops: journey.stops }];
       w.drawJourney();
       const readStrokes = () =>
-        [...document.querySelectorAll(".journey-segment-stroke")].map((el) =>
+        [...document.querySelectorAll(".journey-leg-stroke")].map((el) =>
           parseFloat(el.getAttribute("stroke-width") || "NaN"),
         );
       const readWaypointR = () =>
@@ -235,7 +235,7 @@ test.describe("Journey layer", () => {
     });
 
     await expect(page.locator("#journeys g.journey-instance")).toHaveCount(2);
-    await expect(page.locator("#journeys .journey-segments .journey-segment")).toHaveCount(2);
+    await expect(page.locator("#journeys .journey-legs .journey-leg")).toHaveCount(2);
   });
 
   test("journey editor opens from Tools add Journey", async ({ page }) => {

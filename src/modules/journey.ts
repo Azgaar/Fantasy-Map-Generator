@@ -4,20 +4,29 @@ import { ensureEl } from "../utils";
 import { minmax, rn } from "../utils/numberUtils";
 import { escapeHtml } from "../utils/stringUtils";
 
-interface JourneyBurgLeg {
+/**
+ * Journey layer vocabulary (this module):
+ * - **Journey** — one route in `pack.journeys` with an ordered list of stops.
+ * - **Stop ref** — a burg or marker reference in `stops[]` (`JourneyStopRef`); the serialized stop, not a raw x/y.
+ * - **Leg** — one map hop between consecutive resolved stops (stroke, arrows, lane offset). The curve is built from polyline samples.
+ * - **Directed leg key** — stable string for a directed start→end coordinate pair; duplicate keys get separate lanes (including across journeys).
+ * - **Waypoint** — SVG circle at a resolved stop (`journey-waypoint`).
+ */
+
+interface JourneyBurgStopRef {
   kind: "burg";
   id: number;
 }
 
-interface JourneyMarkerLeg {
+interface JourneyMarkerStopRef {
   kind: "marker";
   id: number;
 }
 
-export type JourneyStopLeg = JourneyBurgLeg | JourneyMarkerLeg;
+export type JourneyStopRef = JourneyBurgStopRef | JourneyMarkerStopRef;
 
 export interface PackJourney {
-  stops: JourneyStopLeg[];
+  stops: JourneyStopRef[];
 }
 
 export type JourneyColorData =
@@ -36,7 +45,7 @@ export type JourneyColorData =
 export interface StoredJourney {
   id: number;
   name?: string;
-  stops: JourneyStopLeg[];
+  stops: JourneyStopRef[];
   color?: JourneyColorData;
 }
 
@@ -99,10 +108,10 @@ type ParsedJourneyStopRef =
   | { kind: "burg"; id: number }
   | { kind: "marker"; id: number };
 
-export function journeyLegToRefString(leg: JourneyStopLeg): string {
-  return leg.kind === "burg"
-    ? burgJourneyStopRef(leg.id)
-    : markerJourneyStopRef(leg.id);
+export function journeyStopRefToString(stopRef: JourneyStopRef): string {
+  return stopRef.kind === "burg"
+    ? burgJourneyStopRef(stopRef.id)
+    : markerJourneyStopRef(stopRef.id);
 }
 
 function parseJourneyStopRef(stopId: string): ParsedJourneyStopRef | null {
@@ -113,7 +122,7 @@ function parseJourneyStopRef(stopId: string): ParsedJourneyStopRef | null {
   return null;
 }
 
-export function journeyRefStringToLeg(ref: string): JourneyStopLeg | null {
+export function journeyRefStringToStopRef(ref: string): JourneyStopRef | null {
   const p = parseJourneyStopRef(ref);
   if (!p) return null;
   return p.kind === "burg"
@@ -176,31 +185,32 @@ function tryWarnMissing(msg: string): void {
   }
 }
 
-export function resolveJourneyLeg(
-  leg: JourneyStopLeg,
+export function resolveJourneyStopRef(
+  stopRef: JourneyStopRef,
   ctx: JourneyResolutionContext,
 ): [number, number] | null {
-  if (leg.kind === "burg") {
+  if (stopRef.kind === "burg") {
     const burg =
-      ctx.burgById?.get(leg.id) ??
-      ctx.burgs.find((b) => b.i === leg.id && !b.removed);
+      ctx.burgById?.get(stopRef.id) ??
+      ctx.burgs.find((b) => b.i === stopRef.id && !b.removed);
     if (!burg) {
-      tryWarnMissing(`journey: missing burg ${leg.id}`);
+      tryWarnMissing(`journey: missing burg ${stopRef.id}`);
       return null;
     }
     const p = finiteCoord(burg.x, burg.y);
-    if (!p) tryWarnMissing(`journey: burg ${leg.id} has invalid x/y`);
+    if (!p) tryWarnMissing(`journey: burg ${stopRef.id} has invalid x/y`);
     return p;
   }
 
   const marker =
-    ctx.markerById?.get(leg.id) ?? ctx.markers.find((m) => m.i === leg.id);
+    ctx.markerById?.get(stopRef.id) ??
+    ctx.markers.find((m) => m.i === stopRef.id);
   if (!marker) {
-    tryWarnMissing(`journey: missing marker ${leg.id}`);
+    tryWarnMissing(`journey: missing marker ${stopRef.id}`);
     return null;
   }
   const p = finiteCoord(marker.x, marker.y);
-  if (!p) tryWarnMissing(`journey: marker ${leg.id} has invalid x/y`);
+  if (!p) tryWarnMissing(`journey: marker ${stopRef.id} has invalid x/y`);
   return p;
 }
 
@@ -208,13 +218,13 @@ export function resolveJourneyStopPosition(
   stopRef: string,
   ctx: JourneyResolutionContext,
 ): [number, number] | null {
-  const leg = journeyRefStringToLeg(stopRef);
-  if (!leg) return null;
-  return resolveJourneyLeg(leg, ctx);
+  const resolved = journeyRefStringToStopRef(stopRef);
+  if (!resolved) return null;
+  return resolveJourneyStopRef(resolved, ctx);
 }
 
 interface JourneyResolvedStopEntry {
-  leg: JourneyStopLeg;
+  stopRef: JourneyStopRef;
   coord: [number, number];
 }
 
@@ -224,10 +234,10 @@ export function journeyResolvedStopEntries(
   ctx: JourneyResolutionContext = { burgs: [], markers: [] },
 ): JourneyResolvedStopEntry[] {
   const out: JourneyResolvedStopEntry[] = [];
-  for (const leg of j.stops) {
-    const p = resolveJourneyLeg(leg, ctx);
+  for (const stopRef of j.stops) {
+    const p = resolveJourneyStopRef(stopRef, ctx);
     if (!p) continue;
-    out.push({ leg, coord: [p[0], p[1]] });
+    out.push({ stopRef, coord: [p[0], p[1]] });
   }
   return out;
 }
@@ -409,7 +419,7 @@ export function journeyRampColor(u: number): string {
   return builtinRampInterpolator(minmax(u, 0, 1));
 }
 
-export function chordKey(a: [number, number], b: [number, number]): string {
+export function directedLegKey(a: [number, number], b: [number, number]): string {
   return `${rn(a[0], 2)},${rn(a[1], 2)}->${rn(b[0], 2)},${rn(b[1], 2)}`;
 }
 
@@ -453,7 +463,8 @@ const BEND_BASE = 0.14;
 const CURVATURE_REPEAT_GAIN = 0.45;
 const LEFT_NORMAL_SCREEN_SIGN = -1;
 
-export function directedChordOccurrenceIndex(
+/** Occurrence index of each directed leg key within one journey’s polyline (per-route). The map renderer uses `countDirectedLegKeysGlobally` for lane/bend slotting instead. */
+export function legRepeatIndexInRoute(
   points: [number, number][],
 ): number[] {
   const indices: number[] = [];
@@ -465,7 +476,7 @@ export function directedChordOccurrenceIndex(
       indices.push(0);
       continue;
     }
-    const key = chordKey(p0, p1);
+    const key = directedLegKey(p0, p1);
     const k = counters.get(key) ?? 0;
     indices.push(k);
     counters.set(key, k + 1);
@@ -479,7 +490,8 @@ export function bendSegmentChord(len: number, repeatIndex: number): number {
   );
 }
 
-export function laneMultipliersForSegments(
+/** Lane offsets for duplicate directed leg keys within a single journey’s coordinates. The map renderer uses `countDirectedLegKeysGlobally` for lane/bend slotting across all journeys. */
+export function laneMultipliersForLegsInRoute(
   points: [number, number][],
 ): number[] {
   const keys: string[] = [];
@@ -490,7 +502,7 @@ export function laneMultipliersForSegments(
       keys.push("");
       continue;
     }
-    keys.push(chordKey(p0, p1));
+    keys.push(directedLegKey(p0, p1));
   }
   const counts = new Map<string, number>();
   for (const k of keys) {
@@ -512,8 +524,8 @@ export function laneMultipliersForSegments(
   return lanes;
 }
 
-/** How often each directed chord appears across all journeys (journey order, then leg order); skips degenerate legs. */
-export function countDirectedChordsGlobally(
+/** How often each directed leg key appears across all journeys (journey order, then leg order); skips degenerate legs. */
+export function countDirectedLegKeysGlobally(
   rows: StoredJourney[],
   resCtx: JourneyResolutionContext,
 ): Map<string, number> {
@@ -531,7 +543,7 @@ export function countDirectedChordsGlobally(
       const b = points[i + 1]!;
       const segLen = Math.hypot(b[0] - a[0], b[1] - a[1]);
       if (segLen < MIN_SEG_LEN) continue;
-      const key = chordKey(a, b);
+      const key = directedLegKey(a, b);
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
   }
@@ -681,13 +693,14 @@ function samplePolylineAtArcLength(
   };
 }
 
-export function segmentUInterval(
-  segmentCount: number,
-  segmentIndex: number,
+/** Maps leg index to [u0,u1) slice along the journey color ramp (gradient / rainbow). */
+export function legColorInterval(
+  legCount: number,
+  legIndex: number,
 ): [number, number] {
-  if (segmentCount <= 0) return [0, 0];
-  const u0 = segmentIndex / segmentCount;
-  const u1 = (segmentIndex + 1) / segmentCount;
+  if (legCount <= 0) return [0, 0];
+  const u0 = legIndex / legCount;
+  const u1 = (legIndex + 1) / legCount;
   return [u0, u1];
 }
 
@@ -799,8 +812,8 @@ class JourneyDrawModule {
       ensureJourneyOutlineFilter(defs, morphR, globalStyle.outlineColor);
     }
 
-    const globalChordCounts = countDirectedChordsGlobally(rows, resCtx);
-    const globalChordSlot = new Map<string, number>();
+    const globalLegKeyCounts = countDirectedLegKeysGlobally(rows, resCtx);
+    const globalLegKeySlot = new Map<string, number>();
 
     for (let ji = 0; ji < rows.length; ji++) {
       const sj = rows[ji];
@@ -838,8 +851,8 @@ class JourneyDrawModule {
         24,
       );
       const idsAtCoord = new Map<string, string[]>();
-      for (const { leg, coord } of resolvedStops) {
-        const sid = journeyLegToRefString(leg);
+      for (const { stopRef, coord } of resolvedStops) {
+        const sid = journeyStopRefToString(stopRef);
         const ck = `${rn(coord[0], 2)},${rn(coord[1], 2)}`;
         const arr = idsAtCoord.get(ck) ?? [];
         if (!arr.includes(sid)) arr.push(sid);
@@ -881,7 +894,7 @@ class JourneyDrawModule {
         0.06,
         120,
       );
-      const segmentsRoot = sub.append("g").attr("class", "journey-segments");
+      const legsRoot = sub.append("g").attr("class", "journey-legs");
       const strokeW = mapMetricScreenToWorld(
         mergedStyle.lineScreenPx,
         zs,
@@ -893,26 +906,26 @@ class JourneyDrawModule {
         const b = points[i + 1];
         const segLen = Math.hypot(b[0] - a[0], b[1] - a[1]);
         if (segLen < MIN_SEG_LEN) continue;
-        const chordId = chordKey(a, b);
-        const repeatSlot = globalChordSlot.get(chordId) ?? 0;
-        globalChordSlot.set(chordId, repeatSlot + 1);
-        const chordMultiplicity = globalChordCounts.get(chordId) ?? 1;
+        const legKey = directedLegKey(a, b);
+        const repeatSlot = globalLegKeySlot.get(legKey) ?? 0;
+        globalLegKeySlot.set(legKey, repeatSlot + 1);
+        const legKeyCount = globalLegKeyCounts.get(legKey) ?? 1;
         const lane =
-          chordMultiplicity <= 1 ? 0 : repeatSlot - (chordMultiplicity - 1) / 2;
+          legKeyCount <= 1 ? 0 : repeatSlot - (legKeyCount - 1) / 2;
         const bendAmount = bendSegmentChord(segLen, repeatSlot);
         const samp = quadraticSamples(a, b, bendAmount, lane, samples);
         const d = polylinePath(samp);
         if (!d) continue;
-        const [u0, u1] = segmentUInterval(S, i);
-        const seg = segmentsRoot
+        const [u0, u1] = legColorInterval(S, i);
+        const seg = legsRoot
           .append("g")
-          .attr("class", "journey-segment")
+          .attr("class", "journey-leg")
           .attr("filter", `url(#${JOURNEY_OUTLINE_FILTER_ID})`);
         const polyLen = polylineLength(samp);
         if (mergedStyle.colorMode === "solid") {
           seg
             .append("path")
-            .attr("class", "journey-segment-stroke")
+            .attr("class", "journey-leg-stroke")
             .attr("d", d)
             .attr("fill", "none")
             .attr("stroke", mergedStyle.solidStroke)
@@ -920,7 +933,7 @@ class JourneyDrawModule {
             .attr("stroke-linecap", "round")
             .attr("stroke-linejoin", "round");
         } else if (polyLen >= 1e-9) {
-          // Piecewise strokes so ramp follows arc length (chord-aligned SVG gradients skew on bends).
+          // Piecewise strokes so ramp follows arc length (endpoint-axis gradients skew on bends).
           let cumAlong = 0;
           for (let ei = 0; ei < samp.length - 1; ei++) {
             const p0 = samp[ei]!;
@@ -933,7 +946,7 @@ class JourneyDrawModule {
             const subd = polylinePath([p0, p1]);
             seg
               .append("path")
-              .attr("class", "journey-segment-stroke")
+              .attr("class", "journey-leg-stroke")
               .attr("d", subd)
               .attr("fill", "none")
               .attr("stroke", rampAt(uMid))
@@ -1014,7 +1027,7 @@ class JourneyDrawModule {
     const styleCfg = readJourneyGlobalStyle(journeys.node());
     const strokeW = mapMetricScreenToWorld(styleCfg.lineScreenPx, zs, 0.06, 24);
     journeys
-      .selectAll(".journey-segment-stroke")
+      .selectAll(".journey-leg-stroke")
       .attr("stroke-width", rn(strokeW, 3));
     const waypointR = mapMetricScreenToWorld(
       styleCfg.waypointRScreenPx,
@@ -1245,9 +1258,9 @@ function journeyStopSelectOptions(currentRef: string): string {
 function journeyRenderStopRows(container: HTMLElement): void {
   const active = syncEditorActiveRow();
   const stops = active && Array.isArray(active.stops) ? active.stops : [];
-  const rows: (JourneyStopLeg | null)[] = stops.length === 0 ? [null] : stops;
-  rows.forEach((leg, i) => {
-    const currentRef = leg ? journeyLegToRefString(leg) : "";
+  const rows: (JourneyStopRef | null)[] = stops.length === 0 ? [null] : stops;
+  rows.forEach((stopRef, i) => {
+    const currentRef = stopRef ? journeyStopRefToString(stopRef) : "";
     const showRemove = stops.length > 0;
     const removeStyle = showRemove
       ? ""
@@ -1257,7 +1270,7 @@ function journeyRenderStopRows(container: HTMLElement): void {
       `<div class="editorLine journey-stop-row" data-stop-index="${i}" style="display:grid;grid-template-columns:auto 1fr auto;gap:0.5em 1em;align-items:center">
         <span><b>#</b>${i + 1}</span>
         <select class="journey-stop-select" data-tip="Stop: marker or burg (position follows the map)" data-stop-index="${i}">${journeyStopSelectOptions(currentRef)}</select>
-        <span data-tip="Remove this leg" class="icon-trash-empty pointer journey-stop-remove" data-stop-index="${i}" style="${removeStyle}"></span>
+        <span data-tip="Remove this stop" class="icon-trash-empty pointer journey-stop-remove" data-stop-index="${i}" style="${removeStyle}"></span>
       </div>`,
     );
   });
@@ -1282,13 +1295,13 @@ function journeyEditorRootChange(ev: Event): void {
     if (!Number.isFinite(idx)) return;
     const val = (t as HTMLSelectElement).value;
     if (!val) return;
-    const leg = journeyRefStringToLeg(val);
-    if (!leg) return;
+    const resolvedStop = journeyRefStringToStopRef(val);
+    if (!resolvedStop) return;
     const cur = syncEditorActiveRow();
     if (!cur || !Array.isArray(cur.stops)) return;
     const stops = cur.stops;
-    if (stops.length === 0) stops.push(leg);
-    else stops[idx] = leg;
+    if (stops.length === 0) stops.push(resolvedStop);
+    else stops[idx] = resolvedStop;
     journeyEditorRefreshBody();
     drawJourney();
   }
@@ -1334,8 +1347,8 @@ function journeyAppendStopRef(stopRef: string, targetIndex?: number): void {
     pack.markers ?? [],
   );
   if (!resolveJourneyStopPosition(stopRef, ctx)) return;
-  const leg = journeyRefStringToLeg(stopRef);
-  if (!leg) return;
+  const resolvedStop = journeyRefStringToStopRef(stopRef);
+  if (!resolvedStop) return;
   const rows = packJourneyRows();
   const idx =
     targetIndex != null && targetIndex >= 0 && targetIndex < rows.length
@@ -1345,7 +1358,7 @@ function journeyAppendStopRef(stopRef: string, targetIndex?: number): void {
   if (!row) return;
   if (!Array.isArray(row.stops)) row.stops = [];
   journeyEditorActiveIndex = idx;
-  row.stops.push(leg);
+  row.stops.push(resolvedStop);
   journeyEditorRefreshBody();
   drawJourney();
 }
