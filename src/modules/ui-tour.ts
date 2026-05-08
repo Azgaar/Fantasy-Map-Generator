@@ -376,12 +376,16 @@ function start() {
     switch (e.key) {
       case "ArrowRight":
       case "ArrowDown":
-        document.querySelector<HTMLElement>(".driver-popover-next-btn")?.click();
+        document
+          .querySelector<HTMLElement>(".driver-popover-next-btn")
+          ?.click();
         e.preventDefault();
         break;
       case "ArrowLeft":
       case "ArrowUp":
-        document.querySelector<HTMLElement>(".driver-popover-prev-btn")?.click();
+        document
+          .querySelector<HTMLElement>(".driver-popover-prev-btn")
+          ?.click();
         e.preventDefault();
         break;
       case "Escape":
