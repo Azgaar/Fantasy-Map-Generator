@@ -103,7 +103,9 @@ function prepareMapData() {
   const routes = JSON.stringify(pack.routes);
   const zones = JSON.stringify(pack.zones);
   const ice = JSON.stringify(pack.ice);
-  const journey = JSON.stringify(pack.journey || {stops: []});
+  const journey = JSON.stringify(
+    Array.isArray(pack.journeys) ? pack.journeys : [],
+  );
 
   // store name array only if not the same as default
   const defaultNB = Names.getNameBases();

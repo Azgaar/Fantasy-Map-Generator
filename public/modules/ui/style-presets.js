@@ -258,9 +258,6 @@ function addStylePreset() {
       "#journeys": [
         "opacity",
         "filter",
-        "data-color-mode",
-        "data-solid-stroke",
-        "data-rainbow-stops",
         "data-line-screen-px",
         "data-waypoint-fill",
         "data-waypoint-stroke",

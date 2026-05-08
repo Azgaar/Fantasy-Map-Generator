@@ -427,15 +427,21 @@ async function parseLoadedData(data, mapVersion) {
             parsedJourney = null;
           }
         }
-        const j =
+        if (Array.isArray(parsedJourney)) {
+          pack.journeys = parsedJourney;
+          delete pack.journey;
+        } else if (
           parsedJourney &&
           typeof parsedJourney === "object" &&
           parsedJourney !== null &&
           !Array.isArray(parsedJourney)
-            ? parsedJourney
-            : {stops: []};
-        pack.journey = j;
-        if (window.Journey) window.Journey.ensurePackJourneyNormalized(pack);
+        ) {
+          pack.journey = parsedJourney;
+        }
+        if (window.Journey)
+          window.Journey.ensurePackJourneysNormalized
+            ? window.Journey.ensurePackJourneysNormalized(pack)
+            : window.Journey.ensurePackJourneyNormalized(pack);
       }
 
       if (data[31]) {
