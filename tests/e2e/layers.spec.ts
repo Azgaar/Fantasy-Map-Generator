@@ -190,6 +190,35 @@ test.describe('map layers', () => {
     expect(html).toMatchSnapshot('labels.html')
   })
 
+  test('labels group can be hidden with display:none', async () => {
+    await sharedPage.evaluate(() => {
+      const styleElementSelect = document.getElementById('styleElementSelect') as HTMLSelectElement
+      const styleGroupSelect = document.getElementById('styleGroupSelect') as HTMLSelectElement
+      const styleLabelsHideGroup = document.getElementById('styleLabelsHideGroup') as HTMLInputElement
+
+      styleElementSelect.value = 'labels'
+      styleElementSelect.dispatchEvent(new Event('change', { bubbles: true }))
+
+      styleGroupSelect.value = 'states'
+      styleGroupSelect.dispatchEvent(new Event('change', { bubbles: true }))
+
+      styleLabelsHideGroup.checked = true
+      styleLabelsHideGroup.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const statesGroup = sharedPage.locator('#labels #states')
+    await expect(statesGroup).toHaveCSS('display', 'none')
+
+    await sharedPage.evaluate(() => {
+      const styleLabelsHideGroup = document.getElementById('styleLabelsHideGroup') as HTMLInputElement
+      styleLabelsHideGroup.checked = false
+      styleLabelsHideGroup.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const inlineDisplay = await statesGroup.evaluate(el => (el as SVGGElement).style.display)
+    expect(inlineDisplay).toBe('')
+  })
+
   // Military and markers
   test('markers layer', async () => {
     const markers = sharedPage.locator('#markers')
