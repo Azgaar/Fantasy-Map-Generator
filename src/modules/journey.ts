@@ -512,6 +512,32 @@ export function laneMultipliersForSegments(
   return lanes;
 }
 
+/** How often each directed chord appears across all journeys (journey order, then leg order); skips degenerate legs. */
+export function countDirectedChordsGlobally(
+  rows: StoredJourney[],
+  resCtx: JourneyResolutionContext,
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (let ji = 0; ji < rows.length; ji++) {
+    const sj = rows[ji];
+    if (!sj || typeof sj !== "object") continue;
+    const stops = Array.isArray(sj.stops) ? sj.stops : [];
+    const pj: PackJourney = { stops };
+    const resolvedStops = journeyResolvedStopEntries(pj, resCtx);
+    const points = resolvedStops.map((r) => r.coord);
+    const S = Math.max(0, points.length - 1);
+    for (let i = 0; i < S; i++) {
+      const a = points[i]!;
+      const b = points[i + 1]!;
+      const segLen = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (segLen < MIN_SEG_LEN) continue;
+      const key = chordKey(a, b);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
 function quadraticSamples(
   a: [number, number],
   b: [number, number],
@@ -773,6 +799,9 @@ class JourneyDrawModule {
       ensureJourneyOutlineFilter(defs, morphR, globalStyle.outlineColor);
     }
 
+    const globalChordCounts = countDirectedChordsGlobally(rows, resCtx);
+    const globalChordSlot = new Map<string, number>();
+
     for (let ji = 0; ji < rows.length; ji++) {
       const sj = rows[ji];
       if (!sj || typeof sj !== "object") continue;
@@ -853,8 +882,6 @@ class JourneyDrawModule {
         120,
       );
       const segmentsRoot = sub.append("g").attr("class", "journey-segments");
-      const lanes = laneMultipliersForSegments(points);
-      const repeats = directedChordOccurrenceIndex(points);
       const strokeW = mapMetricScreenToWorld(
         mergedStyle.lineScreenPx,
         zs,
@@ -866,9 +893,13 @@ class JourneyDrawModule {
         const b = points[i + 1];
         const segLen = Math.hypot(b[0] - a[0], b[1] - a[1]);
         if (segLen < MIN_SEG_LEN) continue;
-        const lane = lanes[i] ?? 0;
-        const k = repeats[i] ?? 0;
-        const bendAmount = bendSegmentChord(segLen, k);
+        const chordId = chordKey(a, b);
+        const repeatSlot = globalChordSlot.get(chordId) ?? 0;
+        globalChordSlot.set(chordId, repeatSlot + 1);
+        const chordMultiplicity = globalChordCounts.get(chordId) ?? 1;
+        const lane =
+          chordMultiplicity <= 1 ? 0 : repeatSlot - (chordMultiplicity - 1) / 2;
+        const bendAmount = bendSegmentChord(segLen, repeatSlot);
         const samp = quadraticSamples(a, b, bendAmount, lane, samples);
         const d = polylinePath(samp);
         if (!d) continue;
