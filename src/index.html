@@ -1489,47 +1489,7 @@
             </tbody>
 
             <tbody id="styleJourney">
-              <tr data-tip="Rainbow: gradient along path; Solid: single stroke and arrow fill">
-                <td>Color mode</td>
-                <td>
-                  <select id="styleJourneyColorMode">
-                    <option value="rainbow">Rainbow</option>
-                    <option value="solid">Solid</option>
-                  </select>
-                </td>
-              </tr>
-              <tr data-tip="Stroke and arrow color when Color mode is Solid">
-                <td>Solid color</td>
-                <td>
-                  <input id="styleJourneySolidStroke" type="color" />
-                  <output id="styleJourneySolidStrokeOutput"></output>
-                </td>
-              </tr>
-              <tr data-tip="Gradient start color along the path (Rainbow mode). Editing applies a two-color gradient.">
-                <td>Gradient from</td>
-                <td>
-                  <input id="styleJourneyGradientFrom" type="color" />
-                  <output id="styleJourneyGradientFromOutput"></output>
-                </td>
-              </tr>
-              <tr data-tip="Gradient end color along the path (Rainbow mode)">
-                <td>Gradient to</td>
-                <td>
-                  <input id="styleJourneyGradientTo" type="color" />
-                  <output id="styleJourneyGradientToOutput"></output>
-                </td>
-              </tr>
-              <tr data-tip="Optional: comma-separated colors (two or more). Overrides Gradient from/to when set.">
-                <td>Gradient stops</td>
-                <td>
-                  <input
-                    id="styleJourneyRainbowStops"
-                    type="text"
-                    style="width: 100%"
-                    placeholder="Leave blank for From/To only, or e.g. #f00, #0f0, #00f"
-                  />
-                </td>
-              </tr>
+
               <tr data-tip="Halo behind path and arrows (screen outline)">
                 <td>Path outline color</td>
                 <td>
@@ -3209,12 +3169,79 @@
       </div>
 
       <div id="journeyEditor" class="dialog stable" style="display: none">
+        <div id="journeyEditorEmptyState" style="display: none; margin: 0.5em 0 1em">
+          <p style="margin: 0 0 0.75em; opacity: 0.9">
+            No journeys yet. Create one to add stops (markers and burgs only).
+          </p>
+          <button type="button" id="journeyEditorCreateJourney">Create journey</button>
+        </div>
+        <div id="journeyEditorMain">
         <div id="journeyEditorRoot" style="margin: 0.3em 0">
-          <div style="display: flex; align-items: center; gap: 0.6em; flex-wrap: wrap">
-            <b>Journey</b>
+          <div style="display: flex; align-items: center; gap: 0.6em; flex-wrap: wrap; margin-bottom: 0.5em">
+            <label for="journeyEditorJourneySelect"><b>Journey</b></label>
+            <select id="journeyEditorJourneySelect" style="min-width: 10em"></select>
+            <button
+              type="button"
+              id="journeyEditorAddJourney"
+              data-tip="Add another journey path"
+              class="icon-plus"
+            ></button>
+            <button
+              type="button"
+              id="journeyEditorRemoveJourney"
+              data-tip="Remove this journey"
+              class="icon-trash-empty"
+            ></button>
             <span style="opacity: 0.85; font-size: 0.92em">Markers and burgs only</span>
           </div>
+          <table style="width: 100%; margin: 0.4em 0; border-collapse: collapse">
+            <tbody id="journeyEditorColorBody">
+              <tr data-tip="Built-in rainbow uses the classic multi-stop ramp; custom gradient uses From/To or the stops list">
+                <td style="white-space: nowrap">Color mode</td>
+                <td>
+                  <select id="journeyEditorColorMode">
+                    <option value="rainbow">Built-in rainbow</option>
+                    <option value="gradient">Custom gradient</option>
+                    <option value="solid">Solid</option>
+                  </select>
+                </td>
+              </tr>
+              <tr data-tip="Stroke and arrow color when Color mode is Solid">
+                <td>Solid color</td>
+                <td>
+                  <input id="journeyEditorSolidStroke" type="color" />
+                  <output id="journeyEditorSolidStrokeOutput"></output>
+                </td>
+              </tr>
+              <tr data-tip="Gradient start along the path (Custom gradient mode). Blank stops uses From and To only.">
+                <td>Gradient from</td>
+                <td>
+                  <input id="journeyEditorGradientFrom" type="color" />
+                  <output id="journeyEditorGradientFromOutput"></output>
+                </td>
+              </tr>
+              <tr data-tip="Gradient end along the path (Custom gradient mode)">
+                <td>Gradient to</td>
+                <td>
+                  <input id="journeyEditorGradientTo" type="color" />
+                  <output id="journeyEditorGradientToOutput"></output>
+                </td>
+              </tr>
+              <tr data-tip="Optional: comma-separated colors (two or more). Overrides Gradient from/to when set.">
+                <td>Gradient stops</td>
+                <td>
+                  <input
+                    id="journeyEditorRainbowStops"
+                    type="text"
+                    style="width: 100%"
+                    placeholder="Blank = From/To only, or e.g. #f00, #0f0, #00f"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
           <div id="journeyEditorStopsBody" class="table"></div>
+        </div>
         </div>
         <div id="journeyEditorBottom" style="display: flex; align-items: center; gap: 0.5em; flex-wrap: wrap">
           <button

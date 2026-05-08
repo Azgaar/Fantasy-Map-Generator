@@ -427,15 +427,7 @@ async function parseLoadedData(data, mapVersion) {
             parsedJourney = null;
           }
         }
-        const j =
-          parsedJourney &&
-          typeof parsedJourney === "object" &&
-          parsedJourney !== null &&
-          !Array.isArray(parsedJourney)
-            ? parsedJourney
-            : {stops: []};
-        pack.journey = j;
-        if (window.Journey) window.Journey.ensurePackJourneyNormalized(pack);
+        pack.journeys = Array.isArray(parsedJourney) ? parsedJourney : [];
       }
 
       if (data[31]) {

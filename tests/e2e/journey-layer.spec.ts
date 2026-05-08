@@ -75,7 +75,7 @@ test.describe("Journey layer", () => {
         toggleJourney: () => void;
         pack: {
           burgs: Array<{ i: number; x: number; y: number; name?: string; removed?: boolean }>;
-          journey: { stops: { kind: string; id: number }[] };
+          journeys: Array<{ id: number; stops: { kind: string; id: number }[] }>;
         };
         drawJourney: () => void;
       };
@@ -88,7 +88,7 @@ test.describe("Journey layer", () => {
         name: "E2E journey burg",
         removed: false,
       });
-      w.pack.journey = { stops: [{ kind: "burg", id: testI }] };
+      w.pack.journeys = [{ id: 1, stops: [{ kind: "burg", id: testI }] }];
       w.drawJourney();
     });
 
@@ -103,14 +103,14 @@ test.describe("Journey layer", () => {
           layerIsOn: (id: string) => boolean;
           toggleJourney: () => void;
           pack: {
-            journey: typeof journey;
+            journeys: Array<{ id: number; stops: (typeof journey)["stops"] }>;
             burgs: Array<{ i: number; x: number; y: number; name: string; removed: boolean }>;
           };
           drawJourney: () => void;
         };
         if (!w.layerIsOn("toggleJourney")) w.toggleJourney();
         for (const b of burgsToPush) w.pack.burgs.push(b);
-        w.pack.journey = journey;
+        w.pack.journeys = [{ id: 1, stops: journey.stops }];
         w.drawJourney();
       },
       { journey: BACKTRACK_FIXTURE.journey, burgsToPush: BACKTRACK_FIXTURE.burgsToPush },
@@ -140,7 +140,7 @@ test.describe("Journey layer", () => {
         layerIsOn: (id: string) => boolean;
         toggleJourney: () => void;
         pack: {
-          journey: typeof journey;
+          journeys: Array<{ id: number; stops: (typeof journey)["stops"] }>;
           burgs: Array<{ i: number; x: number; y: number; name: string; removed: boolean }>;
         };
         drawJourney: () => void;
@@ -149,7 +149,7 @@ test.describe("Journey layer", () => {
       };
       if (!w.layerIsOn("toggleJourney")) w.toggleJourney();
       for (const b of burgsToPush) w.pack.burgs.push(b);
-      w.pack.journey = journey;
+      w.pack.journeys = [{ id: 1, stops: journey.stops }];
       w.drawJourney();
       const readStrokes = () =>
         [...document.querySelectorAll(".journey-segment-stroke")].map((el) =>
@@ -185,6 +185,53 @@ test.describe("Journey layer", () => {
     expect([...new Set(snap.rBefore)].length).toBe(1);
     expect([...new Set(snap.rAfter)].length).toBe(1);
     expect(snap.rAfter[0]).toBeLessThan(snap.rBefore[0]);
+  });
+
+  test("drawJourney renders one SVG subgroup per journey", async ({ page }) => {
+    await page.evaluate(() => {
+      const w = window as unknown as {
+        layerIsOn: (id: string) => boolean;
+        toggleJourney: () => void;
+        pack: {
+          burgs: Array<{ i: number; x: number; y: number; name: string; removed: boolean }>;
+          journeys: Array<{
+            id: number;
+            stops: { kind: "burg"; id: number }[];
+            color?: { type: string; color?: string };
+          }>;
+        };
+        drawJourney: () => void;
+      };
+      if (!w.layerIsOn("toggleJourney")) w.toggleJourney();
+      w.pack.burgs.push(
+        { i: 880_101, x: 100, y: 100, name: "J1a", removed: false },
+        { i: 880_102, x: 200, y: 200, name: "J1b", removed: false },
+        { i: 880_201, x: 500, y: 500, name: "J2a", removed: false },
+        { i: 880_202, x: 600, y: 600, name: "J2b", removed: false },
+      );
+      w.pack.journeys = [
+        {
+          id: 1,
+          stops: [
+            { kind: "burg", id: 880_101 },
+            { kind: "burg", id: 880_102 },
+          ],
+          color: { type: "solid", color: "#ff0000" },
+        },
+        {
+          id: 2,
+          stops: [
+            { kind: "burg", id: 880_201 },
+            { kind: "burg", id: 880_202 },
+          ],
+          color: { type: "solid", color: "#0000ff" },
+        },
+      ];
+      w.drawJourney();
+    });
+
+    await expect(page.locator("#journeys g.journey-instance")).toHaveCount(2);
+    await expect(page.locator("#journeys .journey-segments .journey-segment")).toHaveCount(2);
   });
 
   test("journey editor opens from Tools add Journey", async ({ page }) => {

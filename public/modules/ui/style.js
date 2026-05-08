@@ -107,53 +107,6 @@ function journeyUiDefaults() {
   };
 }
 
-function journeyParseStopsList(raw) {
-  if (raw == null || !String(raw).trim()) return null;
-  const parts = String(raw)
-    .split(",")
-    .map(s => s.trim())
-    .filter(Boolean);
-  return parts.length >= 2 ? parts : null;
-}
-
-function journeyPopulateRainbowUi(j) {
-  const raw = j.attr("data-rainbow-stops") || "";
-  ensureEl("styleJourneyRainbowStops").value = raw.trim() === "" ? "" : raw;
-
-  const parsed = journeyParseStopsList(raw);
-  let fromHex;
-  let toHex;
-  const def = journeyUiDefaults();
-  if (parsed && parsed.length >= 2) {
-    fromHex = journeyStyleHexForPicker(parsed[0], def.gradientFromHex);
-    toHex = journeyStyleHexForPicker(parsed[parsed.length - 1], def.gradientToHex);
-  } else {
-    fromHex = def.gradientFromHex;
-    toHex = def.gradientToHex;
-  }
-  ensureEl("styleJourneyGradientFrom").value = fromHex;
-  ensureEl("styleJourneyGradientFromOutput").value = fromHex;
-  ensureEl("styleJourneyGradientTo").value = toHex;
-  ensureEl("styleJourneyGradientToOutput").value = toHex;
-}
-
-function journeyStyleSyncRowVisibility() {
-  const solid = ensureEl("styleJourneyColorMode").value === "solid";
-  ensureEl("styleJourneySolidStroke").closest("tr").style.display = solid ? "" : "none";
-  const showGrad = !solid;
-  ensureEl("styleJourneyGradientFrom").closest("tr").style.display = showGrad ? "" : "none";
-  ensureEl("styleJourneyGradientTo").closest("tr").style.display = showGrad ? "" : "none";
-  ensureEl("styleJourneyRainbowStops").closest("tr").style.display = showGrad ? "" : "none";
-}
-
-function journeyWriteRainbowFromPickers() {
-  ensureEl("styleJourneyRainbowStops").value = "";
-  const from = ensureEl("styleJourneyGradientFrom").value;
-  const to = ensureEl("styleJourneyGradientTo").value;
-  svg.select("#journeys").attr("data-rainbow-stops", `${from},${to}`);
-  redrawJourneyIfVisible();
-}
-
 function redrawJourneyIfVisible() {
   if (typeof drawJourney === "function" && layerIsOn("toggleJourney")) drawJourney();
 }
@@ -295,12 +248,6 @@ function selectStyleElement() {
       const v = parseFloat(j.attr(name));
       return Number.isFinite(v) ? v : fb;
     };
-    const modeRaw = (j.attr("data-color-mode") || "rainbow").toLowerCase();
-    ensureEl("styleJourneyColorMode").value = modeRaw === "solid" ? "solid" : "rainbow";
-    const solidHex = journeyStyleHexForPicker(j.attr("data-solid-stroke"), jd.solidStroke);
-    ensureEl("styleJourneySolidStroke").value = solidHex;
-    ensureEl("styleJourneySolidStrokeOutput").value = solidHex;
-    journeyPopulateRainbowUi(j);
     ensureEl("styleJourneyLineScreenPx").value = numAttr("data-line-screen-px", jd.lineScreenPx);
     const wpf = journeyStyleHexForPicker(j.attr("data-waypoint-fill"), jd.waypointFill);
     ensureEl("styleJourneyWaypointFill").value = wpf;
@@ -317,7 +264,6 @@ function selectStyleElement() {
     ensureEl("styleJourneyOutlineColor").value = oc;
     ensureEl("styleJourneyOutlineColorOutput").value = oc;
     ensureEl("styleJourneyOutlineScreenPx").value = numAttr("data-outline-screen-px", jd.outlineScreenPx);
-    journeyStyleSyncRowVisibility();
   }
 
   if (styleElement === "gridOverlay") {
@@ -672,38 +618,6 @@ styleGridShiftY.on("input", function () {
 styleRescaleMarkers.on("change", function () {
   markers.attr("rescale", +this.checked);
   invokeActiveZooming();
-});
-
-d3.select("#styleJourneyColorMode").on("change", function () {
-  svg.select("#journeys").attr("data-color-mode", this.value);
-  journeyStyleSyncRowVisibility();
-  redrawJourneyIfVisible();
-});
-
-d3.select("#styleJourneySolidStroke").on("input", function () {
-  ensureEl("styleJourneySolidStrokeOutput").value = this.value;
-  svg.select("#journeys").attr("data-solid-stroke", this.value);
-  redrawJourneyIfVisible();
-});
-
-d3.select("#styleJourneyGradientFrom").on("input", function () {
-  ensureEl("styleJourneyGradientFromOutput").value = this.value;
-  journeyWriteRainbowFromPickers();
-});
-
-d3.select("#styleJourneyGradientTo").on("input", function () {
-  ensureEl("styleJourneyGradientToOutput").value = this.value;
-  journeyWriteRainbowFromPickers();
-});
-
-d3.select("#styleJourneyRainbowStops").on("input", function () {
-  const v = this.value.trim();
-  const jn = svg.select("#journeys");
-  if (v === "") jn.attr("data-rainbow-stops", null);
-  else jn.attr("data-rainbow-stops", v);
-  journeyPopulateRainbowUi(jn);
-  journeyStyleSyncRowVisibility();
-  redrawJourneyIfVisible();
 });
 
 d3.select("#styleJourneyLineScreenPx").on("input", function () {
