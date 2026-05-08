@@ -375,7 +375,7 @@ function start() {
     if (!(target instanceof HTMLElement)) return false;
     if (target.isContentEditable) return true;
     return !!target.closest(
-      "input, textarea, select, [contenteditable], [contenteditable='plaintext-only']"
+      "input, textarea, select, [contenteditable], [contenteditable='plaintext-only']",
     );
   }
 
