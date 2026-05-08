@@ -12,7 +12,7 @@ const SELL_PRESSURE_FACTOR = 0.001;
 const PRICE_FLOOR_FACTOR = 0.5;
 const PRICE_CEILING_FACTOR = 3.0;
 
-export type TradePhase = "local-production-buy" | "local-sale" | "global-redistribution" | "local-demand-fill";
+export type TradePhase = "local-production-buy" | "local-sale" | "global" | "local-demand-buy";
 
 export type DealPrice = {
   base: number;
@@ -136,7 +136,7 @@ export class TradeModule {
     this.data.deals.push(nextDeal);
 
     const taxAmount = nextDeal.units * (nextDeal.prices.consumerBuy - nextDeal.prices.marketBuy);
-    const isLocalBuy = nextDeal.phase === "local-production-buy" || nextDeal.phase === "local-demand-fill";
+    const isLocalBuy = nextDeal.phase === "local-production-buy" || nextDeal.phase === "local-demand-buy";
     const stateId = isLocalBuy ? (pack.burgs[nextDeal.buyerId] as Burg | undefined)?.state || 0 : 0;
 
     if (taxAmount > 0 && stateId > 0) {
@@ -277,7 +277,7 @@ export class TradeModule {
           const marketPrice = this.getMarketGood(candidate.exporter, candidate.goodId, candidate.good.value).sellPrice;
           this.recordDeal({
             market: importer.i,
-            phase: "global-redistribution",
+            phase: "global",
             goodId: candidate.goodId,
             units,
             buyerId: importer.i,

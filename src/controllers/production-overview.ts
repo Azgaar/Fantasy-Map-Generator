@@ -2,54 +2,50 @@ import type {Burg} from "../modules/burgs-generator";
 import type {DemandCategory} from "../modules/goods-generator";
 import {DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "../modules/goods-generator";
 import type {DecisionCandidate, DemandEffect} from "../modules/production-generator";
+import type {Deal} from "../modules/trade-generator";
 import {rn} from "../utils";
 
-type Type = "RAW" | "MFG" | "BUY";
+type Type = "RAW" | "MFG" | "BUY" | "SELL";
 
 export function open(burgId: number): void {
   const burg = pack.burgs[burgId];
-  if (!burg || burg.removed) return;
-
-  const market = Trade.getMarketForBurg(burg);
-  const deals = pack.deals || [];
-  const isLocalBuyDeal = (deal: (typeof deals)[number]) =>
-    deal.phase === "local-production-buy" || deal.phase === "local-demand-fill";
-  const isLocalSaleDeal = (deal: (typeof deals)[number]) => deal.phase === "local-sale";
-  const getDealSpent = (deal: (typeof deals)[number]) => deal.units * deal.prices.consumerBuy;
-  const getDealTax = (deal: (typeof deals)[number]) => deal.units * (deal.prices.consumerBuy - deal.prices.marketBuy);
-  const getDealRevenue = (deal: (typeof deals)[number]) => deal.units * deal.prices.marketSell;
-
-  const burgDeals = deals.filter(deal => {
-    if (isLocalBuyDeal(deal)) return deal.buyerId === burgId;
-    if (isLocalSaleDeal(deal)) return deal.sellerId === burgId;
-    return false;
-  });
-  const burgBuyDeals = burgDeals.filter(deal => isLocalBuyDeal(deal));
-  const burgSaleDeals = burgDeals.filter(deal => isLocalSaleDeal(deal));
-  const demandFillDeals = burgBuyDeals.filter(deal => deal.phase === "local-demand-fill");
-  const centerDeals = market
-    ? deals.filter(
-        deal => deal.phase === "global-redistribution" && (deal.buyerId === market.i || deal.sellerId === market.i)
-      )
-    : [];
-  const centerImportDeals = centerDeals.filter(
-    deal => deal.phase === "global-redistribution" && deal.buyerId === market?.i
-  );
-  const centerExportDeals = centerDeals.filter(
-    deal => deal.phase === "global-redistribution" && deal.sellerId === market?.i
-  );
-
-  const data = Production.getProductionData(burgId);
-  if (!data) {
-    alertMessage.innerHTML = `<div>No production data for this burg.<br>Run map generation or regenerate production first.</div>`;
-    $("#alert").dialog({
-      resizable: false,
-      title: `Production Overview: ${burg.name}`
-    });
+  if (!burg || burg.removed) {
+    tip("Invalid burg. The selected burg does not exist or was removed.", true, "error", 5000);
     return;
   }
 
-  const goodName = (id: number) => Goods.get(id)?.name ?? `#${id}`;
+  const market = Trade.getMarketForBurg(burg);
+  if (!market) {
+    tip("No market. This burg is not connected to any market.", true, "error", 5000);
+    return;
+  }
+
+  const data = Production.getProductionData(burgId);
+  if (!data) {
+    tip("No production data for this burg.", true, "error", 5000);
+    return;
+  }
+
+  const getDealSpent = (deal: Deal) => deal.units * deal.prices.consumerBuy;
+  const getDealTax = (deal: Deal) => deal.units * (deal.prices.consumerBuy - deal.prices.marketBuy);
+  const getDealRevenue = (deal: Deal) => deal.units * deal.prices.marketSell;
+  const getDealSalesTaxPerUnit = (deal: Deal) =>
+    Math.max(0, (deal.prices.consumerBuy || 0) - (deal.prices.marketBuy || 0));
+
+  const {productionBuyDeals, burgSaleDeals, demandFillDeals} = (pack.deals || []).reduce(
+    (acc, deal) => {
+      const {phase, buyerId, sellerId} = deal;
+      if (phase === "local-production-buy" && buyerId === burgId) {
+        acc.productionBuyDeals.push(deal);
+      } else if (phase === "local-sale" && sellerId === burgId) {
+        acc.burgSaleDeals.push(deal);
+      } else if (phase === "local-demand-buy" && buyerId === burgId) {
+        acc.demandFillDeals.push(deal);
+      }
+      return acc;
+    },
+    {productionBuyDeals: [] as Deal[], burgSaleDeals: [] as Deal[], demandFillDeals: [] as Deal[]}
+  );
 
   const styles = {
     muted: "color:#777",
@@ -67,8 +63,10 @@ export function open(burgId: number): void {
     cellRight: "padding:.4em .5em;vertical-align:top;text-align:right",
     detailsCell: "padding:0.5em 0.5em 1em;",
     empty: "color:#888;font-style:italic",
-    summaryBar: "display:flex;margin-top:.6em;justify-content: space-between;padding: 0 .5em;"
+    summaryBar: "display:flex;margin-top:.6em;justify-content:space-between;padding:0 .5em;gap:1em;flex-wrap:wrap"
   };
+
+  const goodName = (id: number) => Goods.get(id)?.name ?? `#${id}`;
 
   const goodDot = (id: number) => {
     const good = Goods.get(id);
@@ -83,9 +81,13 @@ export function open(burgId: number): void {
   const typeBadge = (type: Type) => {
     const commonStyles =
       "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
-    if (type === "RAW") return `<span style="${commonStyles};background:#f0e8e8;color:#a44">RAW</span>`;
-    if (type === "BUY") return `<span style="${commonStyles};background:#f6ead8;color:#b06a00">BUY</span>`;
-    return `<span style="${commonStyles};background:#e8f0e8;color:#4a4">MFG</span>`;
+    if (type === "RAW")
+      return `<span style="${commonStyles};background:#e7edf2;color:#5f6f7a" title="Raw resource production">RAW</span>`;
+    if (type === "BUY")
+      return `<span style="${commonStyles};background:#f5d9d6;color:#a33" title="Local market purchase">BUY</span>`;
+    if (type === "SELL")
+      return `<span style="${commonStyles};background:#dff0e2;color:#2f8a46" title="Sale to local market">SELL</span>`;
+    return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" title="Manufacturing step">MFG</span>`;
   };
 
   const renderGoodLabel = (id: number, suffix = "") => `${goodDot(id)}${goodName(id)}${suffix}`;
@@ -95,15 +97,31 @@ export function open(burgId: number): void {
     `<th style="${align === "right" ? styles.cellRight : styles.cell}"${title ? ` title="${title}"` : ""}>${content}</th>`;
   const renderSection = (title: string, content: string) =>
     `<div style="margin-bottom:.9em"><div style="${styles.sectionTitle}">${title}</div>${content}</div>`;
-  const renderValueCell = (label: string, value: number, positive = true) =>
-    renderDataCell(`${label}: ${rn(value, 2)}`, "right", `${positive ? styles.positive : styles.warning}`);
   const renderPriceCell = (value: number | string, extra = "") => renderDataCell(formatPrice(value), "right", extra);
+  const renderIncomeCell = (
+    value: number,
+    opts?: {
+      formulaTitle?: string;
+    }
+  ) => {
+    const extraStyle = value >= 0 ? styles.positive : styles.warning;
+    const titleAttr = opts?.formulaTitle ? ` title="${opts.formulaTitle}"` : "";
+    return `<td style="${styles.cellRight};${extraStyle}"${titleAttr}>${formatPrice(value)}</td>`;
+  };
+  const getIncomeFormulaTitle = (deal: Deal, kind: "buy" | "sell") => {
+    const units = deal.units;
+    const buyOrSellPrice = kind === "buy" ? deal.prices.marketBuy : deal.prices.marketSell;
+    const salesTaxPerUnit = kind === "buy" ? getDealSalesTaxPerUnit(deal) : 0;
+    const total = units * (buyOrSellPrice + salesTaxPerUnit);
+    const signedTotal = kind === "buy" ? -total : total;
+    return `${rn(units, 2)} * (${rn(buyOrSellPrice, 2)} + 1 * ${rn(salesTaxPerUnit, 2)}) = ${rn(signedTotal, 2)}`;
+  };
   const renderTaggedGood = (id: number, type: Type, suffix = "") =>
     `${renderGoodLabel(id, suffix)} <span style="margin-left:4px">${typeBadge(type)}</span>`;
   const renderLogRow = (candidatesId: string, candidatesHtml: string) =>
     candidatesHtml
       ? /*html*/ `<tr id="${candidatesId}" style="display:none">
-          <td colspan="5" style="${styles.detailsCell}">${candidatesHtml}</td>
+          <td colspan="4" style="${styles.detailsCell}">${candidatesHtml}</td>
         </tr>`
       : "";
   const formatPrice = (value: number | string) => `🟡 ${typeof value === "number" ? rn(value, 2) : value}`;
@@ -213,10 +231,10 @@ export function open(burgId: number): void {
   const processRank = sortedBurgIds.indexOf(burgId) + 1;
 
   // Derive financials from deal log
-  const productionBuyDeals = burgDeals.filter(d => d.phase === "local-production-buy");
   const phaseRevenue = burgSaleDeals.reduce((sum, deal) => sum + getDealRevenue(deal), 0);
   const ingredientCosts = productionBuyDeals.reduce((sum, deal) => sum + getDealSpent(deal), 0);
   const grossProduct = phaseRevenue - ingredientCosts;
+  const totalTax = [...productionBuyDeals, ...demandFillDeals].reduce((sum, deal) => sum + getDealTax(deal), 0);
   const productPerCapita = population > 0 ? grossProduct / population : 0;
 
   const initialDemand = DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
@@ -230,7 +248,7 @@ export function open(burgId: number): void {
     <div style="${styles.topBar}">
       <span><b>Population:</b> ${population}</span>
       <span><b>Order:</b> ${processRank} of ${totalBurgs}</span>
-      <span><b>Market:</b> ${market ? `#${market.i} (center: ${centerBurg?.name || "unknown"} #${market.centerBurgId})` : "—"}</span>
+      <span><b>Market:</b> ${centerBurg?.name || "unknown"} (${market?.i})</span>
       <div><b>Initial Demand:</b> ${renderDemand(initialDemand)}</div>
     </div>`;
 
@@ -295,29 +313,13 @@ export function open(burgId: number): void {
         ${renderDataCell(renderTaggedGood(job.goodId, "RAW", cultureSuffix))}
         ${renderDataCell(rn(job.units, 2), "right")}
         <td style="${styles.cell}">${details}</td>
-        ${
-          job.score !== undefined
-            ? renderValueCell("Score", job.score, job.score >= 0)
-            : renderDataCell("—", "right", styles.subtle)
-        }
+        ${renderDataCell("", "right", styles.subtle)}
       </tr>`,
         renderLogRow(candidatesId, candidatesHtml)
       ];
     }
 
-    const buyItems = job.recipe.filter(item => item.fromMarket > 0);
     const rows: string[] = [];
-
-    if (buyItems.length) {
-      for (const item of buyItems) {
-        rows.push(/*html*/ `<tr>
-          ${renderDataCell(renderTaggedGood(item.goodId, "BUY"))}
-          ${renderDataCell(rn(item.fromMarket, 2), "right")}
-          <td style="${styles.cell}">Local market purchase for ${goodDot(job.goodId)}${goodName(job.goodId)}</td>
-          ${renderValueCell("Spent", item.marketCost, false)}
-        </tr>`);
-      }
-    }
 
     const cultureSuffix =
       job.cultureModifier !== 1
@@ -331,7 +333,7 @@ export function open(burgId: number): void {
       ${renderDataCell(renderTaggedGood(job.goodId, "MFG", cultureSuffix))}
       ${renderDataCell(rn(job.units, 2), "right")}
       <td style="${styles.cell}">${`Producing from ${allInputs}`}</td>
-      ${job.score !== undefined ? renderValueCell("Score", job.score, job.score >= 0) : renderDataCell("—", "right", styles.subtle)}
+      ${renderDataCell("", "right", styles.subtle)}
     </tr>`);
 
     rows.push(renderLogRow(candidatesId, candidatesHtml));
@@ -346,11 +348,29 @@ export function open(burgId: number): void {
       ${renderDataCell(renderTaggedGood(deal.goodId, "BUY"))}
       ${renderDataCell(rn(deal.units, 2), "right")}
       <td style="${styles.cell}">Demand fill from local market</td>
-      ${renderValueCell("Spent", getDealSpent(deal), false)}
+      ${renderIncomeCell(-getDealSpent(deal), {formulaTitle: getIncomeFormulaTitle(deal, "buy")})}
     </tr>`;
   });
 
-  const jobsTableRows = [...stepRows, ...demandFillRows];
+  const productionBuyRows = productionBuyDeals.map(deal => {
+    return /*html*/ `<tr style="${styles.bodyRow}">
+      ${renderDataCell(renderTaggedGood(deal.goodId, "BUY"))}
+      ${renderDataCell(rn(deal.units, 2), "right")}
+      <td style="${styles.cell}">Local market purchase for production</td>
+      ${renderIncomeCell(-getDealSpent(deal), {formulaTitle: getIncomeFormulaTitle(deal, "buy")})}
+    </tr>`;
+  });
+
+  const saleRows = burgSaleDeals.map(deal => {
+    return /*html*/ `<tr style="${styles.bodyRow}">
+      ${renderDataCell(renderTaggedGood(deal.goodId, "SELL"))}
+      ${renderDataCell(rn(deal.units, 2), "right")}
+      <td style="${styles.cell}">Sale to local market</td>
+      ${renderIncomeCell(getDealRevenue(deal), {formulaTitle: getIncomeFormulaTitle(deal, "sell")})}
+    </tr>`;
+  });
+
+  const jobsTableRows = [...stepRows, ...saleRows, ...productionBuyRows, ...demandFillRows];
   const jobsTable = jobsTableRows.length
     ? /*html*/ `<table style="${styles.table}">
         <colgroup>
@@ -363,7 +383,7 @@ export function open(burgId: number): void {
           ${renderHeaderCell("Good")}
           ${renderHeaderCell("Units", "right")}
           ${renderHeaderCell("Details")}
-          ${renderHeaderCell("Score", "right")}
+          ${renderHeaderCell("Income", "right", "Money flow for deal rows: negative for BUY, positive for SELL. Pure production rows are blank.")}
         </tr></thead>
         <tbody>${jobsTableRows.join("")}</tbody>
       </table>`
@@ -411,76 +431,20 @@ export function open(burgId: number): void {
     })
     .join("");
 
-  const summaryHtml = /*html*/ `
+  const demandSummaryHtml = /*html*/ `
     <div style="${styles.summaryBar}">
-      <span title="Initial demand minus final covered demand"><b>Uncovered Demand:</b> ${renderDemand(uncoveredDemand, true)}</span>
-      <span title="Net burg treasury after local buying, local sales, and final local demand fill."><b>Treasury:</b> <span style="font-weight:600; ${wealthAfter >= 0 ? styles.positive : styles.negative}">${formatPrice(wealthAfter)}</span></span>
-      <span title="Gross product per population point. This is the burg's gross product divided by population, a per-capita productivity measure for the current production run."><b>Product / Capita:</b> <span style="font-weight:600; ${productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(productPerCapita)}</span></span>
-      <span title="Gross Product is local sale revenue minus purchased ingredient costs during this production run. It excludes retained inventory and later demand-fill purchases."><b>Gross Product:</b> <span style="font-weight:600; ${grossProduct >= 0 ? styles.positive : styles.negative}">${formatPrice(grossProduct)}</span></span>
+      <span title="Initial demand minus final covered demand"><b>Uncovered Demand:</b> ${renderDemand(uncoveredDemand, true) || "none"}</span>
     </div>`;
 
-  const tradeSummaryRows = [
-    `<tr style="${styles.bodyRow}">
-      ${renderDataCell("Local market buys")}
-      ${renderDataCell(String(burgBuyDeals.length), "right")}
-      ${renderValueCell(
-        "Spent",
-        burgBuyDeals.reduce((sum, deal) => sum + getDealSpent(deal), 0),
-        false
-      )}
-      ${renderValueCell(
-        "Tax",
-        burgBuyDeals.reduce((sum, deal) => sum + getDealTax(deal), 0),
-        false
-      )}
-    </tr>`,
-    `<tr style="${styles.bodyRow}">
-      ${renderDataCell("Local market sales")}
-      ${renderDataCell(String(burgSaleDeals.length), "right")}
-      ${renderValueCell(
-        "Revenue",
-        burgSaleDeals.reduce((sum, deal) => sum + getDealRevenue(deal), 0),
-        true
-      )}
-      ${renderDataCell("—", "right", styles.subtle)}
-    </tr>`,
-    `<tr style="${styles.bodyRow}">
-      ${renderDataCell("Center imports")}
-      ${renderDataCell(String(centerImportDeals.length), "right")}
-      ${renderValueCell(
-        "Value",
-        centerImportDeals.reduce((sum, deal) => sum + getDealRevenue(deal), 0),
-        true
-      )}
-      ${renderDataCell("—", "right", styles.subtle)}
-    </tr>`,
-    `<tr style="${styles.bodyRow}">
-      ${renderDataCell("Center exports")}
-      ${renderDataCell(String(centerExportDeals.length), "right")}
-      ${renderValueCell(
-        "Value",
-        centerExportDeals.reduce((sum, deal) => sum + getDealRevenue(deal), 0),
-        true
-      )}
-      ${renderDataCell("—", "right", styles.subtle)}
-    </tr>`
-  ].join("");
+  const historySummaryHtml = /*html*/ `
+    <div style="${styles.summaryBar}">
+      <span title="Gross Product is local sale revenue minus purchased ingredient costs during this production run. It excludes retained inventory and later demand-fill purchases."><b>Gross Product:</b> <span style="font-weight:600; ${grossProduct >= 0 ? styles.positive : styles.negative}">${formatPrice(grossProduct)}</span></span>
+      <span title="Gross product per population point. This is the burg's gross product divided by population, a per-capita productivity measure for the current production run."><b>Weath:</b> <span style="font-weight:600; ${productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(productPerCapita)}</span></span>
+      <span title="Sales tax is the markup added on top of market buy price for consumers. It transfers value to treasury and increases effective buy costs, lowering net local purchasing power."><b>Total Tax:</b> <span style="font-weight:600; ${totalTax >= 0 ? styles.warning : styles.subtle}">${formatPrice(totalTax)}</span></span>
+      <span title="Net burg treasury after local buying, local sales, and final local demand fill."><b>Treasury:</b> <span style="font-weight:600; ${wealthAfter >= 0 ? styles.positive : styles.negative}">${formatPrice(wealthAfter)}</span></span>
+    </div>`;
 
-  const tradeSummaryTable = /*html*/ `<table style="${styles.table}">
-    <colgroup>
-      <col style="width: 40%;">
-      <col style="width: 15%;">
-      <col style="width: 25%;">
-      <col style="width: 20%;">
-    </colgroup>
-    <thead><tr style="${styles.headRow}">
-      ${renderHeaderCell("Trade Flow")}
-      ${renderHeaderCell("Deals", "right")}
-      ${renderHeaderCell("Value", "right")}
-      ${renderHeaderCell("Tax", "right")}
-    </tr></thead>
-    <tbody>${tradeSummaryRows}</tbody>
-  </table>`;
+  const historySection = `${jobsTable}${historySummaryHtml}`;
 
   const finalTableContent = finalRows
     ? /*html*/ `<table style="${styles.table}">
@@ -501,15 +465,15 @@ export function open(burgId: number): void {
         <tbody>${finalRows}</tbody>
       </table>`
     : `<i style="${styles.empty}">No output produced</i>`;
-  const finalTable = `${finalTableContent}${summaryHtml}`;
+
+  const finalTable = `${finalTableContent}${demandSummaryHtml}`;
 
   alertMessage.innerHTML = /*html*/ `
     <div id="productionOverviewContent">
       ${statsHtml}
       ${renderSection(accessibleResourcesTitle, accessibleResourcesTable)}
-      ${renderSection("Production and Trade history", jobsTable)}
+      ${renderSection("Production and Trade history", historySection)}
       ${renderSection("Demand Coverage", finalTable)}
-      ${renderSection("Trade Summary", tradeSummaryTable)}
     </div>
   `;
 
@@ -530,11 +494,7 @@ export function open(burgId: number): void {
     };
   }
 
-  $("#alert").dialog({
-    width: "48em",
-    resizable: true,
-    title: `Production Overview: ${burg.name}`
-  });
+  $("#alert").dialog({width: "48em", resizable: true, title: `Production Overview: ${burg.name}`});
 }
 
 declare global {

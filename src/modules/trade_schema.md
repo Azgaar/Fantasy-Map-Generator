@@ -53,7 +53,7 @@ The buy–sell spread emerges naturally: buy pressure pushes `buyPrice` up, sell
 
 - Price actually paid by a burg when buying from its market
 - `consumerPrice = marketBuyPrice × (1 + salesTaxRate)`
-- Only applies to local burg-buy deals (phases `local-production-buy` and `local-demand-fill`)
+- Only applies to local burg-buy deals (phases `local-production-buy` and `local-demand-buy`)
 
 ### Price pressure
 
@@ -111,7 +111,7 @@ After all burgs have produced and sold locally:
 1. Per market, sum uncovered demand across all assigned burgs (from their `finalInventory`)
 2. Build export pool per market: market stock beyond its aggregated demand (+ 20% reserve)
 3. For each importer market with shortage per demand category, find exporter markets with export-pool surplus, sorted by coverage weight then cheapest good
-4. Transfer stock; record deal (`phase: "global-redistribution"`, `buyerId = importer.i`, `sellerId = exporter.i`)
+4. Transfer stock; record deal (`phase: "global"`, `buyerId = importer.i`, `sellerId = exporter.i`)
 5. Apply pressure: exporter `sellPrice` rises (negative unit delta), importer `buyPrice` falls (negative unit delta)
 
 No sales tax applies to redistribution deals.
@@ -122,7 +122,7 @@ After redistribution:
 
 1. Each burg re-checks demand coverage against its `finalInventory`
 2. For each uncovered demand category, buy goods from its market (best coverage-weight-per-good first)
-3. Uses `phase: "local-demand-fill"`
+3. Uses `phase: "local-demand-buy"`
 4. Burg pays **consumer price**; state tax is recorded; market `buyPrice` rises
 
 ## Demand model
@@ -147,7 +147,7 @@ Every trade transaction is stored in the `deals` array on `pack`.
 type Deal = {
   id: number;
   market: number; // market where the deal was brokered
-  phase: TradePhase; // "local-production-buy" | "local-sale" | "global-redistribution" | "local-demand-fill"
+  phase: TradePhase; // "local-production-buy" | "local-sale" | "global" | "local-demand-buy"
   goodId: number;
   units: number; // rounded to 2 decimal places on record
   buyerId: number; // burg id for local deals; market id for redistribution

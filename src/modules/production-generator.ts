@@ -399,7 +399,7 @@ export class ProductionModule {
           good: candidate.good,
           units: Math.min(candidate.available, unitsNeeded),
           marketPrice: this.getMarketGoodData(marketCenter, candidate.goodId, candidate.good.value).buyPrice,
-          phase: "local-demand-fill"
+          phase: "local-demand-buy"
         });
         if (purchase.units <= 0.001) continue;
 
@@ -764,7 +764,6 @@ type PlannedAction =
     };
 
 type Ingredient = {goodId: number; amount: number};
-type CellEntry = {cellId: number; goodId: number; amount: number};
 type Recipes = {good: Good; ingredients: Ingredient[]};
 export type DecisionIngredient = {
   goodId: number;
