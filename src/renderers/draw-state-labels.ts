@@ -124,7 +124,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
       );
 
       // Update label data with font size
-      Labels.update(labelData.i, { fontSize: ratio });
+      Labels.update(labelData.i, { text: lines.join("|"), fontSize: ratio });
 
       // prolongate path if it's too short
       const longestLineLength = max(lines.map((line) => line.length)) || 0;
