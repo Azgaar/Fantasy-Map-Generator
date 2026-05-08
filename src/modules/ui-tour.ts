@@ -371,22 +371,32 @@ function start() {
     ],
   });
 
+  function isEditableTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) return false;
+    if (target.isContentEditable) return true;
+    return !!target.closest(
+      "input, textarea, select, [contenteditable], [contenteditable='plaintext-only']"
+    );
+  }
+
   function handleKeydown(e: KeyboardEvent): void {
-    if (!tour.isActive()) return;
+    if (!tour.isActive() || isEditableTarget(e.target)) return;
     switch (e.key) {
       case "ArrowRight":
       case "ArrowDown":
+        e.preventDefault();
+        e.stopPropagation();
         document
           .querySelector<HTMLElement>(".driver-popover-next-btn")
           ?.click();
-        e.preventDefault();
         break;
       case "ArrowLeft":
       case "ArrowUp":
+        e.preventDefault();
+        e.stopPropagation();
         document
           .querySelector<HTMLElement>(".driver-popover-prev-btn")
           ?.click();
-        e.preventDefault();
         break;
       case "Escape":
         tour.destroy();
