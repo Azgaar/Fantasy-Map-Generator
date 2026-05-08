@@ -618,9 +618,9 @@ function addLabelOnClick() {
 
   // use most recently selected label group
   const lastSelected = labelGroupSelect.value;
-  const groupId = ["", "states", "burgLabels"].includes(lastSelected) ? "#addedLabels" : "#" + lastSelected;
+  const groupId = ["", "states", "burgLabels"].includes(lastSelected) ? "addedLabels" :  lastSelected;
 
-  let group = labels.select(groupId);
+  let group = labels.select(`#${groupId}`);
   if (!group.size())
     group = labels
       .append("g")
@@ -637,26 +637,16 @@ function addLabelOnClick() {
   const example = group.append("text").attr("x", 0).attr("y", 0).text(name);
   const width = example.node().getBBox().width;
   example.remove();
+  const newLabel = Labels.addCustomLabel({
+    group: groupId,
+    text: name,
+    pathPoints: [
+      [rn(point[0] - width), point[1]],
+      [rn(point[0] + width), point[1]]
+    ]
+  })
 
-  group.classed("hidden", false);
-  group
-    .append("text")
-    .attr("text-rendering", "optimizeSpeed")
-    .attr("id", id)
-    .append("textPath")
-    .attr("text-rendering", "optimizeSpeed")
-    .attr("xlink:href", "#textPath_" + id)
-    .attr("startOffset", "50%")
-    .attr("font-size", "100%")
-    .append("tspan")
-    .attr("x", 0)
-    .text(name);
-
-  defs
-    .select("#textPaths")
-    .append("path")
-    .attr("id", "textPath_" + id)
-    .attr("d", `M${point[0] - width},${point[1]} h${width * 2}`);
+  drawCustomLabel(newLabel);
 
   if (d3.event.shiftKey === false) unpressClickToAddButton();
 }

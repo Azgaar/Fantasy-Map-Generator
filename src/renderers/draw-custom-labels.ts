@@ -4,12 +4,14 @@ import type { CustomLabel } from "../modules/labels";
 // remove this section once layer.js is refactored--------------------------------
 declare global {
   var drawCustomLabels: () => void;
+  var drawCustomLabel: (label: CustomLabel) => void;
 }
 
-window.drawCustomLabels = customLabelRenderer;
+window.drawCustomLabels = customLabelsRenderer;
+window.drawCustomLabel = customLabelRenderer;
 // -------------------------------------------------------------------------------
 
-export function customLabelRenderer() {
+export function customLabelsRenderer() {
   TIME && console.time("drawCustomLabels");
   const allCustomLabels = Labels.getAll().filter(
     (labels) => labels.type === "custom",
@@ -38,6 +40,25 @@ export function customLabelRenderer() {
     }
   }
   TIME && console.timeEnd("drawCustomLabels");
+}
+
+export function customLabelRenderer(label: CustomLabel) {
+  const pathGroup = defs.select<SVGGElement>("g#deftemp > g#textPaths");
+  const pathId = addPathForLabel(label, pathGroup.node()!);
+  const labelHTML = constructLabelHTML(label, pathId);
+
+  const customLabelsGroup = labels.select<SVGGElement>(`#${label.group}`);
+  const groupNode = customLabelsGroup.node();
+  if (groupNode) {
+    const existingLabel = groupNode.querySelector<SVGTextElement>(
+      `#customLabel${label.i}`,
+    );
+    if (existingLabel) {
+      existingLabel.replaceWith(labelHTML);
+    } else {
+      groupNode.appendChild(labelHTML);
+    }
+  }
 }
 
 function constructLabelHTML(
