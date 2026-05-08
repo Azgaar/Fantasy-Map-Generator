@@ -184,7 +184,7 @@ Execution:
 1. Consume ingredients from inventory first.
 2. For any shortfall, call `Trade.buyFromMarket({phase: "local-production-buy"})`:
    - Market stock decreases (capped at available stock).
-   - Burg pays consumer price: `marketBuyPrice × (1 + salesTax)`.
+   - Burg pays consumer price: `marketBuyPrice` (no buyer-side sales tax).
    - `marketGood.buyPrice` is raised: `buyPrice += actualBuy × buyPressure[ingId]` (capped at ceiling).
 3. Subtract purchase cost from `burg.wealth`.
 4. Add manufactured output to `inventory[goodId]` with culture modifier.
@@ -209,7 +209,7 @@ score       = chainValue × cultureModifier × demandEffect.multiplier × actual
 
 ```ts
 revenue        = currentSellPrice[outputGood] × units × cultureModifier
-ingredientCost = sum(recipeAmount × consumerPrice[ingredient])   // consumerPrice = marketBuyPrice × (1 + tax)
+ingredientCost = sum(recipeAmount × consumerPrice[ingredient])   // consumerPrice = marketBuyPrice
 score          = (revenue - ingredientCost) × demandEffect.multiplier × units
 ```
 
@@ -252,7 +252,7 @@ For each good in `excessInventory`:
 
 1. Call `Trade.sellToMarket({phase: "local-sale"})` at **current `marketSellPrice`**.
 2. `market.goods[goodId].stock` increases.
-3. Burg receives `units × marketSellPrice` as revenue, added to `burg.wealth`.
+3. Burg pays sales tax from gross sale value and receives net revenue: `units × marketSellPrice × (1 - salesTaxRate)`.
 4. After the sale: `marketGood.sellPrice -= amount × sellPressure[goodId]` (floored at floor).
 
 ## Stored production metrics

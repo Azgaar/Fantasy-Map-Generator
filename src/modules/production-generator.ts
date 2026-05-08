@@ -598,7 +598,7 @@ export class ProductionModule {
         const amountNeeded = units * ingredient.amount;
         const fromInventory = Math.min(inventoryAvailable, amountNeeded);
         const fromMarket = Math.max(0, amountNeeded - fromInventory);
-        const marketCost = fromMarket * Trade.getConsumerPrice(params.burg, params.buyPrice[ingredient.goodId]);
+        const marketCost = fromMarket * params.buyPrice[ingredient.goodId];
         marketCostTotal += marketCost;
 
         ingredients.push({

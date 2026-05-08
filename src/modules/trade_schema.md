@@ -52,8 +52,8 @@ The buy–sell spread emerges naturally: buy pressure pushes `buyPrice` up, sell
 #### 3. Consumer price
 
 - Price actually paid by a burg when buying from its market
-- `consumerPrice = marketBuyPrice × (1 + salesTaxRate)`
-- Only applies to local burg-buy deals (phases `local-production-buy` and `local-demand-buy`)
+- `consumerPrice = marketBuyPrice`
+- Local buyers do not pay sales tax; sales tax is collected from the seller on local sales
 
 ### Price pressure
 
@@ -78,7 +78,7 @@ Note: in the redistribution phase, pressure is applied with a **negative** unit 
 
 - Defined per state as `state.salesTax`
 - Default rate: `0.2`
-- Only applies when a burg buys from its market (local-buy deals)
+- Applied when a burg sells to its market (`phase: "local-sale"`)
 - The taxed portion is accumulated in `stateTaxes[stateId]`
 - Center-to-center redistribution deals carry no tax
 
@@ -100,9 +100,9 @@ For each burg:
 
 1. Flood-fill nearby cells → build `goodsPull` (raw resource availability)
 2. Greedy worker loop: score and execute extract or manufacture actions each tick
-3. Manufacture may buy missing ingredients from the burg's market at **current `marketBuyPrice`**; burg pays **consumer price** (with tax); `buyPrice` rises after each purchase
+3. Manufacture may buy missing ingredients from the burg's market at **current `marketBuyPrice`**; local buy has no sales-tax surcharge; `buyPrice` rises after each purchase
 4. At end of loop: split inventory into **retained** (covers burg's own demand) and **excess**
-5. Sell excess to market at **current `marketSellPrice`**; `sellPrice` falls after each sale
+5. Sell excess to market at **current `marketSellPrice`**; seller pays state sales tax from gross sale value, receives net revenue, and `sellPrice` falls after each sale
 
 ### Phase 3: Global redistribution (`Trade.redistributeAcrossMarkets`)
 
@@ -123,7 +123,7 @@ After redistribution:
 1. Each burg re-checks demand coverage against its `finalInventory`
 2. For each uncovered demand category, buy goods from its market (best coverage-weight-per-good first)
 3. Uses `phase: "local-demand-buy"`
-4. Burg pays **consumer price**; state tax is recorded; market `buyPrice` rises
+4. Burg pays **consumer price** (= market buy price); market `buyPrice` rises
 
 ## Demand model
 
@@ -159,11 +159,11 @@ type DealPrice = {
   base: number; // good.value at time of deal (static reference)
   marketBuy: number; // market buyPrice used in this deal
   marketSell: number; // market sellPrice used in this deal
-  consumerBuy: number; // what the buyer actually paid (includes tax for local buys)
+  consumerBuy: number; // what the buyer actually paid (currently equals marketBuy)
 };
 ```
 
-Tax collected per deal: `units × (consumerBuy - marketBuy)`, accumulated in `stateTaxes[stateId]` for local-buy phases.
+Tax collected per local-sale deal: `units × marketSell × sellerStateTaxRate`, accumulated in `stateTaxes[stateId]` for the seller's state.
 
 ## Data model
 
@@ -229,7 +229,7 @@ Included now:
 - trade-center state
 - local trade deals
 - global trade deals
-- state sales tax on local buys
+- state sales tax on local sales (paid by seller)
 - tax ledger derived from deals
 
 Not included yet:

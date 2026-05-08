@@ -54,11 +54,7 @@ export class TradeModule {
   private data: TradeRunData = {markets: [], deals: [], stateTaxes: {}};
 
   reset(): TradeRunData {
-    this.data = {
-      markets: [],
-      deals: [],
-      stateTaxes: {}
-    };
+    this.data = {markets: [], deals: [], stateTaxes: {}};
     this.syncPackData();
     return this.data;
   }
@@ -127,23 +123,22 @@ export class TradeModule {
     return inventory;
   }
 
-  recordDeal(deal: Omit<Deal, "id">): Deal {
-    const nextDeal: Deal = {
+  recordDeal(data: Omit<Deal, "id">): Deal {
+    const deal: Deal = {
       id: this.data.deals.length,
-      ...deal,
-      units: rn(deal.units, 2)
+      ...data,
+      units: rn(data.units, 2)
     };
-    this.data.deals.push(nextDeal);
+    this.data.deals.push(deal);
 
-    const taxAmount = nextDeal.units * (nextDeal.prices.consumerBuy - nextDeal.prices.marketBuy);
-    const isLocalBuy = nextDeal.phase === "local-production-buy" || nextDeal.phase === "local-demand-buy";
-    const stateId = isLocalBuy ? (pack.burgs[nextDeal.buyerId] as Burg | undefined)?.state || 0 : 0;
+    const isLocalSale = deal.phase === "local-sale";
+    const seller = isLocalSale ? (pack.burgs[deal.sellerId] ?? null) : null;
+    const sellerTaxRate = seller ? this.getSalesTaxRate(seller) : 0;
+    const taxAmount = isLocalSale ? deal.units * deal.prices.marketSell * sellerTaxRate : 0;
+    const stateId = seller?.state || 0;
 
-    if (taxAmount > 0 && stateId > 0) {
-      this.data.stateTaxes[stateId] = (this.data.stateTaxes[stateId] || 0) + taxAmount;
-    }
-
-    return nextDeal;
+    if (taxAmount > 0 && stateId > 0) this.data.stateTaxes[stateId] = (this.data.stateTaxes[stateId] || 0) + taxAmount;
+    return deal;
   }
 
   getSalesTaxRate(burg: Burg): number {
@@ -152,16 +147,13 @@ export class TradeModule {
     return pack.states?.[stateId]?.salesTax ?? DEFAULT_SALES_TAX;
   }
 
-  getConsumerPrice(burg: Burg, marketPrice: number): number {
-    return marketPrice * (1 + this.getSalesTaxRate(burg));
-  }
-
   getPriceSnapshot(good: Good, marketBuy: number, marketSell: number, burg?: Burg): DealPrice {
+    void burg;
     return {
       base: good.value,
       marketBuy,
       marketSell,
-      consumerBuy: burg ? this.getConsumerPrice(burg, marketBuy) : marketBuy
+      consumerBuy: marketBuy
     };
   }
 
@@ -309,7 +301,7 @@ export class TradeModule {
     this.updateMarketDemand(goods, productionData);
   }
 
-  buyFromMarket(params: {burg: Burg; good: Good; units: number; marketPrice: number; phase?: TradePhase}) {
+  buyFromMarket(params: {burg: Burg; good: Good; units: number; marketPrice: number; phase: TradePhase}) {
     const {burg, good, marketPrice} = params;
     const market = this.getMarketForBurg(burg);
     if (!market || params.units <= 0) return {units: 0, totalCost: 0, taxAmount: 0};
@@ -320,13 +312,9 @@ export class TradeModule {
 
     marketGood.stock = Math.max(0, marketGood.stock - actualUnits);
 
-    const consumerPrice = this.getConsumerPrice(burg, marketPrice);
-    const grossValue = actualUnits * consumerPrice;
-    const taxAmount = actualUnits * (consumerPrice - marketPrice);
-
     this.recordDeal({
       market: market.i,
-      phase: params.phase || "local-production-buy",
+      phase: params.phase,
       goodId: good.i,
       units: actualUnits,
       buyerId: burg.i!,
@@ -334,21 +322,23 @@ export class TradeModule {
       prices: this.getPriceSnapshot(good, marketPrice, marketPrice, burg)
     });
 
-    return {units: actualUnits, totalCost: grossValue, taxAmount};
+    return {units: actualUnits, totalCost: actualUnits * marketPrice, taxAmount: 0};
   }
 
-  sellToMarket(params: {burg: Burg; good: Good; units: number; marketPrice: number; phase?: TradePhase}) {
+  sellToMarket(params: {burg: Burg; good: Good; units: number; marketPrice: number; phase: TradePhase}) {
     const {burg, good, marketPrice} = params;
     const market = this.getMarketForBurg(burg);
-    if (!market || params.units <= 0) return {units: 0, revenue: 0};
+    if (!market || params.units <= 0) return {units: 0, revenue: 0, taxAmount: 0};
 
     const marketGood = this.getMarketGood(market, good.i, good.value);
     marketGood.stock += params.units;
-    const revenue = params.units * marketPrice;
+    const grossRevenue = params.units * marketPrice;
+    const taxAmount = grossRevenue * this.getSalesTaxRate(burg);
+    const revenue = grossRevenue - taxAmount;
 
     this.recordDeal({
       market: market.i,
-      phase: params.phase || "local-sale",
+      phase: params.phase,
       goodId: good.i,
       units: params.units,
       buyerId: market.i,
@@ -356,7 +346,7 @@ export class TradeModule {
       prices: this.getPriceSnapshot(good, marketPrice, marketPrice, burg)
     });
 
-    return {units: params.units, revenue};
+    return {units: params.units, revenue, taxAmount};
   }
 
   private buildMarkets(goods: Good[], burgs: Burg[]): Market[] {

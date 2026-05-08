@@ -154,7 +154,7 @@ const GOODS_DATA: GoodData[] = [
     name: "Gold",
     tags: ["ore", "luxury"],
     icon: "good-gold",
-    color: "#d4af37",
+    color: "#ffd700",
     value: 15,
     chance: 2,
     distribution: "river() && minHeight(40)",
