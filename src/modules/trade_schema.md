@@ -192,15 +192,7 @@ Trade-related fields that may exist on a state:
 Each center should hold:
 
 - `i`
-- `name`
-- `burgs`
 - `inventory`
-- `demandTargets`
-- `demandCoverage`
-- `uncoveredDemand`
-- `reserveFactor`
-- `buyPrice`
-- `sellPrice`
 
 ## Placeholder extensions
 

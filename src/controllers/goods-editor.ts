@@ -135,8 +135,8 @@ function getMarketPriceStats() {
   const stats: Record<number, {buyLabel: string; sellLabel: string; buySort: number; sellSort: number}> = {};
 
   for (const good of pack.goods) {
-    const buyPrices = markets.map(market => market.buyPrice[good.i]).filter(price => Number.isFinite(price));
-    const sellPrices = markets.map(market => market.sellPrice[good.i]).filter(price => Number.isFinite(price));
+    const buyPrices = markets.map(market => market.goods?.[good.i]?.buyPrice).filter(price => Number.isFinite(price));
+    const sellPrices = markets.map(market => market.goods?.[good.i]?.sellPrice).filter(price => Number.isFinite(price));
     const buyRange = formatMarketPriceRange(buyPrices, good.value);
     const sellRange = formatMarketPriceRange(sellPrices, good.value);
 

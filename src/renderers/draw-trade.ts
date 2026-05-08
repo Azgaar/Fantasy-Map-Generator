@@ -8,9 +8,55 @@ declare global {
 const MARKET_FILL = "#f5df9b";
 const MARKET_STROKE = "#7a5c00";
 const MARKET_ICON = "⚖️";
+const TRADE_LINK_STROKE = "#7a5c00";
+const TRADE_LINK_WIDTH = 0.4;
+
+function tradeLinkRenderer(market: Market): string {
+  const centerBurg = pack.burgs[market.centerBurgId];
+  if (!centerBurg) return "";
+
+  const {x: mx, y: my} = centerBurg;
+  const burgIds = (pack.burgs as any[])
+    .filter(burg => burg?.i && !burg.removed && burg.marketId === market.i)
+    .map(burg => burg.i as number);
+  const burgs = pack.burgs;
+  if (!burgs) return "";
+
+  return burgIds
+    .map((burgId, idx) => {
+      const burg = burgs[burgId];
+      if (!burg) return "";
+      const {x: bx, y: by} = burg;
+
+      return /* html */ `
+        <line
+          class="trade-link"
+          x1="${rn(mx, 1)}" y1="${rn(my, 1)}"
+          x2="${rn(bx, 1)}" y2="${rn(by, 1)}"
+          stroke="${TRADE_LINK_STROKE}"
+          stroke-width="${TRADE_LINK_WIDTH}"
+          opacity="0.5"
+          stroke-dasharray="4,4"
+        >
+          <animate
+            attributeName="stroke-dashoffset"
+            from="0"
+            to="8"
+            dur="${2 + (idx % 2)}s"
+            repeatCount="indefinite"
+          />
+        </line>
+      `;
+    })
+    .join("");
+}
 
 function marketRenderer(market: Market): string {
-  const {i, name, x, y} = market;
+  const {i} = market;
+  const centerBurg = pack.burgs[market.centerBurgId];
+  if (!centerBurg) return "";
+
+  const {x, y, name} = centerBurg;
   const id = `market${i}`;
 
   const radius = Math.max(rn(2 + 1 / scale, 2), 2);
@@ -29,8 +75,10 @@ const tradeRenderer = (): void => {
   TIME && console.time("drawTrade");
 
   const markets: Market[] = pack.markets || [];
-  const html = markets.map(market => marketRenderer(market));
-  trade.html(html.join(""));
+  const links = markets.map(market => tradeLinkRenderer(market)).join("");
+  const marketElements = markets.map(market => marketRenderer(market)).join("");
+
+  trade.html(links + marketElements);
 
   TIME && console.timeEnd("drawTrade");
 };

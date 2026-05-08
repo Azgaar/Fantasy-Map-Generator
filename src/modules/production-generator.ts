@@ -3,6 +3,7 @@ import type {CultureType} from "./cultures-generator";
 import {DEFAULT_CULTURE_TYPE} from "./cultures-generator";
 import type {DemandCategory, Good} from "./goods-generator";
 import {DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "./goods-generator";
+import type {Market} from "./trade-generator";
 
 export class ProductionModule {
   private readonly BONUS_PRODUCTION = 5;
@@ -89,6 +90,8 @@ export class ProductionModule {
         const fraction = Math.min(1, workersLeft);
         if (fraction <= 0) break;
 
+        const marketView = this.getMarketView(marketCenter);
+
         const decision = this.greedyBestAction({
           burg,
           recipeOptions,
@@ -98,9 +101,9 @@ export class ProductionModule {
           cultureType,
           inventory,
           remainingPool,
-          marketInventory: marketCenter.inventory,
-          currentBuyPrice: marketCenter.buyPrice,
-          currentSellPrice: marketCenter.sellPrice,
+          marketInventory: marketView.marketInventory,
+          currentBuyPrice: marketView.currentBuyPrice,
+          currentSellPrice: marketView.currentSellPrice,
           workersLeft,
           fraction
         });
@@ -130,20 +133,18 @@ export class ProductionModule {
             let marketCost = 0;
             if (fromMarket > 0) {
               const good = goodById.get(ingId)!;
-              const actualBuy = Math.min(fromMarket, marketCenter.inventory[ingId] || 0);
+              const marketGood = this.getMarketGoodData(marketCenter, ingId, good.value);
+              const actualBuy = Math.min(fromMarket, marketGood.stock || 0);
               const purchase = Trade.buyFromMarket({
                 burg,
                 good,
                 units: actualBuy,
-                marketPrice: marketCenter.buyPrice[ingId],
+                marketPrice: marketGood.buyPrice,
                 phase: "local-production-buy"
               });
               marketCost = purchase.totalCost;
               burg.wealth = (burg.wealth || 0) - marketCost;
-              marketCenter.buyPrice[ingId] = Math.min(
-                priceCeiling[ingId],
-                marketCenter.buyPrice[ingId] + actualBuy * buyPressure[ingId]
-              );
+              marketGood.buyPrice = Math.min(priceCeiling[ingId], marketGood.buyPrice + actualBuy * buyPressure[ingId]);
             }
 
             recipeLog.push({
@@ -211,14 +212,12 @@ export class ProductionModule {
           burg,
           good,
           units: amount,
-          marketPrice: marketCenter.sellPrice[goodId],
+          marketPrice: this.getMarketGoodData(marketCenter, goodId, good.value).sellPrice,
           phase: "local-sale"
         });
         phaseRevenue += revenue;
-        marketCenter.sellPrice[goodId] = Math.max(
-          priceFloor[goodId],
-          marketCenter.sellPrice[goodId] - amount * sellPressure[goodId]
-        );
+        const marketGood = this.getMarketGoodData(marketCenter, goodId, good.value);
+        marketGood.sellPrice = Math.max(priceFloor[goodId], marketGood.sellPrice - amount * sellPressure[goodId]);
       }
       const grossProduct =
         phaseRevenue -
@@ -424,10 +423,7 @@ export class ProductionModule {
     goods: Good[];
     goodById: Map<number, Good>;
     demandTargets: number[];
-    marketCenter: {
-      inventory: Record<number, number>;
-      buyPrice: number[];
-    };
+    marketCenter: Market;
     buyPressure: number[];
     priceCeiling: number[];
   }): void {
@@ -439,10 +435,10 @@ export class ProductionModule {
       let shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
       if (shortage <= 0.001) continue;
 
-      const candidates = Object.keys(marketCenter.inventory)
+      const candidates = Object.keys(marketCenter.goods)
         .map(Number)
         .flatMap(goodId => {
-          const available = marketCenter.inventory[goodId] || 0;
+          const available = marketCenter.goods[goodId]?.stock || 0;
           const good = goodById.get(goodId);
           const coverageWeight = good?.demandCoverage[demandCategory] || 0;
           if (!good || available <= 0.001 || coverageWeight <= 0) return [];
@@ -458,7 +454,7 @@ export class ProductionModule {
           burg,
           good: candidate.good,
           units: Math.min(candidate.available, unitsNeeded),
-          marketPrice: marketCenter.buyPrice[candidate.goodId],
+          marketPrice: this.getMarketGoodData(marketCenter, candidate.goodId, candidate.good.value).buyPrice,
           phase: "local-demand-fill"
         });
         if (purchase.units <= 0.001) continue;
@@ -475,12 +471,42 @@ export class ProductionModule {
         }
 
         shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
-        marketCenter.buyPrice[candidate.goodId] = Math.min(
+        const marketGood = this.getMarketGoodData(marketCenter, candidate.goodId, candidate.good.value);
+        marketGood.buyPrice = Math.min(
           priceCeiling[candidate.goodId],
-          marketCenter.buyPrice[candidate.goodId] + purchase.units * buyPressure[candidate.goodId]
+          marketGood.buyPrice + purchase.units * buyPressure[candidate.goodId]
         );
       }
     }
+  }
+
+  private getMarketGoodData(market: Market, goodId: number, fallbackPrice: number) {
+    const existing = market.goods[goodId];
+    if (existing) return existing;
+
+    const created = {stock: 0, buyPrice: fallbackPrice, sellPrice: fallbackPrice};
+    market.goods[goodId] = created;
+    return created;
+  }
+
+  private getMarketView(market: Market): {
+    marketInventory: Record<number, number>;
+    currentBuyPrice: number[];
+    currentSellPrice: number[];
+  } {
+    const marketInventory: Record<number, number> = {};
+    const currentBuyPrice: number[] = [];
+    const currentSellPrice: number[] = [];
+
+    for (const goodIdStr in market.goods) {
+      const goodId = +goodIdStr;
+      const goodData = market.goods[goodId];
+      marketInventory[goodId] = goodData.stock;
+      currentBuyPrice[goodId] = goodData.buyPrice;
+      currentSellPrice[goodId] = goodData.sellPrice;
+    }
+
+    return {marketInventory, currentBuyPrice, currentSellPrice};
   }
 
   private getDemandFocus(demandTargets: number[], demandCoverage: number[]): DemandFocus | null {

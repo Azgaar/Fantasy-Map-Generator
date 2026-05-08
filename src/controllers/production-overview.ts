@@ -14,19 +14,23 @@ export function open(burgId: number): void {
 
   const market = Trade.getMarketForBurg(burg);
   const deals = pack.deals || [];
+  const isLocalBuyDeal = (deal: (typeof deals)[number]) =>
+    deal.phase === "local-production-buy" || deal.phase === "local-demand-fill";
+  const isLocalSaleDeal = (deal: (typeof deals)[number]) => deal.phase === "local-sale";
+  const getDealSpent = (deal: (typeof deals)[number]) => deal.units * deal.prices.consumerBuy;
+  const getDealTax = (deal: (typeof deals)[number]) => deal.units * (deal.prices.consumerBuy - deal.prices.marketBuy);
+  const getDealRevenue = (deal: (typeof deals)[number]) => deal.units * deal.prices.marketSell;
+
   const burgDeals = deals.filter(deal => {
-    return (deal.buyerType === "burg" && deal.buyerId === burgId) || (deal.sellerType === "burg" && deal.sellerId === burgId);
+    if (isLocalBuyDeal(deal)) return deal.buyerId === burgId;
+    if (isLocalSaleDeal(deal)) return deal.sellerId === burgId;
+    return false;
   });
-  const burgBuyDeals = burgDeals.filter(deal => deal.buyerType === "burg");
-  const burgSaleDeals = burgDeals.filter(deal => deal.sellerType === "burg");
+  const burgBuyDeals = burgDeals.filter(deal => isLocalBuyDeal(deal));
+  const burgSaleDeals = burgDeals.filter(deal => isLocalSaleDeal(deal));
   const demandFillDeals = burgBuyDeals.filter(deal => deal.phase === "local-demand-fill");
   const centerDeals = market
-    ? deals.filter(deal => {
-        return (
-          (deal.buyerType === "market" && deal.buyerId === market.i) ||
-          (deal.sellerType === "market" && deal.sellerId === market.i)
-        );
-      })
+    ? deals.filter(deal => deal.phase === "global-redistribution" && (deal.buyerId === market.i || deal.sellerId === market.i))
     : [];
   const centerImportDeals = centerDeals.filter(deal => deal.phase === "global-redistribution" && deal.buyerId === market?.i);
   const centerExportDeals = centerDeals.filter(deal => deal.phase === "global-redistribution" && deal.sellerId === market?.i);
@@ -196,6 +200,7 @@ export function open(burgId: number): void {
   const uncoveredDemand = initialDemand.map((target, index) => Math.max(0, target - finalDemandCoverage[index]));
   const producedByGood: Record<number, number> = {};
   const demandFillUnitsByGood: Record<number, number> = {};
+  const centerBurg = market ? (pack.burgs as any[])[market.centerBurgId] : null;
 
   const statsHtml = /*html*/ `
     <div style="${styles.topBar}">
@@ -203,7 +208,7 @@ export function open(burgId: number): void {
       <span><b>Cells:</b> ${data.cellsReached}/${data.cellsBudget}</span>
       <span><b>Culture type:</b> ${data.cultureType}</span>
       <span><b>Order:</b> ${data.processRank} of ${data.totalBurgs}</span>
-      <span><b>Market:</b> ${market ? `${market.name} (#${market.i})` : "—"}</span>
+      <span><b>Market:</b> ${market ? `#${market.i} (center: ${centerBurg?.name || "unknown"} #${market.centerBurgId})` : "—"}</span>
       <div><b>Initial Demand:</b> ${renderDemand(initialDemand)}</div>
     </div>`;
 
@@ -318,7 +323,7 @@ export function open(burgId: number): void {
       ${renderDataCell(renderTaggedGood(deal.goodId, "BUY"))}
       ${renderDataCell(rn(deal.units, 2), "right")}
       <td style="${styles.cell}">Demand fill from local market after center redistribution</td>
-      ${renderValueCell("Spent", deal.grossValue, false)}
+      ${renderValueCell("Spent", getDealSpent(deal), false)}
     </tr>`;
   });
 
@@ -399,25 +404,25 @@ export function open(burgId: number): void {
     `<tr style="${styles.bodyRow}">
       ${renderDataCell("Local market buys")}
       ${renderDataCell(String(burgBuyDeals.length), "right")}
-      ${renderValueCell("Spent", burgBuyDeals.reduce((sum, deal) => sum + deal.grossValue, 0), false)}
-      ${renderValueCell("Tax", burgBuyDeals.reduce((sum, deal) => sum + deal.taxAmount, 0), false)}
+      ${renderValueCell("Spent", burgBuyDeals.reduce((sum, deal) => sum + getDealSpent(deal), 0), false)}
+      ${renderValueCell("Tax", burgBuyDeals.reduce((sum, deal) => sum + getDealTax(deal), 0), false)}
     </tr>`,
     `<tr style="${styles.bodyRow}">
       ${renderDataCell("Local market sales")}
       ${renderDataCell(String(burgSaleDeals.length), "right")}
-      ${renderValueCell("Revenue", burgSaleDeals.reduce((sum, deal) => sum + deal.sellerProceeds, 0), true)}
+      ${renderValueCell("Revenue", burgSaleDeals.reduce((sum, deal) => sum + getDealRevenue(deal), 0), true)}
       ${renderDataCell("—", "right", styles.subtle)}
     </tr>`,
     `<tr style="${styles.bodyRow}">
       ${renderDataCell("Center imports")}
       ${renderDataCell(String(centerImportDeals.length), "right")}
-      ${renderValueCell("Value", centerImportDeals.reduce((sum, deal) => sum + deal.grossValue, 0), true)}
+      ${renderValueCell("Value", centerImportDeals.reduce((sum, deal) => sum + getDealRevenue(deal), 0), true)}
       ${renderDataCell("—", "right", styles.subtle)}
     </tr>`,
     `<tr style="${styles.bodyRow}">
       ${renderDataCell("Center exports")}
       ${renderDataCell(String(centerExportDeals.length), "right")}
-      ${renderValueCell("Value", centerExportDeals.reduce((sum, deal) => sum + deal.sellerProceeds, 0), true)}
+      ${renderValueCell("Value", centerExportDeals.reduce((sum, deal) => sum + getDealRevenue(deal), 0), true)}
       ${renderDataCell("—", "right", styles.subtle)}
     </tr>`
   ].join("");
