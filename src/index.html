@@ -5064,22 +5064,22 @@
       </div>
       <div id="marketOverview" class="dialog stable" style="display: none">
         <div>
-          <div id="marketOverviewStats" class="totalLine" style="display:flex;flex-wrap:wrap;gap:.85em"></div>
-          <div id="marketOverviewSummary" class="totalLine"></div>
+          <div id="marketOverviewStats" class="totalLine"></div>
 
-          <div id="marketOverviewGoodsHeader" class="header" style="grid-template-columns: 16em 5em 7em 7em 7em;gap:.4em">
+          <div id="marketOverviewGoodsHeader" class="header" style="grid-template-columns: 16em 5em 7em 7em;gap:.4em">
             <div data-tip="Click to sort by good" class="sortable alphabetically" data-sortby="good" style="margin-left:0">Good&nbsp;</div>
             <div data-tip="Click to sort by stock" class="sortable" data-sortby="stock">Stock&nbsp;</div>
             <div data-tip="Click to sort by buy price" class="sortable" data-sortby="buyprice">Buy Price&nbsp;</div>
             <div data-tip="Click to sort by sell price" class="sortable" data-sortby="sellprice">Sell Price&nbsp;</div>
-            <div data-tip="Click to sort by spread" class="sortable" data-sortby="spread">Spread&nbsp;</div>
           </div>
           <div id="marketOverviewGoodsBody" class="table" style="max-height:20em"></div>
 
+          <div id="marketOverviewSummary" class="totalLine"></div>
+
           <div id="marketOverviewBottom">
-            <button id="marketOverviewToggleGoods" data-tip="Toggle showing all goods or only in-stock items" class="icon-eye"></button>
-            <button id="marketOverviewOpenDeals" data-tip="View market deal history" class="icon-history"></button>
             <button id="marketOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
+            <button id="marketOverviewToggleGoods" data-tip="Toggle showing all goods or only in-stock items" class="icon-eye"></button>
+            <button id="marketOverviewOpenDeals" data-tip="View market deals" class="icon-list-bullet"></button>
             <button id="marketOverviewExport" data-tip="Save market deals data as a text file (.csv)" class="icon-download"></button>
           </div>
         </div>
