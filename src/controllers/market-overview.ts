@@ -4,8 +4,44 @@ import {ensureEl, rn} from "../utils";
 
 let isInitialized = false;
 let activeMarketId = 0;
+let showAllGoods = false;
 
 type DealKind = "BUY" | "SELL" | "GLOBAL";
+type MarketSummary = {
+  totalDeals: number;
+  globalDeals: number;
+  totalUnits: number;
+  buySpend: number;
+  totalTax: number;
+  saleIncome: number;
+  netFlow: number;
+};
+
+const IDS = {
+  overview: "marketOverview",
+  stats: "marketOverviewStats",
+  summary: "marketOverviewSummary",
+  goodsHeader: "marketOverviewGoodsHeader",
+  goodsBody: "marketOverviewGoodsBody",
+  toggleGoods: "marketOverviewToggleGoods",
+  openDeals: "marketOverviewOpenDeals",
+  refresh: "marketOverviewRefresh",
+  export: "marketOverviewExport",
+  dealsOverview: "marketDeals",
+  dealsHeader: "marketDealsHeader",
+  dealsBody: "marketDealsBody",
+  dealsFooterDeals: "marketDealsFooterDeals",
+  dealsFooterUnits: "marketDealsFooterUnits",
+  dealsFooterNet: "marketDealsFooterNet",
+  dealsExport: "marketDealsExport"
+} as const;
+
+const GOODS_ROW_GRID = "display:grid;grid-template-columns:16em 5em 7em 7em 7em;align-items:center;gap:.4em";
+const DEAL_ROW_GRID = "display:grid;grid-template-columns:20em 5em 15em 7em 13em;align-items:center;gap:.4em";
+const CELL_ELLIPSIS = "width:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
+
+const NO_GOODS_LINE = '<div style="padding:.35em .45em;color:#777;font-style:italic">No market goods available</div>';
+const NO_DEALS_LINE = '<div style="padding:.35em .45em;color:#777;font-style:italic">No market deals recorded</div>';
 
 const PHASE: Record<TradePhase, {label: string; kind: DealKind; tip: string}> = {
   "local-production-buy": {
@@ -32,17 +68,6 @@ const PHASE: Record<TradePhase, {label: string; kind: DealKind; tip: string}> = 
 
 function open(marketId: number): void {
   if (customization) return;
-  closeDialogs("#marketOverview, .stable");
-  if (!layerIsOn("toggleTrade")) toggleTrade();
-
-  if (!isInitialized) {
-    ensureEl("marketOverviewRefresh").on("click", marketOverviewAddLines);
-    ensureEl("marketOverviewExport").on("click", downloadDealsCsv);
-    isInitialized = true;
-  }
-
-  activeMarketId = marketId;
-  marketOverviewAddLines();
 
   const market = Trade.getMarket(marketId);
   if (!market) {
@@ -50,18 +75,34 @@ function open(marketId: number): void {
     return;
   }
 
+  closeDialogs("#marketOverview, .stable");
+  if (!layerIsOn("toggleTrade")) toggleTrade();
+
+  if (!isInitialized) {
+    ensureEl(IDS.refresh).on("click", marketOverviewAddLines);
+    ensureEl(IDS.export).on("click", downloadDealsCsv);
+    ensureEl(IDS.toggleGoods).on("click", toggleGoodsVisibility);
+    ensureEl(IDS.openDeals).on("click", openMarketDeals);
+    ensureEl(IDS.dealsExport).on("click", downloadDealsCsv);
+    isInitialized = true;
+  }
+
+  activeMarketId = marketId;
+  marketOverviewAddLines();
+
   $("#marketOverview").dialog({
     title: `Market Overview: ${getMarketCenterName(market)}`,
     resizable: false,
-    width: "44em",
+    width: "auto",
     close: closeMarketOverview,
     position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 }
 
 function closeMarketOverview(): void {
-  ensureEl("marketOverviewGoodsBody").innerHTML = "";
-  ensureEl("marketOverviewDealsBody").innerHTML = "";
+  ensureEl(IDS.goodsBody).innerHTML = "";
+  ensureEl(IDS.dealsBody).innerHTML = "";
+  showAllGoods = false;
 }
 
 function marketOverviewAddLines(): void {
@@ -71,31 +112,24 @@ function marketOverviewAddLines(): void {
     return;
   }
 
-  const centerBurg = pack.burgs[market.centerBurgId] as Burg | undefined;
+  const centerBurg = pack.burgs[market.centerBurgId];
   if (!centerBurg || centerBurg.removed) {
     tip("Invalid market. The selected market has no center burg", true, "error", 5000);
     return;
   }
 
-  const deals = getMarketDeals(market.i);
   const goodsLines = renderGoodsLines(market);
-  const dealsLines = renderDealsLines(deals, market);
-  const summary = getSummary(deals, centerBurg);
+  const summary = getSummary(getMarketDeals(market.i));
 
-  ensureEl("marketOverviewStats").innerHTML = renderStatsLine(market, centerBurg, summary.totalUnits);
-  ensureEl("marketOverviewSummary").innerHTML = renderSummaryLine(summary);
-  ensureEl("marketOverviewGoodsBody").innerHTML =
-    goodsLines || `<div style="padding:.35em .45em;color:#777;font-style:italic">No market goods available</div>`;
-  ensureEl("marketOverviewDealsBody").innerHTML =
-    dealsLines || `<div style="padding:.35em .45em;color:#777;font-style:italic">No market deals recorded</div>`;
+  ensureEl(IDS.stats).innerHTML = renderStatsLine(market, centerBurg, summary.totalUnits);
+  ensureEl(IDS.summary).innerHTML = renderSummaryLine(summary);
+  ensureEl(IDS.goodsBody).innerHTML = goodsLines || NO_GOODS_LINE;
 
-  ensureEl("marketOverviewFooterDeals").innerHTML = String(deals.length);
-  ensureEl("marketOverviewFooterUnits").innerHTML = String(rn(summary.totalUnits, 2));
-  ensureEl("marketOverviewFooterNet").innerHTML = formatPrice(summary.netFlow);
+  applySorting(ensureEl(IDS.goodsHeader));
 
-  applySorting(ensureEl("marketOverviewGoodsHeader"));
-  applySorting(ensureEl("marketOverviewDealsHeader"));
-  $("#marketOverview").dialog({width: fitContent()});
+  // Sort by stock by default
+  const stockHeader = ensureEl(IDS.goodsHeader).querySelector('[data-sortby="stock"]') as HTMLElement;
+  if (stockHeader) stockHeader.click();
 }
 
 function getMarketDeals(marketId: number): Deal[] {
@@ -104,6 +138,7 @@ function getMarketDeals(marketId: number): Deal[] {
 
 function renderGoodsLines(market: Market): string {
   return Object.entries(market.goods)
+    .filter(([, marketGood]) => showAllGoods || marketGood.stock > 0)
     .map(([goodId, marketGood]) => renderGoodLine(+goodId, marketGood))
     .filter(Boolean)
     .join("");
@@ -135,7 +170,7 @@ function renderSummaryLine(summary: ReturnType<typeof getSummary>): string {
   </div>`;
 }
 
-function getSummary(deals: Deal[], centerBurg: Burg) {
+function getSummary(deals: Deal[]): MarketSummary {
   const sales = deals.filter(deal => deal.phase === "local-sale");
   const buys = deals.filter(deal => deal.phase !== "local-sale");
 
@@ -144,7 +179,7 @@ function getSummary(deals: Deal[], centerBurg: Burg) {
   const totalUnits = deals.reduce((sum, deal) => sum + deal.units, 0);
   const buySpend = buys.reduce((sum, deal) => sum + getDealSpend(deal), 0);
   const grossSaleIncome = sales.reduce((sum, deal) => sum + getDealRevenue(deal), 0);
-  const totalTax = grossSaleIncome * Trade.getSalesTaxRate(centerBurg);
+  const totalTax = sales.reduce((sum, deal) => sum + getDealTax(deal), 0);
   const saleIncome = grossSaleIncome - totalTax;
   const netFlow = saleIncome - buySpend;
 
@@ -158,19 +193,22 @@ function renderDealLine(deal: Deal, market: Market): string {
   const counterparty =
     phase.kind === "SELL" ? getPartyLabel(deal.buyerId, market) : getPartyLabel(deal.sellerId, market);
   const details = getDealDetails(deal, market);
+  const detailsEscaped = escapeHtml(details);
+  const counterpartyEscaped = escapeHtml(counterparty);
+  const goodNameEscaped = escapeHtml(goodName);
 
   return /* html */ `<div class="states marketDeal"
-      style="display:grid;grid-template-columns:14em 4.5em 11em 6.5em 10.5em;align-items:center"
-      data-good="${goodName}"
+      style="${DEAL_ROW_GRID}"
+      data-good="${goodNameEscaped}"
       data-units="${rn(deal.units, 2)}"
-      data-counterparty="${counterparty}"
+      data-counterparty="${counterpartyEscaped}"
       data-income="${dealNet}"
-      data-details="${details}">
-      <div style="width:auto">${getGoodIcon(deal.goodId)}${goodName} ${renderPhaseBadge(deal.phase)}</div>
-      <div style="width:auto">${rn(deal.units, 2)}</div>
-      <div style="width:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${counterparty}">${counterparty}</div>
+      data-details="${detailsEscaped}">
+      <div style="width:auto;min-width:0">${getGoodIcon(deal.goodId)}${goodNameEscaped} ${renderPhaseBadge(deal.phase)}</div>
+      <div style="width:auto;text-align:right">${rn(deal.units, 2)}</div>
+      <div style="${CELL_ELLIPSIS}" title="${counterpartyEscaped}">${counterpartyEscaped}</div>
       <div style="width:auto;text-align:right;color:${dealNet >= 0 ? "#2a6" : "#c44"}">${formatPrice(dealNet)}</div>
-      <div style="width:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${details}">${details}</div>
+      <div style="${CELL_ELLIPSIS}" title="${detailsEscaped}">${detailsEscaped}</div>
     </div>`;
 }
 
@@ -179,14 +217,15 @@ function renderGoodLine(goodId: number, marketGood: Market["goods"][number]): st
   if (!good) return "";
 
   const spread = marketGood.sellPrice - marketGood.buyPrice;
+  const goodName = escapeHtml(good.name);
   return /* html */ `<div class="states marketGood"
-      style="display:grid;grid-template-columns:11em 4.5em 5.5em 5.5em 5.5em;align-items:center"
-      data-good="${good.name}"
+      style="${GOODS_ROW_GRID}"
+      data-good="${goodName}"
       data-stock="${rn(marketGood.stock, 2)}"
       data-buyprice="${marketGood.buyPrice}"
       data-sellprice="${marketGood.sellPrice}"
       data-spread="${spread}">
-      <div style="width:auto">${getGoodIcon(goodId)}${good.name}</div>
+      <div style="width:auto;min-width:0">${getGoodIcon(goodId)}${goodName}</div>
       <div style="width:auto;text-align:right">${rn(marketGood.stock, 2)}</div>
       <div style="width:auto;text-align:right">${formatPrice(marketGood.buyPrice)}</div>
       <div style="width:auto;text-align:right">${formatPrice(marketGood.sellPrice)}</div>
@@ -255,9 +294,11 @@ function getGoodName(goodId: number): string {
 function getGoodIcon(goodId: number): string {
   const good = Goods.get(goodId);
   if (!good) return "";
+
+  const iconId = escapeHtml(good.icon);
   return `<svg width="14" height="14" style="margin:-6px 2px -4px 0;vertical-align:middle">
     <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
-    <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
+    <use href="#${iconId}" x="10%" y="10%" width="80%" height="80%"/>
   </svg>`;
 }
 
@@ -278,8 +319,24 @@ function formatPrice(value: number): string {
   return `🟡 ${rn(value, 2)}`;
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function escapeCsv(value: string): string {
   return `"${value.replaceAll('"', '""')}"`;
+}
+
+function toggleGoodsVisibility(): void {
+  showAllGoods = !showAllGoods;
+  const btn = ensureEl(IDS.toggleGoods);
+  btn.classList.toggle("active", showAllGoods);
+  marketOverviewAddLines();
 }
 
 function downloadDealsCsv(): void {
@@ -310,6 +367,32 @@ function downloadDealsCsv(): void {
   }
 
   downloadFile(csv, `${getFileName(`Market_${centerName}_Deals`)}.csv`);
+}
+
+function openMarketDeals(): void {
+  const market = Trade.getMarket(activeMarketId);
+  if (!market) {
+    tip("Invalid market. The selected market does not exist", true, "error", 5000);
+    return;
+  }
+
+  const deals = getMarketDeals(market.i);
+  const dealsLines = renderDealsLines(deals, market);
+  const summary = getSummary(deals);
+
+  ensureEl(IDS.dealsBody).innerHTML = dealsLines || NO_DEALS_LINE;
+  ensureEl(IDS.dealsFooterDeals).innerHTML = String(deals.length);
+  ensureEl(IDS.dealsFooterUnits).innerHTML = String(rn(summary.totalUnits, 2));
+  ensureEl(IDS.dealsFooterNet).innerHTML = formatPrice(summary.netFlow);
+
+  applySorting(ensureEl(IDS.dealsHeader));
+
+  $(`#${IDS.dealsOverview}`).dialog({
+    title: `Market Deal History: ${getMarketCenterName(market)}`,
+    resizable: false,
+    width: "auto",
+    position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
+  });
 }
 
 declare global {
