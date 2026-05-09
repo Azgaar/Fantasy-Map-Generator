@@ -70,11 +70,21 @@ export function getHeight(h: number, abs = false): string {
   return `${rn(height * unitRatio)} ${unit}`;
 }
 
+/**
+ * Format price value with currency symbol
+ * @param value - The price value to format
+ * @returns {string} - The formatted price string with money symbol
+ */
+export function formatPrice(value: number): string {
+  return `🟡 ${rn(value, 2)}`;
+}
+
 declare global {
   interface Window {
     convertTemperature: typeof convertTemperature;
     si: typeof si;
     getInteger: typeof getIntegerFromSI;
     getHeight: typeof getHeight;
+    formatPrice: typeof formatPrice;
   }
 }

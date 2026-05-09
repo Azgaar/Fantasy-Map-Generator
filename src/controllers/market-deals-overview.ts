@@ -1,10 +1,13 @@
 import type {Burg} from "../modules/burgs-generator";
 import type {Deal, Market, TradePhase} from "../modules/trade-generator";
-import {ensureEl, rn} from "../utils";
+import {ensureEl, formatPrice, rn} from "../utils";
+
+let isInitialized = false;
+let activeMarketId = 0;
 
 type DealKind = "BUY" | "SELL" | "GLOBAL";
 
-export type MarketSummary = {
+type MarketSummary = {
   totalDeals: number;
   globalDeals: number;
   totalUnits: number;
@@ -37,10 +40,6 @@ const PHASE: Record<TradePhase, {label: string; kind: DealKind; tip: string}> = 
   }
 };
 
-const DEAL_ROW_GRID = "display:grid;grid-template-columns:20em 5em 15em 7em 13em;align-items:center;gap:.4em";
-const CELL_ELLIPSIS = "width:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
-const NO_DEALS_LINE = '<div style="padding:.35em .45em;color:#777;font-style:italic">No market deals recorded</div>';
-
 export function open(marketId: number): void {
   const market = Trade.getMarket(marketId);
   if (!market) {
@@ -48,7 +47,8 @@ export function open(marketId: number): void {
     return;
   }
 
-  marketDealsAddLines(market);
+  activeMarketId = marketId;
+  marketDealsAddLines();
 
   $("#marketDeals").dialog({
     title: `Market Deal History: ${getMarketCenterName(market)}`,
@@ -57,50 +57,31 @@ export function open(marketId: number): void {
     close: closeMarketDeals,
     position: {my: "right top", at: "right bottom+10", of: "#marketOverview", collision: "fit"}
   });
+
+  if (!isInitialized) {
+    ensureEl("marketDealsRefresh").on("click", marketDealsAddLines);
+    ensureEl("marketDealsExport").on("click", downloadDealsCsv);
+    isInitialized = true;
+  }
 }
 
-export function downloadDealsCsv(marketId: number): void {
-  const market = Trade.getMarket(marketId);
-  if (!market) return;
-
-  const centerName = getMarketCenterName(market);
-  const lines = getMarketDeals(market.i);
-  let csv = "Market,Deal Id,Phase,Good,Units,Buyer,Seller,Buy Price,Sell Price,Tax,Net\n";
-
-  for (const deal of lines) {
-    const buyer = getPartyLabel(deal.buyerId, market);
-    const seller = getPartyLabel(deal.sellerId, market);
-    csv += [
-      escapeCsv(centerName),
-      deal.id,
-      PHASE[deal.phase].label,
-      escapeCsv(getGoodName(deal.goodId)),
-      rn(deal.units, 2),
-      escapeCsv(buyer),
-      escapeCsv(seller),
-      rn(deal.prices.marketBuy, 2),
-      rn(deal.prices.marketSell, 2),
-      rn(getDealTax(deal), 2),
-      rn(getDealNet(deal), 2)
-    ].join(",");
-    csv += "\n";
+function marketDealsAddLines(): void {
+  const market = Trade.getMarket(activeMarketId);
+  if (!market) {
+    tip("Invalid market. The selected market does not exist", true, "error", 5000);
+    return;
   }
 
-  downloadFile(csv, `${getFileName(`Market_${centerName}_Deals`)}.csv`);
-}
-
-function marketDealsAddLines(market: Market): void {
-  const deals = getMarketDeals(market.i);
+  const deals = pack.deals.filter(deal => deal.market === activeMarketId);
   const summary = getSummary(deals);
-  let lines = "";
 
+  let lines = "";
   for (const deal of deals) {
     lines += renderDealLine(deal, market);
   }
 
-  ensureEl("marketDealsBody").innerHTML = lines || NO_DEALS_LINE;
+  ensureEl("marketDealsBody").innerHTML = lines || "No market deals recorded";
   ensureEl("marketDealsFooterDeals").innerHTML = String(deals.length);
-  ensureEl("marketDealsFooterUnits").innerHTML = String(rn(summary.totalUnits, 2));
   ensureEl("marketDealsFooterNet").innerHTML = formatPrice(summary.netFlow);
 
   applySorting(ensureEl("marketDealsHeader"));
@@ -117,22 +98,18 @@ function renderDealLine(deal: Deal, market: Market): string {
   const counterparty =
     phase.kind === "SELL" ? getPartyLabel(deal.buyerId, market) : getPartyLabel(deal.sellerId, market);
   const details = getDealDetails(deal, market);
-  const detailsEscaped = escapeHtml(details);
-  const counterpartyEscaped = escapeHtml(counterparty);
-  const goodNameEscaped = escapeHtml(goodName);
 
   return /* html */ `<div class="states marketDeal"
-      style="${DEAL_ROW_GRID}"
-      data-good="${goodNameEscaped}"
+      data-good="${goodName}"
       data-units="${rn(deal.units, 2)}"
-      data-counterparty="${counterpartyEscaped}"
+      data-counterparty="${counterparty}"
       data-income="${dealNet}"
-      data-details="${detailsEscaped}">
-      <div style="width:auto;min-width:0">${getGoodIcon(deal.goodId)}${goodNameEscaped} ${renderPhaseBadge(deal.phase)}</div>
+      data-details="${details}">
+      <div style="width:auto;min-width:0">${getGoodIcon(deal.goodId)}${goodName} ${renderPhaseBadge(deal.phase)}</div>
       <div style="width:auto;text-align:right">${rn(deal.units, 2)}</div>
-      <div style="${CELL_ELLIPSIS}" title="${counterpartyEscaped}">${counterpartyEscaped}</div>
+      <div title="${counterparty}">${counterparty}</div>
       <div style="width:auto;text-align:right;color:${dealNet >= 0 ? "#2a6" : "#c44"}">${formatPrice(dealNet)}</div>
-      <div style="${CELL_ELLIPSIS}" title="${detailsEscaped}">${detailsEscaped}</div>
+      <div title="${details}">${details}</div>
     </div>`;
 }
 
@@ -149,11 +126,15 @@ function getSummary(deals: Deal[]): MarketSummary {
   const saleIncome = grossSaleIncome - totalTax;
   const netFlow = saleIncome - buySpend;
 
-  return {totalDeals, globalDeals, totalUnits, buySpend, totalTax, saleIncome, netFlow};
-}
-
-function getMarketDeals(marketId: number): Deal[] {
-  return (pack.deals || []).filter(deal => deal.market === marketId).sort((a, b) => a.id - b.id);
+  return {
+    totalDeals,
+    globalDeals,
+    totalUnits,
+    buySpend,
+    totalTax,
+    saleIncome,
+    netFlow
+  };
 }
 
 function getMarketCenterName(market: Market): string {
@@ -231,19 +212,40 @@ function renderPhaseBadge(phase: TradePhase): string {
   return `<span style="${base};background:#f5d9d6;color:#a33" title="${phaseInfo.tip}">${phaseInfo.label}</span>`;
 }
 
-function formatPrice(value: number): string {
-  return `🟡 ${rn(value, 2)}`;
+function downloadDealsCsv(): void {
+  const market = Trade.getMarket(activeMarketId);
+  if (!market) return;
+
+  const centerName = getMarketCenterName(market);
+  const lines = pack.deals.filter(deal => deal.market === activeMarketId);
+  let csv = "Market,Deal Id,Phase,Good,Units,Buyer,Seller,Buy Price,Sell Price,Tax,Net\n";
+
+  for (const deal of lines) {
+    const buyer = getPartyLabel(deal.buyerId, market);
+    const seller = getPartyLabel(deal.sellerId, market);
+    csv += [
+      centerName,
+      deal.id,
+      PHASE[deal.phase].label,
+      getGoodName(deal.goodId),
+      rn(deal.units, 2),
+      buyer,
+      seller,
+      rn(deal.prices.marketBuy, 2),
+      rn(deal.prices.marketSell, 2),
+      rn(getDealTax(deal), 2),
+      rn(getDealNet(deal), 2)
+    ].join(",");
+    csv += "\n";
+  }
+
+  downloadFile(csv, `${getFileName(`Market_${centerName}_Deals`)}.csv`);
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+declare global {
+  interface Window {
+    MarketDealsOverview: {open: typeof open};
+  }
 }
 
-function escapeCsv(value: string): string {
-  return `"${value.replaceAll('"', '""')}"`;
-}
+window.MarketDealsOverview = {open};

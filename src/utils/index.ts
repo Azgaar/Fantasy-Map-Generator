@@ -42,7 +42,7 @@ import {ensureEl, getComposedPath, getNextId} from "./nodeUtils";
 import {connectVertices, findPath, getIsolines, getPolesOfInaccessibility, getVertexPath} from "./pathUtils";
 import {biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw} from "./probabilityUtils";
 import {capitalize, isValidJSON, parseTransform, round, safeParseJSON, sanitizeId, splitInTwo} from "./stringUtils";
-import {convertTemperature, getHeight, getIntegerFromSI, si} from "./unitUtils";
+import {convertTemperature, formatPrice, getHeight, getIntegerFromSI, si} from "./unitUtils";
 
 window.rn = rn;
 window.lim = lim;
@@ -78,6 +78,7 @@ window.convertTemperature = (temp: number, scale: any = (window as any).temperat
 window.si = si;
 window.getInteger = getIntegerFromSI;
 window.getHeight = getHeight;
+window.formatPrice = formatPrice;
 window.toHEX = toHEX;
 window.getColors = getColors;
 window.getRandomColor = getRandomColor;
@@ -252,6 +253,7 @@ export {
   sanitizeId,
   shouldRegenerateGrid,
   si,
+  formatPrice,
   splitInTwo,
   throttle,
   toHEX,

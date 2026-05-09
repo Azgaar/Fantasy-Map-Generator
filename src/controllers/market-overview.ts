@@ -1,7 +1,6 @@
 import type {Burg} from "../modules/burgs-generator";
-import type {Market} from "../modules/trade-generator";
+import type {Deal, Market} from "../modules/trade-generator";
 import {ensureEl, rn} from "../utils";
-import {downloadDealsCsv} from "./market-deals-overview";
 
 let isInitialized = false;
 let activeMarketId = 0;
@@ -32,9 +31,9 @@ export function open(marketId: number): void {
 
   if (!isInitialized) {
     ensureEl("marketOverviewRefresh").on("click", marketOverviewAddLines);
-    ensureEl("marketOverviewExport").on("click", downloadDealsCsv);
+    ensureEl("marketOverviewExport").on("click", downloadStockCsv);
     ensureEl("marketOverviewToggleGoods").on("click", toggleGoodsVisibility);
-    ensureEl("marketOverviewOpenDeals").on("click", openMarketDealsOverview);
+    ensureEl("marketOverviewOpenDeals").on("click", () => open(activeMarketId));
     isInitialized = true;
   }
 }
@@ -61,8 +60,12 @@ function marketOverviewAddLines() {
     if (!showAllGoods && marketGood.stock <= 0) continue;
     lines += renderGoodLine(+goodId, marketGood);
   }
-  ensureEl("marketOverviewGoodsBody").innerHTML = lines || NO_GOODS_LINE;
+  ensureEl("marketOverviewGoodsBody").innerHTML =
+    lines || '<div style="padding:.35em .45em;color:#777">No market goods available</div>';
 
+  const {totalUnits, buySpend, saleIncome, totalTax} = getMarketSummary(market.i);
+  const netBuys = buySpend;
+  const netSales = saleIncome;
   const taxRate = Trade.getSalesTaxRate(centerBurg);
   ensureEl("marketOverviewSummary").innerHTML = /*html*/ `
     <div>Stock: ${rn(totalUnits, 2)}</div>
@@ -81,6 +84,37 @@ function toggleGoodsVisibility() {
   showAllGoods = !showAllGoods;
   ensureEl("marketOverviewToggleGoods").classList.toggle("active", showAllGoods);
   marketOverviewAddLines();
+}
+
+function downloadStockCsv() {
+  // TODO: not Deals here, only Stock goods data
+  const market = Trade.getMarket(activeMarketId);
+  if (!market) return;
+
+  const centerName = getMarketCenterName(market);
+  const lines = getMarketDeals(market.i);
+  let csv = "Market,Deal Id,Phase,Good,Units,Buyer,Seller,Buy Price,Sell Price,Tax,Net\n";
+
+  for (const deal of lines) {
+    const buyer = getPartyLabel(deal.buyerId, market);
+    const seller = getPartyLabel(deal.sellerId, market);
+    csv += [
+      escapeCsv(centerName),
+      deal.id,
+      deal.phase,
+      escapeCsv(getGoodName(deal.goodId)),
+      rn(deal.units, 2),
+      escapeCsv(buyer),
+      escapeCsv(seller),
+      rn(deal.prices.marketBuy, 2),
+      rn(deal.prices.marketSell, 2),
+      rn(getDealTax(deal), 2),
+      rn(getDealNet(deal), 2)
+    ].join(",");
+    csv += "\n";
+  }
+
+  downloadFile(csv, `${getFileName(`Market_${centerName}_Deals`)}.csv`);
 }
 
 function renderGoodLine(goodId: number, marketGood: Market["goods"][number]): string {
@@ -130,6 +164,61 @@ function getGoodIcon(goodId: number): string {
 
 function formatPrice(value: number): string {
   return `🟡 ${rn(value, 2)}`;
+}
+
+function getMarketSummary(marketId: number) {
+  const deals = getMarketDeals(marketId);
+  const sales = deals.filter(deal => deal.phase === "local-sale");
+  const buys = deals.filter(deal => deal.phase !== "local-sale");
+
+  const totalUnits = deals.reduce((sum, deal) => sum + deal.units, 0);
+  const buySpend = buys.reduce((sum, deal) => sum + getDealSpend(deal), 0);
+  const grossSaleIncome = sales.reduce((sum, deal) => sum + getDealRevenue(deal), 0);
+  const totalTax = sales.reduce((sum, deal) => sum + getDealTax(deal), 0);
+  const saleIncome = grossSaleIncome - totalTax;
+
+  return {totalUnits, buySpend, saleIncome, totalTax};
+}
+
+function getMarketDeals(marketId: number): Deal[] {
+  return (pack.deals || []).filter(deal => deal.market === marketId).sort((a, b) => a.id - b.id);
+}
+
+function getPartyLabel(id: number, currentMarket: Market): string {
+  if (id === currentMarket.i) return `${getMarketCenterName(currentMarket)} market`;
+
+  const burg = pack.burgs[id] as Burg | undefined;
+  if (burg && !burg.removed) return burg.name || `Burg ${id}`;
+
+  const market = Trade.getMarket(id);
+  if (market) return `${getMarketCenterName(market)} market`;
+  return `#${id}`;
+}
+
+function getGoodName(goodId: number): string {
+  return Goods.get(goodId)?.name || `#${goodId}`;
+}
+
+function getDealSpend(deal: Deal): number {
+  return deal.phase === "local-sale" ? 0 : deal.units * deal.prices.marketBuy;
+}
+
+function getDealRevenue(deal: Deal): number {
+  return deal.phase === "local-sale" ? deal.units * deal.prices.marketSell : 0;
+}
+
+function getDealTax(deal: Deal): number {
+  if (deal.phase !== "local-sale") return 0;
+  const seller = pack.burgs[deal.sellerId] as Burg | undefined;
+  return seller ? getDealRevenue(deal) * Trade.getSalesTaxRate(seller) : 0;
+}
+
+function getDealNet(deal: Deal): number {
+  return getDealRevenue(deal) - getDealTax(deal) - getDealSpend(deal);
+}
+
+function escapeCsv(value: string): string {
+  return `"${value.replaceAll('"', '""')}"`;
 }
 
 declare global {
