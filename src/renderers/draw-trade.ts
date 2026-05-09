@@ -73,12 +73,6 @@ const tradeRenderer = (): void => {
   trade.style("display", "block");
   const marketElements = pack.markets.map(marketRenderer).join("");
   trade.html(marketElements);
-  trade.selectAll<SVGGElement, unknown>("g.market").on("click", event => {
-    const currentTarget = event?.currentTarget;
-    if (!(currentTarget instanceof SVGGElement)) return;
-    const marketId = Number(currentTarget.getAttribute("data-id") || 0);
-    if (marketId) MarkerOverview.open(marketId);
-  });
 
   TIME && console.timeEnd("drawTrade");
 };

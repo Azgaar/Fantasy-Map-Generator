@@ -5062,6 +5062,40 @@
       <div id="productionChainsDialog" class="dialog" style="display:none;padding:0">
         <div id="productionChainsContent" style="overflow:auto"></div>
       </div>
+      <div id="marketOverview" class="dialog stable" style="display: none">
+        <div id="marketOverviewStats" class="totalLine" style="display:flex;flex-wrap:wrap;gap:.85em"></div>
+        <div id="marketOverviewSummary" class="totalLine"></div>
+
+        <div id="marketOverviewGoodsHeader" class="header" style="grid-template-columns: 11em 4.5em 5.5em 5.5em 5.5em">
+          <div data-tip="Click to sort by good" class="sortable alphabetically" data-sortby="good" style="margin-left:0">Good&nbsp;</div>
+          <div data-tip="Click to sort by stock" class="sortable" data-sortby="stock">Stock&nbsp;</div>
+          <div data-tip="Click to sort by buy price" class="sortable" data-sortby="buyprice">Buy Price&nbsp;</div>
+          <div data-tip="Click to sort by sell price" class="sortable" data-sortby="sellprice">Sell Price&nbsp;</div>
+          <div data-tip="Click to sort by spread" class="sortable" data-sortby="spread">Spread&nbsp;</div>
+        </div>
+        <div id="marketOverviewGoodsBody" class="table" style="max-height:20em"></div>
+
+        <div style="font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.3em;margin:.8em 0 .45em">Market Deal History</div>
+        <div id="marketOverviewDealsHeader" class="header" style="grid-template-columns: 14em 4.5em 11em 6.5em 10.5em">
+          <div data-tip="Click to sort by good" class="sortable alphabetically" data-sortby="good" style="margin-left:0">Good&nbsp;</div>
+          <div data-tip="Click to sort by units" class="sortable" data-sortby="units">Units&nbsp;</div>
+          <div data-tip="Click to sort by counterparty" class="sortable alphabetically" data-sortby="counterparty">Counterparty&nbsp;</div>
+          <div data-tip="Click to sort by income" class="sortable" data-sortby="income">Income&nbsp;</div>
+          <div data-tip="Deal details and calculation" class="sortable alphabetically" data-sortby="details">Details&nbsp;</div>
+        </div>
+        <div id="marketOverviewDealsBody" class="table" style="max-height:20em"></div>
+
+        <div id="marketOverviewFooter" class="totalLine">
+          <div data-tip="Deals count">Deals: <span id="marketOverviewFooterDeals">0</span></div>
+          <div data-tip="Total recorded units">Units: <span id="marketOverviewFooterUnits">0</span></div>
+          <div data-tip="Net flow for this market">Net Flow: <span id="marketOverviewFooterNet">🟡 0</span></div>
+        </div>
+
+        <div id="marketOverviewBottom">
+          <button id="marketOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
+          <button id="marketOverviewExport" data-tip="Save market deals data as a text file (.csv)" class="icon-download"></button>
+        </div>
+      </div>
       <div id="unitsEditor" class="dialog stable" style="display: none">
         <div id="unitsBody" style="margin-left: 1.1em">
           <div class="unitsHeader" style="margin-top: 0.4em">
@@ -5577,9 +5611,7 @@
           <button id="markersExport" data-tip="Save markers data as a text file (.csv)" class="icon-download"></button>
         </div>
       </div>
-      <div id="markerOverview" class="dialog stable" style="display: none">
-        <div id="markerOverviewBody" class="table"></div>
-      </div>
+
       <div id="styleSaver" class="dialog stable textual" style="display: none">
         <div id="styleSaverHeader" style="padding: 2px 0">
           <span>Preset name:</span>
