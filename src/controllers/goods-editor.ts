@@ -94,7 +94,7 @@ function goodsEditorAddLines() {
     const totalAvailability = availabilityByGood[good.i] || 0;
     const totalProduced = producedByGood[good.i] || 0;
 
-    lines += `<div class="states goods"
+    lines += /*html*/ `<div class="states goods"
           data-id=${good.i} data-name="${good.name}" data-color="${good.color}"
           data-tags="${tags}" data-chance="${good.chance}" data-bonus="${bonusString}" data-demandcoverage="${demandCoverageString}"
           data-value="${good.value}" data-model="${distribution}" data-availability="${totalAvailability}"

@@ -7,36 +7,26 @@ let activeMarketId = 0;
 
 type DealKind = "BUY" | "SELL" | "GLOBAL";
 
-type MarketSummary = {
-  totalDeals: number;
-  globalDeals: number;
-  totalUnits: number;
-  buySpend: number;
-  totalTax: number;
-  saleIncome: number;
-  netFlow: number;
-};
-
-const PHASE: Record<TradePhase, {label: string; kind: DealKind; tip: string}> = {
+const PHASE: Record<TradePhase, {type: DealKind; tip: string; color: string}> = {
   "local-production-buy": {
-    label: "PROD BUY",
-    kind: "BUY",
-    tip: "Local market purchase for production"
+    type: "BUY",
+    tip: "Local market purchase for production",
+    color: "#2a6"
   },
   "local-demand-buy": {
-    label: "DEMAND BUY",
-    kind: "BUY",
-    tip: "Local market purchase to fill burg demand"
+    type: "BUY",
+    tip: "Local market purchase to fill burg demand",
+    color: "#2a6"
   },
   "local-sale": {
-    label: "SALE",
-    kind: "SELL",
-    tip: "Sale to the local market"
+    type: "SELL",
+    tip: "Sale to the local market",
+    color: "#a33"
   },
   global: {
-    label: "GLOBAL",
-    kind: "GLOBAL",
-    tip: "Redistribution between markets"
+    type: "GLOBAL",
+    tip: "Redistribution between markets",
+    color: "#5f6f7a"
   }
 };
 
@@ -73,16 +63,17 @@ function marketDealsAddLines(): void {
   }
 
   const deals = pack.deals.filter(deal => deal.market === activeMarketId);
-  const summary = getSummary(deals);
+  let netFlow = 0;
 
   let lines = "";
   for (const deal of deals) {
+    netFlow += getDealNet(deal);
     lines += renderDealLine(deal, market);
   }
 
   ensureEl("marketDealsBody").innerHTML = lines || "No market deals recorded";
   ensureEl("marketDealsFooterDeals").innerHTML = String(deals.length);
-  ensureEl("marketDealsFooterNet").innerHTML = formatPrice(summary.netFlow);
+  ensureEl("marketDealsFooterNet").innerHTML = formatPrice(netFlow);
 
   applySorting(ensureEl("marketDealsHeader"));
 }
@@ -92,67 +83,43 @@ function closeMarketDeals(): void {
 }
 
 function renderDealLine(deal: Deal, market: Market): string {
+  const good = Goods.get(deal.goodId);
+  if (!good) return "";
+
+  const stroke = Goods.getStroke(good.color);
   const phase = PHASE[deal.phase];
   const dealNet = getDealNet(deal);
-  const goodName = getGoodName(deal.goodId);
+
   const counterparty =
-    phase.kind === "SELL" ? getPartyLabel(deal.buyerId, market) : getPartyLabel(deal.sellerId, market);
-  const details = getDealDetails(deal, market);
+    phase.type === "SELL" ? getPartyLabel(deal.buyerId, market) : getPartyLabel(deal.sellerId, market);
+  const {type, tip, color} = PHASE[deal.phase];
+  const incomeColor = dealNet >= 0 ? "#2a6" : "#c44";
 
-  return /* html */ `<div class="states marketDeal"
-      data-good="${goodName}"
-      data-units="${rn(deal.units, 2)}"
-      data-counterparty="${counterparty}"
-      data-income="${dealNet}"
-      data-details="${details}">
-      <div style="width:auto;min-width:0">${getGoodIcon(deal.goodId)}${goodName} ${renderPhaseBadge(deal.phase)}</div>
-      <div style="width:auto;text-align:right">${rn(deal.units, 2)}</div>
-      <div title="${counterparty}">${counterparty}</div>
-      <div style="width:auto;text-align:right;color:${dealNet >= 0 ? "#2a6" : "#c44"}">${formatPrice(dealNet)}</div>
-      <div title="${details}">${details}</div>
+  return /* html */ `<div class="states marketDeal" data-good="${good.name}" data-type="${type}" data-units="${rn(deal.units, 2)}" data-counterparty="${counterparty}" data-income="${dealNet}">
+      <svg data-tip="Good icon" width="1.4em" height="1.4em" class="goodIcon">
+        <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
+        <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
+      </svg>
+      <div data-tip="Good name" class="goodName">${good.name}</div>
+      <div class="marketDealType" data-tip="${tip}" style="color:${color}">${type}</div>
+      <div class="marketDealUnits">${rn(deal.units, 2)}</div>
+      <div class="marketDealCounterparty" data-tip="${counterparty}">${counterparty}</div>
+      <div class="marketDealIncome" style="color:${incomeColor}">${formatPrice(dealNet)}</div>
     </div>`;
-}
-
-function getSummary(deals: Deal[]): MarketSummary {
-  const sales = deals.filter(deal => deal.phase === "local-sale");
-  const buys = deals.filter(deal => deal.phase !== "local-sale");
-
-  const totalDeals = deals.length;
-  const globalDeals = deals.filter(deal => deal.phase === "global").length;
-  const totalUnits = deals.reduce((sum, deal) => sum + deal.units, 0);
-  const buySpend = buys.reduce((sum, deal) => sum + getDealSpend(deal), 0);
-  const grossSaleIncome = sales.reduce((sum, deal) => sum + getDealRevenue(deal), 0);
-  const totalTax = sales.reduce((sum, deal) => sum + getDealTax(deal), 0);
-  const saleIncome = grossSaleIncome - totalTax;
-  const netFlow = saleIncome - buySpend;
-
-  return {
-    totalDeals,
-    globalDeals,
-    totalUnits,
-    buySpend,
-    totalTax,
-    saleIncome,
-    netFlow
-  };
 }
 
 function getMarketCenterName(market: Market): string {
   return pack.burgs[market.centerBurgId]?.name || `Market ${market.i}`;
 }
 
-function getMarketLabel(market: Market): string {
-  return `${getMarketCenterName(market)} market`;
-}
-
 function getPartyLabel(id: number, currentMarket: Market): string {
-  if (id === currentMarket.i) return getMarketLabel(currentMarket);
+  if (id === currentMarket.i) return `${getMarketCenterName(currentMarket)} market`;
 
   const burg = pack.burgs[id] as Burg | undefined;
   if (burg && !burg.removed) return burg.name || `Burg ${id}`;
 
   const market = Trade.getMarket(id);
-  if (market) return getMarketLabel(market);
+  if (market) return `${getMarketCenterName(market)} market`;
   return `#${id}`;
 }
 
@@ -174,60 +141,24 @@ function getDealNet(deal: Deal): number {
   return getDealRevenue(deal) - getDealTax(deal) - getDealSpend(deal);
 }
 
-function getDealDetails(deal: Deal, market: Market): string {
-  const seller = getPartyLabel(deal.sellerId, market);
-  const buyer = getPartyLabel(deal.buyerId, market);
-  const tax = getDealTax(deal);
-  if (deal.phase === "local-sale") {
-    return `seller ${seller}; buyer ${buyer}; units ${rn(deal.units, 2)} x sell ${rn(deal.prices.marketSell, 2)} - tax ${rn(tax, 2)}`;
-  }
-  return `seller ${seller}; buyer ${buyer}; units ${rn(deal.units, 2)} x buy ${rn(deal.prices.marketBuy, 2)}`;
-}
-
-function getGoodName(goodId: number): string {
-  return Goods.get(goodId)?.name || `#${goodId}`;
-}
-
-function getGoodIcon(goodId: number): string {
-  const good = Goods.get(goodId);
-  if (!good) return "";
-
-  const stroke = Goods.getStroke(good.color);
-  return /*html*/ `<svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
-      <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
-      <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
-    </svg>`;
-}
-
-function renderPhaseBadge(phase: TradePhase): string {
-  const phaseInfo = PHASE[phase];
-  const base =
-    "display:inline-block;border-radius:3px;padding:0 .4em;font-size:.8em;font-weight:bold;line-height:1.35;margin-left:4px";
-  if (phaseInfo.kind === "SELL") {
-    return `<span style="${base};background:#dff0e2;color:#2f8a46" title="${phaseInfo.tip}">${phaseInfo.label}</span>`;
-  }
-  if (phaseInfo.kind === "GLOBAL") {
-    return `<span style="${base};background:#edf1f4;color:#5f6f7a" title="${phaseInfo.tip}">${phaseInfo.label}</span>`;
-  }
-  return `<span style="${base};background:#f5d9d6;color:#a33" title="${phaseInfo.tip}">${phaseInfo.label}</span>`;
-}
-
 function downloadDealsCsv(): void {
   const market = Trade.getMarket(activeMarketId);
   if (!market) return;
 
-  const centerName = getMarketCenterName(market);
   const lines = pack.deals.filter(deal => deal.market === activeMarketId);
-  let csv = "Market,Deal Id,Phase,Good,Units,Buyer,Seller,Buy Price,Sell Price,Tax,Net\n";
-
+  let csv = "Id,Good,Type,Good,Units,Buyer,Seller,Buy Price,Sell Price,Tax,Net\n";
   for (const deal of lines) {
+    const good = Goods.get(deal.goodId);
+    if (!good) continue;
+
     const buyer = getPartyLabel(deal.buyerId, market);
     const seller = getPartyLabel(deal.sellerId, market);
+    const type = PHASE[deal.phase].type;
+
     csv += [
-      centerName,
       deal.id,
-      PHASE[deal.phase].label,
-      getGoodName(deal.goodId),
+      good.name,
+      type,
       rn(deal.units, 2),
       buyer,
       seller,
@@ -239,7 +170,7 @@ function downloadDealsCsv(): void {
     csv += "\n";
   }
 
-  downloadFile(csv, `${getFileName(`Market_${centerName}_Deals`)}.csv`);
+  downloadFile(csv, `${getFileName(`Market_${activeMarketId}_Deals`)}.csv`);
 }
 
 declare global {

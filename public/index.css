@@ -2470,3 +2470,33 @@ div.states > .goodEdit {
 div.states.hiddenByTag {
   display: none;
 }
+
+/* Market Goods */
+div.states > .marketGoodName {
+  width: 8.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+div.states > .marketGoodStock,
+div.states > .marketGoodBuyPrice,
+div.states > .marketGoodSellPrice {
+  width: 5em;
+  text-align: right;
+}
+
+/* Market Deals */
+div.states > .marketDealUnits {
+  width: 4em;
+  text-align: right;
+}
+
+div.states > .marketDealCounterparty {
+  width: 8em;
+}
+
+div.states > .marketDealIncome {
+  width: 5em;
+  text-align: right;
+}

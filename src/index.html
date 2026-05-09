@@ -5063,35 +5063,31 @@
         <div id="productionChainsContent" style="overflow:auto"></div>
       </div>
       <div id="marketOverview" class="dialog stable" style="display: none">
-        <div>
-          <div id="marketOverviewStats" class="totalLine"></div>
-
-          <div id="marketOverviewGoodsHeader" class="header" style="grid-template-columns: 16em 5em 7em 7em;gap:.4em">
-            <div data-tip="Click to sort by good" class="sortable alphabetically" data-sortby="good" style="margin-left:0">Good&nbsp;</div>
-            <div data-tip="Click to sort by stock" class="sortable" data-sortby="stock">Stock&nbsp;</div>
-            <div data-tip="Click to sort by buy price" class="sortable" data-sortby="buyprice">Buy Price&nbsp;</div>
-            <div data-tip="Click to sort by sell price" class="sortable" data-sortby="sellprice">Sell Price&nbsp;</div>
-          </div>
-          <div id="marketOverviewGoodsBody" class="table" style="max-height:20em"></div>
-
-          <div id="marketOverviewSummary" class="totalLine"></div>
-
-          <div id="marketOverviewBottom">
-            <button id="marketOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
-            <button id="marketOverviewToggleGoods" data-tip="Toggle showing all goods or only in-stock items" class="icon-eye"></button>
-            <button id="marketOverviewOpenDeals" data-tip="View market deals" class="icon-list-bullet"></button>
-            <button id="marketOverviewExport" data-tip="Save market deals data as a text file (.csv)" class="icon-download"></button>
-          </div>
+        <div id="marketOverviewHeader" class="header" style="grid-template-columns: 2.6em 9em 4.5em 5em 5em;">
+          <div></div>
+          <div data-tip="Click to sort by good" class="sortable alphabetically" data-sortby="good" style="margin-left:0">Good&nbsp;</div>
+          <div data-tip="Click to sort by stock" class="sortable icon-sort-number-down" data-sortby="stock">Stock&nbsp;</div>
+          <div data-tip="Click to sort by buy price" class="sortable" data-sortby="buyprice">Buy Price&nbsp;</div>
+          <div data-tip="Click to sort by sell price" class="sortable" data-sortby="sellprice">Sell Price&nbsp;</div>
+        </div>
+        <div id="marketOverviewGoodsBody" class="table" style="max-height:40em"></div>
+        <div id="marketOverviewSummary" class="totalLine"></div>
+        <div id="marketOverviewBottom">
+          <button id="marketOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
+          <button id="marketOverviewToggleGoods" data-tip="Toggle showing all goods or only in-stock items" class="icon-eye"></button>
+          <button id="marketOverviewOpenDeals" data-tip="View market deals" class="icon-list-bullet"></button>
+          <button id="marketOverviewExport" data-tip="Save market deals data as a text file (.csv)" class="icon-download"></button>
         </div>
       </div>
       <div id="marketDeals" class="dialog stable" style="display: none">
         <div>
-          <div id="marketDealsHeader" class="header" style="grid-template-columns: 20em 5em 15em 7em 13em;gap:.4em">
+          <div id="marketDealsHeader" class="header" style="grid-template-columns: 2em 7.2em 5.2em 3em 9em 4em;">
+            <div></div>
             <div data-tip="Click to sort by good" class="sortable alphabetically" data-sortby="good" style="margin-left:0">Good&nbsp;</div>
+            <div data-tip="Click to sort by deal type" class="sortable" data-sortby="type">Type&nbsp;</div>
             <div data-tip="Click to sort by units" class="sortable" data-sortby="units">Units&nbsp;</div>
             <div data-tip="Click to sort by counterparty" class="sortable alphabetically" data-sortby="counterparty">Counterparty&nbsp;</div>
             <div data-tip="Click to sort by income" class="sortable" data-sortby="income">Income&nbsp;</div>
-            <div data-tip="Deal details and calculation" class="sortable alphabetically" data-sortby="details">Details&nbsp;</div>
           </div>
           <div id="marketDealsBody" class="table" style="max-height:30em"></div>
 
