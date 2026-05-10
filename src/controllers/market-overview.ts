@@ -26,12 +26,7 @@ export function open(marketId: number): void {
     resizable: false,
     width: "auto",
     close: closeMarketOverview,
-    position: {
-      my: "right top",
-      at: "right-10 top+10",
-      of: "svg",
-      collision: "fit"
-    }
+    position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
   });
 
   if (!isInitialized) {
@@ -82,9 +77,9 @@ function marketOverviewAddLines() {
 
   const totalUnits = Object.values(market.goods).reduce((sum, mg) => sum + mg.stock, 0);
   ensureEl("marketOverviewSummary").innerHTML = /*html*/ `
-    <div>Owner: ${getOwnerStateName(market)}</div>
-    <div>Burgs: ${Trade.getMarketBurgIds(market.i).length}</div>
-    <div>Stock: ${rn(totalUnits, 2)}</div>`;
+    <div style="margin-left:5px">Owner: ${getOwnerStateName(market)}</div>
+    <div style="margin-left:12px">Burgs: ${Trade.getMarketBurgIds(market.i).length}</div>
+    <div style="margin-left:12px">Stock: ${rn(totalUnits, 2)}</div>`;
 
   applySorting(ensureEl("marketOverviewHeader"));
   $("#marketOverview").dialog({width: fitContent()});

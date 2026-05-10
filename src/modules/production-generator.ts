@@ -7,9 +7,6 @@ import type {Market} from "./trade-generator";
 
 export class ProductionModule {
   private readonly BONUS_PRODUCTION = 5;
-  private readonly PROVINCE_PENALTY = 3;
-  private readonly STATE_PENALTY = 15;
-
   private readonly BUY_PRESSURE_FACTOR = 0.002;
   private readonly SELL_PRESSURE_FACTOR = 0.001;
   private readonly PRICE_FLOOR_FACTOR = 0.5;
@@ -40,7 +37,7 @@ export class ProductionModule {
       const cultureType = burg.type || DEFAULT_CULTURE_TYPE;
       const population = burg.population || 0;
       const demandTargets = this.buildDemandTargets(burg);
-      const burgResources = this.collectBurgResources(burg, globalResources);
+      const {resources: burgResources} = this.collectBurgResources(burg, globalResources);
 
       const inventory: Record<number, number> = {};
       const jobs: BurgProductionData["jobs"] = [];
@@ -692,13 +689,20 @@ export class ProductionModule {
     return cellsResources;
   }
 
-  collectBurgResources(burg: Burg, globalResources: Record<number, number>[]): Record<number, number> {
+  collectBurgResources(burg: Burg, globalResources: Record<number, number>[]) {
     const resources: Record<number, number> = {};
+
+    const DEFAULT_COST = 1;
+    const PORT_SEA_RING_COST = 0.2;
+    const SEA_RING_COST = 0.5;
+    const FOREIGN_PROVINCE_COST = 3;
+    const FOREIGN_STATE_COST = 10;
 
     const {cells} = pack;
     const burgCell = burg.cell;
     const burgState = burg.state ?? 0;
     const burgProvince = cells.province[burgCell];
+    const burgPort = burg.port;
     const workers = Math.max(1, Math.ceil(burg.population || 0));
 
     const visited = new Set<number>();
@@ -726,14 +730,26 @@ export class ProductionModule {
       for (const neighbor of cells.c[cellId]) {
         if (visited.has(neighbor)) continue;
 
+        let cellCost = DEFAULT_COST;
         const isWater = cells.h[neighbor] < 20;
-        let hopCost = 1;
-        if (!isWater) {
-          if (cells.province[neighbor] !== burgProvince) hopCost += this.PROVINCE_PENALTY;
-          if (cells.state[neighbor] !== burgState) hopCost += this.STATE_PENALTY;
+        if (isWater) {
+          const ring = Math.abs(cells.t[neighbor]); // distance from coast in cells
+          if (burgPort) {
+            const harbor = cells.harbor[neighbor];
+            const feature = cells.f[harbor];
+            if (feature === burgPort) cellCost = PORT_SEA_RING_COST * ring;
+          } else {
+            cellCost = SEA_RING_COST * ring;
+          }
+        } else {
+          if (cells.state[neighbor] !== burgState) {
+            cellCost = FOREIGN_STATE_COST;
+          } else if (cells.province[neighbor] !== burgProvince) {
+            cellCost = FOREIGN_PROVINCE_COST;
+          }
         }
 
-        const totalCost = baseCost + hopCost;
+        const totalCost = baseCost + cellCost;
         if (cost[neighbor] === undefined || totalCost < cost[neighbor]) {
           cost[neighbor] = totalCost;
           queue.push(neighbor, totalCost);
@@ -741,7 +757,7 @@ export class ProductionModule {
       }
     }
 
-    return resources;
+    return {resources, cells: Array.from(visited)};
   }
 
   getProductionData(burgId: number): BurgProductionData | undefined {

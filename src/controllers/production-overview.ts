@@ -3,9 +3,10 @@ import type {DemandCategory} from "../modules/goods-generator";
 import {DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "../modules/goods-generator";
 import type {DecisionCandidate, DemandEffect} from "../modules/production-generator";
 import type {Deal} from "../modules/trade-generator";
-import {rn} from "../utils";
+import {getPackPolygon, rn} from "../utils";
 
 type Type = "RAW" | "MFG" | "BUY" | "SELL";
+const RESOURCE_CELLS_LAYER = "productionOverviewResourceCells";
 
 export function open(burgId: number): void {
   const burg = pack.burgs[burgId];
@@ -313,9 +314,11 @@ export function open(burgId: number): void {
     </div>`;
 
   const globalResources = Production.collectGlobalResources(pack.goods);
-  const burgResources = Production.collectBurgResources(burg, globalResources);
+  const {resources: burgResources, cells: resourceCells} = Production.collectBurgResources(burg, globalResources);
+  renderResourceCellsDebugLayer(resourceCells);
 
   const accessibleResourceRows = Object.entries(burgResources)
+    .sort((a, b) => b[1] - a[1])
     .map(([goodIdStr, amount]) => {
       const goodId = +goodIdStr;
       const good = Goods.get(goodId);
@@ -339,23 +342,15 @@ export function open(burgId: number): void {
         colWidths: ["30%", "10%", "20%", "40%"],
         headers: [
           {label: "Resource"},
-          {
-            label: "Units",
-            align: "right",
-            title: "Raw units from flood-fill cells"
-          },
-          {
-            label: "Base Price",
-            align: "right",
-            title: "Authored reference price for this resource"
-          },
+          {label: "Units", align: "right", title: "Raw units from flood-fill cells"},
+          {label: "Base Price", align: "right", title: "Authored reference price for this resource"},
           {
             label: "Demand Coverage",
             align: "right",
             title: "Demand categories this accessible resource can help cover at current pulled units"
           }
         ],
-        rows: accessibleResourceRows ? [accessibleResourceRows] : [],
+        rows: [accessibleResourceRows],
         empty: "No goods reached this burg"
       })
     : `<i style="${styles.empty}">No goods reached this burg</i>`;
@@ -599,8 +594,27 @@ export function open(burgId: number): void {
   $("#alert").dialog({
     width: "48em",
     resizable: true,
-    title: `Production Overview: ${burg.name}`
+    title: `Production Overview: ${burg.name}`,
+    position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"},
+    close: () => {
+      debug.select(`#${RESOURCE_CELLS_LAYER}`).remove();
+    }
   });
+}
+
+function renderResourceCellsDebugLayer(resourceCells: number[]): void {
+  debug.select(`#${RESOURCE_CELLS_LAYER}`).remove();
+  const layer = debug.append("g").attr("id", RESOURCE_CELLS_LAYER).attr("pointer-events", "none");
+
+  layer
+    .selectAll("polygon")
+    .data(resourceCells)
+    .enter()
+    .append("polygon")
+    .attr("points", (cellId: number) => getPackPolygon(cellId, pack))
+    .attr("fill", "#4a90e24d")
+    .attr("stroke", "#2f5f9e")
+    .attr("stroke-width", 0.5);
 }
 
 declare global {
