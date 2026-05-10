@@ -86,14 +86,6 @@ function prepareMapData() {
   cloneEl.querySelector("#viewbox").removeAttribute("transform");
 
   cloneEl.querySelector("#ruler").innerHTML = ""; // always remove rulers
-  
-  cloneEl
-    .querySelectorAll("#routes > #roads, #routes > #trails, #routes > #searoutes")
-    .forEach(path => path.setAttribute("fill", "none"));
-  
-  cloneEl
-    .querySelectorAll("#borders > #stateBorders, #borders > #provinceBorders")
-    .forEach(path => path.setAttribute("fill", "none"));
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
