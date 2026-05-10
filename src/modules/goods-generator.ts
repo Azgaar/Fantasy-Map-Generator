@@ -65,7 +65,7 @@ const GOODS_DATA: GoodData[] = [
     chance: 4,
     distribution: "biome(5, 6, 7, 8, 9)",
     unit: "pile",
-    demandCoverage: {construction: 0.75, utilities: 0.25},
+    demandCoverage: {construction: 1, utilities: 1},
     bonus: {fleet: 2, defence: 1},
     culture: {Hunting: 1.5},
     biome: {5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 12: 0.5}
@@ -514,7 +514,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {utilities: 1},
     bonus: {artillery: 2},
     culture: {},
-    recipes: [{Wood: 1.5}, {"Tropical timber": 1}]
+    recipes: [{Wood: 1.5}, {"Tropical timber": 1.5}]
   },
   {
     name: "Oil",

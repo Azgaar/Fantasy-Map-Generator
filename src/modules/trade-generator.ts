@@ -7,8 +7,8 @@ import type {BurgProductionData} from "./production-generator";
 
 export const DEFAULT_SALES_TAX = 0.2;
 export const DEFAULT_TRADE_RESERVE_FACTOR = 0.2;
-const BUY_PRESSURE_FACTOR = 0.002;
-const SELL_PRESSURE_FACTOR = 0.001;
+const BUY_PRESSURE_FACTOR = 0.02;
+const SELL_PRESSURE_FACTOR = 0.01;
 const PRICE_FLOOR_FACTOR = 0.5;
 const PRICE_CEILING_FACTOR = 3.0;
 

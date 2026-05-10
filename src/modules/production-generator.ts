@@ -621,8 +621,8 @@ export class ProductionModule {
       const sellPrice = params.sellPrice[recipe.good.i] ?? recipe.good.value;
       const chainValue = baseChainValue * (sellPrice / recipe.good.value);
       const revenue = chainValue * cultureModifier;
-      const ingredientsCost = marketCostTotal / units;
-      const score = units * (revenue - ingredientsCost) * demandEffect.multiplier;
+      const ingredientCost = marketCostTotal / units;
+      const score = units * (revenue - ingredientCost) * demandEffect.multiplier;
       candidates.push({
         kind: "manufacture",
         goodId: recipe.good.i,
@@ -631,7 +631,7 @@ export class ProductionModule {
         demandEffect,
         cultureModifier,
         revenue,
-        ingredientCost: ingredientsCost,
+        ingredientCost,
         units,
         ingredients
       });
