@@ -79,7 +79,7 @@ const bordersRenderer = () => {
     }
   }
 
-  svg.select("#borders").selectAll("path").remove();
+  svg.select("#borders").attr("fill", "none").selectAll("path").remove();
   svg.select("#stateBorders").append("path").attr("d", statePath.join(" "));
   svg
     .select("#provinceBorders")

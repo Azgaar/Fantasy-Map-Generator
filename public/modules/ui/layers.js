@@ -813,7 +813,7 @@ function drawRoutes() {
     routePaths[group].push(`<path id="route${i}" d="${Routes.getPath(route)}"/>`);
   }
 
-  routes.selectAll("path").remove();
+  routes.attr("fill", "none").selectAll("path").remove();
   for (const group in routePaths) {
     routes.select("#" + group).html(routePaths[group].join(""));
   }
