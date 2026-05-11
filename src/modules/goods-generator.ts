@@ -440,14 +440,14 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing", "luxury"],
     icon: "good-furs",
     color: "#8a5e51",
-    value: 5,
+    value: 4,
     chance: 2,
     distribution: "biome(9) || (biome(10) && nth(2)) || (biome(6, 8) && nth(5)) || (biome(12) && nth(10))",
     unit: "pelt",
     demandCoverage: {luxury: 0.3, utilities: 0.5},
     bonus: {prestige: 1},
     culture: {Hunting: 2},
-    biome: {9: 0.5, 10: 0.5, 6: 0.5, 8: 0.25, 12: 0.25}
+    biome: {9: 0.25, 10: 0.25, 6: 0.25, 8: 0.25, 12: 0.25}
   },
   {
     name: "Sheep",
@@ -509,7 +509,7 @@ const GOODS_DATA: GoodData[] = [
     color: "#5a6a75",
     value: 3,
     chance: 3,
-    distribution: "minHeight(40) || (minHeight(20) && elevation())",
+    distribution: "minHeight(40) || (minHeight(20) && elevation(25))",
     unit: "wain",
     demandCoverage: {utilities: 1},
     bonus: {artillery: 2},
@@ -685,7 +685,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["storage", "construction"],
     icon: "good-glass",
     color: "#a0c8e8",
-    value: 6,
+    value: 7,
     chance: 0,
     recipes: [{"White sand": 0.5, Coal: 0.5}],
     unit: "wain",
@@ -770,7 +770,7 @@ const GOODS_DATA: GoodData[] = [
     chance: 0,
     recipes: [{Wood: 2, Sails: 1, Ropes: 1, Tar: 1}],
     unit: "ship",
-    demandCoverage: {military: 1},
+    demandCoverage: {military: 2},
     bonus: {fleet: 4},
     culture: {Naval: 2}
   },
@@ -872,9 +872,9 @@ const GOODS_DATA: GoodData[] = [
     color: "#b0c4de",
     value: 10,
     chance: 0,
-    recipes: [{Saltpeter: 1, Coal: 1}],
+    recipes: [{Saltpeter: 0.5, Coal: 0.5}],
     unit: "barrel",
-    demandCoverage: {military: 1},
+    demandCoverage: {military: 2},
     bonus: {artillery: 3},
     culture: {}
   },
@@ -1005,15 +1005,15 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food", "luxury"],
     icon: "good-liquor",
     color: "#8a0303",
-    value: 9,
+    value: 10,
     chance: 0,
     recipes: [
       {Grain: 2, Wood: 1, Barrels: 0.5},
       {Wine: 1, Wood: 1, Barrels: 0.5},
-      {Grain: 2, Wood: 1, Ceramics: 0.5},
-      {Wine: 1, Wood: 1, Ceramics: 0.5},
-      {Grain: 2, Wood: 1, Glass: 0.5},
-      {Wine: 1, Wood: 1, Glass: 0.5}
+      {Grain: 2, Wood: 1, Ceramics: 0.25},
+      {Wine: 1, Wood: 1, Ceramics: 0.25},
+      {Grain: 2, Wood: 1, Glass: 0.25},
+      {Wine: 1, Wood: 1, Glass: 0.25}
     ],
     unit: "vessel",
     demandCoverage: {luxury: 1},
@@ -1041,7 +1041,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury", "ritual"],
     icon: "good-soap",
     color: "#e0e4cc",
-    value: 8,
+    value: 6,
     chance: 0,
     recipes: [
       {Olives: 1, Wood: 1},
@@ -1057,15 +1057,15 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury", "ritual"],
     icon: "good-perfume",
     color: "#ff69b4",
-    value: 16,
+    value: 15,
     chance: 0,
     recipes: [
-      {Olives: 1, Incense: 0.25, Glass: 1},
-      {Olives: 1, Game: 1, Glass: 1},
-      {Liquor: 0.25, Incense: 0.25, Whales: 0.5, Ceramics: 1}
+      {Olives: 1, Incense: 0.25, Glass: 0.5},
+      {Olives: 1, Game: 1, Glass: 0.5},
+      {Liquor: 0.25, Incense: 0.25, Whales: 0.5, Ceramics: 0.5}
     ],
     unit: "bottle",
-    demandCoverage: {luxury: 1},
+    demandCoverage: {luxury: 2},
     bonus: {prestige: 2},
     culture: {}
   }
@@ -1121,13 +1121,8 @@ export class GoodsModule {
     const shuffle = shuffler(() => Math.random());
 
     this.cells = pack.cells;
-    this.cells.good = createTypedArray({
-      maxValue: TYPED_ARRAY_MAX.UINT16,
-      length: this.cells.i.length
-    });
-    if (!pack.goods || regenerate) {
-      pack.goods = this.defaultGoods;
-    }
+    this.cells.good = createTypedArray({maxValue: TYPED_ARRAY_MAX.UINT16, length: this.cells.i.length});
+    if (!pack.goods || regenerate) pack.goods = this.defaultGoods;
 
     const resourceMaxCells = Math.ceil((200 * this.cells.i.length) / 5000);
     const methods = `{${Object.keys(this.methods).join(", ")}}`;
@@ -1140,7 +1135,7 @@ export class GoodsModule {
       this.cellId = cellId;
 
       for (const good of pack.goods) {
-        if (good.recipes || !good.distribution) continue;
+        if (!good.distribution) continue;
         if (good.cells! >= resourceMaxCells) continue;
         if (good.cells ? rnd > good.chance : Math.random() * 100 > good.chance) continue;
 

@@ -12,7 +12,7 @@ export class ProductionModule {
   private readonly PRICE_FLOOR_FACTOR = 0.5;
   private readonly PRICE_CEILING_FACTOR = 3.0;
   private readonly DEMAND_SHORTAGE_MULTIPLIER = 2.0;
-  private readonly CHAIN_VALUE_MAX_WORKERS = 5;
+  private readonly CHAIN_VALUE_MAX_WORKERS = 10;
 
   private productionData = new Map<number, BurgProductionData>();
 
@@ -26,6 +26,8 @@ export class ProductionModule {
     const goodById = new Map<number, Good>(goods.map(g => [g.i, g]));
     const globalResources = this.collectGlobalResources(goods);
     const chainValueByWorkers = this.buildChainValues(goods, this.CHAIN_VALUE_MAX_WORKERS);
+    console.log("Chain value by workers:", chainValueByWorkers);
+
     const {buyPressure, sellPressure, priceFloor, priceCeiling} = this.buildPriceArrays(goods);
     const recipes = this.buildRecipesArray(goods);
 
@@ -229,13 +231,88 @@ export class ProductionModule {
     const baseValues: number[] = [];
     for (const good of goods) baseValues[good.i] = good.value;
 
+    const minWorkersPerUnit = this.buildMinWorkersPerUnit(goods, maxWorkers);
+
     const chainValueByWorkers: number[][] = Array.from({length: maxWorkers + 1}, () => []);
     chainValueByWorkers[0] = baseValues.slice();
     chainValueByWorkers[1] = baseValues.slice();
 
     for (let workers = 2; workers <= maxWorkers; workers++) {
       const previous = chainValueByWorkers[workers - 1];
-      const current = previous.slice();
+      const current = baseValues.slice();
+      const recipeSummary: {
+        product: string;
+        workers: number;
+        accepted: boolean;
+        reason: string;
+      }[] = [];
+
+      for (const good of goods) {
+        if (!good.recipes?.length) continue;
+
+        for (const recipe of good.recipes) {
+          const entries = Object.entries(recipe) as [string, number][];
+          if (!entries.length) continue;
+
+          const recipeWorkersNeeded = this.getRecipeWorkersNeeded(entries, minWorkersPerUnit, maxWorkers);
+          if (recipeWorkersNeeded > workers) {
+            recipeSummary.push({
+              product: good.name,
+              workers: recipeWorkersNeeded,
+              accepted: false,
+              reason: `workers=${recipeWorkersNeeded} > ${workers}`
+            });
+
+            continue;
+          }
+
+          const recipeCost = entries.reduce((sum, [ingId, amount]) => sum + (previous[+ingId] ?? 0) * amount, 0);
+          const profit = good.value - recipeCost;
+          if (profit <= 0) {
+            recipeSummary.push({
+              product: good.name,
+              workers: recipeWorkersNeeded,
+              accepted: false,
+              reason: `profit=${profit} <= 0`
+            });
+
+            continue;
+          }
+
+          const totalAmount = entries.reduce((sum, [, amount]) => sum + amount, 0);
+          let _boostedAny = false;
+          for (const [ingIdStr, amount] of entries) {
+            const contribution = profit * (amount / totalAmount);
+            if (contribution <= 0.001) continue;
+            const ingredientId = +ingIdStr;
+            const candidateValue = (baseValues[ingredientId] ?? 0) + contribution;
+            if (candidateValue > (current[ingredientId] ?? 0) + 0.001) {
+              current[ingredientId] = candidateValue;
+              _boostedAny = true;
+            }
+          }
+
+          recipeSummary.push({
+            product: good.name,
+            workers: recipeWorkersNeeded,
+            accepted: true,
+            reason: `profit=${profit}, boosted >=1 ingredient`
+          });
+        }
+      }
+
+      chainValueByWorkers[workers] = current;
+    }
+
+    return chainValueByWorkers;
+  }
+
+  private buildMinWorkersPerUnit(goods: Good[], maxWorkers: number): number[] {
+    const limit = maxWorkers + 1;
+    const minWorkersPerUnit: number[] = [];
+    for (const good of goods) minWorkersPerUnit[good.i] = 1;
+
+    for (let iteration = 0; iteration < goods.length; iteration++) {
       let changed = false;
 
       for (const good of goods) {
@@ -245,34 +322,33 @@ export class ProductionModule {
           const entries = Object.entries(recipe) as [string, number][];
           if (!entries.length) continue;
 
-          const recipeCost = entries.reduce((sum, [ingId, amount]) => sum + (previous[+ingId] ?? 0) * amount, 0);
-          const profit = good.value - recipeCost;
-          if (profit <= 0) continue;
-
-          const totalAmount = entries.reduce((sum, [, amount]) => sum + amount, 0);
-          for (const [ingIdStr, amount] of entries) {
-            const contribution = profit * (amount / totalAmount);
-            if (contribution <= 0.001) continue;
-            const ingredientId = +ingIdStr;
-            const candidateValue = (previous[ingredientId] ?? baseValues[ingredientId] ?? 0) + contribution;
-            if (candidateValue > (current[ingredientId] ?? 0) + 0.001) {
-              current[ingredientId] = candidateValue;
-              changed = true;
-            }
+          const recipeWorkersNeeded = this.getRecipeWorkersNeeded(entries, minWorkersPerUnit, maxWorkers);
+          const currentMin = minWorkersPerUnit[good.i] ?? limit;
+          if (recipeWorkersNeeded < currentMin) {
+            minWorkersPerUnit[good.i] = recipeWorkersNeeded;
+            changed = true;
           }
         }
       }
 
-      chainValueByWorkers[workers] = current;
-      if (!changed) {
-        for (let extraWorkers = workers + 1; extraWorkers <= maxWorkers; extraWorkers++) {
-          chainValueByWorkers[extraWorkers] = current.slice();
-        }
-        break;
-      }
+      if (!changed) break;
     }
 
-    return chainValueByWorkers;
+    return minWorkersPerUnit;
+  }
+
+  private getRecipeWorkersNeeded(entries: [string, number][], minWorkersPerUnit: number[], maxWorkers: number): number {
+    const limit = maxWorkers + 1;
+    let totalWorkersNeeded = 1; // one worker to perform this manufacturing action
+
+    for (const [ingIdStr, amount] of entries) {
+      const ingredientId = +ingIdStr;
+      const ingredientWorkers = minWorkersPerUnit[ingredientId] ?? 1;
+      totalWorkersNeeded += ingredientWorkers * amount;
+      if (totalWorkersNeeded > limit) return limit;
+    }
+
+    return totalWorkersNeeded;
   }
 
   private buildDemandTargets(burg: Burg): number[] {
