@@ -657,5 +657,11 @@
     "stroke-width": 0.32,
     "data-circle": 1,
     "filter": "url(#dropShadow01)"
+  },
+  "#trade": {
+    "opacity": 1,
+    "stroke-width": 0.5,
+    "data-fill-opacity": 0.28,
+    "filter": null
   }
 }

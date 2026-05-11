@@ -7,6 +7,7 @@ import {ProductionChains} from "./production-chains";
 
 let isInitialized = false;
 let visibleTags = new Set<string>();
+const RURAL_BONUS_PRODUCTION = 5;
 
 export function open() {
   if (customization) return;
@@ -52,15 +53,7 @@ export function open() {
 
 function goodsEditorAddLines() {
   const body = ensureEl("goodsBody");
-  const globalResources = Production.collectGlobalResources(pack.goods);
-
-  const resources: number[] = [];
-  Object.entries(globalResources).forEach(([_cellId, cellResources]) => {
-    for (const goodId in cellResources) {
-      if (!resources[goodId]) resources[goodId] = 0;
-      resources[goodId] += cellResources[goodId] || 0;
-    }
-  });
+  const resources = getRuralAvailability();
 
   const production: number[] = [];
   for (const burg of pack.burgs) {
@@ -121,6 +114,28 @@ function goodsEditorAddLines() {
   applySorting(ensureEl("goodsHeader")!);
   applyTagVisibilityFilter();
   $("#goodsEditor").dialog({width: fitContent()});
+}
+
+function getRuralAvailability(): number[] {
+  const resources: number[] = [];
+  const {cells, goods} = pack;
+
+  for (const cellId of cells.i) {
+    const explicitGoodId = cells.good[cellId];
+    if (explicitGoodId) resources[explicitGoodId] = (resources[explicitGoodId] || 0) + RURAL_BONUS_PRODUCTION;
+
+    const population = Math.max(0, cells.pop[cellId] || 0);
+    if (population <= 0) continue;
+
+    const biomeId = cells.biome[cellId];
+    for (const good of goods) {
+      const biomeProduction = good.biome?.[biomeId] || 0;
+      if (!biomeProduction) continue;
+      resources[good.i] = (resources[good.i] || 0) + population * biomeProduction;
+    }
+  }
+
+  return resources;
 }
 
 function getBonusIcon(bonus: string): string {

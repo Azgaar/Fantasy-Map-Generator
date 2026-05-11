@@ -28,7 +28,7 @@ export interface Burg {
   MFCG?: string;
   produced?: Record<number, number>;
   wealth?: number; // cumulative net wealth from production runs
-  marketId?: number;
+  market?: number;
 }
 
 class BurgModule {

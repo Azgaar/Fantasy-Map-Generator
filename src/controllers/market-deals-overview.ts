@@ -41,7 +41,7 @@ export function open(marketId: number): void {
   marketDealsAddLines();
 
   $("#marketDeals").dialog({
-    title: `Market Deal History: ${getMarketCenterName(market)}`,
+    title: `Market Deals: ${getMarketCenterName(market)}`,
     resizable: false,
     width: "auto",
     close: closeMarketDeals,
@@ -90,8 +90,7 @@ function renderDealLine(deal: Deal, market: Market): string {
   const phase = PHASE[deal.phase];
   const dealNet = getDealNet(deal);
 
-  const counterparty =
-    phase.type === "SELL" ? getPartyLabel(deal.buyerId, market) : getPartyLabel(deal.sellerId, market);
+  const counterparty = getPartyLabel(phase.type === "BUY" ? deal.buyer : deal.seller, market);
   const {type, tip, color} = PHASE[deal.phase];
   const incomeColor = dealNet >= 0 ? "#2a6" : "#c44";
 
@@ -124,16 +123,16 @@ function getPartyLabel(id: number, currentMarket: Market): string {
 }
 
 function getDealSpend(deal: Deal): number {
-  return deal.phase === "local-sale" ? 0 : deal.units * deal.prices.marketBuy;
+  return deal.phase === "local-sale" ? 0 : deal.units * deal.price;
 }
 
 function getDealRevenue(deal: Deal): number {
-  return deal.phase === "local-sale" ? deal.units * deal.prices.marketSell : 0;
+  return deal.phase === "local-sale" ? deal.units * deal.price : 0;
 }
 
 function getDealTax(deal: Deal): number {
   if (deal.phase !== "local-sale") return 0;
-  const seller = pack.burgs[deal.sellerId] as Burg | undefined;
+  const seller = pack.burgs[deal.seller] as Burg | undefined;
   return seller ? getDealRevenue(deal) * Trade.getSalesTaxRate(seller) : 0;
 }
 
@@ -146,13 +145,13 @@ function downloadDealsCsv(): void {
   if (!market) return;
 
   const lines = pack.deals.filter(deal => deal.market === activeMarketId);
-  let csv = "Id,Good,Type,Good,Units,Buyer,Seller,Buy Price,Sell Price,Tax,Net\n";
+  let csv = "Id,Good,Type,Units,Buyer,Seller,Price,Tax,Net\n";
   for (const deal of lines) {
     const good = Goods.get(deal.goodId);
     if (!good) continue;
 
-    const buyer = getPartyLabel(deal.buyerId, market);
-    const seller = getPartyLabel(deal.sellerId, market);
+    const buyer = getPartyLabel(deal.buyer, market);
+    const seller = getPartyLabel(deal.seller, market);
     const type = PHASE[deal.phase].type;
 
     csv += [
@@ -162,8 +161,7 @@ function downloadDealsCsv(): void {
       rn(deal.units, 2),
       buyer,
       seller,
-      rn(deal.prices.marketBuy, 2),
-      rn(deal.prices.marketSell, 2),
+      rn(deal.price, 2),
       rn(getDealTax(deal), 2),
       rn(getDealNet(deal), 2)
     ].join(",");

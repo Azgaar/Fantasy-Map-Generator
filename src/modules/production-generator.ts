@@ -5,8 +5,6 @@ import type {DemandCategory, Good} from "./goods-generator";
 import {DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "./goods-generator";
 import type {Market} from "./trade-generator";
 
-export const BONUS_PRODUCTION = 5;
-
 export class ProductionModule {
   private readonly BUY_PRESSURE_FACTOR = 0.002;
   private readonly SELL_PRESSURE_FACTOR = 0.001;
@@ -25,7 +23,6 @@ export class ProductionModule {
     validBurgs.sort((a, b) => (a.population || 0) - (b.population || 0));
 
     const goodById = new Map<number, Good>(goods.map(g => [g.i, g]));
-    const globalResources = this.collectGlobalResources(goods);
     const {buyPressure, sellPressure, priceFloor, priceCeiling} = this.buildPriceArrays(goods);
     const recipes = this.buildRecipesArray(goods);
     const recipesByOutput = this.buildRecipesByOutput(recipes);
@@ -39,7 +36,6 @@ export class ProductionModule {
       const cultureType = burg.type || DEFAULT_CULTURE_TYPE;
       const population = burg.population || 0;
       const demandTargets = this.buildDemandTargets(burg);
-      const {resources: burgResources} = this.collectBurgResources(burg, globalResources);
 
       const inventory: Record<number, number> = {};
       const jobs: BurgProductionData["jobs"] = [];
@@ -61,7 +57,6 @@ export class ProductionModule {
           demandTargets,
           cultureType,
           inventory,
-          burgResources,
           marketInventory: marketView.inventory,
           buyPrice: marketView.buyPrice,
           sellPrice: marketView.sellPrice,
@@ -129,26 +124,6 @@ export class ProductionModule {
             score,
             candidates: decision.candidates
           });
-        } else {
-          // extraction
-          const {goodId, score} = decision.action;
-          const extract = Math.min(fraction, burgResources[goodId] || 0);
-          burgResources[goodId] -= extract;
-
-          const good = goodById.get(goodId)!;
-          const cultureModifier = this.getCultureModifier(good, cultureType);
-          const produced = extract * cultureModifier;
-          inventory[goodId] = (inventory[goodId] || 0) + produced;
-
-          jobs.push({
-            kind: "extract",
-            tick: workersUsed + fraction,
-            goodId,
-            units: produced,
-            cultureModifier,
-            score,
-            candidates: decision.candidates
-          });
         }
 
         workersUsed += fraction;
@@ -212,23 +187,6 @@ export class ProductionModule {
     Trade.updateMarketDemand(goods, this.productionData);
 
     TIME && console.timeEnd("generateProduction");
-  }
-
-  private getBiomesResources(goods: Good[]) {
-    const biomeResources: {goodId: number; production: number}[][] = Array.from(
-      {length: biomesData.i.length},
-      () => []
-    );
-
-    for (const good of goods) {
-      if (!good.biome) continue;
-      for (const [biomeId, production] of Object.entries(good.biome)) {
-        if (!production || production <= 0) continue;
-        biomeResources[+biomeId].push({goodId: good.i, production});
-      }
-    }
-
-    return biomeResources;
   }
 
   private buildRecipesByOutput(recipes: Recipes[]): Map<number, Recipes[]> {
@@ -584,7 +542,6 @@ export class ProductionModule {
     goodById: Map<number, Good>;
     inventory: Record<number, number>;
     marketInventory: Record<number, number>;
-    burgResources: Record<number, number>;
     buyPrice: number[];
     sellPrice: number[];
     workersLeft: number;
@@ -601,7 +558,6 @@ export class ProductionModule {
       goodById,
       inventory,
       marketInventory,
-      burgResources,
       buyPrice,
       sellPrice,
       workersLeft,
@@ -621,31 +577,7 @@ export class ProductionModule {
     const totalProjectedGain = sellValuePerUnit * targetUnits * demandEffect.multiplier;
 
     const recipeList = recipesByOutput.get(good.i);
-    if (!recipeList?.length) {
-      const availableRaw = burgResources[good.i] || 0;
-      if (availableRaw + 0.001 < targetUnits || workersLeft + 0.001 < targetUnits) return null;
-      const unitsNow = Math.min(stepUnits, targetUnits, availableRaw);
-      const score = targetUnits > 0 ? (totalProjectedGain / targetUnits) * unitsNow : totalProjectedGain;
-      return {
-        goalGoodId: good.i,
-        workersNeeded: targetUnits,
-        marketCost: 0,
-        projectedGain: totalProjectedGain,
-        normalizedGain: targetUnits > 0 ? totalProjectedGain / targetUnits : totalProjectedGain,
-        action: {kind: "extract", goodId: good.i, score},
-        candidate: {
-          kind: "extract",
-          goodId: good.i,
-          score,
-          projectedGain: totalProjectedGain,
-          demandEffect,
-          cultureModifier,
-          units: unitsNow,
-          available: availableRaw
-        },
-        immediate: true
-      };
-    }
+    if (!recipeList?.length) return null;
 
     let bestPlan: GoalActionPlan | null = null;
 
@@ -723,7 +655,6 @@ export class ProductionModule {
           goodById,
           inventory,
           marketInventory,
-          burgResources,
           buyPrice,
           sellPrice,
           workersLeft: workersLeft - targetUnits,
@@ -747,22 +678,13 @@ export class ProductionModule {
       const projectedGain = totalProjectedGain - marketCost;
       const normalizedGain = workersNeeded > 0 ? projectedGain / workersNeeded : projectedGain;
       const action = nextActionPlan.action;
-      const candidate: DecisionCandidate =
-        nextActionPlan.candidate.kind === "extract"
-          ? {
-              ...nextActionPlan.candidate,
-              projectedGain,
-              score: normalizedGain * Math.min(stepUnits, targetUnits),
-              goalGoodId: good.i,
-              preparation: nextActionPlan.goalGoodId !== good.i
-            }
-          : {
-              ...nextActionPlan.candidate,
-              projectedGain,
-              score: normalizedGain * Math.min(stepUnits, targetUnits),
-              goalGoodId: good.i,
-              preparation: nextActionPlan.goalGoodId !== good.i
-            };
+      const candidate: DecisionCandidate = {
+        ...nextActionPlan.candidate,
+        projectedGain,
+        score: normalizedGain * Math.min(stepUnits, targetUnits),
+        goalGoodId: good.i,
+        preparation: nextActionPlan.goalGoodId !== good.i
+      };
 
       const plan: GoalActionPlan = {
         goalGoodId: good.i,
@@ -812,7 +734,6 @@ export class ProductionModule {
     demandTargets: number[];
     cultureType: string;
     inventory: Record<number, number>;
-    burgResources: Record<number, number>;
     marketInventory: Record<number, number>;
     buyPrice: number[];
     sellPrice: number[];
@@ -836,7 +757,6 @@ export class ProductionModule {
         goodById: params.goodById,
         inventory: params.inventory,
         marketInventory: params.marketInventory,
-        burgResources: params.burgResources,
         buyPrice: params.buyPrice,
         sellPrice: params.sellPrice,
         workersLeft: params.workersLeft,
@@ -861,7 +781,6 @@ export class ProductionModule {
           goodById: params.goodById,
           inventory: params.inventory,
           marketInventory: params.marketInventory,
-          burgResources: params.burgResources,
           buyPrice: params.buyPrice,
           sellPrice: params.sellPrice,
           workersLeft: params.workersLeft,
@@ -898,110 +817,18 @@ export class ProductionModule {
     return recipes;
   }
 
-  collectGlobalResources(goods: Good[]): Record<number, number>[] {
-    const {cells} = pack;
-    const biomeResources = this.getBiomesResources(goods);
-    const cellsResources: Record<number, number>[] = Array.from({length: cells.i.length}, () => ({}));
-
-    for (const cellId of cells.i) {
-      const goodId = cells.good[cellId];
-      if (goodId) cellsResources[cellId][goodId] = (cellsResources[cellId][goodId] || 0) + BONUS_PRODUCTION;
-
-      const biomeId = cells.biome[cellId];
-      for (const {goodId, production} of biomeResources[biomeId] ?? []) {
-        cellsResources[cellId][goodId] = (cellsResources[cellId][goodId] || 0) + production;
-      }
-    }
-
-    return cellsResources;
-  }
-
-  collectBurgResources(burg: Burg, globalResources: Record<number, number>[]) {
-    const resources: Record<number, number> = {};
-
-    const DEFAULT_COST = 1;
-    const PORT_SEA_RING_COST = 0.25;
-    const FOREIGN_PROVINCE_COST = 3;
-    const FOREIGN_STATE_COST = 10;
-
-    const {cells} = pack;
-    const burgCell = burg.cell;
-    const burgState = burg.state ?? 0;
-    const burgProvince = cells.province[burgCell];
-    const burgPort = burg.port;
-    const workers = Math.max(1, Math.ceil(burg.population || 0));
-
-    const visited = new Set<number>();
-    const cost: Record<number, number> = {};
-    cost[burgCell] = 0;
-
-    const queue = new FlatQueue();
-    queue.push(burgCell, 0);
-
-    while (queue.length && visited.size < workers) {
-      const cellId = queue.pop() as number;
-      if (visited.has(cellId)) continue;
-      visited.add(cellId);
-
-      const pool = globalResources[cellId];
-      for (const goodIdStr in pool) {
-        const goodId = +goodIdStr;
-        const amount = pool[goodId] || 0;
-        if (amount > 0) resources[goodId] = (resources[goodId] || 0) + amount;
-      }
-
-      if (visited.size >= workers) break;
-
-      const baseCost = cost[cellId] ?? 0;
-      for (const neighbor of cells.c[cellId]) {
-        if (visited.has(neighbor)) continue;
-
-        let cellCost = DEFAULT_COST;
-        const isWater = cells.h[neighbor] < 20;
-        if (isWater) {
-          const ring = Math.abs(cells.t[neighbor]); // distance from coast in cells
-          if (burgPort) {
-            const harbor = cells.harbor[neighbor];
-            const feature = cells.f[harbor];
-            if (feature === burgPort) cellCost = PORT_SEA_RING_COST * ring;
-          }
-        } else {
-          if (cells.state[neighbor] !== burgState) {
-            cellCost = FOREIGN_STATE_COST;
-          } else if (cells.province[neighbor] !== burgProvince) {
-            cellCost = FOREIGN_PROVINCE_COST;
-          }
-        }
-
-        const totalCost = baseCost + cellCost;
-        if (cost[neighbor] === undefined || totalCost < cost[neighbor]) {
-          cost[neighbor] = totalCost;
-          queue.push(neighbor, totalCost);
-        }
-      }
-    }
-
-    return {resources, cells: Array.from(visited)};
-  }
-
   getProductionData(burgId: number): BurgProductionData | undefined {
     return this.productionData.get(burgId);
   }
 }
 
-type PlannedAction =
-  | {
-      kind: "extract";
-      goodId: number;
-      score: number;
-    }
-  | {
-      kind: "manufacture";
-      good: Good;
-      ingredients: Ingredient[];
-      maxYield: number;
-      score: number;
-    };
+type PlannedAction = {
+  kind: "manufacture";
+  good: Good;
+  ingredients: Ingredient[];
+  maxYield: number;
+  score: number;
+};
 
 type Ingredient = {goodId: number; amount: number};
 type Recipes = {good: Good; ingredients: Ingredient[]};
@@ -1023,33 +850,20 @@ export type DemandEffect = {
 };
 type DemandFocus = {category: DemandCategory; shortage: number};
 
-export type DecisionCandidate =
-  | {
-      kind: "extract";
-      goodId: number;
-      score: number;
-      projectedGain: number;
-      demandEffect: DemandEffect;
-      cultureModifier: number;
-      units: number;
-      available: number;
-      goalGoodId?: number;
-      preparation?: boolean;
-    }
-  | {
-      kind: "manufacture";
-      goodId: number;
-      score: number;
-      projectedGain: number;
-      demandEffect: DemandEffect;
-      cultureModifier: number;
-      revenue: number;
-      ingredientCost: number;
-      units: number;
-      ingredients: DecisionIngredient[];
-      goalGoodId?: number;
-      preparation?: boolean;
-    };
+export type DecisionCandidate = {
+  kind: "manufacture";
+  goodId: number;
+  score: number;
+  projectedGain: number;
+  demandEffect: DemandEffect;
+  cultureModifier: number;
+  revenue: number;
+  ingredientCost: number;
+  units: number;
+  ingredients: DecisionIngredient[];
+  goalGoodId?: number;
+  preparation?: boolean;
+};
 
 type GoalActionPlan = {
   goalGoodId: number;
@@ -1063,22 +877,18 @@ type GoalActionPlan = {
 };
 
 export interface BurgProductionData {
-  jobs: (Extraction | Manufacturing)[];
+  jobs: Manufacturing[];
   finalInventory: Record<number, number>;
 }
 
 interface Job {
-  kind: "extract" | "manufacture";
+  kind: "manufacture";
   tick: number;
   goodId: number;
   units: number;
   cultureModifier: number;
   score: number;
   candidates: DecisionCandidate[];
-}
-
-interface Extraction extends Job {
-  kind: "extract";
 }
 
 interface Manufacturing extends Job {

@@ -10,7 +10,7 @@ export interface Good {
   // generation
   chance: number; // generation chance
   distribution?: string; // spread function string for raw goods, e.g. "biome(5, 6, 7, 8, 9)"
-  biome?: Partial<Record<number, number>>; // baseline production per biome id (units per biome cell), e.g. {6: 0.5, 7: 0.5}
+  biome?: Partial<Record<number, number>>; // baseline production per biome id per 1 rural population, e.g. {6: 0.05, 7: 0.05}
   recipes?: Record<number, number>[]; // good id and required amount to produce 1 unit of this good; presence marks a manufactured good
   culture: Partial<Record<CultureType, number>>; // modifier to production based on culture, e.g. {Nomadic: 2} means that nomadic cultures produce twice as much of this good
 
@@ -68,7 +68,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {construction: 1, utilities: 1},
     bonus: {fleet: 2, defence: 1},
     culture: {Hunting: 1.5},
-    biome: {5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 12: 0.5}
+    biome: {5: 0.1, 6: 0.1, 7: 0.1, 8: 0.1, 9: 0.1, 12: 0.05}
   },
   {
     name: "Stone",
@@ -82,7 +82,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {construction: 1},
     bonus: {defence: 2},
     culture: {Hunting: 0.6, Nomadic: 0.6},
-    biome: {1: 1, 2: 1}
+    biome: {1: 0.1, 2: 0.1}
   },
   {
     name: "Marble",
@@ -109,7 +109,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {},
     bonus: {artillery: 1, infantry: 1, defence: 1},
     culture: {Highland: 1.4},
-    biome: {12: 1}
+    biome: {12: 0.1}
   },
   {
     name: "Copper",
@@ -175,7 +175,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {food: 1},
     bonus: {population: 4},
     culture: {River: 1.2, Lake: 1.2, Nomadic: 0.5},
-    biome: {5: 1, 6: 1, 7: 1, 8: 1}
+    biome: {5: 0.1, 6: 0.1, 7: 0.1, 8: 0.1}
   },
   {
     name: "Cattle",
@@ -189,7 +189,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {food: 1},
     bonus: {population: 2},
     culture: {Nomadic: 2},
-    biome: {3: 1, 4: 1}
+    biome: {3: 0.1, 4: 0.1}
   },
   {
     name: "Fish",
@@ -203,7 +203,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {food: 1},
     bonus: {population: 2},
     culture: {River: 1.4, Lake: 1.4, Naval: 1.4, Nomadic: 0.2},
-    biome: {0: 1}
+    biome: {0: 0.1}
   },
   {
     name: "Game",
@@ -217,7 +217,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {food: 1},
     bonus: {archers: 2, population: 1},
     culture: {Naval: 0.6, Nomadic: 1.4, Hunting: 2},
-    biome: {3: 0.2, 4: 0.2, 5: 0.4, 6: 0.4, 7: 0.4, 8: 0.4, 9: 0.8}
+    biome: {3: 0.02, 4: 0.02, 5: 0.04, 6: 0.04, 7: 0.04, 8: 0.04, 9: 0.08}
   },
   {
     name: "Wine",
@@ -231,7 +231,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {food: 0.5, luxury: 0.5},
     bonus: {population: 1, prestige: 1},
     culture: {Highland: 1.2, Nomadic: 0.5},
-    biome: {6: 1}
+    biome: {6: 0.1}
   },
   {
     name: "Olives",
@@ -245,7 +245,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {food: 1},
     bonus: {population: 1},
     culture: {Generic: 0.8, Nomadic: 0.5},
-    biome: {6: 1}
+    biome: {6: 0.1}
   },
   {
     name: "Honey",
@@ -259,7 +259,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {food: 0.5},
     bonus: {population: 1},
     culture: {Generic: 1.2},
-    biome: {6: 1, 8: 1, 9: 1}
+    biome: {6: 0.1, 8: 0.1, 9: 0.1}
   },
   {
     name: "Salt",
@@ -273,7 +273,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {utilities: 1},
     bonus: {population: 1, defence: 1},
     culture: {Naval: 1.2},
-    biome: {1: 1, 2: 1}
+    biome: {1: 0.1, 2: 0.1}
   },
   {
     name: "Dates",
@@ -287,7 +287,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {food: 1},
     bonus: {population: 1},
     culture: {Hunting: 0.8, Highland: 0.8},
-    biome: {1: 1}
+    biome: {1: 0.1}
   },
   {
     name: "Horses",
@@ -301,7 +301,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {utilities: 0.6, military: 0.4},
     bonus: {cavalry: 2},
     culture: {Nomadic: 2},
-    biome: {4: 0.5}
+    biome: {4: 0.05}
   },
   {
     name: "Elephants",
@@ -328,7 +328,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {utilities: 0.7, military: 0.3},
     bonus: {cavalry: 1},
     culture: {Nomadic: 2, Generic: 0.8},
-    biome: {1: 0.5, 2: 0.5}
+    biome: {1: 0.05, 2: 0.05}
   },
   {
     name: "Hemp",
@@ -342,7 +342,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {},
     bonus: {fleet: 2},
     culture: {River: 1.4, Lake: 1.4},
-    biome: {6: 1, 7: 1, 8: 1}
+    biome: {6: 0.1, 7: 0.1, 8: 0.1}
   },
   {
     name: "Pearls",
@@ -447,7 +447,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {luxury: 0.5, utilities: 0.3},
     bonus: {prestige: 1},
     culture: {Hunting: 2},
-    biome: {9: 0.25, 10: 0.25, 6: 0.25, 8: 0.25, 12: 0.25}
+    biome: {9: 0.025, 10: 0.025, 6: 0.025, 8: 0.025, 12: 0.025}
   },
   {
     name: "Sheep",
@@ -461,7 +461,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {food: 1},
     bonus: {infantry: 1},
     culture: {Naval: 1.4, Highland: 1.4},
-    biome: {4: 1}
+    biome: {4: 0.1}
   },
   {
     name: "Slaves",
@@ -1120,20 +1120,24 @@ export class GoodsModule {
     const shuffle = shuffler(() => Math.random());
 
     this.cells = pack.cells;
-    this.cells.good = createTypedArray({maxValue: TYPED_ARRAY_MAX.UINT16, length: this.cells.i.length});
+    this.cells.good = createTypedArray({
+      maxValue: TYPED_ARRAY_MAX.UINT16,
+      length: this.cells.i.length
+    });
     if (!pack.goods || regenerate) pack.goods = this.defaultGoods;
 
     const resourceMaxCells = Math.ceil((200 * this.cells.i.length) / 5000);
     const methods = `{${Object.keys(this.methods).join(", ")}}`;
     const shuffledCells = shuffle(this.cells.i.slice());
+    const workingGoods = [...pack.goods];
 
     for (const cellId of shuffledCells) {
-      if (!(cellId % 10)) shuffle(pack.goods);
+      if (!(cellId % 10)) shuffle(workingGoods);
       if (this.cells.biome[cellId] === 11 && biomesData.habitability[11] === 0) continue; // skip glaciers
       const rnd = Math.random() * 100;
       this.cellId = cellId;
 
-      for (const good of pack.goods) {
+      for (const good of workingGoods) {
         if (!good.distribution) continue;
         if (good.cells! >= resourceMaxCells) continue;
         if (good.cells ? rnd > good.chance : Math.random() * 100 > good.chance) continue;

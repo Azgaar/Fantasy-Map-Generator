@@ -28,6 +28,7 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "overviewRiversButton") overviewRivers();
   else if (button === "overviewMilitaryButton") overviewMilitary();
   else if (button === "overviewMarkersButton") overviewMarkers();
+  else if (button === "overviewMarketsButton") MarketsOverview.open();
   else if (button === "overviewCellsButton") viewCellDetails();
   else if (button === "openMinimapButton") openMinimap();
 

@@ -376,6 +376,13 @@ function selectStyleElement() {
     styleGoodsCircle.checked = +el.attr("data-circle");
   }
 
+  if (styleElement === "trade") {
+    styleStrokeWidth.style.display = "block";
+    styleStrokeWidthInput.value = el.attr("stroke-width") || "0.5";
+    styleTrade.style.display = "block";
+    styleTradeFillOpacity.value = el.attr("data-fill-opacity") || "0.28";
+  }
+
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
   if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders", "terrs"].includes(styleElement)) {
@@ -970,6 +977,11 @@ styleGoodsCircle.addEventListener("change", function () {
   goods.attr("data-circle", +this.checked);
   goods.selectAll("*").remove();
   drawGoods();
+});
+
+styleTradeFillOpacity.on("input", e => {
+  trade.attr("data-fill-opacity", e.target.value);
+  if (layerIsOn("toggleTrade")) drawTrade();
 });
 
 // request a URL to image to be used as a texture

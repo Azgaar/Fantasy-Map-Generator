@@ -212,6 +212,7 @@ function drawLayers() {
   if (layerIsOn("toggleCultures")) drawCultures();
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (layerIsOn("toggleTrade")) drawTrade();
   if (layerIsOn("toggleZones")) drawZones();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleRoutes")) drawRoutes();
@@ -225,7 +226,6 @@ function drawLayers() {
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleMilitary")) drawMilitary();
   if (layerIsOn("toggleMarkers")) drawMarkers();
-  if (layerIsOn("toggleTrade")) drawTrade();
   if (layerIsOn("toggleRulers")) rulers.draw();
   // scale bar
   // vignette

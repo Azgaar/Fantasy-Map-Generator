@@ -78,6 +78,7 @@ function marketOverviewAddLines() {
   const totalUnits = Object.values(market.goods).reduce((sum, mg) => sum + mg.stock, 0);
   ensureEl("marketOverviewSummary").innerHTML = /*html*/ `
     <div style="margin-left:5px">Owner: ${getOwnerStateName(market)}</div>
+    <div style="margin-left:5px">Cells: ${pack.cells.market.reduce((count, m) => count + (m === market.i ? 1 : 0), 0)}</div>
     <div style="margin-left:12px">Burgs: ${Trade.getMarketBurgIds(market.i).length}</div>
     <div style="margin-left:12px">Stock: ${rn(totalUnits, 2)}</div>`;
 

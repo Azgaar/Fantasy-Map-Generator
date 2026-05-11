@@ -659,6 +659,9 @@
     "filter": "url(#dropShadow01)"
   },
   "#trade": {
-    "opacity": 1
+    "opacity": 1,
+    "stroke-width": 0.5,
+    "data-fill-opacity": 0.6,
+    "filter": null
   }
 }

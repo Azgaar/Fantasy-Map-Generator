@@ -179,8 +179,7 @@ t,
 #landmass,
 #vignette,
 #gridOverlay,
-#fogging,
-#trade .trade-links {
+#fogging {
   pointer-events: none;
 }
 

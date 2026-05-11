@@ -591,6 +591,14 @@
               <u>P</u>rovinces
             </li>
             <li
+              id="toggleTrade"
+              data-tip="Trade: trade centers and routes. Click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
+              onclick="toggleTrade(event)"
+              class="buttonoff"
+            >
+              Trade
+            </li>
+            <li
               id="toggleZones"
               data-tip="Zones: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="Z"
@@ -694,14 +702,6 @@
               onclick="toggleMarkers(event)"
             >
               Mar<u>k</u>ers
-            </li>
-            <li
-              id="toggleTrade"
-              data-tip="Trade: trade centers and routes. Click to toggle, drag to raise or lower the layer"
-              onclick="toggleTrade(event)"
-              class="buttonoff"
-            >
-              Trade
             </li>
             <li
               id="toggleRulers"
@@ -812,6 +812,7 @@
             <option value="regions" selected>States</option>
             <option value="temperature">Temperature</option>
             <option value="texture">Texture</option>
+            <option value="trade">Trade</option>
             <option value="vignette">Vignette</option>
             <option value="compass">Wind Rose</option>
             <option value="zones">Zones</option>
@@ -1399,6 +1400,14 @@
                 <td colspan="2">
                   <input id="styleGoodsCircle" class="checkbox" type="checkbox" />
                   <label for="styleGoodsCircle" class="checkbox-label">Show circle</label>
+                </td>
+              </tr>
+            </tbody>
+            <tbody id="styleTrade" style="display: none">
+              <tr data-tip="Set market territory cell fill transparency. Requires layer redraw to take effect">
+                <td>Fill opacity</td>
+                <td>
+                  <slider-input id="styleTradeFillOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
               </tr>
             </tbody>
@@ -2042,6 +2051,9 @@
             </button>
             <button id="overviewMarkersButton" data-tip="Click to open Markers Overview" data-shortcut="Shift + K">
               Markers
+            </button>
+            <button id="overviewMarketsButton" data-tip="Click to open Markets Overview">
+              Markets
             </button>
             <button
               id="overviewMilitaryButton"
@@ -5055,6 +5067,45 @@
       </div>
       <div id="productionChainsDialog" class="dialog" style="display:none;padding:0">
         <div id="productionChainsContent" style="overflow:auto"></div>
+      </div>
+      <div id="marketsOverview" class="dialog stable" style="display: none">
+        <div id="marketsOverviewHeader" class="header" style="grid-template-columns: 1.6em 7.2em 8em 3.5em 4.5em 6.5em 6.4em 6em 6em;">
+          <div></div>
+          <div data-tip="Market center burg name. Click to sort" class="sortable alphabetically" data-sortby="market" style="margin-left:0">Market&nbsp;</div>
+          <div data-tip="Owning state. Click to sort" class="sortable alphabetically" data-sortby="owner">Owner&nbsp;</div>
+          <div data-tip="Number of cells in market territory. Click to sort" class="sortable" data-sortby="cells">Cells&nbsp;</div>
+          <div data-tip="Number of burgs in market territory. Click to sort" class="sortable" data-sortby="burgs">Burgs&nbsp;</div>
+          <div data-tip="Total stock of all goods. Click to sort" class="sortable" data-sortby="stock">Stock&nbsp;</div>
+          <div data-tip="Total gross sales revenue. Click to sort" class="sortable" data-sortby="sales">Sales&nbsp;</div>
+          <div data-tip="Total purchase spending. Click to sort" class="sortable" data-sortby="buys">Buys&nbsp;</div>
+          <div data-tip="Net income: sales minus tax minus purchases. Click to sort" class="sortable icon-sort-number-down" data-sortby="income">Income&nbsp;</div>
+        </div>
+        <div id="marketsOverviewBody" class="table" style="max-height:40em; cursor:pointer"></div>
+        <div id="marketsOverviewFooter" class="totalLine">
+          <div data-tip="Total number of markets" style="margin-left:5px">Markets:&nbsp;<span id="marketsOverviewFooterMarkets">0</span></div>
+          <div data-tip="Average gross sales revenue per market" style="margin-left:12px">Avg Sales:&nbsp;<span id="marketsOverviewFooterSales">0</span></div>
+          <div data-tip="Average purchase spending per market" style="margin-left:12px">Avg Buys:&nbsp;<span id="marketsOverviewFooterBuys">0</span></div>
+          <div data-tip="Average net income per market" style="margin-left:12px">Avg Income:&nbsp;<span id="marketsOverviewFooterIncome">0</span></div>
+        </div>
+        <div id="marketsOverviewBottom">
+          <button id="marketsOverviewRefresh" data-tip="Refresh the overview" class="icon-cw"></button>
+          <button id="marketsOverviewCompare" data-tip="Compare good stock across markets" class="icon-chart-bar"></button>
+          <button id="marketsOverviewExport" data-tip="Save markets data as a CSV file" class="icon-download"></button>
+        </div>
+      </div>
+      <div id="marketsGoodCompare" class="dialog" style="display: none">
+        <div style="display:flex; align-items:center; gap:.5em; padding:.2em 0 .4em; font-size:.9em;">
+          <label for="marketsGoodCompareSelect" data-tip="Select good to compare stock across markets">Good:</label>
+          <select id="marketsGoodCompareSelect" style="flex:1; min-width:8em;"></select>
+        </div>
+        <div id="marketsGoodCompareHeader" class="header" style="grid-template-columns: 2.2em 9em 5em 6em 6em;">
+          <div></div>
+          <div data-tip="Market center burg name. Click to sort" class="sortable alphabetically" data-sortby="market" style="margin-left:0">Market&nbsp;</div>
+          <div data-tip="Good stock in this market. Click to sort" class="sortable" data-sortby="stock">Stock&nbsp;</div>
+          <div data-tip="Buy price for this good. Click to sort" class="sortable" data-sortby="buyprice">Buy Price&nbsp;</div>
+          <div data-tip="Sell price for this good. Click to sort" class="sortable" data-sortby="sellprice">Sell Price&nbsp;</div>
+        </div>
+        <div id="marketsGoodCompareBody" class="table" style="max-height:40em;"></div>
       </div>
       <div id="marketOverview" class="dialog stable" style="display: none">
         <div id="marketOverviewHeader" class="header" style="grid-template-columns: 2.6em 9em 4.5em 5em 5em;">

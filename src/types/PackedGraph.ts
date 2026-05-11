@@ -7,7 +7,7 @@ import type {Province} from "../modules/provinces-generator";
 import type {River} from "../modules/river-generator";
 import type {Route} from "../modules/routes-generator";
 import type {State} from "../modules/states-generator";
-import type {Market, Deal} from "../modules/trade-generator";
+import type {Deal, Market} from "../modules/trade-generator";
 import type {Zone} from "../modules/zones-generator";
 
 export type TypedArray = Uint8Array | Uint16Array | Uint32Array | Int8Array | Int16Array | Float32Array | Float64Array;
@@ -40,6 +40,7 @@ export interface PackedGraph {
     area: TypedArray; // cell area
     province: TypedArray; // cell province id
     good: TypedArray; // cell good id
+    market: Uint16Array; // cell market id
     routes: Record<number, Record<number, number>>;
   };
   vertices: {
