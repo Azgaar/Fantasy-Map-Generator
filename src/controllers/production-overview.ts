@@ -206,16 +206,16 @@ export function open(burgId: number): void {
   const renderDecisionCandidate = (candidate: DecisionCandidate) => {
     if (candidate.kind === "extract") {
       const factors = [
-        `projected gain ${formatPrice(candidate.chainValue)}`,
+        `projected gain ${formatPrice(candidate.projectedGain)}`,
         candidate.cultureModifier !== 1 ? `culture x${rn(candidate.cultureModifier, 2)}` : "",
         `unit ${rn(candidate.units, 2)} (${formatAvailable(candidate.available)})`,
-        candidate.demandEffect.multiplier > 1 ? formatDemandMultiplier(candidate.demandEffect) : ""
+        candidate.demandEffect.multiplier > 1 ? formatDemandMultiplier(candidate.demandEffect) : "",
+        candidate.preparation ? `prep for ${goodName(candidate.goalGoodId || -1)}` : ""
       ].filter(Boolean);
 
       return `${typeBadge("RAW")} <b>${goodName(candidate.goodId)}</b>: ${factors.join(" × ")} = ${renderCandidateScore(candidate.score)}`;
     }
 
-    const margin = Math.max(0, candidate.revenue - candidate.ingredientCost);
     const ingredients = candidate.ingredients
       .map(ingredient => {
         const sources = [
@@ -233,10 +233,11 @@ export function open(burgId: number): void {
       .join(", ");
 
     const factors = [
-      `projected gain ${formatPrice(margin)}`,
+      `projected gain ${formatPrice(candidate.projectedGain)}`,
       candidate.cultureModifier !== 1 ? `culture x${rn(candidate.cultureModifier, 2)}` : "",
       `unit ${rn(candidate.units, 2)}`,
-      candidate.demandEffect.multiplier > 1 ? formatDemandMultiplier(candidate.demandEffect) : ""
+      candidate.demandEffect.multiplier > 1 ? formatDemandMultiplier(candidate.demandEffect) : "",
+      candidate.preparation ? `prep for ${goodName(candidate.goalGoodId || -1)}` : ""
     ].filter(Boolean);
 
     return `<div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>: ${factors.join(" × ")} = ${renderCandidateScore(candidate.score)}</div>

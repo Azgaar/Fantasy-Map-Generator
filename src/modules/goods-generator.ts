@@ -37,9 +37,9 @@ export interface Good {
 export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;
 export type DemandCategory = (typeof DEMAND_PRIORITY)[number];
 export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {
-  food: 0.2,
+  food: 0.15,
   utilities: 0.1,
-  construction: 0.1,
+  construction: 0.05,
   military: 0.05,
   luxury: 0.05
 };
@@ -256,7 +256,7 @@ const GOODS_DATA: GoodData[] = [
     chance: 3,
     distribution: "biome(6, 8, 9)",
     unit: "barrel",
-    demandCoverage: {food: 1},
+    demandCoverage: {food: 0.5},
     bonus: {population: 1},
     culture: {Generic: 1.2},
     biome: {6: 1, 8: 1, 9: 1}
@@ -444,7 +444,7 @@ const GOODS_DATA: GoodData[] = [
     chance: 2,
     distribution: "biome(9) || (biome(10) && nth(2)) || (biome(6, 8) && nth(5)) || (biome(12) && nth(10))",
     unit: "pelt",
-    demandCoverage: {luxury: 0.3, utilities: 0.5},
+    demandCoverage: {luxury: 0.5, utilities: 0.3},
     bonus: {prestige: 1},
     culture: {Hunting: 2},
     biome: {9: 0.25, 10: 0.25, 6: 0.25, 8: 0.25, 12: 0.25}
@@ -537,12 +537,11 @@ const GOODS_DATA: GoodData[] = [
     color: "#a45a52",
     value: 7,
     chance: 1,
-    distribution: "biome(5, 7)",
+    distribution: "biome(5, 7) && random(50)",
     unit: "pile",
-    demandCoverage: {construction: 0.5, luxury: 0.5},
+    demandCoverage: {construction: 0.2, luxury: 0.8},
     bonus: {prestige: 1},
-    culture: {},
-    biome: {5: 1, 7: 1}
+    culture: {Hunting: 1.2}
   },
   {
     name: "Whales",
@@ -687,7 +686,7 @@ const GOODS_DATA: GoodData[] = [
     color: "#a0c8e8",
     value: 7,
     chance: 0,
-    recipes: [{"White sand": 0.5, Coal: 0.5}],
+    recipes: [{"White sand": 1}],
     unit: "wain",
     demandCoverage: {luxury: 1},
     bonus: {prestige: 1},
@@ -737,7 +736,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ritual", "educational"],
     icon: "good-books",
     color: "#deb887",
-    value: 18,
+    value: 15,
     chance: 0,
     recipes: [
       {Paper: 1, Ink: 0.5},
@@ -766,7 +765,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval"],
     icon: "good-ships",
     color: "#654321",
-    value: 42,
+    value: 25,
     chance: 0,
     recipes: [{Wood: 2, Sails: 1, Ropes: 1, Tar: 1}],
     unit: "ship",
@@ -779,7 +778,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing", "military"],
     icon: "good-boots",
     color: "#654321",
-    value: 6,
+    value: 5,
     chance: 0,
     recipes: [{Leather: 1}, {Furs: 0.5}],
     unit: "pair",
@@ -838,7 +837,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["construction", "military"],
     icon: "good-tools",
     color: "#808080",
-    value: 17,
+    value: 18,
     chance: 0,
     recipes: [
       {Iron: 1, Coal: 2},
@@ -854,11 +853,11 @@ const GOODS_DATA: GoodData[] = [
     tags: ["military"],
     icon: "good-arms",
     color: "#333333",
-    value: 24,
+    value: 22,
     chance: 0,
     recipes: [
-      {Iron: 1, Coal: 2, Leather: 1},
-      {Bronze: 1, Coal: 1, Leather: 1}
+      {Iron: 0.5, Coal: 1, Leather: 0.5},
+      {Bronze: 0.5, Coal: 1, Leather: 0.5}
     ],
     unit: "set",
     demandCoverage: {military: 1},
@@ -935,7 +934,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food"],
     icon: "good-salted-fish",
     color: "#c2b280",
-    value: 6,
+    value: 5,
     chance: 0,
     recipes: [
       {Fish: 1, Salt: 1},
@@ -962,7 +961,7 @@ const GOODS_DATA: GoodData[] = [
     chance: 0,
     recipes: [{Wine: 1}, {Honey: 1}],
     unit: "barrel",
-    demandCoverage: {utilities: 1},
+    demandCoverage: {utilities: 0.5},
     bonus: {population: 1},
     culture: {}
   },
@@ -989,7 +988,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food"],
     icon: "good-beer",
     color: "#fbb117",
-    value: 7,
+    value: 6,
     chance: 0,
     recipes: [
       {Grain: 1, Barrels: 1},
@@ -1057,11 +1056,11 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury", "ritual"],
     icon: "good-perfume",
     color: "#ff69b4",
-    value: 15,
+    value: 20,
     chance: 0,
     recipes: [
       {Olives: 1, Incense: 0.25, Glass: 0.5},
-      {Olives: 1, Game: 1, Glass: 0.5},
+      {Olives: 1, Game: 2, Glass: 0.5},
       {Liquor: 0.25, Incense: 0.25, Whales: 0.5, Ceramics: 0.5}
     ],
     unit: "bottle",

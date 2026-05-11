@@ -648,7 +648,7 @@
             </li>
             <li
               id="toggleGoods"
-              data-tip="Trade Goods: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
+              data-tip="Goods: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               class="buttonoff"
               data-shortcut="G"
               onclick="toggleGoods(event)"
@@ -2060,7 +2060,7 @@
             <button id="editReligions" data-tip="Click to open Religions Editor" data-shortcut="Shift + R">
               Religions
             </button>
-            <button id="editGoods" data-tip="Click to open Trade Goods Editor" data-shortcut="Shift + G">Goods</button>
+            <button id="editGoods" data-tip="Click to open Goods Editor" data-shortcut="Shift + G">Goods</button>
             <button id="overviewRiversButton" data-tip="Click to open Rivers Overview" data-shortcut="Shift + V">
               Rivers
             </button>
@@ -5004,7 +5004,7 @@
         </div>
       </div>
       <div id="goodsEditor" class="dialog stable" style="display: none">
-        <div id="goodsHeader" class="header" style="grid-template-columns: 2.8em 7em 11em 6em 6em 5em 5em 4.8em 2em;">
+        <div id="goodsHeader" class="header" style="grid-template-columns: 2.8em 7em 11em 6em 5.5em 5.5em 1em;">
           <div></div>
           <div data-tip="Click to sort by good name" class="sortable alphabetically" data-sortby="name">
             Name&nbsp;
@@ -5019,13 +5019,7 @@
             Produced&nbsp;
           </div>
           <div data-tip="Base price. Click to sort" class="sortable" data-sortby="baseprice">
-            Base&nbsp;
-          </div>
-          <div data-tip="Current buy price after production simulation. Click to sort" class="sortable" data-sortby="buyprice">
-            Buy&nbsp;
-          </div>
-          <div data-tip="Current sell price after production simulation. Click to sort" class="sortable" data-sortby="sellprice">
-            Sell&nbsp;
+            Base Price&nbsp;
           </div>
           <div
             data-tip="Click to unpin (show) all goods"
@@ -5035,9 +5029,9 @@
         </div>
         <div id="goodsBody" class="table" data-type="absolute"></div>
         <div id="goodsFooter" class="totalLine">
-          <div data-tip="Number of goods" style="margin-left: 12px">
-            Goods:&nbsp;<span id="goodsNumber">0</span>
-          </div>
+          <div data-tip="Total number of goods" style="margin-left: 5px">Goods:&nbsp;<span id="goodsNumber">0</span></div>
+          <div data-tip="Total amount of availalbe resources" style="margin-left: 12px">Available:&nbsp;<span id="resourcesTotal">0</span></div>
+          <div data-tip="Total amount of goods produces by all burgs" style="margin-left: 12px">Produced:&nbsp;<span id="goodsProduced">0</span></div>
         </div>
         <div id="goodsBottom">
           <button id="goodsEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>

@@ -1,16 +1,12 @@
 import {pointer} from "d3";
-
-declare const ProductionChains: {open: () => void};
-
 import type {DemandCategory, Good} from "../modules/goods-generator";
 import {DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY} from "../modules/goods-generator";
 import {ensureEl, unique} from "../utils";
 import {getHeight} from "../utils/unitUtils";
+import {ProductionChains} from "./production-chains";
 
 let isInitialized = false;
 let visibleTags = new Set<string>();
-
-const BONUS_PRODUCTION = 5;
 
 export function open() {
   if (customization) return;
@@ -20,7 +16,7 @@ export function open() {
   goodsEditorAddLines();
 
   $("#goodsEditor").dialog({
-    title: "Trade Goods Editor",
+    title: "Goods Editor",
     resizable: false,
     width: "auto",
     close: closeGoodsEditor,
@@ -28,7 +24,6 @@ export function open() {
   });
 
   if (!isInitialized) {
-    // add listeners once per session, dialog is re-opened on each open
     ensureEl("goodsEditorRefresh").on("click", goodsEditorAddLines);
     ensureEl("goodsLegend").on("click", toggleLegend);
     ensureEl("goodsPercentage").on("click", togglePercentageMode);
@@ -55,22 +50,26 @@ export function open() {
   }
 }
 
-function getBonusIcon(bonus: string): string {
-  if (bonus === "fleet") return `<span data-tip="Fleet bonus" class="icon-anchor"></span>`;
-  if (bonus === "defence") return `<span data-tip="Defence bonus" class="icon-chess-rook"></span>`;
-  if (bonus === "prestige") return `<span data-tip="Prestige bonus" class="icon-star"></span>`;
-  if (bonus === "artillery") return `<span data-tip="Artillery bonus" class="icon-rocket"></span>`;
-  if (bonus === "infantry") return `<span data-tip="Infantry bonus" class="icon-chess-pawn"></span>`;
-  if (bonus === "population") return `<span data-tip="Population bonus" class="icon-male"></span>`;
-  if (bonus === "archers") return `<span data-tip="Archers bonus" class="icon-dot-circled"></span>`;
-  if (bonus === "cavalry") return `<span data-tip="Cavalry bonus" class="icon-chess-knight"></span>`;
-  return "";
-}
-
 function goodsEditorAddLines() {
   const body = ensureEl("goodsBody");
-  const {availabilityByGood, producedByGood} = calculateGoodsEditorStats();
-  const marketPriceStats = getMarketPriceStats();
+  const globalResources = Production.collectGlobalResources(pack.goods);
+
+  const resources: number[] = [];
+  Object.entries(globalResources).forEach(([_cellId, cellResources]) => {
+    for (const goodId in cellResources) {
+      if (!resources[goodId]) resources[goodId] = 0;
+      resources[goodId] += cellResources[goodId] || 0;
+    }
+  });
+
+  const production: number[] = [];
+  for (const burg of pack.burgs) {
+    if (!burg || burg.removed || !burg.produced) continue;
+    for (const goodId in burg.produced) {
+      production[+goodId] = (production[+goodId] || 0) + (burg.produced[goodId] || 0);
+    }
+  }
+
   let lines = "";
 
   for (const good of pack.goods) {
@@ -83,33 +82,23 @@ function goodsEditorAddLines() {
       .join("; ");
     const tags = good.tags.join(", ");
     const stroke = Goods.getStroke(good.color);
-
-    const basePrice = good.value;
-    const priceStats = marketPriceStats[good.i] || {
-      buyLabel: rn(good.value, 2).toString(),
-      sellLabel: rn(good.value, 2).toString(),
-      buySort: good.value,
-      sellSort: good.value
-    };
-    const totalAvailability = availabilityByGood[good.i] || 0;
-    const totalProduced = producedByGood[good.i] || 0;
+    const produced = rn(production[good.i] || 0, 2);
+    const available = rn(resources[good.i] || 0, 2);
 
     lines += /*html*/ `<div class="states goods"
           data-id=${good.i} data-name="${good.name}" data-color="${good.color}"
           data-tags="${tags}" data-chance="${good.chance}" data-bonus="${bonusString}" data-demandcoverage="${demandCoverageString}"
-          data-value="${good.value}" data-model="${distribution}" data-availability="${totalAvailability}"
-          data-produced="${totalProduced}" data-baseprice="${basePrice}" data-buyprice="${priceStats.buySort}" data-sellprice="${priceStats.sellSort}">
+          data-value="${good.value}" data-model="${distribution}" data-availability="${available}"
+          data-produced="${produced}" data-baseprice="${good.value}">
         <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
           <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
           <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
         </svg>
         <div data-tip="Good name" class="goodName">${good.name}</div>
         <div data-tip="Good tags" class="goodTags" title="${tags}">${tags}</div>
-        <div data-tip="Total map-wide availability from biomes and bonus goods, in units" class="goodAvailability">${rn(totalAvailability, 2)}</div>
-        <div data-tip="Total actual produced units aggregated from all burgs" class="goodProduced">${rn(totalProduced, 2)}</div>
-        <div data-tip="Base price" class="goodBasePrice">🟡 ${rn(basePrice, 2)}</div>
-        <div data-tip="Current buy-price range across trade centers" class="goodBuyPrice">🟡 ${priceStats.buyLabel}</div>
-        <div data-tip="Current sell-price range across trade centers" class="goodSellPrice">🟡 ${priceStats.sellLabel}</div>
+        <div data-tip="Total map-wide availability from biomes and bonus goods, in units" class="goodAvailability">${available}</div>
+        <div data-tip="Total actual produced units aggregated from all burgs" class="goodProduced">${produced}</div>
+        <div data-tip="Base price" class="goodBasePrice">🟡 ${good.value}</div>
         <span data-tip="Edit good" class="icon-pencil goodEdit hide"></span>
         <span data-tip="Toggle good exclusive visibility (pin)" class="icon-pin inactive hide goodPin"></span>
         <span data-tip="Remove good" class="icon-trash-empty hide goodRemove"></span>
@@ -117,7 +106,11 @@ function goodsEditorAddLines() {
   }
   body.innerHTML = lines;
 
+  const totalAvailable = resources.reduce((sum, v) => sum + (v || 0), 0);
+  const totalProduced = production.reduce((sum, v) => sum + (v || 0), 0);
   ensureEl("goodsNumber").innerHTML = String(pack.goods.length);
+  ensureEl("resourcesTotal").innerHTML = String(rn(totalAvailable, 2));
+  ensureEl("goodsProduced").innerHTML = String(rn(totalProduced, 2));
 
   body.querySelectorAll("div.states").forEach(el => void el.on("click", selectResourceOnLineClick));
 
@@ -130,39 +123,16 @@ function goodsEditorAddLines() {
   $("#goodsEditor").dialog({width: fitContent()});
 }
 
-function getMarketPriceStats() {
-  const markets = pack.markets || [];
-  const stats: Record<number, {buyLabel: string; sellLabel: string; buySort: number; sellSort: number}> = {};
-
-  for (const good of pack.goods) {
-    const buyPrices = markets.map(market => market.goods?.[good.i]?.buyPrice).filter(price => Number.isFinite(price));
-    const sellPrices = markets.map(market => market.goods?.[good.i]?.sellPrice).filter(price => Number.isFinite(price));
-    const buyRange = formatMarketPriceRange(buyPrices, good.value);
-    const sellRange = formatMarketPriceRange(sellPrices, good.value);
-
-    stats[good.i] = {
-      buyLabel: buyRange.label,
-      sellLabel: sellRange.label,
-      buySort: buyRange.sortValue,
-      sellSort: sellRange.sortValue
-    };
-  }
-
-  return stats;
-}
-
-function formatMarketPriceRange(prices: number[], fallback: number): {label: string; sortValue: number} {
-  if (!prices.length) {
-    return {label: rn(fallback, 2).toString(), sortValue: fallback};
-  }
-
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
-  const averagePrice = prices.reduce((sum, price) => sum + price, 0) / prices.length;
-  const label =
-    Math.abs(maxPrice - minPrice) <= 0.01 ? rn(averagePrice, 2).toString() : `${rn(minPrice, 2)}-${rn(maxPrice, 2)}`;
-
-  return {label, sortValue: averagePrice};
+function getBonusIcon(bonus: string): string {
+  if (bonus === "fleet") return `<span data-tip="Fleet bonus" class="icon-anchor"></span>`;
+  if (bonus === "defence") return `<span data-tip="Defence bonus" class="icon-chess-rook"></span>`;
+  if (bonus === "prestige") return `<span data-tip="Prestige bonus" class="icon-star"></span>`;
+  if (bonus === "artillery") return `<span data-tip="Artillery bonus" class="icon-rocket"></span>`;
+  if (bonus === "infantry") return `<span data-tip="Infantry bonus" class="icon-chess-pawn"></span>`;
+  if (bonus === "population") return `<span data-tip="Population bonus" class="icon-male"></span>`;
+  if (bonus === "archers") return `<span data-tip="Archers bonus" class="icon-dot-circled"></span>`;
+  if (bonus === "cavalry") return `<span data-tip="Cavalry bonus" class="icon-chess-knight"></span>`;
+  return "";
 }
 
 function openTagsVisibilityDialog() {
@@ -356,40 +326,6 @@ function toggleLegend() {
     .sort((a, b) => (b.cells || 0) - (a.cells || 0))
     .map(good => [good.i, good.color, good.name]);
   drawLegend("Goods", data);
-}
-
-function calculateGoodsEditorStats() {
-  const availabilityByGood: number[] = [];
-  const producedByGood: number[] = [];
-  const biomeProduction: {goodId: number; production: number}[][] = Array.from({length: biomesData.i.length}, () => []);
-
-  for (const good of pack.goods) {
-    if (!good.biome) continue;
-    for (const [biomeId, production] of Object.entries(good.biome)) {
-      if (!production || production <= 0) continue;
-      biomeProduction[+biomeId].push({goodId: good.i, production});
-    }
-  }
-
-  for (const cellId of pack.cells.i) {
-    const explicitGoodId = pack.cells.good[cellId];
-    if (explicitGoodId)
-      availabilityByGood[explicitGoodId] = (availabilityByGood[explicitGoodId] || 0) + BONUS_PRODUCTION;
-
-    const biomeId = pack.cells.biome[cellId];
-    for (const entry of biomeProduction[biomeId] || []) {
-      availabilityByGood[entry.goodId] = (availabilityByGood[entry.goodId] || 0) + entry.production;
-    }
-  }
-
-  for (const burg of pack.burgs as any[]) {
-    if (!burg || burg.removed || !burg.produced) continue;
-    for (const goodId in burg.produced) {
-      producedByGood[+goodId] = (producedByGood[+goodId] || 0) + (burg.produced[goodId] || 0);
-    }
-  }
-
-  return {availabilityByGood, producedByGood};
 }
 
 function togglePercentageMode() {
