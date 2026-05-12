@@ -259,7 +259,13 @@ function editDiplomacy() {
 
         <main style='display: flex; gap: 1em;'>
           <section style="display: flex; flex-direction: column; gap: .3em;">${relationsSelector}</section>
-          <section style="display: flex; flex-direction: column; gap: .3em;">${objectsSelector}</section>
+          <section style="display: flex; flex-direction: column; gap: .3em;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3em;">
+              <label style="font-weight: 500; font-size: 0.95em;">States:</label>
+              <button id="selectAllNoneBtn" type="button" style="padding: 0.3em 0.8em; cursor: pointer; font-size: 0.9em;" data-tip="Toggle selection of all states. Also supports Ctrl+A.">Select All / None</button>
+            </div>
+            <div id="stateSelectionContainer" style="display: flex; flex-direction: column; gap: .3em;">${objectsSelector}</div>
+          </section>
         </main>
       </form>
     `;
@@ -283,6 +289,35 @@ function editDiplomacy() {
         }
       }
     });
+
+    // Setup Select All / None toggle functionality
+    const selectAllNoneBtn = document.getElementById("selectAllNoneBtn");
+    const stateCheckboxes = () => document.querySelectorAll("#stateSelectionContainer input[name='objectSelect']");
+
+    function updateButtonState() {
+      const checkboxes = stateCheckboxes();
+      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+      if (allChecked && checkboxes.length > 0) {
+        selectAllNoneBtn.classList.add("pressed");
+      } else {
+        selectAllNoneBtn.classList.remove("pressed");
+      }
+    }
+
+    function toggleSelectAll() {
+      const checkboxes = stateCheckboxes();
+      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+      const newState = !allChecked;
+      checkboxes.forEach(cb => cb.checked = newState);
+      updateButtonState();
+    }
+
+    selectAllNoneBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      toggleSelectAll();
+    });
+
+    updateButtonState();
   }
 
   function changeRelation(subjectId, objectId, oldRelation, newRelation) {
