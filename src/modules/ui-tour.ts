@@ -3,16 +3,6 @@ import "driver.js/dist/driver.css";
 
 const byId = (id: string) => document.getElementById(id);
 
-let stylesInjected = false;
-function injectTourStyles(): void {
-  if (stylesInjected) return;
-  stylesInjected = true;
-  const style = document.createElement("style");
-  style.textContent =
-    ".driver-popover-title,.driver-popover-description,.driver-popover-progress-text{color:#000!important}";
-  document.head.appendChild(style);
-}
-
 function clickTab(tabId: string) {
   byId(tabId)?.click();
 }
@@ -47,13 +37,16 @@ function hideHeightmapCustomizationPanel() {
 }
 
 function start() {
-  injectTourStyles();
   closeOptionsPanel();
 
   const tour = driver({
     showProgress: true,
     allowClose: true,
-    allowKeyboardControl: false,
+    popoverClass: "fmg-tour",
+    overlayColor: "rgb(0,0,0)",
+    overlayOpacity: 0.75,
+    stagePadding: 4,
+    stageRadius: 4,
     onDestroyStarted: () => {
       document.removeEventListener("keydown", handleKeydown);
       hideHeightmapCustomizationPanel();
@@ -381,26 +374,14 @@ function start() {
 
   function handleKeydown(e: KeyboardEvent): void {
     if (!tour.isActive() || isEditableTarget(e.target)) return;
-    switch (e.key) {
-      case "ArrowRight":
-      case "ArrowDown":
-        e.preventDefault();
-        e.stopPropagation();
-        document
-          .querySelector<HTMLElement>(".driver-popover-next-btn")
-          ?.click();
-        break;
-      case "ArrowLeft":
-      case "ArrowUp":
-        e.preventDefault();
-        e.stopPropagation();
-        document
-          .querySelector<HTMLElement>(".driver-popover-prev-btn")
-          ?.click();
-        break;
-      case "Escape":
-        tour.destroy();
-        break;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      e.stopPropagation();
+      document.querySelector<HTMLElement>(".driver-popover-next-btn")?.click();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      e.stopPropagation();
+      document.querySelector<HTMLElement>(".driver-popover-prev-btn")?.click();
     }
   }
 
