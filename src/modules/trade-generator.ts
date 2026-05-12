@@ -9,10 +9,9 @@ import type {ProductionHistoryEntry} from "./production-generator";
 export const DEFAULT_SALES_TAX = 0.2;
 export const PRICE_FLOOR_FACTOR = 0.25;
 export const PRICE_CEILING_FACTOR = 3.0;
-const LAPLACE_PRICE_SMOOTHING = 5;
+const LAPLACE_PRICE_SMOOTHING = 10;
 export const MARKET_MARGIN = 0.1;
-export const BUY_PRESSURE_FACTOR = 0.02;
-export const SELL_PRESSURE_FACTOR = 0.01;
+export const MARKET_PRESSURE_FACTOR = 0.01;
 export const RURAL_BONUS_PRODUCTION = 5;
 
 const TRADE_RESERVE_FACTOR = 0.2;
@@ -101,6 +100,13 @@ export class TradeModule {
     return (pack.burgs as Burg[])
       .filter(burg => burg.i && !burg.removed && burg.market === marketId)
       .map(burg => burg.i!);
+  }
+
+  applyMarketPressure(basePrice: number, currentPrice: number | undefined, units: number): number {
+    const price = currentPrice ?? basePrice;
+    const floor = basePrice * PRICE_FLOOR_FACTOR;
+    const ceiling = basePrice * PRICE_CEILING_FACTOR;
+    return minmax(floor, price + units * basePrice * MARKET_PRESSURE_FACTOR, ceiling);
   }
 
   private getMarketGood(market: Market, goodId: number, fallbackPrice = 0): MarketGoodData {
@@ -267,8 +273,8 @@ export class TradeModule {
             price: marketPrice
           });
 
-          exporterGood.price = this.applySellPressure(candidate.good, exporterGood.price, -units);
-          importerGood.price = this.applyBuyPressure(candidate.good, importerGood.price, -units);
+          exporterGood.price = this.applyMarketPressure(candidate.good.value, exporterGood.price, -units);
+          importerGood.price = this.applyMarketPressure(candidate.good.value, importerGood.price, units);
         }
       }
     }
@@ -499,8 +505,8 @@ export class TradeModule {
   }
 
   private initializeMarketPrices(goods: Good[], markets: Market[]): void {
-    const consumerDemandFactor = this.buildConsumerDemandFactor(goods);
-    const industrialDemandFactor = this.buildIndustrialDemandFactor(goods);
+    const consumerDemandFactors = this.collectConsiderDemand(goods);
+    const industrialDemandFactors = this.collectIndustrialDemand(goods);
 
     for (const market of markets) {
       const population = this.getMarketBurgIds(market.i).reduce(
@@ -511,12 +517,15 @@ export class TradeModule {
         const marketGood = this.getMarketGood(market, good.i, good.value);
         if (good.distribution) {
           // raw goods: derive price from demand and scarcity
-          const expectedDemand =
-            population * (consumerDemandFactor[good.i] || 0) +
-            Math.sqrt(Math.max(1, population)) * (industrialDemandFactor[good.i] || 0);
+          const consumerDemand = consumerDemandFactors[good.i] || 0;
+          const industrialDemand = industrialDemandFactors[good.i] || 0;
+          const demand = population * consumerDemand + industrialDemand;
 
-          const ratio = (expectedDemand + LAPLACE_PRICE_SMOOTHING) / (marketGood.stock + LAPLACE_PRICE_SMOOTHING);
+          const ratio = (demand + LAPLACE_PRICE_SMOOTHING) / (marketGood.stock + LAPLACE_PRICE_SMOOTHING);
           marketGood.price = good.value * minmax(ratio, PRICE_FLOOR_FACTOR, PRICE_CEILING_FACTOR);
+          console.log(
+            `${market.i} ${good.name}: consumerDemand=${consumerDemand.toFixed(2)}, industrialDemand=${industrialDemand.toFixed(2)}, stock=${marketGood.stock}, demand=${demand.toFixed(2)}, price=${marketGood.price.toFixed(2)}, priceRatio=${ratio.toFixed(2)}`
+          );
         } else {
           // manufactured goods: start with base price and let deals adjust
           marketGood.price = good.value;
@@ -594,7 +603,7 @@ export class TradeModule {
     }
   }
 
-  private buildConsumerDemandFactor(goods: Good[]): number[] {
+  private collectConsiderDemand(goods: Good[]): number[] {
     const demandFactor: number[] = [];
     for (const good of goods) {
       demandFactor[good.i] = DEMAND_PRIORITY.reduce((sum, category) => {
@@ -604,7 +613,7 @@ export class TradeModule {
     return demandFactor;
   }
 
-  private buildIndustrialDemandFactor(goods: Good[]): number[] {
+  private collectIndustrialDemand(goods: Good[]): number[] {
     const demandFactor: number[] = [];
 
     for (const good of goods) {
@@ -622,20 +631,6 @@ export class TradeModule {
     }
 
     return demandFactor;
-  }
-
-  private applyBuyPressure(good: Good, currentPrice: number | undefined, unitsDelta: number): number {
-    const basePrice = currentPrice ?? good.value;
-    const floor = good.value * PRICE_FLOOR_FACTOR;
-    const ceiling = good.value * PRICE_CEILING_FACTOR;
-    return Math.max(floor, Math.min(ceiling, basePrice + unitsDelta * good.value * BUY_PRESSURE_FACTOR));
-  }
-
-  private applySellPressure(good: Good, currentPrice: number | undefined, unitsDelta: number): number {
-    const basePrice = currentPrice ?? good.value;
-    const floor = good.value * PRICE_FLOOR_FACTOR;
-    const ceiling = good.value * PRICE_CEILING_FACTOR;
-    return Math.max(floor, Math.min(ceiling, basePrice - unitsDelta * good.value * SELL_PRESSURE_FACTOR));
   }
 
   private syncPackData(): void {

@@ -1,7 +1,7 @@
 import type {Burg} from "../modules/burgs-generator";
 import type {DemandCategory} from "../modules/goods-generator";
 import {DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "../modules/goods-generator";
-import type {DecisionCandidate, DemandEffect, MfgHistoryEntry} from "../modules/production-generator";
+import type {DecisionCandidate, MfgHistoryEntry} from "../modules/production-generator";
 import type {Deal} from "../modules/trade-generator";
 import {rn} from "../utils";
 
@@ -153,37 +153,28 @@ export function open(burgId: number): void {
 
     return totals;
   };
-  const formatDemandMultiplier = (demandEffect: DemandEffect) => {
-    return (
-      demandEffect.category &&
-      `demand ${rn(demandEffect.multiplier, 2)} (shortage ${rn(demandEffect.shortage, 2)} ${DEMAND_CATEGORY_ICONS[demandEffect.category]})`
-    );
-  };
   const renderCandidateScore = (score: number) => `<b style="${styles.positive}">score ${rn(score, 2)}</b>`;
   const renderDecisionCandidate = (candidate: DecisionCandidate) => {
     const ingredients = candidate.ingredients
       .map(ing => `${rn(ing.amount * candidate.units, 2)} ${goodDot(ing.goodId)}`)
       .join(", ");
 
-    const prepNote = candidate.preparation ? ` (prep for ${goodDot(candidate.goalGoodId || -1)})` : "";
+    const prep = candidate.preparation ? ` (prep for ${goodDot(candidate.goalGoodId || -1)})` : "";
+    const demand =
+      candidate.demandEffect.category && candidate.demandEffect.multiplier !== 1
+        ? `x demand ${DEMAND_CATEGORY_ICONS[candidate.demandEffect.category]} ${rn(candidate.demandEffect.multiplier, 2)}`
+        : "";
+    const culture = candidate.cultureModifier !== 1 ? ` ${modifierBadge(candidate.cultureModifier)}` : "";
+
     let formula: string;
-    if (candidate.preparation && candidate.goalNormalizedGain !== undefined) {
-      const demandMultiplier = candidate.demandEffect.multiplier;
-      if (demandMultiplier > 1) {
-        const rawGain = candidate.goalNormalizedGain / demandMultiplier;
-        const demandNote = formatDemandMultiplier(candidate.demandEffect);
-        formula = `goal base gain/worker ${formatPrice(rawGain)} × ${demandNote} = ${formatPrice(candidate.goalNormalizedGain)} × step ${rn(candidate.units, 2)} = ${renderCandidateScore(candidate.score)}`;
-      } else {
-        formula = `goal gain/worker ${formatPrice(candidate.goalNormalizedGain)} × step ${rn(candidate.units, 2)} = ${renderCandidateScore(candidate.score)}`;
-      }
+    if (candidate.preparation) {
+      const workers = rn(candidate.workers || 1, 2);
+      const gain = ((candidate.gain || 0) / candidate.demandEffect.multiplier) * workers;
+      formula = `goal sell ${formatPrice(gain)}${culture} ÷ ${workers} workers ${demand} × units ${rn(candidate.units, 2)} = ${renderCandidateScore(candidate.score)}`;
     } else {
-      const netMargin = candidate.sellPrice - candidate.ingredientCost;
-      const cultureNote = candidate.cultureModifier !== 1 ? ` ${modifierBadge(candidate.cultureModifier)}` : "";
-      const demandPart =
-        candidate.demandEffect.multiplier > 1 ? ` × ${formatDemandMultiplier(candidate.demandEffect)}` : "";
-      formula = `sell ${formatPrice(candidate.sellPrice)}${cultureNote} − cost ${formatPrice(candidate.ingredientCost)} = net ${formatPrice(netMargin)}${demandPart} = ${renderCandidateScore(candidate.score)}`;
+      formula = `sell ${formatPrice(candidate.sellPrice)}${culture} - cost ${formatPrice(candidate.ingredientCost)} = ${renderCandidateScore(candidate.score)}`;
     }
-    return `<div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>${prepNote}: ${formula}. <span style="${styles.muted}">Ingredients: ${ingredients}</span></div>`;
+    return `<div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>${prep}: ${formula}. <span style="${styles.muted}">Ingredients: ${ingredients}</span></div>`;
   };
   const renderDecisionDetails = (candidates?: DecisionCandidate[]) => {
     if (!candidates || candidates.length === 0) return "";
@@ -301,7 +292,7 @@ export function open(burgId: number): void {
     return [];
   });
 
-  const grossProduct = phaseRevenue - ingredientCosts;
+  const grossProduct = Math.max(0, phaseRevenue - ingredientCosts);
   const productPerCapita = population > 0 ? grossProduct / population : 0;
 
   const jobsTable = renderTable({
@@ -333,7 +324,7 @@ export function open(burgId: number): void {
       <div><b>Initial Demand:</b> ${renderDemand(initialDemand)}</div>
       <div><b>Uncovered Demand:</b> ${renderDemand(uncoveredDemand, true) || "none"}</div>
       <div>
-        <span title="Product is local sale revenue minus purchased ingredient costs during the production. It excludes retained inventory and later demand-fill purchases."><b>Product:</b> <span style="${grossProduct >= 0 ? styles.positive : styles.negative}">${formatPrice(grossProduct)}</span></span>
+        <span title="Product is local sale revenue minus purchased ingredient costs during the production. Never negative."><b>Product:</b> <span style="${styles.positive}">${formatPrice(grossProduct)}</span></span>
         <span title="Product per capita: gross product divided by population."><b>Wealth:</b> <span style="${productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(productPerCapita)}</span></span>
         <span title="Sales Tax is paid by the seller on local sale deals. It is deducted from gross sale value and transferred to the state treasury."><b>Total Tax:</b> <span style="${totalTax >= 0 ? styles.warning : styles.subtle}">${formatPrice(totalTax)}</span></span>
         <span title="Net burg treasury after local buying, local sales, and final local demand fill."><b>Treasury:</b> <span style="${treasuryAfter >= 0 ? styles.positive : styles.negative}">${formatPrice(treasuryAfter)}</span></span>

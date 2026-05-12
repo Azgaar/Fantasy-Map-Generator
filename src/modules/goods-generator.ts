@@ -508,10 +508,10 @@ const GOODS_DATA: GoodData[] = [
     icon: "good-coal",
     color: "#5a6a75",
     value: 3,
-    chance: 3,
+    chance: 4,
     distribution: "minHeight(40) || (minHeight(20) && elevation(25))",
     unit: "wain",
-    demandCoverage: {utilities: 1},
+    demandCoverage: {utilities: 0.5},
     bonus: {artillery: 2},
     culture: {},
     recipes: [{Wood: 1.5}, {"Tropical timber": 1.5}]

@@ -4,12 +4,11 @@ import {DEFAULT_CULTURE_TYPE} from "./cultures-generator";
 import type {DemandCategory, Good} from "./goods-generator";
 import {DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "./goods-generator";
 import {
-  BUY_PRESSURE_FACTOR,
   MARKET_MARGIN,
+  MARKET_PRESSURE_FACTOR,
   type Market,
   PRICE_CEILING_FACTOR,
-  PRICE_FLOOR_FACTOR,
-  SELL_PRESSURE_FACTOR
+  PRICE_FLOOR_FACTOR
 } from "./trade-generator";
 
 export class ProductionModule {
@@ -24,7 +23,6 @@ export class ProductionModule {
     validBurgs.sort((a, b) => (a.population || 0) - (b.population || 0));
 
     const goodById = new Map<number, Good>(goods.map(g => [g.i, g]));
-    const {buyPressure, sellPressure, priceFloor, priceCeiling} = this.buildPriceArrays(goods);
     const recipes = this.buildRecipesArray(goods);
     const recipesByOutput = this.buildRecipesByOutput(recipes);
     const minWorkersByGood = this.buildMinWorkersByGood(goods, recipesByOutput);
@@ -100,7 +98,7 @@ export class ProductionModule {
               ingredientCosts += marketCost;
               if (purchase.dealId !== null) history.push({kind: "deal", dealId: purchase.dealId});
               burg.treasury = Math.round(((burg.treasury || 0) - marketCost) * 100) / 100;
-              marketGood.price = Math.min(priceCeiling[ingId], marketGood.price + actualBuy * buyPressure[ingId]);
+              marketGood.price = Trade.applyMarketPressure(good.value, marketGood.price, actualBuy);
             }
 
             recipeLog.push({goodId: ingId, amount, marketCost});
@@ -146,10 +144,13 @@ export class ProductionModule {
         phaseRevenue += sellResult.revenue;
         if (sellResult.dealId !== null) history.push({kind: "deal", dealId: sellResult.dealId});
         const marketGood = this.getMarketGoodData(market, goodId, good.value);
-        marketGood.price = Math.max(priceFloor[goodId], marketGood.price - amount * sellPressure[goodId]);
+        marketGood.price = Math.max(
+          good.value * PRICE_FLOOR_FACTOR,
+          marketGood.price - amount * good.value * MARKET_PRESSURE_FACTOR
+        );
       }
       burg.treasury = Math.round(((burg.treasury || 0) + phaseRevenue) * 100) / 100;
-      burg.product = Math.round((phaseRevenue - ingredientCosts) * 100) / 100;
+      burg.product = Math.round(Math.max(0, phaseRevenue - ingredientCosts) * 100) / 100;
 
       this.productionData.set(burg.i!, history);
     }
@@ -168,8 +169,6 @@ export class ProductionModule {
         goodById,
         demandTargets: this.buildDemandTargets(burg),
         marketCenter,
-        buyPressure,
-        priceCeiling,
         history: data
       });
       burg.inventory = {};
@@ -318,11 +317,9 @@ export class ProductionModule {
     goodById: Map<number, Good>;
     demandTargets: number[];
     marketCenter: Market;
-    buyPressure: number[];
-    priceCeiling: number[];
     history: ProductionHistoryEntry[];
   }): void {
-    const {burg, demandInventory, goodById, demandTargets, marketCenter, buyPressure, priceCeiling, history} = params;
+    const {burg, demandInventory, goodById, demandTargets, marketCenter, history} = params;
     const demandCoverage = this.calculateDemandCoverage(demandInventory, goodById);
 
     for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
@@ -373,8 +370,8 @@ export class ProductionModule {
         shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
         const marketGood = this.getMarketGoodData(marketCenter, candidate.goodId, candidate.good.value);
         marketGood.price = Math.min(
-          priceCeiling[candidate.goodId],
-          marketGood.price + purchase.units * buyPressure[candidate.goodId]
+          candidate.good.value * PRICE_CEILING_FACTOR,
+          marketGood.price + purchase.units * candidate.good.value * MARKET_PRESSURE_FACTOR
         );
       }
     }
@@ -660,7 +657,8 @@ export class ProductionModule {
         score: normalizedGain * Math.min(stepUnits, targetUnits),
         goalGoodId: good.i,
         preparation: nextActionPlan.goalGoodId !== good.i,
-        goalNormalizedGain: normalizedGain
+        gain: normalizedGain,
+        workers: workersNeeded
       };
 
       const plan: GoalActionPlan = {
@@ -680,29 +678,6 @@ export class ProductionModule {
     }
 
     return bestPlan;
-  }
-
-  private buildPriceArrays(goods: Good[]) {
-    const n = goods.length;
-    const buyPressure = new Array<number>(n);
-    const sellPressure = new Array<number>(n);
-    const priceFloor = new Array<number>(n);
-    const priceCeiling = new Array<number>(n);
-
-    for (const good of goods) {
-      const i = good.i;
-      buyPressure[i] = good.value * BUY_PRESSURE_FACTOR;
-      sellPressure[i] = good.value * SELL_PRESSURE_FACTOR;
-      priceFloor[i] = good.value * PRICE_FLOOR_FACTOR;
-      priceCeiling[i] = good.value * PRICE_CEILING_FACTOR;
-    }
-
-    return {
-      buyPressure,
-      sellPressure,
-      priceFloor,
-      priceCeiling
-    };
   }
 
   private makeProductionDecision(params: {
@@ -841,7 +816,8 @@ export type DecisionCandidate = {
   ingredients: Ingredient[];
   goalGoodId?: number;
   preparation?: boolean;
-  goalNormalizedGain?: number; // set for prep candidates: goal projected gain per worker
+  gain?: number; // set for prep candidates: goal projected gain per worker (demand-weighted)
+  workers?: number; // total workers in the chain (prep + goal)
 };
 
 type GoalActionPlan = {
