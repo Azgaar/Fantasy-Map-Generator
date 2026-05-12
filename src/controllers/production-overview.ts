@@ -168,7 +168,14 @@ export function open(burgId: number): void {
     const prepNote = candidate.preparation ? ` (prep for ${goodDot(candidate.goalGoodId || -1)})` : "";
     let formula: string;
     if (candidate.preparation && candidate.goalNormalizedGain !== undefined) {
-      formula = `goal gain by worker ${formatPrice(candidate.goalNormalizedGain)} × step ${rn(candidate.units, 2)} = ${renderCandidateScore(candidate.score)}`;
+      const demandMultiplier = candidate.demandEffect.multiplier;
+      if (demandMultiplier > 1) {
+        const rawGain = candidate.goalNormalizedGain / demandMultiplier;
+        const demandNote = formatDemandMultiplier(candidate.demandEffect);
+        formula = `goal base gain/worker ${formatPrice(rawGain)} × ${demandNote} = ${formatPrice(candidate.goalNormalizedGain)} × step ${rn(candidate.units, 2)} = ${renderCandidateScore(candidate.score)}`;
+      } else {
+        formula = `goal gain/worker ${formatPrice(candidate.goalNormalizedGain)} × step ${rn(candidate.units, 2)} = ${renderCandidateScore(candidate.score)}`;
+      }
     } else {
       const netMargin = candidate.sellPrice - candidate.ingredientCost;
       const cultureNote = candidate.cultureModifier !== 1 ? ` ${modifierBadge(candidate.cultureModifier)}` : "";

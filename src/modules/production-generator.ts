@@ -643,6 +643,8 @@ export class ProductionModule {
           break;
         }
 
+        marketCost += subPlan.marketCost;
+
         if (!nextActionPlan || subPlan.normalizedGain > nextActionPlan.normalizedGain + 0.001) {
           nextActionPlan = subPlan;
         }
