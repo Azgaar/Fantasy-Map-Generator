@@ -37,7 +37,7 @@ export class ProductionModule {
       const population = burg.population || 0;
       const demandTargets = this.buildDemandTargets(burg);
 
-      const inventory: Record<number, number> = {};
+      const inventory: Record<number, number> = {...(burg.inventory || {})};
       const history: ProductionHistoryEntry[] = [];
       let workersUsed = 0;
       let activeGoalGoodId: number | null = null;
@@ -166,9 +166,10 @@ export class ProductionModule {
       const marketCenter = Trade.getMarketForBurg(burg);
       if (!data || !marketCenter) continue;
 
+      const demandInventory = demandInventoryByBurg.get(burg.i!) ?? {};
       this.fillBurgDemandFromCenter({
         burg,
-        demandInventory: demandInventoryByBurg.get(burg.i!) ?? {},
+        demandInventory,
         goodById,
         demandTargets: this.buildDemandTargets(burg),
         marketCenter,
@@ -176,6 +177,7 @@ export class ProductionModule {
         priceCeiling,
         history: data
       });
+      burg.inventory = demandInventory;
     }
 
     Trade.updateMarketDemand(goods, this.productionData, demandInventoryByBurg);
@@ -342,12 +344,17 @@ export class ProductionModule {
       for (const candidate of candidates) {
         if (shortage <= 0.001) break;
 
+        const wealth = burg.wealth || 0;
+        if (wealth <= 0.001) break;
+
+        const buyPrice = this.getMarketGoodData(marketCenter, candidate.goodId, candidate.good.value).buyPrice;
         const unitsNeeded = shortage / candidate.coverageWeight;
+        const unitsAffordable = buyPrice > 0 ? wealth / buyPrice : candidate.available;
         const purchase = Trade.buyFromMarket({
           burg,
           good: candidate.good,
-          units: Math.min(candidate.available, unitsNeeded),
-          marketPrice: this.getMarketGoodData(marketCenter, candidate.goodId, candidate.good.value).buyPrice
+          units: Math.min(candidate.available, unitsNeeded, unitsAffordable),
+          marketPrice: buyPrice
         });
         if (purchase.units <= 0.001) continue;
 

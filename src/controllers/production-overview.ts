@@ -340,7 +340,7 @@ export function open(burgId: number): void {
     empty: "No production actions recorded"
   });
 
-  const finalDemandCoverage = calculateDemandCoverageTotals(producedByGood);
+  const finalDemandCoverage = calculateDemandCoverageTotals(burg.inventory || {});
   const uncoveredDemand = initialDemand.map((target, index) => Math.max(0, target - finalDemandCoverage[index]));
 
   const statsHtml = /*html*/ `

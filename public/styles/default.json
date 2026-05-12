@@ -661,7 +661,7 @@
   "#trade": {
     "opacity": 1,
     "stroke-width": 0.5,
-    "data-fill-opacity": 0.6,
+    "data-fill-opacity": 0.5,
     "filter": null
   }
 }

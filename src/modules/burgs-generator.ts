@@ -29,6 +29,7 @@ export interface Burg {
   produced?: Record<number, number>;
   wealth?: number; // cumulative net wealth from production runs
   market?: number;
+  inventory?: Record<number, number>;
 }
 
 class BurgModule {

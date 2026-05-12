@@ -1,5 +1,6 @@
 import {quadtree} from "d3-quadtree";
 import {rn} from "../utils";
+import {getRandomColor} from "../utils/colorUtils";
 import type {Burg} from "./burgs-generator";
 import type {DemandCategory, Good} from "./goods-generator";
 import {DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "./goods-generator";
@@ -35,6 +36,7 @@ export type MarketGoodData = {
 export type Market = {
   i: number;
   centerBurgId: number;
+  color: string;
   goods: Record<number, MarketGoodData>;
 };
 
@@ -66,6 +68,7 @@ export class TradeModule {
     return {
       i: id,
       centerBurgId,
+      color: getRandomColor(),
       goods: this.createMarketGoods(goods)
     };
   }

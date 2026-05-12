@@ -1,5 +1,5 @@
 import polylabel from "polylabel";
-import type {Vertices} from "../modules/voronoi";
+import type {Point, Vertices} from "../modules/voronoi";
 import type {PackedGraph} from "../types/PackedGraph";
 import {rn} from "./numberUtils";
 
@@ -82,17 +82,16 @@ const restorePath = (exit: number, start: number, from: number[]): number[] => {
  * @returns {object} An object containing isolines for each type based on the specified options.
  */
 export const getIsolines = (
-  graph: PackedGraph,
+  {cells, vertices, features}: PackedGraph,
   getType: (cellId: number) => string | number,
-  options: {
-    polygons?: boolean;
-    fill?: boolean;
-    halo?: boolean;
-    waterGap?: boolean;
-  } = {polygons: false, fill: false, halo: false, waterGap: false}
-): Record<string, Record<string, string | number[][]>> => {
-  const {cells, vertices} = graph;
-  const isolines: Record<string, Record<string, string | number[][]>> = {};
+  options: {polygons?: boolean; fill?: boolean; halo?: boolean; waterGap?: boolean} = {
+    polygons: false,
+    fill: false,
+    halo: false,
+    waterGap: false
+  }
+): Isolines => {
+  const isolines: Isolines = {};
 
   const checkedCells = new Uint8Array(cells.i.length);
   const addToChecked = (cellId: number) => {
@@ -112,19 +111,13 @@ export const getIsolines = (
     if (onborderCell === undefined) continue;
 
     // check if inner lake. Note there is no shoreline for grid features
-    const feature = graph.features[cells.f[onborderCell]];
+    const feature = features[cells.f[onborderCell]];
     if (feature.type === "lake" && feature.shoreline?.every(ofSameType)) continue;
 
     const startingVertex = cells.v[cellId].find((v: number) => vertices.c[v].some(ofDifferentType));
     if (startingVertex === undefined) throw new Error(`Starting vertex for cell ${cellId} is not found`);
 
-    const vertexChain = connectVertices({
-      vertices,
-      startingVertex,
-      ofSameType,
-      addToChecked,
-      closeRing: true
-    });
+    const vertexChain = connectVertices({vertices, startingVertex, ofSameType, addToChecked, closeRing: true});
     if (vertexChain.length < 3) continue;
 
     addIsolineTo(type, vertices, vertexChain, isolines, options);
@@ -133,40 +126,39 @@ export const getIsolines = (
   return isolines;
 
   function addIsolineTo(
-    type: string,
+    type: string | number,
     vertices: Vertices,
     vertexChain: number[],
-    isolines: Record<string, Record<string, string | number[][]>>,
-    options: Record<string, boolean>
+    isolines: Isolines,
+    options: {polygons?: boolean; fill?: boolean; halo?: boolean; waterGap?: boolean}
   ): void {
     if (!isolines[type]) isolines[type] = {};
 
     if (options.polygons) {
       if (!isolines[type].polygons) isolines[type].polygons = [];
-      (isolines[type].polygons as unknown as number[][][]).push(
-        vertexChain.map(vertexId => vertices.p[vertexId] as [number, number])
-      );
+      isolines[type].polygons.push(vertexChain.map(vertexId => vertices.p[vertexId]));
     }
 
     if (options.fill) {
       if (!isolines[type].fill) isolines[type].fill = "";
-      isolines[type].fill = (isolines[type].fill as string) + getFillPath(vertices, vertexChain);
+      isolines[type].fill = isolines[type].fill + getFillPath(vertices, vertexChain);
     }
 
     if (options.waterGap) {
       if (!isolines[type].waterGap) isolines[type].waterGap = "";
       const isLandVertex = (vertexId: number): boolean => vertices.c[vertexId].every((i: number) => cells.h[i] >= 20);
-      isolines[type].waterGap =
-        (isolines[type].waterGap as string) + getBorderPath(vertices, vertexChain, isLandVertex);
+      isolines[type].waterGap = isolines[type].waterGap + getBorderPath(vertices, vertexChain, isLandVertex);
     }
 
     if (options.halo) {
       if (!isolines[type].halo) isolines[type].halo = "";
       const isBorderVertex = (vertexId: number): boolean => vertices.c[vertexId].some((i: number) => cells.b[i]);
-      isolines[type].halo = (isolines[type].halo as string) + getBorderPath(vertices, vertexChain, isBorderVertex);
+      isolines[type].halo = isolines[type].halo + getBorderPath(vertices, vertexChain, isBorderVertex);
     }
   }
 };
+
+type Isolines = Record<string, {polygons?: Point[][]; fill?: string; halo?: string; waterGap?: string}>;
 
 /**
  * Generates SVG path data for the border of a shape defined by a chain of vertices.

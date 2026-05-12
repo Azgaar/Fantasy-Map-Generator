@@ -550,7 +550,7 @@ const GOODS_DATA: GoodData[] = [
     color: "#7fcdff",
     value: 1,
     chance: 3,
-    distribution: "biome(0) && type('ocean') && maxTemp(7)",
+    distribution: "shore(-1) && type('ocean') && maxTemp(7)",
     unit: "barrel",
     demandCoverage: {food: 1, utilities: 0.2},
     bonus: {population: 1},

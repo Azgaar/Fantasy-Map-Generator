@@ -52,7 +52,6 @@ function marketsOverviewAddLines(): void {
   for (const market of markets) {
     const centerName = getMarketCenterName(market);
     const ownerName = getOwnerStateName(market);
-    const color = getMarketColor(market.i);
     const cells = getMarketCells(market.i);
     const burgs = getMarketBurgs(market.i);
     const stock = rn(getMarketTotalStock(market), 2);
@@ -66,7 +65,7 @@ function marketsOverviewAddLines(): void {
         data-market="${centerName}" data-owner="${ownerName}"
         data-cells="${cells}" data-burgs="${burgs}"
         data-stock="${stock}" data-sales="${sales}" data-buys="${buys}" data-income="${income}">
-      <fill-box fill="${color}"></fill-box>
+      <fill-box fill="${market.color}"></fill-box>
       <div data-tip="Market center burg. Click to view details" class="marketName" style="width:7em">${centerName}</div>
       <div data-tip="Owning state" class="marketOwner" style="width:8em">${ownerName}</div>
       <div data-tip="Number of cells in market territory" class="marketCells" style="width:3.5em">${cells}</div>
@@ -146,13 +145,12 @@ function compareDialogAddLines(): void {
   let lines = "";
   for (const market of markets) {
     const centerName = getMarketCenterName(market);
-    const color = getMarketColor(market.i);
     const goodData = market.goods[good.i];
     const stock = rn(goodData?.stock ?? 0, 2);
     const buyPrice = rn(goodData?.buyPrice ?? 0, 2);
     const sellPrice = rn(goodData?.sellPrice ?? 0, 2);
     lines += /*html*/ `<div class="states" data-id="${market.i}" data-market="${centerName}" data-stock="${stock}" data-buyprice="${buyPrice}" data-sellprice="${sellPrice}">
-      <fill-box fill="${color}"></fill-box>
+      <fill-box fill="${market.color}"></fill-box>
       <div style="width:9em">${centerName}</div>
       <div style="width:5em">${stock}</div>
       <div style="width:6em">${formatPrice(buyPrice)}</div>
@@ -177,10 +175,6 @@ function rebuildCompareGoodSelect(): void {
     compareGoodId = pack.goods[0]?.i ?? 0;
     select.value = String(compareGoodId);
   }
-}
-
-function getMarketColor(marketId: number): string {
-  return document.querySelector<SVGCircleElement>(`#market${marketId} circle`)?.getAttribute("fill") || "#dababf";
 }
 
 function getMarketTotalStock(market: Market): number {
