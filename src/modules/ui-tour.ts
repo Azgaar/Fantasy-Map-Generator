@@ -47,6 +47,25 @@ function start() {
     overlayOpacity: 0.75,
     stagePadding: 4,
     stageRadius: 4,
+    onPopoverRender: (popover) => {
+      Object.assign(popover.wrapper.style, {
+        backgroundColor: "#ffffff",
+        color: "#000000",
+        border: "1px solid #cccccc",
+        fontFamily: "Georgia, serif",
+      });
+      popover.title.style.color = "#000000";
+      popover.title.style.borderBottomColor = "#cccccc";
+      popover.progress.style.color = "#666666";
+      popover.closeButton.style.color = "#000000";
+      for (const btn of [popover.previousButton, popover.nextButton]) {
+        Object.assign(btn.style, {
+          backgroundColor: "#f0f0f0",
+          border: "1px solid #cccccc",
+          color: "#000000",
+        });
+      }
+    },
     onDestroyStarted: () => {
       document.removeEventListener("keydown", handleKeydown);
       hideHeightmapCustomizationPanel();
