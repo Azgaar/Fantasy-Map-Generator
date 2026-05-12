@@ -3,15 +3,16 @@ import type {CultureType} from "./cultures-generator";
 import {DEFAULT_CULTURE_TYPE} from "./cultures-generator";
 import type {DemandCategory, Good} from "./goods-generator";
 import {DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "./goods-generator";
-import type {Market} from "./trade-generator";
+import {
+  BUY_PRESSURE_FACTOR,
+  type Market,
+  PRICE_CEILING_FACTOR,
+  PRICE_FLOOR_FACTOR,
+  SELL_PRESSURE_FACTOR
+} from "./trade-generator";
 
 export class ProductionModule {
-  private readonly BUY_PRESSURE_FACTOR = 0.002;
-  private readonly SELL_PRESSURE_FACTOR = 0.001;
-  private readonly PRICE_FLOOR_FACTOR = 0.5;
-  private readonly PRICE_CEILING_FACTOR = 3.0;
   private readonly GOAL_STICKINESS_FACTOR = 0.85;
-
   private productionData = new Map<number, ProductionHistoryEntry[]>();
 
   produce() {
@@ -41,6 +42,7 @@ export class ProductionModule {
       const history: ProductionHistoryEntry[] = [];
       let workersUsed = 0;
       let activeGoalGoodId: number | null = null;
+      let ingredientCosts = 0;
 
       for (let i = 0; i < Math.ceil(population); i++) {
         const workersLeft = population - workersUsed;
@@ -99,8 +101,9 @@ export class ProductionModule {
                 marketPrice: marketGood.buyPrice
               });
               marketCost = purchase.totalCost;
+              ingredientCosts += marketCost;
               if (purchase.dealId !== null) history.push({kind: "deal", dealId: purchase.dealId});
-              burg.wealth = (burg.wealth || 0) - marketCost;
+              burg.treasury = Math.round(((burg.treasury || 0) - marketCost) * 100) / 100;
               marketGood.buyPrice = Math.min(priceCeiling[ingId], marketGood.buyPrice + actualBuy * buyPressure[ingId]);
             }
 
@@ -154,7 +157,8 @@ export class ProductionModule {
         const marketGood = this.getMarketGoodData(market, goodId, good.value);
         marketGood.sellPrice = Math.max(priceFloor[goodId], marketGood.sellPrice - amount * sellPressure[goodId]);
       }
-      burg.wealth = (burg.wealth || 0) + phaseRevenue;
+      burg.treasury = Math.round(((burg.treasury || 0) + phaseRevenue) * 100) / 100;
+      burg.product = Math.round((phaseRevenue - ingredientCosts) * 100) / 100;
 
       this.productionData.set(burg.i!, history);
     }
@@ -177,7 +181,12 @@ export class ProductionModule {
         priceCeiling,
         history: data
       });
-      burg.inventory = demandInventory;
+      burg.inventory = {};
+      for (const goodIdStr in demandInventory) {
+        const goodId = +goodIdStr;
+        const amount = demandInventory[goodId];
+        if (amount > 0.001) burg.inventory[goodId] = Math.round(amount * 100) / 100;
+      }
     }
 
     Trade.updateMarketDemand(goods, this.productionData, demandInventoryByBurg);
@@ -344,7 +353,7 @@ export class ProductionModule {
       for (const candidate of candidates) {
         if (shortage <= 0.001) break;
 
-        const wealth = burg.wealth || 0;
+        const wealth = burg.treasury || 0;
         if (wealth <= 0.001) break;
 
         const buyPrice = this.getMarketGoodData(marketCenter, candidate.goodId, candidate.good.value).buyPrice;
@@ -360,7 +369,7 @@ export class ProductionModule {
 
         if (purchase.dealId !== null) history.push({kind: "deal", dealId: purchase.dealId});
         demandInventory[candidate.goodId] = (demandInventory[candidate.goodId] || 0) + purchase.units;
-        burg.wealth = (burg.wealth || 0) - purchase.totalCost;
+        burg.treasury = Math.round(((burg.treasury || 0) - purchase.totalCost) * 100) / 100;
 
         for (let coverageCategoryIndex = 0; coverageCategoryIndex < DEMAND_PRIORITY.length; coverageCategoryIndex++) {
           const coverageCategory = DEMAND_PRIORITY[coverageCategoryIndex] as DemandCategory;
@@ -430,7 +439,11 @@ export class ProductionModule {
     if (!coverageWeight) return {multiplier: 1, category: null, shortage: 0};
 
     const multiplier = 1 + coverageWeight * demandFocus.shortage;
-    return {multiplier, category: demandFocus.category, shortage: demandFocus.shortage};
+    return {
+      multiplier,
+      category: demandFocus.category,
+      shortage: demandFocus.shortage
+    };
   }
 
   private buildImmediateManufactureCandidate(params: {
@@ -442,7 +455,6 @@ export class ProductionModule {
     cultureType: string;
     demandEffect: DemandEffect;
     units: number;
-    projectedGainOverride?: number;
     goalGoodId?: number;
     preparation?: boolean;
   }): {action: PlannedAction; candidate: DecisionCandidate} | null {
@@ -455,13 +467,11 @@ export class ProductionModule {
       cultureType,
       demandEffect,
       units,
-      projectedGainOverride,
       goalGoodId,
       preparation
     } = params;
 
     let maxYield = Infinity;
-    const ingredients: DecisionIngredient[] = [];
     let marketCostTotal = 0;
 
     for (const ingredient of recipe.ingredients) {
@@ -477,31 +487,15 @@ export class ProductionModule {
     const actualUnits = Math.min(units, maxYield);
     for (const ingredient of recipe.ingredients) {
       const inventoryAvailable = inventory[ingredient.goodId] || 0;
-      const marketAvailable = marketInventory[ingredient.goodId] || 0;
-      const totalAvailable = inventoryAvailable + marketAvailable;
       const amountNeeded = actualUnits * ingredient.amount;
-      const fromInventory = Math.min(inventoryAvailable, amountNeeded);
-      const fromMarket = Math.max(0, amountNeeded - fromInventory);
-      const marketCost = fromMarket * buyPrice[ingredient.goodId];
-      marketCostTotal += marketCost;
-
-      ingredients.push({
-        goodId: ingredient.goodId,
-        amount: amountNeeded,
-        buyPrice: buyPrice[ingredient.goodId],
-        available: totalAvailable,
-        availableInventory: inventoryAvailable,
-        availableMarket: marketAvailable,
-        fromInventory,
-        fromMarket,
-        marketCost
-      });
+      const fromMarket = Math.max(0, amountNeeded - Math.min(inventoryAvailable, amountNeeded));
+      marketCostTotal += fromMarket * buyPrice[ingredient.goodId];
     }
 
     const cultureModifier = this.getCultureModifier(recipe.good, cultureType);
     const sellValue = (sellPrice[recipe.good.i] ?? recipe.good.value) * cultureModifier;
     const ingredientCost = marketCostTotal / actualUnits;
-    const projectedGain = projectedGainOverride ?? (sellValue - ingredientCost) * demandEffect.multiplier;
+    const projectedGain = (sellValue - ingredientCost) * demandEffect.multiplier;
     const score = projectedGain;
 
     return {
@@ -513,16 +507,14 @@ export class ProductionModule {
         score
       },
       candidate: {
-        kind: "manufacture",
         goodId: recipe.good.i,
-        score,
-        projectedGain,
-        demandEffect,
-        cultureModifier,
-        revenue: sellValue,
-        ingredientCost,
         units: actualUnits,
-        ingredients,
+        sellPrice: sellValue,
+        ingredientCost,
+        cultureModifier,
+        demandEffect,
+        score,
+        ingredients: recipe.ingredients,
         goalGoodId,
         preparation
       }
@@ -587,21 +579,17 @@ export class ProductionModule {
         cultureType,
         demandEffect,
         units: Math.min(stepUnits, targetUnits),
-        projectedGainOverride: totalProjectedGain,
         goalGoodId: good.i
       });
       if (immediate && targetUnits <= workersLeft + 0.001) {
-        const normalizedGain = targetUnits > 0 ? totalProjectedGain / targetUnits : totalProjectedGain;
-        const immediateMarketCost =
-          immediate.candidate.kind === "manufacture"
-            ? immediate.candidate.ingredientCost * immediate.candidate.units
-            : 0;
+        const perUnitNetGain = immediate.candidate.score;
+        const immediateMarketCost = immediate.candidate.ingredientCost * immediate.candidate.units;
         const plan: GoalActionPlan = {
           goalGoodId: good.i,
           workersNeeded: targetUnits,
           marketCost: immediateMarketCost,
-          projectedGain: totalProjectedGain,
-          normalizedGain,
+          projectedGain: perUnitNetGain * targetUnits,
+          normalizedGain: perUnitNetGain,
           action: immediate.action,
           candidate: immediate.candidate,
           immediate: true
@@ -676,10 +664,10 @@ export class ProductionModule {
       const action = nextActionPlan.action;
       const candidate: DecisionCandidate = {
         ...nextActionPlan.candidate,
-        projectedGain,
         score: normalizedGain * Math.min(stepUnits, targetUnits),
         goalGoodId: good.i,
-        preparation: nextActionPlan.goalGoodId !== good.i
+        preparation: nextActionPlan.goalGoodId !== good.i,
+        goalNormalizedGain: normalizedGain
       };
 
       const plan: GoalActionPlan = {
@@ -688,7 +676,10 @@ export class ProductionModule {
         marketCost,
         projectedGain,
         normalizedGain,
-        action: {...action, score: normalizedGain * Math.min(stepUnits, targetUnits)},
+        action: {
+          ...action,
+          score: normalizedGain * Math.min(stepUnits, targetUnits)
+        },
         candidate,
         immediate: false
       };
@@ -707,10 +698,10 @@ export class ProductionModule {
 
     for (const good of goods) {
       const i = good.i;
-      buyPressure[i] = good.value * this.BUY_PRESSURE_FACTOR;
-      sellPressure[i] = good.value * this.SELL_PRESSURE_FACTOR;
-      priceFloor[i] = good.value * this.PRICE_FLOOR_FACTOR;
-      priceCeiling[i] = good.value * this.PRICE_CEILING_FACTOR;
+      buyPressure[i] = good.value * BUY_PRESSURE_FACTOR;
+      sellPressure[i] = good.value * SELL_PRESSURE_FACTOR;
+      priceFloor[i] = good.value * PRICE_FLOOR_FACTOR;
+      priceCeiling[i] = good.value * PRICE_CEILING_FACTOR;
     }
 
     return {
@@ -736,7 +727,11 @@ export class ProductionModule {
     activeGoalGoodId: number | null;
     workersLeft: number;
     fraction: number;
-  }): {action: PlannedAction; candidates: DecisionCandidate[]; goalGoodId: number | null} | null {
+  }): {
+    action: PlannedAction;
+    candidates: DecisionCandidate[];
+    goalGoodId: number | null;
+  } | null {
     const candidates: DecisionCandidate[] = [];
     const demandCoverage = this.calculateDemandCoverage(params.inventory, params.goodById);
     const demandFocus = this.getDemandFocus(params.demandTargets, demandCoverage);
@@ -790,7 +785,11 @@ export class ProductionModule {
     }
 
     if (!chosenGoal) return null;
-    return {action: chosenGoal.action, candidates, goalGoodId: chosenGoal.goalGoodId};
+    return {
+      action: chosenGoal.action,
+      candidates,
+      goalGoodId: chosenGoal.goalGoodId
+    };
   }
 
   private getCultureModifier(good: Good, cultureType: string) {
@@ -826,39 +825,30 @@ type PlannedAction = {
   score: number;
 };
 
-type Ingredient = {goodId: number; amount: number};
+export type Ingredient = {goodId: number; amount: number};
+
 type Recipes = {good: Good; ingredients: Ingredient[]};
-export type DecisionIngredient = {
-  goodId: number;
-  amount: number;
-  buyPrice: number;
-  available: number;
-  availableInventory: number;
-  availableMarket: number;
-  fromInventory: number;
-  fromMarket: number;
-  marketCost: number;
-};
+
 export type DemandEffect = {
   multiplier: number;
   category: DemandCategory | null;
   shortage: number;
 };
+
 type DemandFocus = {category: DemandCategory; shortage: number};
 
 export type DecisionCandidate = {
-  kind: "manufacture";
   goodId: number;
-  score: number;
-  projectedGain: number;
-  demandEffect: DemandEffect;
-  cultureModifier: number;
-  revenue: number;
-  ingredientCost: number;
   units: number;
-  ingredients: DecisionIngredient[];
+  sellPrice: number;
+  ingredientCost: number;
+  cultureModifier: number;
+  demandEffect: DemandEffect;
+  score: number;
+  ingredients: Ingredient[];
   goalGoodId?: number;
   preparation?: boolean;
+  goalNormalizedGain?: number; // set for prep candidates: goal projected gain per worker
 };
 
 type GoalActionPlan = {
@@ -877,7 +867,12 @@ export type MfgHistoryEntry = {
   goodId: number;
   units: number;
   cultureModifier: number;
-  recipe: Array<{goodId: number; fromInventory: number; fromMarket: number; marketCost: number}>;
+  recipe: Array<{
+    goodId: number;
+    fromInventory: number;
+    fromMarket: number;
+    marketCost: number;
+  }>;
   candidates?: DecisionCandidate[];
 };
 

@@ -1,13 +1,13 @@
 import {pointer} from "d3";
 import type {DemandCategory, Good} from "../modules/goods-generator";
 import {DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY} from "../modules/goods-generator";
+import {RURAL_BONUS_PRODUCTION} from "../modules/trade-generator";
 import {ensureEl, unique} from "../utils";
 import {getHeight} from "../utils/unitUtils";
 import {ProductionChains} from "./production-chains";
 
 let isInitialized = false;
 let visibleTags = new Set<string>();
-const RURAL_BONUS_PRODUCTION = 5;
 
 export function open() {
   if (customization) return;

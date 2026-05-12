@@ -60,7 +60,6 @@ function editBurg(id) {
   function updateBurgValues() {
     const id = +elSelected.attr("data-id");
     const b = pack.burgs[id];
-    const productionData = Production.getProductionData(id);
     const province = pack.cells.province[b.cell];
     const provinceName = province ? pack.provinces[province].fullName + ", " : "";
     const stateName = pack.states[b.state].fullName || pack.states[b.state].name;
@@ -70,7 +69,9 @@ function editBurg(id) {
     ensureEl("burgGroup").value = b.group;
     ensureEl("burgType").value = b.type || "Generic";
     ensureEl("burgPopulation").value = rn(b.population * populationRate * urbanization);
-    ensureEl("burgWealth").innerHTML = "🟡 " + rn(productionData?.productPerCapita || 0, 2);
+    ensureEl("burgProduct").innerHTML = "🟡 " + rn(b.product || 0, 2);
+    ensureEl("burgWealth").innerHTML = "🟡 " + rn(b.population > 0 ? (b.product || 0) / b.population : 0, 2);
+    ensureEl("burgTreasury").innerHTML = "🟡 " + rn(b.treasury || 0, 2);
     ensureEl("burgEditAnchorStyle").style.display = +b.port ? "inline-block" : "none";
 
     // update list and select culture

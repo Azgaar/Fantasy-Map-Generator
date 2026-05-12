@@ -54,8 +54,7 @@ export function open(burgId: number): void {
     cell: "padding:.4em .5em;vertical-align:top",
     cellRight: "padding:.4em .5em;vertical-align:top;text-align:right",
     detailsCell: "padding:0.5em 0.5em 1em;",
-    empty: "color:#888;font-style:italic",
-    summaryBar: "display:flex;margin-top:.6em;justify-content:space-between;padding:0 .5em;gap:1em;flex-wrap:wrap"
+    empty: "color:#888;font-style:italic"
   };
 
   const goodName = (id: number) => Goods.get(id)?.name ?? `#${id}`;
@@ -110,21 +109,6 @@ export function open(burgId: number): void {
       <tbody>${rows.join("")}</tbody>
     </table>`;
   };
-  const renderSummaryBar = (
-    items: Array<{
-      label: string;
-      value: string;
-      title: string;
-      valueStyle?: string;
-    }>
-  ) =>
-    /*html*/ `<div style="${styles.summaryBar}">${items
-      .map(
-        item =>
-          `<span title="${item.title}"><b>${item.label}:</b> <span style="font-weight:600; ${item.valueStyle || ""}">${item.value}</span></span>`
-      )
-      .join("")}</div>`;
-
   const renderTaggedGood = (id: number, type: Type, suffix = "") =>
     `${renderGoodLabel(id, suffix)} <span style="margin-left:4px">${typeBadge(type)}</span>`;
   const renderLogRow = (targetId: string, detailsHtml: string) =>
@@ -178,30 +162,21 @@ export function open(burgId: number): void {
   const renderCandidateScore = (score: number) => `<b style="${styles.positive}">score ${rn(score, 2)}</b>`;
   const renderDecisionCandidate = (candidate: DecisionCandidate) => {
     const ingredients = candidate.ingredients
-      .map(ingredient => {
-        const sources = [
-          ingredient.amount === ingredient.fromInventory ? "from inventory" : null,
-          ingredient.fromInventory > 0 && ingredient.amount !== ingredient.fromInventory
-            ? `${rn(ingredient.fromInventory, 2)} from inventory`
-            : null,
-          ingredient.amount === ingredient.fromMarket ? "from market" : null,
-          ingredient.fromMarket > 0 && ingredient.amount !== ingredient.fromMarket
-            ? `${rn(ingredient.fromMarket, 2)} from market`
-            : null
-        ];
-        return `${rn(ingredient.amount, 2)} ${goodDot(ingredient.goodId)} (${sources.filter(Boolean).join(", ")})`;
-      })
+      .map(ing => `${rn(ing.amount * candidate.units, 2)} ${goodDot(ing.goodId)}`)
       .join(", ");
 
-    const factors = [
-      `projected gain ${formatPrice(candidate.projectedGain)}`,
-      candidate.cultureModifier !== 1 ? `culture x${rn(candidate.cultureModifier, 2)}` : "",
-      `unit ${rn(candidate.units, 2)}`,
-      candidate.demandEffect.multiplier > 1 ? formatDemandMultiplier(candidate.demandEffect) : ""
-    ].filter(Boolean);
-
-    return `<div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>${candidate.preparation ? ` (prep for ${goodDot(candidate.goalGoodId || -1)})` : ""}: ${factors.join(" × ")} = ${renderCandidateScore(candidate.score)}</div>
-      <div style="margin-top:.1em;${styles.muted}">Ingredients: ${ingredients}</div>`;
+    const prepNote = candidate.preparation ? ` (prep for ${goodDot(candidate.goalGoodId || -1)})` : "";
+    let formula: string;
+    if (candidate.preparation && candidate.goalNormalizedGain !== undefined) {
+      formula = `goal gain by worker ${formatPrice(candidate.goalNormalizedGain)} × step ${rn(candidate.units, 2)} = ${renderCandidateScore(candidate.score)}`;
+    } else {
+      const netMargin = candidate.sellPrice - candidate.ingredientCost;
+      const cultureNote = candidate.cultureModifier !== 1 ? ` ${modifierBadge(candidate.cultureModifier)}` : "";
+      const demandPart =
+        candidate.demandEffect.multiplier > 1 ? ` × ${formatDemandMultiplier(candidate.demandEffect)}` : "";
+      formula = `sell ${formatPrice(candidate.sellPrice)}${cultureNote} − cost ${formatPrice(candidate.ingredientCost)} = net ${formatPrice(netMargin)}${demandPart} = ${renderCandidateScore(candidate.score)}`;
+    }
+    return `<div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>${prepNote}: ${formula}. <span style="${styles.muted}">Ingredients: ${ingredients}</span></div>`;
   };
   const renderDecisionDetails = (candidates?: DecisionCandidate[]) => {
     if (!candidates || candidates.length === 0) return "";
@@ -242,7 +217,7 @@ export function open(burgId: number): void {
     ];
   };
   const population = burg.population || 0;
-  const wealthAfter = burg.wealth || 0;
+  const treasuryAfter = burg.treasury || 0;
 
   // Derive process rank from sorted burg order (same order as production run)
   const sortedBurgIds = (pack.burgs as Burg[])
@@ -345,11 +320,19 @@ export function open(burgId: number): void {
 
   const statsHtml = /*html*/ `
     <div style="${styles.topBar}">
-      <span><b>Population:</b> ${population}</span>
-      <span><b>Order:</b> ${processRank} of ${totalBurgs}</span>
-      <span><b>Market:</b> ${centerBurg?.name || "unknown"} (${market?.i})</span>
+      <div>
+        <span><b>Population:</b> ${population}</span>
+        <span><b>Order:</b> ${processRank} of ${totalBurgs}</span>
+        <span><b>Market:</b> ${centerBurg?.name || "unknown"} (${market?.i})</span>
+      </div>
       <div><b>Initial Demand:</b> ${renderDemand(initialDemand)}</div>
       <div><b>Uncovered Demand:</b> ${renderDemand(uncoveredDemand, true) || "none"}</div>
+      <div>
+        <span title="Product is local sale revenue minus purchased ingredient costs during the production. It excludes retained inventory and later demand-fill purchases."><b>Product:</b> <span style="${grossProduct >= 0 ? styles.positive : styles.negative}">${formatPrice(grossProduct)}</span></span>
+        <span title="Product per capita: gross product divided by population."><b>Wealth:</b> <span style="${productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(productPerCapita)}</span></span>
+        <span title="Sales Tax is paid by the seller on local sale deals. It is deducted from gross sale value and transferred to the state treasury."><b>Total Tax:</b> <span style="${totalTax >= 0 ? styles.warning : styles.subtle}">${formatPrice(totalTax)}</span></span>
+        <span title="Net burg treasury after local buying, local sales, and final local demand fill."><b>Treasury:</b> <span style="${treasuryAfter >= 0 ? styles.positive : styles.negative}">${formatPrice(treasuryAfter)}</span></span>
+      </div>
     </div>`;
 
   const producedRows = Object.entries(producedByGood)
@@ -371,43 +354,11 @@ export function open(burgId: number): void {
     empty: "No goods manufactured"
   });
 
-  const historySummaryHtml = renderSummaryBar([
-    {
-      label: "Gross Product",
-      value: formatPrice(grossProduct),
-      title:
-        "Gross Product is local sale revenue minus purchased ingredient costs during the production. It excludes retained inventory and later demand-fill purchases.",
-      valueStyle: grossProduct >= 0 ? styles.positive : styles.negative
-    },
-    {
-      label: "Wealth",
-      value: formatPrice(productPerCapita),
-      title:
-        "Gross product per population point. This is the burg's gross product divided by population, a per-capita productivity measure for the current production run.",
-      valueStyle: productPerCapita >= 0 ? styles.positive : styles.negative
-    },
-    {
-      label: "Total Tax",
-      value: formatPrice(totalTax),
-      title:
-        "Sales tax is paid by the seller on local sale deals. It is deducted from gross sale value and transferred to the state treasury.",
-      valueStyle: totalTax >= 0 ? styles.warning : styles.subtle
-    },
-    {
-      label: "Treasury",
-      value: formatPrice(wealthAfter),
-      title: "Net burg treasury after local buying, local sales, and final local demand fill.",
-      valueStyle: wealthAfter >= 0 ? styles.positive : styles.negative
-    }
-  ]);
-
-  const historySection = `${jobsTable}${historySummaryHtml}`;
-
   alertMessage.innerHTML = /*html*/ `
     <div id="productionOverviewContent">
       ${statsHtml}
       ${renderSection("Manufactured Goods", producedTable, "Goods manufactured by this burg in this production cycle.")}
-      ${renderSection("Production and Trade history", historySection, "Chronological local production, market purchases, sales, and demand-fill operations for this burg.")}
+      ${renderSection("Production and Trade history", jobsTable, "Chronological local production, market purchases, sales, and demand-fill operations for this burg.")}
     </div>
   `;
 

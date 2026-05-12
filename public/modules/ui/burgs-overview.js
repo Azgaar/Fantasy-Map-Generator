@@ -94,17 +94,19 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     body.innerHTML = "";
     let lines = "";
     let totalPopulation = 0;
-    let totalGrossProduct = 0;
+    let totalProduct = 0;
     let totalProductPerCapita = 0;
+    let totalTreasury = 0;
 
     for (const b of filtered) {
-      const productionData = Production.getProductionData(b.i) || {grossProduct: 0, productPerCapita: 0};
       const population = b.population * populationRate * urbanization;
-      const grossProduct = rn(productionData.grossProduct || 0, 2);
-      const productPerCapita = rn(productionData.productPerCapita || 0, 2);
+      const grossProduct = rn(b.product || 0, 2);
+      const productPerCapita = rn(b.population > 0 ? (b.product || 0) / b.population : 0, 2);
+      const treasury = rn(b.treasury || 0, 2);
       totalPopulation += population;
-      totalGrossProduct += grossProduct;
+      totalProduct += grossProduct;
       totalProductPerCapita += productPerCapita;
+      totalTreasury += treasury;
       const features = b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg";
       const state = pack.states[b.state].name;
       const prov = pack.cells.province[b.cell];
@@ -122,6 +124,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
         data-population=${population}
         data-grossproduct=${grossProduct}
         data-productpercapita=${productPerCapita}
+        data-treasury=${treasury}
         data-features="${features}"
       >
         <span data-tip="Click to zoom into view" class="icon-dot-circled pointer"></span>
@@ -132,10 +135,12 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
         <input data-tip="Burg group" value="${b.group}" disabled />
         <span data-tip="Burg population" class="icon-male"></span>
         <input data-tip="Burg population" value=${si(population)} style="width: 5em" disabled />
-        <span data-tip="Gross product: total profit of final output for the current production run">🟡</span>
-        <input data-tip="Gross product: total profit of final output for the current production run" value=${grossProduct} style="width: 5em" disabled />
-        <span data-tip="Product per capita (wealth): gross product divided by population">🟡</span>
-        <input data-tip="Product per capita (wealth): gross product divided by population" value=${productPerCapita} style="width: 5em" disabled />
+        <span data-tip="Gross product: total profit of final output">🟡</span>
+        <input data-tip="Gross product: total profit of final output" value=${grossProduct} style="width: 5em" disabled />
+        <span data-tip="Wealth: gross product divided by population">🟡</span>
+        <input data-tip="Wealth: gross product divided by population" value=${productPerCapita} style="width: 5em" disabled />
+        <span data-tip="Treasury: accumulated cash balance">🟡</span>
+        <input data-tip="Treasury: accumulated cash balance" value=${treasury} style="width: 5em" disabled />
         <div style="width: 3em">
           <span
             data-tip="${b.capital ? " This burg is a state capital" : "This burg is a NOT state capital"}"
@@ -156,8 +161,9 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     // update footer
     burgsFooterBurgs.innerHTML = `${filtered.length} of ${validBurgs.length}`;
     burgsFooterPopulation.innerHTML = filtered.length ? si(totalPopulation / filtered.length) : 0;
-    burgsFooterGrossProduct.innerHTML = filtered.length ? rn(totalGrossProduct / filtered.length, 2) : 0;
+    burgsFooterGrossProduct.innerHTML = filtered.length ? rn(totalProduct / filtered.length, 2) : 0;
     burgsFooterProductPerCapita.innerHTML = filtered.length ? rn(totalProductPerCapita / filtered.length, 2) : 0;
+    burgsFooterTreasury.innerHTML = filtered.length ? rn(totalTreasury / filtered.length, 2) : 0;
 
     // add listeners
     body.querySelectorAll("div.states").forEach(el => el.addEventListener("mouseenter", ev => burgHighlightOn(ev)));

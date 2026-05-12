@@ -7,12 +7,13 @@ import {DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "./goods-generator";
 import type {ProductionHistoryEntry} from "./production-generator";
 
 export const DEFAULT_SALES_TAX = 0.2;
-const DEFAULT_TRADE_RESERVE_FACTOR = 0.2;
-const RURAL_BONUS_PRODUCTION = 5;
-const BUY_PRESSURE_FACTOR = 0.02;
-const SELL_PRESSURE_FACTOR = 0.01;
-const PRICE_FLOOR_FACTOR = 0.25;
-const PRICE_CEILING_FACTOR = 4.0;
+export const PRICE_FLOOR_FACTOR = 0.25;
+export const PRICE_CEILING_FACTOR = 3.0;
+export const BUY_PRESSURE_FACTOR = 0.02;
+export const SELL_PRESSURE_FACTOR = 0.01;
+export const RURAL_BONUS_PRODUCTION = 5;
+
+const TRADE_RESERVE_FACTOR = 0.2;
 
 export type TradePhase = "buy" | "sell";
 
@@ -175,7 +176,7 @@ export class TradeModule {
         }
       }
 
-      const demandTargets = aggregatedUncoveredDemand.map(value => value * (1 + DEFAULT_TRADE_RESERVE_FACTOR));
+      const demandTargets = aggregatedUncoveredDemand.map(value => value * (1 + TRADE_RESERVE_FACTOR));
       const demandCoverage = this.calculateDemandCoverage(this.getMarketInventory(market), goodById);
       void demandTargets.map((target, index) => Math.max(0, target - demandCoverage[index]));
     }
@@ -208,7 +209,7 @@ export class TradeModule {
           marketDemand[categoryIndex] += Math.max(0, burgDemandTargets[categoryIndex] - burgCoverage[categoryIndex]);
         }
       }
-      const demandTargets = marketDemand.map(value => value * (1 + DEFAULT_TRADE_RESERVE_FACTOR));
+      const demandTargets = marketDemand.map(value => value * (1 + TRADE_RESERVE_FACTOR));
       const marketInventory = this.getMarketInventory(market);
       const demandCoverage = this.calculateDemandCoverage(marketInventory, goodById);
       uncoveredDemandByMarket.set(

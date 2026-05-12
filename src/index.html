@@ -3411,9 +3411,17 @@
                 <div class="label">Production:</div>
                 <span id="burgProduction"></span>
               </div>
+              <div data-tip="Product is gross revenue minus ingredient costs for the current production run.">
+                <div class="label">Product</div>
+                <span id="burgProduct"></span>
+              </div>
               <div data-tip="Wealth is gross product per population point for the current production run. It is a per-capita productivity measure, not the burg's cumulative treasury.">
                 <div class="label">Wealth</div>
                 <span id="burgWealth"></span>
+              </div>
+              <div data-tip="Treasury is the burg's cumulative cash balance after all production, purchases, and sales.">
+                <div class="label">Treasury</div>
+                <span id="burgTreasury"></span>
               </div>
             </div>
           </div>
@@ -5275,7 +5283,7 @@
         </div>
       </div>
       <div id="burgsOverview" class="dialog stable" style="display: none">
-        <div id="burgsHeader" class="header" style="grid-template-columns: 9em 7em 7.5em 7.2em 6.5em 7em 7em 7em 6em">
+        <div id="burgsHeader" class="header" style="grid-template-columns: 9em 7em 7.5em 7.2em 6.5em 8em 6.5em 6.5em 5.5em 6em">
           <div data-tip="Click to sort by burg name" class="sortable alphabetically" data-sortby="name">Burg</div>
           <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">
             Province
@@ -5292,11 +5300,14 @@
           >
             Population
           </div>
-          <div data-tip="Click to sort by burg production (gross product)" class="sortable" data-sortby="grossproduct">
-            Production&nbsp;
+          <div data-tip="Click to sort by burg product" class="sortable" data-sortby="grossproduct">
+            Product&nbsp;
           </div>
-          <div data-tip="Click to sort by burg Wealth (gross product per capita)" class="sortable" data-sortby="productpercapita">
+          <div data-tip="Click to sort by burg wealth (gross product per capita)" class="sortable" data-sortby="productpercapita">
             Wealth&nbsp;
+          </div>
+          <div data-tip="Click to sort by burg treasury" class="sortable" data-sortby="treasury">
+            Treasury&nbsp;
           </div>
           <div data-tip="Click to sort by burg features" class="sortable alphabetically" data-sortby="features">
             Features&nbsp;
@@ -5324,14 +5335,17 @@
           <div data-tip="Burgs displayed" style="margin-left: 4px">
             Burgs:&nbsp;<span id="burgsFooterBurgs">0 of 0</span>
           </div>
-          <div data-tip="Average population" style="margin-left: 14px">
-            Average population:&nbsp;<span id="burgsFooterPopulation">0</span>
+          <div data-tip="Average population" style="margin-left:grid-template-columns: 9em 7em 7.5em 7.2em 6.5em 7em 5.5em 5.5em 5.5em 6em 14px">
+            Avg population:&nbsp;<span id="burgsFooterPopulation">0</span>
           </div>
           <div data-tip="Average gross product" style="margin-left: 14px">
-            Average production:&nbsp;<span id="burgsFooterGrossProduct">0</span> 🟡
+            Avg product:&nbsp;<span id="burgsFooterGrossProduct">0</span> 🟡
           </div>
-          <div data-tip="Average product per capita (wealth)" style="margin-left: 14px">
-            Average wealth:&nbsp;<span id="burgsFooterProductPerCapita">0</span> 🟡
+          <div data-tip="Average wealth (product per capita)" style="margin-left: 14px">
+            Avg wealth:&nbsp;<span id="burgsFooterProductPerCapita">0</span> 🟡
+          </div>
+          <div data-tip="Average treasury" style="margin-left: 14px">
+            Avg treasury:&nbsp;<span id="burgsFooterTreasury">0</span> 🟡
           </div>
         </div>
         <div id="burgsBottom">
