@@ -250,9 +250,7 @@ export function open(burgId: number): void {
         ? ` data-target="${candidatesId}" style="${styles.bodyRow};cursor:pointer" title="Click to expand decision details"`
         : ` style="${styles.bodyRow}"`;
       const cultureSuffix = mfg.cultureModifier !== 1 ? ` ${modifierBadge(mfg.cultureModifier)}` : "";
-      const allInputs = mfg.recipe
-        .map(item => `${rn(item.fromInventory + item.fromMarket, 2)} ${goodDot(item.goodId)}`)
-        .join(` and `);
+      const allInputs = mfg.recipe.map(item => `${rn(item.amount, 2)} ${goodDot(item.goodId)}`).join(` and `);
 
       return [
         /*html*/ `<tr${rowAttrs}>

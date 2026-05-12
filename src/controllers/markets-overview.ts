@@ -120,7 +120,7 @@ function openCompareDialog(): void {
   rebuildCompareGoodSelect();
   compareDialogAddLines();
   $("#marketsGoodCompare").dialog({
-    title: "Compare Good Stock",
+    title: "Compare Prices",
     resizable: false,
     width: "auto",
     position: {my: "right top", at: "left-10 top", of: "#marketsOverview", collision: "fit"}
@@ -147,14 +147,12 @@ function compareDialogAddLines(): void {
     const centerName = getMarketCenterName(market);
     const goodData = market.goods[good.i];
     const stock = rn(goodData?.stock ?? 0, 2);
-    const buyPrice = rn(goodData?.buyPrice ?? 0, 2);
-    const sellPrice = rn(goodData?.sellPrice ?? 0, 2);
-    lines += /*html*/ `<div class="states" data-id="${market.i}" data-market="${centerName}" data-stock="${stock}" data-buyprice="${buyPrice}" data-sellprice="${sellPrice}">
+    const price = rn(goodData?.price ?? 0, 2);
+    lines += /*html*/ `<div class="states" data-id="${market.i}" data-market="${centerName}" data-stock="${stock}" data-price="${price}">
       <fill-box fill="${market.color}"></fill-box>
       <div style="width:9em">${centerName}</div>
       <div style="width:5em">${stock}</div>
-      <div style="width:6em">${formatPrice(buyPrice)}</div>
-      <div style="width:6em">${formatPrice(sellPrice)}</div>
+      <div style="width:7em">${formatPrice(price)}</div>
     </div>`;
   }
   ensureEl("marketsGoodCompareBody").innerHTML = lines;

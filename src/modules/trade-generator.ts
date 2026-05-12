@@ -1,5 +1,5 @@
 import {quadtree} from "d3-quadtree";
-import {rn} from "../utils";
+import {minmax, rn} from "../utils";
 import {getRandomColor} from "../utils/colorUtils";
 import type {Burg} from "./burgs-generator";
 import type {DemandCategory, Good} from "./goods-generator";
@@ -9,6 +9,8 @@ import type {ProductionHistoryEntry} from "./production-generator";
 export const DEFAULT_SALES_TAX = 0.2;
 export const PRICE_FLOOR_FACTOR = 0.25;
 export const PRICE_CEILING_FACTOR = 3.0;
+const LAPLACE_PRICE_SMOOTHING = 5;
+export const MARKET_MARGIN = 0.1;
 export const BUY_PRESSURE_FACTOR = 0.02;
 export const SELL_PRESSURE_FACTOR = 0.01;
 export const RURAL_BONUS_PRODUCTION = 5;
@@ -30,8 +32,7 @@ export type Deal = {
 
 export type MarketGoodData = {
   stock: number;
-  buyPrice: number;
-  sellPrice: number;
+  price: number;
 };
 
 export type Market = {
@@ -106,11 +107,7 @@ export class TradeModule {
     const existing = market.goods[goodId];
     if (existing) return existing;
 
-    const initialized: MarketGoodData = {
-      stock: 0,
-      buyPrice: fallbackPrice,
-      sellPrice: fallbackPrice
-    };
+    const initialized: MarketGoodData = {stock: 0, price: fallbackPrice};
     market.goods[goodId] = initialized;
     return initialized;
   }
@@ -259,7 +256,7 @@ export class TradeModule {
           importerGood.stock += units;
           shortage = Math.max(0, shortage - units * candidate.coverageWeight);
 
-          const marketPrice = this.getMarketGood(candidate.exporter, candidate.goodId, candidate.good.value).sellPrice;
+          const marketPrice = exporterGood.price * (1 - MARKET_MARGIN);
           this.recordDeal({
             market: importer.i,
             phase: "buy",
@@ -270,19 +267,8 @@ export class TradeModule {
             price: marketPrice
           });
 
-          const nextSell = this.applySellPressure(
-            candidate.good,
-            this.getMarketGood(candidate.exporter, candidate.goodId, candidate.good.value).sellPrice,
-            -units
-          );
-          this.getMarketGood(candidate.exporter, candidate.goodId, candidate.good.value).sellPrice = nextSell;
-
-          const nextBuy = this.applyBuyPressure(
-            candidate.good,
-            this.getMarketGood(importer, candidate.goodId, candidate.good.value).buyPrice,
-            -units
-          );
-          this.getMarketGood(importer, candidate.goodId, candidate.good.value).buyPrice = nextBuy;
+          exporterGood.price = this.applySellPressure(candidate.good, exporterGood.price, -units);
+          importerGood.price = this.applyBuyPressure(candidate.good, importerGood.price, -units);
         }
       }
     }
@@ -471,8 +457,7 @@ export class TradeModule {
     for (const good of goods) {
       marketGoods[good.i] = {
         stock: 0,
-        buyPrice: good.value,
-        sellPrice: good.value
+        price: good.value
       };
     }
 
@@ -524,16 +509,18 @@ export class TradeModule {
       );
       for (const good of goods) {
         const marketGood = this.getMarketGood(market, good.i, good.value);
-        const stock = Math.max(0.001, marketGood.stock);
-        const expectedDemand =
-          population * (consumerDemandFactor[good.i] || 0) +
-          Math.sqrt(Math.max(1, population)) * (industrialDemandFactor[good.i] || 0);
-        const scarcity = expectedDemand > 0 ? expectedDemand / stock : 1;
-        const floor = good.value * PRICE_FLOOR_FACTOR;
-        const ceiling = good.value * PRICE_CEILING_FACTOR;
-        const marketRate = Math.max(floor, Math.min(ceiling, good.value * scarcity));
-        marketGood.buyPrice = Math.min(ceiling, marketRate * 1.1);
-        marketGood.sellPrice = Math.max(floor, marketRate * 0.9);
+        if (good.distribution) {
+          // raw goods: derive price from demand and scarcity
+          const expectedDemand =
+            population * (consumerDemandFactor[good.i] || 0) +
+            Math.sqrt(Math.max(1, population)) * (industrialDemandFactor[good.i] || 0);
+
+          const ratio = (expectedDemand + LAPLACE_PRICE_SMOOTHING) / (marketGood.stock + LAPLACE_PRICE_SMOOTHING);
+          marketGood.price = good.value * minmax(ratio, PRICE_FLOOR_FACTOR, PRICE_CEILING_FACTOR);
+        } else {
+          // manufactured goods: start with base price and let deals adjust
+          marketGood.price = good.value;
+        }
       }
     }
   }

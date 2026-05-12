@@ -521,14 +521,14 @@ const GOODS_DATA: GoodData[] = [
     tags: ["fuel"],
     icon: "good-oil",
     color: "#565656",
-    value: 4,
+    value: 3,
     chance: 2,
     distribution: "biome(1, 2, 10) || (shore(-1) && minTemp(18) && random(15))",
     unit: "barrel",
     demandCoverage: {utilities: 1},
     bonus: {artillery: 1},
     culture: {},
-    recipes: [{Olives: 1}, {Hemp: 1}, {Whales: 1}]
+    recipes: [{Olives: 1}, {Whales: 1}]
   },
   {
     name: "Tropical timber",
@@ -652,7 +652,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing"],
     icon: "good-garments",
     color: "#bd21ec",
-    value: 8,
+    value: 9,
     chance: 0,
     recipes: [
       {Cloth: 1, Dyes: 0.5},
@@ -668,12 +668,9 @@ const GOODS_DATA: GoodData[] = [
     tags: ["storage", "construction"],
     icon: "good-ceramics",
     color: "#c1440e",
-    value: 4,
+    value: 6,
     chance: 0,
-    recipes: [
-      {Clay: 0.5, Coal: 0.5},
-      {Clay: 0.5, Wood: 1}
-    ],
+    recipes: [{Clay: 1}],
     unit: "wain",
     demandCoverage: {utilities: 1},
     bonus: {population: 1},
@@ -752,7 +749,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval"],
     icon: "good-sails",
     color: "#ffffff",
-    value: 10,
+    value: 9,
     chance: 0,
     recipes: [{Cloth: 1}],
     unit: "set",
@@ -765,7 +762,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval"],
     icon: "good-ships",
     color: "#654321",
-    value: 20,
+    value: 19,
     chance: 0,
     recipes: [{Wood: 2, Sails: 1, Ropes: 1, Tar: 1}],
     unit: "ship",
@@ -778,7 +775,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing", "military"],
     icon: "good-boots",
     color: "#654321",
-    value: 5,
+    value: 7,
     chance: 0,
     recipes: [{Leather: 1}, {Furs: 0.5}],
     unit: "pair",
@@ -794,9 +791,9 @@ const GOODS_DATA: GoodData[] = [
     value: 8,
     chance: 0,
     recipes: [
-      {Leather: 1, Iron: 0.25},
-      {Leather: 1, Bronze: 0.25},
-      {Leather: 1, Copper: 0.25}
+      {Leather: 0.5, Iron: 0.25},
+      {Leather: 0.5, Bronze: 0.25},
+      {Leather: 0.5, Copper: 0.25}
     ],
     unit: "set",
     demandCoverage: {military: 1},
@@ -837,11 +834,11 @@ const GOODS_DATA: GoodData[] = [
     tags: ["construction", "military"],
     icon: "good-tools",
     color: "#808080",
-    value: 20,
+    value: 18,
     chance: 0,
     recipes: [
-      {Iron: 1, Coal: 2},
-      {Bronze: 1, Coal: 1}
+      {Iron: 0.5, Coal: 1},
+      {Bronze: 0.5, Coal: 1}
     ],
     unit: "set",
     demandCoverage: {utilities: 1},
@@ -853,7 +850,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["military"],
     icon: "good-arms",
     color: "#333333",
-    value: 23,
+    value: 22,
     chance: 0,
     recipes: [
       {Iron: 0.5, Coal: 1, Leather: 0.5},
@@ -934,7 +931,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food"],
     icon: "good-salted-fish",
     color: "#c2b280",
-    value: 4,
+    value: 6,
     chance: 0,
     recipes: [
       {Fish: 1, Salt: 1},
@@ -1024,12 +1021,9 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury", "ritual"],
     icon: "good-candles",
     color: "#fffacd",
-    value: 5,
+    value: 6,
     chance: 0,
-    recipes: [
-      {Honey: 2, Hemp: 0.25},
-      {Oil: 1, Hemp: 0.25}
-    ],
+    recipes: [{Honey: 2}, {Oil: 1}],
     unit: "block",
     demandCoverage: {utilities: 0.5, luxury: 0.5},
     bonus: {prestige: 1},
@@ -1042,10 +1036,7 @@ const GOODS_DATA: GoodData[] = [
     color: "#e0e4cc",
     value: 5,
     chance: 0,
-    recipes: [
-      {Olives: 1, Wood: 1},
-      {Cattle: 1, Wood: 1}
-    ],
+    recipes: [{Olives: 1}, {Cattle: 1}],
     unit: "barrel",
     demandCoverage: {utilities: 0.4, luxury: 0.6},
     bonus: {prestige: 1},

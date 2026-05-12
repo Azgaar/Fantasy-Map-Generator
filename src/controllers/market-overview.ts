@@ -61,16 +61,14 @@ function marketOverviewAddLines() {
     lines += /*html*/ `<div class="states marketGood"
       data-good="${good.name}"
       data-stock="${rn(marketGood.stock, 2)}"
-      data-buyprice="${rn(marketGood.buyPrice, 2)}"
-      data-sellprice="${rn(marketGood.sellPrice, 2)}">
+      data-price="${rn(marketGood.price, 2)}">
       <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
         <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
         <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
       </svg>
       <div data-tip="Good name" class="goodName">${good.name}</div>
       <div data-tip="Good stock" class="marketGoodStock">${rn(marketGood.stock, 2)}</div>
-      <div data-tip="Good buy price" class="marketGoodBuyPrice">${formatPrice(marketGood.buyPrice)}</div>
-      <div data-tip="Good sell price" class="marketGoodSellPrice">${formatPrice(marketGood.sellPrice)}</div>
+      <div data-tip="Good price" class="marketGoodPrice">${formatPrice(marketGood.price)}</div>
     </div>`;
   }
   ensureEl("marketOverviewGoodsBody").innerHTML = lines || "No market goods available";
@@ -112,9 +110,7 @@ function downloadStockCsv() {
     if (!showAllGoods && marketGood.stock <= 0) continue;
     const good = Goods.get(Number(goodId));
     if (!good) continue;
-    csv += `${[good.name, rn(marketGood.stock, 2), rn(marketGood.buyPrice, 2), rn(marketGood.sellPrice, 2)].join(
-      ","
-    )}\n`;
+    csv += `${[good.name, rn(marketGood.stock, 2), rn(marketGood.price, 2)].join(",")}\n`;
   }
   downloadFile(csv, `${getFileName("Market_Stock")}.csv`);
 }
