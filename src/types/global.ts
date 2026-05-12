@@ -54,6 +54,7 @@ declare global {
   var svgHeight: number;
   var viewbox: Selection<SVGElement, unknown, null, undefined>;
   var routes: Selection<SVGElement, unknown, null, undefined>;
+  var journeys: Selection<SVGGElement, unknown, null, undefined>;
   var biomesData: {
     i: number[];
     name: string[];
@@ -75,6 +76,7 @@ declare global {
   var layerIsOn: (layerId: string) => boolean;
   var drawRoute: (route: any) => void;
   var invokeActiveZooming: () => void;
+  var syncJourneyZoom: (zoomScale: number) => void;
   var FlatQueue: any;
 
   var tip: (
@@ -97,6 +99,11 @@ declare global {
   var createDefaultRuler: () => void;
   var showStatistics: () => void;
   var closeDialogs: (except?: string) => void;
+  var drawJourney: () => void;
+  var toggleJourney: (event?: Event) => void;
+  var clearMainTip: () => void;
+  var restoreDefaultEvents: () => void;
+  var customization: number;
   var editWorld: () => void;
   var showExportPane: () => void;
   var UITour: { start: () => void };
@@ -104,7 +111,6 @@ declare global {
   var getLatitude: (y: number, precision?: number) => number;
   var getLongitude: (x: number, precision?: number) => number;
   var getFileName: (name: string) => string;
-  var customization: number;
   var speak: (text: string) => void;
   var uploadFile: (
     el: HTMLInputElement,

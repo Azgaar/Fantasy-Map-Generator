@@ -472,6 +472,7 @@
             <option value="heightmap">Heightmap</option>
             <option value="physical">Physical map</option>
             <option value="poi">Places of interest</option>
+            <option value="journeyPath">Journey path</option>
             <option value="military">Military map</option>
             <option value="emblems">Emblems</option>
             <option value="landmass">Pure landmass</option>
@@ -624,6 +625,13 @@
               onclick="toggleBorders(event)"
             >
               Bor<u>d</u>ers
+            </li>
+            <li
+              id="toggleJourney"
+              data-tip="Journey path: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
+              onclick="toggleJourney(event)"
+            >
+              Journey
             </li>
             <li
               id="toggleRoutes"
@@ -797,6 +805,7 @@
             <option value="gridOverlay">Grid</option>
             <option value="terrs">Heightmap</option>
             <option value="ice">Ice</option>
+            <option value="journeys">Journey</option>
             <option value="labels">Labels</option>
             <option value="lakes">Lakes</option>
             <option value="landmass">Landmass</option>
@@ -1475,6 +1484,55 @@
                     <option value="url(#land)">Clip water</option>
                     <option value="url(#water)">Clip land</option>
                   </select>
+                </td>
+              </tr>
+            </tbody>
+
+            <tbody id="styleJourney">
+
+              <tr data-tip="Halo behind path and arrows (screen outline)">
+                <td>Path outline color</td>
+                <td>
+                  <input id="styleJourneyOutlineColor" type="color" />
+                  <output id="styleJourneyOutlineColorOutput"></output>
+                </td>
+              </tr>
+              <tr data-tip="Path outline thickness in screen pixels">
+                <td>Path outline (px)</td>
+                <td>
+                  <input id="styleJourneyOutlineScreenPx" type="number" min="0" max="32" step="0.5" />
+                </td>
+              </tr>
+              <tr data-tip="Path stroke width in screen pixels (constant on zoom)">
+                <td>Line (screen px)</td>
+                <td>
+                  <input id="styleJourneyLineScreenPx" type="number" min="0.5" max="96" step="0.5" />
+                </td>
+              </tr>
+              <tr data-tip="Stop vertex fill color">
+                <td>Waypoint fill</td>
+                <td>
+                  <input id="styleJourneyWaypointFill" type="color" />
+                  <output id="styleJourneyWaypointFillOutput"></output>
+                </td>
+              </tr>
+              <tr data-tip="Stop vertex outline color">
+                <td>Waypoint stroke</td>
+                <td>
+                  <input id="styleJourneyWaypointStroke" type="color" />
+                  <output id="styleJourneyWaypointStrokeOutput"></output>
+                </td>
+              </tr>
+              <tr data-tip="Waypoint radius in screen pixels">
+                <td>Waypoint radius (px)</td>
+                <td>
+                  <input id="styleJourneyWaypointRScreenPx" type="number" min="2" max="120" step="1" />
+                </td>
+              </tr>
+              <tr data-tip="Waypoint outline width in screen pixels">
+                <td>Waypoint ring (px)</td>
+                <td>
+                  <input id="styleJourneyWaypointRingScreenPx" type="number" min="0" max="48" step="0.5" />
                 </td>
               </tr>
             </tbody>
@@ -2271,6 +2329,13 @@
               River
             </button>
             <button id="addRoute" data-tip="Open route creation dialog" data-shortcut="Shift + 4">Route</button>
+            <button
+              id="addJourney"
+              data-tip="Open journey editor: choose markers and burgs as stops; click journey circles to revisit"
+              data-shortcut="Shift + J"
+            >
+              Journey
+            </button>
           </div>
 
           <div class="separator">Show</div>
@@ -3100,6 +3165,89 @@
             <select id="routeCreatorGroupSelect"></select>
             <span id="routeCreatorGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
           </div>
+        </div>
+      </div>
+
+      <div id="journeyEditor" class="dialog stable" style="display: none">
+        <div id="journeyEditorEmptyState" style="display: none; margin: 0.5em 0 1em">
+          <p style="margin: 0 0 0.75em; opacity: 0.9">
+            No journeys yet. Create one to add stops (markers and burgs only).
+          </p>
+          <button type="button" id="journeyEditorCreateJourney">Create journey</button>
+        </div>
+        <div id="journeyEditorMain">
+        <div id="journeyEditorRoot" style="margin: 0.3em 0">
+          <div style="display: flex; align-items: center; gap: 0.6em; flex-wrap: wrap; margin-bottom: 0.5em">
+            <label for="journeyEditorJourneySelect"><b>Journey</b></label>
+            <select id="journeyEditorJourneySelect" style="min-width: 10em"></select>
+            <button
+              type="button"
+              id="journeyEditorAddJourney"
+              data-tip="Add another journey path"
+              class="icon-plus"
+            ></button>
+            <button
+              type="button"
+              id="journeyEditorRemoveJourney"
+              data-tip="Remove this journey"
+              class="icon-trash-empty"
+            ></button>
+            <span style="opacity: 0.85; font-size: 0.92em">Markers and burgs only</span>
+          </div>
+          <table style="width: 100%; margin: 0.4em 0; border-collapse: collapse">
+            <tbody id="journeyEditorColorBody">
+              <tr data-tip="Built-in rainbow uses the classic multi-stop ramp; custom gradient uses the color list below">
+                <td style="white-space: nowrap">Color mode</td>
+                <td>
+                  <select id="journeyEditorColorMode">
+                    <option value="rainbow">Built-in rainbow</option>
+                    <option value="gradient">Custom gradient</option>
+                    <option value="solid">Solid</option>
+                  </select>
+                </td>
+              </tr>
+              <tr data-tip="Stroke and arrow color when Color mode is Solid">
+                <td>Solid color</td>
+                <td>
+                  <input id="journeyEditorSolidStroke" type="color" />
+                  <output id="journeyEditorSolidStrokeOutput"></output>
+                </td>
+              </tr>
+              <tr
+                id="journeyEditorGradientStopsRow"
+                style="display: none"
+                data-tip="At least two colors; order follows the journey path. Use + to add another stop."
+              >
+                <td style="vertical-align: top; white-space: nowrap">Gradient colors</td>
+                <td>
+                  <div id="journeyEditorGradientStopsBody"></div>
+                  <button
+                    type="button"
+                    id="journeyEditorGradientAddStop"
+                    data-tip="Add gradient color stop"
+                    class="icon-plus"
+                  ></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div id="journeyEditorStopsBody" class="table"></div>
+        </div>
+        </div>
+        <div id="journeyEditorBottom" style="display: flex; align-items: center; gap: 0.5em; flex-wrap: wrap">
+          <button
+            type="button"
+            id="journeyEditorAddLeg"
+            data-tip="Append a leg (same stop as the previous one)"
+            class="icon-plus"
+          ></button>
+          <button
+            id="journeyEditorUndo"
+            data-tip="Remove the last journey leg"
+            class="icon-level-down"
+          ></button>
+          <button id="journeyEditorClear" data-tip="Clear the journey path" class="icon-trash-empty"></button>
+          <button id="journeyEditorDone" data-tip="Finish editing" class="icon-check"></button>
         </div>
       </div>
 
@@ -8581,16 +8729,16 @@
     <script defer src="libs/alea.min.js?v1.105.0"></script>
     <script defer src="libs/polylabel.min.js?v1.105.0"></script>
     <script defer src="libs/simplify.js?v1.105.6"></script>
-    <script defer src="modules/ui/layers.js?v=1.120.5"></script>
+    <script defer src="modules/ui/layers.js?v=1.122.8"></script>
     <script defer src="modules/ui/measurers.js?v=1.99.00"></script>
-    <script defer src="modules/ui/style-presets.js?v=1.100.00"></script>
-    <script defer src="modules/ui/general.js?v=1.120.5"></script>
+    <script defer src="modules/ui/style-presets.js?v=1.100.01"></script>
+    <script defer src="modules/ui/general.js?v=1.120.6"></script>
     <script defer src="modules/ui/options.js?v=1.120.5"></script>
-    <script defer src="main.js?v=1.120.5"></script>
+    <script defer src="main.js?v=1.122.2"></script>
 
     <script defer src="modules/ui/style.js?v=1.122.0"></script>
     <script defer src="modules/ui/editors.js?v=1.120.5"></script>
-    <script defer src="modules/ui/tools.js?v=1.120.5"></script>
+    <script defer src="modules/ui/tools.js?v=1.122.0"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.120.5"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/provinces-editor.js?v=1.120.5"></script>
@@ -8628,11 +8776,11 @@
     <script defer src="modules/ui/3d.js?v=1.99.00"></script>
     <script defer src="modules/ui/submap-tool.js?v=1.120.5"></script>
     <script defer src="modules/ui/transform-tool.js?v=1.120.5"></script>
-    <script defer src="modules/ui/hotkeys.js?v=1.120.5"></script>
+    <script defer src="modules/ui/hotkeys.js?v=1.122.0"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
-    <script defer src="modules/io/save.js?v=1.120.5"></script>
-    <script defer src="modules/io/load.js?v=1.120.5"></script>
+    <script defer src="modules/io/save.js?v=1.122.0"></script>
+    <script defer src="modules/io/load.js?v=1.122.3"></script>
     <script defer src="modules/io/cloud.js?v=1.114.0"></script>
     <script defer src="modules/io/export.js?v=1.120.5"></script>
   <div id="tourPromptButton" style="display:none" data-tip="Take an interactive tour of the map generator">

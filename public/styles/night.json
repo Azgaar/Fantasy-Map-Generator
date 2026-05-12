@@ -99,6 +99,20 @@
     "rescale": null,
     "filter": "url(#dropShadow01)"
   },
+  "#journeys": {
+    "opacity": null,
+    "filter": null,
+    "data-color-mode": "rainbow",
+    "data-solid-stroke": "#5c5c70",
+    "data-rainbow-stops": null,
+    "data-line-screen-px": 6,
+    "data-waypoint-fill": "#ffffff",
+    "data-waypoint-stroke": "#000000",
+    "data-waypoint-r-screen-px": 9,
+    "data-waypoint-ring-screen-px": 4.5,
+    "data-outline-color": "#000000",
+    "data-outline-screen-px": 2
+  },
   "#prec": {
     "opacity": null,
     "stroke": "#ffffff",

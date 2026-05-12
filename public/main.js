@@ -61,6 +61,7 @@ let zones = viewbox.append("g").attr("id", "zones");
 let borders = viewbox.append("g").attr("id", "borders");
 let stateBorders = borders.append("g").attr("id", "stateBorders");
 let provinceBorders = borders.append("g").attr("id", "provinceBorders");
+let journeys = viewbox.append("g").attr("id", "journeys").style("display", "none");
 let routes = viewbox.append("g").attr("id", "routes");
 let roads = routes.append("g").attr("id", "roads");
 let trails = routes.append("g").attr("id", "trails");
@@ -585,6 +586,9 @@ function invokeActiveZooming() {
     const size = rn((10 / scale ** 0.3) * 2, 2);
     ruler.selectAll("text").attr("font-size", size);
   }
+
+  // journey layer: screen-constant sizing + LOD on tier change
+  if (layerIsOn("toggleJourney")) syncJourneyZoom(scale);
 }
 
 // add drag to upload logic, pull request from @evyatron
@@ -651,6 +655,7 @@ async function generate(options) {
     else delete grid.cells.h;
     grid.cells.h = await HeightmapGenerator.generate(grid);
     pack = {}; // reset pack
+    pack.journeys = [];
 
     Features.markupGrid();
     addLakesInDeepDepressions();

@@ -1,0 +1,1603 @@
+import type { Selection } from "d3";
+import { interpolateRgbBasis } from "d3";
+import { ensureEl } from "../utils";
+import { minmax, rn } from "../utils/numberUtils";
+import { escapeHtml } from "../utils/stringUtils";
+
+/**
+ * Journey layer vocabulary (this module):
+ * - **Journey** — one route in `pack.journeys` with an ordered list of stops.
+ * - **Stop ref** — a burg or marker reference in `stops[]` (`JourneyStopRef`); the serialized stop, not a raw x/y.
+ * - **Leg** — one map hop between consecutive resolved stops (stroke, arrows, lane offset). The curve is built from polyline samples.
+ * - **Directed leg key** — stable string for a directed start→end coordinate pair; duplicate keys get separate lanes (including across journeys).
+ * - **Waypoint** — SVG circle at a resolved stop (`journey-waypoint`).
+ */
+
+interface JourneyBurgStopRef {
+  kind: "burg";
+  id: number;
+}
+
+interface JourneyMarkerStopRef {
+  kind: "marker";
+  id: number;
+}
+
+export type JourneyStopRef = JourneyBurgStopRef | JourneyMarkerStopRef;
+
+export interface PackJourney {
+  stops: JourneyStopRef[];
+}
+
+export type JourneyColorData =
+  | {
+      type: "solid";
+      color: string;
+    }
+  | {
+      type: "rainbow";
+    }
+  | {
+      type: "gradient";
+      colors: string[];
+    };
+
+export interface StoredJourney {
+  id: number;
+  name?: string;
+  stops: JourneyStopRef[];
+  color?: JourneyColorData;
+}
+
+export interface JourneyResolutionContext {
+  burgs: Array<{ i?: number; x?: number; y?: number; removed?: boolean }>;
+  markers: Array<{ i?: number; x?: number; y?: number }>;
+  burgById?: Map<number, JourneyResolutionContext["burgs"][number]>;
+  markerById?: Map<number, JourneyResolutionContext["markers"][number]>;
+}
+
+function indexBurgsById(
+  burgs: JourneyResolutionContext["burgs"],
+): Map<number, JourneyResolutionContext["burgs"][number]> {
+  const m = new Map<number, JourneyResolutionContext["burgs"][number]>();
+  for (const b of burgs) {
+    if (b.removed) continue;
+    const id = b.i;
+    if (id === undefined || typeof id !== "number") continue;
+    if (!m.has(id)) m.set(id, b);
+  }
+  return m;
+}
+
+function indexMarkersById(
+  markers: JourneyResolutionContext["markers"],
+): Map<number, JourneyResolutionContext["markers"][number]> {
+  const m = new Map<number, JourneyResolutionContext["markers"][number]>();
+  for (const mk of markers) {
+    const id = mk.i;
+    if (id === undefined || typeof id !== "number") continue;
+    if (!m.has(id)) m.set(id, mk);
+  }
+  return m;
+}
+
+export function buildJourneyResolutionContext(
+  burgs: JourneyResolutionContext["burgs"],
+  markers: JourneyResolutionContext["markers"],
+): JourneyResolutionContext {
+  return {
+    burgs,
+    markers,
+    burgById: indexBurgsById(burgs),
+    markerById: indexMarkersById(markers),
+  };
+}
+
+const BURG_REF_RE = /^burg:(\d+)$/;
+const MARKER_REF_RE = /^marker:(\d+)$/;
+
+function burgJourneyStopRef(i: number): string {
+  return `burg:${i}`;
+}
+
+export function markerJourneyStopRef(i: number): string {
+  return `marker:${i}`;
+}
+
+type ParsedJourneyStopRef =
+  | { kind: "burg"; id: number }
+  | { kind: "marker"; id: number };
+
+export function journeyStopRefToString(stopRef: JourneyStopRef): string {
+  return stopRef.kind === "burg"
+    ? burgJourneyStopRef(stopRef.id)
+    : markerJourneyStopRef(stopRef.id);
+}
+
+function parseJourneyStopRef(stopId: string): ParsedJourneyStopRef | null {
+  const bm = BURG_REF_RE.exec(stopId);
+  if (bm) return { kind: "burg", id: +bm[1] };
+  const mm = MARKER_REF_RE.exec(stopId);
+  if (mm) return { kind: "marker", id: +mm[1] };
+  return null;
+}
+
+export function journeyRefStringToStopRef(ref: string): JourneyStopRef | null {
+  const p = parseJourneyStopRef(ref);
+  if (!p) return null;
+  return p.kind === "burg"
+    ? { kind: "burg", id: p.id }
+    : { kind: "marker", id: p.id };
+}
+
+export const JOURNEY_DEFAULT_SOLID_STROKE = "#5c5c70";
+
+// Malformed `color` payloads fall back to rainbow so drawing never breaks on bad saves.
+export function sanitizeJourneyColorData(raw: unknown): JourneyColorData {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw))
+    return { type: "rainbow" };
+  const r = raw as Record<string, unknown>;
+  const t = r.type;
+  if (t === "solid") {
+    const col = typeof r.color === "string" ? r.color.trim() : "";
+    return { type: "solid", color: col || JOURNEY_DEFAULT_SOLID_STROKE };
+  }
+  if (t === "rainbow") return { type: "rainbow" };
+  if (t === "gradient" && Array.isArray(r.colors)) {
+    const colors = r.colors
+      .filter((x): x is string => typeof x === "string")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (colors.length >= 2) return { type: "gradient", colors };
+  }
+  return { type: "rainbow" };
+}
+
+function createDefaultStoredJourney(id: number): StoredJourney {
+  return {
+    id,
+    name: `Journey ${id}`,
+    stops: [],
+    color: { type: "rainbow" },
+  };
+}
+
+function packJourneyRows(): StoredJourney[] {
+  const j = pack.journeys;
+  return Array.isArray(j) ? j : [];
+}
+
+function finiteCoord(x: unknown, y: unknown): [number, number] | null {
+  const nx = Number(x);
+  const ny = Number(y);
+  if (!Number.isFinite(nx) || !Number.isFinite(ny)) return null;
+  return [nx, ny];
+}
+
+function tryWarnMissing(msg: string): void {
+  try {
+    const w =
+      typeof globalThis !== "undefined" &&
+      (globalThis as { WARN?: boolean }).WARN;
+    if (w) console.warn(msg);
+  } catch {
+    // ignore
+  }
+}
+
+export function resolveJourneyStopRef(
+  stopRef: JourneyStopRef,
+  ctx: JourneyResolutionContext,
+): [number, number] | null {
+  if (stopRef.kind === "burg") {
+    const burg =
+      ctx.burgById?.get(stopRef.id) ??
+      ctx.burgs.find((b) => b.i === stopRef.id && !b.removed);
+    if (!burg) {
+      tryWarnMissing(`journey: missing burg ${stopRef.id}`);
+      return null;
+    }
+    const p = finiteCoord(burg.x, burg.y);
+    if (!p) tryWarnMissing(`journey: burg ${stopRef.id} has invalid x/y`);
+    return p;
+  }
+
+  const marker =
+    ctx.markerById?.get(stopRef.id) ??
+    ctx.markers.find((m) => m.i === stopRef.id);
+  if (!marker) {
+    tryWarnMissing(`journey: missing marker ${stopRef.id}`);
+    return null;
+  }
+  const p = finiteCoord(marker.x, marker.y);
+  if (!p) tryWarnMissing(`journey: marker ${stopRef.id} has invalid x/y`);
+  return p;
+}
+
+export function resolveJourneyStopPosition(
+  stopRef: string,
+  ctx: JourneyResolutionContext,
+): [number, number] | null {
+  const resolved = journeyRefStringToStopRef(stopRef);
+  if (!resolved) return null;
+  return resolveJourneyStopRef(resolved, ctx);
+}
+
+interface JourneyResolvedStopEntry {
+  stopRef: JourneyStopRef;
+  coord: [number, number];
+}
+
+// Drops stops whose burg/marker cannot be resolved (partial paths allowed).
+export function journeyResolvedStopEntries(
+  j: PackJourney,
+  ctx: JourneyResolutionContext = { burgs: [], markers: [] },
+): JourneyResolvedStopEntry[] {
+  const out: JourneyResolvedStopEntry[] = [];
+  for (const stopRef of j.stops) {
+    const p = resolveJourneyStopRef(stopRef, ctx);
+    if (!p) continue;
+    out.push({ stopRef, coord: [p[0], p[1]] });
+  }
+  return out;
+}
+
+export function journeyResolvedCoordinates(
+  j: PackJourney,
+  ctx: JourneyResolutionContext = { burgs: [], markers: [] },
+): [number, number][] {
+  const rows = journeyResolvedStopEntries(j, ctx);
+  const out: [number, number][] = new Array(rows.length);
+  for (let i = 0; i < rows.length; i++) out[i] = rows[i].coord;
+  return out;
+}
+
+const JOURNEY_RAINBOW_STOPS = [
+  "#e81416",
+  "#ff7518",
+  "#ffdc00",
+  "#32cd32",
+  "#00bfff",
+  "#4e529a",
+  "#70389d",
+];
+
+const JOURNEY_STYLE_DEFAULTS = {
+  lineScreenPx: 6,
+  waypointRScreenPx: 9,
+  waypointRingScreenPx: 4.5,
+  outlineScreenPx: 2,
+  solidStroke: JOURNEY_DEFAULT_SOLID_STROKE,
+  waypointFill: "#ffffff",
+  waypointStroke: "#000000",
+  outlineColor: "#000000",
+  gradientFromHex: "#e81416",
+  gradientToHex: "#70389d",
+} as const;
+
+type JourneyColorMode = "rainbow" | "solid";
+
+export interface JourneyGlobalStyleConfig {
+  lineScreenPx: number;
+  waypointFill: string;
+  waypointStroke: string;
+  waypointRScreenPx: number;
+  waypointRingScreenPx: number;
+  outlineColor: string;
+  outlineScreenPx: number;
+}
+
+export interface JourneyColorStyleConfig {
+  colorMode: JourneyColorMode;
+  solidStroke: string;
+  rainbowStops: readonly string[];
+}
+
+interface JourneyStyleConfig
+  extends JourneyGlobalStyleConfig,
+    JourneyColorStyleConfig {}
+
+const builtinRampInterpolator = interpolateRgbBasis(JOURNEY_RAINBOW_STOPS);
+
+export function readJourneyGlobalStyle(
+  el: Element | null,
+): JourneyGlobalStyleConfig {
+  const get = (name: string): string | null =>
+    el && typeof el.getAttribute === "function" ? el.getAttribute(name) : null;
+
+  const attrPx = (name: string, fallback: number): number => {
+    const v = Number.parseFloat(get(name) ?? "");
+    return Number.isFinite(v) ? v : fallback;
+  };
+
+  const lineScreenPx = minmax(
+    attrPx("data-line-screen-px", JOURNEY_STYLE_DEFAULTS.lineScreenPx),
+    0.5,
+    96,
+  );
+
+  const waypointFill =
+    get("data-waypoint-fill")?.trim() || JOURNEY_STYLE_DEFAULTS.waypointFill;
+  const waypointStroke =
+    get("data-waypoint-stroke")?.trim() ||
+    JOURNEY_STYLE_DEFAULTS.waypointStroke;
+
+  const waypointRScreenPx = minmax(
+    attrPx(
+      "data-waypoint-r-screen-px",
+      JOURNEY_STYLE_DEFAULTS.waypointRScreenPx,
+    ),
+    2,
+    120,
+  );
+
+  const waypointRingScreenPx = minmax(
+    attrPx(
+      "data-waypoint-ring-screen-px",
+      JOURNEY_STYLE_DEFAULTS.waypointRingScreenPx,
+    ),
+    0,
+    48,
+  );
+
+  const outlineColor =
+    get("data-outline-color")?.trim() || JOURNEY_STYLE_DEFAULTS.outlineColor;
+
+  const outlineScreenPx = minmax(
+    attrPx("data-outline-screen-px", JOURNEY_STYLE_DEFAULTS.outlineScreenPx),
+    0,
+    32,
+  );
+
+  return {
+    lineScreenPx,
+    waypointFill,
+    waypointStroke,
+    waypointRScreenPx,
+    waypointRingScreenPx,
+    outlineColor,
+    outlineScreenPx,
+  };
+}
+
+export function journeyColorStyleFromData(
+  data: unknown,
+): JourneyColorStyleConfig {
+  const cd = sanitizeJourneyColorData(data);
+  if (cd.type === "solid") {
+    return {
+      colorMode: "solid",
+      solidStroke: cd.color,
+      rainbowStops: [...JOURNEY_RAINBOW_STOPS],
+    };
+  }
+  if (cd.type === "rainbow") {
+    return {
+      colorMode: "rainbow",
+      solidStroke: JOURNEY_STYLE_DEFAULTS.solidStroke,
+      rainbowStops: [...JOURNEY_RAINBOW_STOPS],
+    };
+  }
+  return {
+    colorMode: "rainbow",
+    solidStroke: JOURNEY_STYLE_DEFAULTS.solidStroke,
+    // Stored as gradient colors[] but drawn via rgbBasis(rainbowStops), same path as built-in ramp.
+    rainbowStops: cd.colors,
+  };
+}
+
+export function journeyColorStyleFromRecord(
+  row: StoredJourney,
+): JourneyColorStyleConfig {
+  return journeyColorStyleFromData(row.color);
+}
+
+export function mergeJourneyDrawStyle(
+  global: JourneyGlobalStyleConfig,
+  color: JourneyColorStyleConfig,
+): JourneyStyleConfig {
+  return {
+    ...global,
+    ...color,
+  };
+}
+
+export function journeyRampSamplerForConfig(
+  cfg: JourneyStyleConfig,
+): (u: number) => string {
+  if (cfg.colorMode === "solid") {
+    const c = cfg.solidStroke;
+    return (_u: number) => c;
+  }
+  const stops =
+    cfg.rainbowStops.length >= 2 ? cfg.rainbowStops : JOURNEY_RAINBOW_STOPS;
+  const interp = interpolateRgbBasis([...stops]);
+  return (u: number) => interp(minmax(u, 0, 1));
+}
+
+export function journeyRampColor(u: number): string {
+  return builtinRampInterpolator(minmax(u, 0, 1));
+}
+
+export function directedLegKey(a: [number, number], b: [number, number]): string {
+  return `${rn(a[0], 2)},${rn(a[1], 2)}->${rn(b[0], 2)},${rn(b[1], 2)}`;
+}
+
+const MIN_SEG_LEN = 0.05;
+const LANE_WIDTH = 3.5;
+/** Extra screen px beyond the waypoint radius so arrow shapes clear stop discs and never hug leg endpoints. */
+const JOURNEY_ARROW_EDGE_PADDING_PX = 26;
+const JOURNEY_ARROW_SPACING_BASE_PX = 38;
+const LOD_TIER_MAX = 6;
+const LOD_ARROW_SPACING_MUL: readonly number[] = [
+  2.25, 1.9, 1.6, 1.35, 1.2, 1.08, 1,
+];
+
+export function journeyLodTier(scale: number, zoomMin: number): number {
+  const s = Math.max(scale, 1e-9);
+  const zmin = Math.max(zoomMin, 1e-9);
+  const raw = Math.floor(Math.log2(s)) - Math.floor(Math.log2(zmin));
+  return minmax(raw, 0, LOD_TIER_MAX);
+}
+
+export function journeyPolylineSamplesForTier(tier: number): number {
+  const t = minmax(tier, 0, LOD_TIER_MAX);
+  return minmax(14 + t * 5, 12, 44);
+}
+
+export function journeyArrowSpacingMulForTier(tier: number): number {
+  const t = minmax(tier, 0, LOD_TIER_MAX);
+  return LOD_ARROW_SPACING_MUL[t] ?? 1;
+}
+
+export function journeyArrowSpacingMapUnits(
+  scale: number,
+  tier: number,
+  spacingPx = JOURNEY_ARROW_SPACING_BASE_PX,
+): number {
+  const k = Math.max(scale, 1e-9);
+  return (spacingPx * journeyArrowSpacingMulForTier(tier)) / k;
+}
+
+const BEND_BASE = 0.14;
+const CURVATURE_REPEAT_GAIN = 0.45;
+const LEFT_NORMAL_SCREEN_SIGN = -1;
+
+/** Occurrence index of each directed leg key within one journey’s polyline (per-route). The map renderer uses `countDirectedLegKeysGlobally` for lane/bend slotting instead. */
+export function legRepeatIndexInRoute(
+  points: [number, number][],
+): number[] {
+  const indices: number[] = [];
+  const counters = new Map<string, number>();
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i];
+    const p1 = points[i + 1];
+    if (Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) < MIN_SEG_LEN) {
+      indices.push(0);
+      continue;
+    }
+    const key = directedLegKey(p0, p1);
+    const k = counters.get(key) ?? 0;
+    indices.push(k);
+    counters.set(key, k + 1);
+  }
+  return indices;
+}
+
+export function bendSegmentChord(len: number, repeatIndex: number): number {
+  return (
+    BEND_BASE * len * (1 + Math.max(0, repeatIndex) * CURVATURE_REPEAT_GAIN)
+  );
+}
+
+/** Lane offsets for duplicate directed leg keys within a single journey’s coordinates. The map renderer uses `countDirectedLegKeysGlobally` for lane/bend slotting across all journeys. */
+export function laneMultipliersForLegsInRoute(
+  points: [number, number][],
+): number[] {
+  const keys: string[] = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i];
+    const p1 = points[i + 1];
+    if (Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) < MIN_SEG_LEN) {
+      keys.push("");
+      continue;
+    }
+    keys.push(directedLegKey(p0, p1));
+  }
+  const counts = new Map<string, number>();
+  for (const k of keys) {
+    if (!k) continue;
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
+  const idx = new Map<string, number>();
+  const lanes: number[] = [];
+  for (const k of keys) {
+    if (!k || (counts.get(k) ?? 0) <= 1) {
+      lanes.push(0);
+      continue;
+    }
+    const c = counts.get(k)!;
+    const slot = idx.get(k) ?? 0;
+    idx.set(k, slot + 1);
+    lanes.push(slot - (c - 1) / 2);
+  }
+  return lanes;
+}
+
+/** How often each directed leg key appears across all journeys (journey order, then leg order); skips degenerate legs. */
+export function countDirectedLegKeysGlobally(
+  rows: StoredJourney[],
+  resCtx: JourneyResolutionContext,
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (let ji = 0; ji < rows.length; ji++) {
+    const sj = rows[ji];
+    if (!sj || typeof sj !== "object") continue;
+    const stops = Array.isArray(sj.stops) ? sj.stops : [];
+    const pj: PackJourney = { stops };
+    const resolvedStops = journeyResolvedStopEntries(pj, resCtx);
+    const points = resolvedStops.map((r) => r.coord);
+    const S = Math.max(0, points.length - 1);
+    for (let i = 0; i < S; i++) {
+      const a = points[i]!;
+      const b = points[i + 1]!;
+      const segLen = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (segLen < MIN_SEG_LEN) continue;
+      const key = directedLegKey(a, b);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
+function quadraticSamples(
+  a: [number, number],
+  b: [number, number],
+  bendAmount: number,
+  lane: number,
+  samples: number,
+): [number, number][] {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+  const mx = (a[0] + b[0]) / 2;
+  const my = (a[1] + b[1]) / 2;
+  const cx = mx + nx * bendAmount * LEFT_NORMAL_SCREEN_SIGN;
+  const cy = my + ny * bendAmount * LEFT_NORMAL_SCREEN_SIGN;
+  const pts: [number, number][] = [];
+  for (let i = 0; i <= samples; i++) {
+    const t = i / samples;
+    const omt = 1 - t;
+    let x = omt * omt * a[0] + 2 * omt * t * cx + t * t * b[0];
+    let y = omt * omt * a[1] + 2 * omt * t * cy + t * t * b[1];
+    const tx = 2 * omt * (cx - a[0]) + 2 * t * (b[0] - cx);
+    const ty = 2 * omt * (cy - a[1]) + 2 * t * (b[1] - cy);
+    const tlen = Math.hypot(tx, ty) || 1;
+    const px = -ty / tlen;
+    const py = tx / tlen;
+    const fade = Math.sin(Math.PI * t);
+    const off = lane * LANE_WIDTH * fade;
+    x += px * off;
+    y += py * off;
+    pts.push([x, y]);
+  }
+  return pts;
+}
+
+function polylinePath(pts: [number, number][]): string {
+  if (pts.length === 0) return "";
+  let d = `M${rn(pts[0][0], 2)},${rn(pts[0][1], 2)}`;
+  for (let i = 1; i < pts.length; i++)
+    d += `L${rn(pts[i][0], 2)},${rn(pts[i][1], 2)}`;
+  return d;
+}
+
+interface ArrowSample {
+  x: number;
+  y: number;
+  angleDeg: number;
+  arcFrac: number;
+}
+
+export function arrowPositionsAlongPolyline(
+  pts: [number, number][],
+  spacing: number,
+  edgeInset = 0,
+): ArrowSample[] {
+  const result: ArrowSample[] = [];
+  if (pts.length < 2 || spacing <= 0) return result;
+  const polyLen = polylineLength(pts);
+  if (polyLen < 1e-9) return result;
+  const inset = Math.max(0, edgeInset);
+  const lo = inset;
+  const hi = polyLen - inset;
+  if (hi <= lo + 1e-9) return result;
+  let cumulative = 0;
+  let nextAt = Math.max(spacing, Math.ceil(lo / spacing) * spacing);
+  for (let i = 0; i < pts.length - 1; i++) {
+    const x0 = pts[i][0];
+    const y0 = pts[i][1];
+    const x1 = pts[i + 1][0];
+    const y1 = pts[i + 1][1];
+    const segLen = Math.hypot(x1 - x0, y1 - y0);
+    if (segLen < 1e-9) continue;
+    const angleDeg = (Math.atan2(y1 - y0, x1 - x0) * 180) / Math.PI;
+    const segEnd = cumulative + segLen;
+    const segHi = Math.min(segEnd, hi);
+    while (nextAt <= segHi + 1e-9) {
+      const alongSeg = nextAt - cumulative;
+      const t = alongSeg / segLen;
+      const distAlongTotal = cumulative + alongSeg;
+      result.push({
+        x: x0 + t * (x1 - x0),
+        y: y0 + t * (y1 - y0),
+        angleDeg,
+        arcFrac: distAlongTotal / polyLen,
+      });
+      nextAt += spacing;
+    }
+    cumulative = segEnd;
+  }
+  return result;
+}
+
+function polylineLength(pts: [number, number][]): number {
+  let len = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    len += Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
+  }
+  return len;
+}
+
+/** Position and tangent along `pts` at arc length `distAlong` from the start (clamped to the polyline). */
+function samplePolylineAtArcLength(
+  pts: [number, number][],
+  distAlong: number,
+): ArrowSample | null {
+  const polyLen = polylineLength(pts);
+  if (pts.length < 2 || polyLen < 1e-9) return null;
+  const d = minmax(distAlong, 0, polyLen);
+  let cumulative = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const x0 = pts[i][0];
+    const y0 = pts[i][1];
+    const x1 = pts[i + 1][0];
+    const y1 = pts[i + 1][1];
+    const segLen = Math.hypot(x1 - x0, y1 - y0);
+    if (segLen < 1e-9) continue;
+    const segEnd = cumulative + segLen;
+    if (d <= segEnd + 1e-9) {
+      const alongSeg = Math.max(0, d - cumulative);
+      const t = segLen > 1e-9 ? alongSeg / segLen : 0;
+      const angleDeg = (Math.atan2(y1 - y0, x1 - x0) * 180) / Math.PI;
+      return {
+        x: x0 + t * (x1 - x0),
+        y: y0 + t * (y1 - y0),
+        angleDeg,
+        arcFrac: d / polyLen,
+      };
+    }
+    cumulative = segEnd;
+  }
+  const last = pts[pts.length - 1]!;
+  const prev = pts[pts.length - 2]!;
+  const angleDeg =
+    (Math.atan2(last[1] - prev[1], last[0] - prev[0]) * 180) / Math.PI;
+  return {
+    x: last[0],
+    y: last[1],
+    angleDeg,
+    arcFrac: 1,
+  };
+}
+
+/** Maps leg index to [u0,u1) slice along the journey color ramp (gradient / rainbow). */
+export function legColorInterval(
+  legCount: number,
+  legIndex: number,
+): [number, number] {
+  if (legCount <= 0) return [0, 0];
+  const u0 = legIndex / legCount;
+  const u1 = (legIndex + 1) / legCount;
+  return [u0, u1];
+}
+
+const ARROW_PATH_D = "M0,-8.4 L22.5,0 L0,8.4 Z";
+const JOURNEY_OUTLINE_FILTER_ID = "journeyUnifiedOutline";
+
+function mapMetricScreenToWorld(
+  screenPx: number,
+  zoomScale: number,
+  lo: number,
+  hi: number,
+): number {
+  const k = Math.max(zoomScale, 1e-9);
+  return minmax(screenPx / k, lo, hi);
+}
+
+function arrowTransform(
+  x: number,
+  y: number,
+  angleDeg: number,
+  zoomScale: number,
+): string {
+  const inv = rn(1 / Math.max(zoomScale, 1e-9), 6);
+  return `translate(${rn(x, 2)},${rn(y, 2)}) rotate(${rn(angleDeg, 2)}) scale(${inv})`;
+}
+
+function ensureJourneyOutlineFilter(
+  defs: Selection<SVGDefsElement, unknown, null, undefined>,
+  morphologyRadiusMap: number,
+  floodColor: string,
+): void {
+  defs.select(`filter#${JOURNEY_OUTLINE_FILTER_ID}`).remove();
+  const f = defs
+    .append("filter")
+    .attr("id", JOURNEY_OUTLINE_FILTER_ID)
+    .attr("class", "journey-outline-filter")
+    .attr("color-interpolation-filters", "sRGB")
+    .attr("x", "-50%")
+    .attr("y", "-50%")
+    .attr("width", "200%")
+    .attr("height", "200%");
+  f.append("feMorphology")
+    .attr("in", "SourceAlpha")
+    .attr("operator", "dilate")
+    .attr("radius", rn(morphologyRadiusMap, 3))
+    .attr("result", "dilatedAlpha");
+  f.append("feFlood")
+    .attr("flood-color", floodColor)
+    .attr("result", "outlineFlood");
+  f.append("feComposite")
+    .attr("in", "outlineFlood")
+    .attr("in2", "dilatedAlpha")
+    .attr("operator", "in")
+    .attr("result", "outlineShape");
+  const merge = f.append("feMerge");
+  merge.append("feMergeNode").attr("in", "outlineShape");
+  merge.append("feMergeNode").attr("in", "SourceGraphic");
+}
+
+class JourneyDrawModule {
+  private lastLodTier: number | null = null;
+
+  redraw(
+    defs: Selection<SVGDefsElement, unknown, null, undefined>,
+    journeys: Selection<SVGGElement, unknown, null, undefined>,
+    zoomScale = 1,
+    zoomMinForLod = 0.05,
+  ): void {
+    journeys.selectAll("*").remove();
+    defs.select(`filter#${JOURNEY_OUTLINE_FILTER_ID}`).remove();
+
+    const rows = packJourneyRows();
+    const resCtx = buildJourneyResolutionContext(
+      pack.burgs ?? [],
+      pack.markers ?? [],
+    );
+
+    let hadResolvedStop = false;
+    let needsOutline = false;
+    const zs = zoomScale;
+    const zm = zoomMinForLod;
+    const tier = journeyLodTier(zs, zm);
+
+    const globalStyle = readJourneyGlobalStyle(journeys.node());
+
+    for (let ji = 0; ji < rows.length; ji++) {
+      const sj = rows[ji];
+      if (!sj || typeof sj !== "object") continue;
+      const stops = Array.isArray(sj.stops) ? sj.stops : [];
+      const pj: PackJourney = { stops };
+      const resolvedStops = journeyResolvedStopEntries(pj, resCtx);
+      if (resolvedStops.length) hadResolvedStop = true;
+      const pts = resolvedStops.map((r) => r.coord);
+      if (pts.length >= 2) needsOutline = true;
+    }
+
+    if (!hadResolvedStop) {
+      this.lastLodTier = null;
+      return;
+    }
+
+    if (needsOutline) {
+      const morphR = mapMetricScreenToWorld(
+        globalStyle.outlineScreenPx,
+        zs,
+        0.35,
+        40,
+      );
+      ensureJourneyOutlineFilter(defs, morphR, globalStyle.outlineColor);
+    }
+
+    const globalLegKeyCounts = countDirectedLegKeysGlobally(rows, resCtx);
+    const globalLegKeySlot = new Map<string, number>();
+
+    for (let ji = 0; ji < rows.length; ji++) {
+      const sj = rows[ji];
+      if (!sj || typeof sj !== "object") continue;
+      const stops = Array.isArray(sj.stops) ? sj.stops : [];
+      const pj: PackJourney = { stops };
+      const resolvedStops = journeyResolvedStopEntries(pj, resCtx);
+      if (!resolvedStops.length) continue;
+
+      const mergedStyle = mergeJourneyDrawStyle(
+        globalStyle,
+        journeyColorStyleFromRecord(sj),
+      );
+      const rampAt = journeyRampSamplerForConfig(mergedStyle);
+      const points = resolvedStops.map((r) => r.coord);
+
+      const domId = Number.isFinite(Number(sj.id)) ? Number(sj.id) : ji;
+      const sub = journeys
+        .append("g")
+        .attr("class", "journey-instance")
+        .attr("data-journey-index", ji)
+        .attr("data-journey-id", domId);
+
+      const verts = sub.append("g").attr("class", "journey-vertices");
+      const waypointR = mapMetricScreenToWorld(
+        mergedStyle.waypointRScreenPx,
+        zs,
+        0.15,
+        80,
+      );
+      const waypointSw = mapMetricScreenToWorld(
+        mergedStyle.waypointRingScreenPx,
+        zs,
+        0.03,
+        24,
+      );
+      const idsAtCoord = new Map<string, string[]>();
+      for (const { stopRef, coord } of resolvedStops) {
+        const sid = journeyStopRefToString(stopRef);
+        const ck = `${rn(coord[0], 2)},${rn(coord[1], 2)}`;
+        const arr = idsAtCoord.get(ck) ?? [];
+        if (!arr.includes(sid)) arr.push(sid);
+        idsAtCoord.set(ck, arr);
+      }
+      const seen = new Set<string>();
+      for (const [x, y] of points) {
+        const k = `${rn(x, 2)},${rn(y, 2)}`;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        const jidList = idsAtCoord.get(k);
+        const circle = verts
+          .append("circle")
+          .attr("class", "journey-waypoint")
+          .attr("data-journey-index", ji)
+          .attr("data-journey-id", domId)
+          .attr("data-jx", rn(x, 2))
+          .attr("data-jy", rn(y, 2))
+          .attr("cx", rn(x, 2))
+          .attr("cy", rn(y, 2))
+          .attr("r", rn(waypointR, 3))
+          .attr("fill", mergedStyle.waypointFill)
+          .attr("stroke", mergedStyle.waypointStroke)
+          .attr("stroke-width", rn(waypointSw, 3))
+          .style("cursor", "pointer");
+        // Same coord can host multiple stops; editor append needs an unambiguous ref.
+        if (jidList?.length === 1)
+          circle.attr("data-journey-stop-ref", jidList[0]);
+      }
+
+      const S = Math.max(0, points.length - 1);
+      if (S < 1) continue;
+
+      const samples = journeyPolylineSamplesForTier(tier);
+      const arrowSpacing = journeyArrowSpacingMapUnits(zs, tier);
+      const arrowEdgeInset = mapMetricScreenToWorld(
+        mergedStyle.waypointRScreenPx + JOURNEY_ARROW_EDGE_PADDING_PX,
+        zs,
+        0.06,
+        120,
+      );
+      const legsRoot = sub.append("g").attr("class", "journey-legs");
+      const strokeW = mapMetricScreenToWorld(
+        mergedStyle.lineScreenPx,
+        zs,
+        0.06,
+        24,
+      );
+      for (let i = 0; i < S; i++) {
+        const a = points[i];
+        const b = points[i + 1];
+        const segLen = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        if (segLen < MIN_SEG_LEN) continue;
+        const legKey = directedLegKey(a, b);
+        const repeatSlot = globalLegKeySlot.get(legKey) ?? 0;
+        globalLegKeySlot.set(legKey, repeatSlot + 1);
+        const legKeyCount = globalLegKeyCounts.get(legKey) ?? 1;
+        const lane =
+          legKeyCount <= 1 ? 0 : repeatSlot - (legKeyCount - 1) / 2;
+        const bendAmount = bendSegmentChord(segLen, repeatSlot);
+        const samp = quadraticSamples(a, b, bendAmount, lane, samples);
+        const d = polylinePath(samp);
+        if (!d) continue;
+        const [u0, u1] = legColorInterval(S, i);
+        const seg = legsRoot
+          .append("g")
+          .attr("class", "journey-leg")
+          .attr("filter", `url(#${JOURNEY_OUTLINE_FILTER_ID})`);
+        const polyLen = polylineLength(samp);
+        if (mergedStyle.colorMode === "solid") {
+          seg
+            .append("path")
+            .attr("class", "journey-leg-stroke")
+            .attr("d", d)
+            .attr("fill", "none")
+            .attr("stroke", mergedStyle.solidStroke)
+            .attr("stroke-width", rn(strokeW, 3))
+            .attr("stroke-linecap", "round")
+            .attr("stroke-linejoin", "round");
+        } else if (polyLen >= 1e-9) {
+          // Piecewise strokes so ramp follows arc length (endpoint-axis gradients skew on bends).
+          let cumAlong = 0;
+          for (let ei = 0; ei < samp.length - 1; ei++) {
+            const p0 = samp[ei]!;
+            const p1 = samp[ei + 1]!;
+            const el = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+            if (el < 1e-9) continue;
+            const uMid =
+              u0 + ((cumAlong + el * 0.5) / polyLen) * (u1 - u0);
+            cumAlong += el;
+            const subd = polylinePath([p0, p1]);
+            seg
+              .append("path")
+              .attr("class", "journey-leg-stroke")
+              .attr("d", subd)
+              .attr("fill", "none")
+              .attr("stroke", rampAt(uMid))
+              .attr("stroke-width", rn(strokeW, 3))
+              .attr("stroke-linecap", "round")
+              .attr("stroke-linejoin", "round");
+          }
+        }
+        let arrPts = arrowPositionsAlongPolyline(
+          samp,
+          arrowSpacing,
+          arrowEdgeInset,
+        );
+        if (!arrPts.length && polyLen > MIN_SEG_LEN) {
+          const lo = arrowEdgeInset;
+          const hi = polyLen - arrowEdgeInset;
+          if (hi > lo + 1e-9) {
+            const midSample = samplePolylineAtArcLength(samp, (lo + hi) * 0.5);
+            if (midSample) arrPts = [midSample];
+          }
+        }
+        for (const ar of arrPts) {
+          const arrowColor = rampAt(u0 + ar.arcFrac * (u1 - u0));
+          seg
+            .append("path")
+            .attr("class", "journey-arrow")
+            .attr("d", ARROW_PATH_D)
+            .attr("fill", arrowColor)
+            .attr("data-ar-x", rn(ar.x, 2))
+            .attr("data-ar-y", rn(ar.y, 2))
+            .attr("data-ar-ang", rn(ar.angleDeg, 2))
+            .attr("transform", arrowTransform(ar.x, ar.y, ar.angleDeg, zs));
+        }
+      }
+    }
+
+    this.lastLodTier = tier;
+  }
+
+  syncZoom(
+    defs: Selection<SVGDefsElement, unknown, null, undefined>,
+    journeys: Selection<SVGGElement, unknown, null, undefined>,
+    zoomScale = 1,
+    zoomMinForLod = 0.05,
+  ): void {
+    const resCtx = buildJourneyResolutionContext(
+      pack.burgs ?? [],
+      pack.markers ?? [],
+    );
+    let hasResolved = false;
+    let anySegments = false;
+    for (const sj of packJourneyRows()) {
+      if (!sj || typeof sj !== "object") continue;
+      const stops = Array.isArray(sj.stops) ? sj.stops : [];
+      const pj: PackJourney = { stops };
+      const pts = journeyResolvedCoordinates(pj, resCtx);
+      if (pts.length) hasResolved = true;
+      if (pts.length >= 2) anySegments = true;
+    }
+    if (!hasResolved) return;
+
+    const zs = zoomScale;
+    const zm = zoomMinForLod;
+    const tier = journeyLodTier(zs, zm);
+    if (anySegments && this.lastLodTier !== tier) {
+      this.redraw(defs, journeys, zs, zm);
+      return;
+    }
+    this.applyZoomSizing(defs, journeys, zs);
+  }
+
+  private applyZoomSizing(
+    defs: Selection<SVGDefsElement, unknown, null, undefined>,
+    journeys: Selection<SVGGElement, unknown, null, undefined>,
+    zoomScale: number,
+  ): void {
+    const zs = Math.max(zoomScale, 1e-9);
+    const styleCfg = readJourneyGlobalStyle(journeys.node());
+    const strokeW = mapMetricScreenToWorld(styleCfg.lineScreenPx, zs, 0.06, 24);
+    journeys
+      .selectAll(".journey-leg-stroke")
+      .attr("stroke-width", rn(strokeW, 3));
+    const waypointR = mapMetricScreenToWorld(
+      styleCfg.waypointRScreenPx,
+      zs,
+      0.15,
+      80,
+    );
+    const waypointSw = mapMetricScreenToWorld(
+      styleCfg.waypointRingScreenPx,
+      zs,
+      0.03,
+      24,
+    );
+    journeys
+      .selectAll(".journey-waypoint")
+      .attr("r", rn(waypointR, 3))
+      .attr("stroke-width", rn(waypointSw, 3));
+    journeys.selectAll(".journey-arrow").each(function () {
+      const el = this as SVGPathElement;
+      const x = el.getAttribute("data-ar-x");
+      const y = el.getAttribute("data-ar-y");
+      const ang = el.getAttribute("data-ar-ang");
+      if (x == null || y == null || ang == null) return;
+      el.setAttribute("transform", arrowTransform(+x, +y, +ang, zoomScale));
+    });
+    const morphR = mapMetricScreenToWorld(
+      styleCfg.outlineScreenPx,
+      zs,
+      0.35,
+      40,
+    );
+    const filt = defs.select(`filter#${JOURNEY_OUTLINE_FILTER_ID}`);
+    if (!filt.empty()) {
+      filt.select("feMorphology").attr("radius", rn(morphR, 3));
+      filt.select("feFlood").attr("flood-color", styleCfg.outlineColor);
+    }
+  }
+}
+
+type JourneyGlobalApi = {
+  STYLE_DEFAULTS: typeof JOURNEY_STYLE_DEFAULTS;
+};
+
+let journeyEditorActiveIndex = 0;
+
+function syncEditorActiveRow(): StoredJourney | undefined {
+  const rows = packJourneyRows();
+  if (!rows.length) return undefined;
+  if (journeyEditorActiveIndex < 0 || journeyEditorActiveIndex >= rows.length) {
+    journeyEditorActiveIndex = 0;
+  }
+  return rows[journeyEditorActiveIndex];
+}
+
+function nextJourneyId(): number {
+  return (
+    packJourneyRows().reduce((m, r) => {
+      const id = Number(r?.id);
+      return Number.isFinite(id) ? Math.max(m, id) : m;
+    }, 0) + 1
+  );
+}
+
+function journeyHexForPicker(
+  raw: string | undefined,
+  fallback: string,
+): string {
+  const fb = fallback || "#000000";
+  const s = raw != null && String(raw).trim() !== "" ? String(raw).trim() : fb;
+  if (/^#[\da-fA-F]{6}$/.test(s)) return s;
+  if (/^#[\da-fA-F]{3}$/.test(s)) {
+    const r = s[1],
+      g = s[2],
+      b = s[3];
+    return `#${r}${r}${g}${g}${b}${b}`;
+  }
+  return fb;
+}
+
+function journeyEditorClearGradientStopsUi(): void {
+  ensureEl("journeyEditorGradientStopsBody").innerHTML = "";
+}
+
+function journeyEditorRenderGradientStops(colorsIn: string[]): void {
+  const container = ensureEl("journeyEditorGradientStopsBody");
+  const jd = JOURNEY_STYLE_DEFAULTS;
+  const cols =
+    colorsIn.length >= 2
+      ? colorsIn.map((c, i) =>
+          journeyHexForPicker(
+            c,
+            i === 0 ? jd.gradientFromHex : jd.gradientToHex,
+          ),
+        )
+      : [jd.gradientFromHex, jd.gradientToHex];
+  container.innerHTML = "";
+  cols.forEach((hex, i) => {
+    const showRemove = cols.length > 2;
+    const removeStyle = showRemove
+      ? ""
+      : "visibility:hidden;pointer-events:none";
+    container.insertAdjacentHTML(
+      "beforeend",
+      `<div class="editorLine journey-gradient-stop-row" data-gradient-stop-index="${i}" style="display:flex;align-items:center;gap:0.5em;margin:0.2em 0;flex-wrap:wrap">
+        <span style="opacity:0.85;min-width:1.25em">${i + 1}</span>
+        <input type="color" class="journey-gradient-stop-color" data-gradient-stop-index="${i}" value="${escapeHtml(hex)}" />
+        <output class="journey-gradient-stop-output" data-gradient-stop-index="${i}">${escapeHtml(hex)}</output>
+        <span data-tip="Remove this color stop" class="icon-trash-empty pointer journey-gradient-stop-remove" data-gradient-stop-index="${i}" style="${removeStyle}"></span>
+      </div>`,
+    );
+  });
+}
+
+function journeyEditorSyncColorUi(row: StoredJourney): void {
+  const jd = JOURNEY_STYLE_DEFAULTS;
+  const cd = sanitizeJourneyColorData(row.color);
+  row.color = cd;
+
+  const sel = ensureEl("journeyEditorColorMode") as HTMLSelectElement;
+  if (cd.type === "solid") {
+    sel.value = "solid";
+    const solidHex = journeyHexForPicker(cd.color, jd.solidStroke);
+    (ensureEl("journeyEditorSolidStroke") as HTMLInputElement).value = solidHex;
+    (ensureEl("journeyEditorSolidStrokeOutput") as HTMLOutputElement).value =
+      solidHex;
+    journeyEditorClearGradientStopsUi();
+  } else if (cd.type === "rainbow") {
+    sel.value = "rainbow";
+    const solidHex = journeyHexForPicker(undefined, jd.solidStroke);
+    (ensureEl("journeyEditorSolidStroke") as HTMLInputElement).value = solidHex;
+    (ensureEl("journeyEditorSolidStrokeOutput") as HTMLOutputElement).value =
+      solidHex;
+    journeyEditorClearGradientStopsUi();
+  } else {
+    sel.value = "gradient";
+    const solidHex = journeyHexForPicker(undefined, jd.solidStroke);
+    (ensureEl("journeyEditorSolidStroke") as HTMLInputElement).value = solidHex;
+    (ensureEl("journeyEditorSolidStrokeOutput") as HTMLOutputElement).value =
+      solidHex;
+    journeyEditorRenderGradientStops(cd.colors);
+  }
+
+  journeyEditorSyncColorRowVisibility();
+}
+
+function journeyEditorSyncColorRowVisibility(): void {
+  const mode = (ensureEl("journeyEditorColorMode") as HTMLSelectElement).value;
+  const solid = mode === "solid";
+  const gradient = mode === "gradient";
+  ensureEl("journeyEditorSolidStroke").closest("tr")!.style.display = solid
+    ? ""
+    : "none";
+  ensureEl("journeyEditorGradientStopsRow").style.display = gradient
+    ? ""
+    : "none";
+}
+
+function journeyEditorSyncEmptyState(): void {
+  const rows = packJourneyRows();
+  const empty = ensureEl("journeyEditorEmptyState");
+  const main = ensureEl("journeyEditorMain");
+  if (!rows.length) {
+    empty.style.display = "block";
+    main.style.display = "none";
+  } else {
+    empty.style.display = "none";
+    main.style.display = "";
+  }
+}
+
+function journeyEditorRefreshJourneySelect(): void {
+  const sel = ensureEl("journeyEditorJourneySelect") as HTMLSelectElement;
+  const rows = packJourneyRows();
+  sel.innerHTML = rows
+    .map((r, i) => {
+      const label = r.name?.trim() || `Journey ${r.id ?? i + 1}`;
+      return `<option value="${i}">${escapeHtml(label)}</option>`;
+    })
+    .join("");
+  if (!rows.length) return;
+  journeyEditorActiveIndex = Math.min(
+    journeyEditorActiveIndex,
+    rows.length - 1,
+  );
+  sel.value = String(journeyEditorActiveIndex);
+}
+
+function journeyStopSelectOptions(currentRef: string): string {
+  let html = "";
+  const known = new Set<string>();
+  if (!currentRef)
+    html +=
+      '<option value="" disabled selected>Choose marker or burg…</option>';
+  html += '<optgroup label="Markers">';
+  for (const m of pack.markers || []) {
+    if (m.i == null || !Number.isFinite(m.x) || !Number.isFinite(m.y)) continue;
+    const ref = markerJourneyStopRef(m.i);
+    known.add(ref);
+    const sel = ref === currentRef ? " selected" : "";
+    const typeLabel = m.type ? String(m.type) : "Marker";
+    const label = `${typeLabel} #${m.i} (${rn(m.x, 2)}, ${rn(m.y, 2)})`;
+    html += `<option value="${escapeHtml(ref)}"${sel}>${escapeHtml(label)}</option>`;
+  }
+  html += '</optgroup><optgroup label="Burgs">';
+  for (const b of pack.burgs || []) {
+    if (
+      b.removed ||
+      b.i == null ||
+      !Number.isFinite(b.x) ||
+      !Number.isFinite(b.y)
+    )
+      continue;
+    const ref = burgJourneyStopRef(b.i);
+    known.add(ref);
+    const sel = ref === currentRef ? " selected" : "";
+    const nm =
+      b.name && String(b.name).trim() !== "" ? String(b.name) : `Burg ${b.i}`;
+    const label = `${nm} (${rn(b.x, 2)}, ${rn(b.y, 2)})`;
+    html += `<option value="${escapeHtml(ref)}"${sel}>${escapeHtml(label)}</option>`;
+  }
+  html += "</optgroup>";
+  if (currentRef && !known.has(currentRef)) {
+    html += `<option value="${escapeHtml(currentRef)}" selected>${escapeHtml("[missing stop]")}</option>`;
+  }
+  return html;
+}
+
+function journeyRenderStopRows(container: HTMLElement): void {
+  const active = syncEditorActiveRow();
+  const stops = active && Array.isArray(active.stops) ? active.stops : [];
+  const rows: (JourneyStopRef | null)[] = stops.length === 0 ? [null] : stops;
+  rows.forEach((stopRef, i) => {
+    const currentRef = stopRef ? journeyStopRefToString(stopRef) : "";
+    const showRemove = stops.length > 0;
+    const removeStyle = showRemove
+      ? ""
+      : "visibility:hidden;pointer-events:none";
+    container.insertAdjacentHTML(
+      "beforeend",
+      `<div class="editorLine journey-stop-row" data-stop-index="${i}" style="display:grid;grid-template-columns:auto 1fr auto;gap:0.5em 1em;align-items:center">
+        <span><b>#</b>${i + 1}</span>
+        <select class="journey-stop-select" data-tip="Stop: marker or burg (position follows the map)" data-stop-index="${i}">${journeyStopSelectOptions(currentRef)}</select>
+        <span data-tip="Remove this stop" class="icon-trash-empty pointer journey-stop-remove" data-stop-index="${i}" style="${removeStyle}"></span>
+      </div>`,
+    );
+  });
+}
+
+function journeyEditorRefreshBody(): void {
+  const stBody = ensureEl("journeyEditorStopsBody");
+  stBody.innerHTML = "";
+  journeyEditorRefreshJourneySelect();
+  const active = syncEditorActiveRow();
+  if (active) journeyEditorSyncColorUi(active);
+  if (packJourneyRows().length) journeyRenderStopRows(stBody);
+  journeyEditorSyncEmptyState();
+}
+
+function journeyEditorRootChange(ev: Event): void {
+  const t = ev.target as HTMLElement;
+  if (t.classList.contains("journey-stop-select")) {
+    const row = t.closest("[data-stop-index]");
+    if (!row) return;
+    const idx = +(row as HTMLElement).dataset.stopIndex!;
+    if (!Number.isFinite(idx)) return;
+    const val = (t as HTMLSelectElement).value;
+    if (!val) return;
+    const resolvedStop = journeyRefStringToStopRef(val);
+    if (!resolvedStop) return;
+    const cur = syncEditorActiveRow();
+    if (!cur || !Array.isArray(cur.stops)) return;
+    const stops = cur.stops;
+    if (stops.length === 0) stops.push(resolvedStop);
+    else stops[idx] = resolvedStop;
+    journeyEditorRefreshBody();
+    drawJourney();
+  }
+}
+
+function journeyEditorRootClick(ev: Event): void {
+  const t = ev.target as HTMLElement;
+  if (t.classList.contains("journey-gradient-stop-remove")) {
+    const rowEl = t.closest("[data-gradient-stop-index]");
+    if (!rowEl) return;
+    const idx = +(rowEl as HTMLElement).dataset.gradientStopIndex!;
+    if (!Number.isFinite(idx)) return;
+    if (
+      (ensureEl("journeyEditorColorMode") as HTMLSelectElement).value !==
+      "gradient"
+    )
+      return;
+    const cur = syncEditorActiveRow();
+    if (!cur || cur.color?.type !== "gradient") return;
+    const colors = [...cur.color.colors];
+    if (colors.length <= 2) return;
+    colors.splice(idx, 1);
+    cur.color = { type: "gradient", colors };
+    journeyEditorSyncColorUi(cur);
+    drawJourney();
+    return;
+  }
+  if (t.classList.contains("journey-stop-remove")) {
+    const row = t.closest("[data-stop-index]");
+    if (!row) return;
+    const idx = +(row as HTMLElement).dataset.stopIndex!;
+    if (!Number.isFinite(idx)) return;
+    const cur = syncEditorActiveRow();
+    if (cur && Array.isArray(cur.stops)) cur.stops.splice(idx, 1);
+    journeyEditorRefreshBody();
+    drawJourney();
+  }
+}
+
+function journeyAppendStopRef(stopRef: string, targetIndex?: number): void {
+  const ctx = buildJourneyResolutionContext(
+    pack.burgs ?? [],
+    pack.markers ?? [],
+  );
+  if (!resolveJourneyStopPosition(stopRef, ctx)) return;
+  const resolvedStop = journeyRefStringToStopRef(stopRef);
+  if (!resolvedStop) return;
+  const rows = packJourneyRows();
+  const idx =
+    targetIndex != null && targetIndex >= 0 && targetIndex < rows.length
+      ? targetIndex
+      : journeyEditorActiveIndex;
+  const row = rows[idx];
+  if (!row) return;
+  if (!Array.isArray(row.stops)) row.stops = [];
+  journeyEditorActiveIndex = idx;
+  row.stops.push(resolvedStop);
+  journeyEditorRefreshBody();
+  drawJourney();
+}
+
+function journeyEditorAddLegClick(): void {
+  const cur = syncEditorActiveRow();
+  const stops = cur && Array.isArray(cur.stops) ? cur.stops : null;
+  if (!stops?.length) {
+    tip(
+      "Choose the first stop in the Journey row (marker or burg), then use + to add legs.",
+      false,
+      "warn",
+    );
+    return;
+  }
+  stops.push(stops[stops.length - 1]);
+  journeyEditorRefreshBody();
+  drawJourney();
+}
+
+function journeyEditorOnClick(): void {
+  const d3g = globalThis as typeof globalThis & {
+    d3?: { event?: { sourceEvent?: Event } };
+  };
+  const evt = d3g.d3?.event?.sourceEvent ?? window.event;
+  const target = evt?.target as HTMLElement | undefined;
+  let circleEl: Element | null = null;
+  if (target?.classList?.contains("journey-waypoint")) circleEl = target;
+  else if (target?.closest?.(".journey-waypoint"))
+    circleEl = target.closest(".journey-waypoint");
+  if (circleEl) {
+    const stopRef = circleEl.getAttribute("data-journey-stop-ref");
+    const jiStr = circleEl.getAttribute("data-journey-index");
+    const ji = jiStr != null && jiStr !== "" ? Number.parseInt(jiStr, 10) : NaN;
+    if (stopRef && Number.isFinite(ji)) {
+      journeyAppendStopRef(stopRef, ji);
+      return;
+    }
+    return;
+  }
+  tip(
+    "Add stops from the Journey dropdown (markers and burgs only).",
+    false,
+    "info",
+  );
+}
+
+function closeJourneyEditor(): void {
+  journeyEditorActiveIndex = 0;
+  ensureEl("journeyEditorStopsBody").innerHTML = "";
+  viewbox.on("click.journey", null).style("cursor", null);
+  clearMainTip();
+  restoreDefaultEvents();
+}
+
+function journeyEditorJourneySelectChange(): void {
+  const v = Number.parseInt(
+    (ensureEl("journeyEditorJourneySelect") as HTMLSelectElement).value,
+    10,
+  );
+  if (Number.isFinite(v)) journeyEditorActiveIndex = v;
+  journeyEditorRefreshBody();
+  drawJourney();
+}
+
+function journeyEditorAddJourneyClick(): void {
+  if (!Array.isArray(pack.journeys)) pack.journeys = [];
+  const id = nextJourneyId();
+  pack.journeys.push(createDefaultStoredJourney(id));
+  journeyEditorActiveIndex = pack.journeys.length - 1;
+  journeyEditorRefreshBody();
+  drawJourney();
+}
+
+function journeyEditorRemoveJourneyClick(): void {
+  if (!Array.isArray(pack.journeys)) return;
+  const rows = pack.journeys;
+  const idx = journeyEditorActiveIndex;
+  if (idx < 0 || idx >= rows.length) return;
+  rows.splice(idx, 1);
+  journeyEditorActiveIndex =
+    rows.length === 0 ? 0 : Math.min(idx, rows.length - 1);
+  journeyEditorRefreshBody();
+  drawJourney();
+}
+
+function editJourney(): void {
+  if (customization) return;
+  closeDialogs("#journeyEditor, .stable");
+  if (!layerIsOn("toggleJourney")) toggleJourney();
+  tip(
+    "Each journey has its own path and colors (below). Line thickness and waypoints are in the Style Editor. Build stops from markers and burgs; use + to repeat the last stop. Click a waypoint to append that stop to that journey.",
+    true,
+  );
+  viewbox.style("cursor", "default").on("click.journey", journeyEditorOnClick);
+  $("#journeyEditor").dialog({
+    title: "Journey editor",
+    resizable: false,
+    position: { my: "left top", at: "left+10 top+10", of: "#map" },
+    close: closeJourneyEditor,
+  });
+  if (modules.editJourney) {
+    journeyEditorRefreshBody();
+    return;
+  }
+  modules.editJourney = true;
+  $("#journeyEditorRoot")
+    .on("change.journeyEd", journeyEditorRootChange)
+    .on("click.journeyEd", journeyEditorRootClick)
+    .on(
+      "input.journeyEd",
+      ".journey-gradient-stop-color",
+      function (this: HTMLInputElement) {
+        if (
+          (ensureEl("journeyEditorColorMode") as HTMLSelectElement).value !==
+          "gradient"
+        )
+          return;
+        const row = syncEditorActiveRow();
+        if (!row) return;
+        const container = ensureEl("journeyEditorGradientStopsBody");
+        const inputs = container.querySelectorAll<HTMLInputElement>(
+          ".journey-gradient-stop-color",
+        );
+        const colors = [...inputs].map((inp) => inp.value);
+        if (colors.length < 2) return;
+        row.color = { type: "gradient", colors };
+        const idx = this.dataset.gradientStopIndex;
+        if (idx != null) {
+          const out = container.querySelector<HTMLOutputElement>(
+            `output.journey-gradient-stop-output[data-gradient-stop-index="${idx}"]`,
+          );
+          if (out) out.value = this.value;
+        }
+        drawJourney();
+      },
+    );
+  $("#journeyEditorJourneySelect").on(
+    "change.journeyEd",
+    journeyEditorJourneySelectChange,
+  );
+  $("#journeyEditorAddJourney, #journeyEditorCreateJourney").on(
+    "click.journeyEd",
+    journeyEditorAddJourneyClick,
+  );
+  $("#journeyEditorRemoveJourney").on(
+    "click.journeyEd",
+    journeyEditorRemoveJourneyClick,
+  );
+  $("#journeyEditorAddLeg").on("click.journeyEd", journeyEditorAddLegClick);
+  $("#journeyEditorUndo").on("click.journeyEd", () => {
+    const cur = syncEditorActiveRow();
+    if (cur && Array.isArray(cur.stops)) cur.stops.pop();
+    journeyEditorRefreshBody();
+    drawJourney();
+  });
+  $("#journeyEditorClear").on("click.journeyEd", () => {
+    const cur = syncEditorActiveRow();
+    if (cur && Array.isArray(cur.stops)) cur.stops = [];
+    journeyEditorRefreshBody();
+    drawJourney();
+  });
+  $("#journeyEditorDone").on("click.journeyEd", () =>
+    $("#journeyEditor").dialog("close"),
+  );
+
+  $("#journeyEditorColorMode").on(
+    "change.journeyEd",
+    function (this: HTMLSelectElement) {
+      const row = syncEditorActiveRow();
+      if (!row) return;
+      const jd = JOURNEY_STYLE_DEFAULTS;
+      const v = this.value;
+      if (v === "solid") {
+        const prev =
+          row.color?.type === "solid" ? row.color.color : jd.solidStroke;
+        row.color = { type: "solid", color: prev };
+      } else if (v === "rainbow") {
+        row.color = { type: "rainbow" };
+      } else {
+        row.color = {
+          type: "gradient",
+          colors: [jd.gradientFromHex, jd.gradientToHex],
+        };
+      }
+      journeyEditorSyncColorUi(row);
+      journeyEditorSyncColorRowVisibility();
+      drawJourney();
+    },
+  );
+  $("#journeyEditorSolidStroke").on(
+    "input.journeyEd",
+    function (this: HTMLInputElement) {
+      const row = syncEditorActiveRow();
+      if (!row) return;
+      row.color = { type: "solid", color: this.value };
+      (ensureEl("journeyEditorSolidStrokeOutput") as HTMLOutputElement).value =
+        this.value;
+      drawJourney();
+    },
+  );
+  $("#journeyEditorGradientAddStop").on("click.journeyEd", () => {
+    if (
+      (ensureEl("journeyEditorColorMode") as HTMLSelectElement).value !==
+      "gradient"
+    )
+      return;
+    const row = syncEditorActiveRow();
+    if (!row) return;
+    const jd = JOURNEY_STYLE_DEFAULTS;
+    let colors: string[];
+    if (row.color?.type === "gradient" && row.color.colors.length >= 2) {
+      colors = [...row.color.colors];
+      colors.push(colors[colors.length - 1]!);
+    } else {
+      colors = [jd.gradientFromHex, jd.gradientToHex];
+    }
+    row.color = { type: "gradient", colors };
+    journeyEditorSyncColorUi(row);
+    drawJourney();
+  });
+
+  journeyEditorRefreshBody();
+}
+
+if (typeof window !== "undefined") {
+  window.JourneyDraw = new JourneyDrawModule();
+  const journeyApi: JourneyGlobalApi = {
+    STYLE_DEFAULTS: JOURNEY_STYLE_DEFAULTS,
+  };
+  window.Journey = journeyApi;
+  window.editJourney = editJourney;
+}
+
+declare global {
+  var pack: import("../types/PackedGraph").PackedGraph;
+  interface Window {
+    JourneyDraw?: JourneyDrawModule;
+    Journey?: JourneyGlobalApi;
+    editJourney?: () => void;
+  }
+}

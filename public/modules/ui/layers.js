@@ -59,10 +59,25 @@ function getDefaultPresets() {
       "toggleIce",
       "toggleLakes",
       "toggleMarkers",
+      "toggleJourney",
       "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
       "toggleVignette"
+    ],
+    journeyPath: [
+      "toggleHeight",
+      "toggleLakes",
+      "toggleCells",
+      "toggleGrid",
+      "toggleStates",
+      "toggleZones",
+      "toggleBorders",
+      "toggleJourney",
+      "toggleRoutes",
+      "toggleBurgIcons",
+      "toggleLabels",
+      "toggleMarkers"
     ],
     military: [
       "toggleBorders",
@@ -206,6 +221,7 @@ function drawLayers() {
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (layerIsOn("toggleZones")) drawZones();
   if (layerIsOn("toggleBorders")) drawBorders();
+  if (layerIsOn("toggleJourney")) drawJourney();
   if (layerIsOn("toggleRoutes")) drawRoutes();
   if (layerIsOn("toggleTemperature")) drawTemperature();
   if (layerIsOn("togglePopulation")) drawPopulation();
@@ -853,6 +869,35 @@ function toggleMarkers(event) {
   }
 }
 
+function drawJourney() {
+  TIME && console.time("drawJourney");
+  const zm = Math.max(+ensureEl("zoomExtentMin").value, 0.01);
+  JourneyDraw.redraw(defs, journeys, scale, zm);
+  // Presets only flip layer buttons; they never call toggleJourney/fadeIn. Match visible state to layerIsOn.
+  if (layerIsOn("toggleJourney")) journeys.style("display", null);
+  TIME && console.timeEnd("drawJourney");
+}
+
+function syncJourneyZoom(zoomScale) {
+  if (!layerIsOn("toggleJourney")) return;
+  const jn = journeys.node();
+  if (!jn || getComputedStyle(jn).display === "none") return;
+  const zm = Math.max(+ensureEl("zoomExtentMin").value, 0.01);
+  JourneyDraw.syncZoom(defs, journeys, zoomScale, zm);
+}
+
+function toggleJourney(event) {
+  if (!layerIsOn("toggleJourney")) {
+    turnButtonOn("toggleJourney");
+    drawJourney();
+    if (event && isCtrlClick(event)) editStyle("journeys");
+  } else {
+    if (event && isCtrlClick(event)) return editStyle("journeys");
+    $("#journeys").fadeOut();
+    turnButtonOff("toggleJourney");
+  }
+}
+
 function toggleLabels(event) {
   if (!layerIsOn("toggleLabels")) {
     turnButtonOn("toggleLabels");
@@ -1022,5 +1067,6 @@ function getLayer(id) {
   if (id === "toggleLabels") return $("#labels");
   if (id === "toggleBurgIcons") return $("#icons");
   if (id === "toggleMarkers") return $("#markers");
+  if (id === "toggleJourney") return $("#journeys");
   if (id === "toggleRulers") return $("#ruler");
 }

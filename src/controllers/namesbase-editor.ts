@@ -1,5 +1,6 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
 import { ensureEl, openURL, rn, unique } from "../utils";
+import { escapeHtml } from "../utils/stringUtils";
 
 addListeners();
 
@@ -396,14 +397,6 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
 }
 
 const unsafe = /[|/]/g;
-
-const escapeHtml = (str: string): string =>
-  str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 
 interface ParseError {
   id: number;

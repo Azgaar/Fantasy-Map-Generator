@@ -160,6 +160,8 @@ function applyStyleWithUiRefresh(style) {
 
   drawScaleBar(scaleBar, scale);
   fitScaleBar(scaleBar, svgWidth, svgHeight);
+
+  if (layerIsOn("toggleJourney")) drawJourney();
 }
 
 function addStylePreset() {
@@ -253,6 +255,17 @@ function addStylePreset() {
         "filter"
       ],
       "#ice": ["opacity", "fill", "stroke", "stroke-width", "filter"],
+      "#journeys": [
+        "opacity",
+        "filter",
+        "data-line-screen-px",
+        "data-waypoint-fill",
+        "data-waypoint-stroke",
+        "data-waypoint-r-screen-px",
+        "data-waypoint-ring-screen-px",
+        "data-outline-color",
+        "data-outline-screen-px"
+      ],
       "#emblems": ["opacity", "stroke-width", "filter"],
       "#emblems > #stateEmblems": ["data-size"],
       "#emblems > #provinceEmblems": ["data-size"],

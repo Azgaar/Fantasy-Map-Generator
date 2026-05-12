@@ -30,6 +30,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
   }
 
   const latestPublicChanges = [
+    "Journey layer: draw and edit a directional path on the map",
     "Jagged coastlines",
     "Heightmap Editor: Fill brush",
     "Editors: undo button",

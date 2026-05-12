@@ -95,6 +95,20 @@ export const safeParseJSON = (str: string) => {
 };
 
 /**
+ * Escape a string for safe inclusion in HTML text content or
+ * double-quoted attribute values.
+ * @param str - The input value (coerced to string)
+ * @returns The escaped string
+ */
+export const escapeHtml = (str: string): string =>
+  String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+/**
  * Sanitize a string to be used as an ID
  * @param {string} inputString - The input string
  * @returns {string} - The sanitized ID string

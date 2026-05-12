@@ -77,6 +77,40 @@ function getColor(value, scheme = getColorScheme("bright")) {
 // Toggle style sections on element select
 styleElementSelect.on("change", selectStyleElement);
 
+function journeyStyleHexForPicker(raw, fallback) {
+  const fb = fallback || "#000000";
+  const s = (raw != null && String(raw).trim() !== "" ? String(raw).trim() : fb);
+  if (/^#[\da-fA-F]{6}$/.test(s)) return s;
+  if (/^#[\da-fA-F]{3}$/.test(s)) {
+    const r = s[1],
+      g = s[2],
+      b = s[3];
+    return `#${r}${r}${g}${g}${b}${b}`;
+  }
+  return fb;
+}
+
+/** Fallbacks if TS bundle not loaded yet; normally mirror `window.Journey.STYLE_DEFAULTS`. */
+function journeyUiDefaults() {
+  const d = window.Journey && window.Journey.STYLE_DEFAULTS;
+  return {
+    gradientFromHex: (d && d.gradientFromHex) || "#e81416",
+    gradientToHex: (d && d.gradientToHex) || "#70389d",
+    lineScreenPx: (d && d.lineScreenPx) || 6,
+    waypointRScreenPx: (d && d.waypointRScreenPx) || 9,
+    waypointRingScreenPx: (d && d.waypointRingScreenPx) || 4.5,
+    outlineScreenPx: (d && d.outlineScreenPx) || 2,
+    solidStroke: (d && d.solidStroke) || "#5c5c70",
+    waypointFill: (d && d.waypointFill) || "#ffffff",
+    waypointStroke: (d && d.waypointStroke) || "#000000",
+    outlineColor: (d && d.outlineColor) || "#000000",
+  };
+}
+
+function redrawJourneyIfVisible() {
+  if (typeof drawJourney === "function" && layerIsOn("toggleJourney")) drawJourney();
+}
+
 function selectStyleElement() {
   const styleElement = styleElementSelect.value;
   let el = d3.select("#" + styleElement);
@@ -84,7 +118,10 @@ function selectStyleElement() {
   styleElements.querySelectorAll("tbody").forEach(e => (e.style.display = "none")); // hide all sections
 
   // show alert line if layer is not visible
-  const isLayerOff = styleElement !== "ocean" && (el.style("display") === "none" || !el.selectAll("*").size());
+  const isLayerOff =
+    styleElement !== "ocean" &&
+    styleElement !== "journeys" &&
+    (el.style("display") === "none" || !el.selectAll("*").size());
   styleIsOff.style.display = isLayerOff ? "block" : "none";
 
   // active group element
@@ -201,6 +238,32 @@ function selectStyleElement() {
   if (styleElement === "markers") {
     styleMarkers.style.display = "block";
     styleRescaleMarkers.checked = +markers.attr("rescale");
+  }
+
+  if (styleElement === "journeys") {
+    ensureEl("styleJourney").style.display = "table-row-group";
+    const j = el;
+    const jd = journeyUiDefaults();
+    const numAttr = (name, fb) => {
+      const v = parseFloat(j.attr(name));
+      return Number.isFinite(v) ? v : fb;
+    };
+    ensureEl("styleJourneyLineScreenPx").value = numAttr("data-line-screen-px", jd.lineScreenPx);
+    const wpf = journeyStyleHexForPicker(j.attr("data-waypoint-fill"), jd.waypointFill);
+    ensureEl("styleJourneyWaypointFill").value = wpf;
+    ensureEl("styleJourneyWaypointFillOutput").value = wpf;
+    const wps = journeyStyleHexForPicker(j.attr("data-waypoint-stroke"), jd.waypointStroke);
+    ensureEl("styleJourneyWaypointStroke").value = wps;
+    ensureEl("styleJourneyWaypointStrokeOutput").value = wps;
+    ensureEl("styleJourneyWaypointRScreenPx").value = numAttr("data-waypoint-r-screen-px", jd.waypointRScreenPx);
+    ensureEl("styleJourneyWaypointRingScreenPx").value = numAttr(
+      "data-waypoint-ring-screen-px",
+      jd.waypointRingScreenPx,
+    );
+    const oc = journeyStyleHexForPicker(j.attr("data-outline-color"), jd.outlineColor);
+    ensureEl("styleJourneyOutlineColor").value = oc;
+    ensureEl("styleJourneyOutlineColorOutput").value = oc;
+    ensureEl("styleJourneyOutlineScreenPx").value = numAttr("data-outline-screen-px", jd.outlineScreenPx);
   }
 
   if (styleElement === "gridOverlay") {
@@ -555,6 +618,44 @@ styleGridShiftY.on("input", function () {
 styleRescaleMarkers.on("change", function () {
   markers.attr("rescale", +this.checked);
   invokeActiveZooming();
+});
+
+d3.select("#styleJourneyLineScreenPx").on("input", function () {
+  svg.select("#journeys").attr("data-line-screen-px", this.value);
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneyWaypointFill").on("input", function () {
+  ensureEl("styleJourneyWaypointFillOutput").value = this.value;
+  svg.select("#journeys").attr("data-waypoint-fill", this.value);
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneyWaypointStroke").on("input", function () {
+  ensureEl("styleJourneyWaypointStrokeOutput").value = this.value;
+  svg.select("#journeys").attr("data-waypoint-stroke", this.value);
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneyWaypointRScreenPx").on("input", function () {
+  svg.select("#journeys").attr("data-waypoint-r-screen-px", this.value);
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneyWaypointRingScreenPx").on("input", function () {
+  svg.select("#journeys").attr("data-waypoint-ring-screen-px", this.value);
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneyOutlineColor").on("input", function () {
+  ensureEl("styleJourneyOutlineColorOutput").value = this.value;
+  svg.select("#journeys").attr("data-outline-color", this.value);
+  redrawJourneyIfVisible();
+});
+
+d3.select("#styleJourneyOutlineScreenPx").on("input", function () {
+  svg.select("#journeys").attr("data-outline-screen-px", this.value);
+  redrawJourneyIfVisible();
 });
 
 styleCoastlineAuto.on("change", function () {
