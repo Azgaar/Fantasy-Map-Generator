@@ -90,7 +90,8 @@ function goodsEditorAddLines() {
         <div data-tip="Good name" class="goodName">${good.name}</div>
         <div data-tip="Good tags" class="goodTags" title="${tags}">${tags}</div>
         <div data-tip="Total map-wide availability from biomes and bonus goods, in units" class="goodAvailability">${available}</div>
-        <div data-tip="Total actual produced units aggregated from all burgs" class="goodProduced">${produced}</div>
+        <div data-tip="Click to see which burgs produce this good" class="goodProduced pointer">${produced}</div>
+        <div data-tip="Click to see which burgs produce this good" class="goodProducedIcon pointer" style="width:0; font-size:1.4em;">⚒</div>
         <div data-tip="Base price" class="goodBasePrice">🟡 ${good.value}</div>
         <span data-tip="Edit good" class="icon-pencil goodEdit hide"></span>
         <span data-tip="Toggle good exclusive visibility (pin)" class="icon-pin inactive hide goodPin"></span>
@@ -106,6 +107,12 @@ function goodsEditorAddLines() {
   ensureEl("goodsProduced").innerHTML = String(rn(totalProduced, 2));
 
   body.querySelectorAll("div.states").forEach(el => void el.on("click", selectResourceOnLineClick));
+  body.querySelectorAll<HTMLButtonElement>(".goodProduced, .goodProducedIcon").forEach(el => {
+    el.addEventListener("click", ev => {
+      ev.stopPropagation();
+      openProducersDialog(Number(el.parentElement?.dataset?.id));
+    });
+  });
 
   if (body.dataset.type === "percentage") {
     body.dataset.type = "absolute";
@@ -114,6 +121,45 @@ function goodsEditorAddLines() {
   applySorting(ensureEl("goodsHeader")!);
   applyTagVisibilityFilter();
   $("#goodsEditor").dialog({width: fitContent()});
+}
+
+function openProducersDialog(goodId: number) {
+  const good = Goods.get(goodId);
+  if (!good) return;
+
+  const producers = pack.burgs
+    .filter(b => b.i && !b.removed && (b.produced?.[goodId] ?? 0) > 0)
+    .map(b => ({burg: b, units: b.produced![goodId]}))
+    .sort((a, b) => b.units - a.units);
+
+  if (!producers.length) {
+    alertMessage.innerHTML = `<i style="color:#888">No burgs produced ${good.name} in this cycle.</i>`;
+  } else {
+    const header = /*html*/ `
+          <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
+            <div></div>
+            <div>Burg</div>
+            <div>Units</div>
+         </div>`;
+    const rows = producers
+      .map(
+        ({burg, units}) => /*html*/ `
+          <div data-tip="Click to zoom to burg" class="states pointer" data-x="${burg.x} " data-y="${burg.y}" data-id="${burg.i}">
+            <div class="icon-dot-circled" style="width:1em"></div>
+            <div style="width:7em;">${burg.name}</div>
+            <div style="width:4em;">${units}</div>
+          </div>`
+      )
+      .join("");
+    alertMessage.innerHTML = header + rows;
+    alertMessage.querySelectorAll<HTMLElement>(".states").forEach(row => {
+      row.on("click", () => {
+        zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000);
+      });
+    });
+  }
+
+  $("#alert").dialog({resizable: false, title: `${good.name} producers`, width: "20em"});
 }
 
 function getRuralAvailability(): number[] {

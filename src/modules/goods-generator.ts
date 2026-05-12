@@ -37,11 +37,11 @@ export interface Good {
 export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;
 export type DemandCategory = (typeof DEMAND_PRIORITY)[number];
 export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {
-  food: 0.15,
-  utilities: 0.1,
-  construction: 0.05,
-  military: 0.05,
-  luxury: 0.05
+  food: 0.2,
+  utilities: 0.15,
+  construction: 0.1,
+  military: 0.08,
+  luxury: 0.07
 };
 export const DEMAND_CATEGORY_ICONS: Record<DemandCategory, string> = {
   food: "🍖",
@@ -548,11 +548,11 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food", "aquatic", "fuel"],
     icon: "good-whales",
     color: "#7fcdff",
-    value: 2,
+    value: 1,
     chance: 3,
     distribution: "biome(0) && type('ocean') && maxTemp(7)",
     unit: "barrel",
-    demandCoverage: {food: 0.8, utilities: 0.2},
+    demandCoverage: {food: 1, utilities: 0.2},
     bonus: {population: 1},
     culture: {Naval: 1.4, Nomadic: 0.5}
   },
@@ -652,7 +652,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing"],
     icon: "good-garments",
     color: "#bd21ec",
-    value: 10,
+    value: 8,
     chance: 0,
     recipes: [
       {Cloth: 1, Dyes: 0.5},
@@ -736,7 +736,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ritual", "educational"],
     icon: "good-books",
     color: "#deb887",
-    value: 15,
+    value: 12,
     chance: 0,
     recipes: [
       {Paper: 1, Ink: 0.5},
@@ -765,7 +765,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval"],
     icon: "good-ships",
     color: "#654321",
-    value: 25,
+    value: 20,
     chance: 0,
     recipes: [{Wood: 2, Sails: 1, Ropes: 1, Tar: 1}],
     unit: "ship",
@@ -837,7 +837,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["construction", "military"],
     icon: "good-tools",
     color: "#808080",
-    value: 18,
+    value: 20,
     chance: 0,
     recipes: [
       {Iron: 1, Coal: 2},
@@ -853,7 +853,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["military"],
     icon: "good-arms",
     color: "#333333",
-    value: 22,
+    value: 23,
     chance: 0,
     recipes: [
       {Iron: 0.5, Coal: 1, Leather: 0.5},
@@ -934,7 +934,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food"],
     icon: "good-salted-fish",
     color: "#c2b280",
-    value: 5,
+    value: 4,
     chance: 0,
     recipes: [
       {Fish: 1, Salt: 1},
@@ -957,7 +957,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food", "preservative"],
     icon: "good-vinegar",
     color: "#9b111e",
-    value: 4,
+    value: 3,
     chance: 0,
     recipes: [{Wine: 1}, {Honey: 1}],
     unit: "barrel",
@@ -1004,7 +1004,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food", "luxury"],
     icon: "good-liquor",
     color: "#8a0303",
-    value: 10,
+    value: 8,
     chance: 0,
     recipes: [
       {Grain: 2, Wood: 1, Barrels: 0.5},
@@ -1040,7 +1040,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury", "ritual"],
     icon: "good-soap",
     color: "#e0e4cc",
-    value: 6,
+    value: 5,
     chance: 0,
     recipes: [
       {Olives: 1, Wood: 1},

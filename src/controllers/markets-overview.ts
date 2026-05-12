@@ -74,7 +74,7 @@ function marketsOverviewAddLines(): void {
       <div data-tip="Total stock of all goods in this market" class="marketStock" style="width:5em">${stock}</div>
       <div data-tip="Total gross sales revenue" class="marketSales" style="width:6em">${formatPrice(sales)}</div>
       <div data-tip="Total purchase spending" class="marketBuysCol" style="width:6em">${formatPrice(buys)}</div>
-      <div data-tip="Net income: sales − tax − purchases" class="marketIncome" style="width:6em">${formatPrice(income)}</div>
+      <div data-tip="Net income" class="marketIncome" style="width:6em">${formatPrice(income)}</div>
     </div>`;
   }
 
@@ -211,7 +211,7 @@ function getMarketFinancials(marketId: number): {sales: number; buys: number; in
 
   for (const deal of deals) {
     const amount = deal.units * deal.price;
-    if (deal.phase === "local-sale") {
+    if (deal.phase === "sell") {
       sales += amount;
       const seller = pack.burgs[deal.seller] as Burg | undefined;
       if (seller) tax += amount * Trade.getSalesTaxRate(seller);

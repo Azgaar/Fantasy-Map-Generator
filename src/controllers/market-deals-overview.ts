@@ -1,34 +1,11 @@
 import type {Burg} from "../modules/burgs-generator";
-import type {Deal, Market, TradePhase} from "../modules/trade-generator";
+import type {Deal, Market} from "../modules/trade-generator";
 import {ensureEl, formatPrice, rn} from "../utils";
 
 let isInitialized = false;
 let activeMarketId = 0;
 
-type DealKind = "BUY" | "SELL" | "GLOBAL";
-
-const PHASE: Record<TradePhase, {type: DealKind; tip: string; color: string}> = {
-  "local-production-buy": {
-    type: "BUY",
-    tip: "Local market purchase for production",
-    color: "#2a6"
-  },
-  "local-demand-buy": {
-    type: "BUY",
-    tip: "Local market purchase to fill burg demand",
-    color: "#2a6"
-  },
-  "local-sale": {
-    type: "SELL",
-    tip: "Sale to the local market",
-    color: "#a33"
-  },
-  global: {
-    type: "GLOBAL",
-    tip: "Redistribution between markets",
-    color: "#5f6f7a"
-  }
-};
+type DealKind = "BUY" | "SELL";
 
 export function open(marketId: number): void {
   const market = Trade.getMarket(marketId);
@@ -51,6 +28,17 @@ export function open(marketId: number): void {
   if (!isInitialized) {
     ensureEl("marketDealsRefresh").on("click", marketDealsAddLines);
     ensureEl("marketDealsExport").on("click", downloadDealsCsv);
+    ensureEl("marketDealsBody").on("click", ev => {
+      const el = ev.target as HTMLElement;
+      if (!el.classList.contains("marketDealCounterparty")) return;
+      const dealId = el.closest<HTMLElement>(".marketDeal")?.dataset.id;
+      const deal = pack.deals.find(d => d.id === Number(dealId));
+      if (!deal) return;
+
+      const counterpartyId = deal.phase === "sell" ? deal.seller : deal.buyer;
+      const burgId = getPartyBurgId(counterpartyId, market);
+      if (burgId) zoomTo(pack.burgs[burgId].x, pack.burgs[burgId].y, 8, 2000);
+    });
     isInitialized = true;
   }
 }
@@ -82,27 +70,47 @@ function closeMarketDeals(): void {
   ensureEl("marketDealsBody").innerHTML = "";
 }
 
+function typeBadge(type: DealKind): string {
+  const base =
+    "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
+  if (type === "BUY") return `<span style="${base};background:#f5d9d6;color:#a33">BUY</span>`;
+  if (type === "SELL") return `<span style="${base};background:#dff0e2;color:#2f8a46">SELL</span>`;
+  return `<span style="${base};background:#edf1f4;color:#5f6f7a">GLOBAL</span>`;
+}
+
+function getPartyBurgId(id: number, currentMarket: Market): number {
+  if (id === currentMarket.i) return currentMarket.centerBurgId;
+  const burg = pack.burgs[id] as Burg | undefined;
+  if (burg && !burg.removed) return id;
+  const market = Trade.getMarket(id);
+  if (market) return market.centerBurgId;
+  return 0;
+}
+
 function renderDealLine(deal: Deal, market: Market): string {
   const good = Goods.get(deal.goodId);
   if (!good) return "";
 
   const stroke = Goods.getStroke(good.color);
-  const phase = PHASE[deal.phase];
+  const type: DealKind = deal.phase === "sell" ? "SELL" : "BUY";
+  const tip = deal.phase === "sell" ? "Sale to the local market" : "Market purchase";
   const dealNet = getDealNet(deal);
 
-  const counterparty = getPartyLabel(phase.type === "BUY" ? deal.buyer : deal.seller, market);
-  const {type, tip, color} = PHASE[deal.phase];
+  const counterparty = getPartyLabel(
+    deal.phase === "sell" ? deal.seller : deal.buyer === activeMarketId ? deal.seller : deal.buyer,
+    market
+  );
   const incomeColor = dealNet >= 0 ? "#2a6" : "#c44";
 
-  return /* html */ `<div class="states marketDeal" data-good="${good.name}" data-type="${type}" data-units="${rn(deal.units, 2)}" data-counterparty="${counterparty}" data-income="${dealNet}">
-      <svg data-tip="Good icon" width="1.4em" height="1.4em" class="goodIcon">
+  return /* html */ `<div class="states marketDeal" data-id="${deal.id}" data-good="${good.name}" data-type="${type}" data-units="${rn(deal.units, 2)}" data-counterparty="${counterparty}" data-income="${dealNet}">
+      <svg data-tip="Good icon" width="1.3em" height="1.3em" class="goodIcon">
         <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
         <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
       </svg>
       <div data-tip="Good name" class="goodName">${good.name}</div>
-      <div class="marketDealType" data-tip="${tip}" style="color:${color}">${type}</div>
+      <div class="marketDealType" data-tip="${tip}">${typeBadge(type)}</div>
+      <div class="marketDealCounterparty pointer" data-tip="Click to zoom">${counterparty}</div>
       <div class="marketDealUnits">${rn(deal.units, 2)}</div>
-      <div class="marketDealCounterparty" data-tip="${counterparty}">${counterparty}</div>
       <div class="marketDealIncome" style="color:${incomeColor}">${formatPrice(dealNet)}</div>
     </div>`;
 }
@@ -123,15 +131,15 @@ function getPartyLabel(id: number, currentMarket: Market): string {
 }
 
 function getDealSpend(deal: Deal): number {
-  return deal.phase === "local-sale" ? 0 : deal.units * deal.price;
+  return deal.phase === "sell" ? 0 : deal.units * deal.price;
 }
 
 function getDealRevenue(deal: Deal): number {
-  return deal.phase === "local-sale" ? deal.units * deal.price : 0;
+  return deal.phase === "sell" ? deal.units * deal.price : 0;
 }
 
 function getDealTax(deal: Deal): number {
-  if (deal.phase !== "local-sale") return 0;
+  if (deal.phase !== "sell") return 0;
   const seller = pack.burgs[deal.seller] as Burg | undefined;
   return seller ? getDealRevenue(deal) * Trade.getSalesTaxRate(seller) : 0;
 }
@@ -152,7 +160,7 @@ function downloadDealsCsv(): void {
 
     const buyer = getPartyLabel(deal.buyer, market);
     const seller = getPartyLabel(deal.seller, market);
-    const type = PHASE[deal.phase].type;
+    const type = deal.phase === "sell" ? "SELL" : "BUY";
 
     csv += [
       deal.id,

@@ -3,7 +3,7 @@ import {rn} from "../utils";
 import type {Burg} from "./burgs-generator";
 import type {DemandCategory, Good} from "./goods-generator";
 import {DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "./goods-generator";
-import type {BurgProductionData} from "./production-generator";
+import type {ProductionHistoryEntry} from "./production-generator";
 
 export const DEFAULT_SALES_TAX = 0.2;
 const DEFAULT_TRADE_RESERVE_FACTOR = 0.2;
@@ -13,7 +13,7 @@ const SELL_PRESSURE_FACTOR = 0.01;
 const PRICE_FLOOR_FACTOR = 0.25;
 const PRICE_CEILING_FACTOR = 4.0;
 
-export type TradePhase = "local-production-buy" | "local-sale" | "global" | "local-demand-buy";
+export type TradePhase = "buy" | "sell";
 
 export type Deal = {
   id: number;
@@ -123,7 +123,7 @@ export class TradeModule {
     const deal: Deal = {id: this.data.deals.length, ...data, units: rn(data.units, 2)};
     this.data.deals.push(deal);
 
-    const isLocalSale = deal.phase === "local-sale";
+    const isLocalSale = deal.phase === "sell";
     const seller = isLocalSale ? (pack.burgs[deal.seller] ?? null) : null;
     const sellerTaxRate = seller ? this.getSalesTaxRate(seller) : 0;
     const taxAmount = isLocalSale ? deal.units * deal.price * sellerTaxRate : 0;
@@ -143,7 +143,11 @@ export class TradeModule {
     return Array(categories.length).fill(0);
   }
 
-  updateMarketDemand(goods: Good[], productionData: Map<number, BurgProductionData>): void {
+  updateMarketDemand(
+    goods: Good[],
+    productionData: Map<number, ProductionHistoryEntry[]>,
+    demandInventory: Map<number, Record<number, number>>
+  ): void {
     const goodById = new Map<number, Good>(goods.map(good => [good.i, good]));
 
     for (const market of this.data.markets) {
@@ -158,7 +162,7 @@ export class TradeModule {
         const burgDemandTargets = DEMAND_PRIORITY.map(
           category => (burg.population || 0) * DEMAND_TARGET_FACTORS[category]
         );
-        const burgCoverage = this.calculateDemandCoverage(data.finalInventory, goodById);
+        const burgCoverage = this.calculateDemandCoverage(demandInventory.get(burgId) ?? {}, goodById);
 
         for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
           aggregatedUncoveredDemand[categoryIndex] += Math.max(
@@ -174,8 +178,12 @@ export class TradeModule {
     }
   }
 
-  redistributeAcrossMarkets(goods: Good[], productionData: Map<number, BurgProductionData>): void {
-    this.updateMarketDemand(goods, productionData);
+  redistributeAcrossMarkets(
+    goods: Good[],
+    productionData: Map<number, ProductionHistoryEntry[]>,
+    demandInventory: Map<number, Record<number, number>>
+  ): void {
+    this.updateMarketDemand(goods, productionData, demandInventory);
     const goodById = new Map<number, Good>(goods.map(good => [good.i, good]));
     const exportPools = new Map<number, Record<number, number>>();
     const uncoveredDemandByMarket = new Map<number, number[]>();
@@ -191,13 +199,12 @@ export class TradeModule {
         const burgDemandTargets = DEMAND_PRIORITY.map(
           category => (burg.population || 0) * DEMAND_TARGET_FACTORS[category]
         );
-        const burgCoverage = this.calculateDemandCoverage(data.finalInventory, goodById);
+        const burgCoverage = this.calculateDemandCoverage(demandInventory.get(burgId) ?? {}, goodById);
 
         for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
           marketDemand[categoryIndex] += Math.max(0, burgDemandTargets[categoryIndex] - burgCoverage[categoryIndex]);
         }
       }
-
       const demandTargets = marketDemand.map(value => value * (1 + DEFAULT_TRADE_RESERVE_FACTOR));
       const marketInventory = this.getMarketInventory(market);
       const demandCoverage = this.calculateDemandCoverage(marketInventory, goodById);
@@ -251,7 +258,7 @@ export class TradeModule {
           const marketPrice = this.getMarketGood(candidate.exporter, candidate.goodId, candidate.good.value).sellPrice;
           this.recordDeal({
             market: importer.i,
-            phase: "global",
+            phase: "buy",
             goodId: candidate.goodId,
             units,
             buyer: importer.i,
@@ -276,23 +283,23 @@ export class TradeModule {
       }
     }
 
-    this.updateMarketDemand(goods, productionData);
+    this.updateMarketDemand(goods, productionData, demandInventory);
   }
 
-  buyFromMarket(params: {burg: Burg; good: Good; units: number; marketPrice: number; phase: TradePhase}) {
+  buyFromMarket(params: {burg: Burg; good: Good; units: number; marketPrice: number}) {
     const {burg, good, marketPrice} = params;
     const market = this.getMarketForBurg(burg);
-    if (!market || params.units <= 0) return {units: 0, totalCost: 0, taxAmount: 0};
+    if (!market || params.units <= 0) return {units: 0, totalCost: 0, taxAmount: 0, dealId: null};
 
     const marketGood = this.getMarketGood(market, good.i, good.value);
     const actualUnits = Math.min(params.units, marketGood.stock || 0);
-    if (actualUnits <= 0) return {units: 0, totalCost: 0, taxAmount: 0};
+    if (actualUnits <= 0) return {units: 0, totalCost: 0, taxAmount: 0, dealId: null};
 
     marketGood.stock = Math.max(0, marketGood.stock - actualUnits);
 
-    this.recordDeal({
+    const deal = this.recordDeal({
       market: market.i,
-      phase: params.phase,
+      phase: "buy",
       goodId: good.i,
       units: actualUnits,
       buyer: burg.i!,
@@ -300,13 +307,13 @@ export class TradeModule {
       price: marketPrice
     });
 
-    return {units: actualUnits, totalCost: actualUnits * marketPrice, taxAmount: 0};
+    return {units: actualUnits, totalCost: actualUnits * marketPrice, taxAmount: 0, dealId: deal.id};
   }
 
-  sellToMarket(params: {burg: Burg; good: Good; units: number; marketPrice: number; phase: TradePhase}) {
+  sellToMarket(params: {burg: Burg; good: Good; units: number; marketPrice: number}) {
     const {burg, good, marketPrice} = params;
     const market = this.getMarketForBurg(burg);
-    if (!market || params.units <= 0) return {units: 0, revenue: 0, taxAmount: 0};
+    if (!market || params.units <= 0) return {units: 0, revenue: 0, taxAmount: 0, dealId: null};
 
     const marketGood = this.getMarketGood(market, good.i, good.value);
     marketGood.stock += params.units;
@@ -314,9 +321,9 @@ export class TradeModule {
     const taxAmount = grossRevenue * this.getSalesTaxRate(burg);
     const revenue = grossRevenue - taxAmount;
 
-    this.recordDeal({
+    const deal = this.recordDeal({
       market: market.i,
-      phase: params.phase,
+      phase: "sell",
       goodId: good.i,
       units: params.units,
       buyer: market.i,
@@ -324,7 +331,7 @@ export class TradeModule {
       price: marketPrice
     });
 
-    return {units: params.units, revenue, taxAmount};
+    return {units: params.units, revenue, taxAmount, dealId: deal.id};
   }
 
   private buildMarkets(goods: Good[], burgs: Burg[]): Market[] {
