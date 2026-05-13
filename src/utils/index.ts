@@ -2,6 +2,7 @@ import {createTypedArray, getTypedArray, last, TYPED_ARRAY_MAX, unique} from "./
 import {abbreviate, getAdjective, isVowel, list, nth, trimVowels} from "./languageUtils";
 import {lerp, lim, minmax, normalize, rn} from "./numberUtils";
 import "./polyfills";
+import {window} from "d3";
 import {C_12, getColors, getMixedColor, getRandomColor, toHEX} from "./colorUtils";
 import {
   clipPoly,
@@ -177,7 +178,6 @@ window.TYPED_ARRAY_MAX = TYPED_ARRAY_MAX;
 export {
   abbreviate,
   biased,
-  ensureEl,
   C_12,
   calculateVoronoi,
   capitalize,
@@ -194,12 +194,14 @@ export {
   drawPolygons,
   drawRouteConnections,
   each,
+  ensureEl,
   findAllCellsInRadius,
   findAllInQuadtree,
   findClosestCell,
   findGridAll,
   findGridCell,
   findPath,
+  formatPrice,
   gauss,
   generateDate,
   generateGrid,
@@ -239,9 +241,9 @@ export {
   nth,
   openURL,
   P,
+  Pint,
   parseError,
   parseTransform,
-  Pint,
   poissonDiscSampler,
   ra,
   rand,
@@ -253,12 +255,12 @@ export {
   sanitizeId,
   shouldRegenerateGrid,
   si,
-  formatPrice,
   splitInTwo,
+  TYPED_ARRAY_MAX,
+  type TYPED_ARRAY_MAX_VALUES,
   throttle,
   toHEX,
   trimVowels,
-  TYPED_ARRAY_MAX,
   unique,
   wiki
 };

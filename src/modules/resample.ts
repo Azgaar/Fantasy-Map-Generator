@@ -184,6 +184,7 @@ class Resampler {
       .filter((river) => river !== null);
 
     pack.rivers.forEach((river) => {
+      river.parent = Rivers.getParent(river.i);
       river.basin = Rivers.getBasin(river.i);
       river.length = Rivers.getApproximateLength(river.points);
     });

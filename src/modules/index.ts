@@ -24,3 +24,4 @@ import "./trade-generator";
 import "../renderers/draw-goods";
 import "../controllers/goods-editor";
 import "./resample";
+import "./ui-tour";

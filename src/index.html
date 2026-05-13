@@ -244,24 +244,11 @@
           <filter
             id="paper"
             name="Paper"
-            x="-20%"
-            y="-20%"
-            width="140%"
-            height="140%"
             filterUnits="objectBoundingBox"
             primitiveUnits="userSpaceOnUse"
             color-interpolation-filters="sRGB"
           >
-            <feGaussianBlur
-              stdDeviation="1 1"
-              x="0%"
-              y="0%"
-              width="100%"
-              height="100%"
-              in="SourceGraphic"
-              edgeMode="none"
-              result="blur"
-            />
+            <feGaussianBlur stdDeviation="1 1" in="SourceGraphic" edgeMode="none" result="blur" />
             <feTurbulence
               type="fractalNoise"
               baseFrequency="0.05 0.05"
@@ -280,38 +267,16 @@
               <feDistantLight azimuth="45" elevation="20" />
             </feDiffuseLighting>
             <feComposite in="diffuseLighting" in2="blur" operator="lighter" result="composite" />
-            <feComposite
-              in="composite"
-              in2="SourceGraphic"
-              operator="in"
-              x="0%"
-              y="0%"
-              width="100%"
-              height="100%"
-              result="composite1"
-            />
+            <feComposite in="composite" in2="SourceGraphic" operator="in" result="composite1" />
           </filter>
           <filter
             id="crumpled"
             name="Crumpled"
-            x="-20%"
-            y="-20%"
-            width="140%"
-            height="140%"
             filterUnits="objectBoundingBox"
             primitiveUnits="userSpaceOnUse"
             color-interpolation-filters="sRGB"
           >
-            <feGaussianBlur
-              stdDeviation="2 2"
-              x="0%"
-              y="0%"
-              width="100%"
-              height="100%"
-              in="SourceGraphic"
-              edgeMode="none"
-              result="blur"
-            />
+            <feGaussianBlur stdDeviation="2 2" in="SourceGraphic" edgeMode="none" result="blur" />
             <feTurbulence
               type="turbulence"
               baseFrequency="0.05 0.05"
@@ -330,16 +295,7 @@
               <feDistantLight azimuth="320" elevation="10" />
             </feDiffuseLighting>
             <feComposite in="diffuseLighting" in2="blur" operator="lighter" result="composite" />
-            <feComposite
-              in="composite"
-              in2="SourceGraphic"
-              operator="in"
-              x="0%"
-              y="0%"
-              width="100%"
-              height="100%"
-              result="composite1"
-            />
+            <feComposite in="composite" in2="SourceGraphic" operator="in" result="composite1" />
           </filter>
           <filter id="filter-grayscale" name="Grayscale">
             <feColorMatrix
@@ -1438,6 +1394,13 @@
               </tr>
             </tbody>
             <tbody id="styleVisibility">
+              <tr data-tip="Completely hide the selected labels group using display:none">
+                <td colspan="2">
+                  <input id="styleLabelsHideGroup" class="checkbox" type="checkbox" />
+                  <label for="styleLabelsHideGroup" class="checkbox-label">Hide selected group</label>
+                </td>
+              </tr>
+
               <tr data-tip="Allow system to hide labels if their size in too small or too big on that scale">
                 <td colspan="2">
                   <input id="hideLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked />
@@ -2276,6 +2239,15 @@
           </div>
         </div>
         <div id="aboutContent" class="tabcontent">
+          <p style="text-align: center; margin-top: 1em">
+            <button
+              id="startTourButton"
+              onclick="UITour.start()"
+              data-tip="Take an interactive tour of the map generator"
+            >
+              &#9654; Take an Interactive Tour
+            </button>
+          </p>
           <p>
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank"
@@ -6217,6 +6189,13 @@
       <input type="file" accept=".json" id="styleToLoad" />
       <input type="file" accept=".csv" id="culturesCSVToLoad" />
     </div>
+    <div id="tourPromptButton" style="display: none" data-tip="Take an interactive tour of the map generator">
+      <button type="button" aria-label="Launch UI Tour">
+        <svg preserveAspectRatio="xMidYMid" viewBox="0 0 58 52" height="30px" width="30px">
+          <path d="M20 10 L20 42 L42 26 Z" />
+        </svg>
+      </button>
+    </div>
     <!-- reusable svg elements -->
     <svg id="defElements" width="0" height="0" style="position: absolute">
       <defs>
@@ -8796,15 +8775,13 @@
     <script defer src="modules/ui/general.js?v=1.120.5"></script>
     <script defer src="modules/ui/options.js?v=1.120.5"></script>
     <script defer src="main.js?v=1.120.5"></script>
-    <script defer src="modules/ui/style.js?v=1.120.5"></script>
+    <script defer src="modules/ui/style.js?v=1.122.0"></script>
     <script defer src="modules/ui/editors.js?v=1.120.5"></script>
     <script defer src="modules/ui/tools.js?v=1.120.5"></script>
     <script defer src="modules/ui/world-configurator.js?v=1.120.5"></script>
     <script defer src="modules/ui/heightmap-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/provinces-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/biomes-editor.js?v=1.112.0"></script>
-    <!-- namesbase-editor migrated to src/controllers/namesbase-editor.ts -->
-    <!-- elevation-profile migrated to src/controllers/elevation-profile.ts -->
     <script defer src="modules/ui/temperature-graph.js?v=1.106.6"></script>
     <script defer src="modules/ui/routes-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/routes-creator.js?v=1.120.5"></script>
