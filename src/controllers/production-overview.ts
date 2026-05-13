@@ -73,21 +73,21 @@ export function open(burgId: number): void {
     const commonStyles =
       "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
     if (type === "BUY")
-      return `<span style="${commonStyles};background:#f5d9d6;color:#a33" title="Local market purchase">BUY</span>`;
+      return `<span style="${commonStyles};background:#f5d9d6;color:#a33" data-tip="Local market purchase">BUY</span>`;
     if (type === "SELL")
-      return `<span style="${commonStyles};background:#dff0e2;color:#2f8a46" title="Sale to local market">SELL</span>`;
-    return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" title="Manufacturing step">MFG</span>`;
+      return `<span style="${commonStyles};background:#dff0e2;color:#2f8a46" data-tip="Sale to local market">SELL</span>`;
+    return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" data-tip="Manufacturing step">MFG</span>`;
   };
   const modifierBadge = (modifier: number) =>
-    `<span style="display:inline-block;margin-left:4px;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35;background:#edf1f4;color:#5f6f7a" title="Culture type production modifier. Produced units are multiplied by this value.">x${rn(modifier, 2)}</span>`;
+    `<span style="display:inline-block;margin-left:4px;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35;background:#edf1f4;color:#5f6f7a" data-tip="Culture type production modifier. Produced units are multiplied by this value.">x${rn(modifier, 2)}</span>`;
 
   const renderGoodLabel = (id: number, suffix = "") => `${goodDot(id)}${goodName(id)}${suffix}`;
   const renderDataCell = (content: string | number, align: "left" | "right" = "left", extra = "") =>
     `<td style="${align === "right" ? styles.cellRight : styles.cell}${extra ? `;${extra}` : ""}">${content}</td>`;
   const renderHeaderCell = (content: string, align: "left" | "right" = "left", title = "") =>
-    `<th style="${align === "right" ? styles.cellRight : styles.cell}"${title ? ` title="${title}"` : ""}>${content}</th>`;
-  const renderSection = (title: string, content: string, titleTooltip = "") =>
-    `<div style="margin-bottom:.9em"><div style="${styles.sectionTitle}"${titleTooltip ? ` title="${titleTooltip}"` : ""}>${title}</div>${content}</div>`;
+    `<th style="${align === "right" ? styles.cellRight : styles.cell}"${title ? ` data-tip="${title}"` : ""}>${content}</th>`;
+  const renderSection = (title: string, content: string, tooltip = "") =>
+    `<div style="margin-bottom:.9em"><div style="${styles.sectionTitle}"${tooltip ? ` data-tip="${tooltip}"` : ""}>${title}</div>${content}</div>`;
   const renderIncomeCell = (value: number) => {
     const extraStyle = value >= 0 ? styles.positive : styles.warning;
     return `<td style="${styles.cellRight};${extraStyle}">${formatPrice(value)}</td>`;
@@ -123,11 +123,11 @@ export function open(burgId: number): void {
       ? DEMAND_PRIORITY.flatMap((category, index) => {
           const value = values[index] || 0;
           if (onlyPositive && value <= 0.001) return [];
-          return `<span title="${category}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
+          return `<span data-tip="${category}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
         })
       : (Object.entries(values) as [DemandCategory, number][]).flatMap(([category, value]) => {
           if (onlyPositive && value <= 0.001) return [];
-          return `<span title="${category}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
+          return `<span data-tip="${category}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
         });
 
     return entries.join(` <span style="${styles.divider}">•</span> `);
@@ -205,7 +205,7 @@ export function open(burgId: number): void {
   }) => {
     const { targetId, goodId, type, units, details, income, detailsHtml } = params;
     return [
-      /*html*/ `<tr data-target="${targetId}" style="${styles.bodyRow};cursor:pointer" title="Click to expand deal details">
+      /*html*/ `<tr data-target="${targetId}" style="${styles.bodyRow};cursor:pointer" data-tip="Click to expand deal details">
         ${renderDataCell(renderTaggedGood(goodId, type))}
         ${renderDataCell(rn(units, 2), "right")}
         <td style="${styles.cell}">${details}</td>
@@ -245,7 +245,7 @@ export function open(burgId: number): void {
       const candidatesId = `candidates${stepIndex++}`;
       const candidatesHtml = renderDecisionDetails(mfg.candidates);
       const rowAttrs = candidatesHtml
-        ? ` data-target="${candidatesId}" style="${styles.bodyRow};cursor:pointer" title="Click to expand decision details"`
+        ? ` data-target="${candidatesId}" style="${styles.bodyRow};cursor:pointer" data-tip="Click to expand decision details"`
         : ` style="${styles.bodyRow}"`;
       const cultureSuffix = mfg.cultureModifier !== 1 ? ` ${modifierBadge(mfg.cultureModifier)}` : "";
       const allInputs = mfg.recipe.map(item => `${rn(item.amount, 2)} ${goodDot(item.goodId)}`).join(` and `);
@@ -324,10 +324,10 @@ export function open(burgId: number): void {
       <div><b>Initial Demand:</b> ${renderDemand(initialDemand)}</div>
       <div><b>Uncovered Demand:</b> ${renderDemand(uncoveredDemand, true) || "none"}</div>
       <div>
-        <span title="Product is local sale revenue minus purchased ingredient costs during the production. Never negative."><b>Product:</b> <span style="${styles.positive}">${formatPrice(grossProduct)}</span></span>
-        <span title="Product per capita: gross product divided by population."><b>Wealth:</b> <span style="${productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(productPerCapita)}</span></span>
-        <span title="Sales Tax is paid by the seller on local sale deals. It is deducted from gross sale value and transferred to the state treasury."><b>Total Tax:</b> <span style="${totalTax >= 0 ? styles.warning : styles.subtle}">${formatPrice(totalTax)}</span></span>
-        <span title="Net burg treasury after local buying, local sales, and final local demand fill."><b>Treasury:</b> <span style="${treasuryAfter >= 0 ? styles.positive : styles.negative}">${formatPrice(treasuryAfter)}</span></span>
+        <span data-tip="Product is local sale revenue minus purchased ingredient costs during the production. Never negative."><b>Product:</b> <span style="${styles.positive}">${formatPrice(grossProduct)}</span></span>
+        <span data-tip="Product per capita: gross product divided by population."><b>Wealth:</b> <span style="${productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(productPerCapita)}</span></span>
+        <span data-tip="Sales Tax is paid by the seller on local sale deals. It is deducted from gross sale value and transferred to the state treasury."><b>Total Tax:</b> <span style="${totalTax >= 0 ? styles.warning : styles.subtle}">${formatPrice(totalTax)}</span></span>
+        <span data-tip="Net burg treasury after local buying, local sales, and final local demand fill."><b>Treasury:</b> <span style="${treasuryAfter >= 0 ? styles.positive : styles.negative}">${formatPrice(treasuryAfter)}</span></span>
       </div>
     </div>`;
 
