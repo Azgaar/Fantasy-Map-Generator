@@ -1,4 +1,4 @@
-import {color, curveBasisClosed, curveLinearClosed, line} from "d3";
+import {color, curveBasisClosed, line} from "d3";
 import type {Market} from "../modules/trade-generator";
 import {rn} from "../utils";
 import {getIsolines} from "../utils/pathUtils";

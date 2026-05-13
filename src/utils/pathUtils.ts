@@ -83,7 +83,7 @@ const restorePath = (exit: number, start: number, from: number[]): number[] => {
  */
 export const getIsolines = (
   {cells, vertices, features}: PackedGraph,
-  getType: (cellId: number) => string | number,
+  getType: (cellId: number) => string | number | null,
   options: {polygons?: boolean; fill?: boolean; halo?: boolean; waterGap?: boolean} = {
     polygons: false,
     fill: false,
@@ -104,6 +104,8 @@ export const getIsolines = (
     addToChecked(cellId);
 
     const type = getType(cellId);
+    if (type === null) continue;
+
     const ofSameType = (cellId: number) => getType(cellId) === type;
     const ofDifferentType = (cellId: number) => getType(cellId) !== type;
 
@@ -217,14 +219,14 @@ export const getVertexPath = (cellsArray: number[], packedGraph: PackedGraph = {
  */
 export const getPolesOfInaccessibility = (
   graph: PackedGraph,
-  getType: (cellId: number) => string
+  getType: (cellId: number) => string | number
 ): Record<string, [number, number]> => {
   const isolines = getIsolines(graph, getType, {polygons: true});
 
   const poles = Object.entries(isolines).map(([id, isoline]) => {
     const multiPolygon = (isoline.polygons as unknown as number[][][]).sort((a, b) => b.length - a.length);
     const [x, y] = polylabel(multiPolygon, 20);
-    return [id, [rn(x), rn(y)] as [number, number]];
+    return [id, [rn(x), rn(y)]];
   });
 
   return Object.fromEntries(poles);

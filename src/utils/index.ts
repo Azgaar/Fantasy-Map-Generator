@@ -2,7 +2,6 @@ import {createTypedArray, getTypedArray, last, TYPED_ARRAY_MAX, unique} from "./
 import {abbreviate, getAdjective, isVowel, list, nth, trimVowels} from "./languageUtils";
 import {lerp, lim, minmax, normalize, rn} from "./numberUtils";
 import "./polyfills";
-import {window} from "d3";
 import {C_12, getColors, getMixedColor, getRandomColor, toHEX} from "./colorUtils";
 import {
   clipPoly,
@@ -257,7 +256,6 @@ export {
   si,
   splitInTwo,
   TYPED_ARRAY_MAX,
-  type TYPED_ARRAY_MAX_VALUES,
   throttle,
   toHEX,
   trimVowels,

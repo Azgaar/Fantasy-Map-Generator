@@ -30,6 +30,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
   }
 
   const latestPublicChanges = [
+    "Goods, trade and economic simulation",
     "Jagged coastlines",
     "Heightmap Editor: Fill brush",
     "Editors: undo button",
