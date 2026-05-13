@@ -19,7 +19,12 @@ export function open(): void {
     resizable: false,
     width: "auto",
     close: closeMarketsOverview,
-    position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
+    position: {
+      my: "right top",
+      at: "right-10 top+10",
+      of: "svg",
+      collision: "fit"
+    }
   });
 
   if (!isInitialized) {
@@ -123,7 +128,12 @@ function openCompareDialog(): void {
     title: "Compare Prices",
     resizable: false,
     width: "auto",
-    position: {my: "right top", at: "left-10 top", of: "#marketsOverview", collision: "fit"}
+    position: {
+      my: "right top",
+      at: "left-10 top",
+      of: "#marketsOverview",
+      collision: "fit"
+    }
   });
   if (!isCompareInitialized) {
     ensureEl("marketsGoodCompareSelect").on("change", () => {
@@ -195,7 +205,11 @@ function getMarketBurgs(marketId: number): number {
   return (pack.burgs as Burg[]).filter(b => b.i && !b.removed && marketArr[b.cell] === marketId).length;
 }
 
-function getMarketFinancials(marketId: number): {sales: number; buys: number; income: number} {
+function getMarketFinancials(marketId: number): {
+  sales: number;
+  buys: number;
+  income: number;
+} {
   const deals: Deal[] = (pack.deals || []).filter((deal: Deal) => deal.market === marketId);
   let sales = 0;
   let buys = 0;
@@ -212,7 +226,11 @@ function getMarketFinancials(marketId: number): {sales: number; buys: number; in
     }
   }
 
-  return {sales: rn(sales, 2), buys: rn(buys, 2), income: rn(sales - tax - buys, 2)};
+  return {
+    sales: rn(sales, 2),
+    buys: rn(buys, 2),
+    income: rn(sales - tax - buys, 2)
+  };
 }
 
 function updateFooter(count: number, avgSales: number, avgBuys: number, avgIncome: number): void {

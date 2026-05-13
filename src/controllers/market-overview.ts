@@ -1,6 +1,6 @@
-import type {Burg} from "../modules/burgs-generator";
-import type {Market} from "../modules/trade-generator";
-import {ensureEl, formatPrice, rn} from "../utils";
+import type { Burg } from "../modules/burgs-generator";
+import type { Market } from "../modules/trade-generator";
+import { ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
 let activeMarketId = 0;
@@ -11,7 +11,12 @@ export function open(marketId: number): void {
 
   const market = Trade.getMarket(marketId);
   if (!market) {
-    tip("Invalid market. The selected market does not exist", true, "error", 5000);
+    tip(
+      "Invalid market. The selected market does not exist",
+      true,
+      "error",
+      5000,
+    );
     return;
   }
 
@@ -26,14 +31,21 @@ export function open(marketId: number): void {
     resizable: false,
     width: "auto",
     close: closeMarketOverview,
-    position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
+    position: {
+      my: "right top",
+      at: "right-10 top+10",
+      of: "svg",
+      collision: "fit",
+    },
   });
 
   if (!isInitialized) {
     ensureEl("marketOverviewRefresh").on("click", marketOverviewAddLines);
     ensureEl("marketOverviewExport").on("click", downloadStockCsv);
     ensureEl("marketOverviewToggleGoods").on("click", toggleGoodsVisibility);
-    ensureEl("marketOverviewOpenDeals").on("click", () => window.MarketDealsOverview.open(activeMarketId));
+    ensureEl("marketOverviewOpenDeals").on("click", () =>
+      window.MarketDealsOverview.open(activeMarketId),
+    );
     isInitialized = true;
   }
 }
@@ -41,13 +53,23 @@ export function open(marketId: number): void {
 function marketOverviewAddLines() {
   const market = Trade.getMarket(activeMarketId);
   if (!market) {
-    tip("Invalid market. The selected market does not exist", true, "error", 5000);
+    tip(
+      "Invalid market. The selected market does not exist",
+      true,
+      "error",
+      5000,
+    );
     return;
   }
 
   const centerBurg = pack.burgs[market.centerBurgId] as Burg | undefined;
   if (!centerBurg || centerBurg.removed) {
-    tip("Invalid market. The selected market has no center burg", true, "error", 5000);
+    tip(
+      "Invalid market. The selected market has no center burg",
+      true,
+      "error",
+      5000,
+    );
     return;
   }
 
@@ -71,9 +93,13 @@ function marketOverviewAddLines() {
       <div data-tip="Good price" class="marketGoodPrice">${formatPrice(marketGood.price)}</div>
     </div>`;
   }
-  ensureEl("marketOverviewGoodsBody").innerHTML = lines || "No market goods available";
+  ensureEl("marketOverviewGoodsBody").innerHTML =
+    lines || "No market goods available";
 
-  const totalUnits = Object.values(market.goods).reduce((sum, mg) => sum + mg.stock, 0);
+  const totalUnits = Object.values(market.goods).reduce(
+    (sum, mg) => sum + mg.stock,
+    0,
+  );
   ensureEl("marketOverviewSummary").innerHTML = /*html*/ `
     <div style="margin-left:5px">Owner: ${getOwnerStateName(market)}</div>
     <div style="margin-left:5px">Cells: ${pack.cells.market.reduce((count, m) => count + (m === market.i ? 1 : 0), 0)}</div>
@@ -81,12 +107,15 @@ function marketOverviewAddLines() {
     <div style="margin-left:12px">Stock: ${rn(totalUnits, 2)}</div>`;
 
   applySorting(ensureEl("marketOverviewHeader"));
-  $("#marketOverview").dialog({width: fitContent()});
+  $("#marketOverview").dialog({ width: fitContent() });
 }
 
 function toggleGoodsVisibility() {
   showAllGoods = !showAllGoods;
-  ensureEl("marketOverviewToggleGoods").classList.toggle("active", showAllGoods);
+  ensureEl("marketOverviewToggleGoods").classList.toggle(
+    "active",
+    showAllGoods,
+  );
   marketOverviewAddLines();
 }
 
@@ -124,10 +153,10 @@ function closeMarketOverview() {
 
 declare global {
   interface Window {
-    MarketOverview: {open: typeof open};
-    MarketDealsOverview: {open: (marketId: number) => void};
+    MarketOverview: { open: typeof open };
+    MarketDealsOverview: { open: (marketId: number) => void };
   }
   var toggleTrade: () => void;
 }
 
-window.MarketOverview = {open};
+window.MarketOverview = { open };

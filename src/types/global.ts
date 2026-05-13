@@ -1,9 +1,9 @@
-import type {Selection} from "d3";
-import type {GoodsModule} from "../modules/goods-generator";
-import type {NameBase} from "../modules/names-generator";
-import type {ProductionModule} from "../modules/production-generator";
-import type {TradeModule} from "../modules/trade-generator";
-import type {PackedGraph} from "./PackedGraph";
+import type { Selection } from "d3";
+import type { GoodsModule } from "../modules/goods-generator";
+import type { NameBase } from "../modules/names-generator";
+import type { ProductionModule } from "../modules/production-generator";
+import type { TradeModule } from "../modules/trade-generator";
+import type { PackedGraph } from "./PackedGraph";
 
 declare global {
   var seed: string;
@@ -14,7 +14,7 @@ declare global {
   var TIME: boolean;
   var WARN: boolean;
   var ERROR: boolean;
-  var DEBUG: {stateLabels?: boolean; [key: string]: boolean | undefined};
+  var DEBUG: { stateLabels?: boolean; [key: string]: boolean | undefined };
   var options: any;
 
   var heightmapTemplates: any;
@@ -75,9 +75,9 @@ declare global {
   };
   var notes: any[];
   var style: {
-    burgLabels: {[key: string]: {[key: string]: string}};
-    burgIcons: {[key: string]: {[key: string]: string}};
-    anchors: {[key: string]: {[key: string]: string}};
+    burgLabels: { [key: string]: { [key: string]: string } };
+    burgIcons: { [key: string]: { [key: string]: string } };
+    anchors: { [key: string]: { [key: string]: string } };
     [key: string]: any;
   };
 
@@ -90,7 +90,7 @@ declare global {
     message: string,
     autoHide?: boolean,
     type?: "info" | "warn" | "error" | "success",
-    timeout?: number
+    timeout?: number,
   ) => void;
   var locked: (settingId: string) => boolean;
   var unlock: (settingId: string) => void;
@@ -115,7 +115,10 @@ declare global {
   var getFileName: (name: string) => string;
   var customization: number;
   var speak: (text: string) => void;
-  var uploadFile: (el: HTMLInputElement, callback: (data: string) => void) => void;
+  var uploadFile: (
+    el: HTMLInputElement,
+    callback: (data: string) => void,
+  ) => void;
   var downloadFile: (content: string | Blob, name: string) => void;
   var zoomTo: (x: number, y: number, zoom: number, duration: number) => void;
   var modules: Record<string, boolean>;
@@ -129,9 +132,18 @@ declare global {
   var applySorting: (header: HTMLElement) => void;
   var capitalize: (str: string) => string;
   var rn: (value: number, decimals?: number) => number;
-  var confirmationDialog: (options: {title: string; message: string; confirm: string; onConfirm: () => void}) => void;
+  var confirmationDialog: (options: {
+    title: string;
+    message: string;
+    confirm: string;
+    onConfirm: () => void;
+  }) => void;
   var openURL: (url: string) => void;
-  var openPicker: (color: string, callback: (color: string) => void, options?: any) => void;
+  var openPicker: (
+    color: string,
+    callback: (color: string) => void,
+    options?: any,
+  ) => void;
   var clearLegend: () => void;
   var drawLegend: (title: string, data: any[]) => void;
   var clearMainTip: () => void;

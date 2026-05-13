@@ -1,7 +1,7 @@
-import {type Selection, select, zoom, zoomIdentity} from "d3";
-import type {Good} from "../modules/goods-generator";
-import {ensureEl} from "../utils";
-import {C_12} from "../utils/colorUtils";
+import { type Selection, select, zoom, zoomIdentity } from "d3";
+import type { Good } from "../modules/goods-generator";
+import { ensureEl } from "../utils";
+import { C_12 } from "../utils/colorUtils";
 
 const CARD_WIDTH = 98;
 const CARD_HEIGHT = 34;
@@ -86,7 +86,12 @@ interface DisplayEdge {
   labels: EdgeLabel[];
 }
 
-type GraphGroupSelection = Selection<SVGGElement, unknown, SVGSVGElement, unknown>;
+type GraphGroupSelection = Selection<
+  SVGGElement,
+  unknown,
+  SVGSVGElement,
+  unknown
+>;
 
 interface LayoutBounds {
   minX: number;
@@ -125,7 +130,11 @@ export class ProductionChains {
 
     const layout = ProductionChains.buildLayout(goods);
     if (!layout.nodes.length) {
-      tip("No production chains found — add manufactured goods with recipes first.", true, "warn");
+      tip(
+        "No production chains found — add manufactured goods with recipes first.",
+        true,
+        "warn",
+      );
       return;
     }
 
@@ -145,10 +154,10 @@ export class ProductionChains {
       resizable: true,
       width: dialogSize.width,
       height: dialogSize.height,
-      position: {my: "center", at: "center", of: window},
+      position: { my: "center", at: "center", of: window },
       close() {
         contentEl.innerHTML = "";
-      }
+      },
     });
   }
 
@@ -159,11 +168,12 @@ export class ProductionChains {
       if (!good.recipes?.length) continue;
       chainIds.add(good.i);
       for (const recipe of good.recipes) {
-        for (const ingredientId of Object.keys(recipe)) chainIds.add(+ingredientId);
+        for (const ingredientId of Object.keys(recipe))
+          chainIds.add(+ingredientId);
       }
     }
 
-    return goods.filter(good => chainIds.has(good.i));
+    return goods.filter((good) => chainIds.has(good.i));
   }
 
   private static getRawEdges(goods: Good[]): RawGraphEdge[] {
@@ -171,9 +181,20 @@ export class ProductionChains {
 
     for (const good of goods) {
       if (!good.recipes?.length) continue;
-      for (let recipeIndex = 0; recipeIndex < good.recipes.length; recipeIndex++) {
-        for (const [ingredientId, amount] of Object.entries(good.recipes[recipeIndex])) {
-          rawEdges.push({from: +ingredientId, to: good.i, recipeIndex, amount});
+      for (
+        let recipeIndex = 0;
+        recipeIndex < good.recipes.length;
+        recipeIndex++
+      ) {
+        for (const [ingredientId, amount] of Object.entries(
+          good.recipes[recipeIndex],
+        )) {
+          rawEdges.push({
+            from: +ingredientId,
+            to: good.i,
+            recipeIndex,
+            amount,
+          });
         }
       }
     }
@@ -181,8 +202,15 @@ export class ProductionChains {
     return rawEdges;
   }
 
-  private static sortStageEntryIds(ids: number[], goodsById: Map<number, Good>) {
-    ids.sort((left, right) => (goodsById.get(left)?.name ?? "").localeCompare(goodsById.get(right)?.name ?? ""));
+  private static sortStageEntryIds(
+    ids: number[],
+    goodsById: Map<number, Good>,
+  ) {
+    ids.sort((left, right) =>
+      (goodsById.get(left)?.name ?? "").localeCompare(
+        goodsById.get(right)?.name ?? "",
+      ),
+    );
   }
 
   private static computeStages(goods: Good[]): Map<number, number> {
@@ -199,11 +227,16 @@ export class ProductionChains {
       for (const good of goods) {
         if (!good.recipes?.length) continue;
 
-        const ingredientIds = [...new Set(good.recipes.flatMap(recipe => Object.keys(recipe).map(Number)))];
+        const ingredientIds = [
+          ...new Set(
+            good.recipes.flatMap((recipe) => Object.keys(recipe).map(Number)),
+          ),
+        ];
         if (!ingredientIds.length) continue;
-        if (!ingredientIds.every(id => stageById.has(id))) continue;
+        if (!ingredientIds.every((id) => stageById.has(id))) continue;
 
-        const nextStage = Math.max(...ingredientIds.map(id => stageById.get(id)!)) + 1;
+        const nextStage =
+          Math.max(...ingredientIds.map((id) => stageById.get(id)!)) + 1;
         if (!stageById.has(good.i) || nextStage > stageById.get(good.i)!) {
           stageById.set(good.i, nextStage);
           changed = true;
@@ -218,7 +251,10 @@ export class ProductionChains {
     return stageById;
   }
 
-  private static getConnectedComponents(ids: number[], edges: RawGraphEdge[]): Set<number>[] {
+  private static getConnectedComponents(
+    ids: number[],
+    edges: RawGraphEdge[],
+  ): Set<number>[] {
     const adjacency = new Map<number, number[]>();
     for (const id of ids) adjacency.set(id, []);
 
@@ -253,7 +289,10 @@ export class ProductionChains {
     return components;
   }
 
-  private static minimizeCrossings(stageEntries: Map<number, number[]>, edges: RawGraphEdge[]) {
+  private static minimizeCrossings(
+    stageEntries: Map<number, number[]>,
+    edges: RawGraphEdge[],
+  ) {
     const sortedStages = [...stageEntries.keys()].sort((a, b) => a - b);
     if (sortedStages.length < 2) return;
 
@@ -267,9 +306,13 @@ export class ProductionChains {
       outgoing.get(edge.from)!.push(edge.to);
     }
 
-    const getBarycenter = (id: number, neighbors: number[], positions: Map<number, number>) => {
+    const getBarycenter = (
+      id: number,
+      neighbors: number[],
+      positions: Map<number, number>,
+    ) => {
       const values = neighbors
-        .map(neighbor => positions.get(neighbor))
+        .map((neighbor) => positions.get(neighbor))
         .filter((value): value is number => value !== undefined);
       if (!values.length) return positions.get(id) ?? 0;
       return values.reduce((sum, value) => sum + value, 0) / values.length;
@@ -277,30 +320,41 @@ export class ProductionChains {
 
     for (let pass = 0; pass < 12; pass++) {
       for (let index = 1; index < sortedStages.length; index++) {
-        const prevPositions = new Map(stageEntries.get(sortedStages[index - 1])!.map((id, position) => [id, position]));
+        const prevPositions = new Map(
+          stageEntries
+            .get(sortedStages[index - 1])!
+            .map((id, position) => [id, position]),
+        );
         stageEntries
           .get(sortedStages[index])!
           .sort(
             (left, right) =>
               getBarycenter(left, incoming.get(left) ?? [], prevPositions) -
-              getBarycenter(right, incoming.get(right) ?? [], prevPositions)
+              getBarycenter(right, incoming.get(right) ?? [], prevPositions),
           );
       }
 
       for (let index = sortedStages.length - 2; index >= 0; index--) {
-        const nextPositions = new Map(stageEntries.get(sortedStages[index + 1])!.map((id, position) => [id, position]));
+        const nextPositions = new Map(
+          stageEntries
+            .get(sortedStages[index + 1])!
+            .map((id, position) => [id, position]),
+        );
         stageEntries
           .get(sortedStages[index])!
           .sort(
             (left, right) =>
               getBarycenter(left, outgoing.get(left) ?? [], nextPositions) -
-              getBarycenter(right, outgoing.get(right) ?? [], nextPositions)
+              getBarycenter(right, outgoing.get(right) ?? [], nextPositions),
           );
       }
     }
   }
 
-  private static assignPortsAndLanes(nodes: GraphNode[], edges: GraphEdge[]): RoutedEdge[] {
+  private static assignPortsAndLanes(
+    nodes: GraphNode[],
+    edges: GraphEdge[],
+  ): RoutedEdge[] {
     const outgoingByNode = new Map<number, GraphEdge[]>();
     const incomingByNode = new Map<number, GraphEdge[]>();
 
@@ -314,7 +368,8 @@ export class ProductionChains {
       incomingByNode.get(edge.to.id)!.push(edge);
     }
 
-    for (const edgeList of outgoingByNode.values()) edgeList.sort((a, b) => a.to.y - b.to.y || a.to.id - b.to.id);
+    for (const edgeList of outgoingByNode.values())
+      edgeList.sort((a, b) => a.to.y - b.to.y || a.to.id - b.to.id);
     for (const edgeList of incomingByNode.values())
       edgeList.sort((a, b) => a.from.y - b.from.y || a.from.id - b.from.id);
 
@@ -327,13 +382,19 @@ export class ProductionChains {
 
     for (const edgeList of boundaryPairs.values()) {
       edgeList.sort((a, b) => {
-        return a.to.y - b.to.y || a.from.y - b.from.y || a.from.id - b.from.id || a.to.id - b.to.id;
+        return (
+          a.to.y - b.to.y ||
+          a.from.y - b.from.y ||
+          a.from.id - b.from.id ||
+          a.to.id - b.to.id
+        );
       });
     }
 
-    return edges.map(edge => {
+    return edges.map((edge) => {
       const targetBoundary = edge.to.stage - 1;
-      const pair = boundaryPairs.get(`${targetBoundary}-${edge.to.stage}`) ?? [];
+      const pair =
+        boundaryPairs.get(`${targetBoundary}-${edge.to.stage}`) ?? [];
       const pairIndex = pair.indexOf(edge);
       return {
         ...edge,
@@ -342,7 +403,7 @@ export class ProductionChains {
         targetPortIndex: incomingByNode.get(edge.to.id)!.indexOf(edge),
         targetPortCount: incomingByNode.get(edge.to.id)!.length,
         lane: pair.length > 1 ? pairIndex - (pair.length - 1) / 2 : 0,
-        targetBoundary
+        targetBoundary,
       };
     });
   }
@@ -350,7 +411,7 @@ export class ProductionChains {
   private static buildStageEntries(
     componentGoods: Good[],
     goodsById: Map<number, Good>,
-    stageById: Map<number, number>
+    stageById: Map<number, number>,
   ) {
     const stageEntries = new Map<number, number[]>();
 
@@ -360,7 +421,8 @@ export class ProductionChains {
       stageEntries.get(stage)!.push(good.i);
     }
 
-    for (const ids of stageEntries.values()) ProductionChains.sortStageEntryIds(ids, goodsById);
+    for (const ids of stageEntries.values())
+      ProductionChains.sortStageEntryIds(ids, goodsById);
 
     return stageEntries;
   }
@@ -369,10 +431,12 @@ export class ProductionChains {
     stageEntries: Map<number, number[]>,
     goodsById: Map<number, Good>,
     currentYOffset: number,
-    stages: Set<number>
+    stages: Set<number>,
   ) {
     const rowHeight = CARD_HEIGHT + ROW_GAP;
-    const maxRows = Math.max(...[...stageEntries.values()].map(ids => ids.length));
+    const maxRows = Math.max(
+      ...[...stageEntries.values()].map((ids) => ids.length),
+    );
     const componentHeight = maxRows * rowHeight - ROW_GAP;
     const componentNodesById = new Map<number, GraphNode>();
     const nodes: GraphNode[] = [];
@@ -392,7 +456,7 @@ export class ProductionChains {
           good,
           stage,
           x: stage * COLUMN_STEP,
-          y: startY + row * rowHeight
+          y: startY + row * rowHeight,
         };
 
         nodes.push(node);
@@ -400,12 +464,12 @@ export class ProductionChains {
       }
     }
 
-    return {stageEntries, nodes, componentNodesById, componentHeight};
+    return { stageEntries, nodes, componentNodesById, componentHeight };
   }
 
   private static createComponentEdges(
     componentEdges: RawGraphEdge[],
-    componentNodesById: Map<number, GraphNode>
+    componentNodesById: Map<number, GraphNode>,
   ): GraphEdge[] {
     const graphEdges: GraphEdge[] = [];
 
@@ -417,7 +481,7 @@ export class ProductionChains {
         from,
         to,
         recipeIndex: edge.recipeIndex,
-        amount: edge.amount
+        amount: edge.amount,
       });
     }
 
@@ -426,13 +490,14 @@ export class ProductionChains {
 
   private static buildLayout(goods: Good[]): LayoutData {
     const chainGoods = ProductionChains.getChainGoods(goods);
-    if (!chainGoods.length) return {nodes: [], edges: [], stages: new Set(), componentBands: []};
+    if (!chainGoods.length)
+      return { nodes: [], edges: [], stages: new Set(), componentBands: [] };
 
-    const goodsById = new Map(chainGoods.map(good => [good.i, good]));
+    const goodsById = new Map(chainGoods.map((good) => [good.i, good]));
     const rawEdges = ProductionChains.getRawEdges(chainGoods);
     const components = ProductionChains.getConnectedComponents(
-      chainGoods.map(good => good.i),
-      rawEdges
+      chainGoods.map((good) => good.i),
+      rawEdges,
     ).sort((a, b) => b.size - a.size);
 
     const nodes: GraphNode[] = [];
@@ -442,23 +507,39 @@ export class ProductionChains {
     let currentYOffset = 0;
 
     for (const component of components) {
-      const componentGoods = chainGoods.filter(good => component.has(good.i));
-      const componentEdges = rawEdges.filter(edge => component.has(edge.from) && component.has(edge.to));
+      const componentGoods = chainGoods.filter((good) => component.has(good.i));
+      const componentEdges = rawEdges.filter(
+        (edge) => component.has(edge.from) && component.has(edge.to),
+      );
       const stageById = ProductionChains.computeStages(componentGoods);
-      const stageEntries = ProductionChains.buildStageEntries(componentGoods, goodsById, stageById);
+      const stageEntries = ProductionChains.buildStageEntries(
+        componentGoods,
+        goodsById,
+        stageById,
+      );
 
       ProductionChains.minimizeCrossings(stageEntries, componentEdges);
 
       const {
         nodes: componentNodes,
         componentNodesById,
-        componentHeight
-      } = ProductionChains.createNodesForComponent(stageEntries, goodsById, currentYOffset, stages);
+        componentHeight,
+      } = ProductionChains.createNodesForComponent(
+        stageEntries,
+        goodsById,
+        currentYOffset,
+        stages,
+      );
 
       nodes.push(...componentNodes);
-      graphEdges.push(...ProductionChains.createComponentEdges(componentEdges, componentNodesById));
+      graphEdges.push(
+        ...ProductionChains.createComponentEdges(
+          componentEdges,
+          componentNodesById,
+        ),
+      );
 
-      componentBands.push({y: currentYOffset});
+      componentBands.push({ y: currentYOffset });
       currentYOffset += componentHeight + COMPONENT_GAP;
     }
 
@@ -466,12 +547,12 @@ export class ProductionChains {
       nodes,
       edges: ProductionChains.assignPortsAndLanes(nodes, graphEdges),
       stages,
-      componentBands
+      componentBands,
     };
   }
 
   private static getBasePositions(nodes: GraphNode[]): Map<number, Position> {
-    return new Map(nodes.map(node => [node.id, {x: node.x, y: node.y}]));
+    return new Map(nodes.map((node) => [node.id, { x: node.x, y: node.y }]));
   }
 
   private static buildDirectedAdjacency(edges: RoutedEdge[]) {
@@ -485,11 +566,15 @@ export class ProductionChains {
       outgoing.get(edge.from.id)!.push(edge.to.id);
     }
 
-    return {incoming, outgoing};
+    return { incoming, outgoing };
   }
 
-  private static getDirectedChainIds(startId: number, edges: RoutedEdge[]): Set<number> {
-    const {incoming, outgoing} = ProductionChains.buildDirectedAdjacency(edges);
+  private static getDirectedChainIds(
+    startId: number,
+    edges: RoutedEdge[],
+  ): Set<number> {
+    const { incoming, outgoing } =
+      ProductionChains.buildDirectedAdjacency(edges);
     const result = new Set([startId]);
 
     const upstream = [startId];
@@ -513,32 +598,51 @@ export class ProductionChains {
     return result;
   }
 
-  private static getPortY(nodeY: number, portIndex: number, portCount: number): number {
+  private static getPortY(
+    nodeY: number,
+    portIndex: number,
+    portCount: number,
+  ): number {
     if (portCount === 1) return nodeY + CARD_HEIGHT / 2;
     const top = nodeY + (CARD_HEIGHT * (1 - PORT_BAND)) / 2;
     return top + (portIndex / (portCount - 1)) * CARD_HEIGHT * PORT_BAND;
   }
 
   private static getLaneOffset(edge: RoutedEdge): number {
-    const sourceSpread = (edge.sourcePortIndex - (edge.sourcePortCount - 1) / 2) * 5;
-    const targetSpread = (edge.targetPortIndex - (edge.targetPortCount - 1) / 2) * 5;
-    const recipeSpread = ((edge.recipeIndex % C_12.length) - (C_12.length - 1) / 2) * 0.5;
+    const sourceSpread =
+      (edge.sourcePortIndex - (edge.sourcePortCount - 1) / 2) * 5;
+    const targetSpread =
+      (edge.targetPortIndex - (edge.targetPortCount - 1) / 2) * 5;
+    const recipeSpread =
+      ((edge.recipeIndex % C_12.length) - (C_12.length - 1) / 2) * 0.5;
     return edge.lane * LANE_SPREAD + sourceSpread + targetSpread + recipeSpread;
   }
 
-  private static getEdgeGeometry(edge: RoutedEdge, positions: Map<number, Position>): EdgeGeometry {
+  private static getEdgeGeometry(
+    edge: RoutedEdge,
+    positions: Map<number, Position>,
+  ): EdgeGeometry {
     const from = positions.get(edge.from.id) ?? {
       x: edge.from.x,
-      y: edge.from.y
+      y: edge.from.y,
     };
-    const to = positions.get(edge.to.id) ?? {x: edge.to.x, y: edge.to.y};
+    const to = positions.get(edge.to.id) ?? { x: edge.to.x, y: edge.to.y };
 
     const x1 = from.x + CARD_WIDTH;
-    const y1 = ProductionChains.getPortY(from.y, edge.sourcePortIndex, edge.sourcePortCount);
+    const y1 = ProductionChains.getPortY(
+      from.y,
+      edge.sourcePortIndex,
+      edge.sourcePortCount,
+    );
     const x2 = to.x;
-    const y2 = ProductionChains.getPortY(to.y, edge.targetPortIndex, edge.targetPortCount);
+    const y2 = ProductionChains.getPortY(
+      to.y,
+      edge.targetPortIndex,
+      edge.targetPortCount,
+    );
 
-    const boundaryBaseX = edge.targetBoundary * COLUMN_STEP + CARD_WIDTH + COLUMN_GAP * 0.62;
+    const boundaryBaseX =
+      edge.targetBoundary * COLUMN_STEP + CARD_WIDTH + COLUMN_GAP * 0.62;
     const minElbowX = x1 + 14;
     const maxElbowX = x2 - 14;
     const rawElbowX = boundaryBaseX + ProductionChains.getLaneOffset(edge);
@@ -548,12 +652,16 @@ export class ProductionChains {
     if (Math.abs(y2 - y1) < 1) {
       d = `M${x1},${y1} H${x2}`;
     } else {
-      const cornerRadius = Math.min(8, Math.abs(y2 - y1) / 2, Math.max(6, (x2 - x1) / 6));
+      const cornerRadius = Math.min(
+        8,
+        Math.abs(y2 - y1) / 2,
+        Math.max(6, (x2 - x1) / 6),
+      );
       const dy = y2 > y1 ? 1 : -1;
       d = `M${x1},${y1} H${elbowX - cornerRadius} Q${elbowX},${y1} ${elbowX},${y1 + dy * cornerRadius} V${y2 - dy * cornerRadius} Q${elbowX},${y2} ${elbowX + cornerRadius},${y2} H${x2}`;
     }
 
-    return {d, labelX: x2 - 10, labelY: y2 - 4};
+    return { d, labelX: x2 - 10, labelY: y2 - 4 };
   }
 
   private static renderMarkers(): string {
@@ -561,7 +669,7 @@ export class ProductionChains {
       (color, index) =>
         `<marker id="ca${index}" viewBox="0 -4 8 8" refX="7" refY="0" markerWidth="5" markerHeight="5" orient="auto">
         <path d="M0,-4L8,0L0,4" fill="${color}"/>
-      </marker>`
+      </marker>`,
     ).join("");
   }
 
@@ -575,12 +683,18 @@ export class ProductionChains {
   }
 
   private static updateFlowDurations(svgEl: SVGSVGElement) {
-    svgEl.querySelectorAll<SVGPathElement>("[data-edge-flow]").forEach(flow => {
-      const amount = Number(flow.dataset.flowAmount || 1);
-      const speed = FLOW_PIXELS_PER_SECOND * Math.max(amount, MIN_FLOW_SPEED_MULTIPLIER);
-      const duration = Math.max(FLOW_DOT_GAP / speed, MIN_FLOW_DURATION_SECONDS);
-      flow.style.animationDuration = `${duration}s`;
-    });
+    svgEl
+      .querySelectorAll<SVGPathElement>("[data-edge-flow]")
+      .forEach((flow) => {
+        const amount = Number(flow.dataset.flowAmount || 1);
+        const speed =
+          FLOW_PIXELS_PER_SECOND * Math.max(amount, MIN_FLOW_SPEED_MULTIPLIER);
+        const duration = Math.max(
+          FLOW_DOT_GAP / speed,
+          MIN_FLOW_DURATION_SECONDS,
+        );
+        flow.style.animationDuration = `${duration}s`;
+      });
   }
 
   private static truncateGoodName(name: string, maxLength = 12): string {
@@ -597,10 +711,10 @@ export class ProductionChains {
   }
 
   private static getLayoutBounds(layout: LayoutData): LayoutBounds {
-    const minX = Math.min(...layout.nodes.map(node => node.x));
-    const maxX = Math.max(...layout.nodes.map(node => node.x)) + CARD_WIDTH;
-    const minY = Math.min(...layout.nodes.map(node => node.y));
-    const maxY = Math.max(...layout.nodes.map(node => node.y)) + CARD_HEIGHT;
+    const minX = Math.min(...layout.nodes.map((node) => node.x));
+    const maxX = Math.max(...layout.nodes.map((node) => node.x)) + CARD_WIDTH;
+    const minY = Math.min(...layout.nodes.map((node) => node.y));
+    const maxY = Math.max(...layout.nodes.map((node) => node.y)) + CARD_HEIGHT;
 
     return {
       minX,
@@ -610,19 +724,26 @@ export class ProductionChains {
       svgWidth: maxX - minX + SVG_PADDING * 2,
       svgHeight: maxY - minY + SVG_PADDING * 2 + HEADER_HEIGHT,
       offsetX: -minX + SVG_PADDING,
-      offsetY: -minY + SVG_PADDING + HEADER_HEIGHT
+      offsetY: -minY + SVG_PADDING + HEADER_HEIGHT,
     };
   }
 
   private static getFlowOpacity(amount: number): number {
-    return Math.min(FLOW_OPACITY_BASE + amount * FLOW_OPACITY_PER_AMOUNT, FLOW_OPACITY_MAX);
+    return Math.min(
+      FLOW_OPACITY_BASE + amount * FLOW_OPACITY_PER_AMOUNT,
+      FLOW_OPACITY_MAX,
+    );
   }
 
-  private static renderEdgeLabels(displayEdge: DisplayEdge, geometry: EdgeGeometry): string {
+  private static renderEdgeLabels(
+    displayEdge: DisplayEdge,
+    geometry: EdgeGeometry,
+  ): string {
     return displayEdge.labels
       .map((label, index) => {
         const color = ProductionChains.getEdgeStrokeColor(label.recipeIndex);
-        const y = geometry.labelY - (displayEdge.labels.length - 1 - index) * 10;
+        const y =
+          geometry.labelY - (displayEdge.labels.length - 1 - index) * 10;
 
         return `<text x="${geometry.labelX}" y="${y}" text-anchor="middle"
         font-size="8" font-family="sans-serif" fill="${color}"
@@ -632,7 +753,11 @@ export class ProductionChains {
       .join("");
   }
 
-  private static renderEdgeFlows(displayEdge: DisplayEdge, geometry: EdgeGeometry, flowColor: string): string {
+  private static renderEdgeFlows(
+    displayEdge: DisplayEdge,
+    geometry: EdgeGeometry,
+    flowColor: string,
+  ): string {
     return displayEdge.labels
       .map((label, index) => {
         const opacity = ProductionChains.getFlowOpacity(label.amount);
@@ -645,7 +770,11 @@ export class ProductionChains {
       .join("");
   }
 
-  private static renderEdgePath(geometry: EdgeGeometry, color: string, markerId?: string): string {
+  private static renderEdgePath(
+    geometry: EdgeGeometry,
+    color: string,
+    markerId?: string,
+  ): string {
     return `<path d="${geometry.d}" fill="none" stroke="${color}" stroke-width="${BASE_EDGE_STROKE_WIDTH}"${
       markerId ? ` marker-end="url(#${markerId})"` : ""
     }/>`;
@@ -654,7 +783,7 @@ export class ProductionChains {
   private static renderHeaders(stages: Set<number>, offsetX: number): string {
     return [...stages]
       .sort((a, b) => a - b)
-      .map(stage => {
+      .map((stage) => {
         const centerX = stage * COLUMN_STEP + CARD_WIDTH / 2 + offsetX;
         const label = stage === 0 ? "Raw Materials" : `Stage ${stage}`;
         return `<text x="${centerX}" y="${HEADER_HEIGHT - 4}" text-anchor="middle"
@@ -666,12 +795,16 @@ export class ProductionChains {
       .join("");
   }
 
-  private static renderComponentSeparators(componentBands: ComponentBand[], offsetY: number, svgWidth: number): string {
+  private static renderComponentSeparators(
+    componentBands: ComponentBand[],
+    offsetY: number,
+    svgWidth: number,
+  ): string {
     if (componentBands.length <= 1) return "";
 
     return componentBands
       .slice(1)
-      .map(band => {
+      .map((band) => {
         const y = band.y + offsetY - COMPONENT_GAP / 2;
         return `<line x1="${SVG_PADDING / 2}" y1="${y}" x2="${svgWidth - SVG_PADDING / 2}" y2="${y}"
         stroke="#e0e0e0" stroke-width="1" stroke-dasharray="4,4"/>`;
@@ -691,31 +824,45 @@ export class ProductionChains {
           fromId: edge.from.id,
           toId: edge.to.id,
           representative: edge,
-          labels: [{amount: edge.amount, recipeIndex: edge.recipeIndex}]
+          labels: [{ amount: edge.amount, recipeIndex: edge.recipeIndex }],
         });
         continue;
       }
 
       existing.labels.push({
         amount: edge.amount,
-        recipeIndex: edge.recipeIndex
+        recipeIndex: edge.recipeIndex,
       });
-      if (edge.recipeIndex < existing.representative.recipeIndex) existing.representative = edge;
+      if (edge.recipeIndex < existing.representative.recipeIndex)
+        existing.representative = edge;
     }
 
     for (const displayEdge of grouped.values()) {
-      displayEdge.labels.sort((left, right) => left.recipeIndex - right.recipeIndex || left.amount - right.amount);
+      displayEdge.labels.sort(
+        (left, right) =>
+          left.recipeIndex - right.recipeIndex || left.amount - right.amount,
+      );
     }
 
     return [...grouped.values()];
   }
 
-  private static renderEdge(displayEdge: DisplayEdge, positions: Map<number, Position>): string {
-    const geometry = ProductionChains.getEdgeGeometry(displayEdge.representative, positions);
+  private static renderEdge(
+    displayEdge: DisplayEdge,
+    positions: Map<number, Position>,
+  ): string {
+    const geometry = ProductionChains.getEdgeGeometry(
+      displayEdge.representative,
+      positions,
+    );
     const edgeColorIndex = ProductionChains.getEdgeColorIndex(displayEdge);
     const flowColor = ProductionChains.getEdgeStrokeColor(edgeColorIndex);
     const labels = ProductionChains.renderEdgeLabels(displayEdge, geometry);
-    const flows = ProductionChains.renderEdgeFlows(displayEdge, geometry, flowColor);
+    const flows = ProductionChains.renderEdgeFlows(
+      displayEdge,
+      geometry,
+      flowColor,
+    );
 
     return `<g data-ef="${displayEdge.fromId}" data-et="${displayEdge.toId}" style="opacity:${DEFAULT_EDGE_OPACITY};transition:opacity 0.15s">
     ${ProductionChains.renderEdgePath(geometry, flowColor)}
@@ -733,8 +880,8 @@ export class ProductionChains {
           `Recipe ${index + 1}: ` +
           Object.entries(recipe)
             .map(([id, amount]) => `${Goods.get(+id)?.name ?? id} x${amount}`)
-            .join(" + ")
-      )
+            .join(" + "),
+      ),
     ].join("\n");
   }
 
@@ -747,7 +894,10 @@ export class ProductionChains {
     <circle cx="15" cy="${CARD_HEIGHT / 2}" r="${ICON_RADIUS}" fill="${node.good.color}" fill-opacity="0.68"/>`;
   }
 
-  private static renderNodeContent(node: GraphNode, displayName: string): string {
+  private static renderNodeContent(
+    node: GraphNode,
+    displayName: string,
+  ): string {
     const iconX = 15;
     const iconY = CARD_HEIGHT / 2;
     const textX = iconX + ICON_RADIUS + 5;
@@ -759,8 +909,11 @@ export class ProductionChains {
     <text x="${textX}" y="${iconY + 8}" font-size="8.5" font-family="sans-serif" fill="#888">🟡 ${node.good.value}</text>`;
   }
 
-  private static renderNode(node: GraphNode, positions: Map<number, Position>): string {
-    const position = positions.get(node.id) ?? {x: node.x, y: node.y};
+  private static renderNode(
+    node: GraphNode,
+    positions: Map<number, Position>,
+  ): string {
+    const position = positions.get(node.id) ?? { x: node.x, y: node.y };
     const displayName = ProductionChains.truncateGoodName(node.good.name);
     const stroke = Goods.getStroke(node.good.color);
     const tooltip = ProductionChains.renderNodeTooltip(node);
@@ -775,23 +928,36 @@ export class ProductionChains {
   private static applyChainVisibility(
     edgeSelection: GraphGroupSelection,
     nodeSelection: GraphGroupSelection,
-    chainIds: Set<number> | null
+    chainIds: Set<number> | null,
   ) {
     edgeSelection.each(function () {
       const group = this as SVGGElement;
       const fromId = +(group.dataset.ef || -1);
       const toId = +(group.dataset.et || -1);
-      const visible = chainIds ? chainIds.has(fromId) && chainIds.has(toId) : false;
-      group.style.opacity = chainIds ? (visible ? "1" : "0") : String(DEFAULT_EDGE_OPACITY);
+      const visible = chainIds
+        ? chainIds.has(fromId) && chainIds.has(toId)
+        : false;
+      group.style.opacity = chainIds
+        ? visible
+          ? "1"
+          : "0"
+        : String(DEFAULT_EDGE_OPACITY);
 
-      group.querySelectorAll<SVGPathElement>("[data-edge-flow]").forEach(flow => {
-        const flowOpacity = flow.dataset.flowOpacity || "0.85";
-        flow.style.opacity = chainIds && visible ? flowOpacity : "0";
-        flow.style.animationPlayState = chainIds && visible ? "running" : "paused";
-      });
+      group
+        .querySelectorAll<SVGPathElement>("[data-edge-flow]")
+        .forEach((flow) => {
+          const flowOpacity = flow.dataset.flowOpacity || "0.85";
+          flow.style.opacity = chainIds && visible ? flowOpacity : "0";
+          flow.style.animationPlayState =
+            chainIds && visible ? "running" : "paused";
+        });
 
-      group.querySelectorAll<SVGTextElement>("text").forEach(label => {
-        label.style.opacity = chainIds ? (visible ? "1" : "0") : String(DEFAULT_LABEL_OPACITY);
+      group.querySelectorAll<SVGTextElement>("text").forEach((label) => {
+        label.style.opacity = chainIds
+          ? visible
+            ? "1"
+            : "0"
+          : String(DEFAULT_LABEL_OPACITY);
       });
     });
 
@@ -805,7 +971,7 @@ export class ProductionChains {
   private static attachHoverInteractions(
     nodeSelection: GraphGroupSelection,
     edgeSelection: GraphGroupSelection,
-    layout: LayoutData
+    layout: LayoutData,
   ) {
     nodeSelection.each(function () {
       const group = this as SVGGElement;
@@ -815,17 +981,24 @@ export class ProductionChains {
         ProductionChains.applyChainVisibility(
           edgeSelection,
           nodeSelection,
-          ProductionChains.getDirectedChainIds(nodeId, layout.edges)
+          ProductionChains.getDirectedChainIds(nodeId, layout.edges),
         );
       });
 
       group.addEventListener("mouseleave", () => {
-        ProductionChains.applyChainVisibility(edgeSelection, nodeSelection, null);
+        ProductionChains.applyChainVisibility(
+          edgeSelection,
+          nodeSelection,
+          null,
+        );
       });
     });
   }
 
-  private static attachGraphInteractions(svgEl: SVGSVGElement, layout: LayoutData) {
+  private static attachGraphInteractions(
+    svgEl: SVGSVGElement,
+    layout: LayoutData,
+  ) {
     const viewportEl = svgEl.querySelector<SVGGElement>("#viewport");
     if (!viewportEl) return;
 
@@ -836,12 +1009,18 @@ export class ProductionChains {
 
     const zoomBehavior = zoom<SVGSVGElement, unknown>()
       .scaleExtent([ZOOM_MIN, ZOOM_MAX])
-      .on("zoom", event => viewport.attr("transform", event.transform.toString()));
+      .on("zoom", (event) =>
+        viewport.attr("transform", event.transform.toString()),
+      );
 
     svg.call(zoomBehavior);
     svg.call(zoomBehavior.transform, zoomIdentity.translate(16, 0).scale(1));
     ProductionChains.updateFlowDurations(svgEl);
-    ProductionChains.attachHoverInteractions(nodeSelection, edgeSelection, layout);
+    ProductionChains.attachHoverInteractions(
+      nodeSelection,
+      edgeSelection,
+      layout,
+    );
   }
 
   private static renderGraph(layout: LayoutData): string {
@@ -849,11 +1028,14 @@ export class ProductionChains {
     const displayEdges = ProductionChains.getDisplayEdges(layout.edges);
     const bounds = ProductionChains.getLayoutBounds(layout);
 
-    const headers = ProductionChains.renderHeaders(layout.stages, bounds.offsetX);
+    const headers = ProductionChains.renderHeaders(
+      layout.stages,
+      bounds.offsetX,
+    );
     const separators = ProductionChains.renderComponentSeparators(
       layout.componentBands,
       bounds.offsetY,
-      bounds.svgWidth
+      bounds.svgWidth,
     );
 
     return /*html*/ `<svg id="chains-svg" xmlns="http://www.w3.org/2000/svg" width="${bounds.svgWidth}" height="${bounds.svgHeight}" style="display:block;cursor:grab">
@@ -863,8 +1045,8 @@ export class ProductionChains {
       ${headers}
       ${separators}
       <g transform="translate(${bounds.offsetX},${bounds.offsetY})">
-        <g id="cedges">${displayEdges.map(edge => ProductionChains.renderEdge(edge, positions)).join("")}</g>
-        <g id="cnodes">${layout.nodes.map(node => ProductionChains.renderNode(node, positions)).join("")}</g>
+        <g id="cedges">${displayEdges.map((edge) => ProductionChains.renderEdge(edge, positions)).join("")}</g>
+        <g id="cnodes">${layout.nodes.map((node) => ProductionChains.renderNode(node, positions)).join("")}</g>
       </g>
     </g>
   </svg>`;
@@ -873,15 +1055,15 @@ export class ProductionChains {
   private static getDialogSize(bounds: LayoutBounds): DialogSize {
     return {
       width: Math.min(bounds.svgWidth + 32, window.innerWidth - 40),
-      height: Math.min(bounds.svgHeight + 80, window.innerHeight - 60)
+      height: Math.min(bounds.svgHeight + 80, window.innerHeight - 60),
     };
   }
 }
 
 declare global {
   interface Window {
-    ProductionChains: {open: typeof ProductionChains.open};
+    ProductionChains: { open: typeof ProductionChains.open };
   }
 }
 
-window.ProductionChains = {open: ProductionChains.open};
+window.ProductionChains = { open: ProductionChains.open };

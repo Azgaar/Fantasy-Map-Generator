@@ -1,4 +1,4 @@
-import {rn} from "../utils";
+import { rn } from "../utils";
 
 interface Marker {
   i: number;
@@ -25,7 +25,7 @@ declare global {
 }
 
 type PinShapeFunction = (fill: string, stroke: string) => string;
-type PinShapes = {[key: string]: PinShapeFunction};
+type PinShapes = { [key: string]: PinShapeFunction };
 
 // prettier-ignore
 const pinShapes: PinShapes = {
@@ -56,13 +56,29 @@ const pinShapes: PinShapes = {
   no: () => "",
 };
 
-const getPinForShape = (shape = "bubble", fill = "#fff", stroke = "#000"): string => {
+const getPinForShape = (
+  shape = "bubble",
+  fill = "#fff",
+  stroke = "#000",
+): string => {
   const shapeFunction = pinShapes[shape] || pinShapes.bubble;
   return shapeFunction(fill, stroke);
 };
 
 function markerRenderer(marker: Marker, rescale = 1): string {
-  const {i, icon, x, y, dx = 50, dy = 50, px = 12, size = 30, pin, fill, stroke} = marker;
+  const {
+    i,
+    icon,
+    x,
+    y,
+    dx = 50,
+    dy = 50,
+    px = 12,
+    size = 30,
+    pin,
+    fill,
+    stroke,
+  } = marker;
   const id = `marker${i}`;
   const zoomSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
   const viewX = rn(x - zoomSize / 2, 1);
@@ -87,7 +103,7 @@ const markersRenderer = (): void => {
   const markersData: Marker[] = pinned
     ? (pack.markers || []).filter((marker: Marker) => marker.pinned)
     : pack.markers || [];
-  const html = markersData.map(marker => markerRenderer(marker, rescale));
+  const html = markersData.map((marker) => markerRenderer(marker, rescale));
   markers.html(html.join(""));
 
   TIME && console.timeEnd("drawMarkers");

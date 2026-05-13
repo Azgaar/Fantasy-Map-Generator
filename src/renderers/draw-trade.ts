@@ -1,7 +1,7 @@
-import {color, curveBasisClosed, line} from "d3";
-import type {Market} from "../modules/trade-generator";
-import {rn} from "../utils";
-import {getIsolines} from "../utils/pathUtils";
+import { color, curveBasisClosed, line } from "d3";
+import type { Market } from "../modules/trade-generator";
+import { rn } from "../utils";
+import { getIsolines } from "../utils/pathUtils";
 
 declare global {
   var drawTrade: () => void;
@@ -15,10 +15,11 @@ function renderMarketCells(markets: Market[]): string {
   let html = "";
 
   const getType = (cellId: number) => pack.cells.market[cellId];
-  const isolines = getIsolines(pack, getType, {polygons: true});
-  for (const [marketIdStr, {polygons}] of Object.entries(isolines)) {
+  const isolines = getIsolines(pack, getType, { polygons: true });
+  for (const [marketIdStr, { polygons }] of Object.entries(isolines)) {
     if (!polygons) continue;
-    const fillColor = markets.find(m => m.i === +marketIdStr)?.color || "#dababf";
+    const fillColor =
+      markets.find((m) => m.i === +marketIdStr)?.color || "#dababf";
     const strokeColor = color(fillColor)?.darker().hex() || "#000";
 
     const path = polygons.map(linegen).join("");
@@ -28,11 +29,11 @@ function renderMarketCells(markets: Market[]): string {
 }
 
 function renderMarkerCenters(markets: Market[]): string {
-  const html = markets.map(market => {
+  const html = markets.map((market) => {
     const centerBurg = pack.burgs[market.centerBurgId];
     if (!centerBurg) return "";
 
-    const {x, y} = centerBurg;
+    const { x, y } = centerBurg;
     const radius = Math.max(rn(5 + 1 / scale, 2), 2);
     const fontSize = Math.max(rn(7 + 1 / scale, 2), 2);
     const stroke = color(market.color)?.darker().hex() || "#000";
