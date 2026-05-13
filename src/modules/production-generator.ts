@@ -4,6 +4,7 @@ import {DEFAULT_CULTURE_TYPE} from "./cultures-generator";
 import type {DemandCategory, Good} from "./goods-generator";
 import {DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "./goods-generator";
 import {
+  BONUS_RESOURCE_PRODUCTION,
   MARKET_MARGIN,
   MARKET_PRESSURE_FACTOR,
   type Market,
@@ -38,6 +39,14 @@ export class ProductionModule {
       const demandTargets = this.buildDemandTargets(burg);
 
       const inventory: Record<number, number> = {...(burg.inventory || {})};
+
+      // Pre-seed local resource: burg is at the source so it doesn't need to buy it
+      const localGoodId = pack.cells.good[burg.cell];
+      if (localGoodId) {
+        const localBonus = Math.min(Math.ceil(population), BONUS_RESOURCE_PRODUCTION);
+        if (localBonus > 0) inventory[localGoodId] = (inventory[localGoodId] || 0) + localBonus;
+      }
+
       const history: ProductionHistoryEntry[] = [];
       let workersUsed = 0;
       let activeGoalGoodId: number | null = null;

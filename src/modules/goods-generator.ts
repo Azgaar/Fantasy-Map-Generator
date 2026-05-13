@@ -766,7 +766,7 @@ const GOODS_DATA: GoodData[] = [
     chance: 0,
     recipes: [{Wood: 2, Sails: 1, Ropes: 1, Tar: 1}],
     unit: "ship",
-    demandCoverage: {military: 2},
+    demandCoverage: {military: 0.5},
     bonus: {fleet: 4},
     culture: {Naval: 2}
   },

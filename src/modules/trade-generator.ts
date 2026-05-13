@@ -12,7 +12,7 @@ export const PRICE_CEILING_FACTOR = 3.0;
 const LAPLACE_PRICE_SMOOTHING = 5;
 export const MARKET_MARGIN = 0.1;
 export const MARKET_PRESSURE_FACTOR = 0.01;
-export const RURAL_BONUS_PRODUCTION = 5;
+export const BONUS_RESOURCE_PRODUCTION = 5;
 
 const TRADE_RESERVE_FACTOR = 0.2;
 
@@ -490,7 +490,7 @@ export class TradeModule {
 
       if (explicitGoodId) {
         const explicitGood = this.getMarketGood(market, explicitGoodId, this.goodById.get(explicitGoodId)?.value || 0);
-        explicitGood.stock += RURAL_BONUS_PRODUCTION;
+        explicitGood.stock += BONUS_RESOURCE_PRODUCTION;
       }
 
       if (cellPopulation <= 0) continue;

@@ -1,7 +1,7 @@
 import {pointer} from "d3";
 import type {DemandCategory, Good} from "../modules/goods-generator";
 import {DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY} from "../modules/goods-generator";
-import {RURAL_BONUS_PRODUCTION} from "../modules/trade-generator";
+import {BONUS_RESOURCE_PRODUCTION} from "../modules/trade-generator";
 import {ensureEl, unique} from "../utils";
 import {getHeight} from "../utils/unitUtils";
 import {ProductionChains} from "./production-chains";
@@ -168,7 +168,7 @@ function getRuralAvailability(): number[] {
 
   for (const cellId of cells.i) {
     const explicitGoodId = cells.good[cellId];
-    if (explicitGoodId) resources[explicitGoodId] = (resources[explicitGoodId] || 0) + RURAL_BONUS_PRODUCTION;
+    if (explicitGoodId) resources[explicitGoodId] = (resources[explicitGoodId] || 0) + BONUS_RESOURCE_PRODUCTION;
 
     const population = Math.max(0, cells.pop[cellId] || 0);
     if (population <= 0) continue;
