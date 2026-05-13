@@ -155,7 +155,7 @@ export class ProductionModule {
       this.productionData.set(burg.i!, history);
     }
 
-    Trade.redistributeAcrossMarkets(goods, this.productionData, demandInventoryByBurg);
+    Trade.redistributeAcrossMarkets(this.productionData, demandInventoryByBurg);
 
     for (const burg of validBurgs) {
       const data = this.productionData.get(burg.i!);
@@ -179,7 +179,7 @@ export class ProductionModule {
       }
     }
 
-    Trade.updateMarketDemand(goods, this.productionData, demandInventoryByBurg);
+    Trade.updateMarketDemand(this.productionData, demandInventoryByBurg);
 
     TIME && console.timeEnd("generateProduction");
   }
