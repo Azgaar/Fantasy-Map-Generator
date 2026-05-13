@@ -25,17 +25,17 @@ class ZonesModule {
 
   constructor() {
     this.config = {
-      invasion: { quantity: 2, generate: (u) => this.addInvasion(u) },
-      rebels: { quantity: 1.5, generate: (u) => this.addRebels(u) },
-      proselytism: { quantity: 1.6, generate: (u) => this.addProselytism(u) },
-      crusade: { quantity: 1.6, generate: (u) => this.addCrusade(u) },
-      disease: { quantity: 1.4, generate: (u) => this.addDisease(u) },
-      disaster: { quantity: 1, generate: (u) => this.addDisaster(u) },
-      eruption: { quantity: 1, generate: (u) => this.addEruption(u) },
-      avalanche: { quantity: 0.8, generate: (u) => this.addAvalanche(u) },
-      fault: { quantity: 1, generate: (u) => this.addFault(u) },
-      flood: { quantity: 1, generate: (u) => this.addFlood(u) },
-      tsunami: { quantity: 1, generate: (u) => this.addTsunami(u) },
+      invasion: { quantity: 2, generate: u => this.addInvasion(u) },
+      rebels: { quantity: 1.5, generate: u => this.addRebels(u) },
+      proselytism: { quantity: 1.6, generate: u => this.addProselytism(u) },
+      crusade: { quantity: 1.6, generate: u => this.addCrusade(u) },
+      disease: { quantity: 1.4, generate: u => this.addDisease(u) },
+      disaster: { quantity: 1, generate: u => this.addDisaster(u) },
+      eruption: { quantity: 1, generate: u => this.addEruption(u) },
+      avalanche: { quantity: 0.8, generate: u => this.addAvalanche(u) },
+      fault: { quantity: 1, generate: u => this.addFault(u) },
+      flood: { quantity: 1, generate: u => this.addFlood(u) },
+      tsunami: { quantity: 1, generate: u => this.addTsunami(u) }
     };
   }
 
@@ -45,7 +45,7 @@ class ZonesModule {
     const usedCells = new Uint8Array(pack.cells.i.length);
     pack.zones = [];
 
-    Object.values(this.config).forEach((type) => {
+    Object.values(this.config).forEach(type => {
       const expectedNumber = type.quantity * globalModifier;
       let number = gauss(expectedNumber, expectedNumber / 2, 0, 100);
       while (number--) type.generate(usedCells);
@@ -58,16 +58,16 @@ class ZonesModule {
     const { cells, states } = pack;
 
     const ongoingConflicts = states
-      .filter((s) => s.i && !s.removed && s.campaigns)
-      .flatMap((s) => s.campaigns!)
-      .filter((c) => !c.end);
+      .filter(s => s.i && !s.removed && s.campaigns)
+      .flatMap(s => s.campaigns!)
+      .filter(c => !c.end);
     if (!ongoingConflicts.length) return;
     const { defender, attacker } = ra(ongoingConflicts);
 
-    const borderCells = cells.i.filter((cellId) => {
+    const borderCells = cells.i.filter(cellId => {
       if (usedCells[cellId]) return false;
       if (cells.state[cellId] !== defender) return false;
-      return cells.c[cellId].some((c) => cells.state[c] === attacker);
+      return cells.c[cellId].some(c => cells.state[c] === attacker);
     });
 
     const startCell = ra(borderCells);
@@ -82,7 +82,7 @@ class ZonesModule {
       invasionCells.push(cellId);
       if (invasionCells.length >= maxCells) break;
 
-      cells.c[cellId].forEach((neibCellId) => {
+      cells.c[cellId].forEach(neibCellId => {
         if (usedCells[neibCellId]) return;
         if (cells.state[neibCellId] !== defender) return;
         usedCells[neibCellId] = 1;
@@ -104,7 +104,7 @@ class ZonesModule {
       Pillaging: 1,
       Plunder: 1,
       Raid: 1,
-      Skirmishes: 1,
+      Skirmishes: 1
     });
     const name = `${getAdjective(states[attacker].name)} ${subtype}`;
 
@@ -113,29 +113,23 @@ class ZonesModule {
       name,
       type: "Invasion",
       cells: invasionCells,
-      color: "url(#hatch1)",
+      color: "url(#hatch1)"
     });
   }
 
   private addRebels(usedCells: Uint8Array) {
     const { cells, states } = pack;
 
-    const state = ra(
-      states.filter((s) => s.i && !s.removed && s.neighbors?.some(Boolean)),
-    );
+    const state = ra(states.filter(s => s.i && !s.removed && s.neighbors?.some(Boolean)));
     if (!state) return;
 
-    const neibStateId = ra(
-      state.neighbors!.filter((n: number) => n && !states[n].removed),
-    );
+    const neibStateId = ra(state.neighbors!.filter((n: number) => n && !states[n].removed));
     if (!neibStateId) return;
 
     const cellsArray: number[] = [];
     const queue: number[] = [];
     const borderCellId = cells.i.find(
-      (i) =>
-        cells.state[i] === state.i &&
-        cells.c[i].some((c) => cells.state[c] === neibStateId),
+      i => cells.state[i] === state.i && cells.c[i].some(c => cells.state[c] === neibStateId)
     );
     if (borderCellId) queue.push(borderCellId);
     const maxCells = rand(10, 30);
@@ -145,15 +139,11 @@ class ZonesModule {
       cellsArray.push(cellId);
       if (cellsArray.length >= maxCells) break;
 
-      cells.c[cellId].forEach((neibCellId) => {
+      cells.c[cellId].forEach(neibCellId => {
         if (usedCells[neibCellId]) return;
         if (cells.state[neibCellId] !== state.i) return;
         usedCells[neibCellId] = 1;
-        if (
-          neibCellId % 4 !== 0 &&
-          !cells.c[neibCellId].some((c) => cells.state[c] === neibStateId)
-        )
-          return;
+        if (neibCellId % 4 !== 0 && !cells.c[neibCellId].some(c => cells.state[c] === neibStateId)) return;
         queue.push(neibCellId);
       });
     }
@@ -170,7 +160,7 @@ class ZonesModule {
       Rioters: 1,
       Separatists: 1,
       Secessionists: 1,
-      Conspiracy: 1,
+      Conspiracy: 1
     });
 
     const name = `${getAdjective(states[neibStateId].name)} ${rebels}`;
@@ -179,25 +169,23 @@ class ZonesModule {
       name,
       type: "Rebels",
       cells: cellsArray,
-      color: "url(#hatch3)",
+      color: "url(#hatch3)"
     });
   }
 
   private addProselytism(usedCells: Uint8Array) {
     const { cells, religions } = pack;
 
-    const organizedReligions = religions.filter(
-      (r) => r.i && !r.removed && r.type === "Organized",
-    );
+    const organizedReligions = religions.filter(r => r.i && !r.removed && r.type === "Organized");
     const religion = ra(organizedReligions);
     if (!religion) return;
 
     const targetBorderCells = cells.i.filter(
-      (i) =>
+      i =>
         cells.h[i] >= 20 &&
         cells.pop[i] &&
         cells.religion[i] !== religion.i &&
-        cells.c[i].some((c) => cells.religion[c] === religion.i),
+        cells.c[i].some(c => cells.religion[c] === religion.i)
     );
     const startCell = ra(targetBorderCells);
     if (!startCell) return;
@@ -212,7 +200,7 @@ class ZonesModule {
       proselytismCells.push(cellId);
       if (proselytismCells.length >= maxCells) break;
 
-      cells.c[cellId].forEach((neibCellId) => {
+      cells.c[cellId].forEach(neibCellId => {
         if (usedCells[neibCellId]) return;
         if (cells.religion[neibCellId] !== targetReligionId) return;
         if (cells.h[neibCellId] < 20 || !cells.pop[neibCellId]) return;
@@ -227,20 +215,18 @@ class ZonesModule {
       name,
       type: "Proselytism",
       cells: proselytismCells,
-      color: "url(#hatch6)",
+      color: "url(#hatch6)"
     });
   }
 
   private addCrusade(usedCells: Uint8Array) {
     const { cells, religions } = pack;
 
-    const heresies = religions.filter((r) => !r.removed && r.type === "Heresy");
+    const heresies = religions.filter(r => !r.removed && r.type === "Heresy");
     if (!heresies.length) return;
 
     const heresy = ra(heresies);
-    const crusadeCells = cells.i.filter(
-      (i) => !usedCells[i] && cells.religion[i] === heresy.i,
-    );
+    const crusadeCells = cells.i.filter(i => !usedCells[i] && cells.religion[i] === heresy.i);
     if (!crusadeCells.length) return;
     for (const i of crusadeCells) {
       usedCells[i] = 1;
@@ -252,16 +238,14 @@ class ZonesModule {
       name,
       type: "Crusade",
       cells: Array.from(crusadeCells),
-      color: "url(#hatch6)",
+      color: "url(#hatch6)"
     });
   }
 
   private addDisease(usedCells: Uint8Array) {
     const { cells, burgs } = pack;
 
-    const burg = ra(
-      burgs.filter((b) => !usedCells[b.cell] && b.i && !b.removed),
-    );
+    const burg = ra(burgs.filter(b => !usedCells[b.cell] && b.i && !b.removed));
     if (!burg) return;
 
     const cellsArray: number[] = [];
@@ -276,7 +260,7 @@ class ZonesModule {
       if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
       usedCells[next.e] = 1;
 
-      cells.c[next.e].forEach((nextCellId) => {
+      cells.c[next.e].forEach(nextCellId => {
         const c = Routes.getRoute(next.e, nextCellId) ? 5 : 100;
         const p = next.p + c;
         if (p > maxCells) return;
@@ -293,12 +277,7 @@ class ZonesModule {
     const adjectiveName = this.getDiseaseName("adjective");
 
     const model = rw({ color: 2, animal: 1, adjective: 1 });
-    const prefix =
-      model === "color"
-        ? colorName
-        : model === "animal"
-          ? animalName
-          : adjectiveName;
+    const prefix = model === "color" ? colorName : model === "animal" ? animalName : adjectiveName;
 
     const disease = rw({
       Fever: 5,
@@ -313,7 +292,7 @@ class ZonesModule {
       Pestilence: 1,
       Consumption: 1,
       Malaria: 1,
-      Dropsy: 1,
+      Dropsy: 1
     });
     const name = `${prefix} ${disease}`;
 
@@ -322,7 +301,7 @@ class ZonesModule {
       name,
       type: "Disease",
       cells: cellsArray,
-      color: "url(#hatch12)",
+      color: "url(#hatch12)"
     });
   }
 
@@ -348,7 +327,7 @@ class ZonesModule {
         "Silver",
         "Violet",
         "White",
-        "Yellow",
+        "Yellow"
       ]);
     if (model === "animal")
       return ra([
@@ -373,7 +352,7 @@ class ZonesModule {
         "Viper",
         "Wolf",
         "Worm",
-        "Wyrm",
+        "Wyrm"
       ]);
     return ra([
       "Blind",
@@ -395,16 +374,14 @@ class ZonesModule {
       "Silent",
       "Unknown",
       "Venomous",
-      "Vicious",
+      "Vicious"
     ]);
   }
 
   private addDisaster(usedCells: Uint8Array) {
     const { cells, burgs } = pack;
 
-    const burg = ra(
-      burgs.filter((b) => !usedCells[b.cell] && b.i && !b.removed),
-    );
+    const burg = ra(burgs.filter(b => !usedCells[b.cell] && b.i && !b.removed));
     if (!burg) return;
     usedCells[burg.cell] = 1;
 
@@ -420,7 +397,7 @@ class ZonesModule {
       if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
       usedCells[next.e] = 1;
 
-      cells.c[next.e].forEach((e) => {
+      cells.c[next.e].forEach(e => {
         const c = rand(1, 10);
         const p = next.p + c;
         if (p > maxCells) return;
@@ -440,7 +417,7 @@ class ZonesModule {
       Tornadoes: 1,
       Wildfires: 1,
       Storms: 1,
-      Blight: 1,
+      Blight: 1
     });
     const name = `${getAdjective(burg.name!)} ${type}`;
     pack.zones.push({
@@ -448,25 +425,20 @@ class ZonesModule {
       name,
       type: "Disaster",
       cells: cellsArray,
-      color: "url(#hatch5)",
+      color: "url(#hatch5)"
     });
   }
 
   private addEruption(usedCells: Uint8Array) {
     const { cells, markers } = pack;
 
-    const volcanoe = markers.find(
-      (m) => m.type === "volcanoes" && !usedCells[m.cell],
-    );
+    const volcanoe = markers.find(m => m.type === "volcanoes" && !usedCells[m.cell]);
     if (!volcanoe) return;
     usedCells[volcanoe.cell] = 1;
 
-    const note = notes.find((n) => n.id === `marker${volcanoe.i}`);
-    if (note)
-      note.legend = note.legend.replace("Active volcano", "Erupting volcano");
-    const name = note
-      ? `${note.name.replace(" Volcano", "")} Eruption`
-      : "Volcano Eruption";
+    const note = notes.find(n => n.id === `marker${volcanoe.i}`);
+    if (note) note.legend = note.legend.replace("Active volcano", "Erupting volcano");
+    const name = note ? `${note.name.replace(" Volcano", "")} Eruption` : "Volcano Eruption";
 
     const cellsArray: number[] = [];
     const queue = [volcanoe.cell];
@@ -477,7 +449,7 @@ class ZonesModule {
       cellsArray.push(cellId);
       if (cellsArray.length >= maxCells) break;
 
-      cells.c[cellId].forEach((neibCellId) => {
+      cells.c[cellId].forEach(neibCellId => {
         if (usedCells[neibCellId] || cells.h[neibCellId] < 20) return;
         usedCells[neibCellId] = 1;
         queue.push(neibCellId);
@@ -489,16 +461,14 @@ class ZonesModule {
       name,
       type: "Eruption",
       cells: cellsArray,
-      color: "url(#hatch7)",
+      color: "url(#hatch7)"
     });
   }
 
   private addAvalanche(usedCells: Uint8Array) {
     const { cells } = pack;
 
-    const routeCells = cells.i.filter(
-      (i) => !usedCells[i] && Routes.isConnected(i) && cells.h[i] >= 70,
-    );
+    const routeCells = cells.i.filter(i => !usedCells[i] && Routes.isConnected(i) && cells.h[i] >= 70);
     if (!routeCells.length) return;
 
     const startCell = ra(routeCells);
@@ -513,7 +483,7 @@ class ZonesModule {
       cellsArray.push(cellId);
       if (cellsArray.length >= maxCells) break;
 
-      cells.c[cellId].forEach((neibCellId) => {
+      cells.c[cellId].forEach(neibCellId => {
         if (usedCells[neibCellId] || cells.h[neibCellId] < 65) return;
         usedCells[neibCellId] = 1;
         queue.push(neibCellId);
@@ -526,16 +496,14 @@ class ZonesModule {
       name,
       type: "Avalanche",
       cells: cellsArray,
-      color: "url(#hatch5)",
+      color: "url(#hatch5)"
     });
   }
 
   private addFault(usedCells: Uint8Array) {
     const cells = pack.cells;
 
-    const elevatedCells = cells.i.filter(
-      (i) => !usedCells[i] && cells.h[i] > 50 && cells.h[i] < 70,
-    );
+    const elevatedCells = cells.i.filter(i => !usedCells[i] && cells.h[i] > 50 && cells.h[i] < 70);
     if (!elevatedCells.length) return;
 
     const startCell = ra(elevatedCells);
@@ -550,7 +518,7 @@ class ZonesModule {
       if (cells.h[cellId] >= 20) cellsArray.push(cellId);
       if (cellsArray.length >= maxCells) break;
 
-      cells.c[cellId].forEach((neibCellId) => {
+      cells.c[cellId].forEach(neibCellId => {
         if (usedCells[neibCellId] || cells.r[neibCellId]) return;
         usedCells[neibCellId] = 1;
         queue.push(neibCellId);
@@ -563,7 +531,7 @@ class ZonesModule {
       name,
       type: "Fault",
       cells: cellsArray,
-      color: "url(#hatch2)",
+      color: "url(#hatch2)"
     });
   }
 
@@ -576,12 +544,7 @@ class ZonesModule {
     const fluxThreshold = (maxFlux - meanFlux) / 2 + meanFlux;
 
     const bigRiverCells = cells.i.filter(
-      (i) =>
-        !usedCells[i] &&
-        cells.h[i] < 50 &&
-        cells.r[i] &&
-        cells.fl[i] > fluxThreshold &&
-        cells.burg[i],
+      i => !usedCells[i] && cells.h[i] < 50 && cells.r[i] && cells.fl[i] > fluxThreshold && cells.burg[i]
     );
     if (!bigRiverCells.length) return;
 
@@ -598,7 +561,7 @@ class ZonesModule {
       cellsArray.push(cellId);
       if (cellsArray.length >= maxCells) break;
 
-      cells.c[cellId].forEach((neibCellId) => {
+      cells.c[cellId].forEach(neibCellId => {
         if (
           usedCells[neibCellId] ||
           cells.h[neibCellId] < 20 ||
@@ -618,7 +581,7 @@ class ZonesModule {
       name,
       type: "Flood",
       cells: cellsArray,
-      color: "url(#hatch13)",
+      color: "url(#hatch13)"
     });
   }
 
@@ -626,10 +589,7 @@ class ZonesModule {
     const { cells, features } = pack;
 
     const coastalCells = cells.i.filter(
-      (i) =>
-        !usedCells[i] &&
-        cells.t[i] === -1 &&
-        features[cells.f[i]].type !== "lake",
+      i => !usedCells[i] && cells.t[i] === -1 && features[cells.f[i]].type !== "lake"
     );
     if (!coastalCells.length) return;
 
@@ -645,7 +605,7 @@ class ZonesModule {
       if (cells.t[cellId] === 1) cellsArray.push(cellId);
       if (cellsArray.length >= maxCells) break;
 
-      cells.c[cellId].forEach((neibCellId) => {
+      cells.c[cellId].forEach(neibCellId => {
         if (usedCells[neibCellId]) return;
         if (cells.t[neibCellId] > 2) return;
         if (pack.features[cells.f[neibCellId]].type === "lake") return;
@@ -660,7 +620,7 @@ class ZonesModule {
       name,
       type: "Tsunami",
       cells: cellsArray,
-      color: "url(#hatch13)",
+      color: "url(#hatch13)"
     });
   }
 }

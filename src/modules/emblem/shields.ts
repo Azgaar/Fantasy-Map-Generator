@@ -10,7 +10,7 @@ export const shields: {
     banner: 1,
     simple: 2,
     fantasy: 1,
-    middleEarth: 0,
+    middleEarth: 0
   },
   basic: { heater: 12, spanish: 6, french: 1 },
   regional: { horsehead: 1, horsehead2: 1, polish: 1, hessen: 1, swiss: 1 },
@@ -20,7 +20,7 @@ export const shields: {
     kite: 1,
     oldFrench: 5,
     renaissance: 2,
-    baroque: 2,
+    baroque: 2
   },
   specific: { targe: 1, targe2: 0, pavise: 5, wedged: 10 },
   banner: {
@@ -30,7 +30,7 @@ export const shields: {
     banner: 0,
     dovetail: 1,
     gonfalon: 5,
-    pennant: 0,
+    pennant: 0
   },
   simple: { round: 12, oval: 6, vesicaPiscis: 1, square: 1, diamond: 2, no: 0 },
   fantasy: { fantasy1: 2, fantasy2: 2, fantasy3: 1, fantasy4: 1, fantasy5: 3 },
@@ -41,6 +41,6 @@ export const shields: {
     erebor: 1,
     ironHills: 1,
     urukHai: 1,
-    moriaOrc: 1,
-  },
+    moriaOrc: 1
+  }
 };

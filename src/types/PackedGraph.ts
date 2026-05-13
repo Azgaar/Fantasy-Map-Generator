@@ -10,14 +10,7 @@ import type { State } from "../modules/states-generator";
 import type { Deal, Market } from "../modules/trade-generator";
 import type { Zone } from "../modules/zones-generator";
 
-export type TypedArray =
-  | Uint8Array
-  | Uint16Array
-  | Uint32Array
-  | Int8Array
-  | Int16Array
-  | Float32Array
-  | Float64Array;
+export type TypedArray = Uint8Array | Uint16Array | Uint32Array | Int8Array | Int16Array | Float32Array | Float64Array;
 
 export interface PackedGraph {
   cells: {

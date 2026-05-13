@@ -47,12 +47,12 @@ function start() {
     overlayOpacity: 0.75,
     stagePadding: 4,
     stageRadius: 4,
-    onPopoverRender: (popover) => {
+    onPopoverRender: popover => {
       Object.assign(popover.wrapper.style, {
         backgroundColor: "#ffffff",
         color: "#000000",
         border: "1px solid #cccccc",
-        fontFamily: "Georgia, serif",
+        fontFamily: "Georgia, serif"
       });
       popover.title.style.color = "#000000";
       popover.title.style.borderBottomColor = "#cccccc";
@@ -62,7 +62,7 @@ function start() {
         Object.assign(btn.style, {
           backgroundColor: "#f0f0f0",
           border: "1px solid #cccccc",
-          color: "#000000",
+          color: "#000000"
         });
       }
     },
@@ -81,8 +81,8 @@ function start() {
           description:
             "This quick tour covers the essential controls. Use Next/Previous to navigate, or press Esc to exit at any time.",
           side: "over",
-          align: "center",
-        },
+          align: "center"
+        }
       },
       {
         element: "#map",
@@ -93,8 +93,8 @@ function start() {
           onNextClick: () => {
             document.body.classList.add("tour-free-roam");
             tour.moveNext();
-          },
-        },
+          }
+        }
       },
       {
         element: "#tooltip",
@@ -106,8 +106,8 @@ function start() {
           description:
             "Move your mouse over the map (when the tour is over), the tooltip bar at the bottom updates with information about cells, burgs, states, and more. Click Next when you're ready to continue.",
           side: "top",
-          align: "center",
-        },
+          align: "center"
+        }
       },
       {
         element: "#optionsTrigger",
@@ -117,14 +117,13 @@ function start() {
         },
         popover: {
           title: "Open the Options Menu",
-          description:
-            "Click this arrow button to open the main options panel where all configuration tabs live.",
+          description: "Click this arrow button to open the main options panel where all configuration tabs live.",
           side: "right",
           onNextClick: () => {
             openOptionsPanel();
             tour.moveNext();
-          },
-        },
+          }
+        }
       },
 
       // ── Layers tab ──────────────────────────────────────────────────────────
@@ -135,10 +134,9 @@ function start() {
         },
         popover: {
           title: "Layers Tab",
-          description:
-            "The Layers tab controls which map elements are visible on the map.",
-          side: "bottom",
-        },
+          description: "The Layers tab controls which map elements are visible on the map.",
+          side: "bottom"
+        }
       },
       {
         element: "#layersPreset",
@@ -149,8 +147,8 @@ function start() {
           title: "Layer Presets",
           description:
             "Choose a preset to instantly show or hide common layer combinations: Political, Physical, Religions, and more.",
-          side: "bottom",
-        },
+          side: "bottom"
+        }
       },
       {
         element: "#mapLayers",
@@ -161,8 +159,8 @@ function start() {
           title: "Toggle Individual Layers",
           description:
             "Click any layer name to toggle it on or off. Layers can be reordered by dragging and dropping them.",
-          side: "right",
-        },
+          side: "right"
+        }
       },
 
       // ── Style tab ────────────────────────────────────────────────────────────
@@ -175,8 +173,8 @@ function start() {
           title: "Style Tab",
           description:
             "The Style tab controls the visual appearance of the map — color schemes, opacity, line weights, and other properties for each map element.",
-          side: "bottom",
-        },
+          side: "bottom"
+        }
       },
       {
         element: "#stylePreset",
@@ -187,8 +185,8 @@ function start() {
           title: "Style Presets",
           description:
             "Pick a color scheme preset for the map including Default, Ancient, Pale, and others. The entire map's color palette updates instantly.",
-          side: "bottom",
-        },
+          side: "bottom"
+        }
       },
       {
         element: "#styleElementSelect",
@@ -199,8 +197,8 @@ function start() {
           title: "Individual Style Settings",
           description:
             "Select a specific map element from this dropdown to adjust its colors, opacity, stroke width, and other visual properties.",
-          side: "bottom",
-        },
+          side: "bottom"
+        }
       },
 
       // ── Options tab ──────────────────────────────────────────────────────────
@@ -213,8 +211,8 @@ function start() {
           title: "Options Tab",
           description:
             "The Options tab lets you configure world generation parameters like the number of states, cultures, religions, and other settings that shape the generated world.",
-          side: "bottom",
-        },
+          side: "bottom"
+        }
       },
       {
         element: "#optionsContent",
@@ -225,8 +223,8 @@ function start() {
           title: "Generation Options",
           description:
             "Set world parameters like the number of cultures, states, and religions before generating a new map. UI preferences like tooltips and autosave are also here.",
-          side: "right",
-        },
+          side: "right"
+        }
       },
       {
         element: "#configureWorld",
@@ -241,8 +239,8 @@ function start() {
           side: "right",
           onNextClick: () => {
             tour.moveNext();
-          },
-        },
+          }
+        }
       },
       {
         element: "#worldConfigurator",
@@ -259,8 +257,8 @@ function start() {
             closeDialogs();
             clickTab("toolsTab");
             tour.moveNext();
-          },
-        },
+          }
+        }
       },
 
       // ── Tools tab ────────────────────────────────────────────────────────────
@@ -273,8 +271,8 @@ function start() {
           title: "Tools Tab",
           description:
             "The Tools tab gives you direct access to all of the map's editors: terrain, biomes, states, cultures, religions, routes, and more.",
-          side: "bottom",
-        },
+          side: "bottom"
+        }
       },
       {
         element: "#editHeightmapButton",
@@ -288,8 +286,8 @@ function start() {
           side: "right",
           onNextClick: () => {
             tour.moveNext();
-          },
-        },
+          }
+        }
       },
       {
         element: "#customizationMenu",
@@ -304,8 +302,8 @@ function start() {
           title: "Heightmap Editor",
           description:
             "The Heightmap editor panel lets you paint terrain directly on the map. You can raise or lower land, apply templates, convert an image into a heightmap, or preview the terrain in 3D.",
-          side: "right",
-        },
+          side: "right"
+        }
       },
 
       // ── About tab ────────────────────────────────────────────────────────────
@@ -318,8 +316,8 @@ function start() {
           title: "About Tab",
           description:
             "The About tab has links to documentation, video tutorials, the community Discord, and version information.",
-          side: "bottom",
-        },
+          side: "bottom"
+        }
       },
       {
         element: "#aboutContent",
@@ -330,8 +328,8 @@ function start() {
           title: "About & Resources",
           description:
             "Find the Quick Start guide, video tutorials, hotkey reference, Discord community, and changelog here. The project is open source and actively maintained.",
-          side: "right",
-        },
+          side: "right"
+        }
       },
 
       // ── Export / Save / Load ─────────────────────────────────────────────────
@@ -347,8 +345,8 @@ function start() {
           side: "top",
           onNextClick: () => {
             tour.moveNext();
-          },
-        },
+          }
+        }
       },
       {
         element: "#exportMapData",
@@ -364,8 +362,8 @@ function start() {
           onNextClick: () => {
             closeDialogs();
             tour.moveNext();
-          },
-        },
+          }
+        }
       },
       {
         element: "#saveButton",
@@ -377,18 +375,16 @@ function start() {
           onNextClick: () => {
             tour.destroy();
             closeOptionsPanel();
-          },
-        },
-      },
-    ],
+          }
+        }
+      }
+    ]
   });
 
   function isEditableTarget(target: EventTarget | null): boolean {
     if (!(target instanceof HTMLElement)) return false;
     if (target.isContentEditable) return true;
-    return !!target.closest(
-      "input, textarea, select, [contenteditable], [contenteditable='plaintext-only']",
-    );
+    return !!target.closest("input, textarea, select, [contenteditable], [contenteditable='plaintext-only']");
   }
 
   function handleKeydown(e: KeyboardEvent): void {

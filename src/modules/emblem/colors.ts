@@ -8,5 +8,5 @@ export const colors = {
   purpure: "#522d5b",
   murrey: "#85185b",
   sanguine: "#b63a3a",
-  tenné: "#cc7f19",
+  tenné: "#cc7f19"
 };

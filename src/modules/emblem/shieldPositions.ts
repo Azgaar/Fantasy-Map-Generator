@@ -30,7 +30,7 @@ export const shieldPositions = {
     F: [55.5, 26],
     I: [-33, 62],
     G: [33, 62],
-    H: [0, 89.5],
+    H: [0, 89.5]
   },
   spanish: {
     a: [-43.75, -50],
@@ -62,7 +62,7 @@ export const shieldPositions = {
     F: [66.4, 26],
     I: [-49, 70],
     G: [49, 70],
-    H: [0, 92],
+    H: [0, 92]
   },
   french: {
     a: [-43.75, -50],
@@ -94,7 +94,7 @@ export const shieldPositions = {
     F: [66.4, 26],
     I: [-65.4, 70],
     G: [65.4, 70],
-    H: [0, 89],
+    H: [0, 89]
   },
   horsehead: {
     a: [-43.75, -47.5],
@@ -124,7 +124,7 @@ export const shieldPositions = {
     F: [39, 20],
     I: [-33.5, 60],
     G: [33.5, 60],
-    H: [0, 91.5],
+    H: [0, 91.5]
   },
   horsehead2: {
     a: [-37.5, -47.5],
@@ -156,7 +156,7 @@ export const shieldPositions = {
     F: [38.5, 31],
     I: [-35, 67],
     G: [35, 67],
-    H: [0, 85],
+    H: [0, 85]
   },
   polish: {
     a: [-35, -50],
@@ -188,7 +188,7 @@ export const shieldPositions = {
     F: [62, 32],
     I: [-37, 68],
     G: [37, 68],
-    H: [0, 86],
+    H: [0, 86]
   },
   hessen: {
     a: [-43.75, -50],
@@ -220,7 +220,7 @@ export const shieldPositions = {
     F: [62, 26],
     I: [-46, 70],
     G: [46, 70],
-    H: [0, 91.5],
+    H: [0, 91.5]
   },
   swiss: {
     a: [-43.75, -50],
@@ -252,7 +252,7 @@ export const shieldPositions = {
     F: [50, 26],
     I: [-29, 62],
     G: [29, 62],
-    H: [0, 89.5],
+    H: [0, 89.5]
   },
   boeotian: {
     a: [-37.5, -47.5],
@@ -284,7 +284,7 @@ export const shieldPositions = {
     F: [58, 27],
     I: [-39, 63],
     G: [39, 63],
-    H: [0, 81],
+    H: [0, 81]
   },
   roman: {
     a: [-40, -52.5],
@@ -317,7 +317,7 @@ export const shieldPositions = {
     I: [-51.5, 65],
     G: [51.5, 65],
     H: [-17, 75],
-    L: [17, 75],
+    L: [17, 75]
   },
   kite: {
     b: [0, -65],
@@ -339,7 +339,7 @@ export const shieldPositions = {
     I: [-15, 42],
     G: [15, 42],
     H: [0, 73],
-    L: [0, -91],
+    L: [0, -91]
   },
   oldFrench: {
     a: [-43.75, -50],
@@ -371,7 +371,7 @@ export const shieldPositions = {
     F: [64, 26],
     I: [-45, 62],
     G: [45, 62],
-    H: [0, 91],
+    H: [0, 91]
   },
   renaissance: {
     a: [-43.75, -50],
@@ -403,7 +403,7 @@ export const shieldPositions = {
     F: [65, 31],
     I: [-45, 76],
     G: [45, 76],
-    H: [0, 87],
+    H: [0, 87]
   },
   baroque: {
     a: [-43.75, -45],
@@ -435,7 +435,7 @@ export const shieldPositions = {
     F: [66, 31],
     I: [-35, 73],
     G: [35, 73],
-    H: [0, 89],
+    H: [0, 89]
   },
   targe: {
     a: [-43.75, -50],
@@ -467,7 +467,7 @@ export const shieldPositions = {
     F: [61, 26],
     I: [-49, 63],
     G: [49, 59],
-    H: [0, 80],
+    H: [0, 80]
   },
   targe2: {
     a: [-43.75, -50],
@@ -499,7 +499,7 @@ export const shieldPositions = {
     F: [62, 26],
     I: [-46, 66],
     G: [48, 67],
-    H: [0, 83],
+    H: [0, 83]
   },
   pavise: {
     a: [-40, -52.5],
@@ -531,7 +531,7 @@ export const shieldPositions = {
     F: [50, 36],
     I: [-46, 81],
     G: [46, 81],
-    H: [0, 81],
+    H: [0, 81]
   },
   wedged: {
     a: [-43.75, -50],
@@ -563,7 +563,7 @@ export const shieldPositions = {
     F: [50, 26],
     I: [-27, 62],
     G: [27, 62],
-    H: [0, 87],
+    H: [0, 87]
   },
   flag: {
     a: [-60, -40],
@@ -596,7 +596,7 @@ export const shieldPositions = {
     I: [-81, 51],
     G: [81, 51],
     H: [-27, 51],
-    L: [27, 51],
+    L: [27, 51]
   },
   pennon: {
     a: [-75, -40],
@@ -619,7 +619,7 @@ export const shieldPositions = {
     H: [-43, 36],
     I: [-81, 48],
     J: [-81, 17],
-    K: [-81, -17],
+    K: [-81, -17]
   },
   guidon: {
     a: [-60, -40],
@@ -650,7 +650,7 @@ export const shieldPositions = {
     I: [-81, 51],
     G: [78, 51],
     H: [-27, 51],
-    L: [27, 51],
+    L: [27, 51]
   },
   banner: {
     a: [-50, -50],
@@ -683,7 +683,7 @@ export const shieldPositions = {
     I: [-66.5, 66.5],
     G: [66.5, 66.5],
     H: [-25, 75],
-    L: [25, 75],
+    L: [25, 75]
   },
   dovetail: {
     a: [-49.75, -50],
@@ -715,7 +715,7 @@ export const shieldPositions = {
     I: [-66.5, 84.5],
     G: [66.5, 84.5],
     H: [-25, 64],
-    L: [25, 64],
+    L: [25, 64]
   },
   gonfalon: {
     a: [-49.75, -50],
@@ -747,7 +747,7 @@ export const shieldPositions = {
     F: [66.5, 26],
     I: [-40, 63],
     G: [40, 63],
-    H: [0, 88],
+    H: [0, 88]
   },
   pennant: {
     a: [-45, -50],
@@ -771,7 +771,7 @@ export const shieldPositions = {
     F: [31, 0],
     I: [-16, 38],
     G: [16, 38],
-    H: [0, 76],
+    H: [0, 76]
   },
   round: {
     a: [-40, -40],
@@ -803,7 +803,7 @@ export const shieldPositions = {
     F: [70, 31],
     I: [-42, 64],
     G: [42, 64],
-    H: [0, 77],
+    H: [0, 77]
   },
   oval: {
     a: [-37.5, -50],
@@ -835,7 +835,7 @@ export const shieldPositions = {
     F: [55, 31],
     I: [-36, 68],
     G: [36, 68],
-    H: [0, 85],
+    H: [0, 85]
   },
   vesicaPiscis: {
     a: [-32, -37],
@@ -868,7 +868,7 @@ export const shieldPositions = {
     I: [-29, 63],
     G: [29, 63],
     H: [0, 89],
-    L: [0, -89],
+    L: [0, -89]
   },
   square: {
     a: [-49.75, -50],
@@ -901,7 +901,7 @@ export const shieldPositions = {
     I: [-66.5, 66.5],
     G: [66.5, 66.5],
     H: [-22, 66.5],
-    L: [22, 66.5],
+    L: [22, 66.5]
   },
   diamond: {
     a: [-32, -37],
@@ -934,7 +934,7 @@ export const shieldPositions = {
     I: [-22, 56],
     G: [22, 56],
     H: [0, 83],
-    L: [0, -82],
+    L: [0, -82]
   },
   no: {
     a: [-66.5, -66.5],
@@ -967,7 +967,7 @@ export const shieldPositions = {
     I: [-91.5, 91.5],
     G: [91.5, 91.5],
     H: [-30.5, 91.5],
-    L: [30.5, 91.5],
+    L: [30.5, 91.5]
   },
   fantasy1: {
     a: [-45, -45],
@@ -999,7 +999,7 @@ export const shieldPositions = {
     F: [46, 26],
     I: [-29, 62],
     G: [29, 62],
-    H: [0, 84],
+    H: [0, 84]
   },
   fantasy2: {
     a: [-45, -45],
@@ -1032,7 +1032,7 @@ export const shieldPositions = {
     I: [-32, 58],
     G: [32, 58],
     H: [0, 83],
-    L: [0, -72],
+    L: [0, -72]
   },
   fantasy3: {
     a: [-40, -45],
@@ -1064,7 +1064,7 @@ export const shieldPositions = {
     F: [60, 20],
     I: [-34, 56],
     G: [34, 56],
-    H: [0, 83],
+    H: [0, 83]
   },
   fantasy4: {
     a: [-50, -45],
@@ -1097,7 +1097,7 @@ export const shieldPositions = {
     I: [-42, 75],
     G: [42, 75],
     H: [0, 91.5],
-    L: [0, -79],
+    L: [0, -79]
   },
   fantasy5: {
     a: [-45, -50],
@@ -1129,7 +1129,7 @@ export const shieldPositions = {
     F: [48, 20],
     I: [-28.5, 60],
     G: [28.5, 60],
-    H: [0, 89],
+    H: [0, 89]
   },
   noldor: {
     b: [0, -65],
@@ -1151,7 +1151,7 @@ export const shieldPositions = {
     I: [-14, 43],
     G: [14, 43],
     H: [0, 74],
-    L: [0, -85],
+    L: [0, -85]
   },
   gondor: {
     a: [-32.5, -50],
@@ -1183,7 +1183,7 @@ export const shieldPositions = {
     F: [42, 22],
     I: [-26, 60],
     G: [26, 60],
-    H: [0, 87],
+    H: [0, 87]
   },
   easterling: {
     a: [-40, -47.5],
@@ -1214,7 +1214,7 @@ export const shieldPositions = {
     F: [52, 24],
     I: [-52, 72],
     G: [52, 72],
-    H: [0, 65],
+    H: [0, 65]
   },
   erebor: {
     a: [-40, -40],
@@ -1245,7 +1245,7 @@ export const shieldPositions = {
     J: [-47, 46],
     F: [47, 46],
     I: [-22, 81],
-    G: [22, 81],
+    G: [22, 81]
   },
   ironHills: {
     a: [-43.75, -50],
@@ -1277,7 +1277,7 @@ export const shieldPositions = {
     F: [57, 26],
     I: [-33, 64],
     G: [33, 64],
-    H: [0, 88],
+    H: [0, 88]
   },
   urukHai: {
     a: [-40, -45],
@@ -1310,7 +1310,7 @@ export const shieldPositions = {
     I: [-33, 57],
     G: [35, 57],
     H: [0, 57],
-    L: [-39, -50],
+    L: [-39, -50]
   },
   moriaOrc: {
     a: [-37.5, -37.5],
@@ -1342,6 +1342,6 @@ export const shieldPositions = {
     F: [52, 9],
     I: [-31, 40],
     G: [40, 43],
-    H: [4, 47],
-  },
+    H: [4, 47]
+  }
 };

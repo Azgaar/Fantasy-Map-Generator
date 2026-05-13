@@ -5,7 +5,7 @@ import {
   defaultCoastSettings,
   fractalize,
   makeRoughnessProfile,
-  PROFILE_SIZE,
+  PROFILE_SIZE
 } from "../renderers/coastline-fractal";
 import { ensureEl } from "../utils";
 
@@ -27,7 +27,7 @@ const SLIDER_DEFS: SliderDef[] = [
     min: 1,
     max: 5,
     step: 1,
-    key: "maxDepth",
+    key: "maxDepth"
   },
   {
     id: "coastBaseAmplitude",
@@ -36,7 +36,7 @@ const SLIDER_DEFS: SliderDef[] = [
     min: 0.2,
     max: 4,
     step: 0.1,
-    key: "baseAmplitude",
+    key: "baseAmplitude"
   },
   {
     id: "coastAmplitudeDecay",
@@ -45,7 +45,7 @@ const SLIDER_DEFS: SliderDef[] = [
     min: 0.01,
     max: 0.99,
     step: 0.01,
-    key: "amplitudeDecay",
+    key: "amplitudeDecay"
   },
   {
     id: "coastMinEdge",
@@ -54,7 +54,7 @@ const SLIDER_DEFS: SliderDef[] = [
     min: 0.1,
     max: 10,
     step: 0.1,
-    key: "minEdge",
+    key: "minEdge"
   },
   {
     id: "coastSmoothThreshold",
@@ -63,7 +63,7 @@ const SLIDER_DEFS: SliderDef[] = [
     min: 0.01,
     max: 0.5,
     step: 0.01,
-    key: "smoothThreshold",
+    key: "smoothThreshold"
   },
   {
     id: "coastRoughnessContrast",
@@ -72,7 +72,7 @@ const SLIDER_DEFS: SliderDef[] = [
     min: 0.5,
     max: 10,
     step: 0.1,
-    key: "roughnessContrast",
+    key: "roughnessContrast"
   },
   {
     id: "coastProfileHarmonics",
@@ -81,7 +81,7 @@ const SLIDER_DEFS: SliderDef[] = [
     min: 1,
     max: 8,
     step: 1,
-    key: "profileHarmonics",
+    key: "profileHarmonics"
   },
   {
     id: "coastLakeSmoothThreshMult",
@@ -90,13 +90,13 @@ const SLIDER_DEFS: SliderDef[] = [
     min: 0.1,
     max: 5,
     step: 0.1,
-    key: "lakeSmoothThreshMult",
-  },
+    key: "lakeSmoothThreshMult"
+  }
 ];
 
 const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled">> = {
   Default: {
-    ...defaultCoastSettings,
+    ...defaultCoastSettings
   },
   Smooth: {
     maxDepth: 3,
@@ -106,7 +106,7 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled">> = {
     smoothThreshold: 0.3,
     roughnessContrast: 2.0,
     profileHarmonics: 1,
-    lakeSmoothThreshMult: 3.0,
+    lakeSmoothThreshMult: 3.0
   },
   Rocky: {
     maxDepth: 4,
@@ -116,7 +116,7 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled">> = {
     smoothThreshold: 0.05,
     roughnessContrast: 0.8,
     profileHarmonics: 7,
-    lakeSmoothThreshMult: 1.2,
+    lakeSmoothThreshMult: 1.2
   },
   Fjords: {
     maxDepth: 4,
@@ -126,7 +126,7 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled">> = {
     smoothThreshold: 0.25,
     roughnessContrast: 5.0,
     profileHarmonics: 2,
-    lakeSmoothThreshMult: 2.5,
+    lakeSmoothThreshMult: 2.5
   },
   Archipelago: {
     maxDepth: 4,
@@ -136,8 +136,8 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled">> = {
     smoothThreshold: 0.18,
     roughnessContrast: 1.0,
     profileHarmonics: 8,
-    lakeSmoothThreshMult: 1.5,
-  },
+    lakeSmoothThreshMult: 1.5
+  }
 };
 
 const PREVIEW_SEED = "preview_coastline";
@@ -182,7 +182,7 @@ export function open(): void {
     thumb.style.left = defaultCoastSettings.enabled ? "18px" : "2px";
     slidersDiv.style.opacity = defaultCoastSettings.enabled ? "" : "0.4";
     slidersDiv.style.pointerEvents = defaultCoastSettings.enabled ? "" : "none";
-    Object.keys(COAST_PRESETS).forEach((name) => {
+    Object.keys(COAST_PRESETS).forEach(name => {
       const btn = ensureEl<HTMLButtonElement>(`coastPreset_${name}`);
       btn.disabled = !defaultCoastSettings.enabled;
     });
@@ -222,16 +222,13 @@ export function open(): void {
     title: "Coastline Settings Editor",
     resizable: false,
     width: "auto",
-    position: { my: "right top", at: "right-10 top+10", of: "svg" },
+    position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
 }
 
 function buildDialogHTML(): string {
   const presetButtons = Object.keys(COAST_PRESETS)
-    .map(
-      (name) =>
-        `<button id="coastPreset_${name}" style="font-size:.78em;padding:2px 8px">${name}</button>`,
-    )
+    .map(name => `<button id="coastPreset_${name}" style="font-size:.78em;padding:2px 8px">${name}</button>`)
     .join("");
 
   const rows = SLIDER_DEFS.map(({ id, label, tip, min, max, step, key }) => {
@@ -301,7 +298,7 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
   const profile = makeRoughnessProfile(
     rand,
     defaultCoastSettings.roughnessContrast,
-    defaultCoastSettings.profileHarmonics,
+    defaultCoastSettings.profileHarmonics
   );
 
   const thresh = Math.min(Math.max(defaultCoastSettings.smoothThreshold, 0), 1);
@@ -336,11 +333,7 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
   };
 
   // Helper: stroke curve clipped to a horizontal band
-  const strokeBand = (
-    clipTop: number,
-    clipBot: number,
-    color: string,
-  ): void => {
+  const strokeBand = (clipTop: number, clipBot: number, color: string): void => {
     const h = clipBot - clipTop;
     if (h <= 0) return;
     ctx.save();
@@ -410,7 +403,7 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
     [cx, cy - r], // top
     [cx + r, cy], // right
     [cx, cy + r], // bottom
-    [cx - r, cy], // left
+    [cx - r, cy] // left
   ];
 
   const shape = defaultCoastSettings.enabled
@@ -419,28 +412,14 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
   const path = new Path2D(`${buildCoastlinePath(shape)}Z`);
 
   // Ocean background — radial gradient, lighter at centre
-  const bgGrad = ctx.createRadialGradient(
-    cx,
-    cy,
-    0,
-    cx,
-    cy,
-    Math.max(W, H) * 0.85,
-  );
+  const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.85);
   bgGrad.addColorStop(0, "#cce5f5");
   bgGrad.addColorStop(1, "#6aa4cb");
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
   // Land fill with drop shadow
-  const landGrad = ctx.createRadialGradient(
-    cx - r * 0.1,
-    cy - r * 0.1,
-    r * 0.05,
-    cx,
-    cy,
-    r * 1.1,
-  );
+  const landGrad = ctx.createRadialGradient(cx - r * 0.1, cy - r * 0.1, r * 0.05, cx, cy, r * 1.1);
   landGrad.addColorStop(0, "#d8c87a");
   landGrad.addColorStop(0.5, "#9cbc60");
   landGrad.addColorStop(1, "#5c8e40");
@@ -460,7 +439,7 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
   ctx.stroke(path);
 
   // Original polygon skeleton — shows the raw 4-vertex input before fractalization
-  const origPts = shape.origIndices.map((i) => shape.points[i]);
+  const origPts = shape.origIndices.map(i => shape.points[i]);
   ctx.beginPath();
   for (let j = 0; j < origPts.length; j++) {
     const [x, y] = origPts[j];

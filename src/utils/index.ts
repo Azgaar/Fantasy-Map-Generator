@@ -1,27 +1,8 @@
-import {
-  createTypedArray,
-  getTypedArray,
-  last,
-  TYPED_ARRAY_MAX,
-  unique,
-} from "./arrayUtils";
-import {
-  abbreviate,
-  getAdjective,
-  isVowel,
-  list,
-  nth,
-  trimVowels,
-} from "./languageUtils";
+import { createTypedArray, getTypedArray, last, TYPED_ARRAY_MAX, unique } from "./arrayUtils";
+import { abbreviate, getAdjective, isVowel, list, nth, trimVowels } from "./languageUtils";
 import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
 import "./polyfills";
-import {
-  C_12,
-  getColors,
-  getMixedColor,
-  getRandomColor,
-  toHEX,
-} from "./colorUtils";
+import { C_12, getColors, getMixedColor, getRandomColor, toHEX } from "./colorUtils";
 import {
   clipPoly,
   debounce,
@@ -37,15 +18,9 @@ import {
   openURL,
   parseError,
   throttle,
-  wiki,
+  wiki
 } from "./commonUtils";
-import {
-  drawCellsValue,
-  drawPath,
-  drawPoint,
-  drawPolygons,
-  drawRouteConnections,
-} from "./debugUtils";
+import { drawCellsValue, drawPath, drawPoint, drawPolygons, drawRouteConnections } from "./debugUtils";
 import { distanceSquared, rollups } from "./functionUtils";
 import {
   calculateVoronoi,
@@ -61,44 +36,13 @@ import {
   isLand,
   isWater,
   poissonDiscSampler,
-  shouldRegenerateGrid,
+  shouldRegenerateGrid
 } from "./graphUtils";
 import { ensureEl, getComposedPath, getNextId } from "./nodeUtils";
-import {
-  connectVertices,
-  findPath,
-  getIsolines,
-  getPolesOfInaccessibility,
-  getVertexPath,
-} from "./pathUtils";
-import {
-  biased,
-  each,
-  gauss,
-  generateSeed,
-  getNumberInRange,
-  P,
-  Pint,
-  ra,
-  rand,
-  rw,
-} from "./probabilityUtils";
-import {
-  capitalize,
-  isValidJSON,
-  parseTransform,
-  round,
-  safeParseJSON,
-  sanitizeId,
-  splitInTwo,
-} from "./stringUtils";
-import {
-  convertTemperature,
-  formatPrice,
-  getHeight,
-  getIntegerFromSI,
-  si,
-} from "./unitUtils";
+import { connectVertices, findPath, getIsolines, getPolesOfInaccessibility, getVertexPath } from "./pathUtils";
+import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
+import { capitalize, isValidJSON, parseTransform, round, safeParseJSON, sanitizeId, splitInTwo } from "./stringUtils";
+import { convertTemperature, formatPrice, getHeight, getIntegerFromSI, si } from "./unitUtils";
 
 window.rn = rn;
 window.lim = lim;
@@ -129,10 +73,8 @@ window.biased = biased;
 window.getNumberInRange = getNumberInRange;
 window.generateSeed = generateSeed;
 
-window.convertTemperature = (
-  temp: number,
-  scale: any = (window as any).temperatureScale.value || "°C",
-) => convertTemperature(temp, scale);
+window.convertTemperature = (temp: number, scale: any = (window as any).temperatureScale.value || "°C") =>
+  convertTemperature(temp, scale);
 window.si = si;
 window.getInteger = getIntegerFromSI;
 window.getHeight = getHeight;
@@ -153,10 +95,8 @@ window.dist2 = distanceSquared;
 window.getIsolines = getIsolines;
 window.getPolesOfInaccessibility = getPolesOfInaccessibility;
 window.connectVertices = connectVertices;
-window.findPath = (start, end, getCost) =>
-  findPath(start, end, getCost, (window as any).pack);
-window.getVertexPath = (cellsArray) =>
-  getVertexPath(cellsArray, (window as any).pack);
+window.findPath = (start, end, getCost) => findPath(start, end, getCost, (window as any).pack);
+window.getVertexPath = cellsArray => getVertexPath(cellsArray, (window as any).pack);
 
 window.round = round;
 window.capitalize = capitalize;
@@ -182,40 +122,20 @@ declare global {
     safeParse: (str: string) => any;
   }
   interface Node {
-    on: (
-      name: string,
-      fn: EventListenerOrEventListenerObject,
-      options?: boolean | AddEventListenerOptions,
-    ) => Node;
+    on: (name: string, fn: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) => Node;
     off: (name: string, fn: EventListenerOrEventListenerObject) => Node;
   }
 }
 
 window.shouldRegenerateGrid = (grid: any, expectedSeed: number) =>
-  shouldRegenerateGrid(
-    grid,
-    expectedSeed,
-    (window as any).graphWidth,
-    (window as any).graphHeight,
-  );
-window.generateGrid = () =>
-  generateGrid(
-    (window as any).seed,
-    (window as any).graphWidth,
-    (window as any).graphHeight,
-  );
-window.findGridAll = (x: number, y: number, radius: number) =>
-  findGridAll(x, y, radius, (window as any).grid);
-window.findGridCell = (x: number, y: number) =>
-  findGridCell(x, y, (window as any).grid);
-window.findCell = (x: number, y: number, radius?: number) =>
-  findClosestCell(x, y, radius, (window as any).pack);
-window.findAll = (x: number, y: number, radius: number) =>
-  findAllCellsInRadius(x, y, radius, (window as any).pack);
-window.getPackPolygon = (cellIndex: number) =>
-  getPackPolygon(cellIndex, (window as any).pack);
-window.getGridPolygon = (cellIndex: number) =>
-  getGridPolygon(cellIndex, (window as any).grid);
+  shouldRegenerateGrid(grid, expectedSeed, (window as any).graphWidth, (window as any).graphHeight);
+window.generateGrid = () => generateGrid((window as any).seed, (window as any).graphWidth, (window as any).graphHeight);
+window.findGridAll = (x: number, y: number, radius: number) => findGridAll(x, y, radius, (window as any).grid);
+window.findGridCell = (x: number, y: number) => findGridCell(x, y, (window as any).grid);
+window.findCell = (x: number, y: number, radius?: number) => findClosestCell(x, y, radius, (window as any).pack);
+window.findAll = (x: number, y: number, radius: number) => findAllCellsInRadius(x, y, radius, (window as any).pack);
+window.getPackPolygon = (cellIndex: number) => getPackPolygon(cellIndex, (window as any).pack);
+window.getGridPolygon = (cellIndex: number) => getGridPolygon(cellIndex, (window as any).grid);
 window.calculateVoronoi = calculateVoronoi;
 window.poissonDiscSampler = poissonDiscSampler;
 window.findAllInQuadtree = findAllInQuadtree;
@@ -223,8 +143,7 @@ window.drawHeights = drawHeights;
 window.isLand = (i: number) => isLand(i, (window as any).pack);
 window.isWater = (i: number) => isWater(i, (window as any).pack);
 
-window.clipPoly = (points: [number, number][], secure?: number) =>
-  clipPoly(points, graphWidth, graphHeight, secure);
+window.clipPoly = (points: [number, number][], secure?: number) => clipPoly(points, graphWidth, graphHeight, secure);
 window.getSegmentId = getSegmentId;
 window.debounce = debounce;
 window.throttle = throttle;
@@ -235,10 +154,8 @@ window.wiki = wiki;
 window.link = link;
 window.isCtrlClick = isCtrlClick;
 window.generateDate = generateDate;
-window.getLongitude = (x: number, decimals?: number) =>
-  getLongitude(x, mapCoordinates, graphWidth, decimals);
-window.getLatitude = (y: number, decimals?: number) =>
-  getLatitude(y, mapCoordinates, graphHeight, decimals);
+window.getLongitude = (x: number, decimals?: number) => getLongitude(x, mapCoordinates, graphWidth, decimals);
+window.getLatitude = (y: number, decimals?: number) => getLatitude(y, mapCoordinates, graphHeight, decimals);
 window.getCoordinates = (x: number, y: number, decimals?: number) =>
   getCoordinates(x, y, mapCoordinates, graphWidth, graphHeight, decimals);
 
@@ -249,12 +166,9 @@ if (document.readyState === "loading") {
   initializePrompt();
 }
 
-window.drawCellsValue = (data: any[]) =>
-  drawCellsValue(data, (window as any).pack);
-window.drawPolygons = (data: any[]) =>
-  drawPolygons(data, (window as any).terrs, (window as any).grid);
-window.drawRouteConnections = () =>
-  drawRouteConnections((window as any).packedGraph);
+window.drawCellsValue = (data: any[]) => drawCellsValue(data, (window as any).pack);
+window.drawPolygons = (data: any[]) => drawPolygons(data, (window as any).terrs, (window as any).grid);
+window.drawRouteConnections = () => drawRouteConnections((window as any).packedGraph);
 window.drawPoint = drawPoint;
 window.drawPath = drawPath;
 
@@ -346,5 +260,5 @@ export {
   toHEX,
   trimVowels,
   unique,
-  wiki,
+  wiki
 };

@@ -34,11 +34,7 @@ class OceanModule {
   // connect vertices to chain
   connectVertices(start: number, t: number) {
     const chain = []; // vertices chain to form a path
-    for (
-      let i = 0, current = start;
-      i === 0 || (current !== start && i < 10000);
-      i++
-    ) {
+    for (let i = 0, current = start; i === 0 || (current !== start && i < 10000); i++) {
       const prev = chain[chain.length - 1]; // previous vertex in chain
       chain.push(current); // add current vertex to sequence
       const c = this.vertices.c[current]; // cells adjacent to vertex
@@ -64,14 +60,8 @@ class OceanModule {
   // find eligible cell vertex to start path detection
   findStart(i: number, t: number) {
     if (this.cells.b[i])
-      return this.cells.v[i].find((v: number) =>
-        this.vertices.c[v].some((c: number) => c >= this.pointsN),
-      ); // map border cell
-    return this.cells.v[i][
-      this.cells.c[i].findIndex(
-        (c: number) => this.cells.t[c] < t || !this.cells.t[c],
-      )
-    ];
+      return this.cells.v[i].find((v: number) => this.vertices.c[v].some((c: number) => c >= this.pointsN)); // map border cell
+    return this.cells.v[i][this.cells.c[i].findIndex((c: number) => this.cells.t[c] < t || !this.cells.t[c])];
   }
 
   draw() {
@@ -82,10 +72,7 @@ class OceanModule {
     this.cells = grid.cells;
     this.pointsN = grid.cells.i.length;
     this.vertices = grid.vertices;
-    const limits =
-      outline === "random"
-        ? this.randomizeOutline()
-        : outline.split(",").map((s: string) => +s);
+    const limits = outline === "random" ? this.randomizeOutline() : outline.split(",").map((s: string) => +s);
 
     const chains: [number, any[]][] = [];
     const opacity = rn(0.4 / limits.length, 2);
@@ -101,32 +88,21 @@ class OceanModule {
       const chain = this.connectVertices(start, t); // vertices chain to form a path
       if (chain.length < 4) continue;
       const relax = 1 + t * -2; // select only n-th point
-      const relaxed = chain.filter(
-        (v, i) =>
-          !(i % relax) ||
-          this.vertices.c[v].some((c: number) => c >= this.pointsN),
-      );
+      const relaxed = chain.filter((v, i) => !(i % relax) || this.vertices.c[v].some((c: number) => c >= this.pointsN));
       if (relaxed.length < 4) continue;
 
       const points = clipPoly(
-        relaxed.map((v) => this.vertices.p[v]),
+        relaxed.map(v => this.vertices.p[v]),
         graphWidth,
-        graphHeight,
+        graphHeight
       );
       chains.push([t, points]);
     }
 
     for (const t of limits) {
       const layer = chains.filter((c: [number, any[]]) => c[0] === t);
-      const path = layer
-        .map((c: [number, any[]]) => round(this.lineGen(c[1]) || ""))
-        .join("");
-      if (path)
-        this.oceanLayers
-          .append("path")
-          .attr("d", path)
-          .attr("fill", "#ecf2f9")
-          .attr("fill-opacity", opacity);
+      const path = layer.map((c: [number, any[]]) => round(this.lineGen(c[1]) || "")).join("");
+      if (path) this.oceanLayers.append("path").attr("d", path).attr("fill", "#ecf2f9").attr("fill-opacity", opacity);
     }
 
     TIME && console.timeEnd("drawOceanLayers");

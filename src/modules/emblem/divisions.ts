@@ -12,7 +12,7 @@ export const divisions = {
     perPile: 1,
     perSaltire: 1,
     gyronny: 1,
-    chevronny: 1,
+    chevronny: 1
   },
   perPale: lineWeights,
   perFess: lineWeights,
@@ -40,7 +40,7 @@ export const divisions = {
     potenty: 1,
     potentyDexter: 1,
     potentySinister: 1,
-    nebuly: 1,
+    nebuly: 1
   },
-  perPile: lineWeights,
+  perPile: lineWeights
 };

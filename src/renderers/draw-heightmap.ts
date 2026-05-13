@@ -19,7 +19,7 @@ import {
   curveStepAfter,
   curveStepBefore,
   line,
-  range,
+  range
 } from "d3";
 import { round } from "../utils";
 
@@ -40,7 +40,7 @@ const CURVE_MAP: Record<string, CurveFactory> = {
   curveNatural,
   curveStep,
   curveStepAfter,
-  curveStepBefore,
+  curveStepBefore
 };
 
 declare global {
@@ -59,9 +59,7 @@ const heightmapRenderer = (): void => {
   const paths: (string | undefined)[] = new Array(101);
   const { cells, vertices } = grid;
   const used = new Uint8Array(cells.i.length);
-  const heights = Array.from(cells.i as number[]).sort(
-    (a, b) => cells.h[a] - cells.h[b],
-  );
+  const heights = Array.from(cells.i as number[]).sort((a, b) => cells.h[a] - cells.h[b]);
 
   // ocean cells
   const renderOceanCells = Boolean(+ocean.attr("data-render"));
@@ -80,14 +78,10 @@ const heightmapRenderer = (): void => {
       if (used[i]) continue; // already marked
       const onborder = cells.c[i].some((n: number) => cells.h[n] < h);
       if (!onborder) continue;
-      const vertex = cells.v[i].find((v: number) =>
-        vertices.c[v].some((i: number) => cells.h[i] < h),
-      );
+      const vertex = cells.v[i].find((v: number) => vertices.c[v].some((i: number) => cells.h[i] < h));
       const chain = connectVertices(cells, vertices, vertex, h, used);
       if (chain.length < 3) continue;
-      const points = simplifyLine(chain, relax).map(
-        (v: number) => vertices.p[v],
-      );
+      const points = simplifyLine(chain, relax).map((v: number) => vertices.p[v]);
       if (!paths[h]) paths[h] = "";
       paths[h] += round(lineGen(points) || "");
     }
@@ -110,15 +104,11 @@ const heightmapRenderer = (): void => {
       const onborder = cells.c[i].some((n: number) => cells.h[n] < h);
       if (!onborder) continue;
 
-      const startVertex = cells.v[i].find((v: number) =>
-        vertices.c[v].some((i: number) => cells.h[i] < h),
-      );
+      const startVertex = cells.v[i].find((v: number) => vertices.c[v].some((i: number) => cells.h[i] < h));
       const chain = connectVertices(cells, vertices, startVertex, h, used);
       if (chain.length < 3) continue;
 
-      const points = simplifyLine(chain, relax).map(
-        (v: number) => vertices.p[v],
-      );
+      const points = simplifyLine(chain, relax).map((v: number) => vertices.p[v]);
       if (!paths[h]) paths[h] = "";
       paths[h] += round(lineGen(points) || "");
     }
@@ -163,31 +153,17 @@ const heightmapRenderer = (): void => {
           .attr("fill", color(fillColor)!.darker(terracing).toString())
           .attr("data-height", height);
       }
-      group
-        .append("path")
-        .attr("d", paths[height]!)
-        .attr("fill", fillColor)
-        .attr("data-height", height);
+      group.append("path").attr("d", paths[height]!).attr("fill", fillColor).attr("data-height", height);
     }
   }
 
   // connect vertices to chain: specific case for heightmap
-  function connectVertices(
-    cells: any,
-    vertices: any,
-    start: number,
-    h: number,
-    used: Uint8Array,
-  ): number[] {
+  function connectVertices(cells: any, vertices: any, start: number, h: number, used: Uint8Array): number[] {
     const MAX_ITERATIONS = vertices.c.length;
 
     const n = cells.i.length;
     const chain: number[] = []; // vertices chain to form a path
-    for (
-      let i = 0, current = start;
-      i === 0 || (current !== start && i < MAX_ITERATIONS);
-      i++
-    ) {
+    for (let i = 0, current = start; i === 0 || (current !== start && i < MAX_ITERATIONS); i++) {
       const prev = chain[chain.length - 1]; // previous vertex in chain
       chain.push(current); // add current vertex to sequence
       const c = vertices.c[current]; // cells adjacent to vertex

@@ -11,7 +11,7 @@ import {
   ra,
   rand,
   rw,
-  trimVowels,
+  trimVowels
 } from "../utils";
 
 declare global {
@@ -60,7 +60,7 @@ const approach: Record<string, number> = {
   "Being + of the + Genitive": 1,
   "Animal + of + Genitive": 1,
   "Adjective + Being + of + Genitive": 2,
-  "Adjective + Animal + of + Genitive": 2,
+  "Adjective + Animal + of + Genitive": 2
 };
 
 // turn weighted array into simple array
@@ -72,20 +72,7 @@ for (const a in approach) {
 }
 
 const base = {
-  number: [
-    "One",
-    "Two",
-    "Three",
-    "Four",
-    "Five",
-    "Six",
-    "Seven",
-    "Eight",
-    "Nine",
-    "Ten",
-    "Eleven",
-    "Twelve",
-  ],
+  number: ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"],
   being: [
     "Ancestor",
     "Ancient",
@@ -125,7 +112,7 @@ const base = {
     "Spirit",
     "Supreme Being",
     "Transcendent",
-    "Virgin",
+    "Virgin"
   ],
   animal: [
     "Antelope",
@@ -212,7 +199,7 @@ const base = {
     "Wolverine",
     "Worm",
     "Wyvern",
-    "Yeti",
+    "Yeti"
   ],
   adjective: [
     "Aggressive",
@@ -324,7 +311,7 @@ const base = {
     "Wild",
     "Wise",
     "Worried",
-    "Young",
+    "Young"
   ],
   genitive: [
     "Cold",
@@ -354,7 +341,7 @@ const base = {
     "Time",
     "Victory",
     "War",
-    "Winter",
+    "Winter"
   ],
   theGenitive: [
     "Abyss",
@@ -380,7 +367,7 @@ const base = {
     "West",
     "Wild",
     "Word",
-    "World",
+    "World"
   ],
   color: [
     "Amber",
@@ -411,8 +398,8 @@ const base = {
     "Teal",
     "Turquoise",
     "White",
-    "Yellow",
-  ],
+    "Yellow"
+  ]
 };
 
 const forms: Record<string, Record<string, number>> = {
@@ -422,7 +409,7 @@ const forms: Record<string, Record<string, number>> = {
     Polytheism: 4,
     "Ancestor Worship": 2,
     "Nature Worship": 1,
-    Totemism: 1,
+    Totemism: 1
   },
   Organized: {
     Polytheism: 7,
@@ -434,24 +421,24 @@ const forms: Record<string, Record<string, number>> = {
     Philosophical: 1,
     Ethical: 1,
     Deism: 1,
-    Henotheism: 1,
+    Henotheism: 1
   },
   Cult: {
     Cult: 5,
     "Dark Cult": 5,
-    Sect: 1,
+    Sect: 1
   },
   Heresy: {
-    Heresy: 1,
-  },
+    Heresy: 1
+  }
 };
 
 const namingMethods: Record<string, Record<string, number>> = {
   Shamanism: {
-    "Culture + type": 1,
+    "Culture + type": 1
   },
   Animism: {
-    "Culture + type": 1,
+    "Culture + type": 1
   },
   Polytheism: {
     "Random + type": 4,
@@ -460,16 +447,16 @@ const namingMethods: Record<string, Record<string, number>> = {
     "Culture + ism": 2,
     "Place + ian + type": 6,
     "Culture + type": 4,
-    "Type + of the + meaning": 2,
+    "Type + of the + meaning": 2
   },
   "Ancestor Worship": {
-    "Culture + type": 1,
+    "Culture + type": 1
   },
   "Nature Worship": {
-    "Culture + type": 1,
+    "Culture + type": 1
   },
   Totemism: {
-    "Culture + type": 1,
+    "Culture + type": 1
   },
   Monotheism: {
     "Random + type": 2,
@@ -479,7 +466,7 @@ const namingMethods: Record<string, Record<string, number>> = {
     "Place + ism": 1,
     "Culture + ism": 1,
     "Place + ian + type": 4,
-    "Culture + type": 3,
+    "Culture + type": 3
   },
   Dualism: {
     "Random + type": 3,
@@ -488,7 +475,7 @@ const namingMethods: Record<string, Record<string, number>> = {
     "Culture + ism": 2,
     "Place + ian + type": 5,
     "Culture + type": 4,
-    "Type + of the + meaning": 3,
+    "Type + of the + meaning": 3
   },
   Syncretism: {
     "Random + type": 3,
@@ -497,7 +484,7 @@ const namingMethods: Record<string, Record<string, number>> = {
     "Culture + ism": 2,
     "Place + ian + type": 5,
     "Culture + type": 4,
-    "Type + of the + meaning": 2,
+    "Type + of the + meaning": 2
   },
   Pantheism: {
     "Random + type": 3,
@@ -506,7 +493,7 @@ const namingMethods: Record<string, Record<string, number>> = {
     "Culture + ism": 2,
     "Place + ian + type": 5,
     "Culture + type": 4,
-    "Type + of the + meaning": 2,
+    "Type + of the + meaning": 2
   },
   "Non-theism": {
     "Random + type": 3,
@@ -514,7 +501,7 @@ const namingMethods: Record<string, Record<string, number>> = {
     "Place + ism": 1,
     "Culture + ism": 3,
     "Place + ian + type": 4,
-    "Culture + type": 5,
+    "Culture + type": 5
   },
   Philosophical: {
     "Random + type": 3,
@@ -522,7 +509,7 @@ const namingMethods: Record<string, Record<string, number>> = {
     "Place + ism": 1,
     "Culture + ism": 3,
     "Place + ian + type": 4,
-    "Culture + type": 5,
+    "Culture + type": 5
   },
   Ethical: {
     "Random + type": 3,
@@ -530,7 +517,7 @@ const namingMethods: Record<string, Record<string, number>> = {
     "Place + ism": 1,
     "Culture + ism": 3,
     "Place + ian + type": 4,
-    "Culture + type": 5,
+    "Culture + type": 5
   },
   Deism: {
     "Random + type": 2,
@@ -540,7 +527,7 @@ const namingMethods: Record<string, Record<string, number>> = {
     "Place + ism": 1,
     "Culture + ism": 2,
     "Place + ian + type": 5,
-    "Culture + type": 4,
+    "Culture + type": 4
   },
   Henotheism: {
     "Random + type": 2,
@@ -551,30 +538,30 @@ const namingMethods: Record<string, Record<string, number>> = {
     "Culture + ism": 2,
     "Place + ian + type": 6,
     "Culture + type": 4,
-    "Type + of the + meaning": 2,
+    "Type + of the + meaning": 2
   },
 
   Cult: {
     "Burg + ian + type": 2,
     "Random + ian + type": 1,
-    "Type + of the + meaning": 2,
+    "Type + of the + meaning": 2
   },
   "Dark Cult": {
     "Burg + ian + type": 2,
     "Random + ian + type": 1,
-    "Type + of the + meaning": 3,
+    "Type + of the + meaning": 3
   },
   Sect: {
     "Burg + ian + type": 2,
     "Random + ian + type": 1,
-    "Type + of the + meaning": 2,
+    "Type + of the + meaning": 2
   },
   Heresy: {
     "Burg + ian + type": 3,
     "Random + ism": 3,
     "Random + ian + type": 2,
-    "Type + of the + meaning": 1,
-  },
+    "Type + of the + meaning": 1
+  }
 };
 
 const types: Record<string, Record<string, number>> = {
@@ -602,7 +589,7 @@ const types: Record<string, Record<string, number>> = {
     Circle: 1,
     Coven: 1,
     Idols: 1,
-    Occultism: 1,
+    Occultism: 1
   },
   Sect: { Sect: 4, Society: 1, Brotherhood: 1, Circle: 1, Way: 1 },
 
@@ -616,37 +603,27 @@ const types: Record<string, Record<string, number>> = {
     Dissenters: 1,
     Iconoclasm: 1,
     Schism: 1,
-    Society: 1,
-  },
+    Society: 1
+  }
 };
 
 const expansionismMap: Record<string, () => number> = {
   Folk: () => 0,
   Organized: () => gauss(5, 3, 0, 10, 1),
   Cult: () => gauss(0.5, 0.5, 0, 5, 1),
-  Heresy: () => gauss(1, 0.5, 0, 5, 1),
+  Heresy: () => gauss(1, 0.5, 0, 5, 1)
 };
 
 class ReligionsModule {
   generate() {
     TIME && console.time("generateReligions");
-    const lockedReligions =
-      pack.religions?.filter((r) => r.i && r.lock && !r.removed) || [];
+    const lockedReligions = pack.religions?.filter(r => r.i && r.lock && !r.removed) || [];
 
     const folkReligions = this.generateFolkReligions();
-    const organizedReligions = this.generateOrganizedReligions(
-      +religionsNumber.value,
-      lockedReligions,
-    );
+    const organizedReligions = this.generateOrganizedReligions(+religionsNumber.value, lockedReligions);
 
-    const namedReligions = this.specifyReligions([
-      ...folkReligions,
-      ...organizedReligions,
-    ]);
-    const indexedReligions = this.combineReligions(
-      namedReligions,
-      lockedReligions,
-    );
+    const namedReligions = this.specifyReligions([...folkReligions, ...organizedReligions]);
+    const indexedReligions = this.combineReligions(namedReligions, lockedReligions);
     const religionIds = this.expandReligions(indexedReligions);
     const religions = this.defineOrigins(religionIds, indexedReligions);
 
@@ -660,22 +637,18 @@ class ReligionsModule {
 
   private generateFolkReligions(): ReligionBase[] {
     return pack.cultures
-      .filter((c) => c.i && !c.removed)
-      .map((culture) => ({
+      .filter(c => c.i && !c.removed)
+      .map(culture => ({
         type: "Folk" as const,
         form: rw(forms.Folk),
         culture: culture.i,
-        center: culture.center!,
+        center: culture.center!
       }));
   }
 
-  private generateOrganizedReligions(
-    desiredReligionNumber: number,
-    lockedReligions: Religion[],
-  ): ReligionBase[] {
+  private generateOrganizedReligions(desiredReligionNumber: number, lockedReligions: Religion[]): ReligionBase[] {
     const cells = pack.cells;
-    const lockedReligionCount =
-      lockedReligions.filter(({ type }) => type !== "Folk").length || 0;
+    const lockedReligionCount = lockedReligions.filter(({ type }) => type !== "Folk").length || 0;
     const requiredReligionsNumber = desiredReligionNumber - lockedReligionCount;
     if (requiredReligionsNumber < 1) return [];
 
@@ -719,75 +692,54 @@ class ReligionsModule {
           religionCells.push(cellId);
           religionsTree.add([x, y]);
 
-          if (religionCells.length === requiredReligionsNumber)
-            return religionCells;
+          if (religionCells.length === requiredReligionsNumber) return religionCells;
         }
       }
 
-      WARN &&
-        console.warn(
-          `Placed only ${religionCells.length} of ${requiredReligionsNumber} religions`,
-        );
+      WARN && console.warn(`Placed only ${religionCells.length} of ${requiredReligionsNumber} religions`);
       return religionCells;
     }
 
     function getCandidateCells(): number[] {
-      const validBurgs = pack.burgs.filter((b) => b.i && !b.removed);
+      const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
 
       if (validBurgs.length >= requiredReligionsNumber)
-        return validBurgs
-          .sort((a, b) => b.population! - a.population!)
-          .map((burg) => burg.cell);
-      return cells.i
-        .filter((i) => cells.s[i] > 2)
-        .sort((a, b) => cells.s[b] - cells.s[a]);
+        return validBurgs.sort((a, b) => b.population! - a.population!).map(burg => burg.cell);
+      return cells.i.filter(i => cells.s[i] > 2).sort((a, b) => cells.s[b] - cells.s[a]);
     }
   }
 
   private specifyReligions(newReligions: ReligionBase[]): NamedReligion[] {
     const { cells, cultures } = pack;
 
-    const rawReligions = newReligions.map(
-      ({ type, form, culture: cultureId, center }) => {
-        const supreme = this.getDeityName(cultureId);
-        const deity: string | null =
-          form === "Non-theism" || form === "Animism"
-            ? null
-            : (supreme ?? null);
+    const rawReligions = newReligions.map(({ type, form, culture: cultureId, center }) => {
+      const supreme = this.getDeityName(cultureId);
+      const deity: string | null = form === "Non-theism" || form === "Animism" ? null : (supreme ?? null);
 
-        const stateId = cells.state[center];
+      const stateId = cells.state[center];
 
-        let [name, expansion] = this.generateReligionName(
-          type,
-          form,
-          supreme!,
-          center,
-        );
-        if (expansion === "state" && !stateId) expansion = "global";
+      let [name, expansion] = this.generateReligionName(type, form, supreme!, center);
+      if (expansion === "state" && !stateId) expansion = "global";
 
-        const expansionism = expansionismMap[type]();
-        const color = getReligionColor(cultures[cultureId], type);
+      const expansionism = expansionismMap[type]();
+      const color = getReligionColor(cultures[cultureId], type);
 
-        return {
-          name,
-          type,
-          form,
-          culture: cultureId,
-          center,
-          deity,
-          expansion,
-          expansionism,
-          color,
-        };
-      },
-    );
+      return {
+        name,
+        type,
+        form,
+        culture: cultureId,
+        center,
+        deity,
+        expansion,
+        expansionism,
+        color
+      };
+    });
 
     return rawReligions;
 
-    function getReligionColor(
-      culture: (typeof pack.cultures)[number],
-      type: string,
-    ): string {
+    function getReligionColor(culture: (typeof pack.cultures)[number], type: string): string {
       if (!culture.i) return getRandomColor();
 
       if (type === "Folk") return culture.color!;
@@ -798,26 +750,16 @@ class ReligionsModule {
   }
 
   // indexes, conditionally renames, and abbreviates religions
-  private combineReligions(
-    namedReligions: NamedReligion[],
-    lockedReligions: Religion[],
-  ): Religion[] {
-    const indexedReligions: Religion[] = [
-      { name: "No religion", i: 0 } as Religion,
-    ];
+  private combineReligions(namedReligions: NamedReligion[], lockedReligions: Religion[]): Religion[] {
+    const indexedReligions: Religion[] = [{ name: "No religion", i: 0 } as Religion];
 
-    const { lockedReligionQueue, highestLockedIndex, codes, numberLockedFolk } =
-      parseLockedReligions();
+    const { lockedReligionQueue, highestLockedIndex, codes, numberLockedFolk } = parseLockedReligions();
     const maxIndex = Math.max(
       highestLockedIndex,
-      namedReligions.length + lockedReligions.length + 1 - numberLockedFolk,
+      namedReligions.length + lockedReligions.length + 1 - numberLockedFolk
     );
 
-    for (
-      let index = 1, progress = 0;
-      index < maxIndex;
-      index = indexedReligions.length
-    ) {
+    for (let index = 1, progress = 0; index < maxIndex; index = indexedReligions.length) {
       // place locked religion back at its old index
       if (index === lockedReligionQueue[0]?.i) {
         const nextReligion = lockedReligionQueue.shift()!;
@@ -832,10 +774,7 @@ class ReligionsModule {
 
         if (
           nextReligion.type === "Folk" &&
-          lockedReligions.some(
-            ({ type, culture }) =>
-              type === "Folk" && culture === nextReligion.culture,
-          )
+          lockedReligions.some(({ type, culture }) => type === "Folk" && culture === nextReligion.culture)
         )
           continue; // when there is a locked Folk religion for this culture discard duplicate
 
@@ -846,7 +785,7 @@ class ReligionsModule {
           ...nextReligion,
           i: index,
           name: newName,
-          code,
+          code
         });
         continue;
       }
@@ -856,7 +795,7 @@ class ReligionsModule {
         type: "Folk",
         culture: 0,
         name: "Removed religion",
-        removed: true,
+        removed: true
       } as Religion);
     }
     return indexedReligions;
@@ -864,54 +803,36 @@ class ReligionsModule {
     function parseLockedReligions() {
       // copy and sort the locked religions list
       const lockedReligionQueue = lockedReligions
-        .map((religion) => {
+        .map(religion => {
           // and filter their origins to locked religions
-          let newOrigin = religion.origins!.filter((n) =>
-            lockedReligions.some(({ i: index }) => index === n),
-          );
+          let newOrigin = religion.origins!.filter(n => lockedReligions.some(({ i: index }) => index === n));
           if (newOrigin.length === 0) newOrigin = [0];
           return { ...religion, origins: newOrigin };
         })
         .sort((a, b) => a.i - b.i);
 
-      const highestLockedIndex = Math.max(
-        ...lockedReligions.map((r) => r.i),
-        0,
-      );
-      const codes =
-        lockedReligions.length > 0 ? lockedReligions.map((r) => r.code!) : [];
-      const numberLockedFolk = lockedReligions.filter(
-        ({ type }) => type === "Folk",
-      ).length;
+      const highestLockedIndex = Math.max(...lockedReligions.map(r => r.i), 0);
+      const codes = lockedReligions.length > 0 ? lockedReligions.map(r => r.code!) : [];
+      const numberLockedFolk = lockedReligions.filter(({ type }) => type === "Folk").length;
 
       return {
         lockedReligionQueue,
         highestLockedIndex,
         codes,
-        numberLockedFolk,
+        numberLockedFolk
       };
     }
 
     // prepend 'Old' to names of folk religions which have organized competitors
-    function renameOld({
-      name,
-      type,
-      culture: cultureId,
-    }: NamedReligion): string {
+    function renameOld({ name, type, culture: cultureId }: NamedReligion): string {
       if (type !== "Folk") return name;
 
       const haveOrganized =
         namedReligions.some(
-          ({ type, culture, expansion }) =>
-            culture === cultureId &&
-            type === "Organized" &&
-            expansion === "culture",
+          ({ type, culture, expansion }) => culture === cultureId && type === "Organized" && expansion === "culture"
         ) ||
         lockedReligions.some(
-          ({ type, culture, expansion }) =>
-            culture === cultureId &&
-            type === "Organized" &&
-            expansion === "culture",
+          ({ type, culture, expansion }) => culture === cultureId && type === "Organized" && expansion === "culture"
         );
       if (haveOrganized && name.slice(0, 3) !== "Old") return `Old ${name}`;
       return name;
@@ -919,51 +840,29 @@ class ReligionsModule {
   }
 
   // finally generate and stores origins trees
-  private defineOrigins(
-    religionIds: Uint16Array,
-    indexedReligions: Religion[],
-  ): Religion[] {
-    const religionOriginsParamsMap: Record<
-      string,
-      { clusterSize: number; maxReligions: number }
-    > = {
+  private defineOrigins(religionIds: Uint16Array, indexedReligions: Religion[]): Religion[] {
+    const religionOriginsParamsMap: Record<string, { clusterSize: number; maxReligions: number }> = {
       Organized: { clusterSize: 100, maxReligions: 2 },
       Cult: { clusterSize: 50, maxReligions: 3 },
-      Heresy: { clusterSize: 50, maxReligions: 4 },
+      Heresy: { clusterSize: 50, maxReligions: 4 }
     };
 
-    const origins = indexedReligions.map(
-      ({ i, type, culture: cultureId, expansion, center }) => {
-        if (i === 0) return null; // no religion
-        if (type === "Folk") return [0]; // folk religions originate from its parent culture only
+    const origins = indexedReligions.map(({ i, type, culture: cultureId, expansion, center }) => {
+      if (i === 0) return null; // no religion
+      if (type === "Folk") return [0]; // folk religions originate from its parent culture only
 
-        const folkReligion = indexedReligions.find(
-          ({ culture, type }) => type === "Folk" && culture === cultureId,
-        );
-        const isFolkBased =
-          folkReligion &&
-          cultureId &&
-          expansion === "culture" &&
-          each(2)(center);
-        if (isFolkBased) return [folkReligion.i];
+      const folkReligion = indexedReligions.find(({ culture, type }) => type === "Folk" && culture === cultureId);
+      const isFolkBased = folkReligion && cultureId && expansion === "culture" && each(2)(center);
+      if (isFolkBased) return [folkReligion.i];
 
-        const { clusterSize, maxReligions } = religionOriginsParamsMap[type];
-        const fallbackOrigin = folkReligion?.i || 0;
-        return this.getReligionsInRadius(
-          pack.cells.c,
-          center,
-          religionIds,
-          i,
-          clusterSize,
-          maxReligions,
-          fallbackOrigin,
-        );
-      },
-    );
+      const { clusterSize, maxReligions } = religionOriginsParamsMap[type];
+      const fallbackOrigin = folkReligion?.i || 0;
+      return this.getReligionsInRadius(pack.cells.c, center, religionIds, i, clusterSize, maxReligions, fallbackOrigin);
+    });
 
     return indexedReligions.map((religion, index) => ({
       ...religion,
-      origins: origins[index],
+      origins: origins[index]
     }));
   }
 
@@ -974,7 +873,7 @@ class ReligionsModule {
     religionId: number,
     clusterSize: number,
     maxReligions: number,
-    fallbackOrigin: number,
+    fallbackOrigin: number
   ): number[] {
     const foundReligions = new Set<number>();
     const queue = [center];
@@ -989,8 +888,7 @@ class ReligionsModule {
         checked[neibId] = true;
 
         const neibReligion = religionIds[neibId];
-        if (neibReligion && neibReligion < religionId)
-          foundReligions.add(neibReligion);
+        if (neibReligion && neibReligion < religionId) foundReligions.add(neibReligion);
         if (foundReligions.size >= maxReligions) return [...foundReligions];
         queue.push(neibId);
       }
@@ -1008,28 +906,25 @@ class ReligionsModule {
     const cost: number[] = [];
 
     // limit cost for organized religions growth
-    const maxExpansionCost =
-      (cells.i.length / 20) *
-      (ensureEl("growthRate") as HTMLInputElement).valueAsNumber;
+    const maxExpansionCost = (cells.i.length / 20) * (ensureEl("growthRate") as HTMLInputElement).valueAsNumber;
 
     religions
-      .filter((r) => r.i && !r.lock && r.type !== "Folk" && !r.removed)
-      .forEach((r) => {
+      .filter(r => r.i && !r.lock && r.type !== "Folk" && !r.removed)
+      .forEach(r => {
         religionIds[r.center] = r.i;
         queue.push({ e: r.center, p: 0, r: r.i, s: cells.state[r.center] }, 0);
         cost[r.center] = 1;
       });
 
-    const religionsMap = new Map(religions.map((r) => [r.i, r]));
+    const religionsMap = new Map(religions.map(r => [r.i, r]));
 
     while (queue.length) {
       const { e: cellId, p, r, s: state } = queue.pop();
       const religion = religionsMap.get(r)!;
       const { culture, expansion, expansionism } = religion;
 
-      cells.c[cellId].forEach((nextCell) => {
-        if (expansion === "culture" && culture !== cells.culture[nextCell])
-          return;
+      cells.c[cellId].forEach(nextCell => {
+        if (expansion === "culture" && culture !== cells.culture[nextCell]) return;
         if (expansion === "state" && state !== cells.state[nextCell]) return;
         if (religionsMap.get(religionIds[nextCell])?.lock) return;
 
@@ -1073,12 +968,8 @@ class ReligionsModule {
     const hasPrior = cells.religion && true;
     const religionIds = new Uint16Array(cells.i.length);
 
-    const folkReligions = religions.filter(
-      (religion) => religion.type === "Folk" && !religion.removed,
-    );
-    const cultureToReligionMap = new Map(
-      folkReligions.map(({ i, culture }) => [culture, i]),
-    );
+    const folkReligions = religions.filter(religion => religion.type === "Folk" && !religion.removed);
+    const cultureToReligionMap = new Map(folkReligions.map(({ i, culture }) => [culture, i]));
 
     for (const cellId of cells.i) {
       const oldId = (hasPrior && cells.religion[cellId]) || 0;
@@ -1095,11 +986,11 @@ class ReligionsModule {
 
   private checkCenters() {
     const cells = pack.cells;
-    pack.religions.forEach((r) => {
+    pack.religions.forEach(r => {
       if (!r.i) return;
       // move religion center if it's not within religion area after expansion
       if (cells.religion[r.center] === r.i) return; // in area
-      const firstCell = cells.i.find((i) => cells.religion[i] === r.i);
+      const firstCell = cells.i.find(i => cells.religion[i] === r.i);
       const cultureHome = pack.cultures[r.culture]?.center;
       if (firstCell)
         r.center = firstCell; // move center, otherwise it's an extinct religion
@@ -1122,21 +1013,13 @@ class ReligionsModule {
     const cultureId = cells.culture[center];
     const missingFolk =
       cultureId !== 0 &&
-      !religions.some(
-        ({ type, culture, removed }) =>
-          type === "Folk" && culture === cultureId && !removed,
-      );
-    const color = missingFolk
-      ? cultures[cultureId].color!
-      : getMixedColor(religions[religionId].color!, 0.3, 0);
+      !religions.some(({ type, culture, removed }) => type === "Folk" && culture === cultureId && !removed);
+    const color = missingFolk ? cultures[cultureId].color! : getMixedColor(religions[religionId].color!, 0.3, 0);
 
     const type: "Folk" | "Organized" | "Cult" | "Heresy" = missingFolk
       ? "Folk"
       : religions[religionId].type === "Organized"
-        ? (rw({ Organized: 4, Cult: 1, Heresy: 2 }) as
-            | "Organized"
-            | "Cult"
-            | "Heresy")
+        ? (rw({ Organized: 4, Cult: 1, Heresy: 2 }) as "Organized" | "Cult" | "Heresy")
         : (rw({ Organized: 5, Cult: 2 }) as "Organized" | "Cult");
     const form = rw(forms[type]);
     const deity =
@@ -1146,27 +1029,14 @@ class ReligionsModule {
           ? null
           : this.getDeityName(cultureId);
 
-    const [name, expansion] = this.generateReligionName(
-      type,
-      form,
-      deity!,
-      center,
-    );
+    const [name, expansion] = this.generateReligionName(type, form, deity!, center);
 
     const formName = type === "Heresy" ? religions[religionId].form : form;
     const code = abbreviate(
       name,
-      religions.map((r) => r.code!),
+      religions.map(r => r.code!)
     );
-    const influences = this.getReligionsInRadius(
-      cells.c,
-      center,
-      cells.religion as Uint16Array,
-      i,
-      25,
-      3,
-      0,
-    );
+    const influences = this.getReligionsInRadius(cells.c, center, cells.religion as Uint16Array, i, 25, 3, 0);
     const origins = type === "Folk" ? [0] : influences;
 
     religions.push({
@@ -1185,7 +1055,7 @@ class ReligionsModule {
       rural: 0,
       urban: 0,
       origins,
-      code,
+      code
     });
     cells.religion[center] = i;
   }
@@ -1201,12 +1071,7 @@ class ReligionsModule {
     return `${cultureName}, The ${meaning}`;
   }
 
-  private generateReligionName(
-    variety: string,
-    form: string,
-    deity: string,
-    center: number,
-  ): [string, string] {
+  private generateReligionName(variety: string, form: string, deity: string, center: number): [string, string] {
     const { cells, cultures, burgs, states } = pack;
 
     const random = () => Names.getCulture(cells.culture[center]);
@@ -1226,22 +1091,16 @@ class ReligionsModule {
     const m = rw(namingMethods[form] || namingMethods[variety]);
     if (m === "Random + type") return [`${random()} ${type}`, "global"];
     if (m === "Random + ism") return [`${trimVowels(random())}ism`, "global"];
-    if (m === "Supreme + ism" && deity)
-      return [`${trimVowels(supreme)}ism`, "global"];
+    if (m === "Supreme + ism" && deity) return [`${trimVowels(supreme)}ism`, "global"];
     if (m === "Faith of + Supreme" && deity)
-      return [
-        `${ra(["Faith", "Way", "Path", "Word", "Witnesses"])} of ${supreme}`,
-        "global",
-      ];
+      return [`${ra(["Faith", "Way", "Path", "Word", "Witnesses"])} of ${supreme}`, "global"];
     if (m === "Place + ism") return [`${place()}ism`, "state"];
     if (m === "Culture + ism") return [`${trimVowels(culture!)}ism`, "culture"];
     if (m === "Place + ian + type") return [`${place(true)} ${type}`, "state"];
     if (m === "Culture + type") return [`${culture} ${type}`, "culture"];
     if (m === "Burg + ian + type") return [`${place(true)} ${type}`, "global"];
-    if (m === "Random + ian + type")
-      return [`${getAdjective(random())} ${type}`, "global"];
-    if (m === "Type + of the + meaning")
-      return [`${type} of the ${this.generateMeaning()}`, "global"];
+    if (m === "Random + ian + type") return [`${getAdjective(random())} ${type}`, "global"];
+    if (m === "Type + of the + meaning") return [`${type} of the ${this.generateMeaning()}`, "global"];
     return [`${trimVowels(random())}ism`, "global"]; // else
   }
 
@@ -1251,21 +1110,14 @@ class ReligionsModule {
     if (a === "Being") return ra(base.being);
     if (a === "Adjective") return ra(base.adjective);
     if (a === "Color + Animal") return `${ra(base.color)} ${ra(base.animal)}`;
-    if (a === "Adjective + Animal")
-      return `${ra(base.adjective)} ${ra(base.animal)}`;
-    if (a === "Adjective + Being")
-      return `${ra(base.adjective)} ${ra(base.being)}`;
-    if (a === "Adjective + Genitive")
-      return `${ra(base.adjective)} ${ra(base.genitive)}`;
+    if (a === "Adjective + Animal") return `${ra(base.adjective)} ${ra(base.animal)}`;
+    if (a === "Adjective + Being") return `${ra(base.adjective)} ${ra(base.being)}`;
+    if (a === "Adjective + Genitive") return `${ra(base.adjective)} ${ra(base.genitive)}`;
     if (a === "Color + Being") return `${ra(base.color)} ${ra(base.being)}`;
-    if (a === "Color + Genitive")
-      return `${ra(base.color)} ${ra(base.genitive)}`;
-    if (a === "Being + of + Genitive")
-      return `${ra(base.being)} of ${ra(base.genitive)}`;
-    if (a === "Being + of the + Genitive")
-      return `${ra(base.being)} of the ${ra(base.theGenitive)}`;
-    if (a === "Animal + of + Genitive")
-      return `${ra(base.animal)} of ${ra(base.genitive)}`;
+    if (a === "Color + Genitive") return `${ra(base.color)} ${ra(base.genitive)}`;
+    if (a === "Being + of + Genitive") return `${ra(base.being)} of ${ra(base.genitive)}`;
+    if (a === "Being + of the + Genitive") return `${ra(base.being)} of the ${ra(base.theGenitive)}`;
+    if (a === "Animal + of + Genitive") return `${ra(base.animal)} of ${ra(base.genitive)}`;
     if (a === "Adjective + Being + of + Genitive")
       return `${ra(base.adjective)} ${ra(base.being)} of ${ra(base.genitive)}`;
     if (a === "Adjective + Animal + of + Genitive")

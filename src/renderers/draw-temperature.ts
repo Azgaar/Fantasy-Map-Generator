@@ -1,14 +1,4 @@
-import {
-  color,
-  curveBasisClosed,
-  interpolateSpectral,
-  leastIndex,
-  line,
-  max,
-  min,
-  range,
-  scaleSequential,
-} from "d3";
+import { color, curveBasisClosed, interpolateSpectral, leastIndex, line, max, min, range, scaleSequential } from "d3";
 import { connectVertices, convertTemperature, ensureEl, round } from "../utils";
 
 declare global {
@@ -55,17 +45,12 @@ const temperatureRenderer = (): void => {
       vertices,
       startingVertex,
       ofSameType,
-      addToChecked,
+      addToChecked
     });
-    const relaxed = chain.filter(
-      (v: number, i: number) =>
-        i % 4 === 0 || vertices.c[v].some((c: number) => c >= n),
-    );
+    const relaxed = chain.filter((v: number, i: number) => i % 4 === 0 || vertices.c[v].some((c: number) => c >= n));
     if (relaxed.length < 6) continue;
 
-    const points: [number, number][] = relaxed.map(
-      (v: number) => vertices.p[v],
-    );
+    const points: [number, number][] = relaxed.map((v: number) => vertices.p[v]);
     chains.push([t, points]);
     addLabel(points, t);
   }
@@ -79,44 +64,31 @@ const temperatureRenderer = (): void => {
 
   for (const t of isolines) {
     const path = chains
-      .filter((c) => c[0] === t)
-      .map((c) => round(lineGen(c[1]) || ""))
+      .filter(c => c[0] === t)
+      .map(c => round(lineGen(c[1]) || ""))
       .join("");
     if (!path) continue;
     const fill = scheme(1 - (t - tMin) / delta);
     const stroke = color(fill)!.darker(0.2);
-    temperature
-      .append("path")
-      .attr("d", path)
-      .attr("fill", fill)
-      .attr("stroke", stroke.toString());
+    temperature.append("path").attr("d", path).attr("fill", fill).attr("stroke", stroke.toString());
   }
 
-  const scale = (ensureEl("temperatureScale") as HTMLSelectElement)
-    .value as Parameters<typeof convertTemperature>[1];
+  const scale = (ensureEl("temperatureScale") as HTMLSelectElement).value as Parameters<typeof convertTemperature>[1];
 
-  const tempLabels = temperature
-    .append("g")
-    .attr("id", "tempLabels")
-    .attr("fill-opacity", 1);
+  const tempLabels = temperature.append("g").attr("id", "tempLabels").attr("fill-opacity", 1);
   tempLabels
     .selectAll("text")
     .data(labels)
     .enter()
     .append("text")
-    .attr("x", (d) => d[0])
-    .attr("y", (d) => d[1])
-    .text((d) => convertTemperature(d[2], scale));
+    .attr("x", d => d[0])
+    .attr("y", d => d[1])
+    .text(d => convertTemperature(d[2], scale));
 
   // find cell with temp < isotherm and find vertex to start path detection
   function findStart(i: number, t: number): number | undefined {
-    if (cells.b[i])
-      return cells.v[i].find((v: number) =>
-        vertices.c[v].some((c: number) => c >= n),
-      ); // map border cell
-    return cells.v[i][
-      cells.c[i].findIndex((c: number) => cells.temp[c] < t || !cells.temp[c])
-    ];
+    if (cells.b[i]) return cells.v[i].find((v: number) => vertices.c[v].some((c: number) => c >= n)); // map border cell
+    return cells.v[i][cells.c[i].findIndex((c: number) => cells.temp[c] < t || !cells.temp[c])];
   }
 
   function addLabel(points: [number, number][], t: number): void {
@@ -126,7 +98,7 @@ const temperatureRenderer = (): void => {
     const tcIndex = leastIndex(
       points,
       (a: [number, number], b: [number, number]) =>
-        a[1] - b[1] + (Math.abs(a[0] - xCenter) - Math.abs(b[0] - xCenter)) / 2,
+        a[1] - b[1] + (Math.abs(a[0] - xCenter) - Math.abs(b[0] - xCenter)) / 2
     );
     const tc = points[tcIndex!];
     pushLabel(tc[0], tc[1], t);
@@ -136,9 +108,7 @@ const temperatureRenderer = (): void => {
       const bcIndex = leastIndex(
         points,
         (a: [number, number], b: [number, number]) =>
-          b[1] -
-          a[1] +
-          (Math.abs(a[0] - xCenter) - Math.abs(b[0] - xCenter)) / 2,
+          b[1] - a[1] + (Math.abs(a[0] - xCenter) - Math.abs(b[0] - xCenter)) / 2
       );
       const bc = points[bcIndex!];
       const dist2 = (tc[1] - bc[1]) ** 2 + (tc[0] - bc[0]) ** 2; // square distance between this and top point

@@ -9,7 +9,7 @@ export const typeMapping: Record<string, Record<string, number>> = {
     armillarySphere: 1,
     escallop: 1,
     dolphin: 1,
-    plaice: 1,
+    plaice: 1
   },
   Highland: {
     tower: 1,
@@ -17,7 +17,7 @@ export const typeMapping: Record<string, Record<string, number>> = {
     wolfHeadErased: 1,
     wolfPassant: 1,
     goat: 1,
-    axe: 1,
+    axe: 1
   },
   River: {
     garb: 1,
@@ -41,7 +41,7 @@ export const typeMapping: Record<string, Record<string, number>> = {
     grapeBunch: 1,
     wheatStalk: 1,
     windmill: 1,
-    crocodile: 1,
+    crocodile: 1
   },
   Lake: {
     hook: 3,
@@ -57,7 +57,7 @@ export const typeMapping: Record<string, Record<string, number>> = {
     swanErased: 1,
     swan: 1,
     frog: 1,
-    wasp: 1,
+    wasp: 1
   },
   Nomadic: {
     pot: 1,
@@ -72,7 +72,7 @@ export const typeMapping: Record<string, Record<string, number>> = {
     crescent: 1,
     camel: 3,
     scorpion: 1,
-    falcon: 1,
+    falcon: 1
   },
   Hunting: {
     bugleHorn: 2,
@@ -103,7 +103,7 @@ export const typeMapping: Record<string, Record<string, number>> = {
     mastiffStatant: 1,
     talbotPassant: 1,
     talbotSejant: 1,
-    stagPassant: 21,
+    stagPassant: 21
   },
   // Selection based on type
   City: {
@@ -144,7 +144,7 @@ export const typeMapping: Record<string, Record<string, number>> = {
     ratRampant: 1,
     hourglass: 1,
     scale: 1,
-    scrollClosed: 1,
+    scrollClosed: 1
   },
   Capital: {
     crown: 2,
@@ -163,7 +163,7 @@ export const typeMapping: Record<string, Record<string, number>> = {
     drawingCompass: 1,
     rapier: 1,
     scaleImbalanced: 1,
-    scalesHanging: 1,
+    scalesHanging: 1
   },
   Сathedra: {
     crossHummetty: 3,
@@ -182,6 +182,6 @@ export const typeMapping: Record<string, Record<string, number>> = {
     bookOpen: 1,
     sceptre: 1,
     bone: 1,
-    skull: 1,
-  },
+    skull: 1
+  }
 };

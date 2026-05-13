@@ -22,11 +22,7 @@ export class Voronoi {
   cells: Cells = { v: [], c: [], b: [], i: new Uint32Array() }; // voronoi cells: v = cell vertices, c = adjacent cells, b = near-border cell, i = cell indexes;
   vertices: Vertices = { p: [], v: [], c: [] }; // cells vertices: p = vertex coordinates, v = neighboring vertices, c = adjacent cells
 
-  constructor(
-    delaunay: Delaunator<Float64Array<ArrayBufferLike>>,
-    points: Point[],
-    pointsN: number,
-  ) {
+  constructor(delaunay: Delaunator<Float64Array<ArrayBufferLike>>, points: Point[], pointsN: number) {
     this.delaunay = delaunay;
     this.points = points;
     this.pointsN = pointsN;
@@ -39,10 +35,8 @@ export class Voronoi {
       const p = this.delaunay.triangles[this.nextHalfedge(e)];
       if (p < this.pointsN && !this.cells.c[p]) {
         const edges = this.edgesAroundPoint(e);
-        this.cells.v[p] = edges.map((e) => this.triangleOfEdge(e)); // cell: adjacent vertex
-        this.cells.c[p] = edges
-          .map((e) => this.delaunay.triangles[e])
-          .filter((c) => c < this.pointsN); // cell: adjacent valid cells
+        this.cells.v[p] = edges.map(e => this.triangleOfEdge(e)); // cell: adjacent vertex
+        this.cells.c[p] = edges.map(e => this.delaunay.triangles[e]).filter(c => c < this.pointsN); // cell: adjacent valid cells
         this.cells.b[p] = edges.length > this.cells.c[p].length ? 1 : 0; // cell: is border
       }
 
@@ -61,9 +55,7 @@ export class Voronoi {
    * @returns {[number, number, number]} The IDs of the points comprising the given triangle.
    */
   private pointsOfTriangle(triangleIndex: number): [number, number, number] {
-    return this.edgesOfTriangle(triangleIndex).map(
-      (edge) => this.delaunay.triangles[edge],
-    ) as [number, number, number];
+    return this.edgesOfTriangle(triangleIndex).map(edge => this.delaunay.triangles[edge]) as [number, number, number];
   }
 
   /**
@@ -102,9 +94,7 @@ export class Voronoi {
    * @returns {[number, number]} The coordinates of the triangle's circumcenter.
    */
   private triangleCenter(triangleIndex: number): Point {
-    const vertices = this.pointsOfTriangle(triangleIndex).map(
-      (p) => this.points[p],
-    );
+    const vertices = this.pointsOfTriangle(triangleIndex).map(p => this.points[p]);
     return this.circumcenter(vertices[0], vertices[1], vertices[2]);
   }
 
@@ -159,7 +149,7 @@ export class Voronoi {
     const D = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
     return [
       Math.floor((1 / D) * (ad * (by - cy) + bd * (cy - ay) + cd * (ay - by))),
-      Math.floor((1 / D) * (ad * (cx - bx) + bd * (ax - cx) + cd * (bx - ax))),
+      Math.floor((1 / D) * (ad * (cx - bx) + bd * (ax - cx) + cd * (bx - ax)))
     ];
   }
 }

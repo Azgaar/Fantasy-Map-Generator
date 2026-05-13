@@ -49,5 +49,5 @@ export const shieldBox = {
   erebor: "0 0 200 200",
   ironHills: "0 5 200 200",
   urukHai: "0 0 200 200",
-  moriaOrc: "0 0 200 200",
+  moriaOrc: "0 0 200 200"
 };

@@ -32,8 +32,8 @@ const reliefIconsRenderer = (): void => {
     if (height < 50 && biomesData.iconsDensity[biome] === 0) continue; // no icons for this biome
 
     const polygon = getPackPolygon(i);
-    const [minX, maxX] = extent(polygon, (p) => p[0]) as [number, number];
-    const [minY, maxY] = extent(polygon, (p) => p[1]) as [number, number];
+    const [minX, maxX] = extent(polygon, p => p[0]) as [number, number];
+    const [minY, maxY] = extent(polygon, p => p[1]) as [number, number];
 
     if (height < 50) placeBiomeIcons();
     else placeReliefIcons();
@@ -43,13 +43,7 @@ const reliefIconsRenderer = (): void => {
       const radius = 2 / iconsDensity / density;
       if (Math.random() > iconsDensity * 10) return;
 
-      for (const [cx, cy] of window.poissonDiscSampler(
-        minX,
-        minY,
-        maxX,
-        maxY,
-        radius,
-      )) {
+      for (const [cx, cy] of window.poissonDiscSampler(minX, minY, maxX, maxY, radius)) {
         if (!polygonContains(polygon, [cx, cy])) continue;
         let h = (4 + Math.random()) * size;
         const icon = getBiomeIcon(i, biomesData.icons[biome]);
@@ -58,7 +52,7 @@ const reliefIconsRenderer = (): void => {
           i: icon,
           x: rn(cx - h, 2),
           y: rn(cy - h, 2),
-          s: rn(h * 2, 2),
+          s: rn(h * 2, 2)
         });
       }
     }
@@ -67,19 +61,13 @@ const reliefIconsRenderer = (): void => {
       const radius = 2 / density;
       const [icon, h] = getReliefIcon(i, height);
 
-      for (const [cx, cy] of window.poissonDiscSampler(
-        minX,
-        minY,
-        maxX,
-        maxY,
-        radius,
-      )) {
+      for (const [cx, cy] of window.poissonDiscSampler(minX, minY, maxX, maxY, radius)) {
         if (!polygonContains(polygon, [cx, cy])) continue;
         relief.push({
           i: icon,
           x: rn(cx - h, 2),
           y: rn(cy - h, 2),
-          s: rn(h * 2, 2),
+          s: rn(h * 2, 2)
         });
       }
     }
@@ -97,9 +85,7 @@ const reliefIconsRenderer = (): void => {
 
   const reliefHTML: string[] = [];
   for (const r of relief) {
-    reliefHTML.push(
-      `<use href="${r.i}" x="${r.x}" y="${r.y}" width="${r.s}" height="${r.s}"/>`,
-    );
+    reliefHTML.push(`<use href="${r.i}" x="${r.x}" y="${r.y}" width="${r.s}" height="${r.s}"/>`);
   }
   terrain.html(reliefHTML.join(""));
 

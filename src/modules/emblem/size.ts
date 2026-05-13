@@ -28,5 +28,5 @@ export const shieldSize = {
   easterling: 0.8,
   erebor: 0.9,
   urukHai: 0.8,
-  moriaOrc: 0.7,
+  moriaOrc: 0.7
 };

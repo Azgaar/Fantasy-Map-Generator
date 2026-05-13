@@ -36,9 +36,7 @@ const iceRenderer = (): void => {
 const redrawIcebergRenderer = (id: number): void => {
   TIME && console.time("redrawIceberg");
   const iceberg = pack.ice.find((element: IceElement) => element.i === id);
-  let el = ice.selectAll<SVGPolygonElement, unknown>(
-    `polygon[data-id="${id}"]:not([type="glacier"])`,
-  );
+  let el = ice.selectAll<SVGPolygonElement, unknown>(`polygon[data-id="${id}"]:not([type="glacier"])`);
   if (!iceberg && !el.empty()) {
     el.remove();
   } else if (iceberg) {
@@ -46,17 +44,10 @@ const redrawIcebergRenderer = (id: number): void => {
       // Create new element if it doesn't exist
       const polygon = getIcebergHtml(iceberg);
       (ice.node() as SVGGElement).insertAdjacentHTML("beforeend", polygon);
-      el = ice.selectAll<SVGPolygonElement, unknown>(
-        `polygon[data-id="${id}"]:not([type="glacier"])`,
-      );
+      el = ice.selectAll<SVGPolygonElement, unknown>(`polygon[data-id="${id}"]:not([type="glacier"])`);
     }
     el.attr("points", iceberg.points as string);
-    el.attr(
-      "transform",
-      iceberg.offset
-        ? `translate(${iceberg.offset[0]},${iceberg.offset[1]})`
-        : null,
-    );
+    el.attr("transform", iceberg.offset ? `translate(${iceberg.offset[0]},${iceberg.offset[1]})` : null);
   }
   TIME && console.timeEnd("redrawIceberg");
 };
@@ -64,9 +55,7 @@ const redrawIcebergRenderer = (id: number): void => {
 const redrawGlacierRenderer = (id: number): void => {
   TIME && console.time("redrawGlacier");
   const glacier = pack.ice.find((element: IceElement) => element.i === id);
-  let el = ice.selectAll<SVGPolygonElement, unknown>(
-    `polygon[data-id="${id}"][type="glacier"]`,
-  );
+  let el = ice.selectAll<SVGPolygonElement, unknown>(`polygon[data-id="${id}"][type="glacier"]`);
   if (!glacier && !el.empty()) {
     el.remove();
   } else if (glacier) {
@@ -74,17 +63,10 @@ const redrawGlacierRenderer = (id: number): void => {
       // Create new element if it doesn't exist
       const polygon = getGlacierHtml(glacier);
       (ice.node() as SVGGElement).insertAdjacentHTML("beforeend", polygon);
-      el = ice.selectAll<SVGPolygonElement, unknown>(
-        `polygon[data-id="${id}"][type="glacier"]`,
-      );
+      el = ice.selectAll<SVGPolygonElement, unknown>(`polygon[data-id="${id}"][type="glacier"]`);
     }
     el.attr("points", glacier.points as string);
-    el.attr(
-      "transform",
-      glacier.offset
-        ? `translate(${glacier.offset[0]},${glacier.offset[1]})`
-        : null,
-    );
+    el.attr("transform", glacier.offset ? `translate(${glacier.offset[0]},${glacier.offset[1]})` : null);
   }
   TIME && console.timeEnd("redrawGlacier");
 };

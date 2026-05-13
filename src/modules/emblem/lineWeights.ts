@@ -33,5 +33,5 @@ export const lineWeights = {
   nebuly: 2,
   seaWaves: 1,
   dragonTeeth: 1,
-  firTrees: 1,
+  firTrees: 1
 };

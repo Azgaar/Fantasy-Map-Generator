@@ -23,10 +23,8 @@ export const unique = <T>(array: T[]): T[] => {
  */
 export const getTypedArray = (maxValue: number) => {
   console.assert(
-    Number.isInteger(maxValue) &&
-      maxValue >= 0 &&
-      maxValue <= TYPED_ARRAY_MAX.UINT32,
-    `Array maxValue must be an integer between 0 and ${TYPED_ARRAY_MAX.UINT32}, got ${maxValue}`,
+    Number.isInteger(maxValue) && maxValue >= 0 && maxValue <= TYPED_ARRAY_MAX.UINT32,
+    `Array maxValue must be an integer between 0 and ${TYPED_ARRAY_MAX.UINT32}, got ${maxValue}`
   );
 
   if (maxValue <= TYPED_ARRAY_MAX.UINT8) return Uint8Array;
@@ -46,7 +44,7 @@ export const getTypedArray = (maxValue: number) => {
 export const createTypedArray = ({
   maxValue,
   length,
-  from,
+  from
 }: {
   maxValue: number;
   length: number;
@@ -61,7 +59,7 @@ export const TYPED_ARRAY_MAX = {
   INT8: 127,
   UINT8: 255,
   UINT16: 65535,
-  UINT32: 4294967295,
+  UINT32: 4294967295
 };
 
 declare global {

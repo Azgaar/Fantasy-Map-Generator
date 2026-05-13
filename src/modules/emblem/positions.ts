@@ -15,7 +15,7 @@ export const positions = {
     jleh: 1,
     def: 3,
     abcpqh: 4,
-    ABCDEFGHIJKL: 1,
+    ABCDEFGHIJKL: 1
   },
   complex: {
     e: 40,
@@ -26,7 +26,7 @@ export const positions = {
     jln: 7,
     jlh: 2,
     def: 1,
-    abcpqh: 1,
+    abcpqh: 1
   },
   divisions: {
     perPale: { e: 15, pq: 5, jo: 2, jl: 2, ABCDEFGHIJKL: 1 },
@@ -37,7 +37,7 @@ export const positions = {
       gizgiz: 1,
       jlh: 3,
       kmo: 1,
-      ABCDEFGHIJKL: 1,
+      ABCDEFGHIJKL: 1
     },
     perBend: { e: 5, lm: 5, bcfdgh: 1 },
     perBendSinister: { e: 1, jo: 1 },
@@ -45,7 +45,7 @@ export const positions = {
     perChevron: { e: 1, jlh: 1, dfk: 1, dfbh: 2, bdefh: 1 },
     perChevronReversed: { e: 1, mok: 2, dfh: 2, dfbh: 1, bdefh: 1 },
     perSaltire: { bhdf: 8, e: 3, abcdefgzi: 1, bh: 1, df: 1, ABCDEFGHIJKL: 1 },
-    perPile: { ee: 3, be: 2, abceh: 1, abcabc: 1, jleh: 1 },
+    perPile: { ee: 3, be: 2, abceh: 1, abcabc: 1, jleh: 1 }
   },
-  inescutcheon: { e: 4, jln: 1 },
+  inescutcheon: { e: 4, jln: 1 }
 };

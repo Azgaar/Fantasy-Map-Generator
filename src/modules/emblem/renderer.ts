@@ -53,8 +53,7 @@ class EmblemRenderModule {
 
   private getTemplate(id: string, line?: string) {
     const linedId = `${id}Lined` as keyof typeof templates;
-    if (!line || line === "straight" || !templates[linedId])
-      return templates[id as keyof typeof templates]; // return regular template if no line or line is straight or lined template does not exist
+    if (!line || line === "straight" || !templates[linedId]) return templates[id as keyof typeof templates]; // return regular template if no line or line is straight or lined template does not exist
     const linePath = lines[line as keyof typeof lines];
     return (templates[linedId] as (line: string) => string)(linePath);
   }
@@ -70,48 +69,43 @@ class EmblemRenderModule {
 
   private async fetchCharge(charge: string, id: string) {
     const fetched = fetch(`./charges/${charge}.svg`)
-      .then((res) => {
+      .then(res => {
         if (res.ok) return res.text();
         else throw new Error("Cannot fetch charge");
       })
-      .then((text) => {
+      .then(text => {
         const html = document.createElement("html");
         html.innerHTML = text;
         const g: SVGAElement = html.querySelector("g") as SVGAElement;
         g.setAttribute("id", `${charge}_${id}`);
         return g.outerHTML;
       })
-      .catch((err) => {
+      .catch(err => {
         ERROR && console.error(err);
       });
     return fetched;
   }
 
   private async getCharges(coa: Emblem, id: string, shieldPath: string) {
-    const charges = coa.charges
-      ? coa.charges.map((charge) => charge.charge)
-      : []; // add charges
+    const charges = coa.charges ? coa.charges.map(charge => charge.charge) : []; // add charges
     if (this.semy(coa.t1)) charges.push(this.semy(coa.t1) as string); // add field semy charge
-    if (this.semy(coa.division?.t))
-      charges.push(this.semy(coa.division?.t) as string); // add division semy charge
+    if (this.semy(coa.division?.t)) charges.push(this.semy(coa.division?.t) as string); // add division semy charge
 
     const uniqueCharges = [...new Set(charges)];
     const fetchedCharges = await Promise.all(
-      uniqueCharges.map(async (charge) => {
+      uniqueCharges.map(async charge => {
         if (charge === "inescutcheon")
           return `<g id="inescutcheon_${id}"><path transform="translate(66 66) scale(.34)" d="${shieldPath}"/></g>`;
         const fetched = await this.fetchCharge(charge, id);
         return fetched;
-      }),
+      })
     );
     return fetchedCharges.join("");
   }
 
   // get color or link to pattern
   private clr(tincture: string) {
-    return tincture in colors
-      ? colors[tincture as keyof typeof colors]
-      : `url(#${tincture})`;
+    return tincture in colors ? colors[tincture as keyof typeof colors] : `url(#${tincture})`;
   }
 
   private getSizeMod(size: string) {
@@ -126,40 +120,33 @@ class EmblemRenderModule {
     const isPattern = (string: string) => string.includes("-");
     const patternsToAdd = [];
     if (coa.t1.includes("-")) patternsToAdd.push(coa.t1); // add field pattern
-    if (coa.division && isPattern(coa.division.t))
-      patternsToAdd.push(coa.division.t); // add division pattern
+    if (coa.division && isPattern(coa.division.t)) patternsToAdd.push(coa.division.t); // add division pattern
     if (coa.ordinaries)
       coa.ordinaries
-        .filter((ordinary) => isPattern(ordinary.t))
-        .forEach((ordinary) => {
+        .filter(ordinary => isPattern(ordinary.t))
+        .forEach(ordinary => {
           patternsToAdd.push(ordinary.t); // add ordinaries pattern
         });
     if (coa.charges)
       coa.charges
-        .filter((charge) => isPattern(charge.t))
-        .forEach((charge) => {
+        .filter(charge => isPattern(charge.t))
+        .forEach(charge => {
           patternsToAdd.push(charge.t); // add charges pattern
         });
     if (!patternsToAdd.length) return "";
 
     return [...new Set(patternsToAdd)]
-      .map((patternString) => {
+      .map(patternString => {
         const [pattern, t1, t2, size] = patternString.split("-");
         const charge = this.semy(patternString);
         if (charge)
-          return patterns.semy(
-            patternString,
-            this.clr(t1),
-            this.clr(t2),
-            this.getSizeMod(size),
-            `${charge}_${id}`,
-          );
+          return patterns.semy(patternString, this.clr(t1), this.clr(t2), this.getSizeMod(size), `${charge}_${id}`);
         return patterns[pattern as keyof typeof patterns](
           patternString,
           this.clr(t1),
           this.clr(t2),
           this.getSizeMod(size),
-          charge as string,
+          charge as string
         );
       })
       .join("");
@@ -168,27 +155,14 @@ class EmblemRenderModule {
   private async draw(id: string, coa: Emblem) {
     const { shield = "heater", division, ordinaries = [], charges = [] } = coa;
 
-    const ordinariesRegular = ordinaries.filter((o) => !o.above);
-    const ordinariesAboveCharges = ordinaries.filter((o) => o.above);
-    const shieldPath =
-      shield in shieldPaths
-        ? shieldPaths[shield as keyof typeof shieldPaths]
-        : shieldPaths.heater;
-    const tDiv = division
-      ? division.t.includes("-")
-        ? division.t.split("-")[1]
-        : division.t
-      : null;
+    const ordinariesRegular = ordinaries.filter(o => !o.above);
+    const ordinariesAboveCharges = ordinaries.filter(o => o.above);
+    const shieldPath = shield in shieldPaths ? shieldPaths[shield as keyof typeof shieldPaths] : shieldPaths.heater;
+    const tDiv = division ? (division.t.includes("-") ? division.t.split("-")[1] : division.t) : null;
     const positions =
-      shield in shieldPositions
-        ? shieldPositions[shield as keyof typeof shieldPositions]
-        : shieldPositions.heater;
-    const sizeModifier =
-      shield in shieldSize ? shieldSize[shield as keyof typeof shieldSize] : 1;
-    const viewBox =
-      shield in shieldBox
-        ? shieldBox[shield as keyof typeof shieldBox]
-        : "0 0 200 200";
+      shield in shieldPositions ? shieldPositions[shield as keyof typeof shieldPositions] : shieldPositions.heater;
+    const sizeModifier = shield in shieldSize ? shieldSize[shield as keyof typeof shieldSize] : 1;
+    const viewBox = shield in shieldBox ? shieldBox[shield as keyof typeof shieldBox] : "0 0 200 200";
 
     const shieldClip = `<clipPath id="${shield}_${id}"><path d="${shieldPath}"/></clipPath>`;
     const divisionClip = division
@@ -207,7 +181,7 @@ class EmblemRenderModule {
       charge: Charge,
       tincture: string,
       secondaryTincture?: string,
-      tertiaryTincture?: string,
+      tertiaryTincture?: string
     ) => {
       const primary = this.clr(tincture);
       const secondary = this.clr(secondaryTincture || tincture);
@@ -215,7 +189,7 @@ class EmblemRenderModule {
       const stroke = charge.stroke || "#000";
 
       const chargePositions = [...new Set(charge.p)].filter(
-        (position) => positions[position as unknown as keyof typeof positions],
+        position => positions[position as unknown as keyof typeof positions]
       ); // filter out invalid positions
 
       let svg = `<g fill="${primary}" style="--secondary: ${secondary}; --tertiary: ${tertiary}" stroke="${stroke}">`;
@@ -253,49 +227,38 @@ class EmblemRenderModule {
 
       // In field part
       for (const ordinary of ordinariesRegular) {
-        if (ordinary.divided === "field")
-          svg += templateOrdinary(ordinary, ordinary.t);
-        else if (ordinary.divided === "counter")
-          svg += templateOrdinary(ordinary, tDiv!);
+        if (ordinary.divided === "field") svg += templateOrdinary(ordinary, ordinary.t);
+        else if (ordinary.divided === "counter") svg += templateOrdinary(ordinary, tDiv!);
       }
 
       for (const charge of charges) {
         if (charge.divided === "field") svg += templateCharge(charge, charge.t);
-        else if (charge.divided === "counter")
-          svg += templateCharge(charge, tDiv!);
+        else if (charge.divided === "counter") svg += templateCharge(charge, tDiv!);
       }
 
       for (const ordinary of ordinariesAboveCharges) {
-        if (ordinary.divided === "field")
-          svg += templateOrdinary(ordinary, ordinary.t);
-        else if (ordinary.divided === "counter")
-          svg += templateOrdinary(ordinary, tDiv!);
+        if (ordinary.divided === "field") svg += templateOrdinary(ordinary, ordinary.t);
+        else if (ordinary.divided === "counter") svg += templateOrdinary(ordinary, tDiv!);
       }
 
       // In division part
       svg += `<g clip-path="url(#divisionClip_${id})"><rect x="0" y="0" width="200" height="200" fill="${this.clr(
-        division!.t,
+        division!.t
       )}"/>`;
 
       for (const ordinary of ordinariesRegular) {
-        if (ordinary.divided === "division")
-          svg += templateOrdinary(ordinary, ordinary.t);
-        else if (ordinary.divided === "counter")
-          svg += templateOrdinary(ordinary, coa.t1);
+        if (ordinary.divided === "division") svg += templateOrdinary(ordinary, ordinary.t);
+        else if (ordinary.divided === "counter") svg += templateOrdinary(ordinary, coa.t1);
       }
 
       for (const charge of charges) {
-        if (charge.divided === "division")
-          svg += templateCharge(charge, charge.t);
-        else if (charge.divided === "counter")
-          svg += templateCharge(charge, coa.t1);
+        if (charge.divided === "division") svg += templateCharge(charge, charge.t);
+        else if (charge.divided === "counter") svg += templateCharge(charge, coa.t1);
       }
 
       for (const ordinary of ordinariesAboveCharges) {
-        if (ordinary.divided === "division")
-          svg += templateOrdinary(ordinary, ordinary.t);
-        else if (ordinary.divided === "counter")
-          svg += templateOrdinary(ordinary, coa.t1);
+        if (ordinary.divided === "division") svg += templateOrdinary(ordinary, ordinary.t);
+        else if (ordinary.divided === "counter") svg += templateOrdinary(ordinary, coa.t1);
       }
 
       svg += `</g>`;
@@ -306,20 +269,20 @@ class EmblemRenderModule {
       let svg = "";
 
       ordinariesRegular
-        .filter((o) => !o.divided)
-        .forEach((ordinary) => {
+        .filter(o => !o.divided)
+        .forEach(ordinary => {
           svg += templateOrdinary(ordinary, ordinary.t);
         });
 
       charges
-        .filter((o) => !o.divided || !division)
-        .forEach((charge) => {
+        .filter(o => !o.divided || !division)
+        .forEach(charge => {
           svg += templateCharge(charge, charge.t);
         });
 
       ordinariesAboveCharges
-        .filter((o) => !o.divided)
-        .forEach((ordinary) => {
+        .filter(o => !o.divided)
+        .forEach(ordinary => {
           svg += templateOrdinary(ordinary, ordinary.t);
         });
 
@@ -348,9 +311,7 @@ class EmblemRenderModule {
 
   async add(type: string, i: number, coa: Emblem, x: number, y: number) {
     const id = `${type}COA${i}`;
-    const g: HTMLElement = document.getElementById(
-      `${type}Emblems`,
-    ) as HTMLElement;
+    const g: HTMLElement = document.getElementById(`${type}Emblems`) as HTMLElement;
 
     if (emblems.selectAll("use").size()) {
       const size = parseFloat(g.getAttribute("font-size") || "50");

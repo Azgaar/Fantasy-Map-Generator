@@ -13,7 +13,7 @@ export function open(): void {
   $("#namesbaseEditor").dialog({
     title: "Namesbase Editor",
     width: "60vw",
-    position: { my: "center", at: "center", of: "svg" },
+    position: { my: "center", at: "center", of: "svg" }
   });
 }
 
@@ -24,52 +24,28 @@ function addListeners(): void {
   ensureEl("namesbaseTextarea").on("change", updateNamesData);
   ensureEl("namesbaseUpdateExamples").on("click", updateExamples);
   ensureEl("namesbaseExamples").on("click", updateExamples);
-  ensureEl("namesbaseName").on("input", (e) =>
-    updateBaseName((e.target as HTMLInputElement).value),
-  );
-  ensureEl("namesbaseMin").on("input", (e) =>
-    updateBaseMin((e.target as HTMLInputElement).value),
-  );
-  ensureEl("namesbaseMax").on("input", (e) =>
-    updateBaseMax((e.target as HTMLInputElement).value),
-  );
-  ensureEl("namesbaseDouble").on("input", (e) =>
-    updateBaseDuplication((e.target as HTMLInputElement).value),
-  );
+  ensureEl("namesbaseName").on("input", e => updateBaseName((e.target as HTMLInputElement).value));
+  ensureEl("namesbaseMin").on("input", e => updateBaseMin((e.target as HTMLInputElement).value));
+  ensureEl("namesbaseMax").on("input", e => updateBaseMax((e.target as HTMLInputElement).value));
+  ensureEl("namesbaseDouble").on("input", e => updateBaseDuplication((e.target as HTMLInputElement).value));
   ensureEl("namesbaseAdd").on("click", namesbaseAdd);
   ensureEl("namesbaseAnalyze").on("click", analyzeNamesbase);
   ensureEl("namesbaseDefault").on("click", namesbaseRestoreDefault);
   ensureEl("namesbaseDownload").on("click", namesbaseDownload);
   ensureEl("namesbaseUpload").on("click", () => {
-    uploader.on(
-      "change",
-      (e) =>
-        uploadFile(e.target as HTMLInputElement, (d) =>
-          namesbaseUpload(d, true),
-        ),
-      { once: true },
-    );
+    uploader.on("change", e => uploadFile(e.target as HTMLInputElement, d => namesbaseUpload(d, true)), { once: true });
     uploader.click();
   });
   ensureEl("namesbaseUploadExtend").on("click", () => {
-    uploader.on(
-      "change",
-      (e) =>
-        uploadFile(e.target as HTMLInputElement, (d) =>
-          namesbaseUpload(d, false),
-        ),
-      { once: true },
-    );
+    uploader.on("change", e => uploadFile(e.target as HTMLInputElement, d => namesbaseUpload(d, false)), {
+      once: true
+    });
     uploader.click();
   });
   ensureEl("namesbaseCA").on("click", () =>
-    openURL(
-      "https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/namebases/",
-    ),
+    openURL("https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/namebases/")
   );
-  ensureEl("namesbaseSpeak").on("click", () =>
-    speak(ensureEl("namesbaseExamples").textContent ?? ""),
-  );
+  ensureEl("namesbaseSpeak").on("click", () => speak(ensureEl("namesbaseExamples").textContent ?? ""));
 }
 
 function createBasesList(): void {
@@ -86,15 +62,10 @@ function updateInputs(): void {
     tip(`Namesbase ${base} is not defined`, false, "error");
     return;
   }
-  (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value =
-    nameBases[base].b;
+  (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value = nameBases[base].b;
   (ensureEl("namesbaseName") as HTMLInputElement).value = nameBases[base].name;
-  (ensureEl("namesbaseMin") as HTMLInputElement).value = String(
-    nameBases[base].min,
-  );
-  (ensureEl("namesbaseMax") as HTMLInputElement).value = String(
-    nameBases[base].max,
-  );
+  (ensureEl("namesbaseMin") as HTMLInputElement).value = String(nameBases[base].min);
+  (ensureEl("namesbaseMax") as HTMLInputElement).value = String(nameBases[base].max);
   (ensureEl("namesbaseDouble") as HTMLInputElement).value = nameBases[base].d;
   updateExamples();
 }
@@ -159,9 +130,7 @@ function updateBaseDuplication(value: string): void {
 }
 
 function analyzeNamesbase(): void {
-  const namesSourceString = (
-    ensureEl("namesbaseTextarea") as HTMLTextAreaElement
-  ).value;
+  const namesSourceString = (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value;
   const namesArray = namesSourceString.toLowerCase().split(",");
   const length = namesArray.length;
   if (!namesSourceString || !length) {
@@ -171,9 +140,9 @@ function analyzeNamesbase(): void {
 
   const chain = Names.calculateChain(namesSourceString);
   const chainValues = Object.values(chain) as string[][];
-  const variety = rn(mean(chainValues.map((kv) => kv.length)) ?? 0);
+  const variety = rn(mean(chainValues.map(kv => kv.length)) ?? 0);
 
-  const wordsLength = namesArray.map((n) => n.length);
+  const wordsLength = namesArray.map(n => n.length);
 
   const nonLatin = namesSourceString.match(/[\u0080-\uFFFF]/gu);
   const nonBasicLatinChars = nonLatin
@@ -182,22 +151,16 @@ function analyzeNamesbase(): void {
           .match(/[\u0080-\uFFFF]/gu)!
           .join("")
           .toLowerCase()
-          .split(""),
+          .split("")
       ).join("")
     : "none";
 
-  const geminate = namesArray.flatMap(
-    (name) => name.match(/[^\w\s]|(.)(?=\1)/g) ?? [],
-  );
-  const doubled = unique(geminate).filter(
-    (char) => geminate.filter((d) => d === char).length > 3,
-  );
+  const geminate = namesArray.flatMap(name => name.match(/[^\w\s]|(.)(?=\1)/g) ?? []);
+  const doubled = unique(geminate).filter(char => geminate.filter(d => d === char).length > 3);
   const doubledStr = doubled.length ? doubled.join("") : "none";
 
-  const duplicates =
-    unique(namesArray.filter((e, i, a) => a.indexOf(e) !== i)).join(", ") ||
-    "none";
-  const multiwordRate = mean(namesArray.map((n) => +n.includes(" "))) ?? 0;
+  const duplicates = unique(namesArray.filter((e, i, a) => a.indexOf(e) !== i)).join(", ") || "none";
+  const multiwordRate = mean(namesArray.map(n => +n.includes(" "))) ?? 0;
 
   const getLengthQuality = (): string => {
     if (length < 30)
@@ -240,8 +203,8 @@ function analyzeNamesbase(): void {
     buttons: {
       OK: function () {
         $(this).dialog("close");
-      },
-    },
+      }
+    }
   });
 }
 
@@ -256,11 +219,9 @@ function namesbaseAdd(): void {
     max: 12,
     d: "",
     m: 0,
-    b,
+    b
   });
-  ensureEl<HTMLSelectElement>("namesbaseSelect").add(
-    new Option(`Base${baseId}`, String(baseId)),
-  );
+  ensureEl<HTMLSelectElement>("namesbaseSelect").add(new Option(`Base${baseId}`, String(baseId)));
   (ensureEl("namesbaseSelect") as HTMLSelectElement).value = String(baseId);
   (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value = b;
   (ensureEl("namesbaseName") as HTMLInputElement).value = `Base${baseId}`;
@@ -285,15 +246,13 @@ function namesbaseRestoreDefault(): void {
       },
       Cancel: function () {
         $(this).dialog("close");
-      },
-    },
+      }
+    }
   });
 }
 
 function namesbaseDownload(): void {
-  const data = nameBases
-    .map((b) => `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${b.b}`)
-    .join("\r\n");
+  const data = nameBases.map(b => `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${b.b}`).join("\r\n");
   const name = `${getFileName("Namesbase")}.txt`;
   downloadFile(data, name);
 }
@@ -304,11 +263,7 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
     .split("\n")
     .filter(Boolean);
   if (!lines.length) {
-    tip(
-      "Cannot load a namesbase. Please check the data format",
-      false,
-      "error",
-    );
+    tip("Cannot load a namesbase. Please check the data format", false, "error");
     return;
   }
 
@@ -330,7 +285,7 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
         max: +max,
         d,
         m: +m,
-        b: names,
+        b: names
       });
     } catch (e) {
       errors.push({ id: index + 1, line, error: (e as Error).message });
@@ -342,11 +297,7 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
     ERROR && console.error("Namesbase upload errors", errors);
     const errorItems = errors
       .map(
-        ({
-          id,
-          line,
-          error,
-        }) => /* html */ `<li style="padding:0.6em 0;border-top:1px solid #ddd;">
+        ({ id, line, error }) => /* html */ `<li style="padding:0.6em 0;border-top:1px solid #ddd;">
             <div>
               Line ${id}:
               <span style="color:#8b0000">${escapeHtml(error)}.</span> Data:
@@ -354,7 +305,7 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
             <div style="margin-top:0.35em;font-family:var(--font-monospace,monospace);font-size:0.95em;line-height:1.4;word-break:break-word;color:#333;">
               ${escapeHtml(line) || "<empty line>"}
             </div>
-          </li>`,
+          </li>`
       )
       .join("");
 
@@ -386,8 +337,8 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
       buttons: {
         Continue: function () {
           $(this).dialog("close");
-        },
-      },
+        }
+      }
     });
   }
 
@@ -398,12 +349,7 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
 const unsafe = /[|/]/g;
 
 const escapeHtml = (str: string): string =>
-  str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+  str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
 interface ParseError {
   id: number;

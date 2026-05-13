@@ -2,7 +2,7 @@
 if (String.prototype.replaceAll === undefined) {
   String.prototype.replaceAll = function (
     str: string | RegExp,
-    newStr: string | ((substring: string, ...args: any[]) => string),
+    newStr: string | ((substring: string, ...args: any[]) => string)
   ): string {
     if (Object.prototype.toString.call(str).toLowerCase() === "[object regexp]")
       return this.replace(str as RegExp, newStr as any);
@@ -14,11 +14,8 @@ if (String.prototype.replaceAll === undefined) {
 if (Array.prototype.flat === undefined) {
   Array.prototype.flat = function <T>(this: T[], depth?: number): any[] {
     return (this as Array<unknown>).reduce(
-      (acc: any[], val: unknown) =>
-        Array.isArray(val)
-          ? acc.concat((val as any).flat(depth))
-          : acc.concat(val),
-      [],
+      (acc: any[], val: unknown) => (Array.isArray(val) ? acc.concat((val as any).flat(depth)) : acc.concat(val)),
+      []
     );
   };
 }
@@ -35,7 +32,7 @@ if (Array.prototype.at === undefined) {
 // readable stream iterator: https://bugs.chromium.org/p/chromium/issues/detail?id=929585#c10
 if ((ReadableStream.prototype as any)[Symbol.asyncIterator] === undefined) {
   (ReadableStream.prototype as any)[Symbol.asyncIterator] = async function* <R>(
-    this: ReadableStream<R>,
+    this: ReadableStream<R>
   ): AsyncGenerator<R, void, unknown> {
     const reader = this.getReader();
     try {
@@ -54,7 +51,7 @@ declare global {
   interface String {
     replaceAll(
       searchValue: string | RegExp,
-      replaceValue: string | ((substring: string, ...args: any[]) => string),
+      replaceValue: string | ((substring: string, ...args: any[]) => string)
     ): string;
   }
 

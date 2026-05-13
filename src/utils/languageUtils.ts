@@ -35,21 +35,19 @@ export const getAdjective = (nounToBeAdjective: string) => {
       name: "guo",
       probability: 1,
       condition: / Guo$/,
-      action: (noun: string) => noun.slice(0, -4),
+      action: (noun: string) => noun.slice(0, -4)
     },
     {
       name: "orszag",
       probability: 1,
       condition: /orszag$/,
-      action: (noun: string) =>
-        noun.length < 9 ? `${noun}ian` : noun.slice(0, -6),
+      action: (noun: string) => (noun.length < 9 ? `${noun}ian` : noun.slice(0, -6))
     },
     {
       name: "stan",
       probability: 1,
       condition: /stan$/,
-      action: (noun: string) =>
-        noun.length < 9 ? `${noun}i` : trimVowels(noun.slice(0, -4)),
+      action: (noun: string) => (noun.length < 9 ? `${noun}i` : trimVowels(noun.slice(0, -4)))
     },
     {
       name: "land",
@@ -61,49 +59,49 @@ export const getAdjective = (nounToBeAdjective: string) => {
         if (root.length < 3) return `${noun}ic`;
         if (root.length < 4) return `${root}lish`;
         return `${root}ish`;
-      },
+      }
     },
     {
       name: "que",
       probability: 1,
       condition: /que$/,
-      action: (noun: string) => noun.replace(/que$/, "can"),
+      action: (noun: string) => noun.replace(/que$/, "can")
     },
     {
       name: "a",
       probability: 1,
       condition: /a$/,
-      action: (noun: string) => `${noun}n`,
+      action: (noun: string) => `${noun}n`
     },
     {
       name: "o",
       probability: 1,
       condition: /o$/,
-      action: (noun: string) => noun.replace(/o$/, "an"),
+      action: (noun: string) => noun.replace(/o$/, "an")
     },
     {
       name: "u",
       probability: 1,
       condition: /u$/,
-      action: (noun: string) => `${noun}an`,
+      action: (noun: string) => `${noun}an`
     },
     {
       name: "i",
       probability: 1,
       condition: /i$/,
-      action: (noun: string) => `${noun}an`,
+      action: (noun: string) => `${noun}an`
     },
     {
       name: "e",
       probability: 1,
       condition: /e$/,
-      action: (noun: string) => `${noun}an`,
+      action: (noun: string) => `${noun}an`
     },
     {
       name: "ay",
       probability: 1,
       condition: /ay$/,
-      action: (noun: string) => `${noun}an`,
+      action: (noun: string) => `${noun}an`
     },
     {
       name: "os",
@@ -113,7 +111,7 @@ export const getAdjective = (nounToBeAdjective: string) => {
         const root = trimVowels(noun.slice(0, -2), 0);
         if (root.length < 4) return noun.slice(0, -1);
         return `${root}ian`;
-      },
+      }
     },
     {
       name: "es",
@@ -123,44 +121,44 @@ export const getAdjective = (nounToBeAdjective: string) => {
         const root = trimVowels(noun.slice(0, -2), 0);
         if (root.length > 7) return noun.slice(0, -1);
         return `${root}ian`;
-      },
+      }
     },
     {
       name: "l",
       probability: 0.8,
       condition: /l$/,
-      action: (noun: string) => `${noun}ese`,
+      action: (noun: string) => `${noun}ese`
     },
     {
       name: "n",
       probability: 0.8,
       condition: /n$/,
-      action: (noun: string) => `${noun}ese`,
+      action: (noun: string) => `${noun}ese`
     },
     {
       name: "ad",
       probability: 0.8,
       condition: /ad$/,
-      action: (noun: string) => `${noun}ian`,
+      action: (noun: string) => `${noun}ian`
     },
     {
       name: "an",
       probability: 0.8,
       condition: /an$/,
-      action: (noun: string) => `${noun}ian`,
+      action: (noun: string) => `${noun}ian`
     },
     {
       name: "ish",
       probability: 0.25,
       condition: /^[a-zA-Z]{6}$/,
-      action: (noun: string) => `${trimVowels(noun.slice(0, -1))}ish`,
+      action: (noun: string) => `${trimVowels(noun.slice(0, -1))}ish`
     },
     {
       name: "an",
       probability: 0.5,
       condition: /^[a-zA-Z]{0,7}$/,
-      action: (noun: string) => `${trimVowels(noun)}an`,
-    },
+      action: (noun: string) => `${trimVowels(noun)}an`
+    }
   ];
   for (const rule of adjectivizationRules) {
     if (P(rule.probability) && rule.condition.test(nounToBeAdjective)) {
@@ -175,8 +173,7 @@ export const getAdjective = (nounToBeAdjective: string) => {
  * @param n - The number.
  * @returns The number with its ordinal suffix.
  */
-export const nth = (n: number) =>
-  n + (["st", "nd", "rd"][((((n + 90) % 100) - 10) % 10) - 1] || "th");
+export const nth = (n: number) => n + (["st", "nd", "rd"][((((n + 90) % 100) - 10) % 10) - 1] || "th");
 
 /**
  * Generate an abbreviation for a given name, avoiding restricted codes.
@@ -189,8 +186,7 @@ export const abbreviate = (name: string, restricted: string[] = []) => {
   const words = parsed.split(" ");
   const letters = words.join("");
 
-  let code =
-    words.length === 2 ? words[0][0] + words[1][0] : letters.slice(0, 2);
+  let code = words.length === 2 ? words[0][0] + words[1][0] : letters.slice(0, 2);
   for (let i = 1; i < letters.length - 1 && restricted.includes(code); i++) {
     code = letters[0] + letters[i].toUpperCase();
   }
@@ -204,10 +200,10 @@ export const abbreviate = (name: string, restricted: string[] = []) => {
  */
 export const list = (array: string[]) => {
   if (!Intl.ListFormat) return array.join(", ");
-  const conjunction = new Intl.ListFormat(
-    document.documentElement.lang || "en",
-    { style: "long", type: "conjunction" },
-  );
+  const conjunction = new Intl.ListFormat(document.documentElement.lang || "en", {
+    style: "long",
+    type: "conjunction"
+  });
   return conjunction.format(array);
 };
 

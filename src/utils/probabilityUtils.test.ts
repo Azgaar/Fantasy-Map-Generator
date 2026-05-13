@@ -1,16 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  biased,
-  each,
-  gauss,
-  generateSeed,
-  getNumberInRange,
-  P,
-  Pint,
-  ra,
-  rand,
-  rw,
-} from "./probabilityUtils";
+import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
 
 describe("rand", () => {
   describe("when called with no arguments", () => {
