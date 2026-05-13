@@ -519,9 +519,6 @@ export class TradeModule {
         }
       }
       avgBaseCostByGood.set(good.i, totalBaseCost / good.recipes.length);
-      console.log(
-        `AVGCALC. ${good.name}: (${good.value} - ${avgBaseCostByGood.get(good.i)?.toFixed(2)} ) = ${good.value - (avgBaseCostByGood.get(good.i) ?? 0)}`
-      );
     }
 
     for (const market of markets) {
@@ -539,9 +536,6 @@ export class TradeModule {
         const demand = population * (consumerDemand + industrialDemand);
         const ratio = (demand + LAPLACE_PRICE_SMOOTHING) / (marketGood.stock + LAPLACE_PRICE_SMOOTHING);
         marketGood.price = good.value * minmax(ratio, PRICE_FLOOR_FACTOR, PRICE_CEILING_FACTOR);
-        // console.log(
-        //   `${market.i} ${good.name}: consumerDemand=${consumerDemand.toFixed(2)} industrialDemand=${industrialDemand.toFixed(2)} totalDemand=${demand.toFixed(2)} stock=${marketGood.stock} ratio=${ratio.toFixed(2)} price=${marketGood.price.toFixed(2)}`
-        // );
       }
 
       // Second pass: manufactured goods - average local ingredient cost + base value-added
@@ -563,9 +557,6 @@ export class TradeModule {
         const minPrice = good.value * PRICE_FLOOR_FACTOR;
         const maxPrice = good.value * PRICE_CEILING_FACTOR;
         marketGood.price = minmax(demandPrice, minPrice, maxPrice);
-        // console.log(
-        //   `${market.i} ${good.name}: avgBaseCost=${avgBaseCost.toFixed(2)} avgLocalCost=${avgLocalCost.toFixed(2)} demandPrice=${demandPrice.toFixed(2)} price=${marketGood.price.toFixed(2)}`
-        // );
       }
     }
   }

@@ -119,8 +119,7 @@ export class ProductionModule {
         workersUsed += fraction;
       }
 
-      const {retainedInventory, excessInventory} = this.splitInventoryByDemand(inventory, demandTargets, goodById);
-      demandInventoryByBurg.set(burg.i!, retainedInventory);
+      demandInventoryByBurg.set(burg.i!, {});
 
       burg.produced = {};
       for (const entry of history) {
@@ -129,9 +128,9 @@ export class ProductionModule {
       }
       let phaseRevenue = 0;
 
-      for (const goodIdStr in excessInventory) {
+      for (const goodIdStr in inventory) {
         const goodId = +goodIdStr;
-        const amount = excessInventory[goodId];
+        const amount = inventory[goodId];
         if (amount <= 0) continue;
         const good = goodById.get(goodId)!;
 
@@ -252,63 +251,6 @@ export class ProductionModule {
     }
 
     return demandCoverage;
-  }
-
-  private splitInventoryByDemand(
-    inventory: Record<number, number>,
-    demandTargets: number[],
-    goodById: Map<number, Good>
-  ): {
-    retainedInventory: Record<number, number>;
-    excessInventory: Record<number, number>;
-  } {
-    const retainedInventory: Record<number, number> = {};
-    const excessInventory: Record<number, number> = {...inventory};
-    const retainedDemandCoverage = Array(DEMAND_PRIORITY.length).fill(0);
-
-    for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
-      const demandCategory = DEMAND_PRIORITY[categoryIndex] as DemandCategory;
-      const candidates = Object.keys(excessInventory)
-        .map(Number)
-        .filter(goodId => {
-          const amount = excessInventory[goodId] || 0;
-          const good = goodById.get(goodId);
-          return amount > 0 && Boolean(good?.demandCoverage[demandCategory]);
-        })
-        .sort((a, b) => {
-          const goodA = goodById.get(a)!;
-          const goodB = goodById.get(b)!;
-          const coverageA = goodA.demandCoverage[demandCategory] || 0;
-          const coverageB = goodB.demandCoverage[demandCategory] || 0;
-          return coverageB - coverageA || a - b;
-        });
-
-      for (const goodId of candidates) {
-        const shortage = Math.max(0, demandTargets[categoryIndex] - retainedDemandCoverage[categoryIndex]);
-        if (shortage <= 0.001) break;
-
-        const available = excessInventory[goodId] || 0;
-        if (available <= 0) continue;
-        const good = goodById.get(goodId)!;
-        const coverageWeight = good.demandCoverage[demandCategory] || 0;
-        if (!coverageWeight) continue;
-
-        const keepAmount = Math.min(available, shortage / coverageWeight);
-        if (keepAmount <= 0.001) continue;
-
-        retainedInventory[goodId] = (retainedInventory[goodId] || 0) + keepAmount;
-        excessInventory[goodId] = Math.max(0, available - keepAmount);
-
-        for (let coverageCategoryIndex = 0; coverageCategoryIndex < DEMAND_PRIORITY.length; coverageCategoryIndex++) {
-          const coverageCategory = DEMAND_PRIORITY[coverageCategoryIndex] as DemandCategory;
-          const retainedCoverage = good.demandCoverage[coverageCategory] || 0;
-          if (!retainedCoverage) continue;
-          retainedDemandCoverage[coverageCategoryIndex] += keepAmount * retainedCoverage;
-        }
-      }
-    }
-
-    return {retainedInventory, excessInventory};
   }
 
   private fillBurgDemandFromCenter(params: {
