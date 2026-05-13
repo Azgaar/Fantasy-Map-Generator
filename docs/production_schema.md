@@ -21,14 +21,19 @@ That setup phase creates markets, assigns each burg to a market, seeds rural raw
 5. Lets trade redistribute market surpluses between regions.
 6. Buys demand goods from the local market to fill the burg's personal needs.
 
-## Inputs for each burg
+## Inputs and Data Structures
 
 Each burg turn starts with:
 
-- `inventory` copied from `burg.inventory` (carry-over from previous cycle)
+- `inventory`: copied from `burg.inventory` (carry-over from previous cycle)
 - local resource bonus added to inventory (see below)
-- `demandTargets` derived from population
+- `demandTargets`: derived from population
 - live local market state: `stock`, `buyPrice`, `sellPrice`
+- `goodById`: **sparse array** of all goods, indexed by `good.i` (not a dense list)
+- `productiveGoods`: **dense array** of only manufacturable goods (those with recipes), used for planning
+- `recipesByOutput`: **array of arrays** of recipes, indexed by `good.i`
+- `minWorkersByGood`: array of minimum workers required per good
+- `path`: boolean array for cycle detection in recursive planning
 
 ## Local resource bonus
 
@@ -50,14 +55,14 @@ Per tick:
 
 1. Measure current demand coverage from retained inventory-in-progress.
 2. Identify the highest-priority unmet demand category.
-3. Evaluate every good as a potential production goal.
-4. Recursively plan the best next manufacturing action for that goal.
+3. Evaluate every **productive good** (from `productiveGoods`) as a potential production goal.
+4. Recursively plan the best next manufacturing action for that goal, using `recipesByOutput` and `goodById`.
 5. Choose the candidate with the highest normalized projected gain, with goal stickiness to avoid oscillation.
 6. Execute one manufacturing step.
 
 ## Unified goal planning
 
-The planner does not split raw and manufactured logic.
+The planner does not split raw and manufactured logic. All planning is done via array-based structures for speed.
 
 For a target good:
 

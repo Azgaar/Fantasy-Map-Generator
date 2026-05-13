@@ -1,7 +1,7 @@
 import type { Burg } from "../modules/burgs-generator";
 import type { DemandCategory } from "../modules/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "../modules/goods-generator";
-import type { DecisionCandidate, MfgHistoryEntry } from "../modules/production-generator";
+import type { MfgHistory, ProductionCandidate } from "../modules/production-generator";
 import type { Deal } from "../modules/trade-generator";
 import { rn } from "../utils";
 
@@ -154,33 +154,35 @@ export function open(burgId: number): void {
     return totals;
   };
   const renderCandidateScore = (score: number) => `<b style="${styles.positive}">score ${rn(score, 2)}</b>`;
-  const renderDecisionCandidate = (candidate: DecisionCandidate) => {
+  const renderDecisionCandidate = (candidate: ProductionCandidate) => {
     const ingredients = candidate.ingredients
       .map(ing => `${rn(ing.amount * candidate.units, 2)} ${goodDot(ing.goodId)}`)
       .join(", ");
 
-    const prep = candidate.preparation ? ` (prep for ${goodDot(candidate.goalGoodId || -1)})` : "";
+    const prep = candidate.isPreparation ? ` (prep for ${goodDot(candidate.goalGoodId || -1)})` : "";
     const demand =
-      candidate.demandEffect.category && candidate.demandEffect.multiplier !== 1
-        ? `x demand ${DEMAND_CATEGORY_ICONS[candidate.demandEffect.category]} ${rn(candidate.demandEffect.multiplier, 2)}`
+      candidate.demandCategory && candidate.demandMultiplier !== 1
+        ? `x demand ${DEMAND_CATEGORY_ICONS[candidate.demandCategory]} ${rn(candidate.demandMultiplier, 2)}`
         : "";
     const culture = candidate.cultureModifier !== 1 ? ` ${modifierBadge(candidate.cultureModifier)}` : "";
 
     let formula: string;
-    if (candidate.preparation) {
-      const workers = rn(candidate.workers || 1, 2);
-      const gain = ((candidate.gain || 0) / candidate.demandEffect.multiplier) * workers;
+    if (candidate.isPreparation) {
+      const workers = rn(candidate.workersNeeded || 1, 2);
+      const gain = ((candidate.gainPerWorker || 0) / candidate.demandMultiplier) * workers;
       formula = `goal sell ${formatPrice(gain)}${culture} ÷ ${workers} workers ${demand} × units ${rn(candidate.units, 2)} = ${renderCandidateScore(candidate.score)}`;
     } else {
       formula = `sell ${formatPrice(candidate.sellPrice)}${culture} - cost ${formatPrice(candidate.ingredientCost)} = ${renderCandidateScore(candidate.score)}`;
     }
     return `<div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>${prep}: ${formula}. <span style="${styles.muted}">Ingredients: ${ingredients}</span></div>`;
   };
-  const renderDecisionDetails = (candidates?: DecisionCandidate[]) => {
+  const renderDecisionDetails = (candidates?: readonly ProductionCandidate[]) => {
     if (!candidates || candidates.length === 0) return "";
-    const candidatesHtml = `<ul style="margin:.2em 0 0 1.1em;padding:0">${candidates
+    const candidatesHtml = `<ul style="margin:.2em 0 0 1.1em;padding:0">${[...candidates]
       .sort((a, b) => b.score - a.score)
-      .map((candidate: DecisionCandidate) => `<li style="margin-top:.25em">${renderDecisionCandidate(candidate)}</li>`)
+      .map(
+        (candidate: ProductionCandidate) => `<li style="margin-top:.25em">${renderDecisionCandidate(candidate)}</li>`
+      )
       .join("")}</ul>`;
     return /*html*/ `<div><b>Decision basis:</b> highest score among ${candidates.length} feasible options:</div>${candidatesHtml}`;
   };
@@ -238,7 +240,7 @@ export function open(burgId: number): void {
 
   const allRows = data.flatMap(entry => {
     if (entry.kind === "mfg") {
-      const mfg = entry as MfgHistoryEntry;
+      const mfg = entry as MfgHistory;
       producedByGood[mfg.goodId] = (producedByGood[mfg.goodId] || 0) + mfg.units;
       ingredientCosts += mfg.recipe.reduce((s, item) => s + item.marketCost, 0);
 

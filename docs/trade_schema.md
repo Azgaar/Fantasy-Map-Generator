@@ -113,7 +113,7 @@ The same demand model drives:
 - final burg demand-fill purchases
 - market demand tracking via `updateMarketDemand`
 
-## Market data model
+## Market and Planning Data Model
 
 Each market stores:
 
@@ -125,6 +125,14 @@ Each market stores:
 Member burgs are derived from `pack.burgs` by matching `burg.market`.
 
 Cell-to-market assignment is stored in `pack.cells.market` as a `Uint16Array`.
+
+### Planning Structures (used by Production and Trade)
+
+- `goodById`: **sparse array** of all goods, indexed by `good.i`
+- `productiveGoods`: **dense array** of manufacturable goods
+- `recipesByOutput`: **array of arrays** of recipes, indexed by `good.i`
+- `minWorkersByGood`: array of minimum workers required per good
+- `path`: boolean array for cycle detection in recursive planning
 
 ## Deal log
 

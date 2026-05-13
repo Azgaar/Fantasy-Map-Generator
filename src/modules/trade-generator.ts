@@ -4,7 +4,7 @@ import { getRandomColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "./goods-generator";
-import type { ProductionHistoryEntry } from "./production-generator";
+import type { ProductionHistory } from "./production-generator";
 
 export const DEFAULT_SALES_TAX = 0.2;
 export const PRICE_FLOOR_FACTOR = 0.25;
@@ -157,7 +157,7 @@ export class TradeModule {
   }
 
   updateMarketDemand(
-    productionData: Map<number, ProductionHistoryEntry[]>,
+    productionData: Map<number, ProductionHistory[]>,
     demandInventory: Map<number, Record<number, number>>
   ): void {
     for (const market of this.data.markets) {
@@ -189,7 +189,7 @@ export class TradeModule {
   }
 
   redistributeAcrossMarkets(
-    productionData: Map<number, ProductionHistoryEntry[]>,
+    productionData: Map<number, ProductionHistory[]>,
     demandInventory: Map<number, Record<number, number>>
   ): void {
     this.updateMarketDemand(productionData, demandInventory);
