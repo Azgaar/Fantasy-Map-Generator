@@ -129,18 +129,9 @@ declare global {
   var applySorting: (header: HTMLElement) => void;
   var capitalize: (str: string) => string;
   var rn: (value: number, decimals?: number) => number;
-  var confirmationDialog: (options: {
-    title: string;
-    message: string;
-    confirm: string;
-    onConfirm: () => void;
-  }) => void;
+  var confirmationDialog: (options: { title: string; message: string; confirm: string; onConfirm: () => void }) => void;
   var openURL: (url: string) => void;
-  var openPicker: (
-    color: string,
-    callback: (color: string) => void,
-    options?: any,
-  ) => void;
+  var openPicker: (color: string, callback: (color: string) => void, options?: any) => void;
   var clearLegend: () => void;
   var drawLegend: (title: string, data: any[]) => void;
   var clearMainTip: () => void;

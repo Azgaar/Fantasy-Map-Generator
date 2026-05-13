@@ -10,12 +10,7 @@ type DealKind = "BUY" | "SELL";
 export function open(marketId: number): void {
   const market = Trade.getMarket(marketId);
   if (!market) {
-    tip(
-      "Invalid market. The selected market does not exist",
-      true,
-      "error",
-      5000,
-    );
+    tip("Invalid market. The selected market does not exist", true, "error", 5000);
     return;
   }
 
@@ -31,18 +26,18 @@ export function open(marketId: number): void {
       my: "right top",
       at: "right bottom+10",
       of: "#marketOverview",
-      collision: "fit",
-    },
+      collision: "fit"
+    }
   });
 
   if (!isInitialized) {
     ensureEl("marketDealsRefresh").on("click", marketDealsAddLines);
     ensureEl("marketDealsExport").on("click", downloadDealsCsv);
-    ensureEl("marketDealsBody").on("click", (ev) => {
+    ensureEl("marketDealsBody").on("click", ev => {
       const el = ev.target as HTMLElement;
       if (!el.classList.contains("marketDealCounterparty")) return;
       const dealId = el.closest<HTMLElement>(".marketDeal")?.dataset.id;
-      const deal = pack.deals.find((d) => d.id === Number(dealId));
+      const deal = pack.deals.find(d => d.id === Number(dealId));
       if (!deal) return;
 
       const counterpartyId = deal.phase === "sell" ? deal.seller : deal.buyer;
@@ -56,16 +51,11 @@ export function open(marketId: number): void {
 function marketDealsAddLines(): void {
   const market = Trade.getMarket(activeMarketId);
   if (!market) {
-    tip(
-      "Invalid market. The selected market does not exist",
-      true,
-      "error",
-      5000,
-    );
+    tip("Invalid market. The selected market does not exist", true, "error", 5000);
     return;
   }
 
-  const deals = pack.deals.filter((deal) => deal.market === activeMarketId);
+  const deals = pack.deals.filter(deal => deal.market === activeMarketId);
   let netFlow = 0;
 
   let lines = "";
@@ -88,10 +78,8 @@ function closeMarketDeals(): void {
 function typeBadge(type: DealKind): string {
   const base =
     "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
-  if (type === "BUY")
-    return `<span style="${base};background:#f5d9d6;color:#a33">BUY</span>`;
-  if (type === "SELL")
-    return `<span style="${base};background:#dff0e2;color:#2f8a46">SELL</span>`;
+  if (type === "BUY") return `<span style="${base};background:#f5d9d6;color:#a33">BUY</span>`;
+  if (type === "SELL") return `<span style="${base};background:#dff0e2;color:#2f8a46">SELL</span>`;
   return `<span style="${base};background:#edf1f4;color:#5f6f7a">GLOBAL</span>`;
 }
 
@@ -110,17 +98,12 @@ function renderDealLine(deal: Deal, market: Market): string {
 
   const stroke = Goods.getStroke(good.color);
   const type: DealKind = deal.phase === "sell" ? "SELL" : "BUY";
-  const tip =
-    deal.phase === "sell" ? "Sale to the local market" : "Market purchase";
+  const tip = deal.phase === "sell" ? "Sale to the local market" : "Market purchase";
   const dealNet = getDealNet(deal);
 
   const counterparty = getPartyLabel(
-    deal.phase === "sell"
-      ? deal.seller
-      : deal.buyer === activeMarketId
-        ? deal.seller
-        : deal.buyer,
-    market,
+    deal.phase === "sell" ? deal.seller : deal.buyer === activeMarketId ? deal.seller : deal.buyer,
+    market
   );
   const incomeColor = dealNet >= 0 ? "#2a6" : "#c44";
 
@@ -142,8 +125,7 @@ function getMarketCenterName(market: Market): string {
 }
 
 function getPartyLabel(id: number, currentMarket: Market): string {
-  if (id === currentMarket.i)
-    return `${getMarketCenterName(currentMarket)} market`;
+  if (id === currentMarket.i) return `${getMarketCenterName(currentMarket)} market`;
 
   const burg = pack.burgs[id] as Burg | undefined;
   if (burg && !burg.removed) return burg.name || `Burg ${id}`;
@@ -175,7 +157,7 @@ function downloadDealsCsv(): void {
   const market = Trade.getMarket(activeMarketId);
   if (!market) return;
 
-  const lines = pack.deals.filter((deal) => deal.market === activeMarketId);
+  const lines = pack.deals.filter(deal => deal.market === activeMarketId);
   let csv = "Id,Good,Type,Units,Buyer,Seller,Price,Tax,Net\n";
   for (const deal of lines) {
     const good = Goods.get(deal.goodId);
@@ -194,7 +176,7 @@ function downloadDealsCsv(): void {
       seller,
       rn(deal.price, 2),
       rn(getDealTax(deal), 2),
-      rn(getDealNet(deal), 2),
+      rn(getDealNet(deal), 2)
     ].join(",");
     csv += "\n";
   }

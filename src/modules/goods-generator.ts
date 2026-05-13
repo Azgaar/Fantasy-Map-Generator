@@ -34,37 +34,23 @@ export interface Good {
   pinned?: boolean;
 }
 
-export const DEMAND_PRIORITY = [
-  "food",
-  "utilities",
-  "construction",
-  "military",
-  "luxury",
-] as const;
+export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;
 export type DemandCategory = (typeof DEMAND_PRIORITY)[number];
 export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {
   food: 0.2,
   utilities: 0.15,
   construction: 0.1,
   military: 0.08,
-  luxury: 0.07,
+  luxury: 0.07
 };
 export const DEMAND_CATEGORY_ICONS: Record<DemandCategory, string> = {
   food: "🍖",
   utilities: "🛠️",
   construction: "🧱",
   military: "🛡️",
-  luxury: "💎",
+  luxury: "💎"
 };
-type BonusType =
-  | "population"
-  | "prestige"
-  | "defence"
-  | "fleet"
-  | "infantry"
-  | "archers"
-  | "cavalry"
-  | "artillery";
+type BonusType = "population" | "prestige" | "defence" | "fleet" | "infantry" | "archers" | "cavalry" | "artillery";
 
 type GoodData = Omit<Good, "i" | "cells"> & {
   recipes?: Record<string, number>[];
@@ -82,7 +68,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: { construction: 1, utilities: 1 },
     bonus: { fleet: 2, defence: 1 },
     culture: { Hunting: 1.5 },
-    biome: { 5: 0.1, 6: 0.1, 7: 0.1, 8: 0.1, 9: 0.1, 12: 0.05 },
+    biome: { 5: 0.1, 6: 0.1, 7: 0.1, 8: 0.1, 9: 0.1, 12: 0.05 }
   },
   {
     name: "Stone",
@@ -91,13 +77,12 @@ const GOODS_DATA: GoodData[] = [
     color: "#979EA2",
     value: 2,
     chance: 4,
-    distribution:
-      "(minHeight(40) || (minHeight(20) && elevation())) && biome(1, 2, 3, 4)",
+    distribution: "(minHeight(40) || (minHeight(20) && elevation())) && biome(1, 2, 3, 4)",
     unit: "pallet",
     demandCoverage: { construction: 1 },
     bonus: { defence: 2 },
     culture: { Hunting: 0.6, Nomadic: 0.6 },
-    biome: { 1: 0.1, 2: 0.1 },
+    biome: { 1: 0.1, 2: 0.1 }
   },
   {
     name: "Marble",
@@ -110,7 +95,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "pallet",
     demandCoverage: { construction: 0.5, luxury: 0.5 },
     bonus: { prestige: 2 },
-    culture: { Highland: 1.4 },
+    culture: { Highland: 1.4 }
   },
   {
     name: "Iron",
@@ -119,13 +104,12 @@ const GOODS_DATA: GoodData[] = [
     color: "#5D686E",
     value: 3,
     chance: 5,
-    distribution:
-      "minHeight(60) || (biome(12) && nth(7)) || (minHeight(20) && nth(10))",
+    distribution: "minHeight(60) || (biome(12) && nth(7)) || (minHeight(20) && nth(10))",
     unit: "wagon",
     demandCoverage: {},
     bonus: { artillery: 1, infantry: 1, defence: 1 },
     culture: { Highland: 1.4 },
-    biome: { 12: 0.1 },
+    biome: { 12: 0.1 }
   },
   {
     name: "Copper",
@@ -138,7 +122,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "wagon",
     demandCoverage: {},
     bonus: { artillery: 2, defence: 1, prestige: 1 },
-    culture: { Highland: 1.4 },
+    culture: { Highland: 1.4 }
   },
   {
     name: "Tin",
@@ -151,7 +135,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "wagon",
     demandCoverage: {},
     bonus: { artillery: 1, defence: 1 },
-    culture: { Highland: 1.4 },
+    culture: { Highland: 1.4 }
   },
   {
     name: "Silver",
@@ -164,7 +148,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "bullion",
     demandCoverage: {},
     bonus: { prestige: 1 },
-    culture: { Hunting: 0.5, Highland: 1.4, Nomadic: 0.5 },
+    culture: { Hunting: 0.5, Highland: 1.4, Nomadic: 0.5 }
   },
   {
     name: "Gold",
@@ -177,7 +161,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "bullion",
     demandCoverage: {},
     bonus: { prestige: 2 },
-    culture: { Highland: 1.4, Nomadic: 0.5 },
+    culture: { Highland: 1.4, Nomadic: 0.5 }
   },
   {
     name: "Grain",
@@ -191,7 +175,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: { food: 1 },
     bonus: { population: 4 },
     culture: { River: 1.2, Lake: 1.2, Nomadic: 0.5 },
-    biome: { 5: 0.1, 6: 0.1, 7: 0.1, 8: 0.1 },
+    biome: { 5: 0.1, 6: 0.1, 7: 0.1, 8: 0.1 }
   },
   {
     name: "Cattle",
@@ -200,13 +184,12 @@ const GOODS_DATA: GoodData[] = [
     color: "#56b000",
     value: 2,
     chance: 4,
-    distribution:
-      "(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))",
+    distribution: "(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))",
     unit: "head",
     demandCoverage: { food: 1 },
     bonus: { population: 2 },
     culture: { Nomadic: 2 },
-    biome: { 3: 0.1, 4: 0.1 },
+    biome: { 3: 0.1, 4: 0.1 }
   },
   {
     name: "Fish",
@@ -215,13 +198,12 @@ const GOODS_DATA: GoodData[] = [
     color: "#7fcdff",
     value: 1,
     chance: 2,
-    distribution:
-      'shore(-1) && (type("ocean", "freshwater", "salt") || (river() && shore(1, 2)))',
+    distribution: 'shore(-1) && (type("ocean", "freshwater", "salt") || (river() && shore(1, 2)))',
     unit: "wain",
     demandCoverage: { food: 1 },
     bonus: { population: 2 },
     culture: { River: 1.4, Lake: 1.4, Naval: 1.4, Nomadic: 0.2 },
-    biome: { 0: 0.1 },
+    biome: { 0: 0.1 }
   },
   {
     name: "Game",
@@ -235,7 +217,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: { food: 1 },
     bonus: { archers: 2, population: 1 },
     culture: { Naval: 0.6, Nomadic: 1.4, Hunting: 2 },
-    biome: { 3: 0.02, 4: 0.02, 5: 0.04, 6: 0.04, 7: 0.04, 8: 0.04, 9: 0.08 },
+    biome: { 3: 0.02, 4: 0.02, 5: 0.04, 6: 0.04, 7: 0.04, 8: 0.04, 9: 0.08 }
   },
   {
     name: "Wine",
@@ -249,7 +231,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: { food: 0.5, luxury: 0.5 },
     bonus: { population: 1, prestige: 1 },
     culture: { Highland: 1.2, Nomadic: 0.5 },
-    biome: { 6: 0.1 },
+    biome: { 6: 0.1 }
   },
   {
     name: "Olives",
@@ -263,7 +245,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: { food: 1 },
     bonus: { population: 1 },
     culture: { Generic: 0.8, Nomadic: 0.5 },
-    biome: { 6: 0.1 },
+    biome: { 6: 0.1 }
   },
   {
     name: "Honey",
@@ -277,7 +259,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: { food: 0.5 },
     bonus: { population: 1 },
     culture: { Generic: 1.2 },
-    biome: { 6: 0.1, 8: 0.1, 9: 0.1 },
+    biome: { 6: 0.1, 8: 0.1, 9: 0.1 }
   },
   {
     name: "Salt",
@@ -286,13 +268,12 @@ const GOODS_DATA: GoodData[] = [
     color: "#E5E4E5",
     value: 2,
     chance: 3,
-    distribution:
-      'shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))',
+    distribution: 'shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))',
     unit: "bag",
     demandCoverage: { utilities: 1 },
     bonus: { population: 1, defence: 1 },
     culture: { Naval: 1.2 },
-    biome: { 1: 0.1, 2: 0.1 },
+    biome: { 1: 0.1, 2: 0.1 }
   },
   {
     name: "Dates",
@@ -306,7 +287,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: { food: 1 },
     bonus: { population: 1 },
     culture: { Hunting: 0.8, Highland: 0.8 },
-    biome: { 1: 0.1 },
+    biome: { 1: 0.1 }
   },
   {
     name: "Horses",
@@ -320,7 +301,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: { utilities: 0.6, military: 0.4 },
     bonus: { cavalry: 2 },
     culture: { Nomadic: 2 },
-    biome: { 4: 0.05 },
+    biome: { 4: 0.05 }
   },
   {
     name: "Elephants",
@@ -333,7 +314,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "head",
     demandCoverage: { utilities: 0.2, military: 0.8 },
     bonus: { cavalry: 1 },
-    culture: { Highland: 0.2 },
+    culture: { Highland: 0.2 }
   },
   {
     name: "Camels",
@@ -347,7 +328,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: { utilities: 0.7, military: 0.3 },
     bonus: { cavalry: 1 },
     culture: { Nomadic: 2, Generic: 0.8 },
-    biome: { 1: 0.05, 2: 0.05 },
+    biome: { 1: 0.05, 2: 0.05 }
   },
   {
     name: "Hemp",
@@ -361,7 +342,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: {},
     bonus: { fleet: 2 },
     culture: { River: 1.4, Lake: 1.4 },
-    biome: { 6: 0.1, 7: 0.1, 8: 0.1 },
+    biome: { 6: 0.1, 7: 0.1, 8: 0.1 }
   },
   {
     name: "Pearls",
@@ -374,7 +355,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "pearl",
     demandCoverage: { luxury: 0.6 },
     bonus: { prestige: 1 },
-    culture: { Naval: 1.4 },
+    culture: { Naval: 1.4 }
   },
   {
     name: "Gemstones",
@@ -387,7 +368,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "gem",
     demandCoverage: { luxury: 0.6 },
     bonus: { prestige: 1 },
-    culture: { Highland: 1.4 },
+    culture: { Highland: 1.4 }
   },
   {
     name: "Dyes",
@@ -400,7 +381,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "bag",
     demandCoverage: {},
     bonus: { prestige: 1 },
-    culture: { Generic: 1.2 },
+    culture: { Generic: 1.2 }
   },
   {
     name: "Incense",
@@ -413,7 +394,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "chest",
     demandCoverage: { luxury: 1 },
     bonus: { prestige: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Silk",
@@ -426,7 +407,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "bolt",
     demandCoverage: { luxury: 1 },
     bonus: { prestige: 1 },
-    culture: { River: 1.2, Lake: 1.2 },
+    culture: { River: 1.2, Lake: 1.2 }
   },
   {
     name: "Spices",
@@ -439,7 +420,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "chest",
     demandCoverage: { luxury: 1 },
     bonus: { prestige: 1 },
-    culture: { Generic: 1.2 },
+    culture: { Generic: 1.2 }
   },
   {
     name: "Amber",
@@ -452,7 +433,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "stone",
     demandCoverage: { luxury: 0.5 },
     bonus: { prestige: 1 },
-    culture: { Generic: 1.2 },
+    culture: { Generic: 1.2 }
   },
   {
     name: "Furs",
@@ -461,13 +442,12 @@ const GOODS_DATA: GoodData[] = [
     color: "#8a5e51",
     value: 4,
     chance: 2,
-    distribution:
-      "biome(9) || (biome(10) && nth(2)) || (biome(6, 8) && nth(5)) || (biome(12) && nth(10))",
+    distribution: "biome(9) || (biome(10) && nth(2)) || (biome(6, 8) && nth(5)) || (biome(12) && nth(10))",
     unit: "pelt",
     demandCoverage: { luxury: 0.5, utilities: 0.3 },
     bonus: { prestige: 1 },
     culture: { Hunting: 2 },
-    biome: { 9: 0.025, 10: 0.025, 6: 0.025, 8: 0.025, 12: 0.025 },
+    biome: { 9: 0.025, 10: 0.025, 6: 0.025, 8: 0.025, 12: 0.025 }
   },
   {
     name: "Sheep",
@@ -476,13 +456,12 @@ const GOODS_DATA: GoodData[] = [
     color: "#53b574",
     value: 2,
     chance: 3,
-    distribution:
-      "(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))",
+    distribution: "(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))",
     unit: "head",
     demandCoverage: { food: 1 },
     bonus: { infantry: 1 },
     culture: { Naval: 1.4, Highland: 1.4 },
-    biome: { 4: 0.1 },
+    biome: { 4: 0.1 }
   },
   {
     name: "Slaves",
@@ -495,7 +474,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "slave",
     demandCoverage: { utilities: 1 },
     bonus: { population: 2 },
-    culture: { Naval: 1.4, Nomadic: 2, Hunting: 0.6, Highland: 0.4 },
+    culture: { Naval: 1.4, Nomadic: 2, Hunting: 0.6, Highland: 0.4 }
   },
   {
     name: "Tar",
@@ -508,7 +487,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: { utilities: 0.4, military: 0.1 },
     bonus: { fleet: 1 },
     culture: { Hunting: 1.2 },
-    recipes: [{ Wood: 1 }],
+    recipes: [{ Wood: 1 }]
   },
   {
     name: "Saltpeter",
@@ -521,7 +500,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "barrel",
     demandCoverage: {},
     bonus: { artillery: 3 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Coal",
@@ -535,7 +514,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: { utilities: 0.5 },
     bonus: { artillery: 2 },
     culture: {},
-    recipes: [{ Wood: 1.5 }],
+    recipes: [{ Wood: 1.5 }]
   },
   {
     name: "Oil",
@@ -549,7 +528,7 @@ const GOODS_DATA: GoodData[] = [
     demandCoverage: { utilities: 1 },
     bonus: { artillery: 1 },
     culture: {},
-    recipes: [{ Olives: 1 }, { Whales: 1 }],
+    recipes: [{ Olives: 1 }, { Whales: 1 }]
   },
   {
     name: "Tropical timber",
@@ -562,7 +541,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "pile",
     demandCoverage: { construction: 0.2, luxury: 0.8 },
     bonus: { prestige: 1 },
-    culture: { Hunting: 1.2 },
+    culture: { Hunting: 1.2 }
   },
   {
     name: "Whales",
@@ -575,7 +554,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "barrel",
     demandCoverage: { food: 1, utilities: 0.2 },
     bonus: { population: 1 },
-    culture: { Naval: 1.4, Nomadic: 0.5 },
+    culture: { Naval: 1.4, Nomadic: 0.5 }
   },
   {
     name: "Sugarcane",
@@ -588,7 +567,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "bag",
     demandCoverage: { food: 0.6, luxury: 0.4 },
     bonus: { population: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Tea",
@@ -597,12 +576,11 @@ const GOODS_DATA: GoodData[] = [
     color: "#d0f0c0",
     value: 5,
     chance: 2,
-    distribution:
-      "minHeight(40) && random(20) && (biome(5) || (biome(7) || biome(8)))",
+    distribution: "minHeight(40) && random(20) && (biome(5) || (biome(7) || biome(8)))",
     unit: "bag",
     demandCoverage: { luxury: 1 },
     bonus: { prestige: 1 },
-    culture: { Highland: 1.2 },
+    culture: { Highland: 1.2 }
   },
   {
     name: "Tobacco",
@@ -615,7 +593,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "bag",
     demandCoverage: { luxury: 1 },
     bonus: { prestige: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Clay",
@@ -628,7 +606,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "wain",
     demandCoverage: { construction: 1 },
     bonus: { defence: 1 },
-    culture: { River: 1.4, Lake: 1.4 },
+    culture: { River: 1.4, Lake: 1.4 }
   },
   {
     name: "White sand",
@@ -641,7 +619,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "wain",
     demandCoverage: {},
     bonus: {},
-    culture: { River: 1.4, Lake: 1.4 },
+    culture: { River: 1.4, Lake: 1.4 }
   },
   {
     name: "Leather",
@@ -654,7 +632,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "roll",
     demandCoverage: {},
     bonus: { infantry: 1, cavalry: 1 },
-    culture: { Naval: 0.6 },
+    culture: { Naval: 0.6 }
   },
   {
     name: "Cloth",
@@ -667,7 +645,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "bolt",
     demandCoverage: { utilities: 0.2 },
     bonus: { population: 2, fleet: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Garments",
@@ -678,12 +656,12 @@ const GOODS_DATA: GoodData[] = [
     chance: 0,
     recipes: [
       { Cloth: 1, Dyes: 0.5 },
-      { Cloth: 0.5, Furs: 1 },
+      { Cloth: 0.5, Furs: 1 }
     ],
     unit: "set",
     demandCoverage: { utilities: 1 },
     bonus: { prestige: 2 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Ceramics",
@@ -696,7 +674,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "wain",
     demandCoverage: { utilities: 1 },
     bonus: { population: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Glass",
@@ -709,7 +687,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "wain",
     demandCoverage: { luxury: 1 },
     bonus: { prestige: 1 },
-    culture: { Nomadic: 0.2 },
+    culture: { Nomadic: 0.2 }
   },
   {
     name: "Ropes",
@@ -722,7 +700,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "coil",
     demandCoverage: { utilities: 1 },
     bonus: { fleet: 2 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Paper",
@@ -735,7 +713,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "ream",
     demandCoverage: {},
     bonus: { prestige: 2 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Ink",
@@ -748,7 +726,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "bottle",
     demandCoverage: {},
     bonus: { prestige: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Books",
@@ -759,12 +737,12 @@ const GOODS_DATA: GoodData[] = [
     chance: 0,
     recipes: [
       { Paper: 1, Ink: 0.5 },
-      { Leather: 1, Ink: 0.5 },
+      { Leather: 1, Ink: 0.5 }
     ],
     unit: "volume",
     demandCoverage: { luxury: 1 },
     bonus: { prestige: 3 },
-    culture: { Nomadic: 0.2, Hunting: 0.5 },
+    culture: { Nomadic: 0.2, Hunting: 0.5 }
   },
   {
     name: "Sails",
@@ -777,7 +755,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "set",
     demandCoverage: { military: 1 },
     bonus: { fleet: 2 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Ships",
@@ -790,7 +768,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "ship",
     demandCoverage: { military: 0.5 },
     bonus: { fleet: 4 },
-    culture: { Naval: 2 },
+    culture: { Naval: 2 }
   },
   {
     name: "Boots",
@@ -803,7 +781,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "pair",
     demandCoverage: { utilities: 1 },
     bonus: { infantry: 1, cavalry: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Harnesses",
@@ -815,12 +793,12 @@ const GOODS_DATA: GoodData[] = [
     recipes: [
       { Leather: 0.5, Iron: 0.25 },
       { Leather: 0.5, Bronze: 0.25 },
-      { Leather: 0.5, Copper: 0.25 },
+      { Leather: 0.5, Copper: 0.25 }
     ],
     unit: "set",
     demandCoverage: { military: 1 },
     bonus: { cavalry: 2 },
-    culture: { Nomadic: 1.2 },
+    culture: { Nomadic: 1.2 }
   },
   {
     name: "Barrels",
@@ -833,7 +811,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "barrel",
     demandCoverage: { utilities: 1 },
     bonus: { fleet: 1, population: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Bronze",
@@ -844,12 +822,12 @@ const GOODS_DATA: GoodData[] = [
     chance: 0,
     recipes: [
       { Copper: 0.5, Coal: 1 },
-      { Tin: 0.5, Coal: 1 },
+      { Tin: 0.5, Coal: 1 }
     ],
     unit: "wagon",
     demandCoverage: {},
     bonus: { infantry: 1, cavalry: 1, defence: 1, artillery: 1 },
-    culture: { Highland: 1.2 },
+    culture: { Highland: 1.2 }
   },
   {
     name: "Tools",
@@ -860,12 +838,12 @@ const GOODS_DATA: GoodData[] = [
     chance: 0,
     recipes: [
       { Iron: 0.5, Coal: 1 },
-      { Bronze: 0.5, Coal: 1 },
+      { Bronze: 0.5, Coal: 1 }
     ],
     unit: "set",
     demandCoverage: { utilities: 1 },
     bonus: { defence: 1, infantry: 1, cavalry: 1, artillery: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Arms",
@@ -876,12 +854,12 @@ const GOODS_DATA: GoodData[] = [
     chance: 0,
     recipes: [
       { Iron: 0.5, Coal: 1, Leather: 0.5 },
-      { Bronze: 0.5, Coal: 1, Leather: 0.5 },
+      { Bronze: 0.5, Coal: 1, Leather: 0.5 }
     ],
     unit: "set",
     demandCoverage: { military: 1 },
     bonus: { infantry: 2, cavalry: 2, artillery: 2, defence: 2 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Gunpowder",
@@ -894,7 +872,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "barrel",
     demandCoverage: { military: 2 },
     bonus: { artillery: 3 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Artillery",
@@ -905,12 +883,12 @@ const GOODS_DATA: GoodData[] = [
     chance: 0,
     recipes: [
       { Iron: 2, Coal: 1 },
-      { Bronze: 1, Coal: 1 },
+      { Bronze: 1, Coal: 1 }
     ],
     unit: "cannon",
     demandCoverage: { military: 1 },
     bonus: { artillery: 5 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Coins",
@@ -921,12 +899,12 @@ const GOODS_DATA: GoodData[] = [
     chance: 0,
     recipes: [
       { Gold: 0.5, Coal: 1 },
-      { Silver: 1, Coal: 1 },
+      { Silver: 1, Coal: 1 }
     ],
     unit: "bag",
     demandCoverage: { luxury: 1 },
     bonus: { prestige: 2 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Jewelry",
@@ -941,12 +919,12 @@ const GOODS_DATA: GoodData[] = [
       { Amber: 2, Gold: 0.5 },
       { Gemstones: 1, Silver: 1 },
       { Pearls: 1, Silver: 1 },
-      { Amber: 2, Silver: 1 },
+      { Amber: 2, Silver: 1 }
     ],
     unit: "piece",
     demandCoverage: { luxury: 1 },
     bonus: { prestige: 2 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Preserved food",
@@ -964,12 +942,12 @@ const GOODS_DATA: GoodData[] = [
       { Cattle: 1, Vinegar: 0.5 },
       { Game: 1, Vinegar: 0.5 },
       { Sheep: 1, Vinegar: 0.5 },
-      { Fish: 1, Wood: 1 },
+      { Fish: 1, Wood: 1 }
     ],
     unit: "wain",
     demandCoverage: { food: 1 },
     bonus: { population: 1, fleet: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Vinegar",
@@ -982,7 +960,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "barrel",
     demandCoverage: { utilities: 0.5 },
     bonus: { population: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Cheese",
@@ -995,12 +973,12 @@ const GOODS_DATA: GoodData[] = [
       { Cattle: 0.5, Salt: 0.25 },
       { Sheep: 0.5, Salt: 0.25 },
       { Sheep: 0.5, Vinegar: 0.25 },
-      { Cattle: 0.5, Vinegar: 0.25 },
+      { Cattle: 0.5, Vinegar: 0.25 }
     ],
     unit: "wain",
     demandCoverage: { food: 1 },
     bonus: { population: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Beer",
@@ -1011,12 +989,12 @@ const GOODS_DATA: GoodData[] = [
     chance: 0,
     recipes: [
       { Grain: 1, Barrels: 1 },
-      { Honey: 0.5, Barrels: 1 },
+      { Honey: 0.5, Barrels: 1 }
     ],
     unit: "barrel",
     demandCoverage: { food: 1 },
     bonus: { population: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Liquor",
@@ -1031,12 +1009,12 @@ const GOODS_DATA: GoodData[] = [
       { Grain: 2, Wood: 1, Ceramics: 0.25 },
       { Wine: 1, Wood: 1, Ceramics: 0.25 },
       { Grain: 2, Wood: 1, Glass: 0.25 },
-      { Wine: 1, Wood: 1, Glass: 0.25 },
+      { Wine: 1, Wood: 1, Glass: 0.25 }
     ],
     unit: "vessel",
     demandCoverage: { luxury: 1 },
     bonus: { prestige: 2 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Candles",
@@ -1049,7 +1027,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "block",
     demandCoverage: { utilities: 0.5, luxury: 0.5 },
     bonus: { prestige: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Soap",
@@ -1062,7 +1040,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "barrel",
     demandCoverage: { utilities: 0.4, luxury: 0.6 },
     bonus: { prestige: 1 },
-    culture: {},
+    culture: {}
   },
   {
     name: "Perfume",
@@ -1074,13 +1052,13 @@ const GOODS_DATA: GoodData[] = [
     recipes: [
       { Olives: 1, Incense: 0.25, Glass: 0.5 },
       { Olives: 1, Game: 2, Glass: 0.5 },
-      { Liquor: 0.25, Incense: 0.25, Whales: 0.5, Ceramics: 0.5 },
+      { Liquor: 0.25, Incense: 0.25, Whales: 0.5, Ceramics: 0.5 }
     ],
     unit: "bottle",
     demandCoverage: { luxury: 2 },
     bonus: { prestige: 2 },
-    culture: {},
-  },
+    culture: {}
+  }
 ];
 
 export class GoodsModule {
@@ -1090,11 +1068,10 @@ export class GoodsModule {
   private readonly defaultGoods = GOODS_DATA.map((good, index): Good => {
     let recipes: Good["recipes"];
     if ("recipes" in good && good.recipes) {
-      recipes = good.recipes.map((recipe) => {
+      recipes = good.recipes.map(recipe => {
         const entries = Object.entries(recipe).map(([key, value]) => {
-          const i = GOODS_DATA.findIndex((g) => g.name === key);
-          if (i === -1)
-            throw new Error(`Unknown ingredient ${key} in good ${good.name}`);
+          const i = GOODS_DATA.findIndex(g => g.name === key);
+          if (i === -1) throw new Error(`Unknown ingredient ${key} in good ${good.name}`);
           return [i, value];
         });
         return Object.fromEntries(entries);
@@ -1105,34 +1082,27 @@ export class GoodsModule {
       i: index,
       ...good,
       ...(recipes && { recipes }),
-      cells: 0,
+      cells: 0
     };
   });
 
   private methods = {
-    random: (number: number) =>
-      number >= 100 || (number > 0 && number / 100 > Math.random()),
+    random: (number: number) => number >= 100 || (number > 0 && number / 100 > Math.random()),
     nth: (number: number) => !(this.cellId % number),
-    minHabitability: (min: number) =>
-      biomesData.habitability[pack.cells.biome[this.cellId]] >= min,
-    habitability: () =>
-      biomesData.habitability[this.cells.biome[this.cellId]] >
-      Math.random() * 100,
+    minHabitability: (min: number) => biomesData.habitability[pack.cells.biome[this.cellId]] >= min,
+    habitability: () => biomesData.habitability[this.cells.biome[this.cellId]] > Math.random() * 100,
     elevation: () => pack.cells.h[this.cellId] / 100 > Math.random(),
-    biome: (...biomes: number[]) =>
-      biomes.includes(pack.cells.biome[this.cellId]),
+    biome: (...biomes: number[]) => biomes.includes(pack.cells.biome[this.cellId]),
     minHeight: (heigh: number) => pack.cells.h[this.cellId] >= heigh,
     maxHeight: (heigh: number) => pack.cells.h[this.cellId] <= heigh,
-    minTemp: (temp: number) =>
-      grid.cells.temp[pack.cells.g[this.cellId]] >= temp,
-    maxTemp: (temp: number) =>
-      grid.cells.temp[pack.cells.g[this.cellId]] <= temp,
+    minTemp: (temp: number) => grid.cells.temp[pack.cells.g[this.cellId]] >= temp,
+    maxTemp: (temp: number) => grid.cells.temp[pack.cells.g[this.cellId]] <= temp,
     shore: (...rings: number[]) => rings.includes(pack.cells.t[this.cellId]),
     type: (...types: string[]) => {
       const feature = pack.features[this.cells.f[this.cellId]];
       return types.includes(feature.group || feature.type);
     },
-    river: () => pack.cells.r[this.cellId],
+    river: () => pack.cells.r[this.cellId]
   };
 
   generate(regenerate: boolean = false) {
@@ -1143,7 +1113,7 @@ export class GoodsModule {
     this.cells = pack.cells;
     this.cells.good = createTypedArray({
       maxValue: TYPED_ARRAY_MAX.UINT16,
-      length: this.cells.i.length,
+      length: this.cells.i.length
     });
     if (!pack.goods || regenerate) pack.goods = this.defaultGoods;
 
@@ -1154,16 +1124,14 @@ export class GoodsModule {
 
     for (const cellId of shuffledCells) {
       if (!(cellId % 10)) shuffle(workingGoods);
-      if (this.cells.biome[cellId] === 11 && biomesData.habitability[11] === 0)
-        continue; // skip glaciers
+      if (this.cells.biome[cellId] === 11 && biomesData.habitability[11] === 0) continue; // skip glaciers
       const rnd = Math.random() * 100;
       this.cellId = cellId;
 
       for (const good of workingGoods) {
         if (!good.distribution) continue;
         if (good.cells! >= resourceMaxCells) continue;
-        if (good.cells ? rnd > good.chance : Math.random() * 100 > good.chance)
-          continue;
+        if (good.cells ? rnd > good.chance : Math.random() * 100 > good.chance) continue;
 
         const spread = new Function(methods, `return ${good.distribution}`);
         if (!spread(this.methods)) continue;

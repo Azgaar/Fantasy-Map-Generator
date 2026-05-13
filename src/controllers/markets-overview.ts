@@ -1,7 +1,7 @@
-import {easeSinIn} from "d3";
-import type {Burg} from "../modules/burgs-generator";
-import type {Deal, Market} from "../modules/trade-generator";
-import {debounce, ensureEl, formatPrice, rn} from "../utils";
+import { easeSinIn } from "d3";
+import type { Burg } from "../modules/burgs-generator";
+import type { Deal, Market } from "../modules/trade-generator";
+import { debounce, ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
 let isCompareInitialized = false;
@@ -60,7 +60,7 @@ function marketsOverviewAddLines(): void {
     const cells = getMarketCells(market.i);
     const burgs = getMarketBurgs(market.i);
     const stock = rn(getMarketTotalStock(market), 2);
-    const {sales, buys, income} = getMarketFinancials(market.i);
+    const { sales, buys, income } = getMarketFinancials(market.i);
 
     totalSales += sales;
     totalBuys += buys;
@@ -99,7 +99,7 @@ function marketsOverviewAddLines(): void {
     count ? rn(totalIncome / count, 2) : 0
   );
   applySorting(ensureEl("marketsOverviewHeader"));
-  $("#marketsOverview").dialog({width: fitContent()});
+  $("#marketsOverview").dialog({ width: fitContent() });
 }
 
 const highlightMarketOn = debounce((ev: Event) => {
@@ -167,7 +167,7 @@ function compareDialogAddLines(): void {
   }
   ensureEl("marketsGoodCompareBody").innerHTML = lines;
   applySorting(ensureEl("marketsGoodCompareHeader"));
-  $("#marketsGoodCompare").dialog({width: fitContent()});
+  $("#marketsGoodCompare").dialog({ width: fitContent() });
 }
 
 function rebuildCompareGoodSelect(): void {
@@ -254,7 +254,7 @@ function getOwnerStateName(market: Market): string {
 function downloadMarketsCsv(): void {
   let csv = "Market,Owner,Cells,Burgs,Total Stock,Sales,Buys,Income\n";
   for (const market of Trade.getMarkets()) {
-    const {sales, buys, income} = getMarketFinancials(market.i);
+    const { sales, buys, income } = getMarketFinancials(market.i);
     const cells = getMarketCells(market.i);
     const burgs = getMarketBurgs(market.i);
     const stock = rn(getMarketTotalStock(market), 2);
@@ -269,8 +269,8 @@ function closeMarketsOverview(): void {
 
 declare global {
   interface Window {
-    MarketsOverview: {open: typeof open};
+    MarketsOverview: { open: typeof open };
   }
 }
 
-window.MarketsOverview = {open};
+window.MarketsOverview = { open };

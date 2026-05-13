@@ -1,9 +1,6 @@
 import { pointer } from "d3";
 import type { DemandCategory, Good } from "../modules/goods-generator";
-import {
-  DEMAND_CATEGORY_ICONS,
-  DEMAND_PRIORITY,
-} from "../modules/goods-generator";
+import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../modules/goods-generator";
 import { BONUS_RESOURCE_PRODUCTION } from "../modules/trade-generator";
 import { ensureEl, unique } from "../utils";
 import { getHeight } from "../utils/unitUtils";
@@ -24,7 +21,7 @@ export function open() {
     resizable: false,
     width: "auto",
     close: closeGoodsEditor,
-    position: { my: "right top", at: "right-10 top+10", of: "svg" },
+    position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
 
   if (!isInitialized) {
@@ -39,7 +36,7 @@ export function open() {
     ensureEl("goodsUnpinAll").on("click", unpinAllGoods);
     ensureEl("goodsChains").on("click", () => ProductionChains.open());
 
-    ensureEl("goodsBody").on("click", (ev) => {
+    ensureEl("goodsBody").on("click", ev => {
       const el = ev.target as HTMLElement;
       const cl = el.classList;
       const line = el.parentNode as HTMLElement;
@@ -62,8 +59,7 @@ function goodsEditorAddLines() {
   for (const burg of pack.burgs) {
     if (!burg || burg.removed || !burg.produced) continue;
     for (const goodId in burg.produced) {
-      production[+goodId] =
-        (production[+goodId] || 0) + (burg.produced[goodId] || 0);
+      production[+goodId] = (production[+goodId] || 0) + (burg.produced[goodId] || 0);
     }
   }
 
@@ -110,17 +106,13 @@ function goodsEditorAddLines() {
   ensureEl("resourcesTotal").innerHTML = String(rn(totalAvailable, 2));
   ensureEl("goodsProduced").innerHTML = String(rn(totalProduced, 2));
 
-  body
-    .querySelectorAll("div.states")
-    .forEach((el) => void el.on("click", selectResourceOnLineClick));
-  body
-    .querySelectorAll<HTMLButtonElement>(".goodProduced, .goodProducedIcon")
-    .forEach((el) => {
-      el.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        openProducersDialog(Number(el.parentElement?.dataset?.id));
-      });
+  body.querySelectorAll("div.states").forEach(el => void el.on("click", selectResourceOnLineClick));
+  body.querySelectorAll<HTMLButtonElement>(".goodProduced, .goodProducedIcon").forEach(el => {
+    el.addEventListener("click", ev => {
+      ev.stopPropagation();
+      openProducersDialog(Number(el.parentElement?.dataset?.id));
     });
+  });
 
   if (body.dataset.type === "percentage") {
     body.dataset.type = "absolute";
@@ -136,8 +128,8 @@ function openProducersDialog(goodId: number) {
   if (!good) return;
 
   const producers = pack.burgs
-    .filter((b) => b.i && !b.removed && (b.produced?.[goodId] ?? 0) > 0)
-    .map((b) => ({ burg: b, units: b.produced![goodId] }))
+    .filter(b => b.i && !b.removed && (b.produced?.[goodId] ?? 0) > 0)
+    .map(b => ({ burg: b, units: b.produced![goodId] }))
     .sort((a, b) => b.units - a.units);
 
   if (!producers.length) {
@@ -156,11 +148,11 @@ function openProducersDialog(goodId: number) {
             <div class="icon-dot-circled" style="width:1em"></div>
             <div style="width:7em;">${burg.name}</div>
             <div style="width:4em;">${units}</div>
-          </div>`,
+          </div>`
       )
       .join("");
     alertMessage.innerHTML = header + rows;
-    alertMessage.querySelectorAll<HTMLElement>(".states").forEach((row) => {
+    alertMessage.querySelectorAll<HTMLElement>(".states").forEach(row => {
       row.on("click", () => {
         zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000);
       });
@@ -170,7 +162,7 @@ function openProducersDialog(goodId: number) {
   $("#alert").dialog({
     resizable: false,
     title: `${good.name} producers`,
-    width: "20em",
+    width: "20em"
   });
 }
 
@@ -180,9 +172,7 @@ function getRuralAvailability(): number[] {
 
   for (const cellId of cells.i) {
     const explicitGoodId = cells.good[cellId];
-    if (explicitGoodId)
-      resources[explicitGoodId] =
-        (resources[explicitGoodId] || 0) + BONUS_RESOURCE_PRODUCTION;
+    if (explicitGoodId) resources[explicitGoodId] = (resources[explicitGoodId] || 0) + BONUS_RESOURCE_PRODUCTION;
 
     const population = Math.max(0, cells.pop[cellId] || 0);
     if (population <= 0) continue;
@@ -191,8 +181,7 @@ function getRuralAvailability(): number[] {
     for (const good of goods) {
       const biomeProduction = good.biome?.[biomeId] || 0;
       if (!biomeProduction) continue;
-      resources[good.i] =
-        (resources[good.i] || 0) + population * biomeProduction;
+      resources[good.i] = (resources[good.i] || 0) + population * biomeProduction;
     }
   }
 
@@ -200,34 +189,26 @@ function getRuralAvailability(): number[] {
 }
 
 function getBonusIcon(bonus: string): string {
-  if (bonus === "fleet")
-    return `<span data-tip="Fleet bonus" class="icon-anchor"></span>`;
-  if (bonus === "defence")
-    return `<span data-tip="Defence bonus" class="icon-chess-rook"></span>`;
-  if (bonus === "prestige")
-    return `<span data-tip="Prestige bonus" class="icon-star"></span>`;
-  if (bonus === "artillery")
-    return `<span data-tip="Artillery bonus" class="icon-rocket"></span>`;
-  if (bonus === "infantry")
-    return `<span data-tip="Infantry bonus" class="icon-chess-pawn"></span>`;
-  if (bonus === "population")
-    return `<span data-tip="Population bonus" class="icon-male"></span>`;
-  if (bonus === "archers")
-    return `<span data-tip="Archers bonus" class="icon-dot-circled"></span>`;
-  if (bonus === "cavalry")
-    return `<span data-tip="Cavalry bonus" class="icon-chess-knight"></span>`;
+  if (bonus === "fleet") return `<span data-tip="Fleet bonus" class="icon-anchor"></span>`;
+  if (bonus === "defence") return `<span data-tip="Defence bonus" class="icon-chess-rook"></span>`;
+  if (bonus === "prestige") return `<span data-tip="Prestige bonus" class="icon-star"></span>`;
+  if (bonus === "artillery") return `<span data-tip="Artillery bonus" class="icon-rocket"></span>`;
+  if (bonus === "infantry") return `<span data-tip="Infantry bonus" class="icon-chess-pawn"></span>`;
+  if (bonus === "population") return `<span data-tip="Population bonus" class="icon-male"></span>`;
+  if (bonus === "archers") return `<span data-tip="Archers bonus" class="icon-dot-circled"></span>`;
+  if (bonus === "cavalry") return `<span data-tip="Cavalry bonus" class="icon-chess-knight"></span>`;
   return "";
 }
 
 function openTagsVisibilityDialog() {
-  const allTags = new Set(pack.goods.flatMap((good) => good.tags));
+  const allTags = new Set(pack.goods.flatMap(good => good.tags));
   const selected = new Set(visibleTags);
 
   const tagsMarkup = allTags.size
     ? Array.from(allTags)
         .map(
-          (tag) =>
-            `<label style="display:block; margin:.2em 0"><input type="checkbox" class="goodTagFilterCheck native" value="${tag}" ${selected.has(tag) ? "checked" : ""} /> ${tag}</label>`,
+          tag =>
+            `<label style="display:block; margin:.2em 0"><input type="checkbox" class="goodTagFilterCheck native" value="${tag}" ${selected.has(tag) ? "checked" : ""} /> ${tag}</label>`
         )
         .join("")
     : '<div style="color:#666">No tags available</div>';
@@ -252,16 +233,12 @@ function openTagsVisibilityDialog() {
         $(this).dialog("close");
       },
       Apply: function () {
-        const checks = Array.from(
-          alertMessage.querySelectorAll<HTMLInputElement>(
-            ".goodTagFilterCheck:checked",
-          ),
-        );
-        visibleTags = new Set(checks.map((check) => check.value));
+        const checks = Array.from(alertMessage.querySelectorAll<HTMLInputElement>(".goodTagFilterCheck:checked"));
+        visibleTags = new Set(checks.map(check => check.value));
         applyTagVisibilityFilter();
         $(this).dialog("close");
-      },
-    },
+      }
+    }
   });
 }
 
@@ -269,9 +246,9 @@ function applyTagVisibilityFilter() {
   const body = ensureEl("goodsBody");
   const hasFilter = visibleTags.size > 0;
 
-  body.querySelectorAll<HTMLElement>(":scope > div.states").forEach((line) => {
+  body.querySelectorAll<HTMLElement>(":scope > div.states").forEach(line => {
     const lineTags = line.dataset.tags?.split(",") || [];
-    const matches = !hasFilter || lineTags.some((tag) => visibleTags.has(tag));
+    const matches = !hasFilter || lineTags.some(tag => visibleTags.has(tag));
     line.classList.toggle("hiddenByTag", !matches);
   });
 
@@ -281,23 +258,18 @@ function applyTagVisibilityFilter() {
 
 function interpretDistribution(dist: string): string {
   const biomeLabel = (id: number): string =>
-    (typeof biomesData !== "undefined" && biomesData.name?.[id]) ||
-    `biome ${id}`;
+    (typeof biomesData !== "undefined" && biomesData.name?.[id]) || `biome ${id}`;
   const SHORE: Record<number, string> = {
     "-1": "water",
     "0": "inland",
     "1": "coast",
-    "2": "near coast",
+    "2": "near coast"
   } as any;
 
   return dist
     .replace(/biome\(([^)]+)\)/g, (_, args) => {
-      const names = args
-        .split(",")
-        .map((a: string) => biomeLabel(parseInt(a.trim(), 10)));
-      return names.length === 1
-        ? `${names[0]} biome`
-        : `${names.join("/")} biomes`;
+      const names = args.split(",").map((a: string) => biomeLabel(parseInt(a.trim(), 10)));
+      return names.length === 1 ? `${names[0]} biome` : `${names.join("/")} biomes`;
     })
     .replace(/minHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) => {
       try {
@@ -342,14 +314,8 @@ function interpretDistribution(dist: string): string {
     .trim();
 }
 
-function uploadImage(
-  type: string,
-  uploadTo: HTMLElement,
-  callback: (type: string, id: string) => void,
-) {
-  const input = (
-    type === "image" ? ensureEl("imageToLoad") : ensureEl("svgToLoad")
-  ) as HTMLInputElement;
+function uploadImage(type: string, uploadTo: HTMLElement, callback: (type: string, id: string) => void) {
+  const input = (type === "image" ? ensureEl("imageToLoad") : ensureEl("svgToLoad")) as HTMLInputElement;
   const file = input.files![0];
   input.value = "";
 
@@ -358,11 +324,11 @@ function uploadImage(
       `File is too big, please optimize file size up to 200kB and re-upload. Recommended size is 48x48 px and up to 10kB`,
       true,
       "error",
-      5000,
+      5000
     );
 
   const reader = new FileReader();
-  reader.onload = (readerEvent) => {
+  reader.onload = readerEvent => {
     const target = readerEvent.target;
     if (!target) return;
     const result = target.result as string;
@@ -375,23 +341,21 @@ function uploadImage(
       const el = document.createElement("html");
       el.innerHTML = result;
 
-      el.querySelectorAll("*").forEach((el) => {
+      el.querySelectorAll("*").forEach(el => {
         const attributes = el.getAttributeNames();
-        attributes.forEach((attr) => {
-          if (attr.includes("inkscape") || attr.includes("sodipodi"))
-            el.removeAttribute(attr);
+        attributes.forEach(attr => {
+          if (attr.includes("inkscape") || attr.includes("sodipodi")) el.removeAttribute(attr);
         });
       });
 
-      if (result.includes("from the Noun Project"))
-        el.querySelectorAll("text").forEach((textEl) => void textEl.remove());
+      if (result.includes("from the Noun Project")) el.querySelectorAll("text").forEach(textEl => void textEl.remove());
 
       const svg = el.querySelector("svg");
       if (!svg)
         return void tip(
           "The file should be prepared for load to FMG. If you don't know why it's happening, try to upload the raster image",
           false,
-          "error",
+          "error"
         );
 
       const icon = uploadTo.appendChild(svg);
@@ -410,10 +374,9 @@ function uploadImage(
 function goodsRestoreDefaults() {
   confirmationDialog({
     title: "Restore default goods",
-    message:
-      "Are you sure you want to restore default goods? <br>This action cannot be reverted",
+    message: "Are you sure you want to restore default goods? <br>This action cannot be reverted",
     confirm: "Restore",
-    onConfirm: regenerateGoods,
+    onConfirm: regenerateGoods
   });
 }
 
@@ -424,9 +387,9 @@ function toggleLegend() {
   }
 
   const data = pack.goods
-    .filter((good) => good.i && good.cells)
+    .filter(good => good.i && good.cells)
     .sort((a, b) => (b.cells || 0) - (a.cells || 0))
-    .map((good) => [good.i, good.color, good.name]);
+    .map(good => [good.i, good.color, good.name]);
   drawLegend("Goods", data);
 }
 
@@ -437,12 +400,12 @@ function togglePercentageMode() {
     let totalAvailability = 0;
     let totalProduced = 0;
 
-    body.querySelectorAll<HTMLElement>(":scope > div").forEach((el) => {
+    body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
       totalAvailability += +el.dataset.availability! || 0;
       totalProduced += +el.dataset.produced! || 0;
     });
 
-    body.querySelectorAll<HTMLElement>(":scope > div").forEach((el) => {
+    body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
       const availabilityEl = el.querySelector<HTMLElement>(".goodAvailability");
       const producedEl = el.querySelector<HTMLElement>(".goodProduced");
       if (availabilityEl) {
@@ -473,35 +436,28 @@ function enterResourceAssignMode(this: HTMLElement) {
 
   ensureEl("goodsEditor")!
     .querySelectorAll(".hide")
-    .forEach((el) => {
+    .forEach(el => {
       el.classList.add("hidden");
     });
   ensureEl("goodsFooter").style.display = "none";
-  body
-    .querySelectorAll<HTMLElement>(".goodEdit, .icon-trash-empty")
-    .forEach((e) => {
-      e.style.pointerEvents = "none";
-    });
+  body.querySelectorAll<HTMLElement>(".goodEdit, .icon-trash-empty").forEach(e => {
+    e.style.pointerEvents = "none";
+  });
   $("#goodsEditor").dialog({
     position: {
       my: "right top",
       at: "right-10 top+10",
       of: "svg",
-      collision: "fit",
-    },
+      collision: "fit"
+    }
   });
 
-  tip(
-    "Select good line in editor, click on cells to remove or add a good",
-    true,
-  );
+  tip("Select good line in editor, click on cells to remove or add a good", true);
   viewbox.on("click", changeResourceOnCellClick);
 
-  body
-    .querySelector<HTMLElement>("div.states:not(.hiddenByTag)")
-    ?.classList.add("selected");
+  body.querySelector<HTMLElement>("div.states:not(.hiddenByTag)")?.classList.add("selected");
 
-  const someArePinned = pack.goods.some((good) => good.pinned);
+  const someArePinned = pack.goods.some(good => good.pinned);
   if (someArePinned) unpinAllGoods();
 }
 
@@ -525,9 +481,7 @@ function changeResourceOnCellClick(this: SVGElement) {
     const resourceToRemove = Goods.get(pack.cells.good[cellId]);
     if (resourceToRemove) {
       resourceToRemove.cells! -= 1;
-      const goodCellsEl = body.querySelector<HTMLElement>(
-        `div.states[data-id='${resourceToRemove.i}'] > .goodCells`,
-      );
+      const goodCellsEl = body.querySelector<HTMLElement>(`div.states[data-id='${resourceToRemove.i}'] > .goodCells`);
       if (goodCellsEl) goodCellsEl.innerHTML = String(resourceToRemove.cells);
     }
     pack.cells.good[cellId] = 0;
@@ -537,9 +491,7 @@ function changeResourceOnCellClick(this: SVGElement) {
     if (!resource) return;
 
     resource.cells! += 1;
-    const goodCellsEl = body.querySelector<HTMLElement>(
-      `div.states[data-id='${resourceId}'] > .goodCells`,
-    );
+    const goodCellsEl = body.querySelector<HTMLElement>(`div.states[data-id='${resourceId}'] > .goodCells`);
     if (goodCellsEl) goodCellsEl.innerHTML = String(resource.cells);
     pack.cells.good[cellId] = resourceId;
   }
@@ -561,13 +513,13 @@ function exitResourceAssignMode(close?: string) {
 
   ensureEl("goodsEditor")
     .querySelectorAll(".hide")
-    .forEach((el) => void el.classList.remove("hidden"));
+    .forEach(el => void el.classList.remove("hidden"));
   ensureEl("goodsFooter").style.display = "block";
   body
     .querySelectorAll<HTMLElement>(
-      ".goodName, .goodTags, .goodAvailability, .goodProduced, .goodBasePrice, .goodBuyPrice, .goodSellPrice, .goodEdit, svg, .icon-trash-empty",
+      ".goodName, .goodTags, .goodAvailability, .goodProduced, .goodBasePrice, .goodBuyPrice, .goodSellPrice, .goodEdit, svg, .icon-trash-empty"
     )
-    .forEach((e) => {
+    .forEach(e => {
       e.style.pointerEvents = "";
     });
   if (!close) {
@@ -576,8 +528,8 @@ function exitResourceAssignMode(close?: string) {
         my: "right top",
         at: "right-10 top+10",
         of: "svg",
-        collision: "fit",
-      },
+        collision: "fit"
+      }
     });
   }
 
@@ -592,58 +544,47 @@ function openGoodDialog(goodToEdit?: Good) {
   const editedGood = goodToEdit;
   const editedType = editedGood?.recipes ? "manufactured" : "raw";
 
-  const standardIcons = Array.from(
-    ensureEl("good-icons").querySelectorAll("symbol"),
-  ).map((el) => el.id);
+  const standardIcons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
   const customIconsEl = ensureEl("defs-icons");
-  const customIcons = customIconsEl
-    ? Array.from(customIconsEl.querySelectorAll("svg")).map((el) => el.id)
-    : [];
+  const customIcons = customIconsEl ? Array.from(customIconsEl.querySelectorAll("svg")).map(el => el.id) : [];
   const iconOptions = [...standardIcons, ...customIcons]
-    .map((icon) => {
-      const selected = editedGood
-        ? editedGood.icon === icon
-        : icon === "good-unknown";
+    .map(icon => {
+      const selected = editedGood ? editedGood.icon === icon : icon === "good-unknown";
       return `<option value="${icon}" ${selected ? "selected" : ""}>${icon}</option>`;
     })
     .join("");
 
   const allBonuses = unique([
-    ...pack.goods.flatMap((good) => Object.keys(good.bonus)),
-    ...Object.keys(editedGood?.bonus || {}),
+    ...pack.goods.flatMap(good => Object.keys(good.bonus)),
+    ...Object.keys(editedGood?.bonus || {})
   ]);
   const bonusInputsHtml = allBonuses
     .map(
-      (bonus) => `<span>
+      bonus => `<span>
         ${getBonusIcon(bonus)}
         <div style="display: inline-block; width: 5em;">${capitalize(bonus)}</div>
         <input id="newGoodBonus_${bonus}" type="number" style="width: 3em;" step="1" min="0" max="9" value="${(editedGood?.bonus as Record<string, number> | undefined)?.[bonus] || 0}" />
-      </span>`,
+      </span>`
     )
     .join("");
   const demandCoverageInputsHtml = DEMAND_PRIORITY.map(
-    (category) => `<span>
+    category => `<span>
         <div style="display: inline-block; width: 6.5em;">${DEMAND_CATEGORY_ICONS[category]} ${capitalize(category)}</div>
         <input id="newGoodDemandCoverage_${category}" type="number" style="width: 4.5em;" step="0.05" min="0" value="${(editedGood?.demandCoverage as Partial<Record<DemandCategory, number>> | undefined)?.[category] || 0}" />
-      </span>`,
+      </span>`
   ).join("");
 
   type RecipeIngredientDraft = { id: number; amount: number };
   type RecipeDraft = RecipeIngredientDraft[];
   const recipeDrafts: RecipeDraft[] = (editedGood?.recipes || [])
-    .map((recipe) =>
+    .map(recipe =>
       Object.entries(recipe)
         .map(([id, amount]) => ({ id: +id, amount: +amount }))
-        .filter(
-          (ingredient) =>
-            Number.isInteger(ingredient.id) && ingredient.amount > 0,
-        ),
+        .filter(ingredient => Number.isInteger(ingredient.id) && ingredient.amount > 0)
     )
-    .filter((recipe) => recipe.length > 0);
+    .filter(recipe => recipe.length > 0);
 
-  const biomeProductionToText = (
-    biomeProduction?: Partial<Record<number, number>>,
-  ): string => {
+  const biomeProductionToText = (biomeProduction?: Partial<Record<number, number>>): string => {
     if (!biomeProduction) return "";
     return Object.entries(biomeProduction)
       .sort(([a], [b]) => +a - +b)
@@ -651,9 +592,7 @@ function openGoodDialog(goodToEdit?: Good) {
       .join(", ");
   };
 
-  const biomeReference = biomesData.i
-    .map((biomeId: number) => `${biomeId}:${biomesData.name[biomeId]}`)
-    .join(" | ");
+  const biomeReference = biomesData.i.map((biomeId: number) => `${biomeId}:${biomesData.name[biomeId]}`).join(" | ");
 
   alertMessage.innerHTML = /*html*/ `
     <div style="display:grid; grid-template-columns: 8em 1fr; align-items:center;">
@@ -717,9 +656,7 @@ function openGoodDialog(goodToEdit?: Good) {
   const typeSelect = ensureEl("newGoodType") as HTMLSelectElement;
   const rawFields = ensureEl("newGoodRawFields");
   const manufacturedFields = ensureEl("newGoodManufacturedFields");
-  const distributionInput = ensureEl(
-    "newGoodDistribution",
-  ) as HTMLTextAreaElement;
+  const distributionInput = ensureEl("newGoodDistribution") as HTMLTextAreaElement;
   const distributionPreview = ensureEl("newGoodDistributionPreview");
 
   const recipeList = ensureEl("newGoodRecipeList");
@@ -727,15 +664,11 @@ function openGoodDialog(goodToEdit?: Good) {
 
   const getGoodOptions = (selectedId: number) =>
     pack.goods
-      .map(
-        (good) =>
-          `<option value="${good.i}" ${good.i === selectedId ? "selected" : ""}>${good.name}</option>`,
-      )
+      .map(good => `<option value="${good.i}" ${good.i === selectedId ? "selected" : ""}>${good.name}</option>`)
       .join("");
 
   const renderRecipes = () => {
-    if (!recipeDrafts.length)
-      recipeDrafts.push([{ id: defaultGoodId, amount: 1 }]);
+    if (!recipeDrafts.length) recipeDrafts.push([{ id: defaultGoodId, amount: 1 }]);
     recipeList.innerHTML = recipeDrafts
       .map(
         (recipe, recipeIndex) => /*html*/ `
@@ -755,78 +688,65 @@ function openGoodDialog(goodToEdit?: Good) {
                       <select class="recipeGoodSelect" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}">${getGoodOptions(ingredient.id)}</select>
                       <input class="recipeAmountInput" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}" type="number" min="1" step="1" value="${ingredient.amount}" />
                       <span class="recipeRemoveIngredient icon-trash-empty" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}" />
-                    </div>`,
+                    </div>`
                 )
                 .join("")}
             </div>
           </div>
-        `,
+        `
       )
       .join("");
 
-    recipeList
-      .querySelectorAll<HTMLSelectElement>(".recipeGoodSelect")
-      .forEach((select) => {
-        select.onchange = () => {
-          const recipeIndex = +select.dataset.recipeIndex!;
-          const ingredientIndex = +select.dataset.ingredientIndex!;
-          recipeDrafts[recipeIndex][ingredientIndex].id = +select.value;
-        };
-      });
+    recipeList.querySelectorAll<HTMLSelectElement>(".recipeGoodSelect").forEach(select => {
+      select.onchange = () => {
+        const recipeIndex = +select.dataset.recipeIndex!;
+        const ingredientIndex = +select.dataset.ingredientIndex!;
+        recipeDrafts[recipeIndex][ingredientIndex].id = +select.value;
+      };
+    });
 
-    recipeList
-      .querySelectorAll<HTMLInputElement>(".recipeAmountInput")
-      .forEach((input) => {
-        input.onchange = () => {
-          const recipeIndex = +input.dataset.recipeIndex!;
-          const ingredientIndex = +input.dataset.ingredientIndex!;
-          const amount = +input.value;
-          recipeDrafts[recipeIndex][ingredientIndex].amount =
-            Number.isFinite(amount) && amount > 0 ? amount : 1;
-          input.value = String(
-            recipeDrafts[recipeIndex][ingredientIndex].amount,
-          );
-        };
-      });
+    recipeList.querySelectorAll<HTMLInputElement>(".recipeAmountInput").forEach(input => {
+      input.onchange = () => {
+        const recipeIndex = +input.dataset.recipeIndex!;
+        const ingredientIndex = +input.dataset.ingredientIndex!;
+        const amount = +input.value;
+        recipeDrafts[recipeIndex][ingredientIndex].amount = Number.isFinite(amount) && amount > 0 ? amount : 1;
+        input.value = String(recipeDrafts[recipeIndex][ingredientIndex].amount);
+      };
+    });
 
-    recipeList
-      .querySelectorAll<HTMLButtonElement>(".recipeAddIngredient")
-      .forEach((button) => {
-        button.onclick = (event) => {
-          event.preventDefault();
-          const recipeIndex = +button.dataset.recipeIndex!;
-          recipeDrafts[recipeIndex].push({ id: defaultGoodId, amount: 1 });
+    recipeList.querySelectorAll<HTMLButtonElement>(".recipeAddIngredient").forEach(button => {
+      button.onclick = event => {
+        event.preventDefault();
+        const recipeIndex = +button.dataset.recipeIndex!;
+        recipeDrafts[recipeIndex].push({ id: defaultGoodId, amount: 1 });
+        renderRecipes();
+      };
+    });
+
+    recipeList.querySelectorAll<HTMLButtonElement>(".recipeRemoveIngredient").forEach(button => {
+      button.onclick = event => {
+        event.preventDefault();
+        const recipeIndex = +button.dataset.recipeIndex!;
+        const ingredientIndex = +button.dataset.ingredientIndex!;
+        if (recipeDrafts[recipeIndex].length > 1) {
+          recipeDrafts[recipeIndex].splice(ingredientIndex, 1);
           renderRecipes();
-        };
-      });
+        }
+      };
+    });
 
-    recipeList
-      .querySelectorAll<HTMLButtonElement>(".recipeRemoveIngredient")
-      .forEach((button) => {
-        button.onclick = (event) => {
-          event.preventDefault();
-          const recipeIndex = +button.dataset.recipeIndex!;
-          const ingredientIndex = +button.dataset.ingredientIndex!;
-          if (recipeDrafts[recipeIndex].length > 1) {
-            recipeDrafts[recipeIndex].splice(ingredientIndex, 1);
-            renderRecipes();
-          }
-        };
-      });
-
-    recipeList
-      .querySelectorAll<HTMLButtonElement>(".recipeRemoveOption")
-      .forEach((button) => {
-        button.onclick = (event) => {
-          event.preventDefault();
-          const recipeIndex = +button.dataset.recipeIndex!;
-          recipeDrafts.splice(recipeIndex, 1);
-          renderRecipes();
-        };
-      });
+    recipeList.querySelectorAll<HTMLButtonElement>(".recipeRemoveOption").forEach(button => {
+      button.onclick = event => {
+        event.preventDefault();
+        const recipeIndex = +button.dataset.recipeIndex!;
+        recipeDrafts.splice(recipeIndex, 1);
+        renderRecipes();
+      };
+    });
   };
 
-  ensureEl("newGoodAddRecipe").on("click", (event) => {
+  ensureEl("newGoodAddRecipe").on("click", event => {
     event.preventDefault();
     recipeDrafts.push([{ id: defaultGoodId, amount: 1 }]);
     renderRecipes();
@@ -854,11 +774,8 @@ function openGoodDialog(goodToEdit?: Good) {
 
   // icon preview + upload
   const iconSelect = ensureEl<HTMLSelectElement>("newGoodIcon");
-  const iconPreview = ensureEl(
-    "newGoodIconPreview",
-  ) as unknown as SVGUseElement;
-  iconSelect.onchange = () =>
-    iconPreview.setAttribute("href", `#${iconSelect.value}`);
+  const iconPreview = ensureEl("newGoodIconPreview") as unknown as SVGUseElement;
+  iconSelect.onchange = () => iconPreview.setAttribute("href", `#${iconSelect.value}`);
 
   const uploadTo = ensureEl("defs-icons")!;
   const onIconUpload = (_type: string, id: string) => {
@@ -866,14 +783,10 @@ function openGoodDialog(goodToEdit?: Good) {
     iconSelect.innerHTML += `<option value="${id}">${id}</option>`;
     iconSelect.value = id;
   };
-  ensureEl("newGoodUploadIconRaster").onclick = () =>
-    (ensureEl("imageToLoad") as HTMLInputElement).click();
-  ensureEl("newGoodUploadIconVector").onclick = () =>
-    (ensureEl("svgToLoad") as HTMLInputElement).click();
-  ensureEl("imageToLoad").onchange = () =>
-    uploadImage("image", uploadTo, onIconUpload);
-  ensureEl("svgToLoad").onchange = () =>
-    uploadImage("svg", uploadTo, onIconUpload);
+  ensureEl("newGoodUploadIconRaster").onclick = () => (ensureEl("imageToLoad") as HTMLInputElement).click();
+  ensureEl("newGoodUploadIconVector").onclick = () => (ensureEl("svgToLoad") as HTMLInputElement).click();
+  ensureEl("imageToLoad").onchange = () => uploadImage("image", uploadTo, onIconUpload);
+  ensureEl("svgToLoad").onchange = () => uploadImage("svg", uploadTo, onIconUpload);
 
   $("#alert").dialog({
     width: "30em",
@@ -887,39 +800,30 @@ function openGoodDialog(goodToEdit?: Good) {
         const error = ensureEl("newGoodError");
         error.textContent = "";
 
-        const type = ensureEl<HTMLSelectElement>("newGoodType").value as
-          | "raw"
-          | "manufactured";
+        const type = ensureEl<HTMLSelectElement>("newGoodType").value as "raw" | "manufactured";
         const name = ensureEl<HTMLInputElement>("newGoodName").value.trim();
-        const tagsInput =
-          ensureEl<HTMLInputElement>("newGoodTags").value.trim();
+        const tagsInput = ensureEl<HTMLInputElement>("newGoodTags").value.trim();
         const value = +ensureEl<HTMLInputElement>("newGoodValue").value;
         const chance = +ensureEl<HTMLInputElement>("newGoodChance").value;
         const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
         const icon = ensureEl<HTMLSelectElement>("newGoodIcon").value;
         const color = ensureEl<HTMLInputElement>("newGoodColor").value;
         const distribution = distributionInput.value.trim();
-        const biomeProductionInput = ensureEl<HTMLInputElement>(
-          "newGoodBiomeProduction",
-        ).value.trim();
+        const biomeProductionInput = ensureEl<HTMLInputElement>("newGoodBiomeProduction").value.trim();
 
-        const tags = unique(
-          tagsInput.split(",").map((tag) => tag.trim().toLocaleLowerCase()),
-        );
+        const tags = unique(tagsInput.split(",").map(tag => tag.trim().toLocaleLowerCase()));
 
         const bonusObj: Record<string, number> = {};
-        allBonuses.forEach((bonus) => {
-          const bonusInput = document.getElementById(
-            `newGoodBonus_${bonus}`,
-          ) as HTMLInputElement | null;
+        allBonuses.forEach(bonus => {
+          const bonusInput = document.getElementById(`newGoodBonus_${bonus}`) as HTMLInputElement | null;
           if (!bonusInput) return;
           const v = parseInt(bonusInput.value, 10);
           if (!Number.isNaN(v) && v > 0) bonusObj[bonus] = v;
         });
         const demandCoverage: Partial<Record<DemandCategory, number>> = {};
-        DEMAND_PRIORITY.forEach((category) => {
+        DEMAND_PRIORITY.forEach(category => {
           const demandCoverageInput = document.getElementById(
-            `newGoodDemandCoverage_${category}`,
+            `newGoodDemandCoverage_${category}`
           ) as HTMLInputElement | null;
           if (!demandCoverageInput) return;
           const v = Number(demandCoverageInput.value);
@@ -970,7 +874,7 @@ function openGoodDialog(goodToEdit?: Good) {
           maxTemp: (..._args: any[]) => true,
           shore: (..._args: any[]) => true,
           type: (..._args: any[]) => true,
-          river: (..._args: any[]) => true,
+          river: (..._args: any[]) => true
         };
 
         const parseBiomeProduction = (): Record<number, number> | null => {
@@ -979,13 +883,11 @@ function openGoodDialog(goodToEdit?: Good) {
           const result: Record<number, number> = {};
           const chunks = biomeProductionInput
             .split(",")
-            .map((chunk) => chunk.trim())
+            .map(chunk => chunk.trim())
             .filter(Boolean);
 
           for (const chunk of chunks) {
-            const [biomeRaw, amountRaw] = chunk
-              .split(":")
-              .map((part) => part.trim());
+            const [biomeRaw, amountRaw] = chunk.split(":").map(part => part.trim());
             const biomeId = Number(biomeRaw);
             const amount = Number(amountRaw);
 
@@ -1011,9 +913,7 @@ function openGoodDialog(goodToEdit?: Good) {
           if (distribution) {
             try {
               const allMethods = `{${Object.keys(distributionMethods).join(", ")}}`;
-              new Function(allMethods, `return ${distribution}`)(
-                distributionMethods,
-              );
+              new Function(allMethods, `return ${distribution}`)(distributionMethods);
             } catch (err) {
               error.textContent = `Distribution error: ${(err as Error).message || err}`;
               return;
@@ -1023,9 +923,7 @@ function openGoodDialog(goodToEdit?: Good) {
           if (editedGood) {
             applyBase(editedGood);
             editedGood.distribution = distribution || undefined;
-            editedGood.biome = Object.keys(biomeProduction).length
-              ? biomeProduction
-              : undefined;
+            editedGood.biome = Object.keys(biomeProduction).length ? biomeProduction : undefined;
             delete editedGood.recipes;
           } else {
             pack.goods.push({
@@ -1037,14 +935,12 @@ function openGoodDialog(goodToEdit?: Good) {
               value,
               chance,
               distribution: distribution || undefined,
-              biome: Object.keys(biomeProduction).length
-                ? biomeProduction
-                : undefined,
+              biome: Object.keys(biomeProduction).length ? biomeProduction : undefined,
               unit,
               bonus: bonusObj,
               demandCoverage,
               culture: {},
-              cells: 0,
+              cells: 0
             });
           }
         } else {
@@ -1054,28 +950,20 @@ function openGoodDialog(goodToEdit?: Good) {
             const recipeData: Record<number, number> = {};
 
             for (const ingredient of recipe) {
-              if (
-                !Number.isInteger(ingredient.id) ||
-                !Goods.get(ingredient.id)
-              ) {
+              if (!Number.isInteger(ingredient.id) || !Goods.get(ingredient.id)) {
                 error.textContent = `Recipe references unknown good id: ${ingredient.id}`;
                 return;
               }
-              if (
-                !Number.isFinite(ingredient.amount) ||
-                ingredient.amount <= 0
-              ) {
+              if (!Number.isFinite(ingredient.amount) || ingredient.amount <= 0) {
                 error.textContent = `Invalid recipe amount for good id: ${ingredient.id}`;
                 return;
               }
 
-              recipeData[ingredient.id] =
-                (recipeData[ingredient.id] || 0) + ingredient.amount;
+              recipeData[ingredient.id] = (recipeData[ingredient.id] || 0) + ingredient.amount;
             }
 
             if (!Object.keys(recipeData).length) {
-              error.textContent =
-                "Each recipe must contain at least one ingredient";
+              error.textContent = "Each recipe must contain at least one ingredient";
               return;
             }
 
@@ -1083,8 +971,7 @@ function openGoodDialog(goodToEdit?: Good) {
           }
 
           if (!recipes.length) {
-            error.textContent =
-              "At least one recipe is required for manufactured goods";
+            error.textContent = "At least one recipe is required for manufactured goods";
             return;
           }
 
@@ -1107,32 +994,26 @@ function openGoodDialog(goodToEdit?: Good) {
               bonus: bonusObj,
               demandCoverage,
               culture: {},
-              cells: 0,
+              cells: 0
             });
           }
         }
 
-        tip(
-          isEdit ? "Good is updated" : "Good is added",
-          false,
-          "success",
-          5000,
-        );
+        tip(isEdit ? "Good is updated" : "Good is added", false, "success", 5000);
         goodsEditorAddLines();
         goods.selectAll("*").remove();
         drawGoods();
         $(this).dialog("close");
-      },
-    },
+      }
+    }
   });
 }
 
 function downloadGoodsData() {
   const body = ensureEl("goodsBody");
-  let data =
-    "Id,Good,Color,Type,Tags,Value,Bonus,Demand Coverage,Chance,Model,Cells\n";
+  let data = "Id,Good,Color,Type,Tags,Value,Bonus,Demand Coverage,Chance,Model,Cells\n";
 
-  body.querySelectorAll<HTMLElement>(":scope > div").forEach((el) => {
+  body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
     const goodId = +el.dataset.id!;
     const good = Goods.get(goodId);
     if (!good) return;
@@ -1165,23 +1046,21 @@ function pinResource(good: Good, el: HTMLElement) {
   goods.selectAll("*").remove();
   drawGoods();
 
-  const someArePinned = pack.goods.some((good) => good.pinned);
+  const someArePinned = pack.goods.some(good => good.pinned);
   const unpinAll = ensureEl("goodsUnpinAll")!;
-  someArePinned
-    ? unpinAll.classList.remove("hidden")
-    : unpinAll.classList.add("hidden");
+  someArePinned ? unpinAll.classList.remove("hidden") : unpinAll.classList.add("hidden");
 }
 
 function unpinAllGoods() {
   const body = ensureEl("goodsBody");
-  pack.goods.forEach((good) => {
+  pack.goods.forEach(good => {
     delete good.pinned;
   });
   goods.selectAll("*").remove();
   drawGoods();
 
   ensureEl("goodsUnpinAll").classList.add("hidden");
-  body.querySelectorAll(":scope > div > span.icon-pin").forEach((el) => {
+  body.querySelectorAll(":scope > div > span.icon-pin").forEach(el => {
     el.classList.add("inactive");
   });
 }
@@ -1189,8 +1068,7 @@ function unpinAllGoods() {
 function removeResource(good: Good, line: HTMLElement) {
   if (customization) return;
 
-  const message =
-    "Are you sure you want to remove the resource? <br>This action cannot be reverted";
+  const message = "Are you sure you want to remove the resource? <br>This action cannot be reverted";
   const onConfirm = () => {
     for (const i of pack.cells.i) {
       if (pack.cells.good[i] === good.i) {
@@ -1198,7 +1076,7 @@ function removeResource(good: Good, line: HTMLElement) {
       }
     }
 
-    pack.goods = pack.goods.filter((g) => g.i !== good.i);
+    pack.goods = pack.goods.filter(g => g.i !== good.i);
     line.remove();
     ensureEl("goodsNumber").innerHTML = String(pack.goods.length);
 
@@ -1209,7 +1087,7 @@ function removeResource(good: Good, line: HTMLElement) {
     title: "Remove resource",
     message,
     confirm: "Remove",
-    onConfirm,
+    onConfirm
   });
 }
 

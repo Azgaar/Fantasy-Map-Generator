@@ -18,8 +18,7 @@ function renderMarketCells(markets: Market[]): string {
   const isolines = getIsolines(pack, getType, { polygons: true });
   for (const [marketIdStr, { polygons }] of Object.entries(isolines)) {
     if (!polygons) continue;
-    const fillColor =
-      markets.find((m) => m.i === +marketIdStr)?.color || "#dababf";
+    const fillColor = markets.find(m => m.i === +marketIdStr)?.color || "#dababf";
     const strokeColor = color(fillColor)?.darker().hex() || "#000";
 
     const path = polygons.map(linegen).join("");
@@ -29,7 +28,7 @@ function renderMarketCells(markets: Market[]): string {
 }
 
 function renderMarkerCenters(markets: Market[]): string {
-  const html = markets.map((market) => {
+  const html = markets.map(market => {
     const centerBurg = pack.burgs[market.centerBurgId];
     if (!centerBurg) return "";
 
