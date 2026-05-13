@@ -618,17 +618,17 @@ class RiverModule {
   }
 
   getParent(r: number): number {
-    const parent = pack.rivers.find(river => river.i === r)?.parent;
+    const parent = pack.rivers.find((river) => river.i === r)?.parent;
     if (!parent || parent === r) return r;
-    if (!pack.rivers.some(river => river.i === parent)) return r;
+    if (!pack.rivers.some((river) => river.i === parent)) return r;
     return parent;
-  };
+  }
 
   getBasin(r: number): number {
     const parent = this.getParent(r);
     if (parent === r) return r;
     return this.getBasin(parent);
-  };
+  }
 
   getNextId(rivers: { i: number }[]) {
     return rivers.length ? Math.max(...rivers.map((r) => r.i)) + 1 : 1;
