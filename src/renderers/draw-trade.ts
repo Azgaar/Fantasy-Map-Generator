@@ -3,10 +3,6 @@ import type { Market } from "../modules/trade-generator";
 import { rn } from "../utils";
 import { getIsolines } from "../utils/pathUtils";
 
-declare global {
-  var drawTrade: () => void;
-}
-
 function renderMarketCells(markets: Market[]): string {
   if (!pack.cells.market) return "";
 
@@ -47,7 +43,7 @@ function renderMarkerCenters(markets: Market[]): string {
   return html.join("");
 }
 
-const tradeRenderer = (): void => {
+const drawTrade = (): void => {
   TIME && console.time("drawTrade");
 
   trade.style("display", "block");
@@ -58,4 +54,10 @@ const tradeRenderer = (): void => {
   TIME && console.timeEnd("drawTrade");
 };
 
-window.drawTrade = tradeRenderer;
+declare global {
+  interface Window {
+    drawTrade: typeof drawTrade;
+  }
+}
+
+window.drawTrade = drawTrade;

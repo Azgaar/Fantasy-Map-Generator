@@ -8,15 +8,15 @@ export interface Good {
   i: number;
 
   // generation
-  chance: number; // generation chance
+  chance?: number; // generation chance
   distribution?: string; // spread function string for raw goods, e.g. "biome(5, 6, 7, 8, 9)"
   biome?: Partial<Record<number, number>>; // baseline production per biome id per 1 rural population, e.g. {6: 0.05, 7: 0.05}
   recipes?: Record<number, number>[]; // good id and required amount to produce 1 unit of this good; presence marks a manufactured good
-  culture: Partial<Record<CultureType, number>>; // modifier to production based on culture, e.g. {Nomadic: 2} means that nomadic cultures produce twice as much of this good
+  culture?: Partial<Record<CultureType, number>>; // modifier to production based on culture, e.g. {Nomadic: 2} means that nomadic cultures produce twice as much of this good
 
   // effects
-  demandCoverage: Partial<Record<DemandCategory, number>>; // how much 1 unit covers each explicit demand category
-  bonus: Partial<Record<BonusType, number>>; // e.g. {population: 2} means that this good gives population +2 if is produced in a cell
+  demandCoverage?: Partial<Record<DemandCategory, number>>; // how much 1 unit covers each explicit demand category
+  bonus?: Partial<Record<BonusType, number>>; // e.g. {population: 2} means that this good gives population +2 if is produced in a cell
 
   // lore
   name: string;
@@ -27,11 +27,6 @@ export interface Good {
   // ui
   icon: string;
   color: string;
-  stroke?: string;
-
-  // editor state
-  cells?: number;
-  pinned?: boolean;
 }
 
 export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;
@@ -52,7 +47,7 @@ export const DEMAND_CATEGORY_ICONS: Record<DemandCategory, string> = {
 };
 type BonusType = "population" | "prestige" | "defence" | "fleet" | "infantry" | "archers" | "cavalry" | "artillery";
 
-type GoodData = Omit<Good, "i" | "cells"> & {
+type GoodData = Omit<Good, "i"> & {
   recipes?: Record<string, number>[];
 };
 const GOODS_DATA: GoodData[] = [
@@ -336,7 +331,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "good-hemp",
     color: "#069a06",
     value: 1,
-    chance: 4,
+    chance: 3,
     distribution: "biome(6, 7, 8)",
     unit: "wain",
     demandCoverage: {},
@@ -1078,32 +1073,8 @@ export class GoodsModule {
       });
     }
 
-    return {
-      i: index,
-      ...good,
-      ...(recipes && { recipes }),
-      cells: 0
-    };
+    return { i: index, ...good, ...(recipes && { recipes }) };
   });
-
-  private methods = {
-    random: (number: number) => number >= 100 || (number > 0 && number / 100 > Math.random()),
-    nth: (number: number) => !(this.cellId % number),
-    minHabitability: (min: number) => biomesData.habitability[pack.cells.biome[this.cellId]] >= min,
-    habitability: () => biomesData.habitability[this.cells.biome[this.cellId]] > Math.random() * 100,
-    elevation: () => pack.cells.h[this.cellId] / 100 > Math.random(),
-    biome: (...biomes: number[]) => biomes.includes(pack.cells.biome[this.cellId]),
-    minHeight: (heigh: number) => pack.cells.h[this.cellId] >= heigh,
-    maxHeight: (heigh: number) => pack.cells.h[this.cellId] <= heigh,
-    minTemp: (temp: number) => grid.cells.temp[pack.cells.g[this.cellId]] >= temp,
-    maxTemp: (temp: number) => grid.cells.temp[pack.cells.g[this.cellId]] <= temp,
-    shore: (...rings: number[]) => rings.includes(pack.cells.t[this.cellId]),
-    type: (...types: string[]) => {
-      const feature = pack.features[this.cells.f[this.cellId]];
-      return types.includes(feature.group || feature.type);
-    },
-    river: () => pack.cells.r[this.cellId]
-  };
 
   generate(regenerate: boolean = false) {
     TIME && console.time("generateGoods");
@@ -1111,38 +1082,57 @@ export class GoodsModule {
     const shuffle = shuffler(() => Math.random());
 
     this.cells = pack.cells;
-    this.cells.good = createTypedArray({
-      maxValue: TYPED_ARRAY_MAX.UINT16,
-      length: this.cells.i.length
-    });
+    this.cells.good = createTypedArray({ maxValue: TYPED_ARRAY_MAX.UINT16, length: this.cells.i.length });
     if (!pack.goods || regenerate) pack.goods = this.defaultGoods;
 
     const resourceMaxCells = Math.ceil((200 * this.cells.i.length) / 5000);
-    const methods = `{${Object.keys(this.methods).join(", ")}}`;
+    const resources: Record<number, number> = {};
+
+    const methods = `{${Object.keys(this.getMethods()).join(", ")}}`;
     const shuffledCells = shuffle(this.cells.i.slice());
-    const workingGoods = [...pack.goods];
+    const goods = [...pack.goods];
 
     for (const cellId of shuffledCells) {
-      if (!(cellId % 10)) shuffle(workingGoods);
+      if (!(cellId % 10)) shuffle(goods);
       if (this.cells.biome[cellId] === 11 && biomesData.habitability[11] === 0) continue; // skip glaciers
-      const rnd = Math.random() * 100;
       this.cellId = cellId;
 
-      for (const good of workingGoods) {
-        if (!good.distribution) continue;
-        if (good.cells! >= resourceMaxCells) continue;
-        if (good.cells ? rnd > good.chance : Math.random() * 100 > good.chance) continue;
+      for (const good of goods) {
+        if (!good.distribution || !good.chance) continue;
+        if (resources[good.i] >= resourceMaxCells) continue;
+        if (Math.random() * 100 > good.chance) continue;
 
         const spread = new Function(methods, `return ${good.distribution}`);
-        if (!spread(this.methods)) continue;
+        if (!spread(this.getMethods())) continue;
 
         this.cells.good[cellId] = good.i;
-        good.cells!++;
+        resources[good.i] = (resources[good.i] || 0) + 1;
         break;
       }
     }
 
     TIME && console.timeEnd("generateGoods");
+  }
+
+  getMethods() {
+    return {
+      random: (number: number) => number >= 100 || (number > 0 && number / 100 > Math.random()),
+      nth: (number: number) => !(this.cellId % number),
+      minHabitability: (min: number) => biomesData.habitability[pack.cells.biome[this.cellId]] >= min,
+      habitability: () => biomesData.habitability[this.cells.biome[this.cellId]] > Math.random() * 100,
+      elevation: () => pack.cells.h[this.cellId] / 100 > Math.random(),
+      biome: (...biomes: number[]) => biomes.includes(pack.cells.biome[this.cellId]),
+      minHeight: (heigh: number) => pack.cells.h[this.cellId] >= heigh,
+      maxHeight: (heigh: number) => pack.cells.h[this.cellId] <= heigh,
+      minTemp: (temp: number) => grid.cells.temp[pack.cells.g[this.cellId]] >= temp,
+      maxTemp: (temp: number) => grid.cells.temp[pack.cells.g[this.cellId]] <= temp,
+      shore: (...rings: number[]) => rings.includes(pack.cells.t[this.cellId]),
+      type: (...types: string[]) => {
+        const feature = pack.features[this.cells.f[this.cellId]];
+        return types.includes(feature.group || feature.type);
+      },
+      river: () => pack.cells.r[this.cellId]
+    };
   }
 
   getStroke(colorHex: string): string {

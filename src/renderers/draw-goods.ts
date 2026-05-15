@@ -10,9 +10,8 @@ export function toggleGoods(event?: MouseEvent) {
   }
 }
 
-export function drawGoods() {
+export function drawGoods(pinnedGoods?: Set<number>) {
   TIME && console.time("drawGoods");
-  const someArePinned = pack.goods.some((good: any) => good.pinned);
   const drawCircle = +goods.attr("data-circle");
 
   if (!pack.cells.good) return;
@@ -22,7 +21,7 @@ export function drawGoods() {
     if (!pack.cells.good[i]) continue;
     const good = Goods.get(pack.cells.good[i]);
     if (!good) continue;
-    if (someArePinned && !good.pinned) continue;
+    if (pinnedGoods && !pinnedGoods.has(good.i)) continue;
     const [x, y] = pack.cells.p[i];
     const stroke = Goods.getStroke(good.color);
 
@@ -42,8 +41,10 @@ export function drawGoods() {
 }
 
 declare global {
-  function toggleGoods(event?: MouseEvent): void;
-  function drawGoods(): void;
+  interface Window {
+    toggleGoods: typeof toggleGoods;
+    drawGoods: typeof drawGoods;
+  }
 }
 
 window.toggleGoods = toggleGoods;

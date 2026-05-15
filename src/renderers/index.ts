@@ -13,3 +13,4 @@ import "./draw-scalebar";
 import "./draw-state-labels";
 import "./draw-temperature";
 import "./draw-trade";
+import "./draw-goods";

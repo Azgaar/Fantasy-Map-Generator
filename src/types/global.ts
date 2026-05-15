@@ -141,7 +141,4 @@ declare global {
   var toggleCells: () => void;
   var regenerateGoods: () => void;
   var legend: any;
-
-  function toggleGoods(event?: MouseEvent): void;
-  function drawGoods(): void;
 }
