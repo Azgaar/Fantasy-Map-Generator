@@ -539,7 +539,7 @@ const GOODS_DATA: GoodData[] = [
     chance: 1,
     distribution: "biome(5, 7) && random(50)",
     unit: "pile",
-    demandCoverage: { construction: 0.2, luxury: 0.8 },
+    demandCoverage: { luxury: 1 },
     bonus: { prestige: 1 },
     culture: { Hunting: 1.2 }
   },

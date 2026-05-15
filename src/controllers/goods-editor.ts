@@ -569,8 +569,8 @@ function openGoodDialog(goodToEdit?: Good) {
     .join("");
   const demandCoverageInputsHtml = DEMAND_PRIORITY.map(
     category => `<span>
-        <div style="display: inline-block; width: 6.5em;">${DEMAND_CATEGORY_ICONS[category]} ${capitalize(category)}</div>
-        <input id="newGoodDemandCoverage_${category}" type="number" style="width: 4.5em;" step="0.05" min="0" value="${(editedGood?.demandCoverage as Partial<Record<DemandCategory, number>> | undefined)?.[category] || 0}" />
+        <div style="display: inline-block; width: 5em; white-space: nowrap;">${DEMAND_CATEGORY_ICONS[category]} ${capitalize(category)}</div>
+        <input id="newGoodDemandCoverage_${category}" type="number" style="width: 4em;" step="0.05" min="0" value="${editedGood?.demandCoverage?.[category] || 0}" />
       </span>`
   ).join("");
 
@@ -595,7 +595,7 @@ function openGoodDialog(goodToEdit?: Good) {
   const biomeReference = biomesData.i.map((biomeId: number) => `${biomeId}:${biomesData.name[biomeId]}`).join(" | ");
 
   alertMessage.innerHTML = /*html*/ `
-    <div style="display:grid; grid-template-columns: 8em 1fr; align-items:center;">
+    <div style="display:grid; grid-template-columns: 7em 1fr; align-items:center;">
       <label for="newGoodName">Name*</label>
       <input id="newGoodName" value="${editedGood?.name || ""}" />
 
@@ -630,14 +630,14 @@ function openGoodDialog(goodToEdit?: Good) {
       <div id="newGoodBonuses" style="display: grid; grid-template-columns: 1fr 1fr;">${bonusInputsHtml}</div>
 
       <label for="newGoodDemandCoverage" style="align-self: start;">Demand Coverage</label>
-      <div id="newGoodDemandCoverage" style="display: grid; grid-template-columns: 1fr 1fr; gap: .2em .5em;">${demandCoverageInputsHtml}</div>
+      <div id="newGoodDemandCoverage" style="display: grid; grid-template-columns: 1fr 1fr; gap: .2em;">${demandCoverageInputsHtml}</div>
     </div>
 
     <div id="newGoodRawFields">
       <label style="display:block; margin-bottom:.2em">Distribution function:</label>
       <textarea id="newGoodDistribution" style="width:100%; height:4em; font-family:monospace; font-size:.9em; box-sizing:border-box" spellcheck="false" placeholder="e.g. biome(5, 6, 7, 8, 9)">${editedGood?.distribution || ""}</textarea>
       <div id="newGoodDistributionPreview" style="color:#555; font-size:.9em; min-height:1.2em; margin-top:.2em">${editedGood?.distribution ? interpretDistribution(editedGood.distribution) : ""}</div>
-      <label style="display:block; margin:.5em 0 .2em">Biome baseline production (biomeId:amount):</label>
+      <label style="display:block; margin:.5em 0 .2em">Biome baseline production (biomeId: amount):</label>
       <input id="newGoodBiomeProduction" style="width:100%; box-sizing:border-box" spellcheck="false" placeholder="e.g. 6:0.5, 7:0.5, 8:0.5" value="${biomeProductionToText(editedGood?.biome)}" />
       <div style="color:#666; font-size:.85em; margin-top:.2em">${biomeReference}</div>
     </div>

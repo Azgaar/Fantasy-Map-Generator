@@ -1,5 +1,5 @@
 "use strict";
-function overviewBurgs(settings = {stateId: null, cultureId: null}) {
+function overviewBurgs(settings = { stateId: null, cultureId: null }) {
   if (customization) return;
   closeDialogs("#burgsOverview, .stable");
   if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
@@ -19,7 +19,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     resizable: false,
     width: fitContent(),
     close: exitAddBurgMode,
-    position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
 
   // add listeners
@@ -135,8 +135,8 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
         <input data-tip="Burg group" value="${b.group}" disabled />
         <span data-tip="Burg population" class="icon-male"></span>
         <input data-tip="Burg population" value=${si(population)} style="width: 5em" disabled />
-        <span data-tip="Gross product: total profit of final output">🟡</span>
-        <input data-tip="Gross product: total profit of final output" value=${grossProduct} style="width: 5em" disabled />
+        <span data-tip="Gross Product: local sale revenue minus purchased ingredient costs during the production.">🟡</span>
+        <input data-tip="Gross Product: local sale revenue minus purchased ingredient costs during the production." value=${grossProduct} style="width: 5em" disabled />
         <span data-tip="Wealth: gross product divided by population">🟡</span>
         <input data-tip="Wealth: gross product divided by population" value=${productPerCapita} style="width: 5em" disabled />
         <span data-tip="Treasury: accumulated cash balance">🟡</span>
@@ -292,7 +292,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     const states = pack.states.map(s => {
       const color = s.color ? s.color : "#ccc";
       const name = s.fullName ? s.fullName : s.name;
-      return {id: s.i, state: s.i ? 0 : null, color, name};
+      return { id: s.i, state: s.i ? 0 : null, color, name };
     });
 
     const burgs = pack.burgs
@@ -328,7 +328,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
 
     const width = 150 + 200 * uiSize.value;
     const height = 150 + 200 * uiSize.value;
-    const margin = {top: 0, right: -50, bottom: -10, left: -50};
+    const margin = { top: 0, right: -50, bottom: -10, left: -50 };
     const w = width - margin.left - margin.right;
     const h = height - margin.top - margin.bottom;
     const treeLayout = d3.pack().size([w, h]).padding(3);
@@ -390,25 +390,25 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
         pack.states.map(s => {
           const color = s.color ? s.color : "#ccc";
           const name = s.fullName ? s.fullName : s.name;
-          return {id: s.i, state: s.i ? 0 : null, color, name};
+          return { id: s.i, state: s.i ? 0 : null, color, name };
         });
 
       const getCulturesData = () =>
         pack.cultures.map(c => {
           const color = c.color ? c.color : "#ccc";
-          return {id: c.i, culture: c.i ? 0 : null, color, name: c.name};
+          return { id: c.i, culture: c.i ? 0 : null, color, name: c.name };
         });
 
       const getParentData = () => {
         const states = pack.states.map(s => {
           const color = s.color ? s.color : "#ccc";
           const name = s.fullName ? s.fullName : s.name;
-          return {id: s.i, parent: s.i ? 0 : null, color, name};
+          return { id: s.i, parent: s.i ? 0 : null, color, name };
         });
         const provinces = pack.provinces
           .filter(p => p.i && !p.removed)
           .map(p => {
-            return {id: p.i + states.length - 1, parent: p.state, color: p.color, name: p.fullName};
+            return { id: p.i + states.length - 1, parent: p.state, color: p.color, name: p.fullName };
           });
         return states.concat(provinces);
       };
@@ -417,7 +417,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
         pack.provinces.map(p => {
           const color = p.color ? p.color : "#ccc";
           const name = p.fullName ? p.fullName : p.name;
-          return {id: p.i ? p.i : 0, province: p.i ? 0 : null, color, name};
+          return { id: p.i ? p.i : 0, province: p.i ? 0 : null, color, name };
         });
 
       const value = d => {
@@ -459,7 +459,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     $("#alert").dialog({
       title: "Burgs bubble chart",
       width: fitContent(),
-      position: {my: "left bottom", at: "left+10 bottom-10", of: "svg"},
+      position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
       buttons: {},
       close: () => (alertMessage.innerHTML = "")
     });
@@ -517,7 +517,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     $("#alert").dialog({
       title: "Burgs bulk renaming",
       width: "22em",
-      position: {my: "center", at: "center", of: "svg"},
+      position: { my: "center", at: "center", of: "svg" },
       buttons: {
         Download: function () {
           const data = pack.burgs
@@ -551,7 +551,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
     for (let i = 0; i < data.length && i <= burgs.length; i++) {
       const v = data[i];
       if (!v || !burgs[i] || v == burgs[i].name) continue;
-      change.push({id: burgs[i].i, name: v});
+      change.push({ id: burgs[i].i, name: v });
       message += `<tr><td style="width:20%">${burgs[i].i}</td><td style="width:40%">${burgs[i].name}</td><td style="width:40%">${v}</td></tr>`;
     }
     message += `</tr></table>`;
@@ -604,7 +604,7 @@ function overviewBurgs(settings = {stateId: null, cultureId: null}) {
   }
 
   function updateLockAllIcon() {
-    const allLocked = pack.burgs.every(({lock, i, removed}) => lock || !i || removed);
+    const allLocked = pack.burgs.every(({ lock, i, removed }) => lock || !i || removed);
     ensureEl("burgsLockAll").className = allLocked ? "icon-lock-open" : "icon-lock";
   }
 }
