@@ -52,14 +52,13 @@ class LabelsModule {
     if (!this.initialized) {
       this.initialized = true;
       this.freeIds.clear();
-      const existingIds = pack.labels.map((l) => l.i).sort((a, b) => a - b);
+      const existingIds = pack.labels.map(l => l.i).sort((a, b) => a - b);
 
       for (let id = 0; id < existingIds[existingIds.length - 1]; id++) {
         if (!existingIds.includes(id)) this.freeIds.add(id);
       }
 
-      this.maxId =
-        existingIds.length > 0 ? existingIds[existingIds.length - 1] + 1 : 0;
+      this.maxId = existingIds.length > 0 ? existingIds[existingIds.length - 1] + 1 : 0;
     }
 
     if (this.freeIds.size > 0) {
@@ -86,20 +85,18 @@ class LabelsModule {
   }
 
   get(id: number): LabelData | undefined {
-    return pack.labels.find((l) => l.i === id);
+    return pack.labels.find(l => l.i === id);
   }
 
   getByGroup(group: string): LabelData[] {
-    return pack.labels.filter(
-      (l) => (l.type === "burg" || l.type === "custom") && l.group === group,
-    );
+    return pack.labels.filter(l => (l.type === "burg" || l.type === "custom") && l.group === group);
   }
 
   private addStateLabel(data: Omit<StateLabel, "i" | "type">): StateLabel {
     const label: StateLabel = {
       ...data,
       i: this.getNextId(),
-      type: "state",
+      type: "state"
     };
     pack.labels.push(label);
     return label;
@@ -116,14 +113,14 @@ class LabelsModule {
     const label: CustomLabel = {
       ...data,
       i: this.getNextId(),
-      type: "custom",
+      type: "custom"
     };
     pack.labels.push(label);
     return label;
   }
 
   update(id: number, updates: Partial<LabelData>): void {
-    const label = pack.labels.find((l) => l.i === id);
+    const label = pack.labels.find(l => l.i === id);
     if (!label) {
       ERROR && console.error(`Label with id ${id} was not found for update.`);
       return;
@@ -132,21 +129,19 @@ class LabelsModule {
   }
 
   remove(id: number): void {
-    const index = pack.labels.findIndex((l) => l.i === id);
+    const index = pack.labels.findIndex(l => l.i === id);
     this.freeIds.add(id);
     if (index !== -1) pack.labels.splice(index, 1);
   }
 
   removeByType(type: LabelData["type"]): void {
     this.initialized = false;
-    pack.labels = pack.labels.filter((l) => l.type !== type);
+    pack.labels = pack.labels.filter(l => l.type !== type);
   }
 
   removeByGroup(group: string): void {
     this.initialized = false;
-    pack.labels = pack.labels.filter(
-      (l) => !((l.type === "burg" || l.type === "custom") && l.group === group),
-    );
+    pack.labels = pack.labels.filter(l => !((l.type === "burg" || l.type === "custom") && l.group === group));
   }
 
   clear(): void {
@@ -172,7 +167,7 @@ class LabelsModule {
       this.addStateLabel({
         stateId: state.i,
         text: state.name!,
-        fontSize: 100,
+        fontSize: 100
       });
     }
 
@@ -198,7 +193,7 @@ class LabelsModule {
         group,
         text: burg.name!,
         x: burg.x,
-        y: burg.y,
+        y: burg.y
       });
     }
 

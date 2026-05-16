@@ -638,7 +638,7 @@ class BurgModule {
       group: burg.group!,
       text: burg.name!,
       x,
-      y,
+      y
     });
 
     return burgId;
@@ -655,7 +655,7 @@ class BurgModule {
 
     drawBurgIcon(burg);
     const labelToChange = Labels.getAll()
-      .filter((l) => l.type === "burg" && l.burgId === burg.i)
+      .filter(l => l.type === "burg" && l.burgId === burg.i)
       .at(0);
     // Typescript cannot infer that labelToChange is guranteed to be a BurgLabel through the type check above.
     // It can be cast without any issue.
@@ -679,9 +679,7 @@ class BurgModule {
     }
 
     removeBurgIcon(burg.i!);
-    const label = Labels.getAll().find(
-      (l) => l.type === "burg" && l.burgId === burgId,
-    );
+    const label = Labels.getAll().find(l => l.type === "burg" && l.burgId === burgId);
     if (label) Labels.remove(label.i);
     removeBurgLabel(burgId);
   }

@@ -19,13 +19,8 @@ function getOffsetWidth(cellsNumber: number): number {
 
 function checkExampleLetterLength(): number {
   const textGroup = select<SVGGElement, unknown>("g#labels > g#states");
-  const testLabel = textGroup
-    .append("text")
-    .attr("x", 0)
-    .attr("y", 0)
-    .text("Example");
-  const letterLength =
-    (testLabel.node() as SVGTextElement).getComputedTextLength() / 7; // approximate length of 1 letter
+  const testLabel = textGroup.append("text").attr("x", 0).attr("y", 0).text("Example");
+  const letterLength = (testLabel.node() as SVGTextElement).getComputedTextLength() / 7; // approximate length of 1 letter
   testLabel.remove();
 
   return letterLength;
@@ -49,13 +44,10 @@ const stateLabelsRenderer = (list?: number[]): void => {
   let labelsToRender: StateLabel[];
   if (list && list.length > 0) {
     labelsToRender = list.flatMap(
-      (id) =>
-        Labels.getAll().filter(
-          (label) => label.type === "state" && label.stateId === id,
-        ) as StateLabel[],
+      id => Labels.getAll().filter(label => label.type === "state" && label.stateId === id) as StateLabel[]
     );
   } else {
-    labelsToRender = Labels.getAll().filter((label) => label.type === "state");
+    labelsToRender = Labels.getAll().filter(label => label.type === "state");
   }
 
   const letterLength = checkExampleLetterLength();
@@ -64,17 +56,12 @@ const stateLabelsRenderer = (list?: number[]): void => {
   // restore labels visibility
   labels.style("display", layerDisplay);
 
-  function drawLabelPath(
-    letterLength: number,
-    labelDataList: StateLabel[],
-  ): void {
+  function drawLabelPath(letterLength: number, labelDataList: StateLabel[]): void {
     const mode = options.stateLabelsMode || "auto";
     const lineGen = line<[number, number]>().curve(curveNatural);
 
     const textGroup = select<SVGGElement, unknown>("g#labels > g#states");
-    const pathGroup = select<SVGGElement, unknown>(
-      "defs > g#deftemp > g#textPaths",
-    );
+    const pathGroup = select<SVGGElement, unknown>("defs > g#deftemp > g#textPaths");
 
     for (const labelData of labelDataList) {
       const state = states[labelData.stateId];
@@ -99,11 +86,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
       });
       const [ray1, ray2] = findBestRayPair(rays);
 
-      const pathPoints: [number, number][] = [
-        [ray1.x, ray1.y],
-        state.pole!,
-        [ray2.x, ray2.y],
-      ];
+      const pathPoints: [number, number][] = [[ray1.x, ray1.y], state.pole!, [ray2.x, ray2.y]];
       if (ray1.x > ray2.x) pathPoints.reverse();
 
       textGroup.select(`#stateLabel${labelData.i}`).remove();
@@ -138,10 +121,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
         .append("text")
         .attr("text-rendering", "optimizeSpeed")
         .attr("id", `stateLabel${labelData.i}`)
-        .attr(
-          "transform",
-          `translate(${labelData.dx || 0}, ${labelData.dy || 0})`,
-        )
+        .attr("transform", `translate(${labelData.dx || 0}, ${labelData.dy || 0})`)
         .append("textPath")
         .attr("startOffset", "50%")
         .attr("font-size", `${ratio}%`)
@@ -161,7 +141,14 @@ const stateLabelsRenderer = (list?: number[]): void => {
       const [[x1, y1], [x2, y2]] = [pathPoints.at(0)!, pathPoints.at(-1)!];
       const angleRad = Math.atan2(y2 - y1, x2 - x1);
 
-      const isInsideState = checkIfInsideState(textElement, angleRad, width / 2, height / 2, stateIds, labelData.stateId);
+      const isInsideState = checkIfInsideState(
+        textElement,
+        angleRad,
+        width / 2,
+        height / 2,
+        stateIds,
+        labelData.stateId
+      );
       if (isInsideState) continue;
 
       // replace name to one-liner
@@ -175,12 +162,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
     }
   }
 
-  function getLinesAndRatio(
-    mode: string,
-    name: string,
-    fullName: string,
-    pathLength: number,
-  ): [string[], number] {
+  function getLinesAndRatio(mode: string, name: string, fullName: string, pathLength: number): [string[], number] {
     if (mode === "short") return getShortOneLine();
     if (pathLength > fullName.length * 2) return getFullOneLine();
     return getFullTwoLines();

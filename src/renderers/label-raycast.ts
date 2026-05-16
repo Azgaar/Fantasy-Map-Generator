@@ -36,15 +36,11 @@ const LENGTH_MAX = 300;
  * Cast a ray from a point in a given direction until it exits a state.
  * Checks both the ray point and offset points perpendicular to it.
  */
-export function raycast({
-  stateId,
-  x0,
-  y0,
-  dx,
-  dy,
-  maxLakeSize,
-  offset,
-}: RaycastParams): { length: number; x: number; y: number } {
+export function raycast({ stateId, x0, y0, dx, dy, maxLakeSize, offset }: RaycastParams): {
+  length: number;
+  x: number;
+  y: number;
+} {
   const { cells, features } = pack;
   const stateIds = cells.state;
   let ray = { length: 0, x: x0, y: y0 };
@@ -56,9 +52,7 @@ export function raycast({
     const offset2: [number, number] = [x + dy * offset, y + -dx * offset];
 
     const inState =
-      isInsideState(x, y, stateId) &&
-      isInsideState(...offset1, stateId) &&
-      isInsideState(...offset2, stateId);
+      isInsideState(x, y, stateId) && isInsideState(...offset1, stateId) && isInsideState(...offset2, stateId);
     if (!inState) break;
     ray = { length, x, y };
   }
@@ -70,14 +64,13 @@ export function raycast({
     const cellId = findClosestCell(x, y, undefined, pack) as number;
 
     const feature = features[cells.f[cellId]];
-    if (feature.type === "lake")
-      return isInnerLake(feature) || isSmallLake(feature);
+    if (feature.type === "lake") return isInnerLake(feature) || isSmallLake(feature);
 
     return stateIds[cellId] === stateId;
   }
 
   function isInnerLake(feature: { shoreline: number[] }): boolean {
-    return feature.shoreline.every((cellId) => stateIds[cellId] === stateId);
+    return feature.shoreline.every(cellId => stateIds[cellId] === stateId);
   }
 
   function isSmallLake(feature: { cells: number }): boolean {
@@ -167,8 +160,7 @@ export function findBestRayPair(rays: Ray[]): [Ray, Ray] {
 
     for (let j = i + 1; j < rays.length; j++) {
       const score2 = rays[j].length * scoreRayAngle(rays[j].angle);
-      const pairScore =
-        (score1 + score2) * scoreCurvature(rays[i].angle, rays[j].angle);
+      const pairScore = (score1 + score2) * scoreCurvature(rays[i].angle, rays[j].angle);
 
       if (pairScore > bestScore) {
         bestScore = pairScore;

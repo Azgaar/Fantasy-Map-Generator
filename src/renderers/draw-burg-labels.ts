@@ -39,10 +39,7 @@ export function drawBurgLabelsRenderer(): void {
 
     const labelsHTML: SVGTextElement[] = [];
     for (const labelData of labels) {
-      const textElement = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "text",
-      );
+      const textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
       textElement.setAttribute("text-rendering", "optimizeSpeed");
       textElement.setAttribute("id", `burgLabel${labelData.i}`);
       textElement.setAttribute("data-id", labelData.burgId.toString());

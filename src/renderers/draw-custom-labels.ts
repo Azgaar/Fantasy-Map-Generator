@@ -13,9 +13,7 @@ window.drawCustomLabel = customLabelRenderer;
 
 export function customLabelsRenderer() {
   TIME && console.time("drawCustomLabels");
-  const allCustomLabels = Labels.getAll().filter(
-    (labels) => labels.type === "custom",
-  );
+  const allCustomLabels = Labels.getAll().filter(labels => labels.type === "custom");
   const customLabelsByGroup = new Map<string, CustomLabel[]>();
   for (const label of allCustomLabels) {
     if (!customLabelsByGroup.has(label.group)) {
@@ -50,9 +48,7 @@ export function customLabelRenderer(label: CustomLabel) {
   const customLabelsGroup = labels.select<SVGGElement>(`#${label.group}`);
   const groupNode = customLabelsGroup.node();
   if (groupNode) {
-    const existingLabel = groupNode.querySelector<SVGTextElement>(
-      `#customLabel${label.i}`,
-    );
+    const existingLabel = groupNode.querySelector<SVGTextElement>(`#customLabel${label.i}`);
     if (existingLabel) {
       existingLabel.replaceWith(labelHTML);
     } else {
@@ -61,53 +57,29 @@ export function customLabelRenderer(label: CustomLabel) {
   }
 }
 
-function constructLabelHTML(
-  label: CustomLabel,
-  pathId: string,
-): SVGTextElement {
+function constructLabelHTML(label: CustomLabel, pathId: string): SVGTextElement {
   const textParts = label.text.split("|");
   const tspans = textParts.map((part, index) => {
-    const tspan = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "tspan",
-    );
+    const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
     tspan.setAttribute("x", "0");
-    tspan.setAttribute(
-      "dy",
-      index ? "1em" : `${(textParts.length - 1) / -2}em`,
-    );
+    tspan.setAttribute("dy", index ? "1em" : `${(textParts.length - 1) / -2}em`);
     tspan.textContent = part;
     return tspan;
   });
 
-  const textPath = document.createElementNS(
-    "http://www.w3.org/2000/svg",
-    "textPath",
-  );
+  const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
   textPath.setAttribute("href", `#${pathId}`);
-  textPath.setAttribute(
-    "startOffset",
-    label.startOffset != null ? `${label.startOffset}%` : "50%",
-  );
-  textPath.setAttribute(
-    "font-size",
-    label.fontSize != null ? `${label.fontSize}%` : "100%",
-  );
+  textPath.setAttribute("startOffset", label.startOffset != null ? `${label.startOffset}%` : "50%");
+  textPath.setAttribute("font-size", label.fontSize != null ? `${label.fontSize}%` : "100%");
   if (label.letterSpacing !== undefined) {
     textPath.setAttribute("letter-spacing", `${label.letterSpacing}`);
   }
   textPath.append(...tspans);
 
-  const textDom = document.createElementNS(
-    "http://www.w3.org/2000/svg",
-    "text",
-  );
+  const textDom = document.createElementNS("http://www.w3.org/2000/svg", "text");
   textDom.setAttribute("text-rendering", "optimizeSpeed");
   textDom.setAttribute("id", `customLabel${label.i}`);
-  textDom.setAttribute(
-    "transform",
-    `translate(${label.dx || 0}, ${label.dy || 0})`,
-  );
+  textDom.setAttribute("transform", `translate(${label.dx || 0}, ${label.dy || 0})`);
   textDom.appendChild(textPath);
 
   return textDom;
@@ -115,9 +87,7 @@ function constructLabelHTML(
 
 function addPathForLabel(label: CustomLabel, pathGroup: SVGGElement): string {
   const pathId = `textPath_customLabel${label.i}`;
-  const pathData = line<[number, number]>().curve(curveNatural)(
-    label.pathPoints || [],
-  );
+  const pathData = line<[number, number]>().curve(curveNatural)(label.pathPoints || []);
   let domPath = pathGroup.querySelector<SVGPathElement>(`#${pathId}`);
 
   if (!domPath) {
