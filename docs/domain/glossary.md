@@ -2,8 +2,6 @@
 
 This glossary covers core terminology, data structures, and concepts used throughout the Fantasy Map Generator project. It is intended as a reference for contributors, users, and developers. This glossary is a living document, update it as new features and terminology are added to the project.
 
----
-
 ## General Concepts
 
 - **Map**: The generated world, including all terrain, features, and data layers.
