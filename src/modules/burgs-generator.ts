@@ -1,5 +1,7 @@
 import { quadtree } from "d3-quadtree";
+import { drawBurgLabel, removeBurgLabel } from "../renderers/draw-burg-labels";
 import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
+import type { BurgLabel } from "./labels";
 
 declare global {
   var Burgs: BurgModule;
@@ -631,7 +633,13 @@ class BurgModule {
     if (newRoute && layerIsOn("toggleRoutes")) drawRoute(newRoute);
 
     drawBurgIcon(burg);
-    drawBurgLabel(burg);
+    Labels.addBurgLabel({
+      burgId,
+      group: burg.group!,
+      text: burg.name!,
+      x,
+      y
+    });
 
     return burgId;
   }
@@ -646,7 +654,12 @@ class BurgModule {
     }
 
     drawBurgIcon(burg);
-    drawBurgLabel(burg);
+    const labelToChange = Labels.getAll()
+      .filter(l => l.type === "burg" && l.burgId === burg.i)
+      .at(0);
+    // Typescript cannot infer that labelToChange is guranteed to be a BurgLabel through the type check above.
+    // It can be cast without any issue.
+    if (labelToChange) drawBurgLabel(labelToChange as unknown as BurgLabel);
   }
 
   remove(burgId: number) {
@@ -666,7 +679,9 @@ class BurgModule {
     }
 
     removeBurgIcon(burg.i!);
-    removeBurgLabel(burg.i!);
+    const label = Labels.getAll().find(l => l.type === "burg" && l.burgId === burgId);
+    if (label) Labels.remove(label.i);
+    removeBurgLabel(burgId);
   }
 }
 window.Burgs = new BurgModule();

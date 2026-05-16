@@ -1115,4 +1115,159 @@ export function resolveVersionConflicts(mapVersion) {
       zone.cells = unique(zone.cells);
     });
   }
+
+  if (isOlderThan("1.123.0")) {
+    // v1.122.0 moved labels data from SVG to data model
+    // Migrate old SVG labels to pack.labels structure
+    if (!pack.labels || !pack.labels.length) {
+      pack.labels = [];
+
+      // Migrate state labels
+      const stateLabelsGroup = document.querySelector("#labels > #states");
+      if (stateLabelsGroup) {
+        stateLabelsGroup.querySelectorAll("text").forEach(textElement => {
+          const id = textElement.getAttribute("id");
+          if (!id) return;
+
+          const stateIdMatch = id.match(/stateLabel(\d+)/);
+          if (!stateIdMatch) return;
+
+          const stateId = +stateIdMatch[1];
+          const state = pack.states[stateId];
+          if (!state || state.removed) return;
+
+          const textPath = textElement.querySelector("textPath");
+          if (!textPath) return;
+
+          const text = textPath.textContent.trim();
+          const fontSizeAttr = textPath.getAttribute("font-size");
+          const fontSize = fontSizeAttr ? parseFloat(fontSizeAttr) : 100;
+          const letterSpacingAttr = textPath.getAttribute("letter-spacing");
+          const letterSpacing = letterSpacingAttr ? parseFloat(letterSpacingAttr) : 0;
+          const startOffsetAttr = textPath.getAttribute("startOffset");
+          const startOffset = startOffsetAttr ? parseFloat(startOffsetAttr) : 50;
+          const transform = textElement.getAttribute("transform");
+          const [dx, dy] = transform ? parseTransform(transform) : [0, 0];
+
+          // Get path points from the referenced path
+          const href = textPath.getAttribute("xlink:href") || textPath.getAttribute("href");
+          if (!href) return;
+
+          const pathId = href.replace("#", "");
+          const pathElement = document.getElementById(pathId);
+
+
+          pack.labels.push({
+            i: pack.labels.length,
+            type: "state",
+            stateId,
+            text,
+            pathPoints: extractPathPoints(pathElement),
+            startOffset,
+            fontSize,
+            letterSpacing,
+            dx,
+            dy
+          });
+        });
+      }
+
+      // Migrate burg labels
+      const burgLabelsGroup = document.querySelector("#burgLabels");
+      if (burgLabelsGroup) {
+        burgLabelsGroup.querySelectorAll("g").forEach(groupElement => {
+          const group = groupElement.getAttribute("id");
+          if (!group) return;
+
+          const dxAttr = groupElement.getAttribute("data-dx");
+          const dyAttr = groupElement.getAttribute("data-dy");
+          const gdx = dxAttr ? parseFloat(dxAttr) : 0;
+          const gdy = dyAttr ? parseFloat(dyAttr) : 0;
+
+          groupElement.querySelectorAll("text").forEach(textElement => {
+            const burgId = +textElement.getAttribute("data-id");
+            if (!burgId) return;
+
+            const burg = pack.burgs[burgId];
+            if (!burg || burg.removed) return;
+
+            const text = textElement.textContent.trim();
+            const transform = textElement.getAttribute("transform");
+            const [tdx, tdy] = transform ? parseTransform(transform) : [0, 0];
+            const dx = gdx + tdx;
+            const dy = gdy + tdy;
+            const x = burg.x;
+            const y = burg.y;
+
+            pack.labels.push({
+              i: pack.labels.length,
+              type: "burg",
+              burgId,
+              group,
+              text,
+              x,
+              y,
+              dx,
+              dy
+            });
+          });
+        });
+      }
+
+      // Migrate custom labels
+      const customLabelsGroup = document.querySelector("#labels > #addedLabels");
+      if (customLabelsGroup) {
+        customLabelsGroup.querySelectorAll("text").forEach(textElement => {
+          const id = textElement.getAttribute("id");
+          if (!id) return;
+
+          const group = "custom";
+          const textPath = textElement.querySelector("textPath");
+          if (!textPath) return;
+
+          const text = textPath.textContent.trim();
+          const fontSizeAttr = textPath.getAttribute("font-size");
+          const fontSize = fontSizeAttr ? parseFloat(fontSizeAttr) : 100;
+          const letterSpacingAttr = textPath.getAttribute("letter-spacing");
+          const letterSpacing = letterSpacingAttr ? parseFloat(letterSpacingAttr) : 0;
+          const startOffsetAttr = textPath.getAttribute("startOffset");
+          const startOffset = startOffsetAttr ? parseFloat(startOffsetAttr) : 50;
+          const transform = textElement.getAttribute("transform");
+          const [dx, dy] = transform ? parseTransform(transform) : [0, 0];
+
+          const href = textPath.getAttribute("xlink:href") || textPath.getAttribute("href");
+          if (!href) return;
+
+          const pathId = href.replace("#", "");
+          const pathElement = document.getElementById(pathId);
+          if (!pathElement) return;
+
+          pack.labels.push({
+            i: pack.labels.length,
+            type: "custom",
+            group,
+            text,
+            pathPoints: extractPathPoints(pathElement),
+            startOffset,
+            fontSize,
+            letterSpacing,
+            dx,
+            dy
+          });
+        });
+      }
+
+      // Clear old SVG labels and redraw from data
+      if (stateLabelsGroup) stateLabelsGroup.querySelectorAll("*").forEach(el => el.remove());
+      if (burgLabelsGroup) burgLabelsGroup.querySelectorAll("text").forEach(el => el.remove());
+      if (customLabelsGroup) customLabelsGroup.querySelectorAll("text").forEach(el => el.remove());
+
+      // Regenerate labels from data
+      if (layerIsOn("toggleLabels")) {
+        drawStateLabels();
+        drawBurgLabels();
+        drawCustomLabels();
+      }
+    }
+  }
 }

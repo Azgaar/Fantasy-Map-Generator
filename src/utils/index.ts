@@ -39,7 +39,14 @@ import {
   shouldRegenerateGrid
 } from "./graphUtils";
 import { ensureEl, getComposedPath, getNextId } from "./nodeUtils";
-import { connectVertices, findPath, getIsolines, getPolesOfInaccessibility, getVertexPath } from "./pathUtils";
+import {
+  connectVertices,
+  extractPathPoints,
+  findPath,
+  getIsolines,
+  getPolesOfInaccessibility,
+  getVertexPath
+} from "./pathUtils";
 import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
 import { capitalize, isValidJSON, parseTransform, round, safeParseJSON, sanitizeId, splitInTwo } from "./stringUtils";
 import { convertTemperature, getIntegerFromSI, si } from "./unitUtils";
@@ -99,6 +106,7 @@ window.getPolesOfInaccessibility = getPolesOfInaccessibility;
 window.connectVertices = connectVertices;
 window.findPath = (start, end, getCost) => findPath(start, end, getCost, (window as any).pack);
 window.getVertexPath = cellsArray => getVertexPath(cellsArray, (window as any).pack);
+window.extractPathPoints = extractPathPoints;
 
 window.round = round;
 window.capitalize = capitalize;

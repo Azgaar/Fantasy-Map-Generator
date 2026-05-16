@@ -2,6 +2,7 @@ import type { Quadtree } from "d3";
 import type { Burg } from "../modules/burgs-generator";
 import type { Culture } from "../modules/cultures-generator";
 import type { PackedGraphFeature } from "../modules/features";
+import type { LabelData } from "../modules/labels";
 import type { Province } from "../modules/provinces-generator";
 import type { River } from "../modules/river-generator";
 import type { Route } from "../modules/routes-generator";
@@ -57,5 +58,6 @@ export interface PackedGraph {
   zones: Zone[];
   markers: any[];
   ice: any[];
+  labels: LabelData[];
   provinces: Province[];
 }

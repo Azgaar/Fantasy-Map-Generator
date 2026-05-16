@@ -327,6 +327,20 @@ export const findPath = (
   return null;
 };
 
+// Helper: extract control points from an SVG path element
+export const extractPathPoints = (pathElement: SVGPathElement) => {
+  if (!pathElement) return [];
+  const l = pathElement.getTotalLength();
+  if (!l) return [];
+  const points = [];
+  const increment = l / Math.max(Math.ceil(l / 200), 2);
+  for (let i = 0; i <= l; i += increment) {
+    const point = pathElement.getPointAtLength(i);
+    points.push([point.x, point.y]);
+  }
+  return points;
+};
+
 declare global {
   interface Window {
     ERROR: boolean;
@@ -337,5 +351,6 @@ declare global {
     connectVertices: typeof connectVertices;
     findPath: typeof findPath;
     getVertexPath: typeof getVertexPath;
+    extractPathPoints: typeof extractPathPoints;
   }
 }

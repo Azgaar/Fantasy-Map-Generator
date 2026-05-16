@@ -1,4 +1,19 @@
 "use strict";
+
+
+
+// Helper: find label data from the Labels data model for an SVG text element
+function getLabelData(textElement) {
+  const id = textElement.id || "";
+  if (id.startsWith("stateLabel")) {
+    return Labels.get(+id.slice(10));
+  }
+  if (id.startsWith("customLabel")) {
+    return Labels.get(+id.slice(11));
+  }
+  return undefined;
+}
+
 function editLabel() {
   if (customization) return;
   closeDialogs();
@@ -14,7 +29,7 @@ function editLabel() {
     title: "Edit Label",
     resizable: false,
     width: fitContent(),
-    position: {my: "center top+10", at: "bottom", of: text, collision: "fit"},
+    position: { my: "center top+10", at: "bottom", of: text, collision: "fit" },
     close: closeLabelEditor
   });
 
@@ -85,13 +100,13 @@ function editLabel() {
   }
 
   function updateValues(textPath) {
-    ensureEl("labelText").value = [...textPath.querySelectorAll("tspan")].map(tspan => tspan.textContent).join("|");
-    const startOffset = parseFloat(textPath.getAttribute("startOffset"));
-    ensureEl("labelStartOffset").value = startOffset;
-    ensureEl("labelStartOffsetValue").value = startOffset;
-    ensureEl("labelRelativeSize").value = parseFloat(textPath.getAttribute("font-size"));
-    let letterSpacingSize = textPath.getAttribute("letter-spacing") ? textPath.getAttribute("letter-spacing") : 0;
-    ensureEl("labelLetterSpacingSize").value = parseFloat(letterSpacingSize);
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) {
+      ensureEl("labelText").value = labelData.text ?? "";
+      ensureEl("labelStartOffset").value = labelData.startOffset ?? 50;
+      ensureEl("labelRelativeSize").value = labelData.fontSize ?? 100;
+      ensureEl("labelLetterSpacingSize").value = labelData.letterSpacing ?? 0;
+    }
   }
 
   function drawControlPointsAndLine() {
@@ -133,11 +148,14 @@ function editLabel() {
       .select("#controlPoints")
       .selectAll("circle")
       .each(function () {
-        points.push([this.getAttribute("cx"), this.getAttribute("cy")]);
+        points.push([+this.getAttribute("cx"), +this.getAttribute("cy")]);
       });
     const d = round(lineGen(points));
     path.setAttribute("d", d);
     debug.select("#controlPoints > path").attr("d", d);
+    // Sync path control points back to data model
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) Labels.update(labelData.i, { pathPoints: points });
   }
 
   function clickControlPoint() {
@@ -189,9 +207,13 @@ function editLabel() {
     d3.event.on("drag", function () {
       const x = d3.event.x,
         y = d3.event.y;
-      const transform = `translate(${dx + x},${dy + y})`;
+      const effectiveDx = dx + x;
+      const effectiveDy = dy + y;
+      const transform = `translate(${effectiveDx},${effectiveDy})`;
       elSelected.attr("transform", transform);
       debug.select("#controlPoints").attr("transform", transform);
+      const labelData = getLabelData(elSelected.node());
+      if (labelData) Labels.update(labelData.i, { dx: effectiveDx, dy: effectiveDy });
     });
   }
 
@@ -210,6 +232,10 @@ function editLabel() {
 
   function changeGroup() {
     ensureEl(this.value).appendChild(elSelected.node());
+    const labelData = getLabelData(elSelected.node());
+    if (labelData && labelData.type === "custom") {
+      Labels.update(labelData.i, { group: this.value });
+    }
   }
 
   function toggleNewGroupInput() {
@@ -248,6 +274,9 @@ function editLabel() {
     if (oldGroup !== "states" && oldGroup !== "addedLabels" && oldGroup.childElementCount === 1) {
       ensureEl("labelGroupSelect").selectedOptions[0].remove();
       ensureEl("labelGroupSelect").options.add(new Option(group, group, false, true));
+      // Update data model for labels in the old group
+      const oldGroupName = oldGroup.id;
+      Labels.getByGroup(oldGroupName).forEach(l => Labels.update(l.i, { group }));
       oldGroup.id = group;
       toggleNewGroupInput();
       ensureEl("labelGroupInput").value = "";
@@ -259,6 +288,11 @@ function editLabel() {
     newGroup.id = group;
     ensureEl("labelGroupSelect").options.add(new Option(group, group, false, true));
     ensureEl(group).appendChild(elSelected.node());
+    // Update data model group for the moved label
+    const labelData = getLabelData(elSelected.node());
+    if (labelData && labelData.type === "custom") {
+      Labels.update(labelData.i, { group });
+    }
 
     toggleNewGroupInput();
     ensureEl("labelGroupInput").value = "";
@@ -268,9 +302,8 @@ function editLabel() {
     const group = elSelected.node().parentNode.id;
     const basic = group === "states" || group === "addedLabels";
     const count = elSelected.node().parentNode.childElementCount;
-    alertMessage.innerHTML = /* html */ `Are you sure you want to remove ${
-      basic ? "all elements in the group" : "the entire label group"
-    }? <br /><br />Labels to be
+    alertMessage.innerHTML = /* html */ `Are you sure you want to remove ${basic ? "all elements in the group" : "the entire label group"
+      }? <br /><br />Labels to be
       removed: ${count}`;
     $("#alert").dialog({
       resizable: false,
@@ -280,6 +313,12 @@ function editLabel() {
           $(this).dialog("close");
           $("#labelEditor").dialog("close");
           hideGroupSection();
+          // Remove from data model
+          if (basic && group === "states") {
+            Labels.removeByType("state");
+          } else {
+            Labels.removeByGroup(group);
+          }
           labels
             .select("#" + group)
             .selectAll("text")
@@ -316,15 +355,19 @@ function editLabel() {
       el.innerHTML = lines.map((line, index) => `<tspan x="0" dy="${index ? 1 : top}em">${line}</tspan>`).join("");
     } else el.innerHTML = `<tspan x="0">${lines}</tspan>`;
 
+    // Update data model
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) Labels.update(labelData.i, { text: input });
+
     if (elSelected.attr("id").slice(0, 10) === "stateLabel")
       tip("Use States Editor to change an actual state name, not just a label", false, "warning");
   }
 
   function generateRandomName() {
     let name = "";
-    if (elSelected.attr("id").slice(0, 10) === "stateLabel") {
-      const id = +elSelected.attr("id").slice(10);
-      const culture = pack.states[id].culture;
+    const labelData = getLabelData(elSelected.node());
+    if (labelData && labelData.type === "state") {
+      const culture = pack.states[labelData.stateId].culture;
       name = Names.getState(Names.getCulture(culture, 4, 7, ""), culture);
     } else {
       const box = elSelected.node().getBBox();
@@ -375,6 +418,8 @@ function editLabel() {
     const value = this.value;
     ensureEl("labelStartOffsetValue").value = value;
     elSelected.select("textPath").attr("startOffset", value + "%");
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) Labels.update(labelData.i, { startOffset: +value });
     tip("Label offset: " + value + "%");
   }
 
@@ -383,17 +428,23 @@ function editLabel() {
     ensureEl("labelStartOffset").value = value;
     this.value = value;
     elSelected.select("textPath").attr("startOffset", value + "%");
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) Labels.update(labelData.i, { startOffset: +value });
     tip("Label offset: " + value + "%");
   }
 
   function changeRelativeSize() {
     elSelected.select("textPath").attr("font-size", this.value + "%");
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) Labels.update(labelData.i, { fontSize: +this.value });
     tip("Label relative size: " + this.value + "%");
     changeText();
   }
 
   function changeLetterSpacingSize() {
     elSelected.select("textPath").attr("letter-spacing", this.value + "px");
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) Labels.update(labelData.i, { letterSpacing: +this.value });
     tip("Label letter-spacing size: " + this.value + "px");
     changeText();
   }
@@ -404,6 +455,12 @@ function editLabel() {
     const path = defs.select("#textPath_" + elSelected.attr("id"));
     path.attr("d", `M${c[0] - bbox.width},${c[1]}h${bbox.width * 2}`);
     drawControlPointsAndLine();
+    // Sync aligned path to data model
+    const labelData = getLabelData(elSelected.node());
+    if (labelData) {
+      const pathEl = byId("textPath_" + elSelected.attr("id"));
+      Labels.update(labelData.i, { pathPoints: extractPathPoints(pathEl) });
+    }
   }
 
   function editLabelLegend() {
@@ -420,6 +477,8 @@ function editLabel() {
       buttons: {
         Remove: function () {
           $(this).dialog("close");
+          const labelData = getLabelData(elSelected.node());
+          if (labelData) Labels.remove(labelData.i);
           defs.select("#textPath_" + elSelected.attr("id")).remove();
           elSelected.remove();
           $("#labelEditor").dialog("close");

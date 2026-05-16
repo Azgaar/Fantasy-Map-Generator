@@ -15,7 +15,7 @@ function editBurg(id) {
     title: "Edit Burg",
     resizable: false,
     close: closeBurgEditor,
-    position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"}
+    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" }
   });
 
   if (modules.editBurg) return;
@@ -109,7 +109,14 @@ function editBurg(id) {
     d3.event.on("drag", function () {
       const x = d3.event.x,
         y = d3.event.y;
-      this.setAttribute("transform", `translate(${dx + x},${dy + y})`);
+      const effectiveDx = dx + x;
+      const effectiveDy = dy + y;
+      this.setAttribute("transform", `translate(${effectiveDx},${effectiveDy})`);
+      const label = Labels.getAll().find((l) => l.type === "burg" && l.burgId === +burg);
+      Labels.update(label.i, {
+        dx: effectiveDx,
+        dy: effectiveDy
+      });
       tip('Use dragging for fine-tuning only, to actually move burg use "Relocate" button', false, "warning");
     });
   }
@@ -118,6 +125,9 @@ function editBurg(id) {
     const id = +elSelected.attr("data-id");
     pack.burgs[id].name = burgName.value;
     elSelected.text(burgName.value);
+    
+    const label = Labels.getAll().find((l) => l.type === "burg" && l.burgId === +burg);
+    Labels.update(label.i, { text: burgName.value });
   }
 
   function generateNameRandom() {
@@ -199,7 +209,7 @@ function editBurg(id) {
   }
 
   function toggleCapital(burgId) {
-    const {burgs, states} = pack;
+    const { burgs, states } = pack;
 
     if (burgs[burgId].capital)
       return tip("To change capital please assign a capital status to another burg of this state", false, "error");
@@ -301,7 +311,7 @@ function editBurg(id) {
 
     prompt(
       "Provide custom URL to the burg map. It can be a link to a generator or just an image. Leave empty to use the default map preview",
-      {default: Burgs.getPreview(burg).link, required: false},
+      { default: Burgs.getPreview(burg).link, required: false },
       link => {
         if (link) burg.link = link;
         else delete burg.link;
@@ -364,8 +374,10 @@ function editBurg(id) {
     const x = rn(point[0], 2);
     const y = rn(point[1], 2);
 
+    const label = Labels.getAll().find(l=> l.type === "burg" && l.burgId === id);
+
     burgIcons.select(`#burg${id}`).attr("x", x).attr("y", y);
-    burgLabels.select(`#burgLabel${id}`).attr("transform", null).attr("x", x).attr("y", y);
+    burgLabels.select(`#burgLabel${label.i}`).attr("transform", null).attr("x", x).attr("y", y);
 
     const anchor = anchors.select("use[data-id='" + id + "']");
     if (anchor.size()) {
@@ -383,6 +395,8 @@ function editBurg(id) {
     burg.x = x;
     burg.y = y;
     if (burg.capital) pack.states[newState].center = burg.cell;
+
+    Labels.update(label.i, { x, y, dx: 0, dy: 0 });
 
     if (d3.event.shiftKey === false) toggleRelocateBurg();
   }
