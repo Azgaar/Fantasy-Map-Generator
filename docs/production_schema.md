@@ -8,7 +8,7 @@ Production starts after rural cells have already seeded raw goods into local mar
 
 ## Run order
 
-`Trade.initialize(goods, burgs)` runs before `Production.produce()`.
+`Trade.initialize()` runs before `Production.produce()`.
 
 That setup phase creates markets, assigns each burg to a market, seeds rural raw production into market stock, and sets initial market prices from local supply and expected demand.
 
@@ -110,7 +110,7 @@ After all burgs finish:
 After the full cycle:
 
 - `burg.inventory`: goods bought in the demand-fill phase (carried into next cycle)
-- `burg.produced`: units of each good manufactured this cycle
+- `burg.produced`: units of each good manufactured
 - `burg.treasury`: updated by ingredient purchases, sales revenue, taxes, and demand purchases
 - `burg.product`: net revenue from the sell phase minus ingredient costs
 

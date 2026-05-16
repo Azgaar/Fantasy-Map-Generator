@@ -10,6 +10,9 @@ export function toggleGoods(event?: MouseEvent) {
   }
 }
 
+const SIZE = 6;
+const HALF = SIZE / 2;
+
 export function drawGoods(pinnedGoods?: Set<number>) {
   TIME && console.time("drawGoods");
   const drawCircle = +goods.attr("data-circle");
@@ -21,18 +24,18 @@ export function drawGoods(pinnedGoods?: Set<number>) {
     if (!pack.cells.good[i]) continue;
     const good = Goods.get(pack.cells.good[i]);
     if (!good) continue;
-    if (pinnedGoods && !pinnedGoods.has(good.i)) continue;
+    if (pinnedGoods?.size && !pinnedGoods.has(good.i)) continue;
     const [x, y] = pack.cells.p[i];
     const stroke = Goods.getStroke(good.color);
 
     if (!drawCircle) {
-      goodsHTML += `<use data-i="${good.i}" href="#${good.icon}" x="${x - 3}" y="${y - 3}" width="6" height="6"/>`;
+      goodsHTML += `<use data-i="${good.i}" href="#${good.icon}" x="${HALF}" y="${HALF}" width="${SIZE}" height="${SIZE}"/>`;
       continue;
     }
 
     goodsHTML += `<g>
-      <circle data-i="${good.i}" cx=${x} cy=${y} r="3" fill="${good.color}" stroke="${stroke}" />
-      <use href="#${good.icon}" x="${x - 3}" y="${y - 3}" width="6" height="6"/>
+      <circle data-i="${good.i}" cx="${x}" cy="${y}" r="${HALF}" fill="${good.color}" stroke="${stroke}" />
+      <use href="#${good.icon}" x="${x - HALF}" y="${y - HALF}" width="${SIZE}" height="${SIZE}"/>
     </g>`;
   }
 

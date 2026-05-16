@@ -54,61 +54,50 @@ export function open() {
 
 function goodsEditorAddLines() {
   const body = ensureEl("goodsBody");
-  const availability = getRuralAvailability();
-
-  const production: number[] = [];
-  for (const burg of pack.burgs) {
-    if (!burg || burg.removed || !burg.produced) continue;
-    for (const goodId in burg.produced) {
-      production[+goodId] = (production[+goodId] || 0) + (burg.produced[goodId] || 0);
-    }
-  }
-
+  const production = getProduction();
   let lines = "";
 
-  for (const good of pack.goods) {
-    const distribution = good.distribution || "";
-    const bonusString = Object.entries(good.bonus || {})
-      .map(([k, v]) => `${k}: ${v}`)
-      .join("; ");
-    const demandCoverageString = Object.entries(good.demandCoverage || {})
-      .map(([k, v]) => `${k}: ${v}`)
-      .join("; ");
-    const tags = good.tags.join(", ");
-    const stroke = Goods.getStroke(good.color);
-    const produced = rn(production[good.i] || 0, 2);
-    const available = rn(availability[good.i] || 0, 2);
+  const renderTypeBadge = (type: string) => {
+    const commonStyles =
+      "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
+    if (type === "RAW")
+      return `<span style="${commonStyles};background:#d0e7f5;color:#036" data-tip="Raw goods are produced by rural population in cells based on biome availability and bonus resources assigned to cells">RAW</span>`;
+    return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" data-tip="Manufactured goods are produced in burgs">MFG</span>`;
+  };
 
-    lines += /*html*/ `<div class="states goods"
-          data-id=${good.i} data-name="${good.name}" data-color="${good.color}"
-          data-tags="${tags}" data-chance="${good.chance}" data-bonus="${bonusString}" data-demandcoverage="${demandCoverageString}"
-          data-value="${good.value}" data-model="${distribution}" data-availability="${available}"
-          data-produced="${produced}" data-baseprice="${good.value}">
+  for (const good of pack.goods) {
+    const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean) as string[];
+    const goodProduction = production[good.i] || { burg: 0, cell: 0, bonus: 0 };
+    const produced = rn(goodProduction.burg + goodProduction.cell + goodProduction.bonus);
+    const producedTip = `Total good production: ${produced}⚒. Burgs: ${rn(goodProduction.burg, 2)}⚒. Cells: ${rn(goodProduction.cell, 2)}⚒. Bonus resource: ${rn(goodProduction.bonus, 2)}⚒ (${BONUS_RESOURCE_PRODUCTION}⚒ per cell with explicit good assigned)`;
+
+    lines += /*html*/ `<div class="states goods" data-id=${good.i} data-name="${good.name}" data-color="${good.color}" data-value="${good.value}" data-produced="${produced}" data-type="${types.join(",")}">
         <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
-          <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
+          <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
           <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
         </svg>
         <div data-tip="Good name" class="goodName">${good.name}</div>
-        <div data-tip="Good tags" class="goodTags" title="${tags}">${tags}</div>
-        <div data-tip="Total map-wide availability from biomes and bonus goods, in units" class="goodAvailability">${available}</div>
-        <div data-tip="Click to see which burgs produce this good" class="goodProduced pointer">${produced}</div>
-        <div data-tip="Click to see which burgs produce this good" class="goodProducedIcon pointer" style="width:0; font-size:1.4em;">⚒</div>
+        <div data-tip="Good types" class="goodType" style="width: 6em;">${types.map(renderTypeBadge).join(" ")}</div>
+        <div data-tip="${producedTip}. Click to see burgs producing this good" class="goodProduced pointer" style="vertical-align: middle;">
+          <div style="display: inline-block;">${produced}</div>
+          <div style="display: inline-block; width: 0.4em; font-size: 1.5em;">⚒</div>
+        </div>
         <div data-tip="Base price" class="goodBasePrice">🟡 ${good.value}</div>
         <span data-tip="Edit good" class="icon-pencil goodEdit hide"></span>
-        <span data-tip="Toggle good exclusive visibility (pin)" class="icon-pin inactive hide goodPin"></span>
+        <span data-tip="Toggle good exclusive visibility (pin)" class="icon-pin ${pinnedGoods.has(good.i) ? "" : "inactive"} hide"></span>
         <span data-tip="Remove good" class="icon-trash-empty hide goodRemove"></span>
       </div>`;
   }
   body.innerHTML = lines;
 
-  const totalAvailable = availability.reduce((sum, v) => sum + (v || 0), 0);
-  const totalProduced = production.reduce((sum, v) => sum + (v || 0), 0);
+  const totalProduced = Object.values(production)
+    .map(p => p.burg + p.cell + p.bonus)
+    .reduce((sum, v) => sum + v, 0);
   ensureEl("goodsNumber").innerHTML = String(pack.goods.length);
-  ensureEl("resourcesTotal").innerHTML = String(rn(totalAvailable));
   ensureEl("goodsProduced").innerHTML = String(rn(totalProduced));
 
   body.querySelectorAll("div.states").forEach(el => void el.on("click", selectResourceOnLineClick));
-  body.querySelectorAll<HTMLButtonElement>(".goodProduced, .goodProducedIcon").forEach(el => {
+  body.querySelectorAll<HTMLButtonElement>(".goodProduced").forEach(el => {
     el.addEventListener("click", ev => {
       ev.stopPropagation();
       openProducersDialog(Number(el.parentElement?.dataset?.id));
@@ -134,7 +123,7 @@ function openProducersDialog(goodId: number) {
     .sort((a, b) => b.units - a.units);
 
   if (!producers.length) {
-    alertMessage.innerHTML = `<i style="color:#888">No burgs produced ${good.name} in this cycle.</i>`;
+    alertMessage.innerHTML = `<i style="color:#888">No burgs produced ${good.name}.</i>`;
   } else {
     const header = /*html*/ `
           <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
@@ -167,7 +156,7 @@ function openProducersDialog(goodId: number) {
   });
 }
 
-function getRuralAvailability(): number[] {
+function _getRuralAvailability(): number[] {
   const resources: number[] = [];
   const { cells, goods } = pack;
 
@@ -187,6 +176,40 @@ function getRuralAvailability(): number[] {
   }
 
   return resources;
+}
+
+function getProduction() {
+  const production: Record<number, { burg: number; cell: number; bonus: number }> = {};
+  const addProduction = (goodId: number, amount: number, type: "burg" | "cell" | "bonus") => {
+    if (!production[goodId]) production[goodId] = { burg: 0, cell: 0, bonus: 0 };
+    production[goodId][type] += amount;
+  };
+
+  // rural production
+  const productionByBiome = Goods.getBiomesProduction();
+  for (const cellId of pack.cells.i) {
+    const biomeId = pack.cells.biome[cellId];
+    const bonusGoodId = pack.cells.good[cellId];
+
+    if (bonusGoodId) addProduction(bonusGoodId, BONUS_RESOURCE_PRODUCTION, "bonus");
+
+    const population = pack.cells.pop[cellId];
+    if (population <= 0) continue;
+
+    for (const { goodId, production } of productionByBiome[biomeId] || []) {
+      addProduction(goodId, population * production, "cell");
+    }
+  }
+
+  // burg production
+  for (const burg of pack.burgs) {
+    if (!burg || burg.removed || !burg.produced) continue;
+    for (const goodId in burg.produced) {
+      addProduction(Number(goodId), burg.produced[goodId] || 0, "burg");
+    }
+  }
+
+  return production;
 }
 
 function getBonusIcon(bonus: string): string {
@@ -379,21 +402,14 @@ function togglePercentageMode() {
   const body = ensureEl("goodsBody");
   if (body.dataset.type === "absolute") {
     body.dataset.type = "percentage";
-    let totalAvailability = 0;
     let totalProduced = 0;
 
     body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
-      totalAvailability += +el.dataset.availability! || 0;
       totalProduced += +el.dataset.produced! || 0;
     });
 
     body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
-      const availabilityEl = el.querySelector<HTMLElement>(".goodAvailability");
       const producedEl = el.querySelector<HTMLElement>(".goodProduced");
-      if (availabilityEl) {
-        const availability = +el.dataset.availability! || 0;
-        availabilityEl.innerHTML = `${rn(totalAvailability ? (availability / totalAvailability) * 100 : 0, 2)}%`;
-      }
       if (producedEl) {
         const produced = +el.dataset.produced! || 0;
         producedEl.innerHTML = `${rn(totalProduced ? (produced / totalProduced) * 100 : 0, 2)}%`;
@@ -485,7 +501,7 @@ function exitResourceAssignMode(close?: string) {
   ensureEl("goodsFooter").style.display = "block";
   body
     .querySelectorAll<HTMLElement>(
-      ".goodName, .goodTags, .goodAvailability, .goodProduced, .goodBasePrice, .goodBuyPrice, .goodSellPrice, .goodEdit, svg, .icon-trash-empty"
+      ".goodName, .goodType, .goodProduced, .goodBasePrice, .goodBuyPrice, .goodSellPrice, .goodEdit, svg, .icon-trash-empty"
     )
     .forEach(e => {
       e.style.pointerEvents = "";
@@ -878,12 +894,13 @@ function downloadGoodsData() {
 }
 
 function pinGood(good: Good, el: HTMLElement) {
-  const pin = el.classList.contains("inactive");
+  if (pinnedGoods.has(good.i)) {
+    pinnedGoods.delete(good.i);
+  } else {
+    pinnedGoods.add(good.i);
+  }
+
   el.classList.toggle("inactive");
-
-  if (pin) pinnedGoods.add(good.i);
-  else pinnedGoods.delete(good.i);
-
   const unpinAll = ensureEl("goodsUnpinAll");
   pinnedGoods.size ? unpinAll.classList.remove("hidden") : unpinAll.classList.add("hidden");
 

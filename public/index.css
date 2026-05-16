@@ -2488,14 +2488,7 @@ div.states > .goodIcon {
 div.states > .goodName {
   width: 7em;
 }
-div.states > .goodTags {
-  width: 9em;
-  overflow: hidden;
-  vertical-align: middle;
-  white-space: nowrap;
-}
 
-div.states > .goodAvailability,
 div.states > .goodProduced,
 div.states > .goodBasePrice,
 div.states > .goodBuyPrice,

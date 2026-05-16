@@ -4996,18 +4996,15 @@
         </div>
       </div>
       <div id="goodsEditor" class="dialog stable" style="display: none">
-        <div id="goodsHeader" class="header" style="grid-template-columns: 2.8em 7em 11em 6em 5.5em 5.5em 1em;">
+        <div id="goodsHeader" class="header" style="grid-template-columns: 2.7em 7em 7em 7em 6.5em 1em;">
           <div></div>
           <div data-tip="Click to sort by good name" class="sortable alphabetically" data-sortby="name">
             Name&nbsp;
           </div>
-          <div data-tip="Click to sort by tags" class="sortable alphabetically" data-sortby="tags">
-            Tags&nbsp;
+          <div data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">
+            Type&nbsp;
           </div>
-          <div data-tip="Total map-wide availability from biomes and bonus goods, in units. Click to sort" class="sortable icon-sort-number-down" data-sortby="availability">
-            Available&nbsp;
-          </div>
-          <div data-tip="Total actual production units aggregated from all burgs. Click to sort" class="sortable" data-sortby="produced">
+          <div data-tip="Total production units aggregated from cells and burgs. Click to sort" class="sortable icon-sort-number-down" data-sortby="produced">
             Produced&nbsp;
           </div>
           <div data-tip="Base price. Click to sort" class="sortable" data-sortby="baseprice">
@@ -5022,8 +5019,7 @@
         <div id="goodsBody" class="table" data-type="absolute"></div>
         <div id="goodsFooter" class="totalLine">
           <div data-tip="Total number of goods" style="margin-left: 5px">Goods:&nbsp;<span id="goodsNumber">0</span></div>
-          <div data-tip="Total amount of availalbe resources" style="margin-left: 12px">Available:&nbsp;<span id="resourcesTotal">0</span></div>
-          <div data-tip="Total amount of goods produces by all burgs" style="margin-left: 12px">Produced:&nbsp;<span id="goodsProduced">0</span></div>
+          <div data-tip="Total amount of goods produced by all cells and burgs" style="margin-left: 12px">Produced:&nbsp;<span id="goodsProduced">0</span></div>
         </div>
         <div id="goodsBottom">
           <button id="goodsEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>

@@ -197,8 +197,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "wain",
     demandCoverage: { food: 1 },
     bonus: { population: 2 },
-    culture: { River: 1.4, Lake: 1.4, Naval: 1.4, Nomadic: 0.2 },
-    biome: { 0: 0.1 }
+    culture: { River: 1.4, Lake: 1.4, Naval: 1.4, Nomadic: 0.2 }
   },
   {
     name: "Game",
@@ -503,12 +502,11 @@ const GOODS_DATA: GoodData[] = [
     icon: "good-coal",
     color: "#5a6a75",
     value: 3,
-    chance: 4,
+    chance: 3,
     distribution: "minHeight(40) || (minHeight(20) && elevation(25))",
     unit: "wain",
     demandCoverage: { utilities: 0.5 },
     bonus: { artillery: 2 },
-    culture: {},
     recipes: [{ Wood: 1.5 }]
   },
   {
@@ -522,11 +520,10 @@ const GOODS_DATA: GoodData[] = [
     unit: "barrel",
     demandCoverage: { utilities: 1 },
     bonus: { artillery: 1 },
-    culture: {},
     recipes: [{ Olives: 1 }, { Whales: 1 }]
   },
   {
-    name: "Tropical timber",
+    name: "Mahogany",
     tags: ["luxury"],
     icon: "good-tropicalTimber",
     color: "#a45a52",
@@ -535,8 +532,7 @@ const GOODS_DATA: GoodData[] = [
     distribution: "biome(5, 7) && random(50)",
     unit: "pile",
     demandCoverage: { luxury: 1 },
-    bonus: { prestige: 1 },
-    culture: { Hunting: 1.2 }
+    bonus: { prestige: 1 }
   },
   {
     name: "Whales",
@@ -1133,6 +1129,23 @@ export class GoodsModule {
       },
       river: () => pack.cells.r[this.cellId]
     };
+  }
+
+  getBiomesProduction(): Record<number, { goodId: number; production: number }[]> {
+    return pack.goods.reduce(
+      (acc, good) => {
+        if (!good.biome) return acc;
+        for (const [biomeIdStr, production] of Object.entries(good.biome)) {
+          const biomeId = +biomeIdStr;
+          if (production) {
+            if (!acc[biomeId]) acc[biomeId] = [];
+            acc[biomeId].push({ goodId: good.i, production });
+          }
+        }
+        return acc;
+      },
+      {} as Record<number, { goodId: number; production: number }[]>
+    );
   }
 
   getStroke(colorHex: string): string {

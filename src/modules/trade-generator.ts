@@ -16,12 +16,17 @@ export const BONUS_RESOURCE_PRODUCTION = 5;
 
 const TRADE_RESERVE_FACTOR = 0.2;
 
-export type TradePhase = "buy" | "sell";
+export type Market = {
+  i: number;
+  centerBurgId: number;
+  color: string;
+  goods: Record<number, { stock: number; price: number }>;
+};
 
 export type Deal = {
   id: number;
   market: number;
-  phase: TradePhase;
+  phase: "buy" | "sell";
   goodId: number;
   units: number;
   buyer: number;
@@ -29,55 +34,35 @@ export type Deal = {
   price: number;
 };
 
-export type MarketGoodData = {
-  stock: number;
-  price: number;
-};
-
-export type Market = {
-  i: number;
-  centerBurgId: number;
-  color: string;
-  goods: Record<number, MarketGoodData>;
-};
-
-export type TradeRunData = {
-  markets: Market[];
-  deals: Deal[];
-  stateTaxes: Record<number, number>;
-};
-
 export class TradeModule {
-  private data: TradeRunData = { markets: [], deals: [], stateTaxes: {} };
+  private data: { markets: Market[]; deals: Deal[]; stateTaxes: Record<number, number> } = {
+    markets: [],
+    deals: [],
+    stateTaxes: {}
+  };
   private goodById: Good[] = [];
+  private marketById: Market[] = [];
 
-  reset(): TradeRunData {
+  reset() {
     this.data = { markets: [], deals: [], stateTaxes: {} };
+    this.goodById = [];
+    this.marketById = [];
     this.syncPackData();
     return this.data;
   }
 
-  initialize(goods: Good[], burgs: Burg[]): TradeRunData {
+  initialize() {
     this.reset();
-    this.goodById = [];
+    const goods = pack.goods;
+    const burgs = pack.burgs.filter(b => b.i && !b.removed);
     for (const g of goods) this.goodById[g.i] = g;
-    const markets = this.buildMarkets(goods, burgs);
-    this.seedMarketsFromRuralProduction(goods, markets);
-    this.initializeMarketPrices(goods, markets);
-    this.setMarkets(markets);
-    return this.data;
-  }
 
-  setMarkets(markets: Market[]): void {
+    const markets = this.createMarkets(burgs);
+    const cellMarket = this.expandMarkers(markets, burgs);
+    this.collectRuralProduction(cellMarket);
+    this.initializeMarketPrices(goods, markets);
     this.data.markets = markets;
     this.syncPackData();
-  }
-
-  getMarkets(): Market[] {
-    return this.data.markets;
-  }
-
-  getRunData(): TradeRunData {
     return this.data;
   }
 
@@ -86,14 +71,8 @@ export class TradeModule {
     return this.data.markets.find(market => market.i === marketId);
   }
 
-  getMarketForBurg(burg: Burg): Market | undefined {
+  getBurgMarket(burg: Burg): Market | undefined {
     return this.getMarket(burg.market);
-  }
-
-  getMarketBurgIds(marketId: number): number[] {
-    return (pack.burgs as Burg[])
-      .filter(burg => burg.i && !burg.removed && burg.market === marketId)
-      .map(burg => burg.i!);
   }
 
   applyMarketPressure(basePrice: number, currentPrice: number | undefined, units: number): number {
@@ -103,12 +82,16 @@ export class TradeModule {
     return minmax(floor, price + units * basePrice * MARKET_PRESSURE_FACTOR, ceiling);
   }
 
-  private getMarketGood(market: Market, goodId: number, fallbackPrice = 0): MarketGoodData {
-    const existing = market.goods[goodId];
+  private getMarketBurgs(marketId: number): Burg[] {
+    return pack.burgs.filter(burg => burg.i && !burg.removed && burg.market === marketId);
+  }
+
+  private getMarketGood(market: Market, good: Good) {
+    const existing = market.goods[good.i];
     if (existing) return existing;
 
-    const initialized: MarketGoodData = { stock: 0, price: fallbackPrice };
-    market.goods[goodId] = initialized;
+    const initialized = { stock: 0, price: good.value };
+    market.goods[good.i] = initialized;
     return initialized;
   }
 
@@ -145,22 +128,17 @@ export class TradeModule {
     return pack.states?.[stateId]?.salesTax ?? DEFAULT_SALES_TAX;
   }
 
-  createDemandVector(categories: readonly DemandCategory[]): number[] {
-    return Array(categories.length).fill(0);
-  }
-
   updateMarketDemand(productionData: Map<number, ProductionHistory[]>, demandInventory: Map<number, number[]>): void {
     for (const market of this.data.markets) {
-      const aggregatedUncoveredDemand = this.createDemandVector(DEMAND_PRIORITY);
-      const marketBurgIds = this.getMarketBurgIds(market.i);
-      for (const burgId of marketBurgIds) {
-        const burg = pack.burgs[burgId] as Burg | undefined;
-        const data = productionData.get(burgId);
+      const aggregatedUncoveredDemand: number[] = Array(DEMAND_PRIORITY.length).fill(0);
+      const marketBurgs = this.getMarketBurgs(market.i);
+      for (const burg of marketBurgs) {
+        const data = productionData.get(burg.i!);
         if (!burg || !data) continue;
         const burgDemandTargets = DEMAND_PRIORITY.map(
           category => (burg.population || 0) * DEMAND_TARGET_FACTORS[category]
         );
-        const burgCoverage = this.calculateDemandCoverage(demandInventory.get(burgId) ?? [], this.goodById);
+        const burgCoverage = this.calculateDemandCoverage(demandInventory.get(burg.i!) ?? [], this.goodById);
         for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
           aggregatedUncoveredDemand[categoryIndex] += Math.max(
             0,
@@ -183,16 +161,15 @@ export class TradeModule {
     const uncoveredDemandByMarket: number[][] = [];
 
     for (const market of this.data.markets) {
-      const marketDemand = this.createDemandVector(DEMAND_PRIORITY);
-      const marketBurgIds = this.getMarketBurgIds(market.i);
-      for (const burgId of marketBurgIds) {
-        const burg = pack.burgs[burgId] as Burg | undefined;
-        const data = productionData.get(burgId);
+      const marketDemand: number[] = Array(DEMAND_PRIORITY.length).fill(0);
+      const marketBurgs = this.getMarketBurgs(market.i);
+      for (const burg of marketBurgs) {
+        const data = productionData.get(burg.i!);
         if (!burg || !data) continue;
         const burgDemandTargets = DEMAND_PRIORITY.map(
           category => (burg.population || 0) * DEMAND_TARGET_FACTORS[category]
         );
-        const burgCoverage = this.calculateDemandCoverage(demandInventory.get(burgId) ?? [], this.goodById);
+        const burgCoverage = this.calculateDemandCoverage(demandInventory.get(burg.i!) ?? [], this.goodById);
         for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
           marketDemand[categoryIndex] += Math.max(0, burgDemandTargets[categoryIndex] - burgCoverage[categoryIndex]);
         }
@@ -211,7 +188,7 @@ export class TradeModule {
     }
 
     for (const importer of this.data.markets) {
-      const importerUncovered = uncoveredDemandByMarket[importer.i] || this.createDemandVector(DEMAND_PRIORITY);
+      const importerUncovered: number[] = uncoveredDemandByMarket[importer.i] || Array(DEMAND_PRIORITY.length).fill(0);
       for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
         const demandCategory = DEMAND_PRIORITY[categoryIndex] as DemandCategory;
         let shortage = importerUncovered[categoryIndex] || 0;
@@ -225,7 +202,7 @@ export class TradeModule {
             for (let goodId = 0; goodId < exportPool.length; goodId++) {
               const available = exportPool[goodId] || 0;
               const good = this.goodById[goodId];
-              const coverageWeight = good?.demandCoverage[demandCategory] || 0;
+              const coverageWeight = good?.demandCoverage?.[demandCategory] || 0;
               if (!good || available <= 0.001 || coverageWeight <= 0) continue;
               goods.push({ exporter, good, goodId, available, coverageWeight });
             }
@@ -239,9 +216,9 @@ export class TradeModule {
           if (units <= 0.001) continue;
           const exporterPool = exportPools[candidate.exporter.i]!;
           exporterPool[candidate.goodId] = Math.max(0, (exporterPool[candidate.goodId] || 0) - units);
-          const exporterGood = this.getMarketGood(candidate.exporter, candidate.goodId, candidate.good.value);
+          const exporterGood = this.getMarketGood(candidate.exporter, candidate.good);
           exporterGood.stock = Math.max(0, exporterGood.stock - units);
-          const importerGood = this.getMarketGood(importer, candidate.goodId, candidate.good.value);
+          const importerGood = this.getMarketGood(importer, candidate.good);
           importerGood.stock += units;
           shortage = Math.max(0, shortage - units * candidate.coverageWeight);
           const marketPrice = exporterGood.price * (1 - MARKET_MARGIN);
@@ -262,13 +239,12 @@ export class TradeModule {
     this.updateMarketDemand(productionData, demandInventory);
   }
 
-  buyFromMarket(params: { burg: Burg; good: Good; units: number; marketPrice: number }) {
-    const { burg, good, marketPrice } = params;
-    const market = this.getMarketForBurg(burg);
-    if (!market || params.units <= 0) return { units: 0, totalCost: 0, taxAmount: 0, dealId: null };
+  buyFromMarket({ burg, good, marketPrice, units }: { burg: Burg; good: Good; units: number; marketPrice: number }) {
+    const market = this.getBurgMarket(burg);
+    if (!market || units <= 0) return { units: 0, totalCost: 0, taxAmount: 0, dealId: null };
 
-    const marketGood = this.getMarketGood(market, good.i, good.value);
-    const actualUnits = Math.min(params.units, marketGood.stock || 0);
+    const marketGood = this.getMarketGood(market, good);
+    const actualUnits = Math.min(units, marketGood.stock || 0);
     if (actualUnits <= 0) return { units: 0, totalCost: 0, taxAmount: 0, dealId: null };
 
     marketGood.stock = Math.max(0, marketGood.stock - actualUnits);
@@ -283,22 +259,16 @@ export class TradeModule {
       price: marketPrice
     });
 
-    return {
-      units: actualUnits,
-      totalCost: actualUnits * marketPrice,
-      taxAmount: 0,
-      dealId: deal.id
-    };
+    return { units: actualUnits, totalCost: actualUnits * marketPrice, taxAmount: 0, dealId: deal.id };
   }
 
-  sellToMarket(params: { burg: Burg; good: Good; units: number; marketPrice: number }) {
-    const { burg, good, marketPrice } = params;
-    const market = this.getMarketForBurg(burg);
-    if (!market || params.units <= 0) return { units: 0, revenue: 0, taxAmount: 0, dealId: null };
+  sellToMarket({ burg, good, marketPrice, units }: { burg: Burg; good: Good; units: number; marketPrice: number }) {
+    const market = this.getBurgMarket(burg);
+    if (!market || units <= 0) return { units: 0, revenue: 0, taxAmount: 0, dealId: null };
 
-    const marketGood = this.getMarketGood(market, good.i, good.value);
-    marketGood.stock += params.units;
-    const grossRevenue = params.units * marketPrice;
+    const marketGood = this.getMarketGood(market, good);
+    marketGood.stock += units;
+    const grossRevenue = units * marketPrice;
     const taxAmount = grossRevenue * this.getSalesTaxRate(burg);
     const revenue = grossRevenue - taxAmount;
 
@@ -306,26 +276,18 @@ export class TradeModule {
       market: market.i,
       phase: "sell",
       goodId: good.i,
-      units: params.units,
+      units,
       buyer: market.i,
       seller: burg.i!,
       price: marketPrice
     });
 
-    return { units: params.units, revenue, taxAmount, dealId: deal.id };
+    return { units, revenue, taxAmount, dealId: deal.id };
   }
 
-  private buildMarkets(goods: Good[], burgs: Burg[]): Market[] {
-    const validBurgs = burgs.filter(burg => burg.i && !burg.removed);
-    if (!validBurgs.length) return [];
-
-    for (const burg of burgs) {
-      if (!burg?.i || burg.removed) continue;
-      burg.market = 0;
-    }
-
+  private createMarkets(burgs: Burg[]): Market[] {
     // Score each burg by population; capitals and ports are weighted higher
-    const scored = validBurgs
+    const scored = burgs
       .map(burg => {
         let score = burg.population || 0;
         if (burg.capital) score *= 2;
@@ -335,7 +297,7 @@ export class TradeModule {
       .sort((a, b) => b.score - a.score);
 
     // minSpacing scales with map size relative to burg count
-    let minSpacing = (((graphWidth + graphHeight) * 4) / validBurgs.length ** 0.7) | 0;
+    let minSpacing = (((graphWidth + graphHeight) * 4) / burgs.length ** 0.7) | 0;
 
     const markets: Market[] = [];
     const tree = quadtree<[number, number, number]>(
@@ -348,16 +310,14 @@ export class TradeModule {
       if (burg.i === undefined) continue;
       const { x, y } = burg;
       const nearest = tree.find(x, y, minSpacing);
-
-      if (nearest) {
-        burg.market = nearest[2]; // Assign to existing market
-      } else {
+      if (!nearest) {
         // Create a new market anchored at this burg
         const marketId = markets.length + 1;
-        const marketGoods = this.createMarketGoods(goods);
-        markets.push({ i: marketId, centerBurgId: burg.i, color: getRandomColor(), goods: marketGoods });
+
+        const market = { i: marketId, centerBurgId: burg.i, color: getRandomColor(), goods: {} };
+        markets.push(market);
+        this.marketById[marketId] = market;
         tree.add([x, y, marketId]);
-        burg.market = marketId;
       }
 
       minSpacing += 1;
@@ -367,7 +327,7 @@ export class TradeModule {
   }
 
   private calculateDemandCoverage(inventory: number[], goodById: Good[]): number[] {
-    const demandCoverage = this.createDemandVector(DEMAND_PRIORITY);
+    const demandCoverage: number[] = Array(DEMAND_PRIORITY.length).fill(0);
     for (let goodId = 0; goodId < inventory.length; goodId++) {
       const amount = inventory[goodId] || 0;
       if (amount <= 0) continue;
@@ -375,7 +335,7 @@ export class TradeModule {
       if (!good) continue;
       for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
         const demandCategory = DEMAND_PRIORITY[categoryIndex] as DemandCategory;
-        const coverageWeight = good.demandCoverage[demandCategory] || 0;
+        const coverageWeight = good?.demandCoverage?.[demandCategory] || 0;
         if (!coverageWeight) continue;
         demandCoverage[categoryIndex] += amount * coverageWeight;
       }
@@ -393,7 +353,7 @@ export class TradeModule {
   } {
     const retainedInventory: number[] = [];
     const excessInventory: number[] = inventory.slice();
-    const retainedDemandCoverage = this.createDemandVector(DEMAND_PRIORITY);
+    const retainedDemandCoverage: number[] = Array(DEMAND_PRIORITY.length).fill(0);
 
     for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
       const demandCategory = DEMAND_PRIORITY[categoryIndex] as DemandCategory;
@@ -402,11 +362,11 @@ export class TradeModule {
       for (let goodId = 0; goodId < excessInventory.length; goodId++) {
         const amount = excessInventory[goodId] || 0;
         const good = goodById[goodId];
-        if (amount > 0 && good?.demandCoverage[demandCategory]) candidates.push(goodId);
+        if (amount > 0 && good?.demandCoverage?.[demandCategory]) candidates.push(goodId);
       }
       candidates.sort((a, b) => {
-        const coverageA = goodById[a]?.demandCoverage[demandCategory] || 0;
-        const coverageB = goodById[b]?.demandCoverage[demandCategory] || 0;
+        const coverageA = goodById[a]?.demandCoverage?.[demandCategory] || 0;
+        const coverageB = goodById[b]?.demandCoverage?.[demandCategory] || 0;
         return coverageB - coverageA || a - b;
       });
 
@@ -417,7 +377,7 @@ export class TradeModule {
         const available = excessInventory[goodId] || 0;
         if (available <= 0) continue;
         const good = goodById[goodId]!;
-        const coverageWeight = good.demandCoverage[demandCategory] || 0;
+        const coverageWeight = good?.demandCoverage?.[demandCategory] || 0;
         if (!coverageWeight) continue;
 
         const keepAmount = Math.min(available, shortage / coverageWeight);
@@ -428,7 +388,7 @@ export class TradeModule {
 
         for (let coverageCategoryIndex = 0; coverageCategoryIndex < DEMAND_PRIORITY.length; coverageCategoryIndex++) {
           const coverageCategory = DEMAND_PRIORITY[coverageCategoryIndex] as DemandCategory;
-          const retainedCoverageWeight = good.demandCoverage[coverageCategory] || 0;
+          const retainedCoverageWeight = good?.demandCoverage?.[coverageCategory] || 0;
           if (!retainedCoverageWeight) continue;
           retainedDemandCoverage[coverageCategoryIndex] += keepAmount * retainedCoverageWeight;
         }
@@ -438,51 +398,34 @@ export class TradeModule {
     return { retainedInventory, excessInventory };
   }
 
-  private createMarketGoods(goods: Good[]): Record<number, MarketGoodData> {
-    const marketGoods: Record<number, MarketGoodData> = {};
+  private collectRuralProduction(cellMarket: Uint16Array): void {
+    const productionByBiome = Goods.getBiomesProduction();
 
-    for (const good of goods) {
-      marketGoods[good.i] = { stock: 0, price: good.value };
-    }
-
-    return marketGoods;
-  }
-
-  private seedMarketsFromRuralProduction(goods: Good[], markets: Market[]): void {
-    if (!markets.length) return;
-    const { cells } = pack;
-    this.assignCellsToMarkets(markets);
-    const marketByCell = cells.market;
-    const marketsById = new Map<number, Market>(markets.map(market => [market.i, market]));
-
-    for (const cellId of cells.i) {
-      const marketId = marketByCell[cellId];
-      if (!marketId) continue;
-      const market = marketsById.get(marketId);
+    for (const cellId of pack.cells.i) {
+      const market = this.marketById[cellMarket[cellId]];
       if (!market) continue;
 
-      const cellPopulation = Math.max(0, cells.pop[cellId] || 0);
-      const biomeId = cells.biome[cellId];
-      const explicitGoodId = cells.good[cellId];
+      const biomeId = pack.cells.biome[cellId];
+      const bonusGoodId = pack.cells.good[cellId];
+      const population = pack.cells.pop[cellId];
 
-      if (explicitGoodId) {
-        const explicitGood = this.getMarketGood(market, explicitGoodId, this.goodById[explicitGoodId]?.value || 0);
-        explicitGood.stock += BONUS_RESOURCE_PRODUCTION;
+      if (bonusGoodId) {
+        const bonusGood = this.getMarketGood(market, this.goodById[bonusGoodId]);
+        bonusGood.stock += BONUS_RESOURCE_PRODUCTION;
       }
 
-      if (cellPopulation <= 0) continue;
-      for (const good of goods) {
-        const biomeProduction = good.biome?.[biomeId] || 0;
-        if (biomeProduction <= 0) continue;
-        const marketGood = this.getMarketGood(market, good.i, good.value);
-        marketGood.stock += cellPopulation * biomeProduction;
+      if (population <= 0) continue;
+      const biomeProduction = productionByBiome[biomeId] || [];
+      for (const { goodId, production } of biomeProduction) {
+        const marketGood = this.getMarketGood(market, this.goodById[goodId]);
+        marketGood.stock += population * production;
       }
     }
   }
 
-  private assignCellsToMarkets(markets: Market[]): void {
-    const { cells, burgs } = pack;
-    const assignment = new Uint16Array(cells.i.length);
+  private expandMarkers(markets: Market[], burgs: Burg[]): Uint16Array {
+    const cells = pack.cells;
+    const cellMarket = new Uint16Array(cells.i.length);
     const costs: number[] = [];
     const queue = new FlatQueue();
 
@@ -502,7 +445,7 @@ export class TradeModule {
       if (!burg) continue;
 
       const startCell = burg.cell;
-      assignment[startCell] = market.i;
+      cellMarket[startCell] = market.i;
       costs[startCell] = 1;
       queue.push({ cellId: startCell, marketId: market.i, burg, priority: 0 }, 0);
     }
@@ -536,17 +479,18 @@ export class TradeModule {
           const isDeepWater = cells.t[neighborId] < -1;
           if (isDeepWater && !hasGood) continue; // exclude deep water cells without goods
 
-          assignment[neighborId] = marketId;
+          cellMarket[neighborId] = marketId;
         }
       }
     }
 
-    pack.cells.market = assignment;
+    pack.cells.market = cellMarket;
 
-    for (const burg of burgs as Burg[]) {
-      if (!burg?.i || burg.removed) continue;
-      burg.market = assignment[burg.cell] || 0;
+    for (const burg of burgs) {
+      burg.market = cellMarket[burg.cell] || 0;
     }
+
+    return cellMarket;
   }
 
   private initializeMarketPrices(goods: Good[], markets: Market[]): void {
@@ -568,15 +512,12 @@ export class TradeModule {
     }
 
     for (const market of markets) {
-      const population = this.getMarketBurgIds(market.i).reduce(
-        (sum, burgId) => sum + (pack.burgs[burgId]?.population || 0),
-        0
-      );
+      const population = this.getMarketBurgs(market.i).reduce((sum, burg) => sum + (burg.population || 0), 0);
 
       // First pass: raw goods - price from demand/supply ratio
       for (const good of goods) {
         if (!good.distribution) continue;
-        const marketGood = this.getMarketGood(market, good.i, good.value);
+        const marketGood = this.getMarketGood(market, good);
         const consumerDemand = consumerDemandFactors[good.i] || 0;
         const industrialDemand = industrialDemandFactors[good.i] || 0;
         const demand = population * (consumerDemand + industrialDemand);
@@ -587,14 +528,14 @@ export class TradeModule {
       // Second pass: manufactured goods - average local ingredient cost + base value-added
       for (const good of goods) {
         if (!good.recipes?.length) continue;
-        const marketGood = this.getMarketGood(market, good.i, good.value);
+        const marketGood = this.getMarketGood(market, good);
         let totalLocalCost = 0;
         for (const recipe of good.recipes) {
           for (const [ingIdStr, amount] of Object.entries(recipe)) {
             const ingId = +ingIdStr;
             const ing = this.goodById[ingId];
             if (!ing) continue;
-            totalLocalCost += amount * this.getMarketGood(market, ingId, ing.value).price;
+            totalLocalCost += amount * this.getMarketGood(market, ing).price;
           }
         }
         const avgLocalCost = totalLocalCost / good.recipes.length;
@@ -608,17 +549,17 @@ export class TradeModule {
   }
 
   private collectConsumerDemand(goods: Good[]): number[] {
-    // Each good's demand factor is its proportional share of satisfying each category,
-    // so that goods competing for the same demand category don't inflate each other.
-    const totalCoverageByCategory: Partial<Record<DemandCategory, number>> = {};
-    for (const category of DEMAND_PRIORITY) {
-      totalCoverageByCategory[category] = goods.reduce((sum, g) => sum + (g.demandCoverage[category] || 0), 0) || 1;
-    }
+    const totalCoverageByCategory = Object.fromEntries(
+      DEMAND_PRIORITY.map(category => [
+        category,
+        goods.reduce((sum, g) => sum + (g?.demandCoverage?.[category] || 0), 0) || 1
+      ])
+    ) as Record<DemandCategory, number>;
 
     const demandFactor: number[] = [];
     for (const good of goods) {
       demandFactor[good.i] = DEMAND_PRIORITY.reduce((sum, category) => {
-        const share = (good.demandCoverage[category] || 0) / (totalCoverageByCategory[category] || 1);
+        const share = (good?.demandCoverage?.[category] || 0) / (totalCoverageByCategory[category] || 1);
         return sum + share * DEMAND_TARGET_FACTORS[category];
       }, 0);
     }

@@ -1,6 +1,6 @@
 import type { Burg } from "./burgs-generator";
 import type { CultureType } from "./cultures-generator";
-import { DEFAULT_CULTURE_TYPE } from "./cultures-generator";
+import { CULTURE_TYPES, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "./goods-generator";
 import {
@@ -23,7 +23,7 @@ export class ProductionModule {
     const validBurgs = this.getValidBurgs(pack.burgs);
 
     this.productionData.clear();
-    const demandInventoryByBurg = new Map<number, Record<number, number>>();
+    const demandInventoryByBurg = new Map<number, number[]>();
     const demandTargetsByBurg: number[][] = [];
 
     for (const burg of validBurgs) {
@@ -31,7 +31,7 @@ export class ProductionModule {
       const burgProduction = this.executeBurgProduction(burg, index);
       if (!burgProduction) continue;
 
-      demandInventoryByBurg.set(burg.i, {});
+      demandInventoryByBurg.set(burg.i, []);
       demandTargetsByBurg[burg.i] = burgProduction.demandTargets;
       this.productionData.set(burg.i, burgProduction.history);
     }
@@ -41,10 +41,10 @@ export class ProductionModule {
     for (const burg of validBurgs) {
       if (!burg.i) continue;
       const data = this.productionData.get(burg.i);
-      const marketCenter = Trade.getMarketForBurg(burg);
+      const marketCenter = Trade.getBurgMarket(burg);
       if (!data || !marketCenter) continue;
 
-      const demandInventory = demandInventoryByBurg.get(burg.i) ?? {};
+      const demandInventory = demandInventoryByBurg.get(burg.i) ?? [];
       this.fillDemandFromMarket({
         burg,
         demandInventory,
@@ -74,18 +74,28 @@ export class ProductionModule {
   private buildProductionIndex(goods: Good[]): ProductionIndex {
     const goodById = this.buildGoodById(goods);
     const demandCoverageByGood = this.buildDemandCoverageByGood(goods);
+    const demandGoodsByCategory = this.buildDemandGoodsByCategory(goods, demandCoverageByGood);
     const recipes = this.buildRecipesArray(goods);
     const recipesByOutput = this.buildRecipesByOutput(recipes);
+    const productiveGoods = goods.filter(good => recipesByOutput[good.i]?.length);
+    const minWorkersByGood = this.buildMinWorkersByGood(goods, recipesByOutput);
+    const cultureModifiersByType = new Map<CultureType, number[]>(
+      CULTURE_TYPES.map(cultureType => {
+        const cultureModifierByGood: number[] = [];
+        for (const good of goods) cultureModifierByGood[good.i] = good.culture?.[cultureType] || 1;
+        return [cultureType, cultureModifierByGood];
+      })
+    );
 
     return {
       goods,
       goodById,
       demandCoverageByGood,
-      demandGoodsByCategory: this.buildDemandGoodsByCategory(goods, demandCoverageByGood),
+      demandGoodsByCategory,
       recipesByOutput,
-      productiveGoods: goods.filter(good => recipesByOutput[good.i]?.length),
-      minWorkersByGood: this.buildMinWorkersByGood(goods, recipesByOutput),
-      cultureModifiersByType: new Map()
+      productiveGoods,
+      minWorkersByGood,
+      cultureModifiersByType
     };
   }
 
@@ -96,7 +106,7 @@ export class ProductionModule {
     demandTargets: number[];
     history: ProductionHistory[];
   } | null {
-    const market = Trade.getMarketForBurg(burg);
+    const market = Trade.getBurgMarket(burg);
     if (!market) return null;
 
     const state = this.createBurgProductionState(burg, market, index);
@@ -131,20 +141,11 @@ export class ProductionModule {
       inventory,
       demandCoverage: this.calculateDemandCoverage(inventory, index.demandCoverageByGood),
       marketView: this.getMarketView(market),
-      cultureModifierByGood: this.getCultureModifiers(index, burg.type || DEFAULT_CULTURE_TYPE),
+      cultureModifierByGood: index.cultureModifiersByType.get(burg.type || DEFAULT_CULTURE_TYPE)!,
       history: [],
       ingredientCosts: 0,
       activeGoalGoodId: null
     };
-  }
-
-  private getCultureModifiers(index: ProductionIndex, cultureType: string): number[] {
-    let cultureModifierByGood = index.cultureModifiersByType.get(cultureType);
-    if (!cultureModifierByGood) {
-      cultureModifierByGood = this.buildCultureModifiers(index.goods, cultureType);
-      index.cultureModifiersByType.set(cultureType, cultureModifierByGood);
-    }
-    return cultureModifierByGood;
   }
 
   private runWorkerLoop(state: BurgProductionState, index: ProductionIndex): void {
@@ -345,9 +346,9 @@ export class ProductionModule {
     const demandCoverageByGood: number[][] = [];
 
     for (const good of goods) {
-      const coverage = Array(DEMAND_PRIORITY.length).fill(0);
+      const coverage: number[] = Array(DEMAND_PRIORITY.length).fill(0);
       for (let category = 0; category < DEMAND_PRIORITY.length; category++) {
-        coverage[category] = good.demandCoverage[DEMAND_PRIORITY[category] as DemandCategory] || 0;
+        coverage[category] = good.demandCoverage?.[DEMAND_PRIORITY[category] as DemandCategory] || 0;
       }
       demandCoverageByGood[good.i] = coverage;
     }
@@ -378,12 +379,6 @@ export class ProductionModule {
     return demandGoodsByCategory;
   }
 
-  private buildCultureModifiers(goods: Good[], cultureType: string): number[] {
-    const cultureModifierByGood: number[] = [];
-    for (const good of goods) cultureModifierByGood[good.i] = this.getCultureModifier(good, cultureType);
-    return cultureModifierByGood;
-  }
-
   private copyInventory(inventory: Record<number, number> | undefined): NumericInventory {
     const copy: NumericInventory = [];
     if (!inventory) return copy;
@@ -400,7 +395,7 @@ export class ProductionModule {
     inventory: Record<number, number> | NumericInventory,
     demandCoverageByGood: number[][]
   ): number[] {
-    const demandCoverage = Array(DEMAND_PRIORITY.length).fill(0);
+    const demandCoverage: number[] = Array(DEMAND_PRIORITY.length).fill(0);
 
     for (const goodIdStr in inventory) {
       const goodId = +goodIdStr;
@@ -430,17 +425,23 @@ export class ProductionModule {
     }
   }
 
-  private fillDemandFromMarket(params: {
+  private fillDemandFromMarket({
+    burg,
+    demandInventory,
+    demandCoverageByGood,
+    demandGoodsByCategory,
+    demandTargets,
+    marketCenter,
+    history
+  }: {
     burg: Burg;
-    demandInventory: Record<number, number>;
+    demandInventory: number[];
     demandCoverageByGood: number[][];
     demandGoodsByCategory: DemandGoodCandidate[][];
     demandTargets: number[];
     marketCenter: Market;
     history: ProductionHistory[];
   }): void {
-    const { burg, demandInventory, demandCoverageByGood, demandGoodsByCategory, demandTargets, marketCenter, history } =
-      params;
     const demandCoverage = this.calculateDemandCoverage(demandInventory, demandCoverageByGood);
 
     for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
@@ -790,10 +791,6 @@ export class ProductionModule {
       candidates,
       goalGoodId: chosenGoal.goalGoodId
     };
-  }
-
-  private getCultureModifier(good: Good, cultureType: string) {
-    return good.culture[cultureType as CultureType] || 1;
   }
 
   private roundMoney(value: number): number {

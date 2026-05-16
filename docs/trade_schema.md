@@ -9,7 +9,7 @@ Trade is centered on regional markets.
 
 ## Market creation
 
-`Trade.initialize(goods, burgs)`:
+`Trade.initialize()`:
 
 1. Resets markets, deals, and tax ledgers.
 2. Places markets by scoring burgs by population, capital status, and port status.

@@ -14,7 +14,7 @@ export function open(burgId: number): void {
     return;
   }
 
-  const market = Trade.getMarketForBurg(burg);
+  const market = Trade.getBurgMarket(burg);
   if (!market) {
     tip("No market. This burg is not connected to any market.", true, "error", 5000);
     return;
@@ -133,7 +133,7 @@ export function open(burgId: number): void {
     return entries.join(` <span style="${styles.divider}">•</span> `);
   };
   const calculateDemandCoverageTotals = (inventory: Record<number, number>) => {
-    const totals = Array(DEMAND_PRIORITY.length).fill(0);
+    const totals: number[] = Array(DEMAND_PRIORITY.length).fill(0);
 
     for (const goodIdStr in inventory) {
       const goodId = +goodIdStr;
@@ -145,7 +145,7 @@ export function open(burgId: number): void {
 
       for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
         const category = DEMAND_PRIORITY[categoryIndex] as DemandCategory;
-        const coveredAmount = good.demandCoverage[category] || 0;
+        const coveredAmount = good.demandCoverage?.[category] || 0;
         if (!coveredAmount) continue;
         totals[categoryIndex] += amount * coveredAmount;
       }

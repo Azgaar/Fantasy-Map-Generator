@@ -42,7 +42,7 @@ export function open(): void {
 }
 
 function marketsOverviewAddLines(): void {
-  const markets = Trade.getMarkets();
+  const markets = pack.markets;
   if (!markets.length) {
     ensureEl("marketsOverviewBody").innerHTML = "No markets available";
     updateFooter(0, 0, 0, 0);
@@ -151,9 +151,8 @@ function compareDialogAddLines(): void {
     return;
   }
 
-  const markets = Trade.getMarkets();
   let lines = "";
-  for (const market of markets) {
+  for (const market of pack.markets) {
     const centerName = getMarketCenterName(market);
     const goodData = market.goods[good.i];
     const stock = rn(goodData?.stock ?? 0, 2);
@@ -253,7 +252,7 @@ function getOwnerStateName(market: Market): string {
 
 function downloadMarketsCsv(): void {
   let csv = "Market,Owner,Cells,Burgs,Total Stock,Sales,Buys,Income\n";
-  for (const market of Trade.getMarkets()) {
+  for (const market of pack.markets) {
     const { sales, buys, income } = getMarketFinancials(market.i);
     const cells = getMarketCells(market.i);
     const burgs = getMarketBurgs(market.i);
