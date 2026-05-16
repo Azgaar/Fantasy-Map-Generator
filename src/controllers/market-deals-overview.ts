@@ -83,8 +83,6 @@ function typeBadge(type: DealKind): string {
   return `<span style="${base};background:#edf1f4;color:#5f6f7a">GLOBAL</span>`;
 }
 
-
-
 function renderDealLine(deal: Deal, market: Market): string {
   const good = Goods.get(deal.good);
   if (!good) return "";

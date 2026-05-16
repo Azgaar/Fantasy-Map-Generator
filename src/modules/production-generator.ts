@@ -30,8 +30,6 @@ export class ProductionModule {
       this.productionData.set(burg.i, burgProduction.history);
     }
 
-
-
     for (const burg of validBurgs) {
       if (!burg.i) continue;
       const data = this.productionData.get(burg.i);
@@ -54,8 +52,6 @@ export class ProductionModule {
         if (amount > 0.001) burg.inventory[goodId] = rn(amount, 2);
       }
     }
-
-
 
     TIME && console.timeEnd("generateProduction");
   }
