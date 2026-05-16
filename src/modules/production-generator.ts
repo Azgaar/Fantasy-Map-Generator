@@ -432,16 +432,11 @@ export class ProductionModule {
       for (const candidate of candidates) {
         if (shortage <= 0.001) break;
 
-        const wealth = burg.treasury || 0;
-        if (wealth <= 0.001) break;
+        const budget = burg.treasury || 0;
+        if (budget <= 0.001) break;
 
-        const unitsNeeded = shortage / candidate.coverageWeight;
-        const deal = Trade.buy({
-          burg,
-          good: candidate.good,
-          units: unitsNeeded,
-          budget: wealth
-        });
+        const units = shortage / candidate.coverageWeight;
+        const deal = Trade.buy({burg, good: candidate.good, units, budget});
         if (!deal) continue;
 
         history.push({kind: "deal", dealId: deal.id});
