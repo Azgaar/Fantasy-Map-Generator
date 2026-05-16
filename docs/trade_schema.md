@@ -75,7 +75,6 @@ Used when a burg sells its entire inventory after manufacturing.
 
 - Market stock increases.
 - `burg.treasury` receives post-tax revenue.
-- Seller-side state sales tax is recorded in `stateTaxes`.
 - Market price falls under sell pressure.
 
 ## Demand-fill buy phase
@@ -145,8 +144,6 @@ Every transaction is recorded in `pack.deals` with:
 - buyer id
 - seller id
 - price per unit at time of deal
-
-State sales tax collected from sale-phase deals is accumulated in `stateTaxes[stateId]`.
 
 ## Architectural intent
 

@@ -152,30 +152,12 @@ function openProducersDialog(goodId: number) {
   $("#alert").dialog({
     resizable: false,
     title: `${good.name} producers`,
-    width: "20em"
-  });
-}
-
-function _getRuralAvailability(): number[] {
-  const resources: number[] = [];
-  const { cells, goods } = pack;
-
-  for (const cellId of cells.i) {
-    const explicitGoodId = cells.good[cellId];
-    if (explicitGoodId) resources[explicitGoodId] = (resources[explicitGoodId] || 0) + BONUS_RESOURCE_PRODUCTION;
-
-    const population = Math.max(0, cells.pop[cellId] || 0);
-    if (population <= 0) continue;
-
-    const biomeId = cells.biome[cellId];
-    for (const good of goods) {
-      const biomeProduction = good.biome?.[biomeId] || 0;
-      if (!biomeProduction) continue;
-      resources[good.i] = (resources[good.i] || 0) + population * biomeProduction;
+    buttons: {
+      Close: function () {
+        $(this).dialog("close");
+      }
     }
-  }
-
-  return resources;
+  });
 }
 
 function getProduction() {

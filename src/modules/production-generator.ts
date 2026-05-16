@@ -3,14 +3,7 @@ import type { CultureType } from "./cultures-generator";
 import { CULTURE_TYPES, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "./goods-generator";
-import {
-  BONUS_RESOURCE_PRODUCTION,
-  MARKET_MARGIN,
-  MARKET_PRESSURE_FACTOR,
-  type Market,
-  PRICE_CEILING_FACTOR,
-  PRICE_FLOOR_FACTOR
-} from "./trade-generator";
+import { BONUS_RESOURCE_PRODUCTION, MARKET_MARGIN, type Market } from "./trade-generator";
 
 export class ProductionModule {
   private readonly GOAL_STICKINESS_FACTOR = 0.85;
@@ -114,8 +107,8 @@ export class ProductionModule {
     this.commitProducedTotals(burg, state.history);
 
     const phaseRevenue = this.sellInventoryToMarket(state, index);
-    burg.treasury = this.roundMoney((burg.treasury || 0) + phaseRevenue);
-    burg.product = this.roundMoney(Math.max(0, phaseRevenue - state.ingredientCosts));
+    burg.treasury = (burg.treasury || 0) + phaseRevenue;
+    burg.product = Math.max(0, phaseRevenue - state.ingredientCosts);
 
     return {
       demandTargets: state.demandTargets,
@@ -208,7 +201,7 @@ export class ProductionModule {
       this.addDemandCoverage(state.demandCoverage, ingredientGoodId, -fromInventory, index.demandCoverageByGood);
 
       const marketCost = this.buyIngredientFromMarket(state, index, ingredientGoodId, fromMarket);
-      recipeLog.push({ goodId: ingredientGoodId, amount, marketCost });
+      if (marketCost) recipeLog.push({ goodId: ingredientGoodId, amount, marketCost });
     }
 
     state.inventory[good.i] = (state.inventory[good.i] || 0) + produced;
@@ -224,8 +217,9 @@ export class ProductionModule {
     });
   }
 
+  // TODO: rework, should just call Trade module to register a deal
   private buyIngredientFromMarket(
-    state: BurgProductionState,
+    { burg, market, marketView, history, ingredientCosts }: BurgProductionState,
     index: ProductionIndex,
     goodId: number,
     requestedUnits: number
@@ -233,55 +227,61 @@ export class ProductionModule {
     if (requestedUnits <= 0) return 0;
 
     const good = index.goodById[goodId]!;
-    const marketGood = this.getMarketGoodData(state.market, goodId, good.value);
-    const actualBuy = Math.min(requestedUnits, marketGood.stock || 0);
-    const purchase = Trade.buyFromMarket({
-      burg: state.burg,
+    const marketGood = this.getMarketGoodData(market, goodId, good.value);
+    const units = Math.min(requestedUnits, marketGood.stock || 0);
+    const deal = Trade.buyFromMarket({
+      burg,
       good,
-      units: actualBuy,
+      units,
       marketPrice: marketGood.price * (1 + MARKET_MARGIN)
     });
+    if (!deal) return 0;
 
-    if (purchase.dealId !== null) state.history.push({ kind: "deal", dealId: purchase.dealId });
-    state.ingredientCosts += purchase.totalCost;
-    state.burg.treasury = this.roundMoney((state.burg.treasury || 0) - purchase.totalCost);
-    marketGood.price = Trade.applyMarketPressure(good.value, marketGood.price, actualBuy);
-    this.updateMarketViewGood(state.marketView, goodId, marketGood);
+    history.push({ kind: "deal", dealId: deal.id });
+    const totalCost = deal.units * deal.price;
+    ingredientCosts += totalCost;
+    burg.treasury = (burg.treasury || 0) - totalCost;
 
-    return purchase.totalCost;
+    marketGood.price = Trade.applyMarketPressure(good.value, marketGood.price, units);
+    this.updateMarketViewGood(marketView, goodId, marketGood);
+
+    return totalCost;
   }
 
   private commitProducedTotals(burg: Burg, history: ProductionHistory[]): void {
     burg.produced = {};
     for (const entry of history) {
       if (entry.kind !== "mfg") continue;
-      burg.produced[entry.goodId] = this.roundMoney((burg.produced[entry.goodId] || 0) + entry.units);
+      burg.produced[entry.goodId] = (burg.produced[entry.goodId] || 0) + entry.units;
     }
   }
 
+  // TODO: rework, should just call Trade module to register a deal to manage pricing
   private sellInventoryToMarket(state: BurgProductionState, index: ProductionIndex): number {
     let phaseRevenue = 0;
 
     for (const goodIdStr in state.inventory) {
       const goodId = +goodIdStr;
-      const amount = state.inventory[goodId];
-      if (amount <= 0) continue;
+      const units = state.inventory[goodId];
+      if (units <= 0) continue;
 
       const good = index.goodById[goodId]!;
       const marketGood = this.getMarketGoodData(state.market, goodId, good.value);
-      const sellResult = Trade.sellToMarket({
+      const deal = Trade.sellToMarket({
         burg: state.burg,
         good,
-        units: amount,
+        units: units,
         marketPrice: marketGood.price * (1 - MARKET_MARGIN)
       });
+      if (!deal) continue;
 
-      phaseRevenue += sellResult.revenue;
-      if (sellResult.dealId !== null) state.history.push({ kind: "deal", dealId: sellResult.dealId });
-      marketGood.price = Math.max(
-        good.value * PRICE_FLOOR_FACTOR,
-        marketGood.price - amount * good.value * MARKET_PRESSURE_FACTOR
-      );
+      const grossRevenue = deal.units * deal.price;
+      const taxAmount = grossRevenue * Trade.getSalesTaxRate(state.burg);
+      const revenue = grossRevenue - taxAmount;
+
+      phaseRevenue += revenue;
+      state.history.push({ kind: "deal", dealId: deal.id });
+      marketGood.price = Trade.applyMarketPressure(good.value, marketGood.price, -deal.units);
     }
 
     return phaseRevenue;
@@ -459,35 +459,35 @@ export class ProductionModule {
         const available = marketCenter.goods[candidate.goodId]?.stock || 0;
         if (available <= 0.001) continue;
 
+        // TODO: rework, should just call Trade module to register a deal to manage pricing
         const buyPrice =
           this.getMarketGoodData(marketCenter, candidate.goodId, candidate.good.value).price * (1 + MARKET_MARGIN);
         const unitsNeeded = shortage / candidate.coverageWeight;
         const unitsAffordable = buyPrice > 0 ? wealth / buyPrice : available;
-        const purchase = Trade.buyFromMarket({
+
+        const deal = Trade.buyFromMarket({
           burg,
           good: candidate.good,
           units: Math.min(available, unitsNeeded, unitsAffordable),
           marketPrice: buyPrice
         });
-        if (purchase.units <= 0.001) continue;
+        if (!deal) continue;
 
-        if (purchase.dealId !== null) history.push({ kind: "deal", dealId: purchase.dealId });
-        demandInventory[candidate.goodId] = (demandInventory[candidate.goodId] || 0) + purchase.units;
-        burg.treasury = this.roundMoney((burg.treasury || 0) - purchase.totalCost);
+        history.push({ kind: "deal", dealId: deal.id });
+        demandInventory[candidate.goodId] = (demandInventory[candidate.goodId] || 0) + deal.units;
+        const totalCost = deal.units * deal.price;
+        burg.treasury = (burg.treasury || 0) - totalCost;
 
         const retainedCoverageByCategory = demandCoverageByGood[candidate.goodId];
         for (let coverageCategoryIndex = 0; coverageCategoryIndex < DEMAND_PRIORITY.length; coverageCategoryIndex++) {
           const retainedCoverage = retainedCoverageByCategory[coverageCategoryIndex] || 0;
           if (!retainedCoverage) continue;
-          demandCoverage[coverageCategoryIndex] += purchase.units * retainedCoverage;
+          demandCoverage[coverageCategoryIndex] += deal.units * retainedCoverage;
         }
 
         shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
         const marketGood = this.getMarketGoodData(marketCenter, candidate.goodId, candidate.good.value);
-        marketGood.price = Math.min(
-          candidate.good.value * PRICE_CEILING_FACTOR,
-          marketGood.price + purchase.units * candidate.good.value * MARKET_PRESSURE_FACTOR
-        );
+        marketGood.price = Trade.applyMarketPressure(candidate.good.value, marketGood.price, deal.units);
       }
     }
   }
@@ -504,6 +504,7 @@ export class ProductionModule {
     return created;
   }
 
+  // TODO: remove, use Trade module
   private getMarketView(market: Market): MarketView {
     const inventory: NumericInventory = [];
     const buyPrice: number[] = [];
@@ -520,6 +521,7 @@ export class ProductionModule {
     return { inventory, buyPrice, sellPrice };
   }
 
+  // TODO: remove, use Trade module
   private updateMarketViewGood(
     marketView: MarketView,
     goodId: number,
@@ -791,10 +793,6 @@ export class ProductionModule {
       candidates,
       goalGoodId: chosenGoal.goalGoodId
     };
-  }
-
-  private roundMoney(value: number): number {
-    return Math.round(value * 100) / 100;
   }
 
   private buildRecipesArray(goods: Good[]): Recipe[] {

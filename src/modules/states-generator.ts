@@ -15,7 +15,6 @@ import {
   rw,
   trimVowels
 } from "../utils";
-import { DEFAULT_SALES_TAX } from "./trade-generator";
 
 declare global {
   var States: StatesModule;
@@ -57,6 +56,8 @@ export interface State {
   alert?: number;
   salesTax?: number;
 }
+
+export const DEFAULT_SALES_TAX = 0.2;
 
 class StatesModule {
   private createStates() {

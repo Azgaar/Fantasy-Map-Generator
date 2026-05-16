@@ -5,13 +5,13 @@ import type { Burg } from "./burgs-generator";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "./goods-generator";
 import type { ProductionHistory } from "./production-generator";
+import { DEFAULT_SALES_TAX } from "./states-generator";
 
-export const DEFAULT_SALES_TAX = 0.2;
-export const PRICE_FLOOR_FACTOR = 0.25;
-export const PRICE_CEILING_FACTOR = 3.0;
+const PRICE_FLOOR_FACTOR = 0.25;
+const PRICE_CEILING_FACTOR = 3.0;
 const LAPLACE_PRICE_SMOOTHING = 5;
-export const MARKET_MARGIN = 0.1;
-export const MARKET_PRESSURE_FACTOR = 0.01;
+const MARKET_PRESSURE_FACTOR = 0.01;
+export const MARKET_MARGIN = 0.1; // TODO: should be private
 export const BONUS_RESOURCE_PRODUCTION = 5;
 
 const TRADE_RESERVE_FACTOR = 0.2;
@@ -60,7 +60,7 @@ export class TradeModule {
     const markets = this.createMarkets(burgs);
     const cellMarket = this.expandMarkers(markets, burgs);
     this.collectRuralProduction(cellMarket);
-    this.initializeMarketPrices(goods, markets);
+    this.initializeMarketPrices(goods, markets, burgs);
     this.data.markets = markets;
     this.syncPackData();
     return this.data;
@@ -73,13 +73,6 @@ export class TradeModule {
 
   getBurgMarket(burg: Burg): Market | undefined {
     return this.getMarket(burg.market);
-  }
-
-  applyMarketPressure(basePrice: number, currentPrice: number | undefined, units: number): number {
-    const price = currentPrice ?? basePrice;
-    const floor = basePrice * PRICE_FLOOR_FACTOR;
-    const ceiling = basePrice * PRICE_CEILING_FACTOR;
-    return minmax(floor, price + units * basePrice * MARKET_PRESSURE_FACTOR, ceiling);
   }
 
   private getMarketBurgs(marketId: number): Burg[] {
@@ -95,30 +88,95 @@ export class TradeModule {
     return initialized;
   }
 
-  private getMarketInventory(market: Market): number[] {
-    const inventory: number[] = [];
+  private getMarketStock(market: Market): number[] {
+    const stock: number[] = [];
     for (const goodId in market.goods) {
       const id = +goodId;
-      inventory[id] = market.goods[id].stock;
+      stock[id] = market.goods[id].stock;
     }
-    return inventory;
+    return stock;
+  }
+
+  // TODO: should be private
+  applyMarketPressure(basePrice: number, currentPrice: number | undefined, units: number): number {
+    const price = currentPrice ?? basePrice;
+    const floor = basePrice * PRICE_FLOOR_FACTOR;
+    const ceiling = basePrice * PRICE_CEILING_FACTOR;
+    return minmax(floor, price + units * basePrice * MARKET_PRESSURE_FACTOR, ceiling);
   }
 
   recordDeal(data: Omit<Deal, "id">): Deal {
     const deal: Deal = {
       id: this.data.deals.length,
       ...data,
-      units: rn(data.units, 2)
+      units: rn(data.units, 2),
+      price: rn(data.price, 2)
     };
     this.data.deals.push(deal);
+    return deal;
+  }
 
-    const isLocalSale = deal.phase === "sell";
-    const seller = isLocalSale ? (pack.burgs[deal.seller] ?? null) : null;
-    const sellerTaxRate = seller ? this.getSalesTaxRate(seller) : 0;
-    const taxAmount = isLocalSale ? deal.units * deal.price * sellerTaxRate : 0;
-    const stateId = seller?.state || 0;
+  // TODO: should manage prices itself instead of relying on production module
+  buyFromMarket({
+    burg,
+    good,
+    marketPrice,
+    units
+  }: {
+    burg: Burg;
+    good: Good;
+    units: number;
+    marketPrice: number;
+  }): Deal | null {
+    const market = this.getBurgMarket(burg);
+    if (!market || units <= 0) return null;
 
-    if (taxAmount > 0 && stateId > 0) this.data.stateTaxes[stateId] = (this.data.stateTaxes[stateId] || 0) + taxAmount;
+    const marketGood = this.getMarketGood(market, good);
+    const actualUnits = Math.min(units, marketGood.stock || 0);
+    if (actualUnits <= 0) return null;
+    marketGood.stock = Math.max(0, marketGood.stock - actualUnits);
+
+    const deal = this.recordDeal({
+      market: market.i,
+      phase: "sell",
+      goodId: good.i,
+      units: actualUnits,
+      buyer: burg.i!,
+      seller: market.i,
+      price: marketPrice
+    });
+
+    return deal;
+  }
+
+  // TODO: should manage prices itself instead of relying on production module
+  sellToMarket({
+    burg,
+    good,
+    marketPrice,
+    units
+  }: {
+    burg: Burg;
+    good: Good;
+    units: number;
+    marketPrice: number;
+  }): Deal | null {
+    const market = this.getBurgMarket(burg);
+    if (!market || units <= 0) return null;
+
+    const marketGood = this.getMarketGood(market, good);
+    marketGood.stock += units;
+
+    const deal = this.recordDeal({
+      market: market.i,
+      phase: "buy",
+      goodId: good.i,
+      units,
+      buyer: market.i,
+      seller: burg.i!,
+      price: marketPrice
+    });
+
     return deal;
   }
 
@@ -147,11 +205,12 @@ export class TradeModule {
         }
       }
       const demandTargets = aggregatedUncoveredDemand.map(value => value * (1 + TRADE_RESERVE_FACTOR));
-      const demandCoverage = this.calculateDemandCoverage(this.getMarketInventory(market), this.goodById);
+      const demandCoverage = this.calculateDemandCoverage(this.getMarketStock(market), this.goodById);
       void demandTargets.map((target, index) => Math.max(0, target - demandCoverage[index]));
     }
   }
 
+  // TODO: rework, just allow burgs to buy directly from other markets with transport costs
   redistributeAcrossMarkets(
     productionData: Map<number, ProductionHistory[]>,
     demandInventory: Map<number, number[]>
@@ -175,16 +234,12 @@ export class TradeModule {
         }
       }
       const demandTargets = marketDemand.map(value => value * (1 + TRADE_RESERVE_FACTOR));
-      const marketInventory = this.getMarketInventory(market);
-      const demandCoverage = this.calculateDemandCoverage(marketInventory, this.goodById);
+      const stock = this.getMarketStock(market);
+      const demandCoverage = this.calculateDemandCoverage(stock, this.goodById);
       uncoveredDemandByMarket[market.i] = demandTargets.map((target, index) =>
         Math.max(0, target - demandCoverage[index])
       );
-      exportPools[market.i] = this.splitInventoryByDemand(
-        marketInventory,
-        demandTargets,
-        this.goodById
-      ).excessInventory;
+      exportPools[market.i] = this.getExcessMarketStock(stock, demandTargets, this.goodById);
     }
 
     for (const importer of this.data.markets) {
@@ -237,52 +292,6 @@ export class TradeModule {
       }
     }
     this.updateMarketDemand(productionData, demandInventory);
-  }
-
-  buyFromMarket({ burg, good, marketPrice, units }: { burg: Burg; good: Good; units: number; marketPrice: number }) {
-    const market = this.getBurgMarket(burg);
-    if (!market || units <= 0) return { units: 0, totalCost: 0, taxAmount: 0, dealId: null };
-
-    const marketGood = this.getMarketGood(market, good);
-    const actualUnits = Math.min(units, marketGood.stock || 0);
-    if (actualUnits <= 0) return { units: 0, totalCost: 0, taxAmount: 0, dealId: null };
-
-    marketGood.stock = Math.max(0, marketGood.stock - actualUnits);
-
-    const deal = this.recordDeal({
-      market: market.i,
-      phase: "buy",
-      goodId: good.i,
-      units: actualUnits,
-      buyer: burg.i!,
-      seller: market.i,
-      price: marketPrice
-    });
-
-    return { units: actualUnits, totalCost: actualUnits * marketPrice, taxAmount: 0, dealId: deal.id };
-  }
-
-  sellToMarket({ burg, good, marketPrice, units }: { burg: Burg; good: Good; units: number; marketPrice: number }) {
-    const market = this.getBurgMarket(burg);
-    if (!market || units <= 0) return { units: 0, revenue: 0, taxAmount: 0, dealId: null };
-
-    const marketGood = this.getMarketGood(market, good);
-    marketGood.stock += units;
-    const grossRevenue = units * marketPrice;
-    const taxAmount = grossRevenue * this.getSalesTaxRate(burg);
-    const revenue = grossRevenue - taxAmount;
-
-    const deal = this.recordDeal({
-      market: market.i,
-      phase: "sell",
-      goodId: good.i,
-      units,
-      buyer: market.i,
-      seller: burg.i!,
-      price: marketPrice
-    });
-
-    return { units, revenue, taxAmount, dealId: deal.id };
   }
 
   private createMarkets(burgs: Burg[]): Market[] {
@@ -343,24 +352,16 @@ export class TradeModule {
     return demandCoverage;
   }
 
-  private splitInventoryByDemand(
-    inventory: number[],
-    demandTargets: number[],
-    goodById: Good[]
-  ): {
-    retainedInventory: number[];
-    excessInventory: number[];
-  } {
-    const retainedInventory: number[] = [];
-    const excessInventory: number[] = inventory.slice();
+  private getExcessMarketStock(stock: number[], demandTargets: number[], goodById: Good[]): number[] {
+    const excessStock: number[] = stock.slice();
     const retainedDemandCoverage: number[] = Array(DEMAND_PRIORITY.length).fill(0);
 
     for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
       const demandCategory = DEMAND_PRIORITY[categoryIndex] as DemandCategory;
       // Find all goods with coverage for this category
       const candidates: number[] = [];
-      for (let goodId = 0; goodId < excessInventory.length; goodId++) {
-        const amount = excessInventory[goodId] || 0;
+      for (let goodId = 0; goodId < excessStock.length; goodId++) {
+        const amount = excessStock[goodId] || 0;
         const good = goodById[goodId];
         if (amount > 0 && good?.demandCoverage?.[demandCategory]) candidates.push(goodId);
       }
@@ -374,7 +375,7 @@ export class TradeModule {
         const shortage = Math.max(0, demandTargets[categoryIndex] - retainedDemandCoverage[categoryIndex]);
         if (shortage <= 0.001) break;
 
-        const available = excessInventory[goodId] || 0;
+        const available = excessStock[goodId] || 0;
         if (available <= 0) continue;
         const good = goodById[goodId]!;
         const coverageWeight = good?.demandCoverage?.[demandCategory] || 0;
@@ -383,9 +384,7 @@ export class TradeModule {
         const keepAmount = Math.min(available, shortage / coverageWeight);
         if (keepAmount <= 0.001) continue;
 
-        retainedInventory[goodId] = (retainedInventory[goodId] || 0) + keepAmount;
-        excessInventory[goodId] = Math.max(0, available - keepAmount);
-
+        excessStock[goodId] = Math.max(0, available - keepAmount);
         for (let coverageCategoryIndex = 0; coverageCategoryIndex < DEMAND_PRIORITY.length; coverageCategoryIndex++) {
           const coverageCategory = DEMAND_PRIORITY[coverageCategoryIndex] as DemandCategory;
           const retainedCoverageWeight = good?.demandCoverage?.[coverageCategory] || 0;
@@ -395,7 +394,7 @@ export class TradeModule {
       }
     }
 
-    return { retainedInventory, excessInventory };
+    return excessStock;
   }
 
   private collectRuralProduction(cellMarket: Uint16Array): void {
@@ -493,26 +492,14 @@ export class TradeModule {
     return cellMarket;
   }
 
-  private initializeMarketPrices(goods: Good[], markets: Market[]): void {
+  private initializeMarketPrices(goods: Good[], markets: Market[], burgs: Burg[]): void {
     const consumerDemandFactors = this.collectConsumerDemand(goods);
     const industrialDemandFactors = this.collectIndustrialDemand(goods, consumerDemandFactors);
-
-    // Pre-calculate average base ingredient cost per manufactured good (market-independent)
-    const avgBaseCostByGood = new Array(goods.length);
-    for (const good of goods) {
-      if (!good.recipes?.length) continue;
-      let totalBaseCost = 0;
-      for (const recipe of good.recipes) {
-        for (const [ingIdStr, amount] of Object.entries(recipe)) {
-          const ing = this.goodById[+ingIdStr];
-          if (ing) totalBaseCost += amount * ing.value;
-        }
-      }
-      avgBaseCostByGood[good.i] = totalBaseCost / good.recipes.length;
-    }
+    const avgIngredientsCostByGood = this.calculateAverageBaseCostByGood(goods);
+    const populationByMarket = this.calculatePopulationByMarket(burgs);
 
     for (const market of markets) {
-      const population = this.getMarketBurgs(market.i).reduce((sum, burg) => sum + (burg.population || 0), 0);
+      const population = populationByMarket[market.i] || 0;
 
       // First pass: raw goods - price from demand/supply ratio
       for (const good of goods) {
@@ -529,21 +516,19 @@ export class TradeModule {
       for (const good of goods) {
         if (!good.recipes?.length) continue;
         const marketGood = this.getMarketGood(market, good);
-        let totalLocalCost = 0;
+        let totalMarketCost = 0;
         for (const recipe of good.recipes) {
           for (const [ingIdStr, amount] of Object.entries(recipe)) {
             const ingId = +ingIdStr;
             const ing = this.goodById[ingId];
             if (!ing) continue;
-            totalLocalCost += amount * this.getMarketGood(market, ing).price;
+            totalMarketCost += amount * this.getMarketGood(market, ing).price;
           }
         }
-        const avgLocalCost = totalLocalCost / good.recipes.length;
-        const avgBaseCost = avgBaseCostByGood[good.i] ?? 0;
-        const demandPrice = avgLocalCost + Math.max(0, good.value - avgBaseCost);
-        const minPrice = good.value * PRICE_FLOOR_FACTOR;
-        const maxPrice = good.value * PRICE_CEILING_FACTOR;
-        marketGood.price = minmax(demandPrice, minPrice, maxPrice);
+        const avgMarketCost = totalMarketCost / good.recipes.length;
+        const avgBaseCost = avgIngredientsCostByGood[good.i] ?? 0;
+        const demandPrice = avgMarketCost + Math.max(0, good.value - avgBaseCost);
+        marketGood.price = minmax(demandPrice, good.value * PRICE_FLOOR_FACTOR, good.value * PRICE_CEILING_FACTOR);
       }
     }
   }
@@ -580,6 +565,32 @@ export class TradeModule {
       }
     }
     return demandFactor;
+  }
+
+  private calculateAverageBaseCostByGood(goods: Good[]): number[] {
+    const avgBaseCostByGood = new Array(goods.length);
+    for (const good of goods) {
+      if (!good.recipes?.length) continue;
+      let totalBaseCost = 0;
+      for (const recipe of good.recipes) {
+        for (const [ingIdStr, amount] of Object.entries(recipe)) {
+          const ing = this.goodById[+ingIdStr];
+          if (ing) totalBaseCost += amount * ing.value;
+        }
+      }
+      avgBaseCostByGood[good.i] = totalBaseCost / good.recipes.length;
+    }
+    return avgBaseCostByGood;
+  }
+
+  private calculatePopulationByMarket(burgs: Burg[]): number[] {
+    const populationByMarket: number[] = [];
+    for (const burg of burgs) {
+      if (!burg.market || !burg.population) continue;
+      if (!populationByMarket[burg.market]) populationByMarket[burg.market] = 0;
+      populationByMarket[burg.market] += burg.population;
+    }
+    return populationByMarket;
   }
 
   private syncPackData(): void {
