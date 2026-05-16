@@ -1,9 +1,9 @@
-import type { Burg } from "../modules/burgs-generator";
-import type { DemandCategory } from "../modules/goods-generator";
-import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "../modules/goods-generator";
-import type { MfgHistory, ProductionCandidate } from "../modules/production-generator";
-import type { Deal } from "../modules/trade-generator";
-import { rn } from "../utils";
+import type {Burg} from "../modules/burgs-generator";
+import type {DemandCategory} from "../modules/goods-generator";
+import {DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "../modules/goods-generator";
+import type {MfgHistory, ProductionCandidate} from "../modules/production-generator";
+import type {Deal} from "../modules/trade-generator";
+import {rn} from "../utils";
 
 type Type = "MFG" | "BUY" | "SELL";
 
@@ -14,7 +14,7 @@ export function open(burgId: number): void {
     return;
   }
 
-  const market = Trade.getBurgMarket(burg);
+  const market = Trade.getMarket(burg.market);
   if (!market) {
     tip("No market. This burg is not connected to any market.", true, "error", 5000);
     return;
@@ -94,11 +94,11 @@ export function open(burgId: number): void {
   };
   const renderTable = (params: {
     colWidths: string[];
-    headers: Array<{ label: string; align?: "left" | "right"; title?: string }>;
+    headers: Array<{label: string; align?: "left" | "right"; title?: string}>;
     rows: string[];
     empty: string;
   }) => {
-    const { colWidths, headers, rows, empty } = params;
+    const {colWidths, headers, rows, empty} = params;
     if (!rows.length) return `<i style="${styles.empty}">${empty}</i>`;
 
     return /*html*/ `<table style="${styles.table}">
@@ -205,7 +205,7 @@ export function open(burgId: number): void {
     income: number;
     detailsHtml: string;
   }) => {
-    const { targetId, goodId, type, units, details, income, detailsHtml } = params;
+    const {targetId, goodId, type, units, details, income, detailsHtml} = params;
     return [
       /*html*/ `<tr data-target="${targetId}" style="${styles.bodyRow};cursor:pointer" data-tip="Click to expand deal details">
         ${renderDataCell(renderTaggedGood(goodId, type))}
@@ -300,9 +300,9 @@ export function open(burgId: number): void {
   const jobsTable = renderTable({
     colWidths: ["30%", "10%", "45%", "15%"],
     headers: [
-      { label: "Good" },
-      { label: "Units", align: "right" },
-      { label: "Details" },
+      {label: "Good"},
+      {label: "Units", align: "right"},
+      {label: "Details"},
       {
         label: "Income",
         align: "right",
@@ -347,7 +347,7 @@ export function open(burgId: number): void {
 
   const producedTable = renderTable({
     colWidths: ["80%", "20%"],
-    headers: [{ label: "Good" }, { label: "Units", align: "right" }],
+    headers: [{label: "Good"}, {label: "Units", align: "right"}],
     rows: producedRows ? [producedRows] : [],
     empty: "No goods manufactured"
   });
@@ -392,8 +392,8 @@ export function open(burgId: number): void {
 
 declare global {
   interface Window {
-    ProductionOverview: { open: typeof open };
+    ProductionOverview: {open: typeof open};
   }
 }
 
-window.ProductionOverview = { open };
+window.ProductionOverview = {open};

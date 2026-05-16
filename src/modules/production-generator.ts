@@ -1,9 +1,9 @@
-import type { Burg } from "./burgs-generator";
-import type { CultureType } from "./cultures-generator";
-import { CULTURE_TYPES, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
-import type { DemandCategory, Good } from "./goods-generator";
-import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "./goods-generator";
-import { BONUS_RESOURCE_PRODUCTION, MARKET_MARGIN, type Market } from "./trade-generator";
+import type {Burg} from "./burgs-generator";
+import type {CultureType} from "./cultures-generator";
+import {CULTURE_TYPES, DEFAULT_CULTURE_TYPE} from "./cultures-generator";
+import type {DemandCategory, Good} from "./goods-generator";
+import {DEMAND_PRIORITY, DEMAND_TARGET_FACTORS} from "./goods-generator";
+import {BONUS_RESOURCE_PRODUCTION, type Market} from "./trade-generator";
 
 export class ProductionModule {
   private readonly GOAL_STICKINESS_FACTOR = 0.85;
@@ -34,8 +34,8 @@ export class ProductionModule {
     for (const burg of validBurgs) {
       if (!burg.i) continue;
       const data = this.productionData.get(burg.i);
-      const marketCenter = Trade.getBurgMarket(burg);
-      if (!data || !marketCenter) continue;
+      const market = Trade.getMarket(burg.market);
+      if (!data || !market) continue;
 
       const demandInventory = demandInventoryByBurg.get(burg.i) ?? [];
       this.fillDemandFromMarket({
@@ -44,7 +44,6 @@ export class ProductionModule {
         demandCoverageByGood: index.demandCoverageByGood,
         demandGoodsByCategory: index.demandGoodsByCategory,
         demandTargets: demandTargetsByBurg[burg.i] ?? this.buildDemandTargets(burg),
-        marketCenter,
         history: data
       });
       burg.inventory = {};
@@ -99,7 +98,7 @@ export class ProductionModule {
     demandTargets: number[];
     history: ProductionHistory[];
   } | null {
-    const market = Trade.getBurgMarket(burg);
+    const market = Trade.getMarket(burg.market);
     if (!market) return null;
 
     const state = this.createBurgProductionState(burg, market, index);
@@ -133,7 +132,6 @@ export class ProductionModule {
       demandTargets: this.buildDemandTargets(burg),
       inventory,
       demandCoverage: this.calculateDemandCoverage(inventory, index.demandCoverageByGood),
-      marketView: this.getMarketView(market),
       cultureModifierByGood: index.cultureModifiersByType.get(burg.type || DEFAULT_CULTURE_TYPE)!,
       history: [],
       ingredientCosts: 0,
@@ -175,7 +173,7 @@ export class ProductionModule {
       demandCoverageByGood: index.demandCoverageByGood,
       cultureModifierByGood: state.cultureModifierByGood,
       inventory: state.inventory,
-      marketView: state.marketView
+      market: state.market
     };
   }
 
@@ -185,7 +183,7 @@ export class ProductionModule {
     decision: ProductionDecision,
     workerFraction: number
   ): void {
-    const { good, ingredients, maxYield } = decision.action;
+    const {good, ingredients, maxYield} = decision.action;
     const actualYield = Math.min(workerFraction, maxYield);
     const cultureModifier = state.cultureModifierByGood[good.i] || 1;
     const produced = actualYield * cultureModifier;
@@ -201,7 +199,7 @@ export class ProductionModule {
       this.addDemandCoverage(state.demandCoverage, ingredientGoodId, -fromInventory, index.demandCoverageByGood);
 
       const marketCost = this.buyIngredientFromMarket(state, index, ingredientGoodId, fromMarket);
-      if (marketCost) recipeLog.push({ goodId: ingredientGoodId, amount, marketCost });
+      if (marketCost) recipeLog.push({goodId: ingredientGoodId, amount, marketCost});
     }
 
     state.inventory[good.i] = (state.inventory[good.i] || 0) + produced;
@@ -217,33 +215,24 @@ export class ProductionModule {
     });
   }
 
-  // TODO: rework, should just call Trade module to register a deal
   private buyIngredientFromMarket(
-    { burg, market, marketView, history, ingredientCosts }: BurgProductionState,
+    state: BurgProductionState,
     index: ProductionIndex,
     goodId: number,
-    requestedUnits: number
+    units: number
   ): number {
-    if (requestedUnits <= 0) return 0;
+    if (units <= 0) return 0;
 
+    const {burg, history} = state;
     const good = index.goodById[goodId]!;
-    const marketGood = this.getMarketGoodData(market, goodId, good.value);
-    const units = Math.min(requestedUnits, marketGood.stock || 0);
-    const deal = Trade.buyFromMarket({
-      burg,
-      good,
-      units,
-      marketPrice: marketGood.price * (1 + MARKET_MARGIN)
-    });
+    const budget = Math.max(0, burg.treasury || 0);
+    const deal = Trade.buy({burg, good, units, budget});
     if (!deal) return 0;
 
-    history.push({ kind: "deal", dealId: deal.id });
+    history.push({kind: "deal", dealId: deal.id});
     const totalCost = deal.units * deal.price;
-    ingredientCosts += totalCost;
+    state.ingredientCosts += totalCost;
     burg.treasury = (burg.treasury || 0) - totalCost;
-
-    marketGood.price = Trade.applyMarketPressure(good.value, marketGood.price, units);
-    this.updateMarketViewGood(marketView, goodId, marketGood);
 
     return totalCost;
   }
@@ -256,7 +245,6 @@ export class ProductionModule {
     }
   }
 
-  // TODO: rework, should just call Trade module to register a deal to manage pricing
   private sellInventoryToMarket(state: BurgProductionState, index: ProductionIndex): number {
     let phaseRevenue = 0;
 
@@ -266,13 +254,7 @@ export class ProductionModule {
       if (units <= 0) continue;
 
       const good = index.goodById[goodId]!;
-      const marketGood = this.getMarketGoodData(state.market, goodId, good.value);
-      const deal = Trade.sellToMarket({
-        burg: state.burg,
-        good,
-        units: units,
-        marketPrice: marketGood.price * (1 - MARKET_MARGIN)
-      });
+      const deal = Trade.sell({burg: state.burg, good, units});
       if (!deal) continue;
 
       const grossRevenue = deal.units * deal.price;
@@ -280,8 +262,7 @@ export class ProductionModule {
       const revenue = grossRevenue - taxAmount;
 
       phaseRevenue += revenue;
-      state.history.push({ kind: "deal", dealId: deal.id });
-      marketGood.price = Trade.applyMarketPressure(good.value, marketGood.price, -deal.units);
+      state.history.push({kind: "deal", dealId: deal.id});
     }
 
     return phaseRevenue;
@@ -357,7 +338,7 @@ export class ProductionModule {
   }
 
   private buildDemandGoodsByCategory(goods: Good[], demandCoverageByGood: number[][]): DemandGoodCandidate[][] {
-    const demandGoodsByCategory: DemandGoodCandidate[][] = Array.from({ length: DEMAND_PRIORITY.length }, () => []);
+    const demandGoodsByCategory: DemandGoodCandidate[][] = Array.from({length: DEMAND_PRIORITY.length}, () => []);
 
     for (const good of goods) {
       const coverage = demandCoverageByGood[good.i];
@@ -366,7 +347,7 @@ export class ProductionModule {
       for (let category = 0; category < DEMAND_PRIORITY.length; category++) {
         const coverageWeight = coverage[category] || 0;
         if (coverageWeight <= 0) continue;
-        demandGoodsByCategory[category].push({ good, goodId: good.i, coverageWeight });
+        demandGoodsByCategory[category].push({good, goodId: good.i, coverageWeight});
       }
     }
 
@@ -431,7 +412,6 @@ export class ProductionModule {
     demandCoverageByGood,
     demandGoodsByCategory,
     demandTargets,
-    marketCenter,
     history
   }: {
     burg: Burg;
@@ -439,7 +419,6 @@ export class ProductionModule {
     demandCoverageByGood: number[][];
     demandGoodsByCategory: DemandGoodCandidate[][];
     demandTargets: number[];
-    marketCenter: Market;
     history: ProductionHistory[];
   }): void {
     const demandCoverage = this.calculateDemandCoverage(demandInventory, demandCoverageByGood);
@@ -456,24 +435,16 @@ export class ProductionModule {
         const wealth = burg.treasury || 0;
         if (wealth <= 0.001) break;
 
-        const available = marketCenter.goods[candidate.goodId]?.stock || 0;
-        if (available <= 0.001) continue;
-
-        // TODO: rework, should just call Trade module to register a deal to manage pricing
-        const buyPrice =
-          this.getMarketGoodData(marketCenter, candidate.goodId, candidate.good.value).price * (1 + MARKET_MARGIN);
         const unitsNeeded = shortage / candidate.coverageWeight;
-        const unitsAffordable = buyPrice > 0 ? wealth / buyPrice : available;
-
-        const deal = Trade.buyFromMarket({
+        const deal = Trade.buy({
           burg,
           good: candidate.good,
-          units: Math.min(available, unitsNeeded, unitsAffordable),
-          marketPrice: buyPrice
+          units: unitsNeeded,
+          budget: wealth
         });
         if (!deal) continue;
 
-        history.push({ kind: "deal", dealId: deal.id });
+        history.push({kind: "deal", dealId: deal.id});
         demandInventory[candidate.goodId] = (demandInventory[candidate.goodId] || 0) + deal.units;
         const totalCost = deal.units * deal.price;
         burg.treasury = (burg.treasury || 0) - totalCost;
@@ -486,50 +457,8 @@ export class ProductionModule {
         }
 
         shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
-        const marketGood = this.getMarketGoodData(marketCenter, candidate.goodId, candidate.good.value);
-        marketGood.price = Trade.applyMarketPressure(candidate.good.value, marketGood.price, deal.units);
       }
     }
-  }
-
-  private getMarketGoodData(market: Market, goodId: number, fallbackPrice: number) {
-    const existing = market.goods[goodId];
-    if (existing) return existing;
-
-    const created = {
-      stock: 0,
-      price: fallbackPrice
-    };
-    market.goods[goodId] = created;
-    return created;
-  }
-
-  // TODO: remove, use Trade module
-  private getMarketView(market: Market): MarketView {
-    const inventory: NumericInventory = [];
-    const buyPrice: number[] = [];
-    const sellPrice: number[] = [];
-
-    for (const goodIdStr in market.goods) {
-      const goodId = +goodIdStr;
-      const goodData = market.goods[goodId];
-      inventory[goodId] = goodData.stock;
-      buyPrice[goodId] = goodData.price * (1 + MARKET_MARGIN);
-      sellPrice[goodId] = goodData.price * (1 - MARKET_MARGIN);
-    }
-
-    return { inventory, buyPrice, sellPrice };
-  }
-
-  // TODO: remove, use Trade module
-  private updateMarketViewGood(
-    marketView: MarketView,
-    goodId: number,
-    marketGood: { stock: number; price: number }
-  ): void {
-    marketView.inventory[goodId] = marketGood.stock;
-    marketView.buyPrice[goodId] = marketGood.price * (1 + MARKET_MARGIN);
-    marketView.sellPrice[goodId] = marketGood.price * (1 - MARKET_MARGIN);
   }
 
   private getDemandFocus(demandTargets: number[], demandCoverage: number[]): DemandFocus | null {
@@ -548,10 +477,10 @@ export class ProductionModule {
   }
 
   private getDemandEffect(good: Good, demandFocus: DemandFocus | null, demandCoverageByGood: number[][]): DemandEffect {
-    if (!demandFocus) return { multiplier: 1, category: null };
+    if (!demandFocus) return {multiplier: 1, category: null};
 
     const coverageWeight = demandCoverageByGood[good.i]?.[demandFocus.categoryIndex] || 0;
-    if (!coverageWeight) return { multiplier: 1, category: null };
+    if (!coverageWeight) return {multiplier: 1, category: null};
 
     const multiplier = 1 + coverageWeight * demandFocus.shortage;
     return {
@@ -566,13 +495,14 @@ export class ProductionModule {
     demandEffect: DemandEffect,
     units: number,
     goalGoodId?: number
-  ): { action: PlannedAction; candidate: ProductionCandidate } | null {
+  ): {action: PlannedAction; candidate: ProductionCandidate} | null {
     let maxYield = Infinity;
     let marketCostTotal = 0;
 
     for (const ingredient of recipe.ingredients) {
+      const quote = Trade.quoteMarket(planner.market, ingredient.goodId);
       const inventoryAvailable = planner.inventory[ingredient.goodId] || 0;
-      const marketAvailable = planner.marketView.inventory[ingredient.goodId] || 0;
+      const marketAvailable = quote.stock || 0;
       const totalAvailable = inventoryAvailable + marketAvailable;
       if (totalAvailable < ingredient.amount * units - 0.001) return null;
       maxYield = Math.min(maxYield, totalAvailable / ingredient.amount);
@@ -582,14 +512,16 @@ export class ProductionModule {
 
     const actualUnits = Math.min(units, maxYield);
     for (const ingredient of recipe.ingredients) {
+      const quote = Trade.quoteMarket(planner.market, ingredient.goodId);
       const inventoryAvailable = planner.inventory[ingredient.goodId] || 0;
       const amountNeeded = actualUnits * ingredient.amount;
       const fromMarket = Math.max(0, amountNeeded - Math.min(inventoryAvailable, amountNeeded));
-      marketCostTotal += fromMarket * planner.marketView.buyPrice[ingredient.goodId];
+      marketCostTotal += fromMarket * quote.buyPrice;
     }
 
     const cultureModifier = planner.cultureModifierByGood[recipe.good.i] || 1;
-    const sellValue = (planner.marketView.sellPrice[recipe.good.i] ?? recipe.good.value) * cultureModifier;
+    const outQuote = Trade.quoteMarket(planner.market, recipe.good.i);
+    const sellValue = (outQuote.sellPrice || recipe.good.value) * cultureModifier;
     const ingredientCost = marketCostTotal / actualUnits;
     const projectedGain = (sellValue - ingredientCost) * demandEffect.multiplier;
     const score = projectedGain;
@@ -630,7 +562,8 @@ export class ProductionModule {
     path[good.i] = true;
 
     const cultureModifier = planner.cultureModifierByGood[good.i] || 1;
-    const sellValuePerUnit = (planner.marketView.sellPrice[good.i] ?? good.value) * cultureModifier;
+    const sellQuote = Trade.quoteMarket(planner.market, good.i);
+    const sellValuePerUnit = (sellQuote.sellPrice || good.value) * cultureModifier;
     const totalProjectedGain = sellValuePerUnit * targetUnits * demandEffect.multiplier;
 
     const recipeList = planner.recipesByOutput[good.i];
@@ -674,13 +607,13 @@ export class ProductionModule {
         const amountNeeded = targetUnits * ingredient.amount;
         let remaining = amountNeeded;
 
+        const quote = Trade.quoteMarket(planner.market, ingredient.goodId);
         const fromInventory = Math.min(remaining, planner.inventory[ingredient.goodId] || 0);
         remaining -= fromInventory;
 
-        const marketAvailable = planner.marketView.inventory[ingredient.goodId] || 0;
-        const fromMarket = Math.min(remaining, marketAvailable);
+        const fromMarket = Math.min(remaining, quote.stock);
         remaining -= fromMarket;
-        marketCost += fromMarket * planner.marketView.buyPrice[ingredient.goodId];
+        marketCost += fromMarket * quote.buyPrice;
 
         if (remaining <= 0.001) continue;
 
@@ -805,7 +738,7 @@ export class ProductionModule {
           amount
         }));
         if (!entries.length) continue;
-        recipes.push({ good, ingredients: entries });
+        recipes.push({good, ingredients: entries});
       }
     }
     return recipes;
@@ -822,16 +755,10 @@ type PlannedAction = {
   maxYield: number;
 };
 
-type Recipe = { good: Good; ingredients: Ingredient[] };
-export type Ingredient = { goodId: number; amount: number };
+type Recipe = {good: Good; ingredients: Ingredient[]};
+export type Ingredient = {goodId: number; amount: number};
 
 type NumericInventory = number[];
-
-type MarketView = {
-  inventory: NumericInventory;
-  buyPrice: number[];
-  sellPrice: number[];
-};
 
 type ProductionIndex = {
   goods: Good[];
@@ -851,7 +778,6 @@ type BurgProductionState = {
   demandTargets: number[];
   inventory: NumericInventory;
   demandCoverage: number[];
-  marketView: MarketView;
   cultureModifierByGood: number[];
   history: ProductionHistory[];
   ingredientCosts: number;
@@ -866,14 +792,14 @@ type ProductionPlanner = {
   demandCoverageByGood: number[][];
   cultureModifierByGood: number[];
   inventory: NumericInventory;
-  marketView: MarketView;
+  market: Market;
 };
 
-type DemandEffect = { multiplier: number; category: DemandCategory | null };
+type DemandEffect = {multiplier: number; category: DemandCategory | null};
 
-type DemandFocus = { category: DemandCategory; categoryIndex: number; shortage: number };
+type DemandFocus = {category: DemandCategory; categoryIndex: number; shortage: number};
 
-type DemandGoodCandidate = { good: Good; goodId: number; coverageWeight: number };
+type DemandGoodCandidate = {good: Good; goodId: number; coverageWeight: number};
 
 type ProductionDecision = {
   action: PlannedAction;
@@ -881,7 +807,7 @@ type ProductionDecision = {
   goalGoodId: number | null;
 };
 
-type ManufacturingRecipeLog = { goodId: number; amount: number; marketCost: number }[];
+type ManufacturingRecipeLog = {goodId: number; amount: number; marketCost: number}[];
 
 export type ProductionCandidate = {
   goodId: number;
@@ -918,7 +844,7 @@ export type MfgHistory = {
   candidates?: readonly ProductionCandidate[];
 };
 
-export type DealHistory = { kind: "deal"; dealId: number };
+export type DealHistory = {kind: "deal"; dealId: number};
 
 export type ProductionHistory = MfgHistory | DealHistory;
 
