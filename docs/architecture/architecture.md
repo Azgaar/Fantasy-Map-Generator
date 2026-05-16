@@ -230,6 +230,7 @@ src/
   editors/
   renderers/
   state/
+  ui/
   utils/
 ```
 
