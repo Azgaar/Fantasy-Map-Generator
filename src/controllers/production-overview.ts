@@ -2,6 +2,7 @@ import type { Burg } from "../modules/burgs-generator";
 import type { DemandCategory } from "../modules/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "../modules/goods-generator";
 import type { MfgHistory, ProductionCandidate } from "../modules/production-generator";
+import { getSalesTaxRateForBurg } from "../modules/states-generator";
 import type { Deal } from "../modules/trade-generator";
 import { rn } from "../utils";
 
@@ -27,16 +28,20 @@ export function open(burgId: number): void {
   }
 
   const getDealSpent = (deal: Deal) => deal.units * deal.price;
+
   const getSellerTaxRate = (deal: Deal) => {
     if (deal.phase !== "sell") return 0;
     const seller = pack.burgs[deal.seller];
-    return seller ? Trade.getSalesTaxRate(seller) : 0;
+    return seller ? getSalesTaxRateForBurg(seller) : 0;
   };
+
   const getDealTax = (deal: Deal) => {
     if (deal.phase !== "sell") return 0;
     return deal.units * deal.price * getSellerTaxRate(deal);
   };
+
   const getDealRevenue = (deal: Deal) => deal.units * deal.price;
+
   const getDealNetRevenue = (deal: Deal) => getDealRevenue(deal) - getDealTax(deal);
 
   const styles = {

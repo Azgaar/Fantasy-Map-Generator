@@ -1,7 +1,6 @@
 import { pointer } from "d3";
 import type { DemandCategory, Good } from "../modules/goods-generator";
-import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../modules/goods-generator";
-import { BONUS_RESOURCE_PRODUCTION } from "../modules/trade-generator";
+import { BONUS_RESOURCE_PRODUCTION, DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../modules/goods-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
 import { ensureEl, unique } from "../utils";
 import { getHeight } from "../utils/unitUtils";

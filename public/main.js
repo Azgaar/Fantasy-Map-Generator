@@ -695,7 +695,7 @@ async function generate(options) {
     Rivers.specify();
     Lakes.defineNames();
 
-    Trade.initialize();
+    Trade.initialize(Goods.getBiomesProduction());
     Production.produce();
 
     Military.generate();

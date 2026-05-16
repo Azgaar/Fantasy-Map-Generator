@@ -59,6 +59,12 @@ export interface State {
 
 export const DEFAULT_SALES_TAX = 0.2;
 
+export function getSalesTaxRateForBurg(burg: { state?: number }): number {
+  const stateId = burg.state || 0;
+  if (!stateId) return 0;
+  return pack.states?.[stateId]?.salesTax ?? DEFAULT_SALES_TAX;
+}
+
 class StatesModule {
   private createStates() {
     const states: State[] = [{ i: 0, name: "Neutrals", salesTax: 0 } as State];

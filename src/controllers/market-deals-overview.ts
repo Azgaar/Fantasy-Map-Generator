@@ -1,4 +1,5 @@
 import type { Burg } from "../modules/burgs-generator";
+import { getSalesTaxRateForBurg } from "../modules/states-generator";
 import type { Deal, Market } from "../modules/trade-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
 
@@ -146,7 +147,7 @@ function getDealRevenue(deal: Deal): number {
 function getDealTax(deal: Deal): number {
   if (deal.phase !== "sell") return 0;
   const seller = pack.burgs[deal.seller] as Burg | undefined;
-  return seller ? getDealRevenue(deal) * Trade.getSalesTaxRate(seller) : 0;
+  return seller ? getDealRevenue(deal) * getSalesTaxRateForBurg(seller) : 0;
 }
 
 function getDealNet(deal: Deal): number {
