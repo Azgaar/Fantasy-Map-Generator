@@ -1116,7 +1116,7 @@ export function resolveVersionConflicts(mapVersion) {
     });
   }
 
-  if (isOlderThan("1.122.0")) {
+  if (isOlderThan("1.123.0")) {
     // v1.122.0 moved labels data from SVG to data model
     // Migrate old SVG labels to pack.labels structure
     if (!pack.labels || !pack.labels.length) {
@@ -1181,8 +1181,8 @@ export function resolveVersionConflicts(mapVersion) {
 
           const dxAttr = groupElement.getAttribute("data-dx");
           const dyAttr = groupElement.getAttribute("data-dy");
-          const dx = dxAttr ? parseFloat(dxAttr) : 0;
-          const dy = dyAttr ? parseFloat(dyAttr) : 0;
+          const gdx = dxAttr ? parseFloat(dxAttr) : 0;
+          const gdy = dyAttr ? parseFloat(dyAttr) : 0;
 
           groupElement.querySelectorAll("text").forEach(textElement => {
             const burgId = +textElement.getAttribute("data-id");
@@ -1192,8 +1192,10 @@ export function resolveVersionConflicts(mapVersion) {
             if (!burg || burg.removed) return;
 
             const text = textElement.textContent.trim();
-            // Use burg coordinates, not SVG text coordinates
-            // SVG coordinates may be affected by viewbox transforms
+            const transform = textElement.getAttribute("transform");
+            const [tdx, tdy] = transform ? parseTransform(transform) : [0, 0];
+            const dx = gdx + tdx;
+            const dy = gdy + tdy;
             const x = burg.x;
             const y = burg.y;
 
