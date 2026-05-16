@@ -1,7 +1,11 @@
 name: Playwright Tests
 on:
   pull_request:
-    branches: [ master ]
+    branches: [master]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
 jobs:
   test:
     timeout-minutes: 30

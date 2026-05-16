@@ -48,12 +48,7 @@ export interface Emblem {
 }
 
 class EmblemGeneratorModule {
-  generate(
-    parent: Emblem | null,
-    kinship: number | null,
-    dominion: number | null,
-    type?: string,
-  ): Emblem {
+  generate(parent: Emblem | null, kinship: number | null, dominion: number | null, type?: string): Emblem {
     if (!parent || parent.custom) {
       parent = null;
       kinship = 0;
@@ -63,9 +58,7 @@ class EmblemGeneratorModule {
     let usedPattern: string | null = null;
     const usedTinctures: string[] = [];
 
-    const t1 = P(kinship as number)
-      ? parent!.t1
-      : this.getTincture("field", usedTinctures, null);
+    const t1 = P(kinship as number) ? parent!.t1 : this.getTincture("field", usedTinctures, null);
     if (t1.includes("-")) usedPattern = t1;
     const coa: Emblem = { t1 };
 
@@ -78,19 +71,9 @@ class EmblemGeneratorModule {
         : null;
 
     const ordinary =
-      (!addCharge && P(0.65)) || P(0.3)
-        ? linedOrdinary
-          ? linedOrdinary
-          : rw(ordinaries.straight)
-        : null; // 36% for ordinary
+      (!addCharge && P(0.65)) || P(0.3) ? (linedOrdinary ? linedOrdinary : rw(ordinaries.straight)) : null; // 36% for ordinary
 
-    const rareDivided = [
-      "chief",
-      "terrace",
-      "chevron",
-      "quarter",
-      "flaunches",
-    ].includes(ordinary!);
+    const rareDivided = ["chief", "terrace", "chevron", "quarter", "flaunches"].includes(ordinary!);
 
     const divisioned = (() => {
       if (rareDivided) return P(0.03);
@@ -102,42 +85,24 @@ class EmblemGeneratorModule {
 
     const division = (() => {
       if (divisioned) {
-        if (parent?.division && P((kinship as number) - 0.1))
-          return parent.division.division;
+        if (parent?.division && P((kinship as number) - 0.1)) return parent.division.division;
         return rw(divisions.variants);
       }
       return null;
     })();
 
     if (division) {
-      const t = this.getTincture(
-        "division",
-        usedTinctures,
-        P(0.98) ? coa.t1 : null,
-      );
+      const t = this.getTincture("division", usedTinctures, P(0.98) ? coa.t1 : null);
       coa.division = { division, t };
       if (divisions[division as keyof typeof divisions])
         coa.division.line =
-          usedPattern || (ordinary && P(0.7))
-            ? "straight"
-            : rw(divisions[division as keyof typeof divisions]);
+          usedPattern || (ordinary && P(0.7)) ? "straight" : rw(divisions[division as keyof typeof divisions]);
     }
 
     if (ordinary) {
-      coa.ordinaries = [
-        { ordinary, t: this.getTincture("charge", usedTinctures, coa.t1) },
-      ];
-      if (linedOrdinary)
-        coa.ordinaries[0].line =
-          usedPattern || (division && P(0.7)) ? "straight" : rw(lineWeights);
-      if (
-        division &&
-        !addCharge &&
-        !usedPattern &&
-        P(0.5) &&
-        ordinary !== "bordure" &&
-        ordinary !== "orle"
-      ) {
+      coa.ordinaries = [{ ordinary, t: this.getTincture("charge", usedTinctures, coa.t1) }];
+      if (linedOrdinary) coa.ordinaries[0].line = usedPattern || (division && P(0.7)) ? "straight" : rw(lineWeights);
+      if (division && !addCharge && !usedPattern && P(0.5) && ordinary !== "bordure" && ordinary !== "orle") {
         if (P(0.8)) coa.ordinaries[0].divided = "counter";
         // 40%
         else if (P(0.6)) coa.ordinaries[0].divided = "field";
@@ -148,12 +113,9 @@ class EmblemGeneratorModule {
 
     if (addCharge) {
       const charge = (() => {
-        if (parent?.charges && P((kinship as number) - 0.1))
-          return parent.charges[0].charge;
+        if (parent?.charges && P((kinship as number) - 0.1)) return parent.charges[0].charge;
         if (type && type !== "Generic" && P(0.3)) return rw(typeMapping[type]);
-        return this.selectCharge(
-          ordinary || divisioned ? charges.types : charges.single,
-        );
+        return this.selectCharge(ordinary || divisioned ? charges.types : charges.single);
       })();
       const chargeDataEntry = charges.data[charge] || {};
 
@@ -166,29 +128,15 @@ class EmblemGeneratorModule {
       if (ordinaryData?.positionsOn && P(0.8)) {
         // place charge over ordinary (use tincture of field type)
         p = rw(ordinaryData.positionsOn);
-        t =
-          !usedPattern && P(0.3)
-            ? coa.t1
-            : this.getTincture("charge", [], tOrdinary);
+        t = !usedPattern && P(0.3) ? coa.t1 : this.getTincture("charge", [], tOrdinary);
       } else if (ordinaryData?.positionsOff && P(0.95)) {
         // place charge out of ordinary (use tincture of ordinary type)
         p = rw(ordinaryData.positionsOff);
-        t =
-          !usedPattern && P(0.3)
-            ? tOrdinary!
-            : this.getTincture("charge", usedTinctures, coa.t1);
-      } else if (
-        positions.divisions[division as keyof typeof positions.divisions]
-      ) {
+        t = !usedPattern && P(0.3) ? tOrdinary! : this.getTincture("charge", usedTinctures, coa.t1);
+      } else if (positions.divisions[division as keyof typeof positions.divisions]) {
         // place charge in fields made by division
-        p = rw(
-          positions.divisions[division as keyof typeof positions.divisions],
-        );
-        t = this.getTincture(
-          "charge",
-          tOrdinary ? usedTinctures.concat(tOrdinary) : usedTinctures,
-          coa.t1,
-        );
+        p = rw(positions.divisions[division as keyof typeof positions.divisions]);
+        t = this.getTincture("charge", tOrdinary ? usedTinctures.concat(tOrdinary) : usedTinctures, coa.t1);
       } else if (chargeDataEntry.positions) {
         // place charge-suitable position
         p = rw(chargeDataEntry.positions);
@@ -200,30 +148,16 @@ class EmblemGeneratorModule {
           : charges.conventional[charge as keyof typeof charges.conventional]
             ? rw(positions.conventional)
             : rw(positions.complex);
-        t = this.getTincture(
-          "charge",
-          usedTinctures.concat(tOrdinary!),
-          coa.t1,
-        );
+        t = this.getTincture("charge", usedTinctures.concat(tOrdinary!), coa.t1);
       }
 
-      if (
-        chargeDataEntry.natural &&
-        chargeDataEntry.natural !== t &&
-        chargeDataEntry.natural !== tOrdinary
-      )
+      if (chargeDataEntry.natural && chargeDataEntry.natural !== t && chargeDataEntry.natural !== tOrdinary)
         t = chargeDataEntry.natural;
 
       const item: EmblemCharge = { charge: charge, t, p };
       const colors = chargeDataEntry.colors || 1;
-      if (colors > 1)
-        item.t2 = P(0.25)
-          ? this.getTincture("charge", usedTinctures, coa.t1)
-          : t;
-      if (colors > 2 && item.t2)
-        item.t3 = P(0.5)
-          ? this.getTincture("charge", usedTinctures, coa.t1)
-          : t;
+      if (colors > 1) item.t2 = P(0.25) ? this.getTincture("charge", usedTinctures, coa.t1) : t;
+      if (colors > 2 && item.t2) item.t3 = P(0.5) ? this.getTincture("charge", usedTinctures, coa.t1) : t;
       coa.charges = [item];
 
       if (p === "ABCDEFGHIJKL" && P(0.95)) {
@@ -238,47 +172,26 @@ class EmblemGeneratorModule {
         const t2 = this.getTincture("charge", [], t);
         coa.charges.push({ charge: chargeNew, t: t2, p, size: 0.5 });
       } else if (division && !ordinary) {
-        const allowCounter =
-          !usedPattern &&
-          (!coa.division?.line || coa.division.line === "straight");
+        const allowCounter = !usedPattern && (!coa.division?.line || coa.division.line === "straight");
 
         // dimidiation: second charge at division basic positions
-        if (
-          P(0.3) &&
-          ["perPale", "perFess"].includes(division) &&
-          coa.division?.line === "straight"
-        ) {
+        if (P(0.3) && ["perPale", "perFess"].includes(division) && coa.division?.line === "straight") {
           coa.charges[0].divided = "field";
           if (P(0.95)) {
             const p2 =
-              p === "e" || P(0.5)
-                ? "e"
-                : rw(
-                    positions.divisions[
-                      division as keyof typeof positions.divisions
-                    ],
-                  );
+              p === "e" || P(0.5) ? "e" : rw(positions.divisions[division as keyof typeof positions.divisions]);
             const chargeNew = this.selectCharge(charges.single);
-            const tNew = this.getTincture(
-              "charge",
-              usedTinctures,
-              coa.division!.t,
-            );
+            const tNew = this.getTincture("charge", usedTinctures, coa.division!.t);
             coa.charges.push({
               charge: chargeNew,
               t: tNew,
               p: p2,
-              divided: "division",
+              divided: "division"
             });
           }
         } else if (allowCounter && P(0.4)) coa.charges[0].divided = "counter";
         // counterchanged, 40%
-        else if (
-          ["perPale", "perFess", "perBend", "perBendSinister"].includes(
-            division,
-          ) &&
-          P(0.8)
-        ) {
+        else if (["perPale", "perFess", "perBend", "perBendSinister"].includes(division) && P(0.8)) {
           // place 2 charges in division standard positions
           const [p1, p2] =
             division === "perPale"
@@ -291,18 +204,11 @@ class EmblemGeneratorModule {
           coa.charges[0].p = p1;
 
           const chargeNew = this.selectCharge(charges.single);
-          const tNew = this.getTincture(
-            "charge",
-            usedTinctures,
-            coa.division!.t,
-          );
+          const tNew = this.getTincture("charge", usedTinctures, coa.division!.t);
           coa.charges.push({ charge: chargeNew, t: tNew, p: p2 });
         } else if (["perCross", "perSaltire"].includes(division) && P(0.5)) {
           // place 4 charges in division standard positions
-          const [p1, p2, p3, p4] =
-            division === "perCross"
-              ? ["j", "l", "m", "o"]
-              : ["b", "d", "f", "h"];
+          const [p1, p2, p3, p4] = division === "perCross" ? ["j", "l", "m", "o"] : ["b", "d", "f", "h"];
           coa.charges[0].p = p1;
 
           const c2 = this.selectCharge(charges.single);
@@ -313,13 +219,8 @@ class EmblemGeneratorModule {
 
           const c4 = this.selectCharge(charges.single);
           const t4 = this.getTincture("charge", [], coa.t1);
-          coa.charges.push(
-            { charge: c2, t: t2, p: p2 },
-            { charge: c3, t: t3, p: p3 },
-            { charge: c4, t: t4, p: p4 },
-          );
-        } else if (allowCounter && p.length > 1)
-          coa.charges[0].divided = "counter"; // counterchanged, 40%
+          coa.charges.push({ charge: c2, t: t2, p: p2 }, { charge: c3, t: t3, p: p3 }, { charge: c4, t: t4, p: p4 });
+        } else if (allowCounter && p.length > 1) coa.charges[0].divided = "counter"; // counterchanged, 40%
       }
 
       for (const c of coa.charges) {
@@ -330,9 +231,7 @@ class EmblemGeneratorModule {
     // dominions have canton with parent coa
     if (P(dominion as number) && parent?.charges) {
       const invert = this.isSameType(parent.t1, coa.t1);
-      const t = invert
-        ? this.getTincture("division", usedTinctures, coa.t1)
-        : parent.t1;
+      const t = invert ? this.getTincture("division", usedTinctures, coa.t1) : parent.t1;
       const canton: EmblemOrdinary = { ordinary: "canton", t };
 
       if (coa.charges) {
@@ -345,12 +244,10 @@ class EmblemGeneratorModule {
       }
 
       let charge = parent.charges[0].charge;
-      if (charge === "inescutcheon" && parent.charges[1])
-        charge = parent.charges[1].charge;
+      if (charge === "inescutcheon" && parent.charges[1]) charge = parent.charges[1].charge;
 
       let t2 = invert ? parent.t1 : parent.charges[0].t;
-      if (this.isSameType(t, t2))
-        t2 = this.getTincture("charge", usedTinctures, t);
+      if (this.isSameType(t, t2)) t2 = this.getTincture("charge", usedTinctures, t);
 
       if (!coa.charges) coa.charges = [];
       coa.charges.push({ charge, t: t2, p: "y", size: 0.5 });
@@ -373,27 +270,17 @@ class EmblemGeneratorModule {
   }
 
   // Select tincture: element type (field, division, charge), used field tinctures, field type to follow RoT
-  private getTincture(
-    element: "field" | "division" | "charge",
-    fields: string[] = [],
-    RoT: string | null,
-  ): string {
+  private getTincture(element: "field" | "division" | "charge", fields: string[] = [], RoT: string | null): string {
     const base = RoT ? (RoT.includes("-") ? RoT.split("-")[1] : RoT) : null;
     const tinctures = createTinctures();
 
     let type = rw(tinctures[element]); // metals, colours, stains, patterns
-    if (RoT && type !== "patterns")
-      type = this.getType(base!) === "metals" ? "colours" : "metals"; // follow RoT
-    if (type === "metals" && fields.includes("or") && fields.includes("argent"))
-      type = "colours"; // exclude metals overuse
-    let tincture = rw(
-      tinctures[type as keyof typeof tinctures] as Record<string, number>,
-    );
+    if (RoT && type !== "patterns") type = this.getType(base!) === "metals" ? "colours" : "metals"; // follow RoT
+    if (type === "metals" && fields.includes("or") && fields.includes("argent")) type = "colours"; // exclude metals overuse
+    let tincture = rw(tinctures[type as keyof typeof tinctures] as Record<string, number>);
 
     while (tincture === base || fields.includes(tincture)) {
-      tincture = rw(
-        tinctures[type as keyof typeof tinctures] as Record<string, number>,
-      );
+      tincture = rw(tinctures[type as keyof typeof tinctures] as Record<string, number>);
     } // follow RoT
 
     if (type !== "patterns" && element !== "charge") fields.push(tincture); // add field tincture
@@ -405,11 +292,7 @@ class EmblemGeneratorModule {
     return tincture;
   }
 
-  private defineChargeAttributes(
-    ordinary: string | null,
-    division: string | null,
-    c: EmblemCharge,
-  ): void {
+  private defineChargeAttributes(ordinary: string | null, division: string | null, c: EmblemCharge): void {
     // define size
     c.size = (c.size || 1) * this.getSize(c.p, ordinary, division);
 
@@ -442,11 +325,7 @@ class EmblemGeneratorModule {
     return "pattern";
   }
 
-  private definePattern(
-    pattern: string,
-    element: "field" | "division" | "charge",
-    usedTinctures: string[],
-  ): string {
+  private definePattern(pattern: string, element: "field" | "division" | "charge", usedTinctures: string[]): string {
     let t1: string | null = null;
     let t2: string | null = null;
     let size = "";
@@ -501,8 +380,7 @@ class EmblemGeneratorModule {
         t1 = "gules";
         t2 = "argent";
       }
-    } else if (pattern === "semy")
-      pattern = `${pattern}_of_${this.selectCharge(charges.semy)}`;
+    } else if (pattern === "semy") pattern = `${pattern}_of_${this.selectCharge(charges.semy)}`;
 
     if (!t1 || !t2) {
       const tinctures = createTinctures();
@@ -526,26 +404,18 @@ class EmblemGeneratorModule {
     let n: string | null = null;
     const tinctures = createTinctures();
     while (!n || n === t) {
-      n = rw(
-        tinctures[type as keyof typeof tinctures] as Record<string, number>,
-      );
+      n = rw(tinctures[type as keyof typeof tinctures] as Record<string, number>);
     }
     return n;
   }
 
-  private getSize(
-    p: string,
-    o: string | null = null,
-    d: string | null = null,
-  ): number {
+  private getSize(p: string, o: string | null = null, d: string | null = null): number {
     if (p === "e" && (o === "bordure" || o === "orle")) return 1.1;
     if (p === "e") return 1.5;
     if (p === "jln" || p === "jlh") return 0.7;
     if (p === "abcpqh" || p === "ez" || p === "be") return 0.5;
-    if (["a", "b", "c", "d", "f", "g", "h", "i", "bh", "df"].includes(p))
-      return 0.5;
-    if (["j", "l", "m", "o", "jlmo"].includes(p) && d === "perCross")
-      return 0.6;
+    if (["a", "b", "c", "d", "f", "g", "h", "i", "bh", "df"].includes(p)) return 0.5;
+    if (["j", "l", "m", "o", "jlmo"].includes(p) && d === "perCross") return 0.6;
     if (p.length > 10) return 0.18; // >10 (bordure)
     if (p.length > 7) return 0.3; // 8, 9, 10
     if (p.length > 4) return 0.4; // 5, 6, 7
@@ -555,19 +425,12 @@ class EmblemGeneratorModule {
 
   getShield(culture: number, state?: number): string {
     const emblemShape = ensureEl<HTMLSelectElement>("emblemShape");
-    const shapeGroup =
-      emblemShape.selectedOptions[0]?.parentElement?.getAttribute("label") ||
-      "Diversiform";
+    const shapeGroup = emblemShape.selectedOptions[0]?.parentElement?.getAttribute("label") || "Diversiform";
     if (shapeGroup !== "Diversiform") return emblemShape.value;
 
-    if (emblemShape.value === "state" && state && pack.states[state].coa)
-      return pack.states[state].coa!.shield!;
+    if (emblemShape.value === "state" && state && pack.states[state].coa) return pack.states[state].coa!.shield!;
     if (pack.cultures[culture].shield) return pack.cultures[culture].shield!;
-    ERROR &&
-      console.error(
-        "Shield shape is not defined on culture level",
-        pack.cultures[culture],
-      );
+    ERROR && console.error("Shield shape is not defined on culture level", pack.cultures[culture]);
     return "heater";
   }
 

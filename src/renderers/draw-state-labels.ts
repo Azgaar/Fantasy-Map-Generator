@@ -93,7 +93,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
           dx,
           dy,
           maxLakeSize,
-          offset,
+          offset
         });
         return { angle, length, x, y };
       });
@@ -114,20 +114,14 @@ const stateLabelsRenderer = (list?: number[]): void => {
         .attr("d", round(lineGen(pathPoints) || ""))
         .attr("id", `textPath_stateLabel${labelData.i}`);
 
-      const pathLength =
-        (textPath.node() as SVGPathElement).getTotalLength() / letterLength; // path length in letters
-      const [lines, ratio] = getLinesAndRatio(
-        mode,
-        state.name!,
-        state.fullName!,
-        pathLength,
-      );
+      const pathLength = (textPath.node() as SVGPathElement).getTotalLength() / letterLength; // path length in letters
+      const [lines, ratio] = getLinesAndRatio(mode, state.name!, state.fullName!, pathLength);
 
       // Update label data with font size
       Labels.update(labelData.i, { text: lines.join("|"), fontSize: ratio });
 
       // prolongate path if it's too short
-      const longestLineLength = max(lines.map((line) => line.length)) || 0;
+      const longestLineLength = max(lines.map(line => line.length)) || 0;
       if (pathLength && pathLength < longestLineLength) {
         const [x1, y1] = pathPoints.at(0)!;
         const [x2, y2] = pathPoints.at(-1)!;
@@ -135,10 +129,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
 
         const mod = longestLineLength / pathLength;
         pathPoints[0] = [x1 + dx - dx * mod, y1 + dy - dy * mod];
-        pathPoints[pathPoints.length - 1] = [
-          x2 - dx + dx * mod,
-          y2 - dy + dy * mod,
-        ];
+        pathPoints[pathPoints.length - 1] = [x2 - dx + dx * mod, y2 - dy + dy * mod];
 
         textPath.attr("d", round(lineGen(pathPoints) || ""));
       }
@@ -157,10 +148,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
         .node() as SVGTextPathElement;
 
       const top = (lines.length - 1) / -2; // y offset
-      const spans = lines.map(
-        (lineText, index) =>
-          `<tspan x="0" dy="${index ? 1 : top}em">${lineText}</tspan>`,
-      );
+      const spans = lines.map((lineText, index) => `<tspan x="0" dy="${index ? 1 : top}em">${lineText}</tspan>`);
       textElement.insertAdjacentHTML("afterbegin", spans.join(""));
 
       textElement.setAttribute("href", `#textPath_stateLabel${labelData.i}`);
@@ -173,29 +161,15 @@ const stateLabelsRenderer = (list?: number[]): void => {
       const [[x1, y1], [x2, y2]] = [pathPoints.at(0)!, pathPoints.at(-1)!];
       const angleRad = Math.atan2(y2 - y1, x2 - x1);
 
-      const isInsideState = checkIfInsideState(
-        textElement,
-        angleRad,
-        width / 2,
-        height / 2,
-        stateIds,
-        labelData.stateId,
-      );
+      const isInsideState = checkIfInsideState(textElement, angleRad, width / 2, height / 2, stateIds, labelData.stateId);
       if (isInsideState) continue;
 
       // replace name to one-liner
-      const text =
-        pathLength > state.fullName!.length * 1.8
-          ? state.fullName!
-          : state.name!;
+      const text = pathLength > state.fullName!.length * 1.8 ? state.fullName! : state.name!;
       textElement.innerHTML = `<tspan x="0">${text}</tspan>`;
       Labels.update(labelData.i, { text });
 
-      const correctedRatio = minmax(
-        rn((pathLength / text.length) * 50),
-        50,
-        130,
-      );
+      const correctedRatio = minmax(rn((pathLength / text.length) * 50), 50, 130);
       textElement.setAttribute("font-size", `${correctedRatio}%`);
       Labels.update(labelData.i, { fontSize: correctedRatio });
     }
@@ -223,7 +197,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
 
     function getFullTwoLines(): [string[], number] {
       const lines = splitInTwo(fullName);
-      const longestLineLength = max(lines.map((line) => line.length)) || 0;
+      const longestLineLength = max(lines.map(line => line.length)) || 0;
       const ratio = pathLength / longestLineLength;
       return [lines, minmax(rn(ratio * 60), 70, 150)];
     }
@@ -236,7 +210,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
     halfwidth: number,
     halfheight: number,
     stateIds: TypedArray,
-    stateId: number,
+    stateId: number
   ): boolean {
     const bbox = textElement.getBBox();
     const [cx, cy] = [bbox.x + bbox.width / 2, bbox.y + bbox.height / 2];
@@ -247,20 +221,16 @@ const stateLabelsRenderer = (list?: number[]): void => {
       [+halfwidth, halfheight],
       [-halfwidth, halfheight],
       [0, halfheight],
-      [0, -halfheight],
+      [0, -halfheight]
     ];
 
     const sin = Math.sin(angleRad);
     const cos = Math.cos(angleRad);
-    const rotatedPoints = points.map(([x, y]): [number, number] => [
-      cx + x * cos - y * sin,
-      cy + x * sin + y * cos,
-    ]);
+    const rotatedPoints = points.map(([x, y]): [number, number] => [cx + x * cos - y * sin, cy + x * sin + y * cos]);
 
     let pointsInside = 0;
     for (const [x, y] of rotatedPoints) {
-      const isInside =
-        stateIds[findClosestCell(x, y, undefined, pack) as number] === stateId;
+      const isInside = stateIds[findClosestCell(x, y, undefined, pack) as number] === stateId;
       if (isInside) pointsInside++;
       if (pointsInside > 4) return true;
     }

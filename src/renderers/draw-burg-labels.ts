@@ -100,23 +100,17 @@ export function removeBurgLabel(burgId: number): void {
 
 function createLabelGroups(): void {
   // save existing styles and remove all groups
-  document.querySelectorAll("g#burgLabels > g").forEach((group) => {
-    style.burgLabels[group.id] = Array.from(group.attributes).reduce(
-      (acc: { [key: string]: string }, attribute) => {
-        acc[attribute.name] = attribute.value;
-        return acc;
-      },
-      {},
-    );
+  document.querySelectorAll("g#burgLabels > g").forEach(group => {
+    style.burgLabels[group.id] = Array.from(group.attributes).reduce((acc: { [key: string]: string }, attribute) => {
+      acc[attribute.name] = attribute.value;
+      return acc;
+    }, {});
     group.remove();
   });
 
   // create groups for each burg group and apply stored or default style
-  const defaultStyle =
-    style.burgLabels.town || Object.values(style.burgLabels)[0] || {};
-  const sortedGroups = [...(options.burgs.groups as BurgGroup[])].sort(
-    (a, b) => a.order - b.order,
-  );
+  const defaultStyle = style.burgLabels.town || Object.values(style.burgLabels)[0] || {};
+  const sortedGroups = [...(options.burgs.groups as BurgGroup[])].sort((a, b) => a.order - b.order);
   for (const { name } of sortedGroups) {
     const group = burgLabels.append("g");
     const styles = style.burgLabels[name] || defaultStyle;

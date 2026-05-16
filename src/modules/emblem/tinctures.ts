@@ -38,6 +38,6 @@ export const createTinctures = () => ({
     grillage: 1,
     chainy: 1,
     maily: 2,
-    honeycombed: 1,
-  },
+    honeycombed: 1
+  }
 });

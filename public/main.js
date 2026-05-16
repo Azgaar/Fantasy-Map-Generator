@@ -290,6 +290,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   restoreDefaultEvents(); // apply default viewbox events
   initiateAutosave();
+  initTourPromptButton();
 });
 
 function hideLoading() {
@@ -429,6 +430,22 @@ function toggleAssistant() {
     const assistantContainer = document.getElementById("chat-widget-container");
     if (assistantContainer) assistantContainer.style.display = "none";
   }
+}
+
+function initTourPromptButton() {
+  const MAX_SHOWS = 3;
+  const STORAGE_KEY = "fmg-tour-prompt-count";
+  const btn = document.getElementById("tourPromptButton");
+  if (!btn) return;
+
+  const count = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+  if (count >= MAX_SHOWS) return;
+
+  localStorage.setItem(STORAGE_KEY, count + 1);
+  btn.style.display = "flex";
+  btn.addEventListener("click", () => {
+    UITour.start();
+  });
 }
 
 // find burg for MFCG and focus on it

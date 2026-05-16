@@ -16,37 +16,25 @@ const burgIconsRenderer = (): void => {
   createIconGroups();
 
   for (const { name } of options.burgs.groups as BurgGroup[]) {
-    const burgsInGroup = pack.burgs.filter(
-      (b) => b.group === name && !b.removed,
-    );
+    const burgsInGroup = pack.burgs.filter(b => b.group === name && !b.removed);
     if (!burgsInGroup.length) continue;
 
-    const iconsGroup = document.querySelector<SVGGElement>(
-      `#burgIcons > g#${name}`,
-    );
+    const iconsGroup = document.querySelector<SVGGElement>(`#burgIcons > g#${name}`);
     if (!iconsGroup) continue;
 
     const icon = iconsGroup.dataset.icon || "#icon-circle";
     iconsGroup.innerHTML = burgsInGroup
-      .map(
-        (b) =>
-          `<use id="burg${b.i}" data-id="${b.i}" href="${icon}" x="${b.x}" y="${b.y}"></use>`,
-      )
+      .map(b => `<use id="burg${b.i}" data-id="${b.i}" href="${icon}" x="${b.x}" y="${b.y}"></use>`)
       .join("");
 
-    const portsInGroup = burgsInGroup.filter((b) => b.port);
+    const portsInGroup = burgsInGroup.filter(b => b.port);
     if (!portsInGroup.length) continue;
 
-    const portGroup = document.querySelector<SVGGElement>(
-      `#anchors > g#${name}`,
-    );
+    const portGroup = document.querySelector<SVGGElement>(`#anchors > g#${name}`);
     if (!portGroup) continue;
 
     portGroup.innerHTML = portsInGroup
-      .map(
-        (b) =>
-          `<use id="anchor${b.i}" data-id="${b.i}" href="#icon-anchor" x="${b.x}" y="${b.y}"></use>`,
-      )
+      .map(b => `<use id="anchor${b.i}" data-id="${b.i}" href="#icon-anchor" x="${b.x}" y="${b.y}"></use>`)
       .join("");
   }
 
@@ -93,36 +81,26 @@ const removeBurgIconRenderer = (burgId: number): void => {
 
 function createIconGroups(): void {
   // save existing styles and remove all groups
-  document.querySelectorAll("g#burgIcons > g").forEach((group) => {
-    style.burgIcons[group.id] = Array.from(group.attributes).reduce(
-      (acc: { [key: string]: string }, attribute) => {
-        acc[attribute.name] = attribute.value;
-        return acc;
-      },
-      {},
-    );
+  document.querySelectorAll("g#burgIcons > g").forEach(group => {
+    style.burgIcons[group.id] = Array.from(group.attributes).reduce((acc: { [key: string]: string }, attribute) => {
+      acc[attribute.name] = attribute.value;
+      return acc;
+    }, {});
     group.remove();
   });
 
-  document.querySelectorAll("g#anchors > g").forEach((group) => {
-    style.anchors[group.id] = Array.from(group.attributes).reduce(
-      (acc: { [key: string]: string }, attribute) => {
-        acc[attribute.name] = attribute.value;
-        return acc;
-      },
-      {},
-    );
+  document.querySelectorAll("g#anchors > g").forEach(group => {
+    style.anchors[group.id] = Array.from(group.attributes).reduce((acc: { [key: string]: string }, attribute) => {
+      acc[attribute.name] = attribute.value;
+      return acc;
+    }, {});
     group.remove();
   });
 
   // create groups for each burg group and apply stored or default style
-  const defaultIconStyle =
-    style.burgIcons.town || Object.values(style.burgIcons)[0] || {};
-  const defaultAnchorStyle =
-    style.anchors.town || Object.values(style.anchors)[0] || {};
-  const sortedGroups = [...(options.burgs.groups as BurgGroup[])].sort(
-    (a, b) => a.order - b.order,
-  );
+  const defaultIconStyle = style.burgIcons.town || Object.values(style.burgIcons)[0] || {};
+  const defaultAnchorStyle = style.anchors.town || Object.values(style.anchors)[0] || {};
+  const sortedGroups = [...(options.burgs.groups as BurgGroup[])].sort((a, b) => a.order - b.order);
   for (const { name } of sortedGroups) {
     const burgGroup = burgIcons.append("g");
     const iconStyles = style.burgIcons[name] || defaultIconStyle;

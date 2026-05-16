@@ -1,14 +1,5 @@
 import { quadtree, sum } from "d3";
-import {
-  findAllInQuadtree,
-  gauss,
-  minmax,
-  nth,
-  ra,
-  rand,
-  rn,
-  si,
-} from "../utils";
+import { findAllInQuadtree, gauss, minmax, nth, ra, rand, rn, si } from "../utils";
 import type { State } from "./states-generator";
 
 declare global {
@@ -53,11 +44,11 @@ class MilitaryModule {
     TIME && console.time("generateMilitary");
     const { cells, states } = pack;
     const { p } = cells;
-    const valid = states.filter((s) => s.i && !s.removed); // valid states
+    const valid = states.filter(s => s.i && !s.removed); // valid states
     if (!options.military) options.military = this.getDefaultOptions();
 
-    const expn = sum(valid.map((s) => s.expansionism)); // total expansion
-    const area = sum(valid.map((s) => s.area)); // total area
+    const expn = sum(valid.map(s => s.expansionism)); // total expansion
+    const area = sum(valid.map(s => s.area)); // total area
     const rate = {
       x: 0,
       Ally: -0.2,
@@ -68,7 +59,7 @@ class MilitaryModule {
       Unknown: 0,
       Rival: 0.5,
       Vassal: 0.5,
-      Suzerain: -0.5,
+      Suzerain: -0.5
     };
 
     const stateModifier = {
@@ -78,7 +69,7 @@ class MilitaryModule {
         Lake: 1,
         Naval: 0.7,
         Hunting: 1.2,
-        River: 1.1,
+        River: 1.1
       },
       ranged: {
         Nomadic: 0.9,
@@ -86,7 +77,7 @@ class MilitaryModule {
         Lake: 1,
         Naval: 0.8,
         Hunting: 2,
-        River: 0.8,
+        River: 0.8
       },
       mounted: {
         Nomadic: 2.3,
@@ -94,7 +85,7 @@ class MilitaryModule {
         Lake: 0.7,
         Naval: 0.3,
         Hunting: 0.7,
-        River: 0.8,
+        River: 0.8
       },
       machinery: {
         Nomadic: 0.8,
@@ -102,7 +93,7 @@ class MilitaryModule {
         Lake: 1.1,
         Naval: 1.4,
         Hunting: 0.4,
-        River: 1.1,
+        River: 1.1
       },
       naval: {
         Nomadic: 0.5,
@@ -110,7 +101,7 @@ class MilitaryModule {
         Lake: 1.2,
         Naval: 1.8,
         Hunting: 0.7,
-        River: 1.2,
+        River: 1.2
       },
       armored: {
         Nomadic: 1,
@@ -118,7 +109,7 @@ class MilitaryModule {
         Lake: 1,
         Naval: 1,
         Hunting: 0.7,
-        River: 1.1,
+        River: 1.1
       },
       aviation: {
         Nomadic: 0.5,
@@ -126,7 +117,7 @@ class MilitaryModule {
         Lake: 1.2,
         Naval: 1.2,
         Hunting: 0.6,
-        River: 1.2,
+        River: 1.2
       },
       magical: {
         Nomadic: 1,
@@ -134,8 +125,8 @@ class MilitaryModule {
         Lake: 1,
         Naval: 1,
         Hunting: 1,
-        River: 1,
-      },
+        River: 1
+      }
     };
 
     const cellTypeModifier = {
@@ -147,7 +138,7 @@ class MilitaryModule {
         naval: 0.3,
         armored: 1.6,
         aviation: 1,
-        magical: 0.5,
+        magical: 0.5
       },
       wetland: {
         melee: 0.8,
@@ -157,7 +148,7 @@ class MilitaryModule {
         naval: 1.0,
         armored: 0.2,
         aviation: 0.5,
-        magical: 0.5,
+        magical: 0.5
       },
       highland: {
         melee: 1.2,
@@ -167,8 +158,8 @@ class MilitaryModule {
         naval: 1.0,
         armored: 0.8,
         aviation: 0.3,
-        magical: 2,
-      },
+        magical: 2
+      }
     };
 
     const burgTypeModifier = {
@@ -180,7 +171,7 @@ class MilitaryModule {
         naval: 1.0,
         armored: 1.6,
         aviation: 1,
-        magical: 0.5,
+        magical: 0.5
       },
       wetland: {
         melee: 1,
@@ -190,7 +181,7 @@ class MilitaryModule {
         naval: 1.0,
         armored: 0.2,
         aviation: 0.5,
-        magical: 0.5,
+        magical: 0.5
       },
       highland: {
         melee: 1.2,
@@ -200,37 +191,27 @@ class MilitaryModule {
         naval: 1.0,
         armored: 0.8,
         aviation: 0.3,
-        magical: 2,
-      },
+        magical: 2
+      }
     };
 
-    valid.forEach((s) => {
+    valid.forEach(s => {
       s.temp = {};
       const d = s.diplomacy!;
 
-      const expansionRate = minmax(
-        s.expansionism / expn / (s.area! / area),
-        0.25,
-        4,
-      ); // how much state expansionism is realized
-      const diplomacyRate = d.some((d) => d === "Enemy")
+      const expansionRate = minmax(s.expansionism / expn / (s.area! / area), 0.25, 4); // how much state expansionism is realized
+      const diplomacyRate = d.some(d => d === "Enemy")
         ? 1
-        : d.some((d) => d === "Rival")
+        : d.some(d => d === "Rival")
           ? 0.8
-          : d.some((d) => d === "Suspicion")
+          : d.some(d => d === "Suspicion")
             ? 0.5
             : 0.1; // peacefulness
       const neighborsRateRaw = s
-        .neighbors!.map((n) =>
-          n ? pack.states[n].diplomacy![s.i] : "Suspicion",
-        )
+        .neighbors!.map(n => (n ? pack.states[n].diplomacy![s.i] : "Suspicion"))
         .reduce((s, r) => s + rate[r as keyof typeof rate], 0.5);
       const neighborsRate = minmax(neighborsRateRaw, 0.3, 3); // neighbors rate
-      s.alert = minmax(
-        rn(expansionRate * diplomacyRate * neighborsRate, 2),
-        0.1,
-        5,
-      ); // alert rate (area modifier)
+      s.alert = minmax(rn(expansionRate * diplomacyRate * neighborsRate, 2), 0.1, 5); // alert rate (area modifier)
       s.temp.platoons = [];
 
       // apply overall state modifiers for unit types based on state features
@@ -241,10 +222,8 @@ class MilitaryModule {
           stateModifier[unit.type as keyof typeof stateModifier][
             s.type as keyof (typeof stateModifier)[keyof typeof stateModifier]
           ] || 1;
-        if (unit.type === "mounted" && s.formName!.includes("Horde"))
-          modifier *= 2;
-        else if (unit.type === "naval" && s.form === "Republic")
-          modifier *= 1.2;
+        if (unit.type === "mounted" && s.formName!.includes("Horde")) modifier *= 2;
+        else if (unit.type === "naval" && s.form === "Republic") modifier *= 1.2;
         s.temp[unit.name] = modifier * s.alert;
       }
     });
@@ -256,13 +235,7 @@ class MilitaryModule {
       return "generic";
     };
 
-    function passUnitLimits(
-      unit: any,
-      biome: number,
-      state: number,
-      culture: number,
-      religion: number,
-    ) {
+    function passUnitLimits(unit: any, biome: number, state: number, culture: number, religion: number) {
       if (unit.biomes && !unit.biomes.includes(biome)) return false;
       if (unit.states && !unit.states.includes(state)) return false;
       if (unit.cultures && !unit.cultures.includes(culture)) return false;
@@ -283,19 +256,16 @@ class MilitaryModule {
       if (!state || stateObj.removed) continue;
 
       let modifier = cells.pop[i] / 100; // basic rural army in percentages
-      if (culture !== stateObj.culture)
-        modifier = stateObj.form === "Union" ? modifier / 1.2 : modifier / 2; // non-dominant culture
+      if (culture !== stateObj.culture) modifier = stateObj.form === "Union" ? modifier / 1.2 : modifier / 2; // non-dominant culture
       if (religion !== cells.religion[stateObj.center])
-        modifier =
-          stateObj.form === "Theocracy" ? modifier / 2.2 : modifier / 1.4; // non-dominant religion
+        modifier = stateObj.form === "Theocracy" ? modifier / 2.2 : modifier / 1.4; // non-dominant religion
       if (cells.f[i] !== cells.f[stateObj.center])
         modifier = stateObj.type === "Naval" ? modifier / 1.2 : modifier / 1.8; // different landmass
       const type = getType(i);
 
       for (const unit of options.military) {
         const perc = +unit.rural;
-        if (Number.isNaN(perc) || perc <= 0 || !stateObj.temp[unit.name])
-          continue;
+        if (Number.isNaN(perc) || perc <= 0 || !stateObj.temp[unit.name]) continue;
         if (!passUnitLimits(unit, biome, state, culture, religion)) continue;
         if (unit.type === "naval" && !cells.haven[i]) continue; // only near-ocean cells create naval units
 
@@ -328,7 +298,7 @@ class MilitaryModule {
           u: unit.name,
           n,
           s: unit.separate,
-          type: unit.type,
+          type: unit.type
         });
       }
     }
@@ -345,21 +315,16 @@ class MilitaryModule {
       const stateObj = states[state];
       let m = (b.population * urbanization) / 100; // basic urban army in percentages
       if (b.capital) m *= 1.2; // capital has household troops
-      if (culture !== stateObj.culture)
-        m = stateObj.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
-      if (religion !== cells.religion[stateObj.center])
-        m = stateObj.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
-      if (cells.f[b.cell] !== cells.f[stateObj.center])
-        m = stateObj.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
+      if (culture !== stateObj.culture) m = stateObj.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
+      if (religion !== cells.religion[stateObj.center]) m = stateObj.form === "Theocracy" ? m / 2.2 : m / 1.4; // non-dominant religion
+      if (cells.f[b.cell] !== cells.f[stateObj.center]) m = stateObj.type === "Naval" ? m / 1.2 : m / 1.8; // different landmass
       const type = getType(b.cell);
 
       for (const unit of options.military) {
         const perc = +unit.urban;
-        if (Number.isNaN(perc) || perc <= 0 || !stateObj.temp[unit.name])
-          continue;
+        if (Number.isNaN(perc) || perc <= 0 || !stateObj.temp[unit.name]) continue;
         if (!passUnitLimits(unit, biome, state, culture!, religion)) continue;
-        if (unit.type === "naval" && (!b.port || !cells.haven[b.cell]))
-          continue; // only ports create naval units
+        if (unit.type === "naval" && (!b.port || !cells.haven[b.cell])) continue; // only ports create naval units
 
         const mod =
           type === "generic"
@@ -390,44 +355,38 @@ class MilitaryModule {
           u: unit.name,
           n,
           s: unit.separate,
-          type: unit.type,
+          type: unit.type
         });
       }
     }
 
     const expected = 3 * populationRate; // expected regiment size
-    const mergeable = (
-      n0: { s: number; u: string },
-      n1: { s: number; u: string },
-    ) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
-    const createRegiments = (
-      nodes: Platoon[],
-      s: State,
-    ): MilitaryRegiment[] => {
+    const mergeable = (n0: { s: number; u: string }, n1: { s: number; u: string }) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
+    const createRegiments = (nodes: Platoon[], s: State): MilitaryRegiment[] => {
       if (!nodes.length) return [];
       nodes.sort((a, b) => a.a - b.a); // form regiments starting from cells with fewest troops
       const tree = quadtree(
         nodes,
-        (d) => d.x,
-        (d) => d.y,
+        d => d.x,
+        d => d.y
       );
 
       // add n0 to n1's ultimate parent
       const merge = (
         n0: { s: number; u: string; t: number; children?: any[] },
-        n1: { s: number; u: string; t: number; children?: any[] },
+        n1: { s: number; u: string; t: number; children?: any[] }
       ) => {
         if (!n1.children) n1.children = [n0];
         else n1.children.push(n0);
         if (n0.children)
-          n0.children.forEach((n) => {
+          n0.children.forEach(n => {
             n1.children!.push(n);
           });
         n1.t += n0.t;
         n0.t = 0;
       };
 
-      nodes.forEach((node) => {
+      nodes.forEach(node => {
         tree.remove(node);
         const overlap = tree.find(node.x, node.y, 20);
         if (overlap?.t && mergeable(node, overlap)) {
@@ -447,12 +406,12 @@ class MilitaryModule {
 
       // parse regiments data
       const regiments: Omit<MilitaryRegiment, "s" | "t" | "type">[] = nodes
-        .filter((n) => n.t)
+        .filter(n => n.t)
         .sort((a, b) => b.t - a.t)
         .map((r, i) => {
           const u: Record<string, number> = {};
           u[r.u] = r.a;
-          (r.children ?? []).forEach((n) => {
+          (r.children ?? []).forEach(n => {
             u[n.u] = (u[n.u] ?? 0) + n.a;
           });
           return {
@@ -466,16 +425,13 @@ class MilitaryModule {
             u,
             n: r.n,
             name: "",
-            state: s.i,
+            state: s.i
           };
         });
 
       // generate name for regiments
       regiments.forEach((r: Omit<MilitaryRegiment, "s" | "t" | "type">) => {
-        r.name = this.getName(
-          r as MilitaryRegiment,
-          regiments as MilitaryRegiment[],
-        );
+        r.name = this.getName(r as MilitaryRegiment, regiments as MilitaryRegiment[]);
         r.icon = this.getEmblem(r as MilitaryRegiment);
         this.generateNote(r as MilitaryRegiment, s);
       });
@@ -489,7 +445,7 @@ class MilitaryModule {
     }
 
     // get regiments for each state
-    valid.forEach((s) => {
+    valid.forEach(s => {
       s.military = createRegiments(s.temp.platoons, s);
       delete s.temp; // do not store temp data
     });
@@ -507,7 +463,7 @@ class MilitaryModule {
         crew: 1,
         power: 1,
         type: "melee",
-        separate: 0,
+        separate: 0
       },
       {
         icon: "🏹",
@@ -517,7 +473,7 @@ class MilitaryModule {
         crew: 1,
         power: 1,
         type: "ranged",
-        separate: 0,
+        separate: 0
       },
       {
         icon: "🐴",
@@ -527,7 +483,7 @@ class MilitaryModule {
         crew: 2,
         power: 2,
         type: "mounted",
-        separate: 0,
+        separate: 0
       },
       {
         icon: "💣",
@@ -537,7 +493,7 @@ class MilitaryModule {
         crew: 8,
         power: 12,
         type: "machinery",
-        separate: 0,
+        separate: 0
       },
       {
         icon: "🌊",
@@ -547,8 +503,8 @@ class MilitaryModule {
         crew: 100,
         power: 50,
         type: "naval",
-        separate: 1,
-      },
+        separate: 1
+      }
     ];
   }
 
@@ -561,9 +517,7 @@ class MilitaryModule {
         : cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]]
           ? pack.burgs[cells.burg[r.cell]].name
           : null;
-    const number = nth(
-      regiments.filter((reg) => reg.n === r.n && reg.i < r.i).length + 1,
-    );
+    const number = nth(regiments.filter(reg => reg.n === r.n && reg.i < r.i).length + 1);
     const form = r.n ? "Fleet" : "Regiment";
     return `${number}${proper ? ` (${proper}) ` : ` `}${form}`;
   }
@@ -581,13 +535,11 @@ class MilitaryModule {
         : cells.province[r.cell] && pack.provinces[cells.province[r.cell]]
           ? pack.provinces[cells.province[r.cell]].fullName
           : null;
-    const station = base
-      ? `${r.name} is ${r.n ? "based" : "stationed"} in ${base}. `
-      : "";
+    const station = base ? `${r.name} is ${r.n ? "based" : "stationed"} in ${base}. ` : "";
 
     const composition = r.a
       ? Object.keys(r.u)
-          .map((t) => `— ${t}: ${r.u[t as keyof typeof r.u]}`)
+          .map(t => `— ${t}: ${r.u[t as keyof typeof r.u]}`)
           .join("\r\n")
       : null;
     const troops = composition
@@ -601,7 +553,7 @@ class MilitaryModule {
     const conflict = campaign ? ` during the ${campaign.name}` : "";
     const legend = `Regiment was formed in ${year} ${options.era}${conflict}. ${station}${troops}`;
     const id = `regiment${s.i}-${r.i}`;
-    const existing = notes.find((n) => n.id === id);
+    const existing = notes.find(n => n.id === id);
     if (existing) {
       existing.name = r.name;
       existing.legend = legend;
@@ -621,9 +573,7 @@ class MilitaryModule {
     )
       return "👑"; // "Royal" regiment based in capital
     const mainUnit = Object.entries(r.u).sort((a, b) => b[1] - a[1])[0][0]; // unit with more troops in regiment
-    const unit = options.military.find(
-      (u: { name: string; icon: string }) => u.name === mainUnit,
-    );
+    const unit = options.military.find((u: { name: string; icon: string }) => u.name === mainUnit);
     return unit ? unit.icon : "⚔️";
   }
 }

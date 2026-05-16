@@ -9,210 +9,210 @@ export interface ChargeDataEntry {
 export const chargeData: Record<string, ChargeDataEntry> = {
   agnusDei: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   angel: {
     colors: 2,
-    positions: { e: 1 },
+    positions: { e: 1 }
   },
   anvil: {
-    sinister: true,
+    sinister: true
   },
   apple: {
-    colors: 2,
+    colors: 2
   },
   arbalest: {
     colors: 3,
-    reversed: true,
+    reversed: true
   },
   archer: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   armEmbowedHoldingSabre: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   armEmbowedVambraced: {
-    sinister: true,
+    sinister: true
   },
   armEmbowedVambracedHoldingSword: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   armillarySphere: {
-    positions: { e: 1 },
+    positions: { e: 1 }
   },
   arrow: {
     colors: 3,
-    reversed: true,
+    reversed: true
   },
   arrowsSheaf: {
     colors: 3,
-    reversed: true,
+    reversed: true
   },
   axe: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   badgerStatant: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   banner: {
-    colors: 2,
+    colors: 2
   },
   basilisk: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   bearPassant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   bearRampant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   bee: {
     colors: 3,
-    reversed: true,
+    reversed: true
   },
   bell: {
-    colors: 2,
+    colors: 2
   },
   boarHeadErased: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   boarRampant: {
     colors: 3,
     sinister: true,
-    positions: { e: 12, beh: 1, kn: 1, jln: 2 },
+    positions: { e: 12, beh: 1, kn: 1, jln: 2 }
   },
   boat: {
-    colors: 2,
+    colors: 2
   },
   bookClosed: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   bookClosed2: {
-    sinister: true,
+    sinister: true
   },
   bookOpen: {
-    colors: 3,
+    colors: 3
   },
   bow: {
-    sinister: true,
+    sinister: true
   },
   bowWithArrow: {
     colors: 3,
-    reversed: true,
+    reversed: true
   },
   bowWithThreeArrows: {
-    colors: 3,
+    colors: 3
   },
   bucket: {
-    colors: 2,
+    colors: 2
   },
   bugleHorn: {
-    colors: 2,
+    colors: 2
   },
   bugleHorn2: {
-    colors: 2,
+    colors: 2
   },
   bullHeadCaboshed: {
-    colors: 2,
+    colors: 2
   },
   bullPassant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   butterfly: {
     colors: 3,
-    reversed: true,
+    reversed: true
   },
   camel: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   cancer: {
-    reversed: true,
+    reversed: true
   },
   cannon: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   caravel: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   castle: {
-    colors: 2,
+    colors: 2
   },
   castle2: {
-    colors: 3,
+    colors: 3
   },
   catPassantGuardant: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   cavalier: {
     colors: 3,
     sinister: true,
-    positions: { e: 1 },
+    positions: { e: 1 }
   },
   centaur: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   chalice: {
-    colors: 2,
+    colors: 2
   },
   cinquefoil: {
-    reversed: true,
+    reversed: true
   },
   cock: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   comet: {
-    reversed: true,
+    reversed: true
   },
   cowStatant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   cossack: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   crescent: {
-    reversed: true,
+    reversed: true
   },
   crocodile: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   crosier: {
-    sinister: true,
+    sinister: true
   },
   crossbow: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   crossGamma: {
-    sinister: true,
+    sinister: true
   },
   crossLatin: {
-    reversed: true,
+    reversed: true
   },
   crossTau: {
-    reversed: true,
+    reversed: true
   },
   crossTriquetra: {
-    reversed: true,
+    reversed: true
   },
   crown: {
     colors: 2,
@@ -228,8 +228,8 @@ export const chargeData: Record<string, ChargeDataEntry> = {
       jln: 4,
       jleh: 1,
       def: 2,
-      abcpqh: 3,
-    },
+      abcpqh: 3
+    }
   },
   crown2: {
     colors: 3,
@@ -245,109 +245,109 @@ export const chargeData: Record<string, ChargeDataEntry> = {
       jln: 4,
       jleh: 1,
       def: 2,
-      abcpqh: 3,
-    },
+      abcpqh: 3
+    }
   },
   deerHeadCaboshed: {
-    colors: 2,
+    colors: 2
   },
   dolphin: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   donkeyHeadCaboshed: {
-    colors: 2,
+    colors: 2
   },
   dove: {
     colors: 2,
     natural: "argent",
-    sinister: true,
+    sinister: true
   },
   doveDisplayed: {
     colors: 2,
     natural: "argent",
-    sinister: true,
+    sinister: true
   },
   dragonfly: {
     colors: 2,
-    reversed: true,
+    reversed: true
   },
   dragonPassant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   dragonRampant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   drakkar: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   drawingCompass: {
-    sinister: true,
+    sinister: true
   },
   drum: {
-    colors: 3,
+    colors: 3
   },
   duck: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   eagle: {
     colors: 3,
     sinister: true,
-    positions: { e: 15, beh: 1, kn: 1, abc: 1, jlh: 2, def: 2, pq: 1 },
+    positions: { e: 15, beh: 1, kn: 1, abc: 1, jlh: 2, def: 2, pq: 1 }
   },
   eagleTwoHeads: {
-    colors: 3,
+    colors: 3
   },
   elephant: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   elephantHeadErased: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   falchion: {
     colors: 2,
-    reversed: true,
+    reversed: true
   },
   falcon: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   fan: {
     colors: 2,
-    reversed: true,
+    reversed: true
   },
   fasces: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   feather: {
-    sinister: true,
+    sinister: true
   },
   flamberge: {
     colors: 2,
-    reversed: true,
+    reversed: true
   },
   flangedMace: {
-    reversed: true,
+    reversed: true
   },
   fly: {
     colors: 3,
-    reversed: true,
+    reversed: true
   },
   foot: {
-    sinister: true,
+    sinister: true
   },
   fountain: {
-    natural: "azure",
+    natural: "azure"
   },
   frog: {
-    reversed: true,
+    reversed: true
   },
   garb: {
     colors: 2,
@@ -362,208 +362,208 @@ export const chargeData: Record<string, ChargeDataEntry> = {
       jleh: 1,
       abcpqh: 1,
       joe: 1,
-      lme: 1,
-    },
+      lme: 1
+    }
   },
   gauntlet: {
     sinister: true,
-    reversed: true,
+    reversed: true
   },
   goat: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   goutte: {
-    reversed: true,
+    reversed: true
   },
   grapeBunch: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   grapeBunch2: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   grenade: {
-    colors: 2,
+    colors: 2
   },
   greyhoundCourant: {
     colors: 3,
     sinister: true,
-    positions: { e: 10, def: 1, abc: 1, bdefh: 1, jlh: 1, abcpqh: 1 },
+    positions: { e: 10, def: 1, abc: 1, bdefh: 1, jlh: 1, abcpqh: 1 }
   },
   greyhoundRampant: {
     colors: 2,
     sinister: true,
-    positions: { e: 10, def: 1, abc: 1, bdefh: 1, jlh: 1, abcpqh: 1 },
+    positions: { e: 10, def: 1, abc: 1, bdefh: 1, jlh: 1, abcpqh: 1 }
   },
   greyhoundSejant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   griffinPassant: {
     colors: 3,
     sinister: true,
-    positions: { e: 10, def: 2, abc: 2, bdefh: 1, kn: 1, jlh: 2, abcpqh: 1 },
+    positions: { e: 10, def: 2, abc: 2, bdefh: 1, kn: 1, jlh: 2, abcpqh: 1 }
   },
   griffinRampant: {
     colors: 3,
     sinister: true,
-    positions: { e: 10, def: 1, abc: 1, bdefh: 1, jlh: 1, abcpqh: 1 },
+    positions: { e: 10, def: 1, abc: 1, bdefh: 1, jlh: 1, abcpqh: 1 }
   },
   hand: {
     sinister: true,
     reversed: true,
-    positions: { e: 10, jln: 2, kn: 1, jeo: 1, abc: 2, pqe: 1 },
+    positions: { e: 10, jln: 2, kn: 1, jeo: 1, abc: 2, pqe: 1 }
   },
   harp: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   hatchet: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   head: {
     colors: 2,
     sinister: true,
-    positions: { e: 1 },
+    positions: { e: 1 }
   },
   headWreathed: {
     colors: 3,
     sinister: true,
-    positions: { e: 1 },
+    positions: { e: 1 }
   },
   hedgehog: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   helmet: {
-    sinister: true,
+    sinister: true
   },
   helmetCorinthian: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   helmetGreat: {
-    sinister: true,
+    sinister: true
   },
   helmetZischagge: {
-    sinister: true,
+    sinister: true
   },
   heron: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   hindStatant: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   hook: {
-    sinister: true,
+    sinister: true
   },
   horseHeadCouped: {
-    sinister: true,
+    sinister: true
   },
   horsePassant: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   horseRampant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   horseSalient: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   horseshoe: {
-    reversed: true,
+    reversed: true
   },
   hourglass: {
-    colors: 3,
+    colors: 3
   },
   ladybird: {
     colors: 3,
-    reversed: true,
+    reversed: true
   },
   lamb: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   lambPassantReguardant: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   lanceWithBanner: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   laurelWreath: {
-    colors: 2,
+    colors: 2
   },
   lighthouse: {
-    colors: 3,
+    colors: 3
   },
   lionHeadCaboshed: {
-    colors: 2,
+    colors: 2
   },
   lionHeadErased: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   lionPassant: {
     colors: 3,
     sinister: true,
-    positions: { e: 10, def: 1, abc: 1, bdefh: 1, jlh: 1, abcpqh: 1 },
+    positions: { e: 10, def: 1, abc: 1, bdefh: 1, jlh: 1, abcpqh: 1 }
   },
   lionPassantGuardant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   lionRampant: {
     colors: 3,
     sinister: true,
-    positions: { e: 10, def: 2, abc: 2, bdefh: 1, kn: 1, jlh: 2, abcpqh: 1 },
+    positions: { e: 10, def: 2, abc: 2, bdefh: 1, kn: 1, jlh: 2, abcpqh: 1 }
   },
   lionSejant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   lizard: {
-    reversed: true,
+    reversed: true
   },
   lochaberAxe: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   log: {
-    sinister: true,
+    sinister: true
   },
   lute: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   lymphad: {
     colors: 3,
     sinister: true,
-    positions: { e: 1 },
+    positions: { e: 1 }
   },
   mace: {
-    colors: 2,
+    colors: 2
   },
   maces: {
-    colors: 2,
+    colors: 2
   },
   mallet: {
-    colors: 2,
+    colors: 2
   },
   mantle: {
-    colors: 3,
+    colors: 3
   },
   martenCourant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   mascle: {
     positions: {
@@ -580,304 +580,304 @@ export const chargeData: Record<string, ChargeDataEntry> = {
       df: 3,
       abcpqh: 4,
       pqe: 3,
-      eknpq: 3,
-    },
+      eknpq: 3
+    }
   },
   mastiffStatant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   mitre: {
-    colors: 3,
+    colors: 3
   },
   monk: {
-    sinister: true,
+    sinister: true
   },
   moonInCrescent: {
-    sinister: true,
+    sinister: true
   },
   mullet: {
-    reversed: true,
+    reversed: true
   },
   mullet7: {
-    reversed: true,
+    reversed: true
   },
   oak: {
-    colors: 3,
+    colors: 3
   },
   orb: {
-    colors: 3,
+    colors: 3
   },
   ouroboros: {
-    sinister: true,
+    sinister: true
   },
   owl: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   owlDisplayed: {
-    colors: 2,
+    colors: 2
   },
   palmTree: {
-    colors: 3,
+    colors: 3
   },
   parrot: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   peacock: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   peacockInPride: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   pear: {
-    colors: 2,
+    colors: 2
   },
   pegasus: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   pike: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   pineTree: {
-    colors: 2,
+    colors: 2
   },
   plaice: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   plough: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   ploughshare: {
-    sinister: true,
+    sinister: true
   },
   porcupine: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   portcullis: {
-    colors: 2,
+    colors: 2
   },
   rabbitSejant: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   rake: {
-    reversed: true,
+    reversed: true
   },
   rapier: {
     colors: 2,
     sinister: true,
-    reversed: true,
+    reversed: true
   },
   ramHeadErased: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   ramPassant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   ratRampant: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   raven: {
     colors: 2,
     natural: "sable",
     sinister: true,
-    positions: { e: 15, beh: 1, kn: 1, jeo: 1, abc: 3, jln: 3, def: 1 },
+    positions: { e: 15, beh: 1, kn: 1, jeo: 1, abc: 3, jln: 3, def: 1 }
   },
   rhinoceros: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   rose: {
-    colors: 3,
+    colors: 3
   },
   sabre: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   sabre2: {
     colors: 2,
     sinister: true,
-    reversed: true,
+    reversed: true
   },
   sabresCrossed: {
     colors: 2,
-    reversed: true,
+    reversed: true
   },
   sagittarius: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   salmon: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   saw: {
-    colors: 2,
+    colors: 2
   },
   scale: {
-    colors: 2,
+    colors: 2
   },
   scaleImbalanced: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   scissors: {
-    reversed: true,
+    reversed: true
   },
   scorpion: {
-    reversed: true,
+    reversed: true
   },
   scrollClosed: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   scythe: {
     colors: 2,
     sinister: true,
-    reversed: true,
+    reversed: true
   },
   scythe2: {
-    sinister: true,
+    sinister: true
   },
   serpent: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   shield: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   sickle: {
     colors: 2,
     sinister: true,
-    reversed: true,
+    reversed: true
   },
   snail: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   snake: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   spear: {
     colors: 2,
-    reversed: true,
+    reversed: true
   },
   spiral: {
     sinister: true,
-    reversed: true,
+    reversed: true
   },
   squirrel: {
-    sinister: true,
+    sinister: true
   },
   stagLodgedRegardant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   stagPassant: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   stirrup: {
-    colors: 2,
+    colors: 2
   },
   swallow: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   swan: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   swanErased: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   sword: {
     colors: 2,
-    reversed: true,
+    reversed: true
   },
   talbotPassant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   talbotSejant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   tower: {
-    colors: 2,
+    colors: 2
   },
   tree: {
-    positions: { e: 1 },
+    positions: { e: 1 }
   },
   trefoil: {
-    reversed: true,
+    reversed: true
   },
   trowel: {
     colors: 2,
     sinister: true,
-    reversed: true,
+    reversed: true
   },
   unicornRampant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   wasp: {
     colors: 3,
-    reversed: true,
+    reversed: true
   },
   wheatStalk: {
-    colors: 2,
+    colors: 2
   },
   windmill: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   wing: {
-    sinister: true,
+    sinister: true
   },
   wingSword: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   wolfHeadErased: {
     colors: 2,
-    sinister: true,
+    sinister: true
   },
   wolfPassant: {
     colors: 3,
     sinister: true,
-    positions: { e: 10, def: 1, abc: 1, bdefh: 1, jlh: 1, abcpqh: 1 },
+    positions: { e: 10, def: 1, abc: 1, bdefh: 1, jlh: 1, abcpqh: 1 }
   },
   wolfRampant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   wolfStatant: {
     colors: 3,
-    sinister: true,
+    sinister: true
   },
   wyvern: {
     colors: 3,
     sinister: true,
-    positions: { e: 10, jln: 1 },
+    positions: { e: 10, jln: 1 }
   },
   wyvernWithWingsDisplayed: {
     colors: 3,
-    sinister: true,
-  },
+    sinister: true
+  }
 };

@@ -3,28 +3,17 @@ import { range } from "d3";
 import { rn } from "../utils";
 
 declare global {
-  var drawScaleBar: (
-    scaleBar: Selection<SVGGElement, unknown, HTMLElement, unknown>,
-    scaleLevel: number,
-  ) => void;
+  var drawScaleBar: (scaleBar: Selection<SVGGElement, unknown, HTMLElement, unknown>, scaleLevel: number) => void;
   var fitScaleBar: (
     scaleBar: Selection<SVGGElement, unknown, HTMLElement, unknown>,
     fullWidth: number,
-    fullHeight: number,
+    fullHeight: number
   ) => void;
 }
 
-type ScaleBarSelection = d3.Selection<
-  SVGGElement,
-  unknown,
-  HTMLElement,
-  unknown
->;
+type ScaleBarSelection = d3.Selection<SVGGElement, unknown, HTMLElement, unknown>;
 
-const scaleBarRenderer = (
-  scaleBar: ScaleBarSelection,
-  scaleLevel: number,
-): void => {
+const scaleBarRenderer = (scaleBar: ScaleBarSelection, scaleLevel: number): void => {
   if (!scaleBar.size() || scaleBar.style("display") === "none") return;
 
   const unit = distanceUnitInput.value;
@@ -61,10 +50,7 @@ const scaleBarRenderer = (
     .attr("stroke-dasharray", `${size} ${rn(length / 5 - size, 2)}`)
     .attr("stroke", "#3d3d3d");
 
-  const texts = content
-    .append("g")
-    .attr("text-anchor", "middle")
-    .attr("font-family", "var(--serif)");
+  const texts = content.append("g").attr("text-anchor", "middle").attr("font-family", "var(--serif)");
   texts
     .selectAll("text")
     .data(range(0, 6))
@@ -74,11 +60,7 @@ const scaleBarRenderer = (
     .attr("x", (d: number) => rn((d * length) / 5, 2))
     .attr("y", 0)
     .attr("dy", "-.6em")
-    .text(
-      (d: number) =>
-        rn((((d * length) / 5) * distanceScale) / scaleLevel) +
-        (d < 5 ? "" : ` ${unit}`),
-    );
+    .text((d: number) => rn((((d * length) / 5) * distanceScale) / scaleLevel) + (d < 5 ? "" : ` ${unit}`));
 
   const label = scaleBar.attr("data-label");
   if (label) {
@@ -124,13 +106,8 @@ function getLength(scaleBar: ScaleBarSelection, scaleLevel: number): number {
   return length;
 }
 
-const scaleBarResize = (
-  scaleBar: ScaleBarSelection,
-  fullWidth: number,
-  fullHeight: number,
-): void => {
-  if (!scaleBar.select("rect").size() || scaleBar.style("display") === "none")
-    return;
+const scaleBarResize = (scaleBar: ScaleBarSelection, fullWidth: number, fullHeight: number): void => {
+  if (!scaleBar.select("rect").size() || scaleBar.style("display") === "none") return;
 
   const posX = +scaleBar.attr("data-x") || 99;
   const posY = +scaleBar.attr("data-y") || 99;

@@ -1,16 +1,6 @@
 import { curveCatmullRom, line } from "d3";
 import Delaunator from "delaunator";
-import {
-  distanceSquared,
-  findClosestCell,
-  findPath,
-  getAdjective,
-  isLand,
-  ra,
-  rn,
-  round,
-  rw,
-} from "../utils";
+import { distanceSquared, findClosestCell, findPath, getAdjective, isLand, ra, rn, round, rw } from "../utils";
 import type { Burg } from "./burgs-generator";
 import type { Point } from "./voronoi";
 
@@ -23,7 +13,7 @@ const ROUTE_TYPE_MODIFIERS: Record<string, number> = {
   "-2": 1.8, // sea
   "-3": 4, // open sea
   "-4": 6, // ocean
-  default: 8, // far ocean
+  default: 8 // far ocean
 };
 
 // name generator data
@@ -32,14 +22,14 @@ const models: Record<string, Record<string, number>> = {
     burg_suffix: 3,
     prefix_suffix: 6,
     the_descriptor_prefix_suffix: 2,
-    the_descriptor_burg_suffix: 1,
+    the_descriptor_burg_suffix: 1
   },
   trails: { burg_suffix: 8, prefix_suffix: 1, the_descriptor_burg_suffix: 1 },
   searoutes: {
     burg_suffix: 4,
     prefix_suffix: 2,
-    the_descriptor_prefix_suffix: 1,
-  },
+    the_descriptor_prefix_suffix: 1
+  }
 };
 
 const prefixes: string[] = [
@@ -146,7 +136,7 @@ const prefixes: string[] = [
   "Sapphire",
   "Crimson",
   "Tranquil",
-  "Paved",
+  "Paved"
 ];
 
 const descriptors = [
@@ -165,13 +155,13 @@ const descriptors = [
   "Cobbled",
   "Cracked",
   "Shaky",
-  "Obscure",
+  "Obscure"
 ];
 
 const suffixes: Record<string, Record<string, number>> = {
   roads: { road: 7, route: 3, way: 2, highway: 1 },
   trails: { trail: 4, path: 1, track: 1, pass: 1 },
-  searoutes: { "sea route": 5, lane: 2, passage: 1, seaway: 1 },
+  searoutes: { "sea route": 5, lane: 2, passage: 1, seaway: 1 }
 };
 
 export interface Route {
@@ -188,7 +178,7 @@ class RoutesModule {
     const links: Record<number, Record<number, number>> = {};
 
     for (const { points, i: routeId } of routes) {
-      const cells = points.map((p) => p[2]);
+      const cells = points.map(p => p[2]);
 
       for (let i = 0; i < cells.length - 1; i++) {
         const cellId = cells[i];
@@ -212,11 +202,7 @@ class RoutesModule {
     const capitalsByFeature: Record<number, Burg[]> = {};
     const portsByFeature: Record<number, Burg[]> = {};
 
-    const addBurg = (
-      collection: Record<number, Burg[]>,
-      feature: number,
-      burg: Burg,
-    ) => {
+    const addBurg = (collection: Record<number, Burg[]>, feature: number, burg: Burg) => {
       if (!collection[feature]) collection[feature] = [];
       collection[feature].push(burg);
     };
@@ -237,8 +223,7 @@ class RoutesModule {
   // this gives us an aproximation of a desired road network, i.e. connections between burgs
   // code from https://observablehq.com/@mbostock/urquhart-graph
   private calculateUrquhartEdges(points: Point[]) {
-    const score = (p0: number, p1: number) =>
-      distanceSquared(points[p0], points[p1]);
+    const score = (p0: number, p1: number) => distanceSquared(points[p0], points[p1]);
 
     const { halfedges, triangles } = Delaunator.from(points);
     const n = triangles.length;
@@ -275,54 +260,30 @@ class RoutesModule {
     return edges;
   }
 
-  private createCostEvaluator({
-    isWater,
-    connections,
-  }: {
-    isWater: boolean;
-    connections: Map<string, boolean>;
-  }) {
+  private createCostEvaluator({ isWater, connections }: { isWater: boolean; connections: Map<string, boolean> }) {
     function getLandPathCost(current: number, next: number) {
       if (pack.cells.h[next] < 20) return Infinity; // ignore water cells
 
       const habitability = biomesData.habitability[pack.cells.biome[next]];
       if (!habitability) return Infinity; // inhabitable cells are not passable (e.g. glacier)
 
-      const distanceCost = distanceSquared(
-        pack.cells.p[current],
-        pack.cells.p[next],
-      );
+      const distanceCost = distanceSquared(pack.cells.p[current], pack.cells.p[next]);
       const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
       const heightModifier = 1 + Math.max(pack.cells.h[next] - 25, 25) / 25; // [1, 3];
-      const connectionModifier = connections.has(`${current}-${next}`)
-        ? 0.5
-        : 1;
+      const connectionModifier = connections.has(`${current}-${next}`) ? 0.5 : 1;
       const burgModifier = pack.cells.burg[next] ? 1 : 3;
 
-      const pathCost =
-        distanceCost *
-        habitabilityModifier *
-        heightModifier *
-        connectionModifier *
-        burgModifier;
+      const pathCost = distanceCost * habitabilityModifier * heightModifier * connectionModifier * burgModifier;
       return pathCost;
     }
 
     function getWaterPathCost(current: number, next: number) {
       if (pack.cells.h[next] >= 20) return Infinity; // ignore land cells
-      if (grid.cells.temp[pack.cells.g[next]] < MIN_PASSABLE_SEA_TEMP)
-        return Infinity; // ignore too cold cells
+      if (grid.cells.temp[pack.cells.g[next]] < MIN_PASSABLE_SEA_TEMP) return Infinity; // ignore too cold cells
 
-      const distanceCost = distanceSquared(
-        pack.cells.p[current],
-        pack.cells.p[next],
-      );
-      const typeModifier =
-        ROUTE_TYPE_MODIFIERS[pack.cells.t[next]] ||
-        ROUTE_TYPE_MODIFIERS.default;
-      const connectionModifier = connections.has(`${current}-${next}`)
-        ? 0.5
-        : 1;
+      const distanceCost = distanceSquared(pack.cells.p[current], pack.cells.p[next]);
+      const typeModifier = ROUTE_TYPE_MODIFIERS[pack.cells.t[next]] || ROUTE_TYPE_MODIFIERS.default;
+      const connectionModifier = connections.has(`${current}-${next}`) ? 0.5 : 1;
 
       const pathCost = distanceCost * typeModifier * connectionModifier;
       return pathCost;
@@ -330,19 +291,14 @@ class RoutesModule {
     return isWater ? getWaterPathCost : getLandPathCost;
   }
 
-  private getRouteSegments(
-    pathCells: number[],
-    connections: Map<string, boolean>,
-  ) {
+  private getRouteSegments(pathCells: number[], connections: Map<string, boolean>) {
     const segments = [];
     let segment = [];
 
     for (let i = 0; i < pathCells.length; i++) {
       const cellId = pathCells[i];
       const nextCellId = pathCells[i + 1];
-      const isConnected =
-        connections.has(`${cellId}-${nextCellId}`) ||
-        connections.has(`${nextCellId}-${cellId}`);
+      const isConnected = connections.has(`${cellId}-${nextCellId}`) || connections.has(`${nextCellId}-${cellId}`);
 
       if (isConnected) {
         if (segment.length) {
@@ -366,7 +322,7 @@ class RoutesModule {
     isWater,
     connections,
     start,
-    exit,
+    exit
   }: {
     isWater: boolean;
     connections: Map<string, boolean>;
@@ -374,12 +330,7 @@ class RoutesModule {
     exit: number;
   }) {
     const getCost = this.createCostEvaluator({ isWater, connections });
-    const pathCells = findPath(
-      start,
-      (current) => current === exit,
-      getCost,
-      pack,
-    );
+    const pathCells = findPath(start, current => current === exit, getCost, pack);
     if (!pathCells) return [];
     const segments = this.getRouteSegments(pathCells, connections);
     return segments;
@@ -391,7 +342,7 @@ class RoutesModule {
     const mainRoads: Route[] = [];
 
     for (const [key, featureCapitals] of Object.entries(capitalsByFeature)) {
-      const points = featureCapitals.map((burg) => [burg.x, burg.y] as Point);
+      const points = featureCapitals.map(burg => [burg.x, burg.y] as Point);
       const urquhartEdges = this.calculateUrquhartEdges(points);
       urquhartEdges.forEach(([fromId, toId]) => {
         const start = featureCapitals[fromId].cell;
@@ -401,7 +352,7 @@ class RoutesModule {
           isWater: false,
           connections,
           start,
-          exit,
+          exit
         });
         for (const segment of segments) {
           this.addConnections(segment, connections);
@@ -431,7 +382,7 @@ class RoutesModule {
     const trails: Route[] = [];
 
     for (const [key, featureBurgs] of Object.entries(burgsByFeature)) {
-      const points = featureBurgs.map((burg) => [burg.x, burg.y] as Point);
+      const points = featureBurgs.map(burg => [burg.x, burg.y] as Point);
       const urquhartEdges = this.calculateUrquhartEdges(points);
       urquhartEdges.forEach(([fromId, toId]) => {
         const start = featureBurgs[fromId].cell;
@@ -441,7 +392,7 @@ class RoutesModule {
           isWater: false,
           connections,
           start,
-          exit,
+          exit
         });
         for (const segment of segments) {
           this.addConnections(segment, connections);
@@ -460,7 +411,7 @@ class RoutesModule {
     const seaRoutes: Route[] = [];
 
     for (const [featureId, featurePorts] of Object.entries(portsByFeature)) {
-      const points = featurePorts.map((burg) => [burg.x, burg.y] as Point);
+      const points = featurePorts.map(burg => [burg.x, burg.y] as Point);
       const urquhartEdges = this.calculateUrquhartEdges(points);
 
       urquhartEdges.forEach(([fromId, toId]) => {
@@ -470,13 +421,13 @@ class RoutesModule {
           isWater: true,
           connections,
           start,
-          exit,
+          exit
         });
         for (const segment of segments) {
           this.addConnections(segment, connections);
           seaRoutes.push({
             feature: Number(featureId),
-            cells: segment,
+            cells: segment
           } as Route);
         }
       });
@@ -496,7 +447,7 @@ class RoutesModule {
   }
 
   private getPoints(group: string, cells: number[], points: Point[]) {
-    const data = cells.map((cellId) => [...points[cellId], cellId]);
+    const data = cells.map(cellId => [...points[cellId], cellId]);
 
     // resolve sharp angles
     if (group !== "searoutes") {
@@ -512,10 +463,7 @@ class RoutesModule {
         const dAy = prevY - currY;
         const dBx = nextX - currX;
         const dBy = nextY - currY;
-        const angle = Math.abs(
-          (Math.atan2(dAx * dBy - dAy * dBx, dAx * dBx + dAy * dBy) * 180) /
-            Math.PI,
-        );
+        const angle = Math.abs((Math.atan2(dAx * dBy - dAy * dBx, dAx * dBx + dAy * dBy) * 180) / Math.PI);
 
         if (angle < ROUTES_SHARP_ANGLE) {
           const middleX = (prevX + nextX) / 2;
@@ -594,8 +542,8 @@ class RoutesModule {
     const connections = new Map();
     lockedRoutes.forEach((route: Route) => {
       this.addConnections(
-        route.points.map((p) => p[2]),
-        connections,
+        route.points.map(p => p[2]),
+        connections
       );
     });
 
@@ -610,16 +558,14 @@ class RoutesModule {
   }
 
   getNextId() {
-    return pack.routes.length
-      ? Math.max(...pack.routes.map((r) => r.i)) + 1
-      : 0;
+    return pack.routes.length ? Math.max(...pack.routes.map(r => r.i)) + 1 : 0;
   }
 
   // connect cell with routes system by land
   connect(cellId: number): Route | undefined {
     const getCost = this.createCostEvaluator({
       isWater: false,
-      connections: new Map(),
+      connections: new Map()
     });
     const isExit = (c: number) => isLand(c, pack) && this.isConnected(c);
     const pathCells = findPath(cellId, isExit, getCost, pack);
@@ -660,7 +606,7 @@ class RoutesModule {
     const routeId = pack.cells.routes[from]?.[to];
     if (routeId === undefined) return null;
 
-    const route = pack.routes.find((route) => route.i === routeId);
+    const route = pack.routes.find(route => route.i === routeId);
     if (!route) return null;
 
     return route;
@@ -670,8 +616,8 @@ class RoutesModule {
     const connections = pack.cells.routes[cellId];
     if (!connections) return false;
 
-    return Object.values(connections).some((routeId) => {
-      const route = pack.routes.find((route) => route.i === routeId);
+    return Object.values(connections).some(routeId => {
+      const route = pack.routes.find(route => route.i === routeId);
       if (!route) return false;
       return route.group === "roads";
     });
@@ -681,8 +627,8 @@ class RoutesModule {
     const connections = pack.cells.routes[cellId];
     if (!connections) return false;
     if (Object.keys(connections).length > 3) return true;
-    const roadConnections = Object.values(connections).filter((routeId) => {
-      const route = pack.routes.find((route) => route.i === routeId);
+    const roadConnections = Object.values(connections).filter(routeId => {
+      const route = pack.routes.find(route => route.i === routeId);
       return route?.group === "roads";
     });
     return roadConnections.length > 2;
@@ -703,7 +649,7 @@ class RoutesModule {
       }
     }
 
-    pack.routes = pack.routes.filter((r) => r.i !== route.i);
+    pack.routes = pack.routes.filter(r => r.i !== route.i);
     viewbox.select(`#route${route.i}`).remove();
   }
 
@@ -715,35 +661,24 @@ class RoutesModule {
       roads: 0.2,
       trails: 0.1,
       searoutes: 0.2,
-      default: 0.1,
+      default: 0.1
     };
 
     const connectivity = Object.values(connections).reduce((acc, routeId) => {
-      const route = pack.routes.find((route) => route.i === routeId);
+      const route = pack.routes.find(route => route.i === routeId);
       if (!route) return acc;
-      const rate =
-        connectivityRateMap[route.group] || connectivityRateMap.default;
+      const rate = connectivityRateMap[route.group] || connectivityRateMap.default;
       return acc + rate;
     }, 0.8);
 
     return connectivity;
   }
 
-  generateName({
-    group,
-    points,
-  }: {
-    group: string;
-    points: number[][];
-  }): string {
+  generateName({ group, points }: { group: string; points: number[][] }): string {
     if (points.length < 4) return "Unnamed route segment";
 
     function getBurgName() {
-      const priority = [
-        points.at(-1),
-        points.at(0),
-        points.slice(1, -1).reverse(),
-      ];
+      const priority = [points.at(-1), points.at(0), points.slice(1, -1).reverse()];
       for (const [_x, _y, cellId] of priority as [number, number, number][]) {
         const burgId = pack.cells.burg[cellId as number];
         if (burgId) return getAdjective(pack.burgs[burgId].name!);
@@ -757,10 +692,8 @@ class RoutesModule {
     const burgName = getBurgName();
     if (model === "burg_suffix" && burgName) return `${burgName} ${suffix}`;
     if (model === "prefix_suffix") return `${ra(prefixes)} ${suffix}`;
-    if (model === "the_descriptor_prefix_suffix")
-      return `The ${ra(descriptors)} ${ra(prefixes)} ${suffix}`;
-    if (model === "the_descriptor_burg_suffix" && burgName)
-      return `The ${ra(descriptors)} ${burgName} ${suffix}`;
+    if (model === "the_descriptor_prefix_suffix") return `The ${ra(descriptors)} ${ra(prefixes)} ${suffix}`;
+    if (model === "the_descriptor_burg_suffix" && burgName) return `The ${ra(descriptors)} ${burgName} ${suffix}`;
     return "Unnamed route";
   }
 
@@ -770,10 +703,10 @@ class RoutesModule {
       roads: curveCatmullRom.alpha(0.1),
       trails: curveCatmullRom.alpha(0.1),
       searoutes: curveCatmullRom.alpha(0.5),
-      default: curveCatmullRom.alpha(0.1),
+      default: curveCatmullRom.alpha(0.1)
     };
     lineGen.curve(ROUTE_CURVES[group] || ROUTE_CURVES.default);
-    const path = round(lineGen(points.map((p) => [p[0], p[1]])) as string, 1);
+    const path = round(lineGen(points.map(p => [p[0], p[1]])) as string, 1);
     return path;
   }
 

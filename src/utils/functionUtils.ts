@@ -36,7 +36,7 @@ const nest = (
   values: any[],
   map: (iterable: Iterable<any>) => any,
   reduce: (values: any[]) => any,
-  keys: ((value: any, index: number, array: any[]) => any)[],
+  keys: ((value: any, index: number, array: any[]) => any)[]
 ) => {
   return (function regroup(values, i) {
     if (i >= keys.length) return reduce(values);
@@ -62,10 +62,7 @@ const nest = (
  * @param {[number, number]} p2 - Second point [x2, y2]
  * @returns {number} - Squared distance between p1 and p2
  */
-export const distanceSquared = (
-  [x1, y1]: [number, number],
-  [x2, y2]: [number, number],
-) => {
+export const distanceSquared = ([x1, y1]: [number, number], [x2, y2]: [number, number]) => {
   return (x1 - x2) ** 2 + (y1 - y2) ** 2;
 };
 declare global {

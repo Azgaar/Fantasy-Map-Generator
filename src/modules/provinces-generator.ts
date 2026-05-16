@@ -1,15 +1,6 @@
 import Alea from "alea";
 import { max } from "d3";
-import {
-  ensureEl,
-  gauss,
-  generateSeed,
-  getMixedColor,
-  getPolesOfInaccessibility,
-  P,
-  rand,
-  rw,
-} from "../utils";
+import { ensureEl, gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "../utils";
 
 declare global {
   var Provinces: ProvinceModule;
@@ -40,7 +31,7 @@ class ProvinceModule {
       Margrave: 2,
       Barony: 2,
       Captaincy: 1,
-      Seneschalty: 1,
+      Seneschalty: 1
     },
     Republic: {
       Province: 6,
@@ -48,7 +39,7 @@ class ProvinceModule {
       Governorate: 2,
       District: 1,
       Canton: 1,
-      Prefecture: 1,
+      Prefecture: 1
     },
     Theocracy: { Parish: 3, Deanery: 1 },
     Union: {
@@ -57,7 +48,7 @@ class ProvinceModule {
       Canton: 1,
       Republic: 1,
       County: 1,
-      Council: 1,
+      Council: 1
     },
     Anarchy: { Council: 1, Commune: 1, Community: 1, Tribe: 1 },
     Wild: {
@@ -67,8 +58,8 @@ class ProvinceModule {
       Tribe: 1,
       Clan: 1,
       Dependency: 1,
-      Area: 1,
-    },
+      Area: 1
+    }
   };
 
   generate(regenerate = false, regenerateLockedStates = false) {
@@ -81,15 +72,12 @@ class ProvinceModule {
     const provinceIds = new Uint16Array(cells.i.length);
 
     const isProvinceLocked = (province: Province) =>
-      province.lock ||
-      (!regenerateLockedStates && states[province.state]?.lock);
-    const isProvinceCellLocked = (cell: number) =>
-      provinceIds[cell] && isProvinceLocked(provinces[provinceIds[cell]]);
+      province.lock || (!regenerateLockedStates && states[province.state]?.lock);
+    const isProvinceCellLocked = (cell: number) => provinceIds[cell] && isProvinceLocked(provinces[provinceIds[cell]]);
 
     if (regenerate) {
-      pack.provinces.forEach((province) => {
-        if (!province.i || province.removed || !isProvinceLocked(province))
-          return;
+      pack.provinces.forEach(province => {
+        if (!province.i || province.removed || !isProvinceLocked(province)) return;
 
         const newId = provinces.length;
         for (const i of cells.i) {
@@ -101,33 +89,23 @@ class ProvinceModule {
       });
     }
 
-    const provincesRatio = (ensureEl("provincesRatio") as HTMLInputElement)
-      .valueAsNumber;
-    const maxGrowth =
-      provincesRatio === 100
-        ? 1000
-        : gauss(20, 5, 5, 100) * provincesRatio ** 0.5; // max growth
+    const provincesRatio = (ensureEl("provincesRatio") as HTMLInputElement).valueAsNumber;
+    const maxGrowth = provincesRatio === 100 ? 1000 : gauss(20, 5, 5, 100) * provincesRatio ** 0.5; // max growth
 
     // generate provinces for selected burgs
-    states.forEach((s) => {
+    states.forEach(s => {
       s.provinces = [];
       if (!s.i || s.removed) return;
-      if (provinces.length)
-        s.provinces = provinces.filter((p) => p.state === s.i).map((p) => p.i); // locked provinces ids
+      if (provinces.length) s.provinces = provinces.filter(p => p.state === s.i).map(p => p.i); // locked provinces ids
       if (s.lock && !regenerateLockedStates) return; // don't regenerate provinces of a locked state
 
       const stateBurgs = burgs
-        .filter((b) => b.state === s.i && !b.removed && !provinceIds[b.cell]) // burgs in this state without province assigned
-        .sort(
-          (a, b) => b.population! * gauss(1, 0.2, 0.5, 1.5, 3) - a.population!,
-        ) // biggest population first
+        .filter(b => b.state === s.i && !b.removed && !provinceIds[b.cell]) // burgs in this state without province assigned
+        .sort((a, b) => b.population! * gauss(1, 0.2, 0.5, 1.5, 3) - a.population!) // biggest population first
         .sort((a, b) => b.capital! - a.capital!); // capitals first
       if (stateBurgs.length < 2) return; // at least 2 provinces are required
 
-      const provincesNumber = Math.max(
-        Math.ceil((stateBurgs.length * provincesRatio) / 100),
-        2,
-      );
+      const provincesNumber = Math.max(Math.ceil((stateBurgs.length * provincesRatio) / 100), 2);
       const form = Object.assign({}, this.forms[s.form!]);
 
       for (let i = 0; i < provincesNumber; i++) {
@@ -136,9 +114,7 @@ class ProvinceModule {
         const burg = stateBurgs[i];
         const c = stateBurgs[i].culture!;
         const nameByBurg = P(0.5);
-        const name = nameByBurg
-          ? stateBurgs[i].name!
-          : Names.getState(Names.getCultureShort(c), c);
+        const name = nameByBurg ? stateBurgs[i].name! : Names.getState(Names.getCultureShort(c), c);
         const formName = rw(form);
         form[formName] += 10;
         const fullName = `${name} ${formName}`;
@@ -158,7 +134,7 @@ class ProvinceModule {
           formName,
           fullName,
           color,
-          coa,
+          coa
         });
       }
     });
@@ -167,7 +143,7 @@ class ProvinceModule {
     const queue = new FlatQueue();
     const cost: number[] = [];
 
-    provinces.forEach((p) => {
+    provinces.forEach(p => {
       if (!p.i || p.removed || isProvinceLocked(p)) return;
       provinceIds[p.center] = p.i;
       queue.push({ e: p.center, province: p.i, state: p.state, p: 0 }, 0);
@@ -177,20 +153,13 @@ class ProvinceModule {
     while (queue.length) {
       const { e, p, province, state } = queue.pop();
 
-      cells.c[e].forEach((e) => {
+      cells.c[e].forEach(e => {
         if (isProvinceCellLocked(e)) return; // do not overwrite cell of locked provinces
 
         const land = cells.h[e] >= 20;
         if (!land && !cells.t[e]) return; // cannot pass deep ocean
         if (land && cells.state[e] !== state) return;
-        const evevation =
-          cells.h[e] >= 70
-            ? 100
-            : cells.h[e] >= 50
-              ? 30
-              : cells.h[e] >= 20
-                ? 10
-                : 100;
+        const evevation = cells.h[e] >= 70 ? 100 : cells.h[e] >= 50 ? 30 : cells.h[e] >= 20 ? 10 : 100;
         const totalCost = p + evevation;
 
         if (totalCost > maxGrowth) return;
@@ -208,19 +177,15 @@ class ProvinceModule {
       if (isProvinceCellLocked(i)) continue; // do not overwrite cell of locked provinces
 
       const neibs = cells.c[i]
-        .filter(
-          (c) => cells.state[c] === cells.state[i] && !isProvinceCellLocked(c),
-        )
-        .map((c) => provinceIds[c]);
-      const adversaries = neibs.filter((c) => c !== provinceIds[i]);
+        .filter(c => cells.state[c] === cells.state[i] && !isProvinceCellLocked(c))
+        .map(c => provinceIds[c]);
+      const adversaries = neibs.filter(c => c !== provinceIds[i]);
       if (adversaries.length < 2) continue;
 
-      const buddies = neibs.filter((c) => c === provinceIds[i]).length;
+      const buddies = neibs.filter(c => c === provinceIds[i]).length;
       if (buddies > 2) continue;
 
-      const competitors = adversaries.map((p) =>
-        adversaries.reduce((s, v) => (v === p ? s + 1 : s), 0),
-      );
+      const competitors = adversaries.map(p => adversaries.reduce((s, v) => (v === p ? s + 1 : s), 0));
       const maxBuddies = max(competitors) as number;
       if (buddies >= maxBuddies) continue;
 
@@ -228,18 +193,14 @@ class ProvinceModule {
     }
 
     // add "wild" provinces if some cells don't have a province assigned
-    const noProvince = Array.from(cells.i).filter(
-      (i) => cells.state[i] && !provinceIds[i],
-    ); // cells without province assigned
-    states.forEach((s) => {
+    const noProvince = Array.from(cells.i).filter(i => cells.state[i] && !provinceIds[i]); // cells without province assigned
+    states.forEach(s => {
       if (!s.i || s.removed) return;
       if (s.lock && !regenerateLockedStates) return;
       if (!s.provinces?.length) return;
 
-      const coreProvinceNames = s.provinces.map((p) => provinces[p]?.name);
-      const colonyNamePool = [s.name, ...coreProvinceNames].filter(
-        (name) => name && !/new/i.test(name),
-      );
+      const coreProvinceNames = s.provinces.map(p => provinces[p]?.name);
+      const colonyNamePool = [s.name, ...coreProvinceNames].filter(name => name && !/new/i.test(name));
       const getColonyName = () => {
         if (colonyNamePool.length < 1) return null;
 
@@ -248,13 +209,11 @@ class ProvinceModule {
         return spliced[0] ? `New ${spliced[0]}` : null;
       };
 
-      let stateNoProvince = noProvince.filter(
-        (i) => cells.state[i] === s.i && !provinceIds[i],
-      );
+      let stateNoProvince = noProvince.filter(i => cells.state[i] === s.i && !provinceIds[i]);
       while (stateNoProvince.length) {
         // add new province
         const provinceId = provinces.length;
-        const burgCell = stateNoProvince.find((i) => cells.burg[i]);
+        const burgCell = stateNoProvince.find(i => cells.burg[i]);
         const center = burgCell ? burgCell : stateNoProvince[0];
         const burg = burgCell ? cells.burg[burgCell] : 0;
         provinceIds[center] = provinceId;
@@ -266,24 +225,16 @@ class ProvinceModule {
         while (queue.length) {
           const { e, p } = queue.pop();
 
-          cells.c[e].forEach((nextCellId) => {
+          cells.c[e].forEach(nextCellId => {
             if (provinceIds[nextCellId]) return;
             const land = cells.h[nextCellId] >= 20;
-            if (cells.state[nextCellId] && cells.state[nextCellId] !== s.i)
-              return;
-            const ter = land
-              ? cells.state[nextCellId] === s.i
-                ? 3
-                : 20
-              : cells.t[nextCellId]
-                ? 10
-                : 30;
+            if (cells.state[nextCellId] && cells.state[nextCellId] !== s.i) return;
+            const ter = land ? (cells.state[nextCellId] === s.i ? 3 : 20) : cells.t[nextCellId] ? 10 : 30;
             const totalCost = p + ter;
 
             if (totalCost > maxGrowth) return;
             if (!cost[nextCellId] || totalCost < cost[nextCellId]) {
-              if (land && cells.state[nextCellId] === s.i)
-                provinceIds[nextCellId] = provinceId; // assign province to a cell
+              if (land && cells.state[nextCellId] === s.i) provinceIds[nextCellId] = provinceId; // assign province to a cell
               cost[nextCellId] = totalCost;
               queue.push({ e: nextCellId, p: totalCost }, totalCost);
             }
@@ -295,17 +246,10 @@ class ProvinceModule {
         const f = pack.features[cells.f[center]];
         const color = getMixedColor(s.color!);
 
-        const provCells = stateNoProvince.filter(
-          (i) => provinceIds[i] === provinceId,
-        );
-        const singleIsle =
-          provCells.length === f.cells &&
-          !provCells.find((i) => cells.f[i] !== f.i);
-        const isleGroup =
-          !singleIsle &&
-          !provCells.find((i) => pack.features[cells.f[i]].group !== "isle");
-        const colony =
-          !singleIsle && !isleGroup && P(0.5) && !isPassable(s.center, center);
+        const provCells = stateNoProvince.filter(i => provinceIds[i] === provinceId);
+        const singleIsle = provCells.length === f.cells && !provCells.find(i => cells.f[i] !== f.i);
+        const isleGroup = !singleIsle && !provCells.find(i => pack.features[cells.f[i]].group !== "isle");
+        const colony = !singleIsle && !isleGroup && P(0.5) && !isPassable(s.center, center);
 
         const name = (() => {
           const colonyName = colony && P(0.8) && getColonyName();
@@ -323,11 +267,7 @@ class ProvinceModule {
 
         const fullName = `${name} ${formName}`;
 
-        const dominion = colony
-          ? P(0.95)
-          : singleIsle || isleGroup
-            ? P(0.7)
-            : P(0.3);
+        const dominion = colony ? P(0.95) : singleIsle || isleGroup ? P(0.7) : P(0.3);
         const kinship = dominion ? 0 : 0.4;
         const type = Burgs.getType(center, burgs[burg]?.port);
         const coa = COA.generate(s.coa, kinship, dominion ? 1 : 0, type);
@@ -342,7 +282,7 @@ class ProvinceModule {
           formName,
           fullName,
           color,
-          coa,
+          coa
         });
         s.provinces.push(provinceId);
 
@@ -355,9 +295,8 @@ class ProvinceModule {
           while (passableQueue.length) {
             const current = passableQueue.pop() as number;
             if (current === to) return true; // way is found
-            cells.c[current].forEach((c) => {
-              if (used[c] || cells.h[c] < 20 || cells.state[c] !== state)
-                return;
+            cells.c[current].forEach(c => {
+              if (used[c] || cells.h[c] < 20 || cells.state[c] !== state) return;
               passableQueue.push(c);
               used[c] = 1;
             });
@@ -366,9 +305,7 @@ class ProvinceModule {
         }
 
         // re-check
-        stateNoProvince = noProvince.filter(
-          (i) => cells.state[i] === s.i && !provinceIds[i],
-        );
+        stateNoProvince = noProvince.filter(i => cells.state[i] === s.i && !provinceIds[i]);
       }
     });
 
@@ -383,7 +320,7 @@ class ProvinceModule {
     const getType = (cellId: number) => pack.cells.province[cellId];
     const poles = getPolesOfInaccessibility(pack, getType);
 
-    pack.provinces.forEach((province) => {
+    pack.provinces.forEach(province => {
       if (!province.i || province.removed) return;
       province.pole = poles[province.i] || [0, 0];
     });

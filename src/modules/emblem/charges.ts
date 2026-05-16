@@ -23,7 +23,7 @@ export const charges = {
     miscellaneous: 5, // 30 charges
     inescutcheon: 3, // 43 charges
     ornaments: 0, // 9 charges
-    uploaded: 0,
+    uploaded: 0
   },
   single: {
     conventional: 10,
@@ -45,11 +45,11 @@ export const charges = {
     seafaring: 3,
     tools: 3,
     miscellaneous: 5,
-    inescutcheon: 1,
+    inescutcheon: 1
   },
   semy: {
     conventional: 4,
-    crosses: 1,
+    crosses: 1
   },
   conventional: {
     annulet: 4,
@@ -91,7 +91,7 @@ export const charges = {
     sunInSplendour2: 1,
     trefle: 2,
     triangle: 3,
-    trianglePierced: 1,
+    trianglePierced: 1
   },
   crosses: {
     crossHummetty: 15,
@@ -133,7 +133,7 @@ export const charges = {
     crossDouble: 1,
     crossTau: 1,
     crossSantiago: 1,
-    crossAnkh: 1,
+    crossAnkh: 1
   },
   beasts: {
     agnusDei: 1,
@@ -176,7 +176,7 @@ export const charges = {
     talbotSejant: 1,
     wolfPassant: 1,
     wolfRampant: 1,
-    wolfStatant: 1,
+    wolfStatant: 1
   },
   beastHeads: {
     boarHeadErased: 1,
@@ -188,7 +188,7 @@ export const charges = {
     lionHeadCaboshed: 2,
     lionHeadErased: 2,
     ramHeadErased: 1,
-    wolfHeadErased: 2,
+    wolfHeadErased: 2
   },
   birds: {
     cock: 3,
@@ -206,14 +206,14 @@ export const charges = {
     raven: 2,
     swallow: 1,
     swan: 2,
-    swanErased: 1,
+    swanErased: 1
   },
   reptiles: {
     crocodile: 1,
     frog: 1,
     lizard: 1,
     ouroboros: 1,
-    snake: 1,
+    snake: 1
   },
   bugs: {
     bee: 1,
@@ -223,16 +223,16 @@ export const charges = {
     fly: 1,
     ladybird: 1,
     scorpion: 1,
-    wasp: 1,
+    wasp: 1
   },
   fishes: {
     pike: 1,
     plaice: 1,
-    salmon: 1,
+    salmon: 1
   },
   molluscs: {
     escallop: 4,
-    snail: 1,
+    snail: 1
   },
   plants: {
     apple: 1,
@@ -252,7 +252,7 @@ export const charges = {
     thistle: 1,
     tree: 1,
     trefoil: 1,
-    wheatStalk: 1,
+    wheatStalk: 1
   },
   fantastic: {
     angel: 3,
@@ -268,7 +268,7 @@ export const charges = {
     serpent: 1,
     unicornRampant: 1,
     wyvern: 1,
-    wyvernWithWingsDisplayed: 1,
+    wyvernWithWingsDisplayed: 1
   },
   agriculture: {
     garb: 2,
@@ -278,7 +278,7 @@ export const charges = {
     rake: 1,
     scythe: 1,
     scythe2: 1,
-    sickle: 1,
+    sickle: 1
   },
   arms: {
     arbalest: 1,
@@ -312,7 +312,7 @@ export const charges = {
     sabresCrossed: 1,
     shield: 1,
     spear: 1,
-    sword: 4,
+    sword: 4
   },
   bodyparts: {
     armEmbowedHoldingSabre: 1,
@@ -326,13 +326,13 @@ export const charges = {
     headWreathed: 1,
     skeleton: 2,
     skull: 2,
-    skull2: 1,
+    skull2: 1
   },
   people: {
     archer: 1,
     cavalier: 3,
     cossack: 1,
-    monk: 1,
+    monk: 1
   },
   architecture: {
     bridge: 1,
@@ -345,7 +345,7 @@ export const charges = {
     pillar: 1,
     portcullis: 1,
     tower: 2,
-    windmill: 1,
+    windmill: 1
   },
   seafaring: {
     anchor: 6,
@@ -356,7 +356,7 @@ export const charges = {
     drakkar: 1,
     lymphad: 2,
     raft: 1,
-    shipWheel: 1,
+    shipWheel: 1
   },
   tools: {
     anvil: 2,
@@ -373,7 +373,7 @@ export const charges = {
     scissors: 1,
     scissors2: 1,
     shears: 1,
-    trowel: 1,
+    trowel: 1
   },
   miscellaneous: {
     attire: 2,
@@ -415,7 +415,7 @@ export const charges = {
     stirrup: 2,
     wheel: 3,
     wing: 2,
-    wingSword: 1,
+    wingSword: 1
   },
   inescutcheon: {
     inescutcheonHeater: 1,
@@ -460,7 +460,7 @@ export const charges = {
     inescutcheonErebor: 1,
     inescutcheonIronHills: 1,
     inescutcheonUrukHai: 1,
-    inescutcheonMoriaOrc: 1,
+    inescutcheonMoriaOrc: 1
   },
   ornaments: {
     mantle: 0,
@@ -471,7 +471,7 @@ export const charges = {
     ribbon5: 1,
     ribbon6: 1,
     ribbon7: 1,
-    ribbon8: 1,
+    ribbon8: 1
   },
-  data: chargeData,
+  data: chargeData
 };

@@ -9,7 +9,7 @@ import {
   isWater,
   rn,
   TYPED_ARRAY_MAX_VALUES,
-  unique,
+  unique
 } from "../utils";
 
 declare global {
@@ -67,7 +67,7 @@ class FeatureModule {
     neighbors,
     start,
     increment,
-    limit = TYPED_ARRAY_MAX_VALUES.INT8_MAX,
+    limit = TYPED_ARRAY_MAX_VALUES.INT8_MAX
   }: {
     distanceField: Int8Array;
     neighbors: number[][];
@@ -75,11 +75,7 @@ class FeatureModule {
     increment: number;
     limit?: number;
   }) {
-    for (
-      let distance = start, marked = Infinity;
-      marked > 0 && distance !== limit;
-      distance += increment
-    ) {
+    for (let distance = start, marked = Infinity; marked > 0 && distance !== limit; distance += increment) {
       marked = 0;
       const prevDistance = distance - increment;
       for (let cellId = 0; cellId < neighbors.length; cellId++) {
@@ -144,7 +140,7 @@ class FeatureModule {
       neighbors,
       start: this.DEEP_WATER,
       increment: -1,
-      limit: -10,
+      limit: -10
     });
     grid.cells.t = distanceField;
     grid.cells.f = featureIds;
@@ -158,22 +154,15 @@ class FeatureModule {
    */
   markupPack() {
     const defineHaven = (cellId: number) => {
-      const waterCells = neighbors[cellId].filter((index: number) =>
-        isWater(index, pack),
-      );
-      const distances = waterCells.map((neibCellId: number) =>
-        distanceSquared(cells.p[cellId], cells.p[neibCellId]),
-      );
+      const waterCells = neighbors[cellId].filter((index: number) => isWater(index, pack));
+      const distances = waterCells.map((neibCellId: number) => distanceSquared(cells.p[cellId], cells.p[neibCellId]));
       const closest = distances.indexOf(Math.min.apply(Math, distances));
 
       haven[cellId] = waterCells[closest];
       harbor[cellId] = waterCells.length;
     };
 
-    const getCellsData = (
-      featureType: string,
-      firstCell: number,
-    ): [number, number[]] => {
+    const getCellsData = (featureType: string, firstCell: number): [number, number[]] => {
       if (featureType === "ocean") return [firstCell, []];
 
       const getType = (cellId: number) => featureIds[cellId];
@@ -186,33 +175,25 @@ class FeatureModule {
       return [startCell, featureVertices];
 
       function findOnBorderCell(firstCell: number) {
-        const isOnBorder = (cellId: number) =>
-          borderCells[cellId] || neighbors[cellId].some(ofDifferentType);
+        const isOnBorder = (cellId: number) => borderCells[cellId] || neighbors[cellId].some(ofDifferentType);
         if (isOnBorder(firstCell)) return firstCell;
 
         const startCell = cells.i.filter(ofSameType).find(isOnBorder);
         if (startCell === undefined)
-          throw new Error(
-            `Markup: firstCell ${firstCell} is not on the feature or map border`,
-          );
+          throw new Error(`Markup: firstCell ${firstCell} is not on the feature or map border`);
 
         return startCell;
       }
 
       function getFeatureVertices(startCell: number) {
-        const startingVertex = cells.v[startCell].find((v: number) =>
-          vertices.c[v].some(ofDifferentType),
-        );
-        if (startingVertex === undefined)
-          throw new Error(
-            `Markup: startingVertex for cell ${startCell} is not found`,
-          );
+        const startingVertex = cells.v[startCell].find((v: number) => vertices.c[v].some(ofDifferentType));
+        if (startingVertex === undefined) throw new Error(`Markup: startingVertex for cell ${startCell} is not found`);
 
         return connectVertices({
           vertices,
           startingVertex,
           ofSameType,
-          closeRing: false,
+          closeRing: false
         });
       }
     };
@@ -222,7 +203,7 @@ class FeatureModule {
       land,
       border,
       featureId,
-      totalCells,
+      totalCells
     }: {
       firstCell: number;
       land: boolean;
@@ -235,7 +216,7 @@ class FeatureModule {
       const points = clipPoly(
         featureVertices.map((vertex: number) => vertices.p[vertex]),
         graphWidth,
-        graphHeight,
+        graphHeight
       );
       const area = polygonArea(points); // feature perimiter area
       const absArea = Math.abs(rn(area));
@@ -250,22 +231,21 @@ class FeatureModule {
         vertices: featureVertices,
         area: absArea,
         shoreline: [],
-        height: 0,
+        height: 0
       };
 
       if (type === "lake") {
-        if (area > 0)
-          feature.vertices = (feature.vertices as number[]).reverse();
+        if (area > 0) feature.vertices = (feature.vertices as number[]).reverse();
         feature.shoreline = unique(
-          (feature.vertices as number[]).flatMap((vertexIndex) =>
-            vertices.c[vertexIndex].filter((index) => isLand(index, pack)),
-          ),
+          (feature.vertices as number[]).flatMap(vertexIndex =>
+            vertices.c[vertexIndex].filter(index => isLand(index, pack))
+          )
         );
         feature.height = Lakes.getHeight(feature as PackedGraphFeature);
       }
 
       return {
-        ...feature,
+        ...feature
       } as PackedGraphFeature;
     };
 
@@ -280,7 +260,7 @@ class FeatureModule {
     const featureIds = new Uint16Array(packCellsNumber); // pack.cells.f
     const haven = createTypedArray({
       maxValue: packCellsNumber,
-      length: packCellsNumber,
+      length: packCellsNumber
     }); // haven: opposite water cell
     const harbor = new Uint8Array(packCellsNumber); // harbor: number of adjacent water cells
     const features: PackedGraphFeature[] = [];
@@ -306,15 +286,9 @@ class FeatureModule {
             distanceField[neighborId] = this.WATER_COAST;
             if (!haven[cellId]) defineHaven(cellId);
           } else if (land && isNeibLand) {
-            if (
-              distanceField[neighborId] === this.UNMARKED &&
-              distanceField[cellId] === this.LAND_COAST
-            )
+            if (distanceField[neighborId] === this.UNMARKED && distanceField[cellId] === this.LAND_COAST)
               distanceField[neighborId] = this.LANDLOCKED;
-            else if (
-              distanceField[cellId] === this.UNMARKED &&
-              distanceField[neighborId] === this.LAND_COAST
-            )
+            else if (distanceField[cellId] === this.UNMARKED && distanceField[neighborId] === this.LAND_COAST)
               distanceField[cellId] = this.LANDLOCKED;
           }
 
@@ -326,9 +300,7 @@ class FeatureModule {
         }
       }
 
-      features.push(
-        addFeature({ firstCell, land, border, featureId, totalCells }),
-      );
+      features.push(addFeature({ firstCell, land, border, featureId, totalCells }));
       queue[0] = featureIds.indexOf(this.UNMARKED); // find unmarked cell
     }
 
@@ -336,14 +308,14 @@ class FeatureModule {
       distanceField,
       neighbors,
       start: this.DEEPER_LAND,
-      increment: 1,
+      increment: 1
     }); // markup pack land
     this.markup({
       distanceField,
       neighbors,
       start: this.DEEP_WATER,
       increment: -1,
-      limit: -10,
+      limit: -10
     }); // markup pack water
 
     pack.cells.t = distanceField;
@@ -380,17 +352,11 @@ class FeatureModule {
 
     const defineLakeGroup = (feature: PackedGraphFeature) => {
       if (feature.temp < -3) return "frozen";
-      if (
-        feature.height > 60 &&
-        feature.cells < 10 &&
-        feature.firstCell % 10 === 0
-      )
-        return "lava";
+      if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 10 === 0) return "lava";
 
       if (!feature.inlets && !feature.outlet) {
         if (feature.evaporation > feature.flux * 4) return "dry";
-        if (feature.cells < 3 && feature.firstCell % 10 === 0)
-          return "sinkhole";
+        if (feature.cells < 3 && feature.firstCell % 10 === 0) return "sinkhole";
       }
 
       if (!feature.outlet && feature.evaporation > feature.flux) return "salt";

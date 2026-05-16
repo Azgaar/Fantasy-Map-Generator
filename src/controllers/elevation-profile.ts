@@ -12,7 +12,7 @@ import {
   pointer,
   type Selection,
   scaleLinear,
-  select,
+  select
 } from "d3";
 import type { Burg } from "../modules/burgs-generator";
 import type { PackedGraphFeature } from "../modules/features";
@@ -20,11 +20,7 @@ import type { Province } from "../modules/provinces-generator";
 import type { State } from "../modules/states-generator";
 import { ensureEl, rn } from "../utils";
 
-export function open(
-  cells: number[],
-  routeLen: number,
-  isRiver: boolean,
-): void {
+export function open(cells: number[], routeLen: number, isRiver: boolean): void {
   closeDialogs("#elevationProfile, .stable");
   ensureEl("epCurve").on("change", draw);
   ensureEl("epSave").on("click", downloadCSV);
@@ -75,7 +71,7 @@ export function open(
     ma: 0,
     mih: 100,
     mah: 0,
-    points: [],
+    points: []
   };
 
   let totalAscent = 0;
@@ -125,11 +121,7 @@ export function open(
   }
 
   // Move last burg label to the final point if it falls right at the end
-  if (
-    lastBurgIndex !== 0 &&
-    lastBurgCell === chartData.cell[cells.length - 1] &&
-    lastBurgIndex < cells.length - 1
-  ) {
+  if (lastBurgIndex !== 0 && lastBurgCell === chartData.cell[cells.length - 1] && lastBurgIndex < cells.length - 1) {
     chartData.burg[cells.length - 1] = chartData.burg[lastBurgIndex];
     chartData.burg[lastBurgIndex] = 0;
   }
@@ -144,8 +136,8 @@ export function open(
       my: "center bottom",
       at: "center bottom-40px",
       of: "svg",
-      collision: "fit",
-    },
+      collision: "fit"
+    }
   });
 
   function draw(): void {
@@ -159,10 +151,7 @@ export function open(
       .range([chartHeight, 0]);
 
     for (let i = 0; i < cells.length; i++) {
-      chartData.points.push([
-        xscale(i) + xOffset,
-        yscale(chartData.height[i]) + yOffset,
-      ]);
+      chartData.points.push([xscale(i) + xOffset, yscale(chartData.height[i]) + yOffset]);
     }
 
     ensureEl("elevationGraph").innerHTML = "";
@@ -201,20 +190,12 @@ export function open(
 
     if (chartData.mah === chartData.mih) {
       const c = getColor(chartData.mih, colors);
-      landGrad
-        .append("stop")
-        .attr("offset", "0%")
-        .attr("style", `stop-color:${c};stop-opacity:1`);
-      landGrad
-        .append("stop")
-        .attr("offset", "100%")
-        .attr("style", `stop-color:${c};stop-opacity:1`);
+      landGrad.append("stop").attr("offset", "0%").attr("style", `stop-color:${c};stop-opacity:1`);
+      landGrad.append("stop").attr("offset", "100%").attr("style", `stop-color:${c};stop-opacity:1`);
     } else {
       const steps = Math.min(20, chartData.mah - chartData.mih);
       for (let s = 0; s <= steps; s++) {
-        const h = Math.round(
-          chartData.mah - (s / steps) * (chartData.mah - chartData.mih),
-        );
+        const h = Math.round(chartData.mah - (s / steps) * (chartData.mah - chartData.mih));
         landGrad
           .append("stop")
           .attr("offset", `${(s / steps) * 100}%`)
@@ -238,13 +219,11 @@ export function open(
       curveBundle.beta(1),
       curveCatmullRom.alpha(0.5),
       curveMonotoneX,
-      curveNatural,
+      curveNatural
     ];
     const epCurve = ensureEl<HTMLSelectElement>("epCurve");
     const curveIndex = Math.min(epCurve.selectedIndex, curveTypes.length - 1);
-    const lineFn = line<[number, number]>().curve(
-      curveTypes[curveIndex] as CurveFactory,
-    );
+    const lineFn = line<[number, number]>().curve(curveTypes[curveIndex] as CurveFactory);
 
     // Land fill: curve + straight close along the bottom edge
     const pts = chartData.points;
@@ -276,10 +255,7 @@ export function open(
 
     // Biome colour bar
     const hu = heightUnit.value;
-    const biomesG = chart
-      .append("g")
-      .attr("id", "epbiomes")
-      .attr("clip-path", "url(#epBiomesClip)");
+    const biomesG = chart.append("g").attr("id", "epbiomes").attr("clip-path", "url(#epBiomesClip)");
     const tileWidth = xscale(1);
 
     for (let k = 0; k < pts.length; k++) {
@@ -287,21 +263,11 @@ export function open(
       const biome = chartData.biome[k];
       const province = pack.cells.province[cell];
       const burgId = chartData.burg[k];
-      const pop =
-        pack.cells.pop[cell] +
-        (burgId
-          ? ((pack.burgs[burgId] as Burg).population ?? 0) * urbanization
-          : 0);
-      const provinceName = province
-        ? (pack.provinces[province] as Province).name
-        : null;
+      const pop = pack.cells.pop[cell] + (burgId ? ((pack.burgs[burgId] as Burg).population ?? 0) * urbanization : 0);
+      const provinceName = province ? (pack.provinces[province] as Province).name : null;
       const stateName = (pack.states[pack.cells.state[cell]] as State).name;
-      const religionName = (
-        pack.religions[pack.cells.religion[cell]] as { name: string }
-      ).name;
-      const cultureName = (
-        pack.cultures[pack.cells.culture[cell]] as { name: string }
-      ).name;
+      const religionName = (pack.religions[pack.cells.religion[cell]] as { name: string }).name;
+      const cultureName = (pack.cultures[pack.cells.culture[cell]] as { name: string }).name;
       const dataTip = [
         biomesData.name[biome],
         provinceName,
@@ -309,7 +275,7 @@ export function open(
         religionName,
         cultureName,
         `height: ${chartData.height[k]} ${hu}`,
-        `population ${rn(pop * populationRate)}`,
+        `population ${rn(pop * populationRate)}`
       ]
         .filter(Boolean)
         .join(", ");
@@ -328,13 +294,10 @@ export function open(
     // Axes
     const xAxis = axisBottom(xscale)
       .ticks(10)
-      .tickFormat(
-        (d) =>
-          `${rn((Number(d) / (pts.length - 1)) * routeLen)} ${distanceUnitInput.value}`,
-      );
+      .tickFormat(d => `${rn((Number(d) / (pts.length - 1)) * routeLen)} ${distanceUnitInput.value}`);
     const yAxis = axisLeft(yscale)
       .ticks(5)
-      .tickFormat((d) => `${d} ${hu}`);
+      .tickFormat(d => `${d} ${hu}`);
 
     chart
       .append("g")
@@ -351,12 +314,8 @@ export function open(
       .call(yAxis as any);
 
     // Grid lines
-    const gridStyle = (
-      g: Selection<SVGGElement, unknown, null, undefined>,
-    ): void => {
-      g.attr("stroke", "lightgrey")
-        .attr("stroke-opacity", "0.2")
-        .attr("stroke-width", "0.5");
+    const gridStyle = (g: Selection<SVGGElement, unknown, null, undefined>): void => {
+      g.attr("stroke", "lightgrey").attr("stroke-opacity", "0.2").attr("stroke-width", "0.5");
       g.selectAll("path").attr("stroke-width", "0");
     };
 
@@ -397,10 +356,7 @@ export function open(
       while (changed) {
         changed = false;
         for (const p of placed) {
-          if (
-            Math.abs(lx - p.lx) < X_PROXIMITY &&
-            Math.abs(ly - p.ly) < LINE_HEIGHT
-          ) {
+          if (Math.abs(lx - p.lx) < X_PROXIMITY && Math.abs(ly - p.ly) < LINE_HEIGHT) {
             const candidate = p.ly - LINE_HEIGHT;
             if (candidate < MIN_LABEL_Y) break;
             ly = candidate;
@@ -454,10 +410,7 @@ export function open(
       `Elev: ${chartData.mi}\u2013${chartData.ma} ${heightUnit.value}\u2002\u2191\u202f${totalAscent}\u2002\u2193\u202f${totalDescent} ${heightUnit.value}`;
 
     // Crosshair + FMG tooltip on hover
-    const crosshairG = chart
-      .append("g")
-      .attr("id", "epcrosshair")
-      .style("pointer-events", "none");
+    const crosshairG = chart.append("g").attr("id", "epcrosshair").style("pointer-events", "none");
     const vLine = crosshairG
       .append("line")
       .attr("x1", -200)
@@ -489,10 +442,7 @@ export function open(
         const [mx] = pointer(event);
         const idx = Math.max(
           0,
-          Math.min(
-            cells.length - 1,
-            Math.round(((mx - xOffset) / chartWidth) * (cells.length - 1)),
-          ),
+          Math.min(cells.length - 1, Math.round(((mx - xOffset) / chartWidth) * (cells.length - 1)))
         );
         const pt = pts[idx];
         if (!pt) return;
@@ -505,10 +455,10 @@ export function open(
             `${dist} ${distanceUnitInput.value} from start`,
             `Elevation: ${chartData.height[idx]} ${heightUnit.value}`,
             biomesData.name[chartData.biome[idx]],
-            burgId ? ((pack.burgs[burgId] as Burg).name ?? null) : null,
+            burgId ? ((pack.burgs[burgId] as Burg).name ?? null) : null
           ]
             .filter(Boolean)
-            .join(". "),
+            .join(". ")
         );
       })
       .on("mouseleave", () => {
@@ -528,9 +478,7 @@ export function open(
       const burgId = pack.cells.burg[cell];
       const pop = pack.cells.pop[cell];
       const burg = burgId ? (pack.burgs[burgId] as Burg) : null;
-      const burgPop = burg
-        ? (burg.population ?? 0) * populationRate * urbanization
-        : 0;
+      const burgPop = burg ? (burg.population ?? 0) * populationRate * urbanization : 0;
       const culture = pack.cultures[pack.cells.culture[cell]] as {
         name: string;
         color: string;
@@ -539,9 +487,7 @@ export function open(
         name: string;
         color: string;
       };
-      const province = pack.provinces[pack.cells.province[cell]] as
-        | Province
-        | 0;
+      const province = pack.provinces[pack.cells.province[cell]] as Province | 0;
       const state = pack.states[pack.cells.state[cell]] as State;
       return [
         k + 1,
@@ -564,13 +510,10 @@ export function open(
         province ? province.name : "",
         province ? province.color : "",
         state.name,
-        (state as State & { color: string }).color,
+        (state as State & { color: string }).color
       ].join(",");
     });
-    downloadFile(
-      `${headers}${rows.join("\n")}`,
-      `${getFileName("elevation profile")}.csv`,
-    );
+    downloadFile(`${headers}${rows.join("\n")}`, `${getFileName("elevation profile")}.csv`);
   }
 
   function downloadSVG(): void {
@@ -585,12 +528,12 @@ export function open(
     const h = +svgEl.getAttribute("height")!;
     const svgUrl = URL.createObjectURL(
       new Blob([new XMLSerializer().serializeToString(svgEl)], {
-        type: "image/svg+xml;charset=utf-8",
-      }),
+        type: "image/svg+xml;charset=utf-8"
+      })
     );
     const canvas = Object.assign(document.createElement("canvas"), {
       width: w,
-      height: h,
+      height: h
     });
     const ctx = canvas.getContext("2d")!;
     ctx.fillStyle = "#ffffff";
@@ -599,10 +542,10 @@ export function open(
     img.onload = () => {
       ctx.drawImage(img, 0, 0);
       URL.revokeObjectURL(svgUrl);
-      canvas.toBlob((pngBlob) => {
+      canvas.toBlob(pngBlob => {
         const a = Object.assign(document.createElement("a"), {
           href: URL.createObjectURL(pngBlob!),
-          download: `${getFileName("elevation profile")}.png`,
+          download: `${getFileName("elevation profile")}.png`
         });
         a.click();
         URL.revokeObjectURL(a.href);

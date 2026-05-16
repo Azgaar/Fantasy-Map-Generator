@@ -13,14 +13,9 @@ import { rand } from "./probabilityUtils";
  *   curves from arcing away from map edges (restores original "secure clipping" behavior)
  * @returns Clipped polygon points
  */
-export const clipPoly = (
-  points: [number, number][],
-  graphWidth: number,
-  graphHeight: number,
-  secure?: number,
-) => {
+export const clipPoly = (points: [number, number][], graphWidth: number, graphHeight: number, secure?: number) => {
   if (points.length < 2) return points;
-  if (points.some((point) => point === undefined)) {
+  if (points.some(point => point === undefined)) {
     window.ERROR && console.error("Undefined point in clipPoly", points);
     return points;
   }
@@ -34,12 +29,7 @@ export const clipPoly = (
   const secured: [number, number][] = [];
   for (const point of clipped) {
     secured.push(point);
-    if (
-      point[0] === 0 ||
-      point[0] === graphWidth ||
-      point[1] === 0 ||
-      point[1] === graphHeight
-    ) {
+    if (point[0] === 0 || point[0] === graphWidth || point[1] === 0 || point[1] === graphHeight) {
       secured.push(point, point);
     }
   }
@@ -53,11 +43,7 @@ export const clipPoly = (
  * @param step - Step size for segment search (default is 10)
  * @returns The segment ID (1-indexed)
  */
-export const getSegmentId = (
-  points: [number, number][],
-  point: [number, number],
-  step: number = 10,
-): number => {
+export const getSegmentId = (points: [number, number][], point: [number, number], step: number = 10): number => {
   if (points.length === 2) return 1;
 
   let minSegment = 1;
@@ -92,10 +78,7 @@ export const getSegmentId = (
  * @param ms - The number of milliseconds to delay
  * @returns The debounced function
  */
-export const debounce = <T extends (...args: any[]) => any>(
-  func: T,
-  ms: number,
-) => {
+export const debounce = <T extends (...args: any[]) => any>(func: T, ms: number) => {
   let isCooldown = false;
 
   return function (this: any, ...args: Parameters<T>) {
@@ -114,10 +97,7 @@ export const debounce = <T extends (...args: any[]) => any>(
  * @param ms - The number of milliseconds to throttle invocations to
  * @returns The throttled function
  */
-export const throttle = <T extends (...args: any[]) => any>(
-  func: T,
-  ms: number,
-) => {
+export const throttle = <T extends (...args: any[]) => any>(func: T, ms: number) => {
   let isThrottled = false;
   let savedArgs: any[] | null = null;
   let savedThis: any = null;
@@ -151,15 +131,9 @@ export const throttle = <T extends (...args: any[]) => any>(
  */
 export const parseError = (error: Error): string => {
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
-  const errorString = isFirefox
-    ? `${error.toString()} ${error.stack}`
-    : error.stack || "";
-  const regex =
-    /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gi;
-  const errorNoURL = errorString.replace(
-    regex,
-    (url) => `<i>${last(url.split("/"))}</i>`,
-  );
+  const errorString = isFirefox ? `${error.toString()} ${error.stack}` : error.stack || "";
+  const regex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gi;
+  const errorNoURL = errorString.replace(regex, url => `<i>${last(url.split("/"))}</i>`);
   const errorParsed = errorNoURL.replace(/at /gi, "<br>&nbsp;&nbsp;at ");
   return errorParsed;
 };
@@ -169,10 +143,7 @@ export const parseError = (error: Error): string => {
  * @param url - The URL to convert
  * @param callback - Callback function that receives the base64 data
  */
-export const getBase64 = (
-  url: string,
-  callback: (result: string | ArrayBuffer | null) => void,
-): void => {
+export const getBase64 = (url: string, callback: (result: string | ArrayBuffer | null) => void): void => {
   const xhr = new XMLHttpRequest();
   xhr.onload = () => {
     const reader = new FileReader();
@@ -199,10 +170,7 @@ export const openURL = (url: string): void => {
  * @param page - The wiki page name/path to open
  */
 export const wiki = (page: string): void => {
-  window.open(
-    `https://github.com/Azgaar/Fantasy-Map-Generator/wiki/${page}`,
-    "_blank",
-  );
+  window.open(`https://github.com/Azgaar/Fantasy-Map-Generator/wiki/${page}`, "_blank");
 };
 
 /**
@@ -232,14 +200,11 @@ export const isCtrlClick = (event: MouseEvent | KeyboardEvent): boolean => {
  * @returns Formatted date string
  */
 export const generateDate = (from: number = 100, to: number = 1000): string => {
-  return new Date(rand(from, to), rand(11), rand(1, 28)).toLocaleDateString(
-    "en",
-    {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    },
-  );
+  return new Date(rand(from, to), rand(11), rand(1, 28)).toLocaleDateString("en", {
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
 };
 
 /**
@@ -250,16 +215,8 @@ export const generateDate = (from: number = 100, to: number = 1000): string => {
  * @param decimals - Number of decimal places (default is 2)
  * @returns Longitude value
  */
-export const getLongitude = (
-  x: number,
-  mapCoordinates: any,
-  graphWidth: number,
-  decimals: number = 2,
-): number => {
-  return rn(
-    mapCoordinates.lonW + (x / graphWidth) * mapCoordinates.lonT,
-    decimals,
-  );
+export const getLongitude = (x: number, mapCoordinates: any, graphWidth: number, decimals: number = 2): number => {
+  return rn(mapCoordinates.lonW + (x / graphWidth) * mapCoordinates.lonT, decimals);
 };
 
 /**
@@ -270,16 +227,8 @@ export const getLongitude = (
  * @param decimals - Number of decimal places (default is 2)
  * @returns Latitude value
  */
-export const getLatitude = (
-  y: number,
-  mapCoordinates: any,
-  graphHeight: number,
-  decimals: number = 2,
-): number => {
-  return rn(
-    mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT,
-    decimals,
-  );
+export const getLatitude = (y: number, mapCoordinates: any, graphHeight: number, decimals: number = 2): number => {
+  return rn(mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT, decimals);
 };
 
 /**
@@ -298,12 +247,9 @@ export const getCoordinates = (
   mapCoordinates: any,
   graphWidth: number,
   graphHeight: number,
-  decimals: number = 2,
+  decimals: number = 2
 ): [number, number] => {
-  return [
-    getLongitude(x, mapCoordinates, graphWidth, decimals),
-    getLatitude(y, mapCoordinates, graphHeight, decimals),
-  ];
+  return [getLongitude(x, mapCoordinates, graphWidth, decimals), getLatitude(y, mapCoordinates, graphHeight, decimals)];
 };
 
 /**
@@ -334,26 +280,19 @@ export const initializePrompt = (): void => {
     step: 0.01,
     min: 0,
     max: 100,
-    required: true,
+    required: true
   };
 
   (window as any).prompt = (
     promptText: string = defaultText,
     options: PromptOptions = defaultOptions,
-    callback?: (value: number | string) => void,
+    callback?: (value: number | string) => void
   ) => {
     if (options.default === undefined)
-      return (
-        window.ERROR &&
-        console.error(
-          "Prompt: options object does not have default value defined",
-        )
-      );
+      return window.ERROR && console.error("Prompt: options object does not have default value defined");
 
     const input = prompt.querySelector("#promptInput") as HTMLInputElement;
-    const promptTextElement = prompt.querySelector(
-      "#promptText",
-    ) as HTMLElement;
+    const promptTextElement = prompt.querySelector("#promptText") as HTMLElement;
 
     if (!input || !promptTextElement) return;
 
@@ -380,7 +319,7 @@ export const initializePrompt = (): void => {
         const v = type === "number" ? +input.value : input.value;
         if (callback) callback(v);
       },
-      { once: true },
+      { once: true }
     );
   };
 
@@ -396,10 +335,7 @@ declare global {
   interface Window {
     ERROR: boolean;
 
-    clipPoly: (
-      points: [number, number][],
-      secure?: number,
-    ) => [number, number][];
+    clipPoly: (points: [number, number][], secure?: number) => [number, number][];
     getSegmentId: typeof getSegmentId;
     debounce: typeof debounce;
     throttle: typeof throttle;
