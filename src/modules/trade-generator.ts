@@ -1,8 +1,8 @@
-import {quadtree} from "d3-quadtree";
-import {minmax, rn} from "../utils";
-import {getRandomColor} from "../utils/colorUtils";
-import type {Burg} from "./burgs-generator";
-import type {DemandCategory, Good} from "./goods-generator";
+import { quadtree } from "d3-quadtree";
+import { minmax, rn } from "../utils";
+import { getRandomColor } from "../utils/colorUtils";
+import type { Burg } from "./burgs-generator";
+import type { DemandCategory, Good } from "./goods-generator";
 import {
   BONUS_RESOURCE_PRODUCTION,
   DEMAND_PRIORITY,
@@ -23,7 +23,7 @@ export type Market = {
   i: number;
   centerBurgId: number;
   color: string;
-  goods: Record<number, {stock: number; price: number}>;
+  goods: Record<number, { stock: number; price: number }>;
 };
 
 export type Deal = {
@@ -37,10 +37,10 @@ export type Deal = {
   price: number;
 };
 
-export type BiomesProduction = Record<number, {goodId: number; production: number}[]>;
+export type BiomesProduction = Record<number, { goodId: number; production: number }[]>;
 
 export class TradeModule {
-  private data: {markets: Market[]; deals: Deal[]; stateTaxes: Record<number, number>} = {
+  private data: { markets: Market[]; deals: Deal[]; stateTaxes: Record<number, number> } = {
     markets: [],
     deals: [],
     stateTaxes: {}
@@ -49,7 +49,7 @@ export class TradeModule {
   private marketById: Market[] = [];
 
   reset() {
-    this.data = {markets: [], deals: [], stateTaxes: {}};
+    this.data = { markets: [], deals: [], stateTaxes: {} };
     this.goodById = [];
     this.marketById = [];
     this.syncPackData();
@@ -76,9 +76,9 @@ export class TradeModule {
     return this.marketById[marketId];
   }
 
-  quoteMarket(market: Market, goodId: number): {stock: number; buyPrice: number; sellPrice: number} {
+  quoteMarket(market: Market, goodId: number): { stock: number; buyPrice: number; sellPrice: number } {
     const good = this.goodById[goodId] ?? Goods.get(goodId);
-    if (!good) return {stock: 0, buyPrice: 0, sellPrice: 0};
+    if (!good) return { stock: 0, buyPrice: 0, sellPrice: 0 };
     const row = this.getMarketGood(market, good);
     return {
       stock: row.stock,
@@ -98,7 +98,7 @@ export class TradeModule {
     return deal;
   }
 
-  buy({burg, good, units, budget}: {burg: Burg; good: Good; units: number; budget?: number}): Deal | null {
+  buy({ burg, good, units, budget }: { burg: Burg; good: Good; units: number; budget?: number }): Deal | null {
     const market = this.getMarket(burg.market);
     if (!market || units <= 0) return null;
 
@@ -125,7 +125,7 @@ export class TradeModule {
     return deal;
   }
 
-  sell({burg, good, units}: {burg: Burg; good: Good; units: number}): Deal | null {
+  sell({ burg, good, units }: { burg: Burg; good: Good; units: number }): Deal | null {
     const market = this.getMarket(burg.market);
     if (!market || units <= 0) return null;
 
@@ -195,14 +195,14 @@ export class TradeModule {
           .filter(exporter => exporter.i !== importer.i)
           .flatMap(exporter => {
             const exportPool = exportPools[exporter.i] || [];
-            const goods: {exporter: Market; good: Good; goodId: number; available: number; coverageWeight: number}[] =
+            const goods: { exporter: Market; good: Good; goodId: number; available: number; coverageWeight: number }[] =
               [];
             for (let goodId = 0; goodId < exportPool.length; goodId++) {
               const available = exportPool[goodId] || 0;
               const good = this.goodById[goodId];
               const coverageWeight = good?.demandCoverage?.[demandCategory] || 0;
               if (!good || available <= 0.001 || coverageWeight <= 0) continue;
-              goods.push({exporter, good, goodId, available, coverageWeight});
+              goods.push({ exporter, good, goodId, available, coverageWeight });
             }
             return goods;
           })
@@ -245,7 +245,7 @@ export class TradeModule {
     const existing = market.goods[good.i];
     if (existing) return existing;
 
-    const initialized = {stock: 0, price: good.value};
+    const initialized = { stock: 0, price: good.value };
     market.goods[good.i] = initialized;
     return initialized;
   }
@@ -281,7 +281,7 @@ export class TradeModule {
         let score = burg.population || 0;
         if (burg.capital) score *= 2;
         if (burg.port) score *= 2;
-        return {burg, score};
+        return { burg, score };
       })
       .sort((a, b) => b.score - a.score);
 
@@ -295,15 +295,15 @@ export class TradeModule {
       d => d[1]
     );
 
-    for (const {burg} of scored) {
+    for (const { burg } of scored) {
       if (burg.i === undefined) continue;
-      const {x, y} = burg;
+      const { x, y } = burg;
       const nearest = tree.find(x, y, minSpacing);
       if (!nearest) {
         // Create a new market anchored at this burg
         const marketId = markets.length + 1;
 
-        const market = {i: marketId, centerBurgId: burg.i, color: getRandomColor(), goods: {}};
+        const market = { i: marketId, centerBurgId: burg.i, color: getRandomColor(), goods: {} };
         markets.push(market);
         this.marketById[marketId] = market;
         tree.add([x, y, marketId]);
@@ -376,7 +376,7 @@ export class TradeModule {
 
       if (population <= 0) continue;
       const biomeRuralGoods = biomeProduction[biomeId] || [];
-      for (const {goodId, production} of biomeRuralGoods) {
+      for (const { goodId, production } of biomeRuralGoods) {
         const marketGood = this.getMarketGood(market, this.goodById[goodId]);
         marketGood.stock += population * production;
       }
@@ -407,11 +407,11 @@ export class TradeModule {
       const startCell = burg.cell;
       cellMarket[startCell] = market.i;
       costs[startCell] = 1;
-      queue.push({cellId: startCell, marketId: market.i, burg, priority: 0}, 0);
+      queue.push({ cellId: startCell, marketId: market.i, burg, priority: 0 }, 0);
     }
 
     while (queue.length) {
-      const {cellId, marketId, burg, priority} = queue.pop();
+      const { cellId, marketId, burg, priority } = queue.pop();
       const cellRiver = cells.r[cellId];
       const cellState = cells.state[cellId];
       const cellProvince = cells.province[cellId];
@@ -433,7 +433,7 @@ export class TradeModule {
         const totalCost = priority + cost;
         if (!costs[neighborId] || totalCost < costs[neighborId]) {
           costs[neighborId] = totalCost;
-          queue.push({cellId: neighborId, marketId, burg, priority: totalCost}, totalCost);
+          queue.push({ cellId: neighborId, marketId, burg, priority: totalCost }, totalCost);
 
           const hasGood = Boolean(cells.good[neighborId]);
           const isDeepWater = cells.t[neighborId] < -1;
