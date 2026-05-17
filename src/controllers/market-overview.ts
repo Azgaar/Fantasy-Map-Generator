@@ -9,8 +9,10 @@ let showAllGoods = false;
 export function open(marketId: number): void {
   if (customization) return;
 
-  const market = Trade.getMarket(marketId);
-  if (!market) {
+  let market: Market;
+  try {
+    market = Trade.getMarket(marketId);
+  } catch (_e) {
     tip("Invalid market. The selected market does not exist", true, "error", 5000);
     return;
   }
@@ -44,8 +46,10 @@ export function open(marketId: number): void {
 }
 
 function marketOverviewAddLines() {
-  const market = Trade.getMarket(activeMarketId);
-  if (!market) {
+  let market: Market;
+  try {
+    market = Trade.getMarket(activeMarketId);
+  } catch (_e) {
     tip("Invalid market. The selected market does not exist", true, "error", 5000);
     return;
   }
@@ -108,8 +112,12 @@ function getMarketCenterName(market: Market): string {
 }
 
 function downloadStockCsv() {
-  const market = Trade.getMarket(activeMarketId);
-  if (!market) return;
+  let market: Market;
+  try {
+    market = Trade.getMarket(activeMarketId);
+  } catch (_e) {
+    return;
+  }
 
   let csv = "Good,Stock,Buy Price,Sell Price\n";
   for (const [goodId, marketGood] of Object.entries(market.goods)) {

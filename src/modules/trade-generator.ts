@@ -62,9 +62,10 @@ export class TradeModule {
     return this.data;
   }
 
-  getMarket(marketId: number | undefined): Market | undefined {
-    if (!marketId) return undefined;
-    return this.marketById[marketId];
+  getMarket(marketId: number | undefined): Market {
+    const market = marketId ? this.marketById[marketId] : undefined;
+    if (!market) throw new Error(`Market ${marketId} not found`);
+    return market;
   }
 
   quoteMarket(market: Market, goodId: number): { stock: number; buyPrice: number; sellPrice: number } {
@@ -89,12 +90,26 @@ export class TradeModule {
     return deal;
   }
 
-  buy({ burg, good, units, budget }: { burg: Burg; good: Good; units: number; budget?: number }): Deal | null {
-    const market = this.getMarket(burg.market);
+  buy({
+    burg,
+    marketId,
+    good,
+    units,
+    budget,
+    transportCost = 0
+  }: {
+    burg: Burg;
+    marketId: number;
+    good: Good;
+    units: number;
+    budget?: number;
+    transportCost?: number;
+  }): Deal | null {
+    const market = this.getMarket(marketId);
     if (!market || units <= 0) return null;
 
     const marketGood = this.getMarketGood(market, good);
-    const unitPrice = this.customerBuyPrice(marketGood.price);
+    const unitPrice = this.customerBuyPrice(marketGood.price) + transportCost;
     const maxByStock = marketGood.stock || 0;
     const maxByBudget =
       budget === undefined ? Number.POSITIVE_INFINITY : budget > 0 && unitPrice > 0 ? budget / unitPrice : 0;
@@ -115,12 +130,24 @@ export class TradeModule {
     return deal;
   }
 
-  sell({ burg, good, units }: { burg: Burg; good: Good; units: number }): Deal | null {
-    const market = this.getMarket(burg.market);
+  sell({
+    burg,
+    marketId,
+    good,
+    units,
+    transportCost = 0
+  }: {
+    burg: Burg;
+    marketId: number;
+    good: Good;
+    units: number;
+    transportCost?: number;
+  }): Deal | null {
+    const market = this.getMarket(marketId);
     if (!market || units <= 0) return null;
 
     const marketGood = this.getMarketGood(market, good);
-    const price = this.customerSellPrice(marketGood.price);
+    const price = Math.max(0, this.customerSellPrice(marketGood.price) - transportCost);
     marketGood.stock += units;
 
     const deal = this.recordDeal({

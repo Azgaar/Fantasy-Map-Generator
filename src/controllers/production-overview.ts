@@ -15,8 +15,10 @@ export function open(burgId: number): void {
     return;
   }
 
-  const market = Trade.getMarket(burg.market);
-  if (!market) {
+  let market: Market;
+  try {
+    market = Trade.getMarket(burg.market);
+  } catch (_e) {
     tip("No market. This burg is not connected to any market.", true, "error", 5000);
     return;
   }

@@ -1,6 +1,6 @@
 import { createTypedArray, getTypedArray, last, TYPED_ARRAY_MAX, unique } from "./arrayUtils";
 import { abbreviate, getAdjective, isVowel, list, nth, trimVowels } from "./languageUtils";
-import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
+import { getOctagonDistance, lerp, lim, minmax, normalize, rn } from "./numberUtils";
 import "./polyfills";
 import { C_12, getColors, getMixedColor, getRandomColor, toHEX } from "./colorUtils";
 import {
@@ -49,6 +49,7 @@ window.lim = lim;
 window.minmax = minmax;
 window.normalize = normalize;
 window.lerp = lerp as typeof window.lerp;
+window.getOctagonDistance = getOctagonDistance;
 
 window.vowel = isVowel;
 window.trimVowels = trimVowels;
@@ -218,6 +219,7 @@ export {
   getMixedColor,
   getNextId,
   getNumberInRange,
+  getOctagonDistance,
   getPackPolygon,
   getPolesOfInaccessibility,
   getRandomColor,
