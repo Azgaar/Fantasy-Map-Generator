@@ -6,7 +6,7 @@ import type { MfgHistory, ProductionCandidate } from "../modules/production-gene
 import { getSalesTaxRateForBurg } from "../modules/states-generator";
 import { rn } from "../utils";
 
-type Type = "MFG" | "BUY" | "SELL";
+type Type = "MFG" | "BUY" | "SELL" | "LOCAL";
 
 export function open(burgId: number): void {
   const burg = pack.burgs[burgId];
@@ -81,6 +81,8 @@ export function open(burgId: number): void {
       return `<span style="${commonStyles};background:#f5d9d6;color:#a33" data-tip="Local market purchase">BUY</span>`;
     if (type === "SELL")
       return `<span style="${commonStyles};background:#dff0e2;color:#2f8a46" data-tip="Sale to local market">SELL</span>`;
+    if (type === "LOCAL")
+      return `<span style="${commonStyles};background:#d9e7f5;color:#346" data-tip="Local production">LOCAL</span>`;
     return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" data-tip="Manufacturing step">MFG</span>`;
   };
   const modifierBadge = (modifier: number) =>
@@ -266,8 +268,7 @@ export function open(burgId: number): void {
          </tr>`,
         renderLogRow(candidatesId, candidatesHtml)
       ];
-    }
-    if (entry.kind === "deal") {
+    } else if (entry.kind === "deal") {
       const deal = dealById.get(entry.dealId);
       if (!deal) return [];
       const detailsId = `deal-details-${stepIndex++}`;
@@ -295,6 +296,14 @@ export function open(burgId: number): void {
           detailsHtml: renderSaleDetails(deal)
         });
       }
+    } else if (entry.kind === "local") {
+      producedByGood[entry.goodId] = (producedByGood[entry.goodId] || 0) + entry.units;
+      return /*html*/ `<tr style="${styles.bodyRow}">
+           ${renderDataCell(renderTaggedGood(entry.goodId, "LOCAL"))}
+           ${renderDataCell(entry.units, "right")}
+           <td style="${styles.cell}">Local bonus resource</td>
+           ${renderDataCell("", "right", styles.subtle)}
+         </tr>`;
     }
     return [];
   });
@@ -344,7 +353,7 @@ export function open(burgId: number): void {
     .map(([goodIdStr, units]) => {
       const id = +goodIdStr;
       return /*html*/ `<tr style="${styles.bodyRow}">
-        ${renderDataCell(renderTaggedGood(id, "MFG"))}
+        ${renderDataCell(renderGoodLabel(id))}
         ${renderDataCell(rn(units, 2), "right")}
       </tr>`;
     })
@@ -353,7 +362,7 @@ export function open(burgId: number): void {
   const producedTable = renderTable({
     colWidths: ["80%", "20%"],
     headers: [{ label: "Good" }, { label: "Units", align: "right" }],
-    rows: producedRows ? [producedRows] : [],
+    rows: [producedRows],
     empty: "No goods manufactured"
   });
 

@@ -278,16 +278,14 @@ export class MarketsModule {
 
   buy({ burg, good, units, budget }: { burg: Burg; good: Good; units: number; budget?: number }): Deal | null {
     const market = this.get(burg.market);
-    if (!market || units <= 0) return null;
+    if (!market) return null;
 
     const marketGood = this.getMarketGood(market, good);
     const unitPrice = this.customerBuyPrice(marketGood.price);
-    const maxByStock = marketGood.stock || 0;
-    const maxByBudget =
-      budget === undefined ? Number.POSITIVE_INFINITY : budget > 0 && unitPrice > 0 ? budget / unitPrice : 0;
-    const actualUnits = Math.min(units, maxByStock, maxByBudget);
+
+    let actualUnits = Math.min(units, marketGood.stock);
+    if (budget) actualUnits = Math.min(actualUnits, budget / unitPrice);
     if (actualUnits <= 0) return null;
-    marketGood.stock = Math.max(0, marketGood.stock - actualUnits);
 
     const deal = this.recordDeal({
       market: market.i,
@@ -299,6 +297,7 @@ export class MarketsModule {
       price: unitPrice
     });
 
+    marketGood.stock = Math.max(0, marketGood.stock - actualUnits);
     marketGood.price = this.applyMarketPressure(good.value, marketGood.price, actualUnits);
     return deal;
   }
@@ -326,19 +325,9 @@ export class MarketsModule {
   }
 
   /**
-   * Placeholder for future market-level demand signals (e.g. price pressure from aggregate shortage).
-   * Currently performs no persistent updates.
-   */
-  updateMarketDemand(productionBurgIds: ReadonlySet<number>, demandInventory: Map<number, number[]>): void {
-    void productionBurgIds;
-    void demandInventory;
-  }
-
-  /**
    * TODO: rework. Moves excess stock between market centers.
    */
-  redistributeAcrossMarkets(productionBurgIds: ReadonlySet<number>, demandInventory: Map<number, number[]>): void {
-    this.updateMarketDemand(productionBurgIds, demandInventory);
+  redistributeAcrossMarkets(): void {
     const exportPools: number[][] = [];
     const uncoveredDemandByMarket: number[][] = [];
 
@@ -346,9 +335,8 @@ export class MarketsModule {
       const marketDemand: number[] = Array(DEMAND_PRIORITY.length).fill(0);
       for (const burg of pack.burgs) {
         if (!burg || burg.removed || burg.market !== market.i) continue;
-        if (!productionBurgIds.has(burg.i!)) continue;
         const burgDemandTargets = getDemandTargets(burg.population || 0);
-        const burgCoverage = getDemandCoverageFromNumericInventory(demandInventory.get(burg.i!) ?? [], this.goodById);
+        const burgCoverage = getDemandCoverageFromNumericInventory([], this.goodById);
         for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
           marketDemand[categoryIndex] += Math.max(0, burgDemandTargets[categoryIndex] - burgCoverage[categoryIndex]);
         }
@@ -403,7 +391,7 @@ export class MarketsModule {
             good: candidate.goodId,
             units,
             client: candidate.exporter.i,
-            clientType: "marker",
+            clientType: "market",
             price: marketPrice
           });
           exporterGood.price = this.applyMarketPressure(candidate.good.value, exporterGood.price, -units);
@@ -411,7 +399,6 @@ export class MarketsModule {
         }
       }
     }
-    this.updateMarketDemand(productionBurgIds, demandInventory);
   }
 
   private customerBuyPrice(midPrice: number): number {
