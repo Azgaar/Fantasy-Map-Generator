@@ -77,11 +77,11 @@ function marketOverviewAddLines() {
     </div>`;
   }
   ensureEl("marketOverviewGoodsBody").innerHTML = lines || "No market goods available";
+  ensureEl("marketOverviewOwner").innerHTML = getOwnerStateName(market);
 
   const burgs = pack.burgs.filter(b => !b.removed && b.market === market.i);
   const totalUnits = Object.values(market.goods).reduce((sum, mg) => sum + mg.stock, 0);
   ensureEl("marketOverviewSummary").innerHTML = /*html*/ `
-    <div style="margin-left:5px">Owner: ${getOwnerStateName(market)}</div>
     <div style="margin-left:5px">Cells: ${pack.cells.market.reduce((count, m) => count + (m === market.i ? 1 : 0), 0)}</div>
     <div style="margin-left:12px">Burgs: ${burgs.length}</div>
     <div style="margin-left:12px">Stock: ${rn(totalUnits, 2)}</div>`;

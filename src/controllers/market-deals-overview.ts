@@ -1,12 +1,9 @@
 import type { Burg } from "../modules/burgs-generator";
-import type { Deal, Market } from "../modules/markets-generator";
-import { getSalesTaxRateForBurg } from "../modules/states-generator";
+import type { Deal } from "../modules/markets-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
 let activeMarketId = 0;
-
-type DealKind = "BUY" | "SELL";
 
 export function open(marketId: number): void {
   const market = Markets.get(marketId);
@@ -19,16 +16,8 @@ export function open(marketId: number): void {
   marketDealsAddLines();
 
   $("#marketDeals").dialog({
-    title: `Market Deals: ${getMarketCenterName(market)}`,
-    resizable: false,
-    width: "auto",
-    close: closeMarketDeals,
-    position: {
-      my: "right top",
-      at: "right bottom+10",
-      of: "#marketOverview",
-      collision: "fit"
-    }
+    title: `${pack.burgs[market.centerBurgId]?.name} Market Deals`,
+    position: { my: "right top", at: "right bottom+10", of: "#marketOverview", collision: "fit" }
   });
 
   if (!isInitialized) {
@@ -36,13 +25,12 @@ export function open(marketId: number): void {
     ensureEl("marketDealsExport").on("click", downloadDealsCsv);
     ensureEl("marketDealsBody").on("click", ev => {
       const el = ev.target as HTMLElement;
-      if (!el.classList.contains("marketDealCounterparty")) return;
-      const dealId = el.closest<HTMLElement>(".marketDeal")?.dataset.id;
+      const dealId = el.closest<HTMLElement>(".marketDealParty")?.parentElement?.dataset.id;
       const deal = pack.deals.find(d => d.i === Number(dealId));
       if (!deal) return;
 
-      const burgId = getPartyBurgId(deal);
-      if (burgId) zoomTo(pack.burgs[burgId].x, pack.burgs[burgId].y, 8, 2000);
+      const party = getParty(deal);
+      if (party) zoomTo(party.x, party.y, 8, 2000);
     });
     isInitialized = true;
   }
@@ -71,86 +59,39 @@ function marketDealsAddLines(): void {
   applySorting(ensureEl("marketDealsHeader"));
 }
 
-function closeMarketDeals(): void {
-  ensureEl("marketDealsBody").innerHTML = "";
-}
-
-function typeBadge(type: DealKind): string {
-  const base =
-    "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
-  if (type === "BUY") return `<span style="${base};background:#f5d9d6;color:#a33">BUY</span>`;
-  if (type === "SELL") return `<span style="${base};background:#dff0e2;color:#2f8a46">SELL</span>`;
-  return `<span style="${base};background:#edf1f4;color:#5f6f7a">GLOBAL</span>`;
-}
-
-function getPartyBurgId(deal: Deal): number {
-  if (deal.clientType === "burg") return deal.client;
-  const market = Markets.get(deal.client);
-  if (market) return market.centerBurgId;
-  return 0;
-}
-
 function renderDealLine(deal: Deal): string {
   const good = Goods.get(deal.good);
   if (!good) return "";
 
-  const stroke = Goods.getStroke(good.color);
-  const type: DealKind = deal.direction === "out" ? "SELL" : "BUY";
-  const tip = deal.direction === "out" ? "Sale to the local market" : "Market purchase";
   const dealNet = getDealNet(deal);
-
-  const counterparty = getPartyLabel(deal);
+  const party = getParty(deal);
+  const patryIcon = deal.clientType === "burg" ? "icon-dot-circled" : "icon-store";
   const incomeColor = dealNet >= 0 ? "#2a6" : "#c44";
 
-  return /* html */ `<div class="states marketDeal" data-id="${deal.i}" data-good="${good.name}" data-type="${type}" data-units="${rn(deal.units, 2)}" data-counterparty="${counterparty}" data-income="${dealNet}">
+  return /* html */ `<div class="states marketDeal" data-id="${deal.i}" data-good="${good.name}" data-direction="${deal.direction}" data-units="${rn(deal.units, 2)}" data-counterparty="${party}" data-income="${dealNet}">
       <svg data-tip="Good icon" width="1.3em" height="1.3em" class="goodIcon">
-        <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
+        <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
         <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
       </svg>
       <div data-tip="Good name" class="goodName">${good.name}</div>
-      <div class="marketDealType" data-tip="${tip}">${typeBadge(type)}</div>
-      <div class="marketDealCounterparty pointer" data-tip="Click to zoom">${counterparty}</div>
+      <div><span class="marketBadge" style="background:#f5d9d6; color:${incomeColor}">${deal.direction.toUpperCase()}</span></div>
+      <div class="marketDealParty pointer" data-tip="Click to zoom">
+        <div class="${patryIcon}" style="display:inline-block; width: 0.8em;"></div>
+        <div style="display:inline-block; width: 6.8em;">${party?.name}</div>
+      </div>
       <div class="marketDealUnits">${rn(deal.units, 2)}</div>
       <div class="marketDealIncome" style="color:${incomeColor}">${formatPrice(dealNet)}</div>
     </div>`;
 }
 
-function getMarketCenterName(market: Market): string {
-  return pack.burgs[market.centerBurgId]?.name || `Market ${market.i}`;
-}
-
-function getPartyLabel(deal: Deal): string {
-  if (deal.clientType === "burg") {
-    const burg = pack.burgs[deal.client] as Burg | undefined;
-    if (burg && !burg.removed) return burg.name || `Burg ${deal.client}`;
-  } else if (deal.clientType === "market") {
-    const market = Markets.get(deal.client);
-    if (market) return `${getMarketCenterName(market)} market`;
-    const marker = pack.markers.find(m => m.i === deal.client);
-    if (marker) return marker.type || `Marker ${deal.client}`;
-  }
-  return `#${deal.client}`;
-}
-
-function getDealSpend(deal: Deal): number {
-  return deal.direction === "in" ? deal.units * deal.price : 0;
-}
-
-function getDealRevenue(deal: Deal): number {
-  return deal.direction === "out" ? deal.units * deal.price : 0;
-}
-
-function getDealTax(deal: Deal): number {
-  if (deal.direction !== "in") return 0;
-  if (deal.clientType === "burg") {
-    const seller = pack.burgs[deal.client] as Burg | undefined;
-    return seller ? deal.units * deal.price * getSalesTaxRateForBurg(seller) : 0;
-  }
-  return 0;
+function getParty(deal: Deal): Burg | null {
+  const burgId = deal.clientType === "burg" ? deal.client : Markets.get(deal.client)?.centerBurgId;
+  if (!burgId) return null;
+  return pack.burgs[burgId] || null;
 }
 
 function getDealNet(deal: Deal): number {
-  return getDealRevenue(deal) - getDealSpend(deal);
+  return rn(deal.units * deal.price * (deal.direction === "in" ? -1 : 1), 2);
 }
 
 function downloadDealsCsv(): void {
@@ -158,24 +99,18 @@ function downloadDealsCsv(): void {
   if (!market) return;
 
   const lines = pack.deals.filter(deal => deal.market === activeMarketId);
-  let csv = "Id,Good,Type,Units,Buyer,Seller,Price,Tax,Net\n";
+  let csv = "Id,Good,Type,Client,Units,Price,Net\n";
   for (const deal of lines) {
     const good = Goods.get(deal.good);
     if (!good) continue;
 
-    const buyer = deal.direction === "out" ? getPartyLabel(deal) : `${getMarketCenterName(market)} market`;
-    const seller = deal.direction === "in" ? getPartyLabel(deal) : `${getMarketCenterName(market)} market`;
-    const type = deal.direction === "out" ? "SELL" : "BUY";
-
     csv += [
       deal.i,
       good.name,
-      type,
+      deal.direction,
+      getParty(deal),
       rn(deal.units, 2),
-      buyer,
-      seller,
       rn(deal.price, 2),
-      rn(getDealTax(deal), 2),
       rn(getDealNet(deal), 2)
     ].join(",");
     csv += "\n";

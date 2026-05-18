@@ -2514,8 +2514,7 @@ div.states > .marketGoodName {
 }
 
 div.states > .marketGoodStock,
-div.states > .marketGoodBuyPrice,
-div.states > .marketGoodSellPrice {
+div.states > .marketGoodPrice {
   width: 5em;
   text-align: right;
 }
@@ -2526,13 +2525,24 @@ div.states > .marketDealUnits {
   text-align: right;
 }
 
-div.states > .marketDealCounterparty {
+div.states > .marketDealParty {
   width: 8em;
 }
 
 div.states > .marketDealIncome {
   width: 5em;
   text-align: right;
+}
+
+div.states .marketBadge {
+  display: inline-block;
+  border-radius: 3px;
+  padding: 0 0.4em;
+  font-size: 0.8em;
+  font-weight: bold;
+  line-height: 1.35;
+}
+
 .fmg-tour.driver-popover {
   border-radius: 4px;
 }
@@ -2570,7 +2580,6 @@ body.tour-free-roam .driver-overlay {
 body.tour-free-roam * {
   pointer-events: auto !important;
 }
-
 
 #startTourButton {
   display: block;
