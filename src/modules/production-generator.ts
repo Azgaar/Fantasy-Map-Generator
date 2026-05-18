@@ -294,22 +294,21 @@ export class ProductionModule {
     const { good, ingredients, maxYield } = decision.action;
     const actualYield = Math.min(workerFraction, maxYield);
     const cultureModifier = state.cultureModifierByGood[good.i] || 1;
+    const produced = actualYield * cultureModifier;
     const recipeLog: ManufacturingRecipeLog = [];
 
     for (const ingredient of ingredients) {
       const ingredientGoodId = ingredient.goodId;
-      const amountNeeded = actualYield * ingredient.amount;
-      const fromInventory = Math.min(state.inventory[ingredientGoodId] || 0, amountNeeded);
-      const fromMarketNeeded = Math.max(0, amountNeeded - fromInventory);
+      const amount = actualYield * ingredient.amount;
+      const fromInventory = Math.min(state.inventory[ingredientGoodId] || 0, amount);
+      const fromMarket = Math.max(0, amount - fromInventory);
 
-      const { unitsBought, cost } = this.buyIngredientFromMarket(state, index, ingredientGoodId, fromMarketNeeded);
       state.inventory[ingredientGoodId] = Math.max(0, (state.inventory[ingredientGoodId] || 0) - fromInventory);
       this.addDemandCoverage(state.demandCoverage, ingredientGoodId, -fromInventory, index.demandCoverageByGood);
-      recipeLog.push({ goodId: ingredientGoodId, amount: fromInventory + unitsBought, marketCost: cost });
-    }
 
-    const produced = actualYield * cultureModifier;
-    if (produced <= 0) return;
+      const marketCost = this.buyIngredientFromMarket(state, index, ingredientGoodId, fromMarket);
+      recipeLog.push({ goodId: ingredientGoodId, amount, marketCost });
+    }
 
     state.inventory[good.i] = (state.inventory[good.i] || 0) + produced;
     this.addDemandCoverage(state.demandCoverage, good.i, produced, index.demandCoverageByGood);
@@ -329,22 +328,28 @@ export class ProductionModule {
     index: ProductionIndex,
     goodId: number,
     units: number
-  ): { unitsBought: number; cost: number } {
-    if (units <= 0) return { unitsBought: 0, cost: 0 };
+  ): number {
+    if (units <= 0) return 0;
 
     const { burg, history } = state;
     const good = index.goodById[goodId]!;
+    const budget = Math.max(0, burg.treasury || 0);
     const { market, transportCost } = this.quoteBestMarket(burg, goodId, "buy", index);
-    // Burg CAN buy ingredients from market no matter of its budget!
-    const deal = Trade.buy({ burg, marketId: market.i, good, units, transportCost });
-    if (!deal) return { unitsBought: 0, cost: 0 };
+    const deal = Trade.buy({ burg, marketId: market.i, good, units, budget, transportCost });
+    console.log(
+      `${good.name} transportCost: ${rn(transportCost, 2)}, basePrice: ${good.value} (${(transportCost / good.value).toFixed(2)}%)`
+    );
+    if (!deal) return 0;
+    console.log(
+      `${burg.name} buys ${units} ${good.name} for ${deal.price}, raw: ${deal.price - transportCost}, transport: ${transportCost}`
+    );
 
     history.push({ kind: "deal", dealId: deal.id });
     const totalCost = deal.units * deal.price;
     state.ingredientCosts += totalCost;
     burg.treasury = (burg.treasury || 0) - totalCost;
 
-    return { unitsBought: deal.units, cost: totalCost };
+    return totalCost;
   }
 
   private commitProducedTotals(burg: Burg, history: ProductionHistory[]): void {
@@ -355,7 +360,7 @@ export class ProductionModule {
     }
   }
 
-  sellInventoryToMarket(state: BurgProductionState, index: ProductionIndex): number {
+  private sellInventoryToMarket(state: BurgProductionState, index: ProductionIndex): number {
     let phaseRevenue = 0;
 
     for (const goodIdStr in state.inventory) {
@@ -380,7 +385,7 @@ export class ProductionModule {
     return phaseRevenue;
   }
 
-  buildRecipesByOutput(recipes: Recipe[]): Recipe[][] {
+  private buildRecipesByOutput(recipes: Recipe[]): Recipe[][] {
     const recipesByOutput: Recipe[][] = [];
     for (const recipe of recipes) {
       const outputId = recipe.good.i;
@@ -391,7 +396,7 @@ export class ProductionModule {
     return recipesByOutput;
   }
 
-  buildMinWorkersByGood(goods: Good[], recipesByOutput: Recipe[][]): number[] {
+  private buildMinWorkersByGood(goods: Good[], recipesByOutput: Recipe[][]): number[] {
     const minWorkersByGood: number[] = [];
     for (const good of goods) minWorkersByGood[good.i] = 1;
 
@@ -424,13 +429,13 @@ export class ProductionModule {
     return minWorkersByGood;
   }
 
-  buildGoodById(goods: Good[]): Good[] {
+  private buildGoodById(goods: Good[]): Good[] {
     const goodById: Good[] = [];
     for (const good of goods) goodById[good.i] = good;
     return goodById;
   }
 
-  buildDemandCoverageByGood(goods: Good[]): number[][] {
+  private buildDemandCoverageByGood(goods: Good[]): number[][] {
     const demandCoverageByGood: number[][] = [];
 
     for (const good of goods) {
@@ -444,7 +449,7 @@ export class ProductionModule {
     return demandCoverageByGood;
   }
 
-  buildDemandGoodsByCategory(goods: Good[], demandCoverageByGood: number[][]): DemandGoodCandidate[][] {
+  private buildDemandGoodsByCategory(goods: Good[], demandCoverageByGood: number[][]): DemandGoodCandidate[][] {
     const demandGoodsByCategory: DemandGoodCandidate[][] = Array.from({ length: DEMAND_PRIORITY.length }, () => []);
 
     for (const good of goods) {
@@ -467,7 +472,10 @@ export class ProductionModule {
     return demandGoodsByCategory;
   }
 
-  calculateDemandCoverage(inventory: Record<number, number> | number[], demandCoverageByGood: number[][]): number[] {
+  private calculateDemandCoverage(
+    inventory: Record<number, number> | number[],
+    demandCoverageByGood: number[][]
+  ): number[] {
     const demandCoverage: number[] = Array(DEMAND_PRIORITY.length).fill(0);
 
     for (const goodIdStr in inventory) {
@@ -481,7 +489,12 @@ export class ProductionModule {
     return demandCoverage;
   }
 
-  addDemandCoverage(demandCoverage: number[], goodId: number, amount: number, demandCoverageByGood: number[][]): void {
+  private addDemandCoverage(
+    demandCoverage: number[],
+    goodId: number,
+    amount: number,
+    demandCoverageByGood: number[][]
+  ): void {
     if (!amount) return;
 
     const coverage = demandCoverageByGood[goodId];
@@ -493,7 +506,7 @@ export class ProductionModule {
     }
   }
 
-  fillDemandFromMarket({
+  private fillDemandFromMarket({
     burg,
     demandInventory,
     index,
@@ -542,7 +555,7 @@ export class ProductionModule {
     }
   }
 
-  getDemandFocus(demandTargets: number[], demandCoverage: number[]): DemandFocus | null {
+  private getDemandFocus(demandTargets: number[], demandCoverage: number[]): DemandFocus | null {
     for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
       const shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
       if (shortage <= 0.001) continue;
@@ -557,7 +570,7 @@ export class ProductionModule {
     return null;
   }
 
-  getDemandEffect(good: Good, demandFocus: DemandFocus | null, demandCoverageByGood: number[][]): DemandEffect {
+  private getDemandEffect(good: Good, demandFocus: DemandFocus | null, demandCoverageByGood: number[][]): DemandEffect {
     if (!demandFocus) return { multiplier: 1, category: null };
 
     const coverageWeight = demandCoverageByGood[good.i]?.[demandFocus.categoryIndex] || 0;
@@ -570,16 +583,13 @@ export class ProductionModule {
     };
   }
 
-  buildImmediateManufactureCandidate(
+  private buildImmediateManufactureCandidate(
     planner: ProductionPlanner,
     recipe: Recipe,
     demandEffect: DemandEffect,
     units: number,
     goalGoodId?: number
-  ): {
-    action: PlannedAction;
-    candidate: ProductionCandidate;
-  } | null {
+  ): { action: PlannedAction; candidate: ProductionCandidate } | null {
     let maxYield = Infinity;
     let marketCostTotal = 0;
 
@@ -631,7 +641,7 @@ export class ProductionModule {
     };
   }
 
-  planGoodAction(
+  private planGoodAction(
     good: Good,
     targetUnits: number,
     stepUnits: number,
@@ -766,7 +776,7 @@ export class ProductionModule {
     return bestPlan;
   }
 
-  makeProductionDecision(
+  private makeProductionDecision(
     planner: ProductionPlanner,
     demandTargets: number[],
     demandCoverage: number[],
@@ -812,7 +822,7 @@ export class ProductionModule {
     };
   }
 
-  buildRecipesArray(goods: Good[]): Recipe[] {
+  private buildRecipesArray(goods: Good[]): Recipe[] {
     const recipes: Recipe[] = [];
     for (const good of goods) {
       if (!good.recipes?.length) continue;
