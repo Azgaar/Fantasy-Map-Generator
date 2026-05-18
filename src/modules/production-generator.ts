@@ -112,12 +112,14 @@ export class ProductionModule {
   }
 
   private createBurgProductionState(burg: Burg, market: Market, index: ProductionIndex): BurgProductionState {
-    const population = burg.population || 0;
+    const population = rn(burg.population || 0, 2);
     const inventory = this.copyInventory(burg.inventory);
     const localGoodId = pack.cells.good[burg.cell];
+    const demandTargets = getDemandTargets(population);
+    const demandCoverage = this.calculateDemandCoverage(inventory, index.demandCoverageByGood);
 
     if (localGoodId) {
-      const localBonus = Math.min(Math.ceil(population), BONUS_RESOURCE_PRODUCTION);
+      const localBonus = Math.min(population, BONUS_RESOURCE_PRODUCTION);
       if (localBonus > 0) inventory[localGoodId] = (inventory[localGoodId] || 0) + localBonus;
     }
 
@@ -125,9 +127,9 @@ export class ProductionModule {
       burg,
       market,
       population,
-      demandTargets: getDemandTargets(burg.population || 0),
+      demandTargets,
       inventory,
-      demandCoverage: this.calculateDemandCoverage(inventory, index.demandCoverageByGood),
+      demandCoverage,
       history: [],
       ingredientCosts: 0,
       activeGoalGoodId: null
