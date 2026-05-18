@@ -237,6 +237,8 @@ export class TradeModule {
       const bonusGoodId = pack.cells.good[cellId];
       const population = pack.cells.pop[cellId];
 
+      // TODO: apply cultureModifierByGood to bonus and biome production
+
       if (bonusGoodId) {
         const bonusGood = this.getMarketGood(market, this.goodById[bonusGoodId]);
         bonusGood.stock += BONUS_RESOURCE_PRODUCTION;
