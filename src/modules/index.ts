@@ -20,7 +20,7 @@ import "./markers-generator";
 import "./fonts";
 import "./goods-generator";
 import "./production-generator";
-import "./trade-generator";
+import "./markets-generator";
 import "../renderers/draw-goods";
 import "../controllers/goods-editor";
 import "./resample";

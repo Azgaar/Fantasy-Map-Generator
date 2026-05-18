@@ -29,7 +29,7 @@ function clicked() {
   else if (parent.id === "ice") editIce(el);
   else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
-  else if (grand.id === "trade") MarketOverview.open(Number(parent.dataset.id));
+  else if (grand.id === "markets") MarketOverview.open(Number(parent.dataset.id));
   else if (grand.id === "coastline") editCoastline();
   else if (grand.id === "lakes") editLake();
   else if (great.id === "armies") editRegiment();
@@ -608,7 +608,7 @@ function getFileName(dataType) {
 }
 
 function downloadFile(data, name, type = "text/plain") {
-  const dataBlob = new Blob([data], {type});
+  const dataBlob = new Blob([data], { type });
   const url = window.URL.createObjectURL(dataBlob);
   const link = document.createElement("a");
   link.download = name;
@@ -629,7 +629,7 @@ function getBBox(element) {
   const y = +element.getAttribute("y");
   const width = +element.getAttribute("width");
   const height = +element.getAttribute("height");
-  return {x, y, width, height};
+  return { x, y, width, height };
 }
 
 function highlightElement(element, zoom) {
@@ -971,7 +971,7 @@ function confirmationDialog(options) {
   };
 
   ensureEl("alertMessage").innerHTML = message;
-  $("#alert").dialog({resizable: false, title, buttons});
+  $("#alert").dialog({ resizable: false, title, buttons });
 }
 
 // add and register event listeners to clean up on editor closure

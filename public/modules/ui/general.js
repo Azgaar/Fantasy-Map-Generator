@@ -178,7 +178,22 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note");
 
-  if (group === "markets") return tip("Click to view the Market");
+  if (group === "markets") {
+    const marketId = +path[path.length - 8].dataset.id;
+    const market = Markets.marketById[marketId];
+    const centerBurg = pack.burgs[market.centerBurgId];
+    if (!centerBurg) return;
+
+    return tip(`${centerBurg.name} market. Click to view`);
+  }
+
+  if (group === "goods") {
+    const goodId = +path[path.length - 8].dataset.id;
+    const good = Goods.get(goodId);
+    if (!good) return;
+
+    return tip(`${good.name}. Click to open the Goods Editor`);
+  }
 
   if (group === "ruler") {
     const tag = e.target.tagName;
@@ -393,7 +408,7 @@ function highlightEmblemElement(type, el) {
   const animation = d3.transition().duration(1000).ease(d3.easeSinIn);
 
   if (type === "burg") {
-    const {x, y} = el;
+    const { x, y } = el;
     debug
       .append("circle")
       .attr("cx", x)
@@ -572,6 +587,6 @@ function showInfo() {
         $(this).dialog("close");
       }
     },
-    position: {my: "center", at: "center", of: "svg"}
+    position: { my: "center", at: "center", of: "svg" }
   });
 }

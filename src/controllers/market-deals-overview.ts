@@ -1,6 +1,6 @@
 import type { Burg } from "../modules/burgs-generator";
+import type { Deal, Market } from "../modules/markets-generator";
 import { getSalesTaxRateForBurg } from "../modules/states-generator";
-import type { Deal, Market } from "../modules/trade-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
@@ -9,7 +9,7 @@ let activeMarketId = 0;
 type DealKind = "BUY" | "SELL";
 
 export function open(marketId: number): void {
-  const market = Trade.getMarket(marketId);
+  const market = Markets.get(marketId);
   if (!market) {
     tip("Invalid market. The selected market does not exist", true, "error", 5000);
     return;
@@ -50,7 +50,7 @@ export function open(marketId: number): void {
 }
 
 function marketDealsAddLines(): void {
-  const market = Trade.getMarket(activeMarketId);
+  const market = Markets.get(activeMarketId);
   if (!market) {
     tip("Invalid market. The selected market does not exist", true, "error", 5000);
     return;
@@ -88,7 +88,7 @@ function getPartyBurgId(id: number, currentMarket: Market): number {
   if (id === currentMarket.i) return currentMarket.centerBurgId;
   const burg = pack.burgs[id] as Burg | undefined;
   if (burg && !burg.removed) return id;
-  const market = Trade.getMarket(id);
+  const market = Markets.get(id);
   if (market) return market.centerBurgId;
   return 0;
 }
@@ -131,7 +131,7 @@ function getPartyLabel(id: number, currentMarket: Market): string {
   const burg = pack.burgs[id] as Burg | undefined;
   if (burg && !burg.removed) return burg.name || `Burg ${id}`;
 
-  const market = Trade.getMarket(id);
+  const market = Markets.get(id);
   if (market) return `${getMarketCenterName(market)} market`;
   return `#${id}`;
 }
@@ -155,7 +155,7 @@ function getDealNet(deal: Deal): number {
 }
 
 function downloadDealsCsv(): void {
-  const market = Trade.getMarket(activeMarketId);
+  const market = Markets.get(activeMarketId);
   if (!market) return;
 
   const lines = pack.deals.filter(deal => deal.market === activeMarketId);

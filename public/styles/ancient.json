@@ -665,7 +665,7 @@
     "data-circle": 1,
     "filter": "url(#dropShadow01)"
   },
-  "#trade": {
+  "#markets": {
     "opacity": 1,
     "stroke-width": 0.5,
     "data-fill-opacity": 0.28,

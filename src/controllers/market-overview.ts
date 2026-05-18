@@ -1,5 +1,5 @@
 import type { Burg } from "../modules/burgs-generator";
-import type { Market } from "../modules/trade-generator";
+import type { Market } from "../modules/markets-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
@@ -9,14 +9,14 @@ let showAllGoods = false;
 export function open(marketId: number): void {
   if (customization) return;
 
-  const market = Trade.getMarket(marketId);
+  const market = Markets.get(marketId);
   if (!market) {
     tip("Invalid market. The selected market does not exist", true, "error", 5000);
     return;
   }
 
   closeDialogs("#marketOverview, .stable");
-  if (!layerIsOn("toggleTrade")) toggleTrade();
+  if (!layerIsOn("toggleMarkets")) toggleMarkets();
 
   activeMarketId = marketId;
   marketOverviewAddLines();
@@ -44,7 +44,7 @@ export function open(marketId: number): void {
 }
 
 function marketOverviewAddLines() {
-  const market = Trade.getMarket(activeMarketId);
+  const market = Markets.get(activeMarketId);
   if (!market) {
     tip("Invalid market. The selected market does not exist", true, "error", 5000);
     return;
@@ -108,7 +108,7 @@ function getMarketCenterName(market: Market): string {
 }
 
 function downloadStockCsv() {
-  const market = Trade.getMarket(activeMarketId);
+  const market = Markets.get(activeMarketId);
   if (!market) return;
 
   let csv = "Good,Stock,Buy Price,Sell Price\n";
@@ -133,7 +133,7 @@ declare global {
     MarketOverview: { open: typeof open };
     MarketDealsOverview: { open: (marketId: number) => void };
   }
-  var toggleTrade: () => void;
+  var toggleMarkets: () => void;
 }
 
 window.MarketOverview = { open };

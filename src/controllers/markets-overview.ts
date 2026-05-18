@@ -1,7 +1,7 @@
 import { easeSinIn } from "d3";
 import type { Burg } from "../modules/burgs-generator";
+import type { Deal, Market } from "../modules/markets-generator";
 import { getSalesTaxRateForBurg } from "../modules/states-generator";
-import type { Deal, Market } from "../modules/trade-generator";
 import { debounce, ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
@@ -11,7 +11,7 @@ let compareGoodId = -1;
 export function open(): void {
   if (customization) return;
   closeDialogs("#marketsOverview, .stable");
-  if (!layerIsOn("toggleTrade")) toggleTrade();
+  if (!layerIsOn("toggleMarkets")) toggleMarkets();
 
   marketsOverviewAddLines();
 
@@ -105,8 +105,8 @@ function marketsOverviewAddLines(): void {
 
 const highlightMarketOn = debounce((ev: Event) => {
   const marketId = +(ev.currentTarget as HTMLElement).dataset.id!;
-  if (!layerIsOn("toggleTrade")) return;
-  trade
+  if (!layerIsOn("toggleMarkets")) return;
+  markets
     .select(`#market${marketId} circle`)
     .raise()
     .transition()
@@ -118,8 +118,8 @@ const highlightMarketOn = debounce((ev: Event) => {
 
 function highlightMarketOff(ev: Event): void {
   const marketId = +(ev.currentTarget as HTMLElement).dataset.id!;
-  if (!layerIsOn("toggleTrade")) return;
-  trade.select(`#market${marketId} circle`).transition().attr("stroke-width", null).attr("stroke", null);
+  if (!layerIsOn("toggleMarkets")) return;
+  markets.select(`#market${marketId} circle`).transition().attr("stroke-width", null).attr("stroke", null);
 }
 
 function openCompareDialog(): void {

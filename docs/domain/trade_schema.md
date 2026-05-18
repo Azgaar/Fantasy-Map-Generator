@@ -1,6 +1,6 @@
-# Trade Schema
+# Markets Schema
 
-Trade is centered on regional market objects. All flows of goods and money are mediated by the market layer, with no object/Map/Set structures in the hot path.
+Markets is centered on regional market objects. All flows of goods and money are mediated by the market layer, with no object/Map/Set structures in the hot path.
 
 - Rural cells seed raw stock into markets (not directly to burgs).
 - Burgs manufacture goods using inventory and market inputs, then sell all output to the market.
@@ -9,7 +9,7 @@ Trade is centered on regional market objects. All flows of goods and money are m
 
 ## Market creation
 
-`Trade.initialize()`:
+`Markets.initialize()`:
 
 1. Resets and creates markets, deals, and tax ledgers.
 2. Places markets by scoring burgs by population, capital status, and port status.
@@ -82,7 +82,7 @@ Used after redistribution when a burg buys goods to cover personal demand:
 
 ## Global redistribution
 
-`Trade.redistributeAcrossMarkets(productionData, demandInventory)`:
+`Markets.redistributeAcrossMarkets(productionData, demandInventory)`:
 
 1. Computes uncovered demand per market from the (empty) post-production burg inventories and demand targets.
 2. Builds export pools from each market's stock exceeding its local reserve (`TRADE_RESERVE_FACTOR`).

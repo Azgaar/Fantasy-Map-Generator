@@ -8,14 +8,14 @@ Production models the transformation of rural resources into manufactured goods 
 
 ## Run order
 
-1. `Trade.initialize()` runs first:
+1. `Markets.initialize()` runs first:
    - Resets and creates markets, assigns burgs to markets, seeds rural raw production into market stock, and sets initial prices based on local supply/demand.
 2. `Production.produce()` runs for each burg (in ascending population order):
    - Pre-seeds local resource bonus (if any) into burg inventory.
    - Executes a worker loop: each tick, plans and performs the best manufacturing step using unified, array-based planning (no split between raw/manufactured logic).
    - Sells the entire resulting inventory to the local market (no hoarding or retain/sell split).
 3. After all burgs finish:
-   - Trade redistributes market surpluses between regions.
+   - Markets redistributes market surpluses between regions.
    - Each burg buys demand goods from its local market to fill personal needs (capped by treasury and market stock).
 
 ## Inputs and Data Structures
@@ -69,12 +69,12 @@ Raw goods are terminal dependencies (not produced by workers).
 When a manufacturing step is executed:
 
 1. Ingredients are taken from inventory first.
-2. Missing inputs are bought from the market (`Trade.buyFromMarket()`), costing treasury and raising market price.
+2. Missing inputs are bought from the market (`Markets.buyFromMarket()`), costing treasury and raising market price.
 3. Output is multiplied by the culture modifier and added to inventory.
 
 ## Sell all
 
-After production, the entire inventory is sold to the local market (`Trade.sellToMarket()`):
+After production, the entire inventory is sold to the local market (`Markets.sellToMarket()`):
 
 - Increases market stock
 - Adds post-tax revenue to `burg.treasury`
@@ -87,9 +87,9 @@ After production, the entire inventory is sold to the local market (`Trade.sellT
 
 After all burgs finish:
 
-1. `Trade.redistributeAcrossMarkets(...)` moves market surpluses to markets with uncovered demand.
+1. `Markets.redistributeAcrossMarkets(...)` moves market surpluses to markets with uncovered demand.
 2. Each burg buys demand goods from its local market (capped by treasury and market stock), storing them in `demandInventory` for the next cycle.
-3. `Trade.updateMarketDemand(...)` refreshes market demand state.
+3. `Markets.updateMarketDemand(...)` refreshes market demand state.
 
 ## Stored burg snapshot
 

@@ -1,9 +1,9 @@
 import type { Burg } from "../modules/burgs-generator";
 import type { DemandCategory } from "../modules/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "../modules/goods-generator";
+import type { Deal } from "../modules/markets-generator";
 import type { MfgHistory, ProductionCandidate } from "../modules/production-generator";
 import { getSalesTaxRateForBurg } from "../modules/states-generator";
-import type { Deal } from "../modules/trade-generator";
 import { rn } from "../utils";
 
 type Type = "MFG" | "BUY" | "SELL";
@@ -15,7 +15,7 @@ export function open(burgId: number): void {
     return;
   }
 
-  const market = Trade.getMarket(burg.market);
+  const market = Markets.get(burg.market);
   if (!market) {
     tip("No market. This burg is not connected to any market.", true, "error", 5000);
     return;

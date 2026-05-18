@@ -61,7 +61,7 @@ let zones = viewbox.append("g").attr("id", "zones");
 let borders = viewbox.append("g").attr("id", "borders");
 let stateBorders = borders.append("g").attr("id", "stateBorders");
 let provinceBorders = borders.append("g").attr("id", "provinceBorders");
-let trade = viewbox.append("g").attr("id", "trade").style("display", "none");
+let markets = viewbox.append("g").attr("id", "markets");
 let routes = viewbox.append("g").attr("id", "routes");
 let roads = routes.append("g").attr("id", "roads");
 let trails = routes.append("g").attr("id", "trails");
@@ -695,7 +695,7 @@ async function generate(options) {
     Rivers.specify();
     Lakes.defineNames();
 
-    Trade.initialize(Goods.getBiomesProduction());
+    Markets.generate();
     Production.produce();
 
     Military.generate();

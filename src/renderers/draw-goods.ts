@@ -28,13 +28,8 @@ export function drawGoods(pinnedGoods?: Set<number>) {
     const [x, y] = pack.cells.p[i];
     const stroke = Goods.getStroke(good.color);
 
-    if (!drawCircle) {
-      goodsHTML += `<use data-i="${good.i}" href="#${good.icon}" x="${HALF}" y="${HALF}" width="${SIZE}" height="${SIZE}"/>`;
-      continue;
-    }
-
-    goodsHTML += `<g>
-      <circle data-i="${good.i}" cx="${x}" cy="${y}" r="${HALF}" fill="${good.color}" stroke="${stroke}" />
+    goodsHTML += `<g data-i="${good.i}">
+      ${drawCircle ? `<circle cx="${x}" cy="${y}" r="${HALF}" fill="${good.color}" stroke="${stroke}" />` : ""}
       <use href="#${good.icon}" x="${x - HALF}" y="${y - HALF}" width="${SIZE}" height="${SIZE}"/>
     </g>`;
   }

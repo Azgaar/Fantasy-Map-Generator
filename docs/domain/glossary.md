@@ -19,6 +19,7 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Renderer**: The system that visualizes world data as SVG or WebGL graphics.
 
 ## World Data & State
+
 - **Culture**: A group of cells sharing cultural traits and modifiers.
 - **Burg**: A settlement or city on the map, with population, culture, production, and so on.
 - **State**: A political entity (country, kingdom, etc.) grouping multiple burgs.
@@ -36,8 +37,7 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Regiment / Military**: The armed forces belonging to States or Burgs, represented by units.
 - **Good**: A resource or product (e.g., wood, iron, grain) with properties like value, demand, and recipes.
 - **Market**: A regional economic hub where goods are bought and sold.
-- **Trade**: The system for moving goods between markets and burgs, including redistribution and pricing.
-- **Deal**: A record of a transaction in the trade system.
+- **Deal**: A record of a transaction in the trade/markets system.
 - **Namesbase**: A collection of linguistic rules, prefixes, and suffixes used to procedurally generate names for map entities.
 - **Emblem**: A heraldic shield or flag representing a State, Province, or Burg.
 - **Note**: User-defined text attached to a specific map entity (cell, burg, state) containing custom lore or description.

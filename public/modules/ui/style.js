@@ -377,11 +377,11 @@ function selectStyleElement() {
     styleGoodsCircle.checked = +el.attr("data-circle");
   }
 
-  if (styleElement === "trade") {
+  if (styleElement === "markets") {
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = el.attr("stroke-width") || "0.5";
-    styleTrade.style.display = "block";
-    styleTradeFillOpacity.value = el.attr("data-fill-opacity") || "0.28";
+    styleMarkets.style.display = "block";
+    styleMarketsFillOpacity.value = el.attr("data-fill-opacity") || "0.28";
   }
 
   // update group options
@@ -716,7 +716,7 @@ openCreateHeightmapSchemeButton.on("click", function () {
       Create: handleCreate,
       Cancel: handleClose
     },
-    position: {my: "center top+150", at: "center top", of: "svg"}
+    position: { my: "center top+150", at: "center top", of: "svg" }
   });
 });
 
@@ -845,7 +845,7 @@ styleFontAdd.on("click", function () {
   $("#addFontDialog").dialog({
     title: "Add custom font",
     width: "26em",
-    position: {my: "center", at: "center", of: "svg"},
+    position: { my: "center", at: "center", of: "svg" },
     buttons: {
       Add: function () {
         const family = addFontNameInput.value;
@@ -984,9 +984,9 @@ styleGoodsCircle.addEventListener("change", function () {
   drawGoods();
 });
 
-styleTradeFillOpacity.on("input", e => {
-  trade.attr("data-fill-opacity", e.target.value);
-  if (layerIsOn("toggleTrade")) drawTrade();
+styleMarketsFillOpacity.on("input", e => {
+  markets.attr("data-fill-opacity", e.target.value);
+  if (layerIsOn("toggleMarkets")) drawMarkets();
 });
 
 // request a URL to image to be used as a texture
@@ -1103,7 +1103,7 @@ styleScaleBar.on("input", function (event) {
   const scaleBarBack = scaleBar.select("#scaleBarBack");
   if (!scaleBarBack.size()) return;
 
-  const {id, value} = event.target;
+  const { id, value } = event.target;
 
   if (id === "styleScaleBarSize") scaleBar.attr("data-bar-size", value);
   else if (id === "styleScaleBarFontSize") scaleBar.attr("font-size", value);

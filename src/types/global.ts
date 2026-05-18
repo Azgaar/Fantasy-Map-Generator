@@ -1,8 +1,8 @@
 import type { Selection } from "d3";
 import type { GoodsModule } from "../modules/goods-generator";
+import type { MarketsModule } from "../modules/markets-generator";
 import type { NameBase } from "../modules/names-generator";
 import type { ProductionModule } from "../modules/production-generator";
-import type { TradeModule } from "../modules/trade-generator";
 import type { PackedGraph } from "./PackedGraph";
 
 declare global {
@@ -21,7 +21,7 @@ declare global {
   var Routes: any;
   var Goods: GoodsModule;
   var Production: ProductionModule;
-  var Trade: TradeModule;
+  var Markets: MarketsModule;
   var populationRate: number;
   var urbanDensity: number;
   var urbanization: number;
@@ -51,7 +51,7 @@ declare global {
   var terrs: Selection<SVGGElement, unknown, null, undefined>;
   var temperature: Selection<SVGGElement, unknown, null, undefined>;
   var markers: Selection<SVGGElement, unknown, null, undefined>;
-  var trade: Selection<SVGGElement, unknown, null, undefined>;
+  var markets: Selection<SVGGElement, unknown, null, undefined>;
   var defs: Selection<SVGDefsElement, unknown, null, undefined>;
   var coastline: Selection<SVGGElement, unknown, null, undefined>;
   var lakes: Selection<SVGGElement, unknown, null, undefined>;

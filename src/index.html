@@ -547,12 +547,12 @@
               <u>P</u>rovinces
             </li>
             <li
-              id="toggleTrade"
-              data-tip="Trade: trade centers and routes. Click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
-              onclick="toggleTrade(event)"
+              id="toggleMarkets"
+              data-tip="Markets: trade centers and routes. Click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
+              onclick="toggleMarkets(event)"
               class="buttonoff"
             >
-              Trade
+              Markets
             </li>
             <li
               id="toggleZones"
@@ -754,6 +754,7 @@
             <option value="landmass">Landmass</option>
             <option value="legend">Legend</option>
             <option value="markers">Markers</option>
+            <option value="markets">Markets</option>
             <option value="armies">Military</option>
             <option value="ocean">Ocean</option>
             <option value="population">Population</option>
@@ -768,7 +769,6 @@
             <option value="regions" selected>States</option>
             <option value="temperature">Temperature</option>
             <option value="texture">Texture</option>
-            <option value="trade">Trade</option>
             <option value="vignette">Vignette</option>
             <option value="compass">Wind Rose</option>
             <option value="zones">Zones</option>
@@ -1359,11 +1359,11 @@
                 </td>
               </tr>
             </tbody>
-            <tbody id="styleTrade" style="display: none">
+            <tbody id="styleMarkets" style="display: none">
               <tr data-tip="Set market territory cell fill transparency. Requires layer redraw to take effect">
                 <td>Fill opacity</td>
                 <td>
-                  <slider-input id="styleTradeFillOpacity" min="0" max="1" step=".01"></slider-input>
+                  <slider-input id="styleMarketsFillOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
               </tr>
             </tbody>
