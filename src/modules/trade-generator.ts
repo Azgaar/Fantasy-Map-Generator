@@ -3,7 +3,11 @@ import { minmax, rn } from "../utils";
 import { getRandomColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
 import type { DemandCategory, Good } from "./goods-generator";
-import { BONUS_RESOURCE_PRODUCTION, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "./goods-generator";
+import {
+  BONUS_RESOURCE_PRODUCTION,
+  DEMAND_PRIORITY,
+  DEMAND_TARGET_FACTORS
+} from "./goods-generator";
 
 const PRICE_FLOOR_FACTOR = 0.25;
 const PRICE_CEILING_FACTOR = 3.0;
@@ -136,6 +140,10 @@ export class TradeModule {
     return deal;
   }
 
+
+
+
+
   private getMarketGood(market: Market, good: Good) {
     const existing = market.goods[good.i];
     if (existing) return existing;
@@ -152,6 +160,8 @@ export class TradeModule {
   private customerSellPrice(midPrice: number): number {
     return midPrice * (1 - MARKET_MARGIN);
   }
+
+
 
   private applyMarketPressure(basePrice: number, currentPrice: number | undefined, units: number): number {
     const price = currentPrice ?? basePrice;
@@ -200,6 +210,8 @@ export class TradeModule {
 
     return markets;
   }
+
+
 
   private collectRuralProduction(cellMarket: Uint16Array, biomeProduction: BiomesProduction): void {
     for (const cellId of pack.cells.i) {
