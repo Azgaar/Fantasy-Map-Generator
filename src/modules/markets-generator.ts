@@ -28,13 +28,13 @@ export type Market = {
 };
 
 export type Deal = {
-  id: number;
+  i: number;
   market: number;
-  phase: "buy" | "sell";
-  goodId: number;
+  client: number;
+  clientType: "burg" | "market";
+  direction: "in" | "out";
+  good: number;
   units: number;
-  buyer: number;
-  seller: number;
   price: number;
 };
 
@@ -265,9 +265,9 @@ export class MarketsModule {
     };
   }
 
-  recordDeal(data: Omit<Deal, "id">): Deal {
+  recordDeal(data: Omit<Deal, "i">): Deal {
     const deal: Deal = {
-      id: pack.deals.length,
+      i: pack.deals.length,
       ...data,
       units: rn(data.units, 2),
       price: rn(data.price, 2)
@@ -291,11 +291,11 @@ export class MarketsModule {
 
     const deal = this.recordDeal({
       market: market.i,
-      phase: "sell",
-      goodId: good.i,
+      direction: "out",
+      good: good.i,
       units: actualUnits,
-      buyer: burg.i!,
-      seller: market.i,
+      client: burg.i!,
+      clientType: "burg",
       price: unitPrice
     });
 
@@ -313,11 +313,11 @@ export class MarketsModule {
 
     const deal = this.recordDeal({
       market: market.i,
-      phase: "buy",
-      goodId: good.i,
+      direction: "in",
+      good: good.i,
       units,
-      buyer: market.i,
-      seller: burg.i!,
+      client: burg.i!,
+      clientType: "burg",
       price
     });
 
@@ -399,11 +399,11 @@ export class MarketsModule {
           const marketPrice = this.customerSellPrice(exporterGood.price);
           this.recordDeal({
             market: importer.i,
-            phase: "buy",
-            goodId: candidate.goodId,
+            direction: "in",
+            good: candidate.goodId,
             units,
-            buyer: importer.i,
-            seller: candidate.exporter.i,
+            client: candidate.exporter.i,
+            clientType: "marker",
             price: marketPrice
           });
           exporterGood.price = this.applyMarketPressure(candidate.good.value, exporterGood.price, -units);

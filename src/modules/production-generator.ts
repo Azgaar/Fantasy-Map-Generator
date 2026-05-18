@@ -211,7 +211,7 @@ export class ProductionModule {
     const deal = Markets.buy({ burg, good, units, budget });
     if (!deal) return 0;
 
-    history.push({ kind: "deal", dealId: deal.id });
+    history.push({ kind: "deal", dealId: deal.i });
     const totalCost = deal.units * deal.price;
     state.ingredientCosts += totalCost;
     burg.treasury = (burg.treasury || 0) - totalCost;
@@ -244,7 +244,7 @@ export class ProductionModule {
       const revenue = grossRevenue - taxAmount;
 
       phaseRevenue += revenue;
-      state.history.push({ kind: "deal", dealId: deal.id });
+      state.history.push({ kind: "deal", dealId: deal.i });
     }
 
     return phaseRevenue;
@@ -416,7 +416,7 @@ export class ProductionModule {
         const deal = Markets.buy({ burg, good: candidate.good, units, budget });
         if (!deal) continue;
 
-        history.push({ kind: "deal", dealId: deal.id });
+        history.push({ kind: "deal", dealId: deal.i });
         demandInventory[candidate.goodId] = (demandInventory[candidate.goodId] || 0) + deal.units;
         const totalCost = deal.units * deal.price;
         burg.treasury = (burg.treasury || 0) - totalCost;

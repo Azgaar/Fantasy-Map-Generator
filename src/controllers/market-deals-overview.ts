@@ -38,11 +38,10 @@ export function open(marketId: number): void {
       const el = ev.target as HTMLElement;
       if (!el.classList.contains("marketDealCounterparty")) return;
       const dealId = el.closest<HTMLElement>(".marketDeal")?.dataset.id;
-      const deal = pack.deals.find(d => d.id === Number(dealId));
+      const deal = pack.deals.find(d => d.i === Number(dealId));
       if (!deal) return;
 
-      const counterpartyId = deal.phase === "sell" ? deal.seller : deal.buyer;
-      const burgId = getPartyBurgId(counterpartyId, market);
+      const burgId = getPartyBurgId(deal);
       if (burgId) zoomTo(pack.burgs[burgId].x, pack.burgs[burgId].y, 8, 2000);
     });
     isInitialized = true;
@@ -62,7 +61,7 @@ function marketDealsAddLines(): void {
   let lines = "";
   for (const deal of deals) {
     netFlow += getDealNet(deal);
-    lines += renderDealLine(deal, market);
+    lines += renderDealLine(deal);
   }
 
   ensureEl("marketDealsBody").innerHTML = lines || "No market deals recorded";
@@ -84,31 +83,26 @@ function typeBadge(type: DealKind): string {
   return `<span style="${base};background:#edf1f4;color:#5f6f7a">GLOBAL</span>`;
 }
 
-function getPartyBurgId(id: number, currentMarket: Market): number {
-  if (id === currentMarket.i) return currentMarket.centerBurgId;
-  const burg = pack.burgs[id] as Burg | undefined;
-  if (burg && !burg.removed) return id;
-  const market = Markets.get(id);
+function getPartyBurgId(deal: Deal): number {
+  if (deal.clientType === "burg") return deal.client;
+  const market = Markets.get(deal.client);
   if (market) return market.centerBurgId;
   return 0;
 }
 
-function renderDealLine(deal: Deal, market: Market): string {
-  const good = Goods.get(deal.goodId);
+function renderDealLine(deal: Deal): string {
+  const good = Goods.get(deal.good);
   if (!good) return "";
 
   const stroke = Goods.getStroke(good.color);
-  const type: DealKind = deal.phase === "sell" ? "SELL" : "BUY";
-  const tip = deal.phase === "sell" ? "Sale to the local market" : "Market purchase";
+  const type: DealKind = deal.direction === "out" ? "SELL" : "BUY";
+  const tip = deal.direction === "out" ? "Sale to the local market" : "Market purchase";
   const dealNet = getDealNet(deal);
 
-  const counterparty = getPartyLabel(
-    deal.phase === "sell" ? deal.seller : deal.buyer === activeMarketId ? deal.seller : deal.buyer,
-    market
-  );
+  const counterparty = getPartyLabel(deal);
   const incomeColor = dealNet >= 0 ? "#2a6" : "#c44";
 
-  return /* html */ `<div class="states marketDeal" data-id="${deal.id}" data-good="${good.name}" data-type="${type}" data-units="${rn(deal.units, 2)}" data-counterparty="${counterparty}" data-income="${dealNet}">
+  return /* html */ `<div class="states marketDeal" data-id="${deal.i}" data-good="${good.name}" data-type="${type}" data-units="${rn(deal.units, 2)}" data-counterparty="${counterparty}" data-income="${dealNet}">
       <svg data-tip="Good icon" width="1.3em" height="1.3em" class="goodIcon">
         <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
         <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
@@ -125,33 +119,38 @@ function getMarketCenterName(market: Market): string {
   return pack.burgs[market.centerBurgId]?.name || `Market ${market.i}`;
 }
 
-function getPartyLabel(id: number, currentMarket: Market): string {
-  if (id === currentMarket.i) return `${getMarketCenterName(currentMarket)} market`;
-
-  const burg = pack.burgs[id] as Burg | undefined;
-  if (burg && !burg.removed) return burg.name || `Burg ${id}`;
-
-  const market = Markets.get(id);
-  if (market) return `${getMarketCenterName(market)} market`;
-  return `#${id}`;
+function getPartyLabel(deal: Deal): string {
+  if (deal.clientType === "burg") {
+    const burg = pack.burgs[deal.client] as Burg | undefined;
+    if (burg && !burg.removed) return burg.name || `Burg ${deal.client}`;
+  } else if (deal.clientType === "market") {
+    const market = Markets.get(deal.client);
+    if (market) return `${getMarketCenterName(market)} market`;
+    const marker = pack.markers.find(m => m.i === deal.client);
+    if (marker) return marker.type || `Marker ${deal.client}`;
+  }
+  return `#${deal.client}`;
 }
 
 function getDealSpend(deal: Deal): number {
-  return deal.phase === "sell" ? 0 : deal.units * deal.price;
+  return deal.direction === "in" ? deal.units * deal.price : 0;
 }
 
 function getDealRevenue(deal: Deal): number {
-  return deal.phase === "sell" ? deal.units * deal.price : 0;
+  return deal.direction === "out" ? deal.units * deal.price : 0;
 }
 
 function getDealTax(deal: Deal): number {
-  if (deal.phase !== "sell") return 0;
-  const seller = pack.burgs[deal.seller] as Burg | undefined;
-  return seller ? getDealRevenue(deal) * getSalesTaxRateForBurg(seller) : 0;
+  if (deal.direction !== "in") return 0;
+  if (deal.clientType === "burg") {
+    const seller = pack.burgs[deal.client] as Burg | undefined;
+    return seller ? deal.units * deal.price * getSalesTaxRateForBurg(seller) : 0;
+  }
+  return 0;
 }
 
 function getDealNet(deal: Deal): number {
-  return getDealRevenue(deal) - getDealTax(deal) - getDealSpend(deal);
+  return getDealRevenue(deal) - getDealSpend(deal);
 }
 
 function downloadDealsCsv(): void {
@@ -161,15 +160,15 @@ function downloadDealsCsv(): void {
   const lines = pack.deals.filter(deal => deal.market === activeMarketId);
   let csv = "Id,Good,Type,Units,Buyer,Seller,Price,Tax,Net\n";
   for (const deal of lines) {
-    const good = Goods.get(deal.goodId);
+    const good = Goods.get(deal.good);
     if (!good) continue;
 
-    const buyer = getPartyLabel(deal.buyer, market);
-    const seller = getPartyLabel(deal.seller, market);
-    const type = deal.phase === "sell" ? "SELL" : "BUY";
+    const buyer = deal.direction === "out" ? getPartyLabel(deal) : `${getMarketCenterName(market)} market`;
+    const seller = deal.direction === "in" ? getPartyLabel(deal) : `${getMarketCenterName(market)} market`;
+    const type = deal.direction === "out" ? "SELL" : "BUY";
 
     csv += [
-      deal.id,
+      deal.i,
       good.name,
       type,
       rn(deal.units, 2),

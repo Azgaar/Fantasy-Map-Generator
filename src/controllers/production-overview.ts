@@ -30,13 +30,13 @@ export function open(burgId: number): void {
   const getDealSpent = (deal: Deal) => deal.units * deal.price;
 
   const getSellerTaxRate = (deal: Deal) => {
-    if (deal.phase !== "sell") return 0;
-    const seller = pack.burgs[deal.seller];
+    if (deal.direction !== "in") return 0;
+    const seller = pack.burgs[deal.client];
     return seller ? getSalesTaxRateForBurg(seller) : 0;
   };
 
   const getDealTax = (deal: Deal) => {
-    if (deal.phase !== "sell") return 0;
+    if (deal.direction !== "in") return 0;
     return deal.units * deal.price * getSellerTaxRate(deal);
   };
 
@@ -241,7 +241,7 @@ export function open(burgId: number): void {
   let totalTax = 0;
   let stepIndex = 0;
 
-  const dealById = new Map<number, Deal>((pack.deals || []).map(d => [d.id, d]));
+  const dealById = new Map<number, Deal>((pack.deals || []).map(d => [d.i, d]));
 
   const allRows = data.flatMap(entry => {
     if (entry.kind === "mfg") {
@@ -271,10 +271,10 @@ export function open(burgId: number): void {
       const deal = dealById.get(entry.dealId);
       if (!deal) return [];
       const detailsId = `deal-details-${stepIndex++}`;
-      if (deal.phase === "buy") {
+      if (deal.direction === "out") {
         return renderExpandableDealRow({
           targetId: detailsId,
-          goodId: deal.goodId,
+          goodId: deal.good,
           type: "BUY",
           units: deal.units,
           details: "Market purchase",
@@ -282,12 +282,12 @@ export function open(burgId: number): void {
           detailsHtml: renderBuyDetails(deal.units, deal.price, getDealSpent(deal))
         });
       }
-      if (deal.phase === "sell") {
+      if (deal.direction === "in") {
         phaseRevenue += getDealNetRevenue(deal);
         totalTax += getDealTax(deal);
         return renderExpandableDealRow({
           targetId: detailsId,
-          goodId: deal.goodId,
+          goodId: deal.good,
           type: "SELL",
           units: deal.units,
           details: "Sale to local market",

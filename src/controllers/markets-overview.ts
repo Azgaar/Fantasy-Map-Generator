@@ -217,12 +217,14 @@ function getMarketFinancials(marketId: number): {
 
   for (const deal of deals) {
     const amount = deal.units * deal.price;
-    if (deal.phase === "sell") {
+    if (deal.direction === "out") {
       sales += amount;
-      const seller = pack.burgs[deal.seller] as Burg | undefined;
-      if (seller) tax += amount * getSalesTaxRateForBurg(seller);
-    } else {
+    } else if (deal.direction === "in") {
       buys += amount;
+      if (deal.clientType === "burg") {
+        const seller = pack.burgs[deal.client] as Burg | undefined;
+        if (seller) tax += amount * getSalesTaxRateForBurg(seller);
+      }
     }
   }
 
