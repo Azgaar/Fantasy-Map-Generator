@@ -6,7 +6,7 @@ import { ensureEl, formatPrice, rn } from "../utils";
 let isInitialized = false;
 let activeMarketId = 0;
 
-type DealKind = "IN" | "OUT";
+type DealKind = "BUY" | "SELL";
 
 export function open(marketId: number): void {
   const market = Trade.getMarket(marketId);
@@ -41,7 +41,8 @@ export function open(marketId: number): void {
       const deal = pack.deals.find(d => d.id === Number(dealId));
       if (!deal) return;
 
-      const burgId = deal.client;
+      const counterpartyId = deal.phase === "sell" ? deal.seller : deal.buyer;
+      const burgId = getPartyBurgId(counterpartyId, market);
       if (burgId) zoomTo(pack.burgs[burgId].x, pack.burgs[burgId].y, 8, 2000);
     });
     isInitialized = true;
@@ -78,23 +79,33 @@ function closeMarketDeals(): void {
 function typeBadge(type: DealKind): string {
   const base =
     "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
-  if (type === "IN") return `<span style="${base};background:#f5d9d6;color:#a33">IN</span>`;
-  if (type === "OUT") return `<span style="${base};background:#dff0e2;color:#2f8a46">OUT</span>`;
+  if (type === "BUY") return `<span style="${base};background:#f5d9d6;color:#a33">BUY</span>`;
+  if (type === "SELL") return `<span style="${base};background:#dff0e2;color:#2f8a46">SELL</span>`;
   return `<span style="${base};background:#edf1f4;color:#5f6f7a">GLOBAL</span>`;
 }
 
-
+function getPartyBurgId(id: number, currentMarket: Market): number {
+  if (id === currentMarket.i) return currentMarket.centerBurgId;
+  const burg = pack.burgs[id] as Burg | undefined;
+  if (burg && !burg.removed) return id;
+  const market = Trade.getMarket(id);
+  if (market) return market.centerBurgId;
+  return 0;
+}
 
 function renderDealLine(deal: Deal, market: Market): string {
-  const good = Goods.get(deal.good);
+  const good = Goods.get(deal.goodId);
   if (!good) return "";
 
   const stroke = Goods.getStroke(good.color);
-  const type: DealKind = deal.type === "in" ? "IN" : "OUT";
-  const tip = deal.type === "in" ? "Market purchase" : "Sale to the local market";
+  const type: DealKind = deal.phase === "sell" ? "SELL" : "BUY";
+  const tip = deal.phase === "sell" ? "Sale to the local market" : "Market purchase";
   const dealNet = getDealNet(deal);
 
-  const counterparty = getPartyLabel(deal.client, market);
+  const counterparty = getPartyLabel(
+    deal.phase === "sell" ? deal.seller : deal.buyer === activeMarketId ? deal.seller : deal.buyer,
+    market
+  );
   const incomeColor = dealNet >= 0 ? "#2a6" : "#c44";
 
   return /* html */ `<div class="states marketDeal" data-id="${deal.id}" data-good="${good.name}" data-type="${type}" data-units="${rn(deal.units, 2)}" data-counterparty="${counterparty}" data-income="${dealNet}">
@@ -126,24 +137,17 @@ function getPartyLabel(id: number, currentMarket: Market): string {
 }
 
 function getDealSpend(deal: Deal): number {
-  return deal.type === "in" ? deal.units * deal.price : 0;
+  return deal.phase === "sell" ? 0 : deal.units * deal.price;
 }
 
 function getDealRevenue(deal: Deal): number {
-  return deal.type === "out" ? deal.units * deal.price : 0;
+  return deal.phase === "sell" ? deal.units * deal.price : 0;
 }
 
 function getDealTax(deal: Deal): number {
-  if (deal.type === "out") {
-    // Market sells
-    const market = Trade.getMarket(deal.market);
-    const seller = pack.burgs[market?.centerBurgId || 0] as Burg | undefined;
-    return seller ? getDealRevenue(deal) * getSalesTaxRateForBurg(seller) : 0;
-  } else {
-    // Burg sells
-    const seller = pack.burgs[deal.client] as Burg | undefined;
-    return seller ? getDealSpend(deal) * getSalesTaxRateForBurg(seller) : 0;
-  }
+  if (deal.phase !== "sell") return 0;
+  const seller = pack.burgs[deal.seller] as Burg | undefined;
+  return seller ? getDealRevenue(deal) * getSalesTaxRateForBurg(seller) : 0;
 }
 
 function getDealNet(deal: Deal): number {
@@ -155,20 +159,22 @@ function downloadDealsCsv(): void {
   if (!market) return;
 
   const lines = pack.deals.filter(deal => deal.market === activeMarketId);
-  let csv = "Id,Good,Type,Units,Client,Price,Tax,Net\n";
+  let csv = "Id,Good,Type,Units,Buyer,Seller,Price,Tax,Net\n";
   for (const deal of lines) {
-    const good = Goods.get(deal.good);
+    const good = Goods.get(deal.goodId);
     if (!good) continue;
 
-    const counterparty = getPartyLabel(deal.client, market);
-    const type = deal.type === "in" ? "IN" : "OUT";
+    const buyer = getPartyLabel(deal.buyer, market);
+    const seller = getPartyLabel(deal.seller, market);
+    const type = deal.phase === "sell" ? "SELL" : "BUY";
 
     csv += [
       deal.id,
       good.name,
       type,
       rn(deal.units, 2),
-      counterparty,
+      buyer,
+      seller,
       rn(deal.price, 2),
       rn(getDealTax(deal), 2),
       rn(getDealNet(deal), 2)

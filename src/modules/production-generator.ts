@@ -30,7 +30,8 @@ export class ProductionModule {
       this.productionData.set(burg.i, burgProduction.history);
     }
 
-
+    const productionBurgIds = new Set(this.productionData.keys());
+    Trade.redistributeAcrossMarkets(productionBurgIds, demandInventoryByBurg);
 
     for (const burg of validBurgs) {
       if (!burg.i) continue;
@@ -55,7 +56,7 @@ export class ProductionModule {
       }
     }
 
-
+    Trade.updateMarketDemand(productionBurgIds, demandInventoryByBurg);
 
     TIME && console.timeEnd("generateProduction");
   }

@@ -217,14 +217,12 @@ function getMarketFinancials(marketId: number): {
 
   for (const deal of deals) {
     const amount = deal.units * deal.price;
-    if (deal.type === "out") {
+    if (deal.phase === "sell") {
       sales += amount;
-      const marketCenter = pack.burgs[Trade.getMarket(marketId)?.centerBurgId || 0] as Burg | undefined;
-      if (marketCenter) tax += amount * getSalesTaxRateForBurg(marketCenter);
+      const seller = pack.burgs[deal.seller] as Burg | undefined;
+      if (seller) tax += amount * getSalesTaxRateForBurg(seller);
     } else {
       buys += amount;
-      const seller = pack.burgs[deal.client] as Burg | undefined;
-      if (seller) tax += amount * getSalesTaxRateForBurg(seller);
     }
   }
 
