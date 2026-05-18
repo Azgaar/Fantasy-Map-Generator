@@ -51,20 +51,6 @@ export const lerp = (a: number, b: number, t: number) => {
   return a + (b - a) * t;
 };
 
-/**
- * Calculates the Euclidean distance approximation using the Octagon 3/8 Method.
- * @param x1 - The x coordinate of the first point.
- * @param y1 - The y coordinate of the first point.
- * @param x2 - The x coordinate of the second point.
- * @param y2 - The y coordinate of the second point.
- * @returns The approximate distance.
- */
-export const getOctagonDistance = (x1: number, y1: number, x2: number, y2: number) => {
-  const dx = Math.abs(x1 - x2);
-  const dy = Math.abs(y1 - y2);
-  return Math.max(dx, dy) + 0.375 * Math.min(dx, dy);
-};
-
 declare global {
   interface Window {
     rn: typeof rn;
@@ -72,6 +58,5 @@ declare global {
     lim: typeof lim;
     normalize: typeof normalize;
     lerp: typeof lerp;
-    getOctagonDistance: typeof getOctagonDistance;
   }
 }

@@ -219,12 +219,7 @@ function getMarketFinancials(marketId: number): {
     const amount = deal.units * deal.price;
     if (deal.type === "out") {
       sales += amount;
-      let marketCenter: Burg | undefined;
-      try {
-        marketCenter = pack.burgs[Trade.getMarket(marketId).centerBurgId];
-      } catch (_e) {
-        marketCenter = undefined;
-      }
+      const marketCenter = pack.burgs[Trade.getMarket(marketId)?.centerBurgId || 0] as Burg | undefined;
       if (marketCenter) tax += amount * getSalesTaxRateForBurg(marketCenter);
     } else {
       buys += amount;

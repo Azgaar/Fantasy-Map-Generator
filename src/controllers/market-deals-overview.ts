@@ -9,10 +9,8 @@ let activeMarketId = 0;
 type DealKind = "IN" | "OUT";
 
 export function open(marketId: number): void {
-  let market: Market;
-  try {
-    market = Trade.getMarket(marketId);
-  } catch (_e) {
+  const market = Trade.getMarket(marketId);
+  if (!market) {
     tip("Invalid market. The selected market does not exist", true, "error", 5000);
     return;
   }
@@ -51,10 +49,8 @@ export function open(marketId: number): void {
 }
 
 function marketDealsAddLines(): void {
-  let market: Market;
-  try {
-    market = Trade.getMarket(activeMarketId);
-  } catch (_e) {
+  const market = Trade.getMarket(activeMarketId);
+  if (!market) {
     tip("Invalid market. The selected market does not exist", true, "error", 5000);
     return;
   }
@@ -122,12 +118,9 @@ function getPartyLabel(id: number, currentMarket: Market): string {
   const burg = pack.burgs[id] as Burg | undefined;
   if (burg && !burg.removed) return burg.name || `Burg ${id}`;
 
-  try {
-    const market = Trade.getMarket(id);
-    return `${getMarketCenterName(market)} market`;
-  } catch (_e) {
-    return `#${id}`;
-  }
+  const market = Trade.getMarket(id);
+  if (market) return `${getMarketCenterName(market)} market`;
+  return `#${id}`;
 }
 
 function getDealSpend(deal: Deal): number {
@@ -141,12 +134,7 @@ function getDealRevenue(deal: Deal): number {
 function getDealTax(deal: Deal): number {
   if (deal.type === "out") {
     // Market sells
-    let market: Market | undefined;
-    try {
-      market = Trade.getMarket(deal.market);
-    } catch (_e) {
-      market = undefined;
-    }
+    const market = Trade.getMarket(deal.market);
     const seller = pack.burgs[market?.centerBurgId || 0] as Burg | undefined;
     return seller ? getDealRevenue(deal) * getSalesTaxRateForBurg(seller) : 0;
   } else {
@@ -161,12 +149,8 @@ function getDealNet(deal: Deal): number {
 }
 
 function downloadDealsCsv(): void {
-  let market: Market;
-  try {
-    market = Trade.getMarket(activeMarketId);
-  } catch (_e) {
-    return;
-  }
+  const market = Trade.getMarket(activeMarketId);
+  if (!market) return;
 
   const lines = pack.deals.filter(deal => deal.market === activeMarketId);
   let csv = "Id,Good,Type,Units,Client,Price,Tax,Net\n";

@@ -37,7 +37,6 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Good**: A resource or product (e.g., wood, iron, grain) with properties like value, demand, and recipes.
 - **Market**: A regional economic hub where goods are bought and sold.
 - **Trade**: The system for moving goods between markets and burgs, including redistribution and pricing.
-- **Transportation Cost**: The extra price added to goods traded across distances, computed using the distance from the burg to its local market + distance from the local market to the source market. Normalized to make long-distance transport of cheap goods unprofitable.
 - **Deal**: A record of a transaction in the trade system.
 - **Namesbase**: A collection of linguistic rules, prefixes, and suffixes used to procedurally generate names for map entities.
 - **Emblem**: A heraldic shield or flag representing a State, Province, or Burg.
