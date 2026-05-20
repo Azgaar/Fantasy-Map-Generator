@@ -268,16 +268,15 @@ export class MarketsModule {
     return deal;
   }
 
-  buy({ burg, good, units, budget }: { burg: Burg; good: Good; units: number; budget?: number }): Deal | null {
+  buy({ burg, good, units, budget = Infinity }: { burg: Burg; good: Good; units: number; budget?: number }): Deal | null {
     const market = this.get(burg.market);
     if (!market) return null;
 
     const marketGood = this.getMarketGood(market, good);
     const unitPrice = this.customerBuyPrice(marketGood.price);
 
-    let actualUnits = Math.min(units, marketGood.stock);
-    if (budget) actualUnits = Math.min(actualUnits, budget / unitPrice);
-    if (actualUnits <= 0) return null;
+    const actualUnits = rn(Math.min(units, marketGood.stock, budget / unitPrice), 2);
+    if (actualUnits < 0.01) return null;
 
     const deal = this.recordDeal({
       market: market.i,
@@ -452,11 +451,11 @@ export class MarketsModule {
     }
   }
 
-  private customerBuyPrice(midPrice: number): number {
+  customerBuyPrice(midPrice: number): number {
     return midPrice * (1 + MARKET_MARGIN);
   }
 
-  private customerSellPrice(midPrice: number): number {
+  customerSellPrice(midPrice: number): number {
     return midPrice * (1 - MARKET_MARGIN);
   }
 

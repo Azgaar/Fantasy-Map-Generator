@@ -75,7 +75,7 @@ function renderDealLine(deal: Deal): string {
       <div data-tip="Good name" class="goodName">${good.name}</div>
       <div><span class="marketBadge" style="background:#f5d9d6; color:${incomeColor}">${deal.direction.toUpperCase()}</span></div>
       <div class="marketDealParty pointer" data-tip="Click to zoom">
-        <div class="${deal.clientType === "burg" ? "icon-dot-circled" : "icon-store"}" style="display:inline-block; width: 0.8em; ${deal.clientType === "market" ? "font-size: 0.85em;" : ''}"></div>
+        <div class="${deal.clientType === "burg" ? "icon-dot-circled" : "icon-store"}" style="display:inline-block; width: 0.8em; ${deal.clientType === "market" ? "font-size: 0.85em;" : ""}"></div>
         <div style="display:inline-block; width: 6.8em;">${party?.name}</div>
       </div>
       <div class="marketDealUnits">${rn(deal.units, 2)}</div>

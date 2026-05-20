@@ -22,7 +22,7 @@ export class ProductionModule {
       .sort((a, b) => a.population! - b.population!);
 
     for (const burg of sortedBurgs) {
-      if (!burg.i) continue;
+      if (!burg.i || burg.removed || !burg.market) continue;
       const market = Markets.get(burg.market);
       if (!market) return null;
 
@@ -44,29 +44,33 @@ export class ProductionModule {
     }
 
     Markets.runGlobalTrade();
+    this.fillBurgsDemand(sortedBurgs, index);
 
+    TIME && console.timeEnd("generateProduction");
+  }
+
+  private fillBurgsDemand(sortedBurgs: Burg[], index: ProductionIndex): void {
     for (const burg of sortedBurgs) {
-      const market = Markets.get(burg.market);
-      if (!burg.i || !market) continue;
+      if (!burg.i || burg.removed || !burg.market) continue;
 
       const demandInventory: number[] = [];
+      const history = this.productionData.get(burg.i) || [];
+
       this.fillDemandFromMarket({
         burg,
         demandInventory,
         demandCoverageByGood: index.demandCoverageByGood,
         demandGoodsByCategory: index.demandGoodsByCategory,
         demandTargets: getDemandTargets(burg.population || 0),
-        history: this.productionData.get(burg.i)!
+        history
       });
+
       burg.inventory = {};
-      for (const goodIdStr in demandInventory) {
-        const goodId = +goodIdStr;
+      for (let goodId = 0; goodId < demandInventory.length; goodId++) {
         const amount = demandInventory[goodId];
         if (amount > 0) burg.inventory[goodId] = rn(amount, 2);
       }
     }
-
-    TIME && console.timeEnd("generateProduction");
   }
 
   private buildProductionIndex(goods: Good[]): ProductionIndex {
@@ -163,7 +167,7 @@ export class ProductionModule {
       const fromInventory = Math.min(state.inventory[ingredientId] || 0, amount);
 
       const fromMarket = Math.max(0, amount - fromInventory);
-      if (fromMarket) {
+      if (fromMarket > 0.01) {
         const deal = Markets.buy({ burg: state.burg, good: index.goodById[ingredientId]!, units: fromMarket });
         if (!deal) {
           const message = `Failed to acquire ${rn(fromMarket, 2)} units of ${index.goodById[ingredientId]?.name} from market for production of ${good.name}`;
@@ -357,28 +361,41 @@ export class ProductionModule {
     demandTargets: number[];
     history: ProductionHistory[];
   }): void {
-    const demandCoverage = this.calculateDemandCoverage(demandInventory, demandCoverageByGood);
+    const market = Markets.get(burg.market);
+    if (!market) return;
+
+    const demandCoverage = new Array(DEMAND_PRIORITY.length).fill(0);
 
     for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
       let shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
       if (shortage <= 0.001) continue;
 
       const candidates = demandGoodsByCategory[categoryIndex];
-
+      const sortedCandidates: { candidate: DemandGoodCandidate; costPerCoverage: number }[] = [];
       for (const candidate of candidates) {
+        const marketGood = market.goods[candidate.goodId];
+        const stock = marketGood?.stock || 0;
+        if (stock <= 0.01) continue;
+        const price = Markets.customerBuyPrice(marketGood.price);
+        const costPerCoverage = price / candidate.coverageWeight;
+        sortedCandidates.push({ candidate, costPerCoverage });
+      }
+      sortedCandidates.sort((a, b) => a.costPerCoverage - b.costPerCoverage);
+
+      for (const { candidate } of sortedCandidates) {
         if (shortage <= 0.001) break;
 
         const budget = burg.treasury || 0;
-        if (budget <= 0.001) break;
+        if (budget <= 0.01) break;
 
         const units = shortage / candidate.coverageWeight;
         const deal = Markets.buy({ burg, good: candidate.good, units, budget });
         if (!deal) continue;
 
         history.push({ kind: "deal", dealId: deal.i });
-        demandInventory[candidate.goodId] = (demandInventory[candidate.goodId] || 0) + deal.units;
         const totalCost = deal.units * deal.price;
         burg.treasury = (burg.treasury || 0) - totalCost;
+        demandInventory[candidate.goodId] = (demandInventory[candidate.goodId] || 0) + deal.units;
 
         const retainedCoverageByCategory = demandCoverageByGood[candidate.goodId];
         for (let coverageCategoryIndex = 0; coverageCategoryIndex < DEMAND_PRIORITY.length; coverageCategoryIndex++) {
