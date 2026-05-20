@@ -43,6 +43,8 @@ export class ProductionModule {
       this.productionData.set(burg.i, state.history);
     }
 
+    Markets.runGlobalTrade();
+
     for (const burg of sortedBurgs) {
       const market = Markets.get(burg.market);
       if (!burg.i || !market) continue;

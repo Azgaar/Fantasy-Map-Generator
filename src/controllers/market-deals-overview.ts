@@ -65,10 +65,9 @@ function renderDealLine(deal: Deal): string {
 
   const dealNet = getDealNet(deal);
   const party = getParty(deal);
-  const patryIcon = deal.clientType === "burg" ? "icon-dot-circled" : "icon-store";
   const incomeColor = dealNet >= 0 ? "#2a6" : "#c44";
 
-  return /* html */ `<div class="states marketDeal" data-id="${deal.i}" data-good="${good.name}" data-direction="${deal.direction}" data-units="${rn(deal.units, 2)}" data-counterparty="${party}" data-income="${dealNet}">
+  return /* html */ `<div class="states marketDeal" data-id="${deal.i}" data-good="${good.name}" data-direction="${deal.direction}" data-units="${rn(deal.units, 2)}" data-counterparty="${deal.clientType}_${party?.name}" data-income="${dealNet}">
       <svg data-tip="Good icon" width="1.3em" height="1.3em" class="goodIcon">
         <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
         <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
@@ -76,7 +75,7 @@ function renderDealLine(deal: Deal): string {
       <div data-tip="Good name" class="goodName">${good.name}</div>
       <div><span class="marketBadge" style="background:#f5d9d6; color:${incomeColor}">${deal.direction.toUpperCase()}</span></div>
       <div class="marketDealParty pointer" data-tip="Click to zoom">
-        <div class="${patryIcon}" style="display:inline-block; width: 0.8em;"></div>
+        <div class="${deal.clientType === "burg" ? "icon-dot-circled" : "icon-store"}" style="display:inline-block; width: 0.8em; ${deal.clientType === "market" ? "font-size: 0.85em;" : ''}"></div>
         <div style="display:inline-block; width: 6.8em;">${party?.name}</div>
       </div>
       <div class="marketDealUnits">${rn(deal.units, 2)}</div>

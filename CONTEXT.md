@@ -16,7 +16,7 @@
 - `public/`: Static assets and NON-MIGRATED JS Code in `public/modules`.
 - `docs/`: Domain and architectural documentation.
 - `src/index.html`: **CAUTION**: Currently a 9K-line monolith containing the entire UI structure, SVG `<defs>`, and CSS filters.
-- `tests/e2e/`: Playwright end-to-end tests.
+- `tests/e2e/`: Playwright end-to-end tests. Never automatically run Playwright tests when developing.
 
 # FMG 2.0 Architecture Rules
 - **Layering Constraint**: Generators MUST NOT directly manipulate SVG or DOM elements.
@@ -59,3 +59,9 @@
 # Important Files
 - `docs/glossary.md`: Domain vocabulary definitions.
 - `docs/architecture.md`: The guiding blueprint for FMG 2.0.
+
+# Code Style Rules
+- Use concise and descriptive variable names, don't use unusual abbreviations.
+- Prefer laconic but clear code.
+- Save space, I like my code to be compact.
+- Avoid over-engineering, keep it simple and vertically readable.

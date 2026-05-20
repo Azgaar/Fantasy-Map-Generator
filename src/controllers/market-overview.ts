@@ -4,7 +4,6 @@ import { ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
 let activeMarketId = 0;
-let showAllGoods = false;
 
 export function open(marketId: number): void {
   if (customization) return;
@@ -37,7 +36,6 @@ export function open(marketId: number): void {
   if (!isInitialized) {
     ensureEl("marketOverviewRefresh").on("click", marketOverviewAddLines);
     ensureEl("marketOverviewExport").on("click", downloadStockCsv);
-    ensureEl("marketOverviewToggleGoods").on("click", toggleGoodsVisibility);
     ensureEl("marketOverviewOpenDeals").on("click", () => window.MarketDealsOverview.open(activeMarketId));
     isInitialized = true;
   }
@@ -62,7 +60,6 @@ function marketOverviewAddLines() {
     if (!good) continue;
     const stroke = Goods.getStroke(good.color);
 
-    if (!showAllGoods && marketGood.stock <= 0) continue;
     lines += /*html*/ `<div class="states marketGood"
       data-good="${good.name}"
       data-stock="${rn(marketGood.stock, 2)}"
@@ -90,12 +87,6 @@ function marketOverviewAddLines() {
   $("#marketOverview").dialog({ width: fitContent() });
 }
 
-function toggleGoodsVisibility() {
-  showAllGoods = !showAllGoods;
-  ensureEl("marketOverviewToggleGoods").classList.toggle("active", showAllGoods);
-  marketOverviewAddLines();
-}
-
 function getOwnerStateName(market: Market): string {
   const center = pack.burgs[market.centerBurgId] as Burg | undefined;
   if (!center) return "Unknown state";
@@ -113,19 +104,16 @@ function downloadStockCsv() {
 
   let csv = "Good,Stock,Buy Price,Sell Price\n";
   for (const [goodId, marketGood] of Object.entries(market.goods)) {
-    if (!showAllGoods && marketGood.stock <= 0) continue;
     const good = Goods.get(Number(goodId));
     if (!good) continue;
     csv += `${[good.name, rn(marketGood.stock, 2), rn(marketGood.price, 2)].join(",")}\n`;
   }
-  downloadFile(csv, `${getFileName("Market_Stock")}.csv`);
+  downloadFile(csv, `${getFileName("Market")}.csv`);
 }
 
 function closeMarketOverview() {
   ensureEl("marketOverviewGoodsBody").innerHTML = "";
   ensureEl("marketOverviewSummary").innerHTML = "";
-  showAllGoods = false;
-  ensureEl("marketOverviewToggleGoods").classList.remove("active");
 }
 
 declare global {

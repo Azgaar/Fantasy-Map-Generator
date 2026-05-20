@@ -17,6 +17,8 @@ if (typeof Node === "undefined") {
 if (typeof document === "undefined") {
   (globalThis as Record<string, unknown>).document = {
     readyState: "complete",
-    addEventListener: () => {}
+    addEventListener: () => {},
+    getElementById: () => null,
+    querySelector: () => null
   };
 }
