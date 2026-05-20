@@ -400,10 +400,7 @@ class StatesModule {
         const neibOfNeib =
           naval || neib
             ? false
-            : states[f]
-                .neighbors!.map(n => states[n].neighbors)
-                .join("")
-                .includes(t.toString());
+            : states[f].neighbors!.some(n => states[n].neighbors!.includes(t));
 
         let status = naval ? rw(navals) : neib ? rw(neibs) : neibOfNeib ? rw(neibsOfNeibs) : rw(far);
 
