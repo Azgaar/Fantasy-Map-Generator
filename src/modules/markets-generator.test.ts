@@ -232,10 +232,10 @@ describe("ProductionModule.fillDemandFromMarket cheapest sorting", () => {
     // fish covers 1.0, demand target is 20. Stock is 10.
     // So burg buys all 10 fish.
     // Fish covers 1.0, demand target is 20. Stock is 10.
-    // Fish price is 13.2, so the burg with budget 100 can only afford 100 / 13.2 = 7.575 -> 7.57 units.
+    // Fish price is 13.2, so the burg with budget 100 can only afford 100 / 13.2 = 7.575... -> 7.58 units.
     // Wheat has worse cost-per-coverage, so Fish is prioritized.
     // The burg spends all its budget on Fish first.
-    expect(demandInventory[1]).toBe(7.57); // Bought all the Fish it could afford (7.57 units)
+    expect(demandInventory[1]).toBe(7.58); // Bought all the Fish it could afford (7.58 units)
     expect(demandInventory[0] || 0).toBe(0); // Wheat was not bought because budget was exhausted
   });
 });

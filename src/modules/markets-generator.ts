@@ -268,7 +268,17 @@ export class MarketsModule {
     return deal;
   }
 
-  buy({ burg, good, units, budget = Infinity }: { burg: Burg; good: Good; units: number; budget?: number }): Deal | null {
+  buy({
+    burg,
+    good,
+    units,
+    budget = Infinity
+  }: {
+    burg: Burg;
+    good: Good;
+    units: number;
+    budget?: number;
+  }): Deal | null {
     const market = this.get(burg.market);
     if (!market) return null;
 
