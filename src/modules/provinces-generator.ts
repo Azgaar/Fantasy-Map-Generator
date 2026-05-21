@@ -101,9 +101,8 @@ class ProvinceModule {
 
       const stateBurgs = burgs
         .filter(b => b.state === s.i && !b.removed && !provinceIds[b.cell]) // burgs in this state without province assigned
-        .map(burg => ({burg: burg, score: burg.population! * gauss(1, 0.2, 0.5, 1.5, 3)}))
-        .sort((a, b) => b.score - a.score) // biggest population first
-        .sort((a, b) => b.burg.capital! - a.burg.capital!) // capitals first
+        .map(burg => ({ burg: burg, score: burg.population! * gauss(1, 0.2, 0.5, 1.5, 3) }))
+        .sort((a, b) => b.burg.capital! - a.burg.capital! || b.score - a.score) // capitals first, biggest population next
         .map(b => b.burg);
       if (stateBurgs.length < 2) return; // at least 2 provinces are required
 
