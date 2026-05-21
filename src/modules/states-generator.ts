@@ -352,6 +352,14 @@ class StatesModule {
     const chronicle = states[0].diplomacy;
     const valid = states.filter(s => s.i && !s.removed); // will filter out neutral as i is 0 => false
 
+    // Pre-Calculate state area since collectStatistics() hasn't run yet.
+    const stateAreas = new Float32Array(states.length);
+    for (const i of cells.i) {
+      if (cells.h[i] >= 20 && cells.state[i]) {
+        stateAreas[cells.state[i]] += cells.area[i];
+      }
+    }
+
     const neibs = { Ally: 1, Friendly: 2, Neutral: 1, Suspicion: 10, Rival: 9 }; // relations to neighbors
     const neibsOfNeibs = { Ally: 10, Friendly: 8, Neutral: 5, Suspicion: 1 }; // relations to neighbors of neighbors
     const far = { Friendly: 1, Neutral: 12, Suspicion: 2, Unknown: 6 }; // relations to other
@@ -361,7 +369,7 @@ class StatesModule {
       s.diplomacy = new Array(states.length).fill("x"); // clear all relationships
     });
     if (valid.length < 2) return; // no states to generate relations with
-    const areaMean: number = mean(valid.map(s => s.area!)) as number; // average state area
+    const areaMean: number = mean(valid.map(s => stateAreas[s.i])) as number; // average state area
 
     // generic relations
     for (let f = 1; f < states.length; f++) {
@@ -408,9 +416,9 @@ class StatesModule {
         if (
           neib &&
           P(0.8) &&
-          states[f].area! > areaMean &&
-          states[t].area! < areaMean &&
-          states[f].area! / states[t].area! > 2
+          stateAreas[f] > areaMean &&
+          stateAreas[t] < areaMean &&
+          stateAreas[f] / stateAreas[t] > 2
         )
           status = "Vassal";
         states[f].diplomacy![t] = status === "Vassal" ? "Suzerain" : status;
@@ -430,8 +438,8 @@ class StatesModule {
       const defender = ra(
         ad.map((r, d) => (r === "Rival" && !states[d].diplomacy!.includes("Vassal") ? d : 0)).filter(d => d)
       );
-      let ap = states[attacker].area! * states[attacker].expansionism;
-      let dp = states[defender].area! * states[defender].expansionism;
+      let ap = stateAreas[attacker] * states[attacker].expansionism;
+      let dp = stateAreas[defender] * states[defender].expansionism;
       if (ap < dp * gauss(1.6, 0.8, 0, 10, 2)) continue; // defender is too strong
 
       const an = states[attacker].name;
@@ -464,8 +472,8 @@ class StatesModule {
         }
       });
 
-      ap = sum(attackers.map(a => states[a].area! * states[a].expansionism)); // attackers joined power
-      dp = sum(defenders.map(d => states[d].area! * states[d].expansionism)); // defender joined power
+      ap = sum(attackers.map(a => stateAreas[a] * states[a].expansionism)); // attackers joined power
+      dp = sum(defenders.map(d => stateAreas[d] * states[d].expansionism)); // defender joined power
 
       // defender allies join
       dd.forEach((r, d) => {
@@ -477,7 +485,7 @@ class StatesModule {
           return;
         }
         defenders.push(d);
-        dp += states[d].area! * states[d].expansionism;
+        dp += stateAreas[d] * states[d].expansionism;
         war.push(`${dn}'s ally ${states[d].name} joined the war on defenders side`);
 
         // ally vassals join
@@ -486,7 +494,7 @@ class StatesModule {
           .filter(d => d)
           .forEach(v => {
             defenders.push(v);
-            dp += states[v].area! * states[v].expansionism;
+            dp += stateAreas[v] * states[v].expansionism;
             war.push(`${states[d].name}'s vassal ${states[v].name} joined the war on defenders side`);
           });
       });
@@ -506,7 +514,7 @@ class StatesModule {
         }
 
         attackers.push(d);
-        ap += states[d].area! * states[d].expansionism;
+        ap += stateAreas[d] * states[d].expansionism;
         war.push(`${an}'s ally ${name} joined the war on attackers side`);
 
         // ally vassals join
@@ -515,7 +523,7 @@ class StatesModule {
           .filter(d => d)
           .forEach(v => {
             attackers.push(v);
-            ap += states[v].area! * states[v].expansionism;
+            ap += stateAreas[v] * states[v].expansionism;
             war.push(`${states[d].name}'s vassal ${states[v].name} joined the war on attackers side`);
           });
       });
