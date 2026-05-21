@@ -386,12 +386,23 @@ function selectStyleElement() {
 
   if (styleElement === "tradeAnimation") {
     styleTradeAnimation.style.display = "block";
-    styleTradeAnimationSpeed.value = el.attr("data-speed") || "1";
-    styleTradeAnimationMaxSpawn.value = el.attr("data-max-spawn") || "5";
-    styleTradeAnimationInterval.value = el.attr("data-interval") || "3000";
-    styleTradeAnimationDotSize.value = el.attr("data-dot-size") || "4";
-    styleTradeAnimationDotOpacity.value = el.attr("data-dot-opacity") || "1";
-    styleTradeAnimationPathOpacity.value = el.attr("data-path-opacity") || "0.35";
+    // Main animation group
+    styleTradeAnimationDuration.value = el.attr("data-duration") || 50;
+    styleTradeAnimationFadeDuration.value = el.attr("data-fade-duration") || 1000;
+    styleTradeAnimationFilter.value = el.attr("filter") || "";
+
+    // Trade paths
+    const tradePaths = el.select("#trade-paths");
+    styleTradeAnimationPathsOpacity.value = tradePaths.attr("opacity") || 0.5;
+    styleTradeAnimationPathsStroke.value = tradePaths.attr("stroke") || "#888";
+    styleTradeAnimationPathsStrokeWidth.value = tradePaths.attr("stroke-width") || 0.5;
+    styleTradeAnimationPathsDasharray.value = tradePaths.attr("stroke-dasharray") || "4 4";
+
+    // Trade markers
+    const tradeMarkers = el.select("#trade-markers");
+    styleTradeAnimationMarkersOpacity.value = tradeMarkers.attr("opacity") || 1;
+    styleTradeAnimationMarkersFill.value = tradeMarkers.attr("fill") || "#ffccaa";
+    styleTradeAnimationMarkersSize.value = tradeMarkers.attr("data-size") || 2;
   }
 
   // update group options
@@ -999,30 +1010,38 @@ styleMarketsFillOpacity.on("input", e => {
   if (layerIsOn("toggleMarkets")) drawMarkets();
 });
 
-styleTradeAnimationSpeed.on("input", e => {
-  tradeAnimation.attr("data-speed", e.target.value);
+// Trade animation style controls
+styleTradeAnimationDuration.on("input", e => {
+  tradeAnimation.attr("data-duration", e.target.value);
 });
-
-styleTradeAnimationMaxSpawn.on("input", e => {
-  tradeAnimation.attr("data-max-spawn", e.target.value);
+styleTradeAnimationFadeDuration.on("input", e => {
+  tradeAnimation.attr("data-fade-duration", e.target.value);
 });
-
-styleTradeAnimationInterval.on("input", e => {
-  tradeAnimation.attr("data-interval", e.target.value);
-  TradeAnimation.restart();
+styleTradeAnimationFilter.on("change", function () {
+  tradeAnimation.attr("filter", this.value);
 });
-
-styleTradeAnimationDotSize.on("input", e => {
-  const value = Number(e.target.value);
-  tradeAnimation.attr("data-dot-size", value);
+// Trade paths controls
+styleTradeAnimationPathsOpacity.on("input", e => {
+  tradeAnimation.select("#trade-paths").attr("opacity", e.target.value);
 });
-
-styleTradeAnimationDotOpacity.on("input", e => {
-  tradeAnimation.attr("data-dot-opacity", e.target.value);
+styleTradeAnimationPathsStroke.on("input", e => {
+  tradeAnimation.select("#trade-paths").attr("stroke", e.target.value);
 });
-
-styleTradeAnimationPathOpacity.on("input", e => {
-  tradeAnimation.attr("stroke-opacity", e.target.value);
+styleTradeAnimationPathsStrokeWidth.on("input", e => {
+  tradeAnimation.select("#trade-paths").attr("stroke-width", e.target.value);
+});
+styleTradeAnimationPathsDasharray.on("input", e => {
+  tradeAnimation.select("#trade-paths").attr("stroke-dasharray", e.target.value);
+});
+// Trade markers controls
+styleTradeAnimationMarkersOpacity.on("input", e => {
+  tradeAnimation.select("#trade-markers").attr("opacity", e.target.value);
+});
+styleTradeAnimationMarkersFill.on("input", e => {
+  tradeAnimation.select("#trade-markers").attr("fill", e.target.value);
+});
+styleTradeAnimationMarkersSize.on("input", e => {
+  tradeAnimation.select("#trade-markers").attr("data-size", e.target.value);
 });
 
 // request a URL to image to be used as a texture
