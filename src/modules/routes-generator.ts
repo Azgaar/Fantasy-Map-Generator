@@ -223,6 +223,10 @@ class RoutesModule {
   // this gives us an aproximation of a desired road network, i.e. connections between burgs
   // code from https://observablehq.com/@mbostock/urquhart-graph
   private calculateUrquhartEdges(points: Point[]) {
+
+    if (points.length < 2) return []; // No connection for less than 2 points
+    if (points.length === 2) return [[0, 1]]; // Direct connection for exactly two points
+
     const score = (p0: number, p1: number) => distanceSquared(points[p0], points[p1]);
 
     const { halfedges, triangles } = Delaunator.from(points);
