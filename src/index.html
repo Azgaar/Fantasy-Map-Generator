@@ -555,6 +555,14 @@
               Markets
             </li>
             <li
+              id="toggleTradeAnimation"
+              data-tip="Trade animation: animated trade deal flows. Click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
+              onclick="toggleTradeAnimation(event)"
+              class="buttonoff"
+            >
+              Trade
+            </li>
+            <li
               id="toggleZones"
               data-tip="Zones: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="Z"
@@ -769,6 +777,7 @@
             <option value="regions" selected>States</option>
             <option value="temperature">Temperature</option>
             <option value="texture">Texture</option>
+            <option value="tradeAnimation">Trade Animation</option>
             <option value="vignette">Vignette</option>
             <option value="compass">Wind Rose</option>
             <option value="zones">Zones</option>
@@ -1364,6 +1373,44 @@
                 <td>Fill opacity</td>
                 <td>
                   <slider-input id="styleMarketsFillOpacity" min="0" max="1" step=".01"></slider-input>
+                </td>
+              </tr>
+            </tbody>
+            <tbody id="styleTradeAnimation" style="display: none">
+              <tr data-tip="Set animation speed. Higher values make trade dots move faster">
+                <td>Speed</td>
+                <td>
+                  <slider-input id="styleTradeAnimationSpeed" min=".25" max="4" step=".05"></slider-input>
+                </td>
+              </tr>
+              <tr data-tip="Set the maximum number of trade batches spawned per interval">
+                <td>Number</td>
+                <td>
+                  <slider-input id="styleTradeAnimationMaxSpawn" min="1" max="20" step="1"></slider-input>
+                </td>
+              </tr>
+              <tr data-tip="Set time between animation spawn waves in milliseconds">
+                <td>Interval</td>
+                <td>
+                  <slider-input id="styleTradeAnimationInterval" min="500" max="10000" step="100"></slider-input>
+                </td>
+              </tr>
+              <tr data-tip="Set trade dot radius">
+                <td>Dot size</td>
+                <td>
+                  <slider-input id="styleTradeAnimationDotSize" min="1" max="12" step=".5"></slider-input>
+                </td>
+              </tr>
+              <tr data-tip="Set trade dot opacity">
+                <td>Dot opacity</td>
+                <td>
+                  <slider-input id="styleTradeAnimationDotOpacity" min="0" max="1" step=".01"></slider-input>
+                </td>
+              </tr>
+              <tr data-tip="Set animated path opacity">
+                <td>Path opacity</td>
+                <td>
+                  <slider-input id="styleTradeAnimationPathOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
               </tr>
             </tbody>
@@ -5119,6 +5166,30 @@
           <div id="marketDealsBottom">
             <button id="marketDealsRefresh" data-tip="Refresh the Deals screen" class="icon-cw"></button>
             <button id="marketDealsExport" data-tip="Save market deals data as a text file (.csv)" class="icon-download"></button>
+          </div>
+        </div>
+      </div>
+      <div id="tradeDetails" class="dialog stable" style="display: none">
+        <div>
+          <div id="tradeDetailsSummary" class="totalLine"></div>
+          <div id="tradeDetailsHeader" class="header" style="grid-template-columns: 2em 6.8em 4em 7em 7em 4em 5em 5em;">
+            <div></div>
+            <div data-tip="Click to sort by good" class="sortable alphabetically" data-sortby="good" style="margin-left:0">Good&nbsp;</div>
+            <div data-tip="Click to sort by deal type" class="sortable" data-sortby="direction">Type&nbsp;</div>
+            <div data-tip="Click to sort by market" class="sortable alphabetically" data-sortby="market">Market&nbsp;</div>
+            <div data-tip="Click to sort by counterparty" class="sortable alphabetically" data-sortby="counterparty">Party&nbsp;</div>
+            <div data-tip="Click to sort by units" class="sortable" data-sortby="units">Units&nbsp;</div>
+            <div data-tip="Click to sort by unit price" class="sortable" data-sortby="price">Price&nbsp;</div>
+            <div data-tip="Click to sort by value" class="sortable" data-sortby="value">Value&nbsp;</div>
+          </div>
+          <div id="tradeDetailsBody" class="table" style="max-height:30em"></div>
+          <div id="tradeDetailsFooter" class="totalLine">
+            <div style="margin-left: 5px" data-tip="Total traded units">Units: <span id="tradeDetailsFooterUnits">0</span></div>
+            <div style="margin-left: 12px" data-tip="Total deal value">Value: <span id="tradeDetailsFooterValue">0</span></div>
+          </div>
+          <div id="tradeDetailsBottom">
+            <button id="tradeDetailsZoomStart" data-tip="Zoom to route start" class="icon-dot-circled"></button>
+            <button id="tradeDetailsZoomEnd" data-tip="Zoom to route end" class="icon-map-pin"></button>
           </div>
         </div>
       </div>

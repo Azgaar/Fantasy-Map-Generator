@@ -86,6 +86,8 @@ function prepareMapData() {
   cloneEl.querySelector("#viewbox").removeAttribute("transform");
 
   cloneEl.querySelector("#ruler").innerHTML = ""; // always remove rulers
+  const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
+  if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 

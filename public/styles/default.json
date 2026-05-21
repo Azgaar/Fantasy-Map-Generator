@@ -663,5 +663,16 @@
     "stroke-width": 0.5,
     "data-fill-opacity": 0.5,
     "filter": null
+  },
+  "#tradeAnimation": {
+    "opacity": 1,
+    "data-speed": 1,
+    "data-size": 2,
+    "fill": "#ffccaa",
+    "stroke-opacity": 0.4,
+    "stroke": "#d06324",
+    "stroke-width": 0.5,
+    "stroke-dasharray": "4 4",
+    "filter": null
   }
 }

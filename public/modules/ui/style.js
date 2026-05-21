@@ -384,6 +384,16 @@ function selectStyleElement() {
     styleMarketsFillOpacity.value = el.attr("data-fill-opacity") || "0.28";
   }
 
+  if (styleElement === "tradeAnimation") {
+    styleTradeAnimation.style.display = "block";
+    styleTradeAnimationSpeed.value = el.attr("data-speed") || "1";
+    styleTradeAnimationMaxSpawn.value = el.attr("data-max-spawn") || "5";
+    styleTradeAnimationInterval.value = el.attr("data-interval") || "3000";
+    styleTradeAnimationDotSize.value = el.attr("data-dot-size") || "4";
+    styleTradeAnimationDotOpacity.value = el.attr("data-dot-opacity") || "1";
+    styleTradeAnimationPathOpacity.value = el.attr("data-path-opacity") || "0.35";
+  }
+
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
   if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
@@ -987,6 +997,32 @@ styleGoodsCircle.addEventListener("change", function () {
 styleMarketsFillOpacity.on("input", e => {
   markets.attr("data-fill-opacity", e.target.value);
   if (layerIsOn("toggleMarkets")) drawMarkets();
+});
+
+styleTradeAnimationSpeed.on("input", e => {
+  tradeAnimation.attr("data-speed", e.target.value);
+});
+
+styleTradeAnimationMaxSpawn.on("input", e => {
+  tradeAnimation.attr("data-max-spawn", e.target.value);
+});
+
+styleTradeAnimationInterval.on("input", e => {
+  tradeAnimation.attr("data-interval", e.target.value);
+  TradeAnimation.restart();
+});
+
+styleTradeAnimationDotSize.on("input", e => {
+  const value = Number(e.target.value);
+  tradeAnimation.attr("data-dot-size", value);
+});
+
+styleTradeAnimationDotOpacity.on("input", e => {
+  tradeAnimation.attr("data-dot-opacity", e.target.value);
+});
+
+styleTradeAnimationPathOpacity.on("input", e => {
+  tradeAnimation.attr("stroke-opacity", e.target.value);
 });
 
 // request a URL to image to be used as a texture

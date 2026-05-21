@@ -79,6 +79,7 @@ let burgIcons = icons.append("g").attr("id", "burgIcons");
 let anchors = icons.append("g").attr("id", "anchors");
 let armies = viewbox.append("g").attr("id", "armies");
 let markers = viewbox.append("g").attr("id", "markers");
+let tradeAnimation = viewbox.append("g").attr("id", "tradeAnimation");
 let fogging = viewbox
   .append("g")
   .attr("id", "fogging-cont")

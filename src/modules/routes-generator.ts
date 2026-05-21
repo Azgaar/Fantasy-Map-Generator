@@ -7,7 +7,7 @@ import type { Point } from "./voronoi";
 const ROUTES_SHARP_ANGLE = 135;
 const ROUTES_VERY_SHARP_ANGLE = 115;
 
-const MIN_PASSABLE_SEA_TEMP = -4;
+export const MIN_PASSABLE_SEA_TEMP = -4;
 const ROUTE_TYPE_MODIFIERS: Record<string, number> = {
   "-1": 1, // coastline
   "-2": 1.8, // sea

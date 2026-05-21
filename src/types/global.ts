@@ -52,6 +52,7 @@ declare global {
   var temperature: Selection<SVGGElement, unknown, null, undefined>;
   var markers: Selection<SVGGElement, unknown, null, undefined>;
   var markets: Selection<SVGGElement, unknown, null, undefined>;
+  var tradeAnimation: Selection<SVGGElement, unknown, null, undefined>;
   var defs: Selection<SVGDefsElement, unknown, null, undefined>;
   var coastline: Selection<SVGGElement, unknown, null, undefined>;
   var lakes: Selection<SVGGElement, unknown, null, undefined>;
@@ -109,6 +110,7 @@ declare global {
   var editWorld: () => void;
   var showExportPane: () => void;
   var UITour: { start: () => void };
+  var TradeDetails: { open: (batch: any) => void };
   var getHeight: (h: number) => string;
   var getLatitude: (y: number, precision?: number) => number;
   var getLongitude: (x: number, precision?: number) => number;
@@ -123,6 +125,7 @@ declare global {
   // Legacy UI globals
   var turnButtonOn: (buttonId: string) => void;
   var turnButtonOff: (buttonId: string) => void;
+  var toggleTradeAnimation: (event?: MouseEvent) => void;
   var isCtrlClick: (event: MouseEvent) => boolean;
   var editStyle: (layer: string) => void;
   var fitContent: () => number;

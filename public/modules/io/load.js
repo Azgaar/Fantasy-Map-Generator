@@ -78,7 +78,7 @@ async function loadMapFromURL(maplink, random) {
 
   try {
     const url = decodeURIComponent(maplink);
-    const response = await fetch(url, {method: "GET", mode: "cors", signal: controller.signal});
+    const response = await fetch(url, { method: "GET", mode: "cors", signal: controller.signal });
     if (!response.ok) throw new Error("Cannot load map from URL");
 
     const blob = await response.blob();
@@ -119,7 +119,7 @@ function uploadMap(file, callback) {
     ensureEl("coas").innerHTML = ""; // remove auto-generated emblems
 
     const result = fileLoadedEvent.target.result;
-    const {mapData, mapVersion} = await parseLoadedResult(result);
+    const { mapData, mapVersion } = await parseLoadedResult(result);
 
     const isInvalid = !mapData || !isValidVersion(mapVersion) || mapData.length < 10 || !mapData[5];
     if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
@@ -176,13 +176,13 @@ async function parseLoadedResult(result) {
     const mapData = content.split("\r\n"); // split by CRLF
     const mapVersion = parseMapVersion(mapData[0].split("|")[0] || mapData[0] || "");
 
-    return {mapData, mapVersion};
+    return { mapData, mapVersion };
   } catch (error) {
     const uncompressedData = await uncompress(result); // file can be gzip compressed
     if (uncompressedData) return parseLoadedResult(uncompressedData);
 
     ERROR && console.error(error);
-    return {mapData: null, mapVersion: null};
+    return { mapData: null, mapVersion: null };
   }
 }
 
@@ -280,9 +280,9 @@ async function parseLoadedData(data, mapVersion) {
       if (data[34]) {
         const usedFonts = JSON.parse(data[34]);
         usedFonts.forEach(usedFont => {
-          const {family: usedFamily, unicodeRange: usedRange, variant: usedVariant} = usedFont;
+          const { family: usedFamily, unicodeRange: usedRange, variant: usedVariant } = usedFont;
           const defaultFont = fonts.find(
-            ({family, unicodeRange, variant}) =>
+            ({ family, unicodeRange, variant }) =>
               family === usedFamily && unicodeRange === usedRange && variant === usedVariant
           );
           if (!defaultFont) fonts.push(usedFont);
@@ -342,6 +342,7 @@ async function parseLoadedData(data, mapVersion) {
       borders = viewbox.select("#borders");
       stateBorders = borders.select("#stateBorders");
       provinceBorders = borders.select("#provinceBorders");
+      markets = viewbox.select("#markets");
       routes = viewbox.select("#routes");
       roads = routes.select("#roads");
       trails = routes.select("#trails");
@@ -350,6 +351,7 @@ async function parseLoadedData(data, mapVersion) {
       coastline = viewbox.select("#coastline");
       prec = viewbox.select("#prec");
       population = viewbox.select("#population");
+      goods = viewbox.select("#goods");
       emblems = viewbox.select("#emblems");
       labels = viewbox.select("#labels");
       icons = viewbox.select("#icons");
@@ -357,6 +359,7 @@ async function parseLoadedData(data, mapVersion) {
       anchors = icons.select("#anchors");
       armies = viewbox.select("#armies");
       markers = viewbox.select("#markers");
+      tradeAnimation = viewbox.select("#tradeAnimation");
       ruler = viewbox.select("#ruler");
       fogging = viewbox.select("#fogging");
       debug = viewbox.select("#debug");
@@ -371,11 +374,29 @@ async function parseLoadedData(data, mapVersion) {
       if (!emblems.size()) {
         emblems = viewbox.insert("g", "#labels").attr("id", "emblems").style("display", "none");
       }
+      if (!markets.size()) {
+        markets = viewbox.insert("g", "#routes").attr("id", "markets");
+      }
+      if (!goods.size()) {
+        goods = viewbox.insert("g", "#emblems").attr("id", "goods").style("display", "none");
+      }
+      if (!tradeAnimation.size()) {
+        tradeAnimation = viewbox.insert("g", "#fogging-cont").attr("id", "tradeAnimation").style("display", "none");
+      }
+      tradeAnimation
+        .attr("data-max-spawn", tradeAnimation.attr("data-max-spawn") || 5)
+        .attr("data-interval", tradeAnimation.attr("data-interval") || 3000)
+        .attr("data-speed", tradeAnimation.attr("data-speed") || 1)
+        .attr("data-dot-size", tradeAnimation.attr("data-dot-size") || 4)
+        .attr("data-dot-opacity", tradeAnimation.attr("data-dot-opacity") || 1)
+        .attr("data-path-opacity", tradeAnimation.attr("data-path-opacity") || 0.35)
+        .selectAll("*")
+        .remove();
     }
 
     {
       grid = JSON.parse(data[6]);
-      const {cells, vertices} = calculateVoronoi(grid.points, grid.boundary);
+      const { cells, vertices } = calculateVoronoi(grid.points, grid.boundary);
       grid.cells = cells;
       grid.vertices = vertices;
       grid.cells.h = Uint8Array.from(data[7].split(","));
@@ -392,7 +413,7 @@ async function parseLoadedData(data, mapVersion) {
       pack.cultures = JSON.parse(data[13]);
       pack.states = JSON.parse(data[14]);
       pack.burgs = JSON.parse(data[15]);
-      pack.religions = data[29] ? JSON.parse(data[29]) : [{i: 0, name: "No religion"}];
+      pack.religions = data[29] ? JSON.parse(data[29]) : [{ i: 0, name: "No religion" }];
       pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
       pack.rivers = data[32] ? JSON.parse(data[32]) : [];
       pack.markers = data[35] ? JSON.parse(data[35]) : [];
@@ -424,7 +445,7 @@ async function parseLoadedData(data, mapVersion) {
           const e = d.split("|");
           if (!e.length) return;
           const b = e[5].split(",").length > 2 || !nameBases[i] ? e[5] : nameBases[i].b;
-          nameBases[i] = {name: e[0], min: e[1], max: e[2], d: e[3], m: e[4], b};
+          nameBases[i] = { name: e[0], min: e[1], max: e[2], d: e[3], m: e[4], b };
         });
       }
     }
@@ -468,11 +489,13 @@ async function parseLoadedData(data, mapVersion) {
       if (isVisible(icons)) turnOn("toggleBurgIcons");
       if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
       if (hasChild(markers, "svg")) turnOn("toggleMarkers");
+      if (isVisible(tradeAnimation)) turnOn("toggleTradeAnimation");
       if (isVisible(ruler)) turnOn("toggleRulers");
       if (isVisible(scaleBar)) turnOn("toggleScaleBar");
       if (isVisibleNode(ensureEl("vignette"))) turnOn("toggleVignette");
 
       getCurrentPreset();
+      TradeAnimation.sync();
     }
 
     {
@@ -484,7 +507,7 @@ async function parseLoadedData(data, mapVersion) {
 
     {
       // dynamically import and run auto-update script
-      const {resolveVersionConflicts} = await import("../dynamic/auto-update.js?v=1.120.5");
+      const { resolveVersionConflicts } = await import("../dynamic/auto-update.js?v=1.120.5");
       resolveVersionConflicts(mapVersion);
     }
 
@@ -506,7 +529,7 @@ async function parseLoadedData(data, mapVersion) {
 
     // data integrity checks
     {
-      const {cells, vertices} = pack;
+      const { cells, vertices } = pack;
 
       const cellsMismatch = cells.i.length !== cells.state.length;
       const featureVerticesMismatch = pack.features.some(f => f?.vertices?.some(vertex => !vertices.p[vertex]));
@@ -777,7 +800,7 @@ async function parseLoadedData(data, mapVersion) {
           $(this).dialog("close");
         }
       },
-      position: {my: "center", at: "center", of: "svg"}
+      position: { my: "center", at: "center", of: "svg" }
     });
   }
 }

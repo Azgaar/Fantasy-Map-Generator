@@ -14,3 +14,4 @@ import "./draw-scalebar";
 import "./draw-state-labels";
 import "./draw-temperature";
 import "./draw-goods";
+import "./draw-trade-animation";
