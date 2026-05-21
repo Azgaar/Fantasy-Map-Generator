@@ -80,6 +80,8 @@ let anchors = icons.append("g").attr("id", "anchors");
 let armies = viewbox.append("g").attr("id", "armies");
 let markers = viewbox.append("g").attr("id", "markers");
 let tradeAnimation = viewbox.append("g").attr("id", "tradeAnimation");
+tradeAnimation.append("g").attr("id", "trade-paths");
+tradeAnimation.append("g").attr("id", "trade-markers");
 let fogging = viewbox
   .append("g")
   .attr("id", "fogging-cont")

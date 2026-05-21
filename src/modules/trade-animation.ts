@@ -65,7 +65,8 @@ export function getTradePathCost(current: number, next: number): number {
 
     // Apply discount if there is a generated sea route
     const routeModifier = routeConnected ? 0.3 : 1.0;
-    return dist * routeModifier;
+    // Make water travel 10x cheaper than land
+    return dist * routeModifier * 0.1;
   }
 }
 

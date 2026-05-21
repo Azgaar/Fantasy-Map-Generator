@@ -2,19 +2,21 @@ import { curveCatmullRom, easeLinear, line } from "d3";
 import type { TradeAnimationBatch } from "../modules/trade-animation";
 import type { Point } from "../modules/voronoi";
 
-const BASE_DURATION = 50;
-const FADE_DURATION = 1000;
-
 export function drawTradeAnimation(batch: TradeAnimationBatch, points: Point[]): void {
   const lineGen = line<Point>().curve(curveCatmullRom.alpha(0.3));
-  const pathElement = tradeAnimation
+  const pathsGroup = tradeAnimation.select("g#trade-paths");
+  const markersGroup = tradeAnimation.select("g#trade-markers");
+
+  const pathElement = pathsGroup
     .append("path")
     .attr("d", lineGen(points))
     .attr("fill", "none")
     .attr("stroke-opacity", 0);
-  pathElement.transition().duration(FADE_DURATION).attr("stroke-opacity", 1);
 
-  const group = tradeAnimation.append("g");
+  const fade = Number(tradeAnimation.attr("data-fade-duration")) || 1000;
+  pathElement.transition().duration(fade).attr("stroke-opacity", 1);
+
+  const group = markersGroup.append("g");
 
   const size = Number(tradeAnimation.attr("data-size")) || 4;
   group.append("circle").attr("r", size).attr("stroke-dasharray", "0").attr("stroke-opacity", 1);
@@ -35,10 +37,10 @@ export function drawTradeAnimation(batch: TradeAnimationBatch, points: Point[]):
   const startPoint = pathNode.getPointAtLength(0);
   group.attr("transform", `translate(${startPoint.x}, ${startPoint.y})`);
 
-  const speed = Number(tradeAnimation.attr("data-speed")) || 1;
+  const duration = Number(tradeAnimation.attr("data-duration")) || 50;
   group
     .transition()
-    .duration((length * BASE_DURATION) / speed)
+    .duration(length * duration)
     .ease(easeLinear)
     .attrTween(
       "transform",
@@ -46,12 +48,13 @@ export function drawTradeAnimation(batch: TradeAnimationBatch, points: Point[]):
     )
     .on("end", () => {
       group.remove();
-      pathElement.transition().duration(FADE_DURATION).attr("stroke-opacity", 0).remove();
+      pathElement.transition().duration(fade).attr("stroke-opacity", 0).remove();
     });
 }
 
 export function clearTradeAnimations(): void {
-  tradeAnimation.selectAll("*").interrupt().remove();
+  tradeAnimation.select("g#trade-paths").selectAll("*").interrupt().remove();
+  tradeAnimation.select("g#trade-markers").selectAll("*").interrupt().remove();
 }
 
 declare global {

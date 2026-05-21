@@ -665,14 +665,19 @@
     "filter": null
   },
   "#tradeAnimation": {
-    "opacity": 1,
-    "data-speed": 1,
-    "data-size": 2,
-    "fill": "#ffccaa",
-    "stroke-opacity": 0.4,
-    "stroke": "#d06324",
-    "stroke-width": 0.5,
-    "stroke-dasharray": "4 4",
+    "data-duration": 50,
+    "data-fade-duration": 1000,
     "filter": null
+  },
+  "#tradeAnimation > #trade-paths": {
+    "opacity": 0.5,
+    "stroke": "#888",
+    "stroke-width": 0.5,
+    "stroke-dasharray": "4 4"
+  },
+  "#tradeAnimation > #trade-markers": {
+    "opacity": 1,
+    "fill": "#ffccaa",
+    "data-size": 2
   }
 }
