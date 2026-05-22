@@ -666,14 +666,15 @@
   },
   "#tradeAnimation": {
     "data-duration": 50,
-    "data-fade-duration": 1000,
+    "data-fade-duration": 2000,
     "filter": null
   },
   "#tradeAnimation > #trade-paths": {
-    "opacity": 0.5,
-    "stroke": "#888",
-    "stroke-width": 0.5,
-    "stroke-dasharray": "4 4"
+    "opacity": 0.8,
+    "stroke": "#d36334",
+    "stroke-width": 0.2,
+    "stroke-linecap": "round",
+    "stroke-dasharray": "0.5 0.8"
   },
   "#tradeAnimation > #trade-markers": {
     "opacity": 1,

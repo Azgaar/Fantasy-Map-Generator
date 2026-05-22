@@ -495,6 +495,7 @@ async function parseLoadedData(data, mapVersion) {
       if (isVisibleNode(ensureEl("vignette"))) turnOn("toggleVignette");
 
       getCurrentPreset();
+      Routes.sync();
       TradeAnimation.sync();
     }
 

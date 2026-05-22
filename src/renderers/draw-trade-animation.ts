@@ -1,12 +1,20 @@
 import { curveCatmullRom, easeLinear, line } from "d3";
-import type { TradeAnimationBatch } from "../modules/trade-animation";
+import type { TradeBatch } from "../modules/trade-animation";
 import type { Point } from "../modules/voronoi";
 
-export function drawTradeAnimation(batch: TradeAnimationBatch, points: Point[]): void {
-  const lineGen = line<Point>().curve(curveCatmullRom.alpha(0.3));
+const LAND_DURATION_MODIFIER = 5;
+
+const lineGen = line<Point>().curve(curveCatmullRom.alpha(0.1));
+
+export function drawTradeAnimation(
+  batch: TradeBatch,
+  points: Point[],
+  segments: { type: "land" | "water"; points: Point[] }[]
+): void {
   const pathsGroup = tradeAnimation.select("g#trade-paths");
   const markersGroup = tradeAnimation.select("g#trade-markers");
 
+  // Draw the full path as one
   const pathElement = pathsGroup
     .append("path")
     .attr("d", lineGen(points))
@@ -16,40 +24,65 @@ export function drawTradeAnimation(batch: TradeAnimationBatch, points: Point[]):
   const fade = Number(tradeAnimation.attr("data-fade-duration")) || 1000;
   pathElement.transition().duration(fade).attr("stroke-opacity", 1);
 
-  const group = markersGroup.append("g");
+  animateSegment(0);
 
-  const size = Number(tradeAnimation.attr("data-size")) || 4;
-  group.append("circle").attr("r", size).attr("stroke-dasharray", "0").attr("stroke-opacity", 1);
-
-  // The visual dot stays small, while the invisible target remains comfortable to click.
-  group
-    .append("circle")
-    .attr("r", Math.max(12, size * 3))
-    .attr("fill", "none")
-    .attr("stroke", "none")
-    .attr("pointer-events", "all")
-    .style("cursor", "pointer")
-    .on("click", () => TradeDetails.open(batch));
-
-  const pathNode = pathElement.node()!;
-  const length = pathNode.getTotalLength();
-
-  const startPoint = pathNode.getPointAtLength(0);
-  group.attr("transform", `translate(${startPoint.x}, ${startPoint.y})`);
-
-  const duration = Number(tradeAnimation.attr("data-duration")) || 50;
-  group
-    .transition()
-    .duration(length * duration)
-    .ease(easeLinear)
-    .attrTween(
-      "transform",
-      () => t => `translate(${pathNode.getPointAtLength(t * length).x}, ${pathNode.getPointAtLength(t * length).y})`
-    )
-    .on("end", () => {
-      group.remove();
+  function animateSegment(idx: number) {
+    if (!segments || idx >= segments.length) {
       pathElement.transition().duration(fade).attr("stroke-opacity", 0).remove();
-    });
+      return;
+    }
+    const segment = segments[idx];
+
+    const group = markersGroup.append("g");
+    const size = Number(tradeAnimation.attr("data-size")) || 4;
+    const imgSize = segment.type === "land" ? size / 2 : size;
+    const imgHref = `./images/markers/${segment.type === "land" ? "wagon" : "ship"}.png`;
+    const duration = Number(tradeAnimation.attr("data-duration")) || 50;
+    const segDuration = segment.type === "land" ? duration * LAND_DURATION_MODIFIER : duration;
+
+    group
+      .append("image")
+      .attr("href", imgHref)
+      .attr("width", imgSize)
+      .attr("height", imgSize)
+      .attr("x", -imgSize / 2)
+      .attr("y", -imgSize / 2)
+      .attr("pointer-events", "none");
+
+    // Invisible target for click
+    group
+      .append("circle")
+      .attr("r", Math.max(12, size * 3))
+      .attr("fill", "none")
+      .attr("stroke", "none")
+      .attr("pointer-events", "all")
+      .style("cursor", "pointer")
+      .on("click", () => TradeDetails.open(batch));
+
+    // Animate along this segment;
+    const tempPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    tempPath.setAttribute("d", lineGen(segment.points)!);
+    const tempLength = tempPath.getTotalLength();
+    const startPoint = tempPath.getPointAtLength(0);
+    group.attr("transform", `translate(${startPoint.x}, ${startPoint.y})`);
+
+    group
+      .transition()
+      .duration(tempLength * segDuration)
+      .ease(easeLinear)
+      .attrTween("transform", () => {
+        return t => {
+          const p = tempPath.getPointAtLength(t * tempLength);
+          const p2 = tempPath.getPointAtLength(t * tempLength + 0.1);
+          const angle = (Math.atan2(p2.y - p.y, p2.x - p.x) * 180) / Math.PI;
+          return `translate(${p.x}, ${p.y}) rotate(${angle})`;
+        };
+      })
+      .on("end", () => {
+        group.remove();
+        animateSegment(idx + 1);
+      });
+  }
 }
 
 export function clearTradeAnimations(): void {

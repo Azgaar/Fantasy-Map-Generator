@@ -1,12 +1,12 @@
 import type { Burg } from "../modules/burgs-generator";
 import type { Deal } from "../modules/markets-generator";
-import type { TradeAnimationBatch } from "../modules/trade-animation";
+import type { TradeBatch } from "../modules/trade-animation";
 import { ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
-let activeBatch: TradeAnimationBatch | null = null;
+let activeBatch: TradeBatch | null = null;
 
-export function open(batch: TradeAnimationBatch): void {
+export function open(batch: TradeBatch): void {
   if (!batch?.deals.length) return;
 
   activeBatch = batch;
@@ -34,7 +34,7 @@ export function open(batch: TradeAnimationBatch): void {
   }
 }
 
-function renderTradeDetails(batch: TradeAnimationBatch): void {
+function renderTradeDetails(batch: TradeBatch): void {
   const totalUnits = batch.deals.reduce((sum, deal) => sum + deal.units, 0);
   const totalValue = batch.deals.reduce((sum, deal) => sum + getDealValue(deal), 0);
 

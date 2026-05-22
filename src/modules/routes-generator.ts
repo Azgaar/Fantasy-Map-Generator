@@ -174,6 +174,8 @@ export interface Route {
 }
 
 class RoutesModule {
+  private connections: Map<string, boolean> = new Map();
+
   buildLinks(routes: Route[]): Record<number, Record<number, number>> {
     const links: Record<number, Record<number, number>> = {};
 
@@ -260,45 +262,47 @@ class RoutesModule {
     return edges;
   }
 
-  private createCostEvaluator({ isWater, connections }: { isWater: boolean; connections: Map<string, boolean> }) {
-    function getLandPathCost(current: number, next: number) {
-      if (pack.cells.h[next] < 20) return Infinity; // ignore water cells
+  getLandPathCost(current: number, next: number) {
+    if (pack.cells.h[next] < 20) return Infinity; // ignore water cells
 
-      const habitability = biomesData.habitability[pack.cells.biome[next]];
-      if (!habitability) return Infinity; // inhabitable cells are not passable (e.g. glacier)
+    const habitability = biomesData.habitability[pack.cells.biome[next]];
+    if (!habitability) return Infinity; // inhabitable cells are not passable (e.g. glacier)
 
-      const distanceCost = distanceSquared(pack.cells.p[current], pack.cells.p[next]);
-      const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
-      const heightModifier = 1 + Math.max(pack.cells.h[next] - 25, 25) / 25; // [1, 3];
-      const connectionModifier = connections.has(`${current}-${next}`) ? 0.5 : 1;
-      const burgModifier = pack.cells.burg[next] ? 1 : 3;
+    const distanceCost = distanceSquared(pack.cells.p[current], pack.cells.p[next]);
+    const habitabilityModifier = 1 + Math.max(100 - habitability, 0) / 1000; // [1, 1.1];
+    const heightModifier = 1 + Math.max(pack.cells.h[next] - 25, 25) / 25; // [1, 3];
+    const connectionModifier = this.connections.has(`${current}-${next}`) ? 0.5 : 1;
+    const burgModifier = pack.cells.burg[next] ? 1 : 3;
 
-      const pathCost = distanceCost * habitabilityModifier * heightModifier * connectionModifier * burgModifier;
-      return pathCost;
-    }
-
-    function getWaterPathCost(current: number, next: number) {
-      if (pack.cells.h[next] >= 20) return Infinity; // ignore land cells
-      if (grid.cells.temp[pack.cells.g[next]] < MIN_PASSABLE_SEA_TEMP) return Infinity; // ignore too cold cells
-
-      const distanceCost = distanceSquared(pack.cells.p[current], pack.cells.p[next]);
-      const typeModifier = ROUTE_TYPE_MODIFIERS[pack.cells.t[next]] || ROUTE_TYPE_MODIFIERS.default;
-      const connectionModifier = connections.has(`${current}-${next}`) ? 0.5 : 1;
-
-      const pathCost = distanceCost * typeModifier * connectionModifier;
-      return pathCost;
-    }
-    return isWater ? getWaterPathCost : getLandPathCost;
+    const pathCost = distanceCost * habitabilityModifier * heightModifier * connectionModifier * burgModifier;
+    return pathCost;
   }
 
-  private getRouteSegments(pathCells: number[], connections: Map<string, boolean>) {
+  getWaterPathCost(current: number, next: number) {
+    if (pack.cells.h[next] >= 20) return Infinity; // ignore land cells
+    if (grid.cells.temp[pack.cells.g[next]] < MIN_PASSABLE_SEA_TEMP) return Infinity; // ignore too cold cells
+
+    const distanceCost = distanceSquared(pack.cells.p[current], pack.cells.p[next]);
+    const typeModifier = ROUTE_TYPE_MODIFIERS[pack.cells.t[next]] || ROUTE_TYPE_MODIFIERS.default;
+    const connectionModifier = this.connections.has(`${current}-${next}`) ? 0.5 : 1;
+
+    const pathCost = distanceCost * typeModifier * connectionModifier;
+    return pathCost;
+  }
+
+  private createCostEvaluator({ isWater }: { isWater: boolean }) {
+    return isWater ? this.getWaterPathCost.bind(this) : this.getLandPathCost.bind(this);
+  }
+
+  private getRouteSegments(pathCells: number[]) {
     const segments = [];
     let segment = [];
 
     for (let i = 0; i < pathCells.length; i++) {
       const cellId = pathCells[i];
       const nextCellId = pathCells[i + 1];
-      const isConnected = connections.has(`${cellId}-${nextCellId}`) || connections.has(`${nextCellId}-${cellId}`);
+      const isConnected =
+        this.connections.has(`${cellId}-${nextCellId}`) || this.connections.has(`${nextCellId}-${cellId}`);
 
       if (isConnected) {
         if (segment.length) {
@@ -318,25 +322,15 @@ class RoutesModule {
     return segments;
   }
 
-  private findPathSegments({
-    isWater,
-    connections,
-    start,
-    exit
-  }: {
-    isWater: boolean;
-    connections: Map<string, boolean>;
-    start: number;
-    exit: number;
-  }) {
-    const getCost = this.createCostEvaluator({ isWater, connections });
+  private findPathSegments({ isWater, start, exit }: { isWater: boolean; start: number; exit: number }) {
+    const getCost = this.createCostEvaluator({ isWater });
     const pathCells = findPath(start, current => current === exit, getCost, pack);
     if (!pathCells) return [];
-    const segments = this.getRouteSegments(pathCells, connections);
+    const segments = this.getRouteSegments(pathCells);
     return segments;
   }
 
-  private generateMainRoads(connections: Map<string, boolean>) {
+  private generateMainRoads() {
     TIME && console.time("generateMainRoads");
     const { capitalsByFeature } = this.sortBurgsByFeature(pack.burgs);
     const mainRoads: Route[] = [];
@@ -350,12 +344,11 @@ class RoutesModule {
 
         const segments = this.findPathSegments({
           isWater: false,
-          connections,
           start,
           exit
         });
         for (const segment of segments) {
-          this.addConnections(segment, connections);
+          this.addConnections(segment);
           mainRoads.push({ feature: Number(key), cells: segment } as Route);
         }
       });
@@ -365,18 +358,18 @@ class RoutesModule {
     return mainRoads;
   }
 
-  private addConnections(segment: number[], connections: Map<string, boolean>) {
+  private addConnections(segment: number[]) {
     for (let i = 0; i < segment.length; i++) {
       const cellId = segment[i];
       const nextCellId = segment[i + 1];
       if (nextCellId) {
-        connections.set(`${cellId}-${nextCellId}`, true);
-        connections.set(`${nextCellId}-${cellId}`, true);
+        this.connections.set(`${cellId}-${nextCellId}`, true);
+        this.connections.set(`${nextCellId}-${cellId}`, true);
       }
     }
   }
 
-  private generateTrails(connections: Map<string, boolean>) {
+  private generateTrails() {
     TIME && console.time("generateTrails");
     const { burgsByFeature } = this.sortBurgsByFeature(pack.burgs);
     const trails: Route[] = [];
@@ -390,12 +383,11 @@ class RoutesModule {
 
         const segments = this.findPathSegments({
           isWater: false,
-          connections,
           start,
           exit
         });
         for (const segment of segments) {
-          this.addConnections(segment, connections);
+          this.addConnections(segment);
           trails.push({ feature: Number(key), cells: segment } as Route);
         }
       });
@@ -405,7 +397,7 @@ class RoutesModule {
     return trails;
   }
 
-  private generateSeaRoutes(connections: Map<string, boolean>) {
+  private generateSeaRoutes() {
     TIME && console.time("generateSeaRoutes");
     const { portsByFeature } = this.sortBurgsByFeature(pack.burgs);
     const seaRoutes: Route[] = [];
@@ -419,12 +411,11 @@ class RoutesModule {
         const exit = featurePorts[toId].cell;
         const segments = this.findPathSegments({
           isWater: true,
-          connections,
           start,
           exit
         });
         for (const segment of segments) {
-          this.addConnections(segment, connections);
+          this.addConnections(segment);
           seaRoutes.push({
             feature: Number(featureId),
             cells: segment
@@ -511,10 +502,11 @@ class RoutesModule {
 
     return routesMerged > 1 ? this.mergeRoutes(routes) : routes;
   }
-  private createRoutesData(routes: Route[], connections: Map<string, boolean>) {
-    const mainRoads = this.generateMainRoads(connections);
-    const trails = this.generateTrails(connections);
-    const seaRoutes = this.generateSeaRoutes(connections);
+
+  private createRoutesData(routes: Route[]) {
+    const mainRoads = this.generateMainRoads();
+    const trails = this.generateTrails();
+    const seaRoutes = this.generateSeaRoutes();
     const pointsArray = this.preparePointsArray();
 
     for (const { feature, cells, merged } of this.mergeRoutes(mainRoads)) {
@@ -539,15 +531,12 @@ class RoutesModule {
   }
 
   generate(lockedRoutes: Route[] = []) {
-    const connections = new Map();
+    this.connections = new Map();
     lockedRoutes.forEach((route: Route) => {
-      this.addConnections(
-        route.points.map(p => p[2]),
-        connections
-      );
+      this.addConnections(route.points.map(p => p[2]));
     });
 
-    pack.routes = this.createRoutesData(lockedRoutes, connections);
+    pack.routes = this.createRoutesData(lockedRoutes);
     pack.cells.routes = this.buildLinks(pack.routes);
   }
 
@@ -563,10 +552,7 @@ class RoutesModule {
 
   // connect cell with routes system by land
   connect(cellId: number): Route | undefined {
-    const getCost = this.createCostEvaluator({
-      isWater: false,
-      connections: new Map()
-    });
+    const getCost = this.createCostEvaluator({ isWater: false });
     const isExit = (c: number) => isLand(c, pack) && this.isConnected(c);
     const pathCells = findPath(cellId, isExit, getCost, pack);
     if (!pathCells) return;
@@ -706,13 +692,26 @@ class RoutesModule {
       default: curveCatmullRom.alpha(0.1)
     };
     lineGen.curve(ROUTE_CURVES[group] || ROUTE_CURVES.default);
-    const path = round(lineGen(points.map(p => [p[0], p[1]])) as string, 1);
+    const path = round(lineGen(points.map(p => [p[0], p[1]]))!, 1);
     return path;
   }
 
   getLength(routeId: number): number {
     const path = routes.select(`#route${routeId}`).node() as SVGPathElement;
     return path.getTotalLength();
+  }
+
+  // run on map load to restore connections based on routes data
+  sync() {
+    this.connections = new Map();
+    for (const route of pack.routes) {
+      for (let i = 0; i < route.points.length - 1; i++) {
+        const cellId = route.points[i][2];
+        const nextCellId = route.points[i + 1][2];
+        this.connections.set(`${cellId}-${nextCellId}`, true);
+        this.connections.set(`${nextCellId}-${cellId}`, true);
+      }
+    }
   }
 }
 

@@ -71,6 +71,9 @@ let coastline = viewbox.append("g").attr("id", "coastline");
 let ice = viewbox.append("g").attr("id", "ice");
 let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
+let tradeAnimation = viewbox.append("g").attr("id", "tradeAnimation");
+tradeAnimation.append("g").attr("id", "trade-paths");
+tradeAnimation.append("g").attr("id", "trade-markers");
 let goods = viewbox.append("g").attr("id", "goods").style("display", "none");
 let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
 let icons = viewbox.append("g").attr("id", "icons");
@@ -79,9 +82,6 @@ let burgIcons = icons.append("g").attr("id", "burgIcons");
 let anchors = icons.append("g").attr("id", "anchors");
 let armies = viewbox.append("g").attr("id", "armies");
 let markers = viewbox.append("g").attr("id", "markers");
-let tradeAnimation = viewbox.append("g").attr("id", "tradeAnimation");
-tradeAnimation.append("g").attr("id", "trade-paths");
-tradeAnimation.append("g").attr("id", "trade-markers");
 let fogging = viewbox
   .append("g")
   .attr("id", "fogging-cont")
