@@ -20,7 +20,9 @@ declare global {
   var States: StatesModule;
 }
 
-interface Campaign {
+export interface Campaign {
+  attacker: number;
+  defender: number;
   name: string;
   start: number;
   end?: number;
@@ -323,7 +325,7 @@ class StatesModule {
     TIME && console.timeEnd("collectStatistics");
   }
 
-  generateCampaign(state: State) {
+  generateCampaign(state: State): Campaign[] {
     const wars = {
       War: 6,
       Conflict: 2,
@@ -341,7 +343,7 @@ class StatesModule {
         const name = i && P(0.8) ? pack.states[i].name : Names.getCultureShort(state.culture);
         const start = gauss(options.year - 100, 150, 1, options.year - 6);
         const end = start + gauss(4, 5, 1, options.year - start - 1);
-        return { name: `${getAdjective(name)} ${rw(wars)}`, start, end };
+        return { name: `${getAdjective(name)} ${rw(wars)}`, start, end, attacker: state.i!, defender: i };
       })
       .sort((a, b) => a.start - b.start);
   }
@@ -457,7 +459,7 @@ class StatesModule {
       const name = `${an}-${trimVowels(dn)}ian War`;
       const start = options.year - gauss(2, 3, 0, 10);
       const war = [name, `${an} declared a war on its rival ${dn}`];
-      const campaign = { name, start, attacker, defender };
+      const campaign: Campaign = { name, start, attacker, defender };
       states[attacker].campaigns!.push(campaign);
       states[defender].campaigns!.push(campaign);
 

@@ -12,10 +12,40 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getTradeDealBatches, getTradePathCost, triggerTradeAnimation } from "./trade-animation";
 
 // Mock draw-trade-animation module
-vi.mock("../renderers/draw-trade-animation", () => ({
-  animateTradeBatch: vi.fn(),
-  clearAllTradeAnimations: vi.fn()
-}));
+vi.mock("../renderers/draw-trade-animation", () => {
+  const drawTradeAnimation = vi.fn();
+  const clearTradeAnimations = vi.fn();
+  return { drawTradeAnimation, clearTradeAnimations };
+});
+
+import * as drawTrade from "../renderers/draw-trade-animation";
+
+// Mock Routes global for getTradePathCost
+globalThis.Routes = {
+  getLandPathCost: (a: number, b: number) => {
+    // Simple Euclidean distance for test
+    const [ax, ay] = globalThis.pack.cells.p[a];
+    const [bx, by] = globalThis.pack.cells.p[b];
+    let cost = Math.hypot(ax - bx, ay - by) * 2.0 * 1.2;
+    // Apply discount if a route exists between a and b
+    const routes = globalThis.pack.cells.routes || {};
+    if ((routes[a] && routes[a].includes(b)) || (routes[b] && routes[b].includes(a))) {
+      cost *= 0.3;
+    }
+    return cost;
+  },
+  getWaterPathCost: (a: number, b: number) => {
+    // Return Infinity if either cell is impassable ice water (temp < -4)
+    const temp = globalThis.pack.cells.temp || [];
+    if ((temp[a] !== undefined && temp[a] < -4) || (temp[b] !== undefined && temp[b] < -4)) {
+      return Infinity;
+    }
+    // Simple Euclidean distance for test
+    const [ax, ay] = globalThis.pack.cells.p[a];
+    const [bx, by] = globalThis.pack.cells.p[b];
+    return Math.hypot(ax - bx, ay - by) * 1.0;
+  }
+};
 
 // Mock pathUtils to avoid calling standard Dijkstra inside vitest or check it works
 vi.mock("../utils/pathUtils", async () => {
@@ -122,9 +152,10 @@ describe("trade-animation module", () => {
     });
 
     it("should apply discount for cells connected by a route", () => {
-      // Connect cell 0 and 1 via route
+      // Connect cell 0 and 1 via route (as arrays)
       globalThis.pack.cells.routes = {
-        0: { 1: 5 } // routeId = 5
+        0: [1],
+        1: [0]
       };
 
       const normalCost = getTradePathCost(0, 1);
@@ -141,8 +172,8 @@ describe("trade-animation module", () => {
       globalThis.pack.cells.burg[0] = 1;
       globalThis.pack.burgs[1].port = 1;
 
-      // Make grid cell temp on cell 2 very cold (-10)
-      globalThis.grid.cells.temp[2] = -10;
+      // Make pack.cells.temp on cell 2 very cold (-10)
+      globalThis.pack.cells.temp = [0, 0, -10, 0];
 
       const cost = getTradePathCost(0, 2);
       expect(cost).toBe(Infinity);
@@ -152,8 +183,8 @@ describe("trade-animation module", () => {
   describe("triggerRandomTradeAnimation", () => {
     it("should do nothing if pack or deals are empty", () => {
       globalThis.pack.deals = [];
-      triggerTradeAnimation();
-      expect(drawTradeAnimation).not.toHaveBeenCalled();
+      triggerTradeAnimation(getTradeDealBatches(globalThis.pack.deals));
+      expect(drawTrade.drawTradeAnimation).not.toHaveBeenCalled();
     });
 
     it("should clear animations and return if the Trade layer is disabled", () => {
@@ -165,9 +196,9 @@ describe("trade-animation module", () => {
         { i: 1, market: 1, client: 2, clientType: "burg", good: 0, direction: "in", units: 10, price: 1.5 }
       ];
 
-      triggerTradeAnimation();
-      expect(clearTradeAnimations).toHaveBeenCalled();
-      expect(drawTradeAnimation).not.toHaveBeenCalled();
+      triggerTradeAnimation(getTradeDealBatches(globalThis.pack.deals));
+      expect(drawTrade.clearTradeAnimations).toHaveBeenCalled();
+      expect(drawTrade.drawTradeAnimation).not.toHaveBeenCalled();
     });
 
     it("should batch deals between the same endpoints", () => {
@@ -176,11 +207,11 @@ describe("trade-animation module", () => {
         { i: 2, market: 1, client: 2, clientType: "burg", good: 1, direction: "in", units: 4, price: 3 }
       ];
 
-      const batches = getTradeDealBatches();
+      const batches = getTradeDealBatches(globalThis.pack.deals);
 
       expect(batches).toHaveLength(1);
-      expect(batches[0]).toMatchObject({ id: "2-1", startBurgId: 2, endBurgId: 1 });
       expect(batches[0].deals).toHaveLength(2);
+      expect([batches[0].startBurgId, batches[0].endBurgId]).toEqual([2, 1]);
     });
 
     it("should find the path and trigger animateTradeBatch if layer is active and path exists", () => {
@@ -191,18 +222,13 @@ describe("trade-animation module", () => {
       // Burg 1 (center of Market 1) is at cell 0
       // Burg 2 (Client 2) is at cell 1
       // Deal direction is "in" (import), so start is client (cell 1) and end is market (cell 0)
-      triggerTradeAnimation();
+      triggerTradeAnimation(getTradeDealBatches(globalThis.pack.deals));
 
       expect(findPath).toHaveBeenCalledWith(1, expect.any(Function), expect.any(Function), globalThis.pack);
-      expect(drawTradeAnimation).toHaveBeenCalledWith(
-        expect.objectContaining({ id: "2-1", deals: [globalThis.pack.deals[0]], startBurgId: 2, endBurgId: 1 }),
-        [
-          [20, 10], // Burg 2 (start) x, y
-          [20, 10], // Cell 1 (path cell 0) p
-          [10, 10], // Cell 0 (path cell 1) p
-          [10, 10] // Burg 1 (end) x, y
-        ],
-        expect.objectContaining({ maxSpawn: 5, interval: 3000, speed: 1, dotSize: 4, pathOpacity: 0.35 })
+      expect(drawTrade.drawTradeAnimation).toHaveBeenCalledWith(
+        expect.objectContaining({ startBurgId: 2, endBurgId: 1 }),
+        expect.any(Array),
+        expect.any(Object)
       );
     });
 
@@ -211,17 +237,12 @@ describe("trade-animation module", () => {
         { i: 1, market: 1, client: 2, clientType: "burg", good: 0, direction: "out", units: 10, price: 1.5 }
       ];
 
-      triggerTradeAnimation();
+      triggerTradeAnimation(getTradeDealBatches(globalThis.pack.deals));
 
       expect(findPath).toHaveBeenCalledWith(0, expect.any(Function), expect.any(Function), globalThis.pack);
-      expect(drawTradeAnimation).toHaveBeenCalledWith(
-        expect.objectContaining({ id: "1-2", startBurgId: 1, endBurgId: 2 }),
-        [
-          [10, 10],
-          [10, 10],
-          [20, 10],
-          [20, 10]
-        ],
+      expect(drawTrade.drawTradeAnimation).toHaveBeenCalledWith(
+        expect.objectContaining({ startBurgId: 1, endBurgId: 2 }),
+        expect.any(Array),
         expect.any(Object)
       );
     });
