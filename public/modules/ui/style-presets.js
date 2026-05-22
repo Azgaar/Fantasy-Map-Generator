@@ -5,7 +5,7 @@ const systemPresets = [
   "default",
   "ancient",
   "gloom",
-  "pale",
+  "pateia",
   "light",
   "watercolor",
   "clean",
@@ -40,7 +40,7 @@ async function applyStyleOnLoad() {
 }
 
 async function getStylePreset(desiredPreset) {
-  let presetToLoad = desiredPreset;
+  let presetToLoad = desiredPreset === "pale" ? "pateia" : desiredPreset;
 
   const isCustom = !systemPresets.includes(desiredPreset);
   if (isCustom) {

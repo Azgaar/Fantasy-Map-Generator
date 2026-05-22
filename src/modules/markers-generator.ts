@@ -114,17 +114,17 @@ class MarkersModule {
         px: 13,
         min: 10,
         each: 500,
-        multiplier: 1,
+        multiplier: 10,
         list: this.listVolcanoes.bind(this),
         add: this.addVolcano.bind(this)
       },
       {
         type: "hot-springs",
-        icon: "♨️",
+        icon: "🏝️",
         dy: 52,
         min: 30,
-        each: 1200,
-        multiplier: 1,
+        each: 200,
+        multiplier: 5,
         list: this.listHotSprings.bind(this),
         add: this.addHotSpring.bind(this)
       },
@@ -144,17 +144,28 @@ class MarkersModule {
         px: 13,
         min: 1,
         each: 15,
-        multiplier: 1,
+        multiplier: 25,
         list: this.listMines.bind(this),
         add: this.addMine.bind(this)
+      },
+      {
+        type: "gem-mines",
+        icon: "💎",
+        dx: 48,
+        px: 13,
+        min: 10,
+        each: 20,
+        multiplier: 5,
+        list: this.listGemMines.bind(this),
+        add: this.addGemMines.bind(this)
       },
       {
         type: "bridges",
         icon: "🌉",
         px: 14,
-        min: 1,
+        min: 10,
         each: 5,
-        multiplier: 1,
+        multiplier: 10,
         list: this.listBridges.bind(this),
         add: this.addBridge.bind(this)
       },
@@ -163,8 +174,8 @@ class MarkersModule {
         icon: "🍻",
         px: 14,
         min: 1,
-        each: 10,
-        multiplier: 1,
+        each: 100,
+        multiplier: 20,
         list: this.listInns.bind(this),
         add: this.addInn.bind(this)
       },
@@ -183,9 +194,9 @@ class MarkersModule {
         icon: "⟱",
         dy: 54,
         px: 16,
-        min: 1,
+        min: 10,
         each: 5,
-        multiplier: 1,
+        multiplier: 3,
         list: this.listWaterfalls.bind(this),
         add: this.addWaterfall.bind(this)
       },
@@ -193,8 +204,8 @@ class MarkersModule {
         type: "battlefields",
         icon: "⚔️",
         dy: 52,
-        min: 50,
-        each: 700,
+        min: 20,
+        each: 50,
         multiplier: 1,
         list: this.listBattlefields.bind(this),
         add: this.addBattlefield.bind(this)
@@ -204,9 +215,9 @@ class MarkersModule {
         icon: "🗝️",
         dy: 51,
         px: 13,
-        min: 30,
-        each: 200,
-        multiplier: 1,
+        min: 10,
+        each: 50,
+        multiplier: 7,
         list: this.listDungeons.bind(this),
         add: this.addDungeon.bind(this)
       },
@@ -214,9 +225,9 @@ class MarkersModule {
         type: "lake-monsters",
         icon: "🐉",
         dy: 48,
-        min: 2,
-        each: 10,
-        multiplier: 1,
+        min: 5,
+        each: 20,
+        multiplier: 5,
         list: this.listLakeMonsters.bind(this),
         add: this.addLakeMonster.bind(this)
       },
@@ -224,8 +235,8 @@ class MarkersModule {
         type: "sea-monsters",
         icon: "🦑",
         min: 50,
-        each: 700,
-        multiplier: 1,
+        each: 50,
+        multiplier: 10,
         list: this.listSeaMonsters.bind(this),
         add: this.addSeaMonster.bind(this)
       },
@@ -235,27 +246,38 @@ class MarkersModule {
         dy: 54,
         px: 13,
         min: 30,
-        each: 600,
-        multiplier: 1,
+        each: 60,
+        multiplier: 20,
         list: this.listHillMonsters.bind(this),
         add: this.addHillMonster.bind(this)
+      },
+      {
+        type: "Spiders",
+        icon: "🕷️",
+        dy: 54,
+        px: 13,
+        min: 10,
+        each: 60,
+        multiplier: 10,
+        list: this.listSpiders.bind(this),
+        add: this.addSpiders.bind(this)
       },
       {
         type: "sacred-mountains",
         icon: "🗻",
         dy: 48,
-        min: 1,
-        each: 5,
-        multiplier: 1,
+        min: 20,
+        each: 50,
+        multiplier: 30,
         list: this.listSacredMountains.bind(this),
         add: this.addSacredMountain.bind(this)
       },
       {
         type: "sacred-forests",
         icon: "🌳",
-        min: 30,
-        each: 1000,
-        multiplier: 1,
+        min: 20,
+        each: 200,
+        multiplier: 30,
         list: this.listSacredForests.bind(this),
         add: this.addSacredForest.bind(this)
       },
@@ -263,9 +285,9 @@ class MarkersModule {
         type: "sacred-pineries",
         icon: "🌲",
         px: 13,
-        min: 30,
-        each: 800,
-        multiplier: 1,
+        min: 10,
+        each: 100,
+        multiplier: 30,
         list: this.listSacredPineries.bind(this),
         add: this.addSacredPinery.bind(this)
       },
@@ -273,9 +295,9 @@ class MarkersModule {
         type: "sacred-palm-groves",
         icon: "🌴",
         px: 13,
-        min: 1,
+        min: 20,
         each: 100,
-        multiplier: 1,
+        multiplier: 5,
         list: this.listSacredPalmGroves.bind(this),
         add: this.addSacredPalmGrove.bind(this)
       },
@@ -285,7 +307,7 @@ class MarkersModule {
         px: 13,
         min: 50,
         each: 100,
-        multiplier: 1,
+        multiplier: 6,
         list: this.listBrigands.bind(this),
         add: this.addBrigands.bind(this)
       },
@@ -294,8 +316,8 @@ class MarkersModule {
         icon: "🏴‍☠️",
         dx: 51,
         min: 40,
-        each: 300,
-        multiplier: 1,
+        each: 100,
+        multiplier: 3,
         list: this.listPirates.bind(this),
         add: this.addPirates.bind(this)
       },
@@ -313,9 +335,18 @@ class MarkersModule {
         icon: "🏺",
         min: 80,
         each: 1200,
-        multiplier: 1,
+        multiplier: 5,
         list: this.listRuins.bind(this),
         add: this.addRuins.bind(this)
+      },
+      {
+        type: "citadel",
+        icon: "🏯",
+        min: 80,
+        each: 500,
+        multiplier: 10,
+        list: this.listCitadel.bind(this),
+        add: this.addCitadel.bind(this)
       },
       {
         type: "libraries",
@@ -341,7 +372,7 @@ class MarkersModule {
         dx: 48,
         min: 5,
         each: 500,
-        multiplier: 1,
+        multiplier: 2,
         list: this.listJousts.bind(this),
         add: this.addJoust.bind(this)
       },
@@ -357,9 +388,9 @@ class MarkersModule {
       {
         type: "canoes",
         icon: "🛶",
-        min: 500,
+        min: 1000,
         each: 2000,
-        multiplier: 1,
+        multiplier: 3,
         list: this.listCanoes.bind(this),
         add: this.addCanoe.bind(this)
       },
@@ -367,17 +398,17 @@ class MarkersModule {
         type: "migration",
         icon: "🐗",
         min: 20,
-        each: 1000,
-        multiplier: 1,
+        each: 150,
+        multiplier: 10,
         list: this.listMigrations.bind(this),
         add: this.addMigration.bind(this)
       },
       {
         type: "dances",
         icon: "💃🏽",
-        min: 50,
-        each: 1000,
-        multiplier: 1,
+        min: 5,
+        each: 60,
+        multiplier: 21,
         list: this.listDances.bind(this),
         add: this.addDances.bind(this)
       },
@@ -394,8 +425,8 @@ class MarkersModule {
         type: "caves",
         icon: "🦇",
         min: 60,
-        each: 1000,
-        multiplier: 1,
+        each: 200,
+        multiplier: 25,
         list: this.listCaves.bind(this),
         add: this.addCave.bind(this)
       },
@@ -403,9 +434,9 @@ class MarkersModule {
         type: "portals",
         icon: "🌀",
         px: 14,
-        min: 16,
-        each: 8,
-        multiplier: +isFantasy,
+        min: 20,
+        each: 58,
+        multiplier: 5,
         list: this.listPortals.bind(this),
         add: this.addPortal.bind(this)
       },
@@ -413,8 +444,8 @@ class MarkersModule {
         type: "rifts",
         icon: "🎆",
         min: 5,
-        each: 3000,
-        multiplier: +isFantasy,
+        each: 100,
+        multiplier: 15,
         list: this.listRifts.bind(this),
         add: this.addRift.bind(this)
       },
@@ -582,13 +613,190 @@ class MarkersModule {
       copper: 2,
       iron: 3,
       lead: 1,
-      tin: 1
+      tin: 1,
+      platinum: 1
     };
     const resource = rw(resources);
     const burg = pack.burgs[cells.burg[cell]];
     const name = `${burg.name} — ${resource} mining town`;
     const population = rn(burg.population! * populationRate * urbanization);
     const legend = `${burg.name} is a mining town of ${population} people just nearby the ${resource} mine.`;
+    notes.push({ id, name, legend });
+  }
+
+  private listGemMines({ cells }: PackedGraph) {
+    return cells.i.filter(i => !this.occupied[i] && cells.h[i] > 50 && !cells.burg[i]);
+  }
+
+  private addGemMines(id: string, cell: number) {
+    const { cells } = pack;
+
+    const resources = {
+      "Agni mani": 1,
+      Alamandine: 1,
+      Alestone: 1,
+      Alexandrite: 1,
+      Algae: 1,
+      Amaratha: 1,
+      Amber: 1,
+      Amethyst: 1,
+      Andar: 1,
+      Aquamarine: 1,
+      Aradite: 1,
+      Augelite: 1,
+      Aventurine: 1,
+      Azurite: 1,
+      "Banded agate": 1,
+      Beljuril: 1,
+      Beryl: 1,
+      Heliodor: 1,
+      "Black opal": 1,
+      "Black pearl": 1,
+      "Black sapphire": 1,
+      Bloodstone: 1,
+      "Blue quartz": 1,
+      "Blue sapphire": 1,
+      "Blue spinel": 1,
+      Bluestone: 1,
+      Boakhar: 1,
+      Brandeen: 1,
+      Carbuncle: 1,
+      Carnelian: 1,
+      Chalcedony: 1,
+      Chrysoberyl: 1,
+      Chrysocolla: 1,
+      Chrysolite: 1,
+      Chrysoprase: 1,
+      Citrine: 1,
+      Cleiophane: 1,
+      Corstal: 1,
+      Corundum: 1,
+      "Crown of silver": 1,
+      Cymophane: 1,
+      Datcha: 1,
+      Demontoid: 1,
+      Diamond: 1,
+      Diopside: 1,
+      Dioptase: 1,
+      Disthene: 1,
+      Emerald: 1,
+      Epidote: 1,
+      Essonite: 1,
+      Euclase: 1,
+      "Eye agate": 1,
+      "Fire agate": 1,
+      "Fire opal": 1,
+      Flamedance: 1,
+      Fluorite: 1,
+      "Frost agate": 1,
+      Garnet: 1,
+      Goldline: 1,
+      Greenstone: 1,
+      Hambergyle: 1,
+      Hematite: 1,
+      Hyacinth: 1,
+      Hyaline: 1,
+      Hyalite: 1,
+      Hydrophane: 1,
+      Hypersthene: 1,
+      Idicolite: 1,
+      Iolite: 1,
+      Irtios: 1,
+      Jacinth: 1,
+      Jade: 1,
+      Jargoon: 1,
+      Jasmal: 1,
+      Jasper: 1,
+      Jet: 1,
+      Kornerupine: 1,
+      Kunzite: 1,
+      "Lapis lazuli": 1,
+      Luriyl: 1,
+      "Lynx eye": 1,
+      Malachite: 1,
+      Malacon: 1,
+      Mellochrysos: 1,
+      Microcline: 1,
+      Moonbar: 1,
+      Moonstone: 1,
+      Morganite: 1,
+      "Moss agate": 1,
+      Mykaro: 1,
+      Mynteer: 1,
+      Nelvine: 1,
+      Nephrite: 1,
+      Nune: 1,
+      Obsidian: 1,
+      Octel: 1,
+      Olivine: 1,
+      Ooline: 1,
+      Onyx: 1,
+      Ophealine: 1,
+      Orbaline: 1,
+      Orblen: 1,
+      Orl: 1,
+      Orprase: 1,
+      Pearl: 1,
+      Peridot: 1,
+      Pyrope: 1,
+      Quartz: 1,
+      Raindrop: 1,
+      "Red Tears": 1,
+      Rhodochrosite: 1,
+      Rhodolite: 1,
+      Rhodonite: 1,
+      Rosaline: 1,
+      Rubellite: 1,
+      Ruby: 1,
+      Rusteen: 1,
+      Saganite: 1,
+      Samarskite: 1,
+      Sanidine: 1,
+      Sarbossa: 1,
+      Sardonyx: 1,
+      "Satin spar": 1,
+      Scapra: 1,
+      Serpentine: 1,
+      Shandon: 1,
+      Sharpstone: 1,
+      Silkstone: 1,
+      Sinhalite: 1,
+      Skydrop: 1,
+      Spessartite: 1,
+      Sphene: 1,
+      Spinel: 1,
+      "Star rose quarts": 1,
+      "Star ruby": 1,
+      "Star sapphire": 1,
+      Sunstone: 1,
+      Tabasheer: 1,
+      Tanzanite: 1,
+      Tchazar: 1,
+      Thupartial: 1,
+      "Tiger eye": 1,
+      Topaz: 1,
+      Tourmaline: 1,
+      Tremair: 1,
+      Turquoise: 1,
+      Ulvaen: 1,
+      Variscite: 1,
+      "Water opal": 1,
+      Waterstar: 1,
+      "White opal": 1,
+      Witherite: 1,
+      Wonderstone: 1,
+      Woodtine: 1,
+      "Yellow sapphire": 1,
+      Zarbrina: 1,
+      Zendalure: 1,
+      Ziose: 1,
+      Zircon: 1
+    };
+
+    const resource = rw(resources);
+    const toponym = Names.getCulture(cells.culture[cell]);
+    const name = `${toponym} — ${resource} mine`;
+    const legend = `${resource} mine`;
     notes.push({ id, name, legend });
   }
 
@@ -1090,6 +1298,50 @@ class MarkersModule {
     notes.push({ id, name, legend });
   }
 
+  private listSpiders({ cells }: PackedGraph) {
+    return cells.i.filter(i => !this.occupied[i] && cells.h[i] <= 50 && cells.h[i] >= 25 && cells.pop[i] <= 4);
+  }
+
+  private addSpiders(id: string, cell: number) {
+    const { cells } = pack;
+
+    const adjectives = ["prime", "proud", "fat", "hungry", "superior", "terrifying", "horrifying", "feared"];
+    const subjects = [
+      "Locals",
+      "Elders",
+      "Inscriptions",
+      "Tipplers",
+      "Legends",
+      "Whispers",
+      "Rumors",
+      "Journeying folk",
+      "Tales"
+    ];
+    const species = [
+      "Giant spider",
+      "Giant wolf spider",
+      "Mammoth spider",
+      "Phase spider",
+      "Sword spider",
+      "Giant scorpion",
+      "Mammoth scorpion"
+    ];
+    const modusOperandi = [
+      "steals goats at night",
+      "keeps the region at bay",
+      "terrorizes the region",
+      "harasses travelers in the area",
+      "attacks anyone who dares to approach its lair",
+      "attacks unsuspecting victims"
+    ];
+
+    const monster = ra(species);
+    const toponym = Names.getCulture(cells.culture[cell]);
+    const name = `${toponym} ${monster}`;
+    const legend = `${ra(subjects)} speak of a ${ra(adjectives)} ${monster} who inhabits ${toponym} and ${ra(modusOperandi)}.`;
+    notes.push({ id, name, legend });
+  }
+
   // Sacred mountains spawn on lonely mountains
   private listSacredMountains({ cells }: PackedGraph) {
     return cells.i.filter(
@@ -1304,6 +1556,28 @@ class MarkersModule {
     const ruinType = ra(types);
     const name = `Ruined ${ruinType}`;
     const legend = `Ruins of an ancient ${ruinType.toLowerCase()}. Untold riches may lie within.`;
+    notes.push({ id, name, legend });
+  }
+
+  private listCitadel({ cells }: PackedGraph) {
+    return cells.i.filter(i => !this.occupied[i] && cells.culture[i] && cells.h[i] >= 20 && Routes.isConnected(i));
+  }
+
+  private addCitadel(id: string, _cell: number) {
+    const adjectives = [
+      "Fantastical",
+      "Wondrous",
+      "Incomprehensible",
+      "Magical",
+      "Extraordinary",
+      "Unmissable",
+      "World-famous",
+      "Breathtaking"
+    ];
+
+    const adjective = ra(adjectives);
+    const name = `${adjective} Citadel`;
+    const legend = `This ${adjective.toLowerCase()} citadel radiates magic.`;
     notes.push({ id, name, legend });
   }
 

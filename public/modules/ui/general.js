@@ -102,7 +102,7 @@ function showNotes(e) {
     currentNoteId = id;
 
     document.getElementById("notes").style.display = "block";
-    document.getElementById("notesHeader").innerHTML = note.name;
+    document.getElementById("notesHeader").innerHTML = getNoteHeader(note);
     document.getElementById("notesBody").innerHTML = note.legend;
   } else if (!options.pinNotes && !markerEditor?.offsetParent && !e.shiftKey) {
     document.getElementById("notes").style.display = "none";
@@ -110,6 +110,16 @@ function showNotes(e) {
     document.getElementById("notesBody").innerHTML = "";
     currentNoteId = null;
   }
+}
+
+function getNoteHeader(note) {
+  const markerIdMatch = /^marker(\d+)$/.exec(note.id || "");
+  if (!markerIdMatch) return note.name;
+
+  const markerId = markerIdMatch[1];
+  const worldName = encodeURIComponent((mapName.value || "").trim());
+  const url = `https://howlingsails.com/world_vision/world/${worldName}/marker/${markerId}`;
+  return `<a href="${url}" target="_blank" rel="noopener noreferrer">${note.name}</a>`;
 }
 
 // show viewbox tooltip if main tooltip is blank

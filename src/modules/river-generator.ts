@@ -206,6 +206,9 @@ class RiverModule {
           // mark real confluences and assign river to cells
           if (cells.r[cell]) cells.conf[cell] = 1;
           else cells.r[cell] = riverId;
+          if (cells.s?.[cell]) {
+            cells.s[cell] *= 1.25;
+          }
         }
 
         const source = riverCells[0];

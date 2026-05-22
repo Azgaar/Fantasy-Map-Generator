@@ -9,14 +9,28 @@ function editBurg(id) {
   elSelected = burgLabels.select("[data-id='" + burg + "']");
   burgLabels.selectAll("text").call(d3.drag().on("start", dragBurgLabel)).classed("draggable", true);
   updateGroupsList();
-  updateBurgValues();
 
   $("#burgEditor").dialog({
     title: "Edit Burg",
-    resizable: false,
+    resizable: true,
+    width: $(window).width() * 0.6,
+    height: $(window).height() * 0.6,
+    resize: (_event, ui) => {
+      if (!ui?.size) return;
+      resizeBurgPreviewObject(ui.size.width, ui.size.height);
+    },
+    open: function () {
+      const widget = $(this).dialog("widget")?.[0];
+      if (!widget) return;
+
+      const {width, height} = widget.getBoundingClientRect();
+      resizeBurgPreviewObject(width, height);
+    },
     close: closeBurgEditor,
     position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"}
   });
+
+  updateBurgValues();
 
   if (modules.editBurg) return;
   modules.editBurg = true;
@@ -282,17 +296,37 @@ function editBurg(id) {
     container.innerHTML = "";
     const object = document.createElement("object");
     object.style.width = "100%";
-    object.style.maxWidth = "60vw";
-    object.style.maxHeight = "60vh";
+    object.style.maxWidth = "100%";
     object.data = preview;
     container.insertBefore(object, null);
+
+    const widget = $("#burgEditor").dialog("widget")?.[0];
+    if (widget) {
+      const {width, height} = widget.getBoundingClientRect();
+      resizeBurgPreviewObject(width, height);
+    }
+  }
+
+  function resizeBurgPreviewObject(dialogWidth, dialogHeight) {
+    const object = ensureEl("burgPreviewObject").querySelector("object");
+    if (!object) return;
+
+    const width = Math.max(320, dialogWidth - 24);
+    const height = Math.max(220, dialogHeight - 284);
+    object.style.width = `${width}px`;
+    object.style.height = `${height}px`;
+    object.style.maxHeight = `${height}px`;
   }
 
   function openBurgLink() {
     const id = +elSelected.attr("data-id");
-    const burg = pack.burgs[id];
-    const link = Burgs.getPreview(burg).link;
+    const link = getExternalBurgLink(id);
     if (link) openURL(link);
+  }
+
+  function getExternalBurgLink(id) {
+    const worldName = encodeURIComponent((mapName.value || "").trim());
+    return `https://howlingsails.com/world_vision/world/${worldName}/burg/${id}`;
   }
 
   function setCustomPreview() {

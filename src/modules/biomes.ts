@@ -40,7 +40,7 @@ class BiomesModule {
       "#d5e7eb",
       "#0b9131"
     ];
-    const habitability: number[] = [0, 4, 10, 22, 30, 50, 100, 80, 90, 12, 4, 0, 12];
+    const habitability: number[] = [0, 4, 10, 22, 30, 65, 100, 80, 90, 12, 4, 0, 35];
     const iconsDensity: number[] = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 250];
     const icons: Array<{ [key: string]: number }> = [
       {},

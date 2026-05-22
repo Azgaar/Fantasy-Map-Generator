@@ -429,7 +429,7 @@ function renderChart({id, entity, plotBy, groupBy, sorting, type}) {
   const {offset, formatX = formatTicks} = plotTypeMap[type];
 
   const $chart = createStackedBarChart(sortedData, {colors, tooltip, offset, formatX});
-  insertChart(id, sortedData, $chart, title);
+  insertChart(id, $chart, title);
 
   ensureEl("chartsOverview__charts").lastChild.scrollIntoView();
 }
@@ -565,7 +565,7 @@ function createStackedBarChart(sortedData, {colors, tooltip, offset, formatX}) {
   return svg.node();
 }
 
-function insertChart(id, sortedData, $chart, title) {
+function insertChart(id, $chart, title) {
   const $chartContainer = ensureEl("chartsOverview__charts");
 
   const $figure = document.createElement("figure");
@@ -577,8 +577,7 @@ function insertChart(id, sortedData, $chart, title) {
       <strong>Figure ${figureNo}</strong>. ${title}
     </div>
     <div>
-      <button data-tip="Download chart data as a text file (.csv)" class="icon-download"></button>
-      <button data-tip="Download the chart in svg format (can open in browser or Inkscape)" class="icon-chart-bar"></button>
+      <button data-tip="Download the chart in svg format (can open in browser or Inkscape)" class="icon-download"></button>
       <button data-tip="Remove the chart" class="icon-trash"></button>
     </div>
   `;
@@ -587,14 +586,7 @@ function insertChart(id, sortedData, $chart, title) {
   $figure.appendChild($caption);
   $chartContainer.appendChild($figure);
 
-  const downloadChartData = () => {
-    const name = `${getFileName(title)}.csv`;
-    const headers = "Name,Group,Value\n";
-    const values = sortedData.map(({name, group, value}) => `${name},${group},${value}`).join("\n");
-    downloadFile(headers + values, name);
-  };
-
-  const downloadChartSvg = () => {
+  const downloadChart = () => {
     const name = `${getFileName(title)}.svg`;
     downloadFile($chart.outerHTML, name);
   };
@@ -605,8 +597,7 @@ function insertChart(id, sortedData, $chart, title) {
     updateDialogPosition();
   };
 
-  $figure.querySelector("button.icon-download").on("click", downloadChartData);
-  $figure.querySelector("button.icon-chart-bar").on("click", downloadChartSvg);
+  $figure.querySelector("button.icon-download").on("click", downloadChart);
   $figure.querySelector("button.icon-trash").on("click", removeChart);
 }
 

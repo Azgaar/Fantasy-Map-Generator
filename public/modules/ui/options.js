@@ -650,6 +650,7 @@ function randomizeCultureSet() {
     english: 5,
     antique: 3,
     highFantasy: 11,
+    howlingSailsFantasy: 6,
     darkFantasy: 3,
     random: 1
   };

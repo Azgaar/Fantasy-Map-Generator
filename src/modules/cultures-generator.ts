@@ -763,6 +763,47 @@ class CulturesModule {
       ];
     }
 
+    if (culturesSet.value === "howlingSailsFantasy") {
+      return [
+        {
+          name: "Aeson (Elfish)",
+          base: 33,
+          odd: 2,
+          sort: (i: number) => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
+          shield: "gondor"
+        },
+        {
+          name: "Filvendor (Elfish)",
+          base: 33,
+          odd: 2,
+          sort: (i: number) => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
+          shield: "noldor"
+        },
+        { name: "Berrouk (Dwarven)", base: 35, odd: 1, sort: (i: number) => n(i) + h[i], shield: "ironHills" },
+        { name: "Runurum (Dwarven)", base: 35, odd: 2, sort: (i: number) => n(i) + h[i], shield: "erebor" },
+        { name: "Eberulf (Halfling)", base: 36, odd: 3, sort: (i: number) => t[i] - s[i], shield: "moriaOrc" },
+        { name: "Dugarod (Orkish)", base: 37, odd: 1, sort: (i: number) => h[i] * t[i], shield: "urukHai" },
+        {
+          name: "Surgug (Orkish)",
+          base: 37,
+          odd: 0.5,
+          sort: (i: number) => (h[i] * t[i]) / bd(i, [1, 2, 10, 11]),
+          shield: "moriaOrc"
+        },
+        { name: "Yanien (Human)", base: 32, odd: 3, sort: (i: number) => n(i) / td(i, 10), shield: "fantasy5" },
+        { name: "Lakitrius (Human)", base: 32, odd: 1, sort: (i: number) => n(i) / td(i, 13), shield: "roman" },
+        { name: "Chrisysios (Human)", base: 16, odd: 1, sort: (i: number) => n(i) / td(i, 16), shield: "round" },
+        {
+          name: "Philerus (Human)",
+          base: 31,
+          odd: 1,
+          sort: (i: number) => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i],
+          shield: "easterling"
+        },
+        { name: "Namur (Gnomish)", base: 16, odd: 3, sort: (i: number) => n(i) / td(i, 16), shield: "round" }
+      ];
+    }
+
     if (culturesSet.value === "random") {
       return range(count).map(() => {
         const rnd = rand(nameBases.length - 1);
