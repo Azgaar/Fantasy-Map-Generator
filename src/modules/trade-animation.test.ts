@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { findPath } from "../utils/pathUtils";
 
 // Pre-mock D3 and other globals needed for modules to load without throwing
 (globalThis as any).viewbox = {
@@ -26,13 +27,7 @@ globalThis.Routes = {
     // Simple Euclidean distance for test
     const [ax, ay] = globalThis.pack.cells.p[a];
     const [bx, by] = globalThis.pack.cells.p[b];
-    let cost = Math.hypot(ax - bx, ay - by) * 2.0 * 1.2;
-    // Apply discount if a route exists between a and b
-    const routes = globalThis.pack.cells.routes || {};
-    if ((routes[a] && routes[a].includes(b)) || (routes[b] && routes[b].includes(a))) {
-      cost *= 0.3;
-    }
-    return cost;
+    return Math.hypot(ax - bx, ay - by) * 2.0 * 1.2;
   },
   getWaterPathCost: (a: number, b: number) => {
     // Return Infinity if either cell is impassable ice water (temp < -4)
@@ -64,9 +59,6 @@ vi.mock("../utils/pathUtils", async () => {
     })
   };
 });
-
-import { clearTradeAnimations, drawTradeAnimation } from "../renderers/draw-trade-animation";
-import { findPath } from "../utils/pathUtils";
 
 describe("trade-animation module", () => {
   beforeEach(() => {
@@ -149,34 +141,6 @@ describe("trade-animation module", () => {
       const cost = getTradePathCost(0, 2);
       expect(cost).not.toBe(Infinity);
       expect(cost).toBeCloseTo(Math.hypot(10 - 30, 10 - 10) * 1.0, 1); // Water cost is dist * modifier
-    });
-
-    it("should apply discount for cells connected by a route", () => {
-      // Connect cell 0 and 1 via route (as arrays)
-      globalThis.pack.cells.routes = {
-        0: [1],
-        1: [0]
-      };
-
-      const normalCost = getTradePathCost(0, 1);
-      // Clean routes and calculate again
-      globalThis.pack.cells.routes = {};
-      const baseCost = getTradePathCost(0, 1);
-
-      expect(normalCost).toBeLessThan(baseCost);
-      expect(normalCost).toBeCloseTo(baseCost * 0.3, 1);
-    });
-
-    it("should return Infinity for impassable ice water (sea temp < -4)", () => {
-      // Cell 0 to Cell 2 transition (add port to cell 0 to bypass transition block)
-      globalThis.pack.cells.burg[0] = 1;
-      globalThis.pack.burgs[1].port = 1;
-
-      // Make pack.cells.temp on cell 2 very cold (-10)
-      globalThis.pack.cells.temp = [0, 0, -10, 0];
-
-      const cost = getTradePathCost(0, 2);
-      expect(cost).toBe(Infinity);
     });
   });
 

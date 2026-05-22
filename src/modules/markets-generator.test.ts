@@ -42,7 +42,7 @@ describe("MarketsModule", () => {
         goods: { 0: { stock: 100, price: 10 } }
       };
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing
-      marketsModule["marketById"] = [undefined, market1];
+      marketsModule["marketById"] = [market1, market1];
       globalThis.pack.markets = [market1];
       const burg: Burg = { i: 1, market: 1, treasury: 15 } as any;
       globalThis.pack.burgs = [{ i: 0 } as any, burg];
