@@ -118,7 +118,7 @@ class RiverModule {
         } else if (cells.haven[i]) {
           min = cells.haven[i];
         } else {
-          min = cells.c[i].sort((a: number, b: number) => h[a] - h[b])[0];
+          min = cells.c[i].reduce((minCell, c) => h[c] < h[minCell] ? c : minCell);
         }
 
         // cells is depressed
