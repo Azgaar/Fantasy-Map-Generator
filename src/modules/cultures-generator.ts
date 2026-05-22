@@ -1296,6 +1296,7 @@ class CulturesModule {
     while (queue.length) {
       const { cellId, priority, cultureId } = queue.pop();
       const { type, expansionism } = cultures[cultureId];
+      const sourceBiome = cells.biome[cellId];
 
       cells.c[cellId].forEach(neibCellId => {
         if (hasLocked) {
@@ -1303,9 +1304,9 @@ class CulturesModule {
           if (neibCultureId && cultures[neibCultureId].lock) return; // do not overwrite cell of locked culture
         }
 
-        const biome = cells.biome[neibCellId];
-        const biomeCost = getBiomeCost(cultureId, biome, type as string);
-        const biomeChangeCost = biome === cells.biome[neibCellId] ? 0 : 20; // penalty on biome change
+        const targetBiome = cells.biome[neibCellId];
+        const biomeCost = getBiomeCost(cultureId, targetBiome, type as string);
+        const biomeChangeCost = sourceBiome === targetBiome ? 0 : 20; // penalty on biome change
         const heightCost = getHeightCost(neibCellId, cells.h[neibCellId], type as string);
         const riverCost = getRiverCost(cells.r[neibCellId], neibCellId, type as string);
         const typeCost = getTypeCost(cells.t[neibCellId], type as string);
