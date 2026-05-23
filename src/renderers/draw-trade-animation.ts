@@ -90,12 +90,36 @@ export function clearTradeAnimations(): void {
   tradeAnimation.select("g#trade-markers").selectAll("*").interrupt().remove();
 }
 
+export function drawTradeHighlight(batch: TradeBatch): void {
+  const pathData = TradeAnimation.getPath(batch);
+  if (!pathData) return;
+
+  const highlightGroup = tradeAnimation.select("g#trade-highlight");
+  highlightGroup.selectAll("*").remove();
+  highlightGroup
+    .append("path")
+    .attr("d", lineGen(pathData.points))
+    .attr("fill", "none")
+    .attr("stroke", "#cc1111")
+    .attr("stroke-width", 0.5)
+    .attr("stroke-opacity", 0.7)
+    .attr("stroke-linecap", "round");
+}
+
+export function clearTradeHighlight(): void {
+  tradeAnimation.select("g#trade-highlight").selectAll("*").remove();
+}
+
 declare global {
   interface Window {
     drawTradeAnimation: typeof drawTradeAnimation;
     clearTradeAnimations: typeof clearTradeAnimations;
+    drawTradeHighlight: typeof drawTradeHighlight;
+    clearTradeHighlight: typeof clearTradeHighlight;
   }
 }
 
 window.drawTradeAnimation = drawTradeAnimation;
 window.clearTradeAnimations = clearTradeAnimations;
+window.drawTradeHighlight = drawTradeHighlight;
+window.clearTradeHighlight = clearTradeHighlight;

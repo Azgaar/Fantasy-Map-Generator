@@ -8,46 +8,6 @@ import type { Point } from "./voronoi";
 const MAX_INTERVAL = 3000;
 const MAX_SPAWN = 5;
 
-let animationInterval: number | null = null;
-export function startTradeAnimationLoop(): void {
-  if (animationInterval || !layerIsOn("toggleTradeAnimation")) return;
-  const batches = getTradeDealBatches(pack.deals);
-  if (batches.length === 0) return;
-
-  spawnTradeAnimations(batches);
-  animationInterval = window.setInterval(() => spawnTradeAnimations(batches), MAX_INTERVAL);
-}
-
-export function stopTradeAnimationLoop(): void {
-  if (animationInterval) {
-    clearInterval(animationInterval);
-    animationInterval = null;
-  }
-  clearTradeAnimations();
-}
-
-export function restartTradeAnimationLoop(): void {
-  stopTradeAnimationLoop();
-  startTradeAnimationLoop();
-}
-
-export function syncTradeAnimationLoop(): void {
-  if (layerIsOn("toggleTradeAnimation")) startTradeAnimationLoop();
-  else stopTradeAnimationLoop();
-}
-
-function spawnTradeAnimations(batches: TradeBatch[]): void {
-  if (!layerIsOn("toggleTradeAnimation")) {
-    stopTradeAnimationLoop();
-    return;
-  }
-
-  const spawnCount = rand(1, MAX_SPAWN);
-  for (let i = 0; i < spawnCount; i++) {
-    triggerTradeAnimation(batches);
-  }
-}
-
 export type TradeBatch = {
   id: string;
   deals: Deal[];
@@ -55,127 +15,166 @@ export type TradeBatch = {
   endBurgId: number;
 };
 
-export function getTradeDealBatches(deals: Deal[]): TradeBatch[] {
-  const batches = new Map<string, TradeBatch>();
+export class TradeAnimationModule {
+  private animationInterval: number | null = null;
 
-  for (const deal of deals) {
-    const endpoints = getDealEndpoints(deal);
-    if (!endpoints || endpoints.start.cell === endpoints.end.cell) continue;
-    if (!endpoints.start.i || !endpoints.end.i) continue;
+  start(): void {
+    if (this.animationInterval || !layerIsOn("toggleTradeAnimation")) return;
+    const batches = this.getDealBatches(pack.deals);
+    if (batches.length === 0) return;
 
-    const startBurgId = endpoints.start.i;
-    const endBurgId = endpoints.end.i;
-    const key = `${startBurgId}-${endBurgId}`;
-    const batch = batches.get(key);
-    if (batch) batch.deals.push(deal);
-    else batches.set(key, { id: key, deals: [deal], startBurgId, endBurgId });
+    this.spawnAnimations(batches);
+    this.animationInterval = window.setInterval(() => this.spawnAnimations(batches), MAX_INTERVAL);
   }
 
-  return Array.from(batches.values());
-}
-
-function getDealEndpoints(deal: Deal): { start: Burg; end: Burg } | null {
-  const market = Markets.get(deal.market);
-  if (!market) return null;
-
-  const marketBurg = pack.burgs[market.centerBurgId];
-  if (!marketBurg) return null;
-
-  const clientBurgId = deal.clientType === "burg" ? deal.client : Markets.get(deal.client)?.centerBurgId;
-  if (!clientBurgId) return null;
-  const clientBurg = pack.burgs[clientBurgId];
-  if (!clientBurg) return null;
-
-  return deal.direction === "in" ? { start: clientBurg, end: marketBurg } : { start: marketBurg, end: clientBurg };
-}
-
-export function triggerTradeAnimation(batches: TradeBatch[]): void {
-  if (!layerIsOn("toggleTradeAnimation")) {
+  stop(): void {
+    if (this.animationInterval) {
+      clearInterval(this.animationInterval);
+      this.animationInterval = null;
+    }
     clearTradeAnimations();
-    return;
   }
 
-  const batch = ra(batches);
-  if (!batch) return;
+  restart(): void {
+    this.stop();
+    this.start();
+  }
 
-  const startBurg = pack.burgs[batch.startBurgId];
-  const endBurg = pack.burgs[batch.endBurgId];
-  if (!startBurg || !endBurg) return;
+  sync(): void {
+    if (layerIsOn("toggleTradeAnimation")) this.start();
+    else this.stop();
+  }
 
-  const pathCells = findPath(startBurg.cell, cellId => cellId === endBurg.cell, getTradePathCost, pack);
-  if (!pathCells || pathCells.length < 2) return;
+  trigger(batches: TradeBatch[]): void {
+    if (!layerIsOn("toggleTradeAnimation")) {
+      clearTradeAnimations();
+      return;
+    }
 
-  const getPoint = (cellId: number): Point => {
-    const burg = pack.burgs[pack.cells.burg[cellId]];
-    return burg ? [burg.x, burg.y] : pack.cells.p[cellId];
-  };
+    const batch = ra(batches);
+    if (!batch) return;
 
-  // split path into land/water segments
-  const isLand = (cellId: number): boolean => pack.cells.h[cellId] >= 20;
-  type Segment = "land" | "water";
-  let currentType: Segment = isLand(pathCells[0]) && isLand(pathCells[1]) ? "land" : "water";
-  let currentPoints: Point[] = [getPoint(pathCells[0])];
-  const points: Point[] = [];
-  const segments: { type: Segment; points: Point[] }[] = [];
+    const pathData = this.getPath(batch);
+    if (!pathData) return;
 
-  for (let i = 0; i < pathCells.length; i++) {
-    const curr = pathCells[i];
-    const point = getPoint(curr);
-    points.push(point);
-    if (i === 0) continue;
+    drawTradeAnimation(batch, pathData.points, pathData.segments);
+  }
 
-    const prev = pathCells[i - 1];
-    const edge: Segment = isLand(prev) && isLand(curr) ? "land" : "water";
-    if (edge !== currentType) {
-      segments.push({ type: currentType, points: currentPoints });
-      currentPoints = [getPoint(prev), point];
-      currentType = edge;
-    } else {
-      currentPoints.push(point);
+  getPath(batch: TradeBatch): { points: Point[]; segments: { type: "land" | "water"; points: Point[] }[] } | null {
+    const startBurg = pack.burgs[batch.startBurgId];
+    const endBurg = pack.burgs[batch.endBurgId];
+    if (!startBurg || !endBurg) return null;
+
+    const pathCells = findPath(
+      startBurg.cell,
+      cellId => cellId === endBurg.cell,
+      (a, b) => this.getPathCost(a, b),
+      pack
+    );
+    if (!pathCells || pathCells.length < 2) return null;
+
+    const getPoint = (cellId: number): Point => {
+      const burg = pack.burgs[pack.cells.burg[cellId]];
+      return burg ? [burg.x, burg.y] : pack.cells.p[cellId];
+    };
+
+    const isLand = (cellId: number): boolean => pack.cells.h[cellId] >= 20;
+    type Segment = "land" | "water";
+    let currentType: Segment = isLand(pathCells[0]) && isLand(pathCells[1]) ? "land" : "water";
+    let currentPoints: Point[] = [getPoint(pathCells[0])];
+    const points: Point[] = [];
+    const segments: { type: Segment; points: Point[] }[] = [];
+
+    for (let i = 0; i < pathCells.length; i++) {
+      const curr = pathCells[i];
+      const point = getPoint(curr);
+      points.push(point);
+      if (i === 0) continue;
+
+      const prev = pathCells[i - 1];
+      const edge: Segment = isLand(prev) && isLand(curr) ? "land" : "water";
+      if (edge !== currentType) {
+        segments.push({ type: currentType, points: currentPoints });
+        currentPoints = [getPoint(prev), point];
+        currentType = edge;
+      } else {
+        currentPoints.push(point);
+      }
+    }
+    segments.push({ type: currentType, points: currentPoints });
+
+    return { points, segments };
+  }
+
+  getDealBatches(deals: Deal[]): TradeBatch[] {
+    const batches = new Map<string, TradeBatch>();
+
+    for (const deal of deals) {
+      const endpoints = this.getDealEndpoints(deal);
+      if (!endpoints || endpoints.start.cell === endpoints.end.cell) continue;
+      if (!endpoints.start.i || !endpoints.end.i) continue;
+
+      const startBurgId = endpoints.start.i;
+      const endBurgId = endpoints.end.i;
+      const key = `${startBurgId}-${endBurgId}`;
+      const batch = batches.get(key);
+      if (batch) batch.deals.push(deal);
+      else batches.set(key, { id: key, deals: [deal], startBurgId, endBurgId });
+    }
+
+    return Array.from(batches.values());
+  }
+
+  getPathCost(current: number, next: number): number {
+    const hCurrent = pack.cells.h[current];
+    const hNext = pack.cells.h[next];
+
+    const isWater = hCurrent < 20;
+    const toBeWater = hNext < 20;
+
+    if (isWater !== toBeWater) {
+      const currentBurgId = pack.cells.burg[current];
+      const nextBurgId = pack.cells.burg[next];
+      const currentBurg = currentBurgId ? pack.burgs[currentBurgId] : null;
+      const nextBurg = nextBurgId ? pack.burgs[nextBurgId] : null;
+
+      const isPortTransition = currentBurg?.port || nextBurg?.port;
+      if (!isPortTransition) return Infinity;
+    }
+
+    return toBeWater ? Routes.getWaterPathCost(current, next) : Routes.getLandPathCost(current, next);
+  }
+
+  private spawnAnimations(batches: TradeBatch[]): void {
+    if (!layerIsOn("toggleTradeAnimation")) {
+      this.stop();
+      return;
+    }
+
+    const spawnCount = rand(1, MAX_SPAWN);
+    for (let i = 0; i < spawnCount; i++) {
+      this.trigger(batches);
     }
   }
-  segments.push({ type: currentType, points: currentPoints });
 
-  drawTradeAnimation(batch, points, segments);
-}
+  private getDealEndpoints(deal: Deal): { start: Burg; end: Burg } | null {
+    const market = Markets.get(deal.market);
+    if (!market) return null;
 
-export function getTradePathCost(current: number, next: number): number {
-  const hCurrent = pack.cells.h[current];
-  const hNext = pack.cells.h[next];
+    const marketBurg = pack.burgs[market.centerBurgId];
+    if (!marketBurg) return null;
 
-  const isWater = hCurrent < 20;
-  const toBeWater = hNext < 20;
+    const clientBurgId = deal.clientType === "burg" ? deal.client : Markets.get(deal.client)?.centerBurgId;
+    if (!clientBurgId) return null;
+    const clientBurg = pack.burgs[clientBurgId];
+    if (!clientBurg) return null;
 
-  // Land-water transitions are only allowed via a port
-  if (isWater !== toBeWater) {
-    const currentBurgId = pack.cells.burg[current];
-    const nextBurgId = pack.cells.burg[next];
-    const currentBurg = currentBurgId ? pack.burgs[currentBurgId] : null;
-    const nextBurg = nextBurgId ? pack.burgs[nextBurgId] : null;
-
-    const isPortTransition = currentBurg?.port || nextBurg?.port;
-    if (!isPortTransition) return Infinity;
+    return deal.direction === "in" ? { start: clientBurg, end: marketBurg } : { start: marketBurg, end: clientBurg };
   }
-
-  return toBeWater ? Routes.getWaterPathCost(current, next) : Routes.getLandPathCost(current, next);
 }
 
 declare global {
-  interface Window {
-    TradeAnimation: {
-      trigger: typeof triggerTradeAnimation;
-      start: typeof startTradeAnimationLoop;
-      stop: typeof stopTradeAnimationLoop;
-      restart: typeof restartTradeAnimationLoop;
-      sync: typeof syncTradeAnimationLoop;
-    };
-  }
+  var TradeAnimation: TradeAnimationModule;
 }
 
-window.TradeAnimation = {
-  trigger: triggerTradeAnimation,
-  start: startTradeAnimationLoop,
-  stop: stopTradeAnimationLoop,
-  restart: restartTradeAnimationLoop,
-  sync: syncTradeAnimationLoop
-};
+window.TradeAnimation = new TradeAnimationModule();

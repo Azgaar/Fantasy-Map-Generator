@@ -1,214 +1,171 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { findPath } from "../utils/pathUtils";
 
-// Pre-mock D3 and other globals needed for modules to load without throwing
-(globalThis as any).viewbox = {
-  select: () => ({
-    empty: () => true,
-    append: () => ({ attr: () => ({ append: () => ({ attr: () => ({ attr: () => ({ attr: () => ({}) }) }) }) }) })
-  })
-};
-(globalThis as any).layerIsOn = () => true;
+vi.mock("../renderers/draw-trade-animation", () => ({
+  drawTradeAnimation: vi.fn(),
+  clearTradeAnimations: vi.fn(),
+  drawTradeHighlight: vi.fn(),
+  clearTradeHighlight: vi.fn()
+}));
 
-import { getTradeDealBatches, getTradePathCost, triggerTradeAnimation } from "./trade-animation";
-
-// Mock draw-trade-animation module
-vi.mock("../renderers/draw-trade-animation", () => {
-  const drawTradeAnimation = vi.fn();
-  const clearTradeAnimations = vi.fn();
-  return { drawTradeAnimation, clearTradeAnimations };
+vi.mock("../utils/pathUtils", async importOriginal => {
+  const actual = await importOriginal<typeof import("../utils/pathUtils")>();
+  return { ...actual, findPath: vi.fn() };
 });
 
 import * as drawTrade from "../renderers/draw-trade-animation";
+import { findPath } from "../utils/pathUtils";
+import { TradeAnimationModule } from "./trade-animation";
 
-// Mock Routes global for getTradePathCost
-globalThis.Routes = {
-  getLandPathCost: (a: number, b: number) => {
-    // Simple Euclidean distance for test
-    const [ax, ay] = globalThis.pack.cells.p[a];
-    const [bx, by] = globalThis.pack.cells.p[b];
-    return Math.hypot(ax - bx, ay - by) * 2.0 * 1.2;
-  },
-  getWaterPathCost: (a: number, b: number) => {
-    // Return Infinity if either cell is impassable ice water (temp < -4)
-    const temp = globalThis.pack.cells.temp || [];
-    if ((temp[a] !== undefined && temp[a] < -4) || (temp[b] !== undefined && temp[b] < -4)) {
-      return Infinity;
-    }
-    // Simple Euclidean distance for test
-    const [ax, ay] = globalThis.pack.cells.p[a];
-    const [bx, by] = globalThis.pack.cells.p[b];
-    return Math.hypot(ax - bx, ay - by) * 1.0;
-  }
-};
+// ─── helpers ────────────────────────────────────────────────────────────────
 
-// Mock pathUtils to avoid calling standard Dijkstra inside vitest or check it works
-vi.mock("../utils/pathUtils", async () => {
-  const actual = await vi.importActual<typeof import("../utils/pathUtils")>("../utils/pathUtils");
+function makePack() {
   return {
-    ...actual,
-    findPath: vi.fn((start, isExit, getCost) => {
-      const end = [0, 1, 2, 3].find(cellId => isExit(cellId));
-      if (end === undefined) return null;
-
-      // Return a dummy path of 2 cells if passable, else null
-      if (getCost(start, end) === Infinity) {
-        return null;
-      }
-      return [start, end];
-    })
+    cells: {
+      h: [20, 20, 10, 10], // 0,1 = land (≥20); 2,3 = water (<20)
+      burg: [0, 0, 0, 0],
+      p: [
+        [0, 0],
+        [10, 0],
+        [20, 0],
+        [30, 0]
+      ] as [number, number][]
+    },
+    burgs: [
+      null,
+      { i: 1, name: "Alpha", cell: 0, x: 0, y: 0, port: 0 },
+      { i: 2, name: "Beta", cell: 1, x: 10, y: 0, port: 0 }
+    ]
   };
+}
+
+// ─── shared setup ───────────────────────────────────────────────────────────
+
+let ta: TradeAnimationModule;
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  ta = new TradeAnimationModule();
+  globalThis.pack = makePack() as any;
+  globalThis.layerIsOn = vi.fn(() => true);
+  globalThis.Routes = {
+    getLandPathCost: vi.fn(() => 5),
+    getWaterPathCost: vi.fn(() => 3)
+  };
+  globalThis.Markets = {
+    get: vi.fn((id: number) => {
+      if (id === 1) return { centerBurgId: 1 } as any;
+      if (id === 2) return { centerBurgId: 2 } as any;
+      return undefined;
+    })
+  } as any;
 });
 
-describe("trade-animation module", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.stubGlobal("document", { getElementById: (id: string) => (id === "toggleTradeAnimation" ? {} : null) });
+// ─── getPathCost ─────────────────────────────────────────────────────────────
 
-    // Reset globals
-    globalThis.pack = {
-      cells: {
-        h: [20, 20, 15, 15], // cells 0, 1 are land (>=20), cells 2, 3 are ocean (<20)
-        burg: [0, 0, 0, 0], // no burgs by default
-        p: [
-          [10, 10],
-          [20, 10],
-          [30, 10],
-          [40, 10]
-        ],
-        biome: [1, 1, 1, 1],
-        g: [0, 1, 2, 3],
-        routes: {}
-      },
-      burgs: [
-        { i: 0 },
-        { i: 1, name: "Burg A", cell: 0, x: 10, y: 10, port: 0 },
-        { i: 2, name: "Burg B", cell: 1, x: 20, y: 10, port: 0 }
-      ],
-      goods: [
-        { i: 0, name: "Salt", color: "#ccc", icon: "salt-icon" },
-        { i: 1, name: "Iron", color: "#999", icon: "iron-icon" }
-      ],
-      deals: []
-    } as any;
-
-    globalThis.grid = {
-      cells: {
-        temp: [20, 20, 20, 20] // sea temp = 20 (warm) by default
-      }
-    } as any;
-
-    globalThis.biomesData = {
-      habitability: [0, 100, 100, 100] // biome 1 has habitability 100
-    } as any;
-
-    globalThis.Goods = {
-      get: vi.fn(id => globalThis.pack.goods[id]),
-      getStroke: vi.fn(() => "#000")
-    } as any;
-
-    globalThis.Markets = {
-      get: vi.fn(id => {
-        if (id === 1) return { i: 1, centerBurgId: 1 };
-        if (id === 2) return { i: 2, centerBurgId: 2 };
-        return null;
-      })
-    } as any;
-
-    globalThis.layerIsOn = vi.fn(() => true);
+describe("getPathCost", () => {
+  it("delegates to getLandPathCost for land-to-land", () => {
+    expect(ta.getPathCost(0, 1)).toBe(5);
+    expect(globalThis.Routes.getLandPathCost).toHaveBeenCalledWith(0, 1);
   });
 
-  describe("getTradePathCost", () => {
-    it("should calculate standard Euclidean distance cost for land-to-land travel", () => {
-      // Cell 0 and 1 are land (height 20), dist = 10
-      const cost = getTradePathCost(0, 1);
-      expect(cost).toBeCloseTo(10 * 1.0 * 2.0 * 1.0 * 1.2, 1);
-    });
-
-    it("should restrict transition between land and water if no port exists", () => {
-      // Cell 1 is land, Cell 2 is water. Neither has a port burg.
-      const cost = getTradePathCost(1, 2);
-      expect(cost).toBe(Infinity);
-    });
-
-    it("should allow transition between land and water if a port exists on the land cell", () => {
-      // Set port to Burg 1 which is on cell 0
-      globalThis.pack.cells.burg[0] = 1;
-      globalThis.pack.burgs[1].port = 1;
-
-      // Cell 0 is land (height 20) with a port, Cell 2 is water (height 15).
-      // Transition is allowed.
-      const cost = getTradePathCost(0, 2);
-      expect(cost).not.toBe(Infinity);
-      expect(cost).toBeCloseTo(Math.hypot(10 - 30, 10 - 10) * 1.0, 1); // Water cost is dist * modifier
-    });
+  it("delegates to getWaterPathCost for water-to-water", () => {
+    expect(ta.getPathCost(2, 3)).toBe(3);
+    expect(globalThis.Routes.getWaterPathCost).toHaveBeenCalledWith(2, 3);
   });
 
-  describe("triggerRandomTradeAnimation", () => {
-    it("should do nothing if pack or deals are empty", () => {
-      globalThis.pack.deals = [];
-      triggerTradeAnimation(getTradeDealBatches(globalThis.pack.deals));
-      expect(drawTrade.drawTradeAnimation).not.toHaveBeenCalled();
-    });
+  it("returns Infinity for land↔water without a port", () => {
+    expect(ta.getPathCost(0, 2)).toBe(Infinity);
+    expect(ta.getPathCost(2, 0)).toBe(Infinity);
+  });
 
-    it("should clear animations and return if the Trade layer is disabled", () => {
-      globalThis.layerIsOn = vi.fn(layer => {
-        if (layer === "toggleTradeAnimation") return false;
-        return true;
-      });
-      globalThis.pack.deals = [
-        { i: 1, market: 1, client: 2, clientType: "burg", good: 0, direction: "in", units: 10, price: 1.5 }
-      ];
+  it("allows land↔water transition when a port burg is on the boundary cell", () => {
+    globalThis.pack.cells.burg[0] = 1;
+    globalThis.pack.burgs[1].port = 1;
+    expect(ta.getPathCost(0, 2)).not.toBe(Infinity);
+  });
+});
 
-      triggerTradeAnimation(getTradeDealBatches(globalThis.pack.deals));
-      expect(drawTrade.clearTradeAnimations).toHaveBeenCalled();
-      expect(drawTrade.drawTradeAnimation).not.toHaveBeenCalled();
-    });
+// ─── getDealBatches ───────────────────────────────────────────────────────────
 
-    it("should batch deals between the same endpoints", () => {
-      globalThis.pack.deals = [
-        { i: 1, market: 1, client: 2, clientType: "burg", good: 0, direction: "in", units: 10, price: 1.5 },
-        { i: 2, market: 1, client: 2, clientType: "burg", good: 1, direction: "in", units: 4, price: 3 }
-      ];
+describe("getDealBatches", () => {
+  it("returns an empty array for no deals", () => {
+    expect(ta.getDealBatches([])).toEqual([]);
+  });
 
-      const batches = getTradeDealBatches(globalThis.pack.deals);
+  it("groups multiple deals between the same burg pair into one batch", () => {
+    const deals: any[] = [
+      { market: 1, client: 2, clientType: "burg", direction: "in" },
+      { market: 1, client: 2, clientType: "burg", direction: "in" }
+    ];
+    const batches = ta.getDealBatches(deals);
+    expect(batches).toHaveLength(1);
+    expect(batches[0].deals).toHaveLength(2);
+    expect(batches[0].startBurgId).toBe(2);
+    expect(batches[0].endBurgId).toBe(1);
+  });
 
-      expect(batches).toHaveLength(1);
-      expect(batches[0].deals).toHaveLength(2);
-      expect([batches[0].startBurgId, batches[0].endBurgId]).toEqual([2, 1]);
-    });
+  it("creates separate batches for different directions on the same pair", () => {
+    // "in" → client→market (2→1); "out" → market→client (1→2) — different keys
+    const deals: any[] = [
+      { market: 1, client: 2, clientType: "burg", direction: "in" },
+      { market: 1, client: 2, clientType: "burg", direction: "out" }
+    ];
+    expect(ta.getDealBatches(deals)).toHaveLength(2);
+  });
 
-    it("should find the path and trigger animateTradeBatch if layer is active and path exists", () => {
-      globalThis.pack.deals = [
-        { i: 1, market: 1, client: 2, clientType: "burg", good: 0, direction: "in", units: 10, price: 1.5 }
-      ];
+  it("skips deals whose market cannot be resolved", () => {
+    const deals: any[] = [{ market: 99, client: 2, clientType: "burg", direction: "in" }];
+    expect(ta.getDealBatches(deals)).toHaveLength(0);
+  });
+});
 
-      // Burg 1 (center of Market 1) is at cell 0
-      // Burg 2 (Client 2) is at cell 1
-      // Deal direction is "in" (import), so start is client (cell 1) and end is market (cell 0)
-      triggerTradeAnimation(getTradeDealBatches(globalThis.pack.deals));
+// ─── getPath ─────────────────────────────────────────────────────────────────
 
-      expect(findPath).toHaveBeenCalledWith(1, expect.any(Function), expect.any(Function), globalThis.pack);
-      expect(drawTrade.drawTradeAnimation).toHaveBeenCalledWith(
-        expect.objectContaining({ startBurgId: 2, endBurgId: 1 }),
-        expect.any(Array),
-        expect.any(Object)
-      );
-    });
+describe("getPath", () => {
+  it("returns null when a burg does not exist", () => {
+    expect(ta.getPath({ id: "1-99", deals: [], startBurgId: 1, endBurgId: 99 })).toBeNull();
+  });
 
-    it("should animate export deals from market to client", () => {
-      globalThis.pack.deals = [
-        { i: 1, market: 1, client: 2, clientType: "burg", good: 0, direction: "out", units: 10, price: 1.5 }
-      ];
+  it("returns null when no path is found", () => {
+    vi.mocked(findPath).mockReturnValue(null);
+    expect(ta.getPath({ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2 })).toBeNull();
+  });
 
-      triggerTradeAnimation(getTradeDealBatches(globalThis.pack.deals));
+  it("returns points and segments when a path is found", () => {
+    vi.mocked(findPath).mockReturnValue([0, 1]); // both land cells
+    const result = ta.getPath({ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2 });
+    expect(result).not.toBeNull();
+    expect(result!.points).toHaveLength(2);
+    expect(result!.segments).toHaveLength(1);
+    expect(result!.segments[0].type).toBe("land");
+  });
+});
 
-      expect(findPath).toHaveBeenCalledWith(0, expect.any(Function), expect.any(Function), globalThis.pack);
-      expect(drawTrade.drawTradeAnimation).toHaveBeenCalledWith(
-        expect.objectContaining({ startBurgId: 1, endBurgId: 2 }),
-        expect.any(Array),
-        expect.any(Object)
-      );
-    });
+// ─── trigger ─────────────────────────────────────────────────────────────────
+
+describe("trigger", () => {
+  it("does nothing when given an empty batch list", () => {
+    ta.trigger([]);
+    expect(drawTrade.drawTradeAnimation).not.toHaveBeenCalled();
+  });
+
+  it("clears animations and returns when the layer is disabled", () => {
+    vi.mocked(globalThis.layerIsOn).mockReturnValue(false);
+    ta.trigger([{ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2 }]);
+    expect(drawTrade.clearTradeAnimations).toHaveBeenCalled();
+    expect(drawTrade.drawTradeAnimation).not.toHaveBeenCalled();
+  });
+
+  it("draws animation when the layer is active and a path exists", () => {
+    vi.mocked(findPath).mockReturnValue([0, 1]);
+    const batch = { id: "1-2", deals: [], startBurgId: 1, endBurgId: 2 };
+    ta.trigger([batch]);
+    expect(drawTrade.drawTradeAnimation).toHaveBeenCalledWith(batch, expect.any(Array), expect.any(Array));
+  });
+
+  it("does not draw when no path can be found", () => {
+    vi.mocked(findPath).mockReturnValue(null);
+    ta.trigger([{ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2 }]);
+    expect(drawTrade.drawTradeAnimation).not.toHaveBeenCalled();
   });
 });

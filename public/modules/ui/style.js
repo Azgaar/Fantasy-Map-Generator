@@ -387,8 +387,6 @@ function selectStyleElement() {
   if (styleElement === "tradeAnimation") {
     styleTradeAnimation.style.display = "block";
     // Main animation group
-    styleTradeAnimationDuration.value = el.attr("data-duration") || 50;
-    styleTradeAnimationFadeDuration.value = el.attr("data-fade-duration") || 1000;
     styleTradeAnimationFilter.value = el.attr("filter") || "";
 
     // Trade paths
@@ -1011,12 +1009,6 @@ styleMarketsFillOpacity.on("input", e => {
 });
 
 // Trade animation style controls
-styleTradeAnimationDuration.on("input", e => {
-  tradeAnimation.attr("data-duration", e.target.value);
-});
-styleTradeAnimationFadeDuration.on("input", e => {
-  tradeAnimation.attr("data-fade-duration", e.target.value);
-});
 styleTradeAnimationFilter.on("change", function () {
   tradeAnimation.attr("filter", this.value);
 });

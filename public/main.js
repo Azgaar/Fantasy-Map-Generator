@@ -73,6 +73,7 @@ let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
 let tradeAnimation = viewbox.append("g").attr("id", "tradeAnimation");
 tradeAnimation.append("g").attr("id", "trade-paths");
+tradeAnimation.append("g").attr("id", "trade-highlight");
 tradeAnimation.append("g").attr("id", "trade-markers");
 let goods = viewbox.append("g").attr("id", "goods").style("display", "none");
 let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");

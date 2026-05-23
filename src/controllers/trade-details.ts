@@ -1,31 +1,31 @@
 import type { Burg } from "../modules/burgs-generator";
 import type { Deal } from "../modules/markets-generator";
 import type { TradeBatch } from "../modules/trade-animation";
+import { clearTradeHighlight, drawTradeHighlight } from "../renderers/draw-trade-animation";
 import { ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
-let activeBatch: TradeBatch | null = null;
+let activeBatch: TradeBatch;
 
 export function open(batch: TradeBatch): void {
   if (!batch?.deals.length) return;
 
   activeBatch = batch;
-  renderTradeDetails(batch);
+  tradeDetailsAddLines();
+  drawTradeHighlight(activeBatch);
 
   $("#tradeDetails").dialog({
-    title: `Trade: ${getBurgName(batch.startBurgId)} to ${getBurgName(batch.endBurgId)}`,
+    title: `Trade: ${pack.burgs[batch.startBurgId]?.name} to ${pack.burgs[batch.endBurgId]?.name}`,
     resizable: false,
-    width: "auto",
-    position: { my: "center", at: "center", of: "svg", collision: "fit" },
+    position: { my: "right top", at: "right-10 top+10", of: "svg" },
     close: closeTradeDetails
   });
 
   if (!isInitialized) {
-    ensureEl("tradeDetailsZoomStart").on("click", () => zoomToBurg("start"));
-    ensureEl("tradeDetailsZoomEnd").on("click", () => zoomToBurg("end"));
-    ensureEl("tradeDetailsBody").on("click", event => {
-      const target = event.target as HTMLElement;
-      const burgId = Number(target.closest<HTMLElement>("[data-zoom-burg]")?.dataset.zoomBurg);
+    ensureEl("tradeDetailsSummary").on("click", event => {
+      const zoomEl = (event.target as HTMLElement).closest<HTMLElement>("[data-zoom]");
+      if (!activeBatch || !zoomEl) return;
+      const burgId = activeBatch[zoomEl.dataset.zoom === "start" ? "startBurgId" : "endBurgId"];
       const burg = pack.burgs[burgId];
       if (!burg) return;
       zoomTo(burg.x, burg.y, 8, 1500);
@@ -34,80 +34,61 @@ export function open(batch: TradeBatch): void {
   }
 }
 
-function renderTradeDetails(batch: TradeBatch): void {
-  const totalUnits = batch.deals.reduce((sum, deal) => sum + deal.units, 0);
-  const totalValue = batch.deals.reduce((sum, deal) => sum + getDealValue(deal), 0);
+function tradeDetailsAddLines(): void {
+  if (!activeBatch) return;
+
+  const from = pack.burgs[activeBatch.startBurgId];
+  const to = pack.burgs[activeBatch.endBurgId];
+  const fromType = getClientType(activeBatch.deals[0], from, "from");
+  const toType = getClientType(activeBatch.deals[0], to, "to");
+  console.log(activeBatch, { fromType, toType });
 
   ensureEl("tradeDetailsSummary").innerHTML = /* html */ `
-    <div style="margin-left:5px">From: <b>${getBurgName(batch.startBurgId)}</b></div>
-    <div style="margin-left:12px">To: <b>${getBurgName(batch.endBurgId)}</b></div>
-    <div style="margin-left:12px">Deals: <b>${batch.deals.length}</b></div>`;
+    <span><b>From</b>: ${from?.name} ${fromType} <span class="icon-dot-circled pointer" data-zoom="start" data-tip="Zoom to start"></span></span>
+    <span style="margin-left:5px"><b>To</b>: ${to?.name} ${toType}</b> <span class="icon-dot-circled pointer" data-zoom="end" data-tip="Zoom to end"></span></span>`;
 
-  ensureEl("tradeDetailsBody").innerHTML = batch.deals.map(renderDealLine).join("");
-  ensureEl("tradeDetailsFooterUnits").innerHTML = rn(totalUnits, 2).toString();
-  ensureEl("tradeDetailsFooterValue").innerHTML = formatPrice(totalValue);
+  const html = activeBatch.deals.map(deal => {
+    const good = Goods.get(deal.good);
+    if (!good) return "";
+
+    return /* html */ `<div class="states tradeDeal" data-good="${good.name}" data-units="${rn(deal.units, 2)}" data-price="${deal.price}" data-value="${rn(deal.units * deal.price, 2)}">
+    <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
+      <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
+      <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"></use>
+    </svg>
+    <div data-tip="Good name" class="goodName">${good.name}</div>
+    <div class="goodUnits">${rn(deal.units, 2)}</div>
+    <div class="goodPrice">${formatPrice(deal.price)}</div>
+    <div class="goodValue">${formatPrice(rn(deal.units * deal.price, 2))}</div>
+  </div>`;
+  });
+
+  ensureEl("tradeDetailsBody").innerHTML = html.join("");
+  ensureEl("tradeDetailsFooterDeals").innerHTML = String(activeBatch.deals.length);
+  ensureEl("tradeDetailsFooterUnits").innerHTML = activeBatch.deals
+    .reduce((sum, deal) => sum + deal.units, 0)
+    .toFixed(2);
+  ensureEl("tradeDetailsFooterValue").innerHTML = formatPrice(
+    rn(
+      activeBatch.deals.reduce((sum, deal) => sum + deal.units * deal.price, 0),
+      2
+    )
+  );
 
   applySorting(ensureEl("tradeDetailsHeader"));
   $("#tradeDetails").dialog({ width: fitContent() });
 }
 
-function renderDealLine(deal: Deal): string {
-  const good = Goods.get(deal.good);
-  if (!good) return "";
-
-  const marketBurg = getMarketCenterBurg(deal.market);
-  const counterparty = getCounterpartyBurg(deal);
-  const value = getDealValue(deal);
-  const color = value >= 0 ? "#2a6" : "#c44";
-  const marketName = marketBurg?.name || "Unknown";
-  const counterpartyName = counterparty?.name || "Unknown";
-
-  return /* html */ `<div class="states tradeDeal" data-good="${good.name}" data-direction="${deal.direction}" data-market="${marketName}" data-counterparty="${counterpartyName}" data-units="${rn(deal.units, 2)}" data-price="${deal.price}" data-value="${value}">
-    <svg data-tip="Good icon" width="1.3em" height="1.3em" class="goodIcon">
-      <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
-      <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
-    </svg>
-    <div data-tip="Good name" class="goodName">${good.name}</div>
-    <div><span class="marketBadge" style="background:#f5d9d6; color:${color}">${deal.direction.toUpperCase()}</span></div>
-    <div class="pointer" data-tip="Click to zoom" data-zoom-burg="${marketBurg?.i || 0}">${marketName}</div>
-    <div class="pointer" data-tip="Click to zoom" data-zoom-burg="${counterparty?.i || 0}">${counterpartyName}</div>
-    <div>${rn(deal.units, 2)}</div>
-    <div>${formatPrice(deal.price)}</div>
-    <div style="color:${color}">${formatPrice(value)}</div>
-  </div>`;
-}
-
-function getDealValue(deal: Deal): number {
-  return rn(deal.units * deal.price * (deal.direction === "in" ? -1 : 1), 2);
-}
-
-function getMarketCenterBurg(marketId: number): Burg | null {
-  const market = Markets.get(marketId);
-  if (!market) return null;
-  return pack.burgs[market.centerBurgId] || null;
-}
-
-function getCounterpartyBurg(deal: Deal): Burg | null {
-  const burgId = deal.clientType === "burg" ? deal.client : Markets.get(deal.client)?.centerBurgId;
-  return burgId ? pack.burgs[burgId] || null : null;
-}
-
-function getBurgName(burgId: number): string {
-  return pack.burgs[burgId]?.name || "Unknown";
-}
-
-function zoomToBurg(target: "start" | "end"): void {
-  if (!activeBatch) return;
-  const burgId = target === "start" ? activeBatch.startBurgId : activeBatch.endBurgId;
-  const burg = pack.burgs[burgId];
-  if (!burg) return;
-  zoomTo(burg.x, burg.y, 8, 1500);
+function getClientType(deal: Deal, burg: Burg, direction: "from" | "to"): string {
+  if (deal.clientType === "market") return "market";
+  const isClient = direction === "to" ? deal.direction === "out" : deal.direction === "in";
+  return isClient ? burg.group || "burg" : "market";
 }
 
 function closeTradeDetails(): void {
   ensureEl("tradeDetailsBody").innerHTML = "";
   ensureEl("tradeDetailsSummary").innerHTML = "";
-  activeBatch = null;
+  clearTradeHighlight();
 }
 
 declare global {

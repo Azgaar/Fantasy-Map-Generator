@@ -2514,7 +2514,10 @@ div.states > .marketGoodName {
 }
 
 div.states > .marketGoodStock,
-div.states > .marketGoodPrice {
+div.states > .marketGoodPrice,
+div.states > .goodUnits,
+div.states > .goodPrice,
+div.states > .goodValue {
   width: 5em;
   text-align: right;
 }

@@ -15,7 +15,7 @@ function editBurg(id) {
     title: "Edit Burg",
     resizable: false,
     close: closeBurgEditor,
-    position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"}
+    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" }
   });
 
   if (modules.editBurg) return;
@@ -52,7 +52,7 @@ function editBurg(id) {
 
   function updateGroupsList() {
     ensureEl("burgGroup").options.length = 0; // remove all options
-    for (const {name} of options.burgs.groups) {
+    for (const { name } of options.burgs.groups) {
       ensureEl("burgGroup").options.add(new Option(name, name));
     }
   }
@@ -69,7 +69,6 @@ function editBurg(id) {
     ensureEl("burgGroup").value = b.group;
     ensureEl("burgType").value = b.type || "Generic";
     ensureEl("burgPopulation").value = rn(b.population * populationRate * urbanization);
-    ensureEl("burgProduct").innerHTML = "🟡 " + rn(b.product || 0, 2);
     ensureEl("burgWealth").innerHTML = "🟡 " + rn(b.population > 0 ? (b.product || 0) / b.population : 0, 2);
     ensureEl("burgTreasury").innerHTML = "🟡 " + rn(b.treasury || 0, 2);
     ensureEl("burgEditAnchorStyle").style.display = +b.port ? "inline-block" : "none";
@@ -203,7 +202,7 @@ function editBurg(id) {
   }
 
   function toggleCapital(burgId) {
-    const {burgs, states} = pack;
+    const { burgs, states } = pack;
 
     if (burgs[burgId].capital)
       return tip("To change capital please assign a capital status to another burg of this state", false, "error");
@@ -305,7 +304,7 @@ function editBurg(id) {
 
     prompt(
       "Provide custom URL to the burg map. It can be a link to a generator or just an image. Leave empty to use the default map preview",
-      {default: Burgs.getPreview(burg).link, required: false},
+      { default: Burgs.getPreview(burg).link, required: false },
       link => {
         if (link) burg.link = link;
         else delete burg.link;
@@ -488,7 +487,7 @@ function getProduction(pool) {
   for (const resourceId in pool) {
     const resource = Goods.get(+resourceId);
     if (!resource) continue;
-    const {name, unit, icon} = resource;
+    const { name, unit, icon } = resource;
     const production = pool[resourceId];
     const unitName = production > 1 ? unit + "s" : unit;
     html += `<span data-tip="${name}: ${production} ${unitName}">
