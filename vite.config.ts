@@ -6,4 +6,7 @@ export default {
         assetsDir: './',
     },
     publicDir: '../public',
+    test: {
+        setupFiles: ['./tests/setup.ts'], 
+    }
 }

@@ -20,7 +20,8 @@
     "test": "vitest",
     "test:e2e": "playwright test",
     "lint": "biome check --write",
-    "prepare": "simple-git-hooks"
+    "prepare": "simple-git-hooks",
+    "dump:grid": "vite-node src/tests/grid.dump.ts"
   },
   "simple-git-hooks": {
     "pre-commit": "npm run lint"
@@ -39,6 +40,7 @@
     "simple-git-hooks": "^2.13.1",
     "typescript": "^5.9.3",
     "vite": "^8.0.12",
+    "vite-node": "^6.0.0",
     "vitest": "^4.0.18"
   },
   "dependencies": {

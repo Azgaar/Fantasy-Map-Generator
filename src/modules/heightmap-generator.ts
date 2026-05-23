@@ -1,6 +1,11 @@
 import Alea from "alea";
 import { range as d3Range, leastIndex, mean } from "d3";
-import { createTypedArray, ensureEl, findGridCell, getNumberInRange, lim, minmax, P, rand } from "../utils";
+
+import { createTypedArray } from "../utils/arrayUtils";
+import { findGridCell } from "../utils/graphUtils";
+import { ensureEl } from "../utils/nodeUtils";
+import { lim, minmax } from "../utils/numberUtils";
+import { getNumberInRange, P, rand } from "../utils/probabilityUtils";
 
 declare global {
   var HeightmapGenerator: HeightmapModule;
@@ -8,7 +13,7 @@ declare global {
 
 type Tool = "Hill" | "Pit" | "Range" | "Trough" | "Strait" | "Mask" | "Invert" | "Add" | "Multiply" | "Smooth";
 
-class HeightmapModule {
+export class HeightmapModule {
   grid: any = null;
   heights: Uint8Array | null = null;
   blobPower: number = 0;
@@ -554,7 +559,7 @@ class HeightmapModule {
   }
 
   fromTemplate(graph: any, id: string): Uint8Array | null {
-    const templateString = heightmapTemplates[id]?.template || "";
+    const templateString = (heightmapTemplates as Record<string, any>)[id]?.template || "";
     const steps = templateString.split("\n");
 
     if (!steps.length) throw new Error(`Heightmap template: no steps. Template: ${id}. Steps: ${steps}`);

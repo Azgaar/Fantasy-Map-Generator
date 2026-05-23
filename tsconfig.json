@@ -4,7 +4,7 @@
     "module": "ESNext",
     "target": "esnext",
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "skipLibCheck": true,
     "isolatedModules": true,
 
@@ -14,6 +14,7 @@
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "noEmit": true,
+    "allowJs": true,
 
     /* Linting */
     "strict": true,
@@ -22,6 +23,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"],
+  "include": ["src", "public"],
   "exclude": ["src/e2e"]
 }
