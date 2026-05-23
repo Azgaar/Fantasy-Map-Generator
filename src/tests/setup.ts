@@ -19,7 +19,7 @@ import "../../public/config/heightmap-templates.js";
     if (id === "mapWidthInput") return { value: "1024" };
     if (id === "mapHeightInput") return { value: "768" };
     if (id === "templateInput") {
-        return { value: (globalThis as any).__TEST_TEMPLATE_ID__ || "highIsland" }; 
+      return { value: (globalThis as any).__TEST_TEMPLATE_ID__ || "highIsland" };
     }
     return { value: "0", dataset: {} };
   }
