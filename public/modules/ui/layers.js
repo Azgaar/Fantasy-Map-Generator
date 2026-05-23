@@ -213,7 +213,7 @@ function drawLayers() {
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (layerIsOn("toggleMarkets")) drawMarkets();
-  if (layerIsOn("toggleTradeAnimation")) TradeAnimation.start();
+  if (layerIsOn("toggleTrade")) TradeAnimation.start();
   if (layerIsOn("toggleZones")) drawZones();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleRoutes")) drawRoutes();
@@ -877,9 +877,9 @@ function toggleMarkets(event) {
   }
 }
 
-function toggleTradeAnimation(event) {
-  if (!layerIsOn("toggleTradeAnimation")) {
-    turnButtonOn("toggleTradeAnimation");
+function toggleTrade(event) {
+  if (!layerIsOn("toggleTrade")) {
+    turnButtonOn("toggleTrade");
     $("#tradeAnimation").fadeIn();
     TradeAnimation.start();
     if (event && isCtrlClick(event)) editStyle("tradeAnimation");
@@ -887,7 +887,7 @@ function toggleTradeAnimation(event) {
     if (event && isCtrlClick(event)) return editStyle("tradeAnimation");
     TradeAnimation.stop();
     $("#tradeAnimation").fadeOut();
-    turnButtonOff("toggleTradeAnimation");
+    turnButtonOff("toggleTrade");
   }
 }
 
@@ -1062,6 +1062,6 @@ function getLayer(id) {
   if (id === "toggleBurgIcons") return $("#icons");
   if (id === "toggleMarkers") return $("#markers");
   if (id === "toggleMarkets") return $("#markets");
-  if (id === "toggleTradeAnimation") return $("#tradeAnimation");
+  if (id === "toggleTrade") return $("#tradeAnimation");
   if (id === "toggleRulers") return $("#ruler");
 }

@@ -611,9 +611,9 @@
               Precipit<u>a</u>tion
             </li>
             <li
-              id="toggleTradeAnimation"
-              data-tip="Trade animation: animated trade deal flows. Click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
-              onclick="toggleTradeAnimation(event)"
+              id="toggleTrade"
+              data-tip="Trade: animated trade deal flows. Click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
+              onclick="toggleTrade(event)"
               class="buttonoff"
             >
               Trade
@@ -1377,6 +1377,10 @@
               </tr>
             </tbody>
             <tbody id="styleTradeAnimation" style="display: none">
+              <tr data-tip="Set marker size">
+                <td>Marker size</td>
+                <td><slider-input id="styleTradeAnimationMarkersSize" min=".1" max="100" step=".1"></slider-input></td>
+              </tr>
             </tbody>
             <tbody id="styleFilter" style="display: block">
               <tr data-tip="Select filter for element. Please note filters may cause performance issues!">
@@ -2055,6 +2059,9 @@
             </button>
             <button id="editStatesButton" data-tip="Click to open States Editor" data-shortcut="Shift + S">
               States
+            </button>
+            <button id="editTradeAnimationButton" data-tip="Click to open Trade Animation Editor">
+              Trade
             </button>
             <button id="editUnitsButton" data-tip="Click to open Units Editor" data-shortcut="Shift + Q">Units</button>
             <button id="editZonesButton" data-tip="Click to open Zones Editor" data-shortcut="Shift + Z">Zones</button>

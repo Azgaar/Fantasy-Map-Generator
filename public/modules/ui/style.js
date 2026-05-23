@@ -88,7 +88,11 @@ function selectStyleElement() {
   styleIsOff.style.display = isLayerOff ? "block" : "none";
 
   // active group element
-  if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
+  if (
+    ["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs", "tradeAnimation"].includes(
+      styleElement
+    )
+  ) {
     const group = styleGroupSelect.value;
     const defaultGroupSelector = styleElement === "terrs" ? "#landHeights" : "g";
     el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
@@ -129,6 +133,7 @@ function selectStyleElement() {
       "prec",
       "relig",
       "routes",
+      "tradeAnimation",
       "zones"
     ].includes(styleElement)
   ) {
@@ -149,6 +154,7 @@ function selectStyleElement() {
       "population",
       "routes",
       "temperature",
+      "tradeAnimation",
       "zones"
     ].includes(styleElement)
   ) {
@@ -386,29 +392,20 @@ function selectStyleElement() {
 
   if (styleElement === "tradeAnimation") {
     styleTradeAnimation.style.display = "block";
-    // Main animation group
-    styleTradeAnimationFilter.value = el.attr("filter") || "";
-
-    // Trade paths
-    const tradePaths = el.select("#trade-paths");
-    styleTradeAnimationPathsOpacity.value = tradePaths.attr("opacity") || 0.5;
-    styleTradeAnimationPathsStroke.value = tradePaths.attr("stroke") || "#888";
-    styleTradeAnimationPathsStrokeWidth.value = tradePaths.attr("stroke-width") || 0.5;
-    styleTradeAnimationPathsDasharray.value = tradePaths.attr("stroke-dasharray") || "4 4";
-
-    // Trade markers
-    const tradeMarkers = el.select("#trade-markers");
-    styleTradeAnimationMarkersOpacity.value = tradeMarkers.attr("opacity") || 1;
-    styleTradeAnimationMarkersFill.value = tradeMarkers.attr("fill") || "#ffccaa";
-    styleTradeAnimationMarkersSize.value = tradeMarkers.attr("data-size") || 2;
+    styleTradeAnimationMarkersSize.value = tradeAnimation.attr("data-size") || 2;
   }
+  debugger;
 
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
-  if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
-    const groups = ensureEl(styleElement).querySelectorAll("g");
+  if (
+    ["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs", "tradeAnimation"].includes(
+      styleElement
+    )
+  ) {
+    const groups = ensureEl(styleElement).querySelectorAll(":scope > g");
     groups.forEach(el => {
-      if (el.id === "burgLabels") return;
+      if (el.id === "burgLabels" || el.id === "trade-highlight" || el.id === "trade-markers") return;
       const option = new Option(`${el.id} (${el.childElementCount})`, el.id, false, false);
       styleGroupSelect.options.add(option);
     });
@@ -1008,32 +1005,8 @@ styleMarketsFillOpacity.on("input", e => {
   if (layerIsOn("toggleMarkets")) drawMarkets();
 });
 
-// Trade animation style controls
-styleTradeAnimationFilter.on("change", function () {
-  tradeAnimation.attr("filter", this.value);
-});
-// Trade paths controls
-styleTradeAnimationPathsOpacity.on("input", e => {
-  tradeAnimation.select("#trade-paths").attr("opacity", e.target.value);
-});
-styleTradeAnimationPathsStroke.on("input", e => {
-  tradeAnimation.select("#trade-paths").attr("stroke", e.target.value);
-});
-styleTradeAnimationPathsStrokeWidth.on("input", e => {
-  tradeAnimation.select("#trade-paths").attr("stroke-width", e.target.value);
-});
-styleTradeAnimationPathsDasharray.on("input", e => {
-  tradeAnimation.select("#trade-paths").attr("stroke-dasharray", e.target.value);
-});
-// Trade markers controls
-styleTradeAnimationMarkersOpacity.on("input", e => {
-  tradeAnimation.select("#trade-markers").attr("opacity", e.target.value);
-});
-styleTradeAnimationMarkersFill.on("input", e => {
-  tradeAnimation.select("#trade-markers").attr("fill", e.target.value);
-});
 styleTradeAnimationMarkersSize.on("input", e => {
-  tradeAnimation.select("#trade-markers").attr("data-size", e.target.value);
+  tradeAnimation.attr("data-size", e.target.value);
 });
 
 // request a URL to image to be used as a texture

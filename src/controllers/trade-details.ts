@@ -41,11 +41,10 @@ function tradeDetailsAddLines(): void {
   const to = pack.burgs[activeBatch.endBurgId];
   const fromType = getClientType(activeBatch.deals[0], from, "from");
   const toType = getClientType(activeBatch.deals[0], to, "to");
-  console.log(activeBatch, { fromType, toType });
 
   ensureEl("tradeDetailsSummary").innerHTML = /* html */ `
-    <span><b>From</b>: ${from?.name} ${fromType} <span class="icon-dot-circled pointer" data-zoom="start" data-tip="Zoom to start"></span></span>
-    <span style="margin-left:5px"><b>To</b>: ${to?.name} ${toType}</b> <span class="icon-dot-circled pointer" data-zoom="end" data-tip="Zoom to end"></span></span>`;
+    <span><b>Seller</b>: ${from?.name} ${fromType} <span class="icon-dot-circled pointer" data-zoom="start" data-tip="Zoom to start"></span></span>
+    <span style="margin-left:5px"><b>Buyer</b>: ${to?.name} ${toType}</b> <span class="icon-dot-circled pointer" data-zoom="end" data-tip="Zoom to end"></span></span>`;
 
   const html = activeBatch.deals.map(deal => {
     const good = Goods.get(deal.good);

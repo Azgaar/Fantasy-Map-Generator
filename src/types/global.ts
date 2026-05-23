@@ -125,7 +125,7 @@ declare global {
   // Legacy UI globals
   var turnButtonOn: (buttonId: string) => void;
   var turnButtonOff: (buttonId: string) => void;
-  var toggleTradeAnimation: (event?: MouseEvent) => void;
+  var toggleTrade: (event?: MouseEvent) => void;
   var isCtrlClick: (event: MouseEvent) => boolean;
   var editStyle: (layer: string) => void;
   var fitContent: () => number;

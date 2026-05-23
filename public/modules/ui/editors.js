@@ -1017,3 +1017,8 @@ function editCoastlineSettings() {
   if (customization) return;
   window.CoastlineEditor.open();
 }
+
+function editTradeAnimation() {
+  if (customization) return;
+  window.TradeAnimationEditor.open();
+}

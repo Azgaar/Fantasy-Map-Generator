@@ -386,12 +386,14 @@ async function parseLoadedData(data, mapVersion) {
       tradeAnimation
         .attr("data-max-spawn", tradeAnimation.attr("data-max-spawn") || 5)
         .attr("data-interval", tradeAnimation.attr("data-interval") || 3000)
-        .attr("data-speed", tradeAnimation.attr("data-speed") || 1)
-        .attr("data-dot-size", tradeAnimation.attr("data-dot-size") || 4)
-        .attr("data-dot-opacity", tradeAnimation.attr("data-dot-opacity") || 1)
-        .attr("data-path-opacity", tradeAnimation.attr("data-path-opacity") || 0.35)
+        .attr("data-duration", tradeAnimation.attr("data-duration") || 50)
+        .attr("data-fade-duration", tradeAnimation.attr("data-fade-duration") || 2000)
+        .attr("data-size", tradeAnimation.attr("data-size") || 2)
         .selectAll("*")
         .remove();
+      tradeAnimation.append("g").attr("id", "trade-paths");
+      tradeAnimation.append("g").attr("id", "trade-highlight");
+      tradeAnimation.append("g").attr("id", "trade-markers");
     }
 
     {
@@ -489,7 +491,7 @@ async function parseLoadedData(data, mapVersion) {
       if (isVisible(icons)) turnOn("toggleBurgIcons");
       if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
       if (hasChild(markers, "svg")) turnOn("toggleMarkers");
-      if (isVisible(tradeAnimation)) turnOn("toggleTradeAnimation");
+      if (isVisible(tradeAnimation)) turnOn("toggleTrade");
       if (isVisible(ruler)) turnOn("toggleRulers");
       if (isVisible(scaleBar)) turnOn("toggleScaleBar");
       if (isVisibleNode(ensureEl("vignette"))) turnOn("toggleVignette");

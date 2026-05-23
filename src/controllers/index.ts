@@ -6,4 +6,5 @@ import "./markets-overview";
 import "./namesbase-editor";
 import "./production-overview";
 import "./production-chains";
+import "./trade-animation-editor";
 import "./trade-details";

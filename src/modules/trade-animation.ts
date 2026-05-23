@@ -5,8 +5,16 @@ import type { Burg } from "./burgs-generator";
 import type { Deal } from "./markets-generator";
 import type { Point } from "./voronoi";
 
-const MAX_INTERVAL = 3000;
-const MAX_SPAWN = 5;
+const DEFAULT_INTERVAL = 3000;
+const DEFAULT_MAX_SPAWN = 5;
+
+function getInterval(): number {
+  return Number(tradeAnimation.attr("data-interval")) || DEFAULT_INTERVAL;
+}
+
+function getMaxSpawn(): number {
+  return Number(tradeAnimation.attr("data-max-spawn")) || DEFAULT_MAX_SPAWN;
+}
 
 export type TradeBatch = {
   id: string;
@@ -19,12 +27,12 @@ export class TradeAnimationModule {
   private animationInterval: number | null = null;
 
   start(): void {
-    if (this.animationInterval || !layerIsOn("toggleTradeAnimation")) return;
+    if (this.animationInterval || !layerIsOn("toggleTrade")) return;
     const batches = this.getDealBatches(pack.deals);
     if (batches.length === 0) return;
 
     this.spawnAnimations(batches);
-    this.animationInterval = window.setInterval(() => this.spawnAnimations(batches), MAX_INTERVAL);
+    this.animationInterval = window.setInterval(() => this.spawnAnimations(batches), getInterval());
   }
 
   stop(): void {
@@ -41,12 +49,12 @@ export class TradeAnimationModule {
   }
 
   sync(): void {
-    if (layerIsOn("toggleTradeAnimation")) this.start();
+    if (layerIsOn("toggleTrade")) this.start();
     else this.stop();
   }
 
   trigger(batches: TradeBatch[]): void {
-    if (!layerIsOn("toggleTradeAnimation")) {
+    if (!layerIsOn("toggleTrade")) {
       clearTradeAnimations();
       return;
     }
@@ -146,12 +154,12 @@ export class TradeAnimationModule {
   }
 
   private spawnAnimations(batches: TradeBatch[]): void {
-    if (!layerIsOn("toggleTradeAnimation")) {
+    if (!layerIsOn("toggleTrade")) {
       this.stop();
       return;
     }
 
-    const spawnCount = rand(1, MAX_SPAWN);
+    const spawnCount = rand(1, getMaxSpawn());
     for (let i = 0; i < spawnCount; i++) {
       this.trigger(batches);
     }
