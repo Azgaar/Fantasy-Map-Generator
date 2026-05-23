@@ -1,9 +1,8 @@
 import "./setup.js";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import Alea from "alea";
 import { generateGrid } from "../utils/graphUtils.js";
-import { typedArrayReplacer } from "./test.utils.js";
+import { defaultTestSetup, typedArrayReplacer } from "./test.utils.js";
 
 const dumpDir = path.join(process.cwd(), "tests", "regression_data");
 
@@ -13,14 +12,8 @@ if (!fs.existsSync(dumpDir)) {
 }
 
 // 1. Define Deterministic State
-const seed = "12345";
-const graphWidth = 1024;
-const graphHeight = 768;
-
-globalThis.seed = seed;
-globalThis.graphWidth = graphWidth;
-globalThis.graphHeight = graphHeight;
-Math.random = Alea(seed);
+const pointCount = 2000;
+defaultTestSetup({ points: pointCount });
 
 console.log(`Generating grid for seed: ${seed}...`);
 
@@ -32,7 +25,7 @@ const pointsData = {
   Seed: seed,
   Width: graphWidth,
   Height: graphHeight,
-  ExpectedPointsCount: 2000,
+  ExpectedPointsCount: pointCount,
   ActualPointsCount: grid.points.length,
   Spacing: grid.spacing,
   CellsCountX: grid.cellsX,

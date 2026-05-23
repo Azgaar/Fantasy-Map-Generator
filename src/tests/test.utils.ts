@@ -1,3 +1,5 @@
+import Alea from "alea";
+
 /**
  * Safely serializes TypedArrays (Uint8Array, Int32Array, etc.) into standard JSON arrays.
  * Use this as the replacer function in JSON.stringify() during regression dumps.
@@ -20,4 +22,51 @@ export const isPointInPolygon = (p: [number, number], poly: [number, number][]) 
     }
   }
   return inside;
+};
+
+// src/tests/test.utils.ts
+export interface TestOptions {
+  seed?: string;
+  width?: number;
+  height?: number;
+  points?: number;
+  templateId?: string; // The ID of the template
+  customRecipe?: string; // If provided, we override the template
+}
+
+export const defaultTestSetup = (options: TestOptions = {}) => {
+  const {
+    seed = "12345",
+    width = 1024,
+    height = 768,
+    points = 2000,
+    templateId = "highIsland",
+    customRecipe
+  } = options;
+
+  // Handle custom recipe injection if provided
+  if (customRecipe) {
+    (globalThis as any).heightmapTemplates = {
+      ...(globalThis as any).heightmapTemplates,
+      custom_regression_recipe: { template: customRecipe }
+    };
+  }
+
+  globalThis.seed = seed;
+  globalThis.graphWidth = width;
+  globalThis.graphHeight = height;
+  Math.random = Alea(seed);
+
+  (globalThis as any).document = {
+    readyState: "complete",
+    addEventListener: () => {},
+    getElementById: (id: string) => {
+      if (id === "pointsInput") return { dataset: { cells: points.toString() } };
+      if (id === "mapWidthInput") return { value: width.toString() };
+      if (id === "mapHeightInput") return { value: height.toString() };
+      // If customRecipe exists, return the internal ID, otherwise return the templateId
+      if (id === "templateInput") return { value: customRecipe ? "custom_regression_recipe" : templateId };
+      return { value: "0", dataset: {} };
+    }
+  };
 };

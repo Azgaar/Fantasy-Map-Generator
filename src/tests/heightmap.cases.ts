@@ -25,25 +25,3 @@ export const heightmapTestCases: HeightmapTestCase[] = [
   { name: "template_fractious", recipe: "fractious", isTemplate: true },
   { name: "template_continents", recipe: "continents", isTemplate: true }
 ];
-
-/**
- * Helper: Injects the test recipe into the global scope.
- * Now takes the whole HeightmapTestCase object!
- */
-export const injectRecipeToGlobals = (testCase: HeightmapTestCase) => {
-  // Clean, explicit boolean check
-  if (testCase.isTemplate) {
-    (globalThis as any).__TEST_TEMPLATE_ID__ = testCase.recipe;
-    return;
-  }
-
-  // Custom multi-step string logic
-  const tempId = "custom_regression_recipe";
-  (globalThis as any).__TEST_TEMPLATE_ID__ = tempId;
-
-  if (!(globalThis as any).heightmapTemplates) {
-    (globalThis as any).heightmapTemplates = {};
-  }
-
-  (globalThis as any).heightmapTemplates[tempId] = { template: testCase.recipe };
-};

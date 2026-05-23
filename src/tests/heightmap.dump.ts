@@ -1,12 +1,12 @@
 // src/tests/heightmap.dump.ts
 import * as fs from "node:fs";
 import * as path from "node:path";
-import Alea from "alea";
 
 import "./setup.js";
 import { HeightmapModule } from "../modules/heightmap-generator.js";
 import { generateGrid } from "../utils/graphUtils.js";
-import { heightmapTestCases, injectRecipeToGlobals } from "./heightmap.cases.js";
+import { heightmapTestCases } from "./heightmap.cases.js";
+import { defaultTestSetup } from "./test.utils.js";
 
 const dumpDir = path.join(process.cwd(), "tests", "regression_data");
 if (!fs.existsSync(dumpDir)) fs.mkdirSync(dumpDir, { recursive: true });
@@ -16,23 +16,18 @@ const generateAllDumps = async () => {
 
   for (const testCase of heightmapTestCases) {
     // 1. Deterministic state
-    const seed = "12345";
-    globalThis.seed = seed;
-    globalThis.graphWidth = 1024;
-    globalThis.graphHeight = 768;
+    defaultTestSetup({
+      templateId: testCase.isTemplate ? testCase.recipe : undefined,
+      customRecipe: !testCase.isTemplate ? testCase.recipe : undefined
+    });
 
-    Math.random = Alea(seed);
-    const grid = generateGrid(seed, 1024, 768);
-    globalThis.grid = grid;
+    globalThis.grid = generateGrid(seed, 1024, 768);
 
-    // 2. Inject the recipe so FMG finds it
-    injectRecipeToGlobals(testCase);
-
-    // 3. Execute exactly as FMG does
+    // 2. Execute exactly as FMG does
     const generator = new HeightmapModule();
     const heightsArray = await generator.generate(grid);
 
-    // 4. Dump to JSON matching your C# structure
+    // 3. Dump to JSON matching your C# structure
     const data = {
       Seed: seed,
       Width: 1024,

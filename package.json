@@ -20,8 +20,7 @@
     "test": "vitest",
     "test:e2e": "playwright test",
     "lint": "biome check --write",
-    "prepare": "simple-git-hooks",
-    "dump:grid": "vite-node src/tests/grid.dump.ts"
+    "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {
     "pre-commit": "npm run lint"

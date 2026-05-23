@@ -1,12 +1,12 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import Alea from "alea";
 import { describe, expect, it } from "vitest";
 
 import "./setup.js";
 import { HeightmapModule } from "../modules/heightmap-generator.js";
 import { generateGrid } from "../utils/graphUtils.js";
-import { heightmapTestCases, injectRecipeToGlobals } from "./heightmap.cases.js";
+import { heightmapTestCases } from "./heightmap.cases.js";
+import { defaultTestSetup } from "./test.utils.js";
 
 interface HeightmapRegressionData {
   Seed: string;
@@ -28,15 +28,14 @@ describe("Heightmap Generator Parameterized Regression", () => {
     const expected: HeightmapRegressionData = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
 
     // 2. Setup Deterministic MapData (Voronoi Graph)
-    globalThis.seed = expected.Seed;
-    globalThis.graphWidth = expected.Width;
-    globalThis.graphHeight = expected.Height;
+    defaultTestSetup({
+      templateId: testCase.isTemplate ? testCase.recipe : undefined,
+      customRecipe: !testCase.isTemplate ? testCase.recipe : undefined
+    });
 
-    Math.random = Alea(expected.Seed);
     globalThis.grid = generateGrid(expected.Seed, expected.Width, expected.Height);
 
-    // 3. Inject Recipe & Execute
-    injectRecipeToGlobals(testCase);
+    // 3. Execute
     const generator = new HeightmapModule();
     const actualHeights = await generator.generate(globalThis.grid);
 

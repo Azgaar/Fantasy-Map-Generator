@@ -1,11 +1,10 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import Alea from "alea";
 import { describe, expect, it } from "vitest";
 
 import "./setup.js"; // Ensure our headless browser mocks are active
 import { generateGrid } from "../utils/graphUtils.js";
-import { isPointInPolygon } from "./test.utils.js";
+import { defaultTestSetup, isPointInPolygon } from "./test.utils.js";
 
 // Define the TypeScript interfaces matching our JSON dumps
 interface PointsRegressionData {
@@ -56,10 +55,7 @@ describe("Grid Generator Regression", () => {
     const expected: PointsRegressionData = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
 
     // 2. Setup Deterministic State
-    globalThis.seed = expected.Seed;
-    globalThis.graphWidth = expected.Width;
-    globalThis.graphHeight = expected.Height;
-    Math.random = Alea(expected.Seed);
+    defaultTestSetup();
 
     // 3. Act
     const grid = generateGrid(expected.Seed, expected.Width, expected.Height);
@@ -94,10 +90,7 @@ describe("Grid Generator Regression", () => {
     const expected: BoundaryRegressionData = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
 
     // 2. Setup Deterministic State
-    globalThis.seed = expected.Seed;
-    globalThis.graphWidth = expected.Width;
-    globalThis.graphHeight = expected.Height;
-    Math.random = Alea(expected.Seed);
+    defaultTestSetup();
 
     // 3. Act
     const grid = generateGrid(expected.Seed, expected.Width, expected.Height);
@@ -117,11 +110,8 @@ describe("Grid Generator Regression", () => {
     const jsonPath = path.join(dataDir, "grid_voronoi_regression.json");
     const expected: VoronoiRegressionData = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
 
-    // 2. Run the full JS pipeline
-    globalThis.seed = expected.Seed;
-    globalThis.graphWidth = expected.Width;
-    globalThis.graphHeight = expected.Height;
-    Math.random = Alea(expected.Seed);
+    // 2. Setup Deterministic State
+    defaultTestSetup();
 
     const mapData = generateGrid(expected.Seed, expected.Width, expected.Height);
 
@@ -158,12 +148,9 @@ describe("Grid Generator Regression", () => {
   });
 
   it("Voronoi Cell point is strictly inside its generated polygon regression test", () => {
-    globalThis.seed = "12345";
-    globalThis.graphWidth = 1024;
-    globalThis.graphHeight = 768;
-    Math.random = Alea("12345");
+    defaultTestSetup();
 
-    const mapData = generateGrid("12345", 1024, 768);
+    const mapData = generateGrid(seed, graphWidth, graphHeight);
 
     for (let i = 0; i < mapData.cells.i.length; i++) {
       const vertexIndices = mapData.cells.v[i];
