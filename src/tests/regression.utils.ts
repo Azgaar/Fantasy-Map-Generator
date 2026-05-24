@@ -1,3 +1,5 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
 import Alea from "alea";
 
 /**
@@ -70,3 +72,19 @@ export const defaultTestSetup = (options: TestOptions = {}) => {
     }
   };
 };
+
+/**
+ * Loads regression data from the standard dump directory.
+ * @param filename The name of the JSON file (e.g., "feature_grid_regression.json")
+ * @returns The parsed JSON cast to the provided Generic type <T>
+ */
+export function loadRegressionData<T>(filename: string): T {
+  const dataDir = path.join(process.cwd(), "tests", "regression_data");
+  const jsonPath = path.join(dataDir, filename);
+
+  if (!fs.existsSync(jsonPath)) {
+    throw new Error(`Regression data missing. Run dump script. Path: ${jsonPath}`);
+  }
+
+  return JSON.parse(fs.readFileSync(jsonPath, "utf8")) as T;
+}
