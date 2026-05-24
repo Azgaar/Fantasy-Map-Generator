@@ -35,7 +35,14 @@ export interface TestOptions {
 }
 
 export const defaultTestSetup = (options: TestOptions = {}) => {
-  const { seed = "42", width = 1920, height = 1080, points = 2000, templateId = "highIsland", templateCustomRecipe } = options;
+  const {
+    seed = "42",
+    width = 1920,
+    height = 1080,
+    points = 2000,
+    templateId = "highIsland",
+    templateCustomRecipe
+  } = options;
 
   // Handle custom recipe injection if provided
   if (templateCustomRecipe) {
