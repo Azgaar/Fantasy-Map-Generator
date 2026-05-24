@@ -18,10 +18,10 @@ const generateAllDumps = async () => {
     // 1. Deterministic state
     defaultTestSetup({
       templateId: testCase.isTemplate ? testCase.recipe : undefined,
-      customRecipe: !testCase.isTemplate ? testCase.recipe : undefined
+      templateCustomRecipe: !testCase.isTemplate ? testCase.recipe : undefined
     });
 
-    globalThis.grid = generateGrid(seed, 1024, 768);
+    globalThis.grid = generateGrid(seed, graphWidth, graphHeight);
 
     // 2. Execute exactly as FMG does
     const generator = new HeightmapModule();
@@ -30,8 +30,8 @@ const generateAllDumps = async () => {
     // 3. Dump to JSON matching your C# structure
     const data = {
       Seed: seed,
-      Width: 1024,
-      Height: 768,
+      Width: graphWidth,
+      Height: graphHeight,
       Heights: Array.from(heightsArray)
     };
 

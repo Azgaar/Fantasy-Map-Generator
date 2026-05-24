@@ -30,7 +30,7 @@ describe("Heightmap Generator Parameterized Regression", () => {
     // 2. Setup Deterministic MapData (Voronoi Graph)
     defaultTestSetup({
       templateId: testCase.isTemplate ? testCase.recipe : undefined,
-      customRecipe: !testCase.isTemplate ? testCase.recipe : undefined
+      templateCustomRecipe: !testCase.isTemplate ? testCase.recipe : undefined
     });
 
     globalThis.grid = generateGrid(expected.Seed, expected.Width, expected.Height);

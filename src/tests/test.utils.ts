@@ -31,24 +31,17 @@ export interface TestOptions {
   height?: number;
   points?: number;
   templateId?: string; // The ID of the template
-  customRecipe?: string; // If provided, we override the template
+  templateCustomRecipe?: string; // If provided, we override the template
 }
 
 export const defaultTestSetup = (options: TestOptions = {}) => {
-  const {
-    seed = "12345",
-    width = 1024,
-    height = 768,
-    points = 2000,
-    templateId = "highIsland",
-    customRecipe
-  } = options;
+  const { seed = "42", width = 1920, height = 1080, points = 2000, templateId = "highIsland", templateCustomRecipe } = options;
 
   // Handle custom recipe injection if provided
-  if (customRecipe) {
+  if (templateCustomRecipe) {
     (globalThis as any).heightmapTemplates = {
       ...(globalThis as any).heightmapTemplates,
-      custom_regression_recipe: { template: customRecipe }
+      custom_regression_recipe: { template: templateCustomRecipe }
     };
   }
 
@@ -65,7 +58,7 @@ export const defaultTestSetup = (options: TestOptions = {}) => {
       if (id === "mapWidthInput") return { value: width.toString() };
       if (id === "mapHeightInput") return { value: height.toString() };
       // If customRecipe exists, return the internal ID, otherwise return the templateId
-      if (id === "templateInput") return { value: customRecipe ? "custom_regression_recipe" : templateId };
+      if (id === "templateInput") return { value: templateCustomRecipe ? "custom_regression_recipe" : templateId };
       return { value: "0", dataset: {} };
     }
   };
