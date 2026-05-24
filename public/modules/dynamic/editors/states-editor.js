@@ -120,7 +120,8 @@ function addListeners() {
   $body.on("click", event => {
     const $element = event.target;
     const classList = $element.classList;
-    const stateId = +$element.parentNode?.dataset?.id;
+    const stateLine = $element.closest("#statesBodySection > div[data-id]");
+    const stateId = stateLine ? +stateLine.dataset.id : NaN;
     if ($element.tagName === "FILL-BOX") stateChangeFill($element);
     else if (classList.contains("name")) editStateName(stateId);
     else if (classList.contains("coaIcon")) editEmblem("state", "stateCOA" + stateId, pack.states[stateId]);
@@ -841,23 +842,21 @@ function showStatesChart() {
 }
 
 function locateState(stateId) {
-  if (!regions) return;
-  const stateElement = regions.select("#state" + stateId).node();
-  if (!stateElement) return;
+  if (!stateId && stateId !== 0) return;
+  const selector = '#statesBody #state' + stateId;
+  const stateElement = document.querySelector(selector);
+  if (!stateElement) {
+    tip("State path not found on the map", true);
+    return;
+  }
   highlightElement(stateElement, 8);
 }
 
 function locateSelectedState() {
   const selected = $body.querySelector("div.selected");
-  if (!selected) {
-    tip("Select a state first", true);
-    return;
-  }
+  if (!selected) return tip("Select a state line first", true);
   const stateId = Number(selected.dataset.id);
-  if (Number.isNaN(stateId)) {
-    tip("Select a state first", true);
-    return;
-  }
+  if (Number.isNaN(stateId)) return tip("Select a state line first", true);
   locateState(stateId);
 }
 
@@ -938,9 +937,8 @@ function enterStatesManualAssignent() {
 }
 
 function selectStateOnLineClick() {
-  if (customization !== 2) return;
   if (this.parentNode.id !== "statesBodySection") return;
-  $body.querySelector("div.selected").classList.remove("selected");
+  $body.querySelector("div.selected")?.classList.remove("selected");
   this.classList.add("selected");
 }
 
