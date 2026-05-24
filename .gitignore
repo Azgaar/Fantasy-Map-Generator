@@ -6,6 +6,7 @@
 /coverage
 /playwright-report
 /test-results
+/tests/regression_data/*
 /_bmad
 /_bmad-output
 .github/agents/bmad-*
