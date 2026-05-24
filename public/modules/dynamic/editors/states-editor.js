@@ -51,6 +51,7 @@ function insertEditorHtml() {
       <button id="statesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
       <button id="statesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
       <button id="statesChart" data-tip="Show states bubble chart" class="icon-chart-area"></button>
+      <button id="statesLocate" data-tip="Click on the list first to select a state, then click to locate it on the map" class="icon-target"></button>
 
       <button id="statesRegenerate" data-tip="Show the regeneration menu and more data" class="icon-cog-alt"></button>
       <div id="statesRegenerateButtons" style="display: none">
@@ -102,6 +103,7 @@ function addListeners() {
   ensureEl("statesLegend").on("click", toggleLegend);
   ensureEl("statesPercentage").on("click", togglePercentageMode);
   ensureEl("statesChart").on("click", showStatesChart);
+  ensureEl("statesLocate").on("click", locateSelectedState);
   ensureEl("statesRegenerate").on("click", openRegenerationMenu);
   ensureEl("statesRegenerateBack").on("click", exitRegenerationMenu);
   ensureEl("statesRecalculate").on("click", () => recalculateStates(true));
@@ -837,6 +839,28 @@ function showStatesChart() {
     }
   });
 }
+
+function locateState(stateId) {
+  if (!regions) return;
+  const stateElement = regions.select("#state" + stateId).node();
+  if (!stateElement) return;
+  highlightElement(stateElement, 8);
+}
+
+function locateSelectedState() {
+  const selected = $body.querySelector("div.selected");
+  if (!selected) {
+    tip("Select a state first", true);
+    return;
+  }
+  const stateId = Number(selected.dataset.id);
+  if (Number.isNaN(stateId)) {
+    tip("Select a state first", true);
+    return;
+  }
+  locateState(stateId);
+}
+
 
 function openRegenerationMenu() {
   ensureEl("statesBottom")
