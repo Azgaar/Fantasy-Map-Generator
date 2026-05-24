@@ -29,7 +29,7 @@ const generateFeatureDump = async () => {
   const validFeatures = globalThis.grid.features
     .filter((f: any) => f)
     .map((f: any) => ({
-      id: f.id,
+      i: f.i,
       type: f.type.toLowerCase(),
       land: f.land
     }));
@@ -41,7 +41,7 @@ const generateFeatureDump = async () => {
     Features: validFeatures
   };
 
-  const dumpPath = path.join(dumpDir, "regression_features_grid.json");
+  const dumpPath = path.join(dumpDir, "feature_grid_regression.json");
   fs.writeFileSync(dumpPath, JSON.stringify(featureData, null, 2));
 
   console.log(`✅ Dumped: ${dumpPath}`);

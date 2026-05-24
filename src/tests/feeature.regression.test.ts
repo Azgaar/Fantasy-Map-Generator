@@ -2,14 +2,14 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import "./setup.js"; 
-import { generateGrid } from "../utils/graphUtils.js";
+import "./setup.js";
+import { FeatureModule } from "../modules/features.js";
 import { HeightmapModule } from "../modules/heightmap-generator.js";
-import { FeatureModule } from "../modules/features.js"; 
+import { generateGrid } from "../utils/graphUtils.js";
 import { defaultTestSetup } from "./test.utils.js";
 
 interface FeatureRegressionItem {
-  id: number;
+  i: number;
   type: string;
   land: boolean;
 }
@@ -25,7 +25,7 @@ describe("Grid Feature Generator Regression", () => {
 
   it("MarkupGrid matches JS output exactly", async () => {
     // 1. Load the specific feature dump
-    const jsonPath = path.join(dataDir, "regression_features_grid.json");
+    const jsonPath = path.join(dataDir, "feature_grid_regression.json");
     if (!fs.existsSync(jsonPath)) {
       throw new Error(`Regression data missing. Run dump script. Path: ${jsonPath}`);
     }
@@ -52,7 +52,7 @@ describe("Grid Feature Generator Regression", () => {
       const exp = expected.Features[i];
       const act = actualFeatures[i];
 
-      expect(act.id).toBe(exp.id);
+      expect(act.i).toBe(exp.i);
       expect(act.land).toBe(exp.land);
       expect(act.type.toLowerCase()).toBe(exp.type);
     }
