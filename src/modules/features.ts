@@ -1,16 +1,12 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
-import {
-  clipPoly,
-  connectVertices,
-  createTypedArray,
-  distanceSquared,
-  isLand,
-  isWater,
-  rn,
-  TYPED_ARRAY_MAX_VALUES,
-  unique
-} from "../utils";
+
+import { createTypedArray, TYPED_ARRAY_MAX_VALUES, unique } from "../utils/arrayUtils.js";
+import { clipPoly } from "../utils/commonUtils.js";
+import { distanceSquared } from "../utils/functionUtils.js";
+import { isLand, isWater } from "../utils/graphUtils.js";
+import { rn } from "../utils/numberUtils.js";
+import { connectVertices } from "../utils/pathUtils.js";
 
 declare global {
   var Features: FeatureModule;
@@ -51,7 +47,7 @@ export interface GridFeature {
   type: FeatureType;
 }
 
-class FeatureModule {
+export class FeatureModule {
   private DEEPER_LAND = 3;
   private LANDLOCKED = 2;
   private LAND_COAST = 1;

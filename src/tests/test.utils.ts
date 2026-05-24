@@ -40,7 +40,7 @@ export const defaultTestSetup = (options: TestOptions = {}) => {
     width = 1920,
     height = 1080,
     points = 2000,
-    templateId = "highIsland",
+    templateId = "continents",
     templateCustomRecipe
   } = options;
 
