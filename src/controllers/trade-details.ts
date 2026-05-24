@@ -46,33 +46,39 @@ function tradeDetailsAddLines(): void {
     <span><b>Seller</b>: ${from?.name} ${fromType} <span class="icon-dot-circled pointer" data-zoom="start" data-tip="Zoom to start"></span></span>
     <span style="margin-left:5px"><b>Buyer</b>: ${to?.name} ${toType}</b> <span class="icon-dot-circled pointer" data-zoom="end" data-tip="Zoom to end"></span></span>`;
 
-  const html = activeBatch.deals.map(deal => {
-    const good = Goods.get(deal.good);
-    if (!good) return "";
+  let totalUnits = 0;
+  let totalValue = 0;
+  const combined = new Map<number, { units: number; value: number }>();
+  for (const deal of activeBatch.deals) {
+    const entry = combined.get(deal.good) ?? { units: 0, value: 0 };
+    entry.units += deal.units;
+    entry.value += deal.units * deal.price;
+    combined.set(deal.good, entry);
+    totalUnits += deal.units;
+    totalValue += deal.units * deal.price;
+  }
 
-    return /* html */ `<div class="states tradeDeal" data-good="${good.name}" data-units="${rn(deal.units, 2)}" data-price="${deal.price}" data-value="${rn(deal.units * deal.price, 2)}">
+  const html = Array.from(combined, ([goodId, { units, value }]) => {
+    const good = Goods.get(goodId);
+    if (!good) return "";
+    const price = units ? value / units : 0;
+
+    return /* html */ `<div class="states tradeDeal" data-good="${good.name}" data-units="${rn(units, 2)}" data-price="${price}" data-value="${rn(value, 2)}">
     <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
       <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
       <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"></use>
     </svg>
     <div data-tip="Good name" class="goodName">${good.name}</div>
-    <div class="goodUnits">${rn(deal.units, 2)}</div>
-    <div class="goodPrice">${formatPrice(deal.price)}</div>
-    <div class="goodValue">${formatPrice(rn(deal.units * deal.price, 2))}</div>
+    <div class="goodUnits">${rn(units, 2)}</div>
+    <div class="goodPrice">${formatPrice(rn(price, 2))}</div>
+    <div class="goodValue">${formatPrice(rn(value, 2))}</div>
   </div>`;
   });
 
   ensureEl("tradeDetailsBody").innerHTML = html.join("");
   ensureEl("tradeDetailsFooterDeals").innerHTML = String(activeBatch.deals.length);
-  ensureEl("tradeDetailsFooterUnits").innerHTML = activeBatch.deals
-    .reduce((sum, deal) => sum + deal.units, 0)
-    .toFixed(2);
-  ensureEl("tradeDetailsFooterValue").innerHTML = formatPrice(
-    rn(
-      activeBatch.deals.reduce((sum, deal) => sum + deal.units * deal.price, 0),
-      2
-    )
-  );
+  ensureEl("tradeDetailsFooterUnits").innerHTML = String(rn(totalUnits, 2));
+  ensureEl("tradeDetailsFooterValue").innerHTML = formatPrice(totalValue);
 
   applySorting(ensureEl("tradeDetailsHeader"));
   $("#tradeDetails").dialog({ width: fitContent() });

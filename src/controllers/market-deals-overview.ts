@@ -76,9 +76,7 @@ function getDirection(deal: Deal): "in" | "out" {
 }
 
 function getCounterparty(deal: Deal): { id: number; type: "burg" | "market" } {
-  return isMarketSeller(deal)
-    ? { id: deal.buyer, type: deal.buyerType }
-    : { id: deal.seller, type: deal.sellerType };
+  return isMarketSeller(deal) ? { id: deal.buyer, type: deal.buyerType } : { id: deal.seller, type: deal.sellerType };
 }
 
 function renderDealLine(deal: Deal): string {
@@ -109,8 +107,7 @@ function renderDealLine(deal: Deal): string {
 
 function getParty(deal: Deal): Burg | null {
   const counterparty = getCounterparty(deal);
-  const burgId =
-    counterparty.type === "burg" ? counterparty.id : Markets.get(counterparty.id)?.centerBurgId;
+  const burgId = counterparty.type === "burg" ? counterparty.id : Markets.get(counterparty.id)?.centerBurgId;
   if (!burgId) return null;
   return pack.burgs[burgId] || null;
 }
