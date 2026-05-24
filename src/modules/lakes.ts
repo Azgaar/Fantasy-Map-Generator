@@ -66,7 +66,7 @@ export class LakesModule {
     };
 
     const getLowestShoreCell = (lake: PackedGraphFeature) => {
-      return lake.shoreline.reduce((minCell, c) => heights[c] < heights[minCell] ? c : minCell);
+      return lake.shoreline.reduce((minCell, c) => (heights[c] < heights[minCell] ? c : minCell));
     };
 
     features.forEach(feature => {
@@ -99,7 +99,7 @@ export class LakesModule {
       }
 
       let isDeep = true;
-      const lowestShorelineCell = feature.shoreline.reduce((minCell, c) => h[c] < h[minCell] ? c : minCell);
+      const lowestShorelineCell = feature.shoreline.reduce((minCell, c) => (h[c] < h[minCell] ? c : minCell));
       const queue = [lowestShorelineCell];
       const checked = [];
       checked[lowestShorelineCell] = true;

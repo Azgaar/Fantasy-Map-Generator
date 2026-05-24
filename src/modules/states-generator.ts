@@ -405,21 +405,12 @@ class StatesModule {
           states[t].type === "Naval" &&
           cells.f[states[f].center] !== cells.f[states[t].center];
         const neib = naval ? false : states[f].neighbors!.includes(t);
-        const neibOfNeib =
-          naval || neib
-            ? false
-            : states[f].neighbors!.some(n => states[n].neighbors!.includes(t));
+        const neibOfNeib = naval || neib ? false : states[f].neighbors!.some(n => states[n].neighbors!.includes(t));
 
         let status = naval ? rw(navals) : neib ? rw(neibs) : neibOfNeib ? rw(neibsOfNeibs) : rw(far);
 
         // add Vassal
-        if (
-          neib &&
-          P(0.8) &&
-          stateAreas[f] > areaMean &&
-          stateAreas[t] < areaMean &&
-          stateAreas[f] / stateAreas[t] > 2
-        )
+        if (neib && P(0.8) && stateAreas[f] > areaMean && stateAreas[t] < areaMean && stateAreas[f] / stateAreas[t] > 2)
           status = "Vassal";
         states[f].diplomacy![t] = status === "Vassal" ? "Suzerain" : status;
         states[t].diplomacy![f] = status;

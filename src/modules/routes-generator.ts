@@ -223,7 +223,6 @@ class RoutesModule {
   // this gives us an aproximation of a desired road network, i.e. connections between burgs
   // code from https://observablehq.com/@mbostock/urquhart-graph
   private calculateUrquhartEdges(points: Point[]) {
-
     if (points.length < 2) return []; // No connection for less than 2 points
     if (points.length === 2) return [[0, 1]]; // Direct connection for exactly two points
 
