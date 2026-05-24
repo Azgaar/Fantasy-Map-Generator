@@ -1,48 +1,38 @@
 import { ensureEl } from "../utils";
 
-interface SliderDef {
-  id: string;
-  label: string;
-  tip: string;
-  min: number;
-  max: number;
-  step: number;
-  attr: string;
-  default: number;
-  restart?: boolean;
-}
-
-const SLIDERS: SliderDef[] = [
-  {
-    id: "tradeAnimInterval",
-    label: "Spawn interval",
-    tip: "Milliseconds between spawn ticks. Lower = more frequent waves of travellers (was MAX_INTERVAL).",
-    min: 200,
-    max: 10000,
-    step: 100,
-    attr: "data-interval",
-    default: 3000,
-    restart: true
-  },
+const DEFAULTS = TradeAnimation.getDefaultOptions();
+const SLIDERS = [
   {
     id: "tradeAnimMaxSpawn",
     label: "Max per tick",
-    tip: "Upper bound on traders launched per tick. Each tick spawns 1..N of them (was MAX_SPAWN).",
+    tip: "Max number of simultaneous trade animations spawned per tick. Higher = more crowded map.",
     min: 1,
-    max: 20,
+    max: 50,
     step: 1,
-    attr: "data-max-spawn",
-    default: 5
+    key: "maxSpawn",
+    default: DEFAULTS.maxSpawn,
+    restart: true
+  },
+  {
+    id: "tradeAnimInterval",
+    label: "Spawn interval",
+    tip: "Milliseconds between spawn ticks. Lower = more frequent spawns.",
+    min: 100,
+    max: 10000,
+    step: 100,
+    key: "interval",
+    default: DEFAULTS.interval,
+    restart: true
   },
   {
     id: "tradeAnimDuration",
     label: "Travel duration",
-    tip: "Milliseconds per map unit travelled. Lower = faster traders.",
-    min: 10,
-    max: 500,
-    step: 10,
-    attr: "data-duration",
-    default: 50
+    tip: "Milliseconds per map unit travelled. Lower = faster animations.",
+    min: 1,
+    max: 1000,
+    step: 1,
+    key: "duration",
+    default: DEFAULTS.duration
   },
   {
     id: "tradeAnimFadeDuration",
@@ -51,12 +41,24 @@ const SLIDERS: SliderDef[] = [
     min: 0,
     max: 10000,
     step: 100,
-    attr: "data-fade-duration",
-    default: 2000
+    key: "fadeDuration",
+    default: DEFAULTS.fadeDuration
+  },
+  {
+    id: "tradeAnimMarkerSize",
+    label: "Marker size",
+    tip: "Marker icon size in map units. Wagons render at half this size.",
+    min: 1,
+    max: 20,
+    step: 0.5,
+    key: "markerSize",
+    default: DEFAULTS.markerSize
   }
 ];
 
 export function open(): void {
+  closeDialogs("#tradeAnimationEditor, .stable");
+
   if (!document.getElementById("tradeAnimationEditor")) {
     document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
   }
@@ -66,61 +68,57 @@ export function open(): void {
     const output = ensureEl(`${def.id}Out`);
     const resetBtn = ensureEl(`${def.id}Reset`);
 
-    const current = Number(tradeAnimation.attr(def.attr)) || def.default;
+    const current = options.tradeAnimations[def.key] ?? def.default;
     slider.value = String(current);
     output.textContent = String(current);
 
     slider.on("input", () => {
       const value = slider.valueAsNumber;
-      tradeAnimation.attr(def.attr, value);
+      options.tradeAnimations[def.key] = value;
       output.textContent = String(value);
       if (def.restart && layerIsOn("toggleTrade")) TradeAnimation.restart();
     });
 
     resetBtn.on("click", () => {
-      tradeAnimation.attr(def.attr, def.default);
+      options.tradeAnimations[def.key] = def.default;
       slider.value = String(def.default);
       output.textContent = String(def.default);
       if (def.restart && layerIsOn("toggleTrade")) TradeAnimation.restart();
     });
   }
 
-  closeDialogs("#tradeAnimationEditor, .stable");
-
   $("#tradeAnimationEditor").dialog({
     title: "Trade Animation Editor",
     resizable: false,
-    width: "auto",
     position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
 }
 
 function buildDialogHTML(): string {
-  const rows = SLIDERS.map(({ id, label, tip, min, max, step, attr, default: def }) => {
-    const current = Number(tradeAnimation.attr(attr)) || def;
+  const rows = SLIDERS.map(({ id, label, tip, min, max, step, key, default: def }) => {
+    const current = options.tradeAnimations[key] ?? def;
     return /* html */ `
       <tr data-tip="${tip}">
-        <td style="padding:2px 0;white-space:nowrap">${label}</td>
-        <td style="padding:2px 4px">
-          <input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${current}"
-            style="width:200px;vertical-align:middle"/>
+        <td style="padding:0">${label}</td>
+        <td style="padding:0">
+          <input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${current}" style="width: 100%; vertical-align:middle"/>
         </td>
-        <td style="padding:2px 6px;min-width:3em;text-align:right">
-          <span id="${id}Out" style="font-family:monospace;font-size:.85em">${current}</span>
+        <td style="padding: 0; width:3em; text-align:right">
+          <span id="${id}Out" style="font-family:monospace; font-size:.85em">${current}</span>
         </td>
-        <td style="padding:2px 0">
-          <button id="${id}Reset" title="Reset to default"
-            style="font-size:.75em;padding:1px 5px;cursor:pointer">↺</button>
+        <td style="padding: 0">
+          <button id="${id}Reset" data-tip="Reset to default"
+            style="font-size:.85em; padding:1px 5px; margin-left: 0.3em">↺</button>
         </td>
       </tr>`;
   }).join("");
 
   return /* html */ `
     <div id="tradeAnimationEditor" style="display:none">
-      <div style="color:#666;font-size:.85em;margin-bottom:6px">
-        Controls how trade deal animations are spawned and rendered. Open layer style editor for visual look (color, opacity, dasharray).
+      <div style="color:#666; font-size:.85em; margin-bottom: 0.3em">
+        Control trade deal animations. Open layer style editor for paths look settings.
       </div>
-      <table style="border-collapse:collapse;width:100%">
+      <table style="border-collapse: collapse;width:100%">
         <tbody>${rows}</tbody>
       </table>
     </div>`;

@@ -253,7 +253,12 @@ async function parseLoadedData(data, mapVersion) {
       if (settings[14]) mapSizeInput.value = mapSizeOutput.value = minmax(settings[14], 1, 100);
       if (settings[15]) latitudeInput.value = latitudeOutput.value = minmax(settings[15], 0, 100);
       if (settings[18]) precInput.value = precOutput.value = settings[18];
-      if (settings[19]) options = JSON.parse(settings[19]);
+      if (settings[19]) {
+        const loaded = JSON.parse(settings[19]);
+        // Merge trade animation defaults so older saves get the new options block
+        loaded.tradeAnimations = { ...options.tradeAnimations, ...(loaded.tradeAnimations || {}) };
+        options = loaded;
+      }
       // setting 16 and 17 (temperature) are part of options now, kept as "" in newer versions for compatibility
       if (settings[16]) options.temperatureEquator = +settings[16];
       if (settings[17]) options.temperatureNorthPole = options.temperatureSouthPole = +settings[17];
@@ -374,26 +379,6 @@ async function parseLoadedData(data, mapVersion) {
       if (!emblems.size()) {
         emblems = viewbox.insert("g", "#labels").attr("id", "emblems").style("display", "none");
       }
-      if (!markets.size()) {
-        markets = viewbox.insert("g", "#routes").attr("id", "markets");
-      }
-      if (!goods.size()) {
-        goods = viewbox.insert("g", "#emblems").attr("id", "goods").style("display", "none");
-      }
-      if (!tradeAnimation.size()) {
-        tradeAnimation = viewbox.insert("g", "#fogging-cont").attr("id", "tradeAnimation").style("display", "none");
-      }
-      tradeAnimation
-        .attr("data-max-spawn", tradeAnimation.attr("data-max-spawn") || 5)
-        .attr("data-interval", tradeAnimation.attr("data-interval") || 3000)
-        .attr("data-duration", tradeAnimation.attr("data-duration") || 50)
-        .attr("data-fade-duration", tradeAnimation.attr("data-fade-duration") || 2000)
-        .attr("data-size", tradeAnimation.attr("data-size") || 2)
-        .selectAll("*")
-        .remove();
-      tradeAnimation.append("g").attr("id", "trade-paths");
-      tradeAnimation.append("g").attr("id", "trade-highlight");
-      tradeAnimation.append("g").attr("id", "trade-markers");
     }
 
     {
@@ -439,7 +424,7 @@ async function parseLoadedData(data, mapVersion) {
       pack.goods = data[41] ? JSON.parse(data[41]) : [];
       pack.markets = data[42] ? JSON.parse(data[42]) : [];
       pack.deals = data[43] ? JSON.parse(data[43]) : [];
-      pack.cells.good = data[40] ? Uint8Array.from(data[40].split(",")) : new Uint8Array(pack.cells.i.length);
+      pack.cells.good = data[40] ? Uint16Array.from(data[40].split(",")) : new Uint16Array(pack.cells.i.length);
 
       if (data[31]) {
         const namesDL = data[31].split("/");

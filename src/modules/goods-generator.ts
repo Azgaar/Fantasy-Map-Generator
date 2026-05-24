@@ -1104,7 +1104,7 @@ export class GoodsModule {
     const shuffle = shuffler(() => Math.random());
 
     this.cells = pack.cells;
-    this.cells.good = createTypedArray({ maxValue: TYPED_ARRAY_MAX.UINT16, length: this.cells.i.length });
+    this.cells.good = new Uint16Array(this.cells.i.length);
     if (!pack.goods || regenerate) pack.goods = this.defaultGoods;
 
     const resourceMaxCells = Math.ceil((200 * this.cells.i.length) / 5000);

@@ -655,13 +655,9 @@
     "data-fill-opacity": 0.28,
     "filter": null
   },
-  "#tradeAnimation": {
-    "opacity": 1,
-    "filter": null,
-    "data-size": 2
-  },
   "#tradeAnimation > #trade-paths": {
     "opacity": 0.8,
+    "display": "none",
     "stroke": "#d36334",
     "stroke-width": 0.2,
     "stroke-linecap": "round",

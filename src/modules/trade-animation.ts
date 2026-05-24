@@ -9,11 +9,13 @@ const DEFAULT_INTERVAL = 3000;
 const DEFAULT_MAX_SPAWN = 5;
 
 function getInterval(): number {
-  return Number(tradeAnimation.attr("data-interval")) || DEFAULT_INTERVAL;
+  const value = options.tradeAnimations?.interval;
+  return typeof value === "number" ? value : DEFAULT_INTERVAL;
 }
 
 function getMaxSpawn(): number {
-  return Number(tradeAnimation.attr("data-max-spawn")) || DEFAULT_MAX_SPAWN;
+  const value = options.tradeAnimations?.maxSpawn;
+  return typeof value === "number" ? value : DEFAULT_MAX_SPAWN;
 }
 
 export type TradeBatch = {
@@ -159,7 +161,8 @@ export class TradeAnimationModule {
       return;
     }
 
-    const spawnCount = rand(1, getMaxSpawn());
+    const maxSpawn = getMaxSpawn();
+    const spawnCount = rand(1, maxSpawn);
     for (let i = 0; i < spawnCount; i++) {
       this.trigger(batches);
     }
@@ -178,6 +181,18 @@ export class TradeAnimationModule {
     if (!clientBurg) return null;
 
     return deal.direction === "in" ? { start: clientBurg, end: marketBurg } : { start: marketBurg, end: clientBurg };
+  }
+
+  getDefaultOptions(): Record<string, number> {
+    return {
+      maxSpawn: 5,
+      interval: 3000,
+      duration: 200,
+      landDurationModifier: 5,
+      segmentChangePause: 1000,
+      fadeDuration: 2000,
+      markerSize: 4
+    };
   }
 }
 

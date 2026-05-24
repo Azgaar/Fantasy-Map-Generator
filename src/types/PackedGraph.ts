@@ -39,7 +39,7 @@ export interface PackedGraph {
     state: TypedArray; // cell state id
     area: TypedArray; // cell area
     province: TypedArray; // cell province id
-    good: TypedArray; // cell good id
+    good: Uint16Array; // cell good id
     market: Uint16Array; // cell market id
     routes: Record<number, Record<number, number>>;
   };

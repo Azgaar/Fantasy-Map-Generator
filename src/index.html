@@ -845,6 +845,18 @@
                 </td>
               </tr>
             </tbody>
+            <tbody id="styleDisplay" style="display: none">
+              <tr data-tip="Set element display: Default keeps CSS/inherited rendering, Block forces visible, None hides the element">
+                <td>Display</td>
+                <td>
+                  <select id="styleDisplayInput">
+                    <option value="">default</option>
+                    <option value="block">block</option>
+                    <option value="none">none</option>
+                  </select>
+                </td>
+              </tr>
+            </tbody>
             <tbody id="styleOpacity" style="display: none">
               <tr data-tip="Set opacity. 0: transparent, 1: solid">
                 <td>Opacity</td>
@@ -1374,12 +1386,6 @@
                 <td>
                   <slider-input id="styleMarketsFillOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
-              </tr>
-            </tbody>
-            <tbody id="styleTradeAnimation" style="display: none">
-              <tr data-tip="Set marker size">
-                <td>Marker size</td>
-                <td><slider-input id="styleTradeAnimationMarkersSize" min=".1" max="100" step=".1"></slider-input></td>
               </tr>
             </tbody>
             <tbody id="styleFilter" style="display: block">

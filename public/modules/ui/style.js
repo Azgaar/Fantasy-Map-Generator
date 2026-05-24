@@ -98,6 +98,12 @@ function selectStyleElement() {
     el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
   }
 
+  // display (show/hide)
+  if (styleElement === "tradeAnimation") {
+    styleDisplay.style.display = "block";
+    styleDisplayInput.value = el.attr("display") || "";
+  }
+
   // opacity
   if (!["landmass", "legend", "ocean", "regions"].includes(styleElement)) {
     styleOpacity.style.display = "block";
@@ -390,12 +396,6 @@ function selectStyleElement() {
     styleMarketsFillOpacity.value = el.attr("data-fill-opacity") || "0.28";
   }
 
-  if (styleElement === "tradeAnimation") {
-    styleTradeAnimation.style.display = "block";
-    styleTradeAnimationMarkersSize.value = tradeAnimation.attr("data-size") || 2;
-  }
-  debugger;
-
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
   if (
@@ -500,6 +500,10 @@ styleStrokeDasharrayInput.on("input", function () {
 styleStrokeLinecapInput.on("change", function () {
   getEl().attr("stroke-linecap", this.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+});
+
+styleDisplayInput.on("change", function () {
+  getEl().attr("display", this.value || null);
 });
 
 styleOpacityInput.on("input", e => {
@@ -1003,10 +1007,6 @@ styleGoodsCircle.addEventListener("change", function () {
 styleMarketsFillOpacity.on("input", e => {
   markets.attr("data-fill-opacity", e.target.value);
   if (layerIsOn("toggleMarkets")) drawMarkets();
-});
-
-styleTradeAnimationMarkersSize.on("input", e => {
-  tradeAnimation.attr("data-size", e.target.value);
 });
 
 // request a URL to image to be used as a texture

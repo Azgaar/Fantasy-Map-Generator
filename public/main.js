@@ -162,7 +162,8 @@ let options = {
   showBurgPreview: true,
   burgs: {
     groups: JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups()
-  }
+  },
+  tradeAnimation: TradeAnimation.getDefaultOptions()
 };
 
 // global style object; in v2.0 to be used for all map styles and render settings

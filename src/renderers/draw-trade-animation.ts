@@ -2,7 +2,18 @@ import { curveCatmullRom, easeLinear, line } from "d3";
 import type { TradeBatch } from "../modules/trade-animation";
 import type { Point } from "../modules/voronoi";
 
-const LAND_DURATION_MODIFIER = 5;
+const DEFAULTS = {
+  duration: 200,
+  fadeDuration: 2000,
+  markerSize: 4,
+  landDurationModifier: 5,
+  segmentChangePause: 1000
+} as const;
+
+function setting<K extends keyof typeof DEFAULTS>(key: K): number {
+  const value = options.tradeAnimations?.[key];
+  return typeof value === "number" ? value : DEFAULTS[key];
+}
 
 const lineGen = line<Point>().curve(curveCatmullRom.alpha(0.1));
 
@@ -21,7 +32,7 @@ export function drawTradeAnimation(
     .attr("fill", "none")
     .attr("stroke-opacity", 0);
 
-  const fade = Number(tradeAnimation.attr("data-fade-duration")) || 1000;
+  const fade = setting("fadeDuration");
   pathElement.transition().duration(fade).attr("stroke-opacity", 1);
 
   animateSegment(0);
@@ -34,11 +45,11 @@ export function drawTradeAnimation(
     const segment = segments[idx];
 
     const group = markersGroup.append("g");
-    const size = Number(tradeAnimation.attr("data-size")) || 4;
+    const size = setting("markerSize");
     const imgSize = segment.type === "land" ? size / 2 : size;
     const imgHref = `./images/markers/${segment.type === "land" ? "wagon" : "ship"}.png`;
-    const duration = Number(tradeAnimation.attr("data-duration")) || 50;
-    const segDuration = segment.type === "land" ? duration * LAND_DURATION_MODIFIER : duration;
+    const duration = setting("duration");
+    const segDuration = segment.type === "land" ? duration * setting("landDurationModifier") : duration;
 
     group
       .append("image")
@@ -80,7 +91,7 @@ export function drawTradeAnimation(
       })
       .on("end", () => {
         group.remove();
-        animateSegment(idx + 1);
+        setTimeout(() => animateSegment(idx + 1), setting("segmentChangePause"));
       });
   }
 }

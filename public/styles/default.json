@@ -664,17 +664,13 @@
     "data-fill-opacity": 0.5,
     "filter": null
   },
-  "#tradeAnimation": {
-    "opacity": 1,
-    "filter": null,
-    "data-size": 2
-  },
   "#tradeAnimation > #trade-paths": {
-    "opacity": 0.8,
-    "stroke": "#d36334",
-    "stroke-width": 0.6,
+    "opacity": 0.6,
+    "display": "none",
+    "stroke": "#7c32ec",
+    "stroke-width": 0.5,
     "stroke-linecap": "round",
-    "stroke-dasharray": "0.5 0.8",
+    "stroke-dasharray": "1 2",
     "filter": null
   }
 }
