@@ -5,8 +5,5 @@ export default {
         outDir: '../dist',
         assetsDir: './',
     },
-    publicDir: '../public',
-    test: {
-        setupFiles: ['./tests/regression.setup.ts'], 
-    }
+    publicDir: '../public'
 }

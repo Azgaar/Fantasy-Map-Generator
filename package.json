@@ -19,6 +19,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:e2e": "playwright test",
+    "test:regression": "vitest run src/regression -c vitest.regression.config.ts",
+    "dump:regression": "vite-node src/regression/regression.dump.ts",
     "lint": "biome check --write",
     "prepare": "simple-git-hooks"
   },
