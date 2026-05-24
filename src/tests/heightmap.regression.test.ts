@@ -1,20 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { type HeightmapRegressionData, HeightmapRegressionRunner, heightmapTestCases } from "./heightmap.regression.js";
+import { type HeightmapRegressionData, heightmapRunners } from "./heightmap.regression.js";
 import { loadRegressionData } from "./regression.utils.js";
 
 describe("Heightmap Generator Parameterized Regression", () => {
-  it.each(heightmapTestCases)("Heightmap regression: $name", async testCase => {
-    // 1. Load Expected Data
-    const expected = loadRegressionData<HeightmapRegressionData>(`heightmap_${testCase.name}_regression.json`);
-
-    // 2. Execute same logic as dumper
-    const runner = new HeightmapRegressionRunner();
-    const actual = await runner.execute(testCase);
+  it.each(heightmapRunners.map(r => [r]))("Heightmap regression: $name", async runner => {
+    const expected = loadRegressionData<HeightmapRegressionData>(runner.filename);
+    const actual = await runner.execute();
 
     // 3. Assert parity
-    expect(actual.Seed).toEqual(expected.Seed);
-    expect(actual.Width).toEqual(expected.Width);
-    expect(actual.Height).toEqual(expected.Height);
+    expect(actual.Seed).toBe(expected.Seed);
+    expect(actual.Width).toBe(expected.Width);
+    expect(actual.Height).toBe(expected.Height);
     expect(actual.Heights).toEqual(expected.Heights);
   });
 });

@@ -1,9 +1,6 @@
-export interface RegressionDumpPayload {
+export interface IRegressionRunner<T = any> {
+  name: string;
   filename: string;
-  data: any; // The standardized DTO object to be converted to JSON
-}
-
-export interface IRegressionRunner {
-  name: string; // The display name for the console logger
-  generateDumps(): Promise<RegressionDumpPayload[]>; // Returns an array of dumps
+  // This extracts the specific slice of data this test case needs
+  execute: () => Promise<T>;
 }

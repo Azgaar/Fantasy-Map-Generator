@@ -2,7 +2,7 @@ import "./regression.setup.js";
 import { FeatureModule } from "../modules/features.js";
 import { HeightmapModule } from "../modules/heightmap-generator.js";
 import { generateGrid } from "../utils/graphUtils.js";
-import type { IRegressionRunner, RegressionDumpPayload } from "./regression.interface.js";
+import type { IRegressionRunner } from "./regression.interface.js";
 import { defaultTestSetup } from "./regression.utils.js";
 
 export interface FeatureRegressionItem {
@@ -17,21 +17,12 @@ export interface GridFeatureRegressionData {
   Features: FeatureRegressionItem[];
 }
 
-export class FeatureRegressionRunner implements IRegressionRunner {
+export class GridFeatureRegressionRunner implements IRegressionRunner<GridFeatureRegressionData> {
   public name = "Feature Generator";
-
-  public async generateDumps(): Promise<RegressionDumpPayload[]> {
-    const data = await this.execute();
-    return [
-      {
-        filename: "feature_grid_regression.json",
-        data: data
-      }
-    ];
-  }
+  public filename = "feature_grid_regression.json";
 
   public async execute(): Promise<GridFeatureRegressionData> {
-    defaultTestSetup({ points: 2000, templateId: "continents" });
+    defaultTestSetup();
 
     globalThis.grid = generateGrid(globalThis.seed, globalThis.graphWidth, globalThis.graphHeight);
     globalThis.grid.cells.h = await new HeightmapModule().generate(globalThis.grid);

@@ -1,6 +1,6 @@
 import "./regression.setup.js";
 import { generateGrid } from "../utils/graphUtils.js";
-import type { IRegressionRunner, RegressionDumpPayload } from "./regression.interface.js";
+import type { IRegressionRunner } from "./regression.interface.js";
 import { defaultTestSetup, typedArrayReplacer } from "./regression.utils.js"; // Adjust to test.utils.js if needed
 
 // --- INTERFACES ---
@@ -31,65 +31,62 @@ export interface VoronoiRegressionData {
   Vertices: { p: [number, number][]; v: number[][]; c: number[][] };
 }
 
-// Wrapper for the Test Execution
-export interface GridRegressionResult {
-  Points: PointsRegressionData;
-  Boundary: BoundaryRegressionData;
-  Voronoi: VoronoiRegressionData;
-}
+// --- GENERATION SEQUENCE ---
+const pointCount = 2000;
+const executeGenerateGrid = () => {
+  defaultTestSetup({ points: pointCount });
+  globalThis.grid = generateGrid(globalThis.seed, globalThis.graphWidth, globalThis.graphHeight);
+};
 
-// --- RUNNER CLASS ---
-export class GridRegressionRunner implements IRegressionRunner {
-  public name = "Grid Generator";
-
-  public async generateDumps(): Promise<RegressionDumpPayload[]> {
-    const data = await this.execute();
-
-    // The interface beautifully handles returning multiple dump files!
-    return [
-      { filename: "grid_points_regression.json", data: data.Points },
-      { filename: "grid_boundary_regression.json", data: data.Boundary },
-      { filename: "grid_voronoi_regression.json", data: data.Voronoi }
-    ];
-  }
-
-  public async execute(): Promise<GridRegressionResult> {
-    const pointCount = 2000;
-    defaultTestSetup({ points: pointCount });
-
-    // 1. Execute Generator
-    const grid = generateGrid(globalThis.seed, globalThis.graphWidth, globalThis.graphHeight);
-
-    // 2. Format Voronoi (re-using the typed array replacer for deeply nested arrays)
-    const voronoiCells = JSON.parse(JSON.stringify(grid.cells, typedArrayReplacer));
-    const voronoiVertices = JSON.parse(JSON.stringify(grid.vertices, typedArrayReplacer));
-
-    // 3. Construct and return the DTOs
+// --- RUNNER CLASSES ---
+export class GridPointsRunner implements IRegressionRunner<PointsRegressionData> {
+  public name = "Grid Points";
+  public filename = "grid_points_regression.json";
+  public async execute(): Promise<PointsRegressionData> {
+    executeGenerateGrid();
     return {
-      Points: {
-        Seed: globalThis.seed,
-        Width: globalThis.graphWidth,
-        Height: globalThis.graphHeight,
-        ExpectedPointsCount: pointCount,
-        ActualPointsCount: grid.points.length,
-        Spacing: grid.spacing,
-        CellsCountX: grid.cellsX,
-        CellsCountY: grid.cellsY,
-        Points: Array.from(grid.points) as [number, number][]
-      },
-      Boundary: {
-        Seed: globalThis.seed,
-        Width: globalThis.graphWidth,
-        Height: globalThis.graphHeight,
-        BoundaryPoints: Array.from(grid.boundary) as [number, number][]
-      },
-      Voronoi: {
-        Seed: globalThis.seed,
-        Width: globalThis.graphWidth,
-        Height: globalThis.graphHeight,
-        Cells: voronoiCells,
-        Vertices: voronoiVertices
-      }
+      Seed: globalThis.seed,
+      Width: globalThis.graphWidth,
+      Height: globalThis.graphHeight,
+      ExpectedPointsCount: pointCount,
+      ActualPointsCount: globalThis.grid.points.length,
+      Spacing: globalThis.grid.spacing,
+      CellsCountX: globalThis.grid.cellsX,
+      CellsCountY: globalThis.grid.cellsY,
+      Points: Array.from(globalThis.grid.points) as [number, number][]
     };
   }
 }
+
+export class GridBoundaryRunner implements IRegressionRunner<BoundaryRegressionData> {
+  public name = "Grid Boundary";
+  public filename = "grid_boundary_regression.json";
+  public async execute(): Promise<BoundaryRegressionData> {
+    executeGenerateGrid();
+    return {
+      Seed: globalThis.seed,
+      Width: globalThis.graphWidth,
+      Height: globalThis.graphHeight,
+      BoundaryPoints: Array.from(globalThis.grid.boundary) as [number, number][]
+    };
+  }
+}
+
+export class GridVoronoiRunner implements IRegressionRunner<VoronoiRegressionData> {
+  public name = "Voronoi Graph";
+  public filename = "grid_voronoi_regression.json";
+  public async execute(): Promise<VoronoiRegressionData> {
+    executeGenerateGrid();
+    const voronoiCells = JSON.parse(JSON.stringify(globalThis.grid.cells, typedArrayReplacer));
+    const voronoiVertices = JSON.parse(JSON.stringify(globalThis.grid.vertices, typedArrayReplacer));
+    return {
+      Seed: globalThis.seed,
+      Width: globalThis.graphWidth,
+      Height: globalThis.graphHeight,
+      Cells: voronoiCells,
+      Vertices: voronoiVertices
+    };
+  }
+}
+
+export const gridRunners = [new GridPointsRunner(), new GridBoundaryRunner(), new GridVoronoiRunner()];

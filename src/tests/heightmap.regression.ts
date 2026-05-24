@@ -1,6 +1,6 @@
 import { HeightmapModule } from "../modules/heightmap-generator.js";
 import { generateGrid } from "../utils/graphUtils.js";
-import type { IRegressionRunner, RegressionDumpPayload } from "./regression.interface.js";
+import type { IRegressionRunner } from "./regression.interface.js";
 import { defaultTestSetup } from "./regression.utils.js";
 
 export interface HeightmapTestCase {
@@ -35,25 +35,21 @@ export const heightmapTestCases: HeightmapTestCase[] = [
   { name: "template_continents", recipe: "continents", isTemplate: true }
 ];
 
-export class HeightmapRegressionRunner implements IRegressionRunner {
-  public name = "Heightmap Generator";
+export class HeightmapRegressionRunner implements IRegressionRunner<HeightmapRegressionData> {
+  private testCase: HeightmapTestCase;
+  public name: string;
+  public filename: string;
 
-  public async generateDumps(): Promise<RegressionDumpPayload[]> {
-    const payloads: RegressionDumpPayload[] = [];
-    for (const testCase of heightmapTestCases) {
-      payloads.push({
-        filename: `heightmap_${testCase.name}_regression.json`,
-        data: await this.execute(testCase)
-      });
-    }
-    return payloads;
+  constructor(testCase: HeightmapTestCase) {
+    this.testCase = testCase;
+    this.name = `Heightmap: ${testCase.name}`;
+    this.filename = `heightmap_${testCase.name}_regression.json`;
   }
 
-  // Now returns the typed interface instead of an anonymous object
-  public async execute(testCase: HeightmapTestCase): Promise<HeightmapRegressionData> {
+  public async execute(): Promise<HeightmapRegressionData> {
     defaultTestSetup({
-      templateId: testCase.isTemplate ? testCase.recipe : undefined,
-      templateCustomRecipe: !testCase.isTemplate ? testCase.recipe : undefined
+      templateId: this.testCase.isTemplate ? this.testCase.recipe : undefined,
+      templateCustomRecipe: !this.testCase.isTemplate ? this.testCase.recipe : undefined
     });
 
     const grid = generateGrid(globalThis.seed, globalThis.graphWidth, globalThis.graphHeight);
@@ -67,3 +63,5 @@ export class HeightmapRegressionRunner implements IRegressionRunner {
     };
   }
 }
+
+export const heightmapRunners = heightmapTestCases.map(tc => new HeightmapRegressionRunner(tc));
