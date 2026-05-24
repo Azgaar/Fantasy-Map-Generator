@@ -79,9 +79,9 @@ function tradeDetailsAddLines(): void {
 }
 
 function getClientType(deal: Deal, burg: Burg, direction: "from" | "to"): string {
-  if (deal.clientType === "market") return "market";
-  const isClient = direction === "to" ? deal.direction === "out" : deal.direction === "in";
-  return isClient ? burg.group || "burg" : "market";
+  const type = direction === "from" ? deal.sellerType : deal.buyerType;
+  if (type === "market") return "market";
+  return burg.group || "burg";
 }
 
 function closeTradeDetails(): void {

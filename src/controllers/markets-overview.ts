@@ -210,19 +210,24 @@ function getMarketFinancials(marketId: number): {
   buys: number;
   income: number;
 } {
-  const deals: Deal[] = (pack.deals || []).filter((deal: Deal) => deal.market === marketId);
+  const deals: Deal[] = (pack.deals || []).filter(
+    (deal: Deal) =>
+      (deal.sellerType === "market" && deal.seller === marketId) ||
+      (deal.buyerType === "market" && deal.buyer === marketId)
+  );
   let sales = 0;
   let buys = 0;
   let tax = 0;
 
   for (const deal of deals) {
     const amount = deal.units * deal.price;
-    if (deal.direction === "out") {
+    const marketIsSeller = deal.sellerType === "market" && deal.seller === marketId;
+    if (marketIsSeller) {
       sales += amount;
-    } else if (deal.direction === "in") {
+    } else {
       buys += amount;
-      if (deal.clientType === "burg") {
-        const seller = pack.burgs[deal.client] as Burg | undefined;
+      if (deal.sellerType === "burg") {
+        const seller = pack.burgs[deal.seller] as Burg | undefined;
         if (seller) tax += amount * getSalesTaxRateForBurg(seller);
       }
     }

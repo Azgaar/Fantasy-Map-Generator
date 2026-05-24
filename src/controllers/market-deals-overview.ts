@@ -43,7 +43,7 @@ function marketDealsAddLines(): void {
     return;
   }
 
-  const deals = pack.deals.filter(deal => deal.market === activeMarketId);
+  const deals = getMarketDeals(activeMarketId);
   let netFlow = 0;
 
   let lines = "";
@@ -59,23 +59,47 @@ function marketDealsAddLines(): void {
   applySorting(ensureEl("marketDealsHeader"));
 }
 
+function getMarketDeals(marketId: number): Deal[] {
+  return pack.deals.filter(
+    deal =>
+      (deal.sellerType === "market" && deal.seller === marketId) ||
+      (deal.buyerType === "market" && deal.buyer === marketId)
+  );
+}
+
+function isMarketSeller(deal: Deal): boolean {
+  return deal.sellerType === "market" && deal.seller === activeMarketId;
+}
+
+function getDirection(deal: Deal): "in" | "out" {
+  return isMarketSeller(deal) ? "out" : "in";
+}
+
+function getCounterparty(deal: Deal): { id: number; type: "burg" | "market" } {
+  return isMarketSeller(deal)
+    ? { id: deal.buyer, type: deal.buyerType }
+    : { id: deal.seller, type: deal.sellerType };
+}
+
 function renderDealLine(deal: Deal): string {
   const good = Goods.get(deal.good);
   if (!good) return "";
 
   const dealNet = getDealNet(deal);
   const party = getParty(deal);
+  const counterparty = getCounterparty(deal);
+  const direction = getDirection(deal);
   const incomeColor = dealNet >= 0 ? "#2a6" : "#c44";
 
-  return /* html */ `<div class="states marketDeal" data-id="${deal.i}" data-good="${good.name}" data-direction="${deal.direction}" data-units="${rn(deal.units, 2)}" data-counterparty="${deal.clientType}_${party?.name}" data-income="${dealNet}">
+  return /* html */ `<div class="states marketDeal" data-id="${deal.i}" data-good="${good.name}" data-direction="${direction}" data-units="${rn(deal.units, 2)}" data-counterparty="${counterparty.type}_${party?.name}" data-income="${dealNet}">
       <svg data-tip="Good icon" width="1.3em" height="1.3em" class="goodIcon">
         <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
         <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
       </svg>
       <div data-tip="Good name" class="goodName">${good.name}</div>
-      <div><span class="marketBadge" style="background:#f5d9d6; color:${incomeColor}">${deal.direction.toUpperCase()}</span></div>
+      <div><span class="marketBadge" style="background:#f5d9d6; color:${incomeColor}">${direction.toUpperCase()}</span></div>
       <div class="marketDealParty pointer" data-tip="Click to zoom">
-        <div class="${deal.clientType === "burg" ? "icon-dot-circled" : "icon-store"}" style="display:inline-block; width: 0.8em; ${deal.clientType === "market" ? "font-size: 0.85em;" : ""}"></div>
+        <div class="${counterparty.type === "burg" ? "icon-dot-circled" : "icon-store"}" style="display:inline-block; width: 0.8em; ${counterparty.type === "market" ? "font-size: 0.85em;" : ""}"></div>
         <div style="display:inline-block; width: 6.8em;">${party?.name}</div>
       </div>
       <div class="marketDealUnits">${rn(deal.units, 2)}</div>
@@ -84,20 +108,22 @@ function renderDealLine(deal: Deal): string {
 }
 
 function getParty(deal: Deal): Burg | null {
-  const burgId = deal.clientType === "burg" ? deal.client : Markets.get(deal.client)?.centerBurgId;
+  const counterparty = getCounterparty(deal);
+  const burgId =
+    counterparty.type === "burg" ? counterparty.id : Markets.get(counterparty.id)?.centerBurgId;
   if (!burgId) return null;
   return pack.burgs[burgId] || null;
 }
 
 function getDealNet(deal: Deal): number {
-  return rn(deal.units * deal.price * (deal.direction === "in" ? -1 : 1), 2);
+  return rn(deal.units * deal.price * (isMarketSeller(deal) ? 1 : -1), 2);
 }
 
 function downloadDealsCsv(): void {
   const market = Markets.get(activeMarketId);
   if (!market) return;
 
-  const lines = pack.deals.filter(deal => deal.market === activeMarketId);
+  const lines = getMarketDeals(activeMarketId);
   let csv = "Id,Good,Type,Client,Units,Price,Net\n";
   for (const deal of lines) {
     const good = Goods.get(deal.good);
@@ -106,7 +132,7 @@ function downloadDealsCsv(): void {
     csv += [
       deal.i,
       good.name,
-      deal.direction,
+      getDirection(deal),
       getParty(deal),
       rn(deal.units, 2),
       rn(deal.price, 2),

@@ -94,8 +94,8 @@ describe("getDealBatches", () => {
 
   it("groups multiple deals between the same burg pair into one batch", () => {
     const deals: any[] = [
-      { market: 1, client: 2, clientType: "burg", direction: "in" },
-      { market: 1, client: 2, clientType: "burg", direction: "in" }
+      { seller: 2, sellerType: "burg", buyer: 1, buyerType: "market" },
+      { seller: 2, sellerType: "burg", buyer: 1, buyerType: "market" }
     ];
     const batches = ta.getDealBatches(deals);
     expect(batches).toHaveLength(1);
@@ -104,17 +104,16 @@ describe("getDealBatches", () => {
     expect(batches[0].endBurgId).toBe(1);
   });
 
-  it("creates separate batches for different directions on the same pair", () => {
-    // "in" → client→market (2→1); "out" → market→client (1→2) — different keys
+  it("creates separate batches for swapped seller/buyer on the same pair", () => {
     const deals: any[] = [
-      { market: 1, client: 2, clientType: "burg", direction: "in" },
-      { market: 1, client: 2, clientType: "burg", direction: "out" }
+      { seller: 2, sellerType: "burg", buyer: 1, buyerType: "market" },
+      { seller: 1, sellerType: "market", buyer: 2, buyerType: "burg" }
     ];
     expect(ta.getDealBatches(deals)).toHaveLength(2);
   });
 
   it("skips deals whose market cannot be resolved", () => {
-    const deals: any[] = [{ market: 99, client: 2, clientType: "burg", direction: "in" }];
+    const deals: any[] = [{ seller: 2, sellerType: "burg", buyer: 99, buyerType: "market" }];
     expect(ta.getDealBatches(deals)).toHaveLength(0);
   });
 });

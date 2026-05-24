@@ -21,10 +21,10 @@ export type Market = {
 
 export type Deal = {
   i: number;
-  market: number;
-  client: number;
-  clientType: "burg" | "market";
-  direction: "in" | "out";
+  seller: number;
+  sellerType: "burg" | "market";
+  buyer: number;
+  buyerType: "burg" | "market";
   good: number;
   units: number;
   price: number;
@@ -289,12 +289,12 @@ export class MarketsModule {
     if (actualUnits < 0.01) return null;
 
     const deal = this.recordDeal({
-      market: market.i,
-      direction: "out",
+      seller: market.i,
+      sellerType: "market",
+      buyer: burg.i!,
+      buyerType: "burg",
       good: good.i,
       units: actualUnits,
-      client: burg.i!,
-      clientType: "burg",
       price: unitPrice
     });
 
@@ -312,12 +312,12 @@ export class MarketsModule {
     marketGood.stock += units;
 
     const deal = this.recordDeal({
-      market: market.i,
-      direction: "in",
+      seller: burg.i!,
+      sellerType: "burg",
+      buyer: market.i,
+      buyerType: "market",
       good: good.i,
       units,
-      client: burg.i!,
-      clientType: "burg",
       price
     });
 
@@ -434,22 +434,12 @@ export class MarketsModule {
         if (totalProfit < MIN_PROFIT) continue;
 
         this.recordDeal({
-          market: opportunity.importer.i,
-          direction: "in",
+          seller: opportunity.exporter.i,
+          sellerType: "market",
+          buyer: opportunity.importer.i,
+          buyerType: "market",
           good: good.i,
           units,
-          client: opportunity.exporter.i,
-          clientType: "market",
-          price
-        });
-
-        this.recordDeal({
-          market: opportunity.exporter.i,
-          direction: "out",
-          good: good.i,
-          units,
-          client: opportunity.importer.i,
-          clientType: "market",
           price
         });
 

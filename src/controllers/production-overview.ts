@@ -27,16 +27,19 @@ export function open(burgId: number): void {
     return;
   }
 
+  const isBurgSeller = (deal: Deal) => deal.sellerType === "burg" && deal.seller === burgId;
+  const isBurgBuyer = (deal: Deal) => deal.buyerType === "burg" && deal.buyer === burgId;
+
   const getDealSpent = (deal: Deal) => deal.units * deal.price;
 
   const getSellerTaxRate = (deal: Deal) => {
-    if (deal.direction !== "in") return 0;
-    const seller = pack.burgs[deal.client];
+    if (!isBurgSeller(deal)) return 0;
+    const seller = pack.burgs[deal.seller];
     return seller ? getSalesTaxRateForBurg(seller) : 0;
   };
 
   const getDealTax = (deal: Deal) => {
-    if (deal.direction !== "in") return 0;
+    if (!isBurgSeller(deal)) return 0;
     return deal.units * deal.price * getSellerTaxRate(deal);
   };
 
@@ -243,8 +246,7 @@ export function open(burgId: number): void {
   let totalTax = 0;
   let stepIndex = 0;
 
-  const dealById = new Map<number, Deal>((pack.deals || []).map(d => [d.i, d]));
-
+  const dealById = new Map(pack.deals.map(d => [d.i, d]));
   const allRows = data.flatMap(entry => {
     if (entry.kind === "mfg") {
       const mfg = entry as MfgHistory;
@@ -272,7 +274,7 @@ export function open(burgId: number): void {
       const deal = dealById.get(entry.dealId);
       if (!deal) return [];
       const detailsId = `deal-details-${stepIndex++}`;
-      if (deal.direction === "out") {
+      if (isBurgBuyer(deal)) {
         return renderExpandableDealRow({
           targetId: detailsId,
           goodId: deal.good,
@@ -283,7 +285,7 @@ export function open(burgId: number): void {
           detailsHtml: renderBuyDetails(deal.units, deal.price, getDealSpent(deal))
         });
       }
-      if (deal.direction === "in") {
+      if (isBurgSeller(deal)) {
         phaseRevenue += getDealNetRevenue(deal);
         totalTax += getDealTax(deal);
         return renderExpandableDealRow({

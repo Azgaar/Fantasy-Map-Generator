@@ -169,18 +169,16 @@ export class TradeAnimationModule {
   }
 
   private getDealEndpoints(deal: Deal): { start: Burg; end: Burg } | null {
-    const market = Markets.get(deal.market);
-    if (!market) return null;
+    const start = this.resolveParty(deal.seller, deal.sellerType);
+    const end = this.resolveParty(deal.buyer, deal.buyerType);
+    if (!start || !end) return null;
+    return { start, end };
+  }
 
-    const marketBurg = pack.burgs[market.centerBurgId];
-    if (!marketBurg) return null;
-
-    const clientBurgId = deal.clientType === "burg" ? deal.client : Markets.get(deal.client)?.centerBurgId;
-    if (!clientBurgId) return null;
-    const clientBurg = pack.burgs[clientBurgId];
-    if (!clientBurg) return null;
-
-    return deal.direction === "in" ? { start: clientBurg, end: marketBurg } : { start: marketBurg, end: clientBurg };
+  private resolveParty(id: number, type: "burg" | "market"): Burg | null {
+    const burgId = type === "burg" ? id : Markets.get(id)?.centerBurgId;
+    if (!burgId) return null;
+    return pack.burgs[burgId] || null;
   }
 
   getDefaultOptions(): Record<string, number> {
