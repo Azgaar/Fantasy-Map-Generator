@@ -72,6 +72,38 @@ function getDefaultPresets() {
       "toggleScaleBar",
       "toggleVignette"
     ],
+    goods: [
+      "toggleBorders",
+      "toggleBurgIcons",
+      "toggleGoods",
+      "toggleLakes",
+      "toggleRivers",
+      "toggleScaleBar",
+      "toggleStates",
+      "toggleVignette"
+    ],
+    markets: [
+      "toggleBorders",
+      "toggleBurgIcons",
+      "toggleLakes",
+      "toggleMarkets",
+      "toggleRivers",
+      "toggleRoutes",
+      "toggleScaleBar",
+      "toggleStates",
+      "toggleVignette"
+    ],
+    trade: [
+      "toggleBorders",
+      "toggleBurgIcons",
+      "toggleLakes",
+      "toggleRivers",
+      "toggleRoutes",
+      "toggleScaleBar",
+      "toggleStates",
+      "toggleTrade",
+      "toggleVignette"
+    ],
     military: [
       "toggleBorders",
       "toggleBurgIcons",

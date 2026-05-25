@@ -1,22 +1,9 @@
-import { clearTradeAnimations, drawTradeAnimation } from "../renderers/draw-trade-animation";
+import { clear, draw } from "../renderers/draw-trade-animation";
 import { ra, rand } from "../utils";
 import { findPath } from "../utils/pathUtils";
 import type { Burg } from "./burgs-generator";
 import type { Deal } from "./markets-generator";
 import type { Point } from "./voronoi";
-
-const DEFAULT_INTERVAL = 3000;
-const DEFAULT_MAX_SPAWN = 5;
-
-function getInterval(): number {
-  const value = options.tradeAnimations?.interval;
-  return typeof value === "number" ? value : DEFAULT_INTERVAL;
-}
-
-function getMaxSpawn(): number {
-  const value = options.tradeAnimations?.maxSpawn;
-  return typeof value === "number" ? value : DEFAULT_MAX_SPAWN;
-}
 
 export type TradeBatch = {
   id: string;
@@ -34,7 +21,7 @@ export class TradeAnimationModule {
     if (batches.length === 0) return;
 
     this.spawnAnimations(batches);
-    this.animationInterval = window.setInterval(() => this.spawnAnimations(batches), getInterval());
+    this.animationInterval = window.setInterval(() => this.spawnAnimations(batches), this.getInterval());
   }
 
   stop(): void {
@@ -42,7 +29,7 @@ export class TradeAnimationModule {
       clearInterval(this.animationInterval);
       this.animationInterval = null;
     }
-    clearTradeAnimations();
+    clear();
   }
 
   restart(): void {
@@ -57,7 +44,7 @@ export class TradeAnimationModule {
 
   trigger(batches: TradeBatch[]): void {
     if (!layerIsOn("toggleTrade")) {
-      clearTradeAnimations();
+      clear();
       return;
     }
 
@@ -67,7 +54,7 @@ export class TradeAnimationModule {
     const pathData = this.getPath(batch);
     if (!pathData) return;
 
-    drawTradeAnimation(batch, pathData.points, pathData.segments);
+    draw(batch, pathData.points, pathData.segments);
   }
 
   getPath(batch: TradeBatch): { points: Point[]; segments: { type: "land" | "water"; points: Point[] }[] } | null {
@@ -161,7 +148,7 @@ export class TradeAnimationModule {
       return;
     }
 
-    const maxSpawn = getMaxSpawn();
+    const maxSpawn = this.getMaxSpawn();
     const spawnCount = rand(1, maxSpawn);
     for (let i = 0; i < spawnCount; i++) {
       this.trigger(batches);
@@ -179,6 +166,16 @@ export class TradeAnimationModule {
     const burgId = type === "burg" ? id : Markets.get(id)?.centerBurgId;
     if (!burgId) return null;
     return pack.burgs[burgId] || null;
+  }
+
+  private getInterval(): number {
+    const value = options.tradeAnimation?.interval;
+    return typeof value === "number" ? value : this.getDefaultOptions().interval;
+  }
+
+  private getMaxSpawn(): number {
+    const value = options.tradeAnimation?.maxSpawn;
+    return typeof value === "number" ? value : this.getDefaultOptions().maxSpawn;
   }
 
   getDefaultOptions(): Record<string, number> {

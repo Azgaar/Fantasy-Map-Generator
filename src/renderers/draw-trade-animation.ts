@@ -2,22 +2,9 @@ import { curveCatmullRom, easeLinear, line } from "d3";
 import type { TradeBatch } from "../modules/trade-animation";
 import type { Point } from "../modules/voronoi";
 
-const DEFAULTS = {
-  duration: 200,
-  fadeDuration: 2000,
-  markerSize: 4,
-  landDurationModifier: 5,
-  segmentChangePause: 1000
-} as const;
-
-function setting<K extends keyof typeof DEFAULTS>(key: K): number {
-  const value = options.tradeAnimations?.[key];
-  return typeof value === "number" ? value : DEFAULTS[key];
-}
-
 const lineGen = line<Point>().curve(curveCatmullRom.alpha(0.1));
 
-export function drawTradeAnimation(
+export function draw(
   batch: TradeBatch,
   points: Point[],
   segments: { type: "land" | "water"; points: Point[] }[]
@@ -31,8 +18,7 @@ export function drawTradeAnimation(
     .attr("d", lineGen(points))
     .attr("fill", "none")
     .attr("stroke-opacity", 0);
-
-  const fade = setting("fadeDuration");
+  const fade = options.tradeAnimation.fadeDuration;
   pathElement.transition().duration(fade).attr("stroke-opacity", 1);
 
   animateSegment(0);
@@ -45,11 +31,11 @@ export function drawTradeAnimation(
     const segment = segments[idx];
 
     const group = markersGroup.append("g");
-    const size = setting("markerSize");
+    const size = options.tradeAnimation.markerSize;
     const imgSize = segment.type === "land" ? size / 2 : size;
     const imgHref = `./images/markers/${segment.type === "land" ? "wagon" : "ship"}.png`;
-    const duration = setting("duration");
-    const segDuration = segment.type === "land" ? duration * setting("landDurationModifier") : duration;
+    const duration = options.tradeAnimation.duration;
+    const segDuration = segment.type === "land" ? duration * options.tradeAnimation.landDurationModifier : duration;
 
     group
       .append("image")
@@ -91,12 +77,12 @@ export function drawTradeAnimation(
       })
       .on("end", () => {
         group.remove();
-        setTimeout(() => animateSegment(idx + 1), setting("segmentChangePause"));
+        setTimeout(() => animateSegment(idx + 1), options.tradeAnimation.segmentChangePause);
       });
   }
 }
 
-export function clearTradeAnimations(): void {
+export function clear(): void {
   tradeAnimation.select("g#trade-paths").selectAll("*").interrupt().remove();
   tradeAnimation.select("g#trade-markers").selectAll("*").interrupt().remove();
 }
@@ -123,14 +109,14 @@ export function clearTradeHighlight(): void {
 
 declare global {
   interface Window {
-    drawTradeAnimation: typeof drawTradeAnimation;
-    clearTradeAnimations: typeof clearTradeAnimations;
-    drawTradeHighlight: typeof drawTradeHighlight;
-    clearTradeHighlight: typeof clearTradeHighlight;
+    draw: typeof draw;
+    clear: typeof clear;
+    drawHighlight: typeof drawTradeHighlight;
+    clearHighlight: typeof clearTradeHighlight;
   }
 }
 
-window.drawTradeAnimation = drawTradeAnimation;
-window.clearTradeAnimations = clearTradeAnimations;
-window.drawTradeHighlight = drawTradeHighlight;
-window.clearTradeHighlight = clearTradeHighlight;
+window.draw = draw;
+window.clear = clear;
+window.drawHighlight = drawTradeHighlight;
+window.clearHighlight = clearTradeHighlight;

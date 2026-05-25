@@ -253,12 +253,7 @@ async function parseLoadedData(data, mapVersion) {
       if (settings[14]) mapSizeInput.value = mapSizeOutput.value = minmax(settings[14], 1, 100);
       if (settings[15]) latitudeInput.value = latitudeOutput.value = minmax(settings[15], 0, 100);
       if (settings[18]) precInput.value = precOutput.value = settings[18];
-      if (settings[19]) {
-        const loaded = JSON.parse(settings[19]);
-        // Merge trade animation defaults so older saves get the new options block
-        loaded.tradeAnimations = { ...options.tradeAnimations, ...(loaded.tradeAnimations || {}) };
-        options = loaded;
-      }
+      if (settings[19]) options = JSON.parse(settings[19]);
       // setting 16 and 17 (temperature) are part of options now, kept as "" in newer versions for compatibility
       if (settings[16]) options.temperatureEquator = +settings[16];
       if (settings[17]) options.temperatureNorthPole = options.temperatureSouthPole = +settings[17];

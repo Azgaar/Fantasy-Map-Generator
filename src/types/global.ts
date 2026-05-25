@@ -15,7 +15,7 @@ declare global {
   var WARN: boolean;
   var ERROR: boolean;
   var DEBUG: { stateLabels?: boolean; [key: string]: boolean | undefined };
-  var options: any;
+  var options: Options;
 
   var heightmapTemplates: any;
   var Routes: any;
@@ -145,3 +145,17 @@ declare global {
   var regenerateGoods: () => void;
   var legend: any;
 }
+
+type Options = {
+  pinNotes: boolean;
+  winds: number[];
+  temperatureEquator: number;
+  temperatureNorthPole: number;
+  temperatureSouthPole: number;
+  stateLabelsMode: string;
+  showBurgPreview: boolean;
+  burgs: {
+    groups: Record<string, number[]>;
+  };
+  tradeAnimation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
+};

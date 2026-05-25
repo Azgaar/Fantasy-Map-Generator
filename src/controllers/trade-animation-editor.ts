@@ -49,7 +49,7 @@ const SLIDERS = [
     label: "Marker size",
     tip: "Marker icon size in map units. Wagons render at half this size.",
     min: 1,
-    max: 20,
+    max: 50,
     step: 0.5,
     key: "markerSize",
     default: DEFAULTS.markerSize
@@ -68,19 +68,19 @@ export function open(): void {
     const output = ensureEl(`${def.id}Out`);
     const resetBtn = ensureEl(`${def.id}Reset`);
 
-    const current = options.tradeAnimations[def.key] ?? def.default;
+    const current = options.tradeAnimation[def.key] ?? def.default;
     slider.value = String(current);
     output.textContent = String(current);
 
     slider.on("input", () => {
       const value = slider.valueAsNumber;
-      options.tradeAnimations[def.key] = value;
+      options.tradeAnimation[def.key] = value;
       output.textContent = String(value);
       if (def.restart && layerIsOn("toggleTrade")) TradeAnimation.restart();
     });
 
     resetBtn.on("click", () => {
-      options.tradeAnimations[def.key] = def.default;
+      options.tradeAnimation[def.key] = def.default;
       slider.value = String(def.default);
       output.textContent = String(def.default);
       if (def.restart && layerIsOn("toggleTrade")) TradeAnimation.restart();
@@ -96,7 +96,7 @@ export function open(): void {
 
 function buildDialogHTML(): string {
   const rows = SLIDERS.map(({ id, label, tip, min, max, step, key, default: def }) => {
-    const current = options.tradeAnimations[key] ?? def;
+    const current = options.tradeAnimation[key] ?? def;
     return /* html */ `
       <tr data-tip="${tip}">
         <td style="padding:0">${label}</td>

@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../renderers/draw-trade-animation", () => ({
-  drawTradeAnimation: vi.fn(),
-  clearTradeAnimations: vi.fn(),
-  drawTradeHighlight: vi.fn(),
-  clearTradeHighlight: vi.fn()
+  draw: vi.fn(),
+  clear: vi.fn(),
+  drawHighlight: vi.fn(),
+  clearHighlight: vi.fn()
 }));
 
 vi.mock("../utils/pathUtils", async importOriginal => {
@@ -145,26 +145,26 @@ describe("getPath", () => {
 describe("trigger", () => {
   it("does nothing when given an empty batch list", () => {
     ta.trigger([]);
-    expect(drawTrade.drawTradeAnimation).not.toHaveBeenCalled();
+    expect(drawTrade.draw).not.toHaveBeenCalled();
   });
 
   it("clears animations and returns when the layer is disabled", () => {
     vi.mocked(globalThis.layerIsOn).mockReturnValue(false);
     ta.trigger([{ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2 }]);
-    expect(drawTrade.clearTradeAnimations).toHaveBeenCalled();
-    expect(drawTrade.drawTradeAnimation).not.toHaveBeenCalled();
+    expect(drawTrade.clear).toHaveBeenCalled();
+    expect(drawTrade.draw).not.toHaveBeenCalled();
   });
 
   it("draws animation when the layer is active and a path exists", () => {
     vi.mocked(findPath).mockReturnValue([0, 1]);
     const batch = { id: "1-2", deals: [], startBurgId: 1, endBurgId: 2 };
     ta.trigger([batch]);
-    expect(drawTrade.drawTradeAnimation).toHaveBeenCalledWith(batch, expect.any(Array), expect.any(Array));
+    expect(drawTrade.draw).toHaveBeenCalledWith(batch, expect.any(Array), expect.any(Array));
   });
 
   it("does not draw when no path can be found", () => {
     vi.mocked(findPath).mockReturnValue(null);
     ta.trigger([{ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2 }]);
-    expect(drawTrade.drawTradeAnimation).not.toHaveBeenCalled();
+    expect(drawTrade.draw).not.toHaveBeenCalled();
   });
 });

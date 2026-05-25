@@ -1134,7 +1134,7 @@ export function resolveVersionConflicts(mapVersion) {
       pack.cells.good = new Uint16Array(pack.cells.i.length); // TODO: define goods for cells
       Goods.generate();
     }
-    options.tradeAnimations = TradeAnimation.getDefaultOptions();
+    options.tradeAnimation = TradeAnimation.getDefaultOptions();
 
     // TODO: update burgs data
     // TODO: update states data
