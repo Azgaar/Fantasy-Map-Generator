@@ -5,5 +5,5 @@ export default {
         outDir: '../dist',
         assetsDir: './',
     },
-    publicDir: '../public'
+    publicDir: '../public',
 }

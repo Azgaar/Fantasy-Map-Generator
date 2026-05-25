@@ -1,7 +1,7 @@
 import "./regression.setup.js";
 import { generateGrid } from "../utils/graphUtils.js";
 import type { IRegressionRunner, IRegressionSuite } from "./regression.interface.js";
-import { defaultTestSetup, typedArrayReplacer } from "./regression.utils.js"; // Adjust to test.utils.js if needed
+import { defaultTestSetup } from "./regression.utils.js";
 
 // --- INTERFACES ---
 export interface PointsRegressionData {
@@ -75,16 +75,29 @@ export class GridBoundaryRunner implements IRegressionRunner<BoundaryRegressionD
 export class GridVoronoiRunner implements IRegressionRunner<VoronoiRegressionData> {
   public name = "Voronoi Graph";
   public filename = "grid_voronoi_regression.json";
+
   public async execute(): Promise<VoronoiRegressionData> {
-    executeGenerateGrid();
-    const voronoiCells = JSON.parse(JSON.stringify(globalThis.grid.cells, typedArrayReplacer));
-    const voronoiVertices = JSON.parse(JSON.stringify(globalThis.grid.vertices, typedArrayReplacer));
+    executeGenerateGrid(); // Assuming this is defined in your scope
+
+    const grid = globalThis.grid;
+
     return {
       Seed: globalThis.seed,
       Width: globalThis.graphWidth,
       Height: globalThis.graphHeight,
-      Cells: voronoiCells,
-      Vertices: voronoiVertices
+
+      Cells: {
+        v: Array.from(grid.cells.v as any[]).map(arr => Array.from(arr as number[])),
+        c: Array.from(grid.cells.c as any[]).map(arr => Array.from(arr as number[])),
+        b: Array.from(grid.cells.b as number[]),
+        i: Array.from(grid.cells.i as number[])
+      },
+
+      Vertices: {
+        p: Array.from(grid.vertices.p as any[]).map((pt: any) => [pt[0], pt[1]] as [number, number]),
+        v: Array.from(grid.vertices.v as any[]).map(arr => Array.from(arr as number[])),
+        c: Array.from(grid.vertices.c as any[]).map(arr => Array.from(arr as number[]))
+      }
     };
   }
 }

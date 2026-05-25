@@ -2,17 +2,6 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import Alea from "alea";
 
-/**
- * Safely serializes TypedArrays (Uint8Array, Int32Array, etc.) into standard JSON arrays.
- * Use this as the replacer function in JSON.stringify() during regression dumps.
- */
-export const typedArrayReplacer = (_key: string, value: any) => {
-  if (ArrayBuffer.isView(value) && !(value instanceof DataView)) {
-    return Array.from(value as any);
-  }
-  return value;
-};
-
 export const isPointInPolygon = (p: [number, number], poly: [number, number][]) => {
   let inside = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -26,7 +15,6 @@ export const isPointInPolygon = (p: [number, number], poly: [number, number][]) 
   return inside;
 };
 
-// src/tests/test.utils.ts
 export interface TestOptions {
   seed?: string;
   width?: number;
