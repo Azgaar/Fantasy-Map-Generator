@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { type HeightmapRegressionData, heightmapRunners } from "./heightmap.regression.js";
+import { type HeightmapRegressionData, heightmapSuite } from "./heightmap.regression.js";
 import { loadRegressionData } from "./regression.utils.js";
 
 describe("Heightmap Generator Parameterized Regression", () => {
-  it.each(heightmapRunners.map(r => [r]))("Heightmap regression: $name", async runner => {
+  it.each(heightmapSuite.runners.map(r => [r]))("Heightmap regression: $name", async runner => {
     const expected = loadRegressionData<HeightmapRegressionData>(runner.filename);
     const actual = await runner.execute();
 

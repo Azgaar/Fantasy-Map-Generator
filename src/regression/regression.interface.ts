@@ -4,3 +4,8 @@ export interface IRegressionRunner<T = any> {
   // This extracts the specific slice of data this test case needs
   execute: () => Promise<T>;
 }
+
+export interface IRegressionSuite {
+  name: string;
+  runners: IRegressionRunner<any>[];
+}

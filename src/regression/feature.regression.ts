@@ -2,7 +2,7 @@ import "./regression.setup.js";
 import { FeatureModule } from "../modules/features.js";
 import { HeightmapModule } from "../modules/heightmap-generator.js";
 import { generateGrid } from "../utils/graphUtils.js";
-import type { IRegressionRunner } from "./regression.interface.js";
+import type { IRegressionRunner, IRegressionSuite } from "./regression.interface.js";
 import { defaultTestSetup } from "./regression.utils.js";
 
 export interface FeatureRegressionItem {
@@ -43,3 +43,8 @@ export class GridFeatureRegressionRunner implements IRegressionRunner<GridFeatur
     };
   }
 }
+
+export const featureSuite: IRegressionSuite = {
+  name: "Feature Regression",
+  runners: [new GridFeatureRegressionRunner()]
+};

@@ -1,6 +1,6 @@
 import { HeightmapModule } from "../modules/heightmap-generator.js";
 import { generateGrid } from "../utils/graphUtils.js";
-import type { IRegressionRunner } from "./regression.interface.js";
+import type { IRegressionRunner, IRegressionSuite } from "./regression.interface.js";
 import { defaultTestSetup } from "./regression.utils.js";
 
 export interface HeightmapTestCase {
@@ -64,4 +64,7 @@ export class HeightmapRegressionRunner implements IRegressionRunner<HeightmapReg
   }
 }
 
-export const heightmapRunners = heightmapTestCases.map(tc => new HeightmapRegressionRunner(tc));
+export const heightmapSuite: IRegressionSuite = {
+  name: "Heightmap Regression",
+  runners: heightmapTestCases.map(tc => new HeightmapRegressionRunner(tc))
+};

@@ -1,6 +1,6 @@
 import "./regression.setup.js";
 import { generateGrid } from "../utils/graphUtils.js";
-import type { IRegressionRunner } from "./regression.interface.js";
+import type { IRegressionRunner, IRegressionSuite } from "./regression.interface.js";
 import { defaultTestSetup, typedArrayReplacer } from "./regression.utils.js"; // Adjust to test.utils.js if needed
 
 // --- INTERFACES ---
@@ -89,4 +89,7 @@ export class GridVoronoiRunner implements IRegressionRunner<VoronoiRegressionDat
   }
 }
 
-export const gridRunners = [new GridPointsRunner(), new GridBoundaryRunner(), new GridVoronoiRunner()];
+export const gridSuite: IRegressionSuite = {
+  name: "Grid Regression",
+  runners: [new GridPointsRunner(), new GridBoundaryRunner(), new GridVoronoiRunner()]
+};
