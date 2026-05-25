@@ -1,7 +1,6 @@
 import Alea from "alea";
 import { color, shuffler } from "d3";
 import type { PackedGraph } from "../types/PackedGraph";
-import { createTypedArray, TYPED_ARRAY_MAX } from "../utils";
 import type { CultureType } from "./cultures-generator";
 
 export interface Good {

@@ -35,9 +35,11 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Zone**: An arbitrary highlighted area of the map defined for custom purposes (e.g., danger zone, magic zone).
 - **Diplomacy**: The system of political relationships (allies, enemies, neutral, vassals) between different States.
 - **Regiment / Military**: The armed forces belonging to States or Burgs, represented by units.
-- **Good**: A resource or product (e.g., wood, iron, grain) with properties like value, demand, and recipes.
-- **Market**: A regional economic hub where goods are bought and sold.
-- **Deal**: A record of a transaction in the trade/markets system.
+- **Good**: A resource or product (e.g., wood, iron, grain) with properties like value, demand, and recipes. Raw goods have a `distribution`; manufactured goods have `recipes`.
+- **Market**: A regional economic hub anchored at a burg. Owns per-good stock and price, mediates all flows between rural cells, burgs, and other markets.
+- **Deal**: A record of a single transaction in the trade/markets system (`{seller, sellerType, buyer, buyerType, good, units, price}`). Stored in `pack.deals` and consumed by the trade animation and trade details UI.
+- **Trade Batch**: All deals sharing the same ordered `(seller burg, buyer burg)` endpoints, animated as one flow on the map.
+- **Demand Category**: One of `food | utilities | construction | military | luxury`, evaluated in `DEMAND_PRIORITY` order during production and demand fill.
 - **Namesbase**: A collection of linguistic rules, prefixes, and suffixes used to procedurally generate names for map entities.
 - **Emblem**: A heraldic shield or flag representing a State, Province, or Burg.
 - **Note**: User-defined text attached to a specific map entity (cell, burg, state) containing custom lore or description.

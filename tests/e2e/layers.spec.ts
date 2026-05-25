@@ -139,6 +139,32 @@ test.describe('map layers', () => {
     expect(html).toMatchSnapshot('borders.html')
   })
 
+  test('markets layer', async () => {
+    // markets is off by default — toggle it on to render market regions
+    await sharedPage.evaluate(() => (window as any).toggleMarkets())
+    await sharedPage.waitForTimeout(300)
+
+    const marketsEl = sharedPage.locator('#markets')
+    await expect(marketsEl).toBeAttached()
+
+    // At least one market <g data-id="N"> group must be rendered
+    const firstGroup = marketsEl.locator('g[data-id]').first()
+    await expect(firstGroup).toBeAttached()
+
+    // Every market group has a path element for the region polygon
+    await expect(firstGroup.locator('path')).toBeAttached()
+
+    // Every market group has a circle at the centre burg
+    await expect(firstGroup.locator('circle')).toBeAttached()
+
+    const html = await marketsEl.evaluate((el) => el.outerHTML)
+    expect(html).toMatchSnapshot('markets.html')
+
+    // Restore: toggle markets off
+    await sharedPage.evaluate(() => (window as any).toggleMarkets())
+    await sharedPage.waitForTimeout(200)
+  })
+
   // Cultural layers
   test('cultures layer', async () => {
     const cults = sharedPage.locator('#cults')
@@ -247,6 +273,44 @@ test.describe('map layers', () => {
     await expect(emblems).toBeAttached()
     const html = await emblems.evaluate((el) => el.outerHTML)
     expect(html).toMatchSnapshot('emblems.html')
+  })
+
+  // Economy layers (off by default — require activation)
+  test('goods layer', async () => {
+    // goods is off by default — toggle it on to render good icons on cells
+    await sharedPage.evaluate(() => (window as any).toggleGoods())
+    await sharedPage.waitForTimeout(300)
+
+    const goodsEl = sharedPage.locator('#goods')
+    await expect(goodsEl).toBeAttached()
+
+    // Good icons are <use> elements pointing to a #good-* SVG symbol
+    const icons = goodsEl.locator('use')
+    await expect(icons.first()).toBeAttached()
+
+    const href = await icons.first().getAttribute('href')
+    expect(href).toMatch(/^#good-/)
+
+    const html = await goodsEl.evaluate((el) => el.outerHTML)
+    expect(html).toMatchSnapshot('goods.html')
+
+    // Restore: toggle goods off
+    await sharedPage.evaluate(() => (window as any).toggleGoods())
+  })
+
+  test('trade animation layer structure', async () => {
+    const tradeAnim = sharedPage.locator('#tradeAnimation')
+    await expect(tradeAnim).toBeAttached()
+
+    // Three sub-groups are always present in the DOM regardless of animation state
+    await expect(sharedPage.locator('#trade-paths')).toBeAttached()
+    await expect(sharedPage.locator('#trade-highlight')).toBeAttached()
+    await expect(sharedPage.locator('#trade-markers')).toBeAttached()
+
+    // No animation is running — all sub-groups start empty
+    await expect(sharedPage.locator('#trade-paths > *')).toHaveCount(0)
+    await expect(sharedPage.locator('#trade-highlight > *')).toHaveCount(0)
+    await expect(sharedPage.locator('#trade-markers > *')).toHaveCount(0)
   })
 
   // Grid and coordinates

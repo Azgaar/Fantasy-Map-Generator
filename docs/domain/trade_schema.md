@@ -1,151 +1,178 @@
 # Markets Schema
 
-Markets is centered on regional market objects. All flows of goods and money are mediated by the market layer, with no object/Map/Set structures in the hot path.
-
-- Rural cells seed raw stock into markets (not directly to burgs).
-- Burgs manufacture goods using inventory and market inputs, then sell all output to the market.
-- Markets redistribute surpluses between each other after production.
-- Burgs finally buy demand goods from their own market to fill needs.
+Markets are the centralized economic layer. Every flow of goods or money passes through a market: rural cells seed stock, burgs buy ingredients and sell output, and surpluses move between markets via global trade. The hot path is array-based and avoids `Map` / `Set` / `Record` lookups.
 
 ## Market creation
 
-`Markets.initialize()`:
+`Markets.generate()`:
 
-1. Resets and creates markets, deals, and tax ledgers.
-2. Places markets by scoring burgs by population, capital status, and port status.
-3. Assigns every active burg to the nearest accepted market center.
-4. Creates per-good market state with `stock` and `price` arrays.
-5. Seeds rural production into market stock.
-6. Sets initial prices from local supply and expected demand.
+1. Scores every active burg by `population`, with `×2` for capitals and `×2` for ports.
+2. Walks burgs in descending score and places a new market whenever no existing market is within an adaptive spacing radius (a quadtree-based spatial check). Each accepted market gets an `i`, a `centerBurgId`, and a random color.
+3. Expands markets out from each center using a cost-aware flood fill (`expandMarkets`). Travel cost favors connected routes, same waterbody for ports, same river, and same state/province; mountains and crossing state borders are penalized. Deep water cells without a good are excluded from market assignment. The result is written to `pack.cells.market` (a `Uint16Array`).
+4. Sets `burg.market` for every active burg from the resulting cell-to-market map.
+5. Resets `pack.deals = []`.
+
+Note: market stock and prices are not initialized during `generate()`. They are seeded and priced inside `Production.produce()` via `Markets.collectRuralProduction()` and `Markets.initializeMarketPrices()`.
 
 ## Rural seeding
 
-Rural production is assigned to markets before any burg works.
+`Markets.collectRuralProduction()` runs before any burg produces. For each cell whose market is set:
 
-For each cell:
+- If `pack.cells.good[cellId]` is set, the market gains `BONUS_RESOURCE_PRODUCTION × cultureModifier` units of that good.
+- For every good with `good.biome[biomeId] > 0`, the market gains `population × biomeProduction × cultureModifier` units of that good.
 
-- `cells.good[cellId]` adds a fixed bonus (`BONUS_RESOURCE_PRODUCTION`) of raw stock for that specific resource.
-- `cells.pop[cellId] * good.biome[biomeId]` adds biome-based output for every good producible in that biome.
-- All stock goes to the market that owns the cell (`cells.market[cellId]`).
-
-This makes raw goods a market-level input instead of a burg-local extraction pool.
-
-## Local resource bonus (burg side)
-
-Separately from market seeding, each burg whose `pack.cells.good[burg.cell]` is set receives a free pre-production stock:
-
-    localBonus = Math.min(Math.ceil(population), BONUS_RESOURCE_PRODUCTION)
-
-These units go directly into the burg's starting inventory, bypassing the market entirely. Additionally, that good receives a 50% discount on its `buyPrice` in the burg's market view, making recipes that use it score significantly higher.
+`cultureModifier` is `good.culture[cultureType]` for the cell's culture, defaulting to `1`. All stock goes to the market that owns the cell.
 
 ## Initial pricing
 
-Every market good starts from authored `good.value`, then is adjusted in two passes:
+`Markets.initializeMarketPrices()` sets each market good's `price` from its `good.value`, then adjusts in two passes:
 
-**Raw goods** — demand/supply ratio:
+**Raw goods** (those with a `distribution`) — demand/supply ratio:
 
-    ratio = (population × (consumerDemand + industrialDemand) + smoothing) / (stock + smoothing)
-    price = good.value × clamp(ratio, PRICE_FLOOR_FACTOR, PRICE_CEILING_FACTOR)
+    demand = population × (consumerDemandFactor + industrialDemandFactor)
+    ratio  = (demand + LAPLACE_PRICE_SMOOTHING) / (stock + LAPLACE_PRICE_SMOOTHING)
+    price  = good.value × clamp(ratio, PRICE_FLOOR_FACTOR, PRICE_CEILING_FACTOR)
 
-**Manufactured goods** — average local ingredient cost plus value-add:
+`consumerDemandFactor` derives from each good's share of its category's total `demandCoverage`, scaled by `DEMAND_TARGET_FACTORS`. `industrialDemandFactor` accumulates per-capita ingredient demand from recipes that consume the good.
 
-    avgLocalCost = average across recipes of (Σ ingredient.amount × market ingredient price)
-    price = clamp(avgLocalCost + max(0, good.value − avgBaseCost), floor, ceiling)
+**Manufactured goods** (those with `recipes`) — local ingredient cost plus base value-add:
 
-Prices are clamped to `[good.value × PRICE_FLOOR_FACTOR, good.value × PRICE_CEILING_FACTOR]`.
+    avgMarketCost = mean over recipes of (Σ ingredient.amount × market ingredient price)
+    avgBaseCost   = mean over recipes of (Σ ingredient.amount × ingredient.value)
+    price         = clamp(avgMarketCost + max(0, good.value − avgBaseCost), floor, ceiling)
 
-## Production buy phase
+All prices are clamped to `[good.value × PRICE_FLOOR_FACTOR, good.value × PRICE_CEILING_FACTOR]`.
 
-Used when a burg buys recipe inputs during manufacturing:
+## Quoted buy/sell prices
 
-- Market stock decreases.
-- `burg.treasury` decreases.
-- Market price rises under buy pressure.
-- No sales tax is charged.
+Each market good stores a single midpoint `price`. Customer-facing prices are derived per call:
 
-## Sale phase
+    buyPrice  = price × (1 + MARKET_MARGIN)
+    sellPrice = price × (1 − MARKET_MARGIN)
 
-Used when a burg sells its entire inventory after manufacturing:
+`Markets.quoteMarket(market, goodId)` returns `{ stock, buyPrice, sellPrice }` for planning.
 
-- Market stock increases.
-- `burg.treasury` receives post-tax revenue.
-- Market price falls under sell pressure.
+## Buy phase (production)
+
+`Markets.buy({ burg, good, units, budget? })` is called when a burg needs recipe ingredients:
+
+- Caps the order at `min(units, marketStock, budget / buyPrice)` and rounds to 2 decimals.
+- If the resulting amount is < 0.01, returns `null`.
+- Records a deal with `seller = market.i / sellerType = "market"` and `buyer = burg.i / buyerType = "burg"`.
+- Reduces market stock; raises market price under buy pressure. No sales tax.
+
+The production module subtracts `deal.units × deal.price` from `burg.treasury` and accumulates it into `state.ingredientCosts`.
+
+## Sell phase (production)
+
+`Markets.sell({ burg, good, units })` is called once per good when a burg sells its inventory after production:
+
+- Records a deal with `seller = burg.i / sellerType = "burg"` and `buyer = market.i / buyerType = "market"`.
+- Increases market stock; lowers market price under sell pressure.
+- Returns the deal; the production module applies the burg's state sales tax to gross revenue and adds the post-tax amount to `burg.treasury`.
 
 ## Demand-fill buy phase
 
-Used after redistribution when a burg buys goods to cover personal demand:
+After global trade, each burg fills personal demand via `Markets.buy(...)` with a `budget` argument equal to the remaining `burg.treasury`:
 
-- Market stock decreases.
-- `burg.treasury` decreases, capped by available wealth.
-- Market price rises under buy pressure.
-- Purchased goods are stored in `demandInventory` and written to `burg.inventory` for the next cycle.
+- Sorts candidate goods per category by `buyPrice / coverageWeight` and buys the cheapest first.
+- Each purchase decreases stock, raises price, and reduces treasury.
+- Bought units accumulate into `burg.inventory` for the next cycle's starting inventory.
 
 ## Global redistribution
 
-`Markets.redistributeAcrossMarkets(productionData, demandInventory)`:
+`Markets.runGlobalTrade()` runs after every burg has produced and sold. For each good:
 
-1. Computes uncovered demand per market from the (empty) post-production burg inventories and demand targets.
-2. Builds export pools from each market's stock exceeding its local reserve (`TRADE_RESERVE_FACTOR`).
-3. Transfers surplus goods from exporter markets to importer markets by demand coverage priority.
-4. Records inter-market deals.
-5. Adjusts prices: exporter price rises (scarcity), importer price rises (demand pressure).
+1. Computes a per-market safety reserve = `population × (consumerDemand + industrialDemand) × (1 + TRADE_RESERVE_FACTOR)`.
+2. Splits markets into **exporters** (stock above reserve) and **importers** (stock below reserve). Skips the good entirely if either side is empty.
+3. For each (exporter, importer) pair, builds an opportunity with:
+   - `transportCost = (octileDistance / mapDiagonal) × DISTANCE_COST_FACTOR × good.value` (a precomputed Chebyshev-octile straight-line cost between market center burgs).
+   - `unitProfit = importerPrice − (exporterPrice + transportCost)`
+   - `units = min(exporterAvailable, importerNeeded)`
+   - Skips if `unitProfit × units < MIN_PROFIT` or `units < MIN_UNIT`.
+4. Sorts opportunities by total profit descending and executes them greedily, recomputing available / needed at execution time.
+5. Each executed transfer records a market-to-market deal at price `exporterPrice + transportCost`, moves stock, and applies market pressure:
+   - **Exporter price rises** (lost stock → applyMarketPressure with positive `units`).
+   - **Importer price falls** (gained stock → applyMarketPressure with negative `units`).
 
-No sales tax is applied to global redistribution.
+No sales tax is applied to inter-market trade.
 
 ## Demand model
 
 Demand is population-driven and category-based:
 
-- `DEMAND_PRIORITY` defines evaluation order: food → utilities → construction → military → luxury.
-- `DEMAND_TARGET_FACTORS` converts burg population into target demand per category.
-- `good.demandCoverage` defines how much one unit contributes to each category.
+- `DEMAND_PRIORITY` defines evaluation order: `food → utilities → construction → military → luxury`.
+- `DEMAND_TARGET_FACTORS` converts burg population into a per-category target via `getDemandTargets(population)`.
+- `good.demandCoverage[category]` defines how much one unit of the good contributes to each category.
 
 The same demand model drives:
 
-- market redistribution priorities
-- final burg demand-fill purchases
-- market demand tracking via `updateMarketDemand`
+- initial price computation (consumer + industrial demand factors),
+- the worker loop's demand-focus multiplier,
+- per-market safety reserves in `runGlobalTrade`,
+- final burg demand-fill prioritization (`cost per coverage`).
 
-## Market and Planning Data Model
+There is no separate `updateMarketDemand` step; demand factors are recomputed per phase from `pack.goods` and burg population.
 
-Each market stores:
+## Data model
 
-- `i`: market id
-- `centerBurgId`: anchor burg
-- `goods[goodId].stock`
-- `goods[goodId].price` (single price; buy/sell are derived by adding/subtracting `MARKET_MARGIN`)
+`pack.markets: Market[]` where each `Market` is:
 
-Member burgs are derived from `pack.burgs` by matching `burg.market`.
-Cell-to-market assignment is stored in `pack.cells.market` as a `Uint16Array`.
+- `i: number` — market id
+- `centerBurgId: number` — anchor burg
+- `color: string` — UI color
+- `goods: Record<number, { stock: number; price: number }>` — per-good state (`buyPrice` / `sellPrice` derived from `price ± MARKET_MARGIN`)
 
-### Planning Structures (used by Production and Trade)
+`pack.cells.market: Uint16Array` — cell-to-market assignment.
+`burg.market: number` — derived from `cells.market[burg.cell]` during `expandMarkets`.
 
-- `goodById`: **sparse array** of all goods, indexed by `good.i`
-- `productiveGoods`: **dense array** of manufacturable goods
-- `recipesByOutput`: **array of arrays** of recipes, indexed by `good.i`
-- `minWorkersByGood`: array of minimum workers required per good
-- `path`: boolean array for cycle detection in recursive planning
+### Planning structures (used by Production and Trade)
+
+- `goodById`: sparse array of all goods, indexed by `good.i`
+- `productiveGoods`: dense array of manufacturable goods
+- `recipesByOutput`: array of arrays of recipes, indexed by `good.i`
+- `minWorkersByGood`: lower-bound worker count per good through the cheapest recipe chain
+- `demandGoodsByCategory`: per-category sorted candidate lists for the demand-fill phase
+- `path`: boolean array used as a visited set during recursive recipe planning
 
 ## Deal log
 
-Every transaction is recorded in `pack.deals` with:
+Every transaction is recorded in `pack.deals` as:
 
-- trade phase
-- market id
-- good id
-- units
-- buyer id
-- seller id
-- price per unit at time of deal
+    Deal = {
+      i: number,                      // index in pack.deals
+      seller: number,                 // burg id or market id
+      sellerType: "burg" | "market",
+      buyer: number,                  // burg id or market id
+      buyerType: "burg" | "market",
+      good: number,                   // good id
+      units: number,                  // rounded to 2 decimals
+      price: number                   // price per unit at time of deal, rounded to 2 decimals
+    }
+
+Deals are produced by three call sites: `Markets.buy` (market → burg), `Markets.sell` (burg → market), and `Markets.runGlobalTrade` (market → market). The deal log is the input for the trade animation layer and the trade details dialog.
+
+## Trade animation
+
+A read-only visualization layer that turns the deal log into moving markers on the map. It does not mutate any market or burg state.
+
+- **Batching**: deals are grouped by ordered `(seller burg, buyer burg)`. Market parties resolve to their `centerBurgId`, so opposite-direction flows form separate batches.
+- **Pathfinding**: `getPath(batch)` runs `findPath` over the cell graph with trade-aware costs — land-water transitions only through ports, otherwise `Routes.getLandPathCost` / `Routes.getWaterPathCost`. The resulting cell sequence is split into `"land"` / `"water"` segments.
+- **Rendering**: each segment animates one marker — `wagon.png` on land (rendered at `markerSize / 2`), `ship.png` on water (`markerSize`). The full route fades in once over `fadeDuration` and fades out after the last segment. An invisible larger circle on each marker is the click target.
+- **Lifecycle**: `start / stop / restart / sync` follow the `toggleTrade` layer flag. Batches are computed once per `start()`; each tick spawns `rand(1, maxSpawn)` of them. `clear()` removes every animation SVG, and the cloned `tradeAnimation` group is wiped before `.map` save.
+- **Interaction**: clicking a marker opens `TradeDetails.open(batch)` — a dialog that groups the batch's deals by good, shows units / unit price / total value, and highlights the route in red. Endpoint zoom buttons recenter on the seller or buyer burg.
+- **Style controls**: `TradeAnimationEditor` exposes timing and size only — `maxSpawn`, `interval`, `duration`, `landDurationModifier`, `segmentChangePause`, `fadeDuration`, `markerSize`. Path stroke color / dash live in the layer style editor.
+- **Sources**: [src/modules/trade-animation.ts](../../src/modules/trade-animation.ts), [src/renderers/draw-trade-animation.ts](../../src/renderers/draw-trade-animation.ts), [src/controllers/trade-details.ts](../../src/controllers/trade-details.ts), [src/controllers/trade-animation-editor.ts](../../src/controllers/trade-animation-editor.ts).
 
 ## Architectural intent
 
-- Rural production shapes local market conditions before burg production begins.
-- Burgs sell everything they produce and buy demand goods separately after redistribution.
-- The local resource bonus gives burgs on resource cells a supply advantage without bypassing the market price signal.
+- Rural production shapes local market conditions before any burg produces.
+- Burgs sell everything they produce and buy demand goods separately after global redistribution.
+- The local resource bonus gives burgs on resource cells a free supply advantage but does not bypass the market price signal.
 - Markets are the only mechanism for moving goods between rural producers, burg workshops, and other regions.
 
 ## Implementation notes
 
-- The system is fully array-based for performance; no Map/Set/object/Record in the hot path.
-- All flows (resource, goods, money) are mediated by the market layer.
+- No `Map` / `Set` / `Record` lookups in the hot path; market state is keyed by integer good id.
+- A single midpoint `price` is stored per market good; `buyPrice` and `sellPrice` are derived via `MARKET_MARGIN`.
+- Sources: [src/modules/markets-generator.ts](../../src/modules/markets-generator.ts), [src/modules/goods-generator.ts](../../src/modules/goods-generator.ts).
