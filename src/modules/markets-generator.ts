@@ -236,7 +236,10 @@ export class MarketsModule {
         const avgMarketCost = totalMarketCost / good.recipes.length;
         const avgBaseCost = avgIngredientsCostByGood[good.i] ?? 0;
         const demandPrice = avgMarketCost + Math.max(0, good.value - avgBaseCost);
-        marketGood.price = rn(minmax(demandPrice, good.value * PRICE_FLOOR_FACTOR, good.value * PRICE_CEILING_FACTOR), 2);
+        marketGood.price = rn(
+          minmax(demandPrice, good.value * PRICE_FLOOR_FACTOR, good.value * PRICE_CEILING_FACTOR),
+          2
+        );
       }
     }
   }
