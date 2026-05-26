@@ -36,6 +36,7 @@ function editProvinces() {
   ensureEl("provincesManuallyCancel").on("click", () => exitProvincesManualAssignment());
   ensureEl("provincesRelease").on("click", triggerProvincesRelease);
   ensureEl("provincesAdd").on("click", enterAddProvinceMode);
+  ensureEl("provincesMerge").on("click", openProvinceMergeDialog);
   ensureEl("provincesRecolor").on("click", recolorProvinces);
 
   body.on("click", function (ev) {
@@ -232,16 +233,22 @@ function editProvinces() {
   }
 
   function provinceHighlightOff(event) {
-    const province = +event.target.dataset.id;
-    const el = body.querySelector(`div[data-id='${province}']`);
-    if (el) el.classList.remove("active");
+    const province = event?.target ? +event.target.dataset.id : null;
+    if (province) {
+      const el = body.querySelector(`div[data-id='${province}']`);
+      if (el) el.classList.remove("active");
+    }
 
-    if (!layerIsOn("toggleProvinces")) return;
+    if (!layerIsOn("toggleProvinces") || !province) {
+      debug.selectAll(".highlight").remove();
+      return;
+    }
     provs
       .select("#province" + province)
       .transition()
       .attr("stroke-width", null)
       .attr("stroke", null);
+    debug.selectAll(".highlight").remove();
   }
 
   function changeFill(el) {
@@ -1155,6 +1162,183 @@ function editProvinces() {
     provs.selectAll("text").call(d3.drag().on("drag", null)).attr("class", null);
     if (customization === 11) exitProvincesManualAssignment("close");
     if (customization === 12) exitAddProvinceMode();
+  }
+
+  function openProvinceMergeDialog() {
+    const selectedState = +ensureEl("provincesFilterState").value;
+    if (selectedState === -1) {
+      alertMessage.innerHTML = "Please select a specific state from the filter to merge provinces within that state.";
+      $("#alert").dialog({title: "Merge Provinces", buttons: {OK: function() {$(this).dialog("close");}}});
+      return;
+    }
+    const provincesToMerge = pack.provinces.filter(p => p.i && !p.removed && p.state === selectedState);
+    if (provincesToMerge.length < 2) {
+      alertMessage.innerHTML = "Not enough provinces in the selected state to merge.";
+      $("#alert").dialog({title: "Merge Provinces", buttons: {OK: function() {$(this).dialog("close");}}});
+      return;
+    }
+
+    const emblem = i => /* html */ `<svg class="coaIcon" viewBox="0 0 200 200"><use href="#provinceCOA${i}"></use></svg>`;
+    const provincesSelector = provincesToMerge
+      .map(
+        p => /* html */ `
+      <div data-id="${p.i}" data-tip="${p.fullName || p.name}" style="cursor:default">
+        <input type="radio" name="rulingProvince" value="${p.i}" />
+        <input id="selectProvince${p.i}" class="checkbox" type="checkbox" name="provincesToMerge" value="${p.i}" />
+        <label for="selectProvince${p.i}" class="checkbox-label"><fill-box fill="${p.color}" disabled></fill-box>${emblem(p.i)}${p.name}</label>
+      </div>
+    `
+      )
+      .join("");
+
+    alertMessage.innerHTML = /* html */ `
+      <form id='mergeProvincesForm' style="overflow: hidden; display: flex; flex-direction: column; gap: 1em;">
+        <p style="margin:0">
+          Check the <b>checkbox</b> next to each province you want to merge.
+          Use the <b>radio button</b> to pick the <em>primary province</em> that will absorb all others.
+          Hover over a row to highlight the province on the map.
+        </p>
+        <main style='display: grid; grid-template-columns: 1fr 1fr; gap: .3em;'>
+          ${provincesSelector}
+        </main>
+      </form>
+    `;
+
+    ensureEl("mergeProvincesForm")
+      .querySelectorAll("div[data-id]")
+      .forEach(el => {
+        el.addEventListener("mouseenter", highlightProvinceOnMergeHover);
+        el.addEventListener("mouseleave", provinceHighlightOff);
+      });
+
+    function highlightProvinceOnMergeHover(event) {
+      if (!layerIsOn("toggleProvinces")) return;
+      const province = +event.currentTarget.dataset.id;
+      if (!province) return;
+      const d = provs.select("#province" + province).attr("d");
+      if (!d) return;
+
+      provinceHighlightOff(event);
+
+      const path = debug
+        .append("path")
+        .attr("class", "highlight")
+        .attr("d", d)
+        .attr("fill", "none")
+        .attr("stroke", "red")
+        .attr("stroke-width", 1)
+        .attr("opacity", 1)
+        .attr("filter", "url(#blur1)");
+
+      const totalLength = path.node().getTotalLength();
+      const duration = (totalLength + 5000) / 2;
+      const interpolate = d3.interpolateString(`0, ${totalLength}`, `${totalLength}, ${totalLength}`);
+      path
+        .transition()
+        .duration(duration)
+        .attrTween("stroke-dasharray", () => interpolate);
+    }
+
+    $("#alert").dialog({
+      width: 600,
+      title: `Merge provinces`,
+      close: provinceHighlightOff,
+      buttons: {
+        Merge: function() {
+          const formData = new FormData(ensureEl("mergeProvincesForm"));
+          const primaryProvinceId = Number(formData.get("rulingProvince"));
+          if (!primaryProvinceId) return tip("Please select a province to merge into", false, "error");
+
+          const provincesToMergeIds = formData
+            .getAll("provincesToMerge")
+            .map(Number)
+            .filter(provinceId => provinceId !== primaryProvinceId);
+          if (!provincesToMergeIds.length) return tip("Please select several provinces to merge", false, "error");
+
+          confirmationDialog({
+            title: "Merge provinces",
+            // prettier-ignore
+            message: /* html */ `
+              <p>The following provinces will be <strong>removed</strong>: ${provincesToMergeIds
+                .map(provinceId => `${emblem(provinceId)}${pack.provinces[provinceId].name}`)
+                .join(", ")}.</p>
+              <p>Removed provinces data (burgs and cells) will be assigned to ${emblem(primaryProvinceId)}${pack.provinces[primaryProvinceId].name}.</p>
+              <p>Are you sure you want to merge provinces? This action cannot be reverted.</p>`,
+            confirm: "Merge",
+            onConfirm: () => {
+              mergeProvinces(provincesToMergeIds, primaryProvinceId);
+              $(this).dialog("close");
+            }
+          });
+        },
+        Cancel: function() {
+          $(this).dialog("close");
+        }
+      }
+    });
+  }
+
+  function cleanupMergedProvince(provinceId) {
+    // Clean up UI artifacts for a province being merged (similar to removeProvince cleanup)
+    unfog("focusProvince" + provinceId);
+    
+    const coaId = "provinceCOA" + provinceId;
+    if (ensureEl(coaId)) ensureEl(coaId).remove();
+    emblems.select(`#provinceEmblems > use[data-i='${provinceId}']`).remove();
+  }
+
+  function mergeProvinces(ids, primary) {
+    const primaryProvince = pack.provinces[primary];
+    const provinceIdMap = new Map();
+    
+    ids.forEach(id => {
+      if (id === primary) return;
+      const province = pack.provinces[id];
+      
+      // merge burgs
+      province.burgs.forEach(b => {
+        pack.burgs[b].province = primary;
+        if (!primaryProvince.burgs.includes(b)) primaryProvince.burgs.push(b);
+      });
+      if (!primaryProvince.burg && province.burg) {
+        primaryProvince.burg = province.burg;
+      }
+      
+      // Add to map for later cell reassignment
+      provinceIdMap.set(id, primary);
+      
+      // Clean up UI artifacts before marking as removed
+      cleanupMergedProvince(id);
+      
+      // remove province
+      pack.provinces[id] = {i: id, removed: true};
+    });
+    
+    // Single pass over cells to remap all merged province ids at once
+    pack.cells.province.forEach((oldProvinceId, cellIndex) => {
+      const newProvinceId = provinceIdMap.get(oldProvinceId);
+      if (newProvinceId !== undefined) {
+        pack.cells.province[cellIndex] = newProvinceId;
+      }
+    });
+    
+    // update state's provinces list
+    const state = pack.states[primaryProvince.state];
+    state.provinces = state.provinces.filter(p => !pack.provinces[p].removed);
+    
+    // recalculate province statistics and poles
+    collectStatistics();
+    Provinces.getPoles();
+    
+    // redraw layers that may have changed
+    if (layerIsOn("toggleProvinces")) drawProvinces();
+    if (layerIsOn("toggleBorders")) drawBorders();
+    
+    // clear any fog or debug highlights
+    unfog();
+    debug.selectAll(".highlight").remove();
+    
+    if (typeof refreshProvincesEditor === "function") refreshProvincesEditor();
   }
 }
 
