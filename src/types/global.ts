@@ -147,6 +147,7 @@ declare global {
 }
 
 type Options = {
+  year: number;
   pinNotes: boolean;
   winds: number[];
   temperatureEquator: number;

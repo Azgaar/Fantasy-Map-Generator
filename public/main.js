@@ -702,6 +702,7 @@ async function generate(options) {
 
     Markets.generate();
     Production.produce();
+    States.collectTaxes();
 
     Military.generate();
     Markers.generate();

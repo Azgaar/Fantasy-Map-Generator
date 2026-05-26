@@ -104,7 +104,7 @@ After every burg finishes producing:
 After the full cycle:
 
 - `burg.inventory`: goods bought in the demand-fill phase (becomes next cycle's starting inventory)
-- `burg.produced`: units of each good manufactured this cycle (sparse `Record<goodId, units>`)
+- `burg.produced`: units of each good manufactured (sparse `Record<goodId, units>`)
 - `burg.treasury`: updated by ingredient purchases, sales revenue (post-tax), and demand-fill purchases
 - `burg.product`: net revenue from the sell phase minus ingredient costs
 

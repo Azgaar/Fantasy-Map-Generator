@@ -3,7 +3,6 @@ import { DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import type { DemandCategory, Good } from "./goods-generator";
 import { BONUS_RESOURCE_PRODUCTION, DEMAND_PRIORITY, getDemandTargets } from "./goods-generator";
 import type { Market } from "./markets-generator";
-import { getSalesTaxRateForBurg } from "./states-generator";
 
 export class ProductionModule {
   private readonly GOAL_STICKINESS_FACTOR = 0.85;
@@ -204,6 +203,7 @@ export class ProductionModule {
 
   private sellInventoryToMarket(state: BurgProductionState, index: ProductionIndex): number {
     let phaseRevenue = 0;
+    const taxRate = States.getSalesTax(state.burg);
 
     for (const goodIdStr in state.inventory) {
       const goodId = +goodIdStr;
@@ -211,11 +211,11 @@ export class ProductionModule {
       if (units <= 0) continue;
 
       const good = index.goodById[goodId]!;
-      const deal = Markets.sell({ burg: state.burg, good, units });
+      const deal = Markets.sell({ burg: state.burg, good, units, taxRate });
       if (!deal) continue;
 
       const grossRevenue = deal.units * deal.price;
-      const taxAmount = grossRevenue * getSalesTaxRateForBurg(state.burg);
+      const taxAmount = deal.tax ?? grossRevenue * taxRate;
       const revenue = grossRevenue - taxAmount;
 
       phaseRevenue += revenue;

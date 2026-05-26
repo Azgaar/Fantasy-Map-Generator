@@ -3,8 +3,7 @@ import type { DemandCategory } from "../modules/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "../modules/goods-generator";
 import type { Deal } from "../modules/markets-generator";
 import type { MfgHistory, ProductionCandidate } from "../modules/production-generator";
-import { getSalesTaxRateForBurg } from "../modules/states-generator";
-import { rn } from "../utils";
+import { formatPrice, rn } from "../utils";
 
 type Type = "MFG" | "BUY" | "SELL" | "LOCAL";
 
@@ -32,15 +31,10 @@ export function open(burgId: number): void {
 
   const getDealSpent = (deal: Deal) => deal.units * deal.price;
 
-  const getSellerTaxRate = (deal: Deal) => {
-    if (!isBurgSeller(deal)) return 0;
-    const seller = pack.burgs[deal.seller];
-    return seller ? getSalesTaxRateForBurg(seller) : 0;
-  };
-
   const getDealTax = (deal: Deal) => {
     if (!isBurgSeller(deal)) return 0;
-    return deal.units * deal.price * getSellerTaxRate(deal);
+    if (deal.tax !== undefined) return deal.tax;
+    return deal.units * deal.price * States.getSalesTax(pack.burgs[deal.seller]);
   };
 
   const getDealRevenue = (deal: Deal) => deal.units * deal.price;
@@ -127,7 +121,6 @@ export function open(burgId: number): void {
           <td colspan="4" style="${styles.detailsCell}">${detailsHtml}</td>
         </tr>`
       : "";
-  const formatPrice = (value: number | string) => `🟡 ${typeof value === "number" ? rn(value, 2) : value}`;
   const renderDemand = (values: number[] | Partial<Record<DemandCategory, number>>, onlyPositive = false) => {
     const entries = Array.isArray(values)
       ? DEMAND_PRIORITY.flatMap((category, index) => {

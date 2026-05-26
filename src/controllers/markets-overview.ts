@@ -1,7 +1,6 @@
 import { easeSinIn } from "d3";
 import type { Burg } from "../modules/burgs-generator";
 import type { Deal, Market } from "../modules/markets-generator";
-import { getSalesTaxRateForBurg } from "../modules/states-generator";
 import { debounce, ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
@@ -226,9 +225,11 @@ function getMarketFinancials(marketId: number): {
       sales += amount;
     } else {
       buys += amount;
-      if (deal.sellerType === "burg") {
+      if (deal.tax !== undefined) {
+        tax += deal.tax;
+      } else if (deal.sellerType === "burg") {
         const seller = pack.burgs[deal.seller] as Burg | undefined;
-        if (seller) tax += amount * getSalesTaxRateForBurg(seller);
+        if (seller) tax += amount * States.getSalesTax(seller);
       }
     }
   }

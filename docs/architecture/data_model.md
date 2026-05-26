@@ -187,6 +187,9 @@ States (countries) data is stored as an array of objects with strict element ord
 - `alert`: `number` - state war alert, see [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
 - `military`: `Regiment[]` - list of state regiments, see [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
 - `coa`: `object` - emblem object, data model is the same as in [Armoria](https://github.com/Azgaar/Armoria) and covered in [API documentation](https://github.com/Azgaar/armoria-api#readme). The only additional fields are optional `size`: `number`, `x`: `number` and `y`: `number` that controls the emblem position on the map (if it's not default). If emblem is loaded by user, then the value is `{ custom: true }` and cannot be displayed in Armoria
+- `salesTax`: `number` - sales tax rate `0..1` charged on deals where this state is the seller. Generated from `form` (Monarchy 0.15, Theocracy 0.25, Union 0.07, Republic 0.05, Anarchy 0), jittered per state. Always `0` for neutrals
+- `pollTax`: `number` - flat poll tax per population point (rural + urban), credited to the treasury once per cycle. Generated from `form` (Monarchy 0.20, Theocracy 0.10, Union 0.13, Republic 0.15, Anarchy 0), jittered per state. Always `0` for neutrals
+- `treasury`: `number` - accumulated state currency balance. Reset and refilled by `States.collectTaxes()` from `deal.tax` (sales tax) plus `pollTax × (rural + urban)`. Always `0` for neutrals
 - `lock`: `boolean` - `true` if state is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if state is removed
 
@@ -336,6 +339,20 @@ Biomes data object is globally available as `biomesData`. It stores a few arrays
 - `habitability`: `number[]` - biome habitability, must be `0` or positive. `0` means the biome is uninhabitable, max value is not defined, but `100` is the actual max used by default
 - `icons`: `string[][]` - non-weighed array of icons for each biome. Used for _relief icons_ rendering. Not-weighed means that random icons from array is selected, so the same icons can be mentioned multiple times
 - `iconsDensity`: `number[]` - defines how packed icons can be for the biome. An integer from `0` to `150`
+
+## Deals
+
+Trade transaction log stored in `pack.deals: Deal[]`. Append-only within a production cycle, rebuilt on regeneration. Object structure:
+
+- `i`: `number` - deal id, equal to the array index
+- `seller`: `number` - burg id or market id of the seller
+- `sellerType`: `"burg" | "market"` - what `seller` refers to
+- `buyer`: `number` - burg id or market id of the buyer
+- `buyerType`: `"burg" | "market"` - what `buyer` refers to
+- `good`: `number` - good id
+- `units`: `number` - traded amount, rounded to 2 decimals
+- `price`: `number` - per-unit price at the time of the deal, rounded to 2 decimals. For inter-market trades this is the importer's landed cost (exporter price + transport + exporter sales tax)
+- `tax`: `number` - optional. Absolute sales-tax amount in currency units, set on burg sells and inter-market trades when the seller's state has a non-zero `salesTax`. `States.collectTaxes()` sums it into the seller state's treasury
 
 ## Notes
 

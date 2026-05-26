@@ -65,11 +65,12 @@ The production module subtracts `deal.units × deal.price` from `burg.treasury` 
 
 ## Sell phase (production)
 
-`Markets.sell({ burg, good, units })` is called once per good when a burg sells its inventory after production:
+`Markets.sell({ burg, good, units, taxRate? })` is called once per good when a burg sells its inventory after production:
 
 - Records a deal with `seller = burg.i / sellerType = "burg"` and `buyer = market.i / buyerType = "market"`.
+- Resolves the seller's sales tax (`taxRate` if passed, otherwise `state.salesTax` via `getSalesTaxRateForBurg(burg)`) and persists the absolute tax amount on `deal.tax = units × price × rate`. `deal.tax` is omitted when the rate is zero (e.g., neutral burgs).
 - Increases market stock; lowers market price under sell pressure.
-- Returns the deal; the production module applies the burg's state sales tax to gross revenue and adds the post-tax amount to `burg.treasury`.
+- Returns the deal; the production module deducts `deal.tax` from gross revenue and adds the post-tax amount to `burg.treasury`. `States.collectTaxes()` later reads `deal.tax` to credit the seller's state treasury.
 
 ## Demand-fill buy phase
 
@@ -87,15 +88,16 @@ After global trade, each burg fills personal demand via `Markets.buy(...)` with 
 2. Splits markets into **exporters** (stock above reserve) and **importers** (stock below reserve). Skips the good entirely if either side is empty.
 3. For each (exporter, importer) pair, builds an opportunity with:
    - `transportCost = (octileDistance / mapDiagonal) × DISTANCE_COST_FACTOR × good.value` (a precomputed Chebyshev-octile straight-line cost between market center burgs).
-   - `unitProfit = importerPrice − (exporterPrice + transportCost)`
+   - `exporterTaxPerUnit = exporterState.salesTax × exporterPrice` (0 for neutral exporters).
+   - `unitProfit = importerPrice − (exporterPrice + transportCost + exporterTaxPerUnit)`
    - `units = min(exporterAvailable, importerNeeded)`
-   - Skips if `unitProfit × units < MIN_PROFIT` or `units < MIN_UNIT`.
+   - Skips if `unitProfit × units < MIN_PROFIT` or `units < MIN_UNIT`. High-tax exporters drop out of opportunities they would otherwise win.
 4. Sorts opportunities by total profit descending and executes them greedily, recomputing available / needed at execution time.
-5. Each executed transfer records a market-to-market deal at price `exporterPrice + transportCost`, moves stock, and applies market pressure:
+5. Each executed transfer records a market-to-market deal at `price = exporterPrice + transportCost + exporterTaxPerUnit` (the importer's landed cost) with `tax = exporterTaxPerUnit × units`, moves stock, and applies market pressure:
    - **Exporter price rises** (lost stock → applyMarketPressure with positive `units`).
    - **Importer price falls** (gained stock → applyMarketPressure with negative `units`).
 
-No sales tax is applied to inter-market trade.
+The recorded `deal.tax` flows to the exporter state's treasury via `States.collectTaxes()`. Markets have no treasury, so the deal price (gross of exporter tax) is what the importer effectively paid.
 
 ## Demand model
 
@@ -147,10 +149,11 @@ Every transaction is recorded in `pack.deals` as:
       buyerType: "burg" | "market",
       good: number,                   // good id
       units: number,                  // rounded to 2 decimals
-      price: number                   // price per unit at time of deal, rounded to 2 decimals
+      price: number,                  // price per unit at time of deal, rounded to 2 decimals
+      tax?: number                    // absolute sales-tax amount in currency units, set on burg sells and inter-market trades when the seller's state has a non-zero salesTax
     }
 
-Deals are produced by three call sites: `Markets.buy` (market → burg), `Markets.sell` (burg → market), and `Markets.runGlobalTrade` (market → market). The deal log is the input for the trade animation layer and the trade details dialog.
+Deals are produced by three call sites: `Markets.buy` (market → burg), `Markets.sell` (burg → market), and `Markets.runGlobalTrade` (market → market). The deal log is the input for the trade animation layer, the trade details dialog, and `States.collectTaxes()` which sums `deal.tax` into the seller state's treasury.
 
 ## Trade animation
 

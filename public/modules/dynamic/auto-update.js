@@ -1137,6 +1137,22 @@ export function resolveVersionConflicts(mapVersion) {
     options.tradeAnimation = TradeAnimation.getDefaultOptions();
 
     // TODO: update burgs data
-    // TODO: update states data
+
+    for (const state of pack.states) {
+      if (!state) continue;
+      if (!state.i || state.removed) {
+        if (state.i === 0) {
+          state.salesTax = 0;
+          state.pollTax = 0;
+          state.treasury = 0;
+        }
+        continue;
+      }
+      const taxes = States.defineTaxRates(state);
+      state.salesTax = taxes.salesTax;
+      state.pollTax = taxes.pollTax;
+      state.treasury = 0;
+    }
+    States.collectTaxes();
   }
 }

@@ -56,20 +56,25 @@ export interface State {
   provinces?: number[];
   temp?: any;
   alert?: number;
-  salesTax?: number;
+  salesTax: number;
+  pollTax: number;
+  treasury: number;
 }
 
-export const DEFAULT_SALES_TAX = 0.2;
+type TaxBases = { salesTax: number; pollTax: number };
 
-export function getSalesTaxRateForBurg(burg: { state?: number }): number {
-  const stateId = burg.state || 0;
-  if (!stateId) return 0;
-  return pack.states?.[stateId]?.salesTax ?? DEFAULT_SALES_TAX;
-}
+const DEFAULT_TAX_BY_FORM: Record<string, TaxBases> = {
+  Monarchy: { salesTax: 0.15, pollTax: 0.2 },
+  Theocracy: { salesTax: 0.25, pollTax: 0.1 },
+  Union: { salesTax: 0.07, pollTax: 0.13 },
+  Republic: { salesTax: 0.05, pollTax: 0.15 },
+  Anarchy: { salesTax: 0, pollTax: 0 }
+};
+const DEFAULT_TAX: TaxBases = DEFAULT_TAX_BY_FORM.Monarchy;
 
 class StatesModule {
   private createStates() {
-    const states: State[] = [{ i: 0, name: "Neutrals", salesTax: 0 } as State];
+    const states: State[] = [{ i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0 } as State];
     const each5th = each(5);
     const sizeVariety = (ensureEl("sizeVariety") as HTMLInputElement).valueAsNumber;
 
@@ -91,7 +96,9 @@ class StatesModule {
         center: burg.cell,
         culture: burg.culture!,
         coa,
-        salesTax: DEFAULT_SALES_TAX
+        salesTax: 0,
+        pollTax: 0,
+        treasury: 0
       });
     });
 
@@ -684,9 +691,21 @@ class StatesModule {
 
       s.formName = selectForm(s, tier);
       s.fullName = this.getFullName(s);
+
+      const taxes = this.defineTaxRates(s);
+      s.salesTax = taxes.salesTax;
+      s.pollTax = taxes.pollTax;
     }
 
     TIME && console.timeEnd("defineStateForms");
+  }
+
+  defineTaxRates(state: State) {
+    const { salesTax, pollTax } = DEFAULT_TAX_BY_FORM[state.form || ""] || DEFAULT_TAX;
+    return {
+      salesTax: rn(gauss(salesTax, salesTax * 0.15, salesTax * 0.5, salesTax * 1.5, 4), 2),
+      pollTax: rn(gauss(pollTax, pollTax * 0.15, pollTax * 0.5, pollTax * 1.5, 4), 2)
+    };
   }
 
   getFullName(state: State) {
@@ -714,6 +733,44 @@ class StatesModule {
     if (!state.name && state.formName) return `The ${state.formName}`;
     const adjName = adjForms.includes(state.formName) && !/-| /.test(state.name);
     return adjName ? `${getAdjective(state.name)} ${state.formName}` : `${state.formName} of ${state.name}`;
+  }
+
+  collectTaxes() {
+    const { states, burgs, deals } = pack;
+    if (!states.length) return;
+    for (const state of states) {
+      if (!state.i || state.removed) continue;
+      state.treasury = 0;
+    }
+
+    for (const deal of deals) {
+      if (!deal.tax) continue;
+
+      let sellerStateId = 0;
+      if (deal.sellerType === "burg") {
+        sellerStateId = burgs?.[deal.seller]?.state || 0;
+      } else if (deal.sellerType === "market") {
+        const market = Markets.get(deal.seller);
+        const centerBurgId = market?.centerBurgId;
+        sellerStateId = centerBurgId ? burgs?.[centerBurgId]?.state || 0 : 0;
+      }
+      if (!sellerStateId) continue;
+      const state = states[sellerStateId];
+      if (!state || state.removed) continue;
+      state.treasury += deal.tax;
+    }
+
+    for (const state of states) {
+      if (!state.i || state.removed) continue;
+      const population = (state.rural || 0) + (state.urban || 0);
+      state.treasury = rn(state.treasury + state.pollTax * population, 2);
+    }
+  }
+
+  getSalesTax(burg: { state?: number }): number {
+    const stateId = burg.state || 0;
+    if (!stateId) return 0;
+    return pack.states?.[stateId]?.salesTax ?? 0;
   }
 }
 

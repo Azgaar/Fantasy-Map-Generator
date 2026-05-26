@@ -28,6 +28,7 @@ export type Deal = {
   good: number;
   units: number;
   price: number;
+  tax: number;
 };
 
 export class MarketsModule {
@@ -260,17 +261,6 @@ export class MarketsModule {
     };
   }
 
-  recordDeal(data: Omit<Deal, "i">): Deal {
-    const deal: Deal = {
-      i: pack.deals.length,
-      ...data,
-      units: rn(data.units, 2),
-      price: rn(data.price, 2)
-    };
-    pack.deals.push(deal);
-    return deal;
-  }
-
   buy({
     burg,
     good,
@@ -291,38 +281,45 @@ export class MarketsModule {
     const actualUnits = rn(Math.min(units, marketGood.stock, budget / unitPrice), 2);
     if (actualUnits < 0.01) return null;
 
-    const deal = this.recordDeal({
+    const deal: Deal = {
+      i: pack.deals.length,
       seller: market.i,
       sellerType: "market",
       buyer: burg.i!,
       buyerType: "burg",
       good: good.i,
       units: actualUnits,
-      price: unitPrice
-    });
+      price: unitPrice,
+      tax: 0
+    };
+    pack.deals.push(deal);
 
     marketGood.stock = rn(Math.max(0, marketGood.stock - actualUnits), 2);
     marketGood.price = rn(this.applyMarketPressure(good.value, marketGood.price, actualUnits), 2);
     return deal;
   }
 
-  sell({ burg, good, units }: { burg: Burg; good: Good; units: number }): Deal | null {
+  sell({ burg, good, units, taxRate }: { burg: Burg; good: Good; units: number; taxRate: number }): Deal | null {
     const market = this.get(burg.market);
     if (!market || units <= 0) return null;
 
     const marketGood = this.getMarketGood(market, good);
     const price = this.customerSellPrice(marketGood.price);
+    const tax = rn(units * price * taxRate, 2);
     marketGood.stock = rn(marketGood.stock + units, 2);
 
-    const deal = this.recordDeal({
+    const deal: Deal = {
+      i: pack.deals.length,
       seller: burg.i!,
       sellerType: "burg",
       buyer: market.i,
       buyerType: "market",
       good: good.i,
-      units,
-      price
-    });
+      units: rn(units, 2),
+      price,
+      tax
+    };
+    pack.deals.push(deal);
 
     marketGood.price = rn(this.applyMarketPressure(good.value, marketGood.price, -units), 2);
     return deal;
@@ -385,6 +382,7 @@ export class MarketsModule {
         reserveExporter: number;
         reserveImporter: number;
         transportCost: number;
+        exporterTaxPerUnit: number;
         units: number;
         unitProfit: number;
         totalProfit: number;
@@ -398,6 +396,9 @@ export class MarketsModule {
         const available = Math.max(0, exporterGood.stock - exporter.reserve);
         if (available < MIN_UNIT) continue;
 
+        const exporterCenter = pack.burgs[exporter.market.centerBurgId];
+        const exporterTaxPerUnit = States.getSalesTax(exporterCenter) * exporterGood.price;
+
         for (const importer of importers) {
           const importerGood = this.getMarketGood(importer.market, good);
           const needed = Math.max(0, importer.reserve - importerGood.stock);
@@ -405,7 +406,7 @@ export class MarketsModule {
           if (units < MIN_UNIT) continue;
 
           const transportCost = distances[importer.market.i] * good.value;
-          const unitProfit = importerGood.price - (exporterGood.price + transportCost);
+          const unitProfit = importerGood.price - (exporterGood.price + transportCost + exporterTaxPerUnit);
           const totalProfit = unitProfit * units;
           if (totalProfit < MIN_PROFIT) continue;
 
@@ -415,6 +416,7 @@ export class MarketsModule {
             reserveExporter: exporter.reserve,
             reserveImporter: importer.reserve,
             transportCost,
+            exporterTaxPerUnit,
             units,
             unitProfit,
             totalProfit
@@ -432,19 +434,22 @@ export class MarketsModule {
         const units = Math.min(available, needed);
         if (units < MIN_UNIT) continue;
 
-        const price = exporterGood.price + opportunity.transportCost;
-        const totalProfit = (importerGood.price - price) * units;
+        const landedCost = exporterGood.price + opportunity.transportCost + opportunity.exporterTaxPerUnit;
+        const totalProfit = (importerGood.price - landedCost) * units;
         if (totalProfit < MIN_PROFIT) continue;
 
-        this.recordDeal({
+        const deal: Deal = {
+          i: pack.deals.length,
           seller: opportunity.exporter.i,
           sellerType: "market",
           buyer: opportunity.importer.i,
           buyerType: "market",
           good: good.i,
           units,
-          price
-        });
+          price: landedCost,
+          tax: opportunity.exporterTaxPerUnit * units
+        };
+        pack.deals.push(deal);
 
         exporterGood.price = rn(this.applyMarketPressure(good.value, exporterGood.price, units), 2);
         importerGood.price = rn(this.applyMarketPressure(good.value, importerGood.price, -units), 2);
@@ -455,11 +460,11 @@ export class MarketsModule {
   }
 
   customerBuyPrice(midPrice: number): number {
-    return midPrice * (1 + MARKET_MARGIN);
+    return rn(midPrice * (1 + MARKET_MARGIN), 2);
   }
 
   customerSellPrice(midPrice: number): number {
-    return midPrice * (1 - MARKET_MARGIN);
+    return rn(midPrice * (1 - MARKET_MARGIN), 2);
   }
 
   private applyMarketPressure(basePrice: number, currentPrice: number | undefined, units: number): number {

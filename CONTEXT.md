@@ -50,6 +50,7 @@
 - **Pack**: The aggregate world state (contains `burgs`, `states`, `cultures`, etc.).
 - **Cell**: The smallest indivisible unit of the map.
 - **Burg**: A settlement. Grouped into `States`.
+- **Treasury & Taxes**: States hold `state.treasury` accumulated by `States.collectTaxes()` from per-deal `deal.tax` (sales tax) plus `state.pollTax × (rural + urban)`. Rates are seeded from `state.form` and jittered per state. Neutrals collect nothing. Details in `docs/domain/taxes.md`.
 - **Invariants**: Saving a `.map` file MUST preserve the exact world state so it can be reloaded identically.
 
 # Known Sharp Edges
