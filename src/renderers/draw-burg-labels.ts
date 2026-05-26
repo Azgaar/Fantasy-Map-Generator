@@ -6,16 +6,11 @@ declare global {
   var removeBurgLabel: (burgId: number) => void;
 }
 
-interface BurgGroup {
-  name: string;
-  order: number;
-}
-
 const burgLabelsRenderer = (): void => {
   TIME && console.time("drawBurgLabels");
   createLabelGroups();
 
-  for (const { name } of options.burgs.groups as BurgGroup[]) {
+  for (const { name } of options.burgs.groups) {
     const burgsInGroup = pack.burgs.filter(b => b.group === name && !b.removed);
     if (!burgsInGroup.length) continue;
 
@@ -83,7 +78,7 @@ function createLabelGroups(): void {
 
   // create groups for each burg group and apply stored or default style
   const defaultStyle = style.burgLabels.town || Object.values(style.burgLabels)[0] || {};
-  const sortedGroups = [...(options.burgs.groups as BurgGroup[])].sort((a, b) => a.order - b.order);
+  const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
   for (const { name } of sortedGroups) {
     const group = burgLabels.append("g");
     const styles = style.burgLabels[name] || defaultStyle;

@@ -146,8 +146,39 @@ declare global {
   var legend: any;
 }
 
+type BurgGroup = {
+  name: string;
+  order: number;
+  active?: boolean;
+  isDefault?: boolean;
+  removed?: boolean;
+  min?: number;
+  max?: number;
+  percentile?: number;
+  features?: Record<string, boolean>;
+  biomes?: number[];
+  preview?: string;
+};
+
+type MilitaryUnit = {
+  icon: string;
+  name: string;
+  rural: number;
+  urban: number;
+  crew: number;
+  power: number;
+  type: string;
+  separate: number;
+  biomes?: number[];
+  states?: number[];
+  cultures?: number[];
+  religions?: number[];
+};
+
 type Options = {
   year: number;
+  era: string;
+  eraShort: string;
   pinNotes: boolean;
   winds: number[];
   temperatureEquator: number;
@@ -156,7 +187,8 @@ type Options = {
   stateLabelsMode: string;
   showBurgPreview: boolean;
   burgs: {
-    groups: Record<string, number[]>;
+    groups: BurgGroup[];
   };
+  military: MilitaryUnit[];
   tradeAnimation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
 };
