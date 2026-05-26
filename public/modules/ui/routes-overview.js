@@ -56,7 +56,7 @@ function overviewRoutes() {
         data-group="${route.group}"
         data-length="${route.length}"
       >
-        <span data-tip="Click to focus on route" class="icon-dot-circled pointer"></span>
+        <span data-tip="Click to focus on route" class="icon-target pointer"></span>
         <div data-tip="Route name" style="width: 15em; margin-left: 0.4em;">${route.name}</div>
         <div data-tip="Route group" style="width: 8em;">${route.group}</div>
         <div data-tip="Route length" style="width: 6em;">${length}</div>
@@ -77,7 +77,7 @@ function overviewRoutes() {
     // add listeners
     body.querySelectorAll("div.states").forEach(el => el.on("mouseenter", routeHighlightOn));
     body.querySelectorAll("div.states").forEach(el => el.on("mouseleave", routeHighlightOff));
-    body.querySelectorAll("div > span.icon-dot-circled").forEach(el => el.on("click", zoomToRoute));
+    body.querySelectorAll("div > span.icon-target").forEach(el => el.on("click", zoomToRoute));
     body.querySelectorAll("div > span.icon-pencil").forEach(el => el.on("click", openRouteEditor));
     body.querySelectorAll("div > span.locks").forEach(el => el.on("click", toggleLockStatus));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", triggerRouteRemove));

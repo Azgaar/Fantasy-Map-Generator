@@ -65,7 +65,7 @@ function overviewRivers() {
         data-width="${r.width}"
         data-basin="${basin}"
       >
-        <span data-tip="Click to focus on river" class="icon-dot-circled pointer"></span>
+        <span data-tip="Click to focus on river" class="icon-target pointer"></span>
         <div data-tip="River name" style="margin-left: 0.4em;" class="riverName">${r.name}</div>
         <div data-tip="River type name" class="riverType">${r.type}</div>
         <div data-tip="River discharge (flux power)" class="biomeArea">${discharge}</div>
@@ -90,7 +90,7 @@ function overviewRivers() {
     // add listeners
     body.querySelectorAll("div.states").forEach(el => el.on("mouseenter", ev => riverHighlightOn(ev)));
     body.querySelectorAll("div.states").forEach(el => el.on("mouseleave", ev => riverHighlightOff(ev)));
-    body.querySelectorAll("div > span.icon-dot-circled").forEach(el => el.on("click", zoomToRiver));
+    body.querySelectorAll("div > span.icon-target").forEach(el => el.on("click", zoomToRiver));
     body.querySelectorAll("div > span.icon-pencil").forEach(el => el.on("click", openRiverEditor));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", triggerRiverRemove));
 

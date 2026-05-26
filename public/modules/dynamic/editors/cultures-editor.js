@@ -49,6 +49,7 @@ function insertEditorHtml() {
       <button id="culturesEditStyle" data-tip="Edit cultures style in Style Editor" class="icon-adjust"></button>
       <button id="culturesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
       <button id="culturesPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
+      <button id="culturesLocate" data-tip="Click on the list first to select a culture, then click to locate it on the map" class="icon-target"></button>
       <button id="culturesHeirarchy" data-tip="Show cultures hierarchy tree" class="icon-sitemap"></button>
       <button id="culturesManually" data-tip="Manually re-assign cultures" class="icon-brush"></button>
       <div id="culturesManuallyButtons" style="display: none">
@@ -82,6 +83,7 @@ function addListeners() {
   ensureEl("culturesEditStyle").on("click", () => editStyle("cults"));
   ensureEl("culturesLegend").on("click", toggleLegend);
   ensureEl("culturesPercentage").on("click", togglePercentageMode);
+  ensureEl("culturesLocate").on("click", locateSelectedCulture);
   ensureEl("culturesHeirarchy").on("click", showHierarchy);
   ensureEl("culturesRecalculate").on("click", () => recalculateCultures(true));
   ensureEl("culturesManually").on("click", enterCultureManualAssignent);
@@ -99,6 +101,27 @@ function refreshCulturesEditor() {
   culturesCollectStatistics();
   culturesEditorAddLines();
   drawCultureCenters();
+}
+
+function locateCulture(cultureId) {
+  if (!cults) return;
+  const cultureElement = cults.select("#culture" + cultureId).node();
+  if (!cultureElement) return;
+  highlightElement(cultureElement, 8);
+}
+
+function locateSelectedCulture() {
+  const selected = $body.querySelector("div.selected");
+  if (!selected) {
+    tip("Select a culture first", true);
+    return;
+  }
+  const cultureId = Number(selected.dataset.id);
+  if (Number.isNaN(cultureId)) {
+    tip("Select a culture first", true);
+    return;
+  }
+  locateCulture(cultureId);
 }
 
 function culturesCollectStatistics() {
@@ -697,8 +720,8 @@ function enterCultureManualAssignent() {
 }
 
 function selectCultureOnLineClick(i) {
-  if (customization !== 4) return;
-  $body.querySelector("div.selected").classList.remove("selected");
+  const previous = $body.querySelector("div.selected");
+  if (previous) previous.classList.remove("selected");
   this.classList.add("selected");
 }
 
