@@ -4479,6 +4479,11 @@
           ></button>
           <button id="provincesChart" data-tip="Show provinces chart" class="icon-chart-area"></button>
           <button
+            id="provincesLocate"
+            data-tip="Click on the list first to select a province, then click to locate it on the map"
+            class="icon-target"
+          ></button>
+          <button
             id="provincesToggleLabels"
             data-tip="Toggle province labels. Change size in Menu ⭢ Style ⭢ Provinces"
             class="icon-font"
@@ -4507,6 +4512,7 @@
             data-tip="Add a new province. Hold Shift to add multiple"
             class="icon-plus"
           ></button>
+          <button id="provincesMerge" data-tip="Merge several provinces into one" class="icon-layer-group"></button>
           <button
             id="provincesRemoveAll"
             data-tip="Remove all provinces. States will remain as they are"
@@ -5439,7 +5445,7 @@
             class="icon-download"
           ></button>
           <button id="routesLockAll" data-tip="Lock or unlock all routes" class="icon-lock"></button>
-          <button id="routesRemoveAll" data-tip="Remove all routes" class="icon-trash"></button>
+          <button id="routesRemoveAll" data-tip="Remove all unlocked routes (locked routes are kept)" class="icon-trash"></button>
           <label for="routesSearch" data-tip="Filter by name or group" style="margin-left: 0.2em"
             >Search: <input id="routesSearch" type="search"
           /></label>

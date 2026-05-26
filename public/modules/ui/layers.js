@@ -237,7 +237,10 @@ function drawLayers() {
   if (layerIsOn("toggleCells")) drawCells();
   if (layerIsOn("toggleGrid")) drawGrid();
   if (layerIsOn("toggleCoordinates")) drawCoordinates();
-  if (layerIsOn("toggleCompass")) compass.style("display", "block");
+  if (layerIsOn("toggleCompass")) {
+    if (!compass.select("use").size()) compass.append("use").attr("xlink:href", "#defs-compass-rose");
+    compass.style("display", "block");
+  }
   if (layerIsOn("toggleRivers")) drawRivers();
   if (layerIsOn("toggleRelief")) drawReliefIcons();
   if (layerIsOn("toggleReligions")) drawReligions();
@@ -737,6 +740,7 @@ function drawCoordinates() {
 function toggleCompass(event) {
   if (!layerIsOn("toggleCompass")) {
     turnButtonOn("toggleCompass");
+    if (!compass.select("use").size()) compass.append("use").attr("xlink:href", "#defs-compass-rose");
     $("#compass").fadeIn();
     if (event && isCtrlClick(event)) editStyle("compass");
   } else {

@@ -62,7 +62,7 @@ function overviewMarkers() {
     const i = +el.parentNode.dataset.i;
 
     if (el.classList.contains("icon-pencil")) return openEditor(i);
-    if (el.classList.contains("icon-dot-circled")) return focusOnMarker(i);
+    if (el.classList.contains("icon-target")) return focusOnMarker(i);
     if (el.classList.contains("icon-pin")) return pinMarker(el, i);
     if (el.classList.contains("locks")) return toggleLockStatus(el, i);
     if (el.classList.contains("icon-trash-empty")) return triggerRemove(i);
@@ -90,7 +90,7 @@ function overviewMarkers() {
             }
             <div data-tip="Marker type" style="width:10em">${type}</div>
             <span style="padding-right:.1em" data-tip="Edit marker" class="icon-pencil"></span>
-            <span style="padding-right:.1em" data-tip="Focus on marker position" class="icon-dot-circled pointer"></span>
+            <span style="padding-right:.1em" data-tip="Focus on marker position" class="icon-target pointer"></span>
             <span style="padding-right:.1em" data-tip="Pin marker (display only pinned markers)" class="icon-pin ${
               pinned ? "" : "inactive"
             }" pointer"></span>

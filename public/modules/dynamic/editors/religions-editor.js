@@ -63,6 +63,7 @@ function insertEditorHtml() {
       <button id="religionsPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
       <button id="religionsHeirarchy" data-tip="Show religions hierarchy tree" class="icon-sitemap"></button>
       <button id="religionsExtinct" data-tip="Show/hide extinct religions (religions without cells)" class="icon-eye-off"></button>
+      <button id="religionsLocate" data-tip="Click on the list first to select a religion, then click to locate it on the map" class="icon-target"></button>
 
       <button id="religionsManually" data-tip="Manually re-assign religions" class="icon-brush"></button>
       <div id="religionsManuallyButtons" style="display: none">
@@ -99,6 +100,7 @@ function addListeners() {
   ensureEl("religionsPercentage").on("click", togglePercentageMode);
   ensureEl("religionsHeirarchy").on("click", showHierarchy);
   ensureEl("religionsExtinct").on("click", toggleExtinct);
+  ensureEl("religionsLocate").on("click", locateSelectedReligion);
   ensureEl("religionsManually").on("click", enterReligionsManualAssignent);
   ensureEl("religionsManuallyApply").on("click", applyReligionsManualAssignent);
   ensureEl("religionsManuallyCancel").on("click", () => exitReligionsManualAssignment());
@@ -552,6 +554,22 @@ function drawReligionCenters() {
     .call(d3.drag().on("start", religionCenterDrag));
 }
 
+function locateReligion(religionId) {
+  if (religionId === undefined || religionId === null) return;
+  if (!relig) return;
+  const el = relig.select("#religion" + religionId).node();
+  if (!el) return;
+  highlightElement(el, 8);
+}
+
+function locateSelectedReligion() {
+  const selected = $body.querySelector("div.selected");
+  if (!selected) return tip("Select a religion first", true);
+  const religionId = Number(selected.dataset.id);
+  if (Number.isNaN(religionId)) return tip("Select a religion first", true);
+  locateReligion(religionId);
+}
+
 function religionCenterDrag() {
   const religionId = +this.dataset.id;
   const tr = parseTransform(this.getAttribute("transform"));
@@ -666,9 +684,9 @@ function enterReligionsManualAssignent() {
   $body.querySelector("div").classList.add("selected");
 }
 
-function selectReligionOnLineClick(i) {
-  if (customization !== 7) return;
-  $body.querySelector("div.selected").classList.remove("selected");
+function selectReligionOnLineClick() {
+  const prev = $body.querySelector("div.selected");
+  if (prev) prev.classList.remove("selected");
   this.classList.add("selected");
 }
 
