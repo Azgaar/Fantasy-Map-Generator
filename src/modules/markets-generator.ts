@@ -177,7 +177,7 @@ export class MarketsModule {
         const good = this.goodById[bonusGoodId];
         const bonusGood = this.getMarketGood(market, good);
         const modifier = good?.culture?.[cultureType] || 1;
-        bonusGood.stock += BONUS_RESOURCE_PRODUCTION * modifier;
+        bonusGood.stock = rn(bonusGood.stock + BONUS_RESOURCE_PRODUCTION * modifier, 2);
       }
 
       if (population <= 0) continue;
@@ -186,7 +186,7 @@ export class MarketsModule {
         const good = this.goodById[goodId];
         const marketGood = this.getMarketGood(market, good);
         const modifier = good?.culture?.[cultureType] || 1;
-        marketGood.stock += population * production * modifier;
+        marketGood.stock = rn(marketGood.stock + population * production * modifier, 2);
       }
     }
   }
@@ -217,7 +217,7 @@ export class MarketsModule {
         const industrialDemand = industrialDemandFactors[good.i] || 0;
         const demand = population * (consumerDemand + industrialDemand);
         const ratio = (demand + LAPLACE_PRICE_SMOOTHING) / (marketGood.stock + LAPLACE_PRICE_SMOOTHING);
-        marketGood.price = good.value * minmax(ratio, PRICE_FLOOR_FACTOR, PRICE_CEILING_FACTOR);
+        marketGood.price = rn(good.value * minmax(ratio, PRICE_FLOOR_FACTOR, PRICE_CEILING_FACTOR), 2);
       }
 
       // Second pass: manufactured goods - average local ingredient cost + base value-added
@@ -236,7 +236,7 @@ export class MarketsModule {
         const avgMarketCost = totalMarketCost / good.recipes.length;
         const avgBaseCost = avgIngredientsCostByGood[good.i] ?? 0;
         const demandPrice = avgMarketCost + Math.max(0, good.value - avgBaseCost);
-        marketGood.price = minmax(demandPrice, good.value * PRICE_FLOOR_FACTOR, good.value * PRICE_CEILING_FACTOR);
+        marketGood.price = rn(minmax(demandPrice, good.value * PRICE_FLOOR_FACTOR, good.value * PRICE_CEILING_FACTOR), 2);
       }
     }
   }
@@ -298,8 +298,8 @@ export class MarketsModule {
       price: unitPrice
     });
 
-    marketGood.stock = Math.max(0, marketGood.stock - actualUnits);
-    marketGood.price = this.applyMarketPressure(good.value, marketGood.price, actualUnits);
+    marketGood.stock = rn(Math.max(0, marketGood.stock - actualUnits), 2);
+    marketGood.price = rn(this.applyMarketPressure(good.value, marketGood.price, actualUnits), 2);
     return deal;
   }
 
@@ -309,7 +309,7 @@ export class MarketsModule {
 
     const marketGood = this.getMarketGood(market, good);
     const price = this.customerSellPrice(marketGood.price);
-    marketGood.stock += units;
+    marketGood.stock = rn(marketGood.stock + units, 2);
 
     const deal = this.recordDeal({
       seller: burg.i!,
@@ -321,7 +321,7 @@ export class MarketsModule {
       price
     });
 
-    marketGood.price = this.applyMarketPressure(good.value, marketGood.price, -units);
+    marketGood.price = rn(this.applyMarketPressure(good.value, marketGood.price, -units), 2);
     return deal;
   }
 
@@ -443,10 +443,10 @@ export class MarketsModule {
           price
         });
 
-        exporterGood.price = this.applyMarketPressure(good.value, exporterGood.price, units);
-        importerGood.price = this.applyMarketPressure(good.value, importerGood.price, -units);
-        exporterGood.stock = exporterGood.stock - units;
-        importerGood.stock += units;
+        exporterGood.price = rn(this.applyMarketPressure(good.value, exporterGood.price, units), 2);
+        importerGood.price = rn(this.applyMarketPressure(good.value, importerGood.price, -units), 2);
+        exporterGood.stock = rn(exporterGood.stock - units, 2);
+        importerGood.stock = rn(importerGood.stock + units, 2);
       }
     }
   }

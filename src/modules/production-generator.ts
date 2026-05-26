@@ -37,8 +37,8 @@ export class ProductionModule {
         },
         {} as Record<number, number>
       );
-      burg.treasury = (burg.treasury || 0) + phaseRevenue;
-      burg.product = Math.max(0, phaseRevenue - state.ingredientCosts);
+      burg.treasury = rn((burg.treasury || 0) + phaseRevenue, 2);
+      burg.product = rn(Math.max(0, phaseRevenue - state.ingredientCosts), 2);
 
       this.productionData.set(burg.i, state.history);
     }
@@ -177,7 +177,7 @@ export class ProductionModule {
         state.history.push({ kind: "deal", dealId: deal.i });
         const totalCost = deal.units * deal.price;
         state.ingredientCosts += totalCost;
-        state.burg.treasury = (state.burg.treasury || 0) - totalCost;
+        state.burg.treasury = rn((state.burg.treasury || 0) - totalCost, 2);
         recipeLog.push({ goodId: ingredientId, amount, marketCost: totalCost });
       } else {
         recipeLog.push({ goodId: ingredientId, amount, marketCost: 0 });
@@ -394,7 +394,7 @@ export class ProductionModule {
 
         history.push({ kind: "deal", dealId: deal.i });
         const totalCost = deal.units * deal.price;
-        burg.treasury = (burg.treasury || 0) - totalCost;
+        burg.treasury = rn((burg.treasury || 0) - totalCost, 2);
         demandInventory[candidate.goodId] = (demandInventory[candidate.goodId] || 0) + deal.units;
 
         const retainedCoverageByCategory = demandCoverageByGood[candidate.goodId];
