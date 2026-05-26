@@ -16,7 +16,7 @@
  * For the changes that may be interesting to end users, update the `latestPublicChanges` array below (new changes on top).
  */
 
-const VERSION = "1.122.8";
+const VERSION = "1.122.9";
 if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format or parsing function");
 
 {
@@ -25,7 +25,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
   if (loadingScreenVersion) loadingScreenVersion.innerText = `v${VERSION}`;
 
   const storedVersion = localStorage.getItem("version");
-  if (compareVersions(storedVersion, VERSION, {major: true, minor: true, patch: false}).isOlder) {
+  if (compareVersions(storedVersion, VERSION, { major: true, minor: true, patch: false }).isOlder) {
     setTimeout(showUpdateWindow, 6000);
   }
 
@@ -68,7 +68,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
       resizable: false,
       title: "Fantasy Map Generator update",
       width: "28em",
-      position: {my: "center center-4em", at: "center", of: "svg"},
+      position: { my: "center center-4em", at: "center", of: "svg" },
       buttons: {
         "Clear cache": () => cleanupData(),
         "Don't show again": function () {
@@ -117,8 +117,8 @@ function isValidVersion(versionString) {
   return !isNaN(major) && !isNaN(minor) && !isNaN(patch);
 }
 
-function compareVersions(version1, version2, options = {major: true, minor: true, patch: true}) {
-  if (!isValidVersion(version1) || !isValidVersion(version2)) return {isEqual: false, isNewer: false, isOlder: false};
+function compareVersions(version1, version2, options = { major: true, minor: true, patch: true }) {
+  if (!isValidVersion(version1) || !isValidVersion(version2)) return { isEqual: false, isNewer: false, isOlder: false };
 
   let [major1, minor1, patch1] = version1.split(".").map(Number);
   let [major2, minor2, patch2] = version2.split(".").map(Number);
@@ -131,5 +131,5 @@ function compareVersions(version1, version2, options = {major: true, minor: true
   const isNewer = major1 > major2 || (major1 === major2 && (minor1 > minor2 || (minor1 === minor2 && patch1 > patch2)));
   const isOlder = major1 < major2 || (major1 === major2 && (minor1 < minor2 || (minor1 === minor2 && patch1 < patch2)));
 
-  return {isEqual, isNewer, isOlder};
+  return { isEqual, isNewer, isOlder };
 }
