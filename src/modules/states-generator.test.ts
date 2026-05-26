@@ -30,6 +30,10 @@ describe("StatesModule.collectTaxes", () => {
       }
     } as any;
     globalThis.Routes = { areConnected: () => false } as any;
+    globalThis.Markets = {
+      get: (marketId: number | undefined) =>
+        marketId ? globalThis.pack.markets?.find((m: any) => m?.i === marketId) : undefined
+    } as any;
     globalThis.options = {} as any;
 
     // Reload module fresh

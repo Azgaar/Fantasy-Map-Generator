@@ -12,6 +12,13 @@ describe("MarketsModule", () => {
       globalThis.graphHeight = 800;
       globalThis.TIME = false;
       globalThis.rn = (v: number, _d?: number) => Math.round(v * 100) / 100;
+      globalThis.States = {
+        getSalesTax: (burg: { state?: number }) => {
+          const stateId = burg?.state || 0;
+          if (!stateId) return 0;
+          return globalThis.pack.states?.[stateId]?.salesTax ?? 0;
+        }
+      } as any;
       // Minimal valid Good
       globalThis.pack = {
         goods: [
@@ -146,7 +153,8 @@ describe("MarketsModule", () => {
       const burg: Burg = { i: 1, market: 1, state: 1 } as any;
       globalThis.pack.burgs = [{ i: 0 } as any, burg];
       globalThis.pack.states = [{ i: 0, salesTax: 0 } as any, { i: 1, salesTax: 0.2 } as any];
-      const deal = marketsModule.sell({ burg, good: globalThis.pack.goods[0], units: 5 });
+      const taxRate = globalThis.States.getSalesTax(burg);
+      const deal = marketsModule.sell({ burg, good: globalThis.pack.goods[0], units: 5, taxRate });
       expect(deal).not.toBeNull();
       expect(deal!.tax).toBeGreaterThan(0);
       expect(deal!.tax).toBeCloseTo(deal!.units * deal!.price * 0.2, 2);
