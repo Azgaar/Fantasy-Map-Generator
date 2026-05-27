@@ -1,6 +1,6 @@
 import { quadtree } from "d3-quadtree";
 import { minmax } from "../utils";
-import { getColors, getRandomColor } from "../utils/colorUtils";
+import { getColors } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
 import { DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import type { DemandCategory, Good } from "./goods-generator";
