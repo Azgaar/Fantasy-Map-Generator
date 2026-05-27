@@ -14,26 +14,14 @@ const INPUTS = [
   },
   {
     type: "slider",
-    id: "tradeAnimMaxSpawn",
-    label: "Max per tick",
-    tip: "Max number of simultaneous trade animations spawned per tick. Higher = more crowded map",
+    id: "tradeAnimConcurrent",
+    label: "Animations",
+    tip: "Target number of trade animations visible at once. New ones spawn as old ones finish. Higher = more simultaneous animations, can cause lag on slower devices",
     min: 1,
-    max: 50,
+    max: 200,
     step: 1,
-    key: "maxSpawn",
-    default: DEFAULTS.maxSpawn,
-    restart: true
-  },
-  {
-    type: "slider",
-    id: "tradeAnimInterval",
-    label: "Spawn interval",
-    tip: "Milliseconds between spawn ticks. Lower = more frequent spawns",
-    min: 100,
-    max: 10000,
-    step: 100,
-    key: "interval",
-    default: DEFAULTS.interval,
+    key: "concurrent",
+    default: DEFAULTS.concurrent,
     restart: true
   },
   {

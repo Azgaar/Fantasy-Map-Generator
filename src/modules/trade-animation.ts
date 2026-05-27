@@ -1,5 +1,5 @@
 import { clear, draw } from "../renderers/draw-trade-animation";
-import { ra, rand } from "../utils";
+import { ra } from "../utils";
 import { findPath } from "../utils/pathUtils";
 import type { Burg } from "./burgs-generator";
 import type { Deal } from "./markets-generator";
@@ -15,9 +15,8 @@ export type TradeBatch = {
 
 const DEFAULT_OPTIONS = {
   displayType: "both",
-  maxSpawn: 5,
-  interval: 3000,
-  duration: 200,
+  concurrent: 30,
+  duration: 250,
   landDurationModifier: 5,
   segmentChangePause: 1000,
   fadeDuration: 2000,
@@ -25,23 +24,23 @@ const DEFAULT_OPTIONS = {
 } as const;
 
 export class TradeAnimationModule {
-  private animationInterval: number | null = null;
+  private activeCount = 0;
+  private generation = 0;
+  private cachedBatches: TradeBatch[] | null = null;
 
   start(): void {
-    if (this.animationInterval || !layerIsOn("toggleTrade")) return;
+    if (!layerIsOn("toggleTrade")) return;
+    this.stop();
     const batches = this.getDealBatches(pack.deals);
     if (batches.length === 0) return;
-
-    this.spawnAnimations(batches);
-    const interval = options.trade.animation.interval || 3000;
-    this.animationInterval = window.setInterval(() => this.spawnAnimations(batches), interval);
+    this.cachedBatches = batches;
+    this.topUp();
   }
 
   stop(): void {
-    if (this.animationInterval) {
-      clearInterval(this.animationInterval);
-      this.animationInterval = null;
-    }
+    this.generation++;
+    this.activeCount = 0;
+    this.cachedBatches = null;
     clear();
   }
 
@@ -55,19 +54,32 @@ export class TradeAnimationModule {
     else this.stop();
   }
 
-  trigger(batches: TradeBatch[]): void {
-    if (!layerIsOn("toggleTrade")) {
-      clear();
-      return;
+  private topUp(): void {
+    if (!layerIsOn("toggleTrade") || !this.cachedBatches) return;
+    const target = options.trade.animation.concurrent ?? DEFAULT_OPTIONS.concurrent;
+    while (this.activeCount < target) {
+      if (!this.spawnOne(this.cachedBatches)) break;
     }
+  }
 
-    const batch = ra(batches);
-    if (!batch) return;
+  private spawnOne(batches: TradeBatch[]): boolean {
+    const type = options.trade.animation.displayType || "both";
+    const enabledBatches = type === "both" ? batches : batches.filter(batch => batch.type === type);
+    if (!enabledBatches.length) return false;
 
+    const batch = ra(enabledBatches);
+    if (!batch) return false;
     const pathData = this.getPath(batch);
-    if (!pathData) return;
+    if (!pathData) return false;
 
-    draw(batch, pathData.points, pathData.segments);
+    const gen = this.generation;
+    this.activeCount++;
+    draw(batch, pathData.points, pathData.segments, () => {
+      if (gen !== this.generation) return;
+      this.activeCount--;
+      this.topUp();
+    });
+    return true;
   }
 
   getPath(batch: TradeBatch): { points: Point[]; segments: { type: "land" | "water"; points: Point[] }[] } | null {
@@ -154,23 +166,6 @@ export class TradeAnimationModule {
     }
 
     return toBeWater ? Routes.getWaterPathCost(current, next) : Routes.getLandPathCost(current, next);
-  }
-
-  private spawnAnimations(batches: TradeBatch[]): void {
-    if (!layerIsOn("toggleTrade")) {
-      this.stop();
-      return;
-    }
-
-    const type = options.trade.animation.displayType || "both";
-    const enabledBatches = type === "both" ? batches : batches.filter(batch => batch.type === type);
-    if (!enabledBatches.length) return;
-
-    const maxSpawn = options.trade.animation.maxSpawn || 5;
-    const spawnCount = rand(1, maxSpawn);
-    for (let i = 0; i < spawnCount; i++) {
-      this.trigger(enabledBatches);
-    }
   }
 
   private getDealEndpoints(deal: Deal): { start: Burg; end: Burg } | null {

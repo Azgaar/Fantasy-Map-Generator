@@ -1,13 +1,15 @@
 import { curveCatmullRom, easeLinear, line } from "d3";
 import type { TradeBatch } from "../modules/trade-animation";
 import type { Point } from "../modules/voronoi";
+import { minmax } from "../utils";
 
 const lineGen = line<Point>().curve(curveCatmullRom.alpha(0.1));
 
 export function draw(
   batch: TradeBatch,
   points: Point[],
-  segments: { type: "land" | "water"; points: Point[] }[]
+  segments: { type: "land" | "water"; points: Point[] }[],
+  onComplete?: () => void
 ): void {
   const pathsGroup = tradeAnimation.select("g#trade-paths");
   const markersGroup = tradeAnimation.select("g#trade-markers");
@@ -26,13 +28,14 @@ export function draw(
   function animateSegment(idx: number) {
     if (!segments || idx >= segments.length) {
       pathElement.transition().duration(fade).attr("stroke-opacity", 0).remove();
+      onComplete?.();
       return;
     }
     const segment = segments[idx];
 
     const group = markersGroup.append("g");
     const size = options.trade.animation.markerSize;
-    const imgSize = segment.type === "land" ? size / 2 : size;
+    const imgSize = segment.type === "land" ? size / 1.6 : size;
     const imgHref = `./images/markers/${segment.type === "land" ? "wagon" : "ship"}.png`;
     const duration = options.trade.animation.duration;
     const segDuration = segment.type === "land" ? duration * options.trade.animation.landDurationModifier : duration;
@@ -49,7 +52,7 @@ export function draw(
     // Invisible target for click
     group
       .append("circle")
-      .attr("r", Math.max(12, size * 3))
+      .attr("r", minmax(size * 1.5, 4, 8))
       .attr("fill", "none")
       .attr("stroke", "none")
       .attr("pointer-events", "all")
