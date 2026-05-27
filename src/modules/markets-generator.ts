@@ -1,6 +1,6 @@
 import { quadtree } from "d3-quadtree";
 import { minmax } from "../utils";
-import { getRandomColor } from "../utils/colorUtils";
+import { getColors, getRandomColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
 import { DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import type { DemandCategory, Good } from "./goods-generator";
@@ -62,7 +62,7 @@ export class MarketsModule {
       .sort((a, b) => b.score - a.score);
 
     // minSpacing scales with map size relative to burg count
-    let minSpacing = (((graphWidth + graphHeight) * 4) / pack.burgs.length ** 0.7) | 0;
+    let minSpacing = (((graphWidth + graphHeight) * 2) / pack.burgs.length ** 0.7) | 0;
 
     const markets: Market[] = [];
     const tree = quadtree<[number, number, number]>(
@@ -78,7 +78,7 @@ export class MarketsModule {
       if (!nearest) {
         // Create a new market anchored at this burg
         const marketId = markets.length + 1;
-        const market = { i: marketId, centerBurgId: burg.i, color: getRandomColor(), goods: {} };
+        const market = { i: marketId, centerBurgId: burg.i, color: "", goods: {} };
         markets.push(market);
         this.marketById[marketId] = market;
         tree.add([x, y, marketId]);
@@ -86,6 +86,11 @@ export class MarketsModule {
 
       minSpacing += 1;
     }
+
+    const colors = getColors(markets.length);
+    markets.forEach((m, i) => {
+      m.color = colors[i];
+    });
 
     return markets;
   }
@@ -113,6 +118,7 @@ export class MarketsModule {
     const DIFFERENT_STATE_COST = 20;
     const DIFFERENT_PROVINCE_COST = 5;
     const MOUNTAIN_COST = 20;
+    const LAND_COST_FOR_PORTS = 10;
 
     for (const market of markets) {
       const centerBurg = pack.burgs[market.centerBurgId];
@@ -134,6 +140,7 @@ export class MarketsModule {
       for (const neighborId of cells.c[cellId]) {
         let cost = BASE_COST;
         if (cells.h[neighborId] < 20 && burg.port === cells.f[neighborId]) cost -= SAME_PORT_WATERBODY_BONUS;
+        if (burg.port && cells.t[neighborId] > 1) cost += LAND_COST_FOR_PORTS * cells.t[neighborId];
         if (Routes.areConnected(cellId, neighborId)) {
           cost -= SAME_ROUTE_BONUS;
         } else if (cells.h[neighborId] >= 70) {

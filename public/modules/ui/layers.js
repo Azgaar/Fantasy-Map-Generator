@@ -90,7 +90,6 @@ function getDefaultPresets() {
       "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
-      "toggleStates",
       "toggleVignette"
     ],
     trade: [

@@ -114,15 +114,19 @@ export function clear(): void {
   tradeAnimation.select("g#trade-markers").selectAll("*").interrupt().remove();
 }
 
-export function drawTradeHighlight(batch: TradeBatch): void {
-  const pathData = TradeAnimation.getPath(batch);
-  if (!pathData) return;
+export function highlight(batch: TradeBatch): void {
+  const startBurg = pack.burgs[batch.startBurgId];
+  const endBurg = pack.burgs[batch.endBurgId];
+  if (!startBurg || !endBurg) return;
+
+  const path = TradeAnimation.findRoutePath(startBurg.cell, endBurg.cell);
+  if (!path) return;
 
   const highlightGroup = tradeAnimation.select("g#trade-highlight");
   highlightGroup.selectAll("*").remove();
   highlightGroup
     .append("path")
-    .attr("d", lineGen(pathData.points))
+    .attr("d", lineGen(path.points))
     .attr("fill", "none")
     .attr("stroke", "#cc1111")
     .attr("stroke-width", 0.5)
@@ -130,7 +134,7 @@ export function drawTradeHighlight(batch: TradeBatch): void {
     .attr("stroke-linecap", "round");
 }
 
-export function clearTradeHighlight(): void {
+export function clearHighlight(): void {
   tradeAnimation.select("g#trade-highlight").selectAll("*").remove();
 }
 
@@ -139,8 +143,8 @@ declare global {
     TradeAnimationRenderer: {
       draw: typeof draw;
       clear: typeof clear;
-      drawHighlight: typeof drawTradeHighlight;
-      clearHighlight: typeof clearTradeHighlight;
+      highlight: typeof highlight;
+      clearHighlight: typeof clearHighlight;
     };
   }
 }
@@ -148,6 +152,6 @@ declare global {
 window.TradeAnimationRenderer = {
   draw,
   clear,
-  drawHighlight: drawTradeHighlight,
-  clearHighlight: clearTradeHighlight
+  highlight: highlight,
+  clearHighlight: clearHighlight
 };

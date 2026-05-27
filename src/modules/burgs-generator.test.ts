@@ -20,21 +20,38 @@ import { beforeEach, describe, expect, it } from "vitest";
 // and is used in the "open lake draining to ocean" scenario.
 
 const BASE_CELLS = {
-  haven:  [0, 4, 4, 0, 0, 0],   // cells 1 & 2 look onto lake cell 4
-  harbor: [0, 1, 1, 0, 0, 0],   // safe harbour on both land cells
-  f:      [0, 0, 0, 0, 1, 2],   // cell 4 → feature 1 (lake); cell 5 → feature 2 (ocean)
-  g:      [0, 0, 0, 0, 0, 0],   // grid-cell index for temperature lookup
-  r:      [0, 0, 0, 0, 0, 0],   // no rivers on land cells
-  fl:     [0, 0, 0, 0, 0, 0],   // no flux
-  p:      [[0, 0], [0, 5], [10, 5], [0, 0], [5, 5], [20, 5]] as [number, number][],
-  v:      [[], [0, 1], [2, 3], [], [], []]  // cell 1 → vertices 0,1; cell 2 → vertices 2,3
+  haven: [0, 4, 4, 0, 0, 0], // cells 1 & 2 look onto lake cell 4
+  harbor: [0, 1, 1, 0, 0, 0], // safe harbour on both land cells
+  f: [0, 0, 0, 0, 1, 2], // cell 4 → feature 1 (lake); cell 5 → feature 2 (ocean)
+  g: [0, 0, 0, 0, 0, 0], // grid-cell index for temperature lookup
+  r: [0, 0, 0, 0, 0, 0], // no rivers on land cells
+  fl: [0, 0, 0, 0, 0, 0], // no flux
+  p: [
+    [0, 0],
+    [0, 5],
+    [10, 5],
+    [0, 0],
+    [5, 5],
+    [20, 5]
+  ] as [number, number][],
+  v: [[], [0, 1], [2, 3], [], [], []] // cell 1 → vertices 0,1; cell 2 → vertices 2,3
 };
 
 const BASE_VERTICES = {
   // c[v] = cells that share vertex v
-  c: [[1, 4], [1, 4], [2, 4], [2, 4]],
+  c: [
+    [1, 4],
+    [1, 4],
+    [2, 4],
+    [2, 4]
+  ],
   // p[v] = [x, y] of vertex v
-  p: [[5, 0], [5, 10], [15, 0], [15, 10]] as [number, number][]
+  p: [
+    [5, 0],
+    [5, 10],
+    [15, 0],
+    [15, 10]
+  ] as [number, number][]
 };
 
 function makeBurgs() {
@@ -51,9 +68,9 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
   let Burgs: any;
 
   beforeEach(async () => {
-    globalThis.TIME  = false;
+    globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
-    globalThis.grid  = { cells: { temp: new Array(10).fill(20) } } as any;
+    globalThis.grid = { cells: { temp: new Array(10).fill(20) } } as any;
 
     // Modules are cached by Vitest; re-import is a no-op after the first run,
     // so we re-wire the globals each time instead.
@@ -69,11 +86,7 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
     globalThis.pack = {
       burgs: makeBurgs(),
       cells: { ...BASE_CELLS },
-      features: [
-        null,
-        { i: 1, type: "lake", cells: 3, outlet: 10 },
-        { i: 2, type: "ocean" }
-      ],
+      features: [null, { i: 1, type: "lake", cells: 3, outlet: 10 }, { i: 2, type: "ocean" }],
       vertices: BASE_VERTICES,
       rivers: [{ i: 10, cells: [4, 5] }]
     } as any;
@@ -113,11 +126,7 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
     globalThis.pack = {
       burgs: makeBurgs(),
       cells: { ...BASE_CELLS },
-      features: [
-        null,
-        { i: 1, type: "lake", cells: 3, outlet: 10 },
-        { i: 2, type: "ocean" }
-      ],
+      features: [null, { i: 1, type: "lake", cells: 3, outlet: 10 }, { i: 2, type: "ocean" }],
       vertices: BASE_VERTICES,
       rivers: [{ i: 10, cells: [4, -1] }] // -1 = exits map
     } as any;
@@ -135,14 +144,22 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
     // River 10 ends in cell 6 which belongs to feature 3 = closed lake.
     const cells = {
       ...BASE_CELLS,
-      f:     [0, 0, 0, 0, 1, 2, 3],  // cell 6 → feature 3 (closed downstream lake)
+      f: [0, 0, 0, 0, 1, 2, 3], // cell 6 → feature 3 (closed downstream lake)
       haven: [0, 4, 4, 0, 0, 0, 0],
-      harbor:[0, 1, 1, 0, 0, 0, 0],
-      g:     [0, 0, 0, 0, 0, 0, 0],
-      r:     [0, 0, 0, 0, 0, 0, 0],
-      fl:    [0, 0, 0, 0, 0, 0, 0],
-      p:     [[0,0],[0,5],[10,5],[0,0],[5,5],[20,5],[30,5]] as [number,number][],
-      v:     [[], [0,1], [2,3], [], [], [], []]
+      harbor: [0, 1, 1, 0, 0, 0, 0],
+      g: [0, 0, 0, 0, 0, 0, 0],
+      r: [0, 0, 0, 0, 0, 0, 0],
+      fl: [0, 0, 0, 0, 0, 0, 0],
+      p: [
+        [0, 0],
+        [0, 5],
+        [10, 5],
+        [0, 0],
+        [5, 5],
+        [20, 5],
+        [30, 5]
+      ] as [number, number][],
+      v: [[], [0, 1], [2, 3], [], [], [], []]
     };
 
     globalThis.pack = {
@@ -152,7 +169,7 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
         null,
         { i: 1, type: "lake", cells: 3, outlet: 10 }, // open lake
         { i: 2, type: "ocean" },
-        { i: 3, type: "lake", cells: 2 }              // closed downstream lake
+        { i: 3, type: "lake", cells: 2 } // closed downstream lake
       ],
       vertices: BASE_VERTICES,
       rivers: [{ i: 10, cells: [4, 6] }] // drains into closed lake cell 6
@@ -176,11 +193,7 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
     globalThis.pack = {
       burgs: makeBurgs(),
       cells,
-      features: [
-        null,
-        { i: 1, type: "lake", cells: 3, outlet: 10 },
-        { i: 2, type: "ocean" }
-      ],
+      features: [null, { i: 1, type: "lake", cells: 3, outlet: 10 }, { i: 2, type: "ocean" }],
       vertices: BASE_VERTICES,
       rivers: [{ i: 10, cells: [4, 5] }]
     } as any;
@@ -201,11 +214,7 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
         { i: 2, cell: 2, x: 10, y: 5, capital: 0 }
       ],
       cells: { ...BASE_CELLS },
-      features: [
-        null,
-        { i: 1, type: "lake", cells: 3, outlet: 10 },
-        { i: 2, type: "ocean" }
-      ],
+      features: [null, { i: 1, type: "lake", cells: 3, outlet: 10 }, { i: 2, type: "ocean" }],
       vertices: BASE_VERTICES,
       rivers: [{ i: 10, cells: [4, 5] }]
     } as any;
@@ -213,7 +222,7 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
     Burgs.assignPorts();
 
     const burgs = globalThis.pack.burgs;
-    expect(burgs[1].port).toBe(99);   // locked — unchanged
+    expect(burgs[1].port).toBe(99); // locked — unchanged
     expect(burgs[2].port).toBeUndefined(); // alone after locking → no port
   });
 });

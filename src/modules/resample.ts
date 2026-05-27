@@ -137,9 +137,7 @@ class Resampler {
       return valid;
     });
 
-    // Re-flood market territories against the new cell graph
     Markets.expandTerritories(pack.markets);
-    // Preserve the last production cycle's deals, filtering refs that no longer exist
     pack.deals = (parentMap.pack.deals || []).filter(deal => {
       const sellerOk =
         deal.sellerType === "burg"

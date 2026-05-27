@@ -92,12 +92,7 @@ describe("RiverModule helpers", () => {
     it("returns the ocean feature id when the lake outlet chain reaches the sea", () => {
       // lake feature 2 has outlet river 1; river 1 ends in ocean feature 3
       setCells({ r: [0, 1, 0], f: [0, 0, 3] });
-      globalThis.pack.features = [
-        null,
-        null,
-        { i: 2, type: "lake", outlet: 1 },
-        { i: 3, type: "ocean" }
-      ] as any;
+      globalThis.pack.features = [null, null, { i: 2, type: "lake", outlet: 1 }, { i: 3, type: "ocean" }] as any;
       globalThis.pack.rivers = [{ i: 1, cells: [1, 2] }] as any;
 
       expect(Rivers.resolveLakeDrainFeature(2)).toBe(3);
@@ -115,7 +110,7 @@ describe("RiverModule helpers", () => {
       ] as any;
       globalThis.pack.rivers = [
         { i: 1, cells: [1, 2] }, // river 1 drains lake 2 into lake 3
-        { i: 2, cells: [3, 4] }  // river 2 drains lake 3 into ocean 4
+        { i: 2, cells: [3, 4] } // river 2 drains lake 3 into ocean 4
       ] as any;
 
       expect(Rivers.resolveLakeDrainFeature(2)).toBe(4);
@@ -137,11 +132,7 @@ describe("RiverModule helpers", () => {
 
     it("returns null when the outlet river exits the map", () => {
       setCells({ r: [0, 1], f: [0, 0] });
-      globalThis.pack.features = [
-        null,
-        null,
-        { i: 2, type: "lake", outlet: 1 }
-      ] as any;
+      globalThis.pack.features = [null, null, { i: 2, type: "lake", outlet: 1 }] as any;
       globalThis.pack.rivers = [{ i: 1, cells: [1, -1] }] as any;
 
       expect(Rivers.resolveLakeDrainFeature(2)).toBeNull();

@@ -281,7 +281,6 @@ class StatesModule {
   }
 
   assignColors() {
-    TIME && console.time("assignColors");
     const colors = ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#ffd92f"]; // d3.schemeSet2;
     const states = pack.states;
 
@@ -301,8 +300,6 @@ class StatesModule {
         state.color = getMixedColor(state.color!);
       });
     });
-
-    TIME && console.timeEnd("assignColors");
   }
 
   // calculate states data like area, population etc.

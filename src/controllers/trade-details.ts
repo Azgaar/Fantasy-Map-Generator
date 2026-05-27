@@ -1,7 +1,7 @@
 import type { Burg } from "../modules/burgs-generator";
 import type { Deal } from "../modules/markets-generator";
 import type { TradeBatch } from "../modules/trade-animation";
-import { clearTradeHighlight, drawTradeHighlight } from "../renderers/draw-trade-animation";
+import { clearHighlight, highlight } from "../renderers/draw-trade-animation";
 import { ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
@@ -12,7 +12,7 @@ export function open(batch: TradeBatch): void {
 
   activeBatch = batch;
   tradeDetailsAddLines();
-  drawTradeHighlight(activeBatch);
+  highlight(activeBatch);
 
   $("#tradeDetails").dialog({
     title: `Trade: ${pack.burgs[batch.startBurgId]?.name} to ${pack.burgs[batch.endBurgId]?.name}`,
@@ -93,7 +93,7 @@ function getClientType(deal: Deal, burg: Burg, direction: "from" | "to"): string
 function closeTradeDetails(): void {
   ensureEl("tradeDetailsBody").innerHTML = "";
   ensureEl("tradeDetailsSummary").innerHTML = "";
-  clearTradeHighlight();
+  clearHighlight();
 }
 
 declare global {

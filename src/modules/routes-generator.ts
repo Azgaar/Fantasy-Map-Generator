@@ -708,18 +708,16 @@ class RoutesModule {
     return "Unnamed route";
   }
 
+  private ROUTE_CURVES: Record<string, any> = {
+    roads: curveCatmullRom.alpha(0.1),
+    trails: curveCatmullRom.alpha(0.1),
+    searoutes: curveCatmullRom.alpha(0.5),
+    default: curveCatmullRom.alpha(0.1)
+  };
+
   getPath({ group, points }: { group: string; points: number[][] }): string {
     const lineGen = line();
-    const ROUTE_CURVES: Record<string, any> = {
-      roads: curveCatmullRom.alpha(0.1),
-      trails: curveCatmullRom.alpha(0.1),
-      searoutes: curveCatmullRom.alpha(0.5),
-      default: curveCatmullRom.alpha(0.1)
-    };
-    // sea routes that include river cells use a tighter curve so the spline
-    // hugs cell centers and does not bulge across the coastline at port chains
-    const hasRiverCell = group === "searoutes" && points.some(p => pack.cells.r[p[2]]);
-    const curve = hasRiverCell ? curveCatmullRom.alpha(0.1) : ROUTE_CURVES[group] || ROUTE_CURVES.default;
+    const curve = this.ROUTE_CURVES[group] || this.ROUTE_CURVES.default;
     lineGen.curve(curve);
     const path = round(lineGen(points.map(p => [p[0], p[1]]))!, 1);
     return path;

@@ -18,7 +18,7 @@ const INPUTS = [
     label: "Animations",
     tip: "Target number of trade animations visible at once. New ones spawn as old ones finish. Higher = more simultaneous animations, can cause lag on slower devices",
     min: 1,
-    max: 200,
+    max: 500,
     step: 1,
     key: "concurrent",
     default: DEFAULTS.concurrent,
