@@ -247,6 +247,8 @@ function editHeightmap(options) {
     Biomes.define();
     Features.defineGroups();
 
+    Goods.generate();
+
     rankCells();
     Cultures.generate();
     Cultures.expand();
@@ -265,6 +267,10 @@ function editHeightmap(options) {
 
     Rivers.specify();
     Lakes.defineNames();
+
+    Markets.generate();
+    Production.produce();
+    States.collectTaxes();
 
     Ice.generate();
 
@@ -470,6 +476,14 @@ function editHeightmap(options) {
         zone.cells = [];
       }
     }
+
+    // rebuild economy against the new pack cells; entity arrays are preserved,
+    // but cells.good, pack.markets, cells.market, state inventories and treasuries
+    // all reference cell ids that no longer exist after reGraph.
+    Goods.generate();
+    Markets.generate();
+    Production.produce();
+    States.collectTaxes();
 
     // recalculate ice
     Ice.generate();

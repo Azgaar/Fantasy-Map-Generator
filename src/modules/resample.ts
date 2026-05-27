@@ -448,6 +448,12 @@ class Resampler {
     this.restoreMarkers(parentMap, projection);
     this.restoreZones(parentMap, projection, scale);
 
+    // economy is not carried over from the parent pack
+    Goods.generate();
+    Markets.generate();
+    Production.produce();
+    States.collectTaxes();
+
     showStatistics();
   }
 }
