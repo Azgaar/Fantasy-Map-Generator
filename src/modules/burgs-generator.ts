@@ -1,6 +1,7 @@
 import { quadtree } from "d3-quadtree";
 import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
+import type { Point } from "./voronoi";
 
 export interface Burg {
   cell: number;
@@ -132,7 +133,7 @@ class BurgModule {
     generateTowns();
 
     pack.burgs = burgs;
-    this.shift();
+    this.assignPorts();
 
     TIME && console.timeEnd("generateBurgs");
 
@@ -178,69 +179,99 @@ class BurgModule {
     return DEFAULT_CULTURE_TYPE;
   }
 
-  shift() {
-    const { cells, features, burgs } = pack;
-    const temp = grid.cells.temp;
-
-    // port is a capital with any harbor OR any burg with a safe harbor
-    // safe harbor is a cell having just one adjacent water cell
-    const featurePortCandidates: Record<number, Burg[]> = {};
+  // Assign port feature ids to burgs and position them appropriately
+  assignPorts() {
+    const { cells, burgs } = pack;
     for (const burg of burgs) {
-      if (!burg.i || burg.lock) continue;
-      delete burg.port; // reset port status
-      const cellId = burg.cell;
+      if (burg.i && !burg.lock) delete burg.port;
+    }
 
-      const haven = cells.haven[cellId];
-      const harbor = cells.harbor[cellId];
-      const featureId = cells.f[haven];
-      if (!featureId) continue; // no adjacent water body
-
-      const isMulticell = features[featureId].cells > 1;
-      const isHarbor = (harbor && burg.capital) || harbor === 1;
-      const isFrozen = temp[cells.g[cellId]] <= 0;
-
-      if (isMulticell && isHarbor && !isFrozen) {
-        if (!featurePortCandidates[featureId]) featurePortCandidates[featureId] = [];
-        featurePortCandidates[featureId].push(burg);
+    const candidates = this.collectPortCandidates(burgs);
+    for (const [featureId, featureCandidates] of candidates) {
+      if (featureCandidates.length < 2) continue;
+      for (const { burg, haven } of featureCandidates) {
+        burg.port = featureId;
+        const [x, y] =
+          haven !== null ? this.getCloseToEdgePoint(burg.cell, haven) : this.shiftTowardsRiverBank(burg.cell);
+        burg.x = x;
+        burg.y = y;
       }
     }
 
-    const getCloseToEdgePoint = (cell1: number, cell2: number) => {
-      const { cells, vertices } = pack;
-
-      const [x0, y0] = cells.p[cell1];
-      const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
-      const [x1, y1] = vertices.p[commonVertices[0]];
-      const [x2, y2] = vertices.p[commonVertices[1]];
-      const xEdge = (x1 + x2) / 2;
-      const yEdge = (y1 + y2) / 2;
-
-      const x = rn(x0 + 0.95 * (xEdge - x0), 2);
-      const y = rn(y0 + 0.95 * (yEdge - y0), 2);
-
-      return [x, y];
-    };
-
-    // shift ports to the edge of the water body
-    Object.entries(featurePortCandidates).forEach(([featureId, burgs]) => {
-      if (burgs.length < 2) return; // only one port on water body - skip
-      burgs.forEach(burg => {
-        burg.port = Number(featureId);
-        const haven = cells.haven[burg.cell];
-        const [x, y] = getCloseToEdgePoint(burg.cell, haven);
-        burg.x = x;
-        burg.y = y;
-      });
-    });
-
-    // shift non-port river burgs a bit
+    // Shift non-port river burgs slightly toward the bank
     for (const burg of burgs) {
       if (!burg.i || burg.lock || burg.port || !cells.r[burg.cell]) continue;
       const cellId = burg.cell;
-      const shift = Math.min(cells.fl[cellId] / 150, 1);
-      burg.x = cellId % 2 ? rn(burg.x + shift, 2) : rn(burg.x - shift, 2);
-      burg.y = cells.r[cellId] % 2 ? rn(burg.y + shift, 2) : rn(burg.y - shift, 2);
+      const [x, y] = this.shiftTowardsRiverBank(cellId);
+      burg.x = x;
+      burg.y = y;
     }
+  }
+
+  private collectPortCandidates(burgs: Burg[]): Map<number, Array<{ burg: Burg; haven: number | null }>> {
+    const { cells } = pack;
+    const temp = grid.cells.temp;
+
+    const candidates: Map<number, Array<{ burg: Burg; haven: number | null }>> = new Map();
+    const addCandidate = (portFeatureId: number, burg: Burg, haven: number | null) => {
+      if (!candidates.has(portFeatureId)) candidates.set(portFeatureId, []);
+      candidates.get(portFeatureId)!.push({ burg, haven });
+    };
+
+    // Coastal candidates: burgs adjacent to a navigable multi-cell water body via a safe harbour
+    for (const burg of burgs) {
+      if (!burg.i || burg.lock) continue;
+      const haven = cells.haven[burg.cell];
+
+      if (haven) {
+        // check if can be a sea/lake port
+        const harbor = cells.harbor[burg.cell];
+        const featureId = cells.f[haven];
+        const feature = pack.features[featureId];
+        if (!feature) continue; // no adjacent water body
+
+        const isHarbor = (harbor && burg.capital) || harbor === 1;
+        const isFrozen = temp[cells.g[burg.cell]] <= 0;
+
+        if (feature.cells > 1 && isHarbor && !isFrozen) {
+          const portFeatureId =
+            feature.type === "lake" && feature.outlet
+              ? (Rivers.resolveLakeDrainFeature(featureId) ?? featureId)
+              : featureId;
+          addCandidate(portFeatureId, burg, haven);
+        }
+      } else {
+        // check if it can be a river port
+        if (!Rivers.isNavigable(burg.cell)) continue;
+        const portFeatureId = Rivers.resolveDrainFeature(burg.cell);
+        if (!portFeatureId) continue;
+        addCandidate(portFeatureId, burg, null);
+      }
+    }
+
+    return candidates;
+  }
+
+  private getCloseToEdgePoint(cell1: number, cell2: number): [number, number] {
+    const { cells, vertices } = pack;
+    const [x0, y0] = cells.p[cell1];
+    const commonVertices = cells.v[cell1].filter((vertex: number) =>
+      vertices.c[vertex].some((c: number) => c === cell2)
+    );
+    const [x1, y1] = vertices.p[commonVertices[0]];
+    const [x2, y2] = vertices.p[commonVertices[1]];
+    const xEdge = (x1 + x2) / 2;
+    const yEdge = (y1 + y2) / 2;
+    return [rn(x0 + 0.95 * (xEdge - x0), 2), rn(y0 + 0.95 * (yEdge - y0), 2)];
+  }
+
+  private shiftTowardsRiverBank(cellId: number): Point {
+    const { cells } = pack;
+    const [x, y] = cells.p[cellId];
+    const shift = Math.min(cells.fl[cellId] / 200, 1);
+    const xShifted = cellId % 2 ? x + shift : x - shift;
+    const yShifted = cells.r[cellId] % 2 ? y + shift : y - shift;
+    return [rn(xShifted, 2), rn(yShifted, 2)];
   }
 
   private definePopulation(burg: Burg) {

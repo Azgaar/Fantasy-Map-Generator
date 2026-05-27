@@ -7,6 +7,8 @@ declare global {
   var Rivers: RiverModule;
 }
 
+export const MIN_NAVIGABLE_FLUX = 100;
+
 export interface River {
   i: number; // river id
   source: number; // source cell index
@@ -567,6 +569,59 @@ class RiverModule {
 
   getNextId(rivers: { i: number }[]) {
     return rivers.length ? Math.max(...rivers.map(r => r.i)) + 1 : 1;
+  }
+
+  isNavigable(cellId: number): boolean {
+    const { r, fl } = pack.cells;
+    return Boolean(r[cellId]) && fl[cellId] >= MIN_NAVIGABLE_FLUX;
+  }
+
+  // Walk an outlet chain starting from a lake feature
+  resolveLakeDrainFeature(lakeFeatureId: number): number | null {
+    const { features, rivers, cells } = pack;
+    const lake = features[lakeFeatureId];
+    if (!lake || lake.type !== "lake") return null;
+    if (!lake.outlet) return lakeFeatureId; // closed lake: return itself
+
+    const visited = new Set<number>();
+    let river = rivers.find(r => r.i === lake.outlet);
+    while (river && !visited.has(river.i)) {
+      visited.add(river.i);
+      const lastCell = river.cells[river.cells.length - 1];
+      if (lastCell < 0) return null; // outlet exits the map
+
+      const feature = features[cells.f[lastCell]];
+      if (!feature) return null;
+      if (feature.type === "ocean") return feature.i;
+      if (feature.type !== "lake") return null;
+      if (!feature.outlet) return feature.i; // closed downstream lake
+      river = rivers.find(r => r.i === feature.outlet);
+    }
+    return null;
+  }
+
+  // Walk a river chain downstream through lakes until we reach the final receiving body
+  resolveDrainFeature(cellId: number): number | null {
+    const { cells, features, rivers } = pack;
+    const startRiver = cells.r[cellId];
+    if (!startRiver) return null;
+
+    let river = rivers.find(r => r.i === startRiver);
+    const visited = new Set<number>();
+    while (river && !visited.has(river.i)) {
+      visited.add(river.i);
+      const lastCell = river.cells[river.cells.length - 1];
+      if (lastCell < 0) return null; // off-map exit
+
+      const feature = features[cells.f[lastCell]];
+      if (!feature) return null;
+      if (feature.type === "ocean") return feature.i;
+      if (feature.type !== "lake") return null;
+
+      if (!feature.outlet) return feature.i; // closed lake terminus
+      river = rivers.find(r => r.i === feature.outlet);
+    }
+    return null;
   }
 }
 

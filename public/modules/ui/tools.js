@@ -128,7 +128,7 @@ async function openEmblemEditor() {
 }
 
 function regenerateRoutes() {
-  const locked = pack.routes.filter(route => route.lock).map((route, index) => ({...route, i: index}));
+  const locked = pack.routes.filter(route => route.lock).map((route, index) => ({ ...route, i: index }));
   Routes.generate(locked);
 
   routes.selectAll("path").remove();
@@ -265,12 +265,12 @@ function recreateStates() {
   const capitalsTree = d3.quadtree();
   const isTooClose = (x, y, spacing) => Boolean(capitalsTree.find(x, y, spacing));
 
-  const newStates = [{i: 0, name: pack.states[0].name}];
+  const newStates = [{ i: 0, name: pack.states[0].name }];
 
   // restore locked states
   lockedStates.forEach(state => {
     const newId = newStates.length;
-    const {x, y} = pack.burgs[state.capital];
+    const { x, y } = pack.burgs[state.capital];
     capitalsTree.add([x, y]);
 
     // update label id reference
@@ -309,7 +309,7 @@ function recreateStates() {
     let capital = null;
 
     for (const burg of sortedBurgs) {
-      const {x, y} = burg;
+      const { x, y } = burg;
       if (!isTooClose(x, y, spacing)) {
         burg.capital = 1;
         capital = burg;
@@ -341,7 +341,7 @@ function recreateStates() {
     const coa = COA.generate(capital.coa, 0.3, null, cultureType);
     coa.shield = capital.coa.shield;
 
-    newStates.push({i, name, type, capital: capital.i, center: capital.cell, culture, expansionism, coa});
+    newStates.push({ i, name, type, capital: capital.i, center: capital.cell, culture, expansionism, coa });
   }
 
   return newStates;
@@ -364,7 +364,7 @@ function regenerateProvinces() {
 }
 
 function regenerateBurgs() {
-  const {cells, features, burgs, states, provinces} = pack;
+  const { cells, features, burgs, states, provinces } = pack;
 
   rankCells();
 
@@ -431,13 +431,13 @@ function regenerateBurgs() {
 
     const culture = cells.culture[cell];
     const name = Names.getCulture(culture);
-    newBurgs.push({cell, x, y, state: stateId, i: id, culture, name, capital, feature: cells.f[cell]});
+    newBurgs.push({ cell, x, y, state: stateId, i: id, culture, name, capital, feature: cells.f[cell] });
     burgsTree.add([x, y]);
     cells.burg[cell] = id;
   }
 
   pack.burgs = newBurgs; // assign new burgs array
-  Burgs.shift();
+  Burgs.assignPorts();
 
   // add a capital at former place for states without added capitals
   states
@@ -542,19 +542,19 @@ function regenerateCultures() {
   // update culture for states
   pack.states = pack.states.map(state => {
     if (!state.i || state.removed) return state;
-    return {...state, culture: pack.cells.culture[state.center]};
+    return { ...state, culture: pack.cells.culture[state.center] };
   });
 
   // update culture for burgs
   pack.burgs = pack.burgs.map(burg => {
     if (!burg.i || burg.removed) return burg;
-    return {...burg, culture: pack.cells.culture[burg.cell]};
+    return { ...burg, culture: pack.cells.culture[burg.cell] };
   });
 
   // update culture for religions
   pack.religions = pack.religions.map(religion => {
     if (!religion.i || religion.removed) return religion;
-    return {...religion, culture: pack.cells.culture[religion.center]};
+    return { ...religion, culture: pack.cells.culture[religion.center] };
   });
 
   layerIsOn("toggleCultures") ? drawCultures() : toggleCultures();
@@ -584,7 +584,7 @@ function regenerateMarkers() {
 
 function regenerateZones(event) {
   if (isCtrlClick(event))
-    prompt("Please provide zones number multiplier", {default: 1, step: 0.01, min: 0, max: 100}, v =>
+    prompt("Please provide zones number multiplier", { default: 1, step: 0.01, min: 0, max: 100 }, v =>
       addNumberOfZones(v)
     );
   else addNumberOfZones(gauss(1, 0.5, 0.6, 5, 2));
@@ -696,7 +696,7 @@ function toggleAddRiver() {
 }
 
 function addRiverOnClick() {
-  const {cells, rivers} = pack;
+  const { cells, rivers } = pack;
   let i = findCell(...d3.mouse(this));
 
   if (cells.r[i]) return tip("There is already a river here", false, "error");
@@ -808,7 +808,7 @@ function addRiverOnClick() {
   } else {
     const basin = Rivers.getBasin(parent);
     const name = Rivers.getName(mouth);
-    const type = Rivers.getType({i: riverId, length, parent});
+    const type = Rivers.getType({ i: riverId, length, parent });
 
     rivers.push({
       i: riverId,
@@ -858,7 +858,7 @@ function toggleAddMarker() {
 }
 
 function addMarkerOnClick() {
-  const {markers} = pack;
+  const { markers } = pack;
   const point = d3.mouse(this);
   const x = rn(point[0], 2);
   const y = rn(point[1], 2);
@@ -871,10 +871,10 @@ function addMarkerOnClick() {
   const selectedMarker = isMarkerSelected ? markers.find(marker => marker.i === +elSelected.attr("id").slice(6)) : null;
 
   const selectedType = ensureEl("addedMarkerType").value;
-  const selectedConfig = Markers.getConfig().find(({type}) => type === selectedType);
+  const selectedConfig = Markers.getConfig().find(({ type }) => type === selectedType);
 
-  const baseMarker = selectedMarker || selectedConfig || {icon: "❓"};
-  const marker = Markers.add({...baseMarker, x, y, cell});
+  const baseMarker = selectedMarker || selectedConfig || { icon: "❓" };
+  const marker = Markers.add({ ...baseMarker, x, y, cell });
 
   if (selectedConfig && selectedConfig.add) {
     selectedConfig.add("marker" + marker.i, cell);
@@ -904,7 +904,7 @@ function configMarkersGeneration() {
       <td data-tip="Number of markers of that type on the current map">Number</td>
     </tr></thead>`;
 
-    const lines = config.map(({type, icon, multiplier}) => {
+    const lines = config.map(({ type, icon, multiplier }) => {
       const isExternal = icon.startsWith("http") || icon.startsWith("data:image");
 
       return /* html */ `<tr>
@@ -950,13 +950,13 @@ function configMarkersGeneration() {
       const icon = image.getAttribute("src") || emoji.textContent;
 
       const multiplier = parseFloat(row.querySelector(".multiplier").value);
-      return {type, icon, multiplier};
+      return { type, icon, multiplier };
     });
 
     const config = Markers.getConfig();
     const newConfig = config.map((markerType, index) => {
-      const {type, icon, multiplier} = rowsData[index];
-      return {...markerType, type, icon, multiplier};
+      const { type, icon, multiplier } = rowsData[index];
+      return { ...markerType, type, icon, multiplier };
     });
 
     Markers.setConfig(newConfig);
@@ -965,7 +965,7 @@ function configMarkersGeneration() {
   $("#alert").dialog({
     resizable: false,
     title: "Markers generation settings",
-    position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"},
+    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
     buttons: {
       Regenerate: () => {
         applyChanges();
@@ -992,7 +992,7 @@ function viewCellDetails() {
     resizable: false,
     width: "22em",
     title: "Cell Details",
-    position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
 }
 

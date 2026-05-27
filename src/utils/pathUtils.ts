@@ -313,14 +313,14 @@ export const connectVertices = ({
 /**
  * Finds the shortest path between two cells using a cost-based pathfinding algorithm.
  * @param {number} start - The ID of the starting cell.
- * @param {(id: number) => boolean} isExit - A function that returns true if the cell is the exit cell.
+ * @param {(id: number, current?: number) => boolean} isExit - Returns true if `id` is the exit cell. The second argument is the cell we are stepping from; it is undefined for the initial start-cell check, letting callers veto invalid approaches (e.g. forbid arriving at a sea port via a land neighbor).
  * @param {(current: number, next: number) => number} getCost - A function that returns the path cost from current cell to the next cell. Must return `Infinity` for impassable connections.
  * @param {object} packedGraph - The packed graph object containing cells and their connections.
  * @returns {number[] | null} An array of cell IDs of the path from start to exit, or null if no path is found or start and exit are the same.
  */
 export const findPath = (
   start: number,
-  isExit: (id: number) => boolean,
+  isExit: (id: number, current?: number) => boolean,
   getCost: (current: number, next: number) => number,
   packedGraph: PackedGraph = {} as PackedGraph
 ): number[] | null => {
@@ -336,7 +336,7 @@ export const findPath = (
     const current = queue.pop();
 
     for (const next of packedGraph.cells.c[current]) {
-      if (isExit(next)) {
+      if (isExit(next, current)) {
         from[next] = current;
         return restorePath(next, start, from);
       }
