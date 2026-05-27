@@ -7,39 +7,24 @@ const lineGen = line<Point>().curve(curveCatmullRom.alpha(0.1));
 
 export function draw(
   batch: TradeBatch,
-  points: Point[],
   segments: { type: "land" | "water"; points: Point[] }[],
   onComplete?: () => void
 ): void {
-  const pathsGroup = tradeAnimation.select("g#trade-paths");
-  const markersGroup = tradeAnimation.select("g#trade-markers");
-
-  // Draw the full path as one
-  const pathElement = pathsGroup
-    .append("path")
-    .attr("d", lineGen(points))
-    .attr("fill", "none")
-    .attr("stroke-opacity", 0);
-  const fade = options.trade.animation.fadeDuration;
-  pathElement.transition().duration(fade).attr("stroke-opacity", 1);
-
   animateSegment(0);
 
   function animateSegment(idx: number) {
     if (!segments || idx >= segments.length) {
-      pathElement.transition().duration(fade).attr("stroke-opacity", 0).remove();
       onComplete?.();
       return;
     }
     const segment = segments[idx];
-
-    const group = markersGroup.append("g");
     const size = options.trade.animation.markerSize;
     const imgSize = segment.type === "land" ? size / 1.6 : size;
     const imgHref = `./images/markers/${segment.type === "land" ? "wagon" : "ship"}.png`;
     const duration = options.trade.animation.duration;
     const segDuration = segment.type === "land" ? duration * options.trade.animation.landDurationModifier : duration;
 
+    const group = tradeAnimation.append("g");
     group
       .append("image")
       .attr("href", imgHref)
@@ -61,7 +46,7 @@ export function draw(
 
     // Animate along the path; samples computed lazily and cached at ~1px spacing
     const tempPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    tempPath.setAttribute("d", lineGen(segment.points)!);
+    tempPath.setAttribute("d", lineGen(segment.points) ?? "");
     const length = tempPath.getTotalLength();
     const numSamples = Math.max(2, Math.ceil(length) + 1);
     const lastIdx = numSamples - 1;
@@ -110,23 +95,19 @@ export function draw(
 }
 
 export function clear(): void {
-  tradeAnimation.select("g#trade-paths").selectAll("*").interrupt().remove();
-  tradeAnimation.select("g#trade-markers").selectAll("*").interrupt().remove();
+  tradeAnimation.selectAll("g").interrupt().remove();
 }
 
-export function highlight(batch: TradeBatch): void {
-  const startBurg = pack.burgs[batch.startBurgId];
-  const endBurg = pack.burgs[batch.endBurgId];
-  if (!startBurg || !endBurg) return;
+export function getPath(points: Point[]): string {
+  return lineGen(points) ?? "";
+}
 
-  const path = TradeAnimation.findRoutePath(startBurg.cell, endBurg.cell);
-  if (!path) return;
-
-  const highlightGroup = tradeAnimation.select("g#trade-highlight");
-  highlightGroup.selectAll("*").remove();
-  highlightGroup
+export function highlight(points: Point[]): void {
+  tradeAnimation.selectAll("path.highlight").remove();
+  tradeAnimation
     .append("path")
-    .attr("d", lineGen(path.points))
+    .attr("class", "highlight")
+    .attr("d", lineGen(points))
     .attr("fill", "none")
     .attr("stroke", "#cc1111")
     .attr("stroke-width", 0.5)
@@ -135,23 +116,5 @@ export function highlight(batch: TradeBatch): void {
 }
 
 export function clearHighlight(): void {
-  tradeAnimation.select("g#trade-highlight").selectAll("*").remove();
+  tradeAnimation.selectAll("path.highlight").remove();
 }
-
-declare global {
-  interface Window {
-    TradeAnimationRenderer: {
-      draw: typeof draw;
-      clear: typeof clear;
-      highlight: typeof highlight;
-      clearHighlight: typeof clearHighlight;
-    };
-  }
-}
-
-window.TradeAnimationRenderer = {
-  draw,
-  clear,
-  highlight: highlight,
-  clearHighlight: clearHighlight
-};

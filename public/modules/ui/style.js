@@ -89,19 +89,11 @@ function selectStyleElement() {
 
   // active group element
   if (
-    ["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs", "tradeAnimation"].includes(
-      styleElement
-    )
+    ["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)
   ) {
     const group = styleGroupSelect.value;
     const defaultGroupSelector = styleElement === "terrs" ? "#landHeights" : "g";
     el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
-  }
-
-  // display (show/hide)
-  if (styleElement === "tradeAnimation") {
-    styleDisplay.style.display = "block";
-    styleDisplayInput.value = el.attr("display") || "";
   }
 
   // opacity
@@ -139,7 +131,6 @@ function selectStyleElement() {
       "prec",
       "relig",
       "routes",
-      "tradeAnimation",
       "zones"
     ].includes(styleElement)
   ) {
@@ -160,7 +151,6 @@ function selectStyleElement() {
       "population",
       "routes",
       "temperature",
-      "tradeAnimation",
       "zones"
     ].includes(styleElement)
   ) {
@@ -399,13 +389,11 @@ function selectStyleElement() {
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
   if (
-    ["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs", "tradeAnimation"].includes(
-      styleElement
-    )
+    ["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)
   ) {
     const groups = ensureEl(styleElement).querySelectorAll(":scope > g");
     groups.forEach(el => {
-      if (el.id === "burgLabels" || el.id === "trade-highlight" || el.id === "trade-markers") return;
+      if (el.id === "burgLabels") return;
       const option = new Option(`${el.id} (${el.childElementCount})`, el.id, false, false);
       styleGroupSelect.options.add(option);
     });

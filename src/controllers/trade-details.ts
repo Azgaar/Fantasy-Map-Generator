@@ -1,6 +1,7 @@
 import type { Burg } from "../modules/burgs-generator";
 import type { Deal } from "../modules/markets-generator";
 import type { TradeBatch } from "../modules/trade-animation";
+import type { Point } from "../modules/voronoi";
 import { clearHighlight, highlight } from "../renderers/draw-trade-animation";
 import { ensureEl, formatPrice, rn } from "../utils";
 
@@ -11,8 +12,15 @@ export function open(batch: TradeBatch): void {
   if (!batch?.deals.length) return;
 
   activeBatch = batch;
-  tradeDetailsAddLines();
-  highlight(activeBatch);
+
+  const startBurg = pack.burgs[batch.startBurgId];
+  const endBurg = pack.burgs[batch.endBurgId];
+  if (!startBurg || !endBurg) return;
+  const path = TradeAnimation.findRoutePath(startBurg.cell, endBurg.cell);
+  if (!path) return;
+
+  tradeDetailsAddLines(path.points);
+  highlight(path.points);
 
   $("#tradeDetails").dialog({
     title: `Trade: ${pack.burgs[batch.startBurgId]?.name} to ${pack.burgs[batch.endBurgId]?.name}`,
@@ -34,7 +42,7 @@ export function open(batch: TradeBatch): void {
   }
 }
 
-function tradeDetailsAddLines(): void {
+function tradeDetailsAddLines(points: Point[]): void {
   if (!activeBatch) return;
 
   const from = pack.burgs[activeBatch.startBurgId];
@@ -75,8 +83,16 @@ function tradeDetailsAddLines(): void {
   </div>`;
   });
 
+  const length = rn(
+    points.reduce((sum, p, i) => {
+      if (i === 0) return 0;
+      const prev = points[i - 1];
+      return sum + Math.hypot(p[0] - prev[0], p[1] - prev[1]);
+    }, 0),
+    2
+  );
   ensureEl("tradeDetailsBody").innerHTML = html.join("");
-  ensureEl("tradeDetailsFooterDeals").innerHTML = String(activeBatch.deals.length);
+  ensureEl("tradeDetailsFooterDistance").innerHTML = `${rn(length * distanceScale)} ${distanceUnitInput.value}`;
   ensureEl("tradeDetailsFooterUnits").innerHTML = String(rn(totalUnits, 2));
   ensureEl("tradeDetailsFooterValue").innerHTML = formatPrice(totalValue);
 

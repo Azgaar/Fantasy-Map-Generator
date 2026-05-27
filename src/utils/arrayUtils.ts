@@ -20,6 +20,7 @@ export const unique = <T>(array: T[]): T[] => {
  * Get the appropriate typed array constructor based on the maximum value
  * @param {number} maxValue - The maximum value that will be stored in the array
  * @returns The typed array constructor
+ * @deprecated This function is deprecated and may be removed in future versions. Use typed array constructors directly for type safety.
  */
 export const getTypedArray = (maxValue: number) => {
   console.assert(
@@ -40,6 +41,7 @@ export const getTypedArray = (maxValue: number) => {
  * @param {number} options.length - The length of the typed array to create
  * @param {Array} [options.from] - An optional array to create the typed array from
  * @returns The created typed array
+ * @deprecated This function is deprecated and may be removed in future versions. Use typed array constructors directly for type safety.
  */
 export const createTypedArray = ({
   maxValue,

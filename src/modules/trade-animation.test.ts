@@ -233,7 +233,7 @@ describe("trigger", () => {
     globalThis.pack = makePack({ 0: { 1: 0 }, 1: { 0: 0 } }, [{ i: 0, group: "roads" }]) as any;
     const batch = { id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" as const };
     ta.trigger([batch]);
-    expect(drawTrade.draw).toHaveBeenCalledWith(batch, expect.any(Array), expect.any(Array));
+    expect(drawTrade.draw).toHaveBeenCalledWith(batch, expect.any(Array));
   });
 
   it("does not draw when no route path can be found", () => {

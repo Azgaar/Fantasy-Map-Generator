@@ -357,9 +357,6 @@ export const findPath = (
 
 declare global {
   interface Window {
-    ERROR: boolean;
-    FlatQueue: any;
-
     getIsolines: typeof getIsolines;
     getPolesOfInaccessibility: typeof getPolesOfInaccessibility;
     connectVertices: typeof connectVertices;

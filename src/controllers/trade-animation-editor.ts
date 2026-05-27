@@ -147,9 +147,6 @@ function buildDialogHTML(): string {
 
   return /* html */ `
     <div id="tradeAnimationEditor" style="display:none">
-      <div style="color:#666; font-size:.85em; margin-bottom: 0.3em">
-        Control trade deal animations. Open layer style editor for paths look settings.
-      </div>
       <table style="border-collapse: collapse;width:100%">
         <tbody>${rows}</tbody>
       </table>

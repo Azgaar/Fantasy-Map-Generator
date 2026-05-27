@@ -302,15 +302,8 @@ test.describe('map layers', () => {
     const tradeAnim = sharedPage.locator('#tradeAnimation')
     await expect(tradeAnim).toBeAttached()
 
-    // Three sub-groups are always present in the DOM regardless of animation state
-    await expect(sharedPage.locator('#trade-paths')).toBeAttached()
-    await expect(sharedPage.locator('#trade-highlight')).toBeAttached()
-    await expect(sharedPage.locator('#trade-markers')).toBeAttached()
-
-    // No animation is running — all sub-groups start empty
-    await expect(sharedPage.locator('#trade-paths > *')).toHaveCount(0)
-    await expect(sharedPage.locator('#trade-highlight > *')).toHaveCount(0)
-    await expect(sharedPage.locator('#trade-markers > *')).toHaveCount(0)
+    // No animation running — layer starts empty (transient groups are appended only during animation)
+    await expect(tradeAnim.locator('> *')).toHaveCount(0)
   })
 
   // Grid and coordinates

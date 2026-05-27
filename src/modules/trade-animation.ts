@@ -68,15 +68,12 @@ export class TradeAnimationModule {
 
     const batch = ra(enabledBatches);
     if (!batch) return false;
-    const startBurg = pack.burgs[batch.startBurgId];
-    const endBurg = pack.burgs[batch.endBurgId];
-    if (!startBurg || !endBurg) return false;
-    const path = this.findRoutePath(startBurg.cell, endBurg.cell);
+    const path = this.getPath(batch);
     if (!path) return false;
 
     const gen = this.generation;
     this.activeCount++;
-    draw(batch, path.points, path.segments, () => {
+    draw(batch, path.segments, () => {
       if (gen !== this.generation) return;
       this.activeCount--;
       this.topUp();
@@ -92,13 +89,25 @@ export class TradeAnimationModule {
     }
 
     for (const batch of batches) {
-      const startBurg = pack.burgs[batch.startBurgId];
-      const endBurg = pack.burgs[batch.endBurgId];
-      if (!startBurg || !endBurg) continue;
-      const path = this.findRoutePath(startBurg.cell, endBurg.cell);
+      const path = this.getPath(batch);
       if (!path) continue;
-      draw(batch, path.points, path.segments);
+      draw(batch, path.segments);
     }
+  }
+
+  getPath(batch: TradeBatch): { points: Point[]; segments: { type: "land" | "water"; points: Point[] }[] } | null {
+    const startBurg = pack.burgs[batch.startBurgId];
+    const endBurg = pack.burgs[batch.endBurgId];
+    if (!startBurg || !endBurg) return null;
+    return this.findRoutePath(startBurg.cell, endBurg.cell);
+  }
+
+  getPathCost(fromCell: number, toCell: number): number {
+    const neighbors = pack.cells.routes[fromCell];
+    if (!neighbors || !(toCell in neighbors)) return this.LAND_COST;
+    const routeId = neighbors[toCell];
+    const route = pack.routes.find(r => r.i === routeId);
+    return route?.group === "searoutes" ? this.WATER_COST : this.LAND_COST;
   }
 
   private WATER_COST = 1;
@@ -234,34 +243,19 @@ export class TradeAnimationModule {
     const batches = new Map<string, TradeBatch>();
 
     for (const deal of deals) {
-      const endpoints = this.getDealEndpoints(deal);
-      if (!endpoints || endpoints.start.cell === endpoints.end.cell) continue;
-      if (!endpoints.start.i || !endpoints.end.i) continue;
+      const start = this.resolveParty(deal.seller, deal.sellerType);
+      const end = this.resolveParty(deal.buyer, deal.buyerType);
+      if (!start || !end || start.cell === end.cell) continue;
+      if (!start.i || !end.i) continue;
 
-      const startBurgId = endpoints.start.i;
-      const endBurgId = endpoints.end.i;
       const type = deal.sellerType === "market" && deal.buyerType === "market" ? "global" : "local";
-      const key = `${startBurgId}-${endBurgId}-${type}`;
+      const key = `${start.i}-${end.i}-${type}`;
       const batch = batches.get(key);
       if (batch) batch.deals.push(deal);
-      else batches.set(key, { id: key, deals: [deal], startBurgId, endBurgId, type });
+      else batches.set(key, { id: key, deals: [deal], startBurgId: start.i, endBurgId: end.i, type });
     }
 
     return Array.from(batches.values());
-  }
-
-  /** Returns the base traversal cost for a single route segment (no switch penalty). */
-  getPathCost(current: number, next: number): number {
-    const routeId = pack.cells.routes[current]?.[next];
-    const route = pack.routes.find(r => r.i === routeId);
-    return route?.group === "searoutes" ? 1 : 5;
-  }
-
-  private getDealEndpoints(deal: Deal): { start: Burg; end: Burg } | null {
-    const start = this.resolveParty(deal.seller, deal.sellerType);
-    const end = this.resolveParty(deal.buyer, deal.buyerType);
-    if (!start || !end) return null;
-    return { start, end };
   }
 
   private resolveParty(id: number, type: "burg" | "market"): Burg | null {
