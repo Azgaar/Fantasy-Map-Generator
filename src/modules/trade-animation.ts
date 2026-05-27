@@ -13,6 +13,17 @@ export type TradeBatch = {
   type: "local" | "global";
 };
 
+const DEFAULT_OPTIONS = {
+  displayType: "both",
+  maxSpawn: 5,
+  interval: 3000,
+  duration: 200,
+  landDurationModifier: 5,
+  segmentChangePause: 1000,
+  fadeDuration: 2000,
+  markerSize: 4
+} as const;
+
 export class TradeAnimationModule {
   private animationInterval: number | null = null;
 
@@ -22,16 +33,8 @@ export class TradeAnimationModule {
     if (batches.length === 0) return;
 
     this.spawnAnimations(batches);
-    this.animationInterval = window.setInterval(() => this.spawnAnimations(batches), this.getInterval());
-  }
-
-  private getBatchType(deal: Deal): "local" | "global" {
-    return deal.sellerType === "market" && deal.buyerType === "market" ? "global" : "local";
-  }
-
-  private isBatchEnabled(batch: TradeBatch): boolean {
-    if (batch.type === "local") return this.getShowLocal();
-    return this.getShowGlobal();
+    const interval = options.trade.animation.interval || 3000;
+    this.animationInterval = window.setInterval(() => this.spawnAnimations(batches), interval);
   }
 
   stop(): void {
@@ -123,7 +126,7 @@ export class TradeAnimationModule {
 
       const startBurgId = endpoints.start.i;
       const endBurgId = endpoints.end.i;
-      const type = this.getBatchType(deal);
+      const type = deal.sellerType === "market" && deal.buyerType === "market" ? "global" : "local";
       const key = `${startBurgId}-${endBurgId}-${type}`;
       const batch = batches.get(key);
       if (batch) batch.deals.push(deal);
@@ -159,10 +162,11 @@ export class TradeAnimationModule {
       return;
     }
 
-    const enabledBatches = batches.filter(batch => this.isBatchEnabled(batch));
+    const type = options.trade.animation.displayType || "both";
+    const enabledBatches = type === "both" ? batches : batches.filter(batch => batch.type === type);
     if (!enabledBatches.length) return;
 
-    const maxSpawn = this.getMaxSpawn();
+    const maxSpawn = options.trade.animation.maxSpawn || 5;
     const spawnCount = rand(1, maxSpawn);
     for (let i = 0; i < spawnCount; i++) {
       this.trigger(enabledBatches);
@@ -182,48 +186,8 @@ export class TradeAnimationModule {
     return pack.burgs[burgId] || null;
   }
 
-  private getInterval(): number {
-    const value = options.tradeAnimation?.interval;
-    return typeof value === "number" ? value : this.getDefaultOptions().interval;
-  }
-
-  private getMaxSpawn(): number {
-    const value = options.tradeAnimation?.maxSpawn;
-    return typeof value === "number" ? value : this.getDefaultOptions().maxSpawn;
-  }
-
-  private getShowLocal(): boolean {
-    const value = options.tradeAnimation?.showLocal;
-    return typeof value === "boolean" ? value : this.getDefaultOptions().showLocal;
-  }
-
-  private getShowGlobal(): boolean {
-    const value = options.tradeAnimation?.showGlobal;
-    return typeof value === "boolean" ? value : this.getDefaultOptions().showGlobal;
-  }
-
-  getDefaultOptions(): Record<string, number | boolean> & {
-    maxSpawn: number;
-    interval: number;
-    duration: number;
-    landDurationModifier: number;
-    segmentChangePause: number;
-    fadeDuration: number;
-    markerSize: number;
-    showLocal: boolean;
-    showGlobal: boolean;
-  } {
-    return {
-      maxSpawn: 5,
-      interval: 3000,
-      duration: 200,
-      landDurationModifier: 5,
-      segmentChangePause: 1000,
-      fadeDuration: 2000,
-      markerSize: 4,
-      showLocal: true,
-      showGlobal: true
-    };
+  getDefaultOptions() {
+    return DEFAULT_OPTIONS;
   }
 }
 

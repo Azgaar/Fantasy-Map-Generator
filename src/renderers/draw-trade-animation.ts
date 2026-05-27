@@ -18,7 +18,7 @@ export function draw(
     .attr("d", lineGen(points))
     .attr("fill", "none")
     .attr("stroke-opacity", 0);
-  const fade = options.tradeAnimation.fadeDuration;
+  const fade = options.trade.animation.fadeDuration;
   pathElement.transition().duration(fade).attr("stroke-opacity", 1);
 
   animateSegment(0);
@@ -31,11 +31,11 @@ export function draw(
     const segment = segments[idx];
 
     const group = markersGroup.append("g");
-    const size = options.tradeAnimation.markerSize;
+    const size = options.trade.animation.markerSize;
     const imgSize = segment.type === "land" ? size / 2 : size;
     const imgHref = `./images/markers/${segment.type === "land" ? "wagon" : "ship"}.png`;
-    const duration = options.tradeAnimation.duration;
-    const segDuration = segment.type === "land" ? duration * options.tradeAnimation.landDurationModifier : duration;
+    const duration = options.trade.animation.duration;
+    const segDuration = segment.type === "land" ? duration * options.trade.animation.landDurationModifier : duration;
 
     group
       .append("image")
@@ -56,28 +56,52 @@ export function draw(
       .style("cursor", "pointer")
       .on("click", () => TradeDetails.open(batch));
 
-    // Animate along this segment;
+    // Animate along the path; samples computed lazily and cached at ~1px spacing
     const tempPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     tempPath.setAttribute("d", lineGen(segment.points)!);
-    const tempLength = tempPath.getTotalLength();
-    const startPoint = tempPath.getPointAtLength(0);
-    group.attr("transform", `translate(${startPoint.x}, ${startPoint.y})`);
+    const length = tempPath.getTotalLength();
+    const numSamples = Math.max(2, Math.ceil(length) + 1);
+    const lastIdx = numSamples - 1;
+    const points: (Point | undefined)[] = new Array(numSamples);
+    const getSample = (i: number): Point => {
+      const cached = points[i];
+      if (cached) return cached;
+      const p = tempPath.getPointAtLength((i / lastIdx) * length);
+      points[i] = [p.x, p.y];
+      return points[i];
+    };
+    const [sx, sy] = getSample(0);
 
     group
+      .attr("transform", `translate(${sx}, ${sy})`)
       .transition()
-      .duration(tempLength * segDuration)
+      .duration(length * segDuration)
       .ease(easeLinear)
       .attrTween("transform", () => {
         return t => {
-          const p = tempPath.getPointAtLength(t * tempLength);
-          const p2 = tempPath.getPointAtLength(t * tempLength + 0.1);
-          const angle = (Math.atan2(p2.y - p.y, p2.x - p.x) * 180) / Math.PI;
-          return `translate(${p.x}, ${p.y}) rotate(${angle})`;
+          const pos = t * lastIdx;
+          const idx = Math.min(lastIdx - 1, Math.floor(pos));
+          const frac = pos - idx;
+          const [x0, y0] = getSample(idx);
+          const [x1, y1] = getSample(idx + 1);
+          const x = x0 + (x1 - x0) * frac;
+          const y = y0 + (y1 - y0) * frac;
+          const angle0 = Math.atan2(y1 - y0, x1 - x0);
+          let angle = angle0;
+          if (idx + 2 <= lastIdx) {
+            const [x2, y2] = getSample(idx + 2);
+            const angle1 = Math.atan2(y2 - y1, x2 - x1);
+            let delta = angle1 - angle0;
+            if (delta > Math.PI) delta -= 2 * Math.PI;
+            else if (delta < -Math.PI) delta += 2 * Math.PI;
+            angle = angle0 + delta * frac;
+          }
+          return `translate(${x}, ${y}) rotate(${(angle * 180) / Math.PI})`;
         };
       })
       .on("end", () => {
         group.remove();
-        setTimeout(() => animateSegment(idx + 1), options.tradeAnimation.segmentChangePause);
+        setTimeout(() => animateSegment(idx + 1), options.trade.animation.segmentChangePause);
       });
   }
 }

@@ -190,5 +190,7 @@ type Options = {
     groups: BurgGroup[];
   };
   military: MilitaryUnit[];
-  tradeAnimation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
+  trade: {
+    animation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
+  };
 };

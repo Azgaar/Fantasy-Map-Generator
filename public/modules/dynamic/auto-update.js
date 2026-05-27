@@ -1127,7 +1127,9 @@ export function resolveVersionConflicts(mapVersion) {
       tradeAnimation.append("g").attr("id", "trade-markers");
     }
 
-    options.tradeAnimation = TradeAnimation.getDefaultOptions();
+    options.trade = {
+      animation: TradeAnimation.getDefaultOptions()
+    };
 
     for (const state of pack.states) {
       if (!state) continue;
