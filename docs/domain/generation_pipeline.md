@@ -67,10 +67,20 @@ Used by `transform-tool` (in-place transform) and `submap-tool` (extract sub-reg
 - Generates a fresh `grid` for the target dimensions.
 - Resamples height/temp/prec from the parent grid via inverse projection.
 - Re-runs hydrology, ocean layers, temperature, repack, ice (phases 3–7) — but skips `Rivers.generate` because rivers are restored from the parent's saved meanders.
-- Restores cell data (biome, fl, s, pop, culture, state, religion, province), cultures, burgs, states, routes, religions, provinces, features, markers, zones from the parent map.
-- Does **not** call `Goods.generate` — the goods catalogue is preserved in `pack.goods` if it was copied via `structuredClone(pack)`. (Re-running `Goods.generate()` without `regenerate=true` is a no-op, which is the desired behaviour: same catalogue, same recipes.)
+- Restores cell data (biome, fl, s, pop, culture, state, religion, province, **good**), cultures, burgs, states, routes, religions, provinces, features, markers, zones from the parent map.
 
-Because burgs, states, and `cells.market` are restored from the parent — but population and area are rescaled — markets, production, and treasuries computed against the parent's economy are stale. They must be rebuilt against the resampled pack.
+The economy (phase 14) is **preserved**, not regenerated:
+
+- `pack.goods` — catalogue is map-independent, copied directly from the parent.
+- `cells.good` — copied via the same parent-land quadtree used for `biome`/`culture`/`state` in `restoreCellData`.
+- `pack.markets` — carried over with stock and prices; markets whose `centerBurgId` was removed (out-of-map burg in submap) are filtered out.
+- `pack.deals` — carried over; deals referencing removed burgs or filtered markets are dropped.
+- `burg.produced`, `burg.treasury`, `burg.product`, `burg.inventory` — preserved by the spread clone in `restoreBurgs`.
+- `state.inventory`, `state.produced`, `state.demandCoverage`, `state.treasury`, `state.salesTax`, `state.pollTax` — preserved by the spread clone in `restoreStates`.
+
+Only the cell-graph-dependent pieces — `cells.market` and `burg.market` — are rebuilt. The market list survives but each market's BFS-flooded territory does not, because the cell graph (ids, areas, neighbour relations) has changed. `Markets.expandTerritories(pack.markets)` re-runs only the BFS step against the preserved market centres. This is wrapped in `Resampler.restoreEconomy`.
+
+Note that for **submaps** (`scale > 1`) cell population is multiplied by `areaRatio / scale` and burg population by `scale`, so stock and prices carried from the parent are *not* re-balanced against the new population. This is a deliberate trade-off favouring user-edited economy state over derived consistency — running `Production.produce()` + `States.collectTaxes()` from the UI after a submap will rebuild fresh values against the rescaled population.
 
 ### Other regeneration callers (for reference)
 
@@ -87,6 +97,6 @@ When extending the pipeline, audit each of these for whether their scope reaches
 1. Add the call in `public/main.js` `generate()` at the correct phase boundary.
 2. If the step runs **after phase 5 (`reGraph`)**, add it to `heightmap-editor.js` `regenerateErasedData()` at the matching boundary.
 3. If the step's output depends on **cell-indexed data** (anything in `pack.cells.*`) or on entity identities that the restore path re-maps, also add it to `heightmap-editor.js` `restoreRiskedData()`.
-4. If the step's output depends on **burgs / states / provinces / cells.market / routes**, add it to `src/modules/resample.ts` `Resampler.process()` after all relevant `restoreXxx` calls.
+4. For `src/modules/resample.ts`: if the step writes to a **per-cell array**, add it to `restoreCellData` (parent-quadtree mapping). If it writes to a **list keyed by an entity id** (markets, deals, etc.), add it to `Resampler.restoreEconomy` (or a sibling restore method) with the appropriate validity filter for removed entities. Only call the generator directly if the output is irrecoverable from the parent (e.g. depends on a re-flood across the new cell graph) — in that case prefer exposing a partial method (cf. `Markets.expandTerritories`) over running the full generator.
 5. Add or update the version-bump migration block in `public/modules/dynamic/auto-update.js` so older saves gain the new fields on load.
 6. Update the canonical sequence table at the top of this file.

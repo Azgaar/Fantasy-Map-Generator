@@ -98,6 +98,7 @@ class Resampler {
     pack.cells.burg = new Uint16Array(pack.cells.i.length);
     pack.cells.religion = new Uint16Array(pack.cells.i.length);
     pack.cells.province = new Uint16Array(pack.cells.i.length);
+    pack.cells.good = new Uint16Array(pack.cells.i.length);
 
     const parentPackCellGroups = this.groupCellsByType(parentMap.pack);
     const parentPackLandCellsQuadtree = quadtree(parentPackCellGroups.land);
@@ -120,7 +121,36 @@ class Resampler {
       pack.cells.state[newPackCell] = parentMap.pack.cells.state[parentPackCell];
       pack.cells.religion[newPackCell] = parentMap.pack.cells.religion[parentPackCell];
       pack.cells.province[newPackCell] = parentMap.pack.cells.province[parentPackCell];
+      pack.cells.good[newPackCell] = parentMap.pack.cells.good?.[parentPackCell] || 0;
     }
+  }
+
+  private restoreEconomy(parentMap: ParentMapDefinition) {
+    pack.goods = parentMap.pack.goods;
+
+    // Drop markets whose center burg is no longer on the map.
+    const validMarketIds = new Set<number>();
+    pack.markets = (parentMap.pack.markets || []).filter(market => {
+      const burg = pack.burgs[market.centerBurgId];
+      const valid = Boolean(burg && !burg.removed);
+      if (valid) validMarketIds.add(market.i);
+      return valid;
+    });
+
+    // Re-flood market territories against the new cell graph
+    Markets.expandTerritories(pack.markets);
+    // Preserve the last production cycle's deals, filtering refs that no longer exist
+    pack.deals = (parentMap.pack.deals || []).filter(deal => {
+      const sellerOk =
+        deal.sellerType === "burg"
+          ? Boolean(pack.burgs[deal.seller] && !pack.burgs[deal.seller].removed)
+          : validMarketIds.has(deal.seller);
+      const buyerOk =
+        deal.buyerType === "burg"
+          ? Boolean(pack.burgs[deal.buyer] && !pack.burgs[deal.buyer].removed)
+          : validMarketIds.has(deal.buyer);
+      return sellerOk && buyerOk;
+    });
   }
 
   private restoreRivers(
@@ -447,12 +477,7 @@ class Resampler {
     this.restoreFeatureDetails(parentMap, inverse);
     this.restoreMarkers(parentMap, projection);
     this.restoreZones(parentMap, projection, scale);
-
-    // economy is not carried over from the parent pack
-    Goods.generate();
-    Markets.generate();
-    Production.produce();
-    States.collectTaxes();
+    this.restoreEconomy(parentMap);
 
     showStatistics();
   }

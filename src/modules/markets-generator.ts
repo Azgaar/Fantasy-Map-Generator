@@ -90,6 +90,14 @@ export class MarketsModule {
     return markets;
   }
 
+  expandTerritories(markets: Market[] = pack.markets): Uint16Array {
+    this.marketById = [];
+    for (const market of markets) this.marketById[market.i] = market;
+    this.goodById = [];
+    for (const good of pack.goods) this.goodById[good.i] = good;
+    return this.expandMarkets(markets);
+  }
+
   private expandMarkets(markets: Market[]): Uint16Array {
     const cells = pack.cells;
     const cellMarket = new Uint16Array(cells.i.length);
