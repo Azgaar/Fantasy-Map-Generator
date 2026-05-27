@@ -196,9 +196,19 @@ function editProvinces() {
     ensureEl("provincesFooterPopulation").dataset.population = totalPopulation;
 
     body.querySelectorAll("div.states").forEach(el => {
-      el.on("click", selectProvinceForLocate);
-      el.on("mouseenter", ev => provinceHighlightOn(ev));
-      el.on("mouseleave", ev => provinceHighlightOff(ev));
+      // Avoid attaching multiple listeners on refresh
+      if (el.dataset.provinceListener) return;
+
+      // Clicks should behave differently depending on mode:
+      // - normal mode: allow quick select for locate
+      // - manual assignment (customization === 11): allow selecting a province for painting
+      el.addEventListener("click", function (ev) {
+        if (customization === 11) selectProvinceOnLineClick.call(this, ev);
+        else selectProvinceForLocate.call(this, ev);
+      });
+      el.addEventListener("mouseenter", provinceHighlightOn);
+      el.addEventListener("mouseleave", provinceHighlightOff);
+      el.dataset.provinceListener = "1";
     });
 
     if (body.dataset.type === "percentage") {
