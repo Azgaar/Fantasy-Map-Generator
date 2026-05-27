@@ -876,11 +876,15 @@ function editProvinces() {
   }
 
   function selectProvinceOnLineClick() {
-    if (customization !== 11) return;
     if (this.parentNode.id !== "provincesBodySection") return;
-    body.querySelector("div.selected").classList.remove("selected");
-    this.classList.add("selected");
-    selectProvince(+this.dataset.id);
+    if (customization === 11) {
+      body.querySelector("div.selected").classList.remove("selected");
+      this.classList.add("selected");
+      selectProvince(+this.dataset.id);
+    } else {
+      const provinceElement = provs.select("#province" + this.dataset.id).node();
+      if (provinceElement) highlightElement(provinceElement, 8);
+    }
   }
 
   function selectProvinceOnMapClick() {
