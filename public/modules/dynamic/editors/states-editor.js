@@ -180,7 +180,7 @@ function statesEditorAddLines() {
     totalPopulation += population;
     totalBurgs += s.burgs;
     const focused = defs.select("#fog #focusState" + s.i).size();
-    const treasuryTip = `Treasury: 🟡 ${si(s.treasury)}. Sales Tax: ${(rn((s.salesTax || 0) * 100, 1), 1)}%. Poll Tax: ${rn((s.pollTax || 0) * 100, 1)}%. Click to view and edit taxes`;
+    const treasuryTip = `Treasury: 🟡 ${si(s.treasury)}. Sales Tax: ${rn((s.salesTax || 0) * 100, 1)}%. Poll Tax: ${rn((s.pollTax || 0) * 100, 1)}%. Click to view and edit taxes`;
 
     if (!s.i) {
       // Neutral line

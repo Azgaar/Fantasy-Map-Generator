@@ -1127,16 +1127,7 @@ export function resolveVersionConflicts(mapVersion) {
       tradeAnimation.append("g").attr("id", "trade-markers");
     }
 
-    if (!pack.goods) pack.goods = []; // TODO: initialize goods
-    if (!pack.markets) pack.markets = []; // TODO: initialize markets
-    if (!pack.deals) pack.deals = []; // TODO: initialize deals
-    if (!pack.cells.good) {
-      pack.cells.good = new Uint16Array(pack.cells.i.length); // TODO: define goods for cells
-      Goods.generate();
-    }
     options.tradeAnimation = TradeAnimation.getDefaultOptions();
-
-    // TODO: update burgs data
 
     for (const state of pack.states) {
       if (!state) continue;
@@ -1153,6 +1144,21 @@ export function resolveVersionConflicts(mapVersion) {
       state.pollTax = taxes.pollTax;
       state.treasury = 0;
     }
+
+    Goods.generate();
+    Markets.generate();
+    Production.produce();
     States.collectTaxes();
+  }
+
+  if (isOlderThan("1.123.1")) {
+    // v1.123.1 added cells.market to the persisted format; rebuild for any save missing it
+    const cellsMarket = pack.cells.market;
+    const isEmpty = !cellsMarket || !cellsMarket.length || cellsMarket.every(m => !m);
+    if (isEmpty && pack.markets?.length) {
+      Markets.generate();
+      Production.produce();
+      States.collectTaxes();
+    }
   }
 }

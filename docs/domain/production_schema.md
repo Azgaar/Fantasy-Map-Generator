@@ -3,8 +3,9 @@
 Production models the transformation of rural resources into manufactured goods via burgs, with all flows mediated by markets. The hot path is array-based and avoids `Map` / `Set` / `Record` lookups.
 
 - Rural cells seed raw goods into market stock (not directly into burgs).
-- Burgs manufacture goods using their starting inventory and market inputs, then sell all output back to the local market.
+- Burgs start each production cycle with no inventory; they manufacture goods using free local resource bonuses and market inputs, then sell all output back to the local market.
 - After every burg finishes producing, surpluses are reshuffled between markets and each burg buys goods to cover personal demand.
+- Production is a single-pass simulation: there is no recurring tick and `burg.inventory` is the end-of-cycle snapshot of demand-fill purchases, not a starting carryover.
 
 ## Run order
 
@@ -73,7 +74,7 @@ Raw goods (no recipes) are terminal dependencies and are never produced by worke
 When a step runs (`executeManufacture`):
 
 1. For each ingredient: take what's available from inventory first.
-2. Missing inputs are bought via `Markets.buy({ burg, good, units })`. The cost reduces `burg.treasury` and `state.ingredientCosts`; the deal is recorded and pushed onto the burg's `productionData` history.
+2. Missing inputs are bought via `Markets.buy({ burg, good, units })`. The cost reduces `burg.treasury` and the per-burg `ingredientCosts` accumulator (local to the worker loop); the deal is recorded and pushed onto the burg's `productionData` history. If any market buy fails, the manufacturing step is skipped without mutating inventory.
 3. Inventory and demand coverage are updated.
 4. Output amount = `actualYield × cultureModifier`; added to `inventory[good.i]` and `produced[good.i]`.
 
@@ -103,7 +104,7 @@ After every burg finishes producing:
 
 After the full cycle:
 
-- `burg.inventory`: goods bought in the demand-fill phase (becomes next cycle's starting inventory)
+- `burg.inventory`: goods bought during the demand-fill phase — a snapshot for UI / uncovered-demand display. It is **not** used as a starting inventory in any subsequent run (production runs once per generation).
 - `burg.produced`: units of each good manufactured (sparse `Record<goodId, units>`)
 - `burg.treasury`: updated by ingredient purchases, sales revenue (post-tax), and demand-fill purchases
 - `burg.product`: net revenue from the sell phase minus ingredient costs

@@ -416,10 +416,11 @@ async function parseLoadedData(data, mapVersion) {
       // data[28] had deprecated cells.crossroad
       pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
       pack.ice = data[39] ? JSON.parse(data[39]) : [];
+      pack.cells.good = data[40] ? Uint16Array.from(data[40].split(",")) : new Uint16Array(pack.cells.i.length);
       pack.goods = data[41] ? JSON.parse(data[41]) : [];
       pack.markets = data[42] ? JSON.parse(data[42]) : [];
       pack.deals = data[43] ? JSON.parse(data[43]) : [];
-      pack.cells.good = data[40] ? Uint16Array.from(data[40].split(",")) : new Uint16Array(pack.cells.i.length);
+      pack.cells.market = data[44] ? Uint16Array.from(data[44].split(",")) : new Uint16Array(pack.cells.i.length);
 
       if (data[31]) {
         const namesDL = data[31].split("/");

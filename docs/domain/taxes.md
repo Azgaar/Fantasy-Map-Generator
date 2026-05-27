@@ -45,10 +45,7 @@ The States Editor exposes a Treasury column. Clicking a treasury value opens a d
 
 ## Backward compatibility
 
-When loading an older save (`auto-update.js`), the migration:
-- Backfills `state.treasury = 0` when missing.
-- Backfills `state.pollTax` from the form-based table (no jitter).
-- **Overwrites** `state.salesTax` from the form-based table, replacing the legacy hard-coded `0.2` (and any custom edits made under the old regime).
+When loading an older save (`auto-update.js`), the migration runs `States.defineTaxRates(state)` for every non-neutral state and resets `treasury = 0`. The migrated rates are jittered exactly like newly generated states (same gauss formula on the form-based base) — so the same world reloaded twice keeps stable rates after the first migration, but loading a pre-1.123 file produces rates that differ from the legacy hard-coded `0.2` salesTax. Any custom per-state tax edits made under the old regime are overwritten.
 
 ## Out of scope
 

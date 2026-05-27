@@ -61,14 +61,14 @@ Each market good stores a single midpoint `price`. Customer-facing prices are de
 - Records a deal with `seller = market.i / sellerType = "market"` and `buyer = burg.i / buyerType = "burg"`.
 - Reduces market stock; raises market price under buy pressure. No sales tax.
 
-The production module subtracts `deal.units × deal.price` from `burg.treasury` and accumulates it into `state.ingredientCosts`.
+The production module subtracts `deal.units × deal.price` from `burg.treasury` and accumulates it into a local `ingredientCosts` accumulator (per-burg, used to compute that burg's `product` at the end of the worker loop).
 
 ## Sell phase (production)
 
 `Markets.sell({ burg, good, units, taxRate? })` is called once per good when a burg sells its inventory after production:
 
 - Records a deal with `seller = burg.i / sellerType = "burg"` and `buyer = market.i / buyerType = "market"`.
-- Resolves the seller's sales tax (`taxRate` if passed, otherwise `state.salesTax` via `getSalesTaxRateForBurg(burg)`) and persists the absolute tax amount on `deal.tax = units × price × rate`. `deal.tax` is omitted when the rate is zero (e.g., neutral burgs).
+- Resolves the seller's sales tax (`taxRate` if passed, otherwise `state.salesTax` via `States.getSalesTax(burg)`) and persists the absolute tax amount on `deal.tax = units × price × rate`. `deal.tax` is always set (0 when the rate is zero, e.g. neutral burgs).
 - Increases market stock; lowers market price under sell pressure.
 - Returns the deal; the production module deducts `deal.tax` from gross revenue and adds the post-tax amount to `burg.treasury`. `States.collectTaxes()` later reads `deal.tax` to credit the seller's state treasury.
 
@@ -150,7 +150,7 @@ Every transaction is recorded in `pack.deals` as:
       good: number,                   // good id
       units: number,                  // rounded to 2 decimals
       price: number,                  // price per unit at time of deal, rounded to 2 decimals
-      tax?: number                    // absolute sales-tax amount in currency units, set on burg sells and inter-market trades when the seller's state has a non-zero salesTax
+      tax: number                     // absolute sales-tax amount in currency units; 0 when the seller's state has no salesTax or the deal is a market→burg buy
     }
 
 Deals are produced by three call sites: `Markets.buy` (market → burg), `Markets.sell` (burg → market), and `Markets.runGlobalTrade` (market → market). The deal log is the input for the trade animation layer, the trade details dialog, and `States.collectTaxes()` which sums `deal.tax` into the seller state's treasury.

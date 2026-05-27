@@ -109,14 +109,18 @@ export function clearTradeHighlight(): void {
 
 declare global {
   interface Window {
-    draw: typeof draw;
-    clear: typeof clear;
-    drawHighlight: typeof drawTradeHighlight;
-    clearHighlight: typeof clearTradeHighlight;
+    TradeAnimationRenderer: {
+      draw: typeof draw;
+      clear: typeof clear;
+      drawHighlight: typeof drawTradeHighlight;
+      clearHighlight: typeof clearTradeHighlight;
+    };
   }
 }
 
-window.draw = draw;
-window.clear = clear;
-window.drawHighlight = drawTradeHighlight;
-window.clearHighlight = clearTradeHighlight;
+window.TradeAnimationRenderer = {
+  draw,
+  clear,
+  drawHighlight: drawTradeHighlight,
+  clearHighlight: clearTradeHighlight
+};

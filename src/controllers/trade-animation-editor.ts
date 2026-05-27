@@ -35,6 +35,26 @@ const SLIDERS = [
     default: DEFAULTS.duration
   },
   {
+    id: "tradeAnimLandDurationModifier",
+    label: "Land slowdown",
+    tip: "Multiplier applied to travel duration on land segments. Land legs render at this factor of sea speed.",
+    min: 1,
+    max: 20,
+    step: 0.5,
+    key: "landDurationModifier",
+    default: DEFAULTS.landDurationModifier
+  },
+  {
+    id: "tradeAnimSegmentChangePause",
+    label: "Segment pause",
+    tip: "Pause between land and water legs of a trip, in milliseconds.",
+    min: 0,
+    max: 5000,
+    step: 100,
+    key: "segmentChangePause",
+    default: DEFAULTS.segmentChangePause
+  },
+  {
     id: "tradeAnimFadeDuration",
     label: "Path fade",
     tip: "Fade-in / fade-out duration for the route trail, in milliseconds.",

@@ -223,14 +223,9 @@ function getMarketFinancials(marketId: number): {
     const marketIsSeller = deal.sellerType === "market" && deal.seller === marketId;
     if (marketIsSeller) {
       sales += amount;
+      tax += deal.tax || 0;
     } else {
       buys += amount;
-      if (deal.tax !== undefined) {
-        tax += deal.tax;
-      } else if (deal.sellerType === "burg") {
-        const seller = pack.burgs[deal.seller] as Burg | undefined;
-        if (seller) tax += amount * States.getSalesTax(seller);
-      }
     }
   }
 

@@ -2,7 +2,7 @@ import type { Burg } from "./burgs-generator";
 import { DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import type { DemandCategory, Good } from "./goods-generator";
 import { BONUS_RESOURCE_PRODUCTION, DEMAND_PRIORITY, getDemandTargets } from "./goods-generator";
-import type { Market } from "./markets-generator";
+import type { Deal, Market } from "./markets-generator";
 
 export class ProductionModule {
   private readonly GOAL_STICKINESS_FACTOR = 0.85;
@@ -158,29 +158,38 @@ export class ProductionModule {
     const actualYield = Math.min(workerFraction, maxYield);
     const cultureModifier = good.culture?.[state.burg.type || DEFAULT_CULTURE_TYPE] || 1;
     const produced = actualYield * cultureModifier;
-    const recipeLog: ManufacturingRecipeLog = [];
 
+    // Plan all ingredient sourcing first; bail out before mutating state if any market buy fails.
+    type Plan = { ingredientId: number; amount: number; fromInventory: number; deal: Deal | null };
+    const plans: Plan[] = [];
     for (const ingredient of ingredients) {
       const ingredientId = ingredient.goodId;
       const amount = actualYield * ingredient.amount;
       const fromInventory = Math.min(state.inventory[ingredientId] || 0, amount);
-
       const fromMarket = Math.max(0, amount - fromInventory);
+
+      let deal: Deal | null = null;
       if (fromMarket > 0.01) {
-        const deal = Markets.buy({ burg: state.burg, good: index.goodById[ingredientId]!, units: fromMarket });
+        deal = Markets.buy({ burg: state.burg, good: index.goodById[ingredientId]!, units: fromMarket });
         if (!deal) {
           const message = `Failed to acquire ${rn(fromMarket, 2)} units of ${index.goodById[ingredientId]?.name} from market for production of ${good.name}`;
           ERROR && console.error(message);
           return;
         }
-        state.history.push({ kind: "deal", dealId: deal.i });
-        const totalCost = deal.units * deal.price;
-        state.ingredientCosts += totalCost;
-        state.burg.treasury = rn((state.burg.treasury || 0) - totalCost, 2);
-        recipeLog.push({ goodId: ingredientId, amount, marketCost: totalCost });
-      } else {
-        recipeLog.push({ goodId: ingredientId, amount, marketCost: 0 });
       }
+      plans.push({ ingredientId, amount, fromInventory, deal });
+    }
+
+    const recipeLog: ManufacturingRecipeLog = [];
+    for (const { ingredientId, amount, fromInventory, deal } of plans) {
+      let marketCost = 0;
+      if (deal) {
+        state.history.push({ kind: "deal", dealId: deal.i });
+        marketCost = deal.units * deal.price;
+        state.ingredientCosts += marketCost;
+        state.burg.treasury = rn((state.burg.treasury || 0) - marketCost, 2);
+      }
+      recipeLog.push({ goodId: ingredientId, amount, marketCost });
 
       state.inventory[ingredientId] = Math.max(0, (state.inventory[ingredientId] || 0) - fromInventory);
       this.addDemandCoverage(state.demandCoverage, ingredientId, -fromInventory, index.demandCoverageByGood);
