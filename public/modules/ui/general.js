@@ -187,14 +187,6 @@ function showMapTooltip(point, e, i, g) {
     return tip(`${centerBurg.name} market. Click to view`);
   }
 
-  if (group === "goods") {
-    const goodId = +path[path.length - 8].dataset.id;
-    const good = Goods.get(goodId);
-    if (!good) return;
-
-    return tip(`${good.name}. Click to open the Goods Editor`);
-  }
-
   if (group === "ruler") {
     const tag = e.target.tagName;
     const className = e.target.getAttribute("class");

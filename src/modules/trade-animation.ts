@@ -10,6 +10,7 @@ export type TradeBatch = {
   deals: Deal[];
   startBurgId: number;
   endBurgId: number;
+  type: "local" | "global";
 };
 
 export class TradeAnimationModule {
@@ -22,6 +23,15 @@ export class TradeAnimationModule {
 
     this.spawnAnimations(batches);
     this.animationInterval = window.setInterval(() => this.spawnAnimations(batches), this.getInterval());
+  }
+
+  private getBatchType(deal: Deal): "local" | "global" {
+    return deal.sellerType === "market" && deal.buyerType === "market" ? "global" : "local";
+  }
+
+  private isBatchEnabled(batch: TradeBatch): boolean {
+    if (batch.type === "local") return this.getShowLocal();
+    return this.getShowGlobal();
   }
 
   stop(): void {
@@ -113,10 +123,11 @@ export class TradeAnimationModule {
 
       const startBurgId = endpoints.start.i;
       const endBurgId = endpoints.end.i;
-      const key = `${startBurgId}-${endBurgId}`;
+      const type = this.getBatchType(deal);
+      const key = `${startBurgId}-${endBurgId}-${type}`;
       const batch = batches.get(key);
       if (batch) batch.deals.push(deal);
-      else batches.set(key, { id: key, deals: [deal], startBurgId, endBurgId });
+      else batches.set(key, { id: key, deals: [deal], startBurgId, endBurgId, type });
     }
 
     return Array.from(batches.values());
@@ -148,10 +159,13 @@ export class TradeAnimationModule {
       return;
     }
 
+    const enabledBatches = batches.filter(batch => this.isBatchEnabled(batch));
+    if (!enabledBatches.length) return;
+
     const maxSpawn = this.getMaxSpawn();
     const spawnCount = rand(1, maxSpawn);
     for (let i = 0; i < spawnCount; i++) {
-      this.trigger(batches);
+      this.trigger(enabledBatches);
     }
   }
 
@@ -178,7 +192,27 @@ export class TradeAnimationModule {
     return typeof value === "number" ? value : this.getDefaultOptions().maxSpawn;
   }
 
-  getDefaultOptions(): Record<string, number> {
+  private getShowLocal(): boolean {
+    const value = options.tradeAnimation?.showLocal;
+    return typeof value === "boolean" ? value : this.getDefaultOptions().showLocal;
+  }
+
+  private getShowGlobal(): boolean {
+    const value = options.tradeAnimation?.showGlobal;
+    return typeof value === "boolean" ? value : this.getDefaultOptions().showGlobal;
+  }
+
+  getDefaultOptions(): Record<string, number | boolean> & {
+    maxSpawn: number;
+    interval: number;
+    duration: number;
+    landDurationModifier: number;
+    segmentChangePause: number;
+    fadeDuration: number;
+    markerSize: number;
+    showLocal: boolean;
+    showGlobal: boolean;
+  } {
     return {
       maxSpawn: 5,
       interval: 3000,
@@ -186,7 +220,9 @@ export class TradeAnimationModule {
       landDurationModifier: 5,
       segmentChangePause: 1000,
       fadeDuration: 2000,
-      markerSize: 4
+      markerSize: 4,
+      showLocal: true,
+      showGlobal: true
     };
   }
 }

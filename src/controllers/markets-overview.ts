@@ -172,14 +172,15 @@ function compareDialogAddLines(): void {
 function rebuildCompareGoodSelect(): void {
   const select = ensureEl<HTMLSelectElement>("marketsGoodCompareSelect");
   const prev = compareGoodId >= 0 ? compareGoodId : +select.value;
-  select.innerHTML = pack.goods
+  const sortedGoods = [...pack.goods].sort((a, b) => a.name.localeCompare(b.name));
+  select.innerHTML = sortedGoods
     .map(g => `<option value="${g.i}" ${g.i === prev ? "selected" : ""}>${g.name}</option>`)
     .join("");
   if (prev >= 0 && Goods.get(prev)) {
     compareGoodId = prev;
     select.value = String(prev);
   } else {
-    compareGoodId = pack.goods[0]?.i ?? 0;
+    compareGoodId = sortedGoods[0]?.i ?? 0;
     select.value = String(compareGoodId);
   }
 }

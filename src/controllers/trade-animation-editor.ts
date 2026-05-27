@@ -1,6 +1,24 @@
 import { ensureEl } from "../utils";
 
 const DEFAULTS = TradeAnimation.getDefaultOptions();
+
+const TOGGLES = [
+  {
+    id: "tradeAnimShowLocal",
+    label: "Local trades",
+    tip: "Show animations for local trades (between a burg and its market).",
+    key: "showLocal",
+    default: DEFAULTS.showLocal as boolean
+  },
+  {
+    id: "tradeAnimShowGlobal",
+    label: "Global trades",
+    tip: "Show animations for global trades (between two markets).",
+    key: "showGlobal",
+    default: DEFAULTS.showGlobal as boolean
+  }
+];
+
 const SLIDERS = [
   {
     id: "tradeAnimMaxSpawn",
@@ -107,6 +125,18 @@ export function open(): void {
     });
   }
 
+  for (const def of TOGGLES) {
+    const checkbox = ensureEl<HTMLInputElement>(def.id);
+    const stored = options.tradeAnimation[def.key];
+    const current = typeof stored === "boolean" ? stored : def.default;
+    checkbox.checked = current;
+    options.tradeAnimation[def.key] = current;
+
+    checkbox.on("change", () => {
+      options.tradeAnimation[def.key] = checkbox.checked;
+    });
+  }
+
   $("#tradeAnimationEditor").dialog({
     title: "Trade Animation Editor",
     resizable: false,
@@ -133,13 +163,25 @@ function buildDialogHTML(): string {
       </tr>`;
   }).join("");
 
+  const toggleRows = TOGGLES.map(({ id, label, tip, key, default: def }) => {
+    const stored = options.tradeAnimation[key];
+    const current = typeof stored === "boolean" ? stored : def;
+    return /* html */ `
+      <tr data-tip="${tip}">
+        <td style="padding:0">${label}</td>
+        <td colspan="3" style="padding:0">
+          <input id="${id}" type="checkbox" ${current ? "checked" : ""} style="vertical-align:middle"/>
+        </td>
+      </tr>`;
+  }).join("");
+
   return /* html */ `
     <div id="tradeAnimationEditor" style="display:none">
       <div style="color:#666; font-size:.85em; margin-bottom: 0.3em">
         Control trade deal animations. Open layer style editor for paths look settings.
       </div>
       <table style="border-collapse: collapse;width:100%">
-        <tbody>${rows}</tbody>
+        <tbody>${rows}${toggleRows}</tbody>
       </table>
     </div>`;
 }

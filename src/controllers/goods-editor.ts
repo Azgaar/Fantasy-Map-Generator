@@ -70,7 +70,7 @@ function goodsEditorAddLines() {
     const produced = rn(goodProduction.burg + goodProduction.cell + goodProduction.bonus);
     const producedTip = `Total good production: ${produced}⚒. Burgs: ${rn(goodProduction.burg, 2)}⚒. Cells: ${rn(goodProduction.cell, 2)}⚒. Bonus resource: ${rn(goodProduction.bonus, 2)}⚒ (${BONUS_RESOURCE_PRODUCTION}⚒ per cell with explicit good assigned)`;
 
-    lines += /*html*/ `<div class="states goods" data-id=${good.i} data-name="${good.name}" data-color="${good.color}" data-value="${good.value}" data-produced="${produced}" data-type="${types.join(",")}">
+    lines += /*html*/ `<div class="states goods" data-id=${good.i} data-name="${good.name}" data-color="${good.color}" data-baseprice="${good.value}" data-produced="${produced}" data-type="${types.join(",")}">
         <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
           <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
           <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>

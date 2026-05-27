@@ -122,17 +122,17 @@ describe("getDealBatches", () => {
 
 describe("getPath", () => {
   it("returns null when a burg does not exist", () => {
-    expect(ta.getPath({ id: "1-99", deals: [], startBurgId: 1, endBurgId: 99 })).toBeNull();
+    expect(ta.getPath({ id: "1-99", deals: [], startBurgId: 1, endBurgId: 99, type: "local" })).toBeNull();
   });
 
   it("returns null when no path is found", () => {
     vi.mocked(findPath).mockReturnValue(null);
-    expect(ta.getPath({ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2 })).toBeNull();
+    expect(ta.getPath({ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" })).toBeNull();
   });
 
   it("returns points and segments when a path is found", () => {
     vi.mocked(findPath).mockReturnValue([0, 1]); // both land cells
-    const result = ta.getPath({ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2 });
+    const result = ta.getPath({ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" });
     expect(result).not.toBeNull();
     expect(result!.points).toHaveLength(2);
     expect(result!.segments).toHaveLength(1);
@@ -150,21 +150,21 @@ describe("trigger", () => {
 
   it("clears animations and returns when the layer is disabled", () => {
     vi.mocked(globalThis.layerIsOn).mockReturnValue(false);
-    ta.trigger([{ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2 }]);
+    ta.trigger([{ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" }]);
     expect(drawTrade.clear).toHaveBeenCalled();
     expect(drawTrade.draw).not.toHaveBeenCalled();
   });
 
   it("draws animation when the layer is active and a path exists", () => {
     vi.mocked(findPath).mockReturnValue([0, 1]);
-    const batch = { id: "1-2", deals: [], startBurgId: 1, endBurgId: 2 };
+    const batch = { id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" as const };
     ta.trigger([batch]);
     expect(drawTrade.draw).toHaveBeenCalledWith(batch, expect.any(Array), expect.any(Array));
   });
 
   it("does not draw when no path can be found", () => {
     vi.mocked(findPath).mockReturnValue(null);
-    ta.trigger([{ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2 }]);
+    ta.trigger([{ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" }]);
     expect(drawTrade.draw).not.toHaveBeenCalled();
   });
 });
