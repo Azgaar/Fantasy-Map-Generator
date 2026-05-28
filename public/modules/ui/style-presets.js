@@ -223,7 +223,7 @@ function addStylePreset() {
       "#prec": ["opacity", "stroke", "stroke-width", "fill", "filter"],
       "#population": ["opacity", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
       "#goods": ["opacity", "stroke-width", "data-circle", "filter"],
-      "#markets": ["opacity", "stroke-width", "data-fill-opacity", "filter"],
+      "#markets": ["opacity", "stroke-width", "fill-opacity", "filter"],
       "#tradeAnimation": ["opacity", "filter"],
       "#rural": ["stroke"],
       "#urban": ["stroke"],

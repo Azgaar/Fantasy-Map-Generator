@@ -88,9 +88,7 @@ function selectStyleElement() {
   styleIsOff.style.display = isLayerOff ? "block" : "none";
 
   // active group element
-  if (
-    ["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)
-  ) {
+  if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
     const group = styleGroupSelect.value;
     const defaultGroupSelector = styleElement === "terrs" ? "#landHeights" : "g";
     el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
@@ -383,14 +381,12 @@ function selectStyleElement() {
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = el.attr("stroke-width") || "0.5";
     styleMarkets.style.display = "block";
-    styleMarketsFillOpacity.value = el.attr("data-fill-opacity") || "0.28";
+    styleMarketsFillOpacity.value = el.attr("fill-opacity") || "0.28";
   }
 
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
-  if (
-    ["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)
-  ) {
+  if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
     const groups = ensureEl(styleElement).querySelectorAll(":scope > g");
     groups.forEach(el => {
       if (el.id === "burgLabels") return;
@@ -993,7 +989,7 @@ styleGoodsCircle.addEventListener("change", function () {
 });
 
 styleMarketsFillOpacity.on("input", e => {
-  markets.attr("data-fill-opacity", e.target.value);
+  markets.attr("fill-opacity", e.target.value);
   if (layerIsOn("toggleMarkets")) drawMarkets();
 });
 

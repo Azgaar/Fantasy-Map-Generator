@@ -1104,7 +1104,7 @@ export class GoodsModule {
 
     this.cells = pack.cells;
     this.cells.good = new Uint16Array(this.cells.i.length);
-    if (!pack.goods || regenerate) pack.goods = this.defaultGoods;
+    if (!pack.goods?.length || regenerate) pack.goods = this.defaultGoods;
 
     const resourceMaxCells = Math.ceil((200 * this.cells.i.length) / 5000);
     const resources: Record<number, number> = {};

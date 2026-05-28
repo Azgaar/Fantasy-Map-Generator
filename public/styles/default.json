@@ -661,7 +661,7 @@
   "#markets": {
     "opacity": 1,
     "stroke-width": 0.5,
-    "data-fill-opacity": 0.5,
+    "fill-opacity": 0.5,
     "filter": null
   },
   "#tradeAnimation": {

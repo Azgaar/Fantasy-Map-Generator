@@ -6,7 +6,6 @@ export const drawMarkets = (): void => {
   TIME && console.time("drawMarkets");
 
   const linegen = line().curve(curveBasisClosed);
-  const fillOpacity = markets.attr("data-fill-opacity") ?? "0.28";
   const getType = (cellId: number) => pack.cells.market[cellId];
   const isolines = getIsolines(pack, getType, { polygons: true });
 
@@ -18,7 +17,7 @@ export const drawMarkets = (): void => {
     const polygons = isolines[market.i]?.polygons;
     if (polygons) {
       const path = polygons.map(p => linegen(p) ?? "").join("");
-      content += /*html*/ `<path d="${path}" fill="${fillColor}" fill-opacity="${fillOpacity}" stroke="${strokeColor}"/>`;
+      content += /*html*/ `<path d="${path}" fill="${fillColor}" stroke="${strokeColor}"/>`;
     }
 
     const centerBurg = pack.burgs[market.centerBurgId];
@@ -29,8 +28,8 @@ export const drawMarkets = (): void => {
       const strokeWidth = rn(radius / 8, 2);
 
       content += /*html*/ `
-        <circle cx="${x}" cy="${y}" r="${radius}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
-        <text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}px">⚖️</text>
+        <circle cx="${x}" cy="${y}" r="${radius}" fill="${fillColor}" fill-opacity="1" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
+        <text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}px" fill-opacity="1">⚖️</text>
       `;
     }
 

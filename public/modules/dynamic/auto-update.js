@@ -1118,9 +1118,21 @@ export function resolveVersionConflicts(mapVersion) {
 
   if (isOlderThan("1.123.0")) {
     // v1.123.0 added goods, markets, deals and trade animation data
-    if (!markets.size()) markets = viewbox.insert("g", "#routes").attr("id", "markets");
-    if (!goods.size()) goods = viewbox.insert("g", "#emblems").attr("id", "goods").style("display", "none");
-    if (!tradeAnimation.size()) tradeAnimation = viewbox.insert("g", "#goods").attr("id", "tradeAnimation");
+    markets = viewbox
+      .insert("g", "#routes")
+      .attr("id", "markets")
+      .attr("stroke-width", "0.5")
+      .attr("fill-opacity", "0.5");
+
+    goods = viewbox
+      .insert("g", "#emblems")
+      .attr("id", "goods")
+      .style("display", "none")
+      .attr("data-circle", "1")
+      .attr("stroke-width", "0.32")
+      .attr("filter", "url(#dropShadow01)");
+
+    tradeAnimation = viewbox.insert("g", "#goods").attr("id", "tradeAnimation");
 
     options.trade = { animation: TradeAnimation.getDefaultOptions() };
 
