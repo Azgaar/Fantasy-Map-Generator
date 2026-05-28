@@ -426,7 +426,8 @@ export const meander = (cells: number[], cellPositions: Point[], options: Meande
   return { points, anchorIndices };
 };
 
-function projectToNearestEdge(point: Point, width: number, height: number): Point {
+// Snap a point to the closest edge of the [0,width]×[0,height] rectangle
+export function projectToNearestEdge(point: Point, width: number, height: number): Point {
   const [x, y] = point;
   const minDist = Math.min(y, height - y, x, width - x);
   if (minDist === y) return [x, 0];

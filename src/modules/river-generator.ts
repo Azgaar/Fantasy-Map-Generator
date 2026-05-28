@@ -1,7 +1,7 @@
 import Alea from "alea";
 import { curveBasis, curveCatmullRom, line, mean, min, sum } from "d3";
 import { each, rn, round, rw } from "../utils";
-import { meander } from "../utils/pathUtils";
+import { meander, projectToNearestEdge } from "../utils/pathUtils";
 import type { Point } from "./voronoi";
 
 export const MIN_NAVIGABLE_FLUX = 100;
@@ -367,25 +367,22 @@ class RiverModule {
   }
 
   addMeandering(riverCells: number[], riverPoints: Point[] | null = null): [number, number, number][] {
-    const { points, anchorIndices } = meander(riverCells, pack.cells.p, {
+    const { fl, h, p } = pack.cells;
+    const { points, anchorIndices } = meander(riverCells, p, {
       anchors: riverPoints ?? undefined,
       meandering: 0.5,
-      startStep: pack.cells.h[riverCells[0]] < 20 ? 1 : 10,
+      startStep: h[riverCells[0]] < 20 ? 1 : 10,
       bounds: { width: graphWidth, height: graphHeight }
     });
 
-    const pointIndexToAnchorIndex: number[] = new Array(points.length).fill(-1);
+    const flux: number[] = new Array(points.length).fill(0);
     anchorIndices.forEach((pointIndex, anchorIndex) => {
-      pointIndexToAnchorIndex[pointIndex] = anchorIndex;
-    });
-
-    return points.map(([x, y], idx) => {
-      const anchorIndex = pointIndexToAnchorIndex[idx];
-      if (anchorIndex < 0) return [x, y, 0];
       const cellId = riverCells[anchorIndex];
       const fluxCell = cellId === -1 ? riverCells[anchorIndex - 1] : cellId;
-      return [x, y, pack.cells.fl[fluxCell] || 0];
+      flux[pointIndex] = fl[fluxCell] || 0;
     });
+
+    return points.map(([x, y], idx) => [x, y, flux[idx]]);
   }
 
   // anchor positions per river cell (cell centers, or override anchors), with -1 cells resolved to the map edge
@@ -394,14 +391,7 @@ class RiverModule {
 
     const { p } = pack.cells;
     return riverCells.map((cell, i) => {
-      if (cell === -1) {
-        const prev = p[riverCells[i - 1]];
-        const min = Math.min(prev[1], graphHeight - prev[1], prev[0], graphWidth - prev[0]);
-        if (min === prev[1]) return [prev[0], 0];
-        if (min === graphHeight - prev[1]) return [prev[0], graphHeight];
-        if (min === prev[0]) return [0, prev[1]];
-        return [graphWidth, prev[1]];
-      }
+      if (cell === -1) return projectToNearestEdge(p[riverCells[i - 1]], graphWidth, graphHeight);
       return p[cell];
     });
   }
