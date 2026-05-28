@@ -18,7 +18,6 @@ const DEFAULT_OPTIONS = {
   duration: 250,
   landDurationModifier: 5,
   segmentChangePause: 1000,
-  fadeDuration: 2000,
   markerSize: 4
 } as const;
 

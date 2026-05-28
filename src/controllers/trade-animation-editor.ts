@@ -59,17 +59,6 @@ const INPUTS = [
   },
   {
     type: "slider",
-    id: "tradeAnimFadeDuration",
-    label: "Path fade",
-    tip: "Fade-in / fade-out duration for the route trail, in milliseconds. Higher = longer fade",
-    min: 0,
-    max: 10000,
-    step: 100,
-    key: "fadeDuration",
-    default: DEFAULTS.fadeDuration
-  },
-  {
-    type: "slider",
     id: "tradeAnimMarkerSize",
     label: "Marker size",
     tip: "Marker icon size in map units. Wagons render at half this size. Higher = bigger icons",
