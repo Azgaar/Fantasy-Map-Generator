@@ -606,7 +606,7 @@ function getFileName(dataType) {
 }
 
 function downloadFile(data, name, type = "text/plain") {
-  const dataBlob = new Blob([data], {type});
+  const dataBlob = new Blob([data], { type });
   const url = window.URL.createObjectURL(dataBlob);
   const link = document.createElement("a");
   link.download = name;
@@ -627,7 +627,7 @@ function getBBox(element) {
   const y = +element.getAttribute("y");
   const width = +element.getAttribute("width");
   const height = +element.getAttribute("height");
-  return {x, y, width, height};
+  return { x, y, width, height };
 }
 
 function highlightElement(element, zoom) {
@@ -938,7 +938,9 @@ function selectIcon(initial, callback) {
 }
 
 function getAreaUnit(squareMark = "²") {
-  return ensureEl("areaUnit").value === "square" ? ensureEl("distanceUnitInput").value + squareMark : ensureEl("areaUnit").value;
+  return ensureEl("areaUnit").value === "square"
+    ? ensureEl("distanceUnitInput").value + squareMark
+    : ensureEl("areaUnit").value;
 }
 
 function getArea(rawArea) {
@@ -967,7 +969,7 @@ function confirmationDialog(options) {
   };
 
   ensureEl("alertMessage").innerHTML = message;
-  $("#alert").dialog({resizable: false, title, buttons});
+  $("#alert").dialog({ resizable: false, title, buttons });
 }
 
 // add and register event listeners to clean up on editor closure
@@ -992,19 +994,19 @@ function refreshAllEditors() {
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/states-editor.js?v=1.120.5");
+  const Editor = await import("../dynamic/editors/states-editor.js?v=1.122.11");
   Editor.open();
 }
 
 async function editCultures() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.120.5");
+  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.122.11");
   Editor.open();
 }
 
 async function editReligions() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/religions-editor.js?v=1.120.5");
+  const Editor = await import("../dynamic/editors/religions-editor.js?v=1.122.11");
   Editor.open();
 }
 
