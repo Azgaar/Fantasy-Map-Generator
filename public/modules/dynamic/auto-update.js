@@ -1145,15 +1145,4 @@ export function resolveVersionConflicts(mapVersion) {
     Production.produce();
     States.collectTaxes();
   }
-
-  if (isOlderThan("1.123.1")) {
-    // v1.123.1 added cells.market to the persisted format; rebuild for any save missing it
-    const cellsMarket = pack.cells.market;
-    const isEmpty = !cellsMarket || !cellsMarket.length || cellsMarket.every(m => !m);
-    if (isEmpty && pack.markets?.length) {
-      Markets.generate();
-      Production.produce();
-      States.collectTaxes();
-    }
-  }
 }

@@ -23,7 +23,7 @@ export class ProductionModule {
     for (const burg of sortedBurgs) {
       if (!burg.i || burg.removed || !burg.market) continue;
       const market = Markets.get(burg.market);
-      if (!market) return null;
+      if (!market) continue;
 
       const state = this.createBurgProductionState(burg, market, index);
       this.runWorkerLoop(index, state);
@@ -794,13 +794,13 @@ export type MfgHistory = {
 
 export type DealHistory = { kind: "deal"; dealId: number };
 
-export type LcoalHistory = {
+export type LocalHistory = {
   kind: "local";
   goodId: number;
   units: number;
 };
 
-export type ProductionHistory = MfgHistory | DealHistory | LcoalHistory;
+export type ProductionHistory = MfgHistory | DealHistory | LocalHistory;
 
 declare global {
   var Production: ProductionModule;

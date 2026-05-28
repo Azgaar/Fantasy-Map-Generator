@@ -191,8 +191,9 @@ export class MarketsModule {
 
       if (bonusGoodId) {
         const good = this.goodById[bonusGoodId];
+        if (!good) continue;
         const bonusGood = this.getMarketGood(market, good);
-        const modifier = good?.culture?.[cultureType] || 1;
+        const modifier = good.culture?.[cultureType] || 1;
         bonusGood.stock = rn(bonusGood.stock + BONUS_RESOURCE_PRODUCTION * modifier, 2);
       }
 

@@ -849,26 +849,26 @@ function openGoodDialog(editedGood?: Good) {
 }
 
 function downloadGoodsData() {
-  const body = ensureEl("goodsBody");
+  const cellsByGood: Record<number, number> = {};
+  for (const goodId of pack.cells.good) {
+    if (goodId) cellsByGood[goodId] = (cellsByGood[goodId] || 0) + 1;
+  }
+
   let data = "Id,Good,Color,Type,Tags,Value,Bonus,Demand Coverage,Chance,Model,Cells\n";
 
-  // TODO: update based on data, not display
-  body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
-    const goodId = +el.dataset.id!;
-    const good = Goods.get(goodId);
-    if (!good) return;
+  for (const good of pack.goods) {
+    const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean).join(";");
+    const tags = good.tags.join(";");
+    const bonus = Object.entries(good.bonus || {})
+      .map(([k, v]) => `${k}:${v}`)
+      .join(";");
+    const demandCoverage = Object.entries(good.demandCoverage || {})
+      .map(([k, v]) => `${k}:${v}`)
+      .join(";");
+    const cells = cellsByGood[good.i] || 0;
 
-    data += `${el.dataset.id},`;
-    data += `${el.dataset.name},`;
-    data += `${el.dataset.color},`;
-    data += `${el.dataset.tags},`;
-    data += `${el.dataset.value},`;
-    data += `${el.dataset.bonus},`;
-    data += `${el.dataset.demandcoverage},`;
-    data += `${el.dataset.chance},`;
-    data += `${el.dataset.model},`;
-    data += `${el.dataset.cells}\n`;
-  });
+    data += `${good.i},${good.name},${good.color},${types},${tags},${good.value},${bonus},${demandCoverage},${good.chance ?? ""},${good.distribution ?? ""},${cells}\n`;
+  }
 
   const name = `${getFileName("Goods")}.csv`;
   downloadFile(data, name);
