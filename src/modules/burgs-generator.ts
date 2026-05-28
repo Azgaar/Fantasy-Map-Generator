@@ -1,6 +1,7 @@
 import { quadtree } from "d3-quadtree";
 import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
+import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
@@ -34,6 +35,15 @@ export interface Burg {
   treasury?: number; // accumulated cash balance
   market?: number;
 }
+
+// A burg that could become a port on a given water body.
+type PortCandidate = {
+  burg: Burg;
+  haven: number | null; // adjacent water cell for coastal ports; null for river ports
+  portFeatureId: number; // the water/drain feature the port trades on
+  landFeature: number; // the landmass the burg sits on
+  preferred: boolean; // safe harbour, capital harbour, or river port — promoted unconditionally
+};
 
 class BurgModule {
   generate() {
@@ -188,17 +198,11 @@ class BurgModule {
       if (burg.i && !burg.lock) delete burg.port;
     }
 
-    const candidates = this.collectPortCandidates(burgs);
-    for (const [featureId, featureCandidates] of candidates) {
-      if (featureCandidates.length < 2) continue;
-      for (const { burg, haven } of featureCandidates) {
-        burg.port = featureId;
-        const [x, y] =
-          haven !== null
-            ? this.getCloseToEdgePoint(burg.cell, haven)
-            : this.shiftTowardsRiverBank(burg.cell, riversById);
-        burg.x = x;
-        burg.y = y;
+    const candidatesByWater = this.collectPortCandidates(burgs);
+    for (const candidates of candidatesByWater.values()) {
+      if (!candidates.length) continue;
+      for (const candidate of this.selectPorts(candidates)) {
+        this.promoteToPort(candidate, riversById);
       }
     }
 
@@ -211,48 +215,88 @@ class BurgModule {
     }
   }
 
-  private collectPortCandidates(burgs: Burg[]): Map<number, Array<{ burg: Burg; haven: number | null }>> {
+  // Collect every burg that could host a port, grouped by the water body
+  private collectPortCandidates(burgs: Burg[]): Map<number, PortCandidate[]> {
     const { cells } = pack;
     const temp = grid.cells.temp;
 
-    const candidates: Map<number, Array<{ burg: Burg; haven: number | null }>> = new Map();
-    const addCandidate = (portFeatureId: number, burg: Burg, haven: number | null) => {
-      if (!candidates.has(portFeatureId)) candidates.set(portFeatureId, []);
-      candidates.get(portFeatureId)!.push({ burg, haven });
+    const byWater = new Map<number, PortCandidate[]>();
+    const addCandidate = (candidate: PortCandidate) => {
+      if (!byWater.has(candidate.portFeatureId)) byWater.set(candidate.portFeatureId, []);
+      byWater.get(candidate.portFeatureId)!.push(candidate);
     };
 
-    // Coastal candidates: burgs adjacent to a navigable multi-cell water body via a safe harbour
     for (const burg of burgs) {
       if (!burg.i || burg.lock) continue;
       const haven = cells.haven[burg.cell];
+      const landFeature = cells.f[burg.cell];
 
       if (haven) {
-        // check if can be a sea/lake port
+        // sea/lake port candidate
         const harbor = cells.harbor[burg.cell];
+        if (!harbor) continue; // not actually adjacent to water
         const featureId = cells.f[haven];
         const feature = pack.features[featureId];
-        if (!feature) continue; // no adjacent water body
+        if (!feature || feature.cells <= 1) continue; // no navigable water body
+        if (NON_NAVIGABLE_LAKE_GROUPS.has(feature.group)) continue;
+        if (temp[cells.g[burg.cell]] <= 0) continue; // frozen
 
-        const hasHarbor = (harbor && burg.capital) || harbor === 1;
-        const isFrozen = temp[cells.g[burg.cell]] <= 0;
-
-        if (feature.cells > 1 && hasHarbor && !isFrozen) {
-          const portFeatureId =
-            feature.type === "lake" && feature.outlet
-              ? (Rivers.resolveLakeDrainFeature(featureId) ?? featureId)
-              : featureId;
-          addCandidate(portFeatureId, burg, haven);
-        }
+        const portFeatureId =
+          feature.type === "lake" && feature.outlet
+            ? (Rivers.resolveLakeDrainFeature(featureId) ?? featureId)
+            : featureId;
+        const preferred = (harbor && Boolean(burg.capital)) || harbor === 1; // safe harbour or capital
+        addCandidate({ burg, haven, portFeatureId, landFeature, preferred });
       } else {
-        // check if it can be a river port
+        // river port candidate
         if (!Rivers.isNavigable(burg.cell)) continue;
         const portFeatureId = Rivers.resolveDrainFeature(burg.cell);
         if (!portFeatureId) continue;
-        addCandidate(portFeatureId, burg, null);
+        addCandidate({ burg, haven: null, portFeatureId, landFeature, preferred: true });
       }
     }
 
-    return candidates;
+    return byWater;
+  }
+
+  private selectPorts(candidates: PortCandidate[]): PortCandidate[] {
+    const { cells } = pack;
+    const rank = (candidate: PortCandidate) =>
+      (candidate.burg.capital ? -1000 : 0) + (candidate.haven !== null ? cells.harbor[candidate.burg.cell] : 0);
+
+    const promoted = new Set<PortCandidate>();
+    for (const c of candidates) if (c.preferred) promoted.add(c);
+
+    const byLand = new Map<number, PortCandidate[]>();
+    for (const c of candidates) {
+      if (!byLand.has(c.landFeature)) byLand.set(c.landFeature, []);
+      byLand.get(c.landFeature)!.push(c);
+    }
+    for (const group of byLand.values()) {
+      if (group.some(c => promoted.has(c))) continue; // landmass already has a port here
+      promoted.add(group.reduce((best, c) => (rank(c) < rank(best) ? c : best)));
+    }
+
+    if (promoted.size < 2) {
+      const rest = candidates.filter(c => !promoted.has(c)).sort((a, b) => rank(a) - rank(b));
+      for (const c of rest) {
+        promoted.add(c);
+        if (promoted.size >= 2) break;
+      }
+    }
+
+    if (promoted.size < 2) return []; // a sea route needs two endpoints; a lone port is useless
+
+    return [...promoted];
+  }
+
+  private promoteToPort(candidate: PortCandidate, riversById: Map<number, River>): void {
+    const { burg, haven, portFeatureId } = candidate;
+    burg.port = portFeatureId;
+    const [x, y] =
+      haven !== null ? this.getCloseToEdgePoint(burg.cell, haven) : this.shiftTowardsRiverBank(burg.cell, riversById);
+    burg.x = x;
+    burg.y = y;
   }
 
   private getCloseToEdgePoint(cell1: number, cell2: number): [number, number] {

@@ -121,6 +121,23 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
   });
 
   // -------------------------------------------------------------------------
+  it.each(["dry", "frozen", "lava"])("does not make ports on a %s lake (cannot be sailed)", group => {
+    globalThis.pack = {
+      burgs: makeBurgs(),
+      cells: { ...BASE_CELLS },
+      features: [null, { i: 1, type: "lake", cells: 3, group }, { i: 2, type: "ocean" }],
+      vertices: BASE_VERTICES,
+      rivers: []
+    } as any;
+
+    Burgs.assignPorts();
+
+    const burgs = globalThis.pack.burgs;
+    expect(burgs[1].port).toBeUndefined();
+    expect(burgs[2].port).toBeUndefined();
+  });
+
+  // -------------------------------------------------------------------------
   it("keeps burg.port = lakeFeatureId when the outlet river exits the map", () => {
     // River 10's last cell is -1 (off-map), so resolveLakeDrainFeature returns null.
     globalThis.pack = {
@@ -225,6 +242,99 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
     expect(burgs[1].port).toBe(99); // locked — unchanged
     expect(burgs[2].port).toBeUndefined(); // alone after locking → no port
   });
+
+  // -------------------------------------------------------------------------
+  // Two islands share ocean feature 2. Island A's burg has a safe harbour;
+  // island B's burg only has an exposed coast (harbor = 2, not a capital).
+  // Both must become ports so neither island is cut off from sea trade.
+  it("promotes an exposed coastal burg so its island is not left portless", () => {
+    globalThis.pack = {
+      burgs: [0 as any, { i: 1, cell: 1, x: 5, y: 5, capital: 0 }, { i: 2, cell: 2, x: 15, y: 5, capital: 0 }],
+      cells: {
+        haven: [0, 3, 3, 0],
+        harbor: [0, 1, 2, 0], // burg 1 safe harbour, burg 2 exposed coast
+        f: [0, 10, 11, 2], // burg 1 → island 10, burg 2 → island 11, cell 3 → ocean 2
+        g: [0, 0, 0, 0],
+        r: [0, 0, 0, 0],
+        fl: [0, 0, 0, 0],
+        p: [
+          [0, 0],
+          [5, 5],
+          [15, 5],
+          [10, 5]
+        ] as [number, number][],
+        v: [[], [0, 1], [2, 3], []]
+      },
+      features: [null, null, { i: 2, type: "ocean", cells: 5 }],
+      vertices: {
+        c: [
+          [1, 3],
+          [1, 3],
+          [2, 3],
+          [2, 3]
+        ],
+        p: [
+          [5, 0],
+          [5, 10],
+          [15, 0],
+          [15, 10]
+        ] as [number, number][]
+      },
+      rivers: []
+    } as any;
+
+    Burgs.assignPorts();
+
+    const burgs = globalThis.pack.burgs;
+    expect(burgs[1].port).toBe(2); // safe-harbour island
+    expect(burgs[2].port).toBe(2); // exposed-coast island — now reachable
+  });
+
+  // -------------------------------------------------------------------------
+  // A single island borders its own sea with two exposed coastal burgs and no
+  // safe harbour. Both should become ports so an internal sea route can form.
+  it("gives a lone island two ports when it has no safe harbour", () => {
+    globalThis.pack = {
+      burgs: [0 as any, { i: 1, cell: 1, x: 5, y: 5, capital: 0 }, { i: 2, cell: 2, x: 15, y: 5, capital: 0 }],
+      cells: {
+        haven: [0, 3, 3, 0],
+        harbor: [0, 2, 2, 0], // both exposed, neither a safe harbour
+        f: [0, 10, 10, 2], // both burgs on island 10; cell 3 → ocean 2
+        g: [0, 0, 0, 0],
+        r: [0, 0, 0, 0],
+        fl: [0, 0, 0, 0],
+        p: [
+          [0, 0],
+          [5, 5],
+          [15, 5],
+          [10, 5]
+        ] as [number, number][],
+        v: [[], [0, 1], [2, 3], []]
+      },
+      features: [null, null, { i: 2, type: "ocean", cells: 5 }],
+      vertices: {
+        c: [
+          [1, 3],
+          [1, 3],
+          [2, 3],
+          [2, 3]
+        ],
+        p: [
+          [5, 0],
+          [5, 10],
+          [15, 0],
+          [15, 10]
+        ] as [number, number][]
+      },
+      rivers: []
+    } as any;
+
+    Burgs.assignPorts();
+
+    const burgs = globalThis.pack.burgs;
+    expect(burgs[1].port).toBe(2);
+    expect(burgs[2].port).toBe(2);
+  });
 });
 
 describe("BurgsModule.assignPorts — river-bank shift", () => {
@@ -274,8 +384,9 @@ describe("BurgsModule.assignPorts — river-bank shift", () => {
 
     // Displacement is perpendicular to the river tangent (1,1): dot product ≈ 0.
     expect(dx * 1 + dy * 1).toBeCloseTo(0, 6);
-    // Displacement magnitude is the shift amount min(fl/300, 0.5) = 0.5 (±2-decimal rounding).
-    expect(Math.hypot(dx, dy)).toBeCloseTo(0.5, 1);
+    // Displacement magnitude is the shift amount min(fl/200, 0.6) (±2-decimal rounding).
+    const expectedShift = Math.min(300 / 200, 0.6);
+    expect(Math.hypot(dx, dy)).toBeCloseTo(expectedShift, 1);
     // The burg actually moved off the cell center.
     expect(dx === 0 && dy === 0).toBe(false);
   });

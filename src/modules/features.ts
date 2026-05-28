@@ -51,6 +51,8 @@ export interface GridFeature {
   type: FeatureType;
 }
 
+export const NON_NAVIGABLE_LAKE_GROUPS = new Set(["dry", "frozen", "lava"]);
+
 class FeatureModule {
   private DEEPER_LAND = 3;
   private LANDLOCKED = 2;

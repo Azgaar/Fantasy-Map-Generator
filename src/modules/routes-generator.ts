@@ -164,7 +164,7 @@ const descriptors = [
 const suffixes: Record<string, Record<string, number>> = {
   roads: { road: 7, route: 3, way: 2, highway: 1 },
   trails: { trail: 4, path: 1, track: 1, pass: 1 },
-  searoutes: { "sea route": 5, lane: 2, passage: 1, seaway: 1 }
+  searoutes: { route: 5, lane: 2, passage: 1, "water way": 1 }
 };
 
 export interface Route {
@@ -296,8 +296,18 @@ class RoutesModule {
       return distanceSquared(p[current], p[next]) * RIVER_TYPE_MODIFIER * connectionModifier;
     }
 
-    // leaving a river-land cell into water: must be the river's recorded outlet
-    if (h[current] >= 20 && r[current] && !this.riverEdges.get(current)?.has(next)) return Infinity;
+    // leaving a land cell into water
+    if (h[current] >= 20) {
+      if (r[current]) {
+        // river-land cell: must follow the river's recorded outlet
+        if (!this.riverEdges.get(current)?.has(next)) return Infinity;
+      } else {
+        // coastal port cell: must leave through its haven, the water cell the burg was shifted
+        // towards — otherwise the rendered route cuts across the land to reach the burg
+        const haven = pack.cells.haven?.[current];
+        if (haven && haven !== next) return Infinity;
+      }
+    }
     if (grid.cells.temp[g[next]] < MIN_PASSABLE_SEA_TEMP) return Infinity;
 
     const distanceCost = distanceSquared(p[current], p[next]);
@@ -343,8 +353,12 @@ class RoutesModule {
       ? (next: number, current?: number) => {
           if (next !== exit) return false;
           if (current === undefined) return true;
-          // approach to a port must be through water or along the river course
-          return pack.cells.h[current] < 20 || Boolean(this.riverEdges.get(current)?.has(next));
+          // river port: approach along the river course
+          if (this.riverEdges.get(current)?.has(next)) return true;
+          // coastal port: approach only over water, through the haven the burg was shifted towards
+          if (pack.cells.h[current] >= 20) return false;
+          const haven = pack.cells.haven?.[exit];
+          return !haven || current === haven;
         }
       : (next: number) => next === exit;
     const pathCells = findPath(start, isExit, getCost, pack);

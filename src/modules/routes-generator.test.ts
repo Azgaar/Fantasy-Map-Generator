@@ -111,6 +111,29 @@ describe("RoutesModule river-aware water cost", () => {
     expect(Routes.getWaterPathCost(0, 2)).toBeLessThan(Infinity);
   });
 
+  it("forces a coastal port to exit through its haven cell", () => {
+    // cell 0 is a coastal port with two adjacent sea cells; its haven is cell 1.
+    // The route must leave through the haven so it meets the burg shifted toward it.
+    globalThis.pack.cells = {
+      h: [25, 5, 5],
+      r: [0, 0, 0],
+      fl: [0, 0, 0],
+      haven: [1, 0, 0], // cell 0's haven is cell 1
+      p: [
+        [0, 0],
+        [10, 0],
+        [0, 10]
+      ],
+      t: [1, -1, -1],
+      g: [0, 0, 0]
+    } as any;
+    globalThis.pack.rivers = [] as any;
+    Routes.sync();
+
+    expect(Routes.getWaterPathCost(0, 1)).toBeLessThan(Infinity); // haven — allowed
+    expect(Routes.getWaterPathCost(0, 2)).toBe(Infinity); // non-haven water — blocked
+  });
+
   it("rejects exit from a river-mouth land cell into a non-mouth water cell", () => {
     // River 1 mouth at cell 2; recorded sea exit is cell 5.
     // Cell 6 is a sea cell also voronoi-adjacent to the mouth but not the recorded outlet.
