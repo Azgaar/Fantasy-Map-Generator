@@ -18,7 +18,7 @@ export function open() {
     title: "Cultures Editor",
     resizable: false,
     close: closeCulturesEditor,
-    position: {my: "right top", at: "right-10 top+10", of: "svg"}
+    position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
   $body.focus();
 }
@@ -49,7 +49,6 @@ function insertEditorHtml() {
       <button id="culturesEditStyle" data-tip="Edit cultures style in Style Editor" class="icon-adjust"></button>
       <button id="culturesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
       <button id="culturesPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
-      <button id="culturesLocate" data-tip="Click on the list first to select a culture, then click to locate it on the map" class="icon-target"></button>
       <button id="culturesHeirarchy" data-tip="Show cultures hierarchy tree" class="icon-sitemap"></button>
       <button id="culturesManually" data-tip="Manually re-assign cultures" class="icon-brush"></button>
       <div id="culturesManuallyButtons" style="display: none">
@@ -65,7 +64,7 @@ function insertEditorHtml() {
       <button id="culturesExport" data-tip="Download cultures-related data" class="icon-download"></button>
       <button id="culturesImport" data-tip="Upload cultures-related data" class="icon-upload"></button>
       <button id="culturesRecalculate" data-tip="Recalculate cultures based on current values of growth-related attributes" class="icon-retweet"></button>
-      <span data-tip="Allow culture centers, expansion and type changes to take an immediate effect">
+      <span data-tip="Allow culture centers, expansion and type changes to take an immediate effect" style="display: inline-flex">
         <input id="culturesAutoChange" class="checkbox" type="checkbox" />
         <label for="culturesAutoChange" class="checkbox-label"><i>auto-apply changes</i></label>
       </span>
@@ -83,7 +82,6 @@ function addListeners() {
   ensureEl("culturesEditStyle").on("click", () => editStyle("cults"));
   ensureEl("culturesLegend").on("click", toggleLegend);
   ensureEl("culturesPercentage").on("click", togglePercentageMode);
-  ensureEl("culturesLocate").on("click", locateSelectedCulture);
   ensureEl("culturesHeirarchy").on("click", showHierarchy);
   ensureEl("culturesRecalculate").on("click", () => recalculateCultures(true));
   ensureEl("culturesManually").on("click", enterCultureManualAssignent);
@@ -103,29 +101,8 @@ function refreshCulturesEditor() {
   drawCultureCenters();
 }
 
-function locateCulture(cultureId) {
-  if (!cults) return;
-  const cultureElement = cults.select("#culture" + cultureId).node();
-  if (!cultureElement) return;
-  highlightElement(cultureElement, 8);
-}
-
-function locateSelectedCulture() {
-  const selected = $body.querySelector("div.selected");
-  if (!selected) {
-    tip("Select a culture first", true);
-    return;
-  }
-  const cultureId = Number(selected.dataset.id);
-  if (Number.isNaN(cultureId)) {
-    tip("Select a culture first", true);
-    return;
-  }
-  locateCulture(cultureId);
-}
-
 function culturesCollectStatistics() {
-  const {cells, cultures, burgs} = pack;
+  const { cells, cultures, burgs } = pack;
   cultures.forEach(c => {
     c.cells = c.area = c.rural = c.urban = 0;
   });
@@ -239,6 +216,7 @@ function culturesEditorAddLines() {
         <div data-tip="${populationTip}" class="culturePopulation hide pointer"
           style="width: 4em">${si(population)}</div>
         ${getShapeOptions(selectShape, c.shield)}
+        <span data-tip="Locate the culture" class="icon-target hide"></span>
         <span data-tip="Lock culture" class="icon-lock${c.lock ? "" : "-open"} hide"></span>
         <span data-tip="Remove culture" class="icon-trash-empty hide"></span>
       </div>`;
@@ -268,6 +246,7 @@ function culturesEditorAddLines() {
   $body.querySelectorAll("div > select.cultureEmblems").forEach($el => $el.on("change", cultureChangeEmblemsShape));
   $body.querySelectorAll("div > div.culturePopulation").forEach($el => $el.on("click", changePopulation));
   $body.querySelectorAll("div > span.icon-arrows-cw").forEach($el => $el.on("click", cultureRegenerateBurgs));
+  $body.querySelectorAll("div > span.icon-target").forEach($el => $el.on("click", cultureHighlightElement));
   $body.querySelectorAll("div > span.icon-trash-empty").forEach($el => $el.on("click", cultureRemovePrompt));
   $body.querySelectorAll("div > span.icon-lock").forEach($el => $el.on("click", updateLockStatus));
   $body.querySelectorAll("div > span.icon-lock-open").forEach($el => $el.on("click", updateLockStatus));
@@ -280,7 +259,7 @@ function culturesEditorAddLines() {
     togglePercentageMode();
   }
   applySorting($culturesHeader);
-  $("#culturesEditor").dialog({width: fitContent()});
+  $("#culturesEditor").dialog({ width: fitContent() });
 }
 
 function getTypeOptions(type) {
@@ -487,7 +466,7 @@ function changePopulation() {
         $(this).dialog("close");
       }
     },
-    position: {my: "center", at: "center", of: "svg"}
+    position: { my: "center", at: "center", of: "svg" }
   });
 }
 
@@ -538,7 +517,7 @@ function removeCulture(cultureId) {
   cults.select("#culture" + cultureId).remove();
   debug.select("#cultureCenter" + cultureId).remove();
 
-  const {burgs, states, cells, cultures} = pack;
+  const { burgs, states, cells, cultures } = pack;
 
   burgs.filter(b => b.culture == cultureId).forEach(b => (b.culture = 0));
   states.forEach(s => {
@@ -556,6 +535,11 @@ function removeCulture(cultureId) {
       if (!c.origins.length) c.origins = [0];
     });
   refreshCulturesEditor();
+}
+
+function cultureHighlightElement() {
+  const cultureId = +this.parentNode.dataset.id;
+  highlightElement(cults.select("#culture" + cultureId).node(), 4);
 }
 
 function cultureRemovePrompt() {
@@ -612,7 +596,7 @@ function cultureCenterDrag() {
   const y0 = +tr[1] - d3.event.y;
 
   function handleDrag() {
-    const {x, y} = d3.event;
+    const { x, y } = d3.event;
     this.setAttribute("transform", `translate(${x0 + x},${y0 + y})`);
     const cell = findCell(x, y);
     if (pack.cells.h[cell] < 20) return; // ignore dragging on water
@@ -643,7 +627,7 @@ function togglePercentageMode() {
     const totalPopulation = +ensureEl("culturesFooterPopulation").dataset.population;
 
     $body.querySelectorAll(":scope > div").forEach(function (el) {
-      const {cells, area, population} = el.dataset;
+      const { cells, area, population } = el.dataset;
       el.querySelector(".cultureCells").innerText = rn((+cells / totalCells) * 100) + "%";
       el.querySelector(".cultureArea").innerText = rn((+area / totalArea) * 100) + "%";
       el.querySelector(".culturePopulation").innerText = rn((+population / totalPopulation) * 100) + "%";
@@ -659,14 +643,14 @@ async function showHierarchy() {
   const HeirarchyTree = await import("../hierarchy-tree.js?v=1.120.5");
 
   const getDescription = culture => {
-    const {name, type, rural, urban} = culture;
+    const { name, type, rural, urban } = culture;
 
     const population = rural * populationRate + urban * populationRate * urbanization;
     const populationText = population > 0 ? si(rn(population)) + " people" : "Extinct";
     return `${name} culture. ${type}. ${populationText}`;
   };
 
-  const getShape = ({type}) => {
+  const getShape = ({ type }) => {
     if (type === "Generic") return "circle";
     if (type === "River") return "diamond";
     if (type === "Lake") return "hexagon";
@@ -706,7 +690,7 @@ function enterCultureManualAssignent() {
   culturesEditor.querySelectorAll(".hide").forEach(el => el.classList.add("hidden"));
   culturesFooter.style.display = "none";
   $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "none"));
-  $("#culturesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
+  $("#culturesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
   tip("Click on culture to select, drag the circle to change culture", true);
   viewbox
@@ -720,6 +704,7 @@ function enterCultureManualAssignent() {
 }
 
 function selectCultureOnLineClick(i) {
+  if (customization !== 4) return;
   const previous = $body.querySelector("div.selected");
   if (previous) previous.classList.remove("selected");
   this.classList.add("selected");
@@ -811,7 +796,7 @@ function exitCulturesManualAssignment(close) {
   culturesEditor.querySelectorAll(".hide").forEach(el => el.classList.remove("hidden"));
   culturesFooter.style.display = "block";
   $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
-  if (!close) $("#culturesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg"}});
+  if (!close) $("#culturesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
   debug.select("#cultureCenters").style("display", null);
   restoreDefaultEvents();
@@ -875,9 +860,9 @@ function downloadCulturesCsv() {
   const headers = `Id,Name,Color,Cells,Expansionism,Type,Area ${unit},Population,Namesbase,Emblems Shape,Origins`;
   const lines = Array.from($body.querySelectorAll(":scope > div"));
   const data = lines.map($line => {
-    const {id, name, color, cells, expansionism, type, area, population, emblems, base} = $line.dataset;
+    const { id, name, color, cells, expansionism, type, area, population, emblems, base } = $line.dataset;
     const namesbase = nameBases[+base].name;
-    const {origins} = pack.cultures[+id];
+    const { origins } = pack.cultures[+id];
     const originList = origins.filter(origin => origin).map(origin => pack.cultures[origin].name);
     const originText = '"' + originList.join(", ") + '"';
     return [id, name, color, cells, expansionism, type, area, population, namesbase, emblems, originText].join(",");
@@ -910,7 +895,7 @@ async function uploadCulturesData() {
     namesbase: d.Namesbase
   }));
 
-  const {cultures, cells} = pack;
+  const { cultures, cells } = pack;
   const shapes = Object.keys(COA.shields.types)
     .map(type => Object.keys(COA.shields[type]))
     .flat();
@@ -934,7 +919,7 @@ async function uploadCulturesData() {
         culture.i
       );
     } else {
-      current = {i: cultures.length, center: ra(populated), area: 0, cells: 0, origins: [0], rural: 0, urban: 0};
+      current = { i: cultures.length, center: ra(populated), area: 0, cells: 0, origins: [0], rural: 0, urban: 0 };
       cultures.push(current);
     }
 

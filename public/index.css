@@ -1481,7 +1481,8 @@ div.states .icon-pin,
 div.states .icon-flag-empty,
 div.states .icon-cw,
 div.states .icon-lock,
-div.states .icon-lock-open {
+div.states .icon-lock-open,
+div.states .icon-target {
   cursor: pointer;
 }
 
@@ -2514,7 +2515,6 @@ body.tour-free-roam .driver-overlay {
 body.tour-free-roam * {
   pointer-events: auto !important;
 }
-
 
 #startTourButton {
   display: block;
