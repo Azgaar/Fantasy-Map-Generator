@@ -1,6 +1,7 @@
 import { quadtree } from "d3-quadtree";
 import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
+import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
 export interface Burg {
@@ -182,6 +183,7 @@ class BurgModule {
   // Assign port feature ids to burgs and position them appropriately
   assignPorts() {
     const { cells, burgs } = pack;
+    const riversById = new Map(pack.rivers.map(river => [river.i, river]));
     for (const burg of burgs) {
       if (burg.i && !burg.lock) delete burg.port;
     }
@@ -192,7 +194,9 @@ class BurgModule {
       for (const { burg, haven } of featureCandidates) {
         burg.port = featureId;
         const [x, y] =
-          haven !== null ? this.getCloseToEdgePoint(burg.cell, haven) : this.shiftTowardsRiverBank(burg.cell);
+          haven !== null
+            ? this.getCloseToEdgePoint(burg.cell, haven)
+            : this.shiftTowardsRiverBank(burg.cell, riversById);
         burg.x = x;
         burg.y = y;
       }
@@ -201,8 +205,7 @@ class BurgModule {
     // Shift non-port river burgs slightly toward the bank
     for (const burg of burgs) {
       if (!burg.i || burg.lock || burg.port || !cells.r[burg.cell]) continue;
-      const cellId = burg.cell;
-      const [x, y] = this.shiftTowardsRiverBank(cellId);
+      const [x, y] = this.shiftTowardsRiverBank(burg.cell, riversById);
       burg.x = x;
       burg.y = y;
     }
@@ -230,10 +233,10 @@ class BurgModule {
         const feature = pack.features[featureId];
         if (!feature) continue; // no adjacent water body
 
-        const isHarbor = (harbor && burg.capital) || harbor === 1;
+        const hasHarbor = (harbor && burg.capital) || harbor === 1;
         const isFrozen = temp[cells.g[burg.cell]] <= 0;
 
-        if (feature.cells > 1 && isHarbor && !isFrozen) {
+        if (feature.cells > 1 && hasHarbor && !isFrozen) {
           const portFeatureId =
             feature.type === "lake" && feature.outlet
               ? (Rivers.resolveLakeDrainFeature(featureId) ?? featureId)
@@ -265,13 +268,47 @@ class BurgModule {
     return [rn(x0 + 0.95 * (xEdge - x0), 2), rn(y0 + 0.95 * (yEdge - y0), 2)];
   }
 
-  private shiftTowardsRiverBank(cellId: number): Point {
+  // Move a river burg off the river centerline onto a bank
+  private shiftTowardsRiverBank(cellId: number, riversById: Map<number, River>): Point {
     const { cells } = pack;
     const [x, y] = cells.p[cellId];
-    const shift = Math.min(cells.fl[cellId] / 200, 1);
-    const xShifted = cellId % 2 ? x + shift : x - shift;
-    const yShifted = cells.r[cellId] % 2 ? y + shift : y - shift;
+    const shift = Math.min(cells.fl[cellId] / 200, 0.6);
+
+    const tangent = this.getRiverTangent(cellId, riversById);
+    if (!tangent) {
+      // No usable course (single-cell river, or cell missing from river path): nudge on axes
+      const xShifted = cellId % 2 ? x + shift : x - shift;
+      const yShifted = cells.r[cellId] % 2 ? y + shift : y - shift;
+      return [rn(xShifted, 2), rn(yShifted, 2)];
+    }
+
+    // Perpendicular to the course
+    const [tx, ty] = tangent;
+    const length = Math.hypot(tx, ty);
+    const side = cellId % 2 ? 1 : -1;
+    const xShifted = x + (-ty / length) * shift * side;
+    const yShifted = y + (tx / length) * shift * side;
     return [rn(xShifted, 2), rn(yShifted, 2)];
+  }
+
+  // Local river course direction at a cell
+  private getRiverTangent(cellId: number, riversById: Map<number, River>): Point | null {
+    const { cells } = pack;
+    const river = riversById.get(cells.r[cellId]);
+    if (!river) return null;
+
+    const idx = river.cells.indexOf(cellId);
+    if (idx === -1) return null;
+
+    const prevCell = river.cells[idx - 1];
+    const nextCell = river.cells[idx + 1];
+    const from = prevCell !== undefined && prevCell >= 0 ? cells.p[prevCell] : cells.p[cellId];
+    const to = nextCell !== undefined && nextCell >= 0 ? cells.p[nextCell] : cells.p[cellId];
+
+    const tx = to[0] - from[0];
+    const ty = to[1] - from[1];
+    if (tx === 0 && ty === 0) return null;
+    return [tx, ty];
   }
 
   private definePopulation(burg: Burg) {

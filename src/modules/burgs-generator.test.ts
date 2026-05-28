@@ -226,3 +226,86 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
     expect(burgs[2].port).toBeUndefined(); // alone after locking → no port
   });
 });
+
+describe("BurgsModule.assignPorts — river-bank shift", () => {
+  let Burgs: any;
+
+  beforeEach(async () => {
+    globalThis.TIME = false;
+    globalThis.window = globalThis.window || ({} as any);
+    globalThis.grid = { cells: { temp: new Array(10).fill(20) } } as any;
+
+    await import("./river-generator");
+    await import("./burgs-generator");
+    Burgs = (globalThis as any).Burgs;
+  });
+
+  it("shifts a non-port river burg perpendicular to the local river course", () => {
+    // River 10 runs diagonally [1 → 2 → 3] along (1,1); burg sits on the middle cell.
+    // The river stays on land (no drain feature) so the burg never becomes a port.
+    globalThis.pack = {
+      burgs: [0 as any, { i: 1, cell: 2, x: 10, y: 10, capital: 0 }],
+      cells: {
+        h: [20, 25, 25, 25],
+        r: [0, 10, 10, 10],
+        fl: [0, 300, 300, 300],
+        f: [0, 0, 0, 0],
+        g: [0, 0, 0, 0],
+        haven: [0, 0, 0, 0],
+        harbor: [0, 0, 0, 0],
+        v: [[], [], [], []],
+        p: [
+          [0, 0],
+          [0, 0],
+          [10, 10],
+          [20, 20]
+        ] as [number, number][]
+      },
+      features: [null],
+      vertices: { c: [], p: [] },
+      rivers: [{ i: 10, cells: [1, 2, 3] }]
+    } as any;
+
+    Burgs.assignPorts();
+
+    const burg = globalThis.pack.burgs[1];
+    const dx = burg.x - 10;
+    const dy = burg.y - 10;
+
+    // Displacement is perpendicular to the river tangent (1,1): dot product ≈ 0.
+    expect(dx * 1 + dy * 1).toBeCloseTo(0, 6);
+    // Displacement magnitude is the shift amount min(fl/300, 0.5) = 0.5 (±2-decimal rounding).
+    expect(Math.hypot(dx, dy)).toBeCloseTo(0.5, 1);
+    // The burg actually moved off the cell center.
+    expect(dx === 0 && dy === 0).toBe(false);
+  });
+
+  it("falls back to an axis nudge for a single-cell river (no course direction)", () => {
+    globalThis.pack = {
+      burgs: [0 as any, { i: 1, cell: 1, x: 5, y: 5, capital: 0 }],
+      cells: {
+        h: [20, 25],
+        r: [0, 10],
+        fl: [0, 150],
+        f: [0, 0],
+        g: [0, 0],
+        haven: [0, 0],
+        harbor: [0, 0],
+        v: [[], []],
+        p: [
+          [0, 0],
+          [5, 5]
+        ] as [number, number][]
+      },
+      features: [null],
+      vertices: { c: [], p: [] },
+      rivers: [{ i: 10, cells: [1] }] // single cell → no tangent
+    } as any;
+
+    Burgs.assignPorts();
+
+    const burg = globalThis.pack.burgs[1];
+    // Still shifted (axis-aligned fallback), just not crashing on the missing course.
+    expect(burg.x === 5 && burg.y === 5).toBe(false);
+  });
+});
