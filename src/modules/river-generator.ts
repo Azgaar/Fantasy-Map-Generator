@@ -583,8 +583,9 @@ class RiverModule {
     if (!lake || lake.type !== "lake") return null;
     if (!lake.outlet) return lakeFeatureId; // closed lake: return itself
 
+    const riverById = new Map(rivers.map(r => [r.i, r]));
     const visited = new Set<number>();
-    let river = rivers.find(r => r.i === lake.outlet);
+    let river = riverById.get(lake.outlet);
     while (river && !visited.has(river.i)) {
       visited.add(river.i);
       const lastCell = river.cells[river.cells.length - 1];
@@ -595,7 +596,7 @@ class RiverModule {
       if (feature.type === "ocean") return feature.i;
       if (feature.type !== "lake") return null;
       if (!feature.outlet) return feature.i; // closed downstream lake
-      river = rivers.find(r => r.i === feature.outlet);
+      river = riverById.get(feature.outlet);
     }
     return null;
   }
@@ -606,7 +607,8 @@ class RiverModule {
     const startRiver = cells.r[cellId];
     if (!startRiver) return null;
 
-    let river = rivers.find(r => r.i === startRiver);
+    const riverById = new Map(rivers.map(r => [r.i, r]));
+    let river = riverById.get(startRiver);
     const visited = new Set<number>();
     while (river && !visited.has(river.i)) {
       visited.add(river.i);
@@ -619,7 +621,7 @@ class RiverModule {
       if (feature.type !== "lake") return null;
 
       if (!feature.outlet) return feature.i; // closed lake terminus
-      river = rivers.find(r => r.i === feature.outlet);
+      river = riverById.get(feature.outlet);
     }
     return null;
   }

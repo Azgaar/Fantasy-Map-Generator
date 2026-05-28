@@ -91,7 +91,7 @@ function getOwnerStateName(market: Market): string {
   const center = pack.burgs[market.centerBurgId] as Burg | undefined;
   if (!center) return "Unknown state";
   if (center.state === undefined) return "Independent";
-  return pack.states[center.state].fullName || `State ${center.state}`;
+  return pack.states[center.state]?.fullName || `State ${center.state}`;
 }
 
 function getMarketCenterName(market: Market): string {

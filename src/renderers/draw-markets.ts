@@ -15,9 +15,9 @@ export const drawMarkets = (): void => {
     const fillColor = market.color || "#dababf";
     const strokeColor = color(fillColor)?.darker().hex() || "#000";
 
-    const polygons = isolines[market.i].polygons;
+    const polygons = isolines[market.i]?.polygons;
     if (polygons) {
-      const path = polygons.map(linegen).join("");
+      const path = polygons.map(p => linegen(p) ?? "").join("");
       content += /*html*/ `<path d="${path}" fill="${fillColor}" fill-opacity="${fillOpacity}" stroke="${strokeColor}"/>`;
     }
 

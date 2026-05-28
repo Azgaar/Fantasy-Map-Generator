@@ -107,8 +107,7 @@ export function open(): void {
     resizable: false,
     position: { my: "right top", at: "right-10 top+10", of: "svg" },
     close: () => {
-      document.getElementById("tradeAnimationEditor")?.remove();
-      $("#tradeAnimationEditor").dialog("destroy");
+      $("#tradeAnimationEditor").dialog("destroy").remove();
     }
   });
 }

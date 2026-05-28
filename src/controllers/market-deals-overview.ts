@@ -130,7 +130,7 @@ function downloadDealsCsv(): void {
       deal.i,
       good.name,
       getDirection(deal),
-      getParty(deal),
+      getParty(deal)?.name ?? "",
       rn(deal.units, 2),
       rn(deal.price, 2),
       rn(getDealNet(deal), 2)

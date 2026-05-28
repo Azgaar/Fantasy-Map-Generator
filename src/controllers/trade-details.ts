@@ -52,7 +52,7 @@ function tradeDetailsAddLines(points: Point[]): void {
 
   ensureEl("tradeDetailsSummary").innerHTML = /* html */ `
     <span><b>Seller</b>: ${from?.name} ${fromType} <span class="icon-dot-circled pointer" data-zoom="start" data-tip="Zoom to start"></span></span>
-    <span style="margin-left:5px"><b>Buyer</b>: ${to?.name} ${toType}</b> <span class="icon-dot-circled pointer" data-zoom="end" data-tip="Zoom to end"></span></span>`;
+    <span style="margin-left:5px"><b>Buyer</b>: ${to?.name} ${toType} <span class="icon-dot-circled pointer" data-zoom="end" data-tip="Zoom to end"></span></span>`;
 
   let totalUnits = 0;
   let totalValue = 0;

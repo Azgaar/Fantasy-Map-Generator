@@ -8,11 +8,13 @@ const lineGen = line<Point>().curve(curveCatmullRom.alpha(0.1));
 export function draw(
   batch: TradeBatch,
   segments: { type: "land" | "water"; points: Point[] }[],
-  onComplete?: () => void
+  onComplete?: () => void,
+  isCancelled?: () => boolean
 ): void {
   animateSegment(0);
 
   function animateSegment(idx: number) {
+    if (isCancelled?.()) return;
     if (!segments || idx >= segments.length) {
       onComplete?.();
       return;
@@ -55,8 +57,9 @@ export function draw(
       const cached = points[i];
       if (cached) return cached;
       const p = tempPath.getPointAtLength((i / lastIdx) * length);
-      points[i] = [p.x, p.y];
-      return points[i];
+      const pt: Point = [p.x, p.y];
+      points[i] = pt;
+      return pt;
     };
     const [sx, sy] = getSample(0);
 

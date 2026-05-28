@@ -72,11 +72,16 @@ export class TradeAnimationModule {
 
     const gen = this.generation;
     this.activeCount++;
-    draw(batch, path.segments, () => {
-      if (gen !== this.generation) return;
-      this.activeCount--;
-      this.topUp();
-    });
+    draw(
+      batch,
+      path.segments,
+      () => {
+        if (gen !== this.generation) return;
+        this.activeCount--;
+        this.topUp();
+      },
+      () => gen !== this.generation
+    );
     return true;
   }
 

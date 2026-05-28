@@ -351,13 +351,12 @@ export function open(burgId: number): void {
         ${renderDataCell(renderGoodLabel(id))}
         ${renderDataCell(rn(units, 2), "right")}
       </tr>`;
-    })
-    .join("");
+    });
 
   const producedTable = renderTable({
     colWidths: ["80%", "20%"],
     headers: [{ label: "Good" }, { label: "Units", align: "right" }],
-    rows: [producedRows],
+    rows: producedRows,
     empty: "No goods manufactured"
   });
 
