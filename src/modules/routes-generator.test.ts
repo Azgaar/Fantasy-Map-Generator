@@ -156,3 +156,219 @@ describe("RoutesModule river-aware water cost", () => {
     expect(Routes.getWaterPathCost(0, 1)).toBe(Infinity);
   });
 });
+
+describe("RoutesModule.addMeandering", () => {
+  let Routes: any;
+  let Rivers: any;
+
+  beforeEach(async () => {
+    globalThis.TIME = false;
+    globalThis.window = globalThis.window || ({} as any);
+    globalThis.graphWidth = 1000;
+    globalThis.graphHeight = 1000;
+    globalThis.pack = {
+      cells: {
+        h: [] as number[],
+        r: [] as number[],
+        fl: [] as number[],
+        p: [] as [number, number][],
+        t: [] as number[],
+        g: [] as number[],
+        burg: [] as number[]
+      },
+      burgs: [],
+      rivers: [],
+      routes: []
+    } as any;
+    globalThis.grid = { cells: { temp: [20, 20, 20, 20, 20, 20, 20, 20] } } as any;
+
+    await import("./routes-generator");
+    await import("./river-generator");
+    Routes = (globalThis as any).Routes;
+    Rivers = (globalThis as any).Rivers;
+  });
+
+  function setupRiverPack() {
+    // 5 cells along a single river [1,2,3,4], cell 5 is sea (mouth water)
+    globalThis.pack.cells = {
+      h: [20, 25, 25, 25, 25, 5],
+      r: [0, 1, 1, 1, 1, 0],
+      fl: [0, 200, 200, 200, 200, 0],
+      p: [
+        [0, 0],
+        [10, 0],
+        [25, 0],
+        [40, 0],
+        [55, 0],
+        [70, 0]
+      ],
+      t: [1, 1, 1, 1, 1, -1],
+      g: [0, 0, 0, 0, 0, 0],
+      burg: [0, 0, 0, 0, 0, 0]
+    } as any;
+    globalThis.pack.rivers = [{ i: 1, cells: [1, 2, 3, 4, 5] }] as any;
+    Routes.sync();
+  }
+
+  it("emits an anchor for each input cell and interior meander points between river-edge anchors", () => {
+    setupRiverPack();
+    const routeCells = [1, 2, 3, 4];
+    const anchors = routeCells.map(c => globalThis.pack.cells.p[c]);
+    const result = Routes.addMeandering(routeCells, anchors);
+
+    // Every input cell appears in the output, and interpolation produces extra points.
+    const emittedCellIds = new Set(result.map((p: number[]) => p[2]));
+    for (const c of routeCells) {
+      expect(emittedCellIds.has(c)).toBe(true);
+    }
+    expect(result.length).toBeGreaterThan(routeCells.length);
+  });
+
+  it("emits one point per cell when there are no river edges (open sea)", () => {
+    globalThis.pack.cells = {
+      h: [5, 5, 5],
+      r: [0, 0, 0],
+      fl: [0, 0, 0],
+      p: [
+        [0, 0],
+        [10, 0],
+        [20, 0]
+      ],
+      t: [-1, -1, -1],
+      g: [0, 0, 0],
+      burg: [0, 0, 0]
+    } as any;
+    globalThis.pack.rivers = [] as any;
+    Routes.sync();
+
+    const routeCells = [0, 1, 2];
+    const anchors = routeCells.map(c => globalThis.pack.cells.p[c]);
+    const result = Routes.addMeandering(routeCells, anchors);
+
+    expect(result.length).toBe(routeCells.length);
+    expect(result.map((p: number[]) => p[2])).toEqual(routeCells);
+  });
+
+  it("matches anchor positions when route runs upstream (mouth→source)", () => {
+    setupRiverPack();
+    const downstreamCells = [1, 2, 3, 4];
+    const upstreamCells = downstreamCells.slice().reverse();
+    const downstreamAnchors = downstreamCells.map(c => globalThis.pack.cells.p[c]);
+    const upstreamAnchors = upstreamCells.map(c => globalThis.pack.cells.p[c]);
+
+    const down = Routes.addMeandering(downstreamCells, downstreamAnchors);
+    const up = Routes.addMeandering(upstreamCells, upstreamAnchors);
+
+    // The number of points produced is the same in both directions.
+    expect(up.length).toBe(down.length);
+
+    // Reversing the upstream output should give the same anchor coordinates as the downstream output
+    const downAnchorXY = down.map((p: number[]) => [p[0], p[1]]);
+    const upReversedXY = up
+      .slice()
+      .reverse()
+      .map((p: number[]) => [p[0], p[1]]);
+    expect(upReversedXY).toEqual(downAnchorXY);
+  });
+
+  it("splits the run at a confluence (each river meandered independently)", () => {
+    // Two rivers joining at cell 3.
+    // River 1: 1 → 2 → 3 (downstream). River 2: 5 → 4 → 3 (downstream).
+    // Route walks tributary [5,4,3] then continues onto river 1 backwards [3,2,1] (upstream),
+    // which exercises the confluence split.
+    globalThis.pack.cells = {
+      h: [20, 25, 25, 25, 25, 25],
+      r: [0, 1, 1, 1, 2, 2],
+      fl: [0, 200, 200, 300, 200, 200],
+      p: [
+        [0, 0],
+        [10, 0],
+        [25, 0],
+        [40, 0],
+        [40, 15],
+        [40, 30]
+      ],
+      t: [1, 1, 1, 1, 1, 1],
+      g: [0, 0, 0, 0, 0, 0],
+      burg: [0, 0, 0, 0, 0, 0]
+    } as any;
+    globalThis.pack.rivers = [
+      { i: 1, cells: [1, 2, 3] },
+      { i: 2, cells: [5, 4, 3] }
+    ] as any;
+    Routes.sync();
+
+    const routeCells = [5, 4, 3, 2, 1];
+    const anchors = routeCells.map(c => globalThis.pack.cells.p[c]);
+    const result = Routes.addMeandering(routeCells, anchors);
+
+    // The cellId sequence should transition through the route order, with no spurious gaps.
+    const cellIds = result.map((p: number[]) => p[2]);
+    const transitions: number[] = [];
+    for (let i = 0; i < cellIds.length; i++) {
+      if (i === 0 || cellIds[i] !== cellIds[i - 1]) transitions.push(cellIds[i]);
+    }
+    expect(transitions).toEqual(routeCells);
+  });
+
+  it("anchors river-following cells at cell centers, ignoring shifted burg coords", () => {
+    setupRiverPack();
+    const routeCells = [1, 2, 3, 4];
+    // Burg at cell 3 is shifted off its cell center; the route must still follow the river.
+    const anchors: [number, number][] = [
+      [10, 0],
+      [25, 0],
+      [40, 3], // burg shifted off cell center (cell 3 center is [40, 0])
+      [55, 0]
+    ];
+    const result = Routes.addMeandering(routeCells, anchors);
+
+    // The anchor for cell 3 must be the cell center [40, 0], not the burg coord [40, 3].
+    const cell3Anchors = result.filter(
+      (p: number[], idx: number, arr: number[][]) => p[2] === 3 && (idx === 0 || arr[idx - 1][2] !== 3)
+    );
+    expect(cell3Anchors.length).toBeGreaterThan(0);
+    const cell3Anchor = cell3Anchors[0];
+    expect(cell3Anchor[0]).toBe(40);
+    expect(cell3Anchor[1]).toBe(0);
+  });
+
+  it("buildLinks does not create self-links from interior meander points", () => {
+    setupRiverPack();
+    const routeCells = [1, 2, 3, 4];
+    const anchors = routeCells.map(c => globalThis.pack.cells.p[c]);
+    const result = Routes.addMeandering(routeCells, anchors);
+
+    const route = { i: 0, group: "searoutes", feature: 0, points: result };
+    const links = Routes.buildLinks([route]);
+
+    // No cell should link to itself
+    for (const fromStr of Object.keys(links)) {
+      const from = Number(fromStr);
+      expect(links[from][from]).toBeUndefined();
+    }
+    // Adjacent cells in the route should be linked
+    expect(links[1][2]).toBe(0);
+    expect(links[2][3]).toBe(0);
+    expect(links[3][4]).toBe(0);
+  });
+
+  it("produces geometry identical to the river polygon along the same cells", () => {
+    setupRiverPack();
+    const riverCells = [1, 2, 3, 4, 5];
+
+    // River polygon geometry: cell centers, [x, y, flux]
+    const polygon = Rivers.addMeandering(riverCells);
+
+    // Route geometry along the same cells (downstream), anchored at cell centers internally
+    const routeAnchors = riverCells.map(c => globalThis.pack.cells.p[c]);
+    const route = Routes.addMeandering(riverCells, routeAnchors);
+
+    // Same number of points, and every x/y coincides — the route overlays the river exactly.
+    expect(route.length).toBe(polygon.length);
+    for (let i = 0; i < polygon.length; i++) {
+      expect(route[i][0]).toBeCloseTo(polygon[i][0], 6);
+      expect(route[i][1]).toBeCloseTo(polygon[i][1], 6);
+    }
+  });
+});

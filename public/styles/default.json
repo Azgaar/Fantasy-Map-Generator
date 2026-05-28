@@ -210,9 +210,9 @@
     "mask": null
   },
   "#searoutes": {
-    "opacity": 0.8,
+    "opacity": 0.9,
     "stroke": "#ffffff",
-    "stroke-width": 0.45,
+    "stroke-width": 0.35,
     "stroke-dasharray": "1 2",
     "stroke-linecap": "round",
     "filter": null,

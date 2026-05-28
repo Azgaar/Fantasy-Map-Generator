@@ -77,6 +77,12 @@ beforeEach(() => {
       return undefined;
     })
   } as any;
+  // Trade animation calls Routes.addMeandering for water spans. In these tests
+  // there are no rivers, so we just pass anchors through with their cellIds.
+  globalThis.Routes = {
+    addMeandering: (cells: number[], anchors: [number, number][]) =>
+      cells.map((c, i) => [anchors[i][0], anchors[i][1], c])
+  } as any;
 });
 
 // ─── getPathCost ─────────────────────────────────────────────────────────────

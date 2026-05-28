@@ -18,7 +18,6 @@ declare global {
   var options: Options;
 
   var heightmapTemplates: any;
-  var Routes: any;
   var Goods: GoodsModule;
   var Production: ProductionModule;
   var Markets: MarketsModule;

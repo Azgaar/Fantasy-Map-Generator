@@ -219,26 +219,44 @@ export class TradeAnimationModule {
     };
 
     type Segment = "land" | "water";
-    let currentType: Segment = waterEdges[0] ? "water" : "land";
-    let currentPoints: Point[] = [getPoint(cells[0])];
+
+    // Partition cells into maximal contiguous spans of the same edge type. Adjacent spans
+    // share their boundary cell so each side keeps a clean endpoint.
+    type Span = { type: Segment; startIdx: number; endIdx: number };
+    const spans: Span[] = [];
+    let spanType: Segment = waterEdges[0] ? "water" : "land";
+    let spanStart = 0;
+    for (let i = 1; i < cells.length; i++) {
+      const edgeType: Segment = waterEdges[i - 1] ? "water" : "land";
+      if (edgeType !== spanType) {
+        spans.push({ type: spanType, startIdx: spanStart, endIdx: i - 1 });
+        spanStart = i - 1;
+        spanType = edgeType;
+      }
+    }
+    spans.push({ type: spanType, startIdx: spanStart, endIdx: cells.length - 1 });
+
     const points: Point[] = [];
     const segments: { type: Segment; points: Point[] }[] = [];
 
-    for (let i = 0; i < cells.length; i++) {
-      const point = getPoint(cells[i]);
-      points.push(point);
-      if (i === 0) continue;
-
-      const edgeType: Segment = waterEdges[i - 1] ? "water" : "land";
-      if (edgeType !== currentType) {
-        segments.push({ type: currentType, points: currentPoints });
-        currentPoints = [getPoint(cells[i - 1]), point];
-        currentType = edgeType;
+    for (const span of spans) {
+      const spanCells = cells.slice(span.startIdx, span.endIdx + 1);
+      const spanAnchors = spanCells.map(getPoint);
+      let spanPoints: Point[];
+      if (span.type === "water") {
+        const meandered = Routes.addMeandering(spanCells, spanAnchors);
+        spanPoints = meandered.map(p => [p[0], p[1]]);
       } else {
-        currentPoints.push(point);
+        spanPoints = spanAnchors;
+      }
+
+      segments.push({ type: span.type, points: spanPoints });
+
+      for (let pk = 0; pk < spanPoints.length; pk++) {
+        if (pk === 0 && points.length > 0) continue;
+        points.push(spanPoints[pk]);
       }
     }
-    segments.push({ type: currentType, points: currentPoints });
 
     return { points, segments };
   }

@@ -1,6 +1,7 @@
 import { curveCatmullRom, line } from "d3";
 import Delaunator from "delaunator";
 import { distanceSquared, findClosestCell, findPath, getAdjective, isLand, ra, rn, round, rw } from "../utils";
+import { meander } from "../utils/pathUtils";
 import type { Burg } from "./burgs-generator";
 import type { Point } from "./voronoi";
 
@@ -176,46 +177,17 @@ export interface Route {
 
 class RoutesModule {
   private connections: Map<string, boolean> = new Map();
-  private riverAdjacency: Map<number, Set<number>> = new Map();
+  private riverEdges: Map<number, Map<number, { riverId: number; fromIndex: number }>> = new Map();
 
-  // course-following adjacency derived from pack.rivers; pairs are added both ways,
-  // and the river-mouth-to-sea step falls out because river.cells extends one cell into the water
-  private buildRiverAdjacency() {
-    this.riverAdjacency = new Map();
-    for (const river of pack.rivers) {
-      for (let i = 0; i < river.cells.length - 1; i++) {
-        const a = river.cells[i];
-        const b = river.cells[i + 1];
-        if (a < 0 || b < 0) continue;
-        if (!this.riverAdjacency.has(a)) this.riverAdjacency.set(a, new Set());
-        if (!this.riverAdjacency.has(b)) this.riverAdjacency.set(b, new Set());
-        this.riverAdjacency.get(a)!.add(b);
-        this.riverAdjacency.get(b)!.add(a);
-      }
-    }
-  }
+  generate(lockedRoutes: Route[] = []) {
+    this.connections = new Map();
+    this.buildRiverEdges();
+    lockedRoutes.forEach((route: Route) => {
+      this.addConnections(route.points.map(p => p[2]));
+    });
 
-  buildLinks(routes: Route[]): Record<number, Record<number, number>> {
-    const links: Record<number, Record<number, number>> = {};
-
-    for (const { points, i: routeId } of routes) {
-      const cells = points.map(p => p[2]);
-
-      for (let i = 0; i < cells.length - 1; i++) {
-        const cellId = cells[i];
-        const nextCellId = cells[i + 1];
-
-        if (cellId !== nextCellId) {
-          if (!links[cellId]) links[cellId] = {};
-          links[cellId][nextCellId] = routeId;
-
-          if (!links[nextCellId]) links[nextCellId] = {};
-          links[nextCellId][cellId] = routeId;
-        }
-      }
-    }
-
-    return links;
+    pack.routes = this.createRoutesData(lockedRoutes);
+    pack.cells.routes = this.buildLinks(pack.routes);
   }
 
   private sortBurgsByFeature(burgs: Burg[]) {
@@ -308,12 +280,12 @@ class RoutesModule {
     if (h[next] >= 20) {
       // land cell: only navigable via a river, and only along the actual river course
       if (!Rivers.isNavigable(next)) return Infinity;
-      if (!this.riverAdjacency.get(current)?.has(next)) return Infinity;
+      if (!this.riverEdges.get(current)?.has(next)) return Infinity;
       return distanceSquared(p[current], p[next]) * RIVER_TYPE_MODIFIER * connectionModifier;
     }
 
-    // leaving a river-land cell into water: must be the river's recorded outlet (coastal non-river ports unaffected)
-    if (h[current] >= 20 && r[current] && !this.riverAdjacency.get(current)?.has(next)) return Infinity;
+    // leaving a river-land cell into water: must be the river's recorded outlet
+    if (h[current] >= 20 && r[current] && !this.riverEdges.get(current)?.has(next)) return Infinity;
     if (grid.cells.temp[g[next]] < MIN_PASSABLE_SEA_TEMP) return Infinity;
 
     const distanceCost = distanceSquared(p[current], p[next]);
@@ -360,7 +332,7 @@ class RoutesModule {
           if (next !== exit) return false;
           if (current === undefined) return true;
           // approach to a port must be through water or along the river course
-          return pack.cells.h[current] < 20 || Boolean(this.riverAdjacency.get(current)?.has(next));
+          return pack.cells.h[current] < 20 || Boolean(this.riverEdges.get(current)?.has(next));
         }
       : (next: number) => next === exit;
     const pathCells = findPath(start, isExit, getCost, pack);
@@ -461,42 +433,148 @@ class RoutesModule {
     });
   }
 
+  addMeandering(cells: number[], anchors: Point[]): [number, number, number][] {
+    const runs: {
+      startIdx: number;
+      endIdx: number;
+      riverId: number;
+      direction: 1 | -1;
+      firstCanonicalIndexInRiver: number;
+    }[] = [];
+
+    let k = 0;
+    while (k < cells.length - 1) {
+      const edge = this.riverEdges.get(cells[k])?.get(cells[k + 1]);
+      const reverseEdge = edge ? this.riverEdges.get(cells[k + 1])?.get(cells[k]) : undefined;
+      if (!edge || !reverseEdge) {
+        k++;
+        continue;
+      }
+
+      const direction: 1 | -1 = reverseEdge.fromIndex === edge.fromIndex + 1 ? 1 : -1;
+      const riverId = edge.riverId;
+      let endIdx = k + 1;
+      let prevToIndex = reverseEdge.fromIndex;
+
+      while (endIdx + 1 < cells.length) {
+        const a = cells[endIdx];
+        const b = cells[endIdx + 1];
+        const ne = this.riverEdges.get(a)?.get(b);
+        if (!ne || ne.riverId !== riverId || ne.fromIndex !== prevToIndex) break;
+        const nr = this.riverEdges.get(b)?.get(a);
+        if (!nr || nr.fromIndex - ne.fromIndex !== direction) break;
+        prevToIndex = nr.fromIndex;
+        endIdx++;
+      }
+
+      const firstCanonicalIndexInRiver = direction === 1 ? edge.fromIndex : prevToIndex;
+      runs.push({ startIdx: k, endIdx, riverId, direction, firstCanonicalIndexInRiver });
+      k = endIdx;
+    }
+
+    const result: [number, number, number][] = [];
+    let runPtr = 0;
+    let i = 0;
+
+    while (i < cells.length) {
+      if (runPtr < runs.length && runs[runPtr].startIdx === i) {
+        const run = runs[runPtr++];
+        const runCells = cells.slice(run.startIdx, run.endIdx + 1);
+        // River-following anchors are cell centers, not burg-shifted coords, so the route's
+        // curve (and its meander interpolation) overlays the river polygon exactly. Burgs that
+        // sit off their cell center would otherwise pull the route outside the river.
+        const runAnchors = runCells.map(cellId => pack.cells.p[cellId]);
+
+        const canonicalCells = run.direction === 1 ? runCells : runCells.slice().reverse();
+        const canonicalAnchors = run.direction === 1 ? runAnchors : runAnchors.slice().reverse();
+
+        // Match the river polygon's meander phase exactly: it starts stepping at 1 for
+        // lake-sourced rivers (source under water) and 10 otherwise, then increments per cell.
+        // cellCount is the full river length so the "small river" interpolation rules match too.
+        const river = pack.rivers.find(r => r.i === run.riverId);
+        const baseStep = river && pack.cells.h[river.cells[0]] < 20 ? 1 : 10;
+
+        const { points, anchorIndices } = meander(canonicalCells, pack.cells.p, {
+          anchors: canonicalAnchors,
+          startStep: baseStep + run.firstCanonicalIndexInRiver,
+          cellCount: river ? river.cells.length : canonicalCells.length
+        });
+
+        let finalPoints = points;
+        let finalAnchorIndices = anchorIndices;
+        if (run.direction === -1) {
+          const total = points.length;
+          finalPoints = points.slice().reverse();
+          finalAnchorIndices = anchorIndices
+            .slice()
+            .reverse()
+            .map(idx => total - 1 - idx);
+        }
+
+        // Interior points inherit the preceding anchor's cellId (in route order).
+        let nextAnchorPtr = 0;
+        let currentCellId = runCells[0];
+        const skipFirst = result.length > 0 && result[result.length - 1][2] === runCells[0];
+        for (let pk = 0; pk < finalPoints.length; pk++) {
+          if (nextAnchorPtr < finalAnchorIndices.length && finalAnchorIndices[nextAnchorPtr] === pk) {
+            currentCellId = runCells[nextAnchorPtr];
+            nextAnchorPtr++;
+          }
+          if (pk === 0 && skipFirst) continue;
+          result.push([finalPoints[pk][0], finalPoints[pk][1], currentCellId]);
+        }
+
+        i = run.endIdx;
+      } else {
+        const alreadyEmitted = result.length > 0 && result[result.length - 1][2] === cells[i];
+        if (!alreadyEmitted) {
+          result.push([anchors[i][0], anchors[i][1], cells[i]]);
+        }
+        i++;
+      }
+    }
+
+    return result;
+  }
+
   private getPoints(group: string, cells: number[], points: Point[]) {
-    const data = cells.map(cellId => [...points[cellId], cellId]);
+    if (group === "searoutes") {
+      const anchors = cells.map(cellId => points[cellId]);
+      return this.addMeandering(cells, anchors);
+    }
 
     // resolve sharp angles
-    if (group !== "searoutes") {
-      for (let i = 1; i < cells.length - 1; i++) {
-        const cellId = cells[i];
-        if (pack.cells.burg[cellId]) continue;
+    const data = cells.map(cellId => [...points[cellId], cellId]);
+    for (let i = 1; i < cells.length - 1; i++) {
+      const cellId = cells[i];
+      if (pack.cells.burg[cellId]) continue;
 
-        const [prevX, prevY] = data[i - 1];
-        const [currX, currY] = data[i];
-        const [nextX, nextY] = data[i + 1];
+      const [prevX, prevY] = data[i - 1];
+      const [currX, currY] = data[i];
+      const [nextX, nextY] = data[i + 1];
 
-        const dAx = prevX - currX;
-        const dAy = prevY - currY;
-        const dBx = nextX - currX;
-        const dBy = nextY - currY;
-        const angle = Math.abs((Math.atan2(dAx * dBy - dAy * dBx, dAx * dBx + dAy * dBy) * 180) / Math.PI);
+      const dAx = prevX - currX;
+      const dAy = prevY - currY;
+      const dBx = nextX - currX;
+      const dBy = nextY - currY;
+      const angle = Math.abs((Math.atan2(dAx * dBy - dAy * dBx, dAx * dBx + dAy * dBy) * 180) / Math.PI);
 
-        if (angle < ROUTES_SHARP_ANGLE) {
-          const middleX = (prevX + nextX) / 2;
-          const middleY = (prevY + nextY) / 2;
-          let newX: number, newY: number;
+      if (angle < ROUTES_SHARP_ANGLE) {
+        const middleX = (prevX + nextX) / 2;
+        const middleY = (prevY + nextY) / 2;
+        let newX: number, newY: number;
 
-          if (angle < ROUTES_VERY_SHARP_ANGLE) {
-            newX = rn((currX + middleX * 2) / 3, 2);
-            newY = rn((currY + middleY * 2) / 3, 2);
-          } else {
-            newX = rn((currX + middleX) / 2, 2);
-            newY = rn((currY + middleY) / 2, 2);
-          }
+        if (angle < ROUTES_VERY_SHARP_ANGLE) {
+          newX = rn((currX + middleX * 2) / 3, 2);
+          newY = rn((currY + middleY * 2) / 3, 2);
+        } else {
+          newX = rn((currX + middleX) / 2, 2);
+          newY = rn((currY + middleY) / 2, 2);
+        }
 
-          if (findClosestCell(newX, newY, undefined, pack) === cellId) {
-            data[i] = [newX, newY, cellId];
-            points[cellId] = [data[i][0], data[i][1]]; // change cell coordinate for all routes
-          }
+        if (findClosestCell(newX, newY, undefined, pack) === cellId) {
+          data[i] = [newX, newY, cellId];
+          points[cellId] = [data[i][0], data[i][1]]; // change cell coordinate for all routes
         }
       }
     }
@@ -554,15 +632,43 @@ class RoutesModule {
     return routes;
   }
 
-  generate(lockedRoutes: Route[] = []) {
-    this.connections = new Map();
-    this.buildRiverAdjacency();
-    lockedRoutes.forEach((route: Route) => {
-      this.addConnections(route.points.map(p => p[2]));
-    });
+  // direction-aware river graph derived from pack.rivers
+  private buildRiverEdges() {
+    this.riverEdges = new Map();
+    for (const river of pack.rivers) {
+      for (let i = 0; i < river.cells.length - 1; i++) {
+        const a = river.cells[i];
+        const b = river.cells[i + 1];
+        if (a < 0 || b < 0) continue;
+        if (!this.riverEdges.has(a)) this.riverEdges.set(a, new Map());
+        if (!this.riverEdges.has(b)) this.riverEdges.set(b, new Map());
+        this.riverEdges.get(a)!.set(b, { riverId: river.i, fromIndex: i });
+        this.riverEdges.get(b)!.set(a, { riverId: river.i, fromIndex: i + 1 });
+      }
+    }
+  }
 
-    pack.routes = this.createRoutesData(lockedRoutes);
-    pack.cells.routes = this.buildLinks(pack.routes);
+  buildLinks(routes: Route[]): Record<number, Record<number, number>> {
+    const links: Record<number, Record<number, number>> = {};
+
+    for (const { points, i: routeId } of routes) {
+      const cells = points.map(p => p[2]);
+
+      for (let i = 0; i < cells.length - 1; i++) {
+        const cellId = cells[i];
+        const nextCellId = cells[i + 1];
+
+        if (cellId !== nextCellId) {
+          if (!links[cellId]) links[cellId] = {};
+          links[cellId][nextCellId] = routeId;
+
+          if (!links[nextCellId]) links[nextCellId] = {};
+          links[nextCellId][cellId] = routeId;
+        }
+      }
+    }
+
+    return links;
   }
 
   // utility functions
@@ -731,7 +837,7 @@ class RoutesModule {
   // run on map load to restore connections based on routes data
   sync() {
     this.connections = new Map();
-    this.buildRiverAdjacency();
+    this.buildRiverEdges();
     for (const route of pack.routes) {
       for (let i = 0; i < route.points.length - 1; i++) {
         const cellId = route.points[i][2];
@@ -741,6 +847,10 @@ class RoutesModule {
       }
     }
   }
+}
+
+declare global {
+  var Routes: RoutesModule;
 }
 
 window.Routes = new RoutesModule();

@@ -355,6 +355,86 @@ export const findPath = (
   return null;
 };
 
+type MeanderOptions = {
+  anchors?: Point[];
+  meandering?: number;
+  startStep?: number;
+  // Overrides cells.length for the "small river" interpolation rules. Lets a caller meander a
+  // sub-slice of a river while keeping the same interpolation decisions as the full river.
+  cellCount?: number;
+  bounds?: {
+    width: number;
+    height: number;
+  };
+};
+
+export const meander = (cells: number[], cellPositions: Point[], options: MeanderOptions = {}) => {
+  const meandering = options.meandering ?? 0.5;
+  const customAnchors = options.anchors;
+  const bounds = options.bounds;
+  const startStep = options.startStep ?? 10;
+  const cellCount = options.cellCount ?? cells.length;
+
+  const anchorPoints: Point[] = cells.map((cell, i) => {
+    if (customAnchors) return customAnchors[i];
+    if (cell === -1) {
+      const prevCell = cells[i - 1];
+      const prev: Point = prevCell !== undefined && prevCell >= 0 ? cellPositions[prevCell] : [0, 0];
+      if (!bounds) return prev;
+      return projectToNearestEdge(prev, bounds.width, bounds.height);
+    }
+    return cellPositions[cell];
+  });
+
+  const points: Point[] = [];
+  const anchorIndices: number[] = [];
+  const lastStep = cells.length - 1;
+  let step = startStep;
+
+  for (let i = 0; i <= lastStep; i++, step++) {
+    const [x1, y1] = anchorPoints[i];
+    anchorIndices.push(points.length);
+    points.push([x1, y1]);
+
+    if (i === lastStep) break;
+
+    const nextCell = cells[i + 1];
+    if (nextCell === -1) continue; // boundary anchor will be emitted on next iter without interpolation
+
+    const [x2, y2] = anchorPoints[i + 1];
+    const dist2 = (x2 - x1) ** 2 + (y2 - y1) ** 2;
+    if (dist2 <= 25 && cellCount >= 6) continue;
+
+    const meanderVal = meandering + 1 / step + Math.max(meandering - step / 100, 0);
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const sinMeander = Math.sin(angle) * meanderVal;
+    const cosMeander = Math.cos(angle) * meanderVal;
+
+    if (step < 20 && (dist2 > 64 || (dist2 > 36 && cellCount < 5))) {
+      const p1x = (x1 * 2 + x2) / 3 + -sinMeander;
+      const p1y = (y1 * 2 + y2) / 3 + cosMeander;
+      const p2x = (x1 + x2 * 2) / 3 + sinMeander / 2;
+      const p2y = (y1 + y2 * 2) / 3 - cosMeander / 2;
+      points.push([p1x, p1y], [p2x, p2y]);
+    } else if (dist2 > 25 || cellCount < 6) {
+      const p1x = (x1 + x2) / 2 + -sinMeander;
+      const p1y = (y1 + y2) / 2 + cosMeander;
+      points.push([p1x, p1y]);
+    }
+  }
+
+  return { points, anchorIndices };
+};
+
+function projectToNearestEdge(point: Point, width: number, height: number): Point {
+  const [x, y] = point;
+  const minDist = Math.min(y, height - y, x, width - x);
+  if (minDist === y) return [x, 0];
+  if (minDist === height - y) return [x, height];
+  if (minDist === x) return [0, y];
+  return [width, y];
+}
+
 declare global {
   interface Window {
     getIsolines: typeof getIsolines;
