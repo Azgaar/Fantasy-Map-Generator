@@ -157,7 +157,8 @@ export class ProductionModule {
     const { good, ingredients, maxYield } = decision.action;
     const actualYield = Math.min(workerFraction, maxYield);
     const cultureModifier = good.culture?.[state.burg.type || DEFAULT_CULTURE_TYPE] || 1;
-    const produced = actualYield * cultureModifier;
+    const produced = rn(actualYield * cultureModifier, 2);
+    if (!produced) return;
 
     // Plan all ingredient sourcing first; bail out before mutating state if any market buy fails.
     type Plan = { ingredientId: number; amount: number; fromInventory: number; deal: Deal | null };

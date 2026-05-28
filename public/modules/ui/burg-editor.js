@@ -7,6 +7,8 @@ function editBurg(id) {
 
   const burg = id || d3.event.target.dataset.id;
   elSelected = burgLabels.select("[data-id='" + burg + "']");
+  if (!elSelected.size()) elSelected = burgIcons.select("[data-id='" + burg + "']");
+
   burgLabels.selectAll("text").call(d3.drag().on("start", dragBurgLabel)).classed("draggable", true);
   updateGroupsList();
   updateBurgValues();
