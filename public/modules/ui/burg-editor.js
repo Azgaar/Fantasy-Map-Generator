@@ -187,10 +187,26 @@ function editBurg(id) {
       const anchor = document.querySelector("#anchors [data-id='" + burgId + "']");
       if (anchor) anchor.remove();
     } else {
-      const haven = pack.cells.haven[burg.cell];
-      if (!haven) tip("Port haven is not found, system won't be able to make a searoute", false, "warn");
-      const portFeature = haven ? pack.cells.f[haven] : -1;
-      burg.port = portFeature;
+      const { cells, features } = pack;
+      const haven = cells.haven[burg.cell];
+      let portFeatureId;
+
+      if (haven) {
+        const featureId = cells.f[haven];
+        const feature = features[featureId];
+        portFeatureId =
+          feature?.type === "lake" && feature.outlet
+            ? (Rivers.resolveLakeDrainFeature(featureId) ?? featureId)
+            : featureId;
+      } else {
+        portFeatureId = Rivers.resolveDrainFeature(burg.cell);
+        if (!portFeatureId) {
+          tip("No navigable water body found downstream, cannot assign port", false, "warn");
+          return;
+        }
+      }
+
+      burg.port = portFeatureId;
 
       anchors
         .select("#" + burg.group)

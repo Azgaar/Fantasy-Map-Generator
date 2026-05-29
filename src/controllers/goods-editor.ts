@@ -1037,7 +1037,7 @@ function downloadGoodsData() {
       .map(([k, v]) => `${k}:${v}`)
       .join(";");
     const cells = cellsByGood[good.i] || 0;
-    const goodProduction = production[good.i] || {burg: 0, cell: 0, bonus: 0};
+    const goodProduction = production[good.i] || { burg: 0, cell: 0, bonus: 0 };
     const produced = rn(goodProduction.burg + goodProduction.cell + goodProduction.bonus);
     const stock = stockData[good.i]?.total ?? 0;
 
