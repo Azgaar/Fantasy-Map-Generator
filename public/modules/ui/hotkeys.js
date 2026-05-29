@@ -93,6 +93,8 @@ function handleKeyup(event) {
   else if (code === "Slash") toggleScaleBar();
   else if (code === "BracketLeft" && !handleBracketSizeChange(code)) toggleVignette();
   else if (code === "BracketRight") handleBracketSizeChange(code);
+  else if (code === "Backquote") toggleTrade();
+  else if (code === "Quote") toggleMarkets();
   else if (code === "ArrowLeft") zoom.translateBy(svg, 10, 0);
   else if (code === "ArrowRight") zoom.translateBy(svg, -10, 0);
   else if (code === "ArrowUp") zoom.translateBy(svg, 0, 10);
