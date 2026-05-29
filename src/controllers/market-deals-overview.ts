@@ -4,6 +4,7 @@ import { ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
 let activeMarketId = 0;
+let activeFilter: "all" | "local" | "global" = "all";
 
 export function open(marketId: number): void {
   const market = Markets.get(marketId);
@@ -13,6 +14,8 @@ export function open(marketId: number): void {
   }
 
   activeMarketId = marketId;
+  activeFilter = "all";
+  (ensureEl("marketDealsFilter") as HTMLSelectElement).value = "all";
   marketDealsAddLines();
 
   $("#marketDeals").dialog({
@@ -32,6 +35,10 @@ export function open(marketId: number): void {
       const party = getParty(deal);
       if (party) zoomTo(party.x, party.y, 8, 2000);
     });
+    ensureEl("marketDealsFilter").on("change", ev => {
+      activeFilter = (ev.target as HTMLSelectElement).value as typeof activeFilter;
+      marketDealsAddLines();
+    });
     isInitialized = true;
   }
 }
@@ -43,7 +50,12 @@ function marketDealsAddLines(): void {
     return;
   }
 
-  const deals = getMarketDeals(activeMarketId);
+  const allDeals = getMarketDeals(activeMarketId);
+  const deals = allDeals.filter(deal => {
+    if (activeFilter === "all") return true;
+    const counterparty = getCounterparty(deal);
+    return activeFilter === "local" ? counterparty.type === "burg" : counterparty.type === "market";
+  });
   let netFlow = 0;
 
   let lines = "";
