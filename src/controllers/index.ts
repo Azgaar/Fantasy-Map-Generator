@@ -1,4 +1,5 @@
 import "./coastline-editor";
+import "./compare-prices";
 import "./elevation-profile";
 import "./market-deals-overview";
 import "./market-overview";

@@ -2490,6 +2490,7 @@ div.states > .goodName {
 }
 
 div.states > .goodProduced,
+div.states > .goodStock,
 div.states > .goodBasePrice,
 div.states > .goodBuyPrice,
 div.states > .goodSellPrice {

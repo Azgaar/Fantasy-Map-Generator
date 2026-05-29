@@ -2,6 +2,7 @@ import { quadtree } from "d3-quadtree";
 import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
+import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
@@ -29,8 +30,7 @@ export interface Burg {
   group?: string;
   link?: string;
   MFCG?: string;
-  produced?: Record<number, number>;
-  inventory?: Record<number, number>;
+  production?: ProductionRecord[]; // per-burg production/trade records from the last production run
   product?: number; // gross product from the last production run
   treasury?: number; // accumulated cash balance
   market?: number;

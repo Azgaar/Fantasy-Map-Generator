@@ -1,6 +1,9 @@
 import { pointer } from "d3";
+import type { CultureType } from "../modules/cultures-generator";
+import { CULTURE_TYPES } from "../modules/cultures-generator";
 import type { DemandCategory, Good } from "../modules/goods-generator";
 import { BONUS_RESOURCE_PRODUCTION, DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../modules/goods-generator";
+import { isDealRecord, isMfgRecord } from "../modules/production-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
 import { ensureEl, unique } from "../utils";
 import { getHeight } from "../utils/unitUtils";
@@ -54,13 +57,14 @@ export function open() {
 function goodsEditorAddLines() {
   const body = ensureEl("goodsBody");
   const production = getProduction();
+  const stockData = getAllStockData();
   let lines = "";
 
   const renderTypeBadge = (type: string) => {
     const commonStyles =
       "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
     if (type === "RAW")
-      return `<span style="${commonStyles};background:#d0e7f5;color:#036" data-tip="Raw goods are produced by rural population in cells based on biome availability and bonus resources assigned to cells">RAW</span>`;
+      return `<span style="${commonStyles};background:#d0e7f5;color:#036" data-tip="Raw goods are produced by rural population in cells based on biome availability and in cells and burgs when bonus resource is assigned to cells">RAW</span>`;
     return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" data-tip="Manufactured goods are produced in burgs">MFG</span>`;
   };
 
@@ -69,8 +73,10 @@ function goodsEditorAddLines() {
     const goodProduction = production[good.i] || { burg: 0, cell: 0, bonus: 0 };
     const produced = rn(goodProduction.burg + goodProduction.cell + goodProduction.bonus);
     const producedTip = `Total good production: ${produced}⚒. Burgs: ${rn(goodProduction.burg, 2)}⚒. Cells: ${rn(goodProduction.cell, 2)}⚒. Bonus resource: ${rn(goodProduction.bonus, 2)}⚒ (${BONUS_RESOURCE_PRODUCTION}⚒ per cell with explicit good assigned)`;
+    const stock = rn(stockData[good.i]?.total ?? 0);
+    const stockTip = `Total stock in all markets and burg inventories: ${stock} units`;
 
-    lines += /*html*/ `<div class="states goods" data-id=${good.i} data-name="${good.name}" data-color="${good.color}" data-baseprice="${good.value}" data-produced="${produced}" data-type="${types.join(",")}">
+    lines += /*html*/ `<div class="states goods" data-id=${good.i} data-name="${good.name}" data-color="${good.color}" data-baseprice="${good.value}" data-produced="${produced}" data-stock="${stock}" data-type="${types.join(",")}">
         <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
           <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
           <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
@@ -81,7 +87,11 @@ function goodsEditorAddLines() {
           <div style="display: inline-block;">${produced}</div>
           <div style="display: inline-block; width: 0.4em; font-size: 1.5em;">⚒</div>
         </div>
-        <div data-tip="Base price" class="goodBasePrice">🟡 ${good.value}</div>
+        <div data-tip="${stockTip}. Click to see breakdown by location" class="goodStock pointer" style="vertical-align: middle;">
+          <div style="display: inline-block;">${stock}</div>
+          <div style="display: inline-block; width: 0.4em; font-size: 1.2em;">⛁</div>
+        </div>
+        <div data-tip="Base (initial) price. Click to compare prices across markets" class="goodBasePrice pointer">🟡 ${good.value}</div>
         <span data-tip="Edit good" class="icon-pencil goodEdit hide"></span>
         <span data-tip="Toggle good exclusive visibility (pin)" class="icon-pin ${pinnedGoods.has(good.i) ? "" : "inactive"} hide"></span>
         <span data-tip="Remove good" class="icon-trash-empty hide goodRemove"></span>
@@ -92,14 +102,32 @@ function goodsEditorAddLines() {
   const totalProduced = Object.values(production)
     .map(p => p.burg + p.cell + p.bonus)
     .reduce((sum, v) => sum + v, 0);
+  const totalStock = Object.values(stockData).reduce((sum, d) => sum + d.total, 0);
   ensureEl("goodsNumber").innerHTML = String(pack.goods.length);
   ensureEl("goodsProduced").innerHTML = String(rn(totalProduced));
+  ensureEl("goodsStock").innerHTML = String(rn(totalStock));
 
   body.querySelectorAll("div.states").forEach(el => void el.on("click", selectResourceOnLineClick));
   body.querySelectorAll<HTMLButtonElement>(".goodProduced").forEach(el => {
     el.addEventListener("click", ev => {
       ev.stopPropagation();
       openProducersDialog(Number(el.parentElement?.dataset?.id));
+    });
+  });
+
+  body.querySelectorAll<HTMLElement>(".goodStock").forEach(el => {
+    el.addEventListener("click", ev => {
+      ev.stopPropagation();
+      const goodId = Number((el.closest<HTMLElement>(".states") as HTMLElement).dataset.id);
+      openStockDialog(goodId);
+    });
+  });
+
+  body.querySelectorAll<HTMLElement>(".goodBasePrice").forEach(el => {
+    el.addEventListener("click", ev => {
+      ev.stopPropagation();
+      const goodId = Number((el.closest<HTMLElement>(".states") as HTMLElement).dataset.id);
+      window.ComparePrices.open(goodId, "#goodsEditor");
     });
   });
 
@@ -117,8 +145,9 @@ function openProducersDialog(goodId: number) {
   if (!good) return;
 
   const producers = pack.burgs
-    .filter(b => b.i && !b.removed && (b.produced?.[goodId] ?? 0) > 0)
-    .map(b => ({ burg: b, units: b.produced![goodId] }))
+    .filter(b => b.i && !b.removed)
+    .map(b => ({ burg: b, units: Production.getProduced(b)[goodId] ?? 0 }))
+    .filter(({ units }) => units > 0)
     .sort((a, b) => b.units - a.units);
 
   if (!producers.length) {
@@ -159,6 +188,119 @@ function openProducersDialog(goodId: number) {
   });
 }
 
+type StockSource = { name: string; type: "market" | "burg"; x: number; y: number; id: number; stock: number };
+
+function getAllStockData(): Record<number, { total: number; sources: StockSource[] }> {
+  const dealById = new Map((pack.deals || []).map(d => [d.i, d]));
+  const result: Record<number, { total: number; sources: StockSource[] }> = {};
+  for (const good of pack.goods) result[good.i] = { total: 0, sources: [] };
+
+  for (const market of pack.markets || []) {
+    const centerBurg = pack.burgs[market.centerBurgId];
+    if (!centerBurg) continue;
+    const x = centerBurg.x ?? 0;
+    const y = centerBurg.y ?? 0;
+    const marketName = centerBurg.name || `Market ${market.i}`;
+
+    for (const [goodIdStr, { stock }] of Object.entries(market.goods)) {
+      const goodId = +goodIdStr;
+      if (!result[goodId] || stock <= 0) continue;
+      result[goodId].total += stock;
+      result[goodId].sources.push({ name: marketName, type: "market", x, y, id: market.i, stock });
+    }
+  }
+
+  for (const burg of pack.burgs as any[]) {
+    if (!burg?.i || burg.removed || !burg.production) continue;
+
+    const netInventory: Record<number, number> = {};
+    for (const record of burg.production) {
+      if (isMfgRecord(record)) {
+        netInventory[record.goodId] = (netInventory[record.goodId] || 0) + record.units;
+        for (const item of record.recipe) {
+          netInventory[item.goodId] = (netInventory[item.goodId] || 0) - item.units;
+        }
+      } else if (isDealRecord(record)) {
+        const deal = dealById.get(record.dealId);
+        if (!deal) continue;
+        if (deal.buyerType === "burg" && deal.buyer === burg.i) {
+          netInventory[deal.good] = (netInventory[deal.good] || 0) + deal.units;
+        } else if (deal.sellerType === "burg" && deal.seller === burg.i) {
+          netInventory[deal.good] = (netInventory[deal.good] || 0) - deal.units;
+        }
+      } else {
+        netInventory[record.goodId] = (netInventory[record.goodId] || 0) + record.units;
+      }
+    }
+
+    for (const [goodIdStr, units] of Object.entries(netInventory)) {
+      const goodId = +goodIdStr;
+      if (!result[goodId] || units <= 0.001) continue;
+      const roundedUnits = rn(units, 2);
+      result[goodId].total += roundedUnits;
+      result[goodId].sources.push({
+        name: burg.name || `Burg ${burg.i}`,
+        type: "burg",
+        x: burg.x ?? 0,
+        y: burg.y ?? 0,
+        id: burg.i,
+        stock: roundedUnits
+      });
+    }
+  }
+
+  for (const good of pack.goods) result[good.i].total = rn(result[good.i].total, 2);
+
+  return result;
+}
+
+function openStockDialog(goodId: number) {
+  const good = Goods.get(goodId);
+  if (!good) return;
+
+  const stockData = getAllStockData();
+  const data = stockData[goodId];
+  const sources = data?.sources ?? [];
+
+  if (!sources.length) {
+    alertMessage.innerHTML = `<i style="color:#888">No stock of ${good.name} found in any market or burg inventory.</i>`;
+  } else {
+    const header = /*html*/ `
+      <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
+        <div></div>
+        <div>Location</div>
+        <div>Units</div>
+      </div>`;
+    const rows = [...sources]
+      .sort((a, b) => b.stock - a.stock)
+      .map(
+        source => /*html*/ `
+        <div data-tip="Click to zoom to location" class="states pointer" data-x="${source.x}" data-y="${source.y}" data-id="${source.id}">
+          <div class="${source.type === "market" ? "icon-store" : "icon-dot-circled"}" style="width:1em"></div>
+          <div style="width:7em;">${source.name}</div>
+          <div style="width:4em;">${source.stock}</div>
+        </div>`
+      )
+      .join("");
+    alertMessage.innerHTML = header + rows;
+    alertMessage.querySelectorAll<HTMLElement>(".states").forEach(row => {
+      row.on("click", () => {
+        zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000);
+      });
+    });
+  }
+
+  $("#alert").dialog({
+    resizable: false,
+    title: `${good.name} stock`,
+    buttons: {
+      Close: function () {
+        $(this).dialog("close");
+      }
+    }
+  });
+}
+
 function getProduction() {
   const production: Record<number, { burg: number; cell: number; bonus: number }> = {};
   const addProduction = (goodId: number, amount: number, type: "burg" | "cell" | "bonus") => {
@@ -184,9 +326,10 @@ function getProduction() {
 
   // burg production
   for (const burg of pack.burgs) {
-    if (!burg || burg.removed || !burg.produced) continue;
-    for (const goodId in burg.produced) {
-      addProduction(Number(goodId), burg.produced[goodId] || 0, "burg");
+    if (!burg || burg.removed || !burg.production) continue;
+    const produced = Production.getProduced(burg);
+    for (const goodId in produced) {
+      addProduction(Number(goodId), produced[goodId] || 0, "burg");
     }
   }
 
@@ -384,9 +527,11 @@ function togglePercentageMode() {
   if (body.dataset.type === "absolute") {
     body.dataset.type = "percentage";
     let totalProduced = 0;
+    let totalStock = 0;
 
     body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
       totalProduced += +el.dataset.produced! || 0;
+      totalStock += +el.dataset.stock! || 0;
     });
 
     body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
@@ -394,6 +539,11 @@ function togglePercentageMode() {
       if (producedEl) {
         const produced = +el.dataset.produced! || 0;
         producedEl.innerHTML = `${rn(totalProduced ? (produced / totalProduced) * 100 : 0, 2)}%`;
+      }
+      const stockEl = el.querySelector<HTMLElement>(".goodStock");
+      if (stockEl) {
+        const stock = +el.dataset.stock! || 0;
+        stockEl.innerHTML = `${rn(totalStock ? (stock / totalStock) * 100 : 0, 2)}%`;
       }
     });
   } else {
@@ -482,7 +632,7 @@ function exitResourceAssignMode(close?: string) {
   ensureEl("goodsFooter").style.display = "block";
   body
     .querySelectorAll<HTMLElement>(
-      ".goodName, .goodType, .goodProduced, .goodBasePrice, .goodBuyPrice, .goodSellPrice, .goodEdit, svg, .icon-trash-empty"
+      ".goodName, .goodType, .goodProduced, .goodStock, .goodBasePrice, .goodBuyPrice, .goodSellPrice, .goodEdit, svg, .icon-trash-empty"
     )
     .forEach(e => {
       e.style.pointerEvents = "";
@@ -521,6 +671,11 @@ function openGoodDialog(editedGood?: Good) {
         <input id="newGoodDemandCoverage_${category}" type="number" style="width: 4em;" step="0.05" min="0" value="${editedGood?.demandCoverage?.[category] || 0}" />
       </span>`;
 
+  const renderCulture = (cultureType: CultureType) => /*html*/ `<span>
+        <div style="display: inline-block; width: 6em; white-space: nowrap;">${cultureType}</div>
+        <input id="newGoodCulture_${cultureType}" type="number" style="width: 4em;" step="0.1" min="0" value="${editedGood?.culture?.[cultureType] ?? 1}" />
+      </span>`;
+
   alertMessage.innerHTML = /*html*/ `
     <div style="display:grid; grid-template-columns: 7em 1fr; align-items:center;">
       <label for="newGoodName">Name*</label>
@@ -552,6 +707,9 @@ function openGoodDialog(editedGood?: Good) {
 
       <label for="newGoodDemandCoverage" style="align-self: start;">Demand Coverage</label>
       <div id="newGoodDemandCoverage" style="display: grid; grid-template-columns: 1fr 1fr; gap: .2em;">${DEMAND_PRIORITY.map(renderDemanCoverage).join("")}</div>
+
+      <label for="newGoodCulture" style="align-self: start;" data-tip="Per culture type production modifier. Goods produced by a burg are multiplied by this value based on the burg culture type. 1 means no effect.">Culture modifier</label>
+      <div id="newGoodCulture" style="display: grid; grid-template-columns: 1fr 1fr; gap: .2em;">${CULTURE_TYPES.map(renderCulture).join("")}</div>
     </div>
 
     <div>
@@ -747,6 +905,14 @@ function openGoodDialog(editedGood?: Good) {
           if (Number.isFinite(v) && v > 0) demandCoverage[category] = v;
         });
 
+        const culture: Partial<Record<CultureType, number>> = {};
+        CULTURE_TYPES.forEach(cultureType => {
+          const cultureInput = document.getElementById(`newGoodCulture_${cultureType}`) as HTMLInputElement | null;
+          if (!cultureInput) return;
+          const v = Number(cultureInput.value);
+          if (Number.isFinite(v) && v >= 0 && v !== 1) culture[cultureType] = v;
+        });
+
         if (!name) errors.push("Name is required");
         if (!Number.isFinite(value) || value < 0) errors.push("Value must be a valid non-negative number");
         if (!Number.isFinite(chance) || chance < 0 || chance > 100) errors.push("Chance must be between 0 and 100");
@@ -812,6 +978,7 @@ function openGoodDialog(editedGood?: Good) {
           editedGood.unit = unit;
           editedGood.bonus = bonuses;
           editedGood.demandCoverage = demandCoverage;
+          editedGood.culture = culture;
           if (distribution) editedGood.distribution = distribution;
           if (biomeProduction) editedGood.biome = biomeProduction;
           if (recipes) editedGood.recipes = recipes;
@@ -833,6 +1000,7 @@ function openGoodDialog(editedGood?: Good) {
             unit,
             bonus: bonuses,
             demandCoverage,
+            culture,
             distribution: distribution || undefined,
             biome: biomeProduction || undefined,
             recipes: recipes.length ? recipes : undefined
@@ -854,7 +1022,10 @@ function downloadGoodsData() {
     if (goodId) cellsByGood[goodId] = (cellsByGood[goodId] || 0) + 1;
   }
 
-  let data = "Id,Good,Color,Type,Tags,Value,Bonus,Demand Coverage,Chance,Model,Cells\n";
+  const production = getProduction();
+  const stockData = getAllStockData();
+
+  let data = "Id,Good,Color,Type,Tags,Value,Bonus,Demand Coverage,Chance,Model,Cells,Produced,Stock\n";
 
   for (const good of pack.goods) {
     const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean).join(";");
@@ -866,8 +1037,11 @@ function downloadGoodsData() {
       .map(([k, v]) => `${k}:${v}`)
       .join(";");
     const cells = cellsByGood[good.i] || 0;
+    const goodProduction = production[good.i] || {burg: 0, cell: 0, bonus: 0};
+    const produced = rn(goodProduction.burg + goodProduction.cell + goodProduction.bonus);
+    const stock = stockData[good.i]?.total ?? 0;
 
-    data += `${good.i},${good.name},${good.color},${types},${tags},${good.value},${bonus},${demandCoverage},${good.chance ?? ""},${good.distribution ?? ""},${cells}\n`;
+    data += `${good.i},${good.name},${good.color},${types},${tags},${good.value},${bonus},${demandCoverage},${good.chance ?? ""},${good.distribution ?? ""},${cells},${produced},${stock}\n`;
   }
 
   const name = `${getFileName("Goods")}.csv`;

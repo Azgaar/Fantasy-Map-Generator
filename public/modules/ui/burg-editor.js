@@ -94,7 +94,7 @@ function editBurg(id) {
     ensureEl("burgPlaza").classList.toggle("inactive", !b.plaza);
     ensureEl("burgTemple").classList.toggle("inactive", !b.temple);
     ensureEl("burgShanty").classList.toggle("inactive", !b.shanty);
-    ensureEl("burgProduction").innerHTML = getProduction(b.produced);
+    ensureEl("burgProduction").innerHTML = getProduction(Production.getProduced(b));
 
     updateBurgLockIcon();
 
@@ -486,11 +486,11 @@ const meanTempCityMap = {
 function getProduction(pool) {
   if (!pool) return "";
   let html = "";
-  for (const resourceId in pool) {
+  const sorted = Object.entries(pool).sort(([, a], [, b]) => b - a);
+  for (const [resourceId, production] of sorted) {
     const resource = Goods.get(+resourceId);
     if (!resource) continue;
     const { name, unit, icon } = resource;
-    const production = pool[resourceId];
     const unitName = production > 1 ? unit + "s" : unit;
     html += `<span data-tip="${name}: ${production} ${unitName}">
       <svg class="resIcon" width="1em" height="1em"><use href="#${icon}"></use></svg>

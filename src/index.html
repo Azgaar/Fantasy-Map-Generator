@@ -5025,7 +5025,7 @@
         </div>
       </div>
       <div id="goodsEditor" class="dialog stable" style="display: none">
-        <div id="goodsHeader" class="header" style="grid-template-columns: 2.7em 7em 7em 7em 6.5em 1em;">
+        <div id="goodsHeader" class="header" style="grid-template-columns: 2.7em 7em 7em 6.8em 6em 4.6em 1em;">
           <div></div>
           <div data-tip="Click to sort by good name" class="sortable alphabetically" data-sortby="name">
             Name&nbsp;
@@ -5036,8 +5036,11 @@
           <div data-tip="Total production units aggregated from cells and burgs. Click to sort" class="sortable icon-sort-number-down" data-sortby="produced">
             Produced&nbsp;
           </div>
-          <div data-tip="Base price. Click to sort" class="sortable" data-sortby="baseprice">
-            Base Price&nbsp;
+          <div data-tip="Total units in stock across all markets and burg inventories. Click to sort" class="sortable" data-sortby="stock">
+            Stock&nbsp;
+          </div>
+          <div data-tip="Base (initial) price. Click to sort" class="sortable" data-sortby="baseprice">
+            Price&nbsp;
           </div>
           <div
             data-tip="Click to unpin (show) all goods"
@@ -5049,6 +5052,7 @@
         <div id="goodsFooter" class="totalLine">
           <div data-tip="Total number of goods" style="margin-left: 5px">Goods:&nbsp;<span id="goodsNumber">0</span></div>
           <div data-tip="Total amount of goods produced by all cells and burgs" style="margin-left: 12px">Produced:&nbsp;<span id="goodsProduced">0</span></div>
+          <div data-tip="Total units in stock across all markets and burg inventories" style="margin-left: 12px">Stock:&nbsp;<span id="goodsStock">0</span></div>
         </div>
         <div id="goodsBottom">
           <button id="goodsEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
@@ -5060,7 +5064,7 @@
           <button id="goodsTagsFilter" data-tip="Filter visible goods by tags" class="icon-tags"></button>
           <button id="goodsAssign" data-tip="Manually assign goods to cells" class="icon-brush"></button>
           <button id="goodsAdd" data-tip="Add a new good" class="icon-plus"></button>
-          <button id="goodsChains" data-tip="Show production chains graph" class="icon-chart-bar"></button>
+          <button id="goodsChains" data-tip="Show production chains graph" class="icon-chart-line"></button>
           <button
             id="goodsRestore"
             data-tip="Restore default list and regenerate goods"
@@ -5082,17 +5086,18 @@
           <div data-tip="Total stock of all goods. Click to sort" class="sortable" data-sortby="stock">Stock&nbsp;</div>
           <div data-tip="Total gross sales revenue. Click to sort" class="sortable" data-sortby="sales">Sales&nbsp;</div>
           <div data-tip="Total purchase spending. Click to sort" class="sortable" data-sortby="buys">Buys&nbsp;</div>
-          <div data-tip="Net income: sales minus tax minus purchases. Click to sort" class="sortable icon-sort-number-down" data-sortby="income">Income&nbsp;</div>
+          <div data-tip="Market value: net trading flow plus unsold inventory value minus tax. Click to sort" class="sortable icon-sort-number-down" data-sortby="value">Value&nbsp;</div>
         </div>
-        <div id="marketsOverviewBody" class="table" style="max-height:40em; cursor:pointer"></div>
+        <div id="marketsOverviewBody" class="table" data-type="absolute" style="max-height:40em; cursor:pointer"></div>
         <div id="marketsOverviewFooter" class="totalLine">
           <div data-tip="Total number of markets" style="margin-left:5px">Markets:&nbsp;<span id="marketsOverviewFooterMarkets">0</span></div>
           <div data-tip="Average gross sales revenue per market" style="margin-left:12px">Avg Sales:&nbsp;<span id="marketsOverviewFooterSales">0</span></div>
           <div data-tip="Average purchase spending per market" style="margin-left:12px">Avg Buys:&nbsp;<span id="marketsOverviewFooterBuys">0</span></div>
-          <div data-tip="Average net income per market" style="margin-left:12px">Avg Income:&nbsp;<span id="marketsOverviewFooterIncome">0</span></div>
+          <div data-tip="Average market value per market" style="margin-left:12px">Avg Value:&nbsp;<span id="marketsOverviewFooterValue">0</span></div>
         </div>
         <div id="marketsOverviewBottom">
           <button id="marketsOverviewRefresh" data-tip="Refresh the overview" class="icon-cw"></button>
+          <button id="marketsOverviewPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
           <button id="marketsOverviewCompare" data-tip="Compare good stock across markets" class="icon-chart-bar"></button>
           <button id="marketsOverviewExport" data-tip="Save markets data as a CSV file" class="icon-download"></button>
         </div>
@@ -5108,7 +5113,16 @@
           <div data-tip="Good stock in this market. Click to sort" class="sortable icon-sort-number-down" data-sortby="stock">Stock&nbsp;</div>
           <div data-tip="Price for this good. Click to sort" class="sortable" data-sortby="price">Price&nbsp;</div>
         </div>
-        <div id="marketsGoodCompareBody" class="table" style="max-height:40em;"></div>
+        <div id="marketsGoodCompareBody" class="table" data-type="absolute" style="max-height:40em;"></div>
+        <div id="marketsGoodCompareFooter" class="totalLine">
+          <div data-tip="Total stock of this good across all markets" style="margin-left:5px">Total Stock:&nbsp;<span id="marketsGoodCompareFooterStock">0</span></div>
+          <div data-tip="Average price of this good across markets" style="margin-left:12px">Avg Price:&nbsp;<span id="marketsGoodCompareFooterPrice">0</span></div>
+        </div>
+        <div id="marketsGoodCompareBottom">
+          <button id="marketsGoodCompareRefresh" data-tip="Refresh" class="icon-cw"></button>
+          <button id="marketsGoodComparePercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
+          <button id="marketsGoodCompareExport" data-tip="Save data as a CSV file" class="icon-download"></button>
+        </div>
       </div>
       <div id="marketOverview" class="dialog stable" style="display: none">
         <div id="marketOverviewHeader" class="header" style="grid-template-columns: 2.5em 9em 5.5em 3.2em;">

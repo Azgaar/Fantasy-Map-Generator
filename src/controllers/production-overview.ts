@@ -2,7 +2,8 @@ import type { Burg } from "../modules/burgs-generator";
 import type { DemandCategory } from "../modules/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "../modules/goods-generator";
 import type { Deal } from "../modules/markets-generator";
-import type { MfgHistory, ProductionCandidate } from "../modules/production-generator";
+import type { ProductionCandidate } from "../modules/production-generator";
+import { isDealRecord, isMfgRecord } from "../modules/production-generator";
 import { formatPrice, rn } from "../utils";
 
 type Type = "MFG" | "BUY" | "SELL" | "LOCAL";
@@ -20,7 +21,7 @@ export function open(burgId: number): void {
     return;
   }
 
-  const data = Production.getProductionData(burgId);
+  const data = burg.production;
   if (!data) {
     tip("No production data for this burg.", true, "error", 5000);
     return;
@@ -234,25 +235,26 @@ export function open(burgId: number): void {
   const producedByGood: Record<number, number> = {};
   const centerBurg = market ? pack.burgs[market.centerBurgId] : null;
 
-  let phaseRevenue = 0;
-  let ingredientCosts = 0;
   let totalTax = 0;
   let stepIndex = 0;
+  const netInventory: Record<number, number> = {};
 
   const dealById = new Map(pack.deals.map(d => [d.i, d]));
   const allRows = data.flatMap(entry => {
-    if (entry.kind === "mfg") {
-      const mfg = entry as MfgHistory;
+    if (isMfgRecord(entry)) {
+      const mfg = entry;
       producedByGood[mfg.goodId] = (producedByGood[mfg.goodId] || 0) + mfg.units;
-      ingredientCosts += mfg.recipe.reduce((s, item) => s + item.marketCost, 0);
+      netInventory[mfg.goodId] = (netInventory[mfg.goodId] || 0) + mfg.units;
+      for (const item of mfg.recipe) netInventory[item.goodId] = (netInventory[item.goodId] || 0) - item.units;
 
       const candidatesId = `candidates${stepIndex++}`;
       const candidatesHtml = renderDecisionDetails(mfg.candidates);
       const rowAttrs = candidatesHtml
         ? ` data-target="${candidatesId}" style="${styles.bodyRow};cursor:pointer" data-tip="Click to expand decision details"`
         : ` style="${styles.bodyRow}"`;
-      const cultureSuffix = mfg.cultureModifier !== 1 ? ` ${modifierBadge(mfg.cultureModifier)}` : "";
-      const allInputs = mfg.recipe.map(item => `${rn(item.amount, 2)} ${goodDot(item.goodId)}`).join(` and `);
+      const cultureModifier = mfg.cultureModifier ?? 1;
+      const cultureSuffix = cultureModifier !== 1 ? ` ${modifierBadge(cultureModifier)}` : "";
+      const allInputs = mfg.recipe.map(item => `${rn(item.units, 2)} ${goodDot(item.goodId)}`).join(` and `);
 
       return [
         /*html*/ `<tr${rowAttrs}>
@@ -263,11 +265,12 @@ export function open(burgId: number): void {
          </tr>`,
         renderLogRow(candidatesId, candidatesHtml)
       ];
-    } else if (entry.kind === "deal") {
+    } else if (isDealRecord(entry)) {
       const deal = dealById.get(entry.dealId);
       if (!deal) return [];
       const detailsId = `deal-details-${stepIndex++}`;
       if (isBurgBuyer(deal)) {
+        netInventory[deal.good] = (netInventory[deal.good] || 0) + deal.units;
         return renderExpandableDealRow({
           targetId: detailsId,
           goodId: deal.good,
@@ -279,7 +282,7 @@ export function open(burgId: number): void {
         });
       }
       if (isBurgSeller(deal)) {
-        phaseRevenue += getDealNetRevenue(deal);
+        netInventory[deal.good] = (netInventory[deal.good] || 0) - deal.units;
         totalTax += getDealTax(deal);
         return renderExpandableDealRow({
           targetId: detailsId,
@@ -291,8 +294,9 @@ export function open(burgId: number): void {
           detailsHtml: renderSaleDetails(deal)
         });
       }
-    } else if (entry.kind === "local") {
+    } else {
       producedByGood[entry.goodId] = (producedByGood[entry.goodId] || 0) + entry.units;
+      netInventory[entry.goodId] = (netInventory[entry.goodId] || 0) + entry.units;
       return /*html*/ `<tr style="${styles.bodyRow}">
            ${renderDataCell(renderTaggedGood(entry.goodId, "LOCAL"))}
            ${renderDataCell(entry.units, "right")}
@@ -303,7 +307,7 @@ export function open(burgId: number): void {
     return [];
   });
 
-  const grossProduct = Math.max(0, phaseRevenue - ingredientCosts);
+  const grossProduct = Math.max(0, burg.product || 0);
   const productPerCapita = population > 0 ? grossProduct / population : 0;
 
   const jobsTable = renderTable({
@@ -322,7 +326,7 @@ export function open(burgId: number): void {
     empty: "No production actions recorded"
   });
 
-  const finalDemandCoverage = calculateDemandCoverageTotals(burg.inventory || {});
+  const finalDemandCoverage = calculateDemandCoverageTotals(netInventory);
   const uncoveredDemand = initialDemand.map((target, index) => Math.max(0, target - finalDemandCoverage[index]));
 
   const statsHtml = /*html*/ `
