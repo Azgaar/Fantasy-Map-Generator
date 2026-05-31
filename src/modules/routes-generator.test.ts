@@ -356,6 +356,48 @@ describe("RoutesModule.addMeandering", () => {
     expect(cell3Anchor[1]).toBe(0);
   });
 
+  it("anchors the route's terminal port cell at the shifted burg coord, not the cell center", () => {
+    setupRiverPack();
+    // Estuary port at the river-mouth terminus (cell 4): the burg is shifted off its cell center
+    // toward the sea, but the route approaches along the river. It must still reach the port marker.
+    globalThis.pack.cells.burg = [0, 0, 0, 0, 9, 0];
+    const routeCells = [1, 2, 3, 4];
+    const anchors: [number, number][] = [
+      [10, 0],
+      [25, 0],
+      [40, 0],
+      [55, 8] // burg at cell 4 shifted off cell center (cell 4 center is [55, 0])
+    ];
+    const result = Routes.addMeandering(routeCells, anchors);
+
+    // The final emitted point is the terminal anchor and must be the burg coord, not [55, 0].
+    const last = result[result.length - 1];
+    expect(last[2]).toBe(4);
+    expect([last[0], last[1]]).toEqual([55, 8]);
+
+    // The non-port start cell (cell 1) still anchors at its cell center, not a shifted coord.
+    expect([result[0][0], result[0][1]]).toEqual([10, 0]);
+  });
+
+  it("keeps an interior port cell on the river (only termini honor shifted burg coords)", () => {
+    setupRiverPack();
+    // Cell 3 is a port but sits in the route interior, so it stays on the river centerline.
+    globalThis.pack.cells.burg = [0, 0, 0, 7, 0, 0];
+    const routeCells = [1, 2, 3, 4];
+    const anchors: [number, number][] = [
+      [10, 0],
+      [25, 0],
+      [40, 9], // shifted burg coord must be ignored for an interior cell
+      [55, 0]
+    ];
+    const result = Routes.addMeandering(routeCells, anchors);
+
+    const cell3Anchor = result.find(
+      (p: number[], idx: number, arr: number[][]) => p[2] === 3 && (idx === 0 || arr[idx - 1][2] !== 3)
+    );
+    expect([cell3Anchor[0], cell3Anchor[1]]).toEqual([40, 0]);
+  });
+
   it("buildLinks does not create self-links from interior meander points", () => {
     setupRiverPack();
     const routeCells = [1, 2, 3, 4];

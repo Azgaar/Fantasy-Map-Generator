@@ -1,16 +1,45 @@
 import { curveCatmullRom, easeLinear, line } from "d3";
 import type { TradeBatch } from "../modules/trade-animation";
 import type { Point } from "../modules/voronoi";
-import { minmax } from "../utils";
+import { ensureEl, minmax } from "../utils";
 
 const lineGen = line<Point>().curve(curveCatmullRom.alpha(0.1));
 
-export function draw(
+const MARKER_SYMBOLS = {
+  water: { id: "trade-marker-ship", src: "./images/markers/ship.svg" },
+  land: { id: "trade-marker-wagon", src: "./images/markers/wagon.svg" }
+} as const;
+
+let symbolsReady: Promise<void> | null = null;
+
+function ensureSymbols(): Promise<void> {
+  if (symbolsReady) return symbolsReady;
+  const defs = ensureEl("trade-markers");
+  symbolsReady = (async () => {
+    await Promise.all(
+      Object.values(MARKER_SYMBOLS).map(async ({ id, src }) => {
+        if (defs.querySelector(`#${id}`)) return;
+        const text = await fetch(src).then(r => r.text());
+        const svgNode = new DOMParser().parseFromString(text, "image/svg+xml").documentElement;
+        const symbol = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
+        symbol.id = id;
+        const vb = svgNode.getAttribute("viewBox");
+        if (vb) symbol.setAttribute("viewBox", vb);
+        while (svgNode.firstChild) symbol.appendChild(svgNode.firstChild);
+        defs.appendChild(symbol);
+      })
+    );
+  })();
+  return symbolsReady;
+}
+
+export async function draw(
   batch: TradeBatch,
   segments: { type: "land" | "water"; points: Point[] }[],
   onComplete?: () => void,
   isCancelled?: () => boolean
-): void {
+): Promise<void> {
+  await ensureSymbols();
   animateSegment(0);
 
   function animateSegment(idx: number) {
@@ -19,17 +48,17 @@ export function draw(
       onComplete?.();
       return;
     }
+
     const segment = segments[idx];
     const size = options.trade.animation.markerSize;
     const imgSize = segment.type === "land" ? size / 1.6 : size;
-    const imgHref = `./images/markers/${segment.type === "land" ? "wagon" : "ship"}.png`;
     const duration = options.trade.animation.duration;
     const segDuration = segment.type === "land" ? duration * options.trade.animation.landDurationModifier : duration;
 
     const group = tradeAnimation.append("g");
     group
-      .append("image")
-      .attr("href", imgHref)
+      .append("use")
+      .attr("href", `#trade-marker-${segment.type}`)
       .attr("width", imgSize)
       .attr("height", imgSize)
       .attr("x", -imgSize / 2)
@@ -39,7 +68,7 @@ export function draw(
     // Invisible target for click
     group
       .append("circle")
-      .attr("r", minmax(size * 1.5, 4, 8))
+      .attr("r", minmax(size, 2, 6))
       .attr("fill", "none")
       .attr("stroke", "none")
       .attr("pointer-events", "all")

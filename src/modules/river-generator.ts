@@ -372,6 +372,7 @@ class RiverModule {
       anchors: riverPoints ?? undefined,
       meandering: 0.5,
       startStep: h[riverCells[0]] < 20 ? 1 : 10,
+      isWaterCell: riverCells.map(c => c !== -1 && h[c] < 20),
       bounds: { width: graphWidth, height: graphHeight }
     });
 

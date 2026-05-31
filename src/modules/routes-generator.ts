@@ -498,12 +498,22 @@ class RoutesModule {
   }
 
   // Meander a single river run, appending its [x, y, cellId] points to `result`.
-  private emitRiverRun(run: RiverRun, cells: number[], result: [number, number, number][]): void {
+  private emitRiverRun(run: RiverRun, cells: number[], anchors: Point[], result: [number, number, number][]): void {
     const runCells = cells.slice(run.startIdx, run.endIdx + 1);
     // River-following anchors are cell centers, not burg-shifted coords, so the route's curve
     // (and its meander interpolation) overlays the river polygon exactly. Burgs sitting off
     // their cell center would otherwise pull the route outside the river.
-    const runAnchors = runCells.map(cellId => pack.cells.p[cellId]);
+    // Exception: at the route's termini, anchor on the port's shifted position so the route
+    // actually reaches the port marker. An estuary port (river + coast) is shifted toward its
+    // sea haven, yet the route approaches along the river course — without this it would stop
+    // at the river-mouth cell center instead of the port.
+    const lastIndex = cells.length - 1;
+    const runAnchors = runCells.map((cellId, idx) => {
+      const globalIdx = run.startIdx + idx;
+      const isRouteEndpoint = globalIdx === 0 || globalIdx === lastIndex;
+      if (isRouteEndpoint && pack.cells.burg[cellId]) return anchors[globalIdx];
+      return pack.cells.p[cellId];
+    });
 
     // Feed the run to `meander` in canonical (source->mouth) order so the perpendicular
     // meander direction matches the river polygon, then reverse the output for upstream routes.
@@ -519,7 +529,8 @@ class RoutesModule {
     const { points, anchorIndices } = meander(canonicalCells, pack.cells.p, {
       anchors: canonicalAnchors,
       startStep: baseStep + run.firstCanonicalIndexInRiver,
-      cellCount: river ? river.cells.length : canonicalCells.length
+      cellCount: river ? river.cells.length : canonicalCells.length,
+      isWaterCell: canonicalCells.map(c => c !== -1 && pack.cells.h[c] < 20)
     });
 
     let finalPoints = points;
@@ -561,7 +572,7 @@ class RoutesModule {
     while (i < cells.length) {
       if (runPtr < runs.length && runs[runPtr].startIdx === i) {
         const run = runs[runPtr++];
-        this.emitRiverRun(run, cells, result);
+        this.emitRiverRun(run, cells, anchors, result);
         i = run.endIdx; // the run's last cell may start the next run (confluence)
       } else {
         const alreadyEmitted = result.length > 0 && result[result.length - 1][2] === cells[i];

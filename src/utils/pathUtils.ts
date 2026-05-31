@@ -359,14 +359,12 @@ type MeanderOptions = {
   anchors?: Point[];
   meandering?: number;
   startStep?: number;
-  // Overrides cells.length for the "small river" interpolation rules. Lets a caller meander a
-  // sub-slice of a river while keeping the same interpolation decisions as the full river.
   cellCount?: number;
-  bounds?: {
-    width: number;
-    height: number;
-  };
+  isWaterCell?: boolean[];
+  bounds?: { width: number; height: number };
 };
+
+const WATER_MEANDER_SCALE = 0.25;
 
 export const meander = (cells: number[], cellPositions: Point[], options: MeanderOptions = {}) => {
   const meandering = options.meandering ?? 0.5;
@@ -374,6 +372,7 @@ export const meander = (cells: number[], cellPositions: Point[], options: Meande
   const bounds = options.bounds;
   const startStep = options.startStep ?? 10;
   const cellCount = options.cellCount ?? cells.length;
+  const isWaterCell = options.isWaterCell;
 
   const anchorPoints: Point[] = cells.map((cell, i) => {
     if (customAnchors) return customAnchors[i];
@@ -405,7 +404,8 @@ export const meander = (cells: number[], cellPositions: Point[], options: Meande
     const dist2 = (x2 - x1) ** 2 + (y2 - y1) ** 2;
     if (dist2 <= 25 && cellCount >= 6) continue;
 
-    const meanderVal = meandering + 1 / step + Math.max(meandering - step / 100, 0);
+    let meanderVal = meandering + 1 / step + Math.max(meandering - step / 100, 0);
+    if (isWaterCell && (isWaterCell[i] || isWaterCell[i + 1])) meanderVal *= WATER_MEANDER_SCALE;
     const angle = Math.atan2(y2 - y1, x2 - x1);
     const sinMeander = Math.sin(angle) * meanderVal;
     const cosMeander = Math.cos(angle) * meanderVal;
