@@ -102,6 +102,42 @@ describe("addMeandering", () => {
     expect(lastAnchor[1]).toBe(100);
   });
 
+  it("flips meander direction at acute turns to smooth cusps, never moving anchors", () => {
+    const angleAt = (points: Point[], i: number) => {
+      const [px, py] = points[i - 1];
+      const [cx, cy] = points[i];
+      const [nx, ny] = points[i + 1];
+      const ax = px - cx;
+      const ay = py - cy;
+      const bx = nx - cx;
+      const by = ny - cy;
+      const cos = (ax * bx + ay * by) / (Math.hypot(ax, ay) * Math.hypot(bx, by));
+      return (Math.acos(Math.max(-1, Math.min(1, cos))) * 180) / Math.PI;
+    };
+
+    // A serpentine backbone whose cell turns would otherwise fold into acute "V" cusps once the
+    // perpendicular meander offsets are applied.
+    const cells = [0, 1, 2, 3, 4, 5];
+    const positions: Point[] = [[0, 0], [10, 8], [20, 0], [30, 8], [40, 0], [50, 8]];
+    const { points, anchorIndices } = meander(cells, positions, { startStep: 6 });
+
+    // Anchors (real control points: confluences, ports) must stay exactly on their cell centres —
+    // displacing them would tear tributary confluences apart or pull river ports off the course.
+    for (let k = 0; k < cells.length; k++) {
+      expect(points[anchorIndices[k]]).toEqual(positions[cells[k]]);
+    }
+
+    // No corner — at an anchor or a meander point — is left acute after flipping.
+    let minAngle = 180;
+    for (let i = 1; i < points.length - 1; i++) minAngle = Math.min(minAngle, angleAt(points, i));
+    expect(minAngle).toBeGreaterThan(88);
+
+    // Flipping mirrors a meander point across its baseline, so the amplitude is preserved (not
+    // flattened): a straight backbone still carries its meander S-curve off the centreline.
+    const straight = meander(linearCells, linearCellPositions, { startStep: 10 });
+    expect(Math.max(...straight.points.map(p => Math.abs(p[1])))).toBeGreaterThan(0);
+  });
+
   it("honours explicit anchors override", () => {
     const cells = [0, 1, 2];
     const positions: Point[] = [

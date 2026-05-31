@@ -356,46 +356,30 @@ describe("RoutesModule.addMeandering", () => {
     expect(cell3Anchor[1]).toBe(0);
   });
 
-  it("anchors the route's terminal port cell at the shifted burg coord, not the cell center", () => {
+  it("keeps a port cell on the river course — burg markers never move a river route", () => {
     setupRiverPack();
-    // Estuary port at the river-mouth terminus (cell 4): the burg is shifted off its cell center
-    // toward the sea, but the route approaches along the river. It must still reach the port marker.
-    globalThis.pack.cells.burg = [0, 0, 0, 0, 9, 0];
+    // Ports at both an interior cell (3) and the terminal cell (4), each with a burg marker shifted
+    // off the river. A river-following route ignores the markers entirely and stays on the course.
+    globalThis.pack.cells.burg = [0, 0, 0, 7, 9, 0];
     const routeCells = [1, 2, 3, 4];
     const anchors: [number, number][] = [
       [10, 0],
       [25, 0],
-      [40, 0],
-      [55, 8] // burg at cell 4 shifted off cell center (cell 4 center is [55, 0])
+      [40, 9], // interior port marker — ignored
+      [55, 8] // terminal port marker — ignored
     ];
     const result = Routes.addMeandering(routeCells, anchors);
 
-    // The final emitted point is the terminal anchor and must be the burg coord, not [55, 0].
-    const last = result[result.length - 1];
-    expect(last[2]).toBe(4);
-    expect([last[0], last[1]]).toEqual([55, 8]);
-
-    // The non-port start cell (cell 1) still anchors at its cell center, not a shifted coord.
-    expect([result[0][0], result[0][1]]).toEqual([10, 0]);
-  });
-
-  it("keeps an interior port cell on the river (only termini honor shifted burg coords)", () => {
-    setupRiverPack();
-    // Cell 3 is a port but sits in the route interior, so it stays on the river centerline.
-    globalThis.pack.cells.burg = [0, 0, 0, 7, 0, 0];
-    const routeCells = [1, 2, 3, 4];
-    const anchors: [number, number][] = [
-      [10, 0],
-      [25, 0],
-      [40, 9], // shifted burg coord must be ignored for an interior cell
-      [55, 0]
-    ];
-    const result = Routes.addMeandering(routeCells, anchors);
-
+    // Interior port (cell 3) stays at its river cell center [40, 0].
     const cell3Anchor = result.find(
       (p: number[], idx: number, arr: number[][]) => p[2] === 3 && (idx === 0 || arr[idx - 1][2] !== 3)
     );
     expect([cell3Anchor[0], cell3Anchor[1]]).toEqual([40, 0]);
+
+    // Terminal port (cell 4) also stays at its river cell center [55, 0], not the marker [55, 8].
+    const last = result[result.length - 1];
+    expect(last[2]).toBe(4);
+    expect([last[0], last[1]]).toEqual([55, 0]);
   });
 
   it("buildLinks does not create self-links from interior meander points", () => {
@@ -434,6 +418,55 @@ describe("RoutesModule.addMeandering", () => {
     for (let i = 0; i < polygon.length; i++) {
       expect(route[i][0]).toBeCloseTo(polygon[i][0], 6);
       expect(route[i][1]).toBeCloseTo(polygon[i][1], 6);
+    }
+  });
+
+  it("a partial route run overlays the river polygon exactly, even where acute angles were relaxed", () => {
+    // A sharp zig-zag river (cells 1..5 on land, 6 the sea mouth) so the meander relaxation flips
+    // acute cusps. A route covering only the interior cells [2,3,4] must still trace the same
+    // curve the polygon does over those cells — re-meandering its own slice would relax the run
+    // boundaries differently and drift off the river.
+    globalThis.pack.cells = {
+      h: [20, 25, 25, 25, 25, 25, 5],
+      r: [0, 1, 1, 1, 1, 1, 0],
+      fl: [0, 200, 200, 200, 200, 200, 0],
+      p: [
+        [0, 0],
+        [0, 0],
+        [15, 16],
+        [30, 0],
+        [45, 16],
+        [60, 0],
+        [75, 5]
+      ],
+      t: [1, 1, 1, 1, 1, 1, -1],
+      g: [0, 0, 0, 0, 0, 0, 0],
+      burg: [0, 0, 0, 0, 0, 0, 0]
+    } as any;
+    globalThis.pack.rivers = [{ i: 1, cells: [1, 2, 3, 4, 5, 6] }] as any;
+    Routes.sync();
+
+    const polygon = Rivers.addMeandering([1, 2, 3, 4, 5, 6]);
+
+    // Anchors are never moved by relaxation, so each cell center appears verbatim in the polygon.
+    const anchorIndexOf = (cell: number) => {
+      const [cx, cy] = globalThis.pack.cells.p[cell];
+      return polygon.findIndex((point: number[]) => point[0] === cx && point[1] === cy);
+    };
+    const from = anchorIndexOf(2);
+    const to = anchorIndexOf(4);
+    const polygonSlice = polygon.slice(from, to + 1);
+
+    const runCells = [2, 3, 4];
+    const route = Routes.addMeandering(
+      runCells,
+      runCells.map(c => globalThis.pack.cells.p[c])
+    );
+
+    expect(route.length).toBe(polygonSlice.length);
+    for (let i = 0; i < polygonSlice.length; i++) {
+      expect(route[i][0]).toBeCloseTo(polygonSlice[i][0], 6);
+      expect(route[i][1]).toBeCloseTo(polygonSlice[i][1], 6);
     }
   });
 });

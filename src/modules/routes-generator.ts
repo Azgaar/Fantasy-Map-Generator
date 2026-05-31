@@ -190,6 +190,7 @@ class RoutesModule {
   private connections: Map<string, boolean> = new Map();
   private riverEdges: Map<number, Map<number, RiverEdge>> = new Map();
   private riversById: Map<number, River> = new Map();
+  private riverGeometryCache: Map<number, { points: Point[]; anchorIndices: number[] }> = new Map();
 
   generate(lockedRoutes: Route[] = []) {
     this.connections = new Map();
@@ -497,72 +498,60 @@ class RoutesModule {
     return runs;
   }
 
-  // Meander a single river run, appending its [x, y, cellId] points to `result`.
-  private emitRiverRun(run: RiverRun, cells: number[], anchors: Point[], result: [number, number, number][]): void {
+  private getRiverGeometry(river: River): { points: Point[]; anchorIndices: number[] } {
+    const cached = this.riverGeometryCache.get(river.i);
+    if (cached) return cached;
+
+    const { h, p } = pack.cells;
+    const geometry = meander(river.cells, p, {
+      anchors: river.points ?? undefined,
+      meandering: 0.5,
+      startStep: h[river.cells[0]] < 20 ? 1 : 10,
+      isWaterCell: river.cells.map(c => c !== -1 && h[c] < 20),
+      bounds: { width: graphWidth, height: graphHeight }
+    });
+
+    this.riverGeometryCache.set(river.i, geometry);
+    return geometry;
+  }
+
+  private emitRiverRun(run: RiverRun, cells: number[], result: [number, number, number][]): void {
     const runCells = cells.slice(run.startIdx, run.endIdx + 1);
-    // River-following anchors are cell centers, not burg-shifted coords, so the route's curve
-    // (and its meander interpolation) overlays the river polygon exactly. Burgs sitting off
-    // their cell center would otherwise pull the route outside the river.
-    // Exception: at the route's termini, anchor on the port's shifted position so the route
-    // actually reaches the port marker. An estuary port (river + coast) is shifted toward its
-    // sea haven, yet the route approaches along the river course — without this it would stop
-    // at the river-mouth cell center instead of the port.
-    const lastIndex = cells.length - 1;
-    const runAnchors = runCells.map((cellId, idx) => {
-      const globalIdx = run.startIdx + idx;
-      const isRouteEndpoint = globalIdx === 0 || globalIdx === lastIndex;
-      if (isRouteEndpoint && pack.cells.burg[cellId]) return anchors[globalIdx];
-      return pack.cells.p[cellId];
-    });
-
-    // Feed the run to `meander` in canonical (source->mouth) order so the perpendicular
-    // meander direction matches the river polygon, then reverse the output for upstream routes.
-    const canonicalCells = run.direction === 1 ? runCells : runCells.slice().reverse();
-    const canonicalAnchors = run.direction === 1 ? runAnchors : runAnchors.slice().reverse();
-
-    // Match the river polygon's meander phase exactly: it starts stepping at 1 for lake-sourced
-    // rivers (source under water) and 10 otherwise, then increments per cell. cellCount is the
-    // full river length so the "small river" interpolation rules match too.
     const river = this.riversById.get(run.riverId);
-    const baseStep = river && pack.cells.h[river.cells[0]] < 20 ? 1 : 10;
+    if (!river) return;
 
-    const { points, anchorIndices } = meander(canonicalCells, pack.cells.p, {
-      anchors: canonicalAnchors,
-      startStep: baseStep + run.firstCanonicalIndexInRiver,
-      cellCount: river ? river.cells.length : canonicalCells.length,
-      isWaterCell: canonicalCells.map(c => c !== -1 && pack.cells.h[c] < 20)
-    });
+    const { points, anchorIndices } = this.getRiverGeometry(river);
 
-    let finalPoints = points;
-    let finalAnchorIndices = anchorIndices;
+    const lo = run.firstCanonicalIndexInRiver;
+    const hi = lo + runCells.length - 1;
+    const startPoint = anchorIndices[lo];
+    const endPoint = anchorIndices[hi];
+    let slicePoints: Point[] = points.slice(startPoint, endPoint + 1).map(point => [point[0], point[1]]);
+    let sliceAnchorIndices = anchorIndices.slice(lo, hi + 1).map(idx => idx - startPoint);
+
+    // Reverse for upstream routes so the output runs in route order.
     if (run.direction === -1) {
-      const total = points.length;
-      finalPoints = points.slice().reverse();
-      // After reversing, anchor originally at index a sits at (total - 1 - a); mapping the
-      // reversed list keeps anchorIndices ascending so the walk below stays in route order.
-      finalAnchorIndices = anchorIndices
+      const total = slicePoints.length;
+      slicePoints = slicePoints.slice().reverse();
+      sliceAnchorIndices = sliceAnchorIndices
         .slice()
         .reverse()
         .map(idx => total - 1 - idx);
     }
 
-    // Interior points inherit the preceding anchor's cellId (in route order). Skip the first
-    // anchor if the previous run already emitted it (shared confluence/boundary cell).
     let nextAnchorPtr = 0;
     let currentCellId = runCells[0];
     const skipFirst = result.length > 0 && result[result.length - 1][2] === runCells[0];
-    for (let pk = 0; pk < finalPoints.length; pk++) {
-      if (nextAnchorPtr < finalAnchorIndices.length && finalAnchorIndices[nextAnchorPtr] === pk) {
+    for (let pk = 0; pk < slicePoints.length; pk++) {
+      if (nextAnchorPtr < sliceAnchorIndices.length && sliceAnchorIndices[nextAnchorPtr] === pk) {
         currentCellId = runCells[nextAnchorPtr];
         nextAnchorPtr++;
       }
       if (pk === 0 && skipFirst) continue;
-      result.push([finalPoints[pk][0], finalPoints[pk][1], currentCellId]);
+      result.push([slicePoints[pk][0], slicePoints[pk][1], currentCellId]);
     }
   }
 
-  // Build sea-route geometry: river-following stretches curve along the river polygon, while
-  // non-river cells (open water) keep a single anchor each. Returns [x, y, cellId] points.
   addMeandering(cells: number[], anchors: Point[]): [number, number, number][] {
     const runs = this.findRiverRuns(cells);
     const result: [number, number, number][] = [];
@@ -572,7 +561,7 @@ class RoutesModule {
     while (i < cells.length) {
       if (runPtr < runs.length && runs[runPtr].startIdx === i) {
         const run = runs[runPtr++];
-        this.emitRiverRun(run, cells, anchors, result);
+        this.emitRiverRun(run, cells, result);
         i = run.endIdx; // the run's last cell may start the next run (confluence)
       } else {
         const alreadyEmitted = result.length > 0 && result[result.length - 1][2] === cells[i];
@@ -683,6 +672,7 @@ class RoutesModule {
   private buildRiverEdges() {
     this.riverEdges = new Map();
     this.riversById = new Map();
+    this.riverGeometryCache = new Map();
     for (const river of pack.rivers) {
       this.riversById.set(river.i, river);
       for (let i = 0; i < river.cells.length - 1; i++) {
