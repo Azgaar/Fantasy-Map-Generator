@@ -118,7 +118,14 @@ describe("addMeandering", () => {
     // A serpentine backbone whose cell turns would otherwise fold into acute "V" cusps once the
     // perpendicular meander offsets are applied.
     const cells = [0, 1, 2, 3, 4, 5];
-    const positions: Point[] = [[0, 0], [10, 8], [20, 0], [30, 8], [40, 0], [50, 8]];
+    const positions: Point[] = [
+      [0, 0],
+      [10, 8],
+      [20, 0],
+      [30, 8],
+      [40, 0],
+      [50, 8]
+    ];
     const { points, anchorIndices } = meander(cells, positions, { startStep: 6 });
 
     // Anchors (real control points: confluences, ports) must stay exactly on their cell centres —
