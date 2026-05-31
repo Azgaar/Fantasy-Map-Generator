@@ -2108,6 +2108,12 @@
               Population
             </button>
             <button
+              id="regenerateProduction"
+              data-tip="Click to regenerate burgs production and trade deals"
+            >
+              Production
+            </button>
+            <button
               id="regenerateProvinces"
               data-tip="Click to regenerate non-locked provinces. States will remain as they are"
             >
@@ -3410,7 +3416,7 @@
               </div>
               <div data-tip="Burg average daily production">
                 <div class="label">Production:</div>
-                <span id="burgProduction"></span>
+                <span id="burgProduction" style="display: inline-flex; flex-wrap: wrap; column-gap: 0.3em; max-width: 110px;"></span>
               </div>
               <div data-tip="Wealth is gross product per population point for the current production run. It is a per-capita productivity measure, not the burg's cumulative treasury.">
                 <div class="label">Wealth</div>

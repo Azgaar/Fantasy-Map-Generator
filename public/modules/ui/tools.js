@@ -95,6 +95,7 @@ function processFeatureRegeneration(event, button) {
   else if (button === "regenerateProvinces") regenerateProvinces();
   else if (button === "regenerateBurgs") regenerateBurgs();
   else if (button === "regenerateGoods") regenerateGoods();
+  else if (button === "regenerateProduction") regenerateProduction();
   else if (button === "regenerateEmblems") regenerateEmblems();
   else if (button === "regenerateReligions") regenerateReligions();
   else if (button === "regenerateCultures") regenerateCultures();
@@ -473,6 +474,13 @@ function regenerateGoods() {
   Goods.generate(true);
   goods.selectAll("*").remove();
   if (layerIsOn("toggleGoods")) drawGoods();
+  refreshAllEditors();
+}
+
+function regenerateProduction() {
+  Markets.generate();
+  Production.produce();
+  if (layerIsOn("toggleTrade")) TradeAnimation.restart();
   refreshAllEditors();
 }
 
