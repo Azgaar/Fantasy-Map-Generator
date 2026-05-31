@@ -360,7 +360,7 @@ describe("RoutesModule.addMeandering", () => {
     setupRiverPack();
     // Ports at both an interior cell (3) and the terminal cell (4), each with a burg marker shifted
     // off the river. A river-following route ignores the markers entirely and stays on the course.
-    globalThis.pack.cells.burg = [0, 0, 0, 7, 9, 0];
+    globalThis.pack.cells.burg = [0, 0, 0, 7, 9, 0] as any;
     const routeCells = [1, 2, 3, 4];
     const anchors: [number, number][] = [
       [10, 0],
