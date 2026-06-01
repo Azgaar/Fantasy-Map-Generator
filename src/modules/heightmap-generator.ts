@@ -419,7 +419,8 @@ class HeightmapModule {
     const step = 0.1 / desiredWidth;
 
     for (let i = 0; i < desiredWidth; i++) {
-      const exp = 0.9 - step * desiredWidth;
+      const remainingWidth = desiredWidth - i;
+      const exp = 0.9 - step * remainingWidth;
       range.forEach((r: number) => {
         this.grid.cells.c[r].forEach((e: number) => {
           if (used[e]) return;
