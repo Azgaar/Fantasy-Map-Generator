@@ -6,8 +6,8 @@ import { ensureEl, minmax } from "../utils";
 const lineGen = line<Point>().curve(curveCatmullRom.alpha(0.1));
 
 const MARKER_SYMBOLS = {
-  water: { id: "trade-marker-ship", src: "./images/markers/ship.svg" },
-  land: { id: "trade-marker-wagon", src: "./images/markers/wagon.svg" }
+  water: { id: "trade-marker-water", src: "./images/markers/ship.svg" },
+  land: { id: "trade-marker-land", src: "./images/markers/wagon.svg" }
 } as const;
 
 let symbolsReady: Promise<void> | null = null;
