@@ -9,8 +9,7 @@ const INPUTS = [
     tip: "Which trade types to display: local (burg-market), global (market-market), or both",
     key: "displayType",
     default: DEFAULTS.displayType,
-    selectOptions: ["local", "global", "both"],
-    restart: true
+    selectOptions: ["local", "global", "both"]
   },
   {
     type: "slider",
@@ -21,8 +20,7 @@ const INPUTS = [
     max: 500,
     step: 1,
     key: "concurrent",
-    default: DEFAULTS.concurrent,
-    restart: true
+    default: DEFAULTS.concurrent
   },
   {
     type: "slider",
@@ -89,16 +87,16 @@ export function open(): void {
         def.type === "slider" ? (input as HTMLInputElement).valueAsNumber : (input as HTMLSelectElement).value;
       options.trade.animation = { ...options.trade.animation, [key]: value };
       if (output) output.textContent = String(value);
-      if (def.restart) TradeAnimation.restart();
       localStorage.setItem("trade-animation", JSON.stringify(options.trade.animation));
+      TradeAnimation.restart();
     });
 
     resetBtn.on("click", () => {
       options.trade.animation = { ...options.trade.animation, [key]: def.default };
       input.value = String(def.default);
       if (output) output.textContent = String(def.default);
-      if (def.restart) TradeAnimation.restart();
       localStorage.setItem("trade-animation", JSON.stringify(options.trade.animation));
+      TradeAnimation.restart();
     });
   }
 
