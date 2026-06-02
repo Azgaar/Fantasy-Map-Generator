@@ -146,7 +146,8 @@ function restoreCustomPresets() {
 
 // run on map generation
 function applyLayersPreset() {
-  const preset = localStorage.getItem("preset") || ensureEl("layersPreset").value;
+  let preset = localStorage.getItem("preset") || ensureEl("layersPreset").value;
+  if (!(preset in presets)) preset = "political"; // fallback to default if preset is removed
   setLayersPreset(preset);
 
   const layers = presets[preset]; // layers to be turned on
