@@ -223,7 +223,12 @@ export class TradeAnimationModule {
     // animation follows the same adjusted/meandered points that the renderer draws.
     const segments: { type: Segment; points: Point[] }[] = [];
     let currentType: Segment = waterEdges[0] ? "water" : "land";
-    let currentPoints: Point[] = this.extractEdgePoints(cells[0], cells[1], pack.cells.routes[cells[0]]?.[cells[1]], routeById);
+    let currentPoints: Point[] = this.extractEdgePoints(
+      cells[0],
+      cells[1],
+      pack.cells.routes[cells[0]]?.[cells[1]],
+      routeById
+    );
 
     for (let i = 1; i < cells.length - 1; i++) {
       const fromCell = cells[i];
@@ -290,7 +295,10 @@ export class TradeAnimationModule {
         while (start > 0 && pts[start - 1][2] === toCell) start--;
         let end = i + 1;
         while (end + 1 < pts.length && pts[end + 1][2] === fromCell) end++;
-        return pts.slice(start, end + 1).reverse().map(p => [p[0], p[1]] as Point);
+        return pts
+          .slice(start, end + 1)
+          .reverse()
+          .map(p => [p[0], p[1]] as Point);
       }
     }
 
