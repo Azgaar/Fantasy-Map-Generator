@@ -221,6 +221,7 @@ async function getMapURL(
 ) {
   const cloneEl = ensureEl("map").cloneNode(true); // clone svg
   cloneEl.id = "fantasyMap";
+  window.ViewportRenderer?.prepareExportClone(cloneEl);
   document.body.appendChild(cloneEl);
   const clone = d3.select(cloneEl);
   if (!debug) clone.select("#debug")?.remove();

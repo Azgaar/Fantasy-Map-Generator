@@ -1000,7 +1000,10 @@ export function resolveVersionConflicts(mapVersion) {
       this.setAttribute("stroke-width", 1);
     });
 
-    if (options.burgs.groups.filter(g => g.isDefault).length === 0) {
+    if (!options.burgs.groups.length) {
+      // Some legacy saves have burg data, but no burg icon group nodes in the SVG.
+      options.burgs.groups = Burgs.getDefaultGroups();
+    } else if (options.burgs.groups.filter(g => g.isDefault).length === 0) {
       options.burgs.groups[0].isDefault = true;
     }
 
