@@ -211,54 +211,96 @@ export class TradeAnimationModule {
     cells.reverse();
     waterEdges.reverse();
 
-    // Build points and typed segments from the reconstructed path.
-    const getPoint = (cellId: number): Point => {
-      const burgId = pack.cells.burg[cellId];
-      const burg = burgId ? pack.burgs[burgId] : null;
-      return burg ? [burg.x, burg.y] : pack.cells.p[cellId];
-    };
-
     type Segment = "land" | "water";
 
-    // Partition cells into maximal contiguous spans of the same edge type. Adjacent spans
-    // share their boundary cell so each side keeps a clean endpoint.
-    type Span = { type: Segment; startIdx: number; endIdx: number };
-    const spans: Span[] = [];
-    let spanType: Segment = waterEdges[0] ? "water" : "land";
-    let spanStart = 0;
-    for (let i = 1; i < cells.length; i++) {
-      const edgeType: Segment = waterEdges[i - 1] ? "water" : "land";
-      if (edgeType !== spanType) {
-        spans.push({ type: spanType, startIdx: spanStart, endIdx: i - 1 });
-        spanStart = i - 1;
-        spanType = edgeType;
-      }
-    }
-    spans.push({ type: spanType, startIdx: spanStart, endIdx: cells.length - 1 });
+    if (cells.length < 2) return { points: [], segments: [] };
 
-    const points: Point[] = [];
+    // Build a fast routeId→route lookup to avoid repeated linear scans.
+    const routeById = new Map<number, { points: number[][] }>();
+    for (const route of pack.routes) routeById.set(route.i, route);
+
+    // Process the path edge-by-edge, extracting actual stored route geometry so the
+    // animation follows the same adjusted/meandered points that the renderer draws.
     const segments: { type: Segment; points: Point[] }[] = [];
+    let currentType: Segment = waterEdges[0] ? "water" : "land";
+    let currentPoints: Point[] = this.extractEdgePoints(cells[0], cells[1], pack.cells.routes[cells[0]]?.[cells[1]], routeById);
 
-    for (const span of spans) {
-      const spanCells = cells.slice(span.startIdx, span.endIdx + 1);
-      const spanAnchors = spanCells.map(getPoint);
-      let spanPoints: Point[];
-      if (span.type === "water") {
-        const meandered = Routes.addMeandering(spanCells, spanAnchors);
-        spanPoints = meandered.map(p => [p[0], p[1]]);
-      } else {
-        spanPoints = spanAnchors;
+    for (let i = 1; i < cells.length - 1; i++) {
+      const fromCell = cells[i];
+      const toCell = cells[i + 1];
+      const type: Segment = waterEdges[i] ? "water" : "land";
+
+      if (type !== currentType) {
+        segments.push({ type: currentType, points: currentPoints });
+        // New segment shares the boundary point with the previous one.
+        currentPoints = [currentPoints[currentPoints.length - 1]];
+        currentType = type;
       }
 
-      segments.push({ type: span.type, points: spanPoints });
+      const edgePoints = this.extractEdgePoints(fromCell, toCell, pack.cells.routes[fromCell]?.[toCell], routeById);
+      // Skip edgePoints[0] — it duplicates the previous edge's last point.
+      for (let k = 1; k < edgePoints.length; k++) currentPoints.push(edgePoints[k]);
+    }
+    segments.push({ type: currentType, points: currentPoints });
 
-      for (let pk = 0; pk < spanPoints.length; pk++) {
-        if (pk === 0 && points.length > 0) continue;
-        points.push(spanPoints[pk]);
+    // Flatten segments into a single points array (shared boundary points appear once).
+    const points: Point[] = [];
+    for (let si = 0; si < segments.length; si++) {
+      for (let pk = 0; pk < segments[si].points.length; pk++) {
+        if (pk === 0 && si > 0) continue;
+        points.push(segments[si].points[pk]);
       }
     }
 
     return { points, segments };
+  }
+
+  // Extract the actual rendered points for one route edge (fromCell → toCell).
+  // Looks up the stored route geometry so the animation follows the same path the renderer draws.
+  private extractEdgePoints(
+    fromCell: number,
+    toCell: number,
+    routeId: number | undefined,
+    routeById: Map<number, { points: number[][] }>
+  ): Point[] {
+    const fallback = (): Point[] => [this.getCellPoint(fromCell), this.getCellPoint(toCell)];
+
+    if (routeId === undefined) return fallback();
+    const route = routeById.get(routeId);
+    if (!route) return fallback();
+
+    const pts = route.points;
+
+    for (let i = 0; i < pts.length - 1; i++) {
+      const cellA = pts[i][2];
+      const cellB = pts[i + 1][2];
+
+      if (cellA === fromCell && cellB === toCell) {
+        // Forward direction: include all points belonging to fromCell, then all belonging to toCell.
+        let start = i;
+        while (start > 0 && pts[start - 1][2] === fromCell) start--;
+        let end = i + 1;
+        while (end + 1 < pts.length && pts[end + 1][2] === toCell) end++;
+        return pts.slice(start, end + 1).map(p => [p[0], p[1]] as Point);
+      }
+
+      if (cellA === toCell && cellB === fromCell) {
+        // Reverse direction: same slice, reversed.
+        let start = i;
+        while (start > 0 && pts[start - 1][2] === toCell) start--;
+        let end = i + 1;
+        while (end + 1 < pts.length && pts[end + 1][2] === fromCell) end++;
+        return pts.slice(start, end + 1).reverse().map(p => [p[0], p[1]] as Point);
+      }
+    }
+
+    return fallback();
+  }
+
+  private getCellPoint(cellId: number): Point {
+    const burgId = pack.cells.burg[cellId];
+    const burg = burgId ? pack.burgs[burgId] : null;
+    return burg ? [burg.x, burg.y] : pack.cells.p[cellId];
   }
 
   getDealBatches(deals: Deal[]): TradeBatch[] {
