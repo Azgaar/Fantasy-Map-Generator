@@ -13,6 +13,14 @@ interface BurgGroup {
 
 const burgLabelsRenderer = (): void => {
   TIME && console.time("drawBurgLabels");
+
+  const viewportRenderer = (window as any).ViewportRenderer;
+  if (viewportRenderer?.drawBurgLabels) {
+    viewportRenderer.drawBurgLabels();
+    TIME && console.timeEnd("drawBurgLabels");
+    return;
+  }
+
   createLabelGroups();
 
   for (const { name } of options.burgs.groups as BurgGroup[]) {
@@ -44,6 +52,12 @@ const burgLabelsRenderer = (): void => {
 };
 
 const drawBurgLabelRenderer = (burg: Burg): void => {
+  const viewportRenderer = (window as any).ViewportRenderer;
+  if (viewportRenderer?.drawBurgLabel) {
+    viewportRenderer.drawBurgLabel(burg);
+    return;
+  }
+
   const labelGroup = burgLabels.select<SVGGElement>(`#${burg.group}`);
   if (labelGroup.empty()) {
     drawBurgLabels();
@@ -67,6 +81,12 @@ const drawBurgLabelRenderer = (burg: Burg): void => {
 };
 
 const removeBurgLabelRenderer = (burgId: number): void => {
+  const viewportRenderer = (window as any).ViewportRenderer;
+  if (viewportRenderer?.removeBurgLabel) {
+    viewportRenderer.removeBurgLabel(burgId);
+    return;
+  }
+
   const existingLabel = document.getElementById(`burgLabel${burgId}`);
   if (existingLabel) existingLabel.remove();
 };

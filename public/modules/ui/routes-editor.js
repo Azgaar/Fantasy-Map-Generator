@@ -9,7 +9,10 @@ function editRoute(id) {
   ensureEl("toggleCells").dataset.forced = +!layerIsOn("toggleCells");
   if (!layerIsOn("toggleCells")) toggleCells();
 
+  const routeId = +id.slice(5);
+  window.ViewportRenderer?.forceVisible?.("routes", routeId);
   elSelected = d3.select("#" + id).on("click", addControlPoint);
+  if (elSelected.empty()) return;
 
   tip(
     "Drag control points to change the route. Click on point to remove it. Click on the route to add additional control point. For major changes please create a new route instead",
@@ -402,6 +405,9 @@ function editRoute(id) {
   }
 
   function closeRouteEditor() {
+    const routeId = +elSelected.attr("id").slice(5);
+    window.ViewportRenderer?.releaseVisible?.("routes", routeId);
+
     debug.select("#controlPoints").remove();
     debug.select("#controlCells").remove();
 

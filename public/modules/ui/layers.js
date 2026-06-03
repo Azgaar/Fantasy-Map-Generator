@@ -808,6 +808,12 @@ function toggleRoutes(event) {
 
 function drawRoutes() {
   TIME && console.time("drawRoutes");
+  if (window.ViewportRenderer?.drawRoutes) {
+    window.ViewportRenderer.drawRoutes();
+    TIME && console.timeEnd("drawRoutes");
+    return;
+  }
+
   const routePaths = {};
 
   for (const route of pack.routes) {
@@ -826,6 +832,11 @@ function drawRoutes() {
 }
 
 function drawRoute(route) {
+  if (window.ViewportRenderer?.drawRoute) {
+    window.ViewportRenderer.drawRoute(route);
+    return;
+  }
+
   routes
     .select("#" + route.group)
     .append("path")

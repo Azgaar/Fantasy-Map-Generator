@@ -88,8 +88,11 @@ function overviewRoutes() {
   function routeHighlightOn(event) {
     if (!layerIsOn("toggleRoutes")) toggleRoutes();
     const routeId = +event.target.dataset.id;
-    routes
-      .select("#route" + routeId)
+    window.ViewportRenderer?.forceVisible?.("routes", routeId);
+    const route = routes.select("#route" + routeId);
+    if (route.empty()) return;
+
+    route
       .attr("stroke", "red")
       .attr("stroke-width", 2)
       .attr("stroke-dasharray", "none");
@@ -97,16 +100,21 @@ function overviewRoutes() {
 
   function routeHighlightOff(e) {
     const routeId = +e.target.dataset.id;
-    routes
-      .select("#route" + routeId)
+    const route = routes.select("#route" + routeId);
+    if (route.empty()) return;
+
+    route
       .attr("stroke", null)
       .attr("stroke-width", null)
       .attr("stroke-dasharray", null);
+    window.ViewportRenderer?.releaseVisible?.("routes", routeId);
   }
 
   function zoomToRoute() {
     const routeId = +this.parentNode.dataset.id;
+    window.ViewportRenderer?.forceVisible?.("routes", routeId);
     const route = routes.select("#route" + routeId).node();
+    if (!route) return;
     highlightElement(route, 3);
   }
 
@@ -125,6 +133,7 @@ function overviewRoutes() {
 
   function openRouteEditor() {
     const routeId = "route" + this.parentNode.dataset.id;
+    window.ViewportRenderer?.forceVisible?.("routes", +this.parentNode.dataset.id);
     editRoute(routeId);
   }
 

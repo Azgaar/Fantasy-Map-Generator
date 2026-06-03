@@ -654,6 +654,8 @@ class RoutesModule {
 
     pack.routes = pack.routes.filter(r => r.i !== route.i);
     viewbox.select(`#route${route.i}`).remove();
+    (window as any).ViewportRenderer?.releaseVisible?.("routes", route.i);
+    (window as any).ViewportRenderer?.invalidate?.("routes");
   }
 
   getConnectivityRate(cellId: number): number {
@@ -715,7 +717,18 @@ class RoutesModule {
 
   getLength(routeId: number): number {
     const path = routes.select(`#route${routeId}`).node() as SVGPathElement;
-    return path.getTotalLength();
+    if (path) return path.getTotalLength();
+
+    const route = pack.routes.find(route => route.i === routeId);
+    if (!route) return 0;
+
+    const tempPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    tempPath.setAttribute("d", this.getPath(route));
+    tempPath.setAttribute("visibility", "hidden");
+    routes.node()?.appendChild(tempPath);
+    const length = tempPath.getTotalLength();
+    tempPath.remove();
+    return length;
   }
 }
 

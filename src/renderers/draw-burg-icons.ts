@@ -13,6 +13,14 @@ interface BurgGroup {
 
 const burgIconsRenderer = (): void => {
   TIME && console.time("drawBurgIcons");
+
+  const viewportRenderer = (window as any).ViewportRenderer;
+  if (viewportRenderer?.drawBurgIcons) {
+    viewportRenderer.drawBurgIcons();
+    TIME && console.timeEnd("drawBurgIcons");
+    return;
+  }
+
   createIconGroups();
 
   for (const { name } of options.burgs.groups as BurgGroup[]) {
@@ -42,6 +50,12 @@ const burgIconsRenderer = (): void => {
 };
 
 const drawBurgIconRenderer = (burg: Burg): void => {
+  const viewportRenderer = (window as any).ViewportRenderer;
+  if (viewportRenderer?.drawBurgIcon) {
+    viewportRenderer.drawBurgIcon(burg);
+    return;
+  }
+
   const iconGroup = burgIcons.select<SVGGElement>(`#${burg.group}`);
   if (iconGroup.empty()) {
     drawBurgIcons();
@@ -72,6 +86,12 @@ const drawBurgIconRenderer = (burg: Burg): void => {
 };
 
 const removeBurgIconRenderer = (burgId: number): void => {
+  const viewportRenderer = (window as any).ViewportRenderer;
+  if (viewportRenderer?.removeBurgIcon) {
+    viewportRenderer.removeBurgIcon(burgId);
+    return;
+  }
+
   const existingIcon = document.getElementById(`burg${burgId}`);
   if (existingIcon) existingIcon.remove();
 

@@ -201,9 +201,9 @@ function zoomRaf() {
     const didPositionChange = pendingPositionChange;
     pendingScaleChange = false;
     pendingPositionChange = false;
-
     // Uses global values, so each frame always draws using the latest positioning values
     viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
+    window.ViewportRenderer?.scheduleUpdate?.("transform");
 
     if (didPositionChange) {
       if (layerIsOn("toggleCoordinates")) drawCoordinates();
@@ -251,6 +251,9 @@ var graphHeight = +mapHeightInput.value;
 // svg canvas resolution, can be changed
 let svgWidth = graphWidth;
 let svgHeight = graphHeight;
+
+window.getMapTransform = () => ({scale, viewX, viewY, svgWidth, svgHeight, graphWidth, graphHeight});
+window.ViewportRenderer?.registerBurgLayer?.();
 
 landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanPattern
@@ -408,25 +411,34 @@ function focusOn() {
 }
 
 let isAssistantLoaded = false;
+let assistantImportPromise = null;
 function toggleAssistant() {
   const showAssistant = document.getElementById("azgaarAssistant")?.value === "show";
   if (showAssistant) {
     if (isAssistantLoaded) {
       const assistantContainer = document.getElementById("chat-widget-container");
       if (assistantContainer) assistantContainer.style.display = "block";
-    } else {
-      import("./libs/openwidget.min.js").then(() => {
+    } else if (!assistantImportPromise) {
+      assistantImportPromise = import("./libs/openwidget.min.js").then(() => {
         isAssistantLoaded = true;
+        if (document.getElementById("azgaarAssistant")?.value !== "show") {
+          const assistantContainer = document.getElementById("chat-widget-container");
+          if (assistantContainer) assistantContainer.style.display = "none";
+        }
         setTimeout(() => {
           const bubble = document.getElementById("chat-widget-minimized");
           if (bubble) {
             bubble.dataset.tip = "Click to open the Assistant";
             bubble.on("mouseover", showDataTip);
           }
+          if (document.getElementById("azgaarAssistant")?.value !== "show") {
+            const assistantContainer = document.getElementById("chat-widget-container");
+            if (assistantContainer) assistantContainer.style.display = "none";
+          }
         }, 5000);
       });
     }
-  } else if (isAssistantLoaded) {
+  } else if (isAssistantLoaded || assistantImportPromise) {
     const assistantContainer = document.getElementById("chat-widget-container");
     if (assistantContainer) assistantContainer.style.display = "none";
   }
