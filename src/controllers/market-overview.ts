@@ -15,13 +15,13 @@ export function open(marketId: number): void {
   }
 
   closeDialogs("#marketOverview, .stable");
-  if (!layerIsOn("toggleMarkets")) toggleMarkets();
+  if (!layerIsOn("toggleGoods")) toggleGoods();
 
   activeMarketId = marketId;
   marketOverviewAddLines();
 
   $("#marketOverview").dialog({
-    title: `Market Overview: ${getMarketCenterName(market)}`,
+    title: `Market Stock: ${getMarketCenterName(market)}`,
     resizable: false,
     width: "auto",
     close: closeMarketOverview,
@@ -74,7 +74,14 @@ function marketOverviewAddLines() {
     </div>`;
   }
   ensureEl("marketOverviewGoodsBody").innerHTML = lines || "No market goods available";
-  ensureEl("marketOverviewOwner").innerHTML = getOwnerStateName(market);
+
+  const center = pack.burgs[market.centerBurgId];
+  const state = pack.states[center?.state || 0];
+  const coaId = `stateCOA${state.i}`;
+  if (state) COArenderer.trigger(coaId, state.coa);
+
+  ensureEl("marketOverviewInfo").innerHTML =
+    `<svg class="coaIcon" viewBox="0 0 200 200"><use href="#${coaId}"></use></svg><b>Owner:</b> ${state.fullName || state.name}`;
 
   const burgs = pack.burgs.filter(b => !b.removed && b.market === market.i);
   const totalUnits = Object.values(market.goods).reduce((sum, mg) => sum + mg.stock, 0);
@@ -85,13 +92,6 @@ function marketOverviewAddLines() {
 
   applySorting(ensureEl("marketOverviewHeader"));
   $("#marketOverview").dialog({ width: fitContent() });
-}
-
-function getOwnerStateName(market: Market): string {
-  const center = pack.burgs[market.centerBurgId] as Burg | undefined;
-  if (!center) return "Unknown state";
-  if (center.state === undefined) return "Independent";
-  return pack.states[center.state]?.fullName || `State ${center.state}`;
 }
 
 function getMarketCenterName(market: Market): string {
@@ -123,7 +123,6 @@ declare global {
     MarketOverview: { open: typeof open };
     MarketDealsOverview: { open: (marketId: number) => void };
   }
-  var toggleMarkets: () => void;
 }
 
 window.MarketOverview = { open };

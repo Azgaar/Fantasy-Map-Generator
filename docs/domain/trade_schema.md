@@ -130,7 +130,6 @@ There is no separate `updateMarketDemand` step; demand factors are recomputed pe
 
 ### Planning structures (used by Production and Trade)
 
-- `goodById`: sparse array of all goods, indexed by `good.i`
 - `productiveGoods`: dense array of manufacturable goods
 - `recipesByOutput`: array of arrays of recipes, indexed by `good.i`
 - `minWorkersByGood`: lower-bound worker count per good through the cheapest recipe chain

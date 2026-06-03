@@ -1,14 +1,14 @@
-import { easeSinIn } from "d3";
 import type { Burg } from "../modules/burgs-generator";
 import type { Deal, Market } from "../modules/markets-generator";
-import { debounce, ensureEl, formatPrice, rn } from "../utils";
+import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-goods";
+import { ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
 
 export function open(): void {
   if (customization) return;
   closeDialogs("#marketsOverview, .stable");
-  if (!layerIsOn("toggleMarkets")) toggleMarkets();
+  if (!layerIsOn("toggleGoods")) toggleGoods();
 
   marketsOverviewAddLines();
 
@@ -81,17 +81,18 @@ function marketsOverviewAddLines(): void {
       <div data-tip="Number of cells in market territory" data-type="cells" class="marketCells" style="width:3.5em">${cells}</div>
       <div data-tip="Number of burgs in market territory" data-type="burgs" class="marketBurgs" style="width:3.5em">${burgs}</div>
       <div data-tip="Total stock of all goods in this market" data-type="stock" class="marketStock" style="width:5em">${stock}</div>
-      <div data-tip="Total gross sales revenue" data-type="sales" class="marketSales" style="width:6em">${formatPrice(sales)}</div>
-      <div data-tip="Total purchase spending" data-type="buys" class="marketBuysCol" style="width:6em">${formatPrice(buys)}</div>
-      <div data-tip="Market value: net trading flow plus unsold inventory value minus tax" data-type="value" class="marketValue" style="width:6em">${formatPrice(value)}</div>
+      <div data-tip="Total gross sales revenue" data-type="sales" class="marketSales" style="width:6em">${formatPrice(rn(sales))}</div>
+      <div data-tip="Total purchase spending" data-type="buys" class="marketBuysCol" style="width:6em">${formatPrice(rn(buys))}</div>
+      <div data-tip="Market value: net trading flow plus unsold inventory value minus tax" data-type="value" class="marketValue" style="width:6em">${formatPrice(rn(value))}</div>
     </div>`;
   }
 
   body.innerHTML = lines;
 
   body.querySelectorAll<HTMLElement>(".states.market").forEach(row => {
-    row.on("mouseenter", highlightMarketOn);
-    row.on("mouseleave", highlightMarketOff);
+    const marketId = row.dataset.id!;
+    row.on("mouseenter", () => highlightMarketOn(marketId));
+    row.on("mouseleave", () => highlightMarketOff(marketId));
   });
 
   const count = markets.length;
@@ -103,25 +104,6 @@ function marketsOverviewAddLines(): void {
   );
   applySorting(ensureEl("marketsOverviewHeader"));
   $("#marketsOverview").dialog({ width: fitContent() });
-}
-
-const highlightMarketOn = debounce((ev: Event) => {
-  const marketId = +(ev.currentTarget as HTMLElement).dataset.id!;
-  if (!layerIsOn("toggleMarkets")) return;
-  markets
-    .select(`#market${marketId} circle`)
-    .raise()
-    .transition()
-    .duration(2000)
-    .ease(easeSinIn)
-    .attr("stroke-width", 2.5)
-    .attr("stroke", "#d0240f");
-}, 200);
-
-function highlightMarketOff(ev: Event): void {
-  const marketId = +(ev.currentTarget as HTMLElement).dataset.id!;
-  if (!layerIsOn("toggleMarkets")) return;
-  markets.select(`#market${marketId} circle`).transition().attr("stroke-width", null).attr("stroke", null);
 }
 
 function getMarketTotalStock(market: Market): number {

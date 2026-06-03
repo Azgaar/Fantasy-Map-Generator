@@ -127,28 +127,24 @@ class Resampler {
 
   private restoreEconomy(parentMap: ParentMapDefinition) {
     pack.goods = parentMap.pack.goods;
+    Goods.sync();
 
     // Drop markets whose center burg is no longer on the map.
-    const validMarketIds = new Set<number>();
     pack.markets = (parentMap.pack.markets || []).filter(market => {
       const burg = pack.burgs[market.centerBurgId];
-      const valid = Boolean(burg && !burg.removed);
-      if (valid) validMarketIds.add(market.i);
-      return valid;
+      return Boolean(burg && !burg.removed);
     });
 
     Markets.expandTerritories(pack.markets);
-    pack.deals = (parentMap.pack.deals || []).filter(deal => {
-      const sellerOk =
-        deal.sellerType === "burg"
-          ? Boolean(pack.burgs[deal.seller] && !pack.burgs[deal.seller].removed)
-          : validMarketIds.has(deal.seller);
-      const buyerOk =
-        deal.buyerType === "burg"
-          ? Boolean(pack.burgs[deal.buyer] && !pack.burgs[deal.buyer].removed)
-          : validMarketIds.has(deal.buyer);
-      return sellerOk && buyerOk;
-    });
+
+    // Reset market stocks so Production.produce() starts from a clean slate
+    // (territory boundaries changed, so inherited parent stocks would be stale).
+    for (const market of pack.markets) {
+      market.goods = {};
+    }
+
+    pack.deals = [];
+    Production.produce();
   }
 
   private restoreRivers(

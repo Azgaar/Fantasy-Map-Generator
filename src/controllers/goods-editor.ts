@@ -11,19 +11,47 @@ import { ProductionChains } from "./production-chains";
 
 let isInitialized = false;
 const visibleTags = new Set<string>();
-const pinnedGoods = new Set<number>();
+const displayedGoods = new Set<number>();
+let displayedGoodsInitialized = false;
+
+function ensureDisplayedGoodsInitialized() {
+  if (displayedGoodsInitialized) return;
+  displayedGoodsInitialized = true;
+  if (!pack.goods?.length) return;
+
+  const production = getProduction();
+  let bestId = pack.goods[0].i;
+  let bestTotal = -1;
+  for (const good of pack.goods) {
+    const p = production[good.i];
+    const total = p ? p.burg + p.cell + p.bonus : 0;
+    if (total > bestTotal) {
+      bestTotal = total;
+      bestId = good.i;
+    }
+  }
+  displayedGoods.add(bestId);
+}
+
+function getDisplayedGoods(): Set<number> {
+  ensureDisplayedGoodsInitialized();
+  for (const id of displayedGoods) if (!Goods.get(id)) displayedGoods.delete(id); // drop goods removed since selection
+  return displayedGoods;
+}
 
 export function open() {
   if (customization) return;
   closeDialogs("#goodsEditor, .stable");
+
+  ensureDisplayedGoodsInitialized();
   if (!layerIsOn("toggleGoods")) toggleGoods();
+  else drawGoods(displayedGoods);
 
   goodsEditorAddLines();
 
   $("#goodsEditor").dialog({
     title: "Goods Editor",
     resizable: false,
-    width: "auto",
     close: closeGoodsEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
@@ -36,7 +64,7 @@ export function open() {
     ensureEl("goodsAdd").on("click", () => openGoodDialog());
     ensureEl("goodsRestore").on("click", goodsRestoreDefaults);
     ensureEl("goodsExport").on("click", downloadGoodsData);
-    ensureEl("goodsUnpinAll").on("click", unpinAllGoods);
+    ensureEl("goodsDisplayAll").on("change", toggleAllDisplayed);
     ensureEl("goodsChains").on("click", () => ProductionChains.open());
 
     ensureEl("goodsBody").on("click", ev => {
@@ -46,7 +74,7 @@ export function open() {
       const good = Goods.get(+line.dataset.id!);
       if (!good) return;
       if (cl.contains("goodEdit")) return openGoodDialog(good);
-      if (cl.contains("icon-pin")) return pinGood(good, el);
+      if (cl.contains("goodDisplayed")) return toggleDisplayedGood(good, el as HTMLInputElement);
       if (cl.contains("icon-trash-empty")) return removeGood(good, line);
     });
 
@@ -77,6 +105,7 @@ function goodsEditorAddLines() {
     const stockTip = `Total stock in all markets and burg inventories: ${stock} units`;
 
     lines += /*html*/ `<div class="states goods" data-id=${good.i} data-name="${good.name}" data-color="${good.color}" data-baseprice="${good.value}" data-produced="${produced}" data-stock="${stock}" data-type="${types.join(",")}">
+        <input type="checkbox" data-tip="Toggle this good on the Goods map" class="native goodDisplayed hide" style="padding: 0; margin: 0; vertical-align: middle; width: 1.2em;" ${displayedGoods.has(good.i) ? "checked" : ""} />
         <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
           <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
           <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
@@ -93,7 +122,6 @@ function goodsEditorAddLines() {
         </div>
         <div data-tip="Base (initial) price. Click to compare prices across markets" class="goodBasePrice pointer">🟡 ${good.value}</div>
         <span data-tip="Edit good" class="icon-pencil goodEdit hide"></span>
-        <span data-tip="Toggle good exclusive visibility (pin)" class="icon-pin ${pinnedGoods.has(good.i) ? "" : "inactive"} hide"></span>
         <span data-tip="Remove good" class="icon-trash-empty hide goodRemove"></span>
       </div>`;
   }
@@ -135,6 +163,7 @@ function goodsEditorAddLines() {
     body.dataset.type = "absolute";
     togglePercentageMode();
   }
+  updateDisplayAllCheckbox();
   applySorting(ensureEl("goodsHeader")!);
   applyTagVisibilityFilter();
   $("#goodsEditor").dialog({ width: fitContent() });
@@ -581,8 +610,6 @@ function enterResourceAssignMode(this: HTMLElement) {
   viewbox.on("click", changeResourceOnCellClick);
 
   body.querySelector<HTMLElement>("div.states:not(.hiddenByTag)")?.classList.add("selected");
-
-  if (pinnedGoods.size) unpinAllGoods();
 }
 
 function selectResourceOnLineClick(this: HTMLElement) {
@@ -608,11 +635,11 @@ function changeResourceOnCellClick(this: SVGElement) {
     const resource = Goods.get(resourceId);
     if (!resource) return;
     pack.cells.good[cellId] = resourceId;
+    displayedGoods.add(resourceId); // keep the freshly assigned good visible on the map
   }
 
-  goods.selectAll("*").remove();
   goodsEditorAddLines();
-  drawGoods(pinnedGoods);
+  drawGoods(displayedGoods);
 }
 
 function exitResourceAssignMode(close?: string) {
@@ -1005,11 +1032,12 @@ function openGoodDialog(editedGood?: Good) {
             biome: biomeProduction || undefined,
             recipes: recipes.length ? recipes : undefined
           });
+          Goods.sync();
         }
 
         tip(editedGood ? "Good is updated" : "Good is added", false, "success", 5000);
         goodsEditorAddLines();
-        drawGoods(pinnedGoods);
+        drawGoods(displayedGoods);
         $("#alert").dialog("close");
       }
     }
@@ -1048,25 +1076,33 @@ function downloadGoodsData() {
   downloadFile(data, name);
 }
 
-function pinGood(good: Good, el: HTMLElement) {
-  if (pinnedGoods.has(good.i)) {
-    pinnedGoods.delete(good.i);
-  } else {
-    pinnedGoods.add(good.i);
-  }
+function toggleDisplayedGood(good: Good, el: HTMLInputElement) {
+  if (el.checked) displayedGoods.add(good.i);
+  else displayedGoods.delete(good.i);
 
-  el.classList.toggle("inactive");
-  const unpinAll = ensureEl("goodsUnpinAll");
-  pinnedGoods.size ? unpinAll.classList.remove("hidden") : unpinAll.classList.add("hidden");
-
-  drawGoods(pinnedGoods);
+  updateDisplayAllCheckbox();
+  drawGoods(displayedGoods);
 }
 
-function unpinAllGoods() {
-  pinnedGoods.clear();
-  drawGoods();
-  goodsEditorAddLines();
-  ensureEl("goodsUnpinAll").classList.add("hidden");
+function toggleAllDisplayed(this: HTMLInputElement) {
+  displayedGoods.clear();
+  if (this.checked) for (const good of pack.goods) displayedGoods.add(good.i);
+
+  ensureEl("goodsBody")
+    .querySelectorAll<HTMLInputElement>(".goodDisplayed")
+    .forEach(checkbox => {
+      const id = Number((checkbox.closest(".states") as HTMLElement).dataset.id);
+      checkbox.checked = displayedGoods.has(id);
+    });
+
+  drawGoods(displayedGoods);
+}
+
+function updateDisplayAllCheckbox() {
+  const master = ensureEl<HTMLInputElement>("goodsDisplayAll");
+  const total = pack.goods.length;
+  master.checked = total > 0 && displayedGoods.size === total;
+  master.indeterminate = displayedGoods.size > 0 && displayedGoods.size < total;
 }
 
 function removeGood(good: Good, line: HTMLElement) {
@@ -1081,10 +1117,13 @@ function removeGood(good: Good, line: HTMLElement) {
     }
 
     pack.goods = pack.goods.filter(g => g.i !== good.i);
+    Goods.sync();
+    displayedGoods.delete(good.i);
     line.remove();
     ensureEl("goodsNumber").innerHTML = String(pack.goods.length);
 
-    drawGoods(pinnedGoods);
+    updateDisplayAllCheckbox();
+    drawGoods(displayedGoods);
   };
   confirmationDialog({
     title: "Remove resource",
@@ -1100,7 +1139,7 @@ function closeGoodsEditor() {
 }
 
 declare global {
-  var GoodsEditor: { open: () => void };
+  var GoodsEditor: { open: () => void; getDisplayedGoods: () => Set<number> };
 }
 
-window.GoodsEditor = { open };
+window.GoodsEditor = { open, getDisplayedGoods };

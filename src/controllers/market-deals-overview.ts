@@ -100,6 +100,7 @@ function renderDealLine(deal: Deal): string {
   const counterparty = getCounterparty(deal);
   const direction = getDirection(deal);
   const incomeColor = dealNet >= 0 ? "#2a6" : "#c44";
+  const backColor = dealNet >= 0 ? "#dff0d8" : "#f2dede";
 
   return /* html */ `<div class="states marketDeal" data-id="${deal.i}" data-good="${good.name}" data-direction="${direction}" data-units="${rn(deal.units, 2)}" data-counterparty="${counterparty.type}_${party?.name}" data-income="${dealNet}">
       <svg data-tip="Good icon" width="1.3em" height="1.3em" class="goodIcon">
@@ -107,7 +108,7 @@ function renderDealLine(deal: Deal): string {
         <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
       </svg>
       <div data-tip="Good name" class="goodName">${good.name}</div>
-      <div><span class="marketBadge" style="background:#f5d9d6; color:${incomeColor}">${direction.toUpperCase()}</span></div>
+      <div><span class="marketBadge" style="background:${backColor}; color:${incomeColor}">${direction.toUpperCase()}</span></div>
       <div class="marketDealParty pointer" data-tip="Click to zoom">
         <div class="${counterparty.type === "burg" ? "icon-dot-circled" : "icon-store"}" style="display:inline-block; width: 0.8em; ${counterparty.type === "market" ? "font-size: 0.85em;" : ""}"></div>
         <div style="display:inline-block; width: 6.8em;">${party?.name}</div>

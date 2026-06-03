@@ -370,18 +370,25 @@ function selectStyleElement() {
     emblemsBurgSizeInput.value = emblems.select("#burgEmblems").attr("data-size") || 1;
   }
 
-  if (styleElement === "goods") {
+  if (styleElement === "goodsIcons") {
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = el.attr("stroke-width") || "";
     styleGoods.style.display = "block";
     styleGoodsCircle.checked = +el.attr("data-circle");
   }
 
-  if (styleElement === "markets") {
+  if (styleElement === "goodsBurgs") {
+    styleStrokeWidth.style.display = "block";
+    styleStrokeWidthInput.value = el.attr("stroke-width") || "0.2";
+    styleStroke.style.display = "block";
+    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#41414f";
+  }
+
+  if (styleElement === "goodsMarkets") {
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = el.attr("stroke-width") || "0.5";
-    styleMarkets.style.display = "block";
-    styleMarketsFillOpacity.value = el.attr("fill-opacity") || "0.28";
+    styleGoodsMarkets.style.display = "block";
+    styleGoodsMarketsFillOpacity.value = el.attr("fill-opacity") || "0";
   }
 
   // update group options
@@ -983,15 +990,14 @@ emblemsBurgSizeInput.on("change", e => {
 });
 
 styleGoodsCircle.addEventListener("change", function () {
-  goods.attr("data-circle", +this.checked);
-  goods.selectAll("*").remove();
-  drawGoods();
+  goods.select("#goodsIcons").attr("data-circle", +this.checked);
+  drawGoods(GoodsEditor?.getDisplayedGoods?.());
 });
 
-styleMarketsFillOpacity.on("input", e => {
-  markets.attr("fill-opacity", e.target.value);
-  if (layerIsOn("toggleMarkets")) drawMarkets();
+styleGoodsMarketsFillOpacity.on("input", e => {
+  goods.select("#goodsMarkets").attr("fill-opacity", e.target.value);
 });
+
 
 // request a URL to image to be used as a texture
 function textureProvideURL() {

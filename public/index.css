@@ -142,9 +142,16 @@ a {
 #armies,
 #ice,
 #emblems,
-#goods,
-#markets {
+#goodsCells,
+#goodsIcons,
+#goodsBurgs,
+#goodsMarkets {
   cursor: pointer;
+}
+
+#goodsMarkets > g > path {
+  user-select: none;
+  pointer-events: none;
 }
 
 #temperature {
@@ -1453,7 +1460,7 @@ div.totalLine > div {
   display: inline-block;
 }
 
-div.states > input {
+div.states > input:not([type="checkbox"]) {
   width: 7em;
   background: none;
   border: 0;

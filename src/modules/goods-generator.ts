@@ -28,6 +28,8 @@ export interface Good {
   color: string;
 }
 
+export const BONUS_RESOURCE_PRODUCTION = 5;
+
 export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;
 export type DemandCategory = (typeof DEMAND_PRIORITY)[number];
 export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {
@@ -45,36 +47,13 @@ export const DEMAND_CATEGORY_ICONS: Record<DemandCategory, string> = {
   luxury: "💎"
 };
 
-/** Extra raw stock per map cell with an explicit resource (`cells.good`) — burg bonus and rural market seeding. */
-export const BONUS_RESOURCE_PRODUCTION = 5;
-
 export function getDemandTargets(population: number): number[] {
   return DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
 }
 
-/** Satisfied demand by category from a sparse `inventory[goodId]` and good definitions (same basis as trade/sim). */
-export function getDemandCoverageFromNumericInventory(inventory: number[], goodById: Good[]): number[] {
-  const demandCoverage: number[] = Array(DEMAND_PRIORITY.length).fill(0);
-  for (let goodId = 0; goodId < inventory.length; goodId++) {
-    const amount = inventory[goodId] || 0;
-    if (amount <= 0) continue;
-    const good = goodById[goodId];
-    if (!good) continue;
-    for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
-      const demandCategory = DEMAND_PRIORITY[categoryIndex] as DemandCategory;
-      const coverageWeight = good.demandCoverage?.[demandCategory] || 0;
-      if (!coverageWeight) continue;
-      demandCoverage[categoryIndex] += amount * coverageWeight;
-    }
-  }
-  return demandCoverage;
-}
-
 type BonusType = "population" | "prestige" | "defence" | "fleet" | "infantry" | "archers" | "cavalry" | "artillery";
 
-type GoodData = Omit<Good, "i"> & {
-  recipes?: Record<string, number>[];
-};
+type GoodData = Omit<Good, "i"> & { recipes?: Record<string, number>[] };
 const GOODS_DATA: GoodData[] = [
   {
     name: "Wood",
@@ -1080,22 +1059,7 @@ const GOODS_DATA: GoodData[] = [
 export class GoodsModule {
   private cells!: PackedGraph["cells"];
   private cellId: number = 0;
-
-  private readonly defaultGoods = GOODS_DATA.map((good, index): Good => {
-    let recipes: Good["recipes"];
-    if ("recipes" in good && good.recipes) {
-      recipes = good.recipes.map(recipe => {
-        const entries = Object.entries(recipe).map(([key, value]) => {
-          const i = GOODS_DATA.findIndex(g => g.name === key);
-          if (i === -1) throw new Error(`Unknown ingredient ${key} in good ${good.name}`);
-          return [i, value];
-        });
-        return Object.fromEntries(entries);
-      });
-    }
-
-    return { i: index, ...good, ...(recipes && { recipes }) };
-  });
+  private goodById: Good[] = [];
 
   generate(regenerate: boolean = false) {
     TIME && console.time("generateGoods");
@@ -1133,6 +1097,7 @@ export class GoodsModule {
     }
 
     TIME && console.timeEnd("generateGoods");
+    this.sync();
   }
 
   getMethods() {
@@ -1178,8 +1143,29 @@ export class GoodsModule {
   }
 
   get(i: number): Good | undefined {
-    return pack.goods.find((resource: Good) => resource.i === i);
+    return this.goodById[i];
   }
+
+  sync() {
+    this.goodById = [];
+    for (const good of pack.goods) this.goodById[good.i] = good;
+  }
+
+  private readonly defaultGoods = GOODS_DATA.map((good, index): Good => {
+    let recipes: Good["recipes"];
+    if ("recipes" in good && good.recipes) {
+      recipes = good.recipes.map(recipe => {
+        const entries = Object.entries(recipe).map(([key, value]) => {
+          const i = GOODS_DATA.findIndex(g => g.name === key);
+          if (i === -1) throw new Error(`Unknown ingredient ${key} in good ${good.name}`);
+          return [i + 1, value];
+        });
+        return Object.fromEntries(entries);
+      });
+    }
+
+    return { i: index + 1, ...good, ...(recipes && { recipes }) };
+  });
 }
 
 declare global {

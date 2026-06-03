@@ -2,9 +2,8 @@ import { quadtree } from "d3-quadtree";
 import { minmax } from "../utils";
 import { getColors } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
-import { DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import type { DemandCategory, Good } from "./goods-generator";
-import { BONUS_RESOURCE_PRODUCTION, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "./goods-generator";
+import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "./goods-generator";
 
 const PRICE_FLOOR_FACTOR = 0.25;
 const PRICE_CEILING_FACTOR = 3.0;
@@ -32,14 +31,10 @@ export type Deal = {
 };
 
 export class MarketsModule {
-  private goodById: Good[] = [];
   private marketById: Market[] = [];
 
   generate(): Market[] {
     TIME && console.time("generateMarkets");
-    const goods = pack.goods;
-    for (const g of goods) this.goodById[g.i] = g;
-
     const markets = this.createMarkets();
     this.expandMarkets(markets);
 
@@ -82,9 +77,8 @@ export class MarketsModule {
         markets.push(market);
         this.marketById[marketId] = market;
         tree.add([x, y, marketId]);
+        minSpacing += 1;
       }
-
-      minSpacing += 1;
     }
 
     const colors = getColors(markets.length);
@@ -98,8 +92,6 @@ export class MarketsModule {
   expandTerritories(markets: Market[] = pack.markets): Uint16Array {
     this.marketById = [];
     for (const market of markets) this.marketById[market.i] = market;
-    this.goodById = [];
-    for (const good of pack.goods) this.goodById[good.i] = good;
     return this.expandMarkets(markets);
   }
 
@@ -183,27 +175,11 @@ export class MarketsModule {
       const market = this.marketById[pack.cells.market[cellId]];
       if (!market) continue;
 
-      const biomeId = pack.cells.biome[cellId];
-      const bonusGoodId = pack.cells.good[cellId];
-      const population = pack.cells.pop[cellId];
-      const cultureId = pack.cells.culture[cellId];
-      const cultureType = pack.cultures[cultureId]?.type || DEFAULT_CULTURE_TYPE;
-
-      if (bonusGoodId) {
-        const good = this.goodById[bonusGoodId];
-        if (!good) continue;
-        const bonusGood = this.getMarketGood(market, good);
-        const modifier = good.culture?.[cultureType] || 1;
-        bonusGood.stock = rn(bonusGood.stock + BONUS_RESOURCE_PRODUCTION * modifier, 2);
-      }
-
-      if (population <= 0) continue;
-      const biomeRuralGoods = biomeProduction[biomeId] || [];
-      for (const { goodId, production } of biomeRuralGoods) {
-        const good = this.goodById[goodId];
+      const produced = Production.getCellProduction(cellId, biomeProduction);
+      for (const [goodId, amount] of produced) {
+        const good = Goods.get(goodId)!;
         const marketGood = this.getMarketGood(market, good);
-        const modifier = good?.culture?.[cultureType] || 1;
-        marketGood.stock = rn(marketGood.stock + population * production * modifier, 2);
+        marketGood.stock = rn(marketGood.stock + amount, 2);
       }
     }
   }
@@ -245,7 +221,7 @@ export class MarketsModule {
         for (const recipe of good.recipes) {
           for (const [ingIdStr, amount] of Object.entries(recipe)) {
             const ingId = +ingIdStr;
-            const ing = this.goodById[ingId];
+            const ing = Goods.get(ingId);
             if (!ing) continue;
             totalMarketCost += amount * this.getMarketGood(market, ing).price;
           }
@@ -267,7 +243,7 @@ export class MarketsModule {
   }
 
   quoteMarket(market: Market, goodId: number): { stock: number; buyPrice: number; sellPrice: number } {
-    const good = this.goodById[goodId] ?? Goods.get(goodId);
+    const good = Goods.get(goodId);
     if (!good) return { stock: 0, buyPrice: 0, sellPrice: 0 };
     const row = this.getMarketGood(market, good);
     return {
@@ -531,7 +507,7 @@ export class MarketsModule {
       let totalBaseCost = 0;
       for (const recipe of good.recipes) {
         for (const [ingIdStr, amount] of Object.entries(recipe)) {
-          const ing = this.goodById[+ingIdStr];
+          const ing = Goods.get(+ingIdStr);
           if (ing) totalBaseCost += amount * ing.value;
         }
       }

@@ -75,21 +75,13 @@ function getDefaultPresets() {
     goods: [
       "toggleBorders",
       "toggleBurgIcons",
+      "toggleCells",
       "toggleGoods",
       "toggleLakes",
       "toggleRivers",
-      "toggleScaleBar",
-      "toggleStates",
-      "toggleVignette"
-    ],
-    markets: [
-      "toggleBorders",
-      "toggleBurgIcons",
-      "toggleLakes",
-      "toggleMarkets",
-      "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
+      "toggleTrade",
       "toggleVignette"
     ],
     trade: [
@@ -247,7 +239,6 @@ function drawLayers() {
   if (layerIsOn("toggleCultures")) drawCultures();
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleMarkets")) drawMarkets();
   if (layerIsOn("toggleTrade")) TradeAnimation.start();
   if (layerIsOn("toggleZones")) drawZones();
   if (layerIsOn("toggleBorders")) drawBorders();
@@ -256,7 +247,7 @@ function drawLayers() {
   if (layerIsOn("togglePopulation")) drawPopulation();
   if (layerIsOn("toggleIce")) drawIce();
   if (layerIsOn("togglePrecipitation")) drawPrecipitation();
-  if (layerIsOn("toggleGoods")) drawGoods();
+  if (layerIsOn("toggleGoods")) drawGoods(GoodsEditor?.getDisplayedGoods?.());
   if (layerIsOn("toggleEmblems")) drawEmblems();
   if (layerIsOn("toggleLabels")) drawLabels();
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
@@ -900,19 +891,6 @@ function toggleMarkers(event) {
   }
 }
 
-function toggleMarkets(event) {
-  if (!layerIsOn("toggleMarkets")) {
-    turnButtonOn("toggleMarkets");
-    $("#markets").fadeIn();
-    if (!markets.selectAll("g").size()) drawMarkets();
-    if (event && isCtrlClick(event)) editStyle("markets");
-  } else {
-    if (event && isCtrlClick(event)) return editStyle("markets");
-    $("#markets").fadeOut();
-    turnButtonOff("toggleMarkets");
-  }
-}
-
 function toggleTrade(event) {
   if (!layerIsOn("toggleTrade")) {
     turnButtonOn("toggleTrade");
@@ -1097,7 +1075,6 @@ function getLayer(id) {
   if (id === "toggleLabels") return $("#labels");
   if (id === "toggleBurgIcons") return $("#icons");
   if (id === "toggleMarkers") return $("#markers");
-  if (id === "toggleMarkets") return $("#markets");
   if (id === "toggleTrade") return $("#tradeAnimation");
   if (id === "toggleRulers") return $("#ruler");
 }

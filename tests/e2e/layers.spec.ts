@@ -139,32 +139,6 @@ test.describe('map layers', () => {
     expect(html).toMatchSnapshot('borders.html')
   })
 
-  test('markets layer', async () => {
-    // markets is off by default — toggle it on to render market regions
-    await sharedPage.evaluate(() => (window as any).toggleMarkets())
-    await sharedPage.waitForTimeout(300)
-
-    const marketsEl = sharedPage.locator('#markets')
-    await expect(marketsEl).toBeAttached()
-
-    // At least one market <g data-id="N"> group must be rendered
-    const firstGroup = marketsEl.locator('g[data-id]').first()
-    await expect(firstGroup).toBeAttached()
-
-    // Every market group has a path element for the region polygon
-    await expect(firstGroup.locator('path')).toBeAttached()
-
-    // Every market group has a circle at the centre burg
-    await expect(firstGroup.locator('circle')).toBeAttached()
-
-    const html = await marketsEl.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('markets.html')
-
-    // Restore: toggle markets off
-    await sharedPage.evaluate(() => (window as any).toggleMarkets())
-    await sharedPage.waitForTimeout(200)
-  })
-
   // Cultural layers
   test('cultures layer', async () => {
     const cults = sharedPage.locator('#cults')
@@ -277,12 +251,26 @@ test.describe('map layers', () => {
 
   // Economy layers (off by default — require activation)
   test('goods layer', async () => {
-    // goods is off by default — toggle it on to render good icons on cells
-    await sharedPage.evaluate(() => (window as any).toggleGoods())
+    // goods is off by default — toggle it on, then display every good so all
+    // four sub-groups (markets, heatmap cells, icons, burg panels) render
+    await sharedPage.evaluate(() => {
+      ;(window as any).toggleGoods()
+      const all = new Set((window as any).pack.goods.map((g: any) => g.i))
+      ;(window as any).drawGoods(all)
+    })
     await sharedPage.waitForTimeout(300)
 
     const goodsEl = sharedPage.locator('#goods')
     await expect(goodsEl).toBeAttached()
+
+    // The four named sub-groups are drawn back to front
+    await expect(goodsEl.locator('#goodsMarkets')).toBeAttached()
+    await expect(goodsEl.locator('#goodsCells')).toBeAttached()
+    await expect(goodsEl.locator('#goodsIcons')).toBeAttached()
+    await expect(goodsEl.locator('#goodsBurgs')).toBeAttached()
+
+    // Market zones (formerly the Markets layer) render as <g data-id="N"> groups
+    await expect(goodsEl.locator('#goodsMarkets g[data-id]').first()).toBeAttached()
 
     // Good icons are <use> elements pointing to a #good-* SVG symbol
     const icons = goodsEl.locator('use')

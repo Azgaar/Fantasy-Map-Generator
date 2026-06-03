@@ -411,7 +411,6 @@
             <option value="physical">Physical map</option>
             <option value="poi">Places of interest</option>
             <option value="goods">Goods map</option>
-            <option value="markets">Markets map</option>
             <option value="trade">Trade animation</option>
             <option value="military">Military map</option>
             <option value="emblems">Emblems</option>
@@ -548,15 +547,6 @@
               onclick="toggleProvinces(event)"
             >
               <u>P</u>rovinces
-            </li>
-            <li
-              id="toggleMarkets"
-              data-tip="Markets: trade centers and routes. Click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
-              data-shortcut="' (apostrophe)"
-              onclick="toggleMarkets(event)"
-              class="buttonoff"
-            >
-              Markets
             </li>
             <li
               id="toggleZones"
@@ -758,7 +748,9 @@
             <option value="cults">Cultures</option>
             <option value="emblems">Emblems</option>
             <option value="fogging">Fogging</option>
-            <option value="goods">Goods</option>
+            <option value="goodsCells">Goods: production</option>
+            <option value="goodsIcons">Goods: resources</option>
+            <option value="goodsBurgs">Goods: burg plates</option>
             <option value="gridOverlay">Grid</option>
             <option value="terrs">Heightmap</option>
             <option value="ice">Ice</option>
@@ -767,7 +759,7 @@
             <option value="landmass">Landmass</option>
             <option value="legend">Legend</option>
             <option value="markers">Markers</option>
-            <option value="markets">Markets</option>
+            <option value="goodsMarkets">Goods: market zones</option>
             <option value="armies">Military</option>
             <option value="ocean">Ocean</option>
             <option value="population">Population</option>
@@ -1385,11 +1377,11 @@
                 </td>
               </tr>
             </tbody>
-            <tbody id="styleMarkets" style="display: none">
-              <tr data-tip="Set market territory cell fill transparency. Requires layer redraw to take effect">
+            <tbody id="styleGoodsMarkets" style="display: none">
+              <tr data-tip="Set market territory zone fill transparency. Defaults to transparent — increase to reveal market zones">
                 <td>Fill opacity</td>
                 <td>
-                  <slider-input id="styleMarketsFillOpacity" min="0" max="1" step=".01"></slider-input>
+                  <slider-input id="styleGoodsMarketsFillOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
               </tr>
             </tbody>
@@ -5033,8 +5025,14 @@
         </div>
       </div>
       <div id="goodsEditor" class="dialog stable" style="display: none">
-        <div id="goodsHeader" class="header" style="grid-template-columns: 2.7em 7em 7em 6.8em 6em 4.6em 1em;">
-          <div></div>
+        <div id="goodsHeader" class="header" style="grid-template-columns: 2.7em 7em 7em 6.8em 6em 4.6em 1.6em;">
+          <input
+            type="checkbox"
+            data-tip="Show or hide all goods on the Goods map"
+            class="native"
+            id="goodsDisplayAll"
+            style="margin: 0 .3em; vertical-align: middle; width: 1.2em;"
+          />
           <div data-tip="Click to sort by good name" class="sortable alphabetically" data-sortby="name">
             Name&nbsp;
           </div>
@@ -5050,11 +5048,6 @@
           <div data-tip="Base (initial) price. Click to sort" class="sortable" data-sortby="baseprice">
             Price&nbsp;
           </div>
-          <div
-            data-tip="Click to unpin (show) all goods"
-            class="icon-pin hidden pointer"
-            id="goodsUnpinAll"
-          ></div>
         </div>
         <div id="goodsBody" class="table" data-type="absolute"></div>
         <div id="goodsFooter" class="totalLine">
@@ -5141,9 +5134,7 @@
         </div>
         <div id="marketOverviewGoodsBody" class="table" style="max-height:40em"></div>
         <div id="marketOverviewSummary" class="totalLine"></div>
-        <div id="marketOverviewInfo" style="margin-left: 5px; margin-bottom: 0.3em">
-          Owner: <span id="marketOverviewOwner"></span>
-        </div>
+        <div id="marketOverviewInfo" style="margin-bottom: 0.3em"></div>
         <div id="marketOverviewBottom">
           <button id="marketOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
           <button id="marketOverviewOpenDeals" data-tip="View market deals" class="icon-list-bullet"></button>

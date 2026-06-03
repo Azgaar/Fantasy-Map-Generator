@@ -29,11 +29,13 @@ function clicked() {
   else if (parent.id === "ice") editIce(el);
   else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
-  else if (grand.id === "markets") MarketOverview.open(Number(parent.dataset.id));
+  else if (grand.id === "goodsMarkets" && el.tagName !== "path") MarketOverview.open(Number(parent.dataset.id));
+  else if (grand.id === "goodsIcons") GoodsEditor.open();
+  else if (parent.id === "goodsCells") GoodsEditor.open();
+  else if (grand.id === "goodsBurgs") ProductionOverview.open(Number(parent.dataset.id));
   else if (grand.id === "coastline") editCoastline();
   else if (grand.id === "lakes") editLake();
   else if (great.id === "armies") editRegiment();
-  else if (grand.id === "goods" || parent.id === "goods") GoodsEditor.open();
 }
 
 // clear elSelected variable

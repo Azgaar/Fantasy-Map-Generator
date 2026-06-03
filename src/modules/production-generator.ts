@@ -24,7 +24,7 @@ export class ProductionModule {
       const state = this.createBurgProductionState(burg, market, index);
       this.runWorkerLoop(index, state);
 
-      const phaseRevenue = this.sellInventoryToMarket(state, index);
+      const phaseRevenue = this.sellInventoryToMarket(state);
       burg.treasury = rn((burg.treasury || 0) + phaseRevenue, 2);
       burg.product = rn(Math.max(0, phaseRevenue - state.ingredientCosts), 2);
 
@@ -51,7 +51,6 @@ export class ProductionModule {
   }
 
   private buildProductionIndex(goods: Good[]): ProductionIndex {
-    const goodById = this.buildGoodById(goods);
     const demandCoverageByGood = this.buildDemandCoverageByGood(goods);
     const demandGoodsByCategory = this.buildDemandGoodsByCategory(goods, demandCoverageByGood);
     const recipes = this.buildRecipesArray(goods);
@@ -61,7 +60,6 @@ export class ProductionModule {
 
     return {
       goods,
-      goodById,
       demandCoverageByGood,
       demandGoodsByCategory,
       recipesByOutput,
@@ -147,9 +145,9 @@ export class ProductionModule {
 
       let deal: Deal | null = null;
       if (fromMarket > 0.01) {
-        deal = Markets.buy({ burg: state.burg, good: index.goodById[ingredientId]!, units: fromMarket });
+        deal = Markets.buy({ burg: state.burg, good: Goods.get(ingredientId)!, units: fromMarket });
         if (!deal) {
-          const message = `Failed to acquire ${rn(fromMarket, 2)} units of ${index.goodById[ingredientId]?.name} from market for production of ${good.name}`;
+          const message = `Failed to acquire ${rn(fromMarket, 2)} units of ${Goods.get(ingredientId)?.name} from market for production of ${good.name}`;
           ERROR && console.error(message);
           return;
         }
@@ -181,7 +179,7 @@ export class ProductionModule {
     state.records.push(record);
   }
 
-  private sellInventoryToMarket(state: BurgProductionState, index: ProductionIndex): number {
+  private sellInventoryToMarket(state: BurgProductionState): number {
     let phaseRevenue = 0;
     const taxRate = States.getSalesTax(state.burg);
 
@@ -190,7 +188,7 @@ export class ProductionModule {
       const units = state.inventory[goodId];
       if (units <= 0) continue;
 
-      const good = index.goodById[goodId]!;
+      const good = Goods.get(goodId)!;
       const deal = Markets.sell({ burg: state.burg, good, units, taxRate });
       if (!deal) continue;
 
@@ -249,11 +247,7 @@ export class ProductionModule {
     return minWorkersByGood;
   }
 
-  private buildGoodById(goods: Good[]): Good[] {
-    const goodById: Good[] = [];
-    for (const good of goods) goodById[good.i] = good;
-    return goodById;
-  }
+
 
   private buildDemandCoverageByGood(goods: Good[]): number[][] {
     const demandCoverageByGood: number[][] = [];
@@ -545,7 +539,7 @@ export class ProductionModule {
 
         if (remaining <= 0.001) continue;
 
-        const ingredientGood = index.goodById[ingredient.goodId];
+        const ingredientGood = Goods.get(ingredient.goodId);
         if (!ingredientGood) {
           feasible = false;
           break;
@@ -635,7 +629,7 @@ export class ProductionModule {
     }
 
     if (activeGoalGoodId !== null && chosenGoal && !activeGoal) {
-      const activeGood = index.goodById[activeGoalGoodId];
+      const activeGood = Goods.get(activeGoalGoodId);
       if (activeGood) {
         const activeDemand = this.getDemandEffect(activeGood, demandFocus, index.demandCoverageByGood);
         activeGoal = this.planGoodAction(index, state, activeGood, fraction, fraction, workersLeft, activeDemand);
@@ -673,6 +667,37 @@ export class ProductionModule {
     }
     return produced;
   }
+
+  // Rural production for a single land cell
+  getCellProduction(
+    cellId: number,
+    biomeProduction: Record<number, { goodId: number; production: number }[]>,
+    displayedGoods?: Set<number>
+  ): Map<number, number> {
+    const produced = new Map<number, number>();
+    if (pack.cells.h[cellId] < 20) return produced;
+
+    const cultureType = pack.cultures[pack.cells.culture[cellId]]?.type || DEFAULT_CULTURE_TYPE;
+    const modifier = (good: Good) => good.culture?.[cultureType] || 1;
+    const add = (goodId: number, amount: number) => produced.set(goodId, (produced.get(goodId) || 0) + amount);
+
+    const pop = pack.cells.pop[cellId];
+    if (pop > 0) {
+      for (const { goodId, production } of biomeProduction[pack.cells.biome[cellId]] || []) {
+        if (displayedGoods && !displayedGoods.has(goodId)) continue;
+        const good = Goods.get(goodId);
+        if (good) add(goodId, pop * production * modifier(good));
+      }
+    }
+
+    const bonusGoodId = pack.cells.good[cellId];
+    if (bonusGoodId && (!displayedGoods || displayedGoods.has(bonusGoodId))) {
+      const good = Goods.get(bonusGoodId);
+      if (good) add(bonusGoodId, BONUS_RESOURCE_PRODUCTION * modifier(good));
+    }
+
+    return produced;
+  }
 }
 
 export const isDealRecord = (record: ProductionRecord): record is DealRecord => "dealId" in record;
@@ -689,7 +714,6 @@ export type Ingredient = { goodId: number; amount: number };
 
 type ProductionIndex = {
   goods: Good[];
-  goodById: Good[];
   demandCoverageByGood: number[][];
   demandGoodsByCategory: DemandGoodCandidate[][];
   recipesByOutput: Recipe[][];
@@ -749,10 +773,8 @@ type GoalActionPlan = {
 
 export type ProductionRecipeEntry = { goodId: number; units: number };
 
-// A market deal (buy or sell); look up the Deal by id for buyer/seller/price.
 export type DealRecord = { dealId: number };
 
-// A manufacturing step: units of goodId produced from the listed recipe ingredients.
 export type MfgRecord = {
   goodId: number;
   units: number;
@@ -761,7 +783,6 @@ export type MfgRecord = {
   candidates?: readonly ProductionCandidate[]; // recorded only when DEBUG.production is on
 };
 
-// Local bonus resource production: units of goodId with no recipe.
 export type LocalRecord = { goodId: number; units: number };
 
 export type ProductionRecord = DealRecord | MfgRecord | LocalRecord;

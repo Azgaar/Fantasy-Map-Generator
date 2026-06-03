@@ -7,7 +7,6 @@ import "./draw-features";
 import "./draw-heightmap";
 import "./draw-ice";
 import "./draw-markers";
-import "./draw-markets";
 import "./draw-military";
 import "./draw-relief-icons";
 import "./draw-scalebar";

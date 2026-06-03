@@ -30,7 +30,6 @@ All planning and execution use array-based structures for speed:
 - `demandTargets`: per-category demand target array (from `getDemandTargets(population)`)
 - `demandCoverage`: per-category running coverage array updated as inventory changes
 - Market state: per-good `{ stock, price }`; `buyPrice` / `sellPrice` are derived on demand via `MARKET_MARGIN`
-- `goodById`: **sparse array** of all goods, indexed by `good.i`
 - `productiveGoods`: **dense array** of goods with at least one recipe
 - `recipesByOutput`: **array of arrays** of recipes, indexed by `good.i`
 - `minWorkersByGood`: per-good lower bound on workers needed to produce one unit through the cheapest recipe chain
@@ -51,7 +50,7 @@ Workers are consumed one fractional tick at a time until population is exhausted
 
 1. Identifies the highest-priority unmet demand category from current coverage.
 2. Iterates every productive good as a candidate goal.
-3. For each goal, recursively plans the best next manufacturing action (`planGoodAction`), using `recipesByOutput`, `goodById`, and inventory + market quotes.
+3. For each goal, recursively plans the best next manufacturing action (`planGoodAction`).
 4. Selects the candidate with the highest normalized projected gain (gain per worker).
 5. Applies **goal stickiness**: if the previously active goal is still feasible and within `GOAL_STICKINESS_FACTOR` (0.85) of the new best, keep it to avoid oscillation.
 6. Executes one manufacturing step toward the chosen goal.

@@ -644,17 +644,27 @@
     "data-bottom": 15,
     "data-left": 10
   },
-  "#goods": {
+  "#goodsMarkets": {
     "opacity": 1,
-    "stroke-width": 0.32,
+    "stroke-width": 0.5,
+    "fill-opacity": 0,
+    "stroke-opacity": 0.8,
+    "filter": null
+  },
+  "#goodsCells": {
+    "opacity": 1,
+    "filter": null
+  },
+  "#goodsIcons": {
+    "opacity": 1,
+    "stroke-width": 0.3,
     "data-circle": 1,
     "filter": "url(#dropShadow01)"
   },
-  "#markets": {
+  "#goodsBurgs": {
     "opacity": 1,
-    "stroke-width": 0.5,
-    "fill-opacity": 0.28,
-    "filter": null
+    "stroke": "#41414f",
+    "stroke-width": 0.2
   },
   "#tradeAnimation": {
     "opacity": 1,

@@ -342,7 +342,6 @@ async function parseLoadedData(data, mapVersion) {
       borders = viewbox.select("#borders");
       stateBorders = borders.select("#stateBorders");
       provinceBorders = borders.select("#provinceBorders");
-      markets = viewbox.select("#markets");
       routes = viewbox.select("#routes");
       roads = routes.select("#roads");
       trails = routes.select("#trails");

@@ -178,13 +178,62 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note");
 
-  if (group === "markets") {
-    const marketId = +path[path.length - 8].dataset.id;
-    const market = Markets.marketById[marketId];
-    const centerBurg = pack.burgs[market.centerBurgId];
-    if (!centerBurg) return;
+  if (group === "goods") {
+    const el = e.target;
+    const bonusGoodId = pack.cells.good[i];
 
-    return tip(`${centerBurg.name} market. Click to view`);
+    if (el.closest("#goodsMarkets")) {
+      const marketEl = el.closest("[data-id]");
+      if (marketEl) {
+        const market = Markets.marketById[+marketEl.dataset.id];
+        const centerBurg = market && pack.burgs[market.centerBurgId];
+        if (!centerBurg) return;
+        return tip(`${centerBurg.name} market. Click to view`);
+      }
+    }
+
+    if (el.closest("#goodsIcons")) {
+      const good = Goods.get(+el.closest("[data-i]")?.dataset.i);
+      return tip(`${good?.name} bonus resource. Click to open goods editor`);
+    }
+
+    if (el.closest("#goodsCells")) {
+      const pop = pack.cells.pop[i];
+      const biomeId = pack.cells.biome[i];
+      const cultureType = pack.cultures[pack.cells.culture[i]]?.type || "Generic";
+      const biomeProduction = Goods.getBiomesProduction()[biomeId] || [];
+      const produced = new Map();
+      const add = (goodId, amount) => produced.set(goodId, (produced.get(goodId) || 0) + amount);
+      if (pop > 0) {
+        for (const { goodId, production } of biomeProduction) {
+          const good = Goods.get(goodId);
+          if (good) add(goodId, pop * production * (good.culture?.[cultureType] || 1));
+        }
+      }
+      const bonusGood = Goods.get(bonusGoodId);
+      if (bonusGood) add(bonusGoodId, 5 * (bonusGood.culture?.[cultureType] || 1));
+
+      const parts = [...produced.entries()]
+        .filter(([, v]) => v > 0)
+        .sort(([, a], [, b]) => b - a)
+        .map(([id, v]) => `${Goods.get(+id)?.name}: ${rn(v, 2)}${+id === bonusGoodId ? " (bonus)" : ""}`);
+      return tip(`Cell rural production: ${parts.join(", ")}. Click to open goods editor`);
+    }
+
+    if (el.closest("#goodsBurgs")) {
+      const burgEl = el.closest("[data-id]");
+      const burgId = burgEl && +burgEl.dataset.id;
+      const burg = burgId && pack.burgs[burgId];
+      if (!burg || burg.removed) return;
+      const produced = Production.getProduced(burg);
+      const goods = Object.entries(produced)
+        .sort(([, a], [, b]) => b - a)
+        .map(([id, v]) => `${Goods.get(+id)?.name}: ${v}${+id === bonusGoodId ? " (bonus)" : ""}`);
+      d3.select(burgEl).raise();
+      return tip(`${burg.name} urban production: ${goods.join(", ")}. Click to view`);
+    }
+
+    return;
   }
 
   if (group === "ruler") {
@@ -223,13 +272,6 @@ function showMapTooltip(point, e, i, g) {
   }
 
   if (group === "ice") return tip("Click to edit the Ice");
-
-  if (group === "goods") {
-    const resourceId = +(e.target.dataset.i ?? e.target.closest("[data-i]")?.dataset.i);
-    const resource = resourceId && Goods.get(resourceId);
-    if (resource) tip(`${resource.name}. Click to open the Goods Editor`);
-    return;
-  }
 
   // covering elements
   if (layerIsOn("togglePrecipitation") && land) tip("Annual Precipitation: " + getFriendlyPrecipitation(i));

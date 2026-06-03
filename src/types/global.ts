@@ -50,7 +50,6 @@ declare global {
   var terrs: Selection<SVGGElement, unknown, null, undefined>;
   var temperature: Selection<SVGGElement, unknown, null, undefined>;
   var markers: Selection<SVGGElement, unknown, null, undefined>;
-  var markets: Selection<SVGGElement, unknown, null, undefined>;
   var tradeAnimation: Selection<SVGGElement, unknown, null, undefined>;
   var defs: Selection<SVGDefsElement, unknown, null, undefined>;
   var coastline: Selection<SVGGElement, unknown, null, undefined>;
@@ -124,6 +123,7 @@ declare global {
   // Legacy UI globals
   var turnButtonOn: (buttonId: string) => void;
   var turnButtonOff: (buttonId: string) => void;
+  var toggleGoods: (event?: MouseEvent) => void;
   var toggleTrade: (event?: MouseEvent) => void;
   var isCtrlClick: (event: MouseEvent) => boolean;
   var editStyle: (layer: string) => void;
