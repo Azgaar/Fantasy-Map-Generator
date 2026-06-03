@@ -247,8 +247,6 @@ export class ProductionModule {
     return minWorkersByGood;
   }
 
-
-
   private buildDemandCoverageByGood(goods: Good[]): number[][] {
     const demandCoverageByGood: number[][] = [];
 
