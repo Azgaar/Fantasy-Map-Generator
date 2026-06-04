@@ -176,8 +176,9 @@ export class MarketsModule {
       if (!market) continue;
 
       const produced = Production.getCellProduction(cellId, biomeProduction);
-      for (const [goodId, amount] of produced) {
-        const good = Goods.get(goodId)!;
+      for (const [goodId, amount] of Object.entries(produced)) {
+        const good = Goods.get(+goodId);
+        if (!good) continue;
         const marketGood = this.getMarketGood(market, good);
         marketGood.stock = rn(marketGood.stock + amount, 2);
       }

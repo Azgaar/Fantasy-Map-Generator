@@ -94,7 +94,7 @@ function editBurg(id) {
     ensureEl("burgPlaza").classList.toggle("inactive", !b.plaza);
     ensureEl("burgTemple").classList.toggle("inactive", !b.temple);
     ensureEl("burgShanty").classList.toggle("inactive", !b.shanty);
-    ensureEl("burgProduction").innerHTML = getProduction(Production.getProduced(b));
+    ensureEl("burgProduction").innerHTML = getProduction(Production.getBurgProduction(b));
 
     updateBurgLockIcon();
 

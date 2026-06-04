@@ -656,8 +656,8 @@ export class ProductionModule {
     return recipes;
   }
 
-  // Total units produced per good, derived from manufacturing and local production records
-  getProduced(burg: Burg): Record<number, number> {
+  // Urban production for a single burg
+  getBurgProduction(burg: Burg): Record<number, number> {
     const produced: Record<number, number> = {};
     for (const record of burg.production || []) {
       if (isDealRecord(record)) continue;
@@ -669,27 +669,25 @@ export class ProductionModule {
   // Rural production for a single land cell
   getCellProduction(
     cellId: number,
-    biomeProduction: Record<number, { goodId: number; production: number }[]>,
-    displayedGoods?: Set<number>
-  ): Map<number, number> {
-    const produced = new Map<number, number>();
+    biomeProduction: Record<number, { goodId: number; production: number }[]>
+  ): Record<number, number> {
+    const produced: Record<number, number> = {};
     if (pack.cells.h[cellId] < 20) return produced;
 
     const cultureType = pack.cultures[pack.cells.culture[cellId]]?.type || DEFAULT_CULTURE_TYPE;
     const modifier = (good: Good) => good.culture?.[cultureType] || 1;
-    const add = (goodId: number, amount: number) => produced.set(goodId, (produced.get(goodId) || 0) + amount);
+    const add = (goodId: number, amount: number) => (produced[goodId] = (produced[goodId] || 0) + rn(amount, 2));
 
     const pop = pack.cells.pop[cellId];
     if (pop > 0) {
       for (const { goodId, production } of biomeProduction[pack.cells.biome[cellId]] || []) {
-        if (displayedGoods && !displayedGoods.has(goodId)) continue;
         const good = Goods.get(goodId);
         if (good) add(goodId, pop * production * modifier(good));
       }
     }
 
     const bonusGoodId = pack.cells.good[cellId];
-    if (bonusGoodId && (!displayedGoods || displayedGoods.has(bonusGoodId))) {
+    if (bonusGoodId) {
       const good = Goods.get(bonusGoodId);
       if (good) add(bonusGoodId, BONUS_RESOURCE_PRODUCTION * modifier(good));
     }

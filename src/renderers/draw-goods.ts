@@ -22,7 +22,7 @@ const PLATE_FILL = "#f5f5f5";
 export function toggleGoods(event?: MouseEvent) {
   if (!layerIsOn("toggleGoods")) {
     turnButtonOn("toggleGoods");
-    drawGoods(GoodsEditor?.getDisplayedGoods?.());
+    drawGoods(GoodsEditor.getDisplayedGoods());
     if (event && isCtrlClick(event)) editStyle("goodsIcons");
   } else {
     if (event && isCtrlClick(event)) return editStyle("goodsIcons");
@@ -31,7 +31,7 @@ export function toggleGoods(event?: MouseEvent) {
   }
 }
 
-export function drawGoods(displayedGoods: Set<number> = new Set()) {
+export function drawGoods(displayedGoods: Set<number>) {
   TIME && console.time("drawGoods");
   ensureSubgroups();
 
@@ -102,21 +102,25 @@ export function highlightMarketOff(marketId: number | string): void {
 function buildGoodsCellsContent(displayedGoods: Set<number>): string {
   if (!displayedGoods.size) return "";
 
-  const biomeProduction = Goods.getBiomesProduction();
-
   // First pass: accumulate total production per cell to find the global max
   const cellTotals = new Map<number, { produced: Map<number, number>; total: number }>();
+  const biomeProduction = Goods.getBiomesProduction();
   let maxTotal = 0;
   for (const cellId of pack.cells.i) {
-    const produced = Production.getCellProduction(cellId, biomeProduction, displayedGoods);
-    if (!produced.size) continue;
     let total = 0;
-    for (const amount of produced.values()) total += amount;
-    if (total <= 0) continue;
-    cellTotals.set(cellId, { produced, total });
+    const produced = Production.getCellProduction(cellId, biomeProduction);
+    const filteredProduced = Object.entries(produced).reduce((map, [goodId, amount]) => {
+      if (displayedGoods.has(+goodId)) {
+        map.set(+goodId, amount);
+        total += amount;
+      }
+      return map;
+    }, new Map<number, number>());
+    if (!total) continue;
+
+    cellTotals.set(cellId, { produced: filteredProduced, total });
     if (total > maxTotal) maxTotal = total;
   }
-
   if (maxTotal === 0) return "";
 
   // Second pass: render polygons with opacity normalized against the global max
@@ -161,7 +165,7 @@ function buildGoodsBurgsContent(displayedGoods: Set<number>): string {
   for (const burg of pack.burgs) {
     if (!burg.i || burg.removed || !burg.production) continue;
 
-    const produced = Production.getProduced(burg);
+    const produced = Production.getBurgProduction(burg);
     const entries: { good: Good; value: number; width: number }[] = [];
 
     for (const good of pack.goods) {

@@ -51,7 +51,6 @@ export function open() {
 
   $("#goodsEditor").dialog({
     title: "Goods Editor",
-    resizable: false,
     close: closeGoodsEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
@@ -61,7 +60,7 @@ export function open() {
     ensureEl("goodsPercentage").on("click", togglePercentageMode);
     ensureEl("goodsTagsFilter").on("click", openTagsVisibilityDialog);
     ensureEl("goodsAssign").on("click", enterResourceAssignMode);
-    ensureEl("goodsAdd").on("click", () => openGoodDialog());
+    ensureEl("goodsAdd").on("click", () => editGoodDialog());
     ensureEl("goodsRestore").on("click", goodsRestoreDefaults);
     ensureEl("goodsExport").on("click", downloadGoodsData);
     ensureEl("goodsDisplayAll").on("change", toggleAllDisplayed);
@@ -73,7 +72,7 @@ export function open() {
       const line = el.parentNode as HTMLElement;
       const good = Goods.get(+line.dataset.id!);
       if (!good) return;
-      if (cl.contains("goodEdit")) return openGoodDialog(good);
+      if (cl.contains("goodEdit")) return editGoodDialog(good);
       if (cl.contains("goodDisplayed")) return toggleDisplayedGood(good, el as HTMLInputElement);
       if (cl.contains("icon-trash-empty")) return removeGood(good, line);
     });
@@ -104,7 +103,7 @@ function goodsEditorAddLines() {
     const stock = rn(stockData[good.i]?.total ?? 0);
     const stockTip = `Total stock in all markets and burg inventories: ${stock} units`;
 
-    lines += /*html*/ `<div class="states goods" data-id=${good.i} data-name="${good.name}" data-color="${good.color}" data-baseprice="${good.value}" data-produced="${produced}" data-stock="${stock}" data-type="${types.join(",")}">
+    lines += /*html*/ `<div class="states goods" data-id=${good.i} data-name="${good.name}" data-color="${good.color}" data-baseprice="${good.value}" data-produced="${produced}" data-stock="${stock}" data-type="${types.join(",")}" data-tags="${good.tags?.join(",")}">
         <input type="checkbox" data-tip="Toggle this good on the Goods map" class="native goodDisplayed hide" style="padding: 0; margin: 0; vertical-align: middle; width: 1.2em;" ${displayedGoods.has(good.i) ? "checked" : ""} />
         <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
           <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
@@ -112,15 +111,15 @@ function goodsEditorAddLines() {
         </svg>
         <div data-tip="Good name" class="goodName">${good.name}</div>
         <div data-tip="Good types" class="goodType" style="width: 6em;">${types.map(renderTypeBadge).join(" ")}</div>
-        <div data-tip="${producedTip}. Click to see burgs producing this good" class="goodProduced pointer" style="vertical-align: middle;">
+        <div data-tip="${producedTip}. Click to see burgs producing this good" class="goodProduced pointer hide" style="vertical-align: middle;">
           <div style="display: inline-block;">${produced}</div>
           <div style="display: inline-block; width: 0.4em; font-size: 1.5em;">⚒</div>
         </div>
-        <div data-tip="${stockTip}. Click to see breakdown by location" class="goodStock pointer" style="vertical-align: middle;">
+        <div data-tip="${stockTip}. Click to see breakdown by location" class="goodStock pointer hide" style="vertical-align: middle;">
           <div style="display: inline-block;">${stock}</div>
           <div style="display: inline-block; width: 0.4em; font-size: 1.2em;">⛁</div>
         </div>
-        <div data-tip="Base (initial) price. Click to compare prices across markets" class="goodBasePrice pointer">🟡 ${good.value}</div>
+        <div data-tip="Base (initial) price. Click to compare prices across markets" class="goodBasePrice pointer hide">🟡 ${good.value}</div>
         <span data-tip="Edit good" class="icon-pencil goodEdit hide"></span>
         <span data-tip="Remove good" class="icon-trash-empty hide goodRemove"></span>
       </div>`;
@@ -131,6 +130,7 @@ function goodsEditorAddLines() {
     .map(p => p.burg + p.cell + p.bonus)
     .reduce((sum, v) => sum + v, 0);
   const totalStock = Object.values(stockData).reduce((sum, d) => sum + d.total, 0);
+  ensureEl("goodsDisplayed").innerHTML = String(displayedGoods.size);
   ensureEl("goodsNumber").innerHTML = String(pack.goods.length);
   ensureEl("goodsProduced").innerHTML = String(rn(totalProduced));
   ensureEl("goodsStock").innerHTML = String(rn(totalStock));
@@ -175,7 +175,7 @@ function openProducersDialog(goodId: number) {
 
   const producers = pack.burgs
     .filter(b => b.i && !b.removed)
-    .map(b => ({ burg: b, units: Production.getProduced(b)[goodId] ?? 0 }))
+    .map(b => ({ burg: b, units: Production.getBurgProduction(b)[goodId] ?? 0 }))
     .filter(({ units }) => units > 0)
     .sort((a, b) => b.units - a.units);
 
@@ -356,7 +356,7 @@ function getProduction() {
   // burg production
   for (const burg of pack.burgs) {
     if (!burg || burg.removed || !burg.production) continue;
-    const produced = Production.getProduced(burg);
+    const produced = Production.getBurgProduction(burg);
     for (const goodId in produced) {
       addProduction(Number(goodId), produced[goodId] || 0, "burg");
     }
@@ -380,11 +380,11 @@ function getBonusIcon(bonus: string): string {
 function openTagsVisibilityDialog() {
   const tags = unique(pack.goods.flatMap(good => good.tags));
   const renderTag = (tag: string) =>
-    `<label><input type="checkbox" class="native" value="${tag}" ${visibleTags.has(tag) ? "checked" : ""} /> ${tag}</label>`;
+    `<label style="display: flex; align-items: center;"><input type="checkbox" class="native" value="${tag}" ${visibleTags.has(tag) ? "checked" : ""} /> ${tag}</label>`;
   const tagsMarkup = tags.length ? tags.map(renderTag).join("") : '<div style="color:#666">No tags available</div>';
 
   alertMessage.innerHTML = `
-    <div data-tip="Only goods with at least one selected tag remain visible in the editor list" style="display: grid; grid-template-columns: 1fr 1fr 1fr;">${tagsMarkup}</div>
+    <div data-tip="Only goods with at least one selected tag remain visible in the editor list" style="display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 0.3em;">${tagsMarkup}</div>
   `;
 
   $("#alert").dialog({
@@ -417,7 +417,7 @@ function applyTagVisibilityFilter() {
   body.querySelectorAll<HTMLElement>(":scope > div.states").forEach(line => {
     const lineTags = line.dataset.tags?.split(",") || [];
     const matches = !hasFilter || lineTags.some(tag => visibleTags.has(tag));
-    line.classList.toggle("hiddenByTag", !matches);
+    line.classList.toggle("hidden", !matches);
   });
 
   const filterBtn = ensureEl("goodsTagsFilter");
@@ -582,7 +582,6 @@ function togglePercentageMode() {
 }
 
 function enterResourceAssignMode(this: HTMLElement) {
-  const body = ensureEl("goodsBody");
   if (this.classList.contains("pressed")) return exitResourceAssignMode();
   customization = 14;
   this.classList.add("pressed");
@@ -592,29 +591,22 @@ function enterResourceAssignMode(this: HTMLElement) {
     toggleCells();
   }
 
-  ensureEl("goodsEditor")!
+  ensureEl("goodsEditor")
     .querySelectorAll(".hide")
     .forEach(el => {
       el.classList.add("hidden");
     });
-  ensureEl("goodsFooter").style.display = "none";
-  body.querySelectorAll<HTMLElement>(".goodEdit, .icon-trash-empty").forEach(e => {
-    e.style.pointerEvents = "none";
-  });
+  ensureEl("goodsHeader").style = "grid-template-columns: 7.5em 6em; margin-left: 22px;";
 
-  $("#goodsEditor").dialog({
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
-  });
+  $("#goodsEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 
-  tip("Select good line in editor, click on cells to remove or add a good", true);
+  tip("Select good line in editor, click on cells to remove or add a bonus resource", true);
   viewbox.on("click", changeResourceOnCellClick);
-
-  body.querySelector<HTMLElement>("div.states:not(.hiddenByTag)")?.classList.add("selected");
 }
 
 function selectResourceOnLineClick(this: HTMLElement) {
-  const body = ensureEl("goodsBody");
   if (customization !== 14) return;
+  const body = ensureEl("goodsBody");
   body.querySelector<HTMLElement>("div.selected")?.classList.remove("selected");
   this.classList.add("selected");
 }
@@ -622,7 +614,7 @@ function selectResourceOnLineClick(this: HTMLElement) {
 function changeResourceOnCellClick(this: SVGElement) {
   const body = ensureEl("goodsBody");
   const point = pointer(event, this);
-  const cellId = findCell(point[0], point[1]);
+  const cellId = findCell(...point);
   if (cellId === undefined) return;
 
   const selected = body.querySelector<HTMLElement>("div.selected");
@@ -638,7 +630,6 @@ function changeResourceOnCellClick(this: SVGElement) {
     displayedGoods.add(resourceId); // keep the freshly assigned good visible on the map
   }
 
-  goodsEditorAddLines();
   drawGoods(displayedGoods);
 }
 
@@ -656,24 +647,9 @@ function exitResourceAssignMode(close?: string) {
   ensureEl("goodsEditor")
     .querySelectorAll(".hide")
     .forEach(el => void el.classList.remove("hidden"));
-  ensureEl("goodsFooter").style.display = "block";
-  body
-    .querySelectorAll<HTMLElement>(
-      ".goodName, .goodType, .goodProduced, .goodStock, .goodBasePrice, .goodBuyPrice, .goodSellPrice, .goodEdit, svg, .icon-trash-empty"
-    )
-    .forEach(e => {
-      e.style.pointerEvents = "";
-    });
-  if (!close) {
-    $("#goodsEditor").dialog({
-      position: {
-        my: "right top",
-        at: "right-10 top+10",
-        of: "svg",
-        collision: "fit"
-      }
-    });
-  }
+  ensureEl("goodsHeader").style = "grid-template-columns: 4em 7.4em 7em 6.8em 6em 4.6em 1.6em;";
+
+  if (!close) goodsEditorAddLines();
 
   restoreDefaultEvents();
   clearMainTip();
@@ -681,7 +657,7 @@ function exitResourceAssignMode(close?: string) {
   if (selected) selected.classList.remove("selected");
 }
 
-function openGoodDialog(editedGood?: Good) {
+function editGoodDialog(editedGood?: Good) {
   const icons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
   const renderIconOption = (icon: string) =>
     /*html*/ `<option value="${icon}" ${editedGood?.icon === icon ? "selected" : ""}>${icon}</option>`;
@@ -1103,6 +1079,7 @@ function updateDisplayAllCheckbox() {
   const total = pack.goods.length;
   master.checked = total > 0 && displayedGoods.size === total;
   master.indeterminate = displayedGoods.size > 0 && displayedGoods.size < total;
+  ensureEl("goodsDisplayed").innerHTML = String(displayedGoods.size);
 }
 
 function removeGood(good: Good, line: HTMLElement) {
@@ -1125,12 +1102,7 @@ function removeGood(good: Good, line: HTMLElement) {
     updateDisplayAllCheckbox();
     drawGoods(displayedGoods);
   };
-  confirmationDialog({
-    title: "Remove resource",
-    message,
-    confirm: "Remove",
-    onConfirm
-  });
+  confirmationDialog({ title: "Remove resource", message, confirm: "Remove", onConfirm });
 }
 
 function closeGoodsEditor() {

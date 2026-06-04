@@ -133,7 +133,7 @@
     </style>
     <link
       rel="preload"
-      href="index.css?v=1.123.0"
+      href="index.css?v=1.123.0-1"
       as="style"
       onload="
         this.onload = null;
@@ -5025,11 +5025,11 @@
         </div>
       </div>
       <div id="goodsEditor" class="dialog stable" style="display: none">
-        <div id="goodsHeader" class="header" style="grid-template-columns: 2.7em 7em 7em 6.8em 6em 4.6em 1.6em;">
+        <div id="goodsHeader" class="header" style="grid-template-columns: 4em 7.4em 7em 6.8em 6em 4.6em 1.6em;">
           <input
             type="checkbox"
             data-tip="Show or hide all goods on the Goods map"
-            class="native"
+            class="native hide"
             id="goodsDisplayAll"
             style="margin: 0 .3em; vertical-align: middle; width: 1.2em;"
           />
@@ -5039,19 +5039,19 @@
           <div data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">
             Type&nbsp;
           </div>
-          <div data-tip="Total production units aggregated from cells and burgs. Click to sort" class="sortable icon-sort-number-down" data-sortby="produced">
+          <div data-tip="Total production units aggregated from cells and burgs. Click to sort" class="sortable icon-sort-number-down hide" data-sortby="produced">
             Produced&nbsp;
           </div>
-          <div data-tip="Total units in stock across all markets and burg inventories. Click to sort" class="sortable" data-sortby="stock">
+          <div data-tip="Total units in stock across all markets and burg inventories. Click to sort" class="sortable hide" data-sortby="stock">
             Stock&nbsp;
           </div>
-          <div data-tip="Base (initial) price. Click to sort" class="sortable" data-sortby="baseprice">
+          <div data-tip="Base (initial) price. Click to sort" class="sortable hide" data-sortby="baseprice">
             Price&nbsp;
           </div>
         </div>
-        <div id="goodsBody" class="table" data-type="absolute"></div>
-        <div id="goodsFooter" class="totalLine">
-          <div data-tip="Total number of goods" style="margin-left: 5px">Goods:&nbsp;<span id="goodsNumber">0</span></div>
+        <div id="goodsBody" class="table" style="max-height: 50vh;" data-type="absolute"></div>
+        <div id="goodsFooter" class="totalLine hide">
+          <div data-tip="Number of goods (displayed / total)" style="margin-left: 5px">Goods:&nbsp;<span id="goodsDisplayed">0</span> of <span id="goodsNumber">0</span></div>
           <div data-tip="Total amount of goods produced by all cells and burgs" style="margin-left: 12px">Produced:&nbsp;<span id="goodsProduced">0</span></div>
           <div data-tip="Total units in stock across all markets and burg inventories" style="margin-left: 12px">Stock:&nbsp;<span id="goodsStock">0</span></div>
         </div>
@@ -5064,14 +5064,14 @@
           ></button>
           <button id="goodsTagsFilter" data-tip="Filter visible goods by tags" class="icon-tags"></button>
           <button id="goodsAssign" data-tip="Manually assign goods to cells" class="icon-brush"></button>
-          <button id="goodsAdd" data-tip="Add a new good" class="icon-plus"></button>
-          <button id="goodsChains" data-tip="Show production chains graph" class="icon-chart-line"></button>
+          <button id="goodsAdd" data-tip="Add a new good" class="icon-plus hide"></button>
+          <button id="goodsChains" data-tip="Show production chains graph" class="icon-chart-line hide"></button>
           <button
             id="goodsRestore"
             data-tip="Restore default list and regenerate goods"
-            class="icon-history"
+            class="icon-history hide"
           ></button>
-          <button id="goodsExport" data-tip="Download goods-related data" class="icon-download"></button>
+          <button id="goodsExport" data-tip="Download goods-related data" class="icon-download hide"></button>
         </div>
       </div>
       <div id="productionChainsDialog" class="dialog" style="display:none;padding:0">

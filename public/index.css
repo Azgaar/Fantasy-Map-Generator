@@ -438,6 +438,8 @@ button.options {
 
 button.active {
   background-color: var(--header);
+  border-color: var(--dark-solid);
+  border-radius: 3px;
   color: white;
 }
 
@@ -2507,10 +2509,6 @@ div.states > .goodSellPrice {
 
 div.states > .goodEdit {
   padding-left: 1em;
-}
-
-div.states.hiddenByTag {
-  display: none;
 }
 
 /* Market Goods */

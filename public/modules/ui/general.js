@@ -181,6 +181,14 @@ function showMapTooltip(point, e, i, g) {
   if (group === "goods") {
     const el = e.target;
     const bonusGoodId = pack.cells.good[i];
+    const displayedGoods = GoodsEditor.getDisplayedGoods();
+    const name = id => (Goods.get(+id)?.name || "unknown").toLowerCase();
+    const formatProduct = produced =>
+      Object.entries(produced).reduce((acc, [goodId, amount]) => {
+        if (displayedGoods.has(+goodId))
+          acc.push(`${name(goodId)} ${amount}${+goodId === bonusGoodId ? " (bonus)" : ""}`);
+        return acc;
+      }, []);
 
     if (el.closest("#goodsMarkets")) {
       const marketEl = el.closest("[data-id]");
@@ -194,30 +202,17 @@ function showMapTooltip(point, e, i, g) {
 
     if (el.closest("#goodsIcons")) {
       const good = Goods.get(+el.closest("[data-i]")?.dataset.i);
-      return tip(`${good?.name} bonus resource. Click to open goods editor`);
+      return tip(`${good?.name} bonus resource. Click to open Goods Editor and select displayed goods`);
     }
 
     if (el.closest("#goodsCells")) {
       const pop = pack.cells.pop[i];
       const biomeId = pack.cells.biome[i];
       const cultureType = pack.cultures[pack.cells.culture[i]]?.type || "Generic";
-      const biomeProduction = Goods.getBiomesProduction()[biomeId] || [];
-      const produced = new Map();
-      const add = (goodId, amount) => produced.set(goodId, (produced.get(goodId) || 0) + amount);
-      if (pop > 0) {
-        for (const { goodId, production } of biomeProduction) {
-          const good = Goods.get(goodId);
-          if (good) add(goodId, pop * production * (good.culture?.[cultureType] || 1));
-        }
-      }
-      const bonusGood = Goods.get(bonusGoodId);
-      if (bonusGood) add(bonusGoodId, 5 * (bonusGood.culture?.[cultureType] || 1));
-
-      const parts = [...produced.entries()]
-        .filter(([, v]) => v > 0)
-        .sort(([, a], [, b]) => b - a)
-        .map(([id, v]) => `${Goods.get(+id)?.name}: ${rn(v, 2)}${+id === bonusGoodId ? " (bonus)" : ""}`);
-      return tip(`Cell rural production: ${parts.join(", ")}. Click to open goods editor`);
+      const produced = Production.getCellProduction(i, Goods.getBiomesProduction());
+      return tip(
+        `Cell rural production: ${formatProduct(produced).join(", ")}. Click to select displayed goods in Goods Editor`
+      );
     }
 
     if (el.closest("#goodsBurgs")) {
@@ -225,12 +220,9 @@ function showMapTooltip(point, e, i, g) {
       const burgId = burgEl && +burgEl.dataset.id;
       const burg = burgId && pack.burgs[burgId];
       if (!burg || burg.removed) return;
-      const produced = Production.getProduced(burg);
-      const goods = Object.entries(produced)
-        .sort(([, a], [, b]) => b - a)
-        .map(([id, v]) => `${Goods.get(+id)?.name}: ${v}${+id === bonusGoodId ? " (bonus)" : ""}`);
       d3.select(burgEl).raise();
-      return tip(`${burg.name} urban production: ${goods.join(", ")}. Click to view`);
+      const produced = Production.getBurgProduction(burg);
+      return tip(`${burg.name} urban production: ${formatProduct(produced).join(", ")}. Click to view`);
     }
 
     return;
