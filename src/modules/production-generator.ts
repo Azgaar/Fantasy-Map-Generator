@@ -77,7 +77,8 @@ export class ProductionModule {
 
     const localGoodId = pack.cells.good[burg.cell];
     if (localGoodId) {
-      const localBonus = Math.min(population, BONUS_RESOURCE_PRODUCTION);
+      const modifier = this.getModifiers(Goods.get(localGoodId)!, burg.cell);
+      const localBonus = Math.min(population, BONUS_RESOURCE_PRODUCTION) * modifier;
       if (localBonus > 0) {
         inventory[localGoodId] = (inventory[localGoodId] || 0) + localBonus;
         records.push({ goodId: localGoodId, units: rn(localBonus, 2) });
@@ -130,7 +131,7 @@ export class ProductionModule {
   ): void {
     const { good, ingredients, maxYield } = decision.action;
     const actualYield = Math.min(workerFraction, maxYield);
-    const cultureModifier = good.culture?.[state.burg.type || DEFAULT_CULTURE_TYPE] || 1;
+    const cultureModifier = this.getModifiers(good, state.burg.cell);
     const produced = rn(actualYield * cultureModifier, 2);
     if (!produced) return;
 
@@ -436,10 +437,9 @@ export class ProductionModule {
       marketCostTotal += fromMarket * quote.buyPrice;
     }
 
-    const burgType = state.burg.type || DEFAULT_CULTURE_TYPE;
-    const cultureModifier = recipe.good.culture?.[burgType] || 1;
+    const modifier = this.getModifiers(recipe.good, state.burg.cell);
     const outQuote = Markets.quoteMarket(state.market, recipe.good.i);
-    const sellValue = (outQuote.sellPrice || recipe.good.value) * cultureModifier;
+    const sellValue = (outQuote.sellPrice || recipe.good.value) * modifier;
     const ingredientCost = marketCostTotal / actualUnits;
     const projectedGain = (sellValue - ingredientCost) * demandEffect.multiplier;
     const score = projectedGain;
@@ -455,7 +455,7 @@ export class ProductionModule {
         units: actualUnits,
         sellPrice: sellValue,
         ingredientCost,
-        cultureModifier,
+        cultureModifier: modifier,
         demandCategory: demandEffect.category,
         demandMultiplier: demandEffect.multiplier,
         score,
@@ -480,10 +480,9 @@ export class ProductionModule {
 
     path[good.i] = true;
 
-    const burgType = state.burg.type || DEFAULT_CULTURE_TYPE;
-    const cultureModifier = good.culture?.[burgType] || 1;
+    const modifier = this.getModifiers(good, state.burg.cell);
     const sellQuote = Markets.quoteMarket(state.market, good.i);
-    const sellValuePerUnit = (sellQuote.sellPrice || good.value) * cultureModifier;
+    const sellValuePerUnit = (sellQuote.sellPrice || good.value) * modifier;
     const totalProjectedGain = sellValuePerUnit * targetUnits * demandEffect.multiplier;
 
     const recipeList = index.recipesByOutput[good.i];
@@ -674,8 +673,7 @@ export class ProductionModule {
     const produced: Record<number, number> = {};
     if (pack.cells.h[cellId] < 20) return produced;
 
-    const cultureType = pack.cultures[pack.cells.culture[cellId]]?.type || DEFAULT_CULTURE_TYPE;
-    const modifier = (good: Good) => good.culture?.[cultureType] || 1;
+    const modifier = (good: Good) => this.getModifiers(good, cellId);
     const add = (goodId: number, amount: number) => (produced[goodId] = (produced[goodId] || 0) + rn(amount, 2));
 
     const pop = pack.cells.pop[cellId];
@@ -693,6 +691,27 @@ export class ProductionModule {
     }
 
     return produced;
+  }
+
+  private getModifiers(good: Good, cellId: number): number {
+    const mult = good.multipliers;
+    if (!mult) return 1;
+
+    const biomeId = pack.cells.biome[cellId];
+    const cultureId = pack.cells.culture[cellId];
+    const stateId = pack.cells.state[cellId];
+    const religionId = pack.cells.religion[cellId];
+
+    const burgId = pack.cells.burg[cellId];
+    const cultureType = (burgId ? pack.burgs[burgId]?.type : pack.cultures[cultureId]?.type) ?? DEFAULT_CULTURE_TYPE;
+
+    return (
+      (mult.cultureType?.[cultureType] ?? 1) *
+      (mult.culture?.[cultureId] ?? 1) *
+      (mult.state?.[stateId] ?? 1) *
+      (mult.religion?.[religionId] ?? 1) *
+      (mult.biome?.[biomeId] ?? 1)
+    );
   }
 }
 

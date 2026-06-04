@@ -1,12 +1,11 @@
 import { pointer } from "d3";
-import type { CultureType } from "../modules/cultures-generator";
 import { CULTURE_TYPES } from "../modules/cultures-generator";
 import type { DemandCategory, Good } from "../modules/goods-generator";
 import { BONUS_RESOURCE_PRODUCTION, DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../modules/goods-generator";
 import { isDealRecord, isMfgRecord } from "../modules/production-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
-import { ensureEl, unique } from "../utils";
-import { getHeight } from "../utils/unitUtils";
+import { ensureEl, getRandomColor, unique } from "../utils";
+import { DistributionEditor } from "./goods-distribution-editor";
 import { ProductionChains } from "./production-chains";
 
 let isInitialized = false;
@@ -65,6 +64,8 @@ export function open() {
     ensureEl("goodsExport").on("click", downloadGoodsData);
     ensureEl("goodsDisplayAll").on("change", toggleAllDisplayed);
     ensureEl("goodsChains").on("click", () => ProductionChains.open());
+    ensureEl("goodsRegenerateGoods").on("click", requestGoodsRegeneration);
+    ensureEl("goodsRegenerateProduction").on("click", requestProductionRegeneration);
 
     ensureEl("goodsBody").on("click", ev => {
       const el = ev.target as HTMLElement;
@@ -365,18 +366,6 @@ function getProduction() {
   return production;
 }
 
-function getBonusIcon(bonus: string): string {
-  if (bonus === "fleet") return `<span data-tip="Fleet bonus" class="icon-anchor"></span>`;
-  if (bonus === "defence") return `<span data-tip="Defence bonus" class="icon-chess-rook"></span>`;
-  if (bonus === "prestige") return `<span data-tip="Prestige bonus" class="icon-star"></span>`;
-  if (bonus === "artillery") return `<span data-tip="Artillery bonus" class="icon-rocket"></span>`;
-  if (bonus === "infantry") return `<span data-tip="Infantry bonus" class="icon-chess-pawn"></span>`;
-  if (bonus === "population") return `<span data-tip="Population bonus" class="icon-male"></span>`;
-  if (bonus === "archers") return `<span data-tip="Archers bonus" class="icon-dot-circled"></span>`;
-  if (bonus === "cavalry") return `<span data-tip="Cavalry bonus" class="icon-chess-knight"></span>`;
-  return "";
-}
-
 function openTagsVisibilityDialog() {
   const tags = unique(pack.goods.flatMap(good => good.tags));
   const renderTag = (tag: string) =>
@@ -422,63 +411,6 @@ function applyTagVisibilityFilter() {
 
   const filterBtn = ensureEl("goodsTagsFilter");
   if (filterBtn) filterBtn.classList.toggle("active", hasFilter);
-}
-
-function interpretDistribution(dist: string): string {
-  const biomeLabel = (id: number): string => biomesData.name?.[id] || `biome ${id}`;
-  const SHORE: Record<number, string> = {
-    "-2": "deep ocean",
-    "-1": "shallow ocean",
-    "1": "coastal land",
-    "2": "near coast land"
-  };
-
-  return dist
-    .replace(/biome\(([^)]+)\)/g, (_, args) => {
-      const names = args.split(",").map((a: string) => biomeLabel(parseInt(a.trim(), 10)));
-      return names.length === 1 ? `${names[0]} biome` : `${names.join("/")} biomes`;
-    })
-    .replace(/minHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) => {
-      try {
-        return `min height ${getHeight(+h, true)}`;
-      } catch {
-        return `min height h=${h}`;
-      }
-    })
-    .replace(/maxHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) => {
-      try {
-        return `max height ${getHeight(+h, true)}`;
-      } catch {
-        return `max height h=${h}`;
-      }
-    })
-    .replace(/minTemp\((-?\d+(?:\.\d+)?)\)/g, (_, t) => `min temp ${t}°C`)
-    .replace(/maxTemp\((-?\d+(?:\.\d+)?)\)/g, (_, t) => `max temp ${t}°C`)
-    .replace(/shore\(([^)]+)\)/g, (_, args) => {
-      const labels = args.split(",").map((a: string) => {
-        const v = parseInt(a.trim(), 10);
-        return SHORE[v] ?? `ring ${v}`;
-      });
-      return labels.join("/");
-    })
-    .replace(/type\(([^)]+)\)/g, (_, args) => {
-      const types = args
-        .replace(/["']/g, "")
-        .split(",")
-        .map((a: string) => a.trim());
-      return `type: ${types.join("/")}`;
-    })
-    .replace(/river\(\)/g, "river presence")
-    .replace(/minHabitability\((\d+)\)/g, (_, n) => `habitability ≥ ${n}%`)
-    .replace(/habitability\(\)/g, "more habitable areas")
-    .replace(/elevation\(\)/g, "more elevated areas")
-    .replace(/nth\((\d+)\)/g, (_, n) => `1 in ${n} cells`)
-    .replace(/random\((\d+)\)/g, (_, n) => `${n}% chance`)
-    .replace(/\s*&&\s*/g, " AND ")
-    .replace(/\s*\|\|\s*/g, " OR ")
-    .replace(/!\s*/g, "NOT ")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 function uploadImage(type: "image" | "svg", callback: (type: string, id: string) => void) {
@@ -657,27 +589,219 @@ function exitResourceAssignMode(close?: string) {
   if (selected) selected.classList.remove("selected");
 }
 
+type MultiplierDimKey = "cultureType" | "culture" | "state" | "religion" | "biome";
+
+function getMultiplierEntityName(dim: MultiplierDimKey, id: string): string {
+  if (dim === "cultureType") return id;
+  if (dim === "culture") return pack.cultures[+id]?.name ?? `Culture ${id}`;
+  if (dim === "state") return pack.states[+id]?.name ?? `State ${id}`;
+  if (dim === "religion") return pack.religions[+id]?.name ?? `Religion ${id}`;
+  return biomesData.name[+id] ?? `Biome ${id}`;
+}
+
+function openMultiplierPopup(
+  dim: MultiplierDimKey,
+  currentValues: Partial<Record<string, number>>,
+  onApply: (values: Partial<Record<string, number>>) => void
+) {
+  type Entity = { id: string; name: string; color?: string };
+
+  let entities: Entity[];
+  let label: string;
+
+  switch (dim) {
+    case "cultureType":
+      entities = CULTURE_TYPES.map(ct => ({ id: ct, name: ct }));
+      label = "Culture Type";
+      break;
+    case "culture":
+      entities = pack.cultures
+        .filter(c => c.i && !c.removed)
+        .map(c => ({ id: String(c.i), name: c.name, color: c.color }));
+      label = "Culture";
+      break;
+    case "state":
+      entities = pack.states
+        .filter(s => s.i && !s.removed)
+        .map(s => ({ id: String(s.i), name: s.fullName || s.name, color: s.color }));
+      label = "State";
+      break;
+    case "religion":
+      entities = pack.religions
+        .filter(r => r.i && !r.removed)
+        .map(r => ({ id: String(r.i), name: r.name, color: r.color }));
+      label = "Religion";
+      break;
+    case "biome":
+      entities = biomesData.i.map(id => ({ id: String(id), name: biomesData.name[id], color: biomesData.color[id] }));
+      label = "Biome";
+      break;
+  }
+
+  const rows = entities.map(entity => {
+    const val = currentValues[entity.id] ?? 1;
+    const dot = `<span style="display:inline-block; width:.85em; height:.85em; border-radius:50%; background:${entity.color || getRandomColor()}; flex-shrink:0;"></span>`;
+    return `${dot}<span>${entity.name}</span><input type="number" class="mPopupInput" data-id="${entity.id}" min="0" step="0.1" style="width:5em;" value="${val}" />`;
+  });
+
+  const popupEl = document.createElement("div");
+  document.body.appendChild(popupEl);
+  popupEl.innerHTML = `
+    <div style="max-height:320px; overflow-y:auto; padding:.2em;">
+      <div style="display:grid; grid-template-columns:auto 1fr 5em; gap:.3em .5em; align-items:center;">${rows.join("")}</div>
+    </div>
+  `;
+
+  $(popupEl).dialog({
+    title: `${label} multipliers`,
+    width: "22em",
+    resizable: false,
+    buttons: {
+      Cancel: function () {
+        $(this).dialog("close");
+      },
+      Apply: function () {
+        const inputs = Array.from(popupEl.querySelectorAll<HTMLInputElement>(".mPopupInput"));
+        const result: Partial<Record<string, number>> = {};
+        for (const input of inputs) {
+          const id = input.dataset.id!;
+          const v = Number(input.value);
+          if (Number.isFinite(v) && v >= 0 && v !== 1) result[id] = v;
+        }
+        onApply(result);
+        $(this).dialog("close");
+      }
+    },
+    close: () => {
+      $(popupEl).dialog("destroy");
+      popupEl.remove();
+    }
+  });
+}
+
+function openDemandCoveragePopup(
+  currentValues: Partial<Record<DemandCategory, number>>,
+  onApply: (values: Partial<Record<DemandCategory, number>>) => void
+) {
+  const rows = DEMAND_PRIORITY.map(cat => {
+    const val = currentValues[cat] ?? 0;
+    return `<span>${DEMAND_CATEGORY_ICONS[cat]} ${capitalize(cat)}</span><input type="number" class="dcPopupInput" data-cat="${cat}" min="0" step="0.05" style="width:5em;" value="${val}" />`;
+  }).join("");
+
+  const popupEl = document.createElement("div");
+  document.body.appendChild(popupEl);
+  popupEl.innerHTML = `<div style="display:grid;grid-template-columns:1fr 5em;gap:.3em .5em;align-items:center;padding:.2em;">${rows}</div>`;
+
+  $(popupEl).dialog({
+    title: "Demand Coverage",
+    width: "18em",
+    resizable: false,
+    buttons: {
+      Cancel: function () {
+        $(this).dialog("close");
+      },
+      Apply: function () {
+        const result: Partial<Record<DemandCategory, number>> = {};
+        popupEl.querySelectorAll<HTMLInputElement>(".dcPopupInput").forEach(input => {
+          const cat = input.dataset.cat as DemandCategory;
+          const v = Number(input.value);
+          if (Number.isFinite(v) && v > 0) result[cat] = v;
+        });
+        onApply(result);
+        $(this).dialog("close");
+      }
+    },
+    close: () => {
+      $(popupEl).dialog("destroy");
+      popupEl.remove();
+    }
+  });
+}
+
+function openBiomeProductionPopup(
+  currentValues: Partial<Record<number, number>>,
+  onApply: (values: Partial<Record<number, number>>) => void
+) {
+  const rows = (biomesData.i as number[])
+    .map(id => {
+      const val = currentValues[id] ?? 0;
+      return `<span>${biomesData.name[id] ?? `Biome ${id}`}</span><input type="number" class="bpPopupInput" data-id="${id}" min="0" step="0.01" style="width:5em;" value="${val}" />`;
+    })
+    .join("");
+
+  const popupEl = document.createElement("div");
+  document.body.appendChild(popupEl);
+  popupEl.innerHTML = `<div style="max-height:320px;overflow-y:auto;padding:.2em;"><div style="display:grid;grid-template-columns:1fr 5em;gap:.3em .5em;align-items:center;">${rows}</div></div>`;
+
+  $(popupEl).dialog({
+    title: "Biome Baseline Production",
+    width: "22em",
+    resizable: false,
+    buttons: {
+      Cancel: function () {
+        $(this).dialog("close");
+      },
+      Apply: function () {
+        const result: Partial<Record<number, number>> = {};
+        popupEl.querySelectorAll<HTMLInputElement>(".bpPopupInput").forEach(input => {
+          const id = Number(input.dataset.id!);
+          const v = Number(input.value);
+          if (Number.isFinite(v) && v > 0) result[id] = v;
+        });
+        onApply(result);
+        $(this).dialog("close");
+      }
+    },
+    close: () => {
+      $(popupEl).dialog("destroy");
+      popupEl.remove();
+    }
+  });
+}
+
 function editGoodDialog(editedGood?: Good) {
   const icons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
   const renderIconOption = (icon: string) =>
     /*html*/ `<option value="${icon}" ${editedGood?.icon === icon ? "selected" : ""}>${icon}</option>`;
 
-  const allBonuses = unique(pack.goods.flatMap(good => Object.keys(good.bonus || {})));
-  const renderBonus = (bonus: string) => /*html*/ `<span>
-        ${getBonusIcon(bonus)}
-        <div style="display: inline-block; width: 5em;">${capitalize(bonus)}</div>
-        <input id="newGoodBonus_${bonus}" type="number" style="width: 4em;" step="1" min="0" max="9" value="${(editedGood?.bonus as Record<string, number> | undefined)?.[bonus] || 0}" />
-      </span>`;
+  const demandCoverageState: Partial<Record<DemandCategory, number>> = { ...(editedGood?.demandCoverage || {}) };
+  const biomeOutputState: Partial<Record<number, number>> = { ...(editedGood?.biomeOutput || {}) };
 
-  const renderDemanCoverage = (category: DemandCategory) => /*html*/ `<span>
-        <div style="display: inline-block; width: 6em; white-space: nowrap;">${DEMAND_CATEGORY_ICONS[category]} ${capitalize(category)}</div>
-        <input id="newGoodDemandCoverage_${category}" type="number" style="width: 4em;" step="0.05" min="0" value="${editedGood?.demandCoverage?.[category] || 0}" />
-      </span>`;
+  const demandCoverageSummary = (): string => {
+    const entries = DEMAND_PRIORITY.map(cat => [cat, demandCoverageState[cat] ?? 0] as const).filter(([, v]) => v > 0);
+    if (!entries.length) return "none";
+    return entries.map(([cat, v]) => `${DEMAND_CATEGORY_ICONS[cat]} ${capitalize(cat)}: ${v}`).join(", ");
+  };
 
-  const renderCulture = (cultureType: CultureType) => /*html*/ `<span>
-        <div style="display: inline-block; width: 6em; white-space: nowrap;">${cultureType}</div>
-        <input id="newGoodCulture_${cultureType}" type="number" style="width: 4em;" step="0.1" min="0" value="${editedGood?.culture?.[cultureType] ?? 1}" />
-      </span>`;
+  const biomeOutputSummary = (): string => {
+    const entries = Object.entries(biomeOutputState).filter(([, v]) => (v ?? 0) > 0);
+    if (!entries.length) return "none";
+    return entries.map(([id, v]) => `${biomesData.name[Number(id)]}: ${v}`).join(", ");
+  };
+
+  const multipliers: { [K in MultiplierDimKey]?: Partial<Record<string, number>> } = {
+    cultureType: { ...((editedGood?.multipliers?.cultureType as any) ?? {}) },
+    culture: { ...((editedGood?.multipliers?.culture as any) ?? {}) },
+    state: { ...((editedGood?.multipliers?.state as any) ?? {}) },
+    religion: { ...((editedGood?.multipliers?.religion as any) ?? {}) },
+    biome: { ...((editedGood?.multipliers?.biome as any) ?? {}) }
+  };
+
+  const multiplierSummary = (dim: MultiplierDimKey): string => {
+    const vals = multipliers[dim] ?? {};
+    const entries = Object.entries(vals).filter(([, v]) => v !== 1);
+    if (!entries.length) return "none";
+    return entries.map(([id, v]) => `${getMultiplierEntityName(dim, id)} ×${rn(v!, 2)}`).join(", ");
+  };
+
+  const renderMultiplierRow = (
+    dim: MultiplierDimKey,
+    label: string
+  ) => /*html*/ `<div style="display: grid; grid-template-columns: 1fr 2fr auto; align-items: self-start; column-gap: 0.4em;">
+      ${label}
+      <span id="mSummary_${dim}">${multiplierSummary(dim)}</span>
+      <button class="mEdit icon-pencil" data-dim="${dim}" data-tip="${label} multipliers"></button>
+    </div>`;
 
   alertMessage.innerHTML = /*html*/ `
     <div style="display:grid; grid-template-columns: 7em 1fr; align-items:center;">
@@ -705,33 +829,38 @@ function editGoodDialog(editedGood?: Good) {
         <input id="newGoodColor" type="color" data-tip="Set a stroke color" style="width:3em; height:14px; padding:0; border:none;" value="${editedGood?.color || "#ff5959"}" />
       </div>
 
-      <label for="newGoodBonuses" style="align-self: start;">Bonuses</label>
-      <div id="newGoodBonuses" style="display: grid; grid-template-columns: 1fr 1fr;">${allBonuses.map(renderBonus).join("")}</div>
+      <label style="align-self:start;" data-tip="How much of each demand category this good satisfies. Click the pencil icon to edit.">Demand Coverage</label>
+      <div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:.4em;">
+        <span id="demandCoverageSummary">${demandCoverageSummary()}</span>
+        <button class="dcEdit icon-pencil" data-tip="Edit demand coverage"></button>
+      </div>
 
-      <label for="newGoodDemandCoverage" style="align-self: start;">Demand Coverage</label>
-      <div id="newGoodDemandCoverage" style="display: grid; grid-template-columns: 1fr 1fr; gap: .2em;">${DEMAND_PRIORITY.map(renderDemanCoverage).join("")}</div>
+      <label style="align-self:start;" data-tip="Per-dimension production multipliers. 1 = no effect, 0 = fully suppressed. Click the pencil icon to edit each dimension.">Multipliers</label>
+      <div style="display:flex;flex-direction:column;">
+        ${renderMultiplierRow("cultureType", "CultureType")}
+        ${renderMultiplierRow("culture", "Culture")}
+        ${renderMultiplierRow("state", "State")}
+        ${renderMultiplierRow("religion", "Religion")}
+        ${renderMultiplierRow("biome", "Biome")}
+      </div>
 
-      <label for="newGoodCulture" style="align-self: start;" data-tip="Per culture type production modifier. Goods produced by a burg are multiplied by this value based on the burg culture type. 1 means no effect.">Culture modifier</label>
-      <div id="newGoodCulture" style="display: grid; grid-template-columns: 1fr 1fr; gap: .2em;">${CULTURE_TYPES.map(renderCulture).join("")}</div>
-    </div>
+      <label data-tip="For raw resources: sets the baseline production per biome" style="align-self:start;">Rural cell production:</label>
+      <div style="display:flex; justify-content: space-between; align-items: flex-start;">
+        <span id="biomeProductionSummary">${biomeOutputSummary()}</span>
+        <button class="bpEdit icon-pencil" data-tip="Edit biome baseline production"></button>
+      </div>
 
-    <div>
-      <label style="display:block; margin-bottom:.2em" data-tip="For raw resources: controls where and how this good is produced directly from the environment (e.g. biome, elevation, temperature)">Distribution function:</label>
-      <textarea id="newGoodDistribution" style="width:100%; height:4em; font-family:monospace; font-size:.9em; box-sizing:border-box" spellcheck="false" placeholder="e.g. biome(5, 6, 7, 8, 9)">${editedGood?.distribution || ""}</textarea>
-      <div id="newGoodDistributionPreview" style="color:#555; font-size:.9em; min-height:1.2em; margin-top:.2em">${editedGood?.distribution ? interpretDistribution(editedGood.distribution) : ""}</div>
-      <label style="display:block; margin:.5em 0 .2em" data-tip="For raw resources: sets the baseline production per biome (biomeId: amount)">Biome baseline production:</label>
-      <input id="newGoodBiomeProduction" style="width:100%; box-sizing:border-box" spellcheck="false" placeholder="e.g. 6:0.5, 7:0.5, 8:0.5" value="${Object.entries(
-        editedGood?.biome || {}
-      )
-        .map(([id, amount]) => `${id}: ${amount}`)
-        .join(", ")}" />
-      <div style="color:#666; font-size:.85em; margin-top:.2em">${biomesData.i.map(id => `${id}: ${biomesData.name[id]}`).join(" | ")}</div>
+      <label data-tip="For raw resources: controls where and how this good is produced directly from the environment (e.g. biome, elevation, temperature)">Distribution:</label>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div id="newGoodDistribution" style="color:#555; font-size:.9em; font-family:monospace;">${editedGood?.distribution || ""}</div>
+        <button id="newGoodDistributionEditor" class="icon-pencil" data-tip="Open the Distribution visual editor"></button>
+      </div>
     </div>
 
     <div>
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:.4em;">
         <label data-tip="For manufactured goods: recipes define which other goods are required to produce this good">Recipes</label>
-        <button id="newGoodAddRecipe">Add recipe</button>
+        <button id="newGoodAddRecipe" class="icon-plus"></button>
       </div>
       <div id="newGoodRecipeList" style="display:flex; flex-direction:column; gap:.45em;"></div>
     </div>
@@ -836,23 +965,47 @@ function editGoodDialog(editedGood?: Good) {
   };
   renderRecipes();
 
+  alertMessage.querySelectorAll<HTMLButtonElement>(".mEdit").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const dim = btn.dataset.dim as MultiplierDimKey;
+      openMultiplierPopup(dim, multipliers[dim] ?? {}, values => {
+        multipliers[dim] = values;
+        const summaryEl = document.getElementById(`mSummary_${dim}`);
+        if (summaryEl) summaryEl.textContent = multiplierSummary(dim);
+      });
+    });
+  });
+
+  alertMessage.querySelector<HTMLButtonElement>(".dcEdit")!.addEventListener("click", () => {
+    openDemandCoveragePopup({ ...demandCoverageState }, values => {
+      (Object.keys(demandCoverageState) as DemandCategory[]).forEach(k => void delete demandCoverageState[k]);
+      Object.assign(demandCoverageState, values);
+      const summaryEl = document.getElementById("demandCoverageSummary");
+      if (summaryEl) summaryEl.textContent = demandCoverageSummary();
+    });
+  });
+
+  alertMessage.querySelector<HTMLButtonElement>(".bpEdit")!.addEventListener("click", () => {
+    openBiomeProductionPopup({ ...biomeOutputState }, values => {
+      Object.keys(biomeOutputState).forEach(k => void delete biomeOutputState[+k]);
+      Object.assign(biomeOutputState, values);
+      const summaryEl = document.getElementById("biomeProductionSummary");
+      if (summaryEl) summaryEl.textContent = biomeOutputSummary();
+    });
+  });
+
   ensureEl("newGoodAddRecipe").on("click", event => {
     event.preventDefault();
     recipes.push({ [defaultGoodId]: 1 });
     renderRecipes();
   });
 
-  const distributionInput = ensureEl<HTMLTextAreaElement>("newGoodDistribution");
-  const distributionPreview = ensureEl("newGoodDistributionPreview");
-  distributionInput.oninput = () => {
-    try {
-      distributionPreview.textContent = distributionInput.value.trim()
-        ? interpretDistribution(distributionInput.value.trim())
-        : "";
-    } catch {
-      distributionPreview.textContent = "";
-    }
-  };
+  ensureEl("newGoodDistributionEditor").on("click", () => {
+    const distEl = ensureEl("newGoodDistribution");
+    DistributionEditor.open(dist => {
+      distEl.textContent = dist;
+    }, distEl.textContent?.trim() ?? "");
+  });
 
   const iconSelect = ensureEl<HTMLSelectElement>("newGoodIcon");
   iconSelect.onchange = () => ensureEl("newGoodIconPreview").setAttribute("href", `#${iconSelect.value}`);
@@ -886,64 +1039,11 @@ function editGoodDialog(editedGood?: Good) {
         const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
         const icon = ensureEl<HTMLSelectElement>("newGoodIcon").value;
         const color = ensureEl<HTMLInputElement>("newGoodColor").value;
-        const distribution = ensureEl<HTMLInputElement>("newGoodDistribution").value.trim();
-        const biomeProductionInput = ensureEl<HTMLInputElement>("newGoodBiomeProduction").value.trim();
-        const biomeProduction = parseBiomeProduction();
-
-        const bonuses: Record<string, number> = {};
-        allBonuses.forEach(bonus => {
-          const bonusInput = document.getElementById(`newGoodBonus_${bonus}`) as HTMLInputElement | null;
-          if (!bonusInput) return;
-          const v = parseInt(bonusInput.value, 10);
-          if (!Number.isNaN(v) && v > 0) bonuses[bonus] = v;
-        });
-
-        const demandCoverage: Partial<Record<DemandCategory, number>> = {};
-        DEMAND_PRIORITY.forEach(category => {
-          const demandCoverageInput = document.getElementById(
-            `newGoodDemandCoverage_${category}`
-          ) as HTMLInputElement | null;
-          if (!demandCoverageInput) return;
-          const v = Number(demandCoverageInput.value);
-          if (Number.isFinite(v) && v > 0) demandCoverage[category] = v;
-        });
-
-        const culture: Partial<Record<CultureType, number>> = {};
-        CULTURE_TYPES.forEach(cultureType => {
-          const cultureInput = document.getElementById(`newGoodCulture_${cultureType}`) as HTMLInputElement | null;
-          if (!cultureInput) return;
-          const v = Number(cultureInput.value);
-          if (Number.isFinite(v) && v >= 0 && v !== 1) culture[cultureType] = v;
-        });
+        const distribution = ensureEl("newGoodDistribution").textContent?.trim() ?? "";
 
         if (!name) errors.push("Name is required");
         if (!Number.isFinite(value) || value < 0) errors.push("Value must be a valid non-negative number");
         if (!Number.isFinite(chance) || chance < 0 || chance > 100) errors.push("Chance must be between 0 and 100");
-
-        function parseBiomeProduction(): Record<number, number> | null {
-          if (!biomeProductionInput) return {};
-
-          const result: Record<number, number> = {};
-          const chunks = biomeProductionInput
-            .split(",")
-            .map(chunk => chunk.trim())
-            .filter(Boolean);
-
-          for (const chunk of chunks) {
-            const [biomeRaw, amountRaw] = chunk.split(":").map(part => part.trim());
-            const biomeId = Number(biomeRaw);
-            const amount = Number(amountRaw);
-
-            if (!Number.isInteger(biomeId) || !biomesData.i.includes(biomeId))
-              errors.push(`Invalid biome id in biome production: ${biomeId}`);
-            if (!Number.isFinite(amount) || amount <= 0)
-              errors.push(`Invalid amount in biome production for biome ${biomeId}: ${amountRaw}`);
-
-            result[biomeId] = amount;
-          }
-
-          return result;
-        }
 
         if (distribution) {
           try {
@@ -971,6 +1071,20 @@ function editGoodDialog(editedGood?: Good) {
         ensureEl("newGoodError").textContent = errors.join(". ");
         if (errors.length) return;
 
+        function buildFinalMultipliers(): Good["multipliers"] {
+          const result: Good["multipliers"] = {};
+          for (const [dimKey, vals] of Object.entries(multipliers) as [
+            MultiplierDimKey,
+            Partial<Record<string, number>>
+          ][]) {
+            const nonDefault = Object.fromEntries(
+              Object.entries(vals ?? {}).filter(([, v]) => v !== undefined && v !== 1)
+            );
+            if (Object.keys(nonDefault).length) (result as any)[dimKey] = nonDefault;
+          }
+          return Object.keys(result).length ? result : undefined;
+        }
+
         if (editedGood) {
           editedGood.name = name;
           editedGood.tags = tags;
@@ -979,12 +1093,11 @@ function editGoodDialog(editedGood?: Good) {
           editedGood.value = value;
           editedGood.chance = chance;
           editedGood.unit = unit;
-          editedGood.bonus = bonuses;
-          editedGood.demandCoverage = demandCoverage;
-          editedGood.culture = culture;
+          editedGood.demandCoverage = demandCoverageState;
+          editedGood.multipliers = buildFinalMultipliers();
           if (distribution) editedGood.distribution = distribution;
-          if (biomeProduction) editedGood.biome = biomeProduction;
-          if (recipes) editedGood.recipes = recipes;
+          if (Object.keys(biomeOutputState).length) editedGood.biomeOutput = biomeOutputState;
+          if (recipes.length) editedGood.recipes = recipes;
         } else {
           const getNextId = () => {
             let nextId = pack.goods?.at(-1)?.i ?? 1;
@@ -1001,11 +1114,10 @@ function editGoodDialog(editedGood?: Good) {
             value,
             chance,
             unit,
-            bonus: bonuses,
-            demandCoverage,
-            culture,
+            demandCoverage: demandCoverageState,
+            multipliers: buildFinalMultipliers(),
             distribution: distribution || undefined,
-            biome: biomeProduction || undefined,
+            biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : undefined,
             recipes: recipes.length ? recipes : undefined
           });
           Goods.sync();
@@ -1029,14 +1141,11 @@ function downloadGoodsData() {
   const production = getProduction();
   const stockData = getAllStockData();
 
-  let data = "Id,Good,Color,Type,Tags,Value,Bonus,Demand Coverage,Chance,Model,Cells,Produced,Stock\n";
+  let data = "Id,Good,Color,Type,Tags,Value,Demand Coverage,Chance,Model,Cells,Produced,Stock\n";
 
   for (const good of pack.goods) {
     const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean).join(";");
     const tags = good.tags.join(";");
-    const bonus = Object.entries(good.bonus || {})
-      .map(([k, v]) => `${k}:${v}`)
-      .join(";");
     const demandCoverage = Object.entries(good.demandCoverage || {})
       .map(([k, v]) => `${k}:${v}`)
       .join(";");
@@ -1045,7 +1154,7 @@ function downloadGoodsData() {
     const produced = rn(goodProduction.burg + goodProduction.cell + goodProduction.bonus);
     const stock = stockData[good.i]?.total ?? 0;
 
-    data += `${good.i},${good.name},${good.color},${types},${tags},${good.value},${bonus},${demandCoverage},${good.chance ?? ""},${good.distribution ?? ""},${cells},${produced},${stock}\n`;
+    data += `${good.i},${good.name},${good.color},${types},${tags},${good.value},${demandCoverage},${good.chance ?? ""},${good.distribution ?? ""},${cells},${produced},${stock}\n`;
   }
 
   const name = `${getFileName("Goods")}.csv`;
@@ -1082,9 +1191,27 @@ function updateDisplayAllCheckbox() {
   ensureEl("goodsDisplayed").innerHTML = String(displayedGoods.size);
 }
 
-function removeGood(good: Good, line: HTMLElement) {
-  if (customization) return;
+function requestGoodsRegeneration() {
+  confirmationDialog({
+    title: "Regenerate bonus goods",
+    message:
+      "Are you sure you want to regenerate bonus goods placement? Generation will be based on the current Goods settings and WON'T effect production or trade",
+    confirm: "Regenerate",
+    onConfirm: window.regenerateGoods
+  });
+}
 
+function requestProductionRegeneration() {
+  confirmationDialog({
+    title: "Regenerate production",
+    message:
+      "Are you sure you want to regenerate production and trade for all goods? Generation will be based on the current Goods settings and bonus goods placement",
+    confirm: "Regenerate",
+    onConfirm: window.regenerateProduction
+  });
+}
+
+function removeGood(good: Good, line: HTMLElement) {
   const message = "Are you sure you want to remove the resource? <br>This action cannot be reverted";
   const onConfirm = () => {
     for (const i of pack.cells.i) {

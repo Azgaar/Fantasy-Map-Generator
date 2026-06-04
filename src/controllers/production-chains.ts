@@ -125,7 +125,7 @@ export class ProductionChains {
 
     const layout = ProductionChains.buildLayout(goods);
     if (!layout.nodes.length) {
-      tip("No production chains found — add manufactured goods with recipes first.", true, "warn");
+      tip("No production chains found: add manufactured goods with recipes first.", true, "warn");
       return;
     }
 

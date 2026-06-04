@@ -67,7 +67,7 @@ export function getHeight(h: number, abs = false): string {
   else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
 
   if (abs) height = Math.abs(height);
-  return `${rn(height * unitRatio)} ${unit}`;
+  return `${rn(height * unitRatio)}${unit}`;
 }
 
 /**

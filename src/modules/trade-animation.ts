@@ -275,6 +275,7 @@ export class TradeAnimationModule {
     if (!route) return fallback();
 
     const pts = route.points;
+    if (!pts) return fallback();
 
     for (let i = 0; i < pts.length - 1; i++) {
       const cellA = pts[i][2];

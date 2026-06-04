@@ -472,13 +472,14 @@ function regenerateBurgs() {
 
 function regenerateGoods() {
   Goods.generate(true);
-  if (layerIsOn("toggleGoods")) drawGoods(GoodsEditor?.getDisplayedGoods?.());
+  if (layerIsOn("toggleGoods")) drawGoods(GoodsEditor.getDisplayedGoods());
   refreshAllEditors();
 }
 
 function regenerateProduction() {
   Markets.generate();
   Production.produce();
+  if (layerIsOn("toggleGoods")) drawGoods(GoodsEditor.getDisplayedGoods());
   if (layerIsOn("toggleTrade")) TradeAnimation.restart();
   refreshAllEditors();
 }

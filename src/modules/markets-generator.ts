@@ -1,3 +1,4 @@
+import Alea from "alea";
 import { quadtree } from "d3-quadtree";
 import { minmax } from "../utils";
 import { getColors } from "../utils/colorUtils";
@@ -35,6 +36,7 @@ export class MarketsModule {
 
   generate(): Market[] {
     TIME && console.time("generateMarkets");
+    Math.random = Alea(seed);
     const markets = this.createMarkets();
     this.expandMarkets(markets);
 

@@ -1378,7 +1378,7 @@
               </tr>
             </tbody>
             <tbody id="styleGoodsMarkets" style="display: none">
-              <tr data-tip="Set market territory zone fill transparency. Defaults to transparent — increase to reveal market zones">
+              <tr data-tip="Set market territory zone fill transparency. Defaults to transparent">
                 <td>Fill opacity</td>
                 <td>
                   <slider-input id="styleGoodsMarketsFillOpacity" min="0" max="1" step=".01"></slider-input>
@@ -2079,7 +2079,7 @@
             </button>
             <button id="regenerateCultures" data-tip="Click to regenerate non-locked cultures">Cultures</button>
             <button id="regenerateEmblems" data-tip="Click to regenerate all emblems">Emblems</button>
-            <button id="regenerateGoods" data-tip="Click to regenerate goods">Goods</button>
+            <button id="regenerateGoods" data-tip="Click to regenerate bonus goods placement">Goods</button>
             <button id="regenerateIce" data-tip="Click to regenerate icebergs and glaciers">Ice</button>
             <button
               id="regenerateStateLabels"
@@ -2101,7 +2101,7 @@
             </button>
             <button
               id="regenerateProduction"
-              data-tip="Click to regenerate burgs production and trade deals"
+              data-tip="Click to regenerate production and trade deals"
             >
               Production
             </button>
@@ -5065,6 +5065,8 @@
           <button id="goodsTagsFilter" data-tip="Filter visible goods by tags" class="icon-tags"></button>
           <button id="goodsAssign" data-tip="Manually assign goods to cells" class="icon-brush"></button>
           <button id="goodsAdd" data-tip="Add a new good" class="icon-plus hide"></button>
+          <button id="goodsRegenerateGoods" data-tip="Regenerate bonus goods placement" class="icon-arrows-cw hide"></button>
+          <button id="goodsRegenerateProduction" data-tip="Regenerate production and trade deals" class="icon-retweet hide"></button>
           <button id="goodsChains" data-tip="Show production chains graph" class="icon-chart-line hide"></button>
           <button
             id="goodsRestore"

@@ -36,6 +36,8 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Diplomacy**: The system of political relationships (allies, enemies, neutral, vassals) between different States.
 - **Regiment / Military**: The armed forces belonging to States or Burgs, represented by units.
 - **Good**: A resource or product (e.g., wood, iron, grain) with properties like value, demand, and recipes. Raw goods have a `distribution`; manufactured goods have `recipes`.
+- **Biome Output**: The baseline production *amount* of a good per unit of rural population in a given biome (stored as `good.biomeOutput`). Distinct from a Good Multiplier. _Avoid_: biome production, biome yield.
+- **Good Multiplier**: A per-dimension scalar (number) that modifies a good's production when a cell matches a specific cultureType, culture id, state id, religion id, or biome id. Absent or 1 means no effect; 0 means no production. Multiple active multipliers combine multiplicatively. _Avoid_: production modifier, culture modifier.
 - **Market**: A regional economic hub anchored at a burg. Owns per-good stock and price, mediates all flows between rural cells, burgs, and other markets.
 - **Deal**: A record of a single transaction in the trade/markets system (`{seller, sellerType, buyer, buyerType, good, units, price, tax?}`). Stored in `pack.deals` and consumed by the trade animation and trade details UI. The optional `tax` field carries the sales-tax amount in currency units credited to the seller's state treasury.
 - **Treasury**: Per-state accumulated balance in currency units. Fed each cycle by [[Sales Tax]] on deals where the seller belongs to the state and by [[Poll Tax]] on the state's population. Stored as `state.treasury`. Neutrals (state 0) keep treasury at 0.

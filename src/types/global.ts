@@ -142,6 +142,7 @@ declare global {
   var refreshAllEditors: () => void;
   var toggleCells: () => void;
   var regenerateGoods: () => void;
+  var regenerateProduction: () => void;
   var legend: any;
 }
 
