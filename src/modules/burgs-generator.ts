@@ -10,7 +10,7 @@ export interface Burg {
   cell: number;
   x: number;
   y: number;
-  i?: number;
+  i: number;
   state?: number;
   culture?: number;
   name?: string;
@@ -74,7 +74,7 @@ class BurgModule {
         const [x, y] = cells.p[cell];
 
         if (burgsQuadtree.find(x, y, spacing) === undefined) {
-          burgs.push({ cell, x, y });
+          burgs.push({ cell, x, y, i: burgs.length });
           burgsQuadtree.add([x, y]);
         }
 
@@ -385,9 +385,6 @@ class BurgModule {
   private defineFeatures(burg: Burg) {
     const pop = burg.population as number;
     burg.citadel = Number(burg.capital || (pop > 50 && P(0.75)) || (pop > 15 && P(0.5)) || P(0.1));
-    burg.plaza = Number(
-      Routes.isCrossroad(burg.cell) || (Routes.hasRoad(burg.cell) && P(0.7)) || pop > 20 || (pop > 10 && P(0.8))
-    );
     burg.walls = Number(burg.capital || pop > 30 || (pop > 20 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.1));
     burg.shanty = Number(pop > 60 || (pop > 40 && P(0.75)) || (pop > 20 && burg.walls && P(0.4)));
     const religion = pack.cells.religion[burg.cell] as number;

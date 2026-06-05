@@ -114,9 +114,11 @@ export class MarketsModule {
     const MOUNTAIN_COST = 20;
     const LAND_COST_FOR_PORTS = 10;
 
+    const tradeCenters = {} as Record<number, boolean>;
     for (const market of markets) {
       const centerBurg = pack.burgs[market.centerBurgId];
       if (!centerBurg) continue;
+      tradeCenters[centerBurg.i] = true;
 
       const startCell = centerBurg.cell;
       cellMarket[startCell] = market.i;
@@ -165,6 +167,7 @@ export class MarketsModule {
     for (const burg of pack.burgs) {
       if (!burg.i || burg.removed) continue;
       burg.market = cellMarket[burg.cell] || 0;
+      burg.plaza = burg.plaza || tradeCenters[burg.i] ? 1 : 0;
     }
 
     return cellMarket;

@@ -35,7 +35,7 @@ const FN_DEFS: FnDef[] = [
     paramLabel: "Height (0–100)",
     defaultVal: "40",
     description: "Cells at or above a height",
-    note: "20: sea level, 50: highlands, 70 = mountains."
+    note: "20: sea level, 50: highlands, 70: mountains."
   },
   {
     id: "maxHeight",
@@ -44,7 +44,7 @@ const FN_DEFS: FnDef[] = [
     paramLabel: "Height (0–100)",
     defaultVal: "40",
     description: "Cells at or below a height",
-    note: "20: sea level, 50: highlands, 70 = mountains."
+    note: "20: sea level, 50: highlands, 70: mountains."
   },
   {
     id: "minTemp",
@@ -69,7 +69,7 @@ const FN_DEFS: FnDef[] = [
     label: "Shore Proximity",
     paramType: "shore",
     description: "Cells by proximity to water",
-    note: "-1 = shallow ocean, -2 = deep ocean, 1 = coastal land, 2 = near coast land."
+    note: "-1: shallow ocean, -2: deep ocean, 1: coastal land, 2: near coast land."
   },
   {
     id: "type",
