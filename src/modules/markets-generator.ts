@@ -34,9 +34,9 @@ export type Deal = {
 export class MarketsModule {
   private marketById: Market[] = [];
 
-  generate(): Market[] {
+  generate(regenerate: boolean = false): Market[] {
     TIME && console.time("generateMarkets");
-    Math.random = Alea(seed);
+    if (!regenerate) Math.random = Alea(seed);
     const markets = this.createMarkets();
     this.expandMarkets(markets);
 
