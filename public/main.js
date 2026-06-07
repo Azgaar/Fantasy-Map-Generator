@@ -68,14 +68,11 @@ let searoutes = routes.append("g").attr("id", "searoutes");
 let temperature = viewbox.append("g").attr("id", "temperature");
 let coastline = viewbox.append("g").attr("id", "coastline");
 let ice = viewbox.append("g").attr("id", "ice");
+let goods = viewbox.append("g").attr("id", "goods").style("display", "none");
+let markets = viewbox.append("g").attr("id", "markets");
+let tradeAnimation = viewbox.append("g").attr("id", "tradeAnimation");
 let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
-let tradeAnimation = viewbox.append("g").attr("id", "tradeAnimation");
-let goods = viewbox.append("g").attr("id", "goods").style("display", "none");
-goods.append("g").attr("id", "goodsCells");
-goods.append("g").attr("id", "goodsMarkets");
-goods.append("g").attr("id", "goodsIcons");
-goods.append("g").attr("id", "goodsBurgs");
 let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
 let icons = viewbox.append("g").attr("id", "icons");
 let labels = viewbox.append("g").attr("id", "labels");
@@ -113,6 +110,11 @@ let burgLabels = labels.append("g").attr("id", "burgLabels");
 // population groups
 population.append("g").attr("id", "rural");
 population.append("g").attr("id", "urban");
+
+// goods groups
+goods.append("g").attr("id", "goodsCells");
+goods.append("g").attr("id", "goodsIcons");
+goods.append("g").attr("id", "goodsBurgs");
 
 // emblem groups
 emblems.append("g").attr("id", "burgEmblems");

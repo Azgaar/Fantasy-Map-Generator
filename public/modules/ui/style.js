@@ -384,11 +384,11 @@ function selectStyleElement() {
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#41414f";
   }
 
-  if (styleElement === "goodsMarkets") {
+  if (styleElement === "markets") {
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = el.attr("stroke-width") || "0.5";
-    styleGoodsMarkets.style.display = "block";
-    styleGoodsMarketsFillOpacity.value = el.attr("fill-opacity") || "0";
+    styleMarketsLayer.style.display = "block";
+    styleMarketsLayerFillOpacity.value = el.attr("fill-opacity") || "0";
   }
 
   // update group options
@@ -994,10 +994,9 @@ styleGoodsCircle.addEventListener("change", function () {
   drawGoods(GoodsEditor?.getDisplayedGoods?.());
 });
 
-styleGoodsMarketsFillOpacity.on("input", e => {
-  goods.select("#goodsMarkets").attr("fill-opacity", e.target.value);
+styleMarketsLayerFillOpacity.on("input", e => {
+  markets.attr("fill-opacity", e.target.value);
 });
-
 
 // request a URL to image to be used as a texture
 function textureProvideURL() {

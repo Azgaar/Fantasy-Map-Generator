@@ -1,14 +1,16 @@
+import { pointer } from "d3";
 import type { Burg } from "../modules/burgs-generator";
 import type { Deal, Market } from "../modules/markets-generator";
-import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-goods";
-import { ensureEl, formatPrice, rn } from "../utils";
+import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-markets";
+import { ensureEl, findAllCellsInRadius, findClosestCell, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
+let marketsManualHistory: string[] = [];
 
 export function open(): void {
   if (customization) return;
   closeDialogs("#marketsOverview, .stable");
-  if (!layerIsOn("toggleGoods")) toggleGoods();
+  if (!layerIsOn("toggleMarketsLayer")) toggleMarketsLayer();
 
   marketsOverviewAddLines();
 
@@ -17,12 +19,7 @@ export function open(): void {
     resizable: false,
     width: "auto",
     close: closeMarketsOverview,
-    position: {
-      my: "right top",
-      at: "right-10 top+10",
-      of: "svg",
-      collision: "fit"
-    }
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
 
   if (!isInitialized) {
@@ -30,12 +27,44 @@ export function open(): void {
     ensureEl("marketsOverviewExport").on("click", downloadMarketsCsv);
     ensureEl("marketsOverviewCompare").on("click", () => window.ComparePrices.open());
     ensureEl("marketsOverviewPercentage").on("click", togglePercentageMode);
-    ensureEl("marketsOverviewBody").on("click", ev => {
-      const line = (ev.target as HTMLElement).closest<HTMLElement>(".states.market");
+
+    ensureEl("marketsManually").on("click", () => {
+      if (customization === 15) exitMarketsManualAssignment(false);
+      else enterMarketsManualAssignment();
+    });
+    ensureEl("marketsManuallyUndo").on("click", undoMarketsManualStep);
+    ensureEl("marketsManuallyApply").on("click", () => exitMarketsManualAssignment(true));
+    ensureEl("marketsManuallyCancel").on("click", () => exitMarketsManualAssignment(false));
+
+    ensureEl("marketsAdd").on("click", () => {
+      if (customization === 16) exitAddMarketMode();
+      else enterAddMarketMode();
+    });
+
+    ensureEl("marketsOverviewBody").on("click", (ev: Event) => {
+      const target = ev.target as HTMLElement;
+
+      if (target.classList.contains("icon-trash-empty")) {
+        const line = target.closest<HTMLElement>(".states.market");
+        if (!line) return;
+        confirmRemoveMarket(+line.dataset.id!);
+        return;
+      }
+
+      const line = target.closest<HTMLElement>(".states.market");
       if (!line) return;
       const marketId = +line.dataset.id!;
-      window.MarketOverview.open(marketId);
+
+      if (customization === 15) {
+        ensureEl("marketsOverviewBody")
+          .querySelector<HTMLElement>(".states.market.selected")
+          ?.classList.remove("selected");
+        line.classList.add("selected");
+      } else {
+        window.MarketOverview.open(marketId);
+      }
     });
+
     isInitialized = true;
   }
 }
@@ -84,6 +113,7 @@ function marketsOverviewAddLines(): void {
       <div data-tip="Total gross sales revenue" data-type="sales" class="marketSales" style="width:6em">${formatPrice(rn(sales))}</div>
       <div data-tip="Total purchase spending" data-type="buys" class="marketBuysCol" style="width:6em">${formatPrice(rn(buys))}</div>
       <div data-tip="Market value: net trading flow plus unsold inventory value minus tax" data-type="value" class="marketValue" style="width:6em">${formatPrice(rn(value))}</div>
+      <span data-tip="Remove this market" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span>
     </div>`;
   }
 
@@ -105,6 +135,203 @@ function marketsOverviewAddLines(): void {
   applySorting(ensureEl("marketsOverviewHeader"));
   $("#marketsOverview").dialog({ width: fitContent() });
 }
+
+function enterMarketsManualAssignment(): void {
+  if (!layerIsOn("toggleMarketsLayer")) toggleMarketsLayer();
+  customization = 15;
+  marketsManualHistory = [];
+
+  document.getElementById("marketsTemp")?.remove();
+  const marketsLayerEl = document.getElementById("markets");
+  if (marketsLayerEl) {
+    const tempG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    tempG.id = "marketsTemp";
+    marketsLayerEl.appendChild(tempG);
+  }
+
+  document.querySelectorAll<HTMLElement>("#marketsOverviewBottom > button:not(#marketsManually)").forEach(b => {
+    b.style.display = "none";
+  });
+  ensureEl("marketsManuallyButtons").style.display = "inline-block";
+  ensureEl("marketsManually").classList.add("pressed");
+
+  tip("Click a market row to select it, then drag on the map to repaint territory", true);
+
+  const firstRow = ensureEl("marketsOverviewBody").querySelector<HTMLElement>(".states.market");
+  if (firstRow) firstRow.classList.add("selected");
+
+  viewbox
+    .style("cursor", "crosshair")
+    .on("click", selectMarketOnMapClick)
+    .call((window as any).d3.drag().on("start", startMarketsBrushDrag))
+    .on("touchmove mousemove", onMarketsBrushMove);
+}
+
+function saveMarketsManualSnapshot(): void {
+  marketsManualHistory.push(document.getElementById("marketsTemp")?.innerHTML ?? "");
+}
+
+function selectMarketOnMapClick(this: SVGElement): void {
+  const [x, y] = pointer(window.event!, this);
+  const cellId = findCell(x, y);
+  if (cellId === undefined) return;
+
+  const marketId = pack.cells.market[cellId];
+  if (!marketId) return;
+
+  const body = ensureEl("marketsOverviewBody");
+  body.querySelector<HTMLElement>(".states.market.selected")?.classList.remove("selected");
+  body.querySelector<HTMLElement>(`.states.market[data-id="${marketId}"]`)?.classList.add("selected");
+}
+
+function startMarketsBrushDrag(this: SVGElement): void {
+  saveMarketsManualSnapshot();
+
+  (window as any).d3.event.on("drag", () => {
+    const d3ev = (window as any).d3.event;
+    if (!d3ev.dx && !d3ev.dy) return;
+    const [x, y] = pointer(window.event!, this);
+    paintMarketCells(x, y);
+  });
+}
+
+function paintMarketCells(x: number, y: number): void {
+  const r = +ensureEl<HTMLInputElement>("marketsBrush").value;
+  moveCircle(x, y, r);
+
+  const found = r > 5 ? findAllCellsInRadius(x, y, r, pack) : [findClosestCell(x, y, Infinity, pack)];
+  const selection = found.filter(cellId => cellId !== undefined);
+  if (!selection.length) return;
+
+  const selectedRow = ensureEl("marketsOverviewBody").querySelector<HTMLElement>(".states.market.selected");
+  if (!selectedRow) return;
+  const marketId = +selectedRow.dataset.id!;
+  const market = pack.markets.find(m => m.i === marketId);
+  if (!market) return;
+
+  const temp = document.getElementById("marketsTemp");
+  if (!temp) return;
+
+  for (const cellId of selection) {
+    temp.querySelector(`polygon[data-cell="${cellId}"]`)?.remove();
+
+    const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    polygon.setAttribute("data-cell", String(cellId));
+    polygon.setAttribute("data-market", String(marketId));
+    const pts = getPackPolygon(cellId)
+      .map(p => p.join(","))
+      .join(" ");
+    polygon.setAttribute("points", pts);
+    polygon.setAttribute("fill", market.color);
+    polygon.setAttribute("fill-opacity", "0.7");
+    temp.appendChild(polygon);
+  }
+}
+
+function onMarketsBrushMove(this: SVGElement): void {
+  showMainTip();
+  const [x, y] = pointer(window.event!, this);
+  const r = +ensureEl<HTMLInputElement>("marketsBrush").value;
+  moveCircle(x, y, r);
+}
+
+function undoMarketsManualStep(): void {
+  if (!marketsManualHistory.length) return;
+  const prev = marketsManualHistory.pop()!;
+  const temp = document.getElementById("marketsTemp");
+  if (temp) temp.innerHTML = prev;
+}
+
+function exitMarketsManualAssignment(apply: boolean): void {
+  customization = 0;
+
+  if (apply) {
+    const temp = document.getElementById("marketsTemp");
+    if (temp) {
+      temp.querySelectorAll<SVGElement>("polygon[data-cell]").forEach(polygon => {
+        const cellId = +polygon.dataset.cell!;
+        const marketId = +polygon.dataset.market!;
+        pack.cells.market[cellId] = marketId;
+        const burgId = pack.cells.burg[cellId];
+        if (burgId) (pack.burgs as Burg[])[burgId].market = marketId;
+      });
+    }
+  }
+
+  document.getElementById("marketsTemp")?.remove();
+
+  document.querySelectorAll<HTMLElement>("#marketsOverviewBottom > button").forEach(b => {
+    b.style.display = "";
+  });
+  ensureEl("marketsManuallyButtons").style.display = "none";
+  ensureEl("marketsManually").classList.remove("pressed");
+  ensureEl("marketsOverviewBody").querySelector<HTMLElement>(".states.market.selected")?.classList.remove("selected");
+
+  restoreDefaultEvents();
+  clearMainTip();
+  removeCircle();
+
+  if (apply) {
+    drawMarketsLayer();
+    marketsOverviewAddLines();
+  }
+}
+
+function enterAddMarketMode(): void {
+  customization = 16;
+  ensureEl("marketsAdd").classList.add("pressed");
+  tip("Click on a burg on the map to create a new market there. Hold Shift to add multiple", true);
+  viewbox.style("cursor", "crosshair").on("click", addMarketOnClick);
+}
+
+function exitAddMarketMode(): void {
+  customization = 0;
+  ensureEl("marketsAdd").classList.remove("pressed");
+  restoreDefaultEvents();
+  clearMainTip();
+}
+
+function addMarketOnClick(this: SVGElement): void {
+  const ev = window.event as MouseEvent;
+  const [x, y] = pointer(ev, this);
+  const cellId = findCell(x, y);
+  if (cellId === undefined) return;
+
+  const burgId = pack.cells.burg[cellId];
+  if (!burgId) {
+    tip("Click on a burg to create a new market — no burg found here", false, "error");
+    return;
+  }
+
+  const newMarket = Markets.addMarket(burgId);
+  if (!newMarket) return;
+
+  if (!ev.shiftKey) exitAddMarketMode();
+
+  if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
+  marketsOverviewAddLines();
+}
+
+// ---- Remove market ----
+
+function confirmRemoveMarket(marketId: number): void {
+  const market = pack.markets.find(m => m.i === marketId);
+  if (!market) return;
+  const name = getMarketCenterName(market);
+
+  confirmationDialog({
+    title: "Remove Market",
+    message: `Are you sure you want to remove the market "${name}"?<br>This action cannot be reverted`,
+    confirm: "Remove",
+    onConfirm: () => {
+      Markets.removeMarket(marketId);
+      if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
+      marketsOverviewAddLines();
+    }
+  });
+}
+
+// ---- Helpers ----
 
 function getMarketTotalStock(market: Market): number {
   return Object.values(market.goods).reduce((sum, g) => sum + (g.stock || 0), 0);
@@ -215,6 +442,8 @@ function downloadMarketsCsv(): void {
 }
 
 function closeMarketsOverview(): void {
+  if (customization === 15) exitMarketsManualAssignment(false);
+  if (customization === 16) exitAddMarketMode();
   ensureEl("marketsOverviewBody").innerHTML = "";
 }
 

@@ -1,10 +1,8 @@
-import { color, curveBasisClosed, line, select } from "d3";
 import type { Good } from "../modules/goods-generator";
 import { normalize, rn } from "../utils";
 import { getPackPolygon } from "../utils/graphUtils";
-import { getIsolines } from "../utils/pathUtils";
 
-const SUBGROUPS = ["goodsMarkets", "goodsCells", "goodsIcons", "goodsBurgs"] as const;
+const SUBGROUPS = ["goodsCells", "goodsIcons", "goodsBurgs"] as const;
 
 const SIZE = 6;
 const HALF = SIZE / 2;
@@ -35,11 +33,9 @@ export function drawGoods(displayedGoods: Set<number>) {
   TIME && console.time("drawGoods");
   ensureSubgroups();
 
-  goods.select("#goodsMarkets").html(buildGoodsMarketsContent());
   goods.select("#goodsCells").html(buildGoodsCellsContent(displayedGoods));
   goods.select("#goodsIcons").html(buildGoodsIconsContent(displayedGoods));
   goods.select("#goodsBurgs").html(buildGoodsBurgsContent(displayedGoods));
-  highlightMarketsOnHover();
 
   goods.style("display", null);
   TIME && console.timeEnd("drawGoods");
@@ -49,54 +45,6 @@ function ensureSubgroups() {
   for (const id of SUBGROUPS) {
     if (goods.select(`#${id}`).empty()) goods.append("g").attr("id", id);
   }
-}
-
-function buildGoodsMarketsContent(): string {
-  const linegen = line().curve(curveBasisClosed);
-  const getType = (cellId: number) => pack.cells.market[cellId];
-  const isolines = getIsolines(pack, getType, { polygons: true });
-
-  return pack.markets
-    .map(market => {
-      let content = "";
-      const fillColor = market.color || "#dababf";
-      const strokeColor = color(fillColor)?.darker().hex() || "#000";
-
-      const polygons = isolines[market.i]?.polygons;
-      if (polygons) {
-        const path = polygons.map(p => linegen(p) ?? "").join("");
-        content += `<path d="${path}" fill="${fillColor}" stroke="${strokeColor}"/>`;
-      }
-
-      const centerBurg = pack.burgs[market.centerBurgId];
-      if (centerBurg) {
-        const { x, y } = centerBurg;
-        const radius = Math.max(rn(3 + 1 / scale, 2), 2);
-        const fontSize = Math.max(rn(5 + 1 / scale, 2), 2);
-        const strokeWidth = rn(radius / 8, 2);
-
-        content += `<circle cx="${x}" cy="${y}" r="${radius}" fill="${fillColor}" fill-opacity="1" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
-        content += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}px" fill-opacity="1">⚖️</text>`;
-      }
-
-      return `<g id="market${market.i}" data-id="${market.i}">${content}</g>`;
-    })
-    .join("");
-}
-
-function highlightMarketsOnHover(): void {
-  select("#goodsMarkets")
-    .selectAll("g")
-    .on("mouseover", e => highlightMarketOn(e.currentTarget.dataset.id!))
-    .on("mouseout", e => highlightMarketOff(e.currentTarget.dataset.id!));
-}
-
-export function highlightMarketOn(marketId: number | string): void {
-  select(`#goodsMarkets #market${marketId} path`).transition().duration(1000).attr("fill-opacity", 0.7);
-}
-
-export function highlightMarketOff(marketId: number | string): void {
-  select(`#goodsMarkets #market${marketId} path`).transition().duration(600).attr("fill-opacity", 0);
 }
 
 function buildGoodsCellsContent(displayedGoods: Set<number>): string {
@@ -126,7 +74,7 @@ function buildGoodsCellsContent(displayedGoods: Set<number>): string {
   // Second pass: render polygons with opacity normalized against the global max
   let html = "";
   for (const [cellId, { produced, total }] of cellTotals) {
-    const opacity = normalize(total, 0, maxTotal);
+    const opacity = 0.1 + 0.9 * normalize(total, 0, maxTotal);
     const points = getPackPolygon(cellId, pack).join(" ");
     for (const [goodId, amount] of produced) {
       if (amount <= 0) continue;

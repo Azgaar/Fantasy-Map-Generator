@@ -351,6 +351,7 @@ async function parseLoadedData(data, mapVersion) {
       prec = viewbox.select("#prec");
       population = viewbox.select("#population");
       goods = viewbox.select("#goods");
+      markets = viewbox.select("#markets");
       emblems = viewbox.select("#emblems");
       labels = viewbox.select("#labels");
       icons = viewbox.select("#icons");

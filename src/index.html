@@ -133,7 +133,7 @@
     </style>
     <link
       rel="preload"
-      href="index.css?v=1.123.0-1"
+      href="index.css?v=1.123.0-2"
       as="style"
       onload="
         this.onload = null;
@@ -581,14 +581,6 @@
               <u>T</u>emperature
             </li>
             <li
-              id="togglePopulation"
-              data-tip="Population map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
-              data-shortcut="N"
-              onclick="togglePopulation(event)"
-            >
-              Populatio<u>n</u>
-            </li>
-            <li
               id="toggleIce"
               data-tip="Icebergs and glaciers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="J"
@@ -597,12 +589,21 @@
               Ice
             </li>
             <li
-              id="togglePrecipitation"
-              data-tip="Precipitation map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
-              data-shortcut="A"
-              onclick="togglePrecipitation(event)"
+              id="toggleGoods"
+              data-tip="Goods and Production: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
+              class="buttonoff"
+              data-shortcut="G"
+              onclick="toggleGoods(event)"
             >
-              Precipit<u>a</u>tion
+              <u>G</u>oods
+            </li>
+            <li
+              id="toggleMarketsLayer"
+              data-tip="Markets: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
+              class="buttonoff"
+              onclick="toggleMarketsLayer(event)"
+            >
+              Markets
             </li>
             <li
               id="toggleTrade"
@@ -613,14 +614,19 @@
             >
               Trade
             </li>
-            <li
-              id="toggleGoods"
-              data-tip="Goods: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
-              class="buttonoff"
-              data-shortcut="G"
-              onclick="toggleGoods(event)"
+            <li id="togglePrecipitation"
+              data-tip="Precipitation map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
+              data-shortcut="A"
+              onclick="togglePrecipitation(event)"
             >
-              <u>G</u>oods
+              Precipit<u>a</u>tion
+            </li>
+            <li id="togglePopulation"
+              data-tip="Population map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
+              data-shortcut="N"
+              onclick="togglePopulation(event)"
+            >
+              Populatio<u>n</u>
             </li>
             <li
               id="toggleEmblems"
@@ -759,7 +765,7 @@
             <option value="landmass">Landmass</option>
             <option value="legend">Legend</option>
             <option value="markers">Markers</option>
-            <option value="goodsMarkets">Goods: market zones</option>
+            <option value="markets">Markets</option>
             <option value="armies">Military</option>
             <option value="ocean">Ocean</option>
             <option value="population">Population</option>
@@ -1377,11 +1383,11 @@
                 </td>
               </tr>
             </tbody>
-            <tbody id="styleGoodsMarkets" style="display: none">
+            <tbody id="styleMarketsLayer" style="display: none">
               <tr data-tip="Set market territory zone fill transparency. Defaults to transparent">
                 <td>Fill opacity</td>
                 <td>
-                  <slider-input id="styleGoodsMarketsFillOpacity" min="0" max="1" step=".01"></slider-input>
+                  <slider-input id="styleMarketsLayerFillOpacity" min="0" max="1" step=".01"></slider-input>
                 </td>
               </tr>
             </tbody>
@@ -2089,6 +2095,9 @@
             </button>
             <button id="regenerateMarkers" data-tip="Click to regenerate unlocked markers">
               Markers <i id="configRegenerateMarkers" class="icon-cog" data-tip="Click to set number multiplier"></i>
+            </button>
+            <button id="regenerateMarkets" data-tip="Click to regenerate markets and their territories">
+              Markets
             </button>
             <button
               id="regenerateMilitary"
@@ -5080,7 +5089,7 @@
         <div id="productionChainsContent" style="overflow:auto"></div>
       </div>
       <div id="marketsOverview" class="dialog stable" style="display: none">
-        <div id="marketsOverviewHeader" class="header" style="grid-template-columns: 1.6em 7.2em 8em 3.5em 4.5em 6.5em 6.4em 6em 6em;">
+        <div id="marketsOverviewHeader" class="header" style="grid-template-columns: 1.6em 7.2em 8em 3.5em 4.5em 6.5em 6.4em 6em 6em 1.2em;">
           <div></div>
           <div data-tip="Market center burg name. Click to sort" class="sortable alphabetically" data-sortby="market" style="margin-left:0">Market&nbsp;</div>
           <div data-tip="Owning state. Click to sort" class="sortable alphabetically" data-sortby="owner">Owner&nbsp;</div>
@@ -5090,6 +5099,7 @@
           <div data-tip="Total gross sales revenue. Click to sort" class="sortable" data-sortby="sales">Sales&nbsp;</div>
           <div data-tip="Total purchase spending. Click to sort" class="sortable" data-sortby="buys">Buys&nbsp;</div>
           <div data-tip="Market value: net trading flow plus unsold inventory value minus tax. Click to sort" class="sortable icon-sort-number-down" data-sortby="value">Value&nbsp;</div>
+          <div></div>
         </div>
         <div id="marketsOverviewBody" class="table" data-type="absolute" style="max-height:40em; cursor:pointer"></div>
         <div id="marketsOverviewFooter" class="totalLine">
@@ -5103,6 +5113,16 @@
           <button id="marketsOverviewPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
           <button id="marketsOverviewCompare" data-tip="Compare good stock across markets" class="icon-chart-bar"></button>
           <button id="marketsOverviewExport" data-tip="Save markets data as a CSV file" class="icon-download"></button>
+          <button id="marketsManually" data-tip="Manually re-assign market territories" class="icon-brush"></button>
+          <div id="marketsManuallyButtons" style="display: none">
+            <div data-tip="Change brush size. Shortcuts: + / ] to increase; - / [ to decrease" style="display: inline-block; margin-block: 0.3em;">
+              <slider-input id="marketsBrush" min="1" max="100" value="15">Brush:</slider-input>
+            </div>
+            <button id="marketsManuallyUndo" data-tip="Undo last brush stroke" class="icon-ccw"></button>
+            <button id="marketsManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
+            <button id="marketsManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
+          </div>
+          <button id="marketsAdd" data-tip="Add a new market. Click on a burg on the map. Hold Shift to add multiple" class="icon-plus"></button>
         </div>
       </div>
       <div id="marketsGoodCompare" class="dialog" style="display: none">
@@ -5695,6 +5715,7 @@
         </div>
         <div id="markersBottom">
           <button id="markersOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
+          <button id="markersRegenerate" data-tip="Regenerate unlocked markers" class="icon-shuffle"></button>
           <input type="hidden" id="addedMarkerType" name="addedMarkerType" value="" />
           <span id="markerTypeSelectorWrapper">
             <button id="markerTypeSelector" data-tip="Select marker type for newly added markers.">❓</button>

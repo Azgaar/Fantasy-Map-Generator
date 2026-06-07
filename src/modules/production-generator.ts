@@ -1,8 +1,15 @@
+import { sum } from "d3";
+import { minmax } from "../utils";
 import type { Burg } from "./burgs-generator";
 import { DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import type { DemandCategory, Good } from "./goods-generator";
-import { BONUS_RESOURCE_PRODUCTION, DEMAND_PRIORITY, getDemandTargets } from "./goods-generator";
+import { DEMAND_PRIORITY, getDemandTargets } from "./goods-generator";
 import type { Deal, Market } from "./markets-generator";
+
+const BONUS_RURAL_PRODUCTION = 0.25;
+const BONUS_URBAN_PRODUCTION = 1;
+const MIN_BONUS_PRODUCTION = 1;
+const MAX_BONUS_PRODUCTION = 5;
 
 export class ProductionModule {
   produce() {
@@ -75,13 +82,14 @@ export class ProductionModule {
     const demandCoverage = this.calculateDemandCoverage(inventory, index.demandCoverageByGood);
     const records: ProductionRecord[] = [];
 
-    const localGoodId = pack.cells.good[burg.cell];
-    if (localGoodId) {
-      const modifier = this.getModifiers(Goods.get(localGoodId)!, burg.cell);
-      const localBonus = Math.min(population, BONUS_RESOURCE_PRODUCTION) * modifier;
+    const good = Goods.get(pack.cells.good[burg.cell]);
+    if (good) {
+      const modifier = this.getModifiers(good, burg.cell);
+      const bonus = minmax(population * BONUS_URBAN_PRODUCTION, MIN_BONUS_PRODUCTION, MAX_BONUS_PRODUCTION);
+      const localBonus = bonus * modifier;
       if (localBonus > 0) {
-        inventory[localGoodId] = (inventory[localGoodId] || 0) + localBonus;
-        records.push({ goodId: localGoodId, units: rn(localBonus, 2) });
+        inventory[good.i] = (inventory[good.i] || 0) + localBonus;
+        records.push({ goodId: good.i, units: rn(localBonus, 2) });
       }
     }
 
@@ -671,23 +679,29 @@ export class ProductionModule {
     biomeProduction: Record<number, { goodId: number; production: number }[]>
   ): Record<number, number> {
     const produced: Record<number, number> = {};
-    if (pack.cells.h[cellId] < 20) return produced;
 
     const modifier = (good: Good) => this.getModifiers(good, cellId);
-    const add = (goodId: number, amount: number) => (produced[goodId] = (produced[goodId] || 0) + rn(amount, 2));
+    const add = (goodId: number, amount: number) => {
+      produced[goodId] = rn((produced[goodId] || 0) + amount, 2);
+    };
 
-    const pop = pack.cells.pop[cellId];
+    const isWater = pack.cells.h[cellId] < 20;
+    const pop = isWater ? sum(pack.cells.c[cellId].map(c => pack.cells.pop[c])) || 0 : pack.cells.pop[cellId];
+
     if (pop > 0) {
       for (const { goodId, production } of biomeProduction[pack.cells.biome[cellId]] || []) {
         const good = Goods.get(goodId);
         if (good) add(goodId, pop * production * modifier(good));
       }
-    }
 
-    const bonusGoodId = pack.cells.good[cellId];
-    if (bonusGoodId) {
-      const good = Goods.get(bonusGoodId);
-      if (good) add(bonusGoodId, BONUS_RESOURCE_PRODUCTION * modifier(good));
+      const bonusGoodId = pack.cells.good[cellId];
+      if (bonusGoodId) {
+        const good = Goods.get(bonusGoodId);
+        if (good) {
+          const bonus = Math.min(pop * BONUS_RURAL_PRODUCTION, MAX_BONUS_PRODUCTION);
+          add(bonusGoodId, bonus * modifier(good));
+        }
+      }
     }
 
     return produced;

@@ -145,11 +145,12 @@ a {
 #goodsCells,
 #goodsIcons,
 #goodsBurgs,
-#goodsMarkets {
+#markets {
   cursor: pointer;
 }
 
-#goodsMarkets > g > path {
+#markets > g > path,
+#markets > g > text {
   user-select: none;
   pointer-events: none;
 }

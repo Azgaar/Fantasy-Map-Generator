@@ -1,7 +1,7 @@
 import Alea from "alea";
 import { quadtree } from "d3-quadtree";
 import { minmax } from "../utils";
-import { getColors } from "../utils/colorUtils";
+import { getColors, getRandomColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "./goods-generator";
@@ -246,6 +246,50 @@ export class MarketsModule {
   public get(marketId: number | undefined): Market | undefined {
     if (!marketId) return undefined;
     return this.marketById[marketId];
+  }
+
+  addMarket(burgId: number): Market | null {
+    const burg = (pack.burgs as Burg[])[burgId];
+    if (!burg || burg.removed) return null;
+
+    if (pack.markets.some(m => m.centerBurgId === burgId)) {
+      tip("This burg is already a market center", false, "error");
+      return null;
+    }
+
+    const maxId = pack.markets.reduce((max, m) => Math.max(max, m.i), 0);
+    const marketId = maxId + 1;
+    const market: Market = { i: marketId, centerBurgId: burgId, color: getRandomColor(), goods: {} };
+    pack.markets.push(market);
+    pack.deals = [];
+
+    this.expandTerritories();
+    return market;
+  }
+
+  removeMarket(marketId: number): boolean {
+    const marketIndex = pack.markets.findIndex(m => m.i === marketId);
+    if (marketIndex === -1) return false;
+
+    const market = pack.markets[marketIndex];
+    const centerBurg = (pack.burgs as Burg[])[market.centerBurgId];
+    if (centerBurg) centerBurg.plaza = 0;
+
+    pack.markets.splice(marketIndex, 1);
+    pack.deals = [];
+
+    if (pack.markets.length) {
+      this.expandTerritories();
+    } else {
+      if (pack.cells.market) pack.cells.market.fill(0);
+      for (const burg of pack.burgs as Burg[]) {
+        if (!burg.i || burg.removed) continue;
+        burg.market = 0;
+        burg.plaza = 0;
+      }
+    }
+
+    return true;
   }
 
   quoteMarket(market: Market, goodId: number): { stock: number; buyPrice: number; sellPrice: number } {

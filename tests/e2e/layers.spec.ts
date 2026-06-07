@@ -263,14 +263,15 @@ test.describe('map layers', () => {
     const goodsEl = sharedPage.locator('#goods')
     await expect(goodsEl).toBeAttached()
 
-    // The four named sub-groups are drawn back to front
-    await expect(goodsEl.locator('#goodsMarkets')).toBeAttached()
+    // The three named sub-groups are drawn back to front
     await expect(goodsEl.locator('#goodsCells')).toBeAttached()
     await expect(goodsEl.locator('#goodsIcons')).toBeAttached()
     await expect(goodsEl.locator('#goodsBurgs')).toBeAttached()
 
-    // Market zones (formerly the Markets layer) render as <g data-id="N"> groups
-    await expect(goodsEl.locator('#goodsMarkets g[data-id]').first()).toBeAttached()
+    // Market zones render as <g data-id="N"> groups inside the standalone #markets layer
+    const marketsEl = sharedPage.locator('#markets')
+    await expect(marketsEl).toBeAttached()
+    await expect(marketsEl.locator('g[data-id]').first()).toBeAttached()
 
     // Good icons are <use> elements pointing to a #good-* SVG symbol
     const icons = goodsEl.locator('use')

@@ -222,7 +222,7 @@ function addStylePreset() {
       "#markers": ["opacity", "rescale", "filter"],
       "#prec": ["opacity", "stroke", "stroke-width", "fill", "filter"],
       "#population": ["opacity", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
-      "#goodsMarkets": ["opacity", "stroke-width", "fill-opacity", "stroke-opacity", "filter"],
+      "#markets": ["opacity", "stroke-width", "fill-opacity", "stroke-opacity", "filter"],
       "#goodsCells": ["opacity", "filter"],
       "#goodsIcons": ["opacity", "stroke-width", "data-circle", "filter"],
       "#goodsBurgs": ["opacity", "stroke", "stroke-width", "filter"],

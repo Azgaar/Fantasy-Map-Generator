@@ -1,6 +1,5 @@
 import { pointer } from "d3";
 import type { Good } from "../modules/goods-generator";
-import { BONUS_RESOURCE_PRODUCTION } from "../modules/goods-generator";
 import { isDealRecord, isMfgRecord } from "../modules/production-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
 import { ensureEl, unique } from "../utils";
@@ -27,7 +26,7 @@ function ensureDisplayedGoodsInitialized() {
   let bestTotal = -1;
   for (const good of pack.goods) {
     const p = production[good.i];
-    const total = p ? p.burg + p.cell + p.bonus : 0;
+    const total = p ? p.burg + p.cell : 0;
     if (total > bestTotal) {
       bestTotal = total;
       bestId = good.i;
@@ -102,9 +101,9 @@ function goodsEditorAddLines() {
 
   for (const good of pack.goods) {
     const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean) as string[];
-    const goodProduction = production[good.i] || { burg: 0, cell: 0, bonus: 0 };
-    const produced = rn(goodProduction.burg + goodProduction.cell + goodProduction.bonus);
-    const producedTip = `Total good production: ${produced}⚒. Burgs: ${rn(goodProduction.burg, 2)}⚒. Cells: ${rn(goodProduction.cell, 2)}⚒. Bonus resource: ${rn(goodProduction.bonus, 2)}⚒ (${BONUS_RESOURCE_PRODUCTION}⚒ per cell with explicit good assigned)`;
+    const goodProduction = production[good.i] || { burg: 0, cell: 0 };
+    const produced = rn(goodProduction.burg + goodProduction.cell);
+    const producedTip = `Total good production: ${produced}⚒. Cells: ${rn(goodProduction.cell, 2)}⚒. Burgs: ${rn(goodProduction.burg, 2)}⚒`;
     const stock = rn(stockData[good.i]?.total ?? 0);
     const stockTip = `Total stock in all markets and burg inventories: ${stock} units`;
 
@@ -132,7 +131,7 @@ function goodsEditorAddLines() {
   body.innerHTML = lines;
 
   const totalProduced = Object.values(production)
-    .map(p => p.burg + p.cell + p.bonus)
+    .map(p => p.burg + p.cell)
     .reduce((sum, v) => sum + v, 0);
   const totalStock = Object.values(stockData).reduce((sum, d) => sum + d.total, 0);
   ensureEl("goodsDisplayed").innerHTML = String(displayedGoods.size);
@@ -336,25 +335,18 @@ function openStockDialog(goodId: number) {
 }
 
 function getProduction() {
-  const production: Record<number, { burg: number; cell: number; bonus: number }> = {};
-  const addProduction = (goodId: number, amount: number, type: "burg" | "cell" | "bonus") => {
-    if (!production[goodId]) production[goodId] = { burg: 0, cell: 0, bonus: 0 };
+  const production: Record<number, { burg: number; cell: number }> = {};
+  const addProduction = (goodId: number, amount: number, type: "burg" | "cell") => {
+    if (!production[goodId]) production[goodId] = { burg: 0, cell: 0 };
     production[goodId][type] += amount;
   };
 
   // rural production
   const productionByBiome = Goods.getBiomesProduction();
   for (const cellId of pack.cells.i) {
-    const biomeId = pack.cells.biome[cellId];
-    const bonusGoodId = pack.cells.good[cellId];
-
-    if (bonusGoodId) addProduction(bonusGoodId, BONUS_RESOURCE_PRODUCTION, "bonus");
-
-    const population = pack.cells.pop[cellId];
-    if (population <= 0) continue;
-
-    for (const { goodId, production } of productionByBiome[biomeId] || []) {
-      addProduction(goodId, population * production, "cell");
+    const produced = Production.getCellProduction(cellId, productionByBiome);
+    for (const goodId in produced) {
+      addProduction(Number(goodId), produced[goodId] || 0, "cell");
     }
   }
 
@@ -550,8 +542,8 @@ function downloadGoodsData() {
       .map(([k, v]) => `${k}:${v}`)
       .join(";");
     const cells = cellsByGood[good.i] || 0;
-    const goodProduction = production[good.i] || { burg: 0, cell: 0, bonus: 0 };
-    const produced = rn(goodProduction.burg + goodProduction.cell + goodProduction.bonus);
+    const goodProduction = production[good.i] || { burg: 0, cell: 0 };
+    const produced = rn(goodProduction.burg + goodProduction.cell);
     const stock = stockData[good.i]?.total ?? 0;
 
     data += `${good.i},${good.name},${good.color},${types},${tags},${good.value},${demandCoverage},${good.chance ?? ""},${good.distribution ?? ""},${cells},${produced},${stock}\n`;

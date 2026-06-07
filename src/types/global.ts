@@ -41,6 +41,7 @@ declare global {
   var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
   var emblems: Selection<SVGElement, unknown, null, undefined>;
   var goods: Selection<SVGGElement, unknown, null, undefined>;
+  var markets: Selection<SVGGElement, unknown, null, undefined>;
   var svg: Selection<SVGSVGElement, unknown, null, undefined>;
   var ice: Selection<SVGGElement, unknown, null, undefined>;
   var labels: Selection<SVGGElement, unknown, null, undefined>;
@@ -124,6 +125,8 @@ declare global {
   var turnButtonOn: (buttonId: string) => void;
   var turnButtonOff: (buttonId: string) => void;
   var toggleGoods: (event?: MouseEvent) => void;
+  var toggleMarketsLayer: (event?: MouseEvent) => void;
+  var drawMarketsLayer: () => void;
   var toggleTrade: (event?: MouseEvent) => void;
   var isCtrlClick: (event: MouseEvent) => boolean;
   var editStyle: (layer: string) => void;
@@ -137,10 +140,14 @@ declare global {
   var clearLegend: () => void;
   var drawLegend: (title: string, data: any[]) => void;
   var clearMainTip: () => void;
+  var showMainTip: () => void;
+  var moveCircle: (x: number, y: number, r?: number) => void;
+  var removeCircle: () => void;
   var restoreDefaultEvents: () => void;
   var findCell: (x: number, y: number, radius?: number) => number | undefined;
   var refreshAllEditors: () => void;
   var toggleCells: () => void;
+  var drawGoods: (displayedGoods: Set<number>) => void;
   var regenerateGoods: () => void;
   var regenerateProduction: () => void;
   var legend: any;

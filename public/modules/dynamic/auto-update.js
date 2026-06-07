@@ -1125,9 +1125,9 @@ export function resolveVersionConflicts(mapVersion) {
       .attr("stroke-width", "0.32")
       .attr("filter", "url(#dropShadow01)");
     goods.append("g").attr("id", "goodsCells");
-    goods.append("g").attr("id", "goodsMarkets");
     goods.append("g").attr("id", "goodsIcons").attr("data-circle", "1");
     goods.append("g").attr("id", "goodsBurgs");
+    markets = viewbox.insert("g", "#emblems").attr("id", "markets").attr("fill-opacity", "0").style("display", "none");
     tradeAnimation = viewbox.insert("g", "#goods").attr("id", "tradeAnimation");
 
     options.trade = { animation: TradeAnimation.getDefaultOptions() };

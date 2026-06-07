@@ -479,6 +479,7 @@ function regenerateGoods() {
 
 function regenerateMarkets() {
   Markets.generate(true);
+  if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
   refreshAllEditors();
 }
 

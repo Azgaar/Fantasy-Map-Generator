@@ -35,8 +35,6 @@ export interface Good {
   color: string;
 }
 
-export const BONUS_RESOURCE_PRODUCTION = 5;
-
 export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;
 export type DemandCategory = (typeof DEMAND_PRIORITY)[number];
 export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {

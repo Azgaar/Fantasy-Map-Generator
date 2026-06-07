@@ -178,6 +178,16 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note");
 
+  if (group === "markets") {
+    const marketEl = e.target.closest("[data-id]");
+    if (marketEl) {
+      const market = Markets.marketById[+marketEl.dataset.id];
+      const centerBurg = market && pack.burgs[market.centerBurgId];
+      if (!centerBurg) return;
+      return tip(`${centerBurg.name} market. Click to view`);
+    }
+  }
+
   if (group === "goods") {
     const el = e.target;
     const bonusGoodId = pack.cells.good[i];
@@ -189,16 +199,6 @@ function showMapTooltip(point, e, i, g) {
           acc.push(`${name(goodId)} ${amount}${+goodId === bonusGoodId ? " (bonus)" : ""}`);
         return acc;
       }, []);
-
-    if (el.closest("#goodsMarkets")) {
-      const marketEl = el.closest("[data-id]");
-      if (marketEl) {
-        const market = Markets.marketById[+marketEl.dataset.id];
-        const centerBurg = market && pack.burgs[market.centerBurgId];
-        if (!centerBurg) return;
-        return tip(`${centerBurg.name} market. Click to view`);
-      }
-    }
 
     if (el.closest("#goodsIcons")) {
       const good = Goods.get(+el.closest("[data-i]")?.dataset.i);

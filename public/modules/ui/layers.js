@@ -77,6 +77,7 @@ function getDefaultPresets() {
       "toggleBurgIcons",
       "toggleCells",
       "toggleGoods",
+      "toggleMarketsLayer",
       "toggleLakes",
       "toggleRivers",
       "toggleRoutes",
@@ -248,6 +249,7 @@ function drawLayers() {
   if (layerIsOn("toggleIce")) drawIce();
   if (layerIsOn("togglePrecipitation")) drawPrecipitation();
   if (layerIsOn("toggleGoods")) drawGoods(GoodsEditor?.getDisplayedGoods?.());
+  if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
   if (layerIsOn("toggleEmblems")) drawEmblems();
   if (layerIsOn("toggleLabels")) drawLabels();
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
@@ -894,13 +896,11 @@ function toggleMarkers(event) {
 function toggleTrade(event) {
   if (!layerIsOn("toggleTrade")) {
     turnButtonOn("toggleTrade");
-    $("#tradeAnimation").fadeIn();
     TradeAnimation.start();
     if (event && isCtrlClick(event)) editStyle("tradeAnimation");
   } else {
     if (event && isCtrlClick(event)) return editStyle("tradeAnimation");
     TradeAnimation.stop();
-    $("#tradeAnimation").fadeOut();
     turnButtonOff("toggleTrade");
   }
 }
@@ -1071,6 +1071,7 @@ function getLayer(id) {
   if (id === "toggleIce") return $("#ice");
   if (id === "toggleTexture") return $("#texture");
   if (id === "toggleGoods") return $("#goods");
+  if (id === "toggleMarketsLayer") return $("#markets");
   if (id === "toggleEmblems") return $("#emblems");
   if (id === "toggleLabels") return $("#labels");
   if (id === "toggleBurgIcons") return $("#icons");

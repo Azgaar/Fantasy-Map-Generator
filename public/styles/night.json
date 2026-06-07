@@ -650,7 +650,7 @@
     "data-bottom": 16,
     "data-left": 10
   },
-  "#goodsMarkets": {
+  "#markets": {
     "opacity": 1,
     "stroke-width": 0.5,
     "fill-opacity": 0,
