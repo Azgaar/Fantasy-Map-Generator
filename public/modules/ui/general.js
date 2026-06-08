@@ -343,6 +343,33 @@ function updateCellInfo(point, i, g) {
   infoFeature.innerHTML = f ? (pack.features[f].group || pack.features[f].type) + " (" + f + ")" : "n/a";
   infoBiome.innerHTML = biomesData.name[cells.biome[i]];
   infoGood.innerHTML = cells.good[i] ? Goods.get(cells.good[i]).name + " (" + cells.good[i] + ")" : "no";
+
+  const marketId = cells.market && cells.market[i];
+  if (marketId) {
+    const market = Markets.get(marketId);
+    const centerBurg = market && pack.burgs[market.centerBurgId];
+    infoMarket.innerHTML = centerBurg ? `${centerBurg.name} market (${marketId})` : `market ${marketId}`;
+  } else {
+    infoMarket.innerHTML = "no";
+  }
+
+  const produced = Production.getCellProduction(i, Goods.getBiomesProduction());
+  const cellEntries = Object.entries(produced).filter(([, amt]) => amt > 0);
+  infoCellProduction.innerHTML = cellEntries.length
+    ? cellEntries.map(([id, amt]) => `${Goods.get(+id)?.name || id}: ${rn(amt, 2)}`).join(", ")
+    : "none";
+
+  const burgId = cells.burg[i];
+  if (burgId) {
+    const burg = pack.burgs[burgId];
+    const produced = Production.getBurgProduction(burg);
+    const burgEntries = Object.entries(produced).filter(([, amt]) => amt > 0);
+    infoBurgProduction.innerHTML = burgEntries.length
+      ? burgEntries.map(([id, amt]) => `${Goods.get(+id)?.name || id}: ${rn(amt, 2)}`).join(", ")
+      : "none";
+  } else {
+    infoBurgProduction.innerHTML = "n/a";
+  }
 }
 
 function getGeozone(latitude) {
