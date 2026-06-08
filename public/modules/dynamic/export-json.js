@@ -28,6 +28,7 @@ function getFullDataJson() {
   const settings = getSettings();
   const pack = getPackCellsData();
   const grid = getGridCellsData();
+  const viewState = getViewState();
 
   return JSON.stringify({
     info,
@@ -37,8 +38,45 @@ function getFullDataJson() {
     grid,
     biomesData,
     notes,
-    nameBases
+    nameBases,
+    viewState
   });
+}
+
+// View-state that lives only in the SVG (not the data model), so it can be restored on import.
+// A .map file keeps this implicitly via the serialized SVG; JSON must capture it explicitly.
+function getViewState() {
+  // manually added free-text labels live in label subgroups under #labels and have no data-model
+  // representation. Capture every label subgroup except the ones drawLayers regenerates.
+  const labelGroups = [];
+  document.querySelectorAll("#labels > g").forEach(g => {
+    if (g.id === "states" || g.id === "burgLabels") return; // regenerated on import
+    if (!g.querySelector("text")) return; // skip empty groups
+    labelGroups.push(g.outerHTML);
+  });
+
+  // the curve paths the added labels follow (exclude regenerated stateLabel paths)
+  const textPaths = [];
+  document.querySelectorAll("#textPaths > path").forEach(p => {
+    if (/^textPath_label\d+$/.test(p.id)) textPaths.push(p.outerHTML);
+  });
+
+  // manual drag positions on regenerated burg/state labels (a drag stores a transform on the <text>)
+  const labelTransforms = {};
+  document.querySelectorAll("#burgLabels text[transform], #states text[transform]").forEach(el => {
+    if (el.id) labelTransforms[el.id] = el.getAttribute("transform");
+  });
+
+  return {
+    labelGroups,
+    textPaths,
+    labelTransforms,
+    fonts: getUsedFonts(svg.node()),
+    rulers: rulers.toString(),
+    texture: document.getElementById("texture")?.getAttribute("data-href") || null,
+    oceanScheme: document.getElementById("oceanHeights")?.getAttribute("scheme") || null,
+    landScheme: document.getElementById("landHeights")?.getAttribute("scheme") || null
+  };
 }
 
 function getMinimalDataJson() {
@@ -103,7 +141,20 @@ function getSettings() {
     hideLabels: hideLabels.checked,
     stylePreset: stylePreset.value,
     rescaleLabels: rescaleLabels.checked,
-    urbanDensity: urbanDensity
+    urbanDensity: urbanDensity,
+    // generation-request sliders ("new map to apply"): not properties of the current map, but
+    // saving them lets an importer restore the Options panel so "New Map" reproduces similar params
+    generationSettings: {
+      template: templateInput.value,
+      cultures: +culturesOutput.value,
+      culturesSet: culturesSet.value,
+      statesNumber: +statesNumber.value,
+      provincesRatio: +provincesRatio.value,
+      sizeVariety: +sizeVariety.value,
+      growthRate: +growthRate.value,
+      manors: manorsOutput.value,
+      religionsNumber: +religionsNumber.value
+    }
   };
 }
 

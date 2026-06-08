@@ -268,6 +268,10 @@ oceanLayers
   .attr("width", graphWidth)
   .attr("height", graphHeight);
 
+// capture the pristine svg skeleton before any map is drawn, so a JSON import (which carries
+// no serialized SVG, unlike a .map file) can reset to a clean canvas and render via drawLayers
+window.cleanMapSkeleton = document.getElementById("map")?.outerHTML;
+
 document.addEventListener("DOMContentLoaded", async () => {
   if (!location.hostname) {
     const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
