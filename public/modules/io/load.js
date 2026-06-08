@@ -995,6 +995,18 @@ async function parseJsonData(json) {
       ice: []
     };
 
+    // forward-compat: carry through any extra pack collections the export provides but this loader
+    // doesn't specially handle (e.g. the goods branch's goods/markets/deals), so they survive the
+    // round-trip even though they aren't rendered here. Geometry keys are excluded — they are
+    // rebuilt into typed arrays below.
+    const handledPackKeys = new Set([
+      "cells", "vertices", "features", "cultures", "states", "burgs",
+      "religions", "provinces", "rivers", "markers", "routes", "zones"
+    ]);
+    for (const key in json.pack) {
+      if (!handledPackKeys.has(key)) pack[key] = json.pack[key];
+    }
+
     pack.vertices = {
       p: pv.map(v => v.p),
       v: pv.map(v => v.v),
