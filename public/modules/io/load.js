@@ -781,6 +781,17 @@ function reselectSvgElements() {
   }
 }
 
+// parse an SVG fragment string into a live node, preserving the SVG namespace and attribute
+// casing (textPath, xlink:href) that insertAdjacentHTML on an HTML context would mangle
+function parseSvgFragment(html) {
+  const doc = new DOMParser().parseFromString(
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">${html}</svg>`,
+    "image/svg+xml"
+  );
+  if (doc.querySelector("parsererror")) return null;
+  return doc.documentElement.firstElementChild;
+}
+
 // read a full JSON export from disk and load it as the current map
 function uploadJsonMap(file, callback) {
   uploadMap.timeStart = performance.now();
@@ -1042,10 +1053,20 @@ async function parseJsonData(json) {
       await applyStyleOnLoad();
     }
 
-    // restore SVG-only view state captured by the exporter (texture, heightmap color schemes,
-    // rulers) before drawing the layers that consume it
+    // restore SVG-only view state captured by the exporter (fonts, texture, heightmap color
+    // schemes, rulers) before drawing the layers that consume it
     const viewState = json.viewState;
     if (viewState) {
+      // declare custom fonts so added labels render in the right typeface
+      if (viewState.fonts) {
+        viewState.fonts.forEach(usedFont => {
+          const exists = fonts.find(
+            f => f.family === usedFont.family && f.unicodeRange === usedFont.unicodeRange && f.variant === usedFont.variant
+          );
+          if (!exists) fonts.push(usedFont);
+          declareFont(usedFont);
+        });
+      }
       if (viewState.texture) {
         texture.attr("data-href", viewState.texture);
         if (window.updateTextureSelectValue) updateTextureSelectValue(viewState.texture);
@@ -1070,11 +1091,38 @@ async function parseJsonData(json) {
     if (rulers?.data?.length) rulers.draw();
     if (layerIsOn("toggleGrid")) drawGrid();
 
-    // reapply custom burg label positions after the labels have been drawn
-    if (viewState?.burgLabels) {
-      for (const id in viewState.burgLabels) {
-        const labelEl = document.getElementById(`burgLabel${id}`);
-        if (labelEl) labelEl.setAttribute("transform", viewState.burgLabels[id]);
+    // restore manually added labels (free-text labels are SVG-only): reinject their curve paths
+    // into the defs first, then their label groups, then reapply burg/state label drag positions
+    if (viewState) {
+      if (viewState.textPaths?.length) {
+        const textPathsGroup = document.getElementById("textPaths");
+        if (textPathsGroup) {
+          for (const html of viewState.textPaths) {
+            const node = parseSvgFragment(html);
+            if (node) textPathsGroup.appendChild(document.importNode(node, true));
+          }
+        }
+      }
+
+      if (viewState.labelGroups?.length) {
+        const labelsGroup = document.getElementById("labels");
+        if (labelsGroup) {
+          for (const html of viewState.labelGroups) {
+            const node = parseSvgFragment(html);
+            if (!node?.id) continue;
+            const imported = document.importNode(node, true);
+            const existing = document.getElementById(imported.id); // replace skeleton's empty group if present
+            if (existing) existing.replaceWith(imported);
+            else labelsGroup.appendChild(imported);
+          }
+        }
+      }
+
+      if (viewState.labelTransforms) {
+        for (const id in viewState.labelTransforms) {
+          const labelEl = document.getElementById(id);
+          if (labelEl) labelEl.setAttribute("transform", viewState.labelTransforms[id]);
+        }
       }
     }
   }
