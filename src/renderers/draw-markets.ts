@@ -63,11 +63,29 @@ function highlightMarketsOnHover(): void {
 }
 
 export function highlightMarketOn(marketId: number | string): void {
-  select(`#markets #market${marketId} path`).transition().duration(1000).attr("fill-opacity", 0.7);
+  const group = select(`#markets #market${marketId}`);
+  const path = group.select<SVGPathElement>("path").node();
+  if (!path) return;
+
+  group.select(".highlight").remove();
+
+  const twin = path.cloneNode() as SVGPathElement;
+  path.after(twin);
+
+  select(twin)
+    .attr("class", "highlight")
+    .attr("fill-opacity", 0)
+    .attr("stroke", "#d0240f")
+    .attr("stroke-width", 0)
+    .attr("pointer-events", "none")
+    .transition()
+    .duration(1000)
+    .attr("fill-opacity", 1)
+    .attr("stroke-width", 1.5);
 }
 
 export function highlightMarketOff(marketId: number | string): void {
-  select(`#markets #market${marketId} path`).transition().duration(600).attr("fill-opacity", 0);
+  select(`#markets #market${marketId} .highlight`).transition().duration(600).attr("fill-opacity", 0).remove();
 }
 
 declare global {

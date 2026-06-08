@@ -27,7 +27,6 @@ export function open(): void {
     ensureEl("marketsOverviewExport").on("click", downloadMarketsCsv);
     ensureEl("marketsOverviewCompare").on("click", () => window.ComparePrices.open());
     ensureEl("marketsOverviewPercentage").on("click", togglePercentageMode);
-
     ensureEl("marketsManually").on("click", () => {
       if (customization === 15) exitMarketsManualAssignment(false);
       else enterMarketsManualAssignment();
@@ -35,12 +34,11 @@ export function open(): void {
     ensureEl("marketsManuallyUndo").on("click", undoMarketsManualStep);
     ensureEl("marketsManuallyApply").on("click", () => exitMarketsManualAssignment(true));
     ensureEl("marketsManuallyCancel").on("click", () => exitMarketsManualAssignment(false));
-
     ensureEl("marketsAdd").on("click", () => {
       if (customization === 16) exitAddMarketMode();
       else enterAddMarketMode();
     });
-
+    ensureEl("marketsRegenerate").on("click", regenerateMarkets);
     ensureEl("marketsOverviewBody").on("click", (ev: Event) => {
       const target = ev.target as HTMLElement;
 
@@ -108,12 +106,12 @@ function marketsOverviewAddLines(): void {
       <div data-tip="Market center burg. Click to view details" class="marketName" style="width:7em">${centerName}</div>
       <div data-tip="Owning state" class="marketOwner" style="width:8em">${ownerName}</div>
       <div data-tip="Number of cells in market territory" data-type="cells" class="marketCells" style="width:3.5em">${cells}</div>
-      <div data-tip="Number of burgs in market territory" data-type="burgs" class="marketBurgs" style="width:3.5em">${burgs}</div>
-      <div data-tip="Total stock of all goods in this market" data-type="stock" class="marketStock" style="width:5em">${stock}</div>
-      <div data-tip="Total gross sales revenue" data-type="sales" class="marketSales" style="width:6em">${formatPrice(rn(sales))}</div>
-      <div data-tip="Total purchase spending" data-type="buys" class="marketBuysCol" style="width:6em">${formatPrice(rn(buys))}</div>
-      <div data-tip="Market value: net trading flow plus unsold inventory value minus tax" data-type="value" class="marketValue" style="width:6em">${formatPrice(rn(value))}</div>
-      <span data-tip="Remove this market" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span>
+      <div data-tip="Number of burgs in market territory" data-type="burgs" class="marketBurgs hide" style="width:3.5em">${burgs}</div>
+      <div data-tip="Total stock of all goods in this market" data-type="stock" class="marketStock hide" style="width:5em">${stock}</div>
+      <div data-tip="Total gross sales revenue" data-type="sales" class="marketSales hide" style="width:6em">${formatPrice(rn(sales))}</div>
+      <div data-tip="Total purchase spending" data-type="buys" class="marketBuysCol hide" style="width:6em">${formatPrice(rn(buys))}</div>
+      <div data-tip="Market value: net trading flow plus unsold inventory value minus tax" data-type="value" class="marketValue hide" style="width:6em">${formatPrice(rn(value))}</div>
+      <span data-tip="Remove this market" class="icon-trash-empty hiddenIcon hide" style="visibility:hidden"></span>
     </div>`;
   }
 
@@ -133,6 +131,7 @@ function marketsOverviewAddLines(): void {
     count ? rn(totalValue / count, 2) : 0
   );
   applySorting(ensureEl("marketsOverviewHeader"));
+
   $("#marketsOverview").dialog({ width: fitContent() });
 }
 
@@ -142,18 +141,28 @@ function enterMarketsManualAssignment(): void {
   marketsManualHistory = [];
 
   document.getElementById("marketsTemp")?.remove();
-  const marketsLayerEl = document.getElementById("markets");
-  if (marketsLayerEl) {
-    const tempG = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    tempG.id = "marketsTemp";
-    marketsLayerEl.appendChild(tempG);
-  }
+  markets.append("g").attr("id", "marketsTemp").style("fill-opacity", "0.7");
+  pack.cells.market.forEach((marketId, cellId) => {
+    if (!marketId) return;
+    const market = Markets.get(marketId);
+    if (!market) return;
+    paintMarketCells([cellId], market);
+  });
 
-  document.querySelectorAll<HTMLElement>("#marketsOverviewBottom > button:not(#marketsManually)").forEach(b => {
+  document.querySelectorAll<HTMLElement>("#marketsOverviewBottom > button").forEach(b => {
     b.style.display = "none";
   });
-  ensureEl("marketsManuallyButtons").style.display = "inline-block";
+  ensureEl("marketsManuallyButtons").style.display = "block";
+  ensureEl("marketsBrush").style.display = "inline-block";
   ensureEl("marketsManually").classList.add("pressed");
+  ensureEl("marketsOverviewFooter").style.display = "none";
+
+  ensureEl("marketsOverviewHeader").style.gridTemplateColumns = "1.6em 7.2em 8em 3.5em";
+  ensureEl("marketsOverview")
+    .querySelectorAll(".hide")
+    .forEach(el => {
+      el.classList.add("hidden");
+    });
 
   tip("Click a market row to select it, then drag on the map to repaint territory", true);
 
@@ -165,6 +174,8 @@ function enterMarketsManualAssignment(): void {
     .on("click", selectMarketOnMapClick)
     .call((window as any).d3.drag().on("start", startMarketsBrushDrag))
     .on("touchmove mousemove", onMarketsBrushMove);
+
+  $("#marketsOverview").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 }
 
 function saveMarketsManualSnapshot(): void {
@@ -185,30 +196,29 @@ function selectMarketOnMapClick(this: SVGElement): void {
 }
 
 function startMarketsBrushDrag(this: SVGElement): void {
-  saveMarketsManualSnapshot();
-
-  (window as any).d3.event.on("drag", () => {
-    const d3ev = (window as any).d3.event;
-    if (!d3ev.dx && !d3ev.dy) return;
-    const [x, y] = pointer(window.event!, this);
-    paintMarketCells(x, y);
-  });
-}
-
-function paintMarketCells(x: number, y: number): void {
-  const r = +ensureEl<HTMLInputElement>("marketsBrush").value;
-  moveCircle(x, y, r);
-
-  const found = r > 5 ? findAllCellsInRadius(x, y, r, pack) : [findClosestCell(x, y, Infinity, pack)];
-  const selection = found.filter(cellId => cellId !== undefined);
-  if (!selection.length) return;
-
   const selectedRow = ensureEl("marketsOverviewBody").querySelector<HTMLElement>(".states.market.selected");
   if (!selectedRow) return;
   const marketId = +selectedRow.dataset.id!;
   const market = pack.markets.find(m => m.i === marketId);
   if (!market) return;
 
+  saveMarketsManualSnapshot();
+  const r = +ensureEl<HTMLInputElement>("marketsBrush").value;
+
+  (window as any).d3.event.on("drag", () => {
+    const d3ev = (window as any).d3.event;
+    if (!d3ev.dx && !d3ev.dy) return;
+    const [x, y] = pointer(window.event!, this);
+    moveCircle(x, y, r);
+
+    const found = r > 5 ? findAllCellsInRadius(x, y, r, pack) : [findClosestCell(x, y, Infinity, pack)];
+    const selection = found.filter(cellId => cellId !== undefined);
+    if (!selection.length) return;
+    paintMarketCells(selection, market);
+  });
+}
+
+function paintMarketCells(selection: number[], market: Market) {
   const temp = document.getElementById("marketsTemp");
   if (!temp) return;
 
@@ -217,13 +227,12 @@ function paintMarketCells(x: number, y: number): void {
 
     const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
     polygon.setAttribute("data-cell", String(cellId));
-    polygon.setAttribute("data-market", String(marketId));
+    polygon.setAttribute("data-market", String(market.i));
     const pts = getPackPolygon(cellId)
       .map(p => p.join(","))
       .join(" ");
     polygon.setAttribute("points", pts);
     polygon.setAttribute("fill", market.color);
-    polygon.setAttribute("fill-opacity", "0.7");
     temp.appendChild(polygon);
   }
 }
@@ -260,10 +269,17 @@ function exitMarketsManualAssignment(apply: boolean): void {
 
   document.getElementById("marketsTemp")?.remove();
 
+  ensureEl("marketsOverviewHeader").style.gridTemplateColumns = "1.6em 7.2em 8em 3.5em 4.5em 6.5em 6.4em 6em 6em 1.2em";
+  ensureEl("marketsOverview")
+    .querySelectorAll(".hide")
+    .forEach(el => void el.classList.remove("hidden"));
+  ensureEl("marketsOverviewFooter").style.display = "block";
+
   document.querySelectorAll<HTMLElement>("#marketsOverviewBottom > button").forEach(b => {
     b.style.display = "";
   });
   ensureEl("marketsManuallyButtons").style.display = "none";
+  ensureEl("marketsBrush").style.display = "none";
   ensureEl("marketsManually").classList.remove("pressed");
   ensureEl("marketsOverviewBody").querySelector<HTMLElement>(".states.market.selected")?.classList.remove("selected");
 
@@ -275,6 +291,8 @@ function exitMarketsManualAssignment(apply: boolean): void {
     drawMarketsLayer();
     marketsOverviewAddLines();
   }
+
+  $("#marketsOverview").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 }
 
 function enterAddMarketMode(): void {
@@ -427,6 +445,15 @@ function getOwnerStateName(market: Market): string {
   if (!center) return "Unknown";
   if (!center.state) return "Independent";
   return pack.states[center.state]?.name || `State ${center.state}`;
+}
+
+function regenerateMarkets() {
+  confirmationDialog({
+    title: "Regenerate markets",
+    message: "Are you sure you want to regenerate markets and their territories?",
+    confirm: "Regenerate",
+    onConfirm: window.regenerateMarkets
+  });
 }
 
 function downloadMarketsCsv(): void {

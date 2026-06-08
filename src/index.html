@@ -5094,11 +5094,11 @@
           <div data-tip="Market center burg name. Click to sort" class="sortable alphabetically" data-sortby="market" style="margin-left:0">Market&nbsp;</div>
           <div data-tip="Owning state. Click to sort" class="sortable alphabetically" data-sortby="owner">Owner&nbsp;</div>
           <div data-tip="Number of cells in market territory. Click to sort" class="sortable" data-sortby="cells">Cells&nbsp;</div>
-          <div data-tip="Number of burgs in market territory. Click to sort" class="sortable" data-sortby="burgs">Burgs&nbsp;</div>
-          <div data-tip="Total stock of all goods. Click to sort" class="sortable" data-sortby="stock">Stock&nbsp;</div>
-          <div data-tip="Total gross sales revenue. Click to sort" class="sortable" data-sortby="sales">Sales&nbsp;</div>
-          <div data-tip="Total purchase spending. Click to sort" class="sortable" data-sortby="buys">Buys&nbsp;</div>
-          <div data-tip="Market value: net trading flow plus unsold inventory value minus tax. Click to sort" class="sortable icon-sort-number-down" data-sortby="value">Value&nbsp;</div>
+          <div data-tip="Number of burgs in market territory. Click to sort" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
+          <div data-tip="Total stock of all goods. Click to sort" class="sortable hide" data-sortby="stock">Stock&nbsp;</div>
+          <div data-tip="Total gross sales revenue. Click to sort" class="sortable hide" data-sortby="sales">Sales&nbsp;</div>
+          <div data-tip="Total purchase spending. Click to sort" class="sortable hide" data-sortby="buys">Buys&nbsp;</div>
+          <div data-tip="Market value: net trading flow plus unsold inventory value minus tax. Click to sort" class="sortable hide icon-sort-number-down" data-sortby="value">Value&nbsp;</div>
           <div></div>
         </div>
         <div id="marketsOverviewBody" class="table" data-type="absolute" style="max-height:40em; cursor:pointer"></div>
@@ -5113,16 +5113,15 @@
           <button id="marketsOverviewPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
           <button id="marketsOverviewCompare" data-tip="Compare good stock across markets" class="icon-chart-bar"></button>
           <button id="marketsOverviewExport" data-tip="Save markets data as a CSV file" class="icon-download"></button>
+          <slider-input id="marketsBrush" min="1" max="100" value="15" data-tip="Change brush size. Shortcuts: + / ] to increase; - / [ to decrease" style="display: none;"></slider-input>
           <button id="marketsManually" data-tip="Manually re-assign market territories" class="icon-brush"></button>
           <div id="marketsManuallyButtons" style="display: none">
-            <div data-tip="Change brush size. Shortcuts: + / ] to increase; - / [ to decrease" style="display: inline-block; margin-block: 0.3em;">
-              <slider-input id="marketsBrush" min="1" max="100" value="15">Brush:</slider-input>
-            </div>
             <button id="marketsManuallyUndo" data-tip="Undo last brush stroke" class="icon-ccw"></button>
             <button id="marketsManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
             <button id="marketsManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
           </div>
           <button id="marketsAdd" data-tip="Add a new market. Click on a burg on the map. Hold Shift to add multiple" class="icon-plus"></button>
+          <button id="marketsRegenerate" data-tip="Regenerate markets and their territories" class="icon-arrows-cw"></button>
         </div>
       </div>
       <div id="marketsGoodCompare" class="dialog" style="display: none">

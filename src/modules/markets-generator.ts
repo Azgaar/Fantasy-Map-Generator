@@ -52,14 +52,15 @@ export class MarketsModule {
     const scored = pack.burgs
       .map(burg => {
         let score = burg.population || 0;
-        if (burg.capital) score *= 2;
-        if (burg.port) score *= 2;
+        if (burg.capital) score *= 2.5;
+        if (burg.port) score *= 1.2;
+        score *= Math.random() * 2 + 0.5; // add some noise
         return { burg, score };
       })
       .sort((a, b) => b.score - a.score);
 
     // minSpacing scales with map size relative to burg count
-    let minSpacing = (((graphWidth + graphHeight) * 2) / pack.burgs.length ** 0.7) | 0;
+    let minSpacing = (((graphWidth + graphHeight) * 2) / pack.burgs.length ** 0.6) | 0;
 
     const markets: Market[] = [];
     const tree = quadtree<[number, number, number]>(
@@ -104,15 +105,11 @@ export class MarketsModule {
     const queue = new FlatQueue();
 
     const MIN_COST = 1;
-    const MAX_COST = cells.i.length * 2;
     const BASE_COST = 10;
-    const SAME_PORT_WATERBODY_BONUS = 8;
-    const SAME_ROUTE_BONUS = 5;
-    const SAME_RIVER_BONUS = 5;
-    const DIFFERENT_STATE_COST = 20;
-    const DIFFERENT_PROVINCE_COST = 5;
-    const MOUNTAIN_COST = 20;
-    const LAND_COST_FOR_PORTS = 10;
+    const DIFFERENT_STATE_COST = 100;
+    const WATER_COST = 50;
+    const WATER_COST_FOR_NON_PORTS = 50;
+    const ISLAND_CHANGE_COST = 100;
 
     const tradeCenters = {} as Record<number, boolean>;
     for (const market of markets) {
@@ -129,24 +126,16 @@ export class MarketsModule {
 
     while (queue.length) {
       const { cellId, marketId, burg, priority } = queue.pop();
-      const cellRiver = cells.r[cellId];
-      const cellState = cells.state[cellId];
-      const cellProvince = cells.province[cellId];
 
       for (const neighborId of cells.c[cellId]) {
         let cost = BASE_COST;
-        if (cells.h[neighborId] < 20 && burg.port === cells.f[neighborId]) cost -= SAME_PORT_WATERBODY_BONUS;
-        if (burg.port && cells.t[neighborId] > 1) cost += LAND_COST_FOR_PORTS * cells.t[neighborId];
-        if (Routes.areConnected(cellId, neighborId)) {
-          cost -= SAME_ROUTE_BONUS;
-        } else if (cells.h[neighborId] >= 70) {
-          cost += MOUNTAIN_COST;
+        if (cells.h[neighborId] < 20) {
+          cost += WATER_COST;
+          if (burg.port !== cells.f[neighborId]) cost += WATER_COST_FOR_NON_PORTS;
+        } else {
+          if (cells.f[burg.cell] !== cells.f[neighborId]) cost += ISLAND_CHANGE_COST;
+          if (cells.state[neighborId] && burg.state !== cells.state[neighborId]) cost += DIFFERENT_STATE_COST;
         }
-        if (cellRiver && cellRiver === cells.r[neighborId]) cost -= SAME_RIVER_BONUS;
-        if (cellState && cellState !== cells.state[neighborId]) cost += DIFFERENT_STATE_COST;
-        if (cellProvince && cellProvince !== cells.province[neighborId]) cost += DIFFERENT_PROVINCE_COST;
-        if (cost < MIN_COST) cost = MIN_COST;
-        if (cost > MAX_COST) continue;
 
         const totalCost = priority + cost;
         if (!costs[neighborId] || totalCost < costs[neighborId]) {

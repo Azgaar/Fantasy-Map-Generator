@@ -149,6 +149,7 @@ declare global {
   var toggleCells: () => void;
   var drawGoods: (displayedGoods: Set<number>) => void;
   var regenerateGoods: () => void;
+  var regenerateMarkets: () => void;
   var regenerateProduction: () => void;
   var legend: any;
 }
