@@ -28,6 +28,7 @@ function getFullDataJson() {
   const settings = getSettings();
   const pack = getPackCellsData();
   const grid = getGridCellsData();
+  const viewState = getViewState();
 
   return JSON.stringify({
     info,
@@ -37,8 +38,28 @@ function getFullDataJson() {
     grid,
     biomesData,
     notes,
-    nameBases
+    nameBases,
+    viewState
   });
+}
+
+// View-state that lives only in the SVG (not the data model), so it can be restored on import.
+// A .map file keeps this implicitly via the serialized SVG; JSON must capture it explicitly.
+function getViewState() {
+  // custom burg label positions: a manual drag stores a transform on the <text>, not in burg data
+  const burgLabels = {};
+  document.querySelectorAll("#burgLabels text[transform]").forEach(el => {
+    const id = el.getAttribute("data-id");
+    if (id) burgLabels[id] = el.getAttribute("transform");
+  });
+
+  return {
+    burgLabels,
+    rulers: rulers.toString(),
+    texture: document.getElementById("texture")?.getAttribute("data-href") || null,
+    oceanScheme: document.getElementById("oceanHeights")?.getAttribute("scheme") || null,
+    landScheme: document.getElementById("landHeights")?.getAttribute("scheme") || null
+  };
 }
 
 function getMinimalDataJson() {

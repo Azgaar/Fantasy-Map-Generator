@@ -1042,12 +1042,41 @@ async function parseJsonData(json) {
       await applyStyleOnLoad();
     }
 
+    // restore SVG-only view state captured by the exporter (texture, heightmap color schemes,
+    // rulers) before drawing the layers that consume it
+    const viewState = json.viewState;
+    if (viewState) {
+      if (viewState.texture) {
+        texture.attr("data-href", viewState.texture);
+        if (window.updateTextureSelectValue) updateTextureSelectValue(viewState.texture);
+      }
+      if (viewState.oceanScheme) {
+        if (!(viewState.oceanScheme in heightmapColorSchemes)) addCustomColorScheme(viewState.oceanScheme);
+        terrs.select("#oceanHeights").attr("scheme", viewState.oceanScheme);
+      }
+      if (viewState.landScheme) {
+        if (!(viewState.landScheme in heightmapColorSchemes)) addCustomColorScheme(viewState.landScheme);
+        terrs.select("#landHeights").attr("scheme", viewState.landScheme);
+      }
+    }
+
+    // always reset rulers (clears any left over from a previously-loaded map), then restore saved ones
+    rulers.fromString(viewState?.rulers || "");
+
     OceanLayers(); // coastal depth bands — generated, not stored in the export
     Ice.generate(); // ice is not included in the export; regenerate it from temperature/height
     applyLayersPreset();
     drawLayers();
-    if (rulers && layerIsOn("toggleRulers")) rulers.draw();
+    if (rulers?.data?.length) rulers.draw();
     if (layerIsOn("toggleGrid")) drawGrid();
+
+    // reapply custom burg label positions after the labels have been drawn
+    if (viewState?.burgLabels) {
+      for (const id in viewState.burgLabels) {
+        const labelEl = document.getElementById(`burgLabel${id}`);
+        if (labelEl) labelEl.setAttribute("transform", viewState.burgLabels[id]);
+      }
+    }
   }
 
   {
