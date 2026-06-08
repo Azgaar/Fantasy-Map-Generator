@@ -473,6 +473,8 @@ async function parseLoadedData(data, mapVersion) {
       if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
       if (hasChild(markers, "svg")) turnOn("toggleMarkers");
       if (isVisible(tradeAnimation)) turnOn("toggleTrade");
+      if (isVisible(goods) && hasChildren(goods)) turnOn("toggleGoods");
+      if (isVisible(markets) && hasChildren(markets)) turnOn("toggleMarketsLayer");
       if (isVisible(ruler)) turnOn("toggleRulers");
       if (isVisible(scaleBar)) turnOn("toggleScaleBar");
       if (isVisibleNode(ensureEl("vignette"))) turnOn("toggleVignette");

@@ -408,6 +408,26 @@ function regenerateBurgs() {
     }
   }
 
+  // readd unlocked market center burgs
+  const marketCenterIds = new Set(pack.markets.map(m => m.centerBurgId));
+  const unlockedMarketCenters = burgs.filter(b => b.i && !b.removed && !b.lock && marketCenterIds.has(b.i));
+  for (let j = 0; j < unlockedMarketCenters.length; j++) {
+    const centerBurg = unlockedMarketCenters[j];
+    const oldId = centerBurg.i;
+    const newId = newBurgs.length;
+
+    const noteIndex = notes.findIndex(note => note.id === `burg${oldId}`);
+    if (noteIndex !== -1) notes[noteIndex].id = `burg${newId}`;
+
+    const market = pack.markets.find(m => m.centerBurgId === oldId);
+    if (market) market.centerBurgId = newId;
+
+    centerBurg.i = newId;
+    newBurgs.push(centerBurg);
+    burgsTree.add([centerBurg.x, centerBurg.y]);
+    cells.burg[centerBurg.cell] = newId;
+  }
+
   const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for capitals placement
   const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
   const existingStatesCount = states.filter(s => s.i && !s.removed).length;
@@ -486,6 +506,7 @@ function regenerateMarkets() {
 function regenerateProduction() {
   pack.markets.forEach(m => (m.goods = {})); // empty Markets stock
   Production.produce();
+  States.collectTaxes();
   if (layerIsOn("toggleGoods")) drawGoods(GoodsEditor.getDisplayedGoods());
   if (layerIsOn("toggleTrade")) TradeAnimation.restart();
   refreshAllEditors();

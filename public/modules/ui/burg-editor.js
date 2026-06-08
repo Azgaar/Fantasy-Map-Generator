@@ -439,6 +439,17 @@ function editBurg(id) {
           }
         }
       });
+    } else if (pack.markets?.some(m => m.centerBurgId === burgId)) {
+      alertMessage.innerHTML = /* html */ `You cannot remove a market center burg. Please remove the market first`;
+      $("#alert").dialog({
+        resizable: false,
+        title: "Remove burg",
+        buttons: {
+          Ok: function () {
+            $(this).dialog("close");
+          }
+        }
+      });
     } else {
       confirmationDialog({
         title: "Remove burg",

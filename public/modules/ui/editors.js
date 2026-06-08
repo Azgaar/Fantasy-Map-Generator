@@ -992,6 +992,7 @@ function refreshAllEditors() {
   if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
   if (document.getElementById("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
   if (document.getElementById("goodsEditorRefresh").offsetParent) goodsEditorRefresh.click();
+  if (document.getElementById("marketsOverviewRefresh")?.offsetParent) marketsOverviewRefresh.click();
 }
 
 // dynamically loaded editors
