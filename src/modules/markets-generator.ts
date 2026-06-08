@@ -128,8 +128,9 @@ export class MarketsModule {
       const { cellId, marketId, burg, priority } = queue.pop();
 
       for (const neighborId of cells.c[cellId]) {
+        const isWater = cells.h[neighborId] < 20;
         let cost = BASE_COST;
-        if (cells.h[neighborId] < 20) {
+        if (isWater) {
           cost += WATER_COST;
           if (burg.port !== cells.f[neighborId]) cost += WATER_COST_FOR_NON_PORTS;
         } else {
@@ -143,8 +144,7 @@ export class MarketsModule {
           queue.push({ cellId: neighborId, marketId, burg, priority: totalCost }, totalCost);
 
           const hasGood = Boolean(cells.good[neighborId]);
-          const isDeepWater = cells.t[neighborId] < -1;
-          if (isDeepWater && !hasGood) continue; // exclude deep water cells without goods
+          if (isWater && !hasGood) continue; // exclude water cells without goods
 
           cellMarket[neighborId] = marketId;
         }

@@ -658,8 +658,8 @@
   },
   "#markets": {
     "opacity": 1,
-    "stroke-width": 0.5,
-    "fill-opacity": 0,
+    "stroke-width": 0.35,
+    "fill-opacity": 0.04,
     "stroke-opacity": 0.8,
     "filter": null
   },

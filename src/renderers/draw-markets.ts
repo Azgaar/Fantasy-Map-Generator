@@ -71,7 +71,6 @@ export function highlightMarketOn(marketId: number | string): void {
 
   const twin = path.cloneNode() as SVGPathElement;
   path.after(twin);
-
   select(twin)
     .attr("class", "highlight")
     .attr("fill-opacity", 0)
@@ -80,12 +79,17 @@ export function highlightMarketOn(marketId: number | string): void {
     .attr("pointer-events", "none")
     .transition()
     .duration(1000)
-    .attr("fill-opacity", 1)
+    .attr("fill-opacity", 0.8)
     .attr("stroke-width", 1.5);
 }
 
 export function highlightMarketOff(marketId: number | string): void {
-  select(`#markets #market${marketId} .highlight`).transition().duration(600).attr("fill-opacity", 0).remove();
+  select(`#markets #market${marketId} .highlight`)
+    .transition()
+    .duration(600)
+    .attr("fill-opacity", 0)
+    .attr("stroke-width", 0)
+    .remove();
 }
 
 declare global {
