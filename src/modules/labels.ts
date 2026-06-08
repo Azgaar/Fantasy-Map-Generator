@@ -130,8 +130,9 @@ class LabelsModule {
 
   remove(id: number): void {
     const index = pack.labels.findIndex(l => l.i === id);
+    if (index === -1) return;
     this.freeIds.add(id);
-    if (index !== -1) pack.labels.splice(index, 1);
+    pack.labels.splice(index, 1);
   }
 
   removeByType(type: LabelData["type"]): void {
