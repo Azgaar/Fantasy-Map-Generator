@@ -311,67 +311,7 @@ async function parseLoadedData(data, mapVersion) {
       document.body.insertAdjacentHTML("afterbegin", data[5]);
     }
 
-    {
-      svg = d3.select("#map");
-      defs = svg.select("#deftemp");
-      viewbox = svg.select("#viewbox");
-      scaleBar = svg.select("#scaleBar");
-      legend = svg.select("#legend");
-      ocean = viewbox.select("#ocean");
-      oceanLayers = ocean.select("#oceanLayers");
-      oceanPattern = ocean.select("#oceanPattern");
-      lakes = viewbox.select("#lakes");
-      landmass = viewbox.select("#landmass");
-      texture = viewbox.select("#texture");
-      terrs = viewbox.select("#terrs");
-      biomes = viewbox.select("#biomes");
-      ice = viewbox.select("#ice");
-      cells = viewbox.select("#cells");
-      gridOverlay = viewbox.select("#gridOverlay");
-      coordinates = viewbox.select("#coordinates");
-      compass = viewbox.select("#compass");
-      rivers = viewbox.select("#rivers");
-      terrain = viewbox.select("#terrain");
-      relig = viewbox.select("#relig");
-      cults = viewbox.select("#cults");
-      regions = viewbox.select("#regions");
-      statesBody = regions.select("#statesBody");
-      statesHalo = regions.select("#statesHalo");
-      provs = viewbox.select("#provs");
-      zones = viewbox.select("#zones");
-      borders = viewbox.select("#borders");
-      stateBorders = borders.select("#stateBorders");
-      provinceBorders = borders.select("#provinceBorders");
-      routes = viewbox.select("#routes");
-      roads = routes.select("#roads");
-      trails = routes.select("#trails");
-      searoutes = routes.select("#searoutes");
-      temperature = viewbox.select("#temperature");
-      coastline = viewbox.select("#coastline");
-      prec = viewbox.select("#prec");
-      population = viewbox.select("#population");
-      emblems = viewbox.select("#emblems");
-      labels = viewbox.select("#labels");
-      icons = viewbox.select("#icons");
-      burgIcons = icons.select("#burgIcons");
-      anchors = icons.select("#anchors");
-      armies = viewbox.select("#armies");
-      markers = viewbox.select("#markers");
-      ruler = viewbox.select("#ruler");
-      fogging = viewbox.select("#fogging");
-      debug = viewbox.select("#debug");
-      burgLabels = labels.select("#burgLabels");
-
-      if (!texture.size()) {
-        texture = viewbox
-          .insert("g", "#landmass")
-          .attr("id", "texture")
-          .attr("data-href", "./images/textures/plaster.jpg");
-      }
-      if (!emblems.size()) {
-        emblems = viewbox.insert("g", "#labels").attr("id", "emblems").style("display", "none");
-      }
-    }
+    reselectSvgElements();
 
     {
       grid = JSON.parse(data[6]);
@@ -776,4 +716,348 @@ async function parseLoadedData(data, mapVersion) {
       position: {my: "center", at: "center", of: "svg"}
     });
   }
+}
+
+// re-acquire all global d3 selections after the #map svg is (re)inserted into the DOM
+function reselectSvgElements() {
+  svg = d3.select("#map");
+  defs = svg.select("#deftemp");
+  viewbox = svg.select("#viewbox");
+  scaleBar = svg.select("#scaleBar");
+  legend = svg.select("#legend");
+  ocean = viewbox.select("#ocean");
+  oceanLayers = ocean.select("#oceanLayers");
+  oceanPattern = ocean.select("#oceanPattern");
+  lakes = viewbox.select("#lakes");
+  landmass = viewbox.select("#landmass");
+  texture = viewbox.select("#texture");
+  terrs = viewbox.select("#terrs");
+  biomes = viewbox.select("#biomes");
+  ice = viewbox.select("#ice");
+  cells = viewbox.select("#cells");
+  gridOverlay = viewbox.select("#gridOverlay");
+  coordinates = viewbox.select("#coordinates");
+  compass = viewbox.select("#compass");
+  rivers = viewbox.select("#rivers");
+  terrain = viewbox.select("#terrain");
+  relig = viewbox.select("#relig");
+  cults = viewbox.select("#cults");
+  regions = viewbox.select("#regions");
+  statesBody = regions.select("#statesBody");
+  statesHalo = regions.select("#statesHalo");
+  provs = viewbox.select("#provs");
+  zones = viewbox.select("#zones");
+  borders = viewbox.select("#borders");
+  stateBorders = borders.select("#stateBorders");
+  provinceBorders = borders.select("#provinceBorders");
+  routes = viewbox.select("#routes");
+  roads = routes.select("#roads");
+  trails = routes.select("#trails");
+  searoutes = routes.select("#searoutes");
+  temperature = viewbox.select("#temperature");
+  coastline = viewbox.select("#coastline");
+  prec = viewbox.select("#prec");
+  population = viewbox.select("#population");
+  emblems = viewbox.select("#emblems");
+  labels = viewbox.select("#labels");
+  icons = viewbox.select("#icons");
+  burgIcons = icons.select("#burgIcons");
+  anchors = icons.select("#anchors");
+  armies = viewbox.select("#armies");
+  markers = viewbox.select("#markers");
+  ruler = viewbox.select("#ruler");
+  fogging = viewbox.select("#fogging");
+  debug = viewbox.select("#debug");
+  burgLabels = labels.select("#burgLabels");
+
+  if (!texture.size()) {
+    texture = viewbox
+      .insert("g", "#landmass")
+      .attr("id", "texture")
+      .attr("data-href", "./images/textures/plaster.jpg");
+  }
+  if (!emblems.size()) {
+    emblems = viewbox.insert("g", "#labels").attr("id", "emblems").style("display", "none");
+  }
+}
+
+// read a full JSON export from disk and load it as the current map
+function uploadJsonMap(file, callback) {
+  uploadMap.timeStart = performance.now();
+
+  const fileReader = new FileReader();
+  fileReader.onloadend = async function (fileLoadedEvent) {
+    if (callback) callback();
+    ensureEl("coas").innerHTML = ""; // remove auto-generated emblems
+
+    try {
+      const json = JSON.parse(fileLoadedEvent.target.result);
+      await parseJsonData(json);
+    } catch (error) {
+      ERROR && console.error(error);
+      clearMainTip();
+
+      alertMessage.innerHTML = /* html */ `An error occurred while loading the JSON map. Make sure the file is a <b>Full</b> JSON export (Minimal, PackCells and GridCells exports cannot be loaded).
+        <p id="errorBox">${parseError(error)}</p>`;
+      $("#alert").dialog({
+        resizable: false,
+        title: "JSON loading error",
+        maxWidth: "40em",
+        buttons: {
+          OK: function () {
+            $(this).dialog("close");
+          }
+        },
+        position: {my: "center", at: "center", of: "svg"}
+      });
+    }
+  };
+
+  fileReader.readAsText(file);
+}
+
+// reconstruct the live map (grid, pack, entities and rendering) from a full JSON export.
+// Unlike a .map file, a JSON export carries no serialized SVG and stores cells as an
+// array of objects, so we rebuild the geometry the way generation does (calculateVoronoi +
+// markupGrid + reGraph + markupPack), overlay the saved attributes, then render via drawLayers.
+async function parseJsonData(json) {
+  const isFullExport = json?.pack?.cells?.length && json?.grid?.cells?.length && json?.grid?.points?.length;
+  if (!isFullExport)
+    throw new Error("This is not a Full JSON export (missing pack.cells / grid.cells / grid.points)");
+
+  INFO && console.group("Loaded JSON Map " + (json.info?.seed || ""));
+
+  if (window.closeDialogs) closeDialogs();
+  customization = 0;
+  if (customizationMenu.offsetParent) styleTab.click();
+
+  // map identity and canvas size
+  {
+    const info = json.info || {};
+    seed = info.seed != null ? String(info.seed) : generateSeed();
+    optionsSeed.value = seed;
+    Math.random = aleaPRNG(seed); // re-seed PRNG so any randomized drawing is reproducible
+    if (info.width) graphWidth = +info.width;
+    if (info.height) graphHeight = +info.height;
+    mapId = info.mapId ? +info.mapId : Date.now();
+  }
+
+  // settings
+  {
+    const s = json.settings || {};
+    if (s.distanceUnit) applyOption(distanceUnitInput, s.distanceUnit);
+    if (s.distanceScale) distanceScale = distanceScaleInput.value = s.distanceScale;
+    if (s.areaUnit) areaUnit.value = s.areaUnit;
+    if (s.heightUnit) applyOption(heightUnit, s.heightUnit);
+    if (s.heightExponent) heightExponentInput.value = s.heightExponent;
+    if (s.temperatureScale) temperatureScale.value = s.temperatureScale;
+    if (s.populationRate) populationRate = populationRateInput.value = s.populationRate;
+    if (s.urbanization) urbanization = urbanizationInput.value = s.urbanization;
+    if (s.mapSize) mapSizeInput.value = mapSizeOutput.value = minmax(s.mapSize, 1, 100);
+    if (s.latitude) latitudeInput.value = latitudeOutput.value = minmax(s.latitude, 0, 100);
+    if (s.longitude != null) longitudeInput.value = longitudeOutput.value = minmax(s.longitude || 50, 0, 100);
+    if (s.prec) precInput.value = precOutput.value = s.prec;
+    if (s.options) options = typeof s.options === "string" ? JSON.parse(s.options) : s.options;
+    if (s.mapName || json.info?.mapName) mapName.value = s.mapName || json.info.mapName;
+    if (s.hideLabels != null) hideLabels.checked = +s.hideLabels;
+    if (s.stylePreset) stylePreset.value = s.stylePreset;
+    if (s.rescaleLabels != null) rescaleLabels.checked = +s.rescaleLabels;
+    if (s.urbanDensity != null) urbanDensity = urbanDensityInput.value = +s.urbanDensity;
+
+    // canvas size: reflect the loaded map's dimensions on the Options inputs
+    mapWidthInput.value = graphWidth;
+    mapHeightInput.value = graphHeight;
+
+    // Points number: derive the cell-density slider from the grid's cellsDesired
+    const cellsDesired = json.grid?.cellsDesired;
+    if (cellsDesired) {
+      const sliderValue = Object.keys(cellsDensityMap).find(k => cellsDensityMap[k] === cellsDesired);
+      if (sliderValue) changeCellsDensity(+sliderValue);
+      else {
+        pointsInput.dataset.cells = cellsDesired;
+        pointsOutputFormatted.value = Math.round(cellsDesired / 1000) + "K";
+        pointsOutputFormatted.style.color = getCellsDensityColor(cellsDesired);
+      }
+    }
+
+    // generation-request sliders ("new map to apply") are only present in newer exports;
+    // restore them when available so a subsequent "New Map" reproduces similar parameters
+    const g = s.generationSettings;
+    if (g) {
+      if (g.template) applyOption(templateInput, g.template);
+      if (g.cultures != null) culturesInput.value = culturesOutput.value = g.cultures;
+      if (g.culturesSet) {
+        culturesSet.value = g.culturesSet;
+        if (window.changeCultureSet) changeCultureSet();
+      }
+      if (g.statesNumber != null) {
+        statesNumber.value = g.statesNumber;
+        changeStatesNumber(g.statesNumber);
+      }
+      if (g.provincesRatio != null) provincesRatio.value = g.provincesRatio;
+      if (g.sizeVariety != null) sizeVariety.value = g.sizeVariety;
+      if (g.growthRate != null) growthRate.value = g.growthRate;
+      if (g.manors != null) {
+        manorsInput.value = g.manors === "auto" ? 1000 : g.manors;
+        manorsOutput.value = g.manors;
+      }
+      if (g.religionsNumber != null) religionsNumber.value = g.religionsNumber;
+    }
+  }
+
+  {
+    stateLabelsModeInput.value = options.stateLabelsMode;
+    yearInput.value = options.year;
+    eraInput.value = options.era;
+    shapeRendering.value = "geometricPrecision";
+  }
+
+  // coordinates, notes, name bases and biomes
+  if (json.mapCoordinates) mapCoordinates = json.mapCoordinates;
+  if (json.notes) notes = json.notes;
+  if (json.nameBases?.length) nameBases = json.nameBases;
+  biomesData = json.biomesData || Biomes.getDefault();
+
+  // reset the canvas to a clean SVG skeleton and re-acquire selections
+  {
+    if (!window.cleanMapSkeleton) throw new Error("Clean SVG skeleton is unavailable; cannot render JSON map");
+    svg.remove();
+    document.body.insertAdjacentHTML("afterbegin", window.cleanMapSkeleton);
+    reselectSvgElements();
+  }
+
+  // Restore the grid graph directly from the export. Unlike a .map file (which stores only
+  // grid points and rebuilds the Voronoi on load), a Full JSON export serializes the complete
+  // grid geometry per cell, so we deserialize it as-is — fully deterministic and version-proof.
+  {
+    const gc = json.grid.cells;
+    const gv = json.grid.vertices;
+    grid = {
+      spacing: json.grid.spacing,
+      cellsDesired: json.grid.cellsDesired,
+      cellsX: json.grid.cellsX,
+      cellsY: json.grid.cellsY,
+      points: json.grid.points,
+      boundary: json.grid.boundary,
+      seed: json.grid.seed || seed,
+      features: json.grid.features || [],
+      cells: {
+        i: createTypedArray({maxValue: gc.length, length: gc.length}).map((_, i) => i),
+        v: gc.map(c => c.v),
+        c: gc.map(c => c.c),
+        b: gc.map(c => c.b),
+        f: Uint16Array.from(gc, c => c.f),
+        t: Int8Array.from(gc, c => c.t),
+        h: Uint8Array.from(gc, c => c.h),
+        temp: Int8Array.from(gc, c => c.temp),
+        prec: Uint8Array.from(gc, c => c.prec)
+      },
+      vertices: {
+        p: gv.map(v => v.p),
+        v: gv.map(v => v.v),
+        c: gv.map(v => v.c)
+      }
+    };
+
+    // The Full export mislabels grid.features (it actually stores pack.features) and never
+    // exports the real grid features. Regenerate them from the restored heights so grid-level
+    // consumers (ocean layers, ice) have a self-consistent features/t/f. This only touches the
+    // grid graph — the packed graph is restored independently above, so it is unaffected.
+    Features.markupGrid();
+  }
+
+  // Restore the packed graph directly from the export (cells, vertices, entities and attributes)
+  {
+    const pc = json.pack.cells;
+    const pv = json.pack.vertices;
+    pack = {
+      features: json.pack.features,
+      cultures: json.pack.cultures,
+      states: json.pack.states,
+      burgs: json.pack.burgs,
+      religions: json.pack.religions?.length ? json.pack.religions : [{i: 0, name: "No religion"}],
+      provinces: json.pack.provinces?.length ? json.pack.provinces : [0],
+      rivers: json.pack.rivers || [],
+      markers: json.pack.markers || [],
+      routes: json.pack.routes || [],
+      zones: json.pack.zones || [],
+      ice: []
+    };
+
+    pack.vertices = {
+      p: pv.map(v => v.p),
+      v: pv.map(v => v.v),
+      c: pv.map(v => v.c)
+    };
+
+    pack.cells = {
+      i: createTypedArray({maxValue: pc.length, length: pc.length}).map((_, i) => i),
+      v: pc.map(c => c.v),
+      c: pc.map(c => c.c),
+      // border flag is not serialized by the export; derive it the way the Voronoi builder does
+      // (a cell is on the border when it has more vertices than adjacent cells)
+      b: pc.map(c => (c.v.length > c.c.length ? 1 : 0)),
+      p: pc.map(c => c.p),
+      g: createTypedArray({maxValue: grid.points.length, from: pc.map(c => c.g)}),
+      h: Uint8Array.from(pc, c => c.h),
+      area: createTypedArray({maxValue: UINT16_MAX, from: pc.map(c => c.area)}),
+      f: Uint16Array.from(pc, c => c.f),
+      t: Int8Array.from(pc, c => c.t),
+      haven: createTypedArray({maxValue: pc.length, from: pc.map(c => c.haven)}),
+      harbor: Uint8Array.from(pc, c => c.harbor),
+      fl: Uint16Array.from(pc, c => c.fl),
+      r: Uint16Array.from(pc, c => c.r),
+      conf: Uint8Array.from(pc, c => c.conf),
+      biome: Uint8Array.from(pc, c => c.biome),
+      s: Int16Array.from(pc, c => c.s),
+      pop: Float32Array.from(pc, c => c.pop),
+      culture: Uint16Array.from(pc, c => c.culture),
+      burg: createTypedArray({maxValue: pack.burgs.length, from: pc.map(c => c.burg)}),
+      state: Uint16Array.from(pc, c => c.state),
+      religion: Uint16Array.from(pc, c => c.religion),
+      province: Uint16Array.from(pc, c => c.province)
+    };
+
+    // rebuild the cell-routes lookup {fromCell: {toCell: routeId}} from per-cell entries
+    pack.cells.routes = {};
+    for (const c of pc) {
+      if (c.routes && Object.keys(c.routes).length) pack.cells.routes[c.i] = c.routes;
+    }
+  }
+
+  // render: JSON carries no SVG, so draw every layer from data like generation does
+  {
+    // apply the map's own saved style preset (mirrors applyStyleOnLoad but with the export's
+    // preset, and without persisting to localStorage so the user's default style is untouched).
+    // Falls back to the local default if that preset isn't available in this browser.
+    try {
+      const desiredPreset = json.settings?.stylePreset || localStorage.getItem("presetStyle") || "default";
+      const [appliedPreset, styleJSON] = await getStylePreset(desiredPreset);
+      applyStyle(styleJSON);
+      updateMapFilter();
+      stylePreset.value = stylePreset.dataset.old = appliedPreset;
+      setPresetRemoveButtonVisibiliy();
+    } catch (styleError) {
+      ERROR && console.error("Failed to apply saved style preset, using default", styleError);
+      await applyStyleOnLoad();
+    }
+
+    OceanLayers(); // coastal depth bands — generated, not stored in the export
+    Ice.generate(); // ice is not included in the export; regenerate it from temperature/height
+    applyLayersPreset();
+    drawLayers();
+    if (rulers && layerIsOn("toggleRulers")) rulers.draw();
+    if (layerIsOn("toggleGrid")) drawGrid();
+  }
+
+  {
+    if (window.restoreDefaultEvents) restoreDefaultEvents();
+    invokeActiveZooming();
+    fitMapToScreen();
+  }
+
+  WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadMap.timeStart) / 1000, 2)}s`);
+  showStatistics();
+  INFO && console.groupEnd("Loaded JSON Map " + seed);
+  tip("Map is successfully loaded from JSON", true, "success", 7000);
 }

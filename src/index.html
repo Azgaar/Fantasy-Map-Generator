@@ -6258,6 +6258,12 @@
             URL
           </button>
           <button onclick="quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
+          <button
+            onclick="jsonToLoad.click()"
+            data-tip="Load a map from a Full JSON export (Exporter > Save as JSON > Full)"
+          >
+            JSON
+          </button>
         </div>
 
         <p>Click on <i>storage</i> to open the last saved map.</p>
@@ -6371,6 +6377,7 @@
 
     <div id="fileInputs" style="display: none">
       <input type="file" accept=".map,.gz" id="mapToLoad" />
+      <input type="file" accept=".json" id="jsonToLoad" />
       <input type="file" accept=".txt,.csv" id="burgsListToLoad" />
       <input type="file" accept=".txt" id="legendsToLoad" />
       <input type="file" accept="image/*" id="imageToLoad" />

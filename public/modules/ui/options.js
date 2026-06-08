@@ -878,6 +878,15 @@ ensureEl("mapToLoad").addEventListener("change", function () {
   uploadMap(fileToLoad);
 });
 
+// load map from a Full JSON export
+ensureEl("jsonToLoad").addEventListener("change", function () {
+  const fileToLoad = this.files[0];
+  this.value = "";
+  if (!fileToLoad) return;
+  closeDialogs();
+  uploadJsonMap(fileToLoad);
+});
+
 function openExportToPngTiles() {
   ensureEl("tileStatus").innerHTML = "";
   closeDialogs();

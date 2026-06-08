@@ -103,7 +103,20 @@ function getSettings() {
     hideLabels: hideLabels.checked,
     stylePreset: stylePreset.value,
     rescaleLabels: rescaleLabels.checked,
-    urbanDensity: urbanDensity
+    urbanDensity: urbanDensity,
+    // generation-request sliders ("new map to apply"): not properties of the current map, but
+    // saving them lets an importer restore the Options panel so "New Map" reproduces similar params
+    generationSettings: {
+      template: templateInput.value,
+      cultures: +culturesOutput.value,
+      culturesSet: culturesSet.value,
+      statesNumber: +statesNumber.value,
+      provincesRatio: +provincesRatio.value,
+      sizeVariety: +sizeVariety.value,
+      growthRate: +growthRate.value,
+      manors: manorsOutput.value,
+      religionsNumber: +religionsNumber.value
+    }
   };
 }
 
