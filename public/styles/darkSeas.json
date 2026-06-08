@@ -625,7 +625,7 @@
   },
   "#markets": {
     "opacity": 1,
-    "stroke-width": 0.5,
+    "stroke-width": 1.0,
     "fill-opacity": 0,
     "stroke-opacity": 0.8,
     "filter": null

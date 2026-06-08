@@ -36,7 +36,10 @@ function buildMarketsContent(): string {
       const polygons = isolines[market.i]?.polygons;
       if (polygons) {
         const path = polygons.map(p => linegen(p) ?? "").join("");
-        content += `<path d="${path}" fill="${fillColor}" stroke="${strokeColor}"/>`;
+        const clipId = `market-clip-${market.i}`;
+        content += `<clipPath id="${clipId}"><path d="${path}"/></clipPath>`;
+        content += `<path class="fill" d="${path}" fill="${fillColor}" stroke="none"/>`;
+        content += `<path class="border" d="${path}" fill="none" stroke="${strokeColor}" stroke-width="0.7" clip-path="url(#${clipId})"/>`;
       }
 
       const centerBurg = pack.burgs[market.centerBurgId];
@@ -64,7 +67,7 @@ function highlightMarketsOnHover(): void {
 
 export function highlightMarketOn(marketId: number | string): void {
   const group = select(`#markets #market${marketId}`);
-  const path = group.select<SVGPathElement>("path").node();
+  const path = group.select<SVGPathElement>("path.fill").node();
   if (!path) return;
 
   group.select(".highlight").remove();
@@ -79,8 +82,8 @@ export function highlightMarketOn(marketId: number | string): void {
     .attr("pointer-events", "none")
     .transition()
     .duration(1000)
-    .attr("fill-opacity", 0.8)
-    .attr("stroke-width", 1.5);
+    .attr("fill-opacity", 0.7)
+    .attr("stroke-width", 1);
 }
 
 export function highlightMarketOff(marketId: number | string): void {
