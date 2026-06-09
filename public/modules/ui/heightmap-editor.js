@@ -186,8 +186,8 @@ function editHeightmap(options) {
     closeDialogs();
     resetZoom();
 
-    if (ensureEl("preview")) ensureEl("preview").remove();
-    if (ensureEl("canvas3d")) enterStandardView();
+    document.getElementById("preview")?.remove();
+    if (document.getElementById("canvas3d")) enterStandardView();
 
     const mode = heightmapEditMode.innerHTML;
     if (mode === "erase") regenerateErasedData();
@@ -570,8 +570,8 @@ function editHeightmap(options) {
     redo.disabled = templateRedo.disabled = true;
     if (!noStat) {
       updateStatistics();
-      if (ensureEl("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-      if (ensureEl("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
+      if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
+      if (document.getElementById("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
     }
   }
 
@@ -585,8 +585,8 @@ function editHeightmap(options) {
     mockHeightmap();
     updateStatistics();
 
-    if (ensureEl("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-    if (ensureEl("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
+    if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
+    if (document.getElementById("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
   }
 
   // restart edits from 1st step
@@ -1253,8 +1253,8 @@ function editHeightmap(options) {
       grid.cells.h = HeightmapGenerator.getHeights();
       updateStatistics();
       mockHeightmap();
-      if (ensureEl("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-      if (ensureEl("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
+      if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
+      if (document.getElementById("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
     }
 
     function downloadTemplate() {
@@ -1641,8 +1641,8 @@ function editHeightmap(options) {
   }
 
   function toggleHeightmapPreview() {
-    if (ensureEl("preview")) {
-      ensureEl("preview").remove();
+    if (document.getElementById("preview")) {
+      document.getElementById("preview").remove();
       return;
     }
     const preview = document.createElement("canvas");
@@ -1656,7 +1656,7 @@ function editHeightmap(options) {
   }
 
   function drawHeightmapPreview() {
-    const ctx = ensureEl("preview").getContext("2d");
+    const ctx = document.getElementById("preview")?.getContext("2d");
     const imageData = ctx.createImageData(grid.cellsX, grid.cellsY);
 
     grid.cells.h.forEach((height, i) => {
@@ -1674,7 +1674,7 @@ function editHeightmap(options) {
   }
 
   function downloadPreview() {
-    const preview = ensureEl("preview");
+    const preview = document.getElementById("preview");
     const dataURL = preview.toDataURL("image/png");
 
     const img = new Image();
