@@ -1,11 +1,21 @@
 "use strict";
 
+const riversPage = {page: 1};
+const RIVERS_SORT_ACCESSORS = {
+  name: r => r.name || "",
+  type: r => r.type || "",
+  discharge: r => r.discharge,
+  length: r => r.length,
+  width: r => r.width
+};
+
 function overviewRivers() {
   if (customization) return;
   closeDialogs("#riversOverview, .stable");
   if (!layerIsOn("toggleRivers")) toggleRivers();
 
   const body = ensureEl("riversBody");
+  riversPage.page = 1;
   riversOverviewAddLines();
   $("#riversOverview").dialog();
 
@@ -26,7 +36,14 @@ function overviewRivers() {
   ensureEl("riversBasinHighlight").on("click", toggleBasinsHightlight);
   ensureEl("riversExport").on("click", downloadRiversData);
   ensureEl("riversRemoveAll").on("click", triggerAllRiversRemove);
-  ensureEl("riversSearch").on("input", riversOverviewAddLines);
+  ensureEl("riversSearch").on("input", () => {
+    riversPage.page = 1;
+    riversOverviewAddLines();
+  });
+  bindEditorSortReset(ensureEl("riversHeader"), () => {
+    riversPage.page = 1;
+    riversOverviewAddLines();
+  });
 
   // add line for each river
   function riversOverviewAddLines() {
@@ -37,7 +54,7 @@ function overviewRivers() {
     // Precompute a lookup map from river id to river for efficient basin lookup
     const riversById = new Map(pack.rivers.map(river => [river.i, river]));
 
-    let filteredRivers = pack.rivers;
+    let filteredRivers = pack.rivers.slice(); // copy so cross-page sort never mutates pack.rivers order
     const searchText = ensureEl("riversSearch").value.toLowerCase().trim();
     if (searchText) {
       filteredRivers = filteredRivers.filter(r => {
@@ -49,7 +66,13 @@ function overviewRivers() {
       });
     }
 
-    for (const r of filteredRivers) {
+    sortDataByActiveHeader(ensureEl("riversHeader"), filteredRivers, {
+      ...RIVERS_SORT_ACCESSORS,
+      basin: r => riversById.get(r.basin)?.name || ""
+    });
+    const pageInfo = getEditorPage(filteredRivers, riversPage);
+
+    for (const r of pageInfo.items) {
       const discharge = r.discharge + " m³/s";
       const length = rn(r.length * distanceScale) + " " + unit;
       const width = rn(r.width * distanceScale, 3) + " " + unit;
@@ -94,7 +117,10 @@ function overviewRivers() {
     body.querySelectorAll("div > span.icon-pencil").forEach(el => el.on("click", openRiverEditor));
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", triggerRiverRemove));
 
-    applySorting(riversHeader);
+    renderEditorPagination(ensureEl("riversFooter"), pageInfo, page => {
+      riversPage.page = page;
+      riversOverviewAddLines();
+    });
   }
 
   function riverHighlightOn(event) {
@@ -154,12 +180,22 @@ function overviewRivers() {
   function downloadRiversData() {
     let data = "Id,River,Type,Discharge,Length,Width,Basin\n"; // headers
 
-    body.querySelectorAll(":scope > div").forEach(function (el) {
-      const d = el.dataset;
-      const discharge = d.discharge + " m³/s";
-      const length = rn(d.length * distanceScale) + " " + distanceUnitInput.value;
-      const width = rn(d.width * distanceScale, 3) + " " + distanceUnitInput.value;
-      data += [d.id, d.name, d.type, discharge, length, width, d.basin].join(",") + "\n";
+    const riversById = new Map(pack.rivers.map(river => [river.i, river]));
+    const searchText = ensureEl("riversSearch").value.toLowerCase().trim();
+    const exported = pack.rivers.filter(r => {
+      if (!searchText) return true;
+      const name = (r.name || "").toLowerCase();
+      const type = (r.type || "").toLowerCase();
+      const basinName = (riversById.get(r.basin)?.name || "").toLowerCase();
+      return name.includes(searchText) || type.includes(searchText) || basinName.includes(searchText);
+    });
+
+    exported.forEach(function (r) {
+      const discharge = r.discharge + " m³/s";
+      const length = rn(r.length * distanceScale) + " " + distanceUnitInput.value;
+      const width = rn(r.width * distanceScale, 3) + " " + distanceUnitInput.value;
+      const basin = riversById.get(r.basin)?.name || "";
+      data += [r.i, r.name, r.type, discharge, length, width, basin].join(",") + "\n";
     });
 
     const name = getFileName("Rivers") + ".csv";

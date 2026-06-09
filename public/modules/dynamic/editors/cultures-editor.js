@@ -4,6 +4,18 @@ let culturesManualHistory = [];
 
 const cultureTypes = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
 
+const culturesPage = {page: 1};
+const CULTURES_SORT_ACCESSORS = {
+  name: c => c.name,
+  type: c => c.type || "",
+  base: c => c.base,
+  cells: c => c.cells,
+  expansionism: c => c.expansionism || 0,
+  area: c => c.area,
+  population: c => c.rural * populationRate + c.urban * populationRate * urbanization,
+  emblems: c => c.shield
+};
+
 export function open() {
   closeDialogs("#culturesEditor, .stable");
   if (!layerIsOn("toggleCultures")) toggleCultures();
@@ -12,6 +24,7 @@ export function open() {
   if (layerIsOn("toggleReligions")) toggleReligions();
   if (layerIsOn("toggleProvinces")) toggleProvinces();
 
+  culturesPage.page = 1;
   refreshCulturesEditor();
 
   $("#culturesEditor").dialog({
@@ -77,6 +90,10 @@ function insertEditorHtml() {
 
 function addListeners() {
   applySortingByHeader("culturesHeader");
+  bindEditorSortReset(ensureEl("culturesHeader"), () => {
+    culturesPage.page = 1;
+    culturesEditorAddLines();
+  });
 
   ensureEl("culturesEditorRefresh").on("click", refreshCulturesEditor);
   ensureEl("culturesEditStyle").on("click", () => editStyle("cults"));
@@ -120,15 +137,25 @@ function culturesCollectStatistics() {
 
 function culturesEditorAddLines() {
   const unit = getAreaUnit();
-  let lines = "";
-  let totalArea = 0;
-  let totalPopulation = 0;
 
   const emblemShapeGroup = ensureEl("emblemShape").selectedOptions[0]?.parentNode?.label;
   const selectShape = emblemShapeGroup === "Diversiform";
 
-  for (const c of pack.cultures) {
-    if (c.removed) continue;
+  const allCultures = pack.cultures.filter(c => !c.removed);
+  sortDataByActiveHeader(ensureEl("culturesHeader"), allCultures, CULTURES_SORT_ACCESSORS);
+
+  // footer totals over the full set
+  let totalArea = 0;
+  let totalPopulation = 0;
+  for (const c of allCultures) {
+    totalArea += getArea(c.area);
+    totalPopulation += rn(c.rural * populationRate + c.urban * populationRate * urbanization);
+  }
+
+  const pageInfo = getEditorPage(allCultures, culturesPage);
+  let lines = "";
+
+  for (const c of pageInfo.items) {
     const area = getArea(c.area);
     const rural = c.rural * populationRate;
     const urban = c.urban * populationRate * urbanization;
@@ -136,8 +163,6 @@ function culturesEditorAddLines() {
     const populationTip = `Total population: ${si(population)}. Rural population: ${si(rural)}. Urban population: ${si(
       urban
     )}. Click to edit`;
-    totalArea += area;
-    totalPopulation += population;
 
     if (!c.i) {
       // Uncultured (neutral) line
@@ -231,6 +256,11 @@ function culturesEditorAddLines() {
   ensureEl("culturesFooterArea").dataset.area = totalArea;
   ensureEl("culturesFooterPopulation").dataset.population = totalPopulation;
 
+  renderEditorPagination(ensureEl("culturesFooter"), pageInfo, page => {
+    culturesPage.page = page;
+    culturesEditorAddLines();
+  });
+
   // add listeners
   $body.querySelectorAll(":scope > div").forEach($line => {
     $line.on("mouseenter", cultureHighlightOn);
@@ -258,7 +288,6 @@ function culturesEditorAddLines() {
     $body.dataset.type = "absolute";
     togglePercentageMode();
   }
-  applySorting($culturesHeader);
   $("#culturesEditor").dialog({ width: fitContent() });
 }
 
@@ -578,12 +607,12 @@ function drawCultureCenters() {
     .attr("cy", d => pack.cells.p[d.center][1])
     .on("mouseenter", d => {
       tip(tooltip, true);
-      $body.querySelector(`div[data-id='${d.i}']`).classList.add("selected");
+      $body.querySelector(`div[data-id='${d.i}']`)?.classList.add("selected");
       cultureHighlightOn(event);
     })
     .on("mouseleave", d => {
       tip("", true);
-      $body.querySelector(`div[data-id='${d.i}']`).classList.remove("selected");
+      $body.querySelector(`div[data-id='${d.i}']`)?.classList.remove("selected");
       cultureHighlightOff(event);
     })
     .call(d3.drag().on("start", cultureCenterDrag));
@@ -682,6 +711,8 @@ function recalculateCultures(force) {
 function enterCultureManualAssignent() {
   if (!layerIsOn("toggleCultures")) toggleCultures();
   customization = 4;
+  culturesPage.page = 1;
+  culturesEditorAddLines();
   cults.append("g").attr("id", "temp");
   document.querySelectorAll("#culturesBottom > *").forEach(el => (el.style.display = "none"));
   ensureEl("culturesManuallyButtons").style.display = "inline-block";
@@ -718,8 +749,10 @@ function selectCultureOnMapClick() {
   const assigned = cults.select("#temp").select("polygon[data-cell='" + i + "']");
   const culture = assigned.size() ? +assigned.attr("data-culture") : pack.cells.culture[i];
 
-  $body.querySelector("div.selected").classList.remove("selected");
-  $body.querySelector("div[data-id='" + culture + "']").classList.add("selected");
+  const $row = $body.querySelector("div[data-id='" + culture + "']");
+  if (!$row) return; // clicked culture's row is on another page; ignore to avoid a crash
+  $body.querySelector("div.selected")?.classList.remove("selected");
+  $row.classList.add("selected");
 }
 
 function dragCultureBrush() {
@@ -794,7 +827,7 @@ function exitCulturesManualAssignment(close) {
   ensureEl("culturesManuallyButtons").style.display = "none";
 
   culturesEditor.querySelectorAll(".hide").forEach(el => el.classList.remove("hidden"));
-  culturesFooter.style.display = "block";
+  culturesFooter.style.display = "flex";
   $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
   if (!close) $("#culturesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
@@ -858,15 +891,16 @@ function addCulture() {
 function downloadCulturesCsv() {
   const unit = getAreaUnit("2");
   const headers = `Id,Name,Color,Cells,Expansionism,Type,Area ${unit},Population,Namesbase,Emblems Shape,Origins`;
-  const lines = Array.from($body.querySelectorAll(":scope > div"));
-  const data = lines.map($line => {
-    const { id, name, color, cells, expansionism, type, area, population, emblems, base } = $line.dataset;
-    const namesbase = nameBases[+base].name;
-    const { origins } = pack.cultures[+id];
-    const originList = origins.filter(origin => origin).map(origin => pack.cultures[origin].name);
-    const originText = '"' + originList.join(", ") + '"';
-    return [id, name, color, cells, expansionism, type, area, population, namesbase, emblems, originText].join(",");
-  });
+  const data = pack.cultures
+    .filter(c => !c.removed)
+    .map(c => {
+      const area = getArea(c.area);
+      const population = rn(c.rural * populationRate + c.urban * populationRate * urbanization);
+      const namesbase = nameBases[c.base].name;
+      const originList = (c.origins || []).filter(origin => origin).map(origin => pack.cultures[origin].name);
+      const originText = '"' + originList.join(", ") + '"';
+      return [c.i, c.name, c.color || "", c.cells, c.i ? (c.expansionism ?? "") : "", c.type || "", area, population, namesbase, c.shield, originText].join(",");
+    });
   const csvData = [headers].concat(data).join("\n");
 
   const name = getFileName("Cultures") + ".csv";

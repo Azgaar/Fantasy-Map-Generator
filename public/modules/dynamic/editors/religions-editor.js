@@ -1,6 +1,18 @@
 const $body = insertEditorHtml();
 addListeners();
 
+const religionsPage = {page: 1};
+const RELIGIONS_SORT_ACCESSORS = {
+  name: r => r.name,
+  type: r => r.type || "",
+  form: r => r.form || "",
+  deity: r => r.deity || "",
+  area: r => r.area,
+  population: r => r.rural * populationRate + r.urban * populationRate * urbanization,
+  expansion: r => r.expansion || "",
+  expansionism: r => r.expansionism || 0
+};
+
 export function open() {
   closeDialogs("#religionsEditor, .stable");
   if (!layerIsOn("toggleReligions")) toggleReligions();
@@ -9,6 +21,7 @@ export function open() {
   if (layerIsOn("toggleCultures")) toggleCultures();
   if (layerIsOn("toggleProvinces")) toggleProvinces();
 
+  religionsPage.page = 1;
   refreshReligionsEditor();
   drawReligionCenters();
 
@@ -92,6 +105,10 @@ function insertEditorHtml() {
 
 function addListeners() {
   applySortingByHeader("religionsHeader");
+  bindEditorSortReset(ensureEl("religionsHeader"), () => {
+    religionsPage.page = 1;
+    religionsEditorAddLines();
+  });
 
   ensureEl("religionsEditorRefresh").on("click", refreshReligionsEditor);
   ensureEl("religionsEditStyle").on("click", () => editStyle("relig"));
@@ -129,17 +146,27 @@ function religionsCollectStatistics() {
   }
 }
 
-// add line for each religion
+// add line for each religion (current page only; sort + totals span all religions)
 function religionsEditorAddLines() {
   const unit = " " + getAreaUnit();
-  let lines = "";
+
+  const allReligions = pack.religions.filter(
+    r => !r.removed && !(r.i && !r.cells && $body.dataset.extinct !== "show")
+  );
+  sortDataByActiveHeader(ensureEl("religionsHeader"), allReligions, RELIGIONS_SORT_ACCESSORS);
+
+  // footer totals over the full (visible) set
   let totalArea = 0;
   let totalPopulation = 0;
+  for (const r of allReligions) {
+    totalArea += getArea(r.area);
+    totalPopulation += rn(r.rural * populationRate + r.urban * populationRate * urbanization);
+  }
 
-  for (const r of pack.religions) {
-    if (r.removed) continue;
-    if (r.i && !r.cells && $body.dataset.extinct !== "show") continue; // hide extinct religions
+  const pageInfo = getEditorPage(allReligions, religionsPage);
+  let lines = "";
 
+  for (const r of pageInfo.items) {
     const area = getArea(r.area);
     const rural = r.rural * populationRate;
     const urban = r.urban * populationRate * urbanization;
@@ -147,8 +174,6 @@ function religionsEditorAddLines() {
     const populationTip = `Believers: ${si(population)}; Rural areas: ${si(rural)}; Urban areas: ${si(
       urban
     )}. Click to change`;
-    totalArea += area;
-    totalPopulation += population;
 
     if (!r.i) {
       // No religion (neutral) line
@@ -233,6 +258,11 @@ function religionsEditorAddLines() {
   ensureEl("religionsFooterArea").dataset.area = totalArea;
   ensureEl("religionsFooterPopulation").dataset.population = totalPopulation;
 
+  renderEditorPagination(ensureEl("religionsFooter"), pageInfo, page => {
+    religionsPage.page = page;
+    religionsEditorAddLines();
+  });
+
   // add listeners
   $body.querySelectorAll(":scope > div").forEach($line => {
     $line.on("mouseenter", religionHighlightOn);
@@ -258,7 +288,6 @@ function religionsEditorAddLines() {
     togglePercentageMode();
   }
 
-  applySorting(religionsHeader);
   $("#religionsEditor").dialog({ width: fitContent() });
 }
 
@@ -640,6 +669,7 @@ async function showHierarchy() {
 }
 
 function toggleExtinct() {
+  religionsPage.page = 1;
   $body.dataset.extinct = $body.dataset.extinct !== "show" ? "show" : "hide";
   religionsEditorAddLines();
   drawReligionCenters();
@@ -648,6 +678,8 @@ function toggleExtinct() {
 function enterReligionsManualAssignent() {
   if (!layerIsOn("toggleReligions")) toggleReligions();
   customization = 7;
+  religionsPage.page = 1;
+  religionsEditorAddLines();
   relig.append("g").attr("id", "temp");
   document.querySelectorAll("#religionsBottom > *").forEach(el => (el.style.display = "none"));
   ensureEl("religionsManuallyButtons").style.display = "inline-block";
@@ -683,8 +715,10 @@ function selectReligionOnMapClick() {
   const assigned = relig.select("#temp").select("polygon[data-cell='" + i + "']");
   const religion = assigned.size() ? +assigned.attr("data-religion") : pack.cells.religion[i];
 
-  $body.querySelector("div.selected").classList.remove("selected");
-  $body.querySelector("div[data-id='" + religion + "']").classList.add("selected");
+  const $row = $body.querySelector("div[data-id='" + religion + "']");
+  if (!$row) return; // clicked religion's row is on another page; ignore to avoid a crash
+  $body.querySelector("div.selected")?.classList.remove("selected");
+  $row.classList.add("selected");
 }
 
 function dragReligionBrush() {
@@ -760,7 +794,7 @@ function exitReligionsManualAssignment(close) {
   ensureEl("religionsEditor")
     .querySelectorAll(".hide")
     .forEach(el => el.classList.remove("hidden"));
-  ensureEl("religionsFooter").style.display = "block";
+  ensureEl("religionsFooter").style.display = "flex";
   $body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
   if (!close) $("#religionsEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
@@ -809,15 +843,28 @@ function addReligion() {
 function downloadReligionsCsv() {
   const unit = getAreaUnit("2");
   const headers = `Id,Name,Color,Type,Form,Supreme Deity,Area ${unit},Believers,Origins,Potential,Expansionism`;
-  const lines = Array.from($body.querySelectorAll(":scope > div"));
-  const data = lines.map($line => {
-    const { id, name, color, type, form, deity, area, population, expansion, expansionism } = $line.dataset;
-    const deityText = '"' + deity + '"';
-    const { origins } = pack.religions[+id];
-    const originList = (origins || []).filter(origin => origin).map(origin => pack.religions[origin].name);
-    const originText = '"' + originList.join(", ") + '"';
-    return [id, name, color, type, form, deityText, area, population, originText, expansion, expansionism].join(",");
-  });
+  const data = pack.religions
+    .filter(r => !r.removed && !(r.i && !r.cells && $body.dataset.extinct !== "show"))
+    .map(r => {
+      const area = getArea(r.area);
+      const population = rn(r.rural * populationRate + r.urban * populationRate * urbanization);
+      const deityText = '"' + (r.deity || "") + '"';
+      const originList = (r.origins || []).filter(origin => origin).map(origin => pack.religions[origin].name);
+      const originText = '"' + originList.join(", ") + '"';
+      return [
+        r.i,
+        r.name,
+        r.color || "",
+        r.type || "",
+        r.form || "",
+        deityText,
+        area,
+        population,
+        originText,
+        r.expansion || "",
+        r.i ? (r.expansionism ?? "") : ""
+      ].join(",");
+    });
   const csvData = [headers].concat(data).join("\n");
 
   const name = getFileName("Religions") + ".csv";
