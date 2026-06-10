@@ -3,6 +3,7 @@
 // GPU erosion-detail bake, a noise-based erosion appearance filter
 window.ThreeDErosion = (function () {
   const SEA_LEVEL = 20;
+  const HILLS = 50; // land below this is smoothed toward its neighbors, fading out by this height
   let cached = null; // {key, heights: Float32Array (0..1 over h 0-100), cols, rows}
 
   // FNV-1a over typed arrays and a param string: cheap content hash to skip re-bakes
@@ -314,19 +315,16 @@ window.ThreeDErosion = (function () {
     const float GULLY_CELLS0 = 0.16;     // octave-0 erosion lattice: ~6 grid cells per kernel
     const float GULLY_AMP0 = 0.07;
     const float GULLY_GAIN = 0.55;       // per-octave amplitude falloff
-    const float DIR_SCALE = 0.5;         // stripes per lattice cell per unit slope: stripe
-                                         // frequency follows the slope, so steep faces get dense
-                                         // gullies and flats fade to a constant automatically
-    const float MAX_STRIPE_FREQ = 4.0;   // cap stripes per lattice cell: prevents pathological
-                                         // phase aliasing into terrace bands on the steepest faces
+    const float DIR_SCALE = 0.5;         // stripes per lattice cell per unit slope
+    const float MAX_STRIPE_FREQ = 4.0;   // cap stripes per lattice cell
     const float RIVER_RELIEF_CAP = 0.15; // max carve depth, in 0..1 height units
-    const float COAST_RAMP = 0.2;        // land mask span (around the 0.5 = true-coastline
-                                         // contour) over which land height ramps up from the
-                                         // water surface -- the cliff itself sits at mask 0.5
-    const float RIDGE_SHARPEN = 0.8;     // unsharp-mask strength for crest sharpening
-    const float EDGE_SHARP = 0.7;        // edge-shaping exponent: sharper crests, rounder gully floors
-    const bool QUANTIZE_GULLY_DIR = true; // runevision sign trick: feed back only the sign of the
-                                          // derivative so smaller gullies hold a consistent angle
+    const float COAST_RAMP = 0.2;        // land mask span
+    const float RIDGE_SHARPEN = 0.8;      // unsharp-mask strength for crest sharpening
+    const float EDGE_SHARP = 0.7;         // edge-shaping exponent: sharper crests, rounder gully floors
+    const float SLOPE_LO = 0.015;         // gradient trick: local slope (height delta per grid cell
+    const float SLOPE_HI = 0.05;          // slope above which erosion energy is unaffected
+    const float FLAT_ENERGY_FLOOR = 0.5;  // min energy fraction kept on dead-flat ground
+    const bool QUANTIZE_GULLY_DIR = true; // runevision sign trick: feed back only the sign of the derivative
 
     float hash12(vec2 p) {
       vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -455,14 +453,22 @@ window.ThreeDErosion = (function () {
       // erosion energy follows the map's terrain classes: h 50+ are hills and
       // h 70+ mountains (full sculpting), rugged areas qualify via local
       // relief regardless of elevation. Flat lowlands get exactly zero energy
-      // (no constant floor) — only genuine height anomalies (relief weighted
-      // by anomalyWeight, which fades in above ~h30) get minor treatment
+      // h<=30 gets none even if locally rugged)
       vec2 heightData = heightSample(uv);
       float localRelief = heightData.y;
       float hillCurve = smoothstep(0.40, 0.70, base);
       float reliefCurve = smoothstep(0.03, 0.10, localRelief);
-      float anomalyWeight = mix(0.35, 1.0, smoothstep(0.30, 0.55, base));
+      float anomalyWeight = smoothstep(0.30, 0.55, base);
       float energy = max(hillCurve, reliefCurve * anomalyWeight);
+
+      // gradient trick: scale energy by the local slope of the base
+      // heightmap so genuinely flat ground (plains, plateau tops, valley
+      // floors) stays smooth even inside a height band that would
+      // otherwise get full erosion detail
+      float slopeMag = length(grad) / uGridSize.x;
+      float slopeCurve = smoothstep(SLOPE_LO, SLOPE_HI, slopeMag);
+      energy *= mix(FLAT_ENERGY_FLOOR, 1.0, slopeCurve);
+
       float gate = contrib * energy;
 
       float h = base;
