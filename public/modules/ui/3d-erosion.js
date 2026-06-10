@@ -55,13 +55,25 @@ window.ThreeDErosion = (function () {
     const n = grid.cells.h.length;
     const data = new Uint8Array(n * 4);
 
+    const heights = Uint8Array.from(grid.cells.h);
+    const sums = new Float64Array(n);
+    const counts = new Uint16Array(n);
+    for (let p = 0; p < pack.cells.g.length; p++) {
+      const g = pack.cells.g[p];
+      sums[g] += pack.cells.h[p];
+      counts[g]++;
+    }
     for (let i = 0; i < n; i++) {
-      const h = grid.cells.h[i];
+      if (counts[i] > 0) heights[i] = Math.round(sums[i] / counts[i]);
+    }
+
+    for (let i = 0; i < n; i++) {
+      const h = heights[i];
       let maxDelta = 0;
       if (grid.cells.c[i]) {
         for (const c of grid.cells.c[i]) {
-          if (grid.cells.h[c] < SEA_LEVEL) continue;
-          const delta = Math.abs(h - grid.cells.h[c]);
+          if (heights[c] < SEA_LEVEL) continue;
+          const delta = Math.abs(h - heights[c]);
           if (delta > maxDelta) maxDelta = delta;
         }
       }
