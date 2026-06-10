@@ -6074,6 +6074,47 @@
             >
           </div>
 
+          <div
+            data-tip="Bake procedural erosion detail (gullies, ridges, river valleys) into the 3D terrain. Visual only, the map data is not changed"
+            style="margin: 0.6em 0 0.3em -0.2em"
+          >
+            <input id="options3dErosion" class="checkbox" type="checkbox" />
+            <label for="options3dErosion" class="checkbox-label"><i>Eroded terrain</i></label>
+          </div>
+
+          <div id="options3dErosionSection" style="display: none">
+            <div data-tip="Set eroded mesh detail level (vertices on the long side)">
+              <div>Mesh detail:</div>
+              <select id="options3dErosionDetail" style="width: 10em">
+                <option value="256">256</option>
+                <option value="512" selected>512</option>
+                <option value="1024">1024 [slow]</option>
+              </select>
+            </div>
+
+            <div data-tip="Set the strength of erosion gullies and ridges">
+              <div>Gully strength:</div>
+              <input id="options3dErosionStrengthRange" type="range" min="0" max="100" />
+              <input id="options3dErosionStrengthNumber" type="number" min="0" max="100" style="width: 4em" />
+            </div>
+
+            <div data-tip="Set how deep the valleys are carved along the rivers">
+              <div>River valleys:</div>
+              <input id="options3dErosionRiverDepthRange" type="range" min="0" max="100" />
+              <input id="options3dErosionRiverDepthNumber" type="number" min="0" max="100" style="width: 4em" />
+            </div>
+
+            <div data-tip="Set the number of erosion detail layers. More octaves add finer gullies">
+              <div>Detail octaves:</div>
+              <select id="options3dErosionOctaves" style="width: 6em">
+                <option value="1">1</option>
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </div>
+          </div>
+
           <div data-tip="Toggle wireframe mode" style="margin: 0.6em 0 0.3em -0.2em">
             <input id="options3dMeshWireframeMode" class="checkbox" type="checkbox" />
             <label for="options3dMeshWireframeMode" class="checkbox-label"><i>Show wireframe</i></label>

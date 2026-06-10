@@ -5,7 +5,7 @@ window.ThreeD = (function () {
     scale: 50,
     lightness: 0.6,
     shadow: 0.5,
-    sun: {x: 100, y: 800, z: 1000},
+    sun: { x: 100, y: 800, z: 1000 },
     rotateMesh: 0,
     rotateGlobe: 0.5,
     skyColor: "#9ecef5",
@@ -16,7 +16,12 @@ window.ThreeD = (function () {
     wireframe: 0,
     resolution: 2,
     resolutionScale: 2048,
-    subdivide: 0
+    subdivide: 0,
+    erosion: 0,
+    erosionDetail: 1024,
+    erosionStrength: 30,
+    erosionRiverDepth: 80,
+    erosionOctaves: 2
   };
 
   // set variables
@@ -40,6 +45,7 @@ window.ThreeD = (function () {
   let icons = [];
   let lines = [];
   let gridToPackCellMap = null; // Map from grid cell index to pack cell index
+  let erosionBakeActive = false; // dense eroded mesh is displayed (see ThreeDErosion)
 
   const context2d = document.createElement("canvas").getContext("2d");
 
@@ -75,6 +81,8 @@ window.ThreeD = (function () {
     if (material) material.dispose();
     if (waterPlane) waterPlane.dispose();
     if (waterMaterial) waterMaterial.dispose();
+    if (window.ThreeDErosion) ThreeDErosion.dispose();
+    erosionBakeActive = false;
     deleteLabels();
 
     Renderer.renderLists.dispose();
@@ -98,6 +106,14 @@ window.ThreeD = (function () {
 
   const setScale = function (scale) {
     options.scale = scale;
+
+    // dense eroded mesh: vertices don't map to grid cells; redraw rebuilds the
+    // geometry from the cached bake (the bake key excludes scale, so no re-bake)
+    if (erosionBakeActive) {
+      redraw();
+      return;
+    }
+
     let vertices = geometry.getAttribute("position");
     for (let i = 0; i < vertices.count; i++) {
       vertices.setZ(i, getMeshHeight(i));
@@ -128,7 +144,7 @@ window.ThreeD = (function () {
   };
 
   const setSun = function (x, y, z) {
-    options.sun = {x, y, z};
+    options.sun = { x, y, z };
     spotLight.position.set(x, y, z);
     render();
   };
@@ -174,6 +190,31 @@ window.ThreeD = (function () {
     redraw();
   };
 
+  const toggleErosion = function () {
+    options.erosion = !options.erosion;
+    redraw();
+  };
+
+  const setErosionStrength = function (value) {
+    options.erosionStrength = value;
+    redraw();
+  };
+
+  const setErosionRiverDepth = function (value) {
+    options.erosionRiverDepth = value;
+    redraw();
+  };
+
+  const setErosionDetail = function (value) {
+    options.erosionDetail = value;
+    redraw();
+  };
+
+  const setErosionOctaves = function (value) {
+    options.erosionOctaves = value;
+    redraw();
+  };
+
   const toggleWireframe = function () {
     options.wireframe = !options.wireframe;
     redraw();
@@ -190,28 +231,28 @@ window.ThreeD = (function () {
   // Time of day presets
   const timeOfDayPresets = {
     dawn: {
-      sun: {x: -500, y: 400, z: 800},
+      sun: { x: -500, y: 400, z: 800 },
       sunColor: "#ff9a56",
       lightness: 0.4,
       skyColor: "#ffccaa",
       waterColor: "#2d4d6b"
     },
     noon: {
-      sun: {x: 100, y: 800, z: 1000},
+      sun: { x: 100, y: 800, z: 1000 },
       sunColor: "#cccccc",
       lightness: 0.6,
       skyColor: "#9ecef5",
       waterColor: "#466eab"
     },
     evening: {
-      sun: {x: 500, y: 400, z: 800},
+      sun: { x: 500, y: 400, z: 800 },
       sunColor: "#ff6b35",
       lightness: 0.5,
       skyColor: "#ff8c42",
       waterColor: "#1e3a52"
     },
     night: {
-      sun: {x: 0, y: -500, z: 1000},
+      sun: { x: 0, y: -500, z: 1000 },
       sunColor: "#4a5568",
       lightness: 0.2,
       skyColor: "#1a1a2e",
@@ -269,7 +310,7 @@ window.ThreeD = (function () {
     scene.add(spotLight);
 
     // Renderer
-    Renderer = new THREE.WebGLRenderer({canvas, antialias: true, preserveDrawingBuffer: true});
+    Renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
     Renderer.setSize(canvas.width, canvas.height);
     Renderer.shadowMap.enabled = true;
     Renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -310,7 +351,7 @@ window.ThreeD = (function () {
   function textureToSprite(texture, width, height) {
     const map = new THREE.TextureLoader().load(texture);
     map.anisotropy = Renderer.capabilities.getMaxAnisotropy();
-    const material = new THREE.SpriteMaterial({map});
+    const material = new THREE.SpriteMaterial({ map });
 
     const sprite = new THREE.Sprite(material);
     sprite.scale.set(width, height, 1);
@@ -318,7 +359,7 @@ window.ThreeD = (function () {
     return sprite;
   }
 
-  async function createTextLabel({text, font, size, color, quality}) {
+  async function createTextLabel({ text, font, size, color, quality }) {
     context2d.font = `${size * quality}px ${font}`;
     context2d.canvas.width = context2d.measureText(text).width;
     context2d.canvas.height = size * quality * 1.25; // 25% margin as text can overflow the font size
@@ -338,6 +379,13 @@ window.ThreeD = (function () {
   function get3dCoords(baseX, baseY) {
     const x = baseX - graphWidth / 2;
     const z = baseY - graphHeight / 2;
+
+    // eroded mesh is too dense to raycast per label (no BVH in three r140):
+    // sample the baked height field instead
+    if (erosionBakeActive) {
+      const y = ThreeDErosion.heightAt(baseX, baseY, options.scale);
+      return [x, y, z];
+    }
 
     raycaster.ray.origin.x = x;
     raycaster.ray.origin.z = z;
@@ -395,7 +443,7 @@ window.ThreeD = (function () {
     // Helper function to get or create icon material for a group
     function getIconMaterial(groupName, iconColor) {
       if (!iconMaterials[groupName]) {
-        const material = new THREE.MeshPhongMaterial({color: iconColor});
+        const material = new THREE.MeshPhongMaterial({ color: iconColor });
         material.wireframe = options.wireframe;
         iconMaterials[groupName] = material;
       }
@@ -414,7 +462,7 @@ window.ThreeD = (function () {
     // Helper function to get or create line material for a group
     function getLineMaterial(groupName, iconColor) {
       if (!lineMaterials[groupName]) {
-        lineMaterials[groupName] = new THREE.LineBasicMaterial({color: iconColor});
+        lineMaterials[groupName] = new THREE.LineBasicMaterial({ color: iconColor });
       }
       return lineMaterials[groupName];
     }
@@ -430,7 +478,7 @@ window.ThreeD = (function () {
       const [x, y, z] = get3dCoords(burg.x, burg.y);
 
       if (layerIsOn("toggleLabels")) {
-        const burgSprite = await createTextLabel({text: burg.name, ...burgOptions});
+        const burgSprite = await createTextLabel({ text: burg.name, ...burgOptions });
 
         burgSprite.position.set(x, y + burgOptions.elevation, z);
         burgSprite.size = burgOptions.size;
@@ -470,7 +518,7 @@ window.ThreeD = (function () {
 
         const [x, y, z] = get3dCoords(state.pole[0], state.pole[1]);
         const text = states.select("#stateLabel" + state.i)?.text() || state.name;
-        const stateSprite = await createTextLabel({text, ...stateOptions});
+        const stateSprite = await createTextLabel({ text, ...stateOptions });
 
         stateSprite.position.set(x, y + stateOptions.elevation, z);
         stateSprite.size = stateOptions.size;
@@ -580,30 +628,68 @@ window.ThreeD = (function () {
       material.transparent = true;
     }
 
-    if (geometry) geometry.dispose();
-    geometry = new THREE.PlaneGeometry(width, height, segmentsX - 1, segmentsY - 1);
-
-    let vertices = geometry.getAttribute("position");
-    for (let i = 0; i < vertices.count; i++) {
-      vertices.setZ(i, getMeshHeight(i));
+    // visual-only erosion detail: bake a dense height field on the GPU and
+    // build a fine mesh from it; falls back to the classic coarse mesh on failure
+    let erosionField = null;
+    if (options.erosion && !options.isGlobe) {
+      const loaded = await loadErosion();
+      if (loaded) {
+        erosionField = await ThreeDErosion.bake(Renderer, {
+          strength: options.erosionStrength,
+          riverDepth: options.erosionRiverDepth,
+          octaves: options.erosionOctaves,
+          bakeResolution: options.erosionDetail > 512 ? 2048 : 1024,
+          gridToPackCellMap
+        });
+      }
+      if (!erosionField) {
+        console.warn("3D erosion bake failed, falling back to standard mesh");
+        tip("Eroded terrain is not supported on this device", false, "warn", 4000);
+      }
     }
+    erosionBakeActive = Boolean(erosionField);
 
-    geometry.setAttribute("position", vertices);
-    geometry.computeVertexNormals();
+    if (geometry) geometry.dispose();
     if (mesh) scene.remove(mesh);
-    if (options.subdivide) {
-      await loadLoopSubdivision();
-      const subdivideParams = {
-        split: true,
-        uvSmooth: false,
-        preserveEdges: true,
-        flatOnly: false,
-        maxTriangles: Infinity
-      };
-      const smoothGeometry = loopSubdivision.modify(geometry, 1, subdivideParams);
-      mesh = new THREE.Mesh(smoothGeometry, material);
+
+    if (erosionField) {
+      const segLong = options.erosionDetail;
+      const segX = width >= height ? segLong : Math.max(2, Math.round((segLong * width) / height));
+      const segY = width >= height ? Math.max(2, Math.round((segLong * height) / width)) : segLong;
+      geometry = new THREE.PlaneGeometry(width, height, segX - 1, segY - 1);
+
+      const vertices = geometry.getAttribute("position");
+      for (let i = 0; i < vertices.count; i++) {
+        const mapX = vertices.getX(i) + width / 2;
+        const mapY = height / 2 - vertices.getY(i);
+        vertices.setZ(i, ThreeDErosion.heightAt(mapX, mapY, options.scale));
+      }
+      geometry.computeVertexNormals();
+      mesh = new THREE.Mesh(geometry, material); // geometry is dense already, subdivision is ignored
     } else {
-      mesh = new THREE.Mesh(geometry, material);
+      geometry = new THREE.PlaneGeometry(width, height, segmentsX - 1, segmentsY - 1);
+
+      let vertices = geometry.getAttribute("position");
+      for (let i = 0; i < vertices.count; i++) {
+        vertices.setZ(i, getMeshHeight(i));
+      }
+
+      geometry.setAttribute("position", vertices);
+      geometry.computeVertexNormals();
+      if (options.subdivide) {
+        await loadLoopSubdivision();
+        const subdivideParams = {
+          split: true,
+          uvSmooth: false,
+          preserveEdges: true,
+          flatOnly: false,
+          maxTriangles: Infinity
+        };
+        const smoothGeometry = loopSubdivision.modify(geometry, 1, subdivideParams);
+        mesh = new THREE.Mesh(smoothGeometry, material);
+      } else {
+        mesh = new THREE.Mesh(geometry, material);
+      }
     }
     mesh.rotation.x = -Math.PI / 2;
     mesh.castShadow = true;
@@ -649,7 +735,7 @@ window.ThreeD = (function () {
     scene.background = new THREE.Color(options.skyColor);
 
     waterPlane = new THREE.PlaneGeometry(width * 10, height * 10, 1);
-    waterMaterial = new THREE.MeshBasicMaterial({color: options.waterColor});
+    waterMaterial = new THREE.MeshBasicMaterial({ color: options.waterColor });
     scene.fog = new THREE.Fog(scene.background, 500, 3000);
 
     waterMesh = new THREE.Mesh(waterPlane, waterMaterial);
@@ -681,7 +767,7 @@ window.ThreeD = (function () {
     );
 
     // Renderer
-    Renderer = new THREE.WebGLRenderer({canvas, antialias: true, preserveDrawingBuffer: true});
+    Renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
     Renderer.setSize(canvas.width, canvas.height);
 
     // material
@@ -783,7 +869,7 @@ window.ThreeD = (function () {
       material.map = texture;
       if (addMesh) addGlobe3dMesh();
     };
-    img2.src = await getMapURL("mesh", {noScaleBar: true, fullMap: true, noVignette: true});
+    img2.src = await getMapURL("mesh", { noScaleBar: true, fullMap: true, noVignette: true });
   }
 
   function addGlobe3dMesh() {
@@ -840,6 +926,18 @@ window.ThreeD = (function () {
     });
   }
 
+  function loadErosion() {
+    if (window.ThreeDErosion) return Promise.resolve(true);
+
+    return new Promise(resolve => {
+      const script = document.createElement("script");
+      script.src = "modules/ui/3d-erosion.js?v=" + VERSION;
+      document.head.append(script);
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+    });
+  }
+
   function OBJExporter() {
     if (THREE.OBJExporter) return new THREE.OBJExporter();
 
@@ -866,6 +964,11 @@ window.ThreeD = (function () {
     setRotation,
     toggleLabels,
     toggle3dSubdivision,
+    toggleErosion,
+    setErosionStrength,
+    setErosionRiverDepth,
+    setErosionDetail,
+    setErosionOctaves,
     toggleWireframe,
     toggleSky,
     setResolution,
