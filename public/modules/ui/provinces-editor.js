@@ -29,6 +29,7 @@ function editProvinces() {
   ensureEl("provincesFilterState").on("change", provincesEditorAddLines);
   ensureEl("provincesPercentage").on("click", togglePercentageMode);
   ensureEl("provincesChart").on("click", showChart);
+  ensureEl("provincesLegend").on("click", toggleProvincesLegend);
   ensureEl("provincesToggleLabels").on("click", toggleLabels);
   ensureEl("provincesExport").on("click", downloadProvincesData);
   ensureEl("provincesRemoveAll").on("click", removeAllProvinces);
@@ -795,6 +796,25 @@ function editProvinces() {
     provs.select("#provinceLabels").style("display", `${hidden ? "block" : "none"}`);
     provs.attr("data-labels", +hidden);
     provs.selectAll("text").call(d3.drag().on("drag", dragLabel)).classed("draggable", true);
+  }
+
+  function toggleProvincesLegend() {
+    // Toggle legend on/off
+    if (legend.selectAll("*").size()) {
+      legend.selectAll("*").remove();
+      return;
+    }
+
+    // Get filtered provinces based on current editor state
+    const selectedState = +ensureEl("provincesFilterState").value;
+    let filtered = pack.provinces.filter(p => p.i && !p.removed);
+    if (selectedState != -1) filtered = filtered.filter(p => p.state === selectedState);
+
+    // Map to [id, color, name] format for legend
+    const data = filtered.map(p => [p.i, p.color, p.name]);
+
+    // Draw legend
+    drawLegend("Provinces", data);
   }
 
   function triggerProvincesRelease() {
