@@ -146,7 +146,7 @@ const fragmentShader = /* glsl */ `
   // lake group palette (hues follow the 2D default style)
   // freshwater reads LIGHTER than the ocean (the 2D style is a pale
   // periwinkle), not a darker basin
-  const vec3 FRESH_DEEP    = vec3(0.42, 0.58, 0.83); // freshwater basin
+  const vec3 FRESH_DEEP    = vec3(0.3, 0.58, 0.86); // freshwater basin
   const vec3 FRESH_RIM     = vec3(0.65, 0.76, 0.97); // #a6c1fd shallow rim
   const vec3 SALT_WATER    = vec3(0.27, 0.60, 0.54); // #409b8a mineral teal
   const vec3 SALT_CRUST    = vec3(0.93, 0.91, 0.85); // evaporite shore rim
