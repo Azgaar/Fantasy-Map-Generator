@@ -114,7 +114,8 @@ const fragmentShader = /* glsl */ `
   uniform sampler2D uCoast;   // R: blurred land mask (0.5 = true coastline), G: water surface byte 0-100, B: river mask
   uniform sampler2D uClimate; // R: temperature C + 128, G: moisture (prec capped at 30), B: grid height (bathymetry)
   uniform sampler2D uBiome;   // RGB: biome satellite albedo, A: vegetation density
-  uniform vec2 uResolution;   // output = bake size in px
+  uniform vec2 uResolution;   // output size in px (>= field size when supersampling)
+  uniform vec2 uFieldSize;    // baked field size in px (uField/uCoast texels)
   uniform vec2 uGridSize;     // (cellsX, cellsY), for half-texel climate alignment
   uniform vec2 uSlopeScale;   // height gradient per texel -> world-space tan(slope), per axis
   uniform float uAspect;      // graphHeight / graphWidth
@@ -175,32 +176,57 @@ const fragmentShader = /* glsl */ `
     return value;
   }
 
-  float heightAt(vec2 uv) {
-    vec4 t = texture2D(uField, uv);
+  float decodeHeight(vec4 t) {
     return (t.r * 65280.0 + t.g * 255.0) / 65535.0;
+  }
+
+  // uField is NearestFilter (the packed 16-bit height must not be hardware-
+  // interpolated), so when the output is supersampled past the field size the
+  // four neighboring texels are decoded first and mixed after.
+  // Returns (height, ridge/gully packed, drainage)
+  vec3 fieldAt(vec2 uv) {
+    vec2 p = uv * uFieldSize - 0.5;
+    vec2 base = floor(p);
+    vec2 f = p - base;
+    vec2 t0 = (base + 0.5) / uFieldSize;
+    vec2 t1 = (base + 1.5) / uFieldSize;
+    vec4 s00 = texture2D(uField, t0);
+    vec4 s10 = texture2D(uField, vec2(t1.x, t0.y));
+    vec4 s01 = texture2D(uField, vec2(t0.x, t1.y));
+    vec4 s11 = texture2D(uField, t1);
+    vec3 d00 = vec3(decodeHeight(s00), s00.ba);
+    vec3 d10 = vec3(decodeHeight(s10), s10.ba);
+    vec3 d01 = vec3(decodeHeight(s01), s01.ba);
+    vec3 d11 = vec3(decodeHeight(s11), s11.ba);
+    return mix(mix(d00, d10, f.x), mix(d01, d11, f.x), f.y);
+  }
+
+  float heightAt(vec2 uv) {
+    return fieldAt(uv).x;
   }
 
   void main() {
     vec2 fragUv = gl_FragCoord.xy / uResolution;
     vec2 uv = vec2(fragUv.x, 1.0 - fragUv.y); // baked-field space: row 0 = map top
-    vec2 texel = 1.0 / uResolution;
+    vec2 texel = 1.0 / uFieldSize;
 
-    float h = heightAt(uv);
-    vec4 field = texture2D(uField, uv);
+    vec3 fieldSample = fieldAt(uv);
+    float h = fieldSample.x;
     vec4 coast = texture2D(uCoast, uv);
     float landFactor = coast.r;
     float waterSurface = coast.g * 2.55;
 
     // ridge(+)/gully(-) signal: packed as detail / 0.4 + 0.5, typical |detail|
     // well under 0.1, so amplify into a usable 0..1 ridge/gully pair
-    float relief = (field.b - 0.5) * 2.0;
+    float relief = (fieldSample.y - 0.5) * 2.0;
     float ridge = clamp(relief * 4.0, 0.0, 1.0);
     float gully = clamp(-relief * 4.0, 0.0, 1.0);
-    float drainage = field.a;
+    float drainage = fieldSample.z;
 
     // per-texel slope (tan of the steepest angle) from central differences;
-    // single-texel taps on purpose: the baked gullies and ridge walls must
-    // register as steep so rock streaks follow the erosion pattern
+    // single FIELD-texel taps on purpose: the baked gullies and ridge walls
+    // must register as steep so rock streaks follow the erosion pattern, and
+    // sub-field-texel taps on bilinear data would stair-step
     float hL = heightAt(uv - vec2(texel.x, 0.0));
     float hR = heightAt(uv + vec2(texel.x, 0.0));
     float hU = heightAt(uv - vec2(0.0, texel.y));
@@ -361,7 +387,7 @@ const fragmentShader = /* glsl */ `
 export function generateSatelliteTexture(
   renderer: THREEType.WebGLRenderer,
   bakeResult: ErosionBakeResult,
-  { scale }: { scale: number }
+  { scale, maxOutput }: { scale: number; maxOutput: number }
 ): THREEType.Texture | null {
   if (!bakeResult?.pixels || !bakeResult?.coast) return null;
   disposeSatelliteTexture();
@@ -387,9 +413,20 @@ export function generateSatelliteTexture(
     climateTexture = buildClimateTexture();
     biomeTexture = buildBiomeTexture();
 
+    // supersample the output past the field size (up to 2x): the procedural
+    // detail (breakup/dither noise, strata, biome edges) is generated per
+    // fragment, so a larger render target genuinely sharpens it. Field-driven
+    // signals interpolate via the shader's bilinear decode. Never downsample:
+    // a 1x output stays bit-identical to rendering at field size
+    const longSide = Math.max(cols, rows);
+    const maxSide = Math.min(maxOutput, renderer.capabilities.maxTextureSize, longSide * 2);
+    const outputScale = Math.max(maxSide / longSide, 1);
+    const outputW = Math.round(cols * outputScale);
+    const outputH = Math.round(rows * outputScale);
+
     // mipmaps need WebGL2 for the non-power-of-two bake size
     const isWebGL2 = renderer.capabilities.isWebGL2;
-    const target = new THREE.WebGLRenderTarget(cols, rows, {
+    const target = new THREE.WebGLRenderTarget(outputW, outputH, {
       format: THREE.RGBAFormat,
       type: THREE.UnsignedByteType,
       generateMipmaps: isWebGL2,
@@ -413,7 +450,8 @@ export function generateSatelliteTexture(
         uCoast: { value: coastTexture },
         uClimate: { value: climateTexture },
         uBiome: { value: biomeTexture },
-        uResolution: { value: new THREE.Vector2(cols, rows) },
+        uResolution: { value: new THREE.Vector2(outputW, outputH) },
+        uFieldSize: { value: new THREE.Vector2(cols, rows) },
         uGridSize: { value: new THREE.Vector2(grid.cellsX, grid.cellsY) },
         uSlopeScale: {
           value: new THREE.Vector2(worldPerHeight / (graphWidth / cols), worldPerHeight / (graphHeight / rows))

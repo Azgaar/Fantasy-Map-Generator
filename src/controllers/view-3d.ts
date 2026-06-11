@@ -87,16 +87,16 @@ const options: Options = {
   sunColor: "#cccccc",
   extendedWater: false,
   labels3d: false,
+  satellite: false,
   wireframe: false,
   resolution: 2,
-  resolutionScale: 2048,
+  resolutionScale: 4096,
   subdivide: false,
   erosion: false,
   erosionDetail: 1024,
   erosionStrength: 30,
-  erosionRiverDepth: 80,
-  erosionOctaves: 2,
-  satellite: false
+  erosionRiverDepth: 10,
+  erosionOctaves: 2
 };
 
 // set variables
@@ -742,13 +742,13 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
   // With erosion off the bake runs with zero strength — a clean field
   let bakeResult: ErosionBake.ErosionBakeResult | null = null;
   if ((options.erosion || useSatellite) && !options.isGlobe) {
-    const baseBakeResolution = options.erosionDetail > 512 ? 2048 : 1024;
+    const baseBakeResolution = options.erosionDetail >= 2048 ? 4096 : options.erosionDetail > 512 ? 2048 : 1024;
     const satelliteBakeResolution =
-      options.resolutionScale >= 8192 ? 4096 : options.resolutionScale >= 4096 ? 2048 : 1024;
+      options.resolutionScale >= 8192 ? 8192 : options.resolutionScale >= 4096 ? 2048 : 1024;
     const desiredBakeResolution = useSatellite
       ? Math.max(baseBakeResolution, satelliteBakeResolution)
       : baseBakeResolution;
-    const maxBakeResolution = Math.min(Renderer.capabilities.maxTextureSize, 4096);
+    const maxBakeResolution = Math.min(Renderer.capabilities.maxTextureSize, 8192);
 
     bakeResult = await ErosionBake.bake(Renderer, {
       strength: options.erosion ? options.erosionStrength : 0,
@@ -813,7 +813,12 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
   // the standard SVG map render is not used at all. If the bake or the
   // texture pass failed, fall back to the regular map render
   if (useSatellite) {
-    const satelliteTexture = bakeResult && generateSatelliteTexture(Renderer, bakeResult, { scale: options.scale });
+    const satelliteTexture =
+      bakeResult &&
+      generateSatelliteTexture(Renderer, bakeResult, {
+        scale: options.scale,
+        maxOutput: clampTextureResolution(options.resolutionScale)
+      });
     if (satelliteTexture) {
       material.map = satelliteTexture;
       applyWaterAnimation(material as THREE.MeshLambertMaterial);
@@ -885,7 +890,10 @@ async function update3dTexture() {
   // involved) — re-bake it from the cached field, e.g. after a height
   // scale change (slope thresholds depend on it)
   if (options.satellite && erosionBakeData && !options.isGlobe && !options.wireframe) {
-    const satelliteTexture = generateSatelliteTexture(Renderer, erosionBakeData, { scale: options.scale });
+    const satelliteTexture = generateSatelliteTexture(Renderer, erosionBakeData, {
+      scale: options.scale,
+      maxOutput: clampTextureResolution(options.resolutionScale)
+    });
     if (satelliteTexture) {
       material.map = satelliteTexture;
       render();

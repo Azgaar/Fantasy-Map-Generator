@@ -670,6 +670,102 @@ function runErosionPass(
   return pixels;
 }
 
+// The shader carves valleys from the cell-level uRivers raster, which cannot
+// guarantee the bed along the actual meandered course descends: the course
+// wanders off the cell-center line and erosion noise can lift single spans.
+// Walk each river's true course (same geometry as the 2D layer and the coast
+// river mask) downstream, keep a running minimum of the baked bed height and
+// stamp any uphill span back down to it, so rendered rivers always flow
+// downhill. Lowering clamps to the local water surface and never raises
+// anything; it writes through to both the heights field and the packed
+// pixels consumed by the satellite texture pass
+function enforceDownhillCourses(bakeResult: ErosionBakeResult) {
+  if (!pack.rivers?.length) return;
+  const { heights, pixels, coast, cols, rows } = bakeResult;
+  const scaleX = cols / graphWidth;
+  const scaleY = rows / graphHeight;
+  const EPSILON = 1e-4; // ~0.01 height units: ignore sub-visible bumps
+
+  const lowerTexel = (index: number, target: number) => {
+    if (heights[index] <= target) return;
+    heights[index] = target;
+    const packed = Math.round(target * 65535);
+    pixels[index * 4] = packed >> 8;
+    pixels[index * 4 + 1] = packed & 0xff;
+  };
+
+  // lower a disc of texels to the bed height: flat core sized to the river
+  // half-width (so the bilinear surface under the whole course drops), with a
+  // smoothstep feather that widens with cut depth to avoid slot-canyon walls
+  const stamp = (x: number, y: number, coreRadius: number, depth: number, bed: number) => {
+    const featherRadius = coreRadius + Math.min(Math.max(depth * 150, 1.5), 10);
+    const cx = x * scaleX - 0.5;
+    const cy = y * scaleY - 0.5;
+    const minX = Math.max(Math.ceil(cx - featherRadius), 0);
+    const maxX = Math.min(Math.floor(cx + featherRadius), cols - 1);
+    const minY = Math.max(Math.ceil(cy - featherRadius), 0);
+    const maxY = Math.min(Math.floor(cy + featherRadius), rows - 1);
+    for (let ty = minY; ty <= maxY; ty++) {
+      for (let tx = minX; tx <= maxX; tx++) {
+        const dist = Math.hypot(tx - cx, ty - cy);
+        if (dist > featherRadius) continue;
+        const index = ty * cols + tx;
+        const waterSurface = coast[index * 4 + 1] / 100; // G: surface byte 0-100
+        let target = Math.max(bed, waterSurface);
+        if (dist > coreRadius) {
+          const t = (dist - coreRadius) / (featherRadius - coreRadius);
+          target += (heights[index] - target) * t * t * (3 - 2 * t);
+        }
+        lowerTexel(index, target);
+      }
+    }
+  };
+
+  for (const river of pack.rivers) {
+    if (!river.cells || river.cells.length < 2) continue;
+    const points = river.points && river.points.length === river.cells.length ? river.points : null;
+    let course: RiverPoint[];
+    try {
+      course = Rivers.addMeandering(river.cells, points);
+    } catch {
+      continue; // same policy as the river mask: a malformed river is skipped
+    }
+    if (course.length < 2) continue;
+
+    const startingWidth = river.sourceWidth || 0;
+    let flux = 0;
+    let bed = Infinity;
+    let [prevX, prevY] = course[0];
+    let prevOffset = startingWidth;
+
+    for (let k = 0; k < course.length; k++) {
+      const [x, y, pointFlux] = course[k];
+      if (pointFlux > flux) flux = pointFlux;
+      const offset = Rivers.getOffset({ flux, pointIndex: k, widthFactor: river.widthFactor, startingWidth });
+
+      // densify segments to ~0.75-texel steps so no texel span is skipped
+      const segmentTexels = Math.hypot((x - prevX) * scaleX, (y - prevY) * scaleY);
+      const steps = k === 0 ? 1 : Math.max(Math.ceil(segmentTexels / 0.75), 1);
+      for (let s = 1; s <= steps; s++) {
+        const t = s / steps;
+        const sx = prevX + (x - prevX) * t;
+        const sy = prevY + (y - prevY) * t;
+        const sampled = sampleField(bakeResult, heights, sx, sy);
+        if (sampled > bed + EPSILON) {
+          const halfWidth = (prevOffset + (offset - prevOffset) * t) * scaleX;
+          stamp(sx, sy, halfWidth + 1, sampled - bed, bed);
+        } else if (sampled < bed) {
+          bed = sampled;
+        }
+      }
+
+      prevX = x;
+      prevY = y;
+      prevOffset = offset;
+    }
+  }
+}
+
 export async function bake(renderer: THREEType.WebGLRenderer, params: BakeParams): Promise<ErosionBakeResult | null> {
   const key = makeKey(params);
   if (cached && cached.key === key) return cached;
@@ -695,7 +791,9 @@ export async function bake(renderer: THREEType.WebGLRenderer, params: BakeParams
 
     // pixels (raw RGBA: height 16-bit, ridge/gully, drainage) and the coast
     // mask are kept for the satellite texture pass (draw-satellite-texture)
-    cached = { key, heights, pixels, coast: coast.data, cols: bakeW, rows: bakeH };
+    const result: ErosionBakeResult = { key, heights, pixels, coast: coast.data, cols: bakeW, rows: bakeH };
+    if (params.riverDepth > 0) enforceDownhillCourses(result);
+    cached = result;
     TIME && console.timeEnd("erosionBake");
     return cached;
   } catch (error) {
