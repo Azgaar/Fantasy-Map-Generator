@@ -13,7 +13,7 @@ export type ErosionBakeResult = {
   key: string;
   heights: Float32Array; // normalized 0..1 over h 0-100, row 0 = map top
   pixels: Uint8Array; // raw bake RGBA: height 16-bit hi/lo, ridge/gully, drainage
-  coast: Uint8Array; // RGBA: land mask, water surface byte, river mask
+  coast: Uint8Array; // RGBA: land mask, water surface byte, river mask, lake group code
   cols: number;
   rows: number;
 };
@@ -21,6 +21,17 @@ export type ErosionBakeResult = {
 type RiverPoint = [number, number, number];
 
 const SEA_LEVEL = 20;
+
+// lake group -> coast texture A channel code (byte = code * 40, 0 = none)
+const LAKE_GROUP_CODES: Record<string, number> = {
+  freshwater: 1,
+  salt: 2,
+  sinkhole: 3,
+  dry: 4,
+  lava: 5,
+  frozen: 6
+};
+
 let cached: ErosionBakeResult | null = null;
 
 // FNV-1a over typed arrays and a param string: cheap content hash to skip re-bakes
@@ -108,6 +119,7 @@ function buildHeightTexture() {
 
 // R: land mask blurred so its 0.5 contour sits exactly on the true vector
 // G: water surface height 0-100 as byte (20 for ocean, feature.height for lakes)
+// B: river mask at true 2D widths, A: lake group code * 40
 // Returns {texture, data}; data is kept in the bake cache for the terrain
 // texture pass (see renderers/draw-satellite-texture)
 function buildCoastTexture(bakeW: number, bakeH: number) {
@@ -135,10 +147,104 @@ function buildCoastTexture(bakeW: number, bakeH: number) {
   }
   maskCtx.restore();
 
+  const taperPx = Math.max(1, grid.spacing * 0.5 * scaleX);
+
+  // river courses for the satellite texture: the actual river polygons
+  // (same geometry as the 2D rivers layer) rasterized white on black; the
+  // hardware bilinear filtering of the coast texture antialiases the edges.
+  // The filled polygon carries the true flux/length width taper; per-segment
+  // centerline strokes at the same local width (clamped to ~1 bake texel)
+  // keep sub-texel headwaters continuous without inflating the wide
+  // downstream course
+  const riverCanvas = document.createElement("canvas");
+  riverCanvas.width = bakeW;
+  riverCanvas.height = bakeH;
+  const riverCtx = riverCanvas.getContext("2d")!;
+  riverCtx.fillStyle = "#000";
+  riverCtx.fillRect(0, 0, bakeW, bakeH);
+  riverCtx.save();
+  riverCtx.scale(scaleX, scaleY);
+  riverCtx.fillStyle = riverCtx.strokeStyle = "#fff";
+  riverCtx.lineJoin = riverCtx.lineCap = "round";
+  const minRiverWidth = 1.1 / scaleX;
+  for (const river of pack.rivers || []) {
+    if (!river.cells || river.cells.length < 2) continue;
+    const points = river.points && river.points.length === river.cells.length ? river.points : null;
+    try {
+      const meandered = Rivers.addMeandering(river.cells, points);
+      riverCtx.fill(new Path2D(Rivers.getRiverPath(meandered, river.widthFactor, river.sourceWidth)));
+      let flux = meandered[0][2];
+      for (let pointIndex = 1; pointIndex < meandered.length; pointIndex++) {
+        if (meandered[pointIndex][2] > flux) flux = meandered[pointIndex][2];
+        const offset = Rivers.getOffset({
+          flux,
+          pointIndex,
+          widthFactor: river.widthFactor,
+          startingWidth: river.sourceWidth
+        });
+        riverCtx.lineWidth = Math.max(2 * offset, minRiverWidth);
+        riverCtx.beginPath();
+        riverCtx.moveTo(meandered[pointIndex - 1][0], meandered[pointIndex - 1][1]);
+        riverCtx.lineTo(meandered[pointIndex][0], meandered[pointIndex][1]);
+        riverCtx.stroke();
+      }
+    } catch {
+      // a malformed river just goes missing from the texture
+    }
+  }
+  riverCtx.restore();
+
+  // the coastline must follow the river into its mouth: cut the river
+  // polygons out of the land mask near water — and only near water, since
+  // cutting whole courses would flatten elevated rivers to the water
+  // surface via the shader's coast flattening. The mask blur below then
+  // rounds the notch exactly like the rest of the coastline
+  const mouthRadius = taperPx * 2; // <= the 3*taperPx lake-surface dilation
+  const mouthZoneCanvas = document.createElement("canvas");
+  mouthZoneCanvas.width = bakeW;
+  mouthZoneCanvas.height = bakeH;
+  const mouthZoneCtx = mouthZoneCanvas.getContext("2d")!;
+  mouthZoneCtx.fillStyle = "#fff";
+  mouthZoneCtx.fillRect(0, 0, bakeW, bakeH);
+  mouthZoneCtx.save();
+  mouthZoneCtx.scale(scaleX, scaleY);
+  mouthZoneCtx.fillStyle = "#000";
+  for (const feature of pack.features) {
+    if (!isLand(feature)) continue;
+    mouthZoneCtx.fill(new Path2D(window.getFeaturePath(feature)));
+  }
+  // white water plus a white stroke along every shoreline = water dilated
+  // inland by mouthRadius
+  mouthZoneCtx.strokeStyle = "#fff";
+  mouthZoneCtx.lineJoin = "round";
+  mouthZoneCtx.lineWidth = (mouthRadius * 2) / scaleX;
+  for (const feature of pack.features) {
+    if (!feature || feature.type === "ocean") continue;
+    const path = new Path2D(window.getFeaturePath(feature));
+    if (feature.type === "lake") mouthZoneCtx.fill(path);
+    mouthZoneCtx.stroke(path);
+  }
+  mouthZoneCtx.restore();
+
+  // all canvases are opaque black/white, so multiply acts as a luminance
+  // AND: rivers ∩ mouth zone, then land ∧ ¬cut via an inverted multiply
+  const mouthCutCanvas = document.createElement("canvas");
+  mouthCutCanvas.width = bakeW;
+  mouthCutCanvas.height = bakeH;
+  const mouthCutCtx = mouthCutCanvas.getContext("2d")!;
+  mouthCutCtx.drawImage(riverCanvas, 0, 0);
+  mouthCutCtx.globalCompositeOperation = "multiply";
+  mouthCutCtx.drawImage(mouthZoneCanvas, 0, 0);
+
+  maskCtx.globalCompositeOperation = "multiply";
+  maskCtx.filter = "invert(1)";
+  maskCtx.drawImage(mouthCutCanvas, 0, 0);
+  maskCtx.filter = "none";
+  maskCtx.globalCompositeOperation = "source-over";
+
   // Gaussian blur of a binary edge keeps its 0.5 level set at the original
   // edge location, so blurring the land/water mask turns the coastline into
   // a short, precisely-placed taper instead of moving it
-  const taperPx = Math.max(1, grid.spacing * 0.5 * scaleX);
   const blurCanvas = document.createElement("canvas");
   blurCanvas.width = bakeW;
   blurCanvas.height = bakeH;
@@ -173,46 +279,41 @@ function buildCoastTexture(bakeW: number, bakeH: number) {
   blurSurfaceCtx.filter = `blur(${taperPx}px)`;
   blurSurfaceCtx.drawImage(surfaceCanvas, 0, 0);
 
-  // river courses for the satellite texture: the actual river polygons
-  // (same geometry as the 2D rivers layer) rasterized white on black; the
-  // hardware bilinear filtering of the coast texture antialiases the edges
-  const riverCanvas = document.createElement("canvas");
-  riverCanvas.width = bakeW;
-  riverCanvas.height = bakeH;
-  const riverCtx = riverCanvas.getContext("2d")!;
-  riverCtx.fillStyle = "#000";
-  riverCtx.fillRect(0, 0, bakeW, bakeH);
-  riverCtx.save();
-  riverCtx.scale(scaleX, scaleY);
-  riverCtx.fillStyle = riverCtx.strokeStyle = "#fff";
-  riverCtx.lineJoin = riverCtx.lineCap = "round";
-  // river widths are true map units, far below a bake texel along most of the
-  // course; stroking the polygon outline dilates it by half the line width,
-  // keeping every course at least ~2 texels wide so it survives rasterization
-  riverCtx.lineWidth = 2 / scaleX;
-  for (const river of pack.rivers || []) {
-    if (!river.cells || river.cells.length < 2) continue;
-    const points = river.points && river.points.length === river.cells.length ? river.points : null;
-    try {
-      const meandered = Rivers.addMeandering(river.cells, points);
-      const path = new Path2D(Rivers.getRiverPath(meandered, river.widthFactor, river.sourceWidth));
-      riverCtx.stroke(path);
-      riverCtx.fill(path);
-    } catch {
-      // a malformed river just goes missing from the texture
-    }
+  // lake groups for the satellite texture: A channel = group code * 40
+  // (freshwater 1 .. frozen 6, 0 = ocean/none). Filled and dilated like the
+  // G surface channel so the bilinear blend toward 0 happens on land, where
+  // the satellite shader ignores the code; no blur (codes must stay discrete)
+  const groupCanvas = document.createElement("canvas");
+  groupCanvas.width = bakeW;
+  groupCanvas.height = bakeH;
+  const groupCtx = groupCanvas.getContext("2d")!;
+  groupCtx.fillStyle = "#000";
+  groupCtx.fillRect(0, 0, bakeW, bakeH);
+  groupCtx.save();
+  groupCtx.scale(scaleX, scaleY);
+  groupCtx.lineJoin = "round";
+  groupCtx.lineWidth = (taperPx * 6) / scaleX;
+  for (const feature of pack.features) {
+    if (!feature || feature.type !== "lake") continue;
+    const code = LAKE_GROUP_CODES[feature.group as string] ?? 1;
+    const gray = code * 40;
+    const path = new Path2D(window.getFeaturePath(feature));
+    groupCtx.fillStyle = groupCtx.strokeStyle = `rgb(${gray},${gray},${gray})`;
+    groupCtx.fill(path);
+    groupCtx.stroke(path);
   }
-  riverCtx.restore();
-  const riverData = riverCtx.getImageData(0, 0, bakeW, bakeH).data;
+  groupCtx.restore();
 
+  const riverData = riverCtx.getImageData(0, 0, bakeW, bakeH).data;
   const landData = blurCtx.getImageData(0, 0, bakeW, bakeH).data;
   const surfaceData = blurSurfaceCtx.getImageData(0, 0, bakeW, bakeH).data;
+  const groupData = groupCtx.getImageData(0, 0, bakeW, bakeH).data;
   const data = new Uint8Array(bakeW * bakeH * 4);
   for (let i = 0; i < bakeW * bakeH; i++) {
     data[i * 4] = landData[i * 4];
     data[i * 4 + 1] = surfaceData[i * 4];
     data[i * 4 + 2] = riverData[i * 4];
-    data[i * 4 + 3] = 255;
+    data[i * 4 + 3] = groupData[i * 4];
   }
 
   const texture = new THREE.DataTexture(data, bakeW, bakeH, THREE.RGBAFormat, THREE.UnsignedByteType);

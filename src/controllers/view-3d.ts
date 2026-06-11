@@ -1,6 +1,11 @@
 import type * as THREE from "three";
 import * as ErosionBake from "../modules/erosion-bake";
-import { disposeSatelliteTexture, generateSatelliteTexture } from "../renderers/draw-satellite-texture";
+import {
+  disposeRiverFlowTexture,
+  disposeSatelliteTexture,
+  generateRiverFlowTexture,
+  generateSatelliteTexture
+} from "../renderers/draw-satellite-texture";
 import { minmax, rn, throttle } from "../utils";
 
 let Three!: typeof import("three");
@@ -161,6 +166,7 @@ const stop = () => {
   if (waterMaterial) waterMaterial.dispose();
   ErosionBake.dispose();
   disposeSatelliteTexture();
+  disposeRiverFlowTexture();
   stopWaterAnimation();
   erosionBakeActive = false;
   erosionBakeData = null;
@@ -763,7 +769,10 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
   }
   erosionBakeActive = Boolean(bakeResult) && Boolean(options.erosion);
   erosionBakeData = bakeResult;
-  if (!useSatellite) disposeSatelliteTexture();
+  if (!useSatellite) {
+    disposeSatelliteTexture();
+    disposeRiverFlowTexture();
+  }
 
   if (geometry) geometry.dispose();
   if (mesh) scene.remove(mesh);
@@ -821,7 +830,7 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
       });
     if (satelliteTexture) {
       material.map = satelliteTexture;
-      applyWaterAnimation(material as THREE.MeshLambertMaterial);
+      applyWaterAnimation(material as THREE.MeshLambertMaterial, generateRiverFlowTexture());
       startWaterAnimation();
     } else {
       material.map = await loadMapTexture();
@@ -1077,14 +1086,19 @@ function stopWaterAnimation() {
   waterAnimationFrame = null;
 }
 
-// the satellite texture packs land coverage in alpha: tint water texels
-// with a slow interference shimmer so the ocean reads alive, then force
-// the fragment opaque (the mask is a texture channel, not transparency)
-function applyWaterAnimation(mat: THREE.MeshLambertMaterial) {
+// the satellite texture packs land coverage in alpha (open water <= 0.3
+// with a shore hint, rivers 0.45, enclosed lakes 0.7, land 1): tint ocean
+// texels with a slow interference shimmer, give lakes a calm ripple with
+// no surf or glitter, drift a faint wave down each river course (phase
+// from the flow texture), then force the fragment opaque (the mask is a
+// texture channel, not transparency)
+function applyWaterAnimation(mat: THREE.MeshLambertMaterial, flowTexture: THREE.Texture) {
   mat.onBeforeCompile = (shader: { uniforms: Record<string, unknown>; fragmentShader: string }) => {
     shader.uniforms.uTime = waterTime;
+    shader.uniforms.uFlow = { value: flowTexture };
     shader.fragmentShader =
       /* glsl */ `uniform float uTime;
+        uniform sampler2D uFlow;
         float fmgWaterHash(vec2 p) {
           vec3 p3 = fract(vec3(p.xyx) * 0.1031);
           p3 += dot(p3, p3.yzx + 33.33);
@@ -1104,7 +1118,7 @@ function applyWaterAnimation(mat: THREE.MeshLambertMaterial) {
       shader.fragmentShader.replace(
         "#include <map_fragment>",
         /* glsl */ `#include <map_fragment>
-          float waterMask = 1.0 - smoothstep(0.35, 0.65, diffuseColor.a);
+          float waterMask = 1.0 - smoothstep(0.30, 0.38, diffuseColor.a);
           if (waterMask > 0.001) {
             // two octaves of value noise drifting in different directions:
             // organic moving glitter instead of a static interference lattice
@@ -1120,6 +1134,40 @@ function applyWaterAnimation(mat: THREE.MeshLambertMaterial) {
             float shoreGlow = smoothstep(0.02, 0.3, diffuseColor.a) * waterMask;
             float surf = shoreGlow * (0.5 + 0.5 * sin(uTime * 1.5 + (n1 - 0.5) * 9.0 + dot(vUv, vec2(420.0, 380.0))));
             diffuseColor.rgb += surf * 0.08 * vec3(0.9, 1.0, 1.0);
+          }
+          // enclosed lakes (fresh/salt/sinkhole): a slow calm ripple, far
+          // gentler than the ocean shimmer — no surf line, no sun glitter
+          float lakeBand = smoothstep(0.64, 0.69, diffuseColor.a) * (1.0 - smoothstep(0.71, 0.78, diffuseColor.a));
+          if (lakeBand > 0.001) {
+            vec2 lp = vUv * vec2(160.0, 115.0);
+            float l1 = fmgWaterNoise(lp + vec2(uTime * 0.18, uTime * 0.12));
+            float l2 = fmgWaterNoise(lp * 2.1 - vec2(uTime * 0.14, -uTime * 0.21));
+            diffuseColor.rgb *= 1.0 + lakeBand * (l1 * 0.6 + l2 * 0.4 - 0.5) * 0.05;
+          }
+          // rivers sit in their own alpha band: a luminance wave traveling
+          // down the course, phase = sin/cos of the arc length packed in
+          // the flow texture. B carries coverage + along-course steepness:
+          // steep water flows faster, ripples shorter and brighter, and on
+          // sheer drops aerates into churning white — a waterfall. Integer
+          // harmonics of the phase stay seam-free across the sin/cos wrap
+          float riverBand = smoothstep(0.36, 0.42, diffuseColor.a) * (1.0 - smoothstep(0.50, 0.58, diffuseColor.a));
+          if (riverBand > 0.001) {
+            vec4 flow = texture2D(uFlow, vUv);
+            if (flow.b > 0.1) {
+              float steep = clamp(flow.b * 1.186 - 0.186, 0.0, 1.0); // byte 40..255 -> 0..1
+              float flowPhase = atan(flow.r - 0.5, flow.g - 0.5);
+              float speedMul = 1.0 + steep * 2.6;
+              float flowWave = sin(flowPhase - uTime * 2.2 * speedMul) * 0.6
+                + sin(flowPhase * 2.0 - uTime * 3.4 * speedMul + 1.7) * 0.4
+                + steep * sin(flowPhase * 5.0 - uTime * 16.0 + 0.6) * 0.6;
+              float glints = fmgWaterNoise(vUv * vec2(380.0, 280.0) + vec2(uTime * 0.5, -uTime * 0.35));
+              float flowAmp = mix(0.06, 0.2, steep);
+              diffuseColor.rgb *= 1.0 + riverBand * flowWave * (0.5 + glints) * flowAmp;
+              // aerated spray on the falls: fast fine flicker plus a
+              // constant white lift over the already-whitened rapids albedo
+              float churn = fmgWaterNoise(vUv * vec2(880.0, 640.0) + vec2(uTime * 1.4, uTime * 1.8));
+              diffuseColor.rgb += riverBand * steep * (churn * 0.22 + 0.05) * vec3(0.92, 0.98, 1.0);
+            }
           }
           diffuseColor.a = 1.0;`
       );

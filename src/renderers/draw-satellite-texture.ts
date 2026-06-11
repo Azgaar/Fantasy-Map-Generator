@@ -1,5 +1,5 @@
 import type * as THREEType from "three";
-import type { ErosionBakeResult } from "../modules/erosion-bake";
+import { type ErosionBakeResult, heightAt } from "../modules/erosion-bake";
 
 let renderTarget: THREEType.WebGLRenderTarget | null = null;
 
@@ -111,7 +111,8 @@ const fragmentShader = /* glsl */ `
   precision highp float;
 
   uniform sampler2D uField;   // R/G: height 16-bit hi/lo, B: ridge(+)/gully(-) packed, A: drainage
-  uniform sampler2D uCoast;   // R: blurred land mask (0.5 = true coastline), G: water surface byte 0-100, B: river mask
+  uniform sampler2D uCoast;   // R: blurred land mask (0.5 = true coastline), G: water surface byte 0-100,
+                              // B: river mask, A: lake group code * 40
   uniform sampler2D uClimate; // R: temperature C + 128, G: moisture (prec capped at 30), B: grid height (bathymetry)
   uniform sampler2D uBiome;   // RGB: biome satellite albedo, A: vegetation density
   uniform vec2 uResolution;   // output size in px (>= field size when supersampling)
@@ -141,6 +142,20 @@ const fragmentShader = /* glsl */ `
   const vec3 OCEAN_BLUE  = vec3(0.15, 0.44, 0.62); // open sea
   const vec3 ABYSS_BLUE  = vec3(0.10, 0.31, 0.48); // deepest ocean
   const vec3 FOAM_COLOR  = vec3(0.97, 1.00, 1.00); // breaking surf
+
+  // lake group palette (hues follow the 2D default style)
+  const vec3 FRESH_DEEP    = vec3(0.21, 0.38, 0.66); // freshwater basin
+  const vec3 FRESH_RIM     = vec3(0.55, 0.68, 0.92); // #a6c1fd shallow rim
+  const vec3 SALT_WATER    = vec3(0.27, 0.60, 0.54); // #409b8a mineral teal
+  const vec3 SALT_CRUST    = vec3(0.93, 0.91, 0.85); // evaporite shore rim
+  const vec3 SINKHOLE_RIM  = vec3(0.36, 0.79, 0.99); // #5bc9fd cenote cyan
+  const vec3 SINKHOLE_DEEP = vec3(0.12, 0.34, 0.60);
+  const vec3 DRY_BED       = vec3(0.79, 0.75, 0.65); // #c9bfa7 clay pan
+  const vec3 DRY_RIM       = vec3(0.61, 0.56, 0.47); // damp fringe
+  const vec3 LAVA_CRUST    = vec3(0.14, 0.10, 0.09); // cooled basalt
+  const vec3 LAVA_RED      = vec3(0.56, 0.15, 0.05); // #90270d dull crust red
+  const vec3 LAVA_GLOW     = vec3(0.98, 0.36, 0.08); // #f93e0c crack glow
+  const vec3 ICE_COLOR     = vec3(0.80, 0.83, 0.91); // #cdd4e7 frozen lid
 
   const float ROCK_SLOPE_LO = 0.65;  // tan(slope) where bare rock starts breaking through
   const float ROCK_SLOPE_HI = 1.35;  // tan(slope) of solid rock cover
@@ -341,12 +356,53 @@ const fragmentShader = /* glsl */ `
 
     // shore: 0 at the true coastline, growing seaward over the mask taper
     float shore = clamp((0.5 - landFactor) * 2.0, 0.0, 1.0);
+    // baked river channel (true 2D widths); estuary water keeps the lagoon
+    // tint but sheds the sand glow and the breaking surf line
+    float riverMask = coast.b;
+    float riverWater = smoothstep(0.2, 0.6, riverMask);
     vec3 lagoonColor = mix(LAGOON_COLD, LAGOON_WARM, warm) * (1.0 + breakup * 0.1);
     waterColor = mix(waterColor, lagoonColor, (1.0 - smoothstep(0.02, 0.25, shore)) * 0.95);
-    waterColor = mix(waterColor, beachColor * 1.05, (1.0 - smoothstep(0.0, 0.07, shore)) * 0.45);
+    waterColor = mix(waterColor, beachColor * 1.05,
+      (1.0 - smoothstep(0.0, 0.07, shore)) * 0.45 * (1.0 - riverWater * 0.7));
     float foam = (1.0 - smoothstep(0.008, 0.04, shore - breakup * 0.02))
-      * smoothstep(0.25, 0.85, 0.5 + breakup + patch * 0.3);
+      * smoothstep(0.25, 0.85, 0.5 + breakup + patch * 0.3)
+      * (1.0 - riverWater);
     waterColor = mix(waterColor, FOAM_COLOR, foam * 0.6);
+
+    // lake groups override the generic ocean recipe (code baked in coast.a,
+    // dilated past the shore so the decode is stable wherever water shows).
+    // Fresh/salt/sinkhole stay water (calm-lake animation band, no ocean
+    // surf), dry/lava/frozen turn into static beds via the alpha below
+    float lakeCode = floor(coast.a * 6.375 + 0.5); // byte / 40
+    float lakeRim = 1.0 - smoothstep(0.0, 0.14, shore + breakup * 0.06);
+    if (lakeCode > 0.5 && lakeCode < 1.5) {
+      // freshwater: still periwinkle-blue water, paler over the shallow rim
+      waterColor = mix(FRESH_DEEP, FRESH_RIM, clamp(lakeRim * 0.85 + breakup * 0.08, 0.0, 1.0));
+      waterColor *= 1.0 + macro * 0.06 + breakup * 0.04;
+    } else if (lakeCode > 1.5 && lakeCode < 2.5) {
+      // salt: milky mineral teal with an evaporite crust ring at the shore
+      vec3 saltWater = mix(SALT_WATER, vec3(1.0), 0.12 + breakup * 0.08);
+      waterColor = mix(saltWater, SALT_CRUST * (1.0 + breakup * 0.08), lakeRim * 0.85);
+    } else if (lakeCode > 2.5 && lakeCode < 3.5) {
+      // sinkhole: bright cenote cyan rim dropping into a deep blue eye
+      waterColor = mix(SINKHOLE_DEEP, SINKHOLE_RIM, clamp(lakeRim * 0.9 + breakup * 0.1, 0.0, 1.0));
+    } else if (lakeCode > 3.5 && lakeCode < 4.5) {
+      // dry: cracked clay pan with a damp fringe
+      waterColor = DRY_BED * (1.0 + breakup * 0.15 + macro * 0.08);
+      float cracks = 1.0 - smoothstep(0.0, 0.05, abs(breakup));
+      waterColor *= 1.0 - cracks * 0.18;
+      waterColor = mix(waterColor, DRY_RIM, lakeRim * 0.5);
+    } else if (lakeCode > 4.5 && lakeCode < 5.5) {
+      // lava: cooled basalt crust veined with glowing cracks
+      vec3 lava = mix(LAVA_CRUST * (1.0 + breakup * 0.3), LAVA_RED, smoothstep(0.1, 0.45, macro + patch * 0.3) * 0.5);
+      float veins = 1.0 - smoothstep(0.0, 0.045, abs(breakup));
+      waterColor = mix(lava, LAVA_GLOW, veins * clamp(0.55 + patch, 0.0, 1.0));
+    } else if (lakeCode > 5.5) {
+      // frozen: pale ice lid with brighter pressure-crack veins
+      waterColor = ICE_COLOR * (1.0 + breakup * 0.06 + macro * 0.05);
+      float iceVeins = 1.0 - smoothstep(0.0, 0.04, abs(breakup));
+      waterColor = mix(waterColor, vec3(0.97, 0.98, 1.0), iceVeins * 0.5 + lakeRim * 0.25);
+    }
 
     // the land ramp spans ~2 bake texels: soft enough to antialias the
     // waterline, tight enough that the beach still meets the water
@@ -354,28 +410,39 @@ const fragmentShader = /* glsl */ `
     vec3 finalColor = mix(waterColor, color, land);
 
     // baked river courses are real water: a deep teal channel that reads
-    // against the land greens, damp sediment banks on the flats. Width is
-    // shaped by flux (drainage) and an inland-length proxy (height above local
-    // sea surface): sources stay narrow and channels widen downstream toward
-    // the mouth while coastline masking keeps flow off open water
-    float riverMask = coast.b;
-    float drainageNorm = smoothstep(0.0, 1.0, drainage);
-    float sourceWidth = mix(0.08, 1.25, drainageNorm);
-    float fluxWidth = mix(0.4, 0.95, smoothstep(0.12, 0.98, drainage));
-    float riverWidth = sourceWidth * fluxWidth;
-    float riverSpread = clamp(riverMask * riverWidth, 0.0, 1.0);
-    float coastRiverMask = smoothstep(0.30, 0.70, landFactor);
-    float river = smoothstep(0.56, 0.68, riverSpread) * coastRiverMask;
-    float bank = smoothstep(0.24, 0.40, riverSpread) * (1.0 - river) * coastRiverMask;
-    finalColor = mix(finalColor, SEDIMENT * (1.05 + breakup * 0.2), bank * 0.5 * flatGround);
-    vec3 riverColor = mix(OCEAN_BLUE, lagoonColor, 0.35) * (0.9 + breakup * 0.1);
+    // against the land greens, damp sediment banks on the flats. The mask
+    // carries the true 2D river widths (hairline at the source, flux-widened
+    // downstream), so only antialias the bank line here and hand the channel
+    // off to the ocean/lake water at the coastline, which the land-mask
+    // mouth cut bends around the river entrance
+    float river = smoothstep(0.35, 0.65, riverMask) * smoothstep(0.42, 0.52, landFactor);
+    // rivers freeze over in extreme cold: same band as the permafrost snow
+    // line (tempC already carries the breakup jitter, so the freeze edge is
+    // a dithered fringe, not a contour); frozen courses also lose their
+    // sediment banks (buried with the rest of the snowed-in floodplain) and
+    // their flow animation via the alpha below
+    float riverIce = 1.0 - smoothstep(-5.5, -3.0, tempC + patch * 1.5);
+    float bank = smoothstep(0.12, 0.32, riverMask) * (1.0 - river) * smoothstep(0.45, 0.55, landFactor);
+    finalColor = mix(finalColor, SEDIMENT * (1.05 + breakup * 0.2), bank * 0.5 * flatGround * (1.0 - riverIce));
+    vec3 riverColor = mix(OCEAN_BLUE, lagoonColor, 0.45) * (0.9 + breakup * 0.1);
+    // white water: steep runs aerate into rapids, sheer drops into falls
+    // (slope at the channel centerline is the along-course gradient; the
+    // animated churn in the mesh material uses the same steepness signal)
+    float rapids = smoothstep(0.45, 1.3, slope + breakup * 0.2) * (1.0 - riverIce);
+    riverColor = mix(riverColor, FOAM_COLOR, rapids * 0.85);
+    riverColor = mix(riverColor, ICE_COLOR * (1.02 + breakup * 0.06), riverIce);
     finalColor = mix(finalColor, riverColor, river);
 
     // alpha packs land coverage for the mesh material's water animation:
-    // land and rivers 1, open water 0 with a shore-proximity hint (up to
-    // 0.3 at the coastline) that drives the animated surf
+    // land 1, rivers 0.45 (course-flow band; frozen rivers read as land),
+    // enclosed lakes 0.7 (calm-ripple band), open water 0 with a shore-
+    // proximity hint (up to 0.3 at the coastline) that drives the animated
+    // surf; dry/lava/frozen lake beds read as static land
     float shoreHint = (1.0 - smoothstep(0.0, 0.25, shore)) * 0.3;
-    float alpha = mix(shoreHint, 1.0, max(land, river));
+    float alpha = mix(shoreHint, 1.0, land);
+    if (lakeCode > 0.5 && lakeCode < 3.5) alpha = mix(0.7, 1.0, land);
+    alpha = mix(alpha, mix(0.45, 1.0, riverIce), river);
+    if (lakeCode > 3.5) alpha = 1.0;
     gl_FragColor = vec4(finalColor, alpha);
   }
 `;
@@ -496,5 +563,112 @@ export function disposeSatelliteTexture(): void {
   if (renderTarget) {
     renderTarget.dispose();
     renderTarget = null;
+  }
+}
+
+const FLOW_WAVELENGTH = 10; // map units per flow animation cycle
+let flowTexture: THREEType.Texture | null = null;
+
+// Flow phase field for the mesh material's river animation: each course is
+// stroked with per-channel linear gradients encoding sin/cos of the arc
+// length from the source in R/G (so the phase survives bilinear filtering
+// with no sawtooth wrap). B packs coverage AND the along-course steepness
+// (byte 40 = flat course .. 255 = sheer fall, 0 = no river), sampled from
+// the baked height field: the animation speeds up and churns white with
+// steepness so steep drops read as waterfalls. Strokes are wider than the
+// rendered river — the satellite alpha band gates where the animation
+// shows — so a low resolution is fine. CanvasTexture default flipY puts
+// canvas row 0 (map top) at v=1, matching how the satellite render target
+// drapes onto the mesh uvs
+export function generateRiverFlowTexture(): THREEType.Texture {
+  disposeRiverFlowTexture();
+
+  const scale = 1024 / Math.max(graphWidth, graphHeight);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(64, Math.round(graphWidth * scale));
+  canvas.height = Math.max(64, Math.round(graphHeight * scale));
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.scale(scale, scale);
+  ctx.lineJoin = ctx.lineCap = "round";
+
+  const k = (Math.PI * 2) / FLOW_WAVELENGTH;
+  const minWidth = 4 / scale; // keep narrow courses covered at flow-texture resolution
+  const encode = (d: number, steep: number) =>
+    `rgb(${Math.round(127.5 + 127.5 * Math.sin(d * k))},${Math.round(127.5 + 127.5 * Math.cos(d * k))},${Math.round(
+      40 + steep * 215
+    )})`;
+  // along-course drop (height units 0-100 per map unit) -> steepness 0..1:
+  // rapids start around 0.35, a sheer fall saturates at 2.5. heightAt with
+  // scale = DIVIDER returns raw height units up to a constant offset that
+  // cancels in the difference (0 without a bake cache -> flat, no falls)
+  const steepness = (drop: number) => Math.min(Math.max((drop - 0.35) / 2.15, 0), 1);
+
+  for (const river of pack.rivers || []) {
+    if (!river.cells || river.cells.length < 2) continue;
+    const points = river.points && river.points.length === river.cells.length ? river.points : null;
+    try {
+      const meandered = Rivers.addMeandering(river.cells, points);
+      let dist = 0;
+      let flux = meandered[0][2];
+      let steep = 0;
+      for (let pointIndex = 1; pointIndex < meandered.length; pointIndex++) {
+        const [x0, y0] = meandered[pointIndex - 1];
+        const [x1, y1] = meandered[pointIndex];
+        const length = Math.hypot(x1 - x0, y1 - y0);
+        if (length < 0.01) continue;
+        if (meandered[pointIndex][2] > flux) flux = meandered[pointIndex][2];
+        const offset = Rivers.getOffset({
+          flux,
+          pointIndex,
+          widthFactor: river.widthFactor,
+          startingWidth: river.sourceWidth
+        });
+        ctx.lineWidth = Math.max(2 * offset, minWidth);
+        // sub-segments short against the wavelength: the linear gradient
+        // then tracks the circular sin/cos phase closely
+        const subs = Math.max(1, Math.ceil(length / (FLOW_WAVELENGTH / 5)));
+        const subLen = length / subs;
+        for (let s = 0; s < subs; s++) {
+          const t0 = s / subs;
+          const t1 = (s + 1) / subs;
+          const ax = x0 + (x1 - x0) * t0;
+          const ay = y0 + (y1 - y0) * t0;
+          const bx = x0 + (x1 - x0) * t1;
+          const by = y0 + (y1 - y0) * t1;
+          // smooth the steepness along the course so the waterfall churn
+          // ramps in over a few sub-segments instead of snapping per texel
+          const drop = Math.max(0, heightAt(ax, ay, 82) - heightAt(bx, by, 82)) / subLen;
+          steep = steep * 0.4 + steepness(drop) * 0.6;
+          const gradient = ctx.createLinearGradient(ax, ay, bx, by);
+          gradient.addColorStop(0, encode(dist + length * t0, steep));
+          gradient.addColorStop(1, encode(dist + length * t1, steep));
+          ctx.strokeStyle = gradient;
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(bx, by);
+          ctx.stroke();
+        }
+        dist += length;
+      }
+    } catch {
+      // a malformed river just goes missing from the animation
+    }
+  }
+  ctx.restore();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+  flowTexture = texture;
+  return texture;
+}
+
+export function disposeRiverFlowTexture(): void {
+  if (flowTexture) {
+    flowTexture.dispose();
+    flowTexture = null;
   }
 }
