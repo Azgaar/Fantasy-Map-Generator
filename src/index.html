@@ -6075,11 +6075,19 @@
           </div>
 
           <div
-            data-tip="Bake procedural erosion detail (gullies, ridges, river valleys) into the 3D terrain. Visual only, the map data is not changed"
+            data-tip="Texture the terrain as a satellite image. Replaces the standard map texture"
+            style="margin: 0.6em 0 0.3em -0.2em"
+          >
+            <input id="options3dSatellite" class="checkbox" type="checkbox" />
+            <label for="options3dSatellite" class="checkbox-label"><i>Satellite texture</i></label>
+          </div>
+
+          <div
+            data-tip="Bake procedural erosion detail into the 3D terrain. Visual only, the map data is not changed"
             style="margin: 0.6em 0 0.3em -0.2em"
           >
             <input id="options3dErosion" class="checkbox" type="checkbox" />
-            <label for="options3dErosion" class="checkbox-label"><i>Eroded terrain</i></label>
+            <label for="options3dErosion" class="checkbox-label"><i>Erode terrain</i></label>
           </div>
 
           <div id="options3dErosionSection" style="display: none">
@@ -6087,8 +6095,8 @@
               <div>Mesh detail:</div>
               <select id="options3dErosionDetail" style="width: 10em">
                 <option value="256">256</option>
-                <option value="512" selected>512</option>
-                <option value="1024">1024 [slow]</option>
+                <option value="512">512</option>
+                <option value="1024" selected>1024</option>
               </select>
             </div>
 
@@ -8631,7 +8639,6 @@
     <script defer src="modules/ui/battle-screen.js?v=1.120.5"></script>
     <script defer src="modules/ui/emblems-editor.js?v=1.122.11"></script>
     <script defer src="modules/ui/markers-editor.js?v=1.122.11"></script>
-    <script defer src="modules/ui/3d.js?v=1.99.00"></script>
     <script defer src="modules/ui/submap-tool.js?v=1.120.5"></script>
     <script defer src="modules/ui/transform-tool.js?v=1.120.5"></script>
     <script defer src="modules/ui/hotkeys.js?v=1.120.5"></script>

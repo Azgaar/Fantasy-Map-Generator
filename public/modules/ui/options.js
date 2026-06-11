@@ -1074,6 +1074,7 @@ function toggle3dOptions() {
   ensureEl("options3dErosionRiverDepthRange").addEventListener("change", changeErosionRiverDepth);
   ensureEl("options3dErosionRiverDepthNumber").addEventListener("change", changeErosionRiverDepth);
   ensureEl("options3dErosionOctaves").addEventListener("change", changeErosionOctaves);
+  ensureEl("options3dSatellite").addEventListener("change", toggleSatellite3d);
 
   function updateValues() {
     const globe = ensureEl("canvas3d").dataset.type === "viewGlobe";
@@ -1102,6 +1103,7 @@ function toggle3dOptions() {
     options3dErosionStrengthRange.value = options3dErosionStrengthNumber.value = ThreeD.options.erosionStrength;
     options3dErosionRiverDepthRange.value = options3dErosionRiverDepthNumber.value = ThreeD.options.erosionRiverDepth;
     options3dErosionOctaves.value = ThreeD.options.erosionOctaves;
+    options3dSatellite.checked = Boolean(ThreeD.options.satellite);
     updateTimeOfDayPreset();
   }
 
@@ -1213,6 +1215,11 @@ function toggle3dOptions() {
   function changeErosionRiverDepth() {
     options3dErosionRiverDepthRange.value = options3dErosionRiverDepthNumber.value = this.value;
     ThreeD.setErosionRiverDepth(+this.value);
+  }
+
+  function toggleSatellite3d() {
+    if (!ThreeD.options.satellite) tip("Baking satellite texture...", false, "warn", 4000);
+    ThreeD.toggleSatellite();
   }
 
   function changeErosionOctaves() {

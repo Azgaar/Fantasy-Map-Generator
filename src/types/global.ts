@@ -77,6 +77,9 @@ declare global {
   var invokeActiveZooming: () => void;
   var FlatQueue: any;
 
+  var THREE: any; // lazy-loaded
+  var getMapURL: (type: string, options?: Record<string, unknown>) => Promise<string>;
+
   var tip: (
     message: string,
     autoHide?: boolean,
@@ -103,11 +106,11 @@ declare global {
   var getHeight: (h: number) => string;
   var getLatitude: (y: number, precision?: number) => number;
   var getLongitude: (x: number, precision?: number) => number;
-  var getFileName: (name: string) => string;
+  var getFileName: (name?: string) => string;
   var customization: number;
   var speak: (text: string) => void;
   var uploadFile: (el: HTMLInputElement, callback: (data: string) => void) => void;
-  var downloadFile: (content: string | Blob, name: string) => void;
+  var downloadFile: (content: string | Blob, name: string, type?: string) => void;
   var zoomTo: (x: number, y: number, zoom: number, duration: number) => void;
   var modules: Record<string, boolean>;
 }
