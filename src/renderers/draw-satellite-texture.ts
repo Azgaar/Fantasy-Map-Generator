@@ -334,13 +334,13 @@ const fragmentShader = /* glsl */ `
     // the mouth while coastline masking keeps flow off open water
     float riverMask = coast.b;
     float drainageNorm = smoothstep(0.0, 1.0, drainage);
-    float sourceWidth = mix(0.15, 1.8, drainageNorm);
-    float fluxWidth = mix(0.5, 1.2, smoothstep(0.12, 0.98, drainage));
+    float sourceWidth = mix(0.08, 1.25, drainageNorm);
+    float fluxWidth = mix(0.4, 0.95, smoothstep(0.12, 0.98, drainage));
     float riverWidth = sourceWidth * fluxWidth;
     float riverSpread = clamp(riverMask * riverWidth, 0.0, 1.0);
     float coastRiverMask = smoothstep(0.30, 0.70, landFactor);
-    float river = smoothstep(0.50, 0.62, riverSpread) * coastRiverMask;
-    float bank = smoothstep(0.20, 0.42, riverSpread) * (1.0 - river) * coastRiverMask;
+    float river = smoothstep(0.56, 0.68, riverSpread) * coastRiverMask;
+    float bank = smoothstep(0.24, 0.40, riverSpread) * (1.0 - river) * coastRiverMask;
     finalColor = mix(finalColor, SEDIMENT * (1.05 + breakup * 0.2), bank * 0.5 * flatGround);
     vec3 riverColor = mix(OCEAN_BLUE, lagoonColor, 0.35) * (0.9 + breakup * 0.1);
     finalColor = mix(finalColor, riverColor, river);
