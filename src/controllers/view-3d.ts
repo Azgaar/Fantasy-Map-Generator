@@ -1,7 +1,7 @@
 import type * as THREE from "three";
 import * as ErosionBake from "../modules/erosion-bake";
 import { disposeSatelliteTexture, generateSatelliteTexture } from "../renderers/draw-satellite-texture";
-import { rn, throttle } from "../utils";
+import { minmax, rn, throttle } from "../utils";
 
 let Three!: typeof import("three");
 let threeLoadPromise: Promise<boolean> | null = null;
@@ -206,8 +206,14 @@ const setSunColor = (color: string) => {
   render();
 };
 
+const clampTextureResolution = (value: number) => minmax(value, 512, 8192);
+
+const resolutionScaleToGlobeMultiplier = (resolutionScale: number) =>
+  minmax(0.5, clampTextureResolution(resolutionScale) / 1024, 8);
+
 const setResolutionScale = (scale: number) => {
-  options.resolutionScale = scale;
+  options.resolutionScale = clampTextureResolution(scale);
+  options.resolution = resolutionScaleToGlobeMultiplier(options.resolutionScale);
   redraw();
 };
 
@@ -357,8 +363,10 @@ const setTimeOfDay = (presetName: string) => {
 };
 
 const setResolution = (resolution: number) => {
-  options.resolution = resolution;
-  update();
+  const nextScale = clampTextureResolution(Number(resolution) * 1024);
+  options.resolutionScale = nextScale;
+  options.resolution = resolutionScaleToGlobeMultiplier(nextScale);
+  redraw();
 };
 
 // download screenshot
@@ -734,11 +742,19 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
   // With erosion off the bake runs with zero strength — a clean field
   let bakeResult: ErosionBake.ErosionBakeResult | null = null;
   if ((options.erosion || useSatellite) && !options.isGlobe) {
+    const baseBakeResolution = options.erosionDetail > 512 ? 2048 : 1024;
+    const satelliteBakeResolution =
+      options.resolutionScale >= 8192 ? 4096 : options.resolutionScale >= 4096 ? 2048 : 1024;
+    const desiredBakeResolution = useSatellite
+      ? Math.max(baseBakeResolution, satelliteBakeResolution)
+      : baseBakeResolution;
+    const maxBakeResolution = Math.min(Renderer.capabilities.maxTextureSize, 4096);
+
     bakeResult = await ErosionBake.bake(Renderer, {
       strength: options.erosion ? options.erosionStrength : 0,
       riverDepth: options.erosion ? options.erosionRiverDepth : 0,
       octaves: options.erosion ? options.erosionOctaves : 1,
-      bakeResolution: options.erosionDetail > 512 ? 2048 : 1024
+      bakeResolution: Math.min(desiredBakeResolution, maxBakeResolution)
     });
     if (!bakeResult && options.erosion) {
       console.warn("3D erosion bake failed, falling back to standard mesh");
@@ -965,11 +981,12 @@ async function updateGlobeTexure(addMesh?: boolean) {
   const world = (mapCoordinates.latT ?? 0) > 179; // define if map covers whole world
 
   // texture size
-  const scale = options.resolution;
-  const height = 512 * scale;
-  const width = 1024 * scale;
+  const maxTextureSize = Renderer?.capabilities?.maxTextureSize || Infinity;
+  const width = Math.min(clampTextureResolution(options.resolutionScale), maxTextureSize);
+  options.resolution = resolutionScaleToGlobeMultiplier(width);
 
   // calculate map size and offset position
+  const height = Math.max(1, Math.round(width / 2));
   const mapHeight = rn(((mapCoordinates.latT ?? 0) / 180) * height);
   const mapWidth = world ? mapHeight * 2 : rn((graphWidth / graphHeight) * mapHeight);
   const dy = world ? 0 : ((90 - (mapCoordinates.latN ?? 0)) / 180) * height;
