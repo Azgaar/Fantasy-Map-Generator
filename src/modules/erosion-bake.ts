@@ -1,5 +1,7 @@
 // GPU erosion-detail bake, a noise-based erosion appearance filter for the 3D view
 
+import type * as THREEType from "three";
+
 export type BakeParams = {
   strength: number;
   riverDepth: number;
@@ -610,11 +612,11 @@ const fragmentShader = /* glsl */ `
   `;
 
 function runErosionPass(
-  renderer: any,
+  renderer: THREEType.WebGLRenderer,
   params: BakeParams,
   bakeW: number,
   bakeH: number,
-  textures: { height: any; coast: any; rivers: any }
+  textures: { height: THREEType.DataTexture; coast: THREEType.DataTexture; rivers: THREEType.Texture }
 ) {
   const renderTarget = new THREE.WebGLRenderTarget(bakeW, bakeH, {
     format: THREE.RGBAFormat,
@@ -668,7 +670,7 @@ function runErosionPass(
   return pixels;
 }
 
-export async function bake(renderer: any, params: BakeParams): Promise<ErosionBakeResult | null> {
+export async function bake(renderer: THREEType.WebGLRenderer, params: BakeParams): Promise<ErosionBakeResult | null> {
   const key = makeKey(params);
   if (cached && cached.key === key) return cached;
 

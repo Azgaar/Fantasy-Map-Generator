@@ -1,8 +1,79 @@
+import type * as THREE from "three";
 import * as ErosionBake from "../modules/erosion-bake";
 import { disposeSatelliteTexture, generateSatelliteTexture } from "../renderers/draw-satellite-texture";
 import { rn, throttle } from "../utils";
 
-const options: any = {
+let Three!: typeof import("three");
+let threeLoadPromise: Promise<boolean> | null = null;
+
+type Controls = {
+  dispose: () => void;
+  update?: () => void;
+  addEventListener: (type: string, listener: () => void) => void;
+  autoRotate: boolean;
+  autoRotateSpeed: number;
+  target?: { set: (x: number, y: number, z: number) => void };
+  enableDamping?: boolean;
+  dampingFactor?: number;
+  screenSpacePanning?: boolean;
+  minDistance?: number;
+  maxDistance?: number;
+  minZoom?: number;
+  maxZoom?: number;
+  zoomSpeed?: number;
+  panSpeed?: number;
+  enableRotate?: boolean;
+  rotateSpeed?: number;
+  maxPolarAngle?: number;
+  minPolarAngle?: number;
+  mouseButtons?: { LEFT: number; MIDDLE: number; RIGHT: number };
+};
+
+type Options = {
+  isOn: boolean;
+  isGlobe: boolean;
+  scale: number;
+  lightness: number;
+  shadow: number;
+  sun: { x: number; y: number; z: number };
+  rotateMesh: number;
+  rotateGlobe: number;
+  skyColor: string;
+  waterColor: string;
+  sunColor: string;
+  extendedWater: boolean;
+  labels3d: boolean;
+  wireframe: boolean;
+  resolution: number;
+  resolutionScale: number;
+  subdivide: boolean;
+  erosion: boolean;
+  erosionDetail: number;
+  erosionStrength: number;
+  erosionRiverDepth: number;
+  erosionOctaves: number;
+  satellite: boolean;
+};
+
+type TimeOfDayPreset = {
+  sun: { x: number; y: number; z: number };
+  sunColor: string;
+  lightness: number;
+  skyColor: string;
+  waterColor: string;
+};
+
+type LabelOptions = {
+  text: string;
+  font: string;
+  size: number;
+  color: string;
+  quality: number;
+};
+
+type LabeledSprite = THREE.Sprite & { size: number };
+
+const options: Options = {
   isOn: false,
   isGlobe: false,
   scale: 50,
@@ -14,40 +85,40 @@ const options: any = {
   skyColor: "#9ecef5",
   waterColor: "#466eab",
   sunColor: "#cccccc",
-  extendedWater: 0,
-  labels3d: 0,
-  wireframe: 0,
+  extendedWater: false,
+  labels3d: false,
+  wireframe: false,
   resolution: 2,
   resolutionScale: 2048,
-  subdivide: 0,
-  erosion: 0,
+  subdivide: false,
+  erosion: false,
   erosionDetail: 1024,
   erosionStrength: 30,
   erosionRiverDepth: 80,
   erosionOctaves: 2,
-  satellite: 0
+  satellite: false
 };
 
 // set variables
-let Renderer: any,
-  scene: any,
-  camera: any,
-  controls: any,
-  animationFrame: any,
-  material: any,
-  texture: any,
-  geometry: any,
-  mesh: any,
-  ambientLight: any,
-  spotLight: any,
-  waterPlane: any,
-  waterMaterial: any,
-  waterMesh: any,
-  raycaster: any;
+let Renderer!: THREE.WebGLRenderer,
+  scene!: THREE.Scene,
+  camera!: THREE.PerspectiveCamera,
+  controls!: Controls,
+  animationFrame = 0,
+  material!: THREE.MeshLambertMaterial | THREE.MeshBasicMaterial,
+  texture: THREE.Texture | null = null,
+  geometry!: THREE.BufferGeometry,
+  mesh!: THREE.Mesh,
+  ambientLight!: THREE.AmbientLight,
+  spotLight!: THREE.SpotLight,
+  waterPlane!: THREE.PlaneGeometry,
+  waterMaterial!: THREE.MeshBasicMaterial,
+  waterMesh!: THREE.Mesh,
+  raycaster!: THREE.Raycaster;
 
-let labels: any[] = [];
-let icons: any[] = [];
-let lines: any[] = [];
+let labels: LabeledSprite[] = [];
+let icons: Array<THREE.Mesh<THREE.BufferGeometry, THREE.MeshPhongMaterial>> = [];
+let lines: Array<THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>> = [];
 let gridToPackCellMap = new Map<number, number>(); // grid cell index -> pack cell index
 let erosionBakeActive = false; // dense eroded mesh is displayed
 let erosionBakeData: ErosionBake.ErosionBakeResult | null = null; // last bake, kept to re-generate the satellite texture
@@ -102,14 +173,7 @@ const stop = () => {
   scene.remove(ambientLight);
   scene.remove(waterMesh);
 
-  Renderer = undefined;
-  scene = undefined;
-  controls = undefined;
-  camera = undefined;
-  material = undefined;
-  texture = undefined;
-  geometry = undefined;
-  mesh = undefined;
+  texture = null;
 
   options.isOn = false;
 };
@@ -124,21 +188,21 @@ const setScale = (scale: number) => {
     return;
   }
 
+  if (!geometry) return;
   const vertices = geometry.getAttribute("position");
   for (let i = 0; i < vertices.count; i++) {
     vertices.setZ(i, getMeshHeight(i));
   }
   geometry.setAttribute("position", vertices);
-  geometry.verticesNeedUpdate = true;
   geometry.computeVertexNormals();
-  geometry.verticesNeedUpdate = false;
 
   redraw();
 };
 
 const setSunColor = (color: string) => {
+  if (!spotLight) return;
   options.sunColor = color;
-  spotLight.color = new THREE.Color(color);
+  spotLight.color = new Three.Color(color);
   render();
 };
 
@@ -148,18 +212,21 @@ const setResolutionScale = (scale: number) => {
 };
 
 const setLightness = (intensity: number) => {
+  if (!ambientLight) return;
   options.lightness = intensity;
   ambientLight.intensity = intensity;
   render();
 };
 
 const setSun = (x: number, y: number, z: number) => {
+  if (!spotLight) return;
   options.sun = { x, y, z };
   spotLight.position.set(x, y, z);
   render();
 };
 
 const setRotation = (speed: number) => {
+  if (!controls) return;
   if (options.isGlobe) options.rotateGlobe = speed;
   else options.rotateMesh = speed;
   controls.autoRotateSpeed = speed;
@@ -238,15 +305,17 @@ const toggleWireframe = () => {
 };
 
 const setColors = (sky: string, water: string) => {
+  if (!scene) return;
   options.skyColor = sky;
-  scene.background = scene.fog.color = new THREE.Color(sky);
+  scene.background = new Three.Color(sky);
+  if (scene.fog) scene.fog.color = new Three.Color(sky);
   options.waterColor = water;
-  waterMaterial.color = new THREE.Color(water);
+  if (waterMaterial) waterMaterial.color = new Three.Color(water);
   render();
 };
 
 // Time of day presets
-const timeOfDayPresets: Record<string, any> = {
+const timeOfDayPresets: Record<string, TimeOfDayPreset> = {
   dawn: {
     sun: { x: -500, y: 400, z: 800 },
     sunColor: "#ff9a56",
@@ -314,12 +383,12 @@ const saveOBJ = async () => {
 async function newMesh(canvas: HTMLCanvasElement) {
   const loaded = await loadTHREE();
   if (!loaded) return tip("Cannot load 3d library", false, "error", 4000);
-  scene = new THREE.Scene();
+  scene = new Three.Scene();
 
   // light
-  ambientLight = new THREE.AmbientLight(0xcccccc, options.lightness);
+  ambientLight = new Three.AmbientLight(0xcccccc, options.lightness);
   scene.add(ambientLight);
-  spotLight = new THREE.SpotLight(options.sunColor, 0.8, 2000, 0.8, 0, 0);
+  spotLight = new Three.SpotLight(options.sunColor, 0.8, 2000, 0.8, 0, 0);
   spotLight.position.set(options.sun.x, options.sun.y, options.sun.z);
   spotLight.castShadow = true;
   spotLight.shadow.mapSize.width = 2048;
@@ -327,17 +396,18 @@ async function newMesh(canvas: HTMLCanvasElement) {
   scene.add(spotLight);
 
   // Renderer
-  Renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  Renderer = new Three.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
   Renderer.setSize(canvas.width, canvas.height);
   Renderer.shadowMap.enabled = true;
-  Renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  Renderer.shadowMap.type = Three.PCFSoftShadowMap;
   if (options.extendedWater) extendWater(graphWidth, graphHeight);
   createMesh(graphWidth, graphHeight, grid.cellsX, grid.cellsY);
 
-  camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 2000);
+  camera = new Three.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 2000);
   camera.position.set(0, 400, 500); // Set initial camera position for isometric view
-  controls = await MapControls(camera, canvas); // Google Maps-style navigation
-  if (!controls) return false;
+  const mapControls = await MapControls(camera, canvas);
+  if (!mapControls) return false;
+  controls = mapControls; // Google Maps-style navigation
 
   // Set initial target at map center
   if (controls.target) controls.target.set(0, 0, 0);
@@ -366,17 +436,17 @@ async function newMesh(canvas: HTMLCanvasElement) {
 }
 
 function textureToSprite(texture: string, width: number, height: number) {
-  const map = new THREE.TextureLoader().load(texture);
+  const map = new Three.TextureLoader().load(texture);
   map.anisotropy = Renderer.capabilities.getMaxAnisotropy();
-  const material = new THREE.SpriteMaterial({ map });
+  const material = new Three.SpriteMaterial({ map });
 
-  const sprite = new THREE.Sprite(material);
+  const sprite = new Three.Sprite(material);
   sprite.scale.set(width, height, 1);
   sprite.renderOrder = 1;
-  return sprite;
+  return sprite as LabeledSprite;
 }
 
-async function createTextLabel({ text, font, size, color, quality }: any) {
+async function createTextLabel({ text, font, size, color, quality }: LabelOptions) {
   context2d.font = `${size * quality}px ${font}`;
   context2d.canvas.width = context2d.measureText(text).width;
   context2d.canvas.height = size * quality * 1.25; // 25% margin as text can overflow the font size
@@ -404,6 +474,8 @@ function get3dCoords(baseX: number, baseY: number) {
     return [x, y, z];
   }
 
+  if (!raycaster || !mesh) return [x, 0, z];
+
   raycaster.ray.origin.x = x;
   raycaster.ray.origin.z = z;
   const y = raycaster.intersectObject(mesh)[0].point.y;
@@ -411,8 +483,8 @@ function get3dCoords(baseX: number, baseY: number) {
 }
 
 async function createLabels() {
-  raycaster = new THREE.Raycaster();
-  raycaster.set(new THREE.Vector3(0, 1000, 0), new THREE.Vector3(0, -1, 0));
+  raycaster = new Three.Raycaster();
+  raycaster.set(new Three.Vector3(0, 1000, 0), new Three.Vector3(0, -1, 0));
 
   const states = viewbox.select("#labels #states");
 
@@ -425,9 +497,9 @@ async function createLabels() {
   };
 
   // Cache icon materials and geometries by group to avoid recreating them
-  const iconMaterials: Record<string, any> = {};
-  const iconGeometries: Record<string, any> = {};
-  const lineMaterials: Record<string, any> = {};
+  const iconMaterials: Record<string, THREE.MeshPhongMaterial> = {};
+  const iconGeometries: Record<string, THREE.CylinderGeometry> = {};
+  const lineMaterials: Record<string, THREE.LineBasicMaterial> = {};
 
   // Helper function to get burg label options from its group
   function getBurgLabelOptions(burg: any) {
@@ -460,7 +532,7 @@ async function createLabels() {
   // Helper function to get or create icon material for a group
   function getIconMaterial(groupName: string, iconColor: string) {
     if (!iconMaterials[groupName]) {
-      const material = new THREE.MeshPhongMaterial({ color: iconColor });
+      const material = new Three.MeshPhongMaterial({ color: iconColor });
       material.wireframe = options.wireframe;
       iconMaterials[groupName] = material;
     }
@@ -471,7 +543,7 @@ async function createLabels() {
   function getIconGeometry(groupName: string, iconSize: number) {
     const key = `${groupName}_${iconSize.toFixed(2)}`;
     if (!iconGeometries[key]) {
-      iconGeometries[key] = new THREE.CylinderGeometry(iconSize * 2, iconSize * 2, iconSize, 16, 1);
+      iconGeometries[key] = new Three.CylinderGeometry(iconSize * 2, iconSize * 2, iconSize, 16, 1);
     }
     return iconGeometries[key];
   }
@@ -479,7 +551,7 @@ async function createLabels() {
   // Helper function to get or create line material for a group
   function getLineMaterial(groupName: string, iconColor: string) {
     if (!lineMaterials[groupName]) {
-      lineMaterials[groupName] = new THREE.LineBasicMaterial({ color: iconColor });
+      lineMaterials[groupName] = new Three.LineBasicMaterial({ color: iconColor });
     }
     return lineMaterials[groupName];
   }
@@ -495,7 +567,7 @@ async function createLabels() {
     const [x, y, z] = get3dCoords(burg.x, burg.y);
 
     if (layerIsOn("toggleLabels")) {
-      const burgSprite = await createTextLabel({ text: burg.name, ...burgOptions });
+      const burgSprite = await createTextLabel({ text: burg.name || "", ...burgOptions });
 
       burgSprite.position.set(x, y + burgOptions.elevation, z);
       burgSprite.size = burgOptions.size;
@@ -508,7 +580,7 @@ async function createLabels() {
     if (layerIsOn("toggleBurgIcons")) {
       const geometry = getIconGeometry(burg.group!, burgOptions.iconSize);
       const material = getIconMaterial(burg.group!, burgOptions.iconColor);
-      const iconMesh = new THREE.Mesh(geometry, material);
+      const iconMesh = new Three.Mesh(geometry, material);
       iconMesh.position.set(x, y, z);
 
       icons.push(iconMesh);
@@ -518,9 +590,9 @@ async function createLabels() {
       // Line starts from top of icon (iconSize/2 above ground) and goes to just below label
       const lineStart = y + burgOptions.iconSize / 2;
       const lineEnd = y + burgOptions.elevation - burgOptions.size * 0.5;
-      const points = [new THREE.Vector3(x, lineStart, z), new THREE.Vector3(x, lineEnd, z)];
-      const line_geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(line_geometry, line_material);
+      const points = [new Three.Vector3(x, lineStart, z), new Three.Vector3(x, lineEnd, z)];
+      const line_geometry = new Three.BufferGeometry().setFromPoints(points);
+      const line = new Three.Line(line_geometry, line_material);
 
       lines.push(line);
       scene.add(line);
@@ -550,11 +622,11 @@ async function createLabels() {
 }
 
 function deleteLabels() {
-  raycaster = undefined;
+  if (!scene) return;
 
   for (const mesh of labels) {
     scene.remove(mesh);
-    mesh.material.map.dispose();
+    if (mesh.material.map) mesh.material.map.dispose();
     mesh.material.dispose();
     mesh.geometry.dispose();
   }
@@ -607,12 +679,13 @@ async function createMeshTextureUrl(): Promise<string> {
 
 // (re)load the 2D map render into the module-level texture
 async function loadMapTexture() {
+  if (!Renderer) return null;
   if (texture) texture.dispose();
   const url = await createMeshTextureUrl();
   await new Promise(resolve => {
-    texture = new THREE.TextureLoader().load(
+    texture = new Three.TextureLoader().load(
       url,
-      (t: any) => {
+      (t: THREE.Texture) => {
         resolve(t);
       },
       undefined,
@@ -627,6 +700,7 @@ async function loadMapTexture() {
 
 // create a mesh from pixel data
 async function createMesh(width: number, height: number, segmentsX: number, segmentsY: number) {
+  if (!scene || !Renderer) return;
   stopWaterAnimation(); // restarted below if the satellite texture applies
 
   // Build lookup map from grid cell index to pack cell index
@@ -646,7 +720,7 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
   if (!options.wireframe && !useSatellite) await loadMapTexture();
 
   if (material) material.dispose();
-  material = new THREE.MeshLambertMaterial();
+  material = new Three.MeshLambertMaterial();
 
   if (options.wireframe) {
     material.wireframe = true;
@@ -683,7 +757,7 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
     const segLong = options.erosionDetail;
     const segX = width >= height ? segLong : Math.max(2, Math.round((segLong * width) / height));
     const segY = width >= height ? Math.max(2, Math.round((segLong * height) / width)) : segLong;
-    geometry = new THREE.PlaneGeometry(width, height, segX - 1, segY - 1);
+    geometry = new Three.PlaneGeometry(width, height, segX - 1, segY - 1);
 
     const vertices = geometry.getAttribute("position");
     for (let i = 0; i < vertices.count; i++) {
@@ -692,9 +766,9 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
       vertices.setZ(i, ErosionBake.heightAt(mapX, mapY, options.scale));
     }
     geometry.computeVertexNormals();
-    mesh = new THREE.Mesh(geometry, material); // geometry is dense already, subdivision is ignored
+    mesh = new Three.Mesh(geometry, material); // geometry is dense already, subdivision is ignored
   } else {
-    geometry = new THREE.PlaneGeometry(width, height, segmentsX - 1, segmentsY - 1);
+    geometry = new Three.PlaneGeometry(width, height, segmentsX - 1, segmentsY - 1);
 
     const vertices = geometry.getAttribute("position");
     for (let i = 0; i < vertices.count; i++) {
@@ -713,9 +787,9 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
         maxTriangles: Infinity
       };
       const smoothGeometry = (window as any).loopSubdivision.modify(geometry, 1, subdivideParams);
-      mesh = new THREE.Mesh(smoothGeometry, material);
+      mesh = new Three.Mesh(smoothGeometry, material);
     } else {
-      mesh = new THREE.Mesh(geometry, material);
+      mesh = new Three.Mesh(geometry, material);
     }
   }
 
@@ -726,7 +800,7 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
     const satelliteTexture = bakeResult && generateSatelliteTexture(Renderer, bakeResult, { scale: options.scale });
     if (satelliteTexture) {
       material.map = satelliteTexture;
-      applyWaterAnimation(material);
+      applyWaterAnimation(material as THREE.MeshLambertMaterial);
       startWaterAnimation();
     } else {
       material.map = await loadMapTexture();
@@ -776,19 +850,21 @@ function getMeshHeight(i: number) {
 }
 
 function extendWater(width: number, height: number) {
-  scene.background = new THREE.Color(options.skyColor);
+  if (!scene) return;
+  scene.background = new Three.Color(options.skyColor);
 
-  waterPlane = new THREE.PlaneGeometry(width * 10, height * 10, 1);
-  waterMaterial = new THREE.MeshBasicMaterial({ color: options.waterColor });
-  scene.fog = new THREE.Fog(scene.background, 500, 3000);
+  waterPlane = new Three.PlaneGeometry(width * 10, height * 10, 1);
+  waterMaterial = new Three.MeshBasicMaterial({ color: options.waterColor });
+  scene.fog = new Three.Fog(scene.background, 500, 3000);
 
-  waterMesh = new THREE.Mesh(waterPlane, waterMaterial);
+  waterMesh = new Three.Mesh(waterPlane, waterMaterial);
   waterMesh.rotation.x = -Math.PI / 2;
   waterMesh.position.y -= 3;
   scene.add(waterMesh);
 }
 
 async function update3dTexture() {
+  if (!material || !Renderer) return;
   // satellite mode: the texture is fully procedural (no SVG render
   // involved) — re-bake it from the cached field, e.g. after a height
   // scale change (slope thresholds depend on it)
@@ -804,7 +880,7 @@ async function update3dTexture() {
   if (texture) texture.dispose();
   const url = await createMeshTextureUrl();
   window.setTimeout(() => window.URL.revokeObjectURL(url), 4000);
-  texture = new THREE.TextureLoader().load(url, render);
+  texture = new Three.TextureLoader().load(url, render);
   material.map = texture;
 }
 
@@ -816,26 +892,28 @@ async function newGlobe(canvas: HTMLCanvasElement) {
   }
 
   // scene
-  scene = new THREE.Scene();
-  scene.background = new THREE.TextureLoader().load(
+  scene = new Three.Scene();
+  scene.background = new Three.TextureLoader().load(
     "https://i0.wp.com/azgaar.files.wordpress.com/2019/10/stars-1.png",
     render
   );
 
   // Renderer
-  Renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  Renderer = new Three.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
   Renderer.setSize(canvas.width, canvas.height);
 
   // material
   if (material) material.dispose();
-  material = new THREE.MeshBasicMaterial();
+  material = new Three.MeshBasicMaterial();
   updateGlobeTexure(true);
 
   // camera
-  camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 1000).translateZ(5);
+  camera = new Three.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 1000);
+  camera.translateZ(5);
 
-  controls = await OrbitControls(camera, Renderer.domElement); // OrbitControls for globe view
-  if (!controls) return false;
+  const orbitControls = await OrbitControls(camera, Renderer.domElement);
+  if (!orbitControls) return false;
+  controls = orbitControls; // OrbitControls for globe view
   controls.zoomSpeed = 0.25;
   controls.minDistance = 1.5;
   controls.maxDistance = 10;
@@ -844,9 +922,9 @@ async function newGlobe(canvas: HTMLCanvasElement) {
 
   // ensure OrbitControls behavior (reset potentially changed defaults by MapControls)
   controls.mouseButtons = {
-    LEFT: THREE.MOUSE.ROTATE,
-    MIDDLE: THREE.MOUSE.DOLLY,
-    RIGHT: THREE.MOUSE.PAN
+    LEFT: Three.MOUSE.ROTATE,
+    MIDDLE: Three.MOUSE.DOLLY,
+    RIGHT: Three.MOUSE.PAN
   };
   controls.screenSpacePanning = true;
   controls.minPolarAngle = 0;
@@ -857,32 +935,28 @@ async function newGlobe(canvas: HTMLCanvasElement) {
   return true;
 }
 
-function OrbitControls(camera: any, domElement: any): any {
-  if (THREE.OrbitControls) return new THREE.OrbitControls(camera, domElement);
+async function OrbitControls(camera: THREE.Camera, domElement: HTMLElement): Promise<Controls | false> {
+  if ((Three as any).OrbitControls) return new (Three as any).OrbitControls(camera, domElement);
 
   return new Promise(resolve => {
     const script = document.createElement("script");
     script.src = "libs/orbitControls.min.js";
     document.head.append(script);
-    script.onload = () => resolve(new THREE.OrbitControls(camera, domElement));
+    script.onload = () =>
+      resolve((Three as any).OrbitControls ? new (Three as any).OrbitControls(camera, domElement) : false);
     script.onerror = () => resolve(false);
   });
 }
 
-function MapControls(camera: any, domElement: any): any {
-  if (THREE.MapControls) return new THREE.MapControls(camera, domElement);
+async function MapControls(camera: THREE.Camera, domElement: HTMLElement): Promise<Controls | false> {
+  if ((Three as any).MapControls) return new (Three as any).MapControls(camera, domElement);
 
   return new Promise(resolve => {
     const script = document.createElement("script");
     script.src = "libs/mapControls.min.js";
     document.head.append(script);
-    script.onload = () => {
-      if (THREE.MapControls) {
-        resolve(new THREE.MapControls(camera, domElement));
-      } else {
-        resolve(false);
-      }
-    };
+    script.onload = () =>
+      resolve((Three as any).MapControls ? new (Three as any).MapControls(camera, domElement) : false);
     script.onerror = () => resolve(false);
   });
 }
@@ -921,7 +995,7 @@ async function updateGlobeTexure(addMesh?: boolean) {
   img2.onload = () => {
     ctx.drawImage(img2, dx, dy, mapWidth, mapHeight);
     if (texture) texture.dispose();
-    texture = new THREE.CanvasTexture(ctx.canvas, render);
+    texture = new Three.CanvasTexture(ctx.canvas);
     material.map = texture;
     if (addMesh) addGlobe3dMesh();
   };
@@ -929,21 +1003,24 @@ async function updateGlobeTexure(addMesh?: boolean) {
 }
 
 function addGlobe3dMesh() {
-  geometry = new THREE.SphereBufferGeometry(1, 64, 64);
-  mesh = new THREE.Mesh(geometry, material);
+  if (!scene || !material) return;
+  geometry = new Three.SphereGeometry(1, 64, 64);
+  mesh = new Three.Mesh(geometry, material);
   scene.add(mesh);
-  if (controls.autoRotate) animate();
+  if (controls?.autoRotate) animate();
   else render();
 }
 
 // render 3d scene and camera, do only on controls change
 const renderThrottled = throttle(doWorkOnRender, 200);
 function render() {
+  if (!Renderer || !scene || !camera) return;
   Renderer.render(scene, camera);
   renderThrottled();
 }
 
 function doWorkOnRender() {
+  if (!camera) return;
   for (const [i, label] of labels.entries()) {
     const dist = label.position.distanceTo(camera.position);
     const isVisible = dist < 100 * label.size && dist > label.size * 6;
@@ -978,8 +1055,8 @@ function stopWaterAnimation() {
 // the satellite texture packs land coverage in alpha: tint water texels
 // with a slow interference shimmer so the ocean reads alive, then force
 // the fragment opaque (the mask is a texture channel, not transparency)
-function applyWaterAnimation(mat: any) {
-  mat.onBeforeCompile = (shader: any) => {
+function applyWaterAnimation(mat: THREE.MeshLambertMaterial) {
+  mat.onBeforeCompile = (shader: { uniforms: Record<string, unknown>; fragmentShader: string }) => {
     shader.uniforms.uTime = waterTime;
     shader.fragmentShader =
       /* glsl */ `uniform float uTime;
@@ -1025,15 +1102,21 @@ function applyWaterAnimation(mat: any) {
 }
 
 function loadTHREE() {
-  if (window.THREE) return Promise.resolve(true);
+  if (Three) return Promise.resolve(true);
+  if (!threeLoadPromise) {
+    threeLoadPromise = new Promise(resolve => {
+      const script = document.createElement("script");
+      script.src = "libs/three.min.js";
+      document.head.append(script);
+      script.onload = () => {
+        Three = window.THREE as unknown as typeof import("three");
+        resolve(true);
+      };
+      script.onerror = () => resolve(false);
+    });
+  }
 
-  return new Promise(resolve => {
-    const script = document.createElement("script");
-    script.src = "libs/three.min.js";
-    document.head.append(script);
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-  });
+  return threeLoadPromise;
 }
 
 function loadLoopSubdivision() {
@@ -1049,13 +1132,13 @@ function loadLoopSubdivision() {
 }
 
 function OBJExporter(): any {
-  if (THREE.OBJExporter) return new THREE.OBJExporter();
+  if ((Three as any).OBJExporter) return new (Three as any).OBJExporter();
 
   return new Promise(resolve => {
     const script = document.createElement("script");
     script.src = "libs/objexporter.min.js?v=1.89.35";
     document.head.append(script);
-    script.onload = () => resolve(new THREE.OBJExporter());
+    script.onload = () => resolve((Three as any).OBJExporter ? new (Three as any).OBJExporter() : false);
     script.onerror = () => resolve(false);
   });
 }

@@ -1,6 +1,7 @@
+import type * as THREEType from "three";
 import type { ErosionBakeResult } from "../modules/erosion-bake";
 
-let renderTarget: any = null;
+let renderTarget: THREEType.WebGLRenderTarget | null = null;
 
 // biome id -> satellite albedo and vegetation density
 const BIOME_SATELLITE: Array<{ color: [number, number, number]; density: number }> = [
@@ -349,16 +350,20 @@ const fragmentShader = /* glsl */ `
 // coast, cols, rows). Returns a THREE.Texture to use directly as
 // material.map, or null on failure. The texture is regenerated on every
 // mesh rebuild and on height-scale changes (slope thresholds depend on it)
-export function generateSatelliteTexture(renderer: any, bakeResult: ErosionBakeResult, { scale }: { scale: number }) {
+export function generateSatelliteTexture(
+  renderer: THREEType.WebGLRenderer,
+  bakeResult: ErosionBakeResult,
+  { scale }: { scale: number }
+): THREEType.Texture | null {
   if (!bakeResult?.pixels || !bakeResult?.coast) return null;
   disposeSatelliteTexture();
 
-  let fieldTexture: any = null;
-  let coastTexture: any = null;
-  let climateTexture: any = null;
-  let biomeTexture: any = null;
-  let material: any = null;
-  let geometry: any = null;
+  let fieldTexture!: THREEType.DataTexture;
+  let coastTexture!: THREEType.DataTexture;
+  let climateTexture!: THREEType.DataTexture;
+  let biomeTexture!: THREEType.DataTexture;
+  let material!: THREEType.RawShaderMaterial;
+  let geometry!: THREEType.BufferGeometry;
 
   try {
     const { cols, rows } = bakeResult;
@@ -376,7 +381,7 @@ export function generateSatelliteTexture(renderer: any, bakeResult: ErosionBakeR
 
     // mipmaps need WebGL2 for the non-power-of-two bake size
     const isWebGL2 = renderer.capabilities.isWebGL2;
-    renderTarget = new THREE.WebGLRenderTarget(cols, rows, {
+    const target = new THREE.WebGLRenderTarget(cols, rows, {
       format: THREE.RGBAFormat,
       type: THREE.UnsignedByteType,
       generateMipmaps: isWebGL2,
@@ -385,7 +390,8 @@ export function generateSatelliteTexture(renderer: any, bakeResult: ErosionBakeR
       depthBuffer: false,
       stencilBuffer: false
     });
-    renderTarget.texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    renderTarget = target;
+    target.texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
     // normalized-height gradient per texel -> world-space tan(slope):
     // d(world y)/d(height) = scale * 100 / 82 (the LOWER_BY_WATER divider),
@@ -421,22 +427,22 @@ export function generateSatelliteTexture(renderer: any, bakeResult: ErosionBakeR
     const bakeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
     const previousTarget = renderer.getRenderTarget();
-    renderer.setRenderTarget(renderTarget);
+    renderer.setRenderTarget(target);
     renderer.render(bakeScene, bakeCamera);
     renderer.setRenderTarget(previousTarget);
 
-    return renderTarget.texture;
+    return target.texture;
   } catch (error) {
     console.error("Satellite texture generation failed:", error);
     disposeSatelliteTexture();
     return null;
   } finally {
-    if (material) material.dispose();
-    if (geometry) geometry.dispose();
-    if (fieldTexture) fieldTexture.dispose();
-    if (coastTexture) coastTexture.dispose();
-    if (climateTexture) climateTexture.dispose();
-    if (biomeTexture) biomeTexture.dispose();
+    material?.dispose();
+    geometry?.dispose();
+    fieldTexture?.dispose();
+    coastTexture?.dispose();
+    climateTexture?.dispose();
+    biomeTexture?.dispose();
   }
 }
 
