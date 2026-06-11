@@ -6,18 +6,18 @@ let renderTarget: THREEType.WebGLRenderTarget | null = null;
 // biome id -> satellite albedo and vegetation density
 const BIOME_SATELLITE: Array<{ color: [number, number, number]; density: number }> = [
   { color: [0.24, 0.58, 0.71], density: 0 }, // 0 Marine (only near data edges)
-  { color: [0.91, 0.81, 0.56], density: 0.02 }, // 1 Hot desert
-  { color: [0.76, 0.7, 0.54], density: 0.05 }, // 2 Cold desert
-  { color: [0.64, 0.67, 0.3], density: 0.35 }, // 3 Savanna
-  { color: [0.44, 0.65, 0.23], density: 0.45 }, // 4 Grassland
-  { color: [0.23, 0.52, 0.16], density: 0.85 }, // 5 Tropical seasonal forest
-  { color: [0.15, 0.43, 0.13], density: 0.9 }, // 6 Temperate deciduous forest
-  { color: [0.09, 0.38, 0.11], density: 1 }, // 7 Tropical rainforest
-  { color: [0.11, 0.4, 0.14], density: 1 }, // 8 Temperate rainforest
-  { color: [0.13, 0.31, 0.17], density: 0.85 }, // 9 Taiga
-  { color: [0.6, 0.57, 0.45], density: 0.12 }, // 10 Tundra
+  { color: [0.89, 0.78, 0.57], density: 0.02 }, // 1 Hot desert
+  { color: [0.75, 0.68, 0.54], density: 0.05 }, // 2 Cold desert
+  { color: [0.62, 0.61, 0.34], density: 0.35 }, // 3 Savanna
+  { color: [0.45, 0.59, 0.25], density: 0.45 }, // 4 Grassland
+  { color: [0.25, 0.48, 0.18], density: 0.85 }, // 5 Tropical seasonal forest
+  { color: [0.17, 0.4, 0.15], density: 0.9 }, // 6 Temperate deciduous forest
+  { color: [0.11, 0.36, 0.13], density: 1 }, // 7 Tropical rainforest
+  { color: [0.13, 0.38, 0.15], density: 1 }, // 8 Temperate rainforest
+  { color: [0.15, 0.3, 0.18], density: 0.85 }, // 9 Taiga
+  { color: [0.6, 0.57, 0.46], density: 0.12 }, // 10 Tundra
   { color: [0.93, 0.95, 0.97], density: 0 }, // 11 Glacier
-  { color: [0.24, 0.42, 0.21], density: 0.65 } // 12 Wetland
+  { color: [0.26, 0.4, 0.23], density: 0.65 } // 12 Wetland
 ];
 
 // R: temperature °C packed as t + 128
@@ -144,8 +144,10 @@ const fragmentShader = /* glsl */ `
   const vec3 FOAM_COLOR  = vec3(0.97, 1.00, 1.00); // breaking surf
 
   // lake group palette (hues follow the 2D default style)
-  const vec3 FRESH_DEEP    = vec3(0.21, 0.38, 0.66); // freshwater basin
-  const vec3 FRESH_RIM     = vec3(0.55, 0.68, 0.92); // #a6c1fd shallow rim
+  // freshwater reads LIGHTER than the ocean (the 2D style is a pale
+  // periwinkle), not a darker basin
+  const vec3 FRESH_DEEP    = vec3(0.42, 0.58, 0.83); // freshwater basin
+  const vec3 FRESH_RIM     = vec3(0.65, 0.76, 0.97); // #a6c1fd shallow rim
   const vec3 SALT_WATER    = vec3(0.27, 0.60, 0.54); // #409b8a mineral teal
   const vec3 SALT_CRUST    = vec3(0.93, 0.91, 0.85); // evaporite shore rim
   const vec3 SINKHOLE_RIM  = vec3(0.36, 0.79, 0.99); // #5bc9fd cenote cyan
@@ -339,10 +341,11 @@ const fragmentShader = /* glsl */ `
     // aerial perspective: the high country pales toward the sky
     color = mix(color, vec3(0.93, 0.96, 1.00), smoothstep(0.45, 0.95, h) * 0.16);
 
-    // final grade: saturate and lift the mids for a sunlit, vivid look
+    // final grade: a restrained saturation and mid lift — keep the land
+    // closer to true aerial color than to a postcard
     float lum = dot(color, vec3(0.299, 0.587, 0.114));
-    color = mix(vec3(lum), color, 1.25);
-    color = pow(clamp(color, 0.0, 1.0), vec3(0.9));
+    color = mix(vec3(lum), color, 1.1);
+    color = pow(clamp(color, 0.0, 1.0), vec3(0.94));
 
     // water is fully procedural. Bathymetry from the grid heightmap drives a
     // sunlit shelf-to-abyss gradient; near the shore a sandy seabed glow, a
@@ -424,12 +427,14 @@ const fragmentShader = /* glsl */ `
     float riverIce = 1.0 - smoothstep(-5.5, -3.0, tempC + patch * 1.5);
     float bank = smoothstep(0.12, 0.32, riverMask) * (1.0 - river) * smoothstep(0.45, 0.55, landFactor);
     finalColor = mix(finalColor, SEDIMENT * (1.05 + breakup * 0.2), bank * 0.5 * flatGround * (1.0 - riverIce));
-    vec3 riverColor = mix(OCEAN_BLUE, lagoonColor, 0.45) * (0.9 + breakup * 0.1);
-    // white water: steep runs aerate into rapids, sheer drops into falls
+    vec3 riverColor = mix(OCEAN_BLUE, lagoonColor, 0.25) * (0.88 + breakup * 0.1);
+    // white water: only genuinely steep runs aerate into rapids and falls
     // (slope at the channel centerline is the along-course gradient; the
-    // animated churn in the mesh material uses the same steepness signal)
-    float rapids = smoothstep(0.45, 1.3, slope + breakup * 0.2) * (1.0 - riverIce);
-    riverColor = mix(riverColor, FOAM_COLOR, rapids * 0.85);
+    // animated churn in the mesh material uses the same steepness signal).
+    // The foam is clumpy — noise-textured white, not a flat wash
+    float rapids = smoothstep(0.55, 1.5, slope + breakup * 0.2) * (1.0 - riverIce);
+    vec3 foamTex = FOAM_COLOR * clamp(0.78 + breakup * 0.55 + patch * 0.2, 0.6, 1.05);
+    riverColor = mix(riverColor, foamTex, min(rapids * 0.95, 0.8));
     riverColor = mix(riverColor, ICE_COLOR * (1.02 + breakup * 0.06), riverIce);
     finalColor = mix(finalColor, riverColor, river);
 
@@ -601,10 +606,11 @@ export function generateRiverFlowTexture(): THREEType.Texture {
       40 + steep * 215
     )})`;
   // along-course drop (height units 0-100 per map unit) -> steepness 0..1:
-  // rapids start around 0.35, a sheer fall saturates at 2.5. heightAt with
-  // scale = DIVIDER returns raw height units up to a constant offset that
-  // cancels in the difference (0 without a bake cache -> flat, no falls)
-  const steepness = (drop: number) => Math.min(Math.max((drop - 0.35) / 2.15, 0), 1);
+  // rapids start around 0.6, a sheer fall saturates at 3.0 — deliberately
+  // rare, only genuinely steep runs churn. heightAt with scale = DIVIDER
+  // returns raw height units up to a constant offset that cancels in the
+  // difference (0 without a bake cache -> flat, no falls)
+  const steepness = (drop: number) => Math.min(Math.max((drop - 0.6) / 2.4, 0), 1);
 
   for (const river of pack.rivers || []) {
     if (!river.cells || river.cells.length < 2) continue;
@@ -638,10 +644,11 @@ export function generateRiverFlowTexture(): THREEType.Texture {
           const ay = y0 + (y1 - y0) * t0;
           const bx = x0 + (x1 - x0) * t1;
           const by = y0 + (y1 - y0) * t1;
-          // smooth the steepness along the course so the waterfall churn
-          // ramps in over a few sub-segments instead of snapping per texel
+          // steepness rises instantly at a drop but decays slowly while
+          // walking downstream: the churn trails past the fall's base like
+          // the foam apron under a real waterfall
           const drop = Math.max(0, heightAt(ax, ay, 82) - heightAt(bx, by, 82)) / subLen;
-          steep = steep * 0.4 + steepness(drop) * 0.6;
+          steep = Math.max(steepness(drop), steep * 0.55);
           const gradient = ctx.createLinearGradient(ax, ay, bx, by);
           gradient.addColorStop(0, encode(dist + length * t0, steep));
           gradient.addColorStop(1, encode(dist + length * t1, steep));

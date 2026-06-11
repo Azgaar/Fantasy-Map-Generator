@@ -1156,17 +1156,33 @@ function applyWaterAnimation(mat: THREE.MeshLambertMaterial, flowTexture: THREE.
             if (flow.b > 0.1) {
               float steep = clamp(flow.b * 1.186 - 0.186, 0.0, 1.0); // byte 40..255 -> 0..1
               float flowPhase = atan(flow.r - 0.5, flow.g - 0.5);
-              float speedMul = 1.0 + steep * 2.6;
-              float flowWave = sin(flowPhase - uTime * 2.2 * speedMul) * 0.6
-                + sin(flowPhase * 2.0 - uTime * 3.4 * speedMul + 1.7) * 0.4
-                + steep * sin(flowPhase * 5.0 - uTime * 16.0 + 0.6) * 0.6;
-              float glints = fmgWaterNoise(vUv * vec2(380.0, 280.0) + vec2(uTime * 0.5, -uTime * 0.35));
-              float flowAmp = mix(0.06, 0.2, steep);
-              diffuseColor.rgb *= 1.0 + riverBand * flowWave * (0.5 + glints) * flowAmp;
-              // aerated spray on the falls: fast fine flicker plus a
-              // constant white lift over the already-whitened rapids albedo
-              float churn = fmgWaterNoise(vUv * vec2(880.0, 640.0) + vec2(uTime * 1.4, uTime * 1.8));
-              diffuseColor.rgb += riverBand * steep * (churn * 0.22 + 0.05) * vec3(0.92, 0.98, 1.0);
+              float speedMul = 1.0 + steep * 2.0;
+              // static noises: spatial variation only. ALL motion must come
+              // from waves traveling in +phase (downstream) — a noise field
+              // drifting in uv has one fixed direction for the whole map and
+              // reads as upstream flow on rivers oriented against it
+              float texNoise = fmgWaterNoise(vUv * vec2(380.0, 280.0));
+              float fineNoise = fmgWaterNoise(vUv * vec2(880.0, 640.0));
+              // noise-offset phases break the ripple bands into irregular
+              // tongues while keeping the motion strictly down-course
+              float flowWave = sin(flowPhase - uTime * 2.2 * speedMul + texNoise * 2.5) * 0.6
+                + sin(flowPhase * 2.0 - uTime * 3.4 * speedMul + 1.7 + texNoise * 3.5) * 0.4;
+              diffuseColor.rgb *= 1.0 + riverBand * flowWave * (0.5 + texNoise) * mix(0.05, 0.11, steep);
+              if (steep > 0.01) {
+                // waterfall churn: phase-locked pulses tumbling downstream,
+                // broken into clumps by the static noises, plus a fast
+                // in-place shimmer (time-hashed, so it boils with no
+                // direction at all). Froth MIXES toward white so heavy spray
+                // reads as foam, and the rare peaks pop as splashes
+                float tumble = sin(flowPhase * 5.0 - uTime * 16.0 + fineNoise * 9.0) * 0.5 + 0.5;
+                float boil = sin(flowPhase * 3.0 - uTime * 11.0 + texNoise * 7.0 + 2.1) * 0.5 + 0.5;
+                float shimmer = fmgWaterNoise(vec2(fineNoise * 37.0, uTime * 2.5));
+                float froth = tumble * 0.5 + boil * 0.35 + shimmer * 0.4;
+                float splash = pow(max(froth - 0.55, 0.0) * 2.2, 2.0);
+                vec3 spray = vec3(0.93, 0.97, 1.0);
+                diffuseColor.rgb = mix(diffuseColor.rgb, spray, clamp(riverBand * steep * froth * 0.38, 0.0, 1.0));
+                diffuseColor.rgb += riverBand * steep * splash * 0.2 * spray;
+              }
             }
           }
           diffuseColor.a = 1.0;`
