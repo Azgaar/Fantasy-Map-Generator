@@ -333,16 +333,14 @@ const fragmentShader = /* glsl */ `
     // sea surface): sources stay narrow and channels widen downstream toward
     // the mouth while coastline masking keeps flow off open water
     float riverMask = coast.b;
-    float fluxWidth = mix(0.7, 1.7, smoothstep(0.12, 0.98, drainage));
-    float inland = smoothstep(0.0, 0.12, max(h - waterSurface, 0.0));
-    float downstream = 1.0 - inland;
-    float lengthWidth = mix(0.75, 1.35, downstream);
-    float sourceNarrow = mix(1.0, 0.15, smoothstep(0.25, 1.0, inland));
-    float riverWidth = fluxWidth * lengthWidth * sourceNarrow;
+    float drainageNorm = smoothstep(0.0, 1.0, drainage);
+    float sourceWidth = mix(0.15, 1.8, drainageNorm);
+    float fluxWidth = mix(0.5, 1.2, smoothstep(0.12, 0.98, drainage));
+    float riverWidth = sourceWidth * fluxWidth;
     float riverSpread = clamp(riverMask * riverWidth, 0.0, 1.0);
-    float coastRiverMask = smoothstep(0.46, 0.54, landFactor);
-    float river = smoothstep(0.46, 0.64, riverSpread) * coastRiverMask;
-    float bank = smoothstep(0.16, 0.44, riverSpread) * (1.0 - river) * coastRiverMask;
+    float coastRiverMask = smoothstep(0.30, 0.70, landFactor);
+    float river = smoothstep(0.50, 0.62, riverSpread) * coastRiverMask;
+    float bank = smoothstep(0.20, 0.42, riverSpread) * (1.0 - river) * coastRiverMask;
     finalColor = mix(finalColor, SEDIMENT * (1.05 + breakup * 0.2), bank * 0.5 * flatGround);
     vec3 riverColor = mix(OCEAN_BLUE, lagoonColor, 0.35) * (0.9 + breakup * 0.1);
     finalColor = mix(finalColor, riverColor, river);
