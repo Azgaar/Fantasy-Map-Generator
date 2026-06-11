@@ -328,11 +328,21 @@ const fragmentShader = /* glsl */ `
     vec3 finalColor = mix(waterColor, color, land);
 
     // baked river courses are real water: a deep teal channel that reads
-    // against the land greens, damp sediment banks on the flats. Rivers are
-    // still water — they keep land alpha so the ocean shimmer skips them
+    // against the land greens, damp sediment banks on the flats. Width is
+    // shaped by flux (drainage) and an inland-length proxy (height above local
+    // sea surface): sources stay narrow and channels widen downstream toward
+    // the mouth while coastline masking keeps flow off open water
     float riverMask = coast.b;
-    float river = smoothstep(0.4, 0.6, riverMask);
-    float bank = smoothstep(0.12, 0.4, riverMask) * (1.0 - river) * land;
+    float fluxWidth = mix(0.7, 1.7, smoothstep(0.12, 0.98, drainage));
+    float inland = smoothstep(0.0, 0.12, max(h - waterSurface, 0.0));
+    float downstream = 1.0 - inland;
+    float lengthWidth = mix(0.75, 1.35, downstream);
+    float sourceNarrow = mix(1.0, 0.15, smoothstep(0.25, 1.0, inland));
+    float riverWidth = fluxWidth * lengthWidth * sourceNarrow;
+    float riverSpread = clamp(riverMask * riverWidth, 0.0, 1.0);
+    float coastRiverMask = smoothstep(0.46, 0.54, landFactor);
+    float river = smoothstep(0.46, 0.64, riverSpread) * coastRiverMask;
+    float bank = smoothstep(0.16, 0.44, riverSpread) * (1.0 - river) * coastRiverMask;
     finalColor = mix(finalColor, SEDIMENT * (1.05 + breakup * 0.2), bank * 0.5 * flatGround);
     vec3 riverColor = mix(OCEAN_BLUE, lagoonColor, 0.35) * (0.9 + breakup * 0.1);
     finalColor = mix(finalColor, riverColor, river);
