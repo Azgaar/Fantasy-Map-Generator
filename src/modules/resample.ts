@@ -109,7 +109,9 @@ class Resampler {
       const parentPackCell = parentPackLandCellsQuadtree.find(x, y, Infinity)?.[2];
       if (parentPackCell === undefined) continue;
       const parentCellArea = parentMap.pack.cells.area[parentPackCell];
-      const areaRatio = pack.cells.area[newPackCell] / parentCellArea;
+      // parentCellArea may be 0 for tiny boundary cells truncated by Uint16 storage;
+      // fall back to 1 to avoid 0 * Infinity = NaN in cells.pop (Float32Array)
+      const areaRatio = pack.cells.area[newPackCell] / (parentCellArea || 1);
       const scaleRatio = areaRatio / scale;
 
       pack.cells.biome[newPackCell] = parentMap.pack.cells.biome[parentPackCell];
