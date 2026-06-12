@@ -169,7 +169,7 @@ if (document.readyState === "loading") {
   initializePrompt();
 }
 
-window.drawCellsValue = (data: any[]) => drawCellsValue(data, (window as any).pack);
+window.drawCellsValue = drawCellsValue;
 window.drawPolygons = (data: any[]) => drawPolygons(data, (window as any).terrs, (window as any).grid);
 window.drawRouteConnections = () => drawRouteConnections((window as any).packedGraph);
 window.drawPoint = drawPoint;

@@ -6029,7 +6029,7 @@
               <option value="512">512x512px</option>
               <option value="1024">1024x1024px</option>
               <option value="2048">2048x2048px</option>
-              <option value="4096">4096x4096px</option>
+              <option value="4096" selected>4096x4096px</option>
               <option value="8192">8192x8192px</option>
             </select>
           </div>
@@ -6072,6 +6072,56 @@
             <label for="options3dSubdivide" class="checkbox-label"
               ><i>Smooth geometry <small style="color: darkred">[slow]</small></i></label
             >
+          </div>
+
+          <div
+            data-tip="Texture the terrain as a satellite image. Replaces the standard map texture"
+            style="margin: 0.6em 0 0.3em -0.2em"
+          >
+            <input id="options3dSatellite" class="checkbox" type="checkbox" />
+            <label for="options3dSatellite" class="checkbox-label"><i>Satellite texture</i></label>
+          </div>
+
+          <div
+            data-tip="Bake procedural erosion detail into the 3D terrain. Visual only, the map data is not changed"
+            style="margin: 0.6em 0 0.3em -0.2em"
+          >
+            <input id="options3dErosion" class="checkbox" type="checkbox" />
+            <label for="options3dErosion" class="checkbox-label"><i>Erode terrain</i></label>
+          </div>
+
+          <div id="options3dErosionSection" style="display: none">
+            <div data-tip="Set eroded mesh detail level (vertices on the long side)">
+              <div>Mesh detail:</div>
+              <select id="options3dErosionDetail" style="width: 10em">
+                <option value="256">256</option>
+                <option value="512">512</option>
+                <option value="1024" selected>1024</option>
+                <option value="2048">2048 [slow]</option>
+              </select>
+            </div>
+
+            <div data-tip="Set the strength of erosion gullies and ridges">
+              <div>Gully strength:</div>
+              <input id="options3dErosionStrengthRange" type="range" min="0" max="100" />
+              <input id="options3dErosionStrengthNumber" type="number" min="0" max="100" style="width: 4em" />
+            </div>
+
+            <div data-tip="Set how deep the valleys are carved along the rivers">
+              <div>River valleys:</div>
+              <input id="options3dErosionRiverDepthRange" type="range" min="0" max="100" />
+              <input id="options3dErosionRiverDepthNumber" type="number" min="0" max="100" style="width: 4em" />
+            </div>
+
+            <div data-tip="Set the number of erosion detail layers. More octaves add finer gullies">
+              <div>Detail octaves:</div>
+              <select id="options3dErosionOctaves" style="width: 6em">
+                <option value="1">1</option>
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </div>
           </div>
 
           <div data-tip="Toggle wireframe mode" style="margin: 0.6em 0 0.3em -0.2em">
@@ -8590,7 +8640,6 @@
     <script defer src="modules/ui/battle-screen.js?v=1.120.5"></script>
     <script defer src="modules/ui/emblems-editor.js?v=1.122.11"></script>
     <script defer src="modules/ui/markers-editor.js?v=1.122.11"></script>
-    <script defer src="modules/ui/3d.js?v=1.99.00"></script>
     <script defer src="modules/ui/submap-tool.js?v=1.120.5"></script>
     <script defer src="modules/ui/transform-tool.js?v=1.120.5"></script>
     <script defer src="modules/ui/hotkeys.js?v=1.120.5"></script>
