@@ -214,11 +214,16 @@ const setSunColor = (color: string) => {
 
 const clampTextureResolution = (value: number) => minmax(value, 512, 8192);
 
+const clampToRendererLimit = (value: number) => {
+  const maxTextureSize = Renderer?.capabilities?.maxTextureSize;
+  return maxTextureSize ? Math.min(clampTextureResolution(value), maxTextureSize) : clampTextureResolution(value);
+};
+
 const resolutionScaleToGlobeMultiplier = (resolutionScale: number) =>
   minmax(0.5, clampTextureResolution(resolutionScale) / 1024, 8);
 
 const setResolutionScale = (scale: number) => {
-  options.resolutionScale = clampTextureResolution(scale);
+  options.resolutionScale = clampToRendererLimit(scale);
   options.resolution = resolutionScaleToGlobeMultiplier(options.resolutionScale);
   redraw();
 };
@@ -278,6 +283,17 @@ const toggle3dSubdivision = () => {
   options.subdivide = !options.subdivide;
   redraw();
 };
+
+function syncErosionUI() {
+  const checkbox = document.getElementById("options3dErosion") as HTMLInputElement | null;
+  if (checkbox) checkbox.checked = options.erosion;
+
+  const section = document.getElementById("options3dErosionSection") as HTMLElement | null;
+  if (section) section.style.display = options.erosion ? "block" : "none";
+
+  const subdivide = document.getElementById("options3dSubdivide") as HTMLInputElement | null;
+  if (subdivide) subdivide.disabled = options.erosion;
+}
 
 const toggleErosion = () => {
   options.erosion = !options.erosion;
@@ -369,7 +385,7 @@ const setTimeOfDay = (presetName: string) => {
 };
 
 const setResolution = (resolution: number) => {
-  const nextScale = clampTextureResolution(Number(resolution) * 1024);
+  const nextScale = clampToRendererLimit(Number(resolution) * 1024);
   options.resolutionScale = nextScale;
   options.resolution = resolutionScaleToGlobeMultiplier(nextScale);
   redraw();
@@ -414,6 +430,11 @@ async function newMesh(canvas: HTMLCanvasElement) {
   Renderer.setSize(canvas.width, canvas.height);
   Renderer.shadowMap.enabled = true;
   Renderer.shadowMap.type = Three.PCFSoftShadowMap;
+
+  // texture sizes (mesh render, satellite, erosion bake) must fit the GPU's limit
+  options.resolutionScale = clampToRendererLimit(options.resolutionScale);
+  options.resolution = resolutionScaleToGlobeMultiplier(options.resolutionScale);
+
   if (options.extendedWater) extendWater(graphWidth, graphHeight);
   createMesh(graphWidth, graphHeight, grid.cellsX, grid.cellsY);
 
@@ -765,6 +786,8 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
     if (!bakeResult && options.erosion) {
       console.warn("3D erosion bake failed, falling back to standard mesh");
       tip("Eroded terrain is not supported on this device", false, "warn", 4000);
+      options.erosion = false;
+      syncErosionUI();
     }
   }
   erosionBakeActive = Boolean(bakeResult) && Boolean(options.erosion);
@@ -935,6 +958,10 @@ async function newGlobe(canvas: HTMLCanvasElement) {
   Renderer = new Three.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
   Renderer.setSize(canvas.width, canvas.height);
 
+  // texture size must fit the GPU's limit
+  options.resolutionScale = clampToRendererLimit(options.resolutionScale);
+  options.resolution = resolutionScaleToGlobeMultiplier(options.resolutionScale);
+
   // material
   if (material) material.dispose();
   material = new Three.MeshBasicMaterial();
@@ -998,8 +1025,8 @@ async function updateGlobeTexure(addMesh?: boolean) {
   const world = (mapCoordinates.latT ?? 0) > 179; // define if map covers whole world
 
   // texture size
-  const maxTextureSize = Renderer?.capabilities?.maxTextureSize || Infinity;
-  const width = Math.min(clampTextureResolution(options.resolutionScale), maxTextureSize);
+  options.resolutionScale = clampToRendererLimit(options.resolutionScale);
+  const width = options.resolutionScale;
   options.resolution = resolutionScaleToGlobeMultiplier(width);
 
   // calculate map size and offset position
@@ -1262,8 +1289,16 @@ const threeD = {
   saveOBJ
 };
 
+// exposes the erosion bake cache for runtime/e2e checks (e.g. window.ThreeDErosion.isCached())
+const threeDErosion = {
+  isCached: ErosionBake.isCached,
+  heightAt: ErosionBake.heightAt
+};
+
 declare global {
   var ThreeD: typeof threeD;
+  var ThreeDErosion: typeof threeDErosion;
 }
 
 window.ThreeD = threeD;
+window.ThreeDErosion = threeDErosion;
