@@ -16,7 +16,7 @@
  * For the changes that may be interesting to end users, update the `latestPublicChanges` array below (new changes on top).
  */
 
-const VERSION = "1.122.12";
+const VERSION = "1.123.0";
 if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format or parsing function");
 
 {
@@ -30,6 +30,8 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
   }
 
   const latestPublicChanges = [
+    "3D view: eroded terrain",
+    "3D view: satellite texture",
     "Jagged coastlines",
     "Heightmap Editor: Fill brush",
     "Editors: undo button",
@@ -39,12 +41,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
     "Ability to set custom image as Marker or Regiment icon",
     "Submap and Transform tools rework",
     "Azgaar Bot to answer questions and provide help",
-    "Labels: ability to set letter spacing",
-    "Zones performance improvement",
-    "Notes Editor: on-demand AI text generation",
-    "New style preset: Dark Seas",
-    "New routes generation algorithm",
-    "Routes overview tool"
+    "Labels: ability to set letter spacing"
   ];
 
   function showUpdateWindow() {
