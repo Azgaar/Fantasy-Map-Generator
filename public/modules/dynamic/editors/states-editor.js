@@ -740,12 +740,7 @@ function togglePercentageMode() {
     const totalTreasury = pack.states.reduce((sum, s) => sum + (s.treasury || 0), 0);
 
     $body.querySelectorAll(":scope > div").forEach(function (el) {
-<<<<<<< HEAD
-      const { cells, burgs, area, population, treasury } = el.dataset;
-=======
-      const { cells, burgs, area, population } = el.dataset;
-      el.querySelector(".stateCells").innerText = rn((+cells / totalCells) * 100) + "%";
->>>>>>> 85fe613ac8ab4233530d99435ad7dec55b237a0b
+      const { burgs, area, population, treasury } = el.dataset;
       el.querySelector(".stateBurgs").innerText = rn((+burgs / totalBurgs) * 100) + "%";
       el.querySelector(".stateArea").innerText = rn((+area / totalArea) * 100) + "%";
       el.querySelector(".statePopulation").innerText = rn((+population / totalPopulation) * 100) + "%";
