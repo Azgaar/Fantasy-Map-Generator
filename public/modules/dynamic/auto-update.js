@@ -1116,8 +1116,8 @@ export function resolveVersionConflicts(mapVersion) {
     });
   }
 
-  if (isOlderThan("1.123.0")) {
-    // v1.123.0 added goods, markets, deals and trade animation data
+  if (isOlderThan("1.124.0")) {
+    // v1.124.0 added goods, markets, deals and trade animation data
     goods = viewbox
       .insert("g", "#emblems")
       .attr("id", "goods")
