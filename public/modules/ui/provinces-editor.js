@@ -1,4 +1,5 @@
 "use strict";
+
 function editProvinces() {
   if (customization) return;
   closeDialogs("#provincesEditor, .stable");
@@ -38,7 +39,6 @@ function editProvinces() {
   ensureEl("provincesAdd").on("click", enterAddProvinceMode);
   ensureEl("provincesMerge").on("click", openProvinceMergeDialog);
   ensureEl("provincesRecolor").on("click", recolorProvinces);
-  ensureEl("provincesLocate").on("click", locateSelectedProvince);
 
   body.on("click", function (ev) {
     if (customization) return;
@@ -55,6 +55,7 @@ function editProvinces() {
     else if (cl.contains("icon-flag-empty")) triggerIndependencePromps(p);
     else if (cl.contains("icon-dot-circled")) overviewBurgs({ stateId });
     else if (cl.contains("culturePopulation")) changePopulation(p);
+    else if (cl.contains("icon-target")) highlightElement(provs.select("#province" + p).node(), 8);
     else if (cl.contains("icon-pin")) toggleFog(p, cl);
     else if (cl.contains("icon-trash-empty")) removeProvince(p);
     else if (cl.contains("icon-lock") || cl.contains("icon-lock-open")) updateLockStatus(p, cl);
@@ -180,6 +181,7 @@ function editProvinces() {
           data-tip="Declare province independence (turn non-capital province with burgs into a new state)"
           class="icon-flag-empty ${separable ? "" : "placeholder"} hide"
         ></span>
+        <span data-tip="Locate the province" class="icon-target hide"></span>
         <span data-tip="Toggle province focus" class="icon-pin ${focused ? "" : " inactive"} hide"></span>
         <span data-tip="Lock the province" class="icon-lock${p.lock ? "" : "-open"} hide"></span>
         <span data-tip="Remove the province" class="icon-trash-empty hide"></span>
@@ -196,9 +198,9 @@ function editProvinces() {
     ensureEl("provincesFooterPopulation").dataset.population = totalPopulation;
 
     body.querySelectorAll("div.states").forEach(el => {
-      el.on("click", selectProvinceForLocate);
-      el.on("mouseenter", ev => provinceHighlightOn(ev));
-      el.on("mouseleave", ev => provinceHighlightOff(ev));
+      el.on("click", selectProvinceOnLineClick);
+      el.on("mouseenter", provinceHighlightOn);
+      el.on("mouseleave", provinceHighlightOff);
     });
 
     if (body.dataset.type === "percentage") {
@@ -265,20 +267,6 @@ function editProvinces() {
     };
 
     openPicker(currentFill, callback);
-  }
-
-  function selectProvinceForLocate() {
-    if (customization === 11) return; // skip if in manual assignment mode
-    if (this.parentNode.id !== "provincesBodySection") return;
-    body.querySelector("div.selected")?.classList.remove("selected");
-    this.classList.add("selected");
-  }
-
-  function locateSelectedProvince() {
-    const selected = body.querySelector("div.selected");
-    if (!selected) return tip("Select a province first", false, "warning");
-    const province = +selected.dataset.id;
-    locateProvince(province);
   }
 
   function capitalZoomIn(p) {
@@ -881,10 +869,6 @@ function editProvinces() {
       body.querySelector("div.selected").classList.remove("selected");
       this.classList.add("selected");
       selectProvince(+this.dataset.id);
-    } else {
-      const provinceElement = provs.select("#province" + p).node();
-      if (!provinceElement) return;
-      highlightElement(provinceElement, 8);
     }
   }
 
@@ -1377,13 +1361,6 @@ function editProvinces() {
 
     if (typeof refreshProvincesEditor === "function") refreshProvincesEditor();
   }
-}
-
-function locateProvince(p) {
-  if (!provs) return;
-  const provinceElement = provs.select("#province" + p).node();
-  if (!provinceElement) return;
-  highlightElement(provinceElement, 8);
 }
 
 function updateLockStatus(provinceId, classList) {

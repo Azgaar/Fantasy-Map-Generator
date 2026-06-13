@@ -16,7 +16,7 @@ function overviewRoutes() {
     title: "Routes Overview",
     resizable: false,
     width: fitContent(),
-    position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
 
   // add listeners
@@ -56,7 +56,7 @@ function overviewRoutes() {
         data-group="${route.group}"
         data-length="${route.length}"
       >
-        <span data-tip="Click to focus on route" class="icon-target pointer"></span>
+        <span data-tip="Locate the route" class="icon-target"></span>
         <div data-tip="Route name" style="width: 15em; margin-left: 0.4em;">${route.name}</div>
         <div data-tip="Route group" style="width: 8em;">${route.group}</div>
         <div data-tip="Route length" style="width: 6em;">${length}</div>

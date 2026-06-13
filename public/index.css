@@ -1493,7 +1493,8 @@ div.states .icon-pin,
 div.states .icon-flag-empty,
 div.states .icon-cw,
 div.states .icon-lock,
-div.states .icon-lock-open {
+div.states .icon-lock-open,
+div.states .icon-target {
   cursor: pointer;
 }
 

@@ -33,6 +33,8 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
     "Trade animation",
     "Economic simulation",
     "Navigatable rivers",
+    "3D view: eroded terrain",
+    "3D view: satellite texture",
     "Jagged coastlines",
     "Heightmap Editor: Fill brush",
     "Editors: undo button",

@@ -82,7 +82,7 @@ document
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
-  const {supporters} = await import("../dynamic/supporters.js?v=1.119.0");
+  const {supporters} = await import("../dynamic/supporters.js?v=1.123.0");
   const list = supporters.split("\n").sort();
   const columns = window.innerWidth < 800 ? 2 : 5;
 
@@ -1066,6 +1066,15 @@ function toggle3dOptions() {
   ensureEl("options3dSunColor").addEventListener("input", changeSunColor);
   ensureEl("options3dSubdivide").addEventListener("change", toggle3dSubdivision);
   ensureEl("options3dTimeOfDay").addEventListener("change", changeTimeOfDay);
+  ensureEl("options3dErosion").addEventListener("change", toggleErosion3d);
+  ensureEl("options3dErosionDetail").addEventListener("change", changeErosionDetail);
+  // "change" instead of "input": every value change triggers a GPU re-bake
+  ensureEl("options3dErosionStrengthRange").addEventListener("change", changeErosionStrength);
+  ensureEl("options3dErosionStrengthNumber").addEventListener("change", changeErosionStrength);
+  ensureEl("options3dErosionRiverDepthRange").addEventListener("change", changeErosionRiverDepth);
+  ensureEl("options3dErosionRiverDepthNumber").addEventListener("change", changeErosionRiverDepth);
+  ensureEl("options3dErosionOctaves").addEventListener("change", changeErosionOctaves);
+  ensureEl("options3dSatellite").addEventListener("change", toggleSatellite3d);
 
   function updateValues() {
     const globe = ensureEl("canvas3d").dataset.type === "viewGlobe";
@@ -1087,6 +1096,14 @@ function toggle3dOptions() {
     options3dGlobeResolution.value = ThreeD.options.resolution;
     options3dSunColor.value = ThreeD.options.sunColor;
     options3dSubdivide.value = ThreeD.options.subdivide;
+    options3dSubdivide.disabled = Boolean(ThreeD.options.erosion);
+    options3dErosion.checked = Boolean(ThreeD.options.erosion);
+    options3dErosionSection.style.display = ThreeD.options.erosion ? "block" : "none";
+    options3dErosionDetail.value = ThreeD.options.erosionDetail;
+    options3dErosionStrengthRange.value = options3dErosionStrengthNumber.value = ThreeD.options.erosionStrength;
+    options3dErosionRiverDepthRange.value = options3dErosionRiverDepthNumber.value = ThreeD.options.erosionRiverDepth;
+    options3dErosionOctaves.value = ThreeD.options.erosionOctaves;
+    options3dSatellite.checked = Boolean(ThreeD.options.satellite);
     updateTimeOfDayPreset();
   }
 
@@ -1176,6 +1193,37 @@ function toggle3dOptions() {
 
   function toggle3dSubdivision() {
     ThreeD.toggle3dSubdivision();
+  }
+
+  function toggleErosion3d() {
+    const enabled = !ThreeD.options.erosion;
+    options3dErosionSection.style.display = enabled ? "block" : "none";
+    options3dSubdivide.disabled = enabled; // geometry is dense already, subdivision is ignored
+    if (enabled) tip("Baking eroded terrain...", false, "warn", 4000);
+    ThreeD.toggleErosion();
+  }
+
+  function changeErosionDetail() {
+    ThreeD.setErosionDetail(+this.value);
+  }
+
+  function changeErosionStrength() {
+    options3dErosionStrengthRange.value = options3dErosionStrengthNumber.value = this.value;
+    ThreeD.setErosionStrength(+this.value);
+  }
+
+  function changeErosionRiverDepth() {
+    options3dErosionRiverDepthRange.value = options3dErosionRiverDepthNumber.value = this.value;
+    ThreeD.setErosionRiverDepth(+this.value);
+  }
+
+  function toggleSatellite3d() {
+    if (!ThreeD.options.satellite) tip("Baking satellite texture...", false, "warn", 4000);
+    ThreeD.toggleSatellite();
+  }
+
+  function changeErosionOctaves() {
+    ThreeD.setErosionOctaves(+this.value);
   }
 
   function toggleWireframe3d() {

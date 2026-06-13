@@ -9,3 +9,4 @@ import "./production-overview";
 import "./production-chains";
 import "./trade-animation-editor";
 import "./trade-details";
+import "./view-3d";

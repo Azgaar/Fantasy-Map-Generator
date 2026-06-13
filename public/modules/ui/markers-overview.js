@@ -26,7 +26,7 @@ function overviewMarkers() {
     resizable: false,
     width: fitContent(),
     close: close,
-    position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
 
   const listeners = [
@@ -43,8 +43,8 @@ function overviewMarkers() {
     listen(markersSearch, "input", addLines)
   ];
 
-  const types = [{type: "empty", icon: "❓"}, ...Markers.getConfig()];
-  types.forEach(({icon, type}) => {
+  const types = [{ type: "empty", icon: "❓" }, ...Markers.getConfig()];
+  types.forEach(({ icon, type }) => {
     const option = document.createElement("button");
     option.textContent = `${icon} ${type}`;
     markerTypeSelectMenu.appendChild(option);
@@ -64,7 +64,7 @@ function overviewMarkers() {
     const i = +el.parentNode.dataset.i;
 
     if (el.classList.contains("icon-pencil")) return openEditor(i);
-    if (el.classList.contains("icon-target")) return focusOnMarker(i);
+    if (el.classList.contains("icon-target")) return highlightMarker(i);
     if (el.classList.contains("icon-pin")) return pinMarker(el, i);
     if (el.classList.contains("locks")) return toggleLockStatus(el, i);
     if (el.classList.contains("icon-trash-empty")) return triggerRemove(i);
@@ -82,7 +82,7 @@ function overviewMarkers() {
     }
 
     const lines = markers
-      .map(({i, type, icon, pinned, lock}) => {
+      .map(({ i, type, icon, pinned, lock }) => {
         return /* html */ `
           <div class="states" data-i=${i} data-type="${type}">
             ${
@@ -92,7 +92,7 @@ function overviewMarkers() {
             }
             <div data-tip="Marker type" style="width:10em">${type}</div>
             <span style="padding-right:.1em" data-tip="Edit marker" class="icon-pencil"></span>
-            <span style="padding-right:.1em" data-tip="Focus on marker position" class="icon-target pointer"></span>
+            <span style="padding-right:.1em" data-tip="Locate the marker" class="icon-target"></span>
             <span style="padding-right:.1em" data-tip="Pin marker (display only pinned markers)" class="icon-pin ${
               pinned ? "" : "inactive"
             }" pointer"></span>
@@ -128,7 +128,7 @@ function overviewMarkers() {
   }
 
   function invertLock() {
-    pack.markers = pack.markers.map(marker => ({...marker, lock: !marker.lock}));
+    pack.markers = pack.markers.map(marker => ({ ...marker, lock: !marker.lock }));
     addLines();
   }
 
@@ -136,12 +136,12 @@ function overviewMarkers() {
     const marker = pack.markers.find(marker => marker.i === i);
     if (!marker) return;
 
-    const {x, y} = marker;
+    const { x, y } = marker;
     zoomTo(x, y, 8, 2000);
     editMarker(i);
   }
 
-  function focusOnMarker(i) {
+  function highlightMarker(i) {
     const marker = document.getElementById(`marker${i}`);
     if (!marker) return;
     highlightElement(marker, 2);
@@ -213,7 +213,7 @@ function overviewMarkers() {
   }
 
   function removeAllMarkers() {
-    pack.markers = pack.markers.filter(({i, lock}) => {
+    pack.markers = pack.markers.filter(({ i, lock }) => {
       if (lock) return true;
 
       const id = `marker${i}`;
@@ -230,7 +230,7 @@ function overviewMarkers() {
     const quote = s => '"' + s.replaceAll('"', '""') + '"';
 
     const body = pack.markers.map(marker => {
-      const {i, type, icon, x, y} = marker;
+      const { i, type, icon, x, y } = marker;
 
       const note = notes.find(note => note.id === "marker" + i);
       const name = note ? quote(note.name) : "Unknown";

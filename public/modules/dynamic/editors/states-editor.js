@@ -50,7 +50,6 @@ function insertEditorHtml() {
       <button id="statesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
       <button id="statesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
       <button id="statesChart" data-tip="Show states bubble chart" class="icon-chart-area"></button>
-      <button id="statesLocate" data-tip="Click on the list first to select a state, then click to locate it on the map" class="icon-target"></button>
 
       <button id="statesRegenerate" data-tip="Show the regeneration menu and more data" class="icon-cog-alt"></button>
       <div id="statesRegenerateButtons" style="display: none">
@@ -102,7 +101,6 @@ function addListeners() {
   ensureEl("statesLegend").on("click", toggleLegend);
   ensureEl("statesPercentage").on("click", togglePercentageMode);
   ensureEl("statesChart").on("click", showStatesChart);
-  ensureEl("statesLocate").on("click", locateSelectedState);
   ensureEl("statesRegenerate").on("click", openRegenerationMenu);
   ensureEl("statesRegenerateBack").on("click", exitRegenerationMenu);
   ensureEl("statesRecalculate").on("click", () => recalculateStates(true));
@@ -119,8 +117,7 @@ function addListeners() {
   $body.on("click", event => {
     const $element = event.target;
     const classList = $element.classList;
-    const stateLine = $element.closest("#statesBodySection > div[data-id]");
-    const stateId = stateLine ? +stateLine.dataset.id : NaN;
+    const stateId = +$element.parentNode?.dataset?.id;
     if ($element.tagName === "FILL-BOX") stateChangeFill($element);
     else if (classList.contains("name")) editStateName(stateId);
     else if (classList.contains("coaIcon")) editEmblem("state", "stateCOA" + stateId, pack.states[stateId]);
@@ -129,6 +126,7 @@ function addListeners() {
     else if (classList.contains("statePopulation")) changePopulation(stateId);
     else if (classList.contains("stateTreasury")) openTreasuryDialog(stateId);
     else if (classList.contains("icon-pin")) toggleFog(stateId, classList);
+    else if (classList.contains("icon-target")) highlightElement(regions.select("#state" + stateId).node(), 4);
     else if (classList.contains("icon-trash-empty")) stateRemovePrompt(stateId);
     else if (classList.contains("icon-lock") || classList.contains("icon-lock-open"))
       updateLockStatus(stateId, classList);
@@ -267,6 +265,9 @@ function statesEditorAddLines() {
       <span data-tip="State expansionism" class="icon-resize-full ${hidden} show hide"></span>
       <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
         class="statePower ${hidden} show hide" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
+      <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
+      <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
+      <span data-tip="Locate the state" class="icon-target hide"></span>
       <span data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"} hide"></span>
       <span data-tip="Lock the state to protect it from re-generation" class="icon-lock${
         s.lock ? "" : "-open"
@@ -739,7 +740,12 @@ function togglePercentageMode() {
     const totalTreasury = pack.states.reduce((sum, s) => sum + (s.treasury || 0), 0);
 
     $body.querySelectorAll(":scope > div").forEach(function (el) {
+<<<<<<< HEAD
       const { cells, burgs, area, population, treasury } = el.dataset;
+=======
+      const { cells, burgs, area, population } = el.dataset;
+      el.querySelector(".stateCells").innerText = rn((+cells / totalCells) * 100) + "%";
+>>>>>>> 85fe613ac8ab4233530d99435ad7dec55b237a0b
       el.querySelector(".stateBurgs").innerText = rn((+burgs / totalBurgs) * 100) + "%";
       el.querySelector(".stateArea").innerText = rn((+area / totalArea) * 100) + "%";
       el.querySelector(".statePopulation").innerText = rn((+population / totalPopulation) * 100) + "%";
@@ -894,26 +900,6 @@ function showStatesChart() {
   });
 }
 
-function locateState(stateId) {
-  if (!stateId && stateId !== 0) return;
-  const selector = '#statesBody #state' + stateId;
-  const stateElement = document.querySelector(selector);
-  if (!stateElement) {
-    tip("State path not found on the map", true);
-    return;
-  }
-  highlightElement(stateElement, 8);
-}
-
-function locateSelectedState() {
-  const selected = $body.querySelector("div.selected");
-  if (!selected) return tip("Select a state line first", true);
-  const stateId = Number(selected.dataset.id);
-  if (Number.isNaN(stateId)) return tip("Select a state line first", true);
-  locateState(stateId);
-}
-
-
 function openRegenerationMenu() {
   ensureEl("statesBottom")
     .querySelectorAll(":scope > button")
@@ -990,8 +976,9 @@ function enterStatesManualAssignent() {
 }
 
 function selectStateOnLineClick() {
+  if (customization !== 2) return;
   if (this.parentNode.id !== "statesBodySection") return;
-  $body.querySelector("div.selected")?.classList.remove("selected");
+  $body.querySelector("div.selected").classList.remove("selected");
   this.classList.add("selected");
 }
 
