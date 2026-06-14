@@ -257,6 +257,8 @@ test.describe('map layers', () => {
       ;(window as any).toggleGoods()
       const all = new Set((window as any).pack.goods.map((g: any) => g.i))
       ;(window as any).drawGoods(all)
+      // markets render in a standalone layer, toggled independently
+      ;(window as any).toggleMarketsLayer()
     })
     await sharedPage.waitForTimeout(300)
 
@@ -283,8 +285,11 @@ test.describe('map layers', () => {
     const html = await goodsEl.evaluate((el) => el.outerHTML)
     expect(html).toMatchSnapshot('goods.html')
 
-    // Restore: toggle goods off
-    await sharedPage.evaluate(() => (window as any).toggleGoods())
+    // Restore: toggle goods and markets layers off
+    await sharedPage.evaluate(() => {
+      ;(window as any).toggleGoods()
+      ;(window as any).toggleMarketsLayer()
+    })
   })
 
   test('trade animation layer structure', async () => {
