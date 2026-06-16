@@ -1,3 +1,4 @@
+import { color as parseColor } from "d3";
 import type * as THREEType from "three";
 import { type ErosionBakeResult, heightAt } from "../modules/erosion-bake";
 
@@ -19,6 +20,20 @@ const BIOME_SATELLITE: Array<{ color: [number, number, number]; density: number 
   { color: [0.93, 0.95, 0.97], density: 0 }, // 11 Glacier
   { color: [0.26, 0.4, 0.23], density: 0.65 } // 12 Wetland
 ];
+
+export function getSatelliteBiomeData(biomeId: number, fallbackBiomeId: number) {
+  const fallback = BIOME_SATELLITE[fallbackBiomeId] || BIOME_SATELLITE[0];
+  const builtIn = BIOME_SATELLITE[biomeId];
+  if (builtIn) return builtIn;
+
+  const customColor = parseColor(biomesData.color[biomeId])?.rgb();
+  if (!customColor) return fallback;
+
+  return {
+    color: [customColor.r / 255, customColor.g / 255, customColor.b / 255] as [number, number, number],
+    density: fallback.density
+  };
+}
 
 // R: temperature °C packed as t + 128
 // G: moisture (precipitation) capped at 30
@@ -81,9 +96,9 @@ function buildBiomeTexture() {
 
   const data = new Uint8Array(n * 4);
   for (let i = 0; i < n; i++) {
-    let biomeId = biomeOfGrid[i];
-    if (!assigned[i]) biomeId = Biomes.getId(prec[i] + 4, temp[i], h[i], false);
-    const { color, density } = BIOME_SATELLITE[biomeId] || BIOME_SATELLITE[0];
+    const fallbackBiomeId = Biomes.getId(prec[i] + 4, temp[i], h[i], false);
+    const biomeId = assigned[i] ? biomeOfGrid[i] : fallbackBiomeId;
+    const { color, density } = getSatelliteBiomeData(biomeId, fallbackBiomeId);
     data[i * 4] = color[0] * 255;
     data[i * 4 + 1] = color[1] * 255;
     data[i * 4 + 2] = color[2] * 255;
