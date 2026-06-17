@@ -15,7 +15,6 @@ export function open(marketId: number): void {
   }
 
   closeDialogs("#marketOverview, .stable");
-  if (!layerIsOn("toggleGoods")) toggleGoods();
 
   activeMarketId = marketId;
   marketOverviewAddLines();

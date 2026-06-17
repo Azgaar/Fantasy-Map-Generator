@@ -1,10 +1,3 @@
-# AI Agent Entrypoint
+Azgaar's Fantasy Map Generator is a web application for procedurally generating, editing, and visualizing fantasy maps. Before making architectural decisions, read the `CONTEXT.md` file in the root.
 
-This is Azgaar's Fantasy Map Generator – a web application for procedurally generating, editing, and visualizing fantasy maps.
-
-Before making architectural decisions, read the `CONTEXT.md` file in the root. It contains critical information about:
-- The ongoing FMG 2.0 architectural migration
-- The separation of State, Generators, Controllers, and Renderers
-- Project constraints and forbidden patterns
-
-For deeper knowledge, consult the `docs/` directory, especially `docs/domain/glossary.md` and `docs/architecture/architecture.md`.
+For deeper knowledge, consult the `docs/` directory, especially `docs/domain/glossary.md`, `docs/architecture/architecture.md` and `docs/architecture/data_model.md`.
