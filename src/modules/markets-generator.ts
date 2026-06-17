@@ -16,6 +16,7 @@ export type Market = {
   i: number;
   centerBurgId: number;
   color: string;
+  name?: string;
   goods: Record<number, { stock: number; price: number }>;
 };
 
@@ -239,6 +240,11 @@ export class MarketsModule {
   public get(marketId: number | undefined): Market | undefined {
     if (!marketId) return undefined;
     return this.marketById[marketId];
+  }
+
+  // Display name: the custom name if set, otherwise derived from the center burg.
+  public getName(market: Market): string {
+    return market.name || pack.burgs[market.centerBurgId]?.name || `Market ${market.i}`;
   }
 
   addMarket(burgId: number): Market | null {

@@ -107,7 +107,7 @@ function marketsOverviewAddLines(): void {
         data-cells="${cells}" data-burgs="${burgs}"
         data-stock="${stock}" data-sales="${sales}" data-buys="${buys}" data-value="${value}">
       <fill-box fill="${market.color}"></fill-box>
-      <div data-tip="Market center burg. Click to view details" class="marketName" style="width:7em">${centerName}</div>
+      <div data-tip="Market name. Click to view details" class="marketName" style="width:7em">${centerName}</div>
       <div data-tip="Owning state" class="marketOwner" style="width:8em">${ownerName}</div>
       <div data-tip="Number of cells in market territory" data-type="cells" class="marketCells" style="width:3.5em">${cells}</div>
       <div data-tip="Number of burgs in market territory" data-type="burgs" class="marketBurgs hide" style="width:3.5em">${burgs}</div>
@@ -500,7 +500,20 @@ function updateFooter(count: number, avgSales: number, avgBuys: number, avgValue
 }
 
 function getMarketCenterName(market: Market): string {
-  return pack.burgs[market.centerBurgId]?.name || `Market ${market.i}`;
+  return Markets.getName(market);
+}
+
+// Update a single market row's name in place (cell text + sort attribute) without a full re-render.
+// Called from the Market Overview detail dialog when a market is renamed.
+function refreshMarketName(marketId: number): void {
+  const row = ensureEl("marketsOverviewBody").querySelector<HTMLElement>(`.states.market[data-id="${marketId}"]`);
+  if (!row) return;
+  const market = pack.markets.find(m => m.i === marketId);
+  if (!market) return;
+  const name = getMarketCenterName(market);
+  row.dataset.market = name;
+  const nameCell = row.querySelector<HTMLElement>(".marketName");
+  if (nameCell) nameCell.textContent = name;
 }
 
 function getOwnerStateName(market: Market): string {
@@ -557,8 +570,8 @@ function closeMarketsOverview(): void {
 
 declare global {
   interface Window {
-    MarketsOverview: { open: typeof open };
+    MarketsOverview: { open: typeof open; refreshMarketName: typeof refreshMarketName };
   }
 }
 
-window.MarketsOverview = { open };
+window.MarketsOverview = { open, refreshMarketName };

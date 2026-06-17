@@ -233,7 +233,7 @@ function getAllStockData(): Record<number, { total: number; sources: StockSource
     if (!centerBurg) continue;
     const x = centerBurg.x ?? 0;
     const y = centerBurg.y ?? 0;
-    const marketName = centerBurg.name || `Market ${market.i}`;
+    const marketName = Markets.getName(market);
 
     for (const [goodIdStr, { stock }] of Object.entries(market.goods)) {
       const goodId = +goodIdStr;

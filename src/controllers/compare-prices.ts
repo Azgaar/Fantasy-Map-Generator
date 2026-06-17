@@ -1,4 +1,3 @@
-import type { Market } from "../modules/markets-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;
@@ -42,7 +41,7 @@ function addLines(): void {
   let priceSum = 0;
 
   for (const market of pack.markets) {
-    const centerName = getMarketCenterName(market);
+    const centerName = Markets.getName(market);
     const goodData = market.goods[good.i];
     const stock = rn(goodData?.stock ?? 0, 2);
     const price = rn(goodData?.price ?? 0, 2);
@@ -94,7 +93,7 @@ function downloadCsv(): void {
   const goodName = good?.name ?? "Unknown";
   let csv = `Market,Stock (${goodName}),Price (${goodName})\n`;
   for (const market of pack.markets) {
-    const centerName = getMarketCenterName(market);
+    const centerName = Markets.getName(market);
     const goodData = good ? market.goods[good.i] : undefined;
     const stock = rn(goodData?.stock ?? 0, 2);
     const price = rn(goodData?.price ?? 0, 2);
@@ -117,10 +116,6 @@ function rebuildGoodSelect(): void {
     activeGoodId = sortedGoods[0]?.i ?? 0;
     select.value = String(activeGoodId);
   }
-}
-
-function getMarketCenterName(market: Market): string {
-  return pack.burgs[market.centerBurgId]?.name || `Market ${market.i}`;
 }
 
 declare global {

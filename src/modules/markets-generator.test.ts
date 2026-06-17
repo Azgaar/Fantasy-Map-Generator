@@ -203,6 +203,22 @@ describe("MarketsModule", () => {
       expect(market1.goods[good.i].stock).toBe(10);
     });
 
+    it("getName() should prefer a custom name, fall back to the center burg, then to a generic label", () => {
+      globalThis.pack.burgs = [{ i: 0 } as any, { i: 1, name: "Riverton" } as any];
+
+      const named: Market = { i: 1, centerBurgId: 1, color: "#fff", goods: {}, name: "Grand Bazaar" };
+      expect(marketsModule.getName(named)).toBe("Grand Bazaar");
+
+      const derived: Market = { i: 1, centerBurgId: 1, color: "#fff", goods: {} };
+      expect(marketsModule.getName(derived)).toBe("Riverton");
+
+      const blank: Market = { i: 2, centerBurgId: 1, color: "#fff", goods: {}, name: "" };
+      expect(marketsModule.getName(blank)).toBe("Riverton");
+
+      const orphan: Market = { i: 7, centerBurgId: 99, color: "#fff", goods: {} };
+      expect(marketsModule.getName(orphan)).toBe("Market 7");
+    });
+
     it("sell() should record sales tax on burg deals when state has a sales tax", () => {
       const market1: Market = {
         i: 1,

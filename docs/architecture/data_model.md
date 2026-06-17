@@ -355,6 +355,7 @@ Markets (regional economic hubs) are stored in `pack.markets: Market[]`. Note th
 - `centerBurgId`: `number` - id of the burg the market is anchored at
 - `color`: `string` - market color in hex, used for territory rendering
 - `goods`: `Record<goodId, {stock: number; price: number}>` - per-good state. A single midpoint `price` is stored; customer-facing `buyPrice` / `sellPrice` are derived on demand via `MARKET_MARGIN`
+- `name`?: `string` - optional market name, derived from the center burg's name
 
 # Secondary global data
 

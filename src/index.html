@@ -5143,6 +5143,22 @@
         </div>
       </div>
       <div id="marketOverview" class="dialog stable" style="display: none">
+        <div id="marketOverviewNameLine" style="display: flex; align-items: center; margin-bottom: 0.4em">
+          <div class="label">Name:</div>
+          <input
+            id="marketOverviewName"
+            data-tip="Type to rename the market. Clear the field to reset to the default name"
+            autocorrect="off"
+            spellcheck="false"
+            style="width: 11em; margin-left: 0.3em;"
+          />
+          <span
+            id="marketOverviewNameReset"
+            data-tip="Reset to the default name (center burg name)"
+            class="icon-ccw pointer"
+            style="margin-left: 0.3em"
+          ></span>
+        </div>
         <div id="marketOverviewHeader" class="header" style="grid-template-columns: 2.5em 9em 5.5em 3.2em;">
           <div></div>
           <div data-tip="Click to sort by good" class="sortable alphabetically" data-sortby="good" style="margin-left:0">Good&nbsp;</div>
