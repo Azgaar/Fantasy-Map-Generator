@@ -2,10 +2,12 @@ import { pointer } from "d3";
 import type { Burg } from "../modules/burgs-generator";
 import type { Deal, Market } from "../modules/markets-generator";
 import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-markets";
-import { ensureEl, findAllCellsInRadius, findClosestCell, formatPrice, rn } from "../utils";
+import { ensureEl, findAllCellsInRadius, findClosestCell, formatPrice, getIsolines, getVertexPath, rn } from "../utils";
 
 let isInitialized = false;
-let marketsManualHistory: string[] = [];
+// Working copy of pack.cells.market mutated during manual assignment; applied on commit.
+let marketsWorking: Uint16Array | null = null;
+let marketsManualHistory: Uint16Array[] = [];
 
 export function open(): void {
   if (customization) return;
@@ -142,12 +144,8 @@ function enterMarketsManualAssignment(): void {
 
   document.getElementById("marketsTemp")?.remove();
   markets.append("g").attr("id", "marketsTemp").style("fill-opacity", "0.7");
-  pack.cells.market.forEach((marketId, cellId) => {
-    if (!marketId) return;
-    const market = Markets.get(marketId);
-    if (!market) return;
-    paintMarketCells([cellId], market);
-  });
+  marketsWorking = Uint16Array.from(pack.cells.market);
+  renderMarketsTemp();
 
   document.querySelectorAll<HTMLElement>("#marketsOverviewBottom > button").forEach(b => {
     b.style.display = "none";
@@ -179,7 +177,7 @@ function enterMarketsManualAssignment(): void {
 }
 
 function saveMarketsManualSnapshot(): void {
-  marketsManualHistory.push(document.getElementById("marketsTemp")?.innerHTML ?? "");
+  if (marketsWorking) marketsManualHistory.push(Uint16Array.from(marketsWorking));
 }
 
 function selectMarketOnMapClick(this: SVGElement): void {
@@ -187,7 +185,7 @@ function selectMarketOnMapClick(this: SVGElement): void {
   const cellId = findCell(x, y);
   if (cellId === undefined) return;
 
-  const marketId = pack.cells.market[cellId];
+  const marketId = (marketsWorking ?? pack.cells.market)[cellId];
   if (!marketId) return;
 
   const body = ensureEl("marketsOverviewBody");
@@ -219,22 +217,62 @@ function startMarketsBrushDrag(this: SVGElement): void {
 }
 
 function paintMarketCells(selection: number[], market: Market) {
-  const temp = document.getElementById("marketsTemp");
-  if (!temp) return;
+  if (!marketsWorking) return;
 
+  const affected = new Set<number>([market.i]);
+  let changed = false;
   for (const cellId of selection) {
-    temp.querySelector(`polygon[data-cell="${cellId}"]`)?.remove();
-
-    const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-    polygon.setAttribute("data-cell", String(cellId));
-    polygon.setAttribute("data-market", String(market.i));
-    const pts = getPackPolygon(cellId)
-      .map(p => p.join(","))
-      .join(" ");
-    polygon.setAttribute("points", pts);
-    polygon.setAttribute("fill", market.color);
-    temp.appendChild(polygon);
+    const prev = marketsWorking[cellId];
+    if (prev === market.i) continue;
+    if (prev) affected.add(prev); // previous owner loses a cell
+    marketsWorking[cellId] = market.i;
+    changed = true;
   }
+
+  if (changed) updateMarketTempPaths(affected);
+}
+
+// Render every market's territory as a single combined path (one DOM node per market).
+function renderMarketsTemp(): void {
+  const temp = document.getElementById("marketsTemp");
+  if (!temp || !marketsWorking) return;
+
+  const working = marketsWorking;
+  const isolines = getIsolines(pack, cellId => working[cellId] || null, { fill: true });
+  temp.innerHTML = pack.markets
+    .map(market => `<path data-market="${market.i}" fill="${market.color}" d="${isolines[market.i]?.fill || ""}"/>`)
+    .join("");
+}
+
+// Recompute the combined path only for the markets whose territory changed.
+function updateMarketTempPaths(marketIds: Iterable<number>): void {
+  const temp = document.getElementById("marketsTemp");
+  if (!temp || !marketsWorking) return;
+
+  const cellsByMarket = new Map<number, number[]>();
+  for (const id of marketIds) cellsByMarket.set(id, []);
+
+  for (let cellId = 0; cellId < marketsWorking.length; cellId++) {
+    const cells = cellsByMarket.get(marketsWorking[cellId]);
+    if (cells) cells.push(cellId);
+  }
+
+  for (const [marketId, cells] of cellsByMarket) {
+    const d = cells.length ? getVertexPath(cells, pack) : "";
+    setMarketTempPath(temp, marketId, d);
+  }
+}
+
+function setMarketTempPath(temp: HTMLElement, marketId: number, d: string): void {
+  let path = temp.querySelector<SVGPathElement>(`path[data-market="${marketId}"]`);
+  if (!path) {
+    path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("data-market", String(marketId));
+    const market = pack.markets.find(m => m.i === marketId);
+    if (market) path.setAttribute("fill", market.color);
+    temp.appendChild(path);
+  }
+  path.setAttribute("d", d);
 }
 
 function onMarketsBrushMove(this: SVGElement): void {
@@ -246,27 +284,24 @@ function onMarketsBrushMove(this: SVGElement): void {
 
 function undoMarketsManualStep(): void {
   if (!marketsManualHistory.length) return;
-  const prev = marketsManualHistory.pop()!;
-  const temp = document.getElementById("marketsTemp");
-  if (temp) temp.innerHTML = prev;
+  marketsWorking = marketsManualHistory.pop()!;
+  renderMarketsTemp();
 }
 
 function exitMarketsManualAssignment(apply: boolean): void {
   customization = 0;
 
-  if (apply) {
-    const temp = document.getElementById("marketsTemp");
-    if (temp) {
-      temp.querySelectorAll<SVGElement>("polygon[data-cell]").forEach(polygon => {
-        const cellId = +polygon.dataset.cell!;
-        const marketId = +polygon.dataset.market!;
-        pack.cells.market[cellId] = marketId;
-        const burgId = pack.cells.burg[cellId];
-        if (burgId) (pack.burgs as Burg[])[burgId].market = marketId;
-      });
+  if (apply && marketsWorking) {
+    for (let cellId = 0; cellId < marketsWorking.length; cellId++) {
+      const marketId = marketsWorking[cellId];
+      pack.cells.market[cellId] = marketId;
+      const burgId = pack.cells.burg[cellId];
+      if (burgId) (pack.burgs as Burg[])[burgId].market = marketId;
     }
   }
 
+  marketsWorking = null;
+  marketsManualHistory = [];
   document.getElementById("marketsTemp")?.remove();
 
   ensureEl("marketsOverviewHeader").style.gridTemplateColumns = "1.6em 7.2em 8em 3.5em 4.5em 6.5em 6.4em 6em 6em 1.2em";
