@@ -340,9 +340,9 @@ export function goodEditor(editedGood?: Good, onUpdate?: () => void) {
           editedGood.unit = unit;
           editedGood.demandCoverage = demandCoverageState;
           editedGood.multipliers = buildFinalMultipliers();
-          if (distribution) editedGood.distribution = distribution;
-          if (Object.keys(biomeOutputState).length) editedGood.biomeOutput = biomeOutputState;
-          if (recipes.length) editedGood.recipes = recipes;
+          editedGood.distribution = distribution || undefined;
+          editedGood.biomeOutput = Object.keys(biomeOutputState).length ? biomeOutputState : undefined;
+          editedGood.recipes = recipes.length ? recipes : undefined;
         } else {
           const getNextId = () => {
             let nextId = pack.goods?.at(-1)?.i ?? 1;
