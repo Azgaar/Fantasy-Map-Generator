@@ -30,6 +30,9 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
   }
 
   const latestPublicChanges = [
+    "Economic simulation",
+    "Trade animation",
+    "Navigable rivers",
     "3D view: eroded terrain",
     "3D view: satellite texture",
     "Jagged coastlines",
@@ -40,8 +43,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
     "Custom burg grouping and icon selection",
     "Ability to set custom image as Marker or Regiment icon",
     "Submap and Transform tools rework",
-    "Azgaar Bot to answer questions and provide help",
-    "Labels: ability to set letter spacing"
+    "Azgaar Bot to answer questions and provide help"
   ];
 
   function showUpdateWindow() {

@@ -8,7 +8,7 @@ import {
   isLand,
   isWater,
   rn,
-  TYPED_ARRAY_MAX_VALUES,
+  TYPED_ARRAY_MAX,
   unique
 } from "../utils";
 
@@ -51,6 +51,8 @@ export interface GridFeature {
   type: FeatureType;
 }
 
+export const NON_NAVIGABLE_LAKE_GROUPS = new Set(["dry", "frozen", "lava"]);
+
 class FeatureModule {
   private DEEPER_LAND = 3;
   private LANDLOCKED = 2;
@@ -67,7 +69,7 @@ class FeatureModule {
     neighbors,
     start,
     increment,
-    limit = TYPED_ARRAY_MAX_VALUES.INT8_MAX
+    limit = TYPED_ARRAY_MAX.INT8
   }: {
     distanceField: Int8Array;
     neighbors: number[][];

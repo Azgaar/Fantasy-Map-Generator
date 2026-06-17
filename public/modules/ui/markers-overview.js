@@ -10,6 +10,7 @@ function overviewMarkers() {
   const markersInverLock = ensureEl("markersInverLock");
   const markersFooterNumber = ensureEl("markersFooterNumber");
   const markersOverviewRefresh = ensureEl("markersOverviewRefresh");
+  const markersRegenerate = ensureEl("markersRegenerate");
   const markersAddFromOverview = ensureEl("markersAddFromOverview");
   const markersGenerationConfig = ensureEl("markersGenerationConfig");
   const markersRemoveAll = ensureEl("markersRemoveAll");
@@ -33,6 +34,7 @@ function overviewMarkers() {
     listen(markersInverPin, "click", invertPin),
     listen(markersInverLock, "click", invertLock),
     listen(markersOverviewRefresh, "click", addLines),
+    listen(markersRegenerate, "click", regenerateMarkers),
     listen(markersAddFromOverview, "click", toggleAddMarker),
     listen(markersGenerationConfig, "click", configMarkersGeneration),
     listen(markersRemoveAll, "click", triggerRemoveAll),

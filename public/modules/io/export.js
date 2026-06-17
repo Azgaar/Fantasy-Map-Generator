@@ -356,6 +356,21 @@ async function getMapURL(
     }
   }
 
+  // add goods icons
+  if (cloneEl.getElementById("goodsIcons") || cloneEl.getElementById("goodsBurgs")) {
+    const uniqueIcons = new Set();
+    const goodsUseElements = cloneEl.querySelectorAll("#goodsIcons use, #goodsBurgs use");
+    for (const el of goodsUseElements) {
+      const href = el.getAttribute("href") || el.getAttribute("xlink:href");
+      if (href) uniqueIcons.add(href);
+    }
+    const goodsIconsDefs = svgDefs.getElementById("good-icons");
+    for (const href of uniqueIcons) {
+      const element = goodsIconsDefs?.querySelector(href);
+      if (element) cloneDefs.appendChild(element.cloneNode(true));
+    }
+  }
+
   // add port icon
   if (cloneEl.getElementById("anchors")) {
     const anchor = svgDefs.getElementById("icon-anchor");

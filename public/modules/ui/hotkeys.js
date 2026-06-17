@@ -56,6 +56,7 @@ function handleKeyup(event) {
   else if ((shift || altShift) && code === "KeyM") overviewMilitary();
   else if ((shift || altShift) && code === "KeyK") overviewMarkers();
   else if ((shift || altShift) && code === "KeyE") viewCellDetails();
+  else if ((shift || altShift) && code === "KeyG") GoodsEditor.open();
   else if (key === "!") toggleAddBurg();
   else if (key === "@") toggleAddLabel();
   else if (key === "#") toggleAddRiver();
@@ -66,7 +67,8 @@ function handleKeyup(event) {
   else if (code === "KeyQ") toggleLakes();
   else if (code === "KeyB") toggleBiomes();
   else if (code === "KeyE") toggleCells();
-  else if (code === "KeyG") toggleGrid();
+  else if (code === "KeyG") toggleGoods();
+  else if (code === "Semicolon") toggleGrid();
   else if (code === "KeyO") toggleCoordinates();
   else if (code === "KeyW") toggleCompass();
   else if (code === "KeyV") toggleRivers();
@@ -91,6 +93,8 @@ function handleKeyup(event) {
   else if (code === "Slash") toggleScaleBar();
   else if (code === "BracketLeft" && !handleBracketSizeChange(code)) toggleVignette();
   else if (code === "BracketRight") handleBracketSizeChange(code);
+  else if (code === "Backquote") toggleTrade();
+  else if (code === "Quote") toggleGoods();
   else if (code === "ArrowLeft") zoom.translateBy(svg, 10, 0);
   else if (code === "ArrowRight") zoom.translateBy(svg, -10, 0);
   else if (code === "ArrowUp") zoom.translateBy(svg, 0, 10);

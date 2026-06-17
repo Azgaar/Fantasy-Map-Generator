@@ -12,3 +12,6 @@ import "./draw-relief-icons";
 import "./draw-scalebar";
 import "./draw-state-labels";
 import "./draw-temperature";
+import "./draw-goods";
+import "./draw-markets";
+import "./draw-trade-animation";

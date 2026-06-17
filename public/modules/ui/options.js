@@ -1,8 +1,8 @@
 // UI module to control the options (preferences)
 "use strict";
 
-$("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
-$("#exitCustomization").draggable({handle: "div"});
+$("#optionsContainer").draggable({ handle: ".drag-trigger", snap: "svg", snapMode: "both" });
+$("#exitCustomization").draggable({ handle: "div" });
 $("#mapLayers").disableSelection();
 
 // remove glow if tip is aknowledged
@@ -82,7 +82,7 @@ document
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
-  const {supporters} = await import("../dynamic/supporters.js?v=1.123.0");
+  const { supporters } = await import("../dynamic/supporters.js?v=1.123.0");
   const list = supporters.split("\n").sort();
   const columns = window.innerWidth < 800 ? 2 : 5;
 
@@ -92,7 +92,7 @@ async function showSupporters() {
     resizable: false,
     title: "Patreon Supporters",
     width: "min-width",
-    position: {my: "center", at: "center", of: "svg"}
+    position: { my: "center", at: "center", of: "svg" }
   });
 }
 
@@ -127,7 +127,7 @@ function updateOutputToFollowInput(ev) {
 const optionsContent = ensureEl("optionsContent");
 
 optionsContent.addEventListener("input", event => {
-  const {id, value} = event.target;
+  const { id, value } = event.target;
   if (id === "mapWidthInput" || id === "mapHeightInput") mapSizeInputChange();
   else if (id === "pointsInput") changeCellsDensity(+value);
   else if (id === "culturesSet") changeCultureSet();
@@ -140,7 +140,7 @@ optionsContent.addEventListener("input", event => {
 });
 
 optionsContent.addEventListener("change", event => {
-  const {id, value} = event.target;
+  const { id, value } = event.target;
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
   else if (id === "optionsSeed") generateMapWithSeed("seed change");
   else if (id === "uiSize") changeUiSize(+value);
@@ -152,7 +152,7 @@ optionsContent.addEventListener("change", event => {
 });
 
 optionsContent.addEventListener("click", event => {
-  const {id} = event.target;
+  const { id } = event.target;
   if (id === "restoreDefaultCanvasSize") restoreDefaultCanvasSize();
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
   else if (id === "optionsCopySeed") copyMapURL();
@@ -279,7 +279,7 @@ function testSpeaker() {
 
 function generateMapWithSeed() {
   if (optionsSeed.value === seed) return tip("The current map already has this seed", false, "error");
-  regeneratePrompt({seed: optionsSeed.value});
+  regeneratePrompt({ seed: optionsSeed.value });
 }
 
 function showSeedHistoryDialog() {
@@ -295,13 +295,13 @@ function showSeedHistoryDialog() {
   $("#alert").dialog({
     resizable: false,
     title: "Seed history",
-    position: {my: "center", at: "center", of: "svg"}
+    position: { my: "center", at: "center", of: "svg" }
   });
 }
 
 // generate map with historical seed
 function restoreSeed(id) {
-  const {seed, width, height, template} = mapHistory[id];
+  const { seed, width, height, template } = mapHistory[id];
   ensureEl("optionsSeed").value = seed;
   ensureEl("mapWidthInput").value = width;
   ensureEl("mapHeightInput").value = height;
@@ -309,7 +309,7 @@ function restoreSeed(id) {
 
   if (locked("template")) unlock("template");
 
-  regeneratePrompt({seed});
+  regeneratePrompt({ seed });
 }
 
 function copyMapURL() {
@@ -434,7 +434,7 @@ function restoreDefaultThemeColor() {
 }
 
 function changeThemeHue(hue) {
-  const {s, l} = d3.hsl(themeColorInput.value);
+  const { s, l } = d3.hsl(themeColorInput.value);
   const newColor = d3.hsl(+hue, s, l).hex();
   changeDialogsTheme(newColor, transparencyInput.value);
 }
@@ -445,7 +445,7 @@ function changeDialogsTheme(themeColor, transparency) {
   const alpha = (100 - +transparency) / 100;
   const alphaReduced = Math.min(alpha + 0.3, 1);
 
-  const {h, s, l} = d3.hsl(themeColor || THEME_COLOR);
+  const { h, s, l } = d3.hsl(themeColor || THEME_COLOR);
   themeColorInput.value = themeColor || THEME_COLOR;
   themeHueInput.value = h;
 
@@ -455,20 +455,20 @@ function changeDialogsTheme(themeColor, transparency) {
   };
 
   const theme = [
-    {name: "--bg-opacity", value: alpha},
-    {name: "--bg-main", h, s, l, alpha},
-    {name: "--bg-lighter", h, s, l: l + 0.02, alpha},
-    {name: "--bg-light", h, s: s - 0.02, l: l + 0.06, alpha},
-    {name: "--light-solid", h, s: s + 0.01, l: l + 0.05, alpha: 1},
-    {name: "--dark-solid", h, s, l: l - 0.2, alpha: 1},
-    {name: "--header", h, s: s, l: l - 0.03, alpha: alphaReduced},
-    {name: "--header-active", h, s: s, l: l - 0.09, alpha: alphaReduced},
-    {name: "--bg-disabled", h, s: s - 0.04, l: l + 0.09, alphaReduced},
-    {name: "--bg-dialogs", h: 0, s: 0, l: 0.98, alpha}
+    { name: "--bg-opacity", value: alpha },
+    { name: "--bg-main", h, s, l, alpha },
+    { name: "--bg-lighter", h, s, l: l + 0.02, alpha },
+    { name: "--bg-light", h, s: s - 0.02, l: l + 0.06, alpha },
+    { name: "--light-solid", h, s: s + 0.01, l: l + 0.05, alpha: 1 },
+    { name: "--dark-solid", h, s, l: l - 0.2, alpha: 1 },
+    { name: "--header", h, s: s, l: l - 0.03, alpha: alphaReduced },
+    { name: "--header-active", h, s: s, l: l - 0.09, alpha: alphaReduced },
+    { name: "--bg-disabled", h, s: s - 0.04, l: l + 0.09, alphaReduced },
+    { name: "--bg-dialogs", h: 0, s: 0, l: 0.98, alpha }
   ];
 
   const sx = document.documentElement.style;
-  theme.forEach(({name, value, h, s, l, alpha}) => {
+  theme.forEach(({ name, value, h, s, l, alpha }) => {
     if (value !== undefined) sx.setProperty(name, value);
     else sx.setProperty(name, getRGBA(h, s, l, alpha));
   });
@@ -495,7 +495,7 @@ function loadGoogleTranslate() {
 
 function initGoogleTranslate() {
   new google.translate.TranslateElement(
-    {pageLanguage: "en", layout: google.translate.TranslateElement.InlineLayout.VERTICAL},
+    { pageLanguage: "en", layout: google.translate.TranslateElement.InlineLayout.VERTICAL },
     "google_translate_element"
   );
 }
@@ -754,7 +754,7 @@ function showSavePane() {
     title: "Save map",
     resizable: false,
     width: "25em",
-    position: {my: "center", at: "center", of: "svg"},
+    position: { my: "center", at: "center", of: "svg" },
     buttons: {
       Close: function () {
         $(this).dialog("close");
@@ -776,7 +776,7 @@ function showExportPane() {
     title: "Export map data",
     resizable: false,
     width: "26em",
-    position: {my: "center", at: "center", of: "svg"},
+    position: { my: "center", at: "center", of: "svg" },
     buttons: {
       Close: function () {
         $(this).dialog("close");
@@ -786,7 +786,7 @@ function showExportPane() {
 }
 
 async function exportToJson(type) {
-  const {exportToJson} = await import("../dynamic/export-json.js?v=1.100.00");
+  const { exportToJson } = await import("../dynamic/export-json.js?v=1.124.0");
   exportToJson(type);
 }
 
@@ -795,7 +795,7 @@ async function showLoadPane() {
     title: "Load map",
     resizable: false,
     width: "auto",
-    position: {my: "center", at: "center", of: "svg"},
+    position: { my: "center", at: "center", of: "svg" },
     buttons: {
       Close: function () {
         $(this).dialog("close");
@@ -821,7 +821,7 @@ async function showLoadPane() {
 
     loadFromDropboxButtons.style.display = "block";
     fileSelect.innerHTML = "";
-    files.forEach(({name, updated, size, path}) => {
+    files.forEach(({ name, updated, size, path }) => {
       const sizeMB = rn(size / 1024 / 1024, 2) + " MB";
       const updatedOn = new Date(updated).toLocaleDateString();
       const nameFormatted = `${updatedOn}: ${name} [${sizeMB}]`;
@@ -905,7 +905,7 @@ function openExportToPngTiles() {
 
 function updateTilesOptions() {
   if (this?.tagName === "INPUT") {
-    const {nextElementSibling: next, previousElementSibling: prev} = this;
+    const { nextElementSibling: next, previousElementSibling: prev } = this;
     if (next?.tagName === "INPUT") next.value = this.value;
     if (prev?.tagName === "INPUT") prev.value = this.value;
   }
@@ -1009,7 +1009,7 @@ async function enter3dView(type) {
     $("#preview3d").dialog({
       title: "3D Preview",
       resizable: true,
-      position: {my: "left bottom", at: "left+10 bottom-20", of: "svg"},
+      position: { my: "left bottom", at: "left+10 bottom-20", of: "svg" },
       resizeStop: resize3d,
       close: enterStandardView
     });
@@ -1034,7 +1034,7 @@ function toggle3dOptions() {
     title: "3D mode settings",
     resizable: false,
     width: fitContent(),
-    position: {my: "right top", at: "right-30 top+10", of: "svg", collision: "fit"}
+    position: { my: "right top", at: "right-30 top+10", of: "svg", collision: "fit" }
   });
 
   updateValues();

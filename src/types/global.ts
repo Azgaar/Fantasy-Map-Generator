@@ -1,5 +1,8 @@
 import type { Selection } from "d3";
+import type { GoodsModule } from "../modules/goods-generator";
+import type { MarketsModule } from "../modules/markets-generator";
 import type { NameBase } from "../modules/names-generator";
+import type { ProductionModule } from "../modules/production-generator";
 import type { PackedGraph } from "./PackedGraph";
 
 declare global {
@@ -12,10 +15,12 @@ declare global {
   var WARN: boolean;
   var ERROR: boolean;
   var DEBUG: { stateLabels?: boolean; [key: string]: boolean | undefined };
-  var options: any;
+  var options: Options;
 
   var heightmapTemplates: any;
-  var Routes: any;
+  var Goods: GoodsModule;
+  var Production: ProductionModule;
+  var Markets: MarketsModule;
   var populationRate: number;
   var urbanDensity: number;
   var urbanization: number;
@@ -35,6 +40,8 @@ declare global {
   var rivers: Selection<SVGElement, unknown, null, undefined>;
   var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
   var emblems: Selection<SVGElement, unknown, null, undefined>;
+  var goods: Selection<SVGGElement, unknown, null, undefined>;
+  var markets: Selection<SVGGElement, unknown, null, undefined>;
   var svg: Selection<SVGSVGElement, unknown, null, undefined>;
   var ice: Selection<SVGGElement, unknown, null, undefined>;
   var labels: Selection<SVGGElement, unknown, null, undefined>;
@@ -44,6 +51,7 @@ declare global {
   var terrs: Selection<SVGGElement, unknown, null, undefined>;
   var temperature: Selection<SVGGElement, unknown, null, undefined>;
   var markers: Selection<SVGGElement, unknown, null, undefined>;
+  var tradeAnimation: Selection<SVGGElement, unknown, null, undefined>;
   var defs: Selection<SVGDefsElement, unknown, null, undefined>;
   var coastline: Selection<SVGGElement, unknown, null, undefined>;
   var lakes: Selection<SVGGElement, unknown, null, undefined>;
@@ -54,6 +62,7 @@ declare global {
   var svgHeight: number;
   var viewbox: Selection<SVGElement, unknown, null, undefined>;
   var routes: Selection<SVGElement, unknown, null, undefined>;
+  var debug: Selection<SVGElement, unknown, null, undefined>;
   var biomesData: {
     i: number[];
     name: string[];
@@ -103,6 +112,7 @@ declare global {
   var editWorld: () => void;
   var showExportPane: () => void;
   var UITour: { start: () => void };
+  var TradeDetails: { open: (batch: any) => void };
   var getHeight: (h: number) => string;
   var getLatitude: (y: number, precision?: number) => number;
   var getLongitude: (x: number, precision?: number) => number;
@@ -113,4 +123,85 @@ declare global {
   var downloadFile: (content: string | Blob, name: string, type?: string) => void;
   var zoomTo: (x: number, y: number, zoom: number, duration: number) => void;
   var modules: Record<string, boolean>;
+
+  // Legacy UI globals
+  var turnButtonOn: (buttonId: string) => void;
+  var turnButtonOff: (buttonId: string) => void;
+  var toggleGoods: (event?: MouseEvent) => void;
+  var toggleMarketsLayer: (event?: MouseEvent) => void;
+  var drawMarketsLayer: () => void;
+  var toggleTrade: (event?: MouseEvent) => void;
+  var isCtrlClick: (event: MouseEvent) => boolean;
+  var editStyle: (layer: string) => void;
+  var fitContent: () => number;
+  var applySorting: (header: HTMLElement) => void;
+  var capitalize: (str: string) => string;
+  var rn: (value: number, decimals?: number) => number;
+  var confirmationDialog: (options: { title: string; message: string; confirm: string; onConfirm: () => void }) => void;
+  var openURL: (url: string) => void;
+  var openPicker: (color: string, callback: (color: string) => void, options?: any) => void;
+  var clearLegend: () => void;
+  var drawLegend: (title: string, data: any[]) => void;
+  var clearMainTip: () => void;
+  var showMainTip: () => void;
+  var moveCircle: (x: number, y: number, r?: number) => void;
+  var removeCircle: () => void;
+  var restoreDefaultEvents: () => void;
+  var findCell: (x: number, y: number, radius?: number) => number | undefined;
+  var refreshAllEditors: () => void;
+  var toggleCells: () => void;
+  var drawGoods: (displayedGoods: Set<number>) => void;
+  var regenerateGoods: () => void;
+  var regenerateMarkets: () => void;
+  var regenerateProduction: () => void;
+  var legend: any;
 }
+
+type BurgGroup = {
+  name: string;
+  order: number;
+  active?: boolean;
+  isDefault?: boolean;
+  removed?: boolean;
+  min?: number;
+  max?: number;
+  percentile?: number;
+  features?: Record<string, boolean>;
+  biomes?: number[];
+  preview?: string;
+};
+
+type MilitaryUnit = {
+  icon: string;
+  name: string;
+  rural: number;
+  urban: number;
+  crew: number;
+  power: number;
+  type: string;
+  separate: number;
+  biomes?: number[];
+  states?: number[];
+  cultures?: number[];
+  religions?: number[];
+};
+
+type Options = {
+  year: number;
+  era: string;
+  eraShort: string;
+  pinNotes: boolean;
+  winds: number[];
+  temperatureEquator: number;
+  temperatureNorthPole: number;
+  temperatureSouthPole: number;
+  stateLabelsMode: string;
+  showBurgPreview: boolean;
+  burgs: {
+    groups: BurgGroup[];
+  };
+  military: MilitaryUnit[];
+  trade: {
+    animation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
+  };
+};

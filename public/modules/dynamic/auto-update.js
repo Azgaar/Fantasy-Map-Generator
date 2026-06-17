@@ -253,8 +253,8 @@ export function resolveVersionConflicts(mapVersion) {
       const source = findCell(s.x, s.y);
       const mouth = findCell(e.x, e.y);
       const name = Rivers.getName(mouth);
-      const type = length < 25 ? rw({Creek: 9, River: 3, Brook: 3, Stream: 1}) : "River";
-      pack.rivers.push({i, parent: 0, length, source, mouth, basin: i, name, type});
+      const type = length < 25 ? rw({ Creek: 9, River: 3, Brook: 3, Stream: 1 }) : "River";
+      pack.rivers.push({ i, parent: 0, length, source, mouth, basin: i, name, type });
     });
   }
 
@@ -270,7 +270,7 @@ export function resolveVersionConflicts(mapVersion) {
     const era = Names.getBaseShort(P(0.7) ? 1 : rand(nameBases.length)) + " Era";
     const eraShort = era[0] + "E";
     const military = Military.getDefaultOptions();
-    options = {winds, year, era, eraShort, military};
+    options = { winds, year, era, eraShort, military };
 
     // v1.3 added campaings data for all states
     States.generateCampaigns();
@@ -484,7 +484,7 @@ export function resolveVersionConflicts(mapVersion) {
   if (isOlderThan("1.65.0")) {
     // v1.65 changed rivers data
     d3.select("#rivers").attr("style", null); // remove style to unhide layer
-    const {cells, rivers} = pack;
+    const { cells, rivers } = pack;
     const defaultWidthFactor = rn(1 / (pointsInput.dataset.cells / 10000) ** 0.25, 2);
 
     for (const river of rivers) {
@@ -500,8 +500,8 @@ export function resolveVersionConflicts(mapVersion) {
 
         for (let i = 0; i <= segments; i++) {
           const shift = increment * i;
-          const {x: x1, y: y1} = node.getPointAtLength(length + shift);
-          const {x: x2, y: y2} = node.getPointAtLength(length - shift);
+          const { x: x1, y: y1 } = node.getPointAtLength(length + shift);
+          const { x: x2, y: y2 } = node.getPointAtLength(length - shift);
           const x = rn((x1 + x2) / 2, 1);
           const y = rn((y1 + y2) / 2, 1);
 
@@ -568,7 +568,7 @@ export function resolveVersionConflicts(mapVersion) {
         const fill = circle && circle.getAttribute("fill");
         const stroke = circle && circle.getAttribute("stroke");
 
-        const marker = {i, icon, type, x, y, size, cell};
+        const marker = { i, icon, type, x, y, size, cell };
         if (size && size !== 30) marker.size = size;
         if (!isNaN(px) && px !== 12) marker.px = px;
         if (!isNaN(dx) && dx !== 50) marker.dx = dx;
@@ -634,7 +634,7 @@ export function resolveVersionConflicts(mapVersion) {
 
   if (isOlderThan("1.88.0")) {
     // v1.87 may have incorrect shield for some reason
-    pack.states.forEach(({coa}) => {
+    pack.states.forEach(({ coa }) => {
       if (coa?.shield === "state") delete coa.shield;
     });
   }
@@ -642,13 +642,13 @@ export function resolveVersionConflicts(mapVersion) {
   if (isOlderThan("1.91.0")) {
     // from 1.91.00 custom coa is moved to coa object
     pack.states.forEach(state => {
-      if (state.coa === "custom") state.coa = {custom: true};
+      if (state.coa === "custom") state.coa = { custom: true };
     });
     pack.provinces.forEach(province => {
-      if (province.coa === "custom") province.coa = {custom: true};
+      if (province.coa === "custom") province.coa = { custom: true };
     });
     pack.burgs.forEach(burg => {
-      if (burg.coa === "custom") burg.coa = {custom: true};
+      if (burg.coa === "custom") burg.coa = { custom: true };
     });
 
     // from 1.91.00 emblems don't have transform attribute
@@ -750,7 +750,7 @@ export function resolveVersionConflicts(mapVersion) {
     const skip = terrs.attr("skip");
     const relax = terrs.attr("relax");
 
-    const curveTypes = {0: "curveBasisClosed", 1: "curveLinear", 2: "curveStep"};
+    const curveTypes = { 0: "curveBasisClosed", 1: "curveLinear", 2: "curveStep" };
     const curve = curveTypes[terrs.attr("curve")] || "curveBasisClosed";
 
     terrs
@@ -885,7 +885,7 @@ export function resolveVersionConflicts(mapVersion) {
         const secondCellId = points[1][2];
         const feature = pack.cells.f[secondCellId];
 
-        pack.routes.push({i: pack.routes.length, group, feature, points});
+        pack.routes.push({ i: pack.routes.length, group, feature, points });
       }
     }
     routes.selectAll("path").remove();
@@ -917,7 +917,7 @@ export function resolveVersionConflicts(mapVersion) {
       const type = this.dataset.type;
       const color = this.getAttribute("fill");
       const cells = this.dataset.cells.split(",").map(Number);
-      pack.zones.push({i, name, type, cells, color});
+      pack.zones.push({ i, name, type, cells, color });
     });
     zones.style("display", null).selectAll("*").remove();
     if (layerIsOn("toggleZones")) drawZones();
@@ -978,7 +978,7 @@ export function resolveVersionConflicts(mapVersion) {
 
   if (isOlderThan("1.109.0")) {
     // v1.109.0 added customizable burg groups and icons
-    options.burgs = {groups: []};
+    options.burgs = { groups: [] };
 
     burgIcons.selectAll("circle, use").each(function () {
       const group = this.parentNode.id;
@@ -990,7 +990,7 @@ export function resolveVersionConflicts(mapVersion) {
     burgIcons.selectAll("g").each(function (_el, index) {
       const name = this.id;
       const isDefault = name === "towns";
-      options.burgs.groups.push({name, active: true, order: index + 1, isDefault, preview: "watabou-city"});
+      options.burgs.groups.push({ name, active: true, order: index + 1, isDefault, preview: "watabou-city" });
       if (!this.dataset.icon) this.dataset.icon = "#icon-circle";
 
       const size = Number(this.getAttribute("size") || 2) * 2;
@@ -1114,5 +1114,43 @@ export function resolveVersionConflicts(mapVersion) {
     pack.zones.forEach(zone => {
       zone.cells = unique(zone.cells);
     });
+  }
+
+  if (isOlderThan("1.124.0")) {
+    // v1.124.0 added goods, markets, deals and trade animation data
+    goods = viewbox
+      .insert("g", "#emblems")
+      .attr("id", "goods")
+      .style("display", "none")
+      .attr("stroke-width", "0.32")
+      .attr("filter", "url(#dropShadow01)");
+    goods.append("g").attr("id", "goodsCells");
+    goods.append("g").attr("id", "goodsIcons").attr("data-circle", "1");
+    goods.append("g").attr("id", "goodsBurgs");
+    markets = viewbox.insert("g", "#emblems").attr("id", "markets").attr("fill-opacity", "0").style("display", "none");
+    tradeAnimation = viewbox.insert("g", "#goods").attr("id", "tradeAnimation");
+
+    options.trade = { animation: TradeAnimation.getDefaultOptions() };
+
+    for (const state of pack.states) {
+      if (!state) continue;
+      if (!state.i || state.removed) {
+        if (state.i === 0) {
+          state.salesTax = 0;
+          state.pollTax = 0;
+          state.treasury = 0;
+        }
+        continue;
+      }
+      const taxes = States.defineTaxRates(state);
+      state.salesTax = taxes.salesTax;
+      state.pollTax = taxes.pollTax;
+      state.treasury = 0;
+    }
+
+    Goods.generate();
+    Markets.generate();
+    Production.produce();
+    States.collectTaxes();
   }
 }

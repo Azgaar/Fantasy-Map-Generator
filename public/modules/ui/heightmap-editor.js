@@ -1,7 +1,7 @@
 "use strict";
 
 function editHeightmap(options) {
-  const {mode, tool} = options || {};
+  const { mode, tool } = options || {};
   restartHistory();
   viewbox.selectAll("#heights").remove();
   viewbox.insert("g", "#terrs").attr("id", "heights");
@@ -167,7 +167,8 @@ function editHeightmap(options) {
   function finalizeHeightmap() {
     if (viewbox.select("#heights").selectAll("*").size() < 200)
       return tip("Insufficient land area. There should be at least 200 land cells!", null, "error");
-    if (ensureEl("imageConverter").offsetParent) return tip("Please exit the Image Conversion mode first", null, "error");
+    if (ensureEl("imageConverter").offsetParent)
+      return tip("Please exit the Image Conversion mode first", null, "error");
 
     delete window.edits; // remove global variable
     redo.disabled = templateRedo.disabled = true;
@@ -175,7 +176,8 @@ function editHeightmap(options) {
 
     customization = 0;
     customizationMenu.style.display = "none";
-    if (ensureEl("options").querySelector(".tab > button.active").id === "toolsTab") toolsContent.style.display = "block";
+    if (ensureEl("options").querySelector(".tab > button.active").id === "toolsTab")
+      toolsContent.style.display = "block";
     layersPreset.disabled = false;
     exitCustomization.style.display = "none"; // hide finalize button
 
@@ -184,8 +186,8 @@ function editHeightmap(options) {
     closeDialogs();
     resetZoom();
 
-    if (ensureEl("preview")) ensureEl("preview").remove();
-    if (ensureEl("canvas3d")) enterStandardView();
+    document.getElementById("preview")?.remove();
+    if (document.getElementById("canvas3d")) enterStandardView();
 
     const mode = heightmapEditMode.innerHTML;
     if (mode === "erase") regenerateErasedData();
@@ -247,6 +249,8 @@ function editHeightmap(options) {
     Biomes.define();
     Features.defineGroups();
 
+    Goods.generate();
+
     rankCells();
     Cultures.generate();
     Cultures.expand();
@@ -265,6 +269,10 @@ function editHeightmap(options) {
 
     Rivers.specify();
     Lakes.defineNames();
+
+    Markets.generate();
+    Production.produce();
+    States.collectTaxes();
 
     Ice.generate();
 
@@ -471,6 +479,12 @@ function editHeightmap(options) {
       }
     }
 
+    // TODO: restore economy, see resample.ts
+    Goods.generate();
+    Markets.generate();
+    Production.produce();
+    States.collectTaxes();
+
     // recalculate ice
     Ice.generate();
     ice.selectAll("*").remove();
@@ -556,8 +570,8 @@ function editHeightmap(options) {
     redo.disabled = templateRedo.disabled = true;
     if (!noStat) {
       updateStatistics();
-      if (ensureEl("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-      if (ensureEl("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
+      if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
+      if (document.getElementById("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
     }
   }
 
@@ -571,8 +585,8 @@ function editHeightmap(options) {
     mockHeightmap();
     updateStatistics();
 
-    if (ensureEl("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-    if (ensureEl("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
+    if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
+    if (document.getElementById("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
   }
 
   // restart edits from 1st step
@@ -590,7 +604,7 @@ function editHeightmap(options) {
       .dialog({
         title: "Paint Brushes",
         resizable: false,
-        position: {my: "right top", at: "right-10 top+10", of: "svg"}
+        position: { my: "right top", at: "right-10 top+10", of: "svg" }
       })
       .on("dialogclose", exitBrushMode);
 
@@ -729,7 +743,7 @@ function editHeightmap(options) {
       if (cellTypeFilter.value === "land" && isWaterFill)
         return tip("Land filter is active, water areas cannot be filled", false, "error");
 
-      const {selection, reachedBorder} = collectFillSelection(start, isWaterFill, startHeight);
+      const { selection, reachedBorder } = collectFillSelection(start, isWaterFill, startHeight);
       if (selection.length < MIN_FILL_CELLS) return tip("No enclosed area found to fill", false, "error");
       if (isWaterFill && reachedBorder)
         return tip("Selected water area is open to map border and is not enclosed", false, "error");
@@ -742,7 +756,7 @@ function editHeightmap(options) {
     }
 
     function collectFillSelection(start, isWaterFill, targetHeight) {
-      const {h: heights, c: neighbors, i: cells} = grid.cells;
+      const { h: heights, c: neighbors, i: cells } = grid.cells;
       const visited = new Uint8Array(cells.length);
       const stack = [start];
       const selection = [];
@@ -762,7 +776,7 @@ function editHeightmap(options) {
         });
       }
 
-      return {selection, reachedBorder};
+      return { selection, reachedBorder };
     }
 
     function matchesFillTarget(height, isWaterFill, targetHeight) {
@@ -771,7 +785,7 @@ function editHeightmap(options) {
 
     function applyConeToSelection(selection, isWaterFill, targetHeight) {
       const power = heightmapBrushPower.valueAsNumber * 10;
-      const {h: heights, c: neighbors, i: cells} = grid.cells;
+      const { h: heights, c: neighbors, i: cells } = grid.cells;
       const inSelection = new Uint8Array(cells.length);
       const edgeDistance = new Uint16Array(cells.length);
       const changed = [];
@@ -959,7 +973,7 @@ function editHeightmap(options) {
       minHeight: "auto",
       width: "fit-content",
       resizable: false,
-      position: {my: "right top", at: "right-10 top+10", of: "svg"}
+      position: { my: "right top", at: "right-10 top+10", of: "svg" }
     });
 
     if (modules.openTemplateEditor) return;
@@ -1150,7 +1164,7 @@ function editHeightmap(options) {
     function setRange(event) {
       if (event.target.value !== "interval") return;
 
-      prompt("Set a height interval. Avoid space, use hyphen as a separator", {default: "17-20"}, v => {
+      prompt("Set a height interval. Avoid space, use hyphen as a separator", { default: "17-20" }, v => {
         const opt = document.createElement("option");
         opt.value = opt.innerHTML = v;
         event.target.add(opt);
@@ -1207,7 +1221,7 @@ function editHeightmap(options) {
       Math.random = aleaPRNG(seed);
       ensureEl("templateSeed").value = seed;
 
-      grid.cells.h = createTypedArray({maxValue: 100, length: grid.points.length});
+      grid.cells.h = createTypedArray({ maxValue: 100, length: grid.points.length });
       HeightmapGenerator.setGraph(grid);
       restartHistory();
 
@@ -1239,8 +1253,8 @@ function editHeightmap(options) {
       grid.cells.h = HeightmapGenerator.getHeights();
       updateStatistics();
       mockHeightmap();
-      if (ensureEl("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-      if (ensureEl("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
+      if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
+      if (document.getElementById("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
     }
 
     function downloadTemplate() {
@@ -1291,7 +1305,7 @@ function editHeightmap(options) {
       maxHeight: svgHeight * 0.8,
       minHeight: "auto",
       width: "20em",
-      position: {my: "right top", at: "right-10 top+10", of: "svg"},
+      position: { my: "right top", at: "right-10 top+10", of: "svg" },
       beforeClose: closeImageConverter
     });
 
@@ -1381,7 +1395,7 @@ function editHeightmap(options) {
       sampleCanvas.height = grid.cellsY;
       sampleCanvas.getContext("2d").drawImage(sourceImage, 0, 0, grid.cellsX, grid.cellsY);
 
-      const q = new RgbQuant({colors: count});
+      const q = new RgbQuant({ colors: count });
       q.sample(sampleCanvas);
       const data = q.reduce(sampleCanvas);
       const pallete = q.palette(true);
@@ -1544,7 +1558,7 @@ function editHeightmap(options) {
     function setConvertColorsNumber() {
       prompt(
         `Please set maximum number of colors. <br>An actual number is usually lower and depends on color scheme`,
-        {default: +convertColors.value, step: 1, min: 3, max: 255},
+        { default: +convertColors.value, step: 1, min: 3, max: 255 },
         number => {
           convertColors.value = number;
           heightsFromImage(number);
@@ -1627,8 +1641,8 @@ function editHeightmap(options) {
   }
 
   function toggleHeightmapPreview() {
-    if (ensureEl("preview")) {
-      ensureEl("preview").remove();
+    if (document.getElementById("preview")) {
+      document.getElementById("preview").remove();
       return;
     }
     const preview = document.createElement("canvas");
@@ -1642,7 +1656,7 @@ function editHeightmap(options) {
   }
 
   function drawHeightmapPreview() {
-    const ctx = ensureEl("preview").getContext("2d");
+    const ctx = document.getElementById("preview")?.getContext("2d");
     const imageData = ctx.createImageData(grid.cellsX, grid.cellsY);
 
     grid.cells.h.forEach((height, i) => {
@@ -1660,7 +1674,7 @@ function editHeightmap(options) {
   }
 
   function downloadPreview() {
-    const preview = ensureEl("preview");
+    const preview = document.getElementById("preview");
     const dataURL = preview.toDataURL("image/png");
 
     const img = new Image();

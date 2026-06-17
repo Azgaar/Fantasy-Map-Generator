@@ -249,6 +249,57 @@ test.describe('map layers', () => {
     expect(html).toMatchSnapshot('emblems.html')
   })
 
+  // Economy layers (off by default — require activation)
+  test('goods layer', async () => {
+    // goods is off by default — toggle it on, then display every good so all
+    // four sub-groups (markets, heatmap cells, icons, burg panels) render
+    await sharedPage.evaluate(() => {
+      ;(window as any).toggleGoods()
+      const all = new Set((window as any).pack.goods.map((g: any) => g.i))
+      ;(window as any).drawGoods(all)
+      // markets render in a standalone layer, toggled independently
+      ;(window as any).toggleMarketsLayer()
+    })
+    await sharedPage.waitForTimeout(300)
+
+    const goodsEl = sharedPage.locator('#goods')
+    await expect(goodsEl).toBeAttached()
+
+    // The three named sub-groups are drawn back to front
+    await expect(goodsEl.locator('#goodsCells')).toBeAttached()
+    await expect(goodsEl.locator('#goodsIcons')).toBeAttached()
+    await expect(goodsEl.locator('#goodsBurgs')).toBeAttached()
+
+    // Market zones render as <g data-id="N"> groups inside the standalone #markets layer
+    const marketsEl = sharedPage.locator('#markets')
+    await expect(marketsEl).toBeAttached()
+    await expect(marketsEl.locator('g[data-id]').first()).toBeAttached()
+
+    // Good icons are <use> elements pointing to a #good-* SVG symbol
+    const icons = goodsEl.locator('use')
+    await expect(icons.first()).toBeAttached()
+
+    const href = await icons.first().getAttribute('href')
+    expect(href).toMatch(/^#good-/)
+
+    const html = await goodsEl.evaluate((el) => el.outerHTML)
+    expect(html).toMatchSnapshot('goods.html')
+
+    // Restore: toggle goods and markets layers off
+    await sharedPage.evaluate(() => {
+      ;(window as any).toggleGoods()
+      ;(window as any).toggleMarketsLayer()
+    })
+  })
+
+  test('trade animation layer structure', async () => {
+    const tradeAnim = sharedPage.locator('#tradeAnimation')
+    await expect(tradeAnim).toBeAttached()
+
+    // No animation running — layer starts empty (transient groups are appended only during animation)
+    await expect(tradeAnim.locator('> *')).toHaveCount(0)
+  })
+
   // Grid and coordinates
   test('cells layer', async () => {
     const cells = sharedPage.locator('g#cells')

@@ -1,14 +1,16 @@
 import { quadtree } from "d3-quadtree";
 import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
+import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
+import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
+import type { ProductionRecord } from "./production-generator";
+import type { River } from "./river-generator";
+import type { Point } from "./voronoi";
 
-declare global {
-  var Burgs: BurgModule;
-}
 export interface Burg {
   cell: number;
   x: number;
   y: number;
-  i?: number;
+  i: number;
   state?: number;
   culture?: number;
   name?: string;
@@ -18,7 +20,7 @@ export interface Burg {
   port?: number;
   removed?: boolean;
   population?: number;
-  type?: string;
+  type?: CultureType;
   coa?: any;
   citadel?: number;
   plaza?: number;
@@ -28,74 +30,22 @@ export interface Burg {
   group?: string;
   link?: string;
   MFCG?: string;
+  production?: ProductionRecord[]; // per-burg production/trade records from the last production run
+  product?: number; // gross product from the last production run
+  treasury?: number; // accumulated cash balance
+  market?: number;
 }
 
+// A burg that could become a port on a given water body.
+type PortCandidate = {
+  burg: Burg;
+  haven: number | null; // adjacent water cell for coastal ports; null for river ports
+  portFeatureId: number; // the water/drain feature the port trades on
+  landFeature: number; // the landmass the burg sits on
+  preferred: boolean; // safe harbour, capital harbour, or river port — promoted unconditionally
+};
+
 class BurgModule {
-  shift() {
-    const { cells, features, burgs } = pack;
-    const temp = grid.cells.temp;
-
-    // port is a capital with any harbor OR any burg with a safe harbor
-    // safe harbor is a cell having just one adjacent water cell
-    const featurePortCandidates: Record<number, Burg[]> = {};
-    for (const burg of burgs) {
-      if (!burg.i || burg.lock) continue;
-      delete burg.port; // reset port status
-      const cellId = burg.cell;
-
-      const haven = cells.haven[cellId];
-      const harbor = cells.harbor[cellId];
-      const featureId = cells.f[haven];
-      if (!featureId) continue; // no adjacent water body
-
-      const isMulticell = features[featureId].cells > 1;
-      const isHarbor = (harbor && burg.capital) || harbor === 1;
-      const isFrozen = temp[cells.g[cellId]] <= 0;
-
-      if (isMulticell && isHarbor && !isFrozen) {
-        if (!featurePortCandidates[featureId]) featurePortCandidates[featureId] = [];
-        featurePortCandidates[featureId].push(burg);
-      }
-    }
-
-    const getCloseToEdgePoint = (cell1: number, cell2: number) => {
-      const { cells, vertices } = pack;
-
-      const [x0, y0] = cells.p[cell1];
-      const commonVertices = cells.v[cell1].filter(vertex => vertices.c[vertex].some(cell => cell === cell2));
-      const [x1, y1] = vertices.p[commonVertices[0]];
-      const [x2, y2] = vertices.p[commonVertices[1]];
-      const xEdge = (x1 + x2) / 2;
-      const yEdge = (y1 + y2) / 2;
-
-      const x = rn(x0 + 0.95 * (xEdge - x0), 2);
-      const y = rn(y0 + 0.95 * (yEdge - y0), 2);
-
-      return [x, y];
-    };
-
-    // shift ports to the edge of the water body
-    Object.entries(featurePortCandidates).forEach(([featureId, burgs]) => {
-      if (burgs.length < 2) return; // only one port on water body - skip
-      burgs.forEach(burg => {
-        burg.port = Number(featureId);
-        const haven = cells.haven[burg.cell];
-        const [x, y] = getCloseToEdgePoint(burg.cell, haven);
-        burg.x = x;
-        burg.y = y;
-      });
-    });
-
-    // shift non-port river burgs a bit
-    for (const burg of burgs) {
-      if (!burg.i || burg.lock || burg.port || !cells.r[burg.cell]) continue;
-      const cellId = burg.cell;
-      const shift = Math.min(cells.fl[cellId] / 150, 1);
-      burg.x = cellId % 2 ? rn(burg.x + shift, 2) : rn(burg.x - shift, 2);
-      burg.y = cells.r[cellId] % 2 ? rn(burg.y + shift, 2) : rn(burg.y - shift, 2);
-    }
-  }
-
   generate() {
     TIME && console.time("generateBurgs");
     const { cells } = pack;
@@ -124,7 +74,7 @@ class BurgModule {
         const [x, y] = cells.p[cell];
 
         if (burgsQuadtree.find(x, y, spacing) === undefined) {
-          burgs.push({ cell, x, y });
+          burgs.push({ cell, x, y, i: burgs.length });
           burgsQuadtree.add([x, y]);
         }
 
@@ -194,7 +144,7 @@ class BurgModule {
     generateTowns();
 
     pack.burgs = burgs;
-    this.shift();
+    this.assignPorts();
 
     TIME && console.timeEnd("generateBurgs");
 
@@ -218,7 +168,7 @@ class BurgModule {
     }
   }
 
-  getType(cellId: number, port?: number) {
+  getType(cellId: number, port?: number): CultureType {
     const { cells, features } = pack;
 
     if (port) return "Naval";
@@ -237,7 +187,172 @@ class BurgModule {
       if (biome > 4 && biome < 10) return "Hunting";
     }
 
-    return "Generic";
+    return DEFAULT_CULTURE_TYPE;
+  }
+
+  // Assign port feature ids to burgs and position them appropriately
+  assignPorts() {
+    const { cells, burgs } = pack;
+    const riversById = new Map(pack.rivers.map(river => [river.i, river]));
+    for (const burg of burgs) {
+      if (burg.i && !burg.lock) delete burg.port;
+    }
+
+    const candidatesByWater = this.collectPortCandidates(burgs);
+    for (const candidates of candidatesByWater.values()) {
+      if (!candidates.length) continue;
+      for (const candidate of this.selectPorts(candidates)) {
+        this.promoteToPort(candidate, riversById);
+      }
+    }
+
+    // Shift non-port river burgs slightly toward the bank
+    for (const burg of burgs) {
+      if (!burg.i || burg.lock || burg.port || !cells.r[burg.cell]) continue;
+      const [x, y] = this.shiftTowardsRiverBank(burg.cell, riversById);
+      burg.x = x;
+      burg.y = y;
+    }
+  }
+
+  // Collect every burg that could host a port, grouped by the water body
+  private collectPortCandidates(burgs: Burg[]): Map<number, PortCandidate[]> {
+    const { cells } = pack;
+    const temp = grid.cells.temp;
+
+    const byWater = new Map<number, PortCandidate[]>();
+    const addCandidate = (candidate: PortCandidate) => {
+      if (!byWater.has(candidate.portFeatureId)) byWater.set(candidate.portFeatureId, []);
+      byWater.get(candidate.portFeatureId)!.push(candidate);
+    };
+
+    for (const burg of burgs) {
+      if (!burg.i || burg.lock) continue;
+      const haven = cells.haven[burg.cell];
+      const landFeature = cells.f[burg.cell];
+
+      if (haven) {
+        // sea/lake port candidate
+        const harbor = cells.harbor[burg.cell];
+        if (!harbor) continue; // not actually adjacent to water
+        const featureId = cells.f[haven];
+        const feature = pack.features[featureId];
+        if (!feature || feature.cells <= 1) continue; // no navigable water body
+        if (NON_NAVIGABLE_LAKE_GROUPS.has(feature.group)) continue;
+        if (temp[cells.g[burg.cell]] <= 0) continue; // frozen
+
+        const portFeatureId =
+          feature.type === "lake" && feature.outlet
+            ? (Rivers.resolveLakeDrainFeature(featureId) ?? featureId)
+            : featureId;
+        const preferred = (harbor && Boolean(burg.capital)) || harbor === 1; // safe harbour or capital
+        addCandidate({ burg, haven, portFeatureId, landFeature, preferred });
+      } else {
+        // river port candidate
+        if (!Rivers.isNavigable(burg.cell)) continue;
+        const portFeatureId = Rivers.resolveDrainFeature(burg.cell);
+        if (!portFeatureId) continue;
+        addCandidate({ burg, haven: null, portFeatureId, landFeature, preferred: true });
+      }
+    }
+
+    return byWater;
+  }
+
+  private selectPorts(candidates: PortCandidate[]): PortCandidate[] {
+    const { cells } = pack;
+    const rank = (candidate: PortCandidate) =>
+      (candidate.burg.capital ? -1000 : 0) + (candidate.haven !== null ? cells.harbor[candidate.burg.cell] : 0);
+
+    const promoted = new Set<PortCandidate>();
+    for (const c of candidates) if (c.preferred) promoted.add(c);
+
+    const byLand = new Map<number, PortCandidate[]>();
+    for (const c of candidates) {
+      if (!byLand.has(c.landFeature)) byLand.set(c.landFeature, []);
+      byLand.get(c.landFeature)!.push(c);
+    }
+    for (const group of byLand.values()) {
+      if (group.some(c => promoted.has(c))) continue; // landmass already has a port here
+      promoted.add(group.reduce((best, c) => (rank(c) < rank(best) ? c : best)));
+    }
+
+    if (promoted.size < 2) {
+      const rest = candidates.filter(c => !promoted.has(c)).sort((a, b) => rank(a) - rank(b));
+      for (const c of rest) {
+        promoted.add(c);
+        if (promoted.size >= 2) break;
+      }
+    }
+
+    if (promoted.size < 2) return []; // a sea route needs two endpoints; a lone port is useless
+
+    return [...promoted];
+  }
+
+  private promoteToPort(candidate: PortCandidate, riversById: Map<number, River>): void {
+    const { burg, haven, portFeatureId } = candidate;
+    burg.port = portFeatureId;
+    const [x, y] =
+      haven !== null ? this.getCloseToEdgePoint(burg.cell, haven) : this.shiftTowardsRiverBank(burg.cell, riversById);
+    burg.x = x;
+    burg.y = y;
+  }
+
+  private getCloseToEdgePoint(cell1: number, cell2: number): [number, number] {
+    const { cells, vertices } = pack;
+    const [x0, y0] = cells.p[cell1];
+    const commonVertices = cells.v[cell1].filter((vertex: number) =>
+      vertices.c[vertex].some((c: number) => c === cell2)
+    );
+    const [x1, y1] = vertices.p[commonVertices[0]];
+    const [x2, y2] = vertices.p[commonVertices[1]];
+    const xEdge = (x1 + x2) / 2;
+    const yEdge = (y1 + y2) / 2;
+    return [rn(x0 + 0.95 * (xEdge - x0), 2), rn(y0 + 0.95 * (yEdge - y0), 2)];
+  }
+
+  // Move a river burg off the river centerline onto a bank
+  private shiftTowardsRiverBank(cellId: number, riversById: Map<number, River>): Point {
+    const { cells } = pack;
+    const [x, y] = cells.p[cellId];
+    const shift = Math.min(cells.fl[cellId] / 200, 0.6);
+
+    const tangent = this.getRiverTangent(cellId, riversById);
+    if (!tangent) {
+      // No usable course (single-cell river, or cell missing from river path): nudge on axes
+      const xShifted = cellId % 2 ? x + shift : x - shift;
+      const yShifted = cells.r[cellId] % 2 ? y + shift : y - shift;
+      return [rn(xShifted, 2), rn(yShifted, 2)];
+    }
+
+    // Perpendicular to the course
+    const [tx, ty] = tangent;
+    const length = Math.hypot(tx, ty);
+    const side = cellId % 2 ? 1 : -1;
+    const xShifted = x + (-ty / length) * shift * side;
+    const yShifted = y + (tx / length) * shift * side;
+    return [rn(xShifted, 2), rn(yShifted, 2)];
+  }
+
+  // Local river course direction at a cell
+  private getRiverTangent(cellId: number, riversById: Map<number, River>): Point | null {
+    const { cells } = pack;
+    const river = riversById.get(cells.r[cellId]);
+    if (!river) return null;
+
+    const idx = river.cells.indexOf(cellId);
+    if (idx === -1) return null;
+
+    const prevCell = river.cells[idx - 1];
+    const nextCell = river.cells[idx + 1];
+    const from = prevCell !== undefined && prevCell >= 0 ? cells.p[prevCell] : cells.p[cellId];
+    const to = nextCell !== undefined && nextCell >= 0 ? cells.p[nextCell] : cells.p[cellId];
+
+    const tx = to[0] - from[0];
+    const ty = to[1] - from[1];
+    if (tx === 0 && ty === 0) return null;
+    return [tx, ty];
   }
 
   private definePopulation(burg: Burg) {
@@ -270,9 +385,6 @@ class BurgModule {
   private defineFeatures(burg: Burg) {
     const pop = burg.population as number;
     burg.citadel = Number(burg.capital || (pop > 50 && P(0.75)) || (pop > 15 && P(0.5)) || P(0.1));
-    burg.plaza = Number(
-      Routes.isCrossroad(burg.cell) || (Routes.hasRoad(burg.cell) && P(0.7)) || pop > 20 || (pop > 10 && P(0.8))
-    );
     burg.walls = Number(burg.capital || pop > 30 || (pop > 20 && P(0.75)) || (pop > 10 && P(0.5)) || P(0.1));
     burg.shanty = Number(pop > 60 || (pop > 40 && P(0.75)) || (pop > 20 && burg.walls && P(0.4)));
     const religion = pack.cells.religion[burg.cell] as number;
@@ -669,4 +781,9 @@ class BurgModule {
     removeBurgLabel(burg.i!);
   }
 }
+
+declare global {
+  var Burgs: BurgModule;
+}
+
 window.Burgs = new BurgModule();

@@ -16,7 +16,7 @@ export interface Culture {
   sort?: (i: number) => number;
   odd?: number;
   color?: string;
-  type?: string;
+  type: CultureType;
   expansionism?: number;
   origins?: (number | null)[];
   removed?: boolean;
@@ -26,6 +26,10 @@ export interface Culture {
   urban?: number;
 }
 
+export const CULTURE_TYPES = ["Generic", "Hunting", "Highland", "River", "Lake", "Naval", "Nomadic"] as const;
+export type CultureType = (typeof CULTURE_TYPES)[number];
+export const DEFAULT_CULTURE_TYPE: CultureType = "Generic";
+
 class CulturesModule {
   cells: any;
 
@@ -34,7 +38,7 @@ class CulturesModule {
     return rw(COA.shields[type]);
   }
 
-  getDefault(count: number = 0): Omit<Culture, "i">[] {
+  getDefault(count: number = 0): Omit<Culture, "i" | "type">[] {
     // generic sorting functions
     const cells = pack.cells,
       s = cells.s,
@@ -1021,7 +1025,15 @@ class CulturesModule {
       count = Math.floor(populated.length / 50);
       if (!count) {
         WARN && console.warn(`There are no populated cells. Cannot generate cultures`);
-        pack.cultures = [{ name: "Wildlands", i: 0, base: 1, shield: "round" }];
+        pack.cultures = [
+          {
+            name: "Wildlands",
+            i: 0,
+            base: 1,
+            shield: "round",
+            type: DEFAULT_CULTURE_TYPE
+          }
+        ];
         this.cells.culture = cultureIds;
 
         alertMessage.innerHTML = /* html */ `The climate is harsh and people cannot live in this world.<br />
@@ -1119,10 +1131,10 @@ class CulturesModule {
         return "Naval"; // low water cross penalty and high for non-along-coastline growth
       if (this.cells.r[i] && this.cells.fl[i] > 100) return "River"; // no River cross penalty, penalty for non-River growth
       if (this.cells.t[i] > 2 && [3, 7, 8, 9, 10, 12].includes(this.cells.biome[i])) return "Hunting"; // high penalty in non-native biomes
-      return "Generic";
+      return DEFAULT_CULTURE_TYPE;
     };
 
-    const defineCultureExpansionism = (type: string) => {
+    const defineCultureExpansionism = (type: CultureType) => {
       let base = 1; // Generic
       if (type === "Lake") base = 0.8;
       else if (type === "Naval") base = 1.5;
@@ -1174,7 +1186,8 @@ class CulturesModule {
       i: 0,
       base: 1,
       origins: [null],
-      shield: "round"
+      shield: "round",
+      type: DEFAULT_CULTURE_TYPE
     });
 
     // make sure all bases exist in nameBases
@@ -1220,7 +1233,7 @@ class CulturesModule {
       center,
       i,
       expansionism: 1,
-      type: "Generic",
+      type: DEFAULT_CULTURE_TYPE,
       cells: 0,
       area: 0,
       rural: 0,

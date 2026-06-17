@@ -32,7 +32,7 @@ async function saveMap(method) {
           $(this).dialog("close");
         }
       },
-      position: {my: "center", at: "center", of: "svg"}
+      position: { my: "center", at: "center", of: "svg" }
     });
   }
 }
@@ -86,11 +86,13 @@ function prepareMapData() {
   cloneEl.querySelector("#viewbox").removeAttribute("transform");
 
   cloneEl.querySelector("#ruler").innerHTML = ""; // always remove rulers
+  const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
+  if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
-  const {spacing, cellsX, cellsY, boundary, points, features, cellsDesired} = grid;
-  const gridGeneral = JSON.stringify({spacing, cellsX, cellsY, boundary, points, features, cellsDesired});
+  const { spacing, cellsX, cellsY, boundary, points, features, cellsDesired } = grid;
+  const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, boundary, points, features, cellsDesired });
   const packFeatures = JSON.stringify(pack.features);
   const cultures = JSON.stringify(pack.cultures);
   const states = JSON.stringify(pack.states);
@@ -103,6 +105,9 @@ function prepareMapData() {
   const routes = JSON.stringify(pack.routes);
   const zones = JSON.stringify(pack.zones);
   const ice = JSON.stringify(pack.ice);
+  const goods = JSON.stringify(pack.goods);
+  const markets = JSON.stringify(pack.markets || []);
+  const deals = JSON.stringify(pack.deals || []);
 
   // store name array only if not the same as default
   const defaultNB = Names.getNameBases();
@@ -157,21 +162,26 @@ function prepareMapData() {
     cellRoutes,
     routes,
     zones,
-    ice
+    ice,
+    pack.cells.good,
+    goods,
+    markets,
+    deals,
+    pack.cells.market
   ].join("\r\n");
   return mapData;
 }
 
 // save map file to indexedDB
 async function saveToStorage(mapData, showTip = false) {
-  const blob = new Blob([mapData], {type: "text/plain"});
+  const blob = new Blob([mapData], { type: "text/plain" });
   await ldb.set("lastMap", blob);
   showTip && tip("Map is saved to the browser storage", false, "success");
 }
 
 // download map file
 function saveToMachine(mapData, filename) {
-  const blob = new Blob([mapData], {type: "text/plain"});
+  const blob = new Blob([mapData], { type: "text/plain" });
   const URL = window.URL.createObjectURL(blob);
 
   const link = document.createElement("a");

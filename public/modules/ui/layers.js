@@ -51,7 +51,15 @@ function getDefaultPresets() {
     ],
     biomes: ["toggleBiomes", "toggleIce", "toggleLakes", "toggleRivers", "toggleScaleBar", "toggleVignette"],
     heightmap: ["toggleHeight", "toggleLakes", "toggleRivers", "toggleVignette"],
-    physical: ["toggleCoordinates", "toggleHeight", "toggleIce", "toggleLakes", "toggleRivers", "toggleScaleBar", "toggleVignette"],
+    physical: [
+      "toggleCoordinates",
+      "toggleHeight",
+      "toggleIce",
+      "toggleLakes",
+      "toggleRivers",
+      "toggleScaleBar",
+      "toggleVignette"
+    ],
     poi: [
       "toggleBorders",
       "toggleBurgIcons",
@@ -62,6 +70,30 @@ function getDefaultPresets() {
       "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
+      "toggleVignette"
+    ],
+    goods: [
+      "toggleBorders",
+      "toggleBurgIcons",
+      "toggleCells",
+      "toggleGoods",
+      "toggleMarketsLayer",
+      "toggleLakes",
+      "toggleRivers",
+      "toggleRoutes",
+      "toggleScaleBar",
+      "toggleTrade",
+      "toggleVignette"
+    ],
+    trade: [
+      "toggleBorders",
+      "toggleBurgIcons",
+      "toggleLakes",
+      "toggleRivers",
+      "toggleRoutes",
+      "toggleScaleBar",
+      "toggleStates",
+      "toggleTrade",
       "toggleVignette"
     ],
     military: [
@@ -107,7 +139,8 @@ function restoreCustomPresets() {
 
 // run on map generation
 function applyLayersPreset() {
-  const preset = localStorage.getItem("preset") || ensureEl("layersPreset").value;
+  let preset = localStorage.getItem("preset") || ensureEl("layersPreset").value;
+  if (!(preset in presets)) preset = "political"; // fallback to default if preset is removed
   setLayersPreset(preset);
 
   const layers = presets[preset]; // layers to be turned on
@@ -143,7 +176,7 @@ function handleLayersPresetChange(preset) {
 }
 
 function savePreset() {
-  prompt("Please provide a preset name", {default: ""}, preset => {
+  prompt("Please provide a preset name", { default: "" }, preset => {
     presets[preset] = Array.from(ensureEl("mapLayers").querySelectorAll("li:not(.buttonoff)"))
       .map(node => node.id)
       .sort();
@@ -207,6 +240,7 @@ function drawLayers() {
   if (layerIsOn("toggleCultures")) drawCultures();
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (layerIsOn("toggleTrade")) TradeAnimation.start();
   if (layerIsOn("toggleZones")) drawZones();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleRoutes")) drawRoutes();
@@ -214,6 +248,8 @@ function drawLayers() {
   if (layerIsOn("togglePopulation")) drawPopulation();
   if (layerIsOn("toggleIce")) drawIce();
   if (layerIsOn("togglePrecipitation")) drawPrecipitation();
+  if (layerIsOn("toggleGoods")) drawGoods(GoodsEditor?.getDisplayedGoods?.());
+  if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
   if (layerIsOn("toggleEmblems")) drawEmblems();
   if (layerIsOn("toggleLabels")) drawLabels();
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
@@ -268,8 +304,8 @@ function drawBiomes() {
 
   const cells = pack.cells;
   const bodyPaths = new Array(biomesData.i.length - 1);
-  const isolines = getIsolines(pack, cellId => cells.biome[cellId], {fill: true, waterGap: true});
-  Object.entries(isolines).forEach(([index, {fill, waterGap}]) => {
+  const isolines = getIsolines(pack, cellId => cells.biome[cellId], { fill: true, waterGap: true });
+  Object.entries(isolines).forEach(([index, { fill, waterGap }]) => {
     const color = biomesData.color[index];
     bodyPaths.push(getGappedFillPaths("biome", fill, waterGap, color, index));
   });
@@ -298,7 +334,7 @@ function drawPrecipitation() {
   TIME && console.time("drawPrecipitation");
 
   prec.selectAll("circle").remove();
-  const {cells, points} = grid;
+  const { cells, points } = grid;
 
   const show = d3.transition().duration(800).ease(d3.easeSinIn);
   prec.selectAll("text").attr("opacity", 0).transition(show).attr("opacity", 1);
@@ -358,7 +394,7 @@ function togglePopulation(event) {
 function drawPopulation() {
   population.selectAll("line").remove();
 
-  const {cells, burgs} = pack;
+  const { cells, burgs } = pack;
   const show = d3.transition().duration(2000).ease(d3.easeSinIn);
 
   const rural = Array.from(
@@ -443,11 +479,11 @@ function toggleCultures(event) {
 
 function drawCultures() {
   TIME && console.time("drawCultures");
-  const {cells, cultures} = pack;
+  const { cells, cultures } = pack;
 
   const bodyPaths = new Array(cultures.length - 1);
-  const isolines = getIsolines(pack, cellId => cells.culture[cellId], {fill: true, waterGap: true});
-  Object.entries(isolines).forEach(([index, {fill, waterGap}]) => {
+  const isolines = getIsolines(pack, cellId => cells.culture[cellId], { fill: true, waterGap: true });
+  Object.entries(isolines).forEach(([index, { fill, waterGap }]) => {
     const color = cultures[index].color;
     bodyPaths.push(getGappedFillPaths("culture", fill, waterGap, color, index));
   });
@@ -472,11 +508,11 @@ function toggleReligions(event) {
 
 function drawReligions() {
   TIME && console.time("drawReligions");
-  const {cells, religions} = pack;
+  const { cells, religions } = pack;
 
   const bodyPaths = new Array(religions.length - 1);
-  const isolines = getIsolines(pack, cellId => cells.religion[cellId], {fill: true, waterGap: true});
-  Object.entries(isolines).forEach(([index, {fill, waterGap}]) => {
+  const isolines = getIsolines(pack, cellId => cells.religion[cellId], { fill: true, waterGap: true });
+  Object.entries(isolines).forEach(([index, { fill, waterGap }]) => {
     const color = religions[index].color;
     bodyPaths.push(getGappedFillPaths("religion", fill, waterGap, color, index));
   });
@@ -500,7 +536,7 @@ function toggleStates(event) {
 
 function drawStates() {
   TIME && console.time("drawStates");
-  const {cells, states} = pack;
+  const { cells, states } = pack;
 
   const maxLength = states.length - 1;
   const bodyPaths = new Array(maxLength);
@@ -508,8 +544,8 @@ function drawStates() {
   const haloPaths = new Array(maxLength);
 
   const renderHalo = shapeRendering.value === "geometricPrecision";
-  const isolines = getIsolines(pack, cellId => cells.state[cellId], {fill: true, waterGap: true, halo: renderHalo});
-  Object.entries(isolines).forEach(([index, {fill, waterGap, halo}]) => {
+  const isolines = getIsolines(pack, cellId => cells.state[cellId], { fill: true, waterGap: true, halo: renderHalo });
+  Object.entries(isolines).forEach(([index, { fill, waterGap, halo }]) => {
     const color = states[index].color;
     bodyPaths.push(getGappedFillPaths("state", fill, waterGap, color, index));
 
@@ -555,11 +591,11 @@ function toggleProvinces(event) {
 
 function drawProvinces() {
   TIME && console.time("drawProvinces");
-  const {cells, provinces} = pack;
+  const { cells, provinces } = pack;
 
   const bodyPaths = new Array(provinces.length - 1);
-  const isolines = getIsolines(pack, cellId => cells.province[cellId], {fill: true, waterGap: true});
-  Object.entries(isolines).forEach(([index, {fill, waterGap}]) => {
+  const isolines = getIsolines(pack, cellId => cells.province[cellId], { fill: true, waterGap: true });
+  Object.entries(isolines).forEach(([index, { fill, waterGap }]) => {
     const color = provinces[index].color;
     bodyPaths.push(getGappedFillPaths("province", fill, waterGap, color, index));
   });
@@ -678,7 +714,7 @@ function drawCoordinates() {
       }
     }
 
-    return {x, y, text};
+    return { x, y, text };
   });
 
   const path = round(d3.geoPath(projection)(graticule()));
@@ -775,7 +811,7 @@ function drawRivers() {
   TIME && console.time("drawRivers");
   rivers.selectAll("*").remove();
 
-  const riverPaths = pack.rivers.map(({cells, points, i, widthFactor, sourceWidth}) => {
+  const riverPaths = pack.rivers.map(({ cells, points, i, widthFactor, sourceWidth }) => {
     if (!cells || cells.length < 2) return;
 
     if (points && points.length !== cells.length) {
@@ -811,7 +847,7 @@ function drawRoutes() {
   const routePaths = {};
 
   for (const route of pack.routes) {
-    const {i, group, points} = route;
+    const { i, group, points } = route;
     if (!points || points.length < 2) continue;
     if (!routePaths[group]) routePaths[group] = [];
     routePaths[group].push(`<path id="route${i}" d="${Routes.getPath(route)}"/>`);
@@ -854,6 +890,18 @@ function toggleMarkers(event) {
     if (event && isCtrlClick(event)) return editStyle("markers");
     markers.html("");
     turnButtonOff("toggleMarkers");
+  }
+}
+
+function toggleTrade(event) {
+  if (!layerIsOn("toggleTrade")) {
+    turnButtonOn("toggleTrade");
+    TradeAnimation.start();
+    if (event && isCtrlClick(event)) editStyle("tradeAnimation");
+  } else {
+    if (event && isCtrlClick(event)) return editStyle("tradeAnimation");
+    TradeAnimation.stop();
+    turnButtonOff("toggleTrade");
   }
 }
 
@@ -931,12 +979,12 @@ function drawZones() {
   const filterBy = ensureEl("zonesFilterType").value;
   const isFiltered = filterBy && filterBy !== "all";
   const visibleZones = pack.zones.filter(
-    ({hidden, cells, type}) => !hidden && cells.length && (!isFiltered || type === filterBy)
+    ({ hidden, cells, type }) => !hidden && cells.length && (!isFiltered || type === filterBy)
   );
   zones.html(visibleZones.map(drawZone).join(""));
 }
 
-function drawZone({i, cells, type, color}) {
+function drawZone({ i, cells, type, color }) {
   const path = getVertexPath(cells);
   return `<path id="zone${i}" data-id="${i}" data-type="${type}" d="${path}" fill="${color}" />`;
 }
@@ -990,7 +1038,7 @@ function turnButtonOn(el) {
 }
 
 // move layers on mapLayers dragging (jquery sortable)
-$("#mapLayers").sortable({items: "li:not(.solid)", containment: "parent", cancel: ".solid", update: moveLayer});
+$("#mapLayers").sortable({ items: "li:not(.solid)", containment: "parent", cancel: ".solid", update: moveLayer });
 function moveLayer(event, ui) {
   const el = getLayer(ui.item.attr("id"));
   if (!el) return;
@@ -1022,9 +1070,12 @@ function getLayer(id) {
   if (id === "togglePopulation") return $("#population");
   if (id === "toggleIce") return $("#ice");
   if (id === "toggleTexture") return $("#texture");
+  if (id === "toggleGoods") return $("#goods");
+  if (id === "toggleMarketsLayer") return $("#markets");
   if (id === "toggleEmblems") return $("#emblems");
   if (id === "toggleLabels") return $("#labels");
   if (id === "toggleBurgIcons") return $("#icons");
   if (id === "toggleMarkers") return $("#markers");
+  if (id === "toggleTrade") return $("#tradeAnimation");
   if (id === "toggleRulers") return $("#ruler");
 }

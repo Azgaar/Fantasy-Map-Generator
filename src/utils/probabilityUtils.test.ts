@@ -197,7 +197,7 @@ describe("ra", () => {
     const array = [1, 2, 3, 4, 5];
     for (let i = 0; i < 100; i++) {
       const result = ra(array);
-      expect(array).toContain(result);
+      expect(array.includes(result)).toBe(true);
     }
   });
 
@@ -208,11 +208,11 @@ describe("ra", () => {
   it("should work with arrays of different types", () => {
     const stringArray = ["a", "b", "c"];
     const result = ra(stringArray);
-    expect(stringArray).toContain(result);
+    expect(stringArray.includes(result)).toBe(true);
 
     const objectArray = [{ id: 1 }, { id: 2 }];
     const objResult = ra(objectArray);
-    expect(objectArray).toContain(objResult);
+    expect(objectArray.includes(objResult)).toBe(true);
   });
 
   it("should return undefined for empty array", () => {
@@ -225,7 +225,7 @@ describe("rw", () => {
     const obj = { a: 1, b: 2, c: 3 };
     for (let i = 0; i < 100; i++) {
       const result = rw(obj);
-      expect(["a", "b", "c"]).toContain(result);
+      expect(["a", "b", "c"].includes(result)).toBe(true);
     }
   });
 

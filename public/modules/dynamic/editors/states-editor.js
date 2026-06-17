@@ -22,7 +22,7 @@ export function open() {
 
 function insertEditorHtml() {
   const editorHtml = /* html */ `<div id="statesEditor" class="dialog stable">
-    <div id="statesHeader" class="header" style="grid-template-columns: 11em 8em 7em 7em 6em 6em 8em 6em 7em 6em">
+    <div id="statesHeader" class="header" style="grid-template-columns: 11em 8em 7em 7em 6em 6em 7em 7em 6em 7em">
       <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
       <div data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
       <div data-tip="Click to sort by capital name" class="sortable alphabetically" data-sortby="capital">Capital&nbsp;</div>
@@ -30,16 +30,15 @@ function insertEditorHtml() {
       <div data-tip="Click to sort by state burgs count" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
       <div data-tip="Click to sort by state area" class="sortable hide icon-sort-number-down" data-sortby="area">Area&nbsp;</div>
       <div data-tip="Click to sort by state population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
+      <div data-tip="Click to sort by state treasury. Click on a value to view and edit taxes" class="sortable hide" data-sortby="treasury">Treasury&nbsp;</div>
       <div data-tip="Click to sort by state type" class="sortable alphabetically hidden show hide" data-sortby="type">Type&nbsp;</div>
       <div data-tip="Click to sort by state expansion value" class="sortable hidden show hide" data-sortby="expansionism">Expansion&nbsp;</div>
-      <div data-tip="Click to sort by state cells count" class="sortable hidden show hide" data-sortby="cells">Cells&nbsp;</div>
     </div>
 
     <div id="statesBodySection" class="table" data-type="absolute"></div>
 
     <div id="statesFooter" class="totalLine">
       <div data-tip="States number" style="margin-left: 5px">States:&nbsp;<span id="statesFooterStates">0</span></div>
-      <div data-tip="Total land cells number" style="margin-left: 12px">Cells:&nbsp;<span id="statesFooterCells">0</span></div>
       <div data-tip="Total burgs number" style="margin-left: 12px">Burgs:&nbsp;<span id="statesFooterBurgs">0</span></div>
       <div data-tip="Total land area" style="margin-left: 12px">Land Area:&nbsp;<span id="statesFooterArea">0</span></div>
       <div data-tip="Total population" style="margin-left: 12px">Population:&nbsp;<span id="statesFooterPopulation">0</span></div>
@@ -125,6 +124,7 @@ function addListeners() {
     else if (classList.contains("icon-star-empty")) stateCapitalZoomIn(stateId);
     else if (classList.contains("icon-dot-circled")) overviewBurgs({ stateId });
     else if (classList.contains("statePopulation")) changePopulation(stateId);
+    else if (classList.contains("stateTreasury")) openTreasuryDialog(stateId);
     else if (classList.contains("icon-pin")) toggleFog(stateId, classList);
     else if (classList.contains("icon-target")) highlightElement(regions.select("#state" + stateId).node(), 4);
     else if (classList.contains("icon-trash-empty")) stateRemovePrompt(stateId);
@@ -178,6 +178,7 @@ function statesEditorAddLines() {
     totalPopulation += population;
     totalBurgs += s.burgs;
     const focused = defs.select("#fog #focusState" + s.i).size();
+    const treasuryTip = `Treasury: 🟡 ${si(s.treasury)}. Sales Tax: ${rn((s.salesTax || 0) * 100, 1)}%. Poll Tax: ${rn((s.pollTax || 0) * 100, 1)}%. Click to view and edit taxes`;
 
     if (!s.i) {
       // Neutral line
@@ -189,6 +190,7 @@ function statesEditorAddLines() {
         data-area=${area}
         data-population=${population}
         data-burgs=${s.burgs}
+        data-treasury="0"
         data-color=""
         data-form=""
         data-capital=""
@@ -211,11 +213,10 @@ function statesEditorAddLines() {
         <div data-tip="Neutral lands area" class="stateArea hide" style="width: 6em">${si(area)} ${unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
         <div data-tip="${populationTip}" class="statePopulation pointer hide" style="width: 5em">${si(population)}</div>
+        <div data-tip="Neutrals collect no taxes" class="stateTreasury placeholder hide" style="width: 6em"></div>
         <select class="cultureType ${hidden} placeholder show hide">${getTypeOptions(0)}</select>
         <span class="icon-resize-full ${hidden} placeholder show hide"></span>
         <input class="statePower ${hidden} placeholder show hide" type="number" value="0" />
-        <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
-        <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
       </div>`;
       continue;
     }
@@ -233,6 +234,7 @@ function statesEditorAddLines() {
       data-area=${area}
       data-population=${population}
       data-burgs=${s.burgs}
+      data-treasury="${s.treasury}"
       data-culture=${pack.cultures[s.culture].name}
       data-type=${s.type}
       data-expansionism=${s.expansionism}
@@ -256,14 +258,13 @@ function statesEditorAddLines() {
       <div data-tip="State area" class="stateArea hide" style="width: 6em">${si(area)} ${unit}</div>
       <span data-tip="${populationTip}" class="icon-male hide"></span>
       <div data-tip="${populationTip}" class="statePopulation pointer hide" style="width: 5em">${si(population)}</div>
+      <div data-tip="${treasuryTip}" class="stateTreasury pointer hide" style="width: 6em">🟡 ${si(s.treasury)}</div>
       <select data-tip="State type. Defines growth model. Click to change" class="cultureType ${hidden} show hide">${getTypeOptions(
         s.type
       )}</select>
       <span data-tip="State expansionism" class="icon-resize-full ${hidden} show hide"></span>
       <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
         class="statePower ${hidden} show hide" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
-      <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
-      <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
       <span data-tip="Locate the state" class="icon-target hide"></span>
       <span data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"} hide"></span>
       <span data-tip="Lock the state to protect it from re-generation" class="icon-lock${
@@ -276,7 +277,6 @@ function statesEditorAddLines() {
 
   // update footer
   ensureEl("statesFooterStates").innerHTML = pack.states.filter(s => s.i && !s.removed).length;
-  ensureEl("statesFooterCells").innerHTML = pack.cells.h.filter(h => h >= 20).length;
   ensureEl("statesFooterBurgs").innerHTML = totalBurgs;
   ensureEl("statesFooterArea").innerHTML = si(totalArea) + unit;
   ensureEl("statesFooterArea").dataset.area = totalArea;
@@ -557,6 +557,59 @@ function changePopulation(stateId) {
   }
 }
 
+function openTreasuryDialog(stateId) {
+  const state = pack.states[stateId];
+  if (!stateId || !state || state.removed) return;
+
+  const pollTaxRevenue = rn(state.pollTax * ((state.rural || 0) + (state.urban || 0)), 2);
+  const salesTaxRevenue = pack.deals.reduce((sum, deal) => {
+    if (!deal.tax) return sum;
+    let sellerStateId = 0;
+    if (deal.sellerType === "burg") {
+      sellerStateId = pack.burgs[deal.seller]?.state || 0;
+    } else if (deal.sellerType === "market") {
+      const market = Markets.get(deal.seller);
+      const centerBurgId = market?.centerBurgId;
+      sellerStateId = centerBurgId ? pack.burgs[centerBurgId]?.state || 0 : 0;
+    }
+    return sellerStateId === stateId ? sum + deal.tax : sum;
+  }, 0);
+
+  alertMessage.innerHTML = /* html */ `<div data-tip="Sales tax is applied to deals with a seller from the state. Poll tax is applied to all population of the state. Tax changes take effect on Production regeneration" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
+      <label for="stateSalesTaxInput">Sales Tax:</label>
+      <input id="stateSalesTaxInput" type="number" min="0" max="1" step="0.01" value="${state.salesTax}" style="width: 6em"/> = ${formatPrice(salesTaxRevenue)}
+      <label for="statePollTaxInput">Poll Tax:</label>
+      <input id="statePollTaxInput" type="number" min="0" max="10" step="0.01" value="${state.pollTax}" style="width: 6em"/> = ${formatPrice(pollTaxRevenue)}
+      <label for="stateTreasuryInput">Treasury:</label>
+      <input id="stateTreasuryInput" type="number" step="1" value="${state.treasury}" style="width: 6em" />
+    </div>`;
+
+  $("#alert").dialog({
+    resizable: false,
+    title: `Taxes and Treasury: ${state.name}`,
+    width: "26em",
+    buttons: {
+      Apply: function () {
+        const salesInput = ensureEl("stateSalesTaxInput");
+        const pollInput = ensureEl("statePollTaxInput");
+        const treasuryInput = ensureEl("stateTreasuryInput");
+        const newSales = Math.max(0, Math.min(1, +salesInput.value));
+        const newPoll = Math.max(0, +pollInput.value);
+        const newTreasury = +treasuryInput.value;
+        if (Number.isFinite(newSales)) state.salesTax = rn(newSales, 4);
+        if (Number.isFinite(newPoll)) state.pollTax = rn(newPoll, 4);
+        if (Number.isFinite(newTreasury)) state.treasury = rn(newTreasury, 2);
+        refreshStatesEditor();
+        $(this).dialog("close");
+      },
+      Cancel: function () {
+        $(this).dialog("close");
+      }
+    },
+    position: { my: "center", at: "center", of: "svg" }
+  });
+}
+
 function stateCapitalZoomIn(state) {
   const capital = pack.states[state].capital;
   const l = burgLabels.select("[data-id='" + capital + "']");
@@ -679,17 +732,17 @@ function toggleLegend() {
 function togglePercentageMode() {
   if ($body.dataset.type === "absolute") {
     $body.dataset.type = "percentage";
-    const totalCells = +ensureEl("statesFooterCells").innerText;
     const totalBurgs = +ensureEl("statesFooterBurgs").innerText;
     const totalArea = +ensureEl("statesFooterArea").dataset.area;
     const totalPopulation = +ensureEl("statesFooterPopulation").dataset.population;
+    const totalTreasury = pack.states.reduce((sum, s) => sum + (s.treasury || 0), 0);
 
     $body.querySelectorAll(":scope > div").forEach(function (el) {
-      const { cells, burgs, area, population } = el.dataset;
-      el.querySelector(".stateCells").innerText = rn((+cells / totalCells) * 100) + "%";
+      const { burgs, area, population, treasury } = el.dataset;
       el.querySelector(".stateBurgs").innerText = rn((+burgs / totalBurgs) * 100) + "%";
       el.querySelector(".stateArea").innerText = rn((+area / totalArea) * 100) + "%";
       el.querySelector(".statePopulation").innerText = rn((+population / totalPopulation) * 100) + "%";
+      el.querySelector(".stateTreasury").innerText = rn((+treasury / totalTreasury) * 100, 2) + "%";
     });
   } else {
     $body.dataset.type = "absolute";

@@ -37,7 +37,7 @@ class IceModule {
 
     // Generate glaciers on cold land
     {
-      const type = "iceShield";
+      const type: string = "iceShield";
       const getType = (cellId: number) => (h[cellId] >= 20 && temp[cellId] <= GLACIER_MAX_TEMP ? type : null);
       const isolines = getIsolines(grid, getType, { polygons: true });
 
@@ -121,10 +121,10 @@ class IceModule {
     const [cx, cy] = grid.points[cellId];
 
     // Get a different random cell for the polygon template
-    const i = ra(grid.cells.i);
-    const cn = grid.points[i];
-    const poly = getGridPolygon(i, grid).map((p: Point) => [p[0] - cn[0], p[1] - cn[1]]);
-    const points = poly.map((p: Point) => [rn(cx + p[0] * size, 2), rn(cy + p[1] * size, 2)]);
+    const i: number = ra(grid.cells.i);
+    const cn: [number, number] = grid.points[i];
+    const poly = getGridPolygon(i, grid).map((p: [number, number]) => [p[0] - cn[0], p[1] - cn[1]]);
+    const points = poly.map((p: [number, number]) => [rn(cx + p[0] * size, 2), rn(cy + p[1] * size, 2)]);
 
     iceberg.points = points;
   }

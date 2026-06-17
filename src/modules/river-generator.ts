@@ -1,11 +1,10 @@
 import Alea from "alea";
 import { curveBasis, curveCatmullRom, line, mean, min, sum } from "d3";
 import { each, rn, round, rw } from "../utils";
+import { meander, projectToNearestEdge } from "../utils/pathUtils";
 import type { Point } from "./voronoi";
 
-declare global {
-  var Rivers: RiverModule;
-}
+export const MIN_NAVIGABLE_FLUX = 100;
 
 export interface River {
   i: number; // river id
@@ -367,77 +366,35 @@ class RiverModule {
     depressions && WARN && console.warn(`Unresolved depressions: ${depressions}. Edit heightmap to fix`);
   }
 
-  addMeandering(
-    riverCells: number[],
-    riverPoints: Point[] | null = null,
-    meandering = 0.5
-  ): [number, number, number][] {
-    const { fl, h } = pack.cells;
-    const meandered = [];
-    const points = this.getRiverPoints(riverCells, riverPoints);
-    const lastStep = points.length - 1;
-    let step = h[riverCells[0]] < 20 ? 1 : 10;
+  addMeandering(riverCells: number[], riverPoints: Point[] | null = null): [number, number, number][] {
+    const { fl, h, p } = pack.cells;
+    const { points, anchorIndices } = meander(riverCells, p, {
+      anchors: riverPoints ?? undefined,
+      meandering: 0.5,
+      startStep: h[riverCells[0]] < 20 ? 1 : 10,
+      isWaterCell: riverCells.map(c => c !== -1 && h[c] < 20),
+      bounds: { width: graphWidth, height: graphHeight }
+    });
 
-    for (let i = 0; i <= lastStep; i++, step++) {
-      const cell = riverCells[i];
-      const isLastCell = i === lastStep;
+    const flux: number[] = new Array(points.length).fill(0);
+    anchorIndices.forEach((pointIndex, anchorIndex) => {
+      const cellId = riverCells[anchorIndex];
+      const fluxCell = cellId === -1 ? riverCells[anchorIndex - 1] : cellId;
+      flux[pointIndex] = fl[fluxCell] || 0;
+    });
 
-      const [x1, y1] = points[i];
-
-      meandered.push([x1, y1, fl[cell]]);
-      if (isLastCell) break;
-
-      const nextCell = riverCells[i + 1];
-      const [x2, y2] = points[i + 1];
-
-      if (nextCell === -1) {
-        meandered.push([x2, y2, fl[cell]]);
-        break;
-      }
-
-      const dist2 = (x2 - x1) ** 2 + (y2 - y1) ** 2; // square distance between cells
-      if (dist2 <= 25 && riverCells.length >= 6) continue;
-
-      const meander = meandering + 1 / step + Math.max(meandering - step / 100, 0);
-      const angle = Math.atan2(y2 - y1, x2 - x1);
-      const sinMeander = Math.sin(angle) * meander;
-      const cosMeander = Math.cos(angle) * meander;
-
-      if (step < 20 && (dist2 > 64 || (dist2 > 36 && riverCells.length < 5))) {
-        // if dist2 is big or river is small add extra points at 1/3 and 2/3 of segment
-        const p1x = (x1 * 2 + x2) / 3 + -sinMeander;
-        const p1y = (y1 * 2 + y2) / 3 + cosMeander;
-        const p2x = (x1 + x2 * 2) / 3 + sinMeander / 2;
-        const p2y = (y1 + y2 * 2) / 3 - cosMeander / 2;
-        meandered.push([p1x, p1y, 0], [p2x, p2y, 0]);
-      } else if (dist2 > 25 || riverCells.length < 6) {
-        // if dist is medium or river is small add 1 extra middlepoint
-        const p1x = (x1 + x2) / 2 + -sinMeander;
-        const p1y = (y1 + y2) / 2 + cosMeander;
-        meandered.push([p1x, p1y, 0]);
-      }
-    }
-
-    return meandered as [number, number, number][];
+    return points.map(([x, y], idx) => [x, y, flux[idx]]);
   }
 
-  getRiverPoints(riverCells: number[], riverPoints: [number, number][] | null) {
+  // anchor positions per river cell (cell centers, or override anchors), with -1 cells resolved to the map edge
+  getRiverPoints(riverCells: number[], riverPoints: Point[] | null = null): Point[] {
     if (riverPoints) return riverPoints;
 
     const { p } = pack.cells;
     return riverCells.map((cell, i) => {
-      if (cell === -1) return this.getBorderPoint(riverCells[i - 1]);
+      if (cell === -1) return projectToNearestEdge(p[riverCells[i - 1]], graphWidth, graphHeight);
       return p[cell];
     });
-  }
-
-  getBorderPoint(i: number) {
-    const [x, y] = pack.cells.p[i];
-    const min = Math.min(y, graphHeight - y, x, graphWidth - x);
-    if (min === y) return [x, 0];
-    else if (min === graphHeight - y) return [x, graphHeight];
-    else if (min === x) return [0, y];
-    return [graphWidth, y];
   }
 
   getOffset({
@@ -568,6 +525,65 @@ class RiverModule {
   getNextId(rivers: { i: number }[]) {
     return rivers.length ? Math.max(...rivers.map(r => r.i)) + 1 : 1;
   }
+
+  isNavigable(cellId: number): boolean {
+    const { r, fl } = pack.cells;
+    return Boolean(r[cellId]) && fl[cellId] >= MIN_NAVIGABLE_FLUX;
+  }
+
+  // Walk an outlet chain starting from a lake feature
+  resolveLakeDrainFeature(lakeFeatureId: number): number | null {
+    const { features, rivers, cells } = pack;
+    const lake = features[lakeFeatureId];
+    if (!lake || lake.type !== "lake") return null;
+    if (!lake.outlet) return lakeFeatureId; // closed lake: return itself
+
+    const riverById = new Map(rivers.map(r => [r.i, r]));
+    const visited = new Set<number>();
+    let river = riverById.get(lake.outlet);
+    while (river && !visited.has(river.i)) {
+      visited.add(river.i);
+      const lastCell = river.cells[river.cells.length - 1];
+      if (lastCell < 0) return null; // outlet exits the map
+
+      const feature = features[cells.f[lastCell]];
+      if (!feature) return null;
+      if (feature.type === "ocean") return feature.i;
+      if (feature.type !== "lake") return null;
+      if (!feature.outlet) return feature.i; // closed downstream lake
+      river = riverById.get(feature.outlet);
+    }
+    return null;
+  }
+
+  // Walk a river chain downstream through lakes until we reach the final receiving body
+  resolveDrainFeature(cellId: number): number | null {
+    const { cells, features, rivers } = pack;
+    const startRiver = cells.r[cellId];
+    if (!startRiver) return null;
+
+    const riverById = new Map(rivers.map(r => [r.i, r]));
+    let river = riverById.get(startRiver);
+    const visited = new Set<number>();
+    while (river && !visited.has(river.i)) {
+      visited.add(river.i);
+      const lastCell = river.cells[river.cells.length - 1];
+      if (lastCell < 0) return null; // off-map exit
+
+      const feature = features[cells.f[lastCell]];
+      if (!feature) return null;
+      if (feature.type === "ocean") return feature.i;
+      if (feature.type !== "lake") return null;
+
+      if (!feature.outlet) return feature.i; // closed lake terminus
+      river = riverById.get(feature.outlet);
+    }
+    return null;
+  }
+}
+
+declare global {
+  var Rivers: RiverModule;
 }
 
 window.Rivers = new RiverModule();

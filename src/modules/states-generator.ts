@@ -20,7 +20,9 @@ declare global {
   var States: StatesModule;
 }
 
-interface Campaign {
+export interface Campaign {
+  attacker: number;
+  defender: number;
   name: string;
   start: number;
   end?: number;
@@ -54,11 +56,25 @@ export interface State {
   provinces?: number[];
   temp?: any;
   alert?: number;
+  salesTax: number;
+  pollTax: number;
+  treasury: number;
 }
+
+type TaxBases = { salesTax: number; pollTax: number };
+
+const DEFAULT_TAX_BY_FORM: Record<string, TaxBases> = {
+  Monarchy: { salesTax: 0.15, pollTax: 0.2 },
+  Theocracy: { salesTax: 0.25, pollTax: 0.1 },
+  Union: { salesTax: 0.07, pollTax: 0.13 },
+  Republic: { salesTax: 0.05, pollTax: 0.15 },
+  Anarchy: { salesTax: 0, pollTax: 0 }
+};
+const DEFAULT_TAX: TaxBases = DEFAULT_TAX_BY_FORM.Monarchy;
 
 class StatesModule {
   private createStates() {
-    const states: State[] = [{ i: 0, name: "Neutrals" } as State];
+    const states: State[] = [{ i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0 } as State];
     const each5th = each(5);
     const sizeVariety = (ensureEl("sizeVariety") as HTMLInputElement).valueAsNumber;
 
@@ -79,7 +95,10 @@ class StatesModule {
         type: type!,
         center: burg.cell,
         culture: burg.culture!,
-        coa
+        coa,
+        salesTax: 0,
+        pollTax: 0,
+        treasury: 0
       });
     });
 
@@ -262,7 +281,6 @@ class StatesModule {
   }
 
   assignColors() {
-    TIME && console.time("assignColors");
     const colors = ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#ffd92f"]; // d3.schemeSet2;
     const states = pack.states;
 
@@ -282,8 +300,6 @@ class StatesModule {
         state.color = getMixedColor(state.color!);
       });
     });
-
-    TIME && console.timeEnd("assignColors");
   }
 
   // calculate states data like area, population etc.
@@ -313,7 +329,7 @@ class StatesModule {
     TIME && console.timeEnd("collectStatistics");
   }
 
-  generateCampaign(state: State) {
+  generateCampaign(state: State): Campaign[] {
     const wars = {
       War: 6,
       Conflict: 2,
@@ -331,7 +347,7 @@ class StatesModule {
         const name = i && P(0.8) ? pack.states[i].name : Names.getCultureShort(state.culture);
         const start = gauss(options.year - 100, 150, 1, options.year - 6);
         const end = start + gauss(4, 5, 1, options.year - start - 1);
-        return { name: `${getAdjective(name)} ${rw(wars)}`, start, end };
+        return { name: `${getAdjective(name)} ${rw(wars)}`, start, end, attacker: state.i!, defender: i };
       })
       .sort((a, b) => a.start - b.start);
   }
@@ -443,7 +459,7 @@ class StatesModule {
       const name = `${an}-${trimVowels(dn)}ian War`;
       const start = options.year - gauss(2, 3, 0, 10);
       const war = [name, `${an} declared a war on its rival ${dn}`];
-      const campaign = { name, start, attacker, defender };
+      const campaign: Campaign = { name, start, attacker, defender };
       states[attacker].campaigns!.push(campaign);
       states[defender].campaigns!.push(campaign);
 
@@ -668,9 +684,21 @@ class StatesModule {
 
       s.formName = selectForm(s, tier);
       s.fullName = this.getFullName(s);
+
+      const taxes = this.defineTaxRates(s);
+      s.salesTax = taxes.salesTax;
+      s.pollTax = taxes.pollTax;
     }
 
     TIME && console.timeEnd("defineStateForms");
+  }
+
+  defineTaxRates(state: State) {
+    const { salesTax, pollTax } = DEFAULT_TAX_BY_FORM[state.form || ""] || DEFAULT_TAX;
+    return {
+      salesTax: rn(gauss(salesTax, salesTax * 0.15, salesTax * 0.5, salesTax * 1.5, 4), 2),
+      pollTax: rn(gauss(pollTax, pollTax * 0.15, pollTax * 0.5, pollTax * 1.5, 4), 2)
+    };
   }
 
   getFullName(state: State) {
@@ -698,6 +726,44 @@ class StatesModule {
     if (!state.name && state.formName) return `The ${state.formName}`;
     const adjName = adjForms.includes(state.formName) && !/-| /.test(state.name);
     return adjName ? `${getAdjective(state.name)} ${state.formName}` : `${state.formName} of ${state.name}`;
+  }
+
+  collectTaxes() {
+    const { states, burgs, deals } = pack;
+    if (!states.length) return;
+    for (const state of states) {
+      if (!state.i || state.removed) continue;
+      state.treasury = 0;
+    }
+
+    for (const deal of deals) {
+      if (!deal.tax) continue;
+
+      let sellerStateId = 0;
+      if (deal.sellerType === "burg") {
+        sellerStateId = burgs?.[deal.seller]?.state || 0;
+      } else if (deal.sellerType === "market") {
+        const market = Markets.get(deal.seller);
+        const centerBurgId = market?.centerBurgId;
+        sellerStateId = centerBurgId ? burgs?.[centerBurgId]?.state || 0 : 0;
+      }
+      if (!sellerStateId) continue;
+      const state = states[sellerStateId];
+      if (!state || state.removed) continue;
+      state.treasury += deal.tax;
+    }
+
+    for (const state of states) {
+      if (!state.i || state.removed) continue;
+      const population = (state.rural || 0) + (state.urban || 0);
+      state.treasury = rn(state.treasury + state.pollTax * population, 2);
+    }
+  }
+
+  getSalesTax(burg: { state?: number }): number {
+    const stateId = burg.state || 0;
+    if (!stateId) return 0;
+    return pack.states?.[stateId]?.salesTax ?? 0;
   }
 }
 

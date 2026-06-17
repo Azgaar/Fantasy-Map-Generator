@@ -141,8 +141,18 @@ a {
 #coastline,
 #armies,
 #ice,
-#emblems {
+#emblems,
+#goodsCells,
+#goodsIcons,
+#goodsBurgs,
+#markets {
   cursor: pointer;
+}
+
+#markets > g > path,
+#markets > g > text {
+  user-select: none;
+  pointer-events: none;
 }
 
 #temperature {
@@ -429,6 +439,8 @@ button.options {
 
 button.active {
   background-color: var(--header);
+  border-color: var(--dark-solid);
+  border-radius: 3px;
   color: white;
 }
 
@@ -1451,7 +1463,7 @@ div.totalLine > div {
   display: inline-block;
 }
 
-div.states > input {
+div.states > input:not([type="checkbox"]) {
   width: 7em;
   background: none;
   border: 0;
@@ -2478,6 +2490,70 @@ svg.button {
     background: #25252a;
   }
 }
+
+/* Goods */
+div.states > .goodIcon {
+  margin: 0;
+  vertical-align: middle;
+}
+div.states > .goodName {
+  width: 7em;
+}
+
+div.states > .goodProduced,
+div.states > .goodStock,
+div.states > .goodBasePrice,
+div.states > .goodBuyPrice,
+div.states > .goodSellPrice {
+  width: 5em;
+  text-align: right;
+}
+
+div.states > .goodEdit {
+  padding-left: 1em;
+}
+
+/* Market Goods */
+div.states > .marketGoodName {
+  width: 8.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+div.states > .marketGoodStock,
+div.states > .marketGoodPrice,
+div.states > .goodUnits,
+div.states > .goodPrice,
+div.states > .goodValue {
+  width: 5em;
+  text-align: right;
+}
+
+/* Market Deals */
+div.states > .marketDealUnits {
+  width: 4em;
+  text-align: right;
+}
+
+div.states > .marketDealParty {
+  width: 8em;
+}
+
+div.states > .marketDealIncome {
+  width: 5em;
+  text-align: right;
+}
+
+div.states .marketBadge {
+  display: inline-block;
+  border-radius: 3px;
+  padding: 0 0.4em;
+  font-size: 0.8em;
+  font-weight: bold;
+  line-height: 1.35;
+}
+
 .fmg-tour.driver-popover {
   border-radius: 4px;
 }

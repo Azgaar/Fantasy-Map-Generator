@@ -52,7 +52,10 @@ function getMinimalDataJson() {
     provinces: pack.provinces,
     religions: pack.religions,
     rivers: pack.rivers,
+    goods: pack.goods,
     markers: pack.markers,
+    markets: pack.markets,
+    deals: pack.deals,
     routes: pack.routes,
     zones: pack.zones
   };
@@ -172,7 +175,10 @@ function getPackCellsData() {
     provinces: pack.provinces,
     religions: pack.religions,
     rivers: pack.rivers,
+    goods: pack.goods,
     markers: pack.markers,
+    markets: pack.markets,
+    deals: pack.deals,
     routes: pack.routes,
     zones: pack.zones
   };

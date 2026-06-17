@@ -1,3 +1,4 @@
+import { ensureEl } from "./nodeUtils";
 import { rn } from "./numberUtils";
 
 type TemperatureScale = "°C" | "°F" | "K" | "°R" | "°De" | "°N" | "°Ré" | "°Rø";
@@ -48,10 +49,42 @@ export const getIntegerFromSI = (value: string): number => {
   return parseInt(value, 10);
 };
 
+/**
+ * Convert height value from generator scale to real-world height with unit
+ * @param {number} h - The height value from generator, [0, 100] scale
+ * @param {boolean} abs - Whether to return absolute height or signed height
+ * @returns {string} - The converted height with unit
+ */
+export function getHeight(h: number, abs = false): string {
+  const unit = ensureEl<HTMLSelectElement>("heightUnit").value;
+  let unitRatio = 3.281; // default calculations are in feet
+  if (unit === "m")
+    unitRatio = 1; // if meter
+  else if (unit === "f") unitRatio = 0.5468; // if fathom
+
+  let height = -990;
+  if (h >= 20) height = (h - 18) ** +heightExponentInput.value;
+  else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
+
+  if (abs) height = Math.abs(height);
+  return `${rn(height * unitRatio)}${unit}`;
+}
+
+/**
+ * Format price value with currency symbol
+ * @param value - The price value to format
+ * @returns {string} - The formatted price string with money symbol
+ */
+export function formatPrice(value: number): string {
+  return `🟡 ${rn(value, 2)}`;
+}
+
 declare global {
   interface Window {
     convertTemperature: typeof convertTemperature;
     si: typeof si;
     getInteger: typeof getIntegerFromSI;
+    getHeight: typeof getHeight;
+    formatPrice: typeof formatPrice;
   }
 }

@@ -5,6 +5,8 @@ interface Marker {
   icon: string;
   x: number;
   y: number;
+  name?: string;
+  type?: string;
   dx?: number;
   dy?: number;
   px?: number;
@@ -13,6 +15,7 @@ interface Marker {
   fill?: string;
   stroke?: string;
   pinned?: boolean;
+  hidden?: boolean;
 }
 
 declare global {
@@ -79,7 +82,9 @@ const markersRenderer = (): void => {
   const rescale = +markers.attr("rescale");
   const pinned = +markers.attr("pinned");
 
-  const markersData: Marker[] = pinned ? pack.markers.filter((m: Marker) => m.pinned) : pack.markers;
+  const markersData: Marker[] = pinned
+    ? (pack.markers || []).filter((marker: Marker) => marker.pinned)
+    : pack.markers || [];
   const html = markersData.map(marker => markerRenderer(marker, rescale));
   markers.html(html.join(""));
 
