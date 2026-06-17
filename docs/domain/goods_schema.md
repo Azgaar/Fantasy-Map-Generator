@@ -54,7 +54,12 @@ Biome output is separate from biome multipliers (`multipliers.biome`): the forme
 
 ## Bonus Resource Channel
 
-When `pack.cells.good[cellId]` is set, that cell produces a flat `BONUS_RESOURCE_PRODUCTION = 5` units regardless of rural population. This applies both to rural market seeding and to burgs that sit on such a cell (pre-seeded into burg inventory before the worker loop). The full multiplier stack (`getModifiers`) is applied to bonus-resource production just as for biome output.
+When `pack.cells.good[cellId]` is set, that cell yields a population-scaled bonus of its good, capped at `MAX_BONUS_PRODUCTION = 5` units:
+
+- **Rural seeding** — `min(population × BONUS_RURAL_PRODUCTION, MAX_BONUS_PRODUCTION)` (`BONUS_RURAL_PRODUCTION = 0.25`).
+- **Burg pre-seed** — a burg sitting on such a cell pre-seeds `minmax(population × BONUS_URBAN_PRODUCTION, MIN_BONUS_PRODUCTION, MAX_BONUS_PRODUCTION)` units into inventory before the worker loop (`BONUS_URBAN_PRODUCTION = 1`, `MIN_BONUS_PRODUCTION = 1`).
+
+The full multiplier stack (`getModifiers`) is applied to bonus-resource production just as for biome output.
 
 ## Recipes (Manufactured Goods)
 
@@ -119,16 +124,21 @@ Coverage is used during the burg worker loop to calculate demand effects (boosti
 
 ## Key Constants
 
-| Constant                    | Value                                                     | Meaning                                                  |
-| --------------------------- | --------------------------------------------------------- | -------------------------------------------------------- |
-| `BONUS_RESOURCE_PRODUCTION` | `5`                                                       | Flat output for bonus-resource cells, before multipliers |
-| `DEMAND_PRIORITY`           | `["food","utilities","construction","military","luxury"]` | Order of demand evaluation                               |
-| `DEMAND_TARGET_FACTORS`     | per-category scalars                                      | Target coverage per population point                     |
+| Constant                  | Value                                                     | Meaning                                                       |
+| ------------------------- | --------------------------------------------------------- | ------------------------------------------------------------ |
+| `BONUS_RURAL_PRODUCTION`  | `0.25`                                                    | Bonus-resource units per rural population point (pre-cap)    |
+| `BONUS_URBAN_PRODUCTION`  | `1`                                                       | Bonus-resource units per burg population point (pre-clamp)   |
+| `MIN_BONUS_PRODUCTION`    | `1`                                                       | Lower clamp on a burg's bonus-resource pre-seed              |
+| `MAX_BONUS_PRODUCTION`    | `5`                                                       | Upper cap on bonus-resource output (rural and burg)         |
+| `DEMAND_PRIORITY`         | `["food","utilities","construction","military","luxury"]` | Order of demand evaluation                                   |
+| `DEMAND_TARGET_FACTORS`   | per-category scalars                                      | Target coverage per population point                         |
 
 ## Source Files
 
 - [`src/modules/goods-generator.ts`](../../src/modules/goods-generator.ts) — `Good` interface, `GOODS_DATA`, `GoodsModule`
 - [`src/modules/production-generator.ts`](../../src/modules/production-generator.ts) — `getModifiers`, production channels, `getCellProduction`
-- [`src/controllers/goods-editor.ts`](../../src/controllers/goods-editor.ts) — Goods Editor UI, multiplier popup
+- [`src/controllers/goods-editor.ts`](../../src/controllers/goods-editor.ts) — Goods Editor (the catalogue list UI)
+- [`src/controllers/good-editor.ts`](../../src/controllers/good-editor.ts) — single-good editor: multiplier popups, biome output, demand coverage
+- [`src/controllers/goods-distribution-editor.ts`](../../src/controllers/goods-distribution-editor.ts) — visual builder for a good's `distribution` expression
 - [`docs/domain/production_schema.md`](production_schema.md) — production pipeline in detail
-- [`docs/adr/0001-good-multipliers-design.md`](../adr/0001-good-multipliers-design.md) — multiplier design decisions
+- [`docs/prd/good-multipliers.md`](../prd/good-multipliers.md) — multiplier design decisions

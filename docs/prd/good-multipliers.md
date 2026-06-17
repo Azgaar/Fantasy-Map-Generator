@@ -225,7 +225,7 @@ The existing `renderCulture` function and its grid are removed. Replace with a `
 ### Docs
 
 - `docs/domain/glossary.md` — already updated: Good Multiplier, Biome Output terms added
-- `docs/adr/0001-good-multipliers-design.md` — already written
+- `docs/domain/goods_schema.md` — Multipliers section documents the implemented design (no separate ADR was created)
 
 ## Acceptance criteria
 

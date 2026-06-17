@@ -5,21 +5,21 @@ Production models the transformation of rural resources into manufactured goods 
 - Rural cells seed raw goods into market stock (not directly into burgs).
 - Burgs start each production cycle with no inventory; they manufacture goods using free local resource bonuses and market inputs, then sell all output back to the local market.
 - After every burg finishes producing, surpluses are reshuffled between markets and each burg buys goods to cover personal demand.
-- Production is a single-pass simulation: there is no recurring tick and `burg.inventory` is the end-of-cycle snapshot of demand-fill purchases, not a starting carryover.
+- Production is a single-pass simulation: there is no recurring tick. The only persisted per-burg output is `burg.production` (a records array); there is no carried-over inventory between runs.
 
 ## Run order
 
 `Production.produce()` is the single entrypoint, called after `Markets.generate()` has created markets and assigned every burg to one. It runs the following sequence:
 
-1. `Markets.collectRuralProduction()` — seeds every market's stock with the rural output of its cells (cell resource bonus plus biome production scaled by population and culture modifier).
+1. `Markets.collectRuralProduction()` — seeds every market's stock with the rural output of its cells (cell resource bonus plus biome output scaled by population, with the full multiplier stack applied via `getModifiers`).
 2. `Markets.initializeMarketPrices()` — sets the starting `price` for every (market, good) pair, in two passes (raw goods first, then manufactured).
 3. For each burg in ascending population order:
    - Pre-seeds the local resource bonus (if any) into burg inventory.
    - Runs a worker loop, planning and executing one manufacturing step per fractional worker tick.
    - Sells the resulting inventory to the local market.
-   - Stores `burg.produced`, updates `burg.treasury`, sets `burg.product`.
+   - Stores `burg.production` (the records array), updates `burg.treasury`, sets `burg.product`.
 4. `Markets.runGlobalTrade()` — moves surpluses between markets according to per-good profitability (see Markets schema).
-5. For each burg, `fillBurgsDemand` buys goods from the local market to cover personal demand, capped by treasury and stock; results are written to `burg.inventory`.
+5. For each burg, `fillBurgsDemand` buys goods from the local market to cover personal demand, capped by treasury and stock; each purchase is appended as a deal record to `burg.production`.
 
 ## Inputs and Data Structures
 
@@ -40,9 +40,9 @@ All planning and execution use array-based structures for speed:
 
 If `pack.cells.good[burg.cell]` is set, the burg receives a free pre-production stock of that good:
 
-    localBonus = Math.min(population, BONUS_RESOURCE_PRODUCTION)
+    localBonus = minmax(population × BONUS_URBAN_PRODUCTION, MIN_BONUS_PRODUCTION, MAX_BONUS_PRODUCTION) × getModifiers(good, burg.cell)
 
-These units go directly into `inventory` (no market transaction, no cost). There is no special buy-price discount on the local good — its attractiveness comes purely from being already in inventory at zero cost.
+(`BONUS_URBAN_PRODUCTION = 1`, `MIN_BONUS_PRODUCTION = 1`, `MAX_BONUS_PRODUCTION = 5`.) These units go directly into `inventory` (no market transaction, no cost). There is no special buy-price discount on the local good — its attractiveness comes purely from being already in inventory at zero cost.
 
 ## Worker loop
 
@@ -61,7 +61,7 @@ There is no split between raw and manufactured logic — planning is unified and
 
 For a target good:
 
-1. Try an immediate manufacture: every recipe is evaluated against inventory + market stock. If feasible within remaining workers, the immediate candidate's score is `(sellPrice × cultureModifier − ingredientCost) × demandMultiplier`.
+1. Try an immediate manufacture: every recipe is evaluated against inventory + market stock. If feasible within remaining workers, the immediate candidate's score is `(sellPrice × modifier − ingredientCost) × demandMultiplier`, where `modifier = getModifiers(good, burg.cell)` is the full production multiplier stack.
 2. If ingredients are missing, recursively plan one upstream manufactured ingredient. The recursion uses `path[good.i]` as a cycle guard.
 3. Reject any plan whose `workersNeeded` (current step plus lower-bound upstream chain) exceeds remaining workers.
 4. Score the chosen plan by `projectedGain / workersNeeded`, with stickiness applied at the outer decision step.
@@ -75,7 +75,7 @@ When a step runs (`executeManufacture`):
 1. For each ingredient: take what's available from inventory first.
 2. Missing inputs are bought via `Markets.buy({ burg, good, units })`. The cost reduces `burg.treasury` and the per-burg `ingredientCosts` accumulator (local to the worker loop); the deal is recorded and pushed onto the burg's `productionData` history. If any market buy fails, the manufacturing step is skipped without mutating inventory.
 3. Inventory and demand coverage are updated.
-4. Output amount = `actualYield × cultureModifier`; added to `inventory[good.i]` and `produced[good.i]`.
+4. Output amount = `actualYield × getModifiers(good, burg.cell)`; added to `inventory[good.i]` and `produced[good.i]`. (The applied factor is persisted on the record as `cultureModifier` when it is not 1 — the field name predates the multi-dimension multiplier system but now carries the full stack.)
 
 ## Sell all
 
@@ -83,7 +83,7 @@ After the worker loop, the entire `inventory` is sold to the local market via `M
 
 - Increases market stock; lowers market price under sell pressure.
 - Gross revenue = `deal.units × deal.price`.
-- Sales tax = `grossRevenue × getSalesTaxRateForBurg(burg)`; the post-tax revenue is added to `burg.treasury` and `phaseRevenue`. The tax amount is subtracted from revenue but not currently recorded to a separate ledger.
+- Sales tax rate comes from `States.getSalesTax(burg)`; `Markets.sell` records the absolute amount on `deal.tax = units × price × rate`. The post-tax revenue (`grossRevenue − deal.tax`) is added to `burg.treasury` and `phaseRevenue`, and `States.collectTaxes()` later credits `deal.tax` to the seller's state treasury (see [taxes.md](taxes.md)).
 
 `burg.product = max(0, phaseRevenue − ingredientCosts)`
 
@@ -96,19 +96,20 @@ After every burg finishes producing:
    - Builds candidate goods from `demandGoodsByCategory`, filtered to those with stock in the burg's market.
    - Sorts candidates by **cost per coverage** (`buyPrice / coverageWeight`).
    - Buys one good at a time via `Markets.buy({ burg, good, units, budget })` until the category shortage is covered, the treasury is empty, or the stock is exhausted.
-   - Records every deal in `productionData` and accumulates bought units into `demandInventory`.
-3. `burg.inventory` is written from `demandInventory`, carrying these goods into the next cycle's pre-production inventory.
+   - Appends a deal-reference record (`{dealId}`) for every purchase onto the burg's `production` records array.
 
 ## Stored burg snapshot
 
 After the full cycle:
 
-- `burg.inventory`: goods bought during the demand-fill phase — a snapshot for UI / uncovered-demand display. It is **not** used as a starting inventory in any subsequent run (production runs once per generation).
-- `burg.produced`: units of each good manufactured (sparse `Record<goodId, units>`)
+- `burg.production`: the unified records array (`ProductionRecord[]`) for the burg's most recent cycle — the only persisted per-burg trade snapshot. Each record is one of:
+  - `LocalRecord` `{goodId, units}` — free local-bonus units pre-seeded before the worker loop.
+  - `MfgRecord` `{goodId, units, recipe, cultureModifier?}` — one manufacturing step (`cultureModifier` carries the full `getModifiers` value, omitted when 1).
+  - `DealRecord` `{dealId}` — a reference into `pack.deals` for every market buy/sell (ingredient buys, the sell-all phase, and demand-fill purchases).
 - `burg.treasury`: updated by ingredient purchases, sales revenue (post-tax), and demand-fill purchases
 - `burg.product`: net revenue from the sell phase minus ingredient costs
 
-`Production.getProductionData(burgId)` returns the recorded history of `local`, `mfg`, and `deal` entries for that burg's most recent cycle (used by the production overview UI and chains viewer).
+There is no separate `burg.produced` or `burg.inventory` field; the worker loop's `inventory` is local scratch state that is fully sold to the market and never persisted. The Production Overview and Production Chains UI read `burg.production` directly (the `isMfgRecord` / `isDealRecord` guards discriminate the record kinds).
 
 ## Architectural intent
 

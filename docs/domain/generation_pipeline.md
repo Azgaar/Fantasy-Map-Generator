@@ -21,14 +21,14 @@ The canonical "build a world from scratch" routine lives in [`public/main.js`](.
 | 11  | **Settlement / state specification** | `Burgs.specify`, `States.collectStatistics`, `States.defineStateForms`                                      | burg types, state stats, state forms                                |
 | 12  | **Provinces**                        | `Provinces.generate`, `Provinces.getPoles`                                                                  | `pack.provinces`                                                    |
 | 13  | **Naming polish**                    | `Rivers.specify`, `Lakes.defineNames`                                                                       | river/lake names                                                    |
-| 14  | **Economy**                          | `Markets.generate`, `Production.produce`, `States.collectTaxes`                                             | `pack.markets`, `cells.market`, `state.inventory`, `state.treasury` |
+| 14  | **Economy**                          | `Markets.generate`, `Production.produce`, `States.collectTaxes`                                             | `pack.markets`, `cells.market`, `pack.deals`, `burg.production`, `burg.treasury`, `state.treasury` |
 | 15  | **Military & overlays**              | `Military.generate`, `Markers.generate`, `Zones.generate`                                                   | regiments, markers, zones                                           |
 | 16  | **Finalise**                         | `drawScaleBar`, `Names.getMapName`, `showStatistics`                                                        | scale bar, map name, stats                                          |
 
 Two ordering constraints matter for replication:
 
 - **Goods depend on nothing pack-side** but must exist before `Markets.generate`. `Goods.generate` is called once per map and idempotent for an existing `pack.goods`; pass `regenerate=true` only to force a fresh catalogue.
-- **Economy depends on the whole settlement chain** — markets are seeded from burgs, production reads `state.culture`, `state.provinces`, `cells.biome`, `cells.pop`, `cells.market`, `pack.routes`. Replicators that rebuild burgs/states/provinces must also rebuild the economy, or `pack.markets`, `cells.market`, `state.inventory`, `state.treasury` will reference stale or removed entities.
+- **Economy depends on the whole settlement chain** — markets are seeded from burgs, production reads `state.culture`, `state.provinces`, `cells.biome`, `cells.pop`, `cells.market`, `pack.routes`. Replicators that rebuild burgs/states/provinces must also rebuild the economy, or `pack.markets`, `cells.market`, `pack.deals`, `burg.production`, and the treasuries will reference stale or removed entities.
 
 See [`production_schema.md`](production_schema.md) and [`trade_schema.md`](trade_schema.md) for the internal ordering of phase 14.
 
@@ -69,25 +69,25 @@ Used by `transform-tool` (in-place transform) and `submap-tool` (extract sub-reg
 - Re-runs hydrology, ocean layers, temperature, repack, ice (phases 3–7) — but skips `Rivers.generate` because rivers are restored from the parent's saved meanders.
 - Restores cell data (biome, fl, s, pop, culture, state, religion, province, **good**), cultures, burgs, states, routes, religions, provinces, features, markers, zones from the parent map.
 
-The economy (phase 14) is **preserved**, not regenerated:
+The economy (phase 14) is **regenerated**, not preserved. `Resampler.restoreEconomy` keeps only the map-independent catalogue and the market anchors, then re-runs production from a clean slate:
 
-- `pack.goods` — catalogue is map-independent, copied directly from the parent.
-- `cells.good` — copied via the same parent-land quadtree used for `biome`/`culture`/`state` in `restoreCellData`.
-- `pack.markets` — carried over with stock and prices; markets whose `centerBurgId` was removed (out-of-map burg in submap) are filtered out.
-- `pack.deals` — carried over; deals referencing removed burgs or filtered markets are dropped.
-- `burg.produced`, `burg.treasury`, `burg.product`, `burg.inventory` — preserved by the spread clone in `restoreBurgs`.
-- `state.inventory`, `state.produced`, `state.demandCoverage`, `state.treasury`, `state.salesTax`, `state.pollTax` — preserved by the spread clone in `restoreStates`.
+- `pack.goods` — catalogue is map-independent, copied directly from the parent; `Goods.sync()` rebuilds the id index.
+- `cells.good` — copied via the same parent-land quadtree used for `biome`/`culture`/`state` in `restoreCellData`, so bonus-resource placement survives.
+- `pack.markets` — the market *list* is carried over but **filtered** to markets whose `centerBurgId` is still on the map (out-of-map center burgs in a submap drop their market). Each surviving market's `goods` (stock + prices) is then reset to `{}`.
+- `Markets.expandTerritories(pack.markets)` re-floods every surviving market's territory against the new cell graph, rewriting `cells.market` and `burg.market` — the cell ids, areas, and neighbour relations have all changed, so the saved BFS result is useless.
+- `pack.deals` is reset to `[]` and `Production.produce()` is re-run, regenerating market stock/prices, `burg.production`, `burg.treasury`, `burg.product`, and the deal log against the resampled population.
 
-Only the cell-graph-dependent pieces — `cells.market` and `burg.market` — are rebuilt. The market list survives but each market's BFS-flooded territory does not, because the cell graph (ids, areas, neighbour relations) has changed. `Markets.expandTerritories(pack.markets)` re-runs only the BFS step against the preserved market centres. This is wrapped in `Resampler.restoreEconomy`.
+Two consequences worth noting:
 
-Note that for **submaps** (`scale > 1`) cell population is multiplied by `areaRatio / scale` and burg population by `scale`, so stock and prices carried from the parent are *not* re-balanced against the new population. This is a deliberate trade-off favouring user-edited economy state over derived consistency — running `Production.produce()` + `States.collectTaxes()` from the UI after a submap will rebuild fresh values against the rescaled population.
+- `restoreBurgs` / `restoreStates` spread-clone the parent entities, so rate fields like `state.salesTax` / `state.pollTax` survive — but the burg economic outputs (`production`, `product`, `treasury`) are overwritten by the re-run, and submap population rescaling (`areaRatio / scale` on cells, `× scale` on burgs) is therefore already baked into the fresh economy.
+- `States.collectTaxes()` is **not** part of `restoreEconomy`, so `state.treasury` keeps the spread-cloned parent value until production is regenerated from the UI (which also collects taxes).
 
 ### Other regeneration callers (for reference)
 
 These are partial regenerations triggered from the UI and do **not** replicate the full pipeline. They still belong to the same dependency graph and may need their own economy refresh when they touch upstream data:
 
 - [`public/modules/ui/tools.js`](../../public/modules/ui/tools.js): `regenerateRoutes`, `regenerateRivers`, `recalculatePopulation`, `regenerateStates`, `regenerateProvinces`, `regenerateBurgs`, `regenerateGoods`, `regenerateCultures`, `regenerateMilitary`, `regenerateMarkers`, `regenerateZones`.
-- [`public/modules/dynamic/auto-update.js`](../../public/modules/dynamic/auto-update.js): version-bump migrations (e.g. the `1.123.0` block that introduced goods/markets/production/taxes).
+- [`public/modules/dynamic/auto-update.js`](../../public/modules/dynamic/auto-update.js): version-bump migrations (e.g. the `1.124.0` block that introduced goods/markets/production/taxes).
 - [`public/modules/ui/world-configurator.js`](../../public/modules/ui/world-configurator.js) → `updateWorld`: climate-only refresh; does not touch the settlement / economy layers.
 
 When extending the pipeline, audit each of these for whether their scope reaches the new phase.

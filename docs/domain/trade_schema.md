@@ -16,12 +16,12 @@ Note: market stock and prices are not initialized during `generate()`. They are 
 
 ## Rural seeding
 
-`Markets.collectRuralProduction()` runs before any burg produces. For each cell whose market is set:
+`Markets.collectRuralProduction()` runs before any burg produces. For each cell whose market is set, it calls `Production.getCellProduction(cellId, biomeProduction)` and adds the returned per-good amounts to that market's stock. `getCellProduction` computes, for the cell's population (summed from land neighbours for water cells):
 
-- If `pack.cells.good[cellId]` is set, the market gains `BONUS_RESOURCE_PRODUCTION × cultureModifier` units of that good.
-- For every good with `good.biome[biomeId] > 0`, the market gains `population × biomeProduction × cultureModifier` units of that good.
+- **Biome output** — for every good with `good.biomeOutput[biomeId] > 0`, `population × biomeOutput × getModifiers(good, cellId)` units.
+- **Bonus resource** — if `pack.cells.good[cellId]` is set, `min(population × BONUS_RURAL_PRODUCTION, MAX_BONUS_PRODUCTION) × getModifiers(good, cellId)` units (`BONUS_RURAL_PRODUCTION = 0.25`, `MAX_BONUS_PRODUCTION = 5`).
 
-`cultureModifier` is `good.culture[cultureType]` for the cell's culture, defaulting to `1`. All stock goes to the market that owns the cell.
+`getModifiers` is the full five-dimension multiplier stack (cultureType × culture × state × religion × biome), each factor defaulting to `1`. All stock goes to the market that owns the cell.
 
 ## Initial pricing
 
@@ -78,7 +78,7 @@ After global trade, each burg fills personal demand via `Markets.buy(...)` with 
 
 - Sorts candidate goods per category by `buyPrice / coverageWeight` and buys the cheapest first.
 - Each purchase decreases stock, raises price, and reduces treasury.
-- Bought units accumulate into `burg.inventory` for the next cycle's starting inventory.
+- Each purchase is recorded as a deal-reference record on `burg.production` (there is no carried-over inventory between cycles).
 
 ## Global redistribution
 

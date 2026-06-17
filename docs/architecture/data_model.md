@@ -98,6 +98,8 @@ World data is mainly stored in typed arrays within `cells` object in both `grid`
 - `pack.cells.state`: `number[]` - cells state index. `Uint16Array`
 - `pack.cells.province`: `number[]` - cells province index. `Uint16Array`
 - `pack.cells.religion`: `number[]` - cells religion index. `Uint16Array`
+- `pack.cells.good`: `number[]` - cells bonus resource good id (`0` if none). Marks the special good extracted on the cell. `Uint16Array`
+- `pack.cells.market`: `number[]` - cells market index (`0` if unassigned). Filled by the market territory flood-fill. `Uint16Array`
 - `pack.cells.area`: `number[]` - cells area in pixels. `Uint16Array`
 - `pack.cells.pop`: `number[]` - cells population in population points (1 point = 1000 people by default). `Float32Array`, not rounded to not lose population of high population rate
 - `pack.cells.r`: `number[]` - cells river index. `Uint16Array`
@@ -151,7 +153,11 @@ Burgs (settlements) data is stored as an array of objects with strict element or
 - `MFCG`: `number` - burg seed in [Medieval Fantasy City Generator](https://watabou.github.io/city-generator) (MFCG). If not provided, seed is combined from map seed and burg id
 - `link`: `string` - custom link to burg in MFCG. `MFCG` seed is not used if link is provided
 - `capital`: `number` - `1` if burg is a capital, `0` if not (each state has only 1 capital)
-- `port`: `number` - if burg is not a port, then `0`, otherwise feature id of the water body the burg stands on
+- `port`: `number` - if burg is not a port, then `0`, otherwise feature id of the water body the burg trades by. For coastal burgs this is the adjacent sea/lake; for burgs on a navigable river it is the water body the river ultimately drains into (the ocean, or a closed lake for endorheic basins), so river burgs join that body's sea-route network
+- `market`: `number` - id of the market this burg belongs to (`0` if none). Derived from `cells.market[burg.cell]` during market territory expansion
+- `production`: `object[]` - per-burg production/trade records from the last production run. Each record is one of: a local-bonus record `{good, units}`, a manufacture record `{good, units, recipe, cultureModifier?}`, or a deal reference `{dealId}` pointing into `pack.deals`. Used by the Production Overview and Production Chains UI
+- `product`: `number` - net product (gross sell revenue minus ingredient costs) from the last production run
+- `treasury`: `number` - accumulated cash balance, updated by ingredient purchases, post-tax sale revenue, and demand-fill purchases
 - `citadel`: `number` - `1` if burg has a castle, `0` if not. Used for MFCG
 - `plaza`: `number` - `1` if burg has a marketplace, `0` if not. Used for MFCG
 - `shanty`: `number` - `1` if burg has a shanty town, `0` if not. Used for MFCG
@@ -322,6 +328,33 @@ Ice data is stored as an array of objects with `i` not necessary equal to the el
 - `type`: `glacier | iceberg` - ice type
 - `offset`: `[number, number]` - ice position offset in px, optional, only added for manually dragged ice elements
 - `points`: `number[][]` - ice element vertices positions
+
+## Goods
+
+Goods (tradable resources and products) are stored in `pack.goods: Good[]`, where `i` equals the array index. The default catalogue is built from `GOODS_DATA`. Stored in .map file. A good is _raw_ if it has a `distribution`, _manufactured_ if it has `recipes`, or _hybrid_ if it has both. Object structure:
+
+- `i`: `number` - good id, always equal to the array index
+- `name`: `string` - good name
+- `tags`: `string[]` - free-form classification tags (used for filtering in the Goods Editor)
+- `value`: `number` - base price per unit; the anchor for all market pricing
+- `unit`: `string` - unit of measure label (e.g. `kg`, `barrel`)
+- `icon`: `string` - id of the SVG symbol used for the good's map/UI icon
+- `color`: `string` - good color in hex
+- `chance`: `number` - placement chance (0–100) for raw/hybrid goods. Manufactured-only goods are `0`. Optional
+- `distribution`: `string` - JS expression evaluated per cell to decide where the raw good is placed (uses the distribution method table; see [goods_schema.md](../domain/goods_schema.md)). Optional
+- `biomeOutput`: `Record<biomeId, number>` - units produced per rural population point per production cycle, per biome. Optional
+- `recipes`: `Record<goodId, number>[]` - array of alternative recipes; each maps input good id → units consumed per 1 unit of output. Optional
+- `multipliers`: `object` - per-dimension production scalars, each an optional `Record<id, number>`: `cultureType`, `culture`, `state`, `religion`, `biome`. Absent or `1` = no effect, `0` = fully suppressed; active factors combine multiplicatively. Only the map-independent `cultureType` is present in `GOODS_DATA`; the rest are set per map via the editor. Optional
+- `demandCoverage`: `Record<category, number>` - how much one unit of the good covers each demand category (`food`, `utilities`, `construction`, `military`, `luxury`). Optional
+
+## Markets
+
+Markets (regional economic hubs) are stored in `pack.markets: Market[]`. Note the market `i` starts at `1` and is **not** the array index — use `Markets.get(i)` (backed by a sparse `marketById`) for lookups. A `cells.market` value of `0` means the cell is unassigned. Stored in .map file. Object structure:
+
+- `i`: `number` - market id (starts at 1, not the array index)
+- `centerBurgId`: `number` - id of the burg the market is anchored at
+- `color`: `string` - market color in hex, used for territory rendering
+- `goods`: `Record<goodId, {stock: number; price: number}>` - per-good state. A single midpoint `price` is stored; customer-facing `buyPrice` / `sellPrice` are derived on demand via `MARKET_MARGIN`
 
 # Secondary global data
 
