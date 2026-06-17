@@ -185,16 +185,10 @@ function saveMarketsManualSnapshot(): void {
   if (marketsWorking) marketsManualHistory.push(Uint16Array.from(marketsWorking));
 }
 
-// Permanent, non-editable summary row (data-id="0") for cells/burgs that belong to no market.
-// In normal mode it just reports counts; during manual assignment it doubles as the selectable
-// "no market" brush target. data-pinned keeps it at the bottom regardless of sorting.
 function renderNoMarketRow(): string {
   const cells = getMarketCells(0);
   const burgs = getMarketBurgs(0);
-  return /*html*/ `<div class="states market" data-id="0" data-pinned="bottom"
-      data-market="No market" data-owner=""
-      data-cells="${cells}" data-burgs="${burgs}"
-      data-stock="0" data-sales="0" data-buys="0" data-value="0">
+  return /*html*/ `<div class="states market" data-id="0"  data-market="No market" data-owner="" data-cells="${cells}" data-burgs="${burgs}" data-stock="0" data-sales="0" data-buys="0" data-value="0">
     <fill-box fill="none" data-tip="Cells assigned to no market"></fill-box>
     <div data-tip="Cells with no market; their burgs are excluded from production" class="marketName" style="width:7em">No market</div>
     <div class="marketOwner" style="width:8em">—</div>
