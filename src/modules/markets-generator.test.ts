@@ -177,6 +177,32 @@ describe("MarketsModule", () => {
       expect(globalThis.pack.markets).toHaveLength(1);
     });
 
+    it("collectRuralProduction() should ignore cells with no market (market 0)", () => {
+      const market1: Market = { i: 1, centerBurgId: 1, color: "#ff0000", goods: {} };
+      globalThis.pack.markets = [market1];
+      // Index by id: slot 0 (no market) stays empty so market-0 cells resolve to undefined.
+      const index: Market[] = [];
+      index[market1.i] = market1;
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["marketById"] = index;
+
+      // Three land cells: cells 0 and 2 belong to market 1, cell 1 has no market.
+      globalThis.pack.cells = { i: [0, 1, 2], market: Uint16Array.from([1, 0, 1]) } as any;
+
+      const good = globalThis.pack.goods[0];
+      globalThis.Goods = {
+        getBiomesProduction: () => ({}),
+        get: (id: number) => (id === good.i ? good : undefined)
+      } as any;
+      // Each cell would yield 5 units if collected.
+      globalThis.Production = { getCellProduction: () => ({ [good.i]: 5 }) } as any;
+
+      marketsModule.collectRuralProduction();
+
+      // Only the two market-1 cells contribute; the no-market cell is skipped.
+      expect(market1.goods[good.i].stock).toBe(10);
+    });
+
     it("sell() should record sales tax on burg deals when state has a sales tax", () => {
       const market1: Market = {
         i: 1,
