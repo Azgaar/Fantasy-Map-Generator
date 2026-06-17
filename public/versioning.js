@@ -30,9 +30,9 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
   }
 
   const latestPublicChanges = [
-    "Trade animation",
     "Economic simulation",
-    "Navigatable rivers",
+    "Trade animation",
+    "Navigable rivers",
     "3D view: eroded terrain",
     "3D view: satellite texture",
     "Jagged coastlines",
