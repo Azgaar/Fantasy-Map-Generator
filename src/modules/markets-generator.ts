@@ -93,9 +93,13 @@ export class MarketsModule {
   }
 
   expandTerritories(markets: Market[] = pack.markets): Uint16Array {
+    this.indexMarkets(markets);
+    return this.expandMarkets(markets);
+  }
+
+  private indexMarkets(markets: Market[] = pack.markets): void {
     this.marketById = [];
     for (const market of markets) this.marketById[market.i] = market;
-    return this.expandMarkets(markets);
   }
 
   private expandMarkets(markets: Market[]): Uint16Array {
@@ -252,7 +256,11 @@ export class MarketsModule {
     pack.markets.push(market);
     pack.deals = [];
 
-    this.expandTerritories();
+    this.indexMarkets();
+    pack.cells.market[burg.cell] = marketId;
+    burg.market = marketId;
+    burg.plaza = 1;
+
     return market;
   }
 

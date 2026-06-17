@@ -140,6 +140,43 @@ describe("MarketsModule", () => {
       expect(tradeDeal!.price).toBeGreaterThan(5);
     });
 
+    it("addMarket() should claim only the center burg's cell and preserve existing borders", () => {
+      // Two cells already owned by market 1, plus a manual edit to be preserved.
+      const market1: Market = { i: 1, centerBurgId: 1, color: "#ff0000", goods: {} };
+      globalThis.pack.markets = [market1];
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["marketById"] = [market1];
+
+      const centerBurg: Burg = { i: 2, cell: 3 } as any;
+      globalThis.pack.burgs = [{ i: 0 } as any, { i: 1, cell: 0 } as any, centerBurg];
+      // cell 3 currently belongs to market 1; all four cells are owned by market 1.
+      globalThis.pack.cells = { i: [0, 1, 2, 3], market: Uint16Array.from([1, 1, 1, 1]) } as any;
+
+      const newMarket = marketsModule.addMarket(2);
+
+      expect(newMarket).not.toBeNull();
+      expect(newMarket!.i).toBe(2);
+      // Only the center burg's own cell changed owner.
+      expect(Array.from(globalThis.pack.cells.market)).toEqual([1, 1, 1, 2]);
+      expect(centerBurg.market).toBe(2);
+      expect(centerBurg.plaza).toBe(1);
+      // The new market is reachable through the index used by buy/sell/overview.
+      expect(marketsModule.get(2)).toBe(newMarket);
+    });
+
+    it("addMarket() should reject a burg that already centers a market", () => {
+      const market1: Market = { i: 1, centerBurgId: 1, color: "#ff0000", goods: {} };
+      globalThis.pack.markets = [market1];
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["marketById"] = [market1];
+      globalThis.pack.burgs = [{ i: 0 } as any, { i: 1, cell: 0 } as any];
+      globalThis.pack.cells = { i: [0], market: Uint16Array.from([1]) } as any;
+      globalThis.tip = () => {};
+
+      expect(marketsModule.addMarket(1)).toBeNull();
+      expect(globalThis.pack.markets).toHaveLength(1);
+    });
+
     it("sell() should record sales tax on burg deals when state has a sales tax", () => {
       const market1: Market = {
         i: 1,
