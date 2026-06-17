@@ -19,7 +19,7 @@ export function open(marketId: number): void {
   marketDealsAddLines();
 
   $("#marketDeals").dialog({
-    title: `${pack.burgs[market.centerBurgId]?.name} Market Deals`,
+    title: `${Markets.getName(market)} Market Deals`,
     position: { my: "right top", at: "right bottom+10", of: "#marketOverview", collision: "fit" }
   });
 

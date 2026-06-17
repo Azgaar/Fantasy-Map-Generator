@@ -233,7 +233,6 @@ export function open(burgId: number): void {
 
   const initialDemand = DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
   const producedByGood: Record<number, number> = {};
-  const centerBurg = market ? pack.burgs[market.centerBurgId] : null;
 
   let totalTax = 0;
   let stepIndex = 0;
@@ -334,7 +333,7 @@ export function open(burgId: number): void {
       <div>
         <span><b>Population:</b> ${population}</span>
         <span><b>Order:</b> ${processRank} of ${totalBurgs}</span>
-        <span><b>Market:</b> ${centerBurg?.name || "unknown"} (${market?.i})</span>
+        <span><b>Market:</b> ${market ? Markets.getName(market) : "unknown"} (${market?.i})</span>
       </div>
       <div><b>Initial Demand:</b> ${renderDemand(initialDemand)}</div>
       <div><b>Uncovered Demand:</b> ${renderDemand(uncoveredDemand, true) || "none"}</div>

@@ -18,9 +18,10 @@ export function open(marketId: number): void {
 
   activeMarketId = marketId;
   marketOverviewAddLines();
+  refreshNameInput(market);
 
   $("#marketOverview").dialog({
-    title: `Market Stock: ${getMarketCenterName(market)}`,
+    title: `Market Stock: ${Markets.getName(market)}`,
     resizable: false,
     width: "auto",
     close: closeMarketOverview,
@@ -36,8 +37,39 @@ export function open(marketId: number): void {
     ensureEl("marketOverviewRefresh").on("click", marketOverviewAddLines);
     ensureEl("marketOverviewExport").on("click", downloadStockCsv);
     ensureEl("marketOverviewOpenDeals").on("click", () => window.MarketDealsOverview.open(activeMarketId));
+    ensureEl("marketOverviewName").on("input", onRenameInput);
+    ensureEl("marketOverviewNameReset").on("click", resetMarketName);
     isInitialized = true;
   }
+}
+
+// The input shows the custom name (empty when using the default); the placeholder shows the default.
+function refreshNameInput(market: Market): void {
+  const input = ensureEl<HTMLInputElement>("marketOverviewName");
+  input.value = market.name || "";
+  input.placeholder = pack.burgs[market.centerBurgId]?.name || `Market ${market.i}`;
+}
+
+function onRenameInput(this: HTMLInputElement): void {
+  const market = Markets.get(activeMarketId);
+  if (!market) return;
+  const value = this.value.trim();
+  market.name = value || undefined;
+  applyRenamed(market);
+}
+
+function resetMarketName(): void {
+  const market = Markets.get(activeMarketId);
+  if (!market) return;
+  market.name = undefined;
+  ensureEl<HTMLInputElement>("marketOverviewName").value = "";
+  applyRenamed(market);
+}
+
+// Reflect a rename in the dialog title and, if open, the Markets Overview list row.
+function applyRenamed(market: Market): void {
+  $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);
+  window.MarketsOverview?.refreshMarketName(market.i);
 }
 
 function marketOverviewAddLines() {
@@ -91,10 +123,6 @@ function marketOverviewAddLines() {
 
   applySorting(ensureEl("marketOverviewHeader"));
   $("#marketOverview").dialog({ width: fitContent() });
-}
-
-function getMarketCenterName(market: Market): string {
-  return pack.burgs[market.centerBurgId]?.name || `Market ${market.i}`;
 }
 
 function downloadStockCsv() {

@@ -5117,6 +5117,7 @@
           </div>
           <button id="marketsAdd" data-tip="Add a new market. Click on a burg on the map. Hold Shift to add multiple" class="icon-plus"></button>
           <button id="marketsRegenerate" data-tip="Regenerate markets and their territories" class="icon-arrows-cw"></button>
+          <button id="marketsRegenerateProduction" data-tip="Regenerate production and trade deals" class="icon-retweet"></button>
         </div>
       </div>
       <div id="marketsGoodCompare" class="dialog" style="display: none">
@@ -5142,6 +5143,22 @@
         </div>
       </div>
       <div id="marketOverview" class="dialog stable" style="display: none">
+        <div id="marketOverviewNameLine" style="display: flex; align-items: center; margin-bottom: 0.4em">
+          <div class="label">Name:</div>
+          <input
+            id="marketOverviewName"
+            data-tip="Type to rename the market. Clear the field to reset to the default name"
+            autocorrect="off"
+            spellcheck="false"
+            style="width: 11em; margin-left: 0.3em;"
+          />
+          <span
+            id="marketOverviewNameReset"
+            data-tip="Reset to the default name (center burg name)"
+            class="icon-ccw pointer"
+            style="margin-left: 0.3em"
+          ></span>
+        </div>
         <div id="marketOverviewHeader" class="header" style="grid-template-columns: 2.5em 9em 5.5em 3.2em;">
           <div></div>
           <div data-tip="Click to sort by good" class="sortable alphabetically" data-sortby="good" style="margin-left:0">Good&nbsp;</div>
