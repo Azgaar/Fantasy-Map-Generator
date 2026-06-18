@@ -5,6 +5,7 @@ import { DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, getDemandTargets } from "./goods-generator";
 import type { Deal, Market } from "./markets-generator";
+import type { Zone } from "./zones-generator";
 
 const BONUS_RURAL_PRODUCTION = 0.25;
 const BONUS_URBAN_PRODUCTION = 1;
@@ -12,9 +13,13 @@ const MIN_BONUS_PRODUCTION = 1;
 const MAX_BONUS_PRODUCTION = 5;
 
 export class ProductionModule {
+  private zoneCellSets: Map<number, Set<number>> | null = null; // lazy zoneId -> cells lookup, built only when a good uses zone multipliers
+  private zoneCellSetsSource: Zone[] | null = null;
+
   produce() {
     TIME && console.time("generateProduction");
 
+    this.zoneCellSets = null; // rebuild lookup to reflect any in-place zone edits
     Markets.collectRuralProduction();
     Markets.initializeMarketPrices();
 
@@ -719,13 +724,34 @@ export class ProductionModule {
     const burgId = pack.cells.burg[cellId];
     const cultureType = (burgId ? pack.burgs[burgId]?.type : pack.cultures[cultureId]?.type) ?? DEFAULT_CULTURE_TYPE;
 
-    return (
+    let modifier =
       (mult.cultureType?.[cultureType] ?? 1) *
       (mult.culture?.[cultureId] ?? 1) *
       (mult.state?.[stateId] ?? 1) *
       (mult.religion?.[religionId] ?? 1) *
-      (mult.biome?.[biomeId] ?? 1)
-    );
+      (mult.biome?.[biomeId] ?? 1);
+
+    if (mult.zone) {
+      const zoneCellSets = this.getZoneCellSets();
+      for (const zoneIdStr in mult.zone) {
+        const value = mult.zone[+zoneIdStr];
+        if (value === undefined || value === 1) continue;
+        if (zoneCellSets.get(+zoneIdStr)?.has(cellId)) modifier *= value;
+      }
+    }
+
+    return modifier;
+  }
+
+  private getZoneCellSets(): Map<number, Set<number>> {
+    const zones = pack.zones || [];
+    if (this.zoneCellSets && this.zoneCellSetsSource === zones) return this.zoneCellSets;
+
+    const sets = new Map<number, Set<number>>();
+    for (const zone of zones) sets.set(zone.i, new Set(zone.cells));
+    this.zoneCellSets = sets;
+    this.zoneCellSetsSource = zones;
+    return sets;
   }
 }
 

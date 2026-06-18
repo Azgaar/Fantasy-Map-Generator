@@ -26,7 +26,8 @@ export function goodEditor(editedGood?: Good, onUpdate?: () => void) {
     culture: { ...(editedGood?.multipliers?.culture ?? {}) },
     state: { ...(editedGood?.multipliers?.state ?? {}) },
     religion: { ...(editedGood?.multipliers?.religion ?? {}) },
-    biome: { ...(editedGood?.multipliers?.biome ?? {}) }
+    biome: { ...(editedGood?.multipliers?.biome ?? {}) },
+    zone: { ...(editedGood?.multipliers?.zone ?? {}) }
   };
 
   const multiplierSummary = (dim: MultiplierDimKey): string => {
@@ -148,6 +149,7 @@ export function goodEditor(editedGood?: Good, onUpdate?: () => void) {
           ${renderMultiplierRow("state", "State")}
           ${renderMultiplierRow("religion", "Religion")}
           ${renderMultiplierRow("biome", "Biome")}
+          ${renderMultiplierRow("zone", "Zone")}
         </div>
       </div>
 
@@ -451,13 +453,14 @@ export function goodEditor(editedGood?: Good, onUpdate?: () => void) {
   });
 }
 
-type MultiplierDimKey = "cultureType" | "culture" | "state" | "religion" | "biome";
+type MultiplierDimKey = "cultureType" | "culture" | "state" | "religion" | "biome" | "zone";
 
 function getMultiplierEntityName(dim: MultiplierDimKey, id: string): string {
   if (dim === "cultureType") return id;
   if (dim === "culture") return pack.cultures[+id]?.name ?? `Culture ${id}`;
   if (dim === "state") return pack.states[+id]?.name ?? `State ${id}`;
   if (dim === "religion") return pack.religions[+id]?.name ?? `Religion ${id}`;
+  if (dim === "zone") return pack.zones.find(z => z.i === +id)?.name ?? `Zone ${id}`;
   return biomesData.name[+id] ?? `Biome ${id}`;
 }
 
@@ -559,6 +562,10 @@ function openMultiplierPopup(
       entities = biomesData.i.map(id => ({ id: String(id), name: biomesData.name[id], color: biomesData.color[id] }));
       label = "Biome";
       break;
+    case "zone":
+      entities = pack.zones.map(z => ({ id: String(z.i), name: z.name }));
+      label = "Zone";
+      break;
   }
 
   const rows = entities.map(entity => {
@@ -569,11 +576,10 @@ function openMultiplierPopup(
 
   const popupEl = document.createElement("div");
   document.body.appendChild(popupEl);
-  popupEl.innerHTML = `
-    <div style="max-height:320px; overflow-y:auto; padding:.2em;">
-      <div style="display:grid; grid-template-columns:auto 1fr 5em; gap:.3em .5em; align-items:center;">${rows.join("")}</div>
-    </div>
-  `;
+  const body = rows.length
+    ? `<div style="display:grid; grid-template-columns:auto 1fr 5em; gap:.3em .5em; align-items:center;">${rows.join("")}</div>`
+    : `<div style="color:#777; font-style:italic;">No ${label.toLowerCase()}s available</div>`;
+  popupEl.innerHTML = `<div style="max-height:320px; overflow-y:auto; padding:.2em;">${body}</div>`;
 
   $(popupEl).dialog({
     title: `${label} multipliers`,
