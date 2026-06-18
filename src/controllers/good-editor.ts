@@ -563,15 +563,16 @@ function openMultiplierPopup(
       label = "Biome";
       break;
     case "zone":
-      entities = pack.zones.map(z => ({ id: String(z.i), name: z.name }));
+      // zone colors are hatch pattern refs (url(#...)); fill-box renders them, a plain dot can't
+      entities = pack.zones.map(z => ({ id: String(z.i), name: z.name, color: z.color }));
       label = "Zone";
       break;
   }
 
   const rows = entities.map(entity => {
     const val = currentValues[entity.id] ?? 1;
-    const dot = `<span style="display:inline-block; width:.85em; height:.85em; border-radius:50%; background:${entity.color || getRandomColor()}; flex-shrink:0;"></span>`;
-    return `${dot}<span>${entity.name}</span><input type="number" class="mPopupInput" data-id="${entity.id}" min="0" step="0.1" style="width:5em;" value="${val}" />`;
+    const box = `<fill-box fill="${entity.color || getRandomColor()}" size="1em" disabled data-tip="${entity.name}"></fill-box>`;
+    return `${box}<span>${entity.name}</span><input type="number" class="mPopupInput" data-id="${entity.id}" min="0" step="0.1" style="width:5em;" value="${val}" />`;
   });
 
   const popupEl = document.createElement("div");
