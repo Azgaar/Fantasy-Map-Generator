@@ -12,6 +12,8 @@ export type TradeBatch = {
   type: "local" | "global";
 };
 
+type TradePath = { points: Point[]; segments: { type: "land" | "water"; points: Point[] }[] };
+
 const DEFAULT_OPTIONS = {
   displayType: "both",
   concurrent: 30,
@@ -25,6 +27,7 @@ export class TradeAnimationModule {
   private activeCount = 0;
   private generation = 0;
   private cachedBatches: TradeBatch[] | null = null;
+  private pathCache = new Map<string, TradePath | null>();
 
   start(): void {
     if (!layerIsOn("toggleTrade")) return;
@@ -39,6 +42,7 @@ export class TradeAnimationModule {
     this.generation++;
     this.activeCount = 0;
     this.cachedBatches = null;
+    this.pathCache.clear();
     clear();
   }
 
@@ -62,27 +66,35 @@ export class TradeAnimationModule {
 
   private spawnOne(batches: TradeBatch[]): boolean {
     const type = options.trade.animation.displayType || "both";
-    const enabledBatches = type === "both" ? batches : batches.filter(batch => batch.type === type);
-    if (!enabledBatches.length) return false;
 
-    const batch = ra(enabledBatches);
-    if (!batch) return false;
-    const path = this.getPath(batch);
-    if (!path) return false;
+    while (true) {
+      const enabledBatches = type === "both" ? batches : batches.filter(batch => batch.type === type);
+      if (!enabledBatches.length) return false;
 
-    const gen = this.generation;
-    this.activeCount++;
-    draw(
-      batch,
-      path.segments,
-      () => {
-        if (gen !== this.generation) return;
-        this.activeCount--;
-        this.topUp();
-      },
-      () => gen !== this.generation
-    );
-    return true;
+      const batch = ra(enabledBatches);
+      if (!batch) return false;
+
+      const path = this.getPath(batch);
+      if (!path) {
+        const idx = batches.indexOf(batch);
+        if (idx !== -1) batches.splice(idx, 1);
+        continue;
+      }
+
+      const gen = this.generation;
+      this.activeCount++;
+      draw(
+        batch,
+        path.segments,
+        () => {
+          if (gen !== this.generation) return;
+          this.activeCount--;
+          this.topUp();
+        },
+        () => gen !== this.generation
+      );
+      return true;
+    }
   }
 
   trigger(batches: TradeBatch[]): void {
@@ -99,11 +111,16 @@ export class TradeAnimationModule {
     }
   }
 
-  getPath(batch: TradeBatch): { points: Point[]; segments: { type: "land" | "water"; points: Point[] }[] } | null {
+  getPath(batch: TradeBatch): TradePath | null {
+    const cacheKey = `${batch.startBurgId}-${batch.endBurgId}`;
+    const cached = this.pathCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+
     const startBurg = pack.burgs[batch.startBurgId];
     const endBurg = pack.burgs[batch.endBurgId];
-    if (!startBurg || !endBurg) return null;
-    return this.findRoutePath(startBurg.cell, endBurg.cell);
+    const path = !startBurg || !endBurg ? null : this.findRoutePath(startBurg.cell, endBurg.cell);
+    this.pathCache.set(cacheKey, path);
+    return path;
   }
 
   getPathCost(fromCell: number, toCell: number): number {

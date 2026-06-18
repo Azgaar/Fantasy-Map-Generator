@@ -481,6 +481,7 @@ async function parseLoadedData(data, mapVersion) {
 
       getCurrentPreset();
       Goods.sync();
+      Markets.sync();
       Routes.sync();
       TradeAnimation.sync();
     }
