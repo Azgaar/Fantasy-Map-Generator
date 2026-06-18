@@ -306,6 +306,7 @@ function editHeightmap(options) {
     const province = new Uint16Array(l);
     const culture = new Uint16Array(l);
     const religion = new Uint16Array(l);
+    const good = new Uint16Array(l);
 
     // rivers data, stored only if allowErosion is unchecked
     const fl = new Uint16Array(l);
@@ -323,6 +324,7 @@ function editHeightmap(options) {
       province[g] = pack.cells.province[i];
       burg[g] = pack.cells.burg[i];
       religion[g] = pack.cells.religion[i];
+      good[g] = pack.cells.good?.[i] || 0;
 
       if (!erosionAllowed) {
         fl[g] = pack.cells.fl[i];
@@ -377,6 +379,7 @@ function editHeightmap(options) {
     pack.cells.culture = new Uint16Array(n);
     pack.cells.religion = new Uint16Array(n);
     pack.cells.biome = new Uint8Array(n);
+    pack.cells.good = new Uint16Array(n);
 
     if (!erosionAllowed) {
       pack.cells.r = new Uint16Array(n);
@@ -400,6 +403,8 @@ function editHeightmap(options) {
         isLand && biome[g]
           ? biome[g]
           : Biomes.getId(grid.cells.prec[g], grid.cells.temp[g], pack.cells.h[i], Boolean(pack.cells.r[i]));
+
+      pack.cells.good[i] = good[g]; // goods can sit on water cells (e.g. fish), so restore before the land check
 
       if (!isLand) continue;
       pack.cells.culture[i] = culture[g];
@@ -479,10 +484,29 @@ function editHeightmap(options) {
       }
     }
 
-    // TODO: restore economy, see resample.ts
-    Goods.generate();
-    Markets.generate();
-    Production.produce();
+    // restore economy (mirror resample.ts restoreEconomy): keep the existing goods and markets
+    // rather than regenerating from scratch, then recompute territories, stocks, deals and taxes
+    if (pack.goods?.length) {
+      Goods.sync();
+
+      // drop markets whose center burg no longer exists on the edited map
+      pack.markets = (pack.markets || []).filter(market => {
+        const centerBurg = pack.burgs[market.centerBurgId];
+        return Boolean(centerBurg && !centerBurg.removed);
+      });
+      Markets.expandTerritories(pack.markets);
+
+      // territory boundaries changed, so inherited stocks would be stale — reset before producing
+      for (const market of pack.markets) market.goods = {};
+
+      pack.deals = [];
+      Production.produce();
+    } else {
+      // no pre-existing economy to restore (e.g. a map predating goods) — generate from scratch
+      Goods.generate();
+      Markets.generate();
+      Production.produce();
+    }
     States.collectTaxes();
 
     // recalculate ice

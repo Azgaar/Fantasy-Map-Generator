@@ -19,6 +19,7 @@ export interface Good {
     state?: Partial<Record<number, number>>;
     religion?: Partial<Record<number, number>>;
     biome?: Partial<Record<number, number>>;
+    zone?: Partial<Record<number, number>>; // keyed by zone.i; rare, resolved via cell membership
   };
 
   // effects

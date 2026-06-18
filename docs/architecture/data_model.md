@@ -344,7 +344,7 @@ Goods (tradable resources and products) are stored in `pack.goods: Good[]`, wher
 - `distribution`: `string` - JS expression evaluated per cell to decide where the raw good is placed (uses the distribution method table; see [goods_schema.md](../domain/goods_schema.md)). Optional
 - `biomeOutput`: `Record<biomeId, number>` - units produced per rural population point per production cycle, per biome. Optional
 - `recipes`: `Record<goodId, number>[]` - array of alternative recipes; each maps input good id → units consumed per 1 unit of output. Optional
-- `multipliers`: `object` - per-dimension production scalars, each an optional `Record<id, number>`: `cultureType`, `culture`, `state`, `religion`, `biome`. Absent or `1` = no effect, `0` = fully suppressed; active factors combine multiplicatively. Only the map-independent `cultureType` is present in `GOODS_DATA`; the rest are set per map via the editor. Optional
+- `multipliers`: `object` - per-dimension production scalars, each an optional `Record<id, number>`: `cultureType`, `culture`, `state`, `religion`, `biome`, `zone`. Absent or `1` = no effect, `0` = fully suppressed; active factors combine multiplicatively. Only the map-independent `cultureType` is present in `GOODS_DATA`; the rest are set per map via the editor. Optional
 - `demandCoverage`: `Record<category, number>` - how much one unit of the good covers each demand category (`food`, `utilities`, `construction`, `military`, `luxury`). Optional
 
 ## Markets

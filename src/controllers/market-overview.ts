@@ -55,7 +55,7 @@ function onRenameInput(this: HTMLInputElement): void {
   if (!market) return;
   const value = this.value.trim();
   market.name = value || undefined;
-  applyRenamed(market);
+  $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);
 }
 
 function resetMarketName(): void {
@@ -63,13 +63,7 @@ function resetMarketName(): void {
   if (!market) return;
   market.name = undefined;
   ensureEl<HTMLInputElement>("marketOverviewName").value = "";
-  applyRenamed(market);
-}
-
-// Reflect a rename in the dialog title and, if open, the Markets Overview list row.
-function applyRenamed(market: Market): void {
   $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);
-  window.MarketsOverview?.refreshMarketName(market.i);
 }
 
 function marketOverviewAddLines() {

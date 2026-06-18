@@ -238,5 +238,26 @@ describe("MarketsModule", () => {
       expect(deal!.tax).toBeGreaterThan(0);
       expect(deal!.tax).toBeCloseTo(deal!.units * deal!.price * 0.2, 2);
     });
+
+    it("sync() should rebuild the id index so get() resolves markets after a load", () => {
+      // Simulate a freshly loaded map: pack.markets is populated but marketById was never built.
+      const market3: Market = { i: 3, centerBurgId: 30, color: "#fff", goods: {} };
+      const market7: Market = { i: 7, centerBurgId: 70, color: "#fff", goods: {} };
+      globalThis.pack.markets = [market3, market7];
+      expect(marketsModule.get(3)).toBeUndefined();
+
+      marketsModule.sync();
+
+      expect(marketsModule.get(3)).toBe(market3);
+      expect(marketsModule.get(7)).toBe(market7);
+      expect(marketsModule.get(99)).toBeUndefined();
+    });
+
+    it("sync() should tolerate holes in pack.markets", () => {
+      const market2: Market = { i: 2, centerBurgId: 20, color: "#fff", goods: {} };
+      globalThis.pack.markets = [null as any, market2];
+      expect(() => marketsModule.sync()).not.toThrow();
+      expect(marketsModule.get(2)).toBe(market2);
+    });
   });
 });

@@ -100,7 +100,11 @@ export class MarketsModule {
 
   private indexMarkets(markets: Market[] = pack.markets): void {
     this.marketById = [];
-    for (const market of markets) this.marketById[market.i] = market;
+    for (const market of markets) if (market) this.marketById[market.i] = market;
+  }
+
+  public sync(): void {
+    this.indexMarkets();
   }
 
   private expandMarkets(markets: Market[]): Uint16Array {

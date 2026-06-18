@@ -1,4 +1,4 @@
-import { pointer } from "d3";
+import { color, pointer } from "d3";
 import type { Burg } from "../modules/burgs-generator";
 import type { Deal, Market } from "../modules/markets-generator";
 import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-markets";
@@ -44,6 +44,15 @@ export function open(): void {
     ensureEl("marketsRegenerateProduction").on("click", regenerateProduction);
     ensureEl("marketsOverviewBody").on("click", (ev: Event) => {
       const target = ev.target as HTMLElement;
+
+      const fillBox = target.closest<HTMLElement>("fill-box");
+      if (fillBox) {
+        const row = fillBox.closest<HTMLElement>(".states.market");
+        const marketId = row ? +row.dataset.id! : 0;
+        // marketId 0 is the "No market" row — it has no color to edit
+        if (marketId) marketChangeFill(fillBox, marketId);
+        return;
+      }
 
       if (target.classList.contains("icon-trash-empty")) {
         const line = target.closest<HTMLElement>(".states.market");
@@ -91,7 +100,7 @@ function marketsOverviewAddLines(): void {
   let totalValue = 0;
 
   for (const market of markets) {
-    const centerName = getMarketCenterName(market);
+    const centerName = Markets.getName(market);
     const ownerName = getOwnerStateName(market);
     const cells = getMarketCells(market.i);
     const burgs = getMarketBurgs(market.i);
@@ -219,7 +228,7 @@ function startMarketsBrushDrag(this: SVGElement): void {
   if (!selectedRow) return;
   const marketId = +selectedRow.dataset.id!;
   // marketId 0 = "no market" (erase assignment); any other id must be an existing market.
-  if (marketId !== 0 && !pack.markets.some(m => m.i === marketId)) return;
+  if (marketId !== 0 && !Markets.get(marketId)) return;
 
   saveMarketsManualSnapshot();
   const r = +ensureEl<HTMLInputElement>("marketsBrush").value;
@@ -290,7 +299,7 @@ function setMarketTempPath(temp: HTMLElement, marketId: number, d: string): void
   if (!path) {
     path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("data-market", String(marketId));
-    const market = pack.markets.find(m => m.i === marketId);
+    const market = Markets.get(marketId);
     if (market) path.setAttribute("fill", market.color);
     temp.appendChild(path);
   }
@@ -387,12 +396,10 @@ function addMarketOnClick(this: SVGElement): void {
   marketsOverviewAddLines();
 }
 
-// ---- Remove market ----
-
 function confirmRemoveMarket(marketId: number): void {
-  const market = pack.markets.find(m => m.i === marketId);
+  const market = Markets.get(marketId);
   if (!market) return;
-  const name = getMarketCenterName(market);
+  const name = Markets.getName(market);
 
   confirmationDialog({
     title: "Remove Market",
@@ -406,7 +413,36 @@ function confirmRemoveMarket(marketId: number): void {
   });
 }
 
-// ---- Helpers ----
+function marketChangeFill(fillBox: HTMLElement, marketId: number): void {
+  const market = Markets.get(marketId);
+  if (!market) return;
+
+  const callback = (newFill: string) => {
+    (fillBox as unknown as { fill: string }).fill = newFill;
+    market.color = newFill;
+    applyMarketColor(marketId, newFill);
+  };
+
+  openPicker(market.color, callback);
+}
+
+// Recolor a single market's rendered shapes in place, matching draw-markets output.
+function applyMarketColor(marketId: number, fill: string): void {
+  const strokeColor = color(fill)?.darker().hex() || "#000";
+
+  const group = document.getElementById(`market${marketId}`);
+  if (group) {
+    group.querySelector<SVGPathElement>("path.fill")?.setAttribute("fill", fill);
+    group.querySelector<SVGPathElement>("path.border")?.setAttribute("stroke", strokeColor);
+    const circle = group.querySelector<SVGCircleElement>("circle");
+    if (circle) {
+      circle.setAttribute("fill", fill);
+      circle.setAttribute("stroke", strokeColor);
+    }
+  }
+
+  document.querySelector<SVGPathElement>(`#marketsTemp path[data-market="${marketId}"]`)?.setAttribute("fill", fill);
+}
 
 function getMarketTotalStock(market: Market): number {
   return Object.values(market.goods).reduce((sum, g) => sum + (g.stock || 0), 0);
@@ -493,23 +529,6 @@ function updateFooter(count: number, avgSales: number, avgBuys: number, avgValue
   ensureEl("marketsOverviewFooterValue").innerHTML = formatPrice(avgValue);
 }
 
-function getMarketCenterName(market: Market): string {
-  return Markets.getName(market);
-}
-
-// Update a single market row's name in place (cell text + sort attribute) without a full re-render.
-// Called from the Market Overview detail dialog when a market is renamed.
-function refreshMarketName(marketId: number): void {
-  const row = ensureEl("marketsOverviewBody").querySelector<HTMLElement>(`.states.market[data-id="${marketId}"]`);
-  if (!row) return;
-  const market = pack.markets.find(m => m.i === marketId);
-  if (!market) return;
-  const name = getMarketCenterName(market);
-  row.dataset.market = name;
-  const nameCell = row.querySelector<HTMLElement>(".marketName");
-  if (nameCell) nameCell.textContent = name;
-}
-
 function getOwnerStateName(market: Market): string {
   const center = pack.burgs[market.centerBurgId];
   if (!center) return "Unknown";
@@ -551,7 +570,7 @@ function downloadMarketsCsv(): void {
     const cells = getMarketCells(market.i);
     const burgs = getMarketBurgs(market.i);
     const stock = rn(getMarketTotalStock(market), 2);
-    csv += `${[getMarketCenterName(market), getOwnerStateName(market), cells, burgs, stock, sales, buys, value].join(",")}\n`;
+    csv += `${[Markets.getName(market), getOwnerStateName(market), cells, burgs, stock, sales, buys, value].join(",")}\n`;
   }
   downloadFile(csv, `${getFileName("Markets_Overview")}.csv`);
 }
@@ -564,8 +583,8 @@ function closeMarketsOverview(): void {
 
 declare global {
   interface Window {
-    MarketsOverview: { open: typeof open; refreshMarketName: typeof refreshMarketName };
+    MarketsOverview: { open: typeof open };
   }
 }
 
-window.MarketsOverview = { open, refreshMarketName };
+window.MarketsOverview = { open };

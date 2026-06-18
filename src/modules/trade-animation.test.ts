@@ -164,8 +164,10 @@ describe("getPath", () => {
     expect(result!.segments[0].type).toBe("land");
   });
 
-  it("returns null when the only path crosses a land↔sea boundary at a non-port cell", () => {
-    // route 0 = searoute (0→1→2), route 1 = roads (2→3); cell 2 has no port burg
+  it("routes through a land↔sea boundary at a non-port cell (sea routes run up navigable rivers)", () => {
+    // route 0 = searoute (0→1→2), route 1 = roads (2→3); cell 2 has no port burg.
+    // The route network only links genuinely connected cells, so this crossing must be traversable —
+    // sea routes legitimately meet land routes at non-port river cells.
     globalThis.pack = {
       cells: {
         h: [20, 20, 20, 20],
@@ -184,7 +186,11 @@ describe("getPath", () => {
         { i: 1, group: "roads" }
       ]
     } as any;
-    expect(ta.getPath({ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" })).toBeNull();
+    const result = ta.getPath({ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" });
+    expect(result).not.toBeNull();
+    expect(result!.segments).toHaveLength(2);
+    expect(result!.segments[0].type).toBe("water");
+    expect(result!.segments[1].type).toBe("land");
   });
 
   it("routes through a land↔sea boundary when the crossing cell has a port burg", () => {
