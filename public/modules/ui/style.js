@@ -394,9 +394,9 @@ function selectStyleElement() {
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
   if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
-    const groups = ensureEl(styleElement).querySelectorAll(":scope > g");
+    const groups = ensureEl(styleElement).querySelectorAll("g");
     groups.forEach(el => {
-      if (el.id === "burgLabels") return;
+      if (el.id === "burgLabels") return; // skip the container; its subgroups (capital, town, ...) are listed individually
       const option = new Option(`${el.id} (${el.childElementCount})`, el.id, false, false);
       styleGroupSelect.options.add(option);
     });
