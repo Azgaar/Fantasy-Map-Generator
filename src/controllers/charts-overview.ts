@@ -465,7 +465,7 @@ function insertHtml() {
         </label>
 
         <label>grouped by
-          <select data-tip="Select entoty to group by. If you don't need grouping, set it the same as the entity" id="chartsOverview__groupBySelect">
+          <select data-tip="Select entity to group by. If you don't need grouping, set it the same as the entity" id="chartsOverview__groupBySelect">
             ${createOptions(entities)}
           </select>
         </label>
@@ -741,10 +741,9 @@ function createStackedBarChart(
   const totalZ: Record<string, number> = Object.fromEntries(
     rollups(
       I,
-      ([i]) => i,
-      i => Y[i],
-      i => X[i]
-    ).map(([y, yz]): [string, number] => [y, sum(yz, entry => entry[0])])
+      indices => sum(indices, i => X[i]),
+      i => Y[i]
+    )
   );
   const getTooltip = ({ i }: { i: number }) => tooltip(Y[i], Z[i], X[i], X[i] / totalZ[Y[i]]);
 
@@ -901,10 +900,10 @@ function getTextMinWidth(entities: string[]): number {
 }
 
 function calculateLegendRows(groups: string[], availableWidth: number): number {
+  if (!groups.length) return 0;
   const minWidth = LABEL_GAP + getTextMinWidth(groups);
-  const maxInRow = Math.floor(availableWidth / minWidth);
-  const legendRows = Math.ceil(groups.length / maxInRow);
-  return legendRows;
+  const maxInRow = Math.max(1, Math.floor(availableWidth / minWidth));
+  return Math.ceil(groups.length / maxInRow);
 }
 
 function nameGetter(entity: CollectionKey) {
