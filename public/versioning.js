@@ -30,6 +30,7 @@ if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format o
   }
 
   const latestPublicChanges = [
+    "Economic charts",
     "Economic simulation",
     "Trade animation",
     "Navigable rivers",
