@@ -23,7 +23,7 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "editUnitsButton") editUnits();
   else if (button === "editNotesButton") editNotes();
   else if (button === "editZonesButton") editZones();
-  else if (button === "overviewChartsButton") overviewCharts();
+  else if (button === "overviewChartsButton") ChartsOverview.open();
   else if (button === "overviewBurgsButton") overviewBurgs();
   else if (button === "overviewRoutesButton") overviewRoutes();
   else if (button === "overviewRiversButton") overviewRivers();
@@ -1030,11 +1030,6 @@ function viewCellDetails() {
     title: "Cell Details",
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
-}
-
-async function overviewCharts() {
-  const Overview = await import("../dynamic/overview/charts-overview.js?v=1.120.5");
-  Overview.open();
 }
 
 async function openMinimap() {

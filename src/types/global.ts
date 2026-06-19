@@ -81,6 +81,11 @@ declare global {
     [key: string]: any;
   };
 
+  var mapId: number;
+  var getArea: (rawArea: number) => number;
+  var getAreaUnit: (squareMark?: string) => string;
+  var getPrecipitation: (prec: number) => string;
+
   var layerIsOn: (layerId: string) => boolean;
   var drawRoute: (route: any) => void;
   var invokeActiveZooming: () => void;

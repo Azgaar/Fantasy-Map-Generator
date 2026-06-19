@@ -49,7 +49,7 @@ function handleKeyup(event) {
   else if ((shift || altShift) && code === "KeyY") openEmblemEditor();
   else if ((shift || altShift) && code === "KeyQ") editUnits();
   else if ((shift || altShift) && code === "KeyO") editNotes();
-  else if ((shift || altShift) && code === "KeyA") overviewCharts();
+  else if ((shift || altShift) && code === "KeyA") ChartsOverview.open();
   else if ((shift || altShift) && code === "KeyT") overviewBurgs();
   else if ((shift || altShift) && code === "KeyU") overviewRoutes();
   else if ((shift || altShift) && code === "KeyV") overviewRivers();
