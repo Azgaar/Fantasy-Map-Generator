@@ -158,6 +158,7 @@ declare global {
   var drawGoods: (displayedGoods: Set<number>) => void;
   var regenerateGoods: () => void;
   var regenerateMarkets: () => void;
+  var regenerateEconomy: () => void;
   var regenerateProduction: () => void;
   var legend: any;
 }

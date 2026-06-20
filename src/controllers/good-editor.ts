@@ -420,6 +420,9 @@ export function goodEditor(editedGood?: Good, onUpdate?: () => void) {
           editedGood.distribution = distribution || undefined;
           editedGood.biomeOutput = Object.keys(biomeOutputState).length ? biomeOutputState : undefined;
           editedGood.recipes = recipes.length ? recipes : undefined;
+
+          Goods.regeneratePlacement(editedGood.i);
+          regenerateEconomy();
         } else {
           const getNextId = () => {
             let nextId = pack.goods?.at(-1)?.i ?? 1;
