@@ -675,6 +675,7 @@ class RoutesModule {
     this.riverGeometryCache = new Map();
     for (const river of pack.rivers) {
       this.riversById.set(river.i, river);
+      if (!river.cells || river.cells.length < 2) continue;
       for (let i = 0; i < river.cells.length - 1; i++) {
         const a = river.cells[i];
         const b = river.cells[i + 1];

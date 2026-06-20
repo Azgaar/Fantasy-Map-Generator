@@ -342,6 +342,17 @@ export function goodEditor(editedGood?: Good, onUpdate?: () => void) {
     width: "30em",
     resizable: false,
     title: editedGood ? "Edit good" : "Add new good",
+    open: function (this: HTMLElement) {
+      if (!editedGood) return; // only edits can recompute the economy
+      const pane = this.parentElement?.querySelector(".ui-dialog-buttonpane");
+      pane?.insertAdjacentHTML(
+        "afterbegin",
+        /*html*/ `<div class="dontAsk" data-tip="Re-place this good and recompute production, trade and taxes. Uncheck to update the good only, without disturbing the current economy.">
+          <input id="goodRegenerateEconomy" class="checkbox" type="checkbox" checked />
+          <label for="goodRegenerateEconomy" class="checkbox-label"><i>regenerate economy on apply</i></label>
+        </div>`
+      );
+    },
     close: () => {
       $(dialog).dialog("destroy");
       dialog.innerHTML = "";
@@ -421,8 +432,13 @@ export function goodEditor(editedGood?: Good, onUpdate?: () => void) {
           editedGood.biomeOutput = Object.keys(biomeOutputState).length ? biomeOutputState : undefined;
           editedGood.recipes = recipes.length ? recipes : undefined;
 
-          Goods.regeneratePlacement(editedGood.i);
-          regenerateEconomy();
+          // opt-out: by default re-place the good and recompute the economy to reflect the change
+          if (ensureEl<HTMLInputElement>("goodRegenerateEconomy").checked) {
+            Goods.regeneratePlacement(editedGood.i);
+            regenerateEconomy();
+          } else {
+            Goods.sync();
+          }
         } else {
           const getNextId = () => {
             let nextId = pack.goods?.at(-1)?.i ?? 1;
