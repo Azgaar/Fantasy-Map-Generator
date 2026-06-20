@@ -62,7 +62,7 @@ describe("GoodsModule", () => {
   });
 
   it("keeps the current catalogue when rerolling placement", () => {
-    goodsModule.generate({ reseed: false });
+    goodsModule.generate({ randomSeed: 123 });
 
     expect(globalThis.pack.goods).toHaveLength(2);
     expect(globalThis.pack.goods[0].name).toBe("Custom A");
