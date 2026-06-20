@@ -414,7 +414,11 @@ function goodsRestoreDefaults() {
     title: "Restore default goods",
     message: "Are you sure you want to restore default goods? <br>This action cannot be reverted",
     confirm: "Restore",
-    onConfirm: regenerateGoods
+    onConfirm: () => {
+      Goods.restoreDefaults();
+      Goods.generate();
+      regenerateEconomy();
+    }
   });
 }
 
@@ -587,7 +591,7 @@ function requestGoodsRegeneration() {
   confirmationDialog({
     title: "Regenerate bonus goods",
     message:
-      "Are you sure you want to regenerate bonus goods placement? Generation will be based on the current Goods settings and WON'T effect production or trade",
+      "Are you sure you want to regenerate bonus goods placement? Generation will be based on the current Goods settings and won't affect production or trade",
     confirm: "Regenerate",
     onConfirm: window.regenerateGoods
   });

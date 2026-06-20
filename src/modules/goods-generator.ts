@@ -957,14 +957,16 @@ export class GoodsModule {
   private cellId: number = 0;
   private goodById: Good[] = [];
 
-  generate(regenerate: boolean = false) {
+  // Place a bonus good on every eligible cell based on the current catalogue
+  generate(options: { randomSeed?: number } = {}) {
     TIME && console.time("generateGoods");
-    if (!regenerate) Math.random = Alea(seed);
+    Math.random = Alea(options.randomSeed || seed);
     const shuffle = shuffler(() => Math.random());
+
+    if (!pack.goods?.length) this.restoreDefaults();
 
     this.cells = pack.cells;
     this.cells.good = new Uint16Array(this.cells.i.length);
-    if (!pack.goods?.length || regenerate) pack.goods = this.defaultGoods;
 
     const resourceMaxCells = Math.ceil((200 * this.cells.i.length) / 5000);
     const resources: Record<number, number> = {};
@@ -993,6 +995,54 @@ export class GoodsModule {
     }
 
     TIME && console.timeEnd("generateGoods");
+    this.sync();
+  }
+
+  regeneratePlacement(goodId: number) {
+    this.sync();
+    const good = this.get(goodId);
+    if (!good) return;
+
+    TIME && console.time("regenerateGoodPlacement");
+    this.cells = pack.cells;
+    if (!this.cells.good || this.cells.good.length !== this.cells.i.length) {
+      this.cells.good = new Uint16Array(this.cells.i.length);
+    }
+
+    for (const cellId of this.cells.i) {
+      if (this.cells.good[cellId] === goodId) this.cells.good[cellId] = 0;
+    }
+
+    if (!good.distribution || !good.chance) {
+      TIME && console.timeEnd("regenerateGoodPlacement");
+      return;
+    }
+
+    const resourceMaxCells = Math.ceil((200 * this.cells.i.length) / 5000);
+    const resources: Record<number, number> = {};
+    const methods = `{${Object.keys(this.getMethods()).join(", ")}}`;
+    const shuffledCells = shuffler(() => Math.random())(this.cells.i.slice());
+    const spread = new Function(methods, `return ${good.distribution}`);
+
+    for (const cellId of shuffledCells) {
+      if (this.cells.biome[cellId] === 11 && biomesData.habitability[11] === 0) continue; // skip glaciers
+      this.cellId = cellId;
+
+      if (this.cells.good[cellId]) continue;
+      if (resources[good.i] >= resourceMaxCells) continue;
+      if (Math.random() * 100 > good.chance) continue;
+
+      if (!spread(this.getMethods())) continue;
+
+      this.cells.good[cellId] = good.i;
+      resources[good.i] = (resources[good.i] || 0) + 1;
+    }
+
+    TIME && console.timeEnd("regenerateGoodPlacement");
+  }
+
+  restoreDefaults() {
+    pack.goods = structuredClone(this.defaultGoods);
     this.sync();
   }
 

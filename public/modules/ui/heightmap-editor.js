@@ -487,27 +487,18 @@ function editHeightmap(options) {
     // restore economy (mirror resample.ts restoreEconomy): keep the existing goods and markets
     // rather than regenerating from scratch, then recompute territories, stocks, deals and taxes
     if (pack.goods?.length) {
-      Goods.sync();
-
       // drop markets whose center burg no longer exists on the edited map
       pack.markets = (pack.markets || []).filter(market => {
         const centerBurg = pack.burgs[market.centerBurgId];
         return Boolean(centerBurg && !centerBurg.removed);
       });
-      Markets.expandTerritories(pack.markets);
-
-      // territory boundaries changed, so inherited stocks would be stale — reset before producing
-      for (const market of pack.markets) market.goods = {};
-
-      pack.deals = [];
-      Production.produce();
+      regenerateEconomy();
     } else {
-      // no pre-existing economy to restore (e.g. a map predating goods) — generate from scratch
       Goods.generate();
       Markets.generate();
       Production.produce();
+      States.collectTaxes();
     }
-    States.collectTaxes();
 
     // recalculate ice
     Ice.generate();
