@@ -29,6 +29,7 @@ function editRegiment(selector) {
   ensureEl("regimentName").addEventListener("change", changeName);
   ensureEl("regimentEmblemChange").addEventListener("click", changeEmblem);
   ensureEl("regimentAttack").addEventListener("click", toggleAttack);
+  ensureEl("regimentBurgAttack").addEventListener("click", toggleBurgAttack);
   ensureEl("regimentRegenerateLegend").addEventListener("click", regenerateLegend);
   ensureEl("regimentLegend").addEventListener("click", editLegend);
   ensureEl("regimentSplit").addEventListener("click", splitRegiment);
@@ -254,6 +255,7 @@ function editRegiment(selector) {
   }
 
   function toggleAttack() {
+    ensureEl("regimentBurgAttack").classList.remove("pressed");
     ensureEl("regimentAttack").classList.toggle("pressed");
     if (ensureEl("regimentAttack").classList.contains("pressed")) {
       viewbox.style("cursor", "crosshair").on("click", attackRegimentOnClick);
@@ -264,6 +266,117 @@ function editRegiment(selector) {
       armies.selectAll(":scope > g").classed("draggable", true);
       viewbox.on("click", clicked).style("cursor", "default");
     }
+  }
+
+  function toggleBurgAttack() {
+    ensureEl("regimentAttack").classList.remove("pressed");
+    ensureEl("regimentBurgAttack").classList.toggle("pressed");
+    if (ensureEl("regimentBurgAttack").classList.contains("pressed")) {
+      viewbox.style("cursor", "crosshair").on("click", attackBurgOnClick);
+      tip("Click on another burg to initiate a siege", true);
+      armies.selectAll(":scope > g").classed("draggable", false);
+    } else {
+      clearMainTip();
+      armies.selectAll(":scope > g").classed("draggable", true);
+      viewbox.on("click", clicked).style("cursor", "default");
+    }
+  }
+
+  function attackBurgOnClick() {
+    const target = d3.event.target,
+      burgSelected = target.parentElement,
+      burg = burgSelected.parentElement;
+    const burgId = target.dataset.id;
+
+    if (pack.states[pack.burgs[burgId].state].military.length == 0) {
+      tip("Burg's state has no military", false, "error");
+      return;
+    }
+    if (String(burg.id) != "burgIcons") {
+      tip("Please click on a burg to attack", false, "error");
+      return;
+    }
+    if (getRegiment().state == pack.burgs[burgId].state) {
+      tip("Cannot attack fraternal burg", false, "error");
+      return;
+    }
+    if (pack.burgs[burgId].walls != 1 && pack.burgs[burgId].citadel != 1) {
+      tip("Please click on a burg with walls or a citadel to attack", false, "error");
+      return;
+    }
+    if (pack.burgs[burgId].type != "Naval" && getRegiment().n) {
+      tip("Burg is too far from sea, regiment cannot engage. Please choose a burg near the shoreline.", false, "error");
+      return;
+    }
+    
+
+    const attacker = getRegiment();
+    const burgStateId = Number(pack.burgs[burgId].state);
+    const burgStateRegiments = pack.states[burgStateId].military;
+    const defendingBurg = target;
+    const dx = +defendingBurg.getAttribute("x");
+    const dy = +defendingBurg.getAttribute("y");
+    const ax = +attacker.getAttribute("x");
+    const ay = +attacker.getAttribute("y");
+
+    let closestIndex = -1;
+    let closestDistance = Infinity;
+
+    burgStateRegiments.forEach((el, i) => {
+      if (el.t === 0 || !el.a) return;
+
+      const distX = el.x - dx;
+      const distY = el.y - dy;
+      const dist = Math.sqrt(distX * distX + distY * distY);
+
+      if (dist < closestDistance) {
+        closestDistance = dist;
+        closestIndex = i;
+      }
+    });
+
+    if (closestIndex == -1 && pack.states[pack.burgs[burgId].state].military.length == 1)
+      closestIndex = 0;
+    if (closestIndex == -1)
+      return;
+    const defendingRegiment = pack.states[pack.burgs[burgId].state].military[closestIndex];
+    if (!attacker.a || !defendingRegiment.a) {
+      tip("Regiment has no troops to battle", false, "error");
+      return;
+    }
+
+    // save initial position to temp attribute
+    (attacker.px = attacker.x), (attacker.py = attacker.y);
+    (defendingRegiment.px = defendingRegiment.x), (defendingRegiment.py = defendingRegiment.y);
+
+    // move attacker to burg
+    moveRegiment(attacker, dx, dy - 8);
+    // Move defender to burg
+    moveRegiment(defendingRegiment, ax, ay);
+    // draw battle icon
+    const attack = d3
+      .transition()
+      .delay(300)
+      .duration(700)
+      .ease(d3.easeSinInOut)
+      .on("end", () => new Battle(attacker, defendingRegiment));
+    svg
+      .append("text")
+      .attr("text-rendering", "optimizeSpeed")
+      .attr("x", window.innerWidth / 2)
+      .attr("y", window.innerHeight / 2)
+      .text("⚔️")
+      .attr("font-size", 0)
+      .attr("opacity", 1)
+      .style("dominant-baseline", "central")
+      .style("text-anchor", "middle")
+      .transition(attack)
+      .attr("font-size", 1000)
+      .attr("opacity", 0.2)
+      .remove();
+
+    clearMainTip();
+    $("#regimentEditor").dialog("close");
   }
 
   function attackRegimentOnClick() {
@@ -487,6 +600,7 @@ function editRegiment(selector) {
     armies.selectAll("g>g").call(d3.drag().on("drag", null));
     ensureEl("regimentAdd").classList.remove("pressed");
     ensureEl("regimentAttack").classList.remove("pressed");
+    ensureEl("regimentBurgAttack").classList.remove("pressed");
     ensureEl("regimentAttach").classList.remove("pressed");
     restoreDefaultEvents();
     elSelected = null;

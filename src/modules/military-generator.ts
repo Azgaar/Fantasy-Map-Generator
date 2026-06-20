@@ -522,7 +522,7 @@ class MilitaryModule {
     return `${number}${proper ? ` (${proper}) ` : ` `}${form}`;
   }
 
-  // utilize si function to make regiment total text fit regiment box
+  // utilize this function to make regiment total text fit regiment box
   getTotal(reg: MilitaryRegiment) {
     return reg.a > (reg.n ? 999 : 99999) ? si(reg.a) : reg.a;
   }

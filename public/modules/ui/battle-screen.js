@@ -28,7 +28,7 @@ class Battle {
       title: this.name,
       resizable: false,
       width: fitContent(),
-      position: {my: "center", at: "center", of: "#map"},
+      position: { my: "center", at: "center", of: "#map" },
       close: () => Battle.prototype.context.cancelResults()
     });
 
@@ -73,7 +73,7 @@ class Battle {
       if (attacker.n && defender.n) return "naval"; // attacker and defender are navals
       if (typesA.every(t => t === "aviation") && typesD.every(t => t === "aviation")) return "air"; // if attackers and defender have only aviation units
       if (attacker.n && !defender.n && typesA.some(t => t !== "naval")) return "landing"; // if attacked is naval with non-naval units and defender is not naval
-      if (!defender.n && pack.burgs[pack.cells.burg[this.cell]].walls) return "siege"; // defender is in walled town
+      if (!defender.n && (pack.burgs[pack.cells.burg[this.cell]].walls || pack.burgs[pack.cells.burg[this.cell]].citadel)) return "siege"; // defender is in walled town
       if (P(0.1) && [5, 6, 7, 8, 9, 12].includes(pack.cells.biome[this.cell])) return "ambush"; // 20% if defenders are in forest or marshes
       return "field";
     };
@@ -156,9 +156,9 @@ class Battle {
       <rect x="0" y="0" width="100%" height="100%" fill="${color}"></rect>${iconHtml}</svg>`;
     const body = `<tbody id="battle${state.i}-${regiment.i}">`;
 
-    let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment" data-tip="${
-      regiment.name
-    }">${regiment.name.slice(0, 24)}</td>`;
+    let initial = `<tr class="battleInitial"><td>${icon}</td><td 
+    class="regiment" data-tip="${regiment.name
+      }">${regiment.name.slice(0, 24)}</td>`;
     let casualties = `<tr class="battleCasualties"><td></td><td data-tip="${state.fullName}">${state.fullName.slice(
       0,
       26
@@ -168,18 +168,19 @@ class Battle {
     for (const u of options.military) {
       initial += `<td data-tip="Initial forces" style="width: 2.5em; text-align: center">${
         regiment.u[u.name] || 0
-      }</td>`;
+        }</td>`;
       casualties += `<td data-tip="Casualties" style="width: 2.5em; text-align: center; color: red">0</td>`;
       survivors += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">${
         regiment.u[u.name] || 0
-      }</td>`;
+        }</td>`;
     }
 
-    initial += `<td data-tip="Initial forces" style="width: 2.5em; text-align: center">${regiment.a || 0}</td></tr>`;
+    initial += `<td data-tip="Initial forces" style="width: 2.5em; text-align: center">${
+      regiment.a || 0}</td></tr>`;
     casualties += `<td data-tip="Casualties"  style="width: 2.5em; text-align: center; color: red">0</td></tr>`;
     survivors += `<td data-tip="Survivors" style="width: 2.5em; text-align: center; color: green">${
       regiment.a || 0
-    }</td></tr>`;
+      }</td></tr>`;
 
     const div = side === "attackers" ? battleAttackers : battleDefenders;
     div.innerHTML += body + initial + casualties + survivors + "</tbody>";
@@ -204,13 +205,11 @@ class Battle {
         const s = pack.states[r.state],
           added = isAdded(r),
           dist = added ? "0 " + distanceUnitInput.value : distance(r);
-        return `<div ${added ? "class='inactive'" : ""} data-s=${s.i} data-i=${r.i} data-state=${
-          s.name
-        } data-regiment=${r.name} 
+        return `<div ${added ? "class='inactive'" : ""} data-s=${s.i} data-i=${r.i} data-state=${s.name
+          } data-regiment=${r.name} 
         data-total=${r.a} data-distance=${dist} data-tip="Click to select regiment">
-        <svg width=".9em" height=".9em" style="margin-bottom:-1px; stroke: #333"><rect x="0" y="0" width="100%" height="100%" fill="${
-          s.color
-        }" ></svg>
+        <svg width=".9em" height=".9em" style="margin-bottom:-1px; stroke: #333"><rect x="0" y="0" width="100%" height="100%" fill="${s.color
+          }" ></svg>
         <div style="width:6em">${s.name.slice(0, 11)}</div>
         <div style="width:1.2em">${r.icon}</div>
         <div style="width:13em">${r.name.slice(0, 24)}</div>
@@ -224,7 +223,7 @@ class Battle {
       resizable: false,
       width: fitContent(),
       title: "Add regiment to the battle",
-      position: {my: "left center", at: "right+10 center", of: "#battleScreen"},
+      position: { my: "left center", at: "right+10 center", of: "#battleScreen" },
       close: addSideClosed,
       buttons: {
         "Add to attackers": () => addSideClicked("attackers"),
@@ -290,7 +289,7 @@ class Battle {
 
   changeName(ev) {
     this.name = ev.target.value;
-    $("#battleScreen").dialog({title: this.name});
+    $("#battleScreen").dialog({ title: this.name });
   }
 
   generateName(type) {
@@ -300,7 +299,7 @@ class Battle {
         : Names.getBase(rand(nameBases.length - 1));
     ensureEl("battleNamePlace").value = this.place = place;
     ensureEl("battleNameFull").value = this.name = this.defineName();
-    $("#battleScreen").dialog({title: this.name});
+    $("#battleScreen").dialog({ title: this.name });
   }
 
   getJoinedForces(regiments) {
@@ -314,6 +313,7 @@ class Battle {
   }
 
   calculateStrength(side) {
+    const hasCitadel = pack.burgs[pack.cells.burg[this.cell]].citadel;
     const scheme = {
       // field battle phases
       skirmish: {
@@ -365,42 +365,42 @@ class Battle {
 
       // siege phases
       blockade: {
-        melee: 0.25,
-        ranged: 0.25,
-        mounted: 0.2,
-        machinery: 0.5,
-        naval: 0.2,
-        armored: 0.1,
-        aviation: 0.25,
-        magical: 0.25
+        melee: hasCitadel ? 0.08 : 0.25,
+        ranged: hasCitadel ? 0.20 : 0.25,
+        mounted: hasCitadel ? 0.03 : 0.2,
+        machinery: hasCitadel ? 0.8 : 0.5,
+        naval: hasCitadel ? 0.06 : 0.2,
+        armored: hasCitadel ? 0.09 : 0.1,
+        aviation: hasCitadel ? 0.25 : 0.25,
+        magical: hasCitadel ? 0.025 : 0.25
       }, // no active actions
       sheltering: {
-        melee: 0.3,
-        ranged: 0.5,
-        mounted: 0.2,
-        machinery: 0.5,
-        naval: 0.2,
-        armored: 0.1,
-        aviation: 0.25,
-        magical: 0.25
+        melee: hasCitadel ? 0.4 : 0.3,
+        ranged: hasCitadel ? 0.8 : 0.5,
+        mounted: hasCitadel ? 0.08 : 0.2,
+        machinery: hasCitadel ? 0.6 : 0.5,
+        naval: hasCitadel ? 0.01 : 0.2,
+        armored: hasCitadel ? 0.1 : 0.1,
+        aviation: hasCitadel ? 0.1 : 0.25,
+        magical: hasCitadel ? 0.25 : 0.25
       }, // no active actions
       sortie: {melee: 2, ranged: 0.5, mounted: 1.2, machinery: 0.2, naval: 0.1, armored: 0.5, aviation: 1, magical: 1}, // melee excel
       bombardment: {
-        melee: 0.2,
-        ranged: 0.5,
-        mounted: 0.2,
-        machinery: 3,
-        naval: 1,
+        melee: hasCitadel ? 0.3 : 0.2,
+        ranged: hasCitadel ? 0.6 : 0.5,
+        mounted: hasCitadel ? 0.25 : 0.2,
+        machinery: hasCitadel ? 0.4 : 3,
+        naval: hasCitadel ? 0.1 : 1,
         armored: 0.5,
         aviation: 1,
         magical: 1
       }, // machinery excel
       storming: {
-        melee: 1,
-        ranged: 0.6,
-        mounted: 0.5,
-        machinery: 1,
-        naval: 0.1,
+        melee: hasCitadel ? 0.8 : 1,
+        ranged: hasCitadel ? 0.5 : 0.6,
+        mounted: hasCitadel ? 0.3 : 0.5,
+        machinery: hasCitadel ? 0.5 : 1,
+        naval: hasCitadel ? 0.01 : 0.1,
         armored: 0.1,
         aviation: 0.5,
         magical: 0.5
@@ -782,7 +782,7 @@ class Battle {
     button.style.opacity = 0.5;
     div.style.display = "block";
 
-    document.getElementsByTagName("body")[0].on("click", hideSection, {once: true});
+    document.getElementsByTagName("body")[0].on("click", hideSection, { once: true });
   }
 
   changeType(ev) {
@@ -793,7 +793,7 @@ class Battle {
     this.calculateStrength("attackers");
     this.calculateStrength("defenders");
     this.name = this.defineName();
-    $("#battleScreen").dialog({title: this.name});
+    $("#battleScreen").dialog({ title: this.name });
   }
 
   changePhase(ev, side) {
