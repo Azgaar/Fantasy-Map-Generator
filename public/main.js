@@ -24,7 +24,7 @@ if (PRODUCTION && "serviceWorker" in navigator) {
     "beforeinstallprompt",
     async event => {
       event.preventDefault();
-      const Installation = await window.loadInstallation();
+      const Installation = await window.lazy.installation();
       Installation.init(event);
     },
     { once: true }

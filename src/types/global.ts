@@ -175,12 +175,47 @@ declare global {
   var regenerateProduction: () => void;
   var legend: any;
 
-  // Lazy-loader bridges, see docs/architecture/lazy_loading.md
-  var loadSupporters: () => Promise<typeof import("../controllers/supporters")>;
-  var loadInstallation: () => Promise<typeof import("../controllers/installation")>;
-  var loadMinimap: () => Promise<typeof import("../controllers/minimap")>;
-  var loadExportJson: () => Promise<typeof import("../controllers/export-json")>;
-  var loadHierarchyTree: () => Promise<typeof import("../controllers/hierarchy-tree")>;
+  // Helpers defined in classic public/ scripts (not yet migrated to src/). Migrated counterparts
+  // (src/utils, src/modules) and globally-typed generators (Names, Cultures, Religions, States,
+  // Provinces, Burgs, COA, COArenderer) are used directly instead.
+  var drawCultures: () => void;
+  var drawReligions: () => void;
+  var drawStates: () => void;
+  var drawBorders: () => void;
+  var drawProvinces: () => void;
+  var drawStateLabels: (ids?: number[]) => void;
+  var drawPopulation: () => void;
+
+  var toggleCultures: () => void;
+  var toggleStates: () => void;
+  var toggleBiomes: () => void;
+  var toggleReligions: () => void;
+  var toggleProvinces: () => void;
+  var toggleBorders: () => void;
+  var togglePopulation: () => void;
+
+  var highlightElement: (element: Element | null, duration?: number) => void;
+  var applySortingByHeader: (headerId: string) => void;
+  var fog: (id: string, path: string) => void;
+  var unfog: (id?: string) => void;
+  var overviewBurgs: (options: { stateId: number }) => void;
+  var editEmblem: (type: string, id: string, el: any) => void;
+  var l: (n: number) => string;
+
+  var aleaPRNG: (seed: string | number) => () => number;
+  var heightmapColorSchemes: Record<string, unknown>;
+  var precreatedHeightmaps: Record<string, { name: string }>;
+  var lock: (option: string) => void;
+  var applyOption: (select: HTMLElement, value: string, text?: string) => void;
+  var regeneratePrompt: (options?: { seed?: string; graph?: any }) => void;
+  var editHeightmap: (options: { mode: string; tool: string }) => void;
+
+  var cults: Selection<SVGGElement, unknown, null, undefined>;
+  var relig: Selection<SVGGElement, unknown, null, undefined>;
+  var regions: Selection<SVGGElement, unknown, null, undefined>;
+  var statesBody: Selection<SVGGElement, unknown, null, undefined>;
+  var statesHalo: Selection<SVGGElement, unknown, null, undefined>;
+  var armies: Selection<SVGGElement, unknown, null, undefined>;
 }
 
 type BurgGroup = {

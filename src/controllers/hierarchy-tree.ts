@@ -1,3 +1,5 @@
+import type { D3DragEvent, D3ZoomEvent } from "d3";
+import { drag, mean, select, stratify, tree, zoom } from "d3";
 import { ensureEl, minmax } from "../utils";
 
 type HierarchyElement = {
@@ -20,21 +22,20 @@ type OpenProps = {
   getShape: (dataElement: HierarchyElement) => string | undefined;
 };
 
-const d3 = (window as any).d3;
-
 appendStyleSheet();
 insertHtml();
 
 const MARGINS = { top: 10, right: 10, bottom: -5, left: 10 };
 
-const handleZoom = () => viewbox.attr("transform", d3.event.transform);
-const zoom = d3.zoom().scaleExtent([0.2, 1.5]).on("zoom", handleZoom);
+const handleZoom = (event: D3ZoomEvent<SVGSVGElement, unknown>) =>
+  viewbox.attr("transform", event.transform.toString());
+const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent([0.2, 1.5]).on("zoom", handleZoom);
 
 // store old root for transitions
 let oldRoot: any;
 
 // define svg elements
-const svg = d3.select("#hierarchyTree > svg").call(zoom);
+const svg = select<SVGSVGElement, unknown>("#hierarchyTree > svg").call(zoomBehavior);
 const viewbox = svg.select("g#hierarchyTree_viewbox");
 const primaryLinks = viewbox.select("g#hierarchyTree_linksPrimary");
 const secondaryLinks = viewbox.select("g#hierarchyTree_linksSecondary");
@@ -72,12 +73,15 @@ export function open(props: OpenProps): void {
 
   const w = treeWidth - MARGINS.left - MARGINS.right;
   const h = treeHeight + 30 - MARGINS.top - MARGINS.bottom;
-  const treeLayout = d3.tree().size([w, h]);
+  const treeLayout = tree().size([w, h]);
 
   const width = minmax(treeWidth, 300, innerWidth * 0.75);
   const height = minmax(treeHeight, 200, innerHeight * 0.75);
 
-  zoom.extent([Array(2).fill(0), [width, height]]);
+  zoomBehavior.extent([
+    [0, 0],
+    [width, height]
+  ]);
   svg.attr("viewBox", `0, 0, ${width}, ${height}`);
 
   $("#hierarchyTree").dialog({
@@ -217,10 +221,9 @@ function cleanupOrigins(elements: HierarchyElement[]): HierarchyElement[] {
 
 function getRoot(): any {
   try {
-    const root = d3
-      .stratify()
-      .id((d: HierarchyElement) => d.i)
-      .parentId((d: HierarchyElement) => d.origins[0])(validElements);
+    const root = stratify<HierarchyElement>()
+      .id(d => String(d.i))
+      .parentId(d => (d.origins[0] == null ? null : String(d.origins[0])))(validElements);
 
     oldRoot = root;
     return root;
@@ -278,7 +281,7 @@ const getSortIndex = (node: any): number => {
   const secondaryOrigins = descendants.flatMap(({ data }: any) => data.origins.slice(1));
 
   if (secondaryOrigins.length === 0) return node.data.i;
-  return d3.mean(secondaryOrigins);
+  return mean(secondaryOrigins) ?? 0;
 };
 
 function renderTree(root: any, treeLayout: any): void {
@@ -288,7 +291,7 @@ function renderTree(root: any, treeLayout: any): void {
   secondaryLinks.selectAll("path").data(getSecondaryLinks(root), getLinkKey).join("path").attr("d", getLinkPath);
 
   const node = nodes
-    .selectAll("g")
+    .selectAll<SVGGElement, unknown>("g")
     .data(root.descendants(), getNodeKey)
     .join("g")
     .attr("data-id", (d: any) => d.data.i)
@@ -296,8 +299,8 @@ function renderTree(root: any, treeLayout: any): void {
     .attr("transform", (d: any) => `translate(${d.x}, ${d.y})`)
     .on("mouseenter", handleNoteEnter)
     .on("mouseleave", handleNodeExit)
-    .on("click", selectElement)
-    .call(d3.drag().on("start", dragToReorigin));
+    .on("click", (_event, d) => selectElement(d))
+    .call(drag<SVGGElement, unknown>().on("start", dragToReorigin));
 
   node
     .selectAll("path")
@@ -359,7 +362,7 @@ function updateTree(): void {
   const w = treeWidth - MARGINS.left - MARGINS.right;
   const h = treeHeight + 30 - MARGINS.top - MARGINS.bottom;
 
-  const treeLayout = d3.tree().size([w, h]);
+  const treeLayout = tree().size([w, h]);
   treeLayout(root.sort((a: any, b: any) => getSortIndex(a) - getSortIndex(b)));
 
   primaryLinks
@@ -505,7 +508,7 @@ function selectElement(d: any): void {
   };
 }
 
-function handleNoteEnter(this: SVGGElement, d: any): void {
+function handleNoteEnter(this: SVGGElement, _event: MouseEvent, d: any): void {
   if (d.depth === 0) return;
 
   this.classList.add("selected");
@@ -515,7 +518,7 @@ function handleNoteEnter(this: SVGGElement, d: any): void {
   tip("Drag to other node to add parent, click to edit");
 }
 
-function handleNodeExit(this: SVGGElement, d: any): void {
+function handleNodeExit(this: SVGGElement, _event: MouseEvent, d: any): void {
   this.classList.remove("selected");
   onNodeLeave(d);
 
@@ -523,22 +526,22 @@ function handleNodeExit(this: SVGGElement, d: any): void {
   tip("");
 }
 
-function dragToReorigin(from: any): void {
+function dragToReorigin(event: D3DragEvent<SVGGElement, unknown, unknown>, from: any): void {
   if (from.id === 0) return;
 
   dragLine.attr("d", `M${from.x},${from.y}L${from.x},${from.y}`);
 
-  d3.event.on("drag", () => {
-    dragLine.attr("d", `M${from.x},${from.y}L${d3.event.x},${d3.event.y}`);
+  event.on("drag", (dragEvent: D3DragEvent<SVGGElement, unknown, unknown>) => {
+    dragLine.attr("d", `M${from.x},${from.y}L${dragEvent.x},${dragEvent.y}`);
   });
 
-  d3.event.on("end", () => {
+  event.on("end", () => {
     dragLine.attr("d", "");
     const selected = nodes.select("g.selected");
     if (!selected.size()) return;
 
     const elementId = from.data.i;
-    const newOrigin = selected.datum().data.i;
+    const newOrigin = (selected.datum() as any).data.i;
     if (elementId === newOrigin) return; // dragged to itself
     if (from.data.origins.includes(newOrigin)) return; // already a child of the selected node
     if (from.descendants().some((node: any) => node.data.i === newOrigin)) return; // cannot be a child of its own child
