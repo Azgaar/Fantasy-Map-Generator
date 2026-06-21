@@ -640,7 +640,7 @@ function togglePercentageMode() {
 
 async function showHierarchy() {
   if (customization) return;
-  const HeirarchyTree = await import("../hierarchy-tree.js?v=1.120.5");
+  const HeirarchyTree = await window.loadHierarchyTree();
 
   const getDescription = culture => {
     const { name, type, rural, urban } = culture;

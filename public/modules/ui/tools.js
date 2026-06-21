@@ -1033,6 +1033,6 @@ function viewCellDetails() {
 }
 
 async function openMinimap() {
-  const Minimap = await import("./minimap.js?v=1.120.5");
+  const Minimap = await window.loadMinimap();
   Minimap.openMinimapDialog();
 }

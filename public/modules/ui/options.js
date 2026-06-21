@@ -82,7 +82,7 @@ document
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
-  const { supporters } = await import("../dynamic/supporters.js?v=1.123.0");
+  const { supporters } = await window.loadSupporters();
   const list = supporters.split("\n").sort();
   const columns = window.innerWidth < 800 ? 2 : 5;
 
@@ -786,7 +786,7 @@ function showExportPane() {
 }
 
 async function exportToJson(type) {
-  const { exportToJson } = await import("../dynamic/export-json.js?v=1.125.0");
+  const { exportToJson } = await window.loadExportJson();
   exportToJson(type);
 }
 

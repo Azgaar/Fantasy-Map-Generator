@@ -2,6 +2,7 @@ import "./charts-overview";
 import "./coastline-editor";
 import "./compare-prices";
 import "./elevation-profile";
+import "./lazy-loaders";
 import "./market-deals-overview";
 import "./market-overview";
 import "./markets-overview";

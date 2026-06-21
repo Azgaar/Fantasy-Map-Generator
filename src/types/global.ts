@@ -36,6 +36,20 @@ declare global {
   var religionsNumber: HTMLInputElement;
   var distanceUnitInput: HTMLInputElement;
   var heightUnit: HTMLSelectElement;
+  var areaUnit: HTMLInputElement;
+  var mapSizeOutput: HTMLInputElement;
+  var latitudeOutput: HTMLInputElement;
+  var longitudeOutput: HTMLInputElement;
+  var precOutput: HTMLInputElement;
+  var hideLabels: HTMLInputElement;
+  var stylePreset: HTMLSelectElement;
+  var rescaleLabels: HTMLInputElement;
+  var temperatureScale: HTMLSelectElement;
+
+  // Global variables defined in main.js / versioning.js
+  var viewX: number;
+  var viewY: number;
+  var VERSION: string;
 
   var rivers: Selection<SVGElement, unknown, null, undefined>;
   var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
@@ -160,6 +174,13 @@ declare global {
   var regenerateMarkets: () => void;
   var regenerateProduction: () => void;
   var legend: any;
+
+  // Lazy-loader bridges, see docs/architecture/lazy_loading.md
+  var loadSupporters: () => Promise<typeof import("../controllers/supporters")>;
+  var loadInstallation: () => Promise<typeof import("../controllers/installation")>;
+  var loadMinimap: () => Promise<typeof import("../controllers/minimap")>;
+  var loadExportJson: () => Promise<typeof import("../controllers/export-json")>;
+  var loadHierarchyTree: () => Promise<typeof import("../controllers/hierarchy-tree")>;
 }
 
 type BurgGroup = {

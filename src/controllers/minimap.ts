@@ -1,8 +1,8 @@
-"use strict";
+import { ensureEl, minmax, rn } from "../utils";
 
 let minimapInitialized = false;
 
-export function openMinimapDialog() {
+export function openMinimapDialog(): void {
   closeDialogs("#minimap, .stable");
   ensureMinimapStyles();
   ensureMinimapMarkup();
@@ -13,17 +13,17 @@ export function openMinimapDialog() {
     title: "Minimap",
     resizable: false,
     width: "auto",
-    position: {my: "left bottom", at: "left+10 bottom-25", of: "svg", collision: "fit"},
-    open: function () {
+    position: { my: "left bottom", at: "left+10 bottom-25", of: "svg", collision: "fit" },
+    open: function (this: HTMLElement) {
       $(this).parent().addClass("minimap-dialog");
     },
-    close: function () {
+    close: function (this: HTMLElement) {
       $(this).dialog("destroy");
     }
   });
 }
 
-function ensureMinimapStyles() {
+function ensureMinimapStyles(): void {
   if (document.getElementById("minimapStyles")) return;
 
   const style = document.createElement("style");
@@ -69,7 +69,7 @@ function ensureMinimapStyles() {
   document.head.append(style);
 }
 
-function ensureMinimapMarkup() {
+function ensureMinimapMarkup(): void {
   if (minimapInitialized) return;
 
   const container = ensureEl("minimapContent");
@@ -89,8 +89,8 @@ function ensureMinimapMarkup() {
   window.updateMinimap = updateMinimap;
 }
 
-function minimapClickToPan(event) {
-  const minimap = ensureEl("minimapSurface");
+function minimapClickToPan(event: MouseEvent): void {
+  const minimap = document.getElementById("minimapSurface") as SVGSVGElement | null;
   if (!minimap) return;
 
   const point = minimap.createSVGPoint();
@@ -106,10 +106,10 @@ function minimapClickToPan(event) {
   zoomTo(x, y, scale, 450);
 }
 
-function updateMinimap() {
-  const minimap = ensureEl("minimapSurface");
-  const viewport = ensureEl("minimapViewport");
-  const mapUse = ensureEl("minimapMapUse");
+function updateMinimap(): void {
+  const minimap = document.getElementById("minimapSurface") as SVGSVGElement | null;
+  const viewport = document.getElementById("minimapViewport") as SVGRectElement | null;
+  const mapUse = document.getElementById("minimapMapUse") as SVGUseElement | null;
   if (!minimap || !viewport || !mapUse) return;
 
   minimap.setAttribute("viewBox", `0 0 ${graphWidth} ${graphHeight}`);
@@ -126,8 +126,14 @@ function updateMinimap() {
   const right = Math.min(graphWidth, left + svgWidth * inverseScale);
   const bottom = Math.min(graphHeight, top + svgHeight * inverseScale);
 
-  viewport.setAttribute("x", rn(left, 3));
-  viewport.setAttribute("y", rn(top, 3));
-  viewport.setAttribute("width", rn(Math.max(0, right - left), 3));
-  viewport.setAttribute("height", rn(Math.max(0, bottom - top), 3));
+  viewport.setAttribute("x", String(rn(left, 3)));
+  viewport.setAttribute("y", String(rn(top, 3)));
+  viewport.setAttribute("width", String(rn(Math.max(0, right - left), 3)));
+  viewport.setAttribute("height", String(rn(Math.max(0, bottom - top), 3)));
+}
+
+declare global {
+  interface Window {
+    updateMinimap: () => void;
+  }
 }
