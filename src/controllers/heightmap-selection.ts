@@ -1,3 +1,5 @@
+import { drawHeights, ensureEl, generateGrid, generateSeed, shouldRegenerateGrid } from "../utils";
+
 const initialSeed = generateSeed();
 let graph = getGraph(grid);
 
@@ -5,35 +7,37 @@ appendStyleSheet();
 insertHtml();
 addListeners();
 
-export function open() {
+export function open(): void {
   closeDialogs(".stable");
 
-  const $templateInput = ensureEl("templateInput");
+  const $templateInput = ensureEl<HTMLInputElement>("templateInput");
   setSelected($templateInput.value);
   graph = getGraph(graph);
 
   $("#heightmapSelection").dialog({
     title: "Select Heightmap",
     resizable: false,
-    position: {my: "center", at: "center", of: "svg"},
+    position: { my: "center", at: "center", of: "svg" },
     buttons: {
-      Cancel: function () {
+      Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
       },
-      Select: function () {
+      Select: function (this: HTMLElement) {
         const id = getSelected();
+        if (!id) return;
         applyOption($templateInput, id, getName(id));
         lock("template");
 
         $(this).dialog("close");
       },
-      "New Map": function () {
+      "New Map": function (this: HTMLElement) {
         const id = getSelected();
+        if (!id) return;
         applyOption($templateInput, id, getName(id));
         lock("template");
 
         const seed = getSeed();
-        regeneratePrompt({seed, graph});
+        regeneratePrompt({ seed, graph });
 
         $(this).dialog("close");
       }
@@ -41,7 +45,7 @@ export function open() {
   });
 }
 
-function appendStyleSheet() {
+function appendStyleSheet(): void {
   const style = document.createElement("style");
   style.textContent = /* css */ `
     div.dialog > div.heightmap-selection {
@@ -149,7 +153,7 @@ function appendStyleSheet() {
   document.head.appendChild(style);
 }
 
-function insertHtml() {
+function insertHtml(): void {
   const heightmapColorSchemeOptions = Object.keys(heightmapColorSchemes)
     .map(scheme => `<option value="${scheme}">${scheme}</option>`)
     .join("");
@@ -223,63 +227,71 @@ function insertHtml() {
     .join("");
 }
 
-function addListeners() {
+function addListeners(): void {
   ensureEl("heightmapSelection").on("click", event => {
-    const article = event.target.closest("#heightmapSelection article");
+    const target = (event as MouseEvent).target as HTMLElement;
+    const article = target.closest<HTMLElement>("#heightmapSelection article");
     if (!article) return;
 
     const id = article.dataset.id;
-    if (event.target.matches("span.icon-cw")) regeneratePreview(article, id);
+    if (!id) return;
+    if (target.matches("span.icon-cw")) regeneratePreview(article, id);
     setSelected(id);
   });
 
   ensureEl("heightmapSelectionRenderOcean").on("change", redrawAll);
   ensureEl("heightmapSelectionColorScheme").on("change", redrawAll);
   ensureEl("heightmapSelectionRedrawPreview").on("click", redrawAll);
-  ensureEl("heightmapSelectionEditTemplates").on("click", confirmHeightmapEdit);
-  ensureEl("heightmapSelectionImportHeightmap").on("click", confirmHeightmapEdit);
+  ensureEl("heightmapSelectionEditTemplates").on("click", event =>
+    confirmHeightmapEdit(event.currentTarget as HTMLElement)
+  );
+  ensureEl("heightmapSelectionImportHeightmap").on("click", event =>
+    confirmHeightmapEdit(event.currentTarget as HTMLElement)
+  );
 }
 
-function getSelected() {
-  return ensureEl("heightmapSelection").querySelector(".selected")?.dataset?.id;
+function getSelected(): string | undefined {
+  return ensureEl("heightmapSelection").querySelector<HTMLElement>(".selected")?.dataset?.id;
 }
 
-function setSelected(id) {
+function setSelected(id: string): void {
   const $heightmapSelection = ensureEl("heightmapSelection");
   $heightmapSelection.querySelector(".selected")?.classList?.remove("selected");
   $heightmapSelection.querySelector(`[data-id="${id}"]`)?.classList?.add("selected");
 }
 
-function getSeed() {
-  return ensureEl("heightmapSelection").querySelector(".selected")?.dataset?.seed;
+function getSeed(): string | undefined {
+  return ensureEl("heightmapSelection").querySelector<HTMLElement>(".selected")?.dataset?.seed;
 }
 
-function getName(id) {
+function getName(id: string): string {
   const isTemplate = id in heightmapTemplates;
   return isTemplate ? heightmapTemplates[id].name : precreatedHeightmaps[id].name;
 }
 
-function getGraph(currentGraph) {
-  const newGraph = shouldRegenerateGrid(currentGraph, seed) ? generateGrid() : structuredClone(currentGraph);
+function getGraph(currentGraph: any): any {
+  const newGraph = shouldRegenerateGrid(currentGraph, seed as unknown as number, graphWidth, graphHeight)
+    ? generateGrid(seed, graphWidth, graphHeight)
+    : structuredClone(currentGraph);
   delete newGraph.cells.h;
   return newGraph;
 }
 
-function drawTemplatePreview(id) {
+function drawTemplatePreview(id: string): void {
   const heights = HeightmapGenerator.fromTemplate(graph, id);
   const dataUrl = getHeightmapPreview(heights);
   const article = ensureEl("heightmapSelection").querySelector(`[data-id="${id}"]`);
-  article.querySelector("img").src = dataUrl;
+  article?.querySelector("img")?.setAttribute("src", dataUrl);
 }
 
-async function drawPrecreatedHeightmap(id) {
+async function drawPrecreatedHeightmap(id: string): Promise<void> {
   const heights = await HeightmapGenerator.fromPrecreated(graph, id);
   const dataUrl = getHeightmapPreview(heights);
   const article = ensureEl("heightmapSelection").querySelector(`[data-id="${id}"]`);
-  article.querySelector("img").src = dataUrl;
+  article?.querySelector("img")?.setAttribute("src", dataUrl);
 }
 
-function regeneratePreview(article, id) {
+function regeneratePreview(article: HTMLElement, id: string): void {
   graph = getGraph(graph);
   const seed = generateSeed();
   article.dataset.seed = seed;
@@ -287,11 +299,12 @@ function regeneratePreview(article, id) {
   drawTemplatePreview(id);
 }
 
-function redrawAll() {
+function redrawAll(): void {
   graph = getGraph(graph);
-  const articles = ensureEl("heightmapSelection").querySelectorAll(`article`);
+  const articles = ensureEl("heightmapSelection").querySelectorAll<HTMLElement>("article");
   for (const article of articles) {
-    const {id, seed} = article.dataset;
+    const { id, seed } = article.dataset;
+    if (!id || !seed) continue;
     Math.random = aleaPRNG(seed);
 
     const isTemplate = id in heightmapTemplates;
@@ -300,20 +313,27 @@ function redrawAll() {
   }
 }
 
-function confirmHeightmapEdit() {
-  const tool = this.dataset.tool;
+function confirmHeightmapEdit(el: HTMLElement): void {
+  const tool = el.dataset.tool;
+  if (!tool) return;
 
   confirmationDialog({
-    title: this.dataset.tip,
+    title: el.dataset.tip ?? "",
     message: "Opening the tool will erase the current map. Are you sure you want to proceed?",
     confirm: "Continue",
-    onConfirm: () => editHeightmap({mode: "erase", tool})
+    onConfirm: () => editHeightmap({ mode: "erase", tool })
   });
 }
 
-function getHeightmapPreview(heights) {
-  const scheme = getColorScheme(ensureEl("heightmapSelectionColorScheme").value);
-  const renderOcean = ensureEl("heightmapSelectionRenderOcean").checked;
-  const dataUrl = drawHeights({heights, width: graph.cellsX, height: graph.cellsY, scheme, renderOcean});
+function getHeightmapPreview(heights: Uint8Array | null): string {
+  const scheme = getColorScheme(ensureEl<HTMLSelectElement>("heightmapSelectionColorScheme").value);
+  const renderOcean = ensureEl<HTMLInputElement>("heightmapSelectionRenderOcean").checked;
+  const dataUrl = drawHeights({
+    heights: heights as unknown as number[],
+    width: graph.cellsX,
+    height: graph.cellsY,
+    scheme,
+    renderOcean
+  });
   return dataUrl;
 }

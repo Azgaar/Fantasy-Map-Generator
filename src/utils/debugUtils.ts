@@ -1,5 +1,5 @@
 import { curveBundle, line, max, min } from "d3";
-import type { Point } from "../modules/voronoi";
+import type { Point } from "../generators/voronoi";
 import { C_12 } from "./colorUtils";
 import { getGridPolygon } from "./graphUtils";
 import { normalize } from "./numberUtils";

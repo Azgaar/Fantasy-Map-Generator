@@ -1,7 +1,7 @@
 import Alea from "alea";
 import { color, quadtree } from "d3";
 import Delaunator from "delaunator";
-import { type Cells, type Point, type Vertices, Voronoi } from "../modules/voronoi";
+import { type Cells, type Point, type Vertices, Voronoi } from "../generators/voronoi";
 import type { PackedGraph } from "../types/PackedGraph";
 import { createTypedArray } from "./arrayUtils";
 import { ensureEl } from "./nodeUtils";

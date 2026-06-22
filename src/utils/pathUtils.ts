@@ -1,5 +1,5 @@
 import polylabel from "polylabel";
-import type { Point, Vertices } from "../modules/voronoi";
+import type { Point, Vertices } from "../generators/voronoi";
 import type { PackedGraph } from "../types/PackedGraph";
 import { rn } from "./numberUtils";
 

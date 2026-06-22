@@ -7,23 +7,25 @@ declare global {
   var Ice: IceModule;
 }
 
+export type Ice = Glacier | Iceberg;
+
+interface Glacier {
+  type: "glacier";
+  i: number;
+  points: Point[];
+  offset?: Point;
+}
+
+interface Iceberg {
+  type: "iceberg";
+  i: number;
+  points: Point[];
+  cellId: number;
+  size: number;
+  offset?: Point;
+}
+
 class IceModule {
-  // Find next available id for new ice element idealy filling gaps
-  private getNextId() {
-    if (pack.ice.length === 0) return 0;
-    // find gaps in existing ids
-    const existingIds = pack.ice.map(e => e.i).sort((a, b) => a - b);
-    for (let id = 0; id < existingIds[existingIds.length - 1]; id++) {
-      if (!existingIds.includes(id)) return id;
-    }
-    return existingIds[existingIds.length - 1] + 1;
-  }
-
-  // Clear all ice
-  private clear() {
-    pack.ice = [];
-  }
-
   // Generate glaciers and icebergs based on temperature and height
   public generate() {
     this.clear();
@@ -44,11 +46,8 @@ class IceModule {
       if (isolines[type]?.polygons) {
         isolines[type].polygons.forEach((points: Point[]) => {
           const clipped = clipPoly(points, graphWidth, graphHeight);
-          pack.ice.push({
-            i: this.getNextId(),
-            points: clipped,
-            type: "glacier"
-          });
+          const ice: Glacier = { i: this.getNextId(), points: clipped, type: "glacier" };
+          pack.ice.push(ice);
         });
       }
     }
@@ -72,14 +71,24 @@ class IceModule {
         rn(lerp(cy, y, size), 2)
       ]);
 
-      pack.ice.push({
-        i: this.getNextId(),
-        points,
-        type: "iceberg",
-        cellId,
-        size
-      });
+      const ice: Iceberg = { i: this.getNextId(), points, type: "iceberg", cellId, size };
+      pack.ice.push(ice);
     }
+  }
+
+  // Find next available id for new ice element idealy filling gaps
+  private getNextId() {
+    if (pack.ice.length === 0) return 0;
+    // find gaps in existing ids
+    const existingIds = pack.ice.map(e => e.i).sort((a, b) => a - b);
+    for (let id = 0; id < existingIds[existingIds.length - 1]; id++) {
+      if (!existingIds.includes(id)) return id;
+    }
+    return existingIds[existingIds.length - 1] + 1;
+  }
+
+  private clear() {
+    pack.ice = [];
   }
 
   addIceberg(cellId: number, size: number) {
@@ -89,22 +98,17 @@ class IceModule {
       rn(lerp(cy, y, size), 2)
     ]);
     const id = this.getNextId();
-    pack.ice.push({
-      i: id,
-      points,
-      type: "iceberg",
-      cellId,
-      size
-    });
+    const ice: Iceberg = { i: id, points, type: "iceberg", cellId, size };
+    pack.ice.push(ice);
     redrawIceberg(id);
   }
 
   removeIce(id: number) {
-    const index = pack.ice.findIndex(element => element.i === id);
-    if (index !== -1) {
-      const type = pack.ice.find(element => element.i === id).type;
+    const ice = pack.ice.find(ice => ice.i === id);
+    if (ice) {
+      const index = pack.ice.indexOf(ice);
       pack.ice.splice(index, 1);
-      if (type === "glacier") {
+      if (ice.type === "glacier") {
         redrawGlacier(id);
       } else {
         redrawIceberg(id);
@@ -113,8 +117,8 @@ class IceModule {
   }
 
   randomizeIcebergShape(id: number) {
-    const iceberg = pack.ice.find(element => element.i === id);
-    if (!iceberg) return;
+    const iceberg = pack.ice.find(ice => ice.i === id);
+    if (!iceberg || iceberg.type !== "iceberg") return;
 
     const cellId = iceberg.cellId;
     const size = iceberg.size;
@@ -130,18 +134,16 @@ class IceModule {
   }
 
   changeIcebergSize(id: number, newSize: number) {
-    const iceberg = pack.ice.find(element => element.i === id);
-    if (!iceberg) return;
+    const iceberg = pack.ice.find(ice => ice.i === id);
+    if (!iceberg || iceberg.type !== "iceberg") return;
 
     const cellId = iceberg.cellId;
     const [cx, cy] = grid.points[cellId];
     const oldSize = iceberg.size;
 
-    const flat = iceberg.points.flat();
-    const pairs = [];
-    while (flat.length) pairs.push(flat.splice(0, 2));
+    const pairs = iceberg.points;
     const poly = pairs.map(p => [(p[0] - cx) / oldSize, (p[1] - cy) / oldSize]);
-    const points = poly.map(p => [rn(cx + p[0] * newSize, 2), rn(cy + p[1] * newSize, 2)]);
+    const points = poly.map(p => [rn(cx + p[0] * newSize, 2), rn(cy + p[1] * newSize, 2)] satisfies Point);
 
     iceberg.points = points;
     iceberg.size = newSize;

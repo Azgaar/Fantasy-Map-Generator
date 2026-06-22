@@ -352,7 +352,7 @@ class Resampler {
       const [xp, yp] = projection(...parentMap.pack.cells.p[religion.center]);
       const [x, y] = [rn(xp, 2), rn(yp, 2)];
       const [centerX, centerY] = this.isInMap(x, y) ? [x, y] : religionPoles[religion.i];
-      const center = findClosestCell(centerX, centerY, Infinity, pack);
+      const center = findClosestCell(centerX, centerY, Infinity, pack) as number;
       return { ...religion, center };
     });
   }
@@ -398,7 +398,7 @@ class Resampler {
       const [x, y] = projection(marker.x, marker.y);
       if (!this.isInMap(x, y)) Markers.deleteMarker(marker.i);
 
-      const cell = findClosestCell(x, y, Infinity, pack);
+      const cell = findClosestCell(x, y, Infinity, pack) as number;
       marker.x = rn(x, 2);
       marker.y = rn(y, 2);
       marker.cell = cell;

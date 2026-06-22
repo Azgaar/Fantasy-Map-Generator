@@ -1,8 +1,8 @@
 import type { Selection } from "d3";
-import type { GoodsModule } from "../modules/goods-generator";
-import type { MarketsModule } from "../modules/markets-generator";
-import type { NameBase } from "../modules/names-generator";
-import type { ProductionModule } from "../modules/production-generator";
+import type { GoodsModule } from "../generators/goods-generator";
+import type { MarketsModule } from "../generators/markets-generator";
+import type { NameBase } from "../generators/names-generator";
+import type { ProductionModule } from "../generators/production-generator";
 import type { PackedGraph } from "./PackedGraph";
 
 declare global {
@@ -36,6 +36,20 @@ declare global {
   var religionsNumber: HTMLInputElement;
   var distanceUnitInput: HTMLInputElement;
   var heightUnit: HTMLSelectElement;
+  var areaUnit: HTMLInputElement;
+  var mapSizeOutput: HTMLInputElement;
+  var latitudeOutput: HTMLInputElement;
+  var longitudeOutput: HTMLInputElement;
+  var precOutput: HTMLInputElement;
+  var hideLabels: HTMLInputElement;
+  var stylePreset: HTMLSelectElement;
+  var rescaleLabels: HTMLInputElement;
+  var temperatureScale: HTMLSelectElement;
+
+  // Global variables defined in main.js / versioning.js
+  var viewX: number;
+  var viewY: number;
+  var VERSION: string;
 
   var rivers: Selection<SVGElement, unknown, null, undefined>;
   var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
@@ -161,6 +175,48 @@ declare global {
   var regenerateEconomy: () => void;
   var regenerateProduction: () => void;
   var legend: any;
+
+  // Helpers defined in classic public/ scripts (not yet migrated to src/). Migrated counterparts
+  // (src/utils, src/modules) and globally-typed generators (Names, Cultures, Religions, States,
+  // Provinces, Burgs, COA, COArenderer) are used directly instead.
+  var drawCultures: () => void;
+  var drawReligions: () => void;
+  var drawStates: () => void;
+  var drawBorders: () => void;
+  var drawProvinces: () => void;
+  var drawStateLabels: (ids?: number[]) => void;
+  var drawPopulation: () => void;
+
+  var toggleCultures: () => void;
+  var toggleStates: () => void;
+  var toggleBiomes: () => void;
+  var toggleReligions: () => void;
+  var toggleProvinces: () => void;
+  var toggleBorders: () => void;
+  var togglePopulation: () => void;
+
+  var highlightElement: (element: Element | null, duration?: number) => void;
+  var applySortingByHeader: (headerId: string) => void;
+  var fog: (id: string, path: string) => void;
+  var unfog: (id?: string) => void;
+  var overviewBurgs: (options: { stateId: number }) => void;
+  var editEmblem: (type: string, id: string, el: any) => void;
+  var l: (n: number) => string;
+
+  var aleaPRNG: (seed: string | number) => () => number;
+  var heightmapColorSchemes: Record<string, unknown>;
+  var precreatedHeightmaps: Record<string, { name: string }>;
+  var lock: (option: string) => void;
+  var applyOption: (select: HTMLElement, value: string, text?: string) => void;
+  var regeneratePrompt: (options?: { seed?: string; graph?: any }) => void;
+  var editHeightmap: (options: { mode: string; tool: string }) => void;
+
+  var cults: Selection<SVGGElement, unknown, null, undefined>;
+  var relig: Selection<SVGGElement, unknown, null, undefined>;
+  var regions: Selection<SVGGElement, unknown, null, undefined>;
+  var statesBody: Selection<SVGGElement, unknown, null, undefined>;
+  var statesHalo: Selection<SVGGElement, unknown, null, undefined>;
+  var armies: Selection<SVGGElement, unknown, null, undefined>;
 }
 
 type BurgGroup = {
