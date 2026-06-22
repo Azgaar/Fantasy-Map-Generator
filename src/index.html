@@ -133,7 +133,7 @@
     </style>
     <link
       rel="preload"
-      href="index.css?v=1.123.0-population-stroke-1"
+      href="index.css?v=1.123.0-population-stroke-2"
       as="style"
       onload="
         this.onload = null;
@@ -468,6 +468,13 @@
             >
               <u>B</u>iomes
             </li>
+            <li id="togglePopulation"
+              data-tip="Population map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
+              data-shortcut="N"
+              onclick="togglePopulation(event)"
+            >
+              Populatio<u>n</u>
+            </li>
             <li
               id="toggleCells"
               data-tip="Cells structure: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
@@ -620,13 +627,6 @@
               onclick="togglePrecipitation(event)"
             >
               Precipit<u>a</u>tion
-            </li>
-            <li id="togglePopulation"
-              data-tip="Population map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
-              data-shortcut="N"
-              onclick="togglePopulation(event)"
-            >
-              Populatio<u>n</u>
             </li>
             <li
               id="toggleEmblems"
@@ -8931,12 +8931,12 @@
     <script defer src="libs/alea.min.js?v1.105.0"></script>
     <script defer src="libs/polylabel.min.js?v1.105.0"></script>
     <script defer src="libs/simplify.js?v1.105.6"></script>
-    <script defer src="modules/ui/layers.js?v=1.125.0-population-stroke-1"></script>
+    <script defer src="modules/ui/layers.js?v=1.125.0-population-stroke-2"></script>
     <script defer src="modules/ui/measurers.js?v=1.99.00"></script>
     <script defer src="modules/ui/style-presets.js?v=1.125.0-population-cells-1"></script>
     <script defer src="modules/ui/general.js?v=1.125.0"></script>
     <script defer src="modules/ui/options.js?v=1.125.0"></script>
-    <script defer src="main.js?v=1.125.1"></script>
+    <script defer src="main.js?v=1.125.1-population-stack-1"></script>
     <script defer src="modules/ui/style.js?v=1.125.0-population-cells-1"></script>
     <script defer src="modules/ui/editors.js?v=1.125.0"></script>
     <script defer src="modules/ui/tools.js?v=1.125.1"></script>

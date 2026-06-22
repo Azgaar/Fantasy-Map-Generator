@@ -373,6 +373,8 @@ function togglePopulation(event) {
 function drawPopulation() {
   TIME && console.time("drawPopulation");
 
+  cells.node().before(population.node());
+
   population
     .attr("mask", "url(#land)")
     .attr("stroke", null)
@@ -408,7 +410,7 @@ function drawPopulation() {
   const isolines = getIsolines(pack, cellId => colors[cellId] || null, { fill: true });
   const paths = Object.entries(isolines).map(([color, { fill }], index) => {
     const closedFill = closeSvgPathRings(fill);
-    return /* html */ `<path d="${closedFill}" fill="${color}" stroke="${color}" stroke-width="1" stroke-linejoin="round" id="population${index}" />`;
+    return /* html */ `<path d="${closedFill}" fill="${color}" stroke="${color}" stroke-width="6" stroke-linejoin="round" paint-order="stroke fill" id="population${index}" />`;
   });
 
   ensureEl("population").innerHTML = paths.join("");
